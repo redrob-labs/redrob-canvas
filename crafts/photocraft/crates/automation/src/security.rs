@@ -194,7 +194,7 @@ pub fn client_token(supplied: Option<&str>, token_file: Option<&Path>) -> Result
     token_file.map_or_else(
         || {
             Err(AutomationError::BadRequest(
-                "bridge mode needs --control-token, --control-token-file, PHOTOCRAFT_CONTROL_TOKEN, or PHOTOCRAFT_CONTROL_TOKEN_FILE".into(),
+                "bridge mode needs --control-token, --control-token-file, REDROB_PHOTO_CONTROL_TOKEN, or REDROB_PHOTO_CONTROL_TOKEN_FILE".into(),
             ))
         },
         |path| read_token_file(path).map(|v| v.to_ascii_lowercase()),
@@ -244,8 +244,9 @@ pub fn configure_stream(stream: &std::net::TcpStream) -> std::io::Result<()> {
 
 /// Environment-aware token inputs shared by the desktop app and CLI.
 pub fn token_inputs(supplied: Option<String>, token_file: Option<PathBuf>) -> (Option<String>, Option<PathBuf>) {
-    let supplied = supplied.or_else(|| std::env::var("PHOTOCRAFT_CONTROL_TOKEN").ok());
-    let token_file = token_file.or_else(|| std::env::var_os("PHOTOCRAFT_CONTROL_TOKEN_FILE").map(PathBuf::from));
+    let supplied = supplied.or_else(|| std::env::var("REDROB_PHOTO_CONTROL_TOKEN").or_else(|_| std::env::var("PHOTOCRAFT_CONTROL_TOKEN")).ok()); // legacy: the upstream variable is read when ours is unset
+    let token_file = token_file
+        .or_else(|| std::env::var_os("REDROB_PHOTO_CONTROL_TOKEN_FILE").or_else(|| std::env::var_os("PHOTOCRAFT_CONTROL_TOKEN_FILE")).map(PathBuf::from)); // legacy: the upstream variable is read when ours is unset
     (supplied, token_file)
 }
 

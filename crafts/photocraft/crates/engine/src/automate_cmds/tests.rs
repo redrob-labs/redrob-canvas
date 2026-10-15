@@ -184,16 +184,16 @@ fn droplet_shim_passes_shell_metacharacters_as_a_literal_path() {
     let input = format!("{dir}/input file");
     std::fs::write(
         &cli,
-        "#!/bin/sh\nif [ \"$#\" -ne 3 ] || [ \"$1\" != droplet ] || [ \"$3\" != \"$PHOTOCRAFT_EXPECTED_INPUT\" ]; then exit 90; fi\nprintf '%s' \"$2\" > \"$PHOTOCRAFT_CAPTURE\"\n",
+        "#!/bin/sh\nif [ \"$#\" -ne 3 ] || [ \"$1\" != droplet ] || [ \"$3\" != \"$REDROB_PHOTO_EXPECTED_INPUT\" ]; then exit 90; fi\nprintf '%s' \"$2\" > \"$REDROB_PHOTO_CAPTURE\"\n",
     )
     .unwrap();
     std::fs::set_permissions(&cli, std::fs::Permissions::from_mode(0o755)).unwrap();
     let output = std::process::Command::new(shim)
         .arg(&input)
         .current_dir(&dir)
-        .env("PHOTOCRAFT_CLI", &cli)
-        .env("PHOTOCRAFT_CAPTURE", &capture)
-        .env("PHOTOCRAFT_EXPECTED_INPUT", &input)
+        .env("REDROB_PHOTO_CLI", &cli)
+        .env("REDROB_PHOTO_CAPTURE", &capture)
+        .env("REDROB_PHOTO_EXPECTED_INPUT", &input)
         .output()
         .unwrap();
 

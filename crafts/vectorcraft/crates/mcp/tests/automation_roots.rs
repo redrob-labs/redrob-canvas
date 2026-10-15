@@ -7,9 +7,9 @@
 
 use std::path::{Path, PathBuf};
 
-use serde_json::{Value, json};
 use redrob_vector_engine::file_access::AutomationRoots;
 use redrob_vector_mcp::{Headless, Server};
+use serde_json::{Value, json};
 
 const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="20" height="10" fill="red"/></svg>"#;
 
@@ -84,14 +84,14 @@ fn saves_exports_and_captures_go_only_into_the_write_root() {
     ok(&mut server, "export", json!({"path": s(&base.join("out/art.png"))}));
     assert!(base.join("out/art.png").is_file());
     ok(&mut server, "export", json!({"path": s(&base.join("out/art.svg"))}));
-    ok(&mut server, "save_file", json!({"path": s(&base.join("out/doc.vectorcraft"))}));
+    ok(&mut server, "save_file", json!({"path": s(&base.join("out/doc.rvector"))}));
     ok(&mut server, "screenshot", json!({"path": s(&base.join("out/shot.png"))}));
     assert!(base.join("out/shot.png").is_file(), "the backend wrote the capture");
 
     refused(&mut server, "export", json!({"path": s(&base.join("in/art.png"))}), "outside the write root");
     refused(&mut server, "export", json!({"path": s(&base.join("outside/art.svg"))}), "outside the write root");
     refused(&mut server, "export", json!({"path": format!("{}{sep}..{sep}outside{sep}up.png", s(&base.join("out")))}), "outside the write root");
-    refused(&mut server, "save_file", json!({"path": s(&base.join("outside/doc.vectorcraft"))}), "outside the write root");
+    refused(&mut server, "save_file", json!({"path": s(&base.join("outside/doc.rvector"))}), "outside the write root");
     refused(&mut server, "screenshot", json!({"path": s(&base.join("outside/shot.png"))}), "outside the write root");
     refused(
         &mut server,

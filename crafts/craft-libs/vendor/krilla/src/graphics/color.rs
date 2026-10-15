@@ -214,11 +214,7 @@ pub mod luma {
     }
 
     pub(crate) fn color_space(no_device_cs: bool) -> RegularColorSpace {
-        if no_device_cs {
-            CieBasedColorSpace::Luma.into()
-        } else {
-            DeviceColorSpace::Gray.into()
-        }
+        if no_device_cs { CieBasedColorSpace::Luma.into() } else { DeviceColorSpace::Gray.into() }
     }
 }
 
@@ -236,9 +232,9 @@ impl From<SpecialColor> for Color {
 
 /// CMYK colors.
 pub mod cmyk {
+    use crate::SerializeSettings;
     use crate::color::{CieBasedColorSpace, DeviceColorSpace, RegularColorSpace};
     use crate::graphics::icc::ICCBasedColorSpace;
-    use crate::SerializeSettings;
 
     /// A CMYK color.
     #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -251,12 +247,7 @@ pub mod cmyk {
         }
 
         pub(crate) fn to_pdf_color(self) -> [f32; 4] {
-            [
-                self.0 as f32 / 255.0,
-                self.1 as f32 / 255.0,
-                self.2 as f32 / 255.0,
-                self.3 as f32 / 255.0,
-            ]
+            [self.0 as f32 / 255.0, self.1 as f32 / 255.0, self.2 as f32 / 255.0, self.3 as f32 / 255.0]
         }
     }
 
@@ -280,9 +271,7 @@ pub mod cmyk {
 
     pub(crate) fn color_space(ss: &SerializeSettings) -> Option<RegularColorSpace> {
         if ss.no_device_cs {
-            ss.clone()
-                .cmyk_profile
-                .map(|p| CieBasedColorSpace::Cmyk(ICCBasedColorSpace::<4>(p.clone())).into())
+            ss.clone().cmyk_profile.map(|p| CieBasedColorSpace::Cmyk(ICCBasedColorSpace::<4>(p.clone())).into())
         } else {
             Some(DeviceColorSpace::Cmyk.into())
         }
@@ -340,11 +329,7 @@ pub mod rgb {
         }
 
         pub(crate) fn to_pdf_color(self) -> [f32; 3] {
-            [
-                self.0 as f32 / 255.0,
-                self.1 as f32 / 255.0,
-                self.2 as f32 / 255.0,
-            ]
+            [self.0 as f32 / 255.0, self.1 as f32 / 255.0, self.2 as f32 / 255.0]
         }
 
         pub(super) fn color_space(&self, no_device_cs: bool) -> RegularColorSpace {
@@ -365,11 +350,7 @@ pub mod rgb {
     }
 
     pub(crate) fn color_space(no_device_cs: bool) -> RegularColorSpace {
-        if no_device_cs {
-            CieBasedColorSpace::Srgb.into()
-        } else {
-            DeviceColorSpace::Rgb.into()
-        }
+        if no_device_cs { CieBasedColorSpace::Srgb.into() } else { DeviceColorSpace::Rgb.into() }
     }
 }
 
@@ -448,10 +429,7 @@ pub mod separation {
 
     impl Default for SeparationSpace {
         fn default() -> Self {
-            Self {
-                colorant: SeparationColorant::default(),
-                fallback: super::rgb::Color::default().into(),
-            }
+            Self { colorant: SeparationColorant::default(), fallback: super::rgb::Color::default().into() }
         }
     }
 

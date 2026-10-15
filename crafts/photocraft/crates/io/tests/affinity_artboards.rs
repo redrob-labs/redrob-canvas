@@ -33,7 +33,7 @@ fn current_property_artboards_keep_bounds_clipping_and_roundtrips() {
                 let x = i % 40;
                 assert_eq!(px, if (16..24).contains(&x) { &[0, 0, 0, 0] } else { &[255, 0, 0, 255] }, "overflow must be clipped at the board edges");
             }
-            for name in ["copy.pcraft", "copy.psd"] {
+            for name in ["copy.rphoto", "copy.psd"] {
                 let bytes = export(d, name, &ExportOptions::default()).unwrap().bytes;
                 let reopened = import(name, &bytes).unwrap().document;
                 assert_eq!(boards(&reopened), boards(d), "{name}");

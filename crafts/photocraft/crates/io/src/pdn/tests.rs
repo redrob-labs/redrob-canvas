@@ -150,9 +150,9 @@ fn all_pdn_blend_modes_and_layer_properties_import_and_save_natively() {
                     assert_eq!(pixel.iter().map(|v| (v * 255.0).round() as u8).collect::<Vec<_>>(), expected);
                 }
             }
-            let saved = crate::export(&doc, "sample.pcraft", &Default::default()).unwrap();
+            let saved = crate::export(&doc, "sample.rphoto", &Default::default()).unwrap();
             assert!(saved.warnings.is_empty());
-            let back = crate::import("sample.pcraft", &saved.bytes).unwrap().document;
+            let back = crate::import("sample.rphoto", &saved.bytes).unwrap().document;
             assert_eq!(doc.layers, back.layers);
             assert_eq!(redrob_photo_compose::flatten(&doc).px, redrob_photo_compose::flatten(&back).px);
         }
@@ -229,8 +229,8 @@ fn psd_export_reports_paint_net_blend_loss() {
     let result = crate::export(&doc, "sample.psd", &Default::default()).unwrap();
     assert!(result.warnings.iter().any(|s| s.contains("Reflect") && s.contains("no PSD equivalent")));
     assert!(result.warnings.iter().any(|s| s.contains("Color Overlay") && s.contains("Glow") && s.contains("no PSD equivalent")));
-    let native = crate::export(&doc, "sample.pcraft", &Default::default()).unwrap();
-    assert_eq!(crate::import("sample.pcraft", &native.bytes).unwrap().document.layers, doc.layers);
+    let native = crate::export(&doc, "sample.rphoto", &Default::default()).unwrap();
+    assert_eq!(crate::import("sample.rphoto", &native.bytes).unwrap().document.layers, doc.layers);
 }
 
 #[test]

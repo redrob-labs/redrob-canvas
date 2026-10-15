@@ -3,7 +3,7 @@
 //!
 //! Goldens live in `tests/golden/*.png` and are compared with a tolerance (antialiasing and blur
 //! rounding may differ by a few levels between SIMD levels). Regenerate them after an intended
-//! change with `DESIGNCRAFT_BLESS=1 cargo test -p redrob-layout-render --test effects`.
+//! change with `REDROB_LAYOUT_BLESS=1 cargo test -p redrob-layout-render --test effects`.
 
 use redrob_layout_compose::Cache;
 use redrob_layout_doc::build::NewDocument;
@@ -46,7 +46,7 @@ const WHITE: u32 = 765;
 /// Tolerant comparison with `tests/golden/{name}.png` (written when missing or when blessing).
 fn golden(name: &str, img: &Rendered) {
     let path = format!("{}/tests/golden/{name}.png", env!("CARGO_MANIFEST_DIR"));
-    let bless = std::env::var_os("DESIGNCRAFT_BLESS").is_some();
+    let bless = std::env::var_os("REDROB_LAYOUT_BLESS").is_some();
     let Ok(bytes) = std::fs::read(&path).map_err(|_| ()).and_then(|b| if bless { Err(()) } else { Ok(b) }) else {
         std::fs::create_dir_all(format!("{}/tests/golden", env!("CARGO_MANIFEST_DIR"))).unwrap();
         std::fs::write(&path, img.to_png()).unwrap();

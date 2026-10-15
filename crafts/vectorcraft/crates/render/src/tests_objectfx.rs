@@ -4,11 +4,11 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::text::{CharStyle, TextObject};
 use redrob_vector_doc::{Appearance, Effect, ImageBlob, ImageObject, Node, NodeKind, Symbol};
 use redrob_vector_geom::{Point, shapes};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -122,7 +122,8 @@ fn revolve_visible_surface_expansion_preserves_the_view_and_transparent_art() {
         let mut expanded = d.clone();
         let id = expanded.layers[0].children().unwrap()[0].id;
         let source = expanded.node(id).unwrap().clone();
-        let mut stroke = |_: &mut Document, _: &redrob_vector_geom::PathData, _: redrob_vector_geom::FillRule, _: &redrob_vector_doc::StrokeLayer| None;
+        let mut stroke =
+            |_: &mut Document, _: &redrob_vector_geom::PathData, _: redrob_vector_geom::FillRule, _: &redrob_vector_doc::StrokeLayer| None;
         let art = redrob_vector_effects::expand_leaf(&mut expanded, &source, &mut stroke).unwrap();
         *expanded.node_mut(id).unwrap() = art;
         let flat = render(&expanded);

@@ -4,12 +4,12 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use serde_json::{Value, json};
 use redrob_vector_engine::{Session, command_specs};
 use redrob_vector_testkit::catch_quiet;
 use redrob_vector_testkit::fixtures::Fixture;
 use redrob_vector_testkit::invariants::{check_all, check_session, doc_json};
 use redrob_vector_testkit::strategies::{junk_params, junk_values, param_keys};
+use serde_json::{Value, json};
 
 /// Commands that replace/close the active document or touch the filesystem are fine to call, but a
 /// few need their paths redirected into a temp dir (handled by `junk_params`).
@@ -127,7 +127,8 @@ fn bug_artboard_huge_props_break_svg() {
         let mut s = Fixture::Single.session();
         let p = json!({"index": 0, key: 1e308});
         if no_panic(s.execute("artboard.setProps", &p)).is_ok() {
-            redrob_vector_testkit::invariants::check_svg_roundtrip(&s.doc().unwrap().doc).unwrap_or_else(|e| panic!("{p}: {}", &e[..e.len().min(200)]));
+            redrob_vector_testkit::invariants::check_svg_roundtrip(&s.doc().unwrap().doc)
+                .unwrap_or_else(|e| panic!("{p}: {}", &e[..e.len().min(200)]));
         }
     }
 }
@@ -373,7 +374,7 @@ fn structured_junk() {
         ("document.open", json!({"name": "x.svg", "dataBase64": "!!!"})),
         ("document.open", json!({"name": "x.svg", "dataBase64": "PHN2Zz4="})),
         ("document.open", json!({"name": "x.pdf", "dataBase64": "JVBERi0xLjQK"})),
-        ("document.open", json!({"name": "x.vectorcraft", "dataBase64": "e30="})),
+        ("document.open", json!({"name": "x.rvector", "dataBase64": "e30="})),
         ("document.activate", json!({"index": 99})),
         ("file.close", json!({"index": 99})),
         ("file.new", json!({"width": -1, "height": 0, "artboards": 1000000})),
@@ -544,19 +545,19 @@ fn every_command_undoes_exactly() {
 /// params never panic.
 #[test]
 fn recovery_commands_with_a_damaged_store_and_junk_params() {
-    use std::sync::Arc;
     use redrob_vector_engine::cmd::recovery::{MemoryStore, RecoveryStore};
+    use std::sync::Arc;
     let store = Arc::new(MemoryStore::default());
     for (name, bytes) in [
-        ("1-1/bad-1.vectorcraft", &b"{not json"[..]),
+        ("1-1/bad-1.rvector", &b"{not json"[..]),
         ("1-1/bad-1.json", b"[1, 2"),
-        ("1-1/gz-1.vectorcraft", &[0x1f, 0x8b, 0, 1, 2][..]),
+        ("1-1/gz-1.rvector", &[0x1f, 0x8b, 0, 1, 2][..]),
         ("1-1/meta-only.json", br#"{"title": 5, "path": [], "saved": "x"}"#),
         ("2-1/heartbeat", b"not a number"),
-        ("2-1/x.vectorcraft", b"{}"),
-        ("../escape.vectorcraft", b"{}"),
-        ("no-area.vectorcraft", b"{}"),
-        ("/.vectorcraft", b"{}"),
+        ("2-1/x.rvector", b"{}"),
+        ("../escape.rvector", b"{}"),
+        ("no-area.rvector", b"{}"),
+        ("/.rvector", b"{}"),
     ] {
         store.write(name, bytes).unwrap();
     }

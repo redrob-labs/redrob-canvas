@@ -33,11 +33,11 @@ fn pdn_save_requests_a_native_copy_without_overwriting_the_source() {
     let ctx = egui::Context::default();
     menus::invoke(&mut app, &ctx, "file.save", json!({})).unwrap();
     app.poll_file_dialog(&ctx, None);
-    assert!(matches!(open.borrow().as_slice(), [(FileDialogRequest::Save { suggested }, _)] if suggested == "/pics/layers.pcraft"));
-    answer(&open, Some(FileDialogAnswer::SaveTo("/pics/layers.pcraft".into())));
+    assert!(matches!(open.borrow().as_slice(), [(FileDialogRequest::Save { suggested }, _)] if suggested == "/pics/layers.rphoto"));
+    answer(&open, Some(FileDialogAnswer::SaveTo("/pics/layers.rphoto".into())));
     app.poll_file_dialog(&ctx, None);
-    assert_eq!(*written.borrow(), ["/pics/layers.pcraft"]);
-    assert_eq!(app.session.active().unwrap().path.as_deref(), Some("/pics/layers.pcraft"));
+    assert_eq!(*written.borrow(), ["/pics/layers.rphoto"]);
+    assert_eq!(app.session.active().unwrap().path.as_deref(), Some("/pics/layers.rphoto"));
 }
 
 /// A real flat JPEG import, optionally edited to contain another layer. A filename without a
@@ -94,7 +94,7 @@ fn save_dialog_preserves_flat_and_existing_layered_format_defaults() {
         ("/pics/My image.JPEG", false),
         ("/pics/My image.PSD", true),
         ("/pics/My image.psb", true),
-        ("/pics/My image.pcraft", true),
+        ("/pics/My image.rphoto", true),
         ("/pics/My image.TIF", true),
         ("/pics/My image.tiff", true),
     ] {
@@ -725,22 +725,22 @@ fn export_contents_suggests_the_contents_file_name() {
     menus::invoke(&mut app, &ctx, "layer.smartObjects.exportContents", json!({})).unwrap();
     app.poll_file_dialog(&ctx, None);
     assert!(
-        matches!(open.borrow().as_slice(), [(FileDialogRequest::Save { suggested }, _)] if suggested == "Layer 1.pcraft"),
+        matches!(open.borrow().as_slice(), [(FileDialogRequest::Save { suggested }, _)] if suggested == "Layer 1.rphoto"),
         "{:?}",
         open.borrow().first().map(|(r, _)| r.clone())
     );
-    answer(&open, Some(FileDialogAnswer::SaveTo("/out/contents.pcraft".into())));
+    answer(&open, Some(FileDialogAnswer::SaveTo("/out/contents.rphoto".into())));
     app.poll_file_dialog(&ctx, None);
-    assert_eq!(*written.borrow(), ["/out/contents.pcraft"]);
+    assert_eq!(*written.borrow(), ["/out/contents.rphoto"]);
 }
 
 #[test]
 fn convert_to_linked_asks_where_to_write_the_contents() {
     let (mut app, open, _, ids) = smart_app();
     let ctx = egui::Context::default();
-    let dir = std::env::temp_dir().join(format!("pcraft-convert-linked-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("rphoto-convert-linked-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let path = dir.join("linked.pcraft").to_string_lossy().into_owned();
+    let path = dir.join("linked.rphoto").to_string_lossy().into_owned();
     menus::invoke(&mut app, &ctx, "layer.smartObjects.convertToLinked", json!({})).unwrap();
     app.poll_file_dialog(&ctx, None);
     assert!(matches!(open.borrow().as_slice(), [(FileDialogRequest::Save { .. }, _)]));

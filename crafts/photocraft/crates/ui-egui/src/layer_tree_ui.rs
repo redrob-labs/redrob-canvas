@@ -3,7 +3,7 @@
 //!
 //! Clicking a triangle opens or closes the group; ⌥-click sets every group in the document to
 //! the new state (Photoshop). The state is the group's `expanded` flag, document data saved in
-//! `.pcraft` and as the PSD section divider's open/closed folder type, toggled through
+//! `.rphoto` and as the PSD section divider's open/closed folder type, toggled through
 //! `layer.setExpanded` (a view change: no history step).
 
 use egui::{Rect, Sense, Shape, Stroke, pos2, vec2};

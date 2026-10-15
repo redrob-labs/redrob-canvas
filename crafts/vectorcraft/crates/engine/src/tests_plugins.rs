@@ -2,16 +2,16 @@
 //! transactional), live-effect plug-ins in appearance stacks, and the `plugin.*` management
 //! commands.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_geom::{PathData, Point, SubPath};
 use redrob_vector_plugins::wat as tpl;
+use serde_json::{Value, json};
 
 use super::*;
 
 /// The example Desaturate plug-in (built from `crates/plugins/example`).
 const DESATURATE: &[u8] = include_bytes!("../../plugins/tests/fixtures/desaturate.wasm");
-const DESATURATE_ID: &str = "org.vectorcraft.example.desaturate";
+const DESATURATE_ID: &str = "org.rvector.example.desaturate";
 
 fn run(s: &mut Session, cmd: &str, p: Value) -> Value {
     s.execute(cmd, &p).unwrap_or_else(|e| panic!("{cmd}: {e}"))

@@ -35,8 +35,8 @@ Draw with draw_shape / draw_path, change colours with set_paint, look with rende
 Every menu action is a command: find it with command_list and run it with command_run (or command_batch for several). New objects become \
 the selection, and most commands act on the selection (or on explicit `ids`). prompts/list has ready-made \
 workflows, completion/complete finishes a command id, a format, an effect or a swatch name, and \
-vectorcraft://object/{id}, vectorcraft://command/{id}, vectorcraft://effect/{id} and \
-vectorcraft://swatch/{name} read one thing at a time instead of the whole document.";
+redrob-vector://object/{id}, redrob-vector://command/{id}, redrob-vector://effect/{id} and \
+redrob-vector://swatch/{name} read one thing at a time instead of the whole document.";
 
 /// An MCP server bound to one backend.
 pub struct Server {

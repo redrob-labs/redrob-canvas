@@ -18,7 +18,7 @@ explicit surface finalization, even if a caller retains the writer after a narro
 catch. A caller must still discard other captured app state after a panic. Normal
 finalization, including checks for unbalanced state, remains unchanged.
 
-Public marker constants, `CRAFT_UNWIND_SAFE_DROP` and `CRAFT_UNWIND_POISONING`, let redrob-craft-pdf reject an accidentally
+Public marker constants, `REDROB_CRAFT_UNWIND_SAFE_DROP` and `REDROB_CRAFT_UNWIND_POISONING`, let redrob-craft-pdf reject an accidentally
 unpatched dependency at compile time. Consumers must copy the Krilla root patch
 from the redrob-craft-pdf README because Cargo ignores dependency workspaces' patches.
 

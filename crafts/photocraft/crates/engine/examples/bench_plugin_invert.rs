@@ -42,7 +42,7 @@ fn main() {
         s.execute("image.adjustments.invert", json!({})).unwrap();
         let builtin = t.elapsed().as_secs_f64() * 1e3;
         let t = Instant::now();
-        s.execute("plugin.run", json!({"id": "org.photocraft.example.invert"})).unwrap();
+        s.execute("plugin.run", json!({"id": "org.rphoto.example.invert"})).unwrap();
         let plugin = t.elapsed().as_secs_f64() * 1e3;
         println!("built-in invert {builtin:>7.0} ms   plug-in invert {plugin:>7.0} ms");
     }

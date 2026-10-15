@@ -1,8 +1,8 @@
 //! Swatch libraries: listing, reading, adding to the document (deduped, one undo step, applied)
 //! and Default Swatches.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -194,7 +194,7 @@ fn another_documents_swatches_load_as_a_library() {
     let mut s = session();
     run(&mut s, "swatch.new", json!({"name": "Signal", "color": "#ff3300"}));
     let b64 = run(&mut s, "document.serialize", json!({}))["dataBase64"].as_str().unwrap().to_string();
-    let r = run(&mut s, "swatch.library.load", json!({"dataBase64": b64, "name": "Poster.vectorcraft"}));
+    let r = run(&mut s, "swatch.library.load", json!({"dataBase64": b64, "name": "Poster.rvector"}));
     assert_eq!(r["name"], "Poster");
     let (_, lib) = cmd::swatchlib::library(&s, r["library"].as_str().unwrap()).unwrap();
     assert!(lib.swatch("Signal").is_some() && lib.swatch("[None]").is_none());
@@ -349,7 +349,7 @@ fn loaded_libraries_copy_into_the_user_folder_without_replacing_files() {
     // A document's swatches and a library loaded from data are written as .vcswatches.
     run(&mut s, "swatch.new", json!({"name": "Signal", "color": "#ff3300"}));
     let b64 = run(&mut s, "document.serialize", json!({}))["dataBase64"].as_str().unwrap().to_string();
-    let poster = elsewhere.join("Poster.vectorcraft");
+    let poster = elsewhere.join("Poster.rvector");
     std::fs::write(&poster, redrob_vector_format::base64_decode(&b64).unwrap()).unwrap();
     let loaded = run(&mut s, "swatch.library.load", json!({ "path": poster.to_string_lossy() }))["library"].clone();
     let r = run(&mut s, "swatch.library.copyToUser", json!({ "library": loaded }));

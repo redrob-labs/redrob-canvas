@@ -91,9 +91,9 @@ impl Headless {
                 let all = self.command_list();
                 Ok(match str_of(&p, "filter").map(str::to_lowercase) {
                     None => all,
-                    Some(n) => {
-                        Value::Array(all.as_array().into_iter().flatten().filter(|c| redrob_photo_engine::commands::list_entry_matches(c, &n)).cloned().collect())
-                    }
+                    Some(n) => Value::Array(
+                        all.as_array().into_iter().flatten().filter(|c| redrob_photo_engine::commands::list_entry_matches(c, &n)).cloned().collect(),
+                    ),
                 })
             }
             "session.list" => Ok(self.session_list()),
@@ -111,8 +111,11 @@ impl Headless {
             "doc.new" => self.command_run("file.new", p),
             "doc.save" => {
                 let tga_bits = redrob_photo_engine::file_cmds::tga_bits_param(&p, "doc.save").map_err(|e| bad(e.to_string()))?;
-                let mut opts =
-                    redrob_photo_io::ExportOptions { tiff_layers: p.get("tiffLayers").and_then(Value::as_bool).unwrap_or(false), tga_bits, ..Default::default() };
+                let mut opts = redrob_photo_io::ExportOptions {
+                    tiff_layers: p.get("tiffLayers").and_then(Value::as_bool).unwrap_or(false),
+                    tga_bits,
+                    ..Default::default()
+                };
                 opts.encode.dpx_bits = redrob_photo_engine::file_cmds::dpx_bits_param(&p, "doc.save").map_err(|e| bad(e.to_string()))?;
                 if let Some(q) = p.get("quality").and_then(Value::as_u64) {
                     opts.encode.jpeg_quality = q.clamp(1, 100) as u8;

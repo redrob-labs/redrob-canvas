@@ -261,7 +261,9 @@ pub fn default_threads() -> u16 {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        if let Some(n) = std::env::var("DESIGNCRAFT_RENDER_THREADS").ok().and_then(|v| v.parse().ok()) {
+        // legacy: the upstream variable is read when ours is unset
+        let threads = std::env::var("REDROB_LAYOUT_RENDER_THREADS").or_else(|_| std::env::var("DESIGNCRAFT_RENDER_THREADS"));
+        if let Some(n) = threads.ok().and_then(|v| v.parse().ok()) {
             return n;
         }
         std::thread::available_parallelism().map(|n| (n.get().saturating_sub(1)).clamp(0, 8) as u16).unwrap_or(0)
@@ -685,7 +687,8 @@ impl Renderer {
     fn draw_stroke_painted(&mut self, ctx: &mut RenderContext, f: &Frame, it: &Item, bp: &BezPath, xf: Affine) {
         let st = &it.stroke;
         let (paint, bounds) = (st.as_fill(), bp.bounding_box());
-        if f.doc.resolve_color(&st.swatch, st.tint).is_none() && redrob_layout_color::swatch::resolve_gradient(&f.doc.swatches, &st.swatch).is_none() {
+        if f.doc.resolve_color(&st.swatch, st.tint).is_none() && redrob_layout_color::swatch::resolve_gradient(&f.doc.swatches, &st.swatch).is_none()
+        {
             return;
         }
         let mut stroke = kurbo::Stroke::new(st.weight)
@@ -1554,7 +1557,8 @@ mod tests {
             kids.push(std::sync::Arc::new(it));
         }
         let gid = redrob_layout_doc::ItemId(d.alloc());
-        let mut g = Item::new(gid, lid, redrob_layout_doc::Shape::Group, redrob_layout_geom::shapes::rectangle(Rect::new(100.0, 100.0, 250.0, 200.0)));
+        let mut g =
+            Item::new(gid, lid, redrob_layout_doc::Shape::Group, redrob_layout_geom::shapes::rectangle(Rect::new(100.0, 100.0, 250.0, 200.0)));
         g.content = redrob_layout_doc::Content::Group { items: kids };
         d.insert_item(SpreadRef::Doc(0), g, None).unwrap();
         let cache = Cache::new();
@@ -1589,9 +1593,10 @@ mod tests {
     fn black_overprints_only_with_the_preference() {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
-        for (sw, r) in
-            [("C=100 M=0 Y=0 K=0", Rect::new(100.0, 100.0, 200.0, 200.0)), (redrob_layout_color::swatch::BLACK, Rect::new(150.0, 100.0, 250.0, 200.0))]
-        {
+        for (sw, r) in [
+            ("C=100 M=0 Y=0 K=0", Rect::new(100.0, 100.0, 200.0, 200.0)),
+            (redrob_layout_color::swatch::BLACK, Rect::new(150.0, 100.0, 250.0, 200.0)),
+        ] {
             let id = redrob_layout_doc::ItemId(d.alloc());
             let mut it = Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(r));
             it.fill = Fill::swatch(sw);

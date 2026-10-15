@@ -335,8 +335,8 @@ fn an_svg_round_trips_through_pcraft_as_shapes() {
     let r = open(&format!(
         "<svg {NS} width=\"50\" height=\"50\"><rect id=\"a\" width=\"25\" height=\"25\" fill=\"#123456\"/><circle cx=\"37\" cy=\"37\" r=\"10\" fill=\"#abcdef\"/></svg>"
     ));
-    let saved = export(&r.document, "x.pcraft", &ExportOptions::default()).unwrap();
-    let back = import("x.pcraft", &saved.bytes).unwrap().document;
+    let saved = export(&r.document, "x.rphoto", &ExportOptions::default()).unwrap();
+    let back = import("x.rphoto", &saved.bytes).unwrap().document;
     assert_eq!(back.layers.len(), 2);
     assert!(back.layers.iter().all(|l| matches!(l.content, LayerContent::Shape(_))));
     assert!(close(px(&back, 10, 10), px(&r.document, 10, 10)));

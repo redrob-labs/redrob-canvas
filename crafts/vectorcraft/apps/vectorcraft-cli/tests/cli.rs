@@ -26,7 +26,7 @@ fn commands_prints_catalogue() {
 fn run_batch_exports() {
     let svg = tmp("batch.svg");
     let png = tmp("batch.png");
-    let dc = tmp("batch.vectorcraft");
+    let dc = tmp("batch.rvector");
     let out = Command::new(BIN)
         .args(["run", "--cmd", "file.new", "--params", r#"{"width":200,"height":100}"#])
         .args(["--cmd", "shape.ellipse", "--params", r#"{"x":10,"y":10,"width":80,"height":60}"#])
@@ -128,7 +128,7 @@ fn mcp_automation_roots() {
         call(2, "open_file", json!({"path": file("outside", "b.svg")})),
         call(3, "export", json!({"path": file("out", "a.png")})),
         call(4, "export", json!({"path": file("in", "a.png")})),
-        call(5, "save_file", json!({"path": file("outside", "a.vectorcraft")})),
+        call(5, "save_file", json!({"path": file("outside", "a.rvector")})),
         call(6, "open_file", json!({"path": file("in", "../outside/b.svg")})),
         call(7, "export", json!({"path": file("out", "../outside/traversal.png")})),
     ];
@@ -144,7 +144,7 @@ fn mcp_automation_roots() {
         expected_errors.extend([true; 4]);
     }
     // An access error is per request: the server continues and can still save inside its root.
-    calls.push(call(12, "save_file", json!({"path": file("out", "allowed.vectorcraft")})));
+    calls.push(call(12, "save_file", json!({"path": file("out", "allowed.rvector")})));
     expected_errors.push(false);
     {
         let mut stdin = child.stdin.take().unwrap();
@@ -158,8 +158,8 @@ fn mcp_automation_roots() {
     let errors: Vec<bool> = replies.iter().map(|r| r["result"]["isError"] == true).collect();
     assert_eq!(errors, expected_errors, "{replies:?}");
     assert!(replies[1]["result"]["content"][0]["text"].as_str().unwrap().contains("outside the read root"));
-    assert!(base.join("out/a.png").is_file() && !base.join("in/a.png").exists() && !base.join("outside/a.vectorcraft").exists());
-    assert!(base.join("out/allowed.vectorcraft").is_file());
+    assert!(base.join("out/a.png").is_file() && !base.join("in/a.png").exists() && !base.join("outside/a.rvector").exists());
+    assert!(base.join("out/allowed.rvector").is_file());
     for denied in ["traversal.png", "escaped.png", "missing.png"] {
         assert!(!base.join("outside").join(denied).exists(), "{denied}");
     }
@@ -232,15 +232,15 @@ fn mcp_protocol_over_stdio() {
     assert_eq!(r["result"]["isError"], false, "{r}");
     let id: i64 = serde_json::from_str::<Value>(r["result"]["content"][0]["text"].as_str().unwrap()).unwrap()["id"].as_i64().unwrap();
 
-    send(&mut stdin, json!({"jsonrpc":"2.0","id":8,"method":"resources/read","params":{"uri": format!("vectorcraft://object/{id}")}}));
+    send(&mut stdin, json!({"jsonrpc":"2.0","id":8,"method":"resources/read","params":{"uri": format!("redrob-vector://object/{id}")}}));
     let r = recv(&mut lines, &mut notes, 8);
     let body: Value = serde_json::from_str(r["result"]["contents"][0]["text"].as_str().unwrap()).unwrap();
     assert_eq!(body["id"].as_i64(), Some(id), "{body}");
 
     // Unknown resources (-32002) and bad template values (-32602) stay apart.
-    send(&mut stdin, json!({"jsonrpc":"2.0","id":9,"method":"resources/read","params":{"uri":"vectorcraft://nope" }}));
+    send(&mut stdin, json!({"jsonrpc":"2.0","id":9,"method":"resources/read","params":{"uri":"redrob-vector://nope" }}));
     assert_eq!(recv(&mut lines, &mut notes, 9)["error"]["code"], -32002);
-    send(&mut stdin, json!({"jsonrpc":"2.0","id":10,"method":"resources/read","params":{"uri":"vectorcraft://object/"}}));
+    send(&mut stdin, json!({"jsonrpc":"2.0","id":10,"method":"resources/read","params":{"uri":"redrob-vector://object/"}}));
     assert_eq!(recv(&mut lines, &mut notes, 10)["error"]["code"], -32602);
 
     // Large containers slice through run_command document.node: a truncated level reports

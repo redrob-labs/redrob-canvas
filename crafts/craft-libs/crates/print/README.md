@@ -95,11 +95,11 @@ that must fail without a panic). On Windows it also submits a mixed-orientation 
 and a shrink-to-fit job to a temporary paused queue (inbox "Generic / Text Only" driver on
 `LPT1:`) and checks each arrives as one job with all its sheets. The queue portion explicitly
 skips if the driver or administrative rights are absent. Windows CI installs the inbox test
-driver and sets `CRAFT_PRINT_REQUIRE_QUEUE=1`, making queue preparation/submission mandatory on
+driver and sets `REDROB_CRAFT_PRINT_REQUIRE_QUEUE=1`, making queue preparation/submission mandatory on
 its runner. Two ignored tests check a real printer by hand: `an_installed_driver_validates_the_ticket`
-(`CRAFT_PRINT_TEST_PRINTER`; sends no job) and `an_installed_printer_prints_a_file`
-(`CRAFT_PRINT_TEST_PRINTER`, `CRAFT_PRINT_TEST_FILE`, optional `CRAFT_PRINT_TEST_SCALING=shrink`
-and `CRAFT_PRINT_TEST_DUPLEX=long`). Physical printer fidelity remains a hardware check.
+(`REDROB_CRAFT_PRINT_TEST_PRINTER`; sends no job) and `an_installed_printer_prints_a_file`
+(`REDROB_CRAFT_PRINT_TEST_PRINTER`, `REDROB_CRAFT_PRINT_TEST_FILE`, optional `REDROB_CRAFT_PRINT_TEST_SCALING=shrink`
+and `REDROB_CRAFT_PRINT_TEST_DUPLEX=long`). Physical printer fidelity remains a hardware check.
 
 The cross-platform GitHub Actions workflow is defined in `.github/workflows/print.yml`.
 It runs formatting, Clippy and this crate's own tests on Windows, Linux and macOS when print

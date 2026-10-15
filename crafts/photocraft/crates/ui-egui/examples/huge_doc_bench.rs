@@ -12,7 +12,7 @@
 //!   /usr/bin/time -l target/release/examples/huge_doc_bench --size 20000x20000 --op $op 2>&1 | grep -E 'ms|MB|maximum resident|peak memory'
 //! done
 //! # The CPU fallback, for comparison:
-//! PHOTOCRAFT_CPU_COMPOSE=1 /usr/bin/time -l target/release/examples/huge_doc_bench --op full
+//! REDROB_PHOTO_CPU_COMPOSE=1 /usr/bin/time -l target/release/examples/huge_doc_bench --op full
 //! ```
 //!
 //! `full`: the first refresh (every page uploaded, every effect map built) and three repeats.
@@ -22,11 +22,11 @@
 use std::time::Instant;
 
 use eframe::egui_wgpu::RenderState;
+use rayon::prelude::*;
 use redrob_photo_color::{BlendMode, Color, ColorMode, PixelFormat, SampleType};
 use redrob_photo_doc::{Adjustment, Document, Effect, FxCommon, FxPaint, Layer, LayerContent, Shadow, StrokeFx, StrokePosition, TextLayer};
 use redrob_photo_geom::{Rect, Size};
 use redrob_photo_ui_egui::gpu_canvas::GpuCanvas;
-use rayon::prelude::*;
 
 fn arg(args: &[String], name: &str) -> Option<String> {
     args.iter().position(|a| a == name).and_then(|i| args.get(i + 1).cloned())
@@ -190,7 +190,7 @@ fn main() {
     println!("document {w}×{h} ({:.0} MP), {} layers, built in {:.0} ms", (w as f64 * h as f64) / 1e6, doc.walk().len(), ms(t));
 
     // The compositor budget the app would use: Memory Usage (default 8 GB, `--memory-mb`) less
-    // the document's pixels, within a quarter of RAM (`PHOTOCRAFT_RAM_MB` simulates a smaller
+    // the document's pixels, within a quarter of RAM (`REDROB_PHOTO_RAM_MB` simulates a smaller
     // machine). The view is the first viewport (`view`) or the whole document (`full`).
     let allowance = arg(&args, "--memory-mb").and_then(|v| v.parse::<u64>().ok()).unwrap_or(8192) << 20;
     let pixels: u64 = doc

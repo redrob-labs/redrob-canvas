@@ -2,10 +2,10 @@
 //! (layout, scale or fit, lineweights, centring, merged layers) and `document.dxfInfo` (layouts,
 //! layers, units) for the DXF Import Options dialog.
 
-use serde::Deserialize;
-use serde_json::{Value, json};
 use redrob_vector_cad::ImportOptions;
 use redrob_vector_doc::{Document, Unit};
+use serde::Deserialize;
+use serde_json::{Value, json};
 
 use super::super::*;
 use super::{err, source};

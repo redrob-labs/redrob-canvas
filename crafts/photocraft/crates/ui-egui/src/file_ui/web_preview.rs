@@ -305,8 +305,12 @@ mod tests {
 
     #[test]
     fn absurd_dimensions_and_navigation_fields_are_safe() {
-        let doc =
-            redrob_photo_doc::Document::new("fixture", redrob_photo_geom::Size::new(100, 50), redrob_photo_color::ColorMode::Rgb, redrob_photo_color::SampleType::U8);
+        let doc = redrob_photo_doc::Document::new(
+            "fixture",
+            redrob_photo_geom::Size::new(100, 50),
+            redrob_photo_color::ColorMode::Rgb,
+            redrob_photo_color::SampleType::U8,
+        );
         assert!(dimensions(&doc, &json!({"percent": 1e308})).is_err());
         assert!(dimensions(&doc, &json!({"width": 1e300})).is_err());
         let f = serde_json::from_value::<Map<String, Value>>(json!({"__zoom": 1e300, "__center": [1e300, -1e300]})).unwrap();

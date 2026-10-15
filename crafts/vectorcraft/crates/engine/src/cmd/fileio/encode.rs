@@ -3,9 +3,6 @@
 
 use std::borrow::Cow;
 
-use serde::Deserialize;
-use serde::de::DeserializeOwned;
-use serde_json::Value;
 use redrob_vector_doc::{Artboard, Document};
 use redrob_vector_geom::Rect;
 use redrob_vector_render::AntiAlias;
@@ -13,6 +10,9 @@ use redrob_vector_render::encode::jpeg::{self, JpegOptions};
 use redrob_vector_render::encode::quantize::{Dither, PaletteOptions, Reduction};
 use redrob_vector_render::encode::tiff::{ByteOrder, TiffOptions};
 use redrob_vector_render::encode::{RasterExportOptions, RasterFormat, bmp, psd, tga};
+use serde::Deserialize;
+use serde::de::DeserializeOwned;
+use serde_json::Value;
 
 use super::super::*;
 use super::Format;

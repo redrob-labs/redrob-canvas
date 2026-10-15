@@ -1,6 +1,6 @@
 //! Fallback fonts for the app's own text: layer and file names (and anything else the UI shows) in
 //! Chinese, Japanese, Korean or other scripts the UI fonts lack are drawn in an installed font that
-//! covers them. Builds made with craft-fonts (`CRAFT_FONTS_DIR`, all releases) carry Japanese fonts,
+//! covers them. Builds made with craft-fonts (`REDROB_CRAFT_FONTS_DIR`, all releases) carry Japanese fonts,
 //! which `theme::install_fonts` adds after the UI fonts, so Japanese never gets here; nothing else
 //! is bundled for them: the first time a frame paints a character the UI fonts
 //! don't have, an installed font covering it is looked for (in the background on native) and added
@@ -175,8 +175,8 @@ mod tests {
 
     #[test]
     fn japanese_renders_with_the_craft_fonts_without_installed_fonts() {
-        if !redrob_vector_text::CRAFT_FONTS.iter().any(|f| f.is_japanese()) {
-            eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
+        if !redrob_vector_text::REDROB_CRAFT_FONTS.iter().any(|f| f.is_japanese()) {
+            eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
             return;
         }
         let text = "日本語の文字";
@@ -210,7 +210,7 @@ mod tests {
         frame(&ctx, &mut fonts, "日本語の文字 Layer 1");
         fonts.finish(&ctx);
         frame(&ctx, &mut fonts, "日本語の文字 Layer 1");
-        if redrob_vector_text::CRAFT_FONTS.is_empty() {
+        if redrob_vector_text::REDROB_CRAFT_FONTS.is_empty() {
             let names: Vec<String> = ctx.fonts(|f| f.definitions().font_data.keys().cloned().collect());
             assert!(names.iter().all(|n| !n.starts_with("craft-fonts")), "{names:?}");
         }

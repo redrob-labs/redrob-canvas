@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use serde_json::{Value, json};
 use redrob_vector_text::FontMatch;
+use serde_json::{Value, json};
 
 use crate::cmd::findfiles::{self, Limits, Rules, Visitor};
 use crate::cmd::fontfiles::{self, FontSearch, MAX_FONT_FILE, Sought, copy_into};
@@ -123,7 +123,7 @@ fn the_fonts_folder_next_to_a_document_in_another_apps_folder_isnt_offered() {
         std::fs::create_dir_all(home.join(dir).join("Fonts")).unwrap();
         let mut doc = redrob_vector_doc::Document::new(100.0, 100.0);
         doc.title = "doc".into();
-        s.add_document(doc, Some(home.join(dir).join("doc.vectorcraft").to_string_lossy().into_owned()));
+        s.add_document(doc, Some(home.join(dir).join("doc.rvector").to_string_lossy().into_owned()));
         text(&mut s, 20.0, "No Such Font Family", "Regular");
         let r = s.execute("text.missingFonts", &json!({})).unwrap();
         assert_eq!(r.get("fontsNextToDocument").is_some(), offered, "{dir}: {r}");
@@ -139,7 +139,7 @@ fn the_fonts_folder_next_to_a_document_is_an_absolute_path() {
     std::fs::create_dir_all(root.join("pkg/Fonts")).unwrap();
     let cwd = std::env::current_dir().unwrap();
     let up = "../".repeat(cwd.components().count().saturating_sub(1));
-    let relative = format!("{up}{}", root.join("pkg/doc.vectorcraft").strip_prefix("/").unwrap().display());
+    let relative = format!("{up}{}", root.join("pkg/doc.rvector").strip_prefix("/").unwrap().display());
     assert!(Path::new(&relative).is_relative());
     let mut s = session_for(&root);
     let mut doc = redrob_vector_doc::Document::new(100.0, 100.0);

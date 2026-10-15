@@ -2,9 +2,9 @@
 //! and `file.place` read ([`LoadOptions`]), the pages they import and `document.pdfInfo` (pages,
 //! boxes, a thumbnail) for the Import PDF dialog.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{ColorMode, Document};
 use redrob_vector_pdf::{Choice, CropTo, ImportOptions, PdfError, TextAs};
+use serde_json::{Value, json};
 
 use super::super::colormgmt::Grays;
 use super::super::*;

@@ -52,7 +52,7 @@ mod tests {
     #[test]
     fn download_mime_matches_native_package_and_existing_exports() {
         for (name, expected) in [
-            ("Quarterly.designcraft", redrob_layout_format::MIME),
+            ("Quarterly.rlayout", redrob_layout_format::MIME),
             ("日本語.multi.DEsignCraft", redrob_layout_format::MIME),
             ("page.pdf", "application/pdf"),
             ("page.png", "image/png"),

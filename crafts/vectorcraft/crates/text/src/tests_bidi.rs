@@ -1,8 +1,8 @@
 //! Direction, source-cluster and editing regressions; no RTL font assets required.
 use super::*;
 use kurbo::{Point, Rect, Shape};
-use std::sync::Arc;
 use redrob_vector_doc::{CharStyle, TextKind, TextRun};
+use std::sync::Arc;
 
 fn text_layout(s: &str) -> TextLayout {
     layout(FontDb::global(), &TextObject::point(Point::ZERO, s, CharStyle::default()))
@@ -395,9 +395,9 @@ fn paragraph_direction_is_per_paragraph() {
 
 #[test]
 fn craft_arabic_fonts_load_and_noto_sans_arabic_is_the_arabic_fallback() {
-    let arabic: Vec<_> = crate::CRAFT_FONTS.iter().filter(|f| f.scripts.contains(&"Arab")).collect();
+    let arabic: Vec<_> = crate::REDROB_CRAFT_FONTS.iter().filter(|f| f.scripts.contains(&"Arab")).collect();
     if arabic.is_empty() {
-        eprintln!("skipping: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout)");
+        eprintln!("skipping: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout)");
         return;
     }
     let db = FontDb::with_font_dirs(vec![]);

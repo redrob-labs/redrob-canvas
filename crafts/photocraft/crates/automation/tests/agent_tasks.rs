@@ -96,7 +96,10 @@ fn gradient_png(dir: &std::path::Path) -> &'static str {
     }
     let img = redrob_photo_codecs::Image::from_u8(w, h, redrob_photo_codecs::ChannelLayout::Rgb, px).unwrap();
     let path = dir.join("gradient.png");
-    std::fs::File::create(&path).unwrap().write_all(&redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap()).unwrap();
+    std::fs::File::create(&path)
+        .unwrap()
+        .write_all(&redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap())
+        .unwrap();
     "gradient.png"
 }
 
@@ -216,9 +219,9 @@ async fn agent_completes_ten_scripted_tasks() {
     // 10. Prepare for print: convert to CMYK and save natively, then reopen.
     run(&c, "image.mode.cmyk", json!({"intent": "perceptual"})).await;
     assert_eq!(inspect(&c).await["mode"], "Cmyk", "task 10");
-    tool(&c, "doc_save", json!({"path": "print.pcraft"})).await;
+    tool(&c, "doc_save", json!({"path": "print.rphoto"})).await;
     tool(&c, "doc_close", json!({})).await;
-    tool(&c, "doc_open", json!({"path": "print.pcraft"})).await;
+    tool(&c, "doc_open", json!({"path": "print.rphoto"})).await;
     let doc = inspect(&c).await;
     assert_eq!((doc["mode"].as_str(), doc["width"].as_u64()), (Some("Cmyk"), Some(45)), "task 10");
     assert_eq!(doc["layers"].as_array().unwrap().len(), 4, "task 10");

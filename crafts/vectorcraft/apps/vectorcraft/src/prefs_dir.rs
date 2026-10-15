@@ -17,7 +17,7 @@ pub fn prefs_path_for(name: &str, lower: &str) -> Option<PathBuf> {
 
 /// Have the font scans read VectorCraft's own Fonts folder, next to the settings, which
 /// `text.addFontFiles` copies font files into. The folder is set whether or not
-/// `VECTORCRAFT_NO_PREFS` is set, as the Swatches and Graphic Styles folders are.
+/// `REDROB_VECTOR_NO_PREFS` is set, as the Swatches and Graphic Styles folders are.
 pub fn install_fonts() {
     if let Some(dir) = prefs_path_for("VectorCraft", "vectorcraft").and_then(|p| Some(p.parent()?.join("Fonts"))) {
         redrob_vector_text::set_app_font_dir(dir);

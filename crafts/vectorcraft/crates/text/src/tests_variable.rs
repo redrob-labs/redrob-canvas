@@ -2,10 +2,10 @@
 //! embedded at its axis settings (#296: Figtree listed only Light, its default instance).
 
 use kurbo::{Point, Shape};
+use redrob_vector_doc::CharStyle;
 use skrifa::MetadataProvider;
 use skrifa::instance::{LocationRef, Size};
 use skrifa::raw::TableProvider;
-use redrob_vector_doc::CharStyle;
 
 use super::test_fonts::{VARIABLE_CHARS, VARIABLE_FAMILY as FAMILY, VARIABLE_WIDEN, name_table, variable_font};
 use super::*;

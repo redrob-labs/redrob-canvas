@@ -2,8 +2,8 @@
 //! falls back to its default, the checks that refuse values out of range, and the inks of a
 //! separation ([`PrintInk`]).
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::cms::{self, Intent, ProfileKind};
+use serde::{Deserialize, Serialize};
 
 use crate::settings::{choice, within};
 use crate::{BleedSettings, MarkSettings, PdfError};

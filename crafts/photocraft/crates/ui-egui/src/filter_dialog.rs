@@ -943,7 +943,14 @@ pub(crate) fn preview_document_for_target(
 /// pointing at another open document found nothing there: Match Color's preview with a Source
 /// document failed, or matched the image to itself (#4851). Add each referenced document (as a
 /// proxy at the same factor) and point the param at its index in the preview session.
-fn add_source_documents(s: &mut redrob_photo_engine::Session, doc_id: redrob_photo_doc::DocId, command: &str, p: &mut Value, documents: &[Arc<Document>], k: u32) {
+fn add_source_documents(
+    s: &mut redrob_photo_engine::Session,
+    doc_id: redrob_photo_doc::DocId,
+    command: &str,
+    p: &mut Value,
+    documents: &[Arc<Document>],
+    k: u32,
+) {
     let Some(spec) = redrob_photo_engine::commands::find(command) else { return };
     let Some(o) = p.as_object_mut() else { return };
     let mut added: Vec<(usize, usize)> = Vec::new();
@@ -1718,8 +1725,13 @@ mod tests {
     fn preview_stays_inside_the_selection_at_every_proxy_factor() {
         use redrob_photo_doc::SampleType;
         for depth in [SampleType::U8, SampleType::U16, SampleType::F32] {
-            let mut doc =
-                Document::with_background("p", redrob_photo_doc::Size::new(64, 64), redrob_photo_doc::ColorMode::Rgb, depth, redrob_photo_doc::Color::gray(0.5));
+            let mut doc = Document::with_background(
+                "p",
+                redrob_photo_doc::Size::new(64, 64),
+                redrob_photo_doc::ColorMode::Rgb,
+                depth,
+                redrob_photo_doc::Color::gray(0.5),
+            );
             let bg = doc.layers[0].id;
             let mut sel = redrob_photo_raster::Surface::new(redrob_photo_doc::PixelFormat::GRAY8);
             sel.fill_rect(redrob_photo_geom::Rect::new(0, 0, 32, 64), &[1.0]);

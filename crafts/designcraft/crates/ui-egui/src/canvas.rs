@@ -1,12 +1,12 @@
 //! The document canvas: pasteboard, spreads (rendered by `redrob-layout-render`), guides, frame edges,
 //! selection, text ports and threads, the text caret, rulers, and pointer/keyboard input.
 
+use egui::{Color32, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use redrob_layout_compose as compose;
 use redrob_layout_doc::{Content, Document, Item, PageSide, SpreadRef};
 use redrob_layout_engine::doc::Selection;
 use redrob_layout_geom::{Affine, Point, Rect as DRect, Vec2 as DVec2};
 use redrob_layout_tools::{CanvasLayout, Cursor, Mods, Overlay, PointerEvent, PointerKind, ToolKey};
-use egui::{Color32, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Value, json};
 
 use crate::{DesignApp, ScreenMode, View, theme::Tokens};
@@ -636,7 +636,8 @@ fn patch_texture(app: &mut DesignApp, layout: &CanvasLayout, ppp: f64, doc_key: 
     if ((x1 - x0) * (y1 - y0)) as f64 > 0.5 * (tw * th) as f64 {
         return false;
     }
-    let placed: Vec<redrob_layout_render::Placed> = layout.slots.iter().map(|s| redrob_layout_render::Placed { spread: s.spread, xf: s.xf }).collect();
+    let placed: Vec<redrob_layout_render::Placed> =
+        layout.slots.iter().map(|s| redrob_layout_render::Placed { spread: s.spread, xf: s.xf }).collect();
     let view = Affine::translate((-(x0 as f64), -(y0 as f64)))
         * Affine::scale(ppp)
         * Affine::scale(sh.zoom)
@@ -672,7 +673,8 @@ fn patch_texture(app: &mut DesignApp, layout: &CanvasLayout, ppp: f64, doc_key: 
 
 #[cfg(not(target_arch = "wasm32"))]
 fn render_worker_spawn(ctx: &egui::Context) -> Option<crate::render_worker::Worker> {
-    if std::env::var_os("DESIGNCRAFT_SYNC_RENDER").is_some() {
+    if std::env::var_os("REDROB_LAYOUT_SYNC_RENDER").or_else(|| std::env::var_os("DESIGNCRAFT_SYNC_RENDER")).is_some() {
+        // legacy: the upstream variable is read when ours is unset
         return None;
     }
     crate::render_worker::Worker::spawn(ctx.clone())
@@ -2211,8 +2213,8 @@ mod parent_canvas_tests;
 
 #[cfg(test)]
 mod tests {
-    use redrob_layout_geom::Unit;
     use egui_kittest::{Harness, kittest::Queryable};
+    use redrob_layout_geom::Unit;
 
     use super::*;
 

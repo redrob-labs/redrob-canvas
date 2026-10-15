@@ -8,10 +8,10 @@
 use std::collections::HashMap;
 use std::io::Read;
 
-use redrob_craft_pdf::write::backend as krilla;
 use krilla::geom::PathBuilder;
 use krilla::graphic::Graphic;
 use krilla::surface::Surface;
+use redrob_craft_pdf::write::backend as krilla;
 use std::sync::Arc;
 
 use redrob_vector_doc::{Document, Node, NodeKind};

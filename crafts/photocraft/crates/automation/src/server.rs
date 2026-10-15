@@ -150,11 +150,11 @@ pub struct NewParams {
 pub struct SaveParams {
     /// Target beneath the configured automation write root: relative (forward slashes) or absolute.
     /// The extension selects the format. Omit to write back to the document's own file, which
-    /// works only for a PSD, PSB or .pcraft file kept in its own format; any other save needs
+    /// works only for a PSD, PSB or .rphoto file kept in its own format; any other save needs
     /// `path`, so a flattened or converted copy never replaces the opened file.
     #[serde(default)]
     pub path: Option<String>,
-    /// Format override as an extension (pcraft, psd, png, jpg, tif, webp, exr, …).
+    /// Format override as an extension (rphoto, psd, png, jpg, tif, webp, exr, …).
     #[serde(default)]
     pub format: Option<String>,
     /// JPEG or WebP quality 1..100. A WebP saved with a quality is lossy; without one it is lossless.
@@ -565,10 +565,10 @@ fn downscale_png(png: &[u8], max_side: u32) -> Result<Option<Vec<u8>>, Automatio
             out[di..di + 4].copy_from_slice(&src[si..si + 4]);
         }
     }
-    let small =
-        redrob_photo_codecs::Image::from_u8(nw, nh, redrob_photo_codecs::ChannelLayout::Rgba, out).map_err(|error| AutomationError::Other(error.to_string()))?;
-    let bytes =
-        redrob_photo_codecs::encode(&small, redrob_photo_codecs::Format::Png, &Default::default()).map_err(|error| AutomationError::Other(error.to_string()))?;
+    let small = redrob_photo_codecs::Image::from_u8(nw, nh, redrob_photo_codecs::ChannelLayout::Rgba, out)
+        .map_err(|error| AutomationError::Other(error.to_string()))?;
+    let bytes = redrob_photo_codecs::encode(&small, redrob_photo_codecs::Format::Png, &Default::default())
+        .map_err(|error| AutomationError::Other(error.to_string()))?;
     Ok(Some(bytes))
 }
 
@@ -726,8 +726,8 @@ impl PhotocraftMcp {
         self.run_command("file.new".into(), Value::Object(params), true).await
     }
 
-    #[tool(description = "Save the document. `.pcraft` is the lossless native format (incremental); other extensions \
-        (psd, png, jpg, tif, webp, exr, …) export. Without `path` only a PSD, PSB or .pcraft document is written back to its own         file. Returns warnings about anything the format cannot hold.")]
+    #[tool(description = "Save the document. `.rphoto` is the lossless native format (incremental); other extensions \
+        (psd, png, jpg, tif, webp, exr, …) export. Without `path` only a PSD, PSB or .rphoto document is written back to its own         file. Returns warnings about anything the format cannot hold.")]
     async fn doc_save(&self, Parameters(p): Parameters<SaveParams>) -> Result<CallToolResult, McpError> {
         self.save_impl(p).await
     }

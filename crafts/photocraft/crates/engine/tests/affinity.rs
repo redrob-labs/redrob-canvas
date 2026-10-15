@@ -51,9 +51,9 @@ fn preview_never_saves_back_to_its_native_or_renamed_source() {
         let native = dir.join("refused.af");
         assert!(s.execute("file.saveACopy", json!({"path": native})).is_err());
         assert!(!native.exists());
-        let copy = dir.join(format!("{name}.pcraft"));
+        let copy = dir.join(format!("{name}.rphoto"));
         s.execute("file.saveACopy", json!({"path": copy})).unwrap();
-        assert!(redrob_photo_io::import("copy.pcraft", &std::fs::read(copy).unwrap()).is_ok());
+        assert!(redrob_photo_io::import("copy.rphoto", &std::fs::read(copy).unwrap()).is_ok());
         assert_eq!(std::fs::read(path).unwrap(), bytes);
     }
     std::fs::remove_dir_all(dir).unwrap();

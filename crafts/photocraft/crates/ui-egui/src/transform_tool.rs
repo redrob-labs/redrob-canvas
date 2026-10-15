@@ -668,8 +668,10 @@ pub fn enter_warp(app: &mut PhotocraftApp, ctx: &egui::Context) {
     if app.ui.transform.as_ref().is_some_and(|t| t.warp.is_none()) && warps_type(app) {
         return enter_type_warp(app, ctx);
     }
-    let existing =
-        app.session.active().and_then(|d| d.doc.layer(LayerId(app.ui.transform.as_ref()?.layer)).and_then(redrob_photo_engine::warp_cmds::smart_warp_doc_space));
+    let existing = app
+        .session
+        .active()
+        .and_then(|d| d.doc.layer(LayerId(app.ui.transform.as_ref()?.layer)).and_then(redrob_photo_engine::warp_cmds::smart_warp_doc_space));
     let Some(t) = app.ui.transform.as_mut() else { return };
     // Warp moves layers and paths (#3027): a lone mask or channel keeps the box.
     if t.warp.is_some() || t.target.is_some() {

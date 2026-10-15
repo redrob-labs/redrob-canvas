@@ -2,8 +2,8 @@
 //! Redrob mark, version, and community links (Discord first and largest), plus the other Redrob
 //! apps; Contributors and Models are the compiled-in credits (`crate::credits`).
 
-use redrob_layout_engine::links;
 use egui::{Color32, Rect, Sense, Stroke, pos2, vec2};
+use redrob_layout_engine::links;
 use serde_json::json;
 
 use crate::DesignApp;

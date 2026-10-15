@@ -1685,7 +1685,7 @@ fn gpu_budget(app: &mut PhotocraftApp, gpu: &crate::gpu_canvas::GpuCanvas, idx: 
 
 /// Live preview for an open filter dialog: run the filter on the proxy and upload it. With
 /// background jobs (the desktop app) it computes on one background worker
-/// (`filter_preview_worker`); otherwise (web, tests, `PHOTOCRAFT_INLINE_JOBS`) it keeps the
+/// (`filter_preview_worker`); otherwise (web, tests, `REDROB_PHOTO_INLINE_JOBS`) it keeps the
 /// deterministic inline path (#1676), which also lets headless/CPU tests inspect previews
 /// without a GPU texture.
 pub(crate) fn ensure_filter_preview(app: &mut PhotocraftApp, idx: usize, ctx: &egui::Context) -> Option<(u32, u64, [u32; 2])> {
@@ -6061,7 +6061,8 @@ mod tests {
         let buf = redrob_photo_compose::Buffer { rect: redrob_photo_geom::Rect::new(0, 0, n as i32, 1), px };
         let reference = |img: redrob_photo_raster::Rgba8Image| egui::ColorImage::from_rgba_unmultiplied([img.width as usize, img.height as usize], &img.pixels);
         assert_eq!(super::display_image(None, &buf).pixels, reference(buf.to_rgba8()).pixels);
-        let mut doc = redrob_photo_doc::Document::new("t", redrob_photo_geom::Size::new(1, 1), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::U8);
+        let mut doc =
+            redrob_photo_doc::Document::new("t", redrob_photo_geom::Size::new(1, 1), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::U8);
         doc.icc_profile = Some(redrob_photo_cms::Builtin::AdobeRgbCompat.profile().to_bytes());
         let mut color = redrob_photo_engine::color_cmds::ColorState::default();
         color.settings.monitor_profile = "srgb".into();

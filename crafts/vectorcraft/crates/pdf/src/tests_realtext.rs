@@ -1,11 +1,11 @@
 //! Real text: type exported as selectable, searchable text in embedded subset fonts with a
 //! ToUnicode map, where the outlines would be; fonts whose licence forbids it stay outlines.
 
-use serde_json::json;
 use redrob_vector_color::{Color, Gradient, GradientPaint, Paint};
 use redrob_vector_doc::{CharStyle, Document, Node, NodeKind, TextKind, TextObject, TextRun};
 use redrob_vector_geom::{Affine, BezPath, PathData, Point, Rect};
 use redrob_vector_text::{FALLBACK_FAMILY, FontDb};
+use serde_json::json;
 
 use crate::*;
 

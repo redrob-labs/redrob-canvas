@@ -150,7 +150,7 @@ fn web_options() -> eframe::WebOptions {
     options
 }
 
-/// Tell the UI the browser's languages (`?lang=es` in the address first, as `VECTORCRAFT_LOCALE`
+/// Tell the UI the browser's languages (`?lang=es` in the address first, as `REDROB_VECTOR_LOCALE`
 /// does on the desktop) before the first frame, so the Automatic interface language follows the
 /// browser; and show the loading text in that language.
 fn detect_language() {
@@ -403,10 +403,12 @@ fn services(inbox: Inbox, place_inbox: PlaceInbox, ctx: egui::Context, locks: Op
             let inbox = picked.clone();
             let ctx = place_ctx.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let dialog =
-                    fileio::place_filters().fold(rfd::AsyncFileDialog::new().set_title(redrob_vector_ui_egui::i18n::t("Place")), |d, (name, exts)| {
+                let dialog = fileio::place_filters().fold(
+                    rfd::AsyncFileDialog::new().set_title(redrob_vector_ui_egui::i18n::t("Place")),
+                    |d, (name, exts)| {
                         d.add_filter(redrob_vector_ui_egui::i18n::tr_ctx(redrob_vector_ui_egui::i18n::current(), "file-filter", name), exts)
-                    });
+                    },
+                );
                 let Some(files) = dialog.pick_files().await else {
                     return;
                 };

@@ -2,10 +2,10 @@
 //! sections per selection state — `plan/indesign/11-observed-ui.md` §4.1) and small
 //! single-purpose panels (Stroke, Character, Paragraph, Text Wrap, Align, Links, Info).
 
+use egui::{Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use redrob_layout_doc::{Align, Arrowhead, Cap, Join, StrokeAlign, StrokeType};
 use redrob_layout_geom::Unit;
 use redrob_layout_geom::corners::CornerShape;
-use egui::{Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::{Value, json};
 
 use super::{SelInfo, sel_info, text_attrs};
@@ -749,7 +749,13 @@ fn appearance_section(app: &mut DesignApp, ui: &mut Ui, i: &SelInfo) {
 }
 
 /// Swatch list popup attached to `resp`.
-fn swatch_menu(app: &mut DesignApp, resp: &egui::Response, doc: &redrob_layout_doc::Document, cur: &str, on_pick: impl FnOnce(&mut DesignApp, String)) {
+fn swatch_menu(
+    app: &mut DesignApp,
+    resp: &egui::Response,
+    doc: &redrob_layout_doc::Document,
+    cur: &str,
+    on_pick: impl FnOnce(&mut DesignApp, String),
+) {
     let mut picked = None;
     egui::Popup::menu(resp).show(|ui| {
         picked = super::swatch_list(ui, doc, cur);

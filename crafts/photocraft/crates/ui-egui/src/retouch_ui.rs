@@ -640,7 +640,8 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
 
 fn pattern_stamp_options(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let opts: Vec<(String, String)> = app.session.patterns.items.iter().map(|p| (p.id.clone(), p.display_name().to_string())).collect();
-    let mut pat = redrob_photo_engine::presets::patterns::current(&app.session).or(app.session.patterns.items.first()).map(|p| p.id.clone()).unwrap_or_default();
+    let mut pat =
+        redrob_photo_engine::presets::patterns::current(&app.session).or(app.session.patterns.items.first()).map(|p| p.id.clone()).unwrap_or_default();
     let o = &mut app.ui.tool_options;
     crate::widgets::checkbox(ui, &mut o.pattern_stamp_aligned, tl!("Aligned"));
     crate::widgets::checkbox(ui, &mut o.pattern_stamp_impressionist, tl!("Impressionist"));

@@ -44,7 +44,7 @@ fn safety_linked_parent_follows_merge_and_updates_after_native_reopen() {
     assert_eq!(s.doc().unwrap().doc.story(linked).unwrap().text, "PARENT");
     let bytes = s.execute("file.serialize", &json!({})).unwrap();
     let mut reopened = Session::new();
-    reopened.execute("file.openBytes", &json!({"name":"links.designcraft","base64":bytes["base64"]})).unwrap();
+    reopened.execute("file.openBytes", &json!({"name":"links.rlayout","base64":bytes["base64"]})).unwrap();
     assert_eq!(link(&mut reopened, linked)["parent"], survivor.0);
     reopened.execute("story.updateLink", &json!({"story":linked.0})).unwrap();
     assert_eq!(reopened.doc().unwrap().doc.story(linked).unwrap().text, "PREFIX\nPARENT");
@@ -212,7 +212,7 @@ fn safety_empty_linked_parent_follows_survivor_only_on_explicit_update() {
             assert_eq!(link(&mut s, linked)["parent"], survivor.0);
             let bytes = s.execute("file.serialize", &json!({})).unwrap();
             let mut reopened = Session::new();
-            reopened.execute("file.openBytes", &json!({"name":"empty-parent.designcraft","base64":bytes["base64"]})).unwrap();
+            reopened.execute("file.openBytes", &json!({"name":"empty-parent.rlayout","base64":bytes["base64"]})).unwrap();
             assert_eq!(link(&mut reopened, linked)["outOfDate"], true);
             assert_eq!(reopened.doc().unwrap().doc.story(linked).unwrap().text, "");
             reopened.execute("story.updateLink", &json!({"story":linked.0})).unwrap();

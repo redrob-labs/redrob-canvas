@@ -8,7 +8,7 @@ use redrob_craft_settings::{OpenOptions, Settings, SettingsStore};
 
 #[test]
 fn env_var_name_uppercases_and_replaces_punctuation() {
-    assert_eq!(env_var_name("photocraft"), "PHOTOCRAFT_CONFIG_DIR");
+    assert_eq!(env_var_name("photocraft"), "REDROB_PHOTO_CONFIG_DIR");
     assert_eq!(env_var_name("photo-craft"), "PHOTO_CRAFT_CONFIG_DIR");
 }
 

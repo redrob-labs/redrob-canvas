@@ -6,7 +6,7 @@
 //! - [`strategies`]: proptest strategies for geometry and for engine command sequences ([`strategies::Op`]), and
 //!   junk-parameter generators for fuzzing the command registry.
 //! - [`invariants`]: structural checks for documents and sessions, and round-trip checks
-//!   (`.vectorcraft`, SVG, `document.inspect`).
+//!   (`.rvector`, SVG, `document.inspect`).
 //! - [`raster`]: rendering helpers and image comparison with a perceptual tolerance.
 //! - [`geom`]: geometry assertions (approximate equality, curve sampling, Hausdorff distance).
 //! - [`pdf`]: hand-written PDF files (page boxes, colour spaces, encryption) for import tests.
@@ -31,8 +31,8 @@ pub mod pdf;
 pub mod raster;
 pub mod strategies;
 
-pub use serde_json::{Value, json};
 pub use redrob_vector_engine::{Session, doc::NodeId};
+pub use serde_json::{Value, json};
 /// Re-exports so dependents without direct dependencies (e.g. app test crates) can use them.
 pub use {redrob_vector_doc as doc, redrob_vector_format as format, redrob_vector_render as render, redrob_vector_svg as svg};
 

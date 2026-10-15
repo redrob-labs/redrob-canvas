@@ -126,9 +126,9 @@ impl VectorcraftApp {
 mod tests {
     use std::sync::Arc;
 
-    use serde_json::json;
     use redrob_vector_engine::Session;
     use redrob_vector_engine::cmd::recovery::{MemoryStore, RecoveryStore};
+    use serde_json::json;
 
     use super::*;
     use crate::Services;
@@ -224,7 +224,7 @@ mod tests {
         app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 50, "height": 20})).unwrap();
         app.session.prefs.autosave_recovery = false;
         assert!(app.graphics_lost("test"), "copied even with Data Recovery off");
-        assert_eq!(store.list().unwrap().iter().filter(|n| n.ends_with(".vectorcraft")).count(), 1);
+        assert_eq!(store.list().unwrap().iter().filter(|n| n.ends_with(".rvector")).count(), 1);
         // Without a store the work isn't safe.
         assert!(!self::app().graphics_lost("test"));
     }

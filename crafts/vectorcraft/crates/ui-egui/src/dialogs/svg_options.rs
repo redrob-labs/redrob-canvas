@@ -412,7 +412,7 @@ mod tests {
         assert!(!text(&written, 2).trim_end().contains('\n') && !text(&written, 2).contains("<?xml"), "minified");
         assert_eq!(app.session.active().unwrap().path.as_deref(), Some("/tmp/doc.svg"));
         // A native Save As needs no options.
-        app.run("file.saveAs", json!({"path": "/tmp/doc.vectorcraft"})).unwrap();
+        app.run("file.saveAs", json!({"path": "/tmp/doc.rvector"})).unwrap();
         assert!(redrob_vector_format::sniff(&written.borrow()[3].1));
     }
 

@@ -224,10 +224,10 @@ fn csv_multiline_values_apply_persist_and_export_as_two_data_sets() {
             assert_eq!(doc(&s).layer(badge).unwrap().visible, visible);
         }
 
-        let native = format!("{dir}/multiline.pcraft");
+        let native = format!("{dir}/multiline.rphoto");
         crate::file_cmds::save_doc(doc(&s), &native, None).unwrap();
         let mut reopened = Session::new();
-        crate::file_cmds::open_bytes_as(&mut reopened, "multiline.pcraft", &std::fs::read(&native).unwrap(), None, Some(native)).unwrap();
+        crate::file_cmds::open_bytes_as(&mut reopened, "multiline.rphoto", &std::fs::read(&native).unwrap(), None, Some(native)).unwrap();
         assert_eq!(doc(&reopened).variables, doc(&s).variables);
         assert_eq!(text_of(&reopened, title), second);
         reopened.execute("image.applyDataSet", json!({"name": "one"})).unwrap();

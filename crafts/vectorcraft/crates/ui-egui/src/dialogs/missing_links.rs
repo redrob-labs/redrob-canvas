@@ -221,7 +221,7 @@ mod tests {
             std::fs::write(&p, png([200, 0, 0])).unwrap();
             app.run("file.place", json!({"path": p.to_string_lossy()})).unwrap();
         }
-        let doc = dir.join("doc.vectorcraft").to_string_lossy().into_owned();
+        let doc = dir.join("doc.rvector").to_string_lossy().into_owned();
         app.run("document.save", json!({"path": doc})).unwrap();
         for n in ["a.png", "b.png"] {
             std::fs::remove_file(dir.join(n)).unwrap();
@@ -288,7 +288,7 @@ mod tests {
         let pic = dir.join("a.png");
         std::fs::write(&pic, png([200, 0, 0])).unwrap();
         app.run("file.place", json!({"path": pic.to_string_lossy()})).unwrap();
-        let doc = dir.join("doc.vectorcraft").to_string_lossy().into_owned();
+        let doc = dir.join("doc.rvector").to_string_lossy().into_owned();
         app.run("document.save", json!({"path": doc})).unwrap();
         let original_stamp = std::fs::metadata(&pic).unwrap().modified().unwrap();
         let mark_modified = |seconds| {

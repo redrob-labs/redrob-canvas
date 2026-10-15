@@ -31,9 +31,7 @@ pub struct Metadata {
 impl Metadata {
     /// Create new metadata.
     pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self { ..Default::default() }
     }
 
     /// The title of the document.
@@ -132,12 +130,7 @@ impl Metadata {
             || self.description.is_some()
     }
 
-    pub(crate) fn serialize_xmp_metadata(
-        &self,
-        xmp: &mut XmpWriter,
-        sc: &mut SerializeContext,
-        instance_id: &str,
-    ) {
+    pub(crate) fn serialize_xmp_metadata(&self, xmp: &mut XmpWriter, sc: &mut SerializeContext, instance_id: &str) {
         if let Some(title) = &self.title {
             xmp.title([(None, title.as_str())]);
         }
@@ -199,23 +192,13 @@ impl Metadata {
             xmp.modify_date(date);
             xmp.create_date(date);
 
-            if sc
-                .serialize_settings()
-                .validators()
-                .requires_file_provenance_information()
-            {
+            if sc.serialize_settings().validators().requires_file_provenance_information() {
                 let mut history = xmp.history();
                 let mut saved = history.add_event();
 
-                saved
-                    .action(xmp_writer::ResourceEventAction::Saved)
-                    .when(date);
+                saved.action(xmp_writer::ResourceEventAction::Saved).when(date);
 
-                if !sc
-                    .serialize_settings()
-                    .validators()
-                    .prohibits_instance_id_in_xmp_metadata()
-                {
+                if !sc.serialize_settings().validators().prohibits_instance_id_in_xmp_metadata() {
                     saved.instance_id(&format!("{instance_id}_source"));
                 }
 
@@ -223,19 +206,13 @@ impl Metadata {
 
                 let mut converted = history.add_event();
 
-                converted
-                    .action(xmp_writer::ResourceEventAction::Converted)
-                    .when(date);
+                converted.action(xmp_writer::ResourceEventAction::Converted).when(date);
 
                 if let Some(creator) = &self.creator {
                     converted.software_agent(creator);
                 }
 
-                if !sc
-                    .serialize_settings()
-                    .validators()
-                    .prohibits_instance_id_in_xmp_metadata()
-                {
+                if !sc.serialize_settings().validators().prohibits_instance_id_in_xmp_metadata() {
                     converted.instance_id(&format!("{instance_id}_source"));
                 }
             }
@@ -244,12 +221,7 @@ impl Metadata {
         }
     }
 
-    pub(crate) fn serialize_document_info(
-        &self,
-        ref_: &mut Ref,
-        pdf: &mut Pdf,
-        config: Configuration,
-    ) {
+    pub(crate) fn serialize_document_info(&self, ref_: &mut Ref, pdf: &mut Pdf, config: Configuration) {
         if config.validators().prohibits_info_dict() {
             return;
         }
@@ -323,16 +295,7 @@ impl DateTime {
     /// 0-9999.
     #[inline]
     pub fn new(year: u16) -> Self {
-        Self {
-            year: year.min(9999),
-            month: None,
-            day: None,
-            hour: None,
-            minute: None,
-            second: None,
-            utc_offset_hour: None,
-            utc_offset_minute: 0,
-        }
+        Self { year: year.min(9999), month: None, day: None, hour: None, minute: None, second: None, utc_offset_hour: None, utc_offset_minute: 0 }
     }
 
     /// Add the month field. It will be clamped within the range 1-12.
@@ -405,10 +368,7 @@ pub(crate) fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
 /// Converts a datetime to an xmp-writer datetime.
 fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
     let timezone = match (datetime.utc_offset_hour, datetime.utc_offset_minute) {
-        (Some(h), m) => Some(Timezone::Local {
-            hour: h,
-            minute: m as i8,
-        }),
+        (Some(h), m) => Some(Timezone::Local { hour: h, minute: m as i8 }),
         _ => Some(Timezone::Utc),
     };
 

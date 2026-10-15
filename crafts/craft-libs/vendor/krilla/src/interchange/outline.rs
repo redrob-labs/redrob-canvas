@@ -109,12 +109,7 @@ impl Outline {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root: Ref,
-    ) {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root: Ref) {
         let mut chunk = sc.new_chunk();
         let children = serialize_children(&self.children, root, &mut chunk, sc);
 
@@ -151,12 +146,7 @@ impl OutlineNode {
     /// `destination` is the destination that should be jumped to when clicking on
     /// the outline entry.
     pub fn new(text: String, destination: XyzDestination) -> Self {
-        Self {
-            children: vec![],
-            text,
-            destination,
-            open: false,
-        }
+        Self { children: vec![], text, destination, open: false }
     }
 
     /// Set whether this node is initially open (children shown expanded).
@@ -213,20 +203,11 @@ impl OutlineNode {
         // closed). Therefore, in case the node is closed, the visible count is
         // just the node itself, so 1.
 
-        if self.open {
-            1 + children.map_or(0, |children| children.visible_count)
-        } else {
-            1
-        }
+        if self.open { 1 + children.map_or(0, |children| children.visible_count) } else { 1 }
     }
 }
 
-fn serialize_children(
-    children: &[OutlineNode],
-    parent: Ref,
-    chunk: &mut Chunk,
-    sc: &mut SerializeContext,
-) -> Option<SerializedChildren> {
+fn serialize_children(children: &[OutlineNode], parent: Ref, chunk: &mut Chunk, sc: &mut SerializeContext) -> Option<SerializedChildren> {
     let mut visible_count = 0;
 
     if !children.is_empty() {
@@ -237,11 +218,7 @@ fn serialize_children(
         let mut cur = Some(first);
 
         for i in 0..children.len() {
-            let next = if i < children.len() - 1 {
-                Some(sc.new_ref())
-            } else {
-                None
-            };
+            let next = if i < children.len() - 1 { Some(sc.new_ref()) } else { None };
 
             last = cur.unwrap();
 
@@ -252,11 +229,7 @@ fn serialize_children(
             cur = next;
         }
 
-        Some(SerializedChildren {
-            first,
-            last,
-            visible_count,
-        })
+        Some(SerializedChildren { first, last, visible_count })
     } else {
         None
     }

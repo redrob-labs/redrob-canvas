@@ -3561,7 +3561,15 @@ fn char_check(ui: &mut egui::Ui, d: &mut Dialog, cf: &CharFields, key: &str, lab
 }
 
 /// A swatch attribute from a menu; `text_color` names the "" entry (the text's own colour).
-fn char_swatch(lang: &str, ui: &mut egui::Ui, d: &mut Dialog, cf: &CharFields, doc: &redrob_layout_doc::Document, key: &str, text_color: Option<&str>) {
+fn char_swatch(
+    lang: &str,
+    ui: &mut egui::Ui,
+    d: &mut Dialog,
+    cf: &CharFields,
+    doc: &redrob_layout_doc::Document,
+    key: &str,
+    text_color: Option<&str>,
+) {
     let mut opts: Vec<(Value, &str)> = text_color.map(|l| (json!(""), l)).into_iter().collect();
     opts.extend(doc.swatches.iter().map(|w| (json!(w.name), w.name.as_str())));
     char_choice(lang, ui, d, cf, key, &opts);
@@ -5563,7 +5571,7 @@ mod tests {
         assert_eq!(app.session.doc().unwrap().doc.story(sid).unwrap().text, "red red | red");
         app.run("edit.redo", json!({})).unwrap();
         let native = app.run("file.serialize", json!({})).unwrap();
-        app.run("file.openBytes", json!({"name": "scope.designcraft", "base64": native["base64"]})).unwrap();
+        app.run("file.openBytes", json!({"name": "scope.rlayout", "base64": native["base64"]})).unwrap();
         assert_eq!(app.session.doc().unwrap().doc.story(sid).unwrap().text, "blue blue | red");
     }
 
@@ -5682,7 +5690,7 @@ mod tests {
     #[test]
     fn find_scope_dialog_failed_native_drop_alert_releases_bounds() {
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("broken.designcraft");
+        let path = directory.path().join("broken.rlayout");
         std::fs::write(&path, b"not a native document").unwrap();
         for dismissal in ["OK", "Escape", "control"] {
             let (mut app, ctx, screen, sid) = scope_dialog();

@@ -103,8 +103,8 @@ pub enum IoError {
     /// The requested conversion is not possible.
     #[error("unsupported: {0}")]
     Unsupported(String),
-    /// Native `.pcraft` bundle failure.
-    #[error("pcraft: {0}")]
+    /// Native `.rphoto` bundle failure.
+    #[error("rphoto: {0}")]
     Pcraft(#[from] redrob_photo_format::FormatError),
     /// Camera raw decode failure.
     #[error("{0}")]
@@ -149,7 +149,7 @@ pub struct ExportResult {
 }
 
 /// Which part of the document's XMP packet and free-form text a flat export embeds.
-/// PSD/PSB always keep XMP; `.pcraft` keeps both. Save As and conversions keep the whole packet, as
+/// PSD/PSB always keep XMP; `.rphoto` keeps both. Save As and conversions keep the whole packet, as
 /// Photoshop's Save As does; Export As starts at `None`, because the packet lists the text of
 /// every type layer and one id per placed document (#647).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -174,7 +174,7 @@ pub struct ExportOptions {
     /// Photoshop's "Discard Layers and Save a Copy".
     pub tiff_layers: bool,
     /// Which part of the document's XMP packet and free-form text a flat export embeds.
-    /// PSD/PSB always keep XMP; `.pcraft` keeps both. Everything by default, as Save As does;
+    /// PSD/PSB always keep XMP; `.rphoto` keeps both. Everything by default, as Save As does;
     /// Export As offers None.
     pub xmp: XmpEmbed,
     /// Targa: bits per pixel of an RGB file. `None` writes 32 when the document has an alpha
@@ -270,7 +270,10 @@ pub fn import_with_svg_group_depth_and_interrupt(
 
 fn import_stages(name: &str, bytes: &[u8], ctl: &redrob_photo_raster::Interrupt, max_group_depth: usize) -> Result<ImportResult, IoError> {
     // A declared native extension must reach its loader so malformed bundles retain format errors.
-    if has_extension(name, redrob_photo_format::EXTENSION) || redrob_photo_format::is_pcraft(bytes) {
+    if has_extension(name, redrob_photo_format::EXTENSION)
+        || has_extension(name, redrob_photo_format::LEGACY_EXTENSION) // legacy: .pcraft still opens
+        || redrob_photo_format::is_pcraft(bytes)
+    {
         return Ok(ImportResult { document: redrob_photo_format::load_from_bytes(bytes)?, warnings: Vec::new(), source_read_only: false, preview_only: false });
     }
     if is_psd(bytes) {
@@ -330,9 +333,9 @@ fn has_extension(name: &str, expected: &str) -> bool {
 }
 
 /// The document as it is written to `name` (a file name, path or bare extension): a copy whose
-/// name is that file's own, so a `.pcraft` manifest reports the file it lives in — the name the
+/// name is that file's own, so a `.rphoto` manifest reports the file it lives in — the name the
 /// session adopts on the save that wrote it, and the name every other format gives the document
-/// when it is opened (#3312). A bare extension ("pcraft") names no file and changes nothing.
+/// when it is opened (#3312). A bare extension ("rphoto") names no file and changes nothing.
 pub fn named_for_file<'a>(doc: &'a Document, name: &str) -> std::borrow::Cow<'a, Document> {
     let file = name.contains(['/', '\\', '.']).then(|| name.rsplit(['/', '\\']).next().unwrap_or(name));
     match file {
@@ -370,7 +373,7 @@ pub(crate) fn with_span<R>(ctl: &redrob_photo_raster::Interrupt, lo: f32, hi: f3
     f(&redrob_photo_raster::Interrupt::new(&cancelled, &progress))
 }
 
-/// Where a .pcraft save's progress stands once its thumbnail, then its 1024 px composite preview,
+/// Where a .rphoto save's progress stands once its thumbnail, then its 1024 px composite preview,
 /// are rendered (the bundle itself is written after them).
 const PCRAFT_THUMBNAIL_DONE: f32 = 0.15;
 const PCRAFT_PREVIEWS_DONE: f32 = 0.4;
@@ -381,13 +384,13 @@ const PSD_MODEL_DONE: f32 = 0.9;
 fn export_stages(doc: &Document, name_or_ext: &str, opts: &ExportOptions, ctl: &redrob_photo_raster::Interrupt) -> Result<ExportResult, IoError> {
     let ext = extension(name_or_ext);
     if ext == "pdn" {
-        return Err(IoError::Unsupported("PDN is import-only; save as .pcraft to preserve all layers and blend modes".into()));
+        return Err(IoError::Unsupported("PDN is import-only; save as .rphoto to preserve all layers and blend modes".into()));
     }
     if affinity::EXTENSIONS.contains(&ext.as_str()) {
-        return Err(IoError::Unsupported("Affinity export is not implemented; save a new PSD, PNG or .pcraft copy".into()));
+        return Err(IoError::Unsupported("Affinity export is not implemented; save a new PSD, PNG or .rphoto copy".into()));
     }
     if kra::EXTENSIONS.contains(&ext.as_str()) {
-        return Err(IoError::Unsupported("Krita files are import-only; save as .ora to open the layers in Krita, or .pcraft to keep everything".into()));
+        return Err(IoError::Unsupported("Krita files are import-only; save as .ora to open the layers in Krita, or .rphoto to keep everything".into()));
     }
     if ext == "ora" {
         return ora::export(doc);

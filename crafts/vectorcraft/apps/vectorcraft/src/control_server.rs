@@ -14,8 +14,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::Duration;
 
-use serde_json::{Value, json};
 use redrob_vector_ui_egui::ControlRequest;
+use serde_json::{Value, json};
 
 #[path = "control_deadlines.rs"]
 mod deadlines;

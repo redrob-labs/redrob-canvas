@@ -63,9 +63,9 @@ fn run(ext: &str, tolerance: f32) {
         let name = path.file_name().unwrap().to_string_lossy().into_owned();
         let r = redrob_photo_io::import(&name, &bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
         let (error, share, at) = max_error(&r.document, &merged(&bytes), tolerance);
-        // Saving as .pcraft keeps every imported layer exactly.
-        let native = redrob_photo_io::export(&r.document, "copy.pcraft", &Default::default()).unwrap();
-        assert_eq!(r.document.layers, redrob_photo_io::import("copy.pcraft", &native.bytes).unwrap().document.layers, "{name}");
+        // Saving as .rphoto keeps every imported layer exactly.
+        let native = redrob_photo_io::export(&r.document, "copy.rphoto", &Default::default()).unwrap();
+        assert_eq!(r.document.layers, redrob_photo_io::import("copy.rphoto", &native.bytes).unwrap().document.layers, "{name}");
         let known = KNOWN.iter().find(|(n, ..)| *n == name);
         eprintln!(
             "{name}: {} layers, max error {:.2}/255 {at}{}{}",

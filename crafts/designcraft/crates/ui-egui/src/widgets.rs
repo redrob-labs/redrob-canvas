@@ -4,9 +4,9 @@
 //! buttons, underlined link labels, `•••` more-options, 21 pt icon toggles in a `#303030` well,
 //! section headers and 1.5 pt section rules.
 
+use egui::{Color32, Rect, Response, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use redrob_layout_geom::Unit;
 use redrob_layout_geom::units::{format_measure_prec, parse_measure};
-use egui::{Color32, Rect, Response, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 use crate::theme::Tokens;
 

@@ -1,5 +1,5 @@
 //! Regression for #1547: a successful save back to the document's own PSD or PSB file must
-//! record the current revision as saved, so the session stops reporting `dirty` (as `.pcraft`
+//! record the current revision as saved, so the session stops reporting `dirty` (as `.rphoto`
 //! already did). A flat export stays a copy and leaves the dirty state and path alone.
 
 use redrob_photo_automation::Headless;
@@ -57,12 +57,12 @@ fn pathless_psd_and_psb_saves_clear_dirty() {
 }
 
 /// The control from the issue: exporting a flat copy is not a document save, so it must neither
-/// clear `dirty` nor retarget the document's path. A `.pcraft` save sets the path on both the old
+/// clear `dirty` nor retarget the document's path. A `.rphoto` save sets the path on both the old
 /// and the new code, so this test isolates the flat-export behaviour.
 #[test]
 fn a_flat_export_is_a_copy_and_leaves_the_document_dirty() {
     let dir = tmp("copy");
-    let native = dir.join("doc.pcraft");
+    let native = dir.join("doc.rphoto");
     let png = dir.join("copy.png");
     let mut headless = Headless::trusted_local();
     headless.handle("doc.new", json!({"width": 8, "height": 8, "background": "white"})).unwrap();

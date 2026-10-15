@@ -363,7 +363,7 @@ fn measure(doc: &Document, runs: usize) -> Result<Vec<Row>, String> {
         let s = ((W as f64 - 80.0) / b.width()).min((H as f64 - 80.0) / b.height());
         (s, view_at(centre, s))
     };
-    let dump = std::env::var("DESIGNCRAFT_PERF_DUMP").ok();
+    let dump = std::env::var("REDROB_LAYOUT_PERF_DUMP").ok();
     let save = |name: &str, img: redrob_layout_render::Rendered| {
         if let Some(d) = &dump {
             let _ = std::fs::create_dir_all(d);
@@ -470,7 +470,7 @@ fn measure(doc: &Document, runs: usize) -> Result<Vec<Row>, String> {
     let mut bytes = vec![];
     row(
         &mut rows,
-        format!("save .designcraft ({} pages)", doc.page_count()),
+        format!("save .rlayout ({} pages)", doc.page_count()),
         median_ms(runs.min(3), || match redrob_layout_format::save(doc) {
             Ok(b) => bytes = b,
             Err(e) => failed = Some(format!("save: {e}")),
@@ -482,7 +482,7 @@ fn measure(doc: &Document, runs: usize) -> Result<Vec<Row>, String> {
             failed = Some(format!("open: {e}"));
         }
     });
-    row(&mut rows, "open .designcraft", open_ms, Some(300.0));
+    row(&mut rows, "open .rlayout", open_ms, Some(300.0));
     let n = doc.page_count().min(100);
     let pdf = redrob_layout_pdf::PdfOptions { pages: Some((0..n).collect()), ..Default::default() };
     row(

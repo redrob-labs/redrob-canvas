@@ -3,11 +3,11 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::text::{CharStyle, TextObject};
 use redrob_vector_doc::{Appearance, Effect, ImageBlob, ImageObject, Node, NodeKind, Symbol};
 use redrob_vector_geom::{Point, shapes};
+use serde_json::{Value, json};
 
 use super::*;
 

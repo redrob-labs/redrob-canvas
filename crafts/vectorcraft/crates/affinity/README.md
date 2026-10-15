@@ -94,7 +94,7 @@ The reader also has an independent copy in PhotoCraft's `redrob-photo-affinity`.
 * `tests/real_files.rs` parses every file and freezes the modeled features of all 33 current
   `.af` files. Native raster tests compare decoded pixels with independent embedded images;
   text tests assert Unicode run boundaries, fallback fonts and feature retention.
-* `engine/tests/affinity_corpus.rs` requires editable native import, exact `.vectorcraft`
+* `engine/tests/affinity_corpus.rs` requires editable native import, exact `.rvector`
   save/reload, and SVG/PDF/PSD export of every board in all 33 current files. It checks SVG/PDF
   dimensions and reimport, and independently decodes PSD merged pixels using the published
   specification. These are VectorCraft consistency checks, not independent Affinity PSD oracles.

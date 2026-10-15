@@ -136,8 +136,8 @@ async fn headless_edit_render_save_roundtrip() {
     let decoded = redrob_photo_codecs::decode(&png).unwrap();
     assert_eq!(decoded.dimensions(), (32, 24));
 
-    let r = json_of(&call(&client, "doc_save", json!({"path": "agent.pcraft"})).await);
-    assert_eq!(r["path"], "agent.pcraft");
+    let r = json_of(&call(&client, "doc_save", json!({"path": "agent.rphoto"})).await);
+    assert_eq!(r["path"], "agent.rphoto");
     let png_path = dir.join("agent.png");
     json_of(&call(&client, "doc_export", json!({"path": "agent.png"})).await);
     let jpg_path = dir.join("agent.jpg");
@@ -146,7 +146,7 @@ async fn headless_edit_render_save_roundtrip() {
     assert!(std::fs::metadata(&jpg_path).unwrap().len() > 100);
 
     // Re-open the native file: identical layer tree.
-    let o = json_of(&call(&client, "doc_open", json!({"path": "agent.pcraft"})).await);
+    let o = json_of(&call(&client, "doc_open", json!({"path": "agent.rphoto"})).await);
     assert_eq!(o["index"], 1);
     let doc2 = json_of(&call(&client, "doc_inspect", json!({"index": 1})).await);
     assert_eq!(doc2["layers"].as_array().unwrap().len(), 2);
@@ -350,7 +350,7 @@ async fn bridge_doc_save_rejects_headless_only_options_instead_of_saving_with_de
         json!({"path": "out.jpg", "quality": 50}),
         json!({"path": "out.png", "format": "png"}),
         json!({"path": "out.tif", "tiffLayers": true}),
-        json!({"path": "out.pcraft", "index": 0}),
+        json!({"path": "out.rphoto", "index": 0}),
     ] {
         let r = call(&client, "doc_save", params.clone()).await;
         assert_eq!(r.is_error, Some(true), "{params}: {:?}", text(&r));
@@ -359,7 +359,7 @@ async fn bridge_doc_save_rejects_headless_only_options_instead_of_saving_with_de
 }
 
 /// #946: like headless mode, a bridged `doc_save` without `path` reaches the app's `app.save`,
-/// which writes back to the document's own PSD, PSB or .pcraft file or refuses with its own error.
+/// which writes back to the document's own PSD, PSB or .rphoto file or refuses with its own error.
 #[tokio::test(flavor = "multi_thread")]
 async fn bridge_doc_save_without_path_forwards_app_save_for_write_back() {
     let (addr, app) = fake_app().await;
@@ -454,7 +454,10 @@ async fn open_png_and_inspect() {
     let dir = tmp("open");
     let img = redrob_photo_codecs::Image::from_u8(8, 4, redrob_photo_codecs::ChannelLayout::Rgb, vec![200; 96]).unwrap();
     let path = dir.join("in.png");
-    std::fs::File::create(&path).unwrap().write_all(&redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap()).unwrap();
+    std::fs::File::create(&path)
+        .unwrap()
+        .write_all(&redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap())
+        .unwrap();
     let client = connect(headless_in(&dir)).await;
     let o = json_of(&call(&client, "doc_open", json!({"path": "in.png"})).await);
     assert_eq!((o["width"].as_u64(), o["height"].as_u64()), (Some(8), Some(4)));
@@ -529,8 +532,8 @@ async fn affinity_preview_warns_and_requires_a_new_save_path() {
         assert!(text(&native).contains("Affinity export"));
         assert_eq!(std::fs::read(dir.join(name)).unwrap(), bytes);
     }
-    json_of(&call(&client, "doc_save", json!({"path": "copy.pcraft"})).await);
-    assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "copy.pcraft");
+    json_of(&call(&client, "doc_save", json!({"path": "copy.rphoto"})).await);
+    assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "copy.rphoto");
     assert_eq!(std::fs::read(dir.join("source.af")).unwrap(), bytes);
     client.cancel().await.unwrap();
     cleanup(&dir);
@@ -571,10 +574,10 @@ async fn save_without_path_never_flattens_over_the_opened_file() {
     assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "layered.psd");
     assert!(redrob_photo_io::is_psd(&std::fs::read(dir.join("layered.psd")).unwrap()));
 
-    // Once saved as .pcraft, a flat-born document saves in place there.
+    // Once saved as .rphoto, a flat-born document saves in place there.
     json_of(&call(&client, "doc_select", json!({"index": 0})).await);
-    json_of(&call(&client, "doc_save", json!({"path": "work.pcraft"})).await);
-    assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "work.pcraft");
+    json_of(&call(&client, "doc_save", json!({"path": "work.rphoto"})).await);
+    assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "work.rphoto");
     assert_eq!(std::fs::read(dir.join("seed.png")).unwrap(), png);
 
     // A template opens untitled, without its path.
@@ -771,9 +774,9 @@ async fn smart_object_commands_refuse_real_linked_files_without_changing_the_ses
     let state = session.active_mut().unwrap();
     let LayerContent::Smart(smart) = &mut std::sync::Arc::make_mut(&mut state.doc).layers[0].content else { panic!("smart object") };
     smart.source = SmartSource::Linked { path: dir.join("external.png").to_string_lossy().into_owned() };
-    std::fs::write(dir.join("parent.pcraft"), redrob_photo_engine::smart_cmds::encode_source(&state.doc).unwrap()).unwrap();
+    std::fs::write(dir.join("parent.rphoto"), redrob_photo_engine::smart_cmds::encode_source(&state.doc).unwrap()).unwrap();
     let client = connect(headless_in(&dir)).await;
-    json_of(&call(&client, "doc_open", json!({"path": "parent.pcraft"})).await);
+    json_of(&call(&client, "doc_open", json!({"path": "parent.rphoto"})).await);
     let before = json_of(&call(&client, "doc_inspect", json!({})).await);
     for id in ["layer.smartObjects.editContents", "layer.smartObjects.convertToLayers"] {
         let response = call(&client, "command_run", json!({"id": id, "params": {"layer": layer}})).await;
@@ -1226,7 +1229,7 @@ async fn convention_unknown_arguments_name_the_key_without_side_effects() {
 async fn convention_resources_are_live_json() {
     let client = connect(PhotocraftMcp::headless()).await;
     let resources = client.list_all_resources().await.unwrap();
-    for uri in ["photocraft://document", "photocraft://commands"] {
+    for uri in ["redrob-photo://document", "redrob-photo://commands"] {
         assert!(resources.iter().any(|r| r.uri == uri));
     }
     let read = async |uri: &str| {
@@ -1234,9 +1237,9 @@ async fn convention_resources_are_live_json() {
         let v = serde_json::to_value(r).unwrap();
         serde_json::from_str::<Value>(v["contents"][0]["text"].as_str().unwrap()).unwrap()
     };
-    assert!(read("photocraft://document").await["document"].is_null());
+    assert!(read("redrob-photo://document").await["document"].is_null());
     json_of(&call(&client, "doc_new", json!({"width":8,"height":6})).await);
-    assert_eq!(read("photocraft://document").await["width"], 8);
+    assert_eq!(read("redrob-photo://document").await["width"], 8);
     // Edit › Purge › All is enabled while the process-wide effect, mask and stack caches hold
     // anything, and the other tests in this binary fill and purge those caches concurrently, so
     // its `enabled` flag and paired `disabledReason` can flip between the two reads. Validate
@@ -1253,10 +1256,10 @@ async fn convention_resources_are_live_json() {
         }
         v
     };
-    let commands = stable(read("photocraft://commands").await);
+    let commands = stable(read("redrob-photo://commands").await);
     assert!(commands.as_array().is_some_and(|a| a.len() > 100), "{commands}");
     assert_eq!(commands, stable(json_of(&call(&client, "command_list", json!({})).await)));
-    assert!(client.read_resource(rmcp::model::ReadResourceRequestParams::new("photocraft://missing")).await.is_err());
+    assert!(client.read_resource(rmcp::model::ReadResourceRequestParams::new("redrob-photo://missing")).await.is_err());
     let preview = call(&client, "render_preview", json!({"max_side":4})).await;
     assert!(preview.content.iter().any(|c| c.as_image().is_some()));
     client.cancel().await.unwrap();

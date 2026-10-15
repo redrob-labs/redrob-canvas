@@ -25,8 +25,8 @@ fn png_text_survives_native_and_png_saves_at_both_depths() {
         let original = decode(&png).unwrap();
         let opened = import("synthetic.png", &png).unwrap();
         assert!(opened.warnings.is_empty(), "{:?}", opened.warnings);
-        let native = export(&opened.document, "pcraft", &ExportOptions::default()).unwrap();
-        let reopened = import("synthetic.pcraft", &native.bytes).unwrap();
+        let native = export(&opened.document, "rphoto", &ExportOptions::default()).unwrap();
+        let reopened = import("synthetic.rphoto", &native.bytes).unwrap();
         let saved = export(&reopened.document, "png", &ExportOptions::default()).unwrap();
         assert!(saved.warnings.is_empty(), "{:?}", saved.warnings);
         let back = decode(&saved.bytes).unwrap();

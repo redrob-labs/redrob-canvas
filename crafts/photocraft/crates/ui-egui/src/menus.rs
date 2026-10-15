@@ -574,8 +574,12 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
                     let v = &app.ui.views[i];
                     let pz = app.point_zoom();
                     let (hw, hh) = (app.last_canvas_rect.width() / 2.0 / pz / app.ui.view.display_aspect(), app.last_canvas_rect.height() / 2.0 / pz);
-                    let r =
-                        redrob_photo_geom::Rect::new((v.center[0] - hw) as i32, (v.center[1] - hh) as i32, (v.center[0] + hw) as i32, (v.center[1] + hh) as i32);
+                    let r = redrob_photo_geom::Rect::new(
+                        (v.center[0] - hw) as i32,
+                        (v.center[1] - hh) as i32,
+                        (v.center[0] + hw) as i32,
+                        (v.center[1] + hh) as i32,
+                    );
                     !clip.bounds.intersect(&r).is_empty()
                 });
             let p = match app.session.active_index() {
@@ -2155,7 +2159,7 @@ mod open_recent_tests {
             ..Default::default()
         };
         let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
-        let path = std::env::temp_dir().join("photocraft_recent_test.pcraft");
+        let path = std::env::temp_dir().join("photocraft_recent_test.rphoto");
         std::fs::write(&path, b"x").unwrap();
         let p = path.to_string_lossy().to_string();
         let ctx = egui::Context::default();

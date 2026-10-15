@@ -46,9 +46,9 @@ What each mode opens and saves comes from its editor. The short list:
 
 | Mode | Open | Save / export |
 | --- | --- | --- |
-| Photo | PSD, PSB, `.pcraft`, ORA, KRA, layered TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC (read), camera RAW, Affinity (read) | `.pcraft`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF (optional feature) |
-| Vector | `.vectorcraft`, SVG, SVGZ, AI (PDF-compatible), EPS, PDF, DXF, EMF/WMF, raster images, PSD/PSB as merged image | `.vectorcraft`, SVG, PDF (with PDF/X), AI, EPS, DXF, PNG, JPEG, WebP, PSD, Print, Package |
-| Layout | `.designcraft`, IDML, images, PDFs and vectors as placed assets | `.designcraft`, PDF (PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
+| Photo | PSD, PSB, `.rphoto`, ORA, KRA, layered TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC (read), camera RAW, Affinity (read) | `.rphoto`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF (optional feature) |
+| Vector | `.rvector`, SVG, SVGZ, AI (PDF-compatible), EPS, PDF, DXF, EMF/WMF, raster images, PSD/PSB as merged image | `.rvector`, SVG, PDF (with PDF/X), AI, EPS, DXF, PNG, JPEG, WebP, PSD, Print, Package |
+| Layout | `.rlayout`, IDML, images, PDFs and vectors as placed assets | `.rlayout`, PDF (PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
 
 The authoritative tables are the editors' own: `crafts/photocraft/crates/codecs/README.md`,
 `crafts/vectorcraft/README.md` and `crafts/designcraft/README.md`. `docs/formats.md` says how the

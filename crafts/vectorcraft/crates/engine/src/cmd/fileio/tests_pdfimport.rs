@@ -1,7 +1,7 @@
 //! `document.open` PDF options (pages, Crop To, password) and `document.pdfInfo`.
 
-use serde_json::{Value, json};
 use redrob_vector_testkit::pdf::{PdfPage, pdf};
+use serde_json::{Value, json};
 
 use super::*;
 

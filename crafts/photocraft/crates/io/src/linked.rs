@@ -192,7 +192,7 @@ fn jpeg_size(bytes: &[u8]) -> Option<(f64, f64)> {
     }
 }
 
-/// Size and resolution of a smart-object source file (PSD/PSB header, `.pcraft`, or any image).
+/// Size and resolution of a smart-object source file (PSD/PSB header, `.rphoto`, or any image).
 /// Other formats are decoded in full, which `ctl` can cancel (its progress is left alone: this is
 /// a step of a larger operation).
 pub(crate) fn source_geometry(name: &str, bytes: &[u8], ctl: &redrob_photo_raster::Interrupt) -> Result<((f64, f64), f64), String> {

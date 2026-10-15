@@ -3,14 +3,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use redrob_craft_pdf::write::backend as krilla;
-use redrob_craft_pdf::write::{self, Metadata, Writer};
-use redrob_layout_color::swatch::{ColorType, SwatchValue};
-use redrob_layout_color::{BlendMode as DcBlend, Color, GradientKind};
-use redrob_layout_compose::Cache;
-use redrob_layout_doc::{AssetId, Content, Document, Item, PageSide, Spread, StrokeAlign, StrokeType};
-use redrob_layout_geom::kurbo::{PathEl, Shape as _};
-use redrob_layout_geom::{Affine, BezPath, Rect, Vec2, corners};
 use krilla::color::{cmyk, luma, rgb};
 use krilla::configure::{Archival, PdfVersion};
 use krilla::geom::{Path, PathBuilder, Size, Transform};
@@ -20,6 +12,14 @@ use krilla::page::PageSettings;
 use krilla::paint::{Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash};
 use krilla::surface::Surface;
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, Identifier, Tag, TagGroup, TagTree};
+use redrob_craft_pdf::write::backend as krilla;
+use redrob_craft_pdf::write::{self, Metadata, Writer};
+use redrob_layout_color::swatch::{ColorType, SwatchValue};
+use redrob_layout_color::{BlendMode as DcBlend, Color, GradientKind};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{AssetId, Content, Document, Item, PageSide, Spread, StrokeAlign, StrokeType};
+use redrob_layout_geom::kurbo::{PathEl, Shape as _};
+use redrob_layout_geom::{Affine, BezPath, Rect, Vec2, corners};
 
 use crate::{ExportReport, PdfError, PdfOptions, Result, Standard};
 
@@ -1832,7 +1832,7 @@ mod unwind_tests {
 
     #[test]
     fn export_entry_points_recover_in_a_subprocess() {
-        const CHILD: &str = "DESIGNCRAFT_PDF_EXPORT_PANIC_PROBE";
+        const CHILD: &str = "REDROB_LAYOUT_PDF_EXPORT_PANIC_PROBE";
         if std::env::var_os(CHILD).is_none() {
             let output = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", "export::unwind_tests::export_entry_points_recover_in_a_subprocess", "--nocapture"])

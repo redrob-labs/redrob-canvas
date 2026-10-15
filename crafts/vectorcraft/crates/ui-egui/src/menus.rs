@@ -1141,8 +1141,10 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         }
         "view.setZoom" => {
             let z = p.get("zoom").and_then(Value::as_f64).unwrap_or(100.0) / 100.0;
-            let center =
-                p.get("center").and_then(Value::as_array).and_then(|a| Some(redrob_vector_geom::Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
+            let center = p
+                .get("center")
+                .and_then(Value::as_array)
+                .and_then(|a| Some(redrob_vector_geom::Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
             match app.view_mut() {
                 Some(v) => {
                     v.zoom = z.clamp(0.0313, 640.0);
@@ -4114,12 +4116,12 @@ mod tests {
             },
         );
         app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
-        let (a, b) = (dir.join("a.vectorcraft"), dir.join("b.vectorcraft"));
+        let (a, b) = (dir.join("a.rvector"), dir.join("b.rvector"));
         for p in [&a, &b, &a] {
             app.run("file.saveAs", json!({"path": p.to_string_lossy()})).unwrap();
         }
         assert_eq!(app.ui.recent_files, [a.to_string_lossy(), b.to_string_lossy()]);
-        assert_eq!(dynamic_label(&app, "file.openRecent2", ""), "b.vectorcraft");
+        assert_eq!(dynamic_label(&app, "file.openRecent2", ""), "b.rvector");
         assert!(enabled(&app, "file.openRecent2") && !enabled(&app, "file.openRecent3"));
         app.run("file.openRecent2", json!({})).unwrap();
         assert_eq!(app.session.documents().len(), 2);

@@ -3,14 +3,14 @@
 //! Usage: `vectorcraft [--control <port> [--automation-read-root <dir>] [--automation-write-root <dir>]]
 //! [--in-window-menus] [files…]`
 //!
-//! `--in-window-menus` (or `VECTORCRAFT_IN_WINDOW_MENUS=1`) keeps the menus inside the window on
+//! `--in-window-menus` (or `REDROB_VECTOR_IN_WINDOW_MENUS=1`) keeps the menus inside the window on
 //! macOS instead of the macOS menu bar (`mac_menu`).
 //!
-//! `--control <port>` (or `VECTORCRAFT_CONTROL_PORT`; a port from 1 to 65535, or the app doesn't
+//! `--control <port>` (or `REDROB_VECTOR_CONTROL_PORT`; a port from 1 to 65535, or the app doesn't
 //! start) starts a localhost JSON-lines control server:
 //! `{"id":1,"method":"ui.inspect","params":{}}` → `{"id":1,"ok":true,"result":…}`.
 //! See `redrob_vector_ui_egui::control` for the methods. `--automation-read-root` and
-//! `--automation-write-root` (or `VECTORCRAFT_AUTOMATION_READ_ROOT` / `_WRITE_ROOT`) confine the
+//! `--automation-write-root` (or `REDROB_VECTOR_AUTOMATION_READ_ROOT` / `_WRITE_ROOT`) confine the
 //! files its requests read and write (`redrob_vector_engine::file_access`); the person at the
 //! keyboard isn't confined.
 #![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
@@ -205,9 +205,9 @@ fn log_dir() -> Option<std::path::PathBuf> {
     Some(prefs_path()?.parent()?.join("logs"))
 }
 
-/// Runs without preferences (`VECTORCRAFT_NO_PREFS`, agents' test runs) neither read nor write them.
+/// Runs without preferences (`REDROB_VECTOR_NO_PREFS`, agents' test runs) neither read nor write them.
 fn prefs_enabled() -> bool {
-    std::env::var_os("VECTORCRAFT_NO_PREFS").is_none()
+    std::env::var_os("REDROB_VECTOR_NO_PREFS").is_none()
 }
 
 /// The saved UI preferences, read before the window opens (they hold its size and position).
@@ -510,7 +510,8 @@ fn services(parent: Parent, ui: egui::Context) -> Services {
         pick_save: Some(Box::new(move |pick: &FilePick| pick_now(PickRequest::Save(pick.clone()), &p3).into_iter().next())),
         // Linux shows dialogs on a thread of their own (#592), macOS as sheets (#867); Windows
         // dialogs run the window's events while they are open.
-        start_pick: cfg!(unix).then(|| Box::new(move |request: PickRequest| start_pick(request, &p5, &ui)) as redrob_vector_ui_egui::picks::StartPick),
+        start_pick: cfg!(unix)
+            .then(|| Box::new(move |request: PickRequest| start_pick(request, &p5, &ui)) as redrob_vector_ui_egui::picks::StartPick),
         dialogs_are_sheets: cfg!(target_os = "macos"),
         wayland,
         read: Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string()))),
@@ -561,12 +562,12 @@ fn open_file(path: &str) -> Result<(), String> {
 
 /// The window, Dock, taskbar and app-switcher icon (`assets/app-icon/`, see its README). macOS gets
 /// the version with Apple's transparent margin; elsewhere the full-bleed tile. The app ID matches
-/// `packaging/linux/ai.storyteller.vectorcraft.desktop` so Wayland docks find the launcher icon.
+/// `packaging/linux/ai.storyteller.rvector.desktop` so Wayland docks find the launcher icon.
 fn app_icon() -> egui::IconData {
     #[cfg(target_os = "macos")]
     let png: &[u8] = include_bytes!("../../../assets/app-icon/vectorcraft-macos-512.png");
     #[cfg(not(target_os = "macos"))]
-    let png: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.vectorcraft.png");
+    let png: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.rvector.png");
     eframe::icon_data::from_png_bytes(png).unwrap_or_default()
 }
 
@@ -611,7 +612,7 @@ fn native_options(custom_titlebar: bool) -> eframe::NativeOptions {
             .with_titlebar_shown(false)
             .with_title_shown(false)
             .with_icon(app_icon())
-            .with_app_id("ai.storyteller.vectorcraft"),
+            .with_app_id("ai.storyteller.rvector"),
         #[cfg(feature = "windows7")]
         renderer: eframe::Renderer::Glow,
         ..Default::default()
@@ -624,9 +625,9 @@ fn main() -> std::process::ExitCode {
     let mut control = automation_args::ControlArg::default();
     let root_env = |name: &str| std::env::var_os(name).filter(|v| !v.is_empty()).map(std::path::PathBuf::from);
     let mut roots_args =
-        automation_args::AutomationArgs::new(root_env("VECTORCRAFT_AUTOMATION_READ_ROOT"), root_env("VECTORCRAFT_AUTOMATION_WRITE_ROOT"));
+        automation_args::AutomationArgs::new(root_env("REDROB_VECTOR_AUTOMATION_READ_ROOT"), root_env("REDROB_VECTOR_AUTOMATION_WRITE_ROOT"));
     let mut files = Vec::new();
-    let mut in_window_menus = std::env::var_os("VECTORCRAFT_IN_WINDOW_MENUS").is_some_and(|v| !v.is_empty() && v != "0");
+    let mut in_window_menus = std::env::var_os("REDROB_VECTOR_IN_WINDOW_MENUS").is_some_and(|v| !v.is_empty() && v != "0");
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match roots_args.consume(&a, &mut args).and_then(|root| if root { Ok(true) } else { control.consume(&a, &mut args) }) {
@@ -650,7 +651,7 @@ fn main() -> std::process::ExitCode {
     // After the arguments: `--control` and `--version` win over a bad environment value.
     let control_port = match control.port {
         Some(port) => Some(port),
-        None => match automation_args::env_control_port(std::env::var_os("VECTORCRAFT_CONTROL_PORT")) {
+        None => match automation_args::env_control_port(std::env::var_os("REDROB_VECTOR_CONTROL_PORT")) {
             Ok(port) => port,
             Err(e) => {
                 eprintln!("vectorcraft: {e}");
@@ -816,7 +817,7 @@ fn main() -> std::process::ExitCode {
                 }
                 // Data Recovery copies live next to the preferences too (none for runs without
                 // preferences, such as agents' test runs, unless the recoveryFolder preference is set).
-                if std::env::var_os("VECTORCRAFT_NO_PREFS").is_none() {
+                if std::env::var_os("REDROB_VECTOR_NO_PREFS").is_none() {
                     let recovery = prefs_path().and_then(|p| Some(p.parent()?.join("Data Recovery").to_string_lossy().to_string()));
                     app.session.recovery.set_default_folder(recovery);
                 }

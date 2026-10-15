@@ -2,9 +2,9 @@
 //! no transparency (no soft masks, blend modes, constant opacity or transparency groups): it is
 //! flattened with the chosen preset, and reads back looking like the canvas.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::Rect;
 use redrob_vector_render::{Rendered, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -95,8 +95,12 @@ fn pdf_1_3_flattens_all_transparency_and_looks_the_same() {
     let id = flat.alloc_id();
     let rect = redrob_vector_geom::shapes::rectangle(Rect::new(10.0, 10.0, 50.0, 50.0));
     let paint = redrob_vector_color::Paint::solid(redrob_vector_color::Color::BLACK);
-    flat.insert(Some(l), 0, redrob_vector_doc::Node::path(id, rect, redrob_vector_doc::Appearance::basic(paint, redrob_vector_color::Paint::None, 0.0)))
-        .unwrap();
+    flat.insert(
+        Some(l),
+        0,
+        redrob_vector_doc::Node::path(id, rect, redrob_vector_doc::Appearance::basic(paint, redrob_vector_color::Paint::None, 0.0)),
+    )
+    .unwrap();
     assert!(transparency(&redrob_vector_pdf::export(&flat, &opts).unwrap()).is_empty());
 }
 
@@ -146,7 +150,8 @@ fn pdf_1_3_files_are_encrypted_with_40_bit_rc4_and_can_be_linearised() {
     assert!(text.contains("/V 1/R 2/Length 40") && text.contains("/Linearized 1") && text.contains("/Thumb "));
     for password in ["open", "owner"] {
         s.execute("document.close", &json!({"force": true})).ok();
-        s.execute("document.open", &json!({"dataBase64": redrob_vector_format::base64_encode(&pdf), "name": "old.pdf", "password": password})).unwrap();
+        s.execute("document.open", &json!({"dataBase64": redrob_vector_format::base64_encode(&pdf), "name": "old.pdf", "password": password}))
+            .unwrap();
         assert_eq!(s.doc().unwrap().doc.artboards.len(), 1, "{password}");
     }
     assert!(

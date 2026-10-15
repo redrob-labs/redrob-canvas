@@ -69,7 +69,7 @@ impl ChapterBatch {
             return Err(bad(command, format!("a book update supports at most {MAX_BATCH_CHAPTERS} chapters")));
         }
         let directory = tempfile::Builder::new()
-            .prefix(".designcraft-book-")
+            .prefix(".rlayout-book-")
             .tempdir()
             .map_err(|e| EngineError::Other(format!("{command}: cannot stage chapter changes: {e}")))?;
         Ok(Self { directory, chapters: Vec::with_capacity(chapters), command })
@@ -130,7 +130,7 @@ fn writable_chapter(s: &Session, path: &str, command: &'static str) -> Result<()
     // writable directory even when an in-place write would be permitted.
     crate::io::writable(&target).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let parent = target.parent().ok_or_else(|| bad(command, format!("chapter {path} has no parent folder")))?;
-    tempfile::Builder::new().prefix(".designcraft-book-check-").tempfile_in(parent).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    tempfile::Builder::new().prefix(".rlayout-book-check-").tempfile_in(parent).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     Ok(())
 }
 
@@ -346,22 +346,22 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let p = |n: &str| dir.join(n).to_string_lossy().to_string();
         let mut s = Session::new();
-        for (name, pages, style) in [("a.designcraft", 3, "Chapter Head"), ("b.designcraft", 2, "Other")] {
+        for (name, pages, style) in [("a.rlayout", 3, "Chapter Head"), ("b.rlayout", 2, "Other")] {
             s.execute("file.new", &json!({"pages": pages})).unwrap();
             s.execute("style.paragraph.create", &json!({"name": style, "chars": {"size": 20}})).unwrap();
             s.execute("file.saveAs", &json!({"path": p(name)})).unwrap();
             s.execute("file.close", &json!({})).unwrap();
         }
         s.execute("book.new", &json!({"path": p("book.dcbook")})).unwrap();
-        s.execute("book.add", &json!({"path": p("a.designcraft")})).unwrap();
-        s.execute("book.add", &json!({"path": p("b.designcraft")})).unwrap();
+        s.execute("book.add", &json!({"path": p("a.rlayout")})).unwrap();
+        s.execute("book.add", &json!({"path": p("b.rlayout")})).unwrap();
         let l = s.execute("book.list", &json!({})).unwrap();
         assert_eq!(l["documents"][1]["firstPage"], 4);
         assert_eq!(s.execute("book.paginate", &json!({})).unwrap()["pages"], 5);
-        let b = super::load(&p("b.designcraft")).unwrap();
+        let b = super::load(&p("b.rlayout")).unwrap();
         assert_eq!(b.page_name(0), "4", "continues after the first document");
         assert_eq!(s.execute("book.syncStyles", &json!({})).unwrap()["synced"], 1);
-        assert!(super::load(&p("b.designcraft")).unwrap().styles.para("Chapter Head").is_some());
+        assert!(super::load(&p("b.rlayout")).unwrap().styles.para("Chapter Head").is_some());
         let r = s.execute("book.exportPdf", &json!({})).unwrap();
         assert_eq!(r["pages"], 5);
         let bytes = super::super::file::base64_decode(r["base64"].as_str().unwrap());

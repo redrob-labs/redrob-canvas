@@ -2,7 +2,7 @@
 //! (`tests/data/FOGRA39.txt`), conversions to sRGB against reference values, and its generator:
 //!
 //! ```sh
-//! CRAFT_CMS_REGEN_PROFILES=1 cargo test -p redrob-craft-cms --release --test fogra39
+//! REDROB_CRAFT_CMS_REGEN_PROFILES=1 cargo test -p redrob-craft-cms --release --test fogra39
 //! ```
 //!
 //! The generator fits a Yule–Nielsen modified Neugebauer model (free 16 overprints, per-ink
@@ -334,7 +334,7 @@ fn fitted(p: &[Patch]) -> Fitted {
 
 #[test]
 fn regen_coated_fogra39() {
-    if std::env::var_os("CRAFT_CMS_REGEN_PROFILES").is_none() {
+    if std::env::var_os("REDROB_CRAFT_CMS_REGEN_PROFILES").is_none() {
         return;
     }
     let t = std::time::Instant::now();

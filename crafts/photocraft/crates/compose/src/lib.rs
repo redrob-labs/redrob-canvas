@@ -32,11 +32,11 @@ pub mod proxy;
 pub mod psblend;
 pub mod shape_split;
 
+use psblend as blend;
 use redrob_photo_color::blend::BlendMode;
 use redrob_photo_doc::{Document, Fill, Layer, LayerContent, Pattern};
 use redrob_photo_geom::Rect;
 use redrob_photo_raster::{Rgba8Image, Surface};
-use psblend as blend;
 
 pub use advanced::advanced_active;
 
@@ -1679,7 +1679,8 @@ fn effect_maps(layer: &Layer, rect: Rect, cx: &Ctx) -> std::sync::Arc<effects::F
     use std::hash::{Hash, Hasher};
     let (region, clipped) = effect_region(layer, rect, cx);
     static NO_CACHE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    if *NO_CACHE.get_or_init(|| std::env::var_os("PHOTOCRAFT_FX_NOCACHE").is_some()) {
+    if *NO_CACHE.get_or_init(|| std::env::var_os("REDROB_PHOTO_FX_NOCACHE").or_else(|| std::env::var_os("PHOTOCRAFT_FX_NOCACHE")).is_some()) {
+        // legacy: the upstream variable is read when ours is unset
         let shape = if region.is_empty() { Vec::new() } else { effect_shape(layer, region, cx) };
         return std::sync::Arc::new(effects::build_maps_prepared(layer, shape, region, &cx.light, &texture_ctx(layer, region, cx), cx.patterns));
     }

@@ -158,7 +158,9 @@ fn compositor_flatten_separates_through_the_documents_profile() {
     let d = &s.active().unwrap().doc;
     let space = redrob_photo_compose::cmyk_space(d);
     let shown = |v: &[f32]| -> Vec<[f32; 3]> {
-        redrob_photo_color::convert::with_cmyk_space(space.as_ref(), || v.as_chunks::<4>().0.iter().map(|p| redrob_photo_color::convert::cmyk_to_rgb(*p)).collect())
+        redrob_photo_color::convert::with_cmyk_space(space.as_ref(), || {
+            v.as_chunks::<4>().0.iter().map(|p| redrob_photo_color::convert::cmyk_to_rgb(*p)).collect()
+        })
     };
     let (a, b) = (shown(&pixels(&s)), shown(&before));
     let diffs: Vec<f32> = a.iter().zip(&b).flat_map(|(p, q)| (0..3).map(move |c| (p[c] - q[c]).abs())).collect();

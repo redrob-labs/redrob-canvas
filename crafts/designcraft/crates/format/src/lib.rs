@@ -1,6 +1,6 @@
-//! The native `.designcraft` format: a zip archive holding
+//! The native `.rlayout` format: a zip archive holding
 //!
-//! - `mimetype` (stored first, uncompressed): `application/vnd.designcraft+zip`
+//! - `mimetype` (stored first, uncompressed): `application/vnd.redrob-layout+zip`
 //! - `document.json`: the [`Document`] (pretty JSON, documented by the serde model in `redrob-layout-doc`)
 //! - `assets/<id>.<ext>`: embedded placed files, byte-for-byte: one per distinct file, and only
 //!   the ones the document references (see [`Document::compact_assets`])
@@ -19,7 +19,11 @@ use std::sync::Arc;
 use redrob_layout_doc::{AssetId, Document, ParaAttrs, Story};
 use serde_json::{Value, json};
 
-pub const MIME: &str = "application/vnd.designcraft+zip";
+pub const MIME: &str = "application/vnd.redrob-layout+zip";
+/// File extension of the native format.
+pub const EXTENSION: &str = "rlayout";
+/// The extension the format had upstream. Still opened, never written.
+pub const LEGACY_EXTENSION: &str = "designcraft"; // legacy: upstream extension, read only
 pub const VERSION: u32 = 2;
 
 #[derive(Debug, thiserror::Error)]
@@ -45,7 +49,7 @@ fn ext_for(mime: &str) -> &'static str {
     }
 }
 
-/// Serialize a document to `.designcraft` bytes. The file holds each distinct placed file once
+/// Serialize a document to `.rlayout` bytes. The file holds each distinct placed file once
 /// and leaves out assets nothing references; `doc` itself keeps them (undo can bring them back).
 pub fn save(doc: &Document) -> Result<Vec<u8>, FormatError> {
     let mut compact = doc.clone();
@@ -79,7 +83,7 @@ pub fn save(doc: &Document) -> Result<Vec<u8>, FormatError> {
     Ok(buf.into_inner())
 }
 
-/// Read `.designcraft` bytes (zip, or the legacy single JSON file).
+/// Read `.rlayout` bytes (zip, or the legacy single JSON file).
 pub fn load(bytes: &[u8]) -> Result<Document, FormatError> {
     if bytes.starts_with(b"PK") {
         return load_zip(bytes);
@@ -87,7 +91,7 @@ pub fn load(bytes: &[u8]) -> Result<Document, FormatError> {
     load_legacy_json(bytes)
 }
 
-/// Most entries a `.designcraft` archive may hold.
+/// Most entries a `.rlayout` archive may hold.
 const MAX_ENTRIES: usize = 100_000;
 /// Most bytes `meta.json` or `document.json` may expand to.
 const MAX_JSON_BYTES: u64 = 256 << 20;

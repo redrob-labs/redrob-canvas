@@ -115,15 +115,15 @@ pub fn confirm(app: &mut VectorcraftApp) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, Mutex};
     use redrob_vector_engine::Session;
+    use std::sync::{Arc, Mutex};
 
-    /// An app whose Save As picks `out.vectorcraft` and records written paths.
+    /// An app whose Save As picks `out.rvector` and records written paths.
     fn app() -> (VectorcraftApp, Arc<Mutex<Vec<String>>>) {
         let written = Arc::new(Mutex::new(vec![]));
         let w = written.clone();
         let services = crate::Services {
-            pick_save: Some(Box::new(|_: &crate::FilePick| Some("out.vectorcraft".to_string()))),
+            pick_save: Some(Box::new(|_: &crate::FilePick| Some("out.rvector".to_string()))),
             write: Some(Box::new(move |p: &str, _: &[u8]| {
                 w.lock().unwrap().push(p.to_string());
                 Ok(())
@@ -179,7 +179,7 @@ mod tests {
         // Save writes the file (Save As for an untitled document), then closes it.
         app.run("file.close", json!({ "index": 0 })).unwrap();
         confirm(&mut app).unwrap();
-        assert_eq!(*written.lock().unwrap(), vec!["out.vectorcraft".to_string()]);
+        assert_eq!(*written.lock().unwrap(), vec!["out.rvector".to_string()]);
         assert_eq!((docs(&app), app.views.len()), (1, 1));
     }
 
@@ -236,7 +236,7 @@ mod tests {
         assert_eq!(quit(&mut app), json!({"ok": true, "result": {"pending": KIND}}));
         assert_eq!((pending(&app), app.ui.status.as_str()), (Some(0), ""));
         app.ui.dialog = None;
-        app.run("file.save", json!({"path": "/docs/saved.vectorcraft"})).unwrap();
+        app.run("file.save", json!({"path": "/docs/saved.rvector"})).unwrap();
         assert_eq!(quit(&mut app), json!({"ok": true, "result": null}));
         assert_eq!(app.ui.status, "quit");
     }

@@ -60,7 +60,7 @@ fn svg_options() -> &'static usvg::Options<'static> {
         for f in redrob_layout_fonts::bundled() {
             db.load_font_data(f.to_vec());
         }
-        // Japanese text in SVGs: the craft-fonts faces (none without CRAFT_FONTS_DIR).
+        // Japanese text in SVGs: the craft-fonts faces (none without REDROB_CRAFT_FONTS_DIR).
         for f in redrob_layout_fonts::japanese_document_fonts() {
             db.load_font_data(f.bytes.to_vec());
         }

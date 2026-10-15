@@ -27,7 +27,7 @@ fn canvas() -> Option<(GpuCanvas, RenderState)> {
         eprintln!("skipping: no GPU adapter");
         return None;
     };
-    if !gpu_canvas::supports_f16_canvas(&rs.adapter) || std::env::var("PHOTOCRAFT_CANVAS_F16").as_deref() == Ok("0") {
+    if !gpu_canvas::supports_f16_canvas(&rs.adapter) || std::env::var("REDROB_PHOTO_CANVAS_F16").as_deref() == Ok("0") {
         eprintln!("skipping: adapter can't render/filter Rgba16Float");
         return None;
     }
@@ -140,7 +140,7 @@ fn format_follows_depth_and_budget() {
     assert_eq!(g.format_for(SampleType::U16, [7360, 4912]), TextureFormat::Rgba16Float);
     assert_eq!(g.format_for(SampleType::F32, [7360, 4912]), TextureFormat::Rgba16Float);
     // Over the budget (a 14000² 16-bit document): 8-bit, so it stays on the GPU.
-    if std::env::var_os("PHOTOCRAFT_CANVAS_F16").is_none() {
+    if std::env::var_os("REDROB_PHOTO_CANVAS_F16").is_none() {
         assert_eq!(g.format_for(SampleType::U16, [14000, 14000]), TextureFormat::Rgba8Unorm);
     }
 }
@@ -185,7 +185,7 @@ fn screen(doc: Document, setup: &[(&str, serde_json::Value)], name: &str) -> Opt
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
             let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             if let Some(rs) = cc.wgpu_render_state.as_ref() {
-                ok2.store(gpu_canvas::supports_f16_canvas(&rs.adapter) && std::env::var("PHOTOCRAFT_CANVAS_F16").as_deref() != Ok("0"), Ordering::SeqCst);
+                ok2.store(gpu_canvas::supports_f16_canvas(&rs.adapter) && std::env::var("REDROB_PHOTO_CANVAS_F16").as_deref() != Ok("0"), Ordering::SeqCst);
                 app.set_wgpu(rs.clone());
             }
             app.session.open_document(doc, None);

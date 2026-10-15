@@ -9,8 +9,8 @@
 use std::io::Write as _;
 use std::sync::Arc;
 
-use serde_json::{Map, Value, json};
 use redrob_vector_doc::Document;
+use serde_json::{Map, Value, json};
 
 use super::super::*;
 use super::{

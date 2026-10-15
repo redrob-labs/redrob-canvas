@@ -569,7 +569,7 @@ fn apply_link_groups(nodes: &[LayerNode], layers: &mut [Layer], ids: &[u16]) {
 }
 
 /// Rejects a file whose groups nest deeper than the document model's cap, with the actionable
-/// limit error. Nesting past the cap could never be saved (.pcraft refuses it).
+/// limit error. Nesting past the cap could never be saved (.rphoto refuses it).
 pub(crate) fn check_group_depth(file: &PsdFile) -> Result<(), crate::IoError> {
     if group_depth(file) > redrob_photo_doc::MAX_GROUP_DEPTH {
         return Err(crate::IoError::Unsupported(format!("layer groups nested deeper than {}", redrob_photo_doc::MAX_GROUP_DEPTH)));
@@ -992,8 +992,10 @@ pub(crate) fn psd_to_document_decoded(
             doc.color_table = Some(redrob_photo_doc::ColorTable { colors, transparent: None });
         } else if h.color_mode == PsdMode::Duotone && !file.color_mode_data.is_empty() {
             // The duotone ink block is undocumented: keep it raw; the image shows as its gray plate.
-            doc.duotone =
-                Some(redrob_photo_doc::Duotone { inks: vec![redrob_photo_doc::DuotoneInk::new("Black", [0.0; 3])], psd_raw: Some(file.color_mode_data.clone()) });
+            doc.duotone = Some(redrob_photo_doc::Duotone {
+                inks: vec![redrob_photo_doc::DuotoneInk::new("Black", [0.0; 3])],
+                psd_raw: Some(file.color_mode_data.clone()),
+            });
             cx.warn("duotone inks are not interpreted (shown as grayscale)");
         } else if !file.color_mode_data.is_empty() {
             cx.warn("color mode data is not preserved");

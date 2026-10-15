@@ -176,12 +176,7 @@ impl Artifact {
 
     /// Whether the artifacts requires a property list.
     pub(crate) fn requires_properties(self, pdf_version: PdfVersion) -> bool {
-        self.bbox.is_some()
-            || self
-                .kind
-                .map_pdf_version(pdf_version)
-                .to_pdf_artifact_type()
-                .is_some()
+        self.bbox.is_some() || self.kind.map_pdf_version(pdf_version).to_pdf_artifact_type().is_some()
     }
 
     /// Whether the artifact requires a BBox.
@@ -229,14 +224,8 @@ pub enum ArtifactType {
 impl ArtifactType {
     pub(crate) fn map_pdf_version(self, version: PdfVersion) -> Self {
         match self {
-            Self::PageNumber | Self::LineNumber | Self::Redaction | Self::Bates
-                if version < PdfVersion::Pdf20 =>
-            {
-                ArtifactType::PaginationOther
-            }
-            Self::Header | Self::Footer | Self::Watermark if version < PdfVersion::Pdf17 => {
-                ArtifactType::PaginationOther
-            }
+            Self::PageNumber | Self::LineNumber | Self::Redaction | Self::Bates if version < PdfVersion::Pdf20 => ArtifactType::PaginationOther,
+            Self::Header | Self::Footer | Self::Watermark if version < PdfVersion::Pdf17 => ArtifactType::PaginationOther,
             Self::Background if version < PdfVersion::Pdf17 => ArtifactType::Other,
             _ => self,
         }
@@ -259,9 +248,7 @@ impl ArtifactType {
         }
     }
 
-    pub(crate) fn to_pdf_artifact_subtype(
-        self,
-    ) -> Option<pdf_writer::types::ArtifactSubtype<'static>> {
+    pub(crate) fn to_pdf_artifact_subtype(self) -> Option<pdf_writer::types::ArtifactSubtype<'static>> {
         match self {
             ArtifactType::Header => Some(pdf_writer::types::ArtifactSubtype::Header),
             ArtifactType::Footer => Some(pdf_writer::types::ArtifactSubtype::Footer),
@@ -315,17 +302,10 @@ impl ContentTag<'_> {
         }
     }
 
-    pub(crate) fn write_properties(
-        &self,
-        sc: &mut SerializeContext,
-        mut properties: PropertyList,
-        page_height: f32,
-    ) {
+    pub(crate) fn write_properties(&self, sc: &mut SerializeContext, mut properties: PropertyList, page_height: f32) {
         match self {
             ContentTag::Artifact(artifact) => {
-                let at = artifact
-                    .kind
-                    .map_pdf_version(sc.serialize_settings().pdf_version());
+                let at = artifact.kind.map_pdf_version(sc.serialize_settings().pdf_version());
                 let mut artifact_props = properties.artifact();
 
                 if let Some(bbox) = artifact.bbox {
@@ -352,12 +332,7 @@ impl ContentTag<'_> {
                     artifact_props.kind(artifact_type);
                 }
             }
-            ContentTag::Span(SpanTag {
-                lang,
-                alt_text,
-                expanded,
-                actual_text,
-            }) => {
+            ContentTag::Span(SpanTag { lang, alt_text, expanded, actual_text }) => {
                 if let Some(lang) = lang {
                     properties.pair(Name(b"Lang"), TextStr(lang));
                 }
@@ -403,12 +378,7 @@ pub struct SpanTag<'a> {
 impl<'a> SpanTag<'a> {
     /// An empty span tag.
     pub fn empty() -> Self {
-        Self {
-            lang: None,
-            alt_text: None,
-            expanded: None,
-            actual_text: None,
-        }
+        Self { lang: None, alt_text: None, expanded: None, actual_text: None }
     }
 
     /// Sets [`SpanTag::lang`].
@@ -488,10 +458,7 @@ impl From<AnnotationIdentifier> for Identifier {
 
 impl AnnotationIdentifier {
     pub fn new(page_index: usize, annot_index: usize) -> Self {
-        Self {
-            page_index,
-            annot_index,
-        }
+        Self { page_index, annot_index }
     }
 }
 
@@ -665,11 +632,7 @@ fn write_kind_1_7(struct_elem: &mut StructElement, role: StructRole) {
 
 /// If serializing a PDF 2.0 document, write a PDF 2.0 structure role, otherwise
 /// fall back to the compatible PDF 1.7 role.
-fn write_kind_compat(
-    sc: &mut SerializeContext,
-    struct_elem: &mut StructElement,
-    role: StructRole2,
-) {
+fn write_kind_compat(sc: &mut SerializeContext, struct_elem: &mut StructElement, role: StructRole2) {
     if sc.serialize_settings().pdf_version() < PdfVersion::Pdf20 {
         let compat = role.compatibility_1_7(RoleMapOpts::default());
         struct_elem.kind(compat.role());
@@ -707,14 +670,7 @@ impl Node {
         struct_elems: &mut Chunk,
     ) -> KrillaResult<Option<Reference>> {
         match self {
-            Node::Group(g) => Ok(Some(g.serialize(
-                sc,
-                parent_tree_map,
-                id_tree,
-                parent,
-                note_id,
-                struct_elems,
-            )?)),
+            Node::Group(g) => Ok(Some(g.serialize(sc, parent_tree_map, id_tree, parent, note_id, struct_elems)?)),
             Node::Leaf(ci) => match ci.0 {
                 IdentifierInner::Real(rci) => Ok(Some(Reference::ContentIdentifier(rci))),
                 IdentifierInner::Dummy => Ok(None),
@@ -753,18 +709,12 @@ pub struct TagGroup {
 impl TagGroup {
     /// Create a new tag group with a specific tag.
     pub fn new(tag: impl Into<TagKind>) -> Self {
-        Self {
-            tag: tag.into(),
-            children: vec![],
-        }
+        Self { tag: tag.into(), children: vec![] }
     }
 
     /// Create a new tag group with a specific tag and a list of children.
     pub fn with_children(tag: impl Into<TagKind>, children: Vec<Node>) -> Self {
-        Self {
-            tag: tag.into(),
-            children,
-        }
+        Self { tag: tag.into(), children }
     }
 
     /// Append a new child to the tag group.
@@ -785,14 +735,7 @@ impl TagGroup {
         let mut children_refs = vec![];
 
         for child in &self.children {
-            let serialized = child.serialize(
-                sc,
-                parent_tree_map,
-                id_tree,
-                elem_ref,
-                note_id,
-                struct_elems,
-            )?;
+            let serialized = child.serialize(sc, parent_tree_map, id_tree, elem_ref, note_id, struct_elems)?;
             if let Some(ref_) = serialized {
                 children_refs.push(ref_);
             }
@@ -903,10 +846,7 @@ impl TagGroup {
                         table_attributes.scope(scope.to_pdf());
                     } else if scope == &TableHeaderScope::Row {
                         // Without `Scope`, the correct cell to point to is ambiguous.
-                        sc.register_validation_error(ValidationError::RequiresNewerPdfVersion(
-                            VersionedFeature::TableHeaderScope,
-                            tag.location,
-                        ));
+                        sc.register_validation_error(ValidationError::RequiresNewerPdfVersion(VersionedFeature::TableHeaderScope, tag.location));
                     }
                 }
                 TableAttr::CellHeaders(headers) => {
@@ -1082,13 +1022,7 @@ impl TagGroup {
 
         attributes.finish();
 
-        serialize_children(
-            sc,
-            elem_ref,
-            children_refs,
-            parent_tree_map,
-            &mut struct_elem,
-        )?;
+        serialize_children(sc, elem_ref, children_refs, parent_tree_map, &mut struct_elem)?;
         struct_elem.finish();
 
         Ok(Reference::Ref(elem_ref))
@@ -1123,20 +1057,14 @@ pub struct TagTree {
 
 impl From<Vec<Node>> for TagTree {
     fn from(children: Vec<Node>) -> Self {
-        Self {
-            children,
-            lang: None,
-        }
+        Self { children, lang: None }
     }
 }
 
 impl TagTree {
     /// Create a new tag tree.
     pub fn new() -> Self {
-        Self {
-            children: vec![],
-            lang: None,
-        }
+        Self { children: vec![], lang: None }
     }
 
     /// Set the language attribute on the Document root structure element.
@@ -1173,14 +1101,7 @@ impl TagTree {
         let mut children_refs = vec![];
 
         for child in &self.children {
-            let serialized = child.serialize(
-                sc,
-                parent_tree_map,
-                id_tree_map,
-                root_ref,
-                &mut note_id,
-                &mut struct_elems,
-            )?;
+            let serialized = child.serialize(sc, parent_tree_map, id_tree_map, root_ref, &mut note_id, &mut struct_elems)?;
 
             if let Some(ref_) = serialized {
                 children_refs.push(ref_);
@@ -1195,13 +1116,7 @@ impl TagTree {
                 struct_elem.lang(TextStr(lang));
             }
         }
-        serialize_children(
-            sc,
-            root_ref,
-            children_refs,
-            parent_tree_map,
-            &mut struct_elem,
-        )?;
+        serialize_children(sc, root_ref, children_refs, parent_tree_map, &mut struct_elem)?;
 
         struct_elem.finish();
         chunk_container.non_stream.struct_elements = Some(struct_elems);
@@ -1242,12 +1157,16 @@ fn serialize_children(
             Reference::ContentIdentifier(it) => match it {
                 IdentifierType::PageIdentifier(pi) => {
                     let page_ref = sc
-                            .page_infos()
-                            .get(pi.page_index)
-                            .unwrap_or_else(|| panic!("tag tree contains identifier from page {}, but document only has {} pages",
+                        .page_infos()
+                        .get(pi.page_index)
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "tag tree contains identifier from page {}, but document only has {} pages",
                                 pi.page_index + 1,
-                                sc.page_infos().len()))
-                            .ref_();
+                                sc.page_infos().len()
+                            )
+                        })
+                        .ref_();
 
                     if struct_page_ref.is_none() {
                         struct_page_ref = Some(page_ref);
@@ -1262,25 +1181,16 @@ fn serialize_children(
                     if struct_page_ref == Some(page_ref) {
                         struct_children.marked_content_id(pi.mcid);
                     } else {
-                        struct_children
-                            .marked_content_ref()
-                            .marked_content_id(pi.mcid)
-                            .page(page_ref);
+                        struct_children.marked_content_ref().marked_content_id(pi.mcid).page(page_ref);
                     }
                 }
                 IdentifierType::AnnotationIdentifier(ai) => {
                     let Some(page_info) = sc.page_infos_mut().get_mut(ai.page_index) else {
-                        panic!(
-                            "tag tree contains identifier from page {}, but document only has {} pages",
-                            ai.page_index + 1,
-                            sc.page_infos().len()
-                        );
+                        panic!("tag tree contains identifier from page {}, but document only has {} pages", ai.page_index + 1, sc.page_infos().len());
                     };
 
                     let page_ref = page_info.ref_();
-                    let Some((annotation_ref, struct_parent)) =
-                        page_info.annotations_mut().get_mut(ai.annot_index)
-                    else {
+                    let Some((annotation_ref, struct_parent)) = page_info.annotations_mut().get_mut(ai.annot_index) else {
                         panic!(
                             "tag tree contains identifier from annotation {} on page {}, but page only has {} annotations",
                             ai.annot_index + 1,
@@ -1296,10 +1206,7 @@ fn serialize_children(
 
                     struct_parent.set(parent_ref).expect("only one parent");
 
-                    struct_children
-                        .object_ref()
-                        .page(page_ref)
-                        .object(*annotation_ref);
+                    struct_children.object_ref().page(page_ref).object(*annotation_ref);
                 }
             },
         }

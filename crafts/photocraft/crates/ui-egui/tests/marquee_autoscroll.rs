@@ -165,7 +165,7 @@ fn rotated_marquee_scrolls_on_the_axis_that_is_visibly_clipped() {
         pointer_at(&mut h, outside);
         h.run_steps(30);
         let moved = xf(&h).center[0] - start.center[0];
-        if let Some(dir) = std::env::var_os("CRAFT_UI_VISUAL_FIXTURES") {
+        if let Some(dir) = std::env::var_os("REDROB_CRAFT_UI_VISUAL_FIXTURES") {
             let dir = std::path::PathBuf::from(dir);
             std::fs::create_dir_all(&dir).expect("fixture directory");
             h.render().expect("render").save(dir.join(format!("rotated-marquee-overscroll-{overscroll}.png"))).expect("save fixture");

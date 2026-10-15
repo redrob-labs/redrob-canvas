@@ -3,7 +3,7 @@
 //! Marker.
 //!
 //! The scale, count groups and ruler line are document data ([`redrob_photo_doc::Measurement`],
-//! saved in `.pcraft`; the scale also as PSD resource 1074). The Measurement Log and the data
+//! saved in `.rphoto`; the scale also as PSD resource 1074). The Measurement Log and the data
 //! point choices are session-wide, as in Photoshop.
 //!
 //! Selection measurements follow Photoshop's definitions: the selection (coverage ≥ 50 %) is
@@ -16,10 +16,10 @@
 
 use std::sync::Arc;
 
+use rayon::prelude::*;
 use redrob_photo_color::{Color, SampleType};
 use redrob_photo_doc::{CountGroup, Document, Layer, MeasurementScale, Ruler};
 use redrob_photo_geom::Rect;
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 

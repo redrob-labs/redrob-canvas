@@ -249,7 +249,8 @@ fn run_on_layer(s: &mut Session, cmd: &str, label: &str, p: &Value, moves: bool,
             // As filters do: a pixel or full lock refuses the smart filter (the position lock
             // doesn't, since the smart object itself stays put).
             check_locks(l, group, false)?;
-            let sf = SmartFilter { command: cmd.to_string(), params: params.clone(), blend: redrob_photo_color::BlendMode::Normal, opacity: 1.0, visible: true };
+            let sf =
+                SmartFilter { command: cmd.to_string(), params: params.clone(), blend: redrob_photo_color::BlendMode::Normal, opacity: 1.0, visible: true };
             return crate::smart_cmds::add_smart_filter(doc, id, sf, selection.as_ref());
         }
         check_locks(l, group, moves)?;

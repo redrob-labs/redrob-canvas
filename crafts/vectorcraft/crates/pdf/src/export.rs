@@ -4,8 +4,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use redrob_craft_pdf::write::backend as krilla;
-use redrob_craft_pdf::write::{self, Metadata};
 use krilla::color::separation::{Color as SepColor, SeparationColorant, SeparationSpace};
 use krilla::color::{cmyk, luma, rgb};
 use krilla::configure::{Archival, PdfVersion};
@@ -17,6 +15,8 @@ use krilla::paint::{Fill, LinearGradient, RadialGradient, SpreadMethod, Stop, St
 use krilla::surface::Surface;
 use krilla::text::{Glyph, GlyphId, KrillaGlyph};
 use kurbo::{PathEl, Shape, Vec2};
+use redrob_craft_pdf::write::backend as krilla;
+use redrob_craft_pdf::write::{self, Metadata};
 use redrob_vector_color::{BlendMode, Color, GradientKind, Paint};
 use redrob_vector_doc::{AppearanceItem, Document, LineCap, LineJoin, Node, NodeKind, StrokeAlign, StrokeLayer, SymbolBoxes, TextObject};
 use redrob_vector_effects::stroke::{self, WrittenShape};

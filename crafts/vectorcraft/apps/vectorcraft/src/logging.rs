@@ -5,7 +5,7 @@
 //! has no terminal, so the file is what a bug report can attach: `<settings dir>/logs/vectorcraft.log`,
 //! next to the preferences (`prefs_path` in `main.rs`). Each start moves the previous log to
 //! `vectorcraft.1.log` (and that one to `.2`), so the log of a run that crashed survives the next
-//! launch. Runs without preferences (`VECTORCRAFT_NO_PREFS`) log to standard error only.
+//! launch. Runs without preferences (`REDROB_VECTOR_NO_PREFS`) log to standard error only.
 //!
 //! Levels: `info` for VectorCraft's own crates, `warn` for everything else (wgpu and naga are
 //! chatty). `RUST_LOG` replaces that with env_logger-style directives: `debug`,

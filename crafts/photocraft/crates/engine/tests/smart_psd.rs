@@ -2,7 +2,7 @@
 //! layer comes back as a live smart object (not pixels) with the same nested document (embedded
 //! in `lnk2` as a PSB), transform, filter list and filter mask, and re-renders like before.
 //!
-//! Set `PHOTOCRAFT_SMART_PSD_OUT=<dir>` to keep the exported files (for opening in Photoshop).
+//! Set `REDROB_PHOTO_SMART_PSD_OUT=<dir>` to keep the exported files (for opening in Photoshop).
 
 use redrob_photo_doc::{Document, LayerContent, SmartObject, SmartSource};
 use redrob_photo_engine::Session;
@@ -70,7 +70,7 @@ fn structure_errors(bytes: &[u8]) -> Vec<String> {
 }
 
 fn keep(name: &str, bytes: &[u8]) {
-    if let Ok(dir) = std::env::var("PHOTOCRAFT_SMART_PSD_OUT") {
+    if let Ok(dir) = std::env::var("REDROB_PHOTO_SMART_PSD_OUT") {
         std::fs::write(std::path::Path::new(&dir).join(name), bytes).unwrap();
     }
 }
@@ -91,8 +91,8 @@ fn smart_objects_and_filters_survive_psd() {
         s.execute("edit.transform", json!({"layer": id, "matrix": [0.75, 0, 0, 0.75, 10, 4]})).unwrap();
         let doc = s.active().unwrap().doc.clone();
         let (_, before) = smart(&doc);
-        let SmartSource::Embedded { bytes: pcraft, .. } = &before.source else { panic!("embedded") };
-        let nested = decode_source("x.pcraft", pcraft).unwrap();
+        let SmartSource::Embedded { bytes: rphoto, .. } = &before.source else { panic!("embedded") };
+        let nested = decode_source("x.rphoto", rphoto).unwrap();
 
         let out = redrob_photo_io::export(&doc, "psd", &Default::default()).unwrap();
         assert!(!out.warnings.iter().any(|w| w.contains("pixels")), "{:?}", out.warnings);
@@ -216,12 +216,12 @@ fn camera_raw_psd_filters_survive_re_editing_native_save_and_undo() {
     }
 }
 
-/// Private, user-supplied files remain outside the repository. Set PHOTOCRAFT_CAMERA_RAW_PSD
-/// to check a Camera Raw fixture and PHOTOCRAFT_SMART_PSD_OUT to retain exports for manual checks.
+/// Private, user-supplied files remain outside the repository. Set REDROB_PHOTO_CAMERA_RAW_PSD
+/// to check a Camera Raw fixture and REDROB_PHOTO_SMART_PSD_OUT to retain exports for manual checks.
 #[test]
 #[ignore = "requires a user-supplied Camera Raw PSD"]
 fn camera_raw_psd_fixture() {
-    let path = std::env::var("PHOTOCRAFT_CAMERA_RAW_PSD").expect("set PHOTOCRAFT_CAMERA_RAW_PSD");
+    let path = std::env::var("REDROB_PHOTO_CAMERA_RAW_PSD").expect("set REDROB_PHOTO_CAMERA_RAW_PSD");
     let bytes = std::fs::read(&path).unwrap();
     let imported = redrob_photo_io::import("fixture.psd", &bytes).unwrap();
     let (_, sm) = smart(&imported.document);
@@ -309,7 +309,7 @@ fn smart_filters_survive_psd_in_every_colour_model() {
     }
 }
 
-/// Writes sample files for checking in Photoshop (`PHOTOCRAFT_SMART_PSD_OUT`): per depth, a
+/// Writes sample files for checking in Photoshop (`REDROB_PHOTO_SMART_PSD_OUT`): per depth, a
 /// plain layer, a smart object without filters, and one with filters.
 #[test]
 #[ignore = "writes files for a manual Photoshop check"]
@@ -406,7 +406,7 @@ fn edited_psd_smart_objects_drop_their_old_file() {
 
 /// A Displace smart filter from a Photoshop mockup PSD carries its displacement map embedded
 /// (`DspD`, stretched over the canvas): it re-renders displaced instead of passing the pixels
-/// through, and keeps that map through PSD export, `.pcraft` and a PSD re-import.
+/// through, and keeps that map through PSD export, `.rphoto` and a PSD re-import.
 #[test]
 fn displace_psd_filter_renders_with_its_embedded_map() {
     use redrob_photo_psd::descriptor::{Descriptor, Id, UnicodeString, Value};
@@ -518,8 +518,8 @@ fn cs2_plld_only_smart_object_opens_its_contents() {
     s.execute("edit.transform", json!({"layer": id, "matrix": [0.75, 0, 0, 0.75, 10, 4]})).unwrap();
     let doc = s.active().unwrap().doc.clone();
     let (_, before) = smart(&doc);
-    let SmartSource::Embedded { bytes: pcraft, .. } = &before.source else { panic!("embedded") };
-    let nested = decode_source("x.pcraft", pcraft).unwrap();
+    let SmartSource::Embedded { bytes: rphoto, .. } = &before.source else { panic!("embedded") };
+    let nested = decode_source("x.rphoto", rphoto).unwrap();
 
     let back = redrob_photo_io::import("cs2.psd", &cs2_layout(&doc)).unwrap().document;
     let (bid, after) = smart(&back);

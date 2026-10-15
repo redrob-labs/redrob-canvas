@@ -1,8 +1,8 @@
 //! Window chrome: application bar (with menus), Control panel, document tabs, status bar, start screen.
 
+use egui::{Color32, Sense, Stroke, vec2};
 use redrob_layout_doc::{Align, Content};
 use redrob_layout_geom::Unit;
-use egui::{Color32, Sense, Stroke, vec2};
 use serde_json::json;
 
 use crate::panels::{self, SelInfo};
@@ -814,7 +814,11 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
                     ui.painter().text(
                         egui::pos2(cr.center().x, cr.max.y - 11.0),
                         egui::Align2::CENTER_CENTER,
-                        format!("{} × {}", redrob_layout_geom::format_measure(p.width, p.units), redrob_layout_geom::format_measure(p.height, p.units)),
+                        format!(
+                            "{} × {}",
+                            redrob_layout_geom::format_measure(p.width, p.units),
+                            redrob_layout_geom::format_measure(p.height, p.units)
+                        ),
                         egui::FontId::proportional(10.0),
                         t.text_dim,
                     );

@@ -7,10 +7,10 @@
 //! corner, of which each page shows one tile.
 
 use kurbo::{Affine, Rect};
-use serde::Serialize;
 use redrob_vector_doc::marks::outset;
 use redrob_vector_doc::range::parse_range;
 use redrob_vector_doc::{Document, Node, NodeKind, SymbolBoxes};
+use serde::Serialize;
 
 use super::{Emulsion, Orientation, PrintArtboards, PrintScaling, PrintSettings};
 use crate::PdfError;

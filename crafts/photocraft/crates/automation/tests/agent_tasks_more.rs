@@ -141,9 +141,9 @@ async fn agent_completes_six_rounding_out_tasks() {
     // 34. A native save round trip preserves a styled type layer.
     tool(&c, "doc_new", json!({"width": 160, "height": 80, "background": "white"})).await;
     run(&c, "type.create", json!({"x": 16, "y": 48, "text": "Round", "size": 24, "color": "#3366cc"})).await;
-    tool(&c, "doc_save", json!({"path": "type.pcraft"})).await;
+    tool(&c, "doc_save", json!({"path": "type.rphoto"})).await;
     tool(&c, "doc_close", json!({})).await;
-    tool(&c, "doc_open", json!({"path": "type.pcraft"})).await;
+    tool(&c, "doc_open", json!({"path": "type.rphoto"})).await;
     let doc = inspect(&c).await;
     assert_eq!(top_layer(&doc)["kind"], "Type", "task 34: {doc}");
     assert_eq!(top_layer(&doc)["text"]["text"], "Round", "task 34: {doc}");

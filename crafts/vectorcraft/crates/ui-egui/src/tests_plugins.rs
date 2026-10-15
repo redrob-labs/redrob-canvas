@@ -2,15 +2,15 @@
 //! filter dialog with its live preview, plug-in effects in the effect dialog, and installing
 //! `.wasm` files through File › Open.
 
-use serde_json::{Value, json};
 use redrob_vector_engine::Session;
 use redrob_vector_plugins::wat as tpl;
+use serde_json::{Value, json};
 
 use crate::state::Dialog;
 use crate::{VectorcraftApp, dialogs, io, menus, theme};
 
 const DESATURATE: &[u8] = include_bytes!("../../plugins/tests/fixtures/desaturate.wasm");
-const DESATURATE_ID: &str = "org.vectorcraft.example.desaturate";
+const DESATURATE_ID: &str = "org.rvector.example.desaturate";
 
 fn app() -> VectorcraftApp {
     let mut app = VectorcraftApp::new(Session::new(), Default::default());

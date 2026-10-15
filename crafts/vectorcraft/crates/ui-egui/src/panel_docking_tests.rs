@@ -136,7 +136,7 @@ fn legacy_float_group_aliases_use_atomic_shared_groups_and_preserve_tools() {
 /// Explicit offscreen evidence; this creates no native windows.
 #[test]
 fn capture_custom_panel_docking_visual_fixtures() {
-    let Some(directory) = std::env::var_os("CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from) else { return };
+    let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from) else { return };
     std::fs::create_dir_all(&directory).unwrap();
     for theme in crate::theme::Brightness::ALL {
         for width in [800.0, 1280.0] {
@@ -251,7 +251,7 @@ fn populated_canvas_keeps_a_real_stroke_edit_after_floating_and_redocking() {
     app.run("paint.setFill", json!({"color":"#5297bb"})).unwrap();
     app.run("stroke.set", json!({"weight":8})).unwrap();
     app.run("window.panel.float", json!({"panel":"stroke","x":40,"y":140,"width":310,"height":490})).unwrap();
-    let directory = std::env::var_os("CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from);
+    let directory = std::env::var_os("REDROB_CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from);
     let builder = Harness::builder().with_size(vec2(1280.0, 800.0));
     let builder = if directory.is_some() { builder.wgpu() } else { builder };
     let mut h = builder.build_ui_state(
@@ -465,7 +465,7 @@ fn native_set_close_pointer_restores_shared_split_ownership() {
     app.run("window.panel.float", json!({"panel":"stroke","x":70,"y":90})).unwrap();
     app.run("window.panel.float", json!({"panel":"color","below":"stroke"})).unwrap();
     let mut h = harness(app, vec2(1280.0, 900.0));
-    if let Some(directory) = std::env::var_os("CRAFT_UI_DOCKING_SNAPSHOT_DIR") {
+    if let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_DOCKING_SNAPSHOT_DIR") {
         let directory = std::path::PathBuf::from(directory);
         std::fs::create_dir_all(&directory).unwrap();
         h.render().unwrap().save(directory.join("vectorcraft-native-set-shared-split.png")).unwrap();

@@ -6,10 +6,10 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver, channel};
 
-use redrob_layout_ui_egui::DesignApp;
-use redrob_layout_ui_egui::menus::{self, Item};
 use muda::accelerator::Accelerator;
 use muda::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
+use redrob_layout_ui_egui::DesignApp;
+use redrob_layout_ui_egui::menus::{self, Item};
 use serde_json::Value;
 
 enum Handle {

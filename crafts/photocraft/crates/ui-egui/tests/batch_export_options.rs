@@ -35,7 +35,7 @@ fn open(h: &mut Harness, command: &str) {
 }
 
 fn evidence(h: &mut Harness, name: &str) {
-    if let Some(dir) = std::env::var_os("PHOTOCRAFT_BATCH_EVIDENCE_DIR") {
+    if let Some(dir) = std::env::var_os("REDROB_PHOTO_BATCH_EVIDENCE_DIR") {
         std::fs::create_dir_all(&dir).unwrap();
         h.render().expect("offscreen UI render").save(Path::new(&dir).join(format!("{name}.png"))).unwrap();
     }

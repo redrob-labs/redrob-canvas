@@ -3,7 +3,7 @@ name = "redrob-vector-format"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "VectorCraft native .vectorcraft format (versioned JSON, embedded images)"
+description = "VectorCraft native .rvector format (versioned JSON, embedded images)"
 
 [lints]
 workspace = true

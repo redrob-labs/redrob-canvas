@@ -1,11 +1,11 @@
 //! Envelope Distort: Reset with Warp / Mesh, Envelope Options, Release, Expand and Object → Expand,
 //! driven through `Session::execute`.
 
-use serde_json::{Value, json};
 use redrob_vector_color::BlendMode;
 use redrob_vector_doc::live::{self, EnvelopeKind, EnvelopeOptions, PreserveShape};
 use redrob_vector_doc::{Knockout, Node, NodeKind, OpacityMask};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -239,7 +239,9 @@ fn enveloped_type_exports_distorted_in_every_format() {
     let d = &s.doc().unwrap().doc;
     let pdf = |at: i64| {
         let o = cmd::fileio::pdf::options("document.export", d, &json!({})).unwrap();
-        undated(&export_pdf(d, &redrob_vector_pdf::PdfOptions { created: Some(at), native: Some(redrob_vector_format::save(d, false)), ..o }).unwrap())
+        undated(
+            &export_pdf(d, &redrob_vector_pdf::PdfOptions { created: Some(at), native: Some(redrob_vector_format::save(d, false)), ..o }).unwrap(),
+        )
     };
     assert_eq!(pdf(0), pdf(1), "a PDF dated a second later differs only in its dates and file ID");
     for format in ["svg", "pdf", "eps", "emf", "dxf"] {
@@ -302,7 +304,7 @@ fn warped_type_in_a_symbol_reopens_unchanged() {
     let before = render(&s);
     let dir = std::env::temp_dir().join(format!("vectorcraft-1738-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let path = dir.join("warped.vectorcraft");
+    let path = dir.join("warped.rvector");
     s.execute("document.save", &json!({"path": path})).unwrap();
     let mut o = Session::new();
     o.execute("document.open", &json!({"path": path})).unwrap();

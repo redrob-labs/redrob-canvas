@@ -278,11 +278,11 @@ pub(crate) fn craft_font_name(f: &redrob_vector_text::CraftFont) -> String {
     format!("craft-fonts {} {}", f.family, f.style)
 }
 
-/// The Japanese craft-fonts faces (when built with `CRAFT_FONTS_DIR`) as fallbacks at the end of
+/// The Japanese craft-fonts faces (when built with `REDROB_CRAFT_FONTS_DIR`) as fallbacks at the end of
 /// every family, after the app's own fonts and before the installed fonts `ui_fonts` adds: BIZ
 /// UDPGothic first (bold first in the semibold family), then the Mincho faces.
 fn add_craft_fonts(fonts: &mut FontDefinitions) {
-    for f in redrob_vector_text::CRAFT_FONTS.iter().filter(|f| f.is_japanese()) {
+    for f in redrob_vector_text::REDROB_CRAFT_FONTS.iter().filter(|f| f.is_japanese()) {
         fonts.font_data.insert(craft_font_name(f), Arc::new(FontData::from_static(f.bytes)));
     }
     for (family, stack) in fonts.families.iter_mut() {
@@ -310,11 +310,8 @@ pub fn apply(ctx: &egui::Context, b: Brightness) {
     v.popup_shadow = egui::epaint::Shadow { offset: [0, 4], blur: 14, spread: 0, color: Color32::from_black_alpha(if t.dark { 120 } else { 60 }) };
     v.window_shadow = egui::epaint::Shadow { offset: [0, 8], blur: 28, spread: 0, color: Color32::from_black_alpha(if t.dark { 140 } else { 70 }) };
     let w = &mut v.widgets;
-    redrob_craft_ui::theme::WidgetPalette { noninteractive: t.panel, inactive: t.button, hovered: t.hover, active: t.tool_active, open: t.hover }.apply_to(
-        w,
-        t.cr(),
-        Stroke::new(1.0, t.text),
-    );
+    redrob_craft_ui::theme::WidgetPalette { noninteractive: t.panel, inactive: t.button, hovered: t.hover, active: t.tool_active, open: t.hover }
+        .apply_to(w, t.cr(), Stroke::new(1.0, t.text));
     w.noninteractive.bg_stroke = Stroke::new(1.0, t.divider);
     w.inactive.bg_stroke = Stroke::NONE;
     w.hovered.bg_stroke = Stroke::new(1.0, t.input_border);

@@ -347,7 +347,7 @@ fn tile_le(t: &Tile, sample: SampleType) -> std::borrow::Cow<'_, [u8]> {
 /// objects re-read per directory save.
 pub const DEFAULT_REVERIFY_BUDGET: u64 = 16 * 1024 * 1024;
 
-/// Incremental `.pcraft` writer. Keep one per open document: it remembers
+/// Incremental `.rphoto` writer. Keep one per open document: it remembers
 /// tile hashes (by `Arc` identity), compressed objects, and objects it has
 /// verified in the current directory, so repeated saves stay cheap.
 ///
@@ -948,8 +948,8 @@ fn gc_pinned_directory_handles_resist_subdirectory_swap() {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     static NEXT: AtomicU64 = AtomicU64::new(0);
-    let root = std::env::temp_dir().join(format!("pcraft-gc-swap-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
-    let bundle = root.join("project.pcraft");
+    let root = std::env::temp_dir().join(format!("rphoto-gc-swap-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+    let bundle = root.join("project.rphoto");
     let outside = root.join("outside");
     for sub in ["tiles", "blobs", "composite"] {
         std::fs::create_dir_all(bundle.join(sub)).unwrap();

@@ -95,7 +95,7 @@ fn surviving_duplicate_receives_edits_after_originating_layer_is_deleted() {
 
 #[test]
 fn shared_and_independent_contents_survive_native_psd_and_psb() {
-    for format in ["pcraft", "psd", "psb"] {
+    for format in ["rphoto", "psd", "psb"] {
         let (mut s, original, duplicate) = session(16);
         let independent = s.execute("layer.smartObjects.newSmartObjectViaCopy", json!({"layer": original})).unwrap()["layer"].as_u64().unwrap();
         s.edit("name", |doc, _| {
@@ -107,7 +107,7 @@ fn shared_and_independent_contents_survive_native_psd_and_psb() {
         .unwrap();
         // Initially byte-identical independent copies must not be merged by blob deduplication.
         let doc = &s.active().unwrap().doc;
-        let back = if format == "pcraft" {
+        let back = if format == "rphoto" {
             let bytes = redrob_photo_format::save_to_bytes(doc, &Default::default()).unwrap();
             redrob_photo_format::load_from_bytes(&bytes).unwrap()
         } else {
@@ -178,7 +178,7 @@ fn replacing_shared_contents_does_not_reuse_or_commit_a_stale_editor() {
     let (mut s, original, duplicate) = session(16);
     let child = s.execute("layer.smartObjects.editContents", json!({"layer": original})).unwrap()["document"].as_u64().unwrap() as usize;
     paint(&mut s, [0.0, 1.0, 0.0, 1.0]);
-    let path = std::env::temp_dir().join(format!("photocraft-shared-contents-{}-{original}.pcraft", std::process::id()));
+    let path = std::env::temp_dir().join(format!("photocraft-shared-contents-{}-{original}.rphoto", std::process::id()));
     std::fs::write(&path, redrob_photo_format::save_to_bytes(&s.active().unwrap().doc, &Default::default()).unwrap()).unwrap();
     paint(&mut s, [1.0, 0.0, 0.0, 1.0]);
     s.set_active(0);
@@ -196,13 +196,13 @@ fn replacing_shared_contents_does_not_reuse_or_commit_a_stale_editor() {
     assert_eq!(redrob_photo_compose::flatten(&s.active().unwrap().doc).px[0], [0.0, 1.0, 0.0, 1.0]);
 }
 
-/// A `.pcraft` file whose contents are one solid colour, for Replace Contents.
+/// A `.rphoto` file whose contents are one solid colour, for Replace Contents.
 fn contents_file(rgba: [f32; 4], tag: &str) -> std::path::PathBuf {
     let mut s = Session::new();
     s.execute("file.new", json!({"width": 8, "height": 6})).unwrap();
     s.execute("layer.new.layer", json!({})).unwrap();
     paint(&mut s, rgba);
-    let path = std::env::temp_dir().join(format!("photocraft-{tag}-{}.pcraft", std::process::id()));
+    let path = std::env::temp_dir().join(format!("photocraft-{tag}-{}.rphoto", std::process::id()));
     std::fs::write(&path, redrob_photo_format::save_to_bytes(&s.active().unwrap().doc, &Default::default()).unwrap()).unwrap();
     path
 }

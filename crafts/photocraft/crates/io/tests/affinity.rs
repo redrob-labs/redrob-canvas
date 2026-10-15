@@ -2,9 +2,9 @@
 //! embedded preview only as a warned fallback that keeps its pixels and alpha; never written back.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+use proptest::prelude::*;
 use redrob_photo_codecs::{ChannelLayout, EncodeOptions, Format, Image, SampleType};
 use redrob_photo_io::{ExportOptions, export, import};
-use proptest::prelude::*;
 use std::io::Write as _;
 
 fn png() -> Vec<u8> {
@@ -53,8 +53,8 @@ fn preview_is_named_and_warns_at_its_actual_size() {
     let out = export(&r.document, "copy.png", &ExportOptions::default()).unwrap();
     let img = redrob_photo_codecs::decode(&out.bytes).unwrap();
     assert_eq!(img.data(), &[220, 40, 60, 255, 0, 0, 0, 0]);
-    let native = export(&r.document, "copy.pcraft", &ExportOptions::default()).unwrap();
-    let back = import("copy.pcraft", &native.bytes).unwrap();
+    let native = export(&r.document, "copy.rphoto", &ExportOptions::default()).unwrap();
+    let back = import("copy.rphoto", &native.bytes).unwrap();
     assert_eq!(back.document.size, r.document.size);
     assert!(!back.source_read_only && !back.preview_only);
     for ext in redrob_photo_io::affinity::EXTENSIONS {
@@ -302,8 +302,8 @@ mod native {
             assert_eq!(px(30, 20), [255, 0, 0, 255]);
             assert_eq!(px(50, 40)[3], 0, "even-odd hole");
             // Saved as a native Redrob Canvas document and opened again.
-            let saved = export(d, "copy.pcraft", &ExportOptions::default()).unwrap();
-            let back = import("copy.pcraft", &saved.bytes).unwrap();
+            let saved = export(d, "copy.rphoto", &ExportOptions::default()).unwrap();
+            let back = import("copy.rphoto", &saved.bytes).unwrap();
             assert_eq!(back.document.layers.len(), d.layers.len());
             assert!(export(d, "copy.psd", &ExportOptions::default()).is_ok());
             assert!(export(d, "copy.af", &ExportOptions::default()).is_err());

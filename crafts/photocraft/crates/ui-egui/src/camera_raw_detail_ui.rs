@@ -455,8 +455,12 @@ mod tests {
                 let dark = preview.sample([0.0, 0.0], 1, false, &params).unwrap();
                 let light = preview.sample([1.0 / 40.0, 0.0], 1, false, &params).unwrap();
                 assert!(light[0] - dark[0] > 0.5, "native alternating pixels survive: {mode:?}/{depth:?}");
-                let mut doc =
-                    redrob_photo_doc::Document::new("test", redrob_photo_geom::Size::new(40, 30), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::U8);
+                let mut doc = redrob_photo_doc::Document::new(
+                    "test",
+                    redrob_photo_geom::Size::new(40, 30),
+                    redrob_photo_doc::ColorMode::Rgb,
+                    redrob_photo_doc::SampleType::U8,
+                );
                 doc.icc_profile = Some(redrob_photo_cms::Builtin::Srgb.profile().to_bytes());
                 let display = redrob_photo_engine::color_cmds::ColorState::default().canvas_display(&doc).unwrap();
                 assert_eq!(crop_image(&expected, PixelRect::new(-12, 8, -10, 9), &display).size, [2, 1]);
@@ -469,10 +473,14 @@ mod tests {
     #[test]
     fn refined_crop_uses_linear_document_display_encoding() {
         let area = PixelRect::new(0, 0, 1, 1);
-        let mut source =
-            Surface::new(redrob_photo_color::PixelFormat { mode: redrob_photo_color::ColorMode::Rgb, sample: redrob_photo_color::SampleType::F32, alpha: true });
+        let mut source = Surface::new(redrob_photo_color::PixelFormat {
+            mode: redrob_photo_color::ColorMode::Rgb,
+            sample: redrob_photo_color::SampleType::F32,
+            alpha: true,
+        });
         source.write_region(area, &[0.25, 0.25, 0.25, 1.0]);
-        let mut doc = redrob_photo_doc::Document::new("test", redrob_photo_geom::Size::new(1, 1), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::F32);
+        let mut doc =
+            redrob_photo_doc::Document::new("test", redrob_photo_geom::Size::new(1, 1), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::F32);
         doc.icc_profile = Some(redrob_photo_cms::Builtin::LinearSrgb.profile().to_bytes());
         let mut color = redrob_photo_engine::color_cmds::ColorState::default();
         color.settings.monitor_profile = "srgb".into();
@@ -512,8 +520,12 @@ mod tests {
         let px: Vec<f32> = (0..n).flat_map(|i| [(i % 251) as f32 / 255.0, (i % 241) as f32 / 255.0, (i % 239) as f32 / 255.0, (i % 7) as f32 / 6.0]).collect();
         source.write_region(area, &px);
         for profile in [redrob_photo_cms::Builtin::AdobeRgbCompat, redrob_photo_cms::Builtin::Srgb] {
-            let mut doc =
-                redrob_photo_doc::Document::new("test", redrob_photo_geom::Size::new(1024, 1024), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::U8);
+            let mut doc = redrob_photo_doc::Document::new(
+                "test",
+                redrob_photo_geom::Size::new(1024, 1024),
+                redrob_photo_doc::ColorMode::Rgb,
+                redrob_photo_doc::SampleType::U8,
+            );
             doc.icc_profile = Some(profile.profile().to_bytes());
             let mut color = redrob_photo_engine::color_cmds::ColorState::default();
             color.settings.monitor_profile = "srgb".into();

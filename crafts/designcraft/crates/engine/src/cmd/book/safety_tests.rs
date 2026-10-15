@@ -5,9 +5,9 @@ use serde_json::json;
 #[test]
 fn a_commit_failure_reports_the_completed_prefix_and_cleans_staging() {
     let dir = tempfile::tempdir().unwrap();
-    let first = dir.path().join("first.designcraft");
-    let second = dir.path().join("second.designcraft");
-    let third = dir.path().join("third.designcraft");
+    let first = dir.path().join("first.rlayout");
+    let second = dir.path().join("second.rlayout");
+    let third = dir.path().join("third.rlayout");
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let old = (*s.doc().unwrap().doc).clone();

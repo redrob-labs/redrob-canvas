@@ -3,10 +3,10 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Paint, Swatch};
 use redrob_vector_doc::{GraphicStyle, Node, NodeId, PatternDef};
 use redrob_vector_geom::{Point, Rect, shapes};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -207,7 +207,7 @@ fn user_libraries_and_other_documents_styles() {
     let id = rect(&mut s, 0.0, 0.0, 10.0, 10.0);
     run(&mut s, "graphicStyle.new", json!({"name": "Poster Look", "id": id.0}));
     let b64 = run(&mut s, "document.serialize", json!({}))["dataBase64"].as_str().unwrap().to_string();
-    let r = run(&mut s, "graphicStyle.loadLibrary", json!({"dataBase64": b64, "name": "Poster.vectorcraft"}));
+    let r = run(&mut s, "graphicStyle.loadLibrary", json!({"dataBase64": b64, "name": "Poster.rvector"}));
     assert_eq!(r["name"], "Poster");
     let (_, lib) = cmd::stylelib::library(&s, r["library"].as_str().unwrap()).unwrap();
     assert!(lib.style("Poster Look").is_some_and(|g: &GraphicStyle| g.id == 0));

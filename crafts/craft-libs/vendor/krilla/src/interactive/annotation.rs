@@ -36,12 +36,7 @@ impl Annotation {
     /// Note that the alt text might be required in some cases, for example
     /// when exporting to PDF/UA.
     pub fn new_link(annotation: LinkAnnotation, alt_text: Option<String>) -> Self {
-        Self {
-            annotation_type: AnnotationType::Link(annotation),
-            alt: alt_text,
-            struct_parent: None,
-            location: None,
-        }
+        Self { annotation_type: AnnotationType::Link(annotation), alt: alt_text, struct_parent: None, location: None }
     }
 
     /// Sets the location of the annotation.
@@ -53,12 +48,7 @@ impl Annotation {
 
 impl From<LinkAnnotation> for Annotation {
     fn from(value: LinkAnnotation) -> Self {
-        Self {
-            annotation_type: AnnotationType::Link(value),
-            alt: None,
-            struct_parent: None,
-            location: None,
-        }
+        Self { annotation_type: AnnotationType::Link(value), alt: None, struct_parent: None, location: None }
     }
 }
 
@@ -71,12 +61,9 @@ impl Annotation {
         page_height: f32,
     ) -> KrillaResult<()> {
         let chunk = &mut chunk_container.non_stream.annotations;
-        let mut annotation = chunk
-            .indirect(root_ref)
-            .start::<pdf_writer::writers::Annotation>();
+        let mut annotation = chunk.indirect(root_ref).start::<pdf_writer::writers::Annotation>();
 
-        self.annotation_type
-            .serialize_type(sc, &mut annotation, page_height)?;
+        self.annotation_type.serialize_type(sc, &mut annotation, page_height)?;
 
         let AnnotationType::Link(l) = &self.annotation_type;
         // Only set the print flag when really necessary (only PDF/A). Don't
@@ -84,13 +71,7 @@ impl Annotation {
         // on a screen but not printed.
         // TODO: No need to write the print flag even if it is `None`,
         // only for PDF/A.
-        if l.border.is_none()
-            || sc
-                .serialize_settings()
-                .configuration
-                .validators()
-                .requires_annotation_flags()
-        {
+        if l.border.is_none() || sc.serialize_settings().configuration.validators().requires_annotation_flags() {
             annotation.flags(AnnotationFlags::PRINT);
         }
 
@@ -119,12 +100,7 @@ pub enum AnnotationType {
 }
 
 impl AnnotationType {
-    fn serialize_type(
-        &self,
-        sc: &mut SerializeContext,
-        annotation: &mut pdf_writer::writers::Annotation,
-        page_height: f32,
-    ) -> KrillaResult<()> {
+    fn serialize_type(&self, sc: &mut SerializeContext, annotation: &mut pdf_writer::writers::Annotation, page_height: f32) -> KrillaResult<()> {
         match self {
             AnnotationType::Link(l) => l.serialize_type(sc, annotation, page_height),
         }
@@ -169,12 +145,7 @@ impl LinkAnnotation {
     /// `rect`: The bounding box of the link annotation that it should cover on the page.
     /// `target`: The target of the link annotation.
     pub fn new(rect: Rect, target: Target) -> Self {
-        Self {
-            rect,
-            quad_points: None,
-            target,
-            border: None,
-        }
+        Self { rect, quad_points: None, target, border: None }
     }
 
     /// Create a new link annotation.
@@ -202,50 +173,23 @@ impl LinkAnnotation {
         // that sometimes prevents the quadpoints from being used if the quad
         // points lie exactly on the bounding rectangle.
         const EPSILON: f32 = 0.001;
-        let rect = Rect::from_ltrb(
-            min_x - EPSILON,
-            min_y - EPSILON,
-            max_x + EPSILON,
-            max_y + EPSILON,
-        )
-        .unwrap();
+        let rect = Rect::from_ltrb(min_x - EPSILON, min_y - EPSILON, max_x + EPSILON, max_y + EPSILON).unwrap();
 
-        Self {
-            rect,
-            quad_points: Some(quad_points),
-            target,
-            border: None,
-        }
+        Self { rect, quad_points: Some(quad_points), target, border: None }
     }
 
     /// Set a border for this link annotation. The border will be visible on
     /// screen but not when printed, unless when exporting with PDF/A standard.
     pub fn with_border(self, border: LinkBorder) -> Self {
-        Self {
-            border: Some(border),
-            ..self
-        }
+        Self { border: Some(border), ..self }
     }
 
-    fn serialize_type(
-        &self,
-        sc: &mut SerializeContext,
-        annotation: &mut pdf_writer::writers::Annotation,
-        page_height: f32,
-    ) -> KrillaResult<()> {
+    fn serialize_type(&self, sc: &mut SerializeContext, annotation: &mut pdf_writer::writers::Annotation, page_height: f32) -> KrillaResult<()> {
         annotation.subtype(pdf_writer::types::AnnotationType::Link);
 
-        let actual_rect = self
-            .rect
-            .transform(page_root_transform(page_height))
-            .unwrap();
+        let actual_rect = self.rect.transform(page_root_transform(page_height)).unwrap();
         annotation.rect(actual_rect.to_pdf_rect());
-        annotation.border(
-            0.0,
-            0.0,
-            self.border.as_ref().map_or(0.0, |x| x.width),
-            None,
-        );
+        annotation.border(0.0, 0.0, self.border.as_ref().map_or(0.0, |x| x.width), None);
 
         if let Some(border) = &self.border {
             match border.color.to_regular() {
@@ -274,9 +218,7 @@ impl LinkAnnotation {
         }
 
         match &self.target {
-            Target::Destination(destination) => {
-                destination.serialize(sc, annotation.insert(Name(b"Dest")))
-            }
+            Target::Destination(destination) => destination.serialize(sc, annotation.insert(Name(b"Dest"))),
             Target::Action(action) => action.serialize(sc, annotation.action()),
         }
     }

@@ -226,7 +226,7 @@ fn slices_round_trip_through_psd_and_pcraft() {
     s.execute("layer.newLayerBasedSlice", json!({})).unwrap();
     s.execute("slice.new", json!({"rect": [5, 5, 30, 20], "name": "hero", "url": "https://example.org", "alt": "Hero", "target": "_blank"})).unwrap();
     let d = doc(&s).clone();
-    for ext in ["psd", "pcraft"] {
+    for ext in ["psd", "rphoto"] {
         let bytes = redrob_photo_io::export(&d, &format!("x.{ext}"), &Default::default()).unwrap().bytes;
         let back = redrob_photo_io::import(&format!("x.{ext}"), &bytes).unwrap().document;
         assert_eq!(back.slices.list.len(), 2, "{ext}");

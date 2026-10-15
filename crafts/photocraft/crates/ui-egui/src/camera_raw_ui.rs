@@ -1328,7 +1328,8 @@ mod tests {
 
     #[test]
     fn preview_texture_uses_linear_document_display_encoding() {
-        let mut doc = redrob_photo_doc::Document::new("test", redrob_photo_geom::Size::new(1, 1), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::F32);
+        let mut doc =
+            redrob_photo_doc::Document::new("test", redrob_photo_geom::Size::new(1, 1), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::F32);
         doc.icc_profile = Some(redrob_photo_cms::Builtin::LinearSrgb.profile().to_bytes());
         let mut color = redrob_photo_engine::color_cmds::ColorState::default();
         color.settings.monitor_profile = "srgb".into();

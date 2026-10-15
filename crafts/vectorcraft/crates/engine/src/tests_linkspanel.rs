@@ -1,8 +1,8 @@
 //! The Links panel's commands: listing images with their status (`links.list`), Go To, Embed and
 //! Unembed, Link Info and the Placement Options a relinked file follows.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeKind, PlacementOptions};
+use serde_json::{Value, json};
 
 use super::tests_links::{BLUE, Folder, RED, bounds, centre_colour, image, near, open, place, png, save, session, write};
 use super::*;
@@ -74,7 +74,7 @@ fn embed_keeps_the_pixels_without_the_file() {
     assert!(image(&s, id).link.is_some(), "one undo step");
     run(&mut s, "edit.redo", json!({}));
     // Saved and reopened without the file: the full pixels, nothing missing.
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     std::fs::remove_file(&pic).unwrap();
     let r = open(&mut s, &doc_path);
@@ -91,7 +91,7 @@ fn a_missing_file_showing_its_preview_stays_linked() {
     write(&pic, &png(600, 300, RED));
     let mut s = session();
     let id = place(&mut s, &pic);
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     std::fs::remove_file(&pic).unwrap();
     open(&mut s, &doc_path);
@@ -277,7 +277,7 @@ fn placement_options_read_set_and_round_trip() {
     assert!(s.execute("links.placementOptions", &json!({"preserve": "stretch"})).is_err());
     assert!(s.execute("links.placementOptions", &json!({"align": "middle"})).is_err());
     // Saved and opened again.
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     let saved: Value = serde_json::from_slice(&std::fs::read(&doc_path).unwrap()).unwrap();
     assert_eq!(

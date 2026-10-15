@@ -280,8 +280,8 @@ impl ColorState {
                 // 32-bit linear images (EXR/HDR are tagged linear sRGB or linear gray on import)
                 // stay linear, as Photoshop keeps 32-bit documents in a linear version of the
                 // working space.
-                let linear_hdr =
-                    doc.depth == SampleType::F32 && (emb.same_colors(Builtin::LinearSrgb.profile()) || emb.same_colors(redrob_photo_cms::builtin::linear_gray()));
+                let linear_hdr = doc.depth == SampleType::F32
+                    && (emb.same_colors(Builtin::LinearSrgb.profile()) || emb.same_colors(redrob_photo_cms::builtin::linear_gray()));
                 if !mismatch || linear_hdr {
                     return merge(base, json!({"action": "kept"}));
                 }
@@ -329,8 +329,8 @@ impl ColorState {
         let embedded = doc.icc_profile.as_ref().and_then(|b| profile_from_bytes(b).ok()).filter(|p| p.color_space == space);
         match embedded {
             Some(emb) => {
-                let linear_hdr =
-                    doc.depth == SampleType::F32 && (emb.same_colors(Builtin::LinearSrgb.profile()) || emb.same_colors(redrob_photo_cms::builtin::linear_gray()));
+                let linear_hdr = doc.depth == SampleType::F32
+                    && (emb.same_colors(Builtin::LinearSrgb.profile()) || emb.same_colors(redrob_photo_cms::builtin::linear_gray()));
                 if !self.settings.ask_on_mismatch || emb.same_colors(&working) || linear_hdr {
                     return None;
                 }

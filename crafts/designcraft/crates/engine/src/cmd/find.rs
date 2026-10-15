@@ -775,7 +775,7 @@ mod tests {
             s.execute("edit.redo", &json!({})).unwrap();
             assert_eq!(s.doc().unwrap().doc.story(sid).unwrap(), &changed);
             let native = s.execute("file.serialize", &json!({})).unwrap();
-            s.execute("file.openBytes", &json!({"name": "scope.designcraft", "base64": native["base64"]})).unwrap();
+            s.execute("file.openBytes", &json!({"name": "scope.rlayout", "base64": native["base64"]})).unwrap();
             assert_eq!(serde_json::to_value(s.doc().unwrap().doc.story(sid).unwrap()).unwrap(), serde_json::to_value(&changed).unwrap());
             assert!(s.find_context.is_none());
         }
@@ -1101,7 +1101,7 @@ mod tests {
     #[test]
     fn find_scope_revert_releases_context_with_same_document_uid() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("scope.designcraft");
+        let path = dir.path().join("scope.rlayout");
         let (mut s, sid) = scope_session("red red | red");
         s.execute("file.save", &json!({"path": path.to_string_lossy()})).unwrap();
         scope_select(&mut s, sid, 0, 7);

@@ -555,19 +555,20 @@ fn printer_page(_: &mut Session, p: &Value) -> Result<Value> {
 static PRINTING_DISABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Refuse to spool anything from this process from now on (tests, fuzzing). The
-/// `PHOTOCRAFT_NO_PRINT` environment variable does the same for a whole shell (CI).
+/// `REDROB_PHOTO_NO_PRINT` environment variable does the same for a whole shell (CI).
 pub fn disable_printing() {
     PRINTING_DISABLED.store(true, std::sync::atomic::Ordering::Relaxed);
 }
 
-/// Whether spooling is blocked by [`disable_printing`] or `PHOTOCRAFT_NO_PRINT`.
+/// Whether spooling is blocked by [`disable_printing`] or `REDROB_PHOTO_NO_PRINT`.
 pub fn printing_disabled() -> bool {
-    PRINTING_DISABLED.load(std::sync::atomic::Ordering::Relaxed) || std::env::var_os("PHOTOCRAFT_NO_PRINT").is_some_and(|v| !v.is_empty() && v != "0")
+    PRINTING_DISABLED.load(std::sync::atomic::Ordering::Relaxed)
+        || std::env::var_os("REDROB_PHOTO_NO_PRINT").or_else(|| std::env::var_os("PHOTOCRAFT_NO_PRINT")).is_some_and(|v| !v.is_empty() && v != "0") // legacy: the upstream variable is read when ours is unset
 }
 
 fn require_printing_enabled() -> Result<()> {
     if printing_disabled() {
-        Err(other("printing is disabled in this process (redrob_photo_engine::print_cmds::disable_printing or PHOTOCRAFT_NO_PRINT); use dryRun: true"))
+        Err(other("printing is disabled in this process (redrob_photo_engine::print_cmds::disable_printing or REDROB_PHOTO_NO_PRINT); use dryRun: true"))
     } else {
         Ok(())
     }
@@ -608,9 +609,9 @@ fn package(s: &mut Session, p: &Value) -> Result<Value> {
     // The native format keeps external links; our PSD writer has no `lnkE` (external linked
     // file) support yet, so a PSD package would embed or flatten them.
     let ext = match p.get("format").and_then(Value::as_str) {
-        Some(f @ ("psd" | "psb" | "pcraft")) => f.to_string(),
-        Some(f) => return Err(bad(cmd, format!("unknown package format `{f}` (pcraft|psd|psb)"))),
-        None => "pcraft".into(),
+        Some(f @ ("psd" | "psb" | "rphoto")) => f.to_string(),
+        Some(f) => return Err(bad(cmd, format!("unknown package format `{f}` (rphoto|psd|psb)"))),
+        None => "rphoto".into(),
     };
     let folder = join(dir, &crate::file_cmds::sanitize(&name));
     let links_dir = join(&folder, "Links");
@@ -798,7 +799,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Package…",
             &["File"],
             None,
-            r##"{"dir":folder,"format":"pcraft|psd|psb"="pcraft"} → {folder, document, links, missing} (copies the document and its linked files into <dir>/<name>/, relinked to Links/)"##,
+            r##"{"dir":folder,"format":"rphoto|psd|psb"="rphoto"} → {folder, document, links, missing} (copies the document and its linked files into <dir>/<name>/, relinked to Links/)"##,
             native_doc,
             package
         ),

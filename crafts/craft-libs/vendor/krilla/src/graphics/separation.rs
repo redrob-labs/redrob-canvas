@@ -19,12 +19,7 @@ impl SeparationColorSpace {
 }
 
 impl Cacheable for SeparationColorSpace {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         // Delegate fallback color space registration to existing logic
         let fallback_cs = self.space.fallback.color_space(sc);
         let fallback_cs_resource = sc.register_colorspace(chunk_container, fallback_cs.into());
@@ -36,11 +31,7 @@ impl Cacheable for SeparationColorSpace {
         // Determine C0 based on whether the fallback is subtractive or additive
         // - Additive (RGB, Luma): tint 0.0 = white = [1.0, 1.0, 1.0]
         // - Subtractive (CMYK): tint 0.0 = white = [0.0, 0.0, 0.0, 0.0]
-        let c0_value = if self.space.fallback.is_subtractive() {
-            0.0
-        } else {
-            1.0
-        };
+        let c0_value = if self.space.fallback.is_subtractive() { 0.0 } else { 1.0 };
 
         if let Err(validation_error) = sc.validation_store().validate_separation(&self.space) {
             sc.register_validation_error(validation_error);

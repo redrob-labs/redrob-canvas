@@ -29,7 +29,7 @@ use skrifa::MetadataProvider;
 use skrifa::instance::Size;
 
 /// A font from the optional craft-fonts build input (https://github.com/storytold/craft-fonts;
-/// empty unless built with `CRAFT_FONTS_DIR`, see `build.rs`).
+/// empty unless built with `REDROB_CRAFT_FONTS_DIR`, see `build.rs`).
 pub struct CraftFont {
     pub family: &'static str,
     pub style: &'static str,
@@ -42,7 +42,7 @@ include!(concat!(env!("OUT_DIR"), "/craft_fonts.rs"));
 
 /// The craft-fonts faces for Japanese (`"Jpan"`), in manifest order. Empty without craft-fonts.
 pub fn japanese_fonts() -> impl Iterator<Item = &'static CraftFont> {
-    CRAFT_FONTS.iter().filter(|f| f.scripts.contains(&"Jpan"))
+    REDROB_CRAFT_FONTS.iter().filter(|f| f.scripts.contains(&"Jpan"))
 }
 
 /// Japanese faces in document-fallback order: Mincho (serif) families first, matching the
@@ -523,8 +523,8 @@ mod tests {
 
     #[test]
     fn craft_fonts_japanese_faces_cover_japanese_and_have_vertical_forms() {
-        if CRAFT_FONTS.is_empty() {
-            eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a checkout)");
+        if REDROB_CRAFT_FONTS.is_empty() {
+            eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a checkout)");
             return;
         }
         let fonts = japanese_document_fonts();
@@ -558,12 +558,12 @@ mod tests {
 
     #[test]
     fn works_without_craft_fonts() {
-        // Always true without CRAFT_FONTS_DIR; with it, the bundled fonts must still all load.
+        // Always true without REDROB_CRAFT_FONTS_DIR; with it, the bundled fonts must still all load.
         let db = FontDb::with_font_dirs(Vec::new());
         db.set_system_fallback(false);
         assert_eq!(db.face(DEFAULT_FAMILY, "Regular").family, DEFAULT_FAMILY);
         assert!(!shape(&db.face(DEFAULT_FAMILY, "Regular"), "Hello", &[], |c| c).is_empty());
-        if CRAFT_FONTS.is_empty() {
+        if REDROB_CRAFT_FONTS.is_empty() {
             assert!(japanese_fonts().next().is_none() && japanese_document_fonts().is_empty());
             let latin = db.face(DEFAULT_FAMILY, "Regular");
             for language in [Some("ja"), None] {

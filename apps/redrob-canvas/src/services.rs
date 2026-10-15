@@ -188,17 +188,18 @@ pub mod photo {
 
     /// Everything File › Open reads (upstream `services::OPEN_EXTS`).
     const OPEN_EXTS: &[&str] = &[
-        "pcraft", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif",
+        "rphoto", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif",
         "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr", "pbm", "pgm", "ppm",
         "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin", "heic", "heif",
         "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2", "raf", "abr", "grd",
         "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto", "afpub",
+        "pcraft", // legacy: upstream Photo documents still open
     ];
 
     const SAVE_FILTERS: &[(&str, &[&str])] = &[
         ("PSD Document", &["psd", "psb"]),
         ("PDF", &["pdf"]),
-        ("Redrob Canvas photo document", &["pcraft"]),
+        ("Redrob Canvas photo document", &["rphoto"]),
         ("OpenRaster", &["ora"]),
         ("PNG", &["png"]),
         ("JPEG", &["jpg"]),
@@ -291,7 +292,7 @@ pub mod photo {
                                 .add_filter("All Formats", &open_filter_extensions(OPEN_EXTS))
                                 .add_filter(
                                     "Redrob Canvas photo document",
-                                    &open_filter_extensions(&["pcraft"]),
+                                    &open_filter_extensions(&["rphoto", "pcraft"]), // legacy: old documents still open
                                 )
                                 .add_filter("OpenRaster", &open_filter_extensions(&["ora"]))
                                 .add_filter("SVG", &open_filter_extensions(&["svg", "svgz"])),
@@ -431,7 +432,8 @@ pub mod photo {
             ..recovery_services(recovery_dir())
         };
         // Brush presets load in the background; the app attaches them when they arrive.
-        services.preset_store = presets_dir().map(redrob_photo_engine::preset_store::open_dir_async);
+        services.preset_store =
+            presets_dir().map(redrob_photo_engine::preset_store::open_dir_async);
         services
     }
 }
@@ -645,7 +647,8 @@ pub mod layout {
                         "md",
                         "xlsx",
                         "idml",
-                        "designcraft",
+                        "rlayout",
+                        "designcraft", // legacy: upstream Layout documents still open
                         "mp4",
                         "m4v",
                         "mov",
@@ -675,11 +678,11 @@ pub mod layout {
             _ => &[
                 OpenFilter {
                     name: "Redrob Canvas layout or IDML",
-                    extensions: &["designcraft", "idml"],
+                    extensions: &["rlayout", "designcraft", "idml"], // legacy: old documents still open
                 },
                 OpenFilter {
                     name: "Redrob Canvas layout",
-                    extensions: &["designcraft"],
+                    extensions: &["rlayout", "designcraft"], // legacy: old documents still open
                 },
                 OpenFilter {
                     name: "InDesign Markup (IDML)",
@@ -707,7 +710,8 @@ pub mod layout {
             })),
             read: Some(Box::new(read_bytes)),
             write: Some(Box::new(|p: &str, b: &[u8]| {
-                redrob_layout_engine::atomic::write_atomic(Path::new(p), b).map_err(|e| e.to_string())
+                redrob_layout_engine::atomic::write_atomic(Path::new(p), b)
+                    .map_err(|e| e.to_string())
             })),
             clipboard_text: Some(Box::new(|| {
                 arboard::Clipboard::new()

@@ -9,11 +9,11 @@ use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let n = |key: &str, default| std::env::var(key).ok().and_then(|s| s.parse::<u32>().ok()).unwrap_or(default);
-    let (w, h, reps) = (n("PHOTOCRAFT_UNSHARP_WIDTH", 6000), n("PHOTOCRAFT_UNSHARP_HEIGHT", 4000), n("PHOTOCRAFT_UNSHARP_REPS", 5));
+    let (w, h, reps) = (n("REDROB_PHOTO_UNSHARP_WIDTH", 6000), n("REDROB_PHOTO_UNSHARP_HEIGHT", 4000), n("REDROB_PHOTO_UNSHARP_REPS", 5));
     if w == 0 || h == 0 || w > 8192 || h > 8192 || !(1..=15).contains(&reps) {
         return Err("invalid benchmark dimensions/reps".into());
     }
-    let depth = match n("PHOTOCRAFT_UNSHARP_DEPTH", 8) {
+    let depth = match n("REDROB_PHOTO_UNSHARP_DEPTH", 8) {
         8 => SampleType::U8,
         16 => SampleType::U16,
         32 => SampleType::F32,
@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         s.write_region(Rect::new(0, y, w as i32, y + 1), &data);
     }
     let cmd = "filter.sharpen.unsharpMask";
-    let cases = std::env::var("PHOTOCRAFT_UNSHARP_CASES").unwrap_or_else(|_| "0.6:150:0,3:150:8,10:300:16,30:150:0".into());
+    let cases = std::env::var("REDROB_PHOTO_UNSHARP_CASES").unwrap_or_else(|_| "0.6:150:0,3:150:8,10:300:16,30:150:0".into());
     for case in cases.split(',') {
         let v: Vec<f64> = case.split(':').map(str::parse).collect::<Result<_, _>>()?;
         let (&radius, &amount, &threshold) = (v.first().ok_or("radius")?, v.get(1).ok_or("amount")?, v.get(2).ok_or("threshold")?);
@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             sorted.sort_by(f64::total_cmp);
             println!(
                 "{}",
-                json!({"width":w,"height":h,"depth":n("PHOTOCRAFT_UNSHARP_DEPTH",8),"radius":radius,"amount":amount,"threshold":threshold,"proxy_factor":k,"runs_ms":times,"median_ms":sorted.get(sorted.len()/2),"checksum":checksum,"workers":rayon::current_num_threads(),"scope":"existing preview_document + CPU flatten; excludes GUI and GPU"})
+                json!({"width":w,"height":h,"depth":n("REDROB_PHOTO_UNSHARP_DEPTH",8),"radius":radius,"amount":amount,"threshold":threshold,"proxy_factor":k,"runs_ms":times,"median_ms":sorted.get(sorted.len()/2),"checksum":checksum,"workers":rayon::current_num_threads(),"scope":"existing preview_document + CPU flatten; excludes GUI and GPU"})
             );
         }
     }

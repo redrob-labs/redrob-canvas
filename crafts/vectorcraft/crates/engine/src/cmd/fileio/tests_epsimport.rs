@@ -138,7 +138,8 @@ fn eps_files_place_as_one_group_clipped_to_their_bounding_box() {
     // The interpreter's reading of the same file places too.
     let r = s.execute("file.place", &json!({"name": "other.eps", "dataBase64": redrob_vector_format::base64_encode(&foreign(&eps))})).unwrap();
     assert_eq!(r["ids"].as_array().unwrap().len(), 1, "{r}");
-    let info = s.execute("file.place.info", &json!({"name": "other.eps", "dataBase64": redrob_vector_format::base64_encode(&foreign(&eps))})).unwrap();
+    let info =
+        s.execute("file.place.info", &json!({"name": "other.eps", "dataBase64": redrob_vector_format::base64_encode(&foreign(&eps))})).unwrap();
     assert_eq!(info["format"], "eps");
     // EPS is readable, and listed for the open and place dialogs.
     assert!(format("eps").is_some_and(|f| f.read && f.write));

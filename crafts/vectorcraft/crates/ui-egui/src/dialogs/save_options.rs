@@ -11,8 +11,8 @@
 
 use std::sync::OnceLock;
 
-use serde_json::{Map, Value, json};
 use redrob_vector_engine::cmd::fileio::{self, ArtboardPick, Format, FormatOption, SAVE_FORMATS, SaveMode};
+use serde_json::{Map, Value, json};
 
 use super::{DialogResult, DialogSpec, form};
 use crate::state::Dialog;
@@ -310,7 +310,7 @@ mod tests {
         let pick = &picks.borrow()[0];
         let labels: Vec<&str> = pick.filters.iter().map(|f| f.0).collect();
         assert_eq!(labels, ["Redrob Canvas", "Redrob Canvas Template", "PDF", "SVG", "SVG Compressed", "PDF-compatible .ai"]);
-        assert_eq!(pick.name, "Untitled-1.vectorcraft");
+        assert_eq!(pick.name, "Untitled-1.rvector");
         let d = dialog(&app);
         assert_eq!((d.kind.as_str(), d.str("path").as_str(), d.str("mode").as_str()), ("svgOptions", "art.svg", "save"));
         assert!(written.borrow().is_empty(), "nothing is written before OK");
@@ -337,11 +337,11 @@ mod tests {
 
     #[test]
     fn save_a_copy_and_template_suggest_their_names() {
-        let (mut app, written, picks) = desktop("copy.vectorcraft");
+        let (mut app, written, picks) = desktop("copy.rvector");
         let folder = redrob_vector_testkit::temp_dir("save-template-dialog");
         app.session.prefs.templates_folder = folder.to_string_lossy().into_owned();
         app.run("file.saveCopy", json!({})).unwrap();
-        assert_eq!(picks.borrow()[0].name, "Untitled-1 copy.vectorcraft");
+        assert_eq!(picks.borrow()[0].name, "Untitled-1 copy.rvector");
         assert!(app.ui.dialog.is_none(), "the native format has no options");
         assert!(redrob_vector_format::sniff(&written.borrow()[0].1));
         assert!(app.session.active().unwrap().path.is_none() && app.session.active().unwrap().is_dirty());
@@ -350,7 +350,7 @@ mod tests {
         assert_eq!(pick.name, "Untitled-1 template.vctemplate");
         assert_eq!(pick.folder.as_deref().map(std::path::Path::new), Some(folder.as_path()));
         assert_eq!(pick.filters, [("Redrob Canvas Template", &["vctemplate"][..])]);
-        assert_eq!(written.borrow()[1].0, "copy.vectorcraft", "the picked name is kept");
+        assert_eq!(written.borrow()[1].0, "copy.rvector", "the picked name is kept");
     }
 
     #[test]
@@ -358,7 +358,7 @@ mod tests {
         let (mut app, written) = web();
         app.run("file.saveAs", json!({})).unwrap();
         let d = dialog(&app);
-        assert_eq!((heading(d).as_str(), d.str("path").as_str(), d.str("format").as_str()), ("Save As", "Untitled-1.vectorcraft", "vectorcraft"));
+        assert_eq!((heading(d).as_str(), d.str("path").as_str(), d.str("format").as_str()), ("Save As", "Untitled-1.rvector", "vectorcraft"));
         frame(&mut app, false);
         let mut d = app.ui.dialog.take().unwrap();
         switch_format(&mut app, &mut d, "pdf");

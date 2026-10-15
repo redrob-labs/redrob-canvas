@@ -36,8 +36,8 @@ fn book(d: &Path, chapters: &[&Path]) -> Session {
 #[test]
 fn late_missing_chapter_does_not_partially_paginate_earlier_chapters() {
     let d = dir("late-missing");
-    let first = d.path().join("first.designcraft");
-    let later = d.path().join("later.designcraft");
+    let first = d.path().join("first.rlayout");
+    let later = d.path().join("later.rlayout");
     native(&first, 9, false);
     native(&later, 1, false);
     let mut s = book(d.path(), &[&first, &later]);
@@ -55,9 +55,9 @@ fn late_missing_chapter_does_not_partially_paginate_earlier_chapters() {
 #[test]
 fn late_corrupt_chapter_does_not_partially_sync_earlier_chapters() {
     let d = dir("late-corrupt");
-    let source = d.path().join("source.designcraft");
-    let first = d.path().join("first.designcraft");
-    let later = d.path().join("later.designcraft");
+    let source = d.path().join("source.rlayout");
+    let first = d.path().join("first.rlayout");
+    let later = d.path().join("later.rlayout");
     native(&source, 1, true);
     native(&first, 1, false);
     native(&later, 1, false);
@@ -92,7 +92,7 @@ fn paginate_does_not_replace_imported_idml_with_native_format() {
 #[test]
 fn style_sync_does_not_replace_imported_idml_with_native_format() {
     let d = dir("idml-sync");
-    let source = d.path().join("source.designcraft");
+    let source = d.path().join("source.rlayout");
     let chapter = d.path().join("chapter.idml");
     native(&source, 1, true);
     idml(&chapter, 1);
@@ -111,8 +111,8 @@ fn style_sync_does_not_replace_imported_idml_with_native_format() {
 #[test]
 fn an_open_unsaved_chapter_blocks_batch_writes_before_any_files_change() {
     let d = dir("open-unsaved");
-    let first = d.path().join("first.designcraft");
-    let later = d.path().join("later.designcraft");
+    let first = d.path().join("first.rlayout");
+    let later = d.path().join("later.rlayout");
     native(&first, 9, false);
     native(&later, 5, false);
     let mut s = book(d.path(), &[&first, &later]);
@@ -133,19 +133,19 @@ fn an_open_unsaved_chapter_blocks_batch_writes_before_any_files_change() {
     assert_eq!(s.doc().unwrap().revision, revision);
     assert!(s.doc().unwrap().is_dirty());
     let e = result.unwrap_err().to_string();
-    assert!(e.contains("later.designcraft") && e.contains("close"), "{e}");
+    assert!(e.contains("later.rlayout") && e.contains("close"), "{e}");
 }
 
 #[cfg(unix)]
 #[test]
 fn an_alias_of_an_open_chapter_blocks_all_batch_writes() {
     let d = dir("open-alias");
-    let first = d.path().join("first.designcraft");
-    let real = d.path().join("real.designcraft");
-    let alias = d.path().join("alias.designcraft");
+    let first = d.path().join("first.rlayout");
+    let real = d.path().join("real.rlayout");
+    let alias = d.path().join("alias.rlayout");
     native(&first, 9, false);
     native(&real, 5, false);
-    std::os::unix::fs::symlink("real.designcraft", &alias).unwrap();
+    std::os::unix::fs::symlink("real.rlayout", &alias).unwrap();
     let mut s = book(d.path(), &[&first, &alias]);
     s.execute("file.open", &json!({"path":real.to_string_lossy()})).unwrap();
     let first_before = std::fs::read(&first).unwrap();
@@ -155,14 +155,14 @@ fn an_alias_of_an_open_chapter_blocks_all_batch_writes() {
     assert_eq!(std::fs::read(&first).unwrap(), first_before);
     assert_eq!(std::fs::read(&real).unwrap(), real_before);
     let e = result.unwrap_err().to_string();
-    assert!(e.contains("alias.designcraft") && e.contains("close"), "{e}");
+    assert!(e.contains("alias.rlayout") && e.contains("close"), "{e}");
     assert!(std::fs::symlink_metadata(alias).unwrap().file_type().is_symlink());
 }
 #[test]
 fn imported_idml_remains_a_read_only_style_source() {
     let d = dir("idml-style-source");
     let source = d.path().join("source.idml");
-    let target = d.path().join("target.designcraft");
+    let target = d.path().join("target.rlayout");
     std::fs::write(&source, redrob_layout_idml::export_idml(&document(1, true))).unwrap();
     native(&target, 1, false);
     let mut s = book(d.path(), &[&source, &target]);

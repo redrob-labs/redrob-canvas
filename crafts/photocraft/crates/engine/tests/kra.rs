@@ -48,6 +48,6 @@ fn krita_documents_open_read_only_and_stay_editable() {
     assert!(redrob_photo_io::export(doc, "x.kra", &Default::default()).is_err());
     let ora = redrob_photo_io::export(doc, "x.ora", &Default::default()).unwrap();
     assert_eq!(redrob_photo_io::import("x.ora", &ora.bytes).unwrap().document.layers.len(), doc.layers.len());
-    let native = redrob_photo_io::export(doc, "x.pcraft", &Default::default()).unwrap();
-    assert_eq!(redrob_photo_io::import("x.pcraft", &native.bytes).unwrap().document.layers, doc.layers);
+    let native = redrob_photo_io::export(doc, "x.rphoto", &Default::default()).unwrap();
+    assert_eq!(redrob_photo_io::import("x.rphoto", &native.bytes).unwrap().document.layers, doc.layers);
 }

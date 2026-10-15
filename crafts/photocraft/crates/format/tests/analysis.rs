@@ -1,4 +1,4 @@
-//! Image › Analysis data and notes survive a `.pcraft` round trip; old manifests default them.
+//! Image › Analysis data and notes survive a `.rphoto` round trip; old manifests default them.
 
 use redrob_photo_color::{Color, ColorMode, SampleType};
 use redrob_photo_doc::{CountGroup, Document, MeasurementScale, Note, Ruler, Size};

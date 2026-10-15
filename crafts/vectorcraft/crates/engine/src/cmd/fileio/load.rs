@@ -2,9 +2,9 @@
 
 use std::io::Cursor;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, ImageBlob, ImageObject, Node, NodeKind};
 use redrob_vector_geom::Affine;
+use serde_json::{Value, json};
 
 use super::super::*;
 use super::pdfimport::LoadOptions;
@@ -19,7 +19,7 @@ pub struct Loaded {
     pub warnings: Vec<String>,
     /// The document is the native one the file carries (SVG or PDF saved with Preserve Editing).
     pub restored: bool,
-    /// An older native file (the former `.drawcraft` name or format version): saving it again
+    /// An older native file (the former `.drawcraft` name or format version): saving it again // legacy: upstream extension still read
     /// rewrites it in today's format.
     pub converted: bool,
     /// Only a stand-in picture of the file (an Affinity document whose native data couldn't be
@@ -199,7 +199,8 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
         _ if format.id == "eps" || redrob_vector_pdf::is_postscript(bytes) => {
             let editing = redrob_vector_eps::has_native(bytes).then_some((true, || redrob_vector_eps::native(bytes)));
             restore_or_import(editing, || {
-                let r = redrob_vector_eps::import_with(bytes, opts.editing_data).map_err(|e| err(format!("can't open `{}`: {e}", file_name(name))))?;
+                let r =
+                    redrob_vector_eps::import_with(bytes, opts.editing_data).map_err(|e| err(format!("can't open `{}`: {e}", file_name(name))))?;
                 Ok((r.document, r.warnings))
             })?
         }

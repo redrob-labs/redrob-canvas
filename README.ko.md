@@ -47,9 +47,9 @@
 
 | 모드 | 열기 | 저장 / 내보내기 |
 | --- | --- | --- |
-| Photo | PSD, PSB, `.pcraft`, ORA, KRA, 레이어 TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC(읽기), 카메라 RAW, Affinity(읽기) | `.pcraft`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF(선택 기능) |
-| Vector | `.vectorcraft`, SVG, SVGZ, AI(PDF 호환), EPS, PDF, DXF, EMF/WMF, 래스터 이미지, PSD/PSB(병합 이미지) | `.vectorcraft`, SVG, PDF(PDF/X 포함), AI, EPS, DXF, PNG, JPEG, WebP, PSD, 인쇄, 패키지 |
-| Layout | `.designcraft`, IDML, 배치 자산으로서의 이미지·PDF·벡터 | `.designcraft`, PDF(PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
+| Photo | PSD, PSB, `.rphoto`, ORA, KRA, 레이어 TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC(읽기), 카메라 RAW, Affinity(읽기) | `.rphoto`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF(선택 기능) |
+| Vector | `.rvector`, SVG, SVGZ, AI(PDF 호환), EPS, PDF, DXF, EMF/WMF, 래스터 이미지, PSD/PSB(병합 이미지) | `.rvector`, SVG, PDF(PDF/X 포함), AI, EPS, DXF, PNG, JPEG, WebP, PSD, 인쇄, 패키지 |
+| Layout | `.rlayout`, IDML, 배치 자산으로서의 이미지·PDF·벡터 | `.rlayout`, PDF(PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
 
 정본 표는 편집기 자신의 문서입니다: `crafts/photocraft/crates/codecs/README.md`,
 `crafts/vectorcraft/README.md`, `crafts/designcraft/README.md`. 셸이 파일을 어느 모드로 보내는지는

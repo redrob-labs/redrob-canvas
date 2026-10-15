@@ -899,7 +899,7 @@ fn run_ui_inner(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
             return run_ui(app, "app.saveDialog", p);
         }
         "app.saveDialog" => {
-            let name = app.session.active().map(|d| format!("{}.designcraft", d.doc.title)).unwrap_or_default();
+            let name = app.session.active().map(|d| format!("{}.rlayout", d.doc.title)).unwrap_or_default();
             if let Some(path) = app.services.pick_save.as_mut().and_then(|f| f(&name)) {
                 return Some(app.run("file.saveAs", json!({"path": path})));
             }
@@ -910,7 +910,7 @@ fn run_ui_inner(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
             Ok(Value::Null)
         }
         "app.saveCopyDialog" => {
-            let name = app.session.active().map(|d| format!("{} copy.designcraft", d.doc.title)).unwrap_or_default();
+            let name = app.session.active().map(|d| format!("{} copy.rlayout", d.doc.title)).unwrap_or_default();
             if let Some(path) = app.services.pick_save.as_mut().and_then(|f| f(&name)) {
                 return Some(app.run("file.saveACopy", json!({"path": path})));
             }
@@ -1661,7 +1661,7 @@ fn run_ui_inner(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
 
 /// Save by handing the serialized document to the host as a download (web).
 fn download_document(app: &mut DesignApp) -> Result<Value, String> {
-    let name = app.session.active().map(|d| format!("{}.designcraft", d.doc.title)).ok_or("no document")?;
+    let name = app.session.active().map(|d| format!("{}.rlayout", d.doc.title)).ok_or("no document")?;
     let ser = app.run("file.serialize", json!({}))?;
     let bytes = redrob_layout_engine::cmd::base64_decode(ser["base64"].as_str().unwrap_or_default());
     if let Some(download) = app.services.download.as_mut() {
@@ -2405,7 +2405,8 @@ pub fn shortcuts(app: &mut DesignApp, ctx: &egui::Context) {
             let sc = if modifiers.shift { format!("Shift+{name}") } else { name.to_string() };
             if let Some(tool) = redrob_layout_tools::tool_for_shortcut(&sc) {
                 log::debug!("tool shortcut {sc} -> {tool}");
-                if std::env::var_os("DESIGNCRAFT_DEBUG_KEYS").is_some() {
+                if std::env::var_os("REDROB_LAYOUT_DEBUG_KEYS").or_else(|| std::env::var_os("DESIGNCRAFT_DEBUG_KEYS")).is_some() {
+                    // legacy: the upstream variable is read when ours is unset
                     eprintln!("tool shortcut {sc} ({key:?}, {modifiers:?}) -> {tool}");
                 }
                 app.select_tool(tool);

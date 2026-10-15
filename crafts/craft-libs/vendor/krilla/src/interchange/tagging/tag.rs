@@ -55,10 +55,7 @@ impl<T> Tag<T> {
     /// This can't be public, otherwise tags could be constructed without
     /// providing required attributes.
     pub(crate) const fn new() -> Self {
-        Self {
-            inner: AnyTag::new(),
-            ty: PhantomData,
-        }
+        Self { inner: AnyTag::new(), ty: PhantomData }
     }
 
     /// A raw tag, which allows reading all attributes.
@@ -100,10 +97,7 @@ pub struct AnyTag {
 
 impl AnyTag {
     pub(crate) const fn new() -> Self {
-        Self {
-            attrs: OrdinalSet::new(),
-            location: None,
-        }
+        Self { attrs: OrdinalSet::new(), location: None }
     }
 }
 
@@ -115,9 +109,7 @@ pub(crate) struct OrdinalSet<A> {
 
 impl<A> OrdinalSet<A> {
     pub(crate) const fn new() -> Self {
-        Self {
-            items: SmallVec::new_const(),
-        }
+        Self { items: SmallVec::new_const() }
     }
 }
 
@@ -376,17 +368,10 @@ impl NaiveRgbColor {
 
     /// Create a new RGB color from normalized floating point values.
     pub fn new_f32(red: f32, green: f32, blue: f32) -> Self {
-        if !(0.0..=1.0).contains(&red)
-            || !(0.0..=1.0).contains(&green)
-            || !(0.0..=1.0).contains(&blue)
-        {
+        if !(0.0..=1.0).contains(&red) || !(0.0..=1.0).contains(&green) || !(0.0..=1.0).contains(&blue) {
             panic!("RGB color components must be in the range [0.0, 1.0]");
         }
-        Self {
-            red: (255.0 * red).round() as u8,
-            green: (255.0 * green).round() as u8,
-            blue: (255.0 * blue).round() as u8,
-        }
+        Self { red: (255.0 * red).round() as u8, green: (255.0 * green).round() as u8, blue: (255.0 * blue).round() as u8 }
     }
 
     /// Convert the color into an array of f32 components for PDF serialization.
@@ -589,9 +574,7 @@ impl GlyphOrientationVertical {
     /// `None`.
     pub(super) fn to_pdf(self) -> pdf_writer::types::GlyphOrientationVertical {
         let angle = match self {
-            GlyphOrientationVertical::Auto => {
-                return pdf_writer::types::GlyphOrientationVertical::Auto
-            }
+            GlyphOrientationVertical::Auto => return pdf_writer::types::GlyphOrientationVertical::Auto,
             GlyphOrientationVertical::None => 0,
             GlyphOrientationVertical::Clockwise90 => 90,
             GlyphOrientationVertical::CounterClockwise90 => -90,
@@ -619,12 +602,7 @@ pub struct Sides<T> {
 impl<T> Sides<T> {
     /// Construct a new `Sides` value with specific values for each side.
     pub fn new(before: T, after: T, start: T, end: T) -> Self {
-        Self {
-            before,
-            after,
-            start,
-            end,
-        }
+        Self { before, after, start, end }
     }
 
     /// Construct a new `Sides` value with the same value for all sides.
@@ -632,12 +610,7 @@ impl<T> Sides<T> {
     where
         T: Copy,
     {
-        Sides {
-            before: value,
-            after: value,
-            start: value,
-            end: value,
-        }
+        Sides { before: value, after: value, start: value, end: value }
     }
 
     pub(crate) fn is_uniform(&self) -> bool

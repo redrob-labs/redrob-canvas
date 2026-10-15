@@ -2,10 +2,10 @@
 //! selection visuals (bounding box, anchors, handles, smart-guide style labels).
 
 use egui::{Color32, CornerRadius, Pos2, Sense, Shape, Stroke, StrokeKind, Ui, Vec2, pos2, vec2};
-use serde_json::json;
 use redrob_vector_doc::{Node, NodeKind, SymbolBoxes, Unit};
 use redrob_vector_geom::{Affine, BezPath, PathEl, Point, Rect};
 use redrob_vector_tools::{Cursor, Mods, Overlay, PointerEvent, PointerKind};
+use serde_json::json;
 
 use crate::state::View;
 use crate::theme::{self, Tokens};
@@ -270,7 +270,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
     if !app.canvas.worker_started {
         app.canvas.worker_started = true;
-        if std::env::var_os("VECTORCRAFT_SYNC_RENDER").is_none() {
+        if std::env::var_os("REDROB_VECTOR_SYNC_RENDER").or_else(|| std::env::var_os("VECTORCRAFT_SYNC_RENDER")).is_none() {
+            // legacy: the upstream variable is read when ours is unset
             app.canvas.worker = crate::render_worker::Worker::spawn(ui.ctx().clone());
         }
     }
@@ -310,7 +311,11 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             highlight_substitutions: true,
             // General › Anti-aliased Artwork: off, edges are hard on screen (raster effects and
             // pattern tiles stay smooth), as in Illustrator.
-            anti_alias: if app.session.prefs.anti_aliased_artwork { redrob_vector_render::AntiAlias::Art } else { redrob_vector_render::AntiAlias::None },
+            anti_alias: if app.session.prefs.anti_aliased_artwork {
+                redrob_vector_render::AntiAlias::Art
+            } else {
+                redrob_vector_render::AntiAlias::None
+            },
             progressive_placed: true,
             trace_views: true,
             smooth_images,
@@ -491,8 +496,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 crate::place::paint_cursor(app, ui.ctx(), &painter, hp);
             }
             // The glyph cursors are drawn here; General › Use Precise Cursors (the session turns the drawing tools' pointers
-            // into crosshairs, `Cursor::precise`) needs no handling. VECTORCRAFT_SYSTEM_CURSORS opts out of the glyphs.
-            let custom = std::env::var_os("VECTORCRAFT_SYSTEM_CURSORS").is_none();
+            // into crosshairs, `Cursor::precise`) needs no handling. REDROB_VECTOR_SYSTEM_CURSORS opts out of the glyphs.
+            let custom = std::env::var_os("REDROB_VECTOR_SYSTEM_CURSORS").or_else(|| std::env::var_os("VECTORCRAFT_SYSTEM_CURSORS")).is_none(); // legacy: the upstream variable is read when ours is unset
             // User Interface › Scale Cursor Proportional to UI: the glyphs grow with UI Scaling;
             // off, they keep their size.
             let ui_scale = if app.session.prefs.scale_cursor_with_ui { 1.0 } else { ui.ctx().zoom_factor() };
@@ -2284,7 +2289,7 @@ mod tests {
     use redrob_vector_engine::Session;
     use redrob_vector_geom::Shape as _;
 
-    /// With VECTORCRAFT_SYSTEM_CURSORS set the glyphs aren't drawn and the system's cursors stand in: those of
+    /// With REDROB_VECTOR_SYSTEM_CURSORS set the glyphs aren't drawn and the system's cursors stand in: those of
     /// the Pen and the other drawing tools are the system crosshair already, so Use Precise Cursors makes no
     /// difference to them there.
     #[test]
@@ -2893,7 +2898,8 @@ mod tests {
             assert_eq!(app.session.tool_id(), "pen", "back to the Pen tool");
             used
         };
-        let bounds = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
+        let bounds =
+            |app: &VectorcraftApp| app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
         // Direct Selection used last: the drag moves the rectangle's bottom-right corner only (once
         // the rectangle isn't selected whole, which would move all its anchors).
         app.select_tool("directSelection");

@@ -2209,7 +2209,7 @@ mod tests {
         assert_eq!(s.active().unwrap().history.can_undo(), undo_before, "a refused guide records no history step");
     }
 
-    /// Guides keep their exact place (#2918): 1 cm at 300 ppi through New Guide and .pcraft, and
+    /// Guides keep their exact place (#2918): 1 cm at 300 ppi through New Guide and .rphoto, and
     /// a 1/32 px PSD position past 2^19 px, where f32 has no 1/32 steps left.
     #[test]
     fn guides_keep_sub_pixel_positions_through_pcraft_and_psd() {
@@ -2223,8 +2223,8 @@ mod tests {
         let exact = |g: &redrob_photo_doc::Guides| (wide(g.horizontal[0]), wide(g.vertical[0]));
         let doc = &s.active().unwrap().doc;
         assert_eq!(exact(&doc.guides), (cm, far));
-        let pcraft = redrob_photo_format::save_to_bytes(doc, &Default::default()).unwrap();
-        assert_eq!(exact(&redrob_photo_format::load_from_bytes(&pcraft).unwrap().guides), (cm, far));
+        let rphoto = redrob_photo_format::save_to_bytes(doc, &Default::default()).unwrap();
+        assert_eq!(exact(&redrob_photo_format::load_from_bytes(&rphoto).unwrap().guides), (cm, far));
         let psd = redrob_photo_io::export(doc, "psd", &Default::default()).unwrap().bytes;
         let back = redrob_photo_io::import("g.psd", &psd).unwrap().document.guides;
         assert_eq!(wide(back.vertical[0]), far, "1032 stores 1/32 px");

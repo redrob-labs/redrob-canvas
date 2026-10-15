@@ -26,7 +26,8 @@ fn color_replacement_preserves_pixel_membership_and_transparency() {
             assert_eq!(before.indices, after.indices, "palette edits must not remap pixels");
             assert_eq!(after.transparent_index, Some(2));
             assert_eq!(after.color_table, vec![[255, 0, 0], [0, 0, 255]]);
-            let decoded = redrob_photo_codecs::decode(&after.bytes).unwrap().convert(redrob_photo_codecs::ChannelLayout::Rgba, redrob_photo_codecs::SampleType::U8);
+            let decoded =
+                redrob_photo_codecs::decode(&after.bytes).unwrap().convert(redrob_photo_codecs::ChannelLayout::Rgba, redrob_photo_codecs::SampleType::U8);
             // Transparent RGB has no significance; opaque preview pixels must equal the file.
             for (file, preview) in decoded.data().as_chunks::<4>().0.iter().zip(after.preview.as_chunks::<4>().0) {
                 assert_eq!(file[3], preview[3]);

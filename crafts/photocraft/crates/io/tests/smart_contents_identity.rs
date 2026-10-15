@@ -16,7 +16,7 @@ fn fixture() -> Document {
     source.layers.push(Layer::new("red", LayerContent::Raster(pixels.clone())));
     let bytes = redrob_photo_format::save_to_bytes(&source, &Default::default()).unwrap();
     let mut doc = Document::new("instances", Size::new(12, 4), ColorMode::Rgb, SampleType::U8);
-    let smart = SmartObject::new(SmartSource::Embedded { file_name: "contents.pcraft".into(), bytes: Arc::new(bytes) }, Affine::IDENTITY, Some(pixels));
+    let smart = SmartObject::new(SmartSource::Embedded { file_name: "contents.rphoto".into(), bytes: Arc::new(bytes) }, Affine::IDENTITY, Some(pixels));
     doc.layers.push(Layer::new("original", LayerContent::Smart(smart)));
     doc
 }

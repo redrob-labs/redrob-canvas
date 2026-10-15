@@ -6,11 +6,11 @@ use std::sync::Arc;
 
 use redrob_craft_pdf::syntax::Pdf;
 use redrob_craft_pdf::syntax::object::{Array, Name, Object, Stream};
-use serde_json::json;
 use redrob_vector_color::cms::{self, DEVICE_CMYK, GENERIC_CMYK, SRGB};
 use redrob_vector_doc::cmyk::Inks;
 use redrob_vector_doc::{ColorMode, Document, ImageBlob, ImageObject, Node, NodeKind};
 use redrob_vector_geom::Affine;
+use serde_json::json;
 
 use crate::*;
 

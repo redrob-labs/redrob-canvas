@@ -1315,12 +1315,9 @@ mod tests {
         assert_eq!(result["failed"]["step"], 0);
         assert_eq!(app.session.actions.playing, 0);
         app.run("file.new", json!({"width": 40, "height": 40})).unwrap();
-        app.session.authorize =
-            Some(
-                |id, _| {
-                    if id == "view.fitOnScreen" { Err(redrob_photo_engine::EngineError::BadParams { cmd: id.into(), msg: "denied view".into() }) } else { Ok(()) }
-                },
-            );
+        app.session.authorize = Some(|id, _| {
+            if id == "view.fitOnScreen" { Err(redrob_photo_engine::EngineError::BadParams { cmd: id.into(), msg: "denied view".into() }) } else { Ok(()) }
+        });
         let result = app.run("actions.play", json!({"action": 0})).unwrap();
         assert_eq!(result["ran"], 0);
         assert!(result["failed"]["error"].as_str().unwrap().contains("denied view"));

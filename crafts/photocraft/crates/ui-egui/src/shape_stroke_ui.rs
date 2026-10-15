@@ -104,7 +104,8 @@ pub fn paint_shape_preview(painter: &egui::Painter, shape: &redrob_photo_doc::Sh
         if let Some(stroke) = proxy.stroke.as_mut() {
             stroke.width *= scale;
         }
-        let canvas = redrob_photo_geom::Rect::from_size(redrob_photo_geom::Size::new((clip.width() * scale).ceil() as u32, (clip.height() * scale).ceil() as u32));
+        let canvas =
+            redrob_photo_geom::Rect::from_size(redrob_photo_geom::Size::new((clip.width() * scale).ceil() as u32, (clip.height() * scale).ceil() as u32));
         let compiled = redrob_photo_vector::CompiledShape::new(&proxy, redrob_photo_vector::DEFAULT_TOLERANCE, canvas);
         let bounds = compiled.bounds()?.intersect(&canvas);
         if bounds.is_empty() {

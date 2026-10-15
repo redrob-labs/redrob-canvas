@@ -306,7 +306,7 @@ pub struct Effects {
 
 /// Deepest group nesting a document may hold: a layer inside this many nested groups is the
 /// deepest legal one. Everything that walks the layer tree (engine lookups, the layers panel,
-/// PSD export, `.pcraft` save and load) recurses once per level, so deeper trees risk
+/// PSD export, `.rphoto` save and load) recurses once per level, so deeper trees risk
 /// overflowing the 1 MiB main-thread stacks of Windows and wasm. PSD import and the engine
 /// commands that nest layers (`layer.groupLayers`, `layer.moveTo`, Artboard from Layers) enforce
 /// this up front; `redrob-photo-format` refuses to save deeper trees.

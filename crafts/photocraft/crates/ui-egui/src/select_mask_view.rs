@@ -447,7 +447,13 @@ fn length(params: &Value, key: &str, k: u32) -> f64 {
 
 /// The preview of the Select and Mask dialog for `doc`: the proxy reduced by `k`, shown in the
 /// requested view. `None` when the refinement fails or is cancelled.
-pub fn preview_document(doc: &Document, active: Option<LayerId>, params: &Value, k: u32, cancel: Option<&redrob_photo_engine::jobs::JobCtx>) -> Option<Document> {
+pub fn preview_document(
+    doc: &Document,
+    active: Option<LayerId>,
+    params: &Value,
+    k: u32,
+    cancel: Option<&redrob_photo_engine::jobs::JobCtx>,
+) -> Option<Document> {
     let view = View::of(params);
     let k = k.max(1);
     let mut proxy = crate::proxy::proxy_document(doc, k);

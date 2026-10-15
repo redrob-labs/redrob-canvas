@@ -1037,7 +1037,8 @@ mod tests {
     #[test]
     fn color_lookup_synthetic_block() {
         let cube = b"TITLE \"t\"\nLUT_3D_SIZE 2\n0 0 0\n1 0 0\n0 1 0\n1 1 0\n0 0 1\n1 0 1\n0 1 1\n1 1 1\n";
-        let en = |t: &str, val: &str| Value::Enumerated { type_id: redrob_photo_psd::descriptor::Id::new(t), value: redrob_photo_psd::descriptor::Id::new(val) };
+        let en =
+            |t: &str, val: &str| Value::Enumerated { type_id: redrob_photo_psd::descriptor::Id::new(t), value: redrob_photo_psd::descriptor::Id::new(val) };
         let desc = Descriptor::new("null")
             .with("lookupType", en("colorLookupType", "3DLUT"))
             .with("NM  ", Value::Text(redrob_photo_psd::descriptor::UnicodeString::new_nul("Id")))

@@ -43,7 +43,7 @@ fn headless_opens_pdf_ai_and_templates() {
     std::fs::write(&ait, &pdf).unwrap();
     let r = text(&call_tool(&mut h, "open_file", &json!({"path": ait})));
     assert!(r["title"].as_str().unwrap().starts_with("Untitled-"), "{r}");
-    let tpl = tmp("t.vectorcraft");
+    let tpl = tmp("t.rvector");
     h.call("engine.execute", json!({"command": "file.saveAsTemplate", "params": {"path": tpl}})).unwrap();
     let r = text(&call_tool(&mut h, "open_file", &json!({"path": tpl})));
     assert!(r["title"].as_str().unwrap().starts_with("Untitled-"), "{r}");
@@ -128,9 +128,9 @@ fn export_is_the_same_call_in_the_app_and_headless() {
 #[test]
 fn exporting_native_keeps_the_document_path() {
     let mut h = two_boards();
-    let doc = tmp("keep.vectorcraft");
+    let doc = tmp("keep.rvector");
     h.call("app.save", json!({"path": doc})).unwrap();
-    let copy = tmp("copy.vectorcraft");
+    let copy = tmp("copy.rvector");
     let r = text(&call_tool(&mut h, "export", &json!({"path": copy})));
     assert_eq!(r["format"], "vectorcraft");
     assert_eq!(h.session.doc().unwrap().path.as_deref(), Some(doc.as_str()));
@@ -142,8 +142,11 @@ fn exporting_native_keeps_the_document_path() {
 
 fn pdf_pages(pdf: &[u8]) -> usize {
     let mut h = Headless::new();
-    h.call("engine.execute", json!({"command": "document.open", "params": {"name": "p.pdf", "dataBase64": redrob_vector_format::base64_encode(pdf)}}))
-        .unwrap();
+    h.call(
+        "engine.execute",
+        json!({"command": "document.open", "params": {"name": "p.pdf", "dataBase64": redrob_vector_format::base64_encode(pdf)}}),
+    )
+    .unwrap();
     h.session.doc().unwrap().doc.artboards.len()
 }
 

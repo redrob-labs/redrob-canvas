@@ -252,5 +252,5 @@ against independent reference painters, including exact mesh and RGBA checks, an
 color, spacing and stroke changes fail those comparisons. To retain reviewable PNG pairs:
 
 ```sh
-CRAFT_UI_VISUAL_DIR=/absolute/path/to/visuals cargo test -p redrob-craft-ui --test visual_regression
+REDROB_CRAFT_UI_VISUAL_DIR=/absolute/path/to/visuals cargo test -p redrob-craft-ui --test visual_regression
 ```

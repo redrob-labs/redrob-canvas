@@ -1,6 +1,6 @@
 //! #2399: a save writes a JPEG or WebP back the way it was opened. A JPEG keeps the quality
 //! estimated from its quantisation tables, a lossy WebP stays lossy and a lossless one lossless,
-//! unless the save asks for a quality; the remembered settings survive a .pcraft round trip.
+//! unless the save asks for a quality; the remembered settings survive a .rphoto round trip.
 
 use redrob_photo_codecs::{ChannelLayout, EncodeOptions, Format, Image, SampleType, WebpEncoding, jpeg_quality, webp_encoding};
 use redrob_photo_engine::Session;

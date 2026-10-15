@@ -1,9 +1,9 @@
 //! `document.open` PDF options `textAs` and `layers`.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeKind;
 use redrob_vector_pdf::TextAs;
 use redrob_vector_testkit::pdf::{PdfPage, first_extra, pdf, pdf_with_catalog};
+use serde_json::{Value, json};
 
 use super::*;
 

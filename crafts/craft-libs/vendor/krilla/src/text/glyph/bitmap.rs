@@ -1,5 +1,5 @@
-use skrifa::bitmap::{BitmapData, BitmapFormat, BitmapGlyph, Origin};
 use skrifa::MetadataProvider;
+use skrifa::bitmap::{BitmapData, BitmapFormat, BitmapGlyph, Origin};
 
 use crate::geom::{Size, Transform};
 use crate::graphics::image::Image;
@@ -19,13 +19,10 @@ pub(crate) fn get_bitmap_glyph(font: &Font, glyph: GlyphId) -> Option<BitmapGlyp
 
 /// Draw a bitmap-based glyph on a surface.
 pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
-    let metrics = font
-        .font_ref()
-        .metrics(skrifa::instance::Size::unscaled(), font.location_ref());
+    let metrics = font.font_ref().metrics(skrifa::instance::Size::unscaled(), font.location_ref());
 
     let bitmap_strikes = font.font_ref().bitmap_strikes();
-    let bitmap_glyph =
-        bitmap_strikes.glyph_for_size(skrifa::instance::Size::unscaled(), glyph.to_skrifa())?;
+    let bitmap_glyph = bitmap_strikes.glyph_for_size(skrifa::instance::Size::unscaled(), glyph.to_skrifa())?;
 
     let upem = metrics.units_per_em as f32;
 
@@ -36,19 +33,13 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
 
             // Adapted from vello.
             let scale_factor = upem / (bitmap_glyph.ppem_y);
-            let mut transform =
-                Transform::from_translate(-bitmap_glyph.bearing_x, bitmap_glyph.bearing_y)
-                    .pre_concat(Transform::from_scale(scale_factor, scale_factor))
-                    .pre_concat(Transform::from_translate(
-                        -bitmap_glyph.inner_bearing_x,
-                        -bitmap_glyph.inner_bearing_y,
-                    ));
+            let mut transform = Transform::from_translate(-bitmap_glyph.bearing_x, bitmap_glyph.bearing_y)
+                .pre_concat(Transform::from_scale(scale_factor, scale_factor))
+                .pre_concat(Transform::from_translate(-bitmap_glyph.inner_bearing_x, -bitmap_glyph.inner_bearing_y));
 
             transform = match bitmap_glyph.placement_origin {
                 Origin::TopLeft => transform,
-                Origin::BottomLeft => {
-                    transform.pre_concat(Transform::from_translate(0.0, -(image.size().1 as f32)))
-                }
+                Origin::BottomLeft => transform.pre_concat(Transform::from_translate(0.0, -(image.size().1 as f32))),
             };
 
             transform = if let Some(format) = bitmap_strikes.format() {
@@ -60,8 +51,7 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
                     // See also https://github.com/harfbuzz/harfbuzz/issues/2679#issuecomment-1345595425
                     // We approximate this vertical shift that seems to be produced by it.
                     // This value seems to be pretty close to what is happening on MacOS.
-                    transform
-                        .pre_concat(Transform::from_translate(0.0, 0.128 * upem / scale_factor))
+                    transform.pre_concat(Transform::from_translate(0.0, 0.128 * upem / scale_factor))
                 } else {
                     transform
                 }

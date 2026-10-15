@@ -41,7 +41,7 @@ fn export_reports_monotonic_progress_and_writes_the_same_bytes() {
         ("a.psd", ExportOptions::default(), 6),
         ("a.psb", ExportOptions::default(), 6),
         ("a.tif", layered_tiff, 6),
-        ("a.pcraft", ExportOptions::default(), 3),
+        ("a.rphoto", ExportOptions::default(), 3),
         ("a.png", ExportOptions::default(), 2),
         ("a.jpg", ExportOptions::default(), 2),
     ];
@@ -53,8 +53,8 @@ fn export_reports_monotonic_progress_and_writes_the_same_bytes() {
             }
             let (bytes, seen) = export_recorded(&doc, name, opts);
             let plain = redrob_photo_io::export(&doc, name, opts).unwrap().bytes;
-            // .pcraft bundles carry a save time, so only the formats without one compare exactly.
-            if !name.ends_with(".pcraft") {
+            // .rphoto bundles carry a save time, so only the formats without one compare exactly.
+            if !name.ends_with(".rphoto") {
                 assert!(bytes == plain, "{name} {depth:?}: progress reporting changed the bytes");
             }
             assert!(seen.len() >= *min_reports, "{name} {depth:?}: only {} reports: {seen:?}", seen.len());
@@ -79,7 +79,7 @@ fn psd_progress_moves_per_layer_before_the_composite() {
 #[test]
 fn a_cancelled_export_stops_with_cancelled() {
     let doc = layered(SampleType::U8);
-    for name in ["a.psd", "a.tif", "a.pcraft", "a.png"] {
+    for name in ["a.psd", "a.tif", "a.rphoto", "a.png"] {
         // Cancelled from the start, and cancelled after the first progress report.
         let cancelled = || true;
         let r = redrob_photo_io::export_with(&doc, name, &ExportOptions { tiff_layers: true, ..Default::default() }, &Interrupt::cancel_only(&cancelled));

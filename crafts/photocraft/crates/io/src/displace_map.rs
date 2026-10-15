@@ -11,7 +11,7 @@
 //! ```
 //!
 //! The whole `filterFX` item (with the map) is kept verbatim in the params as a template
-//! ([`TEMPLATE_KEY`]), so the filter re-renders, survives `.pcraft` and is written back to PSD
+//! ([`TEMPLATE_KEY`]), so the filter re-renders, survives `.rphoto` and is written back to PSD
 //! with only the editable settings replaced. Anything else (another mode, a missing or truncated
 //! map, unknown enum values) stays an opaque [`super::UNSUPPORTED_FILTER`].
 

@@ -24,10 +24,11 @@ fn real_pdn_layers_and_native_saves() {
     assert!(!paths.is_empty(), "no PDN files found");
     let mut worst = 0.0f32;
     for path in &paths {
-        let doc = redrob_photo_io::import(&path.to_string_lossy(), &std::fs::read(path).unwrap()).unwrap_or_else(|e| panic!("{}: {e}", path.display())).document;
+        let doc =
+            redrob_photo_io::import(&path.to_string_lossy(), &std::fs::read(path).unwrap()).unwrap_or_else(|e| panic!("{}: {e}", path.display())).document;
         let flat = redrob_photo_compose::flatten(&doc);
-        let native = redrob_photo_io::export(&doc, "copy.pcraft", &Default::default()).unwrap();
-        let back = redrob_photo_io::import("copy.pcraft", &native.bytes).unwrap().document;
+        let native = redrob_photo_io::export(&doc, "copy.rphoto", &Default::default()).unwrap();
+        let back = redrob_photo_io::import("copy.rphoto", &native.bytes).unwrap().document;
         assert_eq!(doc.layers, back.layers, "{}", path.display());
         assert_eq!(flat.px, redrob_photo_compose::flatten(&back).px);
         let png = path.with_extension("png");

@@ -8,12 +8,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{
     Appearance, CharStyle, Document, GraphDesign, GraphKind, GraphSpec, Justify, Node, NodeId, NodeKind, TextObject, TickLength, ValueAxisSide,
 };
 use redrob_vector_geom::{Affine, BezPath, PathData, Point, Rect, shapes};
+use serde_json::{Value, json};
 
 use super::typecmd::refresh_bounds;
 use super::*;
@@ -1901,9 +1901,9 @@ fn set_type(s: &mut Session, p: &Value) -> Result<Value> {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_color::Paint;
     use redrob_vector_doc::{CharStyle, GraphKind, GraphSpec, NodeKind};
+    use serde_json::json;
 
     use crate::{NodeId, Session};
 
@@ -2237,7 +2237,7 @@ mod tests {
         s.execute("paint.setFill", &json!({"ids": [first.0], "color": "#f00"})).unwrap();
         s.execute("paint.setFill", &json!({"ids": [second.0], "color": "#008080"})).unwrap();
         let dir = redrob_vector_testkit::temp_dir("graph-palette");
-        let path = dir.join("palette.vectorcraft");
+        let path = dir.join("palette.rvector");
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
         let paints = &s.doc().unwrap().doc.node(id).unwrap().extras().graph.as_ref().unwrap().series_paints;
@@ -2630,7 +2630,7 @@ mod tests {
         s.execute("file.new", &json!({})).unwrap();
         let id = graph(&mut s, "column");
         s.execute("graph.setType", &json!({"seriesIndexes": [1], "type": "line"})).unwrap();
-        let path = redrob_vector_testkit::temp_dir("graph-kinds").join("kinds.vectorcraft");
+        let path = redrob_vector_testkit::temp_dir("graph-kinds").join("kinds.rvector");
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
         assert_eq!(spec(&s, id).series_kinds, [None, Some(GraphKind::Line)]);
@@ -2758,7 +2758,7 @@ mod tests {
         let id = two_scale_graph(&mut s);
         s.execute("graph.setType", &json!({"valueAxis": "both", "separateScales": true, "rightAxisMin": 0, "rightAxisMax": 2000})).unwrap();
         s.execute("graph.setType", &json!({"seriesIndexes": [1], "valueAxis": "right"})).unwrap();
-        let path = redrob_vector_testkit::temp_dir("graph-axes").join("axes.vectorcraft");
+        let path = redrob_vector_testkit::temp_dir("graph-axes").join("axes.rvector");
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
         let g = spec(&s, id);
@@ -2966,7 +2966,7 @@ mod tests {
             &json!({"tickLength": "full", "tickMarks": 3, "categoryTickLength": "short", "ticksBetweenLabels": true, "suffix": "%"}),
         )
         .unwrap();
-        let path = redrob_vector_testkit::temp_dir("graph-ticks").join("ticks.vectorcraft");
+        let path = redrob_vector_testkit::temp_dir("graph-ticks").join("ticks.rvector");
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
         let g = spec(&s, id);
@@ -3198,7 +3198,7 @@ mod tests {
         save_design(&mut s, "Pill");
         let id = graph(&mut s, "line");
         s.execute("graph.marker", &json!({"seriesIndexes": [0], "design": "Pill"})).unwrap();
-        let path = redrob_vector_testkit::temp_dir("graph-designs").join("designs.vectorcraft");
+        let path = redrob_vector_testkit::temp_dir("graph-designs").join("designs.rvector");
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
         assert_eq!(s.execute("graph.design", &json!({})).unwrap()["designs"], json!(["Pill"]));
@@ -3514,7 +3514,7 @@ mod tests {
         s.execute("graph.setType", &json!({"legend": true})).unwrap();
         assert!(!spec(&s, id).pie_legend_in_wedges);
         assert!(s.execute("graph.setType", &json!({"pieLegend": "inside"})).is_err());
-        let path = redrob_vector_testkit::temp_dir("graph-pie").join("pie.vectorcraft");
+        let path = redrob_vector_testkit::temp_dir("graph-pie").join("pie.rvector");
         s.execute("graph.setType", &json!({"pieLegend": "wedges", "piePosition": "stacked", "pieSort": "all"})).unwrap();
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
@@ -3658,7 +3658,7 @@ mod tests {
         assert!(ys.iter().all(|y| *y + 8.0 <= 100.0 - 8.0 + 1e-6), "{ys:?}");
         let xs: Vec<f64> = (0..6).map(|i| swatch(&s, i).x1).collect();
         assert!(xs.iter().all(|x| *x <= 400.0), "{xs:?}");
-        let path = redrob_vector_testkit::temp_dir("graph-top").join("top.vectorcraft");
+        let path = redrob_vector_testkit::temp_dir("graph-top").join("top.rvector");
         s.execute("graph.setType", &json!({"dropShadow": true})).unwrap();
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
@@ -3778,7 +3778,7 @@ mod tests {
         s.execute("paint.setFill", &json!({"ids": [grp.0], "color": "#ff0000"})).unwrap();
         s.execute("graph.setData", &json!({"id": id.0, "rows": [[2], [3], [2]]})).unwrap();
         assert_eq!(series_parts(&s, id, 0)[0].appearance.fill_paint().color().unwrap().to_hex(), "#ff0000");
-        let path = redrob_vector_testkit::temp_dir("graph-filled").join("filled.vectorcraft");
+        let path = redrob_vector_testkit::temp_dir("graph-filled").join("filled.rvector");
         s.execute("graph.setType", &json!({"firstRowInFront": true, "firstColumnInFront": true})).unwrap();
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
@@ -3897,7 +3897,7 @@ mod tests {
         assert_eq!(look("0").2, "#0000ff", "every value axis number");
         assert_eq!(look("0").1, 9.0);
         // Kept through save and open; nothing written when unset.
-        let path = redrob_vector_testkit::temp_dir("graph-labels").join("labels.vectorcraft");
+        let path = redrob_vector_testkit::temp_dir("graph-labels").join("labels.rvector");
         s.execute("document.save", &json!({"path": path})).unwrap();
         s.execute("document.open", &json!({"path": path})).unwrap();
         assert_eq!(spec(&s, id).label_styles.categories.as_ref().unwrap().size, 14.0);

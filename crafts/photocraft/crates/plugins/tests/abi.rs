@@ -68,7 +68,7 @@ fn run_err(bytes: &[u8], limits: Limits) -> (Error, Duration) {
 fn example_invert_loads_and_reports_its_manifest() {
     let p = Plugin::load(INVERT, Limits::default()).unwrap();
     let m = p.manifest();
-    assert_eq!(m.id, "org.photocraft.example.invert");
+    assert_eq!(m.id, "org.rphoto.example.invert");
     assert_eq!(m.name, "Invert (WebAssembly)");
     assert_eq!(m.kind, redrob_photo_plugins::Kind::Filter);
     assert!(m.params.is_empty());
@@ -310,7 +310,7 @@ fn folder_loading_skips_bad_files() {
     std::fs::write(dir.join("b-broken.wasm"), b"\0asm junk").unwrap();
     std::fs::write(dir.join("notes.txt"), b"ignored").unwrap();
     let r = redrob_photo_plugins::registry::load_folder(&dir).unwrap();
-    assert_eq!(r.loaded, ["org.photocraft.example.invert"]);
+    assert_eq!(r.loaded, ["org.rphoto.example.invert"]);
     assert_eq!(r.failed.len(), 1);
     assert!(r.failed[0].0.ends_with("b-broken.wasm"));
     assert!(redrob_photo_plugins::registry::load_folder(&dir.join("missing")).is_err());

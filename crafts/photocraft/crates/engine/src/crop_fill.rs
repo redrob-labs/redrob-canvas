@@ -9,9 +9,9 @@
 //! uncovered area (each corner, each edge strip) is filled on its own, with Photoshop's sampling
 //! window around that piece, and only pixels the image covers are sampled.
 
+use rayon::prelude::*;
 use redrob_photo_doc::{Document, LayerId};
 use redrob_photo_geom::Rect;
-use rayon::prelude::*;
 
 use crate::{EngineError, Result};
 

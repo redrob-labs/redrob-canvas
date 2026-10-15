@@ -1508,10 +1508,10 @@ impl Renderer {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_doc::color::{Color, Paint};
     use redrob_vector_doc::{Appearance, Document, Effect, Node};
     use redrob_vector_geom::{Affine, Rect, shapes};
+    use serde_json::json;
 
     use super::{Drawn, PIXEL_BUDGET, filter_region};
     use crate::{RenderOptions, Rendered, Renderer};

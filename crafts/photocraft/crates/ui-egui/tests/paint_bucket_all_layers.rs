@@ -110,7 +110,7 @@ fn all_layers_checkbox_limits_bucket_fill_to_the_visible_color() {
         h.run_steps(6);
 
         // Optional real UI evidence, saved before assertions so a failing baseline has a frame.
-        if let Some(dir) = std::env::var_os("PHOTOCRAFT_BUCKET_EVIDENCE_DIR") {
+        if let Some(dir) = std::env::var_os("REDROB_PHOTO_BUCKET_EVIDENCE_DIR") {
             std::fs::create_dir_all(&dir).expect("evidence directory");
             let name = if all_layers { "all-layers-on.png" } else { "all-layers-off.png" };
             h.render().expect("render UI").save(std::path::Path::new(&dir).join(name)).expect("save UI evidence");

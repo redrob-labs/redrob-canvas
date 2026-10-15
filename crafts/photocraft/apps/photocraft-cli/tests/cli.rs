@@ -108,7 +108,7 @@ fn unknown_flags_are_usage_errors() {
 #[test]
 fn convert_png_pcraft_png_is_lossless() {
     let d = tmp("convert");
-    let (a, b, c) = (d.join("a.png"), d.join("b.pcraft"), d.join("c.png"));
+    let (a, b, c) = (d.join("a.png"), d.join("b.rphoto"), d.join("c.png"));
     write_png(&a, 37, 23, 7);
     ok(bin().args(["convert"]).arg(&a).arg(&b));
     assert!(redrob_photo_format::is_pcraft(&std::fs::read(&b).unwrap()));
@@ -183,7 +183,7 @@ fn info_and_convert_report_decode_warnings() {
 #[test]
 fn run_commands_and_save() {
     let d = tmp("run");
-    let out_pc = d.join("r.pcraft");
+    let out_pc = d.join("r.rphoto");
     let (out, _) = ok(bin()
         .args(["run", "--new", r#"{"width":40,"height":30,"name":"Run"}"#])
         .args(["--cmd", "layer.new.layer", "--params", r#"{"name":"Ink"}"#])
@@ -198,7 +198,7 @@ fn run_commands_and_save() {
     let (info, _) = ok(bin().arg("info").arg(&out_pc));
     let v: Value = serde_json::from_str(&info).unwrap();
     // Saving a native document gives the reopened bundle its output filename.
-    assert_eq!(v["name"], "r.pcraft");
+    assert_eq!(v["name"], "r.rphoto");
     let names: Vec<&str> = v["layers"].as_array().unwrap().iter().filter_map(|l| l["name"].as_str()).collect();
     assert_eq!(names, ["Ink", "Background"]);
     // Continue from the saved file and export PNG.
@@ -300,10 +300,10 @@ fn batch_applies_actions_to_directory() {
     std::fs::write(inp.join("notes.txt"), "ignored").unwrap();
     let actions = d.join("actions.json");
     std::fs::write(&actions, json!([{"command": "layer.new.layer", "params": {"name": "Batch"}}]).to_string()).unwrap();
-    let (out, _) = ok(bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&inp).arg("--out").arg(&outp).args(["--format", "pcraft"]));
+    let (out, _) = ok(bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&inp).arg("--out").arg(&outp).args(["--format", "rphoto"]));
     assert!(out.contains("2 succeeded, 0 failed"), "{out}");
     for n in ["one", "two"] {
-        let (info, _) = ok(bin().arg("info").arg(outp.join(format!("{n}.pcraft"))));
+        let (info, _) = ok(bin().arg("info").arg(outp.join(format!("{n}.rphoto"))));
         let v: Value = serde_json::from_str(&info).unwrap();
         assert_eq!(v["layers"][0]["name"], "Batch");
     }

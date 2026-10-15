@@ -6,8 +6,8 @@
 //! the same [`Live`] catalogues, so `completion/complete` can suggest real command ids, effect ids,
 //! swatch names and export formats instead of a fixed list that goes stale.
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::fileio::FORMATS;
+use serde_json::{Value, json};
 
 use crate::backend::Backend;
 
@@ -79,7 +79,7 @@ fn ids_in(reply: &Value, key: Option<&str>) -> Vec<String> {
     items.iter().take(MAX_VALUES * 8).filter_map(|i| i.get("id").or_else(|| i.get("name"))).filter_map(Value::as_str).map(str::to_string).collect()
 }
 
-/// Ids of every layer and object in the active document, for `vectorcraft://object/{id}`.
+/// Ids of every layer and object in the active document, for `redrob-vector://object/{id}`.
 fn object_ids(b: &mut dyn Backend) -> Vec<String> {
     let mut out = Vec::new();
     let Ok(v) = b.call("document.inspect", json!({})) else { return out };
@@ -553,7 +553,7 @@ mod tests {
         for params in [
             json!({"ref": {"type": "ref/prompt", "name": "nope"}, "argument": {"name": "x", "value": ""}}),
             json!({"ref": {"type": "ref/prompt", "name": "poster"}, "argument": {"name": "nope", "value": ""}}),
-            json!({"ref": {"type": "ref/resource", "uri": "vectorcraft://nope/{id}"}, "argument": {"name": "id", "value": ""}}),
+            json!({"ref": {"type": "ref/resource", "uri": "redrob-vector://nope/{id}"}, "argument": {"name": "id", "value": ""}}),
             json!({"ref": {"type": "ref/other"}, "argument": {"name": "x", "value": ""}}),
             json!({}),
         ] {

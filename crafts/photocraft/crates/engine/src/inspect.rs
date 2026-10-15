@@ -84,7 +84,12 @@ fn smart_instances(layers: &[Layer]) -> HashMap<SmartContentsId, usize> {
 }
 
 /// [`layer`] with a `selected` flag on every node (Layers panel multi-selection).
-fn layer_sel(l: &Layer, selected: &[redrob_photo_doc::LayerId], instances: &HashMap<SmartContentsId, usize>, meta: Option<&redrob_photo_doc::Metadata>) -> Value {
+fn layer_sel(
+    l: &Layer,
+    selected: &[redrob_photo_doc::LayerId],
+    instances: &HashMap<SmartContentsId, usize>,
+    meta: Option<&redrob_photo_doc::Metadata>,
+) -> Value {
     let bounds = l.surface().map(|s| {
         let r = s.content_bounds();
         [r.x0, r.y0, r.width() as i32, r.height() as i32]

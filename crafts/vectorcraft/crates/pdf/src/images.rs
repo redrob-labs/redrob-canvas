@@ -15,10 +15,10 @@
 use std::io::Cursor;
 use std::sync::Arc;
 
-use redrob_craft_pdf::write::backend as krilla;
 use image::imageops::FilterType;
 use image::{DynamicImage, ExtendedColorType, ImageDecoder, ImageFormat, ImageReader};
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
+use redrob_craft_pdf::write::backend as krilla;
 
 use redrob_vector_doc::ImageBlob;
 use redrob_vector_doc::cmyk::jpeg_components;

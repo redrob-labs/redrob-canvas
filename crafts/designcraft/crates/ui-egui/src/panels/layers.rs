@@ -2,8 +2,8 @@
 //! `<first words…>` for text frames), with eye / lock columns per layer and per object and a
 //! selection square in the layer colour.
 
-use redrob_layout_doc::{Content, Document, Item, ItemId};
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use redrob_layout_doc::{Content, Document, Item, ItemId};
 use serde_json::json;
 
 use crate::theme::Tokens;

@@ -1,14 +1,14 @@
 //! Content-bearing offscreen acceptance of the shared docking surface. No OS windows are opened.
-//! Set CRAFT_UI_DOCK_VISUAL_DIR to retain every stage of the pointer-driven workflow.
+//! Set REDROB_CRAFT_UI_DOCK_VISUAL_DIR to retain every stage of the pointer-driven workflow.
 
 use std::{collections::BTreeMap, path::PathBuf};
 
+use egui::{Color32, Context, Event, FullOutput, Id, Modifiers, PointerButton, Pos2, RawInput, Rect, Stroke, pos2, vec2};
+use egui_kittest::{TestRenderer, wgpu::WgpuTestRenderer};
 use redrob_craft_ui::{
     docking::{Action, DockArea, DockStyle, Floating, Layout, Node, Permissions},
     layout::{SplitAxis, SplitSize},
 };
-use egui::{Color32, Context, Event, FullOutput, Id, Modifiers, PointerButton, Pos2, RawInput, Rect, Stroke, pos2, vec2};
-use egui_kittest::{TestRenderer, wgpu::WgpuTestRenderer};
 
 const CANVAS: u32 = 0;
 const LAYERS: u32 = 1;
@@ -217,7 +217,7 @@ impl Harness {
 
 #[test]
 fn floating_brushes_merge_detach_and_redock_through_real_pointer_input() {
-    let output = std::env::var_os("CRAFT_UI_DOCK_VISUAL_DIR").map(PathBuf::from);
+    let output = std::env::var_os("REDROB_CRAFT_UI_DOCK_VISUAL_DIR").map(PathBuf::from);
     for dark in [true, false] {
         for width in [640.0, 1000.0] {
             for scale in [1.0, 2.0] {

@@ -18,8 +18,8 @@ use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_geom::{Affine, Rect};
+use serde::{Deserialize, Serialize};
 
 use redrob_vector_color::Paint;
 
@@ -573,7 +573,7 @@ mod tests {
 
     fn placed(key: &str) -> PlacedDocument {
         PlacedDocument {
-            link: LinkInfo::new("/art/logo.vectorcraft"),
+            link: LinkInfo::new("/art/logo.rvector"),
             key: key.into(),
             bounding: false,
             width: 80.0,
@@ -615,7 +615,7 @@ mod tests {
         let n = Node::new(NodeId(3), NodeKind::PlacedDocument(Box::new(placed("doc1-1"))));
         let v = serde_json::to_value(&n).unwrap();
         assert_eq!(v["kind"]["type"], "placeddocument");
-        assert_eq!(v["kind"]["link"]["path"], "/art/logo.vectorcraft");
+        assert_eq!(v["kind"]["link"]["path"], "/art/logo.rvector");
         let back: Node = serde_json::from_value(v).unwrap();
         assert_eq!(back, n);
         assert_eq!(key_for("img00", 2, true), "img00-2b");

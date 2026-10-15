@@ -12,7 +12,7 @@
 //! path, with the device the app requests). Interactions go through real input where the harness
 //! can reach it (key shortcuts, pointer drags and clicks on the canvas) and otherwise through the
 //! command a panel runs (`layer.select`, `layer.setProps`), then the frames that follow. Each row
-//! is the median / p90 / max of a frame's time over the repetitions; `PHOTOCRAFT_GPU_SYNC` makes
+//! is the median / p90 / max of a frame's time over the repetitions; `REDROB_PHOTO_GPU_SYNC` makes
 //! the canvas wait for the GPU, so a frame's time includes its composite. Move drags report the
 //! press, the pointer-move frames and the release (the commit) separately. `--direct` skips the
 //! PSD round trip; `--navigator` also shows the Navigator panel; `--spin idle|select|tool|move-
@@ -460,13 +460,13 @@ fn spin(h: &mut H, what: &str, [pixel, text, shape, group, smart, headline]: [La
     }
 }
 
-/// Run again with `PHOTOCRAFT_GPU_SYNC=1` unless it is set (the workspace forbids the `unsafe`
+/// Run again with `REDROB_PHOTO_GPU_SYNC=1` unless it is set (the workspace forbids the `unsafe`
 /// that setting it in-process needs).
 fn reexec_with_gpu_sync() {
-    if std::env::var_os("PHOTOCRAFT_GPU_SYNC").is_some() {
+    if std::env::var_os("REDROB_PHOTO_GPU_SYNC").is_some() {
         return;
     }
     let exe = std::env::current_exe().expect("exe");
-    let status = std::process::Command::new(exe).args(std::env::args().skip(1)).env("PHOTOCRAFT_GPU_SYNC", "1").status().expect("re-exec");
+    let status = std::process::Command::new(exe).args(std::env::args().skip(1)).env("REDROB_PHOTO_GPU_SYNC", "1").status().expect("re-exec");
     std::process::exit(status.code().unwrap_or(1));
 }

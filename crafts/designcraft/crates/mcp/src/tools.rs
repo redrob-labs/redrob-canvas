@@ -187,14 +187,14 @@ pub fn tool_definitions() -> Vec<Value> {
         tool(
             "open_document",
             "Open document",
-            "Open a .designcraft file as a new, active document.",
+            "Open a .rlayout file as a new, active document.",
             obj(json!({"path": string("File path")}), &["path"]),
             false,
         ),
         tool(
             "save_document",
             "Save document",
-            "Save the active document in the native .designcraft format.",
+            "Save the active document in the native .rlayout format.",
             obj(json!({"path": string("Destination (default: the document's current path)")}), &[]),
             false,
         ),

@@ -20,7 +20,7 @@ mod recovery_tests;
 /// Photoshop brushes (.abr), gradients (.grd), swatches (.aco, .ase) and keyboard shortcut sets
 /// (.kys), which go to the preset libraries and Edit › Keyboard Shortcuts.
 const OPEN_EXTS: &[&str] = &[
-    "pcraft", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr",
+    "rphoto", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr",
     "pbm", "pgm", "ppm", "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin", "heic", "heif", "hif", "dng", "cr2", "cr3", "nef", "nrw",
     "arw", "pef", "orf", "rw2", "raf", "abr", "grd", "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto", "afpub",
 ];
@@ -41,7 +41,7 @@ fn open_filter_extensions(extensions: &[&str]) -> Vec<String> {
 fn open_filters() -> Vec<(&'static str, Vec<String>)> {
     vec![
         ("All Formats", open_filter_extensions(OPEN_EXTS)),
-        ("PhotoCraft", open_filter_extensions(&["pcraft"])),
+        ("PhotoCraft", open_filter_extensions(&["rphoto"])),
         ("OpenRaster", open_filter_extensions(&["ora"])),
         ("Krita", open_filter_extensions(&["kra", "krz"])),
         ("SVG", open_filter_extensions(SVG_EXTS)),
@@ -49,12 +49,12 @@ fn open_filters() -> Vec<(&'static str, Vec<String>)> {
 }
 
 /// File › Save As formats: (filter name, extensions). The filter matching the suggested name's
-/// extension comes first, so a .pcraft document saves as .pcraft by default and everything else
+/// extension comes first, so a .rphoto document saves as .rphoto by default and everything else
 /// keeps defaulting to PSD.
 const SAVE_FILTERS: &[(&str, &[&str])] = &[
     ("PSD Document", &["psd", "psb"]),
     ("PDF", &["pdf"]),
-    ("PhotoCraft", &["pcraft"]),
+    ("PhotoCraft", &["rphoto"]),
     ("OpenRaster", &["ora"]),
     ("PNG", &["png"]),
     ("JPEG", &["jpg"]),
@@ -195,7 +195,7 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
     }
 }
 
-/// Per-user settings directory: `PHOTOCRAFT_CONFIG_DIR`, else `<exe dir>/PhotoCraftData` in
+/// Per-user settings directory: `REDROB_PHOTO_CONFIG_DIR`, else `<exe dir>/PhotoCraftData` in
 /// portable mode, else the platform convention. Everything the app persists lives under it; see
 /// [`crate::app_dirs`].
 pub fn config_dir() -> Option<PathBuf> {
@@ -279,7 +279,7 @@ fn with_store<R>(store: &SharedRecovery, f: impl FnOnce(&mut RecoveryStore) -> R
     Ok(f(slot.as_mut().ok_or("no config directory")?))
 }
 
-/// Crash recovery: background incremental .pcraft autosaves into `dir` (`None`: no config
+/// Crash recovery: background incremental .rphoto autosaves into `dir` (`None`: no config
 /// directory, so autosaves fail and nothing is recovered). Recovered documents keep their entries
 /// until a newer autosave replaces them or they're saved or closed (see [`RecoveryStore`]).
 fn recovery_services(dir: Option<PathBuf>) -> Services {
@@ -600,7 +600,7 @@ mod tests {
             }
             text.next().is_none()
         }
-        assert_eq!(open_filter_extensions(&["cr2", "pcraft"]), ["[cC][rR]2", "[pP][cC][rR][aA][fF][tT]"]);
+        assert_eq!(open_filter_extensions(&["cr2", "rphoto"]), ["[cC][rR]2", "[pP][cC][rR][aA][fF][tT]"]);
         let globs = open_filter_extensions(OPEN_EXTS);
         assert_eq!(globs.len(), OPEN_EXTS.len());
         for (ext, glob) in OPEN_EXTS.iter().zip(&globs) {
@@ -623,15 +623,15 @@ mod tests {
     #[test]
     fn open_filters_keep_literal_extensions_on_windows_and_macos() {
         assert_eq!(open_filter_extensions(OPEN_EXTS), OPEN_EXTS);
-        assert_eq!(open_filter_extensions(&["pcraft"]), ["pcraft"]);
+        assert_eq!(open_filter_extensions(&["rphoto"]), ["rphoto"]);
         assert_eq!(open_filters().into_iter().find(|(name, _)| *name == "SVG").map(|(_, exts)| exts), Some(vec!["svg".to_string(), "svgz".to_string()]));
     }
 
     #[test]
     fn xwayland_command_matches_how_photocraft_was_installed() {
         // Flatpak: WAYLAND_DISPLAY doesn't reach the sandbox's socket choice; flatpak's flags do.
-        let flatpak = xwayland_command(Some("ai.storyteller.photocraft"), None, false);
-        assert_eq!(flatpak.as_deref(), Some("flatpak run --nosocket=wayland --socket=x11 ai.storyteller.photocraft"));
+        let flatpak = xwayland_command(Some("ai.storyteller.rphoto"), None, false);
+        assert_eq!(flatpak.as_deref(), Some("flatpak run --nosocket=wayland --socket=x11 ai.storyteller.rphoto"));
         // AppImage: its own path, quoted for the shell (spaces, quotes).
         let appimage = xwayland_command(None, Some("/home/me/My Apps/it's.AppImage"), true);
         assert_eq!(appimage.as_deref(), Some(r"WAYLAND_DISPLAY= '/home/me/My Apps/it'\''s.AppImage'"));
@@ -680,7 +680,7 @@ mod tests {
         // Save As, Save a Copy.
         // Files in a format Save As can't write, like .dng, should suggest .psd instead.
         let _ = invoke(&mut app, "file.saveAs");
-        for name in ["cat.pcraft", "cat.jpeg", "cat.gif", "cat.bmp", "cat.dng"] {
+        for name in ["cat.rphoto", "cat.jpeg", "cat.gif", "cat.bmp", "cat.dng"] {
             app.session.active_mut().unwrap().path = Some(name.into());
             let _ = invoke(&mut app, "file.saveAs");
         }
@@ -707,7 +707,7 @@ mod tests {
         // The extension each save above should suggest, in order.
         let want = [
             "psd",                       // Save As untitled
-            "pcraft jpeg gif bmp psd",   // Save As opened .pcraft .jpeg .gif .bmp .dng
+            "rphoto jpeg gif bmp psd",   // Save As opened .rphoto .jpeg .gif .bmp .dng
             "psd",                       // Save a Copy
             "png jpg webp tif tga",      // Export As
             "png jpg gif webp",          // Quick Export
@@ -727,7 +727,7 @@ mod tests {
     #[test]
     fn save_as_offers_only_writable_formats_including_ico() {
         // Layered formats, and PDF, are written by `redrob-photo-io`, not a codec.
-        let layered = ["psd", "psb", "pcraft", "ora", "pdf"];
+        let layered = ["psd", "psb", "rphoto", "ora", "pdf"];
         for (name, exts) in SAVE_FILTERS {
             for ext in exts.iter().filter(|e| !layered.contains(e)) {
                 let format = redrob_photo_codecs::from_extension(ext).unwrap_or_else(|| panic!("{name}: .{ext} is no known format"));
@@ -759,7 +759,7 @@ mod tests {
         for (suggested, name, first) in [
             ("/pics/image.psd", "image", "psd"),
             ("/pics/image.psb", "image", "psb"),
-            ("/pics/image.pcraft", "image", "pcraft"),
+            ("/pics/image.rphoto", "image", "rphoto"),
             ("/pics/sky.fit", "sky", "fit"),
             ("cat.jpeg", "cat", "jpeg"),
             ("swatches.aco", "swatches", "aco"),

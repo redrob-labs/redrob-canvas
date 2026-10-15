@@ -4,8 +4,8 @@
 //! gets Breeze's in KWin's order (`kwinrc`); other desktops get plain round buttons, or Adwaita's
 //! or Breeze's when their GTK theme is one of those, in GTK's `gtk-decoration-layout` order.
 //!
-//! `PHOTOCRAFT_CAPTION_STYLE` (`windows`, `adwaita`, `breeze`, `generic`) and
-//! `PHOTOCRAFT_CAPTION_LAYOUT` (a GTK layout such as `close,minimize:`) override what is found.
+//! `REDROB_PHOTO_CAPTION_STYLE` (`windows`, `adwaita`, `breeze`, `generic`) and
+//! `REDROB_PHOTO_CAPTION_LAYOUT` (a GTK layout such as `close,minimize:`) override what is found.
 
 #[cfg(target_os = "linux")]
 use redrob_photo_ui_egui::{CaptionFamily, CaptionIcon, CaptionIcons, CaptionStyle};
@@ -109,11 +109,11 @@ struct Found {
     icon_theme: Option<String>,
 }
 
-/// The icon theme the glyphs come from: `PHOTOCRAFT_CAPTION_ICONS` (`none` draws PhotoCraft's own),
+/// The icon theme the glyphs come from: `REDROB_PHOTO_CAPTION_ICONS` (`none` draws PhotoCraft's own),
 /// the desktop's setting, or its default theme.
 #[cfg(target_os = "linux")]
 fn icon_theme_name(desktop: Desktop, found: &Found, var: &dyn Fn(&str) -> Option<String>) -> Option<String> {
-    match var("PHOTOCRAFT_CAPTION_ICONS") {
+    match var("REDROB_PHOTO_CAPTION_ICONS") {
         Some(name) if name.trim().eq_ignore_ascii_case("none") => None,
         Some(name) => Some(name.trim().to_string()),
         None => Some(found.icon_theme.clone().unwrap_or_else(|| if desktop == Desktop::Kde { "breeze" } else { "Adwaita" }.into())),
@@ -123,10 +123,10 @@ fn icon_theme_name(desktop: Desktop, found: &Found, var: &dyn Fn(&str) -> Option
 /// The style from what was found; `icons` loads a theme's glyphs.
 #[cfg(target_os = "linux")]
 fn resolve(desktop: Desktop, found: &Found, var: &dyn Fn(&str) -> Option<String>, icons: &dyn Fn(&str) -> Option<CaptionIcons>) -> CaptionStyle {
-    let family = var("PHOTOCRAFT_CAPTION_STYLE").and_then(|s| CaptionFamily::parse(&s)).unwrap_or_else(|| family(desktop, found.gtk_theme.as_deref()));
+    let family = var("REDROB_PHOTO_CAPTION_STYLE").and_then(|s| CaptionFamily::parse(&s)).unwrap_or_else(|| family(desktop, found.gtk_theme.as_deref()));
     // GNOME's own default shows Close only; GTK's shows all three.
     let default = if desktop == Desktop::Gnome { "appmenu:close" } else { "menu:minimize,maximize,close" };
-    let layout = var("PHOTOCRAFT_CAPTION_LAYOUT").or_else(|| found.layout.clone()).unwrap_or_else(|| default.to_string());
+    let layout = var("REDROB_PHOTO_CAPTION_LAYOUT").or_else(|| found.layout.clone()).unwrap_or_else(|| default.to_string());
     let mut style = CaptionStyle::from_gtk_layout(family, &layout);
     style.icons = icon_theme_name(desktop, found, var).and_then(|name| icons(&name));
     style
@@ -346,8 +346,8 @@ mod tests {
         assert_eq!(icon_theme_name(Desktop::Gnome, &found, &env(&[])).as_deref(), Some("Papirus"));
         assert_eq!(icon_theme_name(Desktop::Gnome, &Found::default(), &env(&[])).as_deref(), Some("Adwaita"));
         assert_eq!(icon_theme_name(Desktop::Kde, &Found::default(), &env(&[])).as_deref(), Some("breeze"));
-        assert_eq!(icon_theme_name(Desktop::Kde, &found, &env(&[("PHOTOCRAFT_CAPTION_ICONS", " None ")])), None);
-        assert_eq!(icon_theme_name(Desktop::Kde, &found, &env(&[("PHOTOCRAFT_CAPTION_ICONS", "Tela")])).as_deref(), Some("Tela"));
+        assert_eq!(icon_theme_name(Desktop::Kde, &found, &env(&[("REDROB_PHOTO_CAPTION_ICONS", " None ")])), None);
+        assert_eq!(icon_theme_name(Desktop::Kde, &found, &env(&[("REDROB_PHOTO_CAPTION_ICONS", "Tela")])).as_deref(), Some("Tela"));
         // The style carries what the loader returns for that name.
         let s = resolve(Desktop::Gnome, &found, &env(&[]), &|t| {
             (t == "Papirus").then(|| CaptionIcons { theme: t.into(), render: std::sync::Arc::new(|_, _| None) })
@@ -365,11 +365,11 @@ mod tests {
         let found = Found { gtk_theme: Some("Mint-Y".into()), layout: Some("close:".into()), icon_theme: None };
         let other = resolve(Desktop::Other, &found, &none, &no_icons);
         assert_eq!((other.family, other.left, other.right), (CaptionFamily::Generic, vec![Close], vec![]));
-        let forced = env(&[("PHOTOCRAFT_CAPTION_STYLE", "Breeze"), ("PHOTOCRAFT_CAPTION_LAYOUT", "minimize,close:maximize")]);
+        let forced = env(&[("REDROB_PHOTO_CAPTION_STYLE", "Breeze"), ("REDROB_PHOTO_CAPTION_LAYOUT", "minimize,close:maximize")]);
         let s = resolve(Desktop::Gnome, &found, &forced, &no_icons);
         assert_eq!((s.family, s.left, s.right), (CaptionFamily::Breeze, vec![Minimize, Close], vec![Maximize]));
         // An unknown override name falls back to what was found.
-        assert_eq!(resolve(Desktop::Kde, &found, &env(&[("PHOTOCRAFT_CAPTION_STYLE", "aqua")]), &no_icons).family, CaptionFamily::Breeze);
+        assert_eq!(resolve(Desktop::Kde, &found, &env(&[("REDROB_PHOTO_CAPTION_STYLE", "aqua")]), &no_icons).family, CaptionFamily::Breeze);
     }
 
     #[test]

@@ -17,7 +17,8 @@ async fn malformed_line_recovers_and_modern_lists_are_complete() {
     assert_eq!(error["id"], Value::Null);
     assert_eq!(error["error"]["code"], -32700);
     let meta = json!({"io.modelcontextprotocol/protocolVersion":"2026-07-28", "io.modelcontextprotocol/clientInfo":{"name":"test", "version":"1"}, "io.modelcontextprotocol/clientCapabilities":{}});
-    for (id, method, extra) in [(2, "tools/list", json!({})), (3, "resources/list", json!({})), (4, "resources/read", json!({"uri":"photocraft://document"}))] {
+    for (id, method, extra) in [(2, "tools/list", json!({})), (3, "resources/list", json!({})), (4, "resources/read", json!({"uri":"redrob-photo://document"}))]
+    {
         let mut params = extra;
         params["_meta"] = meta.clone();
         input.write_all(format!("{}\n", json!({"jsonrpc":"2.0", "id":id, "method":method, "params":params})).as_bytes()).await.unwrap();

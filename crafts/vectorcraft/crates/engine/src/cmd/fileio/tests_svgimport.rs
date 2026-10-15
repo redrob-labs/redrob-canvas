@@ -4,8 +4,8 @@
 
 use std::path::PathBuf;
 
-use serde_json::json;
 use redrob_vector_doc::{ImageObject, NodeKind};
+use serde_json::json;
 
 use super::*;
 

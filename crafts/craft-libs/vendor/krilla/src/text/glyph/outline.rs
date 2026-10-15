@@ -11,24 +11,14 @@ pub(crate) fn glyph_path(font: Font, glyph: GlyphId) -> Option<tiny_skia_path::P
     let mut outline_builder = OutlineBuilder::new();
 
     if let Some(outline_glyph) = outline_glyphs.get(glyph.to_skrifa()) {
-        outline_glyph
-            .draw(
-                DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()),
-                &mut outline_builder,
-            )
-            .ok()?;
+        outline_glyph.draw(DrawSettings::unhinted(skrifa::instance::Size::unscaled(), font.location_ref()), &mut outline_builder).ok()?;
     }
 
     outline_builder.finish()
 }
 
 /// Draw an outline-based glyph on a surface.
-pub(crate) fn draw_glyph(
-    font: Font,
-    glyph: GlyphId,
-    base_transform: Transform,
-    surface: &mut Surface,
-) -> Option<()> {
+pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, base_transform: Transform, surface: &mut Surface) -> Option<()> {
     let path = Path(glyph_path(font, glyph).and_then(|p| p.transform(base_transform.to_tsp()))?);
 
     surface.draw_path(&path);

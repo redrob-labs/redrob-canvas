@@ -7,10 +7,10 @@ use unicode_bidi::Level;
 use unicode_script::{Script, UnicodeScript};
 
 use harfrust::{Direction, Feature, ShapeOptions, UnicodeBuffer};
-use skrifa::MetadataProvider;
-use skrifa::instance::Size;
 use redrob_vector_doc::text::INLINE_CHAR;
 use redrob_vector_doc::{CharStyle, InlineArt};
+use skrifa::MetadataProvider;
+use skrifa::instance::Size;
 
 use crate::features::OtFeatures;
 use crate::fontdb::{FontDb, FontFace};

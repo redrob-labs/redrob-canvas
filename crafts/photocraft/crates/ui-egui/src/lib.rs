@@ -366,7 +366,7 @@ pub(crate) enum SaveKind {
 pub type AutomationReadFn = Box<dyn FnMut(&str) -> Result<(String, Vec<u8>), String>>;
 /// Write bytes through the desktop control session's authorized write root.
 pub type AutomationWriteFn = Box<dyn FnMut(&str, &[u8]) -> Result<(), String>>;
-/// Load a directory-form `.pcraft` through the authorized read root, returning its display
+/// Load a directory-form `.rphoto` through the authorized read root, returning its display
 /// name (the file name) and the loaded document. `Ok(None)` marks a regular file: the
 /// caller falls back to the bytes path for the zip form.
 pub type AutomationOpenPcraftFn = Box<dyn FnMut(&str) -> Result<Option<(String, Document)>, String>>;
@@ -774,7 +774,7 @@ pub struct PhotocraftApp {
     started: Option<gpu_status::StartedHook>,
     /// Frame and canvas-upload timings (exposed via `ui.inspect`).
     pub perf: gpu_canvas::Perf,
-    /// Per-frame stroke timings for latency reports (`PHOTOCRAFT_STROKE_TRACE`, see `stroke_trace`).
+    /// Per-frame stroke timings for latency reports (`REDROB_PHOTO_STROKE_TRACE`, see `stroke_trace`).
     pub stroke_trace: stroke_trace::StrokeTrace,
     /// Preferences, autosave and snapping runtime state (see `prefs_ui`, `snap_ui`).
     pub(crate) prefs_rt: prefs_ui::Runtime,
@@ -952,7 +952,7 @@ impl PhotocraftApp {
     /// Draw the document canvas on the GPU (custom WGSL shader) instead of via egui textures.
     /// Call from the app creator with `cc.wgpu_render_state`; without it the CPU path is used.
     pub fn set_wgpu(&mut self, rs: eframe::egui_wgpu::RenderState) {
-        // Preferences › Performance › cache tile size (PHOTOCRAFT_GPU_TILE still overrides).
+        // Preferences › Performance › cache tile size (REDROB_PHOTO_GPU_TILE still overrides).
         let tile = self.session.prefs().performance.cache_tile_size;
         // Escaped driver/setup panics must leave the session and CPU canvas alive.
         self.perf.gpu_info.set_adapter(&rs.adapter.get_info());
@@ -1404,7 +1404,8 @@ impl PhotocraftApp {
             p => {
                 let source = p.as_deref().unwrap_or(&st.doc.name);
                 let ext = match redrob_photo_engine::file_cmds::extension(source).as_deref() {
-                    Some("pdn") => "pcraft",
+                    Some("pdn") => "rphoto",
+                    Some("pcraft") => "rphoto", // legacy: an upstream document saves under the new extension
                     Some("kra" | "krz") => "ora",
                     _ => "psd",
                 };
@@ -1496,7 +1497,7 @@ impl PhotocraftApp {
                     && redrob_photo_engine::file_cmds::extension(p).is_some_and(|e| redrob_photo_codecs::from_extension(&e).is_some_and(|f| f.caps().write))
             };
             let path = st.path.clone().filter(|p| redrob_photo_engine::file_cmds::holds_at(&st.doc, p) || flat_own(p)).ok_or(
-                "Save writes back only to the document's own PSD, PSB, .pcraft or OpenRaster file (OpenRaster only when it holds everything), or to its own flat file while the document is a single plain layer",
+                "Save writes back only to the document's own PSD, PSB, .rphoto or OpenRaster file (OpenRaster only when it holds everything), or to its own flat file while the document is a single plain layer",
             )?;
             return self.save_in_place(path);
         }
@@ -1595,7 +1596,8 @@ impl PhotocraftApp {
         let (hooks, arm) = match kind {
             SaveKind::User => (true, true),
             SaveKind::Automation => {
-                let holds = self.session.documents().iter().find(|st| st.doc.id == doc).is_some_and(|st| redrob_photo_engine::file_cmds::holds_at(&st.doc, path));
+                let holds =
+                    self.session.documents().iter().find(|st| st.doc.id == doc).is_some_and(|st| redrob_photo_engine::file_cmds::holds_at(&st.doc, path));
                 (false, holds)
             }
         };
@@ -1665,7 +1667,7 @@ impl PhotocraftApp {
             let state = self.session.active().ok_or("no document")?;
             // As File › Save: without `path` only a layered file is written back (#416).
             path.or_else(|| state.path.clone().filter(|p| redrob_photo_engine::file_cmds::holds_at(&state.doc, p))).ok_or(
-                "pass `path`: a save without one writes back only to the document's own PSD, PSB, .pcraft or OpenRaster file, and to OpenRaster only when it holds everything (adjustment layers, styles and masks don't fit)",
+                "pass `path`: a save without one writes back only to the document's own PSD, PSB, .rphoto or OpenRaster file, and to OpenRaster only when it holds everything (adjustment layers, styles and masks don't fit)",
             )?
         };
         let reply = |path: &str, warnings: &[String]| json!({"path": path, "warnings": warnings});
@@ -2091,7 +2093,9 @@ impl PhotocraftApp {
     /// pixels brings back that target's foreground/background pair, as in Photoshop (#2166).
     pub(crate) fn sync_mask_targets(&mut self) {
         if let Some(st) = self.session.active_mut() {
-            if redrob_photo_engine::mask_view_cmds::current(st).is_some() || st.channel_view.target == redrob_photo_engine::channel_cmds::ChannelTarget::LayerMask {
+            if redrob_photo_engine::mask_view_cmds::current(st).is_some()
+                || st.channel_view.target == redrob_photo_engine::channel_cmds::ChannelTarget::LayerMask
+            {
                 self.ui.mask_target = true;
                 self.ui.vector_mask_target = false;
             } else if st.channel_view.target == redrob_photo_engine::channel_cmds::ChannelTarget::VectorMask {

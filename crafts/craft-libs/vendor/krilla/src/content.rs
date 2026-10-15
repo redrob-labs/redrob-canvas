@@ -22,9 +22,7 @@ use crate::graphics::graphics_state::{ExtGState, GraphicsStates};
 use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
 use crate::graphics::paint::{Fill, FillRule, InnerPaint, LineCap, LineJoin, Paint, Stroke};
-use crate::graphics::shading_function::{
-    GradientProperties, GradientPropertiesExt, ShadingFunction,
-};
+use crate::graphics::shading_function::{GradientProperties, GradientPropertiesExt, ShadingFunction};
 use crate::graphics::shading_pattern::ShadingPattern;
 use crate::graphics::tiling_pattern::TilingPattern;
 use crate::graphics::xobject::XObject;
@@ -34,11 +32,11 @@ use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::Stream;
-use crate::text::group::{use_text_spanner, GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner};
+use crate::text::group::{GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner, use_text_spanner};
 use crate::text::type3::ColoredGlyph;
-use crate::text::{Font, FontContainer, FontIdentifier, PdfFont, PDF_UNITS_PER_EM};
+use crate::text::{Font, FontContainer, FontIdentifier, PDF_UNITS_PER_EM, PdfFont};
 use crate::text::{Glyph, GlyphId};
-use crate::util::{calculate_stroke_bbox, NameExt};
+use crate::util::{NameExt, calculate_stroke_bbox};
 
 pub(crate) struct ContentBuilder {
     rd_builder: ResourceDictionaryBuilder,
@@ -67,11 +65,7 @@ enum ContentColorSpace {
 }
 
 impl ContentBuilder {
-    pub(crate) fn new(
-        root_transform: Transform,
-        bbox_important: bool,
-        sc: &SerializeContext,
-    ) -> Self {
+    pub(crate) fn new(root_transform: Transform, bbox_important: bool, sc: &SerializeContext) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             validation_errors: HashSet::new(),
@@ -90,8 +84,7 @@ impl ContentBuilder {
         self.content.save_state();
 
         if self.content.state_nesting_depth() > 28 {
-            self.validation_errors
-                .insert(ValidationError::TooHighQNestingLevel);
+            self.validation_errors.insert(ValidationError::TooHighQNestingLevel);
         }
     }
 
@@ -101,8 +94,7 @@ impl ContentBuilder {
 
         Stream::new(
             buf.to_vec(),
-            self.bbox
-                .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
+            self.bbox.unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
             self.validation_errors.into_iter().collect(),
             self.rd_builder.finish(),
             self.uses_mask,
@@ -124,17 +116,10 @@ impl ContentBuilder {
     }
 
     #[track_caller]
-    pub(crate) fn start_marked_content_with_properties(
-        &mut self,
-        sc: &mut SerializeContext,
-        mcid: Option<i32>,
-        tag: ContentTag,
-    ) {
+    pub(crate) fn start_marked_content_with_properties(&mut self, sc: &mut SerializeContext, mcid: Option<i32>, tag: ContentTag) {
         self.start_marked_content_prelude();
 
-        let mut mc = self
-            .content
-            .begin_marked_content_with_properties(tag.name());
+        let mut mc = self.content.begin_marked_content_with_properties(tag.name());
         let mut properties = mc.properties();
 
         if let Some(mcid) = mcid {
@@ -210,9 +195,7 @@ impl ContentBuilder {
         }
 
         // See issue 199.
-        let is_line = path.verbs().len() == 2
-            && path.verbs()[0] == PathVerb::Move
-            && path.verbs()[1] == PathVerb::Line;
+        let is_line = path.verbs().len() == 2 && path.verbs()[0] == PathVerb::Move && path.verbs()[1] == PathVerb::Line;
         let dont_fill = path.bounds().width() == 0.0 || path.bounds().height() == 0.0 || is_line;
 
         if dont_fill {
@@ -261,17 +244,9 @@ impl ContentBuilder {
             }
         };
 
-        let fill_op = |sb: &mut ContentBuilder,
-                       sc: &mut SerializeContext,
-                       chunk_container: &mut ChunkContainer,
-                       fill: &Fill| {
+        let fill_op = |sb: &mut ContentBuilder, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, fill: &Fill| {
             let fill_rule = fill.rule;
-            sb.content_set_fill_properties(
-                Rect::from_tsp(path.bounds()),
-                fill,
-                sc,
-                chunk_container,
-            );
+            sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc, chunk_container);
             sb.content_draw_path(path.segments());
 
             match fill_rule {
@@ -280,15 +255,12 @@ impl ContentBuilder {
             };
         };
 
-        let stroke_op = |sb: &mut ContentBuilder,
-                         sc: &mut SerializeContext,
-                         chunk_container: &mut ChunkContainer,
-                         stroke: &Stroke,
-                         stroke_bbox: Rect| {
-            sb.content_set_stroke_properties(stroke_bbox, stroke, sc, chunk_container);
-            sb.content_draw_path(path.segments());
-            sb.content.stroke();
-        };
+        let stroke_op =
+            |sb: &mut ContentBuilder, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, stroke: &Stroke, stroke_bbox: Rect| {
+                sb.content_set_stroke_properties(stroke_bbox, stroke, sc, chunk_container);
+                sb.content_draw_path(path.segments());
+                sb.content.stroke();
+            };
 
         let fill_stroke_op = |sb: &mut ContentBuilder,
                               sc: &mut SerializeContext,
@@ -297,12 +269,7 @@ impl ContentBuilder {
                               stroke: &Stroke,
                               stroke_bbox: Rect| {
             let fill_rule = fill.rule;
-            sb.content_set_fill_properties(
-                Rect::from_tsp(path.bounds()),
-                fill,
-                sc,
-                chunk_container,
-            );
+            sb.content_set_fill_properties(Rect::from_tsp(path.bounds()), fill, sc, chunk_container);
             sb.content_set_stroke_properties(stroke_bbox, stroke, sc, chunk_container);
             sb.content_draw_path(path.segments());
 
@@ -360,12 +327,7 @@ impl ContentBuilder {
 
     pub(crate) fn push_clip_path(&mut self, path: &Path, clip_rule: &FillRule) {
         self.content_save_state();
-        self.content_draw_path(
-            path.clone()
-                .transform(self.cur_transform_with_root_transform().to_tsp())
-                .unwrap()
-                .segments(),
-        );
+        self.content_draw_path(path.clone().transform(self.cur_transform_with_root_transform().to_tsp()).unwrap().segments());
 
         match clip_rule {
             FillRule::NonZero => self.content.clip_nonzero(),
@@ -405,10 +367,7 @@ impl ContentBuilder {
         let bbox_important = self.bbox_important;
         let calculate_bbox = |is_solid: bool| bbox_important || !is_solid;
 
-        let fill_action = |sb: &mut ContentBuilder,
-                           sc: &mut SerializeContext,
-                           chunk_container: &mut ChunkContainer,
-                           fill: &Fill| {
+        let fill_action = |sb: &mut ContentBuilder, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, fill: &Fill| {
             let bbox = if calculate_bbox(matches!(&fill.paint.0, InnerPaint::Color(_))) {
                 let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
                 sb.expand_bbox(bbox);
@@ -420,10 +379,7 @@ impl ContentBuilder {
             sb.content_set_fill_properties(bbox, fill, sc, chunk_container)
         };
 
-        let stroke_action = |sb: &mut ContentBuilder,
-                             sc: &mut SerializeContext,
-                             chunk_container: &mut ChunkContainer,
-                             stroke: &Stroke| {
+        let stroke_action = |sb: &mut ContentBuilder, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, stroke: &Stroke| {
             let bbox = if calculate_bbox(matches!(&stroke.paint.0, InnerPaint::Color(_))) {
                 // TODO: Bbox should also account for stroke.
                 let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
@@ -539,18 +495,12 @@ impl ContentBuilder {
         glyphs: &[impl Glyph],
         text: &str,
     ) {
-        let font_name = self
-            .rd_builder
-            .register_resource(sc.register_font_identifier(font_identifier));
+        let font_name = self.rd_builder.register_resource(sc.register_font_identifier(font_identifier));
         self.content.set_font(font_name.to_pdf_name(), size);
-        self.content.set_text_matrix(
-            Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
-        );
+        self.content.set_text_matrix(Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform());
 
         for glyph in glyphs {
-            if glyph.glyph_id() == GlyphId::new(0)
-                || pdf_font.font().postscript_name() == Some("LastResort")
-            {
+            if glyph.glyph_id() == GlyphId::new(0) || pdf_font.font().postscript_name() == Some("LastResort") {
                 sc.register_validation_error(ValidationError::ContainsNotDefGlyph(
                     pdf_font.font(),
                     glyph.location(),
@@ -570,26 +520,11 @@ impl ContentBuilder {
             }
         }
 
-        self.encode_glyphs_with_individual_positioning(
-            cur_x,
-            pdf_font,
-            size,
-            context_color,
-            glyphs,
-        );
+        self.encode_glyphs_with_individual_positioning(cur_x, pdf_font, size, context_color, glyphs);
     }
 
-    fn encode_single_glyph(
-        &mut self,
-        cur_x: &mut f32,
-        pdf_font: &dyn PdfFont,
-        size: f32,
-        context_color: rgb::Color,
-        glyph: &impl Glyph,
-    ) {
-        let pdf_glyph = pdf_font
-            .get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color))
-            .unwrap();
+    fn encode_single_glyph(&mut self, cur_x: &mut f32, pdf_font: &dyn PdfFont, size: f32, context_color: rgb::Color, glyph: &impl Glyph) {
+        let pdf_glyph = pdf_font.get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color)).unwrap();
         self.scratch.clear();
         let encoded = &mut self.scratch;
         pdf_glyph.encode_into(encoded);
@@ -613,17 +548,12 @@ impl ContentBuilder {
         let mut items = positioned.items();
 
         for glyph in glyphs {
-            let pdf_glyph = pdf_font
-                .get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color))
-                .unwrap();
+            let pdf_glyph = pdf_font.get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color)).unwrap();
 
             let scale = |val| val * pdf_font.units_per_em();
 
             let x_advance = scale(glyph.x_advance(1.0));
-            let font_advance = pdf_font
-                .font()
-                .advance_width(glyph.glyph_id())
-                .map(|n| scale(n / pdf_font.font().units_per_em()));
+            let font_advance = pdf_font.font().advance_width(glyph.glyph_id()).map(|n| scale(n / pdf_font.font().units_per_em()));
             let x_offset = scale(glyph.x_offset(1.0));
 
             adjustment += x_offset;
@@ -686,22 +616,13 @@ impl ContentBuilder {
 
                 // When the glyph ranges are monotonically decreasing, the glyphs are in reverse
                 // order and we should write `/ReversedChars` marked content.
-                let reversed = glyphs.len() > 1
-                    && glyphs
-                        .windows(2)
-                        .all(|w| w[0].text_range().start >= w[1].text_range().end);
+                let reversed = glyphs.len() > 1 && glyphs.windows(2).all(|w| w[0].text_range().start >= w[1].text_range().end);
 
                 action(sb, sc, chunk_container);
                 sb.content.begin_text();
 
                 let font_container = sc.register_font_container(font.clone());
-                let do_text_span = reversed
-                    || use_text_spanner(
-                        glyphs,
-                        text,
-                        context_color,
-                        &mut font_container.borrow_mut(),
-                    );
+                let do_text_span = reversed || use_text_spanner(glyphs, text, context_color, &mut font_container.borrow_mut());
 
                 if do_text_span {
                     // Separate into distinct glyph runs that either are encoded using actual text, or are
@@ -710,9 +631,7 @@ impl ContentBuilder {
                         glyphs,
                         text,
                         reversed,
-                        sc.serialize_settings()
-                            .validators()
-                            .requires_codepoint_mappings(),
+                        sc.serialize_settings().validators().requires_codepoint_mappings(),
                         context_color,
                         font_container.clone(),
                     );
@@ -770,9 +689,7 @@ impl ContentBuilder {
         reversed: bool,
     ) {
         if let Some(text) = fragment.actual_text() {
-            let mut actual_text = self
-                .content
-                .begin_marked_content_with_properties(Name(b"Span"));
+            let mut actual_text = self.content.begin_marked_content_with_properties(Name(b"Span"));
             actual_text.properties().actual_text(TextStr(text));
         }
 
@@ -785,17 +702,7 @@ impl ContentBuilder {
         let segmented = GlyphGrouper::new(font_container.clone(), context_color, fragment.glyphs());
 
         for glyph_group in segmented {
-            self.fill_stroke_glyph_group(
-                cur_x,
-                cur_y,
-                glyph_group,
-                sc,
-                fill_render_mode,
-                font_container.clone(),
-                context_color,
-                text,
-                font_size,
-            )
+            self.fill_stroke_glyph_group(cur_x, cur_y, glyph_group, sc, fill_render_mode, font_container.clone(), context_color, text, font_size)
         }
 
         if reversed {
@@ -821,19 +728,14 @@ impl ContentBuilder {
         font_size: f32,
     ) {
         let borrowed = font_container.borrow();
-        let pdf_font = borrowed
-            .get_from_identifier(glyph_group.font_identifier.clone())
-            .unwrap();
+        let pdf_font = borrowed.get_from_identifier(glyph_group.font_identifier.clone()).unwrap();
 
         if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
-            self.content
-                .set_text_rendering_mode(TextRenderingMode::Fill);
+            self.content.set_text_rendering_mode(TextRenderingMode::Fill);
         } else if fill_render_mode == TextRenderingMode::FillStroke {
-            self.content
-                .set_text_rendering_mode(TextRenderingMode::FillStroke);
+            self.content.set_text_rendering_mode(TextRenderingMode::FillStroke);
         } else {
-            self.content
-                .set_text_rendering_mode(TextRenderingMode::Stroke);
+            self.content.set_text_rendering_mode(TextRenderingMode::Stroke);
         }
 
         self.encode_consecutive_glyph_run(
@@ -851,13 +753,7 @@ impl ContentBuilder {
         *cur_y -= glyph_group.y_advance * font_size;
     }
 
-    pub(crate) fn draw_xobject(
-        &mut self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        x_object: XObject,
-        state: &ExtGState,
-    ) {
+    pub(crate) fn draw_xobject(&mut self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, x_object: XObject, state: &ExtGState) {
         let bbox = x_object.bbox();
         self.apply_isolated_op(
             |sb, _, _| {
@@ -865,9 +761,7 @@ impl ContentBuilder {
                 sb.expand_bbox(bbox);
             },
             move |sb, sc, chunk_container| {
-                let x_object_name = sb
-                    .rd_builder
-                    .register_resource(sc.register_resourceable(chunk_container, x_object));
+                let x_object_name = sb.rd_builder.register_resource(sc.register_resourceable(chunk_container, x_object));
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
             sc,
@@ -876,22 +770,14 @@ impl ContentBuilder {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn draw_xobject_by_reference(
-        &mut self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        bbox: Rect,
-        x_object: Ref,
-    ) {
+    pub(crate) fn draw_xobject_by_reference(&mut self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, bbox: Rect, x_object: Ref) {
         // TODO: Consider bbox of XObject somehow?
         self.apply_isolated_op(
             |sb, _, _| {
                 sb.expand_bbox(bbox);
             },
             move |sb, _, _| {
-                let x_object_name = sb
-                    .rd_builder
-                    .register_resource(resource::XObject::new(x_object));
+                let x_object_name = sb.rd_builder.register_resource(resource::XObject::new(x_object));
                 sb.content.x_object(x_object_name.to_pdf_name());
             },
             sc,
@@ -899,64 +785,36 @@ impl ContentBuilder {
         );
     }
 
-    pub(crate) fn draw_masked(
-        &mut self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        mask: Mask,
-        stream: Stream,
-    ) {
+    pub(crate) fn draw_masked(&mut self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, mask: Mask, stream: Stream) {
         let state = ExtGState::new().mask(mask, sc, chunk_container);
         self.uses_mask = true;
         let x_object = XObject::new(stream, false, true, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
-    pub(crate) fn draw_opacified(
-        &mut self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        opacity: NormalizedF32,
-        stream: Stream,
-    ) {
-        let state = ExtGState::new()
-            .stroking_alpha(opacity)
-            .non_stroking_alpha(opacity);
+    pub(crate) fn draw_opacified(&mut self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, opacity: NormalizedF32, stream: Stream) {
+        let state = ExtGState::new().stroking_alpha(opacity).non_stroking_alpha(opacity);
         let x_object = XObject::new(stream, true, false, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
-    pub(crate) fn draw_isolated(
-        &mut self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        stream: Stream,
-    ) {
+    pub(crate) fn draw_isolated(&mut self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, stream: Stream) {
         let state = ExtGState::new();
         let x_object = XObject::new(stream, true, false, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
     #[cfg(feature = "raster-images")]
-    pub(crate) fn draw_image(
-        &mut self,
-        image: Image,
-        size: Size,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-    ) {
+    pub(crate) fn draw_image(&mut self, image: Image, size: Size, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer) {
         self.apply_isolated_op(
             |sb, _, _| {
                 // Scale the image from 1x1 to the actual dimensions.
-                let transform =
-                    Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
+                let transform = Transform::from_row(size.width(), 0.0, 0.0, -size.height(), 0.0, size.height());
                 sb.concat_transform(&transform);
                 sb.expand_bbox(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap());
             },
             move |sb, sc, chunk_container| {
-                let image_name = sb.rd_builder.register_resource(resource::XObject::new(
-                    sc.register_image(chunk_container, image),
-                ));
+                let image_name = sb.rd_builder.register_resource(resource::XObject::new(sc.register_image(chunk_container, image)));
 
                 sb.content.x_object(image_name.to_pdf_name());
             },
@@ -965,18 +823,11 @@ impl ContentBuilder {
         );
     }
 
-    pub(crate) fn draw_shading(
-        &mut self,
-        shading: &ShadingFunction,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-    ) {
+    pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer) {
         self.apply_isolated_op(
             |_, _, _| {},
             move |sb, sc, chunk_container| {
-                let sh = sb
-                    .rd_builder
-                    .register_resource(sc.register_resourceable(chunk_container, shading.clone()));
+                let sh = sb.rd_builder.register_resource(sc.register_resourceable(chunk_container, shading.clone()));
                 sb.content.shading(sh.to_pdf_name());
             },
             sc,
@@ -1019,9 +870,7 @@ impl ContentBuilder {
         let state = self.graphics_states.cur().ext_g_state().clone();
 
         if !state.empty() {
-            let ext = self.rd_builder.register_resource::<resource::ExtGState>(
-                sc.register_resourceable(chunk_container, state),
-            );
+            let ext = self.rd_builder.register_resource::<resource::ExtGState>(sc.register_resourceable(chunk_container, state));
             self.content.set_parameters(ext.to_pdf_name());
         }
 
@@ -1042,59 +891,37 @@ impl ContentBuilder {
         mut set_pattern_fn: impl FnMut(&mut Content, String),
         mut set_solid_fn: impl FnMut(&mut Content, ContentColorSpace, &Color),
     ) {
-        let pattern_transform = |transform: Transform| -> Transform {
-            transform.post_concat(self.cur_transform_with_root_transform())
-        };
+        let pattern_transform = |transform: Transform| -> Transform { transform.post_concat(self.cur_transform_with_root_transform()) };
 
-        let mut write_gradient =
-            |gradient_props: GradientProperties,
-             sc: &mut SerializeContext,
-             chunk_container: &mut ChunkContainer,
-             transform: Transform,
-             content_builder: &mut ContentBuilder| {
-                if let Some((color, opacity)) = gradient_props.single_stop_color() {
-                    // Write gradients with one stop as a solid color fill.
-                    content_builder.set_fill_opacity(opacity);
-                    let cs = color.color_space(sc);
-                    let color_space_resource =
-                        Self::cs_to_content_cs(content_builder, sc, chunk_container, cs);
-                    set_solid_fn(&mut content_builder.content, color_space_resource, color);
-                } else {
-                    let shading_mask = Mask::new_from_shading(
-                        gradient_props.clone(),
-                        transform,
-                        bounds,
-                        sc,
-                        chunk_container,
-                    );
+        let mut write_gradient = |gradient_props: GradientProperties,
+                                  sc: &mut SerializeContext,
+                                  chunk_container: &mut ChunkContainer,
+                                  transform: Transform,
+                                  content_builder: &mut ContentBuilder| {
+            if let Some((color, opacity)) = gradient_props.single_stop_color() {
+                // Write gradients with one stop as a solid color fill.
+                content_builder.set_fill_opacity(opacity);
+                let cs = color.color_space(sc);
+                let color_space_resource = Self::cs_to_content_cs(content_builder, sc, chunk_container, cs);
+                set_solid_fn(&mut content_builder.content, color_space_resource, color);
+            } else {
+                let shading_mask = Mask::new_from_shading(gradient_props.clone(), transform, bounds, sc, chunk_container);
 
-                    let shading_pattern = ShadingPattern::new(
-                        gradient_props,
-                        content_builder
-                            .cur_transform_with_root_transform()
-                            .pre_concat(transform),
-                    );
-                    let color_space = content_builder
-                        .rd_builder
-                        .register_resource::<resource::Pattern>(
-                            sc.register_resourceable(chunk_container, shading_pattern),
-                        );
+                let shading_pattern = ShadingPattern::new(gradient_props, content_builder.cur_transform_with_root_transform().pre_concat(transform));
+                let color_space =
+                    content_builder.rd_builder.register_resource::<resource::Pattern>(sc.register_resourceable(chunk_container, shading_pattern));
 
-                    if let Some(shading_mask) = shading_mask {
-                        let state = ExtGState::new().mask(shading_mask, sc, chunk_container);
-                        content_builder.uses_mask = true;
+                if let Some(shading_mask) = shading_mask {
+                    let state = ExtGState::new().mask(shading_mask, sc, chunk_container);
+                    content_builder.uses_mask = true;
 
-                        let ext = content_builder
-                            .rd_builder
-                            .register_resource::<resource::ExtGState>(
-                                sc.register_resourceable(chunk_container, state),
-                            );
-                        content_builder.content.set_parameters(ext.to_pdf_name());
-                    }
-
-                    set_pattern_fn(&mut content_builder.content, color_space);
+                    let ext = content_builder.rd_builder.register_resource::<resource::ExtGState>(sc.register_resourceable(chunk_container, state));
+                    content_builder.content.set_parameters(ext.to_pdf_name());
                 }
-            };
+
+                set_pattern_fn(&mut content_builder.content, color_space);
+            }
+        };
 
         match &paint.0 {
             InnerPaint::Color(c) => {
@@ -1118,19 +945,9 @@ impl ContentBuilder {
                 let mut pat = Arc::unwrap_or_clone(pat.clone());
                 pat.transform = pattern_transform(pat.transform);
 
-                let tiling_pattern = TilingPattern::new(
-                    pat.stream,
-                    pat.transform,
-                    opacity,
-                    pat.width,
-                    pat.height,
-                    sc,
-                    chunk_container,
-                );
+                let tiling_pattern = TilingPattern::new(pat.stream, pat.transform, opacity, pat.width, pat.height, sc, chunk_container);
 
-                let color_space = self.rd_builder.register_resource::<resource::Pattern>(
-                    sc.register_resourceable(chunk_container, tiling_pattern),
-                );
+                let color_space = self.rd_builder.register_resource::<resource::Pattern>(sc.register_resourceable(chunk_container, tiling_pattern));
                 set_pattern_fn(&mut self.content, color_space);
             }
         }
@@ -1143,9 +960,7 @@ impl ContentBuilder {
         cs: ColorSpace,
     ) -> ContentColorSpace {
         match sc.register_colorspace(chunk_container, cs) {
-            MaybeDeviceColorSpace::ColorSpace(s) => {
-                ContentColorSpace::Named(content_builder.rd_builder.register_resource(s))
-            }
+            MaybeDeviceColorSpace::ColorSpace(s) => ContentColorSpace::Named(content_builder.rd_builder.register_resource(s)),
             MaybeDeviceColorSpace::DeviceGray => ContentColorSpace::Device,
             MaybeDeviceColorSpace::DeviceRgb => ContentColorSpace::Device,
             MaybeDeviceColorSpace::DeviceCMYK => ContentColorSpace::Device,
@@ -1189,15 +1004,7 @@ impl ContentBuilder {
             }
         }
 
-        self.content_set_fill_stroke_properties(
-            bounds,
-            &fill.paint,
-            fill.opacity,
-            serializer_context,
-            chunk_container,
-            set_pattern_fn,
-            set_solid_fn,
-        );
+        self.content_set_fill_stroke_properties(bounds, &fill.paint, fill.opacity, serializer_context, chunk_container, set_pattern_fn, set_solid_fn);
     }
 
     fn content_set_stroke_properties(
@@ -1262,13 +1069,11 @@ impl ContentBuilder {
         }
 
         if stroke.line_join != LineJoin::Miter {
-            self.content
-                .set_line_join(stroke.line_join.to_pdf_line_join());
+            self.content.set_line_join(stroke.line_join.to_pdf_line_join());
         }
 
         if let Some(stroke_dash) = &stroke.dash {
-            self.content
-                .set_dash_pattern(stroke_dash.array.iter().copied(), stroke_dash.offset);
+            self.content.set_dash_pattern(stroke_dash.array.iter().copied(), stroke_dash.offset);
         }
     }
 
@@ -1294,14 +1099,7 @@ impl ContentBuilder {
                     // Since PDF doesn't support quad curves, we need to convert them into
                     // cubic.
                     let prev = p_prev.unwrap();
-                    self.content.cubic_to(
-                        calc(prev.x, p1.x),
-                        calc(prev.y, p1.y),
-                        calc(p2.x, p1.x),
-                        calc(p2.y, p1.y),
-                        p2.x,
-                        p2.y,
-                    );
+                    self.content.cubic_to(calc(prev.x, p1.x), calc(prev.y, p1.y), calc(p2.x, p1.x), calc(p2.y, p1.y), p2.x, p2.y);
                     p_prev = Some(p2);
                 }
                 PathSegment::CubicTo(p1, p2, p3) => {
@@ -1322,10 +1120,7 @@ impl ContentBuilder {
 fn get_glyphs_bbox(glyphs: &[impl Glyph], x: f32, y: f32, size: f32, font: Font) -> Rect {
     let font_bbox = font.bbox();
     let (mut bl, mut bt, mut br, mut bb) = font_bbox
-        .transform(Transform::from_scale(
-            size / font.units_per_em(),
-            -size / font.units_per_em(),
-        ))
+        .transform(Transform::from_scale(size / font.units_per_em(), -size / font.units_per_em()))
         .and_then(|b| b.transform(Transform::from_translate(x, y)))
         .map(|b| (b.left(), b.top(), b.right(), b.bottom()))
         .unwrap_or((x, y, x + 1.0, y + 1.0));

@@ -1,10 +1,10 @@
 //! PDF text in installed fonts imports as live type (one point type object per line).
 
-use redrob_craft_pdf::write::backend as krilla;
 use krilla::geom::{Point as KPoint, Transform};
 use krilla::page::PageSettings;
 use krilla::text::{Font, TextDirection};
 use kurbo::Shape;
+use redrob_craft_pdf::write::backend as krilla;
 use redrob_vector_doc::{Document, NodeKind, TextObject};
 
 use crate::*;

@@ -164,7 +164,7 @@ fn embedded_pages_can_be_written_without_interpretation_or_rasterization() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_unbalanced_surface_cleanup_survives_in_a_subprocess() {
-    const CHILD: &str = "CRAFT_PDF_SURFACE_PANIC_PROBE";
+    const CHILD: &str = "REDROB_CRAFT_PDF_SURFACE_PANIC_PROBE";
     if std::env::var_os(CHILD).is_some() {
         let result: Result<(), AppError> = write::guard(|| {
             let mut writer = Writer::new(Default::default(), Metadata::default());

@@ -89,7 +89,7 @@ let _ = store.flush();
 
 `SettingsStore::open_at(dir)` opens a store in a given folder, for settings that travel with a
 library or project. `SettingsStore::open(Location::Memory)` keeps settings in memory only and
-reads and writes nothing, for tests, demos and switches like `DESIGNCRAFT_NO_PREFS`; the app
+reads and writes nothing, for tests, demos and switches like `REDROB_LAYOUT_NO_PREFS`; the app
 uses the same `get`/`update`/`tick`/`flush` calls either way. `OpenOptions` adds older files to
 import, a different debounce, and a `Probe` for tests.
 
@@ -98,7 +98,7 @@ import, a different debounce, and a `Probe` for tests.
 `Location::Auto` applies these rules in order; the report says which one won:
 
 1. `Location::Dir(path)`: an application override, such as a `--config-dir` flag.
-2. `<APP>_CONFIG_DIR` (`PHOTOCRAFT_CONFIG_DIR`). Set but **empty** means isolated: the store
+2. `<APP>_CONFIG_DIR` (`REDROB_PHOTO_CONFIG_DIR`). Set but **empty** means isolated: the store
    is in memory only and nothing is read or written, so tests and agents never touch the real
    profile.
 3. A portable marker next to the executable (next to the `.app` bundle on macOS): by default a

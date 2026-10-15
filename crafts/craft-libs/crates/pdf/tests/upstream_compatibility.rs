@@ -230,14 +230,14 @@ mod page_trees {
 #[cfg(feature = "interpret")]
 mod painting {
     use super::{assemble, stream};
+    use kurbo::{Affine, BezPath, Point, Rect};
     use redrob_craft_pdf::interpret::{
         BlendMode, ClipPath, Context, Device, GlyphDrawMode, Image, InterpreterCache, InterpreterSettings, Paint, PathDrawMode, SoftMask,
         TransformExt, font::Glyph,
     };
-    use kurbo::{Affine, BezPath, Point, Rect};
 
     #[cfg(craft_pdf_unicode_fixtures)]
-    const INTER: &[u8] = include_bytes!(concat!(env!("CRAFT_PDF_TEST_FONT_DIR"), "/Inter-Regular.ttf"));
+    const INTER: &[u8] = include_bytes!(concat!(env!("REDROB_CRAFT_PDF_TEST_FONT_DIR"), "/Inter-Regular.ttf"));
 
     #[derive(Debug)]
     struct GlyphEvent {

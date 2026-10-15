@@ -1,6 +1,6 @@
 [package]
 name = "redrob-photo-format"
-description = "Native .pcraft document bundle: manifest + content-addressed zstd tiles"
+description = "Native .rphoto document bundle: manifest + content-addressed zstd tiles"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

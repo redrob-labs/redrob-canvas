@@ -581,7 +581,7 @@ fn images_resolve_in_order_and_roles_win() {
     new_doc(&mut s, 1);
     write(&data.join("doc.csv"), "Photo\ndocpic.png\n");
     exec(&mut s, "data.source.select", json!({"path": data.join("doc.csv")}));
-    exec(&mut s, "file.save", json!({"path": docs.join("layout.designcraft")}));
+    exec(&mut s, "file.save", json!({"path": docs.join("layout.rlayout")}));
     let frame = exec(&mut s, "frame.create", json!({"rect": [0.0, 0.0, 200.0, 100.0], "content": "graphic"}));
     exec(&mut s, "data.placeholder.add", json!({"field": "Photo", "role": "image", "item": frame["id"]}));
     exec(&mut s, "data.options", json!({"center": false, "linkImages": true, "fitting": "fitProportionally"}));
@@ -871,7 +871,7 @@ fn update_remove_preview_inline_rows_and_old_files() {
     assert!(texts(&s).iter().any(|t| t.contains("<<Name>>")));
 
     exec(&mut s, "data.preview", json!({"record": 2}));
-    let path = dir.join("saved.designcraft");
+    let path = dir.join("saved.rlayout");
     exec(&mut s, "file.save", json!({"path": path}));
     let saved = crate::cmd::from_bytes(&std::fs::read(&path).unwrap()).unwrap();
     assert!(!saved.stories.values().any(|st| st.text.contains("Grace")));
@@ -882,7 +882,7 @@ fn update_remove_preview_inline_rows_and_old_files() {
     s.recovery_dir = Some(rec.clone());
     crate::recovery::save(&s, &rec).unwrap();
     let uid = s.documents()[0].uid;
-    let recovered = crate::cmd::from_bytes(&std::fs::read(rec.join(format!("{uid}.designcraft"))).unwrap()).unwrap();
+    let recovered = crate::cmd::from_bytes(&std::fs::read(rec.join(format!("{uid}.rlayout"))).unwrap()).unwrap();
     assert!(!recovered.stories.values().any(|st| st.text.contains("Grace")));
     assert!(texts(&s).iter().any(|t| t.contains("Grace")), "recovery writes the stash and leaves the preview on screen");
     exec(&mut s, "file.new", json!({}));
@@ -917,7 +917,7 @@ fn update_remove_preview_inline_rows_and_old_files() {
     assert!(msg.contains("too large"), "{msg}");
     assert_eq!(s.documents().len(), before);
 
-    let fresh = dir.join("fresh.designcraft");
+    let fresh = dir.join("fresh.rlayout");
     let mut s = Session::new();
     new_doc(&mut s, 1);
     exec(&mut s, "file.save", json!({"path": fresh}));
@@ -1008,14 +1008,14 @@ fn relative_path_and_reopen() {
         status: SourceStatus::Missing,
         warnings: vec![],
     });
-    resolve_sources_on_open(&mut doc, Some(&b.join("doc.designcraft")));
+    resolve_sources_on_open(&mut doc, Some(&b.join("doc.rlayout")));
     assert_eq!(doc.data_merge.sources[0].status, SourceStatus::Ok);
     assert_eq!(doc.data_merge.sources[0].path.as_deref(), Some(csv.to_string_lossy().as_ref()));
 
     let mut s = Session::new();
     new_doc(&mut s, 1);
     exec(&mut s, "data.source.select", json!({"path": csv}));
-    let saved = a.join("layout.designcraft");
+    let saved = a.join("layout.rlayout");
     exec(&mut s, "file.save", json!({"path": saved}));
     let mut s2 = Session::new();
     exec(&mut s2, "file.open", json!({"path": saved}));

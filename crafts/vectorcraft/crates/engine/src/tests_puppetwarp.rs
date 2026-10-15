@@ -1,8 +1,8 @@
 //! Puppet Warp: turning the art around a pin (`object.puppetWarp {angles}`) and the tool's pins.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::{Point, Rect};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -256,7 +256,7 @@ fn pins_are_never_saved() {
     assert!(s.doc().unwrap().doc.puppet.is_some());
     let r = s.execute("document.serialize", &json!({"format": "vectorcraft"})).unwrap();
     let data = r["dataBase64"].as_str().unwrap().to_string();
-    s.execute("document.open", &json!({"name": "pins.vectorcraft", "dataBase64": data})).unwrap();
+    s.execute("document.open", &json!({"name": "pins.rvector", "dataBase64": data})).unwrap();
     let st = s.doc().unwrap();
     assert!(st.doc.puppet.is_none());
     assert_eq!(st.doc.node_count(), 2, "layer + rectangle");

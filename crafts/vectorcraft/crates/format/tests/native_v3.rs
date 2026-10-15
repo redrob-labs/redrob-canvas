@@ -1,4 +1,4 @@
-//! `.vectorcraft` v3: compression, pruning unused images, keys from newer versions, colour
+//! `.rvector` v3: compression, pruning unused images, keys from newer versions, colour
 //! profiles as a document field, saving for older versions and the embedded preview.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -6,12 +6,12 @@
 use std::io::Write as _;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{ColorProfiles, Composer, Document, ImageBlob, ImageObject, Node, NodeKind, OpacityMask, Symbol};
 use redrob_vector_format::{FormatError, SaveOptions, VERSION, is_compressed, load, preview, save, save_with, sniff};
 use redrob_vector_geom::Affine;
 use redrob_vector_testkit::fixtures;
 use redrob_vector_testkit::invariants::{check_native_roundtrip, doc_json, json_approx_eq};
+use serde_json::{Value, json};
 
 fn rich_doc() -> Document {
     (*fixtures::rich_session().doc().unwrap().doc).clone()

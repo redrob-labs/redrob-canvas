@@ -1,9 +1,9 @@
 //! Desktop printer transport. VectorCraft composes every page and copy before submission;
 //! redrob-craft-print owns discovery and spooling. Windows 7 keeps its viewer-based transport because
 //! Windows.Data.Pdf is unavailable there.
+use redrob_vector_ui_egui::print::{PrintJob, PrintService, Printer};
 #[cfg(not(all(windows, any(feature = "windows7", target_vendor = "win7"))))]
 use std::process::Command;
-use redrob_vector_ui_egui::print::{PrintJob, PrintService, Printer};
 
 #[cfg(all(windows, any(feature = "windows7", target_vendor = "win7")))]
 mod windows7;
@@ -41,7 +41,9 @@ mod system {
         // Copies, layout, marks and colour management are already in the PDF. Preserve its
         // physical sheet size and the queue's duplex default without printing copies twice.
         let settings = redrob_craft_print::Job { printer: job.printer.map(str::to_string), title: job.title.into(), ..Default::default() };
-        redrob_craft_print::submit(job.pdf, &settings).map(|note| if note.is_empty() { note } else { format!(" ({note})") }).map_err(|e| e.to_string())
+        redrob_craft_print::submit(job.pdf, &settings)
+            .map(|note| if note.is_empty() { note } else { format!(" ({note})") })
+            .map_err(|e| e.to_string())
     }
     pub fn setup(printer: Option<&str>) -> Result<(), String> {
         #[cfg(windows)]

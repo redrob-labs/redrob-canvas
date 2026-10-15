@@ -116,7 +116,7 @@ fn saved_workspace_restores_the_custom_tree_and_hidden_panel_placement() {
 /// Explicit offscreen evidence; this creates no native windows.
 #[test]
 fn capture_custom_panel_docking_visual_fixtures() {
-    let Some(directory) = std::env::var_os("CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from) else { return };
+    let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from) else { return };
     std::fs::create_dir_all(&directory).unwrap();
     for theme in crate::theme::Brightness::ALL {
         for width in [800.0, 1280.0] {
@@ -266,7 +266,7 @@ fn populated_canvas_keeps_a_real_stroke_edit_after_floating_and_redocking() {
     app.run("object.fill", json!({"swatch":"C=100 M=0 Y=0 K=0"})).unwrap();
     app.run("object.stroke", json!({"weight":8})).unwrap();
     app.run("window.panel.float", json!({"panel":"stroke","x":40,"y":140,"width":310,"height":490})).unwrap();
-    let directory = std::env::var_os("CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from);
+    let directory = std::env::var_os("REDROB_CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from);
     let builder = Harness::builder().with_size(vec2(1280.0, 800.0));
     let builder = if directory.is_some() { builder.wgpu() } else { builder };
     let mut h = builder.build_ui_state(
@@ -552,7 +552,7 @@ fn first_story_editor_frame_conservatively_blocks_owned_tab_release() {
 
 #[test]
 fn capture_legacy_panel_menu_visual_fixture() {
-    let Some(directory) = std::env::var_os("CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from) else { return };
+    let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_DOCKING_FIXTURES").map(std::path::PathBuf::from) else { return };
     std::fs::create_dir_all(&directory).unwrap();
     let mut app = app();
     app.run("file.new", json!({})).unwrap();

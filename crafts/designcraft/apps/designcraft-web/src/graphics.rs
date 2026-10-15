@@ -39,7 +39,7 @@ impl RecoveryDocument {
 
     pub(crate) fn save_copy(&self) -> Result<(String, Vec<u8>), String> {
         let bytes = redrob_layout_format::save(&self.doc).map_err(|error| format!("Couldn't save a copy of {}: {error}", self.title))?;
-        Ok((format!("{}.designcraft", self.doc.title), bytes))
+        Ok((format!("{}.rlayout", self.doc.title), bytes))
     }
 }
 
@@ -99,7 +99,7 @@ mod tests {
 
         for (index, expected) in [first.clone(), second.clone()].iter().enumerate() {
             let (name, bytes) = recovery_document(&session, index).unwrap();
-            assert_eq!(name, format!("{}.designcraft", expected.title));
+            assert_eq!(name, format!("{}.rlayout", expected.title));
             let reopened = redrob_layout_engine::cmd::from_bytes(&bytes).unwrap();
             assert_eq!(reopened, **expected, "the copy must retain document content and embedded PNG bytes");
         }
@@ -148,7 +148,7 @@ mod tests {
 
         for (snapshot, expected) in documents.iter().zip([first, template]) {
             let (name, bytes) = snapshot.save_copy().unwrap();
-            assert_eq!(name, format!("{}.designcraft", expected.title));
+            assert_eq!(name, format!("{}.rlayout", expected.title));
             assert!(bytes.starts_with(b"PK"));
             let reopened = redrob_layout_engine::cmd::from_bytes(&bytes).unwrap();
             assert_eq!(reopened, *expected, "snapshots must retain every document and its embedded asset bytes");

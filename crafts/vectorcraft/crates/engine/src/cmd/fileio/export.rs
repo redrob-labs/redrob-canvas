@@ -4,8 +4,8 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind, SymbolBoxes};
+use serde_json::{Value, json};
 
 use crate::DocState;
 
@@ -41,7 +41,8 @@ pub(super) fn serialize(s: &mut Session, p: &Value) -> Result<Value> {
         out["files"] = main.iter().map(|(name, bytes)| merge(json!({ "name": name }), data(bytes))).collect();
     }
     if !linked.is_empty() {
-        out["linked"] = linked.iter().map(|(name, bytes)| json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) })).collect();
+        out["linked"] =
+            linked.iter().map(|(name, bytes)| json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) })).collect();
     }
     Ok(out)
 }

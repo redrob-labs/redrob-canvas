@@ -3,9 +3,9 @@
 //! artboard with Use Artboards; raster effects as images, rendered at the document's raster
 //! effects resolution), `document.open` and File → Place (one artboard, the picture's frame).
 
-use serde_json::Value;
 use redrob_vector_doc::Document;
 use redrob_vector_metafile::Kind;
+use serde_json::Value;
 
 use super::super::*;
 use super::{ArtboardPick, Encoded, FormatOption};

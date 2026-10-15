@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
+use kurbo::{Affine, BezPath, PathEl, Rect, Shape};
 use redrob_craft_pdf::interpret::font::Glyph;
 use redrob_craft_pdf::interpret::hayro_cmap::BfString;
 use redrob_craft_pdf::interpret::pattern::{Pattern, TilingPattern};
@@ -12,7 +13,6 @@ use redrob_craft_pdf::interpret::{
     MaskType, PathDrawMode, SoftMask, StrokeProps,
 };
 use redrob_craft_pdf::syntax::object::Name;
-use kurbo::{Affine, BezPath, PathEl, Rect, Shape};
 use redrob_vector_color::{BlendMode, Color, Paint, Swatch};
 use redrob_vector_doc::{
     Appearance, AppearanceItem, Artboard, ColorMode, Dash, Document, FillLayer, ImageBlob, ImageObject, Knockout, LayerColor, LineCap, LineJoin,
@@ -159,7 +159,11 @@ pub(crate) fn read(bytes: &[u8], opts: &ImportOptions) -> Result<ImportReport, P
 }
 
 #[cfg(test)]
-pub(crate) fn import_with_reader_options(bytes: &[u8], opts: &ImportOptions, reader: &redrob_craft_pdf::OpenOptions) -> Result<ImportReport, PdfError> {
+pub(crate) fn import_with_reader_options(
+    bytes: &[u8],
+    opts: &ImportOptions,
+    reader: &redrob_craft_pdf::OpenOptions,
+) -> Result<ImportReport, PdfError> {
     redrob_vector_doc::depth::with_deep_stack(|| read_with_reader_options(bytes, opts, reader))
 }
 
@@ -534,7 +538,12 @@ const KANGXI: &str = "一丨丶丿乙亅二亠人儿入八冂冖冫几凵刀力�
 /// largest difference between their boxes, in thousandths of an em. `None` when they are clearly
 /// different glyphs (or the face lacks the character); `Some(0)` when there is nothing to compare
 /// (several characters, a vertical form, no ink in either).
-fn glyph_deviation(face: &redrob_vector_text::FontFace, text: &str, o: &redrob_craft_pdf::interpret::font::OutlineGlyph, vertical: bool) -> Option<f64> {
+fn glyph_deviation(
+    face: &redrob_vector_text::FontFace,
+    text: &str,
+    o: &redrob_craft_pdf::interpret::font::OutlineGlyph,
+    vertical: bool,
+) -> Option<f64> {
     let Some(c) = comparable(text, vertical) else { return Some(0.0) };
     let gid = face.glyph_for(c);
     if gid == 0 {
@@ -1291,7 +1300,13 @@ impl<'p> Builder<'p> {
     /// before it on the open line was stroked so too, is held with the line instead of ending it
     /// (an editor writes type on a path glyph by glyph, each followed by the stroke added to the
     /// type). `false`: it isn't one.
-    fn hold_glyph_stroke(&mut self, path: &BezPath, transform: Affine, paint: &redrob_craft_pdf::interpret::Paint<'_>, draw_mode: &PathDrawMode) -> bool {
+    fn hold_glyph_stroke(
+        &mut self,
+        path: &BezPath,
+        transform: Affine,
+        paint: &redrob_craft_pdf::interpret::Paint<'_>,
+        draw_mode: &PathDrawMode,
+    ) -> bool {
         let PathDrawMode::Stroke(props) = draw_mode else { return false };
         if self.mask.is_some() || self.blend != BlendMode::Normal || matches!(paint, redrob_craft_pdf::interpret::Paint::Pattern(_)) {
             return false;

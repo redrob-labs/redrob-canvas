@@ -10,7 +10,7 @@ fn snapshot(tag: &str) -> (PathBuf, Document, RecoveryEntry) {
     let mut doc = Document::with_background("Recovered drawing", Size::new(4, 3), ColorMode::Rgb, SampleType::U16, Color::WHITE);
     doc.layers[0].surface_mut().unwrap().write_pixel(1, 2, &[1.0, 0.0, 0.0, 1.0]);
     let saver = Autosaver::new(&dir, "previous-session");
-    saver.request_checked(Arc::new(doc.clone()), 7, Some(dir.join("original.pcraft").to_string_lossy().into_owned()), SaveOptions::default()).unwrap();
+    saver.request_checked(Arc::new(doc.clone()), 7, Some(dir.join("original.rphoto").to_string_lossy().into_owned()), SaveOptions::default()).unwrap();
     assert!(saver.flush().unwrap().unwrap().tiles_written > 0);
     let mut entries = list_recovery(&dir);
     assert_eq!(entries.len(), 1);

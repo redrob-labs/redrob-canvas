@@ -66,31 +66,17 @@ impl ConfigurationBuilder {
 
     /// Build the [`Configuration`], returning an error if the validators and version are incompatible.
     pub fn finish(self) -> Result<Configuration, ConfigurationError> {
-        let validators = self
-            .validators
-            .finish()
-            .map_err(ConfigurationError::NoOverlappingValidatorsRange)?;
+        let validators = self.validators.finish().map_err(ConfigurationError::NoOverlappingValidatorsRange)?;
 
         let validator_range = validators.min().unwrap_or(PdfVersion::MIN)..=validators.max();
         match self.version {
-            Some(version) if validator_range.contains(&version) => Ok(Configuration {
-                validators,
-                version,
-            }),
-            Some(version) => Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(
-                version, validators,
-            )),
-            None if !validators.is_empty() => Ok(Configuration {
-                validators,
-                version: *validator_range.end(),
-            }),
+            Some(version) if validator_range.contains(&version) => Ok(Configuration { validators, version }),
+            Some(version) => Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(version, validators)),
+            None if !validators.is_empty() => Ok(Configuration { validators, version: *validator_range.end() }),
             None => {
                 let version = PdfVersion::default();
                 debug_assert!(validator_range.contains(&version));
-                Ok(Configuration {
-                    validators,
-                    version,
-                })
+                Ok(Configuration { validators, version })
             }
         }
     }
@@ -107,23 +93,14 @@ pub enum ConfigurationError {
 
 #[cfg(test)]
 mod tests {
-    use crate::configure::{
-        Accessibility, Archival, Configuration, ConfigurationBuilder, ConfigurationError,
-        PdfVersion,
-    };
+    use crate::configure::{Accessibility, Archival, Configuration, ConfigurationBuilder, ConfigurationError, PdfVersion};
 
     #[test]
     fn invalid_combination_1() {
         // A1_B max is PDF 1.4; explicit PDF 1.7 is out of range.
         assert!(matches!(
-            ConfigurationBuilder::new()
-                .with_version(PdfVersion::Pdf17)
-                .with_archival_validator(Archival::A1_B)
-                .finish(),
-            Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(
-                PdfVersion::Pdf17,
-                _
-            ))
+            ConfigurationBuilder::new().with_version(PdfVersion::Pdf17).with_archival_validator(Archival::A1_B).finish(),
+            Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(PdfVersion::Pdf17, _))
         ));
     }
 
@@ -131,10 +108,7 @@ mod tests {
     fn invalid_combination_2() {
         // A4 requires PDF 2.0; UA1 max is PDF 1.7 → no overlapping range.
         assert!(matches!(
-            ConfigurationBuilder::new()
-                .with_archival_validator(Archival::A4)
-                .with_accessibility_validator(Accessibility::UA1)
-                .finish(),
+            ConfigurationBuilder::new().with_archival_validator(Archival::A4).with_accessibility_validator(Accessibility::UA1).finish(),
             Err(ConfigurationError::NoOverlappingValidatorsRange(_))
         ));
     }
@@ -149,35 +123,24 @@ mod tests {
                 .with_accessibility_validator(Accessibility::UA1)
                 .with_version(PdfVersion::Pdf17)
                 .finish(),
-            Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(
-                PdfVersion::Pdf17,
-                _
-            ))
+            Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(PdfVersion::Pdf17, _))
         ));
     }
 
     #[test]
     fn multi_validator_pdf_a3b_pdf_ua1() {
-        let config = ConfigurationBuilder::new()
-            .with_archival_validator(Archival::A3_B)
-            .with_accessibility_validator(Accessibility::UA1)
-            .finish()
-            .unwrap();
+        let config =
+            ConfigurationBuilder::new().with_archival_validator(Archival::A3_B).with_accessibility_validator(Accessibility::UA1).finish().unwrap();
         assert_eq!(config.validators().archival(), Some(Archival::A3_B));
-        assert_eq!(
-            config.validators().accessibility(),
-            Some(Accessibility::UA1)
-        );
+        assert_eq!(config.validators().accessibility(), Some(Accessibility::UA1));
         assert_eq!(config.version(), PdfVersion::Pdf17);
     }
 
     #[test]
     fn multi_validator_pdfa2a_pdfua1() {
-        assert!(ConfigurationBuilder::new()
-            .with_archival_validator(Archival::A2_A)
-            .with_accessibility_validator(Accessibility::UA1)
-            .finish()
-            .is_ok());
+        assert!(
+            ConfigurationBuilder::new().with_archival_validator(Archival::A2_A).with_accessibility_validator(Accessibility::UA1).finish().is_ok()
+        );
     }
 
     #[test]
@@ -189,9 +152,6 @@ mod tests {
 
     #[test]
     fn default_config() {
-        assert_eq!(
-            ConfigurationBuilder::new().finish().unwrap(),
-            Configuration::default()
-        );
+        assert_eq!(ConfigurationBuilder::new().finish().unwrap(), Configuration::default());
     }
 }

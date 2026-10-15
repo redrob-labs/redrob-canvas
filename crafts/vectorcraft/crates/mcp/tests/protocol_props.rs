@@ -5,12 +5,12 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
-use serde_json::{Value, json};
 use redrob_vector_doc::Document;
 use redrob_vector_mcp::{Headless, Server, tool_definitions};
 use redrob_vector_testkit::catch_quiet;
 use redrob_vector_testkit::invariants::{check_document, doc_json};
 use redrob_vector_testkit::strategies::{arb_ops, junk_values};
+use serde_json::{Value, json};
 
 fn server() -> Server {
     Server::new(Box::new(Headless::with_document()))
@@ -31,7 +31,7 @@ fn call(s: &mut Server, name: &str, args: Value) -> Value {
 }
 
 fn document(s: &mut Server) -> Document {
-    let v = rpc(s, 2, "resources/read", json!({"uri": "vectorcraft://document/json"}));
+    let v = rpc(s, 2, "resources/read", json!({"uri": "redrob-vector://document/json"}));
     let text = v["result"]["contents"][0]["text"].as_str().unwrap_or_else(|| panic!("{v}"));
     serde_json::from_str(text).expect("document JSON")
 }
@@ -99,7 +99,7 @@ fn tool_definitions_are_valid() {
 #[test]
 fn every_tool_survives_empty_and_junk_arguments() {
     let dir = redrob_vector_testkit::temp_dir("mcp-junk");
-    let safe = dir.join("junk.vectorcraft").to_string_lossy().to_string();
+    let safe = dir.join("junk.rvector").to_string_lossy().to_string();
     let mut failures = vec![];
     for t in tool_definitions() {
         let name = t["name"].as_str().unwrap().to_string();
@@ -140,8 +140,7 @@ fn every_tool_survives_empty_and_junk_arguments() {
 /// Junk below a root: names, `.`, `..` (at most four, which stay inside the test's folder), a
 /// device name, a drive, either separator.
 fn junk_tail() -> impl Strategy<Value = String> {
-    let seg =
-        prop::sample::select(vec!["..", ".", "a", "b.svg", "x.png", "d.vectorcraft", "CON", "nul.txt", "", "c:", "~", "%2e%2e", "ü", "a b", "x."]);
+    let seg = prop::sample::select(vec!["..", ".", "a", "b.svg", "x.png", "d.rvector", "CON", "nul.txt", "", "c:", "~", "%2e%2e", "ü", "a b", "x."]);
     (prop::collection::vec(seg, 1..=4), prop::sample::select(vec!["/", "\\"])).prop_map(|(segs, sep)| segs.join(sep))
 }
 
@@ -360,7 +359,7 @@ fn completions_are_well_formed_and_survive_junk() {
         cases.push(json!({"ref": {"type": "ref/prompt", "name": "nope"}, "argument": {"name": "x", "value": ""}}));
     }
     for t in templates(&mut s) {
-        for v in ["", "1", "%", "vectorcraft://x"] {
+        for v in ["", "1", "%", "redrob-vector://x"] {
             cases.push(json!({"ref": {"type": "ref/resource", "uri": t["uriTemplate"]}, "argument": {"name": "id", "value": v}}));
         }
     }
@@ -450,7 +449,7 @@ fn the_new_methods_survive_junk_and_keep_the_document_valid() {
     let before = doc_json(&document(&mut s));
 
     let mut cases: Vec<(&str, Value)> = vec![];
-    for uri in ["vectorcraft://document", "vectorcraft://object/1", "vectorcraft://nope", "", "x://y", "%"] {
+    for uri in ["redrob-vector://document", "redrob-vector://object/1", "redrob-vector://nope", "", "x://y", "%"] {
         cases.push(("resources/read", json!({"uri": uri})));
         cases.push(("resources/read", json!({})));
         cases.push(("resources/read", json!({"uri": 5})));
@@ -465,7 +464,7 @@ fn the_new_methods_survive_junk_and_keep_the_document_valid() {
     }
     for ref_ in [
         json!({"type": "ref/prompt", "name": "poster"}),
-        json!({"type": "ref/resource", "uri": "vectorcraft://object/{id}"}),
+        json!({"type": "ref/resource", "uri": "redrob-vector://object/{id}"}),
         json!({"type": "ref/other"}),
         json!("x"),
         json!([]),
@@ -516,7 +515,7 @@ fn advertised_capabilities_all_answer() {
     }
     // And nothing is advertised that the server does not answer.
     assert!(caps["resources"].get("subscribe").is_none(), "subscribe is advertised but not implemented: {caps}");
-    assert_eq!(err_code(&mut s, 3, "resources/subscribe", json!({"uri": "vectorcraft://document"})), -32601);
+    assert_eq!(err_code(&mut s, 3, "resources/subscribe", json!({"uri": "redrob-vector://document"})), -32601);
 }
 
 /// A capability the server advertises must be one it answers, and one it does not advertise must

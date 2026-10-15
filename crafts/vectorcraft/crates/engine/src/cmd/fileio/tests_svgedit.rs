@@ -2,8 +2,8 @@
 //! SVG was edited elsewhere), Save keeps hidden layers, symbols share one def, and linked images
 //! stay linked.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, NodeKind};
+use serde_json::{Value, json};
 
 use super::tests_svg::{image_session, svg};
 use super::*;

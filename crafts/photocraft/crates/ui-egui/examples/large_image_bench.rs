@@ -6,7 +6,7 @@
 //!
 //! ```sh
 //! cargo build --release -p redrob-photo-ui-egui --example large_image_bench
-//! for op in open refresh thumbs filter brush psd png jpeg pcraft; do
+//! for op in open refresh thumbs filter brush psd png jpeg rphoto; do
 //!   /usr/bin/time -l target/release/examples/large_image_bench --size 14000x14000 --op $op 2>&1 | grep -E 'ms|maximum resident'
 //! done
 //! ```
@@ -204,7 +204,7 @@ fn main() {
                 println!("brush stroke 40 dabs          {t1:>9.0} ms   refresh ({path}) {:>6.0} ms", ms(t));
             }
         }
-        "psd" | "png" | "jpeg" | "pcraft" => {
+        "psd" | "png" | "jpeg" | "rphoto" => {
             let ext = if op == "jpeg" { "jpg" } else { op.as_str() };
             let d = doc();
             let t = Instant::now();

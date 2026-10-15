@@ -5,8 +5,8 @@
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
-use serde_json::{Value, json};
 use redrob_vector_testkit::raster::Image;
+use serde_json::{Value, json};
 
 const BIN: &str = env!("CARGO_BIN_EXE_vectorcraft-cli");
 
@@ -71,7 +71,7 @@ impl Mcp {
         self.tool_json("run_command", json!({"command": command, "params": params}))
     }
     fn document(&mut self) -> Value {
-        let v = self.request("resources/read", json!({"uri": "vectorcraft://document/json"}));
+        let v = self.request("resources/read", json!({"uri": "redrob-vector://document/json"}));
         serde_json::from_str(v["result"]["contents"][0]["text"].as_str().unwrap()).unwrap()
     }
     fn art_count(&mut self) -> usize {
@@ -210,7 +210,7 @@ fn export_formats_and_reopen() {
     let original = m.document();
     let n = m.art_count();
 
-    let dc = tmp("e2e.vectorcraft");
+    let dc = tmp("e2e.rvector");
     let svg = tmp("e2e.svg");
     let pdf = tmp("e2e.pdf");
     let png = tmp("e2e.png");
@@ -222,7 +222,7 @@ fn export_formats_and_reopen() {
     assert!(std::fs::read_to_string(&svg).unwrap().contains("<svg"));
     Image::from_png(&std::fs::read(&png).unwrap()).expect("exported PNG decodes");
 
-    // Re-open each: .vectorcraft reproduces the document; SVG and PDF bring the art back.
+    // Re-open each: .rvector reproduces the document; SVG and PDF bring the art back.
     m.tool("open_file", json!({"path": dc}));
     assert!(redrob_vector_testkit::invariants::json_approx_eq(&m.document(), &original, 1e-12));
     m.tool("open_file", json!({"path": svg}));
@@ -233,7 +233,7 @@ fn export_formats_and_reopen() {
     assert!(docs.is_object());
 
     // save_file writes the native format to a new path and it loads.
-    let saved = tmp("saved.vectorcraft");
+    let saved = tmp("saved.rvector");
     m.tool("save_file", json!({"path": saved}));
     let d = redrob_vector_testkit::format::load(&std::fs::read(&saved).unwrap()).unwrap();
     redrob_vector_testkit::invariants::check_document(&d).unwrap();

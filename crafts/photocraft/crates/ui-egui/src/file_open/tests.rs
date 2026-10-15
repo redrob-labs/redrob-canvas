@@ -177,9 +177,9 @@ fn the_web_opens_every_selected_file() {
 fn pcraft_documents_save_in_place_but_flat_files_ask() {
     let (mut app, written) = app_with(vec![None]);
     let ctx = egui::Context::default();
-    app.open_file("/pics/work.pcraft", b"x").unwrap();
+    app.open_file("/pics/work.rphoto", b"x").unwrap();
     let r = menus::invoke(&mut app, &ctx, "file.save", json!({})).unwrap();
-    assert_eq!(r["path"], "/pics/work.pcraft");
+    assert_eq!(r["path"], "/pics/work.rphoto");
     assert_eq!(written.borrow().len(), 1);
     // A PNG goes through Save As (cancelled here), not silently flattened over the original.
     app.open_file("/pics/flat.png", b"x").unwrap();
@@ -829,7 +829,7 @@ fn a_set_of_background_opens_keeps_its_order_however_they_finish() {
 fn save_a_copy_is_recorded_and_replayed_as_a_copy() {
     let (mut app, written) = app_with(vec![Some(FileDialogAnswer::SaveTo("/pics/copy.png".into()))]);
     let ctx = egui::Context::default();
-    app.open_file("/pics/work.pcraft", b"x").unwrap();
+    app.open_file("/pics/work.rphoto", b"x").unwrap();
     app.run("layer.new.layer", json!({})).unwrap();
     app.run("actions.record", json!({})).unwrap();
     app.run("edit.fill", json!({"color": "#ff0000"})).unwrap();
@@ -843,7 +843,7 @@ fn save_a_copy_is_recorded_and_replayed_as_a_copy() {
     assert!(played.get("failed").is_none(), "{played}");
     assert_eq!(written.borrow().iter().map(|(p, _)| p.as_str()).collect::<Vec<_>>(), ["/pics/copy.png"]);
     let st = app.session.active().unwrap();
-    assert_eq!(st.path.as_deref(), Some("/pics/work.pcraft"), "the document keeps its file");
+    assert_eq!(st.path.as_deref(), Some("/pics/work.rphoto"), "the document keeps its file");
     assert!(st.is_dirty(), "and its unsaved changes");
 }
 

@@ -25,7 +25,7 @@
 //! a heartbeat newer than the one another app wrote when taking the area over marks it running
 //! again.
 //!
-//! Each copy is two entries: `<area>/<file>.vectorcraft` (the native document, written as a save
+//! Each copy is two entries: `<area>/<file>.rvector` (the native document, written as a save
 //! writes it, without its images) and `<area>/<file>.json` (its title, original path and format,
 //! when it was written, and its images). The images are entries of their own, `<area>/img-…blob`,
 //! named by their content and shared by the area's copies: a copy written again writes only the
@@ -38,9 +38,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, Weak};
 
+use redrob_vector_doc::{Document, ImageBlob};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use redrob_vector_doc::{Document, ImageBlob};
 
 use super::fileio::{self, SAVE_FORMATS, SaveJob, SaveMode, SavePlan};
 use super::*;
@@ -51,7 +51,7 @@ use crate::DocState;
 pub const COMPLEX_OBJECTS: usize = 20_000;
 
 /// The extension of a copy's document entry.
-const DOC_EXT: &str = ".vectorcraft";
+const DOC_EXT: &str = ".rvector";
 /// The extension of a copy's details entry.
 const META_EXT: &str = ".json";
 /// The extension of an image entry (see [`blob_name`]).

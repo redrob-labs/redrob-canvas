@@ -18,7 +18,7 @@ pub fn specs() -> Vec<CommandSpec> {
         cmd!(noundo "file.newSample", "Sample Document", ["Help"], None, "{} — a multi-page magazine sample", always, file_sample),
         cmd!(query "file.presets", "Document Presets", [], None, "{}", always, |_, _| Ok(serde_json::to_value(PRESETS).unwrap_or_default())),
         cmd!(noundo "file.open", "Open…", ["File"], Some("Cmd+O"),
-            "{path} — .designcraft or .idml; the fonts in a `Document Fonts` folder beside it load first → {index, documentFonts: faces loaded, warnings: font files skipped (and, for .idml, package parts missing)}",
+            "{path} — .rlayout or .idml; the fonts in a `Document Fonts` folder beside it load first → {index, documentFonts: faces loaded, warnings: font files skipped (and, for .idml, package parts missing)}",
             always, file_open),
         cmd!(noundo "file.openBytes", "Open Bytes", [], None, "{name, base64} — Redrob Canvas JSON or an IDML package", always, file_open_bytes),
         cmd!(noundo "file.save", "Save", ["File"], Some("Cmd+S"), "{path?}", has_doc, file_save),
@@ -46,7 +46,7 @@ pub fn specs() -> Vec<CommandSpec> {
             let dir = recovery_dir(s, p, FolderAccess::ReadWrite)?;
             Ok(json!({"opened": crate::recovery::open(s, &dir)?}))
         }),
-        cmd!(query "file.serialize", "Serialize", [], None, "{} → {base64, bytes} the .designcraft file", has_doc, |s, _| {
+        cmd!(query "file.serialize", "Serialize", [], None, "{} → {base64, bytes} the .rlayout file", has_doc, |s, _| {
             let st = s.doc()?;
             // Preview fill is session state. Serialize the unfilled template.
             let doc = st.preview_stash.as_deref().unwrap_or(st.doc.as_ref());
@@ -63,7 +63,7 @@ pub fn specs() -> Vec<CommandSpec> {
             ok()
         }),
         cmd!(query "snippet.export", "Export Selection as Snippet", ["File", "Export"], None,
-            "{path?} — the selected items (with their stories, styles and images) as a .designcraft snippet; no path: {base64}", super::has_selection, snippet_export),
+            "{path?} — the selected items (with their stories, styles and images) as a .rlayout snippet; no path: {base64}", super::has_selection, snippet_export),
         cmd!(query "place.styles", "Import Options: Styles", [], None,
         "{path | base64, name} → {paragraph: [name], character: [name], conflicts: [name]} — the styles a Word/RTF file brings (for styleMap / styleConflicts)",
         has_doc, |s, p| {
@@ -103,7 +103,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Place…",
             ["File"],
             Some("Cmd+D"),
-            "{path?|base64?, name?, frame?: id (place into), spread?, x?, y?, width?, pdfPage?: n (1-based, Image Import Options), pdfCrop?: crop|trim|bleed|art|media, loadCursor?: with no frame to fill and no x/y, an image loads into the place cursor (File › Place), layoutPage?: n (IDML / .designcraft: that page's objects as a group)} — places an image (into the selected empty frame if any); text files (.txt, .docx, .rtf, .md) and Excel workbooks (.xlsx, as a table) go into the insertion point, the selected frame or a new frame on `page`/`rect` — {autoflow?: adds pages with threaded frames until the text fits, removeStyles?, styleMap?: {imported name: document style}, styleConflicts?: useExisting|redefine|autoRename, link?: keep the file linked (Links panel; default: the linkTextFiles preference)}",
+            "{path?|base64?, name?, frame?: id (place into), spread?, x?, y?, width?, pdfPage?: n (1-based, Image Import Options), pdfCrop?: crop|trim|bleed|art|media, loadCursor?: with no frame to fill and no x/y, an image loads into the place cursor (File › Place), layoutPage?: n (IDML / .rlayout: that page's objects as a group)} — places an image (into the selected empty frame if any); text files (.txt, .docx, .rtf, .md) and Excel workbooks (.xlsx, as a table) go into the insertion point, the selected frame or a new frame on `page`/`rect` — {autoflow?: adds pages with threaded frames until the text fits, removeStyles?, styleMap?: {imported name: document style}, styleConflicts?: useExisting|redefine|autoRename, link?: keep the file linked (Links panel; default: the linkTextFiles preference)}",
             has_doc,
             file_place
         ),
@@ -309,7 +309,7 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
     };
     // A page of another layout (IDML or Redrob Canvas): its objects, as one group.
     let lname = name.to_lowercase();
-    if lname.ends_with(".idml") || lname.ends_with(".designcraft") {
+    if lname.ends_with(".idml") || lname.ends_with(".rlayout") {
         return place_layout_page(s, p, &name, &bytes);
     }
     // EPS: shown and printed through its preview (or a placeholder) at its bounding box size.
@@ -562,7 +562,7 @@ fn place_drop(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(r)
 }
 
-/// The selection as `.designcraft` snippet bytes.
+/// The selection as `.rlayout` snippet bytes.
 pub(crate) fn snippet_bytes(s: &mut Session) -> Result<Vec<u8>> {
     Ok(to_bytes(&super::edit::clip_doc(s)?))
 }
@@ -820,7 +820,7 @@ mod save_tests {
         let dir = std::env::temp_dir().join(format!("dc-save-atomic-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("doc.designcraft");
+        let path = dir.join("doc.rlayout");
         std::fs::write(&path, vec![b'x'; 1 << 20]).unwrap();
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
@@ -830,9 +830,9 @@ mod save_tests {
         let saved = super::from_bytes(&std::fs::read(&path).unwrap()).unwrap();
         assert!(saved.stories.values().any(|st| st.text == "Saved whole"));
         let names: Vec<_> = std::fs::read_dir(&dir).unwrap().map(|e| e.unwrap().file_name()).collect();
-        assert_eq!(names, ["doc.designcraft"], "no temporary file is left");
+        assert_eq!(names, ["doc.rlayout"], "no temporary file is left");
         // A folder that doesn't exist: an error naming the path.
-        let missing = dir.join("missing").join("doc.designcraft");
+        let missing = dir.join("missing").join("doc.rlayout");
         let e = s.execute("file.save", &json!({"path": missing.to_string_lossy()})).unwrap_err();
         assert!(e.to_string().contains("missing"), "{e}");
         let _ = std::fs::remove_dir_all(&dir);
@@ -908,7 +908,7 @@ mod document_fonts_tests {
         let fonts = dir.join(DOCUMENT_FONTS_FOLDER);
         std::fs::write(fonts.join("open.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
         std::fs::write(fonts.join("broken.otf"), b"not a font").unwrap();
-        let path = dir.join("Brochure.designcraft");
+        let path = dir.join("Brochure.rlayout");
         write_document(&path, FAMILY);
         assert!(!FontDb::global().has_family(FAMILY));
 
@@ -974,7 +974,7 @@ mod document_fonts_tests {
         let dir = std::env::temp_dir().join(format!("dc-open-docfonts-none-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("Plain.designcraft");
+        let path = dir.join("Plain.rlayout");
         write_document(&path, redrob_layout_fonts::DEFAULT_FAMILY);
         let r = Session::new().execute("file.open", &json!({"path": path.to_string_lossy()})).unwrap();
         assert_eq!((r["documentFonts"].clone(), r["warnings"].clone()), (json!(0), json!([])), "{r}");
@@ -985,12 +985,12 @@ mod document_fonts_tests {
         const FAMILY: &str = "DocFont Scoped";
         let (a, b) = (temp_dir("scoped-a"), temp_dir("scoped-b"));
         std::fs::write(a.join(DOCUMENT_FONTS_FOLDER).join("scoped.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
-        write_document(&a.join("A.designcraft"), FAMILY);
-        write_document(&b.join("B.designcraft"), FAMILY);
+        write_document(&a.join("A.rlayout"), FAMILY);
+        write_document(&b.join("B.rlayout"), FAMILY);
 
         let mut s = Session::new();
-        assert_eq!(open(&mut s, &a.join("A.designcraft"))["documentFonts"], 1);
-        assert_eq!(open(&mut s, &b.join("B.designcraft"))["documentFonts"], 0);
+        assert_eq!(open(&mut s, &a.join("A.rlayout"))["documentFonts"], 1);
+        assert_eq!(open(&mut s, &b.join("B.rlayout"))["documentFonts"], 0);
         // B, open at the same time, doesn't have A's font.
         assert_eq!(font_entry(&mut s, FAMILY)["missing"], true);
         assert!(glyph_faces(&s).iter().all(|(_, f)| f.family != FAMILY), "{:?}", glyph_faces(&s));
@@ -1010,12 +1010,12 @@ mod document_fonts_tests {
         std::fs::write(&a_font, font_with(FAMILY, &['a', 'b']).unwrap()).unwrap();
         std::fs::write(&b_font, font_with(FAMILY, &['b']).unwrap()).unwrap();
         // The same words in both: the word cache must not hand one document's shaping to the other.
-        write_document_with(&a.join("A.designcraft"), FAMILY, "ab ab ab");
-        write_document_with(&b.join("B.designcraft"), FAMILY, "ab ab ab");
+        write_document_with(&a.join("A.rlayout"), FAMILY, "ab ab ab");
+        write_document_with(&b.join("B.rlayout"), FAMILY, "ab ab ab");
 
         let mut s = Session::new();
-        open(&mut s, &a.join("A.designcraft"));
-        open(&mut s, &b.join("B.designcraft"));
+        open(&mut s, &a.join("A.rlayout"));
+        open(&mut s, &b.join("B.rlayout"));
         // Fallback fonts for the `a` B's font lacks: never A's font.
         s.execute("document.preferences", &json!({"glyphFallback": true})).unwrap();
         let in_b = glyph_faces(&s);
@@ -1040,7 +1040,7 @@ mod document_fonts_tests {
         const FAMILY: &str = "DocFont Closed";
         let dir = temp_dir("closed");
         std::fs::write(dir.join(DOCUMENT_FONTS_FOLDER).join("closed.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
-        let path = dir.join("Closed.designcraft");
+        let path = dir.join("Closed.rlayout");
         write_document(&path, FAMILY);
 
         let mut s = Session::new();
@@ -1063,7 +1063,7 @@ mod document_fonts_tests {
         const FAMILY: &str = "DocFont Reverted";
         let dir = temp_dir("revert");
         std::fs::write(dir.join(DOCUMENT_FONTS_FOLDER).join("revert.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
-        let path = dir.join("Revert.designcraft");
+        let path = dir.join("Revert.rlayout");
         write_document(&path, FAMILY);
 
         let mut s = Session::new();
@@ -1080,7 +1080,7 @@ mod document_fonts_tests {
         const FAMILY: &str = "DocFont Linked";
         let dir = temp_dir("linked");
         std::fs::write(dir.join(DOCUMENT_FONTS_FOLDER).join("linked.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
-        let path = dir.join("Linked.designcraft");
+        let path = dir.join("Linked.rlayout");
         write_document(&path, FAMILY);
 
         let mut s = Session::new();

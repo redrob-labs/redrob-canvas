@@ -11,18 +11,18 @@
 //! `--layers` layers, the first `--full` of them canvas-sized (the rest 1024×1024 patches);
 //! `--selection` starts from an elliptical selection; `--render` also tessellates and paints
 //! each frame on the GPU (with a readback, about 7 ms here), otherwise only the app's logic runs.
-//! `PHOTOCRAFT_GPU_SYNC=1` makes a canvas refresh wait for the GPU.
+//! `REDROB_PHOTO_GPU_SYNC=1` makes a canvas refresh wait for the GPU.
 
 use std::time::Instant;
 
 use egui::{Event, Modifiers, PointerButton, Pos2};
+use rayon::prelude::*;
 use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
 use redrob_photo_doc::{Document, Layer};
 use redrob_photo_geom::{Rect, Size};
 use redrob_photo_ui_egui::canvas::ViewXform;
 use redrob_photo_ui_egui::state::Tool;
 use redrob_photo_ui_egui::{PhotocraftApp, Services};
-use rayon::prelude::*;
 use serde_json::json;
 
 type H = egui_kittest::Harness<'static, PhotocraftApp>;

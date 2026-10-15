@@ -321,8 +321,8 @@ fn edit_tiles(
     whole: impl Fn(bool) -> Option<TileEdit> + Sync,
     pixel: impl Fn(f32, &mut [f32]) -> bool + Sync,
 ) -> crate::Result<()> {
-    use redrob_photo_raster::Tile;
     use rayon::prelude::*;
+    use redrob_photo_raster::Tile;
     use std::sync::Arc;
     let fmt = s.format();
     let (n, bpp) = (fmt.channels(), fmt.bytes_per_pixel());

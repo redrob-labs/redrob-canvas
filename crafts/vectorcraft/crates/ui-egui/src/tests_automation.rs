@@ -4,9 +4,9 @@
 
 use std::path::{Path, PathBuf};
 
-use serde_json::{Value, json};
 use redrob_vector_engine::Session;
 use redrob_vector_engine::file_access::AutomationRoots;
+use serde_json::{Value, json};
 
 use crate::control::ControlRequest;
 use crate::{Services, VectorcraftApp};
@@ -60,7 +60,7 @@ fn control_requests_stay_inside_the_roots() {
     assert!(base.join("out/a.png").is_file());
     for (method, params) in [
         ("app.export", json!({"path": s(base.join("outside/a.png")), "format": "png"})),
-        ("app.save", json!({"path": s(base.join("outside/a.vectorcraft"))})),
+        ("app.save", json!({"path": s(base.join("outside/a.rvector"))})),
         ("ui.render", json!({"path": s(base.join("outside/r.png"))})),
         // Refused at once, not when the frame comes.
         ("ui.screenshot", json!({"path": s(base.join("outside/w.png"))})),

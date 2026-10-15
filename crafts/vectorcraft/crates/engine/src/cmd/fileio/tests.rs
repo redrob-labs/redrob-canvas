@@ -1,7 +1,7 @@
 use std::io::Cursor;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeKind;
+use serde_json::{Value, json};
 
 use super::*;
 use crate::cmd::parse_range;
@@ -58,8 +58,8 @@ fn opens_every_readable_format() {
     let svgz = redrob_vector_svg::compress(&svg);
 
     for (name, bytes, format) in [
-        ("a.vectorcraft", native.clone(), "vectorcraft"),
-        ("a.drawcraft", native, "vectorcraft"),
+        ("a.rvector", native.clone(), "vectorcraft"),
+        ("a.drawcraft", native, "vectorcraft"), // legacy: upstream extension still read
         ("a.svg", svg.into_bytes(), "svg"),
         ("a.svgz", svgz, "svgz"),
         ("a.pdf", pdf.clone(), "pdf"),
@@ -128,7 +128,7 @@ fn content_beats_a_wrong_extension() {
 fn templates_open_untitled() {
     let mut s = session(100.0, 100.0, 1);
     let dir = tmp_dir("tpl");
-    let path = dir.join("t.vectorcraft").to_string_lossy().to_string();
+    let path = dir.join("t.rvector").to_string_lossy().to_string();
     s.execute("file.saveAsTemplate", &json!({"path": path})).unwrap();
     let r = s.execute("document.open", &json!({"path": path})).unwrap();
     assert!(r["title"].as_str().unwrap().starts_with("Untitled-"), "{r}");
@@ -274,9 +274,9 @@ fn pdf_export_honours_artboard_and_range() {
 fn export_without_path_returns_bytes_and_never_retargets() {
     let mut s = session(100.0, 100.0, 1);
     let dir = tmp_dir("retarget");
-    let doc_path = dir.join("doc.vectorcraft").to_string_lossy().to_string();
+    let doc_path = dir.join("doc.rvector").to_string_lossy().to_string();
     s.execute("document.save", &json!({"path": doc_path})).unwrap();
-    let copy = dir.join("copy.vectorcraft").to_string_lossy().to_string();
+    let copy = dir.join("copy.rvector").to_string_lossy().to_string();
     let r = s.execute("document.export", &json!({"path": copy})).unwrap();
     assert_eq!(r["format"], "vectorcraft");
     assert!(redrob_vector_format::sniff(&std::fs::read(&copy).unwrap()));
@@ -419,7 +419,7 @@ fn a_native_save_streams_the_bytes_the_encoder_makes() {
     let d = tmp_dir("stream");
     let mut s = session(200.0, 100.0, 1);
     s.execute("shape.rectangle", &json!({"x": 10, "y": 10, "width": 50, "height": 20})).unwrap();
-    for (name, compress) in [("a.vectorcraft", false), ("b.vectorcraft", true), ("c.vctemplate", true)] {
+    for (name, compress) in [("a.rvector", false), ("b.rvector", true), ("c.vctemplate", true)] {
         let path = d.join(name).to_string_lossy().to_string();
         let p = json!({"path": path, "compress": compress});
         let r = s.execute("file.saveCopy", &p).unwrap();
@@ -432,7 +432,7 @@ fn a_native_save_streams_the_bytes_the_encoder_makes() {
         assert_eq!(redrob_vector_format::load(&written).unwrap().template, name.ends_with("vctemplate"));
     }
     // A writer that fails: the save fails with its error.
-    let plan = save_plan(&s, SaveMode::Copy, &json!({"path": "/x/y.vectorcraft"})).unwrap();
+    let plan = save_plan(&s, SaveMode::Copy, &json!({"path": "/x/y.rvector"})).unwrap();
     let job = save_job(&mut s, plan).unwrap();
     let e = job
         .write_streamed(&mut |_, fill| {
@@ -473,7 +473,7 @@ fn a_save_that_fails_while_streaming_leaves_the_file_as_it_was() {
         s.execute("shape.rectangle", &json!({"x": i % 100 * 20, "y": i / 100 * 20, "width": 10, "height": 10})).unwrap();
     }
     for compress in [false, true] {
-        let path = d.join("a.vectorcraft").to_string_lossy().to_string();
+        let path = d.join("a.rvector").to_string_lossy().to_string();
         s.execute("file.saveCopy", &json!({"path": path, "compress": compress})).unwrap();
         let before = std::fs::read(&path).unwrap();
         s.execute("shape.ellipse", &json!({"x": 0, "y": 0, "width": 50, "height": 50})).unwrap();
@@ -494,25 +494,25 @@ fn a_failed_save_does_not_stamp_the_documents_dates() {
     s.execute("shape.rectangle", &json!({"x": 10, "y": 10, "width": 50, "height": 20})).unwrap();
     let before = s.doc().unwrap().doc.metadata.clone();
     let dirty = s.doc().unwrap().is_dirty();
-    let plan = save_plan(&s, SaveMode::SaveAs, &json!({"path": "/x/y.vectorcraft", "modified": 12345})).unwrap();
+    let plan = save_plan(&s, SaveMode::SaveAs, &json!({"path": "/x/y.rvector", "modified": 12345})).unwrap();
     let e = save_with(&mut s, plan, |_, _| Err(EngineError::Other("disk full".into()))).unwrap_err();
     assert_eq!(e.to_string(), "disk full");
     let st = s.doc().unwrap();
     assert_eq!(st.doc.metadata, before);
     assert_eq!(st.is_dirty(), dirty);
     // Options the encoder refuses: the same.
-    assert!(s.execute("file.saveAs", &json!({"path": "/x/y.vectorcraft", "version": 99, "modified": 12345})).is_err());
+    assert!(s.execute("file.saveAs", &json!({"path": "/x/y.rvector", "version": 99, "modified": 12345})).is_err());
     let st = s.doc().unwrap();
     assert_eq!(st.doc.metadata, before);
     assert_eq!(st.is_dirty(), dirty);
-    let plan = save_plan(&s, SaveMode::SaveAs, &json!({"path": "/x/y.vectorcraft", "modified": 12345})).unwrap();
+    let plan = save_plan(&s, SaveMode::SaveAs, &json!({"path": "/x/y.rvector", "modified": 12345})).unwrap();
     save_with(&mut s, plan, |_, _| Ok(())).unwrap();
     let st = s.doc().unwrap();
     assert_eq!(st.doc.metadata.modified, Some(12345));
     assert!(!st.is_dirty());
     // Edited while the file is written (Background Save): the dates go on once it is, and the
     // edit keeps the document modified.
-    let plan = save_plan(&s, SaveMode::SaveAs, &json!({"path": "/x/z.vectorcraft", "modified": 777})).unwrap();
+    let plan = save_plan(&s, SaveMode::SaveAs, &json!({"path": "/x/z.rvector", "modified": 777})).unwrap();
     let job = save_job(&mut s, plan).unwrap();
     let uid = s.doc().unwrap().uid;
     assert_eq!(s.doc().unwrap().doc.metadata.modified, Some(12345));
@@ -521,7 +521,7 @@ fn a_failed_save_does_not_stamp_the_documents_dates() {
     job.complete(&mut s, uid);
     let st = s.doc().unwrap();
     assert_eq!(st.doc.metadata.modified, Some(777));
-    assert_eq!(st.path.as_deref(), Some("/x/z.vectorcraft"));
+    assert_eq!(st.path.as_deref(), Some("/x/z.rvector"));
     assert!(st.is_dirty());
     // Undoing the edit is back at what the file holds.
     s.execute("edit.undo", &json!({})).unwrap();

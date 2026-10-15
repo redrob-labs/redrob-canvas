@@ -1128,7 +1128,8 @@ mod tests {
             let synced = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
             let mut app = app(true);
             let ctx = egui::Context::default();
-            let id = redrob_photo_doc::LayerId(app.run("type.create", json!({"text": "Hello", "size": 12, "x": 4, "y": 24})).unwrap()["layer"].as_u64().unwrap());
+            let id =
+                redrob_photo_doc::LayerId(app.run("type.create", json!({"text": "Hello", "size": 12, "x": 4, "y": 24})).unwrap()["layer"].as_u64().unwrap());
             crate::menus::invoke(&mut app, &ctx, "type.editText", json!({})).unwrap();
             let edit = app.ui.text_edit.as_ref().unwrap();
             assert_eq!((edit.anchor, edit.caret), (0, 5));

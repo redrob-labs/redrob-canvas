@@ -789,7 +789,7 @@ fn vertical_align_with_top_to_top_leading() {
     assert_eq!(top.lines.len(), 3);
     // The em box top sits 0.88 em above the baseline in the craft-fonts CJK faces; a system
     // fallback (no craft-fonts) has its own metrics, which the relative checks below don't need.
-    if !crate::CRAFT_FONTS.is_empty() {
+    if !crate::REDROB_CRAFT_FONTS.is_empty() {
         assert!((top.lines[0].baseline - 0.88 * 40.0).abs() < 0.01, "first em box at the top: {}", top.lines[0].baseline);
     }
     let gaps = |l: &TextLayout| l.lines.windows(2).map(|w| w[1].baseline - w[0].baseline).collect::<Vec<_>>();
@@ -910,7 +910,7 @@ fn layout_10k_area_text_is_fast() {
 fn proportional_metrics_set_full_width_glyphs_on_their_proportional_widths() {
     use redrob_vector_doc::Mojikumi;
     if db().face("Shippori Mincho", "Regular").is_none_or(|f| f.family != "Shippori Mincho") {
-        eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
+        eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
         return;
     }
     let st = |on: bool| CharStyle { size: 20.0, font_family: "Shippori Mincho".into(), proportional_metrics: on, ..CharStyle::default() };

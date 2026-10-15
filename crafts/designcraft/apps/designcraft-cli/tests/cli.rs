@@ -11,7 +11,7 @@ fn cli() -> Command {
 fn script_from_stdin_with_references_saves_and_exports() {
     let dir = std::env::temp_dir().join(format!("dc-cli-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let (doc, png) = (dir.join("a.designcraft"), dir.join("a.png"));
+    let (doc, png) = (dir.join("a.rlayout"), dir.join("a.png"));
     let mut child = cli()
         .args(["script", "-", "--save", doc.to_str().unwrap(), "--export", png.to_str().unwrap()])
         .stdin(Stdio::piped())
@@ -210,7 +210,7 @@ fn text(reply: &serde_json::Value) -> &str {
     reply["result"]["content"][0]["text"].as_str().unwrap()
 }
 
-/// A `.designcraft` file with one page, made with the CLI itself.
+/// A `.rlayout` file with one page, made with the CLI itself.
 fn make_document(path: &std::path::Path) {
     let out = cli().args(["run", "--cmd", "file.new={}", "--cmd"]).arg(format!("file.save={}", serde_json::json!({"path": path}))).output().unwrap();
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
@@ -224,18 +224,18 @@ fn mcp_automation_roots_confine_the_server() {
     let (work, elsewhere) = (base.join("work"), base.join("elsewhere"));
     std::fs::create_dir_all(&work).unwrap();
     std::fs::create_dir_all(&elsewhere).unwrap();
-    make_document(&work.join("in.designcraft"));
-    make_document(&elsewhere.join("secret.designcraft"));
+    make_document(&work.join("in.rlayout"));
+    make_document(&elsewhere.join("secret.rlayout"));
     let work_s = work.to_str().unwrap();
-    let secret = elsewhere.join("secret.designcraft").to_str().unwrap().to_string();
+    let secret = elsewhere.join("secret.rlayout").to_str().unwrap().to_string();
 
     // Both spellings of the flags; inside works, outside is refused with a readable message.
     let read_flag = format!("--automation-read-root={work_s}");
     let calls = [
-        ("open_document", serde_json::json!({"path": work.join("in.designcraft").to_str().unwrap()})),
+        ("open_document", serde_json::json!({"path": work.join("in.rlayout").to_str().unwrap()})),
         ("open_document", serde_json::json!({"path": secret})),
-        ("save_document", serde_json::json!({"path": work.join("saved.designcraft").to_str().unwrap()})),
-        ("save_document", serde_json::json!({"path": elsewhere.join("saved.designcraft").to_str().unwrap()})),
+        ("save_document", serde_json::json!({"path": work.join("saved.rlayout").to_str().unwrap()})),
+        ("save_document", serde_json::json!({"path": elsewhere.join("saved.rlayout").to_str().unwrap()})),
         ("export_png", serde_json::json!({"path": elsewhere.join("page.png").to_str().unwrap()})),
         ("render_page", serde_json::json!({"path": elsewhere.join("render.png").to_str().unwrap()})),
     ];
@@ -246,12 +246,12 @@ fn mcp_automation_roots_confine_the_server() {
     assert_eq!(replies[1]["result"]["isError"], true);
     assert!(text(&replies[1]).contains("outside the read root"), "{}", text(&replies[1]));
     assert_eq!(replies[2]["result"]["isError"], false, "{}", replies[2]);
-    assert!(work.join("saved.designcraft").exists());
+    assert!(work.join("saved.rlayout").exists());
     for reply in &replies[3..] {
         assert_eq!(reply["result"]["isError"], true, "{reply}");
         assert!(text(reply).contains("outside the write root"), "{}", text(reply));
     }
-    for name in ["saved.designcraft", "page.png", "render.png"] {
+    for name in ["saved.rlayout", "page.png", "render.png"] {
         assert!(!elsewhere.join(name).exists(), "{name} was written outside the write root");
     }
 

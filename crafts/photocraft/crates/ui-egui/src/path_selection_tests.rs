@@ -223,7 +223,7 @@ fn thumbnail_selection_ctrl_click_layer_path_preserves_panel_target() {
     assert_eq!(selection(&h), Some([40, 20, 60, 40]));
     assert_eq!(h.state().ui.selected_path.as_deref(), Some("work"));
     assert!(!h.state().ui.mask_target && !h.state().ui.vector_mask_target);
-    if let Ok(path) = std::env::var("PHOTOCRAFT_THUMBNAIL_SELECTION_SCREENSHOT") {
+    if let Ok(path) = std::env::var("REDROB_PHOTO_THUMBNAIL_SELECTION_SCREENSHOT") {
         h.render().unwrap().save(path).unwrap();
     }
 }

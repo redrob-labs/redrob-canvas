@@ -350,7 +350,13 @@ mod tests {
     #[test]
     fn a_line_carries_time_level_thread_target_and_message() {
         assert_eq!(
-            format_line("2026-10-08T07:59:17.728Z", log::Level::Error, "main", "redrob_layout_engine::guard", "command `frame.create` panicked: boom"),
+            format_line(
+                "2026-10-08T07:59:17.728Z",
+                log::Level::Error,
+                "main",
+                "redrob_layout_engine::guard",
+                "command `frame.create` panicked: boom"
+            ),
             "2026-10-08T07:59:17.728Z ERROR [main] redrob_layout_engine::guard: command `frame.create` panicked: boom\n"
         );
         // A multi-line message (a panic with a backtrace) keeps its lines; the record still ends in one newline.

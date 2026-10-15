@@ -5,7 +5,7 @@
 //! - the **library** ([`PatternLibrary`], on the [`Session`]): built-in procedural patterns plus
 //!   defined and imported ones. Library edits are app state, not document history.
 //! - the **document** ([`redrob_photo_doc::Document::patterns`]): the patterns its layers use
-//!   (saved in PSD `Patt` blocks and `.pcraft`). Commands that apply a pattern copy it into the
+//!   (saved in PSD `Patt` blocks and `.rphoto`). Commands that apply a pattern copy it into the
 //!   document in the same history step, so a document always renders on its own.
 //!
 //! Patterns are referenced by `"pattern": id | name` (document first, then library).
@@ -311,7 +311,12 @@ pub(crate) fn placement(p: &Value) -> (f32, f32, bool, (f32, f32)) {
 
 /// The edit of `layer.newFillLayer.pattern`: a Pattern Fill layer of `pat` placed as `p` asks,
 /// above `active`. The Pattern Fill dialog previews it on a copy of the document.
-pub(crate) fn insert_fill_layer(doc: &mut Document, active: &mut Option<redrob_photo_doc::LayerId>, pat: &Pattern, p: &Value) -> Result<redrob_photo_doc::LayerId> {
+pub(crate) fn insert_fill_layer(
+    doc: &mut Document,
+    active: &mut Option<redrob_photo_doc::LayerId>,
+    pat: &Pattern,
+    p: &Value,
+) -> Result<redrob_photo_doc::LayerId> {
     let (scale, angle, link, phase) = placement(p);
     ensure_in_doc(doc, pat);
     let fill = Fill::Pattern { name: pat.name.clone(), scale, id: pat.id.clone(), angle, link, phase };

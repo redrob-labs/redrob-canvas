@@ -278,7 +278,7 @@ fn tracking_spaces_upright_marks_without_moving_them_off_the_centre_line() {
 #[test]
 fn japanese_numbers_keep_their_own_cells_down_the_column() {
     let Some(face) = crate::craft_fonts::japanese_ui_fonts(false).into_iter().next() else {
-        eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
+        eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
         return;
     };
     let db = FontDb::with_font_dirs(vec![]);
@@ -561,7 +561,7 @@ fn proportional_metrics_set_upright_glyphs_on_their_proportional_heights() {
     let (on, off) = (lay("§§", "Source Sans 3", true, Mojikumi::None), lay("§§", "Source Sans 3", false, Mojikumi::None));
     assert!(near(&adv(&on), &adv(&off)) && near(&y0(&on), &y0(&off)), "{:?} {:?}", adv(&on), adv(&off));
     if FontDb::global().face("Shippori Mincho", "Regular").is_none_or(|f| f.family != "Shippori Mincho") {
-        eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
+        eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
         return;
     }
     let text = "「あ」、ッ漢。";
@@ -602,8 +602,8 @@ fn proportional_metrics_kern_the_glyphs_they_respace() {
     assert!(tags(v.resolve_vertical(&st(true, Some(0.0)), true, true)).contains(&(*b"vkrn", 0)), "manual kerning: none");
     assert!(tags(v.resolve_vertical(&st(true, None), false, false)).contains(&(*b"vkrn", 0)));
 
-    let Some(noto) = crate::CRAFT_FONTS.iter().find(|f| f.family == "Noto Sans CJK SC") else {
-        eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
+    let Some(noto) = crate::REDROB_CRAFT_FONTS.iter().find(|f| f.family == "Noto Sans CJK SC") else {
+        eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
         return;
     };
     let db = FontDb::with_font_dirs(vec![]);

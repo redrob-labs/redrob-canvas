@@ -8,10 +8,10 @@
 //! where the platform has one) for this launch, e.g. after a graphics driver crash. A start that
 //! crashes inside the driver also falls back by itself next time (see `gpu_startup`).
 //!
-//! `--in-window-menus` (or `PHOTOCRAFT_IN_WINDOW_MENUS=1`) keeps the menus inside the window on
+//! `--in-window-menus` (or `REDROB_PHOTO_IN_WINDOW_MENUS=1`) keeps the menus inside the window on
 //! macOS instead of the macOS menu bar (`mac_menu`).
 //!
-//! `--control <port>` (or `PHOTOCRAFT_CONTROL_PORT`) starts a localhost JSON-lines control server.
+//! `--control <port>` (or `REDROB_PHOTO_CONTROL_PORT`) starts a localhost JSON-lines control server.
 //! The first line must authenticate; subsequent request lines get reply lines.
 //! `{"id":1,"ok":true,"result":…}`. See `redrob_photo_ui_egui::control` for the methods.
 
@@ -56,7 +56,7 @@ use redrob_photo_engine::Session;
 use redrob_photo_ui_egui::PhotocraftApp;
 
 /// Matches the `.desktop` file and hicolor icon name, so Wayland docks pick up the icon.
-const APP_ID: &str = "ai.storyteller.photocraft";
+const APP_ID: &str = "ai.storyteller.rphoto";
 
 /// Windows and Linux: no OS title bar; the app's top bar is the title bar, with its own caption
 /// buttons and edge resizing (`redrob_photo_ui_egui::titlebar`), as Photoshop does on Windows. macOS
@@ -125,14 +125,14 @@ fn at_least_min_size(mut builder: egui::ViewportBuilder) -> egui::ViewportBuilde
     builder
 }
 
-/// Parse a `--control` / `PHOTOCRAFT_CONTROL_PORT` value. An unparseable port is an error that
+/// Parse a `--control` / `REDROB_PHOTO_CONTROL_PORT` value. An unparseable port is an error that
 /// names the value (issue #701): silently running with no control server leaves a launcher or
 /// agent unable to tell a typo from a successful grant.
 fn parse_control_port(value: &str, source: &str) -> Result<u16, String> {
     value.trim().parse().map_err(|_| format!("{source}: `{value}` is not a valid port (expected a number from 0 to 65535)"))
 }
 
-/// Process exit status for the collected `--control` / `PHOTOCRAFT_CONTROL_PORT` errors: `None`
+/// Process exit status for the collected `--control` / `REDROB_PHOTO_CONTROL_PORT` errors: `None`
 /// when there are none, else 2 (a command-line usage error), never 0.
 fn control_args_exit_code(errors: &[String]) -> Option<i32> {
     if errors.is_empty() { None } else { Some(2) }
@@ -153,7 +153,7 @@ mod control_port_tests {
     fn control_port_accepts_valid_numbers() {
         assert_eq!(parse_control_port("50494", "--control"), Ok(50494));
         assert_eq!(parse_control_port(" 8080 ", "--control"), Ok(8080));
-        assert_eq!(parse_control_port("0", "PHOTOCRAFT_CONTROL_PORT"), Ok(0));
+        assert_eq!(parse_control_port("0", "REDROB_PHOTO_CONTROL_PORT"), Ok(0));
     }
 
     #[test]
@@ -175,23 +175,23 @@ fn main() -> eframe::Result {
     redrob_photo_ui_egui::type_tool::warm_fonts();
     let mut control_port: Option<u16> = None;
     let mut control_arg_errors: Vec<String> = Vec::new();
-    if let Some(value) = std::env::var("PHOTOCRAFT_CONTROL_PORT").ok().filter(|v| !v.trim().is_empty()) {
-        match parse_control_port(&value, "PHOTOCRAFT_CONTROL_PORT") {
+    if let Some(value) = std::env::var("REDROB_PHOTO_CONTROL_PORT").ok().filter(|v| !v.trim().is_empty()) {
+        match parse_control_port(&value, "REDROB_PHOTO_CONTROL_PORT") {
             Ok(port) => control_port = Some(port),
             Err(error) => control_arg_errors.push(error),
         }
     }
     let mut control_token = None;
     let mut control_token_file = None;
-    let mut automation_read_root = std::env::var_os("PHOTOCRAFT_AUTOMATION_READ_ROOT").map(std::path::PathBuf::from);
-    let mut automation_write_root = std::env::var_os("PHOTOCRAFT_AUTOMATION_WRITE_ROOT").map(std::path::PathBuf::from);
+    let mut automation_read_root = std::env::var_os("REDROB_PHOTO_AUTOMATION_READ_ROOT").map(std::path::PathBuf::from);
+    let mut automation_write_root = std::env::var_os("REDROB_PHOTO_AUTOMATION_WRITE_ROOT").map(std::path::PathBuf::from);
     let mut files = Vec::new();
     // Arguments that are not valid Unicode (issue #1108): a file manager can hand over a Latin-1
     // file name on Linux, and `std::env::args()` would panic before any window opened. Paths are
     // reported in a notice once the app is up; a control token is a usage error like a bad port.
     let mut unreadable_paths: Vec<String> = Vec::new();
     let mut safe_gpu = false;
-    let mut in_window_menus = std::env::var_os("PHOTOCRAFT_IN_WINDOW_MENUS").is_some_and(|v| !v.is_empty() && v != "0");
+    let mut in_window_menus = std::env::var_os("REDROB_PHOTO_IN_WINDOW_MENUS").is_some_and(|v| !v.is_empty() && v != "0");
     let mut args = std::env::args_os().skip(1);
     while let Some(a) = args.next() {
         match a.to_str() {
@@ -398,7 +398,7 @@ fn main() -> eframe::Result {
             #[cfg(target_os = "macos")]
             mac_window::disable_native_title_drag();
             // Long commands and file opens run as background jobs with progress and Cancel (#210).
-            app.background_jobs = std::env::var_os("PHOTOCRAFT_INLINE_JOBS").is_none();
+            app.background_jobs = std::env::var_os("REDROB_PHOTO_INLINE_JOBS").is_none();
             // Displays and their profiles (#569): wait briefly so the first frames already use
             // the right profile; a slower reading is applied when it arrives, and the shell reads
             // again when the displays may have changed.
@@ -437,7 +437,7 @@ fn main() -> eframe::Result {
                 }
                 if !software_window
                     && plan.backend != redrob_photo_engine::prefs::GpuBackend::Cpu
-                    && std::env::var_os("PHOTOCRAFT_CPU_CANVAS").is_none()
+                    && std::env::var_os("REDROB_PHOTO_CPU_CANVAS").is_none()
                     && app.session.prefs().performance.effective_rendering_mode() != redrob_photo_engine::prefs::RenderingMode::Cpu
                 {
                     app.set_wgpu(rs);
@@ -446,7 +446,7 @@ fn main() -> eframe::Result {
                     let _ = redrob_photo_ui_egui::gpu_canvas::DeviceHealth::watch(&rs.device);
                 }
             }
-            let fallback_reason = std::env::var("PHOTOCRAFT_GPU_STARTUP_FAILURE").ok().or_else(|| {
+            let fallback_reason = std::env::var("REDROB_PHOTO_GPU_STARTUP_FAILURE").ok().or_else(|| {
                 (app.perf.gpu_info.canvas == "cpu" && mode != redrob_photo_engine::prefs::RenderingMode::Cpu)
                     .then(|| app.perf.gpu_info.fallback.clone())
                     .flatten()
@@ -554,7 +554,7 @@ fn main() -> eframe::Result {
                 .args(std::env::args_os().skip(1))
                 .arg("--safe-gpu")
                 .env_remove("WGPU_BACKEND")
-                .env("PHOTOCRAFT_GPU_STARTUP_FAILURE", &reason)
+                .env("REDROB_PHOTO_GPU_STARTUP_FAILURE", &reason)
                 .spawn();
             match launched {
                 Ok(_) => return Ok(()),
@@ -677,7 +677,7 @@ mod tests {
     /// so it has to be the class the window carries: the app id, on Wayland and X11 alike.
     #[test]
     fn the_desktop_entry_names_the_window_class() {
-        let entry = include_str!("../../../packaging/linux/ai.storyteller.photocraft.desktop");
+        let entry = include_str!("../../../packaging/linux/ai.storyteller.rphoto.desktop");
         let class = entry.lines().find_map(|line| line.strip_prefix("StartupWMClass="));
         assert_eq!(class, Some(super::APP_ID));
     }

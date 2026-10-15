@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind};
 use redrob_vector_engine::Session;
 use redrob_vector_geom::{PathData, Rect, shapes};
+use serde_json::{Value, json};
 
 /// Execute a command and panic with context on error.
 #[track_caller]

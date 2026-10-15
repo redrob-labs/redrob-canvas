@@ -6,9 +6,9 @@
 
 use std::sync::Arc;
 
+use kurbo::{BezPath, Circle, Point, Rect, Shape, Vec2};
 use redrob_craft_pdf::interpret::pattern::ShadingPattern;
 use redrob_craft_pdf::interpret::shading::{ShadingFunction, ShadingType};
-use kurbo::{BezPath, Circle, Point, Rect, Shape, Vec2};
 use redrob_vector_color::{Color, Gradient, GradientGeom, GradientKind, GradientPaint, GradientStop, Paint};
 use redrob_vector_doc::live::{GradientMesh, lerp_color};
 use redrob_vector_doc::{AppearanceItem, Node, NodeKind, OpacityMask};

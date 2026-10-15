@@ -26,8 +26,8 @@ execute type.char / style.paragraph.apply → render_page to look at the result.
 (ids, bounds), stories (overset) and styles. place_image puts a picture on the page.";
 
 /// Resource URIs.
-pub const DOC_URI: &str = "designcraft://document";
-pub const COMMANDS_URI: &str = "designcraft://commands";
+pub const DOC_URI: &str = "redrob-layout://document";
+pub const COMMANDS_URI: &str = "redrob-layout://commands";
 
 /// An MCP server bound to one backend.
 pub struct Server {
@@ -158,6 +158,9 @@ impl Server {
             "resources/templates/list" => Ok(json!({"resourceTemplates": []})),
             "resources/read" => {
                 let uri = params.get("uri").and_then(Value::as_str).ok_or((INVALID_PARAMS, "missing `uri`".to_string()))?;
+                // A client built against the upstream server still names its resources by the old scheme.
+                let legacy = uri.strip_prefix("designcraft://").map(|rest| format!("redrob-layout://{rest}")); // legacy: old URI scheme still read
+                let uri = legacy.as_deref().unwrap_or(uri);
                 let v = match uri {
                     DOC_URI => self.backend.call("document.inspect", json!({})),
                     COMMANDS_URI => self.backend.call("engine.commands", json!({})),

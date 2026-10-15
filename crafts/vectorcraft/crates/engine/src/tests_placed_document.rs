@@ -2,10 +2,10 @@
 //! from a file), drawn and output as vectors, saved with its preview, checked, updated and
 //! relinked when the file changes, and turned into an editable copy (Break Link, Expand).
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, Document, Node, NodeKind, PlacedDocument};
 use redrob_vector_geom::{Rect, shapes};
+use serde_json::{Value, json};
 
 use super::tests_links::{BLUE, Folder, RED, centre_colour, near, open, save, session, write};
 use super::*;
@@ -84,7 +84,7 @@ fn pdf_contents(bytes: &[u8]) -> (usize, usize) {
     (images, paths)
 }
 
-/// The JSON of a `.vectorcraft` file (the data after it left out).
+/// The JSON of a `.rvector` file (the data after it left out).
 fn file_json(bytes: &[u8]) -> Value {
     let end = bytes.windows(redrob_vector_format::BLOB_MAGIC.len()).position(|w| w == redrob_vector_format::BLOB_MAGIC).unwrap_or(bytes.len());
     serde_json::from_slice(&bytes[..end]).unwrap()
@@ -93,7 +93,7 @@ fn file_json(bytes: &[u8]) -> Value {
 #[test]
 fn a_document_places_linked_by_default_at_its_artboard_size() {
     let dir = Folder::new("placed-basic");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     let id = place(&mut s, &src);
@@ -102,7 +102,7 @@ fn a_document_places_linked_by_default_at_its_artboard_size() {
     assert_eq!(bounds(&s, id), Rect::new(150.0, 125.0, 250.0, 175.0));
     assert_eq!((p.link.path.as_str(), p.link.page), (src.as_str(), Some(1)));
     let n = s.doc().unwrap().doc.node(id).unwrap();
-    assert_eq!((n.name.as_deref(), n.kind_label()), (Some("logo.vectorcraft"), "Placed Document"));
+    assert_eq!((n.name.as_deref(), n.kind_label()), (Some("logo.rvector"), "Placed Document"));
     assert!(near(centre_colour(&s.doc().unwrap().doc), RED));
     // It moves and scales like any object.
     s.execute("object.move", &json!({"dx": 10, "dy": 0})).unwrap();
@@ -112,7 +112,7 @@ fn a_document_places_linked_by_default_at_its_artboard_size() {
     let layer = d.layers[0].id;
     let id2 = d.alloc_id();
     d.insert(Some(layer), 0, Node::path(id2, shapes::rectangle(Rect::new(10.0, 10.0, 40.0, 30.0)), look(RED))).unwrap();
-    let small = dir.file("small.vectorcraft");
+    let small = dir.file("small.rvector");
     write(&small, &redrob_vector_format::save_file(&d));
     let r = s.execute("file.place", &json!({"path": small, "crop": "bounding", "at": [200, 150]})).unwrap();
     let p = placed(&s, NodeId(r["ids"][0].as_u64().unwrap()));
@@ -122,11 +122,11 @@ fn a_document_places_linked_by_default_at_its_artboard_size() {
 #[test]
 fn without_link_or_a_file_a_document_places_as_an_editable_copy() {
     let dir = Folder::new("placed-copy");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     let data = redrob_vector_format::base64_encode(&std::fs::read(&src).unwrap());
-    for p in [json!({"path": src, "link": false}), json!({"name": "logo.vectorcraft", "dataBase64": data})] {
+    for p in [json!({"path": src, "link": false}), json!({"name": "logo.rvector", "dataBase64": data})] {
         let r = s.execute("file.place", &p).unwrap();
         assert_eq!(r["linked"], false, "{r}");
         let n = s.doc().unwrap().doc.node(NodeId(r["ids"][0].as_u64().unwrap())).unwrap();
@@ -138,7 +138,7 @@ fn without_link_or_a_file_a_document_places_as_an_editable_copy() {
 #[test]
 fn a_placed_document_is_vectors_in_every_output() {
     let dir = Folder::new("placed-outputs");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     place(&mut s, &src);
@@ -162,18 +162,18 @@ fn a_placed_document_is_vectors_in_every_output() {
 #[test]
 fn the_preview_is_saved_so_the_document_shows_it_without_its_file() {
     let dir = Folder::new("placed-saved");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     // Content of its own: files read are cached by content, and this one is removed.
     source(&src, 100.0, 50.0, RED, 2);
     let mut s = session();
     let id = place(&mut s, &src);
-    let doc_path = dir.file("poster/poster.vectorcraft");
+    let doc_path = dir.file("poster/poster.rvector");
     std::fs::create_dir_all(dir.file("poster")).unwrap();
     save(&mut s, &doc_path);
     let saved: Value = serde_json::from_slice(&std::fs::read(&doc_path).unwrap()).unwrap();
     let kind = &saved["document"]["layers"][0]["kind"]["children"][0]["kind"];
     assert_eq!(kind["type"], "placeddocument");
-    assert_eq!(kind["link"]["relative"], "../logo.vectorcraft");
+    assert_eq!(kind["link"]["relative"], "../logo.rvector");
     let key = kind["key"].as_str().unwrap();
     let entry = &saved["images"][key];
     assert_eq!((entry["proxy"].as_bool(), entry["mime"].as_str()), (Some(true), Some("image/jpeg")), "the preview, as JPEG (opaque)");
@@ -202,11 +202,11 @@ fn the_preview_is_saved_so_the_document_shows_it_without_its_file() {
 fn ai_export_preserves_placed_links_while_drawing_full_art_or_previews() {
     for missing in [false, true] {
         let dir = Folder::new(&format!("placed-ai-editable-{missing}"));
-        let src = dir.file("logo.vectorcraft");
+        let src = dir.file("logo.rvector");
         star_source(&src, &format!("placed-ai-editable-{missing}"));
         let mut s = session();
         let id = place(&mut s, &src);
-        let parent = dir.file("parent.vectorcraft");
+        let parent = dir.file("parent.rvector");
         save(&mut s, &parent);
         if missing {
             std::fs::remove_file(&src).unwrap();
@@ -245,7 +245,7 @@ fn ai_export_preserves_placed_links_while_drawing_full_art_or_previews() {
                 assert_eq!(placed(&s, id), original, "export leaves the source intact");
                 if missing {
                     assert_eq!(restored.execute("links.check", &json!({})).unwrap()["missing"], 1);
-                    let replacement = dir.file("replacement.vectorcraft");
+                    let replacement = dir.file("replacement.rvector");
                     source(&replacement, 100.0, 50.0, BLUE, 1);
                     let relinked = restored.execute("links.relink", &json!({"ids": [id.0], "path": replacement})).unwrap();
                     assert_eq!(relinked["relinked"], json!([id.0]));
@@ -259,11 +259,11 @@ fn ai_export_preserves_placed_links_while_drawing_full_art_or_previews() {
 #[test]
 fn ai_export_public_aliases_preserve_missing_placed_links() {
     let dir = Folder::new("placed-ai-public-aliases-latest");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     star_source(&src, "placed-ai-public-aliases-latest-unique");
     let mut s = session();
     let id = place(&mut s, &src);
-    let parent = dir.file("parent.vectorcraft");
+    let parent = dir.file("parent.rvector");
     save(&mut s, &parent);
     std::fs::remove_file(&src).unwrap();
     open(&mut s, &parent);
@@ -271,7 +271,7 @@ fn ai_export_public_aliases_preserve_missing_placed_links() {
     assert!(s.doc().unwrap().doc.images[&original.key].is_proxy());
 
     for alias in
-        ["vectorcraft", ".vectorcraft", "VECTORCRAFT", "drawcraft", ".DRAWCRAFT", "template", "vctemplate", ".VCTEMPLATE", "ai", ".ai", "AI", ".AI"]
+        ["vectorcraft", ".rvector", "VECTORCRAFT", "drawcraft", ".DRAWCRAFT", "template", "vctemplate", ".VCTEMPLATE", "ai", ".ai", "AI", ".AI"]
     {
         let canonical = cmd::fileio::format(alias).unwrap().id;
         let enc = cmd::fileio::encode_all(&s.doc().unwrap().doc, alias, &json!({"pdfCompatible": false, "includeLinked": false})).unwrap();
@@ -292,7 +292,7 @@ fn ai_export_public_aliases_preserve_missing_placed_links() {
 fn native_included_links_keep_missing_placed_documents_editable() {
     for missing in [true, false] {
         let dir = Folder::new(&format!("native-included-links-{missing}"));
-        let src = dir.file("logo.vectorcraft");
+        let src = dir.file("logo.rvector");
         star_source(&src, &format!("native-included-links-{missing}"));
         let source_bytes = std::fs::read(&src).unwrap();
         let mut s = session();
@@ -301,7 +301,7 @@ fn native_included_links_keep_missing_placed_documents_editable() {
         if missing {
             std::fs::remove_file(&src).unwrap();
         }
-        s.execute("document.open", &json!({"name": "parent.vectorcraft", "dataBase64": redrob_vector_format::base64_encode(&parent)})).unwrap();
+        s.execute("document.open", &json!({"name": "parent.rvector", "dataBase64": redrob_vector_format::base64_encode(&parent)})).unwrap();
         let original = placed(&s, id);
         assert!(s.doc().unwrap().doc.images[&original.key].is_proxy());
         let before = s.execute("document.json", &json!({})).unwrap();
@@ -325,14 +325,11 @@ fn native_included_links_keep_missing_placed_documents_editable() {
                     if missing && include_linked {
                         let mut restored = Session::new();
                         restored
-                            .execute(
-                                "document.open",
-                                &json!({"name": "included.vectorcraft", "dataBase64": redrob_vector_format::base64_encode(&bytes)}),
-                            )
+                            .execute("document.open", &json!({"name": "included.rvector", "dataBase64": redrob_vector_format::base64_encode(&bytes)}))
                             .unwrap();
                         assert_eq!(placed(&restored, id), original);
                         assert_eq!(restored.execute("links.check", &json!({})).unwrap()["missing"], 1);
-                        let replacement = dir.file("replacement.vectorcraft");
+                        let replacement = dir.file("replacement.rvector");
                         source(&replacement, 100.0, 50.0, BLUE, 1);
                         assert_eq!(
                             restored.execute("links.relink", &json!({"ids": [id.0], "path": replacement})).unwrap()["relinked"],
@@ -349,11 +346,11 @@ fn native_included_links_keep_missing_placed_documents_editable() {
 #[test]
 fn a_document_saved_with_previews_outputs_its_files_art() {
     let dir = Folder::new("placed-preview-output");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     let id = place(&mut s, &src);
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     open(&mut s, &doc_path);
     let key = placed(&s, id).key;
@@ -373,7 +370,7 @@ fn a_document_saved_with_previews_outputs_its_files_art() {
 #[test]
 fn a_changed_file_is_modified_and_update_links_reads_it_again() {
     let dir = Folder::new("placed-update");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     let id = place(&mut s, &src);
@@ -405,11 +402,11 @@ fn a_changed_file_is_modified_and_update_links_reads_it_again() {
 #[test]
 fn update_links_on_open_reads_a_modified_file_again() {
     let dir = Folder::new("placed-open");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     place(&mut s, &src);
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     source(&src, 100.0, 50.0, BLUE, 1);
     // Ask When Modified (the default): reported, left as it was.
@@ -426,7 +423,7 @@ fn update_links_on_open_reads_a_modified_file_again() {
 #[test]
 fn relink_points_a_placed_document_at_another_file() {
     let dir = Folder::new("placed-relink");
-    let (a, b) = (dir.file("a.vectorcraft"), dir.file("b.vectorcraft"));
+    let (a, b) = (dir.file("a.rvector"), dir.file("b.rvector"));
     source(&a, 100.0, 50.0, RED, 0);
     source(&b, 100.0, 50.0, BLUE, 0);
     let mut s = session();
@@ -440,7 +437,7 @@ fn relink_points_a_placed_document_at_another_file() {
 #[test]
 fn a_placed_document_inside_a_placed_document_outputs_from_its_own_file() {
     let dir = Folder::new("placed-nested");
-    let (logo, card) = (dir.file("logo.vectorcraft"), dir.file("card.vectorcraft"));
+    let (logo, card) = (dir.file("logo.rvector"), dir.file("card.rvector"));
     source(&logo, 100.0, 50.0, RED, 0);
     // The card places the logo, and is saved with the logo's preview only.
     let mut s = session();
@@ -459,7 +456,7 @@ fn a_placed_document_inside_a_placed_document_outputs_from_its_own_file() {
 #[test]
 fn documents_that_place_each_other_dont_loop() {
     let dir = Folder::new("placed-loop");
-    let (a, b) = (dir.file("a.vectorcraft"), dir.file("b.vectorcraft"));
+    let (a, b) = (dir.file("a.rvector"), dir.file("b.rvector"));
     source(&a, 100.0, 50.0, RED, 0);
     // B places A; A then places B.
     let mut s = session();
@@ -481,7 +478,7 @@ fn documents_that_place_each_other_dont_loop() {
 #[test]
 fn what_cant_be_placed_linked_is_an_error() {
     let dir = Folder::new("placed-errors");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     let place = |s: &mut Session, p: Value| s.execute("file.place", &p).unwrap_err().to_string();
@@ -489,7 +486,7 @@ fn what_cant_be_placed_linked_is_an_error() {
     assert!(e.contains("page 2") && e.contains("1 artboard"), "{e}");
     let e = place(&mut s, json!({"path": src, "crop": "art"}));
     assert!(e.contains("crop"), "{e}");
-    let empty = dir.file("empty.vectorcraft");
+    let empty = dir.file("empty.rvector");
     write(&empty, &redrob_vector_format::save_file(&Document::new(100.0, 50.0)));
     let e = place(&mut s, json!({"path": empty, "crop": "bounding"}));
     assert!(e.contains("no art to place"), "{e}");
@@ -504,7 +501,7 @@ fn what_cant_be_placed_linked_is_an_error() {
 #[test]
 fn a_placed_documents_resources_stay_its_own() {
     let dir = Folder::new("placed-symbols");
-    let src = dir.file("badge.vectorcraft");
+    let src = dir.file("badge.rvector");
     star_source(&src, "star");
     let mut s = session();
     parent_star(&mut s);
@@ -520,7 +517,8 @@ fn a_placed_documents_resources_stay_its_own() {
     let saved = String::from_utf8(decode(&s.execute("document.serialize", &json!({"format": "vectorcraft"})).unwrap())).unwrap();
     assert!(!saved.contains(prefix), "{saved}");
     // Saved for older apps: the art and its resources, as plain objects.
-    let old = redrob_vector_format::load(&decode(&s.execute("document.serialize", &json!({"format": "vectorcraft", "version": 2})).unwrap())).unwrap();
+    let old =
+        redrob_vector_format::load(&decode(&s.execute("document.serialize", &json!({"format": "vectorcraft", "version": 2})).unwrap())).unwrap();
     assert!(!old.has_placed());
     assert!(near(centre_colour(&old), BLUE));
 }
@@ -528,7 +526,7 @@ fn a_placed_documents_resources_stay_its_own() {
 #[test]
 fn break_link_gives_the_editable_copy_placing_without_link_gives() {
     let dir = Folder::new("placed-break");
-    let src = dir.file("badge.vectorcraft");
+    let src = dir.file("badge.rvector");
     star_source(&src, "break");
     let mut s = session();
     parent_star(&mut s);
@@ -558,7 +556,7 @@ fn break_link_gives_the_editable_copy_placing_without_link_gives() {
     assert!(s.doc().unwrap().doc.has_placed());
     // A file that can't be read stays linked.
     std::fs::remove_file(&src).unwrap();
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     open(&mut s, &doc_path);
     let r = s.execute("links.embed", &json!({"ids": [id.0]})).unwrap();
@@ -568,7 +566,7 @@ fn break_link_gives_the_editable_copy_placing_without_link_gives() {
 #[test]
 fn expand_turns_a_placed_document_into_editable_art_with_its_resources() {
     let dir = Folder::new("placed-expand");
-    let src = dir.file("badge.vectorcraft");
+    let src = dir.file("badge.rvector");
     star_source(&src, "star");
     let mut s = session();
     parent_star(&mut s);
@@ -591,7 +589,7 @@ fn expand_turns_a_placed_document_into_editable_art_with_its_resources() {
 #[test]
 fn saving_a_document_refreshes_the_open_documents_that_place_it() {
     let dir = Folder::new("placed-refresh");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     let id = place(&mut s, &src);
@@ -613,7 +611,7 @@ fn saving_a_document_refreshes_the_open_documents_that_place_it() {
 #[test]
 fn link_info_gives_the_artboards_size_not_pixels() {
     let dir = Folder::new("placed-info");
-    let src = dir.file("logo.vectorcraft");
+    let src = dir.file("logo.rvector");
     source(&src, 100.0, 50.0, RED, 0);
     let mut s = session();
     let id = place(&mut s, &src);
@@ -621,11 +619,7 @@ fn link_info_gives_the_artboards_size_not_pixels() {
     let i = s.execute("links.info", &json!({"id": id.0})).unwrap();
     assert_eq!((i["pageWidth"].as_f64(), i["pageHeight"].as_f64(), i["document"].as_bool()), (Some(100.0), Some(50.0), Some(true)), "{i}");
     assert!(i.get("pixelWidth").is_none() && i.get("ppi").is_none(), "no pixels: {i}");
-    assert_eq!(
-        (i["status"].as_str(), i["fileName"].as_str(), i["scale"].clone()),
-        (Some("ok"), Some("logo.vectorcraft"), json!([200.0, 200.0])),
-        "{i}"
-    );
+    assert_eq!((i["status"].as_str(), i["fileName"].as_str(), i["scale"].clone()), (Some("ok"), Some("logo.rvector"), json!([200.0, 200.0])), "{i}");
 }
 
 /// Save As reads its defaults from the catalog; using them must retain current editable links.
@@ -633,7 +627,7 @@ fn link_info_gives_the_artboards_size_not_pixels() {
 fn native_save_catalog_defaults_keep_placed_documents_editable() {
     for missing in [false, true] {
         let dir = Folder::new(if missing { "native-default-missing" } else { "native-default-linked" });
-        let src = dir.file("logo.vectorcraft");
+        let src = dir.file("logo.rvector");
         star_source(&src, if missing { "native-default-missing" } else { "native-default-linked" });
         let mut s = session();
         let id = place(&mut s, &src);
@@ -642,14 +636,14 @@ fn native_save_catalog_defaults_keep_placed_documents_editable() {
             std::fs::remove_file(&src).unwrap();
         }
         let options = s.execute("file.formatOptions", &json!({"format": "vectorcraft"})).unwrap();
-        let saved = dir.file("default-options.vectorcraft");
+        let saved = dir.file("default-options.rvector");
         s.execute("document.save", &json!({"path": saved, "version": options["options"]["version"]["value"]})).unwrap();
         let bytes = std::fs::read(&saved).unwrap();
         let native = redrob_vector_format::load(&bytes).unwrap();
         let mut written = original.clone();
         // Native saves record a sibling link relative to the destination as well as its
         // absolute path. This is relocation metadata, not a change to the placed object.
-        written.link.relative = Some("logo.vectorcraft".into());
+        written.link.relative = Some("logo.rvector".into());
         assert!(matches!(&native.node(id).unwrap().kind, NodeKind::PlacedDocument(p) if **p == written), "source missing: {missing}");
         assert_eq!(file_json(&bytes)["version"], redrob_vector_format::VERSION);
         assert_eq!(placed(&s, id), original, "saving does not rewrite the live link");
@@ -665,7 +659,7 @@ fn native_save_catalog_defaults_keep_placed_documents_editable() {
 fn pdf_editing_keeps_placed_links_separate_from_drawn_previews() {
     for missing in [true, false] {
         let dir = Folder::new(&format!("pdf-editable-links-{missing}"));
-        let src = dir.file("logo.vectorcraft");
+        let src = dir.file("logo.rvector");
         star_source(&src, &format!("pdf-editable-links-{missing}"));
         let mut s = session();
         parent_star(&mut s);
@@ -675,7 +669,7 @@ fn pdf_editing_keeps_placed_links_separate_from_drawn_previews() {
         if missing {
             std::fs::remove_file(&src).unwrap();
         }
-        s.execute("document.open", &json!({"name": "parent.vectorcraft", "dataBase64": redrob_vector_format::base64_encode(&parent)})).unwrap();
+        s.execute("document.open", &json!({"name": "parent.rvector", "dataBase64": redrob_vector_format::base64_encode(&parent)})).unwrap();
         let original = placed(&s, id);
         assert!(s.doc().unwrap().doc.images[&original.key].is_proxy());
         let before = s.execute("document.json", &json!({})).unwrap();
@@ -698,14 +692,15 @@ fn pdf_editing_keeps_placed_links_separate_from_drawn_previews() {
             );
             let mut restored = Session::new();
             assert_eq!(
-                restored.execute("document.open", &json!({"name":"editable.pdf","dataBase64":redrob_vector_format::base64_encode(&bytes)})).unwrap()["restored"],
+                restored.execute("document.open", &json!({"name":"editable.pdf","dataBase64":redrob_vector_format::base64_encode(&bytes)})).unwrap()
+                    ["restored"],
                 true
             );
             assert_eq!(placed(&restored, id), original);
             assert_eq!(restored.execute("links.check", &json!({})).unwrap()["missing"], usize::from(missing));
             assert_eq!(s.execute("document.json", &json!({})).unwrap(), before);
             if missing {
-                let replacement = dir.file("replacement.vectorcraft");
+                let replacement = dir.file("replacement.rvector");
                 source(&replacement, 100.0, 50.0, BLUE, 1);
                 assert_eq!(restored.execute("links.relink", &json!({"ids":[id.0],"path":replacement})).unwrap()["relinked"], json!([id.0]));
             }
@@ -730,7 +725,7 @@ fn pdf_editing_keeps_placed_links_separate_from_drawn_previews() {
 fn eps_editing_keeps_placed_links_and_requested_source_bytes() {
     for missing in [true, false] {
         let dir = Folder::new(&format!("eps-editable-links-{missing}"));
-        let src = dir.file("logo.vectorcraft");
+        let src = dir.file("logo.rvector");
         star_source(&src, &format!("eps-editable-links-{missing}"));
         let source_bytes = std::fs::read(&src).unwrap();
         let mut s = session();
@@ -740,7 +735,7 @@ fn eps_editing_keeps_placed_links_and_requested_source_bytes() {
         if missing {
             std::fs::remove_file(&src).unwrap();
         }
-        s.execute("document.open", &json!({"name":"parent.vectorcraft","dataBase64":redrob_vector_format::base64_encode(&parent)})).unwrap();
+        s.execute("document.open", &json!({"name":"parent.rvector","dataBase64":redrob_vector_format::base64_encode(&parent)})).unwrap();
         let original = placed(&s, id);
         assert!(s.doc().unwrap().doc.images[&original.key].is_proxy());
         let before = s.execute("document.json", &json!({})).unwrap();
@@ -789,7 +784,7 @@ fn eps_editing_keeps_placed_links_and_requested_source_bytes() {
                 assert_eq!(restored.execute("links.check", &json!({})).unwrap()["missing"], usize::from(missing));
                 assert_eq!(s.execute("document.json", &json!({})).unwrap(), before);
                 if missing {
-                    let replacement = dir.file("replacement.vectorcraft");
+                    let replacement = dir.file("replacement.rvector");
                     source(&replacement, 100.0, 50.0, BLUE, 1);
                     assert_eq!(restored.execute("links.relink", &json!({"ids":[id.0],"path":replacement})).unwrap()["relinked"], json!([id.0]));
                 }
@@ -808,7 +803,7 @@ fn eps_editing_keeps_placed_links_and_requested_source_bytes() {
 fn svg_editing_keeps_placed_links_separate_from_drawn_previews() {
     for missing in [true, false] {
         let dir = Folder::new(&format!("svg-editable-links-{missing}"));
-        let src = dir.file("logo.vectorcraft");
+        let src = dir.file("logo.rvector");
         star_source(&src, &format!("svg-editable-links-{missing}"));
         let mut s = session();
         parent_star(&mut s);
@@ -817,7 +812,7 @@ fn svg_editing_keeps_placed_links_separate_from_drawn_previews() {
         if missing {
             std::fs::remove_file(&src).unwrap();
         }
-        s.execute("document.open", &json!({"name": "parent.vectorcraft", "dataBase64": redrob_vector_format::base64_encode(&parent)})).unwrap();
+        s.execute("document.open", &json!({"name": "parent.rvector", "dataBase64": redrob_vector_format::base64_encode(&parent)})).unwrap();
         let original = placed(&s, id);
         assert!(s.doc().unwrap().doc.images[&original.key].is_proxy());
         let before = s.execute("document.json", &json!({})).unwrap();
@@ -837,7 +832,10 @@ fn svg_editing_keeps_placed_links_separate_from_drawn_previews() {
                 );
                 let mut restored = Session::new();
                 let opened = restored
-                    .execute("document.open", &json!({"name": format!("editable.{format}"), "dataBase64": redrob_vector_format::base64_encode(&bytes)}))
+                    .execute(
+                        "document.open",
+                        &json!({"name": format!("editable.{format}"), "dataBase64": redrob_vector_format::base64_encode(&bytes)}),
+                    )
                     .unwrap();
                 assert_eq!(opened["restored"], true, "{opened}");
                 eprintln!("SVG_EDITING_RESTORED_READY missing={missing} format={format} command={command}");
@@ -845,7 +843,7 @@ fn svg_editing_keeps_placed_links_separate_from_drawn_previews() {
                 assert_eq!(restored.execute("links.check", &json!({})).unwrap()["missing"], usize::from(missing));
                 assert_eq!(s.execute("document.json", &json!({})).unwrap(), before, "source unchanged");
                 if missing {
-                    let replacement = dir.file("replacement.vectorcraft");
+                    let replacement = dir.file("replacement.rvector");
                     source(&replacement, 100.0, 50.0, BLUE, 1);
                     assert_eq!(restored.execute("links.relink", &json!({"ids": [id.0], "path": replacement})).unwrap()["relinked"], json!([id.0]));
                     assert_eq!(placed(&restored, id).link.path, replacement);

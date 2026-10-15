@@ -5,20 +5,20 @@
 use backend::geom::Point;
 use backend::page::PageSettings;
 use backend::text::{GlyphId, KrillaGlyph};
-use redrob_craft_pdf::write::{self, Metadata, Writer, backend};
 use hayro_cmap::BfString;
 use hayro_interpret::{
     BlendMode, ClipPath, Context, Device, GlyphDrawMode, Image, InterpreterCache, InterpreterSettings, Paint, PathDrawMode, SoftMask, TransformExt,
     font::Glyph,
 };
 use kurbo::{Affine, BezPath, Rect};
+use redrob_craft_pdf::write::{self, Metadata, Writer, backend};
 
 #[cfg(craft_pdf_unicode_fixtures)]
-const INTER: &[u8] = include_bytes!(concat!(env!("CRAFT_PDF_TEST_FONT_DIR"), "/Inter-Regular.ttf"));
+const INTER: &[u8] = include_bytes!(concat!(env!("REDROB_CRAFT_PDF_TEST_FONT_DIR"), "/Inter-Regular.ttf"));
 #[cfg(craft_pdf_unicode_fixtures)]
-const ARABIC: &[u8] = include_bytes!(concat!(env!("CRAFT_PDF_TEST_FONT_DIR"), "/NotoSansArabic.ttf"));
+const ARABIC: &[u8] = include_bytes!(concat!(env!("REDROB_CRAFT_PDF_TEST_FONT_DIR"), "/NotoSansArabic.ttf"));
 #[cfg(craft_pdf_unicode_fixtures)]
-const THAI: &[u8] = include_bytes!(concat!(env!("CRAFT_PDF_TEST_FONT_DIR"), "/NotoSansThai[wdth,wght].ttf"));
+const THAI: &[u8] = include_bytes!(concat!(env!("REDROB_CRAFT_PDF_TEST_FONT_DIR"), "/NotoSansThai[wdth,wght].ttf"));
 
 #[derive(Default)]
 struct TextDevice {
@@ -134,6 +134,6 @@ fn fixture_fonts() -> [&'static [u8]; 3] {
     }
     #[cfg(not(craft_pdf_unicode_fixtures))]
     {
-        panic!("enable craft_pdf_unicode_fixtures and supply CRAFT_PDF_TEST_FONT_DIR to run this contract")
+        panic!("enable craft_pdf_unicode_fixtures and supply REDROB_CRAFT_PDF_TEST_FONT_DIR to run this contract")
     }
 }

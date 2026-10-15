@@ -4,10 +4,10 @@
 
 use std::sync::{Arc, Mutex};
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeKind;
 use redrob_vector_engine::cmd::fileio;
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use crate::theme::{self, Tokens};
 use crate::{VectorcraftApp, io, widgets};
@@ -171,7 +171,12 @@ fn open_dialog(app: &mut VectorcraftApp, files: Vec<Value>) {
 /// Is dialog file entry `file` a Redrob Canvas document on disk (what Link places as one locked
 /// object)?
 fn is_vectorcraft_file(file: &Value) -> bool {
-    let native = ["vectorcraft", redrob_vector_format::LEGACY_EXTENSION, "vctemplate"];
+    let native = [
+        redrob_vector_format::EXTENSION,
+        redrob_vector_format::UPSTREAM_EXTENSION, // legacy: upstream documents still place as documents
+        redrob_vector_format::LEGACY_EXTENSION,   // legacy:
+        "vctemplate",
+    ];
     file.get("path").and_then(Value::as_str).is_some_and(|p| native.contains(&fileio::extension(p).as_str()))
 }
 

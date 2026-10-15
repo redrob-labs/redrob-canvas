@@ -1,8 +1,8 @@
 //! Headless DesignCraft.
 //!
 //! ```text
-//! designcraft-cli run [--in FILE.designcraft|FILE.idml | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--export OUT.png|.jpg|.pdf|.designcraft|.idml|.epub|.pptx] [--pdf-options JSON] [--all-pages DIR]
-//! designcraft-cli run [--in FILE.designcraft|FILE.idml | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT.png|.jpg|.pdf|.designcraft|.idml|.epub] [--all-pages DIR]
+//! designcraft-cli run [--in FILE.rlayout|FILE.idml | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--export OUT.png|.jpg|.pdf|.rlayout|.idml|.epub|.pptx] [--pdf-options JSON] [--all-pages DIR]
+//! designcraft-cli run [--in FILE.rlayout|FILE.idml | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT.png|.jpg|.pdf|.rlayout|.idml|.epub] [--all-pages DIR]
 //!                                      # --page, --scale and --pdf-options apply to the exports that follow them
 //! designcraft-cli commands [FILTER]   # list commands (JSON), optionally only ids/labels/menus containing FILTER
 //! designcraft-cli describe ID          # one command: label, menu, shortcut, parameters
@@ -66,8 +66,8 @@ Most commands ignore parameters they do not know instead of rejecting them: chec
 with `designcraft-cli describe COMMAND`.
 
 Options:
-  --in FILE / --sample   open a document (.designcraft or .idml) or the sample first
-  --save OUT             save as .designcraft after the script succeeds
+  --in FILE / --sample   open a document (.rlayout or .idml) or the sample first
+  --save OUT             save as .rlayout after the script succeeds
   --export OUT           export after the script succeeds (.pdf, .idml, .epub, .png, .jpg); repeatable
   --keep-going           run every step, recording failures as {"error": ...} results
 
@@ -340,7 +340,7 @@ fn export(s: &mut Session, out: &str, page: usize, scale: f64) -> Result<(), Str
         eprintln!("wrote {out} ({} bytes)", r["bytes"]);
         return Ok(());
     }
-    if out.ends_with(".designcraft") {
+    if out.ends_with(".rlayout") {
         s.execute("file.saveAs", &json!({"path": out})).map_err(|e| e.to_string())?;
         eprintln!("saved {out}");
         return Ok(());

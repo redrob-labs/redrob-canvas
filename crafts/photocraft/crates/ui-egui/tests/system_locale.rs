@@ -6,7 +6,7 @@ use redrob_photo_ui_egui::{PhotocraftApp, i18n};
 
 #[test]
 fn native_first_launch_follows_os_ui_preferences() {
-    let tags: Vec<String> = match std::env::var("PHOTOCRAFT_LOCALE").ok().filter(|tag| !tag.trim().is_empty()) {
+    let tags: Vec<String> = match std::env::var("REDROB_PHOTO_LOCALE").ok().filter(|tag| !tag.trim().is_empty()) {
         Some(tag) => vec![tag],
         None => sys_locale::get_locales().take(64).collect(),
     };

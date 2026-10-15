@@ -1,6 +1,6 @@
 //! The developer tile grid: the active layer's storage tiles over the canvas, turned on with the
 //! control channel's `ui.set {"tileGrid": true}` ([`crate::view_cmds::ViewOptions::tile_grid`]).
-//! It shows how sparse a layer is, which tiles copy-on-write shares, and which ones `.pcraft`
+//! It shows how sparse a layer is, which tiles copy-on-write shares, and which ones `.rphoto`
 //! saves once.
 //!
 //! A layer's pixels live in a sparse [`Surface`] of [`TILE_SIZE`] tiles; cells with no stored
@@ -19,10 +19,10 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use egui::{Align2, Color32, FontId, Painter, Shape, Stroke};
-use redrob_photo_geom::{Rect as DRect, TILE_SIZE, TileCoord};
-use redrob_photo_raster::{Surface, Tile};
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
+use redrob_photo_geom::{Rect as DRect, TILE_SIZE, TileCoord};
+use redrob_photo_raster::{Surface, Tile};
 
 use crate::PhotocraftApp;
 use crate::canvas::ViewXform;
@@ -216,7 +216,7 @@ mod tests {
 
     fn identical_pixels_share_a_group_in(fmt: PixelFormat) {
         let mut s = Surface::new(fmt);
-        // Two separately allocated tiles with the same red pixels, as after loading a .pcraft.
+        // Two separately allocated tiles with the same red pixels, as after loading a .rphoto.
         s.fill_rect(cell(0, 0), &[1.0, 0.0, 0.0, 1.0]);
         s.fill_rect(cell(2, 0), &[1.0, 0.0, 0.0, 1.0]);
         // One shared allocation in two cells (copy-on-write), and a lone green tile.

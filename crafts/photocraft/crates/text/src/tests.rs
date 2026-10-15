@@ -675,15 +675,15 @@ fn depth_is_respected() {
     assert!(r.surface.format().alpha);
 }
 
-/// Visual check: `PHOTOCRAFT_TEXT_DUMP=/tmp/t.ppm cargo test -p redrob-photo-text dump -- --ignored`.
+/// Visual check: `REDROB_PHOTO_TEXT_DUMP=/tmp/t.ppm cargo test -p redrob-photo-text dump -- --ignored`.
 #[test]
 #[ignore]
 fn dump_sample() {
     use redrob_photo_doc::text::{Caps, TextAlign};
-    let Some(path) = std::env::var_os("PHOTOCRAFT_TEXT_DUMP") else {
+    let Some(path) = std::env::var_os("REDROB_PHOTO_TEXT_DUMP") else {
         return;
     };
-    let mut e = if std::env::var_os("PHOTOCRAFT_TEXT_SYSTEM").is_some() { TextEngine::with_system_fonts() } else { TextEngine::new() };
+    let mut e = if std::env::var_os("REDROB_PHOTO_TEXT_SYSTEM").is_some() { TextEngine::with_system_fonts() } else { TextEngine::new() };
     let s = CharStyle { size_pt: 28.0, ..Default::default() };
     let text = "Redrob Canvas Type\nBold faux, italic faux, underline\nשלום عربي mixed ✓\nJustified paragraph text wraps inside the box nicely and evenly across lines.";
     let runs = vec![
@@ -1457,7 +1457,7 @@ fn craft_family_of(l: &crate::TextLayout) -> Vec<&'static str> {
     for g in &l.glyphs {
         let Some(face) = l.faces.get(g.face as usize) else { continue };
         let data: &[u8] = face.font.data.as_ref();
-        if let Some(f) = crate::CRAFT_FONTS.iter().find(|f| std::ptr::eq(f.bytes.as_ptr(), data.as_ptr()) && f.bytes.len() == data.len())
+        if let Some(f) = crate::REDROB_CRAFT_FONTS.iter().find(|f| std::ptr::eq(f.bytes.as_ptr(), data.as_ptr()) && f.bytes.len() == data.len())
             && !v.contains(&f.family)
         {
             v.push(f.family);
@@ -1468,8 +1468,8 @@ fn craft_family_of(l: &crate::TextLayout) -> Vec<&'static str> {
 
 #[test]
 fn craft_fonts_cover_japanese_without_system_fonts() {
-    if !crate::CRAFT_FONTS.iter().any(|f| f.is_japanese()) {
-        eprintln!("skipping: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout)");
+    if !crate::REDROB_CRAFT_FONTS.iter().any(|f| f.is_japanese()) {
+        eprintln!("skipping: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout)");
         return;
     }
     let mut e = TextEngine::new();
@@ -1480,7 +1480,7 @@ fn craft_fonts_cover_japanese_without_system_fonts() {
     // Sans (Inter) runs fall back to the Gothic UI family.
     assert_eq!(craft_family_of(&l), vec![crate::craft_fonts::UI_JAPANESE_FAMILY]);
     // Serif runs fall back to a Mincho face when the build has one (not the web build).
-    if crate::CRAFT_FONTS.iter().any(|f| f.is_mincho()) {
+    if crate::REDROB_CRAFT_FONTS.iter().any(|f| f.is_mincho()) {
         let mut t = point(text, 24.0);
         t.font_family = "Times New Roman".into();
         let l = e.layout(&t, 72.0);
@@ -1501,10 +1501,10 @@ fn works_without_craft_fonts() {
     assert!(e.fonts.has_family("Inter"));
     let l = e.layout(&point("日本語 Latin", 12.0), 72.0);
     assert_eq!(l.glyphs.len(), "日本語 Latin".chars().count());
-    for f in crate::CRAFT_FONTS {
+    for f in crate::REDROB_CRAFT_FONTS {
         assert!(e.fonts.has_family(f.family), "{} registered under its manifest name", f.family);
     }
-    if crate::CRAFT_FONTS.is_empty() {
+    if crate::REDROB_CRAFT_FONTS.is_empty() {
         assert!(crate::craft_fonts::japanese_families().is_empty());
         let fb = fonts::fallback_candidates(&crate::cjk::script_order(Some("ja")));
         assert!(!fb.iter().any(|f| f.contains("BIZ UD")));
@@ -1731,8 +1731,8 @@ fn indic_fallback_candidates_cover_every_platform() {
 
 #[test]
 fn a_served_script_fallback_joins_the_fallback_stack_once_it_arrives() {
-    let Some(cairo) = crate::CRAFT_FONTS.iter().find(|f| f.family == "Cairo") else {
-        eprintln!("skipping: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout)");
+    let Some(cairo) = crate::REDROB_CRAFT_FONTS.iter().find(|f| f.family == "Cairo") else {
+        eprintln!("skipping: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout)");
         return;
     };
     crate::served::add_fonts(&crate::served::parse_manifest("Cairo | Regular | fonts/cairo/Cairo.ttf | Arab,Latn\n").0);
@@ -1845,8 +1845,8 @@ fn txt2_frame_moves_box_text_onto_its_bounds() {
 /// fallback's glyph (#1909).
 #[test]
 fn missing_glyph_protection_can_turn_the_fallback_stack_off() {
-    let Some(cairo) = crate::CRAFT_FONTS.iter().find(|f| f.family == "Cairo") else {
-        eprintln!("skipping: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout)");
+    let Some(cairo) = crate::REDROB_CRAFT_FONTS.iter().find(|f| f.family == "Cairo") else {
+        eprintln!("skipping: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout)");
         return;
     };
     let mut db = fonts::FontDb::new();

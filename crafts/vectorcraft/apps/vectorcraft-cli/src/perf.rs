@@ -6,11 +6,11 @@
 
 use std::time::Instant;
 
-use serde_json::json;
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, Document, Node, hit};
 use redrob_vector_geom::{Affine, Point, Rect, shapes};
 use redrob_vector_render::{RenderOptions, Renderer};
+use serde_json::json;
 
 /// Deterministic xorshift in 0..1.
 struct Rng(u64);
@@ -341,14 +341,14 @@ pub fn run(args: &[String]) -> Result<(), String> {
     rows.push(("hit test (per click)", hits, 2.0));
 
     let mut bytes = vec![];
-    rows.push(("save .vectorcraft", median_ms(3, || bytes = redrob_vector_format::save_file(&doc)), 300.0));
+    rows.push(("save .rvector", median_ms(3, || bytes = redrob_vector_format::save_file(&doc)), 300.0));
     let mut failed = None;
     let open = median_ms(3, || {
         if let Err(e) = redrob_vector_format::load(&bytes) {
-            failed = Some(format!("open .vectorcraft: {e}"));
+            failed = Some(format!("open .rvector: {e}"));
         }
     });
-    rows.push(("open .vectorcraft", open, 300.0));
+    rows.push(("open .rvector", open, 300.0));
     let svg_opts = redrob_vector_svg::ExportOptions::default();
     rows.push(("export SVG", median_ms(3, || drop(redrob_vector_svg::export(&doc, &svg_opts))), 500.0));
 

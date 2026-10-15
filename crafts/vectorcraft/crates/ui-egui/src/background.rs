@@ -8,8 +8,8 @@
 
 use std::sync::mpsc::{Receiver, Sender, channel};
 
-use serde_json::{Value, json};
 use redrob_vector_engine::file_access::ScopeHandle;
+use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
 
@@ -45,7 +45,7 @@ struct Task {
 /// A job in progress.
 pub struct Job {
     id: u64,
-    /// What the status bar shows ("Saving Poster.vectorcraft").
+    /// What the status bar shows ("Saving Poster.rvector").
     pub label: String,
     /// The document the job reads (`DocState::uid`), if any.
     pub doc: Option<u64>,

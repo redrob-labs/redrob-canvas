@@ -3,11 +3,11 @@
 
 use std::sync::Arc;
 
-use serde_json::json;
 use redrob_vector_color::{Color, Paint, Swatch};
 use redrob_vector_doc::{Appearance, Artboard, Document, LayerColor, Node, NodeKind};
 use redrob_vector_geom::{Rect, shapes};
 use redrob_vector_testkit::raster::render_region;
+use serde_json::json;
 
 use crate::*;
 

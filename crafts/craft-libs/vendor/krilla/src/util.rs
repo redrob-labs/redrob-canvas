@@ -74,10 +74,7 @@ impl<T: ?Sized> Deref for Prehashed<T> {
 
 impl<T: Hash + Clone + 'static> Clone for Prehashed<T> {
     fn clone(&self) -> Self {
-        Self {
-            hash: self.hash,
-            value: self.value.clone(),
-        }
+        Self { hash: self.hash, value: self.value.clone() }
     }
 }
 
@@ -264,23 +261,17 @@ pub(crate) mod test_utils {
 
     use crate::Data;
 
-    pub(crate) static WORKSPACE_PATH: LazyLock<PathBuf> =
-        LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+    pub(crate) static WORKSPACE_PATH: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
 
-    pub(crate) static ASSETS_PATH: LazyLock<PathBuf> =
-        LazyLock::new(|| WORKSPACE_PATH.join("assets"));
+    pub(crate) static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("assets"));
 
     static FONT_PATH: LazyLock<PathBuf> = LazyLock::new(|| ASSETS_PATH.join("fonts"));
 
     macro_rules! lazy_font {
         ($name:ident, $path:expr) => {
-            pub static $name: LazyLock<Data> =
-                LazyLock::new(|| Arc::new(std::fs::read($path).unwrap()).into());
+            pub static $name: LazyLock<Data> = LazyLock::new(|| Arc::new(std::fs::read($path).unwrap()).into());
         };
     }
 
-    lazy_font!(
-        NOTO_COLOR_EMOJI_COLR,
-        FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf")
-    );
+    lazy_font!(NOTO_COLOR_EMOJI_COLR, FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf"));
 }

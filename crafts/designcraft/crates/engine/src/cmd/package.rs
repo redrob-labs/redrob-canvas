@@ -127,7 +127,7 @@ impl OutputRoot {
         let parent = path.parent().ok_or_else(|| path_error(path, "output file has no parent directory"))?;
         self.validate_directory(parent)?;
         let mut builder = tempfile::Builder::new();
-        builder.prefix(".designcraft-package-").suffix(".tmp");
+        builder.prefix(".rlayout-package-").suffix(".tmp");
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -371,7 +371,7 @@ fn package(s: &mut Session, p: &Value) -> Result<Value> {
     let d = s.doc()?.doc.clone();
     let links_dir = root.child("Links")?;
     let (packed, mut files) = write_links(&d, &root, &links_dir, None)?;
-    let doc_path = package_output_path(&dir, &title, "designcraft")?;
+    let doc_path = package_output_path(&dir, &title, redrob_layout_format::EXTENSION)?;
     root.write(&doc_path, &super::to_bytes(&packed))?;
     files.insert(0, doc_path);
     // The font files, and what the report says about each font.
@@ -467,7 +467,7 @@ mod tests {
         s.execute("file.package", &json!({"dir": original.to_string_lossy(), "idml": true, "pdf": false})).unwrap();
         std::fs::rename(&original, &moved).unwrap();
         let expected = std::path::absolute(moved.join("Links").join("owned.png")).unwrap();
-        for (command, extension) in [("file.open", "designcraft"), ("file.openIdml", "idml")] {
+        for (command, extension) in [("file.open", "rlayout"), ("file.openIdml", "idml")] {
             let mut opened = Session::new();
             opened.execute(command, &json!({"path": moved.join(format!("OwnedPackage.{extension}")).to_string_lossy()})).unwrap();
             let asset = opened.doc().unwrap().doc.assets.values().next().unwrap();
@@ -513,7 +513,7 @@ mod tests {
         assert!(!r["files"].to_string().contains("gone.svg"), "{}", r["files"]);
         let report = r["report"].as_str().unwrap();
         assert!(report.contains("gone.svg (missing)"), "{report}");
-        for (command, extension) in [("file.open", "designcraft"), ("file.openIdml", "idml")] {
+        for (command, extension) in [("file.open", "rlayout"), ("file.openIdml", "idml")] {
             let mut opened = Session::new();
             opened.execute(command, &json!({"path": out.join(format!("TwoLinks.{extension}")).to_string_lossy()})).unwrap();
             assert_eq!(status(&mut opened, "gone.svg"), Some(json!("missing")), "{extension}");
@@ -536,7 +536,7 @@ mod tests {
         let out = dir.join("Pkg");
         let r = s.execute("file.package", &json!({"dir": out.to_string_lossy(), "pdf": true, "instructions": "Print on matte."})).unwrap();
         let files: Vec<String> = r["files"].as_array().unwrap().iter().map(|f| f.as_str().unwrap().to_string()).collect();
-        assert!(files.iter().any(|f| f.ends_with(".designcraft")));
+        assert!(files.iter().any(|f| f.ends_with(".rlayout")));
         assert!(files.iter().any(|f| f.ends_with(".idml")));
         assert!(files.iter().any(|f| f.ends_with(".pdf")));
         assert!(out.join("Links").join("logo.svg").exists());
@@ -544,7 +544,7 @@ mod tests {
         assert!(report.contains("Print on matte.") && report.contains("logo.svg"), "{report}");
         assert!(report.contains("Preflight:"), "{report}");
         // The packaged document links to its Links folder.
-        let doc_file = files.iter().find(|f| f.ends_with(".designcraft")).unwrap();
+        let doc_file = files.iter().find(|f| f.ends_with(".rlayout")).unwrap();
         let packed = super::super::from_bytes(&std::fs::read(doc_file).unwrap()).unwrap();
         let link = packed.assets.values().next().unwrap().link.clone().unwrap();
         assert!(link.contains("Links"), "{link}");
@@ -581,7 +581,7 @@ mod tests {
             s.execute("text.select", &json!({"story": r["story"], "anchor": a, "focus": b})).unwrap();
             s.execute("type.char", &json!({"fontFamily": family, "fontStyle": "Regular"})).unwrap();
         }
-        let src = dir.join("src").join("Fonts.designcraft");
+        let src = dir.join("src").join("Fonts.rlayout");
         s.execute("file.save", &json!({"path": src.to_string_lossy()})).unwrap();
         let mut s = Session::new();
         assert_eq!(s.execute("file.open", &json!({"path": src.to_string_lossy()})).unwrap()["documentFonts"], 2);
@@ -639,7 +639,7 @@ mod tests {
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": text})).unwrap();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": text.len()})).unwrap();
         s.execute("type.char", &json!({"fontFamily": NAMED, "fontStyle": "Regular"})).unwrap();
-        let src = dir.join("src").join("Fallback.designcraft");
+        let src = dir.join("src").join("Fallback.rlayout");
         s.execute("file.save", &json!({"path": src.to_string_lossy()})).unwrap();
         let mut s = Session::new();
         assert_eq!(s.execute("file.open", &json!({"path": src.to_string_lossy()})).unwrap()["documentFonts"], 3);
@@ -686,7 +686,7 @@ mod tests {
         let r = s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": false})).unwrap();
         let files = r["files"].as_array().unwrap();
         assert!(files.iter().all(|path| Path::new(path.as_str().unwrap()).starts_with(&dir)));
-        assert!(dir.join("Annual_ Review.designcraft").is_file());
+        assert!(dir.join("Annual_ Review.rlayout").is_file());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -695,7 +695,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("dc-package-overwrite-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let document = dir.join("Annual.designcraft");
+        let document = dir.join("Annual.rlayout");
         std::fs::write(&document, b"previous package").unwrap();
         #[cfg(unix)]
         {
@@ -726,7 +726,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({"title": "Relative"})).unwrap();
         s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": false})).unwrap();
-        assert!(dir.join("Relative.designcraft").is_file());
+        assert!(dir.join("Relative.rlayout").is_file());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -746,7 +746,7 @@ mod tests {
         let redirected_root = base.join("redirected-package");
         symlink(&outside, &redirected_root).unwrap();
         assert!(s.execute("file.package", &json!({"dir": redirected_root.to_string_lossy(), "idml": false})).is_err());
-        assert!(!outside.join("Annual.designcraft").exists());
+        assert!(!outside.join("Annual.rlayout").exists());
         std::fs::remove_file(&redirected_root).unwrap();
 
         // A linked folder above the package is followed, as `/tmp` is on macOS.
@@ -754,20 +754,20 @@ mod tests {
         symlink(&outside, &linked_parent).unwrap();
         let nested_package = linked_parent.join("nested").join("Package");
         s.execute("file.package", &json!({"dir": nested_package.to_string_lossy(), "idml": false})).unwrap();
-        assert!(outside.join("nested").join("Package").join("Annual.designcraft").is_file());
+        assert!(outside.join("nested").join("Package").join("Annual.rlayout").is_file());
         std::fs::remove_file(&linked_parent).unwrap();
 
         let package = base.join("Package");
         std::fs::create_dir_all(&package).unwrap();
         symlink(&outside, package.join("Links")).unwrap();
         assert!(s.execute("file.package", &json!({"dir": package.to_string_lossy(), "idml": false})).is_err());
-        assert!(!outside.join("Annual.designcraft").exists());
+        assert!(!outside.join("Annual.rlayout").exists());
         std::fs::remove_file(package.join("Links")).unwrap();
         std::fs::create_dir(package.join("Links")).unwrap();
 
-        let kept = outside.join("kept.designcraft");
+        let kept = outside.join("kept.rlayout");
         std::fs::write(&kept, b"kept").unwrap();
-        symlink(&kept, package.join("Annual.designcraft")).unwrap();
+        symlink(&kept, package.join("Annual.rlayout")).unwrap();
         assert!(s.execute("file.package", &json!({"dir": package.to_string_lossy(), "idml": false})).is_err());
         assert_eq!(std::fs::read(&kept).unwrap(), b"kept");
         let _ = std::fs::remove_dir_all(&base);
@@ -794,7 +794,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({"title": "Annual"})).unwrap();
         assert!(s.execute("file.package", &json!({"dir": redirected.to_string_lossy(), "idml": false})).is_err());
-        assert!(!outside.join("Annual.designcraft").exists());
+        assert!(!outside.join("Annual.rlayout").exists());
         std::fs::remove_dir(&redirected).unwrap();
         let _ = std::fs::remove_dir_all(&base);
     }

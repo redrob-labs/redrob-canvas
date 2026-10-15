@@ -4,10 +4,10 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
-use serde_json::json;
 use redrob_vector_testkit::fixtures::{self, exec};
 use redrob_vector_testkit::invariants::{self, check_all, check_session, doc_json, first_diff, redo_all, undo_all};
 use redrob_vector_testkit::strategies::{Op, arb_ops};
+use serde_json::json;
 
 fn run_sequence(ops: &[Op], full_checks_every: usize) -> Result<(), TestCaseError> {
     let mut s = fixtures::session();
@@ -136,7 +136,7 @@ fn a_failed_batch_restores_the_file_the_history_and_a_drag_in_progress() {
         (doc_json(&st.doc), st.history.undo.len(), st.history.redo.len())
     };
     // Save As, then a failing step: the document keeps no file and stays modified.
-    let path = redrob_vector_testkit::temp_dir("batch-rollback").join("named.vectorcraft").to_string_lossy().to_string();
+    let path = redrob_vector_testkit::temp_dir("batch-rollback").join("named.rvector").to_string_lossy().to_string();
     let save = json!({"command": "file.saveAs", "params": {"path": path}});
     assert!(s.execute("command.batch", &json!({"commands": [rect(0), save, fail]})).is_err());
     assert_eq!(state(&s), before);
@@ -173,7 +173,7 @@ fn empty_batch_is_harmless() {
 fn save_open_via_commands_roundtrips() {
     let mut s = fixtures::rich_session();
     let dir = redrob_vector_testkit::temp_dir("engine-save");
-    let path = dir.join("rich.vectorcraft");
+    let path = dir.join("rich.rvector");
     exec(&mut s, "document.save", json!({"path": path.to_str().unwrap()}));
     let want = doc_json(&s.doc().unwrap().doc);
     exec(&mut s, "document.open", json!({"path": path.to_str().unwrap()}));

@@ -4,11 +4,11 @@
 
 use std::sync::Arc;
 
-use serde::Deserialize;
-use serde_json::{Value, json};
 use redrob_vector_cad::{ColorDepth, DxfOptions, DxfVersion, Preserve, RasterFormat};
 use redrob_vector_doc::{Document, Unit};
 use redrob_vector_geom::Rect;
+use serde::Deserialize;
+use serde_json::{Value, json};
 
 use super::super::*;
 use super::{ArtboardPick, Encoded, FormatOption};

@@ -258,7 +258,7 @@ impl Tokens {
 /// installed without waiting, and the caller installs again once they are (see
 /// [`system_fonts_ready`]) to add the installed faces for the scripts they lack.
 pub fn install_fonts(ctx: &egui::Context, lang: &str) -> bool {
-    let craft = redrob_layout_fonts::CRAFT_FONTS;
+    let craft = redrob_layout_fonts::REDROB_CRAFT_FONTS;
     let mut defs = font_definitions(craft, lang);
     let system = system_ui_fonts(craft);
     if let Some(system) = system {
@@ -437,7 +437,7 @@ pub(crate) fn add_system_fallbacks(fonts: &mut FontDefinitions, system: &[System
 }
 
 /// The UI fonts: the app's own, then the craft-fonts faces from `craft` (empty without
-/// `CRAFT_FONTS_DIR`) as fallbacks at the end of every family: Japanese (BIZ UDPGothic first) and
+/// `REDROB_CRAFT_FONTS_DIR`) as fallbacks at the end of every family: Japanese (BIZ UDPGothic first) and
 /// Simplified Chinese, in the interface language's order, then Arabic. The `arabic` families
 /// put the Arabic face first for right-to-left runs. egui has no system-font discovery, so
 /// without craft-fonts CJK and Arabic UI text has no glyphs.
@@ -514,11 +514,8 @@ pub fn apply(ctx: &egui::Context, t: &Tokens) {
     v.selection.stroke = Stroke::new(1.0, t.text_strong);
     v.hyperlink_color = t.accent;
     v.override_text_color = Some(t.text);
-    redrob_craft_ui::theme::WidgetPalette { noninteractive: t.panel, inactive: t.button, hovered: t.hover, active: t.tool_active, open: t.hover }.apply_to(
-        &mut v.widgets,
-        r,
-        Stroke::new(1.0, t.text),
-    );
+    redrob_craft_ui::theme::WidgetPalette { noninteractive: t.panel, inactive: t.button, hovered: t.hover, active: t.tool_active, open: t.hover }
+        .apply_to(&mut v.widgets, r, Stroke::new(1.0, t.text));
     v.widgets.noninteractive.bg_stroke = Stroke::new(1.0, t.divider);
     v.widgets.inactive.bg_stroke = Stroke::new(1.0, t.field_border);
     v.widgets.hovered.bg_stroke = Stroke::new(1.0, t.field_border);
@@ -561,11 +558,11 @@ mod japanese_font_tests {
 
     #[test]
     fn japanese_ui_glyphs_are_available_in_every_family() {
-        if redrob_layout_fonts::CRAFT_FONTS.is_empty() {
-            eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a checkout)");
+        if redrob_layout_fonts::REDROB_CRAFT_FONTS.is_empty() {
+            eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a checkout)");
             return;
         }
-        let ctx = ctx_with(redrob_layout_fonts::CRAFT_FONTS);
+        let ctx = ctx_with(redrob_layout_fonts::REDROB_CRAFT_FONTS);
         ctx.fonts_mut(|fonts| {
             for family in families() {
                 let font = egui::FontId::new(13.0, family);
@@ -576,7 +573,7 @@ mod japanese_font_tests {
             }
         });
         // The UI face is BIZ UDPGothic, ahead of the Mincho faces.
-        let defs = super::font_definitions(redrob_layout_fonts::CRAFT_FONTS, "ja");
+        let defs = super::font_definitions(redrob_layout_fonts::REDROB_CRAFT_FONTS, "ja");
         let stack = &defs.families[&egui::FontFamily::Proportional];
         assert_eq!(stack.iter().find(|n| n.starts_with("craft-")).map(String::as_str), Some("craft-BIZ UDPGothic-Regular"));
     }
@@ -651,8 +648,9 @@ mod japanese_font_tests {
     /// before the built-in CJK faces and the other scripts' faces.
     #[test]
     fn interface_language_orders_the_cjk_faces() {
-        let face =
-            |family: &str, script| super::SystemFont::new(script, family.into(), redrob_layout_fonts::testing::font_with(family, &['日']).unwrap(), 0);
+        let face = |family: &str, script| {
+            super::SystemFont::new(script, family.into(), redrob_layout_fonts::testing::font_with(family, &['日']).unwrap(), 0)
+        };
         let system = [face("DC Ja", "Jpan"), face("DC Hans", "Hans"), face("DC Hant", "Hant"), face("DC Ko", "Kore")];
         for (lang, first) in [("ja", "DC Ja"), ("zh", "DC Hans"), ("zh-hant", "DC Hant"), ("ko", "DC Ko"), ("", "DC Ja")] {
             let mut defs = super::font_definitions(&[], lang);

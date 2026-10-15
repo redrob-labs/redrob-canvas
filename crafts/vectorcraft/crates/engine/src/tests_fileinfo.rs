@@ -1,8 +1,8 @@
 //! File → File Info (`file.info`): editing as one undo step, the native round trip, and the PDF,
 //! PNG and SVG metadata it writes.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{CopyrightStatus, DocMetadata};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -101,7 +101,7 @@ fn file_info_round_trips_and_old_files_load() {
 fn saving_to_a_file_stamps_the_modified_date() {
     let mut s = session();
     let created = s.doc().unwrap().doc.metadata.created;
-    let path = std::env::temp_dir().join(format!("vc-fileinfo-{}.vectorcraft", std::process::id()));
+    let path = std::env::temp_dir().join(format!("vc-fileinfo-{}.rvector", std::process::id()));
     s.execute("document.save", &json!({"path": path.to_string_lossy()})).unwrap();
     let st = s.doc().unwrap();
     assert!(st.doc.metadata.modified.is_some() && st.doc.metadata.created == created);

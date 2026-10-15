@@ -117,7 +117,7 @@ fn content_aware_fill_huge_area_neither_panics_nor_wraps() {
 }
 
 /// `blob_session` with the canvas declared as `size` and a sparse selection of `rects`, as a
-/// loaded `.pcraft` can hold (#963). Nothing here allocates more than a few tiles.
+/// loaded `.rphoto` can hold (#963). Nothing here allocates more than a few tiles.
 fn huge_selection(size: (u32, u32), rects: &[Rect]) -> Session {
     let mut s = blob_session(8);
     let st = s.active_mut().unwrap();

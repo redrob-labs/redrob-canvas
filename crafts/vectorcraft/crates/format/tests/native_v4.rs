@@ -1,14 +1,14 @@
-//! `.vectorcraft` v4: large data after the JSON (images, the PDF, profiles), small files still plain
+//! `.rvector` v4: large data after the JSON (images, the PDF, profiles), small files still plain
 //! JSON, older versions inline, damaged offsets refused.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::sync::Arc;
 
-use serde_json::Value;
 use redrob_vector_doc::{Document, ImageBlob, ImageObject, Node, NodeKind};
 use redrob_vector_format::{BLOB_MAGIC, FormatError, INLINE_MAX, SaveOptions, load, load_file, pdf_content, save_with};
 use redrob_vector_geom::Affine;
+use serde_json::Value;
 
 /// A document showing image `key` of `len` bytes.
 fn doc_with_image(key: &str, len: usize) -> Document {

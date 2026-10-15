@@ -18,7 +18,7 @@
 //! locale's script (Japanese forms only for a Japanese locale). At most one font is read per
 //! frame, each file at most once, and once every script has been tried the scan stops.
 //!
-//! Builds made with the optional craft-fonts input (`CRAFT_FONTS_DIR`,
+//! Builds made with the optional craft-fonts input (`REDROB_CRAFT_FONTS_DIR`,
 //! [`redrob_photo_text::craft_fonts`]) carry Japanese fonts (BIZ UDPGothic first): they are tried
 //! before the system Japanese fonts, in the Japanese slot of the same locale order. Without
 //! craft-fonts (and on the web, which never embeds them) nothing changes.
@@ -865,7 +865,7 @@ mod tests {
     #[test]
     fn craft_fonts_render_japanese_without_system_fonts() {
         let Some(ui_font) = craft_fonts::japanese_for_ui().first().copied() else {
-            eprintln!("skipping: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout)");
+            eprintln!("skipping: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout)");
             return;
         };
         // An English locale tries Chinese first (none here), then Japanese: the craft font.
@@ -904,7 +904,7 @@ mod tests {
         assert!(!render(&ctx, "日本語の文字"));
         let n = ctx.fonts(|f| f.definitions().font_data.keys().filter(|k| k.starts_with(FONT_PREFIX)).count());
         assert_eq!(n, 0);
-        if craft_fonts::CRAFT_FONTS.is_empty() {
+        if craft_fonts::REDROB_CRAFT_FONTS.is_empty() {
             assert!(craft_embedded(CjkScript::Japanese).is_empty());
         }
     }

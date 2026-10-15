@@ -4,9 +4,9 @@
 
 use std::path::{Path, PathBuf};
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, ImageObject, LinkInfo, NodeKind};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -112,7 +112,7 @@ fn a_placed_link_records_the_file_and_the_document_saves_only_a_preview() {
     assert!(link.modified.is_some_and(|m| m > 1_600_000_000_000), "{link:?}");
     let blob = &s.doc().unwrap().doc.images[&im.key];
     assert!(blob.proxy.is_some() && !blob.is_proxy(), "full pixels, with a preview to save");
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     let mut saved: Value = serde_json::from_slice(&std::fs::read(&doc_path).unwrap()).unwrap();
     let entry = &saved["images"][&im.key];
@@ -165,11 +165,11 @@ fn the_relative_path_finds_the_file_after_the_folder_moves() {
     write(&pic, &png(600, 300, RED));
     let mut s = session();
     let id = place(&mut s, &pic);
-    save(&mut s, &a.file("poster.vectorcraft"));
+    save(&mut s, &a.file("poster.rvector"));
     // Move the document with its links: the old folder is gone.
     std::fs::remove_dir_all(&b.0).unwrap();
     std::fs::rename(&a.0, &b.0).unwrap();
-    let r = open(&mut s, &b.file("poster.vectorcraft"));
+    let r = open(&mut s, &b.file("poster.rvector"));
     assert_eq!((r["missingLinks"].clone(), r["modifiedLinks"].clone()), (json!([]), json!([])), "{r}");
     let moved = b.file("art/photo.png");
     let im = image(&s, id);
@@ -188,7 +188,7 @@ fn a_missing_link_renders_its_preview_and_relinks() {
     let mut s = session();
     let id = place(&mut s, &pic);
     let placed = bounds(&s, id);
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     std::fs::remove_file(&pic).unwrap();
     let r = open(&mut s, &doc_path);
@@ -227,7 +227,7 @@ fn a_modified_link_follows_the_update_links_preference() {
     let mut s = session();
     let id = place(&mut s, &pic);
     let placed = bounds(&s, id);
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     write(&pic, &png(400, 400, BLUE));
     let c = s.execute("links.check", &json!({})).unwrap();
@@ -278,7 +278,7 @@ fn a_file_read_for_opening_has_its_links_read_and_its_type_laid_out() {
     let r = s.execute("text.create", &json!({"x": 20, "y": 40, "text": "Linked files and type. ".repeat(12), "area": area})).unwrap();
     let text = NodeId(r["id"].as_u64().unwrap());
     s.execute("text.areaOptions", &json!({"ids": [text.0], "columns": 2})).unwrap();
-    let doc_path = dir.file("poster.vectorcraft");
+    let doc_path = dir.file("poster.rvector");
     save(&mut s, &doc_path);
     std::fs::remove_file(&gone).unwrap();
     write(&changed, &png(200, 200, RED));
@@ -320,7 +320,7 @@ fn links_from_older_files_load_and_keep_their_pixels() {
     saved_image(&mut v)["link"] = json!(pic);
     v["format"] = json!("drawcraft");
     let legacy = serde_json::to_vec(&v).unwrap();
-    let doc_path = dir.file("old.drawcraft");
+    let doc_path = dir.file("old.drawcraft"); // legacy: upstream extension still read
     write(&doc_path, &legacy);
     let r = open(&mut s, &doc_path);
     assert_eq!((r["missingLinks"].clone(), r["modifiedLinks"].clone()), (json!([]), json!([])), "{r}");
@@ -351,7 +351,7 @@ fn without_a_file_system_the_saved_preview_shows() {
     let doc = redrob_vector_format::load(&saved).unwrap();
     assert!(doc.images.values().all(|b| b.is_proxy()));
     assert!(near(centre_colour(&doc), RED), "the preview renders");
-    let r = s.execute("document.open", &json!({"name": "poster.vectorcraft", "dataBase64": redrob_vector_format::base64_encode(&saved)})).unwrap();
+    let r = s.execute("document.open", &json!({"name": "poster.rvector", "dataBase64": redrob_vector_format::base64_encode(&saved)})).unwrap();
     assert_eq!(r["missingLinks"][0]["ids"], json!([id.0]));
     assert!(near(centre_colour(&s.doc().unwrap().doc), RED));
     // Exports carry the preview.
@@ -381,12 +381,12 @@ fn relative_paths_are_written_against_the_saved_file() {
             _ => None,
         }
     };
-    assert_eq!(rel(format!("{root}{sep}doc.vectorcraft")).as_deref(), Some("art/a.png"));
-    assert_eq!(rel(format!("{root}{sep}docs{sep}deep{sep}doc.vectorcraft")).as_deref(), Some("../../art/a.png"));
-    assert_eq!(rel(format!("{root}{sep}art{sep}doc.vectorcraft")).as_deref(), Some("a.png"));
+    assert_eq!(rel(format!("{root}{sep}doc.rvector")).as_deref(), Some("art/a.png"));
+    assert_eq!(rel(format!("{root}{sep}docs{sep}deep{sep}doc.rvector")).as_deref(), Some("../../art/a.png"));
+    assert_eq!(rel(format!("{root}{sep}art{sep}doc.rvector")).as_deref(), Some("a.png"));
     if cfg!(windows) {
-        assert_eq!(rel("D:\\other\\doc.vectorcraft".into()), None, "another drive");
-        assert_eq!(rel("c:\\WORK\\doc.vectorcraft".into()).as_deref(), Some("art/a.png"), "without case");
+        assert_eq!(rel("D:\\other\\doc.rvector".into()), None, "another drive");
+        assert_eq!(rel("c:\\WORK\\doc.rvector".into()).as_deref(), Some("art/a.png"), "without case");
     }
 }
 
@@ -397,7 +397,7 @@ fn a_placed_document_brings_its_links_with_the_files_pixels() {
     write(&pic, &png(600, 300, RED));
     let mut s = session();
     place(&mut s, &pic);
-    let doc_path = dir.file("part.vectorcraft");
+    let doc_path = dir.file("part.rvector");
     save(&mut s, &doc_path);
     let mut s = session();
     // As an editable copy (placed linked, it stays one locked object).

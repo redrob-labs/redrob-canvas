@@ -429,7 +429,7 @@ fn stack_modes_render_from_the_nested_layers() {
     }
     s.execute("layer.smartObjects.stackMode.none", json!({})).unwrap();
     assert!(at(&s, 3, 3)[0] > 0.9);
-    // The stack mode survives .pcraft.
+    // The stack mode survives .rphoto.
     s.execute("layer.smartObjects.stackMode.mean", json!({})).unwrap();
     let bytes = redrob_photo_format::save_to_bytes(doc(&s), &Default::default()).unwrap();
     let back = redrob_photo_format::load_from_bytes(&bytes).unwrap();

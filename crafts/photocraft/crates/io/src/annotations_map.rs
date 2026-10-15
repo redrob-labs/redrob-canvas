@@ -14,7 +14,7 @@
 //!   measurement scale; no sample file was available, so parsing is lenient and the raw resource
 //!   is kept byte-exact while the scale is unchanged.
 //! * Count information: image resource 1080 is kept verbatim (its layout is not public) unless
-//!   the document has its own count markers, which only `.pcraft` stores.
+//!   the document has its own count markers, which only `.rphoto` stores.
 
 use std::sync::Arc;
 

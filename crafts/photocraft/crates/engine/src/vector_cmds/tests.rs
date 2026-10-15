@@ -725,7 +725,7 @@ fn vector_mask_commands_and_compositing() {
 }
 
 /// #4201: the vector mask's feather takes the pixel mask's range (finite 0..=1000 px); anything
-/// else is refused before the edit, so no infinite feather can block a .pcraft save.
+/// else is refused before the edit, so no infinite feather can block a .rphoto save.
 #[test]
 fn vector_mask_edit_rejects_out_of_range_feather() {
     let mut s = session(32, 32, 8);

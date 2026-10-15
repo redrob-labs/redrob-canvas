@@ -15,11 +15,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, SyncSender, TryRecvError};
 
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
 use redrob_photo_doc::{DocId, Document};
 use redrob_photo_engine::display_color::CanvasDisplay;
 use redrob_photo_geom::Rect;
-#[cfg(not(target_arch = "wasm32"))]
-use rayon::prelude::*;
 
 use crate::PhotocraftApp;
 use crate::gpu_canvas::GpuCanvas;

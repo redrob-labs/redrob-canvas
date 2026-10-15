@@ -6,11 +6,11 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use serde::Deserialize;
-use serde_json::{Value, json};
 use redrob_vector_color::cms;
 use redrob_vector_doc::Document;
 use redrob_vector_format::{PREVIEW_MAX, SaveOptions};
+use serde::Deserialize;
+use serde_json::{Value, json};
 
 use super::super::*;
 use super::{Format, FormatOption};
@@ -133,7 +133,7 @@ pub(super) fn save_options(cmd: &str, f: &Format, doc: &Document, p: &Value) -> 
     Ok((so, Extras { preview: o.preview, pdf: o.pdf_compatible }))
 }
 
-/// The `.vectorcraft` file of `doc` with the options in `p`.
+/// The `.rvector` file of `doc` with the options in `p`.
 pub(super) fn encode(cmd: &str, f: &Format, doc: &Document, p: &Value) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     encode_to(cmd, f, doc, p, &mut out)?;

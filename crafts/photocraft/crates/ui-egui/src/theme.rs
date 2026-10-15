@@ -1381,7 +1381,7 @@ mod tests {
 
 /// Development feature: live design-token overrides.
 ///
-/// Set `PHOTOCRAFT_THEME_FILE=/path/tokens.json` in a debug build; the file is polled and applied
+/// Set `REDROB_PHOTO_THEME_FILE=/path/tokens.json` in a debug build; the file is polled and applied
 /// on change, so colours, radii and sizes can be tuned without recompiling. Keys are `Tokens` field
 /// names; values are `"#rrggbb"`, `"#rrggbbaa"` or numbers. Compiled out of release builds.
 #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
@@ -1399,7 +1399,11 @@ pub mod live {
 
     impl LiveTokens {
         pub fn from_env() -> Self {
-            Self { path: std::env::var_os("PHOTOCRAFT_THEME_FILE").map(Into::into), ..Default::default() }
+            Self {
+                // legacy: the upstream variable is read when ours is unset
+                path: std::env::var_os("REDROB_PHOTO_THEME_FILE").or_else(|| std::env::var_os("PHOTOCRAFT_THEME_FILE")).map(Into::into),
+                ..Default::default()
+            } // legacy: the upstream variable is read when ours is unset
         }
 
         /// Re-apply overrides if the file changed. Returns true when tokens were updated.

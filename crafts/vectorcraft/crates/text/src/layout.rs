@@ -3,11 +3,11 @@
 use std::ops::Range;
 
 use kurbo::{Affine, BezPath, PathEl, Point, Rect, Shape, Vec2};
-use unicode_bidi::{BidiInfo, Level};
 use redrob_vector_doc::{
     Burasagari, CharStyle, InlineArt, Justify, Kinsoku, LeadingModel, Mojikumi, ParaDirection, ParaStyle, PathAlign, PathEffect, TextKind, TextObject,
 };
 use redrob_vector_geom::{ArcPath, PathData};
+use unicode_bidi::{BidiInfo, Level};
 
 use crate::composer::{Breakpoint, Params, compose};
 use crate::fontdb::FontDb;

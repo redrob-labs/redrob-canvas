@@ -1254,7 +1254,7 @@ impl DesignApp {
         if presenting || self.ui.hidden_panels != 0 {
             panel_docking::cancel_gesture(self, &ctx);
         }
-        let dbg = std::env::var_os("DESIGNCRAFT_DEBUG_LAYOUT").is_some();
+        let dbg = std::env::var_os("REDROB_LAYOUT_DEBUG_LAYOUT").or_else(|| std::env::var_os("DESIGNCRAFT_DEBUG_LAYOUT")).is_some(); // legacy: the upstream variable is read when ours is unset
         if dbg {
             eprintln!("root start {:?}", ui.available_rect_before_wrap());
         }
@@ -1453,7 +1453,7 @@ pub fn opens_as_document(name: &str) -> bool {
     let n = name.to_ascii_lowercase();
     // InDesign files go to the open path too, which says how to bring them over (as IDML)
     // instead of failing to place them as a graphic.
-    [".designcraft", ".idml", ".indd", ".indt"].iter().any(|ext| n.ends_with(ext))
+    [".rlayout", ".idml", ".indd", ".indt"].iter().any(|ext| n.ends_with(ext)) || n.ends_with(".designcraft") // legacy: upstream Layout documents still open as documents
 }
 
 pub fn now_ms() -> f64 {
@@ -1540,7 +1540,7 @@ mod tests {
     #[test]
     fn closing_with_save_writes_the_file_then_closes() {
         let mut app = app_with_unsaved_document();
-        let path = std::env::temp_dir().join(format!("designcraft-close-test-{}.designcraft", std::process::id()));
+        let path = std::env::temp_dir().join(format!("designcraft-close-test-{}.rlayout", std::process::id()));
         app.run("file.saveAs", json!({"path": path})).unwrap();
         let saved = std::fs::metadata(&path).unwrap().len();
         app.run("frame.create", json!({"rect": [200, 200, 300, 300]})).unwrap();
@@ -1732,7 +1732,7 @@ mod tests {
             assert!(std::sync::Arc::ptr_eq(&document.doc, &original));
             assert!(document.is_dirty());
             assert!(!document.history.undo.is_empty());
-            assert!(directory.path().join(format!("{}.designcraft", document.uid)).exists());
+            assert!(directory.path().join(format!("{}.rlayout", document.uid)).exists());
         }
         // A fresh Dock Quit must ask about the first document again after cancellation.
         assert!(quit_frame(&mut app, &ctx, true).contains(&egui::ViewportCommand::CancelClose));
@@ -1746,7 +1746,7 @@ mod tests {
         second_unsaved_document(&mut app);
         let uids: Vec<_> = app.session.documents().iter().map(|d| d.uid).collect();
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("saved.designcraft");
+        let path = directory.path().join("saved.rlayout");
         let chosen = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(chosen.clone())));
         app.session.recovery_dir = Some(directory.path().join("recovery"));
@@ -1762,7 +1762,7 @@ mod tests {
         discard_quit_dialog(&mut app);
         assert!(quit_frame(&mut app, &ctx, false).contains(&egui::ViewportCommand::Close));
         assert_eq!(app.session.documents().len(), 2);
-        assert!(app.session.recovery_dir.as_ref().unwrap().join(format!("{}.designcraft", uids[1])).exists());
+        assert!(app.session.recovery_dir.as_ref().unwrap().join(format!("{}.rlayout", uids[1])).exists());
         assert!(quit_frame(&mut app, &ctx, true).is_empty());
         assert!(app.session.documents().is_empty());
         assert!(path.exists());
@@ -1808,7 +1808,7 @@ mod tests {
         let path = std::env::temp_dir()
             .join(format!("designcraft-quit-missing-{}-{}", std::process::id(), app.session.active().unwrap().uid))
             .join("missing")
-            .join("document.designcraft");
+            .join("document.rlayout");
         assert!(!path.parent().unwrap().exists());
         let picked = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(picked.clone())));
@@ -1830,7 +1830,7 @@ mod tests {
         let mut app = app_with_unsaved_document();
         second_unsaved_document(&mut app);
         let first = app.session.documents()[0].uid;
-        let path = std::env::temp_dir().join(format!("designcraft-quit-save-{}-{first}.designcraft", std::process::id()));
+        let path = std::env::temp_dir().join(format!("designcraft-quit-save-{}-{first}.rlayout", std::process::id()));
         let picked = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(picked.clone())));
         quit_frame(&mut app, &ctx, true);
@@ -1883,7 +1883,7 @@ mod tests {
         let mut app = app_with_unsaved_document();
         second_unsaved_document(&mut app);
         let first = app.session.documents()[0].uid;
-        let path = std::env::temp_dir().join(format!("designcraft-quit-uid-{}-{first}.designcraft", std::process::id()));
+        let path = std::env::temp_dir().join(format!("designcraft-quit-uid-{}-{first}.rlayout", std::process::id()));
         let picked = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(picked.clone())));
         quit_frame(&mut app, &ctx, true);
@@ -1905,7 +1905,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("designcraft-quit-recovery-{}-{uid}", std::process::id()));
         app.session.recovery_dir = Some(dir.clone());
         app.run("file.recovery.save", json!({})).unwrap();
-        let entry = dir.join(format!("{uid}.designcraft"));
+        let entry = dir.join(format!("{uid}.rlayout"));
         quit_frame(&mut app, &ctx, true);
         discard_quit_dialog(&mut app);
         assert!(quit_frame(&mut app, &ctx, false).contains(&egui::ViewportCommand::Close));
@@ -2090,7 +2090,7 @@ mod tests {
 
     #[test]
     fn dropped_documents_open_and_the_rest_is_placed() {
-        for name in ["a.designcraft", "B.IDML", "c.indd", "D.INDT"] {
+        for name in ["a.rlayout", "B.IDML", "c.indd", "D.INDT"] {
             assert!(opens_as_document(name), "{name}");
         }
         for name in ["a.png", "b.pdf", "idml.txt", "c.idml.zip"] {
@@ -2101,7 +2101,7 @@ mod tests {
     #[test]
     fn dropping_an_unreadable_file_alerts() {
         // A document opens, so it says it can't be opened.
-        let path = unreadable_file("broken.designcraft");
+        let path = unreadable_file("broken.rlayout");
         let mut app = DesignApp::new(Session::new(), Services::default());
         let r = app.open_dropped(&path.to_string_lossy());
         let _ = std::fs::remove_file(&path);
@@ -2163,7 +2163,7 @@ mod tests {
 
     #[test]
     fn file_open_failures_show_an_alert() {
-        let path = unreadable_file("open.designcraft");
+        let path = unreadable_file("open.rlayout");
         let picked = path.to_string_lossy().to_string();
         let services = Services { pick_open: Some(Box::new(move |_| Some(picked.clone()))), ..Default::default() };
         let mut app = DesignApp::new(Session::new(), services);
@@ -2180,11 +2180,11 @@ mod tests {
     #[test]
     fn other_command_errors_stay_in_the_status_line() {
         let mut app = DesignApp::new(Session::new(), Services::default());
-        assert!(app.run("file.open", json!({"path": "/nonexistent/x.designcraft"})).is_err());
+        assert!(app.run("file.open", json!({"path": "/nonexistent/x.rlayout"})).is_err());
         assert!(app.ui.dialog.is_none(), "a scripted file.open doesn't raise an alert");
         assert!(!app.ui.status.is_empty());
         // The control channel's app.open answers with the error; no alert waits for a click.
-        let (req, _rx) = control::ControlRequest::new("app.open", json!({"path": "/nonexistent/x.designcraft"}));
+        let (req, _rx) = control::ControlRequest::new("app.open", json!({"path": "/nonexistent/x.rlayout"}));
         let control::Outcome::Done(r) = control::handle(&mut app, &egui::Context::default(), &req) else { panic!("app.open answers") };
         assert_eq!(r["ok"], json!(false), "{r}");
         assert!(app.ui.dialog.is_none(), "a control-channel app.open doesn't raise an alert");
@@ -2241,8 +2241,9 @@ mod import_warning_tests {
     #[test]
     fn byte_open_reports_partial_import_warnings_without_losing_documents() {
         let mut app = app();
-        let result =
-            app.open_file("file.openBytes", json!({"name": "partial.idml", "base64": redrob_layout_engine::cmd::base64_encode(&idml(true))})).unwrap();
+        let result = app
+            .open_file("file.openBytes", json!({"name": "partial.idml", "base64": redrob_layout_engine::cmd::base64_encode(&idml(true))}))
+            .unwrap();
         assert_eq!(result["warnings"].as_array().unwrap().len(), 2);
         assert_partial_import_warning(&mut app, "partial.idml");
     }
@@ -2453,7 +2454,7 @@ mod browser_import_tests {
         source.execute("frame.create", &json!({"rect": [10, 10, 50, 50], "content": "text", "text": "placed"})).unwrap();
         let native = redrob_layout_engine::cmd::to_bytes(&source.doc().unwrap().doc);
         let idml = redrob_layout_idml::export_idml(&source.doc().unwrap().doc);
-        for (name, bytes) in [("source.designcraft", native), ("source.idml", idml)] {
+        for (name, bytes) in [("source.rlayout", native), ("source.idml", idml)] {
             let mut app = app();
             let request = app.import_request("place");
             deliver(&mut app, request, name, bytes.clone());
@@ -2556,7 +2557,7 @@ mod browser_import_tests {
         let mut app = app();
         let native = redrob_layout_engine::cmd::to_bytes(&app.session.doc().unwrap().doc);
         let request = app.import_request("drop");
-        deliver(&mut app, request, "document.designcraft", native);
+        deliver(&mut app, request, "document.rlayout", native);
         assert_eq!(app.session.documents().len(), 2);
         let request = app.import_request("drop");
         app.run("file.activate", json!({"index": 0})).unwrap();

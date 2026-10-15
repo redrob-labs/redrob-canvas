@@ -17,9 +17,9 @@ pub mod typography;
 #[cfg(test)]
 mod color_panel_tests;
 
+use egui::vec2;
 use redrob_layout_doc::{Content, StrokeAlign, WrapMode};
 use redrob_layout_geom::Rect;
-use egui::vec2;
 use serde_json::{Value, json};
 
 use crate::DesignApp;

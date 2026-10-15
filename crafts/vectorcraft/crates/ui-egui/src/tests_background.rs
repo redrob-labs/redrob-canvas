@@ -4,10 +4,10 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Appearance, Document, Node};
 use redrob_vector_engine::Session;
 use redrob_vector_geom::{Rect, shapes};
+use serde_json::{Value, json};
 
 use crate::{Services, VectorcraftApp, background, io};
 
@@ -65,21 +65,21 @@ fn a_50k_path_save_returns_at_once_and_the_file_appears_later() {
     let gate = Gate::default();
     let (mut app, files) = app(gate.clone());
     app.session.add_document(paths(50_000), None);
-    let r = app.run("file.save", json!({"path": "/docs/big.vectorcraft"})).unwrap();
-    assert_eq!((r["background"].as_bool(), r["path"].as_str()), (Some(true), Some("/docs/big.vectorcraft")));
+    let r = app.run("file.save", json!({"path": "/docs/big.rvector"})).unwrap();
+    assert_eq!((r["background"].as_bool(), r["path"].as_str()), (Some(true), Some("/docs/big.rvector")));
     assert!(written(&files).is_empty(), "nothing written yet");
     assert_eq!(app.background.jobs.len(), 1);
-    assert!(app.ui.status.starts_with("Saving big.vectorcraft"));
+    assert!(app.ui.status.starts_with("Saving big.rvector"));
     // The file is the document's once it is written (and its dates are stamped then, #1721: until
     // then this document, never edited, is as it was).
     assert!(!app.session.doc().unwrap().is_dirty() && app.session.doc().unwrap().path.is_none());
     gate.open();
     background::wait_all(&mut app);
-    assert_eq!(written(&files), ["/docs/big.vectorcraft"]);
+    assert_eq!(written(&files), ["/docs/big.rvector"]);
     let st = app.session.doc().unwrap();
     assert!(!st.is_dirty());
-    assert_eq!(st.path.as_deref(), Some("/docs/big.vectorcraft"));
-    assert_eq!(app.ui.status, "Saved /docs/big.vectorcraft");
+    assert_eq!(st.path.as_deref(), Some("/docs/big.rvector"));
+    assert_eq!(app.ui.status, "Saved /docs/big.rvector");
     let bytes = files.lock().unwrap()[0].1.clone();
     assert_eq!(redrob_vector_format::load(&bytes).unwrap().node_count(), 50_001);
 }
@@ -90,7 +90,7 @@ fn the_dirty_state_follows_the_snapshot() {
     let (mut app, files) = app(gate.clone());
     app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
     app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 10, "height": 10})).unwrap();
-    app.run("file.save", json!({"path": "/docs/a.vectorcraft"})).unwrap();
+    app.run("file.save", json!({"path": "/docs/a.rvector"})).unwrap();
     // Edited while the file is written: still modified afterwards.
     app.run("shape.rectangle", json!({"x": 20, "y": 0, "width": 10, "height": 10})).unwrap();
     gate.open();
@@ -117,7 +117,7 @@ fn exports_run_in_the_background_and_the_preference_turns_both_off() {
     // Preferences off: at once, through the ordinary writer (which this app refuses).
     app.session.execute("prefs.set", &json!({"values": {"backgroundSave": false, "backgroundExport": false}})).unwrap();
     assert!(io::export(&mut app, Some("svg"), Some("/out/b.svg".into()), &json!({})).is_err());
-    assert!(app.run("file.save", json!({"path": "/docs/x.vectorcraft"})).is_err());
+    assert!(app.run("file.save", json!({"path": "/docs/x.rvector"})).is_err());
     assert!(app.background.jobs.is_empty());
 }
 
@@ -126,7 +126,7 @@ fn quitting_waits_for_background_saves() {
     let gate = Gate::default();
     let (mut app, files) = app(gate.clone());
     app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
-    app.run("file.save", json!({"path": "/docs/q.vectorcraft"})).unwrap();
+    app.run("file.save", json!({"path": "/docs/q.rvector"})).unwrap();
     let opener = gate.clone();
     let release = std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(50));
@@ -137,7 +137,7 @@ fn quitting_waits_for_background_saves() {
     release.join().unwrap();
     assert!(r.is_null(), "{r}");
     assert_eq!(app.ui.status, "quit");
-    assert_eq!(written(&files), ["/docs/q.vectorcraft"]);
+    assert_eq!(written(&files), ["/docs/q.rvector"]);
 }
 
 /// The status bar's texts in one headless frame.
@@ -162,10 +162,10 @@ fn the_status_bar_shows_progress() {
     let gate = Gate::default();
     let (mut app, _) = app(gate.clone());
     app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
-    app.run("file.save", json!({"path": "/docs/p.vectorcraft"})).unwrap();
+    app.run("file.save", json!({"path": "/docs/p.rvector"})).unwrap();
     io::export(&mut app, Some("svg"), Some("/out/p.svg".into()), &json!({})).unwrap();
     let busy = status_bar_texts(&mut app);
-    assert!(busy.iter().any(|t| t == "Saving p.vectorcraft… (+1)"), "{busy:?}");
+    assert!(busy.iter().any(|t| t == "Saving p.rvector… (+1)"), "{busy:?}");
     gate.open();
     background::wait_all(&mut app);
     let done = status_bar_texts(&mut app);
@@ -176,7 +176,7 @@ fn the_status_bar_shows_progress() {
 fn bad_options_fail_before_going_to_the_background() {
     let (mut app, files) = app(Gate::default());
     app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
-    for bad in [json!({"path": "/docs/v.vectorcraft", "version": 9}), json!({"path": "/docs/v.vectorcraft", "version": 1, "compress": true})] {
+    for bad in [json!({"path": "/docs/v.rvector", "version": 9}), json!({"path": "/docs/v.rvector", "version": 1, "compress": true})] {
         assert!(app.run("file.save", bad.clone()).is_err(), "{bad}");
     }
     assert!(app.background.jobs.is_empty() && written(&files).is_empty());

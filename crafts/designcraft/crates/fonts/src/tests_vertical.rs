@@ -33,7 +33,7 @@ fn gid_in(font: &[u8], c: char) -> u16 {
 /// Shippori Mincho from craft-fonts, or `None` (with a note) when built without it.
 fn shippori() -> Option<Arc<FontFace>> {
     if !crate::japanese_fonts().any(|f| f.family == "Shippori Mincho") {
-        eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a checkout)");
+        eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a checkout)");
         return None;
     }
     let face = FontDb::global().face("Shippori Mincho", "Regular");

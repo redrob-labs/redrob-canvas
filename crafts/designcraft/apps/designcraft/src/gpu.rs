@@ -16,7 +16,7 @@
 //! there at the next start means the previous start never got that far — the driver crashed, or
 //! the app was killed meanwhile — so that backend joins `failed`, the next candidate is tried and
 //! the status bar says so. When every candidate has failed the list starts over, and so does a
-//! new DesignCraft version (drivers and wgpu move on). `DESIGNCRAFT_NO_PREFS` records nothing.
+//! new DesignCraft version (drivers and wgpu move on). `REDROB_LAYOUT_NO_PREFS` records nothing.
 
 use std::path::{Path, PathBuf};
 

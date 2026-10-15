@@ -16,10 +16,10 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
-use serde_json::{Value, json};
 use redrob_vector_doc::Document;
 use redrob_vector_testkit::catch_quiet;
 use redrob_vector_testkit::fixtures::rich_session;
+use serde_json::{Value, json};
 
 /// 64 cases each, unless `PROPTEST_CASES` asks for more.
 fn config() -> ProptestConfig {
@@ -1326,7 +1326,7 @@ proptest! {
         }
         let _ = redrob_vector_format::sniff(&bytes);
         let _ = redrob_vector_format::preview(&bytes);
-        survive("mutated native file", || redrob_vector_engine::cmd::fileio::load("x.vectorcraft", &bytes).ok().map(|l| l.doc))?;
+        survive("mutated native file", || redrob_vector_engine::cmd::fileio::load("x.rvector", &bytes).ok().map(|l| l.doc))?;
     }
 }
 
@@ -3122,7 +3122,7 @@ fn brushed_document(kind: usize, art: usize) -> Document {
 
 /// `doc` saved, opened again, drawn, exported and edited: nothing overflows.
 fn art_by_name_survives(what: &str, doc: Document) {
-    let (back, _) = open_deep("named.vectorcraft", &redrob_vector_format::save_file(&doc)).expect("opens");
+    let (back, _) = open_deep("named.rvector", &redrob_vector_format::save_file(&doc)).expect("opens");
     let mut s = redrob_vector_engine::Session::new();
     s.add_document(back, None);
     for (cmd, p) in [
@@ -3229,7 +3229,7 @@ fn a_native_file_nested_too_deep_is_merged_or_refused() {
     on_a_small_stack(|| {
         // Saved before the cap by a version that could still open it: opened, the deepest merged.
         let old = redrob_vector_format::save_file(&nested_document(MAX_DEPTH + 2));
-        let (doc, warnings) = open_deep("old.vectorcraft", &old).expect("opens");
+        let (doc, warnings) = open_deep("old.rvector", &old).expect("opens");
         assert!(merged(&warnings), "{warnings:?}");
         assert_eq!(paths_in(&doc), MAX_DEPTH + 3, "no art is lost");
         // Deeper than any version could open, and a hostile file: an error that says why. Written
@@ -3239,7 +3239,7 @@ fn a_native_file_nested_too_deep_is_merged_or_refused() {
         let at = text.find("\"children\":[").expect("the layer's children") + "\"children\":[".len();
         for levels in [100, 50_000] {
             let deep = format!("{}{}{},{}", &text[..at], open.repeat(levels), close.repeat(levels), &text[at..]);
-            let e = redrob_vector_engine::cmd::fileio::load("deep.vectorcraft", deep.as_bytes()).err().expect("refused").to_string();
+            let e = redrob_vector_engine::cmd::fileio::load("deep.rvector", deep.as_bytes()).err().expect("refused").to_string();
             assert!(e.contains("nested too deep"), "{levels}: {e}");
         }
     });
@@ -3299,7 +3299,7 @@ fn symbols_document(count: usize, levels: usize, last: &str) -> Document {
 /// `doc` saved (as an older version, or a hostile file, could have) and opened again: within the
 /// caps (`kept`: as it was), drawn, exported and edited.
 fn symbols_survive(what: &str, doc: Document, kept: bool) {
-    let (back, warnings) = open_deep("symbols.vectorcraft", &redrob_vector_format::save_file(&doc)).expect("opens");
+    let (back, warnings) = open_deep("symbols.rvector", &redrob_vector_format::save_file(&doc)).expect("opens");
     assert_eq!(!warnings.iter().any(|w| w.contains("symbol instances")), kept, "{what}: {warnings:?}");
     let mut s = redrob_vector_engine::Session::new();
     s.add_document(back, None);

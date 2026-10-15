@@ -23,8 +23,6 @@ impl Graphic {
     /// `isolated` indicates whether the contents of the graphic should be isolated
     /// from wherever the graphic is invoked.
     pub fn new(stream: Stream, isolated: bool) -> Self {
-        Self {
-            x_object: XObject::new(stream, isolated, false, None),
-        }
+        Self { x_object: XObject::new(stream, isolated, false, None) }
     }
 }

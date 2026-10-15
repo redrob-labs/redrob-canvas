@@ -85,7 +85,7 @@ fn protocol_round_trip_over_serve() {
         json!({"jsonrpc":"2.0","id":2,"method":"tools/list"}),
         json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_commands","arguments":{"filter":"frame.create"}}}),
         json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"execute","arguments":{"command":"frame.create","params":{"rect":[36,36,300,200],"content":"text","text":"Hi"}}}}),
-        json!({"jsonrpc":"2.0","id":5,"method":"resources/read","params":{"uri":"designcraft://document"}}),
+        json!({"jsonrpc":"2.0","id":5,"method":"resources/read","params":{"uri":"redrob-layout://document"}}),
     ]
     .map(|v| v.to_string())
     .join("\n");
@@ -309,7 +309,7 @@ fn files_place_and_export() {
     assert_eq!(r["isError"], false);
     assert!(std::fs::read(tmp("render.png")).unwrap().starts_with(PNG_MAGIC));
 
-    let doc_path = tmp("saved.designcraft");
+    let doc_path = tmp("saved.rlayout");
     let saved = ok(&mut s, "save_document", json!({"path": doc_path}));
     assert_eq!(saved["path"], doc_path.to_string_lossy().as_ref());
     let opened = ok(&mut s, "open_document", json!({"path": doc_path}));

@@ -190,19 +190,19 @@ mod tests {
 
     /// What a real driver makes of a job's ticket: Letter, portrait, two copies. Checks explicit
     /// option retention separately; unsupported options must fail before submission. Sends no job.
-    /// `CRAFT_PRINT_TEST_PRINTER` names the queue;
-    /// `CRAFT_PRINT_TEST_TICKET_OUTPUT` keeps the validated ticket, to see which options it kept.
+    /// `REDROB_CRAFT_PRINT_TEST_PRINTER` names the queue;
+    /// `REDROB_CRAFT_PRINT_TEST_TICKET_OUTPUT` keeps the validated ticket, to see which options it kept.
     #[test]
-    #[ignore = "needs CRAFT_PRINT_TEST_PRINTER naming an installed printer; sends no job"]
+    #[ignore = "needs REDROB_CRAFT_PRINT_TEST_PRINTER naming an installed printer; sends no job"]
     fn an_installed_driver_validates_the_ticket() {
-        let name = std::env::var("CRAFT_PRINT_TEST_PRINTER").unwrap();
+        let name = std::env::var("REDROB_CRAFT_PRINT_TEST_PRINTER").unwrap();
         let device = select_device(PrinterDevice::all().unwrap(), Some(&name), None).unwrap();
         let job = Job { copies: 2, ..Job::default() };
         let (ticket, paper) = driver_ticket(&device, &job, (612.0, 792.0), false).unwrap();
         ticket::verify_job_options(std::str::from_utf8(ticket.get_xml()).unwrap(), &job, 1).unwrap();
         assert_eq!(paper, (215_900, 279_400));
         eprintln!("unprintable margin: {} pt", imageable_margin(&device, &ticket));
-        if let Ok(path) = std::env::var("CRAFT_PRINT_TEST_TICKET_OUTPUT") {
+        if let Ok(path) = std::env::var("REDROB_CRAFT_PRINT_TEST_TICKET_OUTPUT") {
             std::fs::write(path, ticket.get_xml()).unwrap();
         }
         let capabilities = PrintCapabilities::fetch(&device).unwrap();
@@ -224,17 +224,17 @@ mod tests {
     }
 
     /// A real job, for checking a printer by hand (paper, or a paused queue's spool file):
-    /// `CRAFT_PRINT_TEST_FILE` printed on `CRAFT_PRINT_TEST_PRINTER`, shrink-to-fit when
-    /// `CRAFT_PRINT_TEST_SCALING=shrink`, two-sided on the long edge when
-    /// `CRAFT_PRINT_TEST_DUPLEX=long`.
+    /// `REDROB_CRAFT_PRINT_TEST_FILE` printed on `REDROB_CRAFT_PRINT_TEST_PRINTER`, shrink-to-fit when
+    /// `REDROB_CRAFT_PRINT_TEST_SCALING=shrink`, two-sided on the long edge when
+    /// `REDROB_CRAFT_PRINT_TEST_DUPLEX=long`.
     #[test]
-    #[ignore = "sends a real job: needs CRAFT_PRINT_TEST_PRINTER and CRAFT_PRINT_TEST_FILE"]
+    #[ignore = "sends a real job: needs REDROB_CRAFT_PRINT_TEST_PRINTER and REDROB_CRAFT_PRINT_TEST_FILE"]
     fn an_installed_printer_prints_a_file() {
-        let pdf = std::fs::read(std::env::var("CRAFT_PRINT_TEST_FILE").unwrap()).unwrap();
+        let pdf = std::fs::read(std::env::var("REDROB_CRAFT_PRINT_TEST_FILE").unwrap()).unwrap();
         let job = Job {
-            printer: Some(std::env::var("CRAFT_PRINT_TEST_PRINTER").unwrap()),
-            scaling: if std::env::var("CRAFT_PRINT_TEST_SCALING").as_deref() == Ok("shrink") { Scaling::ShrinkToFit } else { Scaling::Exact },
-            duplex: (std::env::var("CRAFT_PRINT_TEST_DUPLEX").as_deref() == Ok("long")).then_some(crate::Duplex::LongEdge),
+            printer: Some(std::env::var("REDROB_CRAFT_PRINT_TEST_PRINTER").unwrap()),
+            scaling: if std::env::var("REDROB_CRAFT_PRINT_TEST_SCALING").as_deref() == Ok("shrink") { Scaling::ShrinkToFit } else { Scaling::Exact },
+            duplex: (std::env::var("REDROB_CRAFT_PRINT_TEST_DUPLEX").as_deref() == Ok("long")).then_some(crate::Duplex::LongEdge),
             title: "redrob-craft-print test".into(),
             ..Job::default()
         };

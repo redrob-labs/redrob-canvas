@@ -3,11 +3,11 @@
 //! read from wide gaps, and lines wrapped in a frame rebuilt as area type.
 
 use kurbo::{BezPath, PathEl, Point, Shape};
-use serde_json::json;
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{AppearanceItem, CharStyle, Document, Justify, Node, NodeKind, TextKind, TextObject};
 use redrob_vector_geom::{Affine, Rect, shapes};
 use redrob_vector_testkit::pdf::{PdfPage, first_extra, pdf_with_catalog};
+use serde_json::json;
 
 use crate::*;
 

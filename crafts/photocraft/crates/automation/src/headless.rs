@@ -27,7 +27,7 @@ enum Filesystem {
 /// A headless editing session.
 pub struct Headless {
     pub session: Session,
-    /// Incremental `.pcraft` writers per document id.
+    /// Incremental `.rphoto` writers per document id.
     writers: HashMap<u64, PcraftWriter>,
     filesystem: Filesystem,
 }
@@ -215,7 +215,7 @@ impl Headless {
         Ok(redrob_photo_engine::import_data_sets_text(&mut self.session, &text, params)?)
     }
 
-    /// Save (`.pcraft` or any export format by extension). With no path,
+    /// Save (`.rphoto` or any export format by extension). With no path,
     /// saves to the document's own path.
     pub fn save(&mut self, index: Option<usize>, path: Option<&Path>, format: Option<&str>, opts: &ExportOptions) -> Result<Value, AutomationError> {
         let i = self.doc_index(index)?;
@@ -234,7 +234,7 @@ impl Headless {
                     let lost = file_cmds::losses_at(&doc, p);
                     let why = if lost.is_empty() { String::new() } else { format!(" (it can't keep: {})", lost.join("; ")) };
                     return Err(AutomationError::BadRequest(format!(
-                        "pass `path`: without one, only a PSD, PSB, .pcraft or OpenRaster file that holds the whole document is written back, in its own format, so `{p}` was left unchanged{why}"
+                        "pass `path`: without one, only a PSD, PSB, .rphoto or OpenRaster file that holds the whole document is written back, in its own format, so `{p}` was left unchanged{why}"
                     )));
                 }
                 PathBuf::from(p)
@@ -257,7 +257,7 @@ impl Headless {
             }
         };
         warnings.extend(redrob_photo_engine::type_extra_cmds::missing_font_warnings(&doc));
-        // A layered document save (PSD, PSB, OpenRaster or .pcraft) that holds the whole document is a
+        // A layered document save (PSD, PSB, OpenRaster or .rphoto) that holds the whole document is a
         // full write, not a flattened copy: record the current revision as saved so the session
         // stops reporting `dirty`, and make the file the document's path. A flat export (PNG,
         // JPEG, …), or an OpenRaster file that drops part of it, is a copy and leaves both alone

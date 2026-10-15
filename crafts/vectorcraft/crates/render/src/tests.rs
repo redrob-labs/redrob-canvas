@@ -334,7 +334,8 @@ fn a_scaled_instance_is_culled_by_the_effects_in_its_art_as_placed() {
     // (10, 110).
     let mut d = Document::new(100.0, 100.0);
     let mut art = rect_node(&mut d, Rect::new(-1.0, -1.0, 1.0, 1.0), Paint::solid(Color::rgb(1.0, 0.0, 0.0)), Paint::None, 0.0);
-    let double = redrob_vector_doc::Effect { id: "distort.transform".into(), params: serde_json::json!({"scaleH": 200, "scaleV": 200}), visible: true };
+    let double =
+        redrob_vector_doc::Effect { id: "distort.transform".into(), params: serde_json::json!({"scaleH": 200, "scaleV": 200}), visible: true };
     art.appearance.effects.push(double);
     d.symbols.push(redrob_vector_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
     let (id, l) = (d.alloc_id(), d.layers[0].id);

@@ -4,9 +4,9 @@
 use std::sync::Arc;
 
 use egui::{Pos2, Shape, vec2};
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeKind;
 use redrob_vector_engine::Session;
+use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
 use crate::canvas::Xf;
@@ -118,7 +118,7 @@ fn a_drop_with_a_position_places_on_the_canvas_and_opens_off_it() {
     let pos = rect.center() + vec2(60.0, -40.0);
     let want = Xf::new(rect, app.view().unwrap()).to_doc(pos);
     let uid = app.session.active().unwrap().uid;
-    for name in ["a.png", "a.svg", "a.ai", "a.vectorcraft"] {
+    for name in ["a.png", "a.svg", "a.ai", "a.rvector"] {
         assert_eq!(app.drop_target(name, Some(pos), true), DropTarget::Place(DropAt { doc: uid, at: want, embed: true }), "{name}");
         assert_eq!(app.drop_target(name, Some(Pos2::new(300.0, rect.top() - 10.0)), false), DropTarget::Open, "{name} on the tab bar");
     }
@@ -133,7 +133,8 @@ fn a_drop_without_a_position_opens_documents_and_places_pictures() {
     laid_out(&mut app, &ctx);
     let center = app.view().unwrap().center;
     let uid = app.session.active().unwrap().uid;
-    for name in ["a.svg", "a.svgz", "a.pdf", "a.ai", "a.eps", "a.vectorcraft", "a.drawcraft", "a.vctemplate", "a.dxf", "a.emf"] {
+    for name in ["a.svg", "a.svgz", "a.pdf", "a.ai", "a.eps", "a.rvector", "a.drawcraft", "a.vctemplate", "a.dxf", "a.emf"] {
+        // legacy: upstream extension still read
         assert_eq!(app.drop_target(name, None, false), DropTarget::Open, "{name}");
     }
     for name in ["a.png", "a.jpg", "a.tiff", "a.webp", "a.txt"] {
@@ -567,7 +568,7 @@ fn a_vectorcraft_document_places_linked_and_edit_original_opens_it() {
     src.execute("file.new", &json!({"width": 100, "height": 50})).unwrap();
     src.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 100, "height": 50})).unwrap();
     let bytes = redrob_vector_format::save_file(&src.active().unwrap().doc);
-    let path = temp_file("badge.vectorcraft", &bytes);
+    let path = temp_file("badge.rvector", &bytes);
     place_picked(&mut app, &path);
     let d = app.ui.dialog.as_ref().expect("the Place dialog");
     assert!(d.bool("link") && d.bool("__documents") && !d.bool("__others"), "Link on, for a document");

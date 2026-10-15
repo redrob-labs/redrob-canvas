@@ -471,7 +471,7 @@ mod tests {
     fn missing_fonts_are_asked_about_after_the_missing_links() {
         let root = folder("after-links");
         let mut app = app_for(&root);
-        let doc = root.join("doc.vectorcraft");
+        let doc = root.join("doc.rvector");
         save_doc(&mut app, &doc, "No Such Font Family", true);
         open(&mut app, &doc);
         assert_eq!(kind(&app), Some(super::super::missing_links::KIND));
@@ -499,7 +499,7 @@ mod tests {
         std::fs::create_dir_all(font.parent().unwrap()).unwrap();
         std::fs::write(&font, redrob_vector_testkit::fonts::renamed("Findme Sans 3")).unwrap();
         let mut app = app_for(&root);
-        let doc = root.join("pkg/doc.vectorcraft");
+        let doc = root.join("pkg/doc.rvector");
         save_doc(&mut app, &doc, "Findme Sans 3", false);
         open(&mut app, &doc);
         let next = app.ui.dialog.as_ref().filter(|d| d.kind == KIND).expect("Missing Fonts at once: no links missing").str("fontsNextToDocument");
@@ -536,7 +536,7 @@ mod tests {
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.run("text.create", json!({"x": 10, "y": 40, "text": "Here", "font": "Source Sans 3"})).unwrap();
         app.run("text.create", json!({"x": 10, "y": 80, "text": "Gone", "font": "Zz Missing Family"})).unwrap();
-        let doc = root.join("doc.vectorcraft");
+        let doc = root.join("doc.rvector");
         app.run("document.save", json!({"path": doc.to_string_lossy()})).unwrap();
         open(&mut app, &doc);
         assert_eq!(kind(&app), Some(KIND));
@@ -559,7 +559,7 @@ mod tests {
     fn find_fonts_works_on_the_dialog_s_own_document() {
         let root = folder("find-fonts-tab");
         let mut app = app_for(&root);
-        let (a, b) = (root.join("a.vectorcraft"), root.join("b.vectorcraft"));
+        let (a, b) = (root.join("a.rvector"), root.join("b.rvector"));
         save_doc(&mut app, &a, "Alpha Missing Family", false);
         save_doc(&mut app, &b, "Beta Missing Family", true);
         open(&mut app, &a);
@@ -610,7 +610,7 @@ mod tests {
     fn one_dialog_at_a_time_document_by_document() {
         let root = folder("queue");
         let mut app = app_for(&root);
-        let (a, b) = (root.join("a.vectorcraft"), root.join("b.vectorcraft"));
+        let (a, b) = (root.join("a.rvector"), root.join("b.rvector"));
         save_doc(&mut app, &a, "Alpha Missing Family", false);
         save_doc(&mut app, &b, "Beta Missing Family", true);
         open(&mut app, &a);
@@ -640,15 +640,14 @@ mod tests {
     fn the_question_comes_back_after_a_dialog_that_took_its_place() {
         let root = folder("replaced");
         let mut app = app_for(&root);
-        let doc = root.join("a.vectorcraft");
+        let doc = root.join("a.rvector");
         save_doc(&mut app, &doc, "Alpha Missing Family", false);
         let pdf = || {
             let page = || redrob_vector_testkit::pdf::PdfPage::new(100.0, 100.0, "0 g 0 0 10 10 re f");
             redrob_vector_testkit::pdf::pdf(&[page(), page()], None)
         };
         let opened = |name: &str, path: Option<String>, bytes: Vec<u8>| (crate::place::DropTarget::Open, (name.to_string(), path, bytes));
-        let files =
-            vec![opened("a.vectorcraft", Some(doc.to_string_lossy().into_owned()), std::fs::read(&doc).unwrap()), opened("b.pdf", None, pdf())];
+        let files = vec![opened("a.rvector", Some(doc.to_string_lossy().into_owned()), std::fs::read(&doc).unwrap()), opened("b.pdf", None, pdf())];
         crate::place::drop_files(&mut app, files);
         assert_eq!(kind(&app), Some(super::super::import_pdf::KIND));
         super::super::cancel(&mut app);
@@ -704,7 +703,7 @@ mod tests {
     fn edit_original_asks_about_the_placed_documents_fonts() {
         let root = folder("edit-original");
         let mut app = app_for(&root);
-        let badge = root.join("badge.vectorcraft");
+        let badge = root.join("badge.rvector");
         save_doc(&mut app, &badge, "Badge Missing Family", false);
         app.session.execute("file.close", &json!({})).unwrap();
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();

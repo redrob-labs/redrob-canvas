@@ -5,10 +5,10 @@
 use std::io::Write as _;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Node, NodeKind};
 use redrob_vector_testkit::ai;
 use redrob_vector_testkit::pdf::{PdfPage, first_extra, pdf_with};
+use serde_json::{Value, json};
 
 use super::*;
 

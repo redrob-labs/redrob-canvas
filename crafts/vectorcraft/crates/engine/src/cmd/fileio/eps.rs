@@ -5,11 +5,11 @@
 
 use std::borrow::Cow;
 
-use serde::Deserialize;
-use serde_json::{Value, json};
 use redrob_vector_doc::Document;
 use redrob_vector_eps::{EpsOptions, Level, Overprint, Preview, Raster};
 use redrob_vector_geom::{Point, Rect};
+use serde::Deserialize;
+use serde_json::{Value, json};
 
 use super::super::flatten::{FlattenOptions, flatten_document};
 use super::super::*;

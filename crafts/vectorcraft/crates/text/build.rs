@@ -1,7 +1,7 @@
 //! The optional craft-fonts build input (https://github.com/storytold/craft-fonts,
-//! `docs/integration.md`): with `CRAFT_FONTS_DIR=<checkout>` set, every font in its
-//! `fonts/manifest.txt` is embedded as `CRAFT_FONTS`; unset, `CRAFT_FONTS` is empty and the app
-//! uses its own and the installed fonts. `CRAFT_FONTS_REQUIRED=1` turns a bad checkout into a build
+//! `docs/integration.md`): with `REDROB_CRAFT_FONTS_DIR=<checkout>` set, every font in its
+//! `fonts/manifest.txt` is embedded as `REDROB_CRAFT_FONTS`; unset, `REDROB_CRAFT_FONTS` is empty and the app
+//! uses its own and the installed fonts. `REDROB_CRAFT_FONTS_REQUIRED=1` turns a bad checkout into a build
 //! error (release builds). Nothing is fetched: the build reads only the local checkout.
 //!
 //! Web (wasm32) builds embed only the UI font, BIZ UDPGothic Regular (~4.7 MB): the browser has no
@@ -20,18 +20,22 @@ use std::path::{Path, PathBuf};
 mod web_fonts;
 
 fn main() {
-    println!("cargo::rerun-if-env-changed=CRAFT_FONTS_DIR");
-    println!("cargo::rerun-if-env-changed=CRAFT_FONTS_REQUIRED");
+    println!("cargo::rerun-if-env-changed=REDROB_CRAFT_FONTS_DIR");
+    println!("cargo::rerun-if-env-changed=REDROB_CRAFT_FONTS_REQUIRED");
     println!("cargo::rerun-if-changed=web-fonts.txt");
     println!("cargo::rerun-if-changed=build/web_fonts.rs");
-    let required = std::env::var_os("CRAFT_FONTS_REQUIRED").is_some();
+    let required = std::env::var_os("REDROB_CRAFT_FONTS_REQUIRED").or_else(|| std::env::var_os("CRAFT_FONTS_REQUIRED")).is_some(); // legacy: the upstream variable is read when ours is unset
     let (mut fonts, mut web) = (String::new(), String::new());
-    if let Some(dir) = std::env::var_os("CRAFT_FONTS_DIR").filter(|d| !d.is_empty()).map(PathBuf::from) {
+    if let Some(dir) =
+        // legacy: the upstream variable is read when ours is unset
+        std::env::var_os("REDROB_CRAFT_FONTS_DIR").or_else(|| std::env::var_os("CRAFT_FONTS_DIR")).filter(|d| !d.is_empty()).map(PathBuf::from)
+    {
+        // legacy: the upstream variable is read when ours is unset
         let dir = from_workspace(dir);
         match craft_fonts(&dir) {
             Ok(entries) => fonts = entries,
-            Err(e) if required => println!("cargo::error=CRAFT_FONTS_DIR={}: {e}", dir.display()),
-            Err(e) => println!("cargo::warning=building without craft-fonts: CRAFT_FONTS_DIR={}: {e}", dir.display()),
+            Err(e) if required => println!("cargo::error=REDROB_CRAFT_FONTS_DIR={}: {e}", dir.display()),
+            Err(e) => println!("cargo::warning=building without craft-fonts: REDROB_CRAFT_FONTS_DIR={}: {e}", dir.display()),
         }
         // Separately: a bad web list must not cost the desktop build its craft fonts. A listed face
         // the checkout lacks (an older craft-fonts pin) is left out with a warning, never an error,
@@ -41,7 +45,7 @@ fn main() {
             Ok((entries, missing)) => {
                 web = entries;
                 if !missing.is_empty() {
-                    let msg = format!("{} not in CRAFT_FONTS_DIR={} (an older craft-fonts?)", missing.join(", "), dir.display());
+                    let msg = format!("{} not in REDROB_CRAFT_FONTS_DIR={} (an older craft-fonts?)", missing.join(", "), dir.display());
                     println!("cargo::warning=web build won't fetch: {msg}");
                 }
             }
@@ -49,7 +53,7 @@ fn main() {
             Err(e) => println!("cargo::warning=web build fetches no craft fonts: web-fonts.txt: {e}"),
         }
     }
-    let src = format!("pub static CRAFT_FONTS: &[CraftFont] = &[\n{fonts}];\npub static WEB_FONTS: &[WebFont] = &[\n{web}];\n");
+    let src = format!("pub static REDROB_CRAFT_FONTS: &[CraftFont] = &[\n{fonts}];\npub static WEB_FONTS: &[WebFont] = &[\n{web}];\n");
     let out = PathBuf::from(std::env::var_os("OUT_DIR").unwrap_or_default()).join("craft_fonts.rs");
     // Unchanged output keeps its mtime. Rewritten just before this crate compiles, it can read as
     // newer than that compile where cargo's recorded times lose their sub-second part (ecryptfs
@@ -62,7 +66,7 @@ fn main() {
     }
 }
 
-/// A relative `CRAFT_FONTS_DIR` is taken from the workspace root (where `cargo` is usually run),
+/// A relative `REDROB_CRAFT_FONTS_DIR` is taken from the workspace root (where `cargo` is usually run),
 /// not from this crate's directory, which is where build scripts run.
 fn from_workspace(dir: PathBuf) -> PathBuf {
     if dir.is_absolute() {

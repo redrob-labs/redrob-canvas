@@ -1,7 +1,7 @@
 //! Opening password-protected PDFs: the open password or the permissions password unlocks them.
 
-use serde_json::{Value, json};
 use redrob_vector_testkit::pdf::{PdfPage, pdf};
+use serde_json::{Value, json};
 
 use super::*;
 

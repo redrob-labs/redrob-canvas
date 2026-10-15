@@ -38,7 +38,7 @@ pub fn install_macos(feed: &StylusFeed) -> Option<redrob_photo_tablet::macos::Mo
 
 /// The display server to open the window on: the session's own, except Xwayland on Wayland when
 /// a pen is attached (see the module docs) and Xwayland can run the window: `$DISPLAY` is set
-/// and the X11 libraries are installed. `PHOTOCRAFT_NATIVE_WAYLAND=1` keeps native Wayland.
+/// and the X11 libraries are installed. `REDROB_PHOTO_NATIVE_WAYLAND=1` keeps native Wayland.
 #[cfg(target_os = "linux")]
 pub fn display_session() -> DisplaySession {
     let var = |k: &str| std::env::var(k).ok();
@@ -46,7 +46,7 @@ pub fn display_session() -> DisplaySession {
     let pen = || std::fs::read_to_string("/proc/bus/input/devices").is_ok_and(|d| has_pen(&d));
     let x11_libs = || crate::linux_libs::available(DisplaySession::X11);
     if pen_needs_xwayland(session, var, pen, x11_libs) {
-        eprintln!("photocraft: pen found; opening the window through Xwayland, where the pen works (PHOTOCRAFT_NATIVE_WAYLAND=1 keeps Wayland)");
+        eprintln!("photocraft: pen found; opening the window through Xwayland, where the pen works (REDROB_PHOTO_NATIVE_WAYLAND=1 keeps Wayland)");
         return DisplaySession::X11;
     }
     session
@@ -56,7 +56,7 @@ pub fn display_session() -> DisplaySession {
 #[cfg(any(target_os = "linux", test))]
 pub fn pen_needs_xwayland(session: DisplaySession, var: impl Fn(&str) -> Option<String>, pen: impl FnOnce() -> bool, x11_libs: impl FnOnce() -> bool) -> bool {
     let set = |k: &str| var(k).is_some_and(|v| !v.is_empty() && v != "0");
-    session == DisplaySession::Wayland && !set("PHOTOCRAFT_NATIVE_WAYLAND") && set("DISPLAY") && pen() && x11_libs()
+    session == DisplaySession::Wayland && !set("REDROB_PHOTO_NATIVE_WAYLAND") && set("DISPLAY") && pen() && x11_libs()
 }
 
 /// `BTN_TOOL_PEN` (linux/input-event-codes.h): the key a pen tablet's stylus, a pen display's or
@@ -314,9 +314,9 @@ mod tests {
         assert!(!pen_needs_xwayland(DisplaySession::Wayland, env(&wayland), || false, || true));
         assert!(!pen_needs_xwayland(DisplaySession::Wayland, env(&[("WAYLAND_DISPLAY", "wayland-0")]), || true, || true));
         assert!(!pen_needs_xwayland(DisplaySession::Wayland, env(&wayland), || true, || false));
-        let native = [("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0"), ("PHOTOCRAFT_NATIVE_WAYLAND", "1")];
+        let native = [("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0"), ("REDROB_PHOTO_NATIVE_WAYLAND", "1")];
         assert!(!pen_needs_xwayland(DisplaySession::Wayland, env(&native), || true, || true));
-        let zero = [("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0"), ("PHOTOCRAFT_NATIVE_WAYLAND", "0")];
+        let zero = [("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0"), ("REDROB_PHOTO_NATIVE_WAYLAND", "0")];
         assert!(pen_needs_xwayland(DisplaySession::Wayland, env(&zero), || true, || true));
         // X11 already gets the pen; the probes don't even run off Wayland.
         assert!(!pen_needs_xwayland(DisplaySession::X11, env(&[("DISPLAY", ":0")]), || panic!("probed"), || panic!("probed")));

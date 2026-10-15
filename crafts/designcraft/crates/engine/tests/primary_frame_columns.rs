@@ -25,7 +25,7 @@ fn primary_columns_survive_composition_native_reopen_and_idml_round_trip() {
         assert_primary_columns(&s.doc().unwrap().doc, columns);
         let bytes = s.execute("file.serialize", &json!({})).unwrap();
         let mut reopened = Session::new();
-        reopened.execute("file.openBytes", &json!({"name":"primary-columns.designcraft","base64":bytes["base64"]})).unwrap();
+        reopened.execute("file.openBytes", &json!({"name":"primary-columns.rlayout","base64":bytes["base64"]})).unwrap();
         assert_primary_columns(&reopened.doc().unwrap().doc, columns);
         let idml = redrob_layout_idml::export_idml(&reopened.doc().unwrap().doc);
         let imported = redrob_layout_idml::import_idml(&idml).unwrap();

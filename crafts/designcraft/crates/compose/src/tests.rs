@@ -134,8 +134,12 @@ fn wrap_pushes_text_aside() {
     let (mut d, sid, _) = doc_with(&[LOREM; 2].join(" "), Rect::new(0.0, 0.0, 300.0, 800.0), ParaAttrs::default());
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
-    let mut it =
-        redrob_layout_doc::Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(0.0, 0.0, 120.0, 60.0)));
+    let mut it = redrob_layout_doc::Item::new(
+        id,
+        lid,
+        redrob_layout_doc::Shape::Rectangle,
+        redrob_layout_geom::shapes::rectangle(Rect::new(0.0, 0.0, 120.0, 60.0)),
+    );
     it.wrap.mode = WrapMode::BoundingBox;
     it.wrap.offsets = [0.0, 0.0, 6.0, 6.0];
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
@@ -390,7 +394,8 @@ fn tombstone(frame: Rect, wrap: Rect) -> (Document, StoryId) {
     st.paras[0].chars = redrob_layout_doc::CharAttrs { size: Some(14.0), ..Default::default() };
     st.format_chars(0..1, |f| f.over.size = Some(7.6));
     let lid = d.default_layer();
-    let mut it = redrob_layout_doc::Item::new(ItemId(d.alloc()), lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(wrap));
+    let mut it =
+        redrob_layout_doc::Item::new(ItemId(d.alloc()), lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(wrap));
     it.wrap.mode = WrapMode::BoundingBox;
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     (d, sid)
@@ -1206,8 +1211,9 @@ fn tab_leaders_fill_the_gap() {
         },
         ..Default::default()
     };
-    let (_, sid) =
-        doc.add_text_frame(redrob_layout_doc::SpreadRef::Doc(0), redrob_layout_geom::Rect::new(0.0, 0.0, 300.0, 100.0), lid, "Intro\t12", pf).unwrap();
+    let (_, sid) = doc
+        .add_text_frame(redrob_layout_doc::SpreadRef::Doc(0), redrob_layout_geom::Rect::new(0.0, 0.0, 300.0, 100.0), lid, "Intro\t12", pf)
+        .unwrap();
     let cs = crate::compose_story(&doc, sid, &Default::default());
     let line = &cs.frames[0].lines[0];
     let dots: Vec<&crate::PlacedGlyph> = line.glyphs.iter().filter(|g| g.len == 0 && g.visible).collect();
@@ -2624,7 +2630,8 @@ fn drop_cap_takes_its_character_style_and_nested_styles_count_it() {
     assert_eq!(fill(&cs, at(0)), "Initial Red");
     assert_eq!((fill(&cs, at(3)), fill(&cs, at(4))), ("Lead Blue".to_string(), "[Black]".to_string()));
     // A nested style "through 1 drop cap" covers the drop cap; the next one starts after it.
-    let ns = |style: &str, until: redrob_layout_doc::NestedUntil| redrob_layout_doc::NestedStyle { style: style.into(), through: true, count: 1, until };
+    let ns =
+        |style: &str, until: redrob_layout_doc::NestedUntil| redrob_layout_doc::NestedStyle { style: style.into(), through: true, count: 1, until };
     d.story_mut(sid).unwrap().paras[0].para = ParaAttrs {
         nested_styles: Some(vec![ns("Lead", redrob_layout_doc::NestedUntil::Dropcap), ns("Initial", redrob_layout_doc::NestedUntil::Words)]),
         ..drop_cap(2, 3)
@@ -3305,7 +3312,7 @@ fn language_picks_localized_forms_through_the_word_cache() {
 #[test]
 fn chinese_and_japanese_take_their_localized_forms() {
     // Noto Sans CJK SC (craft-fonts) draws 直 differently for Japanese (`locl`).
-    let Some(noto) = redrob_layout_fonts::CRAFT_FONTS.iter().find(|f| f.family == "Noto Sans CJK SC") else { return };
+    let Some(noto) = redrob_layout_fonts::REDROB_CRAFT_FONTS.iter().find(|f| f.family == "Noto Sans CJK SC") else { return };
     FontDb::global().add_font(noto.bytes.to_vec());
     let gid = |language: &str| {
         let (mut d, sid, _) = doc_with("直", Rect::new(36.0, 36.0, 300.0, 100.0), ParaAttrs::default());
@@ -3628,7 +3635,7 @@ fn vertical_test_font() -> &'static str {
 /// Shippori Mincho (vertical forms, `vpal`) when built with craft-fonts; else `None`, with a note.
 fn shippori() -> Option<&'static str> {
     if !redrob_layout_fonts::japanese_fonts().any(|f| f.family == "Shippori Mincho") {
-        eprintln!("skipped Shippori Mincho: built without craft-fonts (set CRAFT_FONTS_DIR to a checkout)");
+        eprintln!("skipped Shippori Mincho: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a checkout)");
         return None;
     }
     Some("Shippori Mincho")
@@ -4398,8 +4405,12 @@ fn cache_recomposes_when_a_wrap_layer_is_hidden() {
     let (mut d, sid, _) = doc_with(&[LOREM; 2].join(" "), Rect::new(0.0, 0.0, 300.0, 800.0), ParaAttrs::default());
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
-    let mut it =
-        redrob_layout_doc::Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(0.0, 0.0, 120.0, 60.0)));
+    let mut it = redrob_layout_doc::Item::new(
+        id,
+        lid,
+        redrob_layout_doc::Shape::Rectangle,
+        redrob_layout_geom::shapes::rectangle(Rect::new(0.0, 0.0, 120.0, 60.0)),
+    );
     it.wrap.mode = WrapMode::BoundingBox;
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     let cache = Cache::new();

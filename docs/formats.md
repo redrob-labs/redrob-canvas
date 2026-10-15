@@ -11,9 +11,9 @@ renamed file the way its upstream does.
 
 | Extensions | Mode | Notes |
 | --- | --- | --- |
-| `.pcraft`, `.psd`, `.psb`, `.ora`, `.kra`, `.pdn`, `.tif`/`.tiff`, `.png`, `.jpg`/`.jpeg`, `.webp`, `.gif`, `.bmp`, `.tga`, `.ico`, `.qoi`, `.pnm`, `.exr`, `.hdr`, `.fits`, `.heic`/`.heif`, camera RAW extensions, `.af`/`.afphoto`/`.afdesign`/`.afpub` | Photo | the Photo editor's codec crate; raster formats default here even though Vector and Layout can also place them |
-| `.vectorcraft`, `.svg`, `.svgz`, `.ai`, `.eps`, `.pdf`, `.dxf`, `.emf`, `.wmf` | Vector | PDF opens as editable vector pages here; Layout places PDFs as assets instead |
-| `.designcraft`, `.idml` | Layout | the Layout editor's native format and InDesign interchange |
+| `.rphoto`, `.psd`, `.psb`, `.ora`, `.kra`, `.pdn`, `.tif`/`.tiff`, `.png`, `.jpg`/`.jpeg`, `.webp`, `.gif`, `.bmp`, `.tga`, `.ico`, `.qoi`, `.pnm`, `.exr`, `.hdr`, `.fits`, `.heic`/`.heif`, camera RAW extensions, `.af`/`.afphoto`/`.afdesign`/`.afpub` | Photo | the Photo editor's codec crate; raster formats default here even though Vector and Layout can also place them |
+| `.rvector`, `.svg`, `.svgz`, `.ai`, `.eps`, `.pdf`, `.dxf`, `.emf`, `.wmf` | Vector | PDF opens as editable vector pages here; Layout places PDFs as assets instead |
+| `.rlayout`, `.idml` | Layout | the Layout editor's native format and InDesign interchange |
 
 Routing is the shell's (`apps/redrob-canvas`); a mode can still open or place any format its editor
 supports from its own menus, so the table above is the default, not a restriction. Routing by
@@ -38,6 +38,6 @@ formats in the table are the contract.
 
 ## Native formats
 
-`.pcraft` (Photo), `.vectorcraft` (Vector, JSON) and `.designcraft` (Layout) are each editor's own
+`.rphoto` (Photo), `.rvector` (Vector, JSON) and `.rlayout` (Layout) are each editor's own
 documented format and are versioned by their upstreams. Redrob Canvas has no project format of its
 own; the GPL-era `.rrg` format was retired with the Qt shell in 0.7.0 and nothing reads it.

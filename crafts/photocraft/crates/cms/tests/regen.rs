@@ -1,7 +1,7 @@
-//! Regenerates the shipped synthetic CMYK profile when `PHOTOCRAFT_REGEN_PROFILES=1`:
+//! Regenerates the shipped synthetic CMYK profile when `REDROB_PHOTO_REGEN_PROFILES=1`:
 //!
 //! ```sh
-//! PHOTOCRAFT_REGEN_PROFILES=1 cargo test -p redrob-photo-cms --release --test regen
+//! REDROB_PHOTO_REGEN_PROFILES=1 cargo test -p redrob-photo-cms --release --test regen
 //! ```
 //!
 //! Without the variable the test only checks that the generator's model still matches the
@@ -13,7 +13,7 @@ use redrob_photo_cms::{Builtin, Intent, Profile, Transform};
 #[test]
 fn regen_or_check_coated_cmyk() {
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/profiles/photocraft-coated-cmyk.icc");
-    if std::env::var_os("PHOTOCRAFT_REGEN_PROFILES").is_some() {
+    if std::env::var_os("REDROB_PHOTO_REGEN_PROFILES").is_some() {
         let t = std::time::Instant::now();
         let p = redrob_photo_cms::synth::coated_cmyk();
         let bytes = p.to_bytes();

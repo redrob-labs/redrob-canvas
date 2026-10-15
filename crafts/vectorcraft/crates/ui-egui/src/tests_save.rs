@@ -4,9 +4,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use serde_json::json;
 use redrob_vector_engine::Session;
 use redrob_vector_geom::Point;
+use serde_json::json;
 
 use crate::{Services, VectorcraftApp, dialogs, io, menus, palette, theme};
 
@@ -48,7 +48,7 @@ fn press_ok(app: &mut VectorcraftApp) {
 #[test]
 fn revert_asks_then_reloads_in_the_same_tab_keeping_every_zoom() {
     let d = dir("revert");
-    let path = d.join("a.vectorcraft").to_string_lossy().to_string();
+    let path = d.join("a.rvector").to_string_lossy().to_string();
     let mut app = app();
     app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
     rect(&mut app);
@@ -120,15 +120,15 @@ fn show_in_folder_needs_a_saved_document_and_a_file_manager() {
     let mut app = app();
     app.run("file.new", json!({})).unwrap();
     assert!(!menus::enabled(&app, "file.reveal"));
-    app.session.doc_mut().unwrap().path = Some("/art/a.vectorcraft".into());
+    app.session.doc_mut().unwrap().path = Some("/art/a.rvector".into());
     assert!(!menus::enabled(&app, "file.reveal"), "no file manager (web)");
     app.services.reveal = Some(Box::new(move |p: &str| {
         s.borrow_mut().push(p.to_string());
         Ok(())
     }));
     assert!(menus::enabled(&app, "file.reveal"));
-    assert_eq!(app.run("file.reveal", json!({})).unwrap()["path"], "/art/a.vectorcraft");
-    assert_eq!(*shown.borrow(), ["/art/a.vectorcraft"]);
+    assert_eq!(app.run("file.reveal", json!({})).unwrap()["path"], "/art/a.rvector");
+    assert_eq!(*shown.borrow(), ["/art/a.rvector"]);
 }
 
 #[test]
@@ -147,7 +147,7 @@ fn the_palette_lists_document_color_mode_once() {
 #[test]
 fn a_document_reopens_at_its_saved_view() {
     let d = dir("view");
-    let path = d.join("v.vectorcraft").to_string_lossy().to_string();
+    let path = d.join("v.rvector").to_string_lossy().to_string();
     let mut app = app();
     app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
     {
@@ -170,7 +170,7 @@ fn a_document_reopens_at_its_saved_view() {
 #[test]
 fn replacing_a_file_that_opening_left_things_out_of_asks_first() {
     let d = dir("lossy");
-    let path = d.join("a.vectorcraft").to_string_lossy().to_string();
+    let path = d.join("a.rvector").to_string_lossy().to_string();
     let mut app = app();
     app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
     rect(&mut app);
@@ -219,7 +219,7 @@ fn native_saves_stream_into_the_file() {
     }));
     app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
     rect(&mut app);
-    let native = d.join("a.vectorcraft").to_string_lossy().to_string();
+    let native = d.join("a.rvector").to_string_lossy().to_string();
     let r = app.run("file.saveAs", json!({"path": native, "compress": true})).unwrap();
     let bytes = std::fs::read(&native).unwrap();
     assert_eq!(r["bytes"], bytes.len(), "{r}");

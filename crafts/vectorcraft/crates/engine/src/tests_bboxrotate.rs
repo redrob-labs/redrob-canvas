@@ -2,11 +2,11 @@
 //! handles turn with them, sizes are measured along their own axes, and Reset Bounding Box squares
 //! the box to the page again.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::OrientedBox;
 use redrob_vector_geom::{Point, Rect};
 use redrob_vector_tools::bbox::Handle;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -195,7 +195,7 @@ fn native_files_keep_the_angle() {
     let text = String::from_utf8(redrob_vector_format::base64_decode(&data).unwrap()).unwrap();
     // Only turned objects write it.
     assert_eq!(text.matches("bbox_angle").count(), 1);
-    s.execute("document.open", &json!({"name": "turned.vectorcraft", "dataBase64": data})).unwrap();
+    s.execute("document.open", &json!({"name": "turned.rvector", "dataBase64": data})).unwrap();
     assert!(near(angle(&s, a), 45.0));
     assert_eq!(angle(&s, plain), 0.0);
     sel(&mut s, &[a]);

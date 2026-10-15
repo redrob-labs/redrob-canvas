@@ -290,7 +290,8 @@ fn run_filter(s: &mut Session, cmd: &str, label: &str, stored: Value, float_bg: 
         let background = doc.is_background(id);
         let l = doc.layer_mut(id).ok_or(EngineError::NoLayer(id))?;
         if let LayerContent::Smart(_) = l.content {
-            let sf = SmartFilter { command: cmd.to_string(), params: stored.clone(), blend: redrob_photo_color::BlendMode::Normal, opacity: 1.0, visible: true };
+            let sf =
+                SmartFilter { command: cmd.to_string(), params: stored.clone(), blend: redrob_photo_color::BlendMode::Normal, opacity: 1.0, visible: true };
             return crate::smart_cmds::add_smart_filter(doc, id, sf, selection.as_ref());
         }
         if locks.all || locks.pixels {

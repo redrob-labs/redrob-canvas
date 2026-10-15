@@ -1,5 +1,5 @@
 //! File I/O shared by the MCP server and the CLI: open/save any supported
-//! format, with `.pcraft` (ZIP or directory bundle) handled natively.
+//! format, with `.rphoto` (ZIP or directory bundle) handled natively.
 
 use std::path::Path;
 
@@ -25,7 +25,7 @@ pub fn open_bytes(name: &str, bytes: &[u8]) -> Result<Opened, AutomationError> {
     Ok(Opened { document: r.document, warnings: r.warnings, source_read_only: r.source_read_only })
 }
 
-/// Open a document from disk. Directory bundles and `.pcraft` ZIPs load
+/// Open a document from disk. Directory bundles and `.rphoto` ZIPs load
 /// natively; everything else goes through `redrob-photo-io` (PSD, PNG, …).
 pub fn open(path: &Path) -> Result<Opened, AutomationError> {
     if path.is_dir() {
@@ -36,7 +36,7 @@ pub fn open(path: &Path) -> Result<Opened, AutomationError> {
     open_bytes(&name, &bytes)
 }
 
-/// Previews for a `.pcraft` bundle.
+/// Previews for a `.rphoto` bundle.
 pub fn previews(doc: &Document) -> SaveOptions {
     SaveOptions { thumbnail: Some(redrob_photo_compose::thumbnail(doc, 256)), composite: Some(redrob_photo_compose::thumbnail(doc, 1024)) }
 }
@@ -54,7 +54,7 @@ fn named_for_output(doc: &Document, path: &str) -> Document {
 
 /// Save or export `doc` to `path`, choosing the format from the extension
 /// (or `format_override`, an extension such as `"png"`). `writer` makes
-/// repeated `.pcraft` saves incremental. Returns warnings about lost data.
+/// repeated `.rphoto` saves incremental. Returns warnings about lost data.
 pub fn save(
     doc: &Document,
     path: &Path,
@@ -80,7 +80,7 @@ pub fn save(
 }
 
 /// Encode a document for a capability-scoped write. Unlike [`save`], this
-/// never obtains ambient filesystem authority and emits `.pcraft` as a ZIP.
+/// never obtains ambient filesystem authority and emits `.rphoto` as a ZIP.
 pub fn save_bytes(doc: &Document, name: &str, format_override: Option<&str>, opts: &ExportOptions) -> Result<(Vec<u8>, Vec<String>), AutomationError> {
     let ext = format_override
         .map(|format| format.trim_start_matches('.').to_ascii_lowercase())

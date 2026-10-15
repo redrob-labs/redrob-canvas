@@ -11,8 +11,8 @@ use std::time::{Duration, Instant};
 
 use redrob_layout_ui_egui::DesignApp;
 use redrob_photo_ui_egui::PhotocraftApp;
-use serde_json::{Value, json};
 use redrob_vector_ui_egui::VectorcraftApp;
+use serde_json::{Value, json};
 
 use crate::ai::bridge::{Capabilities, LayoutBridge, ModeBridge, PhotoBridge, VectorBridge};
 use crate::ai::jobs::{JobOutput, JobResult, ToolKind};
@@ -793,10 +793,12 @@ impl ShellApp {
         // The pinned lockup (brand/SOURCES.json), decoded with the Photo editor's codecs so no
         // image loader has to be installed on the context.
         if self.about_lockup.is_none() {
-            let decoded = redrob_photo_codecs::decode(ABOUT_LOCKUP_PNG).ok().map(|img| {
-                let size = [img.width() as usize, img.height() as usize];
-                egui::ColorImage::from_rgba_unmultiplied(size, &img.to_rgba8())
-            });
+            let decoded = redrob_photo_codecs::decode(ABOUT_LOCKUP_PNG)
+                .ok()
+                .map(|img| {
+                    let size = [img.width() as usize, img.height() as usize];
+                    egui::ColorImage::from_rgba_unmultiplied(size, &img.to_rgba8())
+                });
             if let Some(image) = decoded {
                 self.about_lockup = Some(ctx.load_texture(
                     "redrob_canvas_about_lockup",
@@ -1120,10 +1122,16 @@ impl ShellApp {
             services::photo::services(),
         );
         // Long commands and file opens run as background jobs with progress and Cancel.
-        app.background_jobs = std::env::var_os("PHOTOCRAFT_INLINE_JOBS").is_none();
+        app.background_jobs = std::env::var_os("REDROB_PHOTO_INLINE_JOBS")
+            .or_else(|| std::env::var_os("PHOTOCRAFT_INLINE_JOBS"))
+            .is_none(); // legacy: the upstream variable is read when ours is unset
         if let Some(rs) = wgpu
             && rs.adapter.get_info().device_type != eframe::wgpu::DeviceType::Cpu
-            && std::env::var_os("PHOTOCRAFT_CPU_CANVAS").is_none()
+            && std::env::var_os("REDROB_PHOTO_CPU_CANVAS")
+                // legacy: the upstream variable is read when ours is unset
+                .or_else(|| std::env::var_os("PHOTOCRAFT_CPU_CANVAS"))
+                .is_none()
+        // legacy: the upstream variable is read when ours is unset
         {
             app.set_wgpu(rs);
         }

@@ -496,9 +496,9 @@ fn tab_leaders_line_up_from_line_to_line_and_stop_short_of_the_stop() {
 /// Are the Japanese craft-fonts faces built in? Tests of Japanese glyphs skip (and say so) when
 /// they aren't: the bundled fonts have none, and [`db`] reads no system fonts.
 fn japanese_fonts() -> bool {
-    let built_in = CRAFT_FONTS.iter().any(|f| f.is_japanese());
+    let built_in = REDROB_CRAFT_FONTS.iter().any(|f| f.is_japanese());
     if !built_in {
-        eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
+        eprintln!("skipped: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
     }
     built_in
 }
@@ -513,7 +513,7 @@ fn japanese_text_uses_the_craft_fonts_mincho_after_the_bundled_fonts() {
     assert!(l.glyphs.iter().all(|g| g.gid != 0 && !g.outline.elements().is_empty()), "real glyphs, no tofu");
     let face = db().face_covering('日').unwrap();
     assert!(face.family.contains("Mincho"), "document text falls back to a Mincho face: {}", face.family);
-    assert!(CRAFT_FONTS.iter().any(|f| f.family == face.family));
+    assert!(REDROB_CRAFT_FONTS.iter().any(|f| f.family == face.family));
     // Latin keeps the bundled fallback family.
     assert_eq!(db().face_covering('a').unwrap().family, FALLBACK_FAMILY);
 }
@@ -524,7 +524,7 @@ fn japanese_text_lays_out_without_the_craft_fonts() {
     let l = layout(db(), &point("日本語の文字 abc", style(20.0)));
     assert_eq!(l.lines.len(), 1);
     assert!(l.glyphs.iter().all(|g| g.advance.is_finite()));
-    if CRAFT_FONTS.is_empty() {
+    if REDROB_CRAFT_FONTS.is_empty() {
         assert!(db().families().iter().all(|f| !f.contains("Mincho") && !f.contains("Gothic")), "no Japanese font is bundled");
     }
 }
@@ -760,8 +760,8 @@ fn burasagari_leaves_latin_commas_and_full_stops_inside_the_line() {
 /// boxes. Skipped when built without craft-fonts or with a checkout that has no Thai font.
 #[test]
 fn thai_without_installed_fonts_takes_the_craft_fonts_thai_font() {
-    if !crate::CRAFT_FONTS.iter().any(|f| f.is_thai()) {
-        eprintln!("skipping: no Thai font in craft-fonts (set CRAFT_FONTS_DIR to a checkout that has one)");
+    if !crate::REDROB_CRAFT_FONTS.iter().any(|f| f.is_thai()) {
+        eprintln!("skipping: no Thai font in craft-fonts (set REDROB_CRAFT_FONTS_DIR to a checkout that has one)");
         return;
     }
     let l = layout(db(), &point("ภาษาไทย", style(20.0)));

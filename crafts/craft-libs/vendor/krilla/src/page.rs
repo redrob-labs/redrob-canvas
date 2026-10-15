@@ -9,8 +9,8 @@ use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 
 use crate::chunk_container::ChunkContainer;
-use crate::configure::validate::VersionedFeature;
 use crate::configure::ValidationError;
+use crate::configure::validate::VersionedFeature;
 use crate::content::ContentBuilder;
 use crate::error::KrillaResult;
 use crate::geom::{Rect, Size, Transform};
@@ -45,11 +45,7 @@ pub struct PageSettings {
 impl PageSettings {
     /// Create new page settings and define the size of the page surface.
     pub fn new(size: Size) -> Self {
-        Self {
-            media_box: Some(Rect::from_xywh(0.0, 0.0, size.width(), size.height()).unwrap()),
-            surface_size: size,
-            ..Default::default()
-        }
+        Self { media_box: Some(Rect::from_xywh(0.0, 0.0, size.width(), size.height()).unwrap()), surface_size: size, ..Default::default() }
     }
 
     /// Try to create new page settings with the specified width and height.
@@ -198,21 +194,8 @@ pub struct Page<'a> {
 }
 
 impl<'a> Page<'a> {
-    pub(crate) fn new(
-        sc: &'a mut SerializeContext,
-        chunk_container: &'a mut ChunkContainer,
-        page_index: usize,
-        page_settings: PageSettings,
-    ) -> Self {
-        Self {
-            sc,
-            chunk_container,
-            page_settings,
-            page_index,
-            num_mcids: 0,
-            page_stream: Stream::empty(),
-            annotations: vec![],
-        }
+    pub(crate) fn new(sc: &'a mut SerializeContext, chunk_container: &'a mut ChunkContainer, page_index: usize, page_settings: PageSettings) -> Self {
+        Self { sc, chunk_container, page_settings, page_index, num_mcids: 0, page_stream: Stream::empty(), annotations: vec![] }
     }
 
     pub(crate) fn root_transform(&self) -> Transform {
@@ -241,30 +224,16 @@ impl<'a> Page<'a> {
     /// Get the surface of the page to draw on. Calling this multiple times
     /// on the same page will reset any previous drawings.
     pub fn surface(&mut self) -> Surface<'_> {
-        let root_builder = ContentBuilder::new(
-            self.root_transform(),
-            self.page_settings.media_box.is_none(),
-            self.sc,
-        );
+        let root_builder = ContentBuilder::new(self.root_transform(), self.page_settings.media_box.is_none(), self.sc);
 
         let finish_fn = Box::new(|stream, num_mcids| {
             self.page_stream = stream;
             self.num_mcids = num_mcids;
         });
 
-        let page_identifier = if self.sc.serialize_settings().enable_tagging {
-            Some(PageTagIdentifier::new(self.page_index, 0))
-        } else {
-            None
-        };
+        let page_identifier = if self.sc.serialize_settings().enable_tagging { Some(PageTagIdentifier::new(self.page_index, 0)) } else { None };
 
-        Surface::new(
-            self.sc,
-            self.chunk_container,
-            root_builder,
-            page_identifier,
-            finish_fn,
-        )
+        Surface::new(self.sc, self.chunk_container, root_builder, page_identifier, finish_fn)
     }
 
     /// A shorthand for `std::mem::drop`.
@@ -292,19 +261,10 @@ impl Drop for Page<'_> {
         let annotations = std::mem::take(&mut self.annotations);
         let page_settings = std::mem::take(&mut self.page_settings);
 
-        let struct_parent = self
-            .sc
-            .register_page_struct_parent(self.page_index, self.num_mcids);
+        let struct_parent = self.sc.register_page_struct_parent(self.page_index, self.num_mcids);
 
         let stream = std::mem::replace(&mut self.page_stream, Stream::empty());
-        let page = InternalPage::new(
-            stream,
-            self.sc,
-            annotations,
-            struct_parent,
-            page_settings,
-            self.page_index,
-        );
+        let page = InternalPage::new(stream, self.sc, annotations, struct_parent, page_settings, self.page_index);
         self.sc.register_page(page);
         self.sc.poisoned = poisoned;
     }
@@ -367,9 +327,7 @@ impl InternalPage {
         let mut chunk = sc.new_chunk();
 
         let stream_chunk = Deferred::new(move || {
-            let page_stream =
-                FilterStreamBuilder::new_from_content_stream(&stream.content, &serialize_settings)
-                    .finish(&serialize_settings.clone());
+            let page_stream = FilterStreamBuilder::new_from_content_stream(&stream.content, &serialize_settings).finish(&serialize_settings.clone());
 
             let mut stream = chunk.stream(stream_ref, page_stream.encoded_data());
             page_stream.write_filters(stream.deref_mut());
@@ -378,54 +336,26 @@ impl InternalPage {
             chunk
         });
 
-        Self {
-            stream_resources,
-            stream_ref,
-            stream_chunk,
-            struct_parent,
-            bbox: stream.bbox,
-            annotations,
-            page_settings,
-            page_index,
-        }
+        Self { stream_resources, stream_ref, stream_chunk, struct_parent, bbox: stream.bbox, annotations, page_settings, page_index }
     }
 
-    pub(crate) fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) -> KrillaResult<()> {
+    pub(crate) fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) -> KrillaResult<()> {
         let mut annotation_refs = vec![];
 
         if !self.annotations.is_empty() {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
 
-                annotation.serialize(
-                    sc,
-                    chunk_container,
-                    annot_ref,
-                    self.page_settings.surface_size().height(),
-                )?;
+                annotation.serialize(sc, chunk_container, annot_ref, self.page_settings.surface_size().height())?;
                 annotation_refs.push((annot_ref, OnceCell::new()));
             }
         }
 
         let chunk = &mut chunk_container.non_stream.pages;
         let mut page = chunk.page(root_ref);
-        self.stream_resources.to_pdf_resources(
-            &mut page,
-            sc,
-            &mut chunk_container.non_stream.resource_dictionaries,
-        );
+        self.stream_resources.to_pdf_resources(&mut page, sc, &mut chunk_container.non_stream.resource_dictionaries);
 
-        let transform_rect = |rect: Rect| {
-            rect.transform(page_root_transform(
-                self.page_settings.surface_size().height(),
-            ))
-            .unwrap()
-        };
+        let transform_rect = |rect: Rect| rect.transform(page_root_transform(self.page_settings.surface_size().height())).unwrap();
 
         // media box is mandatory, so we need to fall back to the default bbox
         let media_box = transform_rect(self.page_settings.media_box().unwrap_or(self.bbox));
@@ -474,25 +404,14 @@ impl InternalPage {
         //
         // [1]: https://helpx.adobe.com/acrobat/using/create-verify-pdf-accessibility.html#TabOrder "Create and verify PDF accessibility (Acrobat Pro): Tab order"
         if (!self.annotations.is_empty()
-            || ((sc
-                .serialize_settings()
-                .validators()
-                .accessibility()
-                .is_some()
-                || sc.serialize_settings().validators().requires_tagging())
-                && sc.serialize_settings().pdf_version()
-                    >= VersionedFeature::StructureOrderTabbing.minimum_pdf_version()))
+            || ((sc.serialize_settings().validators().accessibility().is_some() || sc.serialize_settings().validators().requires_tagging())
+                && sc.serialize_settings().pdf_version() >= VersionedFeature::StructureOrderTabbing.minimum_pdf_version()))
             && sc.serialize_settings().enable_tagging
         {
-            if sc.serialize_settings().pdf_version()
-                >= VersionedFeature::StructureOrderTabbing.minimum_pdf_version()
-            {
+            if sc.serialize_settings().pdf_version() >= VersionedFeature::StructureOrderTabbing.minimum_pdf_version() {
                 page.tab_order(TabOrder::StructureOrder);
             } else {
-                sc.register_validation_error(ValidationError::RequiresNewerPdfVersion(
-                    VersionedFeature::StructureOrderTabbing,
-                    sc.location,
-                ));
+                sc.register_validation_error(ValidationError::RequiresNewerPdfVersion(VersionedFeature::StructureOrderTabbing, sc.location));
             }
         }
 
@@ -504,9 +423,7 @@ impl InternalPage {
         }
 
         // Populate the refs for each annotation in page infos.
-        let PageInfo::Krilla { annotations, .. } = &mut sc.page_infos_mut()[self.page_index] else {
-            unreachable!()
-        };
+        let PageInfo::Krilla { annotations, .. } = &mut sc.page_infos_mut()[self.page_index] else { unreachable!() };
         *annotations = annotation_refs;
 
         page.finish();
@@ -529,16 +446,8 @@ pub struct PageLabel {
 
 impl PageLabel {
     /// Create a new page label.
-    pub fn new(
-        style: Option<NumberingStyle>,
-        prefix: Option<String>,
-        offset: Option<NonZeroU32>,
-    ) -> Self {
-        Self {
-            style,
-            prefix,
-            offset,
-        }
+    pub fn new(style: Option<NumberingStyle>, prefix: Option<String>, offset: Option<NonZeroU32>) -> Self {
+        Self { style, prefix, offset }
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -547,9 +456,7 @@ impl PageLabel {
 
     pub(crate) fn serialize(&self, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let chunk = &mut chunk_container.non_stream.page_labels;
-        let mut label = chunk
-            .indirect(root_ref)
-            .start::<pdf_writer::writers::PageLabel>();
+        let mut label = chunk.indirect(root_ref).start::<pdf_writer::writers::PageLabel>();
 
         if let Some(style) = self.style {
             label.style(style.to_pdf());
@@ -574,19 +481,10 @@ pub(crate) struct PageLabelContainer<'a> {
 
 impl<'a> PageLabelContainer<'a> {
     pub(crate) fn new(labels: &'a [PageLabel]) -> Option<Self> {
-        if labels.iter().all(|f| f.is_empty()) {
-            None
-        } else {
-            Some(PageLabelContainer { labels })
-        }
+        if labels.iter().all(|f| f.is_empty()) { None } else { Some(PageLabelContainer { labels }) }
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
@@ -594,9 +492,7 @@ impl<'a> PageLabelContainer<'a> {
 
         for (i, label) in self.labels.iter().enumerate() {
             if let Some(n_prev) = &prev {
-                if n_prev.style != label.style
-                    || n_prev.prefix != label.prefix
-                    || n_prev.offset.map(|n| n.get()) != label.offset.map(|n| n.get() + 1)
+                if n_prev.style != label.style || n_prev.prefix != label.prefix || n_prev.offset.map(|n| n.get()) != label.offset.map(|n| n.get() + 1)
                 {
                     filtered_entries.push((i, label.clone()));
                     prev = Some(label.clone());

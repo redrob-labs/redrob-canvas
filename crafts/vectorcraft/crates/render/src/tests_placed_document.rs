@@ -28,7 +28,7 @@ fn doc_with(key: &str, bytes: &[u8]) -> Document {
     let mut d = Document::new(100.0, 100.0);
     d.images.insert(key.into(), ImageBlob::new("application/json", bytes.to_vec()));
     let p = PlacedDocument {
-        link: LinkInfo::new("/art/card.vectorcraft"),
+        link: LinkInfo::new("/art/card.rvector"),
         key: key.into(),
         bounding: false,
         width: 40.0,

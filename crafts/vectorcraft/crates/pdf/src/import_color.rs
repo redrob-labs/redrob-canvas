@@ -13,9 +13,9 @@ use redrob_craft_pdf::interpret::Function;
 use redrob_craft_pdf::interpret::color::ColorSpace;
 use redrob_craft_pdf::syntax::Pdf;
 use redrob_craft_pdf::syntax::object::{Array, MaybeRef, Name, Object, Stream};
-use smallvec::SmallVec;
 use redrob_vector_color::swatch::REGISTRATION;
 use redrob_vector_color::{Color, Paint, Swatch};
+use smallvec::SmallVec;
 
 /// The longest `Debug` text read: a colour whose space is longer (a big sampled tint transform)
 /// imports as RGB.

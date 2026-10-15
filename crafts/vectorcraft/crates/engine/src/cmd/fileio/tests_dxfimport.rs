@@ -2,9 +2,9 @@
 //! File → Place of a drawing (fitted, centred or at its origin), the format table, binary files,
 //! and a drawing `document.export` wrote opened again.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Node, NodeKind};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::*;
 

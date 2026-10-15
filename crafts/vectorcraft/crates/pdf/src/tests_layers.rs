@@ -3,10 +3,10 @@
 //! for the overprinting fills and strokes).
 
 use redrob_craft_pdf::syntax::object::{Array, Dict, Name, ObjectIdentifier};
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, CharStyle, Document, LayerColor, Node, NodeKind, TextObject};
 use redrob_vector_geom::{Point, Rect, shapes};
+use serde_json::{Value, json};
 
 use crate::*;
 

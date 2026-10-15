@@ -37,7 +37,7 @@ fn smart_object_commands_act_on_a_named_layer_while_another_is_active() {
     // Without "layer" the active pixel layer decides, as the menus show.
     assert!(!s.is_enabled("layer.smartObjects.replaceContents"));
     // Replace Contents on the named smart object.
-    let dir = std::env::temp_dir().join(format!("pcraft-explicit-layer-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("rphoto-explicit-layer-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let png = dir.join("red.png");
     let red = redrob_photo_doc::Document::with_background(

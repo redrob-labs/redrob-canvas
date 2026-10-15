@@ -1,8 +1,8 @@
 //! Live colour adjustments (Effect → Color Adjustments) through the commands: applied, listed,
 //! exported, expanded and kept in the native file.
 
-use serde_json::json;
 use redrob_vector_doc::{Node, NodeKind};
+use serde_json::json;
 
 use super::*;
 
@@ -124,7 +124,7 @@ fn adjustments_survive_the_native_file() {
     s.execute("effect.apply", &json!({"effect": "adjust.curves", "params": {"points": "0,0 64,32 255,255", "channel": "green"}})).unwrap();
     let saved = s.execute("document.export", &json!({"format": "vectorcraft"})).unwrap()["dataBase64"].clone();
     let mut o = Session::new();
-    o.execute("document.open", &json!({"name": "a.vectorcraft", "dataBase64": saved})).unwrap();
+    o.execute("document.open", &json!({"name": "a.rvector", "dataBase64": saved})).unwrap();
     let mut found = None;
     o.doc().unwrap().doc.walk(|n| {
         if let Some(e) = n.appearance.effects.first() {

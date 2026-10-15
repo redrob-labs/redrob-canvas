@@ -1,9 +1,9 @@
 //! Save PDF settings: JSON shape, checks and the warnings for options not applied yet.
 
-use serde_json::json;
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, Document, Node};
 use redrob_vector_geom::{Rect, shapes};
+use serde_json::json;
 
 use crate::*;
 

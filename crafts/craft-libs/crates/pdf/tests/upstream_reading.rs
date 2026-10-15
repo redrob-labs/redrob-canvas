@@ -2,15 +2,15 @@
 #![cfg(feature = "interpret")]
 #![allow(clippy::unwrap_used, clippy::panic)]
 
+use hayro_cmap::BfString;
+use kurbo::{Affine, BezPath, Rect};
 use redrob_craft_pdf::interpret::{
     BlendMode, ClipPath, Context, Device, GlyphDrawMode, Image, InterpreterCache, InterpreterSettings, Paint, PathDrawMode, SoftMask, TransformExt,
     font::Glyph,
 };
-use hayro_cmap::BfString;
-use kurbo::{Affine, BezPath, Rect};
 
 #[cfg(craft_pdf_unicode_fixtures)]
-const INTER: &[u8] = include_bytes!(concat!(env!("CRAFT_PDF_TEST_FONT_DIR"), "/Inter-Regular.ttf"));
+const INTER: &[u8] = include_bytes!(concat!(env!("REDROB_CRAFT_PDF_TEST_FONT_DIR"), "/Inter-Regular.ttf"));
 
 #[derive(Default)]
 struct TextDevice {

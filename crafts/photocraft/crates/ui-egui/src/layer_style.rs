@@ -1722,9 +1722,12 @@ mod tests {
         let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let mut layer = redrob_photo_doc::Layer::new("L", redrob_photo_doc::LayerContent::Adjustment(redrob_photo_doc::Adjustment::Invert));
         layer.advanced.knockout = redrob_photo_doc::Knockout::Deep;
-        for mode in
-            [redrob_photo_color::ColorMode::Rgb, redrob_photo_color::ColorMode::Cmyk, redrob_photo_color::ColorMode::Lab, redrob_photo_color::ColorMode::Grayscale]
-        {
+        for mode in [
+            redrob_photo_color::ColorMode::Rgb,
+            redrob_photo_color::ColorMode::Cmyk,
+            redrob_photo_color::ColorMode::Lab,
+            redrob_photo_color::ColorMode::Grayscale,
+        ] {
             let mut f = initial_fields(&layer, Some(BLENDING), 120.0);
             set_blending_fields(&mut f, &layer, mode);
             let mut out = ctx.run_ui(Default::default(), |ui| body(&mut app, ui, &mut f));

@@ -123,8 +123,8 @@ fn conventions_resources_and_versioned_results() {
         ("resources/list", json!({}), 600_000),
         ("resources/templates/list", json!({}), 600_000),
         ("prompts/list", json!({}), 600_000),
-        ("resources/read", json!({"uri":"vectorcraft://document"}), 0),
-        ("resources/read", json!({"uri":"vectorcraft://commands"}), 0),
+        ("resources/read", json!({"uri":"redrob-vector://document"}), 0),
+        ("resources/read", json!({"uri":"redrob-vector://commands"}), 0),
     ] {
         let legacy = rpc(&mut s, method, extra.clone());
         assert!(legacy["result"].is_object(), "{legacy}");
@@ -143,8 +143,8 @@ fn conventions_resources_and_versioned_results() {
         assert!(rpc(&mut s, method, extra)["result"].get("resultType").is_none());
     }
     let r = rpc(&mut s, "resources/list", json!({}));
-    assert!(r["result"]["resources"].as_array().unwrap().iter().any(|r| r["uri"] == "vectorcraft://commands"));
-    let commands = rpc(&mut s, "resources/read", json!({"uri":"vectorcraft://commands"}));
+    assert!(r["result"]["resources"].as_array().unwrap().iter().any(|r| r["uri"] == "redrob-vector://commands"));
+    let commands = rpc(&mut s, "resources/read", json!({"uri":"redrob-vector://commands"}));
     let commands: Value = serde_json::from_str(commands["result"]["contents"][0]["text"].as_str().unwrap()).unwrap();
     assert_eq!(commands, payload(&call(&mut s, "command_list", json!({}))));
     assert_eq!(rpc(&mut s, "initialize", json!({"protocolVersion":"2026-07-28"}))["result"]["protocolVersion"], "2026-07-28");

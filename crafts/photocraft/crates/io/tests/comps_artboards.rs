@@ -1,5 +1,5 @@
 //! Layer comps (resource 1065 + per-layer `cmls`) and artboards (`artb`) through PSD and
-//! `.pcraft`: byte-exact while unchanged, regenerated after edits.
+//! `.rphoto`: byte-exact while unchanged, regenerated after edits.
 
 #[cfg(feature = "corpus")]
 use std::path::PathBuf;
@@ -236,8 +236,8 @@ fn synthetic_pcraft_roundtrip_keeps_everything() {
     }
 
     let png = export(&d, "x.png", &ExportOptions::default()).unwrap().bytes;
-    assert!(import("pcraft", &png).is_ok());
-    assert!(matches!(import("broken.pcraft", b"not a native bundle"), Err(redrob_photo_io::IoError::Pcraft(_))));
+    assert!(import("rphoto", &png).is_ok());
+    assert!(matches!(import("broken.rphoto", b"not a native bundle"), Err(redrob_photo_io::IoError::Pcraft(_))));
 }
 
 /// A layer at (4, 4) whose preserved `shmd` block offsets it by `(dx, 0)` in comp 1, plus the

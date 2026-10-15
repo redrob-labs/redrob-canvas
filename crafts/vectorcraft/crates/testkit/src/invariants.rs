@@ -2,9 +2,9 @@
 
 use std::collections::HashSet;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, NodeKind};
 use redrob_vector_engine::Session;
+use serde_json::{Value, json};
 
 /// Serialize a document to JSON (the canonical form for equality checks).
 pub fn doc_json(doc: &Document) -> Value {
@@ -88,7 +88,7 @@ pub fn check_session(s: &Session) -> Result<(), String> {
     Ok(())
 }
 
-/// `.vectorcraft` save → load → the JSON of the document and of what loaded, without `images`: a
+/// `.rvector` save → load → the JSON of the document and of what loaded, without `images`: a
 /// save keeps only the images in use, which must come back byte for byte.
 fn native_roundtrip(doc: &Document) -> Result<(Value, Value), String> {
     let bytes = redrob_vector_format::save(doc, false);
@@ -122,7 +122,7 @@ fn native_roundtrip(doc: &Document) -> Result<(Value, Value), String> {
     Ok((strip(doc_json(doc)), strip(doc_json(&back))))
 }
 
-/// `.vectorcraft` save → load must reproduce the document (numbers compared to 1e-12 relative —
+/// `.rvector` save → load must reproduce the document (numbers compared to 1e-12 relative —
 /// see [`check_native_roundtrip_exact`] for the bit-exact version).
 pub fn check_native_roundtrip(doc: &Document) -> Result<(), String> {
     let (a, b) = native_roundtrip(doc)?;
@@ -132,7 +132,7 @@ pub fn check_native_roundtrip(doc: &Document) -> Result<(), String> {
     Ok(())
 }
 
-/// Bit-exact `.vectorcraft` round trip (every f64 must survive).
+/// Bit-exact `.rvector` round trip (every f64 must survive).
 pub fn check_native_roundtrip_exact(doc: &Document) -> Result<(), String> {
     let (a, b) = native_roundtrip(doc)?;
     if a != b {

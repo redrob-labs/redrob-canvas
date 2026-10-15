@@ -267,7 +267,7 @@ fn is_cjk(c: char) -> bool {
 /// Chinese one waits for a Traditional Chinese UI font in craft-fonts).
 #[test]
 fn bundled_fonts_cover_the_catalogs() {
-    let japanese_ui_font = redrob_vector_text::CRAFT_FONTS.iter().any(|f| f.is_japanese());
+    let japanese_ui_font = redrob_vector_text::REDROB_CRAFT_FONTS.iter().any(|f| f.is_japanese());
     let ctx = egui::Context::default();
     crate::theme::install_fonts(&ctx);
     let mut output = ctx.run_ui(egui::RawInput::default(), |_| {});
@@ -436,11 +436,11 @@ pub fn tl_literals() -> std::collections::BTreeSet<String> {
     literals
 }
 
-/// `VECTORCRAFT_I18N_DUMP=<file> cargo test -p redrob-vector-ui-egui dump_source_strings` writes every
+/// `REDROB_VECTOR_I18N_DUMP=<file> cargo test -p redrob-vector-ui-egui dump_source_strings` writes every
 /// English source string a complete catalog has to cover, one per line, for translators.
 #[test]
 fn dump_source_strings() {
-    let Ok(path) = std::env::var("VECTORCRAFT_I18N_DUMP") else { return };
+    let Ok(path) = std::env::var("REDROB_VECTOR_I18N_DUMP") else { return };
     let mut all = crate::menus::menu_strings();
     all.extend(tl_literals());
     let text: String = all.iter().map(|s| format!("{}\n", s.replace('\\', "\\\\").replace('\n', "\\n").replace('\t', "\\t"))).collect();
@@ -1078,12 +1078,12 @@ fn messages_translate_by_template_and_their_parts() {
 
 /// Each language that translates status and error messages ([`COMPLETE_MESSAGES`]) has an `@msg`
 /// row for every message in the sources that reach the status bar, so a new one can't ship
-/// untranslated by accident (`VECTORCRAFT_I18N_DUMP_MESSAGES=<file>` lists them).
+/// untranslated by accident (`REDROB_VECTOR_I18N_DUMP_MESSAGES=<file>` lists them).
 #[test]
 fn complete_languages_translate_every_message() {
     let messages = message_literals();
     assert!(messages.len() > 300, "scan found only {} messages", messages.len());
-    if let Ok(path) = std::env::var("VECTORCRAFT_I18N_DUMP_MESSAGES") {
+    if let Ok(path) = std::env::var("REDROB_VECTOR_I18N_DUMP_MESSAGES") {
         std::fs::write(path, messages.iter().map(|m| format!("{m}\n")).collect::<String>()).expect("write dump");
     }
     for code in COMPLETE_MESSAGES {

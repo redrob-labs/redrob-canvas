@@ -3,11 +3,11 @@
 
 use std::collections::HashMap;
 
+use kurbo::{Affine, Rect};
 use redrob_craft_pdf::syntax::object::{Array, Dict, MaybeRef, Name, Object, ObjectIdentifier, Stream, dict_or_stream};
 use redrob_craft_pdf::syntax::page::Page;
 use redrob_craft_pdf::syntax::xref::XRef;
 use redrob_craft_pdf::syntax::{DecryptionError, LoadPdfError, Pdf};
-use kurbo::{Affine, Rect};
 use redrob_vector_doc::setup::MAX_BLEED;
 
 use crate::import_color::direct;

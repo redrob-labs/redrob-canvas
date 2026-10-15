@@ -162,7 +162,7 @@ fn save_writes_svg_and_remembers_its_options() {
     assert!(text.contains("<style>") && text.matches("<path").count() == 2, "Save reuses the options: {text}");
     assert!(s.execute("document.save", &json!({"path": dir.join("x.png").to_string_lossy()})).is_err(), "PNG is an export");
     // A native save switches back.
-    let native = dir.join("doc.vectorcraft").to_string_lossy().to_string();
+    let native = dir.join("doc.rvector").to_string_lossy().to_string();
     s.execute("document.save", &json!({"path": native})).unwrap();
     assert!(redrob_vector_format::sniff(&std::fs::read(&native).unwrap()));
     assert!(s.doc().unwrap().save_options.is_empty(), "a native save remembers no options");
@@ -234,7 +234,10 @@ fn svgz_opens_and_pastes_like_svg() {
     // Detected by the magic bytes whatever the name says.
     assert_eq!(open(&mut s, "a.svg", &redrob_vector_svg::compress(&text)), plain);
     assert_eq!(open(&mut s, "a.svgz", &redrob_vector_svg::compress(&text)), plain);
-    let r = s.execute("clipboard.importSvg", &json!({"dataBase64": redrob_vector_format::base64_encode(&redrob_vector_svg::compress(&text))})).unwrap();
+    let r =
+        s.execute("clipboard.importSvg", &json!({"dataBase64": redrob_vector_format::base64_encode(&redrob_vector_svg::compress(&text))})).unwrap();
     assert_eq!(r["count"], 2);
-    assert!(s.execute("document.open", &json!({"name": "bad.svgz", "dataBase64": redrob_vector_format::base64_encode(&[0x1f, 0x8b, 1, 2])})).is_err());
+    assert!(
+        s.execute("document.open", &json!({"name": "bad.svgz", "dataBase64": redrob_vector_format::base64_encode(&[0x1f, 0x8b, 1, 2])})).is_err()
+    );
 }

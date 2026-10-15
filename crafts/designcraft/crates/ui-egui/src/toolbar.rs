@@ -1,8 +1,8 @@
 //! The Tools panel (left): single or double column, tool groups with flyouts, fill/stroke proxy,
 //! screen mode buttons.
 
-use redrob_layout_tools::{SPLIT_IN_TWO_COLUMNS, TOOL_GROUPS};
 use egui::{Color32, Sense, Stroke, StrokeKind, vec2};
+use redrob_layout_tools::{SPLIT_IN_TWO_COLUMNS, TOOL_GROUPS};
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
@@ -192,7 +192,8 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
             }
         }
     });
-    if std::env::var_os("DESIGNCRAFT_DEBUG_LAYOUT").is_some() {
+    if std::env::var_os("REDROB_LAYOUT_DEBUG_LAYOUT").or_else(|| std::env::var_os("DESIGNCRAFT_DEBUG_LAYOUT")).is_some() {
+        // legacy: the upstream variable is read when ours is unset
         eprintln!("tools panel rect {:?} (wanted width {width}); remaining {:?}", r.response.rect, ui.available_rect_before_wrap());
     }
 }
@@ -570,12 +571,10 @@ pub(crate) fn apply_color(app: &mut DesignApp) -> Result<Value, String> {
 /// a new white-to-black gradient (InDesign's default), on the fill or stroke in front.
 pub(crate) fn apply_gradient(app: &mut DesignApp) -> Result<Value, String> {
     let st = app.session.active().ok_or("no document")?;
-    let known = app
-        .ui
-        .last_gradient
-        .clone()
-        .filter(|s| redrob_layout_color::swatch::resolve_gradient(&st.doc.swatches, s).is_some())
-        .or_else(|| st.doc.swatches.iter().find(|w| matches!(w.value, redrob_layout_color::SwatchValue::Gradient { .. })).map(|w| w.name.clone()));
+    let known =
+        app.ui.last_gradient.clone().filter(|s| redrob_layout_color::swatch::resolve_gradient(&st.doc.swatches, s).is_some()).or_else(|| {
+            st.doc.swatches.iter().find(|w| matches!(w.value, redrob_layout_color::SwatchValue::Gradient { .. })).map(|w| w.name.clone())
+        });
     let stroke = app.ui.stroke_front;
     if let Some(sw) = known {
         return crate::panels::apply_swatch(app, stroke, &sw, None);

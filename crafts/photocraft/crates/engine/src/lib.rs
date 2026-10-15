@@ -225,7 +225,7 @@ pub struct DocState {
     pub floating: Option<float_cmds::Floating>,
     /// Color Sampler points (`view.colorSamplers.*`, #1046): numbered sample positions in document
     /// pixel coordinates. Per-document view state: discarded when the document closes, never saved
-    /// to `.pcraft` or PSD, and not a history step.
+    /// to `.rphoto` or PSD, and not a history step.
     pub color_samplers: Vec<[f64; 2]>,
     /// History panel snapshots, oldest first (`history.newSnapshot`, #2966). Kept for the
     /// session only, as in Photoshop: not history states, and not saved with the document.

@@ -3,11 +3,11 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{AppearanceItem, Node, NodeKind};
 use redrob_vector_geom::Rect;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -174,8 +174,10 @@ fn replace_keeps_the_transform_and_the_stacking_place() {
 #[test]
 fn replace_needs_exactly_one_selected_object() {
     let mut s = session();
-    let r = s
-        .execute("file.place", &json!({"replace": true, "name": "b.png", "dataBase64": redrob_vector_format::base64_encode(&png(2, 2, [0; 4], None))}));
+    let r = s.execute(
+        "file.place",
+        &json!({"replace": true, "name": "b.png", "dataBase64": redrob_vector_format::base64_encode(&png(2, 2, [0; 4], None))}),
+    );
     assert!(r.unwrap_err().to_string().contains("select the one object"));
 }
 
@@ -206,7 +208,7 @@ fn pdf_pages_and_native_artboards_place_as_clipped_groups() {
     let pdf = serialize(&mut src, "pdf");
     let native = serialize(&mut src, "vectorcraft");
     let mut s = session();
-    for (name, bytes) in [("two.pdf", &pdf), ("two.vectorcraft", &native)] {
+    for (name, bytes) in [("two.pdf", &pdf), ("two.rvector", &native)] {
         let r = place(&mut s, name, bytes, json!({"page": 2}));
         assert!(close(r["width"].as_f64().unwrap(), 40.0) && close(r["height"].as_f64().unwrap(), 50.0), "{name}: {r}");
         let g = node(&s, &r["ids"][0]);
@@ -233,7 +235,7 @@ fn placed_art_brings_its_symbols_and_swatches_renaming_on_conflict() {
     s.execute("swatch.new", &json!({"name": "Brand", "color": "#00ff00", "global": true})).unwrap();
     s.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 5, "height": 5})).unwrap();
     s.execute("symbol.new", &json!({"name": "Star"})).unwrap();
-    let r = place(&mut s, "logo.vectorcraft", &bytes, json!({"crop": "bounding"}));
+    let r = place(&mut s, "logo.rvector", &bytes, json!({"crop": "bounding"}));
     let g = node(&s, &r["ids"][0]);
     let (mut fill, mut symbol) = (None, None);
     g.walk(&mut |n| match &n.kind {
@@ -251,7 +253,7 @@ fn placed_art_brings_its_symbols_and_swatches_renaming_on_conflict() {
     assert_eq!(doc.swatch("Brand").and_then(|w| w.paint.color()).map(|c| c.to_hex()).as_deref(), Some("#00ff00"));
     // A document without them gets them as they are.
     let mut fresh = session();
-    let r = place(&mut fresh, "logo.vectorcraft", &bytes, json!({}));
+    let r = place(&mut fresh, "logo.rvector", &bytes, json!({}));
     let doc = &fresh.doc().unwrap().doc;
     assert!(doc.symbols.iter().any(|x| x.name == "Star") && doc.swatch("Brand").is_some());
     let mut linked = false;

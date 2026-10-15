@@ -1,7 +1,7 @@
 //! Layers panel disclosure state: expanding and collapsing layer groups (#126).
 //!
 //! A group's open/closed state is document data ([`redrob_photo_doc::Group::expanded`], the PSD
-//! section divider's open/closed folder type, saved in `.pcraft` too) but, as in Photoshop,
+//! section divider's open/closed folder type, saved in `.rphoto` too) but, as in Photoshop,
 //! toggling it is a view change: no history step, and a clean document stays clean.
 
 use std::sync::Arc;

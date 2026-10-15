@@ -195,7 +195,7 @@ No PDF test fonts are stored in this repository. Obtain the licensed fixtures li
 one directory using the listed names, then run:
 
 ```sh
-CRAFT_PDF_TEST_FONT_DIR=/absolute/path/to/licensed-fonts \
+REDROB_CRAFT_PDF_TEST_FONT_DIR=/absolute/path/to/licensed-fonts \
 RUSTFLAGS="--cfg craft_pdf_unicode_fixtures" \
 cargo test -p redrob-craft-pdf --all-features --test unicode_writing
 ```
