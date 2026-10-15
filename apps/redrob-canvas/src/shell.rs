@@ -4,12 +4,18 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
+use std::time::Duration;
 
 use designcraft_ui_egui::DesignApp;
 use photocraft_ui_egui::PhotocraftApp;
+use serde_json::{Value, json};
 use vectorcraft_ui_egui::VectorcraftApp;
 
-use crate::services;
+use crate::ai::bridge::{Capabilities, LayoutBridge, ModeBridge, PhotoBridge, VectorBridge};
+use crate::ai::jobs::{JobOutput, JobResult, ToolKind};
+use crate::ai::tools::{self, ToolReply, ToolRequest};
+use crate::ai::{self, Action, AiPanel};
+use crate::{handoff, services};
 
 /// Height of the shell's own top bar, in points.
 pub const TOP_BAR_HEIGHT: f32 = 28.0;
@@ -147,7 +153,6 @@ impl StyleSnapshot {
 }
 
 /// The eframe app: the shell plus its (lazily created) editors.
-#[derive(Default)]
 pub struct ShellApp {
     mode: Mode,
     /// A switch asked for (button, shortcut, `--mode`) and applied at the next frame's start,
@@ -167,14 +172,42 @@ pub struct ShellApp {
     wgpu: Option<eframe::egui_wgpu::RenderState>,
     /// Modes whose editor has been created, in creation order (for tests and the status line).
     created: Vec<Mode>,
+    /// The AI dock, menu, engine, job queue and agent.
+    pub ai: AiPanel,
+    /// What the active mode's bridge could do when this frame's logic ran.
+    caps: Capabilities,
+}
+
+impl Default for ShellApp {
+    fn default() -> Self {
+        Self::new(None)
+    }
 }
 
 impl ShellApp {
     pub fn new(wgpu: Option<eframe::egui_wgpu::RenderState>) -> Self {
+        // The engine installs under the config directory; a run without preferences has no
+        // engine (the Tools tab says so).
+        let ai = AiPanel::new(services::config_dir().filter(|_| services::prefs_enabled()));
         Self {
+            mode: Mode::default(),
+            pending: None,
+            fonts: HashMap::new(),
+            merged_fonts: None,
+            styles: HashMap::new(),
+            photo: None,
+            vector: None,
+            layout: None,
             wgpu,
-            ..Default::default()
+            created: Vec::new(),
+            ai,
+            caps: Capabilities::none(Mode::default()),
         }
+    }
+
+    /// What the active mode's bridge could do at the start of this frame.
+    pub fn capabilities(&self) -> Capabilities {
+        self.caps
     }
 
     pub fn mode(&self) -> Mode {
@@ -252,8 +285,9 @@ impl ShellApp {
         ctx.set_fonts(merged);
     }
 
-    /// The shell's own top bar: brand, the mode buttons, and the (empty) right slot.
+    /// The shell's own top bar: brand, the mode buttons, the AI menu, and the right slot.
     pub fn top_bar(&mut self, ui: &mut egui::Ui) {
+        let caps = self.caps;
         let visuals = ui.visuals().clone();
         let frame = egui::Frame::NONE
             .fill(visuals.panel_fill)
@@ -286,6 +320,8 @@ impl ShellApp {
                     if next != self.mode {
                         self.set_mode(next);
                     }
+                    ui.separator();
+                    ai::panel::menu(ui, &mut self.ai, &caps);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.add_space(8.0);
                         self.right_slot(ui);
@@ -294,8 +330,249 @@ impl ShellApp {
             });
     }
 
-    /// The right side of the top bar. Empty for now: the AI tools go here later.
-    pub fn right_slot(&mut self, _ui: &mut egui::Ui) {}
+    /// The right side of the top bar: the AI dock toggle.
+    pub fn right_slot(&mut self, ui: &mut egui::Ui) {
+        ai::panel::toggle(ui, &mut self.ai);
+    }
+
+    /// The AI dock, drawn before the editor area so the editor gets what is left. Returns the
+    /// actions its widgets asked for.
+    fn ai_dock(&mut self, ui: &mut egui::Ui) -> Vec<Action> {
+        let mut actions = std::mem::take(&mut self.ai.queued);
+        if !self.ai.open {
+            return actions;
+        }
+        let caps = self.caps;
+        let visuals = ui.visuals().clone();
+        let frame = egui::Frame::NONE
+            .fill(visuals.panel_fill)
+            .inner_margin(8.0)
+            .stroke(egui::Stroke::new(
+                1.0,
+                visuals.widgets.noninteractive.bg_stroke.color,
+            ));
+        let drawn = egui::Panel::right("redrob_canvas_ai_dock")
+            .default_size(ai::panel::DEFAULT_WIDTH)
+            .size_range(ai::panel::MIN_WIDTH..=ai::panel::MAX_WIDTH)
+            .resizable(true)
+            .frame(frame)
+            .show(ui, |ui| ai::panel::dock(ui, &mut self.ai, &caps));
+        actions.extend(drawn.inner);
+        actions
+    }
+
+    /// The active mode's document, through its bridge. Creates the mode's editor when it does not
+    /// exist yet (the frame would anyway).
+    pub fn with_bridge<R>(&mut self, f: impl FnOnce(&mut dyn ModeBridge) -> R) -> R {
+        match self.mode {
+            Mode::Photo => {
+                let app = self.ensure_photo();
+                f(&mut PhotoBridge::new(&mut app.session))
+            }
+            Mode::Vector => {
+                let app = self.ensure_vector();
+                f(&mut VectorBridge::new(app))
+            }
+            Mode::Layout => {
+                let app = self.ensure_layout();
+                f(&mut LayoutBridge::new(app))
+            }
+        }
+    }
+
+    /// The Vector editor (created on demand): where a trace hand-off lands.
+    pub fn vector_app(&mut self) -> &mut VectorcraftApp {
+        self.ensure_vector()
+    }
+
+    /// Everything the AI layer does between frames: finished jobs, the agent's tool calls, agent
+    /// events, the engine log, and the capabilities and info the next frame draws from.
+    fn service_ai(&mut self, ctx: &egui::Context) {
+        while let Some(result) = self.ai.poll_job() {
+            self.apply_ai_result(result);
+        }
+        for request in self.ai.take_tool_requests() {
+            self.handle_tool_request(request);
+        }
+        self.ai.poll_agent();
+        self.ai.drain_engine_log();
+        let (caps, size) = self.with_bridge(|b| (b.capabilities(), b.document_size()));
+        self.caps = caps;
+        self.ai.refresh_info(self.mode, &caps, size);
+        if self.ai.wants_repaint() {
+            ctx.request_repaint_after(Duration::from_millis(100));
+        }
+    }
+
+    fn run_ai_action(&mut self, action: Action) {
+        match action {
+            Action::Run(kind) => {
+                if let Err(e) = self.start_tool(kind, None, None) {
+                    self.ai.status = Some((format!("{}: {e}", kind.label()), true));
+                    self.ai.push_log(format!("{}: {e}", kind.label()));
+                }
+            }
+            Action::Install => self.ai.install(),
+            Action::Start => self.ai.start(),
+            Action::Stop => self.ai.stop(),
+            Action::SetModel => self.ai.set_model(),
+            Action::SwitchMode(mode) => self.set_mode(mode),
+            Action::AgentSend(text) => self.ai.agent_send(text),
+            Action::AgentReset => self.ai.agent_reset(),
+            Action::CancelJob => {
+                if let Some(reply) = self.ai.jobs.cancel() {
+                    let _ = reply.send(Err("cancelled".into()));
+                }
+                self.ai.status = Some((
+                    "Cancelled; the engine finishes its request in the background".into(),
+                    false,
+                ));
+            }
+        }
+    }
+
+    /// Gathers `kind`'s inputs from the active mode and starts it. `args` are the agent's tool
+    /// arguments (they override the card's settings); `reply` its pending call.
+    fn start_tool(
+        &mut self,
+        kind: ToolKind,
+        reply: Option<ToolReply>,
+        args: Option<&Value>,
+    ) -> Result<(), String> {
+        if let Some(reason) = kind.unavailable_reason(&self.caps) {
+            return Err(reason.to_owned());
+        }
+        let settings = self.ai.settings.clone();
+        if let Some(plugin) = ai::plugin_for(kind, &settings)
+            && !self
+                .ai
+                .engine()
+                .and_then(|e| e.config())
+                .is_some_and(|c| c.has_plugin(plugin))
+        {
+            return Err(format!(
+                "start the AI engine with the {plugin} plugin enabled (Plugins, above)"
+            ));
+        }
+        let input = self.with_bridge(|bridge| ai::gather_input(bridge, kind, &settings, args))?;
+        self.ai.start_job(kind, input, reply)
+    }
+
+    fn apply_ai_result(&mut self, result: JobResult) {
+        let kind = result.kind;
+        let outcome = match result.output {
+            Err(e) => Err(e),
+            Ok(output) => self.apply_ai_output(kind, output),
+        };
+        let seconds = result.elapsed.as_secs_f32();
+        match &outcome {
+            Ok(_) => {
+                let line = format!("{} done in {seconds:.1} s", kind.label());
+                self.ai.status = Some((line.clone(), false));
+                self.ai.push_log(line);
+            }
+            Err(e) => {
+                let line = format!("{}: {e}", kind.label());
+                self.ai.status = Some((line.clone(), true));
+                self.ai.push_log(line);
+            }
+        }
+        if let Some(reply) = result.reply {
+            let _ = reply.send(outcome);
+        }
+    }
+
+    /// Puts a job's output into the active mode's document.
+    fn apply_ai_output(&mut self, kind: ToolKind, output: JobOutput) -> Result<Value, String> {
+        match output {
+            JobOutput::Layer {
+                name,
+                image,
+                offset,
+            } => {
+                let (w, h) = (image.width, image.height);
+                self.with_bridge(|bridge| {
+                    // An upscale is larger than the canvas: grow the canvas first where the
+                    // mode can, so the layer is not cropped.
+                    if kind == ToolKind::Upscale
+                        && bridge.supports_expand()
+                        && let Some((dw, dh)) = bridge.document_size()
+                        && (w > dw || h > dh)
+                    {
+                        bridge
+                            .expand_canvas(redrob_ai::Expand {
+                                left: 0,
+                                top: 0,
+                                right: w.saturating_sub(dw),
+                                bottom: h.saturating_sub(dh),
+                            })
+                            .map_err(|e| e.to_string())?;
+                    }
+                    bridge
+                        .place_layer(&name, image, offset)
+                        .map_err(|e| e.to_string())
+                })?;
+                Ok(json!({ "ok": true, "layer": name, "width": w, "height": h }))
+            }
+            JobOutput::Expanded {
+                name,
+                image,
+                expand,
+            } => {
+                let (w, h) = (image.width, image.height);
+                self.with_bridge(|bridge| {
+                    bridge.expand_canvas(expand).map_err(|e| e.to_string())?;
+                    bridge
+                        .place_layer(&name, image, (0, 0))
+                        .map_err(|e| e.to_string())
+                })?;
+                Ok(json!({ "ok": true, "layer": name, "width": w, "height": h }))
+            }
+            JobOutput::Selection(mask) => {
+                let coverage = mask.coverage();
+                self.with_bridge(|bridge| bridge.set_selection(mask).map_err(|e| e.to_string()))?;
+                Ok(json!({ "ok": true, "selected_pixels": coverage }))
+            }
+            JobOutput::Trace {
+                preset,
+                result,
+                size,
+            } => {
+                let paths = handoff::deliver_trace(self, &result, size)?;
+                Ok(json!({ "ok": true, "paths": paths, "preset": preset, "mode": "vector" }))
+            }
+        }
+    }
+
+    /// One of the agent's tool calls, answered through its reply channel (long tools answer when
+    /// their job result is applied).
+    fn handle_tool_request(&mut self, request: ToolRequest) {
+        let ToolRequest {
+            name,
+            arguments,
+            reply,
+        } = request;
+        if name == tools::SWITCH_MODE {
+            let answer = match tools::parse_mode(arguments["mode"].as_str().unwrap_or_default()) {
+                Some(mode) => {
+                    self.set_mode(mode);
+                    Ok(json!({ "ok": true, "mode": mode.label().to_lowercase() }))
+                }
+                None => Err("mode must be photo, vector or layout".to_owned()),
+            };
+            let _ = reply.send(answer);
+            return;
+        }
+        let Some(kind) = ToolKind::from_tool_name(&name) else {
+            let _ = reply.send(Err(format!("unknown tool {name}")));
+            return;
+        };
+        self.ai.open = true;
+        if let Err(e) = self.start_tool(kind, Some(reply.clone()), Some(&arguments)) {
+            self.ai.push_log(format!("agent {}: {e}", kind.label()));
+            let _ = reply.send(Err(e));
+        }
+    }
 
     /// Ctrl+1/2/3 switch modes. Consumed before the active editor sees the frame's input.
     fn handle_shortcuts(&mut self, ctx: &egui::Context) {
@@ -418,6 +695,7 @@ impl eframe::App for ShellApp {
             }
             Mode::Layout => self.ensure_layout().logic(ctx),
         }
+        self.service_ai(ctx);
     }
 
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
@@ -443,6 +721,10 @@ impl eframe::App for ShellApp {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         sync_window_title(ui.ctx());
         self.top_bar(ui);
+        let actions = self.ai_dock(ui);
+        for action in actions {
+            self.run_ai_action(action);
+        }
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(ui, |ui| self.editor_area(ui, frame));

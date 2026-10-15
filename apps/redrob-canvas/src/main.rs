@@ -4,6 +4,8 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
+mod ai;
+mod handoff;
 mod services;
 mod shell;
 
