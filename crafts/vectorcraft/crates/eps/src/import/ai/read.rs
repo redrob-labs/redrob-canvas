@@ -39,14 +39,14 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use kurbo::{Affine, BezPath, PathEl, Point, Rect};
-use vectorcraft_color::gradient::Gradient;
-use vectorcraft_color::swatch::Swatch;
-use vectorcraft_color::{BlendMode, Paint};
-use vectorcraft_doc::{
+use redrob_vector_color::gradient::Gradient;
+use redrob_vector_color::swatch::Swatch;
+use redrob_vector_color::{BlendMode, Paint};
+use redrob_vector_doc::{
     Appearance, AppearanceItem, Artboard, ColorMode, Dash, Document, FillLayer, ImageBlob, ImageObject, Knockout, LayerColor, LineCap, LineJoin,
     LinkInfo, Node, NodeId, NodeKind, PatternDef, StrokeLayer,
 };
-use vectorcraft_geom::{FillRule, PathData};
+use redrob_vector_geom::{FillRule, PathData};
 
 use super::super::ate::CANVAS_CENTRE;
 use super::lex::{Lexer, Tok};
@@ -192,7 +192,7 @@ struct GState {
 
 impl Default for GState {
     fn default() -> Self {
-        let black = Paint::solid(vectorcraft_color::Color::BLACK);
+        let black = Paint::solid(redrob_vector_color::Color::BLACK);
         Self {
             fill: black.clone(),
             stroke: black,
@@ -1196,8 +1196,8 @@ impl<'a> Reader<'a> {
             return Ok(());
         }
         let target = self.space().transform_rect_bbox(art_box);
-        let opts = vectorcraft_pdf::ImportOptions { layers: false, ..Default::default() };
-        let read = match vectorcraft_pdf::import_with_report(&pdf, &opts) {
+        let opts = redrob_vector_pdf::ImportOptions { layers: false, ..Default::default() };
+        let read = match redrob_vector_pdf::import_with_report(&pdf, &opts) {
             Ok(r) => r,
             Err(e) => {
                 self.warn(&format!("{NON_NATIVE_ART_UNREAD} ({e})"));
@@ -1205,7 +1205,7 @@ impl<'a> Reader<'a> {
             }
         };
         let mut art: Vec<Node> = read.document.layers.iter().filter_map(|l| l.children()).flatten().map(|n| n.as_ref().clone()).collect();
-        let Some(bbox) = art.iter().fold(None, |acc, n| vectorcraft_geom::union_opt(acc, n.geometric_bounds())) else { return Ok(()) };
+        let Some(bbox) = art.iter().fold(None, |acc, n| redrob_vector_geom::union_opt(acc, n.geometric_bounds())) else { return Ok(()) };
         if bbox.width() <= 0.0 || bbox.height() <= 0.0 {
             return Ok(());
         }
@@ -1318,7 +1318,7 @@ impl<'a> Reader<'a> {
         let at = if n.len() <= 10 { 6 } else { 7 };
         let index = n.get(at).copied().unwrap_or(0.0);
         let rgb = |i: usize| n.get(at + i).map_or(0, |v| v.clamp(0.0, 255.0) as u8);
-        a.color = Some(if (0.0..vectorcraft_doc::LAYER_COLORS.len() as f64).contains(&index) && index.fract() == 0.0 {
+        a.color = Some(if (0.0..redrob_vector_doc::LAYER_COLORS.len() as f64).contains(&index) && index.fract() == 0.0 {
             LayerColor::Preset(index as u8)
         } else {
             LayerColor::Custom([rgb(1), rgb(2), rgb(3)])
@@ -1356,8 +1356,8 @@ impl<'a> Reader<'a> {
     fn color(&mut self, w: &str, vals: &[V]) {
         let Some((p, named)) = paint::color_op(w, vals) else { return };
         match p.color() {
-            Some(vectorcraft_color::Color::Rgb { .. }) => self.rgb_colors += 1,
-            Some(vectorcraft_color::Color::Cmyk { .. }) => self.cmyk_colors += 1,
+            Some(redrob_vector_color::Color::Rgb { .. }) => self.rgb_colors += 1,
+            Some(redrob_vector_color::Color::Cmyk { .. }) => self.cmyk_colors += 1,
             _ => {}
         }
         if let Some(n) = named {
@@ -1832,7 +1832,7 @@ impl<'a> Reader<'a> {
         }
         if self.color_model.unwrap_or(self.cmyk_colors > self.rgb_colors) {
             doc.color_mode = ColorMode::Cmyk;
-            let (swatches, groups) = vectorcraft_color::default_swatches(ColorMode::Cmyk.model());
+            let (swatches, groups) = redrob_vector_color::default_swatches(ColorMode::Cmyk.model());
             (doc.swatches, doc.swatch_groups) = (swatches.into(), groups.into());
         }
         for n in &self.spots {
@@ -2029,7 +2029,7 @@ fn two(v: &str) -> Option<(f64, f64)> {
 /// A CMYK sample in RGB.
 fn cmyk_rgb([c, m, y, k]: [u8; 4]) -> [u8; 3] {
     let f = |v: u8| f32::from(v) / 255.0;
-    let rgb = vectorcraft_color::Color::cmyk(f(c), f(m), f(y), f(k)).to_rgba8(1.0);
+    let rgb = redrob_vector_color::Color::cmyk(f(c), f(m), f(y), f(k)).to_rgba8(1.0);
     [rgb[0], rgb[1], rgb[2]]
 }
 

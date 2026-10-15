@@ -10,8 +10,8 @@
 use std::sync::mpsc::{Receiver, TryRecvError};
 
 use egui::ColorImage;
-use photocraft_engine::edit_menu_cmds::ContentAwareScalePreview;
-use photocraft_engine::jobs::JobCtx;
+use redrob_photo_engine::edit_menu_cmds::ContentAwareScalePreview;
+use redrob_photo_engine::jobs::JobCtx;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -77,7 +77,7 @@ pub fn begin(app: &mut PhotocraftApp, ctx: &egui::Context) -> Result<Value, Stri
     if app.ui.transform.is_some() {
         return Err("Commit or cancel the transform first".into());
     }
-    if let Some(Err(why)) = photocraft_engine::commands::find(COMMAND).map(|c| (c.enabled)(&app.session)) {
+    if let Some(Err(why)) = redrob_photo_engine::commands::find(COMMAND).map(|c| (c.enabled)(&app.session)) {
         return Err(why);
     }
     // The command's own checks and area (the selection's bounds, else the layer's content).
@@ -181,7 +181,7 @@ pub fn tick(app: &mut PhotocraftApp, ctx: &egui::Context) {
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let surf = preview.run(&work).map_err(|e| e.to_string())?;
             let [w, h] = preview.size();
-            Ok(crate::transform_tex::read_surface(&surf, None, photocraft_geom::Rect::from_xywh(0, 0, w, h), usize::MAX).0)
+            Ok(crate::transform_tex::read_surface(&surf, None, redrob_photo_geom::Rect::from_xywh(0, 0, w, h), usize::MAX).0)
         }))
         .unwrap_or_else(|_| Err("Content-Aware Scale preview failed".into()));
         let _ = tx.send(result);
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn menu_opens_a_scale_box_and_enter_commits_one_step() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         app.run("file.new", json!({"width": 64, "height": 48})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();

@@ -4,7 +4,7 @@
 //! They recolour what an object paints with, non-destructively: its fills and strokes (solid
 //! colours and gradient stops), type, gradient meshes, embedded images and, on a group or layer,
 //! every member — through the colour visitor the Edit Colors commands use
-//! ([`vectorcraft_doc::recolor`]). Each colour keeps its colour model. An effect on one fill or
+//! ([`redrob_vector_doc::recolor`]). Each colour keeps its colour model. An effect on one fill or
 //! stroke recolours that paint only. [`adjust`] evaluates them, innermost first and each list in
 //! stack order; the renderer draws the result (caching recoloured copies of embedded images) and
 //! [`crate::bake_document`] writes it for export, recoloured images as new embedded images.
@@ -12,10 +12,10 @@
 
 use std::sync::Arc;
 
+use redrob_vector_doc::color::{Color, Paint, keep_model};
+use redrob_vector_doc::recolor::{ColorVisitor, Reach, map_paint, recolor_node};
+use redrob_vector_doc::{Document, Effect, Node, NodeKind};
 use serde_json::Value;
-use vectorcraft_doc::color::{Color, Paint, keep_model};
-use vectorcraft_doc::recolor::{ColorVisitor, Reach, map_paint, recolor_node};
-use vectorcraft_doc::{Document, Effect, Node, NodeKind};
 
 use crate::merged_params;
 use crate::raster::color_param;
@@ -418,9 +418,9 @@ pub fn adjust_in_document(d: &mut Document, n: &Node) -> Option<Node> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use redrob_vector_doc::{Appearance, NodeId};
+    use redrob_vector_geom::{Rect, shapes};
     use serde_json::json;
-    use vectorcraft_doc::{Appearance, NodeId};
-    use vectorcraft_geom::{Rect, shapes};
 
     fn map(id: &str, params: Value) -> ColorMap {
         color_map(&[Effect { id: id.into(), params, visible: true }]).unwrap()

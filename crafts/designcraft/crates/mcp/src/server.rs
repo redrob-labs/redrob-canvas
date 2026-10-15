@@ -26,8 +26,8 @@ execute type.char / style.paragraph.apply → render_page to look at the result.
 (ids, bounds), stories (overset) and styles. place_image puts a picture on the page.";
 
 /// Resource URIs.
-pub const DOC_URI: &str = "designcraft://document";
-pub const COMMANDS_URI: &str = "designcraft://commands";
+pub const DOC_URI: &str = "redrob-layout://document";
+pub const COMMANDS_URI: &str = "redrob-layout://commands";
 
 /// An MCP server bound to one backend.
 pub struct Server {
@@ -134,13 +134,13 @@ impl Server {
                 Ok(json!({
                     "protocolVersion": version,
                     "capabilities": {"tools": {}, "resources": {}},
-                    "serverInfo": {"name": "designcraft", "title": "Redrob Canvas", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": designcraft_engine::links::APP_PAGE},
+                    "serverInfo": {"name": "designcraft", "title": "Redrob Canvas", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": redrob_layout_engine::links::APP_PAGE},
                     "instructions": format!(
                         "{INSTRUCTIONS} Backend: {}. Community: {} (Discord), {} (app page), {} (source). The `app.links` command returns these links.",
                         self.backend.describe(),
-                        designcraft_engine::links::DISCORD,
-                        designcraft_engine::links::APP_PAGE,
-                        designcraft_engine::links::GITHUB
+                        redrob_layout_engine::links::DISCORD,
+                        redrob_layout_engine::links::APP_PAGE,
+                        redrob_layout_engine::links::GITHUB
                     ),
                 }))
             }
@@ -158,6 +158,9 @@ impl Server {
             "resources/templates/list" => Ok(json!({"resourceTemplates": []})),
             "resources/read" => {
                 let uri = params.get("uri").and_then(Value::as_str).ok_or((INVALID_PARAMS, "missing `uri`".to_string()))?;
+                // A client built against the upstream server still names its resources by the old scheme.
+                let legacy = uri.strip_prefix("designcraft://").map(|rest| format!("redrob-layout://{rest}")); // legacy: old URI scheme still read
+                let uri = legacy.as_deref().unwrap_or(uri);
                 let v = match uri {
                     DOC_URI => self.backend.call("document.inspect", json!({})),
                     COMMANDS_URI => self.backend.call("engine.commands", json!({})),

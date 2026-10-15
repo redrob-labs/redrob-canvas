@@ -1,6 +1,6 @@
+use redrob_vector_doc::Effect;
+use redrob_vector_geom::{PathData, Point, Rect, Shape, SubPath, shapes};
 use serde_json::{Value, json};
-use vectorcraft_doc::Effect;
-use vectorcraft_geom::{PathData, Point, Rect, Shape, SubPath, shapes};
 
 use super::*;
 
@@ -337,12 +337,12 @@ fn zigzag_on_a_circle_is_regular() {
 /// #1554 on an uneven curve: the ridges divide its length, not its parameter, into equal parts.
 #[test]
 fn zigzag_spaces_ridges_by_length_on_an_uneven_curve() {
-    use vectorcraft_geom::kurbo::{ParamCurve, ParamCurveArclen, ParamCurveNearest};
+    use redrob_vector_geom::kurbo::{ParamCurve, ParamCurveArclen, ParamCurveNearest};
     let (a, b) = (Point::new(0.0, 0.0), Point::new(300.0, 0.0));
     let curve = PathData::single(SubPath::new(
         vec![
-            vectorcraft_geom::Anchor::with_handles(a, a, Point::new(10.0, 40.0)),
-            vectorcraft_geom::Anchor::with_handles(b, Point::new(100.0, 200.0), b),
+            redrob_vector_geom::Anchor::with_handles(a, a, Point::new(10.0, 40.0)),
+            redrob_vector_geom::Anchor::with_handles(b, Point::new(100.0, 200.0), b),
         ],
         false,
     ));
@@ -366,7 +366,7 @@ fn offset_path_grows_and_shrinks() {
 
 #[test]
 fn outline_stroke_uses_context_stroke() {
-    let st = vectorcraft_doc::StrokeLayer::new(vectorcraft_color::Paint::solid(vectorcraft_color::Color::BLACK), 10.0);
+    let st = redrob_vector_doc::StrokeLayer::new(redrob_vector_color::Paint::solid(redrob_vector_color::Color::BLACK), 10.0);
     let ctx = GeomContext { stroke: Some(&st), ..Default::default() };
     let out = apply_geometry_with(&[fx("path.outlineStroke", json!({}))], &square(), Rect::new(0.0, 0.0, 100.0, 100.0), &ctx);
     let b = out.bounds().unwrap();
@@ -420,11 +420,11 @@ fn scribble_does_not_cross_holes() {
     let out = run("stylize.scribble", params, &u).to_bezpath();
     for x in [40.0, 50.0, 60.0] {
         for y in [12.5, 32.5, 52.5] {
-            assert_eq!(vectorcraft_geom::kurbo::Shape::winding(&out, Point::new(x, y)), 0, "scribble covers the notch at ({x}, {y})");
+            assert_eq!(redrob_vector_geom::kurbo::Shape::winding(&out, Point::new(x, y)), 0, "scribble covers the notch at ({x}, {y})");
         }
     }
     // The bar below the notch is still hatched.
-    assert_ne!(vectorcraft_geom::kurbo::Shape::winding(&out, Point::new(50.0, 82.5)), 0);
+    assert_ne!(redrob_vector_geom::kurbo::Shape::winding(&out, Point::new(50.0, 82.5)), 0);
 }
 
 #[test]
@@ -463,7 +463,7 @@ fn raster_effects_parse_and_outset() {
     assert_eq!(r.len(), 5);
     match &r[0] {
         RasterFx::DropShadow { mode, opacity, dx, dy, blur, color } => {
-            assert_eq!(*mode, vectorcraft_doc::color::BlendMode::Multiply);
+            assert_eq!(*mode, redrob_vector_doc::color::BlendMode::Multiply);
             assert!(close(*opacity as f64, 0.5, 1e-6));
             assert_eq!((*dx, *dy, *blur), (10.0, -4.0, 6.0));
             assert_eq!(color.to_rgb(), [1.0, 0.0, 0.0]);
@@ -471,13 +471,13 @@ fn raster_effects_parse_and_outset() {
         other => panic!("{other:?}"),
     }
     assert!(matches!(r[2], RasterFx::InnerGlow { center: true, .. }));
-    assert!(close(outset(&list, vectorcraft_geom::Rect::ZERO), 10.0 + 9.0, 1e-9));
-    assert_eq!(outset(&[], vectorcraft_geom::Rect::ZERO), 0.0);
+    assert!(close(outset(&list, redrob_vector_geom::Rect::ZERO), 10.0 + 9.0, 1e-9));
+    assert_eq!(outset(&[], redrob_vector_geom::Rect::ZERO), 0.0);
 }
 
 #[test]
 fn blend_mode_names() {
-    use vectorcraft_doc::color::BlendMode;
+    use redrob_vector_doc::color::BlendMode;
     assert_eq!(raster::blend_mode("Color-Burn"), BlendMode::ColorBurn);
     assert_eq!(raster::blend_mode("screen"), BlendMode::Screen);
     assert_eq!(raster::blend_mode("???"), BlendMode::Normal);

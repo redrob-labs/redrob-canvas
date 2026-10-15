@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-tools"
+name = "redrob-vector-tools"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,15 +9,15 @@ description = "VectorCraft tool state machines: pointer events in, commands and 
 workspace = true
 
 [dependencies]
-vectorcraft-geom = { workspace = true }
-vectorcraft-color = { workspace = true }
-vectorcraft-doc = { workspace = true }
-vectorcraft-pathops = { workspace = true }
-vectorcraft-text = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-pathops = { workspace = true }
+redrob-vector-text = { workspace = true }
 kurbo = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
 image = { workspace = true }
-vectorcraft-text = { workspace = true, features = ["test-fonts"] }
+redrob-vector-text = { workspace = true, features = ["test-fonts"] }

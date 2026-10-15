@@ -4,9 +4,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use redrob_vector_engine::Session;
+use redrob_vector_engine::cmd::fileio;
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::fileio;
 
 use super::tests_export::{frame, kind, set};
 use super::*;
@@ -154,7 +154,7 @@ fn the_web_downloads_one_zip_or_the_file() {
         let log = log.borrow();
         let [(name, zip)] = log.as_slice() else { panic!("one download: {:?}", log.iter().map(|(n, _)| n).collect::<Vec<_>>()) };
         assert_eq!(name, "Untitled-1.zip");
-        assert_eq!(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap(), zip);
+        assert_eq!(&redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap(), zip);
     }
     assert_eq!(r["files"], json!(["Artboard-1.png", "Artboard-1@2x.jpg", "Artboard-2.png", "Artboard-2@2x.jpg"]));
     // One file downloads as itself, with the format's settings.

@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-mcp"
+name = "redrob-vector-mcp"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,19 +9,19 @@ description = "VectorCraft MCP server: JSON-RPC 2.0 over stdio, driving a runnin
 workspace = true
 
 [dependencies]
-vectorcraft-engine = { workspace = true }
-vectorcraft-render = { workspace = true }
-vectorcraft-svg = { workspace = true }
-vectorcraft-format = { workspace = true }
-vectorcraft-tools = { workspace = true }
-vectorcraft-geom = { workspace = true }
-vectorcraft-doc = { workspace = true }
+redrob-vector-engine = { workspace = true }
+redrob-vector-render = { workspace = true }
+redrob-vector-svg = { workspace = true }
+redrob-vector-format = { workspace = true }
+redrob-vector-tools = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-doc = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 
 image = { workspace = true }
 
 [dev-dependencies]
-vectorcraft-testkit = { workspace = true }
+redrob-vector-testkit = { workspace = true }
 proptest = { workspace = true }
 socket2 = { workspace = true }

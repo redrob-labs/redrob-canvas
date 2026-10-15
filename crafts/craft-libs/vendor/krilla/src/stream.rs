@@ -27,10 +27,11 @@
 use std::borrow::Cow;
 use std::ops::DerefMut;
 
-use flate2::write::ZlibEncoder;
 use flate2::Compression;
+use flate2::write::ZlibEncoder;
 use pdf_writer::{Array, Dict, Name};
 
+use crate::SerializeSettings;
 use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
@@ -38,7 +39,6 @@ use crate::geom::{Rect, Transform};
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializeContext;
 use crate::surface::Surface;
-use crate::SerializeSettings;
 
 /// A stream.
 ///
@@ -65,13 +65,7 @@ impl Stream {
         resource_dictionary: ResourceDictionary,
         uses_mask: bool,
     ) -> Self {
-        Self {
-            content,
-            bbox,
-            validation_errors,
-            resource_dictionary,
-            uses_mask,
-        }
+        Self { content, bbox, validation_errors, resource_dictionary, uses_mask }
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -97,15 +91,8 @@ pub struct StreamBuilder<'a> {
 }
 
 impl<'a> StreamBuilder<'a> {
-    pub(crate) fn new(
-        sc: &'a mut SerializeContext,
-        chunk_container: &'a mut ChunkContainer,
-    ) -> Self {
-        Self {
-            sc,
-            chunk_container,
-            stream: Stream::empty(),
-        }
+    pub(crate) fn new(sc: &'a mut SerializeContext, chunk_container: &'a mut ChunkContainer) -> Self {
+        Self { sc, chunk_container, stream: Stream::empty() }
     }
 
     /// Get the surface of the stream builder.
@@ -116,13 +103,7 @@ impl<'a> StreamBuilder<'a> {
             self.stream = stream;
         });
 
-        Surface::new(
-            self.sc,
-            self.chunk_container,
-            ContentBuilder::new(Transform::identity(), true, self.sc),
-            None,
-            finish_fn,
-        )
+        Surface::new(self.sc, self.chunk_container, ContentBuilder::new(Transform::identity(), true, self.sc), None, finish_fn)
     }
 
     /// Turn the stream builder into a stream.
@@ -192,9 +173,7 @@ impl StreamFilters {
     pub(crate) fn add(&mut self, stream_filter: StreamFilter) {
         match self {
             StreamFilters::None => *self = StreamFilters::Single(stream_filter),
-            StreamFilters::Single(cur) => {
-                *self = StreamFilters::Multiple(vec![*cur, stream_filter])
-            }
+            StreamFilters::Single(cur) => *self = StreamFilters::Multiple(vec![*cur, stream_filter]),
             StreamFilters::Multiple(cur) => cur.push(stream_filter),
         }
     }
@@ -216,24 +195,14 @@ pub(crate) struct FilterStreamBuilder<'a> {
 
 impl<'a> FilterStreamBuilder<'a> {
     fn empty(content: &'a [u8]) -> Self {
-        Self {
-            content: Cow::Borrowed(content),
-            filters: StreamFilters::None,
-            is_binary: false,
-        }
+        Self { content: Cow::Borrowed(content), filters: StreamFilters::None, is_binary: false }
     }
 
     fn binary(content: &'a [u8]) -> Self {
-        Self {
-            is_binary: true,
-            ..Self::empty(content)
-        }
+        Self { is_binary: true, ..Self::empty(content) }
     }
 
-    pub(crate) fn new_from_content_stream(
-        content: &'a [u8],
-        serialize_settings: &SerializeSettings,
-    ) -> Self {
+    pub(crate) fn new_from_content_stream(content: &'a [u8], serialize_settings: &SerializeSettings) -> Self {
         let mut filter_stream = Self::empty(content);
 
         if serialize_settings.compress_content_streams {
@@ -261,9 +230,7 @@ impl<'a> FilterStreamBuilder<'a> {
         let filter_stream = Self::new_from_binary_data(content);
 
         const MAX_COMPRESSED_SIZE: usize = 75;
-        if content.is_empty()
-            || 100 * filter_stream.content.len() / content.len() > MAX_COMPRESSED_SIZE
-        {
+        if content.is_empty() || 100 * filter_stream.content.len() / content.len() > MAX_COMPRESSED_SIZE {
             return Self::binary(content);
         }
 
@@ -286,16 +253,12 @@ impl<'a> FilterStreamBuilder<'a> {
     pub(crate) fn finish(mut self, serialize_settings: &SerializeSettings) -> FilterStream<'a> {
         if serialize_settings.ascii_compatible
             && !self.content.is_empty()
-            && (self.filters.is_binary()
-                || (self.is_binary && self.content.iter().any(|byte| !byte.is_ascii())))
+            && (self.filters.is_binary() || (self.is_binary && self.content.iter().any(|byte| !byte.is_ascii())))
         {
             self.add_filter(StreamFilter::AsciiHex);
         }
 
-        FilterStream {
-            content: self.content,
-            filters: self.filters,
-        }
+        FilterStream { content: self.content, filters: self.filters }
     }
 
     fn add_filter(&mut self, filter: StreamFilter) {
@@ -328,10 +291,7 @@ impl FilterStream<'_> {
                 dict.deref_mut().pair(Name(b"Filter"), filter.to_name());
             }
             StreamFilters::Multiple(filters) => {
-                dict.deref_mut()
-                    .insert(Name(b"Filter"))
-                    .start::<Array>()
-                    .items(filters.iter().map(|f| f.to_name()).rev());
+                dict.deref_mut().insert(Name(b"Filter")).start::<Array>().items(filters.iter().map(|f| f.to_name()).rev());
             }
         }
     }

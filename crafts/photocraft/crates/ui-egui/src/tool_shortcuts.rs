@@ -36,7 +36,7 @@ mod tests {
 
     #[test]
     fn every_toolbar_tool_has_a_unique_live_shortcut_row() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let ctx = egui::Context::default();
         let items = crate::prefs_ui::shortcut_items(&app);
         let mut ids = std::collections::HashSet::new();
@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn toolbar_hints_follow_assignments_removal_and_reset() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         assert_eq!(shortcut(&app, Tool::Pencil).as_deref(), Some("B"));
         assert_eq!(shortcut(&app, Tool::SingleRowMarquee), None);
         app.run("prefs.set", json!({"path": "shortcuts.tools.select.pencil", "value": "F6"})).unwrap();
@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn a_remapped_tool_letter_does_not_steal_text_input() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("prefs.set", json!({"path": "shortcuts.tools.select.pencil", "value": "Q"})).unwrap();
         let mut h = egui_kittest::Harness::builder().build_ui_state(
             |ui, app: &mut PhotocraftApp| {

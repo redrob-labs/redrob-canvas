@@ -1,9 +1,9 @@
 //! Print presets in the UI: the Print dialog's preset list and Save Preset…, and Edit → Print
 //! Presets (New…, Edit…, Delete, Import…, Export…) with its preset editor.
 
+use redrob_vector_engine::Session;
+use redrob_vector_engine::cmd::printpresets::DEFAULT_PRESET;
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::printpresets::DEFAULT_PRESET;
 
 use super::print::{KIND, PRESET_KIND, SECTIONS};
 use super::print_presets::{self, Action};
@@ -53,7 +53,7 @@ fn the_print_dialog_saves_and_loads_presets() {
     assert_eq!(field(&app, "preset"), "Proofs");
     assert!(field(&app, "__savePresetAs").is_null());
     let saved = &app.session.prefs.print_presets[0].settings;
-    assert_eq!((saved.copies, saved.media), (4, vectorcraft_pdf::Media::A4));
+    assert_eq!((saved.copies, saved.media), (4, redrob_vector_pdf::Media::A4));
     // Setting `preset` (the list, or an agent) loads that preset's settings.
     set(&mut app, "preset", json!(DEFAULT_PRESET));
     frame(&mut app);

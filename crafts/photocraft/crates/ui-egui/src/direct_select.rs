@@ -16,15 +16,15 @@
 //!   segments) and the Pen carries on drawing from its last anchor once ⌘/Ctrl is let go; a
 //!   ⌘/Ctrl-press anywhere else ends it, as in Photoshop (#4022).
 //!
-//! A drag previews with `photocraft_vector::edit` and commits once on release through the engine
+//! A drag previews with `redrob_photo_vector::edit` and commits once on release through the engine
 //! (`path.moveAnchors`, `path.moveHandle`, `path.bendSegment`, `path.convertPoint`): one history
 //! step per drag, and the same commands drive it over MCP and the control channel. The Pen path
 //! being drawn is not in the document yet: its edits apply to it directly, without a command.
 
 use egui::{Color32, Modifiers, Pos2};
-use photocraft_doc::vector::Path;
-use photocraft_geom::Point;
-use photocraft_vector::edit::{self, Handle, Hit};
+use redrob_photo_doc::vector::Path;
+use redrob_photo_geom::Point;
+use redrob_photo_vector::edit::{self, Handle, Hit};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -181,7 +181,7 @@ pub(crate) fn candidates(app: &PhotocraftApp) -> Vec<(PathRef, Path)> {
             if !l.visible || !(1..=path.len()).all(|n| st.doc.layer_at(&path[..n]).is_some_and(|a| a.visible)) {
                 continue;
             }
-            if let photocraft_doc::LayerContent::Shape(sh) = &l.content
+            if let redrob_photo_doc::LayerContent::Shape(sh) = &l.content
                 && !out.iter().any(|(r, _)| *r == PathRef::Layer(l.id.0))
             {
                 out.push((PathRef::Layer(l.id.0), sh.path.clone()));
@@ -191,7 +191,7 @@ pub(crate) fn candidates(app: &PhotocraftApp) -> Vec<(PathRef, Path)> {
     out
 }
 
-fn retracted(k: &photocraft_doc::Knot, h: Handle) -> bool {
+fn retracted(k: &redrob_photo_doc::Knot, h: Handle) -> bool {
     let c = if h == Handle::In { k.in_ctrl } else { k.out_ctrl };
     (c.x - k.anchor.x).abs() < 1e-9 && (c.y - k.anchor.y).abs() < 1e-9
 }

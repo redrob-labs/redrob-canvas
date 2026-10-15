@@ -1,8 +1,8 @@
 //! MCP tool definitions (names, descriptions, JSON Schemas) and their implementations on top of a
 //! [`Backend`].
 
+use redrob_vector_engine::cmd::fileio::{ARTBOARD_PARAMS, FORMATS, OPEN_EXTS, SAVE_FORMATS, format};
 use serde_json::{Map, Value, json};
-use vectorcraft_engine::cmd::fileio::{ARTBOARD_PARAMS, FORMATS, OPEN_EXTS, SAVE_FORMATS, format};
 
 use crate::backend::Backend;
 
@@ -323,7 +323,7 @@ pub fn tool_definitions() -> Vec<Value> {
             "save_file",
             "Save file",
             &format!(
-                "Save the active document with the engine's document.save: by default to its own file in its own format (native .vectorcraft unless it was opened from or saved as SVG, PDF or a restorable .ai). With `path`, the extension picks the format: .{}. Other formats are exports (see export). The reply's `format` says what was written and `warnings` what that format loses.",
+                "Save the active document with the engine's document.save: by default to its own file in its own format (native .rvector unless it was opened from or saved as SVG, PDF or a restorable .ai). With `path`, the extension picks the format: .{}. Other formats are exports (see export). The reply's `format` says what was written and `warnings` what that format loses.",
                 save_extensions().join(", .")
             ),
             obj(json!({"path": string("Destination; its extension picks the format (default: the document's own file)")}), &[]),
@@ -685,7 +685,7 @@ fn screenshot(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
         b.call("ui.render", p)?
     };
     let png = match r.get("pngBase64").and_then(Value::as_str) {
-        Some(b64) => vectorcraft_format::base64_decode(b64).ok_or("the backend returned bad base64")?,
+        Some(b64) => redrob_vector_format::base64_decode(b64).ok_or("the backend returned bad base64")?,
         // An app from before `data` wrote the file without sending the image: read it back
         // (loopback: the same machine).
         None => match path {
@@ -715,7 +715,7 @@ fn old_window_capture(b: &mut dyn Backend) -> Result<ToolResult, String> {
 fn image_result(png: &[u8], info: Value) -> ToolResult {
     ToolResult {
         content: vec![
-            json!({"type": "image", "data": vectorcraft_format::base64_encode(png), "mimeType": "image/png"}),
+            json!({"type": "image", "data": redrob_vector_format::base64_encode(png), "mimeType": "image/png"}),
             json!({"type": "text", "text": info.to_string()}),
         ],
         is_error: false,
@@ -909,7 +909,7 @@ pub fn call_tool(b: &mut dyn Backend, name: &str, args: &Value) -> ToolResult {
         Value::Null => &empty,
         _ => return ToolResult::error("tool arguments must be a JSON object"),
     };
-    match vectorcraft_engine::guard::catch_panic(|| dispatch(b, name, a)) {
+    match redrob_vector_engine::guard::catch_panic(|| dispatch(b, name, a)) {
         Ok(Ok(r)) => r,
         Ok(Err(e)) => ToolResult::error(format!("{name}: {e}")),
         Err(e) => ToolResult::error(format!("internal error in `{name}`: {e} (please report this bug)")),
@@ -948,7 +948,7 @@ fn command_batch(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
     // pile up an unbounded answer (#1727).
     let mut kept_bytes = 0usize;
     for step in steps {
-        let result = vectorcraft_engine::guard::catch_panic(|| {
+        let result = redrob_vector_engine::guard::catch_panic(|| {
             let args = step.as_object().ok_or("each step must be an object")?;
             if args.keys().any(|k| k != "id" && k != "params") {
                 return Err("unknown step argument (expected id, params)".into());
@@ -956,7 +956,7 @@ fn command_batch(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
             let id = req_str(args, "id")?;
             let params = match args.get("params") {
                 None | Some(Value::Null) => json!({}),
-                Some(v @ Value::Object(_)) => vectorcraft_engine::steps::resolve(v, &values)?,
+                Some(v @ Value::Object(_)) => redrob_vector_engine::steps::resolve(v, &values)?,
                 Some(_) => return Err("`params` must be an object".into()),
             };
             b.call("engine.execute", json!({"command":id,"params":params}))
@@ -1024,7 +1024,7 @@ fn render_preview(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
     }
     let r = b.call("ui.render", json!({"scale":scale, "artboard": index}))?;
     let encoded = r.get("pngBase64").and_then(Value::as_str).ok_or("renderer returned no image")?;
-    let png = vectorcraft_format::base64_decode(encoded).ok_or("renderer returned bad base64")?;
+    let png = redrob_vector_format::base64_decode(encoded).ok_or("renderer returned bad base64")?;
     let img = image::load_from_memory_with_format(&png, image::ImageFormat::Png).map_err(|e| format!("read preview: {e}"))?;
     let img = img.thumbnail(max as u32, max as u32);
     let mut out = std::io::Cursor::new(Vec::new());

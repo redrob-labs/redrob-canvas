@@ -46,7 +46,7 @@ fn menu_item(texts: &[(String, egui::Rect)], s: &str) -> egui::Rect {
     texts.iter().find(|(t, _)| t.trim_start() == s).unwrap_or_else(|| panic!("`{s}` not in the menu: {texts:?}")).1
 }
 
-fn effects(app: &VectorcraftApp, item: Option<usize>) -> Vec<vectorcraft_doc::Effect> {
+fn effects(app: &VectorcraftApp, item: Option<usize>) -> Vec<redrob_vector_doc::Effect> {
     first_selected(app).unwrap().appearance.effects_at(item).cloned().unwrap_or_default()
 }
 
@@ -107,7 +107,7 @@ fn effect_rows_drag_to_reorder_and_into_an_item() {
     // Twist below Roughen.
     let below = text_rect(&texts, "Roughen").center() + egui::vec2(60.0, 9.0);
     drag(&ctx, &mut app, row_of(&texts, "Twist"), below, egui::Modifiers::NONE);
-    let ids = |fx: Vec<vectorcraft_doc::Effect>| fx.into_iter().map(|e| e.id).collect::<Vec<_>>();
+    let ids = |fx: Vec<redrob_vector_doc::Effect>| fx.into_iter().map(|e| e.id).collect::<Vec<_>>();
     assert_eq!(ids(effects(&app, None)), ["distort.roughen", "distort.twist"]);
     // Alt-dragging Twist onto the stroke row copies it into the stroke's effects.
     let texts = panel_frame(&ctx, &mut app, vec![], egui::Modifiers::NONE);

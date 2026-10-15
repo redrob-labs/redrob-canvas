@@ -50,15 +50,15 @@ pub fn write_backup(path: &Path, text: &str) -> io::Result<()> {
         if backup.exists() {
             std::fs::set_permissions(&backup, std::fs::Permissions::from_mode(mode))?;
         }
-        craft_atomic::WriteOptions::default()
-            .with_new_file_permissions(craft_atomic::NewFilePermissions::Private)
+        redrob_craft_atomic::WriteOptions::default()
+            .with_new_file_permissions(redrob_craft_atomic::NewFilePermissions::Private)
             .atomic_write(&backup, text.as_bytes())?;
         std::fs::set_permissions(&backup, std::fs::Permissions::from_mode(mode))
     }
     #[cfg(not(unix))]
     {
-        craft_atomic::WriteOptions::default()
-            .with_new_file_permissions(craft_atomic::NewFilePermissions::Private)
+        redrob_craft_atomic::WriteOptions::default()
+            .with_new_file_permissions(redrob_craft_atomic::NewFilePermissions::Private)
             .atomic_write(&backup, text.as_bytes())
     }
 }

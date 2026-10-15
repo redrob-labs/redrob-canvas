@@ -16,7 +16,7 @@ fn session() -> (Session, u64) {
 /// `file.print {p}` → (PDF bytes, its answer).
 fn print(s: &mut Session, p: Value) -> (Vec<u8>, Value) {
     let v = s.execute("file.print", &p).unwrap_or_else(|e| panic!("{p}: {e}"));
-    (vectorcraft_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap(), v)
+    (redrob_vector_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap(), v)
 }
 
 #[test]
@@ -35,16 +35,16 @@ fn setup_is_saved_with_the_document_as_one_undo_step() {
     assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1);
     // Saved in the native file, and gone again after undoing both steps.
     let doc = &s.doc().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save(doc, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(doc, false)).unwrap();
     assert_eq!(back.print_setup, doc.print_setup);
     assert!(back.print_setup.as_ref().is_some_and(|p| p["copies"] == 3));
     s.execute("edit.undo", &json!({})).unwrap();
     s.execute("edit.undo", &json!({})).unwrap();
     assert!(s.doc().unwrap().doc.print_setup.is_none());
     // Files from before print settings load without them.
-    let mut v: Value = serde_json::from_slice(&vectorcraft_format::save(&s.doc().unwrap().doc, false)).unwrap();
+    let mut v: Value = serde_json::from_slice(&redrob_vector_format::save(&s.doc().unwrap().doc, false)).unwrap();
     v.as_object_mut().unwrap().remove("print_setup");
-    assert!(vectorcraft_format::load(v.to_string().as_bytes()).unwrap().print_setup.is_none());
+    assert!(redrob_vector_format::load(v.to_string().as_bytes()).unwrap().print_setup.is_none());
 }
 
 #[test]
@@ -53,7 +53,7 @@ fn print_writes_the_saved_setup_with_overrides() {
     s.execute("print.setup", &json!({"settings": {"media": "a4", "scaling": "fit"}})).unwrap();
     let (bytes, v) = print(&mut s, json!({"settings": {"copies": 2}}));
     assert_eq!(v["pages"], 2);
-    let info = vectorcraft_pdf::info(&bytes, None).unwrap();
+    let info = redrob_vector_pdf::info(&bytes, None).unwrap();
     assert_eq!(info.pages.len(), 2);
     // A4 turned landscape for the wide artboard.
     assert_eq!((info.pages[0].width.round(), info.pages[0].height.round()), (842.0, 595.0));

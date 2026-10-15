@@ -208,7 +208,7 @@ mod tests {
         let got = drain();
         let ours = got.iter().find(|m| m["data"] == "hello world").unwrap_or_else(|| panic!("not in {got:?}"));
         assert_eq!(ours["level"], "warning");
-        assert!(ours["logger"].as_str().unwrap_or_default().starts_with("vectorcraft_mcp"), "{ours}");
+        assert!(ours["logger"].as_str().unwrap_or_default().starts_with("redrob_vector_mcp"), "{ours}");
 
         // Below the requested level stays out.
         set_level(Some("error")).ok();

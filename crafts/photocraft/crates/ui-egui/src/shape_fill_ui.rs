@@ -5,8 +5,8 @@
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use photocraft_color::Color;
-use photocraft_doc::{DocId, Document, Fill, LayerContent, LayerId};
+use redrob_photo_color::Color;
+use redrob_photo_doc::{DocId, Document, Fill, LayerContent, LayerId};
 use serde_json::{Map, Value, json};
 
 use crate::{PhotocraftApp, color_picker_ui};
@@ -107,7 +107,7 @@ pub(crate) fn display_doc(app: &mut PhotocraftApp, idx: usize) -> Option<(Arc<Do
     let mut doc = (*st.doc).clone();
     if let LayerContent::Shape(sh) = &mut doc.layer_mut(layer)?.content {
         sh.fill = Some(Fill::Solid(color));
-        photocraft_engine::vector_cmds::refresh_shape(&st.doc, sh);
+        redrob_photo_engine::vector_cmds::refresh_shape(&st.doc, sh);
     }
     let mut hash = std::collections::hash_map::DefaultHasher::new();
     (st.doc.id.0, st.revision, d.id, layer.0).hash(&mut hash);
@@ -115,7 +115,7 @@ pub(crate) fn display_doc(app: &mut PhotocraftApp, idx: usize) -> Option<(Arc<Do
         component.to_bits().hash(&mut hash);
     }
     let key = (1 << 46) | (hash.finish() & ((1 << 40) - 1));
-    let shown = Arc::new(photocraft_engine::mode_cmds::display_document(&doc).unwrap_or(doc));
+    let shown = Arc::new(redrob_photo_engine::mode_cmds::display_document(&doc).unwrap_or(doc));
     app.shape_fill_preview = Some(Preview { document: st.doc.id, revision: st.revision, dialog: d.id, layer, color, shown: shown.clone(), key });
     Some((shown, key))
 }

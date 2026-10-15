@@ -13,8 +13,8 @@ use serde_json::json;
 
 use crate::PhotocraftApp;
 use crate::state::Tool;
-use photocraft_doc::{Adjustment, LayerContent, LayerId};
-use photocraft_engine::adjust_params::CurvesEyedropper;
+use redrob_photo_doc::{Adjustment, LayerContent, LayerId};
+use redrob_photo_engine::adjust_params::CurvesEyedropper;
 
 /// An armed Properties eyedropper: on `layer`, for `point` ("black", "gray" or "white"), armed
 /// while `tool` was the current tool.

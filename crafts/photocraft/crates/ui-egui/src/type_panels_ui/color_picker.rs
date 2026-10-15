@@ -1,7 +1,7 @@
 //! A modal color transaction for a named text style; the canvas preview never edits the session.
 use std::sync::Arc;
 
-use photocraft_doc::{Color, DocId, Document};
+use redrob_photo_doc::{Color, DocId, Document};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
@@ -139,7 +139,7 @@ pub(crate) fn display_doc(app: &mut PhotocraftApp, idx: usize) -> Option<(Arc<Do
     }
     let key = (egui::Id::new((t.document.0, t.revision, d.id, t.kind.paragraph(), t.id, &color)).value() & ((1 << 60) - 1)) | (1 << 60);
     if app.text_style_preview.as_ref().map(|p| p.key) != Some(key) {
-        let shown = photocraft_engine::type_styles_cmds::preview_options(&st.doc, &json!({"id": t.id, "attrs": {"color": color}}), t.kind.paragraph())
+        let shown = redrob_photo_engine::type_styles_cmds::preview_options(&st.doc, &json!({"id": t.id, "attrs": {"color": color}}), t.kind.paragraph())
             .map(Arc::new)
             .map_err(|e| e.to_string());
         if let Err(error) = &shown {

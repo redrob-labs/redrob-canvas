@@ -7,7 +7,7 @@
 mod common;
 use common::Rng;
 use common::tiffgen::*;
-use photocraft_codecs::*;
+use redrob_photo_codecs::*;
 
 const ORDERS: [(bool, bool); 4] = [(true, false), (false, false), (true, true), (false, true)];
 

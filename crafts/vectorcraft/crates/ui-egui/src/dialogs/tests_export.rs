@@ -3,9 +3,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use redrob_vector_engine::Session;
+use redrob_vector_engine::cmd::fileio;
 use serde_json::json;
-use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::fileio;
 
 use super::*;
 use crate::Services;
@@ -160,7 +160,7 @@ fn svg_continues_in_svg_options_and_pdf_art_is_written_directly() {
     app.run("file.exportAs", json!({"format": "pdf"})).unwrap();
     let r = confirm(&mut app).unwrap();
     assert_eq!(r["path"], "/out/Untitled-1.pdf");
-    let pdf = vectorcraft_pdf::import(&written.borrow()[2].1).unwrap();
+    let pdf = redrob_vector_pdf::import(&written.borrow()[2].1).unwrap();
     assert_eq!((pdf.artboards[0].rect.width().round(), pdf.artboards[0].rect.height().round()), (30.0, 20.0), "the ellipse's bounds");
 }
 
@@ -237,7 +237,7 @@ fn pdf_artboards_continue_in_the_save_pdf_dialog() {
     assert!(written.borrow().is_empty());
     frame(&mut app);
     confirm(&mut app).unwrap();
-    let pdf = vectorcraft_pdf::import(&written.borrow()[0].1).unwrap();
+    let pdf = redrob_vector_pdf::import(&written.borrow()[0].1).unwrap();
     assert_eq!(pdf.artboards.len(), 2, "one page per artboard in the range");
 }
 

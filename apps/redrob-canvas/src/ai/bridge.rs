@@ -162,13 +162,13 @@ impl Capabilities {
 // Photo (photocraft)
 // ---------------------------------------------------------------------------------------------
 
-/// The Photo editor's document through `photocraft_engine::Session`.
+/// The Photo editor's document through `redrob_photo_engine::Session`.
 pub struct PhotoBridge<'a> {
-    pub session: &'a mut photocraft_engine::Session,
+    pub session: &'a mut redrob_photo_engine::Session,
 }
 
 impl<'a> PhotoBridge<'a> {
-    pub fn new(session: &'a mut photocraft_engine::Session) -> Self {
+    pub fn new(session: &'a mut redrob_photo_engine::Session) -> Self {
         Self { session }
     }
 
@@ -181,10 +181,10 @@ impl<'a> PhotoBridge<'a> {
 /// selected) read over the document bounds. `Surface::convert` is
 /// crafts/photocraft/crates/raster/src/lib.rs L930, `to_interleaved` L728.
 pub fn mask_from_selection(
-    selection: &photocraft_raster::Surface,
-    bounds: photocraft_geom::Rect,
+    selection: &redrob_photo_raster::Surface,
+    bounds: redrob_photo_geom::Rect,
 ) -> Option<Mask> {
-    let gray = photocraft_color::PixelFormat::GRAY8;
+    let gray = redrob_photo_color::PixelFormat::GRAY8;
     let bytes = if selection.format() == gray {
         selection.to_interleaved(bounds)
     } else {
@@ -195,10 +195,10 @@ pub fn mask_from_selection(
 
 /// photocraft's selection surface from a document-sized `redrob_ai::Mask`
 /// (`Surface::from_interleaved`, crafts/photocraft/crates/raster/src/lib.rs L704).
-pub fn selection_from_mask(mask: &Mask) -> photocraft_raster::Surface {
-    let rect = photocraft_geom::Rect::new(0, 0, mask.width as i32, mask.height as i32);
-    photocraft_raster::Surface::from_interleaved(
-        photocraft_color::PixelFormat::GRAY8,
+pub fn selection_from_mask(mask: &Mask) -> redrob_photo_raster::Surface {
+    let rect = redrob_photo_geom::Rect::new(0, 0, mask.width as i32, mask.height as i32);
+    redrob_photo_raster::Surface::from_interleaved(
+        redrob_photo_color::PixelFormat::GRAY8,
         rect,
         &mask.data,
     )
@@ -212,8 +212,8 @@ impl ModeBridge for PhotoBridge<'_> {
     fn snapshot(&mut self) -> Option<Rgba8Image> {
         let st = self.session.active()?;
         // `flatten(&Document) -> Buffer` (crafts/photocraft/crates/compose/src/lib.rs L323),
-        // `Buffer::to_rgba8()` (L61) gives photocraft_raster::Rgba8Image { width, height, pixels }.
-        let img = photocraft_compose::flatten(&st.doc).to_rgba8();
+        // `Buffer::to_rgba8()` (L61) gives redrob_photo_raster::Rgba8Image { width, height, pixels }.
+        let img = redrob_photo_compose::flatten(&st.doc).to_rgba8();
         Rgba8Image::new(img.width, img.height, img.pixels).ok()
     }
 
@@ -228,7 +228,7 @@ impl ModeBridge for PhotoBridge<'_> {
         if self.session.active().is_none() {
             return Err(BridgeError::NoDocument);
         }
-        let rect = photocraft_geom::Rect::new(
+        let rect = redrob_photo_geom::Rect::new(
             offset.0,
             offset.1,
             offset.0.saturating_add(img.width as i32),
@@ -237,9 +237,9 @@ impl ModeBridge for PhotoBridge<'_> {
         let name = name.to_owned();
         self.session
             .edit("AI layer", move |doc, active| {
-                let rgba8 = photocraft_color::PixelFormat::RGBA8;
+                let rgba8 = redrob_photo_color::PixelFormat::RGBA8;
                 let mut surface =
-                    photocraft_raster::Surface::from_interleaved(rgba8, rect, &img.data);
+                    redrob_photo_raster::Surface::from_interleaved(rgba8, rect, &img.data);
                 // New raster layers take the document's format
                 // (`Document::pixel_format`, crafts/photocraft/crates/doc/src/lib.rs ~L1000).
                 let want = doc.pixel_format();
@@ -248,8 +248,10 @@ impl ModeBridge for PhotoBridge<'_> {
                 }
                 // `Layer::new(name, LayerContent::Raster(surface))` (doc/src/lib.rs L672),
                 // `Document::insert_above(above, layer) -> LayerId` (L1168).
-                let layer =
-                    photocraft_doc::Layer::new(name, photocraft_doc::LayerContent::Raster(surface));
+                let layer = redrob_photo_doc::Layer::new(
+                    name,
+                    redrob_photo_doc::LayerContent::Raster(surface),
+                );
                 let id = doc.insert_above(*active, layer);
                 *active = Some(id);
                 Ok(())
@@ -352,16 +354,16 @@ impl ModeBridge for PhotoBridge<'_> {
 /// The Vector editor's document through `VectorcraftApp` (its session and the active view's
 /// artboard).
 pub struct VectorBridge<'a> {
-    pub app: &'a mut vectorcraft_ui_egui::VectorcraftApp,
+    pub app: &'a mut redrob_vector_ui_egui::VectorcraftApp,
 }
 
 impl<'a> VectorBridge<'a> {
-    pub fn new(app: &'a mut vectorcraft_ui_egui::VectorcraftApp) -> Self {
+    pub fn new(app: &'a mut redrob_vector_ui_egui::VectorcraftApp) -> Self {
         Self { app }
     }
 
     /// The active view's artboard rectangle in document points.
-    fn artboard_rect(&self) -> Option<vectorcraft_geom::Rect> {
+    fn artboard_rect(&self) -> Option<redrob_vector_geom::Rect> {
         let st = self.app.session.active()?;
         let index = self.app.view().map(|v| v.artboard).unwrap_or(0);
         let board = st
@@ -383,7 +385,7 @@ impl ModeBridge for VectorBridge<'_> {
         let st = self.app.session.active()?;
         // `Renderer::render_region(doc, region, scale, white) -> Rendered` (premultiplied), then
         // `Rendered::to_straight()` (crafts/vectorcraft/crates/render/src/lib.rs L782, L272).
-        let mut renderer = vectorcraft_render::Renderer::new();
+        let mut renderer = redrob_vector_render::Renderer::new();
         let rendered = renderer.render_region(&st.doc, rect, 1.0, false);
         Rgba8Image::new(rendered.width, rendered.height, rendered.to_straight()).ok()
     }
@@ -413,19 +415,19 @@ impl ModeBridge for VectorBridge<'_> {
                 // tests build it (crafts/vectorcraft/crates/engine/src/tests_build.rs L660).
                 doc.images.insert(
                     key.clone(),
-                    vectorcraft_doc::ImageBlob::new("image/png", png),
+                    redrob_vector_doc::ImageBlob::new("image/png", png),
                 );
                 let id = doc.alloc_id();
-                let image = vectorcraft_doc::ImageObject {
+                let image = redrob_vector_doc::ImageObject {
                     key,
                     width: w,
                     height: h,
-                    xf: vectorcraft_geom::Affine::translate((x, y)),
+                    xf: redrob_vector_geom::Affine::translate((x, y)),
                     link: None,
                     placement: Default::default(),
                 };
-                let kind = vectorcraft_doc::NodeKind::Image(Box::new(image));
-                let mut node = vectorcraft_doc::Node::new(id, kind);
+                let kind = redrob_vector_doc::NodeKind::Image(Box::new(image));
+                let mut node = redrob_vector_doc::Node::new(id, kind);
                 node.name = Some(name);
                 let layer = doc.default_layer();
                 doc.insert(layer, usize::MAX, node)?;
@@ -445,7 +447,7 @@ impl ModeBridge for VectorBridge<'_> {
 
     fn document_size(&self) -> Option<(u32, u32)> {
         let rect = self.artboard_rect()?;
-        let (w, h) = vectorcraft_render::region_pixels(rect, 1.0);
+        let (w, h) = redrob_vector_render::region_pixels(rect, 1.0);
         Some((w, h))
     }
 
@@ -468,11 +470,11 @@ impl ModeBridge for VectorBridge<'_> {
 
 /// The Layout editor's document through `DesignApp`: the page under the view centre.
 pub struct LayoutBridge<'a> {
-    pub app: &'a mut designcraft_ui_egui::DesignApp,
+    pub app: &'a mut redrob_layout_ui_egui::DesignApp,
 }
 
 impl<'a> LayoutBridge<'a> {
-    pub fn new(app: &'a mut designcraft_ui_egui::DesignApp) -> Self {
+    pub fn new(app: &'a mut redrob_layout_ui_egui::DesignApp) -> Self {
         Self { app }
     }
 
@@ -483,12 +485,12 @@ impl<'a> LayoutBridge<'a> {
         if st.doc.page_count() == 0 {
             return None;
         }
-        Some(designcraft_ui_egui::canvas::current_page(self.app).unwrap_or(0))
+        Some(redrob_layout_ui_egui::canvas::current_page(self.app).unwrap_or(0))
     }
 
     /// The page's bounds in points (`Page::bounds`, crafts/designcraft/crates/doc/src/page.rs
     /// L229) and the index of its spread.
-    fn page_rect(&self) -> Option<(designcraft_geom::Rect, usize)> {
+    fn page_rect(&self) -> Option<(redrob_layout_geom::Rect, usize)> {
         let abs = self.current_page()?;
         let st = self.app.session.active()?;
         let (si, _) = st.doc.page_loc(abs)?;
@@ -499,7 +501,7 @@ impl<'a> LayoutBridge<'a> {
     /// The current page's content box (inside its margins; `Page::margin_rect`,
     /// crafts/designcraft/crates/doc/src/page.rs L240) in points and the index of its spread:
     /// where a hand-off places its graphic.
-    pub fn content_box(&self) -> Option<(designcraft_geom::Rect, usize)> {
+    pub fn content_box(&self) -> Option<(redrob_layout_geom::Rect, usize)> {
         let abs = self.current_page()?;
         let st = self.app.session.active()?;
         let (si, _) = st.doc.page_loc(abs)?;
@@ -519,12 +521,12 @@ impl ModeBridge for LayoutBridge<'_> {
         // `Renderer::render_page(doc, cache, abs, scale, bleed, opts) -> Option<Rendered>`
         // (crafts/designcraft/crates/render/src/lib.rs L404); `session.cache: Arc<Cache>`
         // (crafts/designcraft/crates/engine/src/lib.rs L276).
-        let opts = designcraft_render::RenderOptions {
+        let opts = redrob_layout_render::RenderOptions {
             paper: true,
             printing_only: true,
-            ..designcraft_render::RenderOptions::default()
+            ..redrob_layout_render::RenderOptions::default()
         };
-        let mut renderer = designcraft_render::Renderer::new();
+        let mut renderer = redrob_layout_render::Renderer::new();
         let cache = &self.app.session.cache;
         let rendered = renderer.render_page(&st.doc, cache, abs, 1.0, false, &opts)?;
         Rgba8Image::new(rendered.width, rendered.height, rendered.to_straight()).ok()
@@ -595,13 +597,13 @@ impl ModeBridge for LayoutBridge<'_> {
 mod tests {
     use super::*;
 
-    fn session_with_4x4() -> photocraft_engine::Session {
-        let mut session = photocraft_engine::Session::new();
-        let doc = photocraft_doc::Document::new(
+    fn session_with_4x4() -> redrob_photo_engine::Session {
+        let mut session = redrob_photo_engine::Session::new();
+        let doc = redrob_photo_doc::Document::new(
             "t",
-            photocraft_geom::Size::new(4, 4),
-            photocraft_color::ColorMode::Rgb,
-            photocraft_color::SampleType::U8,
+            redrob_photo_geom::Size::new(4, 4),
+            redrob_photo_color::ColorMode::Rgb,
+            redrob_photo_color::SampleType::U8,
         );
         session.add_document(doc, None);
         session
@@ -679,7 +681,7 @@ mod tests {
     fn mask_surface_conversion_is_lossless() {
         let mask = Mask::new(3, 2, vec![0, 255, 7, 9, 0, 255]).unwrap();
         let surface = selection_from_mask(&mask);
-        let back = mask_from_selection(&surface, photocraft_geom::Rect::new(0, 0, 3, 2)).unwrap();
+        let back = mask_from_selection(&surface, redrob_photo_geom::Rect::new(0, 0, 3, 2)).unwrap();
         assert_eq!(back, mask);
     }
 

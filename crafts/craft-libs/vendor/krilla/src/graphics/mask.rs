@@ -34,11 +34,7 @@ impl Mask {
     /// Create a new mask. `stream` contains the content description
     /// of the mask, and `mask_type` indicates the type of mask.
     pub fn new(stream: Stream, mask_type: MaskType) -> Self {
-        Self {
-            stream,
-            mask_type,
-            custom_bbox: None,
-        }
+        Self { stream, mask_type, custom_bbox: None }
     }
 
     /// Create a new mask for a shading to encode the opacity channels.
@@ -74,11 +70,7 @@ impl Mask {
             builder.finish()
         };
 
-        Some(Self {
-            stream: shading_stream,
-            mask_type: MaskType::Luminosity,
-            custom_bbox: Some(bbox),
-        })
+        Some(Self { stream: shading_stream, mask_type: MaskType::Luminosity, custom_bbox: Some(bbox) })
     }
 }
 
@@ -102,16 +94,8 @@ impl MaskType {
 }
 
 impl Cacheable for Mask {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
-        let x_object = sc.register_cacheable(
-            chunk_container,
-            XObject::new(self.stream, false, true, self.custom_bbox),
-        );
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
+        let x_object = sc.register_cacheable(chunk_container, XObject::new(self.stream, false, true, self.custom_bbox));
 
         let chunk = &mut chunk_container.non_stream.masks;
         let mut dict = chunk.indirect(root_ref).dict();

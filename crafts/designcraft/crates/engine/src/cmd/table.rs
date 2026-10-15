@@ -6,9 +6,9 @@
 //! `col`) narrow the cell range (default: the selected cells, else the caret's cell, else the
 //! whole table).
 
-use designcraft_compose as compose;
-use designcraft_doc::story::floor_char_boundary;
-use designcraft_doc::{
+use redrob_layout_compose as compose;
+use redrob_layout_doc::story::floor_char_boundary;
+use redrob_layout_doc::{
     AltFills, CellAddr, CellRange, CellStroke, Document, RowHeightMode, Selection, StoryId, StrokeType, Table, TableSel, TextSel,
     VerticalJustification,
 };
@@ -386,10 +386,10 @@ fn column_width(s: &Session, t: &TextSel) -> f64 {
 
 /// The direction of the paragraph at `offset` in `story`, as composition resolves it (its style
 /// chain, then local overrides). A table created there takes it.
-fn para_direction(d: &Document, story: StoryId, offset: usize) -> designcraft_doc::TextDirection {
+fn para_direction(d: &Document, story: StoryId, offset: usize) -> redrob_layout_doc::TextDirection {
     d.story(story)
         .and_then(|st| st.paras.get(st.para_at(offset)))
-        .map_or(designcraft_doc::TextDirection::LeftToRight, |pf| d.styles.resolve_para(pf).0.direction)
+        .map_or(redrob_layout_doc::TextDirection::LeftToRight, |pf| d.styles.resolve_para(pf).0.direction)
 }
 
 fn insert(s: &mut Session, p: &Value) -> Result<Value> {
@@ -411,7 +411,7 @@ fn insert(s: &mut Session, p: &Value) -> Result<Value> {
         let pf = st.paras[st.para_at(t.range().start)].clone();
         let cf = st.char_format_at(t.range().start).clone();
         for c in &mut table.cells {
-            c.text.paras[0] = designcraft_doc::ParaFormat { table: None, ..pf.clone() };
+            c.text.paras[0] = redrob_layout_doc::ParaFormat { table: None, ..pf.clone() };
             c.text.chars[0].format = cf.clone();
         }
         let r = t.range();
@@ -457,7 +457,7 @@ fn convert_to_text(s: &mut Session, p: &Value) -> Result<Value> {
         let st = d.story_mut(g.story).ok_or_else(|| bad("table.convertToText", "no story"))?;
         let text = st.tables.get(&g.table).map(|t| t.plain_text()).unwrap_or_default();
         let a = st.table_anchor(g.table).ok_or_else(|| bad("table.convertToText", "no anchor"))?;
-        st.replace(a..a + designcraft_doc::TABLE_ANCHOR.len_utf8(), &text);
+        st.replace(a..a + redrob_layout_doc::TABLE_ANCHOR.len_utf8(), &text);
         *sel = Selection::text(TextSel::caret(g.story, a + text.len()));
         ok()
     })
@@ -469,7 +469,7 @@ fn delete_table(s: &mut Session, p: &Value) -> Result<Value> {
         let st = d.story_mut(g.story).ok_or_else(|| bad("table.delete", "no story"))?;
         let a = st.table_anchor(g.table).ok_or_else(|| bad("table.delete", "no anchor"))?;
         // Remove the anchor paragraph (with one separator) so no empty paragraph is left behind.
-        let end = a + designcraft_doc::TABLE_ANCHOR.len_utf8();
+        let end = a + redrob_layout_doc::TABLE_ANCHOR.len_utf8();
         let r = if &st.text[end..] == "\n" && a > 0 && st.text[..a].ends_with('\n') {
             // Inserted at the end of the story: remove the empty paragraph after it too.
             a - 1..end + 1
@@ -534,7 +534,7 @@ fn insert_col(s: &mut Session, p: &Value, left: Option<bool>) -> Result<Value> {
         .doc
         .story(g.story)
         .and_then(|st| st.tables.get(&g.table))
-        .is_some_and(|t| t.options.direction == designcraft_doc::TextDirection::RightToLeft);
+        .is_some_and(|t| t.options.direction == redrob_layout_doc::TextDirection::RightToLeft);
     let n = count(p);
     let at = if left != rtl { g.range.c0 } else { g.range.c1 + 1 };
     let width = p.get("width").and_then(Value::as_f64);
@@ -653,7 +653,7 @@ fn set_cell(s: &mut Session, p: &Value) -> Result<Value> {
     edit_table(s, &g, "table.setCell", |t| {
         let nc = t.ncols();
         let nr = t.nrows();
-        let rtl = t.options.direction == designcraft_doc::TextDirection::RightToLeft;
+        let rtl = t.options.direction == redrob_layout_doc::TextDirection::RightToLeft;
         let borders: [CellStroke; 4] = std::array::from_fn(|side| t.options.border_for(side).clone());
         // Local edits outrank previously imported edges, including explicit zero/None.
         let priority = if stroke.is_some() { next_cell_stroke_priority(t) } else { 0 };
@@ -768,7 +768,7 @@ fn mirror_cell_edge(t: &mut Table, owners: &[(usize, usize)], from: (usize, usiz
     // A merged cell's edge may border several separately editable cells. Mirroring
     // a segment onto that whole edge would change unselected neighbors; priorities
     // instead resolve each segment without altering the merged cell's formatting.
-    let merged = |cell: &designcraft_doc::Cell| cell.row_span > 1 || cell.col_span > 1;
+    let merged = |cell: &redrob_layout_doc::Cell| cell.row_span > 1 || cell.col_span > 1;
     if t.cell(from.0, from.1).is_some_and(merged) || t.cell(to.0, to.1).is_some_and(merged) {
         return;
     }
@@ -1034,9 +1034,9 @@ fn get(s: &mut Session, p: &Value) -> Result<Value> {
 
 // ---------- cell and table styles ----------
 
-fn stroke_param(v: Option<&Value>) -> Option<designcraft_doc::CellStroke> {
+fn stroke_param(v: Option<&Value>) -> Option<redrob_layout_doc::CellStroke> {
     let o = v?.as_object()?;
-    let mut st = designcraft_doc::CellStroke::default();
+    let mut st = redrob_layout_doc::CellStroke::default();
     if let Some(w) = o.get("weight").and_then(Value::as_f64) {
         st.weight = w.max(0.0);
     }
@@ -1050,7 +1050,7 @@ fn stroke_param(v: Option<&Value>) -> Option<designcraft_doc::CellStroke> {
 }
 
 /// Fill in the cell style fields given in `p`.
-fn cell_style_fields(cs: &mut designcraft_doc::CellStyle, p: &Value, cmd: &str) -> Result<()> {
+fn cell_style_fields(cs: &mut redrob_layout_doc::CellStyle, p: &Value, cmd: &str) -> Result<()> {
     if let Some(v) = p.get("basedOn") {
         cs.based_on = v.as_str().map(str::to_string);
     }
@@ -1087,7 +1087,7 @@ fn cell_style_fields(cs: &mut designcraft_doc::CellStyle, p: &Value, cmd: &str) 
 
 fn cell_style_create(s: &mut Session, p: &Value) -> Result<Value> {
     let base = str_param(p, "name").unwrap_or("Cell Style 1").to_string();
-    let mut cs = designcraft_doc::CellStyle::default();
+    let mut cs = redrob_layout_doc::CellStyle::default();
     if p.get("fromSelection").and_then(Value::as_bool).unwrap_or(false) {
         let g = target(s, p, "style.cell.create")?;
         let d = &s.doc()?.doc;
@@ -1108,7 +1108,7 @@ fn cell_style_create(s: &mut Session, p: &Value) -> Result<Value> {
     }
     cell_style_fields(&mut cs, p, "style.cell.create")?;
     s.edit(|d, _| {
-        let name = designcraft_doc::Styles::unique_name(|n| d.styles.cell.iter().any(|c| c.name == n), &base);
+        let name = redrob_layout_doc::Styles::unique_name(|n| d.styles.cell.iter().any(|c| c.name == n), &base);
         cs.name = name.clone();
         d.styles_mut().cell.push(cs);
         Ok(json!({"name": name}))
@@ -1121,7 +1121,7 @@ fn cell_style_apply(s: &mut Session, p: &Value) -> Result<Value> {
     if !styles.iter().any(|c| c.name == name) {
         return Err(bad("style.cell.apply", format!("no cell style `{name}`")));
     }
-    let cs = designcraft_doc::resolve_cell_style(styles, &name);
+    let cs = redrob_layout_doc::resolve_cell_style(styles, &name);
     let g = target(s, p, "style.cell.apply")?;
     edit_table(s, &g, "style.cell.apply", |t| {
         let mut n = 0;
@@ -1137,7 +1137,7 @@ fn cell_style_apply(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// Re-apply cell styles named in `names` to every cell using them (after a style edit).
 fn reapply_cell_styles(d: &mut Document, names: &[String]) {
-    let styles: Vec<_> = names.iter().map(|name| designcraft_doc::resolve_cell_style(&d.styles.cell, name)).collect();
+    let styles: Vec<_> = names.iter().map(|name| redrob_layout_doc::resolve_cell_style(&d.styles.cell, name)).collect();
     for sid in d.stories.keys().copied().collect::<Vec<_>>() {
         let Some(st) = d.story_mut(sid) else { continue };
         for t in st.tables.values_mut() {
@@ -1188,7 +1188,7 @@ fn cell_style_edit(s: &mut Session, p: &Value) -> Result<Value> {
     })
 }
 
-fn table_style_fields(ts: &mut designcraft_doc::TableStyle, p: &Value) {
+fn table_style_fields(ts: &mut redrob_layout_doc::TableStyle, p: &Value) {
     if let Some(v) = p.get("basedOn") {
         ts.based_on = v.as_str().map(str::to_string);
     }
@@ -1209,9 +1209,9 @@ fn table_style_fields(ts: &mut designcraft_doc::TableStyle, p: &Value) {
     }
     if let Some(a) = p.get("altRows").and_then(Value::as_object) {
         let n = |k: &str, d: u32| a.get(k).and_then(Value::as_u64).map_or(d, |v| v as u32);
-        let c = |k: &str| a.get(k).and_then(Value::as_str).unwrap_or(designcraft_color::swatch::NONE).to_string();
+        let c = |k: &str| a.get(k).and_then(Value::as_str).unwrap_or(redrob_layout_color::swatch::NONE).to_string();
         let t = |k: &str| a.get(k).and_then(Value::as_f64).map_or(1.0, |v| v.clamp(0.0, 1.0) as f32);
-        ts.alt_rows = Some(designcraft_doc::AltFills {
+        ts.alt_rows = Some(redrob_layout_doc::AltFills {
             first: n("first", 1),
             first_color: c("firstColor"),
             first_tint: t("firstTint"),
@@ -1232,10 +1232,10 @@ fn table_style_fields(ts: &mut designcraft_doc::TableStyle, p: &Value) {
 
 fn table_style_create(s: &mut Session, p: &Value) -> Result<Value> {
     let base = str_param(p, "name").unwrap_or("Table Style 1").to_string();
-    let mut ts = designcraft_doc::TableStyle::default();
+    let mut ts = redrob_layout_doc::TableStyle::default();
     table_style_fields(&mut ts, p);
     s.edit(|d, _| {
-        let name = designcraft_doc::Styles::unique_name(|n| d.styles.table.iter().any(|c| c.name == n), &base);
+        let name = redrob_layout_doc::Styles::unique_name(|n| d.styles.table.iter().any(|c| c.name == n), &base);
         ts.name = name.clone();
         d.styles_mut().table.push(ts);
         Ok(json!({"name": name}))
@@ -1300,9 +1300,9 @@ mod style_tests {
         s.execute("style.table.create", &json!({"name": "Data", "header": "Head", "body": "Body", "border": {"weight": 2, "color": "Black"}}))
             .unwrap();
         s.execute("style.table.apply", &json!({"name": "Data"})).unwrap();
-        let t = |s: &Session| -> designcraft_doc::Table {
+        let t = |s: &Session| -> redrob_layout_doc::Table {
             let d = &s.doc().unwrap().doc;
-            (**d.story(designcraft_doc::StoryId(sid)).unwrap().tables.values().next().unwrap()).clone()
+            (**d.story(redrob_layout_doc::StoryId(sid)).unwrap().tables.values().next().unwrap()).clone()
         };
         let tb = t(&s);
         assert_eq!(tb.style, "Data");
@@ -1322,7 +1322,7 @@ mod style_tests {
 }
 
 /// The table cell under spread point `pt` in text frame `frame`: (story, table, row, col).
-fn cell_at(s: &Session, frame: designcraft_doc::ItemId, pt: designcraft_geom::Point) -> Option<(StoryId, u64, usize, usize)> {
+fn cell_at(s: &Session, frame: redrob_layout_doc::ItemId, pt: redrob_layout_geom::Point) -> Option<(StoryId, u64, usize, usize)> {
     let st = s.active()?;
     let loc = st.doc.find(frame)?;
     let it = st.doc.item_at(&loc)?;
@@ -1330,16 +1330,16 @@ fn cell_at(s: &Session, frame: designcraft_doc::ItemId, pt: designcraft_geom::Po
     let inner = (st.doc.parent_xf(&loc) * st.doc.text_xf(it)).inverse() * pt;
     let cs = s.cache.get(&st.doc, sid, None);
     let fi = cs.frames.iter().position(|f| f.frame == frame)?;
-    let (table, row, col, _) = designcraft_compose::hit_cell(&cs, fi, inner)?;
+    let (table, row, col, _) = redrob_layout_compose::hit_cell(&cs, fi, inner)?;
     Some((sid, table, row, col))
 }
 
 fn drop_cells(s: &mut Session, p: &Value) -> Result<Value> {
     const ID: &str = "table.dropCells";
     let frame = super::id_param(p, "frame").ok_or_else(|| bad(ID, "`frame` required"))?;
-    let pt = |k: &str| -> Result<designcraft_geom::Point> {
+    let pt = |k: &str| -> Result<redrob_layout_geom::Point> {
         let a = p.get(k).and_then(Value::as_array).ok_or_else(|| bad(ID, format!("`{k}` required")))?;
-        Ok(designcraft_geom::Point::new(a.first().and_then(Value::as_f64).unwrap_or(0.0), a.get(1).and_then(Value::as_f64).unwrap_or(0.0)))
+        Ok(redrob_layout_geom::Point::new(a.first().and_then(Value::as_f64).unwrap_or(0.0), a.get(1).and_then(Value::as_f64).unwrap_or(0.0)))
     };
     let (from, to) = (pt("from")?, pt("to")?);
     let sel = s.doc()?.selection.cells;
@@ -1366,7 +1366,7 @@ fn drop_cells(s: &mut Session, p: &Value) -> Result<Value> {
             let n = hi - lo + 1;
             let r2 = s.edit(|d, selm| {
                 let t = d.story_mut(sid).and_then(|st| st.table_mut(tid)).ok_or_else(|| bad(ID, "no table"))?;
-                let mv = |t: &mut designcraft_doc::Table, a: usize, b: usize| if rows { t.move_row(a, b) } else { t.move_col(a, b) };
+                let mv = |t: &mut redrob_layout_doc::Table, a: usize, b: usize| if rows { t.move_row(a, b) } else { t.move_col(a, b) };
                 let new_lo = if target > hi {
                     for _ in 0..n {
                         mv(t, lo, target).map_err(|e| bad(ID, e))?;
@@ -1395,13 +1395,13 @@ fn place_graphic(s: &mut Session, p: &Value) -> Result<Value> {
     const ID: &str = "table.placeGraphic";
     let g = target(s, p, ID)?;
     let (bytes, name, link) = super::file::read_source(p)?;
-    let (pw, ph) = designcraft_render::image_size(&bytes).ok_or_else(|| bad(ID, "unsupported or corrupt image"))?;
+    let (pw, ph) = redrob_layout_render::image_size(&bytes).ok_or_else(|| bad(ID, "unsupported or corrupt image"))?;
     let fill = p.get("fit").and_then(Value::as_str) == Some("fill");
     s.edit(|d, sel| {
-        let fresh = designcraft_doc::AssetId(d.alloc());
-        let mime = designcraft_render::image_mime(&bytes).to_string();
+        let fresh = redrob_layout_doc::AssetId(d.alloc());
+        let mime = redrob_layout_render::image_mime(&bytes).to_string();
         let aid =
-            d.add_asset(designcraft_doc::Asset { page: 0, id: fresh, name, mime, link, data: std::sync::Arc::new(bytes), pixels: Some((pw, ph)) });
+            d.add_asset(redrob_layout_doc::Asset { page: 0, id: fresh, name, mime, link, data: std::sync::Arc::new(bytes), pixels: Some((pw, ph)) });
         let st = d.story_mut(g.story).ok_or_else(|| bad(ID, "no story"))?;
         let t = st.table_mut(g.table).ok_or_else(|| bad(ID, "no table"))?;
         let (r, c) = t.owner(g.range.r0, g.range.c0);
@@ -1413,13 +1413,13 @@ fn place_graphic(s: &mut Session, p: &Value) -> Result<Value> {
         let (bw, bh) = ((w - ins[1] - ins[3]).max(1.0), (h - ins[0] - ins[2]).max(1.0));
         let (nw, nh) = (pw as f64, ph as f64);
         let k = if fill { (bw / nw).max(bh / nh) } else { (bw / nw).min(bh / nh) };
-        let xf = designcraft_geom::Affine::translate(((bw - nw * k) / 2.0, (bh - nh * k) / 2.0)) * designcraft_geom::Affine::scale(k);
+        let xf = redrob_layout_geom::Affine::translate(((bw - nw * k) / 2.0, (bh - nh * k) / 2.0)) * redrob_layout_geom::Affine::scale(k);
         let cell = t.cell_mut(r, c).ok_or_else(|| bad(ID, format!("no cell {r},{c}")))?;
-        cell.graphic = Some(designcraft_doc::Graphic {
+        cell.graphic = Some(redrob_layout_doc::Graphic {
             asset: aid,
             size: (nw, nh),
             xf,
-            auto_fit: if fill { designcraft_doc::Fitting::FillProportionally } else { designcraft_doc::Fitting::FitProportionally },
+            auto_fit: if fill { redrob_layout_doc::Fitting::FillProportionally } else { redrob_layout_doc::Fitting::FitProportionally },
             fit_align: 4,
             crop: [0.0; 4],
         });
@@ -1495,7 +1495,7 @@ mod sort_tests {
         s
     }
 
-    fn table(s: &Session) -> designcraft_doc::Table {
+    fn table(s: &Session) -> redrob_layout_doc::Table {
         (**s.doc().unwrap().doc.stories.values().flat_map(|st| st.tables.values()).next().unwrap()).clone()
     }
 
@@ -1544,7 +1544,7 @@ mod sort_tests {
         let result = s.execute("table.distributeRows", &json!({"story": sid.0, "table": tid, "rows": [1, 2]})).unwrap();
         assert!((result["height"].as_f64().unwrap() * 2.0 - total).abs() < 1e-6);
         assert!(table(&s).rows[1].height > 3.0);
-        assert_eq!(table(&s).rows[1].mode, designcraft_doc::RowHeightMode::Exactly);
+        assert_eq!(table(&s).rows[1].mode, redrob_layout_doc::RowHeightMode::Exactly);
     }
 
     #[test]
@@ -1617,7 +1617,7 @@ mod sort_tests {
         s.execute("table.rowHeight", &json!({"height": 100})).ok();
         // A red image into the first cell.
         let px: Vec<u8> = (0..40 * 40).flat_map(|_| [255, 0, 0, 255]).collect();
-        let png = designcraft_render::Rendered { width: 40, height: 40, pixels: px }.to_png();
+        let png = redrob_layout_render::Rendered { width: 40, height: 40, pixels: px }.to_png();
         s.execute("table.setCell", &json!({"rows": [0, 0], "cols": [0, 0], "text": ""})).ok();
         let g = s.execute("table.placeGraphic", &json!({"base64": super::super::file::base64_encode(&png), "name": "r.png", "fit": "fill"})).unwrap();
         assert_eq!((g["row"].as_u64(), g["col"].as_u64()), (Some(0), Some(0)));
@@ -1628,7 +1628,7 @@ mod sort_tests {
         let cell = cs.frames[0].tables[0].cells.iter().find(|c| c.row == 0 && c.col == 0).unwrap().clone();
         let fx = d.item(cs.frames[0].frame).unwrap().xf;
         let centre = fx * cell.clip.center();
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = redrob_layout_render::Renderer::new();
         rr.threads = 0;
         let img = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
         let p = img.pixel(centre.x as u32, centre.y as u32);
@@ -1712,7 +1712,7 @@ mod arabic_tests {
         s.execute("edit.undo", &json!({})).unwrap();
         let t = s.doc().unwrap().doc.stories.values().flat_map(|st| st.tables.values()).next().unwrap();
         assert_eq!(t.ncols(), 2);
-        assert_eq!(t.options.direction, designcraft_doc::TextDirection::RightToLeft);
+        assert_eq!(t.options.direction, redrob_layout_doc::TextDirection::RightToLeft);
     }
 
     /// A text frame whose paragraphs have a paragraph style with `direction`, with the story's
@@ -1728,7 +1728,7 @@ mod arabic_tests {
         (s, r["story"].as_u64().unwrap())
     }
 
-    fn only_table(s: &Session) -> std::sync::Arc<designcraft_doc::Table> {
+    fn only_table(s: &Session) -> std::sync::Arc<redrob_layout_doc::Table> {
         s.doc().unwrap().doc.stories.values().flat_map(|st| st.tables.values()).next().unwrap().clone()
     }
 
@@ -1736,12 +1736,12 @@ mod arabic_tests {
     /// (#100): the first column belongs on the right.
     #[test]
     fn tables_take_the_direction_of_their_paragraph() {
-        use designcraft_doc::TextDirection::{LeftToRight, RightToLeft};
+        use redrob_layout_doc::TextDirection::{LeftToRight, RightToLeft};
         let (mut s, sid) = styled_frame("rightToLeft", "١\t٢\t٣\nأ\tب\tج");
         s.execute("table.convertFromText", &json!({"columnSeparator": "tab"})).unwrap();
         assert_eq!(only_table(&s).options.direction, RightToLeft);
         let st = s.doc().unwrap();
-        let cs = s.cache.get(&st.doc, designcraft_doc::StoryId(sid), None);
+        let cs = s.cache.get(&st.doc, redrob_layout_doc::StoryId(sid), None);
         let placed = &cs.frames[0].tables[0];
         let (first, last) = (placed.cell(0, 0).unwrap().rect, placed.cell(0, 2).unwrap().rect);
         assert!(first.x0 > last.x0, "cell ١ is the rightmost: {first:?} {last:?}");

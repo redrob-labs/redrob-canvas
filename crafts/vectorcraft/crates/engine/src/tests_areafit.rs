@@ -1,10 +1,10 @@
 //! Area type fitting: Auto Size (the frame's height follows the text), Shrink Text to Fit, and
 //! overflow reporting.
 
+use redrob_vector_doc::{AreaFit, NodeKind, TextKind, TextObject};
+use redrob_vector_geom::Rect;
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 use serde_json::{Value, json};
-use vectorcraft_doc::{AreaFit, NodeKind, TextKind, TextObject};
-use vectorcraft_geom::Rect;
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 
@@ -40,7 +40,7 @@ fn frame(s: &Session, id: NodeId) -> Rect {
 }
 
 fn overflows(s: &Session, id: NodeId) -> bool {
-    vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &text(s, id)).overflow
+    redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &text(s, id)).overflow
 }
 
 fn undo_len(s: &Session) -> usize {
@@ -123,9 +123,12 @@ fn auto_height_follows_edits_in_the_same_undo_step() {
     let mut t = text(&s, id);
     t.area.fit = AreaFit::None;
     t.kind = TextKind::Area {
-        frame: vectorcraft_geom::PathData::from_bezpath(&vectorcraft_geom::Shape::to_path(&Rect::new(0.0, 0.0, 200.0, grown.height() - 1.0), 0.1)),
+        frame: redrob_vector_geom::PathData::from_bezpath(&redrob_vector_geom::Shape::to_path(
+            &Rect::new(0.0, 0.0, 200.0, grown.height() - 1.0),
+            0.1,
+        )),
     };
-    assert!(vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t).overflow);
+    assert!(redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t).overflow);
     // Character changes resize it too.
     s.execute("text.setRangeStyle", &json!({"id": id.0, "start": 0, "end": 3, "size": 40})).unwrap();
     assert!(frame(&s, id).height() > grown.height());
@@ -182,13 +185,13 @@ fn auto_height_in_columns_and_by_hand() {
     assert_eq!(r["fit"], "autoHeight");
     // The least height the two columns fit: a point less overflows, and both columns are used.
     let mut t = text(&s, id);
-    let lay = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t);
+    let lay = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t);
     assert!(lay.glyphs.iter().any(|g| g.origin.x > 160.0), "text flows into the second column");
     t.area.fit = AreaFit::None;
     t.kind = TextKind::Area {
-        frame: vectorcraft_geom::PathData::from_bezpath(&vectorcraft_geom::Shape::to_path(&Rect::new(0.0, 0.0, 300.0, two - 1.0), 0.1)),
+        frame: redrob_vector_geom::PathData::from_bezpath(&redrob_vector_geom::Shape::to_path(&Rect::new(0.0, 0.0, 300.0, two - 1.0), 0.1)),
     };
-    assert!(vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t).overflow);
+    assert!(redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t).overflow);
     // Dragging the bottom edge sets the height by hand: Auto Size goes off.
     let b = frame(&s, id);
     s.execute("text.reshapeArea", &json!({"id": id.0, "anchors": [[0, 2], [0, 3]], "dx": 0, "dy": 50})).unwrap();
@@ -210,8 +213,8 @@ fn shrink_text_round_trips_through_the_native_format() {
     let mut s = session();
     let id = area(&mut s, 120.0, 30.0, STORY, json!({"fit": "shrinkText", "fitMinPercent": 35}));
     let doc = s.doc().unwrap().doc.clone();
-    let bytes = vectorcraft_format::save(&doc, false);
-    let back = vectorcraft_format::load(&bytes).unwrap();
+    let bytes = redrob_vector_format::save(&doc, false);
+    let back = redrob_vector_format::load(&bytes).unwrap();
     let NodeKind::Text(t) = &back.node(id).unwrap().kind else { panic!() };
     assert_eq!(t.area.fit, AreaFit::ShrinkText { min_percent: 35.0 });
 }
@@ -236,9 +239,12 @@ fn auto_height_follows_the_leading_model_and_character_alignment() {
     let mut t = text(&s, id);
     t.area.fit = AreaFit::None;
     t.kind = TextKind::Area {
-        frame: vectorcraft_geom::PathData::from_bezpath(&vectorcraft_geom::Shape::to_path(&Rect::new(0.0, 0.0, 200.0, mixed.height() - 1.0), 0.1)),
+        frame: redrob_vector_geom::PathData::from_bezpath(&redrob_vector_geom::Shape::to_path(
+            &Rect::new(0.0, 0.0, 200.0, mixed.height() - 1.0),
+            0.1,
+        )),
     };
-    assert!(vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t).overflow, "tight");
+    assert!(redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t).overflow, "tight");
 }
 
 /// #1471: the commands that make type or change what it holds say which text no longer fits, so

@@ -17,7 +17,7 @@ enum Popup {
 fn harness(tool: Tool, selection: bool, scale: f32) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1200.0, 800.0)).with_pixels_per_point(scale).with_step_dt(1.0 / 60.0).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Services::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.run("layer.new.layer", json!({"name": "Color"})).unwrap();
         app.run("edit.fill", json!({"color": "#cc6644"})).unwrap();

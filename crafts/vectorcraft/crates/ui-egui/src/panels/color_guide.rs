@@ -8,10 +8,10 @@
 //! Apply Colors opens Recolor Artwork with the harmony colours, limited the same way.
 
 use egui::{Rect, Sense, Ui, vec2};
+use redrob_vector_color::harmony::{Guide, GuideOptions, Harmony, Variation};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_engine::cmd::swatchlib;
 use serde_json::{Value, json};
-use vectorcraft_color::harmony::{Guide, GuideOptions, Harmony, Variation};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_engine::cmd::swatchlib;
 
 use super::swatches::{self, colour_libraries, limit_key, limit_name};
 use super::{active_paint, apply_click, c32, color_json, library_panel, pstate, set_pstate};
@@ -262,7 +262,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
@@ -380,6 +380,6 @@ mod tests {
         // Colours from elsewhere snap to the library as the dialog opens.
         app.run("ui.recolorDialog", json!({"colors": ["#123457"], "library": "web-safe-216"})).unwrap();
         let to = app.ui.dialog.as_ref().unwrap().fields["rows"][0]["to"].clone();
-        assert_eq!(vectorcraft_engine::cmd::color_value(&to).map(|c| c.to_hex()).as_deref(), Some("#003366"));
+        assert_eq!(redrob_vector_engine::cmd::color_value(&to).map(|c| c.to_hex()).as_deref(), Some("#003366"));
     }
 }

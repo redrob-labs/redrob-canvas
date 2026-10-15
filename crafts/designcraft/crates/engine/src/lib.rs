@@ -23,14 +23,14 @@ mod tooling;
 
 use std::sync::Arc;
 
-use designcraft_compose::Cache;
-use designcraft_doc::{Document, LayerId, Selection};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{Document, LayerId, Selection};
 use serde_json::Value;
 
 pub use cmd::{CommandInfo, CommandSpec, command_specs, find_command};
-pub use designcraft_compose as compose;
-pub use designcraft_doc as doc;
-pub use designcraft_tools as tools;
+pub use redrob_layout_compose as compose;
+pub use redrob_layout_doc as doc;
+pub use redrob_layout_tools as tools;
 pub use tooling::{SnapView, UiRequest, ViewInfo};
 
 #[derive(Debug, thiserror::Error)]
@@ -50,8 +50,8 @@ pub enum EngineError {
     Internal(String, String),
 }
 
-impl From<designcraft_doc::DocError> for EngineError {
-    fn from(e: designcraft_doc::DocError) -> Self {
+impl From<redrob_layout_doc::DocError> for EngineError {
+    fn from(e: redrob_layout_doc::DocError) -> Self {
         EngineError::Other(e.to_string())
     }
 }
@@ -106,7 +106,7 @@ pub struct DocState {
     pub fonts: Option<Arc<FontScope>>,
 }
 
-/// A document's font scope ([`designcraft_fonts::FontDb::load_document_fonts`]): its fonts are
+/// A document's font scope ([`redrob_layout_fonts::FontDb::load_document_fonts`]): its fonts are
 /// found until the document's state (with every copy of it) is gone — closed, reverted, or its
 /// session ended.
 #[derive(Debug)]
@@ -115,7 +115,7 @@ pub struct FontScope(pub u32);
 /// A graphic loaded in the place cursor (`place.load`, File › Place with no frame to fill).
 #[derive(Clone, Copy, Debug)]
 pub struct LoadedGraphic {
-    pub asset: designcraft_doc::AssetId,
+    pub asset: redrob_layout_doc::AssetId,
     /// Natural size in points.
     pub size: (f64, f64),
     /// Image Import Options › Crop to: the box of the graphic a new frame shows (x, y, w, h).
@@ -124,7 +124,7 @@ pub struct LoadedGraphic {
 
 impl Drop for FontScope {
     fn drop(&mut self) {
-        designcraft_fonts::FontDb::global().close_scope(self.0);
+        redrob_layout_fonts::FontDb::global().close_scope(self.0);
     }
 }
 
@@ -274,14 +274,14 @@ pub struct Session {
     active: Option<usize>,
     pub prefs: Prefs,
     pub cache: Arc<Cache>,
-    pub(crate) tool: Box<dyn designcraft_tools::Tool>,
+    pub(crate) tool: Box<dyn redrob_layout_tools::Tool>,
     pub journal: Vec<(String, Value)>,
     pub(crate) find_context: Option<cmd::find::FindContext>,
     pub clipboard: Option<Arc<Document>>,
     /// Crash-recovery folder (the app sets it; saving or closing a document removes its entry).
     pub recovery_dir: Option<std::path::PathBuf>,
     /// Copied text with its formatting (a frameless story slice) and its plain text.
-    pub text_clipboard: Option<(Arc<designcraft_doc::Story>, String)>,
+    pub text_clipboard: Option<(Arc<redrob_layout_doc::Story>, String)>,
     /// Requests for the UI (dialogs, view changes) produced by tools/commands.
     pub ui_requests: Vec<UiRequest>,
     /// Graphic loaded in the place cursor.
@@ -290,7 +290,7 @@ pub struct Session {
     /// Transforms applied to the current selection, oldest first (Transform Again / Sequence
     /// Again), with the selection they were applied to and whether the last one came from a
     /// tool interaction (its previews replace each other).
-    pub(crate) transforms: (Vec<(String, Value)>, Vec<designcraft_doc::ItemId>, bool),
+    pub(crate) transforms: (Vec<(String, Value)>, Vec<redrob_layout_doc::ItemId>, bool),
     /// Drag and drop text editing: the press landed in the selected text.
     pub(crate) text_drag: bool,
     /// Character formatting chosen at a bare caret, for the text typed there next.
@@ -306,7 +306,7 @@ pub struct Session {
     pub conveyor: Vec<(String, Vec<u8>)>,
     /// Linked text files checked by the Links panel: path → the size and modification time the
     /// file had and the hash of its contents then, so a file touched but not changed is read once.
-    pub(crate) text_link_checks: std::collections::HashMap<String, (designcraft_doc::Fingerprint, String)>,
+    pub(crate) text_link_checks: std::collections::HashMap<String, (redrob_layout_doc::Fingerprint, String)>,
 }
 
 impl Default for Session {
@@ -323,7 +323,7 @@ impl Session {
             active: None,
             prefs: Prefs::default(),
             cache: Arc::new(Cache::new()),
-            tool: designcraft_tools::create("selection"),
+            tool: redrob_layout_tools::create("selection"),
             journal: vec![],
             find_context: None,
             clipboard: None,
@@ -533,7 +533,7 @@ impl Session {
                     break;
                 }
                 let Some(&last) = story.frames.last() else { break };
-                let cs = designcraft_compose::compose_story(&d, sid, &Default::default());
+                let cs = redrob_layout_compose::compose_story(&d, sid, &Default::default());
                 if cs.frame(last).is_some_and(|ft| !ft.range.is_empty()) {
                     break;
                 }

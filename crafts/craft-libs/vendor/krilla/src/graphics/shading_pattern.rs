@@ -39,12 +39,7 @@ impl ShadingPattern {
 }
 
 impl Cacheable for ShadingPattern {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let shading_ref = sc.register_cacheable(chunk_container, self.0.shading_function.clone());
         let chunk = &mut chunk_container.non_stream.patterns;
         let mut shading_pattern = chunk.shading_pattern(root_ref);

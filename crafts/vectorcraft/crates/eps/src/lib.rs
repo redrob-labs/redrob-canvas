@@ -37,8 +37,8 @@ mod tiff;
 pub use import::{Imported, ai_alone, family_style, import, import_with, is_loss, layered_ai};
 pub use print::{PrintJob, PrintPage, print};
 
-use vectorcraft_doc::Document;
-use vectorcraft_geom::{Point, Rect};
+use redrob_vector_doc::Document;
+use redrob_vector_geom::{Point, Rect};
 
 /// The PostScript language level the file needs.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -211,7 +211,7 @@ pub fn export(doc: &Document, opts: &EpsOptions, preview: Option<&Raster>, thumb
     if ![r.x0, r.y0, r.x1, r.y1, opts.origin.x, opts.origin.y].iter().all(|v| v.is_finite()) {
         return Err("the export region is not finite".into());
     }
-    let baked = vectorcraft_effects::bake_document(doc);
+    let baked = redrob_vector_effects::bake_document(doc);
     let doc = baked.as_ref().unwrap_or(doc);
     let page = scene::Scene::new(doc, opts).run();
     let mut warnings = page.warnings;
@@ -254,7 +254,7 @@ pub(crate) fn comments(s: &mut String, title: &str, created: Option<i64>, level:
     let _ = writeln!(s, "%%Creator: Redrob Canvas {}", env!("CARGO_PKG_VERSION"));
     let _ = writeln!(s, "%%Title: {}", ps::string(title));
     if let Some(t) = created {
-        let [y, mo, d, h, mi, se] = vectorcraft_doc::metadata::civil(t);
+        let [y, mo, d, h, mi, se] = redrob_vector_doc::metadata::civil(t);
         let _ = writeln!(s, "%%CreationDate: ({y:04}-{mo:02}-{d:02} {h:02}:{mi:02}:{se:02} UTC)");
     }
     let _ = writeln!(s, "%%LanguageLevel: {}", level.id());

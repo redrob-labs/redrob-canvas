@@ -11,7 +11,7 @@ use super::*;
 fn dragging_a_brush_shows_its_tip_preview() {
     for theme in crate::theme::ThemeKind::ALL {
         for mode in 0..3 {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             app.run("prefs.set", json!({"path": "interface.theme", "value": theme.id()})).unwrap();
             app.ui.panels.brush_settings = mode != 2;
             app.ui.brush_tab = 1;
@@ -56,7 +56,7 @@ fn dragging_a_brush_shows_its_tip_preview() {
 /// visible row.
 #[test]
 fn dragging_a_brush_to_the_list_edge_scrolls_the_list() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.ui.panels.brush_settings = true;
     app.ui.brush_tab = 1;
     app.ui.brushes_panel.view = BrushesView::List;
@@ -180,7 +180,7 @@ fn rows_are_centred(h: &Harness<'_, PhotocraftApp>, indent: f32, groups: usize) 
 fn brush_picker_cards_follow_the_part_boxes() {
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
     });
     h.state_mut().run("file.new", serde_json::json!({"width": 400, "height": 300})).unwrap();
     h.state_mut().ui.tool = crate::state::Tool::Brush;
@@ -223,7 +223,7 @@ fn brush_picker_cards_follow_the_part_boxes() {
 fn brush_picker_cards_floor_their_height_but_not_their_width() {
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
     });
     h.state_mut().run("file.new", serde_json::json!({"width": 400, "height": 300})).unwrap();
     h.state_mut().ui.tool = crate::state::Tool::Brush;
@@ -256,7 +256,7 @@ fn brush_picker_menu_closes_when_a_slider_or_the_grip_is_grabbed() {
     }
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
     });
     h.state_mut().run("file.new", serde_json::json!({"width": 400, "height": 300})).unwrap();
     h.state_mut().ui.tool = crate::state::Tool::Brush;
@@ -304,7 +304,7 @@ fn brush_picker_upper_controls_stop_at_their_max_width() {
     }
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
     });
     h.state_mut().run("file.new", serde_json::json!({"width": 400, "height": 300})).unwrap();
     h.state_mut().ui.tool = crate::state::Tool::Brush;
@@ -328,7 +328,7 @@ fn brush_picker_upper_controls_stop_at_their_max_width() {
 
 #[test]
 fn the_brushes_tab_grid_is_centred_past_its_indent() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.ui.panels.brush_settings = true;
     app.ui.brush_tab = 1;
     app.ui.brushes_panel.view = BrushesView::Grid;

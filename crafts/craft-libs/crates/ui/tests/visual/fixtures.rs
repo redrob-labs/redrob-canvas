@@ -1,10 +1,10 @@
 //! Independent, font-free reference painting for the shared controls' public visual contracts.
-//! Reference paths never call craft-ui or derive their expected rectangles from its responses.
+//! Reference paths never call redrob-craft-ui or derive their expected rectangles from its responses.
 
-use craft_ui::buttons::{ButtonVisuals, IconButton, IconButtonStyle};
-use craft_ui::layout::{ResizeHandle, ResizeHandleStyle, SplitAxis, SplitSize, split_rect};
-use craft_ui::tabs::Tab;
 use egui::{Align, Color32, CornerRadius, Id, Layout, Painter, Rect, Response, Stroke, StrokeKind, Ui, UiBuilder, Vec2, pos2, vec2};
+use redrob_craft_ui::buttons::{ButtonVisuals, IconButton, IconButtonStyle};
+use redrob_craft_ui::layout::{ResizeHandle, ResizeHandleStyle, SplitAxis, SplitSize, split_rect};
+use redrob_craft_ui::tabs::Tab;
 
 pub const CANVAS: Vec2 = vec2(128.0, 72.0);
 pub const GAP: f32 = 8.0;

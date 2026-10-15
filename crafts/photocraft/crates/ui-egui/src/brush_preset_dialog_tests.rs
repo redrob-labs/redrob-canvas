@@ -7,7 +7,7 @@ use super::*;
 fn harness() -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
     });
     h.state_mut().run("file.new", json!({"width": 400, "height": 300})).unwrap();
     h.state_mut().ui.tool = crate::state::Tool::Brush;
@@ -94,7 +94,7 @@ fn ok_saves_under_the_name_with_the_boxes_as_set() {
     h.run_steps(3);
     assert!(dialog(&h).is_none());
     let p = h.state().session.tools.presets.iter().find(|p| p.name == "Chalk 1").expect("saved");
-    assert_eq!(p.captures, photocraft_paint::PresetCaptures { size: false, tool_settings: true, color: true });
+    assert_eq!(p.captures, redrob_photo_paint::PresetCaptures { size: false, tool_settings: true, color: true });
     assert!(h.state().session.tools.presets.iter().any(|p| p.name == "Chalk"), "the preset it came from is still there");
     assert_eq!(h.state().session.tools.current_preset.as_deref(), Some("Chalk 1"));
 
@@ -112,14 +112,14 @@ fn ok_saves_under_the_name_with_the_boxes_as_set() {
 /// Include Color unchecked with it ticked earlier: the preset doesn't take the colour.
 #[test]
 fn include_color_needs_include_tool_settings() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     let id = open(&mut app, None);
     let f = &mut app.ui.dialog_mut(id).unwrap().fields;
     f.insert("name".into(), json!("Mine"));
     f.insert("color".into(), json!(true));
     crate::dialogs::confirm(&mut app, id).unwrap();
     let p = app.session.tools.presets.iter().find(|p| p.name == "Mine").unwrap();
-    assert_eq!(p.captures, photocraft_paint::PresetCaptures { size: true, tool_settings: false, color: false });
+    assert_eq!(p.captures, redrob_photo_paint::PresetCaptures { size: true, tool_settings: false, color: false });
 }
 
 /// The dialog opens on the name, all of it selected: typing replaces it, and Enter is OK.

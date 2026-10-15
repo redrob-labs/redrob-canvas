@@ -1,11 +1,11 @@
-# craft-print
+# redrob-craft-print
 
 Submit a print-ready PDF to the system spooler. Used by PdfCraft and DesignCraft;
 there are no dependencies on either app or on a UI framework. Requires Rust 1.95.
 
 ```rust,no_run
-let job = craft_print::Job { title: "Report".into(), ..Default::default() };
-let receipt = craft_print::submit(&pdf_bytes, &job)?;
+let job = redrob_craft_print::Job { title: "Report".into(), ..Default::default() };
+let receipt = redrob_craft_print::submit(&pdf_bytes, &job)?;
 ```
 
 The caller generates the PDF, checks document permissions, and handles page selection,
@@ -86,7 +86,7 @@ refused; select supported options or flatten grayscale into the print-ready page
 Without an explicit duplex request, the queue default applies. Normal color output retains
 the driver's color policy. Single-page or single-copy jobs have no collating order to check.
 
-`cargo test -p craft-print` tests CUPS transport (including pipe-sized jobs and refusal),
+`cargo test -p redrob-craft-print` tests CUPS transport (including pipe-sized jobs and refusal),
 printer parsing, PPD options and argument mapping, and on every platform the Windows pieces that
 need no printer: the PrintTicket, the checks on the driver's validated ticket and capabilities,
 paper matching, job file names, and the PDF sheet reader and its update (classic and compressed
@@ -95,11 +95,11 @@ that must fail without a panic). On Windows it also submits a mixed-orientation 
 and a shrink-to-fit job to a temporary paused queue (inbox "Generic / Text Only" driver on
 `LPT1:`) and checks each arrives as one job with all its sheets. The queue portion explicitly
 skips if the driver or administrative rights are absent. Windows CI installs the inbox test
-driver and sets `CRAFT_PRINT_REQUIRE_QUEUE=1`, making queue preparation/submission mandatory on
+driver and sets `REDROB_CRAFT_PRINT_REQUIRE_QUEUE=1`, making queue preparation/submission mandatory on
 its runner. Two ignored tests check a real printer by hand: `an_installed_driver_validates_the_ticket`
-(`CRAFT_PRINT_TEST_PRINTER`; sends no job) and `an_installed_printer_prints_a_file`
-(`CRAFT_PRINT_TEST_PRINTER`, `CRAFT_PRINT_TEST_FILE`, optional `CRAFT_PRINT_TEST_SCALING=shrink`
-and `CRAFT_PRINT_TEST_DUPLEX=long`). Physical printer fidelity remains a hardware check.
+(`REDROB_CRAFT_PRINT_TEST_PRINTER`; sends no job) and `an_installed_printer_prints_a_file`
+(`REDROB_CRAFT_PRINT_TEST_PRINTER`, `REDROB_CRAFT_PRINT_TEST_FILE`, optional `REDROB_CRAFT_PRINT_TEST_SCALING=shrink`
+and `REDROB_CRAFT_PRINT_TEST_DUPLEX=long`). Physical printer fidelity remains a hardware check.
 
 The cross-platform GitHub Actions workflow is defined in `.github/workflows/print.yml`.
 It runs formatting, Clippy and this crate's own tests on Windows, Linux and macOS when print
@@ -119,7 +119,7 @@ running `cargo deny` need a licence exception for `webpki-root-certs` (CDLA-Perm
 list data reqwest brings) and an advisory ignore for RUSTSEC-2024-0370 (`proc-macro-error`
 unmaintained, a compile-time proc macro of winprint's `fmt-derive`).
 
-`craft_print::rgb` exposes the safe `craft-winprint-gdi` API for native driver settings,
+`redrob_craft_print::rgb` exposes the safe `craft-winprint-gdi` API for native driver settings,
 printable geometry, RGB pages and caller-composed vector strokes. Applications retain ICC
 conversion, document layout, labels and print-mark composition. The shared transport validates
 single-copy DEVMODE settings before emitting manual copies and checks GDI errors. Color policy

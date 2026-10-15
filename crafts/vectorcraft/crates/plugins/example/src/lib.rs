@@ -8,7 +8,7 @@
 use serde_json::{Value, json};
 
 const MANIFEST: &str = r#"{
-  "id": "org.vectorcraft.example.desaturate",
+  "id": "org.rvector.example.desaturate",
   "name": "Desaturate",
   "version": "1.0.0",
   "kind": "filter",

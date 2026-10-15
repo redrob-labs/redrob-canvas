@@ -4,11 +4,11 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Document, Node, OpacityMask};
-use vectorcraft_geom::{Rect, shapes};
-use vectorcraft_svg::{ExportOptions, export, import_with_report};
-use vectorcraft_testkit::raster::{Image, render_artboard};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Document, Node, OpacityMask};
+use redrob_vector_geom::{Rect, shapes};
+use redrob_vector_svg::{ExportOptions, export, import_with_report};
+use redrob_vector_testkit::raster::{Image, render_artboard};
 
 /// A red square masked by white art over its left half.
 fn masked(clip: bool, invert: bool) -> Document {

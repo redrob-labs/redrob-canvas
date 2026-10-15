@@ -54,7 +54,7 @@ fn serialize_and_reopen() {
     let b64 = s.execute("document.serialize", &json!({"format": "vectorcraft"})).unwrap()["dataBase64"].as_str().unwrap().to_string();
     let svg = s.execute("document.serialize", &json!({"format": "svg"})).unwrap()["text"].as_str().unwrap().to_string();
     assert!(svg.contains("<svg"));
-    s.execute("document.open", &json!({"name": "copy.vectorcraft", "dataBase64": b64})).unwrap();
+    s.execute("document.open", &json!({"name": "copy.rvector", "dataBase64": b64})).unwrap();
     assert_eq!(s.documents().len(), 2);
     assert_eq!(s.doc().unwrap().doc.node_count(), 2);
     let png = s.execute("document.serialize", &json!({"format": "png", "scale": 0.5})).unwrap()["dataBase64"].as_str().unwrap().to_string();
@@ -67,7 +67,7 @@ fn save_and_open_path() {
     s.execute("shape.rectangle", &json!({"x": 10, "y": 10, "width": 80, "height": 40})).unwrap();
     let dir = std::env::temp_dir().join(format!("dc-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let path = dir.join("t.vectorcraft");
+    let path = dir.join("t.rvector");
     s.execute("document.save", &json!({"path": path.to_string_lossy()})).unwrap();
     assert!(!s.doc().unwrap().is_dirty());
     s.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
@@ -145,7 +145,7 @@ fn recolor_maps_fills_strokes_gradients() {
     s.execute("recolor.apply", &json!({"map": {"#FF0000": "#00ff00"}})).unwrap();
     let n = s.doc().unwrap().doc.node(NodeId(a)).unwrap().clone();
     match n.appearance.fill_paint() {
-        vectorcraft_color::Paint::Gradient(g) => assert_eq!(g.gradient.stops[0].color.to_hex(), "#00ff00"),
+        redrob_vector_color::Paint::Gradient(g) => assert_eq!(g.gradient.stops[0].color.to_hex(), "#00ff00"),
         other => panic!("{other:?}"),
     }
 }
@@ -160,11 +160,11 @@ fn export_selection_crops_to_the_selection() {
     // Only the selected (last) rectangle, with its stroke.
     let w = b[2].as_f64().unwrap();
     assert!((81.0..90.0).contains(&w) && b[0].as_f64().unwrap() > 190.0, "{v}");
-    let png = vectorcraft_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap();
     assert_eq!(&png[..4], b"\x89PNG");
     assert_eq!(u32::from_be_bytes([png[16], png[17], png[18], png[19]]), (w * 2.0).round() as u32);
     let svg = s.execute("document.exportSelection", &json!({"format": "svg"})).unwrap();
-    let text = String::from_utf8(vectorcraft_format::base64_decode(svg["dataBase64"].as_str().unwrap()).unwrap()).unwrap();
+    let text = String::from_utf8(redrob_vector_format::base64_decode(svg["dataBase64"].as_str().unwrap()).unwrap()).unwrap();
     assert_eq!(text.matches("<path").count(), 1, "{text}");
 }
 
@@ -201,7 +201,7 @@ fn template_opens_as_untitled() {
     s.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 50, "height": 50})).unwrap();
     let dir = std::env::temp_dir().join(format!("vc-tpl-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let path = dir.join("letterhead.vectorcraft");
+    let path = dir.join("letterhead.rvector");
     s.execute("file.saveAsTemplate", &json!({"path": path.to_str().unwrap()})).unwrap();
     s.execute("document.open", &json!({"path": path.to_str().unwrap()})).unwrap();
     let st = s.doc().unwrap();
@@ -243,15 +243,15 @@ fn japanese_file_names_save_open_and_export() {
     s.execute("text.create", &json!({"x": 10, "y": 80, "text": "日本語のテキスト"})).unwrap();
     let dir = std::env::temp_dir().join(format!("vc-日本語フォルダ-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let path = dir.join("運動会カード（最終版）・2024.vectorcraft");
+    let path = dir.join("運動会カード（最終版）・2024.rvector");
     s.execute("document.save", &json!({"path": path.to_string_lossy()})).unwrap();
     assert!(path.exists());
-    assert_eq!(s.doc().unwrap().title(), "運動会カード（最終版）・2024.vectorcraft", "the tab names the file as typed");
+    assert_eq!(s.doc().unwrap().title(), "運動会カード（最終版）・2024.rvector", "the tab names the file as typed");
     s.execute("document.open", &json!({"path": path.to_string_lossy()})).unwrap();
     let d = s.doc().unwrap();
     assert_eq!(d.path.as_deref(), Some(path.to_string_lossy().as_ref()));
     let mut found = false;
-    d.doc.walk(|n| found |= matches!(&n.kind, vectorcraft_doc::NodeKind::Text(t) if t.plain_text() == "日本語のテキスト"));
+    d.doc.walk(|n| found |= matches!(&n.kind, redrob_vector_doc::NodeKind::Text(t) if t.plain_text() == "日本語のテキスト"));
     assert!(found, "the Japanese text comes back");
     for (format, name) in [("svg", "書き出し.svg"), ("png", "書き出し.png"), ("pdf", "書き出し.pdf")] {
         let out = dir.join(name);

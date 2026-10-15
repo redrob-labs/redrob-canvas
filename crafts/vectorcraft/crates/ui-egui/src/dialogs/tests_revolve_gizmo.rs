@@ -2,7 +2,7 @@
 use super::*;
 use crate::{dialogs, theme};
 use egui::{Event, Modifiers, PointerButton};
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 struct Harness {
     app: VectorcraftApp,

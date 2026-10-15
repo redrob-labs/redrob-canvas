@@ -4,12 +4,12 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use photocraft_codecs::{ChannelLayout, EncodeOptions, Image};
-use photocraft_doc::Document;
-use photocraft_ui_egui::i18n;
-use photocraft_ui_egui::served_fonts;
-use photocraft_ui_egui::theme::ThemeKind;
-use photocraft_ui_egui::{FileDialogAnswer, FileDialogRequest, PhotocraftApp, Services};
+use redrob_photo_codecs::{ChannelLayout, EncodeOptions, Image};
+use redrob_photo_doc::Document;
+use redrob_photo_ui_egui::i18n;
+use redrob_photo_ui_egui::served_fonts;
+use redrob_photo_ui_egui::theme::ThemeKind;
+use redrob_photo_ui_egui::{FileDialogAnswer, FileDialogRequest, PhotocraftApp, Services};
 use wasm_bindgen::JsCast as _;
 
 type Inbox = Arc<Mutex<Vec<(String, Vec<u8>)>>>;
@@ -17,14 +17,14 @@ type Inbox = Arc<Mutex<Vec<(String, Vec<u8>)>>>;
 /// Everything File › Open reads: PhotoCraft, Photoshop, OpenRaster, Krita and Affinity documents, flat images, and
 /// Photoshop brushes (.abr), gradients (.grd) and swatches (.aco, .ase), which go to the preset libraries.
 const OPEN_EXTS: &[&str] = &[
-    "pcraft", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr",
+    "rphoto", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr",
     "pbm", "pgm", "ppm", "pam", "pfm", "dds", "fits", "fit", "fts", "dpx", "cin", "heic", "heif", "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef",
     "orf", "rw2", "raf", "abr", "grd", "svg", "svgz", "aco", "ase", "af", "afdesign", "afphoto", "afpub",
 ];
 const SVG_EXTS: &[&str] = &["svg", "svgz"];
 const CANVAS_ID: &str = "photocraft_canvas";
 
-/// Fonts the host serves next to the page (`photocraft_ui_egui::served_fonts`): craft-fonts' manifest
+/// Fonts the host serves next to the page (`redrob_photo_ui_egui::served_fonts`): craft-fonts' manifest
 /// format, each file relative to the site root. No manifest (a 404) means no served fonts.
 const FONTS_MANIFEST: &str = "fonts/manifest.txt";
 
@@ -55,7 +55,7 @@ pub fn start() {
         let q = query();
         let force_cpu = q.contains("cpu");
         let mut options = eframe::WebOptions::default();
-        photocraft_ui_egui::gpu_canvas::use_adapter_limits(&mut options.wgpu_options.wgpu_setup);
+        redrob_photo_ui_egui::gpu_canvas::use_adapter_limits(&mut options.wgpu_options.wgpu_setup);
         if q.contains("webgl")
             && let eframe::egui_wgpu::WgpuSetup::CreateNew(create) = &mut options.wgpu_options.wgpu_setup
         {
@@ -85,7 +85,7 @@ pub fn start() {
                     preset_warnings.extend(warnings);
                     let mut app = PhotocraftApp::new(session, services(inbox.clone()));
                     if !preset_warnings.is_empty() {
-                        photocraft_ui_egui::notices::post(&mut app, i18n::t("Some brush presets could not be loaded"), preset_warnings, true, None);
+                        redrob_photo_ui_egui::notices::post(&mut app, i18n::t("Some brush presets could not be loaded"), preset_warnings, true, None);
                     }
                     listen_pen(&pen_target, app.stylus.feed.clone());
                     app.set_theme(&cc.egui_ctx, ThemeKind::Pro);
@@ -113,8 +113,8 @@ pub fn start() {
 /// Pen pressure, tilt, twist and the eraser button from Pointer Events (eframe forwards none of them for pens) into
 /// the app's stylus feed. The sample is kept through `pointerup` so the stroke's last points keep
 /// their pressure; hovering, a mouse, or leaving the canvas clears it.
-fn listen_pen(target: &web_sys::HtmlCanvasElement, feed: photocraft_ui_egui::stylus::StylusFeed) {
-    use photocraft_ui_egui::stylus::PenSample;
+fn listen_pen(target: &web_sys::HtmlCanvasElement, feed: redrob_photo_ui_egui::stylus::StylusFeed) {
+    use redrob_photo_ui_egui::stylus::PenSample;
     use wasm_bindgen::closure::Closure;
     for kind in ["pointerdown", "pointermove", "pointerup", "pointercancel", "pointerleave"] {
         let feed = feed.clone();
@@ -312,7 +312,7 @@ impl eframe::App for WebShell {
             && let Some(error) = self.presets.error()
         {
             egui::Panel::top("browser_preset_storage").show(ui, |ui| {
-                let tokens = photocraft_ui_egui::theme::Tokens::for_kind(self.app.ui.theme);
+                let tokens = redrob_photo_ui_egui::theme::Tokens::for_kind(self.app.ui.theme);
                 // Put retry first so floating brush windows cannot cover the control.
                 ui.horizontal_wrapped(|ui| {
                     if self.database.is_some() && ui.button(i18n::t("Retry saving presets")).clicked() {
@@ -337,10 +337,10 @@ fn services(inbox: Inbox) -> Services {
     Services {
         screen_pick: screen_color_service(),
         import: Some(Box::new(|name: &str, bytes: &[u8], max_svg_group_depth: usize| {
-            photocraft_io::import_with_svg_group_depth(name, bytes, max_svg_group_depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
+            redrob_photo_io::import_with_svg_group_depth(name, bytes, max_svg_group_depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
         })),
-        export: Some(Box::new(|doc: &Document, path: &str, settings: &photocraft_ui_egui::ExportSettings| {
-            photocraft_io::export(doc, path, &settings.io_options()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string())
+        export: Some(Box::new(|doc: &Document, path: &str, settings: &redrob_photo_ui_egui::ExportSettings| {
+            redrob_photo_io::export(doc, path, &settings.io_options()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string())
         })),
         file_dialog: Some(Box::new(|request, _parent, reply| match request {
             // The browser's file picker hands over the files' contents, not paths. File › Open
@@ -381,7 +381,7 @@ fn services(inbox: Inbox) -> Services {
         write: Some(Box::new(|path: &str, bytes: &[u8]| download(path, bytes))),
         encode_png: Some(Box::new(|w, h, rgba| {
             let img = Image::from_u8(w, h, ChannelLayout::Rgba, rgba.to_vec()).map_err(|e| e.to_string())?;
-            photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &EncodeOptions::default()).map_err(|e| e.to_string())
+            redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &EncodeOptions::default()).map_err(|e| e.to_string())
         })),
         inbox: Some(inbox),
         // Preferences live in the browser's localStorage.
@@ -440,9 +440,9 @@ fn mime_for(name: &str) -> &'static str {
 
 /// Rust bindings to the browser's user-activated EyeDropper API; unsupported browsers keep
 /// the document picker and its normal canvas zoom. The browser owns its screen magnifier.
-fn screen_color_service() -> Option<photocraft_ui_egui::screen_picker::Service> {
+fn screen_color_service() -> Option<redrob_photo_ui_egui::screen_picker::Service> {
     use js_sys::{Function, Reflect};
-    use photocraft_ui_egui::screen_picker::{Capture, Pending};
+    use redrob_photo_ui_egui::screen_picker::{Capture, Pending};
     use wasm_bindgen::{JsValue, closure::Closure};
     let window = web_sys::window()?;
     let constructor = Reflect::get(&window, &JsValue::from_str("EyeDropper")).ok()?.dyn_into::<Function>().ok()?;
@@ -488,7 +488,7 @@ fn screen_color_service() -> Option<photocraft_ui_egui::screen_picker::Service> 
                         Ok(value) => Reflect::get(&value, &JsValue::from_str("sRGBHex"))
                             .ok()
                             .and_then(|v| v.as_string())
-                            .and_then(|h| photocraft_ui_egui::color_picker_ui::parse_hex(&h))
+                            .and_then(|h| redrob_photo_ui_egui::color_picker_ui::parse_hex(&h))
                             .map(|rgb| Capture::Color(Some(rgb)))
                             .ok_or_else(|| "Browser eyedropper returned an invalid color".into()),
                         Err(e) if Reflect::get(&e, &JsValue::from_str("name")).ok().and_then(|v| v.as_string()).as_deref() == Some("AbortError") => {

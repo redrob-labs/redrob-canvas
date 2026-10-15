@@ -3,14 +3,14 @@
 
 use egui::Modifiers;
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::{Layer, LayerId};
+use redrob_photo_doc::{Layer, LayerId};
 use serde_json::json;
 
 use crate::PhotocraftApp;
 
 /// Background, then `A` and `B` on top of it with both selected (`B` active).
 fn two_selected() -> (egui_kittest::Harness<'static, PhotocraftApp>, LayerId, LayerId) {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 8, "height": 8})).unwrap();
     let a = LayerId(s.execute("layer.new.layer", json!({"name": "A"})).unwrap()["layer"].as_u64().unwrap());
     let b = LayerId(s.execute("layer.new.layer", json!({"name": "B"})).unwrap()["layer"].as_u64().unwrap());

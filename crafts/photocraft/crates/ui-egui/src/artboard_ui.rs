@@ -3,7 +3,7 @@
 //! background). Everything that changes the document is `layer.artboard.set` and friends.
 
 use egui::{Align2, Color32, Pos2, Rect, Stroke};
-use photocraft_doc::{ArtboardBackground, Document, Layer};
+use redrob_photo_doc::{ArtboardBackground, Document, Layer};
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -14,7 +14,7 @@ use crate::theme::Tokens;
 /// boards' x edges, split around the boards they cross).
 pub fn pasteboard_rects(xf: &ViewXform, doc: &Document) -> Vec<Rect> {
     let canvas = doc.bounds();
-    let boards: Vec<photocraft_geom::Rect> = doc.artboards().iter().map(|b| b.2.rect.intersect(&canvas)).filter(|r| !r.is_empty()).collect();
+    let boards: Vec<redrob_photo_geom::Rect> = doc.artboards().iter().map(|b| b.2.rect.intersect(&canvas)).filter(|r| !r.is_empty()).collect();
     let mut xs: Vec<i32> = vec![canvas.x0, canvas.x1];
     for b in &boards {
         xs.extend([b.x0, b.x1]);
@@ -29,12 +29,12 @@ pub fn pasteboard_rects(xf: &ViewXform, doc: &Document) -> Vec<Rect> {
         let mut y = canvas.y0;
         for (a, b) in spans {
             if a > y {
-                out.push(xf.doc_rect(photocraft_geom::Rect::new(x0, y, x1, a)));
+                out.push(xf.doc_rect(redrob_photo_geom::Rect::new(x0, y, x1, a)));
             }
             y = y.max(b);
         }
         if y < canvas.y1 {
-            out.push(xf.doc_rect(photocraft_geom::Rect::new(x0, y, x1, canvas.y1)));
+            out.push(xf.doc_rect(redrob_photo_geom::Rect::new(x0, y, x1, canvas.y1)));
         }
     }
     out
@@ -88,7 +88,7 @@ pub fn properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, layer: &Layer) {
     ui.add_space(4.0);
     let mut preset = a.preset.clone();
     let mut opts: Vec<(String, &str)> = vec![(String::new(), tl!("Custom"))];
-    opts.extend(photocraft_engine::artboard_cmds::PRESETS.iter().map(|(n, _, _)| (n.to_string(), *n)));
+    opts.extend(redrob_photo_engine::artboard_cmds::PRESETS.iter().map(|(n, _, _)| (n.to_string(), *n)));
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(tl!("Size")).color(t.text_dim).size(12.0));
         if crate::widgets::dropdown(ui, &key("preset"), &mut preset, &opts, 150.0) && !preset.is_empty() {
@@ -168,7 +168,7 @@ mod tests {
     use crate::menus::{invoke as menu, is_live, menu_items};
 
     fn app() -> (PhotocraftApp, egui::Context) {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 100, "height": 50})).unwrap();
         app.sync_views();
         (app, egui::Context::default())
@@ -256,7 +256,7 @@ mod tests {
         tool_event(app, ToolEvent::Up { x: from[0] + by[0], y: from[1] + by[1] }, mods);
     }
 
-    fn boards(app: &PhotocraftApp) -> Vec<photocraft_geom::Rect> {
+    fn boards(app: &PhotocraftApp) -> Vec<redrob_photo_geom::Rect> {
         app.session.active().unwrap().doc.artboards().iter().map(|b| b.2.rect).collect()
     }
 
@@ -272,14 +272,14 @@ mod tests {
         app.ui.extras.snap = false;
         app.ui.view.show.smart_guides = false;
         drag(&mut app, [20.0, 20.0], [10.0, 5.0], egui::Modifiers::NONE);
-        assert_eq!(boards(&app), vec![photocraft_geom::Rect::new(10, 5, 50, 45)]);
+        assert_eq!(boards(&app), vec![redrob_photo_geom::Rect::new(10, 5, 50, 45)]);
         let st = app.session.active().unwrap();
         assert_eq!(st.active_layer, Some(st.doc.artboards()[0].0));
         // ⌥-drag: the copy follows the pointer, the original stays.
         drag(&mut app, [20.0, 20.0], [50.0, 0.0], egui::Modifiers::ALT);
         let mut got = boards(&app);
         got.sort_by_key(|r| r.x0);
-        assert_eq!(got, vec![photocraft_geom::Rect::new(10, 5, 50, 45), photocraft_geom::Rect::new(60, 5, 100, 45)]);
+        assert_eq!(got, vec![redrob_photo_geom::Rect::new(10, 5, 50, 45), redrob_photo_geom::Rect::new(60, 5, 100, 45)]);
         // One undo step takes the copy back.
         app.run("edit.undo", json!({})).unwrap();
         assert_eq!(boards(&app).len(), 1);

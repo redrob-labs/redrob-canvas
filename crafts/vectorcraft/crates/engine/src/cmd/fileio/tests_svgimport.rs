@@ -4,8 +4,8 @@
 
 use std::path::PathBuf;
 
+use redrob_vector_doc::{ImageObject, NodeKind};
 use serde_json::json;
-use vectorcraft_doc::{ImageObject, NodeKind};
 
 use super::*;
 
@@ -85,7 +85,7 @@ fn opening_an_svg_links_its_images_from_its_folder() {
     assert_eq!(r["updated"].as_array().unwrap().len(), 1, "{r}");
     let gone = &images(&s)[1];
     assert_eq!((gone.width, gone.height), (50, 50));
-    let b = gone.xf.transform_rect_bbox(vectorcraft_geom::Rect::new(0.0, 0.0, 50.0, 50.0));
+    let b = gone.xf.transform_rect_bbox(redrob_vector_geom::Rect::new(0.0, 0.0, 50.0, 50.0));
     assert!((b.x0 - 200.0).abs() < 1e-6 && (b.width() - 100.0).abs() < 1e-6, "{b:?}");
 }
 

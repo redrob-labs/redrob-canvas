@@ -6,7 +6,7 @@
 
 use std::borrow::Cow;
 
-use vectorcraft_color::cms;
+use redrob_vector_color::cms;
 
 use super::jpeg::{self, ColorModel};
 use super::on_white;

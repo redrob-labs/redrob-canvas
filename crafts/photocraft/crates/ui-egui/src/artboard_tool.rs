@@ -8,7 +8,7 @@
 //! gesture is one undo step; this module only turns pointer gestures into them.
 
 use egui::{CursorIcon, Pos2, Rect, Stroke, vec2};
-use photocraft_doc::{Document, Layer, LayerId};
+use redrob_photo_doc::{Document, Layer, LayerId};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -50,7 +50,7 @@ pub enum ArtboardDrag {
     Resize { id: LayerId, rect: [i64; 4], hx: i8, hy: i8, start: [f64; 2], cur: [f64; 2], keep: bool },
 }
 
-fn edges(r: photocraft_geom::Rect) -> [i64; 4] {
+fn edges(r: redrob_photo_geom::Rect) -> [i64; 4] {
     [i64::from(r.x0), i64::from(r.y0), i64::from(r.x1), i64::from(r.y1)]
 }
 
@@ -301,7 +301,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
         ui.label(egui::RichText::new(tl!("Size")).color(t.text_dim));
         let mut preset = preset.unwrap_or_default();
         let mut opts: Vec<(String, &str)> = vec![(String::new(), tl!("Custom"))];
-        opts.extend(photocraft_engine::artboard_cmds::PRESETS.iter().map(|(n, _, _)| (n.to_string(), *n)));
+        opts.extend(redrob_photo_engine::artboard_cmds::PRESETS.iter().map(|(n, _, _)| (n.to_string(), *n)));
         if crate::widgets::dropdown(ui, "artboard-tool-preset", &mut preset, &opts, 150.0) && !preset.is_empty() {
             edit = Some(json!({"layer": id.0, "preset": preset}));
         }
@@ -342,7 +342,7 @@ mod tests {
     use crate::canvas::tool_event;
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.sync_views();
         app.ui.extras.snap = false;
@@ -359,7 +359,7 @@ mod tests {
         tool_event(app, ToolEvent::Up { x: to[0], y: to[1] }, m);
     }
 
-    fn boards(app: &PhotocraftApp) -> Vec<photocraft_geom::Rect> {
+    fn boards(app: &PhotocraftApp) -> Vec<redrob_photo_geom::Rect> {
         app.session.active().unwrap().doc.artboards().iter().map(|b| b.2.rect).collect()
     }
 
@@ -369,17 +369,17 @@ mod tests {
     fn artboard_tool_draws_resizes_and_moves_boards() {
         let mut app = app();
         drag(&mut app, [20.0, 30.0], [120.0, 110.0]);
-        assert_eq!(boards(&app), vec![photocraft_geom::Rect::new(20, 30, 120, 110)]);
+        assert_eq!(boards(&app), vec![redrob_photo_geom::Rect::new(20, 30, 120, 110)]);
         let st = app.session.active().unwrap();
         assert_eq!(st.active_layer, Some(st.doc.artboards()[0].0));
         // The right edge's handle.
         drag(&mut app, [120.0, 70.0], [160.0, 75.0]);
-        assert_eq!(boards(&app), vec![photocraft_geom::Rect::new(20, 30, 160, 110)]);
+        assert_eq!(boards(&app), vec![redrob_photo_geom::Rect::new(20, 30, 160, 110)]);
         app.run("edit.undo", json!({})).unwrap();
-        assert_eq!(boards(&app), vec![photocraft_geom::Rect::new(20, 30, 120, 110)]);
+        assert_eq!(boards(&app), vec![redrob_photo_geom::Rect::new(20, 30, 120, 110)]);
         // From inside: the board moves.
         drag(&mut app, [60.0, 60.0], [70.0, 50.0]);
-        assert_eq!(boards(&app), vec![photocraft_geom::Rect::new(30, 20, 130, 100)]);
+        assert_eq!(boards(&app), vec![redrob_photo_geom::Rect::new(30, 20, 130, 100)]);
         // A click on empty canvas draws nothing.
         drag(&mut app, [300.0, 250.0], [300.0, 250.0]);
         assert_eq!(boards(&app).len(), 1);
@@ -413,7 +413,7 @@ mod tests {
         let right = buttons.iter().find(|b| b.0 == "right").unwrap().1;
         assert!(right[0] > 120.0 && (right[1] - 55.0).abs() < 1e-9, "{right:?}");
         drag(&mut app, right, right);
-        assert_eq!(boards(&app), vec![photocraft_geom::Rect::new(20, 30, 120, 80), photocraft_geom::Rect::new(220, 30, 320, 80)]);
+        assert_eq!(boards(&app), vec![redrob_photo_geom::Rect::new(20, 30, 120, 80), redrob_photo_geom::Rect::new(220, 30, 320, 80)]);
         app.run("edit.undo", json!({})).unwrap();
         assert_eq!(boards(&app).len(), 1);
         // The 100×50 board's bottom-right corner, dragged 40 right and 5 down with ⇧: 140×70.
@@ -421,13 +421,13 @@ mod tests {
         tool_event(&mut app, ToolEvent::Down { x: 120.0, y: 80.0, pressure: 1.0 }, m);
         tool_event(&mut app, ToolEvent::Move { x: 160.0, y: 85.0, pressure: 1.0 }, m);
         tool_event(&mut app, ToolEvent::Up { x: 160.0, y: 85.0 }, m);
-        assert_eq!(boards(&app), vec![photocraft_geom::Rect::new(20, 30, 160, 100)]);
+        assert_eq!(boards(&app), vec![redrob_photo_geom::Rect::new(20, 30, 160, 100)]);
     }
 
     /// V picks the Move group, ⇧V cycles Move ↔ Artboard as in Photoshop.
     #[test]
     fn shift_v_cycles_move_and_artboard() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let ctx = egui::Context::default();
         let press = |app: &mut PhotocraftApp, modifiers| {
             let key = egui::Key::V;

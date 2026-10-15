@@ -11,8 +11,8 @@
 //! [`effects::gradient_t`] (and the GPU's `gradient_t`) already take, so both compositors share
 //! one layout.
 
-use photocraft_doc::GradientStyle;
-use photocraft_geom::Rect;
+use redrob_photo_doc::GradientStyle;
+use redrob_photo_geom::Rect;
 
 use crate::effects;
 

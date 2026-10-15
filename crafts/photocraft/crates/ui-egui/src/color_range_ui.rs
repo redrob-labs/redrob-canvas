@@ -14,7 +14,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
-use photocraft_doc::{DocId, Document};
+use redrob_photo_doc::{DocId, Document};
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -88,7 +88,7 @@ pub fn controls(f: &Map<String, Value>) -> Controls {
 /// Open the dialog with Photoshop's defaults (Sampled Colors, Fuzziness 40, the foreground colour
 /// as the sample until the eyedropper picks one).
 pub fn open(app: &mut PhotocraftApp) -> u64 {
-    let label = photocraft_engine::commands::find(COMMAND).map_or(tl!("Color Range…"), |c| c.label);
+    let label = redrob_photo_engine::commands::find(COMMAND).map_or(tl!("Color Range…"), |c| c.label);
     let mut f = Map::new();
     f.insert("__colorRange".into(), json!(true));
     f.insert("__label".into(), json!(label));
@@ -211,7 +211,7 @@ fn scope_preview(proxy: &Document, params: &Value, mask: &mut [f32]) {
         return;
     }
     if let Some(selection) = proxy.selection.as_ref() {
-        let prior = photocraft_algo::selection::mask_from_surface(Some(selection), proxy.bounds());
+        let prior = redrob_photo_algo::selection::mask_from_surface(Some(selection), proxy.bounds());
         for (value, bound) in mask.iter_mut().zip(prior) {
             *value = value.min(bound);
         }
@@ -225,7 +225,7 @@ fn proxy_mask(app: &PhotocraftApp, proxy: &Document, k: u32, params: &Value) -> 
     if params.get("select").and_then(Value::as_str).unwrap_or("sampledColors") == "sampledColors" {
         // Pick on the original document, not the thumbnail's nearest retained pixel. The
         // prepared Lab query is the same one the command uses at full resolution.
-        let query = photocraft_engine::selection_cmds::ColorRangeSamples::new(&app.session, params).map_err(|e| e.to_string())?;
+        let query = redrob_photo_engine::selection_cmds::ColorRangeSamples::new(&app.session, params).map_err(|e| e.to_string())?;
         // Like the command (and OK): `sampleAllLayers: false` judges the active layer's own
         // pixels, otherwise the composite.
         let all_layers = params.get("sampleAllLayers").and_then(Value::as_bool).unwrap_or(true);
@@ -236,7 +236,7 @@ fn proxy_mask(app: &PhotocraftApp, proxy: &Document, k: u32, params: &Value) -> 
                 surf.read_rgba_into(area, &mut px);
                 px
             }
-            _ => photocraft_compose::render(proxy, area).px,
+            _ => redrob_photo_compose::render(proxy, area).px,
         };
         let invert = params.get("invert").and_then(Value::as_bool).unwrap_or(false);
         let mut mask: Vec<f32> = query
@@ -253,7 +253,7 @@ fn proxy_mask(app: &PhotocraftApp, proxy: &Document, k: u32, params: &Value) -> 
     }
     if params.get("select").and_then(Value::as_str) == Some("outOfGamut") {
         let pv = app.session.color.proof(proxy.id);
-        let (m, _) = photocraft_engine::color_cmds::gamut_mask(proxy, &pv.setup, pv.gamut_threshold).map_err(|e| e.to_string())?;
+        let (m, _) = redrob_photo_engine::color_cmds::gamut_mask(proxy, &pv.setup, pv.gamut_threshold).map_err(|e| e.to_string())?;
         let invert = params.get("invert").and_then(Value::as_bool).unwrap_or(false);
         let mut mask: Vec<f32> = m.iter().map(|v| f32::from(*v) / 255.0).map(|v| if invert { 1.0 - v } else { v }).collect();
         scope_preview(proxy, params, &mut mask);
@@ -276,7 +276,7 @@ fn proxy_mask(app: &PhotocraftApp, proxy: &Document, k: u32, params: &Value) -> 
             }
         }
     }
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.tools = app.session.tools.clone();
     // Preserve the proxy's pre-existing selection so preview and OK use the same scope.
     s.add_document(proxy.clone(), None);
@@ -285,7 +285,7 @@ fn proxy_mask(app: &PhotocraftApp, proxy: &Document, k: u32, params: &Value) -> 
     }
     s.execute(COMMAND, p).map_err(|e| e.to_string())?;
     let d = s.active().ok_or("no preview document")?;
-    Ok(photocraft_algo::selection::mask_from_surface(d.doc.selection.as_ref(), area))
+    Ok(redrob_photo_algo::selection::mask_from_surface(d.doc.selection.as_ref(), area))
 }
 
 /// Record why the preview failed (logged once per new reason), or clear it.
@@ -334,7 +334,7 @@ fn preview(app: &mut PhotocraftApp, ctx: &egui::Context, f: &Map<String, Value>)
     let (w, h) = (proxy.size.width as usize, proxy.size.height as usize);
     if image_view {
         if app.color_range.as_ref().is_some_and(|p| p.image.is_none()) {
-            let buf = photocraft_compose::thumbnail_buffer(&proxy, proxy.size.width.max(proxy.size.height));
+            let buf = redrob_photo_compose::thumbnail_buffer(&proxy, proxy.size.width.max(proxy.size.height));
             let thumb = match app.session.color.canvas_display(&proxy) {
                 Ok(display) => display.to_rgba8(&buf),
                 Err(e) => {
@@ -672,7 +672,7 @@ pub fn canvas_eyedropper(app: &mut PhotocraftApp, ctx: &egui::Context, over: egu
     } else {
         s(&f, "__tool", "sample")
     };
-    if app.session.prefs().cursors.other == photocraft_engine::prefs::OtherCursor::Precise {
+    if app.session.prefs().cursors.other == redrob_photo_engine::prefs::OtherCursor::Precise {
         ctx.set_cursor_icon(egui::CursorIcon::Crosshair);
     } else {
         // The tip of the icon's pipette is at (2, 22) of its 24-unit box (as the Color Picker's).
@@ -751,8 +751,8 @@ mod tests {
         Harness,
         kittest::{NodeT, Queryable},
     };
-    use photocraft_doc::{Color, ColorMode, SampleType, Size};
-    use photocraft_geom::Rect as GRect;
+    use redrob_photo_doc::{Color, ColorMode, SampleType, Size};
+    use redrob_photo_geom::Rect as GRect;
 
     /// 40 × 30: red block (0..20, 0..15), blue block (20..40, 0..15), black and white below.
     fn app_with_doc() -> PhotocraftApp {
@@ -761,7 +761,7 @@ mod tests {
         bg.fill_rect(GRect::new(0, 0, 20, 15), &[1.0, 0.0, 0.0, 1.0]);
         bg.fill_rect(GRect::new(20, 0, 40, 15), &[0.0, 0.0, 1.0, 1.0]);
         bg.fill_rect(GRect::new(0, 15, 20, 30), &[0.0, 0.0, 0.0, 1.0]);
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.add_document(doc, None);
         PhotocraftApp::new(s, crate::Services::default())
     }
@@ -1178,7 +1178,7 @@ mod tests {
         let surface = doc.layers[0].surface_mut().unwrap();
         surface.fill_rect(GRect::new(200, 0, 400, 4), &[0.0, 0.0, 1.0, 1.0]);
         surface.fill_rect(GRect::new(101, 0, 102, 4), &[0.0, 0.0, 1.0, 1.0]);
-        let mut session = photocraft_engine::Session::new();
+        let mut session = redrob_photo_engine::Session::new();
         session.add_document(doc, None);
         let mut app = PhotocraftApp::new(session, crate::Services::default());
         let id = open(&mut app);
@@ -1187,7 +1187,7 @@ mod tests {
         fields.insert("fuzziness".into(), json!(0.0));
         let original = app.session.active().unwrap().doc.clone();
         let proxy = crate::proxy::proxy_document(&original, 2);
-        let mut old = photocraft_engine::Session::new();
+        let mut old = redrob_photo_engine::Session::new();
         old.add_document(proxy.clone(), None);
         old.execute(COMMAND, json!({"points": [[50, 0]], "fuzziness": 0})).unwrap();
         assert_eq!(
@@ -1207,7 +1207,7 @@ mod tests {
     fn preview_honours_sample_all_layers_like_ok() {
         let mut app = app_with_doc();
         let doc = app.session.active().unwrap().doc.clone();
-        let mut top = photocraft_doc::Layer::new("blue cover", photocraft_doc::LayerContent::Raster(doc.layers[0].surface().unwrap().clone()));
+        let mut top = redrob_photo_doc::Layer::new("blue cover", redrob_photo_doc::LayerContent::Raster(doc.layers[0].surface().unwrap().clone()));
         top.surface_mut().unwrap().fill_rect(GRect::new(0, 0, 40, 30), &[0.0, 0.0, 1.0, 1.0]);
         app.session
             .edit("layers", |doc, _| {

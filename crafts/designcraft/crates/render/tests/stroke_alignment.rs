@@ -1,10 +1,10 @@
 //! Synthetic pixel regressions for stroke alignment. No imported artwork is needed.
-use designcraft_color::{Color, swatch::Swatch};
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Document, Fill, Item, ItemId, Join, Shape, SpreadRef, Stroke, StrokeAlign, StrokeType};
-use designcraft_geom::{Affine, PathData, Point, Rect, shapes};
-use designcraft_render::{Placed, RenderOptions, Rendered, Renderer};
+use redrob_layout_color::{Color, swatch::Swatch};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::build::NewDocument;
+use redrob_layout_doc::{Document, Fill, Item, ItemId, Join, Shape, SpreadRef, Stroke, StrokeAlign, StrokeType};
+use redrob_layout_geom::{Affine, PathData, Point, Rect, shapes};
+use redrob_layout_render::{Placed, RenderOptions, Rendered, Renderer};
 
 const WHITE: [u8; 4] = [255, 255, 255, 255];
 const RED: [u8; 4] = [255, 0, 0, 255];
@@ -19,7 +19,7 @@ fn render_with(path: PathData, fill: bool, stroke: Stroke, xf: Affine, threads: 
     d.swatches.push(Swatch::color("Red", Color::rgb8(255, 0, 0)));
     let id = ItemId(d.alloc());
     let mut item = Item::new(id, d.default_layer(), Shape::Rectangle, path);
-    item.fill = if fill { Fill::swatch(designcraft_color::swatch::PAPER) } else { Fill::default() };
+    item.fill = if fill { Fill::swatch(redrob_layout_color::swatch::PAPER) } else { Fill::default() };
     item.stroke = stroke;
     item.xf = xf;
     item.opacity = opacity;

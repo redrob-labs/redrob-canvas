@@ -3,7 +3,7 @@
 
 use egui::{Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
-use photocraft_geom::Rect;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use super::*;
@@ -13,7 +13,7 @@ const SQUARE: Rect = Rect::new(50, 40, 130, 110);
 
 /// A black 80×70 square on a white 200×150 document, the Magnetic Lasso, 100 % zoom.
 fn app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
     app.sync_views();
     app.session
@@ -273,7 +273,7 @@ fn hostile_input_never_panics() {
     remove_last_point(&mut app);
     cancel(&mut app);
     // No document at all.
-    let mut empty = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut empty = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     empty.ui.tool = Tool::MagneticLasso;
     click(&mut empty, 5.0, 5.0, Modifiers::NONE);
     hover_along(&mut empty, &[[5.0, 5.0], [60.0, 5.0], [60.0, 60.0]]);

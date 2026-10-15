@@ -1,7 +1,7 @@
 //! Paragraph / character styles and swatches.
 
-use designcraft_color::{Swatch, SwatchValue};
-use designcraft_doc::{CharAttrs, CharacterStyle, ParaAttrs, ParagraphStyle, Styles};
+use redrob_layout_color::{Swatch, SwatchValue};
+use redrob_layout_doc::{CharAttrs, CharacterStyle, ParaAttrs, ParagraphStyle, Styles};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, has_text_or_frames, ok, str_param};
@@ -20,7 +20,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "{name, entries: [{name?, characters?, family, style?, relativeSize?, horizontalScale?, verticalScale?, baselineShift?, scaleOption?}]} — replaces a composite font definition; empty characters selects the base entry",
             has_doc,
             |s, p| {
-                let f: designcraft_doc::cjk::CompositeFont =
+                let f: redrob_layout_doc::cjk::CompositeFont =
                     serde_json::from_value(p.clone()).map_err(|e| bad("style.compositeFont.set", e.to_string()))?;
                 if f.name.trim().is_empty()
                     || f.entries.is_empty()
@@ -233,7 +233,7 @@ pub fn specs() -> Vec<CommandSpec> {
             let inks: Vec<Value> = d
                 .swatches
                 .iter()
-                .filter(|w| matches!(w.value, designcraft_color::swatch::SwatchValue::Color { color_type: designcraft_color::swatch::ColorType::Spot, .. }))
+                .filter(|w| matches!(w.value, redrob_layout_color::swatch::SwatchValue::Color { color_type: redrob_layout_color::swatch::ColorType::Spot, .. }))
                 .map(|w| {
                     let alias = d.inks.aliases.iter().find(|(a, _)| *a == w.name).map(|(_, t)| t.clone());
                     json!({"name": w.name, "process": d.inks.resolve(&w.name).1, "alias": alias})
@@ -262,7 +262,7 @@ pub fn specs() -> Vec<CommandSpec> {
                             d.swatch(n).is_some_and(|w| {
                                 matches!(
                                     w.value,
-                                    designcraft_color::swatch::SwatchValue::Color { color_type: designcraft_color::swatch::ColorType::Spot, .. }
+                                    redrob_layout_color::swatch::SwatchValue::Color { color_type: redrob_layout_color::swatch::ColorType::Spot, .. }
                                 )
                             })
                         };
@@ -325,7 +325,7 @@ pub fn specs() -> Vec<CommandSpec> {
                     for g in &mut d.color_groups {
                         g.swatches.retain(|w| !names.contains(w));
                     }
-                    d.color_groups.push(designcraft_doc::ColorGroup { name: name.clone(), swatches: names });
+                    d.color_groups.push(redrob_layout_doc::ColorGroup { name: name.clone(), swatches: names });
                     Ok(json!({"name": name}))
                 })
             }
@@ -451,12 +451,12 @@ fn create_para(s: &mut Session, p: &Value) -> Result<Value> {
         && let Ok(cur) = s.execute("type.selectionAttrs", &json!({}))
         && !cur.is_null()
     {
-        if let Ok(pp) = serde_json::from_value::<designcraft_doc::ParaProps>(cur["para"].clone()) {
+        if let Ok(pp) = serde_json::from_value::<redrob_layout_doc::ParaProps>(cur["para"].clone()) {
             let mut full = ParaProps_to_attrs(&pp);
             full.merge(&para);
             para = full;
         }
-        if let Ok(cp) = serde_json::from_value::<designcraft_doc::CharProps>(cur["chars"].clone()) {
+        if let Ok(cp) = serde_json::from_value::<redrob_layout_doc::CharProps>(cur["chars"].clone()) {
             let mut full = CharProps_to_attrs(&cp);
             full.merge(&chars);
             chars = full;
@@ -477,12 +477,12 @@ fn create_para(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 #[allow(non_snake_case)]
-fn ParaProps_to_attrs(p: &designcraft_doc::ParaProps) -> ParaAttrs {
-    designcraft_doc::ParaProps::common([p])
+fn ParaProps_to_attrs(p: &redrob_layout_doc::ParaProps) -> ParaAttrs {
+    redrob_layout_doc::ParaProps::common([p])
 }
 #[allow(non_snake_case)]
-fn CharProps_to_attrs(p: &designcraft_doc::CharProps) -> CharAttrs {
-    designcraft_doc::CharProps::common([p])
+fn CharProps_to_attrs(p: &redrob_layout_doc::CharProps) -> CharAttrs {
+    redrob_layout_doc::CharProps::common([p])
 }
 
 fn edit_para(s: &mut Session, p: &Value) -> Result<Value> {
@@ -517,7 +517,7 @@ fn edit_para(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// Rename a paragraph or character style everywhere it's used.
-fn rename_style(d: &mut designcraft_doc::Document, para: bool, from: &str, to: &str) {
+fn rename_style(d: &mut redrob_layout_doc::Document, para: bool, from: &str, to: &str) {
     if para {
         for s in &mut d.styles_mut().paragraph {
             if s.name == from {
@@ -537,7 +537,7 @@ fn rename_style(d: &mut designcraft_doc::Document, para: bool, from: &str, to: &
 /// Point every reference to style `from` at `to`, except the style's own registry entry (its
 /// `name` field) — shared by renaming (which also updates the entry's name) and deletion (which
 /// instead removes the entry, after its former uses point at the replacement).
-fn redirect_style_refs(d: &mut designcraft_doc::Document, para: bool, from: &str, to: &str) {
+fn redirect_style_refs(d: &mut redrob_layout_doc::Document, para: bool, from: &str, to: &str) {
     let st = d.styles_mut();
     // A style is never based on itself: when `to` was based on `from`, it takes `from`'s parent.
     let parent_of = |based_on: Option<&String>| based_on.filter(|b| b.as_str() != to).cloned();
@@ -626,7 +626,7 @@ fn group_styles(s: &mut Session, p: &Value) -> Result<Value> {
             }
             let base = n.rsplit('/').next().unwrap_or(n);
             let mut to = if group.is_empty() { base.to_string() } else { format!("{group}/{base}") };
-            let taken = |d: &designcraft_doc::Document, x: &str| {
+            let taken = |d: &redrob_layout_doc::Document, x: &str| {
                 if para { d.styles.para(x).is_some() } else { d.styles.character.iter().any(|c| c.name == x) }
             };
             if to != *n {
@@ -641,7 +641,7 @@ fn group_styles(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn delete_para(s: &mut Session, p: &Value) -> Result<Value> {
     let name = str_param(p, "name").filter(|n| !n.is_empty()).ok_or_else(|| bad("style.paragraph.delete", "missing name"))?.to_string();
-    let repl = str_param(p, "replaceWith").unwrap_or(designcraft_doc::BASIC_PARAGRAPH).to_string();
+    let repl = str_param(p, "replaceWith").unwrap_or(redrob_layout_doc::BASIC_PARAGRAPH).to_string();
     if name.starts_with('[') {
         return Err(bad("style.paragraph.delete", "built-in styles can't be deleted"));
     }
@@ -684,7 +684,7 @@ fn create_char(s: &mut Session, p: &Value) -> Result<Value> {
         chars = captured;
     }
     // Based on [None] is based on nothing.
-    let based_on = str_param(p, "basedOn").filter(|b| *b != designcraft_doc::NO_CHAR_STYLE).map(str::to_string);
+    let based_on = str_param(p, "basedOn").filter(|b| *b != redrob_layout_doc::NO_CHAR_STYLE).map(str::to_string);
     s.edit(|d, _| {
         if let Some(b) = &based_on
             && d.styles.char_style(b).is_none()
@@ -699,7 +699,7 @@ fn create_char(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn edit_char(s: &mut Session, p: &Value) -> Result<Value> {
     let name = str_param(p, "name").ok_or_else(|| bad("style.character.edit", "missing name"))?.to_string();
-    if name == designcraft_doc::NO_CHAR_STYLE {
+    if name == redrob_layout_doc::NO_CHAR_STYLE {
         return Err(bad("style.character.edit", "[None] can't be edited"));
     }
     let chars: CharAttrs = attrs("style.character.edit", "chars", p, |a: &mut CharAttrs, k, v| a.set_json(k, v))?;
@@ -714,7 +714,7 @@ fn edit_char(s: &mut Session, p: &Value) -> Result<Value> {
     let based: Option<Option<String>> = match p.get("basedOn") {
         None => None,
         Some(Value::Null) => Some(None),
-        Some(Value::String(b)) if b == designcraft_doc::NO_CHAR_STYLE => Some(None),
+        Some(Value::String(b)) if b == redrob_layout_doc::NO_CHAR_STYLE => Some(None),
         Some(Value::String(b)) => Some(Some(b.clone())),
         Some(_) => return Err(bad("style.character.edit", "`basedOn` is a style name or null")),
     };
@@ -750,7 +750,7 @@ fn edit_char(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn delete_char(s: &mut Session, p: &Value) -> Result<Value> {
     let name = str_param(p, "name").filter(|n| !n.is_empty()).ok_or_else(|| bad("style.character.delete", "missing name"))?.to_string();
-    let repl = str_param(p, "replaceWith").unwrap_or(designcraft_doc::NO_CHAR_STYLE).to_string();
+    let repl = str_param(p, "replaceWith").unwrap_or(redrob_layout_doc::NO_CHAR_STYLE).to_string();
     if name.starts_with('[') {
         return Err(bad("style.character.delete", "built-in styles can't be deleted"));
     }
@@ -775,7 +775,7 @@ fn create_swatch(s: &mut Session, p: &Value) -> Result<Value> {
     let color = parse_color(c).ok_or_else(|| bad("swatch.create", "bad color"))?;
     let spot = p.get("spot").and_then(Value::as_bool).unwrap_or(false);
     let name = str_param(p, "name").map(str::to_string).unwrap_or_else(|| match color {
-        designcraft_color::Color::Cmyk { c, m, y, k } => designcraft_color::swatch::cmyk_name(c, m, y, k),
+        redrob_layout_color::Color::Cmyk { c, m, y, k } => redrob_layout_color::swatch::cmyk_name(c, m, y, k),
         other => {
             let [r, g, b] = other.to_rgb();
             format!("R={} G={} B={}", (r * 255.0).round(), (g * 255.0).round(), (b * 255.0).round())
@@ -787,7 +787,7 @@ fn create_swatch(s: &mut Session, p: &Value) -> Result<Value> {
             name: name.clone(),
             value: SwatchValue::Color {
                 color,
-                color_type: if spot { designcraft_color::ColorType::Spot } else { designcraft_color::ColorType::Process },
+                color_type: if spot { redrob_layout_color::ColorType::Spot } else { redrob_layout_color::ColorType::Process },
             },
             locked: false,
             named: true,
@@ -797,8 +797,8 @@ fn create_swatch(s: &mut Session, p: &Value) -> Result<Value> {
     })
 }
 
-pub fn parse_color(v: &Value) -> Option<designcraft_color::Color> {
-    use designcraft_color::Color;
+pub fn parse_color(v: &Value) -> Option<redrob_layout_color::Color> {
+    use redrob_layout_color::Color;
     match v {
         Value::String(s) => Color::from_hex(s),
         // One scale per colour, not per component: [1, 128, 255] is 0..255. Only an RGB array whose
@@ -858,14 +858,14 @@ fn create_object(s: &mut Session, p: &Value) -> Result<Value> {
     let base = str_param(p, "name").unwrap_or("Object Style 1").to_string();
     let from_sel = p.get("fromSelection").and_then(Value::as_bool).unwrap_or(true);
     let src = if from_sel { s.doc()?.selection.items.first().and_then(|i| s.doc().ok()?.doc.item(*i).cloned()) } else { None };
-    let mut os = designcraft_doc::ObjectStyle::default();
+    let mut os = redrob_layout_doc::ObjectStyle::default();
     if let Some(it) = &src {
         os.fill = Some(it.fill.clone());
         os.stroke = Some(it.stroke.clone());
         os.text_frame = it.text_frame().map(|t| t.options.clone());
     }
     if let Some(sw) = str_param(p, "fill") {
-        os.fill = Some(designcraft_doc::Fill::swatch(sw));
+        os.fill = Some(redrob_layout_doc::Fill::swatch(sw));
     }
     if let Some(ps) = str_param(p, "paragraphStyle") {
         os.paragraph_style = Some(ps.to_string());
@@ -879,9 +879,9 @@ fn create_object(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// The swatch name of a colour value ("C=… M=… Y=… K=…" / "R=… G=… B=…").
-fn value_name(color: designcraft_color::Color) -> String {
+fn value_name(color: redrob_layout_color::Color) -> String {
     match color {
-        designcraft_color::Color::Cmyk { c, m, y, k } => designcraft_color::swatch::cmyk_name(c, m, y, k),
+        redrob_layout_color::Color::Cmyk { c, m, y, k } => redrob_layout_color::swatch::cmyk_name(c, m, y, k),
         other => {
             let [r, g, b] = other.to_rgb();
             format!("R={} G={} B={}", (r * 255.0).round(), (g * 255.0).round(), (b * 255.0).round())
@@ -895,7 +895,7 @@ fn load_swatches(s: &mut Session, p: &Value) -> Result<Value> {
         (Some(path), None) => crate::io::read_file(path).map_err(|e| bad("swatch.load", e))?,
         _ => return Err(bad("swatch.load", "give `path` or `base64`")),
     };
-    let incoming = designcraft_color::ase::read(&bytes).map_err(|e| bad("swatch.load", e.to_string()))?;
+    let incoming = redrob_layout_color::ase::read(&bytes).map_err(|e| bad("swatch.load", e.to_string()))?;
     let replace = p.get("replace").and_then(Value::as_bool).unwrap_or(false);
     s.edit(|d, _| {
         // The position of the first swatch with each name, kept up to date as the file's colors are added.
@@ -930,7 +930,7 @@ fn save_swatches(s: &mut Session, p: &Value) -> Result<Value> {
     let names: Option<Vec<String>> =
         p.get("names").and_then(Value::as_array).map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect());
     let chosen: Vec<Swatch> = d.swatches.iter().filter(|w| names.as_ref().is_none_or(|n| n.contains(&w.name))).cloned().collect();
-    let bytes = designcraft_color::ase::write(&chosen);
+    let bytes = redrob_layout_color::ase::write(&chosen);
     match str_param(p, "path") {
         Some(path) => {
             crate::io::write_file(path, &bytes).map_err(|e| bad("swatch.save", e))?;
@@ -940,17 +940,17 @@ fn save_swatches(s: &mut Session, p: &Value) -> Result<Value> {
     }
 }
 
-fn gradient_json(name: &str, g: &designcraft_color::Gradient) -> Value {
+fn gradient_json(name: &str, g: &redrob_layout_color::Gradient) -> Value {
     let stops: Vec<Value> = g
         .stops
         .iter()
         .map(|s| json!({"location": (s.offset as f64 * 1000.0).round() / 10.0, "color": s.color.to_hex(), "opacity": (s.opacity * 100.0).round(), "midpoint": (s.midpoint * 100.0).round()}))
         .collect();
-    json!({"swatch": name, "kind": if g.kind == designcraft_color::GradientKind::Radial { "radial" } else { "linear" }, "stops": stops})
+    json!({"swatch": name, "kind": if g.kind == redrob_layout_color::GradientKind::Radial { "radial" } else { "linear" }, "stops": stops})
 }
 
 fn apply_gradient(s: &mut Session, p: &Value) -> Result<Value> {
-    use designcraft_color::{GradientKind, GradientStop};
+    use redrob_layout_color::{GradientKind, GradientStop};
     let kind = match str_param(p, "kind") {
         Some("radial") => Some(GradientKind::Radial),
         Some("linear") => Some(GradientKind::Linear),
@@ -991,7 +991,7 @@ fn apply_gradient(s: &mut Session, p: &Value) -> Result<Value> {
         for id in &ids {
             let Some(it) = d.item(*id) else { continue };
             let cur_name = if stroke { it.stroke.swatch.clone() } else { it.fill.swatch.clone() };
-            let cur = designcraft_color::swatch::resolve_gradient(&d.swatches, &cur_name).cloned();
+            let cur = redrob_layout_color::swatch::resolve_gradient(&d.swatches, &cur_name).cloned();
             let mut g = cur.clone().unwrap_or_default();
             if let Some(k) = kind {
                 g.kind = k;
@@ -1082,11 +1082,11 @@ fn apply_color(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// A process swatch holding exactly `color`, else a new unnamed one (hidden from the Swatches
 /// panel until Add to Swatches).
-fn color_swatch(d: &mut designcraft_doc::Document, color: designcraft_color::Color) -> String {
+fn color_swatch(d: &mut redrob_layout_doc::Document, color: redrob_layout_color::Color) -> String {
     let existing = d
         .swatches
         .iter()
-        .find(|w| matches!(&w.value, SwatchValue::Color { color: c, color_type: designcraft_color::ColorType::Process } if *c == color))
+        .find(|w| matches!(&w.value, SwatchValue::Color { color: c, color_type: redrob_layout_color::ColorType::Process } if *c == color))
         .map(|w| w.name.clone());
     if let Some(n) = existing {
         return n;
@@ -1094,7 +1094,7 @@ fn color_swatch(d: &mut designcraft_doc::Document, color: designcraft_color::Col
     let name = Styles::unique_name(|n| d.swatch(n).is_some(), &value_name(color));
     d.swatches.push(Swatch {
         name: name.clone(),
-        value: SwatchValue::Color { color, color_type: designcraft_color::ColorType::Process },
+        value: SwatchValue::Color { color, color_type: redrob_layout_color::ColorType::Process },
         locked: false,
         named: false,
         hidden: true,
@@ -1102,7 +1102,7 @@ fn color_swatch(d: &mut designcraft_doc::Document, color: designcraft_color::Col
     name
 }
 
-fn color_items(d: &mut designcraft_doc::Document, ids: &[designcraft_doc::ItemId], name: &str, stroke: bool) {
+fn color_items(d: &mut redrob_layout_doc::Document, ids: &[redrob_layout_doc::ItemId], name: &str, stroke: bool) {
     for id in ids {
         if let Some(it) = d.item_mut(*id) {
             if stroke {
@@ -1142,28 +1142,28 @@ fn sample_color(s: &mut Session, p: &Value) -> Result<Value> {
 /// frame shows that point (locked ones too, as sampling changes nothing). (image frame, colour);
 /// None over no image, a transparent pixel, or a graphic that is not a raster (PDF, EPS).
 pub(crate) fn image_color_at(
-    d: &designcraft_doc::Document,
-    sr: designcraft_doc::SpreadRef,
-    at: designcraft_geom::Point,
-) -> Option<(designcraft_doc::ItemId, designcraft_color::Color)> {
+    d: &redrob_layout_doc::Document,
+    sr: redrob_layout_doc::SpreadRef,
+    at: redrob_layout_geom::Point,
+) -> Option<(redrob_layout_doc::ItemId, redrob_layout_color::Color)> {
     let sp = d.spread(sr)?;
-    let mut items: Vec<&designcraft_doc::Item> = sp.items.iter().map(|i| &**i).collect();
+    let mut items: Vec<&redrob_layout_doc::Item> = sp.items.iter().map(|i| &**i).collect();
     items.sort_by_key(|i| d.layer_rank(i.layer));
     items
         .into_iter()
         .rev()
         .filter(|it| d.layer(it.layer).is_none_or(|l| l.visible))
-        .find_map(|it| sample_item(d, it, designcraft_geom::Affine::IDENTITY, at, 0))
+        .find_map(|it| sample_item(d, it, redrob_layout_geom::Affine::IDENTITY, at, 0))
 }
 
 fn sample_item(
-    d: &designcraft_doc::Document,
-    it: &designcraft_doc::Item,
-    outer: designcraft_geom::Affine,
-    at: designcraft_geom::Point,
+    d: &redrob_layout_doc::Document,
+    it: &redrob_layout_doc::Item,
+    outer: redrob_layout_geom::Affine,
+    at: redrob_layout_geom::Point,
     depth: usize,
-) -> Option<(designcraft_doc::ItemId, designcraft_color::Color)> {
-    use designcraft_doc::Content;
+) -> Option<(redrob_layout_doc::ItemId, redrob_layout_color::Color)> {
+    use redrob_layout_doc::Content;
     if it.hidden || depth > 64 {
         return None;
     }
@@ -1172,7 +1172,7 @@ fn sample_item(
         Content::Group { items } => items.iter().rev().find_map(|c| sample_item(d, c, xf, at, depth + 1)),
         Content::Graphic(g) => {
             let inner = xf.inverse() * at;
-            if !designcraft_geom::hit::fill_contains(&it.path.to_bezpath(), designcraft_geom::FillRule::NonZero, inner) {
+            if !redrob_layout_geom::hit::fill_contains(&it.path.to_bezpath(), redrob_layout_geom::FillRule::NonZero, inner) {
                 return None;
             }
             let gp = g.xf.inverse() * inner;
@@ -1182,12 +1182,12 @@ fn sample_item(
                 return None;
             }
             let asset = d.assets.get(&g.asset).filter(|a| a.is_raster())?;
-            let img = designcraft_images::decode_rgba(&asset.data)?;
+            let img = redrob_layout_images::decode_rgba(&asset.data)?;
             let (pw, ph) = img.dimensions();
             let px = ((gp.x / w * f64::from(pw)) as u32).min(pw.checked_sub(1)?);
             let py = ((gp.y / h * f64::from(ph)) as u32).min(ph.checked_sub(1)?);
             let [r, gr, b, a] = img.get_pixel_checked(px, py)?.0;
-            (a > 0).then(|| (it.id, designcraft_color::Color::rgb8(r, gr, b)))
+            (a > 0).then(|| (it.id, redrob_layout_color::Color::rgb8(r, gr, b)))
         }
         _ => None,
     }
@@ -1248,7 +1248,7 @@ fn add_to_swatches(s: &mut Session, p: &Value) -> Result<Value> {
 /// Point text colours (character fill, stroke, underline and strikethrough; paragraph shading,
 /// border and rules; table cells, borders and alternating fills) at a renamed swatch, in a story
 /// and the texts inside it (table cells, footnotes, endnotes). Returns whether anything changed.
-fn rename_in_story(st: &mut designcraft_doc::Story, from: &str, to: &str, depth: usize) -> Result<bool> {
+fn rename_in_story(st: &mut redrob_layout_doc::Story, from: &str, to: &str, depth: usize) -> Result<bool> {
     // Refuse the whole edit instead of leaving deeper references pointing at a removed name.
     if depth > 32 {
         return Err(bad("swatch.addToSwatches", "story nesting exceeds 32 levels"));
@@ -1312,7 +1312,7 @@ fn rename_in_story(st: &mut designcraft_doc::Story, from: &str, to: &str, depth:
 }
 
 /// Point fills and strokes of an item (and its children) at a renamed swatch.
-fn rename_in(it: &mut designcraft_doc::Item, from: &str, to: &str) {
+fn rename_in(it: &mut redrob_layout_doc::Item, from: &str, to: &str) {
     if it.fill.swatch == from {
         it.fill.swatch = to.to_string();
     }
@@ -1543,7 +1543,7 @@ mod color_tests {
 
     #[test]
     fn percent_components_at_most_one_stay_percent() {
-        use designcraft_color::Color;
+        use redrob_layout_color::Color;
         // {"c": 0.7, ..., "y": 12.2} is a pale cream (C 0.7 %, Y 12.2 %), not C 70 %.
         let Some(Color::Cmyk { c, m, y, k }) = parse_color(&json!({"c": 0.7, "m": 0, "y": 12.2, "k": 0})) else { panic!("not CMYK") };
         assert!((c - 0.007).abs() < 1e-6 && m == 0.0 && (y - 0.122).abs() < 1e-6 && k == 0.0, "got {c} {m} {y} {k}");
@@ -1558,7 +1558,7 @@ mod color_tests {
     /// #910: `{c: 1, m: 0, y: 0, k: 0}` is a 1 % cyan tint, not solid cyan, though every component is within 0..1.
     #[test]
     fn cmyk_percentages_of_one_or_less_stay_percent() {
-        use designcraft_color::Color;
+        use redrob_layout_color::Color;
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let id = s.execute("frame.create", &json!({"rect": [0, 0, 50, 50]})).unwrap()["id"].as_u64().unwrap();
@@ -1567,7 +1567,7 @@ mod color_tests {
         let d = &s.doc().unwrap().doc;
         let Some(Color::Cmyk { c, m, y, k }) = d.resolve_color("Tint1", 1.0) else { panic!("not CMYK") };
         assert!((c - 0.01).abs() < 1e-6 && m == 0.0 && y == 0.0 && k == 0.0, "got {c} {m} {y} {k}");
-        let pdf = designcraft_pdf::export_pdf(d, &s.cache, &designcraft_pdf::PdfOptions { compress: false, ..Default::default() }).unwrap();
+        let pdf = redrob_layout_pdf::export_pdf(d, &s.cache, &redrob_layout_pdf::PdfOptions { compress: false, ..Default::default() }).unwrap();
         let text = String::from_utf8_lossy(&pdf);
         // Operands of every `k` (DeviceCMYK fill), last first: [k, y, m, c]. Inks are written in 1/255 steps (C 1 % is 3/255).
         let fills: Vec<Vec<f32>> =
@@ -1579,7 +1579,7 @@ mod color_tests {
         s.execute("selection.set", &json!({"ids": [id]})).unwrap();
         s.execute("object.color", &json!({"color": {"c": 0.5, "m": 0.5, "y": 0, "k": 0}})).unwrap();
         let d = &s.doc().unwrap().doc;
-        let fill = &d.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch;
+        let fill = &d.item(redrob_layout_doc::ItemId(id)).unwrap().fill.swatch;
         let Some(Color::Cmyk { c, m, .. }) = d.resolve_color(fill, 1.0) else { panic!("not CMYK") };
         assert!((c - 0.005).abs() < 1e-6 && (m - 0.005).abs() < 1e-6, "got {c} {m}");
     }
@@ -1597,7 +1597,7 @@ mod color_tests {
         let r = s.execute("style.group", &json!({"kind": "paragraph", "names": ["Head", "Sub"], "group": "Titles"})).unwrap();
         assert_eq!(r["renamed"]["Head"], "Titles/Head");
         let d = s.doc().unwrap().doc.clone();
-        assert_eq!(d.story(designcraft_doc::StoryId(sid)).unwrap().paras[0].style, "Titles/Head");
+        assert_eq!(d.story(redrob_layout_doc::StoryId(sid)).unwrap().paras[0].style, "Titles/Head");
         assert_eq!(d.styles.para("Titles/Sub").unwrap().based_on.as_deref(), Some("Titles/Head"));
         // Out of the group again.
         s.execute("style.group", &json!({"kind": "paragraph", "names": ["Titles/Head"], "group": ""})).unwrap();
@@ -1636,7 +1636,7 @@ mod color_tests {
         assert_eq!(st.based_on.as_deref(), Some("Base"));
         // Exactly the attributes set: `null` unset the font style, the rest stayed unset.
         assert_eq!(st.chars, CharAttrs { size: Some(14.0), fill: Some("[Paper]".into()), tracking: Some(20.0), ..Default::default() });
-        let story = d.story(designcraft_doc::StoryId(sid)).unwrap();
+        let story = d.story(redrob_layout_doc::StoryId(sid)).unwrap();
         assert!(story.chars.iter().any(|r| r.format.style == "Strong"));
         assert!(story.chars.iter().all(|r| r.format.style != "Emphasis"));
         let lead = d.styles.para("Lead").unwrap();
@@ -1689,7 +1689,7 @@ mod color_tests {
 
     #[test]
     fn loading_swatches_matches_the_first_swatch_of_each_name() {
-        use designcraft_color::{Color, ColorType};
+        use redrob_layout_color::{Color, ColorType};
         let ink = |k: f32| SwatchValue::Color { color: Color::cmyk(0.0, 0.0, 0.0, k), color_type: ColorType::Process };
         let sw = |name: &str, k: f32| Swatch { name: name.into(), value: ink(k), locked: false, named: true, hidden: false };
         let mut s = Session::new();
@@ -1700,7 +1700,7 @@ mod color_tests {
             Ok(())
         })
         .unwrap();
-        let file = designcraft_color::ase::write(&[sw("New", 0.4), sw("New", 0.5), sw("Twin", 0.6), sw("Unnamed", 0.7), sw("[Black]", 0.8)]);
+        let file = redrob_layout_color::ase::write(&[sw("New", 0.4), sw("New", 0.5), sw("Twin", 0.6), sw("Unnamed", 0.7), sw("[Black]", 0.8)]);
         let b64 = crate::cmd::base64_encode(&file);
         let named = |s: &Session, name: &str| -> Vec<(SwatchValue, bool)> {
             s.doc().unwrap().doc.swatches.iter().filter(|w| w.name == name).map(|w| (w.value.clone(), w.hidden)).collect()
@@ -1736,16 +1736,16 @@ mod color_tests {
         s.execute("object.color", &json!({"color": {"c": 10, "m": 20, "y": 30, "k": 0}, "target": "stroke"})).unwrap();
         assert_eq!(s.doc().unwrap().doc.swatches.len(), n);
         let d = &s.doc().unwrap().doc;
-        let it = d.item(designcraft_doc::ItemId(id)).unwrap();
+        let it = d.item(redrob_layout_doc::ItemId(id)).unwrap();
         assert_eq!(it.fill.swatch, it.stroke.swatch);
         // Add to Swatches with a name: listed, and the object follows the rename.
         s.execute("swatch.addToSwatches", &json!({"name": "Sand"})).unwrap();
         assert_eq!(listed(&s), before + 1);
         let d = &s.doc().unwrap().doc;
-        assert_eq!(d.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch, "Sand");
+        assert_eq!(d.item(redrob_layout_doc::ItemId(id)).unwrap().fill.swatch, "Sand");
         // A colour equal to an existing swatch applies that swatch.
         s.execute("object.color", &json!({"color": {"c": 10, "m": 20, "y": 30, "k": 0}})).unwrap();
-        assert_eq!(s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch, "Sand");
+        assert_eq!(s.doc().unwrap().doc.item(redrob_layout_doc::ItemId(id)).unwrap().fill.swatch, "Sand");
     }
 
     #[test]
@@ -1754,7 +1754,7 @@ mod color_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Hello world"})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = redrob_layout_doc::StoryId(r["story"].as_u64().unwrap());
         s.execute("text.select", &json!({"story": sid.0, "anchor": 11})).unwrap();
         s.execute("footnote.insert", &json!({"text": "note"})).unwrap();
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0})).unwrap();
@@ -1825,8 +1825,8 @@ mod color_group_tests {
         s.execute("swatch.moveToGroup", &json!({"swatches": [b], "group": "Brand"})).unwrap();
         let groups = |s: &Session| s.doc().unwrap().doc.color_groups.clone();
         assert_eq!(groups(&s)[0].swatches, [a.clone(), b.clone()]);
-        let bytes = designcraft_idml::export_idml(&s.doc().unwrap().doc);
-        let back = designcraft_idml::import_idml(&bytes).unwrap();
+        let bytes = redrob_layout_idml::export_idml(&s.doc().unwrap().doc);
+        let back = redrob_layout_idml::import_idml(&bytes).unwrap();
         assert_eq!(back.color_groups, groups(&s), "IDML ColorGroup");
         s.execute("swatch.delete", &json!({"name": b})).unwrap();
         assert_eq!(groups(&s)[0].swatches, [a.as_str()]);
@@ -1865,7 +1865,7 @@ mod ink_tests {
         assert!(!pdf(&mut s).contains("Pantone"), "all spots to process");
         let l = s.execute("ink.list", &json!({})).unwrap();
         assert_eq!(l["inks"][0]["alias"], "Pantone B");
-        let back = designcraft_idml::import_idml(&designcraft_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
+        let back = redrob_layout_idml::import_idml(&redrob_layout_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
         assert!(back.inks.resolve("Pantone A").1, "IDML ConvertToProcess");
         assert!(back.inks.aliases.iter().any(|(a, b)| a == "Pantone A" && b == "Pantone B"), "IDML AliasInkName");
         assert!(s.execute("ink.options", &json!({"ink": "[Black]", "toProcess": true})).is_err());
@@ -1901,7 +1901,7 @@ mod export_tag_tests {
         let pdf = super::super::file::base64_decode(r["base64"].as_str().unwrap());
         let text = String::from_utf8_lossy(&pdf);
         assert!(text.contains("/S/H1") && text.contains("/S/P"), "structure elements");
-        assert!(designcraft_render::pdf_page_count(&pdf) == Some(1));
+        assert!(redrob_layout_render::pdf_page_count(&pdf) == Some(1));
     }
 }
 
@@ -1913,7 +1913,7 @@ mod cjk_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [0, 0, 300, 150], "content": "text", "text": "AB"})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = redrob_layout_doc::StoryId(r["story"].as_u64().unwrap());
         let definition = |scale| json!({"name": "Mixed", "entries": [{"family": "Source Serif 4", "relativeSize": scale}]});
         s.execute("style.compositeFont.set", &definition(1.0)).unwrap();
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 2})).unwrap();
@@ -1932,15 +1932,15 @@ mod cjk_tests {
 
 #[cfg(test)]
 mod sample_color_tests {
-    use designcraft_color::{Color, SwatchValue};
-    use designcraft_doc::ItemId;
+    use redrob_layout_color::{Color, SwatchValue};
+    use redrob_layout_doc::ItemId;
     use serde_json::json;
 
     use crate::Session;
 
     /// A 2×1 image, red then blue, placed 144 pt wide at (72, 72): each pixel is 72 pt.
     fn session_with_image() -> (Session, u64) {
-        let png = designcraft_render::Rendered { width: 2, height: 1, pixels: vec![255, 0, 0, 255, 0, 0, 255, 255] }.to_png();
+        let png = redrob_layout_render::Rendered { width: 2, height: 1, pixels: vec![255, 0, 0, 255, 0, 0, 255, 255] }.to_png();
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let b64 = super::super::file::base64_encode(&png);
@@ -2017,7 +2017,7 @@ mod sample_color_tests {
         for command in ["color.sample", "object.color"] {
             let (mut s, _) = session_with_image();
             let f = s.execute("frame.create", &json!({"rect": [300, 300, 500, 360], "content": "text"})).unwrap();
-            let story = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
+            let story = redrob_layout_doc::StoryId(f["story"].as_u64().unwrap());
             s.execute("text.select", &json!({"story": story.0, "anchor": 0})).unwrap();
             let undo = s.doc().unwrap().history.undo.len();
             let r = s.execute(command, &json!({"at": [100, 100], "color": "#ff0000"})).unwrap();
@@ -2056,7 +2056,7 @@ mod radial_gradient_tests {
 
     /// White at the side and the top of a 100×200 radial (black → white) rectangle at (50, 20) on
     /// a 200×240 page, rendered at 1 px/pt.
-    fn sides(img: &designcraft_render::Rendered) -> (u8, u8, u8) {
+    fn sides(img: &redrob_layout_render::Rendered) -> (u8, u8, u8) {
         (img.pixel(100, 120)[0], img.pixel(52, 120)[0], img.pixel(100, 22)[0])
     }
 
@@ -2072,11 +2072,11 @@ mod radial_gradient_tests {
         )
         .unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let mut r = designcraft_render::Renderer::new();
+        let mut r = redrob_layout_render::Renderer::new();
         let (c, side, top) = sides(&r.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap());
         assert!(c < 30 && side > 220 && top > 220, "screen: centre {c}, side {side}, top {top}");
         // The PDF, placed back and drawn: the same ellipse.
-        let pdf = designcraft_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
+        let pdf = redrob_layout_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
         let mut p = crate::Session::new();
         p.execute("file.new", &json!({"width": 200, "height": 240, "facingPages": false})).unwrap();
         p.execute("file.place", &json!({"base64": crate::cmd::file::base64_encode(&pdf), "name": "radial.pdf", "x": 0, "y": 0, "width": 200}))
@@ -2088,17 +2088,17 @@ mod radial_gradient_tests {
 
     #[test]
     fn a_box_with_no_height_or_width_has_a_circle_across_its_length() {
-        let f = designcraft_doc::Fill::swatch("g");
-        let line = designcraft_geom::Rect::new(20.0, 60.0, 180.0, 60.0);
+        let f = redrob_layout_doc::Fill::swatch("g");
+        let line = redrob_layout_geom::Rect::new(20.0, 60.0, 180.0, 60.0);
         let (c, rx, ry) = f.radial_ellipse(line);
         assert_eq!((c.x, c.y, rx, ry), (100.0, 60.0, 80.0, 80.0));
-        let (_, rx, ry) = f.radial_ellipse(designcraft_geom::Rect::new(10.0, 0.0, 10.0, 50.0));
+        let (_, rx, ry) = f.radial_ellipse(redrob_layout_geom::Rect::new(10.0, 0.0, 10.0, 50.0));
         assert_eq!((rx, ry), (25.0, 25.0));
         // A point: a tiny circle, never a zero radius.
-        let (_, rx, ry) = f.radial_ellipse(designcraft_geom::Rect::new(5.0, 5.0, 5.0, 5.0));
+        let (_, rx, ry) = f.radial_ellipse(redrob_layout_geom::Rect::new(5.0, 5.0, 5.0, 5.0));
         assert!(rx > 0.0 && rx == ry);
         // A box keeps its ellipse.
-        let (_, rx, ry) = f.radial_ellipse(designcraft_geom::Rect::new(0.0, 0.0, 100.0, 200.0));
+        let (_, rx, ry) = f.radial_ellipse(redrob_layout_geom::Rect::new(0.0, 0.0, 100.0, 200.0));
         assert_eq!((rx, ry), (50.0, 100.0));
     }
 }
@@ -2108,7 +2108,7 @@ mod gradient_stroke_tests {
     use serde_json::json;
 
     /// Grey along a 20 pt line from (20, 60) to (180, 60): near its start, middle and end.
-    fn along(img: &designcraft_render::Rendered) -> (u8, u8, u8) {
+    fn along(img: &redrob_layout_render::Rendered) -> (u8, u8, u8) {
         (img.pixel(26, 60)[0], img.pixel(100, 60)[0], img.pixel(174, 60)[0])
     }
 
@@ -2125,14 +2125,14 @@ mod gradient_stroke_tests {
             )
             .unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let it = d.item(designcraft_doc::ItemId(id)).unwrap();
+        let it = d.item(redrob_layout_doc::ItemId(id)).unwrap();
         assert_eq!(it.stroke.swatch, r["swatch"].as_str().unwrap());
-        assert_eq!(it.fill.swatch, designcraft_color::swatch::NONE, "the fill is left alone");
-        let mut rr = designcraft_render::Renderer::new();
+        assert_eq!(it.fill.swatch, redrob_layout_color::swatch::NONE, "the fill is left alone");
+        let mut rr = redrob_layout_render::Renderer::new();
         let (a, m, b) = along(&rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap());
         assert!(a < 40 && (90..170).contains(&m) && b > 215, "screen: {a} {m} {b}");
         // The PDF, placed back and drawn: the same.
-        let pdf = designcraft_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
+        let pdf = redrob_layout_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
         let mut p = crate::Session::new();
         p.execute("file.new", &json!({"width": 200, "height": 120, "facingPages": false})).unwrap();
         p.execute("file.place", &json!({"base64": crate::cmd::file::base64_encode(&pdf), "name": "stroke.pdf", "x": 0, "y": 0, "width": 200}))
@@ -2149,7 +2149,7 @@ mod gradient_stroke_tests {
     }
 
     /// A 20 pt horizontal line with a gradient on its stroke, drawn on screen and from its PDF.
-    fn line_with_stroke_gradient(g: serde_json::Value) -> (designcraft_render::Rendered, designcraft_render::Rendered) {
+    fn line_with_stroke_gradient(g: serde_json::Value) -> (redrob_layout_render::Rendered, redrob_layout_render::Rendered) {
         let mut s = crate::Session::new();
         s.execute("file.new", &json!({"width": 200, "height": 120, "facingPages": false})).unwrap();
         let id = s.execute("line.create", &json!({"a": [20, 60], "b": [180, 60]})).unwrap()["id"].as_u64().unwrap();
@@ -2159,9 +2159,9 @@ mod gradient_stroke_tests {
         g["target"] = json!("stroke");
         s.execute("object.gradient", &g).unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = redrob_layout_render::Renderer::new();
         let screen = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
-        let pdf = designcraft_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
+        let pdf = redrob_layout_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
         let mut p = crate::Session::new();
         p.execute("file.new", &json!({"width": 200, "height": 120, "facingPages": false})).unwrap();
         p.execute("file.place", &json!({"base64": crate::cmd::file::base64_encode(&pdf), "name": "line.pdf", "x": 0, "y": 0, "width": 200})).unwrap();

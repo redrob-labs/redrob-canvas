@@ -9,7 +9,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 pub use krilla as backend;
 
 // Require the root workspace patch; an unpatched backend can abort during unwind.
-const _: bool = backend::CRAFT_UNWIND_POISONING;
+const _: bool = backend::REDROB_CRAFT_UNWIND_POISONING;
 
 use backend::configure::{Archival, Configuration, ConfigurationBuilder, ConfigurationError, PdfVersion};
 use backend::text::{Font, Tag};

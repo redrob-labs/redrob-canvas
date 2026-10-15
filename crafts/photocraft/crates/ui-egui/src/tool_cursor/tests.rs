@@ -345,8 +345,8 @@ fn write_cursor_preview() {
             }
         }
     }
-    let image = photocraft_codecs::Image::from_u8(width as u32, height as u32, photocraft_codecs::ChannelLayout::Rgba, rgba).unwrap();
-    let png = photocraft_codecs::encode(&image, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+    let image = redrob_photo_codecs::Image::from_u8(width as u32, height as u32, redrob_photo_codecs::ChannelLayout::Rgba, rgba).unwrap();
+    let png = redrob_photo_codecs::encode(&image, redrob_photo_codecs::Format::Png, &Default::default()).unwrap();
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/tool-cursor-preview.png");
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(path, png).unwrap();
@@ -354,7 +354,7 @@ fn write_cursor_preview() {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn harness() -> Harness<'static, crate::PhotocraftApp> {
-    let mut app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
     app.run("tools.setBrush", json!({"brush": {"size": 40, "hardness": 1.0}})).unwrap();
     app.ui.tool = crate::Tool::Brush;

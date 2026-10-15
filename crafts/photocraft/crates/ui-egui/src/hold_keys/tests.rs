@@ -4,14 +4,14 @@
 
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
-use photocraft_geom::Rect;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use super::*;
 use crate::canvas::ViewXform;
 
 fn harness(tool: Tool) -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     app.sync_views();
     app.ui.extras.rulers = false;
@@ -407,7 +407,7 @@ fn fill_key_on_a_locked_layer_reports_instead_of_crashing() {
 
 #[test]
 fn keyboard_shortcuts_dialog_lists_the_keys_under_tools() {
-    let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     let items = crate::prefs_ui::shortcut_items(&app);
     let find = |id: &str| items.iter().find(|i| i.0 == id).map(|i| (i.2.clone(), i.3.clone()));
     let tools = || vec!["Tools".to_string()];
@@ -431,7 +431,7 @@ fn keyboard_shortcuts_dialog_lists_the_keys_under_tools() {
 #[test]
 fn agents_reposition_a_marquee_with_space() {
     use crate::control::{ControlRequest, Outcome, handle};
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     let mut call = |p: serde_json::Value| {
@@ -452,7 +452,7 @@ fn release(h: &mut Harness<'static, PhotocraftApp>, x: f32, y: f32, m: Modifiers
 
 /// A red square on a new layer for the ⌘ (Move) tests; Auto-Select, snapping and smart guides
 /// off so the drag offsets are exact.
-fn with_layer(h: &mut Harness<'static, PhotocraftApp>) -> photocraft_doc::LayerId {
+fn with_layer(h: &mut Harness<'static, PhotocraftApp>) -> redrob_photo_doc::LayerId {
     let app = h.state_mut();
     app.run("layer.new.layer", json!({})).unwrap();
     let id = app.session.active().unwrap().active_layer.unwrap();
@@ -469,7 +469,7 @@ fn with_layer(h: &mut Harness<'static, PhotocraftApp>) -> photocraft_doc::LayerI
     id
 }
 
-fn bounds(h: &Harness<'static, PhotocraftApp>, id: photocraft_doc::LayerId) -> Rect {
+fn bounds(h: &Harness<'static, PhotocraftApp>, id: redrob_photo_doc::LayerId) -> Rect {
     h.state().session.active().unwrap().doc.layer(id).unwrap().surface().unwrap().content_bounds()
 }
 
@@ -592,7 +592,7 @@ fn cmd_drag_with_the_brush_inside_the_selection_floats_the_selected_pixels() {
     let n0 = h.state().session.active().unwrap().doc.layers.len();
     drag_with(&mut h, Modifiers::COMMAND, 130.0, 130.0, 170.0, 150.0);
     let st = h.state().session.active().unwrap();
-    let f = photocraft_engine::float_cmds::floating(st).expect("a floating piece");
+    let f = redrob_photo_engine::float_cmds::floating(st).expect("a floating piece");
     assert_eq!((f.layer, f.offset), (id, (40, 20)));
     assert_eq!(st.doc.layers.len(), n0, "no layer was added");
     assert_eq!(bounds(&h, id), Rect::new(100, 100, 160, 160), "the layer itself stayed");
@@ -718,7 +718,7 @@ fn rebound_brush_eraser_uses_the_new_key_only() {
 fn clear_in_the_mode_dropdown_erases_until_another_mode_is_chosen() {
     use crate::canvas::{ToolEvent, tool_event};
     use egui_kittest::kittest::{NodeT, Queryable};
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 120, "height": 80})).unwrap();
     app.ui.tool = Tool::Pencil;
     let mut h = Harness::builder().with_size(vec2(1600.0, 400.0)).build_ui_state(
@@ -788,11 +788,11 @@ fn a_held_key_keeps_a_pending_crop_and_another_tools_key_commits_it() {
     key(&mut h, Key::Space, false, Modifiers::NONE);
     h.run_steps(2);
     assert_eq!(h.state().ui.tool, Tool::Crop);
-    assert_eq!(h.state().session.active().unwrap().doc.size, photocraft_doc::Size::new(400, 300));
+    assert_eq!(h.state().session.active().unwrap().doc.size, redrob_photo_doc::Size::new(400, 300));
     assert!(crate::crop_ui::pending(h.state()));
     tap(&mut h, Key::V, Modifiers::NONE);
     h.run_steps(2);
     assert_eq!(h.state().ui.tool, Tool::Move);
-    assert_eq!(h.state().session.active().unwrap().doc.size, photocraft_doc::Size::new(200, 150));
+    assert_eq!(h.state().session.active().unwrap().doc.size, redrob_photo_doc::Size::new(200, 150));
     assert_eq!(h.state().ui.crop_rect, None);
 }

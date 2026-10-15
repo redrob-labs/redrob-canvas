@@ -9,9 +9,9 @@
 //! existing RGB/proof approximation instead of applying RGB Hue/Color formulas to CMY channels.
 
 use crate::{Frame, Placed, RenderOptions, Rendered, Renderer};
-use designcraft_color::BlendMode as DcBlend;
-use designcraft_doc::{Document, Item, SpreadRef};
-use designcraft_geom::{Affine, Rect, Shape};
+use redrob_layout_color::BlendMode as DcBlend;
+use redrob_layout_doc::{Document, Item, SpreadRef};
+use redrob_layout_geom::{Affine, Rect, Shape};
 use vello_cpu::{RenderContext, peniko};
 
 /// At most one viewport, capped at 64 MiB. The snapshot shares the document's large Arcs;
@@ -20,7 +20,7 @@ use vello_cpu::{RenderContext, peniko};
 /// stories, assets, layer visibility and font scope. `clear_caches` releases it too.
 pub(crate) struct CachedView {
     doc: Document,
-    settings: designcraft_color::cms::ColorSettings,
+    settings: redrob_layout_color::cms::ColorSettings,
     opts: RenderOptions,
     spreads: Vec<Placed>,
     view: Affine,
@@ -47,7 +47,7 @@ impl CachedView {
             && self.opts == *opts
             && self.spreads == spreads
             && self.threads == threads
-            && self.settings == designcraft_color::cms::active_settings()
+            && self.settings == redrob_layout_color::cms::active_settings()
             && same_document(&self.doc, doc)
     }
     pub(crate) fn image(&self) -> Rendered {
@@ -67,7 +67,7 @@ impl CachedView {
     ) -> Self {
         Self {
             doc: doc.clone(),
-            settings: designcraft_color::cms::active_settings(),
+            settings: redrob_layout_color::cms::active_settings(),
             opts: opts.clone(),
             spreads: spreads.to_vec(),
             view,
@@ -114,7 +114,7 @@ fn same_document(old: &Document, new: &Document) -> bool {
         next_id,
         font_scope,
     } = new;
-    let same_spreads = |a: &[std::sync::Arc<designcraft_doc::Spread>], b: &[std::sync::Arc<designcraft_doc::Spread>]| {
+    let same_spreads = |a: &[std::sync::Arc<redrob_layout_doc::Spread>], b: &[std::sync::Arc<redrob_layout_doc::Spread>]| {
         a.len() == b.len() && a.iter().zip(b).all(|(a, b)| std::sync::Arc::ptr_eq(a, b))
     };
     same_spreads(&old.spreads, spreads)
@@ -173,7 +173,7 @@ pub(crate) fn uses_rgb_proof(doc: &Document, sr: SpreadRef, opts: &RenderOptions
 }
 
 fn pipeline(doc: &Document, sr: SpreadRef, opts: &RenderOptions) -> Pipeline {
-    if !opts.blend_space_view || opts.plate.is_some() || doc.settings.blend_space != designcraft_doc::BlendSpace::Cmyk {
+    if !opts.blend_space_view || opts.plate.is_some() || doc.settings.blend_space != redrob_layout_doc::BlendSpace::Cmyk {
         return Pipeline::Rgb;
     }
     let Some(sp) = doc.spread(sr) else { return Pipeline::Rgb };
@@ -237,14 +237,14 @@ const RGB_N: usize = 9;
 /// sample it with [`srgb_in`].
 fn srgb_table() -> std::sync::Arc<Vec<[f32; 3]>> {
     const N: usize = RGB_N;
-    type Lut = (designcraft_color::cms::ColorSettings, std::sync::Arc<Vec<[f32; 3]>>);
+    type Lut = (redrob_layout_color::cms::ColorSettings, std::sync::Arc<Vec<[f32; 3]>>);
     static LUT: std::sync::Mutex<Option<Lut>> = std::sync::Mutex::new(None);
-    let settings = designcraft_color::cms::active_settings();
+    let settings = redrob_layout_color::cms::active_settings();
     let mut g = LUT.lock().unwrap_or_else(|e| e.into_inner());
     match g.as_ref() {
         Some((s, t)) if *s == settings => t.clone(),
         _ => {
-            let cms = designcraft_color::cms::active();
+            let cms = redrob_layout_color::cms::active();
             let step = |i: usize| i as f32 / (N - 1) as f32;
             let t: Vec<[f32; 3]> = (0..N * N * N * N)
                 .map(|i| cms.cmyk_to_srgb([step(i / (N * N * N)), step(i / (N * N) % N), step(i / N % N), step(i % N)], false))
@@ -414,18 +414,18 @@ impl Renderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_compose::Cache;
-    use designcraft_doc::{Content, Fill, ItemId, Shape, build::NewDocument};
+    use redrob_layout_compose::Cache;
+    use redrob_layout_doc::{Content, Fill, ItemId, Shape, build::NewDocument};
     use std::sync::Arc;
 
     fn document() -> Document {
         let mut doc = Document::new(&NewDocument { width: 160.0, height: 120.0, facing_pages: false, ..Default::default() });
-        doc.swatches.push(designcraft_color::swatch::Swatch::color("Lilac", designcraft_color::Color::rgb8(171, 154, 227)));
+        doc.swatches.push(redrob_layout_color::swatch::Swatch::color("Lilac", redrob_layout_color::Color::rgb8(171, 154, 227)));
         doc
     }
     fn rectangle(doc: &mut Document, sr: SpreadRef, rect: Rect, fill: &str, blend: DcBlend) -> ItemId {
         let id = ItemId(doc.alloc());
-        let mut item = Item::new(id, doc.default_layer(), Shape::Rectangle, designcraft_geom::shapes::rectangle(rect));
+        let mut item = Item::new(id, doc.default_layer(), Shape::Rectangle, redrob_layout_geom::shapes::rectangle(rect));
         item.fill = Fill::swatch(fill);
         item.blend = blend;
         doc.insert_item(sr, item, None).unwrap();
@@ -444,7 +444,7 @@ mod tests {
     }
     fn dodge(doc: &mut Document, sr: SpreadRef) -> ItemId {
         rectangle(doc, sr, Rect::new(-25.0, 10.0, 130.0, 70.0), "Lilac", DcBlend::Normal);
-        rectangle(doc, sr, Rect::new(-20.0, 25.0, 100.0, 100.0), designcraft_color::swatch::BLACK, DcBlend::ColorDodge)
+        rectangle(doc, sr, Rect::new(-20.0, 25.0, 100.0, 100.0), redrob_layout_color::swatch::BLACK, DcBlend::ColorDodge)
     }
     fn white(pixel: [u8; 4]) {
         assert!(pixel[..3].iter().all(|v| *v > 235), "{pixel:?}");
@@ -498,7 +498,8 @@ mod tests {
         assert!(image.pixel(70, 95)[..3].iter().all(|v| *v < 90));
         assert_eq!(image.pixel(5, 130), [180, 180, 180, 255]);
         // Optional synthetic preview for manual visual QA, never a checked-in fixture.
-        if let Ok(path) = std::env::var("DESIGNCRAFT_CMYK_PREVIEW") {
+        if let Ok(path) = std::env::var("REDROB_LAYOUT_CMYK_PREVIEW").or_else(|_| std::env::var("DESIGNCRAFT_CMYK_PREVIEW")) {
+            // legacy: the upstream variable is read when ours is unset
             std::fs::write(path, image.to_png()).unwrap();
         }
     }
@@ -524,7 +525,7 @@ mod tests {
         assert_eq!(draw(&doc, &mut renderer).pixels, image.pixels);
         // The effect's blend must also see the object's backdrop in the existing RGB path,
         // including the multithreaded offscreen-filter implementation.
-        doc.settings.blend_space = designcraft_doc::BlendSpace::Rgb;
+        doc.settings.blend_space = redrob_layout_doc::BlendSpace::Rgb;
         let rgb = draw(&doc, &mut renderer);
         let mixed = rgb.pixel(60, 60);
         assert!(mixed[0] < 100 && mixed[1] < 100 && mixed[2] > 100, "cyan times magenta is blue, not magenta: {mixed:?}");
@@ -545,7 +546,7 @@ mod tests {
         assert_eq!(renderer.cmyk_passes, 2, "ten Multiply objects still need only two ink passes");
         assert_eq!(draw(&doc, &mut renderer).pixels, before.pixels);
         assert_eq!(renderer.cmyk_passes, 2, "an unchanged frame performs no ink passes");
-        doc.item_mut(ids[9]).unwrap().fill = Fill::swatch(designcraft_color::swatch::BLACK);
+        doc.item_mut(ids[9]).unwrap().fill = Fill::swatch(redrob_layout_color::swatch::BLACK);
         let after = draw(&doc, &mut renderer);
         assert_ne!(after.pixel(70, 50), before.pixel(70, 50));
         assert_eq!(renderer.cmyk_passes, 4);
@@ -610,7 +611,7 @@ mod tests {
     #[test]
     fn the_view_is_kept_only_when_the_ink_passes_ran() {
         let mut doc = document();
-        doc.settings.blend_space = designcraft_doc::BlendSpace::Cmyk;
+        doc.settings.blend_space = redrob_layout_doc::BlendSpace::Cmyk;
         let id = rectangle(&mut doc, SpreadRef::Doc(0), Rect::new(20.0, 20.0, 100.0, 100.0), "C=100 M=0 Y=0 K=0", DcBlend::Normal);
         let mut renderer = Renderer::new();
         renderer.threads = 0;

@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::Range;
 
-use designcraft_doc::{GrepStyle, NestedStyle, NestedUntil};
+use redrob_layout_doc::{GrepStyle, NestedStyle, NestedUntil};
 
 thread_local! {
     static PATTERNS: RefCell<HashMap<String, Option<regex::Regex>>> = RefCell::new(HashMap::new());
@@ -19,7 +19,7 @@ fn is_event(u: &NestedUntil, c: char, prev: Option<char>, next: Option<char>) ->
         NestedUntil::Letters => c.is_alphabetic(),
         NestedUntil::Digits => c.is_numeric(),
         NestedUntil::Tab => c == '\t',
-        NestedUntil::ForcedLineBreak => c == designcraft_doc::FORCED_LINE_BREAK,
+        NestedUntil::ForcedLineBreak => c == redrob_layout_doc::FORCED_LINE_BREAK,
         NestedUntil::EmSpace => c == '\u{2003}',
         NestedUntil::EnSpace => c == '\u{2002}',
         // Counted by position, not by character (see `overlays`).

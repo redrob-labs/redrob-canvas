@@ -10,9 +10,9 @@
 //! pixels. Skips when no GPU adapter exists (like `drag_preview_canvas.rs`).
 
 use egui::{Key, Modifiers, PointerButton, Pos2};
-use photocraft_ui_egui::PhotocraftApp;
-use photocraft_ui_egui::canvas::ViewXform;
-use photocraft_ui_egui::control::{ControlRequest, handle};
+use redrob_photo_ui_egui::PhotocraftApp;
+use redrob_photo_ui_egui::canvas::ViewXform;
+use redrob_photo_ui_egui::control::{ControlRequest, handle};
 use serde_json::{Value, json};
 
 type Harness = egui_kittest::Harness<'static, PhotocraftApp>;
@@ -37,7 +37,7 @@ fn harness() -> Option<Harness> {
     let built = std::panic::catch_unwind(|| {
         egui_kittest::Harness::builder().with_size(egui::vec2(900.0, 640.0)).with_max_steps(64).wgpu().build_eframe(|cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             if let Some(rs) = cc.wgpu_render_state.as_ref() {
                 app.set_wgpu(rs.clone());
             }
@@ -64,7 +64,7 @@ fn screen(h: &Harness, x: f32, y: f32) -> Pos2 {
     let app = h.state();
     let v = &app.ui.views[0];
     let xf = ViewXform {
-        rect: photocraft_ui_egui::rulers::content_rect(app, app.last_canvas_rect),
+        rect: redrob_photo_ui_egui::rulers::content_rect(app, app.last_canvas_rect),
         zoom: v.zoom,
         center: v.center,
         flip: app.ui.view.flip_horizontal,
@@ -103,7 +103,7 @@ fn tinted(p: [u8; 3], c: usize) -> bool {
 
 #[test]
 fn editing_a_crop_frame_shows_the_pixels_past_the_canvas() {
-    let _gpu = photocraft_testkit::gpu_lock();
+    let _gpu = redrob_photo_testkit::gpu_lock();
     let Some(mut h) = harness() else { return };
     h.run_steps(4);
     {

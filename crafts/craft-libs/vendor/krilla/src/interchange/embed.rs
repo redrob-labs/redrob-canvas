@@ -4,6 +4,7 @@ use std::ops::DerefMut;
 
 use pdf_writer::{Finish, Name, Ref, Str, TextStr};
 
+use crate::Data;
 use crate::chunk_container::ChunkContainer;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::interchange::metadata::pdf_date;
@@ -12,7 +13,6 @@ use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
 use crate::util::NameExt;
-use crate::Data;
 
 /// An error while embedding the file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -52,16 +52,8 @@ pub struct EmbeddedFile {
 }
 
 impl Cacheable for EmbeddedFile {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
-        sc.register_validation_error(ValidationError::EmbeddedFile(
-            EmbedError::Existence,
-            self.location,
-        ));
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
+        sc.register_validation_error(ValidationError::EmbeddedFile(EmbedError::Existence, self.location));
 
         let chunk = &mut chunk_container.non_stream.embedded_files;
         let mut stream_chunk = sc.new_chunk();
@@ -74,17 +66,13 @@ impl Cacheable for EmbeddedFile {
         }
         .finish(&sc.serialize_settings());
 
-        let mut embedded_file_stream =
-            stream_chunk.embedded_file(stream_ref, file_stream.encoded_data());
+        let mut embedded_file_stream = stream_chunk.embedded_file(stream_ref, file_stream.encoded_data());
         file_stream.write_filters(embedded_file_stream.deref_mut().deref_mut());
 
         if let Some(mime_type) = &self.mime_type {
             embedded_file_stream.subtype(mime_type.0.to_pdf_name());
         } else {
-            sc.register_validation_error(ValidationError::EmbeddedFile(
-                EmbedError::MissingMimeType,
-                self.location,
-            ));
+            sc.register_validation_error(ValidationError::EmbeddedFile(EmbedError::MissingMimeType, self.location));
         }
 
         let mut params = embedded_file_stream.params();
@@ -94,10 +82,7 @@ impl Cacheable for EmbeddedFile {
             let date = pdf_date(*date_time);
             params.modification_date(date);
         } else {
-            sc.register_validation_error(ValidationError::EmbeddedFile(
-                EmbedError::MissingDate,
-                self.location,
-            ));
+            sc.register_validation_error(ValidationError::EmbeddedFile(EmbedError::MissingDate, self.location));
         }
 
         params.finish();
@@ -126,10 +111,7 @@ impl Cacheable for EmbeddedFile {
         if let Some(description) = self.description {
             file_spec.description(TextStr(&description));
         } else {
-            sc.register_validation_error(ValidationError::EmbeddedFile(
-                EmbedError::MissingDescription,
-                self.location,
-            ));
+            sc.register_validation_error(ValidationError::EmbeddedFile(EmbedError::MissingDescription, self.location));
         }
 
         file_spec.finish();
@@ -173,11 +155,7 @@ impl MimeType {
     ///
     /// Returns `None` if the mime type is invalid.
     pub fn new(mime_type: &str) -> Option<Self> {
-        if valid_mime_type(mime_type) {
-            Some(Self(mime_type.to_string()))
-        } else {
-            None
-        }
+        if valid_mime_type(mime_type) { Some(Self(mime_type.to_string())) } else { None }
     }
 }
 
@@ -197,8 +175,7 @@ fn valid_mime_part(part: &str) -> bool {
         return false;
     }
 
-    part.chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '+' || c == '.')
+    part.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '+' || c == '.')
 }
 
 #[cfg(test)]

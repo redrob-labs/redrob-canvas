@@ -2,10 +2,10 @@
 use super::*;
 use egui::{Event, Key, Modifiers, PointerButton};
 use egui_kittest::{Harness, kittest::Queryable};
-use photocraft_doc::ShapeLayer;
+use redrob_photo_doc::ShapeLayer;
 
 fn app(mode: &str, depth: u32) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 120, "height": 100, "mode": mode, "depth": depth})).unwrap();
     app.ui.tool = Tool::Rectangle;
     app.sync_views();
@@ -155,7 +155,7 @@ fn float_paints_match_preview_creation_native_roundtrip_and_document_depth() {
             let mut app = app(mode, depth);
             set_tool_paint(&mut app, false, PaintChange::Color(foreground)).unwrap();
             set_tool_paint(&mut app, true, PaintChange::Color(background)).unwrap();
-            app.ui.tool_options.shape_stroke.cap = photocraft_doc::LineCap::Round;
+            app.ui.tool_options.shape_stroke.cap = redrob_photo_doc::LineCap::Round;
             app.ui.tool_options.shape_stroke.dashes = vec![0.0, 2.0];
             let preview = shape_preview(&app, tool, [20.0, 20.0], [100.0, 80.0], Modifiers::NONE).unwrap();
             finish_shape(&mut app, tool, [20.0, 20.0], [100.0, 80.0], Modifiers::NONE);
@@ -166,10 +166,10 @@ fn float_paints_match_preview_creation_native_roundtrip_and_document_depth() {
             assert_eq!(committed.fill, Some(solid_paint(foreground)));
             assert_eq!(committed.stroke.as_ref().unwrap().paint, solid_paint(background));
             let doc = &app.session.active().unwrap().doc;
-            let rendered = photocraft_vector::render_shape(&preview, doc.pixel_format(), doc.bounds());
+            let rendered = redrob_photo_vector::render_shape(&preview, doc.pixel_format(), doc.bounds());
             assert_eq!(committed.cache.as_ref().unwrap(), &rendered, "{tool:?} {mode}/{depth}");
-            let bytes = photocraft_format::save_to_bytes(doc, &Default::default()).unwrap();
-            let loaded = photocraft_format::load_from_bytes(&bytes).unwrap();
+            let bytes = redrob_photo_format::save_to_bytes(doc, &Default::default()).unwrap();
+            let loaded = redrob_photo_format::load_from_bytes(&bytes).unwrap();
             let id = app.session.active().unwrap().active_layer.unwrap();
             let LayerContent::Shape(saved) = &loaded.layer(id).unwrap().content else { panic!("saved editable shape") };
             assert_eq!((&saved.fill, &saved.stroke), (&committed.fill, &committed.stroke));

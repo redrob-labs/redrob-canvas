@@ -1,14 +1,14 @@
 //! Attributes panel: Overprint Fill / Overprint Stroke, Show / Don't Show Center, Reverse Path
 //! Direction Off / On, the fill rule (non-zero winding or even-odd), Image Map, URL (with the
 //! recent URLs and a Browser button) and the note. The menu hides the options and shows the note.
-//! Everything reads `attributes.info` ([`vectorcraft_engine::Session::attributes_info`]) and acts
+//! Everything reads `attributes.info` ([`redrob_vector_engine::Session::attributes_info`]) and acts
 //! through `attributes.set`, `path.reverse` and `path.setFillRule`.
 
 use egui::Ui;
+use redrob_vector_doc::{ImageMap, NodeId, NodeKind};
+use redrob_vector_engine::cmd::AttributesInfo;
+use redrob_vector_geom::FillRule;
 use serde_json::{Value, json};
-use vectorcraft_doc::{ImageMap, NodeId, NodeKind};
-use vectorcraft_engine::cmd::AttributesInfo;
-use vectorcraft_geom::FillRule;
 
 use super::{pstate, selection_len, set_pstate};
 use crate::VectorcraftApp;
@@ -172,7 +172,7 @@ pub(crate) fn open_url(app: &mut VectorcraftApp, p: &Value) -> Result<Value, Str
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// Run the panel and its menu for one headless frame: the texts drawn.
     fn frame(app: &mut VectorcraftApp) -> Vec<String> {

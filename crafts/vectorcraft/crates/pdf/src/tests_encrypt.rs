@@ -1,9 +1,9 @@
 //! PDF security: password-protected files open only with a password, carry the permissions asked
 //! for, and refuse what a PDF standard forbids.
 
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Document, Node, NodeId, NodeKind};
-use vectorcraft_geom::{Rect, shapes};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind};
+use redrob_vector_geom::{Rect, shapes};
 
 use crate::encrypt::protect;
 use crate::lab_spot::find;
@@ -200,7 +200,7 @@ fn without_a_password_nothing_changes() {
 
 #[test]
 fn the_permissions_password_opens_files_of_other_writers() {
-    use vectorcraft_testkit::pdf::{PdfPage, pdf};
+    use redrob_vector_testkit::pdf::{PdfPage, pdf};
     // Revision 2 (40-bit RC4): the owner password is the user password followed by `-owner`.
     let bytes = pdf(&[PdfPage::new(50.0, 50.0, "0 g 0 0 10 10 re f")], Some("pw"));
     assert_eq!(info(&bytes, Some("pw-owner")).unwrap().pages.len(), 1);

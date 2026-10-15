@@ -14,12 +14,12 @@
 
 use std::collections::{HashMap, HashSet};
 
-use craft_pdf::interpret::CacheKey;
-use craft_pdf::syntax::Pdf;
-use craft_pdf::syntax::content::TypedIter;
-use craft_pdf::syntax::content::ops::TypedInstruction;
-use craft_pdf::syntax::object::{Array, Dict, FromBytes, MaybeRef, Name, Object, ObjectIdentifier, dict_or_stream};
-use craft_pdf::syntax::page::{Page, Resources};
+use redrob_craft_pdf::interpret::CacheKey;
+use redrob_craft_pdf::syntax::Pdf;
+use redrob_craft_pdf::syntax::content::TypedIter;
+use redrob_craft_pdf::syntax::content::ops::TypedInstruction;
+use redrob_craft_pdf::syntax::object::{Array, Dict, FromBytes, MaybeRef, Name, Object, ObjectIdentifier, dict_or_stream};
+use redrob_craft_pdf::syntax::page::{Page, Resources};
 
 use crate::PdfError;
 
@@ -109,7 +109,7 @@ impl Ocgs {
     /// lists that array's groups as its sublayers; an array starting with a label lists its
     /// groups under the label, which isn't a group (they go under `parent`). A group listed twice
     /// stays where it is first listed. `seen`: the entries read so far.
-    fn nest(&mut self, order: &Array<'_>, parent: Option<usize>, depth: usize, xref: &craft_pdf::syntax::xref::XRef, seen: &mut usize) {
+    fn nest(&mut self, order: &Array<'_>, parent: Option<usize>, depth: usize, xref: &redrob_craft_pdf::syntax::xref::XRef, seen: &mut usize) {
         let mut prev = None;
         for item in order.raw_iter() {
             *seen += 1;
@@ -152,7 +152,7 @@ impl Ocgs {
         if let Some(i) = self.index.get(&id) {
             return *i;
         }
-        let name = d.get::<craft_pdf::syntax::object::String<'_>>(b"Name").map(|s| text_string(s.as_bytes())).unwrap_or_default();
+        let name = d.get::<redrob_craft_pdf::syntax::object::String<'_>>(b"Name").map(|s| text_string(s.as_bytes())).unwrap_or_default();
         let print = usage(d, b"Print", b"PrintState") != Some(false);
         // A view state applies when the configuration says so on opening; an off one hides the
         // group all the same (it says how the group is meant to be seen).
@@ -175,7 +175,7 @@ impl Ocgs {
 
     /// The group content marked with `/OC` (`d`: the group or membership dictionary, `id` its
     /// object) belongs to: a membership dictionary's first group.
-    fn group_of(&mut self, d: &Dict<'_>, id: ObjectIdentifier, xref: &craft_pdf::syntax::xref::XRef) -> Option<usize> {
+    fn group_of(&mut self, d: &Dict<'_>, id: ObjectIdentifier, xref: &redrob_craft_pdf::syntax::xref::XRef) -> Option<usize> {
         if d.get::<Name<'_>>(b"Type").is_some_and(|t| t.as_ref() == b"OCMD") {
             let first = d.get::<Array<'_>>(b"OCGs").and_then(|a| a.raw_iter().find_map(|i| i.as_obj_ref())).or_else(|| d.get_ref(b"OCGs"))?;
             let id = ObjectIdentifier::from(first);
@@ -321,7 +321,7 @@ struct Walker<'w, 'p> {
     ocgs: &'w mut Ocgs,
     /// The groups that are off for the interpreter (none once [`all_on`] turned them on).
     off: HashSet<ObjectIdentifier>,
-    xref: &'p craft_pdf::syntax::xref::XRef,
+    xref: &'p redrob_craft_pdf::syntax::xref::XRef,
     fonts: &'w mut FontNames,
     visible: Vec<bool>,
     ops: usize,

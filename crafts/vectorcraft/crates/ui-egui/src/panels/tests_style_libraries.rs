@@ -3,9 +3,9 @@
 //! Library writes `.vcstyles` files that open as libraries.
 
 use egui::{Event, Modifiers, PointerButton, Pos2, Rect, vec2};
+use redrob_vector_doc::style_libs::STYLE_LIBRARIES;
+use redrob_vector_engine::Session;
 use serde_json::{Value, json};
-use vectorcraft_doc::style_libs::STYLE_LIBRARIES;
-use vectorcraft_engine::Session;
 
 use super::graphic_styles::GraphicStyleLibraries;
 use super::library_panel::{self, LibraryKind, OpenLibrary};
@@ -78,7 +78,7 @@ fn clicking_a_library_style_adds_and_applies_it_in_one_step() {
     let tile = ctx.read_response(library_panel::tile_id::<GraphicStyleLibraries>("Halo")).unwrap().rect;
     assert_eq!(tile.width(), 30.0, "styles open in large thumbnails");
     // Alt-click adds the style's appearance on top, unlinked.
-    let fills = |app: &VectorcraftApp| app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(rect)).unwrap().appearance.items.len();
+    let fills = |app: &VectorcraftApp| app.session.doc().unwrap().doc.node(redrob_vector_doc::NodeId(rect)).unwrap().appearance.items.len();
     let before = fills(&app);
     click(&mut app, &ctx, "Ember", Modifiers::ALT, 2.0);
     assert!(app.session.doc().unwrap().doc.graphic_style("Ember").is_some());

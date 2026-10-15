@@ -1,11 +1,11 @@
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_ui_egui::PhotocraftApp;
-use photocraft_ui_egui::state::DialogKind;
+use redrob_photo_ui_egui::PhotocraftApp;
+use redrob_photo_ui_egui::state::DialogKind;
 use serde_json::{Map, json};
 
 fn app_with_variables_dialog(cur: u64) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), photocraft_ui_egui::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), redrob_photo_ui_egui::Services::default());
     app.run("file.new", json!({"width": 64, "height": 64})).unwrap();
     app.run("layer.new.layer", json!({})).unwrap();
     let state = json!({
@@ -34,11 +34,11 @@ fn harness(app: PhotocraftApp) -> Harness<'static, PhotocraftApp> {
             if !ctx.fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
                 return;
             }
-            photocraft_ui_egui::dialogs::show(app, &ctx);
+            redrob_photo_ui_egui::dialogs::show(app, &ctx);
         },
         app,
     );
-    PhotocraftApp::setup_context(&h.ctx, photocraft_ui_egui::theme::ThemeKind::ALL[0]);
+    PhotocraftApp::setup_context(&h.ctx, redrob_photo_ui_egui::theme::ThemeKind::ALL[0]);
     h.run_steps(3);
     h
 }
@@ -58,7 +58,7 @@ fn out_of_range_data_set_index_is_clamped_before_delete() {
 
 /// `ui.dialog.set` can store any JSON in `__variables`; the editors write into its entries.
 fn app_with_malformed_variables(page: &str) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), photocraft_ui_egui::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), redrob_photo_ui_egui::Services::default());
     app.run("file.new", json!({"width": 64, "height": 64})).unwrap();
     app.run("layer.new.layer", json!({})).unwrap();
     let mut fields = Map::new();

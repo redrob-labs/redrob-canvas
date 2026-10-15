@@ -2,10 +2,10 @@
 //! with three dash/gap pairs, arrowheads with rendered previews, arrow scale, width profiles.
 
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, ArrowAlign, Arrowhead, Dash, Document, LineCap, LineJoin, Node, StrokeAlign, StrokeLayer, Unit, WidthProfile};
+use redrob_vector_engine::inspect::StrokeMixed;
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, ArrowAlign, Arrowhead, Dash, Document, LineCap, LineJoin, Node, StrokeAlign, StrokeLayer, Unit, WidthProfile};
-use vectorcraft_engine::inspect::StrokeMixed;
 
 use super::{character, current_stroke, pstate, set_pstate, stroke_mixed};
 use crate::theme::Tokens;
@@ -323,11 +323,11 @@ pub(super) fn arrow_doc(a: Option<Arrowhead>, start: bool, w: f64, h: f64) -> Op
     } else {
         st.end_arrow = a
     }
-    let mut bp = vectorcraft_geom::BezPath::new();
+    let mut bp = redrob_vector_geom::BezPath::new();
     bp.move_to((3.0, h / 2.0));
     bp.line_to((w - 3.0, h / 2.0));
     let (id, l) = (doc.alloc_id(), doc.layers[0].id);
-    doc.insert(Some(l), 0, Node::path(id, vectorcraft_geom::PathData::from_bezpath(&bp), ap)).ok()?;
+    doc.insert(Some(l), 0, Node::path(id, redrob_vector_geom::PathData::from_bezpath(&bp), ap)).ok()?;
     Some(doc)
 }
 
@@ -530,7 +530,7 @@ mod tests {
 
     #[test]
     fn arrow_align_buttons_need_a_head() {
-        let mut st = StrokeLayer::new(vectorcraft_color::Paint::None, 1.0);
+        let mut st = StrokeLayer::new(redrob_vector_color::Paint::None, 1.0);
         assert_eq!(arrow_align_state(None), (ArrowAlign::Extend, false));
         assert_eq!(arrow_align_state(Some(&st)), (ArrowAlign::Extend, false));
         st.start_arrow = Some(Arrowhead::Bar);
@@ -553,7 +553,7 @@ mod tests {
 
     #[test]
     fn panel_draws_for_lines_with_and_without_heads() {
-        use vectorcraft_engine::Session;
+        use redrob_vector_engine::Session;
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         let r = |app: &mut VectorcraftApp, id: &str, p: Value| app.session.execute(id, &p).unwrap();
         r(&mut app, "file.new", json!({"width": 100, "height": 100}));
@@ -571,9 +571,9 @@ mod tests {
 
     #[test]
     fn while_typing_the_panel_strokes_the_selected_characters() {
-        use vectorcraft_doc::NodeKind;
-        use vectorcraft_engine::{Session, ViewInfo};
-        use vectorcraft_tools::{PointerEvent, PointerKind};
+        use redrob_vector_doc::NodeKind;
+        use redrob_vector_engine::{Session, ViewInfo};
+        use redrob_vector_tools::{PointerEvent, PointerKind};
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
         let v = ViewInfo::default();

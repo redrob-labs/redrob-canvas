@@ -1,10 +1,10 @@
 //! File I/O through the injected services (pick, read, write, download, reveal); the engine's
 //! `fileio` decodes, encodes and saves every format.
 
+use redrob_vector_doc::SavedView;
+use redrob_vector_engine::EngineError;
+use redrob_vector_engine::cmd::fileio::{self, Format, SAVE_FORMATS, SaveMode, SavePlan};
 use serde_json::{Value, json};
-use vectorcraft_doc::SavedView;
-use vectorcraft_engine::EngineError;
-use vectorcraft_engine::cmd::fileio::{self, Format, SAVE_FORMATS, SaveMode, SavePlan};
 
 use crate::background::{self, Writer};
 use crate::dialogs::svg_options;
@@ -12,7 +12,13 @@ use crate::state::Dialog;
 use crate::{FilePick, Services, VectorcraftApp, dialogs};
 
 /// Template extensions New from Template's open dialog lists first.
-const TEMPLATE_EXTS: &[&str] = &["vctemplate", "ait", "vectorcraft", "drawcraft"];
+const TEMPLATE_EXTS: &[&str] = &[
+    "vctemplate",
+    "ait",
+    "rvector",
+    "vectorcraft", // legacy: upstream documents still open as templates
+    "drawcraft",   // legacy:
+];
 
 /// Open bytes of any readable format as a new document (templates open untitled); swatch and
 /// graphic style library files open in the library panel, Libraries panel files are added to it,
@@ -25,7 +31,7 @@ pub fn open_bytes(app: &mut VectorcraftApp, name: &str, bytes: &[u8], path: Opti
     // A WebAssembly plug-in is installed.
     if opens == Some(OpensAs::Plugin) {
         let r =
-            app.run("plugin.install", json!({"dataBase64": vectorcraft_format::base64_encode(bytes), "name": path.as_deref().unwrap_or(name)}))?;
+            app.run("plugin.install", json!({"dataBase64": redrob_vector_format::base64_encode(bytes), "name": path.as_deref().unwrap_or(name)}))?;
         app.status(format!("Installed plug-in {}", r["name"].as_str().unwrap_or(name)));
         return Ok(Value::Null);
     }
@@ -35,7 +41,7 @@ pub fn open_bytes(app: &mut VectorcraftApp, name: &str, bytes: &[u8], path: Opti
     if opens == Some(OpensAs::Script) {
         let p = match path {
             Some(path) => json!({ "path": path }),
-            None => json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)}),
+            None => json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes)}),
         };
         return dialogs::script_check::command(app, &p).map(|_| Value::Null);
     }
@@ -53,7 +59,7 @@ pub fn open_bytes(app: &mut VectorcraftApp, name: &str, bytes: &[u8], path: Opti
         let p = match path {
             Some(path) => serde_json::json!({ "path": path }),
             // `.ase` swatch libraries are binary.
-            None if swatches => serde_json::json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)}),
+            None if swatches => serde_json::json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes)}),
             None => serde_json::json!({"name": name, "data": String::from_utf8_lossy(bytes)}),
         };
         let load = if swatches { crate::panels::swatches::load_library } else { crate::panels::graphic_styles::load_library };
@@ -97,24 +103,24 @@ pub enum OpensAs {
 pub fn opens_as(name: &str) -> Option<OpensAs> {
     let ext = fileio::extension(name);
     let presets = [
-        (vectorcraft_engine::cmd::flatten::PRESET_EXTS, "flattener.presets.import", "flattener presets"),
-        (vectorcraft_engine::cmd::pdfcmds::PRESET_EXTS, "pdf.preset.import", "PDF presets"),
-        (vectorcraft_engine::cmd::printpresets::PRESET_EXTS, "print.presets.import", "print presets"),
-        (vectorcraft_engine::cmd::perspgrid::PRESET_EXTS, "perspective.presets.import", "perspective grid presets"),
+        (redrob_vector_engine::cmd::flatten::PRESET_EXTS, "flattener.presets.import", "flattener presets"),
+        (redrob_vector_engine::cmd::pdfcmds::PRESET_EXTS, "pdf.preset.import", "PDF presets"),
+        (redrob_vector_engine::cmd::printpresets::PRESET_EXTS, "print.presets.import", "print presets"),
+        (redrob_vector_engine::cmd::perspgrid::PRESET_EXTS, "perspective.presets.import", "perspective grid presets"),
     ];
-    if vectorcraft_engine::cmd::plugin::EXTS.contains(&ext.as_str()) {
+    if redrob_vector_engine::cmd::plugin::EXTS.contains(&ext.as_str()) {
         Some(OpensAs::Plugin)
-    } else if vectorcraft_engine::cmd::shortcutset::EXTS.contains(&ext.as_str()) {
+    } else if redrob_vector_engine::cmd::shortcutset::EXTS.contains(&ext.as_str()) {
         Some(OpensAs::ShortcutSet)
-    } else if vectorcraft_engine::cmd::scripts::EXTS.contains(&ext.as_str()) {
+    } else if redrob_vector_engine::cmd::scripts::EXTS.contains(&ext.as_str()) {
         Some(OpensAs::Script)
     } else if let Some(&(_, import, what)) = presets.iter().find(|(exts, ..)| exts.contains(&ext.as_str())) {
         Some(OpensAs::Presets { import, what })
-    } else if vectorcraft_engine::cmd::library::LIBRARY_EXTS.contains(&ext.as_str()) {
+    } else if redrob_vector_engine::cmd::library::LIBRARY_EXTS.contains(&ext.as_str()) {
         Some(OpensAs::Library)
-    } else if vectorcraft_engine::cmd::swatchlib::LIBRARY_EXTS.contains(&ext.as_str()) {
+    } else if redrob_vector_engine::cmd::swatchlib::LIBRARY_EXTS.contains(&ext.as_str()) {
         Some(OpensAs::SwatchLibrary)
-    } else if ext == vectorcraft_doc::style_libs::STYLES_EXT {
+    } else if ext == redrob_vector_doc::style_libs::STYLES_EXT {
         Some(OpensAs::StyleLibrary)
     } else {
         None
@@ -150,7 +156,7 @@ pub fn install_plugin(app: &mut VectorcraftApp, path: Option<String>) -> Result<
     let path = match path {
         Some(p) => p,
         None if app.services.open_async.is_some() => return open_dialog(app).map(|_| Value::Null),
-        None => pick_open(app, &FilePick { filters: vec![("Plug-ins", vectorcraft_engine::cmd::plugin::EXTS)], ..Default::default() })?,
+        None => pick_open(app, &FilePick { filters: vec![("Plug-ins", redrob_vector_engine::cmd::plugin::EXTS)], ..Default::default() })?,
     };
     let r = app.run("plugin.install", json!({ "path": path }))?;
     app.status(format!("Installed plug-in {}", r["name"].as_str().unwrap_or_default()));
@@ -357,7 +363,7 @@ fn with_save_extension(path: &str, f: &Format) -> String {
 
 /// Write every file of an export (one per artboard, linked images) for the destination `path`.
 /// → the export's own files (without the linked images).
-fn write_encoded(write: Writer, doc: &vectorcraft_doc::Document, path: &str, enc: &fileio::Encoded) -> Result<Vec<String>, String> {
+fn write_encoded(write: Writer, doc: &redrob_vector_doc::Document, path: &str, enc: &fileio::Encoded) -> Result<Vec<String>, String> {
     let named = enc.named(doc, path);
     for (p, bytes) in &named {
         write(p, bytes)?;
@@ -686,7 +692,7 @@ pub(crate) fn save_command_output_named(app: &mut VectorcraftApp, id: &str, name
 fn take_output(v: &mut Value) -> Result<Vec<u8>, String> {
     let o = v.as_object_mut().ok_or("no data")?;
     let bytes = match (o.remove("dataBase64"), o.remove("data")) {
-        (Some(Value::String(b64)), _) => vectorcraft_format::base64_decode(&b64),
+        (Some(Value::String(b64)), _) => redrob_vector_format::base64_decode(&b64),
         (_, Some(Value::String(text))) => Some(text.into_bytes()),
         _ => None,
     };
@@ -751,7 +757,7 @@ pub(crate) fn file_url(path: &str) -> String {
 
 /// File → Revert: ask first; OK runs `file.revert` with `confirmed`, which goes to the engine.
 pub fn ask_revert(app: &mut VectorcraftApp) -> Result<Value, String> {
-    let c = vectorcraft_engine::find_command("file.revert").ok_or("no revert command")?;
+    let c = redrob_vector_engine::find_command("file.revert").ok_or("no revert command")?;
     (c.enabled)(&app.session)?;
     let name = app.session.active().map(|d| d.title()).unwrap_or_default();
     let message = crate::i18n::fmt(tl!("Revert to the saved version of “{name}”?"), &[("name", &name)]);
@@ -808,7 +814,7 @@ pub(crate) fn export_files(app: &mut VectorcraftApp, id: &str, params: Value) ->
         app.status(status);
     } else if let Some(download) = app.services.download.as_mut() {
         for (name, data) in &returned {
-            let bytes = vectorcraft_format::base64_decode(data).ok_or("the export returned unreadable data")?;
+            let bytes = redrob_vector_format::base64_decode(data).ok_or("the export returned unreadable data")?;
             download(name, &bytes)?;
         }
         let what = match returned.as_slice() {
@@ -822,7 +828,7 @@ pub(crate) fn export_files(app: &mut VectorcraftApp, id: &str, params: Value) ->
 
 /// Place a file's bytes (no path, so embedded) centred in the view: `file.place`.
 pub fn place_bytes(app: &mut VectorcraftApp, name: &str, bytes: &[u8]) -> Result<(), String> {
-    crate::place::run(app, &serde_json::json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(bytes) })).map(|_| ())
+    crate::place::run(app, &serde_json::json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) })).map(|_| ())
 }
 
 #[cfg(test)]
@@ -830,12 +836,12 @@ mod tests {
     use std::cell::RefCell;
     use std::rc::Rc;
 
+    use redrob_vector_engine::Session;
     use serde_json::json;
-    use vectorcraft_engine::Session;
 
     use super::*;
     use crate::Services;
-    use vectorcraft_doc::NodeKind;
+    use redrob_vector_doc::NodeKind;
 
     type Written = Rc<RefCell<Vec<(String, Vec<u8>)>>>;
 
@@ -886,9 +892,9 @@ mod tests {
             (st.is_dirty(), st.path.clone())
         };
         for (command, path, message) in [
-            ("file.save", "/docs/Poster.vectorcraft", "Can't save “Poster.vectorcraft”."),
-            ("file.saveAs", "/docs/Poster.vectorcraft", "Can't save “Poster.vectorcraft”."),
-            ("file.saveCopy", "/docs/Copy.vectorcraft", "Can't save “Copy.vectorcraft”."),
+            ("file.save", "/docs/Poster.rvector", "Can't save “Poster.rvector”."),
+            ("file.saveAs", "/docs/Poster.rvector", "Can't save “Poster.rvector”."),
+            ("file.saveCopy", "/docs/Copy.rvector", "Can't save “Copy.rvector”."),
             ("file.exportAs", "/docs/Poster.png", "Can't export “Poster.png”."),
             ("file.export.pdf", "/docs/Poster.pdf", "Can't save “Poster.pdf”."),
         ] {
@@ -901,14 +907,14 @@ mod tests {
         }
         // An agent waiting on its request gets the error as its reply, and no dialog.
         app.ui.answering_control = true;
-        assert!(app.run("file.save", json!({"path": "/docs/Poster.vectorcraft"})).is_err());
+        assert!(app.run("file.save", json!({"path": "/docs/Poster.rvector"})).is_err());
         app.ui.answering_control = false;
         assert!(app.ui.dialog.is_none() && app.ui.told.is_empty());
         // Under another dialog (a background save that fails later) the message waits its turn,
         // once, and is drawn when that dialog is closed.
         dialogs::confirm::ask(&mut app, "Delete the swatch?", "", "edit.undo", json!({}));
         for _ in 0..2 {
-            report_write_error(&mut app, false, "/docs/Poster.vectorcraft", "the disk is full");
+            report_write_error(&mut app, false, "/docs/Poster.rvector", "the disk is full");
         }
         assert_eq!((app.ui.dialog.as_ref().map(|d| d.kind.as_str()), app.ui.told.len()), (Some(dialogs::confirm::KIND), 1));
         app.ui.dialog = None;
@@ -921,7 +927,7 @@ mod tests {
         let d = app.ui.dialog.as_ref().expect("the message is shown, and stays");
         assert_eq!(
             (d.kind.as_str(), d.str("message").as_str(), d.str("detail").as_str()),
-            (dialogs::confirm::MESSAGE, "Can't save “Poster.vectorcraft”.", "the disk is full")
+            (dialogs::confirm::MESSAGE, "Can't save “Poster.rvector”.", "the disk is full")
         );
         assert!(app.ui.told.is_empty());
     }
@@ -941,13 +947,13 @@ mod tests {
             let st = app.session.doc().unwrap();
             (st.is_dirty(), st.path.clone())
         };
-        let e = save(&mut app, SaveMode::Save, &json!({"path": "Poster.vectorcraft"}), false).unwrap_err();
+        let e = save(&mut app, SaveMode::Save, &json!({"path": "Poster.rvector"}), false).unwrap_err();
         assert!(e.contains("the browser refused the download"), "{e}");
         assert_eq!(unsaved(&app), (true, None));
         // Save Changes › Save: not saved, so not closed.
         let (i, uid) = (app.session.active_index().unwrap(), app.session.doc().unwrap().uid);
         app.ui.dialog = Some(crate::state::Dialog::new(crate::unsaved::KIND, json!({"index": i, "uid": uid, "name": "Poster", "then": "close"})));
-        app.session.doc_mut().unwrap().path = Some("Poster.vectorcraft".into());
+        app.session.doc_mut().unwrap().path = Some("Poster.rvector".into());
         assert!(crate::unsaved::confirm(&mut app).is_err());
         assert_eq!((app.session.documents().len(), app.session.doc().unwrap().is_dirty()), (1, true));
         // Once the download starts, the save counts.
@@ -958,10 +964,10 @@ mod tests {
 
     fn bytes_of(app: &mut VectorcraftApp, cmd: &str, p: Value) -> Vec<u8> {
         let v = app.session.execute(cmd, &p).unwrap();
-        vectorcraft_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
+        redrob_vector_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
     }
 
-    fn image_size(app: &VectorcraftApp, id: vectorcraft_doc::NodeId) -> (u32, u32) {
+    fn image_size(app: &VectorcraftApp, id: redrob_vector_doc::NodeId) -> (u32, u32) {
         match &app.session.doc().unwrap().doc.node(id).unwrap().kind {
             NodeKind::Image(im) => (im.width, im.height),
             other => panic!("{other:?}"),
@@ -1001,13 +1007,13 @@ mod tests {
         let (mut app, written) = app();
         app.session.execute("file.new", &json!({"width": 100, "height": 50, "artboards": 2})).unwrap();
         app.session.execute("artboard.setProps", &json!({"index": 1, "width": 40})).unwrap();
-        app.session.doc_mut().unwrap().path = Some("/tmp/doc.vectorcraft".into());
+        app.session.doc_mut().unwrap().path = Some("/tmp/doc.rvector".into());
         export(&mut app, None, Some("/tmp/b.png".into()), &json!({"artboard": 1, "scale": 2})).unwrap();
-        export(&mut app, None, Some("/tmp/copy.vectorcraft".into()), &Value::Null).unwrap();
+        export(&mut app, None, Some("/tmp/copy.rvector".into()), &Value::Null).unwrap();
         let w = written.borrow();
         assert_eq!(&w[0].1[16..20], 80u32.to_be_bytes(), "artboard 1 (40 pt) at scale 2");
-        assert!(vectorcraft_format::sniff(&w[1].1));
-        assert_eq!(app.session.active().unwrap().path.as_deref(), Some("/tmp/doc.vectorcraft"));
+        assert!(redrob_vector_format::sniff(&w[1].1));
+        assert_eq!(app.session.active().unwrap().path.as_deref(), Some("/tmp/doc.rvector"));
         drop(w);
         assert!(export(&mut app, None, Some("/tmp/x.dwg".into()), &Value::Null).is_err(), "DWG can't be written");
     }
@@ -1052,7 +1058,7 @@ mod tests {
         let (req, _) = crate::control::ControlRequest::new("app.export", json!({"format": "png", "scale": 2}));
         let crate::control::Outcome::Done(r) = crate::control::handle(&mut app, &egui::Context::default(), &req) else { panic!("not done") };
         assert_eq!(r["ok"], true, "{r}");
-        let png = vectorcraft_format::base64_decode(r["result"]["dataBase64"].as_str().unwrap()).unwrap();
+        let png = redrob_vector_format::base64_decode(r["result"]["dataBase64"].as_str().unwrap()).unwrap();
         assert_eq!(&png[16..20], 60u32.to_be_bytes(), "30 pt at scale 2");
         assert!(written.borrow().is_empty(), "no file and no save dialog");
     }

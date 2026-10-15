@@ -3,8 +3,8 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use crate::color::rgb;
-use crate::text::type3::ColoredGlyph;
 use crate::text::Glyph;
+use crate::text::type3::ColoredGlyph;
 use crate::text::{FontContainer, FontIdentifier};
 
 pub(crate) enum GlyphSpan<'a, T>
@@ -75,14 +75,7 @@ where
         context_color: rgb::Color,
         font_container: Rc<RefCell<FontContainer>>,
     ) -> Self {
-        Self {
-            slice,
-            context_color,
-            reversed,
-            forbid_invalid_codepoints,
-            text,
-            font_container,
-        }
+        Self { slice, context_color, reversed, forbid_invalid_codepoints, text, font_container }
     }
 }
 
@@ -105,11 +98,8 @@ where
         where
             U: Glyph,
         {
-            let (identifier, pdf_glyph) =
-                font_container.add_glyph(ColoredGlyph::new(g.glyph_id(), context_color));
-            let pdf_font = font_container
-                .get_from_identifier_mut(identifier.clone())
-                .unwrap();
+            let (identifier, pdf_glyph) = font_container.add_glyph(ColoredGlyph::new(g.glyph_id(), context_color));
+            let pdf_font = font_container.get_from_identifier_mut(identifier.clone()).unwrap();
 
             let range = g.text_range().clone();
             let text = &text[range.clone()];
@@ -132,10 +122,7 @@ where
             // to have a valid codepoint mapping. So in this case, we still add the codepoints
             // to each glyph in the cluster, this will result in worse copy-pasting in viewers
             // that don't support `ActualText`.
-            if !incompatible_codepoint
-                && (previous_range != Some(range.clone()) || forbid_invalid_codepoints)
-                && codepoints != Some(text)
-            {
+            if !incompatible_codepoint && (previous_range != Some(range.clone()) || forbid_invalid_codepoints) && codepoints != Some(text) {
                 pdf_font.set_codepoints(pdf_glyph, text.to_string(), g.location());
             }
 
@@ -149,26 +136,14 @@ where
 
         // Get the range of the first glyph, as well as whether it's
         // incompatible.
-        let (first_range, first_incompatible) = func(
-            iter.next()?,
-            self.context_color,
-            None,
-            self.forbid_invalid_codepoints,
-            self.font_container.borrow_mut(),
-            self.text,
-        );
+        let (first_range, first_incompatible) =
+            func(iter.next()?, self.context_color, None, self.forbid_invalid_codepoints, self.font_container.borrow_mut(), self.text);
 
         let mut prev_range = first_range.clone();
 
         for next in iter {
-            let (next_range, next_incompatible) = func(
-                next,
-                self.context_color,
-                Some(prev_range.clone()),
-                self.forbid_invalid_codepoints,
-                self.font_container.borrow_mut(),
-                self.text,
-            );
+            let (next_range, next_incompatible) =
+                func(next, self.context_color, Some(prev_range.clone()), self.forbid_invalid_codepoints, self.font_container.borrow_mut(), self.text);
 
             match use_span {
                 // In this case, we just started and we are looking at the first two glyphs.
@@ -272,12 +247,7 @@ where
     T: Glyph,
 {
     pub fn from_props(glyphs: &'a [T], props: GlyphProps) -> Self {
-        GlyphGroup {
-            font_identifier: props.font_identifier,
-            glyphs,
-            y_offset: props.y_offset,
-            y_advance: props.y_advance,
-        }
+        GlyphGroup { font_identifier: props.font_identifier, glyphs, y_offset: props.y_offset, y_advance: props.y_advance }
     }
 }
 
@@ -302,16 +272,8 @@ impl<'a, T> GlyphGrouper<'a, T>
 where
     T: Glyph,
 {
-    pub fn new(
-        font_container: Rc<RefCell<FontContainer>>,
-        context_color: rgb::Color,
-        slice: &'a [T],
-    ) -> Self {
-        Self {
-            font_container,
-            context_color,
-            slice,
-        }
+    pub fn new(font_container: Rc<RefCell<FontContainer>>, context_color: rgb::Color, slice: &'a [T]) -> Self {
+        Self { font_container, context_color, slice }
     }
 }
 
@@ -329,18 +291,10 @@ where
             let mut count = 1;
 
             let mut iter = self.slice.iter();
-            let first = get_glyph_props(
-                iter.next()?,
-                self.context_color,
-                &mut self.font_container.borrow_mut(),
-            );
+            let first = get_glyph_props(iter.next()?, self.context_color, &mut self.font_container.borrow_mut());
 
             for next in iter {
-                let temp_glyph = get_glyph_props(
-                    next,
-                    self.context_color,
-                    &mut self.font_container.borrow_mut(),
-                );
+                let temp_glyph = get_glyph_props(next, self.context_color, &mut self.font_container.borrow_mut());
 
                 // If either of those is different, we need to start a new subrun.
                 if first.font_identifier != temp_glyph.font_identifier
@@ -372,32 +326,17 @@ pub(crate) struct GlyphProps {
     y_advance: f32,
 }
 
-pub(crate) fn get_glyph_props<U>(
-    g: &U,
-    context_color: rgb::Color,
-    font_container: &mut FontContainer,
-) -> GlyphProps
+pub(crate) fn get_glyph_props<U>(g: &U, context_color: rgb::Color, font_container: &mut FontContainer) -> GlyphProps
 where
     U: Glyph,
 {
     // Safe because we've already added all glyphs in the text spanner.
-    let font_identifier = font_container
-        .font_identifier(ColoredGlyph::new(g.glyph_id(), context_color))
-        .unwrap();
+    let font_identifier = font_container.font_identifier(ColoredGlyph::new(g.glyph_id(), context_color)).unwrap();
 
-    GlyphProps {
-        font_identifier,
-        y_offset: g.y_offset(1.0),
-        y_advance: g.y_advance(1.0),
-    }
+    GlyphProps { font_identifier, y_offset: g.y_offset(1.0), y_advance: g.y_advance(1.0) }
 }
 
-pub fn use_text_spanner(
-    glyphs: &[impl Glyph],
-    text: &str,
-    context_color: rgb::Color,
-    font_container: &mut FontContainer,
-) -> bool {
+pub fn use_text_spanner(glyphs: &[impl Glyph], text: &str, context_color: rgb::Color, font_container: &mut FontContainer) -> bool {
     if glyphs.is_empty() {
         return false;
     }
@@ -436,18 +375,9 @@ pub fn use_text_spanner(
     do_text_span
 }
 
-fn check_text_span_prop(
-    glyph: &impl Glyph,
-    text: &str,
-    context_color: rgb::Color,
-    font_container: &mut FontContainer,
-    do_text_span: &mut bool,
-) {
-    let (identifier, pdf_glyph) =
-        font_container.add_glyph(ColoredGlyph::new(glyph.glyph_id(), context_color));
-    let pdf_font = font_container
-        .get_from_identifier_mut(identifier.clone())
-        .unwrap();
+fn check_text_span_prop(glyph: &impl Glyph, text: &str, context_color: rgb::Color, font_container: &mut FontContainer, do_text_span: &mut bool) {
+    let (identifier, pdf_glyph) = font_container.add_glyph(ColoredGlyph::new(glyph.glyph_id(), context_color));
+    let pdf_font = font_container.get_from_identifier_mut(identifier.clone()).unwrap();
 
     let range = glyph.text_range().clone();
     let text = &text[range.clone()];

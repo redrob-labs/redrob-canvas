@@ -5,16 +5,16 @@ use std::sync::Arc;
 
 use skrifa::instance::{Location, LocationRef, Size};
 use skrifa::metrics::GlyphMetrics;
-use skrifa::raw::types::NameId;
 use skrifa::raw::TableProvider;
+use skrifa::raw::types::NameId;
 use skrifa::{FontRef, MetadataProvider, OutlineGlyphCollection};
 use tiny_skia_path::FiniteF32;
 use yoke::{Yoke, Yokeable};
 
+use crate::Data;
 use crate::geom::Rect;
 use crate::text::GlyphId;
 use crate::util::Prehashed;
-use crate::Data;
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information
@@ -46,29 +46,18 @@ impl Font {
     }
 
     pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
-        let yoke_data = YokeData {
-            data: data.0.clone(),
-            location: font_info.location.clone(),
-        };
+        let yoke_data = YokeData { data: data.0.clone(), location: font_info.location.clone() };
 
-        let font_ref_yoke = Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(
-            Box::new(yoke_data),
-            |data| {
-                let font_ref =
-                    FontRef::from_index(data.data.as_ref().as_ref(), font_info.index).unwrap();
-                FontRefYoke {
-                    font_ref: font_ref.clone(),
-                    glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), &data.location),
-                    outline_glyphs: font_ref.outline_glyphs(),
-                }
-            },
-        );
+        let font_ref_yoke = Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(Box::new(yoke_data), |data| {
+            let font_ref = FontRef::from_index(data.data.as_ref().as_ref(), font_info.index).unwrap();
+            FontRefYoke {
+                font_ref: font_ref.clone(),
+                glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), &data.location),
+                outline_glyphs: font_ref.outline_glyphs(),
+            }
+        });
 
-        Some(Font(Arc::new(Prehashed::new(Repr {
-            font_data: data,
-            font_ref_yoke,
-            font_info,
-        }))))
+        Some(Font(Arc::new(Prehashed::new(Repr { font_data: data, font_ref_yoke, font_info }))))
     }
 
     pub(crate) fn postscript_name(&self) -> Option<&str> {
@@ -252,27 +241,15 @@ impl Hash for Repr {
 impl FontInfo {
     pub(crate) fn new(data: &[u8], index: u32, var_coords: &[(Tag, f32)]) -> Option<Self> {
         let font_ref = FontRef::from_index(data, index).ok()?;
-        let location = font_ref.axes().location(
-            var_coords
-                .iter()
-                .map(|i| (skrifa::Tag::new(i.0.get()), i.1)),
-        );
+        let location = font_ref.axes().location(var_coords.iter().map(|i| (skrifa::Tag::new(i.0.get()), i.1)));
         let data_len = data.len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
         let num_glyphs = font_ref.glyph_names().num_glyphs();
 
         let metrics = font_ref.metrics(Size::unscaled(), &location);
         let os_2 = font_ref.os2().ok();
-        let ascent = FiniteF32::new(
-            os_2.as_ref()
-                .map(|s| s.s_typo_ascender() as f32)
-                .unwrap_or(metrics.ascent),
-        )?;
-        let descent = FiniteF32::new(
-            os_2.as_ref()
-                .map(|s| s.s_typo_descender() as f32)
-                .unwrap_or(metrics.descent),
-        )?;
+        let ascent = FiniteF32::new(os_2.as_ref().map(|s| s.s_typo_ascender() as f32).unwrap_or(metrics.ascent))?;
+        let descent = FiniteF32::new(os_2.as_ref().map(|s| s.s_typo_descender() as f32).unwrap_or(metrics.descent))?;
         let is_monospaced = metrics.is_monospace;
         let cap_height = metrics.cap_height.map(|n| FiniteF32::new(n).unwrap());
         let italic_angle = FiniteF32::new(metrics.italic_angle).unwrap();
@@ -280,15 +257,12 @@ impl FontInfo {
         let stretch = FiniteF32::new(font_ref.attributes().stretch.ratio())?;
         let units_per_em = metrics.units_per_em;
 
-        let global_bbox = metrics
-            .bounds
-            .and_then(|b| Rect::from_ltrb(b.x_min, b.y_min, b.x_max, b.y_max))
-            .unwrap_or(Rect::from_xywh(
-                0.0,
-                0.0,
-                units_per_em as f32,
-                units_per_em as f32,
-            )?);
+        let global_bbox = metrics.bounds.and_then(|b| Rect::from_ltrb(b.x_min, b.y_min, b.x_max, b.y_max)).unwrap_or(Rect::from_xywh(
+            0.0,
+            0.0,
+            units_per_em as f32,
+            units_per_em as f32,
+        )?);
 
         let postscript_name = {
             if let Ok(name) = font_ref.name() {
@@ -314,10 +288,7 @@ impl FontInfo {
             index,
             data_len,
             checksum,
-            var_coords: var_coords
-                .iter()
-                .map(|v| (v.0, FiniteF32::new(v.1).unwrap_or_default()))
-                .collect(),
+            var_coords: var_coords.iter().map(|v| (v.0, FiniteF32::new(v.1).unwrap_or_default())).collect(),
             location,
             num_glyphs,
             units_per_em,

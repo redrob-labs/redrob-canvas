@@ -14,7 +14,7 @@
 
 use std::collections::HashMap;
 
-use designcraft_doc::{ListType, NumberStyle, ParaAttrs};
+use redrob_layout_doc::{ListType, NumberStyle, ParaAttrs};
 
 use crate::docx::El;
 

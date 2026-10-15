@@ -143,7 +143,7 @@ mod tests {
     /// sliders), ⇧Tab back, and ↑ / ↓ step the focused field by 1 (⇧: 10).
     #[test]
     fn hue_saturation_tabs_through_its_fields_and_arrows_step_them() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         let mut h = harness(PhotocraftApp::new(s, crate::Services::default()));
         crate::adjust_dialog::open(h.state_mut(), "image.adjustments.hueSaturation").unwrap();
@@ -184,7 +184,7 @@ mod tests {
     /// New Document opens with the name selected; Tab goes Width → Height → Resolution and wraps.
     #[test]
     fn new_document_opens_on_the_name_and_tabs_to_width_then_height() {
-        let mut h = harness(PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default()));
+        let mut h = harness(PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default()));
         h.state_mut().ui.open_dialog(DialogKind::NewDocument, UiState::new_document_fields());
         h.run_steps(3);
         assert!(h.get_by_role(Role::TextInput).is_focused(), "the name field has focus");
@@ -218,7 +218,7 @@ mod tests {
     /// Tab is the dialog's: the modal underneath never sees it, and a dialog with no fields swallows it.
     #[test]
     fn tab_in_a_dialog_without_fields_does_nothing() {
-        let mut h = harness(PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default()));
+        let mut h = harness(PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default()));
         h.state_mut().ui.open_dialog(DialogKind::About, Default::default());
         h.run_steps(3);
         tab(&mut h);

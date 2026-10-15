@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Document, Guide, Item, ItemId, Orientation, ParaFormat, Selection, Shape, SpreadRef, Stroke};
-use designcraft_geom::shapes;
-use designcraft_geom::{Point, Rect, Unit};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::build::NewDocument;
+use redrob_layout_doc::{Document, Guide, Item, ItemId, Orientation, ParaFormat, Selection, Shape, SpreadRef, Stroke};
+use redrob_layout_geom::shapes;
+use redrob_layout_geom::{Point, Rect, Unit};
 
 use super::*;
 
@@ -63,10 +63,10 @@ fn selection_click_and_marquee() {
 #[test]
 fn resize_rect_modifiers() {
     let r = Rect::new(0.0, 0.0, 100.0, 50.0);
-    assert_eq!(select::resize_rect(r, 4, designcraft_geom::Point::new(200.0, 80.0), Mods::default()), Rect::new(0.0, 0.0, 200.0, 80.0));
-    let p = select::resize_rect(r, 4, designcraft_geom::Point::new(200.0, 60.0), Mods { shift: true, ..Default::default() });
+    assert_eq!(select::resize_rect(r, 4, redrob_layout_geom::Point::new(200.0, 80.0), Mods::default()), Rect::new(0.0, 0.0, 200.0, 80.0));
+    let p = select::resize_rect(r, 4, redrob_layout_geom::Point::new(200.0, 60.0), Mods { shift: true, ..Default::default() });
     assert_eq!(p, Rect::new(0.0, 0.0, 200.0, 100.0));
-    let c = select::resize_rect(r, 3, designcraft_geom::Point::new(150.0, 25.0), Mods { alt: true, ..Default::default() });
+    let c = select::resize_rect(r, 3, redrob_layout_geom::Point::new(150.0, 25.0), Mods { alt: true, ..Default::default() });
     assert_eq!(c, Rect::new(-50.0, 0.0, 150.0, 50.0));
 }
 
@@ -284,14 +284,14 @@ fn page_tool_selects_a_page_and_opens_page_size_on_double_click() {
 fn type_on_path_tool_targets_paths() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let id = designcraft_doc::ItemId(d.alloc());
-    let mut it = designcraft_doc::Item::new(
+    let id = redrob_layout_doc::ItemId(d.alloc());
+    let mut it = redrob_layout_doc::Item::new(
         id,
         lid,
-        designcraft_doc::Shape::GraphicLine,
-        designcraft_geom::shapes::line(designcraft_geom::Point::new(100.0, 100.0), designcraft_geom::Point::new(300.0, 100.0)),
+        redrob_layout_doc::Shape::GraphicLine,
+        redrob_layout_geom::shapes::line(redrob_layout_geom::Point::new(100.0, 100.0), redrob_layout_geom::Point::new(300.0, 100.0)),
     );
-    it.stroke = designcraft_doc::Stroke::default();
+    it.stroke = redrob_layout_doc::Stroke::default();
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     let (s, c, l) = (Selection::default(), Cache::new(), CanvasLayout::new(&d, false));
     let cx = ctx(&d, &s, &c, &l);
@@ -325,7 +325,7 @@ fn turned_spread_maps_points_both_ways() {
     let slot = l.slots[0];
     let b = d.spreads[0].bounds();
     assert!((slot.bounds.width() - b.height()).abs() < 1e-6);
-    let p = designcraft_geom::Point::new(b.x0 + 10.0, b.y0 + 20.0);
+    let p = redrob_layout_geom::Point::new(b.x0 + 10.0, b.y0 + 20.0);
     let c = slot.to_canvas(p);
     let back = slot.to_spread(c);
     assert!((back - p).hypot() < 1e-9);
@@ -335,7 +335,7 @@ fn turned_spread_maps_points_both_ways() {
     assert_eq!(sr, SpreadRef::Doc(0));
     assert!((sp - p).hypot() < 1e-9);
     // A canvas drag rightwards is a drag down the spread.
-    let dv = slot.delta_to_spread(designcraft_geom::Vec2::new(10.0, 0.0));
+    let dv = slot.delta_to_spread(redrob_layout_geom::Vec2::new(10.0, 0.0));
     assert!(dv.x.abs() < 1e-9 && (dv.y + 10.0).abs() < 1e-9 || (dv.y - 10.0).abs() < 1e-9, "{dv:?}");
 }
 
@@ -577,7 +577,7 @@ fn drag_onto_the_next_spread_snaps_to_that_guide() {
     let raw_top = 50.0;
     let corner0 = layout.to_canvas(SpreadRef::Doc(0), Point::new(item.x0, item.y0));
     let corner_raw = layout.to_canvas(SpreadRef::Doc(1), Point::new(item.x0, raw_top));
-    let travel = designcraft_geom::Vec2::new(corner_raw.x - corner0.x, corner_raw.y - corner0.y);
+    let travel = redrob_layout_geom::Vec2::new(corner_raw.x - corner0.x, corner_raw.y - corner0.y);
     let origin_top = item.y0 + layout.delta_to_spread(SpreadRef::Doc(0), travel).y;
     Arc::make_mut(&mut doc.spreads[0]).pages[0].guides.push(guide(origin_top - 4.0));
     let mut cx = ctx(&doc, &sel, &cache, &layout);
@@ -715,7 +715,7 @@ fn add_rotated(doc: &mut Document, rect: Rect, degrees: f64) -> ItemId {
     let layer = doc.default_layer();
     let id = ItemId(doc.alloc());
     let mut item = Item::new(id, layer, Shape::Rectangle, shapes::rectangle(rect));
-    item.xf = designcraft_geom::Affine::rotate((-degrees).to_radians());
+    item.xf = redrob_layout_geom::Affine::rotate((-degrees).to_radians());
     doc.insert_item(SpreadRef::Doc(0), item, None).unwrap();
     id
 }
@@ -810,7 +810,7 @@ fn out_port_loads_text_and_a_click_threads_an_empty_frame() {
     // The out port sits on the right edge, 12 px above the bottom-right corner.
     assert!((port - td.at(250.0, 148.0)).hypot() < 1e-9, "{port:?}");
     // A press just off the port's centre still loads (any zoom: tolerance is in pixels).
-    assert!(click(&mut t, &cx, port + designcraft_geom::Vec2::new(3.0, -3.0), Mods::default()).is_empty());
+    assert!(click(&mut t, &cx, port + redrob_layout_geom::Vec2::new(3.0, -3.0), Mods::default()).is_empty());
     assert_eq!(t.cursor(&cx, td.at(500.0, 700.0), Mods::default()), Cursor::LoadedText);
     let over_e = td.at(175.0, 450.0);
     assert_eq!(t.cursor(&cx, over_e, Mods::default()), Cursor::ThreadLink);
@@ -829,8 +829,8 @@ fn ports_hit_at_any_zoom() {
     cx.zoom = 4.0;
     let port = thread::port_center(&td.d, &td.l, td.a, false, 4.0).unwrap();
     assert!((port - td.at(100.0, 100.0 + 14.5 / 4.0)).hypot() < 1e-9);
-    assert_eq!(thread::port_at(&cx, port + designcraft_geom::Vec2::new(1.5, 1.5)), Some((td.a, false)));
-    assert_eq!(thread::port_at(&cx, port + designcraft_geom::Vec2::new(4.0, 0.0)), None, "8 screen px away at 4×");
+    assert_eq!(thread::port_at(&cx, port + redrob_layout_geom::Vec2::new(1.5, 1.5)), Some((td.a, false)));
+    assert_eq!(thread::port_at(&cx, port + redrob_layout_geom::Vec2::new(4.0, 0.0)), None, "8 screen px away at 4×");
 }
 
 #[test]
@@ -1038,15 +1038,15 @@ fn pen_continues_an_open_path_from_either_end_point() {
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
     let anchors = vec![
-        designcraft_geom::Anchor::corner(Point::new(100.0, 100.0)),
-        designcraft_geom::Anchor {
+        redrob_layout_geom::Anchor::corner(Point::new(100.0, 100.0)),
+        redrob_layout_geom::Anchor {
             p: Point::new(200.0, 100.0),
             h_in: Point::new(170.0, 80.0),
             h_out: Point::new(230.0, 120.0),
-            kind: designcraft_geom::AnchorKind::Smooth,
+            kind: redrob_layout_geom::AnchorKind::Smooth,
         },
     ];
-    let mut it = Item::new(id, lid, Shape::Path, designcraft_geom::PathData::single(designcraft_geom::SubPath::new(anchors, false)));
+    let mut it = Item::new(id, lid, Shape::Path, redrob_layout_geom::PathData::single(redrob_layout_geom::SubPath::new(anchors, false)));
     it.stroke = Stroke::default();
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     let (s, c, l) = (Selection::default(), Cache::new(), CanvasLayout::new(&d, false));
@@ -1096,16 +1096,16 @@ fn the_selection_tool_drags_a_path_type_bracket_along_its_path() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
-    let line = designcraft_geom::PathData::single(designcraft_geom::SubPath::new(
-        vec![designcraft_geom::Anchor::corner(Point::new(100.0, 300.0)), designcraft_geom::Anchor::corner(Point::new(500.0, 300.0))],
+    let line = redrob_layout_geom::PathData::single(redrob_layout_geom::SubPath::new(
+        vec![redrob_layout_geom::Anchor::corner(Point::new(100.0, 300.0)), redrob_layout_geom::Anchor::corner(Point::new(500.0, 300.0))],
         false,
     ));
     let mut it = Item::new(id, lid, Shape::GraphicLine, line);
-    let sid = designcraft_doc::StoryId(d.alloc());
-    let mut tf = designcraft_doc::TextFrame { story: sid, options: Default::default() };
-    tf.options.path = Some(designcraft_doc::PathType { start: 40.0, end: Some(300.0), ..Default::default() });
-    it.content = designcraft_doc::Content::Text(tf);
-    let mut st = designcraft_doc::Story::with_text(sid, "On the line", Default::default());
+    let sid = redrob_layout_doc::StoryId(d.alloc());
+    let mut tf = redrob_layout_doc::TextFrame { story: sid, options: Default::default() };
+    tf.options.path = Some(redrob_layout_doc::PathType { start: 40.0, end: Some(300.0), ..Default::default() });
+    it.content = redrob_layout_doc::Content::Text(tf);
+    let mut st = redrob_layout_doc::Story::with_text(sid, "On the line", Default::default());
     st.frames = vec![id];
     d.stories.insert(sid, Arc::new(st));
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
@@ -1145,18 +1145,18 @@ fn eyedropper_samples_a_placed_image_and_matches_other_objects() {
     let lid = d.default_layer();
     let photo = ItemId(d.alloc());
     let mut it = Item::new(photo, lid, Shape::Rectangle, shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
-    it.content = designcraft_doc::Content::Graphic(designcraft_doc::Graphic {
-        asset: designcraft_doc::AssetId(1),
+    it.content = redrob_layout_doc::Content::Graphic(redrob_layout_doc::Graphic {
+        asset: redrob_layout_doc::AssetId(1),
         size: (100.0, 100.0),
-        xf: designcraft_geom::Affine::translate((0.0, 0.0)),
+        xf: redrob_layout_geom::Affine::translate((0.0, 0.0)),
         auto_fit: Default::default(),
         fit_align: 4,
         crop: [0.0; 4],
     });
     d.assets.insert(
-        designcraft_doc::AssetId(1),
-        std::sync::Arc::new(designcraft_doc::Asset {
-            id: designcraft_doc::AssetId(1),
+        redrob_layout_doc::AssetId(1),
+        std::sync::Arc::new(redrob_layout_doc::Asset {
+            id: redrob_layout_doc::AssetId(1),
             name: "photo.png".into(),
             mime: "image/png".into(),
             link: None,
@@ -1203,7 +1203,7 @@ fn eyedropper_samples_a_placed_image_and_matches_other_objects() {
     assert_eq!(a, vec![Action::Exec("object.matchAttributes".into(), serde_json::json!({"from": swatch.0}))]);
     // Vector graphics and missing assets must retain the ordinary attribute-matching path.
     for mime in ["application/pdf", "application/postscript", "image/svg+xml", "application/octet-stream"] {
-        std::sync::Arc::make_mut(d2.assets.get_mut(&designcraft_doc::AssetId(1)).unwrap()).mime = mime.into();
+        std::sync::Arc::make_mut(d2.assets.get_mut(&redrob_layout_doc::AssetId(1)).unwrap()).mime = mime.into();
         let cx = ctx(&d2, &s, &c, &l);
         let a = t.pointer(&cx, &PointerEvent::new(PointerKind::Down, 120.0 + off.x, 130.0 + off.y));
         assert_eq!(a, vec![Action::Exec("object.matchAttributes".into(), serde_json::json!({"from": photo.0}))], "{mime}");
@@ -1216,7 +1216,7 @@ fn eyedropper_samples_a_placed_image_and_matches_other_objects() {
 
 #[test]
 fn eyedropper_ignores_inactive_states_of_a_multi_state_object() {
-    use designcraft_doc::{Asset, AssetId, Content, Graphic};
+    use redrob_layout_doc::{Asset, AssetId, Content, Graphic};
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     d.assets.insert(
@@ -1237,7 +1237,7 @@ fn eyedropper_ignores_inactive_states_of_a_multi_state_object() {
         it.content = Content::Graphic(Graphic {
             asset: AssetId(1),
             size: (100.0, 100.0),
-            xf: designcraft_geom::Affine::translate((0.0, 0.0)),
+            xf: redrob_layout_geom::Affine::translate((0.0, 0.0)),
             auto_fit: Default::default(),
             fit_align: 4,
             crop: [0.0; 4],

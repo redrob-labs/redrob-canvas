@@ -3,9 +3,9 @@
 
 use std::path::PathBuf;
 
+use redrob_vector_doc::SavedView;
+use redrob_vector_geom::Point;
 use serde_json::{Value, json};
-use vectorcraft_doc::SavedView;
-use vectorcraft_geom::Point;
 
 use super::*;
 use crate::cmd::fileio::{SaveMode, save_plan};
@@ -33,7 +33,7 @@ fn path(d: &std::path::Path, name: &str) -> String {
 }
 
 fn b64(v: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
 }
 
 fn objects(s: &Session) -> usize {
@@ -103,12 +103,12 @@ fn save_as_takes_on_path_format_and_options() {
 fn another_format_without_a_path_hands_the_bytes_back() {
     let d = dir("otherfmt");
     let mut s = session();
-    let native = path(&d, "a.vectorcraft");
+    let native = path(&d, "a.rvector");
     s.execute("document.save", &json!({"path": native})).unwrap();
     let r = s.execute("document.save", &json!({"format": "svg"})).unwrap();
     assert!(String::from_utf8(b64(&r)).unwrap().starts_with("<?xml"));
     assert_eq!(r["name"], "a.svg");
-    assert!(vectorcraft_format::sniff(&std::fs::read(&native).unwrap()), "the native file isn't overwritten with SVG");
+    assert!(redrob_vector_format::sniff(&std::fs::read(&native).unwrap()), "the native file isn't overwritten with SVG");
     let _ = std::fs::remove_dir_all(d);
 }
 
@@ -116,16 +116,16 @@ fn another_format_without_a_path_hands_the_bytes_back() {
 fn save_a_copy_keeps_the_path_title_and_modified_state() {
     let d = dir("copy");
     let mut s = session();
-    let native = path(&d, "poster.vectorcraft");
+    let native = path(&d, "poster.rvector");
     s.execute("document.save", &json!({"path": native})).unwrap();
     rect(&mut s);
     let r = s.execute("file.saveCopy", &json!({})).unwrap();
-    assert_eq!((r["name"].as_str(), r["folder"].as_str()), (Some("poster copy.vectorcraft"), Some(d.to_string_lossy().as_ref())));
+    assert_eq!((r["name"].as_str(), r["folder"].as_str()), (Some("poster copy.rvector"), Some(d.to_string_lossy().as_ref())));
     let copy = path(&d, "poster copy.svg");
     s.execute("file.saveCopy", &json!({"path": copy})).unwrap();
     assert!(std::fs::read_to_string(&copy).unwrap().starts_with("<?xml"));
     let st = s.doc().unwrap();
-    assert_eq!((st.path.as_deref(), st.format, st.title()), (Some(native.as_str()), "vectorcraft", "poster.vectorcraft".to_string()));
+    assert_eq!((st.path.as_deref(), st.format, st.title()), (Some(native.as_str()), "vectorcraft", "poster.rvector".to_string()));
     assert!(st.is_dirty(), "a copy leaves the document modified");
     let _ = std::fs::remove_dir_all(d);
 }
@@ -135,7 +135,7 @@ fn revert_reloads_the_saved_file_in_the_same_tab() {
     let d = dir("revert");
     let mut s = session();
     rect(&mut s);
-    let native = path(&d, "a.vectorcraft");
+    let native = path(&d, "a.rvector");
     s.execute("document.save", &json!({"path": native})).unwrap();
     assert!(s.execute("file.revert", &json!({})).is_err(), "nothing to revert");
     s.execute("file.new", &json!({})).unwrap();
@@ -167,7 +167,7 @@ fn revert_reloads_the_saved_file_in_the_same_tab() {
 fn templates_suggest_a_name_in_the_templates_folder_and_open_untitled() {
     let d = dir("tpl");
     let mut s = session();
-    let source = path(&d, "flyer.vectorcraft");
+    let source = path(&d, "flyer.rvector");
     s.execute("document.save", &json!({"path": source})).unwrap();
     s.prefs.templates_folder = path(&d, "Templates");
     let r = s.execute("file.saveAsTemplate", &json!({})).unwrap();
@@ -199,11 +199,11 @@ fn templates_suggest_a_name_in_the_templates_folder_and_open_untitled() {
 
 /// A native file as an older version wrote it: under the former name, or format version 1.
 fn old_file(legacy: bool) -> Vec<u8> {
-    let text = String::from_utf8(vectorcraft_format::save(&vectorcraft_doc::Document::new(50.0, 50.0), false)).unwrap();
+    let text = String::from_utf8(redrob_vector_format::save(&redrob_vector_doc::Document::new(50.0, 50.0), false)).unwrap();
     let text = if legacy {
         text.replacen("\"format\":\"vectorcraft\"", "\"format\":\"drawcraft\"", 1)
     } else {
-        text.replacen(&format!("\"version\":{}", vectorcraft_format::VERSION), "\"version\":1", 1)
+        text.replacen(&format!("\"version\":{}", redrob_vector_format::VERSION), "\"version\":1", 1)
     };
     text.into_bytes()
 }
@@ -211,29 +211,29 @@ fn old_file(legacy: bool) -> Vec<u8> {
 #[test]
 fn older_native_files_open_converted_and_save_under_a_new_name() {
     let d = dir("converted");
-    let legacy = path(&d, "logo.drawcraft");
+    let legacy = path(&d, "logo.drawcraft"); // legacy: upstream extension still read
     std::fs::write(&legacy, old_file(true)).unwrap();
-    let v1 = path(&d, "badge.vectorcraft");
+    let v1 = path(&d, "badge.rvector");
     std::fs::write(&v1, old_file(false)).unwrap();
     let mut s = Session::new();
     s.execute("document.open", &json!({"path": legacy})).unwrap();
     assert_eq!(s.doc().unwrap().title(), "logo [Converted]");
-    // Save doesn't overwrite the old file: it asks for a .vectorcraft name.
+    // Save doesn't overwrite the old file: it asks for a .rvector name.
     let r = s.execute("document.save", &json!({})).unwrap();
-    assert_eq!((r["name"].as_str(), r.get("path")), (Some("logo.vectorcraft"), None));
+    assert_eq!((r["name"].as_str(), r.get("path")), (Some("logo.rvector"), None));
     assert_eq!(std::fs::read(&legacy).unwrap(), old_file(true));
     let r = s.execute("document.open", &json!({"path": v1})).unwrap();
     assert_eq!(r["title"], "badge [Converted]");
-    let saved = path(&d, "badge2.vectorcraft");
+    let saved = path(&d, "badge2.rvector");
     s.execute("file.saveAs", &json!({"path": saved})).unwrap();
-    assert_eq!(s.doc().unwrap().title(), "badge2.vectorcraft");
+    assert_eq!(s.doc().unwrap().title(), "badge2.rvector");
     assert!(!s.doc().unwrap().converted);
     // A current file isn't converted; with the preference off old files open as they are.
     s.execute("document.open", &json!({"path": saved})).unwrap();
-    assert_eq!(s.doc().unwrap().title(), "badge2.vectorcraft");
+    assert_eq!(s.doc().unwrap().title(), "badge2.rvector");
     s.prefs.append_converted = false;
     s.execute("document.open", &json!({"path": legacy})).unwrap();
-    assert_eq!(s.doc().unwrap().title(), "logo.drawcraft");
+    assert_eq!(s.doc().unwrap().title(), "logo.drawcraft"); // legacy: upstream extension still read
     assert_eq!(s.execute("document.save", &json!({})).unwrap()["path"].as_str(), Some(legacy.as_str()));
     let _ = std::fs::remove_dir_all(d);
 }
@@ -245,13 +245,13 @@ fn the_saved_view_round_trips_without_dirtying() {
     let view = SavedView { name: String::new(), center: Point::new(40.0, 25.0), zoom: 3.0, rotation: 15.0 };
     s.doc_mut().unwrap().view = Some(view.clone());
     assert!(!s.doc().unwrap().is_dirty(), "the view isn't an edit");
-    let native = path(&d, "v.vectorcraft");
+    let native = path(&d, "v.rvector");
     s.execute("document.save", &json!({"path": native})).unwrap();
     assert_eq!(s.doc().unwrap().doc.last_view, None, "only the written file carries it");
     s.execute("document.open", &json!({"path": native})).unwrap();
     assert_eq!(s.doc().unwrap().view.as_ref(), Some(&view));
     // Files without a view (older ones) open with none; SVG doesn't carry it.
-    let doc = vectorcraft_format::load(&vectorcraft_format::save(&vectorcraft_doc::Document::new(5.0, 5.0), false)).unwrap();
+    let doc = redrob_vector_format::load(&redrob_vector_format::save(&redrob_vector_doc::Document::new(5.0, 5.0), false)).unwrap();
     assert_eq!(doc.last_view, None);
     let svg = path(&d, "v.svg");
     s.execute("document.save", &json!({"path": svg})).unwrap();
@@ -270,10 +270,10 @@ fn open_layers_rows_round_trip_without_dirtying() {
     let g = NodeId(s.execute("object.group", &json!({})).unwrap()["id"].as_u64().unwrap());
     // A document starts with its top-level layers open, and a file keeps nothing for that.
     assert!(s.doc().unwrap().layers_open.contains(layer) && !s.doc().unwrap().layers_open.contains(g));
-    let native = path(&d, "rows.vectorcraft");
+    let native = path(&d, "rows.rvector");
     s.execute("document.save", &json!({"path": native})).unwrap();
     let bytes = std::fs::read(&native).unwrap();
-    assert_eq!(vectorcraft_format::load(&bytes).unwrap().layers_open, None);
+    assert_eq!(redrob_vector_format::load(&bytes).unwrap().layers_open, None);
     // Opening the group and closing the layer is view state: not an edit, kept by the file.
     let st = s.doc_mut().unwrap();
     st.layers_open.set(g, true);
@@ -286,7 +286,7 @@ fn open_layers_rows_round_trip_without_dirtying() {
     let open = &again.doc().unwrap().layers_open;
     assert!(open.contains(g) && !open.contains(layer));
     // Older files (none saved) open with the top-level layers open.
-    let doc = vectorcraft_format::load(&vectorcraft_format::save(&vectorcraft_doc::Document::new(5.0, 5.0), false)).unwrap();
+    let doc = redrob_vector_format::load(&redrob_vector_format::save(&redrob_vector_doc::Document::new(5.0, 5.0), false)).unwrap();
     assert_eq!(doc.layers_open, None);
     let _ = std::fs::remove_dir_all(d);
 }
@@ -297,7 +297,7 @@ fn save_plans_suggest_names_and_folders() {
     s.execute("file.info", &json!({"title": "Map"})).unwrap();
     let plan = |s: &Session, mode, p: Value| save_plan(s, mode, &p).unwrap();
     let p = plan(&s, SaveMode::Save, json!({}));
-    assert_eq!((p.path, p.name.as_str(), p.format.id, p.folder), (None, "Map.vectorcraft", "vectorcraft", None));
+    assert_eq!((p.path, p.name.as_str(), p.format.id, p.folder), (None, "Map.rvector", "vectorcraft", None));
     assert_eq!(plan(&s, SaveMode::Copy, json!({"format": "pdf"})).name, "Map copy.pdf");
     assert_eq!(plan(&s, SaveMode::Template, json!({"format": "svg"})).format.id, "template", "a template is always native");
     assert_eq!(SaveMode::of("file.saveCopy"), Some(SaveMode::Copy));
@@ -316,7 +316,7 @@ fn document_color_mode_is_one_command_with_a_hidden_alias() {
     let before = s.doc().unwrap().doc.clone();
     let r = s.execute("file.documentColorMode", &json!({"mode": "rgb", "convert": false})).unwrap();
     assert_eq!(r["changed"], 0);
-    assert_eq!(s.doc().unwrap().doc.color_mode, vectorcraft_doc::ColorMode::Rgb);
+    assert_eq!(s.doc().unwrap().doc.color_mode, redrob_vector_doc::ColorMode::Rgb);
     assert_eq!(s.doc().unwrap().doc.layers, before.layers, "colours untouched");
     let e = s.execute("file.documentColorMode", &json!({"mode": "lab"})).unwrap_err().to_string();
     assert!(e.contains("file.documentColorMode"), "{e}");

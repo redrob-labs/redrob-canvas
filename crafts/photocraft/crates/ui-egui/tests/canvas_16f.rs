@@ -9,15 +9,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use eframe::egui_wgpu::RenderState;
 use eframe::wgpu::TextureFormat;
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_doc::{Document, Layer, LayerContent, Size};
-use photocraft_geom::Rect;
-use photocraft_raster::Surface;
-use photocraft_ui_egui::PhotocraftApp;
-use photocraft_ui_egui::gpu_canvas::{self, GpuCanvas};
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_doc::{Document, Layer, LayerContent, Size};
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::Surface;
+use redrob_photo_ui_egui::PhotocraftApp;
+use redrob_photo_ui_egui::gpu_canvas::{self, GpuCanvas};
 use serde_json::json;
 
-use photocraft_testkit::gpu_lock;
+use redrob_photo_testkit::gpu_lock;
 
 /// A headless GPU canvas on a device created like the app's, if the adapter has a float canvas.
 fn canvas() -> Option<(GpuCanvas, RenderState)> {
@@ -27,7 +27,7 @@ fn canvas() -> Option<(GpuCanvas, RenderState)> {
         eprintln!("skipping: no GPU adapter");
         return None;
     };
-    if !gpu_canvas::supports_f16_canvas(&rs.adapter) || std::env::var("PHOTOCRAFT_CANVAS_F16").as_deref() == Ok("0") {
+    if !gpu_canvas::supports_f16_canvas(&rs.adapter) || std::env::var("REDROB_PHOTO_CANVAS_F16").as_deref() == Ok("0") {
         eprintln!("skipping: adapter can't render/filter Rgba16Float");
         return None;
     }
@@ -54,7 +54,7 @@ fn levels(texels: &[[f32; 4]], w: u32, y: u32) -> usize {
 
 /// The stored texels of a document's canvas texture against its CPU composite (premultiplied).
 fn max_error(doc: &Document, texels: &[[f32; 4]]) -> f32 {
-    let buf = photocraft_compose::render(doc, doc.bounds());
+    let buf = redrob_photo_compose::render(doc, doc.bounds());
     buf.px.iter().zip(texels).map(|(c, t)| (0..4).map(|i| ((if i < 3 { c[i] * c[3] } else { c[3] }) - t[i]).abs()).fold(0.0, f32::max)).fold(0.0, f32::max)
 }
 
@@ -114,7 +114,7 @@ fn eight_bit_documents_keep_their_rgba8_texture() {
     g.upload_composite(doc.id.0, &doc, None);
     let (format, _, texels) = g.read_texels(doc.id.0).expect("read back");
     assert_eq!(format, TextureFormat::Rgba8Unorm);
-    let want = gpu_canvas::premultiply_rgba8(&photocraft_compose::render(&doc, doc.bounds()).px);
+    let want = gpu_canvas::premultiply_rgba8(&redrob_photo_compose::render(&doc, doc.bounds()).px);
     let got: Vec<u8> = texels.iter().flat_map(|p| p.map(|v| (v * 255.0).round() as u8)).collect();
     assert!(got == want, "8-bit texels changed");
     assert!(levels(&texels, 1024, 0) <= 256);
@@ -140,7 +140,7 @@ fn format_follows_depth_and_budget() {
     assert_eq!(g.format_for(SampleType::U16, [7360, 4912]), TextureFormat::Rgba16Float);
     assert_eq!(g.format_for(SampleType::F32, [7360, 4912]), TextureFormat::Rgba16Float);
     // Over the budget (a 14000² 16-bit document): 8-bit, so it stays on the GPU.
-    if std::env::var_os("PHOTOCRAFT_CANVAS_F16").is_none() {
+    if std::env::var_os("REDROB_PHOTO_CANVAS_F16").is_none() {
         assert_eq!(g.format_for(SampleType::U16, [14000, 14000]), TextureFormat::Rgba8Unorm);
     }
 }
@@ -183,9 +183,9 @@ fn screen(doc: Document, setup: &[(&str, serde_json::Value)], name: &str) -> Opt
     let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
         egui_kittest::Harness::builder().with_size(egui::vec2(1000.0, 700.0)).with_pixels_per_point(1.0).with_max_steps(64).wgpu().build_eframe(move |cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             if let Some(rs) = cc.wgpu_render_state.as_ref() {
-                ok2.store(gpu_canvas::supports_f16_canvas(&rs.adapter) && std::env::var("PHOTOCRAFT_CANVAS_F16").as_deref() != Ok("0"), Ordering::SeqCst);
+                ok2.store(gpu_canvas::supports_f16_canvas(&rs.adapter) && std::env::var("REDROB_PHOTO_CANVAS_F16").as_deref() != Ok("0"), Ordering::SeqCst);
                 app.set_wgpu(rs.clone());
             }
             app.session.open_document(doc, None);

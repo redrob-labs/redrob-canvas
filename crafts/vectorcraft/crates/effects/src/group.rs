@@ -13,9 +13,9 @@
 
 use std::sync::Arc;
 
-use vectorcraft_doc::{Appearance, AppearanceItem, Node, NodeId, NodeKind, StrokeLayer};
-use vectorcraft_geom::{FillRule, PathData, Rect};
-use vectorcraft_pathops::{self as po, PathfinderOp};
+use redrob_vector_doc::{Appearance, AppearanceItem, Node, NodeId, NodeKind, StrokeLayer};
+use redrob_vector_geom::{FillRule, PathData, Rect};
+use redrob_vector_pathops::{self as po, PathfinderOp};
 
 /// Effect ids of the Pathfinder submenu with their operation, in Illustrator's menu order.
 pub const PATHFINDER_EFFECTS: [(&str, &str, PathfinderOp); 10] = [
@@ -182,7 +182,7 @@ pub fn member_shapes(n: &Node) -> Vec<(PathData, FillRule)> {
                 }
             }
             NodeKind::Group { .. } | NodeKind::Layer { .. } => members(n, out),
-            _ if vectorcraft_doc::live::is_live(n) => members(&crate::reshape::outlined_members(n), out),
+            _ if redrob_vector_doc::live::is_live(n) => members(&crate::reshape::outlined_members(n), out),
             _ => {}
         }
     }
@@ -281,9 +281,9 @@ pub fn evaluate_container(n: &Node) -> Option<Node> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_color::{Color, Paint};
-    use vectorcraft_doc::{Effect, NodeId};
-    use vectorcraft_geom::{Rect, shapes};
+    use redrob_vector_color::{Color, Paint};
+    use redrob_vector_doc::{Effect, NodeId};
+    use redrob_vector_geom::{Rect, shapes};
 
     fn sq(id: u64, x: f64, color: Color) -> Arc<Node> {
         Arc::new(Node::path(

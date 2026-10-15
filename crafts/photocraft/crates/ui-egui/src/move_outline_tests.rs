@@ -4,8 +4,8 @@
 
 use egui::{Event, PointerButton, Pos2};
 use egui_kittest::Harness;
-use photocraft_doc::LayerId;
-use photocraft_geom::Rect;
+use redrob_photo_doc::LayerId;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -15,7 +15,7 @@ use crate::state::{Tool, View};
 /// A 64×64 document with two painted layers: A covers (8..24)², B covers (40..56)². B is active,
 /// the Move tool (Auto-Select on) is current and View › Show › Layer Edges is on.
 fn app() -> (PhotocraftApp, LayerId, LayerId) {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
     app.sync_views();
     let mut ids = Vec::new();

@@ -1,5 +1,5 @@
 //! CIE L*a*b* (D50) ⇄ encoded sRGB for [`crate::ChannelLayout::Lab`] samples, the same formulas
-//! and constants as `photocraft-color` (this crate stays standalone). Samples are normalized as
+//! and constants as `redrob-photo-color` (this crate stays standalone). Samples are normalized as
 //! Redrob Canvas holds Lab: L* 0..100 as 0..1, a* and b* −128..127 as `(v + 128) / 255`.
 
 const D50: [f32; 3] = [0.964_22, 1.0, 0.825_21];

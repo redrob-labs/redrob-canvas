@@ -126,11 +126,7 @@ fn get_point_ts(start: Point, end: Point) -> (Transform, f32, f32) {
     let dy = end.y - start.y;
     let angle = dy.atan2(dx).to_degrees();
 
-    (
-        Transform::from_rotate_at(angle, start.x, start.y),
-        start.x,
-        start.x + dist,
-    )
+    (Transform::from_rotate_at(angle, start.x, start.y), start.x, start.x + dist)
 }
 
 impl GradientPropertiesExt for LinearGradient {
@@ -218,52 +214,27 @@ pub(crate) struct ShadingFunction(Arc<Repr>);
 
 impl ShadingFunction {
     pub(crate) fn new(properties: GradientProperties, use_opacities: bool) -> Self {
-        Self(Arc::new(Repr {
-            properties,
-            use_opacities,
-        }))
+        Self(Arc::new(Repr { properties, use_opacities }))
     }
 }
 
 impl Cacheable for ShadingFunction {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let mut stream_chunk = sc.new_chunk();
 
         match &self.0.properties {
             GradientProperties::RadialAxialGradient(rag) => {
-                let shading_cs =
-                    shading_color_space(sc, rag.stops[0].color.clone(), self.0.use_opacities);
+                let shading_cs = shading_color_space(sc, rag.stops[0].color.clone(), self.0.use_opacities);
                 let registered_cs = sc.register_colorspace(chunk_container, shading_cs);
                 let chunk = &mut chunk_container.non_stream.shading_functions;
-                serialize_axial_radial_shading(
-                    sc,
-                    chunk,
-                    root_ref,
-                    rag,
-                    self.0.use_opacities,
-                    registered_cs,
-                )
+                serialize_axial_radial_shading(sc, chunk, root_ref, rag, self.0.use_opacities, registered_cs)
             }
             GradientProperties::PostScriptGradient(psg) => {
                 sc.register_validation_error(ValidationError::ContainsPostScript(sc.location));
-                let shading_cs =
-                    shading_color_space(sc, psg.stops[0].color.clone(), self.0.use_opacities);
+                let shading_cs = shading_color_space(sc, psg.stops[0].color.clone(), self.0.use_opacities);
                 let registered_cs = sc.register_colorspace(chunk_container, shading_cs);
                 let chunk = &mut chunk_container.non_stream.shading_functions;
-                serialize_postscript_shading(
-                    sc,
-                    chunk,
-                    &mut stream_chunk,
-                    root_ref,
-                    psg,
-                    self.0.use_opacities,
-                    registered_cs,
-                )
+                serialize_postscript_shading(sc, chunk, &mut stream_chunk, root_ref, psg, self.0.use_opacities, registered_cs)
             }
         }
 
@@ -277,11 +248,7 @@ impl Resourceable for ShadingFunction {
 }
 
 fn shading_color_space(sc: &mut SerializeContext, color: Color, use_opacities: bool) -> ColorSpace {
-    if use_opacities {
-        luma::color_space(sc.serialize_settings().no_device_cs).into()
-    } else {
-        color.color_space(sc)
-    }
+    if use_opacities { luma::color_space(sc.serialize_settings().no_device_cs).into() } else { color.color_space(sc) }
 }
 
 fn serialize_postscript_shading(
@@ -296,8 +263,7 @@ fn serialize_postscript_shading(
     let domain = post_script_gradient.domain;
 
     let bump = Bump::new();
-    let function_ref =
-        select_postscript_function(post_script_gradient, stream_chunk, sc, &bump, use_opacities);
+    let function_ref = select_postscript_function(post_script_gradient, stream_chunk, sc, &bump, use_opacities);
     let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
 
@@ -321,8 +287,7 @@ fn serialize_axial_radial_shading(
     use_opacities: bool,
     cs: MaybeDeviceColorSpace,
 ) {
-    let function_ref =
-        select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
+    let function_ref = select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
     let mut shading = chunk.function_shading(root_ref);
     if radial_axial_gradient.shading_type == FunctionShadingType::Radial {
         shading.shading_type(FunctionShadingType::Radial);
@@ -339,12 +304,7 @@ fn serialize_axial_radial_shading(
     shading.finish();
 }
 
-fn select_axial_radial_function(
-    properties: &RadialAxialGradient,
-    chunk: &mut Chunk,
-    sc: &mut SerializeContext,
-    use_opacities: bool,
-) -> Ref {
+fn select_axial_radial_function(properties: &RadialAxialGradient, chunk: &mut Chunk, sc: &mut SerializeContext, use_opacities: bool) -> Ref {
     debug_assert!(properties.stops.len() > 1);
 
     let mut stops = properties.stops.clone();
@@ -367,24 +327,11 @@ fn select_axial_radial_function(
 
     if stops.len() == 2 {
         if use_opacities {
-            serialize_exponential(
-                vec![stops[0].opacity.get()],
-                vec![stops[1].opacity.get()],
-                chunk,
-                sc,
-            )
+            serialize_exponential(vec![stops[0].opacity.get()], vec![stops[1].opacity.get()], chunk, sc)
         } else {
             serialize_exponential(
-                stops[0]
-                    .color
-                    .to_pdf_color()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
-                stops[1]
-                    .color
-                    .to_pdf_color()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
+                stops[0].color.to_pdf_color().into_iter().collect::<Vec<_>>(),
+                stops[1].color.to_pdf_color().into_iter().collect::<Vec<_>>(),
                 chunk,
                 sc,
             )
@@ -486,16 +433,10 @@ fn serialize_sweep_postscript(
 
     let encoded = PostScriptOp::encode(&code);
     sc.register_limits(encoded.limits());
-    let encoded = FilterStreamBuilder::new_from_content_stream(&encoded, &sc.serialize_settings())
-        .finish(&sc.serialize_settings());
+    let encoded = FilterStreamBuilder::new_from_content_stream(&encoded, &sc.serialize_settings()).finish(&sc.serialize_settings());
     let mut postscript_function = chunk.post_script_function(root_ref, encoded.encoded_data());
     encoded.write_filters(postscript_function.deref_mut().deref_mut());
-    postscript_function.domain([
-        properties.domain.left(),
-        properties.domain.right(),
-        properties.domain.top(),
-        properties.domain.bottom(),
-    ]);
+    postscript_function.domain([properties.domain.left(), properties.domain.right(), properties.domain.top(), properties.domain.bottom()]);
 
     if use_opacities {
         postscript_function.range([0.0, 1.0]);
@@ -525,12 +466,7 @@ fn trim_stops(stops: &[Stop]) -> Vec<Stop> {
     new_stops
 }
 
-fn serialize_linear_postscript(
-    properties: &PostScriptGradient,
-    chunk: &mut Chunk,
-    sc: &mut SerializeContext,
-    use_opacities: bool,
-) -> Ref {
+fn serialize_linear_postscript(properties: &PostScriptGradient, chunk: &mut Chunk, sc: &mut SerializeContext, use_opacities: bool) -> Ref {
     use pdf_writer::types::PostScriptOp::*;
 
     let bump = Bump::new();
@@ -552,16 +488,10 @@ fn serialize_linear_postscript(
 
     let encoded = PostScriptOp::encode(&code);
     sc.register_limits(encoded.limits());
-    let encoded = FilterStreamBuilder::new_from_content_stream(&encoded, &sc.serialize_settings())
-        .finish(&sc.serialize_settings());
+    let encoded = FilterStreamBuilder::new_from_content_stream(&encoded, &sc.serialize_settings()).finish(&sc.serialize_settings());
     let mut postscript_function = chunk.post_script_function(root_ref, encoded.encoded_data());
     encoded.write_filters(postscript_function.deref_mut().deref_mut());
-    postscript_function.domain([
-        properties.domain.left(),
-        properties.domain.right(),
-        properties.domain.top(),
-        properties.domain.bottom(),
-    ]);
+    postscript_function.domain([properties.domain.left(), properties.domain.right(), properties.domain.top(), properties.domain.bottom()]);
 
     if use_opacities {
         postscript_function.range([0.0, 1.0]);
@@ -576,13 +506,7 @@ fn serialize_linear_postscript(
 /// between min and max that yields the correct color, depending on the spread mode. In the case
 /// of the `Pad` spread methods, the coordinate will not be normalized since the Postscript functions
 /// assign the correct value by default.
-fn encode_spread_method<'a>(
-    min: f32,
-    max: f32,
-    code: &mut Vec<PostScriptOp<'a>>,
-    bump: &'a Bump,
-    spread_method: SpreadMethod,
-) {
+fn encode_spread_method<'a>(min: f32, max: f32, code: &mut Vec<PostScriptOp<'a>>, bump: &'a Bump, spread_method: SpreadMethod) {
     use pdf_writer::types::PostScriptOp::*;
 
     if spread_method == SpreadMethod::Pad {
@@ -646,11 +570,7 @@ fn encode_spread_method<'a>(
         Integer(0),
         Gt,
         // x length min o {(abs(i) % 2) > 0}
-        if spread_method == SpreadMethod::Reflect {
-            If(bump.alloc([Integer(2), Index, Exch, Sub]))
-        } else {
-            Pop
-        },
+        if spread_method == SpreadMethod::Reflect { If(bump.alloc([Integer(2), Index, Exch, Sub])) } else { Pop },
         // x length min o
         Add,
         // x length x_new
@@ -667,14 +587,7 @@ fn encode_spread_method<'a>(
 /// Postscript code that, given an x coordinate between the min and max
 /// of a gradient, returns the interpolated color value depending on where it
 /// lies within the stops.
-fn encode_postscript_stops<'a>(
-    stops: &[Stop],
-    min: f32,
-    max: f32,
-    code: &mut Vec<PostScriptOp<'a>>,
-    bump: &'a Bump,
-    use_opacities: bool,
-) {
+fn encode_postscript_stops<'a>(stops: &[Stop], min: f32, max: f32, code: &mut Vec<PostScriptOp<'a>>, bump: &'a Bump, use_opacities: bool) {
     // Our algorithm requires the stops to be padded.
     let mut stops = stops.to_vec();
 
@@ -702,53 +615,31 @@ fn encode_postscript_stops<'a>(
     encode_stops_impl(&stops, min, max, code, bump, use_opacities);
 }
 
-fn encode_stops_impl<'a>(
-    stops: &[Stop],
-    min: f32,
-    max: f32,
-    code: &mut Vec<PostScriptOp<'a>>,
-    bump: &'a Bump,
-    use_opacities: bool,
-) {
+fn encode_stops_impl<'a>(stops: &[Stop], min: f32, max: f32, code: &mut Vec<PostScriptOp<'a>>, bump: &'a Bump, use_opacities: bool) {
     use pdf_writer::types::PostScriptOp::*;
 
-    let encode_two_stops =
-        |c0: &[f32], c1: &[f32], min: f32, max: f32, code: &mut Vec<PostScriptOp>| {
-            if min == max {
-                code.push(Pop);
-                code.extend(c0.iter().map(|n| Real(*n)));
-                return;
-            }
+    let encode_two_stops = |c0: &[f32], c1: &[f32], min: f32, max: f32, code: &mut Vec<PostScriptOp>| {
+        if min == max {
+            code.push(Pop);
+            code.extend(c0.iter().map(|n| Real(*n)));
+            return;
+        }
 
-            // Sanity check that both stops have the same number of components.
-            assert_eq!(
-                c0.len(),
-                c1.len(),
-                "cannot create gradient with stops from different color spaces"
-            );
+        // Sanity check that both stops have the same number of components.
+        assert_eq!(c0.len(), c1.len(), "cannot create gradient with stops from different color spaces");
 
-            // Normalize the x coordinate to be between 0 and 1.
-            code.extend([Real(min), Sub, Real(max), Real(min), Sub, Div]);
+        // Normalize the x coordinate to be between 0 and 1.
+        code.extend([Real(min), Sub, Real(max), Real(min), Sub, Div]);
 
-            for i in 0..c0.len() {
-                // Interpolate each color component c0 + x_norm * (x1 - c0).
-                code.extend([
-                    Integer(i as i32),
-                    Index,
-                    Real(c0[i]),
-                    Exch,
-                    Real(c1[i]),
-                    Real(c0[i]),
-                    Sub,
-                    Mul,
-                    Add,
-                ]);
-                // x_norm, c0, c1, ...
-            }
-            // Remove x_norm from the stack.
-            code.extend([Integer((c0.len() + 1) as i32), Integer(-1), Roll, Pop]);
-            // c0, c1, c2, ...
-        };
+        for i in 0..c0.len() {
+            // Interpolate each color component c0 + x_norm * (x1 - c0).
+            code.extend([Integer(i as i32), Index, Real(c0[i]), Exch, Real(c1[i]), Real(c0[i]), Sub, Mul, Add]);
+            // x_norm, c0, c1, ...
+        }
+        // Remove x_norm from the stack.
+        code.extend([Integer((c0.len() + 1) as i32), Integer(-1), Roll, Pop]);
+        // c0, c1, c2, ...
+    };
 
     if stops.len() == 1 {
         if use_opacities {
@@ -764,25 +655,11 @@ fn encode_stops_impl<'a>(
 
         let if_stops = bump.alloc(vec![]);
         if use_opacities {
-            encode_two_stops(
-                &[stops[0].opacity.get()],
-                &[stops[1].opacity.get()],
-                stops_min,
-                stops_max,
-                if_stops,
-            )
+            encode_two_stops(&[stops[0].opacity.get()], &[stops[1].opacity.get()], stops_min, stops_max, if_stops)
         } else {
             encode_two_stops(
-                &stops[0]
-                    .color
-                    .to_pdf_color()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
-                &stops[1]
-                    .color
-                    .to_pdf_color()
-                    .into_iter()
-                    .collect::<Vec<_>>(),
+                &stops[0].color.to_pdf_color().into_iter().collect::<Vec<_>>(),
+                &stops[1].color.to_pdf_color().into_iter().collect::<Vec<_>>(),
                 stops_min,
                 stops_max,
                 if_stops,
@@ -795,12 +672,7 @@ fn encode_stops_impl<'a>(
     }
 }
 
-fn serialize_stitching(
-    stops: &[Stop],
-    chunk: &mut Chunk,
-    sc: &mut SerializeContext,
-    use_opacities: bool,
-) -> Ref {
+fn serialize_stitching(stops: &[Stop], chunk: &mut Chunk, sc: &mut SerializeContext, use_opacities: bool) -> Ref {
     let root_ref = sc.new_ref();
     let mut functions = vec![];
     let mut bounds = vec![];
@@ -814,10 +686,7 @@ fn serialize_stitching(
         let (c0_components, c1_components) = if use_opacities {
             (vec![first.opacity.get()], vec![second.opacity.get()])
         } else {
-            (
-                first.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
-                second.color.to_pdf_color().into_iter().collect::<Vec<_>>(),
-            )
+            (first.color.to_pdf_color().into_iter().collect::<Vec<_>>(), second.color.to_pdf_color().into_iter().collect::<Vec<_>>())
         };
 
         count = c0_components.len();
@@ -839,18 +708,9 @@ fn serialize_stitching(
     root_ref
 }
 
-fn serialize_exponential(
-    c0: Vec<f32>,
-    c1: Vec<f32>,
-    chunk: &mut Chunk,
-    sc: &mut SerializeContext,
-) -> Ref {
+fn serialize_exponential(c0: Vec<f32>, c1: Vec<f32>, chunk: &mut Chunk, sc: &mut SerializeContext) -> Ref {
     let root_ref = sc.new_ref();
-    assert_eq!(
-        c0.len(),
-        c1.len(),
-        "cannot create gradient with stops from different color spaces"
-    );
+    assert_eq!(c0.len(), c1.len(), "cannot create gradient with stops from different color spaces");
     let num_components = c0.len();
 
     let mut exp = chunk.exponential_function(root_ref);

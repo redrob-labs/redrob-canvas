@@ -2,8 +2,8 @@
 //! Redrob mark, version, and community links (Discord first and largest), plus the other Redrob
 //! apps; Contributors and Models are the compiled-in credits (`crate::credits`).
 
-use designcraft_engine::links;
 use egui::{Color32, Rect, Sense, Stroke, pos2, vec2};
+use redrob_layout_engine::links;
 use serde_json::json;
 
 use crate::DesignApp;
@@ -32,7 +32,7 @@ pub const ABOUT_TABS: [&str; 3] = ["About", "Contributors", "Models"];
 
 /// Paint the Redrob mark into `rect` (square), rasterised once per size and cached.
 pub fn paint_mark(ui: &egui::Ui, rect: Rect, color: Color32) {
-    use designcraft_render::vello_cpu::{self, kurbo, peniko};
+    use redrob_layout_render::vello_cpu::{self, kurbo, peniko};
     let ctx = ui.ctx();
     let ppp = ctx.pixels_per_point();
     let px = ((rect.width().min(rect.height()) * ppp).round() as u32).clamp(8, 1024);

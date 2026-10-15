@@ -8,7 +8,7 @@ pub fn config_dir() -> Option<PathBuf> {
 }
 
 fn config_dir_with(os: &str, env: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
-    if let Some(root) = env("DESIGNCRAFT_CONFIG_DIR") {
+    if let Some(root) = env("REDROB_LAYOUT_CONFIG_DIR") {
         // An explicitly empty override must not fall back to the user's profile.
         return (!root.is_empty()).then(|| PathBuf::from(root));
     }
@@ -22,13 +22,13 @@ fn config_dir_with(os: &str, env: impl Fn(&str) -> Option<OsString>) -> Option<P
 }
 
 pub fn recovery_dir() -> Option<PathBuf> {
-    recovery_dir_with(std::env::var_os("DESIGNCRAFT_CONFIG_DIR"), designcraft_engine::recovery::default_dir).and_then(own_run)
+    recovery_dir_with(std::env::var_os("REDROB_LAYOUT_CONFIG_DIR"), redrob_layout_engine::recovery::default_dir).and_then(own_run)
 }
 
 /// This run's folder in the recovery folder `root`. A second running DesignCraft has its own, so
 /// neither writes over the other's documents nor takes them for a crash's.
 fn own_run(root: PathBuf) -> Option<PathBuf> {
-    match designcraft_engine::recovery::run_dir(&root) {
+    match redrob_layout_engine::recovery::run_dir(&root) {
         Ok(dir) => Some(dir),
         Err(e) => {
             log::warn!("recovery is unavailable because this run cannot be isolated: {e}");
@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn isolated_profile_overrides_every_platform_and_recovery() {
         for os in ["macos", "windows", "linux"] {
-            let dir = config_dir_with(os, |key| if key == "DESIGNCRAFT_CONFIG_DIR" { Some("/isolated".into()) } else { environment(key) });
+            let dir = config_dir_with(os, |key| if key == "REDROB_LAYOUT_CONFIG_DIR" { Some("/isolated".into()) } else { environment(key) });
             assert_eq!(dir, Some(PathBuf::from("/isolated")));
         }
         assert_eq!(recovery_dir_with(Some("/isolated".into()), || Some("/user/recovery".into())), Some(PathBuf::from("/isolated/Recovery")));
@@ -68,7 +68,10 @@ mod tests {
 
     #[test]
     fn empty_override_never_reads_or_writes_the_default_profile() {
-        assert_eq!(config_dir_with("macos", |key| { if key == "DESIGNCRAFT_CONFIG_DIR" { Some(OsString::new()) } else { environment(key) } }), None);
+        assert_eq!(
+            config_dir_with("macos", |key| { if key == "REDROB_LAYOUT_CONFIG_DIR" { Some(OsString::new()) } else { environment(key) } }),
+            None
+        );
         assert_eq!(recovery_dir_with(Some(OsString::new()), || Some("/user/recovery".into())), None);
     }
 

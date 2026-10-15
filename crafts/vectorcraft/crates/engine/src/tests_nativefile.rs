@@ -3,8 +3,8 @@
 
 use std::path::PathBuf;
 
+use redrob_vector_format::{is_compressed, sniff};
 use serde_json::{Value, json};
-use vectorcraft_format::{is_compressed, sniff};
 
 use super::*;
 
@@ -23,7 +23,7 @@ fn tmp_dir(tag: &str) -> PathBuf {
 }
 
 fn bytes_of(r: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(r["dataBase64"].as_str().expect("dataBase64")).unwrap()
+    redrob_vector_format::base64_decode(r["dataBase64"].as_str().expect("dataBase64")).unwrap()
 }
 
 /// The file `document.save` (no path) gives back with `p`.
@@ -32,7 +32,7 @@ fn saved(s: &mut Session, p: Value) -> Vec<u8> {
 }
 
 fn open(s: &mut Session, name: &str, bytes: &[u8]) -> Value {
-    s.execute("document.open", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)})).unwrap()
+    s.execute("document.open", &json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes)})).unwrap()
 }
 
 /// The file's JSON (unpacked when compressed).
@@ -54,7 +54,8 @@ fn compressed_saves_open_by_their_content() {
     let plain = saved(&mut s, json!({}));
     assert!(!is_compressed(&plain) && packed.len() < plain.len());
     // Recognised by its content, whatever the name says.
-    for name in ["a.vectorcraft", "a.drawcraft", "a.svgz", "a.bin"] {
+    for name in ["a.rvector", "a.drawcraft", "a.svgz", "a.bin"] {
+        // legacy: upstream extension still read
         let r = open(&mut s, name, &packed);
         assert_eq!(r["format"], "vectorcraft", "{name}");
         assert_eq!(s.doc().unwrap().doc.node_count(), 2);
@@ -83,7 +84,7 @@ fn saves_for_older_versions() {
         let bytes = saved(&mut s, json!({"version": v}));
         let j = json_of(&bytes);
         assert_eq!((j["format"].as_str(), j["version"].as_u64()), (Some("drawcraft"), Some(v)));
-        open(&mut s, "old.drawcraft", &bytes);
+        open(&mut s, "old.drawcraft", &bytes); // legacy: upstream extension still read
         assert_eq!(s.doc().unwrap().doc.node_count(), 2);
     }
     for bad in [json!({"version": 0}), json!({"version": 9}), json!({"version": "two"})] {
@@ -100,26 +101,26 @@ fn saves_for_older_versions() {
 fn preview_is_at_most_256_pixels() {
     let mut s = session();
     let bytes = saved(&mut s, json!({"preview": true, "compress": true}));
-    let png = vectorcraft_format::preview(&bytes).expect("a preview");
+    let png = redrob_vector_format::preview(&bytes).expect("a preview");
     let img = image::load_from_memory(&png).unwrap();
     assert_eq!((img.width(), img.height()), (256, 128), "the 400×200 artboard fitted into 256 px");
-    assert!(vectorcraft_format::preview(&saved(&mut s, json!({}))).is_none(), "off by default");
+    assert!(redrob_vector_format::preview(&saved(&mut s, json!({}))).is_none(), "off by default");
 }
 
 #[test]
 fn saving_writes_through_a_temporary_file() {
     let d = tmp_dir("atomic");
-    let path = d.join("doc.vectorcraft");
+    let path = d.join("doc.rvector");
     std::fs::write(&path, b"an older version of the file").unwrap();
     let mut s = session();
     s.execute("document.save", &json!({"path": path.to_string_lossy()})).unwrap();
     assert!(sniff(&std::fs::read(&path).unwrap()));
     let names: Vec<String> = std::fs::read_dir(&d).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().to_string()).collect();
-    assert_eq!(names, ["doc.vectorcraft"], "no temporary file left behind");
+    assert_eq!(names, ["doc.rvector"], "no temporary file left behind");
     assert!(!s.doc().unwrap().is_dirty());
     // A save that can't be written fails, and the document stays modified.
     s.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 5, "height": 5})).unwrap();
-    let missing = d.join("missing").join("doc.vectorcraft");
+    let missing = d.join("missing").join("doc.rvector");
     assert!(s.execute("document.save", &json!({"path": missing.to_string_lossy()})).is_err());
     assert!(s.doc().unwrap().is_dirty());
     let _ = std::fs::remove_dir_all(&d);
@@ -130,7 +131,7 @@ fn unused_images_are_left_out_of_saves() {
     let mut s = session();
     let mut png = vec![];
     image::RgbaImage::from_pixel(4, 4, image::Rgba([1, 2, 3, 255])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
-    let r = s.execute("file.place", &json!({"name": "a.png", "dataBase64": vectorcraft_format::base64_encode(&png)})).unwrap();
+    let r = s.execute("file.place", &json!({"name": "a.png", "dataBase64": redrob_vector_format::base64_encode(&png)})).unwrap();
     let id = r["ids"][0].as_u64().unwrap();
     assert_eq!(json_of(&saved(&mut s, json!({})))["images"].as_object().unwrap().len(), 1);
     s.execute("edit.clear", &json!({"ids": [id]})).unwrap();
@@ -138,7 +139,7 @@ fn unused_images_are_left_out_of_saves() {
     assert!(json_of(&saved(&mut s, json!({})))["images"].as_object().unwrap().is_empty());
     s.execute("edit.undo", &json!({})).unwrap();
     let bytes = saved(&mut s, json!({}));
-    open(&mut s, "back.vectorcraft", &bytes);
+    open(&mut s, "back.rvector", &bytes);
     assert_eq!(s.doc().unwrap().doc.images.len(), 1);
 }
 
@@ -148,7 +149,7 @@ fn newer_keys_and_legacy_profiles_survive_open_and_save() {
     let mut j = json_of(&saved(&mut s, json!({"version": 2})));
     j["document"]["fromTheFuture"] = json!({"x": 1});
     j["document"]["unknown"] = json!({"colorProfiles": {"rgb": "sRGB IEC61966-2.1", "cmyk": null}});
-    open(&mut s, "old.vectorcraft", &serde_json::to_vec(&j).unwrap());
+    open(&mut s, "old.rvector", &serde_json::to_vec(&j).unwrap());
     let d = &s.doc().unwrap().doc;
     assert_eq!(d.color_profiles.rgb.as_deref(), Some("sRGB IEC61966-2.1"), "profiles migrate");
     assert!(d.unknown.is_empty());

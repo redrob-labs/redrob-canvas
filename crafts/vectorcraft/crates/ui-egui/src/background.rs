@@ -8,8 +8,8 @@
 
 use std::sync::mpsc::{Receiver, Sender, channel};
 
+use redrob_vector_engine::file_access::ScopeHandle;
 use serde_json::{Value, json};
-use vectorcraft_engine::file_access::ScopeHandle;
 
 use crate::VectorcraftApp;
 
@@ -17,7 +17,7 @@ use crate::VectorcraftApp;
 pub type SharedWriteFn = std::sync::Arc<dyn Fn(&str, &[u8]) -> Result<(), String> + Send + Sync>;
 
 /// Writes the file at a path with what the filler it is given writes into it (atomically, as
-/// `vectorcraft_format::write_atomic_with`); callable from any thread.
+/// `redrob_vector_format::write_atomic_with`); callable from any thread.
 pub type SharedStreamFn =
     std::sync::Arc<dyn Fn(&str, &mut dyn FnMut(&mut dyn std::io::Write) -> std::io::Result<()>) -> Result<(), String> + Send + Sync>;
 
@@ -45,7 +45,7 @@ struct Task {
 /// A job in progress.
 pub struct Job {
     id: u64,
-    /// What the status bar shows ("Saving Poster.vectorcraft").
+    /// What the status bar shows ("Saving Poster.rvector").
     pub label: String,
     /// The document the job reads (`DocState::uid`), if any.
     pub doc: Option<u64>,
@@ -75,7 +75,7 @@ impl Background {
                 .spawn(move || {
                     while let Ok(Task { id, work, write, scope }) = tasks.recv() {
                         let r = scope
-                            .run(|| vectorcraft_engine::guard::catch_panic(|| work(&mut |p: &str, b: &[u8]| write(p, b))))
+                            .run(|| redrob_vector_engine::guard::catch_panic(|| work(&mut |p: &str, b: &[u8]| write(p, b))))
                             .unwrap_or_else(|msg| Err(format!("internal error: {msg} (please report this bug)")));
                         if done_tx.send((id, r)).is_err() {
                             break;

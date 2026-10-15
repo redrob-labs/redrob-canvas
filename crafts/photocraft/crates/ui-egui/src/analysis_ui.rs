@@ -9,7 +9,7 @@
 //! shares them; this module only maps pointer input and draws the numbered markers.
 
 use egui::{Align2, Color32, CornerRadius, FontId, Pos2, RichText, Stroke, pos2, vec2};
-use photocraft_doc::{Document, Ruler};
+use redrob_photo_doc::{Document, Ruler};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
@@ -88,7 +88,7 @@ pub fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
         _ => {
             // View › Proof Setup simulations: checked while that proof is shown.
             // A check item with no document too: an item's kind never changes (native menus).
-            let kind = id.strip_prefix("view.proofSetup.").and_then(photocraft_engine::proof_sim::ProofKind::from_id)?;
+            let kind = id.strip_prefix("view.proofSetup.").and_then(redrob_photo_engine::proof_sim::ProofKind::from_id)?;
             let Some(d) = app.session.active() else { return Some(false) };
             let pv = app.session.color.proof(d.doc.id);
             Some(pv.enabled && pv.setup.kind == kind)
@@ -167,7 +167,7 @@ pub fn menu(app: &mut PhotocraftApp, id: &str, params: &Value) -> Option<Result<
         "file.import.notes" => match app.active_doc_id() {
             Ok(doc) => app.pick_file_bytes(move |app, name, bytes| {
                 app.refocus(doc)?;
-                let r = photocraft_engine::notes_cmds::import_notes_from(&mut app.session, &name, &bytes).map_err(|e| e.to_string());
+                let r = redrob_photo_engine::notes_cmds::import_notes_from(&mut app.session, &name, &bytes).map_err(|e| e.to_string());
                 if r.is_ok() {
                     app.ui.analysis.notes = true;
                     app.sync_views();
@@ -500,7 +500,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
         Tool::Ruler => {
             let sc = doc.measurement.scale.clone();
             let f = if app.ui.analysis.use_measurement_scale { sc.factor() } else { 1.0 };
-            let info = doc.measurement.ruler.map(|r| photocraft_engine::analysis_cmds::ruler_info(&r, &sc));
+            let info = doc.measurement.ruler.map(|r| redrob_photo_engine::analysis_cmds::ruler_info(&r, &sc));
             let g = |k: &str| info.as_ref().and_then(|i| i[k].as_f64());
             readout(ui, "X:", g("x").map(|v| v * f));
             readout(ui, "Y:", g("y").map(|v| v * f));
@@ -594,7 +594,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
             ui.label(
                 RichText::new(crate::i18n::fmt(
                     tl!("{n} of {max} sample points"),
-                    &[("n", &n.to_string()), ("max", &photocraft_engine::sampler_cmds::MAX_SAMPLERS.to_string())],
+                    &[("n", &n.to_string()), ("max", &redrob_photo_engine::sampler_cmds::MAX_SAMPLERS.to_string())],
                 ))
                 .color(t.text)
                 .size(11.0),
@@ -695,11 +695,11 @@ pub fn windows(app: &mut PhotocraftApp, ctx: &egui::Context) {
                     }
                 });
             });
-            let cols: Vec<&str> = photocraft_engine::analysis_cmds::log_columns(&rows).into_iter().filter(|c| *c != "histogram").collect();
+            let cols: Vec<&str> = redrob_photo_engine::analysis_cmds::log_columns(&rows).into_iter().filter(|c| *c != "histogram").collect();
             egui::ScrollArea::both().max_height(220.0).max_width(620.0).show(ui, |ui| {
                 egui::Grid::new("mlog-grid").striped(true).spacing(vec2(10.0, 2.0)).show(ui, |ui| {
                     for c in &cols {
-                        let name = photocraft_engine::analysis_cmds::COLUMNS.iter().find(|x| x.0 == *c).map_or(*c, |x| x.1);
+                        let name = redrob_photo_engine::analysis_cmds::COLUMNS.iter().find(|x| x.0 == *c).map_or(*c, |x| x.1);
                         ui.label(RichText::new(tl!(name)).color(t.text_dim).size(10.5).strong());
                     }
                     ui.end_row();
@@ -909,8 +909,8 @@ fn dialog(app: &mut PhotocraftApp, ctx: &egui::Context) {
                                     .map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect())
                                     .unwrap_or_default();
                                 let mut changed = false;
-                                for key in photocraft_engine::analysis_cmds::available(source) {
-                                    let name = photocraft_engine::analysis_cmds::COLUMNS.iter().find(|c| c.0 == key).map_or(key, |c| c.1);
+                                for key in redrob_photo_engine::analysis_cmds::available(source) {
+                                    let name = redrob_photo_engine::analysis_cmds::COLUMNS.iter().find(|c| c.0 == key).map_or(key, |c| c.1);
                                     let mut on = list.iter().any(|x| x == key);
                                     if crate::widgets::checkbox(ui, &mut on, name).changed() {
                                         list.retain(|x| x != key);
@@ -972,7 +972,7 @@ pub(crate) mod tests {
     use super::*;
 
     fn app() -> (PhotocraftApp, egui::Context) {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
         (app, egui::Context::default())
     }
@@ -1061,7 +1061,7 @@ pub(crate) mod tests {
         down(&mut app, 10.0, 10.0, egui::Modifiers::ALT);
         mv(&mut app, 60.0, 10.0, none);
         up(&mut app, 60.0, 10.0);
-        let info = photocraft_engine::analysis_cmds::ruler_info(&ruler(&app).unwrap(), &Default::default());
+        let info = redrob_photo_engine::analysis_cmds::ruler_info(&ruler(&app).unwrap(), &Default::default());
         assert!((info["angle"].as_f64().unwrap() - 90.0).abs() < 1e-6, "{info}");
         // A click without a drag far away starts a new line and clears it.
         down(&mut app, 150.0, 80.0, none);
@@ -1222,7 +1222,7 @@ pub(crate) mod tests {
         app.run("document.activate", json!({"document": 0})).unwrap();
         assert_eq!(app.session.active().unwrap().color_samplers, vec![[10.0, 10.0]]);
         // With no document the tool says so (no dialog, no panic) and the commands error.
-        let mut empty = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut empty = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         empty.ui.tool = Tool::ColorSampler;
         down(&mut empty, 5.0, 5.0, egui::Modifiers::NONE);
         assert_eq!(empty.ui.status, "No document open");

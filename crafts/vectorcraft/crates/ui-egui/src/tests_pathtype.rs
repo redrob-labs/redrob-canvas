@@ -1,9 +1,9 @@
 //! Type → Type on a Path → Type on a Path Options… (#429): the dialog shows the selected type's
 //! options (Effect, Flip, Align to Path, Spacing) and OK leaves its brackets where they are.
 
+use redrob_vector_doc::{NodeId, NodeKind, TextKind};
+use redrob_vector_engine::Session;
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeId, NodeKind, TextKind};
-use vectorcraft_engine::Session;
 
 use crate::{VectorcraftApp, dialogs, menus};
 

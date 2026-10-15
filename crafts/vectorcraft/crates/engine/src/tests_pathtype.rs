@@ -1,10 +1,10 @@
 //! Type on a path (#429): Type on a Path Options keep its brackets, flip it, align it to the path
 //! and space it; the selection tools drag its brackets to move it along the path and across it.
 
+use redrob_vector_doc::{NodeKind, PathAlign, TextKind, TextObject};
+use redrob_vector_geom::{Point, Rect, Shape};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeKind, PathAlign, TextKind, TextObject};
-use vectorcraft_geom::{Point, Rect, Shape};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
 
 use super::*;
 
@@ -46,7 +46,7 @@ fn brackets(s: &Session, id: NodeId) -> (f64, Option<f64>) {
 /// The glyphs' ink bounds in the document.
 fn ink(s: &Session, id: NodeId) -> Rect {
     let t = text(s, id);
-    let lay = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t);
+    let lay = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t);
     lay.glyphs
         .iter()
         .filter(|g| !g.outline.elements().is_empty())
@@ -58,7 +58,7 @@ fn ink(s: &Session, id: NodeId) -> Rect {
 /// The glyph origins along the path, in reading order.
 fn origins(s: &Session, id: NodeId) -> Vec<Point> {
     let t = text(s, id);
-    vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t).glyphs.iter().map(|g| t.xf * g.origin).collect()
+    redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t).glyphs.iter().map(|g| t.xf * g.origin).collect()
 }
 
 fn undo_len(s: &Session) -> usize {
@@ -116,7 +116,7 @@ fn options_keep_the_brackets() {
     // So does a new effect.
     s.execute("type.pathOptions", &json!({"effect": "skew"})).unwrap();
     assert_eq!(brackets(&s, id), (start, None));
-    assert_eq!(text(&s, id).path_effect, vectorcraft_doc::PathEffect::Skew);
+    assert_eq!(text(&s, id).path_effect, redrob_vector_doc::PathEffect::Skew);
     // The end bracket is set, and put back at the end of the path.
     s.execute("type.pathOptions", &json!({"end": 0.9})).unwrap();
     assert_eq!(brackets(&s, id), (start, Some(0.9)));

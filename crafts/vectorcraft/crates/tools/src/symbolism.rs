@@ -7,8 +7,8 @@
 //! `path.freehand` previews into `brush.freehand` when a brush is current (tool option `brush`,
 //! else the document's current brush).
 
+use redrob_vector_geom::{Point, Shape};
 use serde_json::{Value, json};
-use vectorcraft_geom::{Point, Shape};
 
 use crate::draw2::{FEEDBACK, GestureTool, points_json};
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
@@ -264,7 +264,7 @@ impl Tool for BrushPaintTool {
 mod tests {
     use super::*;
     use crate::testutil::*;
-    use vectorcraft_doc::Selection;
+    use redrob_vector_doc::Selection;
 
     #[test]
     fn sprayer_previews_all_points_and_commits() {

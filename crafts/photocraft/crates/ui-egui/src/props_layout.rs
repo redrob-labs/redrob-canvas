@@ -3,7 +3,7 @@
 //! widths that make field rows fill the panel, and the Quick Actions each layer kind offers.
 
 use egui::{Rect, Sense, pos2, vec2};
-use photocraft_doc::{Layer, LayerContent};
+use redrob_photo_doc::{Layer, LayerContent};
 
 use crate::theme::{self, Tokens};
 use crate::{PhotocraftApp, widgets};

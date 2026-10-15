@@ -45,10 +45,7 @@ impl Document {
         let serializer_context = SerializeContext::new(SerializeSettings::default());
         let chunk_container = ChunkContainer::new(&serializer_context);
 
-        Self {
-            serializer_context,
-            chunk_container,
-        }
+        Self { serializer_context, chunk_container }
     }
 
     /// Create a new document with custom serialize settings.
@@ -56,32 +53,19 @@ impl Document {
         let serializer_context = SerializeContext::new(serialize_settings);
         let chunk_container = ChunkContainer::new(&serializer_context);
 
-        Self {
-            serializer_context,
-            chunk_container,
-        }
+        Self { serializer_context, chunk_container }
     }
 
     /// Start a new page with default settings.
     pub fn start_page(&mut self) -> Page<'_> {
         let page_index = self.serializer_context.page_infos().iter().len();
-        Page::new(
-            &mut self.serializer_context,
-            &mut self.chunk_container,
-            page_index,
-            PageSettings::default(),
-        )
+        Page::new(&mut self.serializer_context, &mut self.chunk_container, page_index, PageSettings::default())
     }
 
     /// Start a new page with specific page settings.
     pub fn start_page_with(&mut self, page_settings: PageSettings) -> Page<'_> {
         let page_index = self.serializer_context.page_infos().iter().len();
-        Page::new(
-            &mut self.serializer_context,
-            &mut self.chunk_container,
-            page_index,
-            page_settings,
-        )
+        Page::new(&mut self.serializer_context, &mut self.chunk_container, page_index, page_settings)
     }
 
     /// Embed the pages (0-indexed) from the given
@@ -121,8 +105,7 @@ impl Document {
     /// Returns `None` if the file couldn't be embedded because a file
     /// with the same name has already been embedded.
     pub fn embed_file(&mut self, file: EmbeddedFile) -> Option<()> {
-        self.serializer_context
-            .embed_file(&mut self.chunk_container, file)
+        self.serializer_context.embed_file(&mut self.chunk_container, file)
     }
 
     /// Manually register a global named destination.
@@ -134,9 +117,7 @@ impl Document {
     /// already been registered, and therefore could not be registered again.
     #[must_use]
     pub fn register_named_destination(&mut self, dest: NamedDestination) -> Option<()> {
-        self.serializer_context
-            .register_named_destination(dest)
-            .map(|_| ())
+        self.serializer_context.register_named_destination(dest).map(|_| ())
     }
 
     /// Attempt to export the document to a PDF file.
@@ -150,10 +131,7 @@ impl Document {
             self.start_page();
         }
 
-        let Self {
-            serializer_context,
-            chunk_container,
-        } = self;
+        let Self { serializer_context, chunk_container } = self;
 
         Ok(serializer_context.finish(chunk_container)?.finish())
     }

@@ -2,7 +2,7 @@ use super::*;
 use egui_kittest::{Harness, kittest::Queryable};
 
 fn harness(adjustment: bool, theme: crate::theme::ThemeKind) -> Harness<'static, PhotocraftApp> {
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
     let command = if adjustment { "layer.newAdjustmentLayer.curves" } else { "layer.new.layer" };
     session.execute(command, json!({})).unwrap();
@@ -30,7 +30,7 @@ fn harness(adjustment: bool, theme: crate::theme::ThemeKind) -> Harness<'static,
     h
 }
 
-fn mask(h: &Harness<'_, PhotocraftApp>) -> photocraft_doc::LayerMask {
+fn mask(h: &Harness<'_, PhotocraftApp>) -> redrob_photo_doc::LayerMask {
     let s = h.state().session.active().unwrap();
     s.doc.layer(s.active_layer.unwrap()).unwrap().mask.clone().unwrap()
 }
@@ -121,7 +121,7 @@ fn uncommitted_mask_number_stays_with_its_layer() {
 /// `layer.vectorMask.edit` (the compositor already renders both).
 #[test]
 fn vector_mask_properties_edit_density_and_feather() {
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
     let id = session.execute("layer.new.layer", json!({})).unwrap()["layer"].as_u64().unwrap();
     session.execute("layer.vectorMask.revealAll", json!({})).unwrap();
@@ -146,7 +146,7 @@ fn vector_mask_properties_edit_density_and_feather() {
     assert!(h.query_all_by_label("Density").next().is_some(), "the vector mask section is shown");
     assert!(h.query_all_by_label("Feather").next().is_some());
     drag(&mut h, 0, &[1.0, 0.8, 0.5]);
-    let vm = h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().vector_mask.clone().unwrap();
+    let vm = h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().vector_mask.clone().unwrap();
     assert!((vm.density - 0.5).abs() < 0.02, "density edited through the vector mask command: {}", vm.density);
 }
 
@@ -216,7 +216,7 @@ fn refine_row_opens_the_select_and_mask_and_color_range_dialogs() {
 
 /// A Studio-layout theme's floating Properties card, with no mask targeted.
 fn card_harness(new_layer: bool, theme: crate::theme::ThemeKind) -> Harness<'static, PhotocraftApp> {
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.execute("file.new", json!({"width": 64, "height": 64, "background": "white"})).unwrap();
     if new_layer {
         session.execute("layer.new.layer", json!({})).unwrap();

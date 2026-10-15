@@ -9,7 +9,7 @@
 //!
 //! Levels: `info` for DesignCraft's own crates, `warn` for everything else (wgpu and naga are
 //! chatty). `RUST_LOG` replaces that with env_logger-style directives: `debug`,
-//! `warn,designcraft_render=trace`, `wgpu_core=info`. A directive ending in `*` matches every
+//! `warn,redrob_layout_render=trace`, `wgpu_core=info`. A directive ending in `*` matches every
 //! target that starts with it (`designcraft*=debug`).
 //!
 //! Records logged before the settings directory is known are kept (up to [`MAX_PENDING`]) and
@@ -273,7 +273,7 @@ mod tests {
         let f = Filter::parse(DEFAULT_FILTER);
         assert_eq!(f.level_for("designcraft"), LevelFilter::Info);
         assert_eq!(f.level_for("designcraft::control_server"), LevelFilter::Info);
-        assert_eq!(f.level_for("designcraft_render::tile"), LevelFilter::Info);
+        assert_eq!(f.level_for("redrob_layout_render::tile"), LevelFilter::Info);
         assert_eq!(f.level_for("wgpu_core::device"), LevelFilter::Warn);
         assert_eq!(f.level_for("naga"), LevelFilter::Warn);
         assert_eq!(f.max(), LevelFilter::Info);
@@ -281,11 +281,11 @@ mod tests {
 
     #[test]
     fn directives_follow_env_logger_and_the_most_specific_one_wins() {
-        let f = Filter::parse("info,wgpu_core=error,designcraft_render=trace,designcraft_render::tile=off");
+        let f = Filter::parse("info,wgpu_core=error,redrob_layout_render=trace,redrob_layout_render::tile=off");
         assert_eq!(f.level_for("eframe"), LevelFilter::Info);
         assert_eq!(f.level_for("wgpu_core::instance"), LevelFilter::Error);
-        assert_eq!(f.level_for("designcraft_render::raster"), LevelFilter::Trace);
-        assert_eq!(f.level_for("designcraft_render::tile"), LevelFilter::Off);
+        assert_eq!(f.level_for("redrob_layout_render::raster"), LevelFilter::Trace);
+        assert_eq!(f.level_for("redrob_layout_render::tile"), LevelFilter::Off);
         assert_eq!(f.max(), LevelFilter::Trace);
         // A module name is matched at `::` boundaries, not as a bare prefix.
         assert_eq!(f.level_for("wgpu_core_extra"), LevelFilter::Info);
@@ -350,8 +350,14 @@ mod tests {
     #[test]
     fn a_line_carries_time_level_thread_target_and_message() {
         assert_eq!(
-            format_line("2026-10-08T07:59:17.728Z", log::Level::Error, "main", "designcraft_engine::guard", "command `frame.create` panicked: boom"),
-            "2026-10-08T07:59:17.728Z ERROR [main] designcraft_engine::guard: command `frame.create` panicked: boom\n"
+            format_line(
+                "2026-10-08T07:59:17.728Z",
+                log::Level::Error,
+                "main",
+                "redrob_layout_engine::guard",
+                "command `frame.create` panicked: boom"
+            ),
+            "2026-10-08T07:59:17.728Z ERROR [main] redrob_layout_engine::guard: command `frame.create` panicked: boom\n"
         );
         // A multi-line message (a panic with a backtrace) keeps its lines; the record still ends in one newline.
         assert!(format_line("t", log::Level::Error, "w", "x", "a\nb\n").ends_with("x: a\nb\n"));
@@ -419,7 +425,7 @@ mod tests {
         assert!(text.contains(" INFO  [") && text.contains("designcraft::prefs: settings directory\n"), "{text}");
         assert!(text.contains("wgpu_hal::vulkan: a real warning\n"), "{text}");
         assert!(!text.contains("too chatty") && !text.contains("below info"), "{text}");
-        assert!(logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("designcraft_render").build()));
+        assert!(logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("redrob_layout_render").build()));
         assert!(!logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("naga").build()));
         let _ = std::fs::remove_dir_all(&dir);
     }

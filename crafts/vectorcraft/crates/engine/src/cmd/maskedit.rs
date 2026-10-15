@@ -9,8 +9,8 @@
 
 use std::sync::Arc;
 
+use redrob_vector_doc::{Document, MaskEdit, Node, NodeId, NodeKind, Selection};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, MaskEdit, Node, NodeId, NodeKind, Selection};
 
 use super::*;
 
@@ -253,7 +253,7 @@ mod tests {
         // Rendered: the object shows through the moved mask; the mask art itself isn't painted
         // (the ellipse pokes out of the object at x = 210).
         let doc = s.doc().unwrap().doc.clone();
-        let img = vectorcraft_render::Renderer::new().render(&doc, 300, 300, vectorcraft_geom::Affine::IDENTITY, &Default::default());
+        let img = redrob_vector_render::Renderer::new().render(&doc, 300, 300, redrob_vector_geom::Affine::IDENTITY, &Default::default());
         assert!(img.pixel(100, 100)[3] > 200);
         assert_eq!(img.pixel(25, 100)[3], 0);
         assert_eq!(img.pixel(212, 170)[3], 0);

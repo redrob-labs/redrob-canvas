@@ -6,7 +6,7 @@ use pdf_writer::{Finish, Name, Ref};
 use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::geom::Rect;
-use crate::graphics::color::{rgb, DEVICE_RGB};
+use crate::graphics::color::{DEVICE_RGB, rgb};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
@@ -25,12 +25,7 @@ struct Repr {
 pub(crate) struct XObject(Arc<Prehashed<Repr>>);
 
 impl XObject {
-    pub(crate) fn new(
-        stream: Stream,
-        isolated: bool,
-        mut transparency_group_color_space: bool,
-        custom_bbox: Option<Rect>,
-    ) -> Self {
+    pub(crate) fn new(stream: Stream, isolated: bool, mut transparency_group_color_space: bool, custom_bbox: Option<Rect>) -> Self {
         // In case a mask was invoked in the content stream, we _always_ create
         // a new transparency group. Please see <https://github.com/typst/typst/issues/5509>.
         // Just to provide a brief explanation: I have not found any mention
@@ -43,12 +38,7 @@ impl XObject {
         // TODO: Apply group transparency to page as well.
         transparency_group_color_space |= stream.uses_mask;
 
-        Self(Arc::new(Prehashed::new(Repr {
-            stream,
-            isolated,
-            transparency_group_color_space,
-            custom_bbox,
-        })))
+        Self(Arc::new(Prehashed::new(Repr { stream, isolated, transparency_group_color_space, custom_bbox })))
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -61,12 +51,7 @@ impl XObject {
 }
 
 impl Cacheable for XObject {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let mut chunk = sc.new_chunk();
 
         for validation_error in &self.0.stream.validation_errors {
@@ -89,33 +74,17 @@ impl Cacheable for XObject {
         // So while we don't technically always need to write it, let's just play it save
         // and always add a group color space in case we have a transparency group.
         let transparency_group_cs = if use_transparency_group {
-            Some(sc.register_colorspace(
-                chunk_container,
-                rgb::color_space(serialize_settings.no_device_cs).into(),
-            ))
+            Some(sc.register_colorspace(chunk_container, rgb::color_space(serialize_settings.no_device_cs).into()))
         } else {
             None
         };
 
-        let x_object_stream = FilterStreamBuilder::new_from_content_stream(
-            &self.0.stream.content,
-            &serialize_settings,
-        )
-        .finish(&serialize_settings);
+        let x_object_stream = FilterStreamBuilder::new_from_content_stream(&self.0.stream.content, &serialize_settings).finish(&serialize_settings);
         let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
         x_object_stream.write_filters(x_object.deref_mut().deref_mut());
 
-        self.0.stream.resource_dictionary.to_pdf_resources(
-            &mut x_object,
-            sc,
-            &mut chunk_container.non_stream.resource_dictionaries,
-        );
-        x_object.bbox(
-            self.0
-                .custom_bbox
-                .unwrap_or(self.0.stream.bbox)
-                .to_pdf_rect(),
-        );
+        self.0.stream.resource_dictionary.to_pdf_resources(&mut x_object, sc, &mut chunk_container.non_stream.resource_dictionaries);
+        x_object.bbox(self.0.custom_bbox.unwrap_or(self.0.stream.bbox).to_pdf_rect());
 
         if use_transparency_group {
             let mut group = x_object.group();

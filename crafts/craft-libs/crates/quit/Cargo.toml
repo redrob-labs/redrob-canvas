@@ -1,5 +1,5 @@
 [package]
-name = "craft-quit"
+name = "redrob-craft-quit"
 description = "Quit a Craft app the platform's own way: on macOS through `-[NSApplication terminate:]`."
 version.workspace = true
 edition.workspace = true

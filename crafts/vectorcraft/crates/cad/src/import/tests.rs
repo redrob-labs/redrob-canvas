@@ -5,9 +5,9 @@
 use std::sync::Arc;
 
 use kurbo::ParamCurve;
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Document, Justify, Node, NodeKind, TextObject, Unit};
-use vectorcraft_geom::{Affine, FillRule, Point, Rect, shapes};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Document, Justify, Node, NodeKind, TextObject, Unit};
+use redrob_vector_geom::{Affine, FillRule, Point, Rect, shapes};
 
 use super::*;
 
@@ -460,7 +460,7 @@ fn text_and_multiline_text() {
 
 /// Where the first line's baseline starts and ends, in document coordinates.
 fn baseline_ends(t: &TextObject) -> (Point, Point) {
-    let layout = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), t);
+    let layout = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), t);
     let l = &layout.lines[0];
     (t.xf * Point::new(l.x0, l.baseline), t.xf * Point::new(l.x1, l.baseline))
 }
@@ -663,11 +663,11 @@ fn an_insert_is_measured_clicked_and_marqueed_by_its_blocks_art() {
     assert!(close(b, Rect::new(100.0, h - 70.0, 100.0, h - 50.0), 1e-9), "{b:?}");
     // A click 25 pt right of the line, inside that square's box, selects nothing; one on the line
     // selects the insert.
-    let hit = |x: f64| vectorcraft_doc::hit::hit_test(&doc, Point::new(x, h - 60.0), vectorcraft_doc::hit::HitOptions::default()).map(|h| h.leaf);
+    let hit = |x: f64| redrob_vector_doc::hit::hit_test(&doc, Point::new(x, h - 60.0), redrob_vector_doc::hit::HitOptions::default()).map(|h| h.leaf);
     assert_eq!(hit(125.0), None);
     assert_eq!(hit(100.0), Some(inst.id));
     // A marquee beside the line leaves it out; one across it takes it.
-    let marquee = |r: Rect| vectorcraft_doc::hit::marquee(&doc, r, None, false);
+    let marquee = |r: Rect| redrob_vector_doc::hit::marquee(&doc, r, None, false);
     assert!(marquee(Rect::new(115.0, h - 65.0, 125.0, h - 55.0)).is_empty());
     assert_eq!(marquee(Rect::new(90.0, h - 62.0, 110.0, h - 58.0)), vec![inst.id]);
 }

@@ -4,8 +4,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use redrob_vector_engine::Session;
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
 
 use super::tests_export::{frame, kind, set};
 use super::*;
@@ -33,7 +33,7 @@ fn app(web: bool) -> (VectorcraftApp, Log, [u64; 2]) {
     }
     let mut app = VectorcraftApp::new(Session::new(), services);
     app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
-    app.session.paint.stroke = vectorcraft_color::Paint::None;
+    app.session.paint.stroke = redrob_vector_color::Paint::None;
     let mut rect = |x: f64| app.run("shape.rectangle", json!({"x": x, "y": 10, "width": 30, "height": 20})).unwrap()["id"].as_u64().unwrap();
     let ids = [rect(10.0), rect(100.0)];
     app.run("select.set", json!({"ids": ids})).unwrap();

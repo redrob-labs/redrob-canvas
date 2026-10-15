@@ -8,8 +8,8 @@ use std::rc::Rc;
 use std::sync::mpsc::{Sender, channel};
 
 use egui::{Pos2, Rect, vec2};
+use redrob_vector_engine::Session;
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
 
 use crate::panels::graphic_styles::GraphicStyleLibraries;
 use crate::panels::library_panel::library_menu;
@@ -141,14 +141,14 @@ fn dialogs(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
     crate::dialogs::show(app, ui.ctx());
 }
 
-/// The active document written to `Poster.vectorcraft` in a folder of its own named after `tag`
+/// The active document written to `Poster.rvector` in a folder of its own named after `tag`
 /// → (the folder, the file).
 fn saved_document(app: &mut VectorcraftApp, tag: &str) -> (std::path::PathBuf, String) {
     let b64 = app.run("document.serialize", json!({})).unwrap()["dataBase64"].as_str().unwrap().to_string();
     let dir = std::env::temp_dir().join(format!("vc-picks-{tag}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    let file = dir.join("Poster.vectorcraft");
-    std::fs::write(&file, vectorcraft_format::base64_decode(&b64).unwrap()).unwrap();
+    let file = dir.join("Poster.rvector");
+    std::fs::write(&file, redrob_vector_format::base64_decode(&b64).unwrap()).unwrap();
     (dir, file.to_string_lossy().into_owned())
 }
 
@@ -237,7 +237,7 @@ fn other_swatch_library_asks_off_the_ui_thread() {
     poll(&mut app);
     let open = app.ui.library_panel.clone().unwrap_or_else(|| panic!("no library open: {}", app.ui.status));
     assert_eq!(open.kind, "swatches");
-    let (_, lib) = vectorcraft_engine::cmd::swatchlib::library(&app.session, &open.id).unwrap();
+    let (_, lib) = redrob_vector_engine::cmd::swatchlib::library(&app.session, &open.id).unwrap();
     assert!(lib.swatch("Signal").is_some(), "{}", open.id);
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -257,7 +257,7 @@ fn other_graphic_style_library_asks_off_the_ui_thread() {
     poll(&mut app);
     let open = app.ui.library_panel.clone().unwrap_or_else(|| panic!("no library open: {}", app.ui.status));
     assert_eq!(open.kind, "graphicStyles");
-    let (_, lib) = vectorcraft_engine::cmd::stylelib::library(&app.session, &open.id).unwrap();
+    let (_, lib) = redrob_vector_engine::cmd::stylelib::library(&app.session, &open.id).unwrap();
     assert!(lib.style("Poster Look").is_some(), "{}", open.id);
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -345,7 +345,7 @@ fn a_folder_for_a_closed_dialog_is_dropped() {
 /// the UI thread and writes the selected preset where the dialog answers; the dialog stays open.
 #[test]
 fn preset_dialogs_export_asks_off_the_ui_thread() {
-    use vectorcraft_engine::cmd::{flatten, pdfcmds, perspgrid, printpresets};
+    use redrob_vector_engine::cmd::{flatten, pdfcmds, perspgrid, printpresets};
     let cases = [
         ("pdf.preset.save", json!({"name": "Mine"}), "ui.pdfPresetsDialog", pdfcmds::PRESET_FORMAT),
         ("print.presets.save", json!({"name": "Mine", "settings": {"copies": 2}}), "ui.printPresetsDialog", printpresets::PRESET_FORMAT),
@@ -555,7 +555,7 @@ fn save_changes_answers_for_its_own_document() {
     modified(&mut app);
     app.run("file.new", json!({"width": 100, "height": 80})).unwrap();
     modified(&mut app);
-    app.session.active_mut().unwrap().path = Some("/art/c.vectorcraft".into());
+    app.session.active_mut().unwrap().path = Some("/art/c.rvector".into());
     let uids: Vec<u64> = app.session.documents().iter().map(|d| d.uid).collect();
     app.run("file.closeAll", json!({})).unwrap();
     assert_eq!(app.ui.dialog.as_ref().map(|d| d.fields["uid"].clone()), Some(json!(uids[1])), "asks about A");
@@ -563,9 +563,9 @@ fn save_changes_answers_for_its_own_document() {
     assert!(crate::dialogs::confirm(&mut app).is_err());
     assert!(matches!(shown.requests().as_slice(), [PickRequest::Save(_)]));
     app.run("file.close", json!({"index": 0})).unwrap();
-    shown.answer(&["/art/a.vectorcraft"]);
+    shown.answer(&["/art/a.rvector"]);
     poll(&mut app);
-    assert_eq!(*written.borrow(), ["/art/a.vectorcraft"], "{}", app.ui.status);
+    assert_eq!(*written.borrow(), ["/art/a.rvector"], "{}", app.ui.status);
     assert_eq!(app.session.documents().iter().map(|d| d.uid).collect::<Vec<_>>(), [uids[2]], "A closed, C untouched");
     let d = app.ui.dialog.as_ref().expect("Save Changes asks about C next");
     assert_eq!((d.kind.as_str(), &d.fields["uid"]), (crate::unsaved::KIND, &json!(uids[2])));
@@ -597,7 +597,7 @@ fn a_refused_dialog_says_why() {
 fn a_panic_inside_an_entry_leaves_none_behind() {
     let (mut app, shown, written) = app();
     app.run("file.new", json!({"width": 100, "height": 80})).unwrap();
-    let r = vectorcraft_engine::guard::catch_panic(|| picks::button(&mut app, |_| panic!("a bug")));
+    let r = redrob_vector_engine::guard::catch_panic(|| picks::button(&mut app, |_| panic!("a bug")));
     assert!(r.is_err());
     app.picks.recover();
     assert!(app.picks.is_entry_free());

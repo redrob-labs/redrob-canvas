@@ -9,7 +9,7 @@ and the krilla/hayro patches all point at craft-libs' vendored copies.
 
 Run after every `git subtree pull`:
 
-    python3 tools/merge_workspaces.py && cargo metadata --offline >/dev/null
+    python3 tools/merge_workspaces.py && cargo update --workspace --offline
 
 Each subtree's own `Cargo.toml` is renamed to `Cargo.upstream.toml`: cargo would otherwise
 treat it as a nested workspace root and refuse the crates as members of the wrong workspace.
@@ -20,13 +20,14 @@ whichever exists and renames it again.
 from __future__ import annotations
 
 import re
+import sys
 import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CRAFTS = ["photocraft", "vectorcraft", "designcraft", "craft-libs"]
 CRAFT_LIBS = {
-    f"craft-{n}": f"crafts/craft-libs/crates/{n}"
+    f"redrob-craft-{n}": f"crafts/craft-libs/crates/{n}"
     for n in ["atomic", "cms", "pdf", "print", "quit", "settings", "ui"]
 }
 VENDORED = ["krilla", "hayro", "hayro-interpret", "hayro-syntax", "hayro-jbig2"]
@@ -115,6 +116,22 @@ def main() -> None:
         parked = live.with_name("Cargo.upstream.toml")
         if live.exists():
             live.replace(parked)
+    # A pull brings upstream's docs, packaging, CI and READMEs back, its crate names and its file
+    # extensions, URI schemes, MIME types and env prefixes: drop the furniture and rename all of it
+    # BEFORE the manifests are read, so the generated root manifest sees the renamed tree
+    # (tools/prune_upstream.py, tools/rename_crates.py, tools/rename_identifiers.py; then
+    # `cargo update --workspace --offline` re-sorts Cargo.lock and tools/rebrand_crafts.py the
+    # display strings). scripts/check_upstream_ids.py is the gate that all of it ran.
+    sys.path.insert(0, str(ROOT / "tools"))
+    import prune_upstream  # noqa: E402
+    import rename_crates  # noqa: E402
+    import rename_identifiers  # noqa: E402
+
+    prune_upstream.main([])
+    rename_crates.main([])
+    rename_identifiers.main([])
+    for craft in CRAFTS:
+        parked = ROOT / "crafts" / craft / "Cargo.upstream.toml"
         data = tomllib.load(parked.open("rb"))
         ws = data["workspace"]
         for name, spec in ws.get("dependencies", {}).items():
@@ -135,7 +152,7 @@ def main() -> None:
         for k, v in lints.get("clippy", {}).items():
             lints_clippy.setdefault(k, v)
     # The upstream subtrees are linted by their own projects on their own clippy version; on
-    # ours (1.95) craft-ui and photocraft-raw trip collapsible_match, and since `-D warnings`
+    # ours (1.95) redrob-craft-ui and redrob-photo-raw trip collapsible_match, and since `-D warnings`
     # covers every workspace member we cannot gate our crates without silencing it here.
     lints_clippy["collapsible_match"] = "allow"
     lints_clippy["nonminimal_bool"] = "allow"
@@ -164,15 +181,12 @@ def main() -> None:
         '  "crafts/designcraft/crates/*",',
         '  "crafts/craft-libs/crates/*",',
         "]",
-        "# Upstream binaries, xtasks and web shells are not built here; the Redrob Canvas shell in",
-        "# apps/ hosts the three editors as modes. craft-libs vendors krilla/hayro, patched below.",
+        "# Upstream binaries and web shells are not built here; the Redrob Canvas shell in apps/",
+        "# hosts the three editors as modes. craft-libs vendors krilla/hayro, patched below.",
         "exclude = [",
         '  "crafts/photocraft/apps",',
-        '  "crafts/photocraft/xtask",',
         '  "crafts/vectorcraft/apps",',
-        '  "crafts/vectorcraft/xtask",',
         '  "crafts/designcraft/apps",',
-        '  "crafts/designcraft/xtask",',
         '  "crafts/craft-libs/vendor",',
         "]",
         "",

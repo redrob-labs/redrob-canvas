@@ -13,9 +13,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, Ui, vec2};
+use redrob_vector_doc::{ExportAsset, Node, NodeId};
+use redrob_vector_engine::DocState;
 use serde_json::{Value, json};
-use vectorcraft_doc::{ExportAsset, Node, NodeId};
-use vectorcraft_engine::DocState;
 
 use super::{pstate, set_pstate};
 use crate::dialogs::{EXPORT_FOR_SCREENS, open_export_for_screens_assets, screen_formats, screen_saved_options, screen_saved_rows};
@@ -46,7 +46,7 @@ type Revision = (u64, u64);
 /// object is a new allocation, so its address is a free change detector, as in the Layers panel).
 pub(crate) fn paint_thumb(ui: &Ui, st: &DocState, a: &ExportAsset, r: Rect) {
     thread_local! {
-        static RENDERER: RefCell<vectorcraft_render::Renderer> = RefCell::new(vectorcraft_render::Renderer::new());
+        static RENDERER: RefCell<redrob_vector_render::Renderer> = RefCell::new(redrob_vector_render::Renderer::new());
         /// The addresses of each asset's objects in one document revision (no tree walks per frame).
         static KEYS: RefCell<(Revision, HashMap<u64, Look>)> = RefCell::new(Default::default());
         static CACHE: crate::graphics::TexCache<HashMap<(Look, u32), egui::TextureHandle>> = crate::graphics::TexCache::default();
@@ -196,7 +196,7 @@ fn export_now(app: &mut VectorcraftApp, ids: Vec<u64>, files_each: usize) {
         && screen_saved_rows(&st.doc.export_settings)
             .0
             .iter()
-            .any(|row| row["format"].as_str().and_then(vectorcraft_engine::cmd::fileio::format).is_some_and(|f| f.id == "tiff"))
+            .any(|row| row["format"].as_str().and_then(redrob_vector_engine::cmd::fileio::format).is_some_and(|f| f.id == "tiff"))
     {
         let saved = &st.doc.export_settings;
         let mut settings = saved.get("settings").and_then(Value::as_object).cloned().unwrap_or_default();
@@ -218,7 +218,7 @@ fn export_now(app: &mut VectorcraftApp, ids: Vec<u64>, files_each: usize) {
                 .and_then(Value::as_str)
                 .filter(|f| !f.is_empty())
                 .map(str::to_string)
-                .or_else(vectorcraft_engine::cmd::fileio::export_folder)
+                .or_else(redrob_vector_engine::cmd::fileio::export_folder)
             {
                 Some(f) => f,
                 None => return app.status("choose a folder to export to".to_string()),

@@ -4,7 +4,7 @@ use egui::{Modifiers, Pos2, Rect, pos2, vec2};
 use egui_kittest::{Harness, kittest::Queryable};
 
 fn harness() -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.ui.tool = crate::state::Tool::Brush;
     app.session.tools.brush.hardness = 0.5;
     let mut h = Harness::builder().with_size(vec2(1400.0, 60.0)).build_ui_state(

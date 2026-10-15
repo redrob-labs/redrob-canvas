@@ -20,38 +20,25 @@ use crate::geom::Rect;
 use crate::serialize::SerializeContext;
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
-use crate::text::outline::OutlineBuilder;
 use crate::text::Font;
 use crate::text::GlyphId;
-use crate::util::{stable_hash128, SliceExt};
+use crate::text::outline::OutlineBuilder;
+use crate::util::{SliceExt, stable_hash128};
 
 const SUBSET_TAG_LEN: usize = 6;
 pub(crate) const IDENTITY_H: &str = "Identity-H";
 pub(crate) const CMAP_NAME: Name = Name(b"Custom");
-pub(crate) const SYSTEM_INFO: SystemInfo = SystemInfo {
-    registry: Str(b"Adobe"),
-    ordering: Str(b"Identity"),
-    supplement: 0,
-};
+pub(crate) const SYSTEM_INFO: SystemInfo = SystemInfo { registry: Str(b"Adobe"), ordering: Str(b"Identity"), supplement: 0 };
 
 pub(crate) type Cid = u16;
 
 /// A shared function for CID fonts and Type3 fonts to write the cmap entries.
-pub(crate) fn write_cmap_entry<G>(
-    font: &Font,
-    entry: Option<&(String, Option<Location>)>,
-    sc: &mut SerializeContext,
-    cmap: &mut UnicodeCmap<G>,
-    g: G,
-) where
+pub(crate) fn write_cmap_entry<G>(font: &Font, entry: Option<&(String, Option<Location>)>, sc: &mut SerializeContext, cmap: &mut UnicodeCmap<G>, g: G)
+where
     G: pdf_writer::types::GlyphId + Into<u32> + Copy,
 {
     match entry {
-        None => sc.register_validation_error(ValidationError::NoCodepointMapping(
-            font.clone(),
-            GlyphId::new(g.into()),
-            None,
-        )),
+        None => sc.register_validation_error(ValidationError::NoCodepointMapping(font.clone(), GlyphId::new(g.into()), None)),
         Some((text, loc)) => {
             let mut invalid_codepoint = text.is_empty();
             let mut invalid_code = None;
@@ -69,25 +56,15 @@ pub(crate) fn write_cmap_entry<G>(
             }
 
             match invalid_code {
-                Some(c) => sc.register_validation_error(ValidationError::InvalidCodepointMapping(
-                    font.clone(),
-                    GlyphId::new(g.into()),
-                    c,
-                    *loc,
-                )),
-                None if invalid_codepoint => sc.register_validation_error(
-                    ValidationError::NoCodepointMapping(font.clone(), GlyphId::new(g.into()), *loc),
-                ),
+                Some(c) => sc.register_validation_error(ValidationError::InvalidCodepointMapping(font.clone(), GlyphId::new(g.into()), c, *loc)),
+                None if invalid_codepoint => {
+                    sc.register_validation_error(ValidationError::NoCodepointMapping(font.clone(), GlyphId::new(g.into()), *loc))
+                }
                 _ => {}
             }
 
             if let Some(code) = private_unicode {
-                sc.register_validation_error(ValidationError::UnicodePrivateArea(
-                    font.clone(),
-                    GlyphId::new(g.into()),
-                    code,
-                    *loc,
-                ));
+                sc.register_validation_error(ValidationError::UnicodePrivateArea(font.clone(), GlyphId::new(g.into()), code, *loc));
             }
 
             if !text.is_empty() {
@@ -123,13 +100,7 @@ impl CIDFont {
         // the glyph remapper.
         let widths = vec![font.advance_width(GlyphId::new(0)).unwrap_or(0.0)];
 
-        Self {
-            glyph_remapper: GlyphRemapper::new(),
-            cmap_entries: FxHashMap::default(),
-            widths,
-            font,
-            is_empty: true,
-        }
+        Self { glyph_remapper: GlyphRemapper::new(), cmap_entries: FxHashMap::default(), widths, font, is_empty: true }
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -156,14 +127,11 @@ impl CIDFont {
     pub(crate) fn add_glyph(&mut self, glyph_id: GlyphId) -> Cid {
         self.is_empty = false;
 
-        let new_id = self
-            .glyph_remapper
-            .remap(u16::try_from(glyph_id.to_u32()).unwrap());
+        let new_id = self.glyph_remapper.remap(u16::try_from(glyph_id.to_u32()).unwrap());
 
         // This means that the glyph ID has been newly assigned, and thus we need to add its width.
         if new_id as usize >= self.widths.len() {
-            self.widths
-                .push(self.font.advance_width(glyph_id).unwrap_or(0.0));
+            self.widths.push(self.font.advance_width(glyph_id).unwrap_or(0.0));
         }
 
         new_id
@@ -184,12 +152,7 @@ impl CIDFont {
         FontIdentifier::Cid(CIDIdentifier(self.font.clone()))
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) -> KrillaResult<()> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) -> KrillaResult<()> {
         let chunk = &mut chunk_container.non_stream.fonts;
         let mut stream_chunk = sc.new_chunk();
 
@@ -206,10 +169,7 @@ impl CIDFont {
         let is_cff2 = self.font.font_ref().cff2().is_ok();
 
         if !is_glyf && !is_cff && !is_cff2 {
-            return Err(KrillaError::Font(
-                self.font.clone(),
-                "font is missing an outline table".to_string(),
-            ));
+            return Err(KrillaError::Font(self.font.clone(), "font is missing an outline table".to_string()));
         }
 
         // OS/2 fsType has a few bits that describe which kind of license the font has. Of
@@ -225,12 +185,7 @@ impl CIDFont {
         //
         // Hence, we are not checking `fsType & 2 != 0` (as would be usual for bit flags),
         // but rather `fsType & 0xF == 2`.
-        if self
-            .font
-            .font_ref()
-            .os2()
-            .is_ok_and(|os2| os2.fs_type() & 0xF == 2)
-        {
+        if self.font.font_ref().os2().is_ok_and(|os2| os2.fs_type() & 0xF == 2) {
             sc.register_validation_error(ValidationError::RestrictedLicense(self.font.clone()));
         }
 
@@ -242,9 +197,8 @@ impl CIDFont {
             let mut data = subsetted_data.as_ref().as_ref();
 
             // If we have a CFF font, only embed the standalone CFF program.
-            let subsetted_ref = skrifa::FontRef::new(data).map_err(|_| {
-                KrillaError::Font(self.font.clone(), "failed to read font subset".to_string())
-            })?;
+            let subsetted_ref =
+                skrifa::FontRef::new(data).map_err(|_| KrillaError::Font(self.font.clone(), "failed to read font subset".to_string()))?;
 
             if let Some(cff) = subsetted_ref.data_for_tag(Cff::TAG) {
                 data = cff.as_bytes();
@@ -254,11 +208,7 @@ impl CIDFont {
         };
 
         let base_font = base_font_name(&self.font, &self.glyph_remapper);
-        let base_font_type0 = if is_cff {
-            format!("{base_font}-{IDENTITY_H}")
-        } else {
-            base_font.clone()
-        };
+        let base_font_type0 = if is_cff { format!("{base_font}-{IDENTITY_H}") } else { base_font.clone() };
 
         chunk
             .type0_font(root_ref)
@@ -268,11 +218,7 @@ impl CIDFont {
             .to_unicode(cmap_ref);
 
         let mut cid = chunk.cid_font(cid_ref);
-        cid.subtype(if is_cff {
-            CidFontType::Type0
-        } else {
-            CidFontType::Type2
-        });
+        cid.subtype(if is_cff { CidFontType::Type0 } else { CidFontType::Type2 });
         cid.base_font(Name(base_font.as_bytes()));
         cid.system_info(SYSTEM_INFO);
         cid.font_descriptor(descriptor_ref);
@@ -315,8 +261,7 @@ impl CIDFont {
                 bytes
             };
 
-            let cid_stream = FilterStreamBuilder::new_from_binary_data(&cid_stream_data)
-                .finish(&sc.serialize_settings());
+            let cid_stream = FilterStreamBuilder::new_from_binary_data(&cid_stream_data).finish(&sc.serialize_settings());
             let mut cid_set = stream_chunk.stream(cid_set_ref, cid_stream.encoded_data());
             cid_stream.write_filters(cid_set.deref_mut());
             cid_set.finish();
@@ -324,12 +269,7 @@ impl CIDFont {
         }
 
         let mut flags = FontFlags::empty();
-        flags.set(
-            FontFlags::SERIF,
-            self.font
-                .postscript_name()
-                .is_some_and(|n| n.contains("Serif")),
-        );
+        flags.set(FontFlags::SERIF, self.font.postscript_name().is_some_and(|n| n.contains("Serif")));
         flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
         flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
         flags.insert(FontFlags::SYMBOLIC);
@@ -389,9 +329,7 @@ impl CIDFont {
         };
 
         let cmap_stream = cmap.finish();
-        let cmap_stream =
-            FilterStreamBuilder::new_from_content_stream(&cmap_stream, &sc.serialize_settings())
-                .finish(&sc.serialize_settings());
+        let cmap_stream = FilterStreamBuilder::new_from_content_stream(&cmap_stream, &sc.serialize_settings()).finish(&sc.serialize_settings());
         let mut cmap = stream_chunk.cmap(cmap_ref, cmap_stream.encoded_data());
         cmap_stream.write_filters(cmap.deref_mut().deref_mut());
         cmap.writing_mode(WMode::Horizontal);
@@ -437,24 +375,10 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font, Rect)> {
     let mut bbox: Option<Rect> = None;
 
-    let variation_coordinates = font
-        .variation_coordinates()
-        .iter()
-        .map(|v| (subsetter::Tag::new(v.0.get()), v.1.get()))
-        .collect::<Vec<_>>();
-    let font = subsetter::subset_with_variations(
-        font.font_data().as_ref(),
-        font.index(),
-        &variation_coordinates,
-        glyph_remapper,
-    )
-    .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {e}")))
-    .and_then(|data| {
-        Font::new(Arc::new(data).into(), 0).ok_or(KrillaError::Font(
-            font.clone(),
-            "failed to subset font".to_string(),
-        ))
-    })?;
+    let variation_coordinates = font.variation_coordinates().iter().map(|v| (subsetter::Tag::new(v.0.get()), v.1.get())).collect::<Vec<_>>();
+    let font = subsetter::subset_with_variations(font.font_data().as_ref(), font.index(), &variation_coordinates, glyph_remapper)
+        .map_err(|e| KrillaError::Font(font.clone(), format!("failed to subset font: {e}")))
+        .and_then(|data| Font::new(Arc::new(data).into(), 0).ok_or(KrillaError::Font(font.clone(), "failed to subset font".to_string())))?;
     let global_bbox = font.bbox();
 
     for g in 0..font.num_glyphs() {
@@ -477,10 +401,7 @@ fn compute_bbox(font: &Font, glyph: skrifa::GlyphId) -> Option<Rect> {
 
     if let Some(outline_glyph) = outline_glyphs.get(glyph) {
         let mut glyph_builder = OutlineBuilder::new();
-        let _ = outline_glyph.draw(
-            DrawSettings::unhinted(Size::unscaled(), LocationRef::default()),
-            &mut glyph_builder,
-        );
+        let _ = outline_glyph.draw(DrawSettings::unhinted(Size::unscaled(), LocationRef::default()), &mut glyph_builder);
         glyph_builder.finish().map(|p| Rect::from_tsp(p.bounds()))
     } else {
         None

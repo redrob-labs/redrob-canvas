@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn draws_headless() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         app.session.execute("text.create", &json!({"x": 10, "y": 40, "text": "Hi"})).unwrap();
         let ctx = egui::Context::default();
@@ -159,7 +159,7 @@ mod tests {
     /// language: an artboard named like a label ("Units") is still a name.
     #[test]
     fn names_in_rows_are_told_from_labels() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         app.session.execute("artboard.setProps", &json!({"index": 0, "name": "Units"})).unwrap();
         app.session.execute("text.create", &json!({"x": 10, "y": 40, "text": "Hi"})).unwrap();
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn categories_filter_the_panel_and_save_writes_the_report() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         app.session.execute("text.create", &json!({"x": 10, "y": 40, "text": "Hi"})).unwrap();
         let text = crate::tests_labels::painted_text(&mut app, show);

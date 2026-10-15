@@ -21,7 +21,7 @@ pub struct Lasso {
     pub cursor: [f64; 2],
     down: bool,
     polygonal: bool,
-    document: Option<photocraft_doc::DocId>,
+    document: Option<redrob_photo_doc::DocId>,
     /// Indices of the points an Alt-click added: the segment into each one is straight.
     straight: Vec<usize>,
 }

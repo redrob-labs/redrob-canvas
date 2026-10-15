@@ -75,7 +75,7 @@ fn matches(o: &ToolOptions, fields: &Map<String, Value>) -> bool {
 }
 
 /// The number of a length or resolution as the preset name shows it ("8.5", "300").
-fn number(v: f64, unit: photocraft_engine::prefs::Unit) -> String {
+fn number(v: f64, unit: redrob_photo_engine::prefs::Unit) -> String {
     let s = crop_size::format_length(v, unit);
     s.split_once(' ').map_or(s.clone(), |(n, _)| n.to_string())
 }
@@ -83,7 +83,7 @@ fn number(v: f64, unit: photocraft_engine::prefs::Unit) -> String {
 /// What New Crop Preset would save from `o`: the crop fields and the name it suggests. `None` when
 /// there is nothing to save (W x H x Resolution without both W and H, or no numeric ratio).
 pub fn savable(o: &ToolOptions) -> Option<(Map<String, Value>, String)> {
-    use photocraft_engine::prefs::Unit;
+    use redrob_photo_engine::prefs::Unit;
     if o.crop_ratio == WHR {
         let (w, wu) = crop_size::parse_length(&o.crop_width, Unit::Pixels)?;
         let (h, hu) = crop_size::parse_length(&o.crop_height, Unit::Pixels)?;
@@ -335,13 +335,13 @@ pub fn confirm(app: &mut PhotocraftApp, fields: &Map<String, Value>) -> Result<V
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
+    use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
     use std::{cell::RefCell, rc::Rc};
 
     fn app_with(services: crate::Services) -> PhotocraftApp {
         let mut doc = Document::with_background("crop", Size::new(400, 300), ColorMode::Rgb, SampleType::U8, Color::WHITE);
         doc.resolution_dpi = 72.0;
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.add_document(doc, None);
         let mut app = PhotocraftApp::new(s, services);
         app.ui.tool = Tool::Crop;
@@ -490,7 +490,7 @@ mod tests {
         }
         assert_eq!(names(&app).len(), 3);
         // A preset from a hand-edited file with odd options is listed and selecting it is harmless.
-        app.session.presets.tool_presets.push(photocraft_engine::presets::tools::ToolPreset {
+        app.session.presets.tool_presets.push(redrob_photo_engine::presets::tools::ToolPreset {
             name: "Odd".into(),
             tool: "crop".into(),
             options: json!({"toolOptions": {"crop_ratio": 5, "crop_width": []}}),

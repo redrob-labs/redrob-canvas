@@ -6,7 +6,7 @@ use std::sync::Arc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::sync::Mutex;
 
-use photocraft_doc::Document;
+use redrob_photo_doc::Document;
 use serde_json::{Map, Value, json};
 
 use crate::state::DialogKind;
@@ -107,9 +107,9 @@ pub fn open(app: &mut PhotocraftApp) -> Result<u64, String> {
 }
 
 /// Layer › Export As…: the same dialog for just the active layer (trimmed to its pixels).
-pub fn open_layer(app: &mut PhotocraftApp, layer: photocraft_doc::LayerId) -> Result<u64, String> {
+pub fn open_layer(app: &mut PhotocraftApp, layer: redrob_photo_doc::LayerId) -> Result<u64, String> {
     let st = app.session.active().ok_or("no document")?;
-    let ldoc = photocraft_engine::layer_menu_cmds::layer_document(&st.doc, layer).map_err(|e| e.to_string())?;
+    let ldoc = redrob_photo_engine::layer_menu_cmds::layer_document(&st.doc, layer).map_err(|e| e.to_string())?;
     let id = open(app)?;
     if let Some(d) = app.ui.dialogs.iter_mut().find(|d| d.id == id) {
         d.fields.insert("__layer".into(), json!(layer.0));
@@ -122,7 +122,7 @@ pub fn open_layer(app: &mut PhotocraftApp, layer: photocraft_doc::LayerId) -> Re
 
 /// Layer › Export As… with several layers (artboards, say) selected: the same dialog, then one
 /// file per layer with its settings (#3629). The preview shows the first layer.
-pub fn open_layers(app: &mut PhotocraftApp, layers: &[photocraft_doc::LayerId]) -> Result<u64, String> {
+pub fn open_layers(app: &mut PhotocraftApp, layers: &[redrob_photo_doc::LayerId]) -> Result<u64, String> {
     let (first, n) = match layers {
         [] => return Err("no selected layers".into()),
         [one] => return open_layer(app, *one),
@@ -138,7 +138,7 @@ pub fn open_layers(app: &mut PhotocraftApp, layers: &[photocraft_doc::LayerId]) 
 }
 
 /// Layer › Quick Export as PNG.
-pub fn quick_export_layer_png(app: &mut PhotocraftApp, layer: photocraft_doc::LayerId) -> Result<Value, String> {
+pub fn quick_export_layer_png(app: &mut PhotocraftApp, layer: redrob_photo_doc::LayerId) -> Result<Value, String> {
     let mut f = Map::new();
     f.insert("format".into(), json!("png"));
     f.insert("transparency".into(), json!(true));
@@ -161,7 +161,7 @@ pub fn quick_export_selected_layers_png(app: &mut PhotocraftApp) -> Result<Value
     // Capture all sources before showing the dialog: changing selection or document while it
     // is open cannot change which layers get exported.
     let docs: Vec<_> =
-        layers.into_iter().map(|id| photocraft_engine::layer_menu_cmds::layer_document(&st.doc, id).map_err(|e| e.to_string())).collect::<Result<_, _>>()?;
+        layers.into_iter().map(|id| redrob_photo_engine::layer_menu_cmds::layer_document(&st.doc, id).map_err(|e| e.to_string())).collect::<Result<_, _>>()?;
     let suggested = format!("{}.png", export_name(&st.doc.name));
     app.pick_save(&suggested, move |app, path| {
         if !path.to_ascii_lowercase().ends_with(".png") {
@@ -224,7 +224,7 @@ fn batch_paths(path: &str, docs: &[Document]) -> Vec<String> {
 /// The document a dialog exports: the whole image, or one layer (`__layer`).
 fn source_document_from(doc: Arc<Document>, f: &Map<String, Value>) -> Result<Arc<Document>, String> {
     match f.get("__layer").and_then(Value::as_u64) {
-        Some(id) => photocraft_engine::layer_menu_cmds::layer_document(&doc, photocraft_doc::LayerId(id)).map(Arc::new).map_err(|e| e.to_string()),
+        Some(id) => redrob_photo_engine::layer_menu_cmds::layer_document(&doc, redrob_photo_doc::LayerId(id)).map(Arc::new).map_err(|e| e.to_string()),
         None => Ok(doc),
     }
 }
@@ -243,7 +243,7 @@ fn n(f: &Map<String, Value>, k: &str, d: f64) -> f64 {
 /// The document as exported: scaled (engine Image Size, bicubic) and flattened over white when
 /// transparency is off or the format has no alpha.
 fn export_document(doc: &Document, f: &Map<String, Value>, max_side: Option<u32>) -> Result<Document, String> {
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.add_document(doc.clone(), None);
     if s(f, "profile") == "srgb" && doc.icc_profile.is_some() {
         session.execute("edit.convertToProfile", json!({"profile": "srgb", "intent": "perceptual"})).map_err(|e| e.to_string())?;
@@ -350,7 +350,7 @@ fn export_pixels(src_w: f64, src_h: f64, f: &Map<String, Value>, max_side: Optio
 
 /// Export As already supports lossy WebP; reuse the Quick Export defaults when
 /// choosing that format so both flows expose the same quality and lossless options.
-fn set_format_defaults(f: &mut Map<String, Value>, fmt: &str, prefs: &photocraft_engine::prefs::Export) {
+fn set_format_defaults(f: &mut Map<String, Value>, fmt: &str, prefs: &redrob_photo_engine::prefs::Export) {
     f.insert("format".into(), json!(fmt));
     match fmt {
         "jpg" => {
@@ -375,8 +375,8 @@ fn lossless(f: &Map<String, Value>) -> bool {
 
 /// TGA bits per pixel: `"24"` or `"32"`; `"auto"` (the default) is 32 with an alpha channel or
 /// transparency, else 24, as Export As wrote before it offered the choice.
-fn tga_bits(f: &Map<String, Value>) -> Option<photocraft_io::TgaBits> {
-    s(f, "tgaBits").parse().ok().and_then(photocraft_io::TgaBits::from_bits)
+fn tga_bits(f: &Map<String, Value>) -> Option<redrob_photo_io::TgaBits> {
+    s(f, "tgaBits").parse().ok().and_then(redrob_photo_io::TgaBits::from_bits)
 }
 
 fn settings(f: &Map<String, Value>) -> ExportSettings {
@@ -430,7 +430,7 @@ struct PreviewPixels {
 }
 
 fn preview_pixels(proxy: &Document, estimate: Option<u64>) -> PreviewPixels {
-    let img = photocraft_compose::thumbnail(proxy, 360);
+    let img = redrob_photo_compose::thumbnail(proxy, 360);
     PreviewPixels { estimate, width: img.width as usize, height: img.height as usize, rgba: img.pixels }
 }
 
@@ -522,7 +522,7 @@ fn poll_or_start_preview(
 /// The native exporter uses this same IO encoder. Keep the entire estimate off the UI thread.
 #[cfg(not(target_arch = "wasm32"))]
 fn estimate_native(doc: &Document, proxy: &Document, f: &Map<String, Value>) -> Option<u64> {
-    let bytes = photocraft_io::export(proxy, &format!("estimate.{}", s_fmt(f)), &settings(f).io_options()).ok()?.bytes;
+    let bytes = redrob_photo_io::export(proxy, &format!("estimate.{}", s_fmt(f)), &settings(f).io_options()).ok()?.bytes;
     Some(scaled_estimate(bytes.len(), doc, proxy, f))
 }
 
@@ -585,7 +585,7 @@ fn size_fields(ui: &mut egui::Ui, f: &mut Map<String, Value>, src_w: f64, src_h:
     }
 }
 
-fn apply_preset(f: &mut Map<String, Value>, settings: &photocraft_engine::export_preset_cmds::ExportPresetSettings, src_w: f64, src_h: f64) {
+fn apply_preset(f: &mut Map<String, Value>, settings: &redrob_photo_engine::export_preset_cmds::ExportPresetSettings, src_w: f64, src_h: f64) {
     f.insert("format".into(), json!(settings.format));
     f.insert("quality".into(), json!(settings.quality));
     f.insert("lossless".into(), json!(settings.lossless));
@@ -841,7 +841,7 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
 pub fn confirm(app: &mut PhotocraftApp, f: &Map<String, Value>) -> Result<Value, String> {
     remember(app, f);
     if let Some(layers) = f.get("__layers").and_then(Value::as_array) {
-        let ids: Vec<_> = layers.iter().filter_map(Value::as_u64).map(photocraft_doc::LayerId).collect();
+        let ids: Vec<_> = layers.iter().filter_map(Value::as_u64).map(redrob_photo_doc::LayerId).collect();
         return confirm_layers(app, f, &ids);
     }
     let doc = source_document(app, f)?;
@@ -868,10 +868,10 @@ pub fn confirm(app: &mut PhotocraftApp, f: &Map<String, Value>) -> Result<Value,
 /// [`confirm`] for several layers: one destination prompt, then each layer exported with the
 /// dialog's settings and named as Quick Export names a selection's files. The layers are captured
 /// when asked, so changing the selection or document meanwhile can't change what is exported.
-fn confirm_layers(app: &mut PhotocraftApp, f: &Map<String, Value>, ids: &[photocraft_doc::LayerId]) -> Result<Value, String> {
+fn confirm_layers(app: &mut PhotocraftApp, f: &Map<String, Value>, ids: &[redrob_photo_doc::LayerId]) -> Result<Value, String> {
     let st = app.session.active().ok_or("no document")?;
     let docs: Vec<Document> =
-        ids.iter().map(|id| photocraft_engine::layer_menu_cmds::layer_document(&st.doc, *id).map_err(|e| e.to_string())).collect::<Result<_, _>>()?;
+        ids.iter().map(|id| redrob_photo_engine::layer_menu_cmds::layer_document(&st.doc, *id).map_err(|e| e.to_string())).collect::<Result<_, _>>()?;
     if docs.is_empty() {
         return Err("no selected layers".into());
     }
@@ -937,7 +937,7 @@ fn quick_export(app: &mut PhotocraftApp, p: Value) -> Result<Value, String> {
 mod tests {
     #[test]
     fn ico_export_is_available_and_rejects_oversize_output() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
         let mut f = Map::new();
         f.insert("format".into(), json!("ico"));
@@ -955,7 +955,7 @@ mod tests {
     /// dialog settings), and a value no control accepts keeps its default.
     #[test]
     fn export_as_opens_with_the_settings_used_last() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 20, "height": 10})).unwrap();
         app.session.prefs.edit(|p| {
             p.dialogs.insert(
@@ -986,7 +986,7 @@ mod tests {
     /// the layer the dialog was opened with.
     #[test]
     fn remembering_keeps_only_the_dialog_settings() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let mut f = Map::new();
         f.insert("format".into(), json!("webp"));
         f.insert("scale".into(), json!(50));
@@ -1002,7 +1002,7 @@ mod tests {
 
     #[test]
     fn export_document_scales_height_when_rounded_width_is_unchanged() {
-        use photocraft_doc::{Color, ColorMode, SampleType, Size};
+        use redrob_photo_doc::{Color, ColorMode, SampleType, Size};
 
         for depth in [SampleType::U8, SampleType::U16, SampleType::F32] {
             for (width, height, scale, expected) in [
@@ -1028,7 +1028,7 @@ mod tests {
 
     #[test]
     fn export_document_proxy_limits_both_dimensions_before_rounding() {
-        use photocraft_doc::{Color, ColorMode, SampleType, Size};
+        use redrob_photo_doc::{Color, ColorMode, SampleType, Size};
 
         for (width, height, scale, max_side, expected) in
             [(1, 1000, 100, 360, (1, 360)), (1, 1000, 50, 360, (1, 360)), (1, 1000, 25, 360, (1, 250)), (13, 20, 50, 8, (5, 8)), (20, 13, 50, 8, (8, 5))]
@@ -1049,10 +1049,10 @@ mod tests {
     fn export_document_scales_and_flattens() {
         let doc = Document::with_background(
             "x",
-            photocraft_doc::Size::new(200, 100),
-            photocraft_doc::ColorMode::Rgb,
-            photocraft_doc::SampleType::U8,
-            photocraft_doc::Color::WHITE,
+            redrob_photo_doc::Size::new(200, 100),
+            redrob_photo_doc::ColorMode::Rgb,
+            redrob_photo_doc::SampleType::U8,
+            redrob_photo_doc::Color::WHITE,
         );
         let mut f = Map::new();
         f.insert("format".into(), json!("jpg"));
@@ -1076,10 +1076,10 @@ mod tests {
         for (src_h, want_h) in [(100u32, 50u32), (200, 100)] {
             let doc = Document::with_background(
                 "x",
-                photocraft_doc::Size::new(1, src_h),
-                photocraft_doc::ColorMode::Rgb,
-                photocraft_doc::SampleType::U8,
-                photocraft_doc::Color::WHITE,
+                redrob_photo_doc::Size::new(1, src_h),
+                redrob_photo_doc::ColorMode::Rgb,
+                redrob_photo_doc::SampleType::U8,
+                redrob_photo_doc::Color::WHITE,
             );
             let out = export_document(&doc, &f, None).unwrap();
             assert_eq!((out.size.width, out.size.height), (1, want_h), "1 × {src_h} at 50%");
@@ -1095,7 +1095,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn layered_preview_runs_outside_the_ui_frame() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 32, "height": 16})).unwrap();
         for _ in 0..33 {
             app.run("layer.new.layer", json!({})).unwrap();
@@ -1135,14 +1135,14 @@ mod tests {
 
         let tiff_fields = Map::from_iter([("format".into(), json!("tif")), ("scale".into(), json!(100))]);
         let proxy = preview_proxy(&doc, &tiff_fields).unwrap();
-        let options = photocraft_io::ExportOptions { tiff_layers: true, xmp: photocraft_io::XmpEmbed::None, ..Default::default() };
-        let actual_bytes = photocraft_io::export(&proxy, "estimate.tif", &options).unwrap().bytes.len();
+        let options = redrob_photo_io::ExportOptions { tiff_layers: true, xmp: redrob_photo_io::XmpEmbed::None, ..Default::default() };
+        let actual_bytes = redrob_photo_io::export(&proxy, "estimate.tif", &options).unwrap().bytes.len();
         assert_eq!(estimate_native(&doc, &proxy, &tiff_fields), Some(scaled_estimate(actual_bytes, &doc, &proxy, &tiff_fields)));
     }
 
     #[test]
     fn switching_export_formats_uses_independent_quality_preferences() {
-        let prefs = photocraft_engine::prefs::Export { jpeg_quality: 43, webp_quality: 72, webp_lossless: false, ..Default::default() };
+        let prefs = redrob_photo_engine::prefs::Export { jpeg_quality: 43, webp_quality: 72, webp_lossless: false, ..Default::default() };
         let mut fields = Map::new();
         set_format_defaults(&mut fields, "webp", &prefs);
         assert_eq!(fields["quality"], 72);
@@ -1157,7 +1157,7 @@ mod tests {
         assert_eq!(settings(&fields).jpeg_quality, Some(43));
         assert_eq!(settings(&fields).webp_quality, None);
 
-        set_format_defaults(&mut fields, "webp", &photocraft_engine::prefs::Export::default());
+        set_format_defaults(&mut fields, "webp", &redrob_photo_engine::prefs::Export::default());
         assert!(settings(&fields).webp_lossless, "default WebP Quick Export mode is lossless");
         assert_eq!(settings(&fields).webp_quality, None);
     }
@@ -1183,7 +1183,7 @@ mod tests {
     /// for TGA.
     #[test]
     fn tga_settings_follow_the_bits_per_pixel() {
-        use photocraft_io::TgaBits;
+        use redrob_photo_io::TgaBits;
         let mut f = Map::new();
         f.insert("format".into(), json!("tga"));
         assert_eq!(settings(&f).tga_bits, None, "no choice made");
@@ -1211,10 +1211,10 @@ mod tests {
 
         let doc = Document::with_background(
             "x",
-            photocraft_doc::Size::new(400, 200),
-            photocraft_doc::ColorMode::Rgb,
-            photocraft_doc::SampleType::U8,
-            photocraft_doc::Color::WHITE,
+            redrob_photo_doc::Size::new(400, 200),
+            redrob_photo_doc::ColorMode::Rgb,
+            redrob_photo_doc::SampleType::U8,
+            redrob_photo_doc::Color::WHITE,
         );
         let before = doc.clone();
         let mut f = Map::new();
@@ -1232,7 +1232,7 @@ mod tests {
 
     #[test]
     fn profile_and_metadata_follow_the_existing_exporter() {
-        use photocraft_cms::Builtin;
+        use redrob_photo_cms::Builtin;
 
         let mut f = Map::new();
         f.insert("format".into(), json!("jpg"));
@@ -1252,10 +1252,10 @@ mod tests {
 
         let mut doc = Document::with_background(
             "x",
-            photocraft_doc::Size::new(8, 8),
-            photocraft_doc::ColorMode::Rgb,
-            photocraft_doc::SampleType::U8,
-            photocraft_doc::Color::WHITE,
+            redrob_photo_doc::Size::new(8, 8),
+            redrob_photo_doc::ColorMode::Rgb,
+            redrob_photo_doc::SampleType::U8,
+            redrob_photo_doc::Color::WHITE,
         );
         doc.icc_profile = Some(Builtin::DisplayP3.profile().to_bytes());
         doc.metadata.xmp = Some("<x:xmpmeta>secret</x:xmpmeta>".into());
@@ -1266,14 +1266,14 @@ mod tests {
         f.insert("metadata".into(), json!("none"));
         f.insert("embedProfile".into(), json!(false));
         let converted = export_document(&doc, &f, None).unwrap();
-        let parsed = photocraft_cms::Profile::parse(converted.icc_profile.as_deref().unwrap()).unwrap();
+        let parsed = redrob_photo_cms::Profile::parse(converted.icc_profile.as_deref().unwrap()).unwrap();
         assert!(parsed.same_colors(Builtin::Srgb.profile()), "Convert to sRGB replaces the document profile");
-        let stripped = photocraft_io::export(&converted, "out.jpg", &settings(&f).io_options()).unwrap().bytes;
+        let stripped = redrob_photo_io::export(&converted, "out.jpg", &settings(&f).io_options()).unwrap().bytes;
         assert!(!stripped.windows(b"ICC_PROFILE".len()).any(|w| w == b"ICC_PROFILE"));
         assert!(!stripped.windows(b"secret".len()).any(|w| w == b"secret"));
         f.insert("metadata".into(), json!("all"));
         f.insert("embedProfile".into(), json!(true));
-        let kept = photocraft_io::export(&converted, "out.jpg", &settings(&f).io_options()).unwrap().bytes;
+        let kept = redrob_photo_io::export(&converted, "out.jpg", &settings(&f).io_options()).unwrap().bytes;
         assert!(kept.windows(b"ICC_PROFILE".len()).any(|w| w == b"ICC_PROFILE"));
         assert!(kept.windows(b"secret".len()).any(|w| w == b"secret"));
         assert_eq!(doc, before);
@@ -1281,7 +1281,7 @@ mod tests {
 
     #[test]
     fn applying_a_preset_restores_its_size_mode() {
-        use photocraft_engine::export_preset_cmds::ExportPresetSettings;
+        use redrob_photo_engine::export_preset_cmds::ExportPresetSettings;
 
         let pixels = ExportPresetSettings {
             format: "png".into(),

@@ -23,7 +23,7 @@ fn thumb(app: &mut DesignApp, ctx: &egui::Context, abs: usize, h: f32) -> Option
     }
     let page = st.doc.page(abs)?;
     let scale = (h as f64 * ctx.pixels_per_point() as f64) / page.height;
-    let mut r = designcraft_render::Renderer::new();
+    let mut r = redrob_layout_render::Renderer::new();
     r.threads = 0;
     let img = r.render_page(
         &st.doc,
@@ -31,7 +31,7 @@ fn thumb(app: &mut DesignApp, ctx: &egui::Context, abs: usize, h: f32) -> Option
         abs,
         scale,
         false,
-        &designcraft_render::RenderOptions { printing_only: true, ..Default::default() },
+        &redrob_layout_render::RenderOptions { printing_only: true, ..Default::default() },
     )?;
     let ci = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
     let tex = crate::widgets::load_texture(ctx, format!("thumb{abs}"), ci, egui::TextureOptions::LINEAR);
@@ -150,7 +150,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
                 let prefix = pp.parent.as_ref().map(|i| i.prefix.clone()).unwrap_or_default();
                 let g = ui.painter().layout_no_wrap(prefix, crate::theme::semibold(9.5), Color32::BLACK);
                 let w = g.size().x + 2.0;
-                let br = if p.side == designcraft_doc::PageSide::Left {
+                let br = if p.side == redrob_layout_doc::PageSide::Left {
                     egui::Rect::from_min_size(pr.left_top(), vec2(w, 10.0))
                 } else {
                     egui::Rect::from_min_size(pr.right_top() - vec2(w, 0.0), vec2(w, 10.0))
@@ -270,7 +270,7 @@ pub fn panel_menu(app: &mut DesignApp, ui: &mut egui::Ui) {
     page_menu(app, ui, &doc, cur, si);
 }
 
-fn page_menu(app: &mut DesignApp, ui: &mut egui::Ui, doc: &designcraft_doc::Document, abs: usize, si: usize) {
+fn page_menu(app: &mut DesignApp, ui: &mut egui::Ui, doc: &redrob_layout_doc::Document, abs: usize, si: usize) {
     let lang = app.ui.language.clone();
     let tr = |s: &str| crate::i18n::tr(&lang, s).to_owned();
     let pages_in_spread = doc.spreads.get(si).map_or(1, |sp| sp.pages.len());
@@ -426,7 +426,7 @@ mod tests {
 
     #[test]
     fn a_page_in_a_spread_offers_delete_page_and_delete_spread() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"pages": 5, "facingPages": true})).unwrap();
         let doc = app.session.doc().unwrap().doc.clone();
         let (si, _) = doc.page_loc(2).unwrap();
@@ -440,7 +440,7 @@ mod tests {
 
     #[test]
     fn the_panel_menu_follows_indesigns_order() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"pages": 2, "facingPages": false})).unwrap();
         let mut h = menu_harness(app, 0, 0);
         assert!(h.query_by_label("Delete Spread").is_none(), "a single-page spread has no Delete Spread");
@@ -461,7 +461,7 @@ mod tests {
     #[test]
     fn a_page_dropped_on_create_new_page_is_duplicated_at_the_end() {
         // Chris Cicchino's Page Tool video (2:06): "click and drag onto my plus sign I can duplicate that".
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 252, "height": 144, "facingPages": false})).unwrap();
         app.run("layout.pages.insert", json!({"count": 1})).unwrap();
         app.run("layout.pageSize", json!({"pages": [2], "width": 612, "height": 792})).unwrap();

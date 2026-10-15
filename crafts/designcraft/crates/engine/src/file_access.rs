@@ -277,8 +277,8 @@ mod tests {
         for d in ["in/sub", "out", "outside", "in2"] {
             std::fs::create_dir_all(base.join(d)).unwrap();
         }
-        std::fs::write(base.join("in/a.designcraft"), "x").unwrap();
-        std::fs::write(base.join("outside/secret.designcraft"), "x").unwrap();
+        std::fs::write(base.join("in/a.rlayout"), "x").unwrap();
+        std::fs::write(base.join("outside/secret.rlayout"), "x").unwrap();
         let roots = AutomationRoots::new(Some(&base.join("in")), Some(&base.join("out"))).unwrap().unwrap();
         (base, roots)
     }
@@ -290,14 +290,14 @@ mod tests {
     #[test]
     fn paths_inside_the_roots_pass_and_others_dont() {
         let (base, roots) = folders("inside");
-        assert_eq!(roots.check(s(base.join("in/a.designcraft")), Access::Read), Ok(()));
+        assert_eq!(roots.check(s(base.join("in/a.rlayout")), Access::Read), Ok(()));
         assert_eq!(roots.check(s(base.join("in")), Access::Read), Ok(()), "the root itself");
-        assert_eq!(roots.check(s(base.join("in/sub/new.designcraft")), Access::Read), Ok(()), "missing files are checked by their folder");
+        assert_eq!(roots.check(s(base.join("in/sub/new.rlayout")), Access::Read), Ok(()), "missing files are checked by their folder");
         assert_eq!(roots.check(s(base.join("out/new/deeper/x.png")), Access::Write), Ok(()), "and by their nearest folder");
-        let e = roots.check(s(base.join("outside/secret.designcraft")), Access::Read).unwrap_err();
+        let e = roots.check(s(base.join("outside/secret.rlayout")), Access::Read).unwrap_err();
         assert!(e.starts_with("automation path rejected: outside the read root"), "{e}");
         // Read and write access are separate.
-        let e = roots.check(s(base.join("in/a.designcraft")), Access::Write).unwrap_err();
+        let e = roots.check(s(base.join("in/a.rlayout")), Access::Write).unwrap_err();
         assert!(e.contains("outside the write root"), "{e}");
         assert!(roots.check(s(base.join("out/x.png")), Access::Read).unwrap_err().contains("outside the read root"));
         let _ = std::fs::remove_dir_all(base);
@@ -306,9 +306,9 @@ mod tests {
     #[test]
     fn a_sibling_with_the_same_prefix_is_outside() {
         let (base, roots) = folders("prefix");
-        std::fs::write(base.join("in2/b.designcraft"), "x").unwrap();
-        assert!(roots.check(s(base.join("in2/b.designcraft")), Access::Read).is_err(), "in2 is not inside in");
-        assert!(roots.check(format!("{}2/c.designcraft", s(base.join("in"))), Access::Read).is_err());
+        std::fs::write(base.join("in2/b.rlayout"), "x").unwrap();
+        assert!(roots.check(s(base.join("in2/b.rlayout")), Access::Read).is_err(), "in2 is not inside in");
+        assert!(roots.check(format!("{}2/c.rlayout", s(base.join("in"))), Access::Read).is_err());
         let _ = std::fs::remove_dir_all(base);
     }
 
@@ -316,11 +316,11 @@ mod tests {
     fn parent_traversal_is_resolved_or_refused() {
         let (base, roots) = folders("dotdot");
         let sep = std::path::MAIN_SEPARATOR;
-        let up = format!("{}{sep}..{sep}outside{sep}secret.designcraft", s(base.join("in")));
+        let up = format!("{}{sep}..{sep}outside{sep}secret.rlayout", s(base.join("in")));
         assert!(roots.check(&up, Access::Read).unwrap_err().contains("outside the read root"), "`..` out of the root");
-        let back = format!("{}{sep}..{sep}a.designcraft", s(base.join("in/sub")));
+        let back = format!("{}{sep}..{sep}a.rlayout", s(base.join("in/sub")));
         assert_eq!(roots.check(&back, Access::Read), Ok(()), "`..` that stays inside");
-        let missing = format!("{}{sep}nope{sep}..{sep}..{sep}outside{sep}x.designcraft", s(base.join("out")));
+        let missing = format!("{}{sep}nope{sep}..{sep}..{sep}outside{sep}x.rlayout", s(base.join("out")));
         let e = roots.check(&missing, Access::Write).unwrap_err();
         // Windows resolves `..` by name first (so does opening the file there): then it's outside.
         assert!(e.contains("parent traversal below a folder that doesn't exist") || e.contains("outside the write root"), "{e}");
@@ -331,7 +331,7 @@ mod tests {
     fn relative_paths_resolve_against_the_working_directory() {
         let (base, roots) = folders("relative");
         // The tests' working directory is the crate's folder: not inside the roots.
-        assert!(roots.check("a.designcraft", Access::Read).unwrap_err().contains("outside the read root"));
+        assert!(roots.check("a.rlayout", Access::Read).unwrap_err().contains("outside the read root"));
         assert!(roots.check("", Access::Read).unwrap_err().contains("path is empty"));
         let _ = std::fs::remove_dir_all(base);
     }
@@ -341,7 +341,7 @@ mod tests {
         let (base, _) = folders("missing");
         let e = AutomationRoots::new(Some(&base.join("nope")), None).unwrap_err();
         assert!(e.starts_with("cannot open the automation read root"), "{e}");
-        let e = AutomationRoots::new(None, Some(&base.join("in/a.designcraft"))).unwrap_err();
+        let e = AutomationRoots::new(None, Some(&base.join("in/a.rlayout"))).unwrap_err();
         assert!(
             e.starts_with("cannot open the automation write root")
                 && e.ends_with(&std::io::Error::from(std::io::ErrorKind::NotADirectory).to_string()),
@@ -351,7 +351,7 @@ mod tests {
         assert!(AutomationRoots::new(None, None).unwrap().is_none());
         // One root alone grants only its own access.
         let read_only = AutomationRoots::new(Some(&base.join("in")), None).unwrap().unwrap();
-        let e = read_only.check(s(base.join("in/x.designcraft")), Access::Write).unwrap_err();
+        let e = read_only.check(s(base.join("in/x.rlayout")), Access::Write).unwrap_err();
         assert!(e.contains("write authority is absent"), "{e}");
         let _ = std::fs::remove_dir_all(base);
     }
@@ -370,25 +370,25 @@ mod tests {
         #[cfg(not(any(unix, windows)))]
         let made = |_: &Path, _: &Path| false;
         // Windows needs Developer Mode or elevation to make links: nothing to test without them.
-        if !made(&base.join("outside/secret.designcraft"), &base.join("in/leak.designcraft")) {
+        if !made(&base.join("outside/secret.rlayout"), &base.join("in/leak.rlayout")) {
             eprintln!("skipped: symbolic links can't be made here");
             let _ = std::fs::remove_dir_all(base);
             return;
         }
-        assert!(roots.check(s(base.join("in/leak.designcraft")), Access::Read).unwrap_err().contains("outside the read root"), "a file link out");
+        assert!(roots.check(s(base.join("in/leak.rlayout")), Access::Read).unwrap_err().contains("outside the read root"), "a file link out");
         assert!(made(&base.join("outside"), &base.join("out/away")));
         let e = roots.check(s(base.join("out/away/new.png")), Access::Write).unwrap_err();
         assert!(e.contains("outside the write root"), "a folder link out: {e}");
-        assert!(made(&base.join("outside/gone.designcraft"), &base.join("out/dangling.png")));
+        assert!(made(&base.join("outside/gone.rlayout"), &base.join("out/dangling.png")));
         let e = roots.check(s(base.join("out/dangling.png")), Access::Write).unwrap_err();
         assert!(e.contains("a link that leads nowhere"), "writing would create the file outside: {e}");
         // A link to a folder inside the root stays inside.
         assert!(made(&base.join("in/sub"), &base.join("in/alias")));
-        assert_eq!(roots.check(s(base.join("in/alias/x.designcraft")), Access::Read), Ok(()));
+        assert_eq!(roots.check(s(base.join("in/alias/x.rlayout")), Access::Read), Ok(()));
         // A root given through a link is the folder it leads to.
         assert!(made(&base.join("in"), &base.join("in-link")));
         let linked = AutomationRoots::new(Some(&base.join("in-link")), None).unwrap().unwrap();
-        assert_eq!(linked.check(s(base.join("in/a.designcraft")), Access::Read), Ok(()));
+        assert_eq!(linked.check(s(base.join("in/a.rlayout")), Access::Read), Ok(()));
         let _ = std::fs::remove_dir_all(base);
     }
 
@@ -396,9 +396,9 @@ mod tests {
     #[test]
     fn windows_ignores_case_and_refuses_devices() {
         let (base, roots) = folders("case");
-        let upper = s(base.join("IN/a.designcraft"));
+        let upper = s(base.join("IN/a.rlayout"));
         assert_eq!(roots.check(&upper, Access::Read), Ok(()), "{upper}");
-        assert_eq!(roots.check(s(base.join("In/Sub/New.designcraft")), Access::Read), Ok(()));
+        assert_eq!(roots.check(s(base.join("In/Sub/New.rlayout")), Access::Read), Ok(()));
         let e = roots.check(s(base.join("out/NUL")), Access::Write).unwrap_err();
         assert!(e.contains("reserved device names"), "{e}");
         assert!(roots.check(s(base.join("out/com1.txt")), Access::Write).is_err());
@@ -409,7 +409,7 @@ mod tests {
     #[test]
     fn scopes_nest_and_stay_on_their_thread() {
         let (base, roots) = folders("scopes");
-        let outside = s(base.join("outside/secret.designcraft"));
+        let outside = s(base.join("outside/secret.rlayout"));
         assert_eq!(check_read(&outside), Ok(()), "nothing is confined by default");
         confine(Some(&roots), || {
             assert!(check_read(&outside).is_err());
@@ -429,10 +429,10 @@ mod tests {
 
     #[test]
     fn device_names() {
-        for d in ["CON", "nul", "Com1", "LPT9.txt", "aux.designcraft", "NUL "] {
+        for d in ["CON", "nul", "Com1", "LPT9.txt", "aux.rlayout", "NUL "] {
             assert!(is_device_name(d), "{d}");
         }
-        for f in ["console", "com10", "COM0", "lpt", "a.designcraft", "nul-x"] {
+        for f in ["console", "com10", "COM0", "lpt", "a.rlayout", "nul-x"] {
             assert!(!is_device_name(f), "{f}");
         }
     }

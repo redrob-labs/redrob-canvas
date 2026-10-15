@@ -23,7 +23,7 @@
 //! temporary tool that started a drag lasts until the button is released, as in Photoshop.
 //!
 //! The keys are bindings, not commands: they come from
-//! [`photocraft_engine::prefs::TEMPORARY_TOOLS`] with Edit › Keyboard Shortcuts overrides on top
+//! [`redrob_photo_engine::prefs::TEMPORARY_TOOLS`] with Edit › Keyboard Shortcuts overrides on top
 //! (Tools › Temporary), and the reposition key is whatever the Hand key is.
 
 use egui::{InputState, KeyboardShortcut};
@@ -120,7 +120,7 @@ fn cmd_move_held(app: &PhotocraftApp, i: &InputState) -> bool {
 
 /// Is `id` a held temporary tool rather than a command?
 pub fn is_temporary(id: &str) -> bool {
-    photocraft_engine::prefs::TEMPORARY_TOOLS.iter().any(|t| t.0 == id)
+    redrob_photo_engine::prefs::TEMPORARY_TOOLS.iter().any(|t| t.0 == id)
 }
 
 /// The key binding of a temporary tool in effect (`None` when removed or unparsable).
@@ -130,7 +130,7 @@ pub fn binding(app: &PhotocraftApp, t: Temporary) -> Option<KeyboardShortcut> {
 
 /// [`binding`] by id.
 fn binding_of(app: &PhotocraftApp, id: &str) -> Option<KeyboardShortcut> {
-    let def = photocraft_engine::prefs::TEMPORARY_TOOLS.iter().find(|x| x.0 == id).map(|x| x.2);
+    let def = redrob_photo_engine::prefs::TEMPORARY_TOOLS.iter().find(|x| x.0 == id).map(|x| x.2);
     parse(app.session.prefs().shortcut(id, def)?)
 }
 

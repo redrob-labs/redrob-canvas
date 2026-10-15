@@ -6,14 +6,14 @@
 
 use std::sync::Arc;
 
+use redrob_vector_color::cms::Model;
+use redrob_vector_color::freeform::spread_scale;
+use redrob_vector_color::{Color, Gradient, GradientKind, GradientPaint, Paint};
+use redrob_vector_doc::appearance::{AppearanceItem, FillLayer};
+use redrob_vector_doc::live::{GradientMesh, lerp_color};
+use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind};
+use redrob_vector_geom::{Affine, PathData, Point, Rect, SubPath, Vec2, shapes};
 use serde_json::{Value, json};
-use vectorcraft_color::cms::Model;
-use vectorcraft_color::freeform::spread_scale;
-use vectorcraft_color::{Color, Gradient, GradientKind, GradientPaint, Paint};
-use vectorcraft_doc::appearance::{AppearanceItem, FillLayer};
-use vectorcraft_doc::live::{GradientMesh, lerp_color};
-use vectorcraft_doc::{Appearance, Document, Node, NodeId, NodeKind};
-use vectorcraft_geom::{Affine, PathData, Point, Rect, SubPath, Vec2, shapes};
 
 use super::edit::selected_roots;
 use super::menucmds::{run_raw, squash};
@@ -392,7 +392,7 @@ impl Frame {
         let (mut t0, mut t1) = range(&|c| (c - geom.start).dot(along) / along.hypot2());
         let (s0, s1) = range(&|c| (c - geom.start).dot(normal));
         if radial {
-            let geom = vectorcraft_color::GradientGeom { end: geom.start + along, ..geom };
+            let geom = redrob_vector_color::GradientGeom { end: geom.start + along, ..geom };
             (t0, t1) = (0.0, range(&|c| geom.param_at(GradientKind::Radial, c)).1);
         }
         // Keep a sliver of span so the art maps back invertibly.

@@ -1,5 +1,5 @@
 use egui::Modifiers;
-use photocraft_doc::LayerContent;
+use redrob_photo_doc::LayerContent;
 use serde_json::json;
 
 use super::*;
@@ -7,7 +7,7 @@ use crate::canvas::tool_event;
 
 /// A document whose active layer is a `kind` layer over a white Background.
 fn app_with(kind: Kind) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 120, "height": 80})).unwrap();
     match kind {
         Kind::Type => app.run("type.create", json!({"x": 10, "y": 40, "text": "Hello"})).map(|_| ()),

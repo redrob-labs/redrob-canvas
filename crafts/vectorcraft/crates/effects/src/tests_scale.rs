@@ -1,7 +1,7 @@
 //! Scale Strokes & Effects on effects: the catalogue's distance parameters and `scale_effect`.
 
+use redrob_vector_doc::Effect;
 use serde_json::json;
-use vectorcraft_doc::Effect;
 
 use super::*;
 

@@ -1,7 +1,7 @@
 use super::*;
 use crate::{Recoverable, Services};
-use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
-use photocraft_engine::Session;
+use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
+use redrob_photo_engine::Session;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};

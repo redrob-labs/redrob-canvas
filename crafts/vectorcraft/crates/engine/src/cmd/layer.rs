@@ -9,9 +9,9 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
+use redrob_vector_doc::{Artboard, Document, LAYER_COLORS, LayerColor, Node, NodeId, NodeKind, Scaling};
+use redrob_vector_geom::{Affine, Rect};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Artboard, Document, LAYER_COLORS, LayerColor, Node, NodeId, NodeKind, Scaling};
-use vectorcraft_geom::{Affine, Rect};
 
 use super::*;
 use crate::EngineError;
@@ -288,7 +288,7 @@ fn layer_color_param(v: &Value) -> std::result::Result<LayerColor, String> {
             if let Some(i) = LAYER_COLORS.iter().position(|(name, _)| name.eq_ignore_ascii_case(s.trim())) {
                 return Ok(LayerColor::Preset(i as u8));
             }
-            let c = vectorcraft_color::Color::from_hex(s).ok_or_else(|| format!("`{s}` is not a colour (#rrggbb or a preset name)"))?;
+            let c = redrob_vector_color::Color::from_hex(s).ok_or_else(|| format!("`{s}` is not a colour (#rrggbb or a preset name)"))?;
             let [r, g, b, _] = c.to_rgba8(1.0);
             Ok(LayerColor::Custom([r, g, b]))
         }
@@ -298,7 +298,7 @@ fn layer_color_param(v: &Value) -> std::result::Result<LayerColor, String> {
 
 /// Layer Options in `p` applied to layer or row `n` (validated first by [`check_options`]).
 /// `xml_id`: Preferences › Units › Identify Objects By › XML ID — `name` is an XML id and is
-/// stored as the object name ([`vectorcraft_doc::xml_id`]).
+/// stored as the object name ([`redrob_vector_doc::xml_id`]).
 fn apply_options(n: &mut Node, p: &Value, xml_id: bool) {
     if let Some(v) = str_param(p, "name") {
         if v.trim().is_empty() {
@@ -307,7 +307,7 @@ fn apply_options(n: &mut Node, p: &Value, xml_id: bool) {
                 n.name = None;
             }
         } else {
-            let name = if xml_id { vectorcraft_doc::xml_id::to_object_name(v) } else { v.to_string() };
+            let name = if xml_id { redrob_vector_doc::xml_id::to_object_name(v) } else { v.to_string() };
             n.name = Some(name.chars().take(512).collect());
         }
     }
@@ -375,7 +375,7 @@ fn check_options(cmd: &str, p: &Value, xml_id: bool) -> Result<()> {
     }
     if xml_id
         && let Some(name) = str_param(p, "name").filter(|n| !n.trim().is_empty())
-        && !vectorcraft_doc::xml_id::is_valid(name)
+        && !redrob_vector_doc::xml_id::is_valid(name)
     {
         return Err(bad(cmd, "Identify Objects By is XML ID: the name must be a valid XML ID (start with a letter, underscore or colon; no spaces)"));
     }
@@ -829,7 +829,7 @@ fn artboard_set(s: &mut Session, p: &Value) -> Result<Value> {
     // Position fields honor Move Artwork independently of Scale Artwork. A resize still
     // leaves the art alone unless scaling was requested. Fit-to-art callers keep the default.
     let delta = now.origin() - was.origin();
-    let moving = !resized && bool_or(p, "moveArt", false) && delta != vectorcraft_geom::Vec2::ZERO;
+    let moving = !resized && bool_or(p, "moveArt", false) && delta != redrob_vector_geom::Vec2::ZERO;
     let transform = fit.or_else(|| moving.then(|| Affine::translate(delta)));
     let art = if transform.is_some() {
         // Locked and hidden art too? Noted in the journal, so a replay transforms the same objects
@@ -886,7 +886,7 @@ fn rect_map(from: Rect, to: Rect) -> Option<Affine> {
 /// layers don't count.
 fn artboard_fit_art(s: &mut Session, p: &Value) -> Result<Value> {
     let i = p.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
-    let b = vectorcraft_render::encode::art_bounds(&s.doc()?.doc).ok_or_else(|| EngineError::Other("no artwork".into()))?;
+    let b = redrob_vector_render::encode::art_bounds(&s.doc()?.doc).ok_or_else(|| EngineError::Other("no artwork".into()))?;
     s.execute("artboard.setProps", &json!({"index": i, "x": b.x0, "y": b.y0, "width": b.width(), "height": b.height()}))
 }
 

@@ -8,13 +8,13 @@
 use std::collections::HashMap;
 use std::io::Read;
 
-use craft_pdf::write::backend as krilla;
 use krilla::geom::PathBuilder;
 use krilla::graphic::Graphic;
 use krilla::surface::Surface;
+use redrob_craft_pdf::write::backend as krilla;
 use std::sync::Arc;
 
-use vectorcraft_doc::{Document, Node, NodeKind};
+use redrob_vector_doc::{Document, Node, NodeKind};
 
 use crate::encrypt::{Lexer, Obj, StreamSpans, Tok, int, stream_spans};
 use crate::output::{deflate, text_string};

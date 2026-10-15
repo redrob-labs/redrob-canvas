@@ -16,7 +16,7 @@
 //!   resolution; Clear empties them; ⇄ and X swap W and H.
 
 use egui::{Modifiers, Stroke, StrokeKind, vec2};
-use photocraft_engine::prefs::Unit;
+use redrob_photo_engine::prefs::Unit;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -305,12 +305,12 @@ pub fn fields(o: &mut ToolOptions, ui: &mut egui::Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
+    use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
 
     fn app(depth: SampleType) -> PhotocraftApp {
         let mut doc = Document::with_background("crop", Size::new(400, 300), ColorMode::Rgb, depth, Color::WHITE);
         doc.resolution_dpi = 72.0;
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.add_document(doc, None);
         let mut app = PhotocraftApp::new(s, crate::Services::default());
         app.ui.tool = Tool::Crop;

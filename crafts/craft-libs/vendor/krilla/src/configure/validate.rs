@@ -27,12 +27,12 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use pdf_writer::types::OutputIntentSubtype;
-use xmp_writer::pdfa::PdfAExtSchemasWriter;
 use xmp_writer::XmpWriter;
+use xmp_writer::pdfa::PdfAExtSchemasWriter;
 
+use crate::color::RegularColor;
 use crate::color::separation::SeparationColorant;
 use crate::color::separation::SeparationSpace;
-use crate::color::RegularColor;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
 use crate::surface::Location;
@@ -212,8 +212,7 @@ impl Validators {
 
     /// Force the `DisplayDocTitle` flag set.
     pub(crate) fn requires_display_doc_title(self) -> bool {
-        self.ua
-            .is_some_and(Accessibility::requires_display_doc_title)
+        self.ua.is_some_and(Accessibility::requires_display_doc_title)
     }
 
     /// Force sRGB profiles for `DeviceGray` and `DeviceRgb` colorspaces.
@@ -240,20 +239,17 @@ impl Validators {
     /// Whether any extension schemata should be descibed using the "pdfaSchema"
     /// namespace.
     pub(crate) fn requires_xmp_metadata_extension_schema(self) -> bool {
-        self.a
-            .is_some_and(Archival::requires_xmp_metadata_extension_schema)
+        self.a.is_some_and(Archival::requires_xmp_metadata_extension_schema)
     }
 
     /// Whether the `instanceID` field is allowed in XMP.
     pub(crate) fn prohibits_instance_id_in_xmp_metadata(self) -> bool {
-        self.a
-            .is_some_and(Archival::prohibits_instance_id_in_xmp_metadata)
+        self.a.is_some_and(Archival::prohibits_instance_id_in_xmp_metadata)
     }
 
     /// Whether the xmpMM:History entry is required.
     pub(crate) fn requires_file_provenance_information(self) -> bool {
-        self.a
-            .is_some_and(Archival::requires_file_provenance_information)
+        self.a.is_some_and(Archival::requires_file_provenance_information)
     }
 
     /// Whether the `/Info` dictionary is allowed in the file trailer.
@@ -269,8 +265,7 @@ impl Validators {
     /// Whether the `EmbeddedFiles` key in the name dictionary of the document
     /// catalog dictionary should be written even if empty.
     pub(crate) fn requires_embedded_files_when_empty(self) -> bool {
-        self.a
-            .is_some_and(Archival::requires_embedded_files_when_empty)
+        self.a.is_some_and(Archival::requires_embedded_files_when_empty)
     }
 
     /// Whether any of these standards explicitly specifies the `/AF` key.
@@ -308,16 +303,12 @@ impl Validators {
 
     /// Returns the maximum PDF version allowed by all active validators.
     pub fn max(self) -> PdfVersion {
-        self.a
-            .map_or(PdfVersion::MAX, |v| v.max())
-            .min(self.ua.map_or(PdfVersion::MAX, |v| v.max()))
+        self.a.map_or(PdfVersion::MAX, |v| v.max()).min(self.ua.map_or(PdfVersion::MAX, |v| v.max()))
     }
 
     /// Returns the minimum PDF version required by all active validators, if any.
     pub fn min(self) -> Option<PdfVersion> {
-        self.a
-            .and_then(|v| v.min())
-            .max(self.ua.and_then(|v| v.min()))
+        self.a.and_then(|v| v.min()).max(self.ua.and_then(|v| v.min()))
     }
 }
 
@@ -326,9 +317,7 @@ impl IntoIterator for Validators {
     type IntoIter = std::iter::Flatten<std::array::IntoIter<Option<Validator>, 2>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        [self.a.map(Validator::A), self.ua.map(Validator::Ua)]
-            .into_iter()
-            .flatten()
+        [self.a.map(Validator::A), self.ua.map(Validator::Ua)].into_iter().flatten()
     }
 }
 
@@ -361,11 +350,7 @@ impl ValidatorsBuilder {
         let min = self.0.min().unwrap_or(PdfVersion::MIN);
         let max = self.0.max();
 
-        if min > max {
-            Err(self.0)
-        } else {
-            Ok(self.0)
-        }
+        if min > max { Err(self.0) } else { Ok(self.0) }
     }
 }
 
@@ -561,9 +546,7 @@ impl Archival {
                 | ValidationError::MissingDocumentOutline
                 | ValidationError::EmbeddedFile(_, _)
                 | ValidationError::RequiresNewerPdfVersion(
-                    VersionedFeature::HeaderFooterArtifactSubtypes
-                    | VersionedFeature::StructureOrderTabbing
-                    | VersionedFeature::TableHeaderScope,
+                    VersionedFeature::HeaderFooterArtifactSubtypes | VersionedFeature::StructureOrderTabbing | VersionedFeature::TableHeaderScope,
                     _,
                 ),
             ) => false,
@@ -605,9 +588,7 @@ impl Archival {
                 | ValidationError::MissingHeadingTitle
                 | ValidationError::MissingDocumentOutline
                 | ValidationError::RequiresNewerPdfVersion(
-                    VersionedFeature::HeaderFooterArtifactSubtypes
-                    | VersionedFeature::StructureOrderTabbing
-                    | VersionedFeature::TableHeaderScope,
+                    VersionedFeature::HeaderFooterArtifactSubtypes | VersionedFeature::StructureOrderTabbing | VersionedFeature::TableHeaderScope,
                     _,
                 ),
             ) => false,
@@ -619,12 +600,7 @@ impl Archival {
             // Forbidden under PDF/A-3 but allowed under PDF/A-2.
             (
                 Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U,
-                ValidationError::EmbeddedFile(
-                    EmbedError::MissingDate
-                    | EmbedError::MissingDescription
-                    | EmbedError::MissingMimeType,
-                    _,
-                ),
+                ValidationError::EmbeddedFile(EmbedError::MissingDate | EmbedError::MissingDescription | EmbedError::MissingMimeType, _),
             ) => self == Self::A3_A || self == Self::A3_B || self == Self::A3_U,
             // Forbidden under PDF/A-2 and PDF/A-3 accessible profiles.
             (
@@ -638,11 +614,8 @@ impl Archival {
             // Forbidden under PDF/A-2 and PDF/A-3 accessible and Unicode profiles.
             (
                 Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U,
-                ValidationError::NoCodepointMapping(_, _, _)
-                | ValidationError::InvalidCodepointMapping(_, _, _, _),
-            ) => {
-                self == Self::A2_A || self == Self::A2_U || self == Self::A3_A || self == Self::A3_U
-            }
+                ValidationError::NoCodepointMapping(_, _, _) | ValidationError::InvalidCodepointMapping(_, _, _, _),
+            ) => self == Self::A2_A || self == Self::A2_U || self == Self::A3_A || self == Self::A3_U,
 
             // Forbidden under all PDF/A-4 profiles.
             (
@@ -676,41 +649,23 @@ impl Archival {
                 | ValidationError::MissingDocumentOutline
                 | ValidationError::MissingAnnotationAltText(_)
                 | ValidationError::Transparency(_)
-                | ValidationError::EmbeddedFile(
-                    EmbedError::MissingDate | EmbedError::MissingMimeType,
-                    _,
-                )
+                | ValidationError::EmbeddedFile(EmbedError::MissingDate | EmbedError::MissingMimeType, _)
                 | ValidationError::MissingTagging
                 | ValidationError::RequiresNewerPdfVersion(
-                    VersionedFeature::HeaderFooterArtifactSubtypes
-                    | VersionedFeature::StructureOrderTabbing
-                    | VersionedFeature::TableHeaderScope,
+                    VersionedFeature::HeaderFooterArtifactSubtypes | VersionedFeature::StructureOrderTabbing | VersionedFeature::TableHeaderScope,
                     _,
                 ),
             ) => false,
             // Forbidden under PDF/A-4 but allowed under other PDF/A-4 profiles.
-            (
-                Self::A4 | Self::A4F | Self::A4E,
-                ValidationError::EmbeddedFile(EmbedError::Existence, _),
-            ) => self == Self::A4,
+            (Self::A4 | Self::A4F | Self::A4E, ValidationError::EmbeddedFile(EmbedError::Existence, _)) => self == Self::A4,
             // Allowed under PDF/A-4 but forbidden under other profiles.
-            (
-                Self::A4 | Self::A4F | Self::A4E,
-                ValidationError::EmbeddedFile(EmbedError::MissingDescription, _),
-            ) => self == Self::A4,
+            (Self::A4 | Self::A4F | Self::A4E, ValidationError::EmbeddedFile(EmbedError::MissingDescription, _)) => self == Self::A4,
         }
     }
 
     fn requires_codepoint_mappings(self) -> bool {
         match self {
-            Self::A1_A
-            | Self::A2_A
-            | Self::A2_U
-            | Self::A3_A
-            | Self::A3_U
-            | Self::A4
-            | Self::A4F
-            | Self::A4E => true,
+            Self::A1_A | Self::A2_A | Self::A2_U | Self::A3_A | Self::A3_U | Self::A4 | Self::A4F | Self::A4E => true,
             Self::A1_B | Self::A2_B | Self::A3_B => false,
         }
     }
@@ -750,14 +705,7 @@ impl Archival {
     fn requires_tagging(self) -> bool {
         match self {
             Self::A1_A | Self::A2_A | Self::A3_A => true,
-            Self::A1_B
-            | Self::A2_B
-            | Self::A2_U
-            | Self::A3_B
-            | Self::A3_U
-            | Self::A4
-            | Self::A4F
-            | Self::A4E => false,
+            Self::A1_B | Self::A2_B | Self::A2_U | Self::A3_B | Self::A3_U | Self::A4 | Self::A4F | Self::A4E => false,
         }
     }
 
@@ -779,14 +727,7 @@ impl Archival {
 
     fn requires_xmp_metadata_extension_schema(self) -> bool {
         match self {
-            Self::A1_A
-            | Self::A1_B
-            | Self::A2_A
-            | Self::A2_B
-            | Self::A2_U
-            | Self::A3_A
-            | Self::A3_B
-            | Self::A3_U => true,
+            Self::A1_A | Self::A1_B | Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U => true,
             // Clause 6.7.2.3 of PDF/A-4 recommends ("should") a RELAX NG
             // definition of its metadata contents to be embedded as an
             // associated file. It no longer uses the inline schema definition
@@ -798,15 +739,7 @@ impl Archival {
     fn prohibits_instance_id_in_xmp_metadata(self) -> bool {
         match self {
             Self::A1_A | Self::A1_B => true,
-            Self::A2_A
-            | Self::A2_B
-            | Self::A2_U
-            | Self::A3_A
-            | Self::A3_B
-            | Self::A3_U
-            | Self::A4
-            | Self::A4F
-            | Self::A4E => false,
+            Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U | Self::A4 | Self::A4F | Self::A4E => false,
         }
     }
 
@@ -828,14 +761,7 @@ impl Archival {
 
     fn prohibits_info_dict(self) -> bool {
         match self {
-            Self::A1_A
-            | Self::A1_B
-            | Self::A2_A
-            | Self::A2_B
-            | Self::A2_U
-            | Self::A3_A
-            | Self::A3_B
-            | Self::A3_U => false,
+            Self::A1_A | Self::A1_B | Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U => false,
             Self::A4 | Self::A4F | Self::A4E => true,
         }
     }
@@ -858,16 +784,7 @@ impl Archival {
 
     fn requires_embedded_files_when_empty(self) -> bool {
         match self {
-            Self::A1_A
-            | Self::A1_B
-            | Self::A2_A
-            | Self::A2_B
-            | Self::A2_U
-            | Self::A3_A
-            | Self::A3_B
-            | Self::A3_U
-            | Self::A4
-            | Self::A4E => false,
+            Self::A1_A | Self::A1_B | Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U | Self::A4 | Self::A4E => false,
             Self::A4F => true,
         }
     }
@@ -880,14 +797,7 @@ impl Archival {
     fn specifies_associated_files(self) -> bool {
         match self {
             Self::A3_A | Self::A3_B | Self::A3_U => true,
-            Self::A1_A
-            | Self::A1_B
-            | Self::A2_A
-            | Self::A2_B
-            | Self::A2_U
-            | Self::A4
-            | Self::A4F
-            | Self::A4E => false,
+            Self::A1_A | Self::A1_B | Self::A2_A | Self::A2_B | Self::A2_U | Self::A4 | Self::A4F | Self::A4E => false,
         }
     }
 
@@ -958,18 +868,12 @@ impl Archival {
         }
     }
 
-    fn write_xmp_extension_schema_description(
-        self,
-        extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
-    ) {
+    fn write_xmp_extension_schema_description(self, extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>) {
         if !self.requires_xmp_metadata_extension_schema() {
             return;
         }
 
-        extension_schemas
-            .xmp_media_management()
-            .properties()
-            .describe_instance_id();
+        extension_schemas.xmp_media_management().properties().describe_instance_id();
         extension_schemas.pdf().properties().describe_all();
     }
 
@@ -1005,9 +909,7 @@ impl Archival {
     pub const fn max(self) -> PdfVersion {
         match self {
             Self::A1_A | Self::A1_B => PdfVersion::Pdf14,
-            Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U => {
-                PdfVersion::Pdf17
-            }
+            Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U => PdfVersion::Pdf17,
             Self::A4 | Self::A4F | Self::A4E => PdfVersion::Pdf20,
         }
     }
@@ -1108,9 +1010,7 @@ impl Accessibility {
                 | ValidationError::MissingTagging
                 | ValidationError::EmbeddedPDF(_)
                 | ValidationError::RequiresNewerPdfVersion(
-                    VersionedFeature::HeaderFooterArtifactSubtypes
-                    | VersionedFeature::StructureOrderTabbing
-                    | VersionedFeature::TableHeaderScope,
+                    VersionedFeature::HeaderFooterArtifactSubtypes | VersionedFeature::StructureOrderTabbing | VersionedFeature::TableHeaderScope,
                     _,
                 ),
             ) => true,
@@ -1130,10 +1030,7 @@ impl Accessibility {
                 | ValidationError::NoDocumentLanguage
                 | ValidationError::Transparency(_)
                 | ValidationError::ImageInterpolation(_)
-                | ValidationError::EmbeddedFile(
-                    EmbedError::Existence | EmbedError::MissingDate | EmbedError::MissingMimeType,
-                    _,
-                )
+                | ValidationError::EmbeddedFile(EmbedError::Existence | EmbedError::MissingDate | EmbedError::MissingMimeType, _)
                 | ValidationError::MissingDocumentDate,
             ) => false,
         }
@@ -1169,10 +1066,7 @@ impl Accessibility {
         }
     }
 
-    fn write_xmp_extension_schema_description(
-        self,
-        extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
-    ) {
+    fn write_xmp_extension_schema_description(self, extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>) {
         // Needs to be updated if [`Self::write_xmp`] gains more properties.
         extension_schemas.pdfua_id().properties().describe_part();
     }
@@ -1217,21 +1111,11 @@ impl ValidationStore {
 
     /// Register a colorant and its fallback and raise an error if it already
     /// exists.
-    pub(crate) fn validate_separation(
-        &mut self,
-        separation: &SeparationSpace,
-    ) -> Result<(), ValidationError> {
-        if self
-            .separation_fallback_map
-            .entry(separation.colorant.clone())
-            .or_insert(separation.fallback)
-            == &separation.fallback
-        {
+    pub(crate) fn validate_separation(&mut self, separation: &SeparationSpace) -> Result<(), ValidationError> {
+        if self.separation_fallback_map.entry(separation.colorant.clone()).or_insert(separation.fallback) == &separation.fallback {
             Ok(())
         } else {
-            Err(ValidationError::InconsistentSeparationFallback(
-                separation.colorant.clone(),
-            ))
+            Err(ValidationError::InconsistentSeparationFallback(separation.colorant.clone()))
         }
     }
 }

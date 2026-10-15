@@ -18,7 +18,7 @@ pub fn intercept(app: &mut PhotocraftApp, command: &str, params: &Value) -> Opti
     }
     let state = app.session.active()?;
     let selected = state.selected_layers();
-    let ids = if let Some(id) = params.get("layer").and_then(Value::as_u64) { vec![photocraft_doc::LayerId(id)] } else { selected.clone() };
+    let ids = if let Some(id) = params.get("layer").and_then(Value::as_u64) { vec![redrob_photo_doc::LayerId(id)] } else { selected.clone() };
     if ids.is_empty() {
         return None;
     }
@@ -74,7 +74,7 @@ mod tests {
     use super::*;
     use egui_kittest::kittest::Queryable;
     fn make_app() -> PhotocraftApp {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width":8,"height":8})).unwrap();
         s.execute("layer.new.layer", json!({"name":"Ink"})).unwrap();
         PhotocraftApp::new(s, crate::Services::default())
@@ -114,7 +114,7 @@ mod tests {
         assert!(app.session.active().unwrap().doc.layer(target).is_some());
         let text = saved.borrow().clone();
         assert!(text.contains(PREF));
-        let mut session = photocraft_engine::Session::new();
+        let mut session = redrob_photo_engine::Session::new();
         session.execute("file.new", json!({"width":8,"height":8})).unwrap();
         session.execute("layer.new.layer", json!({"name":"Fresh"})).unwrap();
         let mut fresh = PhotocraftApp::new(session, crate::Services { load_prefs: Some(Box::new(move || Some(text.clone()))), ..Default::default() });
@@ -149,8 +149,8 @@ mod tests {
         h.state_mut().run("layer.delete", json!({})).unwrap();
         assert!(h.state().ui.dialogs.is_empty());
         assert!(h.state().session.active().unwrap().doc.layer(id).is_none());
-        let clear = photocraft_engine::commands::find("edit.clear").unwrap();
-        let delete = photocraft_engine::commands::find("layer.delete").unwrap();
+        let clear = redrob_photo_engine::commands::find("edit.clear").unwrap();
+        let delete = redrob_photo_engine::commands::find("layer.delete").unwrap();
         assert_eq!(clear.shortcut, Some("Delete"));
         assert_eq!(delete.shortcut, None);
     }

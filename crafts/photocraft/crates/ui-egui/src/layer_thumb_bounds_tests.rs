@@ -3,15 +3,15 @@
 
 use egui::vec2;
 use egui_kittest::Harness;
-use photocraft_doc::LayerId;
-use photocraft_geom::Rect;
+use redrob_photo_doc::LayerId;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use crate::PhotocraftApp;
 use crate::mask_thumbs_ui::THUMB_LAYER;
 
 fn harness() -> (Harness<'static, PhotocraftApp>, u64) {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 2000, "height": 1000})).unwrap();
     let id = s.execute("layer.new.layer", json!({"name": "Speck"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("select.rect", json!({"x": 100, "y": 200, "width": 20, "height": 10})).unwrap();
@@ -64,8 +64,8 @@ fn clipped_layer_thumbnails_frame_the_layer_pixels() {
 #[test]
 fn empty_and_off_canvas_layers_keep_the_canvas_frame() {
     let canvas = Rect::new(0, 0, 50, 40);
-    let raster = photocraft_raster::Surface::new(photocraft_color::PixelFormat::RGBA8);
-    let mut empty = photocraft_doc::Layer::new("Empty", photocraft_doc::LayerContent::Raster(raster));
+    let raster = redrob_photo_raster::Surface::new(redrob_photo_color::PixelFormat::RGBA8);
+    let mut empty = redrob_photo_doc::Layer::new("Empty", redrob_photo_doc::LayerContent::Raster(raster));
     assert_eq!(crate::layer_thumb_frame(&empty, canvas, true), canvas);
     empty.surface_mut().unwrap().write_pixel(-10, -10, &[1.0, 0.0, 0.0, 1.0]);
     assert_eq!(crate::layer_thumb_frame(&empty, canvas, true), canvas, "pixels only off the canvas");

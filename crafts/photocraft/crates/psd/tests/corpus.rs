@@ -5,7 +5,7 @@
 
 use std::path::{Path, PathBuf};
 
-use photocraft_psd::PsdFile;
+use redrob_photo_psd::PsdFile;
 
 fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(rd) = std::fs::read_dir(dir) else { return };

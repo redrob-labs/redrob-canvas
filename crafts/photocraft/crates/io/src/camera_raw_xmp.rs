@@ -12,7 +12,7 @@
 //! and Tint. The absolute `Temperature` (kelvin) / `Tint` of raw-file settings have no
 //! counterpart and are ignored.
 
-use photocraft_algo::camera_raw::{CameraRaw, validate_curve};
+use redrob_photo_algo::camera_raw::{CameraRaw, validate_curve};
 
 /// The Camera Raw settings namespace.
 pub const CRS_NS: &str = "http://ns.adobe.com/camera-raw-settings/1.0/";

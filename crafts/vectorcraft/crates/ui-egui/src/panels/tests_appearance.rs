@@ -1,8 +1,8 @@
 //! Headless frames of the Appearance panel and the panels that follow its active item.
 
+use redrob_vector_doc::Unit;
+use redrob_vector_engine::Session;
 use serde_json::{Value, json};
-use vectorcraft_doc::Unit;
-use vectorcraft_engine::Session;
 
 use super::*;
 
@@ -133,13 +133,13 @@ fn item_effect_rows_toggle_their_eye() {
     assert_eq!(app.session.appearance_item(), Some(1));
 }
 
-fn current_stroke_effects(app: &VectorcraftApp) -> Vec<vectorcraft_doc::Effect> {
+fn current_stroke_effects(app: &VectorcraftApp) -> Vec<redrob_vector_doc::Effect> {
     first_selected(app).unwrap().appearance.items[1].effects().clone()
 }
 
 #[test]
 fn blend_separators_follow_the_groups() {
-    use vectorcraft_color::BlendMode;
+    use redrob_vector_color::BlendMode;
     let starts: Vec<BlendMode> =
         (0..BlendMode::ALL.len()).filter(|i| crate::widgets::blend_separator_before(*i)).map(|i| BlendMode::ALL[i]).collect();
     assert_eq!(starts, [BlendMode::Darken, BlendMode::Lighten, BlendMode::Overlay, BlendMode::Difference, BlendMode::Hue]);
@@ -181,7 +181,7 @@ fn opacity_popup_blend_dropdown_sets_the_blend_mode() {
     click(&ctx, &mut app, text_rect(&texts, "Normal").center(), appearance::show);
     let texts = frame_events(&ctx, &mut app, vec![], appearance::show);
     click(&ctx, &mut app, text_rect(&texts, "Multiply").center(), appearance::show);
-    assert_eq!(first_selected(&app).unwrap().blend, vectorcraft_color::BlendMode::Multiply);
+    assert_eq!(first_selected(&app).unwrap().blend, redrob_vector_color::BlendMode::Multiply);
     // The popup is still open after choosing.
     let texts = frame_events(&ctx, &mut app, vec![], appearance::show);
     assert!(texts.iter().any(|(t, _)| t == "Multiply"), "{texts:?}");

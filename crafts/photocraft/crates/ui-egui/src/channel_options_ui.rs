@@ -4,7 +4,7 @@
 //! `channel.options`, which agents can also call directly with params (#3761).
 
 use egui::{Align2, Sense, pos2, vec2};
-use photocraft_doc::ColorIndicates;
+use redrob_photo_doc::ColorIndicates;
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -151,7 +151,7 @@ pub fn new_spot_fields(app: &PhotocraftApp) -> Option<Map<String, Value>> {
     f.insert(NEW_SPOT_MARK.into(), json!(true));
     f.insert("__command".into(), json!(NEW_SPOT));
     f.insert("__label".into(), json!("New Spot Channel…"));
-    f.insert("name".into(), json!(photocraft_engine::channel_cmds::next_alpha_name(doc, "Spot Color")));
+    f.insert("name".into(), json!(redrob_photo_engine::channel_cmds::next_alpha_name(doc, "Spot Color")));
     f.insert("color".into(), json!(color));
     f.insert("solidity".into(), json!(solidity));
     Some(f)

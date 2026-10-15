@@ -1,4 +1,4 @@
-//! Snapping in the shell: builds [`photocraft_engine::snap`] targets from View › Snap To and the
+//! Snapping in the shell: builds [`redrob_photo_engine::snap`] targets from View › Snap To and the
 //! document, snaps tool gestures (Move tool, marquees, crop, shapes, pen anchors, Free Transform
 //! handles and guides), and draws smart guides (magenta alignment lines) while layers move.
 //!
@@ -7,8 +7,8 @@
 //! tool to other layers' edges and centres. The threshold is 8 screen pixels at the current zoom.
 
 use egui::{Color32, Stroke, pos2};
-use photocraft_doc::LayerId;
-use photocraft_engine::snap::{SnapKind, SnapLine, SnapOptions, SnapTargets, layer_rect, union};
+use redrob_photo_doc::LayerId;
+use redrob_photo_engine::snap::{SnapKind, SnapLine, SnapOptions, SnapTargets, layer_rect, union};
 
 use crate::PhotocraftApp;
 use crate::canvas::{ToolEvent, ViewXform};
@@ -104,7 +104,7 @@ fn moving_rect(app: &PhotocraftApp, tool: Tool) -> Option<[f64; 4]> {
 /// The selection's bounds where it is shown: moved by its floating piece's offset.
 fn selection_rect(app: &PhotocraftApp) -> Option<[f64; 4]> {
     let st = app.session.active()?;
-    let (dx, dy) = photocraft_engine::float_cmds::floating(st).map_or((0, 0), |f| f.offset);
+    let (dx, dy) = redrob_photo_engine::float_cmds::floating(st).map_or((0, 0), |f| f.offset);
     let r = st.doc.selection.as_ref()?.content_bounds().translate(dx, dy);
     (!r.is_empty()).then(|| [r.x0, r.y0, r.x1, r.y1].map(f64::from))
 }
@@ -496,7 +496,7 @@ pub fn snap_guide(app: &mut PhotocraftApp, vertical: bool, pos: f64) -> f64 {
 }
 
 fn hex_color(s: &str, fallback: Color32) -> Color32 {
-    photocraft_engine::prefs::parse_hex(s).map_or(fallback, |c| Color32::from_rgb(c[0], c[1], c[2]))
+    redrob_photo_engine::prefs::parse_hex(s).map_or(fallback, |c| Color32::from_rgb(c[0], c[1], c[2]))
 }
 
 /// Draw smart guides (and the moving bounds) for the drag in progress.
@@ -539,7 +539,7 @@ mod tests {
     use serde_json::json;
 
     fn app_with_box() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.sync_views();
         app.ui.views[0].zoom = 1.0;
@@ -555,7 +555,7 @@ mod tests {
         app
     }
 
-    fn mover_bounds(app: &PhotocraftApp) -> photocraft_geom::Rect {
+    fn mover_bounds(app: &PhotocraftApp) -> redrob_photo_geom::Rect {
         let st = app.session.active().unwrap();
         st.doc.layer(st.active_layer.unwrap()).unwrap().surface().unwrap().content_bounds()
     }
@@ -565,7 +565,7 @@ mod tests {
         // In both crop modes: the default mode draws a new box inside the untouched frame too.
         for (classic, snap, end) in [(true, false, [300.0, 220.0]), (true, true, [294.0, 217.0]), (false, false, [300.0, 220.0]), (false, true, [294.0, 217.0])]
         {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 640, "height": 480, "background": "white"})).unwrap();
             app.run("shape.create", json!({"kind": "rect", "rect": [100, 80, 200, 140], "fill": "#d59b40"})).unwrap();
             app.sync_views();
@@ -705,7 +705,7 @@ mod tests {
     #[test]
     fn drawing_repositioned_with_space_snaps_its_edges() {
         for tool in [Tool::RectMarquee, Tool::EllipseMarquee, Tool::ObjectSelection, Tool::Rectangle, Tool::Line] {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
             app.sync_views();
             app.ui.views[0].zoom = 1.0;
@@ -736,7 +736,7 @@ mod tests {
     #[test]
     fn selection_drag_snaps_the_selection_bounds() {
         for (tool, cut) in [(Tool::RectMarquee, false), (Tool::Lasso, false), (Tool::RectMarquee, true)] {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 400, "height": 300, "background": "white"})).unwrap();
             app.sync_views();
             app.ui.views[0].zoom = 1.0;
@@ -751,7 +751,7 @@ mod tests {
             crate::canvas::tool_event(&mut app, ToolEvent::Move { x: 193.0, y: 117.0, pressure: 1.0 }, m);
             crate::canvas::tool_event(&mut app, ToolEvent::Up { x: 193.0, y: 117.0 }, m);
             let st = app.session.active().unwrap();
-            let off = photocraft_engine::float_cmds::floating(st).map_or((0, 0), |f| f.offset);
+            let off = redrob_photo_engine::float_cmds::floating(st).map_or((0, 0), |f| f.offset);
             let sel = st.doc.selection.as_ref().unwrap().content_bounds().translate(off.0, off.1);
             assert_eq!((sel.x0, sel.y0, sel.x1, sel.y1), (170, 100, 220, 140), "{tool:?} cut: {cut}");
         }
@@ -1096,7 +1096,7 @@ mod tests {
     #[test]
     fn free_transform_of_a_shape_keeps_whole_pixels() {
         for grid in [true, false] {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 1080, "height": 1080, "resolution": 72})).unwrap();
             app.run("prefs.set", json!({"path": "tools.snapVectorToolsAndTransformsToPixelGrid", "value": grid})).unwrap();
             app.sync_views();
@@ -1125,7 +1125,7 @@ mod tests {
             assert_eq!(whole(q), grid, "grid {grid}: corner {q:?}");
             crate::transform_tool::commit(&mut app);
             let st = app.session.active().unwrap();
-            let photocraft_doc::LayerContent::Shape(sh) = &st.doc.layer(st.active_layer.unwrap()).unwrap().content else { panic!("a shape layer") };
+            let redrob_photo_doc::LayerContent::Shape(sh) = &st.doc.layer(st.active_layer.unwrap()).unwrap().content else { panic!("a shape layer") };
             let (x0, y0, x1, y1) = sh.path.control_bounds().unwrap();
             if grid {
                 for v in [x0, y0, x1, y1] {
@@ -1147,7 +1147,7 @@ mod tests {
 
     #[test]
     fn percentage_grid_snaps_at_separate_axis_intervals() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 1280, "height": 720})).unwrap();
         app.ui.extras.grid = true;
         app.ui.view.snap_to.grid = true;

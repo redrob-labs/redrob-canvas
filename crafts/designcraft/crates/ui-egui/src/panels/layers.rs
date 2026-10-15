@@ -2,8 +2,8 @@
 //! `<first words…>` for text frames), with eye / lock columns per layer and per object and a
 //! selection square in the layer colour.
 
-use designcraft_doc::{Content, Document, Item, ItemId};
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use redrob_layout_doc::{Content, Document, Item, ItemId};
 use serde_json::json;
 
 use crate::theme::Tokens;
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn text_frames_are_labelled_with_their_first_words() {
-        let mut s = designcraft_engine::Session::new();
+        let mut s = redrob_layout_engine::Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [36, 36, 300, 200], "content": "text"})).unwrap();
         s.execute("text.insert", &json!({"text": "Every page begins as an empty field of possibility"})).unwrap();
@@ -351,7 +351,7 @@ mod tests {
     #[test]
     fn selecting_an_object_opens_its_layer_in_the_panel() {
         use egui_kittest::Harness;
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let id = app.run("frame.create", json!({"rect": [72, 72, 200, 200]})).unwrap()["id"].as_u64().unwrap();
         let first = app.session.active().unwrap().doc.item(ItemId(id)).unwrap().layer;
@@ -374,7 +374,7 @@ mod tests {
     #[test]
     fn rows_rename_in_place() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let id = app.run("frame.create", json!({"rect": [72, 72, 200, 200]})).unwrap()["id"].as_u64().unwrap();
         let mut h = Harness::builder().with_size(egui::vec2(260.0, 400.0)).build_ui_state(|ui, app: &mut DesignApp| show(app, ui), app);

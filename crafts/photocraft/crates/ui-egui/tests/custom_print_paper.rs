@@ -1,11 +1,11 @@
 //! #3820: edit custom paper through the real Print dialog, preview it, and print safely to PDF.
 use egui::{Event, Key, Modifiers, PointerButton, vec2};
 use egui_kittest::{Harness, kittest::Queryable};
-use photocraft_ui_egui::{PhotocraftApp, file_ui::open_print};
+use redrob_photo_ui_egui::{PhotocraftApp, file_ui::open_print};
 use serde_json::{Map, Value, json};
 
 fn app() -> (PhotocraftApp, u64) {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), photocraft_ui_egui::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), redrob_photo_ui_egui::Services::default());
     app.run("file.new", json!({"width": 120, "height": 80, "name": "Custom paper"})).unwrap();
     let id = open_print(&mut app);
     // Every UI path in these fixtures is safe even if an unexpected Enter confirms the dialog.
@@ -17,7 +17,7 @@ fn app() -> (PhotocraftApp, u64) {
 
 fn show(ui: &mut egui::Ui, app: &mut PhotocraftApp) {
     if ui.ctx().fonts(|fonts| fonts.families().contains(&egui::FontFamily::Name("medium".into()))) {
-        photocraft_ui_egui::dialogs::show(app, ui.ctx());
+        redrob_photo_ui_egui::dialogs::show(app, ui.ctx());
     }
 }
 
@@ -92,13 +92,13 @@ fn custom_paper_ui_edits_reach_preview_and_pdf_and_restore_when_reopened() {
     click(&mut h, "Millimeters");
     click(&mut h, "Inches");
     assert_eq!(fields(&h, id)["paper"], edited["paper"]);
-    let preview = photocraft_engine::print_cmds::layout(&h.state().session.active().unwrap().doc, &Value::Object(edited.clone()), "file.print").unwrap();
+    let preview = redrob_photo_engine::print_cmds::layout(&h.state().session.active().unwrap().doc, &Value::Object(edited.clone()), "file.print").unwrap();
     assert_eq!(preview.paper, (522.0, 666.0));
     click(&mut h, "Portrait");
     click(&mut h, "Landscape");
     let edited = fields(&h, id);
     assert_eq!(edited["paper"], json!([522.0, 666.0]), "orientation must not rewrite the unrotated custom dimensions");
-    let preview = photocraft_engine::print_cmds::layout(&h.state().session.active().unwrap().doc, &Value::Object(edited), "file.print").unwrap();
+    let preview = redrob_photo_engine::print_cmds::layout(&h.state().session.active().unwrap().doc, &Value::Object(edited), "file.print").unwrap();
     assert_eq!(preview.paper, (666.0, 522.0));
     click(&mut h, "Print");
     let pdf = std::fs::read(&output).unwrap();
@@ -134,7 +134,7 @@ fn invalid_custom_paper_is_rejected_without_printing_or_changing_the_document() 
     click(&mut h, "Custom");
     enter_length(&mut h, "Paper Width", "0");
     let edited = fields(&h, id);
-    assert!(photocraft_engine::print_cmds::layout(&h.state().session.active().unwrap().doc, &Value::Object(edited), "file.print").is_err());
+    assert!(redrob_photo_engine::print_cmds::layout(&h.state().session.active().unwrap().doc, &Value::Object(edited), "file.print").is_err());
     click(&mut h, "Print");
     let error = &h.state().ui.status;
     assert!(error.contains("paper is too small"), "{error}");

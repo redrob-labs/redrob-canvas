@@ -8,8 +8,8 @@
 //! shader stopped multiplying back would change the measured size. They skip when no wgpu
 //! adapter is available (like `checker_canvas.rs`).
 
-use photocraft_ui_egui::PhotocraftApp;
-use photocraft_ui_egui::control::{ControlRequest, handle};
+use redrob_photo_ui_egui::PhotocraftApp;
+use redrob_photo_ui_egui::control::{ControlRequest, handle};
 use serde_json::{Value, json};
 
 type Harness = egui_kittest::Harness<'static, PhotocraftApp>;
@@ -19,7 +19,7 @@ fn harness(gpu: bool) -> Option<Harness> {
     let built = std::panic::catch_unwind(|| {
         egui_kittest::Harness::builder().with_size(egui::vec2(1200.0, 800.0)).with_pixels_per_point(1.0).with_max_steps(64).wgpu().build_eframe(|cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             if let Some(rs) = cc.wgpu_render_state.as_ref().filter(|_| gpu) {
                 app.set_wgpu(rs.clone());
             }
@@ -115,12 +115,12 @@ fn assert_document_size_is_physical(gpu: bool) {
 
 #[test]
 fn ui_scale_keeps_the_document_pixel_size_on_the_gpu_canvas() {
-    let _gpu = photocraft_testkit::gpu_lock();
+    let _gpu = redrob_photo_testkit::gpu_lock();
     assert_document_size_is_physical(true);
 }
 
 #[test]
 fn ui_scale_keeps_the_document_pixel_size_on_the_cpu_canvas() {
-    let _gpu = photocraft_testkit::gpu_lock();
+    let _gpu = redrob_photo_testkit::gpu_lock();
     assert_document_size_is_physical(false);
 }

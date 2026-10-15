@@ -102,7 +102,7 @@ pub fn frame_angle(a: [f64; 2], b: [f64; 2], min_len: f64) -> Option<f64> {
     if !len.is_finite() || len < min_len.max(f64::MIN_POSITIVE) {
         return None;
     }
-    let rot = photocraft_engine::analysis_cmds::straighten_angle(&photocraft_doc::Ruler { start: a, end: b, protractor: None });
+    let rot = redrob_photo_engine::analysis_cmds::straighten_angle(&redrob_photo_doc::Ruler { start: a, end: b, protractor: None });
     // ↵ turns the document back by the frame's angle; turning it by `rot` levels the line.
     rot.is_finite().then(|| crate::crop_ui::normalized_angle(-rot) + 0.0)
 }
@@ -172,14 +172,14 @@ mod tests {
     use super::*;
     use crate::canvas::tool_event;
     use crate::crop_ui::{CropDrag, ensure_frame};
-    use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
+    use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
 
     const NONE: Modifiers = Modifiers::NONE;
     const CMD: Modifiers = Modifiers::COMMAND;
 
     fn app(depth: SampleType) -> PhotocraftApp {
         let doc = Document::with_background("straighten", Size::new(200, 100), ColorMode::Rgb, depth, Color::WHITE);
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.add_document(doc, None);
         let mut app = PhotocraftApp::new(s, crate::Services::default());
         app.ui.tool = Tool::Crop;

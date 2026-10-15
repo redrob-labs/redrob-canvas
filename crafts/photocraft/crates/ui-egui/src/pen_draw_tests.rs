@@ -11,7 +11,7 @@ use crate::canvas::ViewXform;
 use crate::state::Tool;
 
 fn harness() -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
     app.sync_views();
     app.ui.tool = Tool::Pen;
@@ -183,7 +183,7 @@ fn delete_with_the_pen_deletes_the_finished_work_path_not_the_pixels() {
     h.state_mut()
         .session
         .edit("paint", |doc, a| {
-            doc.layer_mut(a.unwrap()).unwrap().surface_mut().unwrap().fill_rect(photocraft_geom::Rect::new(0, 0, 200, 150), &[1.0, 0.0, 0.0, 1.0]);
+            doc.layer_mut(a.unwrap()).unwrap().surface_mut().unwrap().fill_rect(redrob_photo_geom::Rect::new(0, 0, 200, 150), &[1.0, 0.0, 0.0, 1.0]);
             Ok(())
         })
         .unwrap();

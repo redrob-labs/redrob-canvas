@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use designcraft_compose::Cache;
-use designcraft_doc::Document;
-use designcraft_geom::Affine;
-use designcraft_render::{Placed, RenderOptions, Rendered};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::Document;
+use redrob_layout_geom::Affine;
+use redrob_layout_render::{Placed, RenderOptions, Rendered};
 
 pub struct Job {
     pub token: u64,
@@ -38,9 +38,9 @@ impl Worker {
         let (tx, jobs) = std::sync::mpsc::channel::<Job>();
         let (done_tx, rx) = std::sync::mpsc::channel::<Done>();
         std::thread::Builder::new()
-            .name("designcraft-render".into())
+            .name("redrob-layout-render".into())
             .spawn(move || {
-                let mut r = designcraft_render::Renderer::new();
+                let mut r = redrob_layout_render::Renderer::new();
                 while let Ok(mut job) = jobs.recv() {
                     // Only the newest job matters.
                     while let Ok(newer) = jobs.try_recv() {

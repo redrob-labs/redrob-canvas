@@ -1,14 +1,14 @@
 //! Overprinting (Attributes panel → Overprint Fill / Overprint Stroke, Edit → Edit Colors →
 //! Overprint Black): each fill and stroke, and each character's fill and stroke, can overprint
-//! ([`vectorcraft_doc::FillLayer::overprint`]). Overprint Preview and Separations Preview show it.
+//! ([`redrob_vector_doc::FillLayer::overprint`]). Overprint Preview and Separations Preview show it.
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
+use redrob_vector_doc::overprint::OverprintBlack;
+use redrob_vector_doc::{Document, ImageMap, Node, NodeId, NodeKind};
+use redrob_vector_geom::FillRule;
 use serde_json::{Value, json};
-use vectorcraft_doc::overprint::OverprintBlack;
-use vectorcraft_doc::{Document, ImageMap, Node, NodeId, NodeKind};
-use vectorcraft_geom::FillRule;
 
 use super::appearance::{ItemTarget, item_target};
 use super::edit::selected_roots;

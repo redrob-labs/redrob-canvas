@@ -61,19 +61,11 @@ impl NamedDestination {
     /// That said, you can also manually register a destination without linking to it by calling
     /// [`Document::register_named_destination`](crate::Document::register_named_destination).
     pub fn new(name: String, xyz_dest: XyzDestination) -> Self {
-        Self {
-            name: Arc::new(name),
-            xyz_dest: Arc::new(xyz_dest),
-        }
+        Self { name: Arc::new(name), xyz_dest: Arc::new(xyz_dest) }
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        destination: Obj,
-    ) -> KrillaResult<()> {
-        sc.register_named_destination(self.clone())
-            .ok_or_else(|| KrillaError::DuplicateNamedDestination(Arc::clone(&self.name)))?;
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, destination: Obj) -> KrillaResult<()> {
+        sc.register_named_destination(self.clone()).ok_or_else(|| KrillaError::DuplicateNamedDestination(Arc::clone(&self.name)))?;
         destination.primitive(Str(self.name.as_bytes()));
 
         Ok(())
@@ -96,9 +88,7 @@ impl Hash for XyzDestRepr {
 
 impl PartialEq for XyzDestRepr {
     fn eq(&self, other: &Self) -> bool {
-        self.page_index == other.page_index
-            && self.point.x == other.point.x
-            && self.point.y == other.point.y
+        self.page_index == other.page_index && self.point.x == other.point.x && self.point.y == other.point.y
     }
 }
 
@@ -122,27 +112,17 @@ impl XyzDestination {
         Self(Arc::new(XyzDestRepr { page_index, point }))
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let chunk = &mut chunk_container.non_stream.destinations;
         let destination = chunk.destination(root_ref);
 
-        let page_info = sc.page_infos().get(self.0.page_index).unwrap_or_else(|| {
-            panic!(
-                "attempted to link to page {}, but document only has {} pages",
-                self.0.page_index + 1,
-                sc.page_infos().len()
-            )
-        });
+        let page_info = sc
+            .page_infos()
+            .get(self.0.page_index)
+            .unwrap_or_else(|| panic!("attempted to link to page {}, but document only has {} pages", self.0.page_index + 1, sc.page_infos().len()));
 
         let (ref_, surface_size) = match page_info {
-            PageInfo::Krilla {
-                ref_, surface_size, ..
-            } => (ref_, surface_size),
+            PageInfo::Krilla { ref_, surface_size, .. } => (ref_, surface_size),
             PageInfo::Pdf { ref_, size, .. } => (ref_, size),
         };
 
@@ -154,9 +134,7 @@ impl XyzDestination {
         let invert_transform = Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, page_size);
         invert_transform.map_point(&mut mapped_point);
 
-        destination
-            .page(page_ref)
-            .xyz(mapped_point.x, mapped_point.y, None);
+        destination.page(page_ref).xyz(mapped_point.x, mapped_point.y, None);
     }
 }
 
@@ -164,10 +142,10 @@ impl XyzDestination {
 mod tests {
     use std::sync::Arc;
 
+    use crate::Document;
     use crate::annotation::{LinkAnnotation, Target};
     use crate::error::KrillaError;
     use crate::geom::{Point, Rect};
-    use crate::Document;
 
     use super::{NamedDestination, XyzDestination};
 
@@ -175,17 +153,11 @@ mod tests {
     fn named_duplicate_rejected() {
         let mut document = Document::new();
         assert_eq!(
-            document.register_named_destination(NamedDestination::new(
-                "same".to_string(),
-                XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
-            )),
+            document.register_named_destination(NamedDestination::new("same".to_string(), XyzDestination::new(0, Point::from_xy(0.0, 0.0)),)),
             Some(())
         );
         assert_eq!(
-            document.register_named_destination(NamedDestination::new(
-                "same".to_string(),
-                XyzDestination::new(0, Point::from_xy(100.0, 100.0)),
-            )),
+            document.register_named_destination(NamedDestination::new("same".to_string(), XyzDestination::new(0, Point::from_xy(100.0, 100.0)),)),
             None
         );
     }
@@ -194,17 +166,11 @@ mod tests {
     fn named_duplicate_same_location_allowed() {
         let mut document = Document::new();
         assert_eq!(
-            document.register_named_destination(NamedDestination::new(
-                "same".to_string(),
-                XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
-            )),
+            document.register_named_destination(NamedDestination::new("same".to_string(), XyzDestination::new(0, Point::from_xy(0.0, 0.0)),)),
             Some(())
         );
         assert_eq!(
-            document.register_named_destination(NamedDestination::new(
-                "same".to_string(),
-                XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
-            )),
+            document.register_named_destination(NamedDestination::new("same".to_string(), XyzDestination::new(0, Point::from_xy(0.0, 0.0)),)),
             Some(())
         );
 
@@ -219,47 +185,27 @@ mod tests {
         page.add_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
-                Target::Destination(
-                    NamedDestination::new(
-                        "same".to_string(),
-                        XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
-                    )
-                    .into(),
-                ),
+                Target::Destination(NamedDestination::new("same".to_string(), XyzDestination::new(0, Point::from_xy(0.0, 0.0))).into()),
             )
             .into(),
         );
         page.add_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(0.0, 100.0, 100.0, 100.0).unwrap(),
-                Target::Destination(
-                    NamedDestination::new(
-                        "same".to_string(),
-                        XyzDestination::new(0, Point::from_xy(100.0, 100.0)),
-                    )
-                    .into(),
-                ),
+                Target::Destination(NamedDestination::new("same".to_string(), XyzDestination::new(0, Point::from_xy(100.0, 100.0))).into()),
             )
             .into(),
         );
         drop(page);
 
-        assert_eq!(
-            document.finish(),
-            Err(KrillaError::DuplicateNamedDestination(Arc::new(
-                "same".to_string()
-            )))
-        );
+        assert_eq!(document.finish(), Err(KrillaError::DuplicateNamedDestination(Arc::new("same".to_string()))));
     }
 
     #[test]
     fn named_duplicate_manual_then_annotation_rejected() {
         let mut document = Document::new();
         assert_eq!(
-            document.register_named_destination(NamedDestination::new(
-                "same".to_string(),
-                XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
-            )),
+            document.register_named_destination(NamedDestination::new("same".to_string(), XyzDestination::new(0, Point::from_xy(0.0, 0.0)),)),
             Some(())
         );
 
@@ -267,23 +213,12 @@ mod tests {
         page.add_annotation(
             LinkAnnotation::new(
                 Rect::from_xywh(0.0, 0.0, 100.0, 100.0).unwrap(),
-                Target::Destination(
-                    NamedDestination::new(
-                        "same".to_string(),
-                        XyzDestination::new(0, Point::from_xy(100.0, 100.0)),
-                    )
-                    .into(),
-                ),
+                Target::Destination(NamedDestination::new("same".to_string(), XyzDestination::new(0, Point::from_xy(100.0, 100.0))).into()),
             )
             .into(),
         );
         drop(page);
 
-        assert_eq!(
-            document.finish(),
-            Err(KrillaError::DuplicateNamedDestination(Arc::new(
-                "same".to_string()
-            )))
-        );
+        assert_eq!(document.finish(), Err(KrillaError::DuplicateNamedDestination(Arc::new("same".to_string()))));
     }
 }

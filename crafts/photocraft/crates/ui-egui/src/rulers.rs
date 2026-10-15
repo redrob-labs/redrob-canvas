@@ -3,8 +3,8 @@
 //! commands (`view.newGuide` / `view.moveGuide` / `view.deleteGuide`).
 
 use egui::{Align2, Color32, Pos2, Rect, Sense, Stroke, pos2, vec2};
-use photocraft_doc::Document;
-use photocraft_engine::prefs::{GuidesGridAndSlices, Unit};
+use redrob_photo_doc::Document;
+use redrob_photo_engine::prefs::{GuidesGridAndSlices, Unit};
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -15,12 +15,12 @@ pub const RULER: f32 = 16.0;
 
 /// A `#rrggbb` preference colour.
 fn pref_color(s: &str, fallback: Color32) -> Color32 {
-    photocraft_engine::prefs::parse_hex(s).map_or(fallback, |c| Color32::from_rgb(c[0], c[1], c[2]))
+    redrob_photo_engine::prefs::parse_hex(s).map_or(fallback, |c| Color32::from_rgb(c[0], c[1], c[2]))
 }
 
 /// Draw a line in a Guides/Grid preference style (lines, dashed lines, dots).
-fn styled_line(painter: &egui::Painter, a: Pos2, b: Pos2, stroke: Stroke, style: photocraft_engine::prefs::LineStyle) {
-    use photocraft_engine::prefs::LineStyle;
+fn styled_line(painter: &egui::Painter, a: Pos2, b: Pos2, stroke: Stroke, style: redrob_photo_engine::prefs::LineStyle) {
+    use redrob_photo_engine::prefs::LineStyle;
     match style {
         LineStyle::Lines => {
             painter.line_segment([a, b], stroke);
@@ -500,7 +500,7 @@ mod tests {
         let mut failures = Vec::new();
         for theme in crate::theme::ThemeKind::ALL {
             for (zoom, flip, rotation, width) in [(1.0, false, 0.0, 560.0), (1.0, false, 0.0, 800.0), (0.25, true, 0.0, 560.0), (2.0, false, 30.0, 560.0)] {
-                let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+                let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
                 app.run("file.new", json!({"width": 256, "height": 128})).unwrap();
                 let full = Rect::from_min_size(pos2(32.0, 32.0), vec2(width - 80.0, 320.0));
                 let corner = Rect::from_min_size(full.min, vec2(RULER, RULER));
@@ -588,7 +588,7 @@ mod tests {
     /// resets it.
     #[test]
     fn dragging_the_ruler_corner_sets_the_zero_point_and_double_click_resets_it() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 256, "height": 128})).unwrap();
         app.ui.extras.snap = false;
         let (mut h, full, xf) = ruler_harness(app);
@@ -656,7 +656,7 @@ mod tests {
     #[test]
     fn info_panel_position_reads_from_the_zero_point() {
         use egui_kittest::kittest::Queryable;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
         app.run("view.setRulerOrigin", json!({"x": 20, "y": 5})).unwrap();
         app.hover_doc = Some([50.5, 20.5]);
@@ -672,7 +672,7 @@ mod tests {
     #[test]
     fn info_panel_shows_guide_drag_position_outside_canvas() {
         use egui_kittest::kittest::Queryable;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
         app.hover_doc = None;
         app.guide_drag = Some(GuideDrag { vertical: true, index: None, pos: 42.0, press: 42.0 });
@@ -716,7 +716,7 @@ mod tests {
 
     #[test]
     fn hidden_guides_are_not_hit_tested() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 200, "height": 100})).unwrap();
         app.sync_views();
         app.session.execute("view.newGuide", json!({"orientation": "vertical", "position": 50})).unwrap();
@@ -767,7 +767,7 @@ mod tests {
 
     #[test]
     fn picking_a_ruler_unit_changes_the_preference() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         assert_eq!(app.session.prefs().units_and_rulers.rulers, Unit::Pixels);
         // The context menu applies its pick exactly as the preference pane does.
         app.run("prefs.set", json!({"path": "unitsAndRulers.rulers", "value": "cm"})).unwrap();
@@ -783,7 +783,7 @@ mod tests {
         let launch = |saved: &Rc<RefCell<Option<String>>>| {
             let (load, store) = (saved.clone(), saved.clone());
             PhotocraftApp::new(
-                photocraft_engine::Session::new(),
+                redrob_photo_engine::Session::new(),
                 crate::Services {
                     load_prefs: Some(Box::new(move || load.borrow().clone())),
                     save_prefs: Some(Box::new(move |text| {
@@ -807,7 +807,7 @@ mod tests {
 
     #[test]
     fn guide_drags_create_move_and_delete() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 200, "height": 100})).unwrap();
         app.sync_views();
         finish_drag(&mut app, GuideDrag { vertical: true, index: None, pos: 50.0, press: 50.0 });
@@ -830,7 +830,7 @@ mod tests {
         use crate::canvas::{ToolEvent, tool_event};
         use crate::state::Tool;
         for (tool, locked) in [(Tool::Brush, false), (Tool::RectMarquee, false), (Tool::Lasso, false), (Tool::MagicWand, false), (Tool::RectMarquee, true)] {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 80, "height": 60, "background": "transparent"})).unwrap();
             app.sync_views();
             app.ui.tool = tool;
@@ -838,7 +838,7 @@ mod tests {
             let layer = app.session.active().unwrap().active_layer.unwrap();
             app.session
                 .edit("paint", |doc, _| {
-                    doc.layer_mut(layer).unwrap().surface_mut().unwrap().fill_rect(photocraft_geom::Rect::new(10, 10, 30, 30), &[1.0, 0.0, 0.0, 1.0]);
+                    doc.layer_mut(layer).unwrap().surface_mut().unwrap().fill_rect(redrob_photo_geom::Rect::new(10, 10, 30, 30), &[1.0, 0.0, 0.0, 1.0]);
                     Ok(())
                 })
                 .unwrap();
@@ -980,7 +980,7 @@ mod tests {
         let rect = Rect::from_min_max(full.min + vec2(RULER, RULER), full.max);
         let xf = ViewXform { rect, zoom: 1.0, center: [128.0, 64.0], flip: false, rotation: 0.0, aspect: 1.0 };
         let drag = |from: Pos2, modifiers: egui::Modifiers| {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 256, "height": 128})).unwrap();
             let mut h = egui_kittest::Harness::builder().with_size(vec2(400.0, 300.0)).build_ui_state(move |ui, app| draw_rulers(app, ui, full, &xf), app);
             let to = xf.to_screen(37.0, 90.0);
@@ -1009,7 +1009,7 @@ mod tests {
         let rect = Rect::from_min_max(full.min + vec2(RULER, RULER), full.max);
         let xf = ViewXform { rect, zoom: 1.0, center: [128.0, 64.0], flip: false, rotation: 0.0, aspect: 1.0 };
         let new_app = || {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 256, "height": 128})).unwrap();
             app
         };

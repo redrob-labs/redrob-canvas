@@ -63,7 +63,7 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
     });
     ui.add_space(4.0);
     let own =
-        if app.session.active().is_some_and(|s| s.doc.color_mode == vectorcraft_doc::ColorMode::Cmyk) { ("cmyk", "CMYK") } else { ("rgb", "RGB") };
+        if app.session.active().is_some_and(|s| s.doc.color_mode == redrob_vector_doc::ColorMode::Cmyk) { ("cmyk", "CMYK") } else { ("rgb", "RGB") };
     choice(ui, d, "colorModel", tl!("Color Model:"), &[own, ("grayscale", tl!("Grayscale")), ("bitmap", tl!("Bitmap"))]);
     ui.add_space(6.0);
     widgets::label_row(ui, tl!("Background:"), LABEL, |ui| {
@@ -96,8 +96,8 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use redrob_vector_engine::Session;
     use serde_json::json;
-    use vectorcraft_engine::Session;
 
     use crate::VectorcraftApp;
 
@@ -128,8 +128,8 @@ mod tests {
         assert!(app.ui.dialog.is_none());
         let st = app.session.active().unwrap();
         let r = &st.doc.raster_effects;
-        assert_eq!((st.doc.raster_effects_ppi, r.add_around, r.background), (200.0, 36.0, vectorcraft_doc::Background::White));
-        assert_eq!(r.color_model, vectorcraft_doc::RasterColorModel::Grayscale);
+        assert_eq!((st.doc.raster_effects_ppi, r.add_around, r.background), (200.0, 36.0, redrob_vector_doc::Background::White));
+        assert_eq!(r.color_model, redrob_vector_doc::RasterColorModel::Grayscale);
         assert_eq!(st.history.undo.len(), 1);
         // A bad value keeps the dialog open.
         app.run("ui.rasterEffectsSettingsDialog", json!({})).unwrap();
@@ -147,6 +147,6 @@ mod tests {
         );
         crate::dialogs::confirm(&mut app).unwrap();
         let st = app.session.active().unwrap();
-        assert!(st.selection.objects.iter().any(|id| matches!(st.doc.node(*id).map(|n| &n.kind), Some(vectorcraft_doc::NodeKind::Image(_)))));
+        assert!(st.selection.objects.iter().any(|id| matches!(st.doc.node(*id).map(|n| &n.kind), Some(redrob_vector_doc::NodeKind::Image(_)))));
     }
 }

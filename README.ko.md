@@ -47,13 +47,12 @@
 
 | 모드 | 열기 | 저장 / 내보내기 |
 | --- | --- | --- |
-| Photo | PSD, PSB, `.pcraft`, ORA, KRA, 레이어 TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC(읽기), 카메라 RAW, Affinity(읽기) | `.pcraft`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF(선택 기능) |
-| Vector | `.vectorcraft`, SVG, SVGZ, AI(PDF 호환), EPS, PDF, DXF, EMF/WMF, 래스터 이미지, PSD/PSB(병합 이미지) | `.vectorcraft`, SVG, PDF(PDF/X 포함), AI, EPS, DXF, PNG, JPEG, WebP, PSD, 인쇄, 패키지 |
-| Layout | `.designcraft`, IDML, 배치 자산으로서의 이미지·PDF·벡터 | `.designcraft`, PDF(PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
+| Photo | PSD, PSB, `.rphoto`, ORA, KRA, 레이어 TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC(읽기), 카메라 RAW, Affinity(읽기) | `.rphoto`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF(선택 기능) |
+| Vector | `.rvector`, SVG, SVGZ, AI(PDF 호환), EPS, PDF, DXF, EMF/WMF, 래스터 이미지, PSD/PSB(병합 이미지) | `.rvector`, SVG, PDF(PDF/X 포함), AI, EPS, DXF, PNG, JPEG, WebP, PSD, 인쇄, 패키지 |
+| Layout | `.rlayout`, IDML, 배치 자산으로서의 이미지·PDF·벡터 | `.rlayout`, PDF(PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
 
-정본 표는 편집기 자신의 문서입니다: `crafts/photocraft/crates/codecs/README.md`,
-`crafts/vectorcraft/README.md`, `crafts/designcraft/README.md`. 셸이 파일을 어느 모드로 보내는지는
-`docs/formats.md`에 있습니다.
+셸이 파일을 어느 모드로 보내는지, 각 편집기의 포맷 표가 코드 어디에 있는지, 어떤 upstream 확장자
+(`.pcraft`, `.vectorcraft`, `.designcraft`)가 여전히 열리는지는 `docs/formats.md`에 있습니다.
 
 ## 빌드
 
@@ -66,16 +65,18 @@ cargo build --release -p redrob-canvas
 target/release/redrob-canvas
 ```
 
-모든 풀 리퀘스트가 통과해야 하는 게이트를 CI(`.github/workflows/verify-upstream.yml`)가 돌리는 순서대로:
+모든 풀 리퀘스트가 통과해야 하는 게이트를 CI(`.github/workflows/ci.yml`: `checks` 잡, 그 다음 우리
+크레이트만 `--profile ci`로 도는 `rust` 잡)가 돌리는 순서대로:
 
 ```bash
 scripts/verify-upstream.sh
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
+python3 scripts/check_upstream_ids.py
 cargo fetch --locked && python3 tools/generate_distribution_artifacts.py --check
 python3 tools/check_design_system.py
 python3 -m unittest discover -s tools/tests -p "test_*.py"
+cargo fmt --all -- --check
+cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked --profile ci -- -D warnings
+cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 ```
 
 빌드 어디에도 Qt, CMake, Node는 없습니다. 루트 `Cargo.toml`은 `tools/merge_workspaces.py`가 네 subtree의
@@ -105,7 +106,7 @@ AI 층입니다. 편집기 내부를 포크하지 않으므로 상류의 개선�
 
 네 편집기는 MIT OR Apache-2.0 이고 원저작자의 저작권 표기를 그대로 지킵니다. 각 편집기의 라이선스 파일과
 NOTICE는 `crafts/<name>/` 아래 그대로 있고 [NOTICE](NOTICE)와 [COPYRIGHT](COPYRIGHT)에 원문대로 실려 있습니다.
-`crafts/*/docs/brand/`의 원래 이름과 로고는 원저작자의 상표이며 오픈 소스가 아니고, 여기서는 쓰지 않습니다.
+원래 이름과 로고는 원저작자의 상표이며 오픈 소스가 아니고, 여기서는 쓰지도 싣지도 않습니다(각 subtree의 `docs/`는 pull 뒤마다 트리에서 제거됩니다).
 
 ## 로드맵
 

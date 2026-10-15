@@ -17,9 +17,9 @@
 //! (`object.envelope.info`); the menu items and shortcuts of Make with Warp and Make with Mesh
 //! open the Reset variant while an envelope is selected, as the reference app's do.
 
+use redrob_vector_doc::{EnvelopeKind, NodeKind};
+use redrob_vector_render::effects::WARP_STYLES;
 use serde_json::{Value, json};
-use vectorcraft_doc::{EnvelopeKind, NodeKind};
-use vectorcraft_render::effects::WARP_STYLES;
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;
@@ -236,7 +236,7 @@ enum Bar {
 /// edited, and its settings.
 fn bar_of(app: &VectorcraftApp) -> Option<(bool, Bar)> {
     let st = app.session.active()?;
-    let env = st.selection.objects.first().and_then(|id| vectorcraft_doc::live::envelope_of(&st.doc, *id))?;
+    let env = st.selection.objects.first().and_then(|id| redrob_vector_doc::live::envelope_of(&st.doc, *id))?;
     let NodeKind::Envelope { kind, editing, .. } = &env.kind else { return None };
     let bar = match &**kind {
         EnvelopeKind::Warp { style, bend, h, v, horizontal } => {
@@ -318,9 +318,9 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_doc::live::EnvelopeKind;
-    use vectorcraft_doc::{NodeId, NodeKind};
-    use vectorcraft_engine::Session;
+    use redrob_vector_doc::live::EnvelopeKind;
+    use redrob_vector_doc::{NodeId, NodeKind};
+    use redrob_vector_engine::Session;
 
     fn app_with_rect() -> (VectorcraftApp, NodeId) {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
@@ -337,7 +337,7 @@ mod tests {
         out.textures_delta.clear();
     }
 
-    fn envelope(app: &VectorcraftApp) -> (NodeId, vectorcraft_doc::Node) {
+    fn envelope(app: &VectorcraftApp) -> (NodeId, redrob_vector_doc::Node) {
         let st = app.session.doc().unwrap();
         let id = st.selection.objects[0];
         (id, st.doc.node(id).unwrap().clone())

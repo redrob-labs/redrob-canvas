@@ -24,11 +24,11 @@
 
 use std::sync::{Arc, OnceLock};
 
-use craft_pdf::write::backend as krilla;
 use krilla::image::ImageColorspace;
-use vectorcraft_color::Color;
-use vectorcraft_color::cms::{self, Cms, CmykLut, Intent, Model, ProfileKind, ProofLut};
-use vectorcraft_doc::{ColorMode, Document};
+use redrob_craft_pdf::write::backend as krilla;
+use redrob_vector_color::Color;
+use redrob_vector_color::cms::{self, Cms, CmykLut, Intent, Model, ProfileKind, ProofLut};
+use redrob_vector_doc::{ColorMode, Document};
 
 use crate::patch::{Patch, Xref};
 use crate::{ColorConversion, PdfError, PdfSettings, ProfileInclusion, Standard};

@@ -1,8 +1,8 @@
 //! Recolor Artwork (M3.78): colour reduction, preserve rules, recolour methods, Limit to Library,
 //! randomize; Edit Color Group (M3.79).
 
+use redrob_vector_color::Color;
 use serde_json::{Value, json};
-use vectorcraft_color::Color;
 
 use super::*;
 use crate::cmd::color_value;
@@ -292,16 +292,16 @@ fn edit_group_refuses_to_change_built_in_swatches() {
     run(&mut s, "swatch.newGroup", json!({"name": "Marks", "colors": ["#ff0000"]}));
     // A group holding the built-in Registration swatch (as an older file might).
     s.edit("test", |d, _| {
-        d.swatch_groups.iter_mut().find(|g| g.name == "Marks").unwrap().swatches.insert(0, vectorcraft_color::swatch::registration().clone());
+        d.swatch_groups.iter_mut().find(|g| g.name == "Marks").unwrap().swatches.insert(0, redrob_vector_color::swatch::registration().clone());
         Ok(())
     })
     .unwrap();
-    let reg = vectorcraft_color::swatch::registration().paint.color().unwrap();
+    let reg = redrob_vector_color::swatch::registration().paint.color().unwrap();
     assert!(s.execute("swatch.editGroup", &json!({"group": "Marks", "colors": ["#00ff00", "#0000ff"]})).is_err(), "changed");
     assert!(s.execute("swatch.editGroup", &json!({"group": "Marks", "colors": []})).is_err(), "removed");
-    let key = vectorcraft_color::recolor::ColorKey::of(&reg).to_string();
+    let key = redrob_vector_color::recolor::ColorKey::of(&reg).to_string();
     let ok = run(&mut s, "swatch.editGroup", json!({"group": "Marks", "colors": [key, "#0000ff"]}));
-    assert_eq!(ok["swatches"][0], vectorcraft_color::swatch::REGISTRATION, "kept as it is");
+    assert_eq!(ok["swatches"][0], redrob_vector_color::swatch::REGISTRATION, "kept as it is");
 }
 
 /// A `{c, m, y, k}` object takes one scale for the whole colour: percent as soon as any component is

@@ -1,10 +1,10 @@
 //! Eyedropper Options and modes (M3.52): the Picks Up / Applies trees, type attributes, Alt-click
 //! (reverse) and Shift+Alt-click (append), image pixels, colour models and the preference.
 
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{ImageBlob, ImageObject, Justify, LineCap, Node, NodeKind};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 use serde_json::json;
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{ImageBlob, ImageObject, Justify, LineCap, Node, NodeKind};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
 
 use super::*;
 
@@ -159,7 +159,7 @@ fn clicking_an_image_samples_its_pixel() {
         d.images.insert("px".into(), ImageBlob::png(png));
         let l = d.layers[0].id;
         let id = d.alloc_id();
-        let xf = vectorcraft_geom::Affine::translate((300.0, 0.0)) * vectorcraft_geom::Affine::scale(100.0);
+        let xf = redrob_vector_geom::Affine::translate((300.0, 0.0)) * redrob_vector_geom::Affine::scale(100.0);
         let im = ImageObject { key: "px".into(), width: 2, height: 1, xf, link: None, placement: Default::default() };
         d.insert(Some(l), 0, Node::new(id, NodeKind::Image(Box::new(im)))).map_err(|e| crate::EngineError::Other(e.to_string()))
     })

@@ -1,22 +1,24 @@
 //! Optional craft-fonts build input (https://github.com/storytold/craft-fonts, recipe from its
-//! `docs/integration.md`). With `CRAFT_FONTS_DIR=<checkout>` the fonts in its
-//! `fonts/manifest.txt` are embedded as `CRAFT_FONTS`; unset, `CRAFT_FONTS` is empty. Web
+//! `docs/integration.md`). With `REDROB_CRAFT_FONTS_DIR=<checkout>` the fonts in its
+//! `fonts/manifest.txt` are embedded as `REDROB_CRAFT_FONTS`; unset, `REDROB_CRAFT_FONTS` is empty. Web
 //! (wasm32) builds embed only the UI face, BIZ UDPGothic Regular, to stay within the web size
 //! budget. It only reads the local checkout: no network.
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
 fn main() {
-    println!("cargo::rerun-if-env-changed=CRAFT_FONTS_DIR");
-    println!("cargo::rerun-if-env-changed=CRAFT_FONTS_REQUIRED");
-    let mut src = String::from("pub static CRAFT_FONTS: &[CraftFont] = &[\n");
-    if let Some(dir) = std::env::var_os("CRAFT_FONTS_DIR").map(PathBuf::from) {
+    println!("cargo::rerun-if-env-changed=REDROB_CRAFT_FONTS_DIR");
+    println!("cargo::rerun-if-env-changed=REDROB_CRAFT_FONTS_REQUIRED");
+    let mut src = String::from("pub static REDROB_CRAFT_FONTS: &[CraftFont] = &[\n");
+    if let Some(dir) = std::env::var_os("REDROB_CRAFT_FONTS_DIR").or_else(|| std::env::var_os("CRAFT_FONTS_DIR")).map(PathBuf::from) {
+        // legacy: the upstream variable is read when ours is unset
         match craft_fonts(&dir) {
             Ok(entries) => src.push_str(&entries),
-            Err(e) if std::env::var_os("CRAFT_FONTS_REQUIRED").is_some() => {
-                println!("cargo::error=CRAFT_FONTS_DIR={}: {e}", dir.display());
+            Err(e) if std::env::var_os("REDROB_CRAFT_FONTS_REQUIRED").or_else(|| std::env::var_os("CRAFT_FONTS_REQUIRED")).is_some() => {
+                // legacy: the upstream variable is read when ours is unset
+                println!("cargo::error=REDROB_CRAFT_FONTS_DIR={}: {e}", dir.display());
             }
-            Err(e) => println!("cargo::warning=building without craft-fonts: CRAFT_FONTS_DIR={}: {e}", dir.display()),
+            Err(e) => println!("cargo::warning=building without craft-fonts: REDROB_CRAFT_FONTS_DIR={}: {e}", dir.display()),
         }
     }
     src.push_str("];\n");

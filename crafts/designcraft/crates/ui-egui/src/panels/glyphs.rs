@@ -28,7 +28,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
         st.family = a
             .as_ref()
             .and_then(|a| a["chars"]["fontFamily"].as_str().map(str::to_string))
-            .unwrap_or_else(|| designcraft_fonts::DEFAULT_FAMILY.into());
+            .unwrap_or_else(|| redrob_layout_fonts::DEFAULT_FAMILY.into());
         st.style = a.as_ref().and_then(|a| a["chars"]["fontStyle"].as_str().map(str::to_string)).unwrap_or_else(|| "Regular".into());
     }
     let (db, scope) = (super::fonts(app), super::font_scope(app));
@@ -86,7 +86,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
     let tex: egui::TextureHandle = match ui.data(|d| d.get_temp::<egui::TextureHandle>(key)) {
         Some(t) => t,
         None => {
-            let img = designcraft_render::glyphs::glyph_grid(&db, &st.family, &st.style, &chars, cols, cell_px, ink.to_array());
+            let img = redrob_layout_render::glyphs::glyph_grid(&db, &st.family, &st.style, &chars, cols, cell_px, ink.to_array());
             let ci = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
             let h = crate::widgets::load_texture(ui.ctx(), "glyph_grid", ci, egui::TextureOptions::LINEAR);
             ui.data_mut(|d| d.insert_temp(key, h.clone()));
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn the_grid_leaves_room_for_the_scroll_bar() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx, "");

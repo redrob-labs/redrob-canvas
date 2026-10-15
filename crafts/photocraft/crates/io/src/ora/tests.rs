@@ -1,11 +1,11 @@
 use super::*;
-use photocraft_doc::{Adjustment, Color, Fill, LayerMask};
+use redrob_photo_doc::{Adjustment, Color, Fill, LayerMask};
 
 const CANVAS: Size = Size { width: 70, height: 50 };
 
 fn px(fmt: PixelFormat, rgba: [f32; 4]) -> Vec<u8> {
     let mut out = vec![0; fmt.bytes_per_pixel()];
-    photocraft_raster::encode_pixel(&fmt, &rgba, &mut out);
+    redrob_photo_raster::encode_pixel(&fmt, &rgba, &mut out);
     out
 }
 
@@ -84,7 +84,7 @@ fn layers_groups_and_properties_round_trip_at_8_and_16_bit() {
         assert_eq!(back.size, d.size);
         assert_eq!(back.depth, depth);
         assert_same(&d.layers, &back.layers);
-        assert_eq!(photocraft_compose::flatten(&d).px, photocraft_compose::flatten(&back).px);
+        assert_eq!(redrob_photo_compose::flatten(&d).px, redrob_photo_compose::flatten(&back).px);
     }
 }
 
@@ -97,7 +97,7 @@ fn float_documents_save_as_16_bit() {
     let (back, warnings, _) = round_trip(&d);
     assert!(warnings.iter().any(|w| w.contains("16-bit")), "{warnings:?}");
     assert_eq!(back.depth, SampleType::U16);
-    let (a, b) = (photocraft_compose::flatten(&d), photocraft_compose::flatten(&back));
+    let (a, b) = (redrob_photo_compose::flatten(&d), redrob_photo_compose::flatten(&back));
     let err = a.px.iter().zip(&b.px).flat_map(|(p, q)| (0..4).map(move |c| (p[c] - q[c]).abs())).fold(0.0f32, f32::max);
     assert!(err < 1.0 / 65535.0 + 1e-6, "{err}");
 }
@@ -135,7 +135,7 @@ fn masks_are_applied_to_pixels_and_reported() {
     assert!(warnings.iter().any(|w| w.contains("layer masks were applied")), "{warnings:?}");
     let s = back.layers.first().and_then(Layer::surface).unwrap();
     assert_eq!(s.content_bounds(), Rect::from_xywh(0, 0, 10, 20));
-    assert_eq!(photocraft_compose::flatten(&d).px, photocraft_compose::flatten(&back).px);
+    assert_eq!(redrob_photo_compose::flatten(&d).px, redrob_photo_compose::flatten(&back).px);
 }
 
 #[test]
@@ -378,8 +378,8 @@ fn normal_group_fill_opacity_survives_openraster_export() {
     let imported_group = back.layers.first().unwrap();
     assert!((imported_group.opacity - 0.5).abs() < 1e-6);
     assert_eq!(imported_group.fill_opacity, 1.0);
-    let before = photocraft_compose::flatten(&d);
-    let after = photocraft_compose::flatten(&back);
+    let before = redrob_photo_compose::flatten(&d);
+    let after = redrob_photo_compose::flatten(&back);
     for (a, b) in before.px.iter().zip(&after.px) {
         assert!((a[3] - b[3]).abs() < 1.0 / 255.0 + 1e-6, "alpha: {a:?} vs {b:?}");
     }
@@ -417,7 +417,7 @@ fn lossy_documents() -> Vec<(&'static str, Document)> {
         ("clipped", with(&|d| d.layers[1].clipped = true)),
         ("fill opacity", with(&|d| d.layers[0].fill_opacity = 0.5)),
         ("float", doc(SampleType::F32)),
-        ("profile", with(&|d| d.icc_profile = Some(photocraft_cms::Builtin::DisplayP3.profile().to_bytes()))),
+        ("profile", with(&|d| d.icc_profile = Some(redrob_photo_cms::Builtin::DisplayP3.profile().to_bytes()))),
         ("metadata", with(&|d| d.metadata.xmp = Some("<x/>".into()))),
     ]
 }
@@ -439,7 +439,7 @@ fn plain_documents_lose_nothing() {
     for depth in [SampleType::U8, SampleType::U16] {
         let mut d = doc(depth);
         assert_eq!(losses(&d), Vec::<String>::new(), "{depth:?}");
-        d.icc_profile = Some(photocraft_cms::Builtin::Srgb.profile().to_bytes());
+        d.icc_profile = Some(redrob_photo_cms::Builtin::Srgb.profile().to_bytes());
         assert_eq!(losses(&d), Vec::<String>::new(), "{depth:?} tagged sRGB");
         assert_eq!(export(&d).unwrap().warnings, Vec::<String>::new());
     }

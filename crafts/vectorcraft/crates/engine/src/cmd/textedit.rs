@@ -1,11 +1,11 @@
 //! Rich text editing commands: range edits and range styling (what the Type tool and the
 //! Character panel use while editing), creating area / on-path type from a path, and Fit Headline.
 
+use redrob_vector_color::Paint;
+use redrob_vector_doc::{Appearance, CharStyle, Node, NodeId, NodeKind, TextKind, TextObject, TextRun};
+use redrob_vector_geom::Affine;
+use redrob_vector_text::edit;
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
-use vectorcraft_doc::{Appearance, CharStyle, Node, NodeId, NodeKind, TextKind, TextObject, TextRun};
-use vectorcraft_geom::Affine;
-use vectorcraft_text::edit;
 
 use super::stroke::StrokeChange;
 use super::typecmd::refresh_bounds;
@@ -97,7 +97,7 @@ pub fn specs() -> Vec<CommandSpec> {
     ]
 }
 
-fn text_mut(d: &mut vectorcraft_doc::Document, id: NodeId) -> Option<&mut TextObject> {
+fn text_mut(d: &mut redrob_vector_doc::Document, id: NodeId) -> Option<&mut TextObject> {
     match d.node_mut(id).map(|n| &mut n.kind) {
         Some(NodeKind::Text(t)) => Some(t),
         _ => None,
@@ -116,7 +116,7 @@ fn text_ref(s: &Session, id: NodeId) -> Result<TextObject> {
 /// style and paragraph styles follow, exactly as `text.editRange` over the full
 /// range does. Dataset apply and friends share this so Variables edits behave
 /// like Type tool edits.
-pub(crate) fn set_plain_text(d: &mut vectorcraft_doc::Document, id: NodeId, text: &str) -> Result<()> {
+pub(crate) fn set_plain_text(d: &mut redrob_vector_doc::Document, id: NodeId, text: &str) -> Result<()> {
     let len = match d.node(id).map(|n| &n.kind) {
         Some(NodeKind::Text(t)) => edit::runs_len(&t.runs),
         Some(_) => return Err(EngineError::Other(format!("node {} is not text", id.0))),
@@ -205,16 +205,16 @@ pub(crate) struct CharChange {
     strikethrough: Option<bool>,
     all_caps: Option<bool>,
     features: Option<Vec<String>>,
-    position: Option<vectorcraft_doc::CharPosition>,
+    position: Option<redrob_vector_doc::CharPosition>,
     small_caps: Option<Option<f64>>,
-    char_align: Option<vectorcraft_doc::CharAlign>,
+    char_align: Option<redrob_vector_doc::CharAlign>,
     proportional_metrics: Option<bool>,
-    digits: Option<vectorcraft_doc::Digits>,
+    digits: Option<redrob_vector_doc::Digits>,
 }
 
 /// `digits: "default"|"arabic"|"hindi"|"farsi"` → the numeral system the digits are drawn in.
-pub(crate) fn digits_param(p: &Value, cmd: &str) -> Result<Option<vectorcraft_doc::Digits>> {
-    use vectorcraft_doc::Digits;
+pub(crate) fn digits_param(p: &Value, cmd: &str) -> Result<Option<redrob_vector_doc::Digits>> {
+    use redrob_vector_doc::Digits;
     let Some(v) = p.get("digits").filter(|v| !v.is_null()) else { return Ok(None) };
     Ok(Some(match v.as_str() {
         Some("default") => Digits::Default,
@@ -229,7 +229,7 @@ pub(crate) fn digits_param(p: &Value, cmd: &str) -> Result<Option<vectorcraft_do
 pub(crate) fn features_param(p: &Value, cmd: &str) -> Result<Option<Vec<String>>> {
     let Some(v) = p.get("features").filter(|v| !v.is_null()) else { return Ok(None) };
     let tags: Vec<&str> = v.as_array().ok_or_else(|| bad(cmd, "features must be a list of tags"))?.iter().filter_map(Value::as_str).collect();
-    if let Some(t) = tags.iter().find(|t| !vectorcraft_text::OtFeatures::known_tag(t)) {
+    if let Some(t) = tags.iter().find(|t| !redrob_vector_text::OtFeatures::known_tag(t)) {
         return Err(bad(
             cmd,
             format!(
@@ -237,12 +237,12 @@ pub(crate) fn features_param(p: &Value, cmd: &str) -> Result<Option<Vec<String>>
             ),
         ));
     }
-    Ok(Some(vectorcraft_text::OtFeatures::default().with_tags(tags).to_tags()))
+    Ok(Some(redrob_vector_text::OtFeatures::default().with_tags(tags).to_tags()))
 }
 
 /// `charAlign: "romanBaseline"|"emBoxTop"|"emBoxCenter"|"emBoxBottom"|"icfTop"|"icfBottom"` (Character Alignment).
-pub(crate) fn char_align_param(p: &Value, cmd: &str) -> Result<Option<vectorcraft_doc::CharAlign>> {
-    use vectorcraft_doc::CharAlign;
+pub(crate) fn char_align_param(p: &Value, cmd: &str) -> Result<Option<redrob_vector_doc::CharAlign>> {
+    use redrob_vector_doc::CharAlign;
     let Some(v) = p.get("charAlign").filter(|v| !v.is_null()) else { return Ok(None) };
     Ok(Some(match v.as_str() {
         Some("romanBaseline") => CharAlign::RomanBaseline,
@@ -278,7 +278,7 @@ fn auto_or_num(p: &Value, k: &str, cmd: &str) -> Result<Option<Option<f64>>> {
 
 impl CharChange {
     /// `setup` gives the superscript, subscript and small caps proportions.
-    pub(crate) fn parse(p: &Value, cmd: &str, setup: &vectorcraft_doc::DocSetup) -> Result<Self> {
+    pub(crate) fn parse(p: &Value, cmd: &str, setup: &redrob_vector_doc::DocSetup) -> Result<Self> {
         let num = |k: &str| p.get(k).and_then(Value::as_f64);
         let (position, small_caps) = super::docsetup::script_params(p, setup, cmd)?;
         let flag = |k: &str| p.get(k).and_then(Value::as_bool);
@@ -359,10 +359,10 @@ impl CharChange {
             st.font_family = f.clone();
             // Keep the style when the new family has it, else its closest match.
             if self.style.is_none() {
-                let styles = vectorcraft_text::FontDb::global().styles(f);
+                let styles = redrob_vector_text::FontDb::global().styles(f);
                 if !styles.is_empty()
                     && !styles.iter().any(|s| s.eq_ignore_ascii_case(&st.font_style))
-                    && let Some(face) = vectorcraft_text::FontDb::global().face(f, &st.font_style)
+                    && let Some(face) = redrob_vector_text::FontDb::global().face(f, &st.font_style)
                 {
                     st.font_style = face.style.clone();
                 }
@@ -450,7 +450,7 @@ pub(crate) fn protect_missing_glyphs(before: &[TextRun], runs: &mut Vec<TextRun>
             })
             .flatten()
     }
-    let db = vectorcraft_text::FontDb::global();
+    let db = redrob_vector_text::FontDb::global();
     let mut faces = std::collections::HashMap::new();
     let mut covers = |st: &CharStyle, c: char| {
         let face = faces
@@ -533,7 +533,7 @@ fn create_in_path(s: &mut Session, p: &Value) -> Result<Value> {
     let style = super::create::new_type_style(s, p);
     let text = str_param(p, "text").unwrap_or("").to_string();
     let start = match point_param(p, "at") {
-        Some(at) if on_path => vectorcraft_geom::ArcPath::new(path).fraction_at(at).unwrap_or(0.0),
+        Some(at) if on_path => redrob_vector_geom::ArcPath::new(path).fraction_at(at).unwrap_or(0.0),
         _ => 0.0,
     };
     let kind = if on_path { TextKind::OnPath { path: path.clone(), start, end: None } } else { TextKind::Area { frame: path.clone() } };
@@ -707,7 +707,7 @@ fn headline_tracking(t: &TextObject, target: f64) -> Option<f64> {
         for r in &mut h.runs {
             r.style.tracking = tr;
         }
-        let l = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &h);
+        let l = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &h);
         l.lines.first().map_or(0.0, |li| li.x1 - li.x0)
     };
     // Width is linear in tracking: w(tr) = w0 + tr * slope.
@@ -736,7 +736,7 @@ fn fit_headline(s: &mut Session, p: &Value) -> Result<Value> {
     s.edit("Fit Headline", |d, _| {
         for id in &ids {
             let Some(t) = text_mut(d, *id) else { continue };
-            let lay = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), t);
+            let lay = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), t);
             let Some(first) = lay.lines.first() else { continue };
             let target = first.avail.1 - first.avail.0;
             let Some(tr) = headline_tracking(t, target) else { continue };

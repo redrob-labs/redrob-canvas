@@ -1,9 +1,9 @@
 use super::tiles::{Space, lzf_decompress};
 use super::*;
-use photocraft_codecs::{ChannelLayout, Format, Image, SampleType as CSample};
-use photocraft_color::{ColorMode, SampleType};
-use photocraft_format::zip::ZipWriter;
-use photocraft_geom::Rect;
+use redrob_photo_codecs::{ChannelLayout, Format, Image, SampleType as CSample};
+use redrob_photo_color::{ColorMode, SampleType};
+use redrob_photo_format::zip::ZipWriter;
+use redrob_photo_geom::Rect;
 
 const T: usize = 4; // small tiles keep the fixtures short
 
@@ -162,7 +162,7 @@ fn a_nonzero_default_pixel_fills_untouched_areas() {
 
 fn merged_png() -> Vec<u8> {
     let img = Image::from_raw(12, 8, ChannelLayout::Rgba, CSample::U8, vec![90; 12 * 8 * 4]).unwrap();
-    photocraft_codecs::encode(&img, Format::Png, &Default::default()).unwrap()
+    redrob_photo_codecs::encode(&img, Format::Png, &Default::default()).unwrap()
 }
 
 #[test]

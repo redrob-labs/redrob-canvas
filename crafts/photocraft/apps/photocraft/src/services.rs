@@ -1,11 +1,11 @@
 //! Native platform services: file dialogs (rfd), filesystem, codecs.
 
-use photocraft_codecs::{ChannelLayout, EncodeOptions, Image, SampleType as CS};
-use photocraft_color::{ColorMode, SampleType};
-use photocraft_doc::{Document, Layer, Size};
-use photocraft_format::RecoveryStore;
-use photocraft_geom::Rect;
-use photocraft_ui_egui::{FileDialogAnswer, FileDialogReply, FileDialogRequest, Recoverable, Services};
+use redrob_photo_codecs::{ChannelLayout, EncodeOptions, Image, SampleType as CS};
+use redrob_photo_color::{ColorMode, SampleType};
+use redrob_photo_doc::{Document, Layer, Size};
+use redrob_photo_format::RecoveryStore;
+use redrob_photo_geom::Rect;
+use redrob_photo_ui_egui::{FileDialogAnswer, FileDialogReply, FileDialogRequest, Recoverable, Services};
 use std::cell::RefCell;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -20,7 +20,7 @@ mod recovery_tests;
 /// Photoshop brushes (.abr), gradients (.grd), swatches (.aco, .ase) and keyboard shortcut sets
 /// (.kys), which go to the preset libraries and Edit › Keyboard Shortcuts.
 const OPEN_EXTS: &[&str] = &[
-    "pcraft", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr",
+    "rphoto", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr",
     "pbm", "pgm", "ppm", "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin", "heic", "heif", "hif", "dng", "cr2", "cr3", "nef", "nrw",
     "arw", "pef", "orf", "rw2", "raf", "abr", "grd", "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto", "afpub",
 ];
@@ -41,7 +41,7 @@ fn open_filter_extensions(extensions: &[&str]) -> Vec<String> {
 fn open_filters() -> Vec<(&'static str, Vec<String>)> {
     vec![
         ("All Formats", open_filter_extensions(OPEN_EXTS)),
-        ("PhotoCraft", open_filter_extensions(&["pcraft"])),
+        ("PhotoCraft", open_filter_extensions(&["rphoto"])),
         ("OpenRaster", open_filter_extensions(&["ora"])),
         ("Krita", open_filter_extensions(&["kra", "krz"])),
         ("SVG", open_filter_extensions(SVG_EXTS)),
@@ -49,12 +49,12 @@ fn open_filters() -> Vec<(&'static str, Vec<String>)> {
 }
 
 /// File › Save As formats: (filter name, extensions). The filter matching the suggested name's
-/// extension comes first, so a .pcraft document saves as .pcraft by default and everything else
+/// extension comes first, so a .rphoto document saves as .rphoto by default and everything else
 /// keeps defaulting to PSD.
 const SAVE_FILTERS: &[(&str, &[&str])] = &[
     ("PSD Document", &["psd", "psb"]),
     ("PDF", &["pdf"]),
-    ("PhotoCraft", &["pcraft"]),
+    ("PhotoCraft", &["rphoto"]),
     ("OpenRaster", &["ora"]),
     ("PNG", &["png"]),
     ("JPEG", &["jpg"]),
@@ -195,7 +195,7 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
     }
 }
 
-/// Per-user settings directory: `PHOTOCRAFT_CONFIG_DIR`, else `<exe dir>/PhotoCraftData` in
+/// Per-user settings directory: `REDROB_PHOTO_CONFIG_DIR`, else `<exe dir>/PhotoCraftData` in
 /// portable mode, else the platform convention. Everything the app persists lives under it; see
 /// [`crate::app_dirs`].
 pub fn config_dir() -> Option<PathBuf> {
@@ -207,7 +207,7 @@ pub fn prefs_file() -> Option<PathBuf> {
 }
 
 /// The brush preset store (one file per preset group plus tip bitmaps; see
-/// `photocraft_engine::preset_store`).
+/// `redrob_photo_engine::preset_store`).
 pub fn presets_dir() -> Option<PathBuf> {
     config_dir().map(|d| d.join("Presets"))
 }
@@ -217,18 +217,18 @@ fn recovery_dir() -> Option<PathBuf> {
 }
 
 /// Write `bytes` crash-safely (temp file beside the target, fsync, rename, directory fsync; see
-/// [`photocraft_format::atomic`]). Every document write (Save, Save As, Export, Save for Web) and
+/// [`redrob_photo_format::atomic`]). Every document write (Save, Save As, Export, Save for Web) and
 /// the preferences go through here, so a failed or interrupted save never destroys the old file.
 fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    photocraft_format::atomic_write(path, bytes).map_err(|e| e.to_string())
+    redrob_photo_format::atomic_write(path, bytes).map_err(|e| e.to_string())
 }
 
 /// [`write_atomic`] reporting the fraction written (a background save's progress, #3389).
 fn write_atomic_progress(path: &Path, bytes: &[u8], progress: &dyn Fn(f32)) -> Result<(), String> {
-    photocraft_format::atomic_write_progress(path, bytes, progress).map_err(|e| e.to_string())
+    redrob_photo_format::atomic_write_progress(path, bytes, progress).map_err(|e| e.to_string())
 }
 
-fn export_options(settings: &photocraft_ui_egui::ExportSettings) -> photocraft_io::ExportOptions {
+fn export_options(settings: &redrob_photo_ui_egui::ExportSettings) -> redrob_photo_io::ExportOptions {
     settings.io_options()
 }
 
@@ -243,16 +243,16 @@ const ENCODE_SHARE: f32 = 0.85;
 fn save_through(
     doc: &Document,
     path: &str,
-    settings: &photocraft_ui_egui::ExportSettings,
-    ctl: &photocraft_ui_egui::jobs_ui::SaveCtl,
+    settings: &redrob_photo_ui_egui::ExportSettings,
+    ctl: &redrob_photo_ui_egui::jobs_ui::SaveCtl,
     write: impl Fn(&str, &[u8], &dyn Fn(f32)) -> Result<(), String>,
 ) -> Result<Vec<String>, String> {
     ctl.progress(0.0, "Encoding");
     let opts = export_options(settings);
     let cancelled = || ctl.check().is_err();
     let progress = |f: f32| ctl.progress(f * ENCODE_SHARE, "");
-    let interrupt = photocraft_raster::Interrupt::new(&cancelled, &progress);
-    let r = crate::crash_guard::guard("Save", || photocraft_io::export_with(doc, path, &opts, &interrupt).map_err(|e| e.to_string()))?;
+    let interrupt = redrob_photo_raster::Interrupt::new(&cancelled, &progress);
+    let r = crate::crash_guard::guard("Save", || redrob_photo_io::export_with(doc, path, &opts, &interrupt).map_err(|e| e.to_string()))?;
     ctl.commit()?;
     ctl.progress(ENCODE_SHARE, "Writing");
     // The last bit is the flush and rename after the last chunk: 100% only once they're done.
@@ -264,8 +264,8 @@ fn save_through(
 fn save_file(
     doc: &Document,
     path: &str,
-    settings: &photocraft_ui_egui::ExportSettings,
-    ctl: &photocraft_ui_egui::jobs_ui::SaveCtl,
+    settings: &redrob_photo_ui_egui::ExportSettings,
+    ctl: &redrob_photo_ui_egui::jobs_ui::SaveCtl,
 ) -> Result<Vec<String>, String> {
     save_through(doc, path, settings, ctl, |p, b, progress| write_atomic_progress(Path::new(p), b, progress))
 }
@@ -279,7 +279,7 @@ fn with_store<R>(store: &SharedRecovery, f: impl FnOnce(&mut RecoveryStore) -> R
     Ok(f(slot.as_mut().ok_or("no config directory")?))
 }
 
-/// Crash recovery: background incremental .pcraft autosaves into `dir` (`None`: no config
+/// Crash recovery: background incremental .rphoto autosaves into `dir` (`None`: no config
 /// directory, so autosaves fail and nothing is recovered). Recovered documents keep their entries
 /// until a newer autosave replaces them or they're saved or closed (see [`RecoveryStore`]).
 fn recovery_services(dir: Option<PathBuf>) -> Services {
@@ -296,13 +296,13 @@ fn recovery_services(dir: Option<PathBuf>) -> Services {
         })),
         recover: Some(Box::new(move || {
             let Some(dir) = recover_dir.as_ref() else { return Vec::new() };
-            photocraft_format::list_recovery(dir)
+            redrob_photo_format::list_recovery(dir)
                 .into_iter()
                 .map(|e| Recoverable {
                     key: e.info.key.clone(),
                     name: e.info.document_name.clone(),
                     path: e.info.original_path.clone(),
-                    load: Box::new(move || photocraft_format::recover(&e).map_err(|e| e.to_string())),
+                    load: Box::new(move || redrob_photo_format::recover(&e).map_err(|e| e.to_string())),
                 })
                 .collect()
         })),
@@ -327,11 +327,11 @@ fn image_from_files(paths: &[PathBuf]) -> Option<(u32, u32, Vec<u8>)> {
         // TGA has no magic number and is only guessed from the header, so trust the extension
         // too before reading what may be a large non-image file.
         let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-        match photocraft_codecs::detect(&head)? {
-            photocraft_codecs::Format::Tga if photocraft_codecs::from_extension(ext) != Some(photocraft_codecs::Format::Tga) => return None,
+        match redrob_photo_codecs::detect(&head)? {
+            redrob_photo_codecs::Format::Tga if redrob_photo_codecs::from_extension(ext) != Some(redrob_photo_codecs::Format::Tga) => return None,
             _ => {}
         }
-        let img = photocraft_codecs::decode(&std::fs::read(&path).ok()?).ok()?;
+        let img = redrob_photo_codecs::decode(&std::fs::read(&path).ok()?).ok()?;
         Some((img.width(), img.height(), img.to_rgba8()))
     })
 }
@@ -365,10 +365,10 @@ fn image_from_offers(offers: &[String], mut fetch: impl FnMut(&str) -> Option<Ve
     offers.iter().filter(|mime| mime.starts_with("image/")).find_map(|mime| {
         let bytes = fetch(mime)?;
         // TGA has no magic number (see `image_from_files`), so trust it only when the type says so.
-        if photocraft_codecs::detect(&bytes)? == photocraft_codecs::Format::Tga && !mime.contains("tga") {
+        if redrob_photo_codecs::detect(&bytes)? == redrob_photo_codecs::Format::Tga && !mime.contains("tga") {
             return None;
         }
-        let img = photocraft_codecs::decode(&bytes).ok()?;
+        let img = redrob_photo_codecs::decode(&bytes).ok()?;
         Some((img.width(), img.height(), img.to_rgba8()))
     })
 }
@@ -392,46 +392,46 @@ fn shell_word(s: &str) -> String {
     if s.bytes().all(|b| b.is_ascii_alphanumeric() || b"/._-+:,@".contains(&b)) { s.to_string() } else { format!("'{}'", s.replace('\'', r"'\''")) }
 }
 
-pub fn native(automation: Option<photocraft_automation::AuthorizedWorkspace>) -> Services {
+pub fn native(automation: Option<redrob_photo_automation::AuthorizedWorkspace>) -> Services {
     let clip: Rc<RefCell<Option<arboard::Clipboard>>> = Rc::default();
     let automation_read = automation.clone().map(|workspace| {
         Box::new(move |path: &str| {
             let bytes = workspace.read(path).map_err(|error| error.to_string())?;
             let name = Path::new(path).file_name().and_then(|name| name.to_str()).unwrap_or(path).to_string();
             Ok((name, bytes))
-        }) as photocraft_ui_egui::AutomationReadFn
+        }) as redrob_photo_ui_egui::AutomationReadFn
     });
     let automation_write = automation.clone().map(|workspace| {
-        Box::new(move |path: &str, bytes: &[u8]| workspace.write(path, bytes).map_err(|error| error.to_string())) as photocraft_ui_egui::AutomationWriteFn
+        Box::new(move |path: &str, bytes: &[u8]| workspace.write(path, bytes).map_err(|error| error.to_string())) as redrob_photo_ui_egui::AutomationWriteFn
     });
     let automation_open_pcraft = automation.clone().map(|workspace| {
         Box::new(move |path: &str| {
             let name = Path::new(path).file_name().and_then(|name| name.to_str()).unwrap_or(path).to_string();
             let opened = crate::crash_guard::guard("Open", || workspace.open_pcraft(path).map_err(|e| e.to_string()))?;
             Ok(opened.map(|doc| (name, doc)))
-        }) as photocraft_ui_egui::AutomationOpenPcraftFn
+        }) as redrob_photo_ui_egui::AutomationOpenPcraftFn
     });
     let automation_save = automation.clone().map(|workspace| {
-        std::sync::Arc::new(move |doc: &Document, path: &str, settings: &photocraft_ui_egui::ExportSettings, ctl: &photocraft_ui_egui::jobs_ui::SaveCtl| {
+        std::sync::Arc::new(move |doc: &Document, path: &str, settings: &redrob_photo_ui_egui::ExportSettings, ctl: &redrob_photo_ui_egui::jobs_ui::SaveCtl| {
             save_through(doc, path, settings, ctl, |p, b, _| workspace.write(p, b).map_err(|e| e.to_string()))
-        }) as photocraft_ui_egui::SaveFileFn
+        }) as redrob_photo_ui_egui::SaveFileFn
     });
-    let step: fn(&str, &serde_json::Value) -> photocraft_engine::Result<()> = photocraft_automation::workspace::authorize_desktop_engine_step;
+    let step: fn(&str, &serde_json::Value) -> redrob_photo_engine::Result<()> = redrob_photo_automation::workspace::authorize_desktop_engine_step;
     let automation_authorize = automation.is_some().then_some(step);
     let automation_command = automation.map(|_| {
         Box::new(|id: &str, params: &serde_json::Value| {
-            photocraft_automation::workspace::authorize_desktop_engine_command(id, params).map_err(|error| error.to_string())
-        }) as photocraft_ui_egui::AutomationCommandFn
+            redrob_photo_automation::workspace::authorize_desktop_engine_command(id, params).map_err(|error| error.to_string())
+        }) as redrob_photo_ui_egui::AutomationCommandFn
     });
     Services {
         import: Some(Box::new(|name: &str, bytes: &[u8], max_svg_group_depth: usize| {
             crate::crash_guard::guard("Open", || {
-                photocraft_io::import_with_svg_group_depth(name, bytes, max_svg_group_depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
+                redrob_photo_io::import_with_svg_group_depth(name, bytes, max_svg_group_depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
             })
         })),
-        export: Some(Box::new(|doc: &Document, path: &str, settings: &photocraft_ui_egui::ExportSettings| {
+        export: Some(Box::new(|doc: &Document, path: &str, settings: &redrob_photo_ui_egui::ExportSettings| {
             let opts = export_options(settings);
-            crate::crash_guard::guard("Export", || photocraft_io::export(doc, path, &opts).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string()))
+            crate::crash_guard::guard("Export", || redrob_photo_io::export(doc, path, &opts).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string()))
         })),
         save_file: Some(Arc::new(save_file)),
         file_dialog: Some(Box::new(show_file_dialog)),
@@ -444,7 +444,7 @@ pub fn native(automation: Option<photocraft_automation::AuthorizedWorkspace>) ->
         automation_authorize,
         encode_png: Some(Box::new(|w, h, rgba| {
             let img = Image::from_u8(w, h, ChannelLayout::Rgba, rgba.to_vec()).map_err(|e| e.to_string())?;
-            photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &EncodeOptions::default()).map_err(|e| e.to_string())
+            redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &EncodeOptions::default()).map_err(|e| e.to_string())
         })),
         inbox: None,
         open_url: Some(Box::new(|url: &str| open::that(url).map_err(|e| e.to_string()))),
@@ -515,10 +515,10 @@ fn platform_beep() {
     }
 }
 
-/// Flat-image import via photocraft-codecs (kept for reference/tests; the app uses photocraft-io).
+/// Flat-image import via redrob-photo-codecs (kept for reference/tests; the app uses redrob-photo-io).
 #[allow(dead_code)]
 pub fn import_flat(name: &str, bytes: &[u8]) -> Result<Document, String> {
-    let img = photocraft_codecs::decode(bytes).map_err(|e| e.to_string())?;
+    let img = redrob_photo_codecs::decode(bytes).map_err(|e| e.to_string())?;
     let (w, h) = (img.width(), img.height());
     let depth = match img.sample_type() {
         CS::U8 => SampleType::U8,
@@ -560,8 +560,8 @@ pub fn import_flat(name: &str, bytes: &[u8]) -> Result<Document, String> {
 
 #[allow(dead_code)]
 pub fn export_flat(doc: &Document, path: &str) -> Result<Vec<u8>, String> {
-    let format = photocraft_codecs::from_extension(path).ok_or_else(|| format!("unknown file type for {path}"))?;
-    let buf = photocraft_compose::flatten(doc);
+    let format = redrob_photo_codecs::from_extension(path).ok_or_else(|| format!("unknown file type for {path}"))?;
+    let buf = redrob_photo_compose::flatten(doc);
     let (w, h) = (buf.rect.width(), buf.rect.height());
     let data: Vec<f32> = buf.px.iter().flat_map(|p| *p).collect();
     let img = match doc.depth {
@@ -574,15 +574,15 @@ pub fn export_flat(doc: &Document, path: &str) -> Result<Vec<u8>, String> {
         Some(icc) if doc.mode == ColorMode::Rgb => img.with_icc(Some((**icc).clone())),
         _ => img,
     };
-    photocraft_codecs::encode(&img, format, &EncodeOptions::default()).map_err(|e| e.to_string())
+    redrob_photo_codecs::encode(&img, format, &EncodeOptions::default()).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_engine::Session;
-    use photocraft_format::list_recovery;
-    use photocraft_ui_egui::{PhotocraftApp, prefs_ui};
+    use redrob_photo_engine::Session;
+    use redrob_photo_format::list_recovery;
+    use redrob_photo_ui_egui::{PhotocraftApp, prefs_ui};
     use serde_json::{Value, json};
 
     #[cfg(all(unix, not(target_os = "macos")))]
@@ -600,7 +600,7 @@ mod tests {
             }
             text.next().is_none()
         }
-        assert_eq!(open_filter_extensions(&["cr2", "pcraft"]), ["[cC][rR]2", "[pP][cC][rR][aA][fF][tT]"]);
+        assert_eq!(open_filter_extensions(&["cr2", "rphoto"]), ["[cC][rR]2", "[pP][cC][rR][aA][fF][tT]"]);
         let globs = open_filter_extensions(OPEN_EXTS);
         assert_eq!(globs.len(), OPEN_EXTS.len());
         for (ext, glob) in OPEN_EXTS.iter().zip(&globs) {
@@ -623,15 +623,15 @@ mod tests {
     #[test]
     fn open_filters_keep_literal_extensions_on_windows_and_macos() {
         assert_eq!(open_filter_extensions(OPEN_EXTS), OPEN_EXTS);
-        assert_eq!(open_filter_extensions(&["pcraft"]), ["pcraft"]);
+        assert_eq!(open_filter_extensions(&["rphoto"]), ["rphoto"]);
         assert_eq!(open_filters().into_iter().find(|(name, _)| *name == "SVG").map(|(_, exts)| exts), Some(vec!["svg".to_string(), "svgz".to_string()]));
     }
 
     #[test]
     fn xwayland_command_matches_how_photocraft_was_installed() {
         // Flatpak: WAYLAND_DISPLAY doesn't reach the sandbox's socket choice; flatpak's flags do.
-        let flatpak = xwayland_command(Some("ai.storyteller.photocraft"), None, false);
-        assert_eq!(flatpak.as_deref(), Some("flatpak run --nosocket=wayland --socket=x11 ai.storyteller.photocraft"));
+        let flatpak = xwayland_command(Some("ai.storyteller.rphoto"), None, false);
+        assert_eq!(flatpak.as_deref(), Some("flatpak run --nosocket=wayland --socket=x11 ai.storyteller.rphoto"));
         // AppImage: its own path, quoted for the shell (spaces, quotes).
         let appimage = xwayland_command(None, Some("/home/me/My Apps/it's.AppImage"), true);
         assert_eq!(appimage.as_deref(), Some(r"WAYLAND_DISPLAY= '/home/me/My Apps/it'\''s.AppImage'"));
@@ -664,7 +664,7 @@ mod tests {
         let ctx = egui::Context::default();
         // Dialogs are shown on the next frame: poll once so each is answered before the next asks.
         let invoke = |app: &mut PhotocraftApp, id: &str| {
-            let r = photocraft_ui_egui::menus::invoke(app, &ctx, id, json!({}));
+            let r = redrob_photo_ui_egui::menus::invoke(app, &ctx, id, json!({}));
             app.poll_file_dialog(&ctx, None);
             r
         };
@@ -673,14 +673,14 @@ mod tests {
             for (k, v) in fields.as_object().unwrap() {
                 app.ui.dialog_mut(d).unwrap().fields.insert(k.clone(), v.clone());
             }
-            let _ = photocraft_ui_egui::dialogs::confirm(app, d);
+            let _ = redrob_photo_ui_egui::dialogs::confirm(app, d);
             app.poll_file_dialog(&ctx, None);
         };
         new_doc(&mut app, "#ff0000");
         // Save As, Save a Copy.
         // Files in a format Save As can't write, like .dng, should suggest .psd instead.
         let _ = invoke(&mut app, "file.saveAs");
-        for name in ["cat.pcraft", "cat.jpeg", "cat.gif", "cat.bmp", "cat.dng"] {
+        for name in ["cat.rphoto", "cat.jpeg", "cat.gif", "cat.bmp", "cat.dng"] {
             app.session.active_mut().unwrap().path = Some(name.into());
             let _ = invoke(&mut app, "file.saveAs");
         }
@@ -707,7 +707,7 @@ mod tests {
         // The extension each save above should suggest, in order.
         let want = [
             "psd",                       // Save As untitled
-            "pcraft jpeg gif bmp psd",   // Save As opened .pcraft .jpeg .gif .bmp .dng
+            "rphoto jpeg gif bmp psd",   // Save As opened .rphoto .jpeg .gif .bmp .dng
             "psd",                       // Save a Copy
             "png jpg webp tif tga",      // Export As
             "png jpg gif webp",          // Quick Export
@@ -726,11 +726,11 @@ mod tests {
     /// Every flat format Save As offers is one PhotoCraft writes, and ICO is among them (#4357).
     #[test]
     fn save_as_offers_only_writable_formats_including_ico() {
-        // Layered formats, and PDF, are written by `photocraft-io`, not a codec.
-        let layered = ["psd", "psb", "pcraft", "ora", "pdf"];
+        // Layered formats, and PDF, are written by `redrob-photo-io`, not a codec.
+        let layered = ["psd", "psb", "rphoto", "ora", "pdf"];
         for (name, exts) in SAVE_FILTERS {
             for ext in exts.iter().filter(|e| !layered.contains(e)) {
-                let format = photocraft_codecs::from_extension(ext).unwrap_or_else(|| panic!("{name}: .{ext} is no known format"));
+                let format = redrob_photo_codecs::from_extension(ext).unwrap_or_else(|| panic!("{name}: .{ext} is no known format"));
                 assert!(format.caps().write, "{name}: .{ext} can't be written");
             }
         }
@@ -744,10 +744,10 @@ mod tests {
             s.execute("file.new", json!({"width": side, "height": side})).unwrap();
             s.active().unwrap().doc.clone()
         };
-        let opts = export_options(&photocraft_ui_egui::ExportSettings::default());
-        let icon = photocraft_io::export(&doc(256), "icon.ico", &opts).unwrap();
+        let opts = export_options(&redrob_photo_ui_egui::ExportSettings::default());
+        let icon = redrob_photo_io::export(&doc(256), "icon.ico", &opts).unwrap();
         assert_eq!(icon.bytes[..4], [0, 0, 1, 0], "an ICO header");
-        let err = photocraft_io::export(&doc(300), "icon.ico", &opts).map(|_| ()).unwrap_err().to_string();
+        let err = redrob_photo_io::export(&doc(300), "icon.ico", &opts).map(|_| ()).unwrap_err().to_string();
         assert!(err.contains("256"), "{err}");
     }
 
@@ -759,7 +759,7 @@ mod tests {
         for (suggested, name, first) in [
             ("/pics/image.psd", "image", "psd"),
             ("/pics/image.psb", "image", "psb"),
-            ("/pics/image.pcraft", "image", "pcraft"),
+            ("/pics/image.rphoto", "image", "rphoto"),
             ("/pics/sky.fit", "sky", "fit"),
             ("cat.jpeg", "cat", "jpeg"),
             ("swatches.aco", "swatches", "aco"),
@@ -807,7 +807,7 @@ mod tests {
         prefs_ui::tick(&mut app, &ctx);
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
         while app.session.has_jobs() && std::time::Instant::now() < deadline {
-            photocraft_ui_egui::jobs_ui::tick(&mut app, &ctx);
+            redrob_photo_ui_egui::jobs_ui::tick(&mut app, &ctx);
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
         assert!(!app.session.has_jobs(), "recovery finished");
@@ -816,7 +816,7 @@ mod tests {
 
     /// The first pixel of each open document, and whether it's unsaved.
     fn open_docs(app: &PhotocraftApp) -> Vec<([f32; 4], bool)> {
-        app.session.documents().iter().map(|d| (photocraft_compose::flatten(&d.doc).px.first().copied().unwrap_or_default(), d.is_dirty())).collect()
+        app.session.documents().iter().map(|d| (redrob_photo_compose::flatten(&d.doc).px.first().copied().unwrap_or_default(), d.is_dirty())).collect()
     }
 
     fn index_of(app: &PhotocraftApp, color: [f32; 4]) -> usize {
@@ -877,7 +877,7 @@ mod tests {
         prefs_ui::tick(&mut app, &ctx);
         let left = list_recovery(&dir);
         assert_eq!(left.len(), 1);
-        assert_eq!(photocraft_compose::flatten(&photocraft_format::recover(&left[0]).unwrap()).px.first().copied(), Some(GREEN));
+        assert_eq!(redrob_photo_compose::flatten(&redrob_photo_format::recover(&left[0]).unwrap()).px.first().copied(), Some(GREEN));
         let green = index_of(&app, GREEN);
         app.run("file.close", json!({"document": green})).unwrap();
         prefs_ui::tick(&mut app, &ctx);
@@ -933,8 +933,8 @@ mod tests {
         }
         assert_eq!(recovered.len(), 1, "unchanged revision should retry after failure");
         assert_eq!(recovered[0].info.revision, revision);
-        let restored = photocraft_format::recover(&recovered[0]).unwrap();
-        assert_eq!(photocraft_compose::flatten(&restored).px.first().copied(), Some(RED));
+        let restored = redrob_photo_format::recover(&recovered[0]).unwrap();
+        assert_eq!(redrob_photo_compose::flatten(&restored).px.first().copied(), Some(RED));
         drop(app);
         std::fs::remove_dir_all(dir).unwrap();
     }
@@ -951,7 +951,7 @@ mod tests {
 
     fn red_png(w: u32, h: u32) -> Vec<u8> {
         let img = Image::from_u8(w, h, ChannelLayout::Rgba, [255u8, 0, 0, 255].repeat((w * h) as usize)).unwrap();
-        photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &EncodeOptions::default()).unwrap()
+        redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &EncodeOptions::default()).unwrap()
     }
 
     /// A 1×1 uncompressed 32-bit TGA (TGA has no magic number).
@@ -1001,15 +1001,15 @@ mod tests {
         assert!(image_from_files(&[bad]).is_none());
     }
 
-    fn encoded(format: photocraft_codecs::Format, w: u32, h: u32) -> Vec<u8> {
+    fn encoded(format: redrob_photo_codecs::Format, w: u32, h: u32) -> Vec<u8> {
         let img = Image::from_u8(w, h, ChannelLayout::Rgba, [255u8, 0, 0, 255].repeat((w * h) as usize)).unwrap();
-        photocraft_codecs::encode(&img, format, &EncodeOptions::default()).unwrap()
+        redrob_photo_codecs::encode(&img, format, &EncodeOptions::default()).unwrap()
     }
 
     #[test]
     fn non_png_clipboard_images_paste() {
         // #2546: a screenshot tool that offers only image/bmp or image/jpeg pasted nothing.
-        let bmp = encoded(photocraft_codecs::Format::Bmp, 3, 2);
+        let bmp = encoded(redrob_photo_codecs::Format::Bmp, 3, 2);
         let offers = vec!["text/plain".to_string(), "image/bmp".to_string()];
         let mut asked = Vec::new();
         let got = image_from_offers(&offers, |mime| {
@@ -1019,15 +1019,15 @@ mod tests {
         assert_eq!(got, Some((3, 2, [255u8, 0, 0, 255].repeat(6))));
         assert_eq!(asked, ["image/bmp"], "text offers are never fetched");
 
-        let jpeg = encoded(photocraft_codecs::Format::Jpeg, 16, 8);
+        let jpeg = encoded(redrob_photo_codecs::Format::Jpeg, 16, 8);
         let offers = vec!["image/jpeg".to_string()];
         assert_eq!(image_from_offers(&offers, |_| Some(jpeg.clone())).map(|(w, h, _)| (w, h)), Some((16, 8)));
     }
 
     #[test]
     fn undecodable_clipboard_offers_fall_through_to_the_next() {
-        let bmp = encoded(photocraft_codecs::Format::Bmp, 2, 2);
-        let cut = encoded(photocraft_codecs::Format::Png, 8, 8)[..20].to_vec();
+        let bmp = encoded(redrob_photo_codecs::Format::Bmp, 2, 2);
+        let cut = encoded(redrob_photo_codecs::Format::Png, 8, 8)[..20].to_vec();
         let offers: Vec<String> = ["image/webp", "image/png", "image/x-tga", "image/bmp"].map(String::from).to_vec();
         let got = image_from_offers(&offers, |mime| match mime {
             "image/webp" => None,

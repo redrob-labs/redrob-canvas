@@ -7,9 +7,9 @@ license.workspace = true
 publish = false
 
 [features]
-# Open HEIC/HEIF photos (the optional photocraft-heif crate). Not default so distributors choose
+# Open HEIC/HEIF photos (the optional redrob-photo-heif crate). Not default so distributors choose
 # it; official builds (CI, packaging/, release) build with `--features heif`.
-heif = ["photocraft-codecs/heif"]
+heif = ["redrob-photo-codecs/heif"]
 
 [lints]
 workspace = true
@@ -19,11 +19,11 @@ name = "photocraft-web"
 path = "src/main.rs"
 
 [dependencies]
-photocraft-engine = { workspace = true }
-photocraft-io = { workspace = true }
-photocraft-codecs = { workspace = true }
-photocraft-doc = { workspace = true }
-photocraft-ui-egui = { workspace = true }
+redrob-photo-engine = { workspace = true }
+redrob-photo-io = { workspace = true }
+redrob-photo-codecs = { workspace = true }
+redrob-photo-doc = { workspace = true }
+redrob-photo-ui-egui = { workspace = true }
 egui = { workspace = true }
 log = { workspace = true }
 
@@ -38,5 +38,5 @@ web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlE
 
 [dev-dependencies]
 serde_json = { workspace = true }
-photocraft-paint = { workspace = true }
-photocraft-psd = { workspace = true }
+redrob-photo-paint = { workspace = true }
+redrob-photo-psd = { workspace = true }

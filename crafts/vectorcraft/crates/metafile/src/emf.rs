@@ -8,8 +8,8 @@
 //! that places their pixels.
 
 use kurbo::PathEl;
-use vectorcraft_doc::{LineCap, LineJoin};
-use vectorcraft_geom::{Affine, BezPath, FillRule, Point, Rect};
+use redrob_vector_doc::{LineCap, LineJoin};
+use redrob_vector_geom::{Affine, BezPath, FillRule, Point, Rect};
 
 use crate::bytes::Out;
 use crate::dib::{self, Rgba};

@@ -13,7 +13,7 @@ fn session(artboards: usize) -> Session {
 }
 
 fn b64(v: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
 }
 
 fn export(s: &mut Session, p: Value) -> Value {
@@ -25,7 +25,7 @@ fn warnings(v: &Value) -> Vec<String> {
 }
 
 fn pages(bytes: &[u8]) -> usize {
-    vectorcraft_pdf::import(bytes).unwrap().artboards.len()
+    redrob_vector_pdf::import(bytes).unwrap().artboards.len()
 }
 
 /// `p` plus `format: pdf` (the same options through `document.export`).

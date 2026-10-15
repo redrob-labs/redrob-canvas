@@ -5,8 +5,8 @@
 //! Fields: `name`, `user` (save to the user library folder), `selectedOnly` and `names` (the styles
 //! selected in the Graphic Styles panel), `__user` (there is a user library folder).
 
+use redrob_vector_doc::style_libs::STYLES_EXT;
 use serde_json::Value;
-use vectorcraft_doc::style_libs::STYLES_EXT;
 
 use super::DialogSpec;
 use super::save_swatch_library::{destination, fields, name_row, params, save};

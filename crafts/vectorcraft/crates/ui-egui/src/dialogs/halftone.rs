@@ -5,8 +5,8 @@
 //! Fields: `shape`, `frequency`, `angle`, `mode`, `color`, `invert`, `clip`, `keepOriginal` (the
 //! command's parameters) and `preview`.
 
+use redrob_vector_color::Color;
 use serde_json::{Value, json};
-use vectorcraft_color::Color;
 
 use super::{DialogSpec, form};
 use crate::panels::c32;

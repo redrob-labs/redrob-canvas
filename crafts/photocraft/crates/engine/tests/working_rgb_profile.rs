@@ -1,14 +1,14 @@
 //! Working RGB must support reading and editing for the configured intent.
 
-use photocraft_cms::{
+use redrob_photo_cms::{
     Builtin, Curve, Intent, Profile, ProfileClass,
     pipeline::Stage,
     profile::{Lut, LutKind},
 };
-use photocraft_color::{Color, ColorMode, SampleType};
-use photocraft_doc::{Document, Layer};
-use photocraft_engine::Session;
-use photocraft_geom::Size;
+use redrob_photo_color::{Color, ColorMode, SampleType};
+use redrob_photo_doc::{Document, Layer};
+use redrob_photo_engine::Session;
+use redrob_photo_geom::Size;
 use serde_json::json;
 use std::sync::atomic::{AtomicU64, Ordering};
 

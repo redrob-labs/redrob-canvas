@@ -347,7 +347,7 @@ mod tests {
         use crate::PhotocraftApp;
 
         fn harness(overscroll: bool) -> Harness<'static, PhotocraftApp> {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 2000, "height": 1500})).unwrap();
             app.run("prefs.set", json!({"path": "tools.overscroll", "value": overscroll})).unwrap();
             app.sync_views();

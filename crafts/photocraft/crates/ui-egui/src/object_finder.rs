@@ -3,7 +3,7 @@
 //! Finder does. A click (without dragging) commits that object (`select.object` with `"point"`;
 //! ⇧ adds, ⌥ subtracts, ⇧⌥ intersects); dragging keeps the rectangle mode.
 //!
-//! The lookup is `photocraft_engine::smartselect_cmds::find_object`, run after the pointer has
+//! The lookup is `redrob_photo_engine::smartselect_cmds::find_object`, run after the pointer has
 //! been still for [`DEBOUNCE`] seconds on a worker thread (inline on the web), so the UI never
 //! waits for it. Results go into the session's `object_finder` cache, which the click reuses and
 //! which serves every point of an object already found; it is keyed by the document's pixels,
@@ -14,9 +14,9 @@
 use std::sync::Arc;
 
 use egui::{Color32, TextureOptions, pos2};
-use photocraft_algo::selection::Region;
-use photocraft_doc::{DocId, Document, LayerId};
-use photocraft_engine::smartselect_cmds::{find_object, sampled_target};
+use redrob_photo_algo::selection::Region;
+use redrob_photo_doc::{DocId, Document, LayerId};
+use redrob_photo_engine::smartselect_cmds::{find_object, sampled_target};
 
 use crate::PhotocraftApp;
 use crate::canvas::ViewXform;
@@ -97,7 +97,7 @@ pub(crate) fn update(app: &mut PhotocraftApp, at: Option<[f64; 2]>, pressed: boo
         match job.rx.try_recv() {
             Ok(found) => {
                 if let Some(r) = found {
-                    if photocraft_engine::layer_multi_cmds::same_pixels(&job.doc, &doc_arc) {
+                    if redrob_photo_engine::layer_multi_cmds::same_pixels(&job.doc, &doc_arc) {
                         app.session.object_finder.insert(&doc_arc, target, Arc::new(r));
                     }
                 } else {
@@ -220,17 +220,17 @@ mod tests {
 
     /// A 200 × 160 document: a red disc (centre 100, 80, radius 45) on blue.
     pub(crate) fn disc_app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 200, "height": 160})).unwrap();
         app.session
             .edit("paint", |doc, a| {
                 let s = doc.layer_mut(a.unwrap()).unwrap().surface_mut().unwrap();
-                s.fill_rect(photocraft_geom::Rect::new(0, 0, 200, 160), &[0.2, 0.4, 0.8, 1.0]);
+                s.fill_rect(redrob_photo_geom::Rect::new(0, 0, 200, 160), &[0.2, 0.4, 0.8, 1.0]);
                 for y in 0..160 {
                     for x in 0..200 {
                         let (dx, dy) = (x as f32 + 0.5 - 100.0, y as f32 + 0.5 - 80.0);
                         if dx * dx + dy * dy <= 45.0 * 45.0 {
-                            s.fill_rect(photocraft_geom::Rect::new(x, y, x + 1, y + 1), &[0.9, 0.2, 0.1, 1.0]);
+                            s.fill_rect(redrob_photo_geom::Rect::new(x, y, x + 1, y + 1), &[0.9, 0.2, 0.1, 1.0]);
                         }
                     }
                 }
@@ -320,12 +320,12 @@ mod tests {
 
     #[test]
     fn overlay_image_tints_the_object_and_outlines_it() {
-        let r = Region { bbox: photocraft_geom::Rect::new(0, 0, 4, 4), mask: vec![255; 16] };
+        let r = Region { bbox: redrob_photo_geom::Rect::new(0, 0, 4, 4), mask: vec![255; 16] };
         let img = overlay_image(&r, Color32::from_rgb(0, 120, 255));
         assert_eq!(img.size, [4, 4]);
         assert!(img.pixels[0].a() > 200, "edge");
         assert!(img.pixels[5].a() > 0 && img.pixels[5].a() < 200, "fill");
-        let big = Region { bbox: photocraft_geom::Rect::new(0, 0, 3000, 10), mask: vec![255; 30_000] };
+        let big = Region { bbox: redrob_photo_geom::Rect::new(0, 0, 3000, 10), mask: vec![255; 30_000] };
         assert!(overlay_image(&big, Color32::WHITE).size[0] <= TEX_MAX);
     }
 }

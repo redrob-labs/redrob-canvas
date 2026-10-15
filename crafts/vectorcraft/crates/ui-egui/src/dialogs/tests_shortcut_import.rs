@@ -3,8 +3,8 @@
 
 use std::collections::BTreeMap;
 
+use redrob_vector_engine::Session;
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
 
 use super::shortcut_import::{Code, KIND, Review, Row, Status, report};
 use super::*;
@@ -158,7 +158,7 @@ fn kys_files_open_the_review() {
     // A file in another form says so, and opens nothing.
     app.ui.dialog = None;
     let e = io::open_bytes(&mut app, "Other.kys", b"<?xml version=\"1.0\"?><shortcuts/>", None).unwrap_err();
-    assert_eq!(e, vectorcraft_engine::cmd::shortcutset::NOT_READABLE);
+    assert_eq!(e, redrob_vector_engine::cmd::shortcutset::NOT_READABLE);
     assert!(app.ui.dialog.is_none());
 }
 
@@ -257,7 +257,7 @@ fn cancel_goes_back_to_keyboard_shortcuts_before_a_waiting_missing_fonts_dialog(
 #[test]
 fn a_set_dropped_with_no_document_open_opens_the_review() {
     let mut app = app();
-    let dir = vectorcraft_testkit::temp_dir("shortcut-import-drop");
+    let dir = redrob_vector_testkit::temp_dir("shortcut-import-drop");
     let kys = dir.join("Dropped.kys");
     std::fs::write(&kys, SET).unwrap();
     app.services.read = Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string())));
@@ -327,7 +327,7 @@ fn remembered_choices_answer_the_next_import() {
 
 /// What the import matches say `name` of `kind` stands for.
 fn importmatches_target(app: &VectorcraftApp, kind: &str, name: &str) -> Option<String> {
-    vectorcraft_engine::cmd::importmatches::targets(&app.session.prefs).get(&(kind, name)).map(|t| t.to_string())
+    redrob_vector_engine::cmd::importmatches::targets(&app.session.prefs).get(&(kind, name)).map(|t| t.to_string())
 }
 
 #[test]
@@ -353,7 +353,7 @@ fn a_key_press_answers_the_code_being_recorded() {
 #[test]
 fn keyboard_shortcuts_import_reads_both_kinds_of_set() {
     let mut app = app();
-    let dir = vectorcraft_testkit::temp_dir("shortcut-import-path");
+    let dir = redrob_vector_testkit::temp_dir("shortcut-import-path");
     let kys = dir.join("On Disk.kys");
     std::fs::write(&kys, SET).unwrap();
     let kys = kys.to_string_lossy().to_string();
@@ -387,7 +387,7 @@ fn keyboard_shortcuts_import_reads_both_kinds_of_set() {
     app.ui.dialog = None;
     app.run("ui.shortcutImportDialog", json!({ "path": kys })).unwrap();
     assert_eq!((Review::of(dialog(&app)).rows.len(), dialog(&app).str("name")), (4, "On Disk".into()));
-    let b64 = vectorcraft_format::base64_encode(SET.as_bytes());
+    let b64 = redrob_vector_format::base64_encode(SET.as_bytes());
     let r = app.run("ui.shortcutImportDialog", json!({"dataBase64": b64, "name": "Sent.kys"})).unwrap();
     assert_eq!((r["entries"].as_u64(), dialog(&app).str("name")), (Some(4), "Sent".into()));
     // A file past the reader's cap opens with what fits, marked truncated.

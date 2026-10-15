@@ -1,6 +1,6 @@
 [package]
-name = "photocraft-format"
-description = "Native .pcraft document bundle: manifest + content-addressed zstd tiles"
+name = "redrob-photo-format"
+description = "Native .rphoto document bundle: manifest + content-addressed zstd tiles"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,11 +10,11 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-photocraft-geom = { workspace = true }
-photocraft-color = { workspace = true }
-photocraft-raster = { workspace = true }
-photocraft-doc = { workspace = true }
-photocraft-codecs = { workspace = true }
+redrob-photo-geom = { workspace = true }
+redrob-photo-color = { workspace = true }
+redrob-photo-raster = { workspace = true }
+redrob-photo-doc = { workspace = true }
+redrob-photo-codecs = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["unbounded_depth"] }
 thiserror = { workspace = true }

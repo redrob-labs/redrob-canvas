@@ -1,9 +1,9 @@
 //! File → Document Setup (`document.setup`): validation, one undo step, round-trips, and the
 //! options other commands read (typographer's quotes, superscript/subscript, SVG text export).
 
+use redrob_vector_doc::{CharPosition, DocSetup, ExportText, GridSize, NodeId, NodeKind, ScriptMetrics, TextObject, TextStyleDef, Unit};
+use redrob_vector_tools::{PointerEvent, PointerKind, ToolKey};
 use serde_json::{Value, json};
-use vectorcraft_doc::{CharPosition, DocSetup, ExportText, GridSize, NodeId, NodeKind, ScriptMetrics, TextObject, TextStyleDef, Unit};
-use vectorcraft_tools::{PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 
@@ -208,7 +208,7 @@ fn setup_survives_save_and_load() {
     )
     .unwrap();
     let d = &s.doc().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save_file(d)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save_file(d)).unwrap();
     assert_eq!(back.setup, d.setup);
     assert_eq!(back.setup.grid_colors_name(), "Custom");
 }
@@ -221,7 +221,7 @@ fn svg_text_export_follows_the_export_text_setting() {
         let mut p = p;
         p["format"] = json!("svg");
         let r = s.execute("document.export", &p).unwrap();
-        String::from_utf8(vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()).unwrap()
+        String::from_utf8(redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap()).unwrap()
     };
     assert!(svg(&mut s, json!({})).contains("<text"));
     s.execute("document.setup", &json!({"exportText": "appearance"})).unwrap();
@@ -243,8 +243,8 @@ fn discard_white_overprint_keeps_white_overprints_in_overprint_preview() {
     let white = rect(&mut s, "#ffffff");
     s.execute("object.setOverprint", &json!({"fill": true, "ids": [white]})).unwrap();
     let centre = |s: &Session| {
-        let opts = vectorcraft_render::RenderOptions { background: Some([255; 4]), overprint_preview: true, ..Default::default() };
-        vectorcraft_render::Renderer::new().render(&s.doc().unwrap().doc, 40, 40, vectorcraft_geom::Affine::IDENTITY, &opts).pixel(20, 20)
+        let opts = redrob_vector_render::RenderOptions { background: Some([255; 4]), overprint_preview: true, ..Default::default() };
+        redrob_vector_render::Renderer::new().render(&s.doc().unwrap().doc, 40, 40, redrob_vector_geom::Affine::IDENTITY, &opts).pixel(20, 20)
     };
     // On by default: the white knocks out as it will print.
     assert_eq!(centre(&s), [255, 255, 255, 255]);
@@ -262,5 +262,5 @@ fn saved_flattener_presets_and_background_contents() {
     assert_eq!(setup(&s).flattener_preset, None, "the default is not stored");
     let r = s.execute("document.setup", &json!({"backgroundContents": "white"})).unwrap();
     assert_eq!(r["backgroundContents"], "white");
-    assert_eq!(setup(&s).background, vectorcraft_doc::Background::White);
+    assert_eq!(setup(&s).background, redrob_vector_doc::Background::White);
 }

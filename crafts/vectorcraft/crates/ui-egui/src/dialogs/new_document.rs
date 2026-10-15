@@ -10,9 +10,9 @@
 //! Options open), `bleedLinked` and `presetName` (Save Preset's name). Setting `preset` fills the
 //! fields from that preset; changing any of them afterwards makes the settings custom.
 
+use redrob_vector_doc::Unit;
+use redrob_vector_engine::cmd::newdoc::{self, ArtboardLayout, DocSettings, MAX_ARTBOARDS, PreviewMode, RASTER_PPI};
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::Unit;
-use vectorcraft_engine::cmd::newdoc::{self, ArtboardLayout, DocSettings, MAX_ARTBOARDS, PreviewMode, RASTER_PPI};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;
@@ -586,8 +586,8 @@ fn show_more(app: &mut VectorcraftApp, ctx: &egui::Context) {
 
 #[cfg(test)]
 mod tests {
+    use redrob_vector_engine::Session;
     use serde_json::json;
-    use vectorcraft_engine::Session;
 
     use crate::VectorcraftApp;
 
@@ -685,7 +685,7 @@ mod tests {
         let st = app.session.active().unwrap();
         let rects: Vec<_> = st.doc.artboards.iter().map(|a| (a.rect.x0, a.rect.y0)).collect();
         assert_eq!(rects, [(0.0, 0.0), (3850.0, 0.0), (0.0, 2170.0), (3850.0, 2170.0)]);
-        assert_eq!(st.doc.setup.background, vectorcraft_doc::Background::White);
+        assert_eq!(st.doc.setup.background, redrob_vector_doc::Background::White);
         assert!(app.ui.view.pixel_preview, "Pixel preview mode");
         // Next time Recent opens on it.
         app.run("file.newDialog", json!({})).unwrap();
@@ -698,7 +698,7 @@ mod tests {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.run("file.newDialog", json!({})).unwrap();
         set(&mut app, "advanced", json!(true));
-        for c in vectorcraft_engine::cmd::newdoc::category_names() {
+        for c in redrob_vector_engine::cmd::newdoc::category_names() {
             set(&mut app, "category", json!(c));
             let out = frame(&mut app);
             assert!(!out.shapes.is_empty());

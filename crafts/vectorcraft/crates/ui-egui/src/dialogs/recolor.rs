@@ -19,12 +19,12 @@
 //! `limitTo` reduces the rows again.
 
 use egui::{Rect, Sense, Ui, pos2, vec2};
+use redrob_vector_color::harmony::{Harmony, move_on_wheel};
+use redrob_vector_color::recolor::{ColorKey, Method};
+use redrob_vector_color::{Color, keep_model};
+use redrob_vector_engine::cmd::color_value;
+use redrob_vector_engine::cmd::swatchlib;
 use serde_json::{Value, json};
-use vectorcraft_color::harmony::{Harmony, move_on_wheel};
-use vectorcraft_color::recolor::{ColorKey, Method};
-use vectorcraft_color::{Color, keep_model};
-use vectorcraft_engine::cmd::color_value;
-use vectorcraft_engine::cmd::swatchlib;
 
 use super::{DialogSpec, form};
 use crate::panels::c32;

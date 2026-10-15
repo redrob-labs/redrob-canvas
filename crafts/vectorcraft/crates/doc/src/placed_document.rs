@@ -18,10 +18,10 @@ use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
+use redrob_vector_geom::{Affine, Rect};
 use serde::{Deserialize, Serialize};
-use vectorcraft_geom::{Affine, Rect};
 
-use vectorcraft_color::Paint;
+use redrob_vector_color::Paint;
 
 use crate::{AppearanceItem, Document, ImageBlob, ImageObject, LinkInfo, Node, NodeKind, PatternDef, PlacementOptions, Symbol};
 
@@ -64,9 +64,9 @@ impl PlacedDocument {
     }
 
     /// The four corners of the box in the document.
-    pub fn corners(&self) -> [vectorcraft_geom::Point; 4] {
+    pub fn corners(&self) -> [redrob_vector_geom::Point; 4] {
         let r = self.natural();
-        [(r.x0, r.y0), (r.x1, r.y0), (r.x1, r.y1), (r.x0, r.y1)].map(|(x, y)| self.xf * vectorcraft_geom::Point::new(x, y))
+        [(r.x0, r.y0), (r.x1, r.y0), (r.x1, r.y1), (r.x0, r.y1)].map(|(x, y)| self.xf * redrob_vector_geom::Point::new(x, y))
     }
 
     /// The box in the document (axis-aligned).
@@ -573,7 +573,7 @@ mod tests {
 
     fn placed(key: &str) -> PlacedDocument {
         PlacedDocument {
-            link: LinkInfo::new("/art/logo.vectorcraft"),
+            link: LinkInfo::new("/art/logo.rvector"),
             key: key.into(),
             bounding: false,
             width: 80.0,
@@ -615,7 +615,7 @@ mod tests {
         let n = Node::new(NodeId(3), NodeKind::PlacedDocument(Box::new(placed("doc1-1"))));
         let v = serde_json::to_value(&n).unwrap();
         assert_eq!(v["kind"]["type"], "placeddocument");
-        assert_eq!(v["kind"]["link"]["path"], "/art/logo.vectorcraft");
+        assert_eq!(v["kind"]["link"]["path"], "/art/logo.rvector");
         let back: Node = serde_json::from_value(v).unwrap();
         assert_eq!(back, n);
         assert_eq!(key_for("img00", 2, true), "img00-2b");

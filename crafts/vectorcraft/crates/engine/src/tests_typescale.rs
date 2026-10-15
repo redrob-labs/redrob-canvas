@@ -1,8 +1,8 @@
 //! #1034: Character sizes and horizontal scales account for the object's affine transform.
 
+use redrob_vector_doc::{NodeId, NodeKind, TextObject};
+use redrob_vector_geom::Point;
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeId, NodeKind, TextObject};
-use vectorcraft_geom::Point;
 
 use super::*;
 
@@ -113,8 +113,8 @@ fn rotated_reflected_nonuniform_range_edits_preserve_the_affine() {
     near(em(&after, 0).1, 10.0);
     assert_eq!(after.xf, before.xf);
     // The native document representation retains both the compensation and the affine.
-    let bytes = vectorcraft_format::save_file(&s.doc().unwrap().doc);
-    let reopened = vectorcraft_format::load(&bytes).unwrap();
+    let bytes = redrob_vector_format::save_file(&s.doc().unwrap().doc);
+    let reopened = redrob_vector_format::load(&bytes).unwrap();
     let NodeKind::Text(t) = &reopened.node(id).unwrap().kind else { panic!("not text") };
     near(em(t, 0).0, 10.0);
     near(em(t, 0).1, 10.0);

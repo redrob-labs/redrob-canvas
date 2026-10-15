@@ -34,7 +34,7 @@ fn label_w(d: &Dialog) -> f32 {
 const FIDELITY: (f64, f64) = (0.5, 20.0);
 
 fn heading(d: &Dialog) -> String {
-    let label = vectorcraft_tools::tool_info(&d.str("tool")).map_or("", |t| t.label);
+    let label = redrob_vector_tools::tool_info(&d.str("tool")).map_or("", |t| t.label);
     crate::i18n::fmt(tl!("{tool} Options"), &[("tool", tl!(label))])
 }
 
@@ -118,7 +118,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
@@ -191,12 +191,12 @@ mod tests {
             app.select_tool("pencil");
             let view = app.view_info();
             let pts: Vec<_> = (0..=40).map(|i| (20.0 + i as f64 * 8.0, y0 + 30.0 * (i as f64 * 0.25).sin())).collect();
-            let pointer = |kind, (x, y)| vectorcraft_tools::PointerEvent::new(kind, x, y);
-            crate::canvas::dispatch(app, &pointer(vectorcraft_tools::PointerKind::Down, pts[0]), view);
+            let pointer = |kind, (x, y)| redrob_vector_tools::PointerEvent::new(kind, x, y);
+            crate::canvas::dispatch(app, &pointer(redrob_vector_tools::PointerKind::Down, pts[0]), view);
             for p in &pts[1..] {
-                crate::canvas::dispatch(app, &pointer(vectorcraft_tools::PointerKind::Drag, *p), view);
+                crate::canvas::dispatch(app, &pointer(redrob_vector_tools::PointerKind::Drag, *p), view);
             }
-            crate::canvas::dispatch(app, &pointer(vectorcraft_tools::PointerKind::Up, pts[40]), view);
+            crate::canvas::dispatch(app, &pointer(redrob_vector_tools::PointerKind::Up, pts[40]), view);
             let doc = &app.session.doc().unwrap().doc;
             doc.layers[0].children().unwrap().last().unwrap().path_data().map_or(0, |p| p.subpaths.iter().map(|s| s.anchors.len()).sum::<usize>())
         };

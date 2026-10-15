@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use eframe::{egui_wgpu, wgpu};
-use photocraft_engine::prefs::{GpuBackend, RenderingMode};
+use redrob_photo_engine::prefs::{GpuBackend, RenderingMode};
 use serde_json::{Value, json};
 
 /// The marker's file name in the config directory.
@@ -327,13 +327,13 @@ pub fn configure(setup: &mut egui_wgpu::WgpuSetup, plan: &Plan, os: Os, sentinel
             }));
         }
     }
-    photocraft_ui_egui::gpu_canvas::use_adapter_limits_with(setup, move |adapter| {
+    redrob_photo_ui_egui::gpu_canvas::use_adapter_limits_with(setup, move |adapter| {
         let info = adapter.get_info();
         let mut guard = sentinel.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(s) = guard.as_mut() {
             let mut m = s.marker.clone();
             m.adapter = info.name.clone();
-            m.adapter_backend = photocraft_ui_egui::gpu_canvas::backend_name(info.backend).to_string();
+            m.adapter_backend = redrob_photo_ui_egui::gpu_canvas::backend_name(info.backend).to_string();
             m.driver = [info.driver.as_str(), info.driver_info.as_str()].iter().filter(|s| !s.is_empty()).copied().collect::<Vec<_>>().join(" ");
             if let Err(e) = s.write(m) {
                 log::warn!("GPU startup marker: {e}");
@@ -435,10 +435,10 @@ impl Sentinel {
 /// The Linux display-server preference (`performance.linuxDisplayServer`) from the preferences
 /// file, read before the window opens; `Auto` when the file or value is missing or unknown.
 #[cfg(any(target_os = "linux", test))]
-pub fn read_display_server(path: Option<&Path>) -> photocraft_engine::prefs::LinuxDisplayServer {
+pub fn read_display_server(path: Option<&Path>) -> redrob_photo_engine::prefs::LinuxDisplayServer {
     let v: Value = path.and_then(|p| std::fs::read_to_string(p).ok()).and_then(|t| serde_json::from_str(&t).ok()).unwrap_or(Value::Null);
     v.get("performance")
-        .and_then(|p| serde_json::from_value::<photocraft_engine::prefs::Performance>(p.clone()).ok())
+        .and_then(|p| serde_json::from_value::<redrob_photo_engine::prefs::Performance>(p.clone()).ok())
         .map(|performance| performance.linux_display_server)
         .unwrap_or_default()
 }
@@ -465,7 +465,7 @@ mod tests {
 
     #[test]
     fn display_server_preference_is_read_before_the_window_opens() {
-        use photocraft_engine::prefs::LinuxDisplayServer;
+        use redrob_photo_engine::prefs::LinuxDisplayServer;
         let dir = std::env::temp_dir().join(format!("photocraft-display-server-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let file = dir.join("preferences.json");

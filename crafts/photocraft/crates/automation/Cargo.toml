@@ -1,5 +1,5 @@
 [package]
-name = "photocraft-automation"
+name = "redrob-photo-automation"
 description = "MCP server (rmcp) over the Photocraft engine, plus a bridge to a running GUI"
 version.workspace = true
 edition.workspace = true
@@ -10,13 +10,13 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-photocraft-geom = { workspace = true }
-photocraft-doc = { workspace = true }
-photocraft-compose = { workspace = true }
-photocraft-codecs = { workspace = true }
-photocraft-io = { workspace = true }
-photocraft-format = { path = "../format" }
-photocraft-engine = { workspace = true }
+redrob-photo-geom = { workspace = true }
+redrob-photo-doc = { workspace = true }
+redrob-photo-compose = { workspace = true }
+redrob-photo-codecs = { workspace = true }
+redrob-photo-io = { workspace = true }
+redrob-photo-format = { path = "../format" }
+redrob-photo-engine = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

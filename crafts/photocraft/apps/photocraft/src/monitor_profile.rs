@@ -5,7 +5,7 @@
 //! `colorSpace.ICCProfileData`, documented AppKit APIs read through `osascript` (AppKit via
 //! AppleScriptObjC) so the app needs no `unsafe` FFI. A read takes about 0.4 s on a background
 //! thread; the shell starts one at launch and again when the displays may have changed
-//! (`photocraft_ui_egui::monitor_status`), and each window then uses the profile of the display
+//! (`redrob_photo_ui_egui::monitor_status`), and each window then uses the profile of the display
 //! it is on. Linux X11: RandR output names and CRTC frames are matched to colord display devices
 //! by the exact `XRANDR_name` metadata; cloned outputs get a profile only when every output has
 //! the same ICC bytes. Native Wayland, including Xwayland windows opened from a Wayland session,
@@ -15,7 +15,7 @@
 
 use std::sync::mpsc::Receiver;
 
-use photocraft_engine::display_color::Display;
+use redrob_photo_engine::display_color::Display;
 
 /// What the platform reader returns: the displays, or why there are none.
 pub type Detection = Result<Vec<Display>, String>;
@@ -146,7 +146,7 @@ mod linux {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use photocraft_engine::display_color::Display;
+    use redrob_photo_engine::display_color::Display;
     use x11rb::connection::Connection as _;
     use x11rb::protocol::randr;
     use zbus::blocking::{connection::Builder, proxy::Proxy};
@@ -294,8 +294,8 @@ mod linux {
             return None;
         }
         bytes.truncate(declared);
-        let profile = photocraft_cms::Profile::parse(&bytes).ok()?;
-        (profile.color_space == photocraft_cms::ColorSpace::Rgb).then_some(bytes)
+        let profile = redrob_photo_cms::Profile::parse(&bytes).ok()?;
+        (profile.color_space == redrob_photo_cms::ColorSpace::Rgb).then_some(bytes)
     }
 
     fn unambiguous_clone_profile(output_names: &[String], profiles: &HashMap<String, Vec<IccProfile>>) -> Option<IccProfile> {
@@ -320,11 +320,11 @@ mod linux {
 
         #[test]
         fn checked_icc_bytes_require_a_bounded_parseable_rgb_profile() {
-            let rgb = photocraft_cms::Builtin::Srgb.profile().to_bytes();
+            let rgb = redrob_photo_cms::Builtin::Srgb.profile().to_bytes();
             let bytes = rgb.as_ref().clone();
             assert_eq!(checked_icc_bytes(bytes.clone()), Some(bytes));
 
-            let cmyk = photocraft_cms::Builtin::CoatedCmyk.profile().to_bytes();
+            let cmyk = redrob_photo_cms::Builtin::CoatedCmyk.profile().to_bytes();
             assert!(checked_icc_bytes(cmyk.as_ref().clone()).is_none());
             assert!(checked_icc_bytes(vec![0; 132]).is_none());
             assert!(checked_icc_bytes(vec![0; MAX_ICC_BYTES + 1]).is_none());
@@ -332,8 +332,8 @@ mod linux {
 
         #[test]
         fn cloned_outputs_use_only_one_unambiguous_profile() {
-            let srgb = photocraft_cms::Builtin::Srgb.profile().to_bytes();
-            let p3 = photocraft_cms::Builtin::DisplayP3.profile().to_bytes();
+            let srgb = redrob_photo_cms::Builtin::Srgb.profile().to_bytes();
+            let p3 = redrob_photo_cms::Builtin::DisplayP3.profile().to_bytes();
             let profile = |name: &str, bytes: std::sync::Arc<Vec<u8>>| IccProfile { name: name.into(), bytes };
             let outputs = ["DP-1".to_owned(), "HDMI-1".to_owned()];
 
@@ -530,7 +530,7 @@ mod tests {
         if let Ok(displays) = detect() {
             for d in displays {
                 let Some(icc) = d.icc else { continue };
-                let p = photocraft_engine::color_cmds::profile_from_bytes(&icc).expect("parses");
+                let p = redrob_photo_engine::color_cmds::profile_from_bytes(&icc).expect("parses");
                 assert_eq!(format!("{:?}", p.color_space), "Rgb", "{}: {}", d.name, p.description);
             }
         }

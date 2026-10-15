@@ -54,7 +54,7 @@ pub struct CropState {
     /// The frame is being edited (pressed since it was made): the canvas shows what lies past it.
     pub editing: bool,
     /// The document the pending frame (or gesture) belongs to ([`cancel_stale`], #1918).
-    doc: Option<photocraft_doc::DocId>,
+    doc: Option<redrob_photo_doc::DocId>,
     /// The options-bar Straighten button and ⌘-drag (`crop_straighten`).
     pub straighten: crate::crop_straighten::Straighten,
     /// The box's own Undo/Redo while a crop is pending (Photoshop keeps Edit › Undo live during a
@@ -967,7 +967,7 @@ fn resize_icon(hx: i8, hy: i8, deg: f64, flip: bool) -> CursorIcon {
 mod tests {
     use super::*;
     use crate::canvas::tool_event;
-    use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
+    use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
     use serde_json::json;
 
     const NONE: Modifiers = Modifiers::NONE;
@@ -975,7 +975,7 @@ mod tests {
 
     fn app(depth: SampleType) -> PhotocraftApp {
         let doc = Document::with_background("crop", Size::new(200, 100), ColorMode::Rgb, depth, Color::WHITE);
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.add_document(doc, None);
         let mut app = PhotocraftApp::new(s, crate::Services::default());
         app.ui.tool = Tool::Crop;
@@ -1752,7 +1752,7 @@ mod tests {
         drag(&mut app, &[[10.0, 10.0], [30.0, 30.0]], SHIFT);
         crate::canvas::commit_crop(&mut app);
         // No document: events are swallowed quietly.
-        let mut empty = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut empty = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         empty.ui.tool = Tool::Crop;
         drag(&mut empty, &[[1.0, 1.0], [9.0, 9.0]], NONE);
         assert!(empty.ui.crop_rect.is_none());

@@ -1,6 +1,6 @@
 //! Content-Aware Move drags and its Transform On Drop box shown with the result: once the pointer
 //! (or the box) rests for a moment, the move is computed as a background job
-//! ([`photocraft_engine::retouch_cmds::content_aware_move_preview`]: a smaller sampling window than
+//! ([`redrob_photo_engine::retouch_cmds::content_aware_move_preview`]: a smaller sampling window than
 //! the command and only small selections) and the canvas shows the document with it. Any change of
 //! the offset, scale or rotation cancels the job and starts the wait again, so the UI never waits
 //! for the blend. Releasing (or Enter) runs the exact `paint.contentAwareMove`; the document is
@@ -9,8 +9,8 @@
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, TryRecvError};
 
-use photocraft_doc::{DocId, Document};
-use photocraft_engine::jobs::JobCtx;
+use redrob_photo_doc::{DocId, Document};
+use redrob_photo_engine::jobs::JobCtx;
 use serde_json::Value;
 
 use crate::PhotocraftApp;
@@ -26,7 +26,7 @@ const POLL_MS: u64 = 40;
 struct Running {
     key: String,
     ctx: JobCtx,
-    rx: Receiver<photocraft_engine::Result<Document>>,
+    rx: Receiver<redrob_photo_engine::Result<Document>>,
 }
 
 pub(crate) struct CamPreview {
@@ -125,7 +125,7 @@ fn step(app: &mut PhotocraftApp, now: f64) -> Option<(Arc<Document>, u64)> {
                 match (result, r) {
                     (Ok(d), Some(r)) => {
                         // Duotone documents display through their inks.
-                        let d = photocraft_engine::mode_cmds::display_document(&d).unwrap_or(d);
+                        let d = redrob_photo_engine::mode_cmds::display_document(&d).unwrap_or(d);
                         p.shown = Some((r.key, Arc::new(d)));
                         p.serial += 1;
                     }
@@ -157,7 +157,7 @@ fn step(app: &mut PhotocraftApp, now: f64) -> Option<(Arc<Document>, u64)> {
 
 /// Compute the preview of `params` on a worker thread.
 fn start(app: &PhotocraftApp, params: &Value, key: String) -> Option<Running> {
-    let job = photocraft_engine::retouch_cmds::content_aware_move_preview(&app.session, params).ok()?;
+    let job = redrob_photo_engine::retouch_cmds::content_aware_move_preview(&app.session, params).ok()?;
     let ctx = JobCtx::new();
     let (tx, rx) = std::sync::mpsc::channel();
     let worker = ctx.clone();
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn the_drag_previews_the_move_after_it_rests_and_never_touches_the_document() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 100, "height": 60})).unwrap();
         app.run("paint.pencil", json!({"points": [[16, 30], [28, 30]], "size": 4, "color": "#0000ff"})).unwrap();
         app.run("select.lasso", json!({"points": [[6, 14], [38, 14], [38, 46], [6, 46]]})).unwrap();
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn the_transform_on_drop_box_previews_the_dropped_patch() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 100, "height": 60})).unwrap();
         app.run("paint.pencil", json!({"points": [[16, 30], [28, 30]], "size": 4, "color": "#0000ff"})).unwrap();
         app.run("select.lasso", json!({"points": [[6, 14], [38, 14], [38, 46], [6, 46]]})).unwrap();
@@ -270,7 +270,7 @@ mod tests {
 
     #[test]
     fn a_selection_too_large_to_preview_is_not_retried() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 600, "height": 400})).unwrap();
         app.run("select.rect", json!({"x": 10, "y": 10, "width": 300, "height": 300})).unwrap();
         app.ui.tool = Tool::ContentAwareMove;

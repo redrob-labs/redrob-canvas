@@ -2,9 +2,9 @@
 
 use std::collections::BTreeSet;
 
+use redrob_vector_doc::{NodeId, NodeKind, Scaling};
+use redrob_vector_geom::{Anchor, AnchorKind, PathData, Point, SubPath, Vec2};
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeId, NodeKind, Scaling};
-use vectorcraft_geom::{Anchor, AnchorKind, PathData, Point, SubPath, Vec2};
 
 use super::create::anchor_from_json;
 use super::pathops::Beside;
@@ -117,7 +117,7 @@ pub fn specs() -> Vec<CommandSpec> {
     ]
 }
 
-pub(super) fn path_mut(d: &mut vectorcraft_doc::Document, id: NodeId) -> Result<&mut PathData> {
+pub(super) fn path_mut(d: &mut redrob_vector_doc::Document, id: NodeId) -> Result<&mut PathData> {
     let n = d.node_mut(id).ok_or(EngineError::NoNode(id))?;
     match &mut n.kind {
         NodeKind::Path { path, live, .. } => {
@@ -173,13 +173,13 @@ pub(crate) fn move_anchors(s: &mut Session, p: &Value) -> Result<Value> {
     // `patterns` (default: General › Transform Pattern Tiles) is on.
     let whole = s.doc()?.selection.whole();
     let sc = Scaling { patterns: super::object::transform_patterns(s, p, &whole)?, ..Scaling::default() };
-    transform_anchors(s, "Move", vectorcraft_geom::Affine::translate(d), sc)?;
+    transform_anchors(s, "Move", redrob_vector_geom::Affine::translate(d), sc)?;
     ok()
 }
 
 /// Apply `xf` to the direct-selected anchors, their handles with them, and (with `sc`) to the
 /// objects selected whole (those with no entry in the selection's `anchors`).
-pub(crate) fn transform_anchors(s: &mut Session, label: &str, xf: vectorcraft_geom::Affine, sc: Scaling) -> Result<()> {
+pub(crate) fn transform_anchors(s: &mut Session, label: &str, xf: redrob_vector_geom::Affine, sc: Scaling) -> Result<()> {
     let sel = s.doc()?.selection.clone();
     s.edit(label, |doc, _| {
         for id in &sel.objects {
@@ -254,7 +254,7 @@ fn selected_paths(s: &Session) -> Result<Vec<NodeId>> {
 }
 
 /// The paths in the subtrees of `ids` (in groups and compound paths too), each once.
-pub(super) fn paths_in(d: &vectorcraft_doc::Document, ids: &[NodeId]) -> Vec<NodeId> {
+pub(super) fn paths_in(d: &redrob_vector_doc::Document, ids: &[NodeId]) -> Vec<NodeId> {
     let mut out = BTreeSet::new();
     for n in ids.iter().filter_map(|id| d.node(*id)) {
         n.walk(&mut |c| {
@@ -642,7 +642,7 @@ fn without_segments(sp: SubPath, removed: &BTreeSet<usize>) -> Vec<SubPath> {
     result
 }
 
-fn open_run(mut anchors: Vec<vectorcraft_geom::Anchor>) -> Option<SubPath> {
+fn open_run(mut anchors: Vec<redrob_vector_geom::Anchor>) -> Option<SubPath> {
     if anchors.len() < 2 {
         return None;
     }
@@ -672,9 +672,9 @@ fn reshape(s: &mut Session, p: &Value) -> Result<Value> {
         };
         let origin = sp.anchors[grabbed].p;
         let r = radius.unwrap_or_else(|| {
-            let mut bp = vectorcraft_geom::BezPath::new();
+            let mut bp = redrob_vector_geom::BezPath::new();
             sp.to_bezpath_into(&mut bp);
-            let b = vectorcraft_geom::Shape::bounding_box(&bp);
+            let b = redrob_vector_geom::Shape::bounding_box(&bp);
             (b.width().hypot(b.height()) / 2.0).max(1.0)
         });
         for (i, a) in sp.anchors.iter_mut().enumerate() {

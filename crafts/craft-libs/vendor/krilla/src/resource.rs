@@ -239,12 +239,8 @@ impl Default for ResourceDictionary {
 pub(crate) type ResourceNumber = u32;
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources<T>(
-        &self,
-        parent: &mut T,
-        sc: &mut SerializeContext,
-        resources_chunk: &mut Chunk,
-    ) where
+    pub fn to_pdf_resources<T>(&self, parent: &mut T, sc: &mut SerializeContext, resources_chunk: &mut Chunk)
+    where
         T: ResourcesExt,
     {
         let write_proc_sets = !sc.serialize_settings().pdf_version().deprecates_proc_sets();
@@ -265,16 +261,9 @@ impl ResourceDictionary {
         }
 
         let resources_ref = sc.new_ref();
-        let mut resources = resources_chunk
-            .indirect(resources_ref)
-            .start::<writers::Resources>();
+        let mut resources = resources_chunk.indirect(resources_ref).start::<writers::Resources>();
         if write_proc_sets {
-            resources.proc_sets([
-                ProcSet::Pdf,
-                ProcSet::Text,
-                ProcSet::ImageColor,
-                ProcSet::ImageGrayscale,
-            ]);
+            resources.proc_sets([ProcSet::Pdf, ProcSet::Text, ProcSet::ImageColor, ProcSet::ImageGrayscale]);
         }
         write_resource_type::<ColorSpace>(&mut resources, &self.color_spaces);
         write_resource_type::<ExtGState>(&mut resources, &self.ext_g_states);
@@ -312,10 +301,7 @@ where
     T: Resource,
 {
     pub(crate) fn empty() -> ResourceList<T> {
-        Self {
-            entries: vec![],
-            phantom: Default::default(),
-        }
+        Self { entries: vec![], phantom: Default::default() }
     }
 
     pub(crate) fn len(&self) -> u32 {
@@ -327,10 +313,7 @@ where
     }
 
     pub(crate) fn get_entries(&self) -> impl Iterator<Item = (String, Ref)> + '_ {
-        self.entries
-            .iter()
-            .enumerate()
-            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), *r))
+        self.entries.iter().enumerate().map(|(i, r)| (Self::name_from_number(i as ResourceNumber), *r))
     }
 }
 
@@ -346,11 +329,7 @@ where
     T: Resource,
 {
     pub(crate) fn new() -> Self {
-        Self {
-            forward: Vec::new(),
-            backward: HashMap::new(),
-            phantom: PhantomData,
-        }
+        Self { forward: Vec::new(), backward: HashMap::new(), phantom: PhantomData }
     }
 
     pub(crate) fn remap(&mut self, ref_: Ref) -> ResourceNumber {
@@ -373,10 +352,7 @@ where
     }
 
     pub(crate) fn into_resource_list(self) -> ResourceList<T> {
-        ResourceList {
-            entries: self.forward,
-            phantom: Default::default(),
-        }
+        ResourceList { entries: self.forward, phantom: Default::default() }
     }
 }
 

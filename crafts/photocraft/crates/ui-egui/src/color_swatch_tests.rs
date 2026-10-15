@@ -17,7 +17,7 @@ const PICKED_RGB: [f32; 3] = [0x33 as f32 / 255.0, 0x66 as f32 / 255.0, 0x99 as 
 fn harness(setup: impl FnOnce(&mut PhotocraftApp) + 'static) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1800.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 120})).unwrap();
         setup(&mut app);
         app
@@ -110,8 +110,8 @@ fn an_artboard_background_opens_the_color_picker() {
     pick(&mut h, "Color");
     let st = h.state().session.active().unwrap();
     let l = st.doc.layer(st.active_layer.unwrap()).unwrap();
-    let photocraft_doc::LayerContent::Group(g) = &l.content else { panic!("an artboard") };
+    let redrob_photo_doc::LayerContent::Group(g) = &l.content else { panic!("an artboard") };
     let bg = g.artboard.as_ref().expect("an artboard").background;
-    let photocraft_doc::ArtboardBackground::Custom(c) = bg else { panic!("custom background: {bg:?}") };
+    let redrob_photo_doc::ArtboardBackground::Custom(c) = bg else { panic!("custom background: {bg:?}") };
     assert!(close(c.to_rgb(), PICKED_RGB), "artboard background {:?}", c.to_rgb());
 }

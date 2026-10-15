@@ -7,7 +7,7 @@ use super::screens::ScreenSize;
 use super::*;
 
 fn b64(v: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
 }
 
 /// A document of `artboards` 40×30 pt artboards side by side with a 20 pt square on the first.
@@ -174,7 +174,7 @@ fn full_document_gives_one_file_per_format() {
     let f = files(&r);
     let title = super::file_stem(&s.doc().unwrap().doc.title);
     assert_eq!(names(&r), [format!("x-{title}.pdf"), format!("x-{title}@2x.png"), format!("x-{title}.svg")]);
-    assert_eq!(vectorcraft_pdf::import(&f[0].1).unwrap().artboards.len(), 3, "one page per artboard, whatever the range");
+    assert_eq!(redrob_vector_pdf::import(&f[0].1).unwrap().artboards.len(), 3, "one page per artboard, whatever the range");
     // The bounds of the art: the square and its 1 pt stroke.
     assert_eq!(size(&f[1].1), (42, 42));
     // Nothing visible: nothing to export but the PDF.
@@ -243,7 +243,7 @@ fn zip_downloads_round_trip() {
     for ((name, zipped), (_, returned)) in entries.iter().zip(&plain) {
         if name.ends_with(".pdf") {
             // A PDF carries the time it was written.
-            assert_eq!(vectorcraft_pdf::import(zipped).unwrap().artboards.len(), 1, "{name}");
+            assert_eq!(redrob_vector_pdf::import(zipped).unwrap().artboards.len(), 1, "{name}");
         } else {
             assert_eq!(zipped, returned, "{name}");
         }
@@ -293,9 +293,9 @@ fn the_document_remembers_its_export_settings() {
     assert!(s.execute("document.exportForScreens", &json!({"range": "9"})).is_err());
     assert_eq!(s.execute("document.exportSettings", &json!({})).unwrap()["settings"], json!({"range": "1"}));
     // Saved with the document (native round trip); older files have none.
-    let doc = vectorcraft_format::load(&vectorcraft_format::save(&s.doc().unwrap().doc, false)).unwrap();
+    let doc = redrob_vector_format::load(&redrob_vector_format::save(&s.doc().unwrap().doc, false)).unwrap();
     assert_eq!(doc.export_settings, s.doc().unwrap().doc.export_settings);
-    let plain = String::from_utf8(vectorcraft_format::save(&vectorcraft_doc::Document::new(5.0, 5.0), false)).unwrap();
+    let plain = String::from_utf8(redrob_vector_format::save(&redrob_vector_doc::Document::new(5.0, 5.0), false)).unwrap();
     assert!(!plain.contains("export_settings") && !plain.contains("exportSettings"), "not written when empty");
-    assert!(vectorcraft_format::load(plain.as_bytes()).unwrap().export_settings.is_empty());
+    assert!(redrob_vector_format::load(plain.as_bytes()).unwrap().export_settings.is_empty());
 }

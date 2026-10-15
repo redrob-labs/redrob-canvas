@@ -1,13 +1,13 @@
 //! Camera Raw navigation uses the real modal shell and never changes document history.
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, Rect, pos2, vec2};
 use egui_kittest::{Harness, kittest::Queryable};
-use photocraft_ui_egui::{PhotocraftApp, camera_raw_ui, control, theme::ThemeKind};
+use redrob_photo_ui_egui::{PhotocraftApp, camera_raw_ui, control, theme::ThemeKind};
 use serde_json::{Value, json};
 
 fn fixture(ppp: f32) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_step_dt(1.0 / 60.0).with_size(vec2(1200.0, 800.0)).with_pixels_per_point(ppp).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, ThemeKind::Pro);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width":1200,"height":900})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("edit.fill", json!({"color":"#808080"})).unwrap();
@@ -179,7 +179,7 @@ fn invalid_view_requests_are_atomic_and_reopening_starts_in_fit_view() {
     menu(&mut h, json!({})).unwrap();
     h.run_steps(2);
     assert_eq!(inspect(&h)["view"], json!({"zoom":null,"center":[0.5,0.5],"hand":false}));
-    h.get_by_label(photocraft_ui_egui::i18n::tr(photocraft_ui_egui::i18n::current(), "100%")).click();
+    h.get_by_label(redrob_photo_ui_egui::i18n::tr(redrob_photo_ui_egui::i18n::current(), "100%")).click();
     h.run_steps(2);
     assert_eq!(zoom(&h), 1.0);
 }

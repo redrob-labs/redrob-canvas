@@ -4,13 +4,13 @@
 
 use std::sync::Arc;
 
-use craft_pdf::syntax::Pdf;
-use craft_pdf::syntax::object::{Array, Name, Object, Stream};
+use redrob_craft_pdf::syntax::Pdf;
+use redrob_craft_pdf::syntax::object::{Array, Name, Object, Stream};
+use redrob_vector_color::cms::{self, DEVICE_CMYK, GENERIC_CMYK, SRGB};
+use redrob_vector_doc::cmyk::Inks;
+use redrob_vector_doc::{ColorMode, Document, ImageBlob, ImageObject, Node, NodeKind};
+use redrob_vector_geom::Affine;
 use serde_json::json;
-use vectorcraft_color::cms::{self, DEVICE_CMYK, GENERIC_CMYK, SRGB};
-use vectorcraft_doc::cmyk::Inks;
-use vectorcraft_doc::{ColorMode, Document, ImageBlob, ImageObject, Node, NodeKind};
-use vectorcraft_geom::Affine;
 
 use crate::*;
 

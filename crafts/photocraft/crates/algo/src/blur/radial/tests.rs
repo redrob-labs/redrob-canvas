@@ -1,6 +1,6 @@
 use super::*;
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_raster::Surface;
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_raster::Surface;
 
 fn fixture(format: PixelFormat, rect: Rect, hdr: bool) -> Surface {
     let mut surface = Surface::new(format);

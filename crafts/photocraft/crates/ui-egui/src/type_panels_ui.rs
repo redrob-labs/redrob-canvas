@@ -415,7 +415,7 @@ fn options_editor(app: &mut PhotocraftApp, ui: &mut egui::Ui, paragraph: bool, s
                     }
                 }
                 "color" => {
-                    let c = serde_json::from_value::<photocraft_doc::Color>(v.clone()).map(|c| c.to_rgb()).unwrap_or([0.0; 3]);
+                    let c = serde_json::from_value::<redrob_photo_doc::Color>(v.clone()).map(|c| c.to_rgb()).unwrap_or([0.0; 3]);
                     let [r, g, b] = c.map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8);
                     open_color = crate::widgets::color_swatch(ui, Color32::from_rgb(r, g, b)).on_hover_text(tl!("Color Picker (Text Color)")).clicked();
                 }
@@ -518,11 +518,11 @@ fn options_editor(app: &mut PhotocraftApp, ui: &mut egui::Ui, paragraph: bool, s
 }
 
 /// Searchable family combo box.
-fn family_picker(ui: &mut egui::Ui, salt: &str, current: &mut String, preview: photocraft_engine::prefs::FontPreview) -> bool {
+fn family_picker(ui: &mut egui::Ui, salt: &str, current: &mut String, preview: redrob_photo_engine::prefs::FontPreview) -> bool {
     if !crate::type_tool::fonts_ready(ui, 140.0) {
         return false;
     }
-    let mut shown = if current.is_empty() { photocraft_text::fonts::DEFAULT_FAMILY.to_string() } else { current.clone() };
+    let mut shown = if current.is_empty() { redrob_photo_text::fonts::DEFAULT_FAMILY.to_string() } else { current.clone() };
     let changed = crate::type_tool::family_picker_in(ui, salt, &mut shown, 140.0, &crate::type_tool::families(), preview);
     if changed {
         *current = shown;
@@ -538,22 +538,22 @@ fn glyph_font(app: &PhotocraftApp) -> (String, String) {
     if !p.glyph_family.is_empty() {
         return (p.glyph_family.clone(), if p.glyph_style.is_empty() { tl!("Regular").into() } else { p.glyph_style.clone() });
     }
-    let layer = app.ui.text_edit.as_ref().map(|e| photocraft_doc::LayerId(e.layer)).or_else(|| app.session.active().and_then(|s| s.active_layer));
+    let layer = app.ui.text_edit.as_ref().map(|e| redrob_photo_doc::LayerId(e.layer)).or_else(|| app.session.active().and_then(|s| s.active_layer));
     if let Some(st) = app.session.active()
         && let Some(id) = layer
-        && let Some(photocraft_doc::LayerContent::Text(tl)) = st.doc.layer(id).map(|l| &l.content)
+        && let Some(redrob_photo_doc::LayerContent::Text(tl)) = st.doc.layer(id).map(|l| &l.content)
         && let Some(r) = tl.char_runs().first()
     {
-        let fam = if r.style.font_family.is_empty() { photocraft_text::fonts::DEFAULT_FAMILY.to_string() } else { r.style.font_family.clone() };
+        let fam = if r.style.font_family.is_empty() { redrob_photo_text::fonts::DEFAULT_FAMILY.to_string() } else { r.style.font_family.clone() };
         let style = crate::type_tool::selected_style(&r.style);
         return (fam, style);
     }
-    (photocraft_text::fonts::DEFAULT_FAMILY.into(), tl!("Regular").into())
+    (redrob_photo_text::fonts::DEFAULT_FAMILY.into(), tl!("Regular").into())
 }
 
-fn char_style_for(family: &str, style: &str) -> photocraft_doc::text::CharStyle {
-    let mut st = photocraft_doc::text::CharStyle { font_family: family.into(), ..Default::default() };
-    photocraft_engine::type_cmds::apply_char_props(&mut st, &json!({ "fontStyle": style }));
+fn char_style_for(family: &str, style: &str) -> redrob_photo_doc::text::CharStyle {
+    let mut st = redrob_photo_doc::text::CharStyle { font_family: family.into(), ..Default::default() };
+    redrob_photo_engine::type_cmds::apply_char_props(&mut st, &json!({ "fontStyle": style }));
     st
 }
 
@@ -564,8 +564,8 @@ fn glyph_texture(ctx: &egui::Context, family: &str, style: &str, c: char, px: u3
     }
     let st = char_style_for(family, style);
     let (n, alpha) = {
-        let mut eng = photocraft_text::shared().lock().unwrap_or_else(|e| e.into_inner());
-        photocraft_text::glyphs::preview(&mut eng, &st, c, px)
+        let mut eng = redrob_photo_text::shared().lock().unwrap_or_else(|e| e.into_inner());
+        redrob_photo_text::glyphs::preview(&mut eng, &st, c, px)
     };
     let img = egui::ColorImage::from_rgba_unmultiplied([n as usize, n as usize], &alpha.iter().flat_map(|a| [255, 255, 255, *a]).collect::<Vec<u8>>());
     let tex = ctx.load_texture(format!("glyph-{c}-{px}"), img, TextureOptions::LINEAR);
@@ -580,7 +580,7 @@ fn charmap(ctx: &egui::Context, family: &str, style: &str) -> std::sync::Arc<Vec
         return v;
     }
     let st = char_style_for(family, style);
-    let v = std::sync::Arc::new(photocraft_text::shared().lock().unwrap_or_else(|e| e.into_inner()).fonts.charmap_for_style(&st));
+    let v = std::sync::Arc::new(redrob_photo_text::shared().lock().unwrap_or_else(|e| e.into_inner()).fonts.charmap_for_style(&st));
     ctx.data_mut(|d| d.insert_temp(id, v.clone()));
     v
 }
@@ -633,7 +633,7 @@ pub fn glyphs_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let mut cat = if app.ui.type_panels.glyph_category.is_empty() { tl!("Entire Font").to_string() } else { app.ui.type_panels.glyph_category.clone() };
     ui.horizontal(|ui| {
         ui.label(RichText::new(tl!("Show:")).color(t.text_dim).size(11.5));
-        let opts: Vec<(String, &str)> = photocraft_text::glyphs::CATEGORIES.iter().map(|c| (c.to_string(), *c)).collect();
+        let opts: Vec<(String, &str)> = redrob_photo_text::glyphs::CATEGORIES.iter().map(|c| (c.to_string(), *c)).collect();
         if crate::widgets::dropdown(ui, "glyph-category", &mut cat, &opts, 160.0) {
             app.ui.type_panels.glyph_category = cat.clone();
         }
@@ -669,7 +669,7 @@ pub fn glyphs_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     ui.add_space(4.0);
     // Grid.
     let cmap = charmap(&ctx, &family, &style);
-    let chars: Vec<char> = cmap.iter().copied().filter(|c| photocraft_text::glyphs::in_category(*c, &cat)).collect();
+    let chars: Vec<char> = cmap.iter().copied().filter(|c| redrob_photo_text::glyphs::in_category(*c, &cat)).collect();
     // Leave room for the scroll bar.
     let width = ui.available_width() - 12.0;
     let cols = ((width / size).floor() as usize).max(1);
@@ -895,7 +895,7 @@ mod tests {
     use super::*;
 
     fn app_with_text(text: &str) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 300, "height": 120, "background": "white"})).unwrap();
         app.run("type.create", json!({"x": 10, "y": 60, "text": text})).unwrap();
         app.sync_views();
@@ -926,7 +926,7 @@ mod tests {
         assert!(insert_glyph(&mut app, "→"));
         assert_eq!(app.ui.type_panels.glyph_recent, vec!["→".to_string(), "€".to_string()]);
         let st = app.session.active().unwrap();
-        let Some(photocraft_doc::LayerContent::Text(t)) = st.active_layer.and_then(|id| st.doc.layer(id)).map(|l| &l.content) else { panic!() };
+        let Some(redrob_photo_doc::LayerContent::Text(t)) = st.active_layer.and_then(|id| st.doc.layer(id)).map(|l| &l.content) else { panic!() };
         assert_eq!(t.text, "ab→€→");
     }
 

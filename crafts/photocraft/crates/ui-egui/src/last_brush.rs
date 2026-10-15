@@ -10,12 +10,12 @@ use crate::PhotocraftApp;
 /// Remember the current brush once the pointer is up.
 pub fn persist(app: &mut PhotocraftApp, ctx: &egui::Context) {
     if !ctx.input(|i| i.pointer.any_down()) {
-        photocraft_engine::brush_cmds::remember_brush(&mut app.session);
+        redrob_photo_engine::brush_cmds::remember_brush(&mut app.session);
     }
 }
 
 /// Restore the remembered brush at launch; stored tips load when the preset store attaches
 /// (`Session::attach_preset_store`).
 pub fn restore(app: &mut PhotocraftApp) {
-    photocraft_engine::brush_cmds::restore_brush(&mut app.session);
+    redrob_photo_engine::brush_cmds::restore_brush(&mut app.session);
 }

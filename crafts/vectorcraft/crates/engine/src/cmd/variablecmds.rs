@@ -7,8 +7,8 @@
 
 use std::collections::BTreeMap;
 
+use redrob_vector_doc::{DataSet, DataValue, NodeId, NodeKind, Variable, VariableKind, Variables};
 use serde_json::{Value, json};
-use vectorcraft_doc::{DataSet, DataValue, NodeId, NodeKind, Variable, VariableKind, Variables};
 
 use super::edit::selected_roots;
 use super::textedit::set_plain_text;
@@ -51,7 +51,7 @@ fn names_param(p: &Value, cmd: &str, fallback: Option<String>, nothing: &str) ->
 
 /// Refuse what a variable of `kind` can't drive: art that is locked or on a hidden or locked
 /// layer is not the document's to rewrite, and a text variable only drives type.
-fn check_bindable(doc: &vectorcraft_doc::Document, ids: &[NodeId], kind: VariableKind, cmd: &str) -> Result<()> {
+fn check_bindable(doc: &redrob_vector_doc::Document, ids: &[NodeId], kind: VariableKind, cmd: &str) -> Result<()> {
     for id in ids {
         match doc.node(*id) {
             None => return Err(EngineError::NoNode(*id)),

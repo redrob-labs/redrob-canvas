@@ -1088,8 +1088,8 @@ fn float_onto(
 #[cfg(test)]
 mod tests {
     use egui::{Event, PointerButton};
+    use redrob_vector_engine::Session;
     use serde_json::json;
-    use vectorcraft_engine::Session;
 
     use super::*;
 
@@ -1212,7 +1212,7 @@ mod tests {
         /// The dock's tabs, left to right.
         fn dock_tabs(&self) -> Vec<Rect> {
             if let Some(layout) = &self.app.ui.docking {
-                let root = craft_ui::docking::Layout { root: layout.root.clone(), floating: Vec::new() };
+                let root = redrob_craft_ui::docking::Layout { root: layout.root.clone(), floating: Vec::new() };
                 return root
                     .panels()
                     .into_iter()

@@ -6,12 +6,14 @@
 
 use std::collections::HashSet;
 
+use redrob_vector_color::{BlendMode, Color, GradientKind, GradientPaint, Paint};
+use redrob_vector_doc::{
+    AppearanceItem, CharStyle, Document, Justify, LineCap, LiveShape, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer, TextKind,
+};
+use redrob_vector_effects::RasterFx;
+use redrob_vector_geom::shapes::{self, CornerKind};
+use redrob_vector_geom::{Affine, PathData, Point, Rect};
 use serde::{Deserialize, Serialize};
-use vectorcraft_color::{BlendMode, Color, GradientKind, GradientPaint, Paint};
-use vectorcraft_doc::{AppearanceItem, CharStyle, Document, Justify, LineCap, LiveShape, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer, TextKind};
-use vectorcraft_effects::RasterFx;
-use vectorcraft_geom::shapes::{self, CornerKind};
-use vectorcraft_geom::{Affine, PathData, Point, Rect};
 
 use crate::export::sanitize_id;
 use crate::fmt_num;
@@ -73,7 +75,7 @@ pub(crate) fn transparency(n: &Node) -> Props {
 /// rules and the characters using them say, so each face is told apart (Semibold from Bold).
 pub(crate) fn font_descriptor(st: &CharStyle) -> (u16, bool) {
     let fs = st.font_style.to_ascii_lowercase();
-    (vectorcraft_text::style_weight(&st.font_style).round().clamp(1.0, 1000.0) as u16, fs.contains("italic") || fs.contains("oblique"))
+    (redrob_vector_text::style_weight(&st.font_style).round().clamp(1.0, 1000.0) as u16, fs.contains("italic") || fs.contains("oblique"))
 }
 
 /// The font of character style `st`: family, size (the vertical scale; writers stretch the
@@ -460,7 +462,7 @@ impl Rules<'_> {
     /// A stroke as a border: weight, style (dashed; dotted for round dots) and colour.
     fn border(&mut self, s: &StrokeLayer, bounds: Rect, art: &mut Art) {
         // Aligned strokes still draw as borders; arrowheads, profiles, brushes and fitted dashes don't.
-        if !vectorcraft_effects::stroke::is_plain(&StrokeLayer { align: StrokeAlign::Center, ..s.clone() }) {
+        if !redrob_vector_effects::stroke::is_plain(&StrokeLayer { align: StrokeAlign::Center, ..s.clone() }) {
             art.unsupported("arrowheads, width profiles, brushes or dashes fitted to corners");
         }
         let style = match &s.dash {
@@ -501,7 +503,7 @@ impl Rules<'_> {
                 let (dir, angle) = if length > 1e-9 {
                     (v / length, v.x.atan2(-v.y).to_degrees().rem_euclid(360.0))
                 } else {
-                    (vectorcraft_geom::Vec2::new(1.0, 0.0), 90.0)
+                    (redrob_vector_geom::Vec2::new(1.0, 0.0), 90.0)
                 };
                 let line = (b.width() * dir.x).abs() + (b.height() * dir.y).abs();
                 let from = (geom.start - b.center()).dot(dir);
@@ -526,7 +528,7 @@ impl Rules<'_> {
     }
 
     /// Type: its first character style's font, colour and spacing, its paragraph's alignment.
-    fn type_art(&mut self, n: &Node, t: &vectorcraft_doc::TextObject, art: &mut Art) {
+    fn type_art(&mut self, n: &Node, t: &redrob_vector_doc::TextObject, art: &mut Art) {
         if matches!(t.kind, TextKind::OnPath { .. }) {
             art.unsupported("type on a path");
         }
@@ -573,12 +575,12 @@ impl Rules<'_> {
     /// Shadows and glows as `box-shadow` (type: `text-shadow`), a Gaussian blur as `filter`.
     fn effects(&mut self, n: &Node, text: bool, art: &mut Art) {
         let fx = &n.appearance.effects;
-        if fx.iter().any(|e| e.visible && !vectorcraft_effects::is_raster(&e.id)) {
+        if fx.iter().any(|e| e.visible && !redrob_vector_effects::is_raster(&e.id)) {
             art.unsupported("live effects");
         }
         let mut shadows = vec![];
         let mut filter = None;
-        for f in vectorcraft_effects::raster_effects(fx) {
+        for f in redrob_vector_effects::raster_effects(fx) {
             match f {
                 RasterFx::DropShadow { opacity, dx, dy, blur, color, .. } => {
                     shadows.push(format!("{} {} {} {}", self.len(dx), self.len(dy), self.len(blur), color_css(&color, opacity)))

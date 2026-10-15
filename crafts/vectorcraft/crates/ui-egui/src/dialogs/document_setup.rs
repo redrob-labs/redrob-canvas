@@ -5,9 +5,9 @@
 //! Fields: what `document.setup` reports (and takes back), plus `tab` and `bleedLinked`. OK runs
 //! `document.setup` with them: one undo step. On an error the dialog stays open.
 
+use redrob_vector_doc::setup::{GRID_COLOR_PRESETS, LANGUAGES};
+use redrob_vector_doc::{GridSize, Quotes, Unit};
 use serde_json::{Value, json};
-use vectorcraft_doc::setup::{GRID_COLOR_PRESETS, LANGUAGES};
-use vectorcraft_doc::{GridSize, Quotes, Unit};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;
@@ -128,11 +128,11 @@ fn transparency(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) {
         for i in 0..2 {
             let hex = colors.get(i).map_or("", |h| h.trim_start_matches('#'));
             let (chip, _) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), egui::Sense::hover());
-            if let Some(c) = vectorcraft_color::Color::from_hex(hex) {
+            if let Some(c) = redrob_vector_color::Color::from_hex(hex) {
                 ui.painter().rect_filled(chip, 2.0, crate::panels::c32(&c));
             }
             ui.painter().rect_stroke(chip, 2.0, egui::Stroke::new(1.0, t.input_border), egui::StrokeKind::Inside);
-            if let Some(c) = widgets::hex_field(ui, ("grid-color", i), hex).and_then(|h| vectorcraft_color::Color::from_hex(&h)) {
+            if let Some(c) = widgets::hex_field(ui, ("grid-color", i), hex).and_then(|h| redrob_vector_color::Color::from_hex(&h)) {
                 let mut v = colors.clone();
                 v.resize(2, "#ffffff".into());
                 v[i] = c.to_hex();
@@ -158,7 +158,7 @@ fn typography(ui: &mut egui::Ui, d: &mut Dialog) {
     choice(ui, d, "language", tl!("Language:"), &langs);
     // A language brings its quotes.
     if d.str("language") != before
-        && let Some(q) = vectorcraft_doc::setup::language_quotes(&d.str("language"))
+        && let Some(q) = redrob_vector_doc::setup::language_quotes(&d.str("language"))
     {
         d.fields.insert("quotes".into(), json!({"double": q.double.iter().collect::<String>(), "single": q.single.iter().collect::<String>()}));
     }
@@ -210,8 +210,8 @@ fn typography(ui: &mut egui::Ui, d: &mut Dialog) {
 #[cfg(test)]
 mod tests {
     use egui::{Event, PointerButton, Pos2, Rect, vec2};
+    use redrob_vector_engine::Session;
     use serde_json::json;
-    use vectorcraft_engine::Session;
 
     use crate::VectorcraftApp;
 
@@ -315,7 +315,7 @@ mod tests {
         assert!(app.ui.dialog.is_none());
         let st = app.session.active().unwrap();
         assert_eq!((st.doc.setup.bleed, st.doc.setup.grid_colors_name()), ([9.0; 4], "Blue"));
-        assert_eq!((st.doc.setup.quotes.double, st.doc.units), (['„', '“'], vectorcraft_doc::Unit::Millimeters));
+        assert_eq!((st.doc.setup.quotes.double, st.doc.units), (['„', '“'], redrob_vector_doc::Unit::Millimeters));
         assert_eq!(st.history.undo.len(), 1);
         // A bad value keeps the dialog open.
         app.run("file.documentSetup", json!({})).unwrap();

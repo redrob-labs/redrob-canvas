@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-format"
+name = "redrob-layout-format"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,7 +9,7 @@ description = "DesignCraft native file format: zip with document.json and embedd
 workspace = true
 
 [dependencies]
-designcraft-doc = { workspace = true }
+redrob-layout-doc = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 zip = { workspace = true }

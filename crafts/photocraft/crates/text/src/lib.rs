@@ -4,15 +4,15 @@
 //!   web), optional system fonts from platform directory scans plus Fontconfig's Linux file list,
 //!   user font data, TrueType collections, PostScript-name lookup. Builds made with the optional
 //!   craft-fonts input
-//!   (`CRAFT_FONTS_DIR`, see [`craft_fonts`]) also carry its Japanese fonts as fallbacks.
+//!   (`REDROB_CRAFT_FONTS_DIR`, see [`craft_fonts`]) also carry its Japanese fonts as fallbacks.
 //! * [`layout`]: shaping and line layout with [parley] (HarfRust shaping, bidi, line breaking),
 //!   point and paragraph (box) text, per-run styles, Photoshop leading/indent/spacing rules.
 //! * [`render`]: anti-aliased rasterization (exact-area accumulation, f32 coverage) into a
-//!   [`photocraft_raster::Surface`] at any depth and colour model.
+//!   [`redrob_photo_raster::Surface`] at any depth and colour model.
 //! * [`psd`]: the PSD `TySh` block and its `EngineData` (text, fonts, runs, paragraphs, box).
 //!
 //! The usual entry point is [`TextEngine::render_layer`], which refreshes a
-//! [`photocraft_doc::TextLayer`]'s cache from its style model.
+//! [`redrob_photo_doc::TextLayer`]'s cache from its style model.
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
@@ -32,10 +32,10 @@ pub mod served;
 pub mod spell;
 pub mod warp;
 
-use photocraft_color::PixelFormat;
-use photocraft_doc::TextLayer;
+use redrob_photo_color::PixelFormat;
+use redrob_photo_doc::TextLayer;
 
-pub use craft_fonts::{CRAFT_FONTS, CraftFont};
+pub use craft_fonts::{CraftFont, REDROB_CRAFT_FONTS};
 pub use fonts::{FaceInfo, FontDb, ResolvedFont};
 pub use layout::{
     ClusterInfo, LineInfo, PlacedGlyph, TextLayout, byte_index, char_index, hit_char, line_edge, line_index, line_step, text_point_inside, word_boundary,
@@ -106,10 +106,10 @@ impl TextEngine {
                 if e > s {
                     let mut style = r.style.clone();
                     if unkern {
-                        style.kerning = photocraft_doc::text::Kerning::Off;
+                        style.kerning = redrob_photo_doc::text::Kerning::Off;
                         style.kern = 0.0;
                     }
-                    plain.runs.push(photocraft_doc::text::TextRun { len: e - s, style });
+                    plain.runs.push(redrob_photo_doc::text::TextRun { len: e - s, style });
                 }
             };
             push(start, at.clamp(start, end), false);
@@ -131,7 +131,7 @@ impl TextEngine {
     }
 
     /// Re-renders `layer.cache` from its model. Returns the document-space rectangle drawn.
-    pub fn render_layer(&mut self, layer: &mut TextLayer, dpi: f32, format: PixelFormat) -> photocraft_geom::Rect {
+    pub fn render_layer(&mut self, layer: &mut TextLayer, dpi: f32, format: PixelFormat) -> redrob_photo_geom::Rect {
         let (_, r) = self.render(layer, dpi, format);
         layer.cache = Some(r.surface);
         r.rect
@@ -141,9 +141,11 @@ impl TextEngine {
 static SHARED: warm::Warm<std::sync::Mutex<TextEngine>> = warm::Warm::new();
 
 /// Whether [`shared`] scans the installed fonts (native builds, outside tests, unless
-/// `PHOTOCRAFT_NO_SYSTEM_FONTS` is set). Without the scan it is cheap to build.
+/// `REDROB_PHOTO_NO_SYSTEM_FONTS` is set). Without the scan it is cheap to build.
 fn uses_system_fonts() -> bool {
-    cfg!(not(target_arch = "wasm32")) && !cfg!(test) && std::env::var_os("PHOTOCRAFT_NO_SYSTEM_FONTS").is_none()
+    cfg!(not(target_arch = "wasm32"))
+        && !cfg!(test)
+        && std::env::var_os("REDROB_PHOTO_NO_SYSTEM_FONTS").or_else(|| std::env::var_os("PHOTOCRAFT_NO_SYSTEM_FONTS")).is_none() // legacy: the upstream variable is read when ours is unset
 }
 
 fn new_shared() -> std::sync::Mutex<TextEngine> {

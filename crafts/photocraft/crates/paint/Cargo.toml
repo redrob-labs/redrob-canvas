@@ -1,5 +1,5 @@
 [package]
-name = "photocraft-paint"
+name = "redrob-photo-paint"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,9 +8,9 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-photocraft-geom = { workspace = true }
-photocraft-color = { workspace = true }
-photocraft-raster = { workspace = true }
+redrob-photo-geom = { workspace = true }
+redrob-photo-color = { workspace = true }
+redrob-photo-raster = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]

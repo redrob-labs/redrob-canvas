@@ -117,7 +117,7 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
         ui.horizontal(|ui| {
             ui.label(tl!("Choose Stack Mode:"));
             let mut mode = f.get("mode").and_then(Value::as_str).unwrap_or("median").to_string();
-            let options: Vec<_> = photocraft_doc::StackMode::ALL.iter().map(|m| (m.id().to_string(), m.label())).collect();
+            let options: Vec<_> = redrob_photo_doc::StackMode::ALL.iter().map(|m| (m.id().to_string(), m.label())).collect();
             if widgets::dropdown(ui, "statistics-stack-mode", &mut mode, &options, 180.0) {
                 f.insert("mode".into(), json!(mode));
             }
@@ -141,7 +141,7 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
     ui.horizontal_top(|ui| {
         // The list: the chosen files, or the images in the chosen folder.
         let shown: Vec<String> = if folder_mode {
-            if folder(f).is_empty() { Vec::new() } else { photocraft_engine::file_cmds::list_images(folder(f)).unwrap_or_default() }
+            if folder(f).is_empty() { Vec::new() } else { redrob_photo_engine::file_cmds::list_images(folder(f)).unwrap_or_default() }
         } else {
             files(f)
         };

@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use redrob_vector_color::BlendMode;
+use redrob_vector_geom::corners::cut_corners;
+use redrob_vector_geom::shapes::{self, CornerKind};
+use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, Point, Rect};
 use serde::{Deserialize, Serialize};
-use vectorcraft_color::BlendMode;
-use vectorcraft_geom::corners::cut_corners;
-use vectorcraft_geom::shapes::{self, CornerKind};
-use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, Point, Rect};
 
 use crate::appearance::Appearance;
 use crate::live::{BlendSpec, EnvelopeKind, GradientMesh, Outliner};
@@ -998,11 +998,11 @@ impl Node {
         }
     }
     /// The path a path's or compound path's own strokes follow (a compound's members' together).
-    pub fn stroke_path(&self) -> Option<vectorcraft_geom::BezPath> {
+    pub fn stroke_path(&self) -> Option<redrob_vector_geom::BezPath> {
         match &self.kind {
             NodeKind::Path { path, .. } => Some(path.to_bezpath()),
             NodeKind::Compound { children, .. } => {
-                let mut bp = vectorcraft_geom::BezPath::new();
+                let mut bp = redrob_vector_geom::BezPath::new();
                 children.iter().filter_map(|c| c.path_data()).for_each(|pd| bp.extend(pd.to_bezpath()));
                 Some(bp)
             }
@@ -1050,7 +1050,7 @@ impl Node {
     /// The box of [`Node::geometric_bounds`], or of [`Node::geometric_bounds_with`] when `symbols`
     /// is given.
     pub(crate) fn geometric(&self, symbols: Option<&SymbolBoxes>) -> Option<Rect> {
-        let union = |nodes: &[Arc<Node>]| nodes.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.geometric(symbols)));
+        let union = |nodes: &[Arc<Node>]| nodes.iter().fold(None, |acc, c| redrob_vector_geom::union_opt(acc, c.geometric(symbols)));
         match &self.kind {
             NodeKind::Path { path, .. } => path.bounds(),
             NodeKind::Group { children, clip: true } | NodeKind::Layer { children, clip: true, .. } => {
@@ -1060,14 +1060,14 @@ impl Node {
                 .iter()
                 .skip(usize::from(self.extras().shaper.is_some()))
                 .filter(|c| c.visible || !matches!(self.kind, NodeKind::Layer { .. }))
-                .fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.geometric(symbols))),
+                .fold(None, |acc, c| redrob_vector_geom::union_opt(acc, c.geometric(symbols))),
             NodeKind::Text(t) => self.projected(t.bounds()),
             NodeKind::Image(im) => Some(im.xf.transform_rect_bbox(Rect::new(0.0, 0.0, im.width as f64, im.height as f64))),
             NodeKind::SymbolInstance { symbol, xf } => {
                 let art = symbols.and_then(|s| s.art(symbol)).map_or(SYMBOL_SQUARE, |a| a.geometric);
                 self.projected(Some(xf.transform_rect_bbox(art)))
             }
-            NodeKind::Blend { children, spec } => vectorcraft_geom::union_opt(union(children), spec.spine.as_ref().and_then(|s| s.bounds())),
+            NodeKind::Blend { children, spec } => redrob_vector_geom::union_opt(union(children), spec.spine.as_ref().and_then(|s| s.bounds())),
             NodeKind::Envelope { content, kind, frame, .. } => crate::live::envelope_bounds(content, kind, **frame),
             NodeKind::Mesh(m) => m.bounds(),
             // Each copy is measured where the repeat draws it: `RepeatSpec::transforms` lays the
@@ -1114,13 +1114,13 @@ impl Node {
                 children
                     .iter()
                     .skip(usize::from(self.extras().shaper.is_some()))
-                    .fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.visual(symbols)))
+                    .fold(None, |acc, c| redrob_vector_geom::union_opt(acc, c.visual(symbols)))
                     .map(|b| b.inflate(o, o))
             }
             NodeKind::Blend { children, spec } => {
-                let b = children.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.visual(symbols)));
+                let b = children.iter().fold(None, |acc, c| redrob_vector_geom::union_opt(acc, c.visual(symbols)));
                 let o = crate::live::max_outset(children, symbols);
-                vectorcraft_geom::union_opt(b, spec.spine.as_ref().and_then(|s| s.bounds()).map(|r| r.inflate(o, o)))
+                redrob_vector_geom::union_opt(b, spec.spine.as_ref().and_then(|s| s.bounds()).map(|r| r.inflate(o, o)))
             }
             NodeKind::Envelope { content, .. } | NodeKind::Repeat(RepeatSpec { source: content, .. }) => {
                 let o = crate::live::max_outset(content, symbols);
@@ -1282,7 +1282,7 @@ impl Node {
     /// type objects paint their runs (the first run speaks for all) in text space, fitted to the
     /// layout bounds; everything else paints its fill or stroke in the document, fitted to the
     /// geometric bounds. Strokes fit the box grown by half their weight.
-    pub fn proxy_paint(&self, stroke: bool, item: Option<usize>) -> Option<(&vectorcraft_color::Paint, Affine, Rect)> {
+    pub fn proxy_paint(&self, stroke: bool, item: Option<usize>) -> Option<(&redrob_vector_color::Paint, Affine, Rect)> {
         let item = self.appearance.item_of_kind(item, !stroke);
         if item.is_none()
             && let NodeKind::Text(t) = &self.kind
@@ -1301,9 +1301,13 @@ impl Node {
     }
     /// The gradient behind the Fill (or Stroke) proxy and its placement in document coordinates
     /// (see [`Node::proxy_paint`]): what the gradient annotator shows and edits.
-    pub fn proxy_gradient(&self, stroke: bool, item: Option<usize>) -> Option<(&vectorcraft_color::GradientPaint, vectorcraft_color::GradientGeom)> {
+    pub fn proxy_gradient(
+        &self,
+        stroke: bool,
+        item: Option<usize>,
+    ) -> Option<(&redrob_vector_color::GradientPaint, redrob_vector_color::GradientGeom)> {
         let (paint, to_doc, b) = self.proxy_paint(stroke, item)?;
-        let vectorcraft_color::Paint::Gradient(g) = paint else { return None };
+        let redrob_vector_color::Paint::Gradient(g) = paint else { return None };
         let mut geom = g.resolve(b);
         if to_doc != Affine::IDENTITY {
             geom.transform(to_doc, g.gradient.kind);
@@ -1313,14 +1317,14 @@ impl Node {
     /// The freeform gradient behind the Fill (or Stroke) proxy, its points in document coordinates
     /// (the automatic ones while unplaced), and the length its spreads are fractions of there
     /// (see [`Node::proxy_paint`]): what the Gradient tool's freeform annotator shows and edits.
-    pub fn proxy_freeform(&self, stroke: bool, item: Option<usize>) -> Option<(vectorcraft_color::Freeform, f64)> {
+    pub fn proxy_freeform(&self, stroke: bool, item: Option<usize>) -> Option<(redrob_vector_color::Freeform, f64)> {
         let (paint, to_doc, b) = self.proxy_paint(stroke, item)?;
-        let vectorcraft_color::Paint::Gradient(g) = paint else { return None };
-        if g.gradient.kind != vectorcraft_color::GradientKind::Freeform {
+        let redrob_vector_color::Paint::Gradient(g) = paint else { return None };
+        if g.gradient.kind != redrob_vector_color::GradientKind::Freeform {
             return None;
         }
         let mut f = g.freeform_on(b).into_owned();
-        let mut scale = vectorcraft_color::freeform::spread_scale(b);
+        let mut scale = redrob_vector_color::freeform::spread_scale(b);
         if to_doc != Affine::IDENTITY {
             f.transform(to_doc);
             scale *= to_doc.determinant().abs().sqrt();
@@ -1330,7 +1334,7 @@ impl Node {
 }
 
 /// Unites filled regions (each under its own fill rule) into one path filled non-zero. Booleans
-/// live above this crate (`vectorcraft-pathops`), so callers supply it.
+/// live above this crate (`redrob-vector-pathops`), so callers supply it.
 pub type Uniter<'a> = &'a dyn Fn(&[(BezPath, FillRule)]) -> BezPath;
 
 impl Node {
@@ -1428,7 +1432,7 @@ impl Node {
                 }
                 if let NodeKind::Text(t) = &mut n.kind {
                     for r in &mut t.runs {
-                        *(if fill { &mut r.style.stroke } else { &mut r.style.fill }) = vectorcraft_color::Paint::None;
+                        *(if fill { &mut r.style.stroke } else { &mut r.style.fill }) = redrob_vector_color::Paint::None;
                     }
                 }
                 n
@@ -1675,7 +1679,7 @@ impl Node {
     /// stroke opacity below 100%, a blend mode, an opacity mask, effects or transparent gradient
     /// stops. Hidden objects show none.
     pub fn shows_transparency(&self) -> bool {
-        use vectorcraft_color::Paint;
+        use redrob_vector_color::Paint;
         let see_through = |p: &Paint| matches!(p, Paint::Gradient(g) if g.gradient.stops.iter().any(|s| s.opacity < 1.0));
         let effects = |fx: &[crate::Effect]| fx.iter().any(|e| e.visible);
         self.visible
@@ -1704,7 +1708,7 @@ impl Node {
     /// everywhere for objects without them, such as type, whose boxes stand in).
     pub fn contains_fn(&self) -> impl Fn(Point) -> bool + use<> {
         let shapes = self.clip_shapes(None);
-        move |p| shapes.is_empty() || shapes.iter().any(|(bp, rule)| vectorcraft_geom::hit::fill_contains(bp, *rule, p))
+        move |p| shapes.is_empty() || shapes.iter().any(|(bp, rule)| redrob_vector_geom::hit::fill_contains(bp, *rule, p))
     }
 }
 
@@ -1717,10 +1721,10 @@ mod kind_de {
     use std::fmt;
     use std::sync::Arc;
 
+    use redrob_vector_geom::{Affine, FillRule, PathData};
     use serde::de::value::{MapAccessDeserializer, StringDeserializer};
     use serde::de::{self, DeserializeSeed, Deserializer, EnumAccess, IntoDeserializer, MapAccess, VariantAccess, Visitor};
     use serde::{Deserialize, forward_to_deserialize_any};
-    use vectorcraft_geom::{Affine, FillRule, PathData};
 
     use super::{LayerColor, LiveShape, Node, NodeKind, yes};
     use crate::live::{BlendSpec, EnvelopeKind, GradientMesh};
@@ -2211,7 +2215,7 @@ mod tests {
 
     #[test]
     fn unplaced_gradients_pin_only_when_a_refit_would_differ() {
-        use vectorcraft_color::{Gradient, GradientGeom, GradientKind, GradientPaint, Paint};
+        use redrob_vector_color::{Gradient, GradientGeom, GradientKind, GradientPaint, Paint};
         let grad = || Paint::Gradient(Box::new(GradientPaint::new(Gradient::default())));
         let fresh = || Node::path(NodeId(2), shapes::rectangle(Rect::new(0.0, 0.0, 100.0, 50.0)), Appearance::basic(grad(), grad(), 2.0));
         let geoms = |n: &Node| match (n.appearance.fill_paint(), n.appearance.stroke_paint()) {

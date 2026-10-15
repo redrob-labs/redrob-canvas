@@ -2,15 +2,15 @@
 #![cfg(feature = "interpret")]
 #![allow(clippy::unwrap_used, clippy::panic)]
 
-use craft_pdf::interpret::{
+use hayro_cmap::BfString;
+use kurbo::{Affine, BezPath, Rect};
+use redrob_craft_pdf::interpret::{
     BlendMode, ClipPath, Context, Device, GlyphDrawMode, Image, InterpreterCache, InterpreterSettings, Paint, PathDrawMode, SoftMask, TransformExt,
     font::Glyph,
 };
-use hayro_cmap::BfString;
-use kurbo::{Affine, BezPath, Rect};
 
 #[cfg(craft_pdf_unicode_fixtures)]
-const INTER: &[u8] = include_bytes!(concat!(env!("CRAFT_PDF_TEST_FONT_DIR"), "/Inter-Regular.ttf"));
+const INTER: &[u8] = include_bytes!(concat!(env!("REDROB_CRAFT_PDF_TEST_FONT_DIR"), "/Inter-Regular.ttf"));
 
 #[derive(Default)]
 struct TextDevice {
@@ -86,13 +86,13 @@ fn interpreted_text(flags: u8, encoding: &str, unicode_map: Option<&str>, codes:
         pdf.extend_from_slice(format!("8 0 obj << /Length {} >> stream\n{cmap}\nendstream endobj\n", cmap.len()).as_bytes());
     }
     pdf.extend_from_slice(b"trailer << /Root 1 0 R >>\n%%EOF\n");
-    let pdf = craft_pdf::open_slice(&pdf, None).unwrap();
+    let pdf = redrob_craft_pdf::open_slice(&pdf, None).unwrap();
     let page = &pdf.pages()[0];
     let cache = InterpreterCache::new();
     let mut context =
         Context::new(page.initial_transform(true).to_kurbo(), Rect::new(0.0, 0.0, 600.0, 400.0), &cache, page.xref(), InterpreterSettings::default());
     let mut device = TextDevice::default();
-    craft_pdf::interpret_page(page, &mut context, &mut device).unwrap();
+    redrob_craft_pdf::interpret_page(page, &mut context, &mut device).unwrap();
     assert_eq!(device.embedded_glyphs, codes.len());
     device
 }

@@ -33,9 +33,9 @@ pub struct Workspace {
     pub floating_panels: Vec<FloatingPanels>,
     /// Custom docking tree, including floating tab groups.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub docking: Option<craft_ui::docking::Layout<String>>,
+    pub docking: Option<redrob_craft_ui::docking::Layout<String>>,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
-    pub docking_hidden: std::collections::BTreeMap<String, craft_ui::docking::Location<String>>,
+    pub docking_hidden: std::collections::BTreeMap<String, redrob_craft_ui::docking::Location<String>>,
     /// Panels whose saved return destination is the iconic rail.
     #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
     pub docking_icons: std::collections::BTreeSet<String>,

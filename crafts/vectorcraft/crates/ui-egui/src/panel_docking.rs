@@ -1,6 +1,6 @@
 //! Application-owned panel IDs and commands around the shared docking layout.
 
-use craft_ui::docking::{Action, Floating, Layout, Node, Placement, Zone};
+use redrob_craft_ui::docking::{Action, Floating, Layout, Node, Placement, Zone};
 use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
@@ -17,7 +17,7 @@ struct LegacyDrag {
 struct RootGroupDrag {
     panel: String,
     layout: Layout<String>,
-    hidden: std::collections::BTreeMap<String, craft_ui::docking::Location<String>>,
+    hidden: std::collections::BTreeMap<String, redrob_craft_ui::docking::Location<String>>,
     generation: u64,
 }
 
@@ -29,7 +29,7 @@ fn cancel_legacy_drag(app: &mut VectorcraftApp, ctx: &egui::Context) -> bool {
         app.ui.floating_panels = previous.floating;
         app.ui.docking = previous.layout;
         app.ui.docking_icons = previous.icons;
-        craft_ui::docking::cancel_drag::<String>(ctx, egui::Id::new("vectorcraft-panel-docking"));
+        redrob_craft_ui::docking::cancel_drag::<String>(ctx, egui::Id::new("vectorcraft-panel-docking"));
         true
     } else {
         false
@@ -218,7 +218,7 @@ pub(crate) fn command(app: &mut VectorcraftApp, id: &str, params: &Value) -> Opt
 }
 
 // UI output and automation share this atomic dispatcher. The application owns the registry
-// and saved return locations; craft-ui owns tree validation and structural changes.
+// and saved return locations; redrob-craft-ui owns tree validation and structural changes.
 fn apply_action(app: &mut VectorcraftApp, action: Action<String>) -> Result<Value, String> {
     let registered = |id: &String| normalize(id) == Some(id.as_str());
     let known = match &action {
@@ -237,7 +237,7 @@ fn apply_action(app: &mut VectorcraftApp, action: Action<String>) -> Result<Valu
         | Action::MoveFloating { panel, .. }
         | Action::SetStackOpen { panel, .. }
         | Action::ResizeStack { panel, .. } => registered(panel),
-        Action::ResizeSplit { path, .. } => path.len() <= craft_ui::docking::MAX_DEPTH,
+        Action::ResizeSplit { path, .. } => path.len() <= redrob_craft_ui::docking::MAX_DEPTH,
     };
     if !known {
         return Err("docking action contains an unknown panel or an excessive split path".into());
@@ -502,7 +502,7 @@ struct PanelContent<'a> {
     commands: Vec<(&'static str, Value)>,
 }
 
-impl craft_ui::docking::DockContent<String> for PanelContent<'_> {
+impl redrob_craft_ui::docking::DockContent<String> for PanelContent<'_> {
     fn body(&mut self, ui: &mut egui::Ui, panel: &String) {
         let width = ui.available_width();
         let height = (ui.available_height() - 20.0).max(0.0);
@@ -603,7 +603,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut egui::Ui) -> bool {
         previous.is_some_and(|generation| generation != app.ui.docking_generation)
     });
     if changed_workspace {
-        craft_ui::docking::cancel_drag::<String>(ui.ctx(), area);
+        redrob_craft_ui::docking::cancel_drag::<String>(ui.ctx(), area);
         ui.ctx().data_mut(|data| data.remove::<LegacyDrag>(area.with("legacy-origin")));
     }
 
@@ -642,7 +642,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut egui::Ui) -> bool {
                 }
             }
         }
-        let mut style = craft_ui::docking::DockStyle::from_ui(ui);
+        let mut style = redrob_craft_ui::docking::DockStyle::from_ui(ui);
         style.tab_height = 33.0;
         style.background = t.panel;
         style.tab_background = t.tab_strip;
@@ -658,13 +658,13 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut egui::Ui) -> bool {
         style.resize_label = tl!("Resize panels").to_string();
         style.resize_window_label = tl!("Resize panel window").to_string();
         let mut content = PanelContent { app, commands: Vec::new() };
-        let output = craft_ui::docking::DockArea::new(egui::Id::new("vectorcraft-panel-docking")).show_customized(
+        let output = redrob_craft_ui::docking::DockArea::new(egui::Id::new("vectorcraft-panel-docking")).show_customized(
             ui,
             &display,
             &style,
             |id| crate::state::all_panels().find(|p| p.0 == id).map(|p| tl!(p.1).to_string()).unwrap_or_else(|| id.clone()),
-            |_| craft_ui::docking::Permissions::default(),
-            |_| craft_ui::docking::PanelLimits { min: egui::vec2(220.0, 80.0), ..Default::default() },
+            |_| redrob_craft_ui::docking::Permissions::default(),
+            |_| redrob_craft_ui::docking::PanelLimits { min: egui::vec2(220.0, 80.0), ..Default::default() },
             &mut content,
         );
         for (id, params) in content.commands {
@@ -837,7 +837,7 @@ pub(crate) fn legacy_tab(app: &mut VectorcraftApp, ui: &mut egui::Ui, panel: &st
             egui::vec2(bounds.width().clamp(240.0, 600.0), bounds.height().clamp(200.0, 600.0)),
         );
         if ensure(&mut layout, id).is_ok()
-            && craft_ui::docking::begin_drag(ui.ctx(), egui::Id::new("vectorcraft-panel-docking"), id.to_string(), source)
+            && redrob_craft_ui::docking::begin_drag(ui.ctx(), egui::Id::new("vectorcraft-panel-docking"), id.to_string(), source)
         {
             ui.ctx().data_mut(|data| {
                 data.insert_temp(

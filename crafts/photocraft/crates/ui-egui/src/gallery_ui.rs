@@ -14,10 +14,10 @@
 use std::hash::{Hash, Hasher};
 
 use egui::{Align2, Color32, FontId, Rect as ERect, Sense, Stroke, TextureHandle, pos2, vec2};
-use photocraft_algo::{FilterParams, GALLERY_CATEGORIES, GalleryFilter};
-use photocraft_doc::LayerId;
-use photocraft_geom::Rect;
-use photocraft_raster::{Interrupt, Surface};
+use redrob_photo_algo::{FilterParams, GALLERY_CATEGORIES, GalleryFilter};
+use redrob_photo_doc::LayerId;
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::{Interrupt, Surface};
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -189,10 +189,10 @@ fn sample(surf: &Surface, r: Rect, k: u32) -> Surface {
 
 /// Runs a stack on a small surface (the preview and thumbnails).
 fn render(src: &Surface, params: &Value) -> Surface {
-    let effects = photocraft_engine::gallery_cmds::effects_from_json(params).unwrap_or_default();
+    let effects = redrob_photo_engine::gallery_cmds::effects_from_json(params).unwrap_or_default();
     let b = src.content_bounds().union(&Rect::new(0, 0, 1, 1));
     let b = Rect::new(0, 0, b.x1, b.y1);
-    photocraft_algo::apply_in(src, &FilterParams::FilterGallery { effects }, b, b, None, b)
+    redrob_photo_algo::apply_in(src, &FilterParams::FilterGallery { effects }, b, b, None, b)
 }
 
 /// The preview of `vis` at 1/`k` (#2502): the stack runs at full resolution exactly as OK runs it
@@ -200,11 +200,11 @@ fn render(src: &Surface, params: &Value) -> Surface {
 /// the pixels equal the same crop of the applied result; then `k`×`k` blocks are averaged.
 /// `None` when cancelled.
 fn preview_pixels(src: &Surface, canvas: Rect, params: &Value, vis: Rect, k: u32, ctl: &Interrupt) -> Option<Surface> {
-    let effects = photocraft_engine::gallery_cmds::effects_from_json(params).unwrap_or_default();
+    let effects = redrob_photo_engine::gallery_cmds::effects_from_json(params).unwrap_or_default();
     let fp = FilterParams::FilterGallery { effects };
     let content = src.content_bounds();
-    let area = photocraft_algo::output_area(&fp, content, canvas, None).intersect(&vis);
-    let full = if area.is_empty() { src.clone() } else { photocraft_algo::apply_in_with(src, &fp, area, canvas, None, canvas.union(&content), ctl)? };
+    let area = redrob_photo_algo::output_area(&fp, content, canvas, None).intersect(&vis);
+    let full = if area.is_empty() { src.clone() } else { redrob_photo_algo::apply_in_with(src, &fp, area, canvas, None, canvas.union(&content), ctl)? };
     Some(reduce(&full, vis, k))
 }
 
@@ -310,7 +310,7 @@ pub fn open(app: &mut PhotocraftApp) -> Result<(), String> {
 /// previewing on the pixels below it; OK updates that filter (`layer.smartFilter.setParams`).
 pub fn open_smart_filter(app: &mut PhotocraftApp, layer: LayerId, index: usize) -> Result<(), String> {
     let st = app.session.active().ok_or("no document")?;
-    let Some(photocraft_doc::LayerContent::Smart(sm)) = st.doc.layer(layer).map(|l| &l.content) else {
+    let Some(redrob_photo_doc::LayerContent::Smart(sm)) = st.doc.layer(layer).map(|l| &l.content) else {
         return Err("the layer is not a smart object".into());
     };
     let filter = sm.smart_filters.get(index).ok_or("no such smart filter")?;
@@ -318,7 +318,7 @@ pub fn open_smart_filter(app: &mut PhotocraftApp, layer: LayerId, index: usize) 
         return Err("the smart filter is not a Filter Gallery filter".into());
     }
     let p = filter.params.clone();
-    let src = photocraft_engine::smart_cmds::render_below_filter(&st.doc, sm, index)
+    let src = redrob_photo_engine::smart_cmds::render_below_filter(&st.doc, sm, index)
         .map_err(|e| e.to_string())?
         .ok_or("the smart object's contents are unavailable (missing linked file?)")?;
     let fg = colour_param(&p, "foreground").unwrap_or(app.session.tools.foreground);
@@ -447,7 +447,7 @@ struct PreviewJob {
     key: u64,
     vis: Rect,
     rx: std::sync::mpsc::Receiver<Result<Option<(egui::ColorImage, f64)>, String>>,
-    ctl: photocraft_engine::jobs::JobCtx,
+    ctl: redrob_photo_engine::jobs::JobCtx,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -556,7 +556,7 @@ fn start_job(d: &mut GalleryDialog, ctx: &egui::Context, key: u64, vis: Rect, k:
         return;
     }
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
-    let ctl = photocraft_engine::jobs::JobCtx::new();
+    let ctl = redrob_photo_engine::jobs::JobCtx::new();
     let (work, src, canvas, params, repaint) = (ctl.clone(), d.src.clone(), d.canvas, params.clone(), ctx.clone());
     let spawned = std::thread::Builder::new().name("gallery-preview".into()).spawn(move || {
         let run = || {
@@ -774,7 +774,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
                             .and_then(Value::as_array)
                             .map(|a| a.iter().filter_map(Value::as_f64).map(|v| v as f32).collect::<Vec<_>>())
                             .filter(|v| v.len() >= 3);
-                        let neon = photocraft_algo::GalleryEffect::new(GalleryFilter::NeonGlow).color;
+                        let neon = redrob_photo_algo::GalleryEffect::new(GalleryFilter::NeonGlow).color;
                         let mut rgb = c.map_or([neon[0], neon[1], neon[2]], |v| [v[0], v[1], v[2]]);
                         ui.horizontal(|ui| {
                             ui.label(egui::RichText::new(tl!("Glow Color")).color(t.text_dim));
@@ -856,7 +856,7 @@ mod tests {
     use super::*;
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("file.new", json!({"width": 90, "height": 60, "depth": 16})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session
@@ -919,7 +919,7 @@ mod tests {
         app.run("filter.blur.gaussianBlur", json!({"radius": 2.0})).unwrap();
         let layer = app.session.active().unwrap().active_layer.unwrap();
         let smart = |app: &PhotocraftApp| match &app.session.active().unwrap().doc.layer(layer).unwrap().content {
-            photocraft_doc::LayerContent::Smart(sm) => sm.clone(),
+            redrob_photo_doc::LayerContent::Smart(sm) => sm.clone(),
             _ => panic!("not a smart object"),
         };
         let steps = app.session.active().unwrap().history.past_len();
@@ -932,7 +932,7 @@ mod tests {
         assert_eq!(d.effects.len(), 1);
         assert_eq!((d.effects[0].filter, &d.effects[0].params["detail"]), (GalleryFilter::Chrome, &json!(2)));
         // The preview starts from the pixels below the filter (no blur, no chrome).
-        let below = photocraft_engine::smart_cmds::render_below_filter(&app.session.active().unwrap().doc, &sm, 0).unwrap().unwrap();
+        let below = redrob_photo_engine::smart_cmds::render_below_filter(&app.session.active().unwrap().doc, &sm, 0).unwrap().unwrap();
         let d = app.distort.gallery.as_ref().unwrap();
         assert_eq!(d.src.read_region(d.canvas), below.read_region(d.canvas));
 
@@ -968,7 +968,7 @@ mod tests {
         // Preview equals the engine's algorithm on the sampled pixels.
         let src = sample(&d.src, d.canvas, 1);
         let a = render(&src, &d.params());
-        let mut s2 = photocraft_engine::Session::new();
+        let mut s2 = redrob_photo_engine::Session::new();
         s2.add_document(app.session.active().unwrap().doc.as_ref().clone(), None);
         s2.select_layer(d.layer).unwrap();
         s2.execute("filter.filterGallery", d.params()).unwrap();
@@ -982,7 +982,7 @@ mod tests {
     /// something to draw.
     fn photo_app() -> PhotocraftApp {
         let (w, h) = (240, 160);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("file.new", json!({"width": w, "height": h, "depth": 16})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session
@@ -1005,7 +1005,7 @@ mod tests {
 
     /// What OK applies: `filter.filterGallery` with the dialog's stack on a copy of the document.
     fn applied(app: &PhotocraftApp, d: &GalleryDialog) -> Surface {
-        let mut s2 = photocraft_engine::Session::new();
+        let mut s2 = redrob_photo_engine::Session::new();
         s2.add_document(app.session.active().unwrap().doc.as_ref().clone(), None);
         s2.select_layer(d.layer).unwrap();
         s2.execute("filter.filterGallery", d.params()).unwrap();
@@ -1088,7 +1088,7 @@ mod tests {
 
     #[test]
     fn reduce_averages_blocks_weighted_by_alpha() {
-        let mut s = Surface::new(photocraft_color::PixelFormat::new(photocraft_color::ColorMode::Rgb, photocraft_color::SampleType::F32, true));
+        let mut s = Surface::new(redrob_photo_color::PixelFormat::new(redrob_photo_color::ColorMode::Rgb, redrob_photo_color::SampleType::F32, true));
         s.write_pixel(0, 0, &[1.0, 0.0, 0.0, 1.0]);
         s.write_pixel(1, 0, &[0.0, 1.0, 0.0, 0.0]); // transparent: its colour doesn't count
         s.write_pixel(2, 0, &[0.2, 0.4, 0.6, 1.0]); // a partial block at the edge
@@ -1129,13 +1129,13 @@ mod tests {
         app.distort.gallery = None;
     }
 
-    /// Preview cost on 24 MP: `cargo test -p photocraft-ui-egui --lib bench_gallery_preview -- --ignored --nocapture`.
+    /// Preview cost on 24 MP: `cargo test -p redrob-photo-ui-egui --lib bench_gallery_preview -- --ignored --nocapture`.
     #[test]
     #[ignore]
     fn bench_gallery_preview() {
         let (w, h) = (6000, 4000);
         let canvas = Rect::new(0, 0, w, h);
-        let mut s = Surface::new(photocraft_color::PixelFormat::new(photocraft_color::ColorMode::Rgb, photocraft_color::SampleType::U8, true));
+        let mut s = Surface::new(redrob_photo_color::PixelFormat::new(redrob_photo_color::ColorMode::Rgb, redrob_photo_color::SampleType::U8, true));
         s.fill_rect(canvas, &[0.5, 0.4, 0.3, 1.0]);
         for y in (0..h).step_by(9) {
             s.fill_rect(Rect::new(0, y, w, y + 3), &[0.9, 0.8, 0.2, 1.0]);

@@ -1,7 +1,7 @@
 //! Interleaved `f32` image regions and sampling helpers.
 
-use photocraft_geom::Rect;
-use photocraft_raster::Surface;
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::Surface;
 
 /// How samples outside an image are read.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

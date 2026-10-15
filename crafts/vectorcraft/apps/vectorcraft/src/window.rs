@@ -3,7 +3,7 @@
 //! the size, position and maximized state saved with the UI preferences (`UiState::window`), moved
 //! onto a monitor that is still connected.
 
-use vectorcraft_ui_egui::state::WindowGeometry;
+use redrob_vector_ui_egui::state::WindowGeometry;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize};
 
 /// The first window's size, in points.
@@ -244,13 +244,13 @@ mod tests {
         assert_eq!(frame(minimized), Some(WindowGeometry { maximized: true, ..g }));
         assert_eq!(frame(normal), Some(g));
         // Saved with the preferences; older preference files have no window.
-        let mut ui = vectorcraft_ui_egui::UiState { window: Some(g), ..Default::default() };
-        let back: vectorcraft_ui_egui::UiState = serde_json::from_slice(&serde_json::to_vec(&ui).unwrap()).unwrap();
+        let mut ui = redrob_vector_ui_egui::UiState { window: Some(g), ..Default::default() };
+        let back: redrob_vector_ui_egui::UiState = serde_json::from_slice(&serde_json::to_vec(&ui).unwrap()).unwrap();
         assert_eq!(back.window, Some(g));
         ui.window = None;
         let json = serde_json::to_value(&ui).unwrap();
         assert!(json.get("window").is_none());
-        let back: vectorcraft_ui_egui::UiState = serde_json::from_value(json).unwrap();
+        let back: redrob_vector_ui_egui::UiState = serde_json::from_value(json).unwrap();
         assert_eq!(back.window, None);
     }
 }

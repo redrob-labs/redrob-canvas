@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use vectorcraft_color::{BlendMode, Color, Gradient, GradientGeom, GradientKind, GradientPaint, Paint};
-use vectorcraft_doc::{
+use redrob_vector_color::{BlendMode, Color, Gradient, GradientGeom, GradientKind, GradientPaint, Paint};
+use redrob_vector_doc::{
     Appearance, AppearanceItem, Artboard, CharStyle, Dash, Document, ImageBlob, ImageObject, LineCap, LineJoin, Node, NodeId, NodeKind, TextObject,
 };
-use vectorcraft_geom::{Affine, FillRule, PathData, Point, Rect, shapes};
+use redrob_vector_geom::{Affine, FillRule, PathData, Point, Rect, shapes};
 
 use crate::*;
 
@@ -48,7 +48,7 @@ fn uncompressed(d: &Document) -> String {
 }
 
 fn page_count(bytes: &[u8]) -> usize {
-    craft_pdf::syntax::Pdf::new(bytes.to_vec()).expect("parse").pages().len()
+    redrob_craft_pdf::syntax::Pdf::new(bytes.to_vec()).expect("parse").pages().len()
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn one_page_per_artboard_with_sizes() {
         show_cross_hairs: false,
     });
     let bytes = export(&d, &PdfOptions::default()).unwrap();
-    let pdf = craft_pdf::syntax::Pdf::new(bytes).unwrap();
+    let pdf = redrob_craft_pdf::syntax::Pdf::new(bytes).unwrap();
     let sizes: Vec<(f32, f32)> = pdf.pages().iter().map(|p| p.render_dimensions()).collect();
     assert_eq!(sizes, vec![(200.0, 100.0), (100.0, 400.0), (612.0, 792.0)]);
 }
@@ -106,7 +106,7 @@ fn artboard_range_and_bad_index() {
         show_cross_hairs: false,
     });
     let bytes = export(&d, &PdfOptions { artboards: Some(vec![1]), ..Default::default() }).unwrap();
-    let pdf = craft_pdf::syntax::Pdf::new(bytes).unwrap();
+    let pdf = redrob_craft_pdf::syntax::Pdf::new(bytes).unwrap();
     assert_eq!(pdf.pages().len(), 1);
     assert_eq!(pdf.pages()[0].render_dimensions(), (100.0, 400.0));
     assert_eq!(export(&d, &PdfOptions { artboards: Some(vec![5]), ..Default::default() }), Err(PdfError::BadArtboard(5)));
@@ -139,7 +139,7 @@ fn an_instance_whose_art_reaches_the_page_is_written() {
     // the 20 × 20 square around the origin, moved to (-60, -60) to (-40, -40), is off it.
     let mut d = doc(200.0, 100.0);
     let red = rect_node(Rect::new(100.0, 50.0, 140.0, 90.0), Color::rgb(1.0, 0.0, 0.0));
-    let far = vectorcraft_doc::Symbol { name: "Far".into(), art: Arc::new(red) };
+    let far = redrob_vector_doc::Symbol { name: "Far".into(), art: Arc::new(red) };
     d.symbols.push(far.clone());
     let instance = Node::new(NodeId(0), NodeKind::SymbolInstance { symbol: "Far".into(), xf: Affine::translate((-50.0, -50.0)) });
     add(&mut d, instance.clone());
@@ -152,7 +152,7 @@ fn an_instance_whose_art_reaches_the_page_is_written() {
     d.symbols.push(far);
     let blue = rect_node(Rect::new(150.0, 10.0, 170.0, 30.0), Color::rgb(0.0, 0.0, 1.0));
     let mut group = Node::group(NodeId(0), vec![Arc::new(instance), Arc::new(blue)]);
-    group.knockout = vectorcraft_doc::Knockout::On;
+    group.knockout = redrob_vector_doc::Knockout::On;
     add(&mut d, group);
     let fills: Vec<[u8; 4]> = leaves(&roundtrip(&d)).iter().filter_map(|n| Some(n.appearance.fill_paint().color()?.to_rgba8(1.0))).collect();
     assert!(fills.contains(&[255, 0, 0, 255]) && fills.contains(&[0, 0, 255, 255]), "{fills:?}");
@@ -164,16 +164,16 @@ fn an_instance_whose_brush_art_reaches_the_page_is_written() {
     // nib. Drawn from (-5, 0), the line lies left of the page, and the nib paints 10 pt either side
     // of it, onto the page.
     let mut d = doc(200.0, 100.0);
-    let mut lib = vectorcraft_brush::library(&d);
-    let Some(vectorcraft_brush::BrushKind::Calligraphic(c)) = lib.iter_mut().find(|b| b.name == "3 pt. Round").map(|b| &mut b.kind) else {
+    let mut lib = redrob_vector_brush::library(&d);
+    let Some(redrob_vector_brush::BrushKind::Calligraphic(c)) = lib.iter_mut().find(|b| b.name == "3 pt. Round").map(|b| &mut b.kind) else {
         panic!("the 3 pt. Round brush")
     };
     c.size = 20.0;
-    vectorcraft_brush::store(&mut d, &lib);
+    redrob_vector_brush::store(&mut d, &lib);
     let mut stroke = Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 1.0);
     stroke.stroke_mut().unwrap().brush = Some("3 pt. Round".into());
     let line = Node::path(NodeId(0), shapes::line((0.0, 40.0).into(), (0.0, 60.0).into()), stroke);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Nib".into(), art: Arc::new(line) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Nib".into(), art: Arc::new(line) });
     add(&mut d, Node::new(NodeId(0), NodeKind::SymbolInstance { symbol: "Nib".into(), xf: Affine::translate((-5.0, 0.0)) }));
     let out = roundtrip(&d);
     let l = leaves(&out);
@@ -226,7 +226,7 @@ fn roundtrip_stroke_params_merge_fill_and_stroke() {
 #[test]
 fn roundtrip_open_path_and_even_odd() {
     let mut d = doc(200.0, 200.0);
-    let mut bp = vectorcraft_geom::BezPath::new();
+    let mut bp = redrob_vector_geom::BezPath::new();
     bp.move_to((10.0, 10.0));
     bp.curve_to((50.0, 0.0), (80.0, 100.0), (150.0, 60.0));
     add(&mut d, Node::path(NodeId(0), PathData::from_bezpath(&bp), Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 2.0)));
@@ -250,7 +250,7 @@ fn roundtrip_open_path_and_even_odd() {
 trait Exact {
     fn bounding_box_exact(&self) -> Rect;
 }
-impl Exact for vectorcraft_geom::BezPath {
+impl Exact for redrob_vector_geom::BezPath {
     fn bounding_box_exact(&self) -> Rect {
         kurbo::Shape::bounding_box(self)
     }
@@ -318,7 +318,7 @@ fn objects_outside_artboard_are_culled() {
 
 /// A line from (10, `y`) to (90, `y`).
 fn line(y: f64) -> PathData {
-    let mut bp = vectorcraft_geom::BezPath::new();
+    let mut bp = redrob_vector_geom::BezPath::new();
     bp.move_to((10.0, y));
     bp.line_to((90.0, y));
     PathData::from_bezpath(&bp)
@@ -473,7 +473,7 @@ fn text_exported_as_outlines() {
     let l = leaves(&r.document);
     assert!(!l.is_empty());
     assert!(l.iter().all(|n| matches!(n.kind, NodeKind::Path { .. })));
-    let b = l.iter().fold(None, |acc, n| vectorcraft_geom::union_opt(acc, n.geometric_bounds())).unwrap();
+    let b = l.iter().fold(None, |acc, n| redrob_vector_geom::union_opt(acc, n.geometric_bounds())).unwrap();
     assert!(b.x0 >= 9.0 && b.x1 < 120.0 && b.y1 <= 56.0 && b.y0 > 25.0, "{b:?}");
 }
 
@@ -692,14 +692,14 @@ fn stroke_alignment_and_arrowheads_export() {
         shapes::rectangle(Rect::new(20.0, 20.0, 120.0, 120.0)),
         Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 6.0),
     );
-    p.appearance.stroke_mut().unwrap().align = vectorcraft_doc::StrokeAlign::Inside;
+    p.appearance.stroke_mut().unwrap().align = redrob_vector_doc::StrokeAlign::Inside;
     add(&mut d, p);
     let mut line = Node::path(
         NodeId(0),
         shapes::line(Point::new(10.0, 150.0), Point::new(150.0, 150.0)),
         Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 2.0),
     );
-    line.appearance.stroke_mut().unwrap().end_arrow = Some(vectorcraft_doc::Arrowhead::Triangle);
+    line.appearance.stroke_mut().unwrap().end_arrow = Some(redrob_vector_doc::Arrowhead::Triangle);
     add(&mut d, line);
     let r = export_with_report(&d, &PdfOptions::default()).unwrap();
     let out = import(&r.bytes).unwrap();
@@ -727,7 +727,7 @@ fn opacity_mask_exports_as_luminosity_soft_mask() {
     let mut d = doc(100.0, 100.0);
     let mut n = rect_node(Rect::new(10.0, 10.0, 90.0, 90.0), Color::rgb(1.0, 0.0, 0.0));
     let art = rect_node(Rect::new(10.0, 10.0, 50.0, 90.0), Color::WHITE);
-    n.extras_mut().mask = Some(Box::new(vectorcraft_doc::OpacityMask::new(art, true)));
+    n.extras_mut().mask = Some(Box::new(redrob_vector_doc::OpacityMask::new(art, true)));
     add(&mut d, n);
     let bytes = export(&d, &PdfOptions::uncompressed()).unwrap();
     let text = String::from_utf8_lossy(&bytes);
@@ -758,7 +758,7 @@ fn empty_and_populated_file_info_preserve_key_presence() {
 /// recursion, with no cap: a stack overflow), and those of real files are read.
 #[test]
 fn functions_and_colour_spaces_built_on_themselves_are_refused() {
-    use vectorcraft_testkit::pdf::{PdfPage, first_extra, pdf_with};
+    use redrob_vector_testkit::pdf::{PdfPage, first_extra, pdf_with};
     let first = first_extra(1);
     let (me, next) = (format!("{first} 0 R"), format!("{} 0 R", first + 1));
     let shaded = PdfPage {

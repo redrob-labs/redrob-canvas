@@ -5,9 +5,9 @@
 //! PostScript file (`format: "postscript"`, or a `.ps` path) is always saved. `print.printers`
 //! lists the printers.
 
+use redrob_vector_engine::cmd::fileio;
 use serde::Serialize;
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::fileio;
 
 use crate::{VectorcraftApp, io};
 
@@ -92,7 +92,7 @@ pub fn run(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     }
     let mut v = app.session.execute("file.print", &q).map_err(|e| e.to_string())?;
     let data = v.as_object_mut().and_then(|o| o.remove("dataBase64"));
-    let pdf = data.as_ref().and_then(Value::as_str).and_then(vectorcraft_format::base64_decode).ok_or("the print job has no data")?;
+    let pdf = data.as_ref().and_then(Value::as_str).and_then(redrob_vector_format::base64_decode).ok_or("the print job has no data")?;
     let title = app.session.active().map(|d| d.title()).unwrap_or_default();
     let printer = s("printer").filter(|n| !n.is_empty());
     let service = app.services.print.as_mut().ok_or("no print service")?;

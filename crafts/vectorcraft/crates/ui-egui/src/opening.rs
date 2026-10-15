@@ -7,9 +7,9 @@
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, TryRecvError, channel};
 
+use redrob_vector_engine::cmd::fileio::{self, ReadFile};
+use redrob_vector_engine::file_access::ScopeHandle;
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::fileio::{self, ReadFile};
-use vectorcraft_engine::file_access::ScopeHandle;
 
 use crate::VectorcraftApp;
 
@@ -17,7 +17,7 @@ use crate::VectorcraftApp;
 pub struct Pending {
     /// Where it is.
     pub path: String,
-    /// What the status bar shows ("Opening Poster.vectorcraft").
+    /// What the status bar shows ("Opening Poster.rvector").
     pub label: String,
     done: Receiver<Result<ReadFile, String>>,
 }
@@ -29,9 +29,11 @@ pub struct Opening {
 }
 
 /// Does opening happen off the UI thread here? Not on wasm (no threads), in unit tests (they look
-/// at the document right after asking for it), or with `VECTORCRAFT_SYNC_OPEN` set.
+/// at the document right after asking for it), or with `REDROB_VECTOR_SYNC_OPEN` set.
 pub fn available() -> bool {
-    !(cfg!(target_arch = "wasm32") || cfg!(test) || std::env::var_os("VECTORCRAFT_SYNC_OPEN").is_some())
+    !(cfg!(target_arch = "wasm32")
+        || cfg!(test)
+        || std::env::var_os("REDROB_VECTOR_SYNC_OPEN").or_else(|| std::env::var_os("VECTORCRAFT_SYNC_OPEN")).is_some()) // legacy: the upstream variable is read when ours is unset
 }
 
 /// Decode `bytes`, the file at `path`, read its linked files and lay out its type on a thread of its
@@ -48,7 +50,7 @@ pub fn start(app: &mut VectorcraftApp, path: &str, bytes: Vec<u8>) -> Result<Val
     let spawned = std::thread::Builder::new().name("vectorcraft-open".into()).spawn(move || {
         let r = scope
             .run(|| {
-                vectorcraft_engine::guard::catch_panic(|| {
+                redrob_vector_engine::guard::catch_panic(|| {
                     fileio::read_for_open(&name, &file, Some(name.clone()), &Value::Null, update_links).map_err(|e| e.to_string())
                 })
             })
@@ -109,7 +111,7 @@ fn finish(app: &mut VectorcraftApp, path: &str, r: Result<ReadFile, String>) {
 
 #[cfg(test)]
 mod tests {
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
     use crate::Services;
@@ -121,8 +123,8 @@ mod tests {
         let mut app = VectorcraftApp::new(Session::new(), Services::default());
         app.run("file.new", json!({"width": 100, "height": 80})).unwrap();
         let (first, before) = (app.session.doc().unwrap().uid, app.session.documents().len());
-        app.ui.dialog = Some(crate::state::Dialog::new(crate::dialogs::save_options::KIND, json!({"path": "/art/First.vectorcraft"})));
-        start(&mut app, "/art/Second.vectorcraft", vectorcraft_format::save(&vectorcraft_doc::Document::new(120.0, 80.0), false)).unwrap();
+        app.ui.dialog = Some(crate::state::Dialog::new(crate::dialogs::save_options::KIND, json!({"path": "/art/First.rvector"})));
+        start(&mut app, "/art/Second.rvector", redrob_vector_format::save(&redrob_vector_doc::Document::new(120.0, 80.0), false)).unwrap();
         let t0 = std::time::Instant::now();
         while t0.elapsed().as_millis() < 400 {
             poll(&mut app);
@@ -137,19 +139,19 @@ mod tests {
             std::thread::yield_now();
         }
         assert_eq!(app.session.documents().len(), before + 1);
-        assert_eq!(app.session.doc().unwrap().path.as_deref(), Some("/art/Second.vectorcraft"));
+        assert_eq!(app.session.doc().unwrap().path.as_deref(), Some("/art/Second.rvector"));
     }
 
     #[test]
     fn a_file_read_off_the_ui_thread_opens_as_one_read_at_once() {
         let mut app = VectorcraftApp::new(Session::new(), Services::default());
-        let mut d = vectorcraft_doc::Document::new(120.0, 80.0);
+        let mut d = redrob_vector_doc::Document::new(120.0, 80.0);
         d.title = "Poster".into();
-        let bytes = vectorcraft_format::save(&d, false);
+        let bytes = redrob_vector_format::save(&d, false);
         let before = app.session.documents().len();
-        let r = start(&mut app, "/art/Poster.vectorcraft", bytes).unwrap();
+        let r = start(&mut app, "/art/Poster.rvector", bytes).unwrap();
         assert_eq!(r["background"], true);
-        assert_eq!(app.ui.status, "Opening Poster.vectorcraft…");
+        assert_eq!(app.ui.status, "Opening Poster.rvector…");
         let t0 = std::time::Instant::now();
         while !app.opening.pending.is_empty() && t0.elapsed().as_secs() < 30 {
             poll(&mut app);
@@ -158,18 +160,18 @@ mod tests {
         assert_eq!(app.session.documents().len(), before + 1);
         assert!(!app.ui.status.starts_with("Opening"), "{}", app.ui.status);
         let st = app.session.doc().unwrap();
-        assert_eq!((st.path.as_deref(), st.doc.artboards[0].rect.width()), (Some("/art/Poster.vectorcraft"), 120.0));
-        assert_eq!(app.ui.recent_files.first().map(String::as_str), Some("/art/Poster.vectorcraft"));
+        assert_eq!((st.path.as_deref(), st.doc.artboards[0].rect.width()), (Some("/art/Poster.rvector"), 120.0));
+        assert_eq!(app.ui.recent_files.first().map(String::as_str), Some("/art/Poster.rvector"));
         // A file that can't be read: reported, nothing opened, not a recent file.
-        start(&mut app, "/art/Broken.vectorcraft", b"{\"format\":\"vectorcraft\"".to_vec()).unwrap();
+        start(&mut app, "/art/Broken.rvector", b"{\"format\":\"vectorcraft\"".to_vec()).unwrap();
         let t0 = std::time::Instant::now();
         while !app.opening.pending.is_empty() && t0.elapsed().as_secs() < 30 {
             poll(&mut app);
             std::thread::yield_now();
         }
         assert_eq!(app.session.documents().len(), before + 1);
-        assert!(app.ui.status.starts_with("Couldn't open Broken.vectorcraft"), "{}", app.ui.status);
-        assert_ne!(app.ui.recent_files.first().map(String::as_str), Some("/art/Broken.vectorcraft"));
+        assert!(app.ui.status.starts_with("Couldn't open Broken.rvector"), "{}", app.ui.status);
+        assert_ne!(app.ui.recent_files.first().map(String::as_str), Some("/art/Broken.rvector"));
     }
 
     /// A file read off the UI thread opens as the document read at once. Its linked TIFF, BMP and JPEG
@@ -198,7 +200,7 @@ mod tests {
         let area = json!({"width": 150, "height": 20, "fit": "autoHeight"});
         let t = app.session.execute("text.create", &json!({"x": 20, "y": 40, "text": "Type in two columns. ".repeat(12), "area": area})).unwrap();
         app.session.execute("text.areaOptions", &json!({"ids": [t["id"]], "columns": 2})).unwrap();
-        app.session.execute("document.save", &json!({"path": file(&before, "poster.vectorcraft")})).unwrap();
+        app.session.execute("document.save", &json!({"path": file(&before, "poster.rvector")})).unwrap();
         std::fs::remove_file(file(&before, "gone.png")).unwrap();
         let changed = file(&before, "changed.png");
         let stamp = std::fs::metadata(&changed).unwrap().modified().unwrap();
@@ -208,7 +210,7 @@ mod tests {
         std::fs::OpenOptions::new().write(true).open(&changed).unwrap().set_times(later).unwrap();
         // The folder moves: the linked files are found beside the document.
         std::fs::rename(&before, &after).unwrap();
-        let path = file(&after, "poster.vectorcraft");
+        let path = file(&after, "poster.rvector");
         let bytes = std::fs::read(&path).unwrap();
         let asked = |app: &VectorcraftApp| app.ui.dialog.as_ref().map(|d| (d.kind.clone(), d.fields.clone()));
         for update in ["askWhenModified", "automatically"] {

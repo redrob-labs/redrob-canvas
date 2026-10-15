@@ -15,7 +15,7 @@ fn bottom_id() -> egui::Id {
 }
 
 fn harness(kind: ThemeKind) -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 1080, "height": 1080, "resolution": 72, "background": "white"})).unwrap();
     app.sync_views();
     let mut h = Harness::builder().with_size(SIZE).build_ui_state(
@@ -208,12 +208,12 @@ fn appearance_toggle_preserves_pro_layout_and_has_no_fit_button() {
     // Switch to Light mode (top-bar appearance button).
     let ctx = h.ctx.clone();
     crate::prefs_ui::cycle_appearance(h.state_mut(), &ctx);
-    if h.state().session.prefs().interface.appearance_mode == photocraft_engine::prefs::AppearanceMode::Auto {
+    if h.state().session.prefs().interface.appearance_mode == redrob_photo_engine::prefs::AppearanceMode::Auto {
         crate::prefs_ui::cycle_appearance(h.state_mut(), &ctx);
     }
     crate::prefs_ui::tick(h.state_mut(), &ctx);
     h.run_steps(3);
-    assert_eq!(h.state().session.prefs().interface.appearance_mode, photocraft_engine::prefs::AppearanceMode::Light);
+    assert_eq!(h.state().session.prefs().interface.appearance_mode, redrob_photo_engine::prefs::AppearanceMode::Light);
     assert_eq!(h.state().ui.theme, ThemeKind::ProLight);
     assert!(Tokens::get(&h.ctx).pro);
     assert!(h.query_by_label("Fit").is_none(), "Fit button must not appear in light mode (#5016)");

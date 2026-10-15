@@ -2,7 +2,7 @@
 //! clock) are one History state per run, and Undo takes the run back.
 
 use egui_kittest::Harness;
-use photocraft_geom::Rect;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -11,7 +11,7 @@ use crate::state::Tool;
 fn harness() -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("select.rect", json!({"x": 40, "y": 40, "width": 20, "height": 20})).unwrap();

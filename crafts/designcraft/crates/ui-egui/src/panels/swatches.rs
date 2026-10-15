@@ -1,7 +1,7 @@
 //! Swatches and Color panels.
 
-use designcraft_color::{ColorType, SwatchValue};
 use egui::{Sense, vec2};
+use redrob_layout_color::{ColorType, SwatchValue};
 use serde_json::json;
 
 use crate::theme::Tokens;
@@ -124,7 +124,7 @@ const PICKED: &str = "swatches_picked";
 /// The Swatches panel's top row, as InDesign's: a Fill/Stroke proxy (click: the other in front),
 /// Formatting Affects Container / Text, and the tint of the colour in front. `target` is
 /// [`super::color_target`]: fill and stroke swatches and tints of the text or the first object.
-fn header(app: &mut DesignApp, ui: &mut egui::Ui, doc: &designcraft_doc::Document, target: Option<&(String, f32, String, f32)>) {
+fn header(app: &mut DesignApp, ui: &mut egui::Ui, doc: &redrob_layout_doc::Document, target: Option<&(String, f32, String, f32)>) {
     let t = Tokens::get(ui.ctx());
     let (fill_sw, stroke_sw) = target.map_or(("[None]", "[Black]"), |(f, _, s, _)| (f.as_str(), s.as_str()));
     let text = super::colors_affect_text(app) || app.ui.formatting_affects_text;
@@ -214,8 +214,8 @@ fn folder_button(ui: &mut egui::Ui, tip: &str) -> egui::Response {
 fn swatch_row(
     app: &mut DesignApp,
     ui: &mut egui::Ui,
-    doc: &designcraft_doc::Document,
-    sw: &designcraft_color::swatch::Swatch,
+    doc: &redrob_layout_doc::Document,
+    sw: &redrob_layout_color::swatch::Swatch,
     indent: f32,
     fill_cur: Option<&str>,
 ) {
@@ -235,9 +235,9 @@ fn swatch_row(
     let kind = match &sw.value {
         SwatchValue::Color { color, color_type } => {
             let m = match color {
-                designcraft_color::Color::Cmyk { .. } => "CMYK",
-                designcraft_color::Color::Rgb { .. } => "RGB",
-                designcraft_color::Color::Gray { .. } => crate::i18n::tr(&app.ui.language, "Gray"),
+                redrob_layout_color::Color::Cmyk { .. } => "CMYK",
+                redrob_layout_color::Color::Rgb { .. } => "RGB",
+                redrob_layout_color::Color::Gray { .. } => crate::i18n::tr(&app.ui.language, "Gray"),
             };
             format!("{}{}", if *color_type == ColorType::Spot { "● " } else { "" }, m)
         }
@@ -307,7 +307,7 @@ pub fn color_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
     let Some(doc) = app.session.active().map(|d| d.doc.clone()) else { return };
     let mode_id = egui::Id::new("color_panel_mode");
     let mut stroke = app.ui.stroke_front;
-    let default_mode = if doc.settings.intent == designcraft_doc::Intent::Print { ColorMode::Cmyk } else { ColorMode::Rgb };
+    let default_mode = if doc.settings.intent == redrob_layout_doc::Intent::Print { ColorMode::Cmyk } else { ColorMode::Rgb };
     let mut mode: ColorMode = ui.data(|d| d.get_temp(mode_id)).unwrap_or(default_mode);
     let target = if stroke { "stroke" } else { "fill" };
     let name = if stroke { stroke_sw.clone() } else { fill.clone() };
@@ -466,7 +466,7 @@ fn channel(ui: &mut egui::Ui, label: &str, v: &mut f32, scale: f32, suffix: &str
 fn cmyk_ramp(k: usize, x: f32) -> egui::Color32 {
     let mut v = [0.0f32; 4];
     v[k] = x;
-    let [r, g, b] = designcraft_color::Color::cmyk(v[0], v[1], v[2], v[3]).to_rgb();
+    let [r, g, b] = redrob_layout_color::Color::cmyk(v[0], v[1], v[2], v[3]).to_rgb();
     egui::Color32::from_rgb((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
 }
 
@@ -501,7 +501,7 @@ fn spectrum(app: &mut DesignApp, ui: &mut egui::Ui, target: &str) {
 }
 
 /// Stops in `object.gradient` form.
-fn stops_json(g: &designcraft_color::Gradient) -> Vec<serde_json::Value> {
+fn stops_json(g: &redrob_layout_color::Gradient) -> Vec<serde_json::Value> {
     g.stops
         .iter()
         .map(|s| json!({"location": s.offset as f64 * 100.0, "color": s.color.to_hex(), "opacity": s.opacity as f64 * 100.0, "midpoint": s.midpoint as f64 * 100.0}))
@@ -524,7 +524,7 @@ pub fn gradient_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
     // Gradient panel follows the Fill/Stroke proxy).
     let target = if app.ui.stroke_front { "stroke" } else { "fill" };
     let fill = if app.ui.stroke_front { it.stroke.as_fill() } else { it.fill.clone() };
-    let Some(g) = designcraft_color::swatch::resolve_gradient(&st.doc.swatches, &fill.swatch).cloned() else {
+    let Some(g) = redrob_layout_color::swatch::resolve_gradient(&st.doc.swatches, &fill.swatch).cloned() else {
         crate::rtl::label(
             ui,
             egui::RichText::new(crate::i18n::tr(
@@ -538,7 +538,7 @@ pub fn gradient_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
         }
         return;
     };
-    let radial = g.kind == designcraft_color::GradientKind::Radial;
+    let radial = g.kind == redrob_layout_color::GradientKind::Radial;
     ui.horizontal(|ui| {
         crate::widgets::caption(ui, crate::i18n::tr(&app.ui.language, "Type:"));
         egui::ComboBox::from_id_salt("grad_type")
@@ -716,14 +716,14 @@ mod swatches_header_tests {
         )
     }
 
-    fn items(app: &DesignApp) -> Vec<designcraft_doc::Item> {
+    fn items(app: &DesignApp) -> Vec<redrob_layout_doc::Item> {
         let st = app.session.doc().unwrap();
         st.selection.items.iter().map(|id| st.doc.item(*id).unwrap().clone()).collect()
     }
 
     #[test]
     fn swatches_go_to_the_fill_or_stroke_in_front_and_the_bottom_row_deletes_the_one_clicked() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "unassigned"})).unwrap();
         app.run("swatch.create", json!({"name": "Brand", "color": "#108080"})).unwrap();
@@ -758,7 +758,7 @@ mod swatches_header_tests {
 
     #[test]
     fn the_tint_field_keeps_each_objects_own_swatch() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let a = app.run("frame.create", json!({"rect": [36, 36, 100, 100], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
         let b = app.run("frame.create", json!({"rect": [136, 36, 200, 100], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();

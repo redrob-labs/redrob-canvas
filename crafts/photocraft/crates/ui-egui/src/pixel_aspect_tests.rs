@@ -11,7 +11,7 @@ use crate::canvas::ViewXform;
 use crate::state::Tool;
 
 fn harness() -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 100, "background": "transparent"})).unwrap();
     app.run("tools.setColors", json!({"foreground": "#000000"})).unwrap();
     app.ui.tool = Tool::Pencil;
@@ -65,9 +65,9 @@ fn the_mapping_stretches_document_x_and_inverts_exactly() {
     let rect = Rect::from_min_size(Pos2::new(10.0, 20.0), vec2(800.0, 600.0));
     let square = ViewXform { rect, zoom: 1.5, center: [100.0, 50.0], flip: false, rotation: 0.0, aspect: 1.0 };
     let wide = ViewXform { aspect: 2.0, ..square };
-    let r = wide.doc_rect(photocraft_geom::Rect::new(0, 0, 200, 100));
+    let r = wide.doc_rect(redrob_photo_geom::Rect::new(0, 0, 200, 100));
     assert!((r.width() - 600.0).abs() < 1e-3 && (r.height() - 150.0).abs() < 1e-3, "{r:?}");
-    assert_eq!(r.center(), square.doc_rect(photocraft_geom::Rect::new(0, 0, 200, 100)).center());
+    assert_eq!(r.center(), square.doc_rect(redrob_photo_geom::Rect::new(0, 0, 200, 100)).center());
     assert!((wide.zoom_x() - 3.0).abs() < 1e-6);
     for flip in [false, true] {
         for rotation in [0.0, 30.0, -90.0] {
@@ -127,7 +127,7 @@ fn a_click_paints_the_pixel_drawn_under_the_pointer() {
 
 #[test]
 fn fit_and_fill_on_screen_use_the_stretched_width() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 1000, "height": 500})).unwrap();
     let doc = app.session.active().unwrap().doc.clone();
     // Fit keeps 20 points of margin per side: 1000 points across for 1000 px wide, 2000 shown.

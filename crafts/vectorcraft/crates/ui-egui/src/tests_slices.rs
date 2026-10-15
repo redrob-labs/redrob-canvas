@@ -1,15 +1,15 @@
 //! Slices on the canvas and in the menus.
 
 use egui::{Pos2, vec2};
+use redrob_vector_engine::Session;
 use serde_json::json;
-use vectorcraft_engine::Session;
 
 use crate::VectorcraftApp;
 
 fn app() -> VectorcraftApp {
     let mut app = VectorcraftApp::new(Session::new(), Default::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
-    app.session.paint.stroke = vectorcraft_color::Paint::None;
+    app.session.paint.stroke = redrob_vector_color::Paint::None;
     app
 }
 
@@ -77,7 +77,7 @@ fn slice_menu_items_follow_the_state() {
 fn slice_tool_cursors_are_drawn_in_code() {
     let ctx = egui::Context::default();
     let mut out = ctx.run_ui(Default::default(), |ui| {
-        for c in [vectorcraft_tools::Cursor::Slice, vectorcraft_tools::Cursor::SliceSelect] {
+        for c in [redrob_vector_tools::Cursor::Slice, redrob_vector_tools::Cursor::SliceSelect] {
             assert!(crate::cursors::paint(ui.painter(), c, egui::pos2(50.0, 50.0), 1.0), "{c:?}");
         }
     });
@@ -95,8 +95,8 @@ fn the_slice_tools_are_real_tools() {
     // Double-clicking a slice opens Slice Options.
     let id = app.run("object.slice.create", json!({"x": 10, "y": 10, "width": 50, "height": 50})).unwrap()["id"].as_u64().unwrap();
     let view = app.view_info();
-    let ev = vectorcraft_tools::PointerEvent::new(vectorcraft_tools::PointerKind::DoubleClick, 20.0, 20.0);
+    let ev = redrob_vector_tools::PointerEvent::new(redrob_vector_tools::PointerKind::DoubleClick, 20.0, 20.0);
     crate::canvas::dispatch(&mut app, &ev, view);
     assert_eq!(app.ui.dialog.as_ref().map(|d| d.kind.as_str()), Some(crate::dialogs::slices::OPTIONS));
-    assert_eq!(app.session.active().unwrap().selection.slices, vec![vectorcraft_doc::NodeId(id)]);
+    assert_eq!(app.session.active().unwrap().selection.slices, vec![redrob_vector_doc::NodeId(id)]);
 }

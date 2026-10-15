@@ -1,22 +1,22 @@
 //! Targa Options: the bits per pixel File › Save As and Save a Copy ask for before writing an RGB
 //! Targa, as Photoshop's Targa Options does (its Resolution; 16 bits/pixel isn't offered). 32 bits
 //! write the document's alpha channel as the Targa's alpha, so a game texture keeps the mask its
-//! alpha holds (see `photocraft_io::TgaBits`).
+//! alpha holds (see `redrob_photo_io::TgaBits`).
 //!
 //! The save is parked in [`Prompt`] while the modal is up (egui is immediate-mode) and written
 //! once answered. Cancel drops the save. Scripts skip the prompt by passing `tgaBits`.
 
-use photocraft_io::TgaBits;
+use redrob_photo_io::TgaBits;
 
 use crate::{ExportSettings, PhotocraftApp};
 
 /// A save waiting on the Targa Options answer.
 pub struct Prompt {
     /// The document that requested the save, even if tabs change while this is open.
-    doc: photocraft_doc::DocId,
+    doc: redrob_photo_doc::DocId,
     /// Where the document goes.
     pub path: String,
-    /// The bits per pixel chosen, starting at `photocraft_io::tga_default_bits`.
+    /// The bits per pixel chosen, starting at `redrob_photo_io::tga_default_bits`.
     pub bits: TgaBits,
     /// Save a Copy: the document keeps its path and unsaved changes.
     pub copy: bool,
@@ -28,18 +28,18 @@ pub struct Prompt {
 
 /// `true` when `path` names a Targa (`.tga`, and the rarer `.icb`, `.vda`, `.vst`).
 pub fn is_tga_path(path: &str) -> bool {
-    photocraft_engine::file_cmds::extension(path).and_then(|e| photocraft_codecs::from_extension(&e)) == Some(photocraft_codecs::Format::Tga)
+    redrob_photo_engine::file_cmds::extension(path).and_then(|e| redrob_photo_codecs::from_extension(&e)) == Some(redrob_photo_codecs::Format::Tga)
 }
 
 /// Whether saving the active document to `path` asks for Targa Options: an RGB Targa. Grayscale
 /// Targas are 8-bit, with nothing to choose.
 pub fn wants_prompt(app: &PhotocraftApp, path: &str) -> bool {
-    is_tga_path(path) && app.session.active().is_some_and(|st| st.doc.mode != photocraft_color::ColorMode::Grayscale)
+    is_tga_path(path) && app.session.active().is_some_and(|st| st.doc.mode != redrob_photo_color::ColorMode::Grayscale)
 }
 
 /// The Targa bits a command or control call asks for (`"tgaBits": 24 | 32`), which skip the prompt.
 pub fn bits_param(params: &serde_json::Value, cmd: &str) -> Result<Option<TgaBits>, String> {
-    photocraft_engine::file_cmds::tga_bits_param(params, cmd).map_err(|e| e.to_string())
+    redrob_photo_engine::file_cmds::tga_bits_param(params, cmd).map_err(|e| e.to_string())
 }
 
 /// Parks the save behind the prompt, starting at 32 bits when the document has an alpha channel.
@@ -49,7 +49,7 @@ pub fn park(app: &mut PhotocraftApp, path: String, copy: bool, record: &'static 
         return Err("Answer TIFF or Targa Options before starting another save".into());
     }
     let doc = app.active_doc_id()?;
-    let bits = app.session.active().map_or(TgaBits::Bits24, |st| photocraft_io::tga_default_bits(&st.doc));
+    let bits = app.session.active().map_or(TgaBits::Bits24, |st| redrob_photo_io::tga_default_bits(&st.doc));
     app.targa_options = Some(Prompt { doc, path, bits, copy, record });
     Ok(())
 }

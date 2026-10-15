@@ -9,9 +9,9 @@
 
 use std::collections::BTreeSet;
 
+use redrob_vector_engine::doc::{LiveCorners, NodeId};
+use redrob_vector_geom::shapes::CornerKind;
 use serde_json::{Value, json};
-use vectorcraft_engine::doc::{LiveCorners, NodeId};
-use vectorcraft_geom::shapes::CornerKind;
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, form, run_and_close};
@@ -19,7 +19,7 @@ use crate::state::Dialog;
 use crate::{VectorcraftApp, widgets};
 
 /// The dialog kind of Corners (the corner widgets' double-click).
-pub const KIND: &str = vectorcraft_tools::corners::DIALOG;
+pub const KIND: &str = redrob_vector_tools::corners::DIALOG;
 
 pub(super) const SPEC: DialogSpec = DialogSpec { heading: |_| tl!("Corners").into(), body, confirm, min_width: 280.0, ..DialogSpec::FORM };
 
@@ -103,10 +103,10 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::doc::{LiveShape, NodeKind};
-    use vectorcraft_tools::corners::CornerWidgets;
-    use vectorcraft_tools::{PointerEvent, PointerKind};
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::doc::{LiveShape, NodeKind};
+    use redrob_vector_tools::corners::CornerWidgets;
+    use redrob_vector_tools::{PointerEvent, PointerKind};
 
     /// A selected 100 pt live square at (100, 100).
     fn app() -> (VectorcraftApp, u64) {

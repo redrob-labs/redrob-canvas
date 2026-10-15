@@ -1,6 +1,6 @@
 //! Linked-story threading and text-color transaction safety.
-use designcraft_doc::{ParaFormat, Story, StoryId, table::Table};
-use designcraft_engine::Session;
+use redrob_layout_doc::{ParaFormat, Story, StoryId, table::Table};
+use redrob_layout_engine::Session;
 use serde_json::{Value, json};
 use std::sync::Arc;
 
@@ -44,7 +44,7 @@ fn safety_linked_parent_follows_merge_and_updates_after_native_reopen() {
     assert_eq!(s.doc().unwrap().doc.story(linked).unwrap().text, "PARENT");
     let bytes = s.execute("file.serialize", &json!({})).unwrap();
     let mut reopened = Session::new();
-    reopened.execute("file.openBytes", &json!({"name":"links.designcraft","base64":bytes["base64"]})).unwrap();
+    reopened.execute("file.openBytes", &json!({"name":"links.rlayout","base64":bytes["base64"]})).unwrap();
     assert_eq!(link(&mut reopened, linked)["parent"], survivor.0);
     reopened.execute("story.updateLink", &json!({"story":linked.0})).unwrap();
     assert_eq!(reopened.doc().unwrap().doc.story(linked).unwrap().text, "PREFIX\nPARENT");
@@ -123,7 +123,7 @@ fn nested_story(depth: usize, name: &str) -> Story {
     let mut st = Story::with_text(StoryId(0), "leaf", ParaFormat::default());
     st.chars[0].format.over.fill = Some(name.into());
     for _ in 0..depth {
-        let mut outer = Story::with_text(StoryId(0), &designcraft_doc::TABLE_ANCHOR.to_string(), ParaFormat::default());
+        let mut outer = Story::with_text(StoryId(0), &redrob_layout_doc::TABLE_ANCHOR.to_string(), ParaFormat::default());
         let mut t = Table::new(1, 1, 1, 0, 0, 100.);
         t.cells[0].text = st;
         outer.tables.insert(1, Arc::new(t));
@@ -212,7 +212,7 @@ fn safety_empty_linked_parent_follows_survivor_only_on_explicit_update() {
             assert_eq!(link(&mut s, linked)["parent"], survivor.0);
             let bytes = s.execute("file.serialize", &json!({})).unwrap();
             let mut reopened = Session::new();
-            reopened.execute("file.openBytes", &json!({"name":"empty-parent.designcraft","base64":bytes["base64"]})).unwrap();
+            reopened.execute("file.openBytes", &json!({"name":"empty-parent.rlayout","base64":bytes["base64"]})).unwrap();
             assert_eq!(link(&mut reopened, linked)["outOfDate"], true);
             assert_eq!(reopened.doc().unwrap().doc.story(linked).unwrap().text, "");
             reopened.execute("story.updateLink", &json!({"story":linked.0})).unwrap();

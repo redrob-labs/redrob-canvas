@@ -3,9 +3,9 @@
 
 use std::sync::Arc;
 
-use vectorcraft_color::{Color, Gradient, GradientPaint, Paint};
-use vectorcraft_doc::{Appearance, CharStyle, Dash, Document, ImageBlob, ImageObject, LineCap, LineJoin, Node, NodeId, NodeKind, TextObject};
-use vectorcraft_geom::{Affine, PathData, Point, Rect, shapes};
+use redrob_vector_color::{Color, Gradient, GradientPaint, Paint};
+use redrob_vector_doc::{Appearance, CharStyle, Dash, Document, ImageBlob, ImageObject, LineCap, LineJoin, Node, NodeId, NodeKind, TextObject};
+use redrob_vector_geom::{Affine, PathData, Point, Rect, shapes};
 
 use crate::*;
 
@@ -336,7 +336,7 @@ fn an_instance_whose_art_reaches_the_artboard_is_written() {
     let inst = Node::new(NodeId(0), NodeKind::SymbolInstance { symbol: "Far".into(), xf: Affine::translate((-50.0, -50.0)) });
     let mut d = doc_with(100.0, 100.0, vec![inst]);
     let art = path(shapes::rectangle(Rect::new(100.0, 100.0, 140.0, 140.0)), red(), Paint::None, 0.0);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Far".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Far".into(), art: Arc::new(art) });
     let k = kinds(&emf_records(&emf(&d).bytes));
     assert!(k.contains(&39), "a brush fills the art: {k:?}");
 }

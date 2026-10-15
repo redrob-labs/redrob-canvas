@@ -529,7 +529,7 @@ pub struct ToolOptions {
     /// true = "Classic gradient" (paints the pixels).
     pub gradient_classic: bool,
     /// Blend mode used by both live and classic gradient drags.
-    pub gradient_blend_mode: photocraft_color::BlendMode,
+    pub gradient_blend_mode: redrob_photo_color::BlendMode,
     pub fill_opacity: f32,
     /// Paint Bucket fill source: false = Foreground colour, true = Pattern (Patterns panel selection).
     pub bucket_fill_pattern: bool,
@@ -699,7 +699,7 @@ pub struct ToolOptions {
     #[serde(default = "fifty")]
     pub red_eye_darken: f32,
     /// Eyedropper › Sample Size: 1 = Point Sample, else the side of the averaged square (3, 5,
-    /// 11, 31, 51, 101; `photocraft_engine::sample_cmds::SAMPLE_SIZES`). Shared, as in Photoshop,
+    /// 11, 31, 51, 101; `redrob_photo_engine::sample_cmds::SAMPLE_SIZES`). Shared, as in Photoshop,
     /// with the ⌥-click eyedropper of the painting tools, the dialog eyedroppers and the Info panel.
     #[serde(default = "one_u32")]
     pub eyedropper_size: u32,
@@ -749,8 +749,8 @@ fn default_brush_tool() -> Tool {
     Tool::Brush
 }
 
-fn default_layer_filter_mode() -> photocraft_color::BlendMode {
-    photocraft_color::BlendMode::Normal
+fn default_layer_filter_mode() -> redrob_photo_color::BlendMode {
+    redrob_photo_color::BlendMode::Normal
 }
 
 fn one_u32() -> u32 {
@@ -776,7 +776,7 @@ impl Default for ToolOptions {
             gradient_reverse: false,
             gradient_dither: true,
             gradient_classic: false,
-            gradient_blend_mode: photocraft_color::BlendMode::Normal,
+            gradient_blend_mode: redrob_photo_color::BlendMode::Normal,
             fill_opacity: 100.0,
             bucket_fill_pattern: false,
             type_font: "Inter".into(),
@@ -909,7 +909,7 @@ pub struct TransformSession {
     pub interpolation: String,
     /// Warp mode (Edit › Transform › Warp): the warp being edited over `rect`, in document px.
     #[serde(default)]
-    pub warp: Option<photocraft_geom::warp::Warp>,
+    pub warp: Option<redrob_photo_geom::warp::Warp>,
     /// Select › Transform Selection: the box transforms the selection outline, not pixels.
     #[serde(default)]
     pub selection: bool,
@@ -996,7 +996,7 @@ pub struct TextEdit {
 pub struct TypeTransform {
     pub document: u64,
     pub revision: u64,
-    pub original: photocraft_geom::Affine,
+    pub original: redrob_photo_geom::Affine,
     pub frame: TransformSession,
     pub(crate) gesture: crate::transform_tool::Gesture,
 }
@@ -1146,7 +1146,7 @@ pub struct UiState {
     #[serde(default = "default_brush_tool")]
     pub brush_tool: Tool,
     #[serde(default)]
-    pub tool_brushes: Vec<(Tool, photocraft_engine::paint::BrushSettings)>,
+    pub tool_brushes: Vec<(Tool, redrob_photo_engine::paint::BrushSettings)>,
     /// Pen path under construction.
     #[serde(default)]
     pub pen: Option<crate::vector_ui::PenPath>,
@@ -1172,7 +1172,7 @@ pub struct UiState {
     pub layer_filter_name: String,
     /// Layers panel blend-mode filter.
     #[serde(default = "default_layer_filter_mode")]
-    pub layer_filter_mode: photocraft_color::BlendMode,
+    pub layer_filter_mode: redrob_photo_color::BlendMode,
     /// Actions panel: which row is selected and which are expanded. The list lives on the session.
     #[serde(default)]
     pub actions: crate::actions::ActionsUi,
@@ -1220,9 +1220,9 @@ pub struct UiState {
     pub dock: crate::dock::DockLayout,
     /// Authoritative custom panel membership and placement; legacy fields are compatibility projections.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub docking: Option<craft_ui::docking::Layout<String>>,
+    pub docking: Option<redrob_craft_ui::docking::Layout<String>>,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
-    pub docking_hidden: std::collections::BTreeMap<String, craft_ui::docking::Location<String>>,
+    pub docking_hidden: std::collections::BTreeMap<String, redrob_craft_ui::docking::Location<String>>,
     /// Invalidates in-flight gestures when a workspace is replaced.
     #[serde(skip)]
     pub docking_generation: u64,
@@ -1258,7 +1258,7 @@ pub struct UiState {
     /// The document the polygon is drawn on (set at its first click): another document becoming
     /// active drops it (`canvas::polygon_cancel_stale`).
     #[serde(default)]
-    pub polygon_doc: Option<photocraft_doc::DocId>,
+    pub polygon_doc: Option<redrob_photo_doc::DocId>,
     /// Magnetic Lasso border in progress (`magnetic_lasso_ui`).
     #[serde(default)]
     pub magnetic: crate::magnetic_lasso_ui::MagneticLasso,

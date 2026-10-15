@@ -1,6 +1,6 @@
 //! Pen tablet pressure, tilt, rotation and eraser end on macOS and Linux X11 (issue #79).
 //!
-//! winit 0.30 drops tablet data on both, so `photocraft-tablet` reads it beside winit (an AppKit
+//! winit 0.30 drops tablet data on both, so `redrob-photo-tablet` reads it beside winit (an AppKit
 //! local event monitor; XInput2 raw events on a second X connection) and this module writes each
 //! sample into the UI's [`StylusFeed`], where the canvas reads it exactly like the web runner's
 //! Pointer Events and automation's simulated pen. Windows needs nothing here: winit forwards
@@ -15,8 +15,8 @@
 
 #[cfg(any(target_os = "linux", test))]
 use crate::linux_libs::DisplaySession;
-use photocraft_tablet::Sample;
-use photocraft_ui_egui::stylus::{PenSample, StylusFeed};
+use redrob_photo_tablet::Sample;
+use redrob_photo_ui_egui::stylus::{PenSample, StylusFeed};
 
 /// A tablet sample as the UI's pen sample.
 pub fn pen_sample(s: Sample) -> PenSample {
@@ -32,13 +32,13 @@ pub fn sink(feed: StylusFeed) -> impl Fn(Option<Sample>) + Send + 'static {
 /// from eframe's app creation, not before the event loop). Keep the result until the event loop
 /// returns. On failure this logs why: pens then paint like a mouse.
 #[cfg(target_os = "macos")]
-pub fn install_macos(feed: &StylusFeed) -> Option<photocraft_tablet::macos::Monitor> {
-    photocraft_tablet::macos::Monitor::install(sink(feed.clone())).map_err(|e| log::warn!("{e}")).ok()
+pub fn install_macos(feed: &StylusFeed) -> Option<redrob_photo_tablet::macos::Monitor> {
+    redrob_photo_tablet::macos::Monitor::install(sink(feed.clone())).map_err(|e| log::warn!("{e}")).ok()
 }
 
 /// The display server to open the window on: the session's own, except Xwayland on Wayland when
 /// a pen is attached (see the module docs) and Xwayland can run the window: `$DISPLAY` is set
-/// and the X11 libraries are installed. `PHOTOCRAFT_NATIVE_WAYLAND=1` keeps native Wayland.
+/// and the X11 libraries are installed. `REDROB_PHOTO_NATIVE_WAYLAND=1` keeps native Wayland.
 #[cfg(target_os = "linux")]
 pub fn display_session() -> DisplaySession {
     let var = |k: &str| std::env::var(k).ok();
@@ -46,7 +46,7 @@ pub fn display_session() -> DisplaySession {
     let pen = || std::fs::read_to_string("/proc/bus/input/devices").is_ok_and(|d| has_pen(&d));
     let x11_libs = || crate::linux_libs::available(DisplaySession::X11);
     if pen_needs_xwayland(session, var, pen, x11_libs) {
-        eprintln!("photocraft: pen found; opening the window through Xwayland, where the pen works (PHOTOCRAFT_NATIVE_WAYLAND=1 keeps Wayland)");
+        eprintln!("photocraft: pen found; opening the window through Xwayland, where the pen works (REDROB_PHOTO_NATIVE_WAYLAND=1 keeps Wayland)");
         return DisplaySession::X11;
     }
     session
@@ -56,7 +56,7 @@ pub fn display_session() -> DisplaySession {
 #[cfg(any(target_os = "linux", test))]
 pub fn pen_needs_xwayland(session: DisplaySession, var: impl Fn(&str) -> Option<String>, pen: impl FnOnce() -> bool, x11_libs: impl FnOnce() -> bool) -> bool {
     let set = |k: &str| var(k).is_some_and(|v| !v.is_empty() && v != "0");
-    session == DisplaySession::Wayland && !set("PHOTOCRAFT_NATIVE_WAYLAND") && set("DISPLAY") && pen() && x11_libs()
+    session == DisplaySession::Wayland && !set("REDROB_PHOTO_NATIVE_WAYLAND") && set("DISPLAY") && pen() && x11_libs()
 }
 
 /// `BTN_TOOL_PEN` (linux/input-event-codes.h): the key a pen tablet's stylus, a pen display's or
@@ -102,7 +102,7 @@ pub fn spawn_x11(feed: &StylusFeed, display: Option<DisplayKind>) {
         log::info!("tablet pressure: not available on this display server ({display:?})");
         return;
     }
-    if let Err(e) = photocraft_tablet::x11::spawn(None, sink(feed.clone())) {
+    if let Err(e) = redrob_photo_tablet::x11::spawn(None, sink(feed.clone())) {
         log::warn!("{e}");
     }
 }
@@ -132,10 +132,10 @@ impl DisplayKind {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_tablet::{Update, appkit, xi};
-    use photocraft_ui_egui::PhotocraftApp;
-    use photocraft_ui_egui::canvas::{ToolEvent, tool_event};
-    use photocraft_ui_egui::state::Tool;
+    use redrob_photo_tablet::{Update, appkit, xi};
+    use redrob_photo_ui_egui::PhotocraftApp;
+    use redrob_photo_ui_egui::canvas::{ToolEvent, tool_event};
+    use redrob_photo_ui_egui::state::Tool;
     use serde_json::{Value, json};
 
     #[test]
@@ -157,7 +157,7 @@ mod tests {
     /// A light-to-heavy pen stroke must paint thin and faint at the light end and wide and opaque
     /// at the heavy end (Size and Opacity on Pen Pressure); a mouse paints full strength.
     fn pressure_stroke(mut next: impl FnMut(f32) -> Option<Sample>) -> (f64, f64, f64, f64) {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let feed = app.stylus.feed.clone();
         let sink = sink(feed);
         app.session.execute("file.new", json!({"width": 240, "height": 80, "background": "white"})).unwrap();
@@ -314,9 +314,9 @@ mod tests {
         assert!(!pen_needs_xwayland(DisplaySession::Wayland, env(&wayland), || false, || true));
         assert!(!pen_needs_xwayland(DisplaySession::Wayland, env(&[("WAYLAND_DISPLAY", "wayland-0")]), || true, || true));
         assert!(!pen_needs_xwayland(DisplaySession::Wayland, env(&wayland), || true, || false));
-        let native = [("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0"), ("PHOTOCRAFT_NATIVE_WAYLAND", "1")];
+        let native = [("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0"), ("REDROB_PHOTO_NATIVE_WAYLAND", "1")];
         assert!(!pen_needs_xwayland(DisplaySession::Wayland, env(&native), || true, || true));
-        let zero = [("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0"), ("PHOTOCRAFT_NATIVE_WAYLAND", "0")];
+        let zero = [("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0"), ("REDROB_PHOTO_NATIVE_WAYLAND", "0")];
         assert!(pen_needs_xwayland(DisplaySession::Wayland, env(&zero), || true, || true));
         // X11 already gets the pen; the probes don't even run off Wayland.
         assert!(!pen_needs_xwayland(DisplaySession::X11, env(&[("DISPLAY", ":0")]), || panic!("probed"), || panic!("probed")));
@@ -324,7 +324,7 @@ mod tests {
 
     #[test]
     fn use_tablet_pressure_off_paints_like_a_mouse() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("prefs.set", json!({"path": "tools.useTabletPressure", "value": false})).unwrap();
         // The canvas copies the preference each frame; do what it does.
         app.stylus.use_pressure = app.session.prefs().tools.use_tablet_pressure;
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn eraser_end_switches_to_the_eraser_and_back() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let sink = sink(app.stylus.feed.clone());
         let mut st = appkit::State::default();
         let mut send = |e: appkit::RawEvent| {
@@ -346,17 +346,17 @@ mod tests {
         let prox = |device, entering| appkit::RawEvent { kind: appkit::event_type::TABLET_PROXIMITY, device, entering, ..Default::default() };
         app.ui.tool = Tool::Brush;
         send(prox(appkit::device::PEN, true));
-        assert!(!photocraft_ui_egui::stylus::Stylus::sync_eraser_tool(&mut app));
+        assert!(!redrob_photo_ui_egui::stylus::Stylus::sync_eraser_tool(&mut app));
         assert_eq!(app.ui.tool, Tool::Brush, "the tip changes nothing");
         send(prox(appkit::device::PEN, false));
         send(prox(appkit::device::ERASER, true));
-        assert!(photocraft_ui_egui::stylus::Stylus::sync_eraser_tool(&mut app));
+        assert!(redrob_photo_ui_egui::stylus::Stylus::sync_eraser_tool(&mut app));
         assert_eq!(app.ui.tool, Tool::Eraser);
         // Mouse moves in between change nothing; the tip coming back restores the Brush.
         send(appkit::RawEvent { kind: appkit::event_type::MOUSE_MOVED, ..Default::default() });
-        assert!(!photocraft_ui_egui::stylus::Stylus::sync_eraser_tool(&mut app));
+        assert!(!redrob_photo_ui_egui::stylus::Stylus::sync_eraser_tool(&mut app));
         send(prox(appkit::device::PEN, true));
-        assert!(photocraft_ui_egui::stylus::Stylus::sync_eraser_tool(&mut app));
+        assert!(redrob_photo_ui_egui::stylus::Stylus::sync_eraser_tool(&mut app));
         assert_eq!(app.ui.tool, Tool::Brush);
     }
 }

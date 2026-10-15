@@ -1,10 +1,10 @@
 //! Window → Asset Export and Object → Collect for Export: art collected as assets
-//! ([`vectorcraft_doc::ExportAsset`]), exported each on its own, cropped to its art, at the export
+//! ([`redrob_vector_doc::ExportAsset`]), exported each on its own, cropped to its art, at the export
 //! settings Export for Screens shares (`document.exportSettings`). File → Export Selection collects
 //! the selection this way and opens Export for Screens on its Assets tab (a UI command).
 
+use redrob_vector_doc::{ExportAsset, NodeId};
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::{ExportAsset, NodeId};
 
 use super::edit::{roots_of, selected_roots};
 use super::fileio::{SCREEN_SETTINGS_KEYS, check_screen_settings, export_screens, store_screen_settings};
@@ -96,7 +96,7 @@ fn add(s: &mut Session, p: &Value) -> Result<Value> {
     if name.is_some() && sets.len() > 1 {
         return Err(bad(C, "a name names one asset: give multiple: false, or one object"));
     }
-    let existing = |d: &vectorcraft_doc::Document, nodes: &[NodeId]| d.assets.iter().find(|a| a.nodes == nodes).map(|a| a.id);
+    let existing = |d: &redrob_vector_doc::Document, nodes: &[NodeId]| d.assets.iter().find(|a| a.nodes == nodes).map(|a| a.id);
     let d = &s.doc()?.doc;
     // Nothing new: no undo step.
     if sets.iter().all(|set| existing(d, set).is_some()) {

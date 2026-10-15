@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use photocraft_engine::{
+use redrob_photo_engine::{
     Session,
     preset_store::{self, PresetBackend, *},
 };
@@ -180,7 +180,7 @@ impl PresetBackend for Bridge {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_psd::abr::{AbrSample, LegacyBrush, LegacyTip, write_v12};
+    use redrob_photo_psd::abr::{AbrSample, LegacyBrush, LegacyTip, write_v12};
     use serde_json::json;
 
     fn import(s: &mut Session) {
@@ -195,7 +195,7 @@ mod tests {
             false,
         )
         .unwrap();
-        s.execute("brush.presets.importAbr", json!({"data": photocraft_paint::tile::b64_encode(&abr), "group": "Browser samples"})).unwrap();
+        s.execute("brush.presets.importAbr", json!({"data": redrob_photo_paint::tile::b64_encode(&abr), "group": "Browser samples"})).unwrap();
     }
 
     #[test]
@@ -366,7 +366,7 @@ mod tests {
     }
     #[test]
     fn indexed_brush_store_coexists_with_imported_gradient_preferences() {
-        use photocraft_psd::grd::{GrdColor, GrdGradient, GrdStop, write};
+        use redrob_photo_psd::grd::{GrdColor, GrdGradient, GrdStop, write};
         let b = Bridge::default();
         let (mut s, _) = session(b.clone());
         import(&mut s);
@@ -379,7 +379,7 @@ mod tests {
             ],
             opacity: vec![(0.0, 1.0, 0.5), (1.0, 0.5, 0.5)],
         }]);
-        s.execute("gradient.presets.importGrd", json!({"data":photocraft_paint::tile::b64_encode(&data),"group":"Browser gradients"})).unwrap();
+        s.execute("gradient.presets.importGrd", json!({"data":redrob_photo_paint::tile::b64_encode(&data),"group":"Browser gradients"})).unwrap();
         let prefs = s.prefs_to_json();
         let (mut loaded, _) = session(b);
         loaded.load_prefs_json(&prefs).unwrap();

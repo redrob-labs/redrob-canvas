@@ -9,10 +9,10 @@
 
 use std::collections::{HashMap, HashSet};
 
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::TextStyleDef;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::TextStyleDef;
 
 use super::*;
 use crate::Clipboard;
@@ -352,7 +352,7 @@ fn thumbnail_ok(b64: &str) -> bool {
     }
     // 32 base64 characters: 24 bytes, the signature then the IHDR chunk's length, type, width and
     // height.
-    let Some(head) = b64.get(..32).filter(|_| b64.len() <= MAX_THUMBNAIL).and_then(vectorcraft_format::base64_decode) else { return false };
+    let Some(head) = b64.get(..32).filter(|_| b64.len() <= MAX_THUMBNAIL).and_then(redrob_vector_format::base64_decode) else { return false };
     let side = |at: usize| {
         head.get(at..at + 4).and_then(|b| <[u8; 4]>::try_from(b).ok()).map(u32::from_be_bytes).is_some_and(|v| (1..=MAX_THUMBNAIL_SIDE).contains(&v))
     };
@@ -761,8 +761,8 @@ fn graphic_of(s: &Session, p: &Value, cmd: &str) -> Result<LibraryGraphic> {
         _ => String::new(),
     };
     let name = if name.trim().is_empty() || name.starts_with('<') { "Graphic".to_string() } else { name };
-    let thumbnail = super::fileio::preview_png(&doc)?.map(|b| vectorcraft_format::base64_encode(&b)).unwrap_or_default();
-    let data = vectorcraft_format::base64_encode(&vectorcraft_format::save(&doc, false));
+    let thumbnail = super::fileio::preview_png(&doc)?.map(|b| redrob_vector_format::base64_encode(&b)).unwrap_or_default();
+    let data = redrob_vector_format::base64_encode(&redrob_vector_format::save(&doc, false));
     Ok(LibraryGraphic { id: String::new(), name, width: bounds.width(), height: bounds.height(), data, thumbnail })
 }
 
@@ -856,9 +856,9 @@ fn use_item(s: &mut Session, p: &Value) -> Result<Value> {
             let bytes = data
                 .get("data")
                 .and_then(Value::as_str)
-                .and_then(vectorcraft_format::base64_decode)
+                .and_then(redrob_vector_format::base64_decode)
                 .ok_or_else(|| bad(C, "the graphic's data is damaged"))?;
-            let doc = vectorcraft_format::load(&bytes).map_err(|e| bad(C, format!("the graphic can't be read: {e}")))?;
+            let doc = redrob_vector_format::load(&bytes).map_err(|e| bad(C, format!("the graphic can't be read: {e}")))?;
             let clip = Clipboard::from_document(&doc);
             if clip.is_empty() {
                 return Err(bad(C, "the graphic is empty"));
@@ -1062,7 +1062,7 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
             super::fileio::read_file(path)?.into()
         }
         (None, Some(text), _) => text.as_bytes().into(),
-        (None, None, Some(b64)) => vectorcraft_format::base64_decode(b64).ok_or_else(|| bad(C, "bad dataBase64"))?.into(),
+        (None, None, Some(b64)) => redrob_vector_format::base64_decode(b64).ok_or_else(|| bad(C, "bad dataBase64"))?.into(),
         _ => return Err(bad(C, "give `path`, `data` or `dataBase64`")),
     };
     if bytes.len() as u64 > MAX_FILE {

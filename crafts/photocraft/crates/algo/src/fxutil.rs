@@ -1,9 +1,9 @@
 //! Shared helpers for the second filter batch: colour-model access, window
 //! buffers, single-channel box/Gaussian blurs and jittered cell points.
 
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_geom::Rect;
-use photocraft_raster::{from_rgba_into, to_rgba};
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::{from_rgba_into, to_rgba};
 
 use crate::Ctx;
 use crate::image::Image;

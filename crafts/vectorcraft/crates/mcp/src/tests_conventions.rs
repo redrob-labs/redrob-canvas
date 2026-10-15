@@ -70,7 +70,7 @@ fn conventions_commands_batch_and_bounded_preview() {
     let before = call(&mut s, "doc_inspect", json!({}));
     let r = call(&mut s, "render_preview", json!({"max_side":64}));
     assert_eq!(r["isError"], false, "{r}");
-    let png = vectorcraft_format::base64_decode(r["content"][0]["data"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(r["content"][0]["data"].as_str().unwrap()).unwrap();
     let img = image::load_from_memory(&png).unwrap();
     assert!(img.width() <= 64 && img.height() <= 64);
     assert_eq!(before, call(&mut s, "doc_inspect", json!({})));
@@ -82,7 +82,7 @@ fn conventions_commands_batch_and_bounded_preview() {
     assert_eq!(r["isError"], false, "{r}");
     let r = call(&mut s, "render_preview", json!({"max_side":60,"artboard":1}));
     assert_eq!(r["isError"], false, "{r}");
-    let png = vectorcraft_format::base64_decode(r["content"][0]["data"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(r["content"][0]["data"].as_str().unwrap()).unwrap();
     let img = image::load_from_memory(&png).unwrap();
     assert_eq!((img.width(), img.height()), (60, 20));
     for board in [json!(2), json!(-1), json!("1")] {
@@ -123,8 +123,8 @@ fn conventions_resources_and_versioned_results() {
         ("resources/list", json!({}), 600_000),
         ("resources/templates/list", json!({}), 600_000),
         ("prompts/list", json!({}), 600_000),
-        ("resources/read", json!({"uri":"vectorcraft://document"}), 0),
-        ("resources/read", json!({"uri":"vectorcraft://commands"}), 0),
+        ("resources/read", json!({"uri":"redrob-vector://document"}), 0),
+        ("resources/read", json!({"uri":"redrob-vector://commands"}), 0),
     ] {
         let legacy = rpc(&mut s, method, extra.clone());
         assert!(legacy["result"].is_object(), "{legacy}");
@@ -143,8 +143,8 @@ fn conventions_resources_and_versioned_results() {
         assert!(rpc(&mut s, method, extra)["result"].get("resultType").is_none());
     }
     let r = rpc(&mut s, "resources/list", json!({}));
-    assert!(r["result"]["resources"].as_array().unwrap().iter().any(|r| r["uri"] == "vectorcraft://commands"));
-    let commands = rpc(&mut s, "resources/read", json!({"uri":"vectorcraft://commands"}));
+    assert!(r["result"]["resources"].as_array().unwrap().iter().any(|r| r["uri"] == "redrob-vector://commands"));
+    let commands = rpc(&mut s, "resources/read", json!({"uri":"redrob-vector://commands"}));
     let commands: Value = serde_json::from_str(commands["result"]["contents"][0]["text"].as_str().unwrap()).unwrap();
     assert_eq!(commands, payload(&call(&mut s, "command_list", json!({}))));
     assert_eq!(rpc(&mut s, "initialize", json!({"protocolVersion":"2026-07-28"}))["result"]["protocolVersion"], "2026-07-28");

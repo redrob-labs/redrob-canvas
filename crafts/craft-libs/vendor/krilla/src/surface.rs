@@ -8,8 +8,8 @@ use std::num::NonZeroU64;
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
-use crate::configure::validate::VersionedFeature;
 use crate::configure::ValidationError;
+use crate::configure::validate::VersionedFeature;
 use crate::content::ContentBuilder;
 use crate::geom::Path;
 #[cfg(any(feature = "raster-images", feature = "pdf"))]
@@ -32,9 +32,9 @@ use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::ArtifactType;
 use crate::text::Font;
-use crate::text::{draw_glyph, Glyph};
+use crate::text::{Glyph, draw_glyph};
 #[cfg(feature = "simple-text")]
-use crate::text::{shape::naive_shape, TextDirection};
+use crate::text::{TextDirection, shape::naive_shape};
 
 /// Can be used to associate render operations with a unique identifier.
 /// This is useful if you want to backtrack a validation error to a specific
@@ -88,16 +88,7 @@ impl<'a> Surface<'a> {
         page_identifier: Option<PageTagIdentifier>,
         finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
     ) -> Surface<'a> {
-        Self {
-            sc,
-            chunk_container,
-            bd: Builders::new(root_builder),
-            page_identifier,
-            fill: None,
-            stroke: None,
-            push_instructions: vec![],
-            finish_fn,
-        }
+        Self { sc, chunk_container, bd: Builders::new(root_builder), page_identifier, fill: None, stroke: None, push_instructions: vec![], finish_fn }
     }
 
     /// Return a `StreamBuilder` to allow drawing on a sub-context.
@@ -135,38 +126,14 @@ impl<'a> Surface<'a> {
     pub fn draw_path(&mut self, path: &Path) {
         if self.fill.is_some() || self.stroke.is_some() {
             if self.has_complex_fill_or_stroke() {
-                self.bd.get_mut().draw_path(
-                    &path.0,
-                    self.fill.as_ref(),
-                    None,
-                    self.sc,
-                    self.chunk_container,
-                );
-                self.bd.get_mut().draw_path(
-                    &path.0,
-                    None,
-                    self.stroke.as_ref(),
-                    self.sc,
-                    self.chunk_container,
-                );
+                self.bd.get_mut().draw_path(&path.0, self.fill.as_ref(), None, self.sc, self.chunk_container);
+                self.bd.get_mut().draw_path(&path.0, None, self.stroke.as_ref(), self.sc, self.chunk_container);
             } else {
-                self.bd.get_mut().draw_path(
-                    &path.0,
-                    self.fill.as_ref(),
-                    self.stroke.as_ref(),
-                    self.sc,
-                    self.chunk_container,
-                );
+                self.bd.get_mut().draw_path(&path.0, self.fill.as_ref(), self.stroke.as_ref(), self.sc, self.chunk_container);
             }
         } else {
             // Draw with black by default.
-            self.bd.get_mut().draw_path(
-                &path.0,
-                Some(&Fill::default()),
-                None,
-                self.sc,
-                self.chunk_container,
-            );
+            self.bd.get_mut().draw_path(&path.0, Some(&Fill::default()), None, self.sc, self.chunk_container);
         }
     }
 
@@ -185,39 +152,28 @@ impl<'a> Surface<'a> {
                 // about this.
                 ContentTag::Artifact(artifact) => {
                     if matches!(artifact.kind, ArtifactType::Header | ArtifactType::Footer)
-                        && self.sc.serialize_settings().pdf_version()
-                            < VersionedFeature::HeaderFooterArtifactSubtypes.minimum_pdf_version()
+                        && self.sc.serialize_settings().pdf_version() < VersionedFeature::HeaderFooterArtifactSubtypes.minimum_pdf_version()
                     {
-                        self.sc.register_validation_error(
-                            ValidationError::RequiresNewerPdfVersion(
-                                VersionedFeature::HeaderFooterArtifactSubtypes,
-                                self.sc.location,
-                            ),
-                        );
+                        self.sc.register_validation_error(ValidationError::RequiresNewerPdfVersion(
+                            VersionedFeature::HeaderFooterArtifactSubtypes,
+                            self.sc.location,
+                        ));
                     }
 
                     if artifact.requires_properties(self.sc.serialize_settings().pdf_version()) {
-                        self.bd
-                            .get_mut()
-                            .start_marked_content_with_properties(self.sc, None, tag);
+                        self.bd.get_mut().start_marked_content_with_properties(self.sc, None, tag);
                     } else {
                         self.bd.get_mut().start_marked_content(tag.name());
                     }
 
-                    if artifact.requires_bbox(self.sc.serialize_settings().pdf_version())
-                        && artifact.bbox.is_none()
-                    {
+                    if artifact.requires_bbox(self.sc.serialize_settings().pdf_version()) && artifact.bbox.is_none() {
                         panic!("Background artifact must have a bounding box in PDF 1.7");
                     }
 
                     Identifier::dummy()
                 }
                 ContentTag::Span(_) | ContentTag::Other => {
-                    self.bd.get_mut().start_marked_content_with_properties(
-                        self.sc,
-                        Some(id.mcid),
-                        tag,
-                    );
+                    self.bd.get_mut().start_marked_content_with_properties(self.sc, Some(id.mcid), tag);
                     id.bump().into()
                 }
             }
@@ -236,32 +192,14 @@ impl<'a> Surface<'a> {
         }
     }
 
-    fn outline_glyphs(
-        &mut self,
-        glyphs: &[impl Glyph],
-        context_color: rgb::Color,
-        start: Point,
-        font: Font,
-        font_size: f32,
-    ) {
+    fn outline_glyphs(&mut self, glyphs: &[impl Glyph], context_color: rgb::Color, start: Point, font: Font, font_size: f32) {
         let (mut cur_x, y) = (start.x, start.y);
 
         for glyph in glyphs {
-            let mut base_transform = tiny_skia_path::Transform::from_translate(
-                cur_x + glyph.x_offset(font_size),
-                y - glyph.y_offset(font_size),
-            );
-            base_transform = base_transform.pre_concat(tiny_skia_path::Transform::from_scale(
-                font_size / font.units_per_em(),
-                -font_size / font.units_per_em(),
-            ));
-            draw_glyph(
-                font.clone(),
-                context_color,
-                glyph.glyph_id(),
-                Transform::from_tsp(base_transform),
-                self,
-            );
+            let mut base_transform = tiny_skia_path::Transform::from_translate(cur_x + glyph.x_offset(font_size), y - glyph.y_offset(font_size));
+            base_transform =
+                base_transform.pre_concat(tiny_skia_path::Transform::from_scale(font_size / font.units_per_em(), -font_size / font.units_per_em()));
+            draw_glyph(font.clone(), context_color, glyph.glyph_id(), Transform::from_tsp(base_transform), self);
 
             cur_x += glyph.x_advance(font_size);
         }
@@ -272,15 +210,7 @@ impl<'a> Surface<'a> {
     /// This is a very low-level method, which gives you full control over how to place
     /// the glyphs that make up the text. This means that you must have your own text processing
     /// logic for dealing with bidirectional text, font fallback, text layouting, etc.
-    pub fn draw_glyphs(
-        &mut self,
-        start: Point,
-        glyphs: &[impl Glyph],
-        font: Font,
-        text: &str,
-        font_size: f32,
-        outlined: bool,
-    ) {
+    pub fn draw_glyphs(&mut self, start: Point, glyphs: &[impl Glyph], font: Font, text: &str, font_size: f32, outlined: bool) {
         let context_color = self.context_color();
         if outlined {
             self.outline_glyphs(glyphs, context_color, start, font, font_size);
@@ -320,32 +250,10 @@ impl<'a> Surface<'a> {
                     }
                 }
                 (None, Some(s)) => {
-                    self.bd.get_mut().draw_glyphs(
-                        start,
-                        self.sc,
-                        self.chunk_container,
-                        None,
-                        Some(s),
-                        context_color,
-                        glyphs,
-                        font,
-                        text,
-                        font_size,
-                    );
+                    self.bd.get_mut().draw_glyphs(start, self.sc, self.chunk_container, None, Some(s), context_color, glyphs, font, text, font_size);
                 }
                 (Some(f), None) => {
-                    self.bd.get_mut().draw_glyphs(
-                        start,
-                        self.sc,
-                        self.chunk_container,
-                        Some(f),
-                        None,
-                        context_color,
-                        glyphs,
-                        font,
-                        text,
-                        font_size,
-                    );
+                    self.bd.get_mut().draw_glyphs(start, self.sc, self.chunk_container, Some(f), None, context_color, glyphs, font, text, font_size);
                 }
                 (None, None) => {
                     // Draw with black by default.
@@ -379,15 +287,7 @@ impl<'a> Surface<'a> {
     /// If you need more advanced control over how your text looks,
     /// you can use the `fill_glyphs` method.
     #[cfg(feature = "simple-text")]
-    pub fn draw_text(
-        &mut self,
-        start: Point,
-        font: Font,
-        font_size: f32,
-        text: &str,
-        outlined: bool,
-        direction: TextDirection,
-    ) {
+    pub fn draw_text(&mut self, start: Point, font: Font, font_size: f32, text: &str, outlined: bool, direction: TextDirection) {
         let glyphs = naive_shape(text, font.clone(), direction);
 
         self.draw_glyphs(start, &glyphs, font, text, font_size, outlined);
@@ -430,11 +330,8 @@ impl<'a> Surface<'a> {
 
     /// Push a new mask.
     pub fn push_mask(&mut self, mask: Mask) {
-        self.push_instructions
-            .push(PushInstruction::Mask(Box::new(mask)));
-        self.bd
-            .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+        self.push_instructions.push(PushInstruction::Mask(Box::new(mask)));
+        self.bd.sub_builders.push(ContentBuilder::new(Transform::identity(), true, self.sc));
     }
 
     #[cfg(feature = "pdf")]
@@ -445,13 +342,8 @@ impl<'a> Surface<'a> {
         let obj_ref = self.sc.embed_pdf_page_as_xobject(pdf, page_idx);
         // If the user provided an invalid page index, we will detect this later on anyway, so
         // just use dummy dimensions here.
-        let (page_width, page_height) = pdf
-            .pages()
-            .get(page_idx)
-            .map(|p| p.render_dimensions())
-            .unwrap_or((1.0, 1.0));
-        let transform =
-            Transform::from_scale(size.width() / page_width, size.height() / page_height);
+        let (page_width, page_height) = pdf.pages().get(page_idx).map(|p| p.render_dimensions()).unwrap_or((1.0, 1.0));
+        let transform = Transform::from_scale(size.width() / page_width, size.height() / page_height);
         // We applied a transform to invert the y-axis initially, but since the embedded PDF also uses
         // a y-up coordinate system, we need to "invert" this.
         self.push_transform(&transform);
@@ -474,22 +366,17 @@ impl<'a> Surface<'a> {
     /// This stacks, meaning that if you do `push_opacity(0.5)` twice, the resulting
     /// base opacity will be 0.25.
     pub fn push_opacity(&mut self, opacity: NormalizedF32) {
-        self.push_instructions
-            .push(PushInstruction::Opacity(opacity));
+        self.push_instructions.push(PushInstruction::Opacity(opacity));
 
         if opacity != NormalizedF32::ONE {
-            self.bd
-                .sub_builders
-                .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+            self.bd.sub_builders.push(ContentBuilder::new(Transform::identity(), true, self.sc));
         }
     }
 
     /// Push a new isolated layer.
     pub fn push_isolated(&mut self) {
         self.push_instructions.push(PushInstruction::Isolated);
-        self.bd
-            .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+        self.bd.sub_builders.push(ContentBuilder::new(Transform::identity(), true, self.sc));
     }
 
     /// Pop the last `push` instruction.
@@ -502,24 +389,18 @@ impl<'a> Surface<'a> {
             PushInstruction::Opacity(o) => {
                 if o != NormalizedF32::ONE {
                     let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                    self.bd
-                        .get_mut()
-                        .draw_opacified(self.sc, self.chunk_container, o, stream);
+                    self.bd.get_mut().draw_opacified(self.sc, self.chunk_container, o, stream);
                 }
             }
             PushInstruction::ClipPath => self.bd.get_mut().pop_clip_path(),
             PushInstruction::BlendMode => self.bd.get_mut().restore_graphics_state(),
             PushInstruction::Mask(mask) => {
                 let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                self.bd
-                    .get_mut()
-                    .draw_masked(self.sc, self.chunk_container, *mask, stream)
+                self.bd.get_mut().draw_masked(self.sc, self.chunk_container, *mask, stream)
             }
             PushInstruction::Isolated => {
                 let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                self.bd
-                    .get_mut()
-                    .draw_isolated(self.sc, self.chunk_container, stream);
+                self.bd.get_mut().draw_isolated(self.sc, self.chunk_container, stream);
             }
         }
     }
@@ -527,9 +408,7 @@ impl<'a> Surface<'a> {
     #[cfg(feature = "raster-images")]
     /// Draw a new bitmap image.
     pub fn draw_image(&mut self, image: Image, size: Size) {
-        self.bd
-            .get_mut()
-            .draw_image(image, size, self.sc, self.chunk_container);
+        self.bd.get_mut().draw_image(image, size, self.sc, self.chunk_container);
     }
 
     /// Draw a new graphic.
@@ -537,18 +416,11 @@ impl<'a> Surface<'a> {
     /// Drawing the same graphic multiple times is very cheap in terms of
     /// file size.
     pub fn draw_graphic(&mut self, graphic: Graphic) {
-        self.bd.get_mut().draw_xobject(
-            self.sc,
-            self.chunk_container,
-            graphic.x_object,
-            &ExtGState::new(),
-        )
+        self.bd.get_mut().draw_xobject(self.sc, self.chunk_container, graphic.x_object, &ExtGState::new())
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
-        self.bd
-            .get_mut()
-            .draw_shading(shading, self.sc, self.chunk_container);
+        self.bd.get_mut().draw_shading(shading, self.sc, self.chunk_container);
     }
 
     /// A convenience method for `std::mem::drop`.
@@ -558,9 +430,7 @@ impl<'a> Surface<'a> {
     pub fn finish(self) {}
 
     pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {
-        self.bd
-            .get_mut()
-            .draw_opacified(self.sc, self.chunk_container, opacity, stream)
+        self.bd.get_mut().draw_opacified(self.sc, self.chunk_container, opacity, stream)
     }
 
     /// Return the current transformation matrix of the surface.
@@ -569,11 +439,7 @@ impl<'a> Surface<'a> {
     }
 
     fn context_color(&self) -> rgb::Color {
-        self.fill
-            .as_ref()
-            .and_then(|f| f.paint.as_rgb())
-            .or_else(|| self.stroke.as_ref().and_then(|s| s.paint.as_rgb()))
-            .unwrap_or_default()
+        self.fill.as_ref().and_then(|f| f.paint.as_rgb()).or_else(|| self.stroke.as_ref().and_then(|s| s.paint.as_rgb())).unwrap_or_default()
     }
 
     fn has_complex_fill_or_stroke(&self) -> bool {
@@ -587,20 +453,13 @@ impl<'a> Surface<'a> {
 
         let check_paint = |paint: &Paint| match &paint.0 {
             InnerPaint::Color(_) => false,
-            InnerPaint::LinearGradient(l) => {
-                l.stops.iter().any(|s| s.opacity != NormalizedF32::ONE)
-            }
-            InnerPaint::RadialGradient(r) => {
-                r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE)
-            }
+            InnerPaint::LinearGradient(l) => l.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
+            InnerPaint::RadialGradient(r) => r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
             InnerPaint::SweepGradient(r) => r.stops.iter().any(|s| s.opacity != NormalizedF32::ONE),
             InnerPaint::Pattern(_) => false,
         };
 
-        let complex_stroke = self
-            .stroke
-            .as_ref()
-            .is_some_and(|s| s.opacity != NormalizedF32::ONE || check_paint(&s.paint));
+        let complex_stroke = self.stroke.as_ref().is_some_and(|s| s.opacity != NormalizedF32::ONE || check_paint(&s.paint));
 
         let complex_fill = self.fill.as_ref().is_some_and(|f| check_paint(&f.paint));
 
@@ -620,10 +479,7 @@ impl Drop for Surface<'_> {
             return;
         }
 
-        let root_builder = std::mem::replace(
-            &mut self.bd.root_builder,
-            ContentBuilder::new(Transform::identity(), false, self.sc),
-        );
+        let root_builder = std::mem::replace(&mut self.bd.root_builder, ContentBuilder::new(Transform::identity(), false, self.sc));
         let num_mcids = match self.page_identifier {
             Some(pi) => pi.mcid,
             None => 0,
@@ -648,16 +504,11 @@ struct Builders {
 
 impl Builders {
     fn new(root_builder: ContentBuilder) -> Self {
-        Self {
-            root_builder,
-            sub_builders: vec![],
-        }
+        Self { root_builder, sub_builders: vec![] }
     }
 
     fn get_mut(&mut self) -> &mut ContentBuilder {
-        self.sub_builders
-            .last_mut()
-            .unwrap_or(&mut self.root_builder)
+        self.sub_builders.last_mut().unwrap_or(&mut self.root_builder)
     }
 
     fn get(&self) -> &ContentBuilder {

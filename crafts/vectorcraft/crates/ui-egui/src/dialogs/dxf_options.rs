@@ -6,10 +6,10 @@
 //! options of `document.exportDxf`. OK remembers the options for next time and writes the file
 //! (asking where when there is no path); bad options keep the dialog open.
 
+use redrob_vector_cad::{ColorDepth, DxfVersion, Preserve, RasterFormat};
+use redrob_vector_doc::Unit;
+use redrob_vector_engine::cmd::fileio;
 use serde_json::{Map, Value, json};
-use vectorcraft_cad::{ColorDepth, DxfVersion, Preserve, RasterFormat};
-use vectorcraft_doc::Unit;
-use vectorcraft_engine::cmd::fileio;
 
 use super::DialogSpec;
 use super::document_setup::{LABEL, check, choice};
@@ -128,7 +128,7 @@ pub(super) fn scale_row(ui: &mut egui::Ui, d: &mut Dialog) {
         ui.label(egui::RichText::new("=").color(t.text));
         let scale = d.f64("scale", 1.0);
         if let Some(v) = widgets::plain_field(ui, "dxf-scale", scale, "", 3, 64.0) {
-            let (lo, hi) = (*vectorcraft_cad::SCALE_RANGE.start(), *vectorcraft_cad::SCALE_RANGE.end());
+            let (lo, hi) = (*redrob_vector_cad::SCALE_RANGE.start(), *redrob_vector_cad::SCALE_RANGE.end());
             d.fields.insert("scale".into(), json!(v.clamp(lo, hi)));
         }
         ui.label(egui::RichText::new(tl!("Units")).color(t.text));

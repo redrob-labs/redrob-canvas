@@ -4,8 +4,8 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use designcraft_doc::{CharAttrs, Document, Story};
-use designcraft_fonts::FontSource;
+use redrob_layout_doc::{CharAttrs, Document, Story};
+use redrob_layout_fonts::FontSource;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, str_param};
@@ -44,7 +44,7 @@ fn for_each_story(d: &Document, f: &mut dyn FnMut(&Story)) {
 }
 
 fn list(d: &Document) -> Vec<Value> {
-    let db = designcraft_fonts::FontDb::global().scoped(d.font_scope);
+    let db = redrob_layout_fonts::FontDb::global().scoped(d.font_scope);
     let mut used: BTreeMap<(String, String), usize> = BTreeMap::new();
     for_each_story(d, &mut |st| {
         let ranges = st.para_ranges();
@@ -73,7 +73,7 @@ fn list(d: &Document) -> Vec<Value> {
         .into_iter()
         .map(|((family, style), n)| {
             let missing = !db.has_family(&family);
-            let style_missing = !missing && !db.styles(&family).iter().any(|s| designcraft_fonts::same_style(s, &style));
+            let style_missing = !missing && !db.styles(&family).iter().any(|s| redrob_layout_fonts::same_style(s, &style));
             let source = (!missing).then(|| match db.face(&family, &style).source {
                 FontSource::Bundled => "bundled",
                 FontSource::Installed(_) => "installed",
@@ -171,7 +171,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Some text here."})).unwrap();
-        let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = s.doc().unwrap().doc.item(redrob_layout_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 4})).unwrap();
         s.execute("type.char", &json!({"fontFamily": "Nonexistent Sans", "fontStyle": "Bold"})).unwrap();
         let l = s.execute("font.list", &json!({})).unwrap();
@@ -198,7 +198,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Some text here."})).unwrap();
-        let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = s.doc().unwrap().doc.item(redrob_layout_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 15})).unwrap();
         s.execute("type.char", &json!({"fontFamily": "Source Serif 4 (OTF)", "fontStyle": "Bold"})).unwrap();
         let l = s.execute("font.list", &json!({})).unwrap();
@@ -233,7 +233,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Text"})).unwrap();
-        let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = s.doc().unwrap().doc.item(redrob_layout_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 4})).unwrap();
         s.execute("type.char", &json!({"fontFamily": "Source Serif 4", "fontStyle": "Regular "})).unwrap();
         let l = s.execute("font.list", &json!({})).unwrap();

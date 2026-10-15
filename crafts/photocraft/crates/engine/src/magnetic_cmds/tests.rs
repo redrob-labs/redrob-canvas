@@ -1,4 +1,4 @@
-use photocraft_geom::Rect;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use super::*;

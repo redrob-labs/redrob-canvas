@@ -18,9 +18,9 @@
 use std::f64::consts::PI;
 use std::sync::Arc;
 
-use vectorcraft_color::{Color, Gradient, GradientPaint, GradientStop, Paint};
-use vectorcraft_geom::kurbo::ParamCurveArclen;
-use vectorcraft_geom::{Affine, Anchor, BezPath, FillRule, PathData, Point, SubPath, Vec2};
+use redrob_vector_color::{Color, Gradient, GradientPaint, GradientStop, Paint};
+use redrob_vector_geom::kurbo::ParamCurveArclen;
+use redrob_vector_geom::{Affine, Anchor, BezPath, FillRule, PathData, Point, SubPath, Vec2};
 
 use crate::appearance::{Appearance, AppearanceItem, Dash, StrokeLayer, WidthProfile};
 use crate::live::{BlendOrientation, BlendSpacing, BlendSpec};
@@ -783,8 +783,8 @@ impl Spine {
             } else {
                 bp.curve_to(c.p1, c.p2, c.p3);
             }
-            vectorcraft_geom::kurbo::flatten(bp.iter(), 0.1, |el| {
-                if let vectorcraft_geom::PathEl::MoveTo(p) | vectorcraft_geom::PathEl::LineTo(p) = el
+            redrob_vector_geom::kurbo::flatten(bp.iter(), 0.1, |el| {
+                if let redrob_vector_geom::PathEl::MoveTo(p) | redrob_vector_geom::PathEl::LineTo(p) = el
                     && p.x.is_finite()
                     && p.y.is_finite()
                     && pts.last().is_none_or(|q| q.distance(p) > 1e-9)
@@ -993,13 +993,13 @@ fn paints_opaquely(n: &Node) -> bool {
         _ => true,
     };
     n.opacity >= 1.0
-        && n.blend == vectorcraft_color::BlendMode::Normal
+        && n.blend == redrob_vector_color::BlendMode::Normal
         && n.extras().mask.is_none()
         && n.appearance.effects.is_empty()
         && n.appearance
             .items
             .iter()
-            .all(|i| i.opacity() >= 1.0 && i.blend() == vectorcraft_color::BlendMode::Normal && i.effects().is_empty() && paint(i.paint()))
+            .all(|i| i.opacity() >= 1.0 && i.blend() == redrob_vector_color::BlendMode::Normal && i.effects().is_empty() && paint(i.paint()))
         && n.children().is_none_or(|c| c.iter().all(|c| paints_opaquely(c)))
 }
 
@@ -1047,7 +1047,7 @@ pub fn blend_expand(keys: &[Arc<Node>], spec: &BlendSpec) -> Vec<Node> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_geom::{Rect, shapes};
+    use redrob_vector_geom::{Rect, shapes};
 
     #[test]
     fn clicked_start_points_pair_up() {
@@ -1067,7 +1067,7 @@ mod tests {
     }
 
     fn key(x: f64) -> Arc<Node> {
-        Arc::new(Node::path(NodeId(1), vectorcraft_geom::shapes::rectangle(Rect::new(x, 0.0, x + 10.0, 10.0)), Appearance::default()))
+        Arc::new(Node::path(NodeId(1), redrob_vector_geom::shapes::rectangle(Rect::new(x, 0.0, x + 10.0, 10.0)), Appearance::default()))
     }
 
     #[test]

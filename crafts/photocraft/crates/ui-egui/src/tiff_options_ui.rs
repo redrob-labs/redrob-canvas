@@ -10,7 +10,7 @@ use crate::{ExportSettings, PhotocraftApp};
 /// A save waiting on the TIFF Options answer.
 pub struct Prompt {
     /// The document that requested the save, even if tabs change while this is open.
-    doc: photocraft_doc::DocId,
+    doc: redrob_photo_doc::DocId,
     /// Where the document goes.
     pub path: String,
     /// "Discard Layers and Save a Copy".
@@ -31,7 +31,7 @@ pub fn wants_prompt(app: &PhotocraftApp, path: &str) -> bool {
     if !is_tiff_path(path) || !app.session.prefs().file_handling.ask_before_saving_layered_tiff {
         return false;
     }
-    app.session.active().is_some_and(|st| photocraft_engine::file_cmds::tiff_would_write_layers(&st.doc))
+    app.session.active().is_some_and(|st| redrob_photo_engine::file_cmds::tiff_would_write_layers(&st.doc))
 }
 
 /// Parks the save behind the prompt.

@@ -1,10 +1,10 @@
 //! Blend Options (defaults with nothing selected, `object.blend.info`) and the Blend tool:
 //! start points from clicked anchors, adding keys to a blend instead of nesting it (M8.18).
 
+use redrob_vector_doc::live::{BlendOrientation, BlendSpacing, BlendSpec};
+use redrob_vector_doc::{Node, NodeKind};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 use serde_json::{Value, json};
-use vectorcraft_doc::live::{BlendOrientation, BlendSpacing, BlendSpec};
-use vectorcraft_doc::{Node, NodeKind};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
 
 use super::*;
 
@@ -86,7 +86,7 @@ fn start_points_pair_the_clicked_anchors() {
     let (keys, sp) = spec(&s, g);
     assert_eq!(keys, vec![a, b], "keys in paint order");
     assert_eq!(sp.starts, vec![Some(0), Some(2)], "each start stays with its object");
-    let steps = vectorcraft_doc::live::expand_live(&node(&s, g));
+    let steps = redrob_vector_doc::live::expand_live(&node(&s, g));
     let mid = steps[1].geometric_bounds().unwrap();
     assert!(mid.height() < 1e-6, "the middle step collapses where opposite corners meet: {mid:?}");
     assert!(s.execute("object.blend.make", &json!({"ids": [a.0, b.0], "starts": "x"})).is_err());
@@ -115,7 +115,7 @@ fn a_blend_and_an_object_make_one_blend_with_more_keys() {
     assert_eq!(sp.spacing, BlendSpacing::Steps(3), "the blend's options are kept");
     assert_eq!(n.name.as_deref(), Some("Ribbon"));
     assert!(s.doc().unwrap().doc.node(g).is_none());
-    assert_eq!(vectorcraft_doc::live::expand_live(&n).len(), 3 + 2 * 3);
+    assert_eq!(redrob_vector_doc::live::expand_live(&n).len(), 3 + 2 * 3);
 }
 
 #[test]
@@ -146,7 +146,7 @@ fn start_points_round_trip_and_old_blends_load() {
     let (a, b) = (rect(&mut s, 0.0, 0.0, 10.0), rect(&mut s, 100.0, 0.0, 10.0));
     s.execute("object.blend.make", &json!({"ids": [a.0, b.0], "starts": [null, 3]})).unwrap();
     let d = &s.doc().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save(d, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(d, false)).unwrap();
     assert_eq!(&back.layers, &d.layers);
     // A blend saved before start points has none.
     let old: BlendSpec = serde_json::from_value(json!({"spacing": {"steps": 4}, "orientation": "alignToPage"})).unwrap();

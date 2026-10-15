@@ -3,9 +3,9 @@
 
 use std::sync::Arc;
 
+use redrob_vector_engine::Session;
+use redrob_vector_engine::cmd::recovery::{MemoryStore, RecoveryStore};
 use serde_json::json;
-use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::recovery::{MemoryStore, RecoveryStore};
 
 use crate::{Services, VectorcraftApp, background, dialogs, recovery, theme};
 
@@ -18,7 +18,7 @@ fn app_with(store: &Arc<MemoryStore>, services: Services) -> VectorcraftApp {
 }
 
 fn copies(store: &MemoryStore) -> usize {
-    store.list().unwrap().iter().filter(|n| n.ends_with(".vectorcraft")).count()
+    store.list().unwrap().iter().filter(|n| n.ends_with(".rvector")).count()
 }
 
 /// One headless frame of the dialog layer.
@@ -77,7 +77,7 @@ fn copies_are_written_in_the_background_and_go_on_save() {
     assert_eq!(copies(&store), 1);
     assert!(app.session.doc().unwrap().recovery.is_some());
     // Saving (in the background too) removes it.
-    app.run("file.save", json!({"path": "/docs/a.vectorcraft"})).unwrap();
+    app.run("file.save", json!({"path": "/docs/a.rvector"})).unwrap();
     background::wait_all(&mut app);
     assert_eq!(copies(&store), 0);
 }

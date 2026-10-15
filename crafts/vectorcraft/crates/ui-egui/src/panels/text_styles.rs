@@ -201,13 +201,13 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui, kind: Kind) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_doc::{NodeId, NodeKind};
+    use redrob_vector_doc::{NodeId, NodeKind};
 
     use super::super::tests_appearance::{click, frame_events, text_rect};
 
     #[test]
     fn panels_draw_and_apply_headless() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         let id = app.session.execute("text.create", &json!({"x": 10, "y": 40, "text": "Hi"})).unwrap()["id"].clone();
         app.session.execute("select.set", &json!({"ids": [id]})).unwrap();
@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn auto_leading_style_marks_only_real_overrides() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
         let id = app.run("text.create", json!({"x": 10, "y": 40, "text": "Hi"})).unwrap()["id"].clone();
         app.run("select.set", json!({"ids": [id]})).unwrap();
@@ -244,7 +244,7 @@ mod tests {
     }
 
     fn capture_app() -> (VectorcraftApp, NodeId, egui::Context) {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
         app.run("charStyle.new", json!({"name": "Untouched", "attrs": {"size": 22}})).unwrap();
         let other = app.run("text.create", json!({"x": 20, "y": 100, "text": "Other", "size": 22})).unwrap()["id"].clone();
@@ -260,7 +260,7 @@ mod tests {
     fn select_type_range(app: &mut VectorcraftApp, id: NodeId, start: usize, end: usize) {
         // The same editing handshake and selection API as character::tests::scaled_range_fields_follow_the_type_tool_selection.
         app.session.select_tool("type", Default::default()).unwrap();
-        app.session.apply_actions(vec![vectorcraft_tools::Action::Notify("text.editNew".into())]).unwrap();
+        app.session.apply_actions(vec![redrob_vector_tools::Action::Notify("text.editNew".into())]).unwrap();
         app.session.set_tool_option("select", &json!({"start": start, "end": end}));
         super::super::character::end_typing(app);
         assert_eq!(app.session.tool_options()["typing"], json!(false));
@@ -522,7 +522,7 @@ mod tests {
         let selection = app.session.doc().unwrap().selection.clone();
         let undo = app.session.doc().unwrap().history.undo.len();
         app.session.select_tool("type", Default::default()).unwrap();
-        app.session.apply_actions(vec![vectorcraft_tools::Action::Notify("text.editNew".into())]).unwrap();
+        app.session.apply_actions(vec![redrob_vector_tools::Action::Notify("text.editNew".into())]).unwrap();
         assert_eq!(text_editing(&app), Some((id, 0, 6)));
         capture_input(&ctx, &mut app, vec![egui::Event::Text("Typed".into())]);
         assert_eq!(text_runs(&app, id), vec![("Typed".into(), 18.0, link.clone())]);

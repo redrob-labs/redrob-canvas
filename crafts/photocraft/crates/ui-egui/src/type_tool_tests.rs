@@ -6,8 +6,8 @@
 use egui::{Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::{LayerContent, LayerId, TextLayer};
-use photocraft_geom::{Affine, Point};
+use redrob_photo_doc::{LayerContent, LayerId, TextLayer};
+use redrob_photo_geom::{Affine, Point};
 use serde_json::json;
 
 use super::{layout, text_layer};
@@ -107,7 +107,7 @@ fn make_harness_with(builder: egui_kittest::HarnessBuilder<PhotocraftApp>, ppp: 
 }
 
 fn new_app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 1600, "height": 900})).unwrap();
     app.sync_views();
     app.ui.extras.rulers = false;
@@ -257,7 +257,7 @@ fn editing_psd_type_shows_our_layout_and_cancel_restores_it() {
     let moved = {
         let mut t = text(&app, id);
         t.transform = Affine::translate(330.0, 380.0);
-        photocraft_text::shared().lock().unwrap().render(&t, 72.0, photocraft_color::PixelFormat::RGBA8).1.surface
+        redrob_photo_text::shared().lock().unwrap().render(&t, 72.0, redrob_photo_color::PixelFormat::RGBA8).1.surface
     };
     let st = app.session.active_mut().unwrap();
     let mut doc = (*st.doc).clone();
@@ -334,8 +334,8 @@ fn size_applies_at_layer_and_selection_scope() {
         app.run("type.edit", json!({"layer": id.0, "transform": [2.0, 0.0, 0.0, 2.0, 300.0, 420.0]})).unwrap();
         let id = if psd {
             let doc = (*app.session.active().unwrap().doc).clone();
-            let out = photocraft_io::export(&doc, "t.psd", &Default::default()).unwrap();
-            let back = photocraft_io::import("t.psd", &out.bytes).unwrap().document;
+            let out = redrob_photo_io::export(&doc, "t.psd", &Default::default()).unwrap();
+            let back = redrob_photo_io::import("t.psd", &out.bytes).unwrap().document;
             app.session.add_document(back, None);
             app.sync_views();
             let d = &app.session.active().unwrap().doc;
@@ -529,7 +529,7 @@ fn foreground_colour_recolours_only_selected_type() {
 #[test]
 fn vertical_type_tool_creates_point_and_paragraph_text_with_one_undo() {
     use crate::canvas::{ToolEvent, tool_event};
-    use photocraft_doc::text::{Orientation, TextShape};
+    use redrob_photo_doc::text::{Orientation, TextShape};
     for end in [[100.0, 100.0], [240.0, 230.0]] {
         let mut app = new_app();
         app.ui.tool = crate::state::Tool::VerticalType;
@@ -999,9 +999,9 @@ fn temporary_type_transform_control_roundtrip_and_input_safety() {
     call(&mut app, json!({"events": [{"kind": "up", "x": a[0]+60.0, "y": a[1]+30.0}]}));
     assert_ne!(text(&app, id).transform, initial);
     let doc = &app.session.active().unwrap().doc;
-    for name in ["type.pcraft", "type.psd"] {
-        let out = photocraft_io::export(doc, name, &Default::default()).unwrap();
-        let back = photocraft_io::import(name, &out.bytes).unwrap().document;
+    for name in ["type.rphoto", "type.psd"] {
+        let out = redrob_photo_io::export(doc, name, &Default::default()).unwrap();
+        let back = redrob_photo_io::import(name, &out.bytes).unwrap().document;
         let t = back.walk().into_iter().find_map(|(_, _, l)| if let LayerContent::Text(t) = &l.content { Some(t) } else { None }).unwrap();
         assert_affine(t.transform, text(&app, id).transform);
         assert_eq!(t.text, text(&app, id).text);
@@ -1025,7 +1025,7 @@ fn temporary_type_transform_control_roundtrip_and_input_safety() {
 fn temporary_type_transform_preserves_depth_and_color_model() {
     use crate::canvas::{ToolEvent, tool_event};
     for (depth, mode) in [(8, "rgb"), (16, "rgb"), (32, "rgb"), (16, "gray"), (8, "cmyk"), (16, "lab")] {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 1200, "height": 900, "depth": depth, "mode": mode})).unwrap();
         let id = LayerId(app.run("type.create", json!({"text": "Redrob Canvas é世界", "size": 32, "x": 300, "y": 350})).unwrap()["layer"].as_u64().unwrap());
         super::edit_active(&mut app).unwrap();
@@ -1189,8 +1189,8 @@ fn temporary_type_transform_imported_psd_retains_editability_and_styles() {
         .unwrap();
     app.run("layer.renameLayer", json!({"layer": original_id.0, "name": "Styled caption"})).unwrap();
     app.run("layer.layerStyle.dropShadow", json!({"layer": original_id.0, "distance": 8, "size": 4})).unwrap();
-    let exported = photocraft_io::export(&app.session.active().unwrap().doc, "type.psd", &Default::default()).unwrap();
-    let imported = photocraft_io::import("type.psd", &exported.bytes).unwrap().document;
+    let exported = redrob_photo_io::export(&app.session.active().unwrap().doc, "type.psd", &Default::default()).unwrap();
+    let imported = redrob_photo_io::import("type.psd", &exported.bytes).unwrap().document;
     let mut app = new_app();
     app.session.add_document(imported, None);
     app.sync_views();
@@ -1222,7 +1222,7 @@ fn temporary_type_transform_imported_psd_retains_editability_and_styles() {
 #[ignore = "release benchmark for issue #1091: 24 MP, eight text layers, 60 preview updates"]
 fn temporary_type_transform_large_document_preview() {
     use crate::canvas::{ToolEvent, tool_event};
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 6000, "height": 4000})).unwrap();
     for i in 0..8 {
         app.run("type.create", json!({"text": "Redrob Canvas transform preview", "size": 60, "x": 300, "y": 300 + i * 200})).unwrap();
@@ -1260,7 +1260,7 @@ fn temporary_type_transform_large_document_preview() {
         times[29], times[56], times[59]
     );
     // Compare the same matrices with the existing live-command path on the same document.
-    let mut commands = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut commands = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     commands.session.add_document(source, None);
     let mut command_times = Vec::new();
     for transform in transforms {
@@ -1288,7 +1288,7 @@ fn font_styles_keep_metadata_names_and_numeric_labels() {
 
 #[test]
 fn postscript_only_style_shows_actual_subfamily() {
-    let style = photocraft_doc::text::CharStyle { font_family: "Inter".into(), postscript_name: Some("Inter-SemiBold".into()), ..Default::default() };
+    let style = redrob_photo_doc::text::CharStyle { font_family: "Inter".into(), postscript_name: Some("Inter-SemiBold".into()), ..Default::default() };
     assert_eq!(super::selected_style(&style), "SemiBold");
 }
 
@@ -1303,7 +1303,7 @@ fn variable_faces_list_the_weights_of_their_axis() {
             _ => "Bold",
         };
         let style = if italic { format!("{base} Italic") } else { base.to_string() };
-        photocraft_text::FaceInfo { family: "Montserrat".into(), style, postscript_name: None, weight, italic, axes }
+        redrob_photo_text::FaceInfo { family: "Montserrat".into(), style, postscript_name: None, weight, italic, axes }
     };
     let full = || vec![("wght".to_string(), 100.0, 100.0, 900.0)];
     let names = super::style_names(&[face(100.0, false, full()), face(100.0, true, full())]);
@@ -1322,8 +1322,8 @@ fn variable_faces_list_the_weights_of_their_axis() {
 /// each shows the style's value for it, or what the layout draws without one (#2985).
 #[test]
 fn variable_font_axes_become_sliders_with_the_drawn_value() {
-    use photocraft_doc::text::{CharStyle, FontVariation};
-    let face = |italic: bool, axes: Vec<super::Axis>| photocraft_text::FaceInfo {
+    use redrob_photo_doc::text::{CharStyle, FontVariation};
+    let face = |italic: bool, axes: Vec<super::Axis>| redrob_photo_text::FaceInfo {
         family: "Roboto Flex".into(),
         style: "Regular".into(),
         postscript_name: None,
@@ -1348,7 +1348,7 @@ fn variable_font_axes_become_sliders_with_the_drawn_value() {
 /// Families the host serves are in the font menu before they are fetched.
 #[test]
 fn the_font_menu_lists_served_families() {
-    photocraft_text::served::add_families(["Served Menu Test Serif".to_string()]);
+    redrob_photo_text::served::add_families(["Served Menu Test Serif".to_string()]);
     assert!(super::families().iter().any(|f| f == "Served Menu Test Serif"));
 }
 
@@ -1356,7 +1356,7 @@ fn the_font_menu_lists_served_families() {
 mod multi_layer_formatting {
     use super::*;
     use egui::accesskit::Role;
-    use photocraft_doc::text::{AntiAlias, CharStyle, Orientation, TextAlign};
+    use redrob_photo_doc::text::{AntiAlias, CharStyle, Orientation, TextAlign};
 
     fn selected(app: &mut PhotocraftApp, ids: &[LayerId]) {
         for (i, id) in ids.iter().enumerate() {
@@ -1451,7 +1451,7 @@ mod multi_layer_formatting {
             expected.font_family = "JetBrains Mono".into();
             // #3556: the new family's installed face at the peer's weight and italic is named (no
             // name without such a face), so a PSD names a real font.
-            expected.postscript_name = photocraft_text::shared()
+            expected.postscript_name = redrob_photo_text::shared()
                 .lock()
                 .unwrap()
                 .fonts
@@ -1487,9 +1487,9 @@ mod multi_layer_formatting {
         let mut pass = 0u32;
         let mut h = Harness::builder().with_size(vec2(1100.0, 800.0)).build_ui_state(
             move |ui, app| {
-                photocraft_text::TextEngine::new();
+                redrob_photo_text::TextEngine::new();
                 // The served catalog is process-wide: names that sort last.
-                photocraft_text::served::add_families([format!("zz Churn Test {pass:03}")]);
+                redrob_photo_text::served::add_families([format!("zz Churn Test {pass:03}")]);
                 pass = pass.saturating_add(1);
                 if ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
                     ui.horizontal(|ui| super::super::options_bar(app, ui));
@@ -1596,7 +1596,7 @@ mod multi_layer_formatting {
     fn character_panel_opentype_buttons_toggle_and_show_the_feature() {
         use egui::accesskit::Toggled;
         use egui_kittest::kittest::NodeT;
-        use photocraft_engine::type_extra_cmds::feature_on;
+        use redrob_photo_engine::type_extra_cmds::feature_on;
         let (app, ids) = fixture();
         let untouched = style(&app, ids[2], 0);
         let mut h = controls(app, true);
@@ -1735,7 +1735,7 @@ mod multi_layer_formatting {
             for i in 0..3 {
                 let mut expected = originals[i].clone();
                 if confirm && i < 2 {
-                    expected.color = photocraft_color::Color::rgb(0.0, 1.0, 0.0);
+                    expected.color = redrob_photo_color::Color::rgb(0.0, 1.0, 0.0);
                 }
                 assert_eq!(style(h.state(), ids[i], 0), expected);
             }
@@ -1778,7 +1778,7 @@ fn move_tool_double_click_on_type_edits_it() {
     assert!(h.state().ui.text_edit.is_none());
 }
 
-fn selection_bounds(app: &PhotocraftApp) -> Option<photocraft_geom::Rect> {
+fn selection_bounds(app: &PhotocraftApp) -> Option<redrob_photo_geom::Rect> {
     app.session.active().unwrap().doc.selection.as_ref().map(|m| m.content_bounds())
 }
 
@@ -1888,7 +1888,7 @@ fn line_chars(h: &mut Harness<'static, PhotocraftApp>, id: LayerId, i: usize) ->
     let b = text.char_indices().nth(i).unwrap().0;
     let c = l.clusters.iter().find(|c| c.range.start == b).unwrap();
     let ln = &l.lines[c.line];
-    (photocraft_text::char_index(&text, ln.range.start), photocraft_text::char_index(&text, ln.range.end))
+    (redrob_photo_text::char_index(&text, ln.range.start), redrob_photo_text::char_index(&text, ln.range.end))
 }
 
 /// #3493: like Photoshop, two clicks select the word, three the line, four the paragraph (up
@@ -1991,7 +1991,7 @@ fn click_selection_without_layout_and_on_hostile_input() {
         assert_eq!(sel(None, "", 99, Some(usize::MAX), count), (0, 0), "empty text, count {count}");
         let (a, b) = sel(None, text, usize::MAX, Some(usize::MAX), count);
         assert!(a <= b && b <= 15, "caret past the end, count {count}: {a}..{b}");
-        let empty = photocraft_text::TextLayout::default();
+        let empty = redrob_photo_text::TextLayout::default();
         let (a, b) = sel(Some(&empty), text, usize::MAX, Some(usize::MAX), count);
         assert!(a <= b && b <= 15, "empty layout, count {count}: {a}..{b}");
     }
@@ -2032,7 +2032,7 @@ fn multi_click_without_a_session_does_nothing() {
 fn type_mask_shift_adds_and_alt_subtracts_without_a_layer_row() {
     use crate::canvas::{ToolEvent, tool_event};
     use crate::state::Tool;
-    use photocraft_geom::Rect;
+    use redrob_photo_geom::Rect;
     let mut app = new_app();
     type_with(&mut app, Tool::HorizontalTypeMask, "I");
     let glyphs = selection_bounds(&app).unwrap();

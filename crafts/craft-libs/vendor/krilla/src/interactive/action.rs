@@ -22,11 +22,7 @@ pub enum Action {
 }
 
 impl Action {
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        mut action: pdf_writer::writers::Action,
-    ) -> KrillaResult<()> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, mut action: pdf_writer::writers::Action) -> KrillaResult<()> {
         match self {
             Action::Link(link) => {
                 link.serialize(action);
@@ -61,8 +57,6 @@ impl LinkAction {
 
 impl LinkAction {
     fn serialize(&self, mut action: pdf_writer::writers::Action) {
-        action
-            .action_type(ActionType::Uri)
-            .uri(Str(self.uri.as_bytes()));
+        action.action_type(ActionType::Uri).uri(Str(self.uri.as_bytes()));
     }
 }

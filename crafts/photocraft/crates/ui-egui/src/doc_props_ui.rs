@@ -3,7 +3,7 @@
 //! Rulers & Grids toggles. Every edit dispatches an engine or view command, so the panel stays thin.
 
 use egui::{Align2, Rect, RichText, Sense, Stroke, StrokeKind, pos2, vec2};
-use photocraft_doc::{ColorMode, Document, Layer, LayerId, SampleType};
+use redrob_photo_doc::{ColorMode, Document, Layer, LayerId, SampleType};
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
@@ -278,10 +278,10 @@ pub fn properties(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_doc::Document;
+    use redrob_photo_doc::Document;
 
-    fn doc_with_background() -> photocraft_engine::Session {
-        let mut s = photocraft_engine::Session::new();
+    fn doc_with_background() -> redrob_photo_engine::Session {
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 40, "height": 20, "background": "white"})).unwrap();
         s
     }
@@ -303,7 +303,7 @@ mod tests {
 
     #[test]
     fn transparent_documents_have_no_background() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 40, "height": 20, "background": "transparent"})).unwrap();
         let st = s.active().unwrap();
         let d: &Document = &st.doc;
@@ -323,9 +323,9 @@ mod tests {
     #[test]
     fn tiny_document_in_inches_is_not_resized_by_showing_it() {
         use egui_kittest::Harness;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 1, "height": 1, "resolution": 300, "background": "white"})).unwrap();
-        app.session.prefs.edit(|p| p.units_and_rulers.rulers = photocraft_engine::prefs::Unit::Inches);
+        app.session.prefs.edit(|p| p.units_and_rulers.rulers = redrob_photo_engine::prefs::Unit::Inches);
         let undo = app.session.active().unwrap().history.entries().len();
         let mut h = Harness::builder().with_size(vec2(320.0, 600.0)).build_ui_state(
             |ui, app: &mut PhotocraftApp| {
@@ -345,7 +345,7 @@ mod tests {
     #[test]
     fn document_dropdowns_map_to_live_mode_commands() {
         for id in MODES.iter().map(|m| m.2).chain(DEPTHS.iter().map(|d| d.2)) {
-            assert!(photocraft_engine::commands::find(id).is_some(), "{id} is not an engine command");
+            assert!(redrob_photo_engine::commands::find(id).is_some(), "{id} is not an engine command");
         }
     }
 

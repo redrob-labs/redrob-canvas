@@ -6,9 +6,9 @@
 //!
 //! Field: `selected` (a preset's name).
 
+use redrob_vector_engine::cmd::fileio::pdf;
+use redrob_vector_engine::cmd::pdfcmds::PRESET_FORMAT;
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::fileio::pdf;
-use vectorcraft_engine::cmd::pdfcmds::PRESET_FORMAT;
 
 use super::DialogSpec;
 use super::save_pdf::{open_preset, option_label, option_rows, section_of};
@@ -121,10 +121,10 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
 
 /// What sets the preset apart: its settings that differ from the app default, and the notes on
 /// what Save PDF can't honour or apply yet.
-fn details(ui: &mut egui::Ui, t: &Tokens, preset: &vectorcraft_pdf::PdfPreset, builtin: bool) {
+fn details(ui: &mut egui::Ui, t: &Tokens, preset: &redrob_vector_pdf::PdfPreset, builtin: bool) {
     let dim = |ui: &mut egui::Ui, text: &str| ui.label(egui::RichText::new(tl!(text)).color(t.text_dim).size(11.5));
     widgets::dim_label(ui, &crate::i18n::fmt(tl!("Differences from {preset}:"), &[("preset", pdf::DEFAULT_PRESET)]));
-    let base = vectorcraft_pdf::builtin_preset(pdf::DEFAULT_PRESET).map(|p| p.settings).unwrap_or_default();
+    let base = redrob_vector_pdf::builtin_preset(pdf::DEFAULT_PRESET).map(|p| p.settings).unwrap_or_default();
     let mut changed = pdf::changes(&preset.settings, &base);
     changed.sort_by_key(|c| section_of(c["option"].as_str().unwrap_or_default()));
     egui::ScrollArea::vertical().id_salt("pdf-preset-details").max_height(180.0).show(ui, |ui| {
@@ -167,7 +167,7 @@ fn run(app: &mut VectorcraftApp, d: &mut Dialog, act: Action, current: &str) -> 
             let i = app.session.prefs.pdf_presets.iter().position(|p| p.name == current);
             app.run("pdf.preset.delete", json!({ "name": current }))?;
             // The one above it takes its place (the last built-in one above the first saved one).
-            let builtins = vectorcraft_pdf::builtin_presets().len();
+            let builtins = redrob_vector_pdf::builtin_presets().len();
             let next = app.session.pdf_presets().get((i.unwrap_or(0) + builtins).saturating_sub(1)).map(|p| p.name.clone());
             select(d, &next.unwrap_or_default());
         }
@@ -177,7 +177,7 @@ fn run(app: &mut VectorcraftApp, d: &mut Dialog, act: Action, current: &str) -> 
                 f();
                 return Ok(());
             }
-            let pick = crate::FilePick { filters: vec![("PDF presets", vectorcraft_engine::cmd::pdfcmds::PRESET_EXTS)], ..Default::default() };
+            let pick = crate::FilePick { filters: vec![("PDF presets", redrob_vector_engine::cmd::pdfcmds::PRESET_EXTS)], ..Default::default() };
             let path = crate::picks::open(app, &pick).ok_or("cancelled")?;
             let r = app.run("pdf.preset.import", json!({ "path": path }))?;
             if let Some(first) = r["imported"].get(0).and_then(Value::as_str) {
@@ -194,7 +194,7 @@ fn run(app: &mut VectorcraftApp, d: &mut Dialog, act: Action, current: &str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn frame(app: &mut VectorcraftApp) {
         let ctx = egui::Context::default();
@@ -279,9 +279,9 @@ mod tests {
         assert_eq!(saved.compatibility.id(), "1.5");
         assert_eq!(
             saved,
-            &vectorcraft_pdf::PdfSettings {
+            &redrob_vector_pdf::PdfSettings {
                 compatibility: saved.compatibility,
-                ..vectorcraft_pdf::builtin_preset("High Quality Print").unwrap().settings
+                ..redrob_vector_pdf::builtin_preset("High Quality Print").unwrap().settings
             }
         );
         // A built-in name is refused and the row stays.

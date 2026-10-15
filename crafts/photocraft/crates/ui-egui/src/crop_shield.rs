@@ -299,7 +299,7 @@ mod tests {
     }
 
     fn crop_app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", serde_json::json!({"width": 200, "height": 120})).unwrap();
         app.ui.tool = Tool::Crop;
         crate::crop_ui::ensure_frame(&mut app);
@@ -322,7 +322,7 @@ mod tests {
     #[test]
     fn h_stays_the_hand_key_without_a_crop_box() {
         // No document: no box, so H picks the Hand tool.
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.ui.tool = Tool::Crop;
         press_h(&mut app);
         assert_eq!(app.ui.tool, Tool::Hand);

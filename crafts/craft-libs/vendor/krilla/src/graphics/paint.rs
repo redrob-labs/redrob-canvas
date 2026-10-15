@@ -7,7 +7,7 @@ use pdf_writer::types::{LineCapStyle, LineJoinStyle};
 
 use crate::color::SpecialColor;
 use crate::geom::Transform;
-use crate::graphics::color::{cmyk, luma, rgb, Color};
+use crate::graphics::color::{Color, cmyk, luma, rgb};
 use crate::num::NormalizedF32;
 use crate::stream::Stream;
 
@@ -425,10 +425,6 @@ pub struct Fill {
 
 impl Default for Fill {
     fn default() -> Self {
-        Fill {
-            paint: luma::Color::black().into(),
-            opacity: NormalizedF32::ONE,
-            rule: FillRule::default(),
-        }
+        Fill { paint: luma::Color::black().into(), opacity: NormalizedF32::ONE, rule: FillRule::default() }
     }
 }

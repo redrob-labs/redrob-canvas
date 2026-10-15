@@ -74,11 +74,11 @@ impl ControlArg {
     }
 }
 
-/// `VECTORCRAFT_CONTROL_PORT`, for when `--control` isn't given: unset or empty is no control
+/// `REDROB_VECTOR_CONTROL_PORT`, for when `--control` isn't given: unset or empty is no control
 /// channel, anything else must be a port.
 pub fn env_control_port(value: Option<OsString>) -> Result<Option<u16>, String> {
     match value {
-        Some(v) if !v.is_empty() => port("VECTORCRAFT_CONTROL_PORT", Some(&v.to_string_lossy())).map(Some),
+        Some(v) if !v.is_empty() => port("REDROB_VECTOR_CONTROL_PORT", Some(&v.to_string_lossy())).map(Some),
         _ => Ok(None),
     }
 }
@@ -173,7 +173,7 @@ mod tests {
         assert_eq!(env_control_port(None), Ok(None));
         assert_eq!(env_control_port(Some("".into())), Ok(None));
         assert_eq!(env_control_port(Some("7979".into())), Ok(Some(7979)));
-        let need = "VECTORCRAFT_CONTROL_PORT needs a port number from 1 to 65535";
+        let need = "REDROB_VECTOR_CONTROL_PORT needs a port number from 1 to 65535";
         assert_eq!(env_control_port(Some("abc".into())), Err(format!("{need}, not `abc`")));
         assert_eq!(env_control_port(Some("0".into())), Err(format!("{need}, not `0`")));
         #[cfg(unix)]

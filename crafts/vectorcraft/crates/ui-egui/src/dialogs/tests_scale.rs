@@ -1,8 +1,8 @@
 //! The shared dialog frame at every UI scale (Preferences → User Interface → UI Scaling zooms the
 //! whole interface, so a window holds fewer points).
 
+use redrob_vector_engine::Session;
 use serde_json::json;
-use vectorcraft_engine::Session;
 
 use super::*;
 use crate::theme;

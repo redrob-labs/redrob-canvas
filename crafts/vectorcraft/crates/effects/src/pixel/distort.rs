@@ -7,7 +7,7 @@
 //! white grain. Every surface lies in document space around the object's centre, as the Texture
 //! filters' do.
 
-use vectorcraft_geom::{Point, Vec2};
+use redrob_vector_geom::{Point, Vec2};
 
 use super::pixelate::{Place, value_noise};
 use super::texture::{Texture, cell_noise, luma, premultiply, smooth_noise, straight};

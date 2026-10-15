@@ -1,5 +1,5 @@
 //! Windows: the font files in DirectWrite's system font collection, scanned with the font folders
-//! (`vectorcraft_text::set_platform_font_files`). The desktop app and `vectorcraft-cli` (exports,
+//! (`redrob_vector_text::set_platform_font_files`). The desktop app and `vectorcraft-cli` (exports,
 //! MCP) both install it; the CLI shares this file.
 //!
 //! Font services such as Adobe Fonts load their fonts with GDI at run time, from files in their
@@ -26,7 +26,7 @@ const MAX_PATH: u32 = 32_767;
 
 /// Have the font scans read the font files DirectWrite lists.
 pub fn install() {
-    vectorcraft_text::set_platform_font_files(font_files);
+    redrob_vector_text::set_platform_font_files(font_files);
 }
 
 /// The local files of the fonts in DirectWrite's system font collection as it is now (fonts

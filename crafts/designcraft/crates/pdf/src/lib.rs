@@ -1,7 +1,7 @@
 //! Redrob Canvas PDF export (print), written with `krilla`.
 //!
 //! [`export_pdf`] writes one PDF page per document page (or per spread) and mirrors the renderer's
-//! walk (`designcraft-render`): layers back to front, parent items first (with page-number markers
+//! walk (`redrob-layout-render`): layers back to front, parent items first (with page-number markers
 //! resolved for each page), then the spread's own items. What goes into the file:
 //!
 //! - **Boxes:** MediaBox = trim + bleed (+ room for printer's marks), TrimBox = the page, BleedBox =
@@ -200,8 +200,8 @@ pub fn parse_page_range(s: &str, count: usize) -> Result<Vec<usize>> {
     Ok(out)
 }
 
-impl From<craft_pdf::write::WriteError> for PdfError {
-    fn from(error: craft_pdf::write::WriteError) -> Self {
+impl From<redrob_craft_pdf::write::WriteError> for PdfError {
+    fn from(error: redrob_craft_pdf::write::WriteError) -> Self {
         Self::Write(error.to_string())
     }
 }
@@ -212,7 +212,7 @@ mod tests;
 // Run the same public API/output contracts with the unit-only colliding cache hasher as well
 // as the production RandomState used by the integration-test executable.
 #[cfg(test)]
-extern crate self as designcraft_pdf;
+extern crate self as redrob_layout_pdf;
 #[cfg(test)]
 #[path = "../tests/support/image_content_cache_contract.rs"]
 mod image_content_cache_collision_exports;

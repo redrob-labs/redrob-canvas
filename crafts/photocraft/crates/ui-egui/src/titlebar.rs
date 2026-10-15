@@ -536,7 +536,7 @@ pub fn resize_zones(ui: &mut Ui) {
 mod tests {
     use super::*;
     use egui::{Event, Pos2, RawInput, ViewportId};
-    use photocraft_engine::Session;
+    use redrob_photo_engine::Session;
 
     /// #5826: the drag overlay under a dialog doesn't depend on the custom title bar. On macOS
     /// (OS traffic lights over the app's own title strip) a dialog left the window undraggable.

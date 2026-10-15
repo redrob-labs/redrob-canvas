@@ -1,9 +1,9 @@
 //! Object → Expand Appearance: fills and strokes as objects, baked geometry effects, raster
 //! effects as images, brushes as art, and the enable rule.
 
+use redrob_vector_color::BlendMode;
+use redrob_vector_doc::{Node, NodeKind};
 use serde_json::{Value, json};
-use vectorcraft_color::BlendMode;
-use vectorcraft_doc::{Node, NodeKind};
 
 use super::*;
 
@@ -30,14 +30,14 @@ fn square(s: &mut Session) -> NodeId {
     id
 }
 
-fn render(s: &Session) -> vectorcraft_render::Rendered {
+fn render(s: &Session) -> redrob_vector_render::Rendered {
     let doc = s.doc().unwrap().doc.clone();
-    let opts = vectorcraft_render::RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
-    vectorcraft_render::Renderer::new().render(&doc, 200, 200, vectorcraft_geom::Affine::IDENTITY, &opts)
+    let opts = redrob_vector_render::RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
+    redrob_vector_render::Renderer::new().render(&doc, 200, 200, redrob_vector_geom::Affine::IDENTITY, &opts)
 }
 
 /// Pixels (of 200×200) whose colour differs by more than `tol` in any channel.
-fn differing(a: &vectorcraft_render::Rendered, b: &vectorcraft_render::Rendered, tol: u8) -> usize {
+fn differing(a: &redrob_vector_render::Rendered, b: &redrob_vector_render::Rendered, tol: u8) -> usize {
     a.pixels
         .as_chunks::<4>()
         .0
@@ -130,12 +130,12 @@ fn an_art_brush_becomes_a_group_of_its_art() {
     let n = node(&s, id);
     assert!(matches!(n.kind, NodeKind::Group { .. }), "{}", n.kind_label());
     let mut brushed = false;
-    n.walk(&mut |c| brushed |= vectorcraft_brush::has_brush(c));
+    n.walk(&mut |c| brushed |= redrob_vector_brush::has_brush(c));
     assert!(!brushed, "no brush strokes are left");
     let after = render(&s);
     assert!(differing(&before, &after, 24) < 200, "{} pixels differ", differing(&before, &after, 24));
     run(&mut s, "edit.undo", json!({}));
-    assert!(vectorcraft_brush::has_brush(&node(&s, id)));
+    assert!(redrob_vector_brush::has_brush(&node(&s, id)));
 }
 
 #[test]

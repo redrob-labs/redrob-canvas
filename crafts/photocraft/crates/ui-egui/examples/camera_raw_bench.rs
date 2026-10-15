@@ -1,5 +1,5 @@
 //! Real Camera Raw proxy-update timing on a 36 MP document (CPU preparation, not GPU presentation).
-use photocraft_ui_egui::{PhotocraftApp, camera_raw_ui};
+use redrob_photo_ui_egui::{PhotocraftApp, camera_raw_ui};
 use serde_json::{Value, json};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ctx = egui::Context::default();
     PhotocraftApp::setup_context(&ctx, Default::default());
     let _ = ctx.run_ui(Default::default(), |_| {});
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     // A full-resolution synthetic image with dense hue/saturation coverage and exact clipped
     // endpoints. Setup/import is outside the interactive measurements.
     let mut bytes = Vec::with_capacity(width * height * 3);
@@ -19,9 +19,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let image =
-        photocraft_codecs::Image::from_raw(width as u32, height as u32, photocraft_codecs::ChannelLayout::Rgb, photocraft_codecs::SampleType::U8, bytes)?;
-    let encoded = photocraft_codecs::encode(&image, photocraft_codecs::Format::Png, &Default::default())?;
-    app.session.open_document(photocraft_io::import("scope.png", &encoded)?.document, None);
+        redrob_photo_codecs::Image::from_raw(width as u32, height as u32, redrob_photo_codecs::ChannelLayout::Rgb, redrob_photo_codecs::SampleType::U8, bytes)?;
+    let encoded = redrob_photo_codecs::encode(&image, redrob_photo_codecs::Format::Png, &Default::default())?;
+    app.session.open_document(redrob_photo_io::import("scope.png", &encoded)?.document, None);
     camera_raw_ui::menu(&mut app, &ctx, "filter.cameraRaw", &json!({})).ok_or("no dialog entry point")??;
     let mut samples = Vec::new();
     let mut histogram_samples = Vec::new();
@@ -93,14 +93,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             [0.5 + 0.4 * (x * 0.07).sin(), 0.5 + 0.4 * (y * 0.13).cos(), (x + y) / 192.0, 1.0]
         })
         .collect();
-    let histogram = photocraft_algo::histogram::RgbHistogram::from_rgba(&pixels);
+    let histogram = redrob_photo_algo::histogram::RgbHistogram::from_rgba(&pixels);
     let mut draw_samples = Vec::new();
     for i in 0..reps + 3 {
         let start = std::time::Instant::now();
         let output = ctx.run_ui(
             egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(330.0, 160.0))), ..Default::default() },
             |ui| {
-                photocraft_ui_egui::widgets::rgb_histogram(ui, &histogram, 110.0);
+                redrob_photo_ui_egui::widgets::rgb_histogram(ui, &histogram, 110.0);
             },
         );
         let _meshes = ctx.tessellate(output.shapes, output.pixels_per_point);

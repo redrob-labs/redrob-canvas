@@ -4,9 +4,9 @@ use rmcp::RoleServer;
 use rmcp::model::*;
 use rmcp::service::RequestContext;
 
-const DOCUMENT: &str = "photocraft://document";
-const COMMANDS: &str = "photocraft://commands";
-const INSTRUCTIONS: &str = "Redrob Canvas image editor. Start with doc_new/doc_open, discover ids and parameter docs with command_list, edit with command_run or command_batch (one history step per command). Inspect with doc_inspect and render_preview; doc_save writes native .pcraft or exports by extension. File paths are relative to the read/write roots granted at launch. ui_inspect/ui_screenshot and other ui_* tools require bridge mode. Read photocraft://document and photocraft://commands for live JSON state.";
+const DOCUMENT: &str = "redrob-photo://document";
+const COMMANDS: &str = "redrob-photo://commands";
+const INSTRUCTIONS: &str = "Redrob Canvas image editor. Start with doc_new/doc_open, discover ids and parameter docs with command_list, edit with command_run or command_batch (one history step per command). Inspect with doc_inspect and render_preview; doc_save writes native .rphoto or exports by extension. File paths are relative to the read/write roots granted at launch. ui_inspect/ui_screenshot and other ui_* tools require bridge mode. Read redrob-photo://document and redrob-photo://commands for live JSON state.";
 
 fn annotated(mut tool: Tool) -> Tool {
     let words = tool.name.replace('_', " ");
@@ -68,7 +68,9 @@ impl ServerHandler for PhotocraftMcp {
     }
 
     async fn read_resource(&self, request: ReadResourceRequestParams, _: RequestContext<RoleServer>) -> Result<ReadResourceResponse, McpError> {
-        let result = match request.uri.as_str() {
+        // A client built against the upstream server still names its resources by the old scheme.
+        let legacy = request.uri.strip_prefix("photocraft://").map(|rest| format!("redrob-photo://{rest}")); // legacy: old URI scheme still read
+        let result = match legacy.as_deref().unwrap_or(request.uri.as_str()) {
             DOCUMENT => self.doc_inspect(Parameters(DocIndex::default())).await?,
             COMMANDS => self.command_list(Parameters(ListParams::default())).await?,
             uri => return Err(McpError::resource_not_found(format!("unknown resource `{uri}`"), None)),

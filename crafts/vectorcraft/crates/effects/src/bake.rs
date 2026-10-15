@@ -14,8 +14,8 @@
 
 use std::sync::Arc;
 
-use vectorcraft_doc::{Appearance, AppearanceItem, Document, FillLayer, Node, NodeKind, StrokeLayer};
-use vectorcraft_geom::{FillRule, PathData};
+use redrob_vector_doc::{Appearance, AppearanceItem, Document, FillLayer, Node, NodeKind, StrokeLayer};
+use redrob_vector_geom::{FillRule, PathData};
 
 use crate::group::{has_own_paint, paints};
 use crate::{
@@ -23,7 +23,7 @@ use crate::{
     has_pathfinder, is_geometry, needs_outline, reshape,
 };
 
-fn item_effects(item: &AppearanceItem) -> &[vectorcraft_doc::Effect] {
+fn item_effects(item: &AppearanceItem) -> &[redrob_vector_doc::Effect] {
     match item {
         AppearanceItem::Fill(f) => &f.effects,
         AppearanceItem::Stroke(s) => &s.effects,
@@ -61,11 +61,11 @@ fn geometry(n: &Node) -> Option<(PathData, FillRule)> {
     }
 }
 
-fn apply(effects: &[vectorcraft_doc::Effect], path: &PathData, ctx: &GeomContext) -> PathData {
+fn apply(effects: &[redrob_vector_doc::Effect], path: &PathData, ctx: &GeomContext) -> PathData {
     if !has_geometry(effects) || path.is_empty() {
         return path.clone();
     }
-    let b = vectorcraft_geom::Shape::bounding_box(&path.to_bezpath());
+    let b = redrob_vector_geom::Shape::bounding_box(&path.to_bezpath());
     apply_geometry_with(effects, path, b, ctx)
 }
 
@@ -149,7 +149,7 @@ fn bake_pieces(d: &mut Document, mut m: Node) -> Node {
 
 /// Give `n` and its descendants a new id wherever one was already `seen` (the pieces evaluated art
 /// copies from its source keep ids of their own).
-pub fn fresh_ids(d: &mut Document, n: &mut Node, seen: &mut std::collections::HashSet<vectorcraft_doc::NodeId>) {
+pub fn fresh_ids(d: &mut Document, n: &mut Node, seen: &mut std::collections::HashSet<redrob_vector_doc::NodeId>) {
     if !seen.insert(n.id) {
         n.id = d.alloc_id();
         seen.insert(n.id);
@@ -358,9 +358,9 @@ pub fn bake_document(doc: &Document) -> Option<Document> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use redrob_vector_doc::{Effect, NodeId};
+    use redrob_vector_geom::{Rect, shapes};
     use serde_json::json;
-    use vectorcraft_doc::{Effect, NodeId};
-    use vectorcraft_geom::{Rect, shapes};
 
     fn fx(id: &str, params: serde_json::Value) -> Effect {
         Effect { id: id.into(), params, visible: true }

@@ -27,7 +27,7 @@ fn dialog(answers: Vec<&str>) -> (Harness<'static, PhotocraftApp>, u64, Written)
             log.borrow_mut().push((path.to_string(), bytes.to_vec()));
             Ok(())
         }));
-        PhotocraftApp::new(photocraft_engine::Session::new(), services)
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), services)
     });
     let ctx = h.ctx.clone();
     let id = crate::menus::invoke(h.state_mut(), &ctx, "edit.keyboardShortcuts", json!({})).unwrap()["dialog"].as_u64().unwrap();
@@ -119,7 +119,7 @@ fn export_and_summarize_write_the_dialogs_bindings() {
     assert!(kys.contains("pc-id=\"tools.select.pencil\">F6</tool>"), "tools as <tool> rows: {kys}");
     assert!(kys.contains("KeyboardCustomization/Redrob Canvas Defaults="), "{kys}");
     // The file reads back with the same bindings.
-    let set = photocraft_engine::kys::parse(&kys).unwrap();
+    let set = redrob_photo_engine::kys::parse(&kys).unwrap();
     assert!(set.commands.iter().any(|c| c.id.as_deref() == Some("edit.copy") && c.shortcuts == ["F9"]));
     let html = String::from_utf8(written[1].1.clone()).unwrap();
     assert!(html.contains("<td>Copy</td><td>F9</td>") && html.contains("<h2>Edit</h2>"), "{html}");

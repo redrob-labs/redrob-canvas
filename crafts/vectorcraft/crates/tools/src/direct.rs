@@ -29,10 +29,10 @@
 
 use std::borrow::Cow;
 
+use redrob_vector_doc::hit::{HitKind, hit_test};
+use redrob_vector_doc::{AnchorRef, Node, NodeId, NodeKind, Selection};
+use redrob_vector_geom::{Anchor, PathData, Point, Rect};
 use serde_json::{Value, json};
-use vectorcraft_doc::hit::{HitKind, hit_test};
-use vectorcraft_doc::{AnchorRef, Node, NodeId, NodeKind, Selection};
-use vectorcraft_geom::{Anchor, PathData, Point, Rect};
 
 use crate::bbox::move_delta;
 use crate::corners::{self, CornerDrag, over_widget};
@@ -167,13 +167,13 @@ impl DirectSelectionTool {
 
 /// Whether `id` may be picked while `scope` is isolated: it is that object, or it sits inside it.
 /// With no isolation, everything may be picked.
-fn in_scope(doc: &vectorcraft_doc::Document, scope: Option<NodeId>, id: NodeId) -> bool {
+fn in_scope(doc: &redrob_vector_doc::Document, scope: Option<NodeId>, id: NodeId) -> bool {
     scope.is_none_or(|scope| doc.ancestry(id).is_some_and(|anc| anc.contains(&scope)))
 }
 
 /// Visit the nodes Direct Selection may pick. In isolation mode that is the isolated object and
 /// its contents; art around it is locked and the walk does not reach it.
-fn walk_pickable<'a>(doc: &'a vectorcraft_doc::Document, scope: Option<NodeId>, mut f: impl FnMut(&'a Node)) {
+fn walk_pickable<'a>(doc: &'a redrob_vector_doc::Document, scope: Option<NodeId>, mut f: impl FnMut(&'a Node)) {
     if let Some(id) = scope
         && let Some(n) = doc.node(id)
     {
@@ -188,7 +188,7 @@ pub(crate) fn spines(cx: &ToolContext) -> Vec<(NodeId, PathData)> {
     let mut v = vec![];
     walk_pickable(cx.doc, cx.isolation, |n| {
         if let NodeKind::Blend { children, spec } = &n.kind
-            && let Some((path, _)) = vectorcraft_doc::live::blend_spine(children, spec)
+            && let Some((path, _)) = redrob_vector_doc::live::blend_spine(children, spec)
         {
             v.push((n.id, path));
         }
@@ -226,9 +226,9 @@ fn hit_spine_handle(cx: &ToolContext, sel: (NodeId, usize), p: Point, tol: f64) 
 }
 
 /// Anchor `sel.1` of blend `sel.0`'s spine.
-fn spine_anchor(cx: &ToolContext, (id, ai): (NodeId, usize)) -> Option<vectorcraft_geom::Anchor> {
+fn spine_anchor(cx: &ToolContext, (id, ai): (NodeId, usize)) -> Option<redrob_vector_geom::Anchor> {
     match &cx.doc.node(id)?.kind {
-        NodeKind::Blend { children, spec } => vectorcraft_doc::live::blend_spine(children, spec)?.0.subpaths.first()?.anchors.get(ai).copied(),
+        NodeKind::Blend { children, spec } => redrob_vector_doc::live::blend_spine(children, spec)?.0.subpaths.first()?.anchors.get(ai).copied(),
         _ => None,
     }
 }
@@ -593,7 +593,7 @@ impl Tool for DirectSelectionTool {
                 }
                 out.push(Action::Preview(
                     "object.transform".into(),
-                    json!({"matrix": matrix_json(vectorcraft_geom::Affine::translate(d)), "copy": ev.mods.alt}),
+                    json!({"matrix": matrix_json(redrob_vector_geom::Affine::translate(d)), "copy": ev.mods.alt}),
                 ));
                 out
             }
@@ -722,7 +722,7 @@ impl Tool for DirectSelectionTool {
                 });
                 // Objects without anchors to pick (type, images, symbols…) are selected whole when
                 // the marquee touches them, as with the Selection tool (#927).
-                for id in vectorcraft_doc::hit::marquee(cx.doc, r, cx.isolation, true) {
+                for id in redrob_vector_doc::hit::marquee(cx.doc, r, cx.isolation, true) {
                     let whole = cx.doc.node(id).is_some_and(|n| !matches!(n.kind, NodeKind::Path { .. } | NodeKind::Compound { .. }));
                     if whole && !sel.iter().any(|(s, _)| *s == id) {
                         sel.push((id, vec![]));
@@ -825,13 +825,13 @@ impl DirectSelectionTool {
 mod tests {
     use super::*;
     use crate::testutil::*;
-    use vectorcraft_doc::Selection;
+    use redrob_vector_doc::Selection;
 
     /// #414: a ruler guide is picked over the art, but an anchor on it is picked first.
     #[test]
     fn direct_and_group_selection_pick_ruler_guides() {
         let (mut d, id) = doc_with_rect();
-        d.guides.push(vectorcraft_doc::Guide::new(true, 100.0));
+        d.guides.push(redrob_vector_doc::Guide::new(true, 100.0));
         let (s, p) = (Selection::default(), paint());
         let c = cx(&d, &s, &p);
         let down = |t: &mut DirectSelectionTool, y: f64| t.pointer(&c, &PointerEvent::new(PointerKind::Down, 100.0, y));
@@ -871,15 +871,15 @@ mod tests {
     }
 
     /// A blend of two 20 pt squares centred on (110, 310) and (210, 310), selected.
-    fn blend_doc() -> (vectorcraft_doc::Document, NodeId, NodeId) {
+    fn blend_doc() -> (redrob_vector_doc::Document, NodeId, NodeId) {
         let (mut d, _) = doc_with_rect();
         let l = d.layers[0].id;
         let key = |id: NodeId, x: f64| {
-            let r = vectorcraft_geom::shapes::rectangle(Rect::new(x, 300.0, x + 20.0, 320.0));
-            std::sync::Arc::new(vectorcraft_doc::Node::path(id, r, vectorcraft_doc::Appearance::default_art()))
+            let r = redrob_vector_geom::shapes::rectangle(Rect::new(x, 300.0, x + 20.0, 320.0));
+            std::sync::Arc::new(redrob_vector_doc::Node::path(id, r, redrob_vector_doc::Appearance::default_art()))
         };
         let (g, k1, k2) = (d.alloc_id(), d.alloc_id(), d.alloc_id());
-        let b = vectorcraft_doc::Node::new(g, NodeKind::Blend { children: vec![key(k1, 100.0), key(k2, 200.0)], spec: Default::default() });
+        let b = redrob_vector_doc::Node::new(g, NodeKind::Blend { children: vec![key(k1, 100.0), key(k2, 200.0)], spec: Default::default() });
         d.insert(Some(l), 1, b).unwrap();
         (d, g, k1)
     }
@@ -947,8 +947,8 @@ mod tests {
         let a = drag(&mut DirectSelectionTool::new(false), &straight);
         assert!(!a.iter().any(|x| matches!(x, Action::Preview(c, _) if c == "object.blend.spine.reshapeSegment")), "straight: {a:?}");
         // The spine bent upward: Direct Selection takes it from where it passes.
-        let mut sp = vectorcraft_geom::SubPath::polyline(&[Point::new(110.0, 310.0), Point::new(210.0, 310.0)], false);
-        sp.bend_segment(0, 0.5, vectorcraft_geom::Vec2::new(0.0, 20.0));
+        let mut sp = redrob_vector_geom::SubPath::polyline(&[Point::new(110.0, 310.0), Point::new(210.0, 310.0)], false);
+        sp.bend_segment(0, 0.5, redrob_vector_geom::Vec2::new(0.0, 20.0));
         let Some(NodeKind::Blend { spec, .. }) = d.node_mut(g).map(|n| &mut n.kind) else { panic!("blend") };
         (spec.spine, spec.key_anchors) = (Some(PathData::single(sp)), vec![0, 1]);
         let mut t = DirectSelectionTool::new(false);
@@ -1104,7 +1104,7 @@ mod tests {
     #[test]
     fn marquee_selects_ruler_guides() {
         let (mut d, id) = doc_with_rect();
-        d.guides.push(vectorcraft_doc::Guide::new(false, 80.0));
+        d.guides.push(redrob_vector_doc::Guide::new(false, 80.0));
         let s = Selection::default();
         let p = paint();
         let cx = cx(&d, &s, &p);
@@ -1123,19 +1123,19 @@ mod tests {
 
     /// A path inside an inner group, a sibling path outside it, and the groups' ids.
     /// The inside path is the rectangle at (100, 100); the outside one at (300, 300).
-    fn nested_group_doc() -> (vectorcraft_doc::Document, NodeId, NodeId, NodeId, NodeId) {
-        let mut d = vectorcraft_doc::Document::new(500.0, 500.0);
+    fn nested_group_doc() -> (redrob_vector_doc::Document, NodeId, NodeId, NodeId, NodeId) {
+        let mut d = redrob_vector_doc::Document::new(500.0, 500.0);
         let l = d.layers[0].id;
         let (inside, outside, inner, outer) = (d.alloc_id(), d.alloc_id(), d.alloc_id(), d.alloc_id());
         let path = |id, x| {
-            std::sync::Arc::new(vectorcraft_doc::Node::path(
+            std::sync::Arc::new(redrob_vector_doc::Node::path(
                 id,
-                vectorcraft_geom::shapes::rectangle(Rect::new(x, x, x + 100.0, x + 100.0)),
-                vectorcraft_doc::Appearance::default_art(),
+                redrob_vector_geom::shapes::rectangle(Rect::new(x, x, x + 100.0, x + 100.0)),
+                redrob_vector_doc::Appearance::default_art(),
             ))
         };
-        let inner_g = vectorcraft_doc::Node::group(inner, vec![path(inside, 100.0)]);
-        let outer_g = vectorcraft_doc::Node::group(outer, vec![std::sync::Arc::new(inner_g), path(outside, 300.0)]);
+        let inner_g = redrob_vector_doc::Node::group(inner, vec![path(inside, 100.0)]);
+        let outer_g = redrob_vector_doc::Node::group(outer, vec![std::sync::Arc::new(inner_g), path(outside, 300.0)]);
         d.insert(Some(l), 0, outer_g).unwrap();
         (d, inside, outside, inner, outer)
     }
@@ -1212,14 +1212,14 @@ mod tests {
     }
 
     /// An open path from (100, 300) to (200, 300) arching up through (150, 262.5).
-    fn arch_doc() -> (vectorcraft_doc::Document, NodeId) {
+    fn arch_doc() -> (redrob_vector_doc::Document, NodeId) {
         let (mut d, _) = doc_with_rect();
         let l = d.layers[0].id;
         let id = d.alloc_id();
-        let mut sp = vectorcraft_geom::SubPath::polyline(&[Point::new(100.0, 300.0), Point::new(200.0, 300.0)], false);
+        let mut sp = redrob_vector_geom::SubPath::polyline(&[Point::new(100.0, 300.0), Point::new(200.0, 300.0)], false);
         sp.anchors[0].h_out = Point::new(100.0, 250.0);
         sp.anchors[1].h_in = Point::new(200.0, 250.0);
-        d.insert(Some(l), 1, vectorcraft_doc::Node::path(id, PathData::single(sp), vectorcraft_doc::Appearance::default_art())).unwrap();
+        d.insert(Some(l), 1, redrob_vector_doc::Node::path(id, PathData::single(sp), redrob_vector_doc::Appearance::default_art())).unwrap();
         (d, id)
     }
 
@@ -1327,9 +1327,9 @@ mod tests {
         let (mut d, _) = doc_with_rect();
         let l = d.layers[0].id;
         let id = d.alloc_id();
-        let mut sp = vectorcraft_geom::SubPath::polyline(&[Point::new(100.0, 300.0), Point::new(200.0, 300.0)], false);
+        let mut sp = redrob_vector_geom::SubPath::polyline(&[Point::new(100.0, 300.0), Point::new(200.0, 300.0)], false);
         sp.anchors[0].h_out = Point::new(102.0, 300.0);
-        d.insert(Some(l), 1, vectorcraft_doc::Node::path(id, PathData::single(sp), vectorcraft_doc::Appearance::default_art())).unwrap();
+        d.insert(Some(l), 1, redrob_vector_doc::Node::path(id, PathData::single(sp), redrob_vector_doc::Appearance::default_art())).unwrap();
         let s = anchors_of(id, &[(0, 0)]);
         let p = paint();
         let c = cx(&d, &s, &p);
@@ -1342,12 +1342,12 @@ mod tests {
     }
 
     /// [`doc_with_rect`] (A, 100..200) and a second square B, 300..400: (A, B).
-    fn two_squares() -> (vectorcraft_doc::Document, NodeId, NodeId) {
+    fn two_squares() -> (redrob_vector_doc::Document, NodeId, NodeId) {
         let (mut d, a) = doc_with_rect();
         let l = d.layers[0].id;
         let b = d.alloc_id();
-        let sq = vectorcraft_geom::shapes::rectangle(Rect::new(300.0, 300.0, 400.0, 400.0));
-        d.insert(Some(l), 1, vectorcraft_doc::Node::path(b, sq, vectorcraft_doc::Appearance::default_art())).unwrap();
+        let sq = redrob_vector_geom::shapes::rectangle(Rect::new(300.0, 300.0, 400.0, 400.0));
+        d.insert(Some(l), 1, redrob_vector_doc::Node::path(b, sq, redrob_vector_doc::Appearance::default_art())).unwrap();
         (d, a, b)
     }
 
@@ -1359,8 +1359,8 @@ mod tests {
         let (mut d, a) = doc_with_rect();
         let top = d.add_layer(None);
         let b = d.alloc_id();
-        let sq = vectorcraft_geom::shapes::rectangle(Rect::new(101.0, 100.0, 201.0, 200.0));
-        d.insert(Some(top), 0, vectorcraft_doc::Node::path(b, sq, vectorcraft_doc::Appearance::default_art())).unwrap();
+        let sq = redrob_vector_geom::shapes::rectangle(Rect::new(101.0, 100.0, 201.0, 200.0));
+        d.insert(Some(top), 0, redrob_vector_doc::Node::path(b, sq, redrob_vector_doc::Appearance::default_art())).unwrap();
         let p = paint();
         let pick = |id: NodeId| vec![Action::Exec("select.anchors".into(), json!({"id": id.0, "anchors": [[0, 0]], "mode": "set"}))];
         let s = anchors_of(a, &[(0, 2)]);
@@ -1414,8 +1414,7 @@ mod tests {
         whole.set([b]);
         let c = cx(&d, &whole, &p);
         let mut t = DirectSelectionTool::new(false);
-        let copy =
-            |dx: f64, dy: f64| json!({"matrix": matrix_json(vectorcraft_geom::Affine::translate(vectorcraft_geom::Vec2::new(dx, dy))), "copy": true});
+        let copy = |dx: f64, dy: f64| json!({"matrix": matrix_json(redrob_vector_geom::Affine::translate(redrob_vector_geom::Vec2::new(dx, dy))), "copy": true});
         // B's top-left corner, pressed 1 pt off, onto A's bottom-right one.
         let (v, labels) = drag(&mut t, &c, (301.0, 301.0), (203.0, 199.0), alt);
         assert_eq!((v, labels), (copy(-100.0, -100.0), vec!["anchor".to_string()]));
@@ -1443,7 +1442,7 @@ mod tests {
         let preview = |dx: f64, dy: f64, copy: bool| {
             Action::Preview(
                 "object.transform".into(),
-                json!({"matrix": matrix_json(vectorcraft_geom::Affine::translate(vectorcraft_geom::Vec2::new(dx, dy))), "copy": copy}),
+                json!({"matrix": matrix_json(redrob_vector_geom::Affine::translate(redrob_vector_geom::Vec2::new(dx, dy))), "copy": copy}),
             )
         };
         assert!(t.pointer(&c, &PointerEvent::new(PointerKind::Down, 300.0, 300.0)).is_empty());
@@ -1454,9 +1453,9 @@ mod tests {
         // The tool sees the document as previewed: B moved along, not where the copy leaves it.
         let (mut moved, _, b2) = two_squares();
         let l = moved.layers[0].id;
-        let sq = vectorcraft_geom::shapes::rectangle(Rect::new(250.0, 250.0, 350.0, 350.0));
+        let sq = redrob_vector_geom::shapes::rectangle(Rect::new(250.0, 250.0, 350.0, 350.0));
         moved.remove(b2).unwrap();
-        moved.insert(Some(l), 1, vectorcraft_doc::Node::path(b, sq, vectorcraft_doc::Appearance::default_art())).unwrap();
+        moved.insert(Some(l), 1, redrob_vector_doc::Node::path(b, sq, redrob_vector_doc::Appearance::default_art())).unwrap();
         let c = cx(&moved, &whole, &p);
         // Alt down mid-drag: a copy, whose pressed corner can land on the original's top-right one.
         assert_eq!(t.pointer(&c, &PointerEvent::new(PointerKind::Drag, 402.0, 301.0).with_mods(alt)), vec![preview(100.0, 0.0, true)]);

@@ -341,7 +341,7 @@ fn options_serde_defaults_keep_old_tool_settings_and_full_stroke() {
     style.preset("Dotted");
     style.dashes = vec![0.0, 2.0, 4.0, 1.0];
     style.dash_offset = -0.5;
-    let stroke = style.stroke(5.0, photocraft_doc::Fill::Solid(photocraft_doc::Color::BLACK));
+    let stroke = style.stroke(5.0, redrob_photo_doc::Fill::Solid(redrob_photo_doc::Color::BLACK));
     assert_eq!(StrokeOptions::from(&stroke), style);
     assert_eq!(serde_json::from_value::<StrokeOptions>(serde_json::to_value(&style).unwrap()).unwrap(), style);
 }
@@ -378,7 +378,7 @@ fn moving_the_editor_between_ui_roots_keeps_history_gestures_distinct() {
 }
 
 fn properties_harness(mut params: Value, depth: u32) -> Harness<'static, crate::PhotocraftApp> {
-    let mut app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 80, "height": 60, "depth": depth})).unwrap();
     params["fill"] = json!("#d92070");
     params["stroke"] = json!({"width": 5, "color": "#21bb66"});
@@ -400,11 +400,11 @@ fn properties_harness(mut params: Value, depth: u32) -> Harness<'static, crate::
     h
 }
 
-fn selected_shape(h: &Harness<'_, crate::PhotocraftApp>) -> photocraft_doc::ShapeLayer {
+fn selected_shape(h: &Harness<'_, crate::PhotocraftApp>) -> redrob_photo_doc::ShapeLayer {
     let st = h.state().session.active().unwrap();
     let layer = st.doc.layer(st.active_layer.unwrap()).unwrap();
     match &layer.content {
-        photocraft_doc::LayerContent::Shape(shape) => shape.clone(),
+        redrob_photo_doc::LayerContent::Shape(shape) => shape.clone(),
         _ => panic!("expected the selected vector shape"),
     }
 }
@@ -502,7 +502,7 @@ struct CanvasScene {
 }
 
 fn canvas_harness(properties: bool) -> Harness<'static, CanvasScene> {
-    let mut app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 800, "height": 600})).unwrap();
     app.ui.tool = crate::state::Tool::Rectangle;
     app.ui.tool_options.vector_mode = "shape".into();

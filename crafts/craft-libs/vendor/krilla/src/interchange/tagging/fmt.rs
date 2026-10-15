@@ -5,10 +5,9 @@
 use std::fmt::Display;
 
 use crate::tagging::{
-    Attr, BBox, BlockAlign, BorderStyle, ColumnDimensions, GlyphOrientationVertical, Identifier,
-    IdentifierInner, IdentifierType, InlineAlign, LayoutAttr, LineHeight, ListAttr, ListNumbering,
-    NaiveRgbColor, Node, Placement, Sides, StructAttr, TableAttr, TableHeaderScope, TagGroup,
-    TagId, TagKind, TagTree, TextAlign, TextDecorationType, WritingMode,
+    Attr, BBox, BlockAlign, BorderStyle, ColumnDimensions, GlyphOrientationVertical, Identifier, IdentifierInner, IdentifierType, InlineAlign,
+    LayoutAttr, LineHeight, ListAttr, ListNumbering, NaiveRgbColor, Node, Placement, Sides, StructAttr, TableAttr, TableHeaderScope, TagGroup, TagId,
+    TagKind, TagTree, TextAlign, TextDecorationType, WritingMode,
 };
 
 /// Helper trait for indented output.
@@ -23,18 +22,12 @@ pub trait Output {
 
     /// Create a [`Display`]able wrapper.
     fn display<'a>(&'a self) -> Wrapper<'a, Self> {
-        Wrapper {
-            inner: self,
-            indent: Indent(0),
-        }
+        Wrapper { inner: self, indent: Indent(0) }
     }
 
     /// Create a [`Display`]able wrapper with a specific indent.
     fn display_indent<'a>(&'a self, indent: Indent) -> Wrapper<'a, Self> {
-        Wrapper {
-            inner: self,
-            indent,
-        }
+        Wrapper { inner: self, indent }
     }
 }
 
@@ -80,20 +73,10 @@ impl Output for Node {
         match self {
             Node::Group(group) => group.output_indent(f, indent),
             Node::Leaf(Identifier(IdentifierInner::Real(IdentifierType::PageIdentifier(pi)))) => {
-                writeln!(
-                    f,
-                    "{indent}- Content: page={} mcid={}",
-                    pi.page_index, pi.mcid
-                )
+                writeln!(f, "{indent}- Content: page={} mcid={}", pi.page_index, pi.mcid)
             }
-            Node::Leaf(Identifier(IdentifierInner::Real(
-                IdentifierType::AnnotationIdentifier(ai),
-            ))) => {
-                writeln!(
-                    f,
-                    "{indent}- Annotation: page={} index={}",
-                    ai.page_index, ai.annot_index
-                )
+            Node::Leaf(Identifier(IdentifierInner::Real(IdentifierType::AnnotationIdentifier(ai)))) => {
+                writeln!(f, "{indent}- Annotation: page={} index={}", ai.page_index, ai.annot_index)
             }
             Node::Leaf(Identifier(IdentifierInner::Dummy)) => writeln!(f, "{indent}- Artifact"),
         }
@@ -317,11 +300,7 @@ impl Display for OmitText {
 impl ValueOutput for TagId {}
 impl Output for TagId {
     fn output_indent(&self, f: &mut impl std::fmt::Write, _: Indent) -> std::fmt::Result {
-        if self
-            .as_bytes()
-            .iter()
-            .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z'))
-        {
+        if self.as_bytes().iter().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')) {
             let str = std::str::from_utf8(self.as_bytes()).unwrap();
             write!(f, "\"{str}\"")?;
         } else {
@@ -394,26 +373,10 @@ impl Output for BBox {
     fn output_indent(&self, f: &mut impl std::fmt::Write, indent: Indent) -> std::fmt::Result {
         writeln!(f)?;
         writeln!(f, "{indent}page: {}", self.page_idx)?;
-        writeln!(
-            f,
-            "{indent}left:   {}",
-            self.rect.left().display_indent(indent)
-        )?;
-        writeln!(
-            f,
-            "{indent}top:    {}",
-            self.rect.top().display_indent(indent)
-        )?;
-        writeln!(
-            f,
-            "{indent}right:  {}",
-            self.rect.right().display_indent(indent)
-        )?;
-        write!(
-            f,
-            "{indent}bottom: {}",
-            self.rect.bottom().display_indent(indent)
-        )?;
+        writeln!(f, "{indent}left:   {}", self.rect.left().display_indent(indent))?;
+        writeln!(f, "{indent}top:    {}", self.rect.top().display_indent(indent))?;
+        writeln!(f, "{indent}right:  {}", self.rect.right().display_indent(indent))?;
+        write!(f, "{indent}bottom: {}", self.rect.bottom().display_indent(indent))?;
         Ok(())
     }
 }
@@ -587,15 +550,12 @@ mod tests {
 
     use pretty_assertions::assert_eq;
 
+    use crate::Document;
     use crate::action::{Action, LinkAction};
     use crate::annotation::{LinkAnnotation, Target};
     use crate::geom::Rect;
     use crate::tagging::fmt::{Indent, Output};
-    use crate::tagging::{
-        BBox, ColumnDimensions, ContentTag, LineHeight, NaiveRgbColor, Sides, Tag, TagGroup,
-        TagTree,
-    };
-    use crate::Document;
+    use crate::tagging::{BBox, ColumnDimensions, ContentTag, LineHeight, NaiveRgbColor, Sides, Tag, TagGroup, TagTree};
 
     #[test]
     fn display_empty_tag_tree() {
@@ -622,10 +582,8 @@ mod tests {
         let mut figure = TagGroup::new(figure);
 
         let link_rect = Rect::from_ltrb(12.0, 12.0, 24.0, 32.32).unwrap();
-        let link_target =
-            Target::Action(Action::Link(LinkAction::new("https://github.com".into())));
-        let link_id =
-            page.add_tagged_annotation(LinkAnnotation::new(link_rect, link_target).into());
+        let link_target = Target::Action(Action::Link(LinkAction::new("https://github.com".into())));
+        let link_id = page.add_tagged_annotation(LinkAnnotation::new(link_rect, link_target).into());
         figure.push(link_id);
         sec.push(figure);
 
@@ -635,9 +593,7 @@ mod tests {
             NaiveRgbColor::new(0x4D, 0x66, 0x4D),
             NaiveRgbColor::new(0x00, 0xB3, 0x33),
         );
-        let table = Tag::Table
-            .with_border_color(Some(border_color))
-            .with_line_height(Some(LineHeight::Custom(23.0)));
+        let table = Tag::Table.with_border_color(Some(border_color)).with_line_height(Some(LineHeight::Custom(23.0)));
         let table = TagGroup::new(table);
         sec.push(table);
 

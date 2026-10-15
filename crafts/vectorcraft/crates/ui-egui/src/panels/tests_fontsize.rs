@@ -4,8 +4,8 @@
 
 use std::cell::Cell;
 
+use redrob_vector_doc::{CharStyle, NodeKind, Unit};
 use serde_json::json;
-use vectorcraft_doc::{CharStyle, NodeKind, Unit};
 
 use super::tests_appearance::{app_with_rect, click, frame_events, run, text_rect};
 use super::*;
@@ -25,7 +25,7 @@ fn app_with_text() -> (VectorcraftApp, u64) {
 }
 
 fn style(app: &VectorcraftApp, id: u64) -> CharStyle {
-    match &app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
+    match &app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
         NodeKind::Text(t) => t.first_style(),
         _ => panic!("not type"),
     }

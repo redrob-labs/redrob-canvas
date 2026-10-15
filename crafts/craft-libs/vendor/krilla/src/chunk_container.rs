@@ -8,7 +8,7 @@ use crate::error::KrillaResult;
 use crate::interchange::metadata::Metadata;
 use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
-use crate::util::{stable_hash_base64, Deferred};
+use crate::util::{Deferred, stable_hash_base64};
 
 type DChunk = Deferred<Chunk>;
 
@@ -70,9 +70,7 @@ impl ChunkContainer {
                 x_objects: vec![],
                 images: vec![],
             },
-            mixed: MixedChunks {
-                embedded_pdfs: vec![],
-            },
+            mixed: MixedChunks { embedded_pdfs: vec![] },
             metadata: None,
             non_stream: NonStreamChunks {
                 page_tree: None,
@@ -127,12 +125,7 @@ impl ChunkContainer {
         let mut pdf = sc.new_pdf_with_capacity(capacity);
         sc.serialize_settings().pdf_version().set_version(&mut pdf);
 
-        if sc.serialize_settings().ascii_compatible
-            && !sc
-                .serialize_settings()
-                .validators()
-                .requires_binary_header()
-        {
+        if sc.serialize_settings().ascii_compatible && !sc.serialize_settings().validators().requires_binary_header() {
             pdf.set_binary_marker(b"AAAA")
         }
 
@@ -149,11 +142,7 @@ impl ChunkContainer {
 
         // Write the PDF document info metadata.
         if let Some(metadata) = &self.metadata {
-            metadata.serialize_document_info(
-                &mut remapped_ref,
-                &mut pdf,
-                sc.serialize_settings().configuration,
-            );
+            metadata.serialize_document_info(&mut remapped_ref, &mut pdf, sc.serialize_settings().configuration);
         }
 
         let instance_id = stable_hash_base64(pdf.as_bytes());
@@ -162,11 +151,7 @@ impl ChunkContainer {
             if let Some(document_id) = &metadata.document_id {
                 stable_hash_base64(&(sc.serialize_settings().pdf_version().as_str(), document_id))
             } else if metadata.title.is_some() && metadata.authors.is_some() {
-                stable_hash_base64(&(
-                    sc.serialize_settings().pdf_version().as_str(),
-                    &metadata.title,
-                    &metadata.authors,
-                ))
+                stable_hash_base64(&(sc.serialize_settings().pdf_version().as_str(), &metadata.title, &metadata.authors))
             } else {
                 instance_id.clone()
             }
@@ -187,10 +172,7 @@ impl ChunkContainer {
         xmp.format("application/pdf");
         xmp.instance_id(&instance_id);
         xmp.document_id(&document_id);
-        pdf.set_file_id((
-            document_id.as_bytes().to_vec(),
-            instance_id.as_bytes().to_vec(),
-        ));
+        pdf.set_file_id((document_id.as_bytes().to_vec(), instance_id.as_bytes().to_vec()));
 
         xmp.rendition_class(RenditionClass::Proof);
         sc.serialize_settings().pdf_version().write_xmp(&mut xmp);
@@ -210,9 +192,7 @@ impl ChunkContainer {
             let meta_ref = if sc.serialize_settings().xmp_metadata {
                 let meta_ref = remapped_ref.bump();
                 let xmp_buf = xmp.finish(None);
-                pdf.stream(meta_ref, xmp_buf.as_bytes())
-                    .pair(Name(b"Type"), Name(b"Metadata"))
-                    .pair(Name(b"Subtype"), Name(b"XML"));
+                pdf.stream(meta_ref, xmp_buf.as_bytes()).pair(Name(b"Type"), Name(b"Metadata")).pair(Name(b"Subtype"), Name(b"XML"));
                 Some(meta_ref)
             } else {
                 None
@@ -248,19 +228,14 @@ impl ChunkContainer {
                 catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
                 let mut mark_info = catalog.mark_info();
                 mark_info.marked(true);
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16
-                    && sc.serialize_settings().pdf_version() < PdfVersion::Pdf20
-                {
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16 && sc.serialize_settings().pdf_version() < PdfVersion::Pdf20 {
                     // We always set suspects to false because it's required by PDF/UA.
                     mark_info.suspects(false);
                 }
                 mark_info.finish();
             }
 
-            let write_doc_title = sc
-                .serialize_settings()
-                .validators()
-                .requires_display_doc_title();
+            let write_doc_title = sc.serialize_settings().validators().requires_display_doc_title();
             let text_direction = self.metadata.as_ref().and_then(|m| m.text_direction);
 
             if write_doc_title || text_direction.is_some() {
@@ -278,8 +253,7 @@ impl ChunkContainer {
             let page_layout = self.metadata.as_ref().and_then(|m| m.page_layout);
             if let Some(layout) = page_layout {
                 // TwoPageLeft and TwoPageRight are only available PDF 1.5+
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
-                    || !matches!(layout, PageLayout::TwoPageLeft | PageLayout::TwoPageRight)
+                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 || !matches!(layout, PageLayout::TwoPageLeft | PageLayout::TwoPageRight)
                 {
                     catalog.page_layout(layout.to_pdf());
                 }
@@ -291,8 +265,7 @@ impl ChunkContainer {
 
             let settings = sc.serialize_settings();
             let validators = settings.validators();
-            let write_embedded_files = self.non_stream.embedded_files.len() != 0
-                || validators.requires_embedded_files_when_empty();
+            let write_embedded_files = self.non_stream.embedded_files.len() != 0 || validators.requires_embedded_files_when_empty();
 
             if !named_destinations.is_empty() || write_embedded_files {
                 // Cannot use pdf-writer API here because it requires Ref's, while
@@ -377,8 +350,7 @@ impl Visit for EmbeddedPdfChunk {
         let renumbered = self.new_chunk.get_or_init(|| {
             let mut remapper = self.root_ref_mappings.clone();
 
-            self.original_chunk
-                .renumber(|old| *remapper.entry(old).or_insert_with(|| sc.new_ref()))
+            self.original_chunk.renumber(|old| *remapper.entry(old).or_insert_with(|| sc.new_ref()))
         });
 
         renumbered.visit(sc, f)

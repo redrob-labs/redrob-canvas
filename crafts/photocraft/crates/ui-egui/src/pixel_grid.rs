@@ -12,8 +12,8 @@
 //! document (AGENTS.md rule 8).
 
 use egui::{Color32, Painter, Stroke};
-use photocraft_doc::Document;
-use photocraft_geom::Rect as DRect;
+use redrob_photo_doc::Document;
+use redrob_photo_geom::Rect as DRect;
 
 use crate::PhotocraftApp;
 use crate::canvas::ViewXform;
@@ -152,7 +152,7 @@ pub fn cache_region(visible: DRect, bounds: DRect) -> DRect {
 
 impl GridLines {
     fn build(doc: &Document, revision: u64, preview_key: u64, region: DRect) -> Self {
-        let segs = if region.is_empty() { Vec::new() } else { segments(&photocraft_compose::render(doc, region).px, region) };
+        let segs = if region.is_empty() { Vec::new() } else { segments(&redrob_photo_compose::render(doc, region).px, region) };
         Self { revision, preview_key, region, segs }
     }
 

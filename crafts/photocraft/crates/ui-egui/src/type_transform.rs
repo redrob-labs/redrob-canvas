@@ -6,8 +6,8 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 
 use egui::{CursorIcon, Modifiers, Pos2, Stroke, vec2};
-use photocraft_doc::{DocId, Document, LayerContent, LayerId, text::TextShape};
-use photocraft_geom::{Affine, Point, Rect};
+use redrob_photo_doc::{DocId, Document, LayerContent, LayerId, text::TextShape};
+use redrob_photo_geom::{Affine, Point, Rect};
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -300,9 +300,9 @@ pub(crate) fn display_doc(app: &mut PhotocraftApp, idx: usize) -> Option<(Arc<Do
     let LayerContent::Text(text) = &mut shown.layer_mut(layer)?.content else { return None };
     text.transform = transform;
     let started = crate::gpu_canvas::now_ms();
-    photocraft_engine::type_cmds::refresh(&source, text);
+    redrob_photo_engine::type_cmds::refresh(&source, text);
     let area = text.cache.as_ref().map_or(Rect::EMPTY, |s| s.tile_bounds());
-    let shown = Arc::new(photocraft_engine::mode_cmds::display_document(&shown).unwrap_or(shown));
+    let shown = Arc::new(redrob_photo_engine::mode_cmds::display_document(&shown).unwrap_or(shown));
     let key = PREVIEW_BASE | (app.ui.alloc_id() & (PREVIEW_BASE - 1));
     let mut areas = app.type_transform_preview.take().filter(|p| p.document == id && p.revision == revision).map(|p| p.areas).unwrap_or_default();
     if areas.len() >= 128 {

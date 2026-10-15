@@ -8,12 +8,12 @@
 use std::sync::Arc;
 
 use egui::{Color32, Rect, Response, Sense, Shape, Stroke, StrokeKind, Ui, pos2, vec2};
+use redrob_vector_color::libraries::{BuiltinLibrary, GRADIENT_LIBRARIES, SWATCH_LIBRARIES};
+use redrob_vector_color::swatch::REGISTRATION;
+use redrob_vector_color::{Color, GradientKind, Paint, Swatch, SwatchLibrary};
+use redrob_vector_doc::Document;
+use redrob_vector_engine::cmd::swatchlib;
 use serde_json::{Value, json};
-use vectorcraft_color::libraries::{BuiltinLibrary, GRADIENT_LIBRARIES, SWATCH_LIBRARIES};
-use vectorcraft_color::swatch::REGISTRATION;
-use vectorcraft_color::{Color, GradientKind, Paint, Swatch, SwatchLibrary};
-use vectorcraft_doc::Document;
-use vectorcraft_engine::cmd::swatchlib;
 
 use super::library_panel::{self, LibraryKind, LibraryRef, Row};
 use super::{active_paint, pstate, set_pstate};
@@ -116,7 +116,7 @@ fn entries(app: &VectorcraftApp, kind: Kind, query: &str) -> Vec<Entry> {
     let found = |n: &str| q.is_empty() || n.to_lowercase().contains(&q);
     let mut out = vec![];
     // A tint swatch shows its base's kind (global or spot).
-    let sw = |s: &vectorcraft_color::Swatch| {
+    let sw = |s: &redrob_vector_color::Swatch| {
         let (global, spot) = s.tint_of().and_then(|(base, _)| d.swatch(base)).map_or((s.global, s.spot), |b| (b.global, b.spot));
         // A spot colour shows the colour its art shows (a Lab one's CMYK equivalent when the Spot
         // Colors options use those).
@@ -185,7 +185,7 @@ fn pattern_thumb(app: &VectorcraftApp, ui: &Ui, r: Rect, paint: &Paint) {
         px,
     );
     let tex = CACHE.with(|c| c.borrow().get(&key).cloned()).unwrap_or_else(|| {
-        let tex = vectorcraft_render::render_pattern_swatch(&st.doc, pattern, px).map(|img| {
+        let tex = redrob_vector_render::render_pattern_swatch(&st.doc, pattern, px).map(|img| {
             let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
             ui.ctx().load_texture(format!("pattern-swatch-{pattern}-{px}"), color, egui::TextureOptions::LINEAR)
         });
@@ -565,7 +565,7 @@ fn apply_drop(app: &mut VectorcraftApp, drop: Drop) {
 /// thumbnail of a dragged graphic style.
 pub(crate) fn drag_preview(app: &VectorcraftApp, ctx: &egui::Context) {
     let Some(d) = egui::DragAndDrop::payload::<PanelDrag>(ctx) else { return };
-    let fill_of = |id: &vectorcraft_doc::NodeId| app.session.active().and_then(|st| st.doc.node(*id)).map(|n| n.appearance.fill_paint());
+    let fill_of = |id: &redrob_vector_doc::NodeId| app.session.active().and_then(|st| st.doc.node(*id)).map(|n| n.appearance.fill_paint());
     let (paint, registration) = match &*d {
         // Colour groups paint nothing.
         PanelDrag::Paint { params, .. } if params.is_null() => return,
@@ -1179,8 +1179,8 @@ mod tests {
     use super::*;
     use crate::dialogs::swatch_options::KIND;
     use egui::{Event, Modifiers, PointerButton, Pos2};
-    use vectorcraft_color::Color;
-    use vectorcraft_engine::Session;
+    use redrob_vector_color::Color;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
@@ -1264,7 +1264,7 @@ mod tests {
         assert!(app.ui.dialog.is_none() && !app.session.in_interaction());
         let doc = &app.session.doc().unwrap().doc;
         assert_eq!(doc.swatch("Signal").and_then(|w| w.paint.color()).map(|c| c.to_hex()), Some("#00ff00".into()));
-        let fill = doc.node(vectorcraft_doc::NodeId(id.as_u64().unwrap())).unwrap().appearance.fill_paint();
+        let fill = doc.node(redrob_vector_doc::NodeId(id.as_u64().unwrap())).unwrap().appearance.fill_paint();
         assert_eq!(fill, Paint::Solid { color: Color::from_hex("#00ff00").unwrap(), swatch: Some("Signal".into()), tint: 1.0 });
         assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
     }
@@ -1327,7 +1327,7 @@ mod tests {
         assert!(app.ui.dialog.is_none());
         let doc = &app.session.doc().unwrap().doc;
         assert!(doc.swatch("Red").is_none() && doc.swatch("Bright Red").is_none() && doc.swatch_groups.iter().all(|g| g.name != "Brights"));
-        let fill = doc.node(vectorcraft_doc::NodeId(id.as_u64().unwrap())).unwrap().appearance.fill_paint();
+        let fill = doc.node(redrob_vector_doc::NodeId(id.as_u64().unwrap())).unwrap().appearance.fill_paint();
         assert_eq!(fill, Paint::solid(Color::from_hex("#ed1c24").unwrap()), "the art keeps its colour, unlinked");
         // Cancel keeps the swatch; Alt-click (now) deletes without asking.
         delete(&mut app, vec!["Orange".into()], false);
@@ -1393,7 +1393,7 @@ mod tests {
         let doc = &app.session.doc().unwrap().doc;
         let g = doc.swatch_groups.iter().find(|g| g.name == "Color Group 2").expect("group made");
         assert_eq!(g.swatches.iter().map(|w| (w.name.as_str(), w.global)).collect::<Vec<_>>(), [("R=18 G=52 B=86", true)]);
-        let fill = doc.node(vectorcraft_doc::NodeId(id.as_u64().unwrap())).unwrap().appearance.fill_paint();
+        let fill = doc.node(redrob_vector_doc::NodeId(id.as_u64().unwrap())).unwrap().appearance.fill_paint();
         assert_eq!(fill, Paint::Solid { color: Color::from_hex("#123456").unwrap(), swatch: Some("R=18 G=52 B=86".into()), tint: 1.0 });
     }
 
@@ -1496,14 +1496,14 @@ mod tests {
         frame(&mut app, &ctx, vec![], 0.0, show);
         // Released over a swatch tile: the list takes it.
         let at = tile_center(&ctx, "Bright Red");
-        egui::DragAndDrop::set_payload(&ctx, PanelDrag::Art(vec![vectorcraft_doc::NodeId(id)]));
+        egui::DragAndDrop::set_payload(&ctx, PanelDrag::Art(vec![redrob_vector_doc::NodeId(id)]));
         let release = Event::PointerButton { pos: at, button: PointerButton::Primary, pressed: false, modifiers: Modifiers::NONE };
         frame(&mut app, &ctx, vec![Event::PointerMoved(at), release], 1.0, show);
         let patterns = app.run("pattern.list", json!({})).unwrap();
         assert_eq!(patterns["patterns"].as_array().map(Vec::len), Some(1), "{patterns}");
         assert_eq!(patterns["editing"], Value::Null, "no pattern editing mode");
         let st = app.session.doc().unwrap();
-        assert_eq!(st.doc.node(vectorcraft_doc::NodeId(id)), before.node(vectorcraft_doc::NodeId(id)), "the art stays as it was");
+        assert_eq!(st.doc.node(redrob_vector_doc::NodeId(id)), before.node(redrob_vector_doc::NodeId(id)), "the art stays as it was");
         assert!(egui::DragAndDrop::payload::<PanelDrag>(&ctx).is_none());
     }
 
@@ -1530,9 +1530,11 @@ mod tests {
         let ctx = context();
         frame(&mut app, &ctx, vec![], 0.0, show);
         let grad = |c: &str| {
-            let stops =
-                vec![vectorcraft_color::GradientStop::new(0.0, Color::from_hex(c).unwrap()), vectorcraft_color::GradientStop::new(1.0, Color::WHITE)];
-            Paint::Gradient(Box::new(vectorcraft_color::GradientPaint::new(vectorcraft_color::Gradient { kind: GradientKind::Radial, stops })))
+            let stops = vec![
+                redrob_vector_color::GradientStop::new(0.0, Color::from_hex(c).unwrap()),
+                redrob_vector_color::GradientStop::new(1.0, Color::WHITE),
+            ];
+            Paint::Gradient(Box::new(redrob_vector_color::GradientPaint::new(redrob_vector_color::Gradient { kind: GradientKind::Radial, stops })))
         };
         let drop_on = |app: &mut VectorcraftApp, name: &str, paint: Paint, m: Modifiers, time: f64| {
             let at = tile_center(&ctx, name);
@@ -1564,7 +1566,7 @@ mod tests {
     #[test]
     fn kind_filter() {
         let solid = Paint::solid(Color::BLACK);
-        let grad = Paint::Gradient(Box::new(vectorcraft_color::GradientPaint::new(Default::default())));
+        let grad = Paint::Gradient(Box::new(redrob_vector_color::GradientPaint::new(Default::default())));
         assert!(Kind::All.accepts(&grad, false));
         assert!(Kind::Color.accepts(&solid, false));
         assert!(!Kind::Color.accepts(&grad, false));

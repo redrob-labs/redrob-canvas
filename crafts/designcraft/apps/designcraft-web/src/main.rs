@@ -1,13 +1,13 @@
 //! DesignCraft in the browser.
 //!
-//! Runs the same [`designcraft_ui_egui::DesignApp`] as the desktop app through eframe's web
+//! Runs the same [`redrob_layout_ui_egui::DesignApp`] as the desktop app through eframe's web
 //! runner (wgpu: WebGPU where available, WebGL2 otherwise). Build with `trunk build --release`
 //! from this directory (output in `dist/web`).
 //!
 //! Differences from the desktop app:
 //! - no TCP control channel (browsers can't listen on sockets);
 //! - File → Open / Place use the browser file picker; bytes arrive asynchronously through
-//!   `Services::inbox` (`.designcraft` → `file.openBytes`, images → `file.place`);
+//!   `Services::inbox` (`.rlayout` → `file.openBytes`, images → `file.place`);
 //! - Save and Export trigger a browser download;
 //! - dropped files are read asynchronously by `web::WebShell` and delivered through the inbox.
 //!

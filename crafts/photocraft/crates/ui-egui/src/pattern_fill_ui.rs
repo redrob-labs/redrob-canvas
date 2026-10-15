@@ -8,8 +8,8 @@
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use photocraft_doc::{DocId, Document, Fill, LayerContent};
-use photocraft_engine::pattern_fill_cmds as cmds;
+use redrob_photo_doc::{DocId, Document, Fill, LayerContent};
+use redrob_photo_engine::pattern_fill_cmds as cmds;
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -61,11 +61,11 @@ pub(crate) fn open(app: &mut PhotocraftApp) -> Option<u64> {
 /// Layer › New Fill Layer › Pattern…: the dialog in front of creating the layer, starting from
 /// the Patterns panel's pattern at 100 %, 0° and linked, as in Photoshop.
 pub(crate) fn open_new(app: &mut PhotocraftApp) -> Result<u64, String> {
-    if let Some(Err(why)) = photocraft_engine::commands::find(cmds::CREATE).map(|c| (c.enabled)(&app.session)) {
+    if let Some(Err(why)) = redrob_photo_engine::commands::find(cmds::CREATE).map(|c| (c.enabled)(&app.session)) {
         return Err(why);
     }
     let st = app.session.active().ok_or("no document open")?;
-    let pattern = photocraft_engine::pattern_cmds::resolve(&app.session, "").ok_or("no patterns")?;
+    let pattern = redrob_photo_engine::pattern_cmds::resolve(&app.session, "").ok_or("no patterns")?;
     let values = json!({"pattern": pattern.id, "scale": 100.0, "angle": 0.0, "link": true, "phase": [0.0, 0.0]});
     let f = fields(cmds::CREATE, json!({"document": st.doc.id.0}), values);
     Ok(app.ui.open_dialog(crate::state::DialogKind::Command, f))
@@ -145,7 +145,7 @@ pub(crate) fn display_doc(app: &mut PhotocraftApp, idx: usize) -> Option<(Arc<Do
     (st.doc.id.0, st.revision, d.id, params.to_string()).hash(&mut hash);
     let key = (1 << 47) | (hash.finish() & ((1 << 36) - 1));
     let (document, revision, dialog) = (st.doc.id, st.revision, d.id);
-    let shown = Arc::new(photocraft_engine::mode_cmds::display_document(&doc).unwrap_or(doc));
+    let shown = Arc::new(redrob_photo_engine::mode_cmds::display_document(&doc).unwrap_or(doc));
     app.pattern_fill_preview = Some(Preview { document, revision, dialog, params, shown: shown.clone(), key });
     Some((shown, key))
 }

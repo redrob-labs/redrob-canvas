@@ -1,6 +1,6 @@
 #[cfg(unix)]
-use craft_atomic::{NewFilePermissions, WriteOptions, atomic_write, write_new};
-use craft_atomic::{atomic_write_with, or_plain_fsync, write_new_with};
+use redrob_craft_atomic::{NewFilePermissions, WriteOptions, atomic_write, write_new};
+use redrob_craft_atomic::{atomic_write_with, or_plain_fsync, write_new_with};
 use std::cell::Cell;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};

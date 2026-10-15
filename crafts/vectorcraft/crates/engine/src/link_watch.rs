@@ -43,7 +43,7 @@ fn stamp(_: &str) -> Option<Stamp> {
 }
 
 /// The linked files of `d` with the ids of the objects showing them.
-pub fn linked_files(d: &vectorcraft_doc::Document) -> Vec<(String, Vec<u64>)> {
+pub fn linked_files(d: &redrob_vector_doc::Document) -> Vec<(String, Vec<u64>)> {
     crate::cmd::links::linked_groups(d)
 }
 

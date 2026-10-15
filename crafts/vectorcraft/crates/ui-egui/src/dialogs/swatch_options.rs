@@ -9,8 +9,8 @@
 //! `name`, `preview` and `__gradient` (the gradient shown) only.
 
 use egui::vec2;
+use redrob_vector_color::{Color, Paint};
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
 
 use super::{DialogSpec, form, run_and_close};
 use crate::VectorcraftApp;
@@ -105,7 +105,7 @@ fn edit_params(d: &Dialog) -> Value {
 }
 
 fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
-    let changed = match d.fields.get("__gradient").and_then(|g| serde_json::from_value::<vectorcraft_color::Gradient>(g.clone()).ok()) {
+    let changed = match d.fields.get("__gradient").and_then(|g| serde_json::from_value::<redrob_vector_color::Gradient>(g.clone()).ok()) {
         Some(g) => {
             let changed = grid(ui, |ui| name_row(ui, d));
             ui.add_space(6.0);
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn lab_mode_defines_a_spot_colour_in_lab() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
         app.run("swatch.new", json!({"name": "Ink", "color": {"c": 0, "m": 80, "y": 60, "k": 0}, "spot": true})).unwrap();
         app.run("ui.swatchOptions", json!({"name": "Ink"})).unwrap();
@@ -303,7 +303,7 @@ mod tests {
         assert_eq!(mode_of(app.ui.dialog.as_ref().unwrap()).labels(), ["L", "a", "b"]);
         super::super::confirm(&mut app).unwrap();
         let ink = app.session.active().unwrap().doc.swatch("Ink").unwrap().paint.color().unwrap();
-        assert_eq!(ink.model(), vectorcraft_color::cms::Model::Lab);
+        assert_eq!(ink.model(), redrob_vector_color::cms::Model::Lab);
         assert_eq!(ink.to_hex(), Color::cmyk(0.0, 0.8, 0.6, 0.0).to_hex(), "the same colour, now in Lab");
         // Lab values typed into the fields.
         app.run("ui.swatchOptions", json!({"name": "Ink"})).unwrap();

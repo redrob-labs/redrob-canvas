@@ -1,5 +1,5 @@
 use super::*;
-use photocraft_doc::{Knot, NamedPath, Path, Subpath};
+use redrob_photo_doc::{Knot, NamedPath, Path, Subpath};
 
 fn tmp(name: &str) -> String {
     let d = std::env::temp_dir().join(format!("photocraft-print-{}-{name}", std::process::id()));
@@ -210,7 +210,7 @@ fn printer_profile_can_be_an_installed_icc_file() {
     let dir = tmp("icc");
     let icc = format!("{dir}/My Paper.icc");
     let output = format!("{dir}/managed.pdf");
-    std::fs::write(&icc, photocraft_cms::Builtin::CoatedCmyk.profile().to_bytes().as_slice()).unwrap();
+    std::fs::write(&icc, redrob_photo_cms::Builtin::CoatedCmyk.profile().to_bytes().as_slice()).unwrap();
     let mut s = session("rgb", 16);
     let r = s
         .execute("file.print", json!({"output": output, "dryRun": true, "colorHandling": "photocraftManages", "printerProfile": icc, "emulsionDown": true}))
@@ -255,8 +255,8 @@ fn package_copies_links_and_relinks() {
     assert_eq!(r["links"], json!([copied]));
     assert!(std::path::Path::new(&copied).is_file());
     let docp = r["document"].as_str().unwrap();
-    assert!(docp.ends_with("Print Me/Print Me.pcraft"));
-    let back = photocraft_io::import("Print Me.pcraft", &std::fs::read(docp).unwrap()).unwrap().document;
+    assert!(docp.ends_with("Print Me/Print Me.rphoto"));
+    let back = redrob_photo_io::import("Print Me.rphoto", &std::fs::read(docp).unwrap()).unwrap().document;
     let linked: Vec<String> = back
         .walk()
         .iter()
@@ -286,7 +286,8 @@ fn paths_export_as_illustrator_postscript() {
     s.edit("paths", |d, _| {
         let tri = Subpath::polygon(&[(10.0, 10.0), (100.0, 10.0), (50.0, 90.0)]);
         let mut curve = Subpath::polyline(&[(0.0, 0.0), (300.0, 150.0)]);
-        curve.knots[0] = Knot::smooth(photocraft_geom::Point::new(0.0, 0.0), photocraft_geom::Point::new(0.0, 0.0), photocraft_geom::Point::new(50.0, 0.0));
+        curve.knots[0] =
+            Knot::smooth(redrob_photo_geom::Point::new(0.0, 0.0), redrob_photo_geom::Point::new(0.0, 0.0), redrob_photo_geom::Point::new(50.0, 0.0));
         d.paths.push(NamedPath { name: "Shapes".into(), path: Path::new(vec![tri, curve]), psd_raw: None });
         Ok(())
     })
@@ -338,7 +339,7 @@ fn print_without_sending_requires_output_unless_dry_run_and_forgets_send_overrid
 #[cfg(unix)]
 #[test]
 fn spool_transport_streams_pdf_and_propagates_refusal() {
-    const CHILD: &str = "PHOTOCRAFT_TEST_PRINT_TRANSPORT";
+    const CHILD: &str = "REDROB_PHOTO_TEST_PRINT_TRANSPORT";
     if let Ok(dir) = std::env::var(CHILD) {
         let mut s = session("rgb", 8);
         let source = s.active().unwrap().doc.id;
@@ -392,7 +393,7 @@ fn spool_transport_streams_pdf_and_propagates_refusal() {
     let script = dir.path().join("lp");
     std::fs::write(
         &script,
-        b"#!/bin/sh\nif [ \"$2\" = Refuse ]; then echo 'queue refused' >&2; exit 1; fi\nprintf '%s\\n' \"$@\" > \"$PHOTOCRAFT_TEST_PRINT_TRANSPORT/args\"\n/bin/cat > \"$PHOTOCRAFT_TEST_PRINT_TRANSPORT/received.pdf\"\necho 'request id is Office-42 (0 file(s))'\n",
+        b"#!/bin/sh\nif [ \"$2\" = Refuse ]; then echo 'queue refused' >&2; exit 1; fi\nprintf '%s\\n' \"$@\" > \"$REDROB_PHOTO_TEST_PRINT_TRANSPORT/args\"\n/bin/cat > \"$REDROB_PHOTO_TEST_PRINT_TRANSPORT/received.pdf\"\necho 'request id is Office-42 (0 file(s))'\n",
     ).unwrap();
     std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
     let result = std::process::Command::new(std::env::current_exe().unwrap())
@@ -400,8 +401,8 @@ fn spool_transport_streams_pdf_and_propagates_refusal() {
         .env(CHILD, dir.path())
         .env("PATH", dir.path())
         // The child spools into the fake `lp` above, so a shell that blocks real printing
-        // (`PHOTOCRAFT_NO_PRINT`, see `disabled_printing_never_spools`) must not stop it.
-        .env_remove("PHOTOCRAFT_NO_PRINT")
+        // (`REDROB_PHOTO_NO_PRINT`, see `disabled_printing_never_spools`) must not stop it.
+        .env_remove("REDROB_PHOTO_NO_PRINT")
         .output()
         .unwrap();
     assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));

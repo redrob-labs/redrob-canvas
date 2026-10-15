@@ -19,8 +19,8 @@ fn tmp(name: &str) -> PathBuf {
 
 fn write_png(path: &Path, w: u32, h: u32, seed: u8) {
     let data: Vec<u8> = (0..w * h * 4).map(|i| (i as u8).wrapping_mul(seed).wrapping_add(seed)).collect();
-    let img = photocraft_codecs::Image::from_u8(w, h, photocraft_codecs::ChannelLayout::Rgba, data).unwrap();
-    std::fs::write(path, photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &Default::default()).unwrap()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(w, h, redrob_photo_codecs::ChannelLayout::Rgba, data).unwrap();
+    std::fs::write(path, redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap()).unwrap();
 }
 
 fn ok(cmd: &mut Command) -> (String, String) {
@@ -108,17 +108,17 @@ fn unknown_flags_are_usage_errors() {
 #[test]
 fn convert_png_pcraft_png_is_lossless() {
     let d = tmp("convert");
-    let (a, b, c) = (d.join("a.png"), d.join("b.pcraft"), d.join("c.png"));
+    let (a, b, c) = (d.join("a.png"), d.join("b.rphoto"), d.join("c.png"));
     write_png(&a, 37, 23, 7);
     ok(bin().args(["convert"]).arg(&a).arg(&b));
-    assert!(photocraft_format::is_pcraft(&std::fs::read(&b).unwrap()));
+    assert!(redrob_photo_format::is_pcraft(&std::fs::read(&b).unwrap()));
     ok(bin().args(["convert"]).arg(&b).arg(&c));
-    let x = photocraft_codecs::decode(&std::fs::read(&a).unwrap()).unwrap();
-    let y = photocraft_codecs::decode(&std::fs::read(&c).unwrap()).unwrap();
+    let x = redrob_photo_codecs::decode(&std::fs::read(&a).unwrap()).unwrap();
+    let y = redrob_photo_codecs::decode(&std::fs::read(&c).unwrap()).unwrap();
     assert_eq!(x.to_rgba8(), y.to_rgba8());
     // Format override and lossy warning path.
     ok(bin().args(["convert"]).arg(&a).arg(d.join("out.bin")).args(["--format", "jpg", "--quality", "60"]));
-    assert!(photocraft_codecs::detect(&std::fs::read(d.join("out.bin")).unwrap()) == Some(photocraft_codecs::Format::Jpeg));
+    assert!(redrob_photo_codecs::detect(&std::fs::read(d.join("out.bin")).unwrap()) == Some(redrob_photo_codecs::Format::Jpeg));
     std::fs::remove_dir_all(d).unwrap();
 }
 
@@ -155,8 +155,8 @@ fn info_prints_layer_tree_json() {
 fn info_and_convert_report_decode_warnings() {
     let d = tmp("decode-warnings");
     let noise: Vec<u8> = (0..64 * 48 * 3).map(|i: u32| (i.wrapping_mul(7919) % 251) as u8).collect();
-    let img = photocraft_codecs::Image::from_u8(64, 48, photocraft_codecs::ChannelLayout::Rgb, noise).unwrap();
-    let jpeg = photocraft_codecs::encode(&img, photocraft_codecs::Format::Jpeg, &Default::default()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(64, 48, redrob_photo_codecs::ChannelLayout::Rgb, noise).unwrap();
+    let jpeg = redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Jpeg, &Default::default()).unwrap();
     // Three 1x1 frames.
     let mut gif = b"GIF89a\x01\0\x01\0\x80\0\0\0\0\0\xFF\xFF\xFF".to_vec();
     for _ in 0..3 {
@@ -183,7 +183,7 @@ fn info_and_convert_report_decode_warnings() {
 #[test]
 fn run_commands_and_save() {
     let d = tmp("run");
-    let out_pc = d.join("r.pcraft");
+    let out_pc = d.join("r.rphoto");
     let (out, _) = ok(bin()
         .args(["run", "--new", r#"{"width":40,"height":30,"name":"Run"}"#])
         .args(["--cmd", "layer.new.layer", "--params", r#"{"name":"Ink"}"#])
@@ -198,13 +198,13 @@ fn run_commands_and_save() {
     let (info, _) = ok(bin().arg("info").arg(&out_pc));
     let v: Value = serde_json::from_str(&info).unwrap();
     // Saving a native document gives the reopened bundle its output filename.
-    assert_eq!(v["name"], "r.pcraft");
+    assert_eq!(v["name"], "r.rphoto");
     let names: Vec<&str> = v["layers"].as_array().unwrap().iter().filter_map(|l| l["name"].as_str()).collect();
     assert_eq!(names, ["Ink", "Background"]);
     // Continue from the saved file and export PNG.
     let png = d.join("r.png");
     ok(bin().arg("run").arg(&out_pc).args(["--cmd", "layer.new.layer"]).arg("--out").arg(&png));
-    assert_eq!(photocraft_codecs::decode(&std::fs::read(&png).unwrap()).unwrap().dimensions(), (40, 30));
+    assert_eq!(redrob_photo_codecs::decode(&std::fs::read(&png).unwrap()).unwrap().dimensions(), (40, 30));
     std::fs::remove_dir_all(d).unwrap();
 }
 
@@ -300,10 +300,10 @@ fn batch_applies_actions_to_directory() {
     std::fs::write(inp.join("notes.txt"), "ignored").unwrap();
     let actions = d.join("actions.json");
     std::fs::write(&actions, json!([{"command": "layer.new.layer", "params": {"name": "Batch"}}]).to_string()).unwrap();
-    let (out, _) = ok(bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&inp).arg("--out").arg(&outp).args(["--format", "pcraft"]));
+    let (out, _) = ok(bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&inp).arg("--out").arg(&outp).args(["--format", "rphoto"]));
     assert!(out.contains("2 succeeded, 0 failed"), "{out}");
     for n in ["one", "two"] {
-        let (info, _) = ok(bin().arg("info").arg(outp.join(format!("{n}.pcraft"))));
+        let (info, _) = ok(bin().arg("info").arg(outp.join(format!("{n}.rphoto"))));
         let v: Value = serde_json::from_str(&info).unwrap();
         assert_eq!(v["layers"][0]["name"], "Batch");
     }
@@ -419,7 +419,7 @@ fn batch_format_with_leading_dot() {
         let mut names: Vec<String> = std::fs::read_dir(d.join(name)).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
         names.sort();
         assert_eq!(names, ["a.jpg", "b.jpg"], "{format}");
-        assert_eq!(photocraft_codecs::detect(&std::fs::read(d.join(name).join("a.jpg")).unwrap()), Some(photocraft_codecs::Format::Jpeg));
+        assert_eq!(redrob_photo_codecs::detect(&std::fs::read(d.join(name).join("a.jpg")).unwrap()), Some(redrob_photo_codecs::Format::Jpeg));
     }
 }
 
@@ -528,8 +528,8 @@ fn batch_refuses_to_write_over_its_inputs() {
     let input = d.join("in");
     std::fs::create_dir_all(&input).unwrap();
     write_png(&input.join("a.png"), 8, 4, 3);
-    let img = photocraft_codecs::Image::from_u8(8, 4, photocraft_codecs::ChannelLayout::Rgb, vec![90; 96]).unwrap();
-    std::fs::write(input.join("a.tif"), photocraft_codecs::encode(&img, photocraft_codecs::Format::Tiff, &Default::default()).unwrap()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(8, 4, redrob_photo_codecs::ChannelLayout::Rgb, vec![90; 96]).unwrap();
+    std::fs::write(input.join("a.tif"), redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Tiff, &Default::default()).unwrap()).unwrap();
     let actions = d.join("actions.json");
     std::fs::write(&actions, r#"[{"command":"image.adjustments.invert"}]"#).unwrap();
     let snapshot = || {
@@ -635,9 +635,9 @@ fn batch_fails_inputs_that_share_an_output_name() {
     std::fs::create_dir_all(&input).unwrap();
     write_png(&input.join("a.png"), 8, 4, 3);
     // Same stem in other formats; `A.tif` differs only in case.
-    let img = photocraft_codecs::Image::from_u8(8, 4, photocraft_codecs::ChannelLayout::Rgb, vec![90; 96]).unwrap();
-    for (name, format) in [("a.bmp", photocraft_codecs::Format::Bmp), ("A.tif", photocraft_codecs::Format::Tiff)] {
-        std::fs::write(input.join(name), photocraft_codecs::encode(&img, format, &Default::default()).unwrap()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(8, 4, redrob_photo_codecs::ChannelLayout::Rgb, vec![90; 96]).unwrap();
+    for (name, format) in [("a.bmp", redrob_photo_codecs::Format::Bmp), ("A.tif", redrob_photo_codecs::Format::Tiff)] {
+        std::fs::write(input.join(name), redrob_photo_codecs::encode(&img, format, &Default::default()).unwrap()).unwrap();
     }
     let actions = d.join("actions.json");
     std::fs::write(&actions, r#"[{"command":"image.adjustments.invert"}]"#).unwrap();
@@ -673,7 +673,7 @@ fn droplet_runs_an_action_on_files() {
     let out_dir = d.join("out");
     let (out, _) = ok(bin().arg("droplet").arg(&droplet).arg(d.join("a.png")).arg(d.join("b.png")).arg("--out").arg(&out_dir));
     assert_eq!(out.lines().filter(|l| l.starts_with("ok")).count(), 2, "{out}");
-    let img = photocraft_codecs::decode(&std::fs::read(out_dir.join("a.png")).unwrap()).unwrap();
+    let img = redrob_photo_codecs::decode(&std::fs::read(out_dir.join("a.png")).unwrap()).unwrap();
     assert_eq!(img.dimensions(), (4, 8));
     let o = bin().arg("droplet").arg(d.join("a.png")).arg(d.join("b.png")).output().unwrap();
     assert!(!o.status.success(), "not a droplet");
@@ -728,14 +728,14 @@ fn a_non_unicode_argument_is_a_usage_error_not_a_panic() {
 /// PhotoCraft can't play are warned about up front.
 #[test]
 fn batch_plays_a_photoshop_actions_file() {
-    use photocraft_engine::actions_cmds::Action;
+    use redrob_photo_engine::actions_cmds::Action;
     let d = tmp("atn");
     let input = d.join("in");
     std::fs::create_dir_all(&input).unwrap();
     write_png(&input.join("a.png"), 8, 4, 3);
     let invert = Action::new("Negative", vec![("image.adjustments.invert".into(), json!({})), ("select.all".into(), json!({}))]);
-    let odd = Action::new("Odd", vec![(photocraft_engine::atn_cmds::PHOTOSHOP_STEP.into(), json!({"event": "syntheticFill", "name": "Generative Fill"}))]);
-    let (bytes, skipped) = photocraft_engine::atn_cmds::export("Set", &[&invert, &odd], &[], false).unwrap();
+    let odd = Action::new("Odd", vec![(redrob_photo_engine::atn_cmds::PHOTOSHOP_STEP.into(), json!({"event": "syntheticFill", "name": "Generative Fill"}))]);
+    let (bytes, skipped) = redrob_photo_engine::atn_cmds::export("Set", &[&invert, &odd], &[], false).unwrap();
     assert!(skipped.is_empty());
     let atn = d.join("Set.atn");
     std::fs::write(&atn, bytes).unwrap();

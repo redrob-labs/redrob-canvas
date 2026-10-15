@@ -9,7 +9,7 @@ use serde_json::json;
 use crate::PhotocraftApp;
 
 fn harness() -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     app.sync_views();
     let mut h = Harness::builder().with_size(vec2(1200.0, 800.0)).build_ui_state(
@@ -333,7 +333,7 @@ fn doc_at(h: &Harness<'static, PhotocraftApp>, p: Pos2) -> [f32; 2] {
 
 /// The whole window (status bar and Navigator included) on a 400 × 300 document.
 fn app_window() -> Harness<'static, PhotocraftApp> {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 400, "height": 300})).unwrap();
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
@@ -455,13 +455,13 @@ fn alt_scroll_zooms_while_a_temporary_tool_is_held() {
 
 #[test]
 fn type_tool_alt_arrows_kern_the_pair() {
-    use photocraft_doc::text::Kerning;
+    use redrob_photo_doc::text::Kerning;
     let mut h = harness();
     let id = h.state_mut().run("type.create", json!({"x": 20, "y": 80, "text": "AVA To", "size": 40, "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
     let text = |h: &Harness<'static, PhotocraftApp>| {
         let st = h.state().session.active().unwrap();
-        match &st.doc.layer(photocraft_doc::LayerId(id)).unwrap().content {
-            photocraft_doc::LayerContent::Text(t) => t.clone(),
+        match &st.doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content {
+            redrob_photo_doc::LayerContent::Text(t) => t.clone(),
             _ => panic!("not text"),
         }
     };
@@ -471,7 +471,7 @@ fn type_tool_alt_arrows_kern_the_pair() {
         (r[0].style.kerning, r[0].style.kern, r.len())
     };
     let steps = |h: &Harness<'static, PhotocraftApp>| h.state().session.active().unwrap().history.entries().len();
-    let metric = photocraft_text::shared().lock().unwrap().pair_kerning(&text(&h), 72.0, 0).unwrap().round();
+    let metric = redrob_photo_text::shared().lock().unwrap().pair_kerning(&text(&h), 72.0, 0).unwrap().round();
     h.state_mut().ui.text_edit = Some(crate::state::TextEdit {
         layer: id,
         caret: 1,
@@ -536,15 +536,15 @@ fn edit_type(h: &mut Harness<'static, PhotocraftApp>, layer: u64, anchor: usize,
     h.run_steps(2);
 }
 
-fn type_layer(h: &Harness<'static, PhotocraftApp>, id: u64) -> photocraft_doc::TextLayer {
-    match &h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().content {
-        photocraft_doc::LayerContent::Text(t) => t.clone(),
+fn type_layer(h: &Harness<'static, PhotocraftApp>, id: u64) -> redrob_photo_doc::TextLayer {
+    match &h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content {
+        redrob_photo_doc::LayerContent::Text(t) => t.clone(),
         _ => panic!("not text"),
     }
 }
 
 /// The character style of character `c` of a type layer.
-fn char_style(h: &Harness<'static, PhotocraftApp>, id: u64, c: usize) -> photocraft_doc::text::CharStyle {
+fn char_style(h: &Harness<'static, PhotocraftApp>, id: u64, c: usize) -> redrob_photo_doc::text::CharStyle {
     let t = type_layer(h, id);
     let byte = t.text.char_indices().nth(c).map_or(t.text.len(), |(i, _)| i);
     let mut end = 0;
@@ -559,7 +559,7 @@ fn char_style(h: &Harness<'static, PhotocraftApp>, id: u64, c: usize) -> photocr
 }
 
 /// The paragraph style of the paragraph holding character `c`.
-fn para_style(h: &Harness<'static, PhotocraftApp>, id: u64, c: usize) -> photocraft_doc::text::ParagraphStyle {
+fn para_style(h: &Harness<'static, PhotocraftApp>, id: u64, c: usize) -> redrob_photo_doc::text::ParagraphStyle {
     let t = type_layer(h, id);
     let byte = t.text.char_indices().nth(c).map_or(t.text.len(), |(i, _)| i);
     let mut end = 0;
@@ -582,7 +582,7 @@ fn history(h: &Harness<'static, PhotocraftApp>) -> Vec<String> {
 /// ⇧⌘K/U/B/I (Color Settings, Desaturate, Auto Color, Inverse).
 #[test]
 fn type_tool_format_keys_toggle_character_styles() {
-    use photocraft_doc::text::{Caps, CharStyle};
+    use redrob_photo_doc::text::{Caps, CharStyle};
     let mut h = harness();
     // A selection, so Select ▸ Inverse would be enabled if the key reached it.
     h.state_mut().run("select.all", json!({})).unwrap();
@@ -663,7 +663,7 @@ fn global_cmd_shift_keys_still_work_outside_type_editing() {
     h.key_press_modifiers(cmd_shift, Key::K);
     h.run_steps(3);
     assert_eq!(h.state().ui.dialogs.len(), 1, "Color Settings opens");
-    assert!(!char_style(&h, id, 0).faux_italic && char_style(&h, id, 0).caps == photocraft_doc::text::Caps::Normal);
+    assert!(!char_style(&h, id, 0).faux_italic && char_style(&h, id, 0).caps == redrob_photo_doc::text::Caps::Normal);
 }
 
 /// ⌥↑/↓ leading (2 pt, 10 with ⌘), ⇧⌥↑/↓ baseline shift and ⌥←/→ tracking over a selection
@@ -738,7 +738,7 @@ fn type_tool_format_keys_survive_hostile_state() {
     h.key_press_modifiers(Modifiers::ALT, Key::ArrowDown);
     h.run_steps(2);
     assert!(h.state().ui.text_edit.is_none(), "an edit of a missing layer ends");
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     for ed in [None, Some(1)] {
         app.ui.text_edit = ed.map(|layer| crate::state::TextEdit {
             layer,
@@ -762,7 +762,7 @@ fn type_tool_format_keys_survive_hostile_state() {
 /// The Character panel's kerning field reads and parses Photoshop's values.
 #[test]
 fn kerning_field_values() {
-    use photocraft_doc::text::Kerning;
+    use redrob_photo_doc::text::Kerning;
     assert_eq!(crate::type_tool::kerning_label((Kerning::Metrics, 0.0)), "Metrics");
     assert_eq!(crate::type_tool::kerning_label((Kerning::Optical, 0.0)), "Optical");
     assert_eq!(crate::type_tool::kerning_label((Kerning::Off, 0.0)), "0");

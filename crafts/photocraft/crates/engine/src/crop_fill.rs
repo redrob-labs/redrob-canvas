@@ -9,9 +9,9 @@
 //! uncovered area (each corner, each edge strip) is filled on its own, with Photoshop's sampling
 //! window around that piece, and only pixels the image covers are sampled.
 
-use photocraft_doc::{Document, LayerId};
-use photocraft_geom::Rect;
 use rayon::prelude::*;
+use redrob_photo_doc::{Document, LayerId};
+use redrob_photo_geom::Rect;
 
 use crate::{EngineError, Result};
 
@@ -137,7 +137,7 @@ fn target_layer(doc: &Document, active: Option<LayerId>) -> Result<LayerId> {
         return Ok(bg.id);
     }
     active
-        .filter(|id| doc.layer(*id).is_some_and(|l| matches!(l.content, photocraft_doc::LayerContent::Raster(_))))
+        .filter(|id| doc.layer(*id).is_some_and(|l| matches!(l.content, redrob_photo_doc::LayerContent::Raster(_))))
         .ok_or_else(|| EngineError::Other("Content-Aware crop fill needs a Background or an active pixel layer".into()))
 }
 

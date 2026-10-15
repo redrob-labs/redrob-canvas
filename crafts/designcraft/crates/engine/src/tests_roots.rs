@@ -70,7 +70,7 @@ fn idml_links_are_read_through_the_roots() {
     let mut s = linked_picture(&base.join("outside"));
     // Linked, not embedded: opening the package has to read the file its link names.
     let idml = base64_idml(&mut s);
-    let linked = |doc: &designcraft_doc::Document| doc.assets.values().filter(|a| !a.data.is_empty()).count();
+    let linked = |doc: &redrob_layout_doc::Document| doc.assets.values().filter(|a| !a.data.is_empty()).count();
     let unconfined = cmd::interchange::import_idml_confined(&idml).unwrap();
     assert_eq!(linked(&unconfined), 1, "without roots the link is followed");
     let confined = confine(Some(&roots), || cmd::interchange::import_idml_confined(&idml)).unwrap();
@@ -128,8 +128,8 @@ fn a_data_source_path_stored_in_a_document_is_read_through_the_roots() {
 #[test]
 fn a_book_writes_its_chapters_only_inside_the_write_root() {
     let (base, roots) = folders("book");
-    let chapter = base.join("in/a.designcraft");
-    let second = base.join("in/b.designcraft");
+    let chapter = base.join("in/a.rlayout");
+    let second = base.join("in/b.rlayout");
     {
         // Made by another session: a book only rewrites chapters that are not open.
         let mut maker = Session::new();
@@ -206,11 +206,11 @@ fn fonts_beside_a_document_outside_the_read_root_are_not_loaded() {
     let (base, roots) = folders("fonts");
     std::fs::create_dir_all(base.join("outside/Document Fonts")).unwrap();
     std::fs::write(base.join("outside/Document Fonts/x.ttf"), b"not a font").unwrap();
-    let mut d = designcraft_doc::Document::new(&designcraft_doc::build::NewDocument::default());
-    let (_, faces, warnings) = confine(Some(&roots), || cmd::load_document_fonts(&mut d, &p(&base.join("outside/doc.designcraft"))));
+    let mut d = redrob_layout_doc::Document::new(&redrob_layout_doc::build::NewDocument::default());
+    let (_, faces, warnings) = confine(Some(&roots), || cmd::load_document_fonts(&mut d, &p(&base.join("outside/doc.rlayout"))));
     assert_eq!(faces, 0);
     assert!(warnings.iter().any(|w| w.contains("outside the read root")), "{warnings:?}");
-    let (_, _, warnings) = cmd::load_document_fonts(&mut d, &p(&base.join("outside/doc.designcraft")));
+    let (_, _, warnings) = cmd::load_document_fonts(&mut d, &p(&base.join("outside/doc.rlayout")));
     assert!(warnings.iter().any(|w| w.contains("x.ttf")), "without roots the folder is read and the bad font reported: {warnings:?}");
     let _ = std::fs::remove_dir_all(base);
 }
@@ -222,8 +222,8 @@ fn a_font_file_that_links_out_of_the_read_root_is_skipped() {
     std::fs::create_dir_all(base.join("in/Document Fonts")).unwrap();
     std::fs::write(base.join("outside/secret.ttf"), b"not a font").unwrap();
     std::os::unix::fs::symlink(base.join("outside/secret.ttf"), base.join("in/Document Fonts/link.ttf")).unwrap();
-    let mut d = designcraft_doc::Document::new(&designcraft_doc::build::NewDocument::default());
-    let doc = p(&base.join("in/doc.designcraft"));
+    let mut d = redrob_layout_doc::Document::new(&redrob_layout_doc::build::NewDocument::default());
+    let doc = p(&base.join("in/doc.rlayout"));
     let (_, _, warnings) = confine(Some(&roots), || cmd::load_document_fonts(&mut d, &doc));
     assert!(warnings.iter().any(|w| w.contains("outside the read root")), "{warnings:?}");
     assert!(!warnings.iter().any(|w| w.contains("not a font")), "the file was opened: {warnings:?}");

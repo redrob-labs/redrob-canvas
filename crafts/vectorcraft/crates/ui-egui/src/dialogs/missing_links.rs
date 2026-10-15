@@ -5,7 +5,7 @@
 //! `findLinks`, [`super::find_links`]). Afterwards, with Preferences › Update Links: Ask When
 //! Modified, the modified links are offered for update (`links.update`). Files another app changes
 //! while the document is open are offered the same way ([`ask_update_changed`], from
-//! [`vectorcraft_engine::link_watch`]).
+//! [`redrob_vector_engine::link_watch`]).
 //!
 //! Fields: `missing` (`[{name, path, ids}]`, the one asked about first), `modified` (the ids of
 //! images whose file was modified), `applyToAll`, `path` (the replacement file; picked when empty),
@@ -78,7 +78,7 @@ fn ask_update(app: &mut VectorcraftApp, ids: Vec<Value>) {
 }
 
 /// The same offer for linked files another app changed while the document is open
-/// ([`vectorcraft_engine::link_watch`]).
+/// ([`redrob_vector_engine::link_watch`]).
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn ask_update_changed(app: &mut VectorcraftApp, ids: Vec<Value>) {
     ask(app, ids, tl!("{count} linked image(s) changed on disk. Show the new versions?"));
@@ -172,7 +172,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
         let path = match d.str("path") {
             p if !p.is_empty() => p,
             _ => {
-                let pick = crate::FilePick { filters: vectorcraft_engine::cmd::fileio::place_filters().collect(), ..Default::default() };
+                let pick = crate::FilePick { filters: redrob_vector_engine::cmd::fileio::place_filters().collect(), ..Default::default() };
                 crate::picks::open(app, &pick).ok_or("cancelled")?
             }
         };
@@ -192,7 +192,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn frame(app: &mut VectorcraftApp) -> String {
         crate::tests_labels::painted_text(app, |app, ui| super::super::show(app, ui.ctx()))
@@ -221,7 +221,7 @@ mod tests {
             std::fs::write(&p, png([200, 0, 0])).unwrap();
             app.run("file.place", json!({"path": p.to_string_lossy()})).unwrap();
         }
-        let doc = dir.join("doc.vectorcraft").to_string_lossy().into_owned();
+        let doc = dir.join("doc.rvector").to_string_lossy().into_owned();
         app.run("document.save", json!({"path": doc})).unwrap();
         for n in ["a.png", "b.png"] {
             std::fs::remove_file(dir.join(n)).unwrap();
@@ -288,7 +288,7 @@ mod tests {
         let pic = dir.join("a.png");
         std::fs::write(&pic, png([200, 0, 0])).unwrap();
         app.run("file.place", json!({"path": pic.to_string_lossy()})).unwrap();
-        let doc = dir.join("doc.vectorcraft").to_string_lossy().into_owned();
+        let doc = dir.join("doc.rvector").to_string_lossy().into_owned();
         app.run("document.save", json!({"path": doc})).unwrap();
         let original_stamp = std::fs::metadata(&pic).unwrap().modified().unwrap();
         let mark_modified = |seconds| {

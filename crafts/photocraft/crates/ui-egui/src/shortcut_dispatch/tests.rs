@@ -6,7 +6,7 @@ use egui::accesskit::Role;
 use egui::{Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::LayerContent;
+use redrob_photo_doc::LayerContent;
 use serde_json::json;
 
 use super::{Focus, Outcome, bindings, set_dry_run, take_log};
@@ -16,8 +16,8 @@ use crate::state::Tool;
 
 /// Background, a filled pixel layer "paint" (active, with a selection), a type layer and a group
 /// holding a layer: what a real layout PSD looks like.
-fn realistic() -> photocraft_engine::Session {
-    let mut s = photocraft_engine::Session::new();
+fn realistic() -> redrob_photo_engine::Session {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 240, "height": 160})).unwrap();
     s.execute("layer.new.layer", json!({"name": "in-group"})).unwrap();
     s.execute("layer.groupLayers", json!({"name": "group"})).unwrap();
@@ -307,7 +307,7 @@ fn a_disabled_shortcut_says_why() {
 
 #[test]
 fn a_disabled_shortcut_uses_the_command_id_translation() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     crate::i18n::with_language(crate::i18n::Lang::from_code("cs").unwrap(), || {
         super::dispatch(&mut app, &egui::Context::default(), "select.all");
         assert!(app.ui.status.starts_with("Vybrat vše není k dispozici:"), "{}", app.ui.status);
@@ -500,7 +500,7 @@ fn delete_without_a_selection_deletes_the_selected_layer() {
             put_focus(&mut h, place);
             let s = &mut h.state_mut().session;
             s.execute("select.deselect", json!({})).unwrap();
-            let adj = photocraft_doc::LayerId(s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap()["layer"].as_u64().unwrap());
+            let adj = redrob_photo_doc::LayerId(s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap()["layer"].as_u64().unwrap());
             h.run_steps(2);
             let before = names(&h);
             press(&mut h, key);
@@ -558,7 +558,7 @@ fn delete_without_a_selection_deletes_every_selected_layer() {
     let s = &mut h.state_mut().session;
     s.execute("select.deselect", json!({})).unwrap();
     let paint = s.active().unwrap().active_layer.unwrap();
-    let adj = photocraft_doc::LayerId(s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap()["layer"].as_u64().unwrap());
+    let adj = redrob_photo_doc::LayerId(s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap()["layer"].as_u64().unwrap());
     s.execute("layer.select", json!({"layer": paint.0})).unwrap();
     s.execute("layer.select", json!({"layer": adj.0, "mode": "add"})).unwrap();
     h.run_steps(2);
@@ -577,8 +577,8 @@ fn delete_with_several_layers_selected_deletes_them_even_with_the_mask_targeted(
     let mut h = harness();
     put_focus(&mut h, Place::Canvas);
     let s = &mut h.state_mut().session;
-    let first = photocraft_doc::LayerId(s.execute("layer.newAdjustmentLayer.curves", json!({})).unwrap()["layer"].as_u64().unwrap());
-    let second = photocraft_doc::LayerId(s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap()["layer"].as_u64().unwrap());
+    let first = redrob_photo_doc::LayerId(s.execute("layer.newAdjustmentLayer.curves", json!({})).unwrap()["layer"].as_u64().unwrap());
+    let second = redrob_photo_doc::LayerId(s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap()["layer"].as_u64().unwrap());
     s.execute("layer.select", json!({"layer": first.0, "mode": "add"})).unwrap();
     let st = s.active().unwrap();
     assert_eq!(st.selected_layers().len(), 2);
@@ -611,7 +611,7 @@ fn delete_with_a_selection_clears_it() {
     assert_eq!(names(&h), before, "no layer was deleted");
 }
 
-fn is_clipped(h: &Harness<'_, PhotocraftApp>, id: photocraft_doc::LayerId) -> bool {
+fn is_clipped(h: &Harness<'_, PhotocraftApp>, id: redrob_photo_doc::LayerId) -> bool {
     h.state().session.active().unwrap().doc.layer(id).unwrap().clipped
 }
 
@@ -654,7 +654,7 @@ fn clip_key_toggles_several_selected_layers() {
     let s = &mut h.state_mut().session;
     let paint = s.active().unwrap().active_layer.unwrap();
     let base = s.active().unwrap().doc.walk().into_iter().find(|(_, _, l)| l.name == "Hello").unwrap().2.id;
-    let top = photocraft_doc::LayerId(s.execute("layer.new.layer", json!({"name": "top"})).unwrap()["layer"].as_u64().unwrap());
+    let top = redrob_photo_doc::LayerId(s.execute("layer.new.layer", json!({"name": "top"})).unwrap()["layer"].as_u64().unwrap());
     s.execute("layer.createClippingMask", json!({"layer": paint.0})).unwrap();
     s.execute("layer.select", json!({"layer": base.0, "mode": "replace"})).unwrap();
     for id in [paint, top] {
@@ -673,7 +673,7 @@ fn clip_key_toggles_several_selected_layers() {
 #[test]
 fn named_action_function_key_replays_and_survives_preferences_roundtrip() {
     let mut h = harness();
-    let action = photocraft_engine::actions_cmds::Action {
+    let action = redrob_photo_engine::actions_cmds::Action {
         name: "LivePrint 2R".into(),
         steps: vec![("layer.new.layer".into(), json!({"name": "F6 overlay"}))],
         disabled: Default::default(),
@@ -699,7 +699,7 @@ fn named_action_function_key_replays_and_survives_preferences_roundtrip() {
 fn assigning_action_function_key_moves_it_and_reports_failed_steps() {
     let mut h = harness();
     for name in ["first", "second"] {
-        h.state_mut().session.actions.list.push(photocraft_engine::actions_cmds::Action {
+        h.state_mut().session.actions.list.push(redrob_photo_engine::actions_cmds::Action {
             name: name.into(),
             steps: vec![("no.such.command".into(), json!({}))],
             disabled: Default::default(),
@@ -719,7 +719,7 @@ fn assigning_action_function_key_moves_it_and_reports_failed_steps() {
 #[test]
 fn action_function_key_checks_automation_authorization() {
     let mut h = harness();
-    h.state_mut().session.actions.list.push(photocraft_engine::actions_cmds::Action {
+    h.state_mut().session.actions.list.push(redrob_photo_engine::actions_cmds::Action {
         name: "restricted".into(),
         steps: vec![("layer.new.layer".into(), json!({"name": "should not exist"}))],
         disabled: Default::default(),
@@ -757,7 +757,7 @@ fn fit_shortcut_records_and_f6_fits_the_resized_canvas() {
 #[test]
 fn f6_while_recording_records_a_named_call_not_the_child_steps() {
     let mut h = harness();
-    h.state_mut().session.actions.list.push(photocraft_engine::actions_cmds::Action {
+    h.state_mut().session.actions.list.push(redrob_photo_engine::actions_cmds::Action {
         name: "LivePrint 2R".into(),
         steps: vec![("layer.new.layer".into(), json!({"name":"Nested overlay"})), ("view.fitOnScreen".into(), json!({}))],
         disabled: Default::default(),
@@ -779,7 +779,7 @@ fn type_size_keys_follow_key_position_and_the_typed_selection() {
     let st = h.state().session.active().unwrap();
     let id = st.doc.walk().into_iter().find(|(_, _, l)| matches!(l.content, LayerContent::Text(_))).unwrap().2.id.0;
     h.state_mut().session.execute("layer.select", json!({"layer": id})).unwrap();
-    let sizes = |h: &Harness<'_, PhotocraftApp>| match &h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().content {
+    let sizes = |h: &Harness<'_, PhotocraftApp>| match &h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content {
         LayerContent::Text(t) => t.char_runs().iter().map(|r| (r.len, r.style.size_pt)).collect::<Vec<_>>(),
         _ => Vec::new(),
     };

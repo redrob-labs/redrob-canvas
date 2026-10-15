@@ -3,12 +3,12 @@
 
 use std::sync::Arc;
 
+use redrob_vector_color::{Color, Gradient, GradientPaint, Paint};
+use redrob_vector_doc::live::EnvelopeOptions;
+use redrob_vector_doc::{AppearanceItem, Node, NodeKind, PatternDef, Symbol};
+use redrob_vector_geom::{Affine, Point, Rect, shapes};
+use redrob_vector_render::effects;
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Gradient, GradientPaint, Paint};
-use vectorcraft_doc::live::EnvelopeOptions;
-use vectorcraft_doc::{AppearanceItem, Node, NodeKind, PatternDef, Symbol};
-use vectorcraft_geom::{Affine, Point, Rect, shapes};
-use vectorcraft_render::effects;
 
 use super::*;
 
@@ -34,7 +34,7 @@ fn sel(s: &mut Session, ids: &[NodeId]) {
 fn rect(s: &mut Session) -> NodeId {
     let a = id_of(&s.execute("shape.rectangle", &json!({"x": 100, "y": 100, "width": 200, "height": 100})).unwrap());
     s.edit("red", |d, _| {
-        d.node_mut(a).unwrap().appearance = vectorcraft_doc::Appearance::basic(Paint::solid(Color::rgb(1.0, 0.0, 0.0)), Paint::None, 0.0).into();
+        d.node_mut(a).unwrap().appearance = redrob_vector_doc::Appearance::basic(Paint::solid(Color::rgb(1.0, 0.0, 0.0)), Paint::None, 0.0).into();
         Ok(())
     })
     .unwrap();
@@ -105,7 +105,7 @@ fn the_frame_round_trips_natively() {
     let e = arch(&mut s, 50.0, json!({}));
     s.execute("object.rotate", &json!({"angle": 30})).unwrap();
     let d = &s.doc().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save(d, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(d, false)).unwrap();
     assert_eq!(back.node(e), d.node(e));
     let mut old = serde_json::to_value(node(&s, e)).unwrap();
     old["kind"].as_object_mut().unwrap().remove("frame");
@@ -119,10 +119,10 @@ fn red_image(s: &mut Session) -> NodeId {
     let mut png = vec![];
     img.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
     s.edit("Place", |d, sel| {
-        d.images.insert("pic".into(), vectorcraft_doc::ImageBlob::png(png));
+        d.images.insert("pic".into(), redrob_vector_doc::ImageBlob::png(png));
         let id = d.alloc_id();
         let xf = Affine::translate((100.0, 100.0)) * Affine::scale(10.0);
-        let im = vectorcraft_doc::ImageObject { key: "pic".into(), width: 4, height: 4, xf, link: None, placement: Default::default() };
+        let im = redrob_vector_doc::ImageObject { key: "pic".into(), width: 4, height: 4, xf, link: None, placement: Default::default() };
         d.insert(d.default_layer(), 0, Node::new(id, NodeKind::Image(Box::new(im))))?;
         sel.set([id]);
         Ok(id)
@@ -141,7 +141,7 @@ fn images_bend_as_a_raster_mesh_warp() {
     out[0].walk(&mut |c| pieces += matches!(c.kind, NodeKind::Image(_)) as usize);
     assert!(pieces >= 32, "{pieces} pieces");
     // The arch lifts the image's middle above its top edge, not its corners.
-    let img = vectorcraft_render::Renderer::new().render_region(&s.doc().unwrap().doc, Rect::new(0.0, 0.0, 200.0, 200.0), 1.0, true);
+    let img = redrob_vector_render::Renderer::new().render_region(&s.doc().unwrap().doc, Rect::new(0.0, 0.0, 200.0, 200.0), 1.0, true);
     let b = node(&s, e).geometric_bounds().unwrap();
     assert!(b.y0 < 95.0, "{b:?}");
     let mid = img.pixel(120, 97);
@@ -149,7 +149,7 @@ fn images_bend_as_a_raster_mesh_warp() {
     assert!(img.pixel(101, 95)[1] > 200, "the corner stayed: {:?}", img.pixel(101, 95));
     // The pieces export as clipped images, bent in the SVG too.
     let svg = s.execute("document.export", &json!({"format": "svg"})).unwrap()["dataBase64"].as_str().unwrap().to_string();
-    let svg = String::from_utf8(vectorcraft_format::base64_decode(&svg).unwrap()).unwrap();
+    let svg = String::from_utf8(redrob_vector_format::base64_decode(&svg).unwrap()).unwrap();
     assert!(svg.matches("<use").count() >= 32 && svg.contains("clip"), "{}", &svg[..svg.len().min(400)]);
     assert_eq!(svg.matches("<image").count(), 1, "the pieces share the image's pixels");
 }
@@ -163,7 +163,7 @@ fn symbols_bend_with_the_envelope() {
             let art = Node::path(
                 NodeId(0),
                 shapes::rectangle(Rect::new(-10.0, -10.0, 10.0, 10.0)),
-                vectorcraft_doc::Appearance::basic(Paint::solid(Color::BLACK), Paint::None, 0.0),
+                redrob_vector_doc::Appearance::basic(Paint::solid(Color::BLACK), Paint::None, 0.0),
             );
             d.symbols.push(Symbol { name: "Box".into(), art: Arc::new(art) });
             let id = d.alloc_id();
@@ -178,7 +178,7 @@ fn symbols_bend_with_the_envelope() {
     let pts = anchors(&evaluated(&s, e));
     assert!(pts.iter().any(|p| p.y < 90.0), "the symbol's art rose in the middle");
     // Editing the symbol redraws the envelope (the renderer's cache follows the symbol's art).
-    let mut r = vectorcraft_render::Renderer::new();
+    let mut r = redrob_vector_render::Renderer::new();
     let region = Rect::new(0.0, 0.0, 400.0, 300.0);
     assert!(r.render_region(&s.doc().unwrap().doc, region, 1.0, true).pixel(200, 150)[1] < 60);
     s.edit("edit symbol", |d, _| {
@@ -223,7 +223,7 @@ fn distort_appearance_bends_strokes_and_effects_with_the_art() {
     assert!(anchors(&out).len() > anchors(&[node(&s, a)]).len());
 }
 
-fn gradient_geom(nodes: &[Node]) -> Option<vectorcraft_color::GradientGeom> {
+fn gradient_geom(nodes: &[Node]) -> Option<redrob_vector_color::GradientGeom> {
     let mut g = None;
     for n in nodes {
         n.walk(&mut |c| {
@@ -264,12 +264,12 @@ fn pattern_fills_bend_when_asked() {
         let dot = Node::path(
             NodeId(0),
             shapes::rectangle(Rect::new(0.0, 0.0, 5.0, 5.0)),
-            vectorcraft_doc::Appearance::basic(Paint::solid(Color::BLACK), Paint::None, 0.0),
+            redrob_vector_doc::Appearance::basic(Paint::solid(Color::BLACK), Paint::None, 0.0),
         );
         let mut def = PatternDef::new("Dots", vec![Arc::new(dot)]);
         def.tile = Rect::new(0.0, 0.0, 20.0, 20.0);
         d.patterns.push(def);
-        d.node_mut(a).unwrap().appearance.set_fill(vectorcraft_doc::pattern::pattern_paint("Dots"));
+        d.node_mut(a).unwrap().appearance.set_fill(redrob_vector_doc::pattern::pattern_paint("Dots"));
         Ok(())
     })
     .unwrap();

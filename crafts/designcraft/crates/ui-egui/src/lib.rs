@@ -1,4 +1,4 @@
-//! Redrob Canvas's egui frontend: an InDesign-style UI over `designcraft-engine`.
+//! Redrob Canvas's egui frontend: an InDesign-style UI over `redrob-layout-engine`.
 //!
 //! The UI is thin: every action goes through [`DesignApp::run`], which dispatches UI commands
 //! (view/window) here and everything else to the engine. Menus, shortcuts, the ⌘K palette and
@@ -32,8 +32,8 @@ pub mod widgets;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
 
-use designcraft_engine::{Session, SnapView, UiRequest, ViewInfo};
-use designcraft_geom::{Point, Unit};
+use redrob_layout_engine::{Session, SnapView, UiRequest, ViewInfo};
+use redrob_layout_geom::{Point, Unit};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -107,9 +107,9 @@ pub struct SavedWorkspace {
     pub floating: Vec<(String, [f32; 2])>,
     /// Custom panel membership and placement; absent in older workspace files.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub docking: Option<craft_ui::docking::Layout<String>>,
+    pub docking: Option<redrob_craft_ui::docking::Layout<String>>,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
-    pub docking_hidden: std::collections::BTreeMap<String, craft_ui::docking::Location<String>>,
+    pub docking_hidden: std::collections::BTreeMap<String, redrob_craft_ui::docking::Location<String>>,
     /// The workspace's own icon column (see [`UiState::icon_groups`]).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_groups: Option<Vec<Vec<String>>>,
@@ -196,10 +196,10 @@ pub struct UiState {
     /// Tab / Shift+Tab: 1 = every panel hidden, 2 = all but the Tools panel (0 = shown).
     pub hidden_panels: u8,
     /// Edit › Color Settings (re-applied at start).
-    pub color_settings: Option<designcraft_color::cms::ColorSettings>,
+    pub color_settings: Option<redrob_layout_color::cms::ColorSettings>,
     /// View › Proof Colors and View › Proof Setup.
     pub proof_colors: bool,
-    pub proof_setup: designcraft_color::cms::ProofSetup,
+    pub proof_setup: redrob_layout_color::cms::ProofSetup,
     /// Edit › Spelling › Dynamic Spelling: misspelled words underlined on the canvas.
     pub dynamic_spelling: bool,
     /// Preferences › Story Editor Display: text size (points).
@@ -216,7 +216,7 @@ pub struct UiState {
     #[serde(skip)]
     pub ink_limit: Option<f32>,
     /// View › Display Performance.
-    pub display_quality: designcraft_render::DisplayQuality,
+    pub display_quality: redrob_layout_render::DisplayQuality,
     /// Preferences › Interface › UI scaling (1 = 100%).
     pub ui_scale: f32,
     /// Preferences › Appearance of Black: 100% K on screen as rich black (InDesign's default,
@@ -236,9 +236,9 @@ pub struct UiState {
     pub floating: Vec<(String, [f32; 2])>,
     /// Shared panel layout after the user customizes the legacy dock.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub docking: Option<craft_ui::docking::Layout<String>>,
+    pub docking: Option<redrob_craft_ui::docking::Layout<String>>,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
-    pub docking_hidden: std::collections::BTreeMap<String, craft_ui::docking::Location<String>>,
+    pub docking_hidden: std::collections::BTreeMap<String, redrob_craft_ui::docking::Location<String>>,
     /// Invalidates in-flight gestures when a workspace is replaced.
     #[serde(skip)]
     pub docking_generation: u64,
@@ -348,7 +348,7 @@ impl Default for UiState {
             pdf_export: PdfExportSettings::default(),
             separation: None,
             ink_limit: None,
-            display_quality: designcraft_render::DisplayQuality::High,
+            display_quality: redrob_layout_render::DisplayQuality::High,
             ui_scale: 1.0,
             rich_black: true,
             overprint_preview: false,
@@ -447,8 +447,8 @@ pub struct Shown {
 
 impl CanvasCache {
     pub fn new() -> Self {
-        let mut renderer = designcraft_render::Renderer::new();
-        renderer.threads = designcraft_render::default_threads();
+        let mut renderer = redrob_layout_render::Renderer::new();
+        renderer.threads = redrob_layout_render::default_threads();
         CanvasCache {
             renderer,
             texture: None,
@@ -461,7 +461,7 @@ impl CanvasCache {
             last_ms: 0.0,
             shown_doc: None,
             pending_doc: None,
-            patcher: designcraft_render::Renderer::new(),
+            patcher: redrob_layout_render::Renderer::new(),
             patches: 0,
         }
     }
@@ -474,7 +474,7 @@ impl Default for CanvasCache {
 }
 
 pub struct CanvasCache {
-    pub renderer: designcraft_render::Renderer,
+    pub renderer: redrob_layout_render::Renderer,
     pub texture: Option<egui::TextureHandle>,
     pub shown: Option<Shown>,
     /// The request in flight on the worker.
@@ -485,11 +485,11 @@ pub struct CanvasCache {
     pub worker_started: bool,
     pub last_ms: f64,
     /// The document the texture shows (to repaint only what an edit changed).
-    pub shown_doc: Option<std::sync::Arc<designcraft_doc::Document>>,
+    pub shown_doc: Option<std::sync::Arc<redrob_layout_doc::Document>>,
     /// Document of the request in flight.
-    pub pending_doc: Option<std::sync::Arc<designcraft_doc::Document>>,
+    pub pending_doc: Option<std::sync::Arc<redrob_layout_doc::Document>>,
     /// Renders damaged regions (its own context: region sizes vary).
-    pub patcher: designcraft_render::Renderer,
+    pub patcher: redrob_layout_render::Renderer,
     /// Partial repaints / full renders since start (perf readout).
     pub patches: u64,
 }
@@ -520,7 +520,7 @@ pub struct DesignApp {
     pub focus_pane: u8,
     pub other_pane: Option<(CanvasCache, Option<egui::Rect>)>,
     /// Power Zoom in progress: the zoom to return to and the canvas point it will centre on.
-    pub power_zoom: Option<(f64, designcraft_geom::Point)>,
+    pub power_zoom: Option<(f64, redrob_layout_geom::Point)>,
     /// The persisted colour settings have been applied this session.
     pub color_applied: bool,
     pub perf: Perf,
@@ -530,7 +530,7 @@ pub struct DesignApp {
     control_input_frame: std::sync::Arc<std::sync::atomic::AtomicBool>,
     clipboard_guard_installed: bool,
     /// Story open in the Story Editor.
-    pub story_editor: Option<designcraft_doc::StoryId>,
+    pub story_editor: Option<redrob_layout_doc::StoryId>,
     control_rx: Option<Receiver<ControlRequest>>,
     pending_shots: Vec<(u64, Option<String>, Sender<ControlResponse>, f64)>,
     queued_shots: Vec<(u64, f64, u32)>,
@@ -579,7 +579,7 @@ struct QuitState {
 impl DesignApp {
     pub fn new(session: Session, services: Services) -> Self {
         // The font menus and the first file opened need the installed fonts: catalog them now.
-        designcraft_fonts::FontDb::global().scan_in_background();
+        redrob_layout_fonts::FontDb::global().scan_in_background();
         DesignApp {
             pending_pdf: None,
             session,
@@ -800,7 +800,7 @@ impl DesignApp {
                 // Image Import Options: a multi-page PDF asks which page.
                 Some(path) if purpose == "place" && path.to_ascii_lowercase().ends_with(".pdf") => {
                     let pages =
-                        self.services.read.as_mut().and_then(|r| r(&path).ok()).and_then(|b| designcraft_render::pdf_page_count(&b)).unwrap_or(1);
+                        self.services.read.as_mut().and_then(|r| r(&path).ok()).and_then(|b| redrob_layout_render::pdf_page_count(&b)).unwrap_or(1);
                     if pages > 1 {
                         self.ui.dialog =
                             Some(dialogs::Dialog::new("pdfImport", json!({"path": path, "page": "1", "pages": pages, "target": target})));
@@ -842,7 +842,7 @@ impl DesignApp {
     pub(crate) fn confirm_pdf_import(&mut self, page: u64, crop: String) -> Result<Value, String> {
         let file = self.pending_pdf.take().ok_or("PDF import cancelled: no pending file")?;
         self.activate_import_target(&file.request)?;
-        let params = json!({"name": file.name, "base64": designcraft_engine::cmd::base64_encode(&file.bytes), "pdfPage": page, "pdfCrop": crop});
+        let params = json!({"name": file.name, "base64": redrob_layout_engine::cmd::base64_encode(&file.bytes), "pdfPage": page, "pdfCrop": crop});
         if file.request.purpose == "place" { self.place_file(params) } else { self.open_file("file.place", params) }
     }
 
@@ -886,7 +886,7 @@ impl DesignApp {
             self.activate_import_target(&file.request)?;
         }
         if place && lower.ends_with(".pdf") {
-            let pages = designcraft_render::pdf_page_count(&file.bytes).unwrap_or(1);
+            let pages = redrob_layout_render::pdf_page_count(&file.bytes).unwrap_or(1);
             if pages > 1 {
                 self.ui.dialog =
                     Some(dialogs::Dialog::new("pdfImport", json!({"async": true, "name": file.name.clone(), "page": "1", "pages": pages})));
@@ -894,7 +894,7 @@ impl DesignApp {
                 return Ok(Value::Null);
             }
         }
-        let b64 = designcraft_engine::cmd::base64_encode(&file.bytes);
+        let b64 = redrob_layout_engine::cmd::base64_encode(&file.bytes);
         if lower.ends_with(".ase") || file.request.purpose == "swatches" {
             self.run("swatch.load", json!({"base64": b64}))
         } else if file.request.purpose == "place" {
@@ -920,7 +920,7 @@ impl DesignApp {
         if !self.color_applied {
             self.color_applied = true;
             if let Some(cs) = self.ui.color_settings.clone() {
-                let _ = designcraft_color::cms::set_active(&cs);
+                let _ = redrob_layout_color::cms::set_active(&cs);
             }
         }
         let scale = self.ui.ui_scale.clamp(0.5, 3.0);
@@ -1156,7 +1156,7 @@ impl DesignApp {
             o.insert("spread".into(), serde_json::to_value(sr).unwrap_or(Value::Null));
             o.insert("x".into(), json!(at.x));
             o.insert("y".into(), json!(at.y));
-            if let (designcraft_doc::SpreadRef::Doc(si), Some(st)) = (sr, self.session.active()) {
+            if let (redrob_layout_doc::SpreadRef::Doc(si), Some(st)) = (sr, self.session.active()) {
                 let pi = st.doc.spreads.get(si).and_then(|s| s.page_at_x(at.x)).unwrap_or(0);
                 o.insert("page".into(), json!(st.doc.first_page_of_spread(si) + pi + 1));
             }
@@ -1254,7 +1254,7 @@ impl DesignApp {
         if presenting || self.ui.hidden_panels != 0 {
             panel_docking::cancel_gesture(self, &ctx);
         }
-        let dbg = std::env::var_os("DESIGNCRAFT_DEBUG_LAYOUT").is_some();
+        let dbg = std::env::var_os("REDROB_LAYOUT_DEBUG_LAYOUT").or_else(|| std::env::var_os("DESIGNCRAFT_DEBUG_LAYOUT")).is_some(); // legacy: the upstream variable is read when ours is unset
         if dbg {
             eprintln!("root start {:?}", ui.available_rect_before_wrap());
         }
@@ -1287,10 +1287,10 @@ impl DesignApp {
             }
             let split_layout = (self.split && !presenting)
                 .then(|| {
-                    craft_ui::layout::split_rect(
+                    redrob_craft_ui::layout::split_rect(
                         ui.available_rect_before_wrap(),
-                        craft_ui::layout::SplitAxis::Horizontal,
-                        craft_ui::layout::SplitSize::Ratio(0.5),
+                        redrob_craft_ui::layout::SplitAxis::Horizontal,
+                        redrob_craft_ui::layout::SplitSize::Ratio(0.5),
                         2.0,
                         0.0,
                     )
@@ -1453,7 +1453,7 @@ pub fn opens_as_document(name: &str) -> bool {
     let n = name.to_ascii_lowercase();
     // InDesign files go to the open path too, which says how to bring them over (as IDML)
     // instead of failing to place them as a graphic.
-    [".designcraft", ".idml", ".indd", ".indt"].iter().any(|ext| n.ends_with(ext))
+    [".rlayout", ".idml", ".indd", ".indt"].iter().any(|ext| n.ends_with(ext)) || n.ends_with(".designcraft") // legacy: upstream Layout documents still open as documents
 }
 
 pub fn now_ms() -> f64 {
@@ -1502,7 +1502,7 @@ mod tests {
 
     /// An app with one document that has an unsaved edit.
     fn app_with_unsaved_document() -> DesignApp {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), Services::default());
         app.run("file.new", json!({})).unwrap();
         assert!(!app.session.documents()[0].is_dirty(), "a new document has nothing to save");
         app.run("frame.create", json!({"rect": [36, 36, 136, 136]})).unwrap();
@@ -1540,7 +1540,7 @@ mod tests {
     #[test]
     fn closing_with_save_writes_the_file_then_closes() {
         let mut app = app_with_unsaved_document();
-        let path = std::env::temp_dir().join(format!("designcraft-close-test-{}.designcraft", std::process::id()));
+        let path = std::env::temp_dir().join(format!("designcraft-close-test-{}.rlayout", std::process::id()));
         app.run("file.saveAs", json!({"path": path})).unwrap();
         let saved = std::fs::metadata(&path).unwrap().len();
         app.run("frame.create", json!({"rect": [200, 200, 300, 300]})).unwrap();
@@ -1565,7 +1565,7 @@ mod tests {
 
     #[test]
     fn closing_a_saved_document_does_not_ask() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), Services::default());
         app.run("file.new", json!({})).unwrap();
         menus::activate(&mut app, "file.close", &Value::Null);
         assert!(app.session.documents().is_empty());
@@ -1686,7 +1686,7 @@ mod tests {
         let completed = quit_frame(&mut app, &ctx, true);
         assert!(app.session.documents().is_empty());
 
-        let mut clean = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+        let mut clean = DesignApp::new(redrob_layout_engine::Session::new(), Services::default());
         clean.run("file.new", json!({})).unwrap();
         let clean_close = quit_frame(&mut clean, &ctx, true);
         let mut control = app_with_unsaved_document();
@@ -1732,7 +1732,7 @@ mod tests {
             assert!(std::sync::Arc::ptr_eq(&document.doc, &original));
             assert!(document.is_dirty());
             assert!(!document.history.undo.is_empty());
-            assert!(directory.path().join(format!("{}.designcraft", document.uid)).exists());
+            assert!(directory.path().join(format!("{}.rlayout", document.uid)).exists());
         }
         // A fresh Dock Quit must ask about the first document again after cancellation.
         assert!(quit_frame(&mut app, &ctx, true).contains(&egui::ViewportCommand::CancelClose));
@@ -1746,7 +1746,7 @@ mod tests {
         second_unsaved_document(&mut app);
         let uids: Vec<_> = app.session.documents().iter().map(|d| d.uid).collect();
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("saved.designcraft");
+        let path = directory.path().join("saved.rlayout");
         let chosen = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(chosen.clone())));
         app.session.recovery_dir = Some(directory.path().join("recovery"));
@@ -1762,11 +1762,11 @@ mod tests {
         discard_quit_dialog(&mut app);
         assert!(quit_frame(&mut app, &ctx, false).contains(&egui::ViewportCommand::Close));
         assert_eq!(app.session.documents().len(), 2);
-        assert!(app.session.recovery_dir.as_ref().unwrap().join(format!("{}.designcraft", uids[1])).exists());
+        assert!(app.session.recovery_dir.as_ref().unwrap().join(format!("{}.rlayout", uids[1])).exists());
         assert!(quit_frame(&mut app, &ctx, true).is_empty());
         assert!(app.session.documents().is_empty());
         assert!(path.exists());
-        assert_eq!(designcraft_engine::Session::new().execute("file.open", &json!({"path": path})).unwrap()["index"], 0);
+        assert_eq!(redrob_layout_engine::Session::new().execute("file.open", &json!({"path": path})).unwrap()["index"], 0);
         assert_eq!(std::fs::read_dir(app.session.recovery_dir.as_ref().unwrap()).unwrap().count(), 0);
     }
 
@@ -1808,7 +1808,7 @@ mod tests {
         let path = std::env::temp_dir()
             .join(format!("designcraft-quit-missing-{}-{}", std::process::id(), app.session.active().unwrap().uid))
             .join("missing")
-            .join("document.designcraft");
+            .join("document.rlayout");
         assert!(!path.parent().unwrap().exists());
         let picked = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(picked.clone())));
@@ -1830,7 +1830,7 @@ mod tests {
         let mut app = app_with_unsaved_document();
         second_unsaved_document(&mut app);
         let first = app.session.documents()[0].uid;
-        let path = std::env::temp_dir().join(format!("designcraft-quit-save-{}-{first}.designcraft", std::process::id()));
+        let path = std::env::temp_dir().join(format!("designcraft-quit-save-{}-{first}.rlayout", std::process::id()));
         let picked = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(picked.clone())));
         quit_frame(&mut app, &ctx, true);
@@ -1883,7 +1883,7 @@ mod tests {
         let mut app = app_with_unsaved_document();
         second_unsaved_document(&mut app);
         let first = app.session.documents()[0].uid;
-        let path = std::env::temp_dir().join(format!("designcraft-quit-uid-{}-{first}.designcraft", std::process::id()));
+        let path = std::env::temp_dir().join(format!("designcraft-quit-uid-{}-{first}.rlayout", std::process::id()));
         let picked = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(picked.clone())));
         quit_frame(&mut app, &ctx, true);
@@ -1905,7 +1905,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("designcraft-quit-recovery-{}-{uid}", std::process::id()));
         app.session.recovery_dir = Some(dir.clone());
         app.run("file.recovery.save", json!({})).unwrap();
-        let entry = dir.join(format!("{uid}.designcraft"));
+        let entry = dir.join(format!("{uid}.rlayout"));
         quit_frame(&mut app, &ctx, true);
         discard_quit_dialog(&mut app);
         assert!(quit_frame(&mut app, &ctx, false).contains(&egui::ViewportCommand::Close));
@@ -1968,7 +1968,7 @@ mod tests {
     #[test]
     fn quitting_without_unsaved_changes_closes_at_once() {
         let ctx = egui::Context::default();
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), Services::default());
         app.run("file.new", json!({})).unwrap();
         // Quit (⌘Q) closes the window like its close button.
         app.run("app.quit", json!({})).unwrap();
@@ -1996,7 +1996,7 @@ mod tests {
     #[test]
     fn control_bar_shows_its_second_row() {
         use egui_kittest::kittest::Queryable as _;
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), Services::default());
         app.run("file.newSample", json!({})).unwrap();
         app.ui.control_bar = true;
         let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 900.0)).build_ui_state(
@@ -2090,7 +2090,7 @@ mod tests {
 
     #[test]
     fn dropped_documents_open_and_the_rest_is_placed() {
-        for name in ["a.designcraft", "B.IDML", "c.indd", "D.INDT"] {
+        for name in ["a.rlayout", "B.IDML", "c.indd", "D.INDT"] {
             assert!(opens_as_document(name), "{name}");
         }
         for name in ["a.png", "b.pdf", "idml.txt", "c.idml.zip"] {
@@ -2101,7 +2101,7 @@ mod tests {
     #[test]
     fn dropping_an_unreadable_file_alerts() {
         // A document opens, so it says it can't be opened.
-        let path = unreadable_file("broken.designcraft");
+        let path = unreadable_file("broken.rlayout");
         let mut app = DesignApp::new(Session::new(), Services::default());
         let r = app.open_dropped(&path.to_string_lossy());
         let _ = std::fs::remove_file(&path);
@@ -2130,7 +2130,7 @@ mod tests {
         app.run("layout.parents.edit", json!({"on": true})).unwrap();
         let _ = app.view_mut();
         let path = std::env::temp_dir().join(format!("designcraft-ui-{}-drop.png", std::process::id()));
-        std::fs::write(&path, designcraft_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
+        std::fs::write(&path, redrob_layout_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
         let r = app.open_dropped(&path.to_string_lossy());
         let _ = std::fs::remove_file(&path);
         r.unwrap();
@@ -2145,7 +2145,7 @@ mod tests {
         source.execute("file.new", &json!({})).unwrap();
         source.execute("swatch.create", &json!({"name": "Dropped Teal", "color": "#108080"})).unwrap();
         let data = source.execute("swatch.save", &json!({"names": ["Dropped Teal"]})).unwrap();
-        let bytes = designcraft_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
+        let bytes = redrob_layout_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
         for name in ["palette.ase", "PALETTE.ASE"] {
             let path = std::env::temp_dir().join(format!("designcraft-ui-{}-{name}", std::process::id()));
             std::fs::write(&path, &bytes).unwrap();
@@ -2163,7 +2163,7 @@ mod tests {
 
     #[test]
     fn file_open_failures_show_an_alert() {
-        let path = unreadable_file("open.designcraft");
+        let path = unreadable_file("open.rlayout");
         let picked = path.to_string_lossy().to_string();
         let services = Services { pick_open: Some(Box::new(move |_| Some(picked.clone()))), ..Default::default() };
         let mut app = DesignApp::new(Session::new(), services);
@@ -2180,11 +2180,11 @@ mod tests {
     #[test]
     fn other_command_errors_stay_in_the_status_line() {
         let mut app = DesignApp::new(Session::new(), Services::default());
-        assert!(app.run("file.open", json!({"path": "/nonexistent/x.designcraft"})).is_err());
+        assert!(app.run("file.open", json!({"path": "/nonexistent/x.rlayout"})).is_err());
         assert!(app.ui.dialog.is_none(), "a scripted file.open doesn't raise an alert");
         assert!(!app.ui.status.is_empty());
         // The control channel's app.open answers with the error; no alert waits for a click.
-        let (req, _rx) = control::ControlRequest::new("app.open", json!({"path": "/nonexistent/x.designcraft"}));
+        let (req, _rx) = control::ControlRequest::new("app.open", json!({"path": "/nonexistent/x.rlayout"}));
         let control::Outcome::Done(r) = control::handle(&mut app, &egui::Context::default(), &req) else { panic!("app.open answers") };
         assert_eq!(r["ok"], json!(false), "{r}");
         assert!(app.ui.dialog.is_none(), "a control-channel app.open doesn't raise an alert");
@@ -2204,7 +2204,7 @@ mod import_warning_tests {
         let spread = r#"<idPkg:Spread xmlns:idPkg="http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging"><Spread Self="s"><Page Self="p" GeometricBounds="0 0 100 100" ItemTransform="1 0 0 1 0 0"/><Rectangle Self="r" ItemTransform="1 0 0 1 0 0"/></Spread></idPkg:Spread>"#;
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
         let options = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
-        for (name, text) in [("mimetype", designcraft_idml::MIMETYPE), ("designmap.xml", &map), ("Spreads/one.xml", spread)] {
+        for (name, text) in [("mimetype", redrob_layout_idml::MIMETYPE), ("designmap.xml", &map), ("Spreads/one.xml", spread)] {
             zip.start_file(name, options).unwrap();
             zip.write_all(text.as_bytes()).unwrap();
         }
@@ -2241,8 +2241,9 @@ mod import_warning_tests {
     #[test]
     fn byte_open_reports_partial_import_warnings_without_losing_documents() {
         let mut app = app();
-        let result =
-            app.open_file("file.openBytes", json!({"name": "partial.idml", "base64": designcraft_engine::cmd::base64_encode(&idml(true))})).unwrap();
+        let result = app
+            .open_file("file.openBytes", json!({"name": "partial.idml", "base64": redrob_layout_engine::cmd::base64_encode(&idml(true))}))
+            .unwrap();
         assert_eq!(result["warnings"].as_array().unwrap().len(), 2);
         assert_partial_import_warning(&mut app, "partial.idml");
     }
@@ -2275,7 +2276,7 @@ mod import_warning_tests {
     fn complete_import_does_not_show_a_warning() {
         let mut app = app();
         let result = app
-            .open_file("file.openBytes", json!({"name": "complete.idml", "base64": designcraft_engine::cmd::base64_encode(&idml(false))}))
+            .open_file("file.openBytes", json!({"name": "complete.idml", "base64": redrob_layout_engine::cmd::base64_encode(&idml(false))}))
             .unwrap();
         assert_eq!(result["warnings"], json!([]));
         assert!(app.ui.dialog.is_none());
@@ -2451,9 +2452,9 @@ mod browser_import_tests {
         let mut source = Session::new();
         source.execute("file.new", &json!({"title": "source"})).unwrap();
         source.execute("frame.create", &json!({"rect": [10, 10, 50, 50], "content": "text", "text": "placed"})).unwrap();
-        let native = designcraft_engine::cmd::to_bytes(&source.doc().unwrap().doc);
-        let idml = designcraft_idml::export_idml(&source.doc().unwrap().doc);
-        for (name, bytes) in [("source.designcraft", native), ("source.idml", idml)] {
+        let native = redrob_layout_engine::cmd::to_bytes(&source.doc().unwrap().doc);
+        let idml = redrob_layout_idml::export_idml(&source.doc().unwrap().doc);
+        for (name, bytes) in [("source.rlayout", native), ("source.idml", idml)] {
             let mut app = app();
             let request = app.import_request("place");
             deliver(&mut app, request, name, bytes.clone());
@@ -2489,8 +2490,8 @@ mod browser_import_tests {
         assert!(app.session.documents()[1].doc.assets.is_empty());
         app.run("place.drop", json!({"x": 36, "y": 36})).unwrap();
         let exported = app.run("file.exportPdf", json!({})).unwrap();
-        let exported = designcraft_engine::cmd::base64_decode(exported["base64"].as_str().unwrap());
-        let pixels = designcraft_render::render_pdf_page(&exported, 0, 400).unwrap();
+        let exported = redrob_layout_engine::cmd::base64_decode(exported["base64"].as_str().unwrap());
+        let pixels = redrob_layout_render::render_pdf_page(&exported, 0, 400).unwrap();
         assert!(pixels.data().iter().filter(|p| p.g > 240 && p.r < 10 && p.b < 10).count() > 1000);
         assert_eq!(pixels.data().iter().filter(|p| p.r > 240 && p.g < 10 && p.b < 10).count(), 0);
     }
@@ -2505,8 +2506,8 @@ mod browser_import_tests {
         assert_eq!(app.session.tool_id(), "placeGun");
         assert!(app.session.loaded.is_some());
         assert_eq!(items(&app), 0);
-        let mods = designcraft_tools::Mods::default();
-        app.session.tool_key(designcraft_tools::ToolKey::Escape, mods, designcraft_engine::ViewInfo::at_zoom(1.0)).unwrap();
+        let mods = redrob_layout_tools::Mods::default();
+        app.session.tool_key(redrob_layout_tools::ToolKey::Escape, mods, redrob_layout_engine::ViewInfo::at_zoom(1.0)).unwrap();
         assert_eq!(app.session.tool_id(), "selection");
         assert!(app.session.loaded.is_none());
         // A click with the loaded cursor places the graphic at its natural size.
@@ -2514,7 +2515,7 @@ mod browser_import_tests {
         deliver(&mut app, request, "red.svg", image());
         app.run("place.drop", json!({"x": 100, "y": 100})).unwrap();
         let it = app.session.doc().unwrap().doc.spreads[0].items.last().unwrap();
-        assert_eq!(it.bounds(), designcraft_geom::Rect::new(100.0, 100.0, 107.5, 107.5), "10 CSS px = 7.5 pt");
+        assert_eq!(it.bounds(), redrob_layout_geom::Rect::new(100.0, 100.0, 107.5, 107.5), "10 CSS px = 7.5 pt");
         // An empty graphic frame selected: the graphic fills it.
         let f = app.run("frame.create", json!({"rect": [200, 200, 300, 300], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
         app.run("selection.set", json!({"ids": [f]})).unwrap();
@@ -2523,8 +2524,8 @@ mod browser_import_tests {
         assert_eq!(app.session.tool_id(), "selection");
         assert!(app.session.loaded.is_none());
         assert_eq!(items(&app), 2);
-        let frame = app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(f)).unwrap();
-        assert!(matches!(frame.content, designcraft_doc::Content::Graphic(_)));
+        let frame = app.session.doc().unwrap().doc.item(redrob_layout_doc::ItemId(f)).unwrap();
+        assert!(matches!(frame.content, redrob_layout_doc::Content::Graphic(_)));
     }
 
     #[test]
@@ -2554,9 +2555,9 @@ mod browser_import_tests {
     #[test]
     fn drop_routing_and_nonlayout_open_remain_compatible() {
         let mut app = app();
-        let native = designcraft_engine::cmd::to_bytes(&app.session.doc().unwrap().doc);
+        let native = redrob_layout_engine::cmd::to_bytes(&app.session.doc().unwrap().doc);
         let request = app.import_request("drop");
-        deliver(&mut app, request, "document.designcraft", native);
+        deliver(&mut app, request, "document.rlayout", native);
         assert_eq!(app.session.documents().len(), 2);
         let request = app.import_request("drop");
         app.run("file.activate", json!({"index": 0})).unwrap();
@@ -2576,7 +2577,7 @@ mod browser_import_tests {
         source.execute("file.new", &json!({})).unwrap();
         source.execute("swatch.create", &json!({"name": "Import Teal", "color": "#108080"})).unwrap();
         let data = source.execute("swatch.save", &json!({"names": ["Import Teal"]})).unwrap();
-        let bytes = designcraft_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
+        let bytes = redrob_layout_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
         for (purpose, name) in [("swatches", "picker-file"), ("drop", "palette.ase")] {
             let mut app = app();
             let request = app.import_request(purpose);

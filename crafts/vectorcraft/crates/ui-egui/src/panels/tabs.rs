@@ -2,8 +2,8 @@
 //! adds a stop, dragging moves one and dragging it off the ruler deletes it.
 
 use egui::{Sense, Stroke, Ui, vec2};
+use redrob_vector_doc::{Node, NodeKind, TabAlign, TabStop, TextKind};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Node, NodeKind, TabAlign, TabStop, TextKind};
 
 use super::{first_selected, pstate, set_pstate};
 use crate::VectorcraftApp;
@@ -279,7 +279,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn frame(app: &mut VectorcraftApp) {
         let ctx = egui::Context::default();

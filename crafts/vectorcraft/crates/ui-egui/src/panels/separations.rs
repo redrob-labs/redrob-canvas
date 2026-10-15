@@ -4,9 +4,9 @@
 //! Setup (working spaces, intent, black-point compensation, proof target, gamut check).
 
 use egui::{Sense, Ui, vec2};
+use redrob_vector_color::cms::{self, Intent, ProfileKind};
+use redrob_vector_render::proof;
 use serde_json::{Value, json};
-use vectorcraft_color::cms::{self, Intent, ProfileKind};
-use vectorcraft_render::proof;
 
 use crate::VectorcraftApp;
 use crate::theme::Tokens;
@@ -129,7 +129,7 @@ fn settings_section(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
     });
     if let Some(d) = app.session.active() {
-        let (_, cmyk) = vectorcraft_engine::cmd::colormgmt::doc_profiles(&d.doc);
+        let (_, cmyk) = redrob_vector_engine::cmd::colormgmt::doc_profiles(&d.doc);
         const WORKING: &str = "Working CMYK (don't tag)";
         ui.horizontal(|ui| {
             ui.label(tl!("Assign:"));

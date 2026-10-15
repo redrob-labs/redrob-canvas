@@ -3,7 +3,7 @@
 use std::io::Write;
 
 use base64::Engine as _;
-use photocraft_automation::{AuthorizedWorkspace, PhotocraftMcp};
+use redrob_photo_automation::{AuthorizedWorkspace, PhotocraftMcp};
 use rmcp::model::{CallToolRequestParams, CallToolResult, ClientConfig};
 use rmcp::service::RunningService;
 use rmcp::{ClientHandler, RoleClient, ServiceExt};
@@ -133,20 +133,20 @@ async fn headless_edit_render_save_roundtrip() {
     let img = r.content.iter().find_map(|c| c.as_image()).expect("image content");
     assert_eq!(img.mime_type, "image/png");
     let png = base64::engine::general_purpose::STANDARD.decode(&img.data).unwrap();
-    let decoded = photocraft_codecs::decode(&png).unwrap();
+    let decoded = redrob_photo_codecs::decode(&png).unwrap();
     assert_eq!(decoded.dimensions(), (32, 24));
 
-    let r = json_of(&call(&client, "doc_save", json!({"path": "agent.pcraft"})).await);
-    assert_eq!(r["path"], "agent.pcraft");
+    let r = json_of(&call(&client, "doc_save", json!({"path": "agent.rphoto"})).await);
+    assert_eq!(r["path"], "agent.rphoto");
     let png_path = dir.join("agent.png");
     json_of(&call(&client, "doc_export", json!({"path": "agent.png"})).await);
     let jpg_path = dir.join("agent.jpg");
     json_of(&call(&client, "doc_export", json!({"path": "agent.jpg", "quality": 70})).await);
-    assert!(photocraft_codecs::decode(&std::fs::read(&png_path).unwrap()).is_ok());
+    assert!(redrob_photo_codecs::decode(&std::fs::read(&png_path).unwrap()).is_ok());
     assert!(std::fs::metadata(&jpg_path).unwrap().len() > 100);
 
     // Re-open the native file: identical layer tree.
-    let o = json_of(&call(&client, "doc_open", json!({"path": "agent.pcraft"})).await);
+    let o = json_of(&call(&client, "doc_open", json!({"path": "agent.rphoto"})).await);
     assert_eq!(o["index"], 1);
     let doc2 = json_of(&call(&client, "doc_inspect", json!({"index": 1})).await);
     assert_eq!(doc2["layers"].as_array().unwrap().len(), 2);
@@ -350,7 +350,7 @@ async fn bridge_doc_save_rejects_headless_only_options_instead_of_saving_with_de
         json!({"path": "out.jpg", "quality": 50}),
         json!({"path": "out.png", "format": "png"}),
         json!({"path": "out.tif", "tiffLayers": true}),
-        json!({"path": "out.pcraft", "index": 0}),
+        json!({"path": "out.rphoto", "index": 0}),
     ] {
         let r = call(&client, "doc_save", params.clone()).await;
         assert_eq!(r.is_error, Some(true), "{params}: {:?}", text(&r));
@@ -359,7 +359,7 @@ async fn bridge_doc_save_rejects_headless_only_options_instead_of_saving_with_de
 }
 
 /// #946: like headless mode, a bridged `doc_save` without `path` reaches the app's `app.save`,
-/// which writes back to the document's own PSD, PSB or .pcraft file or refuses with its own error.
+/// which writes back to the document's own PSD, PSB or .rphoto file or refuses with its own error.
 #[tokio::test(flavor = "multi_thread")]
 async fn bridge_doc_save_without_path_forwards_app_save_for_write_back() {
     let (addr, app) = fake_app().await;
@@ -417,7 +417,7 @@ async fn headless_doc_save_writes_targa_bits() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn bridge_response_budget_drops_connection_without_retrying_the_operation() {
-    use photocraft_automation::{BridgeClient, budgets::MAX_RESPONSE_BYTES};
+    use redrob_photo_automation::{BridgeClient, budgets::MAX_RESPONSE_BYTES};
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap().to_string();
     let app = tokio::spawn(async move {
@@ -452,9 +452,12 @@ async fn bridge_response_budget_drops_connection_without_retrying_the_operation(
 #[tokio::test(flavor = "multi_thread")]
 async fn open_png_and_inspect() {
     let dir = tmp("open");
-    let img = photocraft_codecs::Image::from_u8(8, 4, photocraft_codecs::ChannelLayout::Rgb, vec![200; 96]).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(8, 4, redrob_photo_codecs::ChannelLayout::Rgb, vec![200; 96]).unwrap();
     let path = dir.join("in.png");
-    std::fs::File::create(&path).unwrap().write_all(&photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &Default::default()).unwrap()).unwrap();
+    std::fs::File::create(&path)
+        .unwrap()
+        .write_all(&redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap())
+        .unwrap();
     let client = connect(headless_in(&dir)).await;
     let o = json_of(&call(&client, "doc_open", json!({"path": "in.png"})).await);
     assert_eq!((o["width"].as_u64(), o["height"].as_u64()), (Some(8), Some(4)));
@@ -468,7 +471,7 @@ async fn open_png_and_inspect() {
 #[tokio::test(flavor = "multi_thread")]
 async fn open_reports_decode_warnings() {
     let dir = tmp("open-warnings");
-    let jpeg = write_image(&dir, "whole.jpg", photocraft_codecs::Format::Jpeg);
+    let jpeg = write_image(&dir, "whole.jpg", redrob_photo_codecs::Format::Jpeg);
     std::fs::write(dir.join("cut.jpg"), &jpeg[..jpeg.len() - 4]).unwrap();
     // Two 1x1 frames.
     let mut gif = b"GIF89a\x01\0\x01\0\x80\0\0\0\0\0\xFF\xFF\xFF".to_vec();
@@ -486,9 +489,9 @@ async fn open_reports_decode_warnings() {
     cleanup(&dir);
 }
 
-fn write_image(dir: &std::path::Path, name: &str, format: photocraft_codecs::Format) -> Vec<u8> {
-    let img = photocraft_codecs::Image::from_u8(16, 8, photocraft_codecs::ChannelLayout::Rgb, (0..384).map(|i| (i * 7 % 251) as u8).collect()).unwrap();
-    let bytes = photocraft_codecs::encode(&img, format, &Default::default()).unwrap();
+fn write_image(dir: &std::path::Path, name: &str, format: redrob_photo_codecs::Format) -> Vec<u8> {
+    let img = redrob_photo_codecs::Image::from_u8(16, 8, redrob_photo_codecs::ChannelLayout::Rgb, (0..384).map(|i| (i * 7 % 251) as u8).collect()).unwrap();
+    let bytes = redrob_photo_codecs::encode(&img, format, &Default::default()).unwrap();
     std::fs::write(dir.join(name), &bytes).unwrap();
     bytes
 }
@@ -496,7 +499,7 @@ fn write_image(dir: &std::path::Path, name: &str, format: photocraft_codecs::For
 #[tokio::test(flavor = "multi_thread")]
 async fn affinity_preview_warns_and_requires_a_new_save_path() {
     let dir = tmp("affinity-preview");
-    let png = write_image(&dir, "preview.png", photocraft_codecs::Format::Png);
+    let png = write_image(&dir, "preview.png", redrob_photo_codecs::Format::Png);
     // Synthetic v12 envelope; the native document graph is intentionally absent.
     let mut bytes = vec![0; 72];
     bytes[..4].copy_from_slice(b"\x00\xffKA");
@@ -529,8 +532,8 @@ async fn affinity_preview_warns_and_requires_a_new_save_path() {
         assert!(text(&native).contains("Affinity export"));
         assert_eq!(std::fs::read(dir.join(name)).unwrap(), bytes);
     }
-    json_of(&call(&client, "doc_save", json!({"path": "copy.pcraft"})).await);
-    assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "copy.pcraft");
+    json_of(&call(&client, "doc_save", json!({"path": "copy.rphoto"})).await);
+    assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "copy.rphoto");
     assert_eq!(std::fs::read(dir.join("source.af")).unwrap(), bytes);
     client.cancel().await.unwrap();
     cleanup(&dir);
@@ -540,8 +543,8 @@ async fn affinity_preview_warns_and_requires_a_new_save_path() {
 #[tokio::test(flavor = "multi_thread")]
 async fn save_without_path_never_flattens_over_the_opened_file() {
     let dir = tmp("save-in-place");
-    let png = write_image(&dir, "seed.png", photocraft_codecs::Format::Png);
-    let jpg = write_image(&dir, "seed.jpg", photocraft_codecs::Format::Jpeg);
+    let png = write_image(&dir, "seed.png", redrob_photo_codecs::Format::Png);
+    let jpg = write_image(&dir, "seed.jpg", redrob_photo_codecs::Format::Jpeg);
     let client = connect(headless_in(&dir)).await;
     let refused = |r: &CallToolResult| r.is_error == Some(true) && text(r).contains("pass `path`");
 
@@ -569,12 +572,12 @@ async fn save_without_path_never_flattens_over_the_opened_file() {
     assert!(refused(&r), "{}", text(&r));
     assert_eq!(std::fs::read(dir.join("layered.psd")).unwrap(), psd);
     assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "layered.psd");
-    assert!(photocraft_io::is_psd(&std::fs::read(dir.join("layered.psd")).unwrap()));
+    assert!(redrob_photo_io::is_psd(&std::fs::read(dir.join("layered.psd")).unwrap()));
 
-    // Once saved as .pcraft, a flat-born document saves in place there.
+    // Once saved as .rphoto, a flat-born document saves in place there.
     json_of(&call(&client, "doc_select", json!({"index": 0})).await);
-    json_of(&call(&client, "doc_save", json!({"path": "work.pcraft"})).await);
-    assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "work.pcraft");
+    json_of(&call(&client, "doc_save", json!({"path": "work.rphoto"})).await);
+    assert_eq!(json_of(&call(&client, "doc_save", json!({})).await)["path"], "work.rphoto");
     assert_eq!(std::fs::read(dir.join("seed.png")).unwrap(), png);
 
     // A template opens untitled, without its path.
@@ -595,8 +598,8 @@ async fn filesystem_policy_rejects_absolute_and_escaping_paths_before_effects() 
     std::fs::create_dir_all(&root).unwrap();
     std::fs::create_dir_all(&outside).unwrap();
 
-    let img = photocraft_codecs::Image::from_u8(4, 3, photocraft_codecs::ChannelLayout::Rgb, vec![42; 36]).unwrap();
-    let bytes = photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(4, 3, redrob_photo_codecs::ChannelLayout::Rgb, vec![42; 36]).unwrap();
+    let bytes = redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap();
     std::fs::write(root.join("inside.png"), bytes).unwrap();
     let client = connect(headless_in(&root)).await;
 
@@ -633,8 +636,8 @@ async fn doc_place_is_capability_scoped() {
     let outside = base.join("outside");
     std::fs::create_dir_all(&root).unwrap();
     std::fs::create_dir_all(&outside).unwrap();
-    let img = photocraft_codecs::Image::from_u8(8, 6, photocraft_codecs::ChannelLayout::Rgb, vec![42; 144]).unwrap();
-    let bytes = photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(8, 6, redrob_photo_codecs::ChannelLayout::Rgb, vec![42; 144]).unwrap();
+    let bytes = redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap();
     std::fs::write(root.join("inside.png"), &bytes).unwrap();
     std::fs::write(outside.join("outside.png"), bytes).unwrap();
     let client = connect(headless_in(&root)).await;
@@ -761,19 +764,19 @@ async fn embedded_smart_objects_can_be_edited_saved_and_unpacked_without_file_au
 
 #[tokio::test(flavor = "multi_thread")]
 async fn smart_object_commands_refuse_real_linked_files_without_changing_the_session() {
-    use photocraft_engine::doc::{LayerContent, SmartSource};
+    use redrob_photo_engine::doc::{LayerContent, SmartSource};
 
     let dir = tmp("linked-smart-object");
-    let original = write_image(&dir, "external.png", photocraft_codecs::Format::Png);
-    let mut session = photocraft_engine::Session::new();
+    let original = write_image(&dir, "external.png", redrob_photo_codecs::Format::Png);
+    let mut session = redrob_photo_engine::Session::new();
     session.execute("file.new", json!({"width": 16, "height": 8, "background": "white"})).unwrap();
     let layer = session.execute("layer.smartObjects.convertToSmartObject", json!({})).unwrap()["layer"].clone();
     let state = session.active_mut().unwrap();
     let LayerContent::Smart(smart) = &mut std::sync::Arc::make_mut(&mut state.doc).layers[0].content else { panic!("smart object") };
     smart.source = SmartSource::Linked { path: dir.join("external.png").to_string_lossy().into_owned() };
-    std::fs::write(dir.join("parent.pcraft"), photocraft_engine::smart_cmds::encode_source(&state.doc).unwrap()).unwrap();
+    std::fs::write(dir.join("parent.rphoto"), redrob_photo_engine::smart_cmds::encode_source(&state.doc).unwrap()).unwrap();
     let client = connect(headless_in(&dir)).await;
-    json_of(&call(&client, "doc_open", json!({"path": "parent.pcraft"})).await);
+    json_of(&call(&client, "doc_open", json!({"path": "parent.rphoto"})).await);
     let before = json_of(&call(&client, "doc_inspect", json!({})).await);
     for id in ["layer.smartObjects.editContents", "layer.smartObjects.convertToLayers"] {
         let response = call(&client, "command_run", json!({"id": id, "params": {"layer": layer}})).await;
@@ -829,8 +832,8 @@ async fn fake_app_with_screenshot(screenshot_png: Option<Vec<u8>>) -> (String, t
                 "ui.pointer" => json!({"id": id, "ok": true, "result": req["params"]}),
                 "ui.screenshot" => {
                     let bytes = screenshot_png.clone().unwrap_or_else(|| {
-                        let img = photocraft_codecs::Image::from_u8(40, 20, photocraft_codecs::ChannelLayout::Rgba, vec![9; 3200]).unwrap();
-                        photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &Default::default()).unwrap()
+                        let img = redrob_photo_codecs::Image::from_u8(40, 20, redrob_photo_codecs::ChannelLayout::Rgba, vec![9; 3200]).unwrap();
+                        redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap()
                     });
                     let png = base64::engine::general_purpose::STANDARD.encode(bytes);
                     json!({"id": id, "ok": true, "result": {"mimeType": "image/png", "base64": png}})
@@ -864,7 +867,7 @@ async fn bridge_forwards_to_control_protocol() {
     let shot = call(&client, "ui_screenshot", json!({"max_side": 20})).await;
     let img = shot.content.iter().find_map(|c| c.as_image()).expect("image");
     let png = base64::engine::general_purpose::STANDARD.decode(&img.data).unwrap();
-    assert_eq!(photocraft_codecs::decode(&png).unwrap().dimensions(), (20, 10));
+    assert_eq!(redrob_photo_codecs::decode(&png).unwrap().dimensions(), (20, 10));
     let e = call(&client, "control_call", json!({"method": "bogus.method"})).await;
     assert_eq!(e.is_error, Some(true));
     assert!(text(&e).contains("unknown tool"));
@@ -877,7 +880,7 @@ async fn bridge_forwards_to_control_protocol() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn bridge_lost_reply_does_not_replay_an_edit_and_next_call_reconnects() {
-    use photocraft_automation::{BridgeClient, Headless};
+    use redrob_photo_automation::{BridgeClient, Headless};
     use std::time::Duration;
 
     tokio::time::timeout(Duration::from_secs(5), async {
@@ -895,7 +898,7 @@ async fn bridge_lost_reply_does_not_replay_an_edit_and_next_call_reconnects() {
                 let mut reader = BufReader::new(read);
                 let mut line = String::new();
                 reader.read_line(&mut line).await.unwrap();
-                let (auth, authenticated) = photocraft_automation::security::authentication_reply(&line, CONTROL_TOKEN);
+                let (auth, authenticated) = redrob_photo_automation::security::authentication_reply(&line, CONTROL_TOKEN);
                 assert!(authenticated, "each connection must authenticate");
                 write.write_all(format!("{auth}\n").as_bytes()).await.unwrap();
                 line.clear();
@@ -930,7 +933,7 @@ async fn bridge_lost_reply_does_not_replay_an_edit_and_next_call_reconnects() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn bridge_previews_downscale_before_enforcing_the_png_budget() {
-    use photocraft_automation::budgets::MAX_PNG_BYTES;
+    use redrob_photo_automation::budgets::MAX_PNG_BYTES;
 
     let (width, height) = (1400, 1000);
     let mut pixels = vec![0; width * height * 4];
@@ -941,8 +944,8 @@ async fn bridge_previews_downscale_before_enforcing_the_png_budget() {
         state ^= state << 5;
         *pixel = state as u8;
     }
-    let image = photocraft_codecs::Image::from_u8(width as u32, height as u32, photocraft_codecs::ChannelLayout::Rgba, pixels).unwrap();
-    let source_png = photocraft_codecs::encode(&image, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+    let image = redrob_photo_codecs::Image::from_u8(width as u32, height as u32, redrob_photo_codecs::ChannelLayout::Rgba, pixels).unwrap();
+    let source_png = redrob_photo_codecs::encode(&image, redrob_photo_codecs::Format::Png, &Default::default()).unwrap();
     assert!(source_png.len() > MAX_PNG_BYTES, "fixture must exceed the PNG budget");
 
     let (addr, app) = fake_app_with_screenshot(Some(source_png)).await;
@@ -954,7 +957,7 @@ async fn bridge_previews_downscale_before_enforcing_the_png_budget() {
         let img = reply.content.iter().find_map(|content| content.as_image()).expect("preview image");
         let png = base64::engine::general_purpose::STANDARD.decode(&img.data).unwrap();
         assert!(png.len() <= MAX_PNG_BYTES, "{tool} returned {} bytes", png.len());
-        let decoded = photocraft_codecs::decode(&png).unwrap();
+        let decoded = redrob_photo_codecs::decode(&png).unwrap();
         assert_eq!(decoded.dimensions(), (32, 22), "{tool}");
     }
 
@@ -985,7 +988,7 @@ async fn bridge_previews_reject_document_indices() {
         assert_ne!(reply.is_error, Some(true), "{tool}: {}", text(&reply));
         let image = reply.content.iter().find_map(|content| content.as_image()).expect("screenshot");
         let png = base64::engine::general_purpose::STANDARD.decode(&image.data).unwrap();
-        assert_eq!(photocraft_codecs::decode(&png).unwrap().dimensions(), (20, 10), "{tool}");
+        assert_eq!(redrob_photo_codecs::decode(&png).unwrap().dimensions(), (20, 10), "{tool}");
     }
     let tools = client.list_all_tools().await.unwrap();
     let schema = &tools.iter().find(|tool| tool.name == "ui_screenshot").unwrap().input_schema;
@@ -1009,7 +1012,7 @@ async fn headless_previews_preserve_document_indices() {
         assert_ne!(reply.is_error, Some(true), "{}", text(&reply));
         let image = reply.content.iter().find_map(|content| content.as_image()).expect("preview");
         let png = base64::engine::general_purpose::STANDARD.decode(&image.data).unwrap();
-        let image = photocraft_codecs::decode(&png).unwrap();
+        let image = redrob_photo_codecs::decode(&png).unwrap();
         assert_eq!(image.dimensions(), dimensions);
         assert!(image.to_rgba8().as_chunks::<4>().0.iter().all(|actual| actual[..] == pixel[..]));
     }
@@ -1179,7 +1182,7 @@ async fn new_from_clipboard_opens_the_copy_as_a_document() {
 #[tokio::test(flavor = "multi_thread")]
 async fn command_batch_rejects_too_many_steps() {
     let client = connect(PhotocraftMcp::headless()).await;
-    let steps: Vec<Value> = (0..=photocraft_automation::security::MAX_BATCH_STEPS).map(|_| json!({"id": "command.list"})).collect();
+    let steps: Vec<Value> = (0..=redrob_photo_automation::security::MAX_BATCH_STEPS).map(|_| json!({"id": "command.list"})).collect();
     let r = call(&client, "command_batch", json!({"steps": steps})).await;
     assert_eq!(r.is_error, Some(true));
     assert!(text(&r).contains("maximum is 256"), "{}", text(&r));
@@ -1226,7 +1229,7 @@ async fn convention_unknown_arguments_name_the_key_without_side_effects() {
 async fn convention_resources_are_live_json() {
     let client = connect(PhotocraftMcp::headless()).await;
     let resources = client.list_all_resources().await.unwrap();
-    for uri in ["photocraft://document", "photocraft://commands"] {
+    for uri in ["redrob-photo://document", "redrob-photo://commands"] {
         assert!(resources.iter().any(|r| r.uri == uri));
     }
     let read = async |uri: &str| {
@@ -1234,9 +1237,9 @@ async fn convention_resources_are_live_json() {
         let v = serde_json::to_value(r).unwrap();
         serde_json::from_str::<Value>(v["contents"][0]["text"].as_str().unwrap()).unwrap()
     };
-    assert!(read("photocraft://document").await["document"].is_null());
+    assert!(read("redrob-photo://document").await["document"].is_null());
     json_of(&call(&client, "doc_new", json!({"width":8,"height":6})).await);
-    assert_eq!(read("photocraft://document").await["width"], 8);
+    assert_eq!(read("redrob-photo://document").await["width"], 8);
     // Edit › Purge › All is enabled while the process-wide effect, mask and stack caches hold
     // anything, and the other tests in this binary fill and purge those caches concurrently, so
     // its `enabled` flag and paired `disabledReason` can flip between the two reads. Validate
@@ -1253,10 +1256,10 @@ async fn convention_resources_are_live_json() {
         }
         v
     };
-    let commands = stable(read("photocraft://commands").await);
+    let commands = stable(read("redrob-photo://commands").await);
     assert!(commands.as_array().is_some_and(|a| a.len() > 100), "{commands}");
     assert_eq!(commands, stable(json_of(&call(&client, "command_list", json!({})).await)));
-    assert!(client.read_resource(rmcp::model::ReadResourceRequestParams::new("photocraft://missing")).await.is_err());
+    assert!(client.read_resource(rmcp::model::ReadResourceRequestParams::new("redrob-photo://missing")).await.is_err());
     let preview = call(&client, "render_preview", json!({"max_side":4})).await;
     assert!(preview.content.iter().any(|c| c.as_image().is_some()));
     client.cancel().await.unwrap();

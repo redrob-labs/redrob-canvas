@@ -33,7 +33,7 @@ fn field_lab(mode: &str, z: f32, x: f32, y: f32) -> Option<[f32; 3]> {
 
 /// Lab → sRGB, clamped to what the field can show.
 fn lab_rgb(lab: [f32; 3]) -> [f32; 3] {
-    photocraft_color::convert::lab_to_srgb(lab).map(|c| c.clamp(0.0, 1.0))
+    redrob_photo_color::convert::lab_to_srgb(lab).map(|c| c.clamp(0.0, 1.0))
 }
 
 /// Colour differences the CMYK round trip leaves inside the printable gamut (ΔE ≤ 0.4, black ≈ 1.4
@@ -42,7 +42,7 @@ const GAMUT_DE: f32 = 3.0;
 
 /// The nearest printable colour, when `rgb` is outside the CMYK gamut (Photoshop's ⚠ warning).
 pub fn out_of_gamut(rgb: [f32; 3]) -> Option<[f32; 3]> {
-    use photocraft_color::convert::{cmyk_to_rgb, rgb_to_cmyk, srgb_to_lab};
+    use redrob_photo_color::convert::{cmyk_to_rgb, rgb_to_cmyk, srgb_to_lab};
     let back = cmyk_to_rgb(rgb_to_cmyk(rgb)).map(|c| c.clamp(0.0, 1.0));
     let (a, b) = (srgb_to_lab(rgb), srgb_to_lab(back));
     let de = ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt();
@@ -360,8 +360,8 @@ pub fn current(f: &Map<String, Value>) -> Components {
     Components {
         rgb,
         hsv: kept(f, "__hsv", rgb, |h| hsv_to_rgb(h[0], h[1], h[2])).unwrap_or_else(|| rgb_to_hsv(rgb)),
-        lab: kept(f, "__lab", rgb, photocraft_color::convert::lab_to_srgb).unwrap_or_else(|| photocraft_color::convert::srgb_to_lab(rgb)),
-        cmyk: kept(f, "__cmyk", rgb, photocraft_color::convert::cmyk_to_rgb).unwrap_or_else(|| photocraft_color::convert::rgb_to_cmyk(rgb)),
+        lab: kept(f, "__lab", rgb, redrob_photo_color::convert::lab_to_srgb).unwrap_or_else(|| redrob_photo_color::convert::srgb_to_lab(rgb)),
+        cmyk: kept(f, "__cmyk", rgb, redrob_photo_color::convert::cmyk_to_rgb).unwrap_or_else(|| redrob_photo_color::convert::rgb_to_cmyk(rgb)),
     }
 }
 
@@ -722,7 +722,7 @@ fn fields(ui: &mut egui::Ui, f: &mut Map<String, Value>, mode: &str, now: &Compo
                 if widgets::value_field(ui, &mut x, range, "", VALUE_W).changed() {
                     let mut l = lab;
                     l[i] = x;
-                    edit = Some((photocraft_color::convert::lab_to_srgb(l).map(|c| c.clamp(0.0, 1.0)), Keep::Lab(l)));
+                    edit = Some((redrob_photo_color::convert::lab_to_srgb(l).map(|c| c.clamp(0.0, 1.0)), Keep::Lab(l)));
                 }
                 ui.label("");
                 ui.end_row();
@@ -736,7 +736,7 @@ fn fields(ui: &mut egui::Ui, f: &mut Map<String, Value>, mode: &str, now: &Compo
                 if widgets::value_field(ui, &mut x, 0.0..=100.0, "", VALUE_W).changed() {
                     let mut k = cmyk;
                     k[i] = x / 100.0;
-                    edit = Some((photocraft_color::convert::cmyk_to_rgb(k).map(|c| c.clamp(0.0, 1.0)), Keep::Cmyk(k)));
+                    edit = Some((redrob_photo_color::convert::cmyk_to_rgb(k).map(|c| c.clamp(0.0, 1.0)), Keep::Cmyk(k)));
                 }
                 ui.label(egui::RichText::new("%").color(t.text_faint));
                 ui.end_row();
@@ -819,7 +819,7 @@ pub fn confirm(app: &mut PhotocraftApp, f: &Map<String, Value>) -> Result<Value,
     }
     let mut params = json!({ target: color });
     // The CMYK values the person entered stay the colour's inks: a CMYK document is filled with them (#4196).
-    if let Some(cmyk) = parse_hex(color).and_then(|rgb| kept::<4>(f, "__cmyk", rgb, photocraft_color::convert::cmyk_to_rgb)) {
+    if let Some(cmyk) = parse_hex(color).and_then(|rgb| kept::<4>(f, "__cmyk", rgb, redrob_photo_color::convert::cmyk_to_rgb)) {
         params[format!("{target}Cmyk")] = json!(cmyk);
     }
     let r = app.run("tools.setColors", params)?;
@@ -938,7 +938,7 @@ mod tests {
 
     #[test]
     fn color_picker_dialog_hex_field_is_in_tab_order_and_confirms_typed_color() {
-        let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let mut h = Harness::builder().with_size(vec2(760.0, 480.0)).build_ui_state(|ui, app| crate::dialogs::show(app, ui.ctx()), app);
         PhotocraftApp::setup_context(&h.ctx, crate::theme::ThemeKind::ALL[0]);
         open(h.state_mut(), "foreground");
@@ -955,7 +955,7 @@ mod tests {
 
     #[test]
     fn alt_reset_restores_orig_color() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [0.2, 0.4, 0.6, 1.0];
         let id = open(&mut app, "foreground");
         let f = &mut app.ui.dialog_mut(id).unwrap().fields;
@@ -968,13 +968,13 @@ mod tests {
     #[test]
     fn lab_and_cmyk_fields_take_multi_digit_values() {
         let base = parse_hex("#336699").unwrap();
-        let lab = photocraft_color::convert::srgb_to_lab(base);
-        let cmyk = photocraft_color::convert::rgb_to_cmyk(base);
+        let lab = redrob_photo_color::convert::srgb_to_lab(base);
+        let cmyk = redrob_photo_color::convert::rgb_to_cmyk(base);
         // Fields in order: H S B R G B, L a b, C M Y K.
         for (field, typed, want) in [
-            (6, "60", photocraft_color::convert::lab_to_srgb([60.0, lab[1], lab[2]])),
-            (7, "30", photocraft_color::convert::lab_to_srgb([lab[0], 30.0, lab[2]])),
-            (9, "40", photocraft_color::convert::cmyk_to_rgb([0.4, cmyk[1], cmyk[2], cmyk[3]])),
+            (6, "60", redrob_photo_color::convert::lab_to_srgb([60.0, lab[1], lab[2]])),
+            (7, "30", redrob_photo_color::convert::lab_to_srgb([lab[0], 30.0, lab[2]])),
+            (9, "40", redrob_photo_color::convert::cmyk_to_rgb([0.4, cmyk[1], cmyk[2], cmyk[3]])),
         ] {
             let mut h = picker("#336699");
             h.query_all_by_role(Role::SpinButton).nth(field).unwrap().click();
@@ -1016,7 +1016,7 @@ mod tests {
     fn the_picker_window_is_no_bigger_than_photoshops() {
         let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).with_max_steps(64).build_eframe(|cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-            PhotocraftApp::new(photocraft_engine::Session::new(), Default::default())
+            PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default())
         });
         h.run_steps(4);
         let id = open(h.state_mut(), "foreground");
@@ -1052,7 +1052,7 @@ mod tests {
     fn side_buttons_and_keyboard_confirm_or_cancel_without_changing_the_other_color() {
         for target in ["foreground", "background"] {
             for action in ["OK", "Cancel", "Enter", "Escape"] {
-                let app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+                let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
                 let mut h = Harness::builder().with_size(vec2(760.0, 480.0)).build_ui_state(|ui, app| crate::dialogs::show(app, ui.ctx()), app);
                 PhotocraftApp::setup_context(&h.ctx, crate::theme::ThemeKind::ALL[0]);
                 let original_fg = h.state().session.tools.foreground;
@@ -1113,7 +1113,7 @@ mod tests {
     #[test]
     fn field_and_locate_are_inverse_in_every_mode() {
         let rgb = [0.8, 0.3, 0.2];
-        let (hsv, lab) = (rgb_to_hsv(rgb), photocraft_color::convert::srgb_to_lab(rgb));
+        let (hsv, lab) = (rgb_to_hsv(rgb), redrob_photo_color::convert::srgb_to_lab(rgb));
         for (m, _) in MODES.iter().chain(LAB_MODES) {
             let (x, y, z) = locate(m, hsv, rgb, lab);
             let c = field_color(m, z, x, y);
@@ -1124,20 +1124,20 @@ mod tests {
     #[test]
     fn lab_fields_are_laid_out_like_photoshops() {
         // Photoshop 25.4. L: a across (green to red), b upwards (blue to yellow).
-        let l = |x, y| photocraft_color::convert::srgb_to_lab(field_color("lab_l", 0.6, x, y));
+        let l = |x, y| redrob_photo_color::convert::srgb_to_lab(field_color("lab_l", 0.6, x, y));
         assert!(l(0.0, 0.5)[1] < -40.0 && l(1.0, 0.5)[1] > 40.0, "{:?} {:?}", l(0.0, 0.5), l(1.0, 0.5));
         assert!(l(0.5, 1.0)[2] < -40.0 && l(0.5, 0.0)[2] > 40.0, "{:?} {:?}", l(0.5, 1.0), l(0.5, 0.0));
         // a: b across, L upwards (white at the top, black at the bottom).
         assert!(field_color("lab_a", 0.5, 0.5, 0.0).iter().all(|&c| c > 0.99), "white at the top");
         assert!(field_color("lab_a", 0.5, 0.5, 1.0).iter().all(|&c| c < 0.01), "black at the bottom");
-        let a = |x| photocraft_color::convert::srgb_to_lab(field_color("lab_a", 0.5, x, 0.5));
+        let a = |x| redrob_photo_color::convert::srgb_to_lab(field_color("lab_a", 0.5, x, 0.5));
         assert!(a(0.0)[2] < -40.0 && a(1.0)[2] > 40.0);
         // b: a across, L upwards; its slider runs from yellow (top) to blue.
-        let b = |x| photocraft_color::convert::srgb_to_lab(field_color("lab_b", 0.5, x, 0.5));
+        let b = |x| redrob_photo_color::convert::srgb_to_lab(field_color("lab_b", 0.5, x, 0.5));
         assert!(b(0.0)[1] < -40.0 && b(1.0)[1] > 40.0);
         let lab = [60.0, 0.0, 0.0];
-        let top = photocraft_color::convert::srgb_to_lab(slider_color("lab_b", 1.0, [0.0; 3], [0.0; 3], lab));
-        let bottom = photocraft_color::convert::srgb_to_lab(slider_color("lab_b", 0.0, [0.0; 3], [0.0; 3], lab));
+        let top = redrob_photo_color::convert::srgb_to_lab(slider_color("lab_b", 1.0, [0.0; 3], [0.0; 3], lab));
+        let bottom = redrob_photo_color::convert::srgb_to_lab(slider_color("lab_b", 0.0, [0.0; 3], [0.0; 3], lab));
         assert!(top[2] > 40.0 && bottom[2] < -40.0, "{top:?} {bottom:?}");
     }
 
@@ -1159,7 +1159,7 @@ mod tests {
         f.insert("color".into(), json!("#808080"));
         f.insert("__hsv".into(), json!([200.0, 0.0, 128.0 / 255.0]));
         assert_eq!(current(&f).hsv[0], 200.0);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let id = open(&mut app, "background");
         let d = app.ui.dialog_mut(id).unwrap();
         d.fields.insert("color".into(), json!("#3366cc"));
@@ -1172,11 +1172,11 @@ mod tests {
     /// reopening the picker shows them again.
     #[test]
     fn cmyk_values_survive_ok_and_a_reopen() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let cyan = [1.0, 0.0, 0.0, 0.0];
         let id = open(&mut app, "foreground");
         let d = app.ui.dialog_mut(id).unwrap();
-        set_rgb(&mut d.fields, photocraft_color::convert::cmyk_to_rgb(cyan).map(|c| c.clamp(0.0, 1.0)), Keep::Cmyk(cyan));
+        set_rgb(&mut d.fields, redrob_photo_color::convert::cmyk_to_rgb(cyan).map(|c| c.clamp(0.0, 1.0)), Keep::Cmyk(cyan));
         let fields = d.fields.clone();
         confirm(&mut app, &fields).unwrap();
         let fg = app.session.tools.foreground;
@@ -1192,7 +1192,7 @@ mod tests {
 
     #[test]
     fn the_top_picker_samples_the_image() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 40, "height": 20, "background": "transparent"})).unwrap();
         app.run("shape.create", json!({"kind": "rect", "rect": [0, 0, 20, 20], "fill": "#ff0000"})).unwrap();
         app.run("shape.create", json!({"kind": "rect", "rect": [20, 0, 10, 20], "fill": "#00ff00"})).unwrap();
@@ -1236,7 +1236,7 @@ mod screen_integration_tests {
     use egui_kittest::{Harness, kittest::Queryable};
     #[test]
     fn text_swatch_opens_full_dialog_and_screen_pick_waits_for_ok() {
-        let mut session = photocraft_engine::Session::new();
+        let mut session = redrob_photo_engine::Session::new();
         session.execute("file.new", json!({"width":160,"height":120})).unwrap();
         let id = session.execute("type.create", json!({"text":"Hello world","color":"#000000","size":24,"x":10,"y":60})).unwrap()["layer"].as_u64().unwrap();
         let services = crate::Services {
@@ -1267,8 +1267,8 @@ mod screen_integration_tests {
         h.get_by_label("OK").click();
         h.run_steps(4);
         let doc = &h.state().session.active().unwrap().doc;
-        let layer = doc.layer(photocraft_doc::LayerId(id)).unwrap();
-        let photocraft_doc::LayerContent::Text(text) = &layer.content else { panic!("not text") };
+        let layer = doc.layer(redrob_photo_doc::LayerId(id)).unwrap();
+        let redrob_photo_doc::LayerContent::Text(text) = &layer.content else { panic!("not text") };
         assert_eq!(text.color.to_rgba8(), [255, 136, 0, 255]);
         assert_eq!(h.state().session.active().unwrap().history.entries().len(), before + 1);
     }

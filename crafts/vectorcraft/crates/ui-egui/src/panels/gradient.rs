@@ -19,12 +19,12 @@
 //! (edited in the Color panel), opacity and spread, with Delete Point.
 
 use egui::{Color32, Pos2, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
-use serde_json::{Value, json};
-use vectorcraft_color::gradient::{
+use redrob_vector_color::gradient::{
     MIN_STOPS, duplicate_stop, insert_stop, midpoint_from_pos, midpoint_pos, move_stop, remove_stop, set_midpoint, swap_stop_colors,
 };
-use vectorcraft_color::{Color, Freeform, FreeformMode, Gradient, GradientKind, GradientPaint, GradientStop, Paint};
-use vectorcraft_doc::{NodeId, StrokeGradientMode};
+use redrob_vector_color::{Color, Freeform, FreeformMode, Gradient, GradientKind, GradientPaint, GradientStop, Paint};
+use redrob_vector_doc::{NodeId, StrokeGradientMode};
+use serde_json::{Value, json};
 
 use super::{active_paint, live_run, pstate, set_pstate};
 use crate::state::Dialog;
@@ -57,7 +57,7 @@ pub fn x_to_offset(x: f32, left: f32, width: f32) -> f32 {
 }
 
 /// Stops as `paint.editGradient` JSON.
-pub use vectorcraft_tools::params::stops_json;
+pub use redrob_vector_tools::params::stops_json;
 
 /// A colour dropped on the ramp: recolours stop `on` (fully opaque), or adds an opaque stop of
 /// that colour at `offset`, linked to `link` (a global swatch and tint) when given. Returns the
@@ -300,7 +300,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
 /// The freeform points shown: the gradient's own, else (unplaced) as many as it places, coloured
 /// along the stops.
 pub(crate) fn shown_points(g: &GradientPaint) -> std::borrow::Cow<'_, Freeform> {
-    g.freeform_on(vectorcraft_geom::Rect::new(0.0, 0.0, 1.0, 1.0))
+    g.freeform_on(redrob_vector_geom::Rect::new(0.0, 0.0, 1.0, 1.0))
 }
 
 /// Run a `paint.freeform.*` command on the paint behind the active proxy.
@@ -431,7 +431,7 @@ fn stop_fields(app: &mut VectorcraftApp, ui: &mut Ui, g: &Gradient, is_grad: boo
             widgets::swatch_tile(ui, r, &Paint::solid(s.color), false, resp.hovered());
             // A linked stop names its swatch and tint.
             let label = match &s.swatch {
-                Some(n) => format!("{n} {}%", vectorcraft_color::tint_percent(s.tint)),
+                Some(n) => format!("{n} {}%", redrob_vector_color::tint_percent(s.tint)),
                 None => s.color.to_hex().to_uppercase(),
             };
             widgets::dim_name(ui, &label);
@@ -714,7 +714,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use egui::{Event, Modifiers, PointerButton};
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
 

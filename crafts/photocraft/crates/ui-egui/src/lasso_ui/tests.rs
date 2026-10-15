@@ -3,7 +3,7 @@ use crate::canvas::tool_event;
 use serde_json::json;
 
 fn app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     app.sync_views();
     app.ui.tool = Tool::Lasso;
@@ -220,7 +220,7 @@ fn a_drag_inside_the_selection_moves_it() {
     event(&mut app, "move", 130.0, 125.0, Modifiers::NONE);
     event(&mut app, "up", 130.0, 125.0, Modifiers::NONE);
     assert!(!active(&app));
-    assert_eq!(bounds(&app), Some(photocraft_geom::Rect::new(110, 105, 160, 145)));
+    assert_eq!(bounds(&app), Some(redrob_photo_geom::Rect::new(110, 105, 160, 145)));
 
     let mut h = harness();
     h.state_mut().ui.extras.snap = false;
@@ -231,7 +231,7 @@ fn a_drag_inside_the_selection_moves_it() {
     mouse(&mut h, "move", 130.0, 125.0, Modifiers::NONE);
     mouse(&mut h, "up", 130.0, 125.0, Modifiers::NONE);
     assert!(h.state().drag.is_none());
-    assert_eq!(bounds(h.state()), Some(photocraft_geom::Rect::new(110, 105, 160, 145)));
+    assert_eq!(bounds(h.state()), Some(redrob_photo_geom::Rect::new(110, 105, 160, 145)));
 }
 
 #[test]
@@ -317,7 +317,7 @@ fn real_canvas_cmd_drag_outside_the_selection_moves_the_layer() {
     h.state_mut()
         .session
         .edit("paint", |doc, _| {
-            doc.layer_mut(layer).unwrap().surface_mut().unwrap().fill_rect(photocraft_geom::Rect::new(100, 100, 140, 140), &[1.0, 0.0, 0.0, 1.0]);
+            doc.layer_mut(layer).unwrap().surface_mut().unwrap().fill_rect(redrob_photo_geom::Rect::new(100, 100, 140, 140), &[1.0, 0.0, 0.0, 1.0]);
             Ok(())
         })
         .unwrap();

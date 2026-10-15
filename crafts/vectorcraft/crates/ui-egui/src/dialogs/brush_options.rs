@@ -13,8 +13,8 @@
 //! `size` (pt), `length` (25..300 %), `density`, `thickness`, `opacity`, `stiffness` (1..100 %).
 
 use egui::{Color32, Sense, Stroke, pos2, vec2};
+use redrob_vector_brush::{Bristle, Brush, BrushKind, Calligraphic, Variation};
 use serde_json::{Map, Value, json};
-use vectorcraft_brush::{Bristle, Brush, BrushKind, Calligraphic, Variation};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, brush_art_options, form};
@@ -114,14 +114,14 @@ pub fn open(app: &mut VectorcraftApp, name: Option<&str>) -> Result<Value, Strin
 /// Can Brush Options open without a name (the selected path's brush, else the current one, exists)?
 pub fn available(app: &VectorcraftApp) -> bool {
     let Some(st) = app.session.active() else { return false };
-    target(app).is_some_and(|n| vectorcraft_brush::find(&st.doc, &n).is_some())
+    target(app).is_some_and(|n| redrob_vector_brush::find(&st.doc, &n).is_some())
 }
 
 /// The brush Brush Options opens on without a name: the selected path's brush, else the current one.
 fn target(app: &VectorcraftApp) -> Option<String> {
     let st = app.session.active()?;
     let selected = st.selection.subjects().first().and_then(|id| st.doc.node(*id)).and_then(|n| n.appearance.stroke()?.brush.clone());
-    selected.or_else(|| vectorcraft_brush::current(&st.doc))
+    selected.or_else(|| redrob_vector_brush::current(&st.doc))
 }
 
 /// The value of field `key` within `range`.
@@ -276,7 +276,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
@@ -346,17 +346,17 @@ mod tests {
     }
 
     /// A path painted with brush `name`, and the height of the art its stroke draws.
-    fn brushed(app: &mut VectorcraftApp, name: &str) -> (vectorcraft_doc::NodeId, f64) {
+    fn brushed(app: &mut VectorcraftApp, name: &str) -> (redrob_vector_doc::NodeId, f64) {
         let id = app.run("shape.line", json!({"x1": 20, "y1": 100, "x2": 280, "y2": 100})).unwrap()["id"].as_u64().unwrap();
-        let id = vectorcraft_doc::NodeId(id);
+        let id = redrob_vector_doc::NodeId(id);
         app.run("brush.apply", json!({ "name": name, "ids": [id.0] })).unwrap();
         (id, drawn_height(app, id))
     }
 
-    fn drawn_height(app: &VectorcraftApp, id: vectorcraft_doc::NodeId) -> f64 {
+    fn drawn_height(app: &VectorcraftApp, id: redrob_vector_doc::NodeId) -> f64 {
         let st = app.session.active().unwrap();
-        let pieces = vectorcraft_brush::node_pieces(&st.doc, st.doc.node(id).unwrap()).unwrap();
-        vectorcraft_brush::pieces_bounds(&pieces).unwrap().height()
+        let pieces = redrob_vector_brush::node_pieces(&st.doc, st.doc.node(id).unwrap()).unwrap();
+        redrob_vector_brush::pieces_bounds(&pieces).unwrap().height()
     }
 
     #[test]

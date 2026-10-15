@@ -5,8 +5,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use egui::{Sense, Stroke, StrokeKind, Ui, vec2};
+use redrob_vector_doc::{Document, Node, NodeKind};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, Node, NodeKind};
 
 use super::{pstate, set_pstate};
 use crate::VectorcraftApp;
@@ -16,7 +16,7 @@ use crate::widgets::{self, PanelDrag, menu_item};
 /// A thumbnail of symbol `name` (an instance at its natural size), cached by the art's identity.
 fn thumb(ui: &Ui, doc: &Document, name: &str, size: f32) -> Option<egui::TextureHandle> {
     thread_local! {
-        static RENDERER: RefCell<vectorcraft_render::Renderer> = RefCell::new(vectorcraft_render::Renderer::new());
+        static RENDERER: RefCell<redrob_vector_render::Renderer> = RefCell::new(redrob_vector_render::Renderer::new());
         static CACHE: crate::graphics::TexCache<HashMap<(usize, String, u32), egui::TextureHandle>> = crate::graphics::TexCache::default();
     }
     let sym = doc.symbols.iter().find(|s| s.name == name)?;
@@ -34,7 +34,7 @@ fn thumb(ui: &Ui, doc: &Document, name: &str, size: f32) -> Option<egui::Texture
     let mut d = Document::new(w.max(1.0), h.max(1.0));
     d.symbols.push(sym.clone());
     let id = d.alloc_id();
-    let xf = vectorcraft_geom::Affine::scale_non_uniform(w / 20.0, h / 20.0);
+    let xf = redrob_vector_geom::Affine::scale_non_uniform(w / 20.0, h / 20.0);
     let l = d.layers[0].id;
     d.insert(Some(l), 0, Node::new(id, NodeKind::SymbolInstance { symbol: name.into(), xf })).ok()?;
     let img = RENDERER.with(|r| r.borrow_mut().render_thumbnail(&d, id, px))?;
@@ -201,8 +201,8 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use egui::{Pos2, Rect, pos2};
-    use vectorcraft_doc::NodeId;
-    use vectorcraft_engine::Session;
+    use redrob_vector_doc::NodeId;
+    use redrob_vector_engine::Session;
 
     use super::*;
 
@@ -286,7 +286,7 @@ mod tests {
         // The symbol of the SVG import tests: an orange 20 × 20 square from (0, 0) with a white dot.
         let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120"><defs><symbol id="Star" data-name="Gold Star"><path d="M0 0H20V20H0Z" fill="#e0a000"/><circle cx="10" cy="10" r="4" fill="#fff"/></symbol></defs><use href="#Star" x="20" y="30"/></svg>"##;
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
-        app.run("document.open", json!({"name": "star.svg", "dataBase64": vectorcraft_format::base64_encode(svg.as_bytes())})).unwrap();
+        app.run("document.open", json!({"name": "star.svg", "dataBase64": redrob_vector_format::base64_encode(svg.as_bytes())})).unwrap();
         let ctx = egui::Context::default();
         let raw = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(236.0, 400.0))), ..Default::default() };
         let mut out = ctx.run_ui(raw, |ui| show(&mut app, ui));

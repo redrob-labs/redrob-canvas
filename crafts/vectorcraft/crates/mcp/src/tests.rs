@@ -190,7 +190,7 @@ fn headless_end_to_end() {
     assert_eq!(r["isError"], false, "{r}");
     let img = r["content"].as_array().unwrap().iter().find(|c| c["type"] == "image").expect("image content");
     assert_eq!(img["mimeType"], "image/png");
-    let png = vectorcraft_format::base64_decode(img["data"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(img["data"].as_str().unwrap()).unwrap();
     assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
     assert_eq!(std::fs::read(&shot_path).unwrap(), png);
 
@@ -202,7 +202,7 @@ fn headless_end_to_end() {
     assert!(svg.contains("<svg") && (svg.contains("<rect") || svg.contains("<path")), "{svg}");
 
     // Save native, open it back.
-    let dc = tmp("out.vectorcraft");
+    let dc = tmp("out.rvector");
     assert_eq!(call(&mut s, 7, "save_file", json!({"path": dc.to_str().unwrap()}))["isError"], false);
     let r = call(&mut s, 8, "open_file", json!({"path": dc.to_str().unwrap()}));
     assert_eq!(r["isError"], false, "{r}");
@@ -224,12 +224,12 @@ fn headless_end_to_end() {
     // Resources.
     let v = rpc(&mut s, 10, "resources/list", json!({}));
     assert_eq!(v["result"]["resources"].as_array().unwrap().len(), 3);
-    let v = rpc(&mut s, 11, "resources/read", json!({"uri": "vectorcraft://document"}));
+    let v = rpc(&mut s, 11, "resources/read", json!({"uri": "redrob-vector://document"}));
     let text = v["result"]["contents"][0]["text"].as_str().unwrap();
     assert!(serde_json::from_str::<Value>(text).unwrap()["layers"].is_array());
-    let v = rpc(&mut s, 12, "resources/read", json!({"uri": "vectorcraft://document/json"}));
+    let v = rpc(&mut s, 12, "resources/read", json!({"uri": "redrob-vector://document/json"}));
     assert!(v["result"]["contents"][0]["text"].as_str().unwrap().len() > 10);
-    let v = rpc(&mut s, 13, "resources/read", json!({"uri": "vectorcraft://nope"}));
+    let v = rpc(&mut s, 13, "resources/read", json!({"uri": "redrob-vector://nope"}));
     assert_eq!(v["error"]["code"], -32002);
 }
 
@@ -354,7 +354,7 @@ fn add_text_justify_anchors_point_type_on_x() {
 fn save_file_describes_the_formats_it_writes() {
     let tools = tool_definitions();
     let d = tools.iter().find(|t| t["name"] == "save_file").and_then(|t| t["description"].as_str()).unwrap();
-    for ext in [".vectorcraft", ".vctemplate", ".pdf", ".svg", ".svgz", ".ai"] {
+    for ext in [".rvector", ".vctemplate", ".pdf", ".svg", ".svgz", ".ai"] {
         assert!(d.contains(ext), "{ext}: {d}");
     }
     assert!(d.contains("its own format"), "{d}");

@@ -1,5 +1,5 @@
 //! Background jobs in the shell (#210): long commands and file opens run on worker threads (see
-//! `photocraft_engine::jobs`) while the window keeps drawing at full frame rate.
+//! `redrob_photo_engine::jobs`) while the window keeps drawing at full frame rate.
 //!
 //! - [`run`] starts a job-capable command in the background (when [`PhotocraftApp::background_jobs`]
 //!   is on: the desktop app; tests and the web run inline as before).
@@ -20,8 +20,8 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::mpsc::Sender;
 
 use egui::{Color32, Rect, RichText, Sense, Stroke, vec2};
-use photocraft_doc::DocId;
-use photocraft_engine::jobs::{JobCtx, JobEvent, JobId, JobInfo, JobOutcome, OPEN_JOB, OpenSource, Started};
+use redrob_photo_doc::DocId;
+use redrob_photo_engine::jobs::{JobCtx, JobEvent, JobId, JobInfo, JobOutcome, OPEN_JOB, OpenSource, Started};
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
@@ -172,7 +172,7 @@ pub struct JobsUi {
 
 /// Run command `id`: in the background when background jobs are on and the command is a job
 /// (the result is then `{"job": id, "pending": true}` and the edit lands when [`tick`] applies
-/// it), else synchronously like [`photocraft_engine::Session::execute`].
+/// it), else synchronously like [`redrob_photo_engine::Session::execute`].
 pub fn run(app: &mut PhotocraftApp, id: &str, params: Value) -> Result<Value, String> {
     if !app.background_jobs {
         return app.session.execute(id, params).map_err(|e| e.to_string());
@@ -286,7 +286,7 @@ pub fn start_save(
             let _done = WorkerDone(Arc::clone(&worker));
             let ctl = SaveCtl { job: ctx.clone(), state: worker };
             save(&snapshot, &target, &settings, &ctl)
-                .map_err(|e| if ctl.check().is_err() { photocraft_engine::EngineError::Cancelled } else { photocraft_engine::EngineError::Other(e) })
+                .map_err(|e| if ctl.check().is_err() { redrob_photo_engine::EngineError::Cancelled } else { redrob_photo_engine::EngineError::Other(e) })
         },
         move |_, warnings: Vec<String>| Ok(json!({"path": result_path, "warnings": warnings})),
     );
@@ -588,7 +588,7 @@ pub(crate) fn after_open(app: &mut PhotocraftApp, name: &str, path: Option<&str>
         notices::io_warnings(app, &opened, warnings);
     }
     // Script events bound to "Open Document".
-    photocraft_engine::automate_cmds::document_opened(&mut app.session);
+    redrob_photo_engine::automate_cmds::document_opened(&mut app.session);
     app.sync_views();
 }
 

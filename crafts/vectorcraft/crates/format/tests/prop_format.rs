@@ -1,15 +1,15 @@
-//! `.vectorcraft` format: round trips, robustness against garbage, versioning, unknown fields.
+//! `.rvector` format: round trips, robustness against garbage, versioning, unknown fields.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
+use redrob_vector_doc::{Document, ImageBlob, ImageObject, Node, NodeId, NodeKind};
+use redrob_vector_format::{SaveOptions, base64_decode, base64_encode, load, load_file, pdf_content, preview, save, save_with, sniff};
+use redrob_vector_geom::Affine;
+use redrob_vector_testkit::fixtures;
+use redrob_vector_testkit::invariants::{check_document, check_native_roundtrip, check_native_roundtrip_exact, doc_json, json_approx_eq};
+use redrob_vector_testkit::strategies::arb_ops;
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, ImageBlob, ImageObject, Node, NodeId, NodeKind};
-use vectorcraft_format::{SaveOptions, base64_decode, base64_encode, load, load_file, pdf_content, preview, save, save_with, sniff};
-use vectorcraft_geom::Affine;
-use vectorcraft_testkit::fixtures;
-use vectorcraft_testkit::invariants::{check_document, check_native_roundtrip, check_native_roundtrip_exact, doc_json, json_approx_eq};
-use vectorcraft_testkit::strategies::arb_ops;
 
 fn rich_doc() -> Document {
     (*fixtures::rich_session().doc().unwrap().doc).clone()
@@ -143,7 +143,7 @@ fn rich_document_roundtrips() {
     assert!(sniff(&bytes));
     let v: Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(v["format"], "vectorcraft");
-    assert_eq!(v["version"], vectorcraft_format::VERSION);
+    assert_eq!(v["version"], redrob_vector_format::VERSION);
 }
 
 #[test]
@@ -158,14 +158,14 @@ fn sniff_distinguishes_formats() {
 #[test]
 fn rejects_newer_versions_and_other_formats() {
     let mut v: Value = serde_json::from_slice(&save(&Document::new(1.0, 1.0), false)).unwrap();
-    v["version"] = json!(vectorcraft_format::VERSION + 1);
-    assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(vectorcraft_format::FormatError::TooNew(_))));
-    v["version"] = json!(vectorcraft_format::VERSION);
+    v["version"] = json!(redrob_vector_format::VERSION + 1);
+    assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(redrob_vector_format::FormatError::TooNew(_))));
+    v["version"] = json!(redrob_vector_format::VERSION);
     v["format"] = json!("other");
-    assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(vectorcraft_format::FormatError::NotVectorcraft(_))));
+    assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(redrob_vector_format::FormatError::NotVectorcraft(_))));
     v["format"] = json!("vectorcraft");
     v["images"] = json!({"x": {"mime": "image/png", "data": "not base64!"}});
-    assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(vectorcraft_format::FormatError::BadImage(_))));
+    assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(redrob_vector_format::FormatError::BadImage(_))));
 }
 
 #[test]
@@ -224,8 +224,8 @@ fn saved_selections_from_a_file_are_tidied() {
     v["document"]["saved_selections"] = json!(list);
     let back = load(&serde_json::to_vec(&v).unwrap()).unwrap();
     let saved = &back.saved_selections;
-    assert_eq!(saved.len(), vectorcraft_doc::SavedSelection::MAX);
-    assert_eq!(saved[0].name, "x".repeat(vectorcraft_doc::SavedSelection::MAX_NAME));
+    assert_eq!(saved.len(), redrob_vector_doc::SavedSelection::MAX);
+    assert_eq!(saved[0].name, "x".repeat(redrob_vector_doc::SavedSelection::MAX_NAME));
     assert_eq!(saved[0].objects, vec![id], "a missing id is dropped, a repeated one kept once");
     assert_eq!((saved[1].name.as_str(), saved[1].objects.len()), ("Dup", 0), "blank names go, the first of a name stays");
     assert_eq!(saved[2].name, "S0");

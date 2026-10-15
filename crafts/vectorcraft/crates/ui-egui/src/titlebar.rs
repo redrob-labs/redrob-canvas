@@ -162,7 +162,7 @@ pub fn resize_zones(ui: &mut Ui) {
 mod tests {
     use super::*;
     use egui::{Event, Pos2, RawInput, ViewportId};
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// A headless window `width` pt wide showing the app bar (as the title bar) and the resize zones.
     struct Win {

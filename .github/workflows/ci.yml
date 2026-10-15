@@ -1,0 +1,99 @@
+# The one pull-request workflow. `checks` runs the repository scripts: the upstream pins, the
+# upstream-identifier guard, the generated third-party notices, the design-system guard and the
+# tools' own tests. `rust` runs formatting, clippy and the tests of OUR crates (the shell
+# `redrob-canvas`, `redrob-ai`, `redrob-agent`) with `--profile ci` (root Cargo.toml: every
+# dependency at opt-level 0, no incremental); the editor subtrees under crafts/ are compiled only as
+# dependencies, and `rust` is skipped when no Rust input changed or when the pull request targets
+# main (that code already passed here on its way into develop). The release workflow does not
+# repeat any of this; PR policy is the org-wide workflow.
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+  # Our crates and the shell. Not `--workspace`: that would lint and test the four editor subtrees
+  # too, and linking their ~75 test binaries exhausted the hosted runner's disk (ld died with SIGBUS).
+  OUR_CRATES: -p redrob-canvas -p redrob-ai -p redrob-agent
+
+jobs:
+  checks:
+    name: pins, upstream ids, notices, design system
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          fetch-depth: 0 # verify-upstream.sh reads each subtree's squash commit out of git log
+      - name: Upstream pins and identifiers
+        run: |
+          ./scripts/verify-upstream.sh
+          python3 scripts/check_upstream_ids.py
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: "1.95.0"
+      # The notices generator reads `cargo metadata --locked --offline` on purpose; populate the
+      # registry cache first rather than weaken that property.
+      - name: Third-party notices are current
+        run: |
+          cargo fetch --locked
+          python3 tools/generate_distribution_artifacts.py --check
+      - name: Design system tokens, mark and brand assets are current
+        run: python3 tools/check_design_system.py
+      - name: Tool tests
+        run: python3 -m unittest discover -s tools/tests -p "test_*.py"
+
+  rust:
+    name: fmt, clippy, test (profile ci)
+    # A release PR into main carries code that already passed here on its way into develop.
+    if: github.base_ref != 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - name: Did any Rust input change?
+        id: rs
+        run: |
+          git fetch -q origin "${{ github.base_ref }}" --depth=1
+          if git diff --quiet "origin/${{ github.base_ref }}"...HEAD -- '*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' crafts/*/assets .github/workflows/ci.yml; then
+            echo changed=false >> "$GITHUB_OUTPUT"; else echo changed=true >> "$GITHUB_OUTPUT"; fi
+      - name: System libraries for the desktop app
+        if: steps.rs.outputs.changed == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libgtk-3-dev
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        if: steps.rs.outputs.changed == 'true'
+        with:
+          toolchain: "1.95.0"
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        if: steps.rs.outputs.changed == 'true'
+        with:
+          key: ci-profile
+      - name: Formatting
+        if: steps.rs.outputs.changed == 'true'
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        if: steps.rs.outputs.changed == 'true'
+        run: |
+          # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
+          cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
+      - name: Tests
+        if: steps.rs.outputs.changed == 'true'
+        run: |
+          # shellcheck disable=SC2086
+          cargo test $OUR_CRATES --locked --profile ci

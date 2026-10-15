@@ -7,15 +7,15 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use redrob_vector_color::cms::Model;
+use redrob_vector_color::harmony::{Guide, GuideOptions, Harmony, Variation};
+use redrob_vector_color::{Color, Paint, keep_model};
+use redrob_vector_doc::live::lerp_color;
+use redrob_vector_doc::pattern::PatternDef;
+pub(crate) use redrob_vector_doc::recolor::map_paint;
+use redrob_vector_doc::recolor::{ColorVisitor, Reach, map_links, recolor_node};
+use redrob_vector_doc::{Document, ImageBlob, Node, NodeId, NodeKind};
 use serde_json::{Value, json};
-use vectorcraft_color::cms::Model;
-use vectorcraft_color::harmony::{Guide, GuideOptions, Harmony, Variation};
-use vectorcraft_color::{Color, Paint, keep_model};
-use vectorcraft_doc::live::lerp_color;
-use vectorcraft_doc::pattern::PatternDef;
-pub(crate) use vectorcraft_doc::recolor::map_paint;
-use vectorcraft_doc::recolor::{ColorVisitor, Reach, map_links, recolor_node};
-use vectorcraft_doc::{Document, ImageBlob, Node, NodeId, NodeKind};
 
 use super::edit::selected_roots;
 use super::*;

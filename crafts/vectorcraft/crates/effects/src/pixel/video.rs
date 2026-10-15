@@ -1,6 +1,6 @@
 //! Effect › Video: De-Interlace and NTSC Colors.
 
-use vectorcraft_geom::Point;
+use redrob_vector_geom::Point;
 
 use super::PixelSpace;
 

@@ -19,8 +19,8 @@
 //! sending the colour only when it was changed, so a guide that uses the preference colour keeps
 //! doing so.
 
-use photocraft_engine::edit_cmds::GUIDE_COLORS;
-use photocraft_engine::prefs::Unit;
+use redrob_photo_engine::edit_cmds::GUIDE_COLORS;
+use redrob_photo_engine::prefs::Unit;
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -61,7 +61,7 @@ fn is_color_name(name: &str) -> bool {
 fn custom_color(f: &Map<String, Value>) -> String {
     f.get("customColor")
         .and_then(Value::as_str)
-        .filter(|h| photocraft_engine::prefs::parse_hex(h).is_some())
+        .filter(|h| redrob_photo_engine::prefs::parse_hex(h).is_some())
         .map_or_else(|| "#4affff".to_string(), str::to_string)
 }
 
@@ -132,7 +132,7 @@ pub fn open_edit(app: &mut PhotocraftApp) -> Result<u64, String> {
             Some((p, g.color(vertical, p)))
         })
         .ok_or_else(|| "No guide is selected".to_string())?;
-    let pref = photocraft_engine::prefs::parse_hex(&app.session.prefs().guides_grid_and_slices.guide_color).unwrap_or([0x4a, 0xff, 0xff]);
+    let pref = redrob_photo_engine::prefs::parse_hex(&app.session.prefs().guides_grid_and_slices.guide_color).unwrap_or([0x4a, 0xff, 0xff]);
     let (color, custom) = color_choice(own.unwrap_or(pref));
     let orientation = if vertical { "vertical" } else { "horizontal" };
     let mut f = Map::new();
@@ -174,7 +174,7 @@ pub fn body(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
             crate::widgets::dropdown(ui, "new-guide-color", &mut color, &options, 140.0);
             if color == CUSTOM {
                 let hex = custom_color(f);
-                let rgb = photocraft_engine::prefs::parse_hex(&hex).unwrap_or([0x4a, 0xff, 0xff]);
+                let rgb = redrob_photo_engine::prefs::parse_hex(&hex).unwrap_or([0x4a, 0xff, 0xff]);
                 if crate::widgets::color_swatch_button(ui, egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]), tl!("Custom…")).clicked() {
                     f.insert("customColor".into(), json!(hex));
                     crate::color_picker_ui::request_field(f, "customColor", &crate::color_picker_ui::title_for(tl!("Guides")));

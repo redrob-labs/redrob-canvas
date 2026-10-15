@@ -216,10 +216,10 @@ fn unknown(id: &str, key: &str, keys: &[&str]) -> crate::EngineError {
 /// plug-in resolves its own against its manifest, and an unknown effect is the command's to report.
 pub fn check_effect_params(id: &str, effect: &str, params: &Value) -> Result<()> {
     let Value::Object(given) = params else { return Ok(()) };
-    if effect.starts_with(vectorcraft_plugins::effect::PREFIX) {
+    if effect.starts_with(redrob_vector_plugins::effect::PREFIX) {
         return Ok(());
     }
-    let Some(info) = vectorcraft_render::effects::effect_info(effect) else { return Ok(()) };
+    let Some(info) = redrob_vector_render::effects::effect_info(effect) else { return Ok(()) };
     let defaults = info.defaults.as_object();
     let mut keys: Vec<&str> = defaults.into_iter().flat_map(|d| d.keys().map(String::as_str)).collect();
     // A description that doesn't parse names no more keys (the tests rule that out).

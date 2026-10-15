@@ -2,7 +2,7 @@
 //! autosaves and the GPU startup marker all live under the one directory [`config_dir`] returns.
 //!
 //! In order:
-//! 1. `PHOTOCRAFT_CONFIG_DIR`, when set (tests, agents, custom setups).
+//! 1. `REDROB_PHOTO_CONFIG_DIR`, when set (tests, agents, custom setups).
 //! 2. **Portable mode** (#228): a marker file ([`PORTABLE_MARKERS`]) beside the executable puts
 //!    everything in `<exe dir>/PhotoCraftData`, so a portable copy on a USB stick leaves nothing in
 //!    `%APPDATA%`. The Windows portable zip ships with `portable.txt`; the MSI doesn't. If that
@@ -22,7 +22,7 @@ pub const PORTABLE_DATA_DIR: &str = "PhotoCraftData";
 /// How [`DataDir::dir`] was chosen.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
-    /// `PHOTOCRAFT_CONFIG_DIR`.
+    /// `REDROB_PHOTO_CONFIG_DIR`.
     Override,
     /// `<exe dir>/PhotoCraftData`.
     Portable,
@@ -62,7 +62,7 @@ pub fn config_dir() -> Option<PathBuf> {
 
 /// Resolve the data directory from the environment (`env`) and the executable's folder.
 pub fn resolve(env: impl Fn(&str) -> Option<OsString>, exe_dir: Option<&Path>) -> DataDir {
-    if let Some(d) = env("PHOTOCRAFT_CONFIG_DIR").filter(|d| !d.is_empty()) {
+    if let Some(d) = env("REDROB_PHOTO_CONFIG_DIR").filter(|d| !d.is_empty()) {
         return DataDir { dir: Some(PathBuf::from(d)), mode: Mode::Override, warning: None };
     }
     let platform = platform_dir(&env);
@@ -217,7 +217,7 @@ mod tests {
         std::fs::create_dir_all(&exe).unwrap();
         std::fs::write(exe.join("portable.txt"), b"").unwrap();
         let custom = root.join("custom");
-        let d = resolve(env_of(&[("PHOTOCRAFT_CONFIG_DIR", &custom)]), Some(&exe));
+        let d = resolve(env_of(&[("REDROB_PHOTO_CONFIG_DIR", &custom)]), Some(&exe));
         assert_eq!((d.mode, d.dir), (Mode::Override, Some(custom)));
         assert!(!exe.join(PORTABLE_DATA_DIR).exists());
         let _ = std::fs::remove_dir_all(&root);
@@ -228,7 +228,7 @@ mod tests {
         let d = resolve(|_| None, None);
         assert_eq!((d.mode, d.dir), (Mode::Platform, None));
         let empty = PathBuf::new();
-        let d = resolve(env_of(&[("PHOTOCRAFT_CONFIG_DIR", &empty), ("HOME", &empty), ("APPDATA", &empty)]), None);
+        let d = resolve(env_of(&[("REDROB_PHOTO_CONFIG_DIR", &empty), ("HOME", &empty), ("APPDATA", &empty)]), None);
         assert_eq!(d.dir, None, "empty variables are ignored");
     }
 }

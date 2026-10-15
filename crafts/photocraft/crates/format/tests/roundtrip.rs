@@ -1,13 +1,13 @@
-//! doc → .pcraft → doc equality, incremental saves, ids, previews.
+//! doc → .rphoto → doc equality, incremental saves, ids, previews.
 
 mod common;
 use common::*;
-use photocraft_color::{ColorMode, SampleType};
-use photocraft_doc::text::{CharStyle, ParagraphStyle, TextRun};
-use photocraft_doc::text_styles::{CharacterStyleDef, ParagraphStyleDef};
-use photocraft_doc::{Document, Layer, LayerContent, LayerId, Slice, TextLayer, VarKind, VariableDef};
-use photocraft_format::*;
-use photocraft_raster::Rgba8Image;
+use redrob_photo_color::{ColorMode, SampleType};
+use redrob_photo_doc::text::{CharStyle, ParagraphStyle, TextRun};
+use redrob_photo_doc::text_styles::{CharacterStyleDef, ParagraphStyleDef};
+use redrob_photo_doc::{Document, Layer, LayerContent, LayerId, Slice, TextLayer, VarKind, VariableDef};
+use redrob_photo_format::*;
+use redrob_photo_raster::Rgba8Image;
 
 const MODES: [ColorMode; 4] = [ColorMode::Rgb, ColorMode::Grayscale, ColorMode::Cmyk, ColorMode::Lab];
 
@@ -16,12 +16,12 @@ fn custom_shape_stroke_roundtrip_keeps_every_style_field() {
     for mode in MODES {
         for depth in [SampleType::U8, SampleType::U16, SampleType::F32] {
             let mut d = rich_doc(mode, depth);
-            let stroke = photocraft_doc::ShapeStroke {
+            let stroke = redrob_photo_doc::ShapeStroke {
                 width: 5.5,
                 opacity: 0.35,
-                align: photocraft_doc::StrokeAlign::Outside,
-                cap: photocraft_doc::LineCap::Square,
-                join: photocraft_doc::LineJoin::Bevel,
+                align: redrob_photo_doc::StrokeAlign::Outside,
+                cap: redrob_photo_doc::LineCap::Square,
+                join: redrob_photo_doc::LineJoin::Bevel,
                 miter_limit: 2.0,
                 dashes: vec![0.0, 2.0, 4.0, 1.0, 1.5, 3.0],
                 dash_offset: -0.5,
@@ -29,8 +29,8 @@ fn custom_shape_stroke_roundtrip_keeps_every_style_field() {
             };
             d.layers.push(Layer::new(
                 "Custom stroke",
-                LayerContent::Shape(photocraft_doc::ShapeLayer {
-                    path: photocraft_doc::Path::new(vec![photocraft_doc::Subpath::polygon(&[(10.0, 10.0), (40.0, 10.0), (25.0, 40.0)])]),
+                LayerContent::Shape(redrob_photo_doc::ShapeLayer {
+                    path: redrob_photo_doc::Path::new(vec![redrob_photo_doc::Subpath::polygon(&[(10.0, 10.0), (40.0, 10.0), (25.0, 40.0)])]),
                     stroke: Some(stroke),
                     ..Default::default()
                 }),
@@ -83,7 +83,7 @@ fn directory_bundle_roundtrip_all_modes() {
 fn save_path_zip_file() {
     let doc = rich_doc(ColorMode::Rgb, SampleType::U8);
     let dir = temp_dir("file");
-    let path = dir.join("a.pcraft");
+    let path = dir.join("a.rphoto");
     PcraftWriter::new().save_path(&doc, &path, &SaveOptions::default()).unwrap();
     assert!(path.is_file());
     assert_eq!(load_path(&path).unwrap(), doc);
@@ -95,7 +95,7 @@ fn save_path_zip_file() {
 fn load_bytes_source_matches_the_path_load() {
     let doc = rich_doc(ColorMode::Rgb, SampleType::U8);
     let dir = temp_dir("bytes-source");
-    let bundle = dir.join("a.pcraft");
+    let bundle = dir.join("a.rphoto");
     PcraftWriter::new().save_dir(&doc, &bundle, &SaveOptions::default()).unwrap();
     let loaded = load_bytes_source(&FsDir { root: bundle.clone() }, &LoadOptions::default()).unwrap();
     assert_eq!(loaded, doc);
@@ -140,7 +140,7 @@ impl ByteSource for FsDir {
 
 /// Deepest group nesting in `layers` (0 when there are no groups).
 fn group_depth(layers: &[Layer]) -> usize {
-    layers.iter().map(|l| if let photocraft_doc::LayerContent::Group(g) = &l.content { 1 + group_depth(&g.children) } else { 0 }).max().unwrap_or(0)
+    layers.iter().map(|l| if let redrob_photo_doc::LayerContent::Group(g) = &l.content { 1 + group_depth(&g.children) } else { 0 }).max().unwrap_or(0)
 }
 
 /// [`rich_doc`] with its layers wrapped in groups until they are nested `levels` deep.
@@ -178,13 +178,13 @@ fn nesting_beyond_the_load_limit_is_refused_at_save() {
 
 #[test]
 fn empty_document_roundtrips() {
-    let doc = Document::new("empty", photocraft_doc::Size::new(1, 1), ColorMode::Rgb, SampleType::U8);
+    let doc = Document::new("empty", redrob_photo_doc::Size::new(1, 1), ColorMode::Rgb, SampleType::U8);
     assert_eq!(load_from_bytes(&save_to_bytes(&doc, &SaveOptions::default()).unwrap()).unwrap(), doc);
 }
 
 #[test]
 fn exhausted_document_ids_and_maximal_text_runs_roundtrip() {
-    let mut doc = Document::new("exhausted", photocraft_doc::Size::new(2, 1), ColorMode::Rgb, SampleType::U8);
+    let mut doc = Document::new("exhausted", redrob_photo_doc::Size::new(2, 1), ColorMode::Rgb, SampleType::U8);
     doc.slices.list.push(Slice { id: u32::MAX, ..Default::default() });
     doc.text_styles.character.push(CharacterStyleDef { id: u32::MAX, ..Default::default() });
     doc.text_styles.paragraph.push(ParagraphStyleDef { id: u32::MAX, ..Default::default() });
@@ -194,8 +194,8 @@ fn exhausted_document_ids_and_maximal_text_runs_roundtrip() {
             text: "ab".into(),
             runs: vec![TextRun { len: 1, style: CharStyle::default() }, TextRun { len: usize::MAX, style: CharStyle { size_pt: 24.0, ..Default::default() } }],
             paragraphs: vec![
-                photocraft_doc::text::ParagraphRun { len: 1, style: ParagraphStyle::default() },
-                photocraft_doc::text::ParagraphRun { len: usize::MAX, style: ParagraphStyle::default() },
+                redrob_photo_doc::text::ParagraphRun { len: 1, style: ParagraphStyle::default() },
+                redrob_photo_doc::text::ParagraphRun { len: usize::MAX, style: ParagraphStyle::default() },
             ],
             ..Default::default()
         }),
@@ -310,7 +310,7 @@ fn directory_save_accepts_chosen_root_symlink_but_rejects_preview_symlink() {
     let doc = rich_doc(ColorMode::Rgb, SampleType::U8);
     let outside = temp_dir("symlink-preview-outside");
     let root_link_parent = temp_dir("symlink-root-parent");
-    let root_link = root_link_parent.join("linked.pcraft");
+    let root_link = root_link_parent.join("linked.rphoto");
     symlink(&outside, &root_link).unwrap();
     PcraftWriter::new().save_dir(&doc, &root_link, &SaveOptions::default()).unwrap();
     assert_eq!(load_path(&root_link).unwrap(), doc);
@@ -356,7 +356,7 @@ fn directory_save_rejects_manifest_symlink_without_overwriting_target() {
 
 #[test]
 fn identical_tiles_are_stored_once() {
-    let mut doc = Document::new("d", photocraft_doc::Size::new(10, 10), ColorMode::Rgb, SampleType::U8);
+    let mut doc = Document::new("d", redrob_photo_doc::Size::new(10, 10), ColorMode::Rgb, SampleType::U8);
     let mut a = Layer::raster("a", doc.pixel_format());
     scribble(a.surface_mut().unwrap(), 5, false);
     let b = a.duplicate();
@@ -373,10 +373,10 @@ fn identical_tiles_are_stored_once() {
 #[test]
 fn solid_fill_reopens_with_one_shared_tile() {
     for depth in [SampleType::U8, SampleType::U16, SampleType::F32] {
-        let size = photocraft_doc::Size::new(2048, 2048);
+        let size = redrob_photo_doc::Size::new(2048, 2048);
         let mut doc = Document::new("d", size, ColorMode::Rgb, depth);
         let mut l = Layer::raster("solid", doc.pixel_format());
-        l.surface_mut().unwrap().fill_rect(photocraft_geom::Rect::from_size(size), &[1.0, 0.5, 0.25, 1.0]);
+        l.surface_mut().unwrap().fill_rect(redrob_photo_geom::Rect::from_size(size), &[1.0, 0.5, 0.25, 1.0]);
         doc.layers.push(l);
         let bytes = save_to_bytes(&doc, &SaveOptions::default()).unwrap();
         let one_tile = (256 * 256 * doc.pixel_format().bytes_per_pixel()) as u64;
@@ -428,7 +428,7 @@ fn previews_embedded_and_readable() {
     let opts = SaveOptions { thumbnail: Some(thumb.clone()), composite: Some(thumb.clone()) };
     let bytes = save_to_bytes(&doc, &opts).unwrap();
     let png = read_thumbnail(&bytes).unwrap().unwrap();
-    let img = photocraft_codecs::decode(&png).unwrap();
+    let img = redrob_photo_codecs::decode(&png).unwrap();
     assert_eq!(img.dimensions(), (4, 3));
     assert_eq!(img.to_rgba8(), thumb.pixels);
     let m = read_manifest(&bytes).unwrap();
@@ -497,17 +497,17 @@ fn vector_fields_roundtrip_and_default_when_absent() {
         }
     }
     strip(&mut v["layers"]);
-    let old: photocraft_format::manifest::DocM = serde_json::from_value(v).unwrap();
+    let old: redrob_photo_format::manifest::DocM = serde_json::from_value(v).unwrap();
     assert!(old.paths.is_empty() && old.work_path.is_none());
     assert!(old.layers.iter().all(|l| l.vector_mask.is_none()));
 }
 
-/// Type kerning (#206): the auto mode and manual kerning survive .pcraft; manifests written
+/// Type kerning (#206): the auto mode and manual kerning survive .rphoto; manifests written
 /// before `kern` existed load with no manual kerning.
 #[test]
 fn text_kerning_roundtrips_and_defaults() {
-    use photocraft_doc::LayerContent;
-    use photocraft_doc::text::Kerning;
+    use redrob_photo_doc::LayerContent;
+    use redrob_photo_doc::text::Kerning;
     let doc = rich_doc(ColorMode::Rgb, SampleType::U8);
     let bytes = save_to_bytes(&doc, &SaveOptions::default()).unwrap();
     let back = load_from_bytes(&bytes).unwrap();
@@ -536,16 +536,16 @@ fn text_kerning_roundtrips_and_defaults() {
     }
     strip(&mut v);
     assert!(!v.to_string().contains("\"kern\""));
-    let old: photocraft_format::manifest::DocM = serde_json::from_value(v).unwrap();
+    let old: redrob_photo_format::manifest::DocM = serde_json::from_value(v).unwrap();
     let s = serde_json::to_string(&old).unwrap();
     assert!(s.contains("\"kern\":0.0"), "kern defaults to 0");
 }
 
-/// Type on a path (#218): the path, start offset and flip survive .pcraft.
+/// Type on a path (#218): the path, start offset and flip survive .rphoto.
 #[test]
 fn path_text_shape_roundtrips() {
-    use photocraft_doc::text::TextShape;
-    use photocraft_doc::vector::Subpath;
+    use redrob_photo_doc::text::TextShape;
+    use redrob_photo_doc::vector::Subpath;
     let mut doc = rich_doc(ColorMode::Rgb, SampleType::U8);
     let path = Subpath::polyline(&[(0.0, 0.0), (50.0, 20.0), (120.0, 5.5)]);
     let ids: Vec<LayerId> = doc.walk().into_iter().filter(|(_, _, l)| matches!(l.content, LayerContent::Text(_))).map(|(_, _, l)| l.id).collect();
@@ -564,13 +564,13 @@ fn path_text_shape_roundtrips() {
 
 #[test]
 fn channel_restrictions_and_bevel_elements_roundtrip() {
-    use photocraft_doc::{Bevel, BevelContour, BevelTexture, Contour, Effect};
+    use redrob_photo_doc::{Bevel, BevelContour, BevelTexture, Contour, Effect};
     let mut doc = rich_doc(ColorMode::Rgb, SampleType::U8);
     doc.layers[0].excluded_channels = 0b101;
     let mut b = Bevel {
         enabled: true,
-        style: photocraft_doc::BevelStyle::Emboss,
-        technique: photocraft_doc::BevelTechnique::ChiselHard,
+        style: redrob_photo_doc::BevelStyle::Emboss,
+        technique: redrob_photo_doc::BevelTechnique::ChiselHard,
         depth: 1.2,
         up: false,
         size: 9.0,
@@ -579,10 +579,10 @@ fn channel_restrictions_and_bevel_elements_roundtrip() {
         altitude: 40.0,
         use_global_light: false,
         gloss_contour: Contour::Linear,
-        highlight: photocraft_doc::FxCommon::new(photocraft_color::BlendMode::Screen, 0.7),
-        highlight_color: photocraft_color::Color::WHITE,
-        shadow: photocraft_doc::FxCommon::new(photocraft_color::BlendMode::Multiply, 0.6),
-        shadow_color: photocraft_color::Color::BLACK,
+        highlight: redrob_photo_doc::FxCommon::new(redrob_photo_color::BlendMode::Screen, 0.7),
+        highlight_color: redrob_photo_color::Color::WHITE,
+        shadow: redrob_photo_doc::FxCommon::new(redrob_photo_color::BlendMode::Multiply, 0.6),
+        shadow_color: redrob_photo_color::Color::BLACK,
         contour: None,
         texture: None,
     };
@@ -596,7 +596,7 @@ fn channel_restrictions_and_bevel_elements_roundtrip() {
 
 #[test]
 fn blend_if_roundtrips() {
-    use photocraft_doc::{BlendIf, BlendRange};
+    use redrob_photo_doc::{BlendIf, BlendRange};
     let mut doc = rich_doc(ColorMode::Rgb, SampleType::U16);
     let mut bi = BlendIf::default();
     bi.set(0, [BlendRange { black: [20, 60], white: [255, 255] }, BlendRange::FULL]);
@@ -610,11 +610,11 @@ fn blend_if_roundtrips() {
 }
 
 /// Advanced Blending (knockout, as-group switches, transparency shapes, masks hide effects)
-/// survives .pcraft at every depth; manifests written before the field existed load with
+/// survives .rphoto at every depth; manifests written before the field existed load with
 /// Photoshop's defaults, and default layers don't write it.
 #[test]
 fn advanced_blending_roundtrips_and_defaults_when_absent() {
-    use photocraft_doc::{AdvancedBlending, Knockout};
+    use redrob_photo_doc::{AdvancedBlending, Knockout};
     for depth in SampleType::ALL {
         let mut doc = rich_doc(ColorMode::Rgb, depth);
         let a = AdvancedBlending {
@@ -643,24 +643,24 @@ fn advanced_blending_roundtrips_and_defaults_when_absent() {
         for l in old["layers"].as_array_mut().unwrap() {
             l.as_object_mut().unwrap().remove("advanced");
         }
-        let old: photocraft_format::manifest::DocM = serde_json::from_value(old).unwrap();
+        let old: redrob_photo_format::manifest::DocM = serde_json::from_value(old).unwrap();
         assert!(old.layers.iter().all(|l| l.advanced.is_default()));
     }
 }
 
 #[test]
 fn video_layer_frames_survive_roundtrip() {
-    use photocraft_doc::{Timeline, VideoData, VideoSource};
-    use photocraft_geom::Rect;
-    let mut doc = Document::new("Vid", photocraft_geom::Size { width: 8, height: 6 }, ColorMode::Rgb, SampleType::U8);
+    use redrob_photo_doc::{Timeline, VideoData, VideoSource};
+    use redrob_photo_geom::Rect;
+    let mut doc = Document::new("Vid", redrob_photo_geom::Size { width: 8, height: 6 }, ColorMode::Rgb, SampleType::U8);
     doc.timeline = Some(Timeline::new(3, 24.0));
     let fmt = doc.pixel_format();
     let mut l = Layer::raster("Clip", fmt);
     let mut frames = Vec::new();
     for i in 0..3u8 {
-        let mut s = photocraft_raster::Surface::new(fmt);
+        let mut s = redrob_photo_raster::Surface::new(fmt);
         let v = i as f32 / 2.0;
-        s.fill_rect(Rect::new(0, 0, 8, 6), &photocraft_raster::from_rgba(&fmt, [v, 0.0, 1.0 - v, 1.0]));
+        s.fill_rect(Rect::new(0, 0, 8, 6), &redrob_photo_raster::from_rgba(&fmt, [v, 0.0, 1.0 - v, 1.0]));
         frames.push(s);
     }
     let mut vd = VideoData::new(frames, 24.0);
@@ -691,7 +691,7 @@ fn video_layer_frames_survive_roundtrip() {
 /// save is refused instead, naming the value; finite documents are unaffected.
 #[test]
 fn a_non_finite_float_is_refused_at_save_rather_than_breaking_every_later_load() {
-    use photocraft_doc::Adjustment;
+    use redrob_photo_doc::Adjustment;
     type Mutate = Box<dyn Fn(&mut Document)>;
     let base = rich_doc(ColorMode::Rgb, SampleType::U8);
     let cases: Vec<(&str, Mutate)> = vec![

@@ -6,7 +6,7 @@
 
 use std::rc::Rc;
 
-use vectorcraft_geom::Affine;
+use redrob_vector_geom::Affine;
 
 use super::graphics::{GState, Out};
 use super::lex::{IMMEDIATE, Lexer};

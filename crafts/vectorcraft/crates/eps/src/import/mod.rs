@@ -57,10 +57,10 @@ mod tests_native;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use vectorcraft_color::Paint;
-use vectorcraft_color::swatch::{REGISTRATION, Swatch};
-use vectorcraft_doc::{ColorMode, Document, LayerColor, Node};
-use vectorcraft_geom::{Affine, Rect};
+use redrob_vector_color::Paint;
+use redrob_vector_color::swatch::{REGISTRATION, Swatch};
+use redrob_vector_doc::{ColorMode, Document, LayerColor, Node};
+use redrob_vector_geom::{Affine, Rect};
 
 use graphics::{GState, Out};
 use interp::{Fault, Interp};
@@ -234,7 +234,7 @@ pub fn import_with(bytes: &[u8], editing_data: bool) -> Result<Imported, String>
 /// groups), the spot inks as spot swatches, in CMYK when most process colours were.
 fn finish(mut out: Out) -> Imported {
     let drawn = std::mem::take(&mut out.drawn);
-    let mut children = vectorcraft_doc::clipnest::nest(&mut out.doc, drawn);
+    let mut children = redrob_vector_doc::clipnest::nest(&mut out.doc, drawn);
     if !out.shadings.is_empty() {
         graphics::collapse(&mut children, &out.shadings);
     }
@@ -251,7 +251,7 @@ fn finish_with(out: Out, layers: Vec<Arc<Node>>) -> Imported {
     let mut doc = out.doc;
     if out.cmyk > out.rgb {
         doc.color_mode = ColorMode::Cmyk;
-        let (swatches, groups) = vectorcraft_color::default_swatches(ColorMode::Cmyk.model());
+        let (swatches, groups) = redrob_vector_color::default_swatches(ColorMode::Cmyk.model());
         (doc.swatches, doc.swatch_groups) = (swatches.into(), groups.into());
     }
     // `taken` holds the names `Document::swatch` finds: each swatch's name, and Registration.

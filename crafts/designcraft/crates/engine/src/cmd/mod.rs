@@ -59,8 +59,8 @@ mod variables;
 mod xml;
 mod xref;
 
-use designcraft_doc::{ItemId, SpreadRef};
-use designcraft_geom::{Point, Rect};
+use redrob_layout_doc::{ItemId, SpreadRef};
+use redrob_layout_geom::{Point, Rect};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -307,10 +307,10 @@ pub(crate) fn ok() -> Result<Value> {
     Ok(Value::Null)
 }
 
-pub fn file_bytes(d: &designcraft_doc::Document) -> Vec<u8> {
+pub fn file_bytes(d: &redrob_layout_doc::Document) -> Vec<u8> {
     file::to_bytes(d)
 }
-pub fn file_from(b: &[u8]) -> Result<designcraft_doc::Document> {
+pub fn file_from(b: &[u8]) -> Result<redrob_layout_doc::Document> {
     file::from_bytes(b)
 }
 pub(crate) use datamerge::sync_placeholders;

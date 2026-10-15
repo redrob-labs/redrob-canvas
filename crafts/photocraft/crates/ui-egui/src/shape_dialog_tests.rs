@@ -1,12 +1,12 @@
-use photocraft_doc::LayerContent;
-use photocraft_doc::vector::LiveShape;
+use redrob_photo_doc::LayerContent;
+use redrob_photo_doc::vector::LiveShape;
 use serde_json::json;
 
 use super::*;
 use crate::canvas::{Drag, finish_gesture};
 
 fn app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 400, "height": 300, "background": "white"})).unwrap();
     app.run("tools.setColors", json!({"foreground": "#ff0000", "background": "#0000ff"})).unwrap();
     app
@@ -101,9 +101,9 @@ fn drags_still_draw_and_tools_without_a_dialog_ignore_clicks() {
 #[test]
 fn click_dialogs_and_drags_keep_complete_stroke_defaults() {
     let style = crate::shape_stroke_ui::StrokeOptions {
-        align: photocraft_doc::StrokeAlign::Outside,
-        cap: photocraft_doc::LineCap::Square,
-        join: photocraft_doc::LineJoin::Bevel,
+        align: redrob_photo_doc::StrokeAlign::Outside,
+        cap: redrob_photo_doc::LineCap::Square,
+        join: redrob_photo_doc::LineJoin::Bevel,
         miter_limit: 7.0,
         dashes: vec![3.0, 1.0, 0.0, 2.0],
         dash_offset: -0.75,

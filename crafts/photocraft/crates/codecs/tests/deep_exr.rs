@@ -4,9 +4,9 @@
 //! panic. With the `corpus` feature, the OpenEXR project's deep test images (`corpus/exr/`,
 //! pinned) are checked against the ID manifests their sidecars list.
 
-use photocraft_codecs::CodecError;
-use photocraft_codecs::f16;
-use photocraft_codecs::{Limits, decode, decode_deep_exr};
+use redrob_photo_codecs::CodecError;
+use redrob_photo_codecs::f16;
+use redrob_photo_codecs::{Limits, decode, decode_deep_exr};
 use std::io::Write as _;
 
 // ---------------------------------------------------------------------------------------------
@@ -279,9 +279,9 @@ const COUNTS_ONE: &[u32] = &[1; 16]; // for a 4x4 image
 fn rgba_flat(bytes: &[u8]) -> Vec<f32> {
     let img = decode(bytes).expect("decodes");
     let s = img.to_f32_samples().expect("f32");
-    assert_eq!(img.layout(), photocraft_codecs::ChannelLayout::Rgba);
-    assert_eq!(img.sample_type(), photocraft_codecs::SampleType::F32);
-    assert!(img.warnings.iter().any(|w| matches!(w, photocraft_codecs::DecodeWarning::DeepFlattened { .. })));
+    assert_eq!(img.layout(), redrob_photo_codecs::ChannelLayout::Rgba);
+    assert_eq!(img.sample_type(), redrob_photo_codecs::SampleType::F32);
+    assert!(img.warnings.iter().any(|w| matches!(w, redrob_photo_codecs::DecodeWarning::DeepFlattened { .. })));
     s
 }
 
@@ -469,7 +469,7 @@ fn half_channels_round_trip() {
     });
     let deep = decode_deep_exr(&bytes, &Limits::none()).expect("deep");
     for c in &deep.channels {
-        assert_eq!(c.sample, photocraft_codecs::SampleType::F16, "{}", c.name);
+        assert_eq!(c.sample, redrob_photo_codecs::SampleType::F16, "{}", c.name);
     }
     let a = deep.channel("A").expect("A");
     assert_eq!(a.samples.len(), 16);
@@ -493,7 +493,7 @@ fn without_alpha_front_sample_is_opaque() {
         }
     });
     let img = decode(&bytes).expect("decodes");
-    assert_eq!(img.layout(), photocraft_codecs::ChannelLayout::Rgb);
+    assert_eq!(img.layout(), redrob_photo_codecs::ChannelLayout::Rgb);
     let px = img.to_f32_samples().expect("f32");
     // Even pixels: the front sample (z=2) is (r 0.4, g 0.2, b 0.9).
     assert!((px[0] - 0.4).abs() < 1e-6 && (px[1] - 0.2).abs() < 1e-6 && (px[2] - 0.9).abs() < 1e-6);
@@ -512,7 +512,7 @@ fn grayscale_deep_keeps_its_alpha() {
         }
     });
     let img = decode(&bytes).expect("decodes");
-    assert_eq!(img.layout(), photocraft_codecs::ChannelLayout::GrayA);
+    assert_eq!(img.layout(), redrob_photo_codecs::ChannelLayout::GrayA);
     let px = img.to_f32_samples().expect("f32");
     for (p, s) in px.chunks(2).enumerate() {
         let (y, a) = (s[0], s[1]);
@@ -527,7 +527,7 @@ fn grayscale_deep_keeps_its_alpha() {
         _ => vec![p as f32],
     });
     let img = decode(&bytes).expect("decodes");
-    assert_eq!(img.layout(), photocraft_codecs::ChannelLayout::Gray);
+    assert_eq!(img.layout(), redrob_photo_codecs::ChannelLayout::Gray);
     let px = img.to_f32_samples().expect("f32");
     for (p, v) in px.iter().enumerate() {
         assert!((v - 0.4).abs() < 1e-6, "pixel {p}: {v}, want 0.4");
@@ -582,9 +582,9 @@ fn hostile_sizes_and_offsets_error() {
     let tight = Limits { max_alloc: 64, ..Limits::none() };
     assert!(matches!(decode_deep_exr(&bytes, &tight), Err(CodecError::LimitExceeded(_))));
     // A non-deep file is unsupported for decode_deep.
-    let flat = photocraft_codecs::encode(
-        &photocraft_codecs::Image::from_u8(2, 2, photocraft_codecs::ChannelLayout::Rgba, [128; 16].to_vec()).expect("img"),
-        photocraft_codecs::Format::OpenExr,
+    let flat = redrob_photo_codecs::encode(
+        &redrob_photo_codecs::Image::from_u8(2, 2, redrob_photo_codecs::ChannelLayout::Rgba, [128; 16].to_vec()).expect("img"),
+        redrob_photo_codecs::Format::OpenExr,
         &Default::default(),
     )
     .expect("encode");
@@ -709,7 +709,7 @@ fn real_deep_files_decode() {
         let img = decode(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
         assert_eq!((img.width(), img.height()), (deep.width, deep.height), "{name}");
         assert_eq!(img.to_f32_samples().expect("f32").len(), 256 * 256 * 4, "{name}");
-        assert!(img.warnings.iter().any(|w| matches!(w, photocraft_codecs::DecodeWarning::DeepFlattened { .. })), "{name}");
+        assert!(img.warnings.iter().any(|w| matches!(w, redrob_photo_codecs::DecodeWarning::DeepFlattened { .. })), "{name}");
     }
 }
 
@@ -820,7 +820,7 @@ fn cropped_deep_data_opens_on_the_display_stage() {
     let bytes = gen_deep_cropped(w, h, dwx, dwy, sw, sh, &RGBA_NO_Z, &counts, &sample);
     let img = decode(&bytes).expect("cropped deep EXR decodes");
     assert_eq!((img.width(), img.height()), (sw as u32, sh as u32), "opens on the display window stage");
-    assert!(img.warnings.iter().any(|w| matches!(w, photocraft_codecs::DecodeWarning::DisplayWindowStage { origin, .. } if *origin == (dwx, dwy))));
+    assert!(img.warnings.iter().any(|w| matches!(w, redrob_photo_codecs::DecodeWarning::DisplayWindowStage { origin, .. } if *origin == (dwx, dwy))));
 
     // The data sits at its crop offset: the first data pixel's green channel carries its
     // data-row fraction, everything outside the data region stays transparent black.

@@ -43,7 +43,7 @@ pub fn take_log(ctx: &egui::Context) -> Vec<(String, Outcome)> {
 /// command and shell shortcuts, then the menu catalogue's for live items without their own,
 /// then Edit › Keyboard Shortcuts assignments to any other menu item, then the commands'
 /// alternate keys (#3665: F3 is Copy as well as ⌘C, see
-/// [`photocraft_engine::prefs::ALTERNATE_SHORTCUTS`]), which a main key of another command wins. D and X
+/// [`redrob_photo_engine::prefs::ALTERNATE_SHORTCUTS`]), which a main key of another command wins. D and X
 /// (`tools.defaultColors` / `tools.swapColors`) and the fill keys are commands like any other, so
 /// their overrides apply. Held temporary tools (Space…) are not here: see [`crate::hold_keys`].
 pub fn bindings(app: &PhotocraftApp) -> Vec<(String, KeyboardShortcut)> {
@@ -60,11 +60,11 @@ pub fn bindings(app: &PhotocraftApp) -> Vec<(String, KeyboardShortcut)> {
             })
     };
     let ui = crate::menus::UI_COMMANDS.iter().map(|(id, _, _, sc)| (*id, if aliased(id, *sc) { None } else { prefs.shortcut(id, *sc).map(str::to_string) }));
-    let engine = photocraft_engine::command_specs().iter().map(|c| (c.id, prefs.shortcut(c.id, c.shortcut).map(str::to_string)));
+    let engine = redrob_photo_engine::command_specs().iter().map(|c| (c.id, prefs.shortcut(c.id, c.shortcut).map(str::to_string)));
     let own: std::collections::HashSet<&str> = crate::menus::UI_COMMANDS
         .iter()
         .map(|c| c.0)
-        .chain(photocraft_engine::command_specs().iter().filter(|c| c.shortcut.is_some() || prefs.shortcuts.contains_key(c.id)).map(|c| c.id))
+        .chain(redrob_photo_engine::command_specs().iter().filter(|c| c.shortcut.is_some() || prefs.shortcuts.contains_key(c.id)).map(|c| c.id))
         .collect();
     let catalog = crate::menu_catalog::CATALOG
         .iter()
@@ -76,7 +76,7 @@ pub fn bindings(app: &PhotocraftApp) -> Vec<(String, KeyboardShortcut)> {
         .filter(|(id, sc)| {
             !sc.is_empty()
                 && !id.starts_with(crate::actions::SHORTCUT_PREFIX)
-                && photocraft_engine::commands::find(id).is_none()
+                && redrob_photo_engine::commands::find(id).is_none()
                 && !crate::menus::UI_COMMANDS.iter().any(|c| c.0 == id.as_str())
                 && !crate::hold_keys::is_temporary(id)
         })
@@ -96,7 +96,7 @@ pub fn bindings(app: &PhotocraftApp) -> Vec<(String, KeyboardShortcut)> {
         .collect();
     // Each command's alternates after every main key, the user's ahead of the defaults.
     let alternate_ids: std::collections::BTreeSet<&str> =
-        photocraft_engine::prefs::ALTERNATE_SHORTCUTS.iter().map(|(id, _)| *id).chain(prefs.alternate_shortcuts.keys().map(String::as_str)).collect();
+        redrob_photo_engine::prefs::ALTERNATE_SHORTCUTS.iter().map(|(id, _)| *id).chain(prefs.alternate_shortcuts.keys().map(String::as_str)).collect();
     for id in alternate_ids {
         let main = prefs.shortcut(id, crate::shortcuts::default_shortcut(id).as_deref()).map(str::to_string);
         let user = prefs.alternate_shortcuts.contains_key(id);
@@ -277,12 +277,12 @@ fn delete_key_command(app: &PhotocraftApp, id: String) -> String {
         return id;
     }
     let Some(st) = app.session.active() else { return id };
-    let composite = st.channel_view.target == photocraft_engine::channel_cmds::ChannelTarget::Composite && st.doc.quick_mask.is_none();
+    let composite = st.channel_view.target == redrob_photo_engine::channel_cmds::ChannelTarget::Composite && st.doc.quick_mask.is_none();
     let has_mask = st.active_layer.and_then(|l| st.doc.layer(l)).is_some_and(|l| l.mask.is_some());
-    let colors_off = st.channel_view.visible_colors(photocraft_engine::channel_cmds::color_count(&st.doc)) == 0;
+    let colors_off = st.channel_view.visible_colors(redrob_photo_engine::channel_cmds::color_count(&st.doc)) == 0;
     let alpha_on = (0..st.doc.channels.len()).any(|i| st.channel_view.alpha_shown(i));
     let solo_mask = colors_off && has_mask && !alpha_on && st.doc.quick_mask.is_none();
-    let layer_mask = st.channel_view.target == photocraft_engine::channel_cmds::ChannelTarget::LayerMask;
+    let layer_mask = st.channel_view.target == redrob_photo_engine::channel_cmds::ChannelTarget::LayerMask;
     let mask = (app.ui.mask_target || solo_mask || layer_mask) && has_mask;
     // Several selected layers outrank the active one's targeted mask (#4025): a new adjustment
     // layer targets its mask, so the first press used to delete only that mask.
@@ -319,13 +319,13 @@ fn clip_key_command(app: &PhotocraftApp, id: String) -> String {
 
 /// Why `id` can't run now (the engine's reason when it has one).
 pub fn disabled_reason(app: &PhotocraftApp, id: &str) -> String {
-    photocraft_engine::commands::find(id).and_then(|_| app.session.disabled_reason_with(id, &app.with_mask_target(id, serde_json::Value::Null))).unwrap_or_else(
-        || match id {
+    redrob_photo_engine::commands::find(id)
+        .and_then(|_| app.session.disabled_reason_with(id, &app.with_mask_target(id, serde_json::Value::Null)))
+        .unwrap_or_else(|| match id {
             "tools.decreaseBrushHardness" | "tools.increaseBrushHardness" => "the current tool has no brush tip".into(),
             _ if app.session.active().is_none() => "no document open".into(),
             _ => "not available in the current state".into(),
-        },
-    )
+        })
 }
 
 fn label(id: &str) -> String {
@@ -334,7 +334,7 @@ fn label(id: &str) -> String {
         .find(|c| c.3 == id)
         .map(|c| c.1)
         .or_else(|| crate::menus::UI_COMMANDS.iter().find(|c| c.0 == id).map(|c| c.1))
-        .or_else(|| photocraft_engine::commands::find(id).map(|c| c.label))
+        .or_else(|| redrob_photo_engine::commands::find(id).map(|c| c.label))
         .or_else(|| crate::tool_shortcuts::tool(id).map(|tool| tool.label()))
         .unwrap_or(id)
         .trim_end_matches('…')

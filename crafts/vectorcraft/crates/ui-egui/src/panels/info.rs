@@ -2,7 +2,7 @@
 //! selection's fill and stroke colour values.
 
 use egui::{Sense, Ui, vec2};
-use vectorcraft_color::{Color, Paint};
+use redrob_vector_color::{Color, Paint};
 
 use super::{current_paints, first_selected, pstate, set_pstate};
 use crate::VectorcraftApp;
@@ -75,7 +75,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     paint_block(ui, &f);
     paint_block(ui, &s);
     if let Some(n) = first_selected(app)
-        && let vectorcraft_doc::NodeKind::Text(tx) = &n.kind
+        && let redrob_vector_doc::NodeKind::Text(tx) = &n.kind
     {
         widgets::divider(ui);
         let st = tx.first_style();

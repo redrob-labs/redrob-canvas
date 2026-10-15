@@ -2,12 +2,12 @@
 //! preferences (no online service). `colorTheme.addToSwatches` adds a theme to the Swatches panel as a
 //! colour group.
 
+use redrob_vector_color::Color;
+use redrob_vector_color::harmony::{Harmony, THEME_SIZE};
+use redrob_vector_color::recolor::ColorKey;
+use redrob_vector_tools::params::color_json;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use vectorcraft_color::Color;
-use vectorcraft_color::harmony::{Harmony, THEME_SIZE};
-use vectorcraft_color::recolor::ColorKey;
-use vectorcraft_tools::params::color_json;
 
 use super::*;
 

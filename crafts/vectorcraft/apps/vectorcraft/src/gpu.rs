@@ -48,7 +48,7 @@ use eframe::wgpu::{self, Backend, Backends, DeviceType, PowerPreference};
 /// The adapters a restart leaves out, those the window failed on, as comma-separated [`key`]s
 /// (`Vulkan:1002:164e`, `Metal:Intel Iris Pro Graphics`). Set by the app itself when it starts
 /// again.
-pub const SKIP_ENV: &str = "VECTORCRAFT_GPU_SKIP";
+pub const SKIP_ENV: &str = "REDROB_VECTOR_GPU_SKIP";
 
 /// wgpu's variable for choosing an adapter by (part of) its name, any case.
 const NAME_ENV: &str = "WGPU_ADAPTER_NAME";
@@ -1030,7 +1030,7 @@ mod tests {
     /// The preference the engine saves is the one the app reads back before the window opens.
     #[test]
     fn the_saved_engine_preference_is_found() {
-        let mut prefs = vectorcraft_engine::Prefs::default();
+        let mut prefs = redrob_vector_engine::Prefs::default();
         let saved = prefs.to_json();
         assert_eq!(saved.get("gpuPreference").and_then(serde_json::Value::as_str), Some("automatic"));
         for (value, power) in [("lowPower", PowerPreference::LowPower), ("highPerformance", PowerPreference::HighPerformance)] {
@@ -1039,7 +1039,7 @@ mod tests {
             assert_eq!(power_preference(saved.get("gpuPreference").and_then(serde_json::Value::as_str), None), power);
         }
         // Every choice Preferences offer means something here.
-        for (value, _) in vectorcraft_engine::cmd::prefscmds::GPU_PREFERENCES {
+        for (value, _) in redrob_vector_engine::cmd::prefscmds::GPU_PREFERENCES {
             assert!(["automatic", "lowPower", "highPerformance"].contains(value), "{value}");
         }
     }

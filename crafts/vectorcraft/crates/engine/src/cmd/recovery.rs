@@ -25,7 +25,7 @@
 //! a heartbeat newer than the one another app wrote when taking the area over marks it running
 //! again.
 //!
-//! Each copy is two entries: `<area>/<file>.vectorcraft` (the native document, written as a save
+//! Each copy is two entries: `<area>/<file>.rvector` (the native document, written as a save
 //! writes it, without its images) and `<area>/<file>.json` (its title, original path and format,
 //! when it was written, and its images). The images are entries of their own, `<area>/img-…blob`,
 //! named by their content and shared by the area's copies: a copy written again writes only the
@@ -38,9 +38,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, Weak};
 
+use redrob_vector_doc::{Document, ImageBlob};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, ImageBlob};
 
 use super::fileio::{self, SAVE_FORMATS, SaveJob, SaveMode, SavePlan};
 use super::*;
@@ -51,7 +51,7 @@ use crate::DocState;
 pub const COMPLEX_OBJECTS: usize = 20_000;
 
 /// The extension of a copy's document entry.
-const DOC_EXT: &str = ".vectorcraft";
+const DOC_EXT: &str = ".rvector";
 /// The extension of a copy's details entry.
 const META_EXT: &str = ".json";
 /// The extension of an image entry (see [`blob_name`]).
@@ -115,7 +115,7 @@ pub trait RecoveryStore: Send + Sync {
     fn remove_area(&self, _area: &str) {}
     /// The clock heartbeats are judged by (Unix seconds; `None`: none, so no area counts as gone).
     fn now(&self) -> Option<i64> {
-        vectorcraft_doc::metadata::now_unix()
+        redrob_vector_doc::metadata::now_unix()
     }
 }
 
@@ -287,7 +287,7 @@ impl RecoveryStore for FolderStore {
         if let Some(dir) = f.parent() {
             std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
         }
-        vectorcraft_format::write_atomic(&f, bytes).map_err(|e| format!("{}: {e}", f.display()))
+        redrob_vector_format::write_atomic(&f, bytes).map_err(|e| format!("{}: {e}", f.display()))
     }
     fn remove(&self, name: &str) -> std::result::Result<(), String> {
         let f = self.file(name)?;
@@ -583,7 +583,7 @@ fn blob_name(bytes: &Arc<Vec<u8>>) -> String {
 
 /// The MIME type of a linked image's preview (JPEG or PNG), as a save names it.
 fn proxy_mime(bytes: &[u8]) -> &'static str {
-    if bytes.starts_with(&[0xff, 0xd8]) { "image/jpeg" } else { vectorcraft_doc::links::PROXY_MIME }
+    if bytes.starts_with(&[0xff, 0xd8]) { "image/jpeg" } else { redrob_vector_doc::links::PROXY_MIME }
 }
 
 /// Remove the image entries of `area` no copy's details name any more. Best effort: an entry left

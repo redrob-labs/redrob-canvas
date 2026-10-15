@@ -2,7 +2,7 @@
 //! the existing filter.cameraRaw command. Image analysis is cached per completed proxy revision.
 use crate::{camera_raw_ui::CameraRawDialog, state::CameraRawScopeState, theme::Tokens, widgets};
 use egui::{Align2, Color32, FontId, Pos2, Rect, Sense, Stroke, TextureHandle, pos2, vec2};
-use photocraft_algo::{
+use redrob_photo_algo::{
     camera_raw::CameraRaw,
     histogram::clipping,
     vectorscope::{HUES, SATURATIONS, Vectorscope},
@@ -168,7 +168,7 @@ impl CameraRawDialog {
             let mut scope_rgb = [0.0; 3];
             self.scope_transform.eval(&rgb, &mut scope_rgb);
             if scope_rgb.iter().all(|x| x.is_finite()) {
-                let (h, s) = photocraft_algo::vectorscope::hue_saturation(scope_rgb.map(|x| x.clamp(0.0, 1.0)));
+                let (h, s) = redrob_photo_algo::vectorscope::hue_saturation(scope_rgb.map(|x| x.clamp(0.0, 1.0)));
                 Some([h, s])
             } else {
                 None

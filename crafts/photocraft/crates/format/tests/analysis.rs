@@ -1,8 +1,8 @@
-//! Image › Analysis data and notes survive a `.pcraft` round trip; old manifests default them.
+//! Image › Analysis data and notes survive a `.rphoto` round trip; old manifests default them.
 
-use photocraft_color::{Color, ColorMode, SampleType};
-use photocraft_doc::{CountGroup, Document, MeasurementScale, Note, Ruler, Size};
-use photocraft_format::*;
+use redrob_photo_color::{Color, ColorMode, SampleType};
+use redrob_photo_doc::{CountGroup, Document, MeasurementScale, Note, Ruler, Size};
+use redrob_photo_format::*;
 
 #[test]
 fn measurement_and_notes_roundtrip_and_default_when_absent() {
@@ -34,6 +34,6 @@ fn measurement_and_notes_roundtrip_and_default_when_absent() {
     let mut v = serde_json::to_value(&m.document).unwrap();
     v.as_object_mut().unwrap().remove("measurement");
     v.as_object_mut().unwrap().remove("notes");
-    let old: photocraft_format::manifest::DocM = serde_json::from_value(v).unwrap();
+    let old: redrob_photo_format::manifest::DocM = serde_json::from_value(v).unwrap();
     assert!(old.measurement.is_empty() && old.notes.is_empty());
 }

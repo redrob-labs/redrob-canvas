@@ -2,7 +2,7 @@
 //!
 //! ```text
 //! curl -LO https://www.gutenberg.org/files/3204/files/mhyph.txt   # Project Gutenberg #3204, public domain
-//! cargo run --release -p designcraft-compose --example hyphgen -- mhyph.txt assets/hyphenation [--validate]
+//! cargo run --release -p redrob-layout-compose --example hyphgen -- mhyph.txt assets/hyphenation [--validate]
 //! ```
 //!
 //! Writes `en-us.dic` (the word list, front-coded and deflated; see `hyphen::dict`) and
@@ -12,8 +12,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use designcraft_compose::hyphen::dict::{Dictionary, hyphenated};
-use designcraft_compose::hyphen::patgen::{self, DEFAULT_LEVELS};
+use redrob_layout_compose::hyphen::dict::{Dictionary, hyphenated};
+use redrob_layout_compose::hyphen::patgen::{self, DEFAULT_LEVELS};
 
 /// Mac OS Roman, 0x80..=0xFF (the list's encoding; 0xA5 `•` marks breaks).
 const MAC_ROMAN_HIGH: &str =

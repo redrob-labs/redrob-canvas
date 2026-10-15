@@ -7,8 +7,8 @@
 
 use std::sync::Arc;
 
-use photocraft_geom::Rect;
-use photocraft_raster::Interrupt;
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::Interrupt;
 use rustfft::{Fft, FftPlanner, num_complex::Complex};
 
 use crate::Image;

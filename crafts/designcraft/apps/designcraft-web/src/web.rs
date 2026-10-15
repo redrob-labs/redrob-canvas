@@ -2,8 +2,8 @@
 
 use super::browser_policy::{has_query_flag, mime_for};
 use crate::graphics::{GraphicsState, RecoveryDocument, recovery_documents};
-use designcraft_engine::Session;
-use designcraft_ui_egui::{DesignApp, ImportRequest, ImportedFile, Inbox, Services};
+use redrob_layout_engine::Session;
+use redrob_layout_ui_egui::{DesignApp, ImportRequest, ImportedFile, Inbox, Services};
 use wasm_bindgen::JsCast as _;
 
 const DOC_EXTS: &[&str] = &["designcraft", "idml"];
@@ -134,7 +134,7 @@ fn create_error_panel(document: &web_sys::Document) -> Result<(), wasm_bindgen::
     panel.set_attribute("aria-labelledby", ERROR_TITLE_ID)?;
     panel.set_attribute("aria-describedby", ERROR_MESSAGE_ID)?;
     // DOM content remains visible when the GPU can no longer paint the egui canvas.
-    let colors = designcraft_ui_egui::theme::Tokens::for_brightness(designcraft_ui_egui::theme::Brightness::Dark);
+    let colors = redrob_layout_ui_egui::theme::Tokens::for_brightness(redrob_layout_ui_egui::theme::Brightness::Dark);
     panel.style().set_css_text(&format!(
         "position:fixed;inset:0;z-index:1;display:none;flex-direction:column;align-items:center;justify-content:safe center;box-sizing:border-box;padding:24px;overflow:auto;background:{};color:{};font:14px system-ui,sans-serif;gap:12px;",
         css_color(colors.app_bar), css_color(colors.text),
@@ -228,7 +228,7 @@ fn css_color(color: egui::Color32) -> String {
 fn recovery_button(document: &web_sys::Document) -> Result<web_sys::HtmlElement, wasm_bindgen::JsValue> {
     let button: web_sys::HtmlElement = document.create_element("button")?.dyn_into()?;
     button.set_attribute("type", "button")?;
-    let colors = designcraft_ui_egui::theme::Tokens::for_brightness(designcraft_ui_egui::theme::Brightness::Dark);
+    let colors = redrob_layout_ui_egui::theme::Tokens::for_brightness(redrob_layout_ui_egui::theme::Brightness::Dark);
     button.style().set_css_text(&format!(
         "box-sizing:border-box;max-width:100%;padding:6px 12px;border:1px solid {};border-radius:{}px;background:{};color:{};font:inherit;white-space:normal;overflow-wrap:anywhere;cursor:pointer;",
         css_color(colors.field_border), colors.radius, css_color(colors.button), css_color(colors.text),
@@ -373,7 +373,7 @@ impl eframe::App for WebShell {
 
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
         let _ = self.graphics.run_if_healthy(|| {
-            designcraft_ui_egui::drop_key_name_text(raw, ctx.text_edit_focused());
+            redrob_layout_ui_egui::drop_key_name_text(raw, ctx.text_edit_focused());
             self.app.raw_input_hook(raw);
         });
     }

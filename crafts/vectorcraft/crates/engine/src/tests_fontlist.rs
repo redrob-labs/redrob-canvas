@@ -1,8 +1,8 @@
 //! The fonts available (`text.fontList`), the installed ones listed without asking for them (#36),
 //! and Refresh Font List (`text.rescanFonts`).
 
+use redrob_vector_text::{FontDb, system_font_dirs};
 use serde_json::{Value, json};
-use vectorcraft_text::{FontDb, system_font_dirs};
 
 use super::*;
 

@@ -3,7 +3,7 @@
 //! (Photoshop's Insert Stop) and `actions.photoshopStep` (a step Redrob Canvas has no command for
 //! yet, kept verbatim so Save Actions writes it back unchanged).
 //!
-//! Parsing and writing live in `photocraft-psd` (`atn`); this module maps Photoshop *events*
+//! Parsing and writing live in `redrob-photo-psd` (`atn`); this module maps Photoshop *events*
 //! (`gaussianBlur` with `Rds`, `make` of an adjustment layer, `set` of the selection…) onto
 //! Redrob Canvas commands and back. An event is keyed by both its four-character code (`GsnB`,
 //! older files) and its string name (`gaussianBlur`, Photoshop 2024 and later), as the two are
@@ -15,8 +15,8 @@
 //! Layer references by name (`select` of layer "Shadow") become `{"layer": "Shadow"}`, which
 //! `commands::layer_param` resolves in whatever document the action plays on (#219).
 
-use photocraft_psd::atn::{self, AtnAction, AtnEvent, AtnFile, AtnItem};
-use photocraft_psd::descriptor::{Class, Descriptor, Id, ReferenceItem, UnicodeString, Value as D};
+use redrob_photo_psd::atn::{self, AtnAction, AtnEvent, AtnFile, AtnItem};
+use redrob_photo_psd::descriptor::{Class, Descriptor, Id, ReferenceItem, UnicodeString, Value as D};
 use serde_json::{Map, Value, json};
 
 use crate::actions_cmds::Action;
@@ -2951,7 +2951,7 @@ pub struct Imported {
 }
 
 fn photoshop_step(item: &AtnItem) -> (String, Value) {
-    let descriptor = item.descriptor.as_ref().map(|d| photocraft_paint::tile::b64_encode(&d.to_bytes()));
+    let descriptor = item.descriptor.as_ref().map(|d| redrob_photo_paint::tile::b64_encode(&d.to_bytes()));
     (PHOTOSHOP_STEP.into(), json!({"event": item.event.id(), "name": item.dictionary, "descriptor": descriptor}))
 }
 
@@ -3041,7 +3041,7 @@ fn export_item(id: &str, params: &Value, set: &str) -> Option<AtnItem> {
             _ => AtnEvent::Name(event.to_string()),
         };
         let descriptor = match jstr(params, "descriptor") {
-            Some(b64) => Some(Descriptor::from_bytes(&photocraft_paint::tile::b64_decode(b64)?).ok()?),
+            Some(b64) => Some(Descriptor::from_bytes(&redrob_photo_paint::tile::b64_decode(b64)?).ok()?),
             None => None,
         };
         return Some(AtnItem { event, dictionary: jstr(params, "name").unwrap_or("").to_string(), descriptor, ..Default::default() });
@@ -3210,7 +3210,7 @@ fn save(s: &mut Session, p: &Value) -> Result<Value> {
     let mut out = json!({"set": set, "actions": names, "steps": steps, "bytes": bytes.len(), "skipped": skipped});
     match p.get("path") {
         None | Some(Value::Null) => {
-            out["data"] = json!(photocraft_paint::tile::b64_encode(&bytes));
+            out["data"] = json!(redrob_photo_paint::tile::b64_encode(&bytes));
         }
         Some(Value::String(path)) if !path.trim().is_empty() => {
             write_file(path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;

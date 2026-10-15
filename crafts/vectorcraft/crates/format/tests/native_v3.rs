@@ -1,4 +1,4 @@
-//! `.vectorcraft` v3: compression, pruning unused images, keys from newer versions, colour
+//! `.rvector` v3: compression, pruning unused images, keys from newer versions, colour
 //! profiles as a document field, saving for older versions and the embedded preview.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -6,12 +6,12 @@
 use std::io::Write as _;
 use std::sync::Arc;
 
+use redrob_vector_doc::{ColorProfiles, Composer, Document, ImageBlob, ImageObject, Node, NodeKind, OpacityMask, Symbol};
+use redrob_vector_format::{FormatError, SaveOptions, VERSION, is_compressed, load, preview, save, save_with, sniff};
+use redrob_vector_geom::Affine;
+use redrob_vector_testkit::fixtures;
+use redrob_vector_testkit::invariants::{check_native_roundtrip, doc_json, json_approx_eq};
 use serde_json::{Value, json};
-use vectorcraft_doc::{ColorProfiles, Composer, Document, ImageBlob, ImageObject, Node, NodeKind, OpacityMask, Symbol};
-use vectorcraft_format::{FormatError, SaveOptions, VERSION, is_compressed, load, preview, save, save_with, sniff};
-use vectorcraft_geom::Affine;
-use vectorcraft_testkit::fixtures;
-use vectorcraft_testkit::invariants::{check_native_roundtrip, doc_json, json_approx_eq};
 
 fn rich_doc() -> Document {
     (*fixtures::rich_session().doc().unwrap().doc).clone()
@@ -62,7 +62,7 @@ fn area_type_vertical_alignment_round_trips() {
         d.walk(|n| {
             // The fixture's centred area type, by its text (the fixture has other area type).
             if let NodeKind::Text(t) = &n.kind
-                && matches!(t.kind, vectorcraft_doc::TextKind::Area { .. })
+                && matches!(t.kind, redrob_vector_doc::TextKind::Area { .. })
                 && t.runs.iter().map(|r| r.text.as_str()).collect::<String>() == "Centred area type"
             {
                 found = Some(t.area.vertical_align);
@@ -70,7 +70,7 @@ fn area_type_vertical_alignment_round_trips() {
         });
         found.unwrap()
     };
-    assert_eq!(area(&back), vectorcraft_doc::VerticalAlign::Center);
+    assert_eq!(area(&back), redrob_vector_doc::VerticalAlign::Center);
     // Files from before the option open top-aligned.
     // (Every area type the fixture has writes its options, so the key goes from all of them.)
     fn strip(v: &mut Value) {
@@ -87,7 +87,7 @@ fn area_type_vertical_alignment_round_trips() {
     strip(&mut v);
     let old = serde_json::to_string(&v).unwrap();
     assert!(!old.contains("verticalAlign"));
-    assert_eq!(area(&load(old.as_bytes()).unwrap()), vectorcraft_doc::VerticalAlign::Top);
+    assert_eq!(area(&load(old.as_bytes()).unwrap()), redrob_vector_doc::VerticalAlign::Top);
 }
 
 #[test]
@@ -273,7 +273,7 @@ fn pretty_files_are_indented_like_serde_json() {
 /// did, and a file without it (an older version's) opens with canvas guides.
 #[test]
 fn artboard_guides_round_trip_and_canvas_guides_save_as_before() {
-    use vectorcraft_doc::Guide;
+    use redrob_vector_doc::Guide;
     let mut d = Document::new(100.0, 100.0);
     let id = d.artboards[0].id;
     d.guides = vec![Guide::new(true, 10.0), Guide { artboard: Some(id), ..Guide::new(false, 20.0) }];

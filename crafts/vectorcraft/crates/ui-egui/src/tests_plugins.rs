@@ -2,15 +2,15 @@
 //! filter dialog with its live preview, plug-in effects in the effect dialog, and installing
 //! `.wasm` files through File › Open.
 
+use redrob_vector_engine::Session;
+use redrob_vector_plugins::wat as tpl;
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
-use vectorcraft_plugins::wat as tpl;
 
 use crate::state::Dialog;
 use crate::{VectorcraftApp, dialogs, io, menus, theme};
 
 const DESATURATE: &[u8] = include_bytes!("../../plugins/tests/fixtures/desaturate.wasm");
-const DESATURATE_ID: &str = "org.vectorcraft.example.desaturate";
+const DESATURATE_ID: &str = "org.rvector.example.desaturate";
 
 fn app() -> VectorcraftApp {
     let mut app = VectorcraftApp::new(Session::new(), Default::default());
@@ -27,13 +27,13 @@ fn frame(app: &mut VectorcraftApp) {
     out.textures_delta.clear();
 }
 
-fn red_rect(app: &mut VectorcraftApp) -> vectorcraft_doc::NodeId {
+fn red_rect(app: &mut VectorcraftApp) -> redrob_vector_doc::NodeId {
     let id = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 40, "height": 40})).unwrap()["id"].as_u64().unwrap();
     app.run("paint.setFill", json!({"color": "#ff0000"})).unwrap();
-    vectorcraft_doc::NodeId(id)
+    redrob_vector_doc::NodeId(id)
 }
 
-fn fill_rgb(app: &VectorcraftApp, id: vectorcraft_doc::NodeId) -> [f32; 3] {
+fn fill_rgb(app: &VectorcraftApp, id: redrob_vector_doc::NodeId) -> [f32; 3] {
     app.session.doc().unwrap().doc.node(id).unwrap().appearance.fill_paint().color().unwrap().to_rgb_uncalibrated()
 }
 
@@ -47,7 +47,7 @@ fn plugins_are_listed_in_the_object_and_effect_menus() {
     let before = menus::plugin_revision();
     io::open_bytes(&mut app, "desaturate.wasm", DESATURATE, None).unwrap();
     let effect = tpl::module(&tpl::manifest("test.ui.echo", "effect", r#"{"wiggle":{"type":"bool"}}"#), tpl::ECHO, "", 1);
-    app.run("plugin.install", json!({"dataBase64": vectorcraft_format::base64_encode(&wat::parse_str(effect).unwrap())})).unwrap();
+    app.run("plugin.install", json!({"dataBase64": redrob_vector_format::base64_encode(&wat::parse_str(effect).unwrap())})).unwrap();
     assert_ne!(menus::plugin_revision(), before, "the native menu is rebuilt");
     let entries = menus::menu_entries(&app);
     let filter = entry(&entries, &["Object", "Plug-ins"], "Desaturate…").expect("filter listed");
@@ -63,7 +63,7 @@ fn plugins_are_listed_in_the_object_and_effect_menus() {
 #[test]
 fn filter_dialog_previews_and_commits_one_undo_step() {
     let mut app = app();
-    app.run("plugin.install", json!({"dataBase64": vectorcraft_format::base64_encode(DESATURATE)})).unwrap();
+    app.run("plugin.install", json!({"dataBase64": redrob_vector_format::base64_encode(DESATURATE)})).unwrap();
     let id = red_rect(&mut app);
     let undo = app.session.doc().unwrap().history.undo.len();
     menus::invoke(&mut app, "plugin.dialog", json!({"id": DESATURATE_ID}));
@@ -99,7 +99,7 @@ fn plugin_effects_open_the_effect_dialog_with_their_schema() {
     let mut app = app();
     let src =
         tpl::module(&tpl::manifest("test.ui.fx", "effect", r#"{"mode":{"type":"choice","options":["a","b"],"default":"b"}}"#), tpl::ECHO, "", 1);
-    app.run("plugin.install", json!({"dataBase64": vectorcraft_format::base64_encode(&wat::parse_str(src).unwrap())})).unwrap();
+    app.run("plugin.install", json!({"dataBase64": redrob_vector_format::base64_encode(&wat::parse_str(src).unwrap())})).unwrap();
     let id = red_rect(&mut app);
     app.run("effect.dialog", json!({"effect": "plugin.test.ui.fx"})).unwrap();
     let d: &Dialog = app.ui.dialog.as_ref().unwrap();
