@@ -13,14 +13,31 @@ name = "redrob-canvas"
 path = "src/main.rs"
 
 [dependencies]
-eframe = { workspace = true }
+# The union of the eframe features the three upstream desktop binaries enable.
+eframe = { workspace = true, features = ["wgpu", "accesskit", "wayland", "x11", "persistence", "default_fonts"] }
 egui = { workspace = true }
-photocraft-ui-egui = { path = "../../crafts/photocraft/crates/ui-egui" }
-photocraft-engine = { path = "../../crafts/photocraft/crates/engine" }
-vectorcraft-ui-egui = { path = "../../crafts/vectorcraft/crates/ui-egui" }
-vectorcraft-engine = { path = "../../crafts/vectorcraft/crates/engine" }
-designcraft-ui-egui = { path = "../../crafts/designcraft/crates/ui-egui" }
-designcraft-engine = { path = "../../crafts/designcraft/crates/engine" }
+log = { workspace = true }
+serde_json = { workspace = true }
+photocraft-ui-egui = { workspace = true }
+photocraft-engine = { workspace = true }
+photocraft-io = { workspace = true }
+photocraft-format = { workspace = true }
+photocraft-codecs = { workspace = true }
+photocraft-doc = { workspace = true }
+vectorcraft-ui-egui = { workspace = true }
+vectorcraft-engine = { workspace = true }
+vectorcraft-format = { workspace = true }
+vectorcraft-text = { workspace = true }
+designcraft-ui-egui = { workspace = true }
+designcraft-engine = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rfd = { workspace = true }
+arboard = { workspace = true, features = ["image-data"] }
+webbrowser = { workspace = true }
+
+[dev-dependencies]
+egui_kittest = { workspace = true }
 
 [lints]
 workspace = true
