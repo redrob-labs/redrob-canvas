@@ -103,10 +103,9 @@ docs/                   아키텍처, 포맷, 라이선스, 고정된 상류 목
 두 핀 파일을 서로, subtree squash 커밋과, GitHub과 대조합니다. 레드롭 캔버스가 더하는 것은 셸, 에이전트,
 AI 층입니다. 편집기 내부를 포크하지 않으므로 상류의 개선은 머지로 들어옵니다.
 
-Copyright (c) 2026 the upstream authors and the the four vendored editors
-contributors, MIT OR Apache-2.0. 각 편집기의 라이선스 파일과 NOTICE는 `crafts/<name>/` 아래 그대로 있고
-[NOTICE](NOTICE)에 원문대로 실려 있습니다. `crafts/*/docs/brand/`의 upstream 이름과 로고는 the upstream authors의
-상표이며 오픈 소스가 아니고, 여기서는 쓰지 않습니다.
+네 편집기는 MIT OR Apache-2.0 이고 원저작자의 저작권 표기를 그대로 지킵니다. 각 편집기의 라이선스 파일과
+NOTICE는 `crafts/<name>/` 아래 그대로 있고 [NOTICE](NOTICE)와 [COPYRIGHT](COPYRIGHT)에 원문대로 실려 있습니다.
+`crafts/*/docs/brand/`의 원래 이름과 로고는 원저작자의 상표이며 오픈 소스가 아니고, 여기서는 쓰지 않습니다.
 
 ## 로드맵
 

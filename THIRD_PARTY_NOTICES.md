@@ -5,8 +5,8 @@ This file was generated without network access from the exact `Cargo.lock` resol
 
 Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). The four vendored editors under `crafts/` and their own NOTICE texts are recorded in `NOTICE` and `UPSTREAM_NOTICES.md`; the workspace crates they contribute appear in the inventory below as `workspace source`.
 
-- Cargo.lock SHA-256: `a1b4cac796b8f9dbaad7abec1ddc3b33bf70b6878a747150300bc62ae09127af`
-- Resolved packages: **918**
+- Cargo.lock SHA-256: `90b69950c66b2b0b96dca6289abce413c8c36c7db9968a4fb2afef4c52ac9512`
+- Resolved packages: **916**
 - Unique reproduced license/notice texts: **539**
 - Generation mode: `cargo metadata --locked --offline`; no network content was used.
 
@@ -580,8 +580,6 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `redrob-agent` | `0.7.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-ai` | `0.7.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-canvas` | `0.7.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-canvas-web` | `0.7.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-canvas-web-rfd` | `0.7.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-engine-client` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.6.4#bcb8af0dc6f3b97c95208259da4c6a993e4935d9 | `git:bcb8af0dc6f3b97c95208259da4c6a993e4935d9` | `MIT` | (none shipped) |
 | `ref-cast` | `1.0.27` | registry+https://github.com/rust-lang/crates.io-index | `7e440fb4e4b4147295338efb76001ab9e4efc0e5839df2c47fc5ac2381d365c3` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `ref-cast-impl` | `1.0.27` | registry+https://github.com/rust-lang/crates.io-index | `92ecd8964f8453721699a1ed72037b0db49ce2f5a5138486ee89bed6f67cdf3a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |

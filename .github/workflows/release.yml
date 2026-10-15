@@ -29,9 +29,6 @@ name: Release
 #   macOS arm64        redrob-canvas-<v>-macos-arm64.zip + .dmg          (Developer ID, notarized, stapled)
 #   Linux x86_64       redrob-canvas-<v>-linux-x86_64.tar.gz + .deb
 #   Windows x64        redrob-canvas-<v>-windows-x64-portable.zip + -setup.exe   (Azure Artifact Signing)
-#   Web (wasm)         redrob-canvas-web-<v>.zip                          (trunk, apps/redrob-canvas-web)
-# The web bundle is built by the `web` job below, not by the native matrix: it is a trunk build of
-# the wasm shell, zipped, and nothing installs it (a host unzips it behind a web server).
 on:
   workflow_dispatch:
     inputs:
@@ -544,92 +541,9 @@ jobs:
         run: |
           if [ -f "$RUNNER_TEMP/redrob-build.keychain" ]; then security delete-keychain "$RUNNER_TEMP/redrob-build.keychain" || true; fi
 
-  # The web build: the same shell compiled to WebAssembly (apps/redrob-canvas-web) by trunk, the
-  # `dist/` directory zipped as ONE asset. No signing, no installer; the launcher does not read it.
-  # trunk is pinned so the generated loader is the same from one release to the next.
-  web:
-    name: Build Web (wasm)
-    needs: [validate]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    permissions:
-      contents: read
-    env:
-      VERSION: ${{ needs.validate.outputs.version }}
-      TRUNK_VERSION: "0.21.14"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
-        with:
-          ref: ${{ needs.validate.outputs.sha }}
-
-      - name: Rust toolchain (rust-toolchain.toml) with the wasm target
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          toolchain: "1.95.0"
-          targets: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: release-web
-          workspaces: |
-            . -> target
-          cache-directories: |
-            ~/.cargo/bin
-
-      - name: Install trunk (pinned)
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! command -v trunk >/dev/null 2>&1 || [ "$(trunk --version | awk '{print $2}')" != "$TRUNK_VERSION" ]; then
-            cargo install trunk --locked --version "$TRUNK_VERSION"
-          fi
-          trunk --version
-
-      # `trunk build --release` reads apps/redrob-canvas-web/Trunk.toml: the wasm-release profile,
-      # wasm-opt, and `dist/` under the crate. The lock file is the workspace's one; --locked keeps it.
-      - name: Build the web shell
-        shell: bash
-        working-directory: apps/redrob-canvas-web
-        run: trunk build --release --locked
-
-      - name: Smoke test the bundle
-        shell: bash
-        working-directory: apps/redrob-canvas-web
-        run: |
-          set -euo pipefail
-          test -f dist/index.html
-          ls dist/*.wasm dist/*.js >/dev/null
-          wasm="$(ls dist/*.wasm | head -n1)"
-          echo "wasm: $(stat -c%s "$wasm") bytes"
-          # The page must point at files that are in the bundle (trunk hashes the names).
-          for ref in $(grep -oE '(href|src)="\./[^"]+"' dist/index.html | sed -E 's/^(href|src)="\.\///; s/"$//'); do
-            test -f "dist/$ref" || { echo "::error::index.html references $ref, which is not in dist/"; exit 1; }
-          done
-
-      - name: Package
-        id: package
-        shell: bash
-        run: |
-          set -euo pipefail
-          out="$RUNNER_TEMP/artifacts"
-          mkdir -p "$out"
-          # The licences travel with every copy, the web bundle included.
-          cp LICENSE-MIT LICENSE-APACHE COPYRIGHT NOTICE THIRD_PARTY_NOTICES.md UPSTREAM_NOTICES.md apps/redrob-canvas-web/dist/
-          ( cd apps/redrob-canvas-web/dist && zip -r -X "$out/redrob-canvas-web-${VERSION}.zip" . )
-          printf 'dir=%s\n' "$out" >> "$GITHUB_OUTPUT"
-          ls -la "$out"
-
-      # `release-*` is the prefix the shared publish job collects (the same as the native legs).
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-web
-          path: ${{ steps.package.outputs.dir }}/*
-          if-no-files-found: error
-
   verify-release-assets:
     name: Signed builds and licence files accompany the release
-    needs: [validate, build, web]
+    needs: [validate, build]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -647,19 +561,12 @@ jobs:
       - name: Assert every platform and every licence artifact is present
         env:
           REQUIRED_ARCHIVES: ${{ needs.validate.outputs.archive_suffixes }} ${{ needs.validate.outputs.installer_suffixes }}
-          REQUIRED_WEB: redrob-canvas-web-${{ needs.validate.outputs.version }}.zip
         shell: bash
         run: |
           set -euo pipefail
           names="$(ls -1 artifacts)"
           echo "Assets built:"
           printf '  %s\n' $names
-
-          # The web bundle, by its exact name (tools/release_matrix.py web_asset_name).
-          if [ ! -f "artifacts/${REQUIRED_WEB}" ]; then
-            echo "::error::no ${REQUIRED_WEB}; the web job produced no bundle"
-            exit 1
-          fi
 
           # Platform archives and installers come from the same generator that built the matrix,
           # so a leg that was deliberately not built is not demanded here, and one that WAS built
@@ -696,7 +603,7 @@ jobs:
             exit 1
           fi
 
-          echo "Every built platform asset (${REQUIRED_ARCHIVES}), ${REQUIRED_WEB} and the licence files are present."
+          echo "Every built platform asset (${REQUIRED_ARCHIVES}) and the licence files are present."
 
   # The shared redrob-labs publish job: SHA256SUMS.txt over every asset, redrob-launcher.json (this
   # app reads the launcher's shared sign-in through the engine), and the release v<version> created
@@ -704,10 +611,10 @@ jobs:
   # for a dry run, and only when every job before it succeeded. `tag` and `target` are passed
   # explicitly because this workflow is dispatched from a branch: github.sha is the branch head, not
   # the tag's commit. The assets reach it as the `release-*` artifacts every job above uploaded
-  # (release-linux-x86_64, release-macos-arm64, release-windows-x64, release-web), which the shared
+  # (release-linux-x86_64, release-macos-arm64, release-windows-x64), which the shared
   # job merges into one directory before writing the sums -- the same hand-over redrob-shape uses.
   publish:
-    needs: [validate, build, web, verify-release-assets]
+    needs: [validate, build, verify-release-assets]
     if: always() && needs.validate.outputs.dry_run != 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && !contains(needs.*.result, 'skipped')
     uses: redrob-labs/.github/.github/workflows/release-publish.yml@main
     permissions:

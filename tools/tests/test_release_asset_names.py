@@ -5,10 +5,10 @@ The launcher installs an asset only when its name is <stem>-<version>-<os>-<arch
 with an os-arch token and a package kind it knows. tools/release_matrix.py is the single list the
 names come from, and the workflow and the build scripts spell a few of them out by hand, so both
 are checked: the generator against the launcher's grammar, and every hand-written name against the
-generator. The fourth target, the web bundle, is not a launcher asset and has its own name.
+generator. There is no web bundle.
 
 The release ships macOS arm64 (DMG), Linux x86_64 (tar.gz + deb), Windows x64 (setup.exe) and the
-web bundle (zip) -- nothing else. The words that used to name the rest (Flatpak, AppImage, rpm,
+nothing else. The words that used to name the rest (Flatpak, AppImage, rpm,
 FreeBSD, snap, Intel / universal macOS, 32-bit Windows) must not come back into the release files.
 """
 from __future__ import annotations
@@ -83,11 +83,10 @@ DROPPED_TARGETS = (
 
 
 class AssetNames(unittest.TestCase):
-    def test_exactly_four_targets(self) -> None:
-        # Three native legs and the web bundle, each named once.
+    def test_exactly_three_targets(self) -> None:
+        # Three native legs, each named once; no web bundle.
         self.assertEqual([leg["slug"] for leg in release_matrix.LEGS], ["linux-x86_64", "macos-arm64", "windows-x64"])
-        self.assertEqual(release_matrix.WEB["slug"], "web")
-        self.assertEqual(release_matrix.WEB["target"], "wasm32-unknown-unknown")
+        self.assertFalse(hasattr(release_matrix, "WEB"))
         self.assertEqual(
             release_matrix.asset_names(VERSION),
             [
@@ -97,14 +96,13 @@ class AssetNames(unittest.TestCase):
                 "redrob-canvas-0.7.0-macos-arm64.dmg",
                 "redrob-canvas-0.7.0-windows-x64-portable.zip",
                 "redrob-canvas-0.7.0-windows-x64-setup.exe",
-                "redrob-canvas-web-0.7.0.zip",
             ],
         )
 
     def test_every_leg_publishes_something_the_launcher_installs(self) -> None:
         for leg in release_matrix.LEGS:
             os_name = leg["slug"].split("-", 1)[0]
-            names = release_matrix.asset_names(VERSION, [leg], web=False)
+            names = release_matrix.asset_names(VERSION, [leg])
             installable = [n for n in names if INSTALLABLE_RE.match(n)]
             self.assertTrue(installable, f"{leg['label']} publishes {names}; none is a name the launcher installs")
             for name in installable:
@@ -115,31 +113,13 @@ class AssetNames(unittest.TestCase):
                 self.assertIn(m["ext"], INSTALLABLE[os_name], f"{name}: {m['ext']} is not installable on {os_name}")
 
     def test_no_platform_asset_uses_a_token_the_launcher_does_not_know(self) -> None:
-        for name in release_matrix.asset_names(VERSION, web=False):
+        for name in release_matrix.asset_names(VERSION):
             rest = name.removeprefix(f"redrob-canvas-{VERSION}-")
             self.assertNotEqual(rest, name, name)
             ext = next((e for e in ALL_EXTENSIONS if rest.endswith(e)), None)
             self.assertIsNotNone(ext, f"{name}: unknown extension")
             token = rest[: -len(ext)]
             self.assertIn(token, LAUNCHER_TOKENS, f"{name}: {token!r} is not a launcher os-arch token")
-
-    def test_web_bundle_is_named_apart_from_the_launcher_assets(self) -> None:
-        # `redrob-canvas-web-<version>.zip`: the launcher must NOT take it for a platform asset
-        # (no os-arch token can be read out of it), and the workflow writes the same name by hand.
-        name = release_matrix.web_asset_name(VERSION)
-        self.assertEqual(name, "redrob-canvas-web-0.7.0.zip")
-        self.assertIsNone(INSTALLABLE_RE.match(name), f"{name} reads as a launcher-installable asset")
-        text = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
-        for needle, why in (
-            ("redrob-canvas-web-${VERSION}.zip", "release.yml does not zip the web build under the generator's name"),
-            ("redrob-canvas-web-${{ needs.validate.outputs.version }}.zip", "verify-release-assets does not demand the web bundle"),
-            ("name: release-web", "the web job does not upload a release-* artifact for the shared publish job"),
-            ("trunk build --release", "the web job does not build with trunk"),
-            ('cargo install trunk --locked --version "$TRUNK_VERSION"', "trunk is not installed at a pinned version"),
-            ("wasm32-unknown-unknown", "the web job does not add the wasm target"),
-        ):
-            self.assertTrue(needle in text, why)
-        self.assertIsNotNone(re.search(r'TRUNK_VERSION: "\d+\.\d+\.\d+"', text), "trunk is not pinned")
 
     def test_windows_zip_is_the_portable_one(self) -> None:
         # The launcher cannot install a setup.exe, so the Windows leg must offer a -portable.zip
