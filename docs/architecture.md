@@ -41,7 +41,7 @@ says how that routing will work).
 ## The editors (`crafts/*`)
 
 Four git subtrees, each squash-merged at a pinned upstream commit (`UPSTREAM.md`). Only their
-`crates/*` are workspace members; their `apps/`, `xtask` and web shells are excluded by
+`crates/*` are workspace members; their `apps/` and web shells are excluded by
 `tools/merge_workspaces.py`, which generates the root `Cargo.toml` from the four parked
 `Cargo.upstream.toml` files: dependencies unioned, craft-libs git dependencies turned into path
 dependencies on the subtree, and the `krilla` / `hayro` patches pointed at

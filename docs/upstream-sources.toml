@@ -24,7 +24,7 @@ kind = "code"
 prefix = "crafts/photocraft"
 role = ["raster editing", "layers and masks", "brushes", "PSD/PSB, ORA, KRA, TIFF, RAW codecs", "colour management"]
 license = "MIT OR Apache-2.0"
-boundary = "the whole repository is vendored as a subtree; only crates/* are workspace members (apps/, xtask and the web shell are excluded by tools/merge_workspaces.py); docs/brand/* are ArtCraft trademarks and are neither built nor shipped"
+boundary = "the whole repository is vendored as a subtree; only crates/* are workspace members (apps/ and the web shell are excluded by tools/merge_workspaces.py, docs/, packaging/, xtask and the other repository furniture are deleted by tools/prune_upstream.py); docs/brand/* are ArtCraft trademarks and are neither built nor shipped"
 
 [vectorcraft]
 repository = "https://github.com/storytold/vectorcraft"

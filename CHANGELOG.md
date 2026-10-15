@@ -4,6 +4,30 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## Unreleased
+
+### Changed
+
+- **Redrob names everywhere a user meets one.** The vendored editors' crates are `redrob-photo-*`,
+  `redrob-vector-*`, `redrob-layout-*` and `redrob-craft-*`; documents save as `.rphoto`, `.rvector`
+  and `.rlayout`; the MCP resource URIs are `redrob-photo://`, `redrob-vector://` and
+  `redrob-layout://`; MIME types are `application/x-redrob-photo` (vector, layout alike) and
+  `application/vnd.redrob-layout+zip`; environment variables are `REDROB_PHOTO_*`, `REDROB_VECTOR_*`,
+  `REDROB_LAYOUT_*` and `REDROB_CRAFT_*`. Old documents (`.pcraft`, `.vectorcraft`, `.drawcraft`,
+  `.designcraft`) still open, the old URI schemes are still answered and the old environment
+  variables are read when the new ones are unset; nothing writes an old value. The file bytes and
+  the `"format"` header value are unchanged, so documents stay interchangeable with upstream builds.
+- **The upstream repository furniture is gone from `crafts/*`** (docs, book, packaging, CI, READMEs,
+  examples, perf, scorecard, scripts, xtask, Dockerfile); licences, NOTICE and ATTRIBUTION files,
+  assets, vendored crates and contributor credits stay. `tools/prune_upstream.py`,
+  `tools/rename_crates.py` and `tools/rename_identifiers.py` re-apply all of this after a
+  `git subtree pull` (run by `tools/merge_workspaces.py`), and `scripts/check_upstream_ids.py` fails
+  CI while any upstream identifier is left outside the attribution files and `// legacy:` read paths.
+- **CI is one pull-request workflow** (`.github/workflows/ci.yml`: `checks` and `rust`, our crates
+  only, `--profile ci`, skipped when no Rust input changed or the PR targets `main`). The gitflow,
+  verify-upstream and cargo-audit workflows and every push trigger are gone; the release workflow's
+  validate job runs the scripts and `cargo fmt --check` only before the three target builds.
+
 ## 0.7.0 — 2026-10-15
 
 The rewrite. Redrob Canvas is no longer a Qt Quick editor that ports Krita and GIMP behaviour into

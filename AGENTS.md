@@ -38,7 +38,9 @@ translate GPL or LGPL source into this tree.
 - `Cargo.toml` at the root is **generated** by `tools/merge_workspaces.py` from the four
   `crafts/*/Cargo.upstream.toml`; its header says so. Edit the script, run it, commit both. The
   workspace members are `crates/*`, `apps/*` and each subtree's `crates/*`; the subtrees' `apps/`,
-  `xtask` and web shells are excluded. `Cargo.lock` is one lock file for all of it.
+  web shells are excluded; `tools/prune_upstream.py` deletes their docs, packaging, CI and xtasks,
+  and `tools/rename_crates.py` / `tools/rename_identifiers.py` give crates, extensions, URI schemes,
+  MIME types and env variables the Redrob names (UPSTREAM.md). `Cargo.lock` is one lock file for all of it.
 - `apps/redrob-canvas/` is the shell: `main.rs` (args, eframe options), `shell.rs` (`Mode`, lazy
   editors, top bar), `services.rs` (config directory, prefs). Config lives in `ai.redrob.canvas`'s
   directory (`~/Library/Application Support/Redrob Canvas`, `%APPDATA%\Redrob Canvas`,

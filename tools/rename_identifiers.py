@@ -60,8 +60,9 @@ RULES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bCRAFT_(?=[A-Z0-9])"), "REDROB_CRAFT_"),
 ]
 
-# Where identifiers live: the editors' code and text assets, our shell and crates, docs, packaging.
-SCAN = ["crafts", "apps", "crates", "docs", "installer", "resources", "tools/release", "README.md", "README.ko.md"]
+# Where identifiers live: the editors' code and text assets, our shell and crates, packaging. Prose
+# (README, docs/, UPSTREAM.md) is not scanned: it is allowed to name the old extensions it says still open.
+SCAN = ["crafts", "apps", "crates", "installer", "resources", "tools/release"]
 TEXT_SUFFIXES = {".rs", ".toml", ".md", ".txt", ".json", ".yml", ".yaml", ".sh", ".py", ".ftl", ".tsv",
                  ".html", ".js", ".wgsl", ".in", ".xml", ".plist", ".desktop", ".wxs", ".ps1", ".ron"}
 SKIP_DIRS = {".git", "target"}

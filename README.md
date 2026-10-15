@@ -50,9 +50,9 @@ What each mode opens and saves comes from its editor. The short list:
 | Vector | `.rvector`, SVG, SVGZ, AI (PDF-compatible), EPS, PDF, DXF, EMF/WMF, raster images, PSD/PSB as merged image | `.rvector`, SVG, PDF (with PDF/X), AI, EPS, DXF, PNG, JPEG, WebP, PSD, Print, Package |
 | Layout | `.rlayout`, IDML, images, PDFs and vectors as placed assets | `.rlayout`, PDF (PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
 
-The authoritative tables are the editors' own: `crafts/photocraft/crates/codecs/README.md`,
-`crafts/vectorcraft/README.md` and `crafts/designcraft/README.md`. `docs/formats.md` says how the
-shell routes a file to a mode.
+`docs/formats.md` says how the shell routes a file to a mode, where each editor's format tables
+live in the code, and which upstream extensions (`.pcraft`, `.vectorcraft`, `.designcraft`) still
+open.
 
 ## Build
 
@@ -108,8 +108,8 @@ not fork any editor's internals, so upstream improvements arrive by merge.
 
 The four vendored editors are MIT OR Apache-2.0 and keep their authors' copyright: their licence and
 NOTICE files stay intact under `crafts/<name>/` and are reproduced in [NOTICE](NOTICE) and
-[COPYRIGHT](COPYRIGHT). Their original names and logos under `crafts/*/docs/brand/` are trademarks of
-their authors, not open source, and are not used here.
+[COPYRIGHT](COPYRIGHT). Their original names and logos are trademarks of their authors, not open
+source, and are not used or shipped here (their `docs/` are removed from the tree after every pull).
 
 ## Roadmap
 
