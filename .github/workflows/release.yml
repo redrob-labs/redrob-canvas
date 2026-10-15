@@ -1,143 +1,254 @@
 name: Release
 
-# Signs a release whose builds were made on our own machines.
+# The ONE release path: every platform is built on GitHub runners from the single cargo binary
+# `redrob-canvas` (apps/redrob-canvas), Windows is signed through Azure Artifact Signing with the
+# job's OpenID Connect login, macOS is signed and notarized with the organization's Developer ID,
+# and the shared redrob-labs publish job creates the GitHub Release.
 #
-# tools/release/local-release.sh is the entry point: it checks the tag, builds and tests Linux,
-# macOS and Windows on our own machines at the same time, creates the DRAFT release with the
-# Linux archive, the corresponding source, the licence files and the two UNSIGNED archives on it,
-# and starts this workflow for the tag. The certificates never leave GitHub, so signing stays
-# here. Both signing jobs run at the same time; the draft already exists, so they cannot race to
-# create it.
+#   gh workflow run release.yml --ref main -f tag=vX.Y.Z           # the release: PUBLISHED as latest
+#   gh workflow run release.yml --ref <branch> -f dry_run=true     # builds and signs; publishes nothing
 #
-# Publishing the draft is the release; there is no CDN and no promotion step. When the build
-# machines are unavailable, release-ci.yml builds every platform on runners instead.
+# The parts every redrob-labs repository shares are not in this file; they are called:
+#   - redrob-labs/.github/actions/sign-windows                     Authenticode through Azure Artifact Signing
+#   - redrob-labs/.github/.github/workflows/release-publish.yml    checksums, launcher manifest, release
+#
+# Rules this file encodes:
+#   - Windows: build, THEN `azure/login` (OIDC), THEN sign -- the login token is short-lived and the
+#     build is long; there is no certificate file and no client secret anywhere. The executable is
+#     signed BEFORE it is zipped and before the setup embeds that zip; the uninstaller and the setup
+#     are signed in their turn. `release` is the environment the organization's federated credential
+#     names; any other name is refused.
+#   - the publish job runs only for a real tag, and only when every job before it succeeded;
+#   - the release is published as latest unless the version carries a pre-release suffix.
+#
+# There is no Qt, no CMake and no aqtinstall here any more: 0.7.0 replaced the Qt Quick shell with an
+# egui shell, so a leg is `cargo build --release -p redrob-canvas --target <triple>` and a packaging
+# script. The Linux leg needs the X11/Wayland/GL development headers egui, wgpu and rfd link against.
+#
+# Exactly FOUR targets (tools/release_matrix.py is the list):
+#   macOS arm64        redrob-canvas-<v>-macos-arm64.zip + .dmg          (Developer ID, notarized, stapled)
+#   Linux x86_64       redrob-canvas-<v>-linux-x86_64.tar.gz + .deb
+#   Windows x64        redrob-canvas-<v>-windows-x64-portable.zip + -setup.exe   (Azure Artifact Signing)
+#   Web (wasm)         redrob-canvas-web-<v>.zip                          (trunk, apps/redrob-canvas-web)
+# The web bundle is built by the `web` job below, not by the native matrix: it is a trunk build of
+# the wasm shell, zipped, and nothing installs it (a host unzips it behind a web server).
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag, vMAJOR.MINOR.PATCH, already pushed and on main"
-        required: true
+        description: "Release tag, vMAJOR.MINOR.PATCH, already pushed and on main (empty for a dry run)"
+        required: false
         type: string
+        default: ""
+      dry_run:
+        description: "Dry run: build and sign the dispatched ref, publish nothing"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ inputs.tag }}
+  group: release-${{ inputs.tag != '' && inputs.tag || github.ref }}
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: ${{ inputs.tag }}
+  PRODUCT: Redrob Canvas
+  PRODUCT_URL: https://github.com/${{ github.repository }}
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
 
 jobs:
   validate:
     name: Validate release tag
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    # write, not read: GitHub lists a DRAFT release only to a caller with push access.
-    permissions:
-      contents: write
+    timeout-minutes: 60
     outputs:
+      # The version without the leading v, the commit every later job builds, and whether this is a
+      # dry run. For a tag the commit is the tag's; for a dry run it is the dispatched ref's.
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+      dry_run: ${{ steps.resolve.outputs.dry_run }}
+      # The build matrix, the platform assets the release must carry, and the platform list the
+      # release notes promise -- all from the single list in tools/release_matrix.py.
+      matrix: ${{ steps.release-matrix.outputs.matrix }}
       archive_suffixes: ${{ steps.release-matrix.outputs.archive_suffixes }}
       installer_suffixes: ${{ steps.release-matrix.outputs.installer_suffixes }}
+      notes_platforms: ${{ steps.release-matrix.outputs.notes_platforms }}
+      windows_signing_ready: ${{ steps.release-matrix.outputs.windows_signing_ready }}
     steps:
+      # A dry run builds whatever was dispatched; a release builds the tag it names. Resolved
+      # before the checkout so the checkout can take the result.
+      - name: Resolve what to build
+        id: resolve
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
+            echo "dry_run=true" >> "$GITHUB_OUTPUT"
+            echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo "::notice::dry run of $GITHUB_REF_NAME ($GITHUB_SHA): builds and signs, publishes nothing"
+          elif [ -n "$INPUT_TAG" ]; then
+            [[ "$INPUT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] \
+              || { echo "::error::not a release tag: $INPUT_TAG"; exit 1; }
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+            echo "ref=refs/tags/$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::give a tag (the release) or set dry_run (a rehearsal); neither was given"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ steps.resolve.outputs.ref }}
           fetch-depth: 0
 
+      # Decides which platforms this release builds. Windows is omitted, with a notice in the
+      # run log, until the repository variable WINDOWS_SIGNING_READY is "true" -- see the
+      # script for why an unsigned Windows executable is not the fallback.
       - name: Resolve the release matrix
         id: release-matrix
         env:
           WINDOWS_SIGNING_READY: ${{ vars.WINDOWS_SIGNING_READY }}
         run: python3 tools/release_matrix.py
 
-      # The tests are NOT re-run: the commit reached main through pull requests whose required
-      # checks ran them, and a second run was a third of the old release's wall time.
-      - name: Require the tag on main, matching the crate version and the changelog
+      # The packaging step derives the version from the TAG, while the binary reports the one in
+      # Cargo.toml. Nothing made the two agree, so a tag could ship archives named one version
+      # holding a binary that calls itself another. Checked here, before anything is built.
+      # A dry run has no tag: it takes the crate version as it is and skips the tag checks.
+      - name: Require the tag on main, matching the workspace version and the changelog
+        id: version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          DRY_RUN: ${{ steps.resolve.outputs.dry_run }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::not a release tag: $RELEASE_TAG"; exit 1; }
+          crate_version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n1)"
+          test -n "$crate_version"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "version=${crate_version}" >> "$GITHUB_OUTPUT"
+            echo "dry run: building Cargo.toml version ${crate_version} at $(git rev-parse --short HEAD)"
+            exit 0
+          fi
           git fetch --no-tags origin main:refs/remotes/origin/main
           if ! git merge-base --is-ancestor HEAD origin/main; then
             echo "::error::Release tag commit must be reachable from origin/main"
             exit 1
           fi
-          version="${RELEASE_TAG#v}"
-          crate_version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n1)"
-          if [ "$version" != "$crate_version" ]; then
-            echo "::error::Tag ${RELEASE_TAG} does not match Cargo.toml version ${crate_version}"
+          tag_version="${RELEASE_TAG#v}"
+          if [ "$tag_version" != "$crate_version" ]; then
+            echo "::error::Tag v${tag_version} does not match Cargo.toml version ${crate_version}"
             exit 1
           fi
-          if ! grep -q "^## ${version} " CHANGELOG.md || grep -q "^## ${version} — unreleased" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no released '## ${version}' section"
+          # The release notes say "See CHANGELOG", so a release whose version has no entry there
+          # ships notes that describe nothing.
+          if ! grep -q "^## ${tag_version} " CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## ${tag_version}' section"
             exit 1
           fi
+          if grep -q "^## ${tag_version} - unreleased" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md still marks ${tag_version} as unreleased"
+            exit 1
+          fi
+          echo "version=${tag_version}" >> "$GITHUB_OUTPUT"
 
+      - name: Verify the upstream pins
+        run: ./scripts/verify-upstream.sh
+
+      - name: Rust toolchain (rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: "1.95.0"
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-validate
+
+      - name: System libraries for the desktop app
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libgtk-3-dev
+
+      # The generator reads Cargo metadata offline on purpose; populate the cache first.
       - name: Populate the Cargo registry cache
         run: cargo fetch --locked
 
-      # A stale notice inventory is a GPL compliance defect, so it blocks the release.
-      - name: Check the generated notices and source offer
+      # A stale notice inventory is an attribution defect, so it blocks the release rather than
+      # being corrected afterwards.
+      - name: Check the generated third-party notices
         run: python3 tools/generate_distribution_artifacts.py --check
 
-      - name: Require the draft and the three builds
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="${RELEASE_TAG#v}"
-          names="$(gh release view "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --json isDraft,assets \
-            -q 'if .isDraft then .assets[].name else error("not a draft") end')"
-          # redrob-launcher.json comes from the Linux build directory too (build-linux.sh writes
-          # it): a draft without it is one Redrob Launcher cannot read, so it stops here.
-          for name in "redrob-canvas-${version}-linux-x86_64.tar.gz" \
-                      "redrob-canvas-${version}-macos-arm64.unsigned.zip" \
-                      "redrob-canvas-${version}-windows-x64.unsigned.zip" \
-                      "redrob-launcher.json"; do
-            printf '%s\n' "$names" | grep -qxF "$name" \
-              || { echo "::error::$name is not on the draft; run tools/release/local-release.sh"; exit 1; }
-          done
+      - name: Design system tokens and mark are current
+        run: python3 tools/check_design_system.py
 
-  sign-macos:
-    name: Sign macOS arm64
+      - name: Rust workspace
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets --locked -- -D warnings
+          cargo test --workspace --locked
+
+  build:
+    name: Build ${{ matrix.label }}
     needs: [validate]
-    runs-on: macos-15
-    timeout-minutes: 45
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    # `release` is the environment the organization's federated credential names
+    # (repo:redrob-labs/<repo>:environment:release); any other name is refused by Azure.
+    environment: release
     permissions:
-      contents: write
-    environment: production-release
+      contents: read
+      # The OIDC token `azure/login` exchanges for the Artifact Signing credential (Windows leg).
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # Generated by tools/release_matrix.py in the validate job, so the Windows leg can be
+        # excluded while Authenticode signing is not configured, and so the asset names the
+        # verify job demands and the platform list the release notes promise come from that
+        # same single list.
+        include: ${{ fromJSON(needs.validate.outputs.matrix) }}
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      TARGET: ${{ matrix.target }}
+      # Plain IDs (not credentials); here so the login step can be skipped when signing is not set up.
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
     steps:
-      # The disk image scripts (installer/macos/), at the tagged commit.
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ needs.validate.outputs.sha }}
 
-      # The archive the build machine uploaded. Downloaded by name, so a stale file from another
-      # version cannot be picked up.
-      - name: Download the unsigned build
-        id: unpack
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SUFFIX: macos-arm64
+      - name: Rust toolchain (rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: "1.95.0"
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.slug }}
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
         run: |
-          set -euo pipefail
-          version="${RELEASE_TAG#v}"
-          base="redrob-canvas-${version}-${SUFFIX}"
-          gh release download "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" \
-            -p "${base}.unsigned.zip" -D "$RUNNER_TEMP"
-          echo "base=$base" >> "$GITHUB_OUTPUT"
-          ditto -x -k "$RUNNER_TEMP/${base}.unsigned.zip" "$RUNNER_TEMP"
-          test -d "$RUNNER_TEMP/$base/Redrob Canvas.app"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libgtk-3-dev dpkg-dev
 
       # macOS: import the Developer ID certificate into a throwaway keychain and read the
       # identity back out, rather than assuming its name.
       - name: Import Apple Developer ID certificate
+        if: runner.os == 'macOS'
         shell: bash
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CODESIGN_CERT_P12_BASE64 }}
@@ -160,6 +271,7 @@ jobs:
           rm -f "$RUNNER_TEMP/redrob-certificate.p12"
 
       - name: Prepare Apple notarization key
+        if: runner.os == 'macOS'
         shell: bash
         env:
           APPLE_NOTARY_API_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_API_KEY_P8_BASE64 }}
@@ -173,18 +285,61 @@ jobs:
           printf '%s' "$APPLE_NOTARY_API_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
           chmod 600 "$RUNNER_TEMP/AuthKey.p8"
 
-      - name: Sign, notarize and staple
+      - name: Build
         shell: bash
         env:
-          BASE: ${{ steps.unpack.outputs.base }}
+          MACOSX_DEPLOYMENT_TARGET: "12.0"
+        run: cargo build --release --locked -p redrob-canvas --target "$TARGET"
+
+      # Only the shell binary and the four editors' crates are built per platform; the workspace
+      # tests already ran on Linux in validate. Here the binary has to at least answer --version,
+      # which proves it links and starts without a display.
+      - name: Smoke test the binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin="target/$TARGET/release/redrob-canvas"
+          [ "$RUNNER_OS" = "Windows" ] && bin="$bin.exe"
+          test -x "$bin"
+          "$bin" --version
+
+      # One staging tree per platform: bin/<binary> and the licence set. The licences travel with
+      # every archive (MIT asks the notice to be retained in every copy; Apache 4(d) the NOTICE).
+      - name: Stage
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/stage"
+          python3 tools/release/stage.py --target "$TARGET" --version "$VERSION" --out "$stage"
+          ls -R "$stage" | head -50
+
+      # The version Finder, the About box and Gatekeeper show is read from the bundle after it is
+      # built, not trusted from the script that wrote it.
+      - name: Require the bundle version to match the workspace version (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          plist="$RUNNER_TEMP/stage/Redrob Canvas.app/Contents/Info.plist"
+          crate_version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n1)"
+          for key in CFBundleShortVersionString CFBundleVersion; do
+            bundle_version="$(plutil -extract "$key" raw -o - "$plist")"
+            if [ "$bundle_version" != "$crate_version" ]; then
+              echo "::error::Info.plist $key is $bundle_version, Cargo.toml is $crate_version"
+              exit 1
+            fi
+          done
+
+      - name: Sign, notarize and staple (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
           APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
           APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
         run: |
           set -euo pipefail
-          app="$RUNNER_TEMP/$BASE/Redrob Canvas.app"
+          app="$RUNNER_TEMP/stage/Redrob Canvas.app"
 
-          # Deep sign: macdeployqt on the build Mac copied unsigned Qt frameworks in, and its
-          # ad-hoc signature is replaced here.
           codesign --force --deep --options runtime --timestamp \
             --sign "$APPLE_SIGNING_IDENTITY" "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
@@ -198,11 +353,9 @@ jobs:
             --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
             --wait
 
-          # Inline rather than a script: the checkout is the TAG, and a fix to this step must reach a tag
-          # cut before it. Stapling and validating both look the ticket up in Apple's CloudKit service,
-          # and that lookup drops: v0.5.6 failed three times on "The network connection was lost"
-          # (error 68) after notarization was Accepted -- twice in staple, once in validate. Each
-          # network step is retried with backoff; a real refusal fails every attempt and the job.
+          # Stapling and validating both look the ticket up in Apple's CloudKit service, and that
+          # lookup drops ("The network connection was lost", error 68) after notarization was
+          # Accepted. Each network step is retried with backoff; a real refusal fails every attempt.
           retry() {
             local i
             for i in 1 2 3 4 5 6; do
@@ -218,31 +371,79 @@ jobs:
           retry spctl --assess --type execute --verbose=4 "$app"
           rm -f "$RUNNER_TEMP/notarize.zip"
 
-      # The whole staging tree, so the licence, notices and source offer travel with the binary.
-      # ditto (not zip) keeps the signature's extended attributes and the stapled ticket.
+      # The login comes after the build on purpose: the OpenID Connect token is short-lived and a
+      # long build left signtool without a usable credential (it then waited on a browser).
+      - name: Log in to Azure (OIDC)
+        if: runner.os == 'Windows' && env.AZURE_CLIENT_ID != ''
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # The executable is signed BEFORE it is zipped: the portable zip and the setup both carry it
+      # as is.
+      - name: Sign the executable (Windows)
+        if: runner.os == 'Windows'
+        uses: redrob-labs/.github/actions/sign-windows@main
+        with:
+          files: ${{ runner.temp }}/stage/bin/redrob-canvas.exe
+          description: ${{ env.PRODUCT }}
+          url: ${{ env.PRODUCT_URL }}
+          endpoint: ${{ secrets.ARTIFACT_SIGNING_ENDPOINT }}
+          account: ${{ secrets.ARTIFACT_SIGNING_ACCOUNT }}
+          cert-profile: ${{ secrets.ARTIFACT_SIGNING_CERT_PROFILE }}
+
       - name: Package
+        id: package
         shell: bash
-        env:
-          BASE: ${{ steps.unpack.outputs.base }}
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/artifacts"
-          ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$BASE" "artifacts/${BASE}.zip" )
+          out="$RUNNER_TEMP/artifacts"
+          mkdir -p "$out"
+          base="redrob-canvas-${VERSION}-${{ matrix.slug }}"
+
+          case "$RUNNER_OS" in
+            macOS)
+              # Archive the whole staging tree, not just the .app, so the licences and notices
+              # travel with the binary. ditto (not zip/cp) because it preserves the code
+              # signature's extended attributes and the stapled notarization ticket.
+              mv "$RUNNER_TEMP/stage" "$RUNNER_TEMP/${base}"
+              ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$base" "$out/${base}.zip" )
+              ;;
+            Windows)
+              # `-portable`: the unpacked, signed app, which Redrob Launcher unzips and runs in place.
+              powershell -NoProfile -Command \
+                "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$out/${base}-portable.zip' -Force"
+              ;;
+            *)
+              tar -C "$RUNNER_TEMP/stage" -czf "$out/${base}.tar.gz" .
+              # The same tree as a package for apt; the system's own uninstall removes it.
+              python3 tools/release/make_deb.py "$RUNNER_TEMP/stage" "$VERSION" "$out/${base}.deb"
+              # The licence set once, from Linux, rather than three times under the same name.
+              cp LICENSE-MIT LICENSE-APACHE COPYRIGHT NOTICE THIRD_PARTY_NOTICES.md "$out/"
+              ;;
+          esac
+
+          printf 'base=%s\n' "$base" >> "$GITHUB_OUTPUT"
+          printf 'dir=%s\n' "$out" >> "$GITHUB_OUTPUT"
+          ls -la "$out"
 
       # The disk image most people download: the stapled app, an Applications link, the uninstaller
       # and the licences, on the branded window (installer/macos/). The image is signed, notarized and
       # stapled in its own right, so Gatekeeper accepts it before anyone opens the app inside.
-      - name: Disk image
+      - name: Disk image (macOS)
+        if: runner.os == 'macOS'
         shell: bash
         env:
-          BASE: ${{ steps.unpack.outputs.base }}
+          BASE: ${{ steps.package.outputs.base }}
           APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
           APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
         run: |
           set -euo pipefail
           trap 'rm -f "$RUNNER_TEMP/AuthKey.p8"' EXIT
           # A venv: the runner's Homebrew Python is "externally managed" (PEP 668) and refuses
-          # `pip install --user`, which is how the first run of this step failed on v0.5.6.
+          # `pip install --user`.
           python3 -m venv "$RUNNER_TEMP/dmgbuild-venv"
           "$RUNNER_TEMP/dmgbuild-venv/bin/python" -m pip install --quiet "dmgbuild==1.6.5"
           export PATH="$RUNNER_TEMP/dmgbuild-venv/bin:$PATH"  # make-dmg.sh runs `python3 -m dmgbuild`
@@ -250,7 +451,7 @@ jobs:
           bash installer/macos/make-dmg.sh \
             --app "$RUNNER_TEMP/$BASE/Redrob Canvas.app" \
             --licenses "$RUNNER_TEMP/$BASE/share/redrob-canvas/licenses" \
-            --version "${RELEASE_TAG#v}" --sign-identity "$APPLE_SIGNING_IDENTITY" --out "$dmg"
+            --version "$VERSION" --sign-identity "$APPLE_SIGNING_IDENTITY" --out "$dmg"
           xcrun notarytool submit "$dmg" \
             --key "$RUNNER_TEMP/AuthKey.p8" \
             --key-id "$APPLE_NOTARY_API_KEY_ID" \
@@ -270,211 +471,46 @@ jobs:
           retry xcrun stapler validate "$dmg"
           retry spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
 
-      - name: Replace the unsigned build on the draft
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BASE: ${{ steps.unpack.outputs.base }}
-        run: |
-          set -euo pipefail
-          out="$RUNNER_TEMP/artifacts"
-          # Sums are computed into a temporary file and moved in. Redirecting straight into
-          # the SUMS file let the fallback list that file itself: on Windows `shasum` is
-          # missing, its failed attempt had already created the empty file, and `sha256sum ./*`
-          # then hashed it, so `sha256sum -c` failed for every 0.5.x Windows download.
-          sums="$(mktemp)"
-          ( cd "$out" && { shasum -a 256 ./* 2>/dev/null || sha256sum ./*; } > "$sums" )
-          mv "$sums" "$out/${BASE}-SHA256SUMS.txt"
-          gh release upload "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --clobber "$out"/*
-          gh release delete-asset "$RELEASE_TAG" "${BASE}.unsigned.zip" -R "$GITHUB_REPOSITORY" --yes
-
-  sign-windows:
-    name: Sign Windows x64
-    needs: [validate]
-    runs-on: windows-2025
-    timeout-minutes: 30
-    permissions:
-      contents: write
-    environment: production-release
-    steps:
-      # The signing helper and the setup sources, at the tagged commit.
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
-        with:
-          ref: ${{ inputs.tag }}
-
-      # The archive the build machine uploaded. Downloaded by name, so a stale file from another
-      # version cannot be picked up.
-      - name: Download the unsigned build
-        id: unpack
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SUFFIX: windows-x64
-        run: |
-          set -euo pipefail
-          version="${RELEASE_TAG#v}"
-          base="redrob-canvas-${version}-${SUFFIX}"
-          gh release download "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" \
-            -p "${base}.unsigned.zip" -D "$RUNNER_TEMP"
-          echo "base=$base" >> "$GITHUB_OUTPUT"
-          mkdir -p "$RUNNER_TEMP/stage"
-          powershell -NoProfile -Command \
-            "Expand-Archive -LiteralPath '$RUNNER_TEMP/${base}.unsigned.zip' -DestinationPath '$RUNNER_TEMP/stage'"
-
-      # Windows: same certificate-shape validation the sibling products use -- a PFX with a
-      # private key, the Code Signing EKU, currently valid, and a chain that builds.
-      - name: Import Windows code-signing certificate
-        shell: pwsh
-        env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: |
-          $ErrorActionPreference = "Stop"
-          if (-not $env:WIN_CSC_LINK -or -not $env:WIN_CSC_KEY_PASSWORD) {
-            throw "Windows signing secrets are required"
-          }
-          $certificatePath = Join-Path $env:RUNNER_TEMP "redrob-certificate.pfx"
-          $link = $env:WIN_CSC_LINK.Trim()
-          if ($link -match '^https://') {
-            Invoke-WebRequest -Uri $link -OutFile $certificatePath -UseBasicParsing
-          } else {
-            if ($link -match '^data:[^,]*;base64,') {
-              $payload = $link.Substring($link.IndexOf(',') + 1)
-            } else {
-              $payload = $link
-            }
-            $payload = $payload -replace '\s', ''
-            if ($payload -notmatch '^[A-Za-z0-9+/]+={0,2}$') {
-              throw "WIN_CSC_LINK must be raw Base64 PFX data, a data:*;base64 URI, or an HTTPS URL"
-            }
-            [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($payload))
-          }
-          $password = ConvertTo-SecureString $env:WIN_CSC_KEY_PASSWORD -AsPlainText -Force
-          $imported = @(Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password)
-          $codeSigningOid = "1.3.6.1.5.5.7.3.3"
-          # Read the EKU out of the X.509 extension itself, not out of PowerShell's
-          # EnhancedKeyUsageList. That list's ObjectId is already a STRING, so the
-          # `.ObjectId.Value` this used to compare is always $null and the `-contains` never
-          # matched -- the filter rejected the organisation's certificate, which does carry
-          # Code Signing. A sibling product's diagnostic printed `eku=Code Signing ()` and
-          # "EKU is not Code Signing" in the same breath, which is the shape of a check
-          # reading the wrong property rather than a certificate that is wrong.
-          function Get-EkuOid([Security.Cryptography.X509Certificates.X509Certificate2]$candidate) {
-            $oids = @()
-            foreach ($extension in $candidate.Extensions) {
-              if ($extension.Oid.Value -ne "2.5.29.37") { continue }
-              $eku = $extension -as [Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]
-              if ($null -eq $eku) { continue }
-              foreach ($usage in $eku.EnhancedKeyUsages) {
-                $oids += if ($usage.FriendlyName) { "$($usage.FriendlyName) ($($usage.Value))" } else { $usage.Value }
-              }
-            }
-            return $oids
-          }
-          $certificate = $imported | Where-Object {
-            $_.HasPrivateKey -and
-            $_.NotBefore.ToUniversalTime() -le [DateTime]::UtcNow -and
-            $_.NotAfter.ToUniversalTime() -gt [DateTime]::UtcNow -and
-            ((Get-EkuOid $_) -match [regex]::Escape($codeSigningOid))
-          } | Sort-Object NotAfter -Descending | Select-Object -First 1
-          if (-not $certificate -or -not $certificate.Thumbprint) {
-            # One message for three independent conditions is not diagnosable: an expired
-            # certificate, one with no private key, and one issued for the wrong purpose all
-            # read the same. Only public metadata is printed -- never the key, the password,
-            # or the PFX bytes.
-            Write-Host "Imported $($imported.Count) certificate(s); none usable for code signing:"
-            foreach ($candidate in $imported) {
-              $ekus = @(Get-EkuOid $candidate)
-              $reasons = @()
-              if (-not $candidate.HasPrivateKey) { $reasons += "no private key" }
-              if ($candidate.NotBefore.ToUniversalTime() -gt [DateTime]::UtcNow) { $reasons += "not valid until $($candidate.NotBefore.ToUniversalTime().ToString('u'))" }
-              if ($candidate.NotAfter.ToUniversalTime() -le [DateTime]::UtcNow) { $reasons += "EXPIRED $($candidate.NotAfter.ToUniversalTime().ToString('u'))" }
-              if ($ekus.Count -eq 0) { $reasons += "no Enhanced Key Usage at all" }
-              elseif ($ekus -notmatch [regex]::Escape($codeSigningOid)) { $reasons += "EKU is not Code Signing" }
-              Write-Host "  subject=$($candidate.Subject)"
-              Write-Host "    validity=$($candidate.NotBefore.ToUniversalTime().ToString('u')) .. $($candidate.NotAfter.ToUniversalTime().ToString('u'))"
-              Write-Host "    hasPrivateKey=$($candidate.HasPrivateKey)  eku=$(if ($ekus.Count) { $ekus -join ', ' } else { '(none)' })"
-              Write-Host "    unusable because: $($reasons -join '; ')"
-            }
-            throw "WIN_CSC_LINK holds no certificate usable for Authenticode signing. See the per-certificate reasons above; the secret needs a PFX with a private key, an unexpired validity window, and the Code Signing EKU ($codeSigningOid)."
-          }
-          # The organisation's code-signing certificate is SELF-SIGNED. Measured, not assumed:
-          # the chain terminates in "a root certificate which is not trusted by the trust
-          # provider", and a sibling product that signs with this same secret says so in its
-          # own workflow and accepts NotTrusted there.
-          #
-          # So an untrusted or incomplete root is expected and is NOT a defect to fail on.
-          # Everything else still is -- a revoked certificate, one outside its validity window,
-          # a broken signature, a bad usage. Those are listed explicitly rather than the check
-          # being deleted, because deleting it would also stop catching a revoked certificate.
-          #
-          # WHAT THIS BUYS AND WHAT IT DOES NOT. It buys tamper-evidence and a stable publisher
-          # identity: the binary cannot be modified without breaking the signature. It does NOT
-          # buy trust -- Windows SmartScreen still warns the user that the publisher is
-          # unknown, exactly as it would for an unsigned binary. Removing that warning needs an
-          # OV or EV certificate from a CA whose root ships in Windows; no change to this
-          # workflow can substitute for one.
-          $chain = [Security.Cryptography.X509Certificates.X509Chain]::new()
-          $chain.ChainPolicy.RevocationMode = [Security.Cryptography.X509Certificates.X509RevocationMode]::Online
-          $chain.ChainPolicy.RevocationFlag = [Security.Cryptography.X509Certificates.X509RevocationFlag]::ExcludeRoot
-          $built = $chain.Build($certificate)
-          $tolerated = @("UntrustedRoot", "PartialChain", "RevocationStatusUnknown", "OfflineRevocation")
-          $fatal = @($chain.ChainStatus | Where-Object { $tolerated -notcontains $_.Status.ToString() })
-          if ($fatal.Count -gt 0) {
-            $chainErrors = ($fatal | ForEach-Object { "$($_.Status): $($_.StatusInformation.Trim())" }) -join "; "
-            throw "Windows code-signing certificate chain validation failed: $chainErrors"
-          }
-          if (-not $built) {
-            Write-Host "::warning::certificate chain is not publicly trusted ($(($chain.ChainStatus | ForEach-Object { $_.Status.ToString() }) -join ', ')). The binary is signed and tamper-evident, but Windows will still warn that the publisher is unknown until an OV/EV certificate replaces this one."
-          }
-          "WIN_CSC_CERTIFICATE_THUMBPRINT=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Remove-Item -LiteralPath $certificatePath -Force
-
-      - name: Sign and verify
-        shell: pwsh
-        env:
-          WIN_CSC_CERTIFICATE_THUMBPRINT: ${{ env.WIN_CSC_CERTIFICATE_THUMBPRINT }}
-        run: |
-          $ErrorActionPreference = "Stop"
-          $exe = Join-Path $env:RUNNER_TEMP "stage/bin/Redrob Canvas.exe"
-          & ./tools/release/sign-windows.ps1 -Path $exe -Thumbprint $env:WIN_CSC_CERTIFICATE_THUMBPRINT
-
-      - name: Package
-        shell: bash
-        env:
-          BASE: ${{ steps.unpack.outputs.base }}
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/artifacts"
-          # `-portable`: this zip is the unpacked, signed app, and that suffix is how Redrob Launcher
-          # tells an app it can unzip and run from a plain archive it does not install.
-          powershell -NoProfile -Command \
-            "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$RUNNER_TEMP/artifacts/${BASE}-portable.zip' -Force"
-
       # The setup carries the signed zip above and the uninstaller, so it is built after signing:
-      # uninstaller first, signed, then embedded; the setup last, signed. Built here rather than on
-      # the build machine because only this job holds the certificate. installer/windows/README.md.
-      - name: Build and sign the setup
+      # uninstaller first, signed, then embedded; the setup last, signed. installer/windows/README.md.
+      - name: Build the uninstaller (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
-        env:
-          WIN_CSC_CERTIFICATE_THUMBPRINT: ${{ env.WIN_CSC_CERTIFICATE_THUMBPRINT }}
-          BASE: ${{ steps.unpack.outputs.base }}
         run: |
           $ErrorActionPreference = "Stop"
-          $version = $env:RELEASE_TAG.Substring(1)
+          $work = Join-Path $env:RUNNER_TEMP "setup"
+          python installer/windows/build.py --out $work --version $env:VERSION --uninstaller-only
+          if ($LASTEXITCODE -ne 0) { throw "uninstaller build failed ($LASTEXITCODE)" }
+          if (-not (Test-Path -LiteralPath (Join-Path $work "uninstall/Uninstall Redrob Canvas.exe"))) {
+            throw "uninstaller was not built"
+          }
+
+      - name: Sign the uninstaller (Windows)
+        if: runner.os == 'Windows'
+        uses: redrob-labs/.github/actions/sign-windows@main
+        with:
+          files: ${{ runner.temp }}/setup/uninstall/*.exe
+          description: ${{ env.PRODUCT }}
+          url: ${{ env.PRODUCT_URL }}
+          endpoint: ${{ secrets.ARTIFACT_SIGNING_ENDPOINT }}
+          account: ${{ secrets.ARTIFACT_SIGNING_ACCOUNT }}
+          cert-profile: ${{ secrets.ARTIFACT_SIGNING_CERT_PROFILE }}
+
+      - name: Build the setup (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          BASE: ${{ steps.package.outputs.base }}
+        run: |
+          $ErrorActionPreference = "Stop"
           $work = Join-Path $env:RUNNER_TEMP "setup"
           $zip = Join-Path $env:RUNNER_TEMP "artifacts/$env:BASE-portable.zip"
           $setupName = "$env:BASE-setup.exe"
-          python installer/windows/build.py --out $work --version $version --uninstaller-only
-          if ($LASTEXITCODE -ne 0) { throw "uninstaller build failed ($LASTEXITCODE)" }
           $uninstaller = Join-Path $work "uninstall/Uninstall Redrob Canvas.exe"
-          & ./tools/release/sign-windows.ps1 -Path $uninstaller -Thumbprint $env:WIN_CSC_CERTIFICATE_THUMBPRINT
-          python installer/windows/build.py --out $work --version $version --payload $zip `
+          python installer/windows/build.py --out $work --version $env:VERSION --payload $zip `
             --uninstaller $uninstaller --name $setupName
           if ($LASTEXITCODE -ne 0) { throw "setup build failed ($LASTEXITCODE)" }
           $setup = Join-Path $work $setupName
-          & ./tools/release/sign-windows.ps1 -Path $setup -Thumbprint $env:WIN_CSC_CERTIFICATE_THUMBPRINT
           # The setup must carry exactly the zip that ships beside it; a stale payload would install
           # a different build than the one its checksum file describes.
           if ((Get-Item -LiteralPath $setup).Length -le (Get-Item -LiteralPath $zip).Length) {
@@ -482,70 +518,150 @@ jobs:
           }
           Copy-Item -LiteralPath $setup -Destination (Join-Path $env:RUNNER_TEMP "artifacts/$setupName")
 
-      - name: Replace the unsigned build on the draft
+      - name: Sign the setup (Windows)
+        if: runner.os == 'Windows'
+        uses: redrob-labs/.github/actions/sign-windows@main
+        with:
+          files: ${{ runner.temp }}/artifacts/*-setup.exe
+          description: ${{ env.PRODUCT }}
+          url: ${{ env.PRODUCT_URL }}
+          endpoint: ${{ secrets.ARTIFACT_SIGNING_ENDPOINT }}
+          account: ${{ secrets.ARTIFACT_SIGNING_ACCOUNT }}
+          cert-profile: ${{ secrets.ARTIFACT_SIGNING_CERT_PROFILE }}
+
+      # `release-*` is the prefix the shared publish job collects; the checksums and the launcher
+      # manifest are written there, over every platform's files at once.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.slug }}
+          path: ${{ steps.package.outputs.dir }}/*
+          if-no-files-found: error
+
+      - name: Remove the temporary keychain (macOS)
+        if: always() && runner.os == 'macOS'
+        run: |
+          if [ -f "$RUNNER_TEMP/redrob-build.keychain" ]; then security delete-keychain "$RUNNER_TEMP/redrob-build.keychain" || true; fi
+
+  # The web build: the same shell compiled to WebAssembly (apps/redrob-canvas-web) by trunk, the
+  # `dist/` directory zipped as ONE asset. No signing, no installer; the launcher does not read it.
+  # trunk is pinned so the generated loader is the same from one release to the next.
+  web:
+    name: Build Web (wasm)
+    needs: [validate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      TRUNK_VERSION: "0.21.14"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+
+      - name: Rust toolchain (rust-toolchain.toml) with the wasm target
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: "1.95.0"
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-web
+          workspaces: |
+            . -> target
+          cache-directories: |
+            ~/.cargo/bin
+
+      - name: Install trunk (pinned)
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BASE: ${{ steps.unpack.outputs.base }}
+        run: |
+          set -euo pipefail
+          if ! command -v trunk >/dev/null 2>&1 || [ "$(trunk --version | awk '{print $2}')" != "$TRUNK_VERSION" ]; then
+            cargo install trunk --locked --version "$TRUNK_VERSION"
+          fi
+          trunk --version
+
+      # `trunk build --release` reads apps/redrob-canvas-web/Trunk.toml: the wasm-release profile,
+      # wasm-opt, and `dist/` under the crate. The lock file is the workspace's one; --locked keeps it.
+      - name: Build the web shell
+        shell: bash
+        working-directory: apps/redrob-canvas-web
+        run: trunk build --release --locked
+
+      - name: Smoke test the bundle
+        shell: bash
+        working-directory: apps/redrob-canvas-web
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          ls dist/*.wasm dist/*.js >/dev/null
+          wasm="$(ls dist/*.wasm | head -n1)"
+          echo "wasm: $(stat -c%s "$wasm") bytes"
+          # The page must point at files that are in the bundle (trunk hashes the names).
+          for ref in $(grep -oE '(href|src)="\./[^"]+"' dist/index.html | sed -E 's/^(href|src)="\.\///; s/"$//'); do
+            test -f "dist/$ref" || { echo "::error::index.html references $ref, which is not in dist/"; exit 1; }
+          done
+
+      - name: Package
+        id: package
+        shell: bash
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/artifacts"
-          # Sums are computed into a temporary file and moved in. Redirecting straight into
-          # the SUMS file let the fallback list that file itself: on Windows `shasum` is
-          # missing, its failed attempt had already created the empty file, and `sha256sum ./*`
-          # then hashed it, so `sha256sum -c` failed for every 0.5.x Windows download.
-          sums="$(mktemp)"
-          ( cd "$out" && { shasum -a 256 ./* 2>/dev/null || sha256sum ./*; } > "$sums" )
-          mv "$sums" "$out/${BASE}-SHA256SUMS.txt"
-          gh release upload "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --clobber "$out"/*
-          gh release delete-asset "$RELEASE_TAG" "${BASE}.unsigned.zip" -R "$GITHUB_REPOSITORY" --yes
+          mkdir -p "$out"
+          # The licences travel with every copy, the web bundle included.
+          cp LICENSE-MIT LICENSE-APACHE COPYRIGHT NOTICE THIRD_PARTY_NOTICES.md UPSTREAM_NOTICES.md apps/redrob-canvas-web/dist/
+          ( cd apps/redrob-canvas-web/dist && zip -r -X "$out/redrob-canvas-web-${VERSION}.zip" . )
+          printf 'dir=%s\n' "$out" >> "$GITHUB_OUTPUT"
+          ls -la "$out"
+
+      # `release-*` is the prefix the shared publish job collects (the same as the native legs).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-web
+          path: ${{ steps.package.outputs.dir }}/*
+          if-no-files-found: error
 
   verify-release-assets:
-    name: Signed builds and GPL source accompany the release
-    needs: [validate, sign-macos, sign-windows]
+    name: Signed builds and licence files accompany the release
+    needs: [validate, build, web]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
-      # write, not read, for a job that only reads: GitHub lists DRAFT releases solely to a
-      # caller with push access, and this job's whole purpose is to inspect the draft.
-      contents: write
+      contents: read
     steps:
-      # Shipping a GPL binary without its corresponding source is a licence violation, not
-      # an oversight to fix later, and a missing platform is a release that silently ships
-      # less than its notes claim. Both fail here rather than appearing on a checklist
-      # someone reads after publishing.
-      - name: Assert every platform and every licence artifact is attached
+      # A missing platform is a release that silently ships less than its notes claim, and a
+      # binary without its licence texts breaks the one thing MIT and Apache ask for. Both fail
+      # here, BEFORE the release is published.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Assert every platform and every licence artifact is present
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ inputs.tag }}
           REQUIRED_ARCHIVES: ${{ needs.validate.outputs.archive_suffixes }} ${{ needs.validate.outputs.installer_suffixes }}
+          REQUIRED_WEB: redrob-canvas-web-${{ needs.validate.outputs.version }}.zip
         shell: bash
         run: |
           set -euo pipefail
-          # A DRAFT release is NOT on the tags endpoint: GET /releases/tags/<tag> answers 404
-          # until publication, because a draft has no published tag to resolve. Since this job
-          # exists to inspect the draft, it has to find it in the listing, which does include
-          # drafts for a caller with push access.
-          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > "$RUNNER_TEMP/releases.json"
-          release_json="$(jq --arg tag "${RELEASE_TAG}" 'map(select(.tag_name == $tag)) | first // empty' "$RUNNER_TEMP/releases.json")"
-          if [ -z "$release_json" ]; then
-            echo "::error::No release found for ${RELEASE_TAG}. A draft is only listed to a caller with push access, so check this job's contents permission if the draft does exist."
-            exit 1
-          fi
-
-          if [ "$(printf '%s' "$release_json" | jq -r '.draft')" != "true" ]; then
-            echo "::error::Release ${RELEASE_TAG} must still be a draft when the build finishes"
-            exit 1
-          fi
-
-          names="$(printf '%s' "$release_json" | jq -r '.assets[].name')"
-          echo "Assets on ${RELEASE_TAG}:"
+          names="$(ls -1 artifacts)"
+          echo "Assets built:"
           printf '  %s\n' $names
 
-          # Platform archives come from the same generator that built the matrix, so a leg that
-          # was deliberately not built is not demanded here, and one that WAS built cannot be
-          # quietly missing. Glob matching, since the list crosses a job output boundary where
-          # regex escaping is easy to get silently wrong.
+          # The web bundle, by its exact name (tools/release_matrix.py web_asset_name).
+          if [ ! -f "artifacts/${REQUIRED_WEB}" ]; then
+            echo "::error::no ${REQUIRED_WEB}; the web job produced no bundle"
+            exit 1
+          fi
+
+          # Platform archives and installers come from the same generator that built the matrix,
+          # so a leg that was deliberately not built is not demanded here, and one that WAS built
+          # cannot be quietly missing.
           for suffix in ${REQUIRED_ARCHIVES}; do
             found=0
             for name in $names; do
@@ -559,30 +675,45 @@ jobs:
             fi
           done
 
-          # The licence artifacts are unconditional: they do not depend on which platforms were
-          # built, and shipping a GPL binary without its corresponding source is a violation.
-          # redrob-launcher.json is unconditional too: without it Redrob Launcher cannot tell
-          # that this release uses its sign-in (tools/release_manifest.py writes it).
+          # The licence artifacts are unconditional. The checksums and redrob-launcher.json are
+          # the publish job's: it writes both over this same set of files.
           for pattern in \
-            'corresponding-source\.tar\.gz$' \
-            '^SOURCE_OFFER\.md$' \
-            '^THIRD_PARTY_NOTICES\.md$' \
-            '^LICENSE$' \
+            '^LICENSE-MIT$' \
+            '^LICENSE-APACHE$' \
             '^COPYRIGHT$' \
-            'SHA256SUMS\.txt$' \
-            '^redrob-launcher\.json$'; do
+            '^NOTICE$' \
+            '^THIRD_PARTY_NOTICES\.md$'; do
             if ! printf '%s\n' $names | grep -qE "$pattern"; then
-              echo "::error::no asset matching ${pattern}; the GPL obligation requires the corresponding source, offer, notices and licence alongside every binary, and Redrob Launcher requires its manifest"
+              echo "::error::no asset matching ${pattern}; the licence texts and notices must accompany every binary"
               exit 1
             fi
           done
 
-          # The builds arrive unsigned and the signing jobs replace them. One still attached means a
-          # signing job uploaded its result and then failed to remove the input, and a user could
-          # download the unsigned copy, so it fails here.
           if printf '%s\n' $names | grep -q '\.unsigned\.'; then
-            echo "::error::an unsigned archive is still attached to the draft"
+            echo "::error::an unsigned archive is among the assets"
             exit 1
           fi
 
-          echo "Every built platform archive (${REQUIRED_ARCHIVES}), the corresponding source, the source offer, notices, licence and checksums are attached."
+          echo "Every built platform asset (${REQUIRED_ARCHIVES}), ${REQUIRED_WEB} and the licence files are present."
+
+  # The shared redrob-labs publish job: SHA256SUMS.txt over every asset, redrob-launcher.json (this
+  # app reads the launcher's shared sign-in through the engine), and the release v<version> created
+  # and PUBLISHED as latest (prerelease when the version carries a `-`). Only for a real tag, never
+  # for a dry run, and only when every job before it succeeded. `tag` and `target` are passed
+  # explicitly because this workflow is dispatched from a branch: github.sha is the branch head, not
+  # the tag's commit. The assets reach it as the `release-*` artifacts every job above uploaded
+  # (release-linux-x86_64, release-macos-arm64, release-windows-x64, release-web), which the shared
+  # job merges into one directory before writing the sums -- the same hand-over redrob-shape uses.
+  publish:
+    needs: [validate, build, web, verify-release-assets]
+    if: always() && needs.validate.outputs.dry_run != 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && !contains(needs.*.result, 'skipped')
+    uses: redrob-labs/.github/.github/workflows/release-publish.yml@main
+    permissions:
+      contents: write
+    with:
+      version: ${{ needs.validate.outputs.version }}
+      title: Redrob Canvas
+      launcher_manifest: true
+      publish: true
+      tag: ${{ inputs.tag }}
+      target: ${{ needs.validate.outputs.sha }}

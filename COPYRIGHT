@@ -1,15 +1,15 @@
-SPDX-License-Identifier: GPL-3.0-or-later
+SPDX-License-Identifier: MIT OR Apache-2.0
 
-Copyright (C) 2026 Janghoon Lee (Redrob) and contributors
+Copyright 2026 Janghoon Lee (Redrob) and contributors
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Redrob Canvas is licensed under either of
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+  * the MIT License (LICENSE-MIT), or
+  * the Apache License, Version 2.0 (LICENSE-APACHE),
 
-The complete text of the GNU General Public License version 3 is distributed
-with this program in the file LICENSE.
+at your option.
+
+The four editors vendored under crafts/ (PhotoCraft, VectorCraft, DesignCraft and
+craft-libs) are Copyright (c) 2026 ArtCraft Team and their respective contributors,
+licensed MIT OR Apache-2.0. Their own LICENSE-MIT, LICENSE-APACHE and NOTICE files
+are kept intact under crafts/<name>/, and their NOTICE texts are reproduced in NOTICE.

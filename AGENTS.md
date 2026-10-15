@@ -1,287 +1,164 @@
 # AGENTS.md
 
 Operating notes for an agent working in `redrob-labs/redrob-canvas`. Everything here was read out
-of this tree, out of the GitHub branch-protection API, or out of a command that was actually run.
-Where a fact was not verified it says so.
+of this tree, out of the organisation's `.github` repository, or out of a command that was actually
+run. Where a fact was not verified it says so.
 
 ## What this repository is
 
-Redrob Canvas is a cross-platform, agentic graphics editor: a typed Rust core plus a Qt 6 / QML
-desktop shell that talks to it across a stable C ABI. It is a new product architecture and not a
-fork of an existing editor: Krita and GIMP are pinned by exact commit in
-`docs/upstream-sources.toml` and used as executable references for painting and image-processing
-behaviour, so a claim like "this matches Krita" can be checked against a specific tree instead of
-being remembered. Painting behaviour follows Krita, image processing follows GIMP and GEGL, and the
-product UX and agent workflows are first-party.
+Redrob Canvas is an agentic graphics editor: one egui/eframe window (`apps/redrob-canvas`) hosting
+three complete editors as modes, each vendored whole as a git subtree under `crafts/` from
+[storytold](https://github.com/storytold): the Photo editor (Photo), the Vector editor (Vector), the Layout editor
+(Layout), plus their shared craft-libs. Redrob's own code is the shell, `crates/redrob-agent` (the
+Redrob Code client) and `crates/redrob-ai` (the AI tools layer, in progress). Everything is Rust;
+there is no Qt, CMake, Node or QML anywhere in the build. If a document, script or comment you find
+talks about Qt, `native/`, `qml/`, `redrob-core`, `redrob-ffi`, Krita or GIMP, it describes the tree
+before commit `d4854f2` and is stale.
 
-The whole project is GPL-3.0-or-later. That is not a header detail: two committed files and one
-build target exist only to satisfy the licence, and CI will fail a pull request that lets them go
-stale. See "Distribution artifacts" below, and read it before you touch `Cargo.lock`.
+The project is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). Until 0.6 it was
+GPL-3.0-or-later; the relicensing rests on no copyleft input remaining, and
+`scripts/verify-upstream.sh` refuses any `code` pin whose licence is not permissive. Do not vendor or
+translate GPL or LGPL source into this tree.
 
-## Branch model
+## The two rules you cannot learn late
 
-`develop` is the default branch and the base of every pull request. Clone the repository and you
-land on `develop`. `main` is released state and moves only by merging `develop` forward, in
-practice through a `release/*` branch. Release tags are cut from `main`, and the release workflow
-enforces that: its `validate` job runs `git merge-base --is-ancestor "$GITHUB_SHA" origin/main` and
-fails the release outright if the tag commit is not reachable from `origin/main`, so tagging
-straight off `develop` cannot ship.
-
-A hotfix branches from `main`, merges into `main`, releases, and then `main` is merged back into
-`develop`. That last step is the one that gets skipped, and skipping it is a real failure with a
-real cost: the sibling repository redrob-code spent a month with a `Cargo.lock` its own default
-branch could not install from, because a fix that landed on `main` was never brought back.
-
-Both branches are protected identically. Read from the API on 2026-09-17: pull requests only, force
-pushes blocked, branch deletion blocked, `required_approving_review_count` 0, admin enforcement
-off, and `strict` false so a check does not have to pass against the newest tip. Two checks are
-required to merge:
-
-- `Rust workspace`
-- `Distribution artifacts are current`
-
-Note a gap between the document and the setting. `CONTRIBUTING.md` says three jobs are required
-before a merge, but `Upstream pins are well-formed and reachable` is NOT in either branch's
-required-check list, and neither is the newer `Rust security advisories` job. Both still run on every
-pull request; they just cannot block one. Run `./scripts/verify-upstream.sh` yourself rather than
-trusting the merge button.
-
-### Which branch work is actually landing on
-
-Measured on 2026-09-17, after pull request #16 merged:
-
-```
-git rev-list --count origin/develop..origin/main   ->  0
-git rev-list --count origin/main..origin/develop   ->  1
-```
-
-So `main` holds nothing that `develop` lacks, and `develop` is one commit ahead. There is no
-back-merge debt right now, and this is the correct shape: work accumulates on `develop`, `main`
-trails until a release.
-
-That is a recent correction, and the reason to check the numbers before you trust them. Pull
-requests #1 through #15 all targeted `main` even though `develop` was already the default branch,
-which means fifteen changes bypassed the integration branch entirely. Pull request #14 adopted the
-two-branch model and wrote it into `CONTRIBUTING.md`, and #16 is the first pull request in the
-repository's history to target `develop`. The same inversion is how a sibling repository ended up
-with a default branch 22 commits behind its own released state.
-
-One open pull request targets `main` from `release/v0.2.0`. That is not the inversion: a
-`release/*` branch into `main` is exactly the documented release path. The thing to be suspicious of
-is a `feat/`, `fix/`, `chore/`, `docs/`, `test/`, `refactor/` or `perf/` branch aimed at `main`.
-
-Your own pull request goes into `develop`, from a `<type>/<short-slug>` branch cut off `develop`.
-Merges are squash-only and the branch is deleted on merge, so the squash body should be the pull
-request body.
+1. **Never edit a file under `crafts/` by hand.** The four directories are git subtrees. A fix an
+   editor needs goes upstream (the storytold repository) and comes back by
+   `scripts/fetch-upstream.sh <name> <sha>`; a local edit turns the next pull into a conflict hunt and
+   is lost at the next squash. The one exception is the parked `crafts/<name>/Cargo.upstream.toml`,
+   which `tools/merge_workspaces.py` renames and which you also do not edit.
+2. **Never replace an upstream copyright notice, and never touch `crafts/*/docs/brand/`.** The upstream
+   name and logos there are trademarks, not open source. `NOTICE` reproduces each upstream NOTICE
+   verbatim beneath ours; `upstream-base.json`'s `attribution` list says which strings must stay, and
+   the verify script fails when one goes missing or when anything outside `crafts/` references the
+   brand assets.
 
 ## Layout
 
-`Cargo.toml` at the root is a cargo workspace, `resolver = "3"`, with exactly three members:
+- `Cargo.toml` at the root is **generated** by `tools/merge_workspaces.py` from the four
+  `crafts/*/Cargo.upstream.toml`; its header says so. Edit the script, run it, commit both. The
+  workspace members are `crates/*`, `apps/*` and each subtree's `crates/*`; the subtrees' `apps/`,
+  `xtask` and web shells are excluded. `Cargo.lock` is one lock file for all of it.
+- `apps/redrob-canvas/` is the shell: `main.rs` (args, eframe options), `shell.rs` (`Mode`, lazy
+  editors, top bar), `services.rs` (config directory, prefs). Config lives in `ai.redrob.canvas`'s
+  directory (`~/Library/Application Support/Redrob Canvas`, `%APPDATA%\Redrob Canvas`,
+  `~/.config/redrob-canvas`).
+- `crates/redrob-agent/` is the pure-Rust Redrob Code client; `crates/redrob-ai/` the AI layer.
+- `UPSTREAM.md` + `upstream-base.json` + `docs/upstream-sources.toml` are the pins; `UPSTREAM_NOTICES.md`
+  the hand-written attribution; `THIRD_PARTY_NOTICES.md` the generated one (do not edit).
+- `tools/`: `merge_workspaces.py`, `generate_distribution_artifacts.py`, `check_design_system.py`,
+  `generate_design_tokens.py` (a pin checker), `release_matrix.py`, `release_manifest.py`,
+  `release/stage.py`, `release/make_deb.py`, `release/build-linux.sh`, and `tests/`.
+- `installer/macos/` (disk image, uninstaller) and `installer/windows/` (setup and uninstaller, Win32).
+- `third_party/redrob-ui/` and `resources/` are the design system, pinned in `DESIGN_SYSTEM_PIN.json`.
 
-- `crates/redrob-core` is the document model, layers, raster engine, selection, commands, history,
-  and the format codecs (RRG, PNG, JPEG, lossless WebP, OpenRaster, a deliberately limited SVG
-  subset). It is Qt-independent by design, which is why the required Rust check needs no Qt, no
-  display, and none of the upstream trees.
-- `crates/redrob-agent` is the streaming client for the hosted OpenAI-compatible API, the tool
-  loop, and approvals.
-- `crates/redrob-ffi` is the stable C ABI the Qt host links against. Its `crate-type` is
-  `["staticlib", "cdylib", "rlib"]`, and the header it must stay in step with is committed at
-  `crates/redrob-ffi/include/redrob_ffi.h`.
-
-Around them: `native/qt/` is the Qt 6 host (QObject models, canvas bridge, `main.cpp`),
-`native/adapters/` holds the optional GEGL and Krita adapter scaffolds, `qml/Main.qml` is the
-interface, `tools/` holds the two Python tools described below, `scripts/` holds the two upstream
-shell scripts, and `docs/` holds architecture, the compatibility matrix, format routes, licensing
-policy and the upstream pins.
-
-The toolchain is pinned: `rust-toolchain.toml` selects `1.92.0` with `clippy` and `rustfmt`, and
-`rustfmt.toml` sets `edition = "2024"` with `max_width = 100`. Do not reformat to a different width.
+The toolchain is pinned: `rust-toolchain.toml` selects `1.95.0` with `clippy` and `rustfmt`.
+`rustfmt.toml` is the project's; do not reformat to a different width.
 
 ## Commands
 
-These four were run in this repository on 2026-09-17 and all exited 0. They need no Qt, no network
-fetch of upstream trees, and no display.
+Set up once on Linux (what CI installs):
 
 ```bash
-cargo fmt --all -- --check                                              # exit 0, about 0.2s
-./scripts/verify-upstream.sh                                            # exit 0
-python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF   # exit 0
-python3 -m unittest discover -s tools/tests -p "test_*.py"              # exit 0, 18 tests
+sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libgtk-3-dev
+export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
-`cargo fmt --all -- --check` is the fastest gate and the cheapest way to fail fast. The other two
-Rust commands in the required check were not run during this investigation:
+The gates, in the order CI runs them. The first and the last three need no Rust build and finish in
+seconds; run them first to fail fast.
 
 ```bash
+scripts/verify-upstream.sh                                   # pins, attribution, brand boundary, GitHub reachability
+cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
+cargo build --release -p redrob-canvas                       # the shell links
+cargo fetch --locked && python3 tools/generate_distribution_artifacts.py --check
+python3 tools/check_design_system.py
+python3 -m unittest discover -s tools/tests -p "test_*.py"
 ```
 
-Run both before pushing; `-D warnings` means a new Clippy lint fails the merge.
+Verified in this tree on 2026-10-15: `scripts/verify-upstream.sh` (exit 0, also with `--with-trees`),
+`tools/check_design_system.py` (exit 0), the tool tests (28 tests, OK), and the workflow files parse
+as YAML. `cargo clippy`, `cargo test` and `cargo build` were not run while these notes were written
+(another change to `apps/` was in flight), so their status on this branch is not asserted here.
 
-The desktop shell is a separate, much heavier path and needs Qt 6.11 or newer with Core, Concurrent,
-Gui, Qml, Quick, QuickControls2 and Svg:
+The workspace is large (four editors); a cold `cargo build --release` is long. Prefer
+`cargo check -p redrob-canvas` or `cargo test -p <crate>` while iterating, and never wait on a build
+with a shell loop that greps for its own command (`while pgrep -f 'cargo ...'` matches itself).
 
-```bash
-cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release
-cmake --build build/qt
-ctest --test-dir build/qt --output-on-failure
-```
+Running the app: `target/release/redrob-canvas [--mode photo|vector|layout]`; `--version` prints and
+exits, which is what the release smoke test relies on.
 
-The floor is 6.11 and the comment in `native/qt/CMakeLists.txt` says why it is not higher: it was
-briefly 6.12, and every macOS and Windows release leg died because Qt's own mirror had not published
-6.12.0's archive checksums. There is a headless, Qt-free adapter check as well:
+## Distribution artifacts
 
-```bash
-cmake -S native -B build/adapters -DREDROB_BUILD_QT=OFF
-cmake --build build/adapters
-ctest --test-dir build/adapters --output-on-failure
-```
+`THIRD_PARTY_NOTICES.md` is GENERATED and committed. `tools/generate_distribution_artifacts.py
+--check` regenerates it in memory from `Cargo.lock` and `cargo metadata --locked --offline` and fails
+on any byte difference; `--generate` writes it. Run `--generate` after any change to `Cargo.lock`
+and commit the result. On a cold machine run `cargo fetch --locked` first; the generator never
+touches the network and that is deliberate. If `cargo metadata --locked` itself fails, `Cargo.lock`
+is out of step with a `Cargo.toml` and that is the thing to fix, not the generator.
 
-`native/CMakeLists.txt` registers the Python generator tests as the ctest test
-`redrob_distribution_artifacts_python` under `BUILD_TESTING`, so a CMake build runs them. No GitHub
-workflow does. If you change `tools/generate_distribution_artifacts.py`, run the unittest command
-above by hand, because nothing in CI will catch you.
-
-There is no `package.json`, no `justfile` and no `Makefile`. Do not look for one.
-
-## Distribution artifacts, and the mistake to avoid
-
-`THIRD_PARTY_NOTICES.md` and `SOURCE_OFFER.md` are GENERATED and committed. Editing either by hand
-is the first thing an agent gets wrong here.
-
-`tools/generate_distribution_artifacts.py` builds both from `Cargo.lock`, from
-`cargo metadata --locked --offline`, and from the licence files inside each locked crate's own
-source. Nothing is fetched over the network while it runs, and `THIRD_PARTY_NOTICES.md` asserts
-that property, which is why the offline flags stay.
-
-- `--check` regenerates both in memory and compares them to the files byte for byte. On any
-  difference it prints `stale THIRD_PARTY_NOTICES.md` or `stale SOURCE_OFFER.md` to stderr and
-  exits 1. A hand edit is therefore not merely unhelpful, it fails the required
-  `Distribution artifacts are current` check and it fails a local CMake configure.
-- `--generate` is the only correct way to change them. Run
-  `python3 tools/generate_distribution_artifacts.py --generate --gegl OFF --krita OFF` after any
-  change to `Cargo.lock`, to a licence-relevant file, or to the adapter selection, and commit the
-  result.
-- The adapter flags are part of the identity of the output, so a check run with different `--gegl` /
-  `--krita` values than the build uses will disagree.
-
-`native/qt/CMakeLists.txt` runs `--check` at CONFIGURE time via `execute_process` and raises
-`FATAL_ERROR` if it exits nonzero, so a stale pair stops the build before anything compiles. The
-same file declares `redrob_source_bundle` as an `ALL` target that the `redrob-canvas` executable
-depends on, which is how the deterministic GPL corresponding-source archive gets produced by an
-ordinary build rather than by a step someone can forget.
-
-One cold-cache trap, and it bites in CI and on a fresh clone alike: because the generator reads
-Cargo metadata with `--locked --offline`, an empty registry index makes that read fail with
-`no matching package named font8x8`, and the failure looks like a broken generator rather than a
-missing cache. Run `cargo fetch --locked` first. Both CI jobs that touch the generator do exactly
-that, and the fix is never to drop `--offline`.
-
-## What CI actually runs
-
-Three workflow files, and two of them see a pull request.
-
-`.github/workflows/gitflow.yml` triggers on `pull_request` (no branch filter), on `push` to `main`,
-and on `workflow_dispatch`. Its `branch name follows the convention` job allows `develop` and `main`
-as head refs and otherwise requires `<type>/<short-slug>` with the type one of `feat`, `fix`,
-`chore`, `docs`, `test`, `refactor`, `perf`, `release`, `hotfix`, so the `kiro/agents-root` branch
-this repository already carries would fail if a pull request were opened from it. Its
-`main is contained in develop` job runs only outside pull requests and fails while
-`git rev-list --count origin/develop..origin/main` is nonzero, which is the back-merge debt described
-above reported by a machine instead of by a person remembering. Neither job is a required check yet.
-
-`.github/workflows/verify-upstream.yml` triggers on `pull_request` (no branch filter, so every pull
-request), on `push` to `main` and `develop`, and on `workflow_dispatch`. It declares
-`permissions: contents: read` and consumes no secrets, so a fork's pull request gets the same run as
-a local branch. Four jobs:
-
-| Job name | What it runs |
-| --- | --- |
-| `Upstream pins are well-formed and reachable` | `./scripts/verify-upstream.sh` |
-| `Rust workspace` | `cargo fmt --all -- --check`, then `cargo clippy --workspace --all-targets --locked -- -D warnings`, then `cargo test --workspace --locked` |
-| `Distribution artifacts are current` | `cargo fetch --locked`, then the generator's `--check --gegl OFF --krita OFF` |
-| `Rust security advisories` | `cargo install cargo-audit --version 0.22.2 --locked`, then `cargo audit --file Cargo.lock` |
-
-Only `Rust workspace` and `Distribution artifacts are current` are required checks. The pins job and
-the advisory job are not, so neither can block a merge.
-
-The advisory job reads a database that changes daily, so it can turn red on a branch that changed no
-dependency at all. When that happens the finding is still real: bump the crate rather than allowing
-the advisory. The workflow comment says exactly that, and there is no ignore list to add to.
-
-A release is cut by `tools/release/local-release.sh vX.Y.Z` after the tag is pushed on `main`. It
-builds and tests Linux on the release machine, and macOS and Windows on our own Mac and Windows PC
-(addresses come from `~/.config/redrob-canvas/release.env`, never the repository), in parallel,
-uploads the Linux archive, the corresponding source, the licence files and the two UNSIGNED
-archives to a DRAFT release, and dispatches `.github/workflows/release.yml`, which runs ONLY on
-`workflow_dispatch -f tag=…`. That workflow validates the tag against `origin/main` and the
-distribution check, then signs and notarizes macOS and signs Windows with Authenticode in parallel,
-replacing each unsigned archive. The Linux archive is linked against the release machine's glibc. It does not re-run the tests. `release-ci.yml` is the
-by-hand fallback that builds every platform on runners against Qt 6.11.2 from `aqtinstall`, as the
-release workflow used to. Neither runs on a pull request, so nothing in them gates a merge. Publishing that draft is the release; there is no CDN and no promotion step.
-The platform list comes from `tools/release_matrix.py` rather than being typed into the workflow, and
-the Windows leg is omitted until the repository variable `WINDOWS_SIGNING_READY` is `"true"`, so an
-unsigned Windows binary is never the fallback. A final job re-reads the draft and fails if any built
-platform archive, the corresponding-source tarball, `SOURCE_OFFER.md`, `THIRD_PARTY_NOTICES.md`,
-`LICENSE`, `COPYRIGHT` or a checksum file is missing.
-
-Tag `v0.1.0` exists and is reachable from `main`, and its GitHub Release was never published --
-it is still a draft, cut before the Windows leg was enabled. `v0.2.0` is this release: the first
-with `WINDOWS_SIGNING_READY` set, so it is also the first whose draft carries a signed Windows
-archive alongside the signed, notarized, stapled macOS one.
-
-There is no `.github/dependabot.yml`. Dependabot version updates were deliberately turned off in
-pull request #16 and replaced by the `Rust security advisories` job above, with Dependabot security
-updates enabled on the repository instead. So a routine version bump does not arrive as a pull
-request any more, and a dependency with a known advisory still does. There was never an npm
-ecosystem: this project has no JavaScript build.
+`SOURCE_OFFER.md` and the corresponding-source bundle no longer exist. Do not recreate them.
 
 ## Upstream pins
 
-`docs/upstream-sources.toml` is the single place a commit hash lives. It pins Krita at
-`fdbf33b2146735465bb8aa59928fbc1890ceb160`, GIMP at
-`43e3d9601d17e9ebc3fbd7e29158a0ad95ede4fc`, a GEGL minimum of `0.4.66` as a system pkg-config floor
-rather than a checkout, and redrob-code at `ee0ffcfe52f3964b4db660f174febb101333a8d5` as a protocol
-reference. Each entry carries a `license` field, because the obligation is to audit each reused file
-and an entry that quietly loses that note is the one nobody re-reads.
+Update a subtree with `scripts/fetch-upstream.sh <name> <sha>` on a clean tree: it runs
+`git subtree pull --prefix crafts/<name> <repo> <sha> --squash`, then `tools/merge_workspaces.py`,
+and commits the regenerated manifest. Then record the sha in `upstream-base.json`
+(`base.commit`, `lastSyncedUpstream`), `docs/upstream-sources.toml` (`commit`) and the subtree's
+section of `UPSTREAM_NOTICES.md`, run `scripts/verify-upstream.sh`, regenerate the notices if
+`Cargo.lock` moved, and open the pull request from a `sync/upstream-<name>-<sha7>` branch. Merge it
+as a **merge commit**, never a squash: a squash destroys the subtree's merge base.
 
-`scripts/fetch-upstream.sh` reads those same pins and shallow-clones Krita and GIMP into
-`upstream/`. `scripts/verify-upstream.sh` deliberately does not download anything: it asserts that
-`upstream/` is git-ignored (including probe paths inside it), that each pin is a full 40-character
-hex sha over an `https` repository with a licence note, and that each remote is reachable via
-`git ls-remote`. Pass `--with-trees` to additionally check that a local checkout's HEAD equals its
-pin.
+The verify script also checks that `redrob_code`'s tag in `docs/upstream-sources.toml` equals the
+`redrob-engine-client` tag in the root `Cargo.toml`; bump both together.
 
-`upstream/` is about 753 MB of someone else's source and is ignored by the `/upstream/` rule in
-`.gitignore`. Never commit it, and never duplicate one of those commit hashes into a second file.
-If you bump a pin, bump it there and nowhere else.
+## What CI actually runs
+
+`.github/workflows/verify-upstream.yml` runs on every pull request and on pushes to `develop` and
+`main`: `Upstream pins are well-formed and reachable`, `Rust workspace` (fmt, clippy, test, release
+build of the shell), `Distribution artifacts are current` (cargo fetch, the notice check, the design
+guard, the tool tests) and `Rust security advisories` (`cargo audit`). `Rust workspace` and
+`Distribution artifacts are current` are the two checks branch protection required before the rewrite;
+whether the protection rules were updated for this branch was not verified here.
+
+`.github/workflows/gitflow.yml` and `pr-policy.yml` are the organisation templates and only call
+`redrob-labs/.github`: branch names are `<type>/<slug>` from the org list
+(`feat fix chore docs test refactor perf ci build sync hotfix release`), `main` must be contained in
+`develop`, at most three open pull requests per author.
+
+`.github/workflows/release.yml` runs only on `workflow_dispatch`:
+`gh workflow run release.yml --ref main -f tag=vX.Y.Z` after the tag is pushed on `main`, or
+`-f dry_run=true` to build and sign without publishing. It validates the tag against `origin/main`,
+`Cargo.toml` and `CHANGELOG.md` (a `## X.Y.Z ` heading that is not `- unreleased`), runs every
+gate, builds `redrob-canvas` per platform from `tools/release_matrix.py`'s list, stages with
+`tools/release/stage.py`, packages (`.tar.gz` + `.deb`; `.zip` + `.dmg`; `-portable.zip` +
+`-setup.exe`), signs macOS (Developer ID, notarize, staple) and Windows (Azure Artifact Signing over
+OIDC, login after the build, three signatures: executable, uninstaller, setup), checks every built
+asset and licence file is present, and calls the shared `release-publish.yml`, which writes
+`SHA256SUMS.txt` and `redrob-launcher.json` and publishes as latest. Windows is built only when the
+repository variable `WINDOWS_SIGNING_READY` is `"true"`. `tools/tests/test_release_signing.py` pins
+the signing order.
 
 ## Conventions worth keeping
 
-Mutations go through the typed command system in `crates/redrob-core`. A QML surface that mutates a
-document directly is the specific thing this architecture exists to prevent, because it bypasses
-history and undo silently stops covering it.
-
-`.github/PULL_REQUEST_TEMPLATE.md` asks for the commands you actually ran and what they printed, and
-its checklist covers the traps above: no upstream tree committed, pins changed only in
-`docs/upstream-sources.toml`, the generated artifacts rerun if anything licence-relevant moved,
-`LICENSE` still the verbatim GPL-3.0 text, and no GIMP, Krita or GEGL name reaching a user-visible
-string except where it legitimately identifies upstream. Fill it in with real output.
-
-Commit subjects are imperative; the body says why, and names the upstream version a behavioural
-change was checked against.
-
-This app holds no Redrob console key: the shared Redrob Code daemon does (`PUT /auth/redrob`), and
-the agent reaches the console only through it (`crates/redrob-agent`, `redrob-engine-client`). There
-is no `REDROB_API_KEY` or `REDROB_BASE_URL` here any more and no `.env.example`; `.gitignore` still
-excludes `.env` and `.env.*`. Do not add a direct console path for chat, do not store a key, and do
-not print one.
+- Commits: conventional prefix, imperative, lower-case subject; the body says why. No em dashes
+  anywhere. Pull request bodies in English; Korean prose in `README.ko.md` uses 레드롭 캔버스 for the
+  product and keeps Latin only for technical tokens.
+- Working branches are `<type>/<slug>` off `develop`, squash-merged; upstream syncs are merge commits.
+- New source files carry `SPDX-License-Identifier: MIT OR Apache-2.0`. Files under `crafts/` keep
+  upstream's headers.
+- The shell paints from the design-system tokens; a hex literal in `apps/redrob-canvas/src` fails the
+  guard unless the line is marked as a document colour.
+- This app holds no Redrob console key: the shared Redrob Code daemon does, and the agent reaches
+  the console only through it. Do not add a direct console path, store a key, or print one.
 
 ## Not verified here
 
-`cargo clippy --workspace --all-targets --locked -- -D warnings` and `cargo test --workspace
---locked` were not executed during this investigation, so their current exit status on `develop` is
-unknown. Neither the Qt shell build nor `ctest` was run, so nothing here confirms the desktop
-application compiles or starts on any particular host. The release workflow's signing, notarization
-and upload paths were read, not exercised.
+`cargo clippy`, `cargo test` and `cargo build --release -p redrob-canvas` were not executed while
+these notes were written. The macOS and Windows release legs (`stage.py` on those hosts, the
+`.app` bundle, codesign/notarytool, `installer/windows/build.py` against `bin/redrob-canvas.exe`) were
+rewritten for the cargo binary and read, not run; the first dry run of `release.yml` is where they
+are proven. `tools/release/make_deb.py`'s `Depends` table for the egui stack was reasoned from what
+winit, wgpu and rfd load, not measured on a clean machine.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! The client against a fake shared daemon: a tiny HTTP server on 127.0.0.1, a `server.json`
 //! record in a private `REDROB_RUN_DIR`, and a stub `redrob` binary (`REDROB_CODE_BIN`) that

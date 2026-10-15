@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT OR Apache-2.0
 # Uninstall Redrob Canvas.app -- the macOS uninstaller shipped on the disk image.
 #
 # macOS has no uninstall entry to register, so this is what removes Canvas: it asks first, moves the app
@@ -9,9 +9,10 @@
 #   (no arguments)              the dialogs
 #   --silent [--delete-data]    no dialogs, for scripted removal and for tests; exit code is the result
 #
-# The Library paths are exactly where Qt keeps this app's state on macOS (organization "Redrob",
-# application "Redrob Canvas", bundle id ai.redrob.canvas). The shared "Redrob" folders hold other Redrob
-# apps' data and are left alone.
+# The app keeps its state in ~/Library/Application Support/Redrob Canvas (apps/redrob-canvas
+# services::config_dir). The "Redrob/Redrob Canvas" paths are where the 0.6 shell kept its settings,
+# console key and AI engine; they are removed too so an upgrade-then-uninstall leaves nothing behind.
+# The shared "Redrob" folders hold other Redrob apps' data and are left alone.
 set -u
 
 silent=0
@@ -93,6 +94,7 @@ done
 if [ "$delete_data" -eq 1 ]; then
   defaults delete "com.redrob.Redrob Canvas" >/dev/null 2>&1  # also flushes cfprefsd's cached copy
   for path in \
+    "$HOME/Library/Application Support/Redrob Canvas" \
     "$HOME/Library/Preferences/com.redrob.Redrob Canvas.plist" \
     "$HOME/Library/Application Support/Redrob/Redrob Canvas" \
     "$HOME/Library/Preferences/Redrob/Redrob Canvas" \

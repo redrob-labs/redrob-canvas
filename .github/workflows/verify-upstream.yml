@@ -1,3 +1,7 @@
+# The gate every pull request into develop and main must pass. Four jobs, each the same command a
+# contributor runs locally: the upstream pins, the Rust workspace, the generated notices plus the
+# design-system guard, and the advisory audit. None needs a display, Qt or a native toolchain beyond
+# the X11/Wayland/GL headers egui, wgpu and rfd link against.
 name: verify upstream
 
 on:
@@ -15,6 +19,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
 jobs:
   pins:
     name: Upstream pins are well-formed and reachable
@@ -22,29 +30,55 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          # The script reads each subtree's squash commit out of git log.
+          fetch-depth: 0
 
-      # Deliberately does NOT fetch the 753 MB of upstream trees. It checks that the pins are
-      # well-formed, that upstream/ cannot be committed, and that both remotes are reachable.
+      # Reads upstream-base.json, docs/upstream-sources.toml and UPSTREAM_NOTICES.md against each
+      # other and against the subtree squash commits, then asks GitHub whether each pinned commit
+      # still exists. It fetches no upstream tree.
       - name: Verify the upstream pins
         run: ./scripts/verify-upstream.sh
 
   rust:
     name: Rust workspace
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
 
-      # The core is Qt-independent by design, so it tests without Qt, without the upstream trees,
-      # and without a display. This repository had no CI at all before now.
+      # The toolchain is the one rust-toolchain.toml pins; the action installs that channel rather
+      # than whatever `stable` is on the runner image the day the job runs.
+      - name: Rust toolchain (rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: "1.95.0"
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: System libraries for the desktop app
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libgtk-3-dev
+
       - name: Format
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+        # Upstream subtrees under crafts/ are linted by their own projects; we gate only our crates.
+        run: cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked -- -D warnings
 
-      - name: Test the workspace
-        run: cargo test --workspace --locked
+      - name: Test our crates
+        # The upstream subtrees are tested by their own projects; linking every one of the
+        # ~75 crates' test binaries exhausted the hosted runner's disk (ld died with SIGBUS).
+        run: cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked
+
+      - name: Build the shell (release binary links)
+        run: cargo build --release --locked -p redrob-canvas
 
   distribution:
     name: Distribution artifacts are current
@@ -53,42 +87,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
 
-      # The generator reads `cargo metadata --locked --offline` on purpose, and
-      # THIRD_PARTY_NOTICES.md asserts that no network content went into it. On a
-      # cold runner the registry index is empty, so that read fails outright
-      # ("no matching package named font8x8"). Populate the cache first and leave
-      # the generator offline rather than weakening the compliance property.
+      - name: Rust toolchain (rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: "1.95.0"
+
+      # The generator reads `cargo metadata --locked --offline` on purpose, and the notice file
+      # asserts that no network content went into it. On a cold runner the registry index is
+      # empty, so that read fails outright. Populate the cache first and leave the generator
+      # offline rather than weakening the property.
       - name: Populate the Cargo registry cache
         run: cargo fetch --locked
 
-      # THIRD_PARTY_NOTICES.md and SOURCE_OFFER.md are generated, and a stale pair is a GPL
-      # compliance defect rather than a cosmetic one. The default build enables neither seam.
-      - name: Check the generated notices and source offer
+      # THIRD_PARTY_NOTICES.md is generated, and a stale one is an attribution defect.
+      - name: Check the generated third-party notices
         run: python3 tools/generate_distribution_artifacts.py --check
 
-  # The design system guard lives here rather than only in ctest. ctest needs Qt, which this workflow
-  # deliberately does not install -- so without this job a colour literal, a drifted vendored token
-  # file or a hand-drawn mark would reach develop with every check green, and only a release build
-  # would object. Both generators' --check modes run offline against the vendored tokens.
-  design_system:
-    name: Design system tokens and mark are current
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
-
-      - name: Check the tokens, the generated mark and the QML for colour literals
+      # The design-system guard: pinned tokens and icons, the brand assets against brand/SOURCES.json
+      # (scripts/check-brand.py), no stray mark under resources/, no colour literal in the shell's chrome.
+      - name: Design system tokens and mark are current
         run: python3 tools/check_design_system.py
 
-      # The guard's own reverse verification: it puts each defect back and confirms the guard fails.
-      # A guard nobody has seen fail is a guard nobody has tested.
+      # The tools' own tests, including the guard's reverse verification: each defect is put back
+      # and the guard must fail on it. A guard nobody has seen fail is a guard nobody has tested.
       - name: Run the tool tests
         run: python3 -m unittest discover -s tools/tests -p "test_*.py"
 
-  # The sibling products already gate on this; canvas did not, which mattered once Dependabot
-  # version-update pull requests were turned off. Dependabot security updates still open a pull
-  # request for a known-vulnerable dependency, but that is a notification after the fact -- this
-  # job refuses to let one in, which is the control that actually holds the line.
+  # The sibling products gate on this too. Dependabot security updates still open a pull request
+  # for a known-vulnerable dependency, but that is a notification after the fact; this job refuses
+  # to let one in.
   advisories:
     name: Rust security advisories
     runs-on: ubuntu-24.04

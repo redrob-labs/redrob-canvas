@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! Async client for the shared Redrob Code daemon and provider-neutral tool-using agent sessions.
 //!

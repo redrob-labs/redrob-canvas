@@ -1,31 +1,37 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: GPL-3.0-or-later
-"""Generate and verify offline distribution notices and corresponding source artifacts."""
+# SPDX-License-Identifier: MIT OR Apache-2.0
+"""Generate and verify THIRD_PARTY_NOTICES.md from the exact Cargo.lock, offline.
+
+    python3 tools/generate_distribution_artifacts.py --generate   # rewrite the file
+    python3 tools/generate_distribution_artifacts.py --check      # exit 1 when it is stale
+
+The file inventories every package `Cargo.lock` resolves (name, version, source, registry checksum,
+declared licence expression) and reproduces, byte for byte, the licence and notice texts shipped
+inside each package's own source as Cargo unpacked it. Nothing is fetched while it runs: metadata
+is read with `cargo metadata --locked --offline`, so on a cold machine run `cargo fetch --locked`
+first (the two CI jobs that call this do exactly that).
+
+This used to also write SOURCE_OFFER.md and a GPL corresponding-source bundle. Redrob Canvas is
+MIT OR Apache-2.0 since 0.7.0 and carries no copyleft input, so those are gone; what remains is
+the attribution the permissive licences ask for.
+"""
 
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import difflib
-import gzip
 import hashlib
-import io
 import json
 import os
 import re
 from pathlib import Path
-import stat
 import subprocess
 import sys
-import tarfile
-import urllib.parse
-from typing import Any, Iterable
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "Cargo.lock"
 NOTICE_PATH = ROOT / "THIRD_PARTY_NOTICES.md"
-SOURCE_PATH = ROOT / "SOURCE_OFFER.md"
-SOURCE_IDENTITY_PATH = ROOT / ".redrob-source-identity.json"
 LICENSE_PREFIXES = (
     "LICENSE",
     "LICENCE",
@@ -35,42 +41,33 @@ LICENSE_PREFIXES = (
     "UNLICENSE",
     "AUTHORS",
 )
-EXCLUDED_SOURCE_PARTS = {
-    ".git",
-    ".kiro",
-    "build",
-    "target",
-    "semantic-review",
-    "__pycache__",
-}
+# Fallbacks when a package ships no licence file at all; the declared SPDX expression still names
+# the terms, and the README is where small crates state their copyright.
+FALLBACK_FILES = ("README.md", "README", "AUTHORS")
 
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def run(command: list[str], *, allow_failure: bool = False) -> str:
+def cargo_metadata() -> dict[str, Any]:
+    cargo = os.environ.get("CARGO", "cargo")
     completed = subprocess.run(
-        command,
+        # --all-features: Cargo.lock pins every optional dependency (e.g. the AVIF encoder behind
+        # the upstream `avif` feature), so the notices must cover them too.
+        [cargo, "metadata", "--locked", "--offline", "--all-features", "--format-version", "1"],
         cwd=ROOT,
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
     )
-    if completed.returncode != 0 and not allow_failure:
+    if completed.returncode != 0:
         raise RuntimeError(
-            f"command failed ({' '.join(command)}):\n{completed.stderr.strip()}"
+            "cargo metadata --locked --offline failed; run `cargo fetch --locked` first:\n"
+            + completed.stderr.strip()
         )
-    return completed.stdout.strip() if completed.returncode == 0 else ""
-
-
-def cargo_metadata() -> dict[str, Any]:
-    cargo = os.environ.get("CARGO", "cargo")
-    output = run(
-        [cargo, "metadata", "--locked", "--offline", "--format-version", "1"]
-    )
-    return json.loads(output)
+    return json.loads(completed.stdout)
 
 
 def lock_packages() -> list[dict[str, Any]]:
@@ -92,509 +89,108 @@ def lock_packages() -> list[dict[str, Any]]:
         packages.append(current)
     if any("name" not in package or "version" not in package for package in packages):
         raise RuntimeError("could not parse Cargo.lock package inventory")
-    return sorted(
-        packages,
-        key=lambda package: (
-            package["name"],
-            package["version"],
-            package.get("source", ""),
-        ),
-    )
+    return sorted(packages, key=lambda p: (p["name"], p["version"], p.get("source", "")))
 
 
 def package_key(package: dict[str, Any]) -> tuple[str, str, str]:
-    return (
-        package["name"],
-        package["version"],
-        package.get("source") or "",
-    )
+    return (package["name"], package["version"], package.get("source") or "")
 
 
-@dataclass(frozen=True)
-class SourceSnapshot:
-    files: dict[str, bytes]
-    directories: frozenset[str]
-    archive_authoritative: bool
-
-
-def metadata_packages(
+def metadata_by_key(
     metadata: dict[str, Any], locked: list[dict[str, Any]]
 ) -> dict[tuple[str, str, str], dict[str, Any]]:
-    metadata_by_key = {package_key(package): package for package in metadata["packages"]}
-    locked_keys = {package_key(package) for package in locked}
-    metadata_keys = set(metadata_by_key)
-    if locked_keys != metadata_keys:
-        missing = sorted(locked_keys - metadata_keys)
-        extra = sorted(metadata_keys - locked_keys)
-        raise RuntimeError(
-            f"Cargo.lock/metadata package mismatch; missing={missing}, extra={extra}"
-        )
-    return metadata_by_key
+    by_key = {package_key(p): p for p in metadata["packages"]}
+    locked_keys = {package_key(p) for p in locked}
+    if locked_keys != set(by_key):
+        missing = sorted(locked_keys - set(by_key))
+        extra = sorted(set(by_key) - locked_keys)
+        raise RuntimeError(f"Cargo.lock/metadata package mismatch; missing={missing}, extra={extra}")
+    return by_key
 
 
-def archive_member_path(name: str, root: str, *, directory: bool) -> str:
-    if "\0" in name or "\\" in name or name.startswith("/"):
-        raise RuntimeError(f"unsafe registry archive member path: {name!r}")
-    candidate = name[:-1] if directory and name.endswith("/") else name
-    parts = candidate.split("/")
-    if not candidate or any(part in {"", ".", ".."} for part in parts):
-        raise RuntimeError(f"non-canonical registry archive member path: {name!r}")
-    if parts[0] != root:
-        raise RuntimeError(
-            f"registry archive member has wrong root (expected {root!r}): {name!r}"
-        )
-    relative_parts = parts[1:]
-    if not relative_parts:
-        if not directory:
-            raise RuntimeError(f"registry archive root is not a directory: {name!r}")
-        return ""
-    return "/".join(relative_parts)
-
-
-def registry_archive_snapshot(
-    archive_path: Path, locked: dict[str, Any]
-) -> SourceSnapshot:
-    archive_data = archive_path.read_bytes()
-    if sha256(archive_data) != locked.get("checksum"):
-        raise RuntimeError(
-            f"registry archive checksum does not match Cargo.lock: {package_key(locked)}"
-        )
-
-    expected_root = f"{locked['name']}-{locked['version']}"
-    files: dict[str, bytes] = {}
-    directories: set[str] = set()
-    explicit_paths: set[str] = set()
-    saw_member = False
-    try:
-        with tarfile.open(fileobj=io.BytesIO(archive_data), mode="r:*") as archive:
-            for member in archive:
-                saw_member = True
-                if not member.isdir() and not member.isfile():
-                    raise RuntimeError(
-                        f"registry archive contains link or special entry: {member.name!r}"
-                    )
-                relative = archive_member_path(
-                    member.name, expected_root, directory=member.isdir()
-                )
-                if relative in explicit_paths:
-                    raise RuntimeError(
-                        f"duplicate registry archive member: {member.name!r}"
-                    )
-                explicit_paths.add(relative)
-
-                parents: list[str] = []
-                if relative:
-                    components = relative.split("/")
-                    parents = ["/".join(components[:index]) for index in range(1, len(components))]
-                for parent in parents:
-                    if parent in files:
-                        raise RuntimeError(
-                            f"registry archive file/directory conflict: {member.name!r}"
-                        )
-                    directories.add(parent)
-
-                if member.isdir():
-                    if relative in files:
-                        raise RuntimeError(
-                            f"registry archive file/directory conflict: {member.name!r}"
-                        )
-                    if relative:
-                        directories.add(relative)
-                    continue
-                if relative in directories:
-                    raise RuntimeError(
-                        f"registry archive file/directory conflict: {member.name!r}"
-                    )
-                extracted = archive.extractfile(member)
-                if extracted is None:
-                    raise RuntimeError(
-                        f"could not read registry archive member: {member.name!r}"
-                    )
-                files[relative] = extracted.read()
-    except tarfile.TarError as error:
-        raise RuntimeError(f"invalid registry archive: {archive_path}") from error
-    if not saw_member:
-        raise RuntimeError(f"registry archive is empty: {archive_path}")
-    return SourceSnapshot(files, frozenset(directories), True)
-
-
-def unpacked_registry_snapshot(package_root: Path) -> SourceSnapshot:
-    files: dict[str, bytes] = {}
-    directories: set[str] = set()
-
-    def visit(directory: Path) -> None:
-        with os.scandir(directory) as entries:
-            for entry in sorted(entries, key=lambda item: item.name):
-                path = Path(entry.path)
-                relative = path.relative_to(package_root).as_posix()
-                mode = path.lstat().st_mode
-                if stat.S_ISDIR(mode):
-                    directories.add(relative)
-                    visit(path)
-                elif stat.S_ISREG(mode):
-                    if relative == ".cargo-ok":
-                        continue
-                    files[relative] = path.read_bytes()
-                else:
-                    raise RuntimeError(
-                        f"unpacked registry source contains link or special entry: {path}"
-                    )
-
-    visit(package_root)
-    return SourceSnapshot(files, frozenset(directories), False)
-
-
-def compare_registry_snapshots(
-    archive: SourceSnapshot,
-    unpacked: SourceSnapshot,
-    locked: dict[str, Any],
-) -> None:
-    archive_types = {
-        **{path: "directory" for path in archive.directories},
-        **{path: "file" for path in archive.files},
-    }
-    unpacked_types = {
-        **{path: "directory" for path in unpacked.directories},
-        **{path: "file" for path in unpacked.files},
-    }
-    type_mismatches = sorted(
-        path
-        for path in archive_types.keys() & unpacked_types.keys()
-        if archive_types[path] != unpacked_types[path]
-    )
-    if type_mismatches:
-        raise RuntimeError(
-            f"unpacked registry source type mismatch for {package_key(locked)}: {type_mismatches}"
-        )
-    missing = sorted(archive_types.keys() - unpacked_types.keys())
-    if missing:
-        raise RuntimeError(
-            f"unpacked registry source missing archive paths for {package_key(locked)}: {missing}"
-        )
-    extra = sorted(unpacked_types.keys() - archive_types.keys())
-    if extra:
-        raise RuntimeError(
-            f"unpacked registry source has extra paths for {package_key(locked)}: {extra}"
-        )
-    changed = sorted(
-        path
-        for path, data in archive.files.items()
-        if unpacked.files.get(path) != data
-    )
-    if changed:
-        raise RuntimeError(
-            f"unpacked registry source content mismatch for {package_key(locked)}: {changed}"
-        )
-
-
-def vendored_source_snapshot(
-    package_root: Path, locked: dict[str, Any]
-) -> SourceSnapshot:
-    checksum_path = package_root / ".cargo-checksum.json"
-    if not checksum_path.is_file():
-        raise RuntimeError(f"missing vendored checksum metadata: {checksum_path}")
-    bundled_checksum = json.loads(checksum_path.read_text(encoding="utf-8"))
-    if bundled_checksum.get("package") != locked.get("checksum"):
-        raise RuntimeError(
-            f"vendored package checksum does not match Cargo.lock: {package_key(locked)}"
-        )
-    files: dict[str, bytes] = {}
-    for path in sorted(package_root.rglob("*")):
-        if path.is_symlink():
-            raise RuntimeError(f"vendored source refuses symlink: {path}")
-        if not path.is_file() or path.name in {".cargo-ok", ".cargo-checksum.json"}:
-            continue
-        relative = path.relative_to(package_root).as_posix()
-        files[relative] = path.read_bytes()
-    file_checksums = {path: sha256(data) for path, data in files.items()}
-    if bundled_checksum.get("files") != file_checksums:
-        raise RuntimeError(f"vendored file checksum mismatch: {package_key(locked)}")
-    return SourceSnapshot(files, frozenset(), False)
-
-
-@dataclass(frozen=True)
-class GitSource:
-    """A `git+<url>?<kind>=<ref>#<commit>` source as Cargo.lock writes it."""
-
-    url: str
-    kind: str
-    reference: str
-    commit: str
-
-    @property
-    def locked(self) -> str:
-        return f"git+{self.url}?{self.kind}={self.reference}#{self.commit}"
-
-    @property
-    def vendor_source_table(self) -> str:
-        # The form `cargo vendor` emits, so the bundle builds offline with the same config.
-        return (
-            f'[source."{self.locked}"]\n'
-            f'git = "{self.url}"\n'
-            f'{self.kind} = "{self.reference}"\n'
-            'replace-with = "vendored-sources"\n'
-        )
-
-
-def parse_git_source(source: str) -> GitSource:
-    if not source.startswith("git+"):
-        raise RuntimeError(f"not a git source: {source!r}")
-    parsed = urllib.parse.urlsplit(source[len("git+") :])
-    commit = parsed.fragment
-    if not re.fullmatch(r"[0-9a-f]{40}", commit):
-        raise RuntimeError(f"git source does not pin a full commit: {source!r}")
-    query = urllib.parse.parse_qs(parsed.query)
-    kinds = [kind for kind in ("rev", "tag", "branch") if kind in query]
-    if len(kinds) != 1 or len(query[kinds[0]]) != 1:
-        raise RuntimeError(f"git source must name exactly one of rev/tag/branch: {source!r}")
-    url = urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
-    return GitSource(url, kinds[0], query[kinds[0]][0], commit)
-
-
-def git_checkout_snapshot(
-    package_root: Path, locked: dict[str, Any]
-) -> SourceSnapshot:
-    """The package as Cargo checked it out, verified against the commit the lock names.
-
-    A git dependency has no registry archive and no Cargo checksum, so what the lock pins is the
-    commit. The checkout Cargo made is a git work tree whose HEAD must be that commit; the package
-    directory inside it is what the bundle carries, together with the licence texts at the
-    repository root, which a crate inside a workspace declares for itself (``license = ...``) but
-    does not duplicate into its own directory.
-    """
-    git_source = parse_git_source(locked["source"])
-    checkout_root = package_root
-    while not (checkout_root / ".git").exists():
-        if checkout_root.parent == checkout_root:
-            raise RuntimeError(f"git dependency is not inside a git checkout: {package_root}")
-        checkout_root = checkout_root.parent
-    head = run(["git", "-C", str(checkout_root), "rev-parse", "HEAD"])
-    if head != git_source.commit:
-        raise RuntimeError(
-            f"git checkout HEAD {head} does not match Cargo.lock commit {git_source.commit} "
-            f"for {package_key(locked)}"
-        )
-    files: dict[str, bytes] = {}
-    for path in sorted(package_root.rglob("*")):
-        if path.is_symlink():
-            raise RuntimeError(f"git dependency source refuses symlink: {path}")
-        if not path.is_file() or path.name == ".cargo-ok":
-            continue
-        relative = path.relative_to(package_root).as_posix()
-        if relative == ".git" or relative.startswith(".git/"):
-            continue
-        files[relative] = path.read_bytes()
-    if "Cargo.toml" not in files:
-        raise RuntimeError(f"git dependency has no Cargo.toml: {package_root}")
-    if checkout_root != package_root:
-        for child in sorted(checkout_root.iterdir()):
-            if (
-                child.is_file()
-                and not child.is_symlink()
-                and child.name.upper().startswith(LICENSE_PREFIXES)
-                and child.name not in files
-            ):
-                files[child.name] = child.read_bytes()
-    return SourceSnapshot(files, frozenset(), False)
-
-
-def verified_registry_sources(
-    metadata_by_key: dict[tuple[str, str, str], dict[str, Any]],
-    locked: list[dict[str, Any]],
-) -> dict[tuple[str, str, str], SourceSnapshot]:
-    sources: dict[tuple[str, str, str], SourceSnapshot] = {}
-    for locked_package in locked:
-        source = locked_package.get("source")
-        if not source:
-            continue
-        key = package_key(locked_package)
-        package = metadata_by_key[key]
-        package_root = Path(package["manifest_path"]).resolve().parent
-        if source.startswith("git+"):
-            sources[key] = git_checkout_snapshot(package_root, locked_package)
-            continue
-        if not source.startswith("registry+"):
-            raise RuntimeError(
-                "distribution artifacts do not support non-registry dependency "
-                f"{package_key(locked_package)}"
-            )
-        expected_root = f"{locked_package['name']}-{locked_package['version']}"
-        if package_root.name != expected_root:
-            raise RuntimeError(
-                "registry package root does not match Cargo.lock "
-                f"(expected {expected_root!r}): {package_root}"
-            )
-        if package_root.is_relative_to(ROOT / "vendor"):
-            sources[key] = vendored_source_snapshot(package_root, locked_package)
-            continue
-        source_bucket = package_root.parent
-        archive_path = (
-            source_bucket.parent.parent
-            / "cache"
-            / source_bucket.name
-            / f"{expected_root}.crate"
-        )
-        try:
-            archive_mode = archive_path.lstat().st_mode
-        except OSError as error:
-            raise RuntimeError(f"missing registry archive: {archive_path}") from error
-        if not stat.S_ISREG(archive_mode):
-            raise RuntimeError(f"registry archive is not a regular file: {archive_path}")
-        archive_snapshot = registry_archive_snapshot(archive_path, locked_package)
-        unpacked_snapshot = unpacked_registry_snapshot(package_root)
-        compare_registry_snapshots(archive_snapshot, unpacked_snapshot, locked_package)
-        sources[key] = archive_snapshot
-    return sources
+def package_notice_files(package: dict[str, Any]) -> list[tuple[str, bytes]]:
+    """The licence/notice files inside the package's own unpacked source, relative path and bytes."""
+    package_root = Path(package["manifest_path"]).resolve().parent
+    candidates: set[Path] = set()
+    license_file = package.get("license_file")
+    if license_file:
+        candidate = (package_root / license_file).resolve()
+        if candidate.is_relative_to(package_root) and candidate.is_file():
+            candidates.add(candidate)
+    for child in package_root.iterdir():
+        if child.is_file() and child.name.upper().startswith(LICENSE_PREFIXES):
+            candidates.add(child.resolve())
+    if not candidates:
+        for name in FALLBACK_FILES:
+            fallback = package_root / name
+            if fallback.is_file():
+                candidates.add(fallback.resolve())
+                break
+    return [
+        (path.relative_to(package_root).as_posix(), path.read_bytes())
+        for path in sorted(candidates, key=lambda p: p.name.casefold())
+    ]
 
 
 def markdown_cell(value: str) -> str:
     return value.replace("|", "\\|").replace("\n", " ")
 
 
-def display_source(source: str | None) -> str:
-    return source or "workspace source"
-
-
-def package_notice_files(
-    package: dict[str, Any], snapshot: SourceSnapshot | None
-) -> list[tuple[str, bytes]]:
-    package_root = Path(package["manifest_path"]).resolve().parent
-    if snapshot is not None:
-        candidates: set[str] = set()
-        license_file = package.get("license_file")
-        if license_file:
-            candidate = (package_root / license_file).resolve()
-            if not candidate.is_relative_to(package_root):
-                raise RuntimeError(f"unsafe notice path: {candidate}")
-            candidates.add(candidate.relative_to(package_root).as_posix())
-        for relative in snapshot.files:
-            if "/" not in relative and Path(relative).name.upper().startswith(
-                LICENSE_PREFIXES
-            ):
-                candidates.add(relative)
-        if not any(
-            Path(relative).name.upper().startswith(
-                ("LICENSE", "LICENCE", "COPYING", "NOTICE", "COPYRIGHT", "UNLICENSE")
-            )
-            for relative in candidates
-        ):
-            for fallback in ("README.md", "AUTHORS"):
-                if fallback in snapshot.files:
-                    candidates.add(fallback)
-        if not candidates:
-            raise RuntimeError(
-                f"{package['name']} {package['version']} has no local license/notice text"
-            )
-        missing = sorted(candidates - snapshot.files.keys())
-        if missing:
-            raise RuntimeError(
-                f"unsafe or missing notice paths for {package_key(package)}: {missing}"
-            )
-        return [
-            (relative, snapshot.files[relative])
-            for relative in sorted(candidates, key=str.casefold)
-        ]
-
-    candidates: set[Path] = set()
-    license_file = package.get("license_file")
-    if license_file:
-        candidates.add((package_root / license_file).resolve())
-    for child in package_root.iterdir():
-        if child.is_file() and child.name.upper().startswith(LICENSE_PREFIXES):
-            candidates.add(child.resolve())
-    candidates.add((ROOT / "LICENSE").resolve())
-    if not candidates:
-        raise RuntimeError(
-            f"{package['name']} {package['version']} has no local license/notice text"
-        )
-    for candidate in candidates:
-        if not candidate.is_file() or (
-            not candidate.is_relative_to(package_root) and candidate != ROOT / "LICENSE"
-        ):
-            raise RuntimeError(f"unsafe or missing notice path: {candidate}")
-    return [
-        (
-            "LICENSE"
-            if path == ROOT / "LICENSE"
-            else path.relative_to(package_root).as_posix(),
-            path.read_bytes(),
-        )
-        for path in sorted(candidates, key=lambda path: path.name.casefold())
-    ]
-
-
 def generate_notice(
-    babl: str,
-    lcms: str,
-    metadata_by_key: dict[tuple[str, str, str], dict[str, Any]],
-    locked: list[dict[str, Any]],
-    registry_sources: dict[tuple[str, str, str], SourceSnapshot],
+    by_key: dict[tuple[str, str, str], dict[str, Any]], locked: list[dict[str, Any]]
 ) -> bytes:
     corpus: dict[str, dict[str, Any]] = {}
     rows: list[str] = []
     for locked_package in locked:
-        key = package_key(locked_package)
-        package = metadata_by_key[key]
-        license_expression = package.get("license")
+        package = by_key[package_key(locked_package)]
+        license_expression = package.get("license") or (
+            f"see {package['license_file']}" if package.get("license_file") else ""
+        )
         if not license_expression:
             raise RuntimeError(
-                f"{package['name']} {package['version']} has no declared license expression"
+                f"{package['name']} {package['version']} declares no license expression"
             )
         references: list[str] = []
-        snapshot = registry_sources.get(key)
-        for label, data in package_notice_files(package, snapshot):
-            try:
-                text = data.decode("utf-8")
-            except UnicodeDecodeError as error:
-                raise RuntimeError(
-                    f"notice is not UTF-8: {package_key(package)} {label}"
-                ) from error
+        for label, data in package_notice_files(package):
+            text = data.decode("utf-8", errors="replace")
             digest = sha256(data)
             references.append(f"{label}@{digest[:16]}")
-            record = corpus.setdefault(
-                digest,
-                {"data": data, "text": text, "origins": set()},
-            )
-            record["origins"].add(
-                f"{package['name']} {package['version']} — {label}"
-            )
+            record = corpus.setdefault(digest, {"data": data, "text": text, "origins": set()})
+            record["origins"].add(f"{package['name']} {package['version']} - {label}")
         checksum = locked_package.get("checksum")
         if not checksum:
             source = locked_package.get("source") or ""
-            checksum = (
-                f"git:{parse_git_source(source).commit}" if source.startswith("git+") else "workspace"
-            )
+            checksum = f"git:{source.rsplit('#', 1)[-1]}" if source.startswith("git+") else "workspace"
         rows.append(
             "| `{}` | `{}` | {} | `{}` | `{}` | {} |".format(
                 markdown_cell(package["name"]),
                 markdown_cell(package["version"]),
-                markdown_cell(display_source(package.get("source"))),
+                markdown_cell(package.get("source") or "workspace source"),
                 markdown_cell(checksum),
                 markdown_cell(license_expression),
-                "<br>".join(f"`{markdown_cell(reference)}`" for reference in references),
+                "<br>".join(f"`{markdown_cell(r)}`" for r in references) or "(none shipped)",
             )
         )
 
-    lock_bytes = LOCK_PATH.read_bytes()
     lines = [
         "<!-- Generated by tools/generate_distribution_artifacts.py; do not edit. -->",
         "# Complete third-party notices",
         "",
-        "This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.",
+        "This file was generated without network access from the exact `Cargo.lock` resolution, "
+        "Cargo metadata read with `--locked --offline`, and the licence and notice files inside each "
+        "resolved package's own source as Cargo unpacked it. It inventories every workspace, registry "
+        "and git package the build resolves; the corpus below reproduces each distinct licence or "
+        "notice text once, keyed by the SHA-256 of the original bytes.",
         "",
-        f"- Cargo.lock SHA-256: `{sha256(lock_bytes)}`",
+        "Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). "
+        "The four vendored editors under `crafts/` and their own NOTICE texts are recorded in `NOTICE` "
+        "and `UPSTREAM_NOTICES.md`; the workspace crates they contribute appear in the inventory below "
+        "as `workspace source`.",
+        "",
+        f"- Cargo.lock SHA-256: `{sha256(LOCK_PATH.read_bytes())}`",
         f"- Resolved packages: **{len(locked)}**",
         f"- Unique reproduced license/notice texts: **{len(corpus)}**",
-        "- Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.",
-        "",
-        "## Native and system dependency status",
-        "",
-        "- **Qt 6:** version 6.11 or newer to build (find_package in native/qt/CMakeLists.txt); linked modules are Core, Concurrent, Gui, Network, Qml, Quick, QuickControls2 and Svg. Release binaries for Linux, macOS and Windows BUNDLE Qt 6.11.2 beside the executable, dynamically linked and replaceable, under LGPL-3.0; its licence text and the direction to its unmodified source are installed as `Qt-LGPL-3.0.txt` and `Qt-README.md` (from `third_party/qt/`). Qt is not represented in Cargo.lock and its source is not copied into the project source archive.",
-        f"- **babl:** build selection `{babl}`. When ON, CMake requires the system pkg-config module `babl-0.1 >= 0.1.108` and the adapter is LINKED against it; when OFF, no babl library is linked or shipped. babl is LGPL-3.0-or-later. A distributor shipping an ON build therefore carries that license's obligations for the babl portion, including conveying its corresponding source and permitting the recipient to relink against a modified babl; linking it into this GPL-3.0-or-later work is permitted, and it is the reverse direction that is not. The adapter passes only raw pixel bytes and format name strings across its boundary, so no babl type appears in this project's own interfaces.",
-        f"- **Little-CMS 2:** build selection `{lcms}`. When ON, CMake requires the system pkg-config module `lcms2 >= 2.16` and the adapter is LINKED against it; when OFF, no lcms2 library is linked or shipped. lcms2 is MIT-licensed, so unlike babl an ON build carries only the MIT notice obligation and no relinking requirement. The adapter passes raw pixel bytes, ICC profile bytes, and opaque handles across its boundary; no lcms2 type appears in this project's own interfaces.",
-        "- **Platform libraries:** Unix builds link the system `dl`, `pthread`, and `m` interfaces. These are system/toolchain dependencies and are not vendored.",
-        "- **Build-only tools:** CMake 3.21 or newer, a C/C++20 toolchain, Rust/Cargo 1.92, Python 3, and Qt build tools are required to configure, generate compliance artifacts, and compile; they are not installed or bundled by this project.",
-        "- **Project assets:** the Redrob SVG icon and QML sources are GPL-3.0-or-later project files. The `font8x8` package notice and its bundled bitmap provenance are reproduced in the corpus below.",
+        "- Generation mode: `cargo metadata --locked --offline`; no network content was used.",
         "",
         "## Cargo.lock package inventory",
         "",
@@ -604,14 +200,17 @@ def generate_notice(
         "",
         "## Exact local license and notice corpus",
         "",
-        "Each section is keyed by the SHA-256 of the original local file bytes. Identical texts used by multiple packages are reproduced once.",
+        "Each section is keyed by the SHA-256 of the original local file bytes. Identical texts used "
+        "by multiple packages are reproduced once.",
         "",
     ]
     for digest in sorted(corpus):
         record = corpus[digest]
         text = record["text"]
-        trailing_newline = "yes" if record["data"].endswith((bytes([10]), bytes([13]))) else "no"
-        fence = "`" * max(4, max((len(part) for part in text.split("`") if part == ""), default=0) + 1)
+        trailing = "yes" if record["data"].endswith((b"\n", b"\r")) else "no"
+        # A fence longer than any backtick run inside the text, so the text cannot close it.
+        longest_run = max((len(run) for run in re.findall(r"`+", text)), default=0)
+        fence = "`" * max(4, longest_run + 1)
         lines.extend(
             [
                 f"### `{digest}`",
@@ -619,7 +218,7 @@ def generate_notice(
                 "Used by:",
                 *[f"- {origin}" for origin in sorted(record["origins"])],
                 "",
-                f"Original byte length: `{len(record['data'])}`; trailing newline: `{trailing_newline}`.",
+                f"Original byte length: `{len(record['data'])}`; trailing newline: `{trailing}`.",
                 "",
                 f"{fence}text",
                 text + ("" if text.endswith(("\n", "\r")) else "\n"),
@@ -630,333 +229,56 @@ def generate_notice(
     return "\n".join(lines).encode("utf-8")
 
 
-def archived_source_identity() -> dict[str, str]:
-    if not SOURCE_IDENTITY_PATH.is_file():
-        return {}
-    value = json.loads(SOURCE_IDENTITY_PATH.read_text(encoding="utf-8"))
-    if not isinstance(value, dict) or not all(
-        isinstance(value.get(key, ""), str)
-        for key in ("branch", "commit", "repository", "remote")
-    ):
-        raise RuntimeError("invalid archived source identity")
-    return value
-
-
-def git_identity() -> tuple[str, str]:
-    branch = run(["git", "symbolic-ref", "--short", "HEAD"], allow_failure=True)
-    commit = run(["git", "rev-parse", "--verify", "HEAD"], allow_failure=True)
-    if branch or commit:
-        return branch or "(detached or unavailable)", commit
-    archived = archived_source_identity()
-    return archived.get("branch", "(detached or unavailable)"), archived.get("commit", "")
-
-
-def git_remote() -> str:
-    # Read the repository-local value without Git's URL rewrite rules so the
-    # distributed identity records the public origin, not a credential-routing URL.
-    remote = run(
-        ["git", "config", "--local", "--get", "remote.origin.url"],
-        allow_failure=True,
-    )
-    if remote:
-        return remote
-    return archived_source_identity().get("remote", "")
-
-
-def declared_repository() -> str:
-    in_workspace_package = False
-    for raw_line in (ROOT / "Cargo.toml").read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if line.startswith("["):
-            in_workspace_package = line == "[workspace.package]"
-        elif in_workspace_package and line.startswith("repository = "):
-            repository = json.loads(line.split(" = ", 1)[1])
-            if isinstance(repository, str) and repository:
-                return repository
-    raise RuntimeError("Cargo.toml is missing workspace.package.repository")
-
-
-def generate_source_manifest(notice: bytes, babl: str, lcms: str) -> bytes:
-    repository = declared_repository()
-    content = f"""<!-- Generated by tools/generate_distribution_artifacts.py; do not edit. -->
-# Source offer and corresponding-source manifest
-
-Redrob Canvas is licensed under GPL-3.0-or-later. Every distributable install produced by this repository installs this source offer, the complete generated third-party notices, and `redrob-canvas-corresponding-source.tar.gz`. The archive contains the project source used by the build, the exact checksum-verified Cargo registry sources under `vendor/`, an offline Cargo source-replacement configuration, and an internal `SOURCE_BUNDLE_SHA256SUMS` covering every archived file.
-
-## Exact source identity
-
-- Declared repository URL: `{repository}`
-- Exact bundle identity: each corresponding-source archive contains `.redrob-source-identity.json`, recording the Git branch, actual commit when one exists, configured origin, and declared repository URL at bundle generation time. An unborn worktree records an empty commit; no commit hash is fabricated.
-- Cargo.lock SHA-256: `{sha256(LOCK_PATH.read_bytes())}`
-- Third-party notice SHA-256: `{sha256(notice)}`
-- Native selection represented by these artifacts: `REDROB_ENABLE_BABL={babl}`, `REDROB_ENABLE_LCMS={lcms}`.
-
-## Obtaining the same source
-
-Recipients should first use the installed `redrob-canvas-corresponding-source.tar.gz`; it is the authoritative exact source snapshot and its internal checksum manifest covers every archived file. The archive includes every registry package source selected by `Cargo.lock`, verifies each package against its Cargo checksum metadata, and configures Cargo to use only the bundled `vendor/` directory. Its `.redrob-source-identity.json` records the generation-time source identity; when the commit field is non-empty, recipients can additionally clone the declared repository URL over HTTPS and check out that commit. All package license/notice texts used for this build are reproduced in `THIRD_PARTY_NOTICES.md` without network access.
-
-Qt is required to build (6.11 or newer; Core, Concurrent, Gui, Network, Qml, Quick, QuickControls2, Svg). The Linux, macOS and Windows release binaries ship Qt 6.11.2 beside the executable, unmodified and dynamically linked, under LGPL-3.0: `Qt-LGPL-3.0.txt` and `Qt-README.md`, installed with this offer, carry its licence and the direction to its corresponding source, the unmodified `qt-everywhere-src-6.11.2` at https://download.qt.io/archive/qt/6.11/6.11.2/single/, which we keep reachable. babl is a system pkg-config dependency only when enabled (`babl-0.1 >= 0.1.108`) and is LGPL-3.0-or-later: a distributor shipping `REDROB_ENABLE_BABL=ON` must convey babl's corresponding source and leave the recipient able to relink against a modified babl, which a dynamically linked system package satisfies. Little-CMS 2 is a system pkg-config dependency only when enabled (`lcms2 >= 2.16`) and is MIT-licensed, so an ON build carries its notice obligation and no relinking requirement. Qt, babl and lcms2 sources are not copied into the project source archive.
-
-## Reproducing and building
-
-```sh
-python3 tools/generate_distribution_artifacts.py --check --babl {babl} --lcms {lcms}
-cargo fmt --all -- --check
-cargo test --workspace --all-targets --locked --offline
-cargo clippy --workspace --all-targets --locked --offline -- -D warnings
-cmake -S native -B build/qt -DREDROB_ENABLE_BABL={babl} -DREDROB_ENABLE_LCMS={lcms}
-cmake --build build/qt
-ctest --test-dir build/qt --output-on-failure
-cmake --install build/qt --prefix /desired/prefix
-```
-
-The CMake build runs the offline artifact check and creates the corresponding-source archive as an `ALL` target. Installation fails if the generated notice, this manifest, or the source archive is absent. To refresh after changing `Cargo.lock`, the source tree, or adapter selection, run:
-
-```sh
-python3 tools/generate_distribution_artifacts.py --generate --babl {babl} --lcms {lcms}
-```
-"""
-    return content.encode("utf-8")
-
-
-def source_files() -> Iterable[Path]:
-    for path in ROOT.rglob("*"):
-        if path.is_symlink():
-            raise RuntimeError(f"source bundle refuses symlink: {path}")
-        if not path.is_file():
-            continue
-        relative = path.relative_to(ROOT)
-        if relative.parts[0] == "vendor" or relative.as_posix() in {
-            ".cargo/config.toml",
-            SOURCE_IDENTITY_PATH.name,
-        }:
-            continue
-        if any(part in EXCLUDED_SOURCE_PARTS for part in relative.parts):
-            continue
-        if path.name.endswith((".tar.gz", ".pyc")):
-            continue
-        yield path
-
-
-def registry_source_records(
-    locked: list[dict[str, Any]],
-    registry_sources: dict[tuple[str, str, str], SourceSnapshot],
-) -> list[tuple[str, bytes]]:
-    records: list[tuple[str, bytes]] = []
-    vendor_names: set[str] = set()
-    git_sources: dict[str, GitSource] = {}
-    for locked_package in locked:
-        source = locked_package.get("source")
-        if not source:
-            continue
-        if source.startswith("git+"):
-            git_source = parse_git_source(source)
-            git_sources.setdefault(git_source.locked, git_source)
-        key = package_key(locked_package)
-        snapshot = registry_sources[key]
-        vendor_name = f"{locked_package['name']}-{locked_package['version']}"
-        if vendor_name in vendor_names:
-            raise RuntimeError(f"ambiguous vendored package directory: {vendor_name}")
-        vendor_names.add(vendor_name)
-        file_checksums = {
-            relative: sha256(data) for relative, data in snapshot.files.items()
-        }
-        records.extend(
-            (f"vendor/{vendor_name}/{relative}", data)
-            for relative, data in sorted(snapshot.files.items())
-        )
-        # A git package has no registry checksum; `cargo vendor` writes null there too.
-        checksum_data = json.dumps(
-            {"files": file_checksums, "package": locked_package.get("checksum")},
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-        records.append((f"vendor/{vendor_name}/.cargo-checksum.json", checksum_data))
-    config = '''# Generated inside the corresponding-source bundle.\n[source.crates-io]\nreplace-with = "vendored-sources"\n\n[source.vendored-sources]\ndirectory = "vendor"\n\n[net]\noffline = true\n'''
-    for git_source in sorted(git_sources.values(), key=lambda value: value.locked):
-        config += "\n" + git_source.vendor_source_table
-    records.append((".cargo/config.toml", config.encode("utf-8")))
-    return records
-
-
-def render_source_bundle(
-    locked: list[dict[str, Any]],
-    registry_sources: dict[tuple[str, str, str], SourceSnapshot],
-) -> bytes:
-    project_records = [
-        (path.relative_to(ROOT).as_posix(), path.read_bytes())
-        for path in source_files()
-    ]
-    branch, commit = git_identity()
-    identity = json.dumps(
-        {
-            "branch": branch,
-            "commit": commit,
-            "remote": git_remote(),
-            "repository": declared_repository(),
-        },
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    project_records.append((SOURCE_IDENTITY_PATH.name, identity))
-    records = sorted(
-        [*project_records, *registry_source_records(locked, registry_sources)],
-        key=lambda record: record[0],
-    )
-    names = [name for name, _ in records]
-    if len(names) != len(set(names)):
-        raise RuntimeError("duplicate path in corresponding-source bundle")
-    manifest = "".join(f"{sha256(data)}  {name}\n" for name, data in records).encode()
-    records.append(("SOURCE_BUNDLE_SHA256SUMS", manifest))
-
-    tar_bytes = io.BytesIO()
-    with tarfile.open(fileobj=tar_bytes, mode="w", format=tarfile.PAX_FORMAT) as archive:
-        for name, data in records:
-            info = tarfile.TarInfo(f"redrob-canvas-source/{name}")
-            info.size = len(data)
-            info.mode = 0o644
-            info.mtime = 0
-            info.uid = 0
-            info.gid = 0
-            info.uname = "root"
-            info.gname = "root"
-            archive.addfile(info, io.BytesIO(data))
-    output = io.BytesIO()
-    with gzip.GzipFile(filename="", mode="wb", fileobj=output, mtime=0) as compressed:
-        compressed.write(tar_bytes.getvalue())
-    return output.getvalue()
-
-
-def build_source_bundle(
-    destination: Path,
-    locked: list[dict[str, Any]],
-    registry_sources: dict[tuple[str, str, str], SourceSnapshot],
-) -> str:
-    content = render_source_bundle(locked, registry_sources)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_bytes(content)
-    return sha256(content)
-
-
-def check_source_bundle(
-    destination: Path,
-    locked: list[dict[str, Any]],
-    registry_sources: dict[tuple[str, str, str], SourceSnapshot],
-) -> str:
-    actual = destination.read_bytes()
-    expected = render_source_bundle(locked, registry_sources)
-    if actual != expected:
-        raise RuntimeError(f"stale or incomplete source bundle: {destination}")
-    return sha256(expected)
-
-
-def write_if_changed(path: Path, content: bytes) -> None:
-    if path.is_file() and path.read_bytes() == content:
-        return
-    path.write_bytes(content)
-
-
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--generate", action="store_true")
     mode.add_argument("--check", action="store_true")
-    mode.add_argument("--source-bundle", type=Path)
-    mode.add_argument("--check-source-bundle", type=Path)
-    parser.add_argument("--babl", choices=("ON", "OFF"), default="OFF")
-    parser.add_argument("--lcms", choices=("ON", "OFF"), default="OFF")
     args = parser.parse_args()
 
-    metadata = cargo_metadata()
     locked = lock_packages()
-    metadata_by_key = metadata_packages(metadata, locked)
-    registry_sources = verified_registry_sources(metadata_by_key, locked)
-    expected_notice = generate_notice(
-        args.babl, args.lcms, metadata_by_key, locked, registry_sources
-    )
-    expected_source = generate_source_manifest(
-        expected_notice, args.babl, args.lcms
-    )
+    by_key = metadata_by_key(cargo_metadata(), locked)
+    expected = generate_notice(by_key, locked)
 
-    if args.source_bundle or args.check_source_bundle:
-        if NOTICE_PATH.read_bytes() != expected_notice or SOURCE_PATH.read_bytes() != expected_source:
-            raise RuntimeError("generated distribution artifacts are stale; run --generate")
-        if args.source_bundle:
-            destination = args.source_bundle.resolve()
-            digest = build_source_bundle(destination, locked, registry_sources)
-            print(f"source bundle: {destination} sha256={digest}")
-        else:
-            destination = args.check_source_bundle.resolve()
-            digest = check_source_bundle(destination, locked, registry_sources)
-            print(f"checked source bundle: {destination} sha256={digest}")
-        return 0
-
-    notice = expected_notice
-    source = expected_source
     if args.generate:
-        write_if_changed(NOTICE_PATH, notice)
-        write_if_changed(SOURCE_PATH, source)
-        print(f"generated {NOTICE_PATH.name} sha256={sha256(notice)}")
-        print(f"generated {SOURCE_PATH.name} sha256={sha256(source)}")
+        if not NOTICE_PATH.is_file() or NOTICE_PATH.read_bytes() != expected:
+            NOTICE_PATH.write_bytes(expected)
+        print(f"generated {NOTICE_PATH.name} sha256={sha256(expected)}")
         return 0
 
-    failures = []
-    # A checkout that rewrote LF to CRLF makes a CORRECT artifact read as stale, because this
-    # comparison is on bytes, and regenerating cannot fix it. That is what the first Windows
-    # release leg hit: git on that image checks out with autocrlf, and the message said only
-    # "stale", which sends the reader looking for a content difference that is not there.
-    #
-    # The test is "does the file on disk carry MORE CRLF than the expected content", not "does it
-    # carry any". THIRD_PARTY_NOTICES.md legitimately contains 23 of them, embedded from vendored
-    # licence text, so "any CRLF" fires on an ordinary stale file and is noise -- measured, after
-    # writing it that way first. Two other shapes were tried and also mis-sorted a real case:
-    # normalising both sides fails because Cargo.lock is converted by the same checkout and the
-    # notice embeds Cargo.lock's SHA-256, so the expected bytes move too; and "CRLF in the file
-    # but not in the expected" fails on those same 23.
-    crlf_suspects = []
-    for path, expected in ((NOTICE_PATH, notice), (SOURCE_PATH, source)):
-        if not path.is_file():
-            failures.append(f"missing {path.name}")
-            continue
-        actual = path.read_bytes()
-        if actual == expected:
-            print(f"checked {path.name} sha256={sha256(expected)}")
-            continue
-        failures.append(f"stale {path.name}")
-        if actual.count(b"\r\n") > expected.count(b"\r\n"):
-            crlf_suspects.append(path.name)
-        # "stale" alone is not a diagnosis, and this check runs on hosts nobody is sitting at.
-        # Twice now a Windows-only staleness cost a full release round trip just to learn WHAT
-        # differed, so the difference is printed here, bounded, instead of being reconstructed
-        # by someone with a terminal. Bytes are decoded leniently because the notice carries
-        # vendored licence text in several encodings and a decode error here would replace the
-        # diagnosis with a traceback.
-        diff = list(
-            difflib.unified_diff(
-                expected.decode("utf-8", "replace").splitlines(),
-                actual.decode("utf-8", "replace").splitlines(),
-                fromfile=f"{path.name} (expected, regenerated now)",
-                tofile=f"{path.name} (on disk)",
-                lineterm="",
-                n=1,
-            )
-        )
-        print(f"--- how {path.name} differs ({len(diff)} diff lines) ---", file=sys.stderr)
-        for line in diff[:60]:
-            print(line, file=sys.stderr)
-        if len(diff) > 60:
-            print(f"... {len(diff) - 60} further diff lines suppressed", file=sys.stderr)
-    if crlf_suspects:
-        failures.append(
-            f"NOTE: {', '.join(sorted(crlf_suspects))} carry more CRLF line endings than the "
-            "generated content does, and this check compares bytes. If that is the whole "
-            "difference, regenerating will not help -- check .gitattributes and the checkout's "
-            "core.autocrlf."
-        )
-    if failures:
-        print("; ".join(failures), file=sys.stderr)
+    if not NOTICE_PATH.is_file():
+        print(f"missing {NOTICE_PATH.name}; run --generate", file=sys.stderr)
         return 1
-    return 0
+    actual = NOTICE_PATH.read_bytes()
+    if actual == expected:
+        print(f"checked {NOTICE_PATH.name} sha256={sha256(expected)}")
+        return 0
+    # "stale" alone is not a diagnosis, and this runs on hosts nobody is sitting at: print a
+    # bounded diff. A checkout that rewrote LF to CRLF reads as stale too, and regenerating cannot
+    # fix that -- the comparison is on bytes -- so say so when that is the shape of the difference.
+    diff = list(
+        difflib.unified_diff(
+            expected.decode("utf-8", "replace").splitlines(),
+            actual.decode("utf-8", "replace").splitlines(),
+            fromfile=f"{NOTICE_PATH.name} (expected, regenerated now)",
+            tofile=f"{NOTICE_PATH.name} (on disk)",
+            lineterm="",
+            n=1,
+        )
+    )
+    print(f"--- how {NOTICE_PATH.name} differs ({len(diff)} diff lines) ---", file=sys.stderr)
+    for line in diff[:60]:
+        print(line, file=sys.stderr)
+    if len(diff) > 60:
+        print(f"... {len(diff) - 60} further diff lines suppressed", file=sys.stderr)
+    message = f"stale {NOTICE_PATH.name}; run `python3 tools/generate_distribution_artifacts.py --generate`"
+    if actual.count(b"\r\n") > expected.count(b"\r\n"):
+        message += (
+            "; NOTE: the file on disk carries more CRLF line endings than the generated content,"
+            " so check .gitattributes and core.autocrlf before regenerating"
+        )
+    print(message, file=sys.stderr)
+    return 1
 
 
 if __name__ == "__main__":

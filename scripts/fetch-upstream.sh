@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
 #
-# Fetches the pinned upstream reference sources into upstream/.
+# Takes upstream work into one or every vendored subtree under crafts/.
 #
-# redrob-canvas is NOT a fork of Krita or GIMP. It is first-party Rust and Qt that ports behaviour
-# from those two, and `docs/upstream-sources.toml` pins the exact commits it was written against so
-# a claim about upstream behaviour can be checked rather than remembered.
+# Redrob Canvas vendors the four upstream editors as git subtrees (UPSTREAM.md). Updating one is
+# two commands that must run together -- the subtree pull, then the workspace regeneration -- and
+# this script is the one place they are spelled out, so a pull is never left without its
+# regenerated root Cargo.toml.
 #
-# Until now that pinning was documentation only: 753 MB of Krita and GIMP source had to be staged by
-# hand, `upstream/README.md` said "They intentionally do not download source", and nothing in the
-# repository could put a checkout where the build expects one. A new machine could not build, and a
-# stale checkout could not be told apart from a correct one.
+#   scripts/fetch-upstream.sh                      # every subtree, to the commit upstream-base.json records
+#   scripts/fetch-upstream.sh photocraft           # one subtree, to its recorded commit
+#   scripts/fetch-upstream.sh photocraft <sha>     # one subtree, to a NEW upstream commit
 #
-# So this reads the SAME pins the docs declare -- there is no second copy of a commit hash to drift
-# -- and produces exactly those trees.
-#
-# Shallow, single-commit clones: history is not what these are for. Krita's tree alone is ~580 MB
-# and its full history is many times that.
-#
-# Usage:
-#   scripts/fetch-upstream.sh            # fetch every pinned source that has a commit
-#   scripts/fetch-upstream.sh krita      # just one
+# After a pull to a new commit, record <sha> in upstream-base.json (base.commit and
+# lastSyncedUpstream), docs/upstream-sources.toml (commit) and UPSTREAM_NOTICES.md, then run
+# scripts/verify-upstream.sh. The merge this produces is a merge commit; keep it one when the branch
+# lands (never squash a sync), or the subtree loses its merge base.
 
 set -euo pipefail
 
@@ -29,79 +24,72 @@ cd "$root"
 pins="docs/upstream-sources.toml"
 [ -f "$pins" ] || { echo "error: $pins not found" >&2; exit 1; }
 
-# The sources that are actually vendored as trees. gegl is a version floor on a system package and
-# redrob_code is a protocol reference, so neither is checked out here -- listing them would create a
-# directory nothing reads.
-# graphite is the only `kind = "code"` source, so it is the only one a build could ever need a
-# tree of. krita and gimp are `kind = "algorithm"`: fetched to read and to compare output against,
-# never to copy from.
-VENDORED=(graphite krita gimp)
-
 read_pin() { # section key -> value
   python3 - "$pins" "$1" "$2" <<'PY'
-import re, sys
-path, section, key = sys.argv[1], sys.argv[2], sys.argv[3]
-text = open(path, encoding="utf-8").read()
-# Deliberately a small parser rather than a tomllib dependency: this has to run from a bare
-# checkout with nothing installed, and Blender-style vendored Python is not in play here.
-match = re.search(rf"^\[{re.escape(section)}\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S)
-if not match:
+import pathlib, sys, tomllib
+path, section, key = sys.argv[1:4]
+pins = tomllib.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+if section not in pins:
     sys.exit(f"section [{section}] not found in {path}")
-body = match.group(1)
-found = re.search(rf'^{re.escape(key)}\s*=\s*"([^"]+)"\s*$', body, re.M)
-if not found:
+if key not in pins[section]:
     sys.exit(f"{section}.{key} not found in {path}")
-print(found.group(1))
+print(pins[section][key])
 PY
 }
 
-targets=("${VENDORED[@]}")
-if [ "$#" -gt 0 ]; then
-  targets=("$@")
+code_sections() {
+  python3 - "$pins" <<'PY'
+import pathlib, sys, tomllib
+pins = tomllib.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+print("\n".join(n for n, b in pins.items() if b.get("kind") == "code"))
+PY
+}
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "error: the working tree has uncommitted changes; git subtree pull needs a clean tree" >&2
+  exit 1
 fi
 
+targets=()
+override_sha=""
+case "$#" in
+  0) mapfile -t targets < <(code_sections) ;;
+  1) targets=("$1") ;;
+  2) targets=("$1"); override_sha="$2" ;;
+  *) echo "usage: $0 [<subtree> [<sha>]]" >&2; exit 2 ;;
+esac
+
 for name in "${targets[@]}"; do
-  found=0
-  for known in "${VENDORED[@]}"; do
-    [ "$name" = "$known" ] && found=1
-  done
-  if [ "$found" -eq 0 ]; then
-    echo "error: $name is not a vendored source. Known: ${VENDORED[*]}" >&2
+  kind="$(read_pin "$name" kind)"
+  if [ "$kind" != "code" ]; then
+    echo "error: $name is kind=$kind, not a vendored subtree" >&2
     exit 1
   fi
+  repo="$(read_pin "$name" repository)"
+  prefix="$(read_pin "$name" prefix)"
+  commit="${override_sha:-$(read_pin "$name" commit)}"
+  [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || { echo "error: $commit is not a full 40-character sha" >&2; exit 1; }
 
-  repo=$(read_pin "$name" repository | tr -d '\r')
-  commit=$(read_pin "$name" commit | tr -d '\r')
-  target="upstream/$name"
-
-  if [ -d "$target/.git" ]; then
-    have=$(git -C "$target" rev-parse HEAD 2>/dev/null || echo "")
-    if [ "$have" = "$commit" ]; then
-      echo "$name already at $commit"
-      continue
-    fi
-    echo "$name is at ${have:-unknown}, wanted $commit -- refetching"
-    rm -rf "$target"
-  elif [ -d "$target" ]; then
-    # A hand-staged tree with no git metadata -- which is how these arrived before this script
-    # existed. It cannot be verified against the pin, so it is replaced rather than trusted.
-    echo "$name exists without git metadata, so its commit cannot be verified -- replacing"
-    rm -rf "$target"
+  # Already there? The newest squash commit for this prefix names the commit it carries.
+  have="$(git log --all --format=%s --grep "^Squashed '$prefix/' content from commit " \
+          | sed -n "1s/.*from commit \([0-9a-f]*\)$/\1/p")"
+  if [ -n "$have" ] && [[ "$commit" == "$have"* ]]; then
+    echo "$name already at $commit"
+    continue
   fi
 
-  mkdir -p upstream
-  echo "fetching $name from $repo at $commit"
-  git init --quiet "$target"
-  git -C "$target" config core.autocrlf false
-  git -C "$target" config core.eol lf
-  git -C "$target" remote add origin "$repo"
-  git -C "$target" fetch --quiet --depth 1 origin "$commit"
-  git -C "$target" checkout --quiet FETCH_HEAD
-
-  actual=$(git -C "$target" rev-parse HEAD)
-  if [ "$actual" != "$commit" ]; then
-    echo "error: $name expected $commit, checked out $actual" >&2
-    exit 1
-  fi
-  echo "$name at $actual ($(du -sh "$target" 2>/dev/null | cut -f1))"
+  echo "pulling $name from $repo at $commit into $prefix"
+  git subtree pull --prefix "$prefix" "$repo" "$commit" --squash -m \
+    "chore(upstream): update $name to $commit"
 done
+
+echo "regenerating the root Cargo.toml from crafts/*/Cargo.upstream.toml"
+# The pull brings upstream's Cargo.toml back; merge_workspaces.py parks it as Cargo.upstream.toml
+# again and rewrites the root manifest, so both the rename and the root file are committed together.
+python3 tools/merge_workspaces.py
+git add -A -- Cargo.toml crafts/
+if ! git diff --cached --quiet; then
+  git commit -q -m "build: regenerate the workspace after the subtree pull"
+  echo "committed the regenerated Cargo.toml and the parked upstream manifests"
+fi
+echo "done. Record the new commit(s) in upstream-base.json, $pins and UPSTREAM_NOTICES.md, then run scripts/verify-upstream.sh"

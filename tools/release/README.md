@@ -1,38 +1,34 @@
-# Release machines
+# Release packaging
 
-`local-release.sh` builds macOS and Windows on our own machines over SSH, then CI signs them. See
-the README's *Releases* section for the whole flow.
+The release is `.github/workflows/release.yml`: every platform is built, signed and published on GitHub
+runners (see the README's *Releases* section). The pieces here are what that workflow calls, plus one
+rehearsal script.
 
-## This machine
+- `stage.py` turns the built `redrob-canvas` binary into the per-platform tree every archive is made
+  from: `bin/` plus the licence set on Linux and Windows, `Redrob Canvas.app` (with its `Info.plist`,
+  icon and the licences inside) on macOS. Shared by all three legs.
+- `make_deb.py` packages the Linux tree as a `.deb` under `/opt/redrob-canvas`, with the menu entry,
+  icons and a `Depends` line worked out from the binary.
+- `build-linux.sh <tag> <checkout> <outdir>` rehearses the Linux leg on our own machine, unsigned:
+  gates, `cargo build --release`, stage, `.tar.gz`, `.deb`, licences, launcher manifest, sums.
 
-`gh` signed in with push access to the repository, SSH keys accepted by both build machines, and:
+There is no Qt, CMake or aqtinstall anywhere here any more: the shell is egui and a leg is one
+`cargo build --release -p redrob-canvas --target <triple>`. The macOS disk image and the Windows setup
+live in `installer/`.
 
-```sh
-# ~/.config/redrob-canvas/release.env -- not in the repository
-REDROB_MAC_HOST=user@mac-host
-REDROB_MAC_ROOT=redrob                  # relative to the Mac user's home
-REDROB_WIN_HOST=user@windows-host
-REDROB_WIN_ROOT=C:/Users/user/redrob    # forward slashes
-```
+The release is exactly four targets (`tools/release_matrix.py`):
 
-## This machine also builds Linux
+| Target        | Assets                                                              | Built by                    |
+|---------------|---------------------------------------------------------------------|-----------------------------|
+| macOS arm64   | `redrob-canvas-<v>-macos-arm64.zip`, `redrob-canvas-<v>-macos-arm64.dmg` | `build` leg (`macos-15`), signed and notarized |
+| Linux x86_64  | `redrob-canvas-<v>-linux-x86_64.tar.gz`, `redrob-canvas-<v>-linux-x86_64.deb` | `build` leg (`ubuntu-24.04`) |
+| Windows x64   | `redrob-canvas-<v>-windows-x64-portable.zip`, `redrob-canvas-<v>-windows-x64-setup.exe` | `build` leg (`windows-2025`), Azure Artifact Signing |
+| Web (wasm)    | `redrob-canvas-web-<v>.zip`                                         | `web` job: `trunk build --release` in `apps/redrob-canvas-web`, `dist/` zipped |
 
-Qt 6.11.2 `gcc_64` in `~/Qt/6.11.2/gcc_64` (or set `REDROB_QT_PREFIX`), Rust 1.92.0, CMake and
-Ninja. The archive is linked against this machine's glibc, so it runs only on distributions at
-least as new.
+No other package format or architecture is built. The web zip is the only asset Redrob Launcher
+does not install; a host unzips it behind any static web server.
 
-## Mac (Apple silicon, Command Line Tools is enough)
+## Linux
 
-Run `mac-setup.sh` once on the Mac. It installs Rust 1.92.0, CMake, Ninja and Qt 6.11.2 under the
-user's home, nothing system-wide. Xcode is not needed: signing and notarization happen in CI.
-
-## Windows PC
-
-Once: Visual Studio with the C++ workload, Git, Python 3, Ninja on `PATH`, Rust 1.92.0 through
-rustup, and Qt 6.11.2 `win64_msvc2022_64` in `<REDROB_WIN_ROOT>\.toolchain\Qt` from aqtinstall at
-the commit `release-ci.yml` pins (released aqtinstall cannot resolve Windows Qt 6.11).
-
-## Rehearsal
-
-Both build scripts take a branch as `origin/<name>` instead of a tag, to check a build on the
-machines before tagging. `local-release.sh` itself only takes a tag.
+Rust 1.95 (`rust-toolchain.toml`), `dpkg-dev`, and the development headers egui, wgpu and rfd link
+against: `libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libgtk-3-dev`.

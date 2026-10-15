@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
 """Emit the release build matrix, the platform archive names the draft must therefore carry,
 and the release-note line describing what was built -- all from ONE list of legs.
 
 Two things drove this out of the workflow file. First, a static matrix cannot skip a single
-leg, and the Windows leg has to be skippable: Authenticode signing needs a certificate that is
-not configured yet, and a leg that fails on every tag makes the whole release red, which hides
-real regressions instead of surfacing them. Second, the verify job hardcoded the per-platform
+leg, and the Windows leg has to be skippable: Authenticode signing needs the organization's Azure
+Artifact Signing set up for this repository, and a leg that fails on every tag makes the whole
+release red, which hides real regressions instead of surfacing them. Second, the verify job hardcoded the per-platform
 archive suffixes it demanded and the release notes hardcoded the platform list they promised,
 so skipping a leg would have made a correct gate fail for the wrong reason and left the notes
 claiming a binary nobody can download.
@@ -18,6 +19,12 @@ the stem is the repository name, the os-arch token is one of the launcher's (lin
 macos-arm64, windows-x64 -- NOT windows-x86_64), and the Windows archive carries the `-portable`
 suffix because a `-setup.exe` is something the launcher cannot install and a plain `.zip` is
 something it does not recognise. tools/tests/test_release_asset_names.py holds the pattern.
+
+The release is exactly FOUR targets: the three native legs below and the web build (WEB), a
+trunk-built wasm bundle zipped as `redrob-canvas-web-<version>.zip`. The web zip is not a launcher
+asset (nothing installs it; a host unzips it behind a web server), so it carries no os-arch token
+and is built by its own job in release.yml rather than by the native matrix. Nothing else is
+built: no other Linux package format, no 32-bit Windows, no Intel or universal macOS build.
 """
 import json
 import os
@@ -25,49 +32,56 @@ import sys
 
 STEM = "redrob-canvas"
 
+# The web build: `trunk build --release` in apps/redrob-canvas-web, `dist/` zipped. One asset,
+# no installer, no signing. `archive_name(version)` is the whole file name.
+WEB = {
+    "label": "Web (wasm)",
+    "runner": "ubuntu-24.04",
+    "target": "wasm32-unknown-unknown",
+    "slug": "web",
+    "notes": "Web (WebAssembly, for self-hosting)",
+}
+
+
+def web_asset_name(version):
+    """The web bundle's file name on the release: `redrob-canvas-web-<version>.zip`."""
+    return f"{STEM}-web-{version}.zip"
+
+
 LEGS = [
     {
         "label": "Linux x86_64",
         "runner": "ubuntu-24.04",
-        "aqt_host": "linux",
-        "aqt_arch": "linux_gcc_64",
-        "qt_dir": "gcc_64",
+        "target": "x86_64-unknown-linux-gnu",
         "slug": "linux-x86_64",
         "archive_suffix": "linux-x86_64.tar.gz",
-        # The .deb (tools/release/make_deb.py), built with the archive on the Linux build machine.
+        # The .deb (tools/release/make_deb.py), built with the archive by the Linux leg.
         "installer_suffix": "linux-x86_64.deb",
         "notes": "Linux x86_64",
     },
-    # Qt's macOS build is universal (arm64 + x86_64), so one runner covers both architectures
-    # and the bundle is genuinely universal rather than two halves.
     {
-        # arm64, not universal: the binary was only ever built for the runner's own Apple silicon
-        # (`file` on the 0.5.2 bundle says "Mach-O 64-bit arm64"), so the old "universal" name
-        # promised Intel Macs a build that does not start on them.
+        # arm64, not universal: one target, built on the runner's own Apple silicon, so the name
+        # promises exactly what the binary runs on.
         "label": "macOS arm64",
         "runner": "macos-15",
-        "aqt_host": "mac",
-        "aqt_arch": "clang_64",
-        "qt_dir": "macos",
+        "target": "aarch64-apple-darwin",
         "slug": "macos-arm64",
         "archive_suffix": "macos-arm64.zip",
-        # The disk image (installer/macos/), built, notarized and stapled by the signing job.
+        # The disk image (installer/macos/), built, notarized and stapled by the macOS leg.
         "installer_suffix": "macos-arm64.dmg",
         "notes": "macOS arm64 for Apple silicon (signed, notarized, stapled)",
     },
     {
         "label": "Windows x64",
         "runner": "windows-2025",
-        "aqt_host": "windows",
-        "aqt_arch": "win64_msvc2022_64",
-        "qt_dir": "msvc2022_64",
+        "target": "x86_64-pc-windows-msvc",
         # x64, the launcher's token, not x86_64: the launcher installs the first asset whose
         # os-arch token it knows, and `windows-x86_64` is not one it knows.
         "slug": "windows-x64",
         # `-portable`: the unpacked app, which the launcher unzips and runs in place. The signed
         # zip IS that app, so it is published under this name rather than as a second copy.
         "archive_suffix": "windows-x64-portable.zip",
-        # The branded setup (installer/windows/), built and signed by the signing job. For people;
+        # The branded setup (installer/windows/), built and signed by the Windows leg. For people;
         # the launcher cannot install an exe and takes the portable zip instead.
         "installer_suffix": "windows-x64-setup.exe",
         "notes": "Windows x64 (signed and timestamped)",
@@ -75,20 +89,23 @@ LEGS = [
     },
 ]
 
-MATRIX_KEYS = ("label", "runner", "aqt_host", "aqt_arch", "qt_dir", "slug")
+MATRIX_KEYS = ("label", "runner", "target", "slug")
 
 
-def asset_names(version, legs=LEGS):
+def asset_names(version, legs=LEGS, web=True):
     """Every platform asset a release of `version` publishes, in the names the draft must carry.
 
-    The archive and the installer of each leg; the checksum files, the corresponding source and
-    the licence texts are not platform assets and are not listed.
+    The archive and the installer of each leg, then the web bundle (unless `web` is False); the
+    checksum files, the corresponding source and the licence texts are not platform assets and
+    are not listed.
     """
     names = []
     for leg in legs:
         names.append(f"{STEM}-{version}-{leg['archive_suffix']}")
         if leg.get("installer_suffix"):
             names.append(f"{STEM}-{version}-{leg['installer_suffix']}")
+    if web:
+        names.append(web_asset_name(version))
     return names
 
 
@@ -107,8 +124,8 @@ def main():
     for leg in skipped:
         print(
             f"::notice title=Platform skipped::{leg['label']} is not built because the "
-            'repository variable WINDOWS_SIGNING_READY is not "true". Set it once a '
-            "code-signing certificate is in WIN_CSC_LINK; nothing else needs to change."
+            'repository variable WINDOWS_SIGNING_READY is not "true". Set it once Azure '
+            "Artifact Signing is configured for this repository; nothing else needs to change."
         )
 
     if not included:
@@ -117,19 +134,21 @@ def main():
 
     matrix = [{key: leg[key] for key in MATRIX_KEYS} for leg in included]
     archive_suffixes = [leg["archive_suffix"] for leg in included]
-    # Installers are listed separately: release.yml builds them in its signing jobs and demands them,
-    # while release-ci.yml (the all-runner fallback) ships archives only.
+    # Installers are listed separately from the archives Redrob Launcher installs; release.yml builds
+    # and demands both.
     installer_suffixes = [leg["installer_suffix"] for leg in included if leg.get("installer_suffix")]
-    notes_line = ", ".join(leg["notes"] for leg in included)
+    # The web bundle is always built (its job has no signing to be ready for); release.yml names
+    # it by hand as redrob-canvas-web-<version>.zip, which the tests hold to `web_asset_name`.
+    notes_line = ", ".join([leg["notes"] for leg in included] + [WEB["notes"]])
 
     if sys.argv[1:] == ["--notes"]:
-        # tools/release/local-release.sh writes the draft's notes from this same list.
         print(notes_line)
         sys.exit(0)
 
-    print(f"Building: {', '.join(leg['label'] for leg in included)}")
-    print(f"Platform archives required on the draft: {' '.join(archive_suffixes)}")
-    print(f"Installers required by release.yml: {' '.join(installer_suffixes) or '(none)'}")
+    print(f"Building: {', '.join([leg['label'] for leg in included] + [WEB['label']])}")
+    print(f"Platform archives required on the release: {' '.join(archive_suffixes)}")
+    print(f"Installers required on the release: {' '.join(installer_suffixes) or '(none)'}")
+    print(f"Web bundle required on the release: {web_asset_name('<version>')}")
 
     output = os.environ.get("GITHUB_OUTPUT")
     if output:

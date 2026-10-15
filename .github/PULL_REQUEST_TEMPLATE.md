@@ -13,24 +13,23 @@
 <!-- The commands you actually ran, and what they printed. -->
 
 ```
-./scripts/verify-upstream.sh
+scripts/verify-upstream.sh
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cmake -S native -B build/qt && cmake --build build/qt
-ctest --test-dir build/qt --output-on-failure
+python3 tools/check_design_system.py
+python3 -m unittest discover -s tools/tests -p "test_*.py"
 ```
 
 ## Checklist
 
-- [ ] No upstream tree is committed. `upstream/` is ignored and
-      `scripts/verify-upstream.sh` still passes.
-- [ ] Upstream commit pins changed only in `docs/upstream-sources.toml`; no hash
-      is duplicated elsewhere.
-- [ ] If a dependency or licence-relevant file changed,
-      `python3 tools/generate_distribution_artifacts.py --check` was rerun and
-      `THIRD_PARTY_NOTICES.md` / `SOURCE_OFFER.md` are current.
-- [ ] GPL obligations intact: `LICENSE` is still the verbatim GPL-3.0 text and
-      the install still ships the notices and corresponding source.
-- [ ] No GIMP/Krita/GEGL name reaches a user-visible string except where it
-      legitimately identifies upstream.
+- [ ] Nothing under `crafts/` was edited by hand. An editor change went upstream and
+      arrives as a pin bump (`scripts/fetch-upstream.sh`), merged as a merge commit.
+- [ ] Upstream commits changed only in `upstream-base.json`, `docs/upstream-sources.toml`
+      and `UPSTREAM_NOTICES.md`, together, and `scripts/verify-upstream.sh` still passes.
+- [ ] If `Cargo.lock` changed, `cargo fetch --locked` then
+      `python3 tools/generate_distribution_artifacts.py --generate` was run and
+      `THIRD_PARTY_NOTICES.md` is committed.
+- [ ] No upstream copyright notice was replaced; `NOTICE` still reproduces each
+      upstream NOTICE verbatim. Nothing references `crafts/*/docs/brand/`.
+- [ ] No hex colour literal in `apps/redrob-canvas/src` outside a marked document colour.
