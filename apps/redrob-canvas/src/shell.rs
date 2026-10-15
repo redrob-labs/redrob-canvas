@@ -1,10 +1,13 @@
 //! The Redrob Canvas shell: one window, a thin top bar, and the three upstream editors hosted as
 //! switchable modes. Editors are created lazily on their first switch and then kept alive, so
-//! switching modes preserves their open documents.
+//! switching modes preserves their open documents. The shell also owns what crosses the modes:
+//! the Mode menu's hand-offs (`handoff`), file routing by extension (`routing`) for Open and
+//! drops, the window title, and the exit confirm for editors that are not on screen.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use designcraft_ui_egui::DesignApp;
 use photocraft_ui_egui::PhotocraftApp;
@@ -15,10 +18,28 @@ use crate::ai::bridge::{Capabilities, LayoutBridge, ModeBridge, PhotoBridge, Vec
 use crate::ai::jobs::{JobOutput, JobResult, ToolKind};
 use crate::ai::tools::{self, ToolReply, ToolRequest};
 use crate::ai::{self, Action, AiPanel};
+use crate::handoff::Handoff;
+use crate::routing::{self, Route};
 use crate::{handoff, services};
 
 /// Height of the shell's own top bar, in points.
 pub const TOP_BAR_HEIGHT: f32 = 28.0;
+
+/// Ctrl+Shift+O: the shell's Open (routes the file to its editor), whichever editor is active.
+pub const OPEN_ANY_SHORTCUT: egui::KeyboardShortcut = egui::KeyboardShortcut::new(
+    egui::Modifiers::COMMAND.plus(egui::Modifiers::SHIFT),
+    egui::Key::O,
+);
+
+/// Ctrl+O: the shell's Open while the shell owns the keyboard ([`ShellApp::shell_owns_focus`]);
+/// otherwise the active editor's own Open.
+pub const OPEN_SHORTCUT: egui::KeyboardShortcut =
+    egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::O);
+
+/// How long a status line stays before it has faded out, in seconds.
+pub const STATUS_SECS: f32 = 5.0;
+/// A status line with a button ("Open in Layout instead") stays longer.
+pub const STATUS_WITH_ACTION_SECS: f32 = 20.0;
 
 /// Which editor the window shows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
@@ -52,34 +73,77 @@ impl Mode {
     }
 }
 
-/// The window title the editors would set (`PhotoCraft`, `name.psd @ 100% - PhotoCraft`) read
-/// back as this app's: the product suffix becomes "Redrob Canvas".
-pub fn shell_title(current: &str) -> String {
-    for upstream in ["PhotoCraft", "VectorCraft", "DesignCraft"] {
-        if let Some(prefix) = current.strip_suffix(upstream) {
-            return format!("{prefix}{}", services::APP_NAME);
-        }
+/// The window title: `<active document name>[*] - Redrob Canvas`, or the product name alone
+/// with no document open. `dirty` adds the `*`.
+pub fn window_title(doc: Option<(&str, bool)>) -> String {
+    match doc {
+        Some((name, dirty)) => format!(
+            "{name}{} - {}",
+            if dirty { "*" } else { "" },
+            services::APP_NAME
+        ),
+        None => services::APP_NAME.to_string(),
     }
-    if current.is_empty() {
-        return services::APP_NAME.to_string();
-    }
-    if current.ends_with(services::APP_NAME) {
-        return current.to_string();
-    }
-    format!("{current} - {}", services::APP_NAME)
 }
 
-/// The editors send their own window title (`PhotocraftApp` on every document change); the
-/// window reports it back the next frame, and the shell renames it once. Nothing is sent while
-/// the title already is the shell's.
-fn sync_window_title(ctx: &egui::Context) {
-    let current = ctx.input(|i| i.viewport().title.clone());
-    if let Some(current) = current {
-        let want = shell_title(&current);
-        if want != current {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Title(want));
+/// The file name of `path` for a message, or the path itself when it has none.
+fn file_name(path: &Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .filter(|n| !n.is_empty())
+        .unwrap_or_else(|| path.to_string_lossy().to_string())
+}
+
+/// A button on a status line.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum StatusAction {
+    /// Open the file in this mode too ("Open in Layout instead" for a PDF).
+    OpenIn(Mode, PathBuf),
+}
+
+/// The shell's status line in the top bar: one line that fades out after [`STATUS_SECS`].
+#[derive(Clone, Debug)]
+pub struct Status {
+    pub text: String,
+    pub error: bool,
+    pub action: Option<StatusAction>,
+    since: Instant,
+}
+
+impl Status {
+    pub fn new(text: impl Into<String>, error: bool) -> Self {
+        Self {
+            text: text.into(),
+            error,
+            action: None,
+            since: Instant::now(),
         }
     }
+
+    /// How long this line stays in all.
+    fn lifetime(&self) -> f32 {
+        if self.action.is_some() {
+            STATUS_WITH_ACTION_SECS
+        } else {
+            STATUS_SECS
+        }
+    }
+
+    /// The line's opacity at `now`: full, then fading through its last second; `None` once it has
+    /// gone.
+    pub fn alpha(&self, now: Instant) -> Option<f32> {
+        let left = self.lifetime() - now.saturating_duration_since(self.since).as_secs_f32();
+        (left > 0.0).then_some(left.min(1.0))
+    }
+}
+
+/// What the exit confirm's buttons asked for this frame.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ExitChoice {
+    None,
+    Cancel,
+    GoTo(Mode),
+    Quit,
 }
 
 /// The fonts an editor installed, by name: which font files and which families they form. Cheap
@@ -176,6 +240,16 @@ pub struct ShellApp {
     pub ai: AiPanel,
     /// What the active mode's bridge could do when this frame's logic ran.
     caps: Capabilities,
+    /// The shell's status line (hand-off results, routing errors), fading.
+    status: Option<Status>,
+    /// Files dropped on the window that belong to another mode, routed at the next frame's start.
+    pending_opens: Vec<(PathBuf, Route)>,
+    /// The exit confirm: every editor's unsaved-document count, while the dialog is up.
+    exit_prompt: Option<Vec<(Mode, usize)>>,
+    /// "Quit anyway" was clicked: the next close request passes to the active editor.
+    exit_approved: bool,
+    /// The window title the shell set last.
+    last_title: Option<String>,
 }
 
 impl Default for ShellApp {
@@ -202,6 +276,11 @@ impl ShellApp {
             created: Vec::new(),
             ai,
             caps: Capabilities::none(Mode::default()),
+            status: None,
+            pending_opens: Vec::new(),
+            exit_prompt: None,
+            exit_approved: false,
+            last_title: None,
         }
     }
 
@@ -321,13 +400,98 @@ impl ShellApp {
                         self.set_mode(next);
                     }
                     ui.separator();
+                    ui.menu_button("Mode", |ui| self.mode_menu(ui));
+                    ui.separator();
                     ai::panel::menu(ui, &mut self.ai, &caps);
+                    self.status_line(ui);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.add_space(8.0);
                         self.right_slot(ui);
                     });
                 });
             });
+    }
+
+    /// The "Mode" menu: the shell's Open, and Send to Photo / Vector / Layout, each enabled when
+    /// the active mode has a document and a hand-off to that mode ([`Handoff::between`]).
+    fn mode_menu(&mut self, ui: &mut egui::Ui) {
+        let open = ui
+            .button("Open…")
+            .on_hover_text(format!(
+                "Open a file in the editor its type belongs to  ({})",
+                ui.ctx().format_shortcut(&OPEN_ANY_SHORTCUT)
+            ));
+        if open.clicked() {
+            ui.close();
+            self.open_dialog();
+        }
+        ui.separator();
+        let source = self.mode;
+        let has_document = self.caps.has_document;
+        for target in Mode::ALL {
+            let handoff = Handoff::between(source, target);
+            let enabled = has_document && handoff.is_some();
+            let button = ui.add_enabled(
+                enabled,
+                egui::Button::new(format!("Send to {}", target.label())),
+            );
+            let button = match (handoff, has_document) {
+                (Some(h), true) => button.on_hover_text(h.description()),
+                (Some(_), false) => button.on_disabled_hover_text("open a document first"),
+                (None, _) => button.on_disabled_hover_text("this is the active mode"),
+            };
+            if button.clicked() {
+                ui.close();
+                self.send_to(target);
+            }
+        }
+    }
+
+    /// Runs the hand-off from the active mode to `target` and reports on the status line.
+    pub fn send_to(&mut self, target: Mode) {
+        match handoff::send_to(self, target) {
+            Ok(line) => self.set_status(line, false),
+            Err(e) => self.set_status(format!("Send to {}: {e}", target.label()), true),
+        }
+    }
+
+    /// Show `text` on the status line (an error in the error colour) for [`STATUS_SECS`].
+    pub fn set_status(&mut self, text: impl Into<String>, error: bool) {
+        self.status = Some(Status::new(text, error));
+    }
+
+    /// The status line, if one is showing.
+    pub fn status(&self) -> Option<&Status> {
+        self.status.as_ref()
+    }
+
+    /// The top bar's status line: the last hand-off or routing result, fading out, with its
+    /// button when it has one.
+    fn status_line(&mut self, ui: &mut egui::Ui) {
+        let Some(status) = self.status.clone() else {
+            return;
+        };
+        let Some(alpha) = status.alpha(Instant::now()) else {
+            self.status = None;
+            return;
+        };
+        ui.add_space(8.0);
+        let color = if status.error {
+            ui.visuals().error_fg_color
+        } else {
+            ui.visuals().text_color()
+        };
+        ui.label(egui::RichText::new(&status.text).color(color.gamma_multiply(alpha)));
+        if let Some(StatusAction::OpenIn(mode, path)) = &status.action
+            && ui
+                .small_button(format!("Open in {} instead", mode.label()))
+                .clicked()
+        {
+            self.status = None;
+            self.open_in(*mode, path, None);
+            return;
+        }
+        ui.ctx().request_repaint_after(Duration::from_millis(100));
     }
 
     /// The right side of the top bar: the AI dock toggle.
@@ -383,6 +547,266 @@ impl ShellApp {
     /// The Vector editor (created on demand): where a trace hand-off lands.
     pub fn vector_app(&mut self) -> &mut VectorcraftApp {
         self.ensure_vector()
+    }
+
+    /// The Photo editor (created on demand): where a rasterising hand-off lands.
+    pub fn photo_app(&mut self) -> &mut PhotocraftApp {
+        self.ensure_photo()
+    }
+
+    /// The Layout editor (created on demand): where a placing hand-off lands.
+    pub fn layout_app(&mut self) -> &mut DesignApp {
+        self.ensure_layout()
+    }
+
+    /// The shell's Open: a file dialog filtered by every editor's extensions, each chosen file
+    /// routed to its editor ([`Self::open_paths`]).
+    pub fn open_dialog(&mut self) {
+        let all: Vec<&str> = Mode::ALL
+            .iter()
+            .flat_map(|m| routing::extensions_for(*m).iter().copied())
+            .collect();
+        let mut dialog = rfd::FileDialog::new()
+            .set_title("Open in Redrob Canvas")
+            .add_filter("All documents", all.as_slice());
+        for mode in Mode::ALL {
+            dialog = dialog.add_filter(mode.label(), routing::extensions_for(mode));
+        }
+        if let Some(paths) = dialog.pick_files() {
+            self.open_paths(paths);
+        }
+    }
+
+    /// Opens each path in the editor its extension belongs to ([`routing::route`]); a file no
+    /// editor claims is reported on the status line.
+    pub fn open_paths(&mut self, paths: Vec<PathBuf>) {
+        for path in paths {
+            match routing::route(&path) {
+                Some(route) => self.open_in(route.mode, &path, route.alternative),
+                None => self.set_status(
+                    format!("{}: no editor opens this kind of file", file_name(&path)),
+                    true,
+                ),
+            }
+        }
+    }
+
+    /// Opens `path` with `mode`'s editor's own open command and switches to that mode. With an
+    /// `alternative` mode, the status line offers to open the file there instead.
+    pub fn open_in(&mut self, mode: Mode, path: &Path, alternative: Option<Mode>) {
+        let name = file_name(path);
+        match self.editor_open(mode, path) {
+            Ok(()) => {
+                self.set_mode(mode);
+                let mut status = Status::new(format!("Opened {name} in {}", mode.label()), false);
+                if let Some(alt) = alternative {
+                    status.action = Some(StatusAction::OpenIn(alt, path.to_path_buf()));
+                }
+                self.status = Some(status);
+            }
+            Err(e) => self.set_status(format!("{name}: {e}"), true),
+        }
+    }
+
+    /// Each editor's own open path, so the file is named, remembered in Open Recent and imported
+    /// exactly as it would be from that editor's File menu: `PhotocraftApp::open_path`
+    /// (crafts/photocraft/crates/ui-egui/src/file_open.rs L103; a background job when the editor
+    /// runs them), `vectorcraft_ui_egui::io::open_path` (crafts/vectorcraft/crates/ui-egui/src/
+    /// io.rs L218) and `DesignApp::open_dropped` (crafts/designcraft/crates/ui-egui/src/lib.rs
+    /// L1140: layouts open, text and graphics are placed).
+    fn editor_open(&mut self, mode: Mode, path: &Path) -> Result<(), String> {
+        let path = path.to_string_lossy().to_string();
+        match mode {
+            Mode::Photo => self.ensure_photo().open_path(&path).map(|_warnings| ()),
+            Mode::Vector => {
+                vectorcraft_ui_egui::io::open_path(self.ensure_vector(), &path).map(|_| ())
+            }
+            Mode::Layout => self.ensure_layout().open_dropped(&path).map(|_| ()),
+        }
+    }
+
+    /// Files dropped on the window that belong to another mode ([`Self::route_dropped_files`]),
+    /// opened now.
+    fn flush_pending_opens(&mut self) {
+        for (path, route) in std::mem::take(&mut self.pending_opens) {
+            self.open_in(route.mode, &path, route.alternative);
+        }
+    }
+
+    /// Dropped files whose extension belongs to another mode are taken from the input before the
+    /// active editor sees it and opened there; the rest (the active mode's own files, unknown
+    /// types, and everything while Shift is held) stay for the editor's own drop handling, which
+    /// may place rather than open them.
+    fn route_dropped_files(&mut self, raw: &mut egui::RawInput) {
+        if raw.dropped_files.is_empty() || raw.modifiers.shift {
+            return;
+        }
+        let dropped = std::mem::take(&mut raw.dropped_files);
+        let mut keep = Vec::with_capacity(dropped.len());
+        for file in dropped {
+            match routing::route(file.path()) {
+                Some(route) if route.mode != self.mode => {
+                    self.pending_opens.push((file.path().to_path_buf(), route));
+                }
+                _ => keep.push(file),
+            }
+        }
+        raw.dropped_files = keep;
+    }
+
+    /// Whether Ctrl+O is the shell's rather than the active editor's: while the exit confirm is
+    /// up, or while the active editor has no document (its Open would open its own kinds only;
+    /// the shell's routes every kind).
+    fn shell_owns_focus(&self) -> bool {
+        self.exit_prompt.is_some() || !self.caps.has_document
+    }
+
+    /// The active mode's document name and whether it has unsaved changes, read from the
+    /// editor's session (`DocState::is_dirty`: crafts/photocraft/crates/engine/src/lib.rs L291,
+    /// crafts/vectorcraft/crates/engine/src/lib.rs L419, crafts/designcraft/crates/engine/src/
+    /// lib.rs L155; `DocState::title` vectorcraft L479, designcraft L158).
+    pub fn active_document(&self) -> Option<(String, bool)> {
+        match self.mode {
+            Mode::Photo => self
+                .photo
+                .as_ref()?
+                .session
+                .active()
+                .map(|st| (st.doc.name.clone(), st.is_dirty())),
+            Mode::Vector => self
+                .vector
+                .as_ref()?
+                .session
+                .active()
+                .map(|st| (st.title(), st.is_dirty())),
+            Mode::Layout => self
+                .layout
+                .as_ref()?
+                .session
+                .active()
+                .map(|st| (st.title(), st.is_dirty())),
+        }
+    }
+
+    /// Every editor's count of documents with unsaved changes (modes with none left out).
+    pub fn dirty_counts(&self) -> Vec<(Mode, usize)> {
+        let mut out = Vec::new();
+        if let Some(app) = &self.photo {
+            let n = app.session.documents().iter().filter(|d| d.is_dirty()).count();
+            if n > 0 {
+                out.push((Mode::Photo, n));
+            }
+        }
+        if let Some(app) = &self.vector {
+            let n = app.session.documents().iter().filter(|d| d.is_dirty()).count();
+            if n > 0 {
+                out.push((Mode::Vector, n));
+            }
+        }
+        if let Some(app) = &self.layout {
+            let n = app.session.documents().iter().filter(|d| d.is_dirty()).count();
+            if n > 0 {
+                out.push((Mode::Layout, n));
+            }
+        }
+        out
+    }
+
+    /// The window title is the shell's ([`window_title`]). Each editor sends its own on a document
+    /// change (`PhotoCraft`, `*name — VectorCraft`); the window reports it back the next frame and
+    /// the shell sets its own again. Nothing is sent while the title is already right.
+    fn sync_window_title(&mut self, ctx: &egui::Context) {
+        let doc = self.active_document();
+        let want = window_title(doc.as_ref().map(|(name, dirty)| (name.as_str(), *dirty)));
+        let reported = ctx.input(|i| i.viewport().title.clone());
+        let overridden = reported.is_some_and(|t| t != want);
+        if overridden || self.last_title.as_ref() != Some(&want) {
+            self.last_title = Some(want.clone());
+            ctx.send_viewport_cmd(egui::ViewportCommand::Title(want));
+        }
+    }
+
+    /// A close request while an editor that is not on screen has unsaved documents: the request
+    /// is taken out of the input (eframe reads it after this hook, epi_integration.rs L284, so
+    /// nothing closes) and the exit confirm asks. The active editor asks about its own documents
+    /// itself. After "Quit anyway" one request passes through untouched.
+    fn intercept_close(&mut self, raw: &mut egui::RawInput) {
+        let id = raw.viewport_id;
+        let Some(info) = raw.viewports.get_mut(&id) else {
+            return;
+        };
+        if !info.close_requested() {
+            return;
+        }
+        if std::mem::take(&mut self.exit_approved) {
+            return;
+        }
+        let dirty = self.dirty_counts();
+        if dirty.iter().all(|(mode, _)| *mode == self.mode) {
+            return;
+        }
+        info.events.retain(|e| *e != egui::ViewportEvent::Close);
+        self.exit_prompt = Some(dirty);
+    }
+
+    /// The exit confirm (a modal): the unsaved counts per mode, Cancel, Go to <mode>, Quit anyway.
+    fn exit_dialog(&mut self, ctx: &egui::Context) {
+        let Some(dirty) = self.exit_prompt.clone() else {
+            return;
+        };
+        let active = self.mode;
+        let id = egui::Id::new("redrob_canvas_exit_confirm");
+        let modal = egui::Modal::new(id).show(ctx, |ui| {
+            ui.set_width(380.0);
+            ui.heading("Unsaved changes");
+            for (mode, n) in &dirty {
+                ui.label(format!(
+                    "{}: {n} document{} with unsaved changes",
+                    mode.label(),
+                    if *n == 1 { "" } else { "s" }
+                ));
+            }
+            ui.label("Go to a mode to save its documents, or quit and lose them.");
+            ui.add_space(8.0);
+            let mut choice = ExitChoice::None;
+            ui.horizontal(|ui| {
+                if ui.button("Cancel").clicked() {
+                    choice = ExitChoice::Cancel;
+                }
+                for (mode, _) in dirty.iter().filter(|(mode, _)| *mode != active) {
+                    if ui.button(format!("Go to {}", mode.label())).clicked() {
+                        choice = ExitChoice::GoTo(*mode);
+                    }
+                }
+                if ui.button("Quit anyway").clicked() {
+                    choice = ExitChoice::Quit;
+                }
+            });
+            choice
+        });
+        let choice = if modal.should_close() {
+            ExitChoice::Cancel
+        } else {
+            modal.inner
+        };
+        match choice {
+            ExitChoice::None => {}
+            ExitChoice::Cancel => self.exit_prompt = None,
+            ExitChoice::GoTo(mode) => {
+                self.exit_prompt = None;
+                self.set_mode(mode);
+            }
+            ExitChoice::Quit => {
+                self.exit_prompt = None;
+                self.exit_approved = true;
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+        }
+    }
+
+    /// The exit confirm is up (for tests).
+    pub fn exit_prompt(&self) -> Option<&[(Mode, usize)]> {
+        self.exit_prompt.as_deref()
     }
 
     /// Everything the AI layer does between frames: finished jobs, the agent's tool calls, agent
@@ -574,12 +998,19 @@ impl ShellApp {
         }
     }
 
-    /// Ctrl+1/2/3 switch modes. Consumed before the active editor sees the frame's input.
+    /// Ctrl+1/2/3 switch modes; Ctrl+Shift+O (and Ctrl+O while the shell owns the keyboard) is
+    /// the shell's Open. Consumed before the active editor sees the frame's input.
     fn handle_shortcuts(&mut self, ctx: &egui::Context) {
         for mode in Mode::ALL {
             if ctx.input_mut(|i| i.consume_shortcut(&mode.shortcut())) {
                 self.set_mode(mode);
             }
+        }
+        let open_any = ctx.input_mut(|i| i.consume_shortcut(&OPEN_ANY_SHORTCUT));
+        let open =
+            self.shell_owns_focus() && ctx.input_mut(|i| i.consume_shortcut(&OPEN_SHORTCUT));
+        if open_any || open {
+            self.open_dialog();
         }
     }
 
@@ -674,6 +1105,7 @@ impl ShellApp {
 impl eframe::App for ShellApp {
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.handle_shortcuts(ctx);
+        self.flush_pending_opens();
         self.sync_fonts(ctx);
         self.apply_pending(ctx);
         if self.pending.is_some() {
@@ -699,6 +1131,10 @@ impl eframe::App for ShellApp {
     }
 
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
+        // The shell's own look at the input first: a close while an off-screen editor has unsaved
+        // work, and files dropped for another mode, never reach the active editor.
+        self.intercept_close(raw);
+        self.route_dropped_files(raw);
         match self.mode {
             Mode::Photo => {
                 if let Some(app) = self.photo.as_mut() {
@@ -719,7 +1155,7 @@ impl eframe::App for ShellApp {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
-        sync_window_title(ui.ctx());
+        self.sync_window_title(ui.ctx());
         self.top_bar(ui);
         let actions = self.ai_dock(ui);
         for action in actions {
@@ -728,6 +1164,7 @@ impl eframe::App for ShellApp {
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(ui, |ui| self.editor_area(ui, frame));
+        self.exit_dialog(ui.ctx());
         self.styles.insert(self.mode, StyleSnapshot::take(ui.ctx()));
     }
 
@@ -754,6 +1191,7 @@ impl eframe::App for ShellApp {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
 
@@ -907,23 +1345,133 @@ mod tests {
     }
 
     #[test]
-    fn editor_titles_are_rewritten_to_the_shells() {
-        assert_eq!(shell_title("PhotoCraft"), "Redrob Canvas");
+    fn the_window_title_names_the_active_document_and_marks_unsaved_changes() {
+        assert_eq!(window_title(None), "Redrob Canvas");
         assert_eq!(
-            shell_title("Untitled-1 @ 100% (RGB/8) - PhotoCraft"),
-            "Untitled-1 @ 100% (RGB/8) - Redrob Canvas"
+            window_title(Some(("poster.psd", false))),
+            "poster.psd - Redrob Canvas"
         );
-        assert_eq!(shell_title("VectorCraft"), "Redrob Canvas");
-        assert_eq!(shell_title("Redrob Canvas"), "Redrob Canvas");
         assert_eq!(
-            shell_title("poster.designcraft - Redrob Canvas"),
-            "poster.designcraft - Redrob Canvas"
+            window_title(Some(("Untitled-1", true))),
+            "Untitled-1* - Redrob Canvas"
         );
-        assert_eq!(shell_title(""), "Redrob Canvas");
+        let shell = ShellApp::new(None);
+        assert_eq!(shell.active_document(), None, "no editor, no document");
+        assert!(shell.dirty_counts().is_empty());
+    }
+
+    #[test]
+    fn the_status_line_fades_after_its_lifetime() {
+        let status = Status::new("done", false);
+        let now = Instant::now();
+        assert_eq!(status.alpha(now), Some(1.0));
+        let late = now + Duration::from_secs_f32(STATUS_SECS - 0.5);
+        let alpha = status.alpha(late).unwrap_or(0.0);
+        assert!(alpha > 0.0 && alpha < 1.0, "{alpha}");
+        assert_eq!(status.alpha(now + Duration::from_secs(60)), None);
+        let mut with_button = Status::new("opened", false);
+        with_button.action = Some(StatusAction::OpenIn(Mode::Layout, PathBuf::from("a.pdf")));
         assert_eq!(
-            shell_title("Something else"),
-            "Something else - Redrob Canvas"
+            with_button.alpha(now + Duration::from_secs_f32(STATUS_SECS + 1.0)),
+            Some(1.0),
+            "a line with a button stays longer"
         );
+    }
+
+    #[test]
+    fn send_to_enablement_follows_the_handoff_matrix() {
+        // Photo -> Layout and Vector exist, Photo -> Photo does not; the menu enables a hand-off
+        // only with a document.
+        for source in Mode::ALL {
+            for target in Mode::ALL {
+                let expected = source != target;
+                assert_eq!(
+                    Handoff::between(source, target).is_some(),
+                    expected,
+                    "{source:?} -> {target:?}"
+                );
+            }
+        }
+        let mut shell = ShellApp::new(None);
+        // Sending a mode to itself is refused before any editor is created, and reported.
+        shell.send_to(Mode::Photo);
+        let status = shell.status().expect("a status line");
+        assert!(status.error, "{}", status.text);
+        assert!(status.text.starts_with("Send to Photo"), "{}", status.text);
+        assert!(status.text.contains("nothing to send"), "{}", status.text);
+        assert!(shell.created().is_empty());
+    }
+
+    #[test]
+    fn dropped_files_for_another_mode_are_taken_from_the_editors_input() {
+        #[derive(Debug)]
+        struct Dropped(PathBuf);
+        impl egui::DroppedFile for Dropped {
+            fn path(&self) -> &Path {
+                &self.0
+            }
+            fn bytes(&self) -> Result<Vec<u8>, String> {
+                Ok(Vec::new())
+            }
+        }
+        fn dropped(name: &str) -> egui::DroppedFileHandle {
+            Arc::new(Dropped(PathBuf::from(name)))
+        }
+        let mut shell = ShellApp::new(None);
+        let mut raw = egui::RawInput::default();
+        raw.dropped_files = vec![
+            dropped("a.png"),
+            dropped("b.svg"),
+            dropped("c.idml"),
+            dropped("d.zip"),
+        ];
+        shell.route_dropped_files(&mut raw);
+        // Photo is active: its own PNG and the unknown ZIP stay; SVG and IDML are routed.
+        let kept: Vec<String> = raw
+            .dropped_files
+            .iter()
+            .map(|f| f.path().to_string_lossy().to_string())
+            .collect();
+        assert_eq!(kept, vec!["a.png".to_string(), "d.zip".to_string()]);
+        let routed: Vec<(String, Mode)> = shell
+            .pending_opens
+            .iter()
+            .map(|(p, r)| (p.to_string_lossy().to_string(), r.mode))
+            .collect();
+        assert_eq!(
+            routed,
+            vec![
+                ("b.svg".to_string(), Mode::Vector),
+                ("c.idml".to_string(), Mode::Layout)
+            ]
+        );
+        // With Shift held, everything stays for the editor.
+        let mut shell = ShellApp::new(None);
+        let mut raw = egui::RawInput::default();
+        raw.modifiers.shift = true;
+        raw.dropped_files = vec![dropped("b.svg")];
+        shell.route_dropped_files(&mut raw);
+        assert_eq!(raw.dropped_files.len(), 1);
+        assert!(shell.pending_opens.is_empty());
+    }
+
+    #[test]
+    fn a_close_passes_through_while_no_off_screen_editor_is_dirty() {
+        let mut shell = ShellApp::new(None);
+        let mut raw = egui::RawInput::default();
+        raw.viewports
+            .entry(raw.viewport_id)
+            .or_default()
+            .events
+            .push(egui::ViewportEvent::Close);
+        shell.intercept_close(&mut raw);
+        assert!(raw.viewport().close_requested(), "nothing dirty: the close stands");
+        assert_eq!(shell.exit_prompt(), None);
+        // The shell-level Open shortcuts: Ctrl+Shift+O always, Ctrl+O only while the shell owns
+        // the keyboard (here: no document open).
+        assert_eq!(OPEN_SHORTCUT.logical_key, egui::Key::O);
+        assert!(OPEN_ANY_SHORTCUT.modifiers.shift && OPEN_ANY_SHORTCUT.modifiers.command);
+        assert!(shell.shell_owns_focus());
     }
 
     #[test]

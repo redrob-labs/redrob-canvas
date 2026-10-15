@@ -37,9 +37,11 @@ vectorcraft-text = { workspace = true }
 vectorcraft-doc = { workspace = true }
 vectorcraft-geom = { workspace = true }
 vectorcraft-render = { workspace = true }
+vectorcraft-svg = { workspace = true }
 designcraft-ui-egui = { workspace = true }
 designcraft-engine = { workspace = true }
 designcraft-geom = { workspace = true }
+designcraft-images = { workspace = true }
 designcraft-render = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

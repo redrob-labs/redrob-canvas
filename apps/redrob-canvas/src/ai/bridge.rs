@@ -492,6 +492,17 @@ impl<'a> LayoutBridge<'a> {
         let page = st.doc.page(abs)?;
         Some((page.bounds(), si))
     }
+
+    /// The current page's content box (inside its margins; `Page::margin_rect`,
+    /// crafts/designcraft/crates/doc/src/page.rs L240) in points and the index of its spread:
+    /// where a hand-off places its graphic.
+    pub fn content_box(&self) -> Option<(designcraft_geom::Rect, usize)> {
+        let abs = self.current_page()?;
+        let st = self.app.session.active()?;
+        let (si, _) = st.doc.page_loc(abs)?;
+        let page = st.doc.page(abs)?;
+        Some((page.margin_rect(), si))
+    }
 }
 
 impl ModeBridge for LayoutBridge<'_> {
