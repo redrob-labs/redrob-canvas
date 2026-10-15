@@ -2,7 +2,7 @@
 
 use egui::epaint::Shape;
 use serde_json::json;
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use crate::VectorcraftApp;
 use crate::menus::{self, Item};
@@ -154,7 +154,7 @@ fn library_submenus_are_disabled_placeholders() {
 
 #[test]
 fn stroke_profiles_have_descriptive_names() {
-    let labels: Vec<&str> = vectorcraft_doc::WidthProfile::PRESETS.iter().map(|p| p.label).collect();
+    let labels: Vec<&str> = redrob_vector_doc::WidthProfile::PRESETS.iter().map(|p| p.label).collect();
     assert_eq!(labels, ["Uniform", "Lens", "Taper Start", "Taper End", "Pinch", "Teardrop", "Wave"]);
 }
 
@@ -179,7 +179,7 @@ fn edit_menu_lists_pdf_presets() {
 
 #[test]
 fn clipboard_preferences_name_the_legacy_format_neutrally() {
-    let label = |key: &str| vectorcraft_engine::cmd::prefscmds::PREF_SPECS.iter().find(|p| p.key == key).unwrap().label;
+    let label = |key: &str| redrob_vector_engine::cmd::prefscmds::PREF_SPECS.iter().find(|p| p.key == key).unwrap().label;
     assert_eq!(label("copyAicb"), "Legacy vector clipboard (no transparency)");
     assert_eq!(label("aicbMode"), "Legacy vector clipboard");
 }

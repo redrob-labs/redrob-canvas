@@ -8,7 +8,7 @@
 //! the name is edited).
 
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
+use redrob_vector_color::Paint;
 
 use super::swatch_options::{color_of, editor, grid, mode_id, name_row};
 use super::{DialogSpec, run_and_close};
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn a_tint_opens_as_a_named_tint_swatch() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
         app.run("swatch.new", json!({"name": "Ink", "color": "#cc0066", "spot": true})).unwrap();
         app.run("paint.setFill", json!({"swatch": "Ink", "tint": 40})).unwrap();

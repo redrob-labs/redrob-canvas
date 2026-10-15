@@ -104,7 +104,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
     }
     // The package holds the document as saved.
     if app.session.active().is_some_and(|st| st.is_dirty()) {
-        let r = io::save(app, vectorcraft_engine::cmd::fileio::SaveMode::Save, &json!({}), false)?;
+        let r = io::save(app, redrob_vector_engine::cmd::fileio::SaveMode::Save, &json!({}), false)?;
         // The save asks first (it would replace a file that loses what opening it left out).
         if r.get("pending").is_some() {
             return Ok(r);
@@ -122,7 +122,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
     }
     if web {
         let (name, data) = (r["name"].as_str().unwrap_or("package.zip"), r["dataBase64"].as_str().unwrap_or_default());
-        let bytes = vectorcraft_format::base64_decode(data).ok_or("the package came back damaged")?;
+        let bytes = redrob_vector_format::base64_decode(data).ok_or("the package came back damaged")?;
         io::write_named(app, None, name, &bytes)?;
         app.status(format!("Packaged {n} file(s){note}"));
         return Ok(r);

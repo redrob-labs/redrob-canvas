@@ -86,7 +86,7 @@ mod tests {
             })),
             ..Default::default()
         };
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         let ctx = egui::Context::default();
         // Every Help-menu link id reaches the service with its URL.
         for (id, url) in COMMANDS {
@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn help_menu_lists_links_then_separator_then_system_info_and_about() {
-        let app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let help: Vec<String> = crate::menus::menu_items(&app).into_iter().filter(|i| i.path == ["Help"]).map(|i| i.id).collect();
         assert_eq!(help, ["help.discord", "help.website", "help.artcraftWebsite", "help.github", "help.reportIssue", "---", "help.systemInfo", "help.about"]);
         for (id, _) in COMMANDS {
@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn link_commands_open_their_urls() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let ctx = egui::Context::default();
         for (id, url) in [
             ("help.discord", "https://github.com/redrob-labs/redrob-canvas/issues"),

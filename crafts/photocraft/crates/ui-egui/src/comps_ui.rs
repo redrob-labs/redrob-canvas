@@ -195,7 +195,7 @@ pub fn panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_engine::Session;
+    use redrob_photo_engine::Session;
 
     #[test]
     fn warning_icon_clears_only_its_own_comp() {

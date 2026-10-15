@@ -46,10 +46,10 @@ pub mod variables;
 
 use egui::{Rect, Sense, Ui, vec2};
 use serde_json::{Value, json};
-use vectorcraft_color::{BlendMode, Color, Paint};
-use vectorcraft_doc::{LiveCorners, Node, StrokeLayer};
-use vectorcraft_engine::inspect::StrokeMixed;
-use vectorcraft_geom::shapes::CornerKind;
+use redrob_vector_color::{BlendMode, Color, Paint};
+use redrob_vector_doc::{LiveCorners, Node, StrokeLayer};
+use redrob_vector_engine::inspect::StrokeMixed;
+use redrob_vector_geom::shapes::CornerKind;
 
 use crate::theme::Tokens;
 use crate::widgets::{Live, dim_label};
@@ -285,7 +285,7 @@ pub(crate) fn apply_click(app: &mut VectorcraftApp, ui: &Ui, mut params: Value) 
     app.run(proxy_cmd(app, alt), params).ok();
 }
 
-/// Fill and stroke as the proxies show them ([`vectorcraft_engine::Session::proxy_paints`]: the
+/// Fill and stroke as the proxies show them ([`redrob_vector_engine::Session::proxy_paints`]: the
 /// Appearance panel's active item for the proxy of its kind, else the first selected object's, a
 /// group's first painted object's, else the defaults for new art).
 pub(crate) fn current_paints(app: &VectorcraftApp) -> (Paint, Paint) {
@@ -308,7 +308,7 @@ pub(crate) fn mixed_paints(app: &VectorcraftApp, ctx: &egui::Context) -> (bool, 
 }
 
 /// The stroke the Stroke panel, Control bar and Properties show: while the Type tool edits text,
-/// the selected characters' stroke, else [`vectorcraft_engine::Session::shown_stroke`].
+/// the selected characters' stroke, else [`redrob_vector_engine::Session::shown_stroke`].
 pub(crate) fn current_stroke(app: &VectorcraftApp) -> Option<StrokeLayer> {
     if character::text_editing(app).is_some() {
         return character::text_style(app).map(|(c, _)| c.stroke_layer());
@@ -317,7 +317,7 @@ pub(crate) fn current_stroke(app: &VectorcraftApp) -> Option<StrokeLayer> {
 }
 
 /// Which Stroke panel values the selection doesn't share and whether Align Stroke applies
-/// ([`vectorcraft_engine::DocState::stroke_mixed`]), cached per document revision. While the Type
+/// ([`redrob_vector_engine::DocState::stroke_mixed`]), cached per document revision. While the Type
 /// tool edits text, the selected characters' stroke shows as it is.
 pub(crate) fn stroke_mixed(app: &VectorcraftApp, ctx: &egui::Context) -> StrokeMixed {
     let Some(st) = app.session.active().filter(|_| character::text_editing(app).is_none()) else { return StrokeMixed::default() };
@@ -479,7 +479,7 @@ pub(crate) fn recent_colors_row(app: &VectorcraftApp, ui: &mut Ui) -> Option<Col
 }
 
 /// A colour as command JSON, keeping its model.
-pub(crate) use vectorcraft_tools::params::color_json;
+pub(crate) use redrob_vector_tools::params::color_json;
 
 /// Paint as command params (`{color}`, `{swatch, tint?}`, `{none}`, `{gradient}` (lossless) or
 /// `{pattern}`).
@@ -489,7 +489,7 @@ pub(crate) fn paint_params(p: &Paint) -> Value {
         Paint::Solid { swatch: Some(n), tint, .. } if *tint < 1.0 => json!({"swatch": n, "tint": tint * 100.0}),
         Paint::Solid { swatch: Some(n), .. } => json!({"swatch": n}),
         Paint::Solid { color, .. } => json!({"color": color_json(color)}),
-        Paint::Gradient(g) => json!({"gradient": vectorcraft_tools::params::gradient_params(g)}),
+        Paint::Gradient(g) => json!({"gradient": redrob_vector_tools::params::gradient_params(g)}),
         Paint::Pattern { pattern, .. } => json!({"pattern": pattern}),
     }
 }
@@ -522,11 +522,11 @@ mod tests {
         assert_eq!(paint_params(&Paint::None), json!({"none": true}));
         let p = paint_params(&Paint::solid(Color::cmyk(0.1, 0.2, 0.3, 0.4)));
         assert!((p["color"]["k"].as_f64().unwrap() - 0.4).abs() < 1e-6);
-        let g = Paint::Gradient(Box::new(vectorcraft_color::GradientPaint::new(Default::default())));
+        let g = Paint::Gradient(Box::new(redrob_vector_color::GradientPaint::new(Default::default())));
         let p = paint_params(&g);
         assert_eq!(p["gradient"]["kind"], "linear");
         assert_eq!(p["gradient"]["stops"].as_array().unwrap().len(), 2);
-        assert_eq!(paint_params(&vectorcraft_doc::pattern::pattern_paint("Dots")), json!({"pattern": "Dots"}));
+        assert_eq!(paint_params(&redrob_vector_doc::pattern::pattern_paint("Dots")), json!({"pattern": "Dots"}));
         assert_eq!(p["gradient"]["stops"][0]["midpoint"], json!(0.5));
         let tint = Paint::Solid { color: Color::gray(0.5), swatch: Some("Ink".into()), tint: 0.5 };
         assert_eq!(paint_params(&tint), json!({"swatch": "Ink", "tint": 50.0}), "a tint keeps its percentage");

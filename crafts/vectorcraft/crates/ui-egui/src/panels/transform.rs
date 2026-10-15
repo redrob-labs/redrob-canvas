@@ -5,9 +5,9 @@
 
 use egui::Ui;
 use serde_json::json;
-use vectorcraft_doc::{LiveShape, Node, NodeKind};
-use vectorcraft_geom::Rect;
-use vectorcraft_geom::shapes::CornerKind;
+use redrob_vector_doc::{LiveShape, Node, NodeKind};
+use redrob_vector_geom::Rect;
+use redrob_vector_geom::shapes::CornerKind;
 
 use super::{corner_radius_row, first_selected, pstate, set_pstate};
 use crate::dialogs::corners::kind_label as corner_kind;
@@ -40,7 +40,7 @@ fn tool_artboard(app: &VectorcraftApp) -> Option<(usize, Rect)> {
 /// Where an artboard goes when the panel sets its X, Y, W or H: the reference point `refi` moves to
 /// the new X/Y or stays put while the size changes (both sides together when `link` is on).
 pub fn artboard_rect(r: Rect, refi: usize, x: Option<f64>, y: Option<f64>, w: Option<f64>, h: Option<f64>, link: bool) -> Rect {
-    let rp = vectorcraft_geom::reference_point(r, refi);
+    let rp = redrob_vector_geom::reference_point(r, refi);
     let (w0, h0) = (r.width(), r.height());
     let (nw, nh) = if link { constrained(w0, h0, w, h) } else { (w.unwrap_or(w0), h.unwrap_or(h0)) };
     // Where the reference point sits across the box (0, ½ or 1 of each side).
@@ -56,7 +56,7 @@ fn artboard_fields(app: &mut VectorcraftApp, ui: &mut Ui, index: usize, r: Rect)
     let origin = app.ruler_origin();
     let refi: usize = ui.data(|d| d.get_temp(egui::Id::new("refpt"))).unwrap_or(4);
     let link = app.session.prefs.constrain_proportions;
-    let rp = vectorcraft_geom::reference_point(r, refi);
+    let rp = redrob_vector_geom::reference_point(r, refi);
     let set = |app: &mut VectorcraftApp, x, y, w, h| {
         let n = artboard_rect(r, refi, x, y, w, h, link);
         let scale_art = crate::panels::artboards::scale_art(app);
@@ -219,19 +219,19 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     // Live shape properties (a path with live corners is no shape).
     if let Some(n) = first_selected(app)
         && let NodeKind::Path { live: Some(live), .. } = &n.kind
-        && !matches!(**live, vectorcraft_doc::LiveShape::Path { .. })
+        && !matches!(**live, redrob_vector_doc::LiveShape::Path { .. })
     {
         widgets::divider(ui);
         match &**live {
-            vectorcraft_doc::LiveShape::Rectangle { .. } => {
+            redrob_vector_doc::LiveShape::Rectangle { .. } => {
                 widgets::subheader(ui, tl!("Rectangle Properties:"));
                 corner_radius_row(app, ui, &n, "xfp-radius");
             }
-            vectorcraft_doc::LiveShape::Polygon { .. } => {
+            redrob_vector_doc::LiveShape::Polygon { .. } => {
                 widgets::subheader(ui, tl!("Polygon Properties:"));
                 polygon_rows(app, ui, &n, live, "xfp-polygon");
             }
-            vectorcraft_doc::LiveShape::Ellipse { pie, .. } => {
+            redrob_vector_doc::LiveShape::Ellipse { pie, .. } => {
                 widgets::subheader(ui, tl!("Ellipse Properties:"));
                 pie_rows(app, ui, *pie, "xfp-pie");
             }
@@ -397,7 +397,7 @@ mod tests {
 
     #[test]
     fn use_preview_bounds_shows_the_visual_size_and_checks_the_align_flyout() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 300})).unwrap();
         app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 100, "height": 50})).unwrap();
         app.run("stroke.set", json!({"weight": 10})).unwrap();
@@ -411,7 +411,7 @@ mod tests {
 
     #[test]
     fn rotation_field_shows_the_angle_the_box_keeps() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 300})).unwrap();
         app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 100, "height": 50})).unwrap();
         app.run("object.rotate", json!({"angle": 45, "absolute": true})).unwrap();
@@ -428,7 +428,7 @@ mod tests {
     /// Properties panel's Transform section, and Make Sides Equal evens it out after a stretch.
     #[test]
     fn a_polygon_shows_its_polygon_properties() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 300})).unwrap();
         app.run("shape.polygon", json!({"cx": 150, "cy": 150, "radius": 50, "sides": 6})).unwrap();
         for draw in [show as fn(&mut VectorcraftApp, &mut Ui), crate::panels::properties::transform_section] {
@@ -451,7 +451,7 @@ mod tests {
 
     #[test]
     fn the_artboard_tool_shows_the_active_artboard() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
         app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 40, "height": 30})).unwrap();
         assert!(texts(&mut app, show).iter().any(|t| t == "40 pt"), "the selection first");
@@ -467,7 +467,7 @@ mod tests {
     /// #1597: with only ruler guides selected the panel shows their X or Y, and nothing of the art.
     #[test]
     fn selected_guides_show_their_position() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
         app.run("guide.add", json!({"vertical": true, "pos": 120})).unwrap();
         app.run("guide.add", json!({"vertical": false, "pos": 45})).unwrap();
@@ -490,7 +490,7 @@ mod tests {
     /// and a new X moves it alone.
     #[test]
     fn an_anchor_selection_shows_and_moves_its_own_box() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 300})).unwrap();
         let square = json!({"anchors": [{"x": 20, "y": 30}, {"x": 120, "y": 30}, {"x": 120, "y": 130}, {"x": 20, "y": 130}], "closed": true});
         let id = app.run("path.create", square).unwrap()["id"].as_u64().unwrap();

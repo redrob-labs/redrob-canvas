@@ -3,8 +3,8 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use vectorcraft_doc::{Document, Node, NodeKind, TextObject};
-use vectorcraft_svg::import_with_report;
+use redrob_vector_doc::{Document, Node, NodeKind, TextObject};
+use redrob_vector_svg::import_with_report;
 
 /// The stroke width and dash pattern of the object named `name`.
 fn stroke(d: &Document, name: &str) -> (f64, Option<Vec<f64>>) {

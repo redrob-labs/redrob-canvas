@@ -1,4 +1,4 @@
-# vectorcraft-affinity
+# redrob-vector-affinity
 
 An independent, bounded Rust reader for native Affinity documents: `.af` from Affinity 3 and
 `.afdesign`, `.afphoto` and `.afpub` from Affinity 1 and 2 (container versions 8 to 12). It reads
@@ -78,7 +78,7 @@ of CC0 sample files.
 * **Read-only.** Nothing is written in Affinity's format; export waits until someone can check
   written files in Affinity itself.
 
-The reader also has an independent copy in PhotoCraft's `photocraft-affinity`.
+The reader also has an independent copy in PhotoCraft's `redrob-photo-affinity`.
 
 ## Validation
 

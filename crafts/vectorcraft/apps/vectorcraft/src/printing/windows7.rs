@@ -1,7 +1,7 @@
 //! The legacy viewer print verb is needed on Windows 7, where Windows.Data.Pdf is absent.
 use std::path::PathBuf;
 use std::process::Command;
-use vectorcraft_ui_egui::print::{PrintJob, Printer};
+use redrob_vector_ui_egui::print::{PrintJob, Printer};
 
 /// Where a job's PDF waits for the spooler: a fresh file in the temp folder. Files of jobs more
 /// than an hour old (the print verb reads them after Print returns) are removed first.

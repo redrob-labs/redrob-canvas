@@ -18,7 +18,7 @@ fn text(s: &Session, id: LayerId) -> &TextLayer {
     }
 }
 
-fn ink(s: &Session, id: LayerId) -> photocraft_geom::Rect {
+fn ink(s: &Session, id: LayerId) -> redrob_photo_geom::Rect {
     s.active().unwrap().doc.layer(id).unwrap().surface().unwrap().content_bounds()
 }
 
@@ -124,8 +124,8 @@ fn vertical_point_and_paragraph_conversion_keep_the_columns_in_place() {
         let st = s.active().unwrap();
         let before = layout(&st.doc, text(&s, id)).bounds().unwrap();
         let before_tf = text(&s, id).transform;
-        let map = |t: &photocraft_geom::Affine, b: [f32; 4]| {
-            let p = t.apply(photocraft_geom::Point::new(f64::from(b[0]), f64::from(b[1])));
+        let map = |t: &redrob_photo_geom::Affine, b: [f32; 4]| {
+            let p = t.apply(redrob_photo_geom::Point::new(f64::from(b[0]), f64::from(b[1])));
             (p.x, p.y)
         };
         let doc_before = map(&before_tf, before);
@@ -138,12 +138,12 @@ fn vertical_point_and_paragraph_conversion_keep_the_columns_in_place() {
         // The column's first glyph stays where it was (glyph positions in document space).
         let g_after = l.glyphs[0];
         let tf = text(&s, id).transform;
-        let p_after = tf.apply(photocraft_geom::Point::new(f64::from(g_after.x), f64::from(g_after.y)));
+        let p_after = tf.apply(redrob_photo_geom::Point::new(f64::from(g_after.x), f64::from(g_after.y)));
         s.execute("type.convertToPointText", json!({})).unwrap();
         let st = s.active().unwrap();
         let back = layout(&st.doc, text(&s, id));
         let g_back = back.glyphs[0];
-        let p_back = text(&s, id).transform.apply(photocraft_geom::Point::new(f64::from(g_back.x), f64::from(g_back.y)));
+        let p_back = text(&s, id).transform.apply(redrob_photo_geom::Point::new(f64::from(g_back.x), f64::from(g_back.y)));
         assert!((p_after.x - p_back.x).abs() < 1.5 && (p_after.y - p_back.y).abs() < 1.5, "{align}: {p_after:?} → {p_back:?}");
         let back_doc = map(&text(&s, id).transform, back.bounds().unwrap());
         assert!((back_doc.0 - doc_before.0).abs() < 1.5 && (back_doc.1 - doc_before.1).abs() < 1.5, "{align}: {doc_before:?} → {back_doc:?}");
@@ -182,12 +182,12 @@ fn work_path_and_shape_follow_the_glyphs() {
         assert!((x0 - before.x0 as f64).abs() < 3.0 && (x1 - before.x1 as f64).abs() < 3.0, "{x0},{x1} vs {before:?}");
         assert!((y0 - before.y0 as f64).abs() < 3.0 && (y1 - before.y1 as f64).abs() < 3.0);
         // Convert to Shape renders the same pixels (the counter of the 'o' stays open).
-        let comp_before = photocraft_compose::flatten(&s.active().unwrap().doc);
+        let comp_before = redrob_photo_compose::flatten(&s.active().unwrap().doc);
         s.execute("type.convertToShape", json!({})).unwrap();
         let l = s.active().unwrap().doc.layer(id).unwrap();
         assert!(matches!(l.content, LayerContent::Shape(_)));
         assert!(!l.psd_blocks.iter().any(|(k, _)| k == b"TySh"));
-        let comp_after = photocraft_compose::flatten(&s.active().unwrap().doc);
+        let comp_after = redrob_photo_compose::flatten(&s.active().unwrap().doc);
         let diff: f32 = comp_before.px.iter().zip(&comp_after.px).map(|(a, b)| (a[0] - b[0]).abs()).sum::<f32>() / comp_before.px.len() as f32;
         assert!(diff < 0.01, "depth {depth}: mean diff {diff}");
         // The middle of the 'o' counter is background (white).
@@ -209,13 +209,13 @@ fn warp_text_changes_pixels_and_round_trips() {
     assert!(arced.height() > flat.height() + 8, "{flat:?} → {arced:?}");
     // The regenerated TySh carries the warp (PSD round trip).
     let raw = text(&s, id).psd_raw.clone().unwrap();
-    let back = photocraft_text::psd::text_layer_from_tysh(&raw, 72.0).unwrap();
+    let back = redrob_photo_text::psd::text_layer_from_tysh(&raw, 72.0).unwrap();
     assert_eq!(back.warp, Some(w));
     assert!(s.execute("type.warpText", json!({"style": "spiral"})).is_err());
     s.execute("type.warpText", json!({"style": "none"})).unwrap();
     assert!(text(&s, id).warp.is_none());
     assert_eq!(ink(&s, id), flat);
-    for (_, style) in photocraft_text::warp::STYLES {
+    for (_, style) in redrob_photo_text::warp::STYLES {
         s.execute("type.warpText", json!({"style": style, "bend": -40, "horizontalDistortion": 10})).unwrap();
         assert!(!ink(&s, id).is_empty(), "{style}");
     }
@@ -239,7 +239,7 @@ fn opentype_toggles_store_features() {
     assert!(!feature_on(&st(&s), "frac"));
     // PSD round trip of the toggles.
     let raw = text(&s, id).psd_raw.clone().unwrap();
-    let back = photocraft_text::psd::text_layer_from_tysh(&raw, 72.0).unwrap();
+    let back = redrob_photo_text::psd::text_layer_from_tysh(&raw, 72.0).unwrap();
     assert!(feature_on(&back.char_runs()[0].style, "swsh") && !back.char_runs()[0].style.ligatures);
 }
 
@@ -262,7 +262,7 @@ fn lorem_update_fonts_and_default_styles() {
     assert_eq!(text(&s, id).char_runs()[0].style.font_family, "JetBrains Mono");
     s.execute("type.setStyle", json!({"font": "Gone Sans"})).unwrap();
     assert_eq!(s.execute("type.replaceAllMissingFonts", json!({})).unwrap()["replaced"], 1);
-    assert_eq!(text(&s, id).char_runs()[0].style.font_family, photocraft_text::fonts::DEFAULT_FAMILY);
+    assert_eq!(text(&s, id).char_runs()[0].style.font_family, redrob_photo_text::fonts::DEFAULT_FAMILY);
     // Default type styles: save from one layer, new layers and Load use them.
     assert!(!s.is_enabled("type.loadDefaultTypeStyles"));
     s.execute("type.setStyle", json!({"size": 50, "font": "JetBrains Mono"})).unwrap();
@@ -346,8 +346,8 @@ fn installed_postscript_face_is_not_missing_or_replaced() {
     // reopened from .pcraft after its face was installed, keeps it.
     let mut s = session(8);
     let (id, created) = guessed_family_layer(&mut s, "test", Some("Inter-SemiBold"));
-    let bytes = photocraft_format::save_to_bytes(&s.active().unwrap().doc, &Default::default()).unwrap();
-    let reopened = photocraft_io::import("reopened.pcraft", &bytes).unwrap().document;
+    let bytes = redrob_photo_format::save_to_bytes(&s.active().unwrap().doc, &Default::default()).unwrap();
+    let reopened = redrob_photo_io::import("reopened.pcraft", &bytes).unwrap().document;
     let LayerContent::Text(t) = &reopened.layer(id).unwrap().content else { panic!("text") };
     assert_eq!(t.char_runs()[0].style.font_family, "Imported Wrong Family", ".pcraft open keeps the stored label");
     let on_open = missing_font_warnings(&reopened);
@@ -391,11 +391,11 @@ fn renamed_face(source: &[u8], family: &str, ps: &str) -> Vec<u8> {
 
 #[test]
 fn exact_postscript_face_outside_the_guessed_family_is_not_missing() {
-    let mut fonts = photocraft_text::FontDb::new();
-    fonts.register_font_data(renamed_face(&photocraft_text::fonts::INTER_REGULAR, "Exact Only Test", "UnrelatedPS30"));
+    let mut fonts = redrob_photo_text::FontDb::new();
+    fonts.register_font_data(renamed_face(&redrob_photo_text::fonts::INTER_REGULAR, "Exact Only Test", "UnrelatedPS30"));
     let style =
-        |ps: &str| photocraft_doc::text::CharStyle { font_family: "Imported Wrong Family".into(), postscript_name: Some(ps.into()), ..Default::default() };
+        |ps: &str| redrob_photo_doc::text::CharStyle { font_family: "Imported Wrong Family".into(), postscript_name: Some(ps.into()), ..Default::default() };
     // Neither the stored family nor the family guessed from the name is installed: only the exact face.
-    assert!(!fonts.has_family(&photocraft_text::fonts::guess_from_postscript("UnrelatedPS30").family));
+    assert!(!fonts.has_family(&redrob_photo_text::fonts::guess_from_postscript("UnrelatedPS30").family));
     assert_eq!((style_font_missing(&mut fonts, &style("UnrelatedPS30")), style_font_missing(&mut fonts, &style("UnrelatedPS31"))), (false, true));
 }

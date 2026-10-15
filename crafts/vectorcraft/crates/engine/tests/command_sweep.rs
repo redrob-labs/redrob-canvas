@@ -5,22 +5,22 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use serde_json::{Value, json};
-use vectorcraft_engine::{Session, command_specs};
-use vectorcraft_testkit::catch_quiet;
-use vectorcraft_testkit::fixtures::Fixture;
-use vectorcraft_testkit::invariants::{check_all, check_session, doc_json};
-use vectorcraft_testkit::strategies::{junk_params, junk_values, param_keys};
+use redrob_vector_engine::{Session, command_specs};
+use redrob_vector_testkit::catch_quiet;
+use redrob_vector_testkit::fixtures::Fixture;
+use redrob_vector_testkit::invariants::{check_all, check_session, doc_json};
+use redrob_vector_testkit::strategies::{junk_params, junk_values, param_keys};
 
 /// Commands that replace/close the active document or touch the filesystem are fine to call, but a
 /// few need their paths redirected into a temp dir (handled by `junk_params`).
 fn safe_path() -> String {
-    vectorcraft_testkit::temp_dir("sweep").join("out.bin").to_string_lossy().to_string()
+    redrob_vector_testkit::temp_dir("sweep").join("out.bin").to_string_lossy().to_string()
 }
 
 /// `r`, after failing the case if the command panicked. The engine's guard reports a panic as
 /// `EngineError::Internal`.
-fn no_panic(r: Result<Value, vectorcraft_engine::EngineError>) -> Result<Value, vectorcraft_engine::EngineError> {
-    if let Err(vectorcraft_engine::EngineError::Internal { cmd, msg }) = &r {
+fn no_panic(r: Result<Value, redrob_vector_engine::EngineError>) -> Result<Value, redrob_vector_engine::EngineError> {
+    if let Err(redrob_vector_engine::EngineError::Internal { cmd, msg }) = &r {
         panic!("{cmd} panicked: {msg}");
     }
     r
@@ -80,7 +80,7 @@ fn every_command_without_a_document() {
         match catch_quiet(|| no_panic(s.execute(c.id, &json!({})))) {
             Err(p) => failures.push(format!("PANIC {} with no document: {p}", c.id)),
             // Anything that needs a document must say so via enablement, not fail later.
-            Ok(Err(vectorcraft_engine::EngineError::NoDocument)) => failures.push(format!("{}: enabled without a document but needs one", c.id)),
+            Ok(Err(redrob_vector_engine::EngineError::NoDocument)) => failures.push(format!("{}: enabled without a document but needs one", c.id)),
             Ok(_) => {}
         }
         if s.in_interaction() {
@@ -116,7 +116,7 @@ fn bug_huge_transform_makes_document_unloadable() {
     ] {
         let mut s = Fixture::Multi.session();
         if no_panic(s.execute(id, &p)).is_ok() {
-            vectorcraft_testkit::invariants::check_native_roundtrip(&s.doc().unwrap().doc).unwrap_or_else(|e| panic!("{id} {p}: {e}"));
+            redrob_vector_testkit::invariants::check_native_roundtrip(&s.doc().unwrap().doc).unwrap_or_else(|e| panic!("{id} {p}: {e}"));
         }
     }
 }
@@ -127,7 +127,7 @@ fn bug_artboard_huge_props_break_svg() {
         let mut s = Fixture::Single.session();
         let p = json!({"index": 0, key: 1e308});
         if no_panic(s.execute("artboard.setProps", &p)).is_ok() {
-            vectorcraft_testkit::invariants::check_svg_roundtrip(&s.doc().unwrap().doc).unwrap_or_else(|e| panic!("{p}: {}", &e[..e.len().min(200)]));
+            redrob_vector_testkit::invariants::check_svg_roundtrip(&s.doc().unwrap().doc).unwrap_or_else(|e| panic!("{p}: {}", &e[..e.len().min(200)]));
         }
     }
 }
@@ -531,7 +531,7 @@ fn every_command_undoes_exactly() {
             let _ = no_panic(s.execute("edit.undo", &json!({})));
             let after = doc_json(&s.doc().unwrap().doc);
             if after != before {
-                failures.push(format!("{}: {}", c.id, vectorcraft_testkit::invariants::first_diff(&before, &after, "$")));
+                failures.push(format!("{}: {}", c.id, redrob_vector_testkit::invariants::first_diff(&before, &after, "$")));
             }
         } else if doc_json(&s.doc().unwrap().doc) != before && !c.params.contains("View state: not an undo step") {
             failures.push(format!("{}: changed the document without an undo step", c.id));
@@ -545,7 +545,7 @@ fn every_command_undoes_exactly() {
 #[test]
 fn recovery_commands_with_a_damaged_store_and_junk_params() {
     use std::sync::Arc;
-    use vectorcraft_engine::cmd::recovery::{MemoryStore, RecoveryStore};
+    use redrob_vector_engine::cmd::recovery::{MemoryStore, RecoveryStore};
     let store = Arc::new(MemoryStore::default());
     for (name, bytes) in [
         ("1-1/bad-1.vectorcraft", &b"{not json"[..]),
@@ -625,7 +625,7 @@ fn envelope_commands_with_junk_params_on_envelopes() {
 /// round-trips and exports.
 #[test]
 fn text_commands_with_junk_params_on_inline_graphics() {
-    use vectorcraft_testkit::fixtures::{ellipse, exec, id_of, select};
+    use redrob_vector_testkit::fixtures::{ellipse, exec, id_of, select};
     let path = safe_path();
     let setup = || {
         let mut s = Fixture::Multi.session();

@@ -5,8 +5,8 @@ use std::sync::{Mutex, OnceLock};
 
 use egui::{Key, Ui, vec2};
 use serde_json::{Value, json};
-use vectorcraft_doc::{CharStyle, NodeId, NodeKind};
-use vectorcraft_tools::{Mods, ToolKey};
+use redrob_vector_doc::{CharStyle, NodeId, NodeKind};
+use redrob_vector_tools::{Mods, ToolKey};
 
 use super::{pstate, set_pstate};
 use crate::VectorcraftApp;
@@ -24,18 +24,18 @@ pub const SCALE_PRESETS: [f64; 8] = [25.0, 50.0, 75.0, 90.0, 100.0, 110.0, 125.0
 /// tool edits text, else the first selected text object's first run (including groups). With it, the paragraph
 /// attributes of the paragraph the selection starts in (else of the first paragraph).
 /// Font/paragraph controls and named-style capture use this; dimensional fields use `shared_effective`.
-pub(crate) fn text_style(app: &VectorcraftApp) -> Option<(CharStyle, vectorcraft_doc::ParaStyle)> {
+pub(crate) fn text_style(app: &VectorcraftApp) -> Option<(CharStyle, redrob_vector_doc::ParaStyle)> {
     if let Some((id, a, b)) = text_editing(app)
         && let Some(NodeKind::Text(t)) = app.session.active().and_then(|d| d.doc.node(id)).map(|n| &n.kind)
     {
-        return Some((vectorcraft_text::edit::insertion_style(&t.runs, a, b), t.para_at(t.paragraphs_in(a, a).start).clone()));
+        return Some((redrob_vector_text::edit::insertion_style(&t.runs, a, b), t.para_at(t.paragraphs_in(a, a).start).clone()));
     }
     let t = first_selected_text(app)?;
     Some((t.first_style(), t.para_at(0).clone()))
 }
 
 /// The first selected text descendant, shared by Character and Paragraph controls.
-pub(crate) fn first_selected_text(app: &VectorcraftApp) -> Option<&vectorcraft_doc::TextObject> {
+pub(crate) fn first_selected_text(app: &VectorcraftApp) -> Option<&redrob_vector_doc::TextObject> {
     let st = app.session.active()?;
     for node in st.selection.objects.iter().filter_map(|id| st.doc.node(*id)) {
         let mut text = None;
@@ -75,7 +75,7 @@ impl PartialEq for Metric {
     }
 }
 
-fn shared_styles<T: PartialEq>(app: &VectorcraftApp, f: impl Fn(&vectorcraft_doc::TextObject, &CharStyle) -> Option<T>) -> Option<T> {
+fn shared_styles<T: PartialEq>(app: &VectorcraftApp, f: impl Fn(&redrob_vector_doc::TextObject, &CharStyle) -> Option<T>) -> Option<T> {
     let st = app.session.active()?;
     let text = |id: NodeId| match st.doc.node(id).map(|n| &n.kind) {
         Some(NodeKind::Text(t)) => Some(t),
@@ -85,7 +85,7 @@ fn shared_styles<T: PartialEq>(app: &VectorcraftApp, f: impl Fn(&vectorcraft_doc
     if let Some((id, a, b)) = text_editing(app) {
         let t = text(id)?;
         if b <= a {
-            return f(t, &vectorcraft_text::edit::insertion_style(&t.runs, a, b));
+            return f(t, &redrob_vector_text::edit::insertion_style(&t.runs, a, b));
         }
         let mut end = 0;
         for r in &t.runs {
@@ -211,7 +211,7 @@ fn pick_face<'a>(styles: &'a [String], bold: bool, italic: bool, like: &str) -> 
 /// without that face is left as it is, and the message says so (#724).
 pub(crate) fn toggle_face(app: &mut VectorcraftApp, face: Face) -> Result<Value, String> {
     let (s, _) = text_style(app).ok_or("select some type first")?;
-    let styles = vectorcraft_text::FontDb::global().styles(&s.font_family);
+    let styles = redrob_vector_text::FontDb::global().styles(&s.font_family);
     let (bold, _, italic, _) = face_of(&s.font_style);
     let (want_bold, want_italic) = match face {
         Face::Bold => (!bold, italic),
@@ -252,7 +252,7 @@ pub(crate) fn text_editing(app: &VectorcraftApp) -> Option<(NodeId, usize, usize
     let o = app.session.tool_options();
     let id = NodeId(o.get("editing")?.as_u64()?);
     let len = match &app.session.active()?.doc.node(id)?.kind {
-        NodeKind::Text(t) => vectorcraft_text::edit::runs_len(&t.runs),
+        NodeKind::Text(t) => redrob_vector_text::edit::runs_len(&t.runs),
         _ => return None,
     };
     let g = |k: &str| o.get(k).and_then(Value::as_u64).map_or(0, |v| (v as usize).min(len));
@@ -503,7 +503,7 @@ pub(crate) fn font_pickers(app: &mut VectorcraftApp, ui: &mut Ui, s: &CharStyle,
     if let Some(pick) = crate::font_menu::font_menu(ui, ids.0, &s.font_family, widths.0, sample.as_deref(), crate::font_menu::MenuLook::of(app)) {
         crate::font_menu::apply(app, ui.ctx(), pick);
     }
-    let styles = vectorcraft_text::FontDb::global().styles(&s.font_family);
+    let styles = redrob_vector_text::FontDb::global().styles(&s.font_family);
     let names: Vec<&str> = styles.iter().map(String::as_str).collect();
     if let Some(name) = widgets::dropdown_names(ui, ids.1, &s.font_style, &names, widths.1).and_then(|i| names.get(i)) {
         style(app, json!({"style": name}));
@@ -640,7 +640,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
         ui.add_enabled_ui(has, |ui| {
             // Indented like the items beside it (their check column).
             ui.menu_button(format!("   {}", tl!("Character Alignment")), |ui| {
-                use vectorcraft_doc::CharAlign;
+                use redrob_vector_doc::CharAlign;
                 for (label, a, key) in [
                     (tl!("Roman Baseline"), CharAlign::RomanBaseline, "romanBaseline"),
                     (tl!("Em Box Top/Right"), CharAlign::EmBoxTop, "emBoxTop"),
@@ -668,7 +668,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
         let digits = s.as_ref().map(|s| s.digits);
         ui.add_enabled_ui(has, |ui| {
             ui.menu_button(format!("   {}", tl!("Digits")), |ui| {
-                use vectorcraft_doc::Digits;
+                use redrob_vector_doc::Digits;
                 for (label, d, key) in [
                     (tl!("Default"), Digits::Default, "default"),
                     (tl!("Arabic"), Digits::Arabic, "arabic"),
@@ -706,7 +706,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     #[test]
     fn scaled_dimensions_do_not_show_false_mixed_values_from_roundoff() {
@@ -772,7 +772,7 @@ mod tests {
         app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
         app.session.select_tool("type", Default::default()).unwrap();
         let id = app.run("text.create", json!({"x": 20, "y": 50, "text": "Axis label", "size": 12})).unwrap()["id"].clone();
-        app.session.apply_actions(vec![vectorcraft_tools::Action::Notify("text.editNew".into())]).unwrap();
+        app.session.apply_actions(vec![redrob_vector_tools::Action::Notify("text.editNew".into())]).unwrap();
         assert!(text_editing(&app).is_some());
         app.run("object.scale", json!({"sx": 200})).unwrap();
         app.run("text.setRangeStyle", json!({"id": id, "start": 0, "end": 4, "size": 10})).unwrap();

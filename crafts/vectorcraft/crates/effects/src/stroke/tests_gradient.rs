@@ -1,7 +1,7 @@
 use kurbo::{BezPath, Point, Shape, Vec2};
-use vectorcraft_color::{Color, Gradient, GradientPaint, GradientStop, Paint};
-use vectorcraft_doc::{ArrowAlign, Arrowhead, Dash, LineCap, LineJoin, StrokeAlign, StrokeGradientMode, StrokeLayer, WidthProfile};
-use vectorcraft_geom::FillRule;
+use redrob_vector_color::{Color, Gradient, GradientPaint, GradientStop, Paint};
+use redrob_vector_doc::{ArrowAlign, Arrowhead, Dash, LineCap, LineJoin, StrokeAlign, StrokeGradientMode, StrokeLayer, WidthProfile};
+use redrob_vector_geom::FillRule;
 
 use super::*;
 

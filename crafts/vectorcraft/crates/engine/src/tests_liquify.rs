@@ -2,8 +2,8 @@
 //! Alt-drag brush sizing, holding still, what they leave alone and incremental strokes.
 
 use serde_json::{Value, json};
-use vectorcraft_geom::{PathData, Point};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
+use redrob_vector_geom::{PathData, Point};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 
 use super::*;
 
@@ -291,7 +291,7 @@ fn guides_are_left_alone_in_selection_mode_and_the_tool_reports_skips() {
     assert!(matches!(ui.first(), Some(UiRequest::Status(m)) if m.contains("type")), "{ui:?}");
     s.pointer(&ev(PointerKind::Up, 290.0, 200.0), v).unwrap();
     assert_eq!(path(&s, g), guide);
-    assert_ne!(path(&s, a).bounds().unwrap(), vectorcraft_geom::Rect::new(120.0, 120.0, 280.0, 280.0));
+    assert_ne!(path(&s, a).bounds().unwrap(), redrob_vector_geom::Rect::new(120.0, 120.0, 280.0, 280.0));
 }
 
 // ---------- incremental strokes ----------

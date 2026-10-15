@@ -2,8 +2,8 @@
 //! trace in the history; frames (dragged area type, type in or on a path) stay.
 
 use serde_json::json;
-use vectorcraft_doc::{NodeId, NodeKind, TextKind};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use redrob_vector_doc::{NodeId, NodeKind, TextKind};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 

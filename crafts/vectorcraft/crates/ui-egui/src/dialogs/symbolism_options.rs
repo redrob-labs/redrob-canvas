@@ -22,7 +22,7 @@ const KEYS: [&str; 3] = ["diameter", "intensity", "density"];
 /// Width of the label column.
 const LABEL_W: f32 = 130.0;
 
-/// Open the options of Symbolism tool `tool` (one of `vectorcraft_tools::settings::SYMBOLISM`)
+/// Open the options of Symbolism tool `tool` (one of `redrob_vector_tools::settings::SYMBOLISM`)
 /// with their current values.
 pub fn open(app: &mut VectorcraftApp, tool: &str) -> Value {
     let o = app.session.tool_options_of(tool);
@@ -56,7 +56,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     #[test]
     fn the_symbolism_tools_share_the_options_ok_sets() {

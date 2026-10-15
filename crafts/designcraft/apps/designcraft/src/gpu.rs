@@ -1,6 +1,6 @@
 //! Which wgpu backend draws the window, and the fallback when one of them crashes at start-up.
 //!
-//! The canvas is rendered on the CPU (`designcraft-render`); the GPU only composites the
+//! The canvas is rendered on the CPU (`redrob-layout-render`); the GPU only composites the
 //! interface, so every backend shows the same pixels and the one that never crashes is the right
 //! one. wgpu's default backend set (`PRIMARY | GL`) enumerates Vulkan first, and on an AMD
 //! hybrid-graphics laptop (a Radeon RX 6800M beside an integrated Radeon, two versions of

@@ -1,11 +1,11 @@
-//! Window → CSS Properties: the CSS web pages style objects with ([`vectorcraft_svg::css_rules`],
+//! Window → CSS Properties: the CSS web pages style objects with ([`redrob_vector_svg::css_rules`],
 //! which writes each property as SVG export writes it), for the selection or the whole document,
 //! and the `.css` file with the pictures of the art it rasterizes.
 
 use serde::Deserialize;
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeId;
-use vectorcraft_svg::{CssOptions, CssSheet, css_rules};
+use redrob_vector_doc::NodeId;
+use redrob_vector_svg::{CssOptions, CssSheet, css_rules};
 
 use super::fileio::{default_name, encode, isolated, write_file};
 use super::*;
@@ -122,7 +122,7 @@ fn export(s: &mut Session, p: &Value) -> Result<Value> {
         }
         None => {
             let images: Vec<Value> =
-                images.iter().map(|(name, bytes)| json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(bytes) })).collect();
+                images.iter().map(|(name, bytes)| json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) })).collect();
             Ok(json!({ "data": css, "name": default_name(doc, "css"), "rules": n, "images": images, "warnings": sheet.warnings }))
         }
     }

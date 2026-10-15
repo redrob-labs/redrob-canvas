@@ -5,9 +5,9 @@
 //! The selection itself lives in [`DocState::selected_layers`] (UI state, like the active layer):
 //! changing it never adds a history step. Every structural change below is one history step.
 
-use photocraft_color::PixelFormat;
-use photocraft_doc::{Document, Layer, LayerContent, LayerId};
-use photocraft_geom::Rect;
+use redrob_photo_color::PixelFormat;
+use redrob_photo_doc::{Document, Layer, LayerContent, LayerId};
+use redrob_photo_geom::Rect;
 use serde_json::{Value, json};
 
 use crate::commands::{CommandSpec, int_i32};
@@ -435,16 +435,16 @@ pub fn moved_target(doc: &Document, ids: &[LayerId], dx: i32, dy: i32, mask_targ
     Ok(out)
 }
 
-/// `photocraft_algo::resample::translate_surface` with the content scan cached per tile (a Move
+/// `redrob_photo_algo::resample::translate_surface` with the content scan cached per tile (a Move
 /// drag shifts the same layers every frame; scanning them each time cost more than the copy).
-pub(crate) fn shift_surface(s: &photocraft_raster::Surface, dx: i32, dy: i32) -> photocraft_raster::Surface {
-    s.translated(dx, dy, photocraft_compose::bounds::content_bounds(s))
+pub(crate) fn shift_surface(s: &redrob_photo_raster::Surface, dx: i32, dy: i32) -> redrob_photo_raster::Surface {
+    s.translated(dx, dy, redrob_photo_compose::bounds::content_bounds(s))
 }
 
 /// [`crate::commands::translate_layer`] plus the vector side, without re-rendering anything.
 fn shift_shown(doc: &Document, l: &mut Layer, dx: i32, dy: i32) {
     use self::shift_surface as translate_surface;
-    let a = photocraft_geom::Affine::translate(f64::from(dx), f64::from(dy));
+    let a = redrob_photo_geom::Affine::translate(f64::from(dx), f64::from(dy));
     if let Some(r) = &mut l.effects.reference {
         *r = (r.0 + f64::from(dx), r.1 + f64::from(dy));
     }
@@ -466,7 +466,7 @@ fn shift_shown(doc: &Document, l: &mut Layer, dx: i32, dy: i32) {
             // The rendered shape is cut at the canvas: one that reaches past it renders again.
             let canvas = doc.bounds();
             let was_inside = sh.cache.as_ref().is_some_and(|c| {
-                let b = photocraft_compose::bounds::content_bounds(c);
+                let b = redrob_photo_compose::bounds::content_bounds(c);
                 b.is_empty() || (b.x0 > canvas.x0 && b.y0 > canvas.y0 && b.x1 < canvas.x1 && b.y1 < canvas.y1)
             });
             crate::vector_cmds::transform_shape(sh, &a);
@@ -501,7 +501,7 @@ pub fn layers_damage(before: &Document, after: &Document, ids: &[LayerId]) -> Op
         let canvas = d.bounds();
         for id in ids {
             // A layer gone from one side (never for a move) changes who knows what.
-            let b = photocraft_compose::change_bounds(d.layer(*id)?, canvas)?;
+            let b = redrob_photo_compose::change_bounds(d.layer(*id)?, canvas)?;
             if !b.is_empty() {
                 out = if out.is_empty() { b } else { out.union(&b) };
             }
@@ -523,7 +523,7 @@ pub(crate) fn note_damage(s: &mut Session, before: &Document, ids: &[LayerId]) {
 /// Whether two surfaces hold identical pixels: same format and default pixel, and the same
 /// copy-on-write tile pointers at the same coordinates. Both documents stay alive during the
 /// comparison, so tile addresses cannot be reused under it.
-fn surfaces_equal(a: &photocraft_raster::Surface, b: &photocraft_raster::Surface) -> bool {
+fn surfaces_equal(a: &redrob_photo_raster::Surface, b: &redrob_photo_raster::Surface) -> bool {
     a.format() == b.format()
         && a.default_pixel() == b.default_pixel()
         && a.tile_count() == b.tile_count()
@@ -545,7 +545,7 @@ fn blobs_equal(a: &Option<std::sync::Arc<Vec<u8>>>, b: &Option<std::sync::Arc<Ve
 }
 
 /// Layer masks (also the smart-filter mask): scalars plus tile-pointer surface identity.
-fn masks_equal(a: &Option<photocraft_doc::LayerMask>, b: &Option<photocraft_doc::LayerMask>) -> bool {
+fn masks_equal(a: &Option<redrob_photo_doc::LayerMask>, b: &Option<redrob_photo_doc::LayerMask>) -> bool {
     match (a, b) {
         (None, None) => true,
         (Some(x), Some(y)) => {
@@ -555,7 +555,7 @@ fn masks_equal(a: &Option<photocraft_doc::LayerMask>, b: &Option<photocraft_doc:
     }
 }
 
-fn texts_equal(a: &photocraft_doc::TextLayer, b: &photocraft_doc::TextLayer) -> bool {
+fn texts_equal(a: &redrob_photo_doc::TextLayer, b: &redrob_photo_doc::TextLayer) -> bool {
     a.text == b.text
         && a.font_family == b.font_family
         && a.size_pt == b.size_pt
@@ -575,7 +575,7 @@ fn texts_equal(a: &photocraft_doc::TextLayer, b: &photocraft_doc::TextLayer) -> 
         && blobs_equal(&a.psd_raw, &b.psd_raw)
 }
 
-fn smarts_equal(a: &photocraft_doc::SmartObject, b: &photocraft_doc::SmartObject) -> bool {
+fn smarts_equal(a: &redrob_photo_doc::SmartObject, b: &redrob_photo_doc::SmartObject) -> bool {
     a.filters_enabled == b.filters_enabled
         && a.transform == b.transform
         && a.smart_filters == b.smart_filters
@@ -583,10 +583,10 @@ fn smarts_equal(a: &photocraft_doc::SmartObject, b: &photocraft_doc::SmartObject
         && a.perspective == b.perspective
         && a.warp == b.warp
         && match (&a.source, &b.source) {
-            (photocraft_doc::SmartSource::Embedded { file_name: x, bytes: xb }, photocraft_doc::SmartSource::Embedded { file_name: y, bytes: yb }) => {
+            (redrob_photo_doc::SmartSource::Embedded { file_name: x, bytes: xb }, redrob_photo_doc::SmartSource::Embedded { file_name: y, bytes: yb }) => {
                 x == y && blob_equal(xb, yb)
             }
-            (photocraft_doc::SmartSource::Linked { path: x }, photocraft_doc::SmartSource::Linked { path: y }) => x == y,
+            (redrob_photo_doc::SmartSource::Linked { path: x }, redrob_photo_doc::SmartSource::Linked { path: y }) => x == y,
             _ => false,
         }
         && match (&a.cache, &b.cache) {
@@ -599,7 +599,7 @@ fn smarts_equal(a: &photocraft_doc::SmartObject, b: &photocraft_doc::SmartObject
 }
 
 /// Extra alpha/spot channels (the image itself in Multichannel mode).
-fn alpha_channels_equal(a: &photocraft_doc::AlphaChannel, b: &photocraft_doc::AlphaChannel) -> bool {
+fn alpha_channels_equal(a: &redrob_photo_doc::AlphaChannel, b: &redrob_photo_doc::AlphaChannel) -> bool {
     a.name == b.name && a.spot == b.spot && a.color == b.color && a.opacity == b.opacity && a.indicates == b.indicates && surfaces_equal(&a.surface, &b.surface)
 }
 
@@ -812,7 +812,7 @@ pub fn step_damage(a: &Document, b: &Document) -> Option<Rect> {
             }
             if !layer_pixels_equal(x, y) {
                 // Both sides' extents: a move changes pixels where it left and where it landed.
-                let (Some(bx), Some(by)) = (photocraft_compose::change_bounds(x, a.bounds()), photocraft_compose::change_bounds(y, b.bounds())) else {
+                let (Some(bx), Some(by)) = (redrob_photo_compose::change_bounds(x, a.bounds()), redrob_photo_compose::change_bounds(y, b.bounds())) else {
                     return false;
                 };
                 *out = if out.is_empty() { bx.union(&by) } else { out.union(&bx).union(&by) };
@@ -833,7 +833,7 @@ pub fn step_damage(a: &Document, b: &Document) -> Option<Rect> {
 }
 
 /// The pixels adding or removing `layers[k]` can change, when that is bounded: its change bounds
-/// (`photocraft_compose::change_bounds`: not for an adjustment, or a pass-through group holding
+/// (`redrob_photo_compose::change_bounds`: not for an adjustment, or a pass-through group holding
 /// one), provided it isn't the clipping base of clipped layers above it (they would change base),
 /// and neither it nor anything inside it is a video layer or excludes channels (both reach
 /// outside the layer's bounds, see [`step_damage`]).
@@ -846,7 +846,7 @@ fn one_sided_bounds(layers: &[Layer], k: usize, canvas: Rect) -> Option<Rect> {
     if new_base || !contained(l, 0) {
         return None;
     }
-    photocraft_compose::change_bounds(l, canvas)
+    redrob_photo_compose::change_bounds(l, canvas)
 }
 
 /// Whether `layers[k]` draws nothing wherever it sits, so adding or removing it leaves the
@@ -861,13 +861,13 @@ fn inert_at(layers: &[Layer], k: usize) -> bool {
         _ => false,
     };
     empty
-        && matches!(l.blend, photocraft_doc::BlendMode::Normal | photocraft_doc::BlendMode::PassThrough)
+        && matches!(l.blend, redrob_photo_doc::BlendMode::Normal | redrob_photo_doc::BlendMode::PassThrough)
         && l.mask.is_none()
         && l.vector_mask.is_none()
-        && !photocraft_compose::effects::has_effects(l)
+        && !redrob_photo_compose::effects::has_effects(l)
         && l.fill_cache.is_none()
         && l.video.is_none()
-        && l.advanced == photocraft_doc::AdvancedBlending::default()
+        && l.advanced == redrob_photo_doc::AdvancedBlending::default()
         && (l.clipped || layers.get(k + 1).is_none_or(|above| !above.clipped))
 }
 
@@ -1249,12 +1249,12 @@ fn reverse(s: &mut Session) -> Result<Value> {
     Ok(Value::Null)
 }
 
-/// Refuses an edit that left `doc` nested deeper than [`photocraft_doc::MAX_GROUP_DEPTH`]
+/// Refuses an edit that left `doc` nested deeper than [`redrob_photo_doc::MAX_GROUP_DEPTH`]
 /// groups. Called at the end of a `Session::edit` closure, so an `Err` leaves the document and
 /// history untouched.
 pub(crate) fn check_group_depth(doc: &Document, what: &str) -> Result<()> {
-    if doc.max_group_depth() > photocraft_doc::MAX_GROUP_DEPTH {
-        return Err(EngineError::Other(format!("{what} would nest layers deeper than {} groups", photocraft_doc::MAX_GROUP_DEPTH)));
+    if doc.max_group_depth() > redrob_photo_doc::MAX_GROUP_DEPTH {
+        return Err(EngineError::Other(format!("{what} would nest layers deeper than {} groups", redrob_photo_doc::MAX_GROUP_DEPTH)));
     }
     Ok(())
 }
@@ -1678,7 +1678,7 @@ mod tests {
         for depth in [8, 16, 32] {
             let mut s = session(depth);
             let a = rect_layer(&mut s, Rect::new(10, 10, 20, 20));
-            let composite = |s: &Session| photocraft_compose::render(doc(s), doc(s).bounds());
+            let composite = |s: &Session| redrob_photo_compose::render(doc(s), doc(s).bounds());
             let shown = composite(&s);
             s.execute("layer.new.layer", json!({})).unwrap();
             assert_eq!(damage(&s), Some(Rect::EMPTY), "{depth}-bit new layer");
@@ -1720,14 +1720,14 @@ mod tests {
         // New Layer between a clipping base and its clipped layer joins their clip group (#2203),
         // so it draws nothing; an empty layer there that stayed unclipped would become their base.
         s.execute("layer.select", json!({"layer": base.0})).unwrap();
-        let shown = photocraft_compose::render(doc(&s), doc(&s).bounds());
+        let shown = redrob_photo_compose::render(doc(&s), doc(&s).bounds());
         let before = doc(&s).clone();
         s.execute("layer.new.layer", json!({})).unwrap();
         assert_eq!(damage(&s), Some(Rect::EMPTY));
-        assert_eq!(photocraft_compose::render(doc(&s), doc(&s).bounds()), shown);
+        assert_eq!(redrob_photo_compose::render(doc(&s), doc(&s).bounds()), shown);
         let mut split = before.clone();
         split.insert_above(Some(base), Layer::raster("split", split.pixel_format()));
-        assert_ne!(photocraft_compose::render(&split, split.bounds()), shown);
+        assert_ne!(redrob_photo_compose::render(&split, split.bounds()), shown);
         assert_eq!(step_damage(&before, &split), None);
         assert_eq!(step_damage(&split, &before), None);
         s.execute("edit.undo", json!({})).unwrap();
@@ -1749,13 +1749,13 @@ mod tests {
         assert_eq!(step_damage(&based, &before), None);
         // An adjustment reaches every pixel below it.
         let mut adjusted = before.clone();
-        adjusted.insert_above(None, Layer::new("inv", LayerContent::Adjustment(photocraft_doc::Adjustment::Invert)));
+        adjusted.insert_above(None, Layer::new("inv", LayerContent::Adjustment(redrob_photo_doc::Adjustment::Invert)));
         assert_eq!(step_damage(&before, &adjusted), None);
         assert_eq!(step_damage(&adjusted, &before), None);
         // Empty layers draw nothing, in any blend mode.
         let mut styled = before.clone();
         let mut l = Layer::raster("styled", styled.pixel_format());
-        l.blend = photocraft_doc::BlendMode::Multiply;
+        l.blend = redrob_photo_doc::BlendMode::Multiply;
         styled.insert_above(None, l);
         assert_eq!(step_damage(&before, &styled), Some(Rect::EMPTY));
         let mut plain = before.clone();
@@ -1769,7 +1769,7 @@ mod tests {
     /// base of the layers above still recomposites everything.
     #[test]
     fn duplicate_shares_tiles_and_damages_only_the_copy() {
-        let render = |s: &Session| photocraft_compose::render(doc(s), doc(s).bounds());
+        let render = |s: &Session| redrob_photo_compose::render(doc(s), doc(s).bounds());
         let tiles =
             |s: &Session, id: LayerId| doc(s).layer(id).unwrap().surface().unwrap().tiles().map(|(c, t)| (*c, std::sync::Arc::as_ptr(t))).collect::<Vec<_>>();
         for depth in [8, 16, 32] {
@@ -1802,7 +1802,7 @@ mod tests {
 
     /// The composite of `after` equals `before`'s outside `damage`.
     fn unchanged_outside(before: &Document, after: &Document, damage: Rect) -> bool {
-        let (x, y) = (photocraft_compose::render(before, before.bounds()), photocraft_compose::render(after, after.bounds()));
+        let (x, y) = (redrob_photo_compose::render(before, before.bounds()), redrob_photo_compose::render(after, after.bounds()));
         let w = before.bounds().width() as i32;
         x.px.iter().zip(&y.px).enumerate().all(|(i, (p, q))| p == q || damage.contains(i as i32 % w, i as i32 / w))
     }
@@ -2164,13 +2164,13 @@ mod tests {
             select_all(&mut s, &[lower, upper]);
             let group = LayerId(s.execute("layer.groupLayers", json!({"name": "Merge test group"})).unwrap()["layer"].as_u64().unwrap());
             let doc_before = doc(&s);
-            let expected = photocraft_compose::render(doc_before, doc_before.bounds());
+            let expected = redrob_photo_compose::render(doc_before, doc_before.bounds());
             let children = doc_before.layer(group).unwrap().children().unwrap().iter().map(|layer| layer.id).collect::<Vec<_>>();
 
             select_all(&mut s, &children);
             s.execute("layer.mergeLayers", json!({})).unwrap();
             let doc_after = doc(&s);
-            let actual = photocraft_compose::render(doc_after, doc_after.bounds());
+            let actual = redrob_photo_compose::render(doc_after, doc_after.bounds());
             assert_eq!(actual, expected, "depth {depth}: group merge changed rendered pixels");
             assert_eq!(doc_after.layer(group).unwrap().children().unwrap().len(), 1);
         }
@@ -2184,10 +2184,10 @@ mod tests {
             let lower = rect_layer(&mut s, Rect::new(10, 10, 30, 30));
             let upper = rect_layer(&mut s, Rect::new(40, 20, 60, 40));
             s.execute("layer.layerStyle.dropShadow", json!({"layer": upper.0, "blend": "normal", "distance": 12, "size": 4})).unwrap();
-            let before = photocraft_compose::render(doc(&s), doc(&s).bounds());
+            let before = redrob_photo_compose::render(doc(&s), doc(&s).bounds());
             select_all(&mut s, &[lower, upper]);
             s.execute("layer.mergeLayers", json!({})).unwrap();
-            let after = photocraft_compose::render(doc(&s), doc(&s).bounds());
+            let after = redrob_photo_compose::render(doc(&s), doc(&s).bounds());
             let worst = before.px.iter().zip(&after.px).map(|(a, b)| a.iter().zip(b).map(|(x, y)| (x - y).abs()).fold(0.0f32, f32::max)).fold(0.0f32, f32::max);
             assert!(worst <= 1.5 / 255.0, "depth {depth}: merge layers dropped the shadow (off by {worst})");
         }
@@ -2203,11 +2203,11 @@ mod tests {
             select_all(&mut s, &[child_a, child_b]);
             let group = LayerId(s.execute("layer.groupLayers", json!({"name": "Merge down group"})).unwrap()["layer"].as_u64().unwrap());
             let doc_before = doc(&s);
-            let expected = photocraft_compose::render(doc_before, doc_before.bounds());
+            let expected = redrob_photo_compose::render(doc_before, doc_before.bounds());
 
             s.execute("layer.mergeDown", json!({"layer": group.0})).unwrap();
             let doc_after = doc(&s);
-            let actual = photocraft_compose::render(doc_after, doc_after.bounds());
+            let actual = redrob_photo_compose::render(doc_after, doc_after.bounds());
             assert_eq!(actual, expected, "depth {depth}: group merge down changed rendered pixels");
             assert!(doc_after.layer(lower).is_some());
             assert!(doc_after.layer(group).is_none());
@@ -2283,17 +2283,17 @@ mod tests {
         let mut s = session(8);
         let a = rect_layer(&mut s, Rect::new(0, 0, 5, 5));
         select_all(&mut s, &[a]);
-        for _ in 0..photocraft_doc::MAX_GROUP_DEPTH {
+        for _ in 0..redrob_photo_doc::MAX_GROUP_DEPTH {
             s.execute("layer.groupLayers", json!({})).unwrap();
         }
-        assert_eq!(doc(&s).max_group_depth(), photocraft_doc::MAX_GROUP_DEPTH);
+        assert_eq!(doc(&s).max_group_depth(), redrob_photo_doc::MAX_GROUP_DEPTH);
         // One more wrapping group would pass the cap: rejected, document untouched.
         let err = s.execute("layer.groupLayers", json!({})).unwrap_err();
         assert!(err.to_string().contains("deeper than 100"), "{err}");
-        assert_eq!(doc(&s).max_group_depth(), photocraft_doc::MAX_GROUP_DEPTH);
+        assert_eq!(doc(&s).max_group_depth(), redrob_photo_doc::MAX_GROUP_DEPTH);
         // The rejected call recorded no history step: undo still lands one grouping earlier.
         s.undo();
-        assert_eq!(doc(&s).max_group_depth(), photocraft_doc::MAX_GROUP_DEPTH - 1);
+        assert_eq!(doc(&s).max_group_depth(), redrob_photo_doc::MAX_GROUP_DEPTH - 1);
     }
 
     #[test]
@@ -2434,7 +2434,7 @@ mod tests {
         let _ = rect_layer(&mut s, Rect::new(10, 10, 20, 20));
         // A canvas change has no bounded damage.
         s.execute("image.crop", json!({"x": 0, "y": 0, "width": 30, "height": 25})).unwrap();
-        assert_ne!(doc(&s).size, photocraft_doc::Size::new(100, 80));
+        assert_ne!(doc(&s).size, redrob_photo_doc::Size::new(100, 80));
         s.undo();
         assert_eq!(damage(&s), None, "a size change recomposites the whole canvas");
         // A layer removed and restored changes only where it draws.

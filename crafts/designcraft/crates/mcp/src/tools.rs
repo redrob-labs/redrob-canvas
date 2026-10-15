@@ -452,7 +452,7 @@ fn filter_commands(all: Value, a: &Args) -> Value {
 }
 
 fn batch(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
-    use designcraft_engine::script;
+    use redrob_layout_engine::script;
     let steps = match (a.get("commands").and_then(Value::as_array), a.get("script").and_then(Value::as_str)) {
         (Some(c), _) if !c.is_empty() => script::parse(&Value::Array(c.clone()).to_string())?,
         (_, Some(t)) => script::parse(t)?,
@@ -480,7 +480,7 @@ fn render_page(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
     let b64 = r.get("pngBase64").and_then(Value::as_str).ok_or("renderer returned no image")?.to_string();
     let path = a.get("path").and_then(Value::as_str);
     if let Some(path) = path {
-        let png = designcraft_engine::cmd::base64_decode(&b64);
+        let png = redrob_layout_engine::cmd::base64_decode(&b64);
         b.write_file(path, &png)?;
     }
     Ok(ToolResult::image(b64, &json!({"width": r.get("width"), "height": r.get("height"), "path": path})))
@@ -502,7 +502,7 @@ fn screenshot(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
     if keep.is_none() {
         std::fs::remove_file(&target).ok();
     }
-    Ok(ToolResult::image(designcraft_engine::cmd::base64_encode(&png), &json!({"width": r.get("width"), "height": r.get("height"), "path": keep})))
+    Ok(ToolResult::image(redrob_layout_engine::cmd::base64_encode(&png), &json!({"width": r.get("width"), "height": r.get("height"), "path": keep})))
 }
 
 fn pointer(b: &mut dyn Backend, a: &Args) -> Result<Value, String> {

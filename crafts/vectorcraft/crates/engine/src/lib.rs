@@ -20,10 +20,10 @@ pub mod units;
 use std::sync::Arc;
 
 use serde_json::Value;
-use vectorcraft_color::{Color, GradientPaint, Paint};
-use vectorcraft_doc::{Document, NodeId, NodeKind, Selection};
-use vectorcraft_geom::Affine;
-use vectorcraft_tools::{PaintDefaults, Tool};
+use redrob_vector_color::{Color, GradientPaint, Paint};
+use redrob_vector_doc::{Document, NodeId, NodeKind, Selection};
+use redrob_vector_geom::Affine;
+use redrob_vector_tools::{PaintDefaults, Tool};
 
 pub use cmd::EyedropperOptions;
 pub use cmd::clipboard::Clipboard;
@@ -33,8 +33,8 @@ pub use cmd::rasterfx::{export_pdf, flatten_raster_effects};
 pub use cmd::{CommandInfo, CommandSpec, command_specs, find_command};
 pub use journal::Journal;
 pub use tooling::{UiRequest, ViewInfo};
-pub use vectorcraft_doc as doc;
-pub use vectorcraft_tools as tools;
+pub use redrob_vector_doc as doc;
+pub use redrob_vector_tools as tools;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
@@ -55,8 +55,8 @@ pub enum EngineError {
     Internal { cmd: String, msg: String },
 }
 
-impl From<vectorcraft_doc::DocError> for EngineError {
-    fn from(e: vectorcraft_doc::DocError) -> Self {
+impl From<redrob_vector_doc::DocError> for EngineError {
+    fn from(e: redrob_vector_doc::DocError) -> Self {
         EngineError::Other(e.to_string())
     }
 }
@@ -306,7 +306,7 @@ pub struct DocState {
     pub converted: bool,
     /// The view saved into native files (`Document::last_view`); the UI keeps it current before a
     /// save and restores it when the document opens.
-    pub view: Option<vectorcraft_doc::SavedView>,
+    pub view: Option<redrob_vector_doc::SavedView>,
     /// Restored by Data Recovery: the title says "[Recovered]" and Save asks where to save it
     /// (suggesting `path`, the file it was copied from) instead of overwriting that file.
     pub recovered: bool,
@@ -584,14 +584,14 @@ pub(crate) fn is_guide_path(d: &Document, id: NodeId) -> bool {
     d.node(id).is_some_and(|n| matches!(n.kind, NodeKind::Path { guide: true, .. }))
 }
 
-/// The error of an edit that would nest objects deeper than [`vectorcraft_doc::MAX_DEPTH`].
+/// The error of an edit that would nest objects deeper than [`redrob_vector_doc::MAX_DEPTH`].
 pub const TOO_DEEP: &str = "objects can't be nested more than 32 deep";
-const _: () = assert!(vectorcraft_doc::MAX_DEPTH == 32, "TOO_DEEP (and its catalog rows) names the cap");
+const _: () = assert!(redrob_vector_doc::MAX_DEPTH == 32, "TOO_DEEP (and its catalog rows) names the cap");
 
 /// Cheap sanity check after an edit: artboards and the objects just touched (the selection) must
 /// have finite, in-range geometry, so saved files always reload and renderers never see NaN/∞.
 fn doc_sane(d: &Document, sel: &Selection) -> bool {
-    let ok = |r: vectorcraft_geom::Rect| [r.x0, r.y0, r.x1, r.y1].iter().all(|v| v.is_finite() && v.abs() <= MAX_COORD);
+    let ok = |r: redrob_vector_geom::Rect| [r.x0, r.y0, r.x1, r.y1].iter().all(|v| v.is_finite() && v.abs() <= MAX_COORD);
     d.ruler_origin.is_finite()
         && d.ruler_origin.x.abs() <= MAX_COORD
         && d.ruler_origin.y.abs() <= MAX_COORD
@@ -791,7 +791,7 @@ pub struct Prefs {
     /// Width profiles saved to the Stroke panel's Profile list (`stroke.widthProfile.*`). Not a
     /// Preferences dialog field, so it has no [`cmd::prefscmds::PREF_SPECS`] row.
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub width_profiles: Vec<vectorcraft_doc::SavedProfile>,
+    pub width_profiles: Vec<redrob_vector_doc::SavedProfile>,
     /// General → Use Japanese Crop Marks: the style of Create Trim Marks and Effect → Crop Marks.
     pub japanese_crop_marks: bool,
     /// Appearance panel → New Art Has Basic Appearance (on): new art takes one fill and stroke;
@@ -811,7 +811,7 @@ pub struct Prefs {
     /// Edit → PDF Presets: the user's presets (the built-in ones aren't stored). A local library,
     /// not a Preferences dialog field: resetting the preferences keeps it; `pdf.preset.*` edit it.
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub pdf_presets: Vec<vectorcraft_pdf::PdfPreset>,
+    pub pdf_presets: Vec<redrob_vector_pdf::PdfPreset>,
     // File Handling (continued)
     /// Where Save as Template and New from Template start ("" = `Documents/Redrob Canvas Templates`).
     pub templates_folder: String,
@@ -838,7 +838,7 @@ pub struct Prefs {
     /// One Corner Radius field sets every corner of a live rectangle (off: a field per corner).
     pub single_corner_radius: bool,
     /// The tools' persistent options by store (a tool id, or a store a family shares: `liquify`
-    /// holds the Liquify tools' Global Brush Dimensions), see [`vectorcraft_tools::settings`]:
+    /// holds the Liquify tools' Global Brush Dimensions), see [`redrob_vector_tools::settings`]:
     /// kept across tool switches and saved with the preferences. Not a Preferences dialog field:
     /// resetting the preferences keeps them; `tool.setOption` edits them.
     #[serde(skip_serializing_if = "std::collections::BTreeMap::is_empty")]
@@ -847,16 +847,16 @@ pub struct Prefs {
     /// library, not a Preferences dialog field: resetting the preferences keeps it;
     /// `perspective.presets.*` edit it.
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub perspective_presets: Vec<vectorcraft_tools::distort::perspective::GridDefinition>,
+    pub perspective_presets: Vec<redrob_vector_tools::distort::perspective::GridDefinition>,
     /// Blend Options set with no blend selected: what new blends start with
     /// (`object.blend.options`; none: Smooth Color, Align to Page). A tool setting, not a
     /// Preferences dialog field: it has no [`cmd::prefscmds::PREF_SPECS`] row and resetting the
     /// preferences keeps it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub blend_options: Option<vectorcraft_doc::live::BlendDefaults>,
+    pub blend_options: Option<redrob_vector_doc::live::BlendDefaults>,
     /// Perspective Grid Options (double-click the Perspective Grid tool): whether the Plane
     /// Switching Widget shows and where (`perspective.widget.options`).
-    pub perspective_widget: vectorcraft_tools::distort::perspective::widget::WidgetOptions,
+    pub perspective_widget: redrob_vector_tools::distort::perspective::widget::WidgetOptions,
     /// What names and codes in other apps' shortcut sets stand for, as the user confirmed them on
     /// import (`importMatches.*`). A local library, not a Preferences dialog field: resetting the
     /// preferences keeps it.
@@ -932,7 +932,7 @@ impl Default for Prefs {
             object_highlighting: true,
             transform_tools_guides: true,
             construction_guides: true,
-            construction_angles: s(vectorcraft_tools::guides::DEFAULT_CONSTRUCTION_ANGLES),
+            construction_angles: s(redrob_vector_tools::guides::DEFAULT_CONSTRUCTION_ANGLES),
             anchor_path_labels: true,
             measurement_labels: true,
             spacing_guides: true,
@@ -983,7 +983,7 @@ impl Default for Prefs {
             touch_gestures: true,
             override_char_color: true,
             pattern_tile_edge_color: {
-                let [r, g, b] = vectorcraft_doc::LAYER_COLORS[0].1;
+                let [r, g, b] = redrob_vector_doc::LAYER_COLORS[0].1;
                 Color::rgb8(r, g, b).to_hex()
             },
             eyedropper: Default::default(),
@@ -1089,14 +1089,14 @@ pub struct Session {
     pub(crate) in_tool_actions: bool,
     /// Envelope Options with no envelope selected: the options and fidelity new envelopes get
     /// (`None`: the reference app's defaults, fidelity 50); not saved.
-    pub(crate) envelope_defaults: Option<(vectorcraft_doc::live::EnvelopeOptions, f64)>,
+    pub(crate) envelope_defaults: Option<(redrob_vector_doc::live::EnvelopeOptions, f64)>,
     /// The Liquify stroke the last live preview applied, which the next sample of the drag goes on
     /// from ([`cmd::distortcmds::LiquifyStroke`]).
     pub(crate) liquify_stroke: Option<Box<cmd::distortcmds::LiquifyStroke>>,
     /// A press on the Plane Switching Widget is under way: its drag and release are the widget's.
     pub(crate) plane_widget_press: bool,
     /// A guide being dragged out of a ruler ([`Session::ruler_guide`]).
-    pub(crate) ruler_guide: Option<vectorcraft_tools::rulerguide::NewGuide>,
+    pub(crate) ruler_guide: Option<redrob_vector_tools::rulerguide::NewGuide>,
     /// The last search for the files of missing fonts (`text.findFontFiles`), until another
     /// starts; dropping it stops it.
     pub(crate) font_search: Option<cmd::fontfiles::FontSearch>,
@@ -1125,8 +1125,8 @@ impl Default for Session {
 impl Session {
     pub fn new() -> Self {
         // Placed documents are read by the native format's loader.
-        vectorcraft_doc::placed_document::set_loader(cmd::place::document::read_document);
-        vectorcraft_doc::placed_document::set_file_reader(cmd::place::document::read_file_again);
+        redrob_vector_doc::placed_document::set_loader(cmd::place::document::read_document);
+        redrob_vector_doc::placed_document::set_file_reader(cmd::place::document::read_file_again);
         Self {
             docs: vec![],
             active: None,
@@ -1135,7 +1135,7 @@ impl Session {
             fill_active: true,
             clipboard: Clipboard::default(),
             journal: Journal::default(),
-            tool: vectorcraft_tools::create("selection"),
+            tool: redrob_vector_tools::create("selection"),
             lender: None,
             last_selection_tool: None,
             last_view: ViewInfo::default(),
@@ -1708,8 +1708,8 @@ impl Session {
 
 /// Lay out the type in tree `n` (opacity mask art included) whose bounds aren't cached. Only the
 /// nodes on the way to such type are copied.
-fn refresh_tree_text_bounds(n: &mut Arc<vectorcraft_doc::Node>) {
-    fn stale(n: &vectorcraft_doc::Node) -> bool {
+fn refresh_tree_text_bounds(n: &mut Arc<redrob_vector_doc::Node>) {
+    fn stale(n: &redrob_vector_doc::Node) -> bool {
         matches!(&n.kind, NodeKind::Text(t) if t.cached_bounds.is_none())
             || n.extras().mask.as_deref().is_some_and(|m| stale(&m.art))
             || n.children().is_some_and(|ch| ch.iter().any(|c| stale(c)))

@@ -6,7 +6,7 @@
 use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
-use vectorcraft_plugins::{Error, Kind, Limits, Plugin, registry, wat as tpl};
+use redrob_vector_plugins::{Error, Kind, Limits, Plugin, registry, wat as tpl};
 
 /// The example Desaturate plug-in, built from `crates/plugins/example`.
 const DESATURATE: &[u8] = include_bytes!("fixtures/desaturate.wasm");
@@ -68,7 +68,7 @@ fn example_desaturate_moves_every_colour_model_to_grey() {
     assert!((half["objects"][0]["fills"][0]["color"]["r"].as_f64().unwrap() - 0.6063).abs() < 1e-9);
     // Nothing to work on: the plug-in's own message.
     let none = p.run(INPUT.as_bytes(), b"{}").unwrap();
-    assert!(matches!(vectorcraft_plugins::objects::decode(&none), Err(Error::Failed(m)) if m.contains("Select some paths")));
+    assert!(matches!(redrob_vector_plugins::objects::decode(&none), Err(Error::Failed(m)) if m.contains("Select some paths")));
 }
 
 #[test]

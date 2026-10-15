@@ -9,7 +9,7 @@
 //! and `preview`.
 
 use serde_json::{Map, Value, json};
-use vectorcraft_engine::cmd::{FlattenOptions, FlattenerPreset};
+use redrob_vector_engine::cmd::{FlattenOptions, FlattenerPreset};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;
@@ -234,7 +234,7 @@ pub(crate) fn options_editor(ui: &mut egui::Ui, id: &str, o: &mut FlattenOptions
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// The built-in presets are told from saved ones by name (only theirs are translated).
     #[test]
@@ -299,7 +299,7 @@ mod tests {
         let st = app.session.doc().unwrap();
         assert_eq!(st.history.undo.len(), undo + 1);
         let mut images = 0;
-        st.doc.layers[0].walk(&mut |n| images += matches!(n.kind, vectorcraft_doc::NodeKind::Image(_)) as usize);
+        st.doc.layers[0].walk(&mut |n| images += matches!(n.kind, redrob_vector_doc::NodeKind::Image(_)) as usize);
         assert_eq!(images, 1, "balance 0 rasterizes");
         assert!(!transparent_left(&app));
     }

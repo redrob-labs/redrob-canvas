@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use serde_json::json;
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use crate::{FilePick, Services, VectorcraftApp, io};
 

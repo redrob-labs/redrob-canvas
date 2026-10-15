@@ -2,8 +2,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
-use vectorcraft_format::{SaveOptions, load, save, save_with};
+use redrob_vector_engine::Session;
+use redrob_vector_format::{SaveOptions, load, save, save_with};
 
 fn session() -> Session {
     let mut s = Session::new();

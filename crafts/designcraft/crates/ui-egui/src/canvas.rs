@@ -1,11 +1,11 @@
-//! The document canvas: pasteboard, spreads (rendered by `designcraft-render`), guides, frame edges,
+//! The document canvas: pasteboard, spreads (rendered by `redrob-layout-render`), guides, frame edges,
 //! selection, text ports and threads, the text caret, rulers, and pointer/keyboard input.
 
-use designcraft_compose as compose;
-use designcraft_doc::{Content, Document, Item, PageSide, SpreadRef};
-use designcraft_engine::doc::Selection;
-use designcraft_geom::{Affine, Point, Rect as DRect, Vec2 as DVec2};
-use designcraft_tools::{CanvasLayout, Cursor, Mods, Overlay, PointerEvent, PointerKind, ToolKey};
+use redrob_layout_compose as compose;
+use redrob_layout_doc::{Content, Document, Item, PageSide, SpreadRef};
+use redrob_layout_engine::doc::Selection;
+use redrob_layout_geom::{Affine, Point, Rect as DRect, Vec2 as DVec2};
+use redrob_layout_tools::{CanvasLayout, Cursor, Mods, Overlay, PointerEvent, PointerKind, ToolKey};
 use egui::{Color32, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Value, json};
 
@@ -105,7 +105,7 @@ pub fn fit(app: &mut DesignApp, rect: Rect, what: &str) {
     }
     if what == "selection" {
         // Fit Selection in Window: the selected objects (on their spread's slot).
-        let sel: Vec<designcraft_geom::Rect> = st
+        let sel: Vec<redrob_layout_geom::Rect> = st
             .selection
             .items
             .iter()
@@ -384,8 +384,8 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
         {
             let col = Color32::from_rgb(74, 227, 255);
             let (a, b) = match g.orientation {
-                designcraft_doc::Orientation::Horizontal => (pos2(rect.min.x, p.y), pos2(rect.max.x, p.y)),
-                designcraft_doc::Orientation::Vertical => (pos2(p.x, rect.min.y), pos2(p.x, rect.max.y)),
+                redrob_layout_doc::Orientation::Horizontal => (pos2(rect.min.x, p.y), pos2(rect.max.x, p.y)),
+                redrob_layout_doc::Orientation::Vertical => (pos2(p.x, rect.min.y), pos2(p.x, rect.max.y)),
             };
             // A new guide from the rulers with the Page tool is a liquid guide: dashed.
             if g.from.is_none() && app.session.tool_id() == "page" {
@@ -515,12 +515,12 @@ fn render_texture(app: &mut DesignApp, ctx: &egui::Context, rect: Rect, xf: &Xf,
     let zoom_same = app.canvas.shown.is_some_and(|s| (s.zoom - xf.zoom).abs() < 1e-9);
     let job = |app: &DesignApp| {
         let st = app.session.active()?;
-        let placed: Vec<designcraft_render::Placed> =
-            layout.slots.iter().map(|s| designcraft_render::Placed { spread: s.spread, xf: s.xf }).collect();
+        let placed: Vec<redrob_layout_render::Placed> =
+            layout.slots.iter().map(|s| redrob_layout_render::Placed { spread: s.spread, xf: s.xf }).collect();
         let w = (target.size.0 as f64 * ppp).round().max(1.0) as u32;
         let h = (target.size.1 as f64 * ppp).round().max(1.0) as u32;
         let view = Affine::scale(ppp) * Affine::scale(xf.zoom) * Affine::translate((-target.origin.x, -target.origin.y));
-        let opts = designcraft_render::RenderOptions {
+        let opts = redrob_layout_render::RenderOptions {
             printing_only: preview,
             greek_below_px: 3.0 * ppp,
             highlight_missing_fonts: !preview && app.session.prefs.highlight_substituted_fonts,
@@ -599,7 +599,7 @@ fn patch_texture(app: &mut DesignApp, layout: &CanvasLayout, ppp: f64, doc_key: 
         return false;
     }
     let new = st.doc.clone();
-    let Some(regions) = designcraft_render::damage::damage_with(&old, &new, Some(&app.session.cache)) else { return false };
+    let Some(regions) = redrob_layout_render::damage::damage_with(&old, &new, Some(&app.session.cache)) else { return false };
     let t0 = crate::now_ms();
     let (tw, th) = ((sh.size.0 as f64 * ppp).round() as i64, (sh.size.1 as f64 * ppp).round() as i64);
     // A texture `upload` sampled down to the GPU limit has other pixels than the view: a region
@@ -636,12 +636,12 @@ fn patch_texture(app: &mut DesignApp, layout: &CanvasLayout, ppp: f64, doc_key: 
     if ((x1 - x0) * (y1 - y0)) as f64 > 0.5 * (tw * th) as f64 {
         return false;
     }
-    let placed: Vec<designcraft_render::Placed> = layout.slots.iter().map(|s| designcraft_render::Placed { spread: s.spread, xf: s.xf }).collect();
+    let placed: Vec<redrob_layout_render::Placed> = layout.slots.iter().map(|s| redrob_layout_render::Placed { spread: s.spread, xf: s.xf }).collect();
     let view = Affine::translate((-(x0 as f64), -(y0 as f64)))
         * Affine::scale(ppp)
         * Affine::scale(sh.zoom)
         * Affine::translate((-sh.origin.x, -sh.origin.y));
-    let opts = designcraft_render::RenderOptions {
+    let opts = redrob_layout_render::RenderOptions {
         printing_only: preview,
         greek_below_px: 3.0 * ppp,
         highlight_missing_fonts: !preview && app.session.prefs.highlight_substituted_fonts,
@@ -678,13 +678,13 @@ fn render_worker_spawn(ctx: &egui::Context) -> Option<crate::render_worker::Work
     crate::render_worker::Worker::spawn(ctx.clone())
 }
 
-fn upload(app: &mut DesignApp, ctx: &egui::Context, mut img: designcraft_render::Rendered) {
+fn upload(app: &mut DesignApp, ctx: &egui::Context, mut img: redrob_layout_render::Rendered) {
     if app.ui.proof_colors {
-        designcraft_render::proof_view(&mut img, &app.ui.proof_setup);
+        redrob_layout_render::proof_view(&mut img, &app.ui.proof_setup);
     }
     // Plates render from source colours; the ink limit is estimated from the composite.
     if app.ui.separation.is_none() && app.ui.ink_limit.is_some() {
-        designcraft_render::separation_view(&mut img, None, app.ui.ink_limit);
+        redrob_layout_render::separation_view(&mut img, None, app.ui.ink_limit);
     }
     let ci = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
     let ci = crate::widgets::fit_texture(ci, ctx.input(|i| i.max_texture_side));
@@ -778,8 +778,8 @@ fn draw_guides(app: &DesignApp, painter: &egui::Painter, xf: &Xf, doc: &Document
                 // Spread guides cross the pasteboard; page guides their page.
                 let span = if g.spread { pasteboard } else { pr };
                 let (a, bb) = match g.orientation {
-                    designcraft_doc::Orientation::Horizontal => (Point::new(span.x0, g.position), Point::new(span.x1, g.position)),
-                    designcraft_doc::Orientation::Vertical => {
+                    redrob_layout_doc::Orientation::Horizontal => (Point::new(span.x0, g.position), Point::new(span.x1, g.position)),
+                    redrob_layout_doc::Orientation::Vertical => {
                         let span = if g.spread { sp.bounds().inflate(0.0, 36.0) } else { pr };
                         (Point::new(g.position, span.y0), Point::new(g.position, span.y1))
                     }
@@ -798,7 +798,7 @@ fn draw_guides(app: &DesignApp, painter: &egui::Painter, xf: &Xf, doc: &Document
 }
 
 /// Spread-space → canvas transform for an item at `loc`.
-fn item_canvas_xf(doc: &Document, layout: &CanvasLayout, id: designcraft_doc::ItemId) -> Option<(Affine, &'static str)> {
+fn item_canvas_xf(doc: &Document, layout: &CanvasLayout, id: redrob_layout_doc::ItemId) -> Option<(Affine, &'static str)> {
     let loc = doc.find(id)?;
     Some((layout.xf(loc.spread) * doc.parent_xf(&loc), ""))
 }
@@ -808,8 +808,8 @@ fn path_screen(it: &Item, xf: &Xf, a: Affine) -> Vec<Vec<Pos2>> {
     let full = a * it.xf;
     let mut out = Vec::new();
     let mut cur: Vec<Pos2> = Vec::new();
-    designcraft_geom::kurbo::flatten(&bp, 0.25 / xf.zoom.max(0.01), |el| {
-        use designcraft_geom::PathEl::*;
+    redrob_layout_geom::kurbo::flatten(&bp, 0.25 / xf.zoom.max(0.01), |el| {
+        use redrob_layout_geom::PathEl::*;
         match el {
             MoveTo(p) => {
                 if cur.len() > 1 {
@@ -902,7 +902,7 @@ fn draw_item_edges(painter: &egui::Painter, xf: &Xf, doc: &Document, it: &Item, 
         }
     }
     // Empty graphic frame: the X.
-    if it.object_style == designcraft_doc::BASIC_GRAPHICS_FRAME && matches!(it.content, Content::Unassigned) {
+    if it.object_style == redrob_layout_doc::BASIC_GRAPHICS_FRAME && matches!(it.content, Content::Unassigned) {
         let r = it.inner_bounds();
         let m = a * it.xf;
         let p = |x: f64, y: f64| xf.to_screen(m * Point::new(x, y));
@@ -992,13 +992,13 @@ fn draw_selection(app: &DesignApp, painter: &egui::Painter, xf: &Xf, doc: &Docum
         // Centre point and the live-corner widget.
         painter.rect_filled(Rect::from_center_size(u.center(), vec2(3.5, 3.5)), 0.0, color);
         if sel.items.len() == 1
-            && doc.item(sel.items[0]).is_some_and(|i| matches!(i.shape, designcraft_doc::Shape::Rectangle) && i.children().is_empty())
+            && doc.item(sel.items[0]).is_some_and(|i| matches!(i.shape, redrob_layout_doc::Shape::Rectangle) && i.children().is_empty())
         {
             let lc = Rect::from_center_size(pos2(u.max.x, u.min.y + 11.5), vec2(6.0, 6.0));
             painter.rect_filled(lc, 0.0, Color32::from_rgb(0xff, 0xe5, 0x00));
             painter.rect_stroke(lc, 0.0, Stroke::new(1.0, color), StrokeKind::Inside);
         }
-        for h in designcraft_tools::select::handles(DRect::new(u.min.x as f64, u.min.y as f64, u.max.x as f64, u.max.y as f64)) {
+        for h in redrob_layout_tools::select::handles(DRect::new(u.min.x as f64, u.min.y as f64, u.max.x as f64, u.max.y as f64)) {
             let r = Rect::from_center_size(pos2(h.x as f32, h.y as f32), vec2(hs, hs));
             painter.rect_filled(r, 0.0, Color32::WHITE);
             painter.rect_stroke(r, 0.0, Stroke::new(hair(painter), color), StrokeKind::Inside);
@@ -1025,7 +1025,7 @@ fn draw_selection(app: &DesignApp, painter: &egui::Painter, xf: &Xf, doc: &Docum
 }
 
 /// Port location (canvas): out port at bottom-right, in port at top-left.
-fn port_pos(doc: &Document, layout: &CanvasLayout, id: designcraft_doc::ItemId, out: bool) -> Option<Point> {
+fn port_pos(doc: &Document, layout: &CanvasLayout, id: redrob_layout_doc::ItemId, out: bool) -> Option<Point> {
     let it = doc.item(id)?;
     let (a, _) = item_canvas_xf(doc, layout, id)?;
     let r = it.inner_bounds();
@@ -1041,7 +1041,7 @@ fn draw_ports(
     doc: &Document,
     layout: &CanvasLayout,
     it: &Item,
-    sid: designcraft_doc::StoryId,
+    sid: redrob_layout_doc::StoryId,
     color: Color32,
 ) {
     let Some(story) = doc.story(sid) else { return };
@@ -1049,10 +1049,10 @@ fn draw_ports(
     let is_last = pos + 1 == story.frames.len();
     let cs = app.session.cache.get(doc, sid, None);
     let overset = is_last && cs.is_overset();
-    let s = designcraft_tools::thread::PORT_SIZE_PX as f32;
+    let s = redrob_layout_tools::thread::PORT_SIZE_PX as f32;
     // In port on the left edge below the top-left corner; out port on the right edge above the
     // bottom-right corner. The Selection tool hit-tests the same places.
-    let port = |out: bool| designcraft_tools::thread::port_center(doc, layout, it.id, out, xf.zoom).map(|c| xf.to_screen(c));
+    let port = |out: bool| redrob_layout_tools::thread::port_center(doc, layout, it.id, out, xf.zoom).map(|c| xf.to_screen(c));
     let (Some(inp), Some(outp)) = (port(false), port(true)) else { return };
     for (c, has_link, is_out) in [(inp, pos > 0, false), (outp, !is_last, true)] {
         let pr = Rect::from_center_size(c, vec2(s, s));
@@ -1074,8 +1074,8 @@ fn draw_text_selection(
     xf: &Xf,
     doc: &Document,
     layout: &CanvasLayout,
-    ts: designcraft_doc::TextSel,
-    cells: Option<designcraft_doc::TableSel>,
+    ts: redrob_layout_doc::TextSel,
+    cells: Option<redrob_layout_doc::TableSel>,
 ) {
     let cs = app.session.cache.get(doc, ts.story, None);
     // Text an input method is composing at the caret is marked like it is in every Mac text
@@ -1216,8 +1216,8 @@ fn draw_cell_selection(
     doc: &Document,
     layout: &CanvasLayout,
     cs: &compose::ComposedStory,
-    ts: designcraft_doc::TextSel,
-    cell: designcraft_doc::CellAddr,
+    ts: redrob_layout_doc::TextSel,
+    cell: redrob_layout_doc::CellAddr,
 ) {
     // Footnote text or a cell: its composed story and where it sits in the frame.
     let found = match cell.footnote_id() {
@@ -1227,7 +1227,7 @@ fn draw_cell_selection(
     let Some((fi, origin, text)) = found else { return };
     let Some(ft) = cs.frames.get(fi) else { return };
     let (Some((a, _)), Some(it)) = (item_canvas_xf(doc, layout, ft.frame), doc.item(ft.frame)) else { return };
-    let m = a * doc.text_xf(it) * designcraft_geom::Affine::translate(origin.to_vec2());
+    let m = a * doc.text_xf(it) * redrob_layout_geom::Affine::translate(origin.to_vec2());
     let composing = app.session.composition().filter(|c| c.0 == ts.story && c.1 == ts.cell && ts.is_caret()).map(|c| c.2);
     let range = composing.clone().unwrap_or_else(|| ts.range());
     let tint = if composing.is_some() { COMPOSING_FILL.gamma_multiply(0.6) } else { Color32::from_rgba_unmultiplied(80, 140, 255, 110) };
@@ -1279,11 +1279,11 @@ fn draw_inverse_highlight(
     xf: &Xf,
     doc: &Document,
     cs: &compose::ComposedStory,
-    story: designcraft_doc::StoryId,
+    story: redrob_layout_doc::StoryId,
     runs: &[(usize, Affine, Vec<[Point; 4]>, Vec<(usize, usize)>)],
     composing: bool,
 ) {
-    use designcraft_render::vello_cpu::{self, kurbo, peniko};
+    use redrob_layout_render::vello_cpu::{self, kurbo, peniko};
     let ctx = painter.ctx();
     let ppp = ctx.pixels_per_point();
     let to_screen = |m: Affine, p: Point| xf.to_screen(m * p);
@@ -1330,7 +1330,7 @@ fn draw_inverse_highlight(
                     rc.fill_path(&bp);
                 }
             }
-            let db = designcraft_fonts::FontDb::global();
+            let db = redrob_layout_fonts::FontDb::global();
             for (fi, m, _, glyphs) in runs {
                 let Some(ft) = cs.frames.get(*fi) else { continue };
                 for &(li, gi) in glyphs {
@@ -1369,7 +1369,7 @@ fn draw_tool_overlays(app: &mut DesignApp, painter: &egui::Painter, xf: &Xf) {
     if let (Some((z, c)), Some(rect)) = (app.power_zoom, app.canvas_rect) {
         // The view that releasing returns to.
         let (w, h) = (rect.width() as f64 / z, rect.height() as f64 / z);
-        let r = xf.rect(designcraft_geom::Rect::new(c.x - w / 2.0, c.y - h / 2.0, c.x + w / 2.0, c.y + h / 2.0));
+        let r = xf.rect(redrob_layout_geom::Rect::new(c.x - w / 2.0, c.y - h / 2.0, c.x + w / 2.0, c.y + h / 2.0));
         painter.rect_stroke(r, 0.0, egui::Stroke::new(1.5, Color32::from_rgb(230, 40, 40)), egui::StrokeKind::Middle);
     }
     let tok = Tokens::get(painter.ctx());
@@ -1465,7 +1465,7 @@ fn draw_liquid_pins(painter: &egui::Painter, o: Rect, page: Rect, pins: [bool; 4
     for m in mids {
         painter.circle_filled(m, 3.5, col);
     }
-    let (po, lo) = (designcraft_tools::PIN_OFFSET_PX as f32, designcraft_tools::LOCK_OFFSET_PX as f32);
+    let (po, lo) = (redrob_layout_tools::PIN_OFFSET_PX as f32, redrob_layout_tools::LOCK_OFFSET_PX as f32);
     let outward = [vec2(0.0, -1.0), vec2(1.0, 0.0), vec2(0.0, 1.0), vec2(-1.0, 0.0)];
     let edge = [pos2(c.x, page.min.y), pos2(page.max.x, c.y), pos2(c.x, page.max.y), pos2(page.min.x, c.y)];
     for i in 0..4 {
@@ -1601,8 +1601,8 @@ fn ruler_units_menus(app: &mut DesignApp, resp: &egui::Response, full: Rect, rec
 
 /// Every unit, the current one checked; picking one sets `key` (`horizontalUnits` or
 /// `verticalUnits`) through `document.preferences`.
-fn ruler_units_menu(app: &mut DesignApp, ui: &mut egui::Ui, key: &str, cur: designcraft_geom::Unit) {
-    for u in designcraft_geom::Unit::ALL {
+fn ruler_units_menu(app: &mut DesignApp, ui: &mut egui::Ui, key: &str, cur: redrob_layout_geom::Unit) {
+    for u in redrob_layout_geom::Unit::ALL {
         let label = crate::i18n::tr(&app.ui.language, u.label());
         let text = if u == cur { format!("✓ {label}") } else { format!("   {label}") };
         if ui.button(crate::rtl::widget(ui, text)).clicked() {
@@ -1985,7 +1985,7 @@ fn draw_flattener_preview(painter: &egui::Painter, xf: &Xf, doc: &Document, layo
     for slot in &layout.slots {
         let Some(sp) = doc.spread(slot.spread) else { continue };
         for it in sp.items.iter().filter(|it| !it.hidden && transparent(it)) {
-            let r = it.bounds().inflate(designcraft_render::effect_outset(it), designcraft_render::effect_outset(it));
+            let r = it.bounds().inflate(redrob_layout_render::effect_outset(it), redrob_layout_render::effect_outset(it));
             painter.rect_filled(xf.rect(slot.xf.transform_rect_bbox(r)), 0.0, red);
         }
     }
@@ -1999,7 +1999,7 @@ fn draw_dynamic_spelling(app: &DesignApp, ctx: &egui::Context, painter: &egui::P
         let bad: std::sync::Arc<Vec<std::ops::Range<usize>>> = match ctx.data(|d| d.get_temp(key)) {
             Some(v) => v,
             None => {
-                let v = std::sync::Arc::new(designcraft_engine::cmd::spelling::misspellings(doc, story, &doc.user_words));
+                let v = std::sync::Arc::new(redrob_layout_engine::cmd::spelling::misspellings(doc, story, &doc.user_words));
                 ctx.data_mut(|d| d.insert_temp(key, v.clone()));
                 v
             }
@@ -2040,7 +2040,7 @@ pub fn selected_text(app: &DesignApp) -> Option<String> {
     if s.is_empty() {
         return None;
     }
-    Some(s.replace(designcraft_doc::story::FORCED_LINE_BREAK, "\n"))
+    Some(s.replace(redrob_layout_doc::story::FORCED_LINE_BREAK, "\n"))
 }
 
 /// One device pixel, the width InDesign uses for guides and frame edges.
@@ -2053,14 +2053,14 @@ const GUIDE_DRAG: &str = "canvas_guide_drag";
 /// A ruler guide being dragged: out of a ruler (`from` None) or an existing one.
 #[derive(Clone, Debug)]
 struct GuideDrag {
-    orientation: designcraft_doc::Orientation,
-    from: Option<(designcraft_doc::SpreadRef, usize, usize)>,
+    orientation: redrob_layout_doc::Orientation,
+    from: Option<(redrob_layout_doc::SpreadRef, usize, usize)>,
     /// Pointer position (screen).
     at: Option<Pos2>,
 }
 
 /// The guide under a screen point (within 3 px), as (spread, page, index, orientation).
-fn guide_at(app: &DesignApp, xf: &Xf, p: Pos2) -> Option<(designcraft_doc::SpreadRef, usize, usize, designcraft_doc::Orientation)> {
+fn guide_at(app: &DesignApp, xf: &Xf, p: Pos2) -> Option<(redrob_layout_doc::SpreadRef, usize, usize, redrob_layout_doc::Orientation)> {
     let st = app.session.active()?;
     let layout = CanvasLayout::new(&st.doc, st.editing_parents);
     let cp = xf.to_canvas(p);
@@ -2076,8 +2076,8 @@ fn guide_at(app: &DesignApp, xf: &Xf, p: Pos2) -> Option<(designcraft_doc::Sprea
                 }
                 let r = if g.spread { pr } else { pg.bounds() };
                 let hit = match g.orientation {
-                    designcraft_doc::Orientation::Horizontal => (local.y - g.position).abs() <= tol && local.x >= r.x0 && local.x <= r.x1,
-                    designcraft_doc::Orientation::Vertical => (local.x - g.position).abs() <= tol && local.y >= r.y0 - tol && local.y <= r.y1 + tol,
+                    redrob_layout_doc::Orientation::Horizontal => (local.y - g.position).abs() <= tol && local.x >= r.x0 && local.x <= r.x1,
+                    redrob_layout_doc::Orientation::Vertical => (local.x - g.position).abs() <= tol && local.y >= r.y0 - tol && local.y <= r.y1 + tol,
                 };
                 if hit && !g.locked {
                     return Some((slot.spread, pi, gi, g.orientation));
@@ -2101,9 +2101,9 @@ fn guide_drag(app: &mut DesignApp, ui: &mut egui::Ui, resp: &egui::Response, rec
         if full.contains(o) && !rect.contains(o) {
             // In a ruler (not the corner).
             let orientation = if o.y < rect.min.y && o.x >= rect.min.x {
-                Some(designcraft_doc::Orientation::Horizontal)
+                Some(redrob_layout_doc::Orientation::Horizontal)
             } else if o.x < rect.min.x && o.y >= rect.min.y {
-                Some(designcraft_doc::Orientation::Vertical)
+                Some(redrob_layout_doc::Orientation::Vertical)
             } else {
                 None
             };
@@ -2118,7 +2118,7 @@ fn guide_drag(app: &mut DesignApp, ui: &mut egui::Ui, resp: &egui::Response, rec
             let over_item = app.session.active().is_some_and(|st| {
                 let layout = CanvasLayout::new(&st.doc, st.editing_parents);
                 layout.spread_at(xf.to_canvas(o)).is_some_and(|(sr, p)| match sr {
-                    designcraft_doc::SpreadRef::Doc(si) => st.doc.hit_item(si, p, 3.0 / xf.zoom).is_some(),
+                    redrob_layout_doc::SpreadRef::Doc(si) => st.doc.hit_item(si, p, 3.0 / xf.zoom).is_some(),
                     _ => false,
                 })
             });
@@ -2133,8 +2133,8 @@ fn guide_drag(app: &mut DesignApp, ui: &mut egui::Ui, resp: &egui::Response, rec
     }
     if !released {
         ui.ctx().set_cursor_icon(match g.orientation {
-            designcraft_doc::Orientation::Horizontal => egui::CursorIcon::ResizeVertical,
-            designcraft_doc::Orientation::Vertical => egui::CursorIcon::ResizeHorizontal,
+            redrob_layout_doc::Orientation::Horizontal => egui::CursorIcon::ResizeVertical,
+            redrob_layout_doc::Orientation::Vertical => egui::CursorIcon::ResizeHorizontal,
         });
         ui.data_mut(|d| d.insert_temp(id, g));
         return true;
@@ -2150,12 +2150,12 @@ fn guide_drag(app: &mut DesignApp, ui: &mut egui::Ui, resp: &egui::Response, rec
         Some((r, sp, on_page))
     });
     let pos_of = |sp: Point| match g.orientation {
-        designcraft_doc::Orientation::Horizontal => sp.y,
-        designcraft_doc::Orientation::Vertical => sp.x,
+        redrob_layout_doc::Orientation::Horizontal => sp.y,
+        redrob_layout_doc::Orientation::Vertical => sp.x,
     };
     let orient = match g.orientation {
-        designcraft_doc::Orientation::Horizontal => "horizontal",
-        designcraft_doc::Orientation::Vertical => "vertical",
+        redrob_layout_doc::Orientation::Horizontal => "horizontal",
+        redrob_layout_doc::Orientation::Vertical => "vertical",
     };
     match (g.from, on_canvas, target) {
         // Dropped back on a ruler: delete.
@@ -2211,7 +2211,7 @@ mod parent_canvas_tests;
 
 #[cfg(test)]
 mod tests {
-    use designcraft_geom::Unit;
+    use redrob_layout_geom::Unit;
     use egui_kittest::{Harness, kittest::Queryable};
 
     use super::*;
@@ -2264,7 +2264,7 @@ mod tests {
     fn the_page_tool_draws_liquid_guides_from_the_rulers() {
         // Chris Cicchino's Page Tool and Liquid Layout video (11:00): with the Page tool, a guide
         // dragged from the ruler is a liquid guide (dashed).
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.session.set_tool("page");
         let mut h = harness(app);
@@ -2273,7 +2273,7 @@ mod tests {
         drag(&mut h, pos2(r.center().x, r.min.y - 8.0), r.center());
         let g = guides(&h);
         assert_eq!(g.len(), 1, "{g:?}");
-        assert!(g[0].liquid && g[0].orientation == designcraft_doc::Orientation::Horizontal);
+        assert!(g[0].liquid && g[0].orientation == redrob_layout_doc::Orientation::Horizontal);
         // With the Selection tool it's a ruler guide.
         h.state_mut().session.set_tool("selection");
         drag(&mut h, pos2(r.center().x, r.min.y - 8.0), r.center() + vec2(0.0, 40.0));
@@ -2292,7 +2292,7 @@ mod tests {
     }
 
     fn new_document() -> Harness<'static, DesignApp> {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         harness(app)
     }
@@ -2382,7 +2382,7 @@ mod tests {
     #[test]
     fn an_edit_repaints_a_canvas_texture_sampled_down_to_the_gpu_limit_whole() {
         for (width, sampled_down) in [(1440.0, false), (2600.0, true)] {
-            let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+            let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({})).unwrap();
             let frame = app.run("frame.create", json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Text"})).unwrap();
             let mut h = Harness::builder().with_size(vec2(width, 900.0)).build_ui_state(
@@ -2412,7 +2412,7 @@ mod tests {
     fn selected_merged_owners_paint_the_same_row_and_column_targets() {
         for column in [true, false] {
             for merged in [false, true] {
-                let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+                let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
                 app.run("file.new", json!({"pages": 1})).unwrap();
                 app.run("frame.create", json!({"rect": [36, 36, 300, 300], "content": "text"})).unwrap();
                 app.run("table.insert", json!({"rows": 2, "cols": 2})).unwrap();
@@ -2429,7 +2429,7 @@ mod tests {
                 let selected = selection.cells.unwrap();
                 assert_eq!(
                     selected.range,
-                    if column { designcraft_doc::CellRange::new(0, 1, 1, 1) } else { designcraft_doc::CellRange::new(1, 0, 1, 1) }
+                    if column { redrob_layout_doc::CellRange::new(0, 1, 1, 1) } else { redrob_layout_doc::CellRange::new(1, 0, 1, 1) }
                 );
                 let layout = CanvasLayout::new(&st.doc, st.editing_parents);
                 let cs = app.session.cache.get(&st.doc, ts.story, None);
@@ -2483,7 +2483,7 @@ mod tests {
 
     #[test]
     fn right_clicking_a_ruler_sets_that_rulers_units() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let mut h = harness(app);
         let rect = h.state().canvas_rect.unwrap();
@@ -2510,7 +2510,7 @@ mod tests {
     /// A text frame holding `text`, the Type tool, and a harness stepping at 60 fps (clicks in a
     /// row must land within the double-click delay).
     fn typing(text: &str) -> (Harness<'static, DesignApp>, u64) {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let r = app.run("frame.create", json!({"rect": [72, 72, 400, 400], "content": "text", "text": text})).unwrap();
         let id = r["id"].as_u64().unwrap();
@@ -2620,7 +2620,7 @@ mod tests {
 
     #[test]
     fn tools_show_their_own_cursors_over_the_page() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let mut h = harness(app);
         let p = h.state().canvas_rect.unwrap().center();
@@ -2647,7 +2647,7 @@ mod tests {
 
     #[test]
     fn rulers_open_no_units_menu_without_a_document() {
-        let mut h = harness(DesignApp::new(designcraft_engine::Session::new(), crate::Services::default()));
+        let mut h = harness(DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default()));
         let Some(rect) = h.state().canvas_rect else { return };
         right_click(&mut h, pos2(rect.center().x, rect.min.y - RULER / 2.0));
         assert!(h.query_by_label("   Points").is_none());
@@ -2677,7 +2677,7 @@ mod scrollbar_tests {
     use crate::test_window::{Window, open, wheel};
 
     fn window() -> Harness<'static, Window> {
-        let mut h = open(DesignApp::new(designcraft_engine::Session::new(), crate::Services::default()), vec2(1440.0, 900.0));
+        let mut h = open(DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default()), vec2(1440.0, 900.0));
         // Zoomed in so both axes scroll.
         set_zoom(&mut h.state_mut().app, 2.0);
         h.run_steps(3);

@@ -531,7 +531,7 @@ pub(crate) fn save_tracked(s: &mut Session, dir: &Path) -> Result<usize> {
         }
         let Some(document) = s.docs.get_mut(index) else { continue };
         let (doc, meta) = files(dir, document.uid);
-        let bytes = designcraft_format::save(document.preview_stash.as_deref().unwrap_or(document.doc.as_ref()))
+        let bytes = redrob_layout_format::save(document.preview_stash.as_deref().unwrap_or(document.doc.as_ref()))
             .map_err(|e| EngineError::Other(e.to_string()))?;
         // An entry this run did not write is never replaced, even one made since it checked.
         let replace = access.owns(document.uid);
@@ -541,7 +541,7 @@ pub(crate) fn save_tracked(s: &mut Session, dir: &Path) -> Result<usize> {
         if !has_checkpoint(document, dir) {
             document.recovery_entries.push((dir.to_path_buf(), document.uid));
         }
-        let metadata = json!({"path": document.path, "title": document.title(), "saved": designcraft_doc::vars::now()});
+        let metadata = json!({"path": document.path, "title": document.title(), "saved": redrob_layout_doc::vars::now()});
         publish_recovery_file(&meta, metadata.to_string().as_bytes(), replace)?;
         n += 1;
     }
@@ -551,11 +551,11 @@ pub(crate) fn save_tracked(s: &mut Session, dir: &Path) -> Result<usize> {
 /// Publish a document's recovery entry before its optional metadata.
 fn write_entry(access: &Access, dir: &Path, d: &DocState) -> Result<()> {
     let (doc, meta) = files(dir, d.uid);
-    let bytes = designcraft_format::save(d.preview_stash.as_deref().unwrap_or(d.doc.as_ref())).map_err(|e| EngineError::Other(e.to_string()))?;
+    let bytes = redrob_layout_format::save(d.preview_stash.as_deref().unwrap_or(d.doc.as_ref())).map_err(|e| EngineError::Other(e.to_string()))?;
     let replace = access.owns(d.uid);
     publish_recovery_file(&doc, &bytes, replace)?;
     access.record(d.uid);
-    let metadata = json!({"path": d.path, "title": d.title(), "saved": designcraft_doc::vars::now()});
+    let metadata = json!({"path": d.path, "title": d.title(), "saved": redrob_layout_doc::vars::now()});
     publish_recovery_file(&meta, metadata.to_string().as_bytes(), replace)
 }
 
@@ -806,14 +806,14 @@ fn open_with_publisher(s: &mut Session, dir: &Path, mut publish: impl FnMut(&Pat
         // clean up every snapshot this document actually owns rather than an unrelated same uid.
         if let Some(state) = s.docs.get_mut(index) {
             let (document, metadata) = files(&destination, state.uid);
-            let published = designcraft_format::save(state.doc.as_ref())
+            let published = redrob_layout_format::save(state.doc.as_ref())
                 .map_err(|e| EngineError::Other(e.to_string()))
                 .and_then(|bytes| publish(&document, &bytes));
             match published {
                 Ok(()) => {
                     target.record(state.uid);
                     state.recovery_entries.push((destination.clone(), state.uid));
-                    let meta = json!({"path": state.path, "title": state.title(), "saved": designcraft_doc::vars::now()});
+                    let meta = json!({"path": state.path, "title": state.title(), "saved": redrob_layout_doc::vars::now()});
                     match publish(&metadata, meta.to_string().as_bytes()) {
                         Ok(()) => {
                             discard(dir, uid);
@@ -1088,7 +1088,7 @@ mod tests {
         let checkpoint = files(root.path(), live_uid).0;
         let original = std::fs::read(&checkpoint).unwrap();
         let saved = root.path().join("saved-other.designcraft");
-        std::fs::write(&saved, designcraft_format::save(&session.docs[0].doc).unwrap()).unwrap();
+        std::fs::write(&saved, redrob_layout_format::save(&session.docs[0].doc).unwrap()).unwrap();
         session.docs[0].path = Some(saved.to_string_lossy().into_owned());
         session.execute("file.activate", &json!({"index": 0})).unwrap();
         session.execute("frame.create", &json!({"rect": [0,0,100,100]})).unwrap();

@@ -2,10 +2,10 @@
 //! and what each refuses (RGB in PDF/X-1a, transparency in PDF/X-1a and PDF/X-3, passwords).
 
 use serde_json::json;
-use vectorcraft_color::cms::{self, GENERIC_CMYK, SRGB};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Document, ImageBlob, ImageObject, Node, NodeKind};
-use vectorcraft_geom::{Affine, Rect, shapes};
+use redrob_vector_color::cms::{self, GENERIC_CMYK, SRGB};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Document, ImageBlob, ImageObject, Node, NodeKind};
+use redrob_vector_geom::{Affine, Rect, shapes};
 
 use crate::*;
 

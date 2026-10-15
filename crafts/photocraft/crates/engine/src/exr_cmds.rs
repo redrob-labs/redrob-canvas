@@ -11,11 +11,11 @@ use crate::{EngineError, Result, Session};
 
 fn entries_json(path: &str) -> Result<Value> {
     let bytes = read_file(path)?;
-    let entries = photocraft_io::exr_parts::entries(&bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    let entries = redrob_photo_io::exr_parts::entries(&bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     Ok(json!(entries
         .iter()
         .map(|e| json!({
-            "kind": match e.kind { photocraft_io::exr_parts::EntryKind::Part => "part", photocraft_io::exr_parts::EntryKind::Group => "group", photocraft_io::exr_parts::EntryKind::Cryptomatte => "cryptomatte" },
+            "kind": match e.kind { redrob_photo_io::exr_parts::EntryKind::Part => "part", redrob_photo_io::exr_parts::EntryKind::Group => "group", redrob_photo_io::exr_parts::EntryKind::Cryptomatte => "cryptomatte" },
             "name": e.name,
             "view": e.view,
             "width": e.width,
@@ -45,14 +45,14 @@ fn open_exr_parts(s: &mut Session, p: &Value) -> Result<Value> {
     if !matches!(view, "both" | "left" | "right") {
         return Err(EngineError::BadParams { cmd: "file.openExrParts".into(), msg: format!("view is \"{view}\"; it is \"both\", \"left\" or \"right\"") });
     }
-    let sel = photocraft_io::exr_parts::Selection {
+    let sel = redrob_photo_io::exr_parts::Selection {
         parts: selected(p, "part/"),
         groups: selected(p, "group/"),
         view: view.to_string(),
         precomp: p.get("precomp").and_then(Value::as_bool).unwrap_or(false),
     };
     let bytes = read_file(&path)?;
-    let r = photocraft_io::exr_parts::import(&stem(&path), &bytes, &sel).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    let r = redrob_photo_io::exr_parts::import(&stem(&path), &bytes, &sel).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let (i, color) = s.open_document(r.document, Some(path.clone()));
     Ok(json!({"document": i, "color": color, "warnings": r.warnings}))
 }
@@ -80,7 +80,7 @@ pub fn specs() -> Vec<CommandSpec> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_doc::ColorMode;
+    use redrob_photo_doc::ColorMode;
 
     fn session() -> Session {
         Session::new()
@@ -164,7 +164,7 @@ mod tests {
         assert_eq!(doc.layers.len(), 1);
         assert_eq!(doc.layers[0].name, "beauty");
         // The beauty pixels survived (R 0.8 at pixel 0).
-        if let photocraft_doc::LayerContent::Raster(surface) = &doc.layers[0].content {
+        if let redrob_photo_doc::LayerContent::Raster(surface) = &doc.layers[0].content {
             let px = surface.pixel(0, 0);
             assert!((px[0] - 0.8).abs() < 1e-4, "{:?}", px);
         } else {
@@ -201,7 +201,7 @@ mod tests {
         let doc = &s.active().unwrap().doc;
         assert_eq!(doc.layers.len(), 1);
         assert_eq!(doc.layers[0].name, "diffuse");
-        if let photocraft_doc::LayerContent::Raster(surface) = &doc.layers[0].content {
+        if let redrob_photo_doc::LayerContent::Raster(surface) = &doc.layers[0].content {
             let px = surface.pixel(0, 0);
             // The channels import as stored (straight here): values are untouched.
             assert!((px[0] - 0.3).abs() < 1e-4, "{:?}", px);
@@ -243,7 +243,7 @@ mod tests {
         let doc = &s.active().unwrap().doc;
         assert_eq!(doc.layers.len(), 1);
         assert_eq!(doc.layers[0].name, "part 0");
-        if let photocraft_doc::LayerContent::Raster(surface) = &doc.layers[0].content {
+        if let redrob_photo_doc::LayerContent::Raster(surface) = &doc.layers[0].content {
             let px = surface.pixel(0, 0);
             assert!((px[0] - 0.7).abs() < 1e-4, "{:?}", px);
         }
@@ -295,7 +295,7 @@ mod tests {
         assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("precomp")), "{r}");
         let doc = &s.active().unwrap().doc;
         let precomp = doc.layers.iter().find(|l| l.name == "beauty (precomp)").expect("the precomp layer");
-        if let photocraft_doc::LayerContent::Raster(surface) = &precomp.content {
+        if let redrob_photo_doc::LayerContent::Raster(surface) = &precomp.content {
             let px = surface.pixel(0, 0);
             assert!((px[0] - expect).abs() < 1e-3, "{:?} vs {expect}", px);
         }

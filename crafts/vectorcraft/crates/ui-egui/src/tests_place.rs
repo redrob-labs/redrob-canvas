@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use egui::{Pos2, Shape, vec2};
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeKind;
-use vectorcraft_engine::Session;
+use redrob_vector_doc::NodeKind;
+use redrob_vector_engine::Session;
 
 use crate::VectorcraftApp;
 use crate::canvas::Xf;
@@ -16,7 +16,7 @@ use crate::place::{DropAt, DropTarget};
 fn png(w: u32, h: u32, ppi: f64) -> Vec<u8> {
     let mut out = vec![];
     image::RgbaImage::from_pixel(w, h, image::Rgba([255, 0, 0, 255])).write_to(&mut std::io::Cursor::new(&mut out), image::ImageFormat::Png).unwrap();
-    vectorcraft_engine::cmd::fileio::ppi::with_png_resolution(&out, (ppi, ppi))
+    redrob_vector_engine::cmd::fileio::ppi::with_png_resolution(&out, (ppi, ppi))
 }
 
 /// `bytes` written to a fresh temporary file named `name` → its path.
@@ -91,7 +91,7 @@ fn frame_files(app: &mut VectorcraftApp, ctx: &egui::Context, mut events: Vec<eg
     out.textures_delta.clear();
 }
 
-fn selected_image(app: &VectorcraftApp) -> vectorcraft_doc::Node {
+fn selected_image(app: &VectorcraftApp) -> redrob_vector_doc::Node {
     let st = app.session.active().unwrap();
     let n = st.doc.node(st.selection.objects[0]).unwrap().clone();
     assert!(matches!(n.kind, NodeKind::Image(_)), "{:?}", n.kind);
@@ -446,7 +446,7 @@ fn the_place_dialog_lists_the_files_and_loads_the_cursor_with_several() {
 #[test]
 fn one_file_places_centred_in_the_view_and_replace_swaps_the_selection() {
     let mut app = app();
-    app.view_mut().unwrap().center = vectorcraft_geom::Point::new(120.0, 80.0);
+    app.view_mut().unwrap().center = redrob_vector_geom::Point::new(120.0, 80.0);
     place_picked(&mut app, &temp_file("one.png", &png(300, 150, 300.0)));
     let d = app.ui.dialog.as_ref().expect("the Place dialog");
     assert_eq!(d.kind, crate::dialogs::place::KIND);
@@ -459,7 +459,7 @@ fn one_file_places_centred_in_the_view_and_replace_swaps_the_selection() {
     crate::dialogs::confirm(&mut app).unwrap();
     assert!(app.ui.dialog.is_none());
     let first = selected_image(&app);
-    assert_eq!(first.geometric_bounds().unwrap().center(), vectorcraft_geom::Point::new(120.0, 80.0), "centred in the view");
+    assert_eq!(first.geometric_bounds().unwrap().center(), redrob_vector_geom::Point::new(120.0, 80.0), "centred in the view");
     // With one object selected, Replace applies.
     place_picked(&mut app, &temp_file("two.png", &png(40, 40, 144.0)));
     assert!(app.ui.dialog.as_ref().unwrap().bool("__replace"));
@@ -500,7 +500,7 @@ fn the_control_bar_and_properties_trace_a_selected_image() {
     let selected_preset = |app: &VectorcraftApp| selected_trace(app).map(|t| t.0);
     use crate::tests_removeanchors::{at, click_control, control_frame, has, properties_frame};
     let mut app = app();
-    let data = vectorcraft_format::base64_encode(&png(30, 30, 72.0));
+    let data = redrob_vector_format::base64_encode(&png(30, 30, 72.0));
     app.run("file.place", json!({"name": "red.png", "dataBase64": data, "link": false})).unwrap();
     let ctx = egui::Context::default();
     crate::theme::install_fonts(&ctx);
@@ -532,7 +532,7 @@ fn the_control_bar_and_properties_trace_a_selected_image() {
     let traced = app.session.active().unwrap().selection.objects.clone();
     click_control(&mut app, &ctx, at(&bar, "Tracing Result"));
     click_label(&mut app, &ctx, "Outlines with Source Image");
-    assert_eq!(selected_trace(&app).map(|t| t.1), Some(vectorcraft_doc::TraceView::OutlinesWithSource));
+    assert_eq!(selected_trace(&app).map(|t| t.1), Some(redrob_vector_doc::TraceView::OutlinesWithSource));
     assert_eq!(app.session.active().unwrap().selection.objects, traced, "the same object");
     let bar = control_frame(&mut app, &ctx, vec![]);
     click_control(&mut app, &ctx, at(&bar, "Default"));
@@ -547,7 +547,7 @@ fn the_control_bar_and_properties_trace_a_selected_image() {
 #[test]
 fn the_control_bars_mask_clips_the_image_and_selects_the_clipping_path() {
     let mut app = app();
-    let data = vectorcraft_format::base64_encode(&png(30, 30, 72.0));
+    let data = redrob_vector_format::base64_encode(&png(30, 30, 72.0));
     let img = app.run("file.place", json!({"name": "red.png", "dataBase64": data, "link": false})).unwrap()["ids"][0].as_u64().unwrap();
     let ctx = egui::Context::default();
     crate::theme::install_fonts(&ctx);
@@ -566,7 +566,7 @@ fn a_vectorcraft_document_places_linked_and_edit_original_opens_it() {
     let mut src = Session::new();
     src.execute("file.new", &json!({"width": 100, "height": 50})).unwrap();
     src.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 100, "height": 50})).unwrap();
-    let bytes = vectorcraft_format::save_file(&src.active().unwrap().doc);
+    let bytes = redrob_vector_format::save_file(&src.active().unwrap().doc);
     let path = temp_file("badge.vectorcraft", &bytes);
     place_picked(&mut app, &path);
     let d = app.ui.dialog.as_ref().expect("the Place dialog");
@@ -576,7 +576,7 @@ fn a_vectorcraft_document_places_linked_and_edit_original_opens_it() {
     crate::dialogs::confirm(&mut app).unwrap();
     let st = app.session.active().unwrap();
     let id = st.selection.objects[0];
-    let vectorcraft_doc::NodeKind::PlacedDocument(p) = &st.doc.node(id).unwrap().kind else { panic!("not a placed document") };
+    let redrob_vector_doc::NodeKind::PlacedDocument(p) = &st.doc.node(id).unwrap().kind else { panic!("not a placed document") };
     assert_eq!(p.link.path, path);
     // Edit Original opens the document in a new tab.
     let tabs = app.session.documents().len();
@@ -597,9 +597,9 @@ fn a_vectorcraft_document_places_linked_and_edit_original_opens_it() {
 }
 
 /// Tool key `key` as the Control bar's Apply (Enter) and Cancel (Escape) send it.
-fn tool_key(app: &mut VectorcraftApp, key: vectorcraft_tools::ToolKey) {
+fn tool_key(app: &mut VectorcraftApp, key: redrob_vector_tools::ToolKey) {
     let view = app.view_info();
-    let r = app.session.tool_key(key, vectorcraft_tools::Mods::default(), view);
+    let r = app.session.tool_key(key, redrob_vector_tools::Mods::default(), view);
     crate::canvas::apply_requests(app, r);
 }
 
@@ -608,7 +608,7 @@ fn tool_key(app: &mut VectorcraftApp, key: vectorcraft_tools::ToolKey) {
 /// leaves the image whole, and both go back to the Selection tool.
 #[test]
 fn crop_image_shows_a_box_that_apply_crops_to() {
-    use vectorcraft_tools::ToolKey;
+    use redrob_vector_tools::ToolKey;
     let mut app = app();
     place_picked(&mut app, &temp_file("crop.png", &png(100, 50, 72.0)));
     app.ui.dialog.as_mut().unwrap().fields.insert("link".into(), json!(false));
@@ -697,7 +697,7 @@ fn a_file_placed_while_idle_follows_its_changes() {
     std::thread::sleep(std::time::Duration::from_millis(30));
     let changed = png(60, 30, 72.0);
     std::fs::write(&path, &changed).unwrap();
-    let hash = vectorcraft_doc::links::hash_bytes(&changed);
+    let hash = redrob_vector_doc::links::hash_bytes(&changed);
     let updated = |app: &VectorcraftApp| {
         let st = app.session.active().unwrap();
         matches!(&st.doc.node(id).unwrap().kind, NodeKind::Image(im) if im.link.as_ref().and_then(|l| l.hash.as_deref()) == Some(hash.as_str()))

@@ -5,15 +5,15 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::clipboard::{FILE_HEAD, Flavour, PASTE_ORDER, file_flavour, is_address};
-use vectorcraft_engine::cmd::fileio;
-use vectorcraft_engine::cmd::recovery::{self, Hold, RecoveryStore};
-use vectorcraft_ui_egui::graphics::GraphicsLoss;
-use vectorcraft_ui_egui::i18n;
-use vectorcraft_ui_egui::place::{DropTarget, PlaceArrival, PlaceInbox};
-use vectorcraft_ui_egui::print::{PrintJob, PrintService, Printer};
-use vectorcraft_ui_egui::{Services, VectorcraftApp};
+use redrob_vector_engine::Session;
+use redrob_vector_engine::cmd::clipboard::{FILE_HEAD, Flavour, PASTE_ORDER, file_flavour, is_address};
+use redrob_vector_engine::cmd::fileio;
+use redrob_vector_engine::cmd::recovery::{self, Hold, RecoveryStore};
+use redrob_vector_ui_egui::graphics::GraphicsLoss;
+use redrob_vector_ui_egui::i18n;
+use redrob_vector_ui_egui::place::{DropTarget, PlaceArrival, PlaceInbox};
+use redrob_vector_ui_egui::print::{PrintJob, PrintService, Printer};
+use redrob_vector_ui_egui::{Services, VectorcraftApp};
 use wasm_bindgen::JsCast as _;
 
 use crate::locks::WebLocks;
@@ -404,8 +404,8 @@ fn services(inbox: Inbox, place_inbox: PlaceInbox, ctx: egui::Context, locks: Op
             let ctx = place_ctx.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 let dialog =
-                    fileio::place_filters().fold(rfd::AsyncFileDialog::new().set_title(vectorcraft_ui_egui::i18n::t("Place")), |d, (name, exts)| {
-                        d.add_filter(vectorcraft_ui_egui::i18n::tr_ctx(vectorcraft_ui_egui::i18n::current(), "file-filter", name), exts)
+                    fileio::place_filters().fold(rfd::AsyncFileDialog::new().set_title(redrob_vector_ui_egui::i18n::t("Place")), |d, (name, exts)| {
+                        d.add_filter(redrob_vector_ui_egui::i18n::tr_ctx(redrob_vector_ui_egui::i18n::current(), "file-filter", name), exts)
                     });
                 let Some(files) = dialog.pick_files().await else {
                     return;
@@ -424,7 +424,7 @@ fn services(inbox: Inbox, place_inbox: PlaceInbox, ctx: egui::Context, locks: Op
             let ctx = ctx.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 let dialog = fileio::open_filters().fold(rfd::AsyncFileDialog::new(), |d, (name, exts)| {
-                    d.add_filter(vectorcraft_ui_egui::i18n::tr_ctx(vectorcraft_ui_egui::i18n::current(), "file-filter", name), exts)
+                    d.add_filter(redrob_vector_ui_egui::i18n::tr_ctx(redrob_vector_ui_egui::i18n::current(), "file-filter", name), exts)
                 });
                 let Some(file) = dialog.pick_file().await else {
                     return;
@@ -471,11 +471,11 @@ impl RecoveryStore for BrowserStore {
     }
     fn read(&self, name: &str) -> Result<Vec<u8>, String> {
         let text = local_storage()?.get_item(&format!("{RECOVERY_PREFIX}{name}")).map_err(js_err)?;
-        text.and_then(|t| vectorcraft_format::base64_decode(&t)).ok_or_else(|| format!("{name}: no such recovery entry"))
+        text.and_then(|t| redrob_vector_format::base64_decode(&t)).ok_or_else(|| format!("{name}: no such recovery entry"))
     }
     fn write(&self, name: &str, bytes: &[u8]) -> Result<(), String> {
         local_storage()?
-            .set_item(&format!("{RECOVERY_PREFIX}{name}"), &vectorcraft_format::base64_encode(bytes))
+            .set_item(&format!("{RECOVERY_PREFIX}{name}"), &redrob_vector_format::base64_encode(bytes))
             .map_err(|e| format!("browser storage is full or turned off: {}", js_err(e)))
     }
     fn remove(&self, name: &str) -> Result<(), String> {

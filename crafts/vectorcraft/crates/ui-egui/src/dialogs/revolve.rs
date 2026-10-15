@@ -4,8 +4,8 @@
 
 use egui::{Align2, FontId, Id, Pos2, Sense, Stroke, vec2};
 use serde_json::{Value, json};
-use vectorcraft_doc::Unit;
-use vectorcraft_effects::{EXTRUDE, INFLATE, REVOLVE, ROTATION_PRESETS};
+use redrob_vector_doc::Unit;
+use redrob_vector_effects::{EXTRUDE, INFLATE, REVOLVE, ROTATION_PRESETS};
 
 use crate::state::Dialog;
 use crate::theme::Tokens;
@@ -35,7 +35,7 @@ pub(super) fn body(app: &VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) {
         });
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             let id = d.str("__effect");
-            let defaults = vectorcraft_effects::default_params(&id).unwrap_or(json!({}));
+            let defaults = redrob_vector_effects::default_params(&id).unwrap_or(json!({}));
             let changed = defaults.as_object().is_some_and(|m| {
                 m.iter().any(|(k, v)| v.as_f64().map_or_else(|| d.fields.get(k) != Some(v), |default| (d.f64(k, default) - default).abs() > 1e-6))
             });
@@ -237,7 +237,7 @@ fn view_controls(ui: &mut egui::Ui, d: &mut Dialog) {
 /// A dropdown of `options` (value, label) for `key`, with its reset dot.
 fn choice(ui: &mut egui::Ui, d: &mut Dialog, key: &str, name: &str, options: &[(Value, &str)]) {
     let id = d.str("__effect");
-    let default = vectorcraft_effects::default_params(&id).and_then(|p| p.get(key).cloned()).unwrap_or(Value::Null);
+    let default = redrob_vector_effects::default_params(&id).and_then(|p| p.get(key).cloned()).unwrap_or(Value::Null);
     let value = d.fields.get(key).cloned().unwrap_or_else(|| default.clone());
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 6.0;
@@ -312,7 +312,7 @@ fn rail_width(ui: &egui::Ui) -> f32 {
 /// A value can be typed, dragged, scrubbed by its label, or moved on its slider.
 #[allow(clippy::too_many_arguments)]
 fn number(ui: &mut egui::Ui, d: &mut Dialog, key: &str, name: &str, range: (f64, f64), suffix: &str, decimals: usize, unit: Option<Unit>) {
-    let default = vectorcraft_effects::default_params(&d.str("__effect")).and_then(|p| p.get(key).and_then(Value::as_f64)).unwrap_or(0.0);
+    let default = redrob_vector_effects::default_params(&d.str("__effect")).and_then(|p| p.get(key).and_then(Value::as_f64)).unwrap_or(0.0);
     let from = |n| unit.map_or(n, |u| u.from_pt(n));
     let to = |n| unit.map_or(n, |u| u.to_pt(n));
     let typed = unit.map(|u| widgets::typed_unit(ui.ctx(), u));
@@ -337,7 +337,7 @@ fn number(ui: &mut egui::Ui, d: &mut Dialog, key: &str, name: &str, range: (f64,
                         .update_while_editing(false)
                         .custom_parser(|s| {
                             unit.map_or_else(
-                                || vectorcraft_doc::parse_number(&s.replace(['°', '%'], "")),
+                                || redrob_vector_doc::parse_number(&s.replace(['°', '%'], "")),
                                 |u| typed.unwrap_or(u).parse(s).map(|v| u.from_pt(v)),
                             )
                         }),

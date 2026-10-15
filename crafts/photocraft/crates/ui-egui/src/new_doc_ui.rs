@@ -6,11 +6,11 @@
 use egui::{Align2, Rect, RichText, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Map, Value, json};
 
-use photocraft_engine::prefs::UnitsAndRulers;
+use redrob_photo_engine::prefs::UnitsAndRulers;
 
 use crate::theme::Tokens;
 use crate::{icons, widgets};
-use photocraft_engine::document_preset_cmds::DocumentSettings;
+use redrob_photo_engine::document_preset_cmds::DocumentSettings;
 
 /// A blank-document preset: (name, width px, height px, ppi).
 pub type Preset = (&'static str, u32, u32, f32);
@@ -311,7 +311,7 @@ fn background_rgb(app: &crate::PhotocraftApp, f: &Map<String, Value>) -> Option<
 }
 
 /// Restore a snapshot without replacing the new document's name or its clipboard offer.
-pub fn apply_saved_preset(f: &mut Map<String, Value>, preset: &photocraft_engine::document_preset_cmds::DocumentPreset) {
+pub fn apply_saved_preset(f: &mut Map<String, Value>, preset: &redrob_photo_engine::document_preset_cmds::DocumentPreset) {
     apply_settings(f, &preset.settings);
     f.insert("__savedPreset".into(), json!(preset.name));
 }
@@ -801,7 +801,7 @@ mod tests {
     #[test]
     fn tiny_size_in_inches_is_not_changed_by_showing_it() {
         use egui_kittest::Harness;
-        let app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let mut f = crate::state::UiState::new_document_fields();
         for (k, v) in [("width", json!(1)), ("height", json!(1)), ("resolution", json!(300.0)), ("__unit", json!("in"))] {
             f.insert(k.into(), v);
@@ -966,7 +966,7 @@ mod tests {
     #[test]
     fn clipboard_preset_comes_first_and_is_selected() {
         // Nothing on the clipboard: the dialog opens as before.
-        let mut app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let f = app.new_document_fields();
         assert_eq!(f, crate::state::UiState::new_document_fields());
         assert!(clipboard_preset(&f).is_none());
@@ -992,7 +992,7 @@ mod tests {
         assert_eq!(p["height"], 3508);
         assert_eq!(p["resolution"], 300.0);
         assert!(p.get("__preset").is_none() && p.get("__unit").is_none());
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", p).unwrap();
         let d = &s.active().unwrap().doc;
         assert_eq!((d.size.width, d.size.height, d.resolution_dpi), (2480, 3508, 300.0));
@@ -1000,7 +1000,7 @@ mod tests {
 
     #[test]
     fn saved_selection_restores_all_settings_but_keeps_the_document_name() {
-        let mut session = photocraft_engine::Session::new();
+        let mut session = redrob_photo_engine::Session::new();
         session
             .execute(
                 "document.presets.save",
@@ -1050,7 +1050,7 @@ mod tests {
                 })),
                 ..Default::default()
             };
-            let app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+            let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
             let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_ui_state(
                 |ui, app| {
                     crate::prefs_ui::tick(app, ui.ctx());
@@ -1088,7 +1088,7 @@ mod tests {
             assert_eq!(bg, "#336699");
             crate::dialogs::confirm(h.state_mut(), nd).unwrap();
             let doc = &h.state().session.active().unwrap().doc;
-            let px = photocraft_compose::flatten(doc).px[0];
+            let px = redrob_photo_compose::flatten(doc).px[0];
             assert!((px[0] * 255.0 - 51.0).abs() < 1.0 && (px[1] * 255.0 - 102.0).abs() < 1.0 && (px[2] * 255.0 - 153.0).abs() < 1.0, "{px:?}");
         }
 
@@ -1188,7 +1188,7 @@ mod tests {
         }
 
         fn harness() -> Harness<'static, PhotocraftApp> {
-            let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             let mut h = Harness::builder()
                 .with_size(egui::vec2(1400.0, 900.0))
                 .with_step_dt(1.0 / 60.0)
@@ -1293,7 +1293,7 @@ mod tests {
             assert_eq!(created(&h), (1200, 1800, 300.0));
             let doc = &h.state().session.active().unwrap().doc;
             assert_eq!(doc.name, "Portrait proof");
-            assert_eq!((doc.mode, doc.depth), (photocraft_doc::ColorMode::Cmyk, photocraft_doc::SampleType::U16));
+            assert_eq!((doc.mode, doc.depth), (redrob_photo_doc::ColorMode::Cmyk, redrob_photo_doc::SampleType::U16));
             assert_pixel(&mut h, [0.0; 4]);
         }
 
@@ -1316,7 +1316,7 @@ mod tests {
             second_click_creates_once(&mut h, at);
             assert_eq!(created(&h), (37, 23, 72.0));
             let doc = &h.state().session.active().unwrap().doc;
-            assert_eq!((doc.mode, doc.depth), (photocraft_doc::ColorMode::Grayscale, photocraft_doc::SampleType::U8));
+            assert_eq!((doc.mode, doc.depth), (redrob_photo_doc::ColorMode::Grayscale, redrob_photo_doc::SampleType::U8));
             assert_pixel(&mut h, [1.0; 4]);
         }
 
@@ -1347,7 +1347,7 @@ mod tests {
             assert_eq!(created(&h), (48, 32, 254.0));
             let doc = &h.state().session.active().unwrap().doc;
             assert_eq!(doc.name, "Current document name");
-            assert_eq!((doc.mode, doc.depth), (photocraft_doc::ColorMode::Rgb, photocraft_doc::SampleType::F32));
+            assert_eq!((doc.mode, doc.depth), (redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::F32));
             assert_pixel(&mut h, [0.125, 0.375, 0.625, 1.0]);
         }
 

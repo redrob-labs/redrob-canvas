@@ -150,14 +150,14 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     #[test]
     fn defaults_are_valid_commands() {
         for set in default_sets() {
             for a in set.actions {
                 for (c, _) in a.steps {
-                    assert!(vectorcraft_engine::find_command(&c).is_some(), "{c}");
+                    assert!(redrob_vector_engine::find_command(&c).is_some(), "{c}");
                 }
             }
         }
@@ -171,7 +171,7 @@ mod tests {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
         let id = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 20, "height": 20})).unwrap()["id"].as_u64().unwrap();
-        let id = vectorcraft_doc::NodeId(id);
+        let id = redrob_vector_doc::NodeId(id);
         let ctx = egui::Context::default();
         let texts = frame_events(&ctx, &mut app, vec![], show);
         click(&ctx, &mut app, text_rect(&texts, "Reflect Horizontal").center(), show);
@@ -202,8 +202,8 @@ mod tests {
         app.run("file.new", json!({"width": 200, "height": 100, "artboards": 3})).unwrap();
         let boards: Vec<_> = app.session.active().unwrap().doc.artboards.iter().map(|a| a.rect).collect();
         let r = app.run("shape.rectangle", json!({"x": boards[1].x0 + 10.0, "y": boards[1].y0 + 15.0, "width": 20, "height": 20})).unwrap();
-        let rect = vectorcraft_doc::NodeId(r["id"].as_u64().unwrap());
-        let bounds = |app: &VectorcraftApp, ids: &[vectorcraft_doc::NodeId]| app.session.active().unwrap().doc.bounds_of(ids, false).unwrap();
+        let rect = redrob_vector_doc::NodeId(r["id"].as_u64().unwrap());
+        let bounds = |app: &VectorcraftApp, ids: &[redrob_vector_doc::NodeId]| app.session.active().unwrap().doc.bounds_of(ids, false).unwrap();
         // Each recorded as the panel records an action, with artboard 0 active.
         let record = |app: &mut VectorcraftApp, name: &str, id: &str, params: Value| {
             let start = app.session.journal.len();
@@ -220,11 +220,11 @@ mod tests {
         app.run("select.set", json!({"ids": [rect.0]})).unwrap();
         play(&mut app, 0, align).unwrap();
         assert_eq!(bounds(&app, &[rect]).x0, boards[2].x0, "aligned to artboard 2, active when the action plays");
-        let ids: Vec<vectorcraft_doc::NodeId> = play(&mut app, 0, paste).unwrap()["results"][0]["ids"]
+        let ids: Vec<redrob_vector_doc::NodeId> = play(&mut app, 0, paste).unwrap()["results"][0]["ids"]
             .as_array()
             .unwrap()
             .iter()
-            .map(|v| vectorcraft_doc::NodeId(v.as_u64().unwrap()))
+            .map(|v| redrob_vector_doc::NodeId(v.as_u64().unwrap()))
             .collect();
         let b = bounds(&app, &ids);
         assert_eq!((b.x0, b.y0), (boards[2].x0 + 10.0, boards[2].y0 + 15.0), "pasted onto artboard 2, where it was on artboard 1");

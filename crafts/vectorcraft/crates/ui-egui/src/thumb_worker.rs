@@ -10,7 +10,7 @@
 use std::collections::VecDeque;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 
-use vectorcraft_render::{Rendered, Renderer};
+use redrob_vector_render::{Rendered, Renderer};
 
 /// How long (seconds) the document must stay unchanged before a thumbnail that is already shown
 /// is drawn again.

@@ -104,14 +104,14 @@ fn without_a_folder_the_zip_has_the_same_files() {
     let mut s = poster(&dir);
     let r = run(&mut s, "file.package", json!({"name": "Poster Kit"}));
     assert_eq!(r["name"], "Poster Kit.zip");
-    let zip = unzip(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
+    let zip = unzip(&redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
     let want: Vec<String> = r["files"].as_array().unwrap().iter().map(|f| format!("Poster Kit/{}", f.as_str().unwrap())).collect();
     let mut want_sorted = want.clone();
     want_sorted.sort();
     assert_eq!(zip.keys().cloned().collect::<Vec<_>>(), want_sorted);
     assert_eq!(zip["Poster Kit/Links/blue.png"], png(300, 300, BLUE));
     // The packaged document links to the files beside it.
-    let doc = vectorcraft_format::load(&zip["Poster Kit/poster.vectorcraft"]).unwrap();
+    let doc = redrob_vector_format::load(&zip["Poster Kit/poster.vectorcraft"]).unwrap();
     let mut rel = vec![];
     doc.visit_images(|_, im| rel.push(im.link.clone().unwrap().relative.unwrap()));
     rel.sort();
@@ -132,13 +132,13 @@ fn options_leave_out_links_fonts_and_the_report() {
     assert_eq!(r["files"], json!(["poster.vectorcraft", "red.png", "blue.png"]));
     let r = run(&mut s, "file.package", json!({"copyLinks": false}));
     assert_eq!(r["files"], json!(["poster.vectorcraft", "Fonts/SourceSans3-Regular.ttf", "poster Report.txt"]));
-    let zip = unzip(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
-    let doc = vectorcraft_format::load(&zip["poster Folder/poster.vectorcraft"]).unwrap();
+    let zip = unzip(&redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
+    let doc = redrob_vector_format::load(&zip["poster Folder/poster.vectorcraft"]).unwrap();
     doc.visit_images(|_, im| assert!(im.link.as_ref().unwrap().path.contains("art"), "not relinked: the originals"));
     let r = run(&mut s, "file.package", json!({"relink": false}));
-    let zip = unzip(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
+    let zip = unzip(&redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
     assert!(zip.contains_key("poster Folder/Links/red.png"), "copied");
-    let doc = vectorcraft_format::load(&zip["poster Folder/poster.vectorcraft"]).unwrap();
+    let doc = redrob_vector_format::load(&zip["poster Folder/poster.vectorcraft"]).unwrap();
     doc.visit_images(|_, im| assert!(im.link.as_ref().unwrap().path.contains("art"), "not relinked"));
     assert!(s.execute("file.package", &json!({"name": "../up"})).is_err());
 }
@@ -174,7 +174,7 @@ fn a_missing_link_is_reported_not_copied() {
     open(&mut s, &dir.file("poster.vectorcraft"));
     let r = run(&mut s, "file.package", json!({}));
     assert_eq!((r["links"].as_u64(), r["missingLinks"].clone()), (Some(1), json!(["blue.png"])));
-    let zip = unzip(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
+    let zip = unzip(&redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
     let report = String::from_utf8(zip["poster Folder/poster Report.txt"].clone()).unwrap();
     assert!(report.contains("blue.png: not found"), "{report}");
 }
@@ -187,7 +187,7 @@ fn a_font_named_by_another_of_its_names_is_copied() {
     run(&mut s, "text.create", json!({"x": 10, "y": 80, "text": "Alias", "font": "SourceSans3-Semibold"}));
     let r = run(&mut s, "file.package", json!({}));
     assert_eq!((r["fonts"].as_u64(), r["skippedFonts"].clone()), (Some(2), json!([])), "{}", r["skippedFonts"]);
-    let zip = unzip(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
+    let zip = unzip(&redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
     let report = String::from_utf8(zip["poster Folder/poster Report.txt"].clone()).unwrap();
     assert!(report.contains("SourceSans3-Semibold Regular → Fonts/"), "{report}");
     let details = report.lines().find(|l| l.starts_with("SourceSans3-Semibold Regular: ")).unwrap_or_default();
@@ -203,7 +203,7 @@ fn a_substituted_style_names_the_style_shown() {
     run(&mut s, "text.create", json!({"x": 10, "y": 80, "text": "Heavy", "font": "Source Sans 3", "style": "Black Wide"}));
     let r = run(&mut s, "file.package", json!({}));
     assert_eq!(r["skippedFonts"], json!([]));
-    let zip = unzip(&vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
+    let zip = unzip(&redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap());
     let report = String::from_utf8(zip["poster Folder/poster Report.txt"].clone()).unwrap();
     assert!(report.contains("Source Sans 3 Black Wide (shown in Source Sans 3 "), "{report}");
     assert!(report.contains("Source Sans 3 Black Wide: substituted: shown in Source Sans 3 "), "{report}");
@@ -242,7 +242,7 @@ fn the_document_info_report_has_every_category() {
     assert!(s.execute("document.info", &json!({"category": "brushes"})).is_err());
     assert!(s.execute("document.info", &json!({"format": "xml"})).is_err());
     // The bundled fonts allow embedding.
-    let face = vectorcraft_text::FontDb::global().face("Source Sans 3", "Regular").unwrap();
+    let face = redrob_vector_text::FontDb::global().face("Source Sans 3", "Regular").unwrap();
     assert!(face.embeddable() && face.path().is_none());
 }
 
@@ -280,7 +280,7 @@ fn verify_portable_nested_package(folder: &std::path::Path) {
     let link = &targets[0];
     assert_eq!(link.relative.as_deref(), Some("Links/part.vectorcraft"));
     let packaged_part = std::fs::read(&part).unwrap();
-    let expected_hash = vectorcraft_doc::links::hash_bytes(&packaged_part);
+    let expected_hash = redrob_vector_doc::links::hash_bytes(&packaged_part);
     assert_eq!(link.hash.as_deref(), Some(expected_hash.as_str()));
     let mut nested = session();
     let opened = open(&mut nested, &part.to_string_lossy());
@@ -311,7 +311,7 @@ fn zipped_package_recursively_relinks_without_absolute_creator_paths() {
     let mut s = poster_with_placed_document(&dir);
     let result = run(&mut s, "file.package", json!({}));
     assert_eq!(result["links"], 2, "{result}");
-    let bytes = vectorcraft_format::base64_decode(result["dataBase64"].as_str().unwrap()).unwrap();
+    let bytes = redrob_vector_format::base64_decode(result["dataBase64"].as_str().unwrap()).unwrap();
     let archive = unzip(&bytes);
     let extraction = dir.file("extracted");
     for (name, bytes) in archive {
@@ -386,12 +386,12 @@ fn identical_stale_paths_in_different_nested_documents_keep_separate_assets() {
 
         // Two otherwise independent linked documents have the *same* obsolete
         // absolute image path. Their relative paths identify different files.
-        let mut saved = vectorcraft_format::load(&std::fs::read(&name).unwrap()).unwrap();
+        let mut saved = redrob_vector_format::load(&std::fs::read(&name).unwrap()).unwrap();
         saved.update_links(|link| {
             link.path = "/old-computer/illustrations/photo.png".into();
             link.relative = Some("photo.png".into());
         });
-        write(&name, &vectorcraft_format::save_file(&saved));
+        write(&name, &redrob_vector_format::save_file(&saved));
         run(&mut poster, "file.place", json!({ "path": name, "link": true }));
     }
     save(&mut poster, &dir.file("poster.vectorcraft"));
@@ -427,22 +427,22 @@ fn packaging_nested_files_preserves_embedded_preview_pdf_and_compression() {
     let mut parent = poster_with_placed_document(&dir);
     let source = dir.file("art/part.vectorcraft");
     let original = std::fs::read(&source).unwrap();
-    let doc = vectorcraft_format::load(&original).unwrap();
+    let doc = redrob_vector_format::load(&original).unwrap();
     let preview = png(8, 8, BLUE);
     let pdf = b"%PDF-1.7\n%Embedded client preview\n".to_vec();
-    let mut opts = vectorcraft_format::SaveOptions::for_doc(&doc);
+    let mut opts = redrob_vector_format::SaveOptions::for_doc(&doc);
     opts.preview = Some(preview.clone());
     opts.pdf = Some(pdf.clone());
     opts.compress = true;
-    write(&source, &vectorcraft_format::save_with(&doc, &opts).unwrap());
+    write(&source, &redrob_vector_format::save_with(&doc, &opts).unwrap());
 
     let result = run(&mut parent, "file.package", json!({ "folder": dir.file("delivery") }));
     assert_eq!(result["missingLinks"], json!([]), "{result}");
     let packaged = std::fs::read(dir.0.join("delivery/poster Folder/Links/part.vectorcraft")).unwrap();
     assert!(packaged.starts_with(&[0x1f, 0x8b]), "compression must be preserved");
-    assert_eq!(vectorcraft_format::preview(&packaged), Some(preview));
-    assert_eq!(vectorcraft_format::pdf_content(&packaged), Some(pdf));
-    let nested = vectorcraft_format::load(&packaged).unwrap();
+    assert_eq!(redrob_vector_format::preview(&packaged), Some(preview));
+    assert_eq!(redrob_vector_format::pdf_content(&packaged), Some(pdf));
+    let nested = redrob_vector_format::load(&packaged).unwrap();
     let mut images = Vec::new();
     nested.visit_images(|_, image| images.push(image.link.clone()));
     assert_eq!(images.len(), 1);
@@ -508,8 +508,8 @@ fn circular_placed_links_copy_each_document_once_and_warn() {
     assert_eq!(result["missingLinks"], json!([]), "{result}");
     assert!(result["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("circular placed-document link")), "{result}");
     let packaged = dir.0.join("delivery/root Folder");
-    let root_doc = vectorcraft_format::load(&std::fs::read(packaged.join("root.vectorcraft")).unwrap()).unwrap();
-    let child_doc = vectorcraft_format::load(&std::fs::read(packaged.join("Links/child.vectorcraft")).unwrap()).unwrap();
+    let root_doc = redrob_vector_format::load(&std::fs::read(packaged.join("root.vectorcraft")).unwrap()).unwrap();
+    let child_doc = redrob_vector_format::load(&std::fs::read(packaged.join("Links/child.vectorcraft")).unwrap()).unwrap();
     let mut direct = Vec::new();
     root_doc.visit_placed(|_, p| direct.push(p.link.relative.clone()));
     assert_eq!(direct, [Some("Links/child.vectorcraft".into())]);
@@ -531,7 +531,7 @@ fn nesting_limit_copies_boundary_file_and_reports_uncollected_links() {
     save(&mut deepest, &next);
 
     let mut root = None;
-    for depth in (0..=vectorcraft_doc::placed_document::MAX_DEPTH).rev() {
+    for depth in (0..=redrob_vector_doc::placed_document::MAX_DEPTH).rev() {
         let mut current = session();
         run(&mut current, "file.place", json!({ "path": next, "link": true }));
         let name = dir.file(&format!("level{depth}.vectorcraft"));
@@ -544,7 +544,7 @@ fn nesting_limit_copies_boundary_file_and_reports_uncollected_links() {
 
     let mut root = root.unwrap();
     let result = run(&mut root, "file.package", json!({ "folder": dir.file("delivery") }));
-    let expected_links = vectorcraft_doc::placed_document::MAX_DEPTH + 1;
+    let expected_links = redrob_vector_doc::placed_document::MAX_DEPTH + 1;
     assert_eq!(result["links"].as_u64(), Some(expected_links as u64), "{result}");
     assert!(result["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("nesting limit reached")), "{result}");
     let folder = dir.0.join("delivery/level0 Folder");

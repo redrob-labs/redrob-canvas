@@ -3,8 +3,8 @@
 
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, Rect, vec2};
 use serde_json::{Value, json};
-use vectorcraft_color::{Freeform, FreeformMode, Paint};
-use vectorcraft_engine::Session;
+use redrob_vector_color::{Freeform, FreeformMode, Paint};
+use redrob_vector_engine::Session;
 
 use super::*;
 

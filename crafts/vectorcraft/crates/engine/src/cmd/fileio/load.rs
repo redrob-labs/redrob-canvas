@@ -3,8 +3,8 @@
 use std::io::Cursor;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, ImageBlob, ImageObject, Node, NodeKind};
-use vectorcraft_geom::Affine;
+use redrob_vector_doc::{Document, ImageBlob, ImageObject, Node, NodeKind};
+use redrob_vector_geom::Affine;
 
 use super::super::*;
 use super::pdfimport::LoadOptions;
@@ -64,17 +64,17 @@ pub fn file_name(name: &str) -> String {
 /// extension of `name`.
 pub fn detect(name: &str, bytes: &[u8]) -> Option<&'static Format> {
     let by_name = format_for_name(name).filter(|f| f.read);
-    if vectorcraft_affinity::is_affinity(bytes) {
+    if redrob_vector_affinity::is_affinity(bytes) {
         return format("affinity");
     }
-    if vectorcraft_format::sniff(bytes) {
+    if redrob_vector_format::sniff(bytes) {
         // A template keeps its meaning from the extension, like .ait.
         return by_name.filter(|f| f.id == "template").or_else(|| format("vectorcraft"));
     }
-    if vectorcraft_svg::is_svgz(bytes) {
+    if redrob_vector_svg::is_svgz(bytes) {
         return format("svgz");
     }
-    if vectorcraft_pdf::is_postscript(bytes) {
+    if redrob_vector_pdf::is_postscript(bytes) {
         // PostScript (.eps, and .ai saved without PDF compatibility) by any name; .ai and .ait
         // keep their meaning (a template), read as PostScript all the same.
         return by_name.filter(|f| matches!(f.id, "ai" | "ait")).or_else(|| format("eps"));
@@ -83,10 +83,10 @@ pub fn detect(name: &str, bytes: &[u8]) -> Option<&'static Format> {
         // .ai and .ait files are PDF inside; the extension keeps the template meaning.
         return by_name.filter(|f| matches!(f.id, "ai" | "ait")).or_else(|| format("pdf"));
     }
-    if vectorcraft_cad::is_dxf(bytes) {
+    if redrob_vector_cad::is_dxf(bytes) {
         return format("dxf");
     }
-    if let Some(kind) = vectorcraft_metafile::sniff(bytes) {
+    if let Some(kind) = redrob_vector_metafile::sniff(bytes) {
         return format(kind.id());
     }
     if psdread::is_psd(bytes) {
@@ -137,8 +137,8 @@ fn restore_or_import(
 
 /// A native file's document and details, the colour profiles it carries installed where missing
 /// (with a warning for each that can't be used).
-pub(crate) fn native_file(bytes: &[u8]) -> Result<(Document, vectorcraft_format::FileInfo, Vec<String>)> {
-    let f = vectorcraft_format::load_file(bytes).map_err(err)?;
+pub(crate) fn native_file(bytes: &[u8]) -> Result<(Document, redrob_vector_format::FileInfo, Vec<String>)> {
+    let f = redrob_vector_format::load_file(bytes).map_err(err)?;
     let mut warnings = super::native::install_profiles(f.profiles);
     warnings.extend(f.depth_notes);
     Ok((f.doc, f.info, warnings))
@@ -158,16 +158,16 @@ fn through_editing_data(bytes: &[u8], opts: &LoadOptions, doc: Document, warning
     if opts.pages.is_some() || !opts.layers || !opts.editing_data {
         return (doc, warnings);
     }
-    let Some(private) = vectorcraft_pdf::illustrator_data(bytes, opts.password.as_deref()) else { return (doc, warnings) };
-    let outlined = opts.text_as == vectorcraft_pdf::TextAs::Outlines;
-    let (doc, mut warnings, read) = vectorcraft_eps::layered_ai(&private, doc, warnings, outlined, opts.trust_editing_data);
+    let Some(private) = redrob_vector_pdf::illustrator_data(bytes, opts.password.as_deref()) else { return (doc, warnings) };
+    let outlined = opts.text_as == redrob_vector_pdf::TextAs::Outlines;
+    let (doc, mut warnings, read) = redrob_vector_eps::layered_ai(&private, doc, warnings, outlined, opts.trust_editing_data);
     // The layers weren't read (or couldn't be): the notes of reading the PDF part still hold.
     if !read {
         return (doc, warnings);
     }
     // The layers hold the art that the PDF part leaves out or, in a PDF, that the import clipped
     // to the page.
-    warnings.retain(|w| w != vectorcraft_pdf::OFF_ARTBOARD_NOTE && w != vectorcraft_pdf::PAST_PAGE_NOTE);
+    warnings.retain(|w| w != redrob_vector_pdf::OFF_ARTBOARD_NOTE && w != redrob_vector_pdf::PAST_PAGE_NOTE);
     (doc, warnings)
 }
 
@@ -178,9 +178,9 @@ fn from_editing_data_alone(bytes: &[u8], opts: &LoadOptions) -> Option<Result<(D
     if opts.pages.is_some() || !opts.layers || !opts.editing_data {
         return None;
     }
-    let private = vectorcraft_pdf::illustrator_data(bytes, opts.password.as_deref())?;
+    let private = redrob_vector_pdf::illustrator_data(bytes, opts.password.as_deref())?;
     Some(
-        vectorcraft_eps::ai_alone(&private)
+        redrob_vector_eps::ai_alone(&private)
             .map_err(|why| err(format!("this file was saved without PDF compatibility, and its editing data can't be read ({why})"))),
     )
 }
@@ -196,21 +196,21 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
     let mut preview_only = false;
     let (mut doc, mut warnings, restored) = match format.id {
         // EPS and PostScript .ai: the document our EPS files carry, else the PostScript read.
-        _ if format.id == "eps" || vectorcraft_pdf::is_postscript(bytes) => {
-            let editing = vectorcraft_eps::has_native(bytes).then_some((true, || vectorcraft_eps::native(bytes)));
+        _ if format.id == "eps" || redrob_vector_pdf::is_postscript(bytes) => {
+            let editing = redrob_vector_eps::has_native(bytes).then_some((true, || redrob_vector_eps::native(bytes)));
             restore_or_import(editing, || {
-                let r = vectorcraft_eps::import_with(bytes, opts.editing_data).map_err(|e| err(format!("can't open `{}`: {e}", file_name(name))))?;
+                let r = redrob_vector_eps::import_with(bytes, opts.editing_data).map_err(|e| err(format!("can't open `{}`: {e}", file_name(name))))?;
                 Ok((r.document, r.warnings))
             })?
         }
         "vectorcraft" | "template" => {
             let (d, info, warnings) = native_file(bytes)?;
-            converted = info.is_old() || super::extension(name) == vectorcraft_format::LEGACY_EXTENSION;
+            converted = info.is_old() || super::extension(name) == redrob_vector_format::LEGACY_EXTENSION;
             (d, warnings, false)
         }
         "svg" | "svgz" => {
-            let text = vectorcraft_svg::text_of(bytes).map_err(err)?;
-            let editing = vectorcraft_svg::editing(&text).map(|e| (e.intact, move || vectorcraft_format::base64_decode(&e.data)));
+            let text = redrob_vector_svg::text_of(bytes).map_err(err)?;
+            let editing = redrob_vector_svg::editing(&text).map(|e| (e.intact, move || redrob_vector_format::base64_decode(&e.data)));
             // Relative links are found in the SVG's folder (when `name` is a path).
             let folder = std::path::Path::new(name).parent().map(|f| f.to_string_lossy()).filter(|f| !f.is_empty()).map(|f| absolute_path(&f));
             restore_or_import(editing, || import_svg(&text, folder.as_deref()))?
@@ -220,7 +220,7 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
             let editing = opts
                 .pages
                 .is_none()
-                .then(|| vectorcraft_pdf::editing_with(bytes, opts.password.as_deref()))
+                .then(|| redrob_vector_pdf::editing_with(bytes, opts.password.as_deref()))
                 .flatten()
                 .map(|e| (e.intact, move || Some(e.data)));
             restore_or_import(editing, || match super::pdfimport::import(bytes, opts, format.id != "pdf") {
@@ -231,7 +231,7 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
                     Ok(alone.unwrap_or_else(|| through_editing_data(bytes, opts, r.document, r.warnings)))
                 }
                 // Saved without its PDF part: the editing copy is all the file has.
-                Err(e) if e.to_string() == vectorcraft_pdf::PdfError::PlaceholderOnly.to_string() => {
+                Err(e) if e.to_string() == redrob_vector_pdf::PdfError::PlaceholderOnly.to_string() => {
                     from_editing_data_alone(bytes, opts).unwrap_or(Err(e))
                 }
                 Err(e) => Err(e),
@@ -271,7 +271,7 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
 
 /// Import SVG text, reading the files its images link to (relative links from `folder`, the SVG's
 /// own): rasters stay linked, SVG files become art, missing ones placeholders (see
-/// [`vectorcraft_svg::ImportOptions`]).
+/// [`redrob_vector_svg::ImportOptions`]).
 pub(crate) fn import_svg(text: &str, folder: Option<&str>) -> Result<(Document, Vec<String>)> {
     // The importer reads on a thread of its own (for its stack): what may be read is what may be
     // read here.
@@ -285,7 +285,7 @@ pub(crate) fn import_svg(text: &str, folder: Option<&str>) -> Result<(Document, 
             Some((bytes, link))
         })
     };
-    vectorcraft_svg::import_with(text, &vectorcraft_svg::ImportOptions { folder, read: Some(&read) }).map_err(err)
+    redrob_vector_svg::import_with(text, &redrob_vector_svg::ImportOptions { folder, read: Some(&read) }).map_err(err)
 }
 
 /// Open a file's bytes as the new active document (what `document.open` does) →
@@ -400,7 +400,7 @@ pub(crate) fn source<'a>(p: &'a Value, cmd: &str) -> Result<Source<'a>> {
     match (str_param(p, "path"), str_param(p, "dataBase64")) {
         (Some(path), _) => Ok(Source { name: path, bytes: read_file(path)?, path: Some(path) }),
         (None, Some(b64)) => {
-            let bytes = vectorcraft_format::base64_decode(b64).ok_or_else(|| bad(cmd, "bad base64"))?;
+            let bytes = redrob_vector_format::base64_decode(b64).ok_or_else(|| bad(cmd, "bad base64"))?;
             Ok(Source { name: str_param(p, "name").unwrap_or("Untitled"), bytes, path: None })
         }
         _ => Err(bad(cmd, "give path, or name and dataBase64")),
@@ -424,7 +424,7 @@ pub(super) fn new_from_template(s: &mut Session, p: &Value) -> Result<Value> {
 /// The most memory decoding one image may take: a 60 in print sheet at 300 ppi (18000 × 6600 px)
 /// is ~475 MB as RGBA, past the decoder's 512 MB default once it is converted. The web app keeps
 /// that default: wasm32 has 4 GB to address and aborts when an allocation fails.
-pub(crate) use vectorcraft_doc::MAX_RASTER_ALLOC;
+pub(crate) use redrob_vector_doc::MAX_RASTER_ALLOC;
 
 /// What to say of encoded image `bytes` that need more than [`MAX_RASTER_ALLOC`] to decode (its
 /// header says so; the pixels aren't read): the renderer, which has the same allowance, draws
@@ -445,7 +445,7 @@ pub(crate) fn too_large_note(bytes: &[u8]) -> Option<String> {
 pub fn raster_image(bytes: &[u8]) -> Result<RasterImage> {
     let ppi = super::ppi::resolution(bytes);
     if psdread::is_psd(bytes) {
-        let cms = vectorcraft_color::cms::active();
+        let cms = redrob_vector_color::cms::active();
         return as_png(psdread::decode(bytes, MAX_RASTER_ALLOC, |c| cms.cmyk_to_srgb(c, false)).map_err(err)?, ppi);
     }
     let mut reader = image::ImageReader::new(Cursor::new(bytes)).with_guessed_format().map_err(err)?;
@@ -460,8 +460,8 @@ pub fn raster_image(bytes: &[u8]) -> Result<RasterImage> {
         return stored(bytes.to_vec(), f.mime, (width, height), ppi);
     }
     let extra_samples = || {
-        let cms = vectorcraft_color::cms::active();
-        vectorcraft_doc::cmyk::extra_samples_tiff_rgba(bytes, |c| cms.cmyk_to_srgb(c, false))
+        let cms = redrob_vector_color::cms::active();
+        redrob_vector_doc::cmyk::extra_samples_tiff_rgba(bytes, |c| cms.cmyk_to_srgb(c, false))
     };
     let img = match (f.id == "tiff").then(extra_samples).flatten() {
         Some(img) => img,
@@ -510,7 +510,7 @@ pub(super) fn raster_doc(name: &str, bytes: &[u8]) -> Result<Document> {
 
 /// Does this import note say that the file has something the document doesn't?
 fn is_loss(note: &str) -> bool {
-    note == vectorcraft_pdf::OFF_ARTBOARD_NOTE || vectorcraft_eps::is_loss(note)
+    note == redrob_vector_pdf::OFF_ARTBOARD_NOTE || redrob_vector_eps::is_loss(note)
 }
 
 /// Writing the file `target` for document `st`: not over the file `st` was read from when reading

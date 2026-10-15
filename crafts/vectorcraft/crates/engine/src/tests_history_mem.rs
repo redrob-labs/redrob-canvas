@@ -2,8 +2,8 @@
 //! shared between steps, and past a memory budget the oldest steps go (never the last few).
 
 use serde_json::json;
-use vectorcraft_doc::{Appearance, Node};
-use vectorcraft_geom::shapes;
+use redrob_vector_doc::{Appearance, Node};
+use redrob_vector_geom::shapes;
 
 use super::*;
 

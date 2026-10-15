@@ -35,7 +35,7 @@ fn people(n: u64) -> Vec<Contributor> {
 }
 
 fn harness(list: Vec<Contributor>, table: bool) -> Harness<'static> {
-    let mut app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     let mut h = Harness::builder().with_size(vec2(WIDTH + 20.0, 520.0)).build_ui(move |ui| {
         if !ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("semibold".into()))) {
             return;
@@ -205,7 +205,7 @@ fn the_models_table_lines_counts_up_on_the_right_under_a_rule_of_headers() {
 fn about_window(tab: &str, table: bool) -> (f32, f32, f32) {
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(|cc| {
         crate::PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        crate::PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+        crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
     });
     let mut fields = serde_json::Map::new();
     fields.insert("tab".into(), serde_json::json!(tab));

@@ -3,9 +3,9 @@
 //! the existing effect preview applies commands and owns OK, Cancel and undo.
 use egui::{Align2, FontId, Id, Pos2, Rect, Sense, Stroke, Vec2, vec2};
 use serde_json::json;
-use vectorcraft_effects::{REVOLVE, revolve_options};
-use vectorcraft_geom::Point;
-use vectorcraft_three_d::Revolve;
+use redrob_vector_effects::{REVOLVE, revolve_options};
+use redrob_vector_geom::Point;
+use redrob_vector_three_d::Revolve;
 
 use crate::{VectorcraftApp, canvas::Xf, state::Dialog, theme::Tokens};
 
@@ -13,7 +13,7 @@ const KEYS: [&str; 3] = ["rotationX", "rotationY", "rotationZ"];
 const SAMPLES: usize = 96;
 
 pub(crate) fn active(d: &Dialog) -> bool {
-    d.kind == "effect" && vectorcraft_effects::is_three_d(&d.str("__effect"))
+    d.kind == "effect" && redrob_vector_effects::is_three_d(&d.str("__effect"))
 }
 
 pub(crate) fn lighting(d: &Dialog) -> bool {
@@ -76,7 +76,7 @@ struct Geometry {
     radius: f32,
     rings: [Ring; 3],
     xf: Xf,
-    bounds: vectorcraft_geom::Rect,
+    bounds: redrob_vector_geom::Rect,
 }
 
 impl Geometry {
@@ -414,7 +414,7 @@ fn paint_light(ui: &egui::Ui, d: &Dialog, g: Geometry, active: Option<usize>, dr
     painter.rect_filled(Rect::from_min_size(name_pos - vec2(4.0, 2.0), galley.size() + vec2(8.0, 4.0)), 3.0, t.panel);
     painter.galley(name_pos, galley, t.warning);
     if drag.is_some() {
-        let [rotation, height] = [("lightRotation", vectorcraft_three_d::DEFAULT_LIGHT.0), ("lightHeight", vectorcraft_three_d::DEFAULT_LIGHT.1)]
+        let [rotation, height] = [("lightRotation", redrob_vector_three_d::DEFAULT_LIGHT.0), ("lightHeight", redrob_vector_three_d::DEFAULT_LIGHT.1)]
             .map(|(k, v)| d.f64(k, v));
         let text = format!("{} {rotation:.1}°   {} {height:.1}°", tl!("Rotation"), tl!("Height"));
         let galley = painter.layout_no_wrap(text, FontId::proportional(11.5), t.text_strong);

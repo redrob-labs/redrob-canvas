@@ -29,11 +29,11 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use usvg::roxmltree;
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{CharStyle, Dash, Justify, LineCap, LineJoin, ParaDirection, ParaStyle, StrokeLayer, TextKind, TextObject, TextRun};
-use vectorcraft_geom::kurbo::ParamCurveArclen;
-use vectorcraft_geom::{Affine, BezPath, PathData, Point, Rect};
-use vectorcraft_text::{FontDb, TextLayout};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{CharStyle, Dash, Justify, LineCap, LineJoin, ParaDirection, ParaStyle, StrokeLayer, TextKind, TextObject, TextRun};
+use redrob_vector_geom::kurbo::ParamCurveArclen;
+use redrob_vector_geom::{Affine, BezPath, PathData, Point, Rect};
+use redrob_vector_text::{FontDb, TextLayout};
 
 use super::css::{Styles, XNode};
 use super::{DEFAULT_FONT_SIZE, PT_PER_IN, href, vector_effect};
@@ -590,7 +590,7 @@ impl Ctx {
         }
         let style = self.elem(paras.first().copied().unwrap_or(t)).style.clone();
         let mut obj = TextObject::point(Point::ZERO, &text, style);
-        obj.kind = TextKind::Area { frame: vectorcraft_geom::shapes::rectangle(frame) };
+        obj.kind = TextKind::Area { frame: redrob_vector_geom::shapes::rectangle(frame) };
         obj.xf = parse_transform(r.attribute("transform")) * origin;
         let servers = vec![(None, None); obj.runs.len()];
         let b = obj.xf.transform_rect_bbox(frame);
@@ -763,7 +763,7 @@ impl Ctx {
         // strong character: pinned (on every paragraph) when that would read as right to left.
         if self.css.prop(t, "direction").is_some_and(|d| d.trim() == "rtl") {
             obj.edit_paras(None, |pa| pa.direction = Some(ParaDirection::RightToLeft));
-        } else if obj.plain_text().split('\n').any(|p| vectorcraft_text::paragraph_is_rtl(p, None)) {
+        } else if obj.plain_text().split('\n').any(|p| redrob_vector_text::paragraph_is_rtl(p, None)) {
             obj.edit_paras(None, |pa| pa.direction = Some(ParaDirection::LeftToRight));
         }
         // The placeholder covers the text (laid out when a paint server needs its bounding box).
@@ -982,7 +982,7 @@ fn point_text(cells: &[Cell]) -> TextObject {
 }
 
 fn measure(t: &TextObject) -> TextLayout {
-    vectorcraft_text::layout(FontDb::global(), t)
+    redrob_vector_text::layout(FontDb::global(), t)
 }
 
 /// Total advance of a laid-out single line.

@@ -1,9 +1,9 @@
 //! Brushes and symbols: commands, tools, rendering and persistence.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, Node, NodeKind};
-use vectorcraft_geom::Rect;
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
+use redrob_vector_doc::{Document, Node, NodeKind};
+use redrob_vector_geom::Rect;
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 
 use super::*;
 
@@ -199,7 +199,7 @@ fn pressure_round(s: &mut Session) {
     s.execute("brush.options", &json!({"name": "3 pt. Round", "params": params})).unwrap();
 }
 
-fn pressure_of(s: &Session, id: NodeId) -> Option<vectorcraft_doc::PressureProfile> {
+fn pressure_of(s: &Session, id: NodeId) -> Option<redrob_vector_doc::PressureProfile> {
     node(s, id).appearance.stroke().and_then(|st| st.pressure.clone())
 }
 
@@ -229,20 +229,20 @@ fn paintbrush_records_pen_pressure_on_the_stroke() {
     assert_eq!(pressure_of(&s, mouse), None, "a mouse presses fully: nothing to record");
     // Drawn: thin where the pen pressed lightly, 6 pt where it pressed fully.
     let doc: Document = (*s.doc().unwrap().doc).clone();
-    let art = |d: &Document, id: NodeId| vectorcraft_brush::node_pieces(d, d.node(id).unwrap()).unwrap();
-    let heavy_end = vectorcraft_brush::pieces_bounds(&art(&doc, pen)).unwrap();
+    let art = |d: &Document, id: NodeId| redrob_vector_brush::node_pieces(d, d.node(id).unwrap()).unwrap();
+    let heavy_end = redrob_vector_brush::pieces_bounds(&art(&doc, pen)).unwrap();
     assert!((heavy_end.height() - 6.0).abs() < 0.3, "{heavy_end:?}");
-    let even = vectorcraft_brush::pieces_bounds(&art(&doc, mouse)).unwrap();
+    let even = redrob_vector_brush::pieces_bounds(&art(&doc, mouse)).unwrap();
     assert!((even.height() - 3.0).abs() < 0.1, "no pressure draws the size itself: {even:?}");
     // Saved and reopened as it was.
-    let back = vectorcraft_format::load(&vectorcraft_format::save(&doc, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(&doc, false)).unwrap();
     assert_eq!(back.node(pen).unwrap().appearance.stroke().unwrap().pressure, Some(p));
     // SVG and PDF draw the brush through the same stroke code: without the pressure they differ.
     let mut flat = doc.clone();
     flat.node_mut(pen).unwrap().appearance.stroke_mut().unwrap().pressure = None;
-    assert_ne!(vectorcraft_svg::export(&doc, &Default::default()), vectorcraft_svg::export(&flat, &Default::default()));
+    assert_ne!(redrob_vector_svg::export(&doc, &Default::default()), redrob_vector_svg::export(&flat, &Default::default()));
     let pdf = |d: &Document| {
-        vectorcraft_pdf::export(d, &vectorcraft_pdf::PdfOptions { created: Some(0), ..vectorcraft_pdf::PdfOptions::uncompressed() }).unwrap()
+        redrob_vector_pdf::export(d, &redrob_vector_pdf::PdfOptions { created: Some(0), ..redrob_vector_pdf::PdfOptions::uncompressed() }).unwrap()
     };
     assert_ne!(pdf(&doc), pdf(&flat));
 }
@@ -262,7 +262,7 @@ fn continuing_a_stroke_joins_its_pressure() {
     s.execute("path.freehand", &json!({"points": [[0, 150, 1], [-100, 150, 0]], "style": "brush", "extend": {"id": id.0, "end": "start"}})).unwrap();
     let p = pressure_of(&s, id).unwrap();
     assert!(p.at(0.0) < 0.05 && (p.at(0.5) - 1.0).abs() < 0.05, "{p:?}");
-    assert_eq!(p.at(1.0), vectorcraft_doc::PressureProfile::MID, "the old part had no pressure");
+    assert_eq!(p.at(1.0), redrob_vector_doc::PressureProfile::MID, "the old part had no pressure");
 }
 
 /// Pen pressure belongs to its path: new art, graphic styles and Brush Options' edits leave it.
@@ -300,8 +300,8 @@ fn brush_options_set_variation_modes() {
 /// The bounds of the brush art `id`'s strokes draw.
 fn brushed_bounds(s: &Session, id: NodeId) -> Rect {
     let st = s.doc().unwrap();
-    let pieces = vectorcraft_brush::node_pieces(&st.doc, &node(s, id)).expect("brushed");
-    vectorcraft_brush::pieces_bounds(&pieces).expect("draws")
+    let pieces = redrob_vector_brush::node_pieces(&st.doc, &node(s, id)).expect("brushed");
+    redrob_vector_brush::pieces_bounds(&pieces).expect("draws")
 }
 
 /// Scatter, Art and Pattern Brush Options: the params reach the brush and every stroke painted
@@ -555,7 +555,7 @@ fn brushed_strokes_and_instances_render() {
     let l = line(&mut s);
     s.execute("brush.apply", &json!({"name": "Chain", "ids": [l.0]})).unwrap();
     let doc = s.doc().unwrap().doc.clone();
-    let img = vectorcraft_render::Renderer::new().render_region(&doc, Rect::new(0.0, 0.0, 400.0, 300.0), 1.0, true);
+    let img = redrob_vector_render::Renderer::new().render_region(&doc, Rect::new(0.0, 0.0, 400.0, 300.0), 1.0, true);
     let dark = |x: u32, y: u32| {
         let p = img.pixel(x, y);
         (p[0] as u32 + p[1] as u32 + p[2] as u32) < 300
@@ -575,10 +575,10 @@ fn brushes_and_symbols_survive_vectorcraft_round_trip() {
     let l = line(&mut s);
     s.execute("brush.apply", &json!({"name": "Mine", "ids": [l.0]})).unwrap();
     let doc = s.doc().unwrap().doc.clone();
-    let bytes = vectorcraft_format::save(&doc, false);
-    let back = vectorcraft_format::load(&bytes).unwrap();
-    assert_eq!(vectorcraft_brush::library(&back), vectorcraft_brush::library(&doc));
-    assert_eq!(vectorcraft_brush::find(&back, "Mine").map(|b| b.kind.type_id()), Some("calligraphic"));
+    let bytes = redrob_vector_format::save(&doc, false);
+    let back = redrob_vector_format::load(&bytes).unwrap();
+    assert_eq!(redrob_vector_brush::library(&back), redrob_vector_brush::library(&doc));
+    assert_eq!(redrob_vector_brush::find(&back, "Mine").map(|b| b.kind.type_id()), Some("calligraphic"));
     assert_eq!(back.symbols, doc.symbols);
     assert_eq!(back.unknown.get("symbolSizes"), doc.unknown.get("symbolSizes"));
     let bl = back.node(l).unwrap();

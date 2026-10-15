@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-pdf"
+name = "redrob-layout-pdf"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,14 +9,14 @@ description = "DesignCraft PDF export (krilla): real text with embedded font sub
 workspace = true
 
 [dependencies]
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
-designcraft-compose = { workspace = true }
-craft-pdf = { workspace = true, features = ["write-pdf"] }
+redrob-layout-geom = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-doc = { workspace = true }
+redrob-layout-fonts = { workspace = true }
+redrob-layout-compose = { workspace = true }
+redrob-craft-pdf = { workspace = true, features = ["write-pdf"] }
 krilla-svg = { workspace = true }
-designcraft-images = { workspace = true }
+redrob-layout-images = { workspace = true }
 image = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
@@ -28,4 +28,4 @@ hayro-interpret = { version = "0.7.0", default-features = false, features = ["em
 hayro-cmap = "0.1"
 kurbo = { workspace = true }
 tiff = { workspace = true }
-designcraft-fonts = { workspace = true, features = ["testing"] }
+redrob-layout-fonts = { workspace = true, features = ["testing"] }

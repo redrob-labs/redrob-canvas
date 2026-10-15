@@ -1,20 +1,20 @@
-//! `plugin.*` commands: sandboxed WebAssembly plug-ins (`vectorcraft-plugins`).
+//! `plugin.*` commands: sandboxed WebAssembly plug-ins (`redrob-vector-plugins`).
 //!
 //! Plug-ins are installed per process (`plugin.install`, or every `*.wasm` in the Additional
 //! Plug-ins Folder preference) and listed with `plugin.list` / `plugin.info`. Object filters run
 //! with `plugin.run` on the selected paths and compound paths (one undo step, transactional: a
 //! plug-in that fails leaves the document untouched); live-effect plug-ins are applied like any
-//! effect (`effect.apply {effect: "plugin.<id>"}`) and drawn by `vectorcraft-effects`.
+//! effect (`effect.apply {effect: "plugin.<id>"}`) and drawn by `redrob-vector-effects`.
 
 use std::sync::{Arc, Mutex};
 
 use serde_json::{Map, Value, json};
-use vectorcraft_plugins::{Kind, Plugin, effect, objects, registry};
+use redrob_vector_plugins::{Kind, Plugin, effect, objects, registry};
 
 use super::*;
 
 /// What a plug-in error looks like to the user.
-fn err(e: vectorcraft_plugins::Error) -> EngineError {
+fn err(e: redrob_vector_plugins::Error) -> EngineError {
     EngineError::Other(e.to_string())
 }
 
@@ -48,7 +48,7 @@ fn plugin_params(p: &Value) -> Value {
 
 fn plugin_by_id(cmd: &str, p: &Value) -> Result<Arc<Plugin>> {
     let id = str_param(p, "id").ok_or_else(|| bad(cmd, "missing `id` (see plugin.list)"))?;
-    registry::get(id).ok_or_else(|| err(vectorcraft_plugins::Error::NotFound(id.into())))
+    registry::get(id).ok_or_else(|| err(redrob_vector_plugins::Error::NotFound(id.into())))
 }
 
 fn run(s: &mut Session, p: &Value) -> Result<Value> {
@@ -66,7 +66,7 @@ fn run(s: &mut Session, p: &Value) -> Result<Value> {
     let parent = st.insertion_parent();
     let bounds = st.doc.bounds_of(&inputs, false);
     let board = bounds.and_then(|b| st.doc.artboard_at(b.center())).and_then(|i| st.doc.artboards.get(i)).or(st.doc.artboards.first());
-    let rect = |r: vectorcraft_geom::Rect| json!([r.x0, r.y0, r.x1, r.y1]);
+    let rect = |r: redrob_vector_geom::Rect| json!([r.x0, r.y0, r.x1, r.y1]);
     params["_context"] = json!({"mode": "filter", "bounds": bounds.map(rect), "artboard": board.map(|a| rect(a.rect))});
     let input = objects::encode_input(&st.doc, &inputs);
     let params = serde_json::to_vec(&params).map_err(|e| bad(C, e.to_string()))?;
@@ -92,8 +92,8 @@ fn install(_: &mut Session, p: &Value) -> Result<Value> {
             if data.len() > MAX_DATA_CHARS {
                 return Err(bad(C, "`dataBase64` is larger than the module limit"));
             }
-            let bytes = vectorcraft_format::base64_decode(data).ok_or_else(|| bad(C, "`dataBase64` is not valid base64"))?;
-            let plugin = Plugin::load(&bytes, vectorcraft_plugins::Limits::default()).map_err(err)?;
+            let bytes = redrob_vector_format::base64_decode(data).ok_or_else(|| bad(C, "`dataBase64` is not valid base64"))?;
+            let plugin = Plugin::load(&bytes, redrob_vector_plugins::Limits::default()).map_err(err)?;
             match str_param(p, "name") {
                 Some(name) => plugin.with_source(name),
                 None => plugin,
@@ -111,7 +111,7 @@ fn install(_: &mut Session, p: &Value) -> Result<Value> {
 #[cfg(not(target_arch = "wasm32"))]
 fn load_path(path: &str) -> Result<Plugin> {
     crate::file_access::check_read(path).map_err(EngineError::Other)?;
-    registry::load_file(std::path::Path::new(path), vectorcraft_plugins::Limits::default()).map_err(err)
+    registry::load_file(std::path::Path::new(path), redrob_vector_plugins::Limits::default()).map_err(err)
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -188,7 +188,7 @@ fn info(_: &mut Session, p: &Value) -> Result<Value> {
 
 fn remove(_: &mut Session, p: &Value) -> Result<Value> {
     let id = str_param(p, "id").ok_or_else(|| bad("plugin.remove", "missing `id`"))?;
-    if registry::remove(id) { Ok(json!({"removed": id})) } else { Err(err(vectorcraft_plugins::Error::NotFound(id.into()))) }
+    if registry::remove(id) { Ok(json!({"removed": id})) } else { Err(err(redrob_vector_plugins::Error::NotFound(id.into()))) }
 }
 
 pub fn specs() -> Vec<CommandSpec> {

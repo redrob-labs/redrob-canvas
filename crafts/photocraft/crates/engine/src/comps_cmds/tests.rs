@@ -1,7 +1,7 @@
 use super::*;
-use photocraft_color::BlendMode;
-use photocraft_doc::Layer;
-use photocraft_geom::Rect;
+use redrob_photo_color::BlendMode;
+use redrob_photo_doc::Layer;
+use redrob_photo_geom::Rect;
 
 fn session(depth: u32) -> (Session, LayerId, LayerId) {
     let mut s = Session::new();
@@ -10,9 +10,9 @@ fn session(depth: u32) -> (Session, LayerId, LayerId) {
         .edit("setup", |doc, _| {
             let fmt = doc.pixel_format();
             let mut a = Layer::raster("A", fmt);
-            a.surface_mut().unwrap().fill_rect(Rect::new(4, 4, 14, 14), &photocraft_raster::from_rgba(&fmt, [1.0, 0.0, 0.0, 1.0]));
+            a.surface_mut().unwrap().fill_rect(Rect::new(4, 4, 14, 14), &redrob_photo_raster::from_rgba(&fmt, [1.0, 0.0, 0.0, 1.0]));
             let mut b = Layer::raster("B", fmt);
-            b.surface_mut().unwrap().fill_rect(Rect::new(30, 20, 40, 30), &photocraft_raster::from_rgba(&fmt, [0.0, 0.0, 1.0, 1.0]));
+            b.surface_mut().unwrap().fill_rect(Rect::new(30, 20, 40, 30), &redrob_photo_raster::from_rgba(&fmt, [0.0, 0.0, 1.0, 1.0]));
             let (ia, ib) = (a.id, b.id);
             doc.layers.push(a);
             doc.layers.push(b);
@@ -247,8 +247,8 @@ fn export_comps_to_files_naming() {
     assert!(files[1].ends_with("doc_0001_No_B.png"), "{files:?}");
     // Each file shows its comp: B's blue square only in the first.
     let blue = |path: &str| {
-        let doc = photocraft_io::import("x.png", &std::fs::read(path).unwrap()).unwrap().document;
-        photocraft_compose::render(&doc, Rect::new(35, 25, 36, 26)).px[0]
+        let doc = redrob_photo_io::import("x.png", &std::fs::read(path).unwrap()).unwrap().document;
+        redrob_photo_compose::render(&doc, Rect::new(35, 25, 36, 26)).px[0]
     };
     assert!(blue(&files[0])[2] > 0.9 && blue(&files[0])[0] < 0.1);
     assert!(blue(&files[1])[2] > 0.9 && blue(&files[1])[0] > 0.9);

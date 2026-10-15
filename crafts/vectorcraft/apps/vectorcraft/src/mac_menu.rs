@@ -1,6 +1,6 @@
 //! The macOS menu bar, through muda (Tauri's menu crate: AppKit menus behind a safe API, no GTK
 //! with default features off). The menus, their Mac layout and how their keys reach VectorCraft
-//! are in `vectorcraft_ui_egui::native_menu`; this file only builds and updates the `NSMenu`s.
+//! are in `redrob_vector_ui_egui::native_menu`; this file only builds and updates the `NSMenu`s.
 //!
 //! - Item ids are the items' places (`vc12`, depth first): one command can run from several items
 //!   (each language of VectorCraft › Language is `app.language` with its own code).
@@ -24,8 +24,8 @@ use muda::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu
 use objc2::MainThreadMarker;
 use objc2_app_kit::{NSApplication, NSEventModifierFlags, NSEventType, NSMenuDidBeginTrackingNotification, NSMenuDidEndTrackingNotification};
 use objc2_foundation::{NSNotification, NSNotificationCenter};
-use vectorcraft_ui_egui::VectorcraftApp;
-use vectorcraft_ui_egui::native_menu::{self, Backend, Event, MenuBar, MenuRole, Node, Standard};
+use redrob_vector_ui_egui::VectorcraftApp;
+use redrob_vector_ui_egui::native_menu::{self, Backend, Event, MenuBar, MenuRole, Node, Standard};
 
 // AppKit can deliver window input while its system menu is still tracking (especially with
 // asynchronous menu presentation). Keep the native tracking state separate from egui popups.
@@ -182,7 +182,7 @@ fn append(sub: &Submenu, nodes: &[Node], entries: &mut Vec<Entry>) -> muda::Resu
                 sub.append(&s)?;
             }
             Node::Standard(item) => {
-                let text = Some(vectorcraft_ui_egui::i18n::t(item.label()));
+                let text = Some(redrob_vector_ui_egui::i18n::t(item.label()));
                 let p = match item {
                     Standard::Services => PredefinedMenuItem::services(text),
                     Standard::ShowAll => PredefinedMenuItem::show_all(text),
@@ -193,7 +193,7 @@ fn append(sub: &Submenu, nodes: &[Node], entries: &mut Vec<Entry>) -> muda::Resu
             }
             Node::Item(it) => {
                 let id = format!("vc{}", entries.len());
-                let chord = it.shortcut.and_then(vectorcraft_ui_egui::shortcuts::parse).filter(native_menu::native_ok);
+                let chord = it.shortcut.and_then(redrob_vector_ui_egui::shortcuts::parse).filter(native_menu::native_ok);
                 let accel = chord.as_ref().and_then(accelerator);
                 let handle = match it.checked {
                     Some(c) => {
@@ -298,9 +298,9 @@ impl Backend for MacMenu {
 /// Install the menu bar (in eframe's creator closure, so winit's default menu doesn't stay up).
 /// `None` keeps the menus in the window: AppKit refused them (logged), never a crash.
 pub fn install(ctx: &egui::Context, app: &VectorcraftApp) -> Option<native_menu::NativeMenu> {
-    vectorcraft_ui_egui::i18n::set_current(app.ui_language());
+    redrob_vector_ui_egui::i18n::set_current(app.ui_language());
     let bar = native_menu::layout(app).bar;
-    let built = vectorcraft_engine::guard::catch_panic(|| {
+    let built = redrob_vector_engine::guard::catch_panic(|| {
         let mut menu = MacMenu::new(ctx);
         menu.build(&bar).map(|()| menu)
     });
@@ -431,11 +431,11 @@ mod tests {
     /// Every shortcut the Mac menu shows as a key equivalent has one AppKit can match.
     #[test]
     fn every_menu_shortcut_maps_to_a_key_equivalent() {
-        let app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         let bar = native_menu::layout(&app).bar;
         let mut native = 0;
         for it in bar.items() {
-            let Some(c) = it.shortcut.and_then(vectorcraft_ui_egui::shortcuts::parse).filter(native_menu::native_ok) else { continue };
+            let Some(c) = it.shortcut.and_then(redrob_vector_ui_egui::shortcuts::parse).filter(native_menu::native_ok) else { continue };
             assert!(accelerator(&c).is_some(), "{:?} ({:?}) has no key equivalent", it.shortcut, it.command);
             native += 1;
         }
@@ -444,7 +444,7 @@ mod tests {
 
     #[test]
     fn control_and_command_stay_distinct() {
-        let parse = |s| vectorcraft_ui_egui::shortcuts::parse(s).and_then(|c| accelerator(&c));
+        let parse = |s| redrob_vector_ui_egui::shortcuts::parse(s).and_then(|c| accelerator(&c));
         assert_ne!(parse("Cmd+M"), parse("Ctrl+Cmd+M"));
         assert!(parse("Cmd+M").is_some());
     }

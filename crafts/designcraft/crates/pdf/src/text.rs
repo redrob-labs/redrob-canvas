@@ -10,11 +10,11 @@ use std::collections::HashMap;
 use std::ops::Range;
 use std::sync::Arc;
 
-use craft_pdf::write::backend as krilla;
-use designcraft_compose::{ComposedStory, FrameText, PlacedGlyph};
-use designcraft_fonts::{FontDb, FontFace};
-use designcraft_geom::kurbo::Shape as _;
-use designcraft_geom::{Affine, BezPath, Rect};
+use redrob_craft_pdf::write::backend as krilla;
+use redrob_layout_compose::{ComposedStory, FrameText, PlacedGlyph};
+use redrob_layout_fonts::{FontDb, FontFace};
+use redrob_layout_geom::kurbo::Shape as _;
+use redrob_layout_geom::{Affine, BezPath, Rect};
 use krilla::geom::Point;
 use krilla::num::NormalizedF32;
 use krilla::paint::{Fill, FillRule, Paint, Stroke};
@@ -28,8 +28,8 @@ impl Exporter<'_> {
     /// A text run's paint: solid, or a gradient spanning the frame's box (`area`, text space),
     /// for glyphs drawn under `origin` (text space ← run space).
     fn text_paint(&mut self, swatch: &str, tint: f32, origin: Affine, area: Rect) -> Option<Paint> {
-        if designcraft_color::swatch::resolve_gradient(&self.doc.swatches, swatch).is_some() && origin.determinant().abs() > 1e-12 {
-            let fill = designcraft_doc::Fill { swatch: swatch.into(), tint, ..designcraft_doc::Fill::none() };
+        if redrob_layout_color::swatch::resolve_gradient(&self.doc.swatches, swatch).is_some() && origin.determinant().abs() > 1e-12 {
+            let fill = redrob_layout_doc::Fill { swatch: swatch.into(), tint, ..redrob_layout_doc::Fill::none() };
             return self.fill_paint_in(&fill, self.text_area.unwrap_or(area), origin.inverse());
         }
         self.swatch_color(swatch, tint).map(Into::into)
@@ -75,8 +75,8 @@ fn same_run(a: &PlacedGlyph, b: &PlacedGlyph) -> bool {
 }
 
 /// Merge bars of one paint layer; underlines and strikes must never be merged together.
-fn text_rules(cs: &ComposedStory, ft: &FrameText, underline: bool) -> Vec<(designcraft_compose::Rule, Rect)> {
-    let mut bars: Vec<(designcraft_compose::Rule, Rect)> = Vec::new();
+fn text_rules(cs: &ComposedStory, ft: &FrameText, underline: bool) -> Vec<(redrob_layout_compose::Rule, Rect)> {
+    let mut bars: Vec<(redrob_layout_compose::Rule, Rect)> = Vec::new();
     for line in &ft.lines {
         for g in line.glyphs.iter().filter(|g| g.visible) {
             let style = &cs.styles[g.style as usize];
@@ -84,7 +84,7 @@ fn text_rules(cs: &ComposedStory, ft: &FrameText, underline: bool) -> Vec<(desig
             if !on {
                 continue;
             }
-            let rect = rule.rect(g.x, g.x + g.adv, designcraft_compose::rule_baseline(style, line, g));
+            let rect = rule.rect(g.x, g.x + g.adv, redrob_layout_compose::rule_baseline(style, line, g));
             match bars.last_mut() {
                 Some((last_rule, last)) if last_rule == rule && (last.y0 - rect.y0).abs() < 1e-6 && (rect.x0 - last.x1).abs() < 0.5 => {
                     last.x1 = rect.x1;
@@ -103,7 +103,7 @@ impl Exporter<'_> {
             .or_insert_with(|| {
                 // Keep the existing outline fallback and warning when embedding fails.
                 let variations = face.is_variable().then_some(face.coords.as_slice());
-                craft_pdf::write::font(face.data(), face.index(), variations)
+                redrob_craft_pdf::write::font(face.data(), face.index(), variations)
                     .inspect_err(|error| log::warn!("PDF font `{} {}` could not be embedded: {error}", face.family, face.style))
                     .ok()
             })
@@ -250,14 +250,14 @@ impl Exporter<'_> {
                 let st = &seg.stroke;
                 let Some(col) = self.swatch_color(&st.color, st.tint) else { continue };
                 let (cap, dash) = match &st.kind {
-                    designcraft_doc::StrokeType::Dashed { pattern } if pattern.iter().any(|v| *v > 0.0) => {
+                    redrob_layout_doc::StrokeType::Dashed { pattern } if pattern.iter().any(|v| *v > 0.0) => {
                         let mut pat: Vec<f32> = pattern.iter().map(|v| v.max(0.0) as f32).collect();
                         if pat.len() % 2 == 1 {
                             pat.extend(pat.clone());
                         }
                         (krilla::paint::LineCap::Butt, Some(krilla::paint::StrokeDash { array: pat, offset: 0.0 }))
                     }
-                    designcraft_doc::StrokeType::Dotted => {
+                    redrob_layout_doc::StrokeType::Dotted => {
                         (krilla::paint::LineCap::Round, Some(krilla::paint::StrokeDash { array: vec![0.0, (st.weight * 2.0) as f32], offset: 0.0 }))
                     }
                     _ => (krilla::paint::LineCap::Square, None),
@@ -335,7 +335,7 @@ impl Exporter<'_> {
         let end = glyphs.last().map_or(g0.x, |g| g.x + g.adv);
         let run_area = Rect::new(g0.x, baseline - size, end.max(g0.x + 1.0), baseline + size * 0.25);
         let fill = self.text_paint(&st.fill, st.fill_tint, origin, run_area);
-        let stroke = if st.stroke != designcraft_color::swatch::NONE && st.stroke_weight > 0.0 {
+        let stroke = if st.stroke != redrob_layout_color::swatch::NONE && st.stroke_weight > 0.0 {
             self.text_paint(&st.stroke, st.stroke_tint, origin, run_area)
         } else {
             None
@@ -443,9 +443,9 @@ impl Exporter<'_> {
 
     /// One line of plain text in the bundled UI face (page information mark).
     pub(crate) fn plain_text(&mut self, s: &mut Surface, text: &str, at: (f64, f64), size: f64, color: krilla::color::Color) {
-        let face = FontDb::global().face(designcraft_fonts::FALLBACK_FAMILY, "Regular");
+        let face = FontDb::global().face(redrob_layout_fonts::FALLBACK_FAMILY, "Regular");
         let Some(font) = self.font(&face) else { return };
-        let shaped = designcraft_fonts::shape(&face, text, &[], |c| c);
+        let shaped = redrob_layout_fonts::shape(&face, text, &[], |c| c);
         let upem = face.upem as f32;
         let glyphs: Vec<KrillaGlyph> = shaped
             .iter()

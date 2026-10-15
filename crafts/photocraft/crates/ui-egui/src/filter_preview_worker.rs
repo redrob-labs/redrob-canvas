@@ -6,12 +6,12 @@
 
 use std::sync::mpsc::{Receiver, TryRecvError};
 
-use photocraft_engine::jobs::JobCtx;
+use redrob_photo_engine::jobs::JobCtx;
 
 use crate::filter_dialog::FilterPreviewKey;
 
 pub(crate) struct Computed {
-    pub result: Option<(std::sync::Arc<photocraft_doc::Document>, photocraft_compose::Buffer)>,
+    pub result: Option<(std::sync::Arc<redrob_photo_doc::Document>, redrob_photo_compose::Buffer)>,
     pub ms: f64,
 }
 
@@ -112,7 +112,7 @@ mod tests {
 
     fn key(dialog: u64, revision: u64, colors: u32) -> FilterPreviewKey {
         FilterPreviewKey {
-            doc: photocraft_doc::DocId(1),
+            doc: redrob_photo_doc::DocId(1),
             revision,
             dialog,
             active: None,
@@ -172,7 +172,7 @@ mod tests {
         assert_ne!(original, key(1, 3, 64));
         assert_ne!(original, key(1, 2, 128));
         let mut layer = original.clone();
-        layer.active = Some(photocraft_doc::LayerId(4));
+        layer.active = Some(redrob_photo_doc::LayerId(4));
         assert_ne!(original, layer);
     }
 

@@ -13,10 +13,10 @@
 
 use egui::{Sense, vec2};
 use serde_json::{Value, json};
-use vectorcraft_color::gradient::move_stop;
-use vectorcraft_color::{Color, FreeformPoint, GradientKind, GradientStop, Paint};
-use vectorcraft_geom::Point;
-use vectorcraft_tools::params::color_json;
+use redrob_vector_color::gradient::move_stop;
+use redrob_vector_color::{Color, FreeformPoint, GradientKind, GradientStop, Paint};
+use redrob_vector_geom::Point;
+use redrob_vector_tools::params::color_json;
 
 use super::{DialogResult, DialogSpec};
 use crate::VectorcraftApp;
@@ -265,8 +265,8 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
 
 #[cfg(test)]
 mod tests {
-    use vectorcraft_engine::Session;
-    use vectorcraft_tools::{PointerEvent, PointerKind};
+    use redrob_vector_engine::Session;
+    use redrob_vector_tools::{PointerEvent, PointerKind};
 
     use super::*;
 

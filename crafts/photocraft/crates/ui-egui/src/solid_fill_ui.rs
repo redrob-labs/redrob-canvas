@@ -5,9 +5,9 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use egui::{Color32, Rect, Stroke, StrokeKind, pos2, vec2};
-use photocraft_color::Color;
-use photocraft_doc::{DocId, Document, Fill, LayerContent, LayerId};
-use photocraft_engine::solid_fill_cmds as cmds;
+use redrob_photo_color::Color;
+use redrob_photo_doc::{DocId, Document, Fill, LayerContent, LayerId};
+use redrob_photo_engine::solid_fill_cmds as cmds;
 use serde_json::{Map, Value, json};
 
 use crate::{PhotocraftApp, color_picker_ui, theme::Tokens};
@@ -105,7 +105,7 @@ pub(crate) fn display_doc(app: &mut PhotocraftApp, idx: usize) -> Option<(Arc<Do
         component.to_bits().hash(&mut hash);
     }
     let key = (1 << 36) | (hash.finish() & ((1 << 36) - 1));
-    let shown = Arc::new(photocraft_engine::mode_cmds::display_document(&doc).unwrap_or(doc));
+    let shown = Arc::new(redrob_photo_engine::mode_cmds::display_document(&doc).unwrap_or(doc));
     app.solid_fill_preview = Some(Preview { document: st.doc.id, revision: st.revision, dialog: d.id, layer, color, shown: shown.clone(), key });
     Some((shown, key))
 }

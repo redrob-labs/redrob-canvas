@@ -4,8 +4,8 @@
 use std::path::PathBuf;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::SavedView;
-use vectorcraft_geom::Point;
+use redrob_vector_doc::SavedView;
+use redrob_vector_geom::Point;
 
 use super::*;
 use crate::cmd::fileio::{SaveMode, save_plan};
@@ -33,7 +33,7 @@ fn path(d: &std::path::Path, name: &str) -> String {
 }
 
 fn b64(v: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
 }
 
 fn objects(s: &Session) -> usize {
@@ -108,7 +108,7 @@ fn another_format_without_a_path_hands_the_bytes_back() {
     let r = s.execute("document.save", &json!({"format": "svg"})).unwrap();
     assert!(String::from_utf8(b64(&r)).unwrap().starts_with("<?xml"));
     assert_eq!(r["name"], "a.svg");
-    assert!(vectorcraft_format::sniff(&std::fs::read(&native).unwrap()), "the native file isn't overwritten with SVG");
+    assert!(redrob_vector_format::sniff(&std::fs::read(&native).unwrap()), "the native file isn't overwritten with SVG");
     let _ = std::fs::remove_dir_all(d);
 }
 
@@ -199,11 +199,11 @@ fn templates_suggest_a_name_in_the_templates_folder_and_open_untitled() {
 
 /// A native file as an older version wrote it: under the former name, or format version 1.
 fn old_file(legacy: bool) -> Vec<u8> {
-    let text = String::from_utf8(vectorcraft_format::save(&vectorcraft_doc::Document::new(50.0, 50.0), false)).unwrap();
+    let text = String::from_utf8(redrob_vector_format::save(&redrob_vector_doc::Document::new(50.0, 50.0), false)).unwrap();
     let text = if legacy {
         text.replacen("\"format\":\"vectorcraft\"", "\"format\":\"drawcraft\"", 1)
     } else {
-        text.replacen(&format!("\"version\":{}", vectorcraft_format::VERSION), "\"version\":1", 1)
+        text.replacen(&format!("\"version\":{}", redrob_vector_format::VERSION), "\"version\":1", 1)
     };
     text.into_bytes()
 }
@@ -251,7 +251,7 @@ fn the_saved_view_round_trips_without_dirtying() {
     s.execute("document.open", &json!({"path": native})).unwrap();
     assert_eq!(s.doc().unwrap().view.as_ref(), Some(&view));
     // Files without a view (older ones) open with none; SVG doesn't carry it.
-    let doc = vectorcraft_format::load(&vectorcraft_format::save(&vectorcraft_doc::Document::new(5.0, 5.0), false)).unwrap();
+    let doc = redrob_vector_format::load(&redrob_vector_format::save(&redrob_vector_doc::Document::new(5.0, 5.0), false)).unwrap();
     assert_eq!(doc.last_view, None);
     let svg = path(&d, "v.svg");
     s.execute("document.save", &json!({"path": svg})).unwrap();
@@ -273,7 +273,7 @@ fn open_layers_rows_round_trip_without_dirtying() {
     let native = path(&d, "rows.vectorcraft");
     s.execute("document.save", &json!({"path": native})).unwrap();
     let bytes = std::fs::read(&native).unwrap();
-    assert_eq!(vectorcraft_format::load(&bytes).unwrap().layers_open, None);
+    assert_eq!(redrob_vector_format::load(&bytes).unwrap().layers_open, None);
     // Opening the group and closing the layer is view state: not an edit, kept by the file.
     let st = s.doc_mut().unwrap();
     st.layers_open.set(g, true);
@@ -286,7 +286,7 @@ fn open_layers_rows_round_trip_without_dirtying() {
     let open = &again.doc().unwrap().layers_open;
     assert!(open.contains(g) && !open.contains(layer));
     // Older files (none saved) open with the top-level layers open.
-    let doc = vectorcraft_format::load(&vectorcraft_format::save(&vectorcraft_doc::Document::new(5.0, 5.0), false)).unwrap();
+    let doc = redrob_vector_format::load(&redrob_vector_format::save(&redrob_vector_doc::Document::new(5.0, 5.0), false)).unwrap();
     assert_eq!(doc.layers_open, None);
     let _ = std::fs::remove_dir_all(d);
 }
@@ -316,7 +316,7 @@ fn document_color_mode_is_one_command_with_a_hidden_alias() {
     let before = s.doc().unwrap().doc.clone();
     let r = s.execute("file.documentColorMode", &json!({"mode": "rgb", "convert": false})).unwrap();
     assert_eq!(r["changed"], 0);
-    assert_eq!(s.doc().unwrap().doc.color_mode, vectorcraft_doc::ColorMode::Rgb);
+    assert_eq!(s.doc().unwrap().doc.color_mode, redrob_vector_doc::ColorMode::Rgb);
     assert_eq!(s.doc().unwrap().doc.layers, before.layers, "colours untouched");
     let e = s.execute("file.documentColorMode", &json!({"mode": "lab"})).unwrap_err().to_string();
     assert!(e.contains("file.documentColorMode"), "{e}");

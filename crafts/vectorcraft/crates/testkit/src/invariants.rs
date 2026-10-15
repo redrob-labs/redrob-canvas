@@ -3,8 +3,8 @@
 use std::collections::HashSet;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, NodeKind};
-use vectorcraft_engine::Session;
+use redrob_vector_doc::{Document, NodeKind};
+use redrob_vector_engine::Session;
 
 /// Serialize a document to JSON (the canonical form for equality checks).
 pub fn doc_json(doc: &Document) -> Value {
@@ -91,8 +91,8 @@ pub fn check_session(s: &Session) -> Result<(), String> {
 /// `.vectorcraft` save → load → the JSON of the document and of what loaded, without `images`: a
 /// save keeps only the images in use, which must come back byte for byte.
 fn native_roundtrip(doc: &Document) -> Result<(Value, Value), String> {
-    let bytes = vectorcraft_format::save(doc, false);
-    let back = vectorcraft_format::load(&bytes).map_err(|e| format!("load: {e}"))?;
+    let bytes = redrob_vector_format::save(doc, false);
+    let back = redrob_vector_format::load(&bytes).map_err(|e| format!("load: {e}"))?;
     if let Some(k) = back.images.iter().find(|(k, b)| doc.images.get(*k).map(|d| &d.bytes) != Some(&b.bytes)).map(|(k, _)| k) {
         return Err(format!("native round trip changed image `{k}`"));
     }
@@ -156,8 +156,8 @@ pub fn json_approx_eq(a: &Value, b: &Value, rel: f64) -> bool {
 
 /// SVG export must not panic and must re-import.
 pub fn check_svg_roundtrip(doc: &Document) -> Result<Document, String> {
-    let svg = vectorcraft_svg::export(doc, &vectorcraft_svg::ExportOptions::default());
-    vectorcraft_svg::import(&svg).map_err(|e| format!("svg re-import: {e}\n{svg}"))
+    let svg = redrob_vector_svg::export(doc, &redrob_vector_svg::ExportOptions::default());
+    redrob_vector_svg::import(&svg).map_err(|e| format!("svg re-import: {e}\n{svg}"))
 }
 
 /// `document.inspect` must succeed and serialize.

@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-pathops"
+name = "redrob-vector-pathops"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,11 +9,11 @@ description = "VectorCraft path operations: booleans (Pathfinder), shape builder
 workspace = true
 
 [dependencies]
-vectorcraft-geom = { workspace = true }
+redrob-vector-geom = { workspace = true }
 kurbo = { workspace = true }
 thiserror = { workspace = true }
 linesweeper = { workspace = true }
 
 [dev-dependencies]
-vectorcraft-testkit = { workspace = true }
+redrob-vector-testkit = { workspace = true }
 proptest = { workspace = true }

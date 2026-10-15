@@ -2,7 +2,7 @@
 //! nearer faces covering them, irrespective of their winding or which side faces the camera.
 //! This preserves interiors visible through open ends and partial sweeps.
 
-use vectorcraft_geom::{PathData, Point, Rect, SubPath};
+use redrob_vector_geom::{PathData, Point, Rect, SubPath};
 
 use crate::{Face, MAX_FACES};
 
@@ -227,7 +227,7 @@ pub fn visible_faces(faces: &[Face]) -> Result<Vec<VisibleFace>, String> {
 mod tests {
     use super::*;
     use crate::{Edge, Revolve, revolve};
-    use vectorcraft_geom::{BezPath, Shape};
+    use redrob_vector_geom::{BezPath, Shape};
 
     fn face(rect: Rect, brightness: f64) -> Face {
         Face {

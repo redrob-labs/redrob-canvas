@@ -19,8 +19,8 @@ use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use egui::{Align2, Color32, FontId, Painter, Shape, Stroke};
-use photocraft_geom::{Rect as DRect, TILE_SIZE, TileCoord};
-use photocraft_raster::{Surface, Tile};
+use redrob_photo_geom::{Rect as DRect, TILE_SIZE, TileCoord};
+use redrob_photo_raster::{Surface, Tile};
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 
@@ -195,7 +195,7 @@ pub fn paint(app: &PhotocraftApp, ctx: &egui::Context, painter: &Painter, xf: &V
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_color::PixelFormat;
+    use redrob_photo_color::PixelFormat;
 
     /// The document rect of tile cell (tx, ty).
     fn cell(tx: i32, ty: i32) -> DRect {
@@ -258,7 +258,7 @@ mod tests {
         }
     }
 
-    /// `cargo test --release -p photocraft-ui-egui --lib tile_grouping_36mp -- --ignored --nocapture`
+    /// `cargo test --release -p redrob-photo-ui-egui --lib tile_grouping_36mp -- --ignored --nocapture`
     #[test]
     #[ignore = "benchmark"]
     fn tile_grouping_36mp() {

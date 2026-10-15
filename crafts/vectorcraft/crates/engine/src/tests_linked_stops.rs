@@ -2,8 +2,8 @@
 //! stops following swatch edits, spot stops on their plate and as Separation shadings in PDF.
 
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, GradientPaint, GradientStop, Paint};
-use vectorcraft_render::proof;
+use redrob_vector_color::{Color, GradientPaint, GradientStop, Paint};
+use redrob_vector_render::proof;
 
 use super::*;
 
@@ -17,7 +17,7 @@ fn run(s: &mut Session, id: &str, p: Value) -> Value {
     s.execute(id, &p).unwrap_or_else(|e| panic!("{id} {p}: {e}"))
 }
 
-fn doc(s: &Session) -> &vectorcraft_doc::Document {
+fn doc(s: &Session) -> &redrob_vector_doc::Document {
     &s.doc().unwrap().doc
 }
 
@@ -113,15 +113,15 @@ fn spot_stops_separate_on_their_plate() {
         *c
     });
     assert!(links.contains(&Some(("Ink".to_string(), 0.6))), "{links:?}");
-    let c = vectorcraft_color::cms::active();
+    let c = redrob_vector_color::cms::active();
     let st = gradient(&s, id).gradient.stops[0].clone();
     let ink = proof::inks(doc(&s), &c, &st.color, Some(("Ink", st.tint)), proof::Intent::RelativeColorimetric);
     assert_eq!((ink.cmyk, ink.spot), ([0.0; 4], Some(("Ink".to_string(), 0.6))));
 }
 
 fn pdf_of(s: &Session) -> (String, Vec<String>) {
-    let opts = vectorcraft_pdf::PdfOptions { created: Some(0), ..vectorcraft_pdf::PdfOptions::uncompressed() };
-    let r = vectorcraft_pdf::export_with_report(doc(s), &opts).unwrap();
+    let opts = redrob_vector_pdf::PdfOptions { created: Some(0), ..redrob_vector_pdf::PdfOptions::uncompressed() };
+    let r = redrob_vector_pdf::export_with_report(doc(s), &opts).unwrap();
     (String::from_utf8_lossy(&r.bytes).into_owned(), r.warnings)
 }
 
@@ -145,7 +145,7 @@ fn linked_stops_round_trip() {
     let (mut s, id) = setup();
     run(&mut s, "paint.editGradient", ink_to_white(30.0));
     let d = doc(&s).clone();
-    let back = vectorcraft_format::load(&vectorcraft_format::save(&d, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(&d, false)).unwrap();
     assert_eq!(back.node(id).unwrap().appearance.fill_paint(), d.node(id).unwrap().appearance.fill_paint());
     // Stops from before links read as unlinked.
     let old: GradientStop = serde_json::from_value(json!({"offset": 0.5, "color": {"model": "rgb", "r": 1, "g": 0, "b": 0}})).unwrap();

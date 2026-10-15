@@ -42,7 +42,7 @@ pub fn close_all(app: &mut VectorcraftApp, then: &str) -> Result<Value, String> 
     }
     if then == "quit" {
         // Nothing unsaved is left: no recovery copies either.
-        vectorcraft_engine::cmd::recovery::forget_all(&mut app.session);
+        redrob_vector_engine::cmd::recovery::forget_all(&mut app.session);
         // The host closes the window.
         app.ui.status = "quit".into();
         return Ok(Value::Null);
@@ -91,7 +91,7 @@ pub fn confirm(app: &mut VectorcraftApp) -> Result<Value, String> {
     let i = i.ok_or("no such document")?;
     if !d.bool("discard") {
         app.session.set_active(i);
-        let r = io::save(app, vectorcraft_engine::cmd::fileio::SaveMode::Save, &json!({}), false)?;
+        let r = io::save(app, redrob_vector_engine::cmd::fileio::SaveMode::Save, &json!({}), false)?;
         // A save that asks first (replacing a file that would lose what opening it left out) keeps
         // the document open: it closes once saved.
         if r.get("pending").is_some() {
@@ -116,7 +116,7 @@ pub fn confirm(app: &mut VectorcraftApp) -> Result<Value, String> {
 mod tests {
     use super::*;
     use std::sync::{Arc, Mutex};
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// An app whose Save As picks `out.vectorcraft` and records written paths.
     fn app() -> (VectorcraftApp, Arc<Mutex<Vec<String>>>) {

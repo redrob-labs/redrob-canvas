@@ -6,8 +6,8 @@ use std::collections::HashMap;
 
 use egui::{Color32, Sense, Ui, vec2};
 use serde_json::json;
-use vectorcraft_geom::{Affine, BezPath, PathEl};
-use vectorcraft_text::FontDb;
+use redrob_vector_geom::{Affine, BezPath, PathEl};
+use redrob_vector_text::FontDb;
 
 use super::{pstate, set_pstate};
 use crate::VectorcraftApp;
@@ -35,7 +35,7 @@ thread_local! {
 pub(crate) fn rasterize(path: &BezPath, w: usize, h: usize) -> Vec<u8> {
     let mut edges: Vec<(f64, f64, f64, f64)> = vec![];
     let (mut start, mut last) = (None, (0.0, 0.0));
-    vectorcraft_geom::kurbo::flatten(path, 0.1, |el| match el {
+    redrob_vector_geom::kurbo::flatten(path, 0.1, |el| match el {
         PathEl::MoveTo(p) => {
             if let Some(s) = start.replace((p.x, p.y)) {
                 edges.push((last.0, last.1, s.0, s.1));
@@ -90,7 +90,7 @@ pub(crate) fn rasterize(path: &BezPath, w: usize, h: usize) -> Vec<u8> {
     acc.into_iter().map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8).collect()
 }
 
-fn glyph_texture(ctx: &egui::Context, face: &vectorcraft_text::FontFace, gid: u32, px: u32) -> egui::TextureHandle {
+fn glyph_texture(ctx: &egui::Context, face: &redrob_vector_text::FontFace, gid: u32, px: u32) -> egui::TextureHandle {
     let key = (face.id(), gid, px);
     if let Some(t) = TEX.with(|c| c.borrow().get(&key).cloned()) {
         return t;
@@ -139,7 +139,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let current = super::character::text_style(app).map(|(s, _)| (s.font_family, s.font_style));
     // The panel browses the current text's font unless another font was picked here.
     let picked: Option<(String, String)> = pstate(ui.ctx(), "gl-font");
-    let (family, style) = picked.or(current).unwrap_or_else(|| (vectorcraft_text::FALLBACK_FAMILY.to_string(), "Regular".to_string()));
+    let (family, style) = picked.or(current).unwrap_or_else(|| (redrob_vector_text::FALLBACK_FAMILY.to_string(), "Regular".to_string()));
     let Some(face) = db.face(&family, &style) else {
         ui.label(egui::RichText::new(tl!("No fonts are available.")).color(t.text_dim));
         return;

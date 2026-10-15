@@ -16,8 +16,8 @@ use std::mem::size_of;
 use std::sync::Arc;
 
 use serde_json::Value;
-use vectorcraft_color::{Paint, Swatch, SwatchGroup};
-use vectorcraft_geom::{Affine, Anchor, PathData, SubPath};
+use redrob_vector_color::{Paint, Swatch, SwatchGroup};
+use redrob_vector_geom::{Affine, Anchor, PathData, SubPath};
 
 use crate::live::{BlendSpec, EnvelopeKind};
 use crate::text::{ParaStyle, TextObject, TextRun, TextStyleDef};
@@ -331,7 +331,7 @@ fn json_bytes(v: &Value) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_geom::shapes;
+    use redrob_vector_geom::shapes;
 
     fn doc_with_rects(n: usize) -> Document {
         let mut d = Document::new(1000.0, 1000.0);

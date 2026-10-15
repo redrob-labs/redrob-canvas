@@ -4,8 +4,8 @@
 
 use serde::Deserialize;
 use serde_json::{Value, json};
-use vectorcraft_cad::ImportOptions;
-use vectorcraft_doc::{Document, Unit};
+use redrob_vector_cad::ImportOptions;
+use redrob_vector_doc::{Document, Unit};
 
 use super::super::*;
 use super::{err, source};
@@ -49,9 +49,9 @@ pub(super) fn options(cmd: &str, p: Option<&Value>) -> Result<ImportOptions> {
         Some(u) => Some(Unit::named(u).ok_or_else(|| bad(cmd, format!("dxf unit `{u}`: a unit such as mm, cm, in or pt")))?),
     };
     if let Some(s) = q.scale
-        && !(s.is_finite() && vectorcraft_cad::SCALE_RANGE.contains(&s))
+        && !(s.is_finite() && redrob_vector_cad::SCALE_RANGE.contains(&s))
     {
-        return Err(bad(cmd, format!("dxf scale must be a positive number up to {}, not {s}", vectorcraft_cad::SCALE_RANGE.end())));
+        return Err(bad(cmd, format!("dxf scale must be a positive number up to {}, not {s}", redrob_vector_cad::SCALE_RANGE.end())));
     }
     let fit_to = match q.fit_to {
         None => d.fit_to,
@@ -72,7 +72,7 @@ pub(super) fn options(cmd: &str, p: Option<&Value>) -> Result<ImportOptions> {
 
 /// Import a DXF drawing → the document and import notes.
 pub(super) fn import(bytes: &[u8], o: &ImportOptions) -> Result<(Document, Vec<String>)> {
-    let r = vectorcraft_cad::import(bytes, o).map_err(err)?;
+    let r = redrob_vector_cad::import(bytes, o).map_err(err)?;
     Ok((r.document, r.warnings))
 }
 
@@ -80,7 +80,7 @@ const INFO: &str = "document.dxfInfo";
 
 fn dxf_info(_: &mut Session, p: &Value) -> Result<Value> {
     let bytes = source(p, INFO)?.bytes;
-    let i = vectorcraft_cad::info(&bytes).map_err(err)?;
+    let i = redrob_vector_cad::info(&bytes).map_err(err)?;
     Ok(json!({
         "version": i.version,
         "units": i.units,

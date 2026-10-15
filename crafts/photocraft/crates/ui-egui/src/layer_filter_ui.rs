@@ -3,8 +3,8 @@
 //! picks one blend mode. The criteria live in `UiState` (`layer_filter*`), so the control channel
 //! can read and set them.
 
-use photocraft_color::BlendMode;
-use photocraft_doc::{Layer, LayerContent};
+use redrob_photo_color::BlendMode;
+use redrob_photo_doc::{Layer, LayerContent};
 use serde::{Deserialize, Serialize};
 
 use crate::state::UiState;
@@ -91,7 +91,7 @@ pub fn patched(current: &UiState, v: &serde_json::Value) -> Result<Filter, Strin
     }
     if let Some(mode) = o.get("mode") {
         let name = mode.as_str().ok_or("layerFilter.mode must be a blend mode name")?;
-        f.mode = photocraft_engine::commands::blend_from_str(name)
+        f.mode = redrob_photo_engine::commands::blend_from_str(name)
             .filter(|m| *m == BlendMode::PassThrough || BlendMode::LAYER_MODES.contains(m))
             .ok_or_else(|| format!("layerFilter.mode: unknown blend mode `{name}`"))?;
     }

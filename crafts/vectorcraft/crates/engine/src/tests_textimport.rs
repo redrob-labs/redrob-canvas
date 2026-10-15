@@ -1,8 +1,8 @@
 //! File → Place of a text file: Text Import Options, and the text set as area type.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeKind, TextKind};
-use vectorcraft_geom::Rect;
+use redrob_vector_doc::{NodeKind, TextKind};
+use redrob_vector_geom::Rect;
 
 use super::*;
 
@@ -13,7 +13,7 @@ fn session() -> Session {
 }
 
 fn place_text(s: &mut Session, text: &[u8], extra: Value) -> Value {
-    let mut p = json!({"name": "notes.txt", "dataBase64": vectorcraft_format::base64_encode(text)});
+    let mut p = json!({"name": "notes.txt", "dataBase64": redrob_vector_format::base64_encode(text)});
     if let (Some(o), Value::Object(e)) = (p.as_object_mut(), extra) {
         o.extend(e);
     }
@@ -54,7 +54,7 @@ fn crlf_with_returns_removed_places_one_paragraph_per_block_as_area_type() {
 #[test]
 fn text_files_report_and_queue_with_their_options() {
     let mut s = session();
-    let file = json!({"name": "a.txt", "dataBase64": vectorcraft_format::base64_encode(b"caf\xe9")});
+    let file = json!({"name": "a.txt", "dataBase64": redrob_vector_format::base64_encode(b"caf\xe9")});
     let info = s.execute("file.place.info", &file).unwrap();
     assert_eq!((info["format"].as_str(), info["width"].as_f64(), info["height"].as_f64()), (Some("txt"), Some(468.0), Some(648.0)));
     // Not UTF-8: read as Windows-1252, or Mac Roman for a Mac file.
@@ -65,7 +65,7 @@ fn text_files_report_and_queue_with_their_options() {
     assert_eq!(s.tool_options()["name"], "a.txt");
     let bad = json!({"name": "a.txt", "dataBase64": "YQ==", "text": {"platform": "beos"}});
     assert!(s.execute("file.place", &bad).is_err());
-    let blank = json!({"name": "blank.txt", "dataBase64": vectorcraft_format::base64_encode(b" \r\n\t\r\n")});
+    let blank = json!({"name": "blank.txt", "dataBase64": redrob_vector_format::base64_encode(b" \r\n\t\r\n")});
     assert!(s.execute("file.place", &blank).is_err(), "no text to place");
     // Replace: the frame takes the replaced object's bounds.
     s.execute("shape.rectangle", &json!({"x": 50, "y": 60, "width": 80, "height": 40})).unwrap();

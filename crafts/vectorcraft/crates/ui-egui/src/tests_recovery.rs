@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use serde_json::json;
-use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::recovery::{MemoryStore, RecoveryStore};
+use redrob_vector_engine::Session;
+use redrob_vector_engine::cmd::recovery::{MemoryStore, RecoveryStore};
 
 use crate::{Services, VectorcraftApp, background, dialogs, recovery, theme};
 

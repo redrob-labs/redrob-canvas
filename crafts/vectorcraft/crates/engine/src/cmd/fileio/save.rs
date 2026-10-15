@@ -10,7 +10,7 @@ use std::io::Write as _;
 use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::Document;
+use redrob_vector_doc::Document;
 
 use super::super::*;
 use super::{
@@ -361,8 +361,8 @@ fn artboard_doc(doc: &Document, i: usize) -> Document {
 }
 
 /// Keep in layer `n` (and its sublayers) only the objects touching `r`.
-fn keep_on(n: &mut Arc<vectorcraft_doc::Node>, r: vectorcraft_geom::Rect) {
-    let touches = |b: vectorcraft_geom::Rect| b.x0 <= r.x1 && b.x1 >= r.x0 && b.y0 <= r.y1 && b.y1 >= r.y0;
+fn keep_on(n: &mut Arc<redrob_vector_doc::Node>, r: redrob_vector_geom::Rect) {
+    let touches = |b: redrob_vector_geom::Rect| b.x0 <= r.x1 && b.x1 >= r.x0 && b.y0 <= r.y1 && b.y1 >= r.y0;
     if let Some(children) = Arc::make_mut(n).children_mut() {
         children.retain(|c| c.is_layer() || c.visual_bounds().is_some_and(touches));
         for c in children.iter_mut().filter(|c| c.is_layer()) {
@@ -554,7 +554,7 @@ impl SaveJob {
     }
 
     /// [`SaveJob::write`] through `stream`, which writes the file at a path with what the filler
-    /// it is given writes (atomically, as [`vectorcraft_format::write_atomic_with`]). A native
+    /// it is given writes (atomically, as [`redrob_vector_format::write_atomic_with`]). A native
     /// file goes into it as it is encoded ([`SaveJob::streams`]), never held whole in memory;
     /// other files are encoded first, then written into it.
     pub fn write_streamed(&self, stream: StreamWrite) -> Result<Value> {

@@ -1,6 +1,6 @@
 use super::*;
-use photocraft_color::Color;
-use photocraft_format::{Autosaver, RecoveryEntry, SaveOptions, list_recovery};
+use redrob_photo_color::Color;
+use redrob_photo_format::{Autosaver, RecoveryEntry, SaveOptions, list_recovery};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 fn snapshot(tag: &str) -> (PathBuf, Document, RecoveryEntry) {

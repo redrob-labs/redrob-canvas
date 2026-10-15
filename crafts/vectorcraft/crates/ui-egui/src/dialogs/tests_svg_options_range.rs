@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use egui::{Event, Pos2, Rect, Shape, vec2};
 use serde_json::json;
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use crate::{Services, VectorcraftApp};
 

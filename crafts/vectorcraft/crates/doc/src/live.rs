@@ -18,8 +18,8 @@ use std::f64::consts::PI;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_geom::{Affine, Anchor, BezPath, CubicBez, ParamCurve, PathData, Point, Rect, Shape, SubPath, Vec2};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_geom::{Affine, Anchor, BezPath, CubicBez, ParamCurve, PathData, Point, Rect, Shape, SubPath, Vec2};
 
 use crate::appearance::{Appearance, AppearanceItem, FillLayer};
 use crate::node::{ImageObject, Node, NodeId, NodeKind};
@@ -271,7 +271,7 @@ pub use crate::blend::{
 };
 
 // =====================================================================================
-// Warp maps (shared with vectorcraft-effects' Warp effects)
+// Warp maps (shared with redrob-vector-effects' Warp effects)
 // =====================================================================================
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -455,8 +455,8 @@ fn flatten_subpath(sp: &SubPath, tol: f64) -> Vec<Point> {
     let mut bp = BezPath::new();
     sp.to_bezpath_into(&mut bp);
     let mut pts: Vec<Point> = Vec::new();
-    vectorcraft_geom::kurbo::flatten(bp.iter(), tol, |el| match el {
-        vectorcraft_geom::PathEl::MoveTo(p) | vectorcraft_geom::PathEl::LineTo(p) if pts.last().is_none_or(|q| q.distance(p) > 1e-9) => pts.push(p),
+    redrob_vector_geom::kurbo::flatten(bp.iter(), tol, |el| match el {
+        redrob_vector_geom::PathEl::MoveTo(p) | redrob_vector_geom::PathEl::LineTo(p) if pts.last().is_none_or(|q| q.distance(p) > 1e-9) => pts.push(p),
         _ => {}
     });
     pts
@@ -1059,7 +1059,7 @@ impl GradientMesh {
 
 /// Union of the geometric bounds of `nodes`.
 pub fn nodes_bounds(nodes: &[Arc<Node>]) -> Option<Rect> {
-    nodes.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, c.geometric_bounds()))
+    nodes.iter().fold(None, |acc, c| redrob_vector_geom::union_opt(acc, c.geometric_bounds()))
 }
 
 /// A `(rows+1)×(cols+1)` grid over `r` (row-major).
@@ -1267,7 +1267,7 @@ impl<'a> EnvelopeMap<'a> {
             content.iter().try_fold(None, |acc, c| {
                 let mut m = (**c).clone();
                 m.transform(to_frame, false);
-                Some(vectorcraft_geom::union_opt(acc, m.geometric_bounds()))
+                Some(redrob_vector_geom::union_opt(acc, m.geometric_bounds()))
             })??
         };
         Some(Self { src, frame, to_frame, surface: surface_of(kind, src, frame) })
@@ -1331,7 +1331,7 @@ pub type Outliner<'a> = Option<&'a dyn Fn(&Node) -> Option<Node>>;
 /// `region` (see [`crate::PatternDef::instances_in`]); `None` without such a swatch.
 pub type PatternTiles<'a> = &'a dyn Fn(&str, Affine, Rect) -> Option<Vec<Node>>;
 
-/// What live evaluation asks of the crates above this one (`vectorcraft-effects` supplies them).
+/// What live evaluation asks of the crates above this one (`redrob-vector-effects` supplies them).
 #[derive(Clone, Copy, Default)]
 pub struct Hooks<'a> {
     /// Type as its glyph outlines, a symbol instance as its art (see [`Outliner`]).
@@ -1754,7 +1754,7 @@ mod tests {
         let (r0, a) = (4.0 / PI, 0.5 / (4.0 / PI));
         assert!((nx - (r0 - 0.25) * a.sin()).abs() < 1e-12 && (ny - (r0 - (r0 - 0.25) * a.cos())).abs() < 1e-12);
     }
-    use vectorcraft_geom::shapes;
+    use redrob_vector_geom::shapes;
 
     fn rect_node(x: f64, y: f64, w: f64, h: f64, c: Color) -> Arc<Node> {
         Arc::new(Node::path(NodeId(1), shapes::rectangle(Rect::new(x, y, x + w, y + h)), Appearance::basic(Paint::solid(c), Paint::None, 0.0)))

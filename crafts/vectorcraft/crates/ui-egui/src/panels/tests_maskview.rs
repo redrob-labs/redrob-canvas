@@ -2,7 +2,7 @@
 //! mask (and edits it), Alt-click again shows the artwork.
 
 use serde_json::json;
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use super::*;
 

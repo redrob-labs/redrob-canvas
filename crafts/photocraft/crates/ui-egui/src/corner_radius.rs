@@ -7,8 +7,8 @@
 //! click without movement changes nothing.
 
 use egui::{Color32, Modifiers, Pos2, Stroke};
-use photocraft_doc::LayerContent;
-use photocraft_doc::vector::LiveShape;
+use redrob_photo_doc::LayerContent;
+use redrob_photo_doc::vector::LiveShape;
 
 use crate::PhotocraftApp;
 use crate::canvas::ToolEvent;
@@ -216,7 +216,7 @@ pub fn draw(app: &PhotocraftApp, painter: &egui::Painter, to_scr: &dyn Fn([f64; 
         let now = drag.and_then(|d| d.targets.iter().position(|g| g.layer == t.layer).and_then(|i| d.now.get(i)));
         let radii = now.copied().unwrap_or(t.radii);
         if now.is_some() {
-            let path = photocraft_vector::shapes::rounded_rect(t.rect[0], t.rect[1], t.rect[2], t.rect[3], radii);
+            let path = redrob_photo_vector::shapes::rounded_rect(t.rect[0], t.rect[1], t.rect[2], t.rect[3], radii);
             crate::vector_ui::draw_outline(painter, &path, to_scr, accent);
         }
         for i in 0..4 {

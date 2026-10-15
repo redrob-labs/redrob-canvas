@@ -33,8 +33,8 @@ fn run(app: &mut VectorcraftApp, ui: &Ui, op: &str, label: &str) {
 /// the operation takes from it, nested groups included (#1450, #1635).
 fn operands(app: &VectorcraftApp) -> usize {
     let alone = app.session.active().filter(|d| d.selection.len() == 1).and_then(|d| d.doc.node(*d.selection.objects.first()?));
-    match alone.filter(|n| matches!(n.kind, vectorcraft_doc::NodeKind::Group { .. })) {
-        Some(group) => vectorcraft_engine::cmd::shape_count(group),
+    match alone.filter(|n| matches!(n.kind, redrob_vector_doc::NodeKind::Group { .. })) {
+        Some(group) => redrob_vector_engine::cmd::shape_count(group),
         None => selection_len(app),
     }
 }
@@ -100,14 +100,14 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::doc::{NodeId, NodeKind};
+    use redrob_vector_engine::doc::{NodeId, NodeKind};
 
     /// #1635: a stroked object expanded inside a group leaves a group holding one group (its fill
     /// and its outlined stroke). The Shape Modes take the group's shapes, so they stay enabled, and
     /// Unite merges the fill and the stroke into one path.
     #[test]
     fn shape_modes_take_the_shapes_of_an_expanded_stroke_in_a_group() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 50, "height": 50})).unwrap();
         app.run("stroke.set", json!({"weight": 10})).unwrap();

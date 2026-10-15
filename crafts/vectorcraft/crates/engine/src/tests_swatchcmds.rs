@@ -3,7 +3,7 @@
 //! document's colour mode.
 
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
+use redrob_vector_color::Paint;
 
 use super::*;
 
@@ -17,7 +17,7 @@ fn run(s: &mut Session, id: &str, p: Value) -> Value {
     s.execute(id, &p).unwrap_or_else(|e| panic!("{id} {p}: {e}"))
 }
 
-fn doc(s: &Session) -> &vectorcraft_doc::Document {
+fn doc(s: &Session) -> &redrob_vector_doc::Document {
     &s.doc().unwrap().doc
 }
 
@@ -109,7 +109,7 @@ fn add_used_colors_skips_colours_that_have_swatches() {
     assert_eq!(r, json!({"added": ["R=171 G=205 B=239"], "linked": 1}));
     assert_eq!(
         fill(&s, d),
-        Paint::Solid { color: vectorcraft_color::Color::from_hex("#abcdef").unwrap(), swatch: Some("R=171 G=205 B=239".into()), tint: 1.0 }
+        Paint::Solid { color: redrob_vector_color::Color::from_hex("#abcdef").unwrap(), swatch: Some("R=171 G=205 B=239".into()), tint: 1.0 }
     );
     assert!(doc(&s).swatch("R=171 G=205 B=239").unwrap().global);
 }
@@ -181,7 +181,7 @@ fn ungroup_and_sort_by_kind_are_one_undo_step_each() {
     run(&mut s, "swatch.edit", json!({"name": "Orange", "spot": true}));
     run(&mut s, "swatch.sortByKind", json!({}));
     assert_eq!(undo_len(&s), undo + 4);
-    let rank = |w: &vectorcraft_color::Swatch| match &w.paint {
+    let rank = |w: &redrob_vector_color::Swatch| match &w.paint {
         Paint::None => 0,
         Paint::Solid { .. } if !w.spot => 1,
         Paint::Solid { .. } => 2,
@@ -197,10 +197,10 @@ fn ungroup_and_sort_by_kind_are_one_undo_step_each() {
 
 #[test]
 fn a_cmyk_document_starts_with_cmyk_swatches_and_stores_new_colours_as_cmyk() {
-    use vectorcraft_color::Color;
+    use redrob_vector_color::Color;
     let mut s = Session::new();
     run(&mut s, "file.new", json!({"width": 100, "height": 100, "colorMode": "cmyk"}));
-    assert_eq!(doc(&s).color_mode, vectorcraft_doc::ColorMode::Cmyk);
+    assert_eq!(doc(&s).color_mode, redrob_vector_doc::ColorMode::Cmyk);
     assert!(doc(&s).swatches_iter().filter_map(|w| w.paint.color()).all(|c| !matches!(c, Color::Rgb { .. })));
     assert_eq!(doc(&s).swatch("Black").and_then(|w| w.paint.color()), Some(Color::cmyk(0.0, 0.0, 0.0, 1.0)));
     let a = rect_filled(&mut s, json!({"color": "#ff0000"}));
@@ -221,12 +221,12 @@ fn a_cmyk_document_starts_with_cmyk_swatches_and_stores_new_colours_as_cmyk() {
     let name = run(&mut s, "swatch.new", json!({"color": "#00ff00"}))["name"].clone();
     assert_eq!(name, "C=100 M=0 Y=100 K=0");
     let json = serde_json::to_string(doc(&s)).unwrap();
-    assert_eq!(serde_json::from_str::<vectorcraft_doc::Document>(&json).unwrap(), *doc(&s));
+    assert_eq!(serde_json::from_str::<redrob_vector_doc::Document>(&json).unwrap(), *doc(&s));
 }
 
 #[test]
 fn rgb_documents_keep_colours_as_given_and_edits_keep_the_source_model() {
-    use vectorcraft_color::Color;
+    use redrob_vector_color::Color;
     let mut s = session();
     assert_eq!(doc(&s).swatch("Black").and_then(|w| w.paint.color()), Some(Color::rgb(0.0, 0.0, 0.0)));
     let a = rect_filled(&mut s, json!({"color": "#ff0000"}));

@@ -7,7 +7,7 @@
 //! away, is left alone until the next change.
 
 use egui::{Rect, pos2};
-use photocraft_doc::{LayerContent, LayerId};
+use redrob_photo_doc::{LayerContent, LayerId};
 use serde_json::json;
 
 use crate::PhotocraftApp;

@@ -15,8 +15,8 @@ pub mod tga;
 pub mod tiff;
 pub mod web;
 
-use vectorcraft_doc::{Document, Node, NodeKind, SymbolBoxes};
-use vectorcraft_geom::Rect;
+use redrob_vector_doc::{Document, Node, NodeKind, SymbolBoxes};
+use redrob_vector_geom::Rect;
 
 use crate::{AntiAlias, RenderOptions, Rendered, Renderer, fx};
 
@@ -195,7 +195,7 @@ pub(crate) fn webp(img: &Rendered) -> Result<Vec<u8>, String> {
 /// nothing would be drawn.
 pub fn art_bounds(doc: &Document) -> Option<Rect> {
     let symbols = doc.symbol_boxes();
-    doc.layers.iter().fold(None, |acc, l| vectorcraft_geom::union_opt(acc, drawn_bounds(&symbols, l)))
+    doc.layers.iter().fold(None, |acc, l| redrob_vector_geom::union_opt(acc, drawn_bounds(&symbols, l)))
 }
 
 fn drawn_bounds(symbols: &SymbolBoxes, n: &Node) -> Option<Rect> {
@@ -205,7 +205,7 @@ fn drawn_bounds(symbols: &SymbolBoxes, n: &Node) -> Option<Rect> {
     match &n.kind {
         NodeKind::Layer { template: true, .. } | NodeKind::Path { guide: true, .. } => None,
         NodeKind::Layer { children, clip: false, .. } | NodeKind::Group { children, clip: false } => {
-            children.iter().fold(None, |acc, c| vectorcraft_geom::union_opt(acc, drawn_bounds(symbols, c)))
+            children.iter().fold(None, |acc, c| redrob_vector_geom::union_opt(acc, drawn_bounds(symbols, c)))
         }
         _ if fx::has_fx(n) => fx::visual_bounds(symbols, n),
         // An instance's box takes in its art, the effects in the art and its own effects.

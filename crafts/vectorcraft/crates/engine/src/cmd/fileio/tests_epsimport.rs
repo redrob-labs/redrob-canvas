@@ -7,11 +7,11 @@ use super::tests_svgedit::{comparable, rich};
 use super::*;
 
 fn b64(v: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().unwrap_or_else(|| panic!("no dataBase64 in {v}"))).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().unwrap_or_else(|| panic!("no dataBase64 in {v}"))).unwrap()
 }
 
 fn open(s: &mut Session, name: &str, bytes: &[u8]) -> Result<Value> {
-    s.execute("document.open", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)}))
+    s.execute("document.open", &json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes)}))
 }
 
 /// `bytes` with `from` replaced by `to` (the same length: the preview header's offsets stay).
@@ -60,7 +60,7 @@ fn other_eps_files_are_read_by_the_postscript_interpreter() {
     assert_eq!((&r["restored"], &r["format"]), (&json!(false), &json!("eps")), "{r}");
     let d = &s.doc().unwrap().doc;
     // The page is the bounding box: the art's bounds.
-    assert_eq!(d.artboards[0].rect.size(), vectorcraft_geom::Size::new(101.0, 51.0), "the stroke's half width rounds up to whole points");
+    assert_eq!(d.artboards[0].rect.size(), redrob_vector_geom::Size::new(101.0, 51.0), "the stroke's half width rounds up to whole points");
     assert_eq!(objects(&s), 1);
     assert_eq!(s.doc().unwrap().title(), "plain.eps");
 }
@@ -79,7 +79,7 @@ fn an_unreadable_eps_file_comes_in_as_its_preview() {
     let d = &s.doc().unwrap().doc;
     let layer = &d.layers[0];
     let image = &layer.children().unwrap()[0];
-    assert!(matches!(image.kind, vectorcraft_doc::NodeKind::Image(_)), "{:?}", image.kind);
+    assert!(matches!(image.kind, redrob_vector_doc::NodeKind::Image(_)), "{:?}", image.kind);
     assert_eq!(image.geometric_bounds().unwrap(), d.artboards[0].rect);
 }
 
@@ -106,7 +106,7 @@ showpage
     let d = s.doc().unwrap().doc.clone();
     let outer = &d.layers[0].children().unwrap()[0];
     let inner = outer.children().map(|c| (c.len(), c[1].children().map(Vec::len))).unwrap();
-    assert!(matches!(outer.kind, vectorcraft_doc::NodeKind::Group { clip: false, .. }), "{:?}", outer.kind);
+    assert!(matches!(outer.kind, redrob_vector_doc::NodeKind::Group { clip: false, .. }), "{:?}", outer.kind);
     assert_eq!(inner, (2, Some(2)));
     // One that names the prolog defining its operators without including it (as other apps write
     // the format) opens with the layers its program has (#1027).
@@ -132,13 +132,13 @@ fn eps_files_place_as_one_group_clipped_to_their_bounding_box() {
     let mut s = rich();
     let eps = b64(&s.execute("document.exportEps", &json!({"useArtboards": true, "artboards": [0]})).unwrap());
     s.execute("file.new", &json!({"width": 600, "height": 600})).unwrap();
-    let r = s.execute("file.place", &json!({"name": "rich.eps", "dataBase64": vectorcraft_format::base64_encode(&eps), "at": [300, 300]})).unwrap();
+    let r = s.execute("file.place", &json!({"name": "rich.eps", "dataBase64": redrob_vector_format::base64_encode(&eps), "at": [300, 300]})).unwrap();
     assert_eq!(r["format"], "eps", "{r}");
     assert_eq!(r["ids"].as_array().unwrap().len(), 1);
     // The interpreter's reading of the same file places too.
-    let r = s.execute("file.place", &json!({"name": "other.eps", "dataBase64": vectorcraft_format::base64_encode(&foreign(&eps))})).unwrap();
+    let r = s.execute("file.place", &json!({"name": "other.eps", "dataBase64": redrob_vector_format::base64_encode(&foreign(&eps))})).unwrap();
     assert_eq!(r["ids"].as_array().unwrap().len(), 1, "{r}");
-    let info = s.execute("file.place.info", &json!({"name": "other.eps", "dataBase64": vectorcraft_format::base64_encode(&foreign(&eps))})).unwrap();
+    let info = s.execute("file.place.info", &json!({"name": "other.eps", "dataBase64": redrob_vector_format::base64_encode(&foreign(&eps))})).unwrap();
     assert_eq!(info["format"], "eps");
     // EPS is readable, and listed for the open and place dialogs.
     assert!(format("eps").is_some_and(|f| f.read && f.write));

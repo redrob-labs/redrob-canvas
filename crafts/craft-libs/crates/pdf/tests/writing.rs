@@ -5,7 +5,7 @@ use backend::configure::{Archival, PdfVersion};
 use backend::geom::{PathBuilder, Rect, Size};
 use backend::page::PageSettings;
 use backend::paint::Fill;
-use craft_pdf::write::{self, Metadata, WriteError, Writer, backend};
+use redrob_craft_pdf::write::{self, Metadata, WriteError, Writer, backend};
 
 fn document(compress: bool) -> Vec<u8> {
     let metadata = Metadata {

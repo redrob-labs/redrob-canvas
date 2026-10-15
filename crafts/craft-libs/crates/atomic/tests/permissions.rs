@@ -1,6 +1,6 @@
 #![cfg(unix)]
 
-use craft_atomic::{NewFilePermissions, WriteOptions, atomic_write, write_new};
+use redrob_craft_atomic::{NewFilePermissions, WriteOptions, atomic_write, write_new};
 use std::fs::{self, File, Permissions};
 use std::io::{self, Write};
 use std::os::unix::fs::PermissionsExt;

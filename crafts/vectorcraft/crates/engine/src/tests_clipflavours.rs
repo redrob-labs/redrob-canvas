@@ -2,9 +2,9 @@
 //! Clipboard Handling preferences.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeKind, TextObject};
-use vectorcraft_geom::Point;
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use redrob_vector_doc::{NodeKind, TextObject};
+use redrob_vector_geom::Point;
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 use crate::cmd::clipboard::{BITMAP, FILE_HEAD, PASTE_ORDER, PDF, PNG, SVG, TEXT, file_flavour};
@@ -36,16 +36,16 @@ fn copy_text(s: &mut Session, texts: &[&str]) {
 }
 
 fn decode(v: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
 }
 
 /// The pasted objects (the selection after a paste).
-fn pasted(s: &Session) -> Vec<vectorcraft_doc::Node> {
+fn pasted(s: &Session) -> Vec<redrob_vector_doc::Node> {
     let st = s.doc().unwrap();
     st.selection.objects.iter().map(|id| st.doc.node(*id).unwrap().clone()).collect()
 }
 
-fn text_of(n: &vectorcraft_doc::Node) -> &TextObject {
+fn text_of(n: &redrob_vector_doc::Node) -> &TextObject {
     match &n.kind {
         NodeKind::Text(t) => t,
         k => panic!("not type: {k:?}"),
@@ -93,7 +93,7 @@ fn exported_pdf_pastes_back_as_vectors() {
         n.walk(&mut |c| red |= c.appearance.fill_paint().color().is_some_and(|c| c.to_hex() == "#ff0000"));
     }
     assert!(red, "the square keeps its red fill");
-    assert!(t.execute("clipboard.importPdf", &json!({"dataBase64": vectorcraft_format::base64_encode(b"not a pdf")})).is_err());
+    assert!(t.execute("clipboard.importPdf", &json!({"dataBase64": redrob_vector_format::base64_encode(b"not a pdf")})).is_err());
     assert!(t.execute("clipboard.importPdf", &json!({})).is_err());
 }
 
@@ -114,7 +114,7 @@ fn import_image_then_paste_gives_an_image() {
     assert!((b.center().x - 300.0).abs() < 1e-6 && (b.center().y - 200.0).abs() < 1e-6 && (b.width() - 40.0).abs() < 1e-6, "{b:?}");
     // Not a bitmap.
     assert!(s.execute("clipboard.importImage", &json!({"dataBase64": png["dataBase64"], "mime": "image/svg+xml"})).is_err());
-    assert!(s.execute("clipboard.importImage", &json!({"dataBase64": vectorcraft_format::base64_encode(b"hello")})).is_err());
+    assert!(s.execute("clipboard.importImage", &json!({"dataBase64": redrob_vector_format::base64_encode(b"hello")})).is_err());
     assert!(s.execute("clipboard.importImage", &json!({"dataBase64": "!!"})).is_err());
 }
 
@@ -149,7 +149,7 @@ fn import_text_then_paste_gives_point_text() {
     run(&mut s, "edit.paste", json!({"center": [200, 150]}));
     let n = &pasted(&s)[0];
     let t = text_of(n);
-    assert!(matches!(t.kind, vectorcraft_doc::TextKind::Point));
+    assert!(matches!(t.kind, redrob_vector_doc::TextKind::Point));
     assert_eq!(t.plain_text(), "Hello\nworld");
     let b = n.geometric_bounds().unwrap();
     assert!((b.center().x - 200.0).abs() < 1.0 && (b.center().y - 150.0).abs() < 1.0, "{b:?}");

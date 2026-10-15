@@ -7,7 +7,7 @@
 //! current values, so editing a row is editing what it already says.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{DataValue, VariableKind, Variables};
+use redrob_vector_doc::{DataValue, VariableKind, Variables};
 
 use super::{DialogSpec, run_and_close};
 use crate::VectorcraftApp;
@@ -287,7 +287,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
 

@@ -10,7 +10,7 @@
 //! merge values into it, so comments and keys the application does not know stay in place.
 //!
 //! ```no_run
-//! use craft_settings::{Location, Settings, SettingsStore};
+//! use redrob_craft_settings::{Location, Settings, SettingsStore};
 //! use serde::{Deserialize, Serialize};
 //!
 //! #[derive(Serialize, Deserialize, Default, Clone, PartialEq)]

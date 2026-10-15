@@ -2,12 +2,12 @@
 //! release:
 //!
 //! ```sh
-//! cargo test --release -p photocraft-codecs --test tiff_bench -- --ignored --nocapture
+//! cargo test --release -p redrob-photo-codecs --test tiff_bench -- --ignored --nocapture
 //! ```
 
 mod common;
 use common::tiffgen::*;
-use photocraft_codecs::*;
+use redrob_photo_codecs::*;
 use std::time::Instant;
 
 const W: u32 = 6336;

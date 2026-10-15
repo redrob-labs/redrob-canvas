@@ -3,8 +3,8 @@
 //! SVG (with `metadata`), PDF and PNG writers carry it.
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::metadata::{MAX_RATING, iso8601};
-use vectorcraft_doc::{ColorMode, CopyrightStatus, DocMetadata, Document};
+use redrob_vector_doc::metadata::{MAX_RATING, iso8601};
+use redrob_vector_doc::{ColorMode, CopyrightStatus, DocMetadata, Document};
 
 use super::*;
 

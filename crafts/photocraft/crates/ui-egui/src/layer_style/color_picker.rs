@@ -13,8 +13,8 @@ pub(super) const REQUEST: &str = "__openColorPicker";
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Target {
     parent: u64,
-    document: photocraft_doc::DocId,
-    layer: photocraft_doc::LayerId,
+    document: redrob_photo_doc::DocId,
+    layer: redrob_photo_doc::LayerId,
     effect: String,
     field: String,
     color: String,
@@ -87,7 +87,7 @@ pub(crate) fn open(app: &mut PhotocraftApp, parent: u64, effect: &str, field: &s
     }
     let d = app.ui.dialogs.iter().find(|d| d.id == parent && d.kind == DialogKind::LayerStyle).ok_or("no Layer Style dialog")?;
     let st = app.session.active().ok_or("no active document")?;
-    let layer = photocraft_doc::LayerId(d.fields.get("layer").and_then(Value::as_u64).ok_or("invalid layer id")?);
+    let layer = redrob_photo_doc::LayerId(d.fields.get("layer").and_then(Value::as_u64).ok_or("invalid layer id")?);
     let ColorField { source, color } = color_value(&d.fields, effect, field)?;
     let t = Target { parent, document: st.doc.id, layer, effect: effect.into(), field: field.into(), color: color.clone(), source };
     validate(app, &t)?;

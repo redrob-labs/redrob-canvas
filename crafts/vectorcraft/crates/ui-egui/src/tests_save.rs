@@ -5,8 +5,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use serde_json::json;
-use vectorcraft_engine::Session;
-use vectorcraft_geom::Point;
+use redrob_vector_engine::Session;
+use redrob_vector_geom::Point;
 
 use crate::{Services, VectorcraftApp, dialogs, io, menus, palette, theme};
 
@@ -223,8 +223,8 @@ fn native_saves_stream_into_the_file() {
     let r = app.run("file.saveAs", json!({"path": native, "compress": true})).unwrap();
     let bytes = std::fs::read(&native).unwrap();
     assert_eq!(r["bytes"], bytes.len(), "{r}");
-    assert!(vectorcraft_format::is_compressed(&bytes));
-    assert_eq!(vectorcraft_format::load(&bytes).unwrap().node_count(), objects(&app));
+    assert!(redrob_vector_format::is_compressed(&bytes));
+    assert_eq!(redrob_vector_format::load(&bytes).unwrap().node_count(), objects(&app));
     assert!(!app.session.doc().unwrap().is_dirty(), "the file is the document's own");
     assert_eq!(*streamed.lock().unwrap(), [native]);
     let _ = std::fs::remove_dir_all(&d);

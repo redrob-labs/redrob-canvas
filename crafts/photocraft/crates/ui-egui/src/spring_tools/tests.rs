@@ -12,7 +12,7 @@ use crate::canvas::ViewXform;
 const DT: f32 = 1.0 / 60.0;
 
 fn harness(tool: Tool) -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     app.sync_views();
     app.ui.extras.rulers = false;
@@ -228,8 +228,8 @@ fn letters_type_while_editing_text() {
     assert_eq!(h.state().ui.tool, Tool::Type);
     assert_eq!(h.state().ui.spring, None);
     let st = h.state().session.active().unwrap();
-    match &st.doc.layer(photocraft_doc::LayerId(id)).unwrap().content {
-        photocraft_doc::LayerContent::Text(t) => assert_eq!(t.text, "ab"),
+    match &st.doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content {
+        redrob_photo_doc::LayerContent::Text(t) => assert_eq!(t.text, "ab"),
         _ => panic!("not text"),
     }
 }
@@ -249,7 +249,7 @@ fn a_tool_picked_while_a_letter_is_held_stands() {
 
 #[test]
 fn plain_functions_follow_the_rules() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.ui.tool = Tool::Eraser;
     // The current group's own key cycles; no spring.
     pressed(&mut app, 'E', Tool::Eraser, true, 0.0);

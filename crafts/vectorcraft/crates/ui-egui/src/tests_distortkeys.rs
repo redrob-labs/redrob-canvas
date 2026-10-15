@@ -4,8 +4,8 @@
 
 use egui::{Key, Modifiers};
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
-use vectorcraft_tools::{PointerEvent, PointerKind};
+use redrob_vector_engine::Session;
+use redrob_vector_tools::{PointerEvent, PointerKind};
 
 use crate::VectorcraftApp;
 
@@ -57,11 +57,11 @@ fn click(app: &mut VectorcraftApp, x: f64, y: f64) {
 }
 
 fn exists(app: &VectorcraftApp, id: u64) -> bool {
-    app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).is_some()
+    app.session.doc().unwrap().doc.node(redrob_vector_doc::NodeId(id)).is_some()
 }
 
 fn width_points(app: &VectorcraftApp, id: u64) -> Value {
-    let n = app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).cloned().unwrap();
+    let n = app.session.doc().unwrap().doc.node(redrob_vector_doc::NodeId(id)).cloned().unwrap();
     json!(n.appearance.stroke().unwrap().profile.as_ref().map(|p| p.points.len()))
 }
 
@@ -184,7 +184,7 @@ fn delete_artboards_with_key(key: Key, select_all: bool) {
     let st = app.session.doc().unwrap();
     assert_eq!(st.doc.artboards, vec![before.artboards[survivor].clone()], "the correct original board record survives");
     assert_eq!(st.selection, selection);
-    assert_eq!(st.doc.node(vectorcraft_doc::NodeId(id)), before.node(vectorcraft_doc::NodeId(id)), "artwork is unchanged");
+    assert_eq!(st.doc.node(redrob_vector_doc::NodeId(id)), before.node(redrob_vector_doc::NodeId(id)), "artwork is unchanged");
     assert_eq!(st.history.undo.len(), undo + 1);
     assert_eq!(st.history.undo.last().unwrap().label, "Delete Artboard");
     assert!(st.history.redo.is_empty());
@@ -232,7 +232,7 @@ fn artboard_keys_history_sequence(redo_before_delete: bool) {
                 let st = app.session.doc().unwrap();
                 let expected: Vec<_> = indices.iter().map(|&i| before.artboards[i].clone()).collect();
                 assert_eq!(st.doc.artboards, expected, "{key:?}: survivor IDs, order and full records");
-                assert_eq!(st.doc.node(vectorcraft_doc::NodeId(id)), before.node(vectorcraft_doc::NodeId(id)), "selected artwork stays unchanged");
+                assert_eq!(st.doc.node(redrob_vector_doc::NodeId(id)), before.node(redrob_vector_doc::NodeId(id)), "selected artwork stays unchanged");
                 assert_eq!(st.selection, selection);
                 assert_eq!((st.history.undo.len(), st.history.redo.len()), (undo, redo));
                 assert_eq!(st.is_dirty(), dirty);

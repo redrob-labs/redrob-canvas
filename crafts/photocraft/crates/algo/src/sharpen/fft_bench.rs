@@ -1,9 +1,9 @@
 //! Opt-in benchmark of the adaptive production path against the frozen original.
 use super::tests::{apply_reference, source};
 use crate::FilterParams;
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_geom::Rect;
-use photocraft_raster::Surface;
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::Surface;
 use std::time::Instant;
 #[test]
 #[ignore = "adaptive large-radius full-operation quality and performance; run alone"]
@@ -97,7 +97,7 @@ fn unsharp_fft_cancel_latency() {
                 flag.store(true, Ordering::Release);
             });
             let cancel = || flag.load(Ordering::Acquire);
-            let result = crate::apply_in_with(&surface, &p, area, area, None, area, &photocraft_raster::Interrupt::cancel_only(&cancel));
+            let result = crate::apply_in_with(&surface, &p, area, area, None, area, &redrob_photo_raster::Interrupt::cancel_only(&cancel));
             let elapsed = started.elapsed().as_micros() as u64;
             timer.join().unwrap();
             assert!(result.is_none());

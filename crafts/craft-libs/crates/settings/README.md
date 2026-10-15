@@ -1,18 +1,18 @@
 # Craft Settings
 
-`craft-settings` stores an application's settings in `config.toml`: it picks the folder, loads
+`redrob-craft-settings` stores an application's settings in `config.toml`: it picks the folder, loads
 without ever failing, saves atomically while the application runs, keeps a backup, moves damaged
 files aside and runs schema migrations. Each application keeps its own settings type and
 defaults. The suite-wide policy (what belongs where) is in
 [docs/settings-storage.md](../../docs/settings-storage.md).
 
-Atomic writes come from [`craft-atomic`](../atomic/README.md).
+Atomic writes come from [`redrob-craft-atomic`](../atomic/README.md).
 
 ## Boundaries
 
 - Never crashes: every error comes back in a `LoadReport`, `TickResult` or `Result`; the crate
   denies `unwrap`, `expect`, `panic` and friends, and the workspace forbids `unsafe`.
-- No application code: it depends only on `craft-atomic`, `serde`, `toml_edit` and `dirs`, and
+- No application code: it depends only on `redrob-craft-atomic`, `serde`, `toml_edit` and `dirs`, and
   knows nothing about any app's settings, defaults, UI or file formats. Apps supply their type
   and their own parsers for older files.
 - No UI: it reports; the application decides what to show.
@@ -20,7 +20,7 @@ Atomic writes come from [`craft-atomic`](../atomic/README.md).
 ## Defining settings
 
 ```rust
-use craft_settings::{DocumentMut, MigrateError, Settings};
+use redrob_craft_settings::{DocumentMut, MigrateError, Settings};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
@@ -59,7 +59,7 @@ Rules for the type:
 ## Using the store
 
 ```rust,ignore
-use craft_settings::{Location, SaveStatus, SettingsStore};
+use redrob_craft_settings::{Location, SaveStatus, SettingsStore};
 
 // Once at startup. Never fails; look at the report for anything to show the user.
 let (mut store, report) = SettingsStore::<Prefs>::open(Location::Auto);
@@ -144,7 +144,7 @@ things that do not belong in `config.toml`.
 
 Values are merged into the document that was loaded: tables merge key by key, arrays and
 scalars are replaced whole, comments, key order, unknown keys and each replaced line's trailing
-comment stay. Each write goes through `craft-atomic`, so a failed save leaves the old file intact.
+comment stay. Each write goes through `redrob-craft-atomic`, so a failed save leaves the old file intact.
 
 Just before each write the store reads the file and compares its **contents** (not its mtime,
 which can stay the same on FAT, HFS+ or network shares) with what it last read or wrote:
@@ -174,7 +174,7 @@ Before merging (from `AGENTS.md`), plus the wasm check:
 cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-cargo check --target wasm32-unknown-unknown -p craft-settings
+cargo check --target wasm32-unknown-unknown -p redrob-craft-settings
 ```
 
 The tests in `tests/` write only to temporary folders and never touch the real config folder.

@@ -80,7 +80,7 @@ fn preview(ui: &egui::Ui, app: &VectorcraftApp, name: &str, r: egui::Rect) {
     use std::cell::RefCell;
     use std::collections::HashMap;
     thread_local! {
-        static RENDERER: RefCell<vectorcraft_render::Renderer> = RefCell::new(vectorcraft_render::Renderer::new());
+        static RENDERER: RefCell<redrob_vector_render::Renderer> = RefCell::new(redrob_vector_render::Renderer::new());
         static CACHE: crate::graphics::TexCache<HashMap<usize, egui::TextureHandle>> = crate::graphics::TexCache::default();
     }
     let Some(st) = app.session.active() else { return };
@@ -227,7 +227,7 @@ mod tests {
     }
 
     fn app_with_design() -> VectorcraftApp {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         let r = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 10, "height": 10})).unwrap()["id"].as_u64().unwrap();
         app.run("select.set", json!({"ids": [r]})).unwrap();

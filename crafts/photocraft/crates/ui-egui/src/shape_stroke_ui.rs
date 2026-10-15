@@ -1,6 +1,6 @@
 //! Shape stroke geometry controls shared by the tool defaults and Properties.
 use egui::vec2;
-use photocraft_doc::{LineCap, LineJoin, ShapeStroke, StrokeAlign};
+use redrob_photo_doc::{LineCap, LineJoin, ShapeStroke, StrokeAlign};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -36,7 +36,7 @@ impl StrokeOptions {
             "miterLimit": self.miter_limit, "dashes": self.dashes, "dashOffset": self.dash_offset, "opacity": self.opacity * 100.0})
     }
 
-    pub fn stroke(&self, width: f32, paint: photocraft_doc::Fill) -> ShapeStroke {
+    pub fn stroke(&self, width: f32, paint: redrob_photo_doc::Fill) -> ShapeStroke {
         ShapeStroke {
             width,
             paint,
@@ -75,13 +75,13 @@ impl StrokeOptions {
     }
 
     fn valid(&self) -> bool {
-        self.stroke(3.0, photocraft_doc::Fill::Solid(photocraft_doc::Color::BLACK)).validate().is_ok()
+        self.stroke(3.0, redrob_photo_doc::Fill::Solid(redrob_photo_doc::Color::BLACK)).validate().is_ok()
     }
 }
 
 #[derive(Clone)]
 struct DragCache {
-    shape: photocraft_doc::ShapeLayer,
+    shape: redrob_photo_doc::ShapeLayer,
     clip: egui::Rect,
     image_rect: egui::Rect,
     texture: egui::TextureHandle,
@@ -89,7 +89,7 @@ struct DragCache {
 
 /// The drag uses the committed vector rasterizer. Cache by geometry/style/visible region, and
 /// cap proxy resolution so oversized windows cannot allocate a document-sized preview.
-pub fn paint_shape_preview(painter: &egui::Painter, shape: &photocraft_doc::ShapeLayer) {
+pub fn paint_shape_preview(painter: &egui::Painter, shape: &redrob_photo_doc::ShapeLayer) {
     let clip = painter.clip_rect();
     if !clip.is_finite() || clip.is_negative() {
         return;
@@ -99,13 +99,13 @@ pub fn paint_shape_preview(painter: &egui::Painter, shape: &photocraft_doc::Shap
     let cache = cached.filter(|c| c.shape == *shape && c.clip == clip).or_else(|| {
         let scale = (2048.0 / clip.width().max(clip.height()).max(1.0)).min(1.0);
         let mut proxy = shape.clone();
-        let tr = photocraft_geom::Affine { m: [scale as f64, 0.0, 0.0, scale as f64, -(clip.left() * scale) as f64, -(clip.top() * scale) as f64] };
+        let tr = redrob_photo_geom::Affine { m: [scale as f64, 0.0, 0.0, scale as f64, -(clip.left() * scale) as f64, -(clip.top() * scale) as f64] };
         proxy.path = proxy.path.transform(&tr);
         if let Some(stroke) = proxy.stroke.as_mut() {
             stroke.width *= scale;
         }
-        let canvas = photocraft_geom::Rect::from_size(photocraft_geom::Size::new((clip.width() * scale).ceil() as u32, (clip.height() * scale).ceil() as u32));
-        let compiled = photocraft_vector::CompiledShape::new(&proxy, photocraft_vector::DEFAULT_TOLERANCE, canvas);
+        let canvas = redrob_photo_geom::Rect::from_size(redrob_photo_geom::Size::new((clip.width() * scale).ceil() as u32, (clip.height() * scale).ceil() as u32));
+        let compiled = redrob_photo_vector::CompiledShape::new(&proxy, redrob_photo_vector::DEFAULT_TOLERANCE, canvas);
         let bounds = compiled.bounds()?.intersect(&canvas);
         if bounds.is_empty() {
             return None;
@@ -196,7 +196,7 @@ pub(crate) fn sync_editor(app: &mut crate::PhotocraftApp, ctx: &egui::Context) {
                 && !locks.all
                 && !locks.pixels
                 && st.doc.layer(layer).is_some_and(|l| match &l.content {
-                    photocraft_doc::LayerContent::Shape(shape) => shape.stroke.as_ref().map(StrokeOptions::from).unwrap_or_default() == e.original,
+                    redrob_photo_doc::LayerContent::Shape(shape) => shape.stroke.as_ref().map(StrokeOptions::from).unwrap_or_default() == e.original,
                     _ => false,
                 })
         })

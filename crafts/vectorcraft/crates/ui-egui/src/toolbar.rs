@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 use egui::{Color32, CornerRadius, Sense, Stroke, Ui, pos2, vec2};
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
-use vectorcraft_tools::{Mods, TOOL_GROUPS, ToolInfo, ToolKey, tool_info};
+use redrob_vector_color::Paint;
+use redrob_vector_tools::{Mods, TOOL_GROUPS, ToolInfo, ToolKey, tool_info};
 
 use crate::theme::{self, Tokens};
 use crate::{VectorcraftApp, icons, widgets};
@@ -327,9 +327,9 @@ pub fn open_options(app: &mut VectorcraftApp, tool: &str) -> Result<serde_json::
         "hand" => app.run("view.fitArtboard", json!({})),
         "zoom" => app.run("view.actualSize", json!({})),
         "rotate" | "scale" | "reflect" | "shear" | "selection" | "directSelection" | "groupSelection" => {
-            let dialog = if vectorcraft_tools::catalog::is_selection_tool(tool) { "move" } else { tool };
+            let dialog = if redrob_vector_tools::catalog::is_selection_tool(tool) { "move" } else { tool };
             let id = format!("object.{dialog}");
-            if let Some(c) = vectorcraft_engine::find_command(&id) {
+            if let Some(c) = redrob_vector_engine::find_command(&id) {
                 (c.enabled)(&app.session)?;
             }
             crate::menus::invoke(app, &id, json!({}));
@@ -356,14 +356,14 @@ pub fn open_options(app: &mut VectorcraftApp, tool: &str) -> Result<serde_json::
         // A double click on the Print Tiling tool puts the pages back where the placement puts them.
         "printTiling" => app.run("print.tiling.set", json!({ "reset": true })),
         // The Liquify tools: their Tool Options (the Global Brush Dimensions and the tool's own).
-        _ if vectorcraft_tools::settings::LIQUIFY.contains(&tool) => crate::dialogs::liquify::open(app, tool),
+        _ if redrob_vector_tools::settings::LIQUIFY.contains(&tool) => crate::dialogs::liquify::open(app, tool),
         // The freehand tools: their Tool Options (Fidelity, fill, the tolerances, the brush size).
         _ if crate::dialogs::freehand::TOOLS.contains(&tool) => crate::dialogs::freehand::open(app, tool),
         // The Symbolism tools: the brush they share.
-        _ if vectorcraft_tools::settings::SYMBOLISM.contains(&tool) => Ok(crate::dialogs::symbolism_options::open(app, tool)),
+        _ if redrob_vector_tools::settings::SYMBOLISM.contains(&tool) => Ok(crate::dialogs::symbolism_options::open(app, tool)),
         // The graph tools: Graph Type for the selected graph.
-        _ if vectorcraft_tools::extra::is_graph_tool(tool) => crate::menus::graph_dialog(app, "graph.setType"),
-        _ if vectorcraft_tools::tool_info(tool).is_none() => Err(format!("unknown tool `{tool}`")),
+        _ if redrob_vector_tools::extra::is_graph_tool(tool) => crate::menus::graph_dialog(app, "graph.setType"),
+        _ if redrob_vector_tools::tool_info(tool).is_none() => Err(format!("unknown tool `{tool}`")),
         _ => Err(format!("the {tool} tool has no options")),
     }
 }
@@ -381,7 +381,7 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.session.tool_id() == "puppetWarp" {
         return puppet_warp_options(app, ui);
     }
-    if app.session.tool_id() == vectorcraft_tools::cropimage::ID {
+    if app.session.tool_id() == redrob_vector_tools::cropimage::ID {
         return crop_options(app, ui);
     }
     if app.session.tool_id() == "artboard" {
@@ -410,10 +410,10 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
 /// `rect` option, then Apply (Enter) and Cancel (Escape).
 fn crop_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     let set = app.session.tool_options()["rect"].as_array().and_then(|v| match v.iter().filter_map(Value::as_f64).collect::<Vec<_>>()[..] {
-        [x, y, w, h] => Some(vectorcraft_geom::Rect::new(x, y, x + w, y + h)),
+        [x, y, w, h] => Some(redrob_vector_geom::Rect::new(x, y, x + w, y + h)),
         _ => None,
     });
-    let Some((_, _, r)) = app.session.active().and_then(|st| vectorcraft_tools::cropimage::crop_box(&st.doc, &st.selection, set)) else { return };
+    let Some((_, _, r)) = app.session.active().and_then(|st| redrob_vector_tools::cropimage::crop_box(&st.doc, &st.selection, set)) else { return };
     let t = Tokens::get(ui.ctx());
     let units = app.session.general_unit();
     let c = r.center();
@@ -478,9 +478,9 @@ fn bottom_controls(app: &mut VectorcraftApp, ui: &mut Ui, t: &Tokens, cols: usiz
         ui.add_space(6.0);
     }
     let modes = [
-        (vectorcraft_engine::DrawMode::Normal, "dc-draw-normal", "Draw Normal", "normal"),
-        (vectorcraft_engine::DrawMode::Behind, "dc-draw-behind", "Draw Behind", "behind"),
-        (vectorcraft_engine::DrawMode::Inside, "dc-draw-inside", "Draw Inside", "inside"),
+        (redrob_vector_engine::DrawMode::Normal, "dc-draw-normal", "Draw Normal", "normal"),
+        (redrob_vector_engine::DrawMode::Behind, "dc-draw-behind", "Draw Behind", "behind"),
+        (redrob_vector_engine::DrawMode::Inside, "dc-draw-inside", "Draw Inside", "inside"),
     ];
     if two && show.draw_mode {
         // Side by side, each one a click away.
@@ -498,7 +498,7 @@ fn bottom_controls(app: &mut VectorcraftApp, ui: &mut Ui, t: &Tokens, cols: usiz
         if !two
             && show.draw_mode
             && let Some((mode, icon, name, _)) = modes.into_iter().find(|m| m.0 == app.session.draw_mode)
-            && widgets::icon_button(ui, icon, &format!("{} (Shift+D)", tl!(name)), mode != vectorcraft_engine::DrawMode::Normal, 26.0).clicked()
+            && widgets::icon_button(ui, icon, &format!("{} (Shift+D)", tl!(name)), mode != redrob_vector_engine::DrawMode::Normal, 26.0).clicked()
         {
             app.run("view.drawMode", json!({})).ok();
         }
@@ -834,7 +834,7 @@ fn puppet_warp_options(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 pub(crate) mod tests {
     use egui::{Event, PointerButton, Pos2};
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
 
@@ -1009,7 +1009,7 @@ pub(crate) mod tests {
         app.run("tool.options", json!({"tool": "rotate"})).unwrap();
         app.ui.dialog.as_mut().unwrap().fields.insert("angle".into(), json!(90));
         crate::dialogs::confirm(&mut app).unwrap();
-        let b = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
+        let b = app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
         assert!((b.x0 - 20.0).abs() < 1e-9 && (b.y0 - 0.0).abs() < 1e-9 && (b.width() - 20.0).abs() < 1e-9, "{b:?}");
     }
 
@@ -1036,7 +1036,7 @@ pub(crate) mod tests {
         app.run("tool.options", json!({"tool": "selection"})).unwrap();
         app.ui.dialog.as_mut().unwrap().fields.insert("dx".into(), json!("25 pt"));
         crate::dialogs::confirm(&mut app).unwrap();
-        let b = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
+        let b = app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
         assert_eq!((b.x0, b.y0), (35.0, 10.0));
     }
 
@@ -1250,7 +1250,7 @@ pub(crate) mod tests {
         assert_eq!(modes.len(), 3, "the three drawing modes side by side");
         assert!(modes.iter().all(|r| (r.top() - modes[0].top()).abs() < 0.5), "{modes:?}");
         click_in(&mut app, &ctx, 2.0, modes[1].center(), PointerButton::Primary, 900.0);
-        assert_eq!(app.session.draw_mode, vectorcraft_engine::DrawMode::Behind);
+        assert_eq!(app.session.draw_mode, redrob_vector_engine::DrawMode::Behind);
     }
 
     /// How many columns of tool buttons `rects` make.

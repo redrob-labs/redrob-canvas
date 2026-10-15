@@ -1,9 +1,9 @@
 //! Transform & utility tools driven through `Session::pointer`, and their commands.
 
 use serde_json::json;
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_geom::{Point, Rect};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_geom::{Point, Rect};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 
@@ -857,7 +857,7 @@ fn several_artboards_move_and_delete_together() {
     assert_eq!(d.artboards[0].rect, before[0]);
     assert_eq!(
         (d.artboards[1].rect, d.artboards[2].rect),
-        (before[1] + vectorcraft_geom::Vec2::new(10.0, 20.0), before[2] + vectorcraft_geom::Vec2::new(10.0, 20.0))
+        (before[1] + redrob_vector_geom::Vec2::new(10.0, 20.0), before[2] + redrob_vector_geom::Vec2::new(10.0, 20.0))
     );
     assert_eq!(d.node(r).unwrap().geometric_bounds().unwrap().x0, 1060.0, "the art on artboard 2 moved with it");
     s.execute("edit.undo", &json!({})).unwrap();

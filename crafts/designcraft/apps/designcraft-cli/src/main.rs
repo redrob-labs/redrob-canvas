@@ -35,7 +35,7 @@ macro_rules! outln {
 mod automation_args;
 mod perf;
 
-use designcraft_engine::Session;
+use redrob_layout_engine::Session;
 use serde_json::{Value, json};
 
 /// The usage block. Shared by `--help` (stdout, success) and an unknown command (stderr, failure).
@@ -78,9 +78,9 @@ non-zero exit when a step fails."#;
 fn usage_footer() -> String {
     format!(
         "\nCommunity: {}  ·  {}  ·  {}",
-        designcraft_engine::links::DISCORD,
-        designcraft_engine::links::APP_PAGE,
-        designcraft_engine::links::GITHUB
+        redrob_layout_engine::links::DISCORD,
+        redrob_layout_engine::links::APP_PAGE,
+        redrob_layout_engine::links::GITHUB
     )
 }
 
@@ -123,7 +123,7 @@ fn main() -> ExitCode {
         Some("bench") => report(perf::bench(&args[1..])),
         Some("validate-pdf") => report(validate_pdf(args.get(1).map(String::as_str))),
         Some("links") => {
-            use designcraft_engine::links::*;
+            use redrob_layout_engine::links::*;
             outln!("Discord   {DISCORD}\nWebsite   {WEBSITE}\nApp page  {APP_PAGE}\nGitHub    {GITHUB}\nIssues    {ISSUES}");
             ExitCode::SUCCESS
         }
@@ -155,7 +155,7 @@ fn report(r: Result<(), String>) -> ExitCode {
 fn validate_pdf(path: Option<&str>) -> Result<(), String> {
     let path = path.ok_or("usage: designcraft-cli validate-pdf FILE.pdf")?;
     let bytes = std::fs::read(path).map_err(|e| format!("{path}: {e}"))?;
-    let issues = designcraft_pdf::check_pdfx4(&bytes);
+    let issues = redrob_layout_pdf::check_pdfx4(&bytes);
     let valid = issues.is_empty();
     let report = json!({"path": path, "standard": "PDF/X-4", "valid": valid, "issues": issues});
     outln!("{}", serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?);
@@ -165,8 +165,8 @@ fn validate_pdf(path: Option<&str>) -> Result<(), String> {
 /// `mcp` (headless, in-process engine) or `mcp --connect PORT|HOST:PORT` (drive a running app
 /// started with `designcraft --control PORT`). JSON-RPC on stdin/stdout; logs on stderr.
 fn mcp(args: &[String]) -> Result<(), String> {
-    use designcraft_engine::file_access::{self, AutomationRoots};
-    use designcraft_mcp::{Backend, Headless, Remote, Server, control_addr};
+    use redrob_layout_engine::file_access::{self, AutomationRoots};
+    use redrob_layout_mcp::{Backend, Headless, Remote, Server, control_addr};
     let mut connect: Option<String> = None;
     let mut sample = false;
     let mut roots_args = automation_args::AutomationArgs::new(None, None);
@@ -279,7 +279,7 @@ fn run(args: &[String]) -> Result<(), String> {
                 let c = val()?;
                 let (id, p) = c.split_once('=').unwrap_or((&c, "{}"));
                 let p: Value = serde_json::from_str(p).map_err(|e| format!("--cmd {id}: {e}"))?;
-                let p = designcraft_engine::script::resolve(&p, &results).map_err(|e| format!("--cmd {id}: {e}"))?;
+                let p = redrob_layout_engine::script::resolve(&p, &results).map_err(|e| format!("--cmd {id}: {e}"))?;
                 let r = s.execute(id, &p).map_err(|e| e.to_string())?;
                 results.push(r.clone());
                 if !r.is_null() {
@@ -346,13 +346,13 @@ fn export(s: &mut Session, out: &str, page: usize, scale: f64) -> Result<(), Str
         return Ok(());
     }
     let st = s.doc().map_err(|e| e.to_string())?;
-    let mut r = designcraft_render::Renderer::new();
+    let mut r = redrob_layout_render::Renderer::new();
     let t = std::time::Instant::now();
     let img = r
-        .render_page(&st.doc, &s.cache, page, scale, true, &designcraft_render::RenderOptions { printing_only: true, ..Default::default() })
+        .render_page(&st.doc, &s.cache, page, scale, true, &redrob_layout_render::RenderOptions { printing_only: true, ..Default::default() })
         .ok_or("no such page")?;
     let bytes = if out.ends_with(".jpg") || out.ends_with(".jpeg") { img.to_jpeg(90) } else { img.to_png() };
-    designcraft_engine::atomic::write_atomic(std::path::Path::new(out), &bytes).map_err(|e| format!("{out}: {e}"))?;
+    redrob_layout_engine::atomic::write_atomic(std::path::Path::new(out), &bytes).map_err(|e| format!("{out}: {e}"))?;
     eprintln!("wrote {out} ({}×{}, {:.1} ms, {} glyphs)", img.width, img.height, t.elapsed().as_secs_f64() * 1000.0, r.stats.glyphs);
     Ok(())
 }
@@ -385,7 +385,7 @@ fn describe(id: Option<&str>) -> Result<(), String> {
 
 /// `script`: run a command script headless (or in the running app with `--connect`).
 fn script(args: &[String]) -> Result<(), String> {
-    use designcraft_mcp::{Backend, Headless, Remote, control_addr};
+    use redrob_layout_mcp::{Backend, Headless, Remote, control_addr};
     let mut file: Option<String> = None;
     let mut setup: Vec<(String, Value)> = Vec::new();
     let mut connect: Option<String> = None;
@@ -422,7 +422,7 @@ fn script(args: &[String]) -> Result<(), String> {
         }
         Some(f) => std::fs::read_to_string(f).map_err(|e| format!("{f}: {e}"))?,
     };
-    let steps = designcraft_engine::script::parse(&text)?;
+    let steps = redrob_layout_engine::script::parse(&text)?;
     let mut backend: Box<dyn Backend> = match &connect {
         Some(c) => {
             let addr = control_addr(c);
@@ -442,12 +442,12 @@ fn script(args: &[String]) -> Result<(), String> {
         // Run every step; failures become {"error": …} results.
         let mut results: Vec<Value> = Vec::new();
         for st in &steps {
-            let r = designcraft_engine::script::resolve(&st.params, &results).and_then(|p| exec(b, &st.command, p));
+            let r = redrob_layout_engine::script::resolve(&st.params, &results).and_then(|p| exec(b, &st.command, p));
             results.push(r.unwrap_or_else(|e| json!({"error": e, "command": st.command})));
         }
-        designcraft_engine::script::Report { results, failed: None }
+        redrob_layout_engine::script::Report { results, failed: None }
     } else {
-        designcraft_engine::script::run(&steps, |id, p| exec(b, id, p))
+        redrob_layout_engine::script::run(&steps, |id, p| exec(b, id, p))
     };
     if report.failed.is_none() {
         if let Some(out) = &save {
@@ -479,7 +479,7 @@ fn script(args: &[String]) -> Result<(), String> {
 
 /// `app`: one command or control-channel method in the running app.
 fn app(args: &[String]) -> Result<(), String> {
-    use designcraft_mcp::{Backend, Remote, control_addr};
+    use redrob_layout_mcp::{Backend, Remote, control_addr};
     let mut port = "7979".to_string();
     let mut method: Option<String> = None;
     let mut rest: Vec<String> = Vec::new();

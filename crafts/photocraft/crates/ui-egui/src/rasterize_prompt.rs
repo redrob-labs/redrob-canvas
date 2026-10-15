@@ -77,7 +77,7 @@ pub fn paints_pixels(app: &PhotocraftApp, tool: Tool) -> bool {
 /// The active layer's kind when painting its pixels needs rasterizing first: the tool targets
 /// the layer's pixels (not its mask, an alpha channel or the Quick Mask) and the layer is a
 /// type, shape, Smart Object or fill layer that isn't locked.
-pub fn needed(app: &PhotocraftApp) -> Option<(Kind, photocraft_doc::LayerId)> {
+pub fn needed(app: &PhotocraftApp) -> Option<(Kind, redrob_photo_doc::LayerId)> {
     if crate::canvas::paint_target(app) != json!("pixels") {
         return None;
     }
@@ -88,7 +88,7 @@ pub fn needed(app: &PhotocraftApp) -> Option<(Kind, photocraft_doc::LayerId)> {
     if locks.all || locks.pixels {
         return None;
     }
-    use photocraft_doc::LayerContent as C;
+    use redrob_photo_doc::LayerContent as C;
     let kind = match &l.content {
         C::Text(_) => Kind::Type,
         C::Shape(_) => Kind::Shape,
@@ -113,7 +113,7 @@ pub fn intercept(app: &mut PhotocraftApp, tool: Tool, x: f64, y: f64, pressure: 
 }
 
 /// Open the prompt for `layer`; OK rasterizes it, then `tool` paints at `at` (x, y, pressure).
-pub fn open(app: &mut PhotocraftApp, kind: Kind, layer: photocraft_doc::LayerId, tool: Tool, at: [f64; 3]) -> u64 {
+pub fn open(app: &mut PhotocraftApp, kind: Kind, layer: redrob_photo_doc::LayerId, tool: Tool, at: [f64; 3]) -> u64 {
     let mut f = Map::new();
     f.insert(MARK.into(), json!(kind.key()));
     f.insert("__command".into(), json!(kind.command()));
@@ -128,13 +128,13 @@ pub fn open(app: &mut PhotocraftApp, kind: Kind, layer: photocraft_doc::LayerId,
 /// The active type layer when `id` is a filter that only needs it rasterized: the engine greys it
 /// for not being a pixel layer, and the layer is not locked. The flag says whether the filter also
 /// runs on a Smart Object, as a smart filter (Vanishing Point doesn't).
-pub fn filter_needs(app: &PhotocraftApp, id: &str) -> Option<(photocraft_doc::LayerId, bool)> {
+pub fn filter_needs(app: &PhotocraftApp, id: &str) -> Option<(redrob_photo_doc::LayerId, bool)> {
     if !id.starts_with("filter.") {
         return None;
     }
     let st = app.session.active()?;
     let layer = st.active_layer?;
-    if !matches!(st.doc.layer(layer)?.content, photocraft_doc::LayerContent::Text(_)) {
+    if !matches!(st.doc.layer(layer)?.content, redrob_photo_doc::LayerContent::Text(_)) {
         return None;
     }
     let locks = st.doc.effective_locks(layer);
@@ -142,7 +142,7 @@ pub fn filter_needs(app: &PhotocraftApp, id: &str) -> Option<(photocraft_doc::La
         return None;
     }
     // Last Filter checks the layer before the journal: with no filter to repeat it stays grey.
-    if id == "filter.lastFilter" && photocraft_engine::filters::last_filter(&app.session).is_none() {
+    if id == "filter.lastFilter" && redrob_photo_engine::filters::last_filter(&app.session).is_none() {
         return None;
     }
     // The engine's reason for a type layer: "filters need a pixel layer (active layer is a Type
@@ -215,7 +215,7 @@ pub fn confirm(app: &mut PhotocraftApp, f: &Map<String, Value>) -> Result<Value,
     // The same tool, layer and point as when the prompt opened.
     app.ui.tool = tool;
     let before = app.session.active().map(|st| st.history.past_len());
-    if app.session.active().and_then(|st| st.active_layer) == Some(photocraft_doc::LayerId(layer)) && x.is_finite() && y.is_finite() {
+    if app.session.active().and_then(|st| st.active_layer) == Some(redrob_photo_doc::LayerId(layer)) && x.is_finite() && y.is_finite() {
         crate::canvas::tool_event(app, ToolEvent::Down { x, y, pressure: pressure.clamp(0.0, 1.0) }, egui::Modifiers::NONE);
         crate::canvas::tool_event(app, ToolEvent::Up { x, y }, egui::Modifiers::NONE);
     }

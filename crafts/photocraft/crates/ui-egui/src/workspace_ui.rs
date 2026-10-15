@@ -487,7 +487,7 @@ mod tests {
     use crate::state::Tool;
 
     fn app() -> (PhotocraftApp, egui::Context) {
-        (PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default()), egui::Context::default())
+        (PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default()), egui::Context::default())
     }
 
     #[test]
@@ -542,7 +542,7 @@ mod tests {
                 let builder = egui_kittest::Harness::builder().with_size(egui::vec2(width, 800.0)).with_max_steps(64);
                 let mut h = builder.build_eframe(move |cc| {
                     PhotocraftApp::setup_context(&cc.egui_ctx, theme);
-                    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+                    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
                     app.run("prefs.set", json!({"path": "interface.theme", "value": theme.id()})).unwrap();
                     app.ui.theme = theme;
                     app.ui.panels.menu_bar = false;
@@ -604,7 +604,7 @@ mod tests {
         // Saved workspaces persist with the preferences.
         inv(&mut app, "window.workspace.newWorkspace", json!({"name": "Mine"})).unwrap();
         let json = app.session.prefs_to_json();
-        let mut s2 = photocraft_engine::Session::new();
+        let mut s2 = redrob_photo_engine::Session::new();
         s2.load_prefs_json(&json).unwrap();
         assert!(s2.prefs().workspaces.contains_key("Mine"));
     }

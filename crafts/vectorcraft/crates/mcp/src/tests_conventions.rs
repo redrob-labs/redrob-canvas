@@ -70,7 +70,7 @@ fn conventions_commands_batch_and_bounded_preview() {
     let before = call(&mut s, "doc_inspect", json!({}));
     let r = call(&mut s, "render_preview", json!({"max_side":64}));
     assert_eq!(r["isError"], false, "{r}");
-    let png = vectorcraft_format::base64_decode(r["content"][0]["data"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(r["content"][0]["data"].as_str().unwrap()).unwrap();
     let img = image::load_from_memory(&png).unwrap();
     assert!(img.width() <= 64 && img.height() <= 64);
     assert_eq!(before, call(&mut s, "doc_inspect", json!({})));
@@ -82,7 +82,7 @@ fn conventions_commands_batch_and_bounded_preview() {
     assert_eq!(r["isError"], false, "{r}");
     let r = call(&mut s, "render_preview", json!({"max_side":60,"artboard":1}));
     assert_eq!(r["isError"], false, "{r}");
-    let png = vectorcraft_format::base64_decode(r["content"][0]["data"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(r["content"][0]["data"].as_str().unwrap()).unwrap();
     let img = image::load_from_memory(&png).unwrap();
     assert_eq!((img.width(), img.height()), (60, 20));
     for board in [json!(2), json!(-1), json!("1")] {

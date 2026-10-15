@@ -2,7 +2,7 @@
 //! screen modes, and no screen mode is saved with the preferences.
 
 use serde_json::json;
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use crate::VectorcraftApp;
 

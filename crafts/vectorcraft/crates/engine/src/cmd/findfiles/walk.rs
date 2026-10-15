@@ -181,7 +181,7 @@ static POOL: Pool = Pool::new(MAX_LIVE);
 /// from 2 to 8.
 pub fn threads() -> usize {
     let cpus = std::thread::available_parallelism().map_or(2, std::num::NonZero::get);
-    threads_for(cpus, usize::from(vectorcraft_render::default_threads()))
+    threads_for(cpus, usize::from(redrob_vector_render::default_threads()))
 }
 
 /// [`threads`] on `cpus` logical CPUs with `render` renderer threads.

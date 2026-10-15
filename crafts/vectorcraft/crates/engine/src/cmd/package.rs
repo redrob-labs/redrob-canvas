@@ -8,8 +8,8 @@ use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use vectorcraft_doc::links::hash_bytes;
-use vectorcraft_doc::{Document, LinkInfo};
+use redrob_vector_doc::links::hash_bytes;
+use redrob_vector_doc::{Document, LinkInfo};
 
 use serde_json::{Value, json};
 
@@ -58,7 +58,7 @@ fn font_ext(bytes: &[u8]) -> &'static str {
 /// extension; without a file, `family-style` with that extension.
 fn packaged_name(path: Option<&Path>, family: &str, style: &str, data: &[u8]) -> String {
     match path.and_then(Path::file_name).map(|n| n.to_string_lossy().into_owned()) {
-        Some(name) if vectorcraft_text::is_font_file(Path::new(&name)) => name,
+        Some(name) if redrob_vector_text::is_font_file(Path::new(&name)) => name,
         Some(name) => format!("{name}.{}", font_ext(data)),
         None => format!("{family}-{style}.{}", font_ext(data)).replace(|c: char| !(c.is_alphanumeric() || "-_.".contains(c)), ""),
     }
@@ -200,13 +200,13 @@ impl<'a> Collector<'a> {
                 let unique = free_name(&name, if self.opts.links_folder { &mut self.link_names } else { &mut self.taken });
                 let destination_file = format!("{dir}{unique}");
                 if placed.contains(&file.path) {
-                    if depth >= vectorcraft_doc::placed_document::MAX_DEPTH {
+                    if depth >= redrob_vector_doc::placed_document::MAX_DEPTH {
                         self.warn(&mut lines, format!("{}: nesting limit reached; copied unchanged without collecting its own links", file.path));
                     } else {
-                        match vectorcraft_format::load_file(&bytes) {
+                        match redrob_vector_format::load_file(&bytes) {
                             Ok(saved) => {
-                                let preview = vectorcraft_format::preview(&bytes);
-                                let pdf = vectorcraft_format::pdf_content(&bytes);
+                                let preview = redrob_vector_format::preview(&bytes);
+                                let pdf = redrob_vector_format::pdf_content(&bytes);
                                 let compressed = bytes.starts_with(&[0x1f, 0x8b]);
                                 let include_linked =
                                     saved.doc.linked_only_images().iter().any(|key| saved.doc.images.get(key).is_some_and(|blob| !blob.is_proxy()));
@@ -214,13 +214,13 @@ impl<'a> Collector<'a> {
                                 self.collect(&mut nested, found_path, &destination_file, depth + 1)?;
                                 if self.opts.relink {
                                     // Preserve auxiliary native-file content when rewriting.
-                                    let mut options = vectorcraft_format::SaveOptions::for_doc(&nested);
+                                    let mut options = redrob_vector_format::SaveOptions::for_doc(&nested);
                                     options.preview = preview;
                                     options.pdf = pdf;
                                     options.profiles = saved.profiles;
                                     options.compress = compressed;
                                     options.include_linked = include_linked;
-                                    match vectorcraft_format::save_with(&nested, &options) {
+                                    match redrob_vector_format::save_with(&nested, &options) {
                                         Ok(rewritten) => bytes = rewritten,
                                         Err(e) => self.warn(
                                             &mut lines,
@@ -248,7 +248,7 @@ impl<'a> Collector<'a> {
             lines.push(String::new());
         }
         if self.opts.copy_fonts {
-            let db = vectorcraft_text::FontDb::global();
+            let db = redrob_vector_text::FontDb::global();
             heading(&mut lines, "FONTS");
             for used in super::fonts::used_fonts(doc) {
                 let font = super::fonts::font_label(&used);
@@ -256,11 +256,11 @@ impl<'a> Collector<'a> {
                 // Found by any of its names, as the canvas draws it (in the version the type names).
                 let resolved = db
                     .resolve(&family, &style)
-                    .filter(|(_, m)| *m != vectorcraft_text::FontMatch::Missing)
+                    .filter(|(_, m)| *m != redrob_vector_text::FontMatch::Missing)
                     .map(|(f, m)| (db.face_version(&family, &style, version.as_deref()).unwrap_or(f), m));
                 // A style the family lacks is shown in its closest style, whose file is copied.
                 let shown = match &resolved {
-                    Some((f, vectorcraft_text::FontMatch::Style)) => format!(" (shown in {} {})", f.family, f.style),
+                    Some((f, redrob_vector_text::FontMatch::Style)) => format!(" (shown in {} {})", f.family, f.style),
                     _ => String::new(),
                 };
                 let reason = match resolved {
@@ -324,7 +324,7 @@ fn package(s: &mut Session, p: &Value) -> Result<Value> {
     let info = if o.report { Some(super::docinfo::report(s, false)?) } else { None };
     let st = s.doc()?;
     let mut doc = (*st.doc).clone();
-    let doc_name = format!("{stem}.{}", vectorcraft_format::EXTENSION);
+    let doc_name = format!("{stem}.{}", redrob_vector_format::EXTENSION);
     // Prepare original links for the destination *before* rebasing copied links.
     // Recalculating afterward would overwrite the portable relative paths.
     if let Some(root) = &root
@@ -335,7 +335,7 @@ fn package(s: &mut Session, p: &Value) -> Result<Value> {
     let mut collector = Collector::new(&o, root.clone(), &doc_name);
     collector.collect(&mut doc, &doc_path, &doc_name, 0)?;
     let mut entries = std::mem::take(&mut collector.entries);
-    entries.insert(0, (doc_name.clone(), vectorcraft_format::save_file(&doc)));
+    entries.insert(0, (doc_name.clone(), redrob_vector_format::save_file(&doc)));
     let mut taken = std::mem::take(&mut collector.taken);
     let lines = collector.sections.concat();
     let missing = std::mem::take(&mut collector.missing);
@@ -375,7 +375,7 @@ fn package(s: &mut Session, p: &Value) -> Result<Value> {
             let zip = zip(&named)?;
             out["name"] = json!(format!("{name}.zip"));
             out["bytes"] = json!(zip.len());
-            out["dataBase64"] = json!(vectorcraft_format::base64_encode(&zip));
+            out["dataBase64"] = json!(redrob_vector_format::base64_encode(&zip));
         }
     }
     Ok(out)
@@ -400,8 +400,8 @@ fn check_no_overwrite(root: &Path, entries: &[Entry], sources: &[&str]) -> Resul
 
 /// The MS-DOS time and date a zip entry records: now (UTC), else 1980-01-01.
 fn dos_time() -> (u16, u16) {
-    let Some(t) = vectorcraft_doc::metadata::now_unix() else { return (0, 0x21) };
-    let [y, mo, d, h, mi, s] = vectorcraft_doc::metadata::civil(t);
+    let Some(t) = redrob_vector_doc::metadata::now_unix() else { return (0, 0x21) };
+    let [y, mo, d, h, mi, s] = redrob_vector_doc::metadata::civil(t);
     let date = (((y - 1980).clamp(0, 127) << 9) | (mo << 5) | d) as u16;
     (((h << 11) | (mi << 5) | (s / 2)) as u16, date)
 }

@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use egui::vec2;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_engine::jobs::{JobId, Started};
+use redrob_photo_engine::jobs::{JobId, Started};
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -22,7 +22,7 @@ fn app_harness() -> Harness<'static, PhotocraftApp> {
 fn app_harness_with(services: crate::Services) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1280.0, 800.0)).with_max_steps(8).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 320, "height": 240})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         s.execute("edit.fill", json!({"color": "#3366cc"})).unwrap();
@@ -281,11 +281,11 @@ fn menu_and_dialog_requests_wait_for_jobs_unless_asked_not_to() {
 }
 
 fn psd_bytes() -> Vec<u8> {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     s.execute("layer.new.layer", json!({})).unwrap();
     let doc = (*s.active().unwrap().doc).clone();
-    photocraft_io::export(&doc, "x.psd", &Default::default()).unwrap().bytes
+    redrob_photo_io::export(&doc, "x.psd", &Default::default()).unwrap().bytes
 }
 
 #[test]
@@ -664,7 +664,7 @@ fn printing_keeps_drawing_and_reports_only_the_final_spooler_result() {
                     if success {
                         Ok(json!({"sent": true, "spooler": "request id is Office-42", "pdf": null}))
                     } else {
-                        Err(photocraft_engine::EngineError::Other("queue refused".into()))
+                        Err(redrob_photo_engine::EngineError::Other("queue refused".into()))
                     }
                 },
                 |_, result| Ok(result),
@@ -771,11 +771,11 @@ fn esc_cancels_a_background_free_transform_commit() {
 /// type in a font that isn't installed.
 #[test]
 fn background_open_warns_about_missing_fonts() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 40, "height": 20})).unwrap();
     s.execute("type.create", json!({"text": "Hi", "x": 2, "y": 12, "size": 10, "font": "NoSuchFamily4559"})).unwrap();
     let doc = (*s.active().unwrap().doc).clone();
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     // What the open job leaves behind: the decoded document in the session, then its result.
     let (index, _) = app.session.open_document(doc, None);
     super::finish_open(&mut app, "poster.psd", None, &json!({"document": index, "warnings": []}), None).unwrap();

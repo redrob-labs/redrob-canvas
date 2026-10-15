@@ -235,7 +235,7 @@ mod tests {
             printer: Some(std::env::var("CRAFT_PRINT_TEST_PRINTER").unwrap()),
             scaling: if std::env::var("CRAFT_PRINT_TEST_SCALING").as_deref() == Ok("shrink") { Scaling::ShrinkToFit } else { Scaling::Exact },
             duplex: (std::env::var("CRAFT_PRINT_TEST_DUPLEX").as_deref() == Ok("long")).then_some(crate::Duplex::LongEdge),
-            title: "craft-print test".into(),
+            title: "redrob-craft-print test".into(),
             ..Job::default()
         };
         let sent = crate::submit(&pdf, &job);

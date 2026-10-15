@@ -3,7 +3,7 @@
 //! Type unit in the Character panel; the change showing in the next frame.
 
 use serde_json::json;
-use vectorcraft_doc::Unit;
+use redrob_vector_doc::Unit;
 
 use super::tests_appearance::{app_with_rect, frame_events, run};
 use super::*;
@@ -69,7 +69,7 @@ fn dialog_lengths_show_in_the_general_unit() {
     crate::dialogs::open_tool_dialog(&mut app, "rectangle", json!({"x": 0, "y": 0}));
     assert!(shows(&dialog_texts(&mut app), &side_mm()), "Rectangle");
     app.run("effect.dialog", json!({"effect": "stylize.dropShadow"})).unwrap();
-    let x = vectorcraft_effects::default_params("stylize.dropShadow").unwrap()["x"].as_f64().unwrap();
+    let x = redrob_vector_effects::default_params("stylize.dropShadow").unwrap()["x"].as_f64().unwrap();
     let t = dialog_texts(&mut app);
     assert!(shows(&t, &Unit::Millimeters.format(x)), "Drop Shadow: {t:?}");
     crate::dialogs::cancel(&mut app);
@@ -106,7 +106,7 @@ fn the_preferences_dialog_shows_the_documents_units() {
 
 #[test]
 fn new_documents_start_in_the_general_preference() {
-    let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+    let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
     general_mm(&mut app);
     app.run("file.newDialog", json!({})).unwrap();
     assert_eq!(app.ui.dialog.as_ref().unwrap().fields["units"], json!("Millimeters"));

@@ -70,14 +70,14 @@ mod tests {
 
     /// An app with a 40×40 white document whose top-left 3×3 pixels are black.
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 40, "height": 40, "background": "white"})).unwrap();
         app.run("tools.setColors", json!({"foreground": [0.0, 0.0, 0.0, 1.0]})).unwrap();
         app.session
             .edit("paint", |doc, _| {
                 let bg = doc.layers[0].surface_mut().unwrap();
-                let black = photocraft_raster::from_rgba(&bg.format(), [0.0, 0.0, 0.0, 1.0]);
-                bg.fill_rect(photocraft_geom::Rect::new(0, 0, 3, 3), &black);
+                let black = redrob_photo_raster::from_rgba(&bg.format(), [0.0, 0.0, 0.0, 1.0]);
+                bg.fill_rect(redrob_photo_geom::Rect::new(0, 0, 3, 3), &black);
                 Ok(())
             })
             .unwrap();
@@ -156,10 +156,10 @@ mod tests {
         assert_eq!(back, o);
         // Every menu entry is a size and a layer choice the engine accepts.
         for (size, _) in super::size_options() {
-            assert!(photocraft_engine::sample_cmds::SAMPLE_SIZES.contains(&size));
+            assert!(redrob_photo_engine::sample_cmds::SAMPLE_SIZES.contains(&size));
         }
         for (id, _) in super::layer_options() {
-            assert!(photocraft_engine::sample_cmds::SampleLayers::parse(&id).is_some(), "{id}");
+            assert!(redrob_photo_engine::sample_cmds::SampleLayers::parse(&id).is_some(), "{id}");
         }
     }
 

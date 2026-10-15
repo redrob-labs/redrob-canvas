@@ -80,7 +80,7 @@ fn source(name: &str, bytes: &[u8]) -> Value {
         return json!({"path": name});
     }
     let _ = name;
-    json!({"data": photocraft_engine::paint::tile::b64_encode(bytes)})
+    json!({"data": redrob_photo_engine::paint::tile::b64_encode(bytes)})
 }
 
 /// Import a preset file; `None` when `name` isn't one.
@@ -149,17 +149,17 @@ mod tests {
     /// Import Brushes… with a PNG: the image becomes the current brush's tip (TOOL-213-12).
     #[test]
     fn import_brushes_turns_an_image_into_a_brush_tip() {
-        use photocraft_engine::paint::TipShape;
+        use redrob_photo_engine::paint::TipShape;
         let mut px = vec![255u8; 16 * 16];
         for y in 4..12 {
             for x in 6..9 {
                 px[y * 16 + x] = 0;
             }
         }
-        let img = photocraft_codecs::Image::from_u8(16, 16, photocraft_codecs::ChannelLayout::Gray, px).unwrap();
-        let png = photocraft_codecs::encode(&img, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+        let img = redrob_photo_codecs::Image::from_u8(16, 16, redrob_photo_codecs::ChannelLayout::Gray, px).unwrap();
+        let png = redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap();
         let (show, asked) = crate::file_dialog::fake(vec![Some(crate::file_dialog::FileDialogAnswer::Contents("Leaf.png".into(), png))]);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services { file_dialog: Some(show), ..Default::default() });
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services { file_dialog: Some(show), ..Default::default() });
         import_brushes(&mut app).unwrap();
         app.poll_file_dialog(&egui::Context::default(), None);
         match asked.borrow().first() {

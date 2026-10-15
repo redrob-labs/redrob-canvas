@@ -1,8 +1,8 @@
 //! Edit → Edit Colors → Overprint Black… opens its parameter dialog, which applies the command.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeId;
-use vectorcraft_engine::Session;
+use redrob_vector_doc::NodeId;
+use redrob_vector_engine::Session;
 
 use crate::{VectorcraftApp, dialogs, menus};
 

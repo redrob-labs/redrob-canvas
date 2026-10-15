@@ -2,8 +2,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeId;
-use vectorcraft_engine::{EngineError, Session};
+use redrob_vector_doc::NodeId;
+use redrob_vector_engine::{EngineError, Session};
 
 fn session() -> (Session, NodeId, NodeId) {
     let mut s = Session::new();

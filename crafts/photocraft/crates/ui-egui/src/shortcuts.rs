@@ -111,9 +111,9 @@ pub fn default_shortcut(id: &str) -> Option<String> {
         .iter()
         .find(|c| c.0 == id)
         .and_then(|c| c.3)
-        .or_else(|| photocraft_engine::commands::find(id).and_then(|c| c.shortcut))
+        .or_else(|| redrob_photo_engine::commands::find(id).and_then(|c| c.shortcut))
         .or_else(|| crate::menu_catalog::CATALOG.iter().find(|c| c.3 == id).and_then(|c| c.2))
-        .or_else(|| photocraft_engine::prefs::TEMPORARY_TOOLS.iter().find(|t| t.0 == id).map(|t| t.2))
+        .or_else(|| redrob_photo_engine::prefs::TEMPORARY_TOOLS.iter().find(|t| t.0 == id).map(|t| t.2))
         .map(str::to_string)
         .or_else(|| crate::tool_shortcuts::tool(id).and_then(crate::tool_shortcuts::default))
 }
@@ -445,7 +445,7 @@ pub fn handle(app: &mut PhotocraftApp, ctx: &egui::Context) {
     }
     // Moved pixels still floating: ↩ drops them.
     if focus == Focus::None
-        && app.session.active().is_some_and(|st| photocraft_engine::float_cmds::floating(st).is_some())
+        && app.session.active().is_some_and(|st| redrob_photo_engine::float_cmds::floating(st).is_some())
         && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Enter))
     {
         if let Err(e) = app.run("select.drop", json!({})) {
@@ -673,7 +673,7 @@ mod tests {
     #[test]
     fn tool_key_brings_back_the_groups_last_used_tool() {
         use crate::state::Tool;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let ctx = egui::Context::default();
         let press = |app: &mut PhotocraftApp, key, modifiers| {
             let raw = egui::RawInput {
@@ -714,7 +714,7 @@ mod tests {
     #[test]
     fn shift_key_tool_switch_is_the_default() {
         use crate::state::Tool;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let ctx = egui::Context::default();
         let press = |app: &mut PhotocraftApp, modifiers| {
             let raw = egui::RawInput {
@@ -746,7 +746,7 @@ mod tests {
     /// (⇧# types `'`) its hardness, as Photoshop's German shortcuts.
     #[test]
     fn german_o_umlaut_and_hash_are_the_brush_keys() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         app.ui.tool = Tool::Brush;
         app.session.tools.brush.hardness = 0.5;
@@ -771,7 +771,7 @@ mod tests {
 
     #[test]
     fn pen_command_z_and_backspace_retract_points_before_document_undo() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", serde_json::json!({"width": 200, "height": 200})).unwrap();
         app.ui.tool = crate::state::Tool::Pen;
         app.run("shape.create", serde_json::json!({"kind": "rect", "rect": [10, 10, 40, 40], "fill": "#ff0000"})).unwrap();
@@ -806,7 +806,7 @@ mod tests {
 
     #[test]
     fn pen_custom_undo_binding_and_menu_retract_pending_points() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", serde_json::json!({"width": 200, "height": 200})).unwrap();
         app.ui.tool = crate::state::Tool::Pen;
         for (x, y) in [(10.0, 10.0), (50.0, 10.0)] {
@@ -899,7 +899,7 @@ mod tests {
 
     #[test]
     fn labels_show_the_effective_shortcut_in_platform_notation() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let new = command_label(&app, "New document…", "file.new");
         if cfg!(target_os = "macos") {
             assert_eq!(new, "New document…     ⌘N");
@@ -1027,7 +1027,7 @@ mod tests {
     fn windows_shift_delete_fills_instead_of_cutting() {
         let shift = Modifiers::SHIFT;
         let ctrl = Modifiers::CTRL | Modifiers::COMMAND;
-        let app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let bound = |held| {
             let (key, mods) = clipboard_press(&egui::Event::Cut, held, true)?;
             assert_eq!((key, mods), (Key::Delete, held));
@@ -1088,7 +1088,7 @@ mod tests {
 
     #[test]
     fn every_registered_shortcut_parses() {
-        for c in photocraft_engine::command_specs() {
+        for c in redrob_photo_engine::command_specs() {
             if let Some(sc) = c.shortcut {
                 assert!(parse(sc).is_some(), "{}: {sc}", c.id);
             }
@@ -1103,12 +1103,12 @@ mod tests {
     #[test]
     fn no_duplicate_shortcuts() {
         let mut seen = std::collections::HashMap::new();
-        let all = photocraft_engine::command_specs()
+        let all = redrob_photo_engine::command_specs()
             .iter()
             .filter_map(|c| c.shortcut.map(|s| (c.id, s)))
             .chain(crate::menus::UI_COMMANDS.iter().filter_map(|(id, _, _, s)| s.map(|s| (*id, s))))
             // Photoshop's second keys (#3665) are taken by no other command either.
-            .chain(photocraft_engine::prefs::ALTERNATE_SHORTCUTS.iter().copied());
+            .chain(redrob_photo_engine::prefs::ALTERNATE_SHORTCUTS.iter().copied());
         for (id, s) in all {
             assert!(parse(s).is_some(), "{id}: {s}");
             if let Some(prev) = seen.insert(s, id) {

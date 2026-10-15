@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-ui-egui"
+name = "redrob-layout-ui-egui"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,15 +10,15 @@ description = "DesignCraft egui frontend (InDesign-style UI); swappable — noth
 workspace = true
 
 [dependencies]
-craft-ui = { workspace = true }
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
-designcraft-compose = { workspace = true }
-designcraft-render = { workspace = true }
-designcraft-tools = { workspace = true }
-designcraft-engine = { workspace = true }
+redrob-craft-ui = { workspace = true }
+redrob-layout-geom = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-doc = { workspace = true }
+redrob-layout-fonts = { workspace = true }
+redrob-layout-compose = { workspace = true }
+redrob-layout-render = { workspace = true }
+redrob-layout-tools = { workspace = true }
+redrob-layout-engine = { workspace = true }
 unicode-bidi = { workspace = true }
 unicode-bidi-mirroring = { workspace = true }
 unicode-segmentation = { workspace = true }
@@ -30,11 +30,11 @@ log = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-designcraft-idml = { workspace = true }
+redrob-layout-idml = { workspace = true }
 zip = { workspace = true }
 # Headless (offscreen wgpu) rendering of the whole window for UI screenshots: `examples/ui_shot.rs`.
 egui_kittest = { workspace = true, features = ["wgpu", "snapshot"] }
-designcraft-fonts = { workspace = true, features = ["testing"] }
+redrob-layout-fonts = { workspace = true, features = ["testing"] }
 
 [build-dependencies]
 serde_json = { workspace = true }

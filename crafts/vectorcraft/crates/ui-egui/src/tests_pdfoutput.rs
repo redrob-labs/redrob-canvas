@@ -2,7 +2,7 @@
 //! chosen in the dialog reach the written file, with nothing reported as not applied.
 
 use serde_json::json;
-use vectorcraft_color::cms::GENERIC_CMYK;
+use redrob_vector_color::cms::GENERIC_CMYK;
 
 use crate::tests_svg::app;
 use crate::{dialogs, theme};

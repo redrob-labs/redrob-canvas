@@ -2,7 +2,7 @@
 //! raster effect images they make (PDF export, Expand Appearance) and the Rasterize defaults.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Background, Document, NodeId, NodeKind, RasterColorModel, RasterEffectsSettings};
+use redrob_vector_doc::{Background, Document, NodeId, NodeKind, RasterColorModel, RasterEffectsSettings};
 
 use super::*;
 
@@ -149,12 +149,12 @@ fn raster_settings_round_trip_and_old_files_load() {
     let mut d = Document::new(10.0, 10.0);
     d.raster_effects =
         RasterEffectsSettings { color_model: RasterColorModel::Bitmap, background: Background::White, add_around: 12.0, ..Default::default() };
-    let back = vectorcraft_format::load(&vectorcraft_format::save_file(&d)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save_file(&d)).unwrap();
     assert_eq!(back.raster_effects, d.raster_effects);
     // Saved before the settings existed: only the resolution.
     let old = Document::new(10.0, 10.0);
-    let bytes = vectorcraft_format::save_file(&old);
+    let bytes = redrob_vector_format::save_file(&old);
     assert!(!String::from_utf8_lossy(&bytes).contains("raster_effects\""), "default settings aren't written");
-    let back = vectorcraft_format::load(&bytes).unwrap();
+    let back = redrob_vector_format::load(&bytes).unwrap();
     assert_eq!((back.raster_effects_ppi, back.raster_effects), (72.0, RasterEffectsSettings::default()));
 }

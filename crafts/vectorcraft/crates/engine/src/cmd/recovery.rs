@@ -40,7 +40,7 @@ use std::sync::{Arc, Mutex, Weak};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, ImageBlob};
+use redrob_vector_doc::{Document, ImageBlob};
 
 use super::fileio::{self, SAVE_FORMATS, SaveJob, SaveMode, SavePlan};
 use super::*;
@@ -115,7 +115,7 @@ pub trait RecoveryStore: Send + Sync {
     fn remove_area(&self, _area: &str) {}
     /// The clock heartbeats are judged by (Unix seconds; `None`: none, so no area counts as gone).
     fn now(&self) -> Option<i64> {
-        vectorcraft_doc::metadata::now_unix()
+        redrob_vector_doc::metadata::now_unix()
     }
 }
 
@@ -287,7 +287,7 @@ impl RecoveryStore for FolderStore {
         if let Some(dir) = f.parent() {
             std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
         }
-        vectorcraft_format::write_atomic(&f, bytes).map_err(|e| format!("{}: {e}", f.display()))
+        redrob_vector_format::write_atomic(&f, bytes).map_err(|e| format!("{}: {e}", f.display()))
     }
     fn remove(&self, name: &str) -> std::result::Result<(), String> {
         let f = self.file(name)?;
@@ -583,7 +583,7 @@ fn blob_name(bytes: &Arc<Vec<u8>>) -> String {
 
 /// The MIME type of a linked image's preview (JPEG or PNG), as a save names it.
 fn proxy_mime(bytes: &[u8]) -> &'static str {
-    if bytes.starts_with(&[0xff, 0xd8]) { "image/jpeg" } else { vectorcraft_doc::links::PROXY_MIME }
+    if bytes.starts_with(&[0xff, 0xd8]) { "image/jpeg" } else { redrob_vector_doc::links::PROXY_MIME }
 }
 
 /// Remove the image entries of `area` no copy's details name any more. Best effort: an entry left

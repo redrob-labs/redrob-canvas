@@ -77,8 +77,8 @@ fn save_a_copy_and_save_dont_ask_and_options_reach_the_file() {
     d.fields.insert("compress".into(), json!(false));
     dialogs::confirm(&mut app).unwrap();
     let bytes = written.borrow()[1].1.clone();
-    assert!(vectorcraft_format::pdf_content(&bytes).is_some_and(|p| p.starts_with(b"%PDF")));
-    assert!(!vectorcraft_format::is_compressed(&bytes));
+    assert!(redrob_vector_format::pdf_content(&bytes).is_some_and(|p| p.starts_with(b"%PDF")));
+    assert!(!redrob_vector_format::is_compressed(&bytes));
 }
 
 #[test]
@@ -92,7 +92,7 @@ fn the_web_save_as_dialog_shows_the_native_options() {
         })),
         ..Default::default()
     };
-    let mut app = crate::VectorcraftApp::new(vectorcraft_engine::Session::new(), services);
+    let mut app = crate::VectorcraftApp::new(redrob_vector_engine::Session::new(), services);
     app.run("file.new", json!({"width": 100, "height": 80})).unwrap();
     three_boards(&mut app);
     app.run("file.saveAs", Value::Null).unwrap();

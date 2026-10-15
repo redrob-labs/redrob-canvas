@@ -330,7 +330,7 @@ fn decode_head(b64: &str) -> Option<Vec<u8>> {
             kept > chars
         })
         .unwrap_or(b64.len());
-    vectorcraft_format::base64_decode(b64.get(..end)?)
+    redrob_vector_format::base64_decode(b64.get(..end)?)
 }
 
 fn read(s: &mut Session, p: &Value) -> Result<Value> {

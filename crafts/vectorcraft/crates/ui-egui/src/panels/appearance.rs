@@ -15,8 +15,8 @@ use std::sync::OnceLock;
 
 use egui::{Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::{Value, json};
-use vectorcraft_color::{BlendMode, Paint};
-use vectorcraft_doc::{AppearanceItem, Effect, Node, NodeId};
+use redrob_vector_color::{BlendMode, Paint};
+use redrob_vector_doc::{AppearanceItem, Effect, Node, NodeId};
 
 use super::{live_run, pstate, set_pstate};
 use crate::panels::stroke::paint_profile;
@@ -134,13 +134,13 @@ fn click_item(app: &mut VectorcraftApp, ctx: &egui::Context, n: &Node, sel: Sel,
 }
 
 /// An effect as the fx menu lists it: (id, label without the ellipsis, Effect-menu path).
-fn catalog_entry(e: vectorcraft_effects::EffectInfo) -> (String, String, Vec<String>) {
+fn catalog_entry(e: redrob_vector_effects::EffectInfo) -> (String, String, Vec<String>) {
     (e.id.to_string(), e.label.trim_end_matches('…').to_string(), e.menu.iter().map(|s| s.to_string()).collect())
 }
 
 fn catalog() -> &'static [(String, String, Vec<String>)] {
     static C: OnceLock<Vec<(String, String, Vec<String>)>> = OnceLock::new();
-    C.get_or_init(|| vectorcraft_effects::effect_catalog().into_iter().map(catalog_entry).collect())
+    C.get_or_init(|| redrob_vector_effects::effect_catalog().into_iter().map(catalog_entry).collect())
 }
 
 /// Display label of an effect id ("stylize.dropShadow" → "Drop Shadow"; plug-in effects by their
@@ -150,7 +150,7 @@ pub fn effect_label(id: &str) -> String {
         .iter()
         .find(|c| c.0 == id)
         .map(|c| c.1.clone())
-        .or_else(|| vectorcraft_effects::effect_info(id).map(|e| e.label.trim_end_matches('…').to_string()))
+        .or_else(|| redrob_vector_effects::effect_info(id).map(|e| e.label.trim_end_matches('…').to_string()))
         .unwrap_or_else(|| id.rsplit('.').next().unwrap_or(id).to_string())
 }
 
@@ -618,7 +618,7 @@ fn contents_row(app: &mut VectorcraftApp, ui: &mut Ui, n: &Node, label: &str, se
     let (r, resp) = row(ui, sel == Sel::Contents);
     eye(ui, r, "ap-contents-eye", true, false);
     text(ui, pos2(r.left() + EYE_W + 24.0, r.center().y), tl!(label), false);
-    let characters = matches!(n.kind, vectorcraft_doc::NodeKind::Text(_));
+    let characters = matches!(n.kind, redrob_vector_doc::NodeKind::Text(_));
     if characters {
         for (k, stroke) in [false, true].into_iter().enumerate() {
             let cr = Rect::from_min_size(pos2(r.left() + EYE_W + 100.0 + 24.0 * k as f32, r.center().y - 9.0), vec2(18.0, 18.0));
@@ -641,7 +641,7 @@ fn contents_row(app: &mut VectorcraftApp, ui: &mut Ui, n: &Node, label: &str, se
 }
 
 /// A stroke row's notes after the weight: its brush, "Dashed" and its width profile (drawn).
-fn stroke_notes(ui: &Ui, r: Rect, st: &vectorcraft_doc::StrokeLayer) {
+fn stroke_notes(ui: &Ui, r: Rect, st: &redrob_vector_doc::StrokeLayer) {
     let t = Tokens::get(ui.ctx());
     let painter = ui.painter_at(r);
     let dashed = st.dash.as_ref().is_some_and(|d| d.is_dashed()).then_some(tl!("Dashed"));
@@ -721,14 +721,14 @@ fn effect_row(app: &mut VectorcraftApp, ui: &mut Ui, item: Option<usize>, k: usi
 
 /// Does the effect have a dialog (any parameters)?
 fn has_options(id: &str) -> bool {
-    vectorcraft_effects::default_params(id).is_some_and(|d| d.as_object().is_some_and(|o| !o.is_empty()))
+    redrob_vector_effects::default_params(id).is_some_and(|d| d.as_object().is_some_and(|o| !o.is_empty()))
 }
 
 /// Inline editor for an applied effect's parameters (numbers, booleans, strings, colours);
 /// edits go through `effect.setParams`.
 fn effect_editor(app: &mut VectorcraftApp, ui: &mut Ui, item: Option<usize>, k: usize, e: &Effect) {
     let t = Tokens::get(ui.ctx());
-    let defaults = vectorcraft_effects::default_params(&e.id).unwrap_or(Value::Null);
+    let defaults = redrob_vector_effects::default_params(&e.id).unwrap_or(Value::Null);
     let mut params = defaults.as_object().cloned().unwrap_or_default();
     if let Some(cur) = e.params.as_object() {
         for (key, v) in cur {
@@ -763,7 +763,7 @@ fn effect_editor(app: &mut VectorcraftApp, ui: &mut Ui, item: Option<usize>, k: 
                     }
                     Value::Number(n) => {
                         let (x, id) = (n.as_f64().unwrap_or(0.0), ("fx", item, k, key.as_str()));
-                        let nx = if vectorcraft_effects::is_length(&e.id, key, relative) {
+                        let nx = if redrob_vector_effects::is_length(&e.id, key, relative) {
                             widgets::num_field(ui, id, Some(x), unit, 70.0)
                         } else {
                             widgets::plain_field(ui, id, x, "", 2, 70.0)
@@ -888,7 +888,7 @@ fn delete_selected(app: &mut VectorcraftApp, ui: &Ui, node: Option<&Node>, sel: 
 /// opens the effect dialog.
 pub(crate) fn fx_menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     let mut groups: Vec<(String, Vec<(String, String)>)> = vec![];
-    let plugins: Vec<_> = vectorcraft_effects::plugin_effects().into_iter().map(catalog_entry).collect();
+    let plugins: Vec<_> = redrob_vector_effects::plugin_effects().into_iter().map(catalog_entry).collect();
     // Built-in effects in the UI language; a plug-in's by the name it gives.
     let built_in = catalog().iter().map(|(id, label, menu)| (id, tl!(label), menu));
     for (id, label, menu) in built_in.chain(plugins.iter().map(|(id, label, menu)| (id, label.as_str(), menu))) {
@@ -982,9 +982,9 @@ mod tests {
 
     #[test]
     fn drops_pick_the_command() {
-        use vectorcraft_doc::{Appearance, FillLayer};
+        use redrob_vector_doc::{Appearance, FillLayer};
         let fx = |id: &str| Effect { id: id.into(), params: Value::Null, visible: true };
-        let mut n = Node::path(NodeId(1), vectorcraft_geom::PathData::default(), Appearance::default_art());
+        let mut n = Node::path(NodeId(1), redrob_vector_geom::PathData::default(), Appearance::default_art());
         n.appearance.items.push(AppearanceItem::Fill(FillLayer::new(Paint::None))); // [F, S, F]
         n.appearance.items[1].effects_mut().extend([fx("distort.twist"), fx("distort.roughen")]);
         n.appearance.effects.push(fx("stylize.dropShadow"));
@@ -1040,7 +1040,7 @@ mod tests {
 
     #[test]
     fn groups_show_a_contents_row_and_type_a_characters_row_in_their_slot() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         let run = |app: &mut VectorcraftApp, id: &str, p: Value| app.session.execute(id, &p).unwrap();
         run(&mut app, "file.new", json!({"width": 100, "height": 100}));
         let a = run(&mut app, "shape.rectangle", json!({"x": 0, "y": 0, "width": 20, "height": 20}))["id"].clone();
@@ -1063,7 +1063,7 @@ mod tests {
 
     #[test]
     fn drops_move_items_across_the_contents_row_and_the_row_itself() {
-        use vectorcraft_doc::FillLayer;
+        use redrob_vector_doc::FillLayer;
         // A group [F0 | F1 F2]: the Contents row sits above item 0.
         let mut n = Node::group(NodeId(1), vec![]);
         n.appearance.items = (0..3).map(|_| AppearanceItem::Fill(FillLayer::new(Paint::None))).collect();
@@ -1095,7 +1095,7 @@ mod tests {
 
     #[test]
     fn with_nothing_selected_it_lists_what_new_art_gets() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         let run = |app: &mut VectorcraftApp, id: &str, p: Value| app.session.execute(id, &p).unwrap();
         run(&mut app, "file.new", json!({"width": 100, "height": 100}));
         run(&mut app, "shape.rectangle", json!({"x": 0, "y": 0, "width": 20, "height": 20}));

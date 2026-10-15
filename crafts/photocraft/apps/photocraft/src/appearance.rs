@@ -77,7 +77,7 @@ fn portal_startup<T>(subscribe: impl FnOnce(), read: impl FnOnce() -> T) -> T {
 
 /// Reads the colour scheme once, then follows the portal's `SettingChanged` signal. There is no
 /// polling: the worker sleeps in the signal iterator and wakes the UI only when the value changes.
-pub fn service() -> Option<photocraft_ui_egui::SystemThemeFn> {
+pub fn service() -> Option<redrob_photo_ui_egui::SystemThemeFn> {
     #[cfg(target_os = "linux")]
     {
         start(|publisher| {
@@ -132,7 +132,7 @@ impl Publisher {
 /// Runs `worker` on its own thread and waits up to 250 ms for its first value, so a fast desktop
 /// answers before the first frame.
 #[cfg(target_os = "linux")]
-fn start(worker: impl FnOnce(&Publisher) + Send + 'static) -> Option<photocraft_ui_egui::SystemThemeFn> {
+fn start(worker: impl FnOnce(&Publisher) + Send + 'static) -> Option<redrob_photo_ui_egui::SystemThemeFn> {
     use std::sync::{Arc, OnceLock, atomic::AtomicU8};
     let value = Arc::new(AtomicU8::new(0));
     let wake: Arc<OnceLock<egui::Context>> = Arc::new(OnceLock::new());

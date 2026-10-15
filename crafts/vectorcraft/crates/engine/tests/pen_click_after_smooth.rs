@@ -2,10 +2,10 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use serde_json::json;
-use vectorcraft_doc::NodeKind;
-use vectorcraft_engine::{Session, ViewInfo};
-use vectorcraft_geom::Point;
-use vectorcraft_tools::{PointerEvent, PointerKind};
+use redrob_vector_doc::NodeKind;
+use redrob_vector_engine::{Session, ViewInfo};
+use redrob_vector_geom::Point;
+use redrob_vector_tools::{PointerEvent, PointerKind};
 
 #[test]
 fn click_after_a_smooth_anchor_curves_from_its_side_only() {

@@ -5,7 +5,7 @@ use egui_kittest::{Harness, kittest::Queryable};
 use std::sync::Arc;
 
 fn app(depth: u32) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("prefs.set", json!({"path":"interface.language","value":"en"})).unwrap();
     app.run("file.new", json!({"width":32,"height":24,"depth":depth,"background":"#406080"})).unwrap();
     app
@@ -70,7 +70,7 @@ fn preview_cancel_ok_parent_cancel_and_apply_are_transactional_at_every_depth() 
         let again = canvas::display_doc(&mut app, 0);
         assert_eq!(key, again.1);
         assert!(Arc::ptr_eq(&shown, &again.0), "unchanged preview is cached");
-        let pixel = photocraft_compose::flatten(&shown).get(3, 3);
+        let pixel = redrob_photo_compose::flatten(&shown).get(3, 3);
         assert!(pixel[1] > pixel[0] && pixel[1] > pixel[2], "live preview is green at {depth} bits");
         let st = app.session.active().unwrap();
         assert_eq!((st.history.past_len(), st.revision, st.is_dirty()), (history, revision, dirty));
@@ -91,7 +91,7 @@ fn preview_cancel_ok_parent_cancel_and_apply_are_transactional_at_every_depth() 
         dialogs::confirm(&mut app, picker).unwrap();
         dialogs::confirm(&mut app, parent).unwrap();
         let applied = app.session.active().unwrap().doc.clone();
-        let pixel = photocraft_compose::flatten(&applied).get(3, 3);
+        let pixel = redrob_photo_compose::flatten(&applied).get(3, 3);
         assert!(pixel[1] > pixel[0]);
         app.run("edit.undo", json!({})).unwrap();
         assert_eq!(app.session.active().unwrap().doc.layer(doc.layers[0].id).unwrap().effects.items.len(), 0);

@@ -4,8 +4,8 @@
 
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, Rect, vec2};
 use serde_json::json;
-use vectorcraft_engine::Session;
-use vectorcraft_tools::{PointerEvent, PointerKind};
+use redrob_vector_engine::Session;
+use redrob_vector_tools::{PointerEvent, PointerKind};
 
 use crate::{VectorcraftApp, menus};
 

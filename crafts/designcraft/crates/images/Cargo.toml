@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-images"
+name = "redrob-layout-images"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,11 +9,11 @@ description = "DesignCraft placed-graphic decoding: raster formats (PNG, JPEG, G
 workspace = true
 
 [dependencies]
-designcraft-color = { workspace = true }
-designcraft-fonts = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-fonts = { workspace = true }
 image = { workspace = true }
 tiff = { workspace = true }
 resvg = { workspace = true }
 
 [dev-dependencies]
-designcraft-fonts = { workspace = true, features = ["testing"] }
+redrob-layout-fonts = { workspace = true, features = ["testing"] }

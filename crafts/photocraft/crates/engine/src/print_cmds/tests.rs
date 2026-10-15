@@ -1,5 +1,5 @@
 use super::*;
-use photocraft_doc::{Knot, NamedPath, Path, Subpath};
+use redrob_photo_doc::{Knot, NamedPath, Path, Subpath};
 
 fn tmp(name: &str) -> String {
     let d = std::env::temp_dir().join(format!("photocraft-print-{}-{name}", std::process::id()));
@@ -210,7 +210,7 @@ fn printer_profile_can_be_an_installed_icc_file() {
     let dir = tmp("icc");
     let icc = format!("{dir}/My Paper.icc");
     let output = format!("{dir}/managed.pdf");
-    std::fs::write(&icc, photocraft_cms::Builtin::CoatedCmyk.profile().to_bytes().as_slice()).unwrap();
+    std::fs::write(&icc, redrob_photo_cms::Builtin::CoatedCmyk.profile().to_bytes().as_slice()).unwrap();
     let mut s = session("rgb", 16);
     let r = s
         .execute("file.print", json!({"output": output, "dryRun": true, "colorHandling": "photocraftManages", "printerProfile": icc, "emulsionDown": true}))
@@ -256,7 +256,7 @@ fn package_copies_links_and_relinks() {
     assert!(std::path::Path::new(&copied).is_file());
     let docp = r["document"].as_str().unwrap();
     assert!(docp.ends_with("Print Me/Print Me.pcraft"));
-    let back = photocraft_io::import("Print Me.pcraft", &std::fs::read(docp).unwrap()).unwrap().document;
+    let back = redrob_photo_io::import("Print Me.pcraft", &std::fs::read(docp).unwrap()).unwrap().document;
     let linked: Vec<String> = back
         .walk()
         .iter()
@@ -286,7 +286,7 @@ fn paths_export_as_illustrator_postscript() {
     s.edit("paths", |d, _| {
         let tri = Subpath::polygon(&[(10.0, 10.0), (100.0, 10.0), (50.0, 90.0)]);
         let mut curve = Subpath::polyline(&[(0.0, 0.0), (300.0, 150.0)]);
-        curve.knots[0] = Knot::smooth(photocraft_geom::Point::new(0.0, 0.0), photocraft_geom::Point::new(0.0, 0.0), photocraft_geom::Point::new(50.0, 0.0));
+        curve.knots[0] = Knot::smooth(redrob_photo_geom::Point::new(0.0, 0.0), redrob_photo_geom::Point::new(0.0, 0.0), redrob_photo_geom::Point::new(50.0, 0.0));
         d.paths.push(NamedPath { name: "Shapes".into(), path: Path::new(vec![tri, curve]), psd_raw: None });
         Ok(())
     })

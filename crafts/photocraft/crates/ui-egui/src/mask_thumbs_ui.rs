@@ -10,7 +10,7 @@
 //! mask to load it as a selection, and click the vector mask to target it (brackets).
 
 use egui::{Color32, Painter, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
-use photocraft_doc::{Document, Layer, LayerId, VectorMask};
+use redrob_photo_doc::{Document, Layer, LayerId, VectorMask};
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -192,7 +192,7 @@ pub fn click_command(l: &Layer, kind: MaskKind, m: egui::Modifiers) -> Option<(S
     }
     if m.alt {
         let mode = if m.shift { "toggleOverlay" } else { "toggleGray" };
-        return (kind == MaskKind::Pixel && l.mask.is_some()).then(|| (photocraft_engine::mask_view_cmds::ID.into(), json!({"layer": l.id.0, "mode": mode})));
+        return (kind == MaskKind::Pixel && l.mask.is_some()).then(|| (redrob_photo_engine::mask_view_cmds::ID.into(), json!({"layer": l.id.0, "mode": mode})));
     }
     if !m.shift {
         return None;
@@ -224,8 +224,8 @@ pub fn double_click_command(app: &PhotocraftApp, kind: MaskKind) -> Option<(&'st
 }
 
 /// The active layer of `st` has a vector mask (shape layers' paths are content, not masks).
-pub fn has_vector_mask(st: &photocraft_engine::DocState) -> bool {
-    st.active_layer.and_then(|id| st.doc.layer(id)).is_some_and(|l| l.vector_mask.is_some() && !matches!(l.content, photocraft_doc::LayerContent::Shape(_)))
+pub fn has_vector_mask(st: &redrob_photo_engine::DocState) -> bool {
+    st.active_layer.and_then(|id| st.doc.layer(id)).is_some_and(|l| l.vector_mask.is_some() && !matches!(l.content, redrob_photo_doc::LayerContent::Shape(_)))
 }
 
 /// Photoshop's target brackets: corner marks just outside thumbnail `r`.
@@ -253,7 +253,7 @@ pub fn brackets(ctx: &egui::Context) -> Option<Rect> {
 pub fn vector_fingerprint(m: &VectorMask) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     let mut mix = |v: u64| h = (h ^ v).wrapping_mul(0x100_0000_01b3);
-    mix(u64::from(m.path.inverted) | u64::from(m.path.fill_rule == photocraft_doc::FillRule::EvenOdd) << 1);
+    mix(u64::from(m.path.inverted) | u64::from(m.path.fill_rule == redrob_photo_doc::FillRule::EvenOdd) << 1);
     mix(u64::from(m.density.to_bits()));
     for s in &m.path.subpaths {
         mix(u64::from(s.closed) | (s.op as u64) << 1 | (s.knots.len() as u64) << 8);
@@ -274,9 +274,9 @@ pub fn vector_thumb_image(doc: &Document, m: &VectorMask, side: usize) -> egui::
     let (w, h) = (f64::from(doc.size.width.max(1)), f64::from(doc.size.height.max(1)));
     let s = side as f64 / w.max(h);
     let (ox, oy) = ((side as f64 - w * s) / 2.0, (side as f64 - h * s) / 2.0);
-    let shown = VectorMask { path: m.path.transform(&photocraft_geom::Affine { m: [s, 0.0, 0.0, s, ox, oy] }), enabled: true, ..m.clone() };
+    let shown = VectorMask { path: m.path.transform(&redrob_photo_geom::Affine { m: [s, 0.0, 0.0, s, ox, oy] }), enabled: true, ..m.clone() };
     let n = side as i32;
-    let values = photocraft_vector::vector_mask_values(&shown, photocraft_geom::Rect::new(0, 0, n, n));
+    let values = redrob_photo_vector::vector_mask_values(&shown, redrob_photo_geom::Rect::new(0, 0, n, n));
     let (x0, y0, x1, y1) = (ox.floor() as usize, oy.floor() as usize, (ox + w * s).ceil() as usize, (oy + h * s).ceil() as usize);
     let mut px = vec![Color32::TRANSPARENT; side * side];
     for (i, p) in px.iter_mut().enumerate() {

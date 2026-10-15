@@ -84,7 +84,7 @@ struct Waiting {
     request: PickRequest,
     answer: Receiver<PickAnswer>,
     entry: Entry,
-    /// The active document when it was asked for ([`vectorcraft_engine::DocState::uid`]).
+    /// The active document when it was asked for ([`redrob_vector_engine::DocState::uid`]).
     doc: Option<u64>,
 }
 

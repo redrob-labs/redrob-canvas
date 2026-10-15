@@ -1,7 +1,7 @@
 use super::*;
 use crate::{FilterParams, apply_tiled};
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_raster::Surface;
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_raster::Surface;
 
 fn image(rect: Rect, n: usize, kind: usize) -> Image {
     let mut img = Image::new(rect, n);

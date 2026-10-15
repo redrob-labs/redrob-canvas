@@ -19,9 +19,9 @@ use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
 use serde::{Deserialize, Serialize};
-use vectorcraft_geom::{Affine, Rect};
+use redrob_vector_geom::{Affine, Rect};
 
-use vectorcraft_color::Paint;
+use redrob_vector_color::Paint;
 
 use crate::{AppearanceItem, Document, ImageBlob, ImageObject, LinkInfo, Node, NodeKind, PatternDef, PlacementOptions, Symbol};
 
@@ -64,9 +64,9 @@ impl PlacedDocument {
     }
 
     /// The four corners of the box in the document.
-    pub fn corners(&self) -> [vectorcraft_geom::Point; 4] {
+    pub fn corners(&self) -> [redrob_vector_geom::Point; 4] {
         let r = self.natural();
-        [(r.x0, r.y0), (r.x1, r.y0), (r.x1, r.y1), (r.x0, r.y1)].map(|(x, y)| self.xf * vectorcraft_geom::Point::new(x, y))
+        [(r.x0, r.y0), (r.x1, r.y0), (r.x1, r.y1), (r.x0, r.y1)].map(|(x, y)| self.xf * redrob_vector_geom::Point::new(x, y))
     }
 
     /// The box in the document (axis-aligned).

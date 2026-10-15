@@ -6,9 +6,9 @@
 use std::sync::Arc;
 
 use serde_json::Value;
-use vectorcraft_doc::{Document, ImageBlob, ImageObject, LinkInfo, Node, NodeKind};
-use vectorcraft_format::{base64_decode, load, save};
-use vectorcraft_geom::Affine;
+use redrob_vector_doc::{Document, ImageBlob, ImageObject, LinkInfo, Node, NodeKind};
+use redrob_vector_format::{base64_decode, load, save};
+use redrob_vector_geom::Affine;
 
 fn image(d: &mut Document, key: &str, link: Option<LinkInfo>) {
     let (id, layer) = (d.alloc_id(), d.layers[0].id);

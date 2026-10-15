@@ -127,8 +127,8 @@ mod tests {
     use std::sync::Arc;
 
     use serde_json::json;
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::cmd::recovery::{MemoryStore, RecoveryStore};
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::cmd::recovery::{MemoryStore, RecoveryStore};
 
     use super::*;
     use crate::Services;
@@ -195,7 +195,7 @@ mod tests {
         let preview = |ctx: &egui::Context| {
             let mut tex = None;
             ctx.run_ui(Default::default(), |ui| {
-                tex = crate::widgets::doc_preview(ui, "loss", egui::vec2(8.0, 8.0), |w, h| Some(vectorcraft_doc::Document::new(w, h)))
+                tex = crate::widgets::doc_preview(ui, "loss", egui::vec2(8.0, 8.0), |w, h| Some(redrob_vector_doc::Document::new(w, h)))
             })
             .textures_delta
             .clear();

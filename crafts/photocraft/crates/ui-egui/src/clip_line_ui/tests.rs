@@ -2,7 +2,7 @@
 
 use egui::{Modifiers, PointerButton, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
-use photocraft_doc::{Document, LayerContent, LayerId};
+use redrob_photo_doc::{Document, LayerContent, LayerId};
 use serde_json::json;
 
 use super::at;
@@ -10,15 +10,15 @@ use crate::PhotocraftApp;
 use crate::layer_row_ui::{RowRects, recorded};
 
 /// Background, `a` and `b` above it.
-fn two_layers() -> (photocraft_engine::Session, LayerId, LayerId) {
-    let mut s = photocraft_engine::Session::new();
+fn two_layers() -> (redrob_photo_engine::Session, LayerId, LayerId) {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let a = s.execute("layer.new.layer", json!({"name": "a"})).unwrap()["layer"].as_u64().unwrap();
     let b = s.execute("layer.new.layer", json!({"name": "b"})).unwrap()["layer"].as_u64().unwrap();
     (s, LayerId(a), LayerId(b))
 }
 
-fn harness(session: photocraft_engine::Session) -> Harness<'static, PhotocraftApp> {
+fn harness(session: redrob_photo_engine::Session) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
         PhotocraftApp::new(session, crate::Services::default())
@@ -94,7 +94,7 @@ fn named(doc: &Document, name: &str) -> LayerId {
 #[test]
 fn only_siblings_next_to_each_other_meet_at_a_line() {
     // Background, `d`, and the group `g { c }` above it.
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     s.execute("layer.new.layer", json!({"name": "d"})).unwrap();
     s.execute("layer.new.layer", json!({"name": "c"})).unwrap();
@@ -146,8 +146,8 @@ fn the_band_reaches_three_above_and_five_below_the_line() {
 }
 
 /// Background, Layer 1, CB (Color Balance), Top; Top active.
-fn chain() -> (photocraft_engine::Session, [LayerId; 3]) {
-    let mut s = photocraft_engine::Session::new();
+fn chain() -> (redrob_photo_engine::Session, [LayerId; 3]) {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let l1 = s.execute("layer.new.layer", json!({"name": "Layer 1"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.newAdjustmentLayer.colorBalance", json!({})).unwrap();

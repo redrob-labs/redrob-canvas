@@ -3,9 +3,9 @@
 
 use egui::{Color32, CornerRadius, Pos2, Sense, Shape, Stroke, StrokeKind, Ui, Vec2, pos2, vec2};
 use serde_json::json;
-use vectorcraft_doc::{Node, NodeKind, SymbolBoxes, Unit};
-use vectorcraft_geom::{Affine, BezPath, PathEl, Point, Rect};
-use vectorcraft_tools::{Cursor, Mods, Overlay, PointerEvent, PointerKind};
+use redrob_vector_doc::{Node, NodeKind, SymbolBoxes, Unit};
+use redrob_vector_geom::{Affine, BezPath, PathEl, Point, Rect};
+use redrob_vector_tools::{Cursor, Mods, Overlay, PointerEvent, PointerKind};
 
 use crate::state::View;
 use crate::theme::{self, Tokens};
@@ -45,10 +45,10 @@ impl Xf {
         [Point::new(r.x0, r.y0), Point::new(r.x1, r.y0), Point::new(r.x1, r.y1), Point::new(r.x0, r.y1)].iter().map(|p| self.to_screen(*p)).collect()
     }
     /// Convert a screen-space delta to a document delta.
-    pub fn delta_to_doc(&self, d: egui::Vec2) -> vectorcraft_geom::Vec2 {
+    pub fn delta_to_doc(&self, d: egui::Vec2) -> redrob_vector_geom::Vec2 {
         let (sn, cs) = self.rot.sin_cos();
         let (dx, dy) = (d.x as f64, d.y as f64);
-        vectorcraft_geom::Vec2::new((dx * cs + dy * sn) / self.zoom, (-dx * sn + dy * cs) / self.zoom)
+        redrob_vector_geom::Vec2::new((dx * cs + dy * sn) / self.zoom, (-dx * sn + dy * cs) / self.zoom)
     }
     pub fn rect_to_screen(&self, r: Rect) -> egui::Rect {
         egui::Rect::from_two_pos(self.to_screen(Point::new(r.x0, r.y0)), self.to_screen(Point::new(r.x1, r.y1)))
@@ -203,7 +203,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     painter.rect_filled(rect, 0.0, t.pasteboard);
     if app.ui.view.artboards && !app.ui.view.outline {
         let setup = &doc.setup;
-        let grid = (st.transparency_grid && setup.background == vectorcraft_doc::Background::Transparent).then(|| checker_texture(ui.ctx(), setup));
+        let grid = (st.transparency_grid && setup.background == redrob_vector_doc::Background::Transparent).then(|| checker_texture(ui.ctx(), setup));
         let paper = if setup.simulate_paper { crate::panels::c32(&setup.paper()) } else { Color32::WHITE };
         for ab in &doc.artboards {
             let q = xf.quad(ab.rect);
@@ -257,7 +257,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         hidden: vec![],
         rot: v.rotation,
         anti_alias: app.session.prefs.anti_aliased_artwork,
-        placed: vectorcraft_render::placed_document::generation(),
+        placed: redrob_vector_render::placed_document::generation(),
         pixel,
         smooth_images,
         isolated: st.isolation.map(|id| id.0),
@@ -265,7 +265,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         rich_black: app.session.prefs.black_on_screen == "rich",
     };
     // Placed documents' bitmaps are being made: draw again when they are ready.
-    if vectorcraft_render::placed_document::busy() {
+    if redrob_vector_render::placed_document::busy() {
         ui.ctx().request_repaint_after(std::time::Duration::from_millis(30));
     }
     if !app.canvas.worker_started {
@@ -296,12 +296,12 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                     * Affine::translate(-v.center.to_vec2()),
             ),
         };
-        let opts = vectorcraft_render::RenderOptions { outline: app.ui.view.outline, background: None, artboards: false, ..Default::default() };
-        let opts = vectorcraft_render::RenderOptions {
-            proof: vectorcraft_render::proof::active_proof(),
-            overprint_preview: vectorcraft_render::proof::overprint_preview_on(),
+        let opts = redrob_vector_render::RenderOptions { outline: app.ui.view.outline, background: None, artboards: false, ..Default::default() };
+        let opts = redrob_vector_render::RenderOptions {
+            proof: redrob_vector_render::proof::active_proof(),
+            overprint_preview: redrob_vector_render::proof::overprint_preview_on(),
             trim: app.ui.view.trim_view,
-            tile_edge: vectorcraft_color::Color::from_hex(&app.session.prefs.pattern_tile_edge_color).map_or(opts.tile_edge, |c| {
+            tile_edge: redrob_vector_color::Color::from_hex(&app.session.prefs.pattern_tile_edge_color).map_or(opts.tile_edge, |c| {
                 let [r, g, b, _] = c.to_rgba8(1.0);
                 [r, g, b]
             }),
@@ -310,12 +310,12 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             highlight_substitutions: true,
             // General › Anti-aliased Artwork: off, edges are hard on screen (raster effects and
             // pattern tiles stay smooth), as in Illustrator.
-            anti_alias: if app.session.prefs.anti_aliased_artwork { vectorcraft_render::AntiAlias::Art } else { vectorcraft_render::AntiAlias::None },
+            anti_alias: if app.session.prefs.anti_aliased_artwork { redrob_vector_render::AntiAlias::Art } else { redrob_vector_render::AntiAlias::None },
             progressive_placed: true,
             trace_views: true,
             smooth_images,
             // Isolation mode: the art around the isolated group or layer is dimmed (#833).
-            isolated: key.isolated.map(vectorcraft_doc::NodeId),
+            isolated: key.isolated.map(redrob_vector_doc::NodeId),
             // Images far smaller on screen than they are sample their mip levels (#1244).
             image_mips: true,
             // During a drag or a dialog's preview, objects that only moved draw their raster
@@ -655,7 +655,7 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
                         deg = (deg / 15.0).round() * 15.0;
                     }
                     if let Some(vm) = app.view_mut() {
-                        vm.rotation = vectorcraft_geom::normalize_deg(deg);
+                        vm.rotation = redrob_vector_geom::normalize_deg(deg);
                     }
                 }
                 Drag::ZoomBox { start } => marquee(ui.painter(), egui::Rect::from_two_pos(start, p)),
@@ -779,7 +779,7 @@ const HOLD_ZOOM: f64 = std::f64::consts::LN_2;
 
 /// Performance › Animated Zoom, which needs GPU Performance as in Illustrator: the Zoom tool zooms
 /// as it is dragged sideways or held, instead of zooming to the area dragged across.
-pub(crate) fn animated_zoom(p: &vectorcraft_engine::Prefs) -> bool {
+pub(crate) fn animated_zoom(p: &redrob_vector_engine::Prefs) -> bool {
     p.animated_zoom && p.gpu_performance
 }
 
@@ -868,7 +868,7 @@ fn wheel(i: &egui::InputState, wheel_zooms: bool, line: f32, page: f32, turn: &m
 /// Enable Touch Gestures: this frame's finger contacts on the canvas ([`crate::touch`]). A second
 /// finger drops the press the first one began (its tool interaction rolled back; the rest of the
 /// gesture presses nothing), and a tap of two fingers undoes, one of three redoes.
-fn touch_gestures(app: &mut VectorcraftApp, ui: &Ui, rect: egui::Rect, view: vectorcraft_engine::ViewInfo) {
+fn touch_gestures(app: &mut VectorcraftApp, ui: &Ui, rect: egui::Rect, view: redrob_vector_engine::ViewInfo) {
     if !app.session.prefs.touch_gestures {
         return;
     }
@@ -912,7 +912,7 @@ fn touch_gestures(app: &mut VectorcraftApp, ui: &Ui, rect: egui::Rect, view: vec
 /// A Selection tool move dragged off the canvas (to `p`, over a panel) turns into a panel drag of
 /// the selected art ([`widgets::PanelDrag::Art`]): the move is dropped, so the art stays where it
 /// was, and the panel it is released on takes it (the Graphic Styles panel makes a style of it).
-fn drag_art_out(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, p: Pos2, view: vectorcraft_engine::ViewInfo) -> bool {
+fn drag_art_out(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, p: Pos2, view: redrob_vector_engine::ViewInfo) -> bool {
     let off = !ui.clip_rect().contains(p) || ui.ctx().layer_id_at(p).is_some_and(|l| l != resp.layer_id);
     let Some(st) = app.session.active().filter(|_| off && app.session.tool_id() == "selection") else { return false };
     // The Selection tool's interaction while it moves (or Alt-copies) the selection.
@@ -930,7 +930,7 @@ fn drag_art_out(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, p: Pos
 }
 
 /// Send a pointer event to the active tool and act on UI requests (dialogs, tool switches).
-pub fn dispatch(app: &mut VectorcraftApp, ev: &PointerEvent, view: vectorcraft_engine::ViewInfo) {
+pub fn dispatch(app: &mut VectorcraftApp, ev: &PointerEvent, view: redrob_vector_engine::ViewInfo) {
     let r = app.session.pointer(ev, view);
     // The artboard the Artboard tool makes active is the active one (the navigator's, the
     // Artboards panel's).
@@ -944,7 +944,7 @@ pub fn dispatch(app: &mut VectorcraftApp, ev: &PointerEvent, view: vectorcraft_e
     // Artboard tool's does: Paste in Place and in Front or Back then paste onto it, Align to
     // Artboard aligns to it, and All on Active Artboard selects on it.
     if ev.kind == PointerKind::Down
-        && vectorcraft_tools::catalog::is_selection_tool(app.session.tool_id())
+        && redrob_vector_tools::catalog::is_selection_tool(app.session.tool_id())
         && let Some(i) = app.session.active().and_then(|d| d.doc.artboard_at(ev.pos))
         && let Some(v) = app.view_mut()
     {
@@ -954,14 +954,14 @@ pub fn dispatch(app: &mut VectorcraftApp, ev: &PointerEvent, view: vectorcraft_e
 }
 
 /// Act on what a tool event asked the UI for (dialogs, tool switches), or show its error.
-pub fn apply_requests(app: &mut VectorcraftApp, r: vectorcraft_engine::Result<Vec<vectorcraft_engine::UiRequest>>) {
+pub fn apply_requests(app: &mut VectorcraftApp, r: redrob_vector_engine::Result<Vec<redrob_vector_engine::UiRequest>>) {
     match r {
         Ok(reqs) => {
             for r in reqs {
                 match r {
-                    vectorcraft_engine::UiRequest::Dialog(kind, p) => crate::dialogs::open_tool_dialog(app, &kind, p),
-                    vectorcraft_engine::UiRequest::SwitchTool(t) => app.select_tool(&t),
-                    vectorcraft_engine::UiRequest::Status(msg) => app.status(msg),
+                    redrob_vector_engine::UiRequest::Dialog(kind, p) => crate::dialogs::open_tool_dialog(app, &kind, p),
+                    redrob_vector_engine::UiRequest::SwitchTool(t) => app.select_tool(&t),
+                    redrob_vector_engine::UiRequest::Status(msg) => app.status(msg),
                 }
             }
         }
@@ -971,7 +971,7 @@ pub fn apply_requests(app: &mut VectorcraftApp, r: vectorcraft_engine::Result<Ve
 
 /// The transparency grid's 2 × 2-cell tile in the document's colours (Document Setup), cached per
 /// look, and its cell size in screen points.
-pub(crate) fn checker_texture(ctx: &egui::Context, setup: &vectorcraft_doc::DocSetup) -> (egui::TextureHandle, f32) {
+pub(crate) fn checker_texture(ctx: &egui::Context, setup: &redrob_vector_doc::DocSetup) -> (egui::TextureHandle, f32) {
     let colors = setup.grid_colors.map(|c| crate::panels::c32(&c));
     let id = egui::Id::new("transparency-grid-tile");
     let cached = ctx.data(|d| d.get_temp::<([Color32; 2], egui::TextureHandle)>(id)).filter(|(c, _)| *c == colors);
@@ -1021,11 +1021,11 @@ struct LineLook {
 }
 
 impl LineLook {
-    fn grid(prefs: &vectorcraft_engine::Prefs) -> Self {
+    fn grid(prefs: &redrob_vector_engine::Prefs) -> Self {
         Self { color: pref_color(&prefs.grid_color, Color32::from_gray(200)), dots: prefs.grid_style == "dots" }
     }
 
-    fn guides(prefs: &vectorcraft_engine::Prefs, t: &Tokens) -> Self {
+    fn guides(prefs: &redrob_vector_engine::Prefs, t: &Tokens) -> Self {
         Self { color: pref_color(&prefs.guide_color, t.guide), dots: prefs.guide_style == "dots" }
     }
 
@@ -1041,7 +1041,7 @@ impl LineLook {
 
 /// A `#rrggbb` colour preference, `fallback` when it doesn't parse.
 fn pref_color(hex: &str, fallback: Color32) -> Color32 {
-    vectorcraft_color::Color::from_hex(hex).map_or(fallback, |c| crate::panels::c32(&c))
+    redrob_vector_color::Color::from_hex(hex).map_or(fallback, |c| crate::panels::c32(&c))
 }
 
 /// The grid (View → Show Grid): a gridline every `spacing` and `subdiv` lighter lines between
@@ -1205,7 +1205,7 @@ fn rulers(ui: &Ui, full: egui::Rect, xf: &Xf, hover: Option<Point>, unit: Unit, 
     // Each ruler measures along its own edge, in the canvas's coordinates turned with the view
     // (#826): at 0° the top one reads x and the left one y. `draw` gets each tick's distance
     // (screen points) from `from` along the ruler, and its value in `unit`.
-    let ticks = |from: Pos2, to: Pos2, axis: vectorcraft_geom::Vec2, draw: &mut dyn FnMut(f32, f64)| {
+    let ticks = |from: Pos2, to: Pos2, axis: redrob_vector_geom::Vec2, draw: &mut dyn FnMut(f32, f64)| {
         let along = |s: Pos2| (xf.to_doc(s) - origin).dot(axis);
         let (a, b) = (along(from), along(to));
         let mut v = (a / per / minor).floor() * minor;
@@ -1217,7 +1217,7 @@ fn rulers(ui: &Ui, full: egui::Rect, xf: &Xf, hover: Option<Point>, unit: Unit, 
     // The canvas's directions along the screen's x and y.
     let (sn, cs) = xf.rot.sin_cos();
     let clip_top = p.with_clip_rect(top);
-    ticks(top.left_top(), top.right_top(), vectorcraft_geom::Vec2::new(cs, -sn), &mut |d, x| {
+    ticks(top.left_top(), top.right_top(), redrob_vector_geom::Vec2::new(cs, -sn), &mut |d, x| {
         let sx = top.left() + d;
         clip_top.line_segment([pos2(sx, top.bottom() - tick(x)), pos2(sx, top.bottom())], Stroke::new(1.0, t.ruler_tick));
         if near(x, step) {
@@ -1225,7 +1225,7 @@ fn rulers(ui: &Ui, full: egui::Rect, xf: &Xf, hover: Option<Point>, unit: Unit, 
         }
     });
     let clip_left = p.with_clip_rect(left);
-    ticks(left.left_top(), left.left_bottom(), vectorcraft_geom::Vec2::new(sn, cs), &mut |d, y| {
+    ticks(left.left_top(), left.left_bottom(), redrob_vector_geom::Vec2::new(sn, cs), &mut |d, y| {
         let sy = left.top() + d;
         clip_left.line_segment([pos2(left.right() - tick(y), sy), pos2(left.right(), sy)], Stroke::new(1.0, t.ruler_tick));
         if near(y, step) {
@@ -1295,14 +1295,14 @@ fn node_outline(n: &Node, symbols: &SymbolBoxes) -> BezPath {
         NodeKind::Path { path, .. } => bp.extend(path.to_bezpath()),
         // Area type shows its frame: the type area Direct Selection reshapes; type on a path its
         // path, which the selection tools' brackets sit on.
-        NodeKind::Text(t) if c.extras().perspective.is_none() && !matches!(t.kind, vectorcraft_doc::TextKind::Point) => {
+        NodeKind::Text(t) if c.extras().perspective.is_none() && !matches!(t.kind, redrob_vector_doc::TextKind::Point) => {
             if let Some(path) = t.area_frame().or_else(|| t.type_path()) {
                 bp.extend(path.to_bezpath());
             }
         }
         NodeKind::Text(_) | NodeKind::Image(_) | NodeKind::SymbolInstance { .. } => {
             if let Some(b) = c.geometric_bounds_with(symbols) {
-                bp.extend(vectorcraft_geom::shapes::rectangle(b).to_bezpath());
+                bp.extend(redrob_vector_geom::shapes::rectangle(b).to_bezpath());
             }
         }
         // A placed document shows its box, turned with it.
@@ -1316,7 +1316,7 @@ fn node_outline(n: &Node, symbols: &SymbolBoxes) -> BezPath {
         NodeKind::Mesh(m) => bp.extend(m.lines().to_bezpath()),
         // An envelope shows its mesh (or top object), not its content.
         NodeKind::Envelope { .. } => {
-            if let Some((lines, _)) = vectorcraft_doc::live::envelope_overlay(c) {
+            if let Some((lines, _)) = redrob_vector_doc::live::envelope_overlay(c) {
                 bp.extend(lines.to_bezpath());
             }
         }
@@ -1365,16 +1365,16 @@ fn walk_drawn<'a>(n: &'a Node, f: &mut impl FnMut(&'a Node)) {
 /// The topmost editable object under document point `p` at `zoom`, as the selection tools pick it
 /// (Selection & Anchor Display › Tolerance and Object Selection by Path Only, Type › Type Object
 /// Selection by Path Only).
-fn hit_at(app: &VectorcraftApp, p: Point, zoom: f64) -> Option<vectorcraft_doc::hit::Hit> {
+fn hit_at(app: &VectorcraftApp, p: Point, zoom: f64) -> Option<redrob_vector_doc::hit::Hit> {
     let prefs = &app.session.prefs;
-    let opt = vectorcraft_doc::hit::HitOptions {
+    let opt = redrob_vector_doc::hit::HitOptions {
         tol: prefs.selection_tolerance / zoom,
         outline: app.ui.view.outline,
         path_only: prefs.object_selection_by_path_only,
         type_path_only: prefs.type_selection_by_path_only,
         scope: app.session.active().and_then(|st| st.isolation),
     };
-    vectorcraft_doc::hit::hit_test(&app.session.active()?.doc, p, opt)
+    redrob_vector_doc::hit::hit_test(&app.session.active()?.doc, p, opt)
 }
 
 /// Right-click: the object under the pointer is selected first unless it already is, then the
@@ -1435,7 +1435,7 @@ fn panel_drop(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, xf: &Xf)
                 return;
             }
             let mut params = params.clone();
-            params["ids"] = json!([vectorcraft_tools::xform::paint_owner(&st.doc, hit.leaf).0]);
+            params["ids"] = json!([redrob_vector_tools::xform::paint_owner(&st.doc, hit.leaf).0]);
             params["focus"] = json!(false);
             (crate::panels::proxy_cmd(app, false), params)
         }
@@ -1452,7 +1452,7 @@ fn panel_drop(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, xf: &Xf)
         }
         // A brush from the Brushes panel: the path it lands on takes it (a compound path as a whole).
         widgets::PanelDrag::Brush { name, .. } => {
-            ("brush.apply", json!({"name": name, "ids": [vectorcraft_tools::xform::paint_owner(&st.doc, hit.leaf).0]}))
+            ("brush.apply", json!({"name": name, "ids": [redrob_vector_tools::xform::paint_owner(&st.doc, hit.leaf).0]}))
         }
         // Art dragged back onto the canvas: its move was already dropped. (A symbol was placed
         // above.)
@@ -1499,7 +1499,7 @@ struct HandleLook<'a> {
 }
 
 impl<'a> HandleLook<'a> {
-    fn of(prefs: &'a vectorcraft_engine::Prefs) -> Self {
+    fn of(prefs: &'a redrob_vector_engine::Prefs) -> Self {
         Self { grow: prefs.anchor_size.clamp(1, 7) as f32 - 3.0, style: &prefs.handle_style }
     }
 
@@ -1541,7 +1541,7 @@ fn hidden_chars_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf) {
     let mut last = std::mem::take(&mut kept.marks);
     // The inputs are read before any layout: when fonts load during this frame, the next frame
     // lays all type out again.
-    let inputs = (vectorcraft_text::FontDb::global().generation(), vectorcraft_text::hyphenation_exceptions());
+    let inputs = (redrob_vector_text::FontDb::global().generation(), redrob_vector_text::hyphenation_exceptions());
     if kept.inputs != inputs {
         last.clear();
         kept.inputs = inputs;
@@ -1581,11 +1581,11 @@ fn hidden_chars_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf) {
 /// fonts or the hyphenation exceptions change.
 #[derive(Default)]
 pub struct HiddenChars {
-    /// The fonts' generation ([`vectorcraft_text::FontDb::generation`]) and the hyphenation
+    /// The fonts' generation ([`redrob_vector_text::FontDb::generation`]) and the hyphenation
     /// exceptions the marks were laid out with.
     inputs: (u64, String),
     /// Each text object drawn, by id: the node it was laid out from and its marks.
-    marks: std::collections::HashMap<vectorcraft_doc::NodeId, (std::sync::Arc<Node>, std::sync::Arc<HiddenMarks>)>,
+    marks: std::collections::HashMap<redrob_vector_doc::NodeId, (std::sync::Arc<Node>, std::sync::Arc<HiddenMarks>)>,
 }
 
 /// One text object's marks in document space: a dot over each space, and ¶ or # after the lines
@@ -1598,9 +1598,9 @@ struct HiddenMarks {
 
 impl HiddenMarks {
     /// Lay out `tx` and place its marks.
-    fn of(tx: &vectorcraft_doc::TextObject) -> Self {
+    fn of(tx: &redrob_vector_doc::TextObject) -> Self {
         let mut marks = Self::default();
-        let lay = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), tx);
+        let lay = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), tx);
         if lay.on_path {
             return marks;
         }
@@ -1638,7 +1638,7 @@ fn thread_overlay(app: &VectorcraftApp, p: &egui::Painter, xf: &Xf) {
             continue;
         }
         let color = c32(st.doc.layer_color(thread[0]));
-        let frames: Vec<vectorcraft_geom::Rect> = thread.iter().filter_map(|id| st.doc.node(*id).and_then(|n| n.geometric_bounds())).collect();
+        let frames: Vec<redrob_vector_geom::Rect> = thread.iter().filter_map(|id| st.doc.node(*id).and_then(|n| n.geometric_bounds())).collect();
         for w in frames.windows(2) {
             let (out, inp) = (xf.to_screen(Point::new(w[0].x1, w[0].y1)), xf.to_screen(Point::new(w[1].x0, w[1].y0)));
             p.line_segment([out, inp], Stroke::new(1.0, color));
@@ -1674,7 +1674,7 @@ fn slice_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf) {
     let selected = &st.selection.slices;
     let objects = &st.selection.objects;
     for a in slices.iter() {
-        let auto = a.source == vectorcraft_doc::SliceSource::Auto;
+        let auto = a.source == redrob_vector_doc::SliceSource::Auto;
         let on = a.id.is_some_and(|id| selected.contains(&id) || objects.contains(&id));
         let q = xf.quad(a.rect);
         let ring: Vec<Pos2> = q.iter().chain(q.first()).copied().collect();
@@ -1705,7 +1705,7 @@ fn print_tiling_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf) {
         Some((k, pages)) if *k == key => pages.clone(),
         _ => {
             // Settings that can't print have no pages to show.
-            let pages = std::sync::Arc::new(vectorcraft_engine::cmd::printtiling::pages(&st.doc).unwrap_or_default());
+            let pages = std::sync::Arc::new(redrob_vector_engine::cmd::printtiling::pages(&st.doc).unwrap_or_default());
             app.canvas.print_tiling = Some((key, pages.clone()));
             pages
         }
@@ -1744,7 +1744,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
     let Some(st) = app.session.active() else { return };
     let symbols = st.doc.symbol_boxes();
     let tool = app.session.tool_id();
-    let direct = vectorcraft_tools::catalog::edits_anchors(tool);
+    let direct = redrob_vector_tools::catalog::edits_anchors(tool);
     let curvature = tool == "curvature";
     // Selection & Anchor Display › Size (1–7, 3 the default): anchors, handles and the bounding
     // box's handles a point bigger or smaller per step.
@@ -1756,13 +1756,13 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
     let (mut handles, mut with_handles) = (vec![], 0);
     // Too many paths to outline: the selection's bounds stand for them.
     if let Some((b, id)) = big_bounds.zip(st.selection.objects.first()) {
-        stroke_path(p, &vectorcraft_geom::shapes::rectangle(b).to_bezpath(), xf, Stroke::new(1.0, c32(st.doc.layer_color(*id))));
+        stroke_path(p, &redrob_vector_geom::shapes::rectangle(b).to_bezpath(), xf, Stroke::new(1.0, c32(st.doc.layer_color(*id))));
     }
     // The key object (Align to Key Object): its outline drawn thicker, or its bounds when it has
     // too many paths to outline.
     if let Some((k, n)) = st.selection.key.and_then(|k| Some((k, st.doc.node(k)?))) {
         let outline = if too_many_anchors([n]) {
-            n.geometric_bounds_with(&symbols).map(|b| vectorcraft_geom::shapes::rectangle(b).to_bezpath())
+            n.geometric_bounds_with(&symbols).map(|b| redrob_vector_geom::shapes::rectangle(b).to_bezpath())
         } else {
             Some(node_outline(n, &symbols))
         };
@@ -1779,7 +1779,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
         // Anchors (and handles for selected anchors in direct mode); a gradient mesh's or a mesh
         // envelope's points.
         walk_drawn(n, &mut |c| {
-            let envelope = vectorcraft_doc::live::envelope_overlay(c).and_then(|(_, grid)| grid);
+            let envelope = redrob_vector_doc::live::envelope_overlay(c).and_then(|(_, grid)| grid);
             let grid = match &c.kind {
                 NodeKind::Mesh(m) => Some(m),
                 _ => envelope.as_ref(),
@@ -1800,7 +1800,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
                 for &(si, seg) in segments {
                     let Some(sp) = path.subpaths.get(si).filter(|sp| seg < sp.segment_count()) else { continue };
                     let curve = sp.segment(seg);
-                    let mut outline = vectorcraft_geom::BezPath::new();
+                    let mut outline = redrob_vector_geom::BezPath::new();
                     outline.move_to(curve.p0);
                     if sp.segment_is_line(seg) {
                         outline.line_to(curve.p3);
@@ -1844,7 +1844,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
         // Point type: baseline marker (area type shows its frame instead, which may not be a
         // rectangle, and type on a path its path).
         if let NodeKind::Text(tx) = &n.kind
-            && matches!(tx.kind, vectorcraft_doc::TextKind::Point)
+            && matches!(tx.kind, redrob_vector_doc::TextKind::Point)
         {
             let o = xf.to_screen(tx.xf * Point::ZERO);
             let b = n.geometric_bounds().unwrap_or_default();
@@ -1862,11 +1862,11 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
     // The spine of each selected blend (or of the blend a selected key object belongs to).
     let mut spines = vec![];
     for id in &st.selection.objects {
-        let is_blend = |b: &vectorcraft_doc::NodeId| st.doc.node(*b).is_some_and(|n| matches!(n.kind, NodeKind::Blend { .. }));
+        let is_blend = |b: &redrob_vector_doc::NodeId| st.doc.node(*b).is_some_and(|n| matches!(n.kind, NodeKind::Blend { .. }));
         let Some(b) = [Some(*id), st.doc.parent_of(*id)].into_iter().flatten().find(is_blend).filter(|b| !spines.contains(b)) else { continue };
         spines.push(b);
         let Some(NodeKind::Blend { children, spec }) = st.doc.node(b).map(|n| &n.kind) else { continue };
-        let Some((path, _)) = vectorcraft_doc::live::blend_spine(children, spec) else { continue };
+        let Some((path, _)) = redrob_vector_doc::live::blend_spine(children, spec) else { continue };
         let color = c32(st.doc.layer_color(b));
         stroke_path(p, &path.to_bezpath(), xf, Stroke::new(1.0, color));
         for (_, _, a) in path.anchors() {
@@ -1875,7 +1875,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
     }
     // Live Corners widgets (Selection on a live rectangle or polygon, Direct Selection on any path).
     if matches!(tool, "selection" | "directSelection")
-        && let Some(w) = vectorcraft_tools::corners::CornerWidgets::showing(
+        && let Some(w) = redrob_vector_tools::corners::CornerWidgets::showing(
             &st.doc,
             &st.selection,
             xf.zoom,
@@ -1895,15 +1895,15 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
     if let Some(b) = bbox {
         let color = c32(st.doc.layer_color(st.selection.objects[0]));
         p.add(Shape::closed_line(b.corners().iter().map(|q| xf.to_screen(*q)).collect(), Stroke::new(1.0, color)));
-        for h in vectorcraft_tools::bbox::Handle::ALL {
+        for h in redrob_vector_tools::bbox::Handle::ALL {
             let c = xf.to_screen(b.to_doc() * h.pos(b.rect));
             let hr = egui::Rect::from_center_size(c, vec2(6.0 + grow, 6.0 + grow));
             p.rect_filled(hr, 0.0, Color32::WHITE);
             p.rect_stroke(hr, 0.0, Stroke::new(1.0, color), StrokeKind::Inside);
         }
         // The type widget beside it: hollow on point type, filled on area type.
-        if let Some(w) = vectorcraft_tools::typewidget::TypeWidget::of(&st.doc, &st.selection, &b, xf.zoom) {
-            let (c, r) = (xf.to_screen(w.at), vectorcraft_tools::typewidget::RADIUS_PX);
+        if let Some(w) = redrob_vector_tools::typewidget::TypeWidget::of(&st.doc, &st.selection, &b, xf.zoom) {
+            let (c, r) = (xf.to_screen(w.at), redrob_vector_tools::typewidget::RADIUS_PX);
             p.circle_filled(c, r, if w.area { color } else { Color32::WHITE });
             p.circle_stroke(c, r, Stroke::new(1.0, color));
         }
@@ -2048,7 +2048,7 @@ fn home(app: &mut VectorcraftApp, ui: &mut Ui, rect: egui::Rect) {
     let presets = ["Letter", "A4", "Web 1920×1080", "Phone 390×844", "Postcard", "Social Square Post 1080×1080"];
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing = vec2(14.0, 14.0);
-        let cards: Vec<_> = presets.iter().filter_map(|name| vectorcraft_engine::cmd::newdoc::find(&app.session, name)).collect();
+        let cards: Vec<_> = presets.iter().filter_map(|name| redrob_vector_engine::cmd::newdoc::find(&app.session, name)).collect();
         for s in cards {
             if crate::dialogs::preset_card(ui, &s, false).clicked() {
                 app.run("file.new", json!({ "preset": s.name })).ok();
@@ -2090,11 +2090,11 @@ fn recent(app: &mut VectorcraftApp, ui: &mut Ui) {
 }
 
 fn kurbo_flatten(p: &BezPath, tol: f64, f: &mut impl FnMut(PathEl)) {
-    vectorcraft_geom::kurbo::flatten(p.elements().iter().copied(), tol, f);
+    redrob_vector_geom::kurbo::flatten(p.elements().iter().copied(), tol, f);
 }
 
 /// Upload the art's raster; Pixel Preview's document pixels keep hard edges when magnified.
-fn upload(app: &mut VectorcraftApp, ctx: &egui::Context, img: &vectorcraft_render::Rendered, pixel: bool) {
+fn upload(app: &mut VectorcraftApp, ctx: &egui::Context, img: &redrob_vector_render::Rendered, pixel: bool) {
     let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
     let options = if pixel { egui::TextureOptions::NEAREST } else { egui::TextureOptions::LINEAR };
     match &mut app.canvas.texture {
@@ -2281,8 +2281,8 @@ fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
-    use vectorcraft_geom::Shape as _;
+    use redrob_vector_engine::Session;
+    use redrob_vector_geom::Shape as _;
 
     /// With VECTORCRAFT_SYSTEM_CURSORS set the glyphs aren't drawn and the system's cursors stand in: those of
     /// the Pen and the other drawing tools are the system crosshair already, so Use Precise Cursors makes no
@@ -2392,7 +2392,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         s.execute("shape.ellipse", &json!({"x":100,"y":100,"width":100,"height":100})).unwrap();
-        let line = vectorcraft_doc::NodeId(s.execute("shape.line", &json!({"x1":50,"y1":150,"x2":250,"y2":150})).unwrap()["id"].as_u64().unwrap());
+        let line = redrob_vector_doc::NodeId(s.execute("shape.line", &json!({"x1":50,"y1":150,"x2":250,"y2":150})).unwrap()["id"].as_u64().unwrap());
         for x in [0.0, 150.0] {
             s.execute("shaper.scribble", &json!({"points":[[60.0+x,140],[70.0+x,160],[80.0+x,140],[90.0+x,160]]})).unwrap();
         }
@@ -2411,7 +2411,7 @@ mod tests {
         // and an instance of it at (20, 30).
         let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120"><defs><symbol id="Star"><path d="M0 0H20V20H0Z" fill="#e0a000"/></symbol></defs><use href="#Star" x="20" y="30"/></svg>"##;
         let mut s = Session::new();
-        s.execute("document.open", &json!({"name": "star.svg", "dataBase64": vectorcraft_format::base64_encode(svg.as_bytes())})).unwrap();
+        s.execute("document.open", &json!({"name": "star.svg", "dataBase64": redrob_vector_format::base64_encode(svg.as_bytes())})).unwrap();
         let st = s.active().unwrap();
         let mut inst = None;
         st.doc.walk(|n| {
@@ -2447,11 +2447,11 @@ mod tests {
             dispatch(&mut app, &PointerEvent { kind, pos: at, mods: Default::default(), pressure: 1.0 }, view);
         }
         assert_eq!(app.view().unwrap().artboard, 2, "the clicked artboard is the active one");
-        let ids: Vec<vectorcraft_doc::NodeId> = app.run("edit.pasteInPlace", json!({})).unwrap()["ids"]
+        let ids: Vec<redrob_vector_doc::NodeId> = app.run("edit.pasteInPlace", json!({})).unwrap()["ids"]
             .as_array()
             .unwrap()
             .iter()
-            .map(|v| vectorcraft_doc::NodeId(v.as_u64().unwrap()))
+            .map(|v| redrob_vector_doc::NodeId(v.as_u64().unwrap()))
             .collect();
         let b = app.session.active().unwrap().doc.bounds_of(&ids, false).unwrap();
         assert_eq!((b.x0, b.y0), (boards[2].x0 + 10.0, boards[2].y0 + 15.0));
@@ -2467,7 +2467,7 @@ mod tests {
         let boards: Vec<_> = app.session.active().unwrap().doc.artboards.iter().map(|a| a.rect).collect();
         let mut rect = |x: f64, y: f64| {
             let r = app.session.execute("shape.rectangle", &json!({"x": boards[0].x0 + x, "y": boards[0].y0 + y, "width": 20, "height": 20}));
-            vectorcraft_doc::NodeId(r.unwrap()["id"].as_u64().unwrap())
+            redrob_vector_doc::NodeId(r.unwrap()["id"].as_u64().unwrap())
         };
         let ids = [rect(10.0, 15.0), rect(50.0, 40.0)];
         app.session.execute("select.set", &json!({"ids": [ids[0].0, ids[1].0]})).unwrap();
@@ -2593,7 +2593,7 @@ mod tests {
         assert!(selected(&app).is_empty(), "a click above the canvas selected {:?}", selected(&app));
         // At the canvas's centre: the square.
         click(&mut app, rect.center());
-        assert_eq!(selected(&app), vec![vectorcraft_doc::NodeId(id)]);
+        assert_eq!(selected(&app), vec![redrob_vector_doc::NodeId(id)]);
     }
 
     #[test]
@@ -2893,7 +2893,7 @@ mod tests {
             assert_eq!(app.session.tool_id(), "pen", "back to the Pen tool");
             used
         };
-        let bounds = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
+        let bounds = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
         // Direct Selection used last: the drag moves the rectangle's bottom-right corner only (once
         // the rectangle isn't selected whole, which would move all its anchors).
         app.select_tool("directSelection");
@@ -3017,7 +3017,7 @@ mod tests {
             app.session.pointer(&PointerEvent::new(kind, 150.0, 50.0), view).unwrap();
         }
         let before = app.session.doc().unwrap().doc.clone();
-        let color = c32(before.layer_color(vectorcraft_doc::NodeId(id)));
+        let color = c32(before.layer_color(redrob_vector_doc::NodeId(id)));
         let selected = selected_anchor(color);
         let ctx = egui::Context::default();
         let painted = shapes(&mut app, &ctx);
@@ -3190,7 +3190,7 @@ mod tests {
         assert!(app.canvas.key.as_ref().is_some_and(|k| !k.interacting));
         assert!(!app.canvas.moved);
         app.canvas.worker = None;
-        app.canvas.renderer = vectorcraft_render::Renderer::new();
+        app.canvas.renderer = redrob_vector_render::Renderer::new();
         app.canvas.key = None;
         assert!(upload(&mut app) == Some(after), "the frame after the drag is what a fresh renderer draws");
     }
@@ -3340,7 +3340,7 @@ mod tests {
             delta.clear();
             px
         };
-        let shown = |cmyk: [f32; 4]| vectorcraft_color::Color::cmyk(cmyk[0], cmyk[1], cmyk[2], cmyk[3]).to_rgba8(1.0);
+        let shown = |cmyk: [f32; 4]| redrob_vector_color::Color::cmyk(cmyk[0], cmyk[1], cmyk[2], cmyk[3]).to_rgba8(1.0);
         let near = |a: [u8; 4], b: [u8; 4]| a.iter().zip(b).all(|(x, y)| x.abs_diff(y) <= 1);
 
         fill(&mut app, [0, 0, 0, 100]);
@@ -3469,7 +3469,7 @@ mod tests {
     fn curvature_points_of_an_existing_path_have_no_direction_handles() {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
-        let id = vectorcraft_doc::NodeId(
+        let id = redrob_vector_doc::NodeId(
             app.session
                 .execute(
                     "path.curvature",
@@ -3525,8 +3525,8 @@ mod tests {
         app.select_tool("curvature");
         for (x, y) in [(60.0, 200.0), (120.0, 80.0), (210.0, 160.0), (280.0, 60.0), (350.0, 180.0)] {
             let view = app.view_info();
-            for kind in [vectorcraft_tools::PointerKind::Down, vectorcraft_tools::PointerKind::Up] {
-                app.session.pointer(&vectorcraft_tools::PointerEvent::new(kind, x, y), view).unwrap();
+            for kind in [redrob_vector_tools::PointerKind::Down, redrob_vector_tools::PointerKind::Up] {
+                app.session.pointer(&redrob_vector_tools::PointerEvent::new(kind, x, y), view).unwrap();
             }
         }
         let st = app.session.active().unwrap();
@@ -3613,7 +3613,7 @@ mod tests {
         frame(&mut app, &ctx, vec![]);
         let rect = app.canvas_rect.unwrap();
         let over = Xf::new(rect, app.view().unwrap()).to_screen(Point::new(150.0, 150.0));
-        let layer = egui::epaint::ColorMode::Solid(c32(app.session.active().unwrap().doc.layer_color(vectorcraft_doc::NodeId(id))));
+        let layer = egui::epaint::ColorMode::Solid(c32(app.session.active().unwrap().doc.layer_color(redrob_vector_doc::NodeId(id))));
         // The hover outline: 1.5 px lines in the layer colour.
         let outlines = |app: &mut VectorcraftApp| {
             frame(app, &ctx, vec![egui::Event::PointerMoved(over)]);
@@ -3670,10 +3670,10 @@ mod tests {
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
         let id = app.session.execute("text.create", &json!({"x": 100, "y": 100, "text": "Type"})).unwrap()["id"].as_u64().unwrap();
         app.session.execute("select.set", &json!({"ids": [id]})).unwrap();
-        let layer = c32(app.session.active().unwrap().doc.layer_color(vectorcraft_doc::NodeId(id)));
+        let layer = c32(app.session.active().unwrap().doc.layer_color(redrob_vector_doc::NodeId(id)));
         let ctx = egui::Context::default();
         let widget = |app: &mut VectorcraftApp| -> Vec<Color32> {
-            let r = vectorcraft_tools::typewidget::RADIUS_PX;
+            let r = redrob_vector_tools::typewidget::RADIUS_PX;
             shapes(app, &ctx)
                 .iter()
                 .filter_map(|s| if let Shape::Circle(c) = s { (c.radius == r && c.fill != Color32::TRANSPARENT).then_some(c.fill) } else { None })
@@ -3702,7 +3702,7 @@ mod tests {
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
         let ids: Vec<_> = (0..3)
             .map(|i| app.session.execute("text.create", &json!({"x": 20, "y": 40 + 80 * i, "text": "a b\nc d"})).unwrap()["id"].as_u64().unwrap())
-            .map(vectorcraft_doc::NodeId)
+            .map(redrob_vector_doc::NodeId)
             .collect();
         let ctx = egui::Context::default();
         let xf = Xf { rect: egui::Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0)), zoom: 1.0, center: Point::new(200.0, 150.0), rot: 0.0 };
@@ -3765,7 +3765,7 @@ mod tests {
         xf.zoom = 2.0;
         let zoomed = drawn(&mut app, &xf);
         assert_ne!(zoomed, edited, "zoomed in");
-        assert!(vectorcraft_text::FontDb::global().add_font(vectorcraft_testkit::fonts::renamed(".Hidden Marks")) > 0, "the family is new");
+        assert!(redrob_vector_text::FontDb::global().add_font(redrob_vector_testkit::fonts::renamed(".Hidden Marks")) > 0, "the family is new");
         assert_ne!(drawn(&mut app, &xf), zoomed, "set in the family that arrived");
     }
 
@@ -3786,7 +3786,7 @@ mod tests {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
         let text = json!({"x": 20, "y": 60, "text": "one two\nthree four"});
-        let id = vectorcraft_doc::NodeId(app.session.execute("text.create", &text).unwrap()["id"].as_u64().unwrap());
+        let id = redrob_vector_doc::NodeId(app.session.execute("text.create", &text).unwrap()["id"].as_u64().unwrap());
         let ctx = egui::Context::default();
         app.run("type.hiddenCharacters", json!({})).unwrap();
         let on = hidden_char_marks(&mut app, &ctx);
@@ -4133,12 +4133,12 @@ mod tests {
         };
         timed(&mut app, 0.0, vec![]);
         let xf = Xf::new(app.canvas_rect.unwrap(), app.view().unwrap());
-        let text = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
+        let text = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
             NodeKind::Text(t) => t.plain_text(),
             _ => panic!("not text"),
         };
         // Double-click the middle of the text.
-        let b = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
+        let b = app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
         let at = xf.to_screen(b.center());
         let button = |pressed| egui::Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
         timed(&mut app, 1.0, vec![egui::Event::PointerMoved(at), button(true), button(false), button(true), button(false)]);
@@ -4191,7 +4191,7 @@ mod tests {
         let xf = Xf::new(app.canvas_rect.unwrap(), app.view().unwrap());
         let brush = |app: &VectorcraftApp| {
             let st = app.session.active().unwrap();
-            st.doc.node(vectorcraft_doc::NodeId(id)).unwrap().appearance.stroke().and_then(|s| s.brush.clone())
+            st.doc.node(redrob_vector_doc::NodeId(id)).unwrap().appearance.stroke().and_then(|s| s.brush.clone())
         };
         let drop = |app: &mut VectorcraftApp, at: Point| {
             let at = xf.to_screen(at);
@@ -4231,7 +4231,7 @@ mod tests {
 
     #[test]
     fn swatches_and_proxy_paints_dropped_on_art_fill_the_object_hit() {
-        use vectorcraft_color::{Color, GradientGeom, GradientPaint, Paint};
+        use redrob_vector_color::{Color, GradientGeom, GradientPaint, Paint};
         use widgets::{PanelDrag, SwatchRows};
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
@@ -4246,7 +4246,7 @@ mod tests {
             let up = egui::Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed: false, modifiers: Default::default() };
             frame(app, &ctx, vec![egui::Event::PointerMoved(at), up]);
         };
-        let fill = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().appearance.fill_paint();
+        let fill = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().appearance.fill_paint();
         let red = Paint::solid(Color::from_hex("#ed1c24").unwrap());
         let rows = SwatchRows { grabbed: "Red".into(), names: vec!["Red".into()], groups: false };
         let swatch = PanelDrag::Paint { paint: red.clone(), params: json!({"swatch": "Red"}), rows: Some(rows) };
@@ -4268,7 +4268,7 @@ mod tests {
 
     #[test]
     fn dropping_the_appearance_thumbnail_on_art_copies_the_appearance() {
-        use vectorcraft_doc::NodeId;
+        use redrob_vector_doc::NodeId;
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         let run = |app: &mut VectorcraftApp, id: &str, p: serde_json::Value| app.session.execute(id, &p).unwrap();
         run(&mut app, "file.new", json!({"width": 400, "height": 300}));
@@ -4302,7 +4302,7 @@ mod tests {
 
     #[test]
     fn a_graphic_style_dropped_on_art_applies_to_the_object_hit() {
-        use vectorcraft_doc::NodeId;
+        use redrob_vector_doc::NodeId;
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         let run = |app: &mut VectorcraftApp, id: &str, p: serde_json::Value| app.session.execute(id, &p).unwrap();
         run(&mut app, "file.new", json!({"width": 400, "height": 300}));
@@ -4332,7 +4332,7 @@ mod tests {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
         let id = app.session.execute("shape.rectangle", &json!({"x": 50, "y": 50, "width": 100, "height": 100})).unwrap()["id"].as_u64().unwrap();
-        let id = vectorcraft_doc::NodeId(id);
+        let id = redrob_vector_doc::NodeId(id);
         app.select_tool("selection");
         let ctx = egui::Context::default();
         frame(&mut app, &ctx, vec![]);
@@ -4379,7 +4379,7 @@ mod tests {
     }
 
     fn plain(app: &VectorcraftApp, id: u64) -> String {
-        match &app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
+        match &app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
             NodeKind::Text(t) => t.plain_text(),
             _ => panic!("not text"),
         }
@@ -4565,7 +4565,7 @@ mod tests {
         frame(&mut app, &ctx, tap);
         frame(&mut app, &ctx, vec![]);
         let doc = app.session.active().unwrap();
-        assert_eq!(doc.selection.objects, vec![vectorcraft_doc::NodeId(id)]);
+        assert_eq!(doc.selection.objects, vec![redrob_vector_doc::NodeId(id)]);
         assert_eq!(doc.doc.art_bounds(), before, "the tap moved nothing");
     }
 

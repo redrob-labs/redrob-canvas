@@ -2,10 +2,10 @@ use super::*;
 use egui::{Event, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::kittest::NodeT;
 use egui_kittest::{Harness, kittest::Queryable};
-use photocraft_doc::LayerId;
+use redrob_photo_doc::LayerId;
 
 fn harness(kind: crate::theme::ThemeKind, ppp: f32) -> (Harness<'static, crate::PhotocraftApp>, LayerId, LayerId) {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 8, "height": 8})).unwrap();
     let red = LayerId(s.execute("layer.new.layer", json!({"name": "Red layer"})).unwrap()["layer"].as_u64().unwrap());
     s.execute("layer.setLabelColor", json!({"color": "red"})).unwrap();

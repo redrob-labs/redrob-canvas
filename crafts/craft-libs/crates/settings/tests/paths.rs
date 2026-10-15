@@ -3,8 +3,8 @@ mod common;
 use std::path::PathBuf;
 
 use common::{Prefs, empty_probe, open_in, probe_with_env};
-use craft_settings::paths::{Location, Portable, Probe, Rule, env_var_name, resolve};
-use craft_settings::{OpenOptions, Settings, SettingsStore};
+use redrob_craft_settings::paths::{Location, Portable, Probe, Rule, env_var_name, resolve};
+use redrob_craft_settings::{OpenOptions, Settings, SettingsStore};
 
 #[test]
 fn env_var_name_uppercases_and_replaces_punctuation() {
@@ -138,6 +138,6 @@ fn unwritable_folder_is_reported_at_open_not_first_save() {
     let (mut store, report) = open_in(&dir);
     std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
     assert!(store.is_read_only());
-    assert!(matches!(report.read_only, Some(craft_settings::ReadOnlyReason::DirNotWritable(_))), "{report:?}");
-    assert!(matches!(store.flush(), Err(craft_settings::SettingsError::ReadOnly(_))));
+    assert!(matches!(report.read_only, Some(redrob_craft_settings::ReadOnlyReason::DirNotWritable(_))), "{report:?}");
+    assert!(matches!(store.flush(), Err(redrob_craft_settings::SettingsError::ReadOnly(_))));
 }

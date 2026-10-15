@@ -1,12 +1,12 @@
 //! View → Show Print Tiling (`view.printTiling`) and the Print Tiling tool (`print.tiling.set`):
 //! the pages of the document's print settings drawn on the canvas, from `print.preview`'s layout
-//! (`print.tiling`), and where the tool put them ([`vectorcraft_pdf::TileOrigin`], saved with
+//! (`print.tiling`), and where the tool put them ([`redrob_vector_pdf::TileOrigin`], saved with
 //! the print settings).
 
 use serde_json::{Value, json};
-use vectorcraft_doc::Document;
-use vectorcraft_geom::Point;
-use vectorcraft_pdf::{TileOrigin, TilingPage};
+use redrob_vector_doc::Document;
+use redrob_vector_geom::Point;
+use redrob_vector_pdf::{TileOrigin, TilingPage};
 
 use super::fileio::pdf::pdf_error;
 use super::print::{settings, to_json};
@@ -61,8 +61,8 @@ pub fn pages(doc: &Document) -> Result<Vec<TilingPage>> {
 fn pages_with(doc: &Document, p: &Value) -> Result<Vec<TilingPage>> {
     const C: &str = "print.tiling";
     let set = settings(C, doc, p)?;
-    let pv = vectorcraft_pdf::preview(doc, &set).map_err(|e| pdf_error(C, e))?;
-    Ok(vectorcraft_pdf::tiling(&pv, &set))
+    let pv = redrob_vector_pdf::preview(doc, &set).map_err(|e| pdf_error(C, e))?;
+    Ok(redrob_vector_pdf::tiling(&pv, &set))
 }
 
 fn tiling(s: &mut Session, p: &Value) -> Result<Value> {
@@ -86,7 +86,7 @@ fn set_origin(s: &mut Session, p: &Value) -> Result<Value> {
     } else {
         let at = point(p, "origin").filter(|q| q.x.is_finite() && q.y.is_finite());
         let at = at.ok_or_else(|| bad(SET, "give origin: [x, y], or reset: true"))?;
-        let regions = vectorcraft_pdf::print_regions(doc, &set).map_err(|e| pdf_error(SET, e))?;
+        let regions = redrob_vector_pdf::print_regions(doc, &set).map_err(|e| pdf_error(SET, e))?;
         let picked = match p.get("artboard").filter(|v| !v.is_null()) {
             Some(v) => {
                 let i = v.as_u64().ok_or_else(|| bad(SET, "artboard must be a 0-based index"))? as usize;

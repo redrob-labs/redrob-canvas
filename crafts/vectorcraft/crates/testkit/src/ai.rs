@@ -1,4 +1,4 @@
-//! Hand-written Illustrator editing data (the format `vectorcraft_eps`'s reader documents) and the
+//! Hand-written Illustrator editing data (the format `redrob_vector_eps`'s reader documents) and the
 //! EPS, `.ai` and PDF files that carry it, for import tests. Nothing here comes from files another
 //! app wrote, except the key names that [`pdf`] uses.
 

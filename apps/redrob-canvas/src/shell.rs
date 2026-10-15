@@ -9,10 +9,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use designcraft_ui_egui::DesignApp;
-use photocraft_ui_egui::PhotocraftApp;
+use redrob_layout_ui_egui::DesignApp;
+use redrob_photo_ui_egui::PhotocraftApp;
 use serde_json::{Value, json};
-use vectorcraft_ui_egui::VectorcraftApp;
+use redrob_vector_ui_egui::VectorcraftApp;
 
 use crate::ai::bridge::{Capabilities, LayoutBridge, ModeBridge, PhotoBridge, VectorBridge};
 use crate::ai::jobs::{JobOutput, JobResult, ToolKind};
@@ -632,7 +632,7 @@ impl ShellApp {
     /// Each editor's own open path, so the file is named, remembered in Open Recent and imported
     /// exactly as it would be from that editor's File menu: `PhotocraftApp::open_path`
     /// (crafts/photocraft/crates/ui-egui/src/file_open.rs L103; a background job when the editor
-    /// runs them), `vectorcraft_ui_egui::io::open_path` (crafts/vectorcraft/crates/ui-egui/src/
+    /// runs them), `redrob_vector_ui_egui::io::open_path` (crafts/vectorcraft/crates/ui-egui/src/
     /// io.rs L218) and `DesignApp::open_dropped` (crafts/designcraft/crates/ui-egui/src/lib.rs
     /// L1140: layouts open, text and graphics are placed).
     fn editor_open(&mut self, mode: Mode, path: &Path) -> Result<(), String> {
@@ -640,7 +640,7 @@ impl ShellApp {
         match mode {
             Mode::Photo => self.ensure_photo().open_path(&path).map(|_warnings| ()),
             Mode::Vector => {
-                vectorcraft_ui_egui::io::open_path(self.ensure_vector(), &path).map(|_| ())
+                redrob_vector_ui_egui::io::open_path(self.ensure_vector(), &path).map(|_| ())
             }
             Mode::Layout => self.ensure_layout().open_dropped(&path).map(|_| ()),
         }
@@ -793,7 +793,7 @@ impl ShellApp {
         // The pinned lockup (brand/SOURCES.json), decoded with the Photo editor's codecs so no
         // image loader has to be installed on the context.
         if self.about_lockup.is_none() {
-            let decoded = photocraft_codecs::decode(ABOUT_LOCKUP_PNG).ok().map(|img| {
+            let decoded = redrob_photo_codecs::decode(ABOUT_LOCKUP_PNG).ok().map(|img| {
                 let size = [img.width() as usize, img.height() as usize];
                 egui::ColorImage::from_rgba_unmultiplied(size, &img.to_rgba8())
             });
@@ -1116,7 +1116,7 @@ impl ShellApp {
 
     fn build_photo(wgpu: Option<eframe::egui_wgpu::RenderState>) -> PhotocraftApp {
         let mut app = PhotocraftApp::new(
-            photocraft_engine::Session::new(),
+            redrob_photo_engine::Session::new(),
             services::photo::services(),
         );
         // Long commands and file opens run as background jobs with progress and Cancel.
@@ -1140,7 +1140,7 @@ impl ShellApp {
     fn build_vector() -> VectorcraftApp {
         services::vector::install_fonts();
         let mut app = VectorcraftApp::new(
-            vectorcraft_engine::Session::new(),
+            redrob_vector_engine::Session::new(),
             services::vector::services(),
         );
         services::vector::load_prefs(&mut app);
@@ -1156,7 +1156,7 @@ impl ShellApp {
     }
 
     fn build_layout() -> DesignApp {
-        let mut session = designcraft_engine::Session::new();
+        let mut session = redrob_layout_engine::Session::new();
         // Crash recovery: reopen what a previous run left unsaved, then keep it current.
         session.recovery_dir = services::layout::recovery_dir();
         let recovered = session

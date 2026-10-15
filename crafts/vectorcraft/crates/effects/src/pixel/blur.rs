@@ -1,6 +1,6 @@
 //! Blur › Radial Blur and Smart Blur.
 
-use vectorcraft_geom::{Affine, Point, Vec2};
+use redrob_vector_geom::{Affine, Point, Vec2};
 
 use super::{PixelSpace, Px16, box_blur, to8, to16};
 

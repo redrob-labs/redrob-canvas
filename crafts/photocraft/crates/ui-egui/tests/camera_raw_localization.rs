@@ -1,19 +1,19 @@
 //! Camera Raw labels and language changes through the real shared native/WASM shell.
 use egui::{accesskit::Role, pos2, vec2};
 use egui_kittest::{Harness, kittest::Queryable};
-use photocraft_ui_egui::{PhotocraftApp, camera_raw_ui, control, i18n, theme::ThemeKind};
+use redrob_photo_ui_egui::{PhotocraftApp, camera_raw_ui, control, i18n, theme::ThemeKind};
 use serde_json::json;
 
 #[test]
 fn all_seven_languages_render_camera_raw_and_switch_without_resetting_view_or_filter() {
-    let _gpu = photocraft_testkit::gpu_lock();
+    let _gpu = redrob_photo_testkit::gpu_lock();
     for lang in i18n::Lang::all() {
         let gpu = std::env::var_os("PHOTOCRAFT_LOCALE_SNAPSHOTS").is_some();
         let builder = Harness::builder().with_step_dt(1.0 / 60.0).with_size(vec2(1440.0, 1000.0));
         let builder = if gpu { builder.wgpu() } else { builder };
         let mut h = builder.build_eframe(move |cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, ThemeKind::Pro);
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             app.run("file.new", json!({"width":64,"height":48})).unwrap();
             app.run("layer.new.layer", json!({})).unwrap();
             app.run("edit.fill", json!({"color":"#80ff00"})).unwrap();

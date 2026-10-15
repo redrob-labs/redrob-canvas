@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use designcraft_doc::{Content, DataField, DataFieldKind, DataSource, Delimiter, HyperlinkDest, SourceStatus};
+use redrob_layout_doc::{Content, DataField, DataFieldKind, DataSource, Delimiter, HyperlinkDest, SourceStatus};
 use serde_json::{Value, json};
 
 use super::parse::{self, parse_csv};
@@ -27,7 +27,7 @@ const PNG_B64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42
 
 fn write_png(path: &Path) {
     let bytes = crate::cmd::base64_decode(PNG_B64);
-    assert!(designcraft_render::image_size(&bytes).is_some(), "the fixture png must decode");
+    assert!(redrob_layout_render::image_size(&bytes).is_some(), "the fixture png must decode");
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).unwrap();
     }
@@ -613,12 +613,12 @@ fn graphic_link(s: &Session) -> Option<String> {
     None
 }
 
-fn graphic_boxes(s: &Session) -> (designcraft_geom::Rect, designcraft_geom::Rect) {
+fn graphic_boxes(s: &Session) -> (redrob_layout_geom::Rect, redrob_layout_geom::Rect) {
     let doc = &s.documents()[s.active_index().unwrap()].doc;
     for sp in &doc.spreads {
         for it in &sp.items {
             if let Content::Graphic(g) = &it.content {
-                let bb = g.xf.transform_rect_bbox(designcraft_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1));
+                let bb = g.xf.transform_rect_bbox(redrob_layout_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1));
                 return (it.inner_bounds(), bb);
             }
         }
@@ -994,7 +994,7 @@ fn relative_path_and_reopen() {
     assert_eq!(relative_between(&a, &csv), relative);
     assert_eq!(relative_between(&b, &csv), "data.csv");
 
-    let mut doc = designcraft_doc::Document::new(&designcraft_doc::build::NewDocument::default());
+    let mut doc = redrob_layout_doc::Document::new(&redrob_layout_doc::build::NewDocument::default());
     doc.data_merge.sources.push(DataSource {
         id: 1,
         path: Some("/no/such/data-merge-source.csv".into()),
@@ -1053,7 +1053,7 @@ fn merge_replaces_typed_fields_on_a_new_document() {
 #[test]
 fn tile_slots_match_the_insets() {
     let plan = parse::tile(&parse::TileInput {
-        block: designcraft_geom::Rect::new(72.0, 72.0, 172.0, 172.0),
+        block: redrob_layout_geom::Rect::new(72.0, 72.0, 172.0, 172.0),
         page_width: 612.0,
         page_height: 792.0,
         insets: [36.0; 4],

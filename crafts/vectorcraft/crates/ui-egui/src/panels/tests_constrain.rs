@@ -12,7 +12,7 @@ type Draw = fn(&mut VectorcraftApp, &mut Ui);
 
 /// A selected 100 × 50 pt rectangle.
 fn rect_app() -> VectorcraftApp {
-    let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+    let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
     run(&mut app, "file.new", json!({"width": 400, "height": 400}));
     let id = run(&mut app, "shape.rectangle", json!({"x": 10, "y": 10, "width": 100, "height": 50}))["id"].clone();
     run(&mut app, "select.set", json!({ "ids": [id] }));

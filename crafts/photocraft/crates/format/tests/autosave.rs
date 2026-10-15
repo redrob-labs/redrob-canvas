@@ -4,9 +4,9 @@ mod common;
 use std::sync::Arc;
 
 use common::*;
-use photocraft_color::{ColorMode, SampleType};
-use photocraft_doc::{DocId, Document};
-use photocraft_format::*;
+use redrob_photo_color::{ColorMode, SampleType};
+use redrob_photo_doc::{DocId, Document};
+use redrob_photo_format::*;
 
 #[test]
 fn autosave_then_recover() {

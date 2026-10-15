@@ -2,7 +2,7 @@
 //! in it: they draw, label, save with the document and move with the preview.
 
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use super::print::KIND;
 use crate::state::Dialog;
@@ -37,7 +37,7 @@ fn advanced_options_draw_label_and_save_with_the_document() {
             set(&mut app, "__section", json!(section));
             set(&mut app, "output", json!({"mode": mode}));
             set(&mut app, "advanced", json!({"printAsBitmap": true, "overprints": "simulate", "flattenerPreset": "High Resolution"}));
-            set(&mut app, "color", json!({"profile": vectorcraft_color::cms::GENERIC_CMYK}));
+            set(&mut app, "color", json!({"profile": redrob_vector_color::cms::GENERIC_CMYK}));
             frame(&mut app);
             assert!(app.ui.dialog.is_some(), "{section} ({mode}) closed the dialog");
         }
@@ -52,7 +52,7 @@ fn advanced_options_draw_label_and_save_with_the_document() {
     super::confirm(&mut app).unwrap();
     let saved = app.session.execute("print.setup", &json!({})).unwrap()["settings"].clone();
     assert_eq!(saved["advanced"], json!({"printAsBitmap": true, "overprints": "simulate", "flattenerPreset": "High Resolution"}));
-    assert_eq!(saved["color"]["profile"], vectorcraft_color::cms::GENERIC_CMYK);
+    assert_eq!(saved["color"]["profile"], redrob_vector_color::cms::GENERIC_CMYK);
     assert_eq!(saved["tileOrigin"]["placed"], true);
 }
 

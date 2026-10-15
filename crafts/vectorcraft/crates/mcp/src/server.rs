@@ -213,7 +213,7 @@ impl Server {
             return Some(error(Value::Null, INVALID_REQUEST, "`id` must be a string or number"));
         }
         // A bug that panics fails this request only; the server keeps serving.
-        let r = vectorcraft_engine::guard::catch_panic(|| self.request(method, &params))
+        let r = redrob_vector_engine::guard::catch_panic(|| self.request(method, &params))
             .unwrap_or_else(|msg| Err((INTERNAL_ERROR, format!("internal error in `{method}`: {msg} (please report this bug)"))));
         Some(match r {
             Ok(mut r) => {

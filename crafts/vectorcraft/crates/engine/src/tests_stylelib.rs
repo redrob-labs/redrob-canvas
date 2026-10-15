@@ -4,9 +4,9 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_color::{Paint, Swatch};
-use vectorcraft_doc::{GraphicStyle, Node, NodeId, PatternDef};
-use vectorcraft_geom::{Point, Rect, shapes};
+use redrob_vector_color::{Paint, Swatch};
+use redrob_vector_doc::{GraphicStyle, Node, NodeId, PatternDef};
+use redrob_vector_geom::{Point, Rect, shapes};
 
 use super::*;
 
@@ -20,7 +20,7 @@ fn run(s: &mut Session, id: &str, p: Value) -> Value {
     s.execute(id, &p).unwrap_or_else(|e| panic!("{id} {p}: {e}"))
 }
 
-fn doc(s: &Session) -> &vectorcraft_doc::Document {
+fn doc(s: &Session) -> &redrob_vector_doc::Document {
     &s.doc().unwrap().doc
 }
 
@@ -52,7 +52,7 @@ fn builtin_libraries_are_listed_with_original_styles_using_catalogued_effects() 
             let ap = &st.appearance;
             let item_fx = ap.items.iter().flat_map(|i| i.effects());
             for e in ap.effects.iter().chain(item_fx) {
-                assert!(vectorcraft_render::effects::effect_info(&e.id).is_some(), "{id} / {}: unknown effect {}", st.name, e.id);
+                assert!(redrob_vector_render::effects::effect_info(&e.id).is_some(), "{id} / {}: unknown effect {}", st.name, e.id);
             }
         }
     }
@@ -120,7 +120,7 @@ fn add_with_apply_styles_the_selection_in_the_same_undo_step() {
 /// A document with pattern `name` (a dot) and its swatch.
 fn add_pattern(s: &mut Session, name: &str, radius: f64) {
     s.edit("Pattern", |d, _| {
-        let dot = Node::path(d.alloc_id(), shapes::ellipse(Rect::new(0.0, 0.0, radius, radius)), vectorcraft_doc::Appearance::default_art());
+        let dot = Node::path(d.alloc_id(), shapes::ellipse(Rect::new(0.0, 0.0, radius, radius)), redrob_vector_doc::Appearance::default_art());
         d.patterns.push(PatternDef { tile: Rect::new(0.0, 0.0, 10.0, 10.0), ..PatternDef::new(name, vec![Arc::new(dot)]) });
         d.swatches.push(Swatch { name: name.into(), paint: pattern(name), global: false, spot: false });
         Ok(())
@@ -217,8 +217,8 @@ fn user_libraries_and_other_documents_styles() {
 #[test]
 fn every_builtin_style_paints_visibly_on_a_rectangle() {
     let mut s = session();
-    let mut renderer = vectorcraft_render::Renderer::new();
-    for b in vectorcraft_doc::style_libs::STYLE_LIBRARIES {
+    let mut renderer = redrob_vector_render::Renderer::new();
+    for b in redrob_vector_doc::style_libs::STYLE_LIBRARIES {
         let (_, lib) = cmd::stylelib::library(&s, b.id).unwrap();
         for g in &lib.styles {
             run(&mut s, "file.new", json!({"width": 100, "height": 100}));

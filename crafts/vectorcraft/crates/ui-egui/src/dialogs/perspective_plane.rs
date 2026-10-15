@@ -6,7 +6,7 @@
 //! is its place in the grid's definition), `objects` (`none`, `move` or `copy`).
 
 use serde_json::{Value, json};
-use vectorcraft_tools::distort::perspective::{PerspectiveGrid, Plane};
+use redrob_vector_tools::distort::perspective::{PerspectiveGrid, Plane};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, run_and_close};
@@ -74,8 +74,8 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
-    use vectorcraft_tools::{PointerEvent, PointerKind};
+    use redrob_vector_engine::Session;
+    use redrob_vector_tools::{PointerEvent, PointerKind};
 
     fn shown(app: &mut VectorcraftApp) -> Vec<String> {
         fn texts(s: &egui::Shape, out: &mut Vec<String>) {
@@ -144,6 +144,6 @@ mod tests {
         assert_eq!(app.session.journal.last().unwrap().0, "perspective.draw");
         let st = app.session.active().unwrap();
         let id = *st.selection.objects.first().unwrap();
-        assert_eq!(vectorcraft_tools::distort::perspective::attachment(st.doc.node(id).unwrap()).map(|a| a.0), Some(Plane::Right));
+        assert_eq!(redrob_vector_tools::distort::perspective::attachment(st.doc.node(id).unwrap()).map(|a| a.0), Some(Plane::Right));
     }
 }

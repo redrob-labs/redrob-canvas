@@ -5,7 +5,7 @@
 //! from the dropdown.
 
 use egui::{Event, Key};
-use photocraft_color::BlendMode;
+use redrob_photo_color::BlendMode;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -90,7 +90,7 @@ mod tests {
     use super::*;
 
     fn app(tool: Tool) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.ui.tool = tool;
@@ -177,7 +177,7 @@ mod tests {
         a.run("layer.select", json!({"layer": bg.0})).unwrap();
         key(&mut a, &ctx, Key::Plus, egui::Modifiers::SHIFT);
         assert_eq!(a.session.active().unwrap().doc.layers[0].blend, BlendMode::Normal);
-        let mut none = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut none = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         press(&mut none, 1);
     }
 }

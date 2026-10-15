@@ -21,7 +21,7 @@ pub const PHOTO_EXTENSIONS: &[&str] = &[
 ];
 
 /// Extensions that open in Vector mode: SVG, Illustrator, PostScript, PDF, CAD and the Windows
-/// metafiles, plus the native document (`vectorcraft_ui_egui::io::open_path`,
+/// metafiles, plus the native document (`redrob_vector_ui_egui::io::open_path`,
 /// crafts/vectorcraft/crates/ui-egui/src/io.rs L218).
 pub const VECTOR_EXTENSIONS: &[&str] = &[
     "svg",
@@ -37,7 +37,7 @@ pub const VECTOR_EXTENSIONS: &[&str] = &[
 ];
 
 /// Extensions that open in Layout mode. The layouts themselves open as documents
-/// (`designcraft_ui_egui::opens_as_document`, crafts/designcraft/crates/ui-egui/src/lib.rs
+/// (`redrob_layout_ui_egui::opens_as_document`, crafts/designcraft/crates/ui-egui/src/lib.rs
 /// L1452); word-processing and spreadsheet files are placed into frames by `file.place`
 /// (`DesignApp::open_dropped`, L1140).
 pub const LAYOUT_EXTENSIONS: &[&str] = &[

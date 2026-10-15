@@ -16,7 +16,7 @@
 
 use std::sync::mpsc::Receiver;
 
-use photocraft_engine::display_color::{Display, MonitorDetection, display_at};
+use redrob_photo_engine::display_color::{Display, MonitorDetection, display_at};
 
 use crate::PhotocraftApp;
 
@@ -163,7 +163,7 @@ pub fn note(app: &PhotocraftApp) -> String {
 }
 
 /// Display-only counterpart of the engine's English monitor summary.
-fn profile_summary(st: &photocraft_engine::display_color::MonitorStatus) -> String {
+fn profile_summary(st: &redrob_photo_engine::display_color::MonitorStatus) -> String {
     let name = match (&st.profile_name, st.source) {
         (Some(name), "auto") => name.as_str(),
         _ => st.profile.as_str(),
@@ -345,7 +345,7 @@ pub fn summary_lines(app: &PhotocraftApp) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_engine::Session;
+    use redrob_photo_engine::Session;
     use std::sync::Arc;
 
     fn app() -> PhotocraftApp {
@@ -353,7 +353,7 @@ mod tests {
     }
 
     fn p3() -> Option<Arc<Vec<u8>>> {
-        Some(photocraft_engine::color_cmds::resolve_profile("display-p3", None, None).unwrap().to_bytes())
+        Some(redrob_photo_engine::color_cmds::resolve_profile("display-p3", None, None).unwrap().to_bytes())
     }
 
     /// The #569 setup: built-in display (primary) without a usable profile here, a P3 one to its

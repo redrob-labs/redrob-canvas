@@ -3,11 +3,11 @@
 //! Options ([`super::png_options`]): the `tiffOptions`, `bmpOptions` and `tgaOptions` dialogs.
 
 use serde_json::{Map, Value, json};
-use vectorcraft_render::encode::bmp::{self, BmpOptions};
-use vectorcraft_render::encode::jpeg::ColorModel;
-use vectorcraft_render::encode::quantize::{Dither, PaletteOptions, Reduction};
-use vectorcraft_render::encode::tga::{self, TgaOptions};
-use vectorcraft_render::encode::tiff::{ByteOrder, TiffOptions};
+use redrob_vector_render::encode::bmp::{self, BmpOptions};
+use redrob_vector_render::encode::jpeg::ColorModel;
+use redrob_vector_render::encode::quantize::{Dither, PaletteOptions, Reduction};
+use redrob_vector_render::encode::tga::{self, TgaOptions};
+use redrob_vector_render::encode::tiff::{ByteOrder, TiffOptions};
 
 use super::form;
 use super::png_options::choice;

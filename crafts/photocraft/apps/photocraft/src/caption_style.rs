@@ -1,5 +1,5 @@
 //! Linux: which desktop the custom title bar's caption buttons look like, and which buttons go on
-//! which side (`photocraft_ui_egui::CaptionStyle`). GNOME gets libadwaita's buttons in the order of
+//! which side (`redrob_photo_ui_egui::CaptionStyle`). GNOME gets libadwaita's buttons in the order of
 //! its `button-layout` setting (read through the settings portal, and followed as it changes); KDE
 //! gets Breeze's in KWin's order (`kwinrc`); other desktops get plain round buttons, or Adwaita's
 //! or Breeze's when their GTK theme is one of those, in GTK's `gtk-decoration-layout` order.
@@ -8,7 +8,7 @@
 //! `PHOTOCRAFT_CAPTION_LAYOUT` (a GTK layout such as `close,minimize:`) override what is found.
 
 #[cfg(target_os = "linux")]
-use photocraft_ui_egui::{CaptionFamily, CaptionIcon, CaptionIcons, CaptionStyle};
+use redrob_photo_ui_egui::{CaptionFamily, CaptionIcon, CaptionIcons, CaptionStyle};
 
 #[cfg(target_os = "linux")]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -228,7 +228,7 @@ fn portal_string(value: zbus::zvariant::OwnedValue) -> Option<String> {
 /// following the button layout and icon theme as they change. A worker does the file and D-Bus
 /// work and wakes the UI only when the style changes; the first answer usually lands before the
 /// first frame.
-pub fn service() -> Option<photocraft_ui_egui::CaptionStyleFn> {
+pub fn service() -> Option<redrob_photo_ui_egui::CaptionStyleFn> {
     #[cfg(target_os = "linux")]
     {
         use std::sync::{Arc, Mutex, OnceLock, PoisonError};
@@ -296,7 +296,7 @@ pub fn service() -> Option<photocraft_ui_egui::CaptionStyleFn> {
 #[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::*;
-    use photocraft_ui_egui::Caption::{Close, Maximize, Minimize};
+    use redrob_photo_ui_egui::Caption::{Close, Maximize, Minimize};
 
     fn env(pairs: &[(&str, &str)]) -> impl Fn(&str) -> Option<String> + use<> {
         let pairs: Vec<(String, String)> = pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();

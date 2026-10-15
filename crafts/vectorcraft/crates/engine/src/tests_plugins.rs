@@ -3,9 +3,9 @@
 //! commands.
 
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_geom::{PathData, Point, SubPath};
-use vectorcraft_plugins::wat as tpl;
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_geom::{PathData, Point, SubPath};
+use redrob_vector_plugins::wat as tpl;
 
 use super::*;
 
@@ -18,7 +18,7 @@ fn run(s: &mut Session, cmd: &str, p: Value) -> Value {
 }
 
 fn install(s: &mut Session, wasm: &[u8]) -> Value {
-    run(s, "plugin.install", json!({"dataBase64": vectorcraft_format::base64_encode(wasm)}))
+    run(s, "plugin.install", json!({"dataBase64": redrob_vector_format::base64_encode(wasm)}))
 }
 
 fn install_wat(s: &mut Session, src: &str) -> Value {
@@ -39,7 +39,7 @@ fn rect(s: &mut Session, x: f64, fill: &str) -> NodeId {
     id
 }
 
-fn node(s: &Session, id: NodeId) -> vectorcraft_doc::Node {
+fn node(s: &Session, id: NodeId) -> redrob_vector_doc::Node {
     s.doc().unwrap().doc.node(id).unwrap().clone()
 }
 
@@ -147,7 +147,7 @@ fn live_effect_plugins_reshape_editable_art_and_expand() {
         let n = node(s, a);
         let path = n.path_data().unwrap().clone();
         let b = path.bounds().unwrap();
-        vectorcraft_render::effects::apply_geometry(&n.appearance.effects, &path, b)
+        redrob_vector_render::effects::apply_geometry(&n.appearance.effects, &path, b)
     };
     run(&mut s, "effect.apply", json!({"ids": [a.0], "effect": "plugin.test.engine.echo"}));
     assert_eq!(effected(&s), *node(&s, a).path_data().unwrap(), "identity");
@@ -189,7 +189,7 @@ fn plugin_management_commands() {
         json!({}),
         json!({"dataBase64": "!!"}),
         json!({"dataBase64": "AGFzbQ=="}),
-        json!({"dataBase64": vectorcraft_format::base64_encode(DESATURATE), "replace": false}),
+        json!({"dataBase64": redrob_vector_format::base64_encode(DESATURATE), "replace": false}),
     ] {
         assert!(s.execute("plugin.install", &bad).is_err(), "{bad}");
     }
@@ -204,7 +204,7 @@ fn plugin_management_commands() {
     std::fs::write(dir.join("folder.wasm"), wat::parse_str(src).unwrap()).unwrap();
     std::fs::write(dir.join("broken.wasm"), b"\0asm?").unwrap();
     run(&mut s, "prefs.set", json!({"key": "pluginsFolder", "value": dir.display().to_string()}));
-    assert!(vectorcraft_plugins::registry::get("test.engine.folder").is_some());
+    assert!(redrob_vector_plugins::registry::get("test.engine.folder").is_some());
     run(&mut s, "plugin.remove", json!({"id": "test.engine.folder"}));
     let r = run(&mut s, "plugin.reload", json!({}));
     assert_eq!(r["loaded"], json!(["test.engine.folder"]));

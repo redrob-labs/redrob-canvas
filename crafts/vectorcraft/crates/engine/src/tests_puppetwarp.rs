@@ -1,8 +1,8 @@
 //! Puppet Warp: turning the art around a pin (`object.puppetWarp {angles}`) and the tool's pins.
 
 use serde_json::{Value, json};
-use vectorcraft_geom::{Point, Rect};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
+use redrob_vector_geom::{Point, Rect};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 
 use super::*;
 
@@ -105,7 +105,7 @@ fn drag(s: &mut Session, from: (f64, f64), to: (f64, f64)) {
 }
 
 fn pin_overlays(s: &mut Session) -> usize {
-    s.overlays(ViewInfo::default()).iter().filter(|o| matches!(o, vectorcraft_tools::Overlay::Anchor { .. })).count()
+    s.overlays(ViewInfo::default()).iter().filter(|o| matches!(o, redrob_vector_tools::Overlay::Anchor { .. })).count()
 }
 
 #[test]

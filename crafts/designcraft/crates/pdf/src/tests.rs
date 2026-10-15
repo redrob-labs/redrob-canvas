@@ -1,9 +1,9 @@
-use designcraft_color::swatch::{ColorType, SwatchValue};
-use designcraft_color::{Color, Swatch};
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Document, Fill, Item, ItemId, ParaFormat, SpreadRef};
-use designcraft_geom::Rect;
+use redrob_layout_color::swatch::{ColorType, SwatchValue};
+use redrob_layout_color::{Color, Swatch};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::build::NewDocument;
+use redrob_layout_doc::{Document, Fill, Item, ItemId, ParaFormat, SpreadRef};
+use redrob_layout_geom::Rect;
 
 use crate::*;
 
@@ -17,7 +17,7 @@ fn doc_with_text(text: &str) -> Document {
 fn add_box(d: &mut Document, r: Rect, swatch: &str) {
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
-    let mut b = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+    let mut b = Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(r));
     b.fill = Fill::swatch(swatch);
     d.insert_item(SpreadRef::Doc(0), b, None).unwrap();
 }
@@ -120,7 +120,7 @@ fn paper_prints_as_no_ink() {
     assert!(s.contains("0 0 0 0 k"), "CMYK, no ink");
     assert!(!s.contains("1 1 1 rg"), "no RGB white");
     // A web document keeps the paper colour.
-    d.settings.intent = designcraft_doc::Intent::Web;
+    d.settings.intent = redrob_layout_doc::Intent::Web;
     assert!(uncompressed(&d, PdfOptions::default()).contains("1 1 1 rg"));
     // PDF/X has a CMYK output intent whatever the document's intent.
     assert!(!uncompressed(&d, PdfOptions { standard: Standard::PdfX4, ..Default::default() }).contains("1 1 1 rg"));
@@ -189,7 +189,7 @@ fn tables_export_cell_text() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 336.0, 400.0), lid, "Before", ParaFormat::default()).unwrap();
-    let mut t = designcraft_doc::Table::new(9, 2, 2, 1, 0, 300.0);
+    let mut t = redrob_layout_doc::Table::new(9, 2, 2, 1, 0, 300.0);
     t.cell_mut(0, 0).unwrap().text.insert(0, "Ink");
     t.cell_mut(0, 0).unwrap().fill = "C=100 M=0 Y=0 K=0".into();
     t.cell_mut(1, 1).unwrap().text.insert(0, "Plum");
@@ -206,7 +206,7 @@ fn tables_export_cell_text() {
 fn drop_cap_text_extracts_in_order() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let para = designcraft_doc::ParaAttrs { drop_cap_lines: Some(3), drop_cap_chars: Some(2), ..Default::default() };
+    let para = redrob_layout_doc::ParaAttrs { drop_cap_lines: Some(3), drop_cap_chars: Some(2), ..Default::default() };
     let text = "Drop caps read in order with the rest of the paragraph, which runs on for a few lines beside the enlarged letters.";
     d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 236.0, 300.0), lid, text, ParaFormat { para, ..Default::default() }).unwrap();
     let bytes = export_pdf(&d, &Cache::new(), &PdfOptions::default()).unwrap();
@@ -224,11 +224,11 @@ fn cmyk_tiff() -> (Vec<u8>, Vec<u8>) {
 }
 
 fn place(d: &mut Document, data: Vec<u8>, px: (u32, u32)) {
-    let asset = designcraft_doc::AssetId(d.alloc());
-    let mime = designcraft_images::mime(&data).into();
+    let asset = redrob_layout_doc::AssetId(d.alloc());
+    let mime = redrob_layout_images::mime(&data).into();
     d.assets.insert(
         asset,
-        std::sync::Arc::new(designcraft_doc::Asset {
+        std::sync::Arc::new(redrob_layout_doc::Asset {
             id: asset,
             name: "scan.tif".into(),
             mime,
@@ -240,12 +240,12 @@ fn place(d: &mut Document, data: Vec<u8>, px: (u32, u32)) {
     );
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
-    let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(72.0, 72.0, 272.0, 172.0)));
-    it.content = designcraft_doc::Content::Graphic(designcraft_doc::Graphic {
+    let mut it = Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(72.0, 72.0, 272.0, 172.0)));
+    it.content = redrob_layout_doc::Content::Graphic(redrob_layout_doc::Graphic {
         asset,
         size: (px.0 as f64, px.1 as f64),
-        xf: designcraft_geom::Affine::translate((72.0, 72.0)) * designcraft_geom::Affine::scale(50.0),
-        auto_fit: designcraft_doc::Fitting::FillProportionally,
+        xf: redrob_layout_geom::Affine::translate((72.0, 72.0)) * redrob_layout_geom::Affine::scale(50.0),
+        auto_fit: redrob_layout_doc::Fitting::FillProportionally,
         fit_align: 4,
         crop: [0.0; 4],
     });
@@ -460,7 +460,7 @@ fn stroke_behind_fill_strokes_the_run_before_filling_it() {
         let mut d = doc_with_text("I");
         let sid = *d.stories.keys().next().unwrap();
         d.story_mut(sid).unwrap().format_chars(0..1, |f| {
-            f.over.stroke = Some(designcraft_color::swatch::BLACK.into());
+            f.over.stroke = Some(redrob_layout_color::swatch::BLACK.into());
             f.over.stroke_weight = Some(4.0);
             f.over.stroke_behind_fill = Some(behind);
         });
@@ -480,9 +480,9 @@ fn pdfa_leaves_out_form_fields_added_after_validation() {
     let mut d = doc_with_text("Archive me");
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
-    let mut b = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(36.0, 400.0, 200.0, 430.0)));
-    b.form_field = Some(designcraft_doc::FormField {
-        kind: designcraft_doc::FieldKind::TextField,
+    let mut b = Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(36.0, 400.0, 200.0, 430.0)));
+    b.form_field = Some(redrob_layout_doc::FormField {
+        kind: redrob_layout_doc::FieldKind::TextField,
         name: "name".into(),
         value: String::new(),
         options: Vec::new(),
@@ -515,8 +515,8 @@ fn missing_glyphs_print_as_boxes() {
     assert!(a.is_ok(), "PDF/A takes the box: {:?}", a.err());
     // A font whose .notdef is empty: the box Redrob Canvas draws for it.
     const FAMILY: &str = "DC Test PDF Empty Notdef";
-    let font = designcraft_fonts::testing::font_mapping(FAMILY, &[('a', 'a'), ('b', 'b')]).unwrap();
-    designcraft_fonts::FontDb::global().add_font(designcraft_fonts::testing::with_empty_notdef(font).unwrap());
+    let font = redrob_layout_fonts::testing::font_mapping(FAMILY, &[('a', 'a'), ('b', 'b')]).unwrap();
+    redrob_layout_fonts::FontDb::global().add_font(redrob_layout_fonts::testing::with_empty_notdef(font).unwrap());
     let mut d = doc_with_text("a語b");
     let sid = *d.stories.keys().next().unwrap();
     d.story_mut(sid).unwrap().format_chars(0.."a語b".len(), |f| f.over.font_family = Some(FAMILY.into()));

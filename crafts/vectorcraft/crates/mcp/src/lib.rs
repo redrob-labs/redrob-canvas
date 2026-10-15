@@ -7,8 +7,8 @@
 //! - [`Remote`] talks to a running desktop app through its loopback JSON-lines control channel
 //!   (`vectorcraft --control 7979`): one `{"id","method","params"}` line in, one
 //!   `{"id","ok","result"|"error"}` line out.
-//! - [`Headless`] hosts an in-process [`vectorcraft_engine::Session`] and implements the same
-//!   control-channel method names itself (rendering screenshots with `vectorcraft-render`), so agents
+//! - [`Headless`] hosts an in-process [`redrob_vector_engine::Session`] and implements the same
+//!   control-channel method names itself (rendering screenshots with `redrob-vector-render`), so agents
 //!   can draw and look at the result without a window.
 //!
 //! Entry points: [`Server::serve`] (stdio loop) and [`Server::handle_line`] (one message).

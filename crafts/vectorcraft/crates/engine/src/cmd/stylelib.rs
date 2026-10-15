@@ -1,6 +1,6 @@
 //! Graphic style libraries (Window → Graphic Style Libraries, the Graphic Styles panel's library
 //! button): read-only sets of graphic styles the library panel shows. The built-in libraries are
-//! generated in [`vectorcraft_doc::style_libs`]; User Defined ones are the `.vcstyles` files in the
+//! generated in [`redrob_vector_doc::style_libs`]; User Defined ones are the `.vcstyles` files in the
 //! user library folder ([`Libraries`]), and Other Library… loads more from files.
 //! `graphicStyle.addFromLibrary` copies styles into the document; `graphicStyle.saveLibrary`
 //! writes the document's.
@@ -9,9 +9,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
-use vectorcraft_doc::style_libs::{self, STYLE_LIBRARIES, STYLES_EXT, builtin_style_library};
-use vectorcraft_doc::{Document, GraphicStyle, PatternDef, StyleLibrary};
+use redrob_vector_color::Paint;
+use redrob_vector_doc::style_libs::{self, STYLE_LIBRARIES, STYLES_EXT, builtin_style_library};
+use redrob_vector_doc::{Document, GraphicStyle, PatternDef, StyleLibrary};
 
 use super::menucmds::squash;
 use super::swatch::str_list;

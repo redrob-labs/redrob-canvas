@@ -2,7 +2,7 @@
 //! and Refresh Font List (`text.rescanFonts`).
 
 use serde_json::{Value, json};
-use vectorcraft_text::{FontDb, system_font_dirs};
+use redrob_vector_text::{FontDb, system_font_dirs};
 
 use super::*;
 

@@ -3,7 +3,7 @@
 
 use std::{collections::BTreeMap, path::PathBuf};
 
-use craft_ui::{
+use redrob_craft_ui::{
     docking::{Action, DockArea, DockStyle, Floating, Layout, Node, Permissions},
     layout::{SplitAxis, SplitSize},
 };

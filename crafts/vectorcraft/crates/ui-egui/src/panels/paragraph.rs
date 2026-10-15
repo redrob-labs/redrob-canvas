@@ -4,7 +4,7 @@
 
 use egui::{Ui, vec2};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Composer, Justify, NodeKind, ParaDirection, ParaStyle};
+use redrob_vector_doc::{Composer, Justify, NodeKind, ParaDirection, ParaStyle};
 
 use super::character::text_style;
 use super::{pstate, set_pstate};
@@ -66,8 +66,8 @@ fn resolved_rtl(app: &VectorcraftApp, para: &ParaStyle) -> bool {
     });
     let Some(t) = text.or_else(|| super::character::first_selected_text(app)) else { return para.direction == Some(ParaDirection::RightToLeft) };
     let plain = t.plain_text();
-    let paragraph = vectorcraft_text::edit::paragraph_at(&plain, editing.map_or(0, |(_, a, _)| a));
-    vectorcraft_text::paragraph_is_rtl(plain.get(paragraph).unwrap_or_default(), para.direction)
+    let paragraph = redrob_vector_text::edit::paragraph_at(&plain, editing.map_or(0, |(_, a, _)| a));
+    redrob_vector_text::paragraph_is_rtl(plain.get(paragraph).unwrap_or_default(), para.direction)
 }
 
 /// The alignment button that shows `justify` in a paragraph running right to left (`rtl`) or not:
@@ -83,7 +83,7 @@ fn shown_alignment(justify: Justify, rtl: bool) -> Justify {
 /// Add the displayed alignments touched by the byte range (all paragraphs without a range).
 /// Walk forward through run fragments so paragraph lookup never rescans an earlier prefix.
 /// Only Auto needs paragraph text; borrow a fragment until style runs split it.
-fn collect_text_alignment(text: &vectorcraft_doc::TextObject, range: Option<(usize, usize)>, shared: &mut Option<Justify>) -> bool {
+fn collect_text_alignment(text: &redrob_vector_doc::TextObject, range: Option<(usize, usize)>, shared: &mut Option<Justify>) -> bool {
     use std::borrow::Cow;
     let (a, b) = range.map_or((0, usize::MAX), |(a, b)| (a.min(b), a.max(b)));
     let mut record = |index, plain: &str, start, end| {
@@ -91,7 +91,7 @@ fn collect_text_alignment(text: &vectorcraft_doc::TextObject, range: Option<(usi
             return true;
         }
         let para = text.para_at(index);
-        let rtl = para.justify == Justify::Auto && vectorcraft_text::paragraph_is_rtl(plain, para.direction);
+        let rtl = para.justify == Justify::Auto && redrob_vector_text::paragraph_is_rtl(plain, para.direction);
         let value = shown_alignment(para.justify, rtl);
         if shared.is_some_and(|old| old != value) {
             return false;
@@ -104,7 +104,7 @@ fn collect_text_alignment(text: &vectorcraft_doc::TextObject, range: Option<(usi
     for run in &text.runs {
         let mut rest = run.text.as_str();
         while !rest.is_empty() {
-            let span = vectorcraft_text::edit::paragraph_at(rest, 0);
+            let span = redrob_vector_text::edit::paragraph_at(rest, 0);
             let part = rest.get(span.clone()).unwrap_or_default();
             let para = text.para_at(index);
             if para.justify == Justify::Auto && !part.is_empty() {
@@ -146,7 +146,7 @@ fn selected_alignment(app: &VectorcraftApp, fallback: &ParaStyle) -> Option<Just
     {
         return if collect_text_alignment(text, Some((a, b)), &mut shared) { shared.or(default) } else { None };
     }
-    fn collect(node: &vectorcraft_doc::Node, shared: &mut Option<Justify>) -> bool {
+    fn collect(node: &redrob_vector_doc::Node, shared: &mut Option<Justify>) -> bool {
         if let NodeKind::Text(text) = &node.kind {
             return collect_text_alignment(text, None, shared);
         }
@@ -246,7 +246,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         ui.horizontal(|ui| {
             widgets::dim_label(ui, tl!("Mojikumi Set"));
             let sets = [tl!("None"), tl!("Line-end Punctuation Half Width")];
-            let current = if para.mojikumi == vectorcraft_doc::Mojikumi::LineEndHalf { sets[1] } else { sets[0] };
+            let current = if para.mojikumi == redrob_vector_doc::Mojikumi::LineEndHalf { sets[1] } else { sets[0] };
             // Already translated: shown as they are.
             if let Some(i) = widgets::dropdown_names(ui, "pa-mojikumi", current, &sets, ui.available_width() - 4.0) {
                 format(app, json!({"mojikumi": if i == 1 { "lineEndHalf" } else { "none" }}));
@@ -254,7 +254,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         });
         // Which characters may not start or end a line.
         ui.horizontal(|ui| {
-            use vectorcraft_doc::Kinsoku;
+            use redrob_vector_doc::Kinsoku;
             widgets::dim_label(ui, tl!("Kinsoku Set"));
             let sets = [(tl!("None"), Kinsoku::None, "none"), (tl!("Hard"), Kinsoku::Hard, "hard"), (tl!("Soft"), Kinsoku::Soft, "soft")];
             let names = sets.map(|s| s.0);
@@ -284,7 +284,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     // the East Asian options.
     if app.session.prefs.show_east_asian_options {
         ui.separator();
-        let top_to_top = style.as_ref().is_some_and(|(_, p)| p.leading_model == vectorcraft_doc::LeadingModel::EmBoxTop);
+        let top_to_top = style.as_ref().is_some_and(|(_, p)| p.leading_model == redrob_vector_doc::LeadingModel::EmBoxTop);
         if menu_item(ui, tl!("Top-to-Top Leading"), has, top_to_top) {
             format(app, json!({"leadingModel": "emBoxTop"}));
         }
@@ -296,7 +296,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
         ui.add_enabled_ui(has, |ui| {
             // Indented like the items beside it (their check column).
             ui.menu_button(format!("   {}", tl!("Burasagari")), |ui| {
-                use vectorcraft_doc::Burasagari;
+                use redrob_vector_doc::Burasagari;
                 for (label, b, key) in [
                     (tl!("None"), Burasagari::None, "none"),
                     (tl!("Regular"), Burasagari::Standard, "standard"),
@@ -331,7 +331,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn alignment_row(app: &mut VectorcraftApp, ui: &mut Ui, size: f32) -> egui::Rect {
         let para = text_style(app).map_or_else(ParaStyle::default, |(_, p)| p);
@@ -375,7 +375,7 @@ mod tests {
         app.run("file.new", json!({"width": 400, "height": 200})).unwrap();
         app.session.select_tool("type", Default::default()).unwrap();
         let id = app.run("text.create", json!({"x": 20, "y": 50, "text": text})).unwrap()["id"].clone();
-        app.session.apply_actions(vec![vectorcraft_tools::Action::Notify("text.editNew".into())]).unwrap();
+        app.session.apply_actions(vec![redrob_vector_tools::Action::Notify("text.editNew".into())]).unwrap();
         assert!(super::super::character::text_editing(&app).is_some());
         (app, id)
     }
@@ -401,7 +401,7 @@ mod tests {
             alignment_row(app, ui, 28.0);
         });
         assert_eq!(alignment_frame(&ctx, &mut app, 28.0).0, [Justify::Center]);
-        let node = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id.as_u64().unwrap())).unwrap();
+        let node = app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id.as_u64().unwrap())).unwrap();
         let NodeKind::Text(text) = &node.kind else { panic!("text") };
         assert_eq!(
             (text.para_at(0).justify, text.para_at(1).justify, text.para_at(2).justify),

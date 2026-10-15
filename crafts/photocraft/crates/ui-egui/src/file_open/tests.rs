@@ -1,9 +1,9 @@
 use super::*;
 use crate::file_dialog::{self, FileDialogAnswer, FileDialogRequest};
 use crate::{Services, menus, notices};
-use photocraft_color::{ColorMode, SampleType};
-use photocraft_doc::Document;
-use photocraft_geom::Size;
+use redrob_photo_color::{ColorMode, SampleType};
+use redrob_photo_doc::Document;
+use redrob_photo_geom::Size;
 use serde_json::json;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -11,7 +11,7 @@ use std::rc::Rc;
 /// Writes recorded by the fake writer: (path, bytes).
 type Written = Rc<RefCell<Vec<(String, Vec<u8>)>>>;
 
-/// An app whose importer names the document after the file (like `photocraft-io`) and reports a
+/// An app whose importer names the document after the file (like `redrob-photo-io`) and reports a
 /// warning for names containing "warn", and fails for bytes "bad"; the exporter warns for ".png"
 /// and the writer records what it wrote. Its file dialogs answer with `answers`, in order.
 fn app_with(answers: Vec<Option<FileDialogAnswer>>) -> (PhotocraftApp, Written) {
@@ -36,7 +36,7 @@ fn app_with(answers: Vec<Option<FileDialogAnswer>>) -> (PhotocraftApp, Written) 
         })),
         ..Default::default()
     };
-    (PhotocraftApp::new(photocraft_engine::Session::new(), services), written)
+    (PhotocraftApp::new(redrob_photo_engine::Session::new(), services), written)
 }
 
 /// The end of a frame: the dialog asked for is shown, and its answer acted on.
@@ -381,9 +381,9 @@ fn dropped_files_open_with_path_and_recent() {
 
 /// PNG bytes of a white `w`×`h` image.
 fn png_bytes(w: u32, h: u32) -> Vec<u8> {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": w, "height": h, "background": "white"})).unwrap();
-    photocraft_io::export(&s.active().unwrap().doc, "p.png", &Default::default()).unwrap().bytes
+    redrob_photo_io::export(&s.active().unwrap().doc, "p.png", &Default::default()).unwrap().bytes
 }
 
 /// An app with one open document whose canvas showed at (100, 50)–(700, 550) last frame.
@@ -446,7 +446,7 @@ fn files_dropped_onto_the_canvas_are_placed_in_free_transform_one_by_one() {
     let st = app.session.active().unwrap();
     let top = st.doc.layer(st.active_layer.unwrap()).unwrap();
     assert_eq!(top.name, "small");
-    assert!(matches!(top.content, photocraft_doc::LayerContent::Smart(_)));
+    assert!(matches!(top.content, redrob_photo_doc::LayerContent::Smart(_)));
     // Esc takes the place back, leaving nothing to redo.
     crate::transform_tool::cancel(&mut app);
     assert_eq!((layer_count(&app), history_steps(&app)), (layers + 1, steps + 1));
@@ -459,7 +459,7 @@ fn files_dropped_onto_the_canvas_are_placed_in_free_transform_one_by_one() {
     let st = app.session.active().unwrap();
     let placed_svg = st.doc.layer(st.active_layer.unwrap()).unwrap();
     assert_eq!(placed_svg.name, "logo");
-    assert!(matches!(placed_svg.content, photocraft_doc::LayerContent::Smart(_)), "SVG drops use Place Embedded");
+    assert!(matches!(placed_svg.content, redrob_photo_doc::LayerContent::Smart(_)), "SVG drops use Place Embedded");
     assert!(app.ui.transform.is_some(), "SVG drop should enter Free Transform");
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -582,7 +582,7 @@ fn a_drop_brings_the_window_to_the_front() {
     std::fs::write(&file, png_bytes(8, 8)).unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(800.0, 600.0)).with_max_steps(8).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        PhotocraftApp::new(photocraft_engine::Session::new(), Services::default())
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), Services::default())
     });
     h.run_steps(2);
     let focus = |h: &egui_kittest::Harness<'_, PhotocraftApp>| {
@@ -607,7 +607,7 @@ fn drag_and_drop_in_the_running_app() {
     let reported = pointer.clone();
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1280.0, 800.0)).with_max_steps(8).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         for _ in 0..2 {
             s.execute("file.new", json!({"width": 320, "height": 240, "background": "white"})).unwrap();
         }
@@ -789,7 +789,7 @@ fn open_paths_opens_a_set_in_name_order() {
 #[test]
 fn a_set_of_background_opens_keeps_its_order_however_they_finish() {
     use crate::jobs_ui::{self, OpenOrder, OpenTab};
-    use photocraft_engine::jobs::JobId;
+    use redrob_photo_engine::jobs::JobId;
     let (mut app, _) = app_with(Vec::new());
     app.open_bytes("existing.psd", b"x").unwrap();
     let batch = jobs_ui::begin_batch(&mut app);
@@ -870,7 +870,7 @@ fn saving_a_new_document_lists_it_in_recent_files() {
 #[test]
 fn opening_type_in_a_missing_font_warns() {
     fn doc_with_type(font: Option<&str>) -> Document {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 40, "height": 20})).unwrap();
         let mut p = json!({"text": "Hi", "x": 2, "y": 12, "size": 10});
         if let Some(f) = font {
@@ -893,7 +893,7 @@ fn opening_type_in_a_missing_font_warns() {
         })),
         ..Default::default()
     };
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
     let warnings = app.open_bytes("poster.psd", b"x").unwrap();
     assert_eq!(warnings, vec![warning.clone()]);
     assert!(app.ui.status.contains(MISSING), "{}", app.ui.status);

@@ -3,8 +3,8 @@
 use egui::vec2;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_color::BlendMode;
-use photocraft_doc::Document;
+use redrob_photo_color::BlendMode;
+use redrob_photo_doc::Document;
 use serde_json::json;
 
 use super::{Filter, FilterBy};
@@ -12,8 +12,8 @@ use crate::PhotocraftApp;
 use crate::state::UiState;
 
 /// Background, "Ink" (Multiply) and "Paper" in a group "Sheets", and "ink notes" (type) on top.
-fn session() -> photocraft_engine::Session {
-    let mut s = photocraft_engine::Session::new();
+fn session() -> redrob_photo_engine::Session {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     s.execute("layer.new.layer", json!({"name": "Paper"})).unwrap();
     s.execute("layer.groupLayers", json!({"name": "Sheets"})).unwrap();

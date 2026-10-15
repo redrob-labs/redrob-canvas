@@ -2,7 +2,7 @@
 //! empty canvas to draw a new text frame. Keys move the caret / delete; typing goes through
 //! `text.insert` (sent by the UI as text input).
 
-use designcraft_geom::Point;
+use redrob_layout_geom::Point;
 use serde_json::json;
 
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey, frame::snapped_drag_rect, rect_json, spread_json};
@@ -54,7 +54,7 @@ impl Tool for TypeTool {
                 // becomes one, unless it's locked: then the press draws a new text frame over it.
                 if let Some((_, id)) = cx.hit(ev.pos)
                     && let Some(it) = cx.doc.item(id)
-                    && !matches!(it.content, designcraft_doc::Content::Graphic(_) | designcraft_doc::Content::Group { .. })
+                    && !matches!(it.content, redrob_layout_doc::Content::Graphic(_) | redrob_layout_doc::Content::Group { .. })
                     && (it.is_text_frame() || !it.locked)
                 {
                     let sp = cx.layout.spread_at(ev.pos).map(|(_, p)| p).unwrap_or(ev.pos);

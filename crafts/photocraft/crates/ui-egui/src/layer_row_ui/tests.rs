@@ -4,7 +4,7 @@
 use egui::{Modifiers, PointerButton, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use photocraft_doc::{Effect, LayerContent};
+use redrob_photo_doc::{Effect, LayerContent};
 use serde_json::json;
 
 use super::{Indicator, RowRects, layout, recorded};
@@ -13,8 +13,8 @@ use crate::PhotocraftApp;
 const LONG: &str = "Button / Primary / Hover state — a very long descriptive layer name 背景のテクスチャ that keeps going";
 
 /// Long-named layers with every indicator, nested four groups deep.
-fn busy() -> photocraft_engine::Session {
-    let mut s = photocraft_engine::Session::new();
+fn busy() -> redrob_photo_engine::Session {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let mut prev = None;
     for depth in 0..4 {
@@ -40,7 +40,7 @@ fn busy() -> photocraft_engine::Session {
     s
 }
 
-fn harness(session: photocraft_engine::Session, ppp: f32, theme: &str, dock_width: f32) -> Harness<'static, PhotocraftApp> {
+fn harness(session: redrob_photo_engine::Session, ppp: f32, theme: &str, dock_width: f32) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1440.0, 1000.0)).with_pixels_per_point(ppp).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
         PhotocraftApp::new(session, crate::Services::default())
@@ -137,7 +137,7 @@ fn the_fx_triangle_hides_and_shows_the_effects_rows() {
 
 #[test]
 fn a_configured_but_disabled_effect_stays_discoverable_in_the_panel() {
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let layer_id = session.execute("layer.new.layer", json!({"name": "Styled"})).unwrap()["layer"].as_u64().unwrap();
     session.execute("layer.layerStyle.dropShadow", json!({"layer": layer_id})).unwrap();
@@ -157,7 +157,7 @@ fn a_configured_but_disabled_effect_stays_discoverable_in_the_panel() {
 /// never opens the Layer Style dialog.
 #[test]
 fn the_eyes_on_the_effects_rows_hide_and_show_effects() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let id = s.execute("layer.new.layer", json!({"name": "Styled"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.layerStyle.dropShadow", json!({"layer": id})).unwrap();
@@ -165,7 +165,7 @@ fn the_eyes_on_the_effects_rows_hide_and_show_effects() {
     let mut h = harness(s, 1.0, "promedium", 290.0);
     // (the whole list is on, each effect is on).
     let fx = |h: &Harness<'_, PhotocraftApp>| {
-        let fx = &h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().effects;
+        let fx = &h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().effects;
         (fx.enabled, fx.items.iter().map(Effect::enabled).collect::<Vec<_>>())
     };
     let steps = |h: &Harness<'_, PhotocraftApp>| h.state().session.active().unwrap().history.past_len();
@@ -173,7 +173,7 @@ fn the_eyes_on_the_effects_rows_hide_and_show_effects() {
         let r = h.get_by_label(row).rect();
         pos2(r.left() + 45.0, r.center().y)
     };
-    let (settings, n) = (h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().effects.items.clone(), steps(&h));
+    let (settings, n) = (h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().effects.items.clone(), steps(&h));
     assert_eq!(fx(&h), (true, vec![true, true]));
 
     let p = eye(&h, "Color Overlay");
@@ -194,12 +194,12 @@ fn the_eyes_on_the_effects_rows_hide_and_show_effects() {
     click(&mut h, p);
     assert_eq!(fx(&h), (true, vec![true, true]));
 
-    assert_eq!(h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().effects.items, settings, "settings survive");
+    assert_eq!(h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().effects.items, settings, "settings survive");
     assert_eq!(steps(&h), n + 4);
     assert!(h.state().ui.dialogs.is_empty(), "an eye click never opens the Layer Style dialog");
 }
 
-fn groups_open(s: &photocraft_engine::Session) -> Vec<bool> {
+fn groups_open(s: &redrob_photo_engine::Session) -> Vec<bool> {
     s.active().unwrap().doc.walk().into_iter().filter_map(|(_, _, l)| if let LayerContent::Group(g) = &l.content { Some(g.expanded) } else { None }).collect()
 }
 
@@ -218,9 +218,9 @@ fn collapse_all_groups_from_the_panel_menu_and_it_is_saved() {
     // Collapsed state is document data: it survives a PSD and a .pcraft round trip.
     let doc = (*h.state().session.active().unwrap().doc).clone();
     for name in ["c.psd", "c.pcraft"] {
-        let bytes = photocraft_io::export(&doc, name, &Default::default()).unwrap().bytes;
-        let back = photocraft_io::import(name, &bytes).unwrap().document;
-        let mut s = photocraft_engine::Session::new();
+        let bytes = redrob_photo_io::export(&doc, name, &Default::default()).unwrap().bytes;
+        let back = redrob_photo_io::import(name, &bytes).unwrap().document;
+        let mut s = redrob_photo_engine::Session::new();
         s.add_document(back, None);
         assert!(groups_open(&s).iter().all(|o| !o), "{name}: groups stay closed");
     }
@@ -232,14 +232,14 @@ fn collapse_all_groups_from_the_panel_menu_and_it_is_saved() {
 #[test]
 fn dragging_down_the_eyes_sweeps_visibility_without_reordering() {
     for moves in [10, 1] {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         for i in 0..4 {
             s.execute("layer.new.layer", json!({"name": format!("L{i}")})).unwrap();
         }
         let mut h = harness(s, 1.0, "promedium", 290.0);
         let order = |h: &Harness<'_, PhotocraftApp>| h.state().session.active().unwrap().doc.layers.iter().map(|l| l.id).collect::<Vec<_>>();
-        let visible = |h: &Harness<'_, PhotocraftApp>, id: u64| h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().visible;
+        let visible = |h: &Harness<'_, PhotocraftApp>, id: u64| h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().visible;
         let steps = |h: &Harness<'_, PhotocraftApp>| h.state().session.active().unwrap().history.past_len();
         let (before, steps_before) = (order(&h), steps(&h));
         // Rows top to bottom: L3, L2, L1, L0, Background.
@@ -274,7 +274,7 @@ fn dragging_down_the_eyes_sweeps_visibility_without_reordering() {
 /// grouped, on Delete it is deleted; a row outside the selection goes alone.
 #[test]
 fn dropping_a_row_on_the_footer_buttons_duplicates_groups_and_deletes() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     for i in 0..3 {
         s.execute("layer.new.layer", json!({"name": format!("L{i}")})).unwrap();
@@ -316,7 +316,7 @@ fn dropping_a_row_on_the_footer_buttons_duplicates_groups_and_deletes() {
 /// step) and leaves the original in place; without ⌥ the same drag moves it.
 #[test]
 fn alt_dragging_a_row_drops_a_copy_and_a_plain_drag_moves() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     for i in 0..3 {
         s.execute("layer.new.layer", json!({"name": format!("L{i}")})).unwrap();
@@ -383,7 +383,7 @@ fn drag_from_to(h: &mut Harness<'static, PhotocraftApp>, from: Pos2, to: Pos2, r
 /// nothing.
 #[test]
 fn alt_dragging_the_only_layer_drops_a_copy_on_itself() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let mut h = harness(s, 1.0, "promedium", 290.0);
     let names = |h: &Harness<'_, PhotocraftApp>| h.state().session.active().unwrap().doc.layers.iter().map(|l| l.name.clone()).collect::<Vec<_>>();
@@ -408,7 +408,7 @@ fn alt_dragging_the_only_layer_drops_a_copy_on_itself() {
 /// the layer to the very bottom of the stack, a plain drag moves it there.
 #[test]
 fn dropping_below_the_bottom_row_lands_at_the_bottom_of_the_stack() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     // Nothing can go below a Background (#2626), so the bottom layer is a normal one here.
     s.execute("layer.new.layerFromBackground", json!({})).unwrap();
@@ -437,7 +437,7 @@ fn dropping_below_the_bottom_row_lands_at_the_bottom_of_the_stack() {
 #[test]
 fn the_footer_is_a_bar_along_the_panel_bottom_with_its_buttons_centred() {
     for theme in ["promedium", "studio"] {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         let h = harness(s, 1.0, theme, 290.0);
@@ -457,7 +457,7 @@ fn the_footer_is_a_bar_along_the_panel_bottom_with_its_buttons_centred() {
 /// click leaves the menu open, and a release on nothing adds nothing.
 #[test]
 fn press_drag_release_on_the_adjustment_button_adds_that_layer() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let mut h = harness(s, 1.0, "promedium", 290.0);
     let count = |h: &Harness<'_, PhotocraftApp>| h.state().session.active().unwrap().doc.layers.len();
@@ -513,7 +513,7 @@ fn press_drag_release_on_the_adjustment_button_adds_that_layer() {
 /// Style on Drop Shadow.
 #[test]
 fn press_drag_release_on_the_fx_button_opens_that_style() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     s.execute("layer.new.layer", json!({})).unwrap();
     let mut h = harness(s, 1.0, "promedium", 290.0);
@@ -538,8 +538,8 @@ fn press_drag_release_on_the_fx_button_opens_that_style() {
 }
 
 /// One layer per lock, each with only that lock set (#4158).
-fn one_lock_each() -> (photocraft_engine::Session, Vec<(&'static str, u64)>) {
-    let mut s = photocraft_engine::Session::new();
+fn one_lock_each() -> (redrob_photo_engine::Session, Vec<(&'static str, u64)>) {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let mut ids = Vec::new();
     for key in ["transparency", "pixels", "position", "artboard", "all"] {
@@ -573,7 +573,7 @@ fn the_studio_lock_button_shows_every_lock() {
     // #4158: the simple themes' lock button drew "unlocked" for a pixels or artboard lock, though
     // clicking it then unlocked the layer.
     for key in ["transparency", "pixels", "position", "artboard", "all"] {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         s.execute("layer.new.layer", json!({"name": key})).unwrap();
         s.execute("layer.setProps", json!({"locks": {key: true}})).unwrap();
@@ -598,7 +598,7 @@ fn clicking_the_lock_icon_on_a_row_unlocks_the_layer() {
         let p = lock_icon(&h, id);
         click(&mut h, p);
         let d = h.state().session.active().unwrap();
-        assert!(!d.doc.layer(photocraft_doc::LayerId(id)).unwrap().locks.any(), "{key}: unlocked");
+        assert!(!d.doc.layer(redrob_photo_doc::LayerId(id)).unwrap().locks.any(), "{key}: unlocked");
         assert_eq!(d.active_layer, active, "{key}: the lock icon doesn't select");
     }
     let p = lock_icon(&h, bg.0);

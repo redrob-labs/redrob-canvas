@@ -3,9 +3,9 @@
 //! proxy focus can be set directly (M3.51).
 
 use serde_json::json;
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Node};
-use vectorcraft_geom::PathData;
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Node};
+use redrob_vector_geom::PathData;
 
 use super::*;
 

@@ -1,5 +1,5 @@
 [package]
-name = "photocraft-ui-egui"
+name = "redrob-photo-ui-egui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,27 +8,27 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-craft-print = { workspace = true }
-craft-ui = { workspace = true }
-photocraft-geom = { workspace = true }
-photocraft-color = { workspace = true }
-photocraft-cms = { workspace = true }
-photocraft-raster = { workspace = true }
-photocraft-doc = { workspace = true }
-photocraft-compose = { workspace = true }
-photocraft-gpu = { workspace = true }
-photocraft-engine = { workspace = true }
-photocraft-io = { workspace = true }
-photocraft-plugins = { workspace = true }
-photocraft-algo = { workspace = true }
-photocraft-text = { workspace = true }
-photocraft-vector = { workspace = true }
+redrob-craft-print = { workspace = true }
+redrob-craft-ui = { workspace = true }
+redrob-photo-geom = { workspace = true }
+redrob-photo-color = { workspace = true }
+redrob-photo-cms = { workspace = true }
+redrob-photo-raster = { workspace = true }
+redrob-photo-doc = { workspace = true }
+redrob-photo-compose = { workspace = true }
+redrob-photo-gpu = { workspace = true }
+redrob-photo-engine = { workspace = true }
+redrob-photo-io = { workspace = true }
+redrob-photo-plugins = { workspace = true }
+redrob-photo-algo = { workspace = true }
+redrob-photo-text = { workspace = true }
+redrob-photo-vector = { workspace = true }
 # Only MAX_BRUSH_SIZE: `ui.set brushSize` validates against the Brush Settings range up front.
-photocraft-paint = { workspace = true }
+redrob-photo-paint = { workspace = true }
 # Reading files to open them (bounded reads, a clear error for files larger than memory).
-photocraft-format = { workspace = true }
-# Decoding the brand mark's PNG (`brand.rs`); already linked through photocraft-io.
-photocraft-codecs = { workspace = true }
+redrob-photo-format = { workspace = true }
+# Decoding the brand mark's PNG (`brand.rs`); already linked through redrob-photo-io.
+redrob-photo-codecs = { workspace = true }
 egui = { workspace = true }
 egui_extras = { version = "0.36", default-features = false, features = ["svg"] }
 eframe = { workspace = true, features = ["wgpu", "accesskit"] }
@@ -36,7 +36,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 base64 = "0.22"
-# Inflating the translation catalogs, stored deflated (build.rs); already linked through photocraft-io.
+# Inflating the translation catalogs, stored deflated (build.rs); already linked through redrob-photo-io.
 flate2 = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -54,12 +54,12 @@ winsafe = { version = "=0.0.29", default-features = false, features = ["kernel"]
 # `Context::default()` (no install_fonts) can lay out text.
 egui = { workspace = true, features = ["default_fonts"] }
 # Synthetic raw files for the open-time Camera Raw dialog tests.
-photocraft-raw = { workspace = true, features = ["testgen"] }
+redrob-photo-raw = { workspace = true, features = ["testgen"] }
 egui_kittest = { workspace = true, features = ["wgpu", "snapshot", "eframe"] }
 # Benchmark helpers for the `--json` benches `cargo xtask perf` runs (in-process RSS, percentiles).
-photocraft-testkit = { workspace = true }
+redrob-photo-testkit = { workspace = true }
 # Only for examples/perf_scenarios.rs (a 500-brush .abr for the #210 import row).
-photocraft-psd = { workspace = true }
+redrob-photo-psd = { workspace = true }
 
 [build-dependencies]
 # Deflates the translation catalogs and egui's default fonts (build.rs); already linked at run time to inflate them.

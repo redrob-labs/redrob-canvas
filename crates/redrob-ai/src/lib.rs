@@ -8,7 +8,7 @@
 //!   PyTorch, so they run in IOPaint's own Python process: [`iopaint::Engine`] installs it into an
 //!   app-owned virtual environment and starts `iopaint start` on a free loopback port, and
 //!   [`iopaint::Client`] speaks its HTTP API (inpaint, outpaint, the plugins).
-//! - [`vectorize`]: Image Trace, a thin wrapper over `vectorcraft_trace`.
+//! - [`vectorize`]: Image Trace, a thin wrapper over `redrob_vector_trace`.
 //! - [`agent`]: the mode agent, an [`redrob_agent::AgentSession`] on its own runtime thread that
 //!   calls whatever tools the current mode exposes through [`agent::ModeTools`].
 //!

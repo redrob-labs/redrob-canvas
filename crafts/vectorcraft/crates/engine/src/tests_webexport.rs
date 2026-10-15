@@ -18,7 +18,7 @@ fn run(s: &mut Session, id: &str, p: Value) -> Value {
 fn session(w: f64, h: f64) -> Session {
     let mut s = Session::new();
     run(&mut s, "file.new", json!({"width": w, "height": h}));
-    s.paint.stroke = vectorcraft_color::Paint::None;
+    s.paint.stroke = redrob_vector_color::Paint::None;
     s
 }
 
@@ -52,7 +52,7 @@ fn files(v: &Value) -> Vec<(String, Vec<u8>)> {
         .as_array()
         .unwrap()
         .iter()
-        .map(|f| (f["name"].as_str().unwrap().to_string(), vectorcraft_format::base64_decode(f["dataBase64"].as_str().unwrap()).unwrap()))
+        .map(|f| (f["name"].as_str().unwrap().to_string(), redrob_vector_format::base64_decode(f["dataBase64"].as_str().unwrap()).unwrap()))
         .collect()
 }
 
@@ -191,7 +191,7 @@ fn preview_size_is_the_written_size() {
         let file = one(&mut s, p.clone());
         let pv = run(&mut s, "document.exportForWeb.preview", merge(&p, json!({"image": true})));
         assert_eq!(pv["bytes"].as_u64().unwrap() as usize, file.len(), "{p}");
-        assert_eq!(vectorcraft_format::base64_decode(pv["dataBase64"].as_str().unwrap()).unwrap(), file, "{p}");
+        assert_eq!(redrob_vector_format::base64_decode(pv["dataBase64"].as_str().unwrap()).unwrap(), file, "{p}");
         let img = pixels(&file);
         assert_eq!((pv["width"].as_u64().unwrap() as u32, pv["height"].as_u64().unwrap() as u32), img.dimensions());
         let seconds = pv["seconds"].as_f64().unwrap();
@@ -264,7 +264,7 @@ fn slices_give_one_image_each_and_a_page() {
 
 #[test]
 fn files_are_written_beside_the_path() {
-    let dir = vectorcraft_testkit::temp_dir("webexport");
+    let dir = redrob_vector_testkit::temp_dir("webexport");
     let mut s = two_colours();
     let path = dir.join("art.gif").to_string_lossy().to_string();
     let r = run(&mut s, "document.exportForWeb", json!({"path": path}));

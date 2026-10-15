@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::{CellAddr, StoryId};
-use designcraft_geom::Unit;
-pub use designcraft_tools::SnapView;
-use designcraft_tools::{Action, CanvasLayout, Cursor, Mods, Overlay, PointerEvent, ToolContext, ToolKey};
+use redrob_layout_doc::{CellAddr, StoryId};
+use redrob_layout_geom::Unit;
+pub use redrob_layout_tools::SnapView;
+use redrob_layout_tools::{Action, CanvasLayout, Cursor, Mods, Overlay, PointerEvent, ToolContext, ToolKey};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -62,7 +62,7 @@ impl Session {
             return;
         }
         self.end_composition();
-        self.tool = designcraft_tools::create(id);
+        self.tool = redrob_layout_tools::create(id);
         // Any other tool unloads the place cursor.
         if id != "placeGun" {
             self.loaded = None;
@@ -85,7 +85,7 @@ impl Session {
         }
     }
 
-    fn with_ctx<T>(&mut self, view: ViewInfo, f: impl FnOnce(&mut dyn designcraft_tools::Tool, &ToolContext) -> T) -> Option<T> {
+    fn with_ctx<T>(&mut self, view: ViewInfo, f: impl FnOnce(&mut dyn redrob_layout_tools::Tool, &ToolContext) -> T) -> Option<T> {
         let st = self.active()?;
         let doc = st.doc.clone();
         let sel = st.selection.clone();
@@ -122,7 +122,7 @@ impl Session {
         self.with_ctx(view, |t, cx| t.overlays(cx)).unwrap_or_default()
     }
 
-    pub fn cursor(&mut self, p: designcraft_geom::Point, mods: Mods, view: ViewInfo) -> Cursor {
+    pub fn cursor(&mut self, p: redrob_layout_geom::Point, mods: Mods, view: ViewInfo) -> Cursor {
         self.with_ctx(view, |t, cx| t.cursor(cx, p, mods)).unwrap_or_default()
     }
 

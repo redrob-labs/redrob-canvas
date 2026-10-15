@@ -9,8 +9,8 @@
 //! with Delete. Hidden or locked slices (View menu) can't be picked.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeId, SliceSource};
-use vectorcraft_geom::{Point, Rect, Vec2};
+use redrob_vector_doc::{NodeId, SliceSource};
+use redrob_vector_geom::{Point, Rect, Vec2};
 
 use crate::bbox::{Handle, hit_handle, move_delta, scale_for_drag};
 use crate::shape::drag_rect;
@@ -324,7 +324,7 @@ impl Tool for SliceSelectionTool {
 mod tests {
     use super::*;
     use crate::testutil::*;
-    use vectorcraft_doc::{Document, Guide, Selection, Slice};
+    use redrob_vector_doc::{Document, Guide, Selection, Slice};
 
     fn ev(kind: PointerKind, x: f64, y: f64) -> PointerEvent {
         PointerEvent::new(kind, x, y)

@@ -1,12 +1,12 @@
 //! `document.open` PDF options (pages, Crop To, password) and `document.pdfInfo`.
 
 use serde_json::{Value, json};
-use vectorcraft_testkit::pdf::{PdfPage, pdf};
+use redrob_vector_testkit::pdf::{PdfPage, pdf};
 
 use super::*;
 
 fn b64(bytes: &[u8]) -> String {
-    vectorcraft_format::base64_encode(bytes)
+    redrob_vector_format::base64_encode(bytes)
 }
 
 /// Three pages of widths 100, 200 and 300 pt, the second with every box set.
@@ -96,7 +96,7 @@ fn pdf_info_lists_pages_boxes_and_a_thumbnail() {
     assert_eq!((p2["width"].as_f64(), p2["height"].as_f64()), (Some(180.0), Some(380.0)));
     assert_eq!(p2["boxes"]["trim"], json!([15.0, 15.0, 185.0, 385.0]));
     assert_eq!(p2["boxes"]["media"], json!([0.0, 0.0, 200.0, 400.0]));
-    let png = vectorcraft_format::base64_decode(v["thumbnail"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(v["thumbnail"].as_str().unwrap()).unwrap();
     let img = image::load_from_memory(&png).unwrap();
     assert_eq!((img.width(), img.height()), (50, 100), "the art box at 100 px on its longest side");
     assert!(s.execute("document.pdfInfo", &json!({"dataBase64": b64(&bytes), "thumbnail": 4})).is_err());
@@ -140,7 +140,7 @@ fn file_place_crops_a_pdf_page_to_any_box_and_takes_its_password() {
 #[test]
 fn load_options_read_pages_crop_and_password() {
     let o = LoadOptions::from_params("x", &json!({"page": 3, "crop": "trim", "password": "p"})).unwrap();
-    assert_eq!(o, LoadOptions { pages: Some("3".into()), crop: vectorcraft_pdf::CropTo::Trim, password: Some("p".into()), ..Default::default() });
+    assert_eq!(o, LoadOptions { pages: Some("3".into()), crop: redrob_vector_pdf::CropTo::Trim, password: Some("p".into()), ..Default::default() });
     // `pages` wins over `page`; an empty password is none.
     let o = LoadOptions::from_params("x", &json!({"pages": "1-2", "page": 3, "password": ""})).unwrap();
     assert_eq!((o.pages.as_deref(), o.password), (Some("1-2"), None));

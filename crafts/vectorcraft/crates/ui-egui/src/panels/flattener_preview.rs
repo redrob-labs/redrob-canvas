@@ -13,11 +13,11 @@ use std::sync::Arc;
 use egui::{Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use vectorcraft_doc::Document;
-use vectorcraft_engine::cmd::FlattenOptions;
-use vectorcraft_engine::cmd::flatten::{FlattenReport, Highlight, Overprints};
-use vectorcraft_geom::{Affine, Point, Rect as DRect};
-use vectorcraft_render::RenderOptions;
+use redrob_vector_doc::Document;
+use redrob_vector_engine::cmd::FlattenOptions;
+use redrob_vector_engine::cmd::flatten::{FlattenReport, Highlight, Overprints};
+use redrob_vector_geom::{Affine, Point, Rect as DRect};
+use redrob_vector_render::RenderOptions;
 
 use super::navigator::{doc_to_thumb, thumb_to_doc};
 use crate::dialogs::flatten::{options_editor, preset_dropdown};
@@ -115,7 +115,7 @@ struct Cache {
     shot: Option<Shot>,
     view: View,
     generation: u64,
-    renderer: Option<vectorcraft_render::Renderer>,
+    renderer: Option<redrob_vector_render::Renderer>,
     drawn: crate::graphics::TexCache<Drawn>,
 }
 
@@ -295,7 +295,7 @@ fn preview_area(ui: &mut Ui, t: &Tokens, h: Highlight, overprints: Overprints) {
         let px = [(rect.width() * ppp) as u32, (rect.height() * ppp) as u32];
         let k = (shot.generation, h, overprints == Overprints::Simulate, [visible.x0, visible.y0, visible.x1, visible.y1].map(f64::to_bits), px);
         if *key != Some(k) || tex.is_none() {
-            let r = renderer.get_or_insert_with(vectorcraft_render::Renderer::new);
+            let r = renderer.get_or_insert_with(redrob_vector_render::Renderer::new);
             let img = render(r, shot, visible, px, h, overprints, t.highlight);
             match tex {
                 Some(tx) => tx.set(img, egui::TextureOptions::LINEAR),
@@ -315,7 +315,7 @@ fn preview_area(ui: &mut Ui, t: &Tokens, h: Highlight, overprints: Overprints) {
 /// `visible` of the snapshot at most `px` pixels: in colour without a highlight, else in grey with
 /// the highlighted art in `color`.
 fn render(
-    r: &mut vectorcraft_render::Renderer,
+    r: &mut redrob_vector_render::Renderer,
     shot: &Shot,
     visible: DRect,
     px: [u32; 2],
@@ -381,7 +381,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// A half-transparent blue rectangle over type, and a green square apart.
     fn app() -> VectorcraftApp {
@@ -412,7 +412,7 @@ mod tests {
             let Cache { shot, view, renderer, .. } = &mut *c;
             let shot = shot.as_ref().unwrap();
             render(
-                renderer.get_or_insert_with(vectorcraft_render::Renderer::new),
+                renderer.get_or_insert_with(redrob_vector_render::Renderer::new),
                 shot,
                 view.visible(shot.fit),
                 [300, 200],
@@ -443,7 +443,7 @@ mod tests {
             (
                 shot.fit,
                 render(
-                    renderer.get_or_insert_with(vectorcraft_render::Renderer::new),
+                    renderer.get_or_insert_with(redrob_vector_render::Renderer::new),
                     shot,
                     fit,
                     [300, 200],

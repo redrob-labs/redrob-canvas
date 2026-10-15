@@ -543,11 +543,11 @@ impl PhotocraftMcp {
 
 fn downscale_png(png: &[u8], max_side: u32) -> Result<Option<Vec<u8>>, AutomationError> {
     // A compressed reply's byte limit does not bound its decoded pixel allocation.
-    let opts = photocraft_codecs::DecodeOptions {
-        limits: photocraft_codecs::Limits { max_width: 8192, max_height: 8192, max_pixels: 16 << 20, max_alloc: 64 << 20 },
+    let opts = redrob_photo_codecs::DecodeOptions {
+        limits: redrob_photo_codecs::Limits { max_width: 8192, max_height: 8192, max_pixels: 16 << 20, max_alloc: 64 << 20 },
         ..Default::default()
     };
-    let img = photocraft_codecs::decode_as_with(photocraft_codecs::Format::Png, png, &opts).map_err(|error| AutomationError::Other(error.to_string()))?;
+    let img = redrob_photo_codecs::decode_as_with(redrob_photo_codecs::Format::Png, png, &opts).map_err(|error| AutomationError::Other(error.to_string()))?;
     let (w, h) = img.dimensions();
     if max_side == 0 || w.max(h) <= max_side {
         return Ok(None);
@@ -566,9 +566,9 @@ fn downscale_png(png: &[u8], max_side: u32) -> Result<Option<Vec<u8>>, Automatio
         }
     }
     let small =
-        photocraft_codecs::Image::from_u8(nw, nh, photocraft_codecs::ChannelLayout::Rgba, out).map_err(|error| AutomationError::Other(error.to_string()))?;
+        redrob_photo_codecs::Image::from_u8(nw, nh, redrob_photo_codecs::ChannelLayout::Rgba, out).map_err(|error| AutomationError::Other(error.to_string()))?;
     let bytes =
-        photocraft_codecs::encode(&small, photocraft_codecs::Format::Png, &Default::default()).map_err(|error| AutomationError::Other(error.to_string()))?;
+        redrob_photo_codecs::encode(&small, redrob_photo_codecs::Format::Png, &Default::default()).map_err(|error| AutomationError::Other(error.to_string()))?;
     Ok(Some(bytes))
 }
 
@@ -825,7 +825,7 @@ impl PhotocraftMcp {
             .unwrap_or_else(|| all.get("commands").and_then(Value::as_array).cloned().unwrap_or_default())
             .into_iter()
             .filter(|c| {
-                needle.as_ref().is_none_or(|n| photocraft_engine::commands::list_entry_matches(c, n))
+                needle.as_ref().is_none_or(|n| redrob_photo_engine::commands::list_entry_matches(c, n))
                     && (!enabled_only || c.get("enabled").and_then(Value::as_bool).unwrap_or(true))
             })
             .collect();
@@ -990,12 +990,12 @@ impl PhotocraftMcp {
     }
 
     async fn save_impl(&self, p: SaveParams) -> Result<CallToolResult, McpError> {
-        let tga_bits = match p.tga_bits.map(|b| (b, photocraft_io::TgaBits::from_bits(u64::from(b)))) {
+        let tga_bits = match p.tga_bits.map(|b| (b, redrob_photo_io::TgaBits::from_bits(u64::from(b)))) {
             None => None,
             Some((_, Some(bits))) => Some(bits),
             Some((b, None)) => return Ok(fail(format!("`tgaBits` must be 24 or 32, got {b}"))),
         };
-        let dpx_bits = match p.dpx_bits.map(|b| (b, photocraft_io::DpxBits::from_bits(u64::from(b)))) {
+        let dpx_bits = match p.dpx_bits.map(|b| (b, redrob_photo_io::DpxBits::from_bits(u64::from(b)))) {
             None => None,
             Some((_, Some(bits))) => Some(bits),
             Some((b, None)) => return Ok(fail(format!("`dpxBits` must be 8, 10, 12 or 16, got {b}"))),
@@ -1029,7 +1029,7 @@ impl PhotocraftMcp {
         }
         let Some(r) = self
             .headless_op(move |h| {
-                let mut opts = photocraft_io::ExportOptions { tiff_layers: p.tiff_layers, tga_bits, ..Default::default() };
+                let mut opts = redrob_photo_io::ExportOptions { tiff_layers: p.tiff_layers, tga_bits, ..Default::default() };
                 opts.encode.dpx_bits = dpx_bits;
                 if let Some(q) = p.quality {
                     opts.encode.jpeg_quality = q.clamp(1, 100);
@@ -1052,7 +1052,7 @@ mod progress;
 mod transport;
 
 /// Used by the render helper in tests and the CLI.
-pub fn render_document_png(doc: &photocraft_doc::Document, max_side: u32) -> Result<Vec<u8>, AutomationError> {
+pub fn render_document_png(doc: &redrob_photo_doc::Document, max_side: u32) -> Result<Vec<u8>, AutomationError> {
     files::render_png(doc, max_side)
 }
 
@@ -1097,8 +1097,8 @@ mod tests {
 
     #[test]
     fn bridge_screenshot_decode_limits_apply_even_without_downscaling() {
-        let image = photocraft_codecs::Image::from_u8(8193, 1, photocraft_codecs::ChannelLayout::Rgba, vec![0; 8193 * 4]).unwrap();
-        let png = photocraft_codecs::encode(&image, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+        let image = redrob_photo_codecs::Image::from_u8(8193, 1, redrob_photo_codecs::ChannelLayout::Rgba, vec![0; 8193 * 4]).unwrap();
+        let png = redrob_photo_codecs::encode(&image, redrob_photo_codecs::Format::Png, &Default::default()).unwrap();
         assert!(downscale_png(b"not a png", 32).is_err());
         assert!(downscale_png(&png, 0).is_err());
         assert!(downscale_png(&png, 1024).is_err());

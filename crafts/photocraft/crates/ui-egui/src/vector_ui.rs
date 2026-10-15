@@ -3,9 +3,9 @@
 //! All edits go through the engine's `shape.*` / `path.*` commands.
 
 use egui::{Color32, Pos2, Rect, Sense, Stroke, pos2, vec2};
-use photocraft_doc::vector::Path;
-use photocraft_doc::{Document, LayerContent};
-use photocraft_geom::Affine;
+use redrob_photo_doc::vector::Path;
+use redrob_photo_doc::{Document, LayerContent};
+use redrob_photo_geom::Affine;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -147,18 +147,18 @@ pub fn create_shape(app: &mut PhotocraftApp, mut geometry: Value) -> Result<Valu
 }
 
 /// The preview and command both use the full float tool colours, including transparent paint.
-fn shape_preview(app: &PhotocraftApp, tool: Tool, start: [f64; 2], end: [f64; 2], mods: egui::Modifiers) -> Option<photocraft_doc::ShapeLayer> {
+fn shape_preview(app: &PhotocraftApp, tool: Tool, start: [f64; 2], end: [f64; 2], mods: egui::Modifiers) -> Option<redrob_photo_doc::ShapeLayer> {
     let o = &app.ui.tool_options;
     let geometry = shape_geometry(o, tool, start, end, mods)?;
     let path = if tool == Tool::CustomShape {
         let rect = geometry.get("rect").and_then(|r| serde_json::from_value::<[f64; 4]>(r.clone()).ok())?;
-        let groups = photocraft_engine::presets::shapes::all_groups(&app.session);
+        let groups = redrob_photo_engine::presets::shapes::all_groups(&app.session);
         let shape = groups.iter().flat_map(|g| &g.items).find(|s| s.name == app.ui.presets_ui.shape())?;
-        photocraft_engine::presets::shapes::fit(&shape.path, rect, mods.shift)
+        redrob_photo_engine::presets::shapes::fit(&shape.path, rect, mods.shift)
     } else {
-        photocraft_engine::vector_cmds::shape_path(&geometry).ok()?
+        redrob_photo_engine::vector_cmds::shape_path(&geometry).ok()?
     };
-    Some(photocraft_doc::ShapeLayer {
+    Some(redrob_photo_doc::ShapeLayer {
         path,
         fill: o.shape_fill.then(|| solid_paint(app.session.tools.foreground)),
         stroke: (o.stroke_width > 0.0).then(|| o.shape_stroke.stroke(o.stroke_width, solid_paint(app.session.tools.background))),
@@ -390,19 +390,19 @@ fn fold_close(pen: &PenPath) -> Option<PenPath> {
 /// The Pen path being drawn as a document path (one open subpath), so ⌘/Ctrl (Direct Selection)
 /// can edit it in place while drawing (#4022).
 pub(crate) fn pen_path(pen: &PenPath) -> Path {
-    let pt = |q: [f64; 2]| photocraft_geom::Point::new(q[0], q[1]);
+    let pt = |q: [f64; 2]| redrob_photo_geom::Point::new(q[0], q[1]);
     let knots = pen
         .knots
         .iter()
         .enumerate()
-        .map(|(i, k)| photocraft_doc::Knot {
+        .map(|(i, k)| redrob_photo_doc::Knot {
             anchor: pt(k[0]),
             in_ctrl: pt(k[1]),
             out_ctrl: pt(k[2]),
             smooth: !pen.unlinked.contains(&i) && (k[1] != k[0] || k[2] != k[0]),
         })
         .collect();
-    Path::new(vec![photocraft_doc::vector::Subpath { closed: false, knots, op: Default::default() }])
+    Path::new(vec![redrob_photo_doc::vector::Subpath { closed: false, knots, op: Default::default() }])
 }
 
 /// The Pen path being drawn becomes `path`'s first subpath, edited with ⌘/Ctrl (Direct Selection);
@@ -456,7 +456,7 @@ fn commit_path(app: &mut PhotocraftApp, pen: &PenPath, closed: bool) {
         app.run("shape.create", json!({"kind": "path", "path": path, "fill": fill, "stroke": stroke}))
     } else if let Some((id, existing)) = targeted_vector_mask(app) {
         // A targeted vector mask takes the new subpath (#196), as in Photoshop.
-        let mut p = photocraft_engine::vector_cmds::path_json(&existing);
+        let mut p = redrob_photo_engine::vector_cmds::path_json(&existing);
         if let (Some(subs), Some(new)) = (p.get_mut("subpaths").and_then(Value::as_array_mut), path.get("subpaths").and_then(Value::as_array)) {
             subs.extend(new.iter().cloned());
         }
@@ -498,7 +498,7 @@ pub fn freeform_finish(app: &mut PhotocraftApp, points: &[[f64; 3]], straight: &
     let closed = (first[0] - last[0]).hypot(first[1] - last[1]) < tol && length > 4.0 * tol;
     let fit = f64::from(app.ui.tool_options.curve_fit);
     let pen = if straight.is_empty() {
-        let Some(sub) = photocraft_vector::trace::fit_trace(&trace, fit, closed) else { return };
+        let Some(sub) = redrob_photo_vector::trace::fit_trace(&trace, fit, closed) else { return };
         let knots = sub.knots.iter().map(knot_points).collect();
         let unlinked = sub.knots.iter().enumerate().filter(|(_, k)| !k.smooth).map(|(i, _)| i).collect();
         (PenPath { knots, unlinked, ..Default::default() }, sub.closed)
@@ -508,7 +508,7 @@ pub fn freeform_finish(app: &mut PhotocraftApp, points: &[[f64; 3]], straight: &
     commit_path(app, &pen.0, pen.1);
 }
 
-fn knot_points(k: &photocraft_doc::Knot) -> [[f64; 2]; 3] {
+fn knot_points(k: &redrob_photo_doc::Knot) -> [[f64; 2]; 3] {
     [[k.anchor.x, k.anchor.y], [k.in_ctrl.x, k.in_ctrl.y], [k.out_ctrl.x, k.out_ctrl.y]]
 }
 
@@ -525,7 +525,7 @@ fn fit_with_straight_segments(trace: &[[f64; 2]], straight: &[usize], fit: f64, 
     for end in cuts {
         let run = trace.get(start..end).unwrap_or_default();
         let first = knots.len();
-        match photocraft_vector::trace::fit_trace(run, fit, false) {
+        match redrob_photo_vector::trace::fit_trace(run, fit, false) {
             Some(sub) => {
                 corners.extend(sub.knots.iter().enumerate().filter(|(_, k)| !k.smooth).map(|(i, _)| first + i));
                 knots.extend(sub.knots.iter().map(knot_points));
@@ -568,7 +568,7 @@ fn fit_with_straight_segments(trace: &[[f64; 2]], straight: &[usize], fit: f64, 
 fn curvature_refresh(pen: &mut PenPath, closed: bool) {
     let anchors: Vec<[f64; 2]> = pen.knots.iter().map(|k| k[0]).collect();
     let corners: Vec<bool> = (0..anchors.len()).map(|i| pen.unlinked.contains(&i)).collect();
-    pen.knots = photocraft_vector::edit::curvature_knots(&anchors, &corners, closed);
+    pen.knots = redrob_photo_vector::edit::curvature_knots(&anchors, &corners, closed);
 }
 
 /// The anchor of the Curvature Pen path being drawn under (x, y), for the cursor.
@@ -723,7 +723,7 @@ enum PathTarget {
 pub(crate) fn targeted_vector_mask(app: &PhotocraftApp) -> Option<(u64, Path)> {
     let st = app.session.active()?;
     let l = st.active_layer.and_then(|id| st.doc.layer(id))?;
-    let targeted = app.ui.vector_mask_target || st.channel_view.target == photocraft_engine::channel_cmds::ChannelTarget::VectorMask;
+    let targeted = app.ui.vector_mask_target || st.channel_view.target == redrob_photo_engine::channel_cmds::ChannelTarget::VectorMask;
     (targeted && !matches!(l.content, LayerContent::Shape(_))).then_some(())?;
     l.vector_mask.as_ref().map(|m| (l.id.0, m.path.clone()))
 }
@@ -778,7 +778,7 @@ pub(crate) fn free_transform_path(app: &PhotocraftApp) -> Option<(Value, Path)> 
     Some((params, path))
 }
 
-fn point_in_subpath(sp: &photocraft_doc::vector::Subpath, pt: [f64; 2]) -> bool {
+fn point_in_subpath(sp: &redrob_photo_doc::vector::Subpath, pt: [f64; 2]) -> bool {
     if !sp.closed || sp.knots.len() < 3 {
         return false;
     }
@@ -801,7 +801,7 @@ fn point_in_subpath(sp: &photocraft_doc::vector::Subpath, pt: [f64; 2]) -> bool 
 /// The topmost visible shape layer under `at` (document coordinates):
 /// hits the shape path or anchor within `tol`, or any non-transparent pixel of the shape's raster surface,
 /// or point inside the shape's filled geometry.
-pub fn pick_shape_at(doc: &Document, at: [f64; 2], tol: f64) -> Option<photocraft_doc::LayerId> {
+pub fn pick_shape_at(doc: &Document, at: [f64; 2], tol: f64) -> Option<redrob_photo_doc::LayerId> {
     let (x, y) = (at[0].floor() as i32, at[1].floor() as i32);
     for (path, _, l) in doc.walk().iter().rev() {
         if !l.visible || !(1..=path.len()).all(|n| doc.layer_at(&path[..n]).is_some_and(|a| a.visible)) {
@@ -812,18 +812,18 @@ pub fn pick_shape_at(doc: &Document, at: [f64; 2], tol: f64) -> Option<photocraf
             continue;
         }
         if let LayerContent::Shape(sh) = &l.content {
-            if photocraft_vector::edit::hit(&sh.path, photocraft_geom::Point::new(at[0], at[1]), tol, &[]).is_some() {
+            if redrob_photo_vector::edit::hit(&sh.path, redrob_photo_geom::Point::new(at[0], at[1]), tol, &[]).is_some() {
                 return Some(l.id);
             }
             if sh.fill.is_some() {
                 if let Some(surf) = l.surface() {
                     let mut px = [[0.0f32; 4]; 1];
-                    surf.read_rgba_into(photocraft_doc::Rect::from_xywh(x, y, 1, 1), &mut px);
+                    surf.read_rgba_into(redrob_photo_doc::Rect::from_xywh(x, y, 1, 1), &mut px);
                     if px[0][3] > 0.0 {
                         return Some(l.id);
                     }
                 }
-                if let Some(photocraft_doc::LiveShape::Rect { rect, .. }) = &sh.live {
+                if let Some(redrob_photo_doc::LiveShape::Rect { rect, .. }) = &sh.live {
                     let x0 = rect[0].min(rect[0] + rect[2]);
                     let x1 = rect[0].max(rect[0] + rect[2]);
                     let y0 = rect[1].min(rect[1] + rect[3]);
@@ -832,7 +832,7 @@ pub fn pick_shape_at(doc: &Document, at: [f64; 2], tol: f64) -> Option<photocraf
                         return Some(l.id);
                     }
                 }
-                if let Some(photocraft_doc::LiveShape::Ellipse { rect }) = &sh.live {
+                if let Some(redrob_photo_doc::LiveShape::Ellipse { rect }) = &sh.live {
                     let rx = rect[2].abs() / 2.0;
                     let ry = rect[3].abs() / 2.0;
                     if rx > 1e-6 && ry > 1e-6 {
@@ -875,11 +875,11 @@ pub fn path_selection_finish(app: &mut PhotocraftApp, start: [f64; 2], end: [f64
         PathTarget::Shape(id) => app.run("shape.edit", json!({"layer": id, "move": [dx.round(), dy.round()]})),
         PathTarget::VectorMask(id) => {
             let moved = path.transform(&Affine::translate(dx.round(), dy.round()));
-            app.run("layer.vectorMask.edit", json!({"layer": id, "path": photocraft_engine::vector_cmds::path_json(&moved)}))
+            app.run("layer.vectorMask.edit", json!({"layer": id, "path": redrob_photo_engine::vector_cmds::path_json(&moved)}))
         }
         PathTarget::Work => {
             let moved = path.transform(&Affine::translate(dx.round(), dy.round()));
-            app.run("path.set", json!({"name": "work", "path": photocraft_engine::vector_cmds::path_json(&moved)}))
+            app.run("path.set", json!({"name": "work", "path": redrob_photo_engine::vector_cmds::path_json(&moved)}))
         }
     };
 }
@@ -1214,7 +1214,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
             crate::widgets::vline(ui, 22.0);
             lbl(ui, tl!("Radius:"));
             let mut r = match target.as_ref().and_then(|s| s.live.as_ref()) {
-                Some(photocraft_doc::LiveShape::Rect { radii, .. }) => radii[0] as f32,
+                Some(redrob_photo_doc::LiveShape::Rect { radii, .. }) => radii[0] as f32,
                 _ => o.corner_radius,
             };
             if crate::widgets::value_field(ui, &mut r, 0.0..=10000.0, "px", 62.0).changed() {
@@ -1241,7 +1241,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
             crate::preset_panels::shape_picker(app, ui);
         }
         _ if matches!(tool, Tool::PathSelection | Tool::DirectSelection) => {
-            if let Some(photocraft_doc::LiveShape::Rect { radii, .. }) = target.as_ref().and_then(|s| s.live.as_ref()) {
+            if let Some(redrob_photo_doc::LiveShape::Rect { radii, .. }) = target.as_ref().and_then(|s| s.live.as_ref()) {
                 crate::widgets::vline(ui, 22.0);
                 lbl(ui, tl!("Radius:"));
                 let mut r = radii[0] as f32;
@@ -1279,14 +1279,14 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
 
 /// The shape layer the options bar edits.
 struct SelectedShape {
-    doc: photocraft_doc::DocId,
-    layer: photocraft_doc::LayerId,
-    fill: Option<photocraft_doc::Fill>,
-    stroke: Option<photocraft_doc::ShapeStroke>,
-    live: Option<photocraft_doc::LiveShape>,
+    doc: redrob_photo_doc::DocId,
+    layer: redrob_photo_doc::LayerId,
+    fill: Option<redrob_photo_doc::Fill>,
+    stroke: Option<redrob_photo_doc::ShapeStroke>,
+    live: Option<redrob_photo_doc::LiveShape>,
 }
 
-fn selected_shape(session: &photocraft_engine::Session) -> Option<SelectedShape> {
+fn selected_shape(session: &redrob_photo_engine::Session) -> Option<SelectedShape> {
     let st = session.active()?;
     let layer = st.active_layer?;
     match &st.doc.layer(layer)?.content {
@@ -1298,13 +1298,13 @@ fn selected_shape(session: &photocraft_engine::Session) -> Option<SelectedShape>
 // ---------------------------------------------------------------------------------------------
 // Properties (shape layers)
 
-fn solid_paint(c: [f32; 4]) -> photocraft_doc::Fill {
-    photocraft_doc::Fill::Solid(photocraft_doc::Color::rgba(c[0], c[1], c[2], c[3]))
+fn solid_paint(c: [f32; 4]) -> redrob_photo_doc::Fill {
+    redrob_photo_doc::Fill::Solid(redrob_photo_doc::Color::rgba(c[0], c[1], c[2], c[3]))
 }
 
-fn color_of(f: &photocraft_doc::Fill) -> Option<[f32; 4]> {
+fn color_of(f: &redrob_photo_doc::Fill) -> Option<[f32; 4]> {
     match f {
-        photocraft_doc::Fill::Solid(c) => {
+        redrob_photo_doc::Fill::Solid(c) => {
             let [r, g, b] = c.to_rgb();
             Some([r, g, b, c.alpha])
         }
@@ -1354,7 +1354,7 @@ fn picker_rgba(hsva: egui::ecolor::Hsva) -> [f32; 4] {
 
 /// The shared compact picker keeps the float RGB paint and its alpha. Color32 is only display
 /// data: opening the picker must never quantize an existing high-depth colour or enable paint.
-fn swatch(ui: &mut egui::Ui, fill: Option<&photocraft_doc::Fill>, fallback: [f32; 4], tip: &str) -> Option<PaintChange> {
+fn swatch(ui: &mut egui::Ui, fill: Option<&redrob_photo_doc::Fill>, fallback: [f32; 4], tip: &str) -> Option<PaintChange> {
     let t = Tokens::get(ui.ctx());
     let (r, resp) = ui.allocate_exact_size(vec2(30.0, 22.0), Sense::click());
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::ColorButton, ui.is_enabled(), tip));
@@ -1364,9 +1364,9 @@ fn swatch(ui: &mut egui::Ui, fill: Option<&photocraft_doc::Fill>, fallback: [f32
         (Some(c), _) => {
             ui.painter().rect_filled(r.shrink(1.0), t.radius_sm, rgba32(c));
         }
-        (None, Some(photocraft_doc::Fill::Gradient { stops, .. })) if !stops.is_empty() => {
+        (None, Some(redrob_photo_doc::Fill::Gradient { stops, .. })) if !stops.is_empty() => {
             // Gradient fills preview as a left-to-right ramp through their stops.
-            let rgb = |c: &photocraft_doc::Color| {
+            let rgb = |c: &redrob_photo_doc::Color| {
                 let v = c.to_rgba8();
                 Color32::from_rgba_unmultiplied(v[0], v[1], v[2], v[3])
             };
@@ -1470,7 +1470,7 @@ fn paint_gesture(ui: &egui::Ui, key: egui::Id) -> u64 {
 }
 
 /// Properties panel for a shape layer: Appearance (fill, stroke) and live shape geometry.
-pub fn shape_properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: photocraft_doc::LayerId) {
+pub fn shape_properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: redrob_photo_doc::LayerId) {
     if app.session.active().is_some_and(|st| {
         let locks = st.doc.effective_locks(id);
         locks.all || locks.pixels
@@ -1525,7 +1525,7 @@ pub fn shape_properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: photocra
             &style,
             &mut app.ui.stroke_editor,
             sh.path.subpaths.iter().all(|s| s.closed),
-            !matches!(sh.live, Some(photocraft_doc::LiveShape::Ellipse { .. })),
+            !matches!(sh.live, Some(redrob_photo_doc::LiveShape::Ellipse { .. })),
             app.session.active().map(|st| (st.doc.id, id)),
             stroke_enabled,
         ) {
@@ -1544,9 +1544,9 @@ pub fn shape_properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: photocra
             crate::widgets::value_field(ui, v, range, unit, 64.0).changed()
         };
         match live {
-            photocraft_doc::vector::LiveShape::Rect { rect, .. }
-            | photocraft_doc::vector::LiveShape::Ellipse { rect }
-            | photocraft_doc::vector::LiveShape::Polygon { rect, .. } => {
+            redrob_photo_doc::vector::LiveShape::Rect { rect, .. }
+            | redrob_photo_doc::vector::LiveShape::Ellipse { rect }
+            | redrob_photo_doc::vector::LiveShape::Polygon { rect, .. } => {
                 ui.horizontal(|ui| {
                     let (mut w, mut h) = (rect[2] as f32, rect[3] as f32);
                     let cw = num(ui, "W", &mut w, 1.0..=300000.0, "px");
@@ -1556,10 +1556,10 @@ pub fn shape_properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: photocra
                     }
                 });
             }
-            photocraft_doc::vector::LiveShape::Line { .. } => {}
+            redrob_photo_doc::vector::LiveShape::Line { .. } => {}
         }
         ui.vertical(|ui| match live {
-            photocraft_doc::vector::LiveShape::Rect { radii, .. } => {
+            redrob_photo_doc::vector::LiveShape::Rect { radii, .. } => {
                 // Keep the uniform workflow available after independent corner edits too.
                 ui.horizontal(|ui| {
                     let mut all = radii[0] as f32;
@@ -1580,7 +1580,7 @@ pub fn shape_properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: photocra
                     });
                 }
             }
-            photocraft_doc::vector::LiveShape::Polygon { sides, star_ratio, .. } => {
+            redrob_photo_doc::vector::LiveShape::Polygon { sides, star_ratio, .. } => {
                 ui.horizontal(|ui| {
                     let mut n = *sides as f32;
                     if num(ui, tl!("Sides"), &mut n, 3.0..=100.0, "") {
@@ -1593,7 +1593,7 @@ pub fn shape_properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: photocra
                 })
                 .inner
             }
-            photocraft_doc::vector::LiveShape::Line { weight, .. } => {
+            redrob_photo_doc::vector::LiveShape::Line { weight, .. } => {
                 ui.horizontal(|ui| {
                     let mut w = *weight as f32;
                     if num(ui, tl!("Weight"), &mut w, 1.0..=10000.0, "px") {
@@ -1660,7 +1660,7 @@ pub struct PathEntry {
 
 /// The Paths panel's rows, top to bottom: saved paths, the work path, then the selected layer's
 /// shape path ("<Layer> Shape Path") or vector mask ("<Layer> Vector Mask"), like Photoshop.
-pub fn path_rows(doc: &Document, active: Option<photocraft_doc::LayerId>) -> Vec<PathEntry> {
+pub fn path_rows(doc: &Document, active: Option<redrob_photo_doc::LayerId>) -> Vec<PathEntry> {
     let mut rows: Vec<_> = doc.paths.iter().map(|p| PathEntry { name: p.name.clone(), path: p.path.clone(), kind: PathRow::Saved }).collect();
     if let Some(wp) = &doc.work_path {
         rows.push(PathEntry { name: "Work Path".into(), path: wp.clone(), kind: PathRow::Work });
@@ -1721,7 +1721,7 @@ fn path_context_actions(entry: &PathEntry, doc: &Document) -> Vec<(&'static str,
             }
         }
         let copy_name = format!("{} copy {n}", entry.name);
-        actions.push(("Duplicate Path", "path.set", json!({"name": copy_name, "path": photocraft_engine::vector_cmds::path_json(&entry.path)})));
+        actions.push(("Duplicate Path", "path.set", json!({"name": copy_name, "path": redrob_photo_engine::vector_cmds::path_json(&entry.path)})));
     }
     if entry.kind != PathRow::Layer {
         actions.push(("Delete Path", "path.delete", json!({"name": key})));
@@ -1913,18 +1913,18 @@ mod tests {
         }
         // Through path_lines too: a closed subpath of two curved segments.
         let mut path = Path::default();
-        path.subpaths.push(photocraft_doc::vector::Subpath {
+        path.subpaths.push(redrob_photo_doc::vector::Subpath {
             knots: vec![
-                photocraft_doc::vector::Knot {
-                    anchor: photocraft_geom::Point::new(0.0, 0.0),
-                    in_ctrl: photocraft_geom::Point::new(0.0, 40.0),
-                    out_ctrl: photocraft_geom::Point::new(0.0, -40.0),
+                redrob_photo_doc::vector::Knot {
+                    anchor: redrob_photo_geom::Point::new(0.0, 0.0),
+                    in_ctrl: redrob_photo_geom::Point::new(0.0, 40.0),
+                    out_ctrl: redrob_photo_geom::Point::new(0.0, -40.0),
                     smooth: true,
                 },
-                photocraft_doc::vector::Knot {
-                    anchor: photocraft_geom::Point::new(60.0, 0.0),
-                    in_ctrl: photocraft_geom::Point::new(60.0, -40.0),
-                    out_ctrl: photocraft_geom::Point::new(60.0, 40.0),
+                redrob_photo_doc::vector::Knot {
+                    anchor: redrob_photo_geom::Point::new(60.0, 0.0),
+                    in_ctrl: redrob_photo_geom::Point::new(60.0, -40.0),
+                    out_ctrl: redrob_photo_geom::Point::new(60.0, 40.0),
                     smooth: true,
                 },
             ],
@@ -1941,8 +1941,8 @@ mod tests {
             let mut a = app();
             a.ui.tool_options.stroke_width = 5.0;
             a.ui.tool_options.shape_stroke = crate::shape_stroke_ui::StrokeOptions {
-                cap: photocraft_doc::LineCap::Square,
-                join: photocraft_doc::LineJoin::Bevel,
+                cap: redrob_photo_doc::LineCap::Square,
+                join: redrob_photo_doc::LineJoin::Bevel,
                 dashes: vec![4.0, 2.0, 1.0, 3.0],
                 dash_offset: -0.5,
                 opacity: 0.4,
@@ -1968,7 +1968,7 @@ mod tests {
     }
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 200, "height": 200})).unwrap();
         app.sync_views();
         app
@@ -1989,7 +1989,7 @@ mod tests {
         let entries = path_context_actions(&first, doc);
         assert_eq!(entries[0].1, "path.toSelection");
         assert_eq!(entries[0].2["name"], "First");
-        assert!(entries.iter().all(|(_, id, _)| photocraft_engine::commands::find(id).is_some()));
+        assert!(entries.iter().all(|(_, id, _)| redrob_photo_engine::commands::find(id).is_some()));
         let (_, id, params) = entries.into_iter().find(|(_, id, _)| *id == "path.toSelection").unwrap();
         app.run(id, params).unwrap();
         assert!(app.session.active().unwrap().doc.selection.is_some());
@@ -2111,7 +2111,7 @@ mod tests {
         app.ui.tool_options.corner_radius = 8.0;
         let preview = |app: &PhotocraftApp, tool, end| {
             shape_geometry(&app.ui.tool_options, tool, [10.0, 10.0], end, egui::Modifiers::ALT)
-                .and_then(|p| photocraft_engine::vector_cmds::shape_path(&p).ok())
+                .and_then(|p| redrob_photo_engine::vector_cmds::shape_path(&p).ok())
         };
         for tool in [Tool::Rectangle, Tool::EllipseShape, Tool::Triangle, Tool::Polygon, Tool::Line] {
             let shown = preview(&app, tool, [60.0, 30.0]).unwrap();
@@ -2121,8 +2121,8 @@ mod tests {
             assert_eq!(sh.path, shown, "{tool:?}");
         }
         assert!(preview(&app, Tool::Rectangle, [10.2, 40.0]).is_none(), "too thin to draw");
-        assert!(photocraft_engine::vector_cmds::shape_path(&json!({"kind": "nope", "rect": [0, 0, 5, 5]})).is_err());
-        assert!(photocraft_engine::vector_cmds::shape_path(&json!({"kind": "rect"})).is_err());
+        assert!(redrob_photo_engine::vector_cmds::shape_path(&json!({"kind": "nope", "rect": [0, 0, 5, 5]})).is_err());
+        assert!(redrob_photo_engine::vector_cmds::shape_path(&json!({"kind": "rect"})).is_err());
     }
 
     #[test]
@@ -2359,7 +2359,7 @@ mod tests {
     fn new_fill_layer_takes_the_selected_path_as_its_vector_mask() {
         let mut app = app();
         let layer = |app: &PhotocraftApp, r: Result<Value, String>| {
-            let id = photocraft_doc::LayerId(r.unwrap()["layer"].as_u64().unwrap());
+            let id = redrob_photo_doc::LayerId(r.unwrap()["layer"].as_u64().unwrap());
             app.session.active().unwrap().doc.layer(id).unwrap().clone()
         };
         // Drawing a work path with the Pen selects it.
@@ -2491,10 +2491,10 @@ mod tests {
         let id = created["layer"].as_u64().unwrap();
         let get_radii = |app: &PhotocraftApp| {
             let st = app.session.active().unwrap();
-            let shape = st.doc.layer(photocraft_doc::LayerId(id)).unwrap();
+            let shape = st.doc.layer(redrob_photo_doc::LayerId(id)).unwrap();
             match &shape.content {
                 LayerContent::Shape(sh) => match &sh.live {
-                    Some(photocraft_doc::vector::LiveShape::Rect { radii, .. }) => *radii,
+                    Some(redrob_photo_doc::vector::LiveShape::Rect { radii, .. }) => *radii,
                     _ => panic!("rectangle must remain a live shape"),
                 },
                 _ => panic!("expected shape layer"),
@@ -2542,7 +2542,7 @@ mod tests {
                 if !ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
                     return;
                 }
-                egui::Panel::right("properties").resizable(false).exact_size(285.0).show(ui, |ui| shape_properties(app, ui, photocraft_doc::LayerId(id)));
+                egui::Panel::right("properties").resizable(false).exact_size(285.0).show(ui, |ui| shape_properties(app, ui, redrob_photo_doc::LayerId(id)));
             },
             app,
         );
@@ -2566,7 +2566,7 @@ mod tests {
         let opened = popup(&h).expect("the picker opened");
         let fill = |h: &egui_kittest::Harness<'_, PhotocraftApp>| {
             let st = h.state().session.active().unwrap();
-            match &st.doc.layer(photocraft_doc::LayerId(id)).unwrap().content {
+            match &st.doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content {
                 LayerContent::Shape(sh) => sh.fill.clone(),
                 _ => None,
             }
@@ -2636,7 +2636,7 @@ mod tests {
         h.run_steps(2);
         let stroke = shape(h.state()).1.expect("the width field stroked the shape");
         assert_eq!(stroke.width, 6.0);
-        assert_eq!(stroke.paint, photocraft_doc::Fill::Solid(photocraft_doc::Color::rgba(0.0, 0.0, 1.0, 1.0)));
+        assert_eq!(stroke.paint, redrob_photo_doc::Fill::Solid(redrob_photo_doc::Color::rgba(0.0, 0.0, 1.0, 1.0)));
         // Fill off.
         click_fill(&mut h);
         assert_eq!(shape(h.state()).0, None, "unchecking Fill removed the shape's fill");
@@ -2700,7 +2700,7 @@ mod tests {
         h.run_steps(2);
         let stroke = shape(h.state()).1.expect("the width field stroked the shape");
         assert_eq!(stroke.width, 6.0);
-        assert_eq!(stroke.paint, photocraft_doc::Fill::Solid(photocraft_doc::Color::rgba(0.0, 0.0, 1.0, 1.0)));
+        assert_eq!(stroke.paint, redrob_photo_doc::Fill::Solid(redrob_photo_doc::Color::rgba(0.0, 0.0, 1.0, 1.0)));
         // Fill toggle.
         click_fill(&mut h);
         assert_eq!(shape(h.state()).0, None, "unchecking Fill removed the shape's fill");

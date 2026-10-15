@@ -14,13 +14,13 @@ use std::sync::Arc;
 
 use egui::{Color32, Rect, Response, Sense, Stroke, StrokeKind, TextureHandle, Ui, pos2, vec2};
 use serde_json::{Value, json};
-use vectorcraft_color::{BlendMode, Paint};
-use vectorcraft_doc::style_libs::STYLE_LIBRARIES;
-use vectorcraft_doc::text::{CharStyle, TextObject};
-use vectorcraft_doc::{Appearance, AppearanceItem, Document, GraphicStyle, Node, NodeId, NodeKind, PatternDef, StyleLibrary};
-use vectorcraft_engine::cmd::stylelib;
-use vectorcraft_engine::cmd::swatchlib::LibraryInfo;
-use vectorcraft_geom::{Affine, Point, shapes};
+use redrob_vector_color::{BlendMode, Paint};
+use redrob_vector_doc::style_libs::STYLE_LIBRARIES;
+use redrob_vector_doc::text::{CharStyle, TextObject};
+use redrob_vector_doc::{Appearance, AppearanceItem, Document, GraphicStyle, Node, NodeId, NodeKind, PatternDef, StyleLibrary};
+use redrob_vector_engine::cmd::stylelib;
+use redrob_vector_engine::cmd::swatchlib::LibraryInfo;
+use redrob_vector_geom::{Affine, Point, shapes};
 
 use super::library_panel::{self, LibraryKind, LibraryRef, Row};
 use super::{alt_held, pstate, selection_len, set_pstate};
@@ -66,7 +66,7 @@ const LARGE: f32 = 132.0;
 const UV: Rect = Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0));
 
 thread_local! {
-    static RENDERER: RefCell<vectorcraft_render::Renderer> = RefCell::new(vectorcraft_render::Renderer::new());
+    static RENDERER: RefCell<redrob_vector_render::Renderer> = RefCell::new(redrob_vector_render::Renderer::new());
     /// Thumbnails by (look hash, pixels, preview shape, Override Character Color on type).
     static THUMBS: crate::graphics::TexCache<HashMap<(u64, u32, Preview, bool), TextureHandle>> = crate::graphics::TexCache::default();
 }
@@ -157,7 +157,7 @@ fn render(app: &VectorcraftApp, paints: Paints, g: &GraphicStyle, preview: Previ
     }
     let id = doc.alloc_id();
     let shape = match preview {
-        Preview::Square => Node::path(id, shapes::rectangle(vectorcraft_geom::Rect::new(22.0, 22.0, 78.0, 78.0)), Appearance::default()),
+        Preview::Square => Node::path(id, shapes::rectangle(redrob_vector_geom::Rect::new(22.0, 22.0, 78.0, 78.0)), Appearance::default()),
         Preview::Text => {
             let style = CharStyle { size: 54.0, ..Default::default() };
             let mut n = Node::new(id, NodeKind::Text(Box::new(TextObject::point(Point::ZERO, "Aa", style))));
@@ -169,7 +169,7 @@ fn render(app: &VectorcraftApp, paints: Paints, g: &GraphicStyle, preview: Previ
     };
     let layer = doc.layers[0].id;
     doc.insert(Some(layer), 0, app.session.styled(&shape, g)).ok()?;
-    let img = RENDERER.with(|r| r.borrow_mut().render_region(&doc, vectorcraft_geom::Rect::new(0.0, 0.0, SIDE, SIDE), px as f64 / SIDE, true));
+    let img = RENDERER.with(|r| r.borrow_mut().render_region(&doc, redrob_vector_geom::Rect::new(0.0, 0.0, SIDE, SIDE), px as f64 / SIDE, true));
     Some(egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels))
 }
 
@@ -675,7 +675,7 @@ fn describe(g: &GraphicStyle) -> String {
         n => Some(crate::i18n::tn(n as u64, "{n} stroke", "{n} strokes")),
     };
     let mut parts: Vec<String> = [count(true), count(false)].into_iter().flatten().collect();
-    let effects = ap.effects.iter().filter_map(|e| vectorcraft_render::effects::effect_info(&e.id));
+    let effects = ap.effects.iter().filter_map(|e| redrob_vector_render::effects::effect_info(&e.id));
     parts.extend(effects.map(|e| e.label.trim_end_matches('…').to_string()));
     if g.opacity < 1.0 {
         parts.push(crate::i18n::fmt(tl!("{percent}% opacity"), &[("percent", &format!("{}", (g.opacity * 100.0).round()))]));
@@ -790,7 +790,7 @@ pub(crate) fn window_menu() -> Vec<Item> {
         "window.userGraphicStyleLibrary10",
     ];
     let open =
-        |b: &'static vectorcraft_doc::style_libs::BuiltinStyleLibrary| Item::Cmd(b.name, GraphicStyleLibraries::OPEN, json!({ "library": b.id }));
+        |b: &'static redrob_vector_doc::style_libs::BuiltinStyleLibrary| Item::Cmd(b.name, GraphicStyleLibraries::OPEN, json!({ "library": b.id }));
     let mut items: Vec<Item> = STYLE_LIBRARIES.iter().map(open).collect();
     items.extend([
         Item::Sep,
@@ -805,7 +805,7 @@ pub(crate) fn window_menu() -> Vec<Item> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// The texts `draw` paints in one headless frame with `events`.
     fn frame_with(ctx: &egui::Context, events: Vec<egui::Event>, draw: impl FnMut(&mut Ui)) -> Vec<String> {

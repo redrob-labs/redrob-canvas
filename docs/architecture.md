@@ -10,9 +10,9 @@ upstream code, vendored whole; the shell owns the window and the seams between t
  | top bar: "Redrob Canvas"  [Photo] [Vector] [Layout]       right slot  |
  +-----------------------------------------------------------------------+
  | active mode's ui()                                                    |
- |   Photo  = photocraft_ui_egui::PhotocraftApp   (crafts/photocraft)    |
- |   Vector = vectorcraft_ui_egui::VectorcraftApp (crafts/vectorcraft)   |
- |   Layout = designcraft_ui_egui::DesignApp      (crafts/designcraft)   |
+ |   Photo  = redrob_photo_ui_egui::PhotocraftApp   (crafts/photocraft)    |
+ |   Vector = redrob_vector_ui_egui::VectorcraftApp (crafts/vectorcraft)   |
+ |   Layout = redrob_layout_ui_egui::DesignApp      (crafts/designcraft)   |
  +-----------------------------------------------------------------------+
    services: config dir, prefs, persistence       crates/redrob-agent  (Redrob Code daemon)
    crafts/craft-libs: docking, CMS, print, PDF    crates/redrob-ai     (IOPaint, vectorize)

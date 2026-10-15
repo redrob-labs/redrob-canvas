@@ -3,7 +3,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use serde_json::json;
-use vectorcraft_engine::{Session, check_params};
+use redrob_vector_engine::{Session, check_params};
 
 /// `Session::execute` takes what it is given: the journal of an older version, an action recorded
 /// with a key a command no longer reads, still plays. The check is the caller's.
@@ -38,8 +38,8 @@ fn effect_params_no_longer_taken_still_replay_and_open() {
         s.execute(id, params).unwrap();
     }
     let doc = &s.active().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save(doc, false)).unwrap();
-    let stored = |d: &vectorcraft_doc::Document| d.layers[0].children().unwrap()[0].appearance.effects[0].params.clone();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(doc, false)).unwrap();
+    let stored = |d: &redrob_vector_doc::Document| d.layers[0].children().unwrap()[0].appearance.effects[0].params.clone();
     assert_eq!(stored(&back), stored(doc));
     assert_eq!(stored(&back)["blurr"], json!(3));
 }

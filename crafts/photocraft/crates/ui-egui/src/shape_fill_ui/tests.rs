@@ -1,6 +1,6 @@
 use egui::{Event, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
-use photocraft_doc::{Fill, LayerContent, LayerId};
+use redrob_photo_doc::{Fill, LayerContent, LayerId};
 use serde_json::json;
 
 use super::*;
@@ -29,7 +29,7 @@ fn fill(app: &PhotocraftApp, id: LayerId) -> Option<Fill> {
 /// canvas previews the pick, Cancel changes nothing and OK is one undoable `shape.edit`.
 #[test]
 fn shape_thumbnail_double_click_picks_the_fill_colour() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let id = LayerId(s.execute("shape.create", json!({"rect": [8, 8, 40, 30], "fill": "#336699"})).unwrap()["layer"].as_u64().unwrap());
     s.execute("layer.new.layer", json!({"name": "Other"})).unwrap();

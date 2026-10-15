@@ -4,7 +4,7 @@
 //! Fields: `intensity` and `preview`.
 
 use serde_json::{Value, json};
-use vectorcraft_color::Color;
+use redrob_vector_color::Color;
 
 use super::{DialogSpec, form};
 use crate::VectorcraftApp;
@@ -41,7 +41,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     #[test]
     fn commits_without_a_drawn_frame_as_one_step() {
@@ -55,7 +55,7 @@ mod tests {
         super::super::confirm(&mut app).unwrap();
         let st = app.session.doc().unwrap();
         assert_eq!(st.history.undo.len(), undo + 1);
-        let c = st.doc.node(vectorcraft_doc::NodeId(id)).unwrap().appearance.fill_paint().color().unwrap();
+        let c = st.doc.node(redrob_vector_doc::NodeId(id)).unwrap().appearance.fill_paint().color().unwrap();
         assert!(c.to_hsb()[1] < 1e-3, "fully desaturated");
     }
 }

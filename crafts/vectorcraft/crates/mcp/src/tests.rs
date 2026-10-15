@@ -190,7 +190,7 @@ fn headless_end_to_end() {
     assert_eq!(r["isError"], false, "{r}");
     let img = r["content"].as_array().unwrap().iter().find(|c| c["type"] == "image").expect("image content");
     assert_eq!(img["mimeType"], "image/png");
-    let png = vectorcraft_format::base64_decode(img["data"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(img["data"].as_str().unwrap()).unwrap();
     assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
     assert_eq!(std::fs::read(&shot_path).unwrap(), png);
 

@@ -14,9 +14,9 @@
 //! Each click is one command and one history step; a click on nothing it can edit does nothing.
 
 use egui::{Color32, Modifiers, Pos2, Stroke};
-use photocraft_doc::vector::Path;
-use photocraft_geom::Point;
-use photocraft_vector::edit::{self, Hit};
+use redrob_photo_doc::vector::Path;
+use redrob_photo_geom::Point;
+use redrob_photo_vector::edit::{self, Hit};
 
 use crate::PhotocraftApp;
 use crate::canvas::ToolEvent;

@@ -1,5 +1,5 @@
 //! macOS: the font files CoreText's font manager lists, scanned with the font folders
-//! (`vectorcraft_text::set_platform_font_files`). The desktop app and `vectorcraft-cli` (exports,
+//! (`redrob_vector_text::set_platform_font_files`). The desktop app and `vectorcraft-cli` (exports,
 //! MCP) both install it; the CLI shares this file.
 //!
 //! Apps and font managers can register fonts with the font manager from files in any folder,
@@ -23,7 +23,7 @@ const MAX_FONTS: usize = 1 << 16;
 
 /// Have the font scans read the font files CoreText lists.
 pub fn install() {
-    vectorcraft_text::set_platform_font_files(font_files);
+    redrob_vector_text::set_platform_font_files(font_files);
 }
 
 /// The files of the fonts available to the app as CoreText lists them now (fonts registered since

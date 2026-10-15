@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use egui::{CursorIcon, Painter, Pos2, Vec2};
-use photocraft_paint::brush::{BrushSettings, TipShape};
+use redrob_photo_paint::brush::{BrushSettings, TipShape};
 
 /// Below this on-screen radius an outline is unreadable: show the crosshair instead.
 const MIN_RADIUS: f32 = 3.0;
@@ -67,7 +67,7 @@ pub(crate) fn cursor(painter: &Painter, at: Pos2, brush: &BrushSettings, radius:
         }
         return crate::tool_cursor::outline(painter, at, pts, centre);
     }
-    let r = if normal { photocraft_paint::half_coverage_radius(radius, brush.hardness).max(1.0) } else { radius };
+    let r = if normal { redrob_photo_paint::half_coverage_radius(radius, brush.hardness).max(1.0) } else { radius };
     crate::tool_cursor::circle(painter, at, r, centre)
 }
 
@@ -83,7 +83,7 @@ pub(crate) fn rings(ctx: &egui::Context, brush: &BrushSettings, full: bool) -> O
     {
         return c.rings;
     }
-    let traced = photocraft_paint::outline::tip_outline(brush, full).map(Arc::new);
+    let traced = redrob_photo_paint::outline::tip_outline(brush, full).map(Arc::new);
     ctx.data_mut(|d| d.insert_temp(id, Cached { key: Key::of(brush, full), rings: traced.clone() }));
     traced
 }

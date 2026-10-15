@@ -77,7 +77,7 @@ pub use presets::*;
 pub use print::*;
 pub use settings::*;
 
-use vectorcraft_doc::Document;
+use redrob_vector_doc::Document;
 
 /// Export options: the Save PDF settings plus what one export run decides (pages, title, date).
 #[derive(Clone, Debug, Default)]
@@ -220,8 +220,8 @@ pub enum PdfError {
     PlaceholderOnly,
 }
 
-impl From<craft_pdf::write::WriteError> for PdfError {
-    fn from(error: craft_pdf::write::WriteError) -> Self {
+impl From<redrob_craft_pdf::write::WriteError> for PdfError {
+    fn from(error: redrob_craft_pdf::write::WriteError) -> Self {
         Self::Write(error.to_string())
     }
 }

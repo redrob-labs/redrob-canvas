@@ -1,12 +1,12 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use designcraft_engine::Session;
+use redrob_layout_engine::Session;
 use serde_json::json;
 use std::path::Path;
 fn dir(name: &str) -> tempfile::TempDir {
     tempfile::Builder::new().prefix(&format!("dc-book-safety-{name}-")).tempdir().unwrap()
 }
-fn document(start: u32, custom: bool) -> designcraft_doc::Document {
+fn document(start: u32, custom: bool) -> redrob_layout_doc::Document {
     let mut s = Session::new();
     s.execute("file.new", &json!({"pages":2})).unwrap();
     let mut d = (*s.doc().unwrap().doc).clone();
@@ -19,11 +19,11 @@ fn document(start: u32, custom: bool) -> designcraft_doc::Document {
     d
 }
 fn native(p: &Path, start: u32, custom: bool) {
-    std::fs::write(p, designcraft_format::save(&document(start, custom)).unwrap()).unwrap();
+    std::fs::write(p, redrob_layout_format::save(&document(start, custom)).unwrap()).unwrap();
 }
 fn idml(p: &Path, start: u32) {
-    std::fs::write(p, designcraft_idml::export_idml(&document(start, false))).unwrap();
-    assert!(designcraft_idml::import_idml(&std::fs::read(p).unwrap()).is_ok());
+    std::fs::write(p, redrob_layout_idml::export_idml(&document(start, false))).unwrap();
+    assert!(redrob_layout_idml::import_idml(&std::fs::read(p).unwrap()).is_ok());
 }
 fn book(d: &Path, chapters: &[&Path]) -> Session {
     let mut s = Session::new();
@@ -49,7 +49,7 @@ fn late_missing_chapter_does_not_partially_paginate_earlier_chapters() {
     assert!(
         before == after,
         "book.paginate changed the first chapter before error: {result:?}; new first number {:?}",
-        designcraft_format::load(&after).unwrap().sections.first().unwrap().start_number
+        redrob_layout_format::load(&after).unwrap().sections.first().unwrap().start_number
     );
 }
 #[test]
@@ -70,7 +70,7 @@ fn late_corrupt_chapter_does_not_partially_sync_earlier_chapters() {
     assert!(
         before == after,
         "book.syncStyles changed the first target before error: {result:?}; copied custom style {}",
-        designcraft_format::load(&after).unwrap().styles.paragraph.iter().any(|s| s.name == "Synthetic Book Style")
+        redrob_layout_format::load(&after).unwrap().styles.paragraph.iter().any(|s| s.name == "Synthetic Book Style")
     );
 }
 #[test]
@@ -85,8 +85,8 @@ fn paginate_does_not_replace_imported_idml_with_native_format() {
     assert!(
         before == after,
         "book.paginate rewrote imported IDML: {result:?}; IDML readable after {}, native readable after {}",
-        designcraft_idml::import_idml(&after).is_ok(),
-        designcraft_format::load(&after).is_ok()
+        redrob_layout_idml::import_idml(&after).is_ok(),
+        redrob_layout_format::load(&after).is_ok()
     );
 }
 #[test]
@@ -103,8 +103,8 @@ fn style_sync_does_not_replace_imported_idml_with_native_format() {
     assert!(
         before == after,
         "book.syncStyles rewrote imported IDML: {result:?}; IDML readable after {}, native readable after {}",
-        designcraft_idml::import_idml(&after).is_ok(),
-        designcraft_format::load(&after).is_ok()
+        redrob_layout_idml::import_idml(&after).is_ok(),
+        redrob_layout_format::load(&after).is_ok()
     );
 }
 
@@ -163,15 +163,15 @@ fn imported_idml_remains_a_read_only_style_source() {
     let d = dir("idml-style-source");
     let source = d.path().join("source.idml");
     let target = d.path().join("target.designcraft");
-    std::fs::write(&source, designcraft_idml::export_idml(&document(1, true))).unwrap();
+    std::fs::write(&source, redrob_layout_idml::export_idml(&document(1, true))).unwrap();
     native(&target, 1, false);
     let mut s = book(d.path(), &[&source, &target]);
     let before = std::fs::read(&source).unwrap();
     let result = s.execute("book.syncStyles", &json!({})).unwrap();
     assert_eq!(result["synced"], 1);
     assert_eq!(std::fs::read(&source).unwrap(), before);
-    assert!(designcraft_idml::import_idml(&before).is_ok());
-    let target = designcraft_format::load(&std::fs::read(target).unwrap()).unwrap();
+    assert!(redrob_layout_idml::import_idml(&before).is_ok());
+    let target = redrob_layout_format::load(&std::fs::read(target).unwrap()).unwrap();
     assert!(target.styles.paragraph.iter().any(|s| s.name == "Synthetic Book Style"));
 }
 #[test]

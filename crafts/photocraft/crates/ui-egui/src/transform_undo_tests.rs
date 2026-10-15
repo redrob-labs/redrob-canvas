@@ -18,7 +18,7 @@ pub(crate) fn harness() -> Harness<'static, PhotocraftApp> {
 
 /// The same document with a chosen tool selected (e.g. Hand, #2302).
 fn harness_tool(tool: Tool) -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     app.run("layer.new.layer", json!({})).unwrap();
     app.run("select.rect", json!({"x": 100, "y": 100, "width": 100, "height": 60})).unwrap();
@@ -105,12 +105,12 @@ fn free_transform_starts_where_the_selected_pixels_were_moved() {
     let mut h = harness();
     h.state_mut().run("select.rect", json!({"x": 100, "y": 100, "width": 100, "height": 60})).unwrap();
     drag(&mut h, [150.0, 130.0], [250.0, 180.0]);
-    assert_eq!(photocraft_engine::float_cmds::floating(h.state().session.active().unwrap()).unwrap().offset, (100, 50));
+    assert_eq!(redrob_photo_engine::float_cmds::floating(h.state().session.active().unwrap()).unwrap().offset, (100, 50));
     begin(&mut h);
     assert_eq!(quad(&h), [[200.0, 150.0], [300.0, 150.0], [300.0, 210.0], [200.0, 210.0]]);
     let st = h.state().session.active().unwrap();
-    assert!(photocraft_engine::float_cmds::floating(st).is_none());
-    assert_eq!(st.doc.selection.as_ref().unwrap().content_bounds(), photocraft_geom::Rect::new(200, 150, 300, 210));
+    assert!(redrob_photo_engine::float_cmds::floating(st).is_none());
+    assert_eq!(st.doc.selection.as_ref().unwrap().content_bounds(), redrob_photo_geom::Rect::new(200, 150, 300, 210));
 }
 
 /// Scale ×2, then down again, then ⌘Z: back to the ×2 box, not the fill before the transform.
@@ -362,7 +362,7 @@ fn picking_another_layer_applies_the_transform_of_moved_selected_pixels() {
     h.run_steps(3);
     assert!(h.state().ui.transform.is_none(), "picking another layer applies the transform");
     let st = h.state().session.active().unwrap();
-    let landed = photocraft_geom::Rect::new(220, 160, 320, 220);
+    let landed = redrob_photo_geom::Rect::new(220, 160, 320, 220);
     let (pixels, selection) = (st.doc.layer(layer).unwrap().surface().unwrap().content_bounds(), st.doc.selection.as_ref().map(|s| s.content_bounds()));
     assert_eq!((pixels, selection), (landed, Some(landed)));
 }
@@ -382,7 +382,7 @@ fn free_transform_opens_on_the_selection_and_moves_it_with_the_pixels() {
     key(&mut h, Modifiers::NONE, Key::Enter);
     assert!(h.state().ui.transform.is_none());
     let st = h.state().session.active().unwrap();
-    assert_eq!(st.doc.selection.as_ref().unwrap().content_bounds(), photocraft_geom::Rect::new(110, 110, 210, 230));
+    assert_eq!(st.doc.selection.as_ref().unwrap().content_bounds(), redrob_photo_geom::Rect::new(110, 110, 210, 230));
     // What stayed (160..200 × 100..160) and what moved (to 150..210 × 130..190).
-    assert_eq!(st.doc.layer(layer).unwrap().surface().unwrap().content_bounds(), photocraft_geom::Rect::new(150, 100, 210, 190));
+    assert_eq!(st.doc.layer(layer).unwrap().surface().unwrap().content_bounds(), redrob_photo_geom::Rect::new(150, 100, 210, 190));
 }

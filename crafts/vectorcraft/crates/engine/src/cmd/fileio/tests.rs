@@ -1,7 +1,7 @@
 use std::io::Cursor;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeKind;
+use redrob_vector_doc::NodeKind;
 
 use super::*;
 use crate::cmd::parse_range;
@@ -19,11 +19,11 @@ fn tmp_dir(tag: &str) -> std::path::PathBuf {
 }
 
 fn b64(v: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().expect("dataBase64")).unwrap()
 }
 
 fn open(s: &mut Session, name: &str, bytes: &[u8]) -> Value {
-    s.execute("document.open", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)}))
+    s.execute("document.open", &json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes)}))
         .unwrap_or_else(|e| panic!("{name}: {e}"))
 }
 
@@ -40,7 +40,7 @@ fn image_bytes(w: u32, h: u32, format: image::ImageFormat) -> Vec<u8> {
     out
 }
 
-fn image_of(s: &Session) -> vectorcraft_doc::ImageObject {
+fn image_of(s: &Session) -> redrob_vector_doc::ImageObject {
     let doc = &s.doc().unwrap().doc;
     match &doc.layers[0].children().unwrap()[0].kind {
         NodeKind::Image(im) => (**im).clone(),
@@ -55,7 +55,7 @@ fn opens_every_readable_format() {
     let native = b64(&s.execute("document.serialize", &json!({})).unwrap());
     let svg = s.execute("document.serialize", &json!({"format": "svg"})).unwrap()["text"].as_str().unwrap().to_string();
     let pdf = b64(&s.execute("document.serialize", &json!({"format": "pdf"})).unwrap());
-    let svgz = vectorcraft_svg::compress(&svg);
+    let svgz = redrob_vector_svg::compress(&svg);
 
     for (name, bytes, format) in [
         ("a.vectorcraft", native.clone(), "vectorcraft"),
@@ -105,8 +105,8 @@ fn webp_opens_at_its_pixel_size() {
 
 #[test]
 fn cmyk_tiffs_keep_their_inks_and_other_tiffs_become_png() {
-    let inks = vectorcraft_doc::cmyk::Inks::new(2, 1, vec![0, 102, 255, 0, 10, 20, 30, 40]).unwrap();
-    let tiff = vectorcraft_doc::ImageBlob::cmyk_tiff(&inks).unwrap();
+    let inks = redrob_vector_doc::cmyk::Inks::new(2, 1, vec![0, 102, 255, 0, 10, 20, 30, 40]).unwrap();
+    let tiff = redrob_vector_doc::ImageBlob::cmyk_tiff(&inks).unwrap();
     let r = raster_image(&tiff.bytes).unwrap();
     assert_eq!((r.width, r.height, r.blob.mime.as_str()), (2, 1, "image/tiff"));
     assert_eq!(r.blob.cmyk(), Some(inks));
@@ -249,7 +249,7 @@ fn ranges_parse_one_based() {
 
 /// Pages in a PDF, counted by importing it (one artboard per page).
 fn pdf_pages(bytes: &[u8]) -> usize {
-    vectorcraft_pdf::import(bytes).unwrap().artboards.len()
+    redrob_vector_pdf::import(bytes).unwrap().artboards.len()
 }
 
 #[test]
@@ -279,7 +279,7 @@ fn export_without_path_returns_bytes_and_never_retargets() {
     let copy = dir.join("copy.vectorcraft").to_string_lossy().to_string();
     let r = s.execute("document.export", &json!({"path": copy})).unwrap();
     assert_eq!(r["format"], "vectorcraft");
-    assert!(vectorcraft_format::sniff(&std::fs::read(&copy).unwrap()));
+    assert!(redrob_vector_format::sniff(&std::fs::read(&copy).unwrap()));
     assert_eq!(s.doc().unwrap().path.as_deref(), Some(doc_path.as_str()), "exporting the native format keeps the document's path");
     let r = s.execute("document.export", &json!({"format": "jpg"})).unwrap();
     assert_eq!(&b64(&r)[..2], [0xFF, 0xD8]);
@@ -288,7 +288,7 @@ fn export_without_path_returns_bytes_and_never_retargets() {
     // A never-saved document hands its native bytes back.
     let mut s = session(10.0, 10.0, 1);
     let r = s.execute("document.save", &json!({})).unwrap();
-    assert!(vectorcraft_format::sniff(&b64(&r)));
+    assert!(redrob_vector_format::sniff(&b64(&r)));
     assert_eq!(s.doc().unwrap().path, None);
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -359,7 +359,7 @@ fn template_sublayers_are_left_out_too() {
     s.execute("layer.setCurrent", &json!({"id": sub})).unwrap();
     s.execute("paint.setFill", &json!({"color": "#ff0000"})).unwrap();
     let red = s.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 50, "height": 100})).unwrap()["id"].as_u64().unwrap();
-    assert_eq!(s.doc().unwrap().doc.ancestry(vectorcraft_doc::NodeId(red)).unwrap().len(), 3, "the square is on a sublayer");
+    assert_eq!(s.doc().unwrap().doc.ancestry(redrob_vector_doc::NodeId(red)).unwrap().len(), 3, "the square is on a sublayer");
     assert!(has_red(&b64(&s.execute("document.export", &json!({"format": "png"})).unwrap())));
     s.execute("layer.setProps", &json!({"id": sub, "template": true})).unwrap();
     assert!(!has_red(&b64(&s.execute("document.export", &json!({"format": "png"})).unwrap())), "a template sublayer is left out");
@@ -429,7 +429,7 @@ fn a_native_save_streams_the_bytes_the_encoder_makes() {
         let job = save_job(&mut s, plan).unwrap();
         assert!(job.streams());
         assert_eq!(written, job.encode().unwrap().files[0].1, "{name}");
-        assert_eq!(vectorcraft_format::load(&written).unwrap().template, name.ends_with("vctemplate"));
+        assert_eq!(redrob_vector_format::load(&written).unwrap().template, name.ends_with("vctemplate"));
     }
     // A writer that fails: the save fails with its error.
     let plan = save_plan(&s, SaveMode::Copy, &json!({"path": "/x/y.vectorcraft"})).unwrap();

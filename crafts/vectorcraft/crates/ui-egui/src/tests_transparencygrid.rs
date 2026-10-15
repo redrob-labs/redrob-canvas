@@ -2,7 +2,7 @@
 //! (M3.88), and the View menu item follows the active document.
 
 use serde_json::json;
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use crate::{VectorcraftApp, canvas, menus};
 

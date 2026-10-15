@@ -14,8 +14,8 @@
 //! A pending quad belongs to the document it was drawn on, like the Crop tool's frame.
 
 use egui::{Color32, Pos2, Stroke};
-use photocraft_algo::transform::{Homography, convex_quad};
-use photocraft_engine::prefs::Unit;
+use redrob_photo_algo::transform::{Homography, convex_quad};
+use redrob_photo_engine::prefs::Unit;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -41,7 +41,7 @@ pub struct PerspectiveCrop {
     /// Corners clicked so far, before the fourth makes the quad.
     pub clicks: Vec<[f64; 2]>,
     /// The document the pending quad belongs to.
-    doc: Option<photocraft_doc::DocId>,
+    doc: Option<redrob_photo_doc::DocId>,
 }
 
 fn active(app: &PhotocraftApp) -> bool {
@@ -297,14 +297,14 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
+    use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
 
     /// A box drag makes the quad, corners drag alone, and ↵'s commit crops the document to the
     /// quad's size; four clicks in any order make a quad in TL, TR, BR, BL order.
     #[test]
     fn drag_a_box_move_a_corner_and_commit() {
         let doc = Document::with_background("p", Size::new(200, 150), ColorMode::Rgb, SampleType::U8, Color::WHITE);
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.add_document(doc, None);
         let mut app = PhotocraftApp::new(s, crate::Services::default());
         app.ui.tool = Tool::PerspectiveCrop;

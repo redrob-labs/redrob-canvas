@@ -2,8 +2,8 @@
 //! options (Effect, Flip, Align to Path, Spacing) and OK leaves its brackets where they are.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeId, NodeKind, TextKind};
-use vectorcraft_engine::Session;
+use redrob_vector_doc::{NodeId, NodeKind, TextKind};
+use redrob_vector_engine::Session;
 
 use crate::{VectorcraftApp, dialogs, menus};
 

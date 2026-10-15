@@ -1,8 +1,8 @@
 //! Chrome around the canvas: title bar, options bar, toolbar, status bar, dock cards, Properties.
 
 use egui::{Align2, Color32, CornerRadius, Pos2, Rect, RichText, Sense, Stroke, StrokeKind, pos2, vec2};
-use photocraft_color::BlendMode;
-use photocraft_doc::{Layer, LayerContent, LayerId};
+use redrob_photo_color::BlendMode;
+use redrob_photo_doc::{Layer, LayerContent, LayerId};
 use serde_json::{Value, json};
 
 use crate::mask_thumbs_ui::MaskKind;
@@ -675,9 +675,9 @@ pub fn title_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         app.ui.palette_open = !app.ui.palette_open;
                     }
                     let (theme_icon, appearance_label) = match app.session.prefs().interface.appearance_mode {
-                        photocraft_engine::prefs::AppearanceMode::Auto => ("monitor", tl!("Auto")),
-                        photocraft_engine::prefs::AppearanceMode::Dark => ("moon", tl!("Dark")),
-                        photocraft_engine::prefs::AppearanceMode::Light => ("sun", tl!("Light")),
+                        redrob_photo_engine::prefs::AppearanceMode::Auto => ("monitor", tl!("Auto")),
+                        redrob_photo_engine::prefs::AppearanceMode::Dark => ("moon", tl!("Dark")),
+                        redrob_photo_engine::prefs::AppearanceMode::Light => ("sun", tl!("Light")),
                     };
                     let appearance_tip = format!("{}: {}", tl!("Appearance Mode"), appearance_label);
                     if icons_shown >= 2 {
@@ -783,7 +783,7 @@ mod title_tests {
     }
 
     fn app(custom_titlebar: bool) -> crate::PhotocraftApp {
-        let mut app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.custom_titlebar = custom_titlebar;
         // The preference that makes the shell launch without its own title bar.
         app.session.edit_prefs(|p| p.interface.system_title_bar = !custom_titlebar);
@@ -793,13 +793,13 @@ mod title_tests {
     #[test]
     fn without_the_preference_the_mark_stays() {
         // The default (e.g. the web build or the snapshot example): no custom bar, no preference.
-        let app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         assert!(!system_title_bar(&app));
     }
 
     fn open_named(app: &mut crate::PhotocraftApp, name: &str) {
         app.session.add_document(
-            photocraft_doc::Document::new(name, photocraft_doc::Size::new(4, 4), photocraft_doc::ColorMode::Rgb, photocraft_doc::SampleType::U8),
+            redrob_photo_doc::Document::new(name, redrob_photo_doc::Size::new(4, 4), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::U8),
             None,
         );
     }
@@ -1034,7 +1034,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::vline(ui, 22.0);
                         if !t.pro {
                             opt_label(ui, tl!("Size"));
-                            widgets::value_field(ui, &mut b.size, 1.0..=photocraft_engine::paint::MAX_BRUSH_SIZE, "px", 76.0);
+                            widgets::value_field(ui, &mut b.size, 1.0..=redrob_photo_engine::paint::MAX_BRUSH_SIZE, "px", 76.0);
                             widgets::vline(ui, 22.0);
                         }
                         opt_label(ui, tl!("Mode"));
@@ -1054,7 +1054,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         let block = crate::eraser_ui::block_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!block, |ui| {
                             opt_label(ui, tl!("Size"));
-                            widgets::value_field(ui, &mut b.size, 1.0..=photocraft_engine::paint::MAX_BRUSH_SIZE, "px", 76.0);
+                            widgets::value_field(ui, &mut b.size, 1.0..=redrob_photo_engine::paint::MAX_BRUSH_SIZE, "px", 76.0);
                         });
                         widgets::vline(ui, 22.0);
                         if app.ui.tool == Tool::Eraser {
@@ -1370,7 +1370,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             ui.set_min_width(200.0);
                             let mut section = |ui: &mut egui::Ui, title: &str, prefix: &str| {
                                 ui.label(egui::RichText::new(tl!(&title)).small().color(t.text_dim));
-                                for c in photocraft_engine::command_specs().iter().filter(|c| c.id.starts_with(prefix)) {
+                                for c in redrob_photo_engine::command_specs().iter().filter(|c| c.id.starts_with(prefix)) {
                                     if ui.add_enabled(app.session.is_enabled(c.id), egui::Button::new(tl!(c.label))).clicked() {
                                         let _ = app.run(c.id, json!({}));
                                         ui.close();
@@ -1796,7 +1796,7 @@ fn info_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let fx = move |px: f64| units.format(px, dpi, size.width as f64);
     let units_y = app.session.prefs().units_and_rulers.clone();
     let fy = move |px: f64| units_y.format(px, dpi, size.height as f64);
-    let sel = st.doc.selection.as_ref().map(photocraft_compose::bounds::content_bounds);
+    let sel = st.doc.selection.as_ref().map(redrob_photo_compose::bounds::content_bounds);
     let pos = app
         .hover_doc
         .map(|p| (p[0].floor() as i32, p[1].floor() as i32))
@@ -1837,7 +1837,7 @@ fn info_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         row(&mut cols[0], "B:", rgba.map_or_else(dash, |c| q(c[2]).to_string()));
         // Naive device CMYK (no ICC profile yet), in percent like Photoshop's readout. The Color
         // Sampler readout uses the same conversion (`sampler_cmds::device_cmyk`).
-        let cmyk = rgba.map(|c| photocraft_engine::sampler_cmds::device_cmyk(c[0], c[1], c[2]));
+        let cmyk = rgba.map(|c| redrob_photo_engine::sampler_cmds::device_cmyk(c[0], c[1], c[2]));
         for (i, k) in ["C:", "M:", "Y:", "K:"].iter().enumerate() {
             row(&mut cols[1], k, cmyk.map_or_else(dash, |c| format!("{}%", c[i])));
         }
@@ -1889,7 +1889,7 @@ fn info_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 }
 
 /// The Info panel's Color Sampler readouts and the (document, revision) they were composited for.
-pub(crate) type SamplerReadouts = ((photocraft_doc::DocId, u64), std::sync::Arc<Vec<Value>>);
+pub(crate) type SamplerReadouts = ((redrob_photo_doc::DocId, u64), std::sync::Arc<Vec<Value>>);
 
 /// The Color Sampler readouts of the active document, composited once per revision (#4528):
 /// adding, moving or deleting a sampler and every pixel edit bump the revision, so between them
@@ -2062,7 +2062,7 @@ mod navigator_wheel_tests {
 
     #[test]
     fn navigator_wheel_changes_zoom_only_when_over_preview() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
         app.sync_views();
         app.ui.views[0].zoom = 1.0;
@@ -2088,7 +2088,7 @@ mod navigator_wheel_tests {
     #[test]
     fn navigator_zoom_row_is_one_line_and_its_buttons_step_the_zoom() {
         use egui_kittest::kittest::Queryable;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
         app.sync_views();
         app.ui.views[0].zoom = 1.0;
@@ -2365,7 +2365,7 @@ fn layers(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             let mut drawn: Vec<(LayerId, Rect)> = Vec::new();
             for &(depth, l) in &rows {
                 // Select › Isolate Layers.
-                if !photocraft_engine::select_extra_cmds::isolation_shows(&doc, &isolated, l.id) {
+                if !redrob_photo_engine::select_extra_cmds::isolation_shows(&doc, &isolated, l.id) {
                     continue;
                 }
                 if !filter.shows(l) {
@@ -2508,7 +2508,7 @@ fn layers(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         // Opens on the press like Photoshop's: drag onto an item and release to choose it (#2071).
         crate::press_menu::show(&adj, |ui, menu| {
             ui.set_min_width(190.0);
-            for c in photocraft_engine::command_specs().iter().filter(|c| c.id.starts_with("layer.newAdjustmentLayer.")) {
+            for c in redrob_photo_engine::command_specs().iter().filter(|c| c.id.starts_with("layer.newAdjustmentLayer.")) {
                 if menu.item(ui, tl!(c.label).trim_end_matches('…')) {
                     actions.push((c.id.into(), json!({})));
                 }
@@ -2748,7 +2748,7 @@ fn layer_row(
     app: &mut PhotocraftApp,
     ctx: &egui::Context,
     ui: &mut egui::Ui,
-    doc: &photocraft_doc::Document,
+    doc: &redrob_photo_doc::Document,
     l: &Layer,
     depth: usize,
     row: RowSel,
@@ -2933,9 +2933,9 @@ fn layer_row(
         let on_thumb = pos.is_some_and(|p| thumb.expand(2.0).contains(p));
         let on_vector = pos.and_then(|p| masks.hit(p)) == Some(crate::mask_thumbs_ui::MaskKind::Vector);
         // Clicking the layer thumbnail leaves mask view (#196).
-        let viewing = app.session.active().and_then(photocraft_engine::mask_view_cmds::current).is_some_and(|v| v.layer == l.id);
+        let viewing = app.session.active().and_then(redrob_photo_engine::mask_view_cmds::current).is_some_and(|v| v.layer == l.id);
         if on_thumb && viewing {
-            actions.push((photocraft_engine::mask_view_cmds::ID.into(), json!({"layer": l.id.0, "mode": "off"})));
+            actions.push((redrob_photo_engine::mask_view_cmds::ID.into(), json!({"layer": l.id.0, "mode": "off"})));
         }
         let content_less = matches!(l.content, LayerContent::Adjustment(_) | LayerContent::Fill(_));
         if on_vector {
@@ -3035,7 +3035,7 @@ fn layer_thumb_fit(cell: Rect, w: u32, h: u32) -> (Rect, Rect) {
     crate::channels_panel::fit_thumb(cell, w, h)
 }
 
-fn draw_layer_thumb(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &egui::Ui, doc: &photocraft_doc::Document, l: &Layer, rect: Rect, selected: bool) {
+fn draw_layer_thumb(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &egui::Ui, doc: &redrob_photo_doc::Document, l: &Layer, rect: Rect, selected: bool) {
     let t = Tokens::get(ctx);
     let p = ui.painter();
     match &l.content {
@@ -3051,7 +3051,7 @@ fn draw_layer_thumb(app: &mut PhotocraftApp, ctx: &egui::Context, ui: &egui::Ui,
         }
         // Gradient fills show the gradient itself (Photoshop); solid ones their colour.
         LayerContent::Fill(f) if crate::gradient_ui::paint_thumbnail(ui, l.id, f, rect) => {}
-        LayerContent::Fill(photocraft_doc::Fill::Solid(color)) => {
+        LayerContent::Fill(redrob_photo_doc::Fill::Solid(color)) => {
             crate::solid_fill_ui::paint_thumbnail(ui, crate::solid_fill_ui::thumbnail_color(app, doc.id, l.id, *color), rect);
         }
         LayerContent::Fill(_) => {
@@ -3254,18 +3254,18 @@ fn history_drag_key() -> egui::Id {
 type SelectedSnapshot = (u64, HistorySpot);
 type HistorySpot = (usize, Option<String>, usize);
 
-fn history_spot(st: &photocraft_engine::DocState) -> HistorySpot {
+fn history_spot(st: &redrob_photo_engine::DocState) -> HistorySpot {
     (st.history.past_len(), st.history.entries().pop(), st.history.redo_labels().count())
 }
 
-fn selected_snapshot_key(doc: photocraft_doc::DocId) -> egui::Id {
+fn selected_snapshot_key(doc: redrob_photo_doc::DocId) -> egui::Id {
     egui::Id::new(("history-snapshot-selected", doc))
 }
 
 /// The selected snapshot: the one last clicked, while it still exists and the history is still at
 /// the state that click made. Any other step (an edit, Undo, a state row) deselects it, as in
 /// Photoshop.
-fn selected_snapshot(ctx: &egui::Context, st: &photocraft_engine::DocState) -> Option<u64> {
+fn selected_snapshot(ctx: &egui::Context, st: &redrob_photo_engine::DocState) -> Option<u64> {
     let key = selected_snapshot_key(st.doc.id);
     let (id, spot) = ctx.data(|d| d.get_temp::<SelectedSnapshot>(key))?;
     let live = spot == history_spot(st) && st.snapshots.iter().any(|s| s.id == id);
@@ -3417,7 +3417,7 @@ pub fn properties_window(app: &mut PhotocraftApp, ctx: &egui::Context) {
     }
 }
 
-fn adjustment_controls(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: LayerId, adj: &photocraft_doc::Adjustment) {
+fn adjustment_controls(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: LayerId, adj: &redrob_photo_doc::Adjustment) {
     crate::adjust_editors::layer_editor(app, ui, id, adj);
     ui.add_space(6.0);
     let layer = app.session.active().and_then(|s| s.doc.layer(id).map(|l| (l.visible, l.clipped)));
@@ -3524,7 +3524,7 @@ fn properties_body_inner(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         // Transform, Align, the kind's sections and Quick Actions.
         crate::layer_props_ui::properties(app, ui, layer);
     } else {
-        if matches!(layer.content, LayerContent::Fill(photocraft_doc::Fill::Gradient { .. })) {
+        if matches!(layer.content, LayerContent::Fill(redrob_photo_doc::Fill::Gradient { .. })) {
             crate::gradient_ui::properties(app, ui, layer);
             ui.add_space(6.0);
         }
@@ -3842,7 +3842,7 @@ fn brush_tip(p: &egui::Painter, c: egui::Pos2, rad: f32, hardness: f32, color: C
 /// The Brush's or Pencil's Mode dropdown: the blend modes, with Photoshop's painting-only Clear
 /// after Dissolve (#3439). Clear erases with the brush (`clear`); it shows while chosen, or while
 /// `~` is held (`held`). The wheel over it steps the mode, as over the Layers panel's (#2061).
-fn paint_mode_dropdown(ui: &mut egui::Ui, id: &str, b: &mut photocraft_engine::BrushSettings, clear: &mut bool, held: bool) {
+fn paint_mode_dropdown(ui: &mut egui::Ui, id: &str, b: &mut redrob_photo_engine::BrushSettings, clear: &mut bool, held: bool) {
     let mut opts: Vec<(Option<BlendMode>, &str)> = BlendMode::LAYER_MODES.iter().map(|m| (Some(*m), m.label())).collect();
     let at = opts.iter().position(|o| o.0 == Some(BlendMode::Dissolve)).map_or(opts.len(), |i| i + 1);
     opts.insert(at, (None, "Clear"));
@@ -3856,7 +3856,7 @@ fn paint_mode_dropdown(ui: &mut egui::Ui, id: &str, b: &mut photocraft_engine::B
 }
 
 /// Options-bar Smoothing % (the brush's stroke smoothing; the live stroke and the commit use it).
-fn smoothing_field(ui: &mut egui::Ui, b: &mut photocraft_engine::BrushSettings, width: f32) {
+fn smoothing_field(ui: &mut egui::Ui, b: &mut redrob_photo_engine::BrushSettings, width: f32) {
     let mut sm = (b.smoothing.amount * 100.0).round();
     if widgets::value_field(ui, &mut sm, 0.0..=100.0, "%", width).changed() {
         b.smoothing.enabled = true;
@@ -3866,7 +3866,7 @@ fn smoothing_field(ui: &mut egui::Ui, b: &mut photocraft_engine::BrushSettings, 
 
 /// Options-bar gear beside Smoothing: Photoshop's smoothing options popup, edited on the brush
 /// like the Smoothing % (so they stay per tool and reach the live stroke and the commit).
-fn smoothing_options(ui: &mut egui::Ui, b: &mut photocraft_engine::BrushSettings) {
+fn smoothing_options(ui: &mut egui::Ui, b: &mut redrob_photo_engine::BrushSettings) {
     let resp = icons::button(ui, "settings", 24.0, false, tl!("Set additional smoothing options"));
     let resp = crate::brush_picker::named(resp, "Set additional smoothing options");
     egui::Popup::from_toggle_button_response(&resp).close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| {
@@ -3880,7 +3880,7 @@ fn smoothing_options(ui: &mut egui::Ui, b: &mut photocraft_engine::BrushSettings
 
 /// Options-bar brush chip: a click shows or hides Photoshop's Brush Preset picker below it (size,
 /// hardness, the preset library), the one a right-click on the canvas opens.
-fn brush_preset_chip(ui: &mut egui::Ui, b: &photocraft_engine::BrushSettings, state: &mut crate::state::UiState) {
+fn brush_preset_chip(ui: &mut egui::Ui, b: &redrob_photo_engine::BrushSettings, state: &mut crate::state::UiState) {
     let t = Tokens::get(ui.ctx());
     let (r, _) = ui.allocate_exact_size(vec2(44.0, 30.0), Sense::hover());
     let resp = ui.interact(r, crate::brush_picker::chip_id(), Sense::click());
@@ -3915,7 +3915,7 @@ fn layer_drop_payload(dragged: u64, target: LayerId, position: &str, selected: &
 
 /// Would this drop move the Background off the bottom, or put a layer below it? Photoshop
 /// refuses both (no drop indicator); ⌥-dragging the Background still copies it above.
-fn background_drop_refused(doc: &photocraft_doc::Document, payload: &Value, target: LayerId, position: &str, copy: bool) -> bool {
+fn background_drop_refused(doc: &redrob_photo_doc::Document, payload: &Value, target: LayerId, position: &str, copy: bool) -> bool {
     let Some(bg) = doc.layers.first().filter(|b| crate::doc_props_ui::is_background(doc, b)).map(|b| b.id) else { return false };
     let moves_bg =
         !copy && (payload["layer"].as_u64() == Some(bg.0) || payload["layers"].as_array().is_some_and(|a| a.iter().any(|v| v.as_u64() == Some(bg.0))));
@@ -4089,7 +4089,7 @@ fn start_fx_drag(ctx: &egui::Context, layer: LayerId, effect: Option<usize>) {
 }
 
 /// While effects are dragged: their name by the pointer, and the copy cursor while ⌥ is held.
-fn fx_drag_feedback(ctx: &egui::Context, doc: &photocraft_doc::Document) {
+fn fx_drag_feedback(ctx: &egui::Context, doc: &redrob_photo_doc::Document) {
     let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else { return };
     let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else { return };
     let label = match effect {
@@ -4223,7 +4223,7 @@ mod symmetry_theme_tests {
     fn brush_pencil_and_eraser_expose_symmetry_menu_in_every_theme() {
         for kind in crate::theme::ThemeKind::ALL {
             for tool in [Tool::Brush, Tool::Pencil, Tool::Eraser] {
-                let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+                let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
                 app.run("file.new", json!({"width": 80, "height": 80})).unwrap();
                 app.ui.tool = tool;
                 let mut h = Harness::builder().with_size(vec2(1600.0, 300.0)).build_ui_state(|ui, app| options_bar(app, ui), app);
@@ -4282,7 +4282,7 @@ mod color_tests {
     /// The Color panel's hex readout is editable, with or without the leading `#`.
     #[test]
     fn color_panel_hex_field_takes_a_typed_hex() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [1.0, 1.0, 1.0, 1.0];
         let mut h = egui_kittest::Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(
             |ui, app: &mut PhotocraftApp| {
@@ -4313,7 +4313,7 @@ mod color_tests {
             (crate::theme::ThemeKind::Studio, true),
             (crate::theme::ThemeKind::StudioLight, true),
         ] {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.session.tools.foreground = [1.0, 0.0, 0.0, 1.0];
             app.session.tools.background = [0.0, 0.0, 1.0, 1.0];
             let mut h = egui_kittest::Harness::builder()
@@ -4338,10 +4338,10 @@ mod color_tests {
     #[test]
     fn swap_and_default_colors_recolour_selected_type() {
         use egui_kittest::kittest::Queryable;
-        use photocraft_doc::LayerId;
+        use redrob_photo_doc::LayerId;
         let rgb = |app: &PhotocraftApp, id: LayerId, ci: usize| {
             let doc = &app.session.active().unwrap().doc;
-            let photocraft_doc::LayerContent::Text(t) = &doc.layer(id).unwrap().content else { panic!("not a type layer") };
+            let redrob_photo_doc::LayerContent::Text(t) = &doc.layer(id).unwrap().content else { panic!("not a type layer") };
             let b = t.text.char_indices().nth(ci).map_or(t.text.len(), |(b, _)| b);
             let mut at = 0;
             for r in t.char_runs() {
@@ -4353,7 +4353,7 @@ mod color_tests {
             [0; 4]
         };
         for selected in [true, false] {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
             let made = app.run("type.create", json!({"text": "Hello world", "size": 40, "x": 50, "y": 150, "color": "#000000"})).unwrap();
             let id = LayerId(made["layer"].as_u64().unwrap());
@@ -4407,7 +4407,7 @@ mod color_tests {
     #[test]
     fn color_panel_hex_field_ignores_partial_input() {
         use egui_kittest::kittest::Queryable;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [0.2, 0.4, 0.6, 1.0];
         let mut h = egui_kittest::Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(
             |ui, app: &mut PhotocraftApp| {
@@ -4438,7 +4438,7 @@ mod color_tests {
     #[test]
     fn color_readout_rgb_fields_take_values() {
         use egui_kittest::kittest::Queryable;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [0.0, 0.0, 0.0, 1.0];
         let mut h = field_harness(app);
         // The only spin buttons are R, G and B, in that order.
@@ -4458,7 +4458,7 @@ mod color_tests {
     /// The pro Color panel's hex readout edits the foreground too.
     #[test]
     fn color_field_hex_field_takes_a_typed_hex() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [1.0, 1.0, 1.0, 1.0];
         let mut h = field_harness(app);
         type_hex(&mut h, "003300");
@@ -4468,7 +4468,7 @@ mod color_tests {
     #[test]
     fn hue_and_saturation_fields_take_values_on_black() {
         use egui_kittest::kittest::Queryable;
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [0.0, 0.0, 0.0, 1.0];
         let mut h = egui_kittest::Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(
             |ui, app: &mut PhotocraftApp| {
@@ -4533,7 +4533,7 @@ mod color_tests {
     /// A click on the background chip makes the field edit the background, not the foreground.
     #[test]
     fn background_chip_retargets_the_color_field() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [0.2, 0.4, 0.6, 1.0];
         app.session.tools.background = [0.0, 0.0, 0.0, 1.0];
         let mut h = field_harness(app);
@@ -4550,7 +4550,7 @@ mod color_tests {
 
     #[test]
     fn double_clicking_a_chip_opens_its_color_picker() {
-        let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let mut h = field_harness(app);
         let min = h.ctx.input(|i| i.viewport_rect()).min;
         // The foreground point is where the chips overlap: the foreground is on top there.
@@ -4603,7 +4603,7 @@ mod color_tests {
     /// (#3228).
     #[test]
     fn dragging_to_the_bottom_right_keeps_the_knob_there() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [1.0, 1.0, 1.0, 1.0];
         let mut h = field_harness(app);
         let min = h.ctx.input(|i| i.viewport_rect()).min;
@@ -4624,7 +4624,7 @@ mod color_tests {
     /// Black has no hue of its own, so each chip remembers the hue last picked for it.
     #[test]
     fn each_chip_keeps_its_own_hue_on_black() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [0.0, 0.0, 0.0, 1.0];
         app.session.tools.background = [0.0, 0.0, 0.0, 1.0];
         let mut h = field_harness(app);
@@ -4651,7 +4651,7 @@ mod info_panel_sampler_tests {
     /// the composite RGB/CMYK readout, one composite pixel each.
     #[test]
     fn info_panel_lists_the_sample_points() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 80, "height": 60, "background": "white"})).unwrap();
         app.run("view.colorSamplers.add", json!({"x": 5, "y": 6})).unwrap();
         app.run("view.colorSamplers.add", json!({"x": 40, "y": 30})).unwrap();
@@ -4689,7 +4689,7 @@ mod history_transform_tests {
     #[test]
     fn history_rows_wait_for_an_open_transform() {
         for transforming in [true, false] {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
             app.run("layer.new.layer", json!({})).unwrap();
             app.run("select.rect", json!({"x": 20, "y": 20, "width": 60, "height": 40})).unwrap();
@@ -4719,7 +4719,7 @@ mod history_transform_tests {
     /// snapshot (#2966), and file-plus makes a new document from the current state.
     #[test]
     fn history_footer_buttons_run_their_commands() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("edit.fill", json!({"color": "#ff0000"})).unwrap();
@@ -4778,7 +4778,7 @@ mod snapshot_row_tests {
     /// state, and its right-click menu renames or deletes it.
     #[test]
     fn snapshot_rows_select_rename_and_delete() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("edit.fill", json!({"color": "#ff0000"})).unwrap();
@@ -4834,7 +4834,7 @@ mod snapshot_row_tests {
 
     /// A History panel in the Photoshop theme (the footer with the trash) on red, Snapshot 1, blue.
     fn pro_history() -> Harness<'static, PhotocraftApp> {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("edit.fill", json!({"color": "#ff0000"})).unwrap();
@@ -4940,7 +4940,7 @@ mod snapshot_row_tests {
     /// its camera button in view.
     #[test]
     fn many_snapshots_keep_the_footer_in_a_short_panel() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
         for _ in 0..6 {
             app.run("history.newSnapshot", json!({})).unwrap();
@@ -4961,7 +4961,7 @@ mod snapshot_row_tests {
     /// carry the edit over to the other document's snapshot with the same id.
     #[test]
     fn a_rename_in_progress_stays_with_its_document() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         for _ in 0..2 {
             app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
             app.run("history.newSnapshot", json!({})).unwrap();
@@ -5012,7 +5012,7 @@ mod lock_tests {
     fn simple_lock_button_never_locks_the_eraser_out_of_the_background() {
         // #76: the simple themes' lock button used to toggle "lock all" on the Background, which
         // kept showing as locked and then refused every paint tool.
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 120, "height": 80})).unwrap();
         app.run("tools.setColors", json!({"background": "#ff0000"})).unwrap();
         app.run("tools.setBrush", json!({"brush": {"size": 12, "hardness": 1.0}})).unwrap();
@@ -5046,7 +5046,7 @@ mod swatch_type_tests {
     /// would recolour selected type the moment it was selected.
     #[test]
     fn idle_hsb_sliders_leave_the_foreground_and_selected_type_alone() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 400, "height": 200})).unwrap();
         let id = app.run("type.create", json!({"text": "Hello world", "size": 40, "x": 20, "y": 100, "color": "#ffffff"})).unwrap()["layer"].as_u64().unwrap();
         app.run("tools.setColors", json!({"foreground": "#d8452e"})).unwrap();
@@ -5067,7 +5067,7 @@ mod swatch_type_tests {
         h.run_steps(4);
         assert_eq!(h.state().session.tools.foreground, fg);
         let st = h.state().session.active().unwrap();
-        let Some(photocraft_doc::LayerContent::Text(t)) = st.doc.layer(photocraft_doc::LayerId(id)).map(|l| &l.content) else { panic!("type layer") };
+        let Some(redrob_photo_doc::LayerContent::Text(t)) = st.doc.layer(redrob_photo_doc::LayerId(id)).map(|l| &l.content) else { panic!("type layer") };
         assert_eq!(t.char_runs().len(), 1, "still one white run");
     }
 }
@@ -5086,7 +5086,7 @@ mod type_flyout_tests {
 
     #[test]
     fn long_press_type_button_selects_type_then_vertical_from_the_flyout() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         assert_ne!(app.ui.tool, Tool::Type);
         let ctx = egui::Context::default();
         PhotocraftApp::setup_context(&ctx, crate::theme::ThemeKind::ALL[0]);
@@ -5126,7 +5126,7 @@ mod type_flyout_tests {
     /// cycling the mode on release; a plain click still cycles, and right-click still opens it.
     #[test]
     fn long_press_screen_mode_opens_the_modes_without_cycling() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         PhotocraftApp::setup_context(&ctx, crate::theme::ThemeKind::ALL[0]);
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -5204,7 +5204,7 @@ mod type_flyout_tests {
     /// held tool or any other; a plain hover still shows its tooltip.
     #[test]
     fn no_tooltips_over_an_open_tool_flyout() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         PhotocraftApp::setup_context(&ctx, crate::theme::ThemeKind::ALL[0]);
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -5254,7 +5254,7 @@ mod type_flyout_tests {
     /// #4932: so does a click on its own tool button.
     #[test]
     fn a_drag_outside_closes_the_tool_flyout() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         PhotocraftApp::setup_context(&ctx, crate::theme::ThemeKind::ALL[0]);
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -5332,7 +5332,7 @@ mod type_flyout_tests {
 
     #[test]
     fn long_press_clone_stamp_selects_pattern_stamp() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         PhotocraftApp::setup_context(&ctx, crate::theme::ThemeKind::ALL[0]);
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -5368,7 +5368,7 @@ mod type_flyout_tests {
 
     #[test]
     fn long_press_brush_selects_color_replacement() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         PhotocraftApp::setup_context(&ctx, crate::theme::ThemeKind::ALL[0]);
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -5447,7 +5447,7 @@ mod toolbar_hidden_tests {
 
     #[test]
     fn hidden_tools_leave_the_toolbar() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let all = tool_buttons(&mut app);
         let slots: usize = TOOL_SECTIONS.iter().map(|section| section.len()).sum();
         hide(&mut app, &Tool::ALL);
@@ -5480,7 +5480,7 @@ mod properties_card_tests {
     /// Arithmetic left uncommitted in one fill layer's card never lands on the layer selected next.
     #[test]
     fn uncommitted_arithmetic_stays_with_its_layer() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
         let mut ids = Vec::new();
         for color in ["#00ff00", "#0000ff"] {
@@ -5533,7 +5533,7 @@ mod toolbar_tests {
             crate::theme::ThemeKind::SolarizedDark,
             crate::theme::ThemeKind::BreezeDark,
         ] {
-            let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             let mut h = egui_kittest::Harness::builder().with_size(vec2(800.0, 1400.0)).build_ui_state(
                 |ui, app: &mut PhotocraftApp| {
                     if ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
@@ -5604,7 +5604,7 @@ mod toolbar_tests {
     /// picks the tool.
     #[test]
     fn double_clicking_the_hand_tool_fits_on_screen() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 64, "height": 64})).unwrap();
         app.ui.tool = Tool::Move;
         app.ui.views[0].fit_pending = false;
@@ -5624,7 +5624,7 @@ mod toolbar_tests {
     /// With no document open the double-click still picks the tool and doesn't panic.
     #[test]
     fn double_clicking_the_hand_tool_without_a_document_is_harmless() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.ui.tool = Tool::Move;
         let mut h = toolbar_harness(app);
         let p = hand_button(&h);
@@ -5637,7 +5637,7 @@ mod toolbar_tests {
     /// Double-clicking the Zoom tool zooms to 100% (Photoshop); a single click only picks the tool.
     #[test]
     fn double_clicking_the_zoom_tool_zooms_to_actual_pixels() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 64, "height": 64})).unwrap();
         app.ui.tool = Tool::Move;
         app.ui.views[0].fit_pending = true;
@@ -5659,7 +5659,7 @@ mod toolbar_tests {
     /// With no document open the double-click still picks the tool and doesn't panic.
     #[test]
     fn double_clicking_the_zoom_tool_without_a_document_is_harmless() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.ui.tool = Tool::Move;
         let mut h = toolbar_harness(app);
         let p = tool_button(&h, Tool::Zoom);
@@ -5678,7 +5678,7 @@ mod embedding_tests {
     fn whole_app(rail: bool, menu_bar: bool) -> egui_kittest::Harness<'static, PhotocraftApp> {
         let mut h = egui_kittest::Harness::builder().with_size(vec2(1280.0, 800.0)).with_max_steps(64).build_eframe(move |cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.ui.panels.rail = rail;
             app.ui.panels.menu_bar = menu_bar;
             app
@@ -5809,7 +5809,7 @@ mod group_drag_selection_tests {
 
     #[test]
     fn the_background_row_neither_moves_nor_takes_a_layer_below_it() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 8, "height": 8})).unwrap();
         let bg = s.active().unwrap().doc.layers[0].id;
         let a = LayerId(s.execute("layer.new.layer", json!({})).unwrap()["layer"].as_u64().unwrap());
@@ -5824,7 +5824,7 @@ mod group_drag_selection_tests {
         assert!(!refused(a, bg, "above", &[a], false));
         assert!(!refused(bg, a, "above", &[bg], true), "⌥-dragging copies the Background above");
         // Without a Background every drop is fine.
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 8, "height": 8})).unwrap();
         s.execute("layer.new.layerFromBackground", json!({})).unwrap();
         let l0 = s.active().unwrap().doc.layers[0].id;
@@ -5913,7 +5913,7 @@ mod compact_visual_regressions {
                 crate::shortcuts::handle(app, ui.ctx());
                 toolbar(app, ui);
             },
-            PhotocraftApp::new(photocraft_engine::Session::new(), Default::default()),
+            PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default()),
         );
         harness.run_steps(4);
         harness
@@ -5988,7 +5988,7 @@ mod compact_visual_regressions {
         for kind in crate::theme::ThemeKind::ALL {
             for (width, height) in [(800.0, 480.0), (1280.0, 720.0)] {
                 for scale in [1.0, 1.5, 2.0] {
-                    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+                    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
                     app.session.tools.foreground = [1.0, 0.0, 1.0, 1.0];
                     app.session.tools.background = [0.0, 1.0, 0.0, 1.0];
                     let mut ready = false;
@@ -6046,7 +6046,7 @@ mod compact_visual_regressions {
                     egui_extras::install_image_loaders(&ctx);
                     crate::theme::install_fonts(&ctx);
                     crate::theme::apply(&ctx, kind);
-                    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+                    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
                     app.session.tools.foreground = [1.0, 0.0, 1.0, 1.0];
                     app.session.tools.background = [0.0, 1.0, 0.0, 1.0];
                     let mut output = ctx.run_ui(input_at_scale(Rect::from_min_size(egui::Pos2::ZERO, vec2(800.0, height)), scale), |ui| toolbar(&mut app, ui));
@@ -6089,7 +6089,7 @@ mod compact_visual_regressions {
                         crate::shortcuts::handle(app, ui.ctx());
                         options_bar(app, ui);
                     },
-                    PhotocraftApp::new(photocraft_engine::Session::new(), Default::default()),
+                    PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default()),
                 );
                 harness.run_steps(4);
                 let pro = Tokens::get(&harness.ctx).pro;
@@ -6146,7 +6146,7 @@ mod compact_visual_regressions {
                     let ctx = egui::Context::default();
                     crate::theme::install_fonts(&ctx);
                     crate::theme::apply(&ctx, kind);
-                    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+                    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
                     if !Tokens::get(&ctx).pro {
                         continue;
                     }
@@ -6203,7 +6203,7 @@ mod compact_visual_regressions {
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx);
         crate::theme::apply(&ctx, crate::theme::ThemeKind::ALL[0]);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let screen = Rect::from_min_size(egui::Pos2::ZERO, vec2(1600.0, 900.0));
         let run = |app: &mut PhotocraftApp| {
             let mut top = 0.0;
@@ -6231,7 +6231,7 @@ mod compact_visual_regressions {
                     egui_extras::install_image_loaders(&ctx);
                     crate::theme::install_fonts(&ctx);
                     crate::theme::apply(&ctx, kind);
-                    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+                    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
                     let (tool, last_label) = if Tokens::get(&ctx).pro { (Tool::Pencil, "Auto Erase") } else { (Tool::Brush, "Pressure for Opacity") };
                     app.ui.tool = tool;
                     let screen = Rect::from_min_size(egui::Pos2::ZERO, vec2(width, 120.0));
@@ -6285,7 +6285,7 @@ mod properties_target_regressions {
 
     #[test]
     fn pending_transform_arithmetic_does_not_apply_to_another_document_with_the_same_layer_id() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width":200,"height":200,"background":"transparent"})).unwrap();
         app.run("select.rect", json!({"x":10,"y":20,"width":100,"height":50})).unwrap();
         app.run("edit.fill", json!({"color":"#ff0000"})).unwrap();
@@ -6333,7 +6333,7 @@ mod layer_click_type_commit_tests {
     use egui_kittest::{Harness, kittest::Queryable};
 
     fn harness(kind: theme::ThemeKind) -> (Harness<'static, PhotocraftApp>, LayerId, LayerId) {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let text = LayerId(app.run("type.create", json!({"text": "Before", "size": 24, "x": 20, "y": 80})).unwrap()["layer"].as_u64().unwrap());
         app.run("layer.setProps", json!({"layer": text.0, "name": "Edited type"})).unwrap();
@@ -6444,7 +6444,7 @@ mod sampler_readout_tests {
     /// edit recomputes them (#4528).
     #[test]
     fn sampler_readouts_are_reused_until_the_document_changes() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 32, "height": 32, "background": "white"})).unwrap();
         app.run("view.colorSamplers.add", json!({"x": 4, "y": 4})).unwrap();
         let a = sampler_readouts(&mut app);

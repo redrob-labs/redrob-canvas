@@ -4,8 +4,8 @@
 //! buttons, underlined link labels, `•••` more-options, 21 pt icon toggles in a `#303030` well,
 //! section headers and 1.5 pt section rules.
 
-use designcraft_geom::Unit;
-use designcraft_geom::units::{format_measure_prec, parse_measure};
+use redrob_layout_geom::Unit;
+use redrob_layout_geom::units::{format_measure_prec, parse_measure};
 use egui::{Color32, Rect, Response, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 use crate::theme::Tokens;
@@ -500,12 +500,12 @@ pub fn paint_stroke_chip(p: &egui::Painter, r: egui::Rect, color: Option<Color32
 }
 
 /// Resolve a swatch to a display colour (and gradient end colours).
-pub fn swatch_colors(doc: &designcraft_doc::Document, name: &str, tint: f32) -> (Option<Color32>, Option<(Color32, Color32)>) {
-    let conv = |c: designcraft_color::Color| {
+pub fn swatch_colors(doc: &redrob_layout_doc::Document, name: &str, tint: f32) -> (Option<Color32>, Option<(Color32, Color32)>) {
+    let conv = |c: redrob_layout_color::Color| {
         let [r, g, b, _] = c.to_rgba8(1.0);
         Color32::from_rgb(r, g, b)
     };
-    if let Some(g) = designcraft_color::swatch::resolve_gradient(&doc.swatches, name)
+    if let Some(g) = redrob_layout_color::swatch::resolve_gradient(&doc.swatches, name)
         && let (Some(a), Some(b)) = (g.stops.first(), g.stops.last())
     {
         return (None, Some((conv(a.color), conv(b.color))));

@@ -7,7 +7,7 @@
 use std::sync::LazyLock;
 
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::fileio::{self, ArtboardPick, Format};
+use redrob_vector_engine::cmd::fileio::{self, ArtboardPick, Format};
 
 use super::{DialogSpec, dxf_options, eps_options, form, png_options, save_pdf, svg_options, text_export};
 use crate::state::Dialog;
@@ -117,7 +117,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
         ArtboardPick { range: Some(range.clone()), ..Default::default() }.resolve(n)?;
     }
     // Nothing to export keeps the dialog open too (before the save dialog, not after it).
-    if !use_artboards && app.session.active().is_some_and(|s| vectorcraft_render::encode::art_bounds(&s.doc).is_none()) {
+    if !use_artboards && app.session.active().is_some_and(|s| redrob_vector_render::encode::art_bounds(&s.doc).is_none()) {
         return Err("nothing to export: the document has no visible art (or turn on Use Artboards)".into());
     }
     app.ui.dialog = None;

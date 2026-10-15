@@ -49,7 +49,7 @@ const MAX_SCALE: f64 = 100_000.0;
 /// `scaleH` and `scaleV` (rails 0–200 %) and for `moveH` and `moveV` (rails ±1000 pt, fields in
 /// `units`), and an angle dial for `rotate` (counter-clockwise). The fields take values past the
 /// rails.
-pub(super) fn sections(ui: &mut egui::Ui, d: &mut Dialog, units: vectorcraft_doc::Unit) {
+pub(super) fn sections(ui: &mut egui::Ui, d: &mut Dialog, units: redrob_vector_doc::Unit) {
     let rail = Tokens::get(ui.ctx()).input_border;
     let track = move |_| rail;
     let axes = |h, v| [(h, tl!("Horizontal:")), (v, tl!("Vertical:"))];
@@ -125,8 +125,8 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_doc::NodeId;
-    use vectorcraft_engine::Session;
+    use redrob_vector_doc::NodeId;
+    use redrob_vector_engine::Session;
 
     #[test]
     fn ok_transforms_each_and_keeps_the_scale_options() {

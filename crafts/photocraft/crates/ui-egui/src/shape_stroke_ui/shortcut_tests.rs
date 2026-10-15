@@ -6,7 +6,7 @@ use serde_json::json;
 use crate::{PhotocraftApp, state::Tool};
 
 fn app(tool: Tool) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 80, "height": 60})).unwrap();
     app.ui.tool = tool;
     app.ui.tool_options.vector_mode = "shape".into();

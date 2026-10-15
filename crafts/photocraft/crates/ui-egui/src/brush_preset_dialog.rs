@@ -3,7 +3,7 @@
 //! a preset opens it: the picker's [+] and its gear menu, the Brush Settings [+] and the Brushes
 //! tab's [+]. Nothing is saved until OK.
 use egui::{Color32, pos2, vec2};
-use photocraft_paint::{BrushPreset, BrushSettings};
+use redrob_photo_paint::{BrushPreset, BrushSettings};
 use serde_json::{Map, Value, json};
 
 use crate::{PhotocraftApp, state::DialogKind, theme::Tokens, widgets};

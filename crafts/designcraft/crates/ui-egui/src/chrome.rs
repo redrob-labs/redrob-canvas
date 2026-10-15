@@ -1,7 +1,7 @@
 //! Window chrome: application bar (with menus), Control panel, document tabs, status bar, start screen.
 
-use designcraft_doc::{Align, Content};
-use designcraft_geom::Unit;
+use redrob_layout_doc::{Align, Content};
+use redrob_layout_geom::Unit;
 use egui::{Color32, Sense, Stroke, vec2};
 use serde_json::json;
 
@@ -803,7 +803,7 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
             ));
             ui.add_space(8.0);
             ui.horizontal_wrapped(|ui| {
-                for p in designcraft_doc::build::PRESETS.iter().filter(|p| p.intent == designcraft_doc::Intent::Print) {
+                for p in redrob_layout_doc::build::PRESETS.iter().filter(|p| p.intent == redrob_layout_doc::Intent::Print) {
                     let (cr, resp) = ui.allocate_exact_size(vec2(120.0, 150.0), Sense::click());
                     let hov = resp.hovered();
                     ui.painter().rect_filled(cr, 6.0, if hov { t.hover } else { t.panel });
@@ -814,7 +814,7 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
                     ui.painter().text(
                         egui::pos2(cr.center().x, cr.max.y - 11.0),
                         egui::Align2::CENTER_CENTER,
-                        format!("{} × {}", designcraft_geom::format_measure(p.width, p.units), designcraft_geom::format_measure(p.height, p.units)),
+                        format!("{} × {}", redrob_layout_geom::format_measure(p.width, p.units), redrob_layout_geom::format_measure(p.height, p.units)),
                         egui::FontId::proportional(10.0),
                         t.text_dim,
                     );
@@ -857,7 +857,7 @@ fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
                 ui.add_space(4.0);
                 ui.horizontal(|ui| {
                     for (text, id) in [("Redrob Canvas page", "help.appPage"), ("GitHub", "help.github"), ("redrob.ai", "help.website")] {
-                        let url = designcraft_engine::links::get(&id[5..]).unwrap_or_default();
+                        let url = redrob_layout_engine::links::get(&id[5..]).unwrap_or_default();
                         let l = ui
                             .add(egui::Label::new(egui::RichText::new(text).size(12.0).color(t.accent).underline()).sense(Sense::click()))
                             .on_hover_text(url)
@@ -890,7 +890,7 @@ mod tests {
     const FIRST_CONTROL: &str = "Rotate 90° Counterclockwise";
 
     fn app() -> crate::DesignApp {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.ui.control_bar = true;
         app
     }
@@ -932,7 +932,7 @@ mod tests {
         // Pages don't move within their spread, so there is no "Objects Move with Page" option, and
         // no "Controlled by Parent" rule until parent pages have rules of their own.
         assert!(h.query_by_label("Objects Move with Page").is_none());
-        assert!(!crate::panels::interactive::LIQUID_RULES.iter().any(|(r, _)| *r == designcraft_doc::LiquidRule::ControlledByParent));
+        assert!(!crate::panels::interactive::LIQUID_RULES.iter().any(|(r, _)| *r == redrob_layout_doc::LiquidRule::ControlledByParent));
         assert_eq!(crate::panels::properties::preset_name(252.0, 144.0), "US Business Card");
         h.get_by_label("Show Parent Page Overlay").click();
         h.run_steps(4);

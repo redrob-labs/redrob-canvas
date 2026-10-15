@@ -17,8 +17,8 @@ pub mod typography;
 #[cfg(test)]
 mod color_panel_tests;
 
-use designcraft_doc::{Content, StrokeAlign, WrapMode};
-use designcraft_geom::Rect;
+use redrob_layout_doc::{Content, StrokeAlign, WrapMode};
+use redrob_layout_geom::Rect;
 use egui::vec2;
 use serde_json::{Value, json};
 
@@ -45,7 +45,7 @@ pub struct SelInfo {
     /// Stroke type id (`solid`, `dashed`, `thickThin`, …).
     pub stroke_kind: String,
     /// Uniform corner (shape, size) — the first corner.
-    pub corner: (designcraft_geom::corners::CornerShape, f64),
+    pub corner: (redrob_layout_geom::corners::CornerShape, f64),
     pub wrap_invert: bool,
     /// Text wrap offsets: top, left, bottom, right.
     pub wrap_offsets: [f64; 4],
@@ -94,10 +94,10 @@ pub fn apply_swatch(app: &mut DesignApp, stroke: bool, swatch: &str, tint: Optio
 /// Keep `swatch` as the colour or gradient Apply Color / Apply Gradient use next.
 pub fn remember_swatch(app: &mut DesignApp, swatch: &str) {
     let Some(st) = app.session.active() else { return };
-    if swatch == designcraft_color::swatch::NONE {
+    if swatch == redrob_layout_color::swatch::NONE {
         return;
     }
-    if designcraft_color::swatch::resolve_gradient(&st.doc.swatches, swatch).is_some() {
+    if redrob_layout_color::swatch::resolve_gradient(&st.doc.swatches, swatch).is_some() {
         app.ui.last_gradient = Some(swatch.to_string());
     } else if st.doc.resolve_color(swatch, 1.0).is_some() {
         app.ui.last_color = Some(swatch.to_string());
@@ -164,23 +164,23 @@ pub fn sel_info(app: &DesignApp) -> Option<SelInfo> {
 /// Resolved attributes at the text selection (or the selected text frames).
 /// The fonts the active document sees: its own (its `Document Fonts` folder) ahead of the shared
 /// ones.
-pub fn fonts(app: &DesignApp) -> designcraft_fonts::ScopedFonts<'static> {
-    designcraft_fonts::FontDb::global().scoped(font_scope(app))
+pub fn fonts(app: &DesignApp) -> redrob_layout_fonts::ScopedFonts<'static> {
+    redrob_layout_fonts::FontDb::global().scoped(font_scope(app))
 }
 
 /// The font menus' families in menu order: Western (and other scripts) first, then Japanese,
 /// Simplified Chinese, Traditional Chinese and Korean, each alphabetical by the name shown (CJK
 /// families by their native names unless Show Font Names in English).
 /// macOS's hidden system families (named with a leading `.`) are left out.
-pub fn font_menu(app: &DesignApp) -> Vec<designcraft_fonts::FamilyInfo> {
+pub fn font_menu(app: &DesignApp) -> Vec<redrob_layout_fonts::FamilyInfo> {
     let mut v = fonts(app).family_infos();
     v.retain(|f| !f.family.starts_with('.'));
-    designcraft_fonts::sort_for_menu(&mut v, app.session.prefs.show_font_names_in_english);
+    redrob_layout_fonts::sort_for_menu(&mut v, app.session.prefs.show_font_names_in_english);
     v
 }
 
 /// The name the font menus show for `family` (its native name, see [`font_menu`]).
-pub fn font_label(app: &DesignApp, menu: &[designcraft_fonts::FamilyInfo], family: &str) -> String {
+pub fn font_label(app: &DesignApp, menu: &[redrob_layout_fonts::FamilyInfo], family: &str) -> String {
     let english = app.session.prefs.show_font_names_in_english;
     menu.iter().find(|f| f.family == family).map_or(family, |f| f.label(english)).to_string()
 }
@@ -207,7 +207,7 @@ pub fn preflight_errors(app: &DesignApp) -> usize {
     {
         return n;
     }
-    let n = designcraft_engine::cmd::preflight::check(&app.session, 150.0).iter().filter(|i| i.severity == "error").count();
+    let n = redrob_layout_engine::cmd::preflight::check(&app.session, 150.0).iter().filter(|i| i.severity == "error").count();
     *g = Some((key, n));
     n
 }
@@ -226,7 +226,7 @@ fn swatch_menu_font() -> egui::FontId {
 
 /// One swatch in a swatch list, `width` wide: the swatch under the pointer is highlighted (white
 /// on blue, like a menu), the current one shaded.
-pub fn swatch_menu_row(ui: &mut egui::Ui, doc: &designcraft_doc::Document, name: &str, current: &str, width: f32) -> bool {
+pub fn swatch_menu_row(ui: &mut egui::Ui, doc: &redrob_layout_doc::Document, name: &str, current: &str, width: f32) -> bool {
     let t = Tokens::get(ui.ctx());
     let (row, resp) = ui.allocate_exact_size(vec2(width, SWATCH_MENU_ROW_H), egui::Sense::click());
     resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, name == current, name));
@@ -254,7 +254,7 @@ pub fn swatch_menu_row(ui: &mut egui::Ui, doc: &designcraft_doc::Document, name:
 
 /// The list in a swatch popup → the swatch picked. It is as wide as its longest name (within
 /// limits), and its rows stop short of the scroll bar that floats over the list's edge.
-pub fn swatch_list(ui: &mut egui::Ui, doc: &designcraft_doc::Document, current: &str) -> Option<String> {
+pub fn swatch_list(ui: &mut egui::Ui, doc: &redrob_layout_doc::Document, current: &str) -> Option<String> {
     let font = swatch_menu_font();
     let widest = doc
         .swatches
@@ -342,7 +342,7 @@ struct FontMenuState {
 /// through the matches, Return picks one and Escape closes the menu; none of them reach a dialog
 /// under the menu. Returns the family picked and closes the menu; the search, Favorites and the
 /// stars keep it open (the popup closes on a click outside only).
-pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[designcraft_fonts::FamilyInfo], current: &str, width: f32) -> Option<String> {
+pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[redrob_layout_fonts::FamilyInfo], current: &str, width: f32) -> Option<String> {
     let (fonts, scope) = (fonts(app), font_scope(app));
     let english = app.session.prefs.show_font_names_in_english;
     let mut favs = app.session.prefs.favorite_fonts.clone();
@@ -378,7 +378,7 @@ pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[designcraf
         search.request_focus();
     }
     let q = st.query.to_lowercase();
-    let shown: Vec<&designcraft_fonts::FamilyInfo> = menu.iter().filter(|f| f.matches(&q) && (!st.only_favs || favs.contains(&f.family))).collect();
+    let shown: Vec<&redrob_layout_fonts::FamilyInfo> = menu.iter().filter(|f| f.matches(&q) && (!st.only_favs || favs.contains(&f.family))).collect();
     if search.changed() {
         st.highlight = if q.is_empty() { None } else { Some(0) };
     }
@@ -445,7 +445,7 @@ pub fn font_menu_body(app: &mut DesignApp, ui: &mut egui::Ui, menu: &[designcraf
             let key = egui::Id::new(("font_preview", f, scope, (ppp * 100.0) as u32, t.text.to_array()));
             let tex: Option<egui::TextureHandle> = ui.data(|d| d.get_temp(key));
             let tex = tex.unwrap_or_else(|| {
-                let img = designcraft_render::glyphs::text_line(&fonts, f, "Regular", "Sample", (18.0 * ppp) as u32, t.text.to_array());
+                let img = redrob_layout_render::glyphs::text_line(&fonts, f, "Regular", "Sample", (18.0 * ppp) as u32, t.text.to_array());
                 let ci = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
                 let h = crate::widgets::load_texture(ui.ctx(), format!("font_preview_{f}"), ci, egui::TextureOptions::LINEAR);
                 ui.data_mut(|d| d.insert_temp(key, h.clone()));
@@ -497,7 +497,7 @@ pub fn font_combo(
 
 /// [`font_menu_body`] in a popup under `field` (a font field the caller draws). Returns the family
 /// picked.
-pub fn font_popup(app: &mut DesignApp, field: &egui::Response, menu: &[designcraft_fonts::FamilyInfo], current: &str) -> Option<String> {
+pub fn font_popup(app: &mut DesignApp, field: &egui::Response, menu: &[redrob_layout_fonts::FamilyInfo], current: &str) -> Option<String> {
     // Screen readers (and tests) see the field as the combo box it looks like.
     field.widget_info(|| {
         let mut info = egui::WidgetInfo::new(egui::WidgetType::ComboBox);
@@ -545,7 +545,7 @@ pub fn para_style_picker(app: &mut DesignApp, ui: &mut egui::Ui, current: &str, 
     let shown = crate::i18n::style_name(&app.ui.language, current);
     let label = if overridden { format!("{shown}+") } else { shown.to_string() };
     egui::ComboBox::from_id_salt("para_style").selected_text(crate::rtl::widget(ui, label)).width(width).show_ui(ui, |ui| {
-        for n in names.iter().filter(|n| *n != designcraft_doc::NO_PARA_STYLE) {
+        for n in names.iter().filter(|n| *n != redrob_layout_doc::NO_PARA_STYLE) {
             if ui.selectable_label(n == current, crate::rtl::widget(ui, crate::i18n::style_name(&app.ui.language, n))).clicked() {
                 pick = Some(n.clone());
             }
@@ -558,8 +558,8 @@ pub fn para_style_picker(app: &mut DesignApp, ui: &mut egui::Ui, current: &str, 
 
 #[cfg(test)]
 mod font_menu_tests {
-    use designcraft_fonts::FontGroup;
-    use designcraft_fonts::testing::{font_with, with_names};
+    use redrob_layout_fonts::FontGroup;
+    use redrob_layout_fonts::testing::{font_with, with_names};
 
     use super::*;
 
@@ -568,15 +568,15 @@ mod font_menu_tests {
         const FAMILY: &str = "DC UI Test Mincho";
         let font = font_with(FAMILY, &['a']).unwrap();
         let font = with_names(&font, &[(3, 1, 0x409, 1, FAMILY), (3, 1, 0x409, 2, "Regular"), (3, 1, 0x0411, 1, "UIテスト明朝")]).unwrap();
-        designcraft_fonts::FontDb::global().add_font(font);
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        redrob_layout_fonts::FontDb::global().add_font(font);
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         let menu = font_menu(&app);
         let at = menu.iter().position(|f| f.family == FAMILY).unwrap();
         assert_eq!(menu[at].group, FontGroup::Japanese);
-        assert!(menu[..at].iter().any(|f| f.family == designcraft_fonts::DEFAULT_FAMILY), "Western fonts first");
+        assert!(menu[..at].iter().any(|f| f.family == redrob_layout_fonts::DEFAULT_FAMILY), "Western fonts first");
         assert!(menu.windows(2).all(|w| w[0].group <= w[1].group), "grouped");
         assert_eq!(font_label(&app, &menu, FAMILY), "UIテスト明朝");
-        assert_eq!(font_label(&app, &menu, designcraft_fonts::DEFAULT_FAMILY), designcraft_fonts::DEFAULT_FAMILY);
+        assert_eq!(font_label(&app, &menu, redrob_layout_fonts::DEFAULT_FAMILY), redrob_layout_fonts::DEFAULT_FAMILY);
         app.run("prefs.set", json!({"showFontNamesInEnglish": true})).unwrap();
         assert_eq!(font_label(&app, &font_menu(&app), FAMILY), FAMILY);
     }
@@ -584,8 +584,8 @@ mod font_menu_tests {
     #[test]
     fn hidden_system_fonts_stay_out_of_the_font_menus() {
         const HIDDEN: &str = ".DC UI Test Hidden";
-        designcraft_fonts::FontDb::global().add_font(font_with(HIDDEN, &['a']).unwrap());
-        let app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        redrob_layout_fonts::FontDb::global().add_font(font_with(HIDDEN, &['a']).unwrap());
+        let app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         assert!(fonts(&app).family_infos().iter().any(|f| f.family == HIDDEN), "installed");
         let menu = font_menu(&app);
         assert!(menu.iter().all(|f| !f.family.starts_with('.')), "no hidden family is listed");
@@ -617,7 +617,7 @@ mod font_menu_ui_tests {
     /// [`typing_in`] a window of `size`, with the macOS window chrome (the native menu bar and the
     /// title bar inside the window) when `mac`.
     fn typing_on(name: &str, size: egui::Vec2, mac: bool) -> (Harness<'static, Window>, u64) {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("window.workspace", json!({ "name": name })).unwrap();
         app.native_menu = mac;
         app.integrated_titlebar = mac;
@@ -652,7 +652,7 @@ mod font_menu_ui_tests {
     fn typing_in_the_font_menu_searches_and_never_reaches_the_story() {
         let (mut h, story) = typing();
         let before = story_text(&mut h, story);
-        let at = field(&h, designcraft_fonts::DEFAULT_FAMILY);
+        let at = field(&h, redrob_layout_fonts::DEFAULT_FAMILY);
         click_at(&mut h, at.center());
         assert!(h.ctx.text_edit_focused(), "the search field takes the keyboard when the menu opens");
         h.event(egui::Event::Text("source sans".into()));
@@ -660,7 +660,7 @@ mod font_menu_ui_tests {
         assert_eq!(search(&h), "source sans");
         assert_eq!(story_text(&mut h, story), before, "the typing went to the search, not the story");
         assert!(h.query_by_label("Source Sans 3").is_some(), "a match is listed");
-        assert!(h.query_by_label(designcraft_fonts::DEFAULT_FAMILY).is_none(), "families that don't match aren't");
+        assert!(h.query_by_label(redrob_layout_fonts::DEFAULT_FAMILY).is_none(), "families that don't match aren't");
         // ↓ and Return pick the first match and close the menu.
         h.key_press(egui::Key::ArrowDown);
         h.run_steps(2);
@@ -676,18 +676,18 @@ mod font_menu_ui_tests {
         // A click on a family picks it.
         h.event(egui::Event::Text("serif 4".into()));
         h.run_steps(4);
-        let row = h.get_by_label(designcraft_fonts::DEFAULT_FAMILY).rect();
+        let row = h.get_by_label(redrob_layout_fonts::DEFAULT_FAMILY).rect();
         click_at(&mut h, row.center());
-        assert_eq!(family(&mut h), designcraft_fonts::DEFAULT_FAMILY);
+        assert_eq!(family(&mut h), redrob_layout_fonts::DEFAULT_FAMILY);
         // Escape closes the menu and leaves the text as it was.
-        let at = field(&h, designcraft_fonts::DEFAULT_FAMILY);
+        let at = field(&h, redrob_layout_fonts::DEFAULT_FAMILY);
         click_at(&mut h, at.center());
         // A star marks a favourite and keeps the menu open.
         h.event(egui::Event::Text("serif 4".into()));
         h.run_steps(4);
-        let row = h.get_by_label(designcraft_fonts::DEFAULT_FAMILY).rect();
+        let row = h.get_by_label(redrob_layout_fonts::DEFAULT_FAMILY).rect();
         click_at(&mut h, row.min + vec2(10.0, 12.0));
-        assert!(h.state().app.session.prefs.favorite_fonts.iter().any(|f| f == designcraft_fonts::DEFAULT_FAMILY));
+        assert!(h.state().app.session.prefs.favorite_fonts.iter().any(|f| f == redrob_layout_fonts::DEFAULT_FAMILY));
         assert_eq!(search(&h), "serif 4", "the menu stays open");
         h.key_press(egui::Key::Escape);
         h.run_steps(4);
@@ -716,7 +716,7 @@ mod font_menu_ui_tests {
         h.run_steps(4);
         assert_eq!(search(h), "SOURCE SA", "{what}: the typing went to the search");
         assert!(h.query_by_label("Source Sans 3").is_some(), "{what}: a match is listed");
-        assert!(h.query_by_label(designcraft_fonts::DEFAULT_FAMILY).is_none(), "{what}: families that don't match aren't");
+        assert!(h.query_by_label(redrob_layout_fonts::DEFAULT_FAMILY).is_none(), "{what}: families that don't match aren't");
         h.key_press(egui::Key::ArrowDown);
         h.run_steps(2);
         h.key_press(egui::Key::Enter);
@@ -742,12 +742,12 @@ mod font_menu_ui_tests {
             }
             let name = &format!("{name} {size:?} {panel:?}");
             let before = story_text(&mut h, story);
-            let count = fields(&h, designcraft_fonts::DEFAULT_FAMILY).len();
+            let count = fields(&h, redrob_layout_fonts::DEFAULT_FAMILY).len();
             assert_eq!(count, 3, "{name}: the font fields are shown");
             for k in 0..count {
-                h.state_mut().app.run("type.char", json!({"attrs": {"fontFamily": designcraft_fonts::DEFAULT_FAMILY}})).unwrap();
+                h.state_mut().app.run("type.char", json!({"attrs": {"fontFamily": redrob_layout_fonts::DEFAULT_FAMILY}})).unwrap();
                 h.run_steps(4);
-                let at = fields(&h, designcraft_fonts::DEFAULT_FAMILY)[k];
+                let at = fields(&h, redrob_layout_fonts::DEFAULT_FAMILY)[k];
                 search_in_menu(&mut h, at, &format!("{name}, field {k}"));
                 assert_eq!(family(&mut h), "Source Sans 3", "{name}, field {k}");
                 assert_eq!(story_text(&mut h, story), before, "{name}, field {k}");
@@ -759,13 +759,13 @@ mod font_menu_ui_tests {
     /// Character Formats and Find/Replace Font's Replace With.
     #[test]
     fn font_fields_in_panels_and_dialogs_search() {
-        let paragraph = json!({"name": designcraft_doc::BASIC_PARAGRAPH, "section": "chars"});
+        let paragraph = json!({"name": redrob_layout_doc::BASIC_PARAGRAPH, "section": "chars"});
         for (what, panel, dialog, shown) in [
-            ("Glyphs", Some("glyphs"), None, designcraft_fonts::DEFAULT_FAMILY),
-            ("Paragraph Style Options", None, Some(("paragraphStyleOptions", paragraph)), designcraft_fonts::DEFAULT_FAMILY),
+            ("Glyphs", Some("glyphs"), None, redrob_layout_fonts::DEFAULT_FAMILY),
+            ("Paragraph Style Options", None, Some(("paragraphStyleOptions", paragraph)), redrob_layout_fonts::DEFAULT_FAMILY),
             ("Find/Replace Font", None, Some(("findFont", json!({}))), "—"),
         ] {
-            let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+            let app = crate::DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
             let mut h = test_window::open(app, vec2(1440.0, 900.0));
             let dialog_id = dialog.as_ref().map(|(id, _)| id.to_string());
             h.state_mut().app.ui.open_panel = panel.map(str::to_string);
@@ -819,7 +819,7 @@ mod swatch_list_tests {
 
     #[test]
     fn the_swatch_under_the_pointer_is_highlighted_and_names_clear_the_scroll_bar() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", serde_json::json!({})).unwrap();
         // A long name, as process swatches have.
         app.run("swatch.create", serde_json::json!({"name": "C=15 M=100 Y=100 K=0 Long Name", "color": {"c": 15, "m": 100, "y": 100, "k": 0}}))

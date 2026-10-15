@@ -6,9 +6,9 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use photocraft_automation::{AuthorizedWorkspace, Headless, PhotocraftMcp, files, security};
-use photocraft_engine::actions_cmds::Action;
-use photocraft_io::ExportOptions;
+use redrob_photo_automation::{AuthorizedWorkspace, Headless, PhotocraftMcp, files, security};
+use redrob_photo_engine::actions_cmds::Action;
+use redrob_photo_io::ExportOptions;
 use serde_json::{Value, json};
 
 pub const USAGE: &str = "\
@@ -172,7 +172,7 @@ pub fn run(args: &[String], out: &mut dyn Write, err: &mut dyn Write) -> i32 {
             return 0;
         }
         "--version" | "version" => {
-            let _ = writeln!(out, "photocraft-cli {}", photocraft_engine::build_info::long_version());
+            let _ = writeln!(out, "photocraft-cli {}", redrob_photo_engine::build_info::long_version());
             return 0;
         }
         _ => {}
@@ -213,11 +213,11 @@ fn export_opts(a: &Args) -> Result<ExportOptions, String> {
         o.encode.webp_lossless = false;
     }
     if let Some(b) = a.get("--tga-bits") {
-        o.tga_bits = Some(b.parse().ok().and_then(photocraft_io::TgaBits::from_bits).ok_or_else(|| format!("bad --tga-bits `{b}`: expected 24 or 32"))?);
+        o.tga_bits = Some(b.parse().ok().and_then(redrob_photo_io::TgaBits::from_bits).ok_or_else(|| format!("bad --tga-bits `{b}`: expected 24 or 32"))?);
     }
     if let Some(b) = a.get("--dpx-bits") {
         o.encode.dpx_bits =
-            Some(b.parse().ok().and_then(photocraft_io::DpxBits::from_bits).ok_or_else(|| format!("bad --dpx-bits `{b}`: expected 8, 10, 12 or 16"))?);
+            Some(b.parse().ok().and_then(redrob_photo_io::DpxBits::from_bits).ok_or_else(|| format!("bad --dpx-bits `{b}`: expected 8, 10, 12 or 16"))?);
     }
     Ok(o)
 }
@@ -246,7 +246,7 @@ fn convert(a: &Args, _out: &mut dyn Write, err: &mut dyn Write) -> R {
     let opts = export_opts(a)?;
     let o = files::open(Path::new(input)).map_err(|e| e.to_string())?;
     warn_all(err, &o.warnings);
-    warn_all(err, &photocraft_engine::type_extra_cmds::missing_font_warnings(&o.document));
+    warn_all(err, &redrob_photo_engine::type_extra_cmds::missing_font_warnings(&o.document));
     let ws = files::save(&o.document, Path::new(output), a.get("--format"), &opts, None).map_err(|e| e.to_string())?;
     warn_all(err, &ws);
     Ok(())
@@ -266,7 +266,7 @@ fn info(a: &Args, out: &mut dyn Write) -> R {
     let mut doc = h.inspect(None).map_err(|e| e.to_string())?;
     let mut warnings = opened["warnings"].as_array().cloned().unwrap_or_default();
     if let Some(st) = h.session.active() {
-        warnings.extend(missing_font_warnings(photocraft_engine::type_extra_cmds::missing_fonts(&st.doc)).into_iter().map(Value::String));
+        warnings.extend(missing_font_warnings(redrob_photo_engine::type_extra_cmds::missing_fonts(&st.doc)).into_iter().map(Value::String));
     }
     doc["warnings"] = Value::Array(warnings);
     doc["file"] = json!(file);
@@ -321,13 +321,13 @@ fn run_cmds(a: &Args, out: &mut dyn Write, err: &mut dyn Write) -> R {
     }
     for (id, params) in cmds {
         let r = h.command_run(&id, params).map_err(|e| format!("`{id}`: {e}"))?;
-        if let Some(e) = photocraft_engine::actions_cmds::nested_failure(&id, &r) {
+        if let Some(e) = redrob_photo_engine::actions_cmds::nested_failure(&id, &r) {
             return Err(format!("`{id}`: {e}"));
         }
         let new_warnings: Vec<String> = h
             .session
             .active()
-            .map(|st| missing_font_warnings(photocraft_engine::type_extra_cmds::missing_fonts(&st.doc)))
+            .map(|st| missing_font_warnings(redrob_photo_engine::type_extra_cmds::missing_fonts(&st.doc)))
             .unwrap_or_default()
             .into_iter()
             .filter(|w| reported_fonts.insert(w.clone()))
@@ -343,7 +343,7 @@ fn run_cmds(a: &Args, out: &mut dyn Write, err: &mut dyn Write) -> R {
     let remaining: Vec<String> = h
         .session
         .active()
-        .map(|st| missing_font_warnings(photocraft_engine::type_extra_cmds::missing_fonts(&st.doc)))
+        .map(|st| missing_font_warnings(redrob_photo_engine::type_extra_cmds::missing_fonts(&st.doc)))
         .unwrap_or_default()
         .into_iter()
         .filter(|w| reported_fonts.insert(w.clone()))
@@ -367,7 +367,7 @@ pub fn parse_actions(text: &str) -> Result<Vec<(String, Value)>, String> {
 }
 
 fn steps_of(v: &Value) -> Result<Steps, String> {
-    photocraft_engine::automate_cmds::parse_action(v.get("actions").unwrap_or(v), "batch --actions").map_err(|e| e.to_string())
+    redrob_photo_engine::automate_cmds::parse_action(v.get("actions").unwrap_or(v), "batch --actions").map_err(|e| e.to_string())
 }
 
 /// Engine commands to run in order: `(id, params)`.
@@ -409,7 +409,7 @@ pub fn load_actions_file(path: &str, name: Option<&str>) -> Result<(Steps, Vec<A
         let (steps, set) = load_actions(&text, name)?;
         return Ok((steps, set, Vec::new()));
     }
-    let imp = photocraft_engine::atn_cmds::import(&bytes).map_err(|e| format!("{path}: {e}"))?;
+    let imp = redrob_photo_engine::atn_cmds::import(&bytes).map_err(|e| format!("{path}: {e}"))?;
     let names = || imp.actions.iter().map(|a| format!("`{}`", a.name)).collect::<Vec<_>>().join(", ");
     let action = match (name, imp.actions.as_slice()) {
         (Some(n), _) => {
@@ -439,7 +439,7 @@ fn same_dir(a: &Path, b: &Path) -> bool {
 fn is_input(p: &Path) -> bool {
     let known = |e: &str| {
         matches!(e, "pcraft" | "psd" | "psb" | "pdn" | "ora" | "kra" | "krz" | "af" | "afdesign" | "afphoto" | "afpub")
-            || photocraft_codecs::from_extension(e).is_some_and(|f| photocraft_codecs::caps(f).read)
+            || redrob_photo_codecs::from_extension(e).is_some_and(|f| redrob_photo_codecs::caps(f).read)
     };
     p.is_file() && p.extension().is_some_and(|e| known(&e.to_string_lossy().to_ascii_lowercase()))
 }
@@ -466,7 +466,7 @@ fn batch(a: &Args, out: &mut dyn Write, err: &mut dyn Write) -> R {
         std::fs::read_dir(&in_dir).map_err(|e| format!("{}: {e}", in_dir.display()))?.flatten().map(|e| e.path()).filter(|p| is_input(p)).collect();
     inputs.sort();
     let (mut ok, mut failed) = (0, 0);
-    let mut written = photocraft_engine::file_cmds::OutputClaims::default();
+    let mut written = redrob_photo_engine::file_cmds::OutputClaims::default();
     // `--format .jpg` names outputs `<stem>.jpg`, as `--format jpg` does (#490).
     let format = a.get("--format").map(|f| f.strip_prefix('.').unwrap_or(f));
     for input in &inputs {
@@ -482,12 +482,12 @@ fn batch(a: &Args, out: &mut dyn Write, err: &mut dyn Write) -> R {
             h.session.actions.list = set.clone();
             h.open(input).map_err(|e| e.to_string())?;
             for (id, p) in &actions {
-                if photocraft_engine::actions_cmds::shell_view_command(id) || photocraft_engine::actions_cmds::shell_save_command(id) {
+                if redrob_photo_engine::actions_cmds::shell_view_command(id) || redrob_photo_engine::actions_cmds::shell_save_command(id) {
                     continue;
                 }
                 let r = h.command_run(id, p.clone()).map_err(|e| format!("`{id}`: {e}"))?;
                 // A failed step inside a called action makes this file an error, not a saved result.
-                if let Some(e) = photocraft_engine::actions_cmds::nested_failure(id, &r) {
+                if let Some(e) = redrob_photo_engine::actions_cmds::nested_failure(id, &r) {
                     return Err(format!("`{id}`: {e}"));
                 }
             }
@@ -520,7 +520,7 @@ fn droplet(a: &Args, out: &mut dyn Write, err: &mut dyn Write) -> R {
     if let Some(o) = a.get("--out") {
         p["output"] = json!(o);
     }
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     let r = s.execute("file.automate.runDroplet", p).map_err(|e| e.to_string())?;
     for f in r["files"].as_array().into_iter().flatten() {
         let _ = writeln!(out, "ok    {}", f.as_str().unwrap_or_default());
@@ -541,7 +541,7 @@ fn commands(a: &Args, out: &mut dyn Write) -> R {
         .map(|v| v.iter().collect::<Vec<_>>())
         .unwrap_or_default()
         .into_iter()
-        .filter(|c| needle.as_ref().is_none_or(|n| photocraft_engine::commands::list_entry_matches(c, n)))
+        .filter(|c| needle.as_ref().is_none_or(|n| redrob_photo_engine::commands::list_entry_matches(c, n)))
         .collect();
     if a.has("--json") {
         return print_json(out, &Value::Array(items.into_iter().cloned().collect()), false);
@@ -567,14 +567,14 @@ fn serve(a: &Args, err: &mut dyn Write) -> R {
             } else if supplied.is_none() {
                 let _ = writeln!(err, "photocraft-cli control token: {token}");
             }
-            photocraft_automation::rpc::serve_tcp(&addr, h, token, |local| {
+            redrob_photo_automation::rpc::serve_tcp(&addr, h, token, |local| {
                 let _ = writeln!(err, "photocraft-cli serving on {local}");
             })
             .map_err(|e| e.to_string())
         }
         None => {
             let stdin = std::io::stdin();
-            photocraft_automation::rpc::serve_lines(&h, stdin.lock(), std::io::stdout()).map_err(|e| e.to_string())
+            redrob_photo_automation::rpc::serve_lines(&h, stdin.lock(), std::io::stdout()).map_err(|e| e.to_string())
         }
     }
 }

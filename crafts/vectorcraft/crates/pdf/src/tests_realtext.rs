@@ -2,10 +2,10 @@
 //! ToUnicode map, where the outlines would be; fonts whose licence forbids it stay outlines.
 
 use serde_json::json;
-use vectorcraft_color::{Color, Gradient, GradientPaint, Paint};
-use vectorcraft_doc::{CharStyle, Document, Node, NodeKind, TextKind, TextObject, TextRun};
-use vectorcraft_geom::{Affine, BezPath, PathData, Point, Rect};
-use vectorcraft_text::{FALLBACK_FAMILY, FontDb};
+use redrob_vector_color::{Color, Gradient, GradientPaint, Paint};
+use redrob_vector_doc::{CharStyle, Document, Node, NodeKind, TextKind, TextObject, TextRun};
+use redrob_vector_geom::{Affine, BezPath, PathData, Point, Rect};
+use redrob_vector_text::{FALLBACK_FAMILY, FontDb};
 
 use crate::*;
 
@@ -148,7 +148,7 @@ fn overprinting_runs_are_written_or_left_out_as_other_runs_are() {
     };
     let written = |mut t: TextObject| {
         // The export culls type by the laid-out bounds that the engine keeps in `cached_bounds`.
-        t.cached_bounds = Some(vectorcraft_text::layout(FontDb::global(), &t).bounds);
+        t.cached_bounds = Some(redrob_vector_text::layout(FontDb::global(), &t).bounds);
         let mut d = doc(vec![t]);
         d.artboards[0].rect = Rect::new(0.0, 0.0, 50.0, 50.0);
         pdf(&d, false).bytes
@@ -166,7 +166,7 @@ fn overprinting_runs_are_written_or_left_out_as_other_runs_are() {
 /// the instance's glyphs where the outlines would be, not the default instance's (#296).
 #[test]
 fn variable_font_instances_are_real_text_in_their_own_glyphs() {
-    use vectorcraft_text::test_fonts::{VARIABLE_CHARS, VARIABLE_FAMILY, variable_font};
+    use redrob_vector_text::test_fonts::{VARIABLE_CHARS, VARIABLE_FAMILY, variable_font};
     FontDb::global().add_font(variable_font().unwrap());
     let mut widths = vec![];
     for s in ["Regular", "Bold"] {
@@ -267,7 +267,7 @@ fn pdf_a_takes_real_text() {
 /// A named instance comes back as live type in that style (not the default instance's).
 #[test]
 fn a_variable_font_instance_comes_back_in_its_own_style() {
-    use vectorcraft_text::test_fonts::{VARIABLE_CHARS, VARIABLE_FAMILY, variable_font};
+    use redrob_vector_text::test_fonts::{VARIABLE_CHARS, VARIABLE_FAMILY, variable_font};
     FontDb::global().add_font(variable_font().unwrap());
     let st = CharStyle { font_family: VARIABLE_FAMILY.into(), font_style: "Bold".into(), ..style(48.0) };
     let d = doc(vec![TextObject::point(Point::new(20.0, 80.0), VARIABLE_CHARS, st)]);
@@ -364,7 +364,7 @@ fn slanted_type_reopens_as_type_that_still_leans() {
 /// names the version, which the family and style alone don't pick.
 #[test]
 fn type_in_another_installed_version_reopens_in_that_version() {
-    use vectorcraft_text::test_fonts::{TWIN_FAMILY, TWIN_VERSIONS, twin_font};
+    use redrob_vector_text::test_fonts::{TWIN_FAMILY, TWIN_VERSIONS, twin_font};
     // The newer version first: the one the family and style resolve to.
     FontDb::global().add_font(twin_font(true).unwrap());
     FontDb::global().add_font(twin_font(false).unwrap());
@@ -387,7 +387,7 @@ fn origins(d: &Document) -> Vec<Point> {
     let mut out = vec![];
     d.walk(|n| {
         if let NodeKind::Text(t) = &n.kind {
-            out.extend(vectorcraft_text::layout(FontDb::global(), t).glyphs.iter().map(|g| t.xf * g.origin));
+            out.extend(redrob_vector_text::layout(FontDb::global(), t).glyphs.iter().map(|g| t.xf * g.origin));
         }
     });
     out

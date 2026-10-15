@@ -103,15 +103,15 @@ fn grid_prefs_apply_to_opened_files_without_a_grid() {
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 400, "height": 400})).unwrap();
     s.execute("prefs.set", &json!({"values": {"gridlineEvery": 18, "gridSubdivisions": 3}})).unwrap();
-    let native = vectorcraft_format::save(&s.doc().unwrap().doc, false);
+    let native = redrob_vector_format::save(&s.doc().unwrap().doc, false);
     let mut pdf = |editing: bool| {
         let v = s.execute("document.exportPdf", &json!({"preserveEditing": editing})).unwrap();
-        vectorcraft_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
+        redrob_vector_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
     };
     let (editable, plain) = (pdf(true), pdf(false));
     s.execute("prefs.set", &json!({"values": {"gridlineEvery": 36, "gridSubdivisions": 4}})).unwrap();
     let mut open = |name: &str, bytes: &[u8]| {
-        let r = s.execute("document.open", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)})).unwrap();
+        let r = s.execute("document.open", &json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes)})).unwrap();
         let g = &s.doc().unwrap().doc.grid;
         (g.spacing, g.subdivisions, r["restored"].as_bool().unwrap())
     };
@@ -245,7 +245,7 @@ fn linux_display_server_defaults_to_automatic_and_validates() {
 /// (#394).
 #[test]
 fn selection_preferences_drive_the_selection_tool() {
-    use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
+    use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 400, "height": 400})).unwrap();
     let rect = |s: &mut Session, x: f64| {
@@ -304,7 +304,7 @@ fn selection_preferences_drive_the_selection_tool() {
 /// a double-click on it switches to the Type tool.
 #[test]
 fn double_clicking_a_single_object_isolates_it() {
-    use vectorcraft_tools::{PointerEvent, PointerKind};
+    use redrob_vector_tools::{PointerEvent, PointerKind};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 400, "height": 400})).unwrap();
     let id = |v: Value| NodeId(v["id"].as_u64().unwrap());
@@ -356,12 +356,12 @@ fn double_clicking_a_single_object_isolates_it() {
 /// tool's arrow stays.
 #[test]
 fn use_precise_cursors_makes_drawing_cursors_crosshairs() {
-    use vectorcraft_tools::{Cursor, Mods};
+    use redrob_vector_tools::{Cursor, Mods};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 400, "height": 400})).unwrap();
     let cursor = |s: &mut Session, tool: &str| {
         s.select_tool(tool, ViewInfo::default()).unwrap();
-        s.cursor(vectorcraft_geom::Point::new(300.0, 300.0), Mods::default(), ViewInfo::default())
+        s.cursor(redrob_vector_geom::Point::new(300.0, 300.0), Mods::default(), ViewInfo::default())
     };
     assert_eq!(cursor(&mut s, "pen"), Cursor::Pen);
     assert_eq!(cursor(&mut s, "eyedropper"), Cursor::Eyedropper);
@@ -378,10 +378,10 @@ fn use_precise_cursors_makes_drawing_cursors_crosshairs() {
 /// Scissors over no path keep theirs.
 #[test]
 fn use_precise_cursors_swaps_the_tools_own_pointers_for_a_crosshair() {
-    use vectorcraft_tools::{Cursor, Mods};
+    use redrob_vector_tools::{Cursor, Mods};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 400, "height": 400})).unwrap();
-    let at = vectorcraft_geom::Point::new(300.0, 300.0);
+    let at = redrob_vector_geom::Point::new(300.0, 300.0);
     let cursor = |s: &mut Session, tool: &str| {
         s.select_tool(tool, ViewInfo::default()).unwrap();
         s.cursor(at, Mods::default(), ViewInfo::default())
@@ -450,7 +450,7 @@ fn use_precise_cursors_swaps_the_tools_own_pointers_for_a_crosshair() {
 /// Every state of the Pen's pointer, and the other drawing pointers, turn into a crosshair; the rest stay.
 #[test]
 fn precise_cursors_replace_every_pen_state() {
-    use vectorcraft_tools::Cursor;
+    use redrob_vector_tools::Cursor;
     for c in [
         Cursor::Pen,
         Cursor::PenAdd,
@@ -517,9 +517,9 @@ fn set_pref(s: &mut Session, key: &str, value: Value) {
     s.execute("prefs.set", &json!({"key": key, "value": value})).unwrap();
 }
 
-fn gesture(s: &mut Session, v: ViewInfo, events: &[(vectorcraft_tools::PointerKind, f64, f64)]) {
+fn gesture(s: &mut Session, v: ViewInfo, events: &[(redrob_vector_tools::PointerKind, f64, f64)]) {
     for (k, x, y) in events {
-        s.pointer(&vectorcraft_tools::PointerEvent::new(*k, *x, *y), v).unwrap();
+        s.pointer(&redrob_vector_tools::PointerEvent::new(*k, *x, *y), v).unwrap();
     }
 }
 
@@ -532,7 +532,7 @@ fn top_left(s: &Session, id: NodeId) -> (f64, f64) {
 /// Smart Guides off, the point a selection is dragged by lands on an anchor within 2 px.
 #[test]
 fn snap_to_point_lands_a_dragged_selection_on_anchors() {
-    use vectorcraft_tools::PointerKind::{Down, Drag, Up};
+    use redrob_vector_tools::PointerKind::{Down, Drag, Up};
     let mut s = new_doc();
     let a = square(&mut s, 100.0, 100.0);
     square(&mut s, 300.0, 100.0);
@@ -556,7 +556,7 @@ fn snap_to_point_lands_a_dragged_selection_on_anchors() {
 /// squares 20 pt apart lands 20 pt from it, with the gaps marked; off, it stays at 21.
 #[test]
 fn spacing_guides_space_a_dragged_square_like_its_row() {
-    use vectorcraft_tools::PointerKind::{Down, Drag, Up};
+    use redrob_vector_tools::PointerKind::{Down, Drag, Up};
     let mut s = new_doc();
     square(&mut s, 20.0, 300.0);
     square(&mut s, 90.0, 300.0);
@@ -566,7 +566,7 @@ fn spacing_guides_space_a_dragged_square_like_its_row() {
     // `m` grabbed by its centre and dragged so its left edge is 21 pt from the second square.
     let drag = |s: &mut Session| {
         gesture(s, v, &[(Down, 225.0, 330.0), (Drag, 200.0, 330.0), (Drag, 186.0, 330.0)]);
-        let marks = s.overlays(v).iter().filter(|o| matches!(o, vectorcraft_tools::Overlay::Line { a, b, .. } if a.y == b.y)).count();
+        let marks = s.overlays(v).iter().filter(|o| matches!(o, redrob_vector_tools::Overlay::Line { a, b, .. } if a.y == b.y)).count();
         gesture(s, v, &[(Up, 186.0, 330.0)]);
         let at = top_left(s, m).0;
         s.execute("edit.undo", &json!({})).unwrap();
@@ -585,8 +585,8 @@ fn spacing_guides_space_a_dragged_square_like_its_row() {
 /// snaps.
 #[test]
 fn smart_guide_display_preferences_filter_the_overlays() {
-    use vectorcraft_tools::Overlay;
-    use vectorcraft_tools::PointerKind::{Down, Drag, Up};
+    use redrob_vector_tools::Overlay;
+    use redrob_vector_tools::PointerKind::{Down, Drag, Up};
     let mut s = new_doc();
     square(&mut s, 100.0, 100.0);
     let b = square(&mut s, 200.0, 100.0);
@@ -609,7 +609,7 @@ fn smart_guide_display_preferences_filter_the_overlays() {
     assert_eq!(drag_to(&mut s, 3.0), 150.0, "3 px off: into line");
     assert!(count(&mut s, &line) > 0 && count(&mut s, &measure) == 1);
     let magenta = s.overlays(v).iter().find_map(|o| if let Overlay::Line { color, .. } = o { Some(*color) } else { None });
-    assert_eq!(magenta, Some(vectorcraft_tools::guides::MAGENTA), "the default colour");
+    assert_eq!(magenta, Some(redrob_vector_tools::guides::MAGENTA), "the default colour");
     release(&mut s);
     set_pref(&mut s, "smartGuideColor", json!("#00ff00"));
     drag_to(&mut s, 3.0);
@@ -658,8 +658,8 @@ fn smart_guide_display_preferences_filter_the_overlays() {
 /// Enable Rubber Band for Pen Tool / Curvature Tool (#394): off, no segment follows the pointer.
 #[test]
 fn rubber_band_preferences_hide_the_preview_to_the_pointer() {
-    use vectorcraft_tools::Overlay;
-    use vectorcraft_tools::PointerKind::{Down, Move, Up};
+    use redrob_vector_tools::Overlay;
+    use redrob_vector_tools::PointerKind::{Down, Move, Up};
     let v = ViewInfo::default();
     for (tool, key) in [("pen", "penRubberBand"), ("curvature", "curvatureRubberBand")] {
         let mut s = new_doc();
@@ -697,7 +697,7 @@ fn move_locked_and_hidden_artwork_with_artboard() {
 /// `patterns` param says otherwise (the dialogs' Transform Patterns).
 #[test]
 fn transform_pattern_tiles_is_the_transforms_default() {
-    use vectorcraft_color::Paint;
+    use redrob_vector_color::Paint;
     let mut s = new_doc();
     let tile = square(&mut s, 0.0, 0.0);
     s.execute("select.set", &json!({"ids": [tile.0]})).unwrap();
@@ -737,7 +737,7 @@ fn patterned_square(s: &mut Session) -> NodeId {
 /// The tile transform of the pattern fill of `id`.
 fn pattern_tiles(s: &Session, id: NodeId) -> [f64; 6] {
     match s.doc().unwrap().doc.node(id).unwrap().appearance.fill_paint() {
-        vectorcraft_color::Paint::Pattern { xf, .. } => xf.as_coeffs(),
+        redrob_vector_color::Paint::Pattern { xf, .. } => xf.as_coeffs(),
         p => panic!("not a pattern: {p:?}"),
     }
 }
@@ -787,7 +787,7 @@ fn a_recorded_transform_again_plays_back_with_its_transform_patterns() {
 /// on, they move with it, and `patterns: false` keeps them in place for one call.
 #[test]
 fn align_and_distribute_follow_transform_pattern_tiles() {
-    use vectorcraft_color::Paint;
+    use redrob_vector_color::Paint;
     let mut s = new_doc();
     let plain = square(&mut s, 0.0, 0.0);
     s.execute("select.set", &json!({"ids": [plain.0]})).unwrap();
@@ -831,7 +831,7 @@ fn align_and_distribute_follow_transform_pattern_tiles() {
 /// move with the square or its copy, and `patterns: false` keeps them in place for one call.
 #[test]
 fn art_moved_with_its_artboard_follows_transform_pattern_tiles() {
-    use vectorcraft_color::Paint;
+    use redrob_vector_color::Paint;
     let mut s = new_doc();
     let plain = square(&mut s, 500.0, 0.0);
     s.execute("select.set", &json!({"ids": [plain.0]})).unwrap();
@@ -887,7 +887,7 @@ fn art_moved_with_its_artboard_follows_transform_pattern_tiles() {
 /// `patterns: false` keeps them in place for one call.
 #[test]
 fn whole_objects_moved_with_selected_anchors_follow_transform_pattern_tiles() {
-    use vectorcraft_tools::PointerKind::{Down, Drag, Up};
+    use redrob_vector_tools::PointerKind::{Down, Drag, Up};
     let mut s = new_doc();
     let filled = patterned_square(&mut s);
     let other = square(&mut s, 300.0, 100.0);
@@ -960,8 +960,8 @@ fn select_same_tint_percent() {
     assert_eq!(same(&mut s), 2, "only Ink 40%");
 }
 
-fn style_at(s: &Session, id: NodeId, byte: usize) -> vectorcraft_doc::CharStyle {
-    let Some(vectorcraft_doc::NodeKind::Text(t)) = s.doc().unwrap().doc.node(id).map(|n| &n.kind) else { panic!("not text") };
+fn style_at(s: &Session, id: NodeId, byte: usize) -> redrob_vector_doc::CharStyle {
+    let Some(redrob_vector_doc::NodeKind::Text(t)) = s.doc().unwrap().doc.node(id).map(|n| &n.kind) else { panic!("not text") };
     let mut at = 0;
     for r in &t.runs {
         if byte < at + r.text.len() {
@@ -977,8 +977,8 @@ fn style_at(s: &Session, id: NodeId, byte: usize) -> vectorcraft_doc::CharStyle 
 /// (Alt+arrows; Cmd/Ctrl too: five steps).
 #[test]
 fn type_increments_step_the_type() {
-    use vectorcraft_tools::PointerKind::{Down, Up};
-    use vectorcraft_tools::{Mods, ToolKey};
+    use redrob_vector_tools::PointerKind::{Down, Up};
+    use redrob_vector_tools::{Mods, ToolKey};
     let mut s = new_doc();
     let id = NodeId(s.execute("text.create", &json!({"x": 100, "y": 100, "text": "Hello world", "size": 20})).unwrap()["id"].as_u64().unwrap());
     s.execute("select.set", &json!({"ids": [id.0]})).unwrap();
@@ -1024,14 +1024,14 @@ fn type_increments_step_the_type() {
 /// places starts with placeholder text, selected, so typing replaces it; off, it starts empty.
 #[test]
 fn new_type_starts_with_placeholder_text() {
-    use vectorcraft_tools::PointerKind::{Down, Drag, Up};
+    use redrob_vector_tools::PointerKind::{Down, Drag, Up};
     let v = ViewInfo::default();
     let mut s = new_doc();
     s.select_tool("type", v).unwrap();
     let text = |s: &Session| {
         let st = s.doc().unwrap();
         match &st.doc.node(st.selection.objects[0]).unwrap().kind {
-            vectorcraft_doc::NodeKind::Text(t) => t.plain_text(),
+            redrob_vector_doc::NodeKind::Text(t) => t.plain_text(),
             _ => panic!("not text"),
         }
     };
@@ -1054,7 +1054,7 @@ fn new_type_starts_with_placeholder_text() {
 #[test]
 fn missing_glyph_protection_keeps_glyphs_a_new_font_lacks() {
     let (from, to, c) = ("Source Sans 3", "JetBrains Mono", '\u{180}');
-    let db = vectorcraft_text::FontDb::global();
+    let db = redrob_vector_text::FontDb::global();
     let covers = |f: &str| db.face(f, "Regular").is_some_and(|face| face.covers(c));
     if !covers(from) || covers(to) {
         return; // Installed fonts of these names cover other characters.
@@ -1081,7 +1081,7 @@ fn missing_glyph_protection_keeps_glyphs_a_new_font_lacks() {
 /// anywhere in its bounds selects it.
 #[test]
 fn type_selection_by_path_only_picks_type_on_its_baseline() {
-    use vectorcraft_tools::{PointerEvent, PointerKind};
+    use redrob_vector_tools::{PointerEvent, PointerKind};
     let mut s = new_doc();
     let id = NodeId(s.execute("text.create", &json!({"x": 100, "y": 100, "text": "Hello world", "size": 20})).unwrap()["id"].as_u64().unwrap());
     s.execute("select.none", &json!({})).unwrap();
@@ -1111,7 +1111,7 @@ fn type_selection_by_path_only_picks_type_on_its_baseline() {
 /// characters, and the Eyedropper still samples it there.
 #[test]
 fn type_selection_by_path_only_takes_every_line_and_spares_the_type_tool_and_eyedropper() {
-    use vectorcraft_tools::{PointerEvent, PointerKind};
+    use redrob_vector_tools::{PointerEvent, PointerKind};
     let v = ViewInfo::default();
     let mut s = new_doc();
     let created = s
@@ -1165,27 +1165,27 @@ fn show_font_names_in_english_preference_is_stored() {
 }
 
 /// Preferences › Hyphenation › Exceptions (#394): `prefs.set` pushes the list into the hyphenator
-/// and bumps open documents so type reflows. Parsing of the list is covered in `vectorcraft-text`.
+/// and bumps open documents so type reflows. Parsing of the list is covered in `redrob-vector-text`.
 #[test]
 fn hyphenation_exceptions_preference_reaches_the_hyphenator() {
     struct Clear;
     impl Drop for Clear {
         fn drop(&mut self) {
-            vectorcraft_text::set_hyphenation_exceptions("");
+            redrob_vector_text::set_hyphenation_exceptions("");
         }
     }
     let _clear = Clear;
     let mut s = Session::new();
     set_pref(&mut s, "hyphenationExceptions", json!(""));
-    assert!(vectorcraft_text::hyphenation_exceptions().is_empty());
+    assert!(redrob_vector_text::hyphenation_exceptions().is_empty());
     s.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
     let before = s.doc().unwrap().revision;
     set_pref(&mut s, "hyphenationExceptions", json!("typography, hap-pen"));
     assert_eq!(s.prefs.hyphenation_exceptions, "typography, hap-pen");
-    assert_eq!(vectorcraft_text::hyphenation_exceptions(), "typography, hap-pen");
+    assert_eq!(redrob_vector_text::hyphenation_exceptions(), "typography, hap-pen");
     assert!(s.doc().unwrap().revision > before, "type reflows");
     set_pref(&mut s, "hyphenationExceptions", json!(""));
-    assert!(vectorcraft_text::hyphenation_exceptions().is_empty());
+    assert!(redrob_vector_text::hyphenation_exceptions().is_empty());
 }
 
 /// #1274: View › Snap to Point lands the anchor a selection is grabbed by (a press within a few
@@ -1193,7 +1193,7 @@ fn hyphenation_exceptions_preference_reaches_the_hyphenator() {
 /// beside it.
 #[test]
 fn snap_to_point_lands_the_grabbed_anchor_on_another_anchor() {
-    use vectorcraft_tools::PointerKind::{Down, Drag, Up};
+    use redrob_vector_tools::PointerKind::{Down, Drag, Up};
     let mut s = new_doc();
     let a = square(&mut s, 100.0, 100.0);
     square(&mut s, 300.0, 100.0);
@@ -1213,17 +1213,17 @@ fn snap_to_point_lands_the_grabbed_anchor_on_another_anchor() {
 /// anchor a press would grab, and lands a Pen click within 2 px of an anchor on it.
 #[test]
 fn snap_to_point_cues_anchors_and_lands_pen_clicks_on_them() {
-    use vectorcraft_tools::PointerKind::{Down, Up};
-    use vectorcraft_tools::{Cursor, Mods};
+    use redrob_vector_tools::PointerKind::{Down, Up};
+    use redrob_vector_tools::{Cursor, Mods};
     let mut s = new_doc();
     square(&mut s, 300.0, 100.0);
     s.execute("select.none", &json!({})).unwrap();
     let on = ViewInfo { smart_guides: false, ..ViewInfo::default() };
     let off = ViewInfo { snap_to_point: false, ..on };
     s.select_tool("selection", on).unwrap();
-    let near = vectorcraft_geom::Point::new(302.0, 102.0);
+    let near = redrob_vector_geom::Point::new(302.0, 102.0);
     assert_eq!(s.cursor(near, Mods::default(), on), Cursor::ArrowHollow);
-    assert_eq!(s.cursor(vectorcraft_geom::Point::new(325.0, 125.0), Mods::default(), on), Cursor::Arrow, "away from the anchors");
+    assert_eq!(s.cursor(redrob_vector_geom::Point::new(325.0, 125.0), Mods::default(), on), Cursor::Arrow, "away from the anchors");
     assert_eq!(s.cursor(near, Mods::default(), off), Cursor::Arrow, "Snap to Point off");
     for (v, first) in [(on, (300.0, 100.0)), (off, (301.0, 101.0))] {
         s.select_tool("pen", v).unwrap();

@@ -1,9 +1,9 @@
 //! Synthetic existing preview workload, including proxy creation, command/history and CPU
 //! flattening. Excludes scheduling, egui frames, display conversion, GPU upload/presentation.
-use photocraft_color::{Color, ColorMode, SampleType};
-use photocraft_doc::{Document, LayerContent};
-use photocraft_geom::{Rect, Size};
-use photocraft_ui_egui::{filter_dialog, proxy};
+use redrob_photo_color::{Color, ColorMode, SampleType};
+use redrob_photo_doc::{Document, LayerContent};
+use redrob_photo_geom::{Rect, Size};
+use redrob_photo_ui_egui::{filter_dialog, proxy};
 use serde_json::json;
 use std::time::Instant;
 
@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let start = Instant::now();
                 let result = filter_dialog::preview_document(&doc, Some(id), cmd, &json!({"radius":radius,"amount":amount,"threshold":threshold}), k)
                     .ok_or("preview failed")?;
-                let pixels = photocraft_compose::flatten(&result);
+                let pixels = redrob_photo_compose::flatten(&result);
                 let ms = start.elapsed().as_secs_f64() * 1000.0;
                 // Outside timing: stable hash over the full flattened result, no image file needed.
                 let hash = pixels.px.iter().flatten().fold(0u64, |h, v| h.wrapping_mul(1099511628211).wrapping_add(u64::from(v.to_bits())));

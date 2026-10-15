@@ -29,7 +29,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::mpsc::Sender;
 
 use serde_json::{Value, json};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 
 use crate::VectorcraftApp;
 use crate::canvas::Xf;
@@ -211,7 +211,7 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
         "ui.menu.list" => ok(serde_json::to_value(crate::menus::menu_entries(app)).unwrap_or_default()),
         "ui.contextMenu.list" => ok(serde_json::to_value(crate::menus::context_entries(app)).unwrap_or_default()),
         "ui.tool.select" => wrap(app.run("tool.select", json!({"tool": s("tool").unwrap_or("")}))),
-        "ui.tool.list" => ok(serde_json::to_value(vectorcraft_tools::TOOL_GROUPS).unwrap_or_default()),
+        "ui.tool.list" => ok(serde_json::to_value(redrob_vector_tools::TOOL_GROUPS).unwrap_or_default()),
         "ui.pointer" => {
             let Some(events) = p.get("events").and_then(Value::as_array) else { return err("missing `events`") };
             let base_mods: Mods = p.get("mods").and_then(|m| serde_json::from_value(m.clone()).ok()).unwrap_or_default();
@@ -234,7 +234,7 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
                         None => return err("no canvas yet"),
                     }
                 } else {
-                    vectorcraft_geom::Point::new(x, y)
+                    redrob_vector_geom::Point::new(x, y)
                 };
                 let mods = e.get("mods").and_then(|m| serde_json::from_value(m.clone()).ok()).unwrap_or(base_mods);
                 crate::canvas::dispatch(app, &PointerEvent { kind, pos, mods, pressure: PointerEvent::json_pressure(e) }, view);
@@ -403,7 +403,7 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
         }
         "ui.screenshot" => {
             // Refused now rather than once the frame comes (it is checked again then).
-            if let Some(Err(e)) = s("path").map(vectorcraft_engine::file_access::check_write) {
+            if let Some(Err(e)) = s("path").map(redrob_vector_engine::file_access::check_write) {
                 return err(e);
             }
             if p.get("focus").and_then(Value::as_bool).unwrap_or(true) {
@@ -419,7 +419,7 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
             let index = p.get("artboard").and_then(Value::as_u64).map_or(Some(0), |i| usize::try_from(i).ok());
             let Some(r) = index.and_then(|i| doc.artboards.get(i)).map(|a| a.rect) else { return err("no such artboard") };
             let scale = p.get("scale").and_then(Value::as_f64).unwrap_or(1.0);
-            if let Err(e) = vectorcraft_render::raster_size(r, scale) {
+            if let Err(e) = redrob_vector_render::raster_size(r, scale) {
                 return err(e);
             }
             let img = app.canvas.renderer.render_region(&doc, r, scale, true);
@@ -456,7 +456,7 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context, req: &ControlReques
 /// `result` with the PNG as `pngBase64` when there is one.
 fn with_data(mut result: Value, png: Option<&[u8]>) -> Value {
     if let Some(png) = png {
-        result["pngBase64"] = json!(vectorcraft_format::base64_encode(png));
+        result["pngBase64"] = json!(redrob_vector_format::base64_encode(png));
     }
     result
 }
@@ -469,7 +469,7 @@ pub fn save_screenshot(app: &mut VectorcraftApp, image: &egui::ColorImage, path:
         return json!({"ok": true, "result": {"width": w, "height": h}});
     }
     let rgba: Vec<u8> = image.pixels.iter().flat_map(|c| c.to_array()).collect();
-    let img = vectorcraft_render::Rendered { width: w as u32, height: h as u32, pixels: rgba };
+    let img = redrob_vector_render::Rendered { width: w as u32, height: h as u32, pixels: rgba };
     let png = match img.to_png() {
         Ok(png) => png,
         Err(e) => return json!({"ok": false, "error": e}),
@@ -490,7 +490,7 @@ pub fn save_screenshot(app: &mut VectorcraftApp, image: &egui::ColorImage, path:
 #[cfg(test)]
 mod tests {
     use serde_json::{Value, json};
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::{ControlRequest, Outcome, handle};
     use crate::{Services, VectorcraftApp};

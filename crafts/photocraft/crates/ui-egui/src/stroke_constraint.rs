@@ -114,7 +114,7 @@ pub fn draw_line_preview(
     for (w, c) in [(2.5, Color32::from_black_alpha(120)), (1.0, Color32::from_white_alpha(230))] {
         painter.line_segment([a, pointer], Stroke::new(w, c));
     }
-    use photocraft_engine::prefs::PaintingCursor;
+    use redrob_photo_engine::prefs::PaintingCursor;
     if matches!(app.session.prefs().cursors.painting, PaintingCursor::Standard | PaintingCursor::Precise) {
         let r = (app.session.tools.brush.size / 2.0 * xf.zoom).max(1.0);
         painter.circle_stroke(pointer, r + 0.5, Stroke::new(1.0, Color32::from_black_alpha(140)));
@@ -164,7 +164,7 @@ mod tests {
     }
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 120, "height": 120, "background": "transparent"})).unwrap();
         app.run("tools.setBrush", json!({"brush": {"size": 4, "hardness": 1.0}})).unwrap();
         app.session.tools.brush.smoothing.amount = 0.0;

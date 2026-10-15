@@ -20,7 +20,7 @@ pub fn prefs_path_for(name: &str, lower: &str) -> Option<PathBuf> {
 /// `VECTORCRAFT_NO_PREFS` is set, as the Swatches and Graphic Styles folders are.
 pub fn install_fonts() {
     if let Some(dir) = prefs_path_for("VectorCraft", "vectorcraft").and_then(|p| Some(p.parent()?.join("Fonts"))) {
-        vectorcraft_text::set_app_font_dir(dir);
+        redrob_vector_text::set_app_font_dir(dir);
     }
 }
 
@@ -33,7 +33,7 @@ mod tests {
         install_fonts();
         let fonts = prefs_path_for("VectorCraft", "vectorcraft").and_then(|p| Some(p.parent()?.join("Fonts")));
         assert!(fonts.is_some(), "a home folder to keep the settings in");
-        assert_eq!(vectorcraft_text::app_font_dir().map(std::path::Path::to_path_buf), fonts);
-        assert!(vectorcraft_text::system_font_dirs().contains(&fonts.unwrap_or_default()));
+        assert_eq!(redrob_vector_text::app_font_dir().map(std::path::Path::to_path_buf), fonts);
+        assert!(redrob_vector_text::system_font_dirs().contains(&fonts.unwrap_or_default()));
     }
 }

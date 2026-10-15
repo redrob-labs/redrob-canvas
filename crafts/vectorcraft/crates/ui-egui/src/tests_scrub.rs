@@ -5,8 +5,8 @@ use std::cell::Cell;
 
 use egui::{CursorIcon, Event, Key, Modifiers, PointerButton, Pos2, Rect, vec2};
 use serde_json::json;
-use vectorcraft_doc::Unit;
-use vectorcraft_engine::Session;
+use redrob_vector_doc::Unit;
+use redrob_vector_engine::Session;
 
 use crate::{VectorcraftApp, scrub, widgets};
 

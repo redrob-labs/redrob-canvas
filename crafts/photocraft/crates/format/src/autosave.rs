@@ -17,7 +17,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use photocraft_doc::Document;
+use redrob_photo_doc::Document;
 use serde::{Deserialize, Serialize};
 
 use crate::store::write_atomic;
@@ -428,7 +428,7 @@ mod tests {
             SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)
         ));
         let doc =
-            Arc::new(Document::new("Kept", photocraft_doc::Size { width: 4, height: 4 }, photocraft_color::ColorMode::Rgb, photocraft_color::SampleType::U8));
+            Arc::new(Document::new("Kept", redrob_photo_doc::Size { width: 4, height: 4 }, redrob_photo_color::ColorMode::Rgb, redrob_photo_color::SampleType::U8));
         let saver = Autosaver::new(&dir, "kept");
         saver.request(doc.clone(), 1, None, SaveOptions::default());
         assert!(saver.flush().is_some_and(|r| r.is_ok()));
@@ -470,7 +470,7 @@ mod tests {
             SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)
         ));
         let doc =
-            Arc::new(Document::new("Lost", photocraft_doc::Size { width: 4, height: 4 }, photocraft_color::ColorMode::Rgb, photocraft_color::SampleType::U8));
+            Arc::new(Document::new("Lost", redrob_photo_doc::Size { width: 4, height: 4 }, redrob_photo_color::ColorMode::Rgb, redrob_photo_color::SampleType::U8));
         let saver = Autosaver::new(&dir, "first");
         saver.request(doc.clone(), 1, None, SaveOptions::default());
         assert!(saver.flush().is_some_and(|r| r.is_ok()));

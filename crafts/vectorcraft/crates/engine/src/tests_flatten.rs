@@ -2,10 +2,10 @@
 //! complex regions, the options and presets, undo and the look of the result.
 
 use serde_json::{Value, json};
-use vectorcraft_color::{BlendMode, Color, Paint};
-use vectorcraft_doc::{AppearanceItem, Node, NodeKind};
-use vectorcraft_geom::{BezPath, Point, Rect, Shape};
-use vectorcraft_render::{Rendered, Renderer};
+use redrob_vector_color::{BlendMode, Color, Paint};
+use redrob_vector_doc::{AppearanceItem, Node, NodeKind};
+use redrob_vector_geom::{BezPath, Point, Rect, Shape};
+use redrob_vector_render::{Rendered, Renderer};
 
 use super::*;
 
@@ -159,7 +159,7 @@ fn every_blend_mode_flattens_to_its_pixels() {
             // The overlap is the reference formula's colour.
             let [r, g, b] = [0xcc, 0x66, 0x33].map(|v| v as f32 / 255.0);
             let src = [0x4d, 0x99, 0xe6].map(|v| v as f32 / 255.0);
-            let want = vectorcraft_color::blend::composite(mode, [r, g, b, 1.0], [src[0], src[1], src[2], *opacity as f32 / 100.0]);
+            let want = redrob_vector_color::blend::composite(mode, [r, g, b, 1.0], [src[0], src[1], src[2], *opacity as f32 / 100.0]);
             let overlap = regions(&s, ids[0]).into_iter().find(|r| outline(r).winding(Point::new(85.0, 85.0)) != 0).unwrap();
             let got = shown(&overlap);
             assert!((0..3).all(|i| (want[i] * 255.0 - got[i] as f32).abs() <= 0.5 + 1e-3), "{mode:?} at {opacity}%: {got:?} vs {want:?}");

@@ -11,7 +11,7 @@ const PREFIX: &str = "plugin.filter.";
 
 /// Inserts the installed plug-ins into Filter › Plug-ins, above "Install Plug-in…".
 pub fn insert_menu_items(app: &PhotocraftApp, items: &mut Vec<MenuItem>) {
-    let plugins = photocraft_plugins::registry::list();
+    let plugins = redrob_photo_plugins::registry::list();
     let Some(at) = items.iter().position(|i| i.id == "plugin.install") else { return };
     // `MenuItem::path` is the untranslated English path from the command's engine spec: the menu
     // renderer groups rows by it and translates only at display time. Translating it here left the
@@ -46,7 +46,7 @@ pub fn insert_menu_items(app: &PhotocraftApp, items: &mut Vec<MenuItem>) {
 /// Enabled state of a plug-in menu item (`None` for other ids).
 pub fn is_enabled(app: &PhotocraftApp, id: &str) -> Option<bool> {
     let pid = id.strip_prefix(PREFIX)?;
-    Some(photocraft_plugins::registry::get(pid).is_some() && app.session.is_enabled("plugin.run"))
+    Some(redrob_photo_plugins::registry::get(pid).is_some() && app.session.is_enabled("plugin.run"))
 }
 
 /// Runs a plug-in menu item: straight away when it has no parameters (or params were given),
@@ -57,7 +57,7 @@ pub fn menu(app: &mut PhotocraftApp, id: &str, params: &Value) -> Option<Result<
         return Some(Ok(json!({"dialog": crate::filter_dialog::open(app, "plugin.install")})));
     }
     let pid = id.strip_prefix(PREFIX)?;
-    let Some(plugin) = photocraft_plugins::registry::get(pid) else { return Some(Err(format!("no plug-in {pid:?} is installed"))) };
+    let Some(plugin) = redrob_photo_plugins::registry::get(pid) else { return Some(Err(format!("no plug-in {pid:?} is installed"))) };
     let m = plugin.manifest();
     if m.params.is_empty() || given {
         let mut p = params.as_object().cloned().unwrap_or_default();
@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn installed_plugins_appear_under_filter_plugins_and_run() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../plugins/tests/fixtures/invert.wasm");
         app.run("plugin.install", json!({"path": path})).unwrap();
@@ -107,7 +107,7 @@ mod tests {
         assert_ne!(crate::i18n::tr(ja, "Filter"), "Filter");
         assert_ne!(crate::i18n::tr(ja, "Plug-ins"), "Plug-ins");
         let _lang = crate::i18n::language_scope(ja);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../plugins/tests/fixtures/invert.wasm");
         app.run("plugin.install", json!({"path": path})).unwrap();
         let items = crate::menus::menu_items(&app);

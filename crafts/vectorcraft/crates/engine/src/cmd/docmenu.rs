@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{CharStyle, Guide, Node, NodeId, NodeKind, SavedSelection, TextKind};
-use vectorcraft_geom::Vec2;
+use redrob_vector_doc::{CharStyle, Guide, Node, NodeId, NodeKind, SavedSelection, TextKind};
+use redrob_vector_geom::Vec2;
 
 use super::edit::selected_roots;
 use super::pathops::Beside;
@@ -455,7 +455,7 @@ fn make_guides(s: &mut Session, _: &Value) -> Result<Value> {
     Ok(json!({ "count": n }))
 }
 
-fn guide_paths(d: &vectorcraft_doc::Document) -> Vec<NodeId> {
+fn guide_paths(d: &redrob_vector_doc::Document) -> Vec<NodeId> {
     let mut v = vec![];
     d.walk(|n| {
         if matches!(n.kind, NodeKind::Path { guide: true, .. }) {

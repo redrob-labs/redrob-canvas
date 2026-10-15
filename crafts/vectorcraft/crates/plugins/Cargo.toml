@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-plugins"
+name = "redrob-vector-plugins"
 description = "Sandboxed WebAssembly plug-ins for VectorCraft: a resource-limited wasmi host for object filters and live effects"
 version.workspace = true
 edition.workspace = true
@@ -9,9 +9,9 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-vectorcraft-geom = { workspace = true }
-vectorcraft-color = { workspace = true }
-vectorcraft-doc = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

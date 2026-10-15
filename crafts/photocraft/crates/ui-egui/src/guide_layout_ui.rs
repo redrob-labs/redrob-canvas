@@ -1,7 +1,7 @@
 //! Photoshop-style guide layout dialog. Its preview is a pure guide overlay, never an edit.
 
 use egui::{Color32, Stroke};
-use photocraft_doc::{Document, Guides};
+use redrob_photo_doc::{Document, Guides};
 use serde_json::{Map, Value, json};
 
 use crate::{PhotocraftApp, theme::Tokens, widgets};
@@ -11,13 +11,13 @@ const MARK: &str = "__guideLayout";
 
 /// A `"#rrggbb"` colour as drawn.
 fn rgb(hex: &str) -> Option<Color32> {
-    photocraft_engine::prefs::parse_hex(hex).map(|[r, g, b]| Color32::from_rgb(r, g, b))
+    redrob_photo_engine::prefs::parse_hex(hex).map(|[r, g, b]| Color32::from_rgb(r, g, b))
 }
 
 /// The Color list: New Guide's colours (`GUIDE_COLORS`) by their `"#rrggbb"`, then `current` as
 /// Custom when it's none of them.
 fn color_options(current: &str) -> Vec<(String, &'static str)> {
-    let mut colors: Vec<(String, &'static str)> = photocraft_engine::edit_cmds::GUIDE_COLORS
+    let mut colors: Vec<(String, &'static str)> = redrob_photo_engine::edit_cmds::GUIDE_COLORS
         .iter()
         .map(|(name, [r, g, b])| (format!("#{r:02x}{g:02x}{b:02x}"), crate::new_guide_ui::color_label(name)))
         .collect();
@@ -74,7 +74,7 @@ pub fn open(app: &mut PhotocraftApp) -> u64 {
     f.insert("__preview".into(), json!(true));
     f.insert("color".into(), json!(app.session.prefs().guides_grid_and_slices.guide_color));
     f.entry("target").or_insert_with(|| json!("document"));
-    if f.get("target").and_then(Value::as_str) == Some("selectedArtboards") && photocraft_engine::guide_layout::selected_artboards(&app.session).is_empty() {
+    if f.get("target").and_then(Value::as_str) == Some("selectedArtboards") && redrob_photo_engine::guide_layout::selected_artboards(&app.session).is_empty() {
         f.insert("target".into(), json!("document"));
     }
     f.entry("__preset").or_insert_with(|| json!("custom"));
@@ -141,7 +141,7 @@ fn calculate(app: &PhotocraftApp, f: &Map<String, Value>) -> Result<Guides, Stri
     {
         return Ok(guides);
     }
-    photocraft_engine::guide_layout::calculate(&app.session, &params).map(|l| l.guides).map_err(|e| e.to_string())
+    redrob_photo_engine::guide_layout::calculate(&app.session, &params).map(|l| l.guides).map_err(|e| e.to_string())
 }
 
 pub fn validate(app: &PhotocraftApp, f: &Map<String, Value>) -> Result<(), String> {
@@ -298,7 +298,7 @@ fn main_fields(app: &PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Value
         ui.label(tl!("Target:"));
         let mut target = f.get("target").and_then(Value::as_str).unwrap_or("document").to_string();
         let mut options = vec![("document".to_string(), "Document")];
-        if !photocraft_engine::guide_layout::selected_artboards(&app.session).is_empty() {
+        if !redrob_photo_engine::guide_layout::selected_artboards(&app.session).is_empty() {
             options.push(("selectedArtboards".into(), "Selected Artboards"));
         }
         if widgets::dropdown(ui, "guide-target", &mut target, &options, 222.0) {

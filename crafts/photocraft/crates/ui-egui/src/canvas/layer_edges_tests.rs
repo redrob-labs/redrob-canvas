@@ -6,7 +6,7 @@ use serde_json::json;
 const ORIGINAL: DRect = DRect::new(100, 100, 300, 260);
 
 fn app(depth: u32) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 600, "height": 400, "depth": depth, "background": "transparent"})).unwrap();
     app.run("select.rect", json!({"x": 100, "y": 100, "width": 200, "height": 160})).unwrap();
     app.run("edit.fill", json!({"color": "#e05030"})).unwrap();

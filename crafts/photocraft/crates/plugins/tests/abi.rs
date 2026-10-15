@@ -3,10 +3,10 @@
 
 use std::time::{Duration, Instant};
 
-use photocraft_color::{PixelFormat, SampleType};
-use photocraft_geom::Rect;
-use photocraft_plugins::{Error, Limits, Plugin};
-use photocraft_raster::Surface;
+use redrob_photo_color::{PixelFormat, SampleType};
+use redrob_photo_geom::Rect;
+use redrob_photo_plugins::{Error, Limits, Plugin};
+use redrob_photo_raster::Surface;
 use serde_json::json;
 
 const INVERT: &[u8] = include_bytes!("fixtures/invert.wasm");
@@ -70,7 +70,7 @@ fn example_invert_loads_and_reports_its_manifest() {
     let m = p.manifest();
     assert_eq!(m.id, "org.photocraft.example.invert");
     assert_eq!(m.name, "Invert (WebAssembly)");
-    assert_eq!(m.kind, photocraft_plugins::Kind::Filter);
+    assert_eq!(m.kind, redrob_photo_plugins::Kind::Filter);
     assert!(m.params.is_empty());
     assert!(p.size() < 4096, "the example stays tiny: {} bytes", p.size());
 }
@@ -291,15 +291,15 @@ fn memory_cap_limits_bands() {
 fn registry_install_list_remove() {
     // Its own id: the registry is process-wide and tests run in parallel.
     let id = "test.registry";
-    let p = photocraft_plugins::registry::install_bytes(&module(r#"{"id":"test.registry","name":"R","kind":"filter"}"#, 1, "(i32.const 0)", "")).unwrap();
+    let p = redrob_photo_plugins::registry::install_bytes(&module(r#"{"id":"test.registry","name":"R","kind":"filter"}"#, 1, "(i32.const 0)", "")).unwrap();
     assert_eq!(p.id(), id);
-    let rev = photocraft_plugins::registry::revision();
-    assert!(photocraft_plugins::registry::list().iter().any(|p| p.id() == id));
-    assert!(photocraft_plugins::registry::get(id).is_some());
-    assert!(photocraft_plugins::registry::remove(id));
-    assert!(!photocraft_plugins::registry::remove(id));
-    assert!(photocraft_plugins::registry::get(id).is_none());
-    assert!(photocraft_plugins::registry::revision() > rev);
+    let rev = redrob_photo_plugins::registry::revision();
+    assert!(redrob_photo_plugins::registry::list().iter().any(|p| p.id() == id));
+    assert!(redrob_photo_plugins::registry::get(id).is_some());
+    assert!(redrob_photo_plugins::registry::remove(id));
+    assert!(!redrob_photo_plugins::registry::remove(id));
+    assert!(redrob_photo_plugins::registry::get(id).is_none());
+    assert!(redrob_photo_plugins::registry::revision() > rev);
 }
 
 #[test]
@@ -309,11 +309,11 @@ fn folder_loading_skips_bad_files() {
     std::fs::write(dir.join("a-invert.wasm"), INVERT).unwrap();
     std::fs::write(dir.join("b-broken.wasm"), b"\0asm junk").unwrap();
     std::fs::write(dir.join("notes.txt"), b"ignored").unwrap();
-    let r = photocraft_plugins::registry::load_folder(&dir).unwrap();
+    let r = redrob_photo_plugins::registry::load_folder(&dir).unwrap();
     assert_eq!(r.loaded, ["org.photocraft.example.invert"]);
     assert_eq!(r.failed.len(), 1);
     assert!(r.failed[0].0.ends_with("b-broken.wasm"));
-    assert!(photocraft_plugins::registry::load_folder(&dir.join("missing")).is_err());
-    assert!(photocraft_plugins::registry::load_file(&dir, Limits::default()).is_err(), "a directory is not a module");
+    assert!(redrob_photo_plugins::registry::load_folder(&dir.join("missing")).is_err());
+    assert!(redrob_photo_plugins::registry::load_file(&dir, Limits::default()).is_err(), "a directory is not a module");
     std::fs::remove_dir_all(&dir).ok();
 }

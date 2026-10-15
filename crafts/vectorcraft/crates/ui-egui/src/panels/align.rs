@@ -118,7 +118,7 @@ fn has_key(app: &VectorcraftApp) -> bool {
 }
 
 /// The topmost selected object, the last in paint order.
-fn topmost(app: &VectorcraftApp) -> Option<vectorcraft_doc::NodeId> {
+fn topmost(app: &VectorcraftApp) -> Option<redrob_vector_doc::NodeId> {
     app.session.active().and_then(|st| st.selection.in_paint_order(&st.doc).last().copied())
 }
 
@@ -261,7 +261,7 @@ mod tests {
     /// object to the artboard.
     #[test]
     fn a_lone_object_aligns_to_the_artboard() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let a = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 10, "height": 10})).unwrap()["id"].clone();
         let b = app.run("shape.rectangle", json!({"x": 80, "y": 50, "width": 30, "height": 30})).unwrap()["id"].clone();
@@ -269,7 +269,7 @@ mod tests {
         app.run("select.set", json!({"ids": [a, b]})).unwrap();
         app.run("select.key", json!({"id": b})).unwrap();
         app.run("select.toggle", json!({"id": a})).unwrap();
-        let id = vectorcraft_doc::NodeId(b.as_u64().unwrap());
+        let id = redrob_vector_doc::NodeId(b.as_u64().unwrap());
         let bounds = |app: &VectorcraftApp| app.session.active().unwrap().doc.node(id).unwrap().geometric_bounds().unwrap();
         // `align_buttons` (the Control bar and the Properties panel): one frame finds the first
         // button, and the next clicks Horizontal Align Right, the third.
@@ -307,7 +307,7 @@ mod tests {
     /// choosing Align to Selection lets the key go.
     #[test]
     fn a_key_object_makes_align_align_to_it() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let a = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 10, "height": 10})).unwrap()["id"].clone();
         let b = app.run("shape.rectangle", json!({"x": 80, "y": 50, "width": 30, "height": 30})).unwrap()["id"].clone();
@@ -322,7 +322,7 @@ mod tests {
     /// Two rectangles, the back one at x 10 and the front one at x 80, selected front first →
     /// (the app, the back one's id, the front one's id).
     fn back_and_front() -> (VectorcraftApp, Value, Value) {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let back = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 10, "height": 10})).unwrap()["id"].clone();
         let front = app.run("shape.rectangle", json!({"x": 80, "y": 50, "width": 30, "height": 30})).unwrap()["id"].clone();
@@ -345,7 +345,7 @@ mod tests {
 
     /// The left edge of object `id`.
     fn left_edge(app: &VectorcraftApp, id: &Value) -> f64 {
-        let id = vectorcraft_doc::NodeId(id.as_u64().unwrap());
+        let id = redrob_vector_doc::NodeId(id.as_u64().unwrap());
         app.session.active().unwrap().doc.node(id).unwrap().geometric_bounds().unwrap().x0
     }
 
@@ -462,7 +462,7 @@ mod tests {
     /// #789: the Control bar's and the Properties panel's align buttons follow Align To too.
     #[test]
     fn the_other_align_buttons_align_to_the_align_to_choice() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let a = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 10, "height": 10})).unwrap()["id"].clone();
         let b = app.run("shape.rectangle", json!({"x": 80, "y": 50, "width": 30, "height": 30})).unwrap()["id"].clone();
@@ -486,7 +486,7 @@ mod tests {
         frame(&mut app, vec![egui::Event::PointerMoved(right), press(true)]);
         frame(&mut app, vec![press(false)]);
         let st = app.session.active().unwrap();
-        let x1 = |id: &serde_json::Value| st.doc.bounds_of(&[vectorcraft_doc::NodeId(id.as_u64().unwrap())], false).unwrap().x1;
+        let x1 = |id: &serde_json::Value| st.doc.bounds_of(&[redrob_vector_doc::NodeId(id.as_u64().unwrap())], false).unwrap().x1;
         assert_eq!((x1(&a), x1(&b)), (200.0, 200.0), "both to the artboard's right edge");
     }
 
@@ -502,13 +502,13 @@ mod tests {
     /// artboard too.
     #[test]
     fn object_align_follows_align_to() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200, "artboards": 2})).unwrap();
         let boards: Vec<_> = app.session.active().unwrap().doc.artboards.iter().map(|a| a.rect).collect();
         let a = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 10, "height": 10})).unwrap()["id"].clone();
         let b = app.run("shape.rectangle", json!({"x": 80, "y": 50, "width": 30, "height": 30})).unwrap()["id"].clone();
         let bounds = |app: &VectorcraftApp, id: &Value| {
-            app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id.as_u64().unwrap())).unwrap().geometric_bounds().unwrap()
+            app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id.as_u64().unwrap())).unwrap().geometric_bounds().unwrap()
         };
         app.run("select.set", json!({"ids": [b]})).unwrap();
         object_align(&mut app, "Horizontal Align Left");
@@ -524,11 +524,11 @@ mod tests {
     /// one path align to their own bounds with Align to Selection and with Align to Artboard chosen.
     #[test]
     fn object_align_aligns_anchor_points_to_each_other() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let id = app.run("path.create", json!({"d": "M100 40 L200 60 L150 160 Z"})).unwrap()["id"].as_u64().unwrap();
         let anchors = |app: &VectorcraftApp| -> Vec<(f64, f64)> {
-            let node = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap();
+            let node = app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap();
             node.path_data().unwrap().anchors().map(|(_, _, a)| (a.p.x, a.p.y)).collect()
         };
         for to in [AlignTo::Selection, AlignTo::Artboard] {
@@ -546,11 +546,11 @@ mod tests {
     /// the stored choice. With Align to Artboard chosen the points go to the artboard.
     #[test]
     fn anchor_points_of_one_path_align_to_each_other() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let id = app.run("path.create", json!({"d": "M100 40 L200 60 L150 160 Z"})).unwrap()["id"].as_u64().unwrap();
         let xs = |app: &VectorcraftApp| -> Vec<f64> {
-            let node = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap();
+            let node = app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap();
             node.path_data().unwrap().anchors().map(|(_, _, a)| a.p.x).collect()
         };
         app.run("select.anchors", json!({"id": id, "anchors": [[0, 0], [0, 1]], "mode": "set"})).unwrap();
@@ -568,7 +568,7 @@ mod tests {
     /// #1636: the Distribute buttons work on the anchor points of one path (one object selected).
     #[test]
     fn distribute_buttons_space_the_anchor_points_of_one_path() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let id = app.run("path.create", json!({"d": "M10 10 L20 50 L100 30"})).unwrap()["id"].as_u64().unwrap();
         app.run("select.anchors", json!({"id": id, "anchors": [[0, 0], [0, 1], [0, 2]], "mode": "set"})).unwrap();
@@ -583,7 +583,7 @@ mod tests {
         assert_eq!(row.len(), 6, "the Distribute row");
         let hit = row[4].center();
         click(&ctx, &mut app, hit, show);
-        let node = app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap();
+        let node = app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap();
         let xs: Vec<f64> = node.path_data().unwrap().anchors().map(|(_, _, a)| a.p.x).collect();
         assert_eq!(xs, [10.0, 55.0, 100.0], "{}", app.ui.status);
     }

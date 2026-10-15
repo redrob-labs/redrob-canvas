@@ -10,8 +10,8 @@
 //! `object.slice.divide`.
 
 use serde_json::{Map, Value, json};
-use vectorcraft_color::Color;
-use vectorcraft_doc::{CellAlign, CellVAlign, SliceKind};
+use redrob_vector_color::Color;
+use redrob_vector_doc::{CellAlign, CellVAlign, SliceKind};
 
 use super::{DialogSpec, form, run_and_close};
 use crate::state::Dialog;
@@ -194,12 +194,12 @@ fn divide_confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
-        app.session.paint.stroke = vectorcraft_color::Paint::None;
+        app.session.paint.stroke = redrob_vector_color::Paint::None;
         let id = app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 60, "height": 40})).unwrap()["id"].as_u64().unwrap();
         app.run("object.slice.make", json!({"ids": [id]})).unwrap();
         app

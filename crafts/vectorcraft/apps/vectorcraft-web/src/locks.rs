@@ -1,5 +1,5 @@
 //! The browser's Web Locks (`navigator.locks`), which tell Data Recovery whether another tab still
-//! runs ([`vectorcraft_engine::cmd::recovery::RecoveryStore::announce`]). A tab holds a lock named
+//! runs ([`redrob_vector_engine::cmd::recovery::RecoveryStore::announce`]). A tab holds a lock named
 //! after its recovery area for as long as it lives; the browser releases it only when the tab is
 //! gone (closed, crashed or reloaded), not while its timers are paused in the background, which a
 //! heartbeat can't tell apart.
@@ -13,7 +13,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex};
 
 use js_sys::{Function, Promise, Reflect};
-use vectorcraft_engine::cmd::recovery::Hold;
+use redrob_vector_engine::cmd::recovery::Hold;
 use wasm_bindgen::JsCast as _;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::closure::Closure;

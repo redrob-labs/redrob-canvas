@@ -2,8 +2,8 @@
 //! Transform box, text being edited with a Type tool, the pasteboard (outside the image) and a guide.
 
 use egui::Context;
-use photocraft_doc::LayerContent;
-use photocraft_engine::prefs::{self, CanvasColor};
+use redrob_photo_doc::LayerContent;
+use redrob_photo_engine::prefs::{self, CanvasColor};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -343,13 +343,13 @@ pub(crate) fn mode_checked(app: &PhotocraftApp, menu: &CanvasToolMenu, command: 
 /// The type edit menu's checkmarks: the faux styles at the selection, the layer's orientation and
 /// anti-aliasing.
 fn type_checked(app: &PhotocraftApp, command: &str) -> bool {
-    use photocraft_doc::text::Orientation;
+    use redrob_photo_doc::text::Orientation;
     let Some(t) = crate::type_tool::target_text(app) else { return false };
     match command {
         FAUX_BOLD | FAUX_ITALIC => crate::type_tool::styles_at(app).is_some_and(|(c, _)| if command == FAUX_BOLD { c.faux_bold } else { c.faux_italic }),
         "type.orientation.horizontal" => t.orientation == Orientation::Horizontal,
         "type.orientation.vertical" => t.orientation == Orientation::Vertical,
-        c => c.strip_prefix("type.antiAlias.") == Some(photocraft_engine::type_extra_cmds::aa_name(t.antialias)),
+        c => c.strip_prefix("type.antiAlias.") == Some(redrob_photo_engine::type_extra_cmds::aa_name(t.antialias)),
     }
 }
 
@@ -364,7 +364,7 @@ fn spelling_at(app: &mut PhotocraftApp, doc: [f64; 2]) -> Option<Spelling> {
     if !doc.iter().all(|v| v.is_finite()) {
         return None;
     }
-    let at = crate::type_tool::offset_at(app, photocraft_doc::LayerId(layer), doc[0], doc[1]);
+    let at = crate::type_tool::offset_at(app, redrob_photo_doc::LayerId(layer), doc[0], doc[1]);
     let found = app.session.execute("edit.checkSpelling", json!({"action": "list", "layer": layer, "suggestions": MAX_SUGGESTIONS})).ok()?;
     let hit = found["misspellings"].as_array()?.iter().find(|m| {
         let (a, b) = (m["start"].as_u64().unwrap_or(u64::MAX) as usize, m["end"].as_u64().unwrap_or(0) as usize);
@@ -895,7 +895,7 @@ mod tests {
     use egui_kittest::{Harness, kittest::Queryable};
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         app
     }
@@ -971,8 +971,8 @@ mod tests {
         id
     }
 
-    fn text_of(app: &PhotocraftApp, id: u64) -> Option<photocraft_doc::TextLayer> {
-        match &app.session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().content {
+    fn text_of(app: &PhotocraftApp, id: u64) -> Option<redrob_photo_doc::TextLayer> {
+        match &app.session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content {
             LayerContent::Text(t) => Some(t.clone()),
             _ => None,
         }
@@ -1231,7 +1231,7 @@ mod tests {
         let app = app();
         let items = crate::menus::menu_items(&app);
         for (label, id) in [SELECTION_MENU, NO_SELECTION_MENU, PEN_MENU, TRANSFORM_MENU].into_iter().flatten().flatten() {
-            assert!(items.iter().any(|i| i.id == *id) || photocraft_engine::commands::find(id).is_some(), "{label}: unknown command {id}");
+            assert!(items.iter().any(|i| i.id == *id) || redrob_photo_engine::commands::find(id).is_some(), "{label}: unknown command {id}");
         }
     }
 
@@ -1322,7 +1322,7 @@ mod tests {
     }
 
     fn zoom_app(w: u32, h: u32) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": w, "height": h})).unwrap();
         app
     }
@@ -1429,7 +1429,7 @@ mod tests {
         choose(&mut app, &Context::default(), "select.all");
         assert_eq!(app.session.journal.len(), before, "the view menu cannot run another menu's row");
         // With no document every row is greyed out and choosing one does nothing.
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         assert!(open_view(&mut app, &Context::default(), Tool::Hand, [1.0, 1.0], [1.0, 1.0]));
         let menu = app.ui.canvas_tool_menu.clone().unwrap();
         for (_, id) in VIEW_MENU.iter().flatten() {

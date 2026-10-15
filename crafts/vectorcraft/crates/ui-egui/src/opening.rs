@@ -8,8 +8,8 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, TryRecvError, channel};
 
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::fileio::{self, ReadFile};
-use vectorcraft_engine::file_access::ScopeHandle;
+use redrob_vector_engine::cmd::fileio::{self, ReadFile};
+use redrob_vector_engine::file_access::ScopeHandle;
 
 use crate::VectorcraftApp;
 
@@ -48,7 +48,7 @@ pub fn start(app: &mut VectorcraftApp, path: &str, bytes: Vec<u8>) -> Result<Val
     let spawned = std::thread::Builder::new().name("vectorcraft-open".into()).spawn(move || {
         let r = scope
             .run(|| {
-                vectorcraft_engine::guard::catch_panic(|| {
+                redrob_vector_engine::guard::catch_panic(|| {
                     fileio::read_for_open(&name, &file, Some(name.clone()), &Value::Null, update_links).map_err(|e| e.to_string())
                 })
             })
@@ -109,7 +109,7 @@ fn finish(app: &mut VectorcraftApp, path: &str, r: Result<ReadFile, String>) {
 
 #[cfg(test)]
 mod tests {
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
     use crate::Services;
@@ -122,7 +122,7 @@ mod tests {
         app.run("file.new", json!({"width": 100, "height": 80})).unwrap();
         let (first, before) = (app.session.doc().unwrap().uid, app.session.documents().len());
         app.ui.dialog = Some(crate::state::Dialog::new(crate::dialogs::save_options::KIND, json!({"path": "/art/First.vectorcraft"})));
-        start(&mut app, "/art/Second.vectorcraft", vectorcraft_format::save(&vectorcraft_doc::Document::new(120.0, 80.0), false)).unwrap();
+        start(&mut app, "/art/Second.vectorcraft", redrob_vector_format::save(&redrob_vector_doc::Document::new(120.0, 80.0), false)).unwrap();
         let t0 = std::time::Instant::now();
         while t0.elapsed().as_millis() < 400 {
             poll(&mut app);
@@ -143,9 +143,9 @@ mod tests {
     #[test]
     fn a_file_read_off_the_ui_thread_opens_as_one_read_at_once() {
         let mut app = VectorcraftApp::new(Session::new(), Services::default());
-        let mut d = vectorcraft_doc::Document::new(120.0, 80.0);
+        let mut d = redrob_vector_doc::Document::new(120.0, 80.0);
         d.title = "Poster".into();
-        let bytes = vectorcraft_format::save(&d, false);
+        let bytes = redrob_vector_format::save(&d, false);
         let before = app.session.documents().len();
         let r = start(&mut app, "/art/Poster.vectorcraft", bytes).unwrap();
         assert_eq!(r["background"], true);

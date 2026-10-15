@@ -6,7 +6,7 @@
 use egui::{Pos2, Rect, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::{Adjustment, LayerContent, LayerId};
+use redrob_photo_doc::{Adjustment, LayerContent, LayerId};
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -39,7 +39,7 @@ fn app_harness_stepped(kind: &str, mode: &str, depth: u32, step_dt: f32) -> Harn
     let (kind, mode) = (kind.to_string(), mode.to_string());
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).with_step_dt(step_dt).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 96, "height": 64, "mode": mode, "depth": depth})).unwrap();
         // Two tones so histograms (and Levels' Auto) have something to work with.
         s.execute("select.rect", json!({"x": 0, "y": 0, "width": 48, "height": 64})).unwrap();
@@ -589,7 +589,7 @@ fn gradient_map_stop_controls_fit_a_narrow_properties_panel_in_every_theme() {
 /// one history step.
 #[test]
 fn gradient_map_picker_offers_the_gradient_library() {
-    use photocraft_engine::presets::{Group, gradients};
+    use redrob_photo_engine::presets::{Group, gradients};
     let mut h = app_harness("gradientMap", "rgb", 8);
     // A short library so every row fits the popup: Basics, Blues and a user-saved group.
     let mut lib: Vec<_> = gradients::builtin().into_iter().take(2).collect();
@@ -624,13 +624,13 @@ fn import_gradients_from_picker(h: &mut Harness<'_, PhotocraftApp>) {
 
 #[test]
 fn gradient_map_picker_imports_grd_without_editing_the_map() {
-    use photocraft_psd::grd::{GrdColor, GrdGradient, GrdStop};
+    use redrob_photo_psd::grd::{GrdColor, GrdGradient, GrdStop};
     let mut h = app_harness("gradientMap", "rgb", 16);
     h.state_mut().session.presets.gradients.truncate(1);
     let before = layer(&h);
     let history = h.state().session.active().unwrap().history.past_len();
     let tool = h.state().session.presets.gradient.clone();
-    let bytes = photocraft_psd::grd::write(&[GrdGradient {
+    let bytes = redrob_photo_psd::grd::write(&[GrdGradient {
         name: "Imported Teal".into(),
         stops: vec![
             GrdStop { location: 0.0, midpoint: 0.5, color: GrdColor::Rgb([0.0, 0.5, 0.5]) },
@@ -668,7 +668,7 @@ fn gradient_map_picker_import_cancel_and_errors_preserve_state() {
         Some(FileDialogAnswer::Contents("old.grd".into(), b"8BGR\0\x03".to_vec())),
         Some(FileDialogAnswer::Contents(
             "noise.grd".into(),
-            photocraft_psd::grd::write(&[photocraft_psd::grd::GrdGradient { noise: true, ..Default::default() }]),
+            redrob_photo_psd::grd::write(&[redrob_photo_psd::grd::GrdGradient { noise: true, ..Default::default() }]),
         )),
         Some(FileDialogAnswer::Contents("wrong.abr".into(), Vec::new())),
         Some(FileDialogAnswer::Paths(vec!["/nonexistent/photocraft-gradients.grd".into()])),

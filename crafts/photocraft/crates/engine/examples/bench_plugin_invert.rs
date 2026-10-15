@@ -1,10 +1,10 @@
 //! Timing: the example WebAssembly Invert plug-in vs the built-in Image › Adjustments › Invert,
 //! through the full command path, on a 6000 × 4000 (24 MP) layer.
-//! `cargo run --release -p photocraft-engine --example bench_plugin_invert [width] [height] [depth]`
+//! `cargo run --release -p redrob-photo-engine --example bench_plugin_invert [width] [height] [depth]`
 use std::time::Instant;
 
-use photocraft_engine::Session;
-use photocraft_geom::Rect;
+use redrob_photo_engine::Session;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 fn main() {
@@ -18,7 +18,7 @@ fn main() {
     s.edit("texture", |doc, active| {
         let surf = doc.layer_mut(active.unwrap()).unwrap().surface_mut().unwrap();
         let fmt = surf.format();
-        let row: Vec<f32> = (0..w).flat_map(|x| photocraft_raster::from_rgba(&fmt, [(x % 256) as f32 / 255.0, 0.5, 0.25, 1.0])).collect();
+        let row: Vec<f32> = (0..w).flat_map(|x| redrob_photo_raster::from_rgba(&fmt, [(x % 256) as f32 / 255.0, 0.5, 0.25, 1.0])).collect();
         for y in 0..h as i32 {
             surf.write_region(Rect::new(0, y, w as i32, y + 1), &row);
         }

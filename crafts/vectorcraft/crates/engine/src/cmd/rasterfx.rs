@@ -15,14 +15,14 @@
 use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
-use vectorcraft_color::{BlendMode, Paint};
-use vectorcraft_doc::rastersettings::MAX_ADD_AROUND;
-use vectorcraft_doc::{
+use redrob_vector_color::{BlendMode, Paint};
+use redrob_vector_doc::rastersettings::MAX_ADD_AROUND;
+use redrob_vector_doc::{
     Appearance, AppearanceItem, ColorMode, Document, Effect, ImageBlob, ImageObject, Node, NodeId, NodeKind, RasterColorModel, StrokeLayer,
 };
-use vectorcraft_geom::{Affine, FillRule, PathData, Rect};
-use vectorcraft_render::effects::{self, RasterFx};
-use vectorcraft_render::{AntiAlias, RenderOptions};
+use redrob_vector_geom::{Affine, FillRule, PathData, Rect};
+use redrob_vector_render::effects::{self, RasterFx};
+use redrob_vector_render::{AntiAlias, RenderOptions};
 
 use super::*;
 
@@ -146,14 +146,14 @@ pub(crate) fn clip_group(d: &mut Document, path: PathData, rule: FillRule, art: 
 }
 
 /// Render `nodes` alone over transparency: (premultiplied pixels, width, height).
-fn render(doc: &Document, nodes: Vec<Node>, region: Rect, scale: f64, anti_alias: AntiAlias) -> vectorcraft_render::Rendered {
+fn render(doc: &Document, nodes: Vec<Node>, region: Rect, scale: f64, anti_alias: AntiAlias) -> redrob_vector_render::Rendered {
     let mut tmp = doc.clone();
-    let mut layer = Node::layer(NodeId(u64::MAX), "raster", vectorcraft_doc::LayerColor::Preset(0));
+    let mut layer = Node::layer(NodeId(u64::MAX), "raster", redrob_vector_doc::LayerColor::Preset(0));
     if let Some(ch) = layer.children_mut() {
         *ch = nodes.into_iter().map(Arc::new).collect();
     }
     tmp.layers = vec![Arc::new(layer)];
-    let mut r = vectorcraft_render::Renderer::new();
+    let mut r = redrob_vector_render::Renderer::new();
     r.threads = 0;
     // Art Optimized is supersampled, as in exports: shapes meeting edge to edge leave no seam.
     r.render_region_with(&tmp, region, scale, &RenderOptions { skip_templates: true, anti_alias, supersample: true, ..Default::default() })
@@ -173,7 +173,7 @@ pub(crate) fn effects_scale(doc: &Document) -> f64 {
 pub(crate) fn effect_image(out: &mut Document, whole: &Node, knockout: Option<&Node>, scale: f64) -> Option<Node> {
     // What it paints (its members' effects included), and how far its fills' and strokes' raster
     // effects reach beyond that.
-    let b = vectorcraft_render::painted_bounds(out, whole)?;
+    let b = redrob_vector_render::painted_bounds(out, whole)?;
     let look = out.raster_effects.clone();
     let reach = whole.appearance.items.iter().map(|i| effects::outset(i.effects(), b)).fold(0.0, f64::max) + 2.0 + look.add_around;
     let b = b.inflate(reach, reach);
@@ -381,7 +381,7 @@ fn split_items(out: &mut Document, n: &Node) -> Option<Node> {
 /// instance alone has no size to render its effects' image over. `None` for other objects.
 fn placed_symbol(d: &Document, n: &Node) -> Option<Node> {
     let NodeKind::SymbolInstance { symbol, xf } = &n.kind else { return None };
-    let mut art = vectorcraft_render::instance_art(&d.symbols.iter().find(|s| s.name == *symbol)?.art, n);
+    let mut art = redrob_vector_render::instance_art(&d.symbols.iter().find(|s| s.name == *symbol)?.art, n);
     art.transform(*xf, false);
     let mut g = n.clone();
     g.kind = NodeKind::Group { children: vec![Arc::new(art)], clip: false };
@@ -536,7 +536,7 @@ fn flatten(doc: &Document, report: &mut FlattenReport) -> Option<Document> {
 }
 
 /// PDF bytes for `doc`, with raster effects rendered as images.
-pub fn export_pdf(doc: &Document, opts: &vectorcraft_pdf::PdfOptions) -> std::result::Result<Vec<u8>, vectorcraft_pdf::PdfError> {
+pub fn export_pdf(doc: &Document, opts: &redrob_vector_pdf::PdfOptions) -> std::result::Result<Vec<u8>, redrob_vector_pdf::PdfError> {
     export_pdf_with_report(doc, opts).map(|r| r.bytes)
 }
 
@@ -544,11 +544,11 @@ pub fn export_pdf(doc: &Document, opts: &vectorcraft_pdf::PdfOptions) -> std::re
 /// approximated or left out).
 pub fn export_pdf_with_report(
     doc: &Document,
-    opts: &vectorcraft_pdf::PdfOptions,
-) -> std::result::Result<vectorcraft_pdf::ExportReport, vectorcraft_pdf::PdfError> {
+    opts: &redrob_vector_pdf::PdfOptions,
+) -> std::result::Result<redrob_vector_pdf::ExportReport, redrob_vector_pdf::PdfError> {
     let mut report = FlattenReport::new(Which::All, doc);
     let flat = flatten(doc, &mut report);
-    let mut exported = vectorcraft_pdf::export_with_report(flat.as_ref().unwrap_or(doc), opts)?;
+    let mut exported = redrob_vector_pdf::export_with_report(flat.as_ref().unwrap_or(doc), opts)?;
     exported.warnings.extend(report.warnings());
     Ok(exported)
 }
@@ -556,7 +556,7 @@ pub fn export_pdf_with_report(
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vectorcraft_doc::NodeKind;
+    use redrob_vector_doc::NodeKind;
 
     use crate::Session;
 
@@ -585,6 +585,6 @@ mod tests {
         let text = String::from_utf8_lossy(&pdf);
         assert!(text.contains("/Image"), "the PDF embeds the effect images");
         // The source document is untouched.
-        assert!(s.doc().unwrap().doc.node(vectorcraft_doc::NodeId(r)).unwrap().appearance.effects.len() == 1);
+        assert!(s.doc().unwrap().doc.node(redrob_vector_doc::NodeId(r)).unwrap().appearance.effects.len() == 1);
     }
 }

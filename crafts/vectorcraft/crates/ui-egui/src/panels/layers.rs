@@ -36,8 +36,8 @@ use std::sync::{Arc, Weak};
 use egui::{Color32, Sense, Stroke, StrokeKind, Ui, vec2};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, Node, NodeId, NodeKind};
-use vectorcraft_engine::OpenRows;
+use redrob_vector_doc::{Document, Node, NodeId, NodeKind};
+use redrob_vector_engine::OpenRows;
 
 use crate::theme::Tokens;
 use crate::thumb_worker::{Settle, ThumbWorker};
@@ -299,7 +299,7 @@ fn push_rows(
 
 /// The rows of the active document as [`list_rows`] lists them, listed again only when the
 /// document, its open rows, the search or Show Layers Only changed.
-fn rows_of_doc(ui: &Ui, st: &vectorcraft_engine::DocState, opts: &PanelOptions, query: &str) -> Arc<Vec<Row>> {
+fn rows_of_doc(ui: &Ui, st: &redrob_vector_engine::DocState, opts: &PanelOptions, query: &str) -> Arc<Vec<Row>> {
     let now =
         RowsKey { uid: st.uid, revision: st.revision, open: st.layers_open.generation(), layers_only: opts.layers_only, query: query.to_string() };
     let id = key("rows");
@@ -967,7 +967,7 @@ pub(crate) struct ThumbSource<'a> {
 
 impl<'a> ThumbSource<'a> {
     /// The thumbnails of the document `st` holds (`doc`, its document).
-    pub(crate) fn of(app: &VectorcraftApp, st: &vectorcraft_engine::DocState, doc: &'a Arc<Document>) -> Self {
+    pub(crate) fn of(app: &VectorcraftApp, st: &redrob_vector_engine::DocState, doc: &'a Arc<Document>) -> Self {
         Self { uid: st.uid, revision: st.revision, doc, busy: st.interaction.is_some() || app.session.tool_busy() }
     }
 }
@@ -1030,8 +1030,8 @@ const THUMB_BUDGET_MS: f64 = 8.0;
 const THUMB_BUDGET_COUNT: u32 = 16;
 
 /// How row thumbnails render: images far smaller than they are sample their mip levels.
-pub(crate) fn thumb_options() -> vectorcraft_render::RenderOptions {
-    vectorcraft_render::RenderOptions { image_mips: true, ..Default::default() }
+pub(crate) fn thumb_options() -> redrob_vector_render::RenderOptions {
+    redrob_vector_render::RenderOptions { image_mips: true, ..Default::default() }
 }
 
 /// Has `n` at most `limit` objects inside it (counting stops there)?
@@ -1054,7 +1054,7 @@ fn small_node(n: &Node, limit: usize) -> bool {
 
 impl Thumbs {
     /// Keep `img` (None: nothing drawn) as the thumbnail of row `key` showing `node`.
-    fn upload(&mut self, ctx: &egui::Context, key: (u64, NodeId), node: Weak<Node>, px: u32, img: Option<&vectorcraft_render::Rendered>, ms: f64) {
+    fn upload(&mut self, ctx: &egui::Context, key: (u64, NodeId), node: Weak<Node>, px: u32, img: Option<&redrob_vector_render::Rendered>, ms: f64) {
         let color = img.map(|img| egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels));
         let used = ctx.cumulative_pass_nr();
         let name = format!("layer-thumb-{}", key.1.0);
@@ -1142,7 +1142,7 @@ impl Thumbs {
             return shown;
         }
         thread_local! {
-            static RENDERER: std::cell::RefCell<vectorcraft_render::Renderer> = std::cell::RefCell::new(vectorcraft_render::Renderer::new());
+            static RENDERER: std::cell::RefCell<redrob_vector_render::Renderer> = std::cell::RefCell::new(redrob_vector_render::Renderer::new());
         }
         let t0 = crate::now_ms();
         let img = RENDERER.with(|r| r.borrow_mut().render_node_thumbnail_with(src.doc, n, px, None, &thumb_options()));
@@ -1323,7 +1323,7 @@ pub fn expand(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
 
@@ -2055,8 +2055,8 @@ mod tests {
     /// in view, and a row highlighted far below them is scrolled to.
     #[test]
     fn only_the_rows_in_view_are_laid_out() {
-        use vectorcraft_doc::Appearance;
-        use vectorcraft_geom::{Rect, shapes};
+        use redrob_vector_doc::Appearance;
+        use redrob_vector_geom::{Rect, shapes};
         let mut d = Document::new(1000.0, 1000.0);
         let mut groups = vec![];
         let mut needle = None;

@@ -156,7 +156,7 @@ fn harness(app: PhotocraftApp) -> egui_kittest::Harness<'static, PhotocraftApp> 
 }
 
 fn app() -> PhotocraftApp {
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.execute("file.new", json!({"width":1200,"height":800})).unwrap();
     PhotocraftApp::new(session, crate::Services::default())
 }

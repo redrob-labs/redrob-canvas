@@ -16,8 +16,8 @@
 use std::io::{Cursor, Read};
 use std::path::PathBuf;
 
-use vectorcraft_engine::cmd::clipboard::{BITMAP, EPS, FILE_HEAD, Flavour, PDF, PNG, SVG, TEXT, file_flavour};
-use vectorcraft_ui_egui::SystemClipboard;
+use redrob_vector_engine::cmd::clipboard::{BITMAP, EPS, FILE_HEAD, Flavour, PDF, PNG, SVG, TEXT, file_flavour};
+use redrob_vector_ui_egui::SystemClipboard;
 
 /// This platform's system clipboard.
 pub fn system_clipboard() -> Box<dyn SystemClipboard> {
@@ -431,7 +431,7 @@ mod mac {
 
 #[cfg(test)]
 mod tests {
-    use vectorcraft_engine::cmd::clipboard::{EMF, PASTE_ORDER};
+    use redrob_vector_engine::cmd::clipboard::{EMF, PASTE_ORDER};
 
     use super::*;
 

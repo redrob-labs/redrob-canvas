@@ -3,11 +3,11 @@
 
 use egui::{Modifiers, PointerButton, Pos2};
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::LayerId;
-use photocraft_geom::Rect;
-use photocraft_ui_egui::PhotocraftApp;
-use photocraft_ui_egui::canvas::ViewXform;
-use photocraft_ui_egui::control::{ControlRequest, Outcome, handle};
+use redrob_photo_doc::LayerId;
+use redrob_photo_geom::Rect;
+use redrob_photo_ui_egui::PhotocraftApp;
+use redrob_photo_ui_egui::canvas::ViewXform;
+use redrob_photo_ui_egui::control::{ControlRequest, Outcome, handle};
 use serde_json::json;
 
 type Harness = egui_kittest::Harness<'static, PhotocraftApp>;
@@ -16,7 +16,7 @@ fn harness() -> Option<Harness> {
     let built = std::panic::catch_unwind(|| {
         egui_kittest::Harness::builder().with_size(egui::vec2(1100.0, 720.0)).with_pixels_per_point(1.0).with_max_steps(64).wgpu().build_eframe(|cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             app.session.prefs.edit(|p| p.interface.language = "en".into());
             if let Some(rs) = cc.wgpu_render_state.as_ref() {
                 app.set_wgpu(rs.clone());
@@ -68,7 +68,7 @@ fn screen(h: &Harness, x: f32, y: f32) -> Pos2 {
     let app = h.state();
     let v = &app.ui.views[0];
     ViewXform {
-        rect: photocraft_ui_egui::rulers::content_rect(app, app.last_canvas_rect),
+        rect: redrob_photo_ui_egui::rulers::content_rect(app, app.last_canvas_rect),
         zoom: v.zoom,
         center: v.center,
         flip: app.ui.view.flip_horizontal,
@@ -88,7 +88,7 @@ fn pixels(h: &Harness, layer: LayerId) -> Vec<[f32; 4]> {
 
 #[test]
 fn all_layers_checkbox_limits_bucket_fill_to_the_visible_color() {
-    let _gpu = photocraft_testkit::gpu_lock();
+    let _gpu = redrob_photo_testkit::gpu_lock();
     let Some(mut h) = harness() else { return };
     h.run_steps(4);
     for all_layers in [false, true] {

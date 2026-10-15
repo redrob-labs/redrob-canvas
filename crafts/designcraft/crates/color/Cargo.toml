@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-color"
+name = "redrob-layout-color"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

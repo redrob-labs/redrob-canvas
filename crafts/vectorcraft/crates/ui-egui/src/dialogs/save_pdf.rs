@@ -12,10 +12,10 @@
 use std::sync::LazyLock;
 
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::Unit;
-use vectorcraft_engine::cmd::FlattenOptions;
-use vectorcraft_engine::cmd::fileio::{SaveMode, pdf};
-use vectorcraft_pdf::{
+use redrob_vector_doc::Unit;
+use redrob_vector_engine::cmd::FlattenOptions;
+use redrob_vector_engine::cmd::fileio::{SaveMode, pdf};
+use redrob_vector_pdf::{
     Changes, Choice, ColorConversion, Compatibility, Downsample, Encryption, ImageCodec, JpegQuality, MarkKind, MonoCodec, Overprint, PdfSettings,
     Printing, ProfileInclusion, Standard,
 };
@@ -53,7 +53,7 @@ static DEFAULTS: LazyLock<Value> = LazyLock::new(|| serde_json::to_value(PdfSett
 /// Is `name` a built-in PDF preset's? Those are ours (translated where listed); the saved ones are
 /// names.
 pub(super) fn is_builtin_preset(name: &str) -> bool {
-    static NAMES: LazyLock<Vec<String>> = LazyLock::new(|| vectorcraft_pdf::builtin_presets().into_iter().map(|p| p.name).collect());
+    static NAMES: LazyLock<Vec<String>> = LazyLock::new(|| redrob_vector_pdf::builtin_presets().into_iter().map(|p| p.name).collect());
     NAMES.iter().any(|n| n == name)
 }
 
@@ -590,7 +590,7 @@ pub(super) fn profile_pick(ui: &mut egui::Ui, d: &mut Dialog, path: &str, names:
 }
 
 fn output(ui: &mut egui::Ui, d: &mut Dialog) {
-    let profiles = vectorcraft_color::cms::profiles();
+    let profiles = redrob_vector_color::cms::profiles();
     let names = |blank: &'static str| -> Vec<&str> { std::iter::once(blank).chain(profiles.iter().map(|p| p.name.as_str())).collect() };
     let standard = choice::<Standard>(d, "standard").unwrap_or_default();
     heading(ui, tl!("Color"));
@@ -815,7 +815,7 @@ mod tests {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
     use crate::Services;
@@ -825,7 +825,7 @@ mod tests {
     /// The built-in presets are told from saved ones by name (only theirs are translated).
     #[test]
     fn built_in_presets_are_known_by_name() {
-        assert!(vectorcraft_pdf::builtin_presets().iter().all(|p| is_builtin_preset(&p.name)));
+        assert!(redrob_vector_pdf::builtin_presets().iter().all(|p| is_builtin_preset(&p.name)));
         assert!(is_builtin_preset(pdf::DEFAULT_PRESET) && !is_builtin_preset("Default") && !is_builtin_preset("My Preset"));
     }
 
@@ -898,7 +898,7 @@ mod tests {
         assert_eq!(w.len(), 1);
         assert_eq!(w[0].0, "/tmp/out.pdf");
         assert!(w[0].1.starts_with(b"%PDF-1.5"), "compatibility reaches the writer");
-        assert_eq!(vectorcraft_pdf::import(&w[0].1).unwrap().artboards.len(), 2, "range 1,3");
+        assert_eq!(redrob_vector_pdf::import(&w[0].1).unwrap().artboards.len(), 2, "range 1,3");
         assert!(!String::from_utf8_lossy(&w[0].1).contains("/FlateDecode"), "uncompressed content");
         assert_eq!(opened.borrow().len(), 1, "View PDF after Saving opens the file once");
         let url = &opened.borrow()[0].0;
@@ -974,11 +974,11 @@ mod tests {
         let r = super::super::confirm(&mut app).unwrap();
         assert_eq!(r["warnings"], json!([]), "marks and bleed are applied");
         let bytes = &written.borrow()[0].1;
-        let page = &vectorcraft_pdf::info(bytes, None).unwrap().pages[0];
-        let trim = page.boxes.iter().find(|(b, _)| *b == vectorcraft_pdf::CropTo::Trim).unwrap().1;
+        let page = &redrob_vector_pdf::info(bytes, None).unwrap().pages[0];
+        let trim = page.boxes.iter().find(|(b, _)| *b == redrob_vector_pdf::CropTo::Trim).unwrap().1;
         assert_eq!((trim.width(), trim.x0), (120.0, 9.0 + 18.0 + 0.25), "the trim box is the artboard, inside the bleed and marks");
         let mut ellipse = false;
-        vectorcraft_pdf::import(bytes).unwrap().walk(|n| {
+        redrob_vector_pdf::import(bytes).unwrap().walk(|n| {
             let b = n.path_data().and_then(|p| p.bounds()).unwrap_or_default();
             ellipse |= (b.width() - 20.0).abs() < 0.1 && (b.height() - 20.0).abs() < 0.1;
         });
@@ -1052,7 +1052,7 @@ mod tests {
         }
         let r = super::super::confirm(&mut app).unwrap();
         assert_eq!(r["warnings"], json!([]));
-        let back = vectorcraft_pdf::import(&written.borrow()[0].1).unwrap();
+        let back = redrob_vector_pdf::import(&written.borrow()[0].1).unwrap();
         let names: Vec<_> = back.layers.iter().filter_map(|l| l.name.clone()).collect();
         // The empty pages of the other artboards come in as page layers.
         assert_eq!(names[..2], ["Layer 1", "Notes"]);

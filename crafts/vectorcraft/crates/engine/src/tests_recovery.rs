@@ -70,7 +70,7 @@ fn recovery_save_writes_modified_documents_once() {
     assert_eq!(r["saved"][0]["file"], format!("{area}/Untitled-1-1"));
     assert_eq!(store.list().unwrap(), [format!("{area}/Untitled-1-1.json"), format!("{area}/Untitled-1-1.vectorcraft")]);
     let doc = store.read(&format!("{area}/Untitled-1-1.vectorcraft")).unwrap();
-    assert_eq!(vectorcraft_format::load(&doc).unwrap().node_count(), s.documents()[0].doc.node_count());
+    assert_eq!(redrob_vector_format::load(&doc).unwrap().node_count(), s.documents()[0].doc.node_count());
     // Unchanged since: nothing written again.
     let again = s.execute("file.recovery.save", &json!({})).unwrap();
     assert!(again["saved"].as_array().unwrap().is_empty());
@@ -400,12 +400,12 @@ fn complex_documents_are_skipped_when_the_preference_says() {
     let store = Arc::new(MemoryStore::default());
     let mut s = Session::new();
     s.recovery.set_store(store.clone());
-    let mut d = vectorcraft_doc::Document::new(1000.0, 1000.0);
+    let mut d = redrob_vector_doc::Document::new(1000.0, 1000.0);
     let layer = d.layers[0].id;
     for i in 0..cmd::recovery::COMPLEX_OBJECTS {
         let id = d.alloc_id();
-        let r = vectorcraft_geom::Rect::new((i % 200) as f64, (i / 200) as f64, (i % 200) as f64 + 1.0, (i / 200) as f64 + 1.0);
-        let n = vectorcraft_doc::Node::path(id, vectorcraft_geom::shapes::rectangle(r), vectorcraft_doc::Appearance::default_art());
+        let r = redrob_vector_geom::Rect::new((i % 200) as f64, (i / 200) as f64, (i % 200) as f64 + 1.0, (i / 200) as f64 + 1.0);
+        let n = redrob_vector_doc::Node::path(id, redrob_vector_geom::shapes::rectangle(r), redrob_vector_doc::Appearance::default_art());
         d.insert(Some(layer), i, n).unwrap();
     }
     s.add_document(d, None);
@@ -504,7 +504,7 @@ impl RecoveryStore for Counting {
 
 fn place_png(s: &mut Session, name: &str, rgb: [u8; 3]) -> Vec<u8> {
     let png = crate::tests_links::png(64, 48, rgb);
-    s.execute("file.place", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(&png), "link": false})).unwrap();
+    s.execute("file.place", &json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(&png), "link": false})).unwrap();
     png
 }
 
@@ -526,7 +526,7 @@ fn images_are_kept_apart_and_written_again_only_when_they_change() {
     let area = s.recovery.own_area().unwrap().to_string();
     // The document entry doesn't hold the image.
     let doc = store.read(&format!("{area}/Untitled-1-1.vectorcraft")).unwrap();
-    assert!(vectorcraft_format::load(&doc).unwrap().images.is_empty());
+    assert!(redrob_vector_format::load(&doc).unwrap().images.is_empty());
     // An edit that leaves the image alone: the copy is written again, its image isn't.
     s.execute("shape.rectangle", &json!({"x": 10, "y": 10, "width": 50, "height": 20})).unwrap();
     let r = s.execute("file.recovery.save", &json!({})).unwrap();
@@ -564,10 +564,10 @@ fn copies_from_before_images_were_kept_apart_still_restore() {
     // The document entry is a whole native file, images inside; the details say nothing of them.
     let mut s = session_in(&store);
     place_png(&mut s, "red.png", crate::tests_links::RED);
-    let d = vectorcraft_doc::Document::clone(&s.doc().unwrap().doc);
+    let d = redrob_vector_doc::Document::clone(&s.doc().unwrap().doc);
     let images = images_of(&s);
     drop(s);
-    store.write("1-1/Old-1.vectorcraft", &vectorcraft_format::save_file(&d)).unwrap();
+    store.write("1-1/Old-1.vectorcraft", &redrob_vector_format::save_file(&d)).unwrap();
     store.write("1-1/Old-1.json", br#"{"title": "Old", "format": "vectorcraft", "saved": 5}"#).unwrap();
     let mut s = relaunch(&store);
     assert_eq!(restored(s.execute("file.recovery.restore", &json!({})).unwrap()), 1);

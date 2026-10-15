@@ -1,6 +1,6 @@
 use std::io::{BufRead, BufReader, Write};
 
-use designcraft_engine::cmd::{base64_decode, base64_encode};
+use redrob_layout_engine::cmd::{base64_decode, base64_encode};
 use serde_json::{Value, json};
 
 use crate::{Backend, Headless, PROTOCOL_VERSION, Remote, Server, control_addr, tool_definitions};
@@ -290,7 +290,7 @@ fn ui_only_tools_explain_how_to_connect() {
 fn files_place_and_export() {
     let mut s = server();
     // A 4×2 red PNG made by the renderer's encoder.
-    let px = designcraft_render::Rendered { width: 4, height: 2, pixels: [255, 0, 0, 255].repeat(8) };
+    let px = redrob_layout_render::Rendered { width: 4, height: 2, pixels: [255, 0, 0, 255].repeat(8) };
     let png = px.to_png();
     let placed = ok(&mut s, "place_image", json!({"base64": base64_encode(&png), "name": "red.png", "x": 50, "y": 60, "width": 100}));
     assert!(placed["id"].is_u64() && placed["asset"].is_u64(), "{placed}");
@@ -356,7 +356,7 @@ fn fake_app() -> (String, std::sync::mpsc::Receiver<Value>) {
             let p = &req["params"];
             let reply = match req["method"].as_str().unwrap() {
                 "ui.screenshot" => {
-                    let px = designcraft_render::Rendered { width: 3, height: 3, pixels: vec![0; 36] };
+                    let px = redrob_layout_render::Rendered { width: 3, height: 3, pixels: vec![0; 36] };
                     std::fs::write(p["path"].as_str().unwrap(), px.to_png()).unwrap();
                     json!({"ok": true, "result": {"path": p["path"], "width": 3, "height": 3}})
                 }

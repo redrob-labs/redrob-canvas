@@ -1,14 +1,14 @@
 //! Renderer caching/culling behaviour, and a render-time regression test (`#[ignore]`: wall-clock
 //! timings are only meaningful on an idle machine — run with
-//! `cargo test --release -p designcraft-render --test perf -- --ignored`).
+//! `cargo test --release -p redrob-layout-render --test perf -- --ignored`).
 
 use std::time::Instant;
 
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Document, ParaFormat, SpreadRef};
-use designcraft_geom::{Affine, Rect, Vec2};
-use designcraft_render::{Placed, RenderOptions, Renderer};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::build::NewDocument;
+use redrob_layout_doc::{Document, ParaFormat, SpreadRef};
+use redrob_layout_geom::{Affine, Rect, Vec2};
+use redrob_layout_render::{Placed, RenderOptions, Renderer};
 
 const WORDS: &[&str] = &["grid", "margin", "column", "rhythm", "baseline", "reader", "story", "frame", "quiet", "layout", "type", "texture"];
 

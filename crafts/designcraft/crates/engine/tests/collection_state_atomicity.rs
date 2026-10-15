@@ -1,6 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use designcraft_engine::Session;
+use redrob_layout_engine::Session;
 use serde_json::json;
 
 fn library_failure(command: &str) {

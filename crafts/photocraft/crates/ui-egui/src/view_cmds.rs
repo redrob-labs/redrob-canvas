@@ -544,10 +544,10 @@ pub fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
 fn type_checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
     let t = crate::type_tool::target_text(app);
     if let Some(k) = id.strip_prefix("type.antiAlias.") {
-        return Some(t.is_some_and(|t| photocraft_engine::type_extra_cmds::aa_name(t.antialias) == k));
+        return Some(t.is_some_and(|t| redrob_photo_engine::type_extra_cmds::aa_name(t.antialias) == k));
     }
     if let Some(k) = id.strip_prefix("type.orientation.") {
-        return Some(t.is_some_and(|t| (t.orientation == photocraft_doc::text::Orientation::Vertical) == (k == "vertical")));
+        return Some(t.is_some_and(|t| (t.orientation == redrob_photo_doc::text::Orientation::Vertical) == (k == "vertical")));
     }
     let t = t?;
     let tag = match id.strip_prefix("type.openType.")? {
@@ -563,7 +563,7 @@ fn type_checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
         "fractions" => "frac",
         _ => return None,
     };
-    Some(t.char_runs().first().is_some_and(|r| photocraft_engine::type_extra_cmds::feature_on(&r.style, tag)))
+    Some(t.char_runs().first().is_some_and(|r| redrob_photo_engine::type_extra_cmds::feature_on(&r.style, tag)))
 }
 
 /// Engine commands that get a dialog or file picker here when invoked without parameters.
@@ -767,7 +767,7 @@ fn run(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, p: &Value) -> Res
 fn fit_layers(app: &mut PhotocraftApp) -> Result<Value, String> {
     let i = app.session.active_index().ok_or("no document")?;
     let st = app.session.active().ok_or("no document")?;
-    let mut b = photocraft_geom::Rect::EMPTY;
+    let mut b = redrob_photo_geom::Rect::EMPTY;
     for id in st.selected_layers() {
         if let Some(r) = st.doc.layer(id).and_then(|l| l.surface()).map(|s| s.content_bounds()) {
             b = if b.is_empty() { r } else { b.union(&r) };
@@ -876,7 +876,7 @@ fn arrange(app: &mut PhotocraftApp, k: &str, p: &Value) -> Result<Value, String>
 /// Screen rectangles for `n` documents in an arrangement (`None` = tabs). The active document
 /// always gets a cell; n-up layouts show that many documents starting from the active one.
 pub fn cells(layout: &str, rect: egui::Rect, n: usize) -> Option<Vec<egui::Rect>> {
-    use craft_ui::layout::{SplitAxis, SplitSize, split_rect};
+    use redrob_craft_ui::layout::{SplitAxis, SplitSize, split_rect};
 
     if n < 2 || !LAYOUTS.contains(&layout) {
         return None;
@@ -1047,7 +1047,7 @@ mod form_reset_tests {
 
     #[test]
     fn alt_reset_restores_form_orig() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let id = form(&mut app, "test.form", "Test", json!({"radius": 5.0, "on": true}), json!({}));
         let f = &mut app.ui.dialog_mut(id).unwrap().fields;
         f.insert("radius".into(), json!(99.0));
@@ -1144,7 +1144,7 @@ fn camera_data(ui: &mut egui::Ui, f: &Map<String, Value>) {
     ui.label(egui::RichText::new(tl!("Camera Data")).font(crate::theme::semibold(13.0)));
     ui.add_space(4.0);
     egui::Grid::new("form-camera-data").num_columns(2).spacing([12.0, 4.0]).show(ui, |ui| {
-        for (key, label) in photocraft_engine::file_cmds::CAMERA_FIELDS {
+        for (key, label) in redrob_photo_engine::file_cmds::CAMERA_FIELDS {
             if let Some(v) = camera.get(key).and_then(Value::as_str) {
                 ui.label(crate::i18n::tr_ctx(crate::i18n::current(), "cameraData", label));
                 ui.add(egui::Label::new(v).selectable(true));
@@ -1190,7 +1190,7 @@ fn front(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Value)
     }
     let doc = app.session.active().map(|d| (d.doc.size.width, d.doc.size.height, d.doc.name.clone()));
     let dir = default_dir(app);
-    let label = photocraft_engine::commands::find(id).map_or(id, |c| c.label);
+    let label = redrob_photo_engine::commands::find(id).map_or(id, |c| c.label);
     let dialog = |app: &mut PhotocraftApp, fields: Value, choices: Value| Some(Ok(json!({"dialog": form(app, id, label, fields, choices)})));
     match id {
         "file.openAs" => Some(app.open_dialog_file()),
@@ -1222,7 +1222,7 @@ fn front(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Value)
             let (doc, layer) = (st.doc.id, st.active_layer?);
             Some(app.pick_file_bytes(move |app, name, bytes| {
                 app.with_document(doc, |app| {
-                    let r = photocraft_engine::smart_cmds::replace_contents_bytes(&mut app.session, layer, &name, bytes).map_err(|e| e.to_string());
+                    let r = redrob_photo_engine::smart_cmds::replace_contents_bytes(&mut app.session, layer, &name, bytes).map_err(|e| e.to_string());
                     app.sync_views();
                     r
                 })
@@ -1232,7 +1232,7 @@ fn front(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Value)
         "layer.smartObjects.convertToLinked" => {
             let st = app.session.active()?;
             let (doc, layer) = (st.doc.id, st.active_layer?);
-            let (name, _) = match photocraft_engine::smart_cmds::contents_of(&st.doc, layer) {
+            let (name, _) = match redrob_photo_engine::smart_cmds::contents_of(&st.doc, layer) {
                 Ok(c) => c,
                 Err(e) => return Some(Err(e.to_string())),
             };
@@ -1285,7 +1285,7 @@ fn front(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Value)
         }
         "layer.new.artboard" => {
             let (w, h, _) = doc?;
-            let presets: Vec<&str> = std::iter::once("").chain(photocraft_engine::artboard_cmds::PRESETS.iter().map(|p| p.0)).collect();
+            let presets: Vec<&str> = std::iter::once("").chain(redrob_photo_engine::artboard_cmds::PRESETS.iter().map(|p| p.0)).collect();
             dialog(
                 app,
                 json!({"name": "", "preset": "", "width": w, "height": h, "background": "white"}),
@@ -1302,7 +1302,7 @@ fn front(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Value)
                 !chosen.is_empty()
                     && chosen.iter().all(|id| {
                         st.doc.layers.iter().any(|root| root.id == *id)
-                            && st.doc.layer(*id).is_some_and(|layer| layer.visible && matches!(layer.content, photocraft_doc::LayerContent::Adjustment(_)))
+                            && st.doc.layer(*id).is_some_and(|layer| layer.visible && matches!(layer.content, redrob_photo_doc::LayerContent::Adjustment(_)))
                     })
             });
             let scope = if selected_adjustments { "selected" } else { "all" };
@@ -1347,9 +1347,9 @@ fn front(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Value)
             let st = app.session.active()?;
             let d = &st.doc;
             let mode = d.pixel_format().mode;
-            let mut chans: Vec<String> = vec![photocraft_engine::channel_cmds::composite_name(mode).to_string()];
+            let mut chans: Vec<String> = vec![redrob_photo_engine::channel_cmds::composite_name(mode).to_string()];
             if mode.color_channels() > 1 {
-                chans.extend(photocraft_engine::channel_cmds::color_names(mode).iter().map(|n| n.to_string()));
+                chans.extend(redrob_photo_engine::channel_cmds::color_names(mode).iter().map(|n| n.to_string()));
             }
             chans.extend(d.channels.iter().map(|c| c.name.clone()));
             let alphas: Vec<String> = std::iter::once("new".to_string()).chain(d.channels.iter().map(|c| c.name.clone())).collect();
@@ -1455,9 +1455,9 @@ fn save_a_copy(app: &mut PhotocraftApp) -> Result<Value, String> {
 /// path and saved state are untouched. `tga_bits` is the Targa answer, when there is one.
 pub(crate) fn write_copy(
     app: &mut PhotocraftApp,
-    doc: &photocraft_doc::Document,
+    doc: &redrob_photo_doc::Document,
     path: &str,
-    tga_bits: Option<photocraft_io::TgaBits>,
+    tga_bits: Option<redrob_photo_io::TgaBits>,
 ) -> Result<Value, String> {
     let settings = crate::ExportSettings { tga_bits, ..app.save_settings() };
     let export = app.services.export.as_ref().ok_or("no exporter configured")?;
@@ -1477,7 +1477,7 @@ fn export_contents(app: &mut PhotocraftApp) -> Result<Value, String> {
     let st = app.session.active().ok_or("no document")?;
     let layer = st.active_layer.ok_or("no layer selected")?;
     // The contents as they were when asked, like Save a Copy.
-    let (name, bytes) = photocraft_engine::smart_cmds::contents_of(&st.doc, layer).map_err(|e| e.to_string())?;
+    let (name, bytes) = redrob_photo_engine::smart_cmds::contents_of(&st.doc, layer).map_err(|e| e.to_string())?;
     app.pick_save(&name.clone(), move |app, path| {
         let write = app.services.write.as_mut().ok_or("no writer configured")?;
         write(&path, &bytes)?;

@@ -1,10 +1,10 @@
-//! # photocraft-automation
+//! # redrob-photo-automation
 //!
 //! Agent-facing automation (architecture §12):
 //!
 //! * [`PhotocraftMcp`]: an MCP server (official `rmcp` SDK) exposing session,
 //!   document and command tools. Headless mode drives an in-process
-//!   [`photocraft_engine::Session`]; bridge mode forwards to a running desktop
+//!   [`redrob_photo_engine::Session`]; bridge mode forwards to a running desktop
 //!   app over the JSON-lines control protocol (`docs/control-protocol.md`), so
 //!   agents can also inspect, screenshot and click the live UI.
 //! * [`Headless`]: the synchronous session + file I/O core, shared with the CLI.
@@ -37,11 +37,11 @@ pub enum AutomationError {
     #[error("I/O: {0}")]
     Io(String),
     #[error(transparent)]
-    Engine(#[from] photocraft_engine::EngineError),
+    Engine(#[from] redrob_photo_engine::EngineError),
     #[error(transparent)]
-    Import(#[from] photocraft_io::IoError),
+    Import(#[from] redrob_photo_io::IoError),
     #[error(transparent)]
-    Format(#[from] photocraft_format::FormatError),
+    Format(#[from] redrob_photo_format::FormatError),
     #[error("bridge: {0}")]
     Bridge(String),
     #[error("app: {0}")]

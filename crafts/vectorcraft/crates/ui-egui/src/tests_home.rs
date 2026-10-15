@@ -5,7 +5,7 @@ use serde_json::json;
 use crate::{VectorcraftApp, canvas};
 
 fn app_with_doc() -> VectorcraftApp {
-    let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+    let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app
 }
@@ -62,7 +62,7 @@ fn draws_text(app: &mut VectorcraftApp) -> bool {
 /// shows an empty window instead of the Home screen, and the Home button still opens it.
 #[test]
 fn home_screen_without_documents_follows_its_preference() {
-    let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+    let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
     assert!(app.session.active().is_none());
     assert!(draws_text(&mut app), "Home with no document open (the default)");
     assert!(crate::menus::home_showing(&app));
@@ -113,7 +113,7 @@ fn home_texts(app: &mut VectorcraftApp, ctx: &egui::Context, events: Vec<egui::E
 /// and one that can't be opened says so. With none, there is no Recent Files section.
 #[test]
 fn home_lists_recent_files_and_a_click_opens_one() {
-    let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+    let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     crate::theme::install_fonts(&ctx);
     let has = |texts: &[(String, egui::Rect)], s: &str| texts.iter().any(|(t, _)| t == s);

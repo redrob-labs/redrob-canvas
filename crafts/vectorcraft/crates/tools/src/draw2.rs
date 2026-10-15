@@ -9,8 +9,8 @@ mod family;
 mod gesture;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeId, NodeKind};
-use vectorcraft_geom::{Anchor, AnchorKind, BezPath, Point, SubPath};
+use redrob_vector_doc::{NodeId, NodeKind};
+use redrob_vector_geom::{Anchor, AnchorKind, BezPath, Point, SubPath};
 
 use crate::{Action, Tool, ToolContext};
 
@@ -106,7 +106,7 @@ pub(crate) fn editable_paths<'a>(cx: &'a ToolContext) -> impl Iterator<Item = No
 /// The paths whose anchors show with the Pen: the selected ones, and those inside selected groups
 /// and compound paths (not guides, nor locked or hidden ones). Pen + Alt converts their anchors.
 pub(crate) fn shown_paths(cx: &ToolContext) -> Vec<NodeId> {
-    fn inside(n: &vectorcraft_doc::Node, v: &mut Vec<NodeId>) {
+    fn inside(n: &redrob_vector_doc::Node, v: &mut Vec<NodeId>) {
         match &n.kind {
             NodeKind::Path { guide: false, .. } => v.push(n.id),
             // A Shape Builder group's first child is its shaper, not art.

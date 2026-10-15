@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::build::{NewDocument, PRESETS};
-use designcraft_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, Selection, Shape};
-use designcraft_geom::{Affine, Rect, shapes};
+use redrob_layout_doc::build::{NewDocument, PRESETS};
+use redrob_layout_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, Selection, Shape};
+use redrob_layout_geom::{Affine, Rect, shapes};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, bad, cmd, f64_or, has_doc, ok, str_param};
@@ -68,7 +68,7 @@ pub fn specs() -> Vec<CommandSpec> {
         "{path | base64, name} → {paragraph: [name], character: [name], conflicts: [name]} — the styles a Word/RTF file brings (for styleMap / styleConflicts)",
         has_doc, |s, p| {
             let (bytes, name, _) = read_source(p)?;
-            let imp = designcraft_textimport::import(&name, &bytes).map_err(|e| bad("place.styles", e.to_string()))?;
+            let imp = redrob_layout_textimport::import(&name, &bytes).map_err(|e| bad("place.styles", e.to_string()))?;
             let st = &s.doc()?.doc.styles;
             let conflicts: Vec<&str> = imp
                 .para_styles
@@ -111,11 +111,11 @@ pub fn specs() -> Vec<CommandSpec> {
 }
 
 pub fn to_bytes(d: &Document) -> Vec<u8> {
-    designcraft_format::save(d).unwrap_or_default()
+    redrob_layout_format::save(d).unwrap_or_default()
 }
 
 pub fn from_bytes(b: &[u8]) -> Result<Document> {
-    designcraft_format::load(b).map_err(|e| EngineError::Other(e.to_string()))
+    redrob_layout_format::load(b).map_err(|e| EngineError::Other(e.to_string()))
 }
 
 fn file_new(s: &mut Session, p: &Value) -> Result<Value> {
@@ -131,7 +131,7 @@ fn file_new(s: &mut Session, p: &Value) -> Result<Value> {
     nd.gutter = f64_or(p, "gutter", nd.gutter);
     nd.primary_text_frame = p.get("primaryTextFrame").and_then(Value::as_bool).unwrap_or(false);
     match p.get("margins") {
-        Some(Value::Number(n)) => nd.margins = designcraft_doc::Margins::uniform(n.as_f64().unwrap_or(36.0)),
+        Some(Value::Number(n)) => nd.margins = redrob_layout_doc::Margins::uniform(n.as_f64().unwrap_or(36.0)),
         Some(v @ Value::Object(_)) => {
             if let Ok(m) = serde_json::from_value(v.clone()) {
                 nd.margins = m;
@@ -204,12 +204,12 @@ fn file_open(s: &mut Session, p: &Value) -> Result<Value> {
 pub(crate) fn load_document_fonts(d: &mut Document, path: &str) -> (Option<Arc<crate::FontScope>>, usize, Vec<String>) {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
+        use redrob_layout_fonts::DOCUMENT_FONTS_FOLDER;
         let Some(folder) = std::path::Path::new(path).parent().map(document_fonts_folder) else { return (None, 0, Vec::new()) };
         // A document's folder is the agent's to name (a recovery entry or a book lists paths too):
         // the fonts crate asks the automation roots about the folder and each font file, so fonts
         // outside the read root stay unloaded.
-        let r = designcraft_fonts::FontDb::global().load_document_fonts(&folder, &|p| crate::file_access::check_read(p));
+        let r = redrob_layout_fonts::FontDb::global().load_document_fonts(&folder, &|p| crate::file_access::check_read(p));
         d.font_scope = r.scope;
         let scope = (r.scope != 0).then(|| Arc::new(crate::FontScope(r.scope)));
         (scope, r.faces, r.skipped.into_iter().map(|s| format!("{DOCUMENT_FONTS_FOLDER}: {s}")).collect())
@@ -225,7 +225,7 @@ pub(crate) fn load_document_fonts(d: &mut Document, path: &str) -> (Option<Arc<c
 /// `Document fonts`, and file systems on Linux are case-sensitive. The exact name wins.
 #[cfg(not(target_arch = "wasm32"))]
 fn document_fonts_folder(dir: &std::path::Path) -> std::path::PathBuf {
-    use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
+    use redrob_layout_fonts::DOCUMENT_FONTS_FOLDER;
     let exact = dir.join(DOCUMENT_FONTS_FOLDER);
     if crate::io::is_dir(&exact) {
         return exact;
@@ -246,7 +246,7 @@ fn file_open_bytes(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let b = base64_decode(str_param(p, "base64").unwrap_or(""));
     // IDML packages are recognised by their stored `mimetype` first entry.
-    if designcraft_idml::is_idml(&b) {
+    if redrob_layout_idml::is_idml(&b) {
         return super::interchange::open_idml(s, p);
     }
     let mut d = from_bytes(&b)?;
@@ -313,24 +313,24 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
         return place_layout_page(s, p, &name, &bytes);
     }
     // EPS: shown and printed through its preview (or a placeholder) at its bounding box size.
-    let (bytes, eps_size) = if designcraft_images::is_eps(&bytes) {
-        let (proxy, size) = designcraft_images::eps_proxy(&bytes).ok_or_else(|| bad("file.place", "the EPS has no bounding box"))?;
+    let (bytes, eps_size) = if redrob_layout_images::is_eps(&bytes) {
+        let (proxy, size) = redrob_layout_images::eps_proxy(&bytes).ok_or_else(|| bad("file.place", "the EPS has no bounding box"))?;
         (proxy, Some(size))
     } else {
         (bytes, None)
     };
     // Video and sound: a media frame (Window › Interactive › Media).
-    if let Some(mime) = designcraft_doc::media_mime(&name) {
+    if let Some(mime) = redrob_layout_doc::media_mime(&name) {
         return super::media::place_media(s, p, name, mime, bytes, link);
     }
     // Text files (plain, Word, RTF) flow into frames.
-    if designcraft_textimport::is_text_file(&name) {
+    if redrob_layout_textimport::is_text_file(&name) {
         return super::place_text::place_text(s, p, &name, &bytes, link, before);
     }
     // Image Import Options: which page of a PDF (1-based).
     let pdf_page = match p.get("pdfPage").and_then(Value::as_u64) {
-        Some(n) if designcraft_render::is_pdf(&bytes) => {
-            let count = designcraft_render::pdf_page_count(&bytes).unwrap_or(1);
+        Some(n) if redrob_layout_render::is_pdf(&bytes) => {
+            let count = redrob_layout_render::pdf_page_count(&bytes).unwrap_or(1);
             let invalid_page = || bad("file.place", format!("the PDF has {count} page(s)"));
             let one_based = usize::try_from(n).map_err(|_| invalid_page())?;
             if one_based == 0 || one_based > count {
@@ -342,21 +342,21 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
         _ => 0,
     };
     let (pw, ph) = match pdf_page {
-        0 => designcraft_render::image_size(&bytes).ok_or_else(|| bad("file.place", "unsupported or corrupt image"))?,
-        n => designcraft_render::pdf_page_size(&bytes, n as usize)
+        0 => redrob_layout_render::image_size(&bytes).ok_or_else(|| bad("file.place", "unsupported or corrupt image"))?,
+        n => redrob_layout_render::pdf_page_size(&bytes, n as usize)
             .map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32))
             .ok_or_else(|| bad("file.place", "can't read that PDF page"))?,
     };
     // 72 ppi by default unless the file says otherwise; scale so it fits the page when huge. PDF pages
     // and SVGs keep their exact size: rounding it to whole points would stretch them unevenly.
-    let (nw, nh) = eps_size.or_else(|| designcraft_render::natural_size(&bytes, pdf_page as usize)).unwrap_or((pw as f64, ph as f64));
+    let (nw, nh) = eps_size.or_else(|| redrob_layout_render::natural_size(&bytes, pdf_page as usize)).unwrap_or((pw as f64, ph as f64));
     // Image Import Options › Crop to: the frame shows that box of the PDF page.
     let crop_box = match str_param(p, "pdfCrop") {
-        Some(k) if designcraft_render::is_pdf(&bytes) => {
+        Some(k) if redrob_layout_render::is_pdf(&bytes) => {
             if !["crop", "trim", "bleed", "art", "media"].contains(&k) {
                 return Err(bad("file.place", format!("unknown pdfCrop `{k}` (crop, trim, bleed, art, media)")));
             }
-            designcraft_render::pdf_page_box(&bytes, pdf_page as usize, k).filter(|b| b.2 > 0.0 && b.3 > 0.0)
+            redrob_layout_render::pdf_page_box(&bytes, pdf_page as usize, k).filter(|b| b.2 > 0.0 && b.3 > 0.0)
         }
         Some(_) => None,
         None => None,
@@ -371,13 +371,13 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
     let py = p.get("y").and_then(Value::as_f64);
     let want_w = p.get("width").and_then(Value::as_f64);
     if target_frame.is_none() && px.is_none() && py.is_none() && p.get("loadCursor").and_then(Value::as_bool) == Some(true) {
-        let mime = designcraft_render::image_mime(&bytes).to_string();
+        let mime = redrob_layout_render::image_mime(&bytes).to_string();
         let asset = Asset { page: pdf_page, id: AssetId(0), name, mime, link, data: Arc::new(bytes), pixels: Some((pw, ph)) };
         return load_cursor(s, asset, (nw, nh), crop_box);
     }
     s.edit(|d, sel| {
         let fresh = AssetId(d.alloc());
-        let mime = designcraft_render::image_mime(&bytes).to_string();
+        let mime = redrob_layout_render::image_mime(&bytes).to_string();
         let aid = d.add_asset(Asset { page: pdf_page, id: fresh, name, mime, link, data: Arc::new(bytes), pixels: Some((pw, ph)) });
         // The width the whole page (or image) gets; the height follows the proportions.
         let w = match want_w {
@@ -388,7 +388,7 @@ fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
             }
         };
         let id = if let Some(fid) = target_frame {
-            let it = d.item_mut(fid).ok_or(designcraft_doc::DocError::NoItem(fid))?;
+            let it = d.item_mut(fid).ok_or(redrob_layout_doc::DocError::NoItem(fid))?;
             let r = it.inner_bounds();
             // Fill the frame proportionally once. Auto-Fit stays off, so resizing the frame crops.
             let k = (r.width() / nw).max(r.height() / nh);
@@ -479,9 +479,9 @@ pub(crate) fn read_source(p: &Value) -> Result<(Vec<u8>, String, Option<String>)
 
 fn place_load(s: &mut Session, p: &Value) -> Result<Value> {
     let (bytes, name, link) = read_source(p)?;
-    let (pw, ph) = designcraft_render::image_size(&bytes).ok_or_else(|| bad("place.load", "unsupported or corrupt image"))?;
-    let natural = designcraft_render::natural_size(&bytes, 0).unwrap_or((pw as f64, ph as f64));
-    let mime = designcraft_render::image_mime(&bytes).to_string();
+    let (pw, ph) = redrob_layout_render::image_size(&bytes).ok_or_else(|| bad("place.load", "unsupported or corrupt image"))?;
+    let natural = redrob_layout_render::natural_size(&bytes, 0).unwrap_or((pw as f64, ph as f64));
+    let mime = redrob_layout_render::image_mime(&bytes).to_string();
     let asset = Asset { page: 0, id: AssetId(0), name, mime, link, data: Arc::new(bytes), pixels: Some((pw, ph)) };
     load_cursor(s, asset, natural, None)
 }
@@ -515,7 +515,7 @@ fn place_drop(s: &mut Session, p: &Value) -> Result<Value> {
     let r = s.edit(|d, sel| {
         let id = match frame {
             Some(fid) => {
-                let it = d.item_mut(fid).ok_or(designcraft_doc::DocError::NoItem(fid))?;
+                let it = d.item_mut(fid).ok_or(redrob_layout_doc::DocError::NoItem(fid))?;
                 let r = it.inner_bounds();
                 let k = (r.width() / nw).max(r.height() / nh);
                 it.content = Content::Graphic(Graphic {
@@ -603,8 +603,8 @@ fn place_layout_page(s: &mut Session, p: &Value, name: &str, bytes: &[u8]) -> Re
     }
     let to = super::spread_param(p, ID)?;
     let off = match (p.get("x").and_then(Value::as_f64), p.get("y").and_then(Value::as_f64)) {
-        (Some(x), Some(y)) => designcraft_geom::Vec2::new(x - pr.x0, y - pr.y0),
-        _ => designcraft_geom::Vec2::new(-pr.x0, -pr.y0),
+        (Some(x), Some(y)) => redrob_layout_geom::Vec2::new(x - pr.x0, y - pr.y0),
+        _ => redrob_layout_geom::Vec2::new(-pr.x0, -pr.y0),
     };
     let placed = s.edit(|d, sel| {
         for sw in &src.swatches {
@@ -640,8 +640,8 @@ pub(crate) fn snippet_place(s: &mut Session, p: &Value) -> Result<Value> {
     let sr = super::spread_param(p, "snippet.place")?;
     let bounds = ids.iter().filter_map(|i| src.item(*i).map(|it| it.bounds())).reduce(|a, b| a.union(b)).unwrap_or(Rect::ZERO);
     let off = match (p.get("x").and_then(Value::as_f64), p.get("y").and_then(Value::as_f64)) {
-        (Some(x), Some(y)) => designcraft_geom::Vec2::new(x - bounds.x0, y - bounds.y0),
-        _ => designcraft_geom::Vec2::ZERO,
+        (Some(x), Some(y)) => redrob_layout_geom::Vec2::new(x - bounds.x0, y - bounds.y0),
+        _ => redrob_layout_geom::Vec2::ZERO,
     };
     s.edit(|d, sel| {
         // Bring over styles and swatches the snippet uses that this document lacks.
@@ -751,7 +751,7 @@ mod pdf_crop_tests {
         let size = |t: &mut Session, crop: &str| {
             t.execute("edit.deselectAll", &json!({})).unwrap();
             let r = t.execute("file.place", &json!({"base64": b64, "name": "a.pdf", "pdfCrop": crop, "width": 630, "x": 0, "y": 0})).unwrap();
-            let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+            let id = redrob_layout_doc::ItemId(r["id"].as_u64().unwrap());
             t.doc().unwrap().doc.item(id).unwrap().bounds()
         };
         let full = size(&mut t, "crop");
@@ -770,12 +770,12 @@ mod pdf_crop_tests {
         let mut t = Session::new();
         t.execute("file.new", &json!({})).unwrap();
         let r = t.execute("file.place", &json!({"base64": b64, "name": "a.pdf", "width": 100.4, "x": 0, "y": 0})).unwrap();
-        let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+        let id = redrob_layout_doc::ItemId(r["id"].as_u64().unwrap());
         let d = &t.doc().unwrap().doc;
         let it = d.item(id).unwrap();
         let b = it.bounds();
         assert!((b.width() - 100.4).abs() < 1e-3 && (b.height() - 50.4).abs() < 1e-3, "{b:?}");
-        let designcraft_doc::Content::Graphic(g) = &it.content else { panic!("not a graphic") };
+        let redrob_layout_doc::Content::Graphic(g) = &it.content else { panic!("not a graphic") };
         assert!((g.size.0 - 100.4).abs() < 1e-3 && (g.size.1 - 50.4).abs() < 1e-3, "{:?}", g.size);
     }
 }
@@ -792,14 +792,14 @@ mod layout_place_tests {
         a.execute("file.new", &json!({"pages": 2})).unwrap();
         a.execute("frame.create", &json!({"rect": [100, 100, 200, 150], "content": "text", "text": "From page one", "caret": false})).unwrap();
         a.execute("frame.create", &json!({"rect": [300, 400, 350, 450]})).unwrap();
-        let idml = designcraft_idml::export_idml(&a.doc().unwrap().doc);
+        let idml = redrob_layout_idml::export_idml(&a.doc().unwrap().doc);
         let b64 = super::base64_encode(&idml);
         let mut b = Session::new();
         b.execute("file.new", &json!({})).unwrap();
         let r = b.execute("file.place", &json!({"base64": b64, "name": "src.idml", "layoutPage": 1, "x": 0, "y": 0})).unwrap();
         assert_eq!(r["items"], 2);
         let d = &b.doc().unwrap().doc;
-        let g = d.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap();
+        let g = d.item(redrob_layout_doc::ItemId(r["id"].as_u64().unwrap())).unwrap();
         assert_eq!(g.children().len(), 2, "one group");
         let bb = g.bounds();
         assert!((bb.x0 - 100.0).abs() < 1e-6 && (bb.y0 - 100.0).abs() < 1e-6, "page top-left at 0,0: {bb:?}");
@@ -843,8 +843,8 @@ mod save_tests {
 mod document_fonts_tests {
     use std::path::{Path, PathBuf};
 
-    use designcraft_fonts::testing::font_with;
-    use designcraft_fonts::{DOCUMENT_FONTS_FOLDER, FaceRef, FontDb, FontSource};
+    use redrob_layout_fonts::testing::font_with;
+    use redrob_layout_fonts::{DOCUMENT_FONTS_FOLDER, FaceRef, FontDb, FontSource};
     use serde_json::{Value, json};
 
     use crate::Session;
@@ -873,7 +873,7 @@ mod document_fonts_tests {
         let mut s = Session::new();
         new_document(&mut s, family, text);
         if path.extension().is_some_and(|e| e == "idml") {
-            std::fs::write(path, designcraft_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
+            std::fs::write(path, redrob_layout_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
         } else {
             s.execute("file.save", &json!({"path": path.to_string_lossy()})).unwrap();
         }
@@ -975,7 +975,7 @@ mod document_fonts_tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("Plain.designcraft");
-        write_document(&path, designcraft_fonts::DEFAULT_FAMILY);
+        write_document(&path, redrob_layout_fonts::DEFAULT_FAMILY);
         let r = Session::new().execute("file.open", &json!({"path": path.to_string_lossy()})).unwrap();
         assert_eq!((r["documentFonts"].clone(), r["warnings"].clone()), (json!(0), json!([])), "{r}");
         let _ = std::fs::remove_dir_all(&dir);

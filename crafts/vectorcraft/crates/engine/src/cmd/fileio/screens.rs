@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::Document;
-use vectorcraft_geom::Rect;
+use redrob_vector_doc::Document;
+use redrob_vector_geom::Rect;
 
 use super::super::*;
 use super::encode::single_artboard;
@@ -384,7 +384,7 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
             } else {
                 if whole.is_none() {
                     let bounds =
-                        vectorcraft_render::encode::art_bounds(&doc).ok_or_else(|| bad(C, "nothing to export: the document has no visible art"))?;
+                        redrob_vector_render::encode::art_bounds(&doc).ok_or_else(|| bad(C, "nothing to export: the document has no visible art"))?;
                     whole = Some(single_artboard(&doc, bounds, "Document"));
                 }
                 let Some(d) = whole.as_ref() else { continue };
@@ -439,13 +439,13 @@ pub(crate) fn export(s: &mut Session, p: &Value) -> Result<Value> {
                 write_file(&path, &zip)?;
                 Ok(json!({ "path": path, "bytes": zip.len(), "files": names }))
             }
-            None => Ok(json!({ "name": zip_name, "dataBase64": vectorcraft_format::base64_encode(&zip), "bytes": zip.len(), "files": names })),
+            None => Ok(json!({ "name": zip_name, "dataBase64": redrob_vector_format::base64_encode(&zip), "bytes": zip.len(), "files": names })),
         };
     }
     Ok(match folder {
         Some(_) => json!({ "files": out.written }),
         None => {
-            json!({ "files": out.kept.iter().map(|(name, bytes)| json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(bytes) })).collect::<Vec<_>>() })
+            json!({ "files": out.kept.iter().map(|(name, bytes)| json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) })).collect::<Vec<_>>() })
         }
     })
 }

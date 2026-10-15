@@ -4,10 +4,10 @@
 use std::sync::Arc;
 
 use serde_json::json;
-use vectorcraft_color::{Color, Paint, Swatch};
-use vectorcraft_doc::{Appearance, Artboard, Document, LayerColor, Node, NodeKind};
-use vectorcraft_geom::{Rect, shapes};
-use vectorcraft_testkit::raster::render_region;
+use redrob_vector_color::{Color, Paint, Swatch};
+use redrob_vector_doc::{Appearance, Artboard, Document, LayerColor, Node, NodeKind};
+use redrob_vector_geom::{Rect, shapes};
+use redrob_vector_testkit::raster::render_region;
 
 use crate::*;
 
@@ -186,9 +186,9 @@ fn a_symbol_instance_prints_by_its_art() {
     let mut d = doc(100.0, 100.0, &[]);
     let red = Appearance::basic(rgb(1.0, 0.0, 0.0), Paint::None, 0.0);
     let art = Node::path(d.alloc_id(), shapes::rectangle(Rect::new(100.0, 100.0, 140.0, 140.0)), red);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Far".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Far".into(), art: Arc::new(art) });
     let (layer, id) = (d.default_layer().unwrap(), d.alloc_id());
-    let xf = vectorcraft_geom::Affine::translate((-50.0, -50.0));
+    let xf = redrob_vector_geom::Affine::translate((-50.0, -50.0));
     d.insert(Some(layer), 0, Node::new(id, NodeKind::SymbolInstance { symbol: "Far".into(), xf })).unwrap();
     // Skip Blank Artboards keeps the artboard.
     assert_eq!(preview(&d, &settings(json!({"skipBlank": true}))).unwrap().sheets.len(), 1);
@@ -205,18 +205,18 @@ fn a_symbol_instances_brush_art_keeps_its_artboard_printed() {
     // round nib. Drawn from (-5, 0), the line lies left of the artboard, and the nib paints 10 pt
     // either side of it, onto the artboard.
     let mut d = doc(100.0, 100.0, &[]);
-    let mut lib = vectorcraft_brush::library(&d);
-    let Some(vectorcraft_brush::BrushKind::Calligraphic(c)) = lib.iter_mut().find(|b| b.name == "3 pt. Round").map(|b| &mut b.kind) else {
+    let mut lib = redrob_vector_brush::library(&d);
+    let Some(redrob_vector_brush::BrushKind::Calligraphic(c)) = lib.iter_mut().find(|b| b.name == "3 pt. Round").map(|b| &mut b.kind) else {
         panic!("the 3 pt. Round brush")
     };
     c.size = 20.0;
-    vectorcraft_brush::store(&mut d, &lib);
+    redrob_vector_brush::store(&mut d, &lib);
     let mut stroke = Appearance::basic(Paint::None, rgb(1.0, 0.0, 0.0), 1.0);
     stroke.stroke_mut().unwrap().brush = Some("3 pt. Round".into());
     let art = Node::path(d.alloc_id(), shapes::line((0.0, 40.0).into(), (0.0, 60.0).into()), stroke);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Nib".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Nib".into(), art: Arc::new(art) });
     let (layer, id) = (d.default_layer().unwrap(), d.alloc_id());
-    let xf = vectorcraft_geom::Affine::translate((-5.0, 0.0));
+    let xf = redrob_vector_geom::Affine::translate((-5.0, 0.0));
     d.insert(Some(layer), 0, Node::new(id, NodeKind::SymbolInstance { symbol: "Nib".into(), xf })).unwrap();
     // Skip Blank Artboards keeps the artboard, and its page holds the nib's art.
     let p = pages(&job(&d, json!({"skipBlank": true})).bytes);
@@ -263,7 +263,7 @@ fn print_layers_and_template_layers() {
 #[test]
 fn cmyk_and_a_spot_separate_into_five_plates() {
     let mut d = doc(200.0, 100.0, &[]);
-    d.color_mode = vectorcraft_doc::ColorMode::Cmyk;
+    d.color_mode = redrob_vector_doc::ColorMode::Cmyk;
     d.swatches.push(Swatch { name: "Gold".into(), paint: Paint::solid(Color::cmyk(0.0, 0.2, 0.8, 0.1)), global: true, spot: true });
     let layer = d.default_layer().unwrap();
     let cyan = Paint::solid(Color::cmyk(1.0, 0.0, 0.0, 0.0));

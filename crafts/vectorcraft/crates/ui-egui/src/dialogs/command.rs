@@ -82,9 +82,9 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
     }
     app.ui.dialog = None;
     // A tool's click-to-size shape (Flare) goes on the active perspective plane while the grid shows.
-    let at = |x: &str, y: &str| Some(vectorcraft_geom::Point::new(params.get(x)?.as_f64()?, params.get(y)?.as_f64()?));
+    let at = |x: &str, y: &str| Some(redrob_vector_geom::Point::new(params.get(x)?.as_f64()?, params.get(y)?.as_f64()?));
     if let Some((c, p)) =
-        at("cx", "cy").or_else(|| at("x", "y")).and_then(|pt| vectorcraft_engine::perspective_click(&app.session, &cmd, &params, pt))
+        at("cx", "cy").or_else(|| at("x", "y")).and_then(|pt| redrob_vector_engine::perspective_click(&app.session, &cmd, &params, pt))
     {
         return app.run(&c, p);
     }
@@ -94,14 +94,14 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vectorcraft_doc::{NodeKind, VerticalAlign};
-    use vectorcraft_engine::Session;
+    use redrob_vector_doc::{NodeKind, VerticalAlign};
+    use redrob_vector_engine::Session;
 
     use super::*;
 
     #[test]
     fn area_type_options_choices_match_the_params_doc() {
-        let doc = vectorcraft_engine::find_command("text.areaOptions").unwrap().params;
+        let doc = redrob_vector_engine::find_command("text.areaOptions").unwrap().params;
         for key in ["firstBaseline", "verticalAlign"] {
             let values: Vec<&str> = choices("text.areaOptions", key).unwrap().iter().map(|(_, v)| *v).collect();
             assert!(doc.contains(&format!("{key}?: {}", values.join("|"))), "{key}: {values:?}");
@@ -126,7 +126,7 @@ mod tests {
         out.textures_delta.clear();
         app.ui.dialog.as_mut().unwrap().fields.insert("verticalAlign".into(), json!("center"));
         crate::dialogs::confirm(&mut app).unwrap();
-        let NodeKind::Text(t) = &app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind else { panic!("text") };
+        let NodeKind::Text(t) = &app.session.doc().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind else { panic!("text") };
         assert_eq!(t.area.vertical_align, VerticalAlign::Center);
     }
 
@@ -134,7 +134,7 @@ mod tests {
     /// value axis on the side picked.
     #[test]
     fn graph_type_value_axis_is_a_dropdown_of_its_sides() {
-        let doc = vectorcraft_engine::find_command("graph.setType").unwrap().params;
+        let doc = redrob_vector_engine::find_command("graph.setType").unwrap().params;
         let values: Vec<&str> = choices("graph.setType", "valueAxis").unwrap().iter().map(|(_, v)| *v).collect();
         assert!(doc.contains(&format!("valueAxis?: {}", values.join("|"))), "{values:?}");
         let mut app = VectorcraftApp::new(Session::new(), Default::default());

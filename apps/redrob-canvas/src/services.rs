@@ -109,9 +109,9 @@ fn open_url(url: &str) -> Result<(), String> {
 
 pub mod photo {
     use super::*;
-    use photocraft_doc::Document;
-    use photocraft_format::RecoveryStore;
-    use photocraft_ui_egui::{
+    use redrob_photo_doc::Document;
+    use redrob_photo_format::RecoveryStore;
+    use redrob_photo_ui_egui::{
         FileDialogAnswer, FileDialogReply, FileDialogRequest, Recoverable, Services,
     };
 
@@ -128,7 +128,7 @@ pub mod photo {
     }
 
     fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), String> {
-        photocraft_format::atomic_write(path, bytes).map_err(|e| e.to_string())
+        redrob_photo_format::atomic_write(path, bytes).map_err(|e| e.to_string())
     }
 
     type SharedRecovery = Rc<RefCell<Option<RecoveryStore>>>;
@@ -167,14 +167,14 @@ pub mod photo {
                 let Some(dir) = recover_dir.as_ref() else {
                     return Vec::new();
                 };
-                photocraft_format::list_recovery(dir)
+                redrob_photo_format::list_recovery(dir)
                     .into_iter()
                     .map(|e| Recoverable {
                         key: e.info.key.clone(),
                         name: e.info.document_name.clone(),
                         path: e.info.original_path.clone(),
                         load: Box::new(move || {
-                            photocraft_format::recover(&e).map_err(|e| e.to_string())
+                            redrob_photo_format::recover(&e).map_err(|e| e.to_string())
                         }),
                     })
                     .collect()
@@ -349,20 +349,20 @@ pub mod photo {
     /// tablet input, automation workspace, Photoshop shortcut import.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn services() -> Services {
-        use photocraft_codecs::{ChannelLayout, EncodeOptions, Image};
+        use redrob_photo_codecs::{ChannelLayout, EncodeOptions, Image};
         let clip: Rc<RefCell<Option<arboard::Clipboard>>> = Rc::default();
         let prefs = prefs_enabled();
         let mut services = Services {
             import: Some(Box::new(
                 |name: &str, bytes: &[u8], max_svg_group_depth: usize| {
-                    photocraft_io::import_with_svg_group_depth(name, bytes, max_svg_group_depth)
+                    redrob_photo_io::import_with_svg_group_depth(name, bytes, max_svg_group_depth)
                         .map(|r| (r.document, r.warnings))
                         .map_err(|e| e.to_string())
                 },
             )),
             export: Some(Box::new(
-                |doc: &Document, path: &str, settings: &photocraft_ui_egui::ExportSettings| {
-                    photocraft_io::export(doc, path, &settings.io_options())
+                |doc: &Document, path: &str, settings: &redrob_photo_ui_egui::ExportSettings| {
+                    redrob_photo_io::export(doc, path, &settings.io_options())
                         .map(|r| (r.bytes, r.warnings))
                         .map_err(|e| e.to_string())
                 },
@@ -374,9 +374,9 @@ pub mod photo {
             encode_png: Some(Box::new(|w, h, rgba| {
                 let img = Image::from_u8(w, h, ChannelLayout::Rgba, rgba.to_vec())
                     .map_err(|e| e.to_string())?;
-                photocraft_codecs::encode(
+                redrob_photo_codecs::encode(
                     &img,
-                    photocraft_codecs::Format::Png,
+                    redrob_photo_codecs::Format::Png,
                     &EncodeOptions::default(),
                 )
                 .map_err(|e| e.to_string())
@@ -412,12 +412,12 @@ pub mod photo {
             })),
             load_prefs: prefs.then(|| {
                 Box::new(|| std::fs::read_to_string(prefs_file()?).ok())
-                    as photocraft_ui_egui::LoadTextFn
+                    as redrob_photo_ui_egui::LoadTextFn
             }),
             save_prefs: prefs.then(|| {
                 Box::new(|text: &str| {
                     write_atomic(&prefs_file().ok_or("no config directory")?, text.as_bytes())
-                }) as photocraft_ui_egui::SaveTextFn
+                }) as redrob_photo_ui_egui::SaveTextFn
             }),
             append_text: Some(Box::new(|path: &str, text: &str| {
                 use std::io::Write;
@@ -431,7 +431,7 @@ pub mod photo {
             ..recovery_services(recovery_dir())
         };
         // Brush presets load in the background; the app attaches them when they arrive.
-        services.preset_store = presets_dir().map(photocraft_engine::preset_store::open_dir_async);
+        services.preset_store = presets_dir().map(redrob_photo_engine::preset_store::open_dir_async);
         services
     }
 }
@@ -442,7 +442,7 @@ pub mod photo {
 
 pub mod vector {
     use super::*;
-    use vectorcraft_ui_egui::{FilePick, Services, VectorcraftApp};
+    use redrob_vector_ui_egui::{FilePick, Services, VectorcraftApp};
 
     pub fn prefs_path() -> Option<PathBuf> {
         editor_dir(Editor::Vector).map(|d| d.join("ui.json"))
@@ -453,7 +453,7 @@ pub mod vector {
     }
 
     fn write_file(path: &str, bytes: &[u8]) -> Result<(), String> {
-        vectorcraft_format::write_atomic(Path::new(path), bytes).map_err(|e| e.to_string())
+        redrob_vector_format::write_atomic(Path::new(path), bytes).map_err(|e| e.to_string())
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -502,7 +502,7 @@ pub mod vector {
             write_shared: Some(Arc::new(write_file)),
             stream_shared: Some(Arc::new(
                 |p: &str, fill: &mut dyn FnMut(&mut dyn std::io::Write) -> std::io::Result<()>| {
-                    vectorcraft_engine::cmd::fileio::write_file_with(p, fill)
+                    redrob_vector_engine::cmd::fileio::write_file_with(p, fill)
                         .map_err(|e| e.to_string())
                 },
             )),
@@ -517,7 +517,7 @@ pub mod vector {
     /// copies font files into.
     pub fn install_fonts() {
         if let Some(dir) = editor_dir(Editor::Vector) {
-            vectorcraft_text::set_app_font_dir(dir.join("Fonts"));
+            redrob_vector_text::set_app_font_dir(dir.join("Fonts"));
         }
     }
 
@@ -542,11 +542,11 @@ pub mod vector {
             return;
         }
         if let Some(bytes) = prefs_path().and_then(|p| std::fs::read(p).ok())
-            && let Ok(ui) = serde_json::from_slice::<vectorcraft_ui_egui::UiState>(&bytes)
+            && let Ok(ui) = serde_json::from_slice::<redrob_vector_ui_egui::UiState>(&bytes)
         {
             app.ui = ui.sanitized();
         }
-        vectorcraft_ui_egui::prefs_dialog::restore(app);
+        redrob_vector_ui_egui::prefs_dialog::restore(app);
     }
 
     pub fn save_prefs(app: &VectorcraftApp) {
@@ -557,7 +557,7 @@ pub mod vector {
             let mut ui = app.ui.clone();
             ui.engine_prefs = app.session.prefs.to_json();
             if let Ok(bytes) = serde_json::to_vec_pretty(&ui) {
-                let _ = vectorcraft_format::write_atomic(&p, &bytes);
+                let _ = redrob_vector_format::write_atomic(&p, &bytes);
             }
         }
     }
@@ -569,7 +569,7 @@ pub mod vector {
 
 pub mod layout {
     use super::*;
-    use designcraft_ui_egui::{DesignApp, Services};
+    use redrob_layout_ui_egui::{DesignApp, Services};
 
     pub fn prefs_path() -> Option<PathBuf> {
         editor_dir(Editor::Layout).map(|d| d.join("ui.json"))
@@ -578,7 +578,7 @@ pub mod layout {
     /// This run's folder in the recovery folder; `None` when the run cannot be isolated.
     pub fn recovery_dir() -> Option<PathBuf> {
         let root = editor_dir(Editor::Layout)?.join("Recovery");
-        match designcraft_engine::recovery::run_dir(&root) {
+        match redrob_layout_engine::recovery::run_dir(&root) {
             Ok(dir) => Some(dir),
             Err(e) => {
                 log::warn!("recovery is unavailable because this run cannot be isolated: {e}");
@@ -707,7 +707,7 @@ pub mod layout {
             })),
             read: Some(Box::new(read_bytes)),
             write: Some(Box::new(|p: &str, b: &[u8]| {
-                designcraft_engine::atomic::write_atomic(Path::new(p), b).map_err(|e| e.to_string())
+                redrob_layout_engine::atomic::write_atomic(Path::new(p), b).map_err(|e| e.to_string())
             })),
             clipboard_text: Some(Box::new(|| {
                 arboard::Clipboard::new()
@@ -724,13 +724,13 @@ pub mod layout {
         }
         if let Some(p) = prefs_path()
             && let Ok(bytes) = std::fs::read(&p)
-            && let Ok(ui) = designcraft_ui_egui::UiState::from_preferences_json(&bytes)
+            && let Ok(ui) = redrob_layout_ui_egui::UiState::from_preferences_json(&bytes)
         {
             app.ui = ui;
         }
         if let Some(p) = prefs_path().map(|p| p.with_file_name("prefs.json"))
             && let Ok(bytes) = std::fs::read(&p)
-            && let Ok(prefs) = serde_json::from_slice::<designcraft_engine::Prefs>(&bytes)
+            && let Ok(prefs) = serde_json::from_slice::<redrob_layout_engine::Prefs>(&bytes)
         {
             app.session.prefs = prefs;
         }

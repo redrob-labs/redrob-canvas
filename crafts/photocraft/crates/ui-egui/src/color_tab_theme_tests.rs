@@ -14,7 +14,7 @@ fn left_top() -> egui::Id {
 
 /// The Color tab of `kind`, alone in a 300 pt wide panel, starting from a red foreground.
 fn color_tab(kind: ThemeKind) -> egui_kittest::Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.session.tools.foreground = [1.0, 0.0, 0.0, 1.0];
     let tab = Group::Color.tabs(Tokens::for_kind(kind).pro).iter().position(|name| *name == "Color").unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(300.0, 400.0)).build_ui_state(

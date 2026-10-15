@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{AppearanceItem, ImageBlob, ImageObject, LineCap, LineJoin, Node, NodeKind};
-use vectorcraft_geom::{Affine, FillRule, PathData, Rect};
-use vectorcraft_testkit::pdf::{PdfPage, pdf};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{AppearanceItem, ImageBlob, ImageObject, LineCap, LineJoin, Node, NodeKind};
+use redrob_vector_geom::{Affine, FillRule, PathData, Rect};
+use redrob_vector_testkit::pdf::{PdfPage, pdf};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 
 use super::*;
 
@@ -39,12 +39,12 @@ fn node(s: &Session, id: NodeId) -> Node {
 }
 
 fn outline(n: &Node) -> (PathData, FillRule) {
-    vectorcraft_tools::builder::node_outline(n).expect("path")
+    redrob_vector_tools::builder::node_outline(n).expect("path")
 }
 
 fn area(s: &Session, id: NodeId) -> f64 {
     let (p, r) = outline(&node(s, id));
-    vectorcraft_pathops::area(&p, r)
+    redrob_vector_pathops::area(&p, r)
 }
 
 /// Rect A (0..100) and rect B (50..150), both 100 tall, selected. A red, B blue.
@@ -229,7 +229,7 @@ fn shape_builder_cuts_gradient_shapes_from_a_pdf_along_their_outlines() {
     };
     let bytes = pdf(&[page], None);
     let mut s = Session::new();
-    s.execute("document.open", &json!({"name": "diamonds.pdf", "dataBase64": vectorcraft_format::base64_encode(&bytes)})).unwrap();
+    s.execute("document.open", &json!({"name": "diamonds.pdf", "dataBase64": redrob_vector_format::base64_encode(&bytes)})).unwrap();
     s.execute("select.all", &json!({})).unwrap();
     let r = s.execute("shapeBuilder.merge", &json!({"points": [[250, 100]]})).unwrap();
     let mut pieces: Vec<(f64, Rect, Paint)> =
@@ -473,8 +473,8 @@ fn live_paint_make_builds_group_with_hidden_sources() {
     let mut s = session();
     let g = live(&mut s);
     let n = node(&s, g);
-    assert!(vectorcraft_tools::builder::is_live_paint(&n));
-    let src = vectorcraft_tools::builder::sources(&n).unwrap();
+    assert!(redrob_vector_tools::builder::is_live_paint(&n));
+    let src = redrob_vector_tools::builder::sources(&n).unwrap();
     assert!(!src.visible);
     assert_eq!(src.children().unwrap().len(), 2);
     assert_eq!(layer_children(&s), 1);
@@ -496,7 +496,7 @@ fn live_paint_fill_assigns_the_face_under_the_point() {
     assert_eq!(face.appearance.fill_paint(), Paint::solid(Color::from_hex("#00ff00").unwrap()));
     // The other faces are untouched.
     let gn = node(&s, g);
-    let green = vectorcraft_tools::builder::faces(&gn).iter().filter(|f| f.appearance.fill_paint() == face.appearance.fill_paint()).count();
+    let green = redrob_vector_tools::builder::faces(&gn).iter().filter(|f| f.appearance.fill_paint() == face.appearance.fill_paint()).count();
     assert_eq!(green, 1);
     // Default paint = current fill; a miss is an error.
     s.paint.fill = Paint::solid(Color::rgb(1.0, 1.0, 0.0));
@@ -511,7 +511,7 @@ fn live_paint_fill_on_plain_paths_makes_the_group() {
     let (a, b) = two(&mut s);
     let r = s.execute("livePaint.fill", &json!({"ids": [a.0, b.0], "point": [125, 50], "color": "#123456"})).unwrap();
     let g = NodeId(r["group"].as_u64().unwrap());
-    assert!(vectorcraft_tools::builder::is_live_paint(&node(&s, g)));
+    assert!(redrob_vector_tools::builder::is_live_paint(&node(&s, g)));
     assert_eq!(layer_children(&s), 1);
     // One undo step removes both the make and the fill.
     s.execute("edit.undo", &json!({})).unwrap();
@@ -539,7 +539,7 @@ fn live_paint_release_and_expand() {
     let r = s.execute("livePaint.expand", &json!({})).unwrap();
     assert_eq!(ids(&r), vec![g]);
     let n = node(&s, g);
-    assert!(!vectorcraft_tools::builder::is_live_paint(&n));
+    assert!(!redrob_vector_tools::builder::is_live_paint(&n));
     // Unpainted face and the hidden sources are gone: 2 faces + stroked edges.
     let ch = n.children().unwrap();
     assert!(ch.iter().all(|c| c.visible));
@@ -569,9 +569,9 @@ fn live_paint_merge_keeps_paint_and_adds_faces() {
     assert_eq!(NodeId(r["id"].as_u64().unwrap()), g);
     assert!(r["faces"].as_u64().unwrap() > 3);
     let gn = node(&s, g);
-    let f = vectorcraft_tools::builder::face_at(&gn, vectorcraft_geom::Point::new(25.0, 50.0)).unwrap();
+    let f = redrob_vector_tools::builder::face_at(&gn, redrob_vector_geom::Point::new(25.0, 50.0)).unwrap();
     assert_eq!(f.appearance.fill_paint(), Paint::solid(Color::from_hex("#00ff00").unwrap()));
-    let src = vectorcraft_tools::builder::sources(&gn).unwrap();
+    let src = redrob_vector_tools::builder::sources(&gn).unwrap();
     assert_eq!(src.children().unwrap().len(), 3, "the rectangle joined the sources");
     assert_eq!(s.doc().unwrap().doc.parent_of(c), Some(src.id));
     assert_eq!(layer_children(&s), 1);
@@ -588,7 +588,7 @@ fn live_paint_bucket_tool_fills_face() {
     assert!(!s.overlays(v).is_empty(), "red face highlight");
     s.pointer(&PointerEvent::new(PointerKind::Down, 125.0, 50.0), v).unwrap();
     let gn = node(&s, g);
-    let f = vectorcraft_tools::builder::face_at(&gn, vectorcraft_geom::Point::new(125.0, 50.0)).unwrap();
+    let f = redrob_vector_tools::builder::face_at(&gn, redrob_vector_geom::Point::new(125.0, 50.0)).unwrap();
     assert_eq!(f.appearance.fill_paint(), s.paint.fill);
     // Live Paint Selection selects the face.
     s.select_tool("livePaintSelection", v).unwrap();
@@ -616,13 +616,13 @@ fn live_paint_bucket_fills_an_area_enclosed_by_lines() {
     s.pointer(&PointerEvent::new(PointerKind::Down, 50.0, 70.0), v).unwrap();
     let g = s.doc().unwrap().selection.objects[0];
     let gn = node(&s, g);
-    assert!(vectorcraft_tools::builder::is_live_paint(&gn));
-    assert_eq!(vectorcraft_tools::builder::faces(&gn).len(), 1);
-    let f = vectorcraft_tools::builder::face_at(&gn, vectorcraft_geom::Point::new(50.0, 70.0)).unwrap();
+    assert!(redrob_vector_tools::builder::is_live_paint(&gn));
+    assert_eq!(redrob_vector_tools::builder::faces(&gn).len(), 1);
+    let f = redrob_vector_tools::builder::face_at(&gn, redrob_vector_geom::Point::new(50.0, 70.0)).unwrap();
     assert_eq!(f.appearance.fill_paint(), s.paint.fill);
-    assert!((vectorcraft_pathops::area(f.path_data().unwrap(), FillRule::NonZero).abs() - 900.0).abs() < 1e-6);
+    assert!((redrob_vector_pathops::area(f.path_data().unwrap(), FillRule::NonZero).abs() - 900.0).abs() < 1e-6);
     // The lines are edges, cut where they cross, and keep their stroke.
-    let edges = vectorcraft_tools::builder::edges(&gn);
+    let edges = redrob_vector_tools::builder::edges(&gn);
     assert_eq!(edges.len(), 9);
     assert!(edges.iter().all(|e| !e.appearance.stroke_paint().is_none()));
     // Outside the triangle there's nothing to fill.
@@ -641,7 +641,7 @@ fn a_line_across_a_live_paint_shape_splits_its_face() {
     let g = NodeId(made["id"].as_u64().unwrap());
     s.execute("livePaint.fill", &json!({"group": g.0, "point": [80, 25], "color": "#0000ff"})).unwrap();
     let gn = node(&s, g);
-    let face = |x: f64| vectorcraft_tools::builder::face_at(&gn, vectorcraft_geom::Point::new(x, 25.0)).unwrap().appearance.fill_paint();
+    let face = |x: f64| redrob_vector_tools::builder::face_at(&gn, redrob_vector_geom::Point::new(x, 25.0)).unwrap().appearance.fill_paint();
     assert_eq!(face(10.0), Paint::solid(Color::rgb(1.0, 0.0, 0.0)), "the left half keeps the rectangle's fill");
     assert_eq!(face(80.0), Paint::solid(Color::from_hex("#0000ff").unwrap()));
 }
@@ -650,14 +650,14 @@ fn a_line_across_a_live_paint_shape_splits_its_face() {
 
 /// A 100×100 image with a black disc (r = 30 px), placed at (50, 50) scaled ×2.
 fn image_doc(s: &mut Session) -> NodeId {
-    let r = vectorcraft_trace::Raster::from_fn(100, 100, |x, y| {
+    let r = redrob_vector_trace::Raster::from_fn(100, 100, |x, y| {
         let (dx, dy) = (x as f64 + 0.5 - 50.0, y as f64 + 0.5 - 50.0);
         if dx * dx + dy * dy <= 900.0 { [0, 0, 0, 255] } else { [255, 255, 255, 255] }
     });
     add_image(s, &r, Affine::translate((50.0, 50.0)) * Affine::scale(2.0))
 }
 
-fn add_image(s: &mut Session, r: &vectorcraft_trace::Raster, xf: Affine) -> NodeId {
+fn add_image(s: &mut Session, r: &redrob_vector_trace::Raster, xf: Affine) -> NodeId {
     let png = r.encode_png();
     let (w, h) = (r.width, r.height);
     s.edit("img", |d, sel| {
@@ -697,7 +697,7 @@ fn image_trace_make_places_paths_over_the_image() {
     assert_eq!(paths.len(), 1);
     let (p, rule) = outline(&paths[0]);
     let want = std::f64::consts::PI * 60.0 * 60.0; // r = 30 px × 2
-    let got = vectorcraft_pathops::area(&p, rule);
+    let got = redrob_vector_pathops::area(&p, rule);
     assert!((got - want).abs() / want < 0.03, "{got} vs {want}");
     let bb = p.bounds().unwrap();
     assert!((bb.center().x - 150.0).abs() < 1.5 && (bb.center().y - 150.0).abs() < 1.5, "{bb:?}");
@@ -715,7 +715,7 @@ fn image_trace_shapes_makes_live_shapes() {
     let paths = traced_paths(&n);
     assert_eq!(paths.len(), 1);
     let NodeKind::Path { path, live: Some(live), .. } = &paths[0].kind else { panic!("not a live shape: {:?}", paths[0].kind) };
-    let vectorcraft_doc::LiveShape::Ellipse { w, h, .. } = **live else { panic!("{live:?}") };
+    let redrob_vector_doc::LiveShape::Ellipse { w, h, .. } = **live else { panic!("{live:?}") };
     // A circle of r = 30 px, drawn twice the size.
     assert!(w == h && (w - 60.0).abs() < 0.75, "{w} × {h}");
     let bb = path.bounds().unwrap();
@@ -735,7 +735,7 @@ fn image_trace_shapes_makes_live_shapes() {
 /// and releases as any other.
 #[test]
 fn image_trace_auto_grouping_groups_what_is_inside() {
-    let art = vectorcraft_trace::Raster::from_fn(120, 80, |x, y| {
+    let art = redrob_vector_trace::Raster::from_fn(120, 80, |x, y| {
         let d = (x as f64 + 0.5 - 40.0).hypot(y as f64 + 0.5 - 40.0);
         if d <= 6.0 || (90..110).contains(&x) && (30..50).contains(&y) {
             [200, 0, 0, 255]
@@ -795,7 +795,7 @@ fn image_trace_auto_grouping_groups_what_is_inside() {
 /// where the image lies; without the option it is bands of flat colour, as saved documents have it.
 #[test]
 fn image_trace_gradients_fills_with_a_gradient() {
-    let art = vectorcraft_trace::Raster::from_fn(100, 60, |x, _| {
+    let art = redrob_vector_trace::Raster::from_fn(100, 60, |x, _| {
         let t = (f64::from(x) + 0.5) / 100.0;
         [(20.0 + 200.0 * t) as u8, 40, (220.0 - 180.0 * t) as u8, 255]
     });
@@ -808,7 +808,7 @@ fn image_trace_gradients_fills_with_a_gradient() {
     let paths = make(true);
     assert_eq!(paths.len(), 1);
     let Paint::Gradient(g) = paths[0].appearance.fill_paint() else { panic!("{:?}", paths[0].appearance.fill_paint()) };
-    assert_eq!(g.gradient.kind, vectorcraft_color::GradientKind::Linear);
+    assert_eq!(g.gradient.kind, redrob_vector_color::GradientKind::Linear);
     assert_eq!(g.gradient.stops.len(), 2);
     // Level, from the image's left edge (x = 50) to its right one (x = 250), at any height.
     let geom = g.geom.as_ref().unwrap();
@@ -867,7 +867,7 @@ fn image_trace_release_and_expand() {
 #[test]
 fn image_trace_make_and_expand_and_color_presets() {
     let mut s = session();
-    let r = vectorcraft_trace::Raster::from_fn(60, 60, |x, y| match (x < 30, y < 30) {
+    let r = redrob_vector_trace::Raster::from_fn(60, 60, |x, y| match (x < 30, y < 30) {
         (true, true) => [230, 20, 20, 255],
         (false, true) => [20, 200, 30, 255],
         (true, false) => [20, 30, 220, 255],
@@ -887,7 +887,7 @@ fn image_trace_make_and_expand_and_color_presets() {
 #[test]
 fn image_trace_palettes_and_swatch_libraries() {
     let mut s = session();
-    let quads = vectorcraft_trace::Raster::from_fn(60, 60, |x, y| match (x < 30, y < 30) {
+    let quads = redrob_vector_trace::Raster::from_fn(60, 60, |x, y| match (x < 30, y < 30) {
         (true, true) => [230, 20, 20, 255],
         (false, true) => [20, 200, 30, 255],
         (true, false) => [20, 30, 220, 255],
@@ -932,7 +932,7 @@ fn image_trace_create_strokes_makes_stroked_centre_lines() {
     let mut s = session();
     // A 3 px wide horizontal line from x = 10 to 90 at y = 50, placed at 2× from (100, 100).
     let r =
-        vectorcraft_trace::Raster::from_fn(100, 100, |x, y| if (10..90).contains(&x) && (49..52).contains(&y) { [0, 0, 0, 255] } else { [255; 4] });
+        redrob_vector_trace::Raster::from_fn(100, 100, |x, y| if (10..90).contains(&x) && (49..52).contains(&y) { [0, 0, 0, 255] } else { [255; 4] });
     add_image(&mut s, &r, Affine::translate((100.0, 100.0)) * Affine::scale(2.0));
     let res = s.execute("imageTrace.make", &json!({"params": {"ignoreWhite": true, "strokes": true, "strokeWidth": 5}})).unwrap();
     assert_eq!(res["paths"], 1);
@@ -977,7 +977,7 @@ fn image_trace_presets_query_and_errors() {
 
 /// A soft-edged red disc (r = 30 px at (50.3, 49.6)) on transparency, placed at (50, 50) scaled ×2.
 fn soft_logo_doc(s: &mut Session) -> NodeId {
-    let r = vectorcraft_trace::Raster::from_fn(100, 100, |x, y| {
+    let r = redrob_vector_trace::Raster::from_fn(100, 100, |x, y| {
         let d = (x as f64 + 0.5 - 50.3).hypot(y as f64 + 0.5 - 49.6);
         let cover = (0.5 + (30.0 - d) * 0.7).clamp(0.0, 1.0);
         [200, 40, 60, (cover * 255.0).round() as u8]
@@ -999,7 +999,7 @@ fn image_trace_flat_logo_preset_makes_a_true_circle() {
     let paths = traced_paths(&n);
     let (p, rule) = outline(&paths[0]);
     let want = std::f64::consts::PI * 60.0 * 60.0;
-    let got = vectorcraft_pathops::area(&p, rule);
+    let got = redrob_vector_pathops::area(&p, rule);
     assert!((got - want).abs() / want < 0.01, "area {got} vs {want}");
     let bb = p.bounds().unwrap();
     // The disc is at (50.3, 49.6) in a x2 image placed at (50, 50): centre (150.6, 149.2).
@@ -1009,7 +1009,7 @@ fn image_trace_flat_logo_preset_makes_a_true_circle() {
 #[test]
 fn image_trace_flat_logo_refuses_a_gradient_and_a_bad_palette() {
     let mut s = session();
-    let grad = vectorcraft_trace::Raster::from_fn(64, 32, |x, y| [(x * 4) as u8, 255 - (x * 4) as u8, (y * 6) as u8, 255]);
+    let grad = redrob_vector_trace::Raster::from_fn(64, 32, |x, y| [(x * 4) as u8, 255 - (x * 4) as u8, (y * 6) as u8, 255]);
     add_image(&mut s, &grad, Affine::IDENTITY);
     let e = s.execute("imageTrace.make", &json!({"preset": "Flat Logo"})).unwrap_err().to_string();
     assert!(e.contains("flat-colour") && e.contains("Color mode"), "{e}");
@@ -1035,7 +1035,7 @@ fn image_trace_object_remembers_its_settings() {
     let r = s.execute("imageTrace.make", &json!({"id": g.0, "preset": "6 Colors", "params": {"colors": 9}})).unwrap();
     let g = NodeId(r["id"].as_u64().unwrap());
     let d = s.doc().unwrap().doc.clone();
-    let back = vectorcraft_format::load(&vectorcraft_format::save(&d, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(&d, false)).unwrap();
     let t = back.node(g).unwrap().extras().trace.clone().unwrap();
     assert_eq!((t["preset"].as_str(), t["params"]["colors"].as_u64()), (Some("Custom"), Some(9)));
     // Expanded traces are plain groups.
@@ -1049,7 +1049,7 @@ fn image_trace_object_remembers_its_settings() {
 /// Black and White with Ignore White, the blue drops out and one disc (r = 60 pt at (150, 150))
 /// remains.
 fn disc_on_blue(s: &mut Session) -> NodeId {
-    let r = vectorcraft_trace::Raster::from_fn(100, 100, |x, y| {
+    let r = redrob_vector_trace::Raster::from_fn(100, 100, |x, y| {
         let (dx, dy) = (x as f64 + 0.5 - 50.0, y as f64 + 0.5 - 50.0);
         if dx * dx + dy * dy <= 900.0 { [0, 0, 0, 255] } else { [170, 210, 255, 255] }
     });
@@ -1060,9 +1060,9 @@ fn disc_on_blue(s: &mut Session) -> NodeId {
 }
 
 /// The document rendered as the canvas draws it (`trace_views`) or as exports do.
-fn render_doc(s: &Session, trace_views: bool) -> vectorcraft_render::Rendered {
-    let opts = vectorcraft_render::RenderOptions { background: Some([255, 255, 255, 255]), trace_views, ..Default::default() };
-    vectorcraft_render::Renderer::new().render(&s.doc().unwrap().doc, 300, 300, Affine::IDENTITY, &opts)
+fn render_doc(s: &Session, trace_views: bool) -> redrob_vector_render::Rendered {
+    let opts = redrob_vector_render::RenderOptions { background: Some([255, 255, 255, 255]), trace_views, ..Default::default() };
+    redrob_vector_render::Renderer::new().render(&s.doc().unwrap().doc, 300, 300, Affine::IDENTITY, &opts)
 }
 
 #[test]
@@ -1072,17 +1072,17 @@ fn image_trace_view_is_stored_kept_and_validated() {
     assert_eq!(node(&s, g).extras().trace.clone().unwrap()["view"], "tracingResult");
     let r = s.execute("imageTrace.setView", &json!({"view": "outlinesWithSourceImage"})).unwrap();
     assert_eq!((ids(&r), r["view"].as_str()), (vec![g], Some("outlinesWithSourceImage")));
-    assert_eq!(node(&s, g).trace_view(), vectorcraft_doc::TraceView::OutlinesWithSource);
+    assert_eq!(node(&s, g).trace_view(), redrob_vector_doc::TraceView::OutlinesWithSource);
     // Setting the view it has already adds no undo step.
     let steps = s.doc().unwrap().history.undo.len();
     s.execute("imageTrace.setView", &json!({"id": g.0, "view": "outlinesWithSourceImage"})).unwrap();
     assert_eq!(s.doc().unwrap().history.undo.len(), steps);
     // Tracing again keeps it, unless another one is asked for; it survives save and open.
     let g = NodeId(s.execute("imageTrace.make", &json!({"id": g.0, "params": {"ignoreWhite": true, "noise": 30}})).unwrap()["id"].as_u64().unwrap());
-    assert_eq!(node(&s, g).trace_view(), vectorcraft_doc::TraceView::OutlinesWithSource);
+    assert_eq!(node(&s, g).trace_view(), redrob_vector_doc::TraceView::OutlinesWithSource);
     let g = NodeId(s.execute("imageTrace.make", &json!({"id": g.0, "view": "SourceImage"})).unwrap()["id"].as_u64().unwrap());
-    let back = vectorcraft_format::load(&vectorcraft_format::save(&s.doc().unwrap().doc, false)).unwrap();
-    assert_eq!(back.node(g).unwrap().trace_view(), vectorcraft_doc::TraceView::Source);
+    let back = redrob_vector_format::load(&redrob_vector_format::save(&s.doc().unwrap().doc, false)).unwrap();
+    assert_eq!(back.node(g).unwrap().trace_view(), redrob_vector_doc::TraceView::Source);
     // Bad views and other objects are refused.
     assert!(s.execute("imageTrace.setView", &json!({"view": "sepia"})).is_err());
     assert!(s.execute("imageTrace.setView", &json!({})).is_err());
@@ -1099,18 +1099,18 @@ fn image_trace_views_draw_on_screen_only_and_expand_to_the_result() {
     let white = |p: [u8; 4]| p[0] > 245 && p[1] > 245 && p[2] > 245;
     let blue = |p: [u8; 4]| p[0] < 200 && p[2] > 245;
     let (centre, beside) = ((150, 150), (70, 70));
-    let at = |img: &vectorcraft_render::Rendered, (x, y): (u32, u32)| img.pixel(x, y);
+    let at = |img: &redrob_vector_render::Rendered, (x, y): (u32, u32)| img.pixel(x, y);
     // The outline is a 1 px line where the disc's right side is (x = 210, anti-aliased).
-    let outlined = |img: &vectorcraft_render::Rendered| (205..=215).any(|x| img.pixel(x, 150)[0] < 128);
+    let outlined = |img: &redrob_vector_render::Rendered| (205..=215).any(|x| img.pixel(x, 150)[0] < 128);
     let mut expanded = None;
-    for view in vectorcraft_doc::TraceView::ALL {
+    for view in redrob_vector_doc::TraceView::ALL {
         s.execute("imageTrace.setView", &json!({"id": g.0, "view": view.id()})).unwrap();
         let screen = render_doc(&s, true);
         let (c, b) = (at(&screen, centre), at(&screen, beside));
         assert_eq!(dark(c), view.shows_result() || view.shows_source(), "{view:?}: the disc's middle {c:?}");
         assert_eq!(blue(b), view.shows_source(), "{view:?}: the image's background {b:?}");
         assert!(view.shows_source() || white(b), "{view:?}: nothing beside the disc {b:?}");
-        if view == vectorcraft_doc::TraceView::Outlines {
+        if view == redrob_vector_doc::TraceView::Outlines {
             assert!(outlined(&screen), "{view:?}: the disc's outline");
         }
         // Exports draw the tracing result whatever the view.
@@ -1166,8 +1166,8 @@ fn shape_builder_merges_rosette_rings_cleanly() {
     let merged = merged.unwrap();
     for id in s.doc().unwrap().selection.objects.clone().into_iter().filter(|id| *id != merged) {
         let (p, r) = outline(&node(&s, id));
-        let over = vectorcraft_pathops::boolean(&p, r, &ring, rule, vectorcraft_pathops::BoolOp::Intersect);
-        let a = vectorcraft_pathops::area(&over, FillRule::NonZero);
+        let over = redrob_vector_pathops::boolean(&p, r, &ring, rule, redrob_vector_pathops::BoolOp::Intersect);
+        let a = redrob_vector_pathops::area(&over, FillRule::NonZero);
         assert!(a < 1.0, "{id:?} overlaps the merged shape by {a} pt²");
     }
     // No outline is a sliver or carries a spur (2 × area / length: its mean width).
@@ -1175,15 +1175,15 @@ fn shape_builder_merges_rosette_rings_cleanly() {
         let (p, r) = outline(&node(&s, id));
         for sp in &p.subpaths {
             let one = PathData::new(vec![sp.clone()]);
-            let width = 2.0 * vectorcraft_pathops::area(&one, r) / one.length();
+            let width = 2.0 * redrob_vector_pathops::area(&one, r) / one.length();
             assert!(width > 1.0, "{id:?} has an outline {width:.3} pt wide on average, {:.1} pt long", one.length());
         }
     }
     // The ring is one outline around the centre (the regions the drags missed aside): the
     // petals' tips are no outlines of their own beside it, apart by a hairline.
-    let big = ring.subpaths.iter().filter(|sp| vectorcraft_pathops::area(&PathData::new(vec![(*sp).clone()]), rule) > 100.0).count();
-    assert_eq!(big, 2, "{:?}", ring.subpaths.iter().map(|sp| vectorcraft_pathops::area(&PathData::new(vec![sp.clone()]), rule)).collect::<Vec<_>>());
+    let big = ring.subpaths.iter().filter(|sp| redrob_vector_pathops::area(&PathData::new(vec![(*sp).clone()]), rule) > 100.0).count();
+    assert_eq!(big, 2, "{:?}", ring.subpaths.iter().map(|sp| redrob_vector_pathops::area(&PathData::new(vec![sp.clone()]), rule)).collect::<Vec<_>>());
     // An inner edge would be a second outline over the merged area: normalising would drop it.
-    let clean = vectorcraft_pathops::normalize(&ring, rule);
+    let clean = redrob_vector_pathops::normalize(&ring, rule);
     assert!((ring.length() - clean.length()).abs() < 1.0, "{} pt of outline, {} without inner edges", ring.length(), clean.length());
 }

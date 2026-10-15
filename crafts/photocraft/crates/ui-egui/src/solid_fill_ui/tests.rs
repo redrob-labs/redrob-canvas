@@ -1,13 +1,13 @@
 use egui::{Event, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
-use photocraft_color::{Color, ColorMode};
-use photocraft_doc::{Fill, LayerContent, LayerId};
+use redrob_photo_color::{Color, ColorMode};
+use redrob_photo_doc::{Fill, LayerContent, LayerId};
 use serde_json::json;
 
 use super::*;
 
 fn harness(ppp: f32) -> (Harness<'static, PhotocraftApp>, LayerId) {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48, "depth": 16})).unwrap();
     let id = LayerId(s.execute("layer.newFillLayer.solidColor", json!({"color": "#33669980"})).unwrap()["layer"].as_u64().unwrap());
     s.execute("layer.layerMask.revealAll", json!({})).unwrap();
@@ -114,12 +114,12 @@ fn picker_previews_without_editing_cancel_discards_and_ok_is_one_step() {
     assert_eq!(app.session.active().unwrap().history.entries().len(), steps + 1);
     assert_eq!(app.session.tools.foreground, tools, "editing a fill doesn't change the tool colour");
     assert_eq!(app.session.active().unwrap().doc.layer(id).unwrap().content, LayerContent::Fill(Fill::Solid(color)));
-    let bytes = photocraft_format::save_to_bytes(&app.session.active().unwrap().doc, &Default::default()).unwrap();
-    let loaded = photocraft_format::load_from_bytes(&bytes).unwrap();
+    let bytes = redrob_photo_format::save_to_bytes(&app.session.active().unwrap().doc, &Default::default()).unwrap();
+    let loaded = redrob_photo_format::load_from_bytes(&bytes).unwrap();
     assert_eq!(loaded.layer(id).unwrap().content, LayerContent::Fill(Fill::Solid(color)));
     assert_eq!(loaded.layer(id).unwrap().mask, before.layer(id).unwrap().mask);
-    let bytes = photocraft_io::export(&app.session.active().unwrap().doc, "fill.psd", &Default::default()).unwrap().bytes;
-    let loaded = photocraft_io::import("fill.psd", &bytes).unwrap().document;
+    let bytes = redrob_photo_io::export(&app.session.active().unwrap().doc, "fill.psd", &Default::default()).unwrap().bytes;
+    let loaded = redrob_photo_io::import("fill.psd", &bytes).unwrap().document;
     let fill = loaded.walk().into_iter().find(|(_, _, l)| matches!(l.content, LayerContent::Fill(Fill::Solid(_)))).unwrap().2;
     let LayerContent::Fill(Fill::Solid(saved)) = fill.content else { panic!() };
     // PSD's existing SoCo descriptor stores the fill's colour components, not Color.alpha.

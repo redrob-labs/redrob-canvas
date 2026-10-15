@@ -2,7 +2,7 @@
 //! and the typed parameter editor of the command and effect dialogs.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::Unit;
+use redrob_vector_doc::Unit;
 
 use crate::state::Dialog;
 use crate::theme::Tokens;
@@ -215,7 +215,7 @@ pub(super) fn grid(ui: &mut egui::Ui, d: &mut Dialog, unit: Unit) {
                 }
                 ui.end_row();
             } else if let Some(ends) = skew_ends(&d.kind, &k) {
-                let max = vectorcraft_geom::shapes::GRID_SKEW_MAX;
+                let max = redrob_vector_geom::shapes::GRID_SKEW_MAX;
                 row_label(ui, tl!("Skew:"));
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| slider_field(ui, d, &k, -max..=max, "%", &|_| rail));
@@ -354,8 +354,8 @@ fn typed_number(x: f64) -> Value {
 /// within their range, whole numbers, checkboxes and dropdowns, in declaration order. Returns
 /// true when a value changed. The labels (from the parameter keys) and choices are the plug-in's
 /// text, shown as they are.
-pub(super) fn schema_fields(ui: &mut egui::Ui, d: &mut Dialog, specs: &[(String, vectorcraft_plugins::ParamSpec)]) -> bool {
-    use vectorcraft_plugins::ParamSpec;
+pub(super) fn schema_fields(ui: &mut egui::Ui, d: &mut Dialog, specs: &[(String, redrob_vector_plugins::ParamSpec)]) -> bool {
+    use redrob_vector_plugins::ParamSpec;
     let t = Tokens::get(ui.ctx());
     let mut changed = false;
     egui::Grid::new("plugin-grid").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
@@ -600,7 +600,7 @@ pub(super) fn bleed_values(d: &Dialog) -> [f64; 4] {
 /// Bleed fields (Document Setup, New Document): Top, Bottom, Left and Right shown in `unit`, each
 /// `width` wide with a caption above, and a link toggle (`bleedLinked`, on by default) that keeps
 /// them equal. Values are clamped to 0–72 pt.
-pub(super) fn bleed(ui: &mut egui::Ui, d: &mut Dialog, unit: vectorcraft_doc::Unit, width: f32) {
+pub(super) fn bleed(ui: &mut egui::Ui, d: &mut Dialog, unit: redrob_vector_doc::Unit, width: f32) {
     let t = Tokens::get(ui.ctx());
     let mut b = bleed_values(d);
     let linked = d.fields.get("bleedLinked").and_then(Value::as_bool).unwrap_or(true);
@@ -611,7 +611,7 @@ pub(super) fn bleed(ui: &mut egui::Ui, d: &mut Dialog, unit: vectorcraft_doc::Un
             ui.vertical(|ui| {
                 ui.label(egui::RichText::new(tl!(side)).size(11.0).color(t.text_dim));
                 if let Some(v) = crate::widgets::num_field(ui, ("bleed", i), Some(b[i]), unit, width) {
-                    changed = Some((i, v.clamp(0.0, vectorcraft_doc::setup::MAX_BLEED)));
+                    changed = Some((i, v.clamp(0.0, redrob_vector_doc::setup::MAX_BLEED)));
                 }
             });
         }

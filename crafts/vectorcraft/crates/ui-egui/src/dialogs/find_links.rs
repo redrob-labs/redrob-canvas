@@ -73,10 +73,10 @@ pub(super) fn from_missing_links(app: &mut VectorcraftApp, d: &mut Dialog, folde
 /// The selected linked images and placed documents of the active document.
 fn selected_linked(app: &VectorcraftApp) -> Vec<Value> {
     let Some(st) = app.session.active() else { return vec![] };
-    let linked = |id: &vectorcraft_doc::NodeId| {
+    let linked = |id: &redrob_vector_doc::NodeId| {
         st.doc.node(*id).is_some_and(|n| match &n.kind {
-            vectorcraft_doc::NodeKind::Image(im) => im.link.is_some(),
-            vectorcraft_doc::NodeKind::PlacedDocument(_) => true,
+            redrob_vector_doc::NodeKind::Image(im) => im.link.is_some(),
+            redrob_vector_doc::NodeKind::PlacedDocument(_) => true,
             _ => false,
         })
     };
@@ -115,7 +115,7 @@ pub(crate) fn find_in_folder_command(app: &mut VectorcraftApp, folder: Option<St
 fn is_image(app: &VectorcraftApp, id: &Value) -> bool {
     let Some(id) = id.as_u64() else { return false };
     let st = app.session.active();
-    st.and_then(|st| st.doc.node(vectorcraft_doc::NodeId(id))).is_some_and(|n| matches!(n.kind, vectorcraft_doc::NodeKind::Image(_)))
+    st.and_then(|st| st.doc.node(redrob_vector_doc::NodeId(id))).is_some_and(|n| matches!(n.kind, redrob_vector_doc::NodeKind::Image(_)))
 }
 
 /// Make the dialog's document the active one: it may be another tab's.
@@ -205,7 +205,7 @@ pub(super) fn stop_when_closed(app: &mut VectorcraftApp) {
     let open = app.ui.dialog.as_ref().is_some_and(|d| d.kind == KIND && d.fields.get("search").and_then(Value::as_u64) == Some(id));
     if !open {
         app.ui.links_search = None;
-        vectorcraft_engine::cmd::linkfiles::stop(&mut app.session, id);
+        redrob_vector_engine::cmd::linkfiles::stop(&mut app.session, id);
     }
 }
 
@@ -386,8 +386,8 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::time::Instant;
 
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::cmd::findfiles::Rules;
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::cmd::findfiles::Rules;
 
     use super::*;
 
@@ -397,10 +397,10 @@ mod tests {
 
     /// A fresh temporary folder (canonical, as a search reports it).
     fn folder(tag: &str) -> PathBuf {
-        let dir = vectorcraft_testkit::temp_dir(&format!("find-links-{tag}"));
+        let dir = redrob_vector_testkit::temp_dir(&format!("find-links-{tag}"));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        vectorcraft_engine::cmd::findfiles::plain(std::fs::canonicalize(&dir).unwrap())
+        redrob_vector_engine::cmd::findfiles::plain(std::fs::canonicalize(&dir).unwrap())
     }
 
     /// An app that reads files, shows a folder picker and whose searches may go anywhere in `root`,

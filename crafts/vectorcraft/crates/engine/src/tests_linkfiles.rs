@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeId, NodeKind};
+use redrob_vector_doc::{NodeId, NodeKind};
 
 use crate::cmd::findfiles::{self, Limits, Rules, Visitor};
 use crate::cmd::linkfiles::{self, LinkSearch, Sought};
@@ -16,7 +16,7 @@ use crate::{EngineError, Session};
 
 /// A fresh temporary folder (canonical, as a search reports it).
 fn folder(tag: &str) -> PathBuf {
-    let dir = vectorcraft_testkit::temp_dir(&format!("linkfiles-{tag}"));
+    let dir = redrob_vector_testkit::temp_dir(&format!("linkfiles-{tag}"));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     findfiles::plain(std::fs::canonicalize(&dir).unwrap())
@@ -238,7 +238,7 @@ fn relinking_with_copy_puts_the_file_in_the_documents_folder() {
         NodeKind::Image(im) => im.link.clone().unwrap(),
         k => panic!("not an image: {k:?}"),
     };
-    assert_eq!((link(&s).path, link(&s).hash), (copy.to_string_lossy().into_owned(), Some(vectorcraft_doc::links::hash_bytes(&blue))));
+    assert_eq!((link(&s).path, link(&s).hash), (copy.to_string_lossy().into_owned(), Some(redrob_vector_doc::links::hash_bytes(&blue))));
     assert_eq!(s.doc().unwrap().history.undo.last().unwrap().label, "Relink");
     // The same file again: the copy is used.
     let r = relink(&mut s, &found).unwrap();
@@ -349,7 +349,7 @@ fn junk_search_params_never_fail_internally() {
     std::fs::remove_file(root.join("orig/a.png")).unwrap();
     let internal = |r: &crate::Result<Value>| matches!(r, Err(EngineError::Internal { .. }));
     let mut cases = vec![];
-    for v in vectorcraft_testkit::strategies::junk_values() {
+    for v in redrob_vector_testkit::strategies::junk_values() {
         cases.extend([
             json!({"folder": root, "maxSeconds": v}),
             json!({"folder": root, "ids": v}),

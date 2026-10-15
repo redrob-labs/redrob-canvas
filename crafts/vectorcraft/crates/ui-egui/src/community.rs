@@ -73,7 +73,7 @@ mod tests {
         let opened = Arc::new(Mutex::new(vec![]));
         let o = opened.clone();
         let services = crate::Services { open_url: Some(Box::new(move |u: &str| o.lock().unwrap().push(u.to_string()))), ..Default::default() };
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), services);
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), services);
         for id in ["help.discord", "help.website", "help.appPage", "help.github"] {
             crate::menus::invoke(&mut app, id, serde_json::json!({}));
         }

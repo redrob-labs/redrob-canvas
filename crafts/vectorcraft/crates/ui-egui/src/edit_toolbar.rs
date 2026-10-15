@@ -18,7 +18,7 @@ use std::sync::OnceLock;
 
 use egui::{DragAndDrop, Pos2, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::{Value, json};
-use vectorcraft_tools::{TOOL_GROUPS, ToolInfo, tool_info};
+use redrob_vector_tools::{TOOL_GROUPS, ToolInfo, tool_info};
 
 use crate::state::{ToolbarCategory, ToolbarEdits};
 use crate::theme::Tokens;
@@ -637,7 +637,7 @@ fn ghost(ctx: &egui::Context, t: &Tokens) {
 #[cfg(test)]
 mod tests {
     use egui::{Color32, Event, PointerButton, RawInput};
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
 

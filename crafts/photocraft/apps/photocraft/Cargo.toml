@@ -8,27 +8,27 @@ description = "Photocraft: an open-source, native image editor"
 build = "build.rs"
 
 [features]
-# Open HEIC/HEIF photos (the optional photocraft-heif crate). Not default so distributors choose
+# Open HEIC/HEIF photos (the optional redrob-photo-heif crate). Not default so distributors choose
 # it; official builds (CI, packaging/, release) build with `--features heif`.
-heif = ["photocraft-codecs/heif"]
+heif = ["redrob-photo-codecs/heif"]
 
 [lints]
 workspace = true
 
 [dependencies]
-photocraft-doc = { workspace = true }
-photocraft-color = { workspace = true }
-photocraft-raster = { workspace = true }
-photocraft-geom = { workspace = true }
-photocraft-compose = { workspace = true }
-photocraft-engine = { workspace = true }
-photocraft-codecs = { workspace = true }
-photocraft-io = { workspace = true }
-photocraft-format = { workspace = true }
-photocraft-automation = { workspace = true }
-photocraft-ui-egui = { workspace = true }
+redrob-photo-doc = { workspace = true }
+redrob-photo-color = { workspace = true }
+redrob-photo-raster = { workspace = true }
+redrob-photo-geom = { workspace = true }
+redrob-photo-compose = { workspace = true }
+redrob-photo-engine = { workspace = true }
+redrob-photo-codecs = { workspace = true }
+redrob-photo-io = { workspace = true }
+redrob-photo-format = { workspace = true }
+redrob-photo-automation = { workspace = true }
+redrob-photo-ui-egui = { workspace = true }
 # Pen tablet pressure/tilt on macOS and X11 (the workspace's one isolated unsafe helper crate).
-photocraft-tablet = { workspace = true }
+redrob-photo-tablet = { workspace = true }
 eframe = { workspace = true, features = ["wgpu", "accesskit", "wayland", "x11", "persistence"] }
 egui = { workspace = true }
 serde_json = { workspace = true }
@@ -51,7 +51,7 @@ core-graphics2 = { version = "=0.6.1", default-features = false, features = ["di
 fmv-macos-events = "=0.1.0"
 # Safe AppKit calls only: turn off AppKit's title bar dragging (mac_window.rs) and find where the
 # pointer is when files are dropped (cursor.rs; winit 0.30 drops carry no position). Already in
-# Cargo.lock (winit, photocraft-tablet); pinned exactly to the same versions.
+# Cargo.lock (winit, redrob-photo-tablet); pinned exactly to the same versions.
 objc2 = "=0.6.4"
 objc2-foundation = { version = "=0.3.2", default-features = false, features = ["std", "NSArray", "NSEnumerator", "NSGeometry"] }
 objc2-app-kit = { version = "=0.3.2", default-features = false, features = ["std", "NSApplication", "NSApplicationScripting", "NSEvent", "NSResponder", "NSView", "NSWindow"] }
@@ -64,7 +64,7 @@ dispatch2 = { version = "=0.3.1", default-features = false, features = ["std"] }
 
 # Drop position on X11 (`cursor.rs`): pure-Rust X client, already in Cargo.lock; pinned exactly.
 [target.'cfg(target_os = "linux")'.dependencies]
-photocraft-cms = { workspace = true }
+redrob-photo-cms = { workspace = true }
 x11rb = { version = "=0.13.2", default-features = false, features = ["image", "randr", "xkb"] }
 # Clipboard images in types other than PNG on Wayland (`services.rs`, #2546): arboard asks for
 # image/png only. Already in Cargo.lock (arboard's wayland-data-control); pinned exactly.
@@ -72,7 +72,7 @@ wl-clipboard-rs = { version = "=0.9.4", default-features = false }
 # Wayland desktop color selection through the existing XDG portal transport.
 zbus = "=5.19.0"
 # Caption button glyphs from the desktop's icon theme (`caption_style.rs`): SVG paths only, no
-# text or images. Already in Cargo.lock (photocraft-io); pinned exactly.
+# text or images. Already in Cargo.lock (redrob-photo-io); pinned exactly.
 resvg = { version = "=0.45.1", default-features = false }
 # Already used by the portal stack; bounded waits let cancelling close the OS request.
 futures-lite = "=2.6.1"

@@ -1,9 +1,9 @@
 //! Filters refuse a pixel-locked (or fully locked) layer and leave it unchanged, as painting
 //! does (#1102).
 
-use photocraft_doc::LayerId;
-use photocraft_engine::Session;
-use photocraft_geom::Rect;
+use redrob_photo_doc::LayerId;
+use redrob_photo_engine::Session;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 fn layered() -> Session {

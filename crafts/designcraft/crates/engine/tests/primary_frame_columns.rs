@@ -1,12 +1,12 @@
 //! Primary text frames retain all columns supported by the new-document command.
-use designcraft_doc::Document;
-use designcraft_engine::Session;
+use redrob_layout_doc::Document;
+use redrob_layout_engine::Session;
 use serde_json::json;
 
 fn assert_primary_columns(doc: &Document, expected: u32) {
     let mut frames = 0;
     for story in doc.stories.values() {
-        for spec in designcraft_compose::frame_specs(doc, story.id) {
+        for spec in redrob_layout_compose::frame_specs(doc, story.id) {
             assert_eq!(spec.opts.columns, expected);
             let columns = spec.columns();
             assert_eq!(columns.len(), expected as usize);
@@ -27,8 +27,8 @@ fn primary_columns_survive_composition_native_reopen_and_idml_round_trip() {
         let mut reopened = Session::new();
         reopened.execute("file.openBytes", &json!({"name":"primary-columns.designcraft","base64":bytes["base64"]})).unwrap();
         assert_primary_columns(&reopened.doc().unwrap().doc, columns);
-        let idml = designcraft_idml::export_idml(&reopened.doc().unwrap().doc);
-        let imported = designcraft_idml::import_idml(&idml).unwrap();
+        let idml = redrob_layout_idml::export_idml(&reopened.doc().unwrap().doc);
+        let imported = redrob_layout_idml::import_idml(&idml).unwrap();
         assert_primary_columns(&imported, columns);
     }
 }

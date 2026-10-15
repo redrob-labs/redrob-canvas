@@ -5,8 +5,8 @@
 use std::path::{Path, PathBuf};
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, ImageObject, LinkInfo, NodeKind};
-use vectorcraft_geom::Rect;
+use redrob_vector_doc::{Document, ImageObject, LinkInfo, NodeKind};
+use redrob_vector_geom::Rect;
 
 use super::*;
 
@@ -75,7 +75,7 @@ pub(crate) fn bounds(s: &Session, id: NodeId) -> Rect {
 
 /// The colour at the centre of the active document's artboard.
 pub(crate) fn centre_colour(doc: &Document) -> [u8; 3] {
-    let img = vectorcraft_render::Renderer::new().render_region(doc, Rect::new(0.0, 0.0, 400.0, 300.0), 1.0, true);
+    let img = redrob_vector_render::Renderer::new().render_region(doc, Rect::new(0.0, 0.0, 400.0, 300.0), 1.0, true);
     let [r, g, b, _] = img.pixel(200, 150);
     [r, g, b]
 }
@@ -108,7 +108,7 @@ fn a_placed_link_records_the_file_and_the_document_saves_only_a_preview() {
     let im = image(&s, id);
     let link = im.link.clone().unwrap();
     assert_eq!((link.path.as_str(), link.size), (pic.as_str(), Some(bytes.len() as u64)));
-    assert_eq!(link.hash.as_deref(), Some(vectorcraft_doc::links::hash_bytes(&bytes).as_str()));
+    assert_eq!(link.hash.as_deref(), Some(redrob_vector_doc::links::hash_bytes(&bytes).as_str()));
     assert!(link.modified.is_some_and(|m| m > 1_600_000_000_000), "{link:?}");
     let blob = &s.doc().unwrap().doc.images[&im.key];
     assert!(blob.proxy.is_some() && !blob.is_proxy(), "full pixels, with a preview to save");
@@ -316,7 +316,7 @@ fn links_from_older_files_load_and_keep_their_pixels() {
     let mut s = session();
     s.execute("file.place", &json!({"path": pic, "at": [200, 150], "link": false})).unwrap();
     // As older versions saved a link: the path alone, the pixels embedded.
-    let mut v: Value = serde_json::from_slice(&vectorcraft_format::save(&s.doc().unwrap().doc, false)).unwrap();
+    let mut v: Value = serde_json::from_slice(&redrob_vector_format::save(&s.doc().unwrap().doc, false)).unwrap();
     saved_image(&mut v)["link"] = json!(pic);
     v["format"] = json!("drawcraft");
     let legacy = serde_json::to_vec(&v).unwrap();
@@ -346,12 +346,12 @@ fn without_a_file_system_the_saved_preview_shows() {
     write(&pic, &png(600, 300, RED));
     let mut s = session();
     let id = place(&mut s, &pic);
-    let saved = vectorcraft_format::save(&s.doc().unwrap().doc, false);
+    let saved = redrob_vector_format::save(&s.doc().unwrap().doc, false);
     std::fs::remove_file(&pic).unwrap();
-    let doc = vectorcraft_format::load(&saved).unwrap();
+    let doc = redrob_vector_format::load(&saved).unwrap();
     assert!(doc.images.values().all(|b| b.is_proxy()));
     assert!(near(centre_colour(&doc), RED), "the preview renders");
-    let r = s.execute("document.open", &json!({"name": "poster.vectorcraft", "dataBase64": vectorcraft_format::base64_encode(&saved)})).unwrap();
+    let r = s.execute("document.open", &json!({"name": "poster.vectorcraft", "dataBase64": redrob_vector_format::base64_encode(&saved)})).unwrap();
     assert_eq!(r["missingLinks"][0]["ids"], json!([id.0]));
     assert!(near(centre_colour(&s.doc().unwrap().doc), RED));
     // Exports carry the preview.
@@ -373,7 +373,7 @@ fn relative_paths_are_written_against_the_saved_file() {
         link: Some(LinkInfo::new(format!("{root}{sep}art{sep}a.png"))),
         placement: Default::default(),
     };
-    d.insert(Some(lid), 0, vectorcraft_doc::Node::new(nid, NodeKind::Image(Box::new(im)))).unwrap();
+    d.insert(Some(lid), 0, redrob_vector_doc::Node::new(nid, NodeKind::Image(Box::new(im)))).unwrap();
     let rel = |dest: String| {
         let d = cmd::links::with_relative_paths(&d, &dest).unwrap_or_else(|| d.clone());
         match &d.node(nid).unwrap().kind {
@@ -414,7 +414,7 @@ fn a_placed_document_brings_its_links_with_the_files_pixels() {
 /// not found shows it, one found is read at once into the same bounds, which isn't a change.
 #[test]
 fn links_of_an_imported_file_are_read_where_they_are_found() {
-    use vectorcraft_testkit::ai;
+    use redrob_vector_testkit::ai;
     let dir = Folder::new("imported");
     let pic = dir.file("photo.png").replace('\\', "/");
     // A 2×1 preview (premultiplied ARGB: a blue at half opacity) of a file of 600 × 300 px placed at

@@ -34,7 +34,7 @@ fn list(app: &mut DesignApp, ui: &mut egui::Ui, para: bool) {
         g
     };
     for n in names.iter().filter(|n| !n.contains('/')) {
-        if para && n == designcraft_doc::NO_PARA_STYLE {
+        if para && n == redrob_layout_doc::NO_PARA_STYLE {
             continue;
         }
         style_row(app, ui, para, n, current.as_deref(), &groups, &t);
@@ -96,7 +96,7 @@ fn style_row(app: &mut DesignApp, ui: &mut egui::Ui, para: bool, n: &str, curren
         egui::FontId::proportional(12.5),
         t.text,
     );
-    let editable = n != if para { designcraft_doc::NO_PARA_STYLE } else { designcraft_doc::NO_CHAR_STYLE };
+    let editable = n != if para { redrob_layout_doc::NO_PARA_STYLE } else { redrob_layout_doc::NO_CHAR_STYLE };
     if resp.double_clicked() && editable {
         crate::dialogs::open_style_options(app, para, n);
     } else if resp.clicked() {
@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn character_style_plus_captures_selection_for_reuse() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let frame = app.run("frame.create", json!({"rect": [36, 36, 300, 200], "content": "text", "text": "alpha beta"})).unwrap();
         app.run("text.select", json!({"story": frame["story"], "anchor": 0, "focus": 5})).unwrap();
@@ -197,7 +197,7 @@ mod tests {
         h.run_steps(3);
         let app = h.state_mut();
         let style = app.session.doc().unwrap().doc.styles.char_style("Character Style 1").unwrap();
-        assert_eq!(style.chars, designcraft_doc::CharAttrs { underline: Some(true), ..Default::default() });
+        assert_eq!(style.chars, redrob_layout_doc::CharAttrs { underline: Some(true), ..Default::default() });
         assert_eq!(app.session.doc().unwrap().selection, selection);
         assert_eq!(app.session.doc().unwrap().history.undo.len(), undo_len + 1);
         app.run("text.select", json!({"story": frame["story"], "anchor": 6, "focus": 10})).unwrap();

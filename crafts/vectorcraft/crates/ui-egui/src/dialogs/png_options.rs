@@ -8,10 +8,10 @@
 
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
-use vectorcraft_engine::cmd::fileio::{self, ArtboardPick, Format};
-use vectorcraft_render::AntiAlias;
-use vectorcraft_render::encode::jpeg::{self, ColorModel, Method};
-use vectorcraft_render::encode::quantize::{Dither, PaletteOptions, Reduction};
+use redrob_vector_engine::cmd::fileio::{self, ArtboardPick, Format};
+use redrob_vector_render::AntiAlias;
+use redrob_vector_render::encode::jpeg::{self, ColorModel, Method};
+use redrob_vector_render::encode::quantize::{Dither, PaletteOptions, Reduction};
 
 use super::{DialogSpec, form, psd_options, tiff_bmp_tga};
 use crate::state::Dialog;
@@ -66,12 +66,12 @@ pub fn open(app: &mut VectorcraftApp, f: &Format, mut params: Value) {
 /// The options raster format `f` starts with (after the resolution): the document's background
 /// (New Document → Background Contents; JPEG has no alpha), anti-aliasing and the format's own.
 pub(super) fn defaults(app: &VectorcraftApp, f: &Format) -> Map<String, Value> {
-    let white = f.id == "jpg" || app.session.active().is_some_and(|st| st.doc.setup.background == vectorcraft_doc::Background::White);
+    let white = f.id == "jpg" || app.session.active().is_some_and(|st| st.doc.setup.background == redrob_vector_doc::Background::White);
     let mut o = Map::new();
     o.insert("background".into(), json!(if white { "white" } else { "transparent" }));
     o.insert("antiAlias".into(), json!(AntiAlias::default().id()));
     // A CMYK document exports CMYK JPEGs, TIFFs and PSDs by default.
-    let cmyk = app.session.active().is_some_and(|st| st.doc.color_mode == vectorcraft_doc::ColorMode::Cmyk);
+    let cmyk = app.session.active().is_some_and(|st| st.doc.color_mode == redrob_vector_doc::ColorMode::Cmyk);
     match f.id {
         "png" => {
             o.insert("interlaced".into(), json!(false));
@@ -108,11 +108,11 @@ pub(super) fn defaults(app: &VectorcraftApp, f: &Format) -> Map<String, Value> {
 
 /// The size in points of the one region an export covers (`None` when it writes several
 /// artboards): the chosen artboard, or the bounds of the visible art.
-fn export_size(doc: &vectorcraft_doc::Document, p: &Value) -> Option<(f64, f64)> {
+fn export_size(doc: &redrob_vector_doc::Document, p: &Value) -> Option<(f64, f64)> {
     let pick = ArtboardPick::deserialize(p).ok()?;
     let n = doc.artboards.len();
     let r = match p["useArtboards"].as_bool() {
-        Some(false) => vectorcraft_render::encode::art_bounds(doc)?,
+        Some(false) => redrob_vector_render::encode::art_bounds(doc)?,
         Some(true) => match pick.resolve(n).ok()?.as_deref() {
             Some([i]) => doc.artboards.get(*i)?.rect,
             None if n == 1 => doc.artboards[0].rect,
@@ -156,7 +156,7 @@ fn body(_: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
             d.fields.get("__size").and_then(Value::as_array).map(|a| [0, 1].map(|i| a.get(i).and_then(Value::as_f64).unwrap_or(0.0)))
         {
             label(ui, tl!("Size:"));
-            let (pw, ph) = vectorcraft_render::region_pixels(vectorcraft_geom::Rect::new(0.0, 0.0, w, h), d.f64("ppi", 72.0) / 72.0);
+            let (pw, ph) = redrob_vector_render::region_pixels(redrob_vector_geom::Rect::new(0.0, 0.0, w, h), d.f64("ppi", 72.0) / 72.0);
             ui.label(egui::RichText::new(format!("{pw} × {ph} px")).color(t.text));
             ui.end_row();
         }
@@ -317,7 +317,7 @@ fn palette_rows(ui: &mut egui::Ui, d: &mut Dialog, label: &dyn Fn(&mut egui::Ui,
 
 /// A colour button bound to `d.fields[key]` (`"#rrggbb"`; grey when unset).
 pub(super) fn color_button(ui: &mut egui::Ui, d: &mut Dialog, key: &str) {
-    let c = vectorcraft_color::Color::from_hex(&d.str(key)).map_or([128, 128, 128, 255], |c| c.to_rgba8(1.0));
+    let c = redrob_vector_color::Color::from_hex(&d.str(key)).map_or([128, 128, 128, 255], |c| c.to_rgba8(1.0));
     let mut rgb = [c[0], c[1], c[2]];
     if ui.color_edit_button_srgb(&mut rgb).changed() {
         d.fields.insert(key.into(), json!(format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2])));

@@ -11,12 +11,12 @@ cargo-fuzz = true
 [workspace]
 
 [features]
-io = ["dep:photocraft-io"]
+io = ["dep:redrob-photo-io"]
 
 [dependencies]
 libfuzzer-sys = "0.4"
-photocraft-affinity = { path = "..", features = ["synth"] }
-photocraft-io = { path = "../../io", optional = true }
+redrob-photo-affinity = { path = "..", features = ["synth"] }
+redrob-photo-io = { path = "../../io", optional = true }
 
 [[bin]]
 name = "preview"

@@ -3,7 +3,7 @@
 //! the grid and Simulate Colored Paper tints the artboard.
 
 use serde_json::json;
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use crate::theme::Tokens;
 use crate::{VectorcraftApp, canvas};

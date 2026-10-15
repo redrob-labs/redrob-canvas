@@ -14,7 +14,7 @@ use std::sync::Arc;
 use egui::epaint::Shape;
 use egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
 use egui::{FontData, FontFamily, FontId, LayerId};
-use vectorcraft_text::{FontDb, FontFace};
+use redrob_vector_text::{FontDb, FontFace};
 
 #[derive(Default)]
 pub(crate) struct UiFonts {
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn japanese_renders_with_the_craft_fonts_without_installed_fonts() {
-        if !vectorcraft_text::CRAFT_FONTS.iter().any(|f| f.is_japanese()) {
+        if !redrob_vector_text::CRAFT_FONTS.iter().any(|f| f.is_japanese()) {
             eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout to run it)");
             return;
         }
@@ -210,7 +210,7 @@ mod tests {
         frame(&ctx, &mut fonts, "日本語の文字 Layer 1");
         fonts.finish(&ctx);
         frame(&ctx, &mut fonts, "日本語の文字 Layer 1");
-        if vectorcraft_text::CRAFT_FONTS.is_empty() {
+        if redrob_vector_text::CRAFT_FONTS.is_empty() {
             let names: Vec<String> = ctx.fonts(|f| f.definitions().font_data.keys().cloned().collect());
             assert!(names.iter().all(|n| !n.starts_with("craft-fonts")), "{names:?}");
         }

@@ -87,8 +87,8 @@ pub use css::{CssOptions, CssRule, CssSheet, CssUnits, css_rules};
 
 use serde::{Deserialize, Serialize};
 
-pub use vectorcraft_doc::Document;
-pub use vectorcraft_doc::TextObject;
+pub use redrob_vector_doc::Document;
+pub use redrob_vector_doc::TextObject;
 
 /// How style properties are written (SVG Options → Styling).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -510,16 +510,16 @@ pub use import::MAX_ELEMENT_DEPTH;
 pub fn import_with(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<String>), SvgError> {
     // usvg converts the tree by recursion, in large stack frames: the nesting it is given is
     // capped (`import::depth`), and it gets room for that cap whatever thread asks.
-    vectorcraft_doc::depth::with_deep_stack(|| import::import(svg, opts))
+    redrob_vector_doc::depth::with_deep_stack(|| import::import(svg, opts))
 }
 
 /// Reads a linked file: its bytes and the link to it (absolute path, size, time and hash), or
 /// `None` when there is no readable file at the (absolute) path.
-pub type ReadFile<'a> = &'a (dyn Fn(&str) -> Option<(Vec<u8>, vectorcraft_doc::LinkInfo)> + Sync);
+pub type ReadFile<'a> = &'a (dyn Fn(&str) -> Option<(Vec<u8>, redrob_vector_doc::LinkInfo)> + Sync);
 
 /// How [`import_with`] reads the files an SVG's `<image>` elements link to.
 ///
-/// A raster file stays linked ([`vectorcraft_doc::ImageObject::link`]); an SVG file imports as
+/// A raster file stays linked ([`redrob_vector_doc::ImageObject::link`]); an SVG file imports as
 /// vector art. A file that can't be read imports as a placeholder that keeps the link (and a
 /// warning), so it can be relinked.
 #[derive(Clone, Copy, Default)]

@@ -9,7 +9,7 @@ and the krilla/hayro patches all point at craft-libs' vendored copies.
 
 Run after every `git subtree pull`:
 
-    python3 tools/merge_workspaces.py && cargo metadata --offline >/dev/null
+    python3 tools/merge_workspaces.py && cargo update --workspace --offline
 
 Each subtree's own `Cargo.toml` is renamed to `Cargo.upstream.toml`: cargo would otherwise
 treat it as a nested workspace root and refuse the crates as members of the wrong workspace.
@@ -27,7 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CRAFTS = ["photocraft", "vectorcraft", "designcraft", "craft-libs"]
 CRAFT_LIBS = {
-    f"craft-{n}": f"crafts/craft-libs/crates/{n}"
+    f"redrob-craft-{n}": f"crafts/craft-libs/crates/{n}"
     for n in ["atomic", "cms", "pdf", "print", "quit", "settings", "ui"]
 }
 VENDORED = ["krilla", "hayro", "hayro-interpret", "hayro-syntax", "hayro-jbig2"]
@@ -116,12 +116,16 @@ def main() -> None:
         parked = live.with_name("Cargo.upstream.toml")
         if live.exists():
             live.replace(parked)
-    # A pull brings upstream's docs, packaging, CI and READMEs back: drop that furniture before
-    # the manifests are read (tools/prune_upstream.py).
+    # A pull brings upstream's docs, packaging, CI and READMEs back, and its crate names: drop the
+    # furniture and rename the crates BEFORE the manifests are read, so the generated root
+    # manifest sees the renamed tree (tools/prune_upstream.py, tools/rename_crates.py; then
+    # `cargo update --workspace --offline` re-sorts Cargo.lock).
     sys.path.insert(0, str(ROOT / "tools"))
     import prune_upstream  # noqa: E402
+    import rename_crates  # noqa: E402
 
     prune_upstream.main([])
+    rename_crates.main([])
     for craft in CRAFTS:
         parked = ROOT / "crafts" / craft / "Cargo.upstream.toml"
         data = tomllib.load(parked.open("rb"))
@@ -144,7 +148,7 @@ def main() -> None:
         for k, v in lints.get("clippy", {}).items():
             lints_clippy.setdefault(k, v)
     # The upstream subtrees are linted by their own projects on their own clippy version; on
-    # ours (1.95) craft-ui and photocraft-raw trip collapsible_match, and since `-D warnings`
+    # ours (1.95) redrob-craft-ui and redrob-photo-raw trip collapsible_match, and since `-D warnings`
     # covers every workspace member we cannot gate our crates without silencing it here.
     lints_clippy["collapsible_match"] = "allow"
     lints_clippy["nonminimal_bool"] = "allow"

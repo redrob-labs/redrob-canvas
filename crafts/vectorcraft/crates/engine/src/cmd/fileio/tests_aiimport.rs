@@ -6,14 +6,14 @@ use std::io::Write as _;
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Node, NodeKind};
-use vectorcraft_testkit::ai;
-use vectorcraft_testkit::pdf::{PdfPage, first_extra, pdf_with};
+use redrob_vector_doc::{Node, NodeKind};
+use redrob_vector_testkit::ai;
+use redrob_vector_testkit::pdf::{PdfPage, first_extra, pdf_with};
 
 use super::*;
 
 fn open(s: &mut Session, name: &str, bytes: &[u8], params: Value) -> Result<Value> {
-    let mut p = json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)});
+    let mut p = json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes)});
     if let (Some(p), Some(extra)) = (p.as_object_mut(), params.as_object()) {
         p.extend(extra.clone());
     }
@@ -36,7 +36,7 @@ fn check_sample(s: &Session) {
     let doc = &s.doc().unwrap().doc;
     assert_eq!(names(&doc.layers), ["Art", "Hidden"]);
     assert_eq!(doc.artboards.len(), 1);
-    assert_eq!(doc.artboards[0].rect, vectorcraft_geom::Rect::new(0.0, 0.0, 200.0, 100.0));
+    assert_eq!(doc.artboards[0].rect, redrob_vector_geom::Rect::new(0.0, 0.0, 200.0, 100.0));
     let art = doc.layers[0].children().unwrap();
     assert_eq!(names(art), ["Pair", "Ring", "Window"]);
     let pair = art[0].children().unwrap();
@@ -48,8 +48,8 @@ fn check_sample(s: &Session) {
     assert!(!hidden.visible);
     let kids = hidden.children().unwrap();
     assert_eq!(names(kids), ["Shaded", "", "Sub", ""]);
-    assert!(matches!(kids[0].appearance.fill().map(|f| &f.paint), Some(vectorcraft_color::Paint::Gradient(_))));
-    assert_eq!((kids[1].opacity, kids[1].blend), (0.5, vectorcraft_color::BlendMode::Screen));
+    assert!(matches!(kids[0].appearance.fill().map(|f| &f.paint), Some(redrob_vector_color::Paint::Gradient(_))));
+    assert_eq!((kids[1].opacity, kids[1].blend), (0.5, redrob_vector_color::BlendMode::Screen));
     assert!(kids[2].locked && matches!(kids[2].kind, NodeKind::Layer { .. }));
     let NodeKind::Image(im) = &kids[3].kind else { panic!("an image") };
     assert_eq!((im.width, im.height), (2, 1));
@@ -63,7 +63,7 @@ fn an_illustrator_eps_opens_with_its_layers() {
     check_sample(&s);
     // Saved as EPS and opened again, it comes back the same.
     let eps = s.execute("document.exportEps", &json!({})).unwrap();
-    let bytes = vectorcraft_format::base64_decode(eps["dataBase64"].as_str().unwrap()).unwrap();
+    let bytes = redrob_vector_format::base64_decode(eps["dataBase64"].as_str().unwrap()).unwrap();
     let r = open(&mut s, "again.eps", &bytes, json!({})).unwrap();
     assert_eq!(r["restored"], json!(true), "{r}");
     check_sample(&s);
@@ -110,7 +110,7 @@ fn a_pdfs_art_past_the_page_opens_whole_from_its_editing_data() {
     assert_eq!(names(&doc.layers), ["Art"]);
     assert!(doc.art_bounds().is_some_and(|b| b.x1 > 200.5), "{:?}", doc.art_bounds());
     let r = open(&mut s, "past.pdf", &file, json!({"editingData": false})).unwrap();
-    assert_eq!(r["warnings"], json!([vectorcraft_pdf::PAST_PAGE_NOTE]), "{r}");
+    assert_eq!(r["warnings"], json!([redrob_vector_pdf::PAST_PAGE_NOTE]), "{r}");
     assert!(s.doc().unwrap().doc.art_bounds().is_some_and(|b| b.x1 < 200.5));
 }
 
@@ -121,9 +121,9 @@ fn editing_data_that_cant_be_read_keeps_the_pdf_parts_notes() {
     let damaged = b"%AI12_CompressedData not zlib";
     let mut s = Session::new();
     let r = open(&mut s, "damaged.ai", &ai::ai(damaged, ai::page_pdf()), json!({})).unwrap();
-    assert_eq!(r["warnings"], json!([vectorcraft_pdf::OFF_ARTBOARD_NOTE]), "{r}");
+    assert_eq!(r["warnings"], json!([redrob_vector_pdf::OFF_ARTBOARD_NOTE]), "{r}");
     let r = open(&mut s, "damaged.pdf", &ai::pdf(damaged, "0 g 150 20 100 60 re f"), json!({})).unwrap();
-    assert_eq!(r["warnings"], json!([vectorcraft_pdf::PAST_PAGE_NOTE]), "{r}");
+    assert_eq!(r["warnings"], json!([redrob_vector_pdf::PAST_PAGE_NOTE]), "{r}");
 }
 
 #[test]
@@ -173,7 +173,7 @@ fn an_ai_file_whose_pdf_part_is_only_text_opens_from_it_when_its_editing_data_ca
         let mut s = Session::new();
         let r = open(&mut s, "text.ai", &ai::ai_with(unreadable, TEXT_ART, boxed), json!({})).unwrap();
         // Then a note on the font, where the machine lacks it.
-        assert_eq!(r["warnings"][0], json!(vectorcraft_pdf::OFF_ARTBOARD_NOTE), "{boxed}: {r}");
+        assert_eq!(r["warnings"][0], json!(redrob_vector_pdf::OFF_ARTBOARD_NOTE), "{boxed}: {r}");
         assert_eq!(text_and_others(&s), (1, 0), "{boxed}");
         // The PDF part alone, as asked.
         open(&mut s, "text.ai", &ai::ai_with(unreadable, TEXT_ART, boxed), json!({"editingData": false})).unwrap();
@@ -187,7 +187,7 @@ fn an_ai_file_whose_pdf_part_is_only_text_opens_from_it_when_its_editing_data_ca
     assert!(e.contains("placeholder"), "{e}");
     // Placed, it is read as its page too.
     let r = s.execute("file.new", &json!({})).and_then(|_| {
-        let data = vectorcraft_format::base64_encode(&ai::ai_with(unreadable, TEXT_ART, "/ArtBox [0 0 200 100]"));
+        let data = redrob_vector_format::base64_encode(&ai::ai_with(unreadable, TEXT_ART, "/ArtBox [0 0 200 100]"));
         s.execute("file.place", &json!({"name": "text.ai", "dataBase64": data, "link": false}))
     });
     assert!(r.is_ok(), "{r:?}");
@@ -234,7 +234,7 @@ fn fit_to_artwork_bounds_leaves_out_the_hidden_art_and_guides_the_editing_data_h
     assert!(!kids[1].visible && matches!(kids[2].kind, NodeKind::Path { guide: true, .. }));
     s.execute("artboard.fitToArt", &json!({})).unwrap();
     // The square, 50 to 90 down the 100-point page.
-    assert_eq!(s.doc().unwrap().doc.artboards[0].rect, vectorcraft_geom::Rect::new(10.0, 50.0, 50.0, 90.0));
+    assert_eq!(s.doc().unwrap().doc.artboards[0].rect, redrob_vector_geom::Rect::new(10.0, 50.0, 50.0, 90.0));
 }
 
 #[test]

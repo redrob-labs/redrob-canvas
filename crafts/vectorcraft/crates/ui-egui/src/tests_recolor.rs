@@ -2,9 +2,9 @@
 
 use egui::{Event, Modifiers, PointerButton, Pos2, Rect, vec2};
 use serde_json::{Value, json};
-use vectorcraft_color::Color;
-use vectorcraft_color::recolor::ColorKey;
-use vectorcraft_engine::Session;
+use redrob_vector_color::Color;
+use redrob_vector_color::recolor::ColorKey;
+use redrob_vector_engine::Session;
 
 use crate::{VectorcraftApp, dialogs, panels};
 
@@ -112,7 +112,7 @@ fn presets_open_colour_jobs_and_libraries_and_both_tabs_draw() {
     app.run("ui.recolorDialog", presets[3].1.clone()).unwrap();
     assert_eq!(field(&app, "limitTo"), "web-safe-216", "Color Library starts on the first library");
     dialog_frame(&mut app, &ctx);
-    let web = |k: &Value| vectorcraft_engine::cmd::color_value(k).unwrap().to_rgb().iter().all(|v| ((v * 5.0).round() - v * 5.0).abs() < 1e-3);
+    let web = |k: &Value| redrob_vector_engine::cmd::color_value(k).unwrap().to_rgb().iter().all(|v| ((v * 5.0).round() - v * 5.0).abs() < 1e-3);
     assert!(field(&app, "rows").as_array().unwrap().iter().all(|r| web(&r["to"])));
     dialogs::cancel(&mut app);
     // The Color Guide's colours become the new colours.

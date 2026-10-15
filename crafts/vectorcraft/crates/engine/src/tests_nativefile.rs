@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 
 use serde_json::{Value, json};
-use vectorcraft_format::{is_compressed, sniff};
+use redrob_vector_format::{is_compressed, sniff};
 
 use super::*;
 
@@ -23,7 +23,7 @@ fn tmp_dir(tag: &str) -> PathBuf {
 }
 
 fn bytes_of(r: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(r["dataBase64"].as_str().expect("dataBase64")).unwrap()
+    redrob_vector_format::base64_decode(r["dataBase64"].as_str().expect("dataBase64")).unwrap()
 }
 
 /// The file `document.save` (no path) gives back with `p`.
@@ -32,7 +32,7 @@ fn saved(s: &mut Session, p: Value) -> Vec<u8> {
 }
 
 fn open(s: &mut Session, name: &str, bytes: &[u8]) -> Value {
-    s.execute("document.open", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes)})).unwrap()
+    s.execute("document.open", &json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes)})).unwrap()
 }
 
 /// The file's JSON (unpacked when compressed).
@@ -100,10 +100,10 @@ fn saves_for_older_versions() {
 fn preview_is_at_most_256_pixels() {
     let mut s = session();
     let bytes = saved(&mut s, json!({"preview": true, "compress": true}));
-    let png = vectorcraft_format::preview(&bytes).expect("a preview");
+    let png = redrob_vector_format::preview(&bytes).expect("a preview");
     let img = image::load_from_memory(&png).unwrap();
     assert_eq!((img.width(), img.height()), (256, 128), "the 400×200 artboard fitted into 256 px");
-    assert!(vectorcraft_format::preview(&saved(&mut s, json!({}))).is_none(), "off by default");
+    assert!(redrob_vector_format::preview(&saved(&mut s, json!({}))).is_none(), "off by default");
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn unused_images_are_left_out_of_saves() {
     let mut s = session();
     let mut png = vec![];
     image::RgbaImage::from_pixel(4, 4, image::Rgba([1, 2, 3, 255])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
-    let r = s.execute("file.place", &json!({"name": "a.png", "dataBase64": vectorcraft_format::base64_encode(&png)})).unwrap();
+    let r = s.execute("file.place", &json!({"name": "a.png", "dataBase64": redrob_vector_format::base64_encode(&png)})).unwrap();
     let id = r["ids"][0].as_u64().unwrap();
     assert_eq!(json_of(&saved(&mut s, json!({})))["images"].as_object().unwrap().len(), 1);
     s.execute("edit.clear", &json!({"ids": [id]})).unwrap();

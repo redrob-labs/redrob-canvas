@@ -7,7 +7,7 @@
 //! `__object`, `__fill`, `__stroke` (that option has something to expand: `object.expand.info`).
 
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::expand::{DEFAULT_STEPS, MAX_STEPS};
+use redrob_vector_engine::cmd::expand::{DEFAULT_STEPS, MAX_STEPS};
 
 use super::{DialogSpec, run_and_close};
 use crate::state::Dialog;
@@ -92,8 +92,8 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::doc::NodeKind;
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::doc::NodeKind;
 
     fn frame(app: &mut VectorcraftApp) -> String {
         crate::tests_labels::painted_text(app, |app, ui| super::super::show(app, ui.ctx()))

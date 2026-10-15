@@ -4,10 +4,10 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
-use vectorcraft_doc::{AppearanceItem, Node, NodeKind};
-use vectorcraft_geom::Rect;
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use redrob_vector_color::Paint;
+use redrob_vector_doc::{AppearanceItem, Node, NodeKind};
+use redrob_vector_geom::Rect;
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 
@@ -28,7 +28,7 @@ fn png(w: u32, h: u32, rgba: [u8; 4], ppi: Option<f64>) -> Vec<u8> {
 }
 
 fn file(name: &str, bytes: &[u8]) -> Value {
-    json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(bytes) })
+    json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) })
 }
 
 /// `file.place` of `bytes` named `name`, with `extra` params.
@@ -54,7 +54,7 @@ fn close(a: f64, b: f64) -> bool {
 
 fn serialize(s: &mut Session, format: &str) -> Vec<u8> {
     let v = s.execute("document.serialize", &json!({"format": format})).unwrap();
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
 }
 
 #[test]
@@ -126,7 +126,7 @@ fn svg_with_a_data_png_renders_and_leaves_the_clipboard_alone() {
     s.execute("select.set", &json!({"ids": [rect]})).unwrap();
     s.execute("edit.copy", &json!({})).unwrap();
     let clipboard = s.clipboard.clone();
-    let red = vectorcraft_format::base64_encode(&png(4, 2, [255, 0, 0, 255], None));
+    let red = redrob_vector_format::base64_encode(&png(4, 2, [255, 0, 0, 255], None));
     let svg = format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><image width="40" height="20" href="data:image/png;base64,{red}"/><rect width="10" height="10" fill="#0000ff"/></svg>"##
     );
@@ -140,7 +140,7 @@ fn svg_with_a_data_png_renders_and_leaves_the_clipboard_alone() {
     let doc = &s.doc().unwrap().doc;
     assert!(doc.images.len() == 1, "the embedded image joined the document");
     // The group spans 80..120 × 90..110: blue square top left, red image elsewhere.
-    let img = vectorcraft_testkit::raster::render_region(doc, Rect::new(80.0, 90.0, 120.0, 110.0), 1.0);
+    let img = redrob_vector_testkit::raster::render_region(doc, Rect::new(80.0, 90.0, 120.0, 110.0), 1.0);
     assert_eq!(img.over_white(30, 15), [255, 0, 0]);
     assert_eq!(img.over_white(4, 4), [0, 0, 255]);
 }
@@ -175,7 +175,7 @@ fn replace_keeps_the_transform_and_the_stacking_place() {
 fn replace_needs_exactly_one_selected_object() {
     let mut s = session();
     let r = s
-        .execute("file.place", &json!({"replace": true, "name": "b.png", "dataBase64": vectorcraft_format::base64_encode(&png(2, 2, [0; 4], None))}));
+        .execute("file.place", &json!({"replace": true, "name": "b.png", "dataBase64": redrob_vector_format::base64_encode(&png(2, 2, [0; 4], None))}));
     assert!(r.unwrap_err().to_string().contains("select the one object"));
 }
 
@@ -213,7 +213,7 @@ fn pdf_pages_and_native_artboards_place_as_clipped_groups() {
         assert!(matches!(g.kind, NodeKind::Group { clip: true, .. }), "{name}: clipped to the page");
         let r = place(&mut s, name, bytes, json!({"page": 2, "crop": "bounding"}));
         assert!((r["width"].as_f64().unwrap() - 20.0).abs() < 1.5, "{name}: the art's bounds: {r}");
-        let err = s.execute("file.place", &json!({"name": name, "dataBase64": vectorcraft_format::base64_encode(bytes), "page": 3})).unwrap_err();
+        let err = s.execute("file.place", &json!({"name": name, "dataBase64": redrob_vector_format::base64_encode(bytes), "page": 3})).unwrap_err();
         assert!(err.to_string().contains("has 2"), "{name}: {err}");
     }
 }
@@ -277,7 +277,7 @@ fn info_reports_size_resolution_colour_mode_and_link() {
     assert_eq!((info["colorMode"].as_str(), info["pixelWidth"].as_u64()), (Some("Grayscale"), Some(300)));
     assert_eq!(info["ppi"], json!([300.0, 300.0]));
     assert!(close(info["width"].as_f64().unwrap(), 72.0));
-    let thumb = image::load_from_memory(&vectorcraft_format::base64_decode(info["thumbnailBase64"].as_str().unwrap()).unwrap()).unwrap();
+    let thumb = image::load_from_memory(&redrob_vector_format::base64_decode(info["thumbnailBase64"].as_str().unwrap()).unwrap()).unwrap();
     assert_eq!((thumb.width(), thumb.height()), (16, 8));
     assert!(top_children(&s).is_empty(), "info places nothing");
     // A path is linked by default.
@@ -328,11 +328,11 @@ fn a_queue_of_3_with_click_drag_and_esc_places_2() {
 #[test]
 fn bad_place_params_are_errors() {
     let mut s = session();
-    let ok = vectorcraft_format::base64_encode(&png(2, 2, [0; 4], None));
+    let ok = redrob_vector_format::base64_encode(&png(2, 2, [0; 4], None));
     for p in [
         json!({}),
         json!({"name": "x.png", "dataBase64": "%%%"}),
-        json!({"name": "notes.xyz", "dataBase64": vectorcraft_format::base64_encode(b"hello")}),
+        json!({"name": "notes.xyz", "dataBase64": redrob_vector_format::base64_encode(b"hello")}),
         json!({"name": "x.png", "dataBase64": ok, "rect": [0, 0, 0, 10]}),
         json!({"name": "x.png", "dataBase64": ok, "at": [1e12, 0]}),
         json!({"name": "x.png", "dataBase64": ok, "page": 0}),

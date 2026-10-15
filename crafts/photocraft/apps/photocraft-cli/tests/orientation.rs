@@ -6,7 +6,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use photocraft_codecs::{ChannelLayout, DecodeOptions, EncodeOptions, Format, Image, SampleType, decode, decode_with, exif_orientation};
+use redrob_photo_codecs::{ChannelLayout, DecodeOptions, EncodeOptions, Format, Image, SampleType, decode, decode_with, exif_orientation};
 use serde_json::Value;
 
 fn bin() -> Command {
@@ -61,7 +61,7 @@ fn phone_jpeg() -> Vec<u8> {
     }
     let stored = Image::from_u8(h as u32, w as u32, ChannelLayout::Rgb, px).unwrap();
     let jpeg =
-        photocraft_codecs::encode(&stored, Format::Jpeg, &EncodeOptions { jpeg_quality: 100, jpeg_chroma_subsampling: false, ..Default::default() }).unwrap();
+        redrob_photo_codecs::encode(&stored, Format::Jpeg, &EncodeOptions { jpeg_quality: 100, jpeg_chroma_subsampling: false, ..Default::default() }).unwrap();
     let mut seg = b"Exif\0\0".to_vec();
     seg.extend_from_slice(&exif(6));
     let mut out = jpeg[..2].to_vec();

@@ -9,7 +9,7 @@
 
 use egui::vec2;
 use serde_json::{Map, Value, json};
-use vectorcraft_color::{Color, Paint};
+use redrob_vector_color::{Color, Paint};
 
 use super::swatch_options::{grid, label};
 use super::{DialogResult, DialogSpec};

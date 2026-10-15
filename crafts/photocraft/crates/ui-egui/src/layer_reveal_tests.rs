@@ -2,7 +2,7 @@
 
 use egui::{Rect, vec2};
 use egui_kittest::{Harness, kittest::Queryable};
-use photocraft_doc::LayerId;
+use redrob_photo_doc::LayerId;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -11,7 +11,7 @@ use crate::theme::ThemeKind;
 
 /// 30 layers above a closed group holding `inner` (near the bottom of the panel).
 fn tall_doc() -> (PhotocraftApp, LayerId, LayerId, LayerId, LayerId) {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
     app.run("layer.new.layer", json!({"name": "Deep inside"})).unwrap();
     let active = |app: &PhotocraftApp| app.session.active().unwrap().active_layer.unwrap();
@@ -59,7 +59,7 @@ fn in_view(h: &Harness<'static, PhotocraftApp>, r: Rect) -> bool {
 }
 
 fn expanded(app: &PhotocraftApp, group: LayerId) -> bool {
-    matches!(&app.session.active().unwrap().doc.layer(group).unwrap().content, photocraft_doc::LayerContent::Group(g) if g.expanded)
+    matches!(&app.session.active().unwrap().doc.layer(group).unwrap().content, redrob_photo_doc::LayerContent::Group(g) if g.expanded)
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn a_new_active_layer_opens_its_groups_and_scrolls_into_view() {
 #[test]
 fn reveal_survives_odd_documents() {
     // No document, a document without layers in groups, a layer deleted between frames.
-    let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     let mut h = harness(app, ThemeKind::ProMedium);
     h.run_steps(2);
     h.state_mut().run("file.new", json!({"width": 20, "height": 20})).unwrap();

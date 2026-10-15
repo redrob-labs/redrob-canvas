@@ -11,7 +11,7 @@
 //! lineweight, centring and layer choices for the next one; errors keep the dialog open.
 
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::fileio;
+use redrob_vector_engine::cmd::fileio;
 
 use super::DialogSpec;
 use super::document_setup::{LABEL, check, choice};
@@ -40,7 +40,7 @@ pub fn offer(app: &mut VectorcraftApp, name: &str, bytes: &[u8], path: Option<St
     if fileio::detect(name, bytes).is_none_or(|f| f.id != "dxf") {
         return false;
     }
-    let Ok(info) = vectorcraft_cad::info(bytes) else { return false };
+    let Ok(info) = redrob_vector_cad::info(bytes) else { return false };
     app.ui.dialog_file = Some(DialogFile::new(bytes.to_vec()));
     let mut fields = json!({
         "mode": if place.is_some() { "place" } else { "open" },
@@ -164,15 +164,15 @@ fn preview(app: &mut VectorcraftApp, ctx: &egui::Context, d: &Dialog) -> Option<
     let file = app.ui.dialog_file.clone()?;
     let layout = d.str("layout");
     let key = egui::Id::new(("dxf-preview", file.token, layout.as_str()));
-    let o = vectorcraft_cad::ImportOptions { layout: Some(layout.clone()), fit: true, ..Default::default() };
+    let o = redrob_vector_cad::ImportOptions { layout: Some(layout.clone()), fit: true, ..Default::default() };
     // A layout that can't be read shows an empty preview (and isn't read again).
-    preview_texture(app, ctx, key, "dxf-preview", PREVIEW, || vectorcraft_cad::import(&file.bytes, &o).ok().map(|r| r.document))
+    preview_texture(app, ctx, key, "dxf-preview", PREVIEW, || redrob_vector_cad::import(&file.bytes, &o).ok().map(|r| r.document))
 }
 
 #[cfg(test)]
 mod tests {
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::doc::NodeKind;
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::doc::NodeKind;
 
     use super::*;
 
@@ -271,7 +271,7 @@ mod tests {
     fn placing_a_drawing_asks_then_places_one_group() {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.run("file.new", json!({"width": 600, "height": 400})).unwrap();
-        let p = json!({"name": "plan.dxf", "dataBase64": vectorcraft_format::base64_encode(&drawing()), "template": false});
+        let p = json!({"name": "plan.dxf", "dataBase64": redrob_vector_format::base64_encode(&drawing()), "template": false});
         crate::place::run(&mut app, &p).unwrap();
         let d = app.ui.dialog.as_ref().unwrap();
         assert_eq!((d.kind.as_str(), d.str("mode")), (KIND, "place".into()));

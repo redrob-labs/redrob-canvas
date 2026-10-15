@@ -18,8 +18,8 @@ const PREFIX: &str = "image.adjustments.";
 const CURVE_PICKER: &str = "__curvePicker";
 const CURVE_PICKER_BASE: &str = "__curvePickerBase";
 
-fn picker(value: Option<&Value>) -> Option<photocraft_engine::adjust_params::CurvesEyedropper> {
-    use photocraft_engine::adjust_params::CurvesEyedropper;
+fn picker(value: Option<&Value>) -> Option<redrob_photo_engine::adjust_params::CurvesEyedropper> {
+    use redrob_photo_engine::adjust_params::CurvesEyedropper;
     match value.and_then(Value::as_str) {
         Some("black") => Some(CurvesEyedropper::Black),
         Some("gray") => Some(CurvesEyedropper::NeutralGray),
@@ -28,9 +28,9 @@ fn picker(value: Option<&Value>) -> Option<photocraft_engine::adjust_params::Cur
     }
 }
 
-pub(crate) fn picker_supported(mode: photocraft_doc::ColorMode, eyedropper: photocraft_engine::adjust_params::CurvesEyedropper) -> bool {
-    use photocraft_engine::adjust_params::CurvesEyedropper;
-    mode == photocraft_doc::ColorMode::Rgb || (mode == photocraft_doc::ColorMode::Grayscale && eyedropper != CurvesEyedropper::NeutralGray)
+pub(crate) fn picker_supported(mode: redrob_photo_doc::ColorMode, eyedropper: redrob_photo_engine::adjust_params::CurvesEyedropper) -> bool {
+    use redrob_photo_engine::adjust_params::CurvesEyedropper;
+    mode == redrob_photo_doc::ColorMode::Rgb || (mode == redrob_photo_doc::ColorMode::Grayscale && eyedropper != CurvesEyedropper::NeutralGray)
 }
 
 /// The kind of an adjustment dialog with Set Black/Neutral Gray/White Point eyedroppers (Levels,
@@ -63,8 +63,8 @@ pub fn sample_at(app: &mut PhotocraftApp, x: f64, y: f64) -> bool {
         return true;
     }
     let Some(sample) = crate::canvas::composite_color(app, x, y) else { return true };
-    let params = match photocraft_engine::adjust_params::adjustment_eyedropper(&kind, &base, eyedropper, sample, mode) {
-        Ok(adjustment) => photocraft_engine::adjust_params::to_params(&adjustment),
+    let params = match redrob_photo_engine::adjust_params::adjustment_eyedropper(&kind, &base, eyedropper, sample, mode) {
+        Ok(adjustment) => redrob_photo_engine::adjust_params::to_params(&adjustment),
         Err(error) => {
             app.ui.status = error.to_string();
             return true;
@@ -88,8 +88,8 @@ pub(crate) fn picker_button(ui: &mut egui::Ui, selected: bool, enabled: bool, to
     response
 }
 
-fn picker_controls(ui: &mut egui::Ui, fields: &mut Map<String, Value>, mode: photocraft_doc::ColorMode) {
-    use photocraft_engine::adjust_params::CurvesEyedropper;
+fn picker_controls(ui: &mut egui::Ui, fields: &mut Map<String, Value>, mode: redrob_photo_doc::ColorMode) {
+    use redrob_photo_engine::adjust_params::CurvesEyedropper;
     let current = picker(fields.get(CURVE_PICKER));
     let mut chosen = None;
     ui.horizontal(|ui| {
@@ -107,7 +107,7 @@ fn picker_controls(ui: &mut egui::Ui, fields: &mut Map<String, Value>, mode: pho
                 chosen = Some((id, eyedropper));
             }
         }
-        if !matches!(mode, photocraft_doc::ColorMode::Rgb | photocraft_doc::ColorMode::Grayscale) {
+        if !matches!(mode, redrob_photo_doc::ColorMode::Rgb | redrob_photo_doc::ColorMode::Grayscale) {
             ui.label(egui::RichText::new(tl!("Unavailable in this color mode")).color(tokens.text_faint).size(11.0));
         }
     });
@@ -149,8 +149,8 @@ pub fn reset(app: &PhotocraftApp, ctx: &egui::Context, fields: &mut Map<String, 
     let mode = curve_mode(app, &kind);
     // Color Balance: Photoshop keeps the user's Preserve Luminosity across Reset.
     let preserve = if kind == "colorBalance" { fields.get("preserveLuminosity").cloned() } else { None };
-    let Ok(defaults) = photocraft_engine::adjust_params::default_for(&kind, mode) else { return };
-    let values = photocraft_engine::adjust_params::to_params(&defaults);
+    let Ok(defaults) = redrob_photo_engine::adjust_params::default_for(&kind, mode) else { return };
+    let values = redrob_photo_engine::adjust_params::to_params(&defaults);
     // Replace parameter keys; keep private `__` chrome (preview, command, …).
     fields.retain(|k, _| k.starts_with("__"));
     if let Value::Object(v) = values {
@@ -169,16 +169,16 @@ pub fn reset(app: &PhotocraftApp, ctx: &egui::Context, fields: &mut Map<String, 
 /// Opens the dialog for `command` with the kind's neutral settings.
 pub fn open(app: &mut PhotocraftApp, command: &str) -> Option<u64> {
     let kind = command.strip_prefix(PREFIX).filter(|k| adjust_editors::has_editor(k))?;
-    let spec = photocraft_engine::commands::find(command)?;
+    let spec = redrob_photo_engine::commands::find(command)?;
     let mode = curve_mode(app, kind);
-    let defaults = photocraft_engine::adjust_params::default_for(kind, mode).ok()?;
+    let defaults = redrob_photo_engine::adjust_params::default_for(kind, mode).ok()?;
     let mut fields = Map::new();
     fields.insert("__command".into(), json!(command));
     fields.insert("__label".into(), json!(spec.label));
     fields.insert("__adjust".into(), json!(kind));
     fields.insert("__filter".into(), json!(true));
     fields.insert("__preview".into(), json!(true));
-    if let Value::Object(p) = photocraft_engine::adjust_params::to_params(&defaults) {
+    if let Value::Object(p) = redrob_photo_engine::adjust_params::to_params(&defaults) {
         fields.extend(p);
     }
     Some(app.ui.open_dialog(crate::state::DialogKind::Command, fields))
@@ -186,17 +186,17 @@ pub fn open(app: &mut PhotocraftApp, command: &str) -> Option<u64> {
 
 /// The Curves dialog's single-channel target: the Channels panel's, plus the Layers panel's mask
 /// selection — both ways of selecting a mask must give the same dropdown (#5335).
-fn isolated(app: &PhotocraftApp) -> Option<photocraft_engine::channel_cmds::IsolatedCurveChannel> {
+fn isolated(app: &PhotocraftApp) -> Option<redrob_photo_engine::channel_cmds::IsolatedCurveChannel> {
     let mask = app.layer_mask_targeted();
-    app.session.active().and_then(|st| photocraft_engine::channel_cmds::isolated_curve_channel_for(st, mask))
+    app.session.active().and_then(|st| redrob_photo_engine::channel_cmds::isolated_curve_channel_for(st, mask))
 }
 
 /// The colour mode the Levels/Curves dialog seeds and parses in: a mask, saved channel or
 /// Quick Mask holds gray levels whatever the document's mode, so its curve is a neutral one
 /// and the fields carry no Lab or CMYK records (#5335).
-fn curve_mode(app: &PhotocraftApp, kind: &str) -> photocraft_doc::ColorMode {
-    let mode = app.session.active().map_or(photocraft_doc::ColorMode::Rgb, |s| s.doc.mode);
-    if kind == "curves" && isolated(app).is_some_and(|c| c.gray.is_some()) { photocraft_doc::ColorMode::Grayscale } else { mode }
+fn curve_mode(app: &PhotocraftApp, kind: &str) -> redrob_photo_doc::ColorMode {
+    let mode = app.session.active().map_or(redrob_photo_doc::ColorMode::Rgb, |s| s.doc.mode);
+    if kind == "curves" && isolated(app).is_some_and(|c| c.gray.is_some()) { redrob_photo_doc::ColorMode::Grayscale } else { mode }
 }
 
 /// Dialog body: the kind's editor over the fields, then the Preview checkbox.
@@ -264,7 +264,7 @@ mod tests {
     use egui_kittest::kittest::{NodeT, Queryable};
 
     fn app_with_image() -> PhotocraftApp {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         s.execute("select.rect", json!({"x": 0, "y": 0, "width": 32, "height": 48})).unwrap();
         s.execute("edit.fill", json!({"color": "#b04020"})).unwrap();
@@ -273,7 +273,7 @@ mod tests {
     }
 
     fn app_in_mode(mode: &str) -> PhotocraftApp {
-        let mut session = photocraft_engine::Session::new();
+        let mut session = redrob_photo_engine::Session::new();
         session.execute("file.new", json!({"width": 32, "height": 24, "mode": mode})).unwrap();
         PhotocraftApp::new(session, crate::Services::default())
     }
@@ -327,8 +327,8 @@ mod tests {
             let before = harness.state().session.active().unwrap().revision;
             let steps = harness.state().session.active().unwrap().history.past_len();
             // Change the settings the way automation does.
-            let sample = photocraft_engine::adjust_params::to_params(
-                &photocraft_engine::adjust_params::from_params(kind, &sample_params(kind), None, photocraft_doc::ColorMode::Rgb).unwrap(),
+            let sample = redrob_photo_engine::adjust_params::to_params(
+                &redrob_photo_engine::adjust_params::from_params(kind, &sample_params(kind), None, redrob_photo_doc::ColorMode::Rgb).unwrap(),
             );
             let d = harness.state_mut().ui.dialog_mut(id).unwrap();
             if let Value::Object(p) = sample {
@@ -454,7 +454,7 @@ mod tests {
         input(&mut h, egui::Modifiers::ALT, &[egui::Event::PointerMoved(reset.center()), click(true), click(false)]);
         assert!(h.state().ui.dialogs.iter().any(|d| d.id == id), "Reset keeps the dialog open");
         let defaults =
-            photocraft_engine::adjust_params::to_params(&photocraft_engine::adjust_params::default_for("levels", photocraft_doc::ColorMode::Rgb).unwrap());
+            redrob_photo_engine::adjust_params::to_params(&redrob_photo_engine::adjust_params::default_for("levels", redrob_photo_doc::ColorMode::Rgb).unwrap());
         assert_eq!(field(&h, id, "inBlack"), defaults["inBlack"]);
         assert_eq!(field(&h, id, "gamma"), defaults["gamma"]);
     }
@@ -689,7 +689,7 @@ mod tests {
 
     #[test]
     fn curves_picker_rejects_outside_and_transparent_samples() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 32, "height": 24, "background": "transparent"})).unwrap();
         let mut app = PhotocraftApp::new(s, crate::Services::default());
         let id = open(&mut app, "image.adjustments.curves").unwrap();
@@ -732,16 +732,16 @@ mod tests {
 
     #[test]
     fn curves_picker_modes_and_depths_are_explicit() {
-        use photocraft_engine::adjust_params::CurvesEyedropper;
-        assert!(picker_supported(photocraft_doc::ColorMode::Rgb, CurvesEyedropper::NeutralGray));
-        assert!(picker_supported(photocraft_doc::ColorMode::Grayscale, CurvesEyedropper::Black));
-        assert!(picker_supported(photocraft_doc::ColorMode::Grayscale, CurvesEyedropper::White));
-        assert!(!picker_supported(photocraft_doc::ColorMode::Grayscale, CurvesEyedropper::NeutralGray));
-        assert!(!picker_supported(photocraft_doc::ColorMode::Cmyk, CurvesEyedropper::Black));
-        assert!(!picker_supported(photocraft_doc::ColorMode::Lab, CurvesEyedropper::White));
+        use redrob_photo_engine::adjust_params::CurvesEyedropper;
+        assert!(picker_supported(redrob_photo_doc::ColorMode::Rgb, CurvesEyedropper::NeutralGray));
+        assert!(picker_supported(redrob_photo_doc::ColorMode::Grayscale, CurvesEyedropper::Black));
+        assert!(picker_supported(redrob_photo_doc::ColorMode::Grayscale, CurvesEyedropper::White));
+        assert!(!picker_supported(redrob_photo_doc::ColorMode::Grayscale, CurvesEyedropper::NeutralGray));
+        assert!(!picker_supported(redrob_photo_doc::ColorMode::Cmyk, CurvesEyedropper::Black));
+        assert!(!picker_supported(redrob_photo_doc::ColorMode::Lab, CurvesEyedropper::White));
 
         for depth in [8, 16, 32] {
-            let mut s = photocraft_engine::Session::new();
+            let mut s = redrob_photo_engine::Session::new();
             s.execute("file.new", json!({"width": 16, "height": 16, "depth": depth})).unwrap();
             s.execute("edit.fill", json!({"color": [0.3142, 0.4821, 0.7137]})).unwrap();
             let mut app = PhotocraftApp::new(s, crate::Services::default());

@@ -3,10 +3,10 @@
 //! perspective (flare, spiral, polar grid, click-to-size dialogs).
 
 use serde_json::json;
-use vectorcraft_doc::NodeKind;
-use vectorcraft_geom::{Point, Rect};
-use vectorcraft_tools::Mods;
-use vectorcraft_tools::distort::perspective::{self as persp, Plane};
+use redrob_vector_doc::NodeKind;
+use redrob_vector_geom::{Point, Rect};
+use redrob_vector_tools::Mods;
+use redrob_vector_tools::distort::perspective::{self as persp, Plane};
 
 use super::tests_persp_select::{attached, drag, grid, persp_session, undo_len};
 use super::*;
@@ -19,14 +19,14 @@ fn persp_text(s: &mut Session) -> NodeId {
     id
 }
 
-fn node(s: &Session, id: NodeId) -> vectorcraft_doc::Node {
+fn node(s: &Session, id: NodeId) -> redrob_vector_doc::Node {
     s.doc().unwrap().doc.node(id).unwrap().clone()
 }
 
 /// The art the renderer and exporters draw for `id` (its outlines, projected).
 fn drawn_bounds(s: &Session, id: NodeId) -> Rect {
     let n = node(s, id);
-    vectorcraft_render::effects::reshape(&n, None).unwrap().geometric_bounds().unwrap()
+    redrob_vector_render::effects::reshape(&n, None).unwrap().geometric_bounds().unwrap()
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn type_in_perspective_is_projected_and_stays_type() {
     let h = n.projection().expect("drawn through a projection");
     // Really foreshortened: the right plane recedes to the right, so the letters' far end is
     // shorter than their near end.
-    let out = vectorcraft_render::effects::reshape(&n, None).unwrap();
+    let out = redrob_vector_render::effects::reshape(&n, None).unwrap();
     let mut pts = vec![];
     out.walk(&mut |c| {
         if let Some(p) = c.path_data() {
@@ -54,7 +54,7 @@ fn type_in_perspective_is_projected_and_stays_type() {
     // Bounds, hit testing and the selection box follow the drawn type.
     let gb = n.geometric_bounds().unwrap();
     assert!((gb.x0 - b.x0).abs() < 12.0 && (gb.x1 - b.x1).abs() < 12.0, "{gb:?} {b:?}");
-    let hit = vectorcraft_doc::hit::hit_test(&s.doc().unwrap().doc, b.center(), Default::default()).unwrap();
+    let hit = redrob_vector_doc::hit::hit_test(&s.doc().unwrap().doc, b.center(), Default::default()).unwrap();
     assert_eq!(hit.leaf, id);
     let _ = h;
 }
@@ -65,9 +65,9 @@ fn type_in_perspective_exports_projected_outlines() {
     let id = persp_text(&mut s);
     let b = drawn_bounds(&s, id);
     let doc = s.doc().unwrap().doc.clone();
-    let svg = vectorcraft_svg::export(&doc, &Default::default());
+    let svg = redrob_vector_svg::export(&doc, &Default::default());
     assert!(!svg.contains("HELLO"), "no flat text in the SVG");
-    let pdf = vectorcraft_render::effects::bake_document(&doc).unwrap();
+    let pdf = redrob_vector_render::effects::bake_document(&doc).unwrap();
     let baked = pdf.node(id).unwrap();
     assert!(!matches!(baked.kind, NodeKind::Text(_)));
     let bb = baked.geometric_bounds().unwrap();
@@ -139,7 +139,7 @@ fn symbols_in_perspective_stay_instances() {
     let n = node(&s, id);
     assert!(matches!(n.kind, NodeKind::SymbolInstance { .. }));
     assert!(n.projection().is_some());
-    let baked = vectorcraft_render::effects::bake_document(&s.doc().unwrap().doc).unwrap();
+    let baked = redrob_vector_render::effects::bake_document(&s.doc().unwrap().doc).unwrap();
     assert!(!matches!(baked.node(id).unwrap().kind, NodeKind::SymbolInstance { .. }), "exports draw the projected art");
 }
 
@@ -232,7 +232,7 @@ fn the_canvas_draws_type_in_perspective_foreshortened() {
     s.execute("edit.clear", &json!({"ids": [rect.0]})).ok();
     let id = persp_text(&mut s);
     let b = drawn_bounds(&s, id);
-    let img = vectorcraft_render::Renderer::new().render_region(&s.doc().unwrap().doc, b, 2.0, true);
+    let img = redrob_vector_render::Renderer::new().render_region(&s.doc().unwrap().doc, b, 2.0, true);
     // The inked height of a strip of columns near each end of the line.
     let height = |x0: f64, x1: f64| {
         let (mut lo, mut hi) = (u32::MAX, 0);
@@ -255,16 +255,16 @@ fn double_clicking_type_in_perspective_edits_it_and_projections_round_trip() {
     let (mut s, _) = persp_session();
     let id = persp_text(&mut s);
     // Saved and opened again: still type, still projected.
-    let doc = vectorcraft_format::load(&vectorcraft_format::save(&s.doc().unwrap().doc, false)).unwrap();
+    let doc = redrob_vector_format::load(&redrob_vector_format::save(&s.doc().unwrap().doc, false)).unwrap();
     assert_eq!(doc.node(id).unwrap().projection(), node(&s, id).projection());
     let v = ViewInfo::default();
     s.select_tool("perspectiveSelection", v).unwrap();
     let c = node(&s, id).geometric_bounds().unwrap().center();
-    let r = s.pointer(&vectorcraft_tools::PointerEvent::new(vectorcraft_tools::PointerKind::DoubleClick, c.x, c.y), v).unwrap();
+    let r = s.pointer(&redrob_vector_tools::PointerEvent::new(redrob_vector_tools::PointerKind::DoubleClick, c.x, c.y), v).unwrap();
     assert_eq!(r, vec![crate::UiRequest::SwitchTool("type".into())]);
     assert_eq!(s.doc().unwrap().isolation, Some(id));
     // Saved while editing: the file has it projected.
-    let doc = vectorcraft_format::load(&vectorcraft_format::save(&s.doc().unwrap().doc, false)).unwrap();
+    let doc = redrob_vector_format::load(&redrob_vector_format::save(&s.doc().unwrap().doc, false)).unwrap();
     assert!(doc.node(id).unwrap().projection().is_some());
     s.execute("object.exitIsolation", &json!({})).unwrap();
     assert!(node(&s, id).projection().is_some());

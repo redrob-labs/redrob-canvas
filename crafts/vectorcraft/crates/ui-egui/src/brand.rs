@@ -60,7 +60,7 @@ mod tests {
     fn the_app_bar_paints_the_icon_from_one_cached_texture() {
         let ctx = Context::default();
         crate::theme::install_fonts(&ctx);
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         // The system title bar hides the in-app mark (the OS draws its own icon), so paint the
         // app-drawn bar here.
         app.custom_titlebar = true;

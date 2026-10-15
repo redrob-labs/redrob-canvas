@@ -27,7 +27,7 @@ fn png(dir: &str, name: &str, w: u32, h: u32, color: &str) -> String {
 }
 
 fn composite(s: &Session, x: i32, y: i32) -> [f32; 4] {
-    let b = photocraft_compose::render(doc(s), Rect::new(x, y, x + 1, y + 1));
+    let b = redrob_photo_compose::render(doc(s), Rect::new(x, y, x + 1, y + 1));
     b.px[0]
 }
 
@@ -50,7 +50,7 @@ fn close_all_and_close_others() {
 
 #[test]
 fn camera_raw_opens_as_16_bit_with_notes() {
-    use photocraft_raw::testgen::{DngSpec, mosaic, scene};
+    use redrob_photo_raw::testgen::{DngSpec, mosaic, scene};
     let (w, h) = (24, 16);
     let mut spec = DngSpec::cfa(w, h, mosaic(&scene(w, h), w, [0, 1, 1, 2], 0, 65535));
     spec.as_shot_neutral = Some([0.5, 1.0, 0.7]);
@@ -58,7 +58,7 @@ fn camera_raw_opens_as_16_bit_with_notes() {
     let r = open_bytes_as(&mut s, "IMG_0001.dng", &spec.build(), None, None).unwrap();
     assert!(r["warnings"].as_array().is_some_and(|w| w.iter().any(|m| m.as_str().is_some_and(|m| m.contains("DNG")))), "{r}");
     assert_eq!((doc(&s).size.width, doc(&s).size.height), (24, 16));
-    assert_eq!(doc(&s).depth, photocraft_color::SampleType::U16);
+    assert_eq!(doc(&s).depth, redrob_photo_color::SampleType::U16);
     // Damaged raw data is an error, not a crash.
     let mut bad = spec.build();
     bad.truncate(bad.len() / 2);
@@ -125,13 +125,13 @@ fn save_a_copy_keeps_path_and_dirty_state() {
     assert_eq!(s.active().unwrap().path, None);
     assert_eq!(s.active().unwrap().revision, rev);
     assert!(s.active().unwrap().is_dirty());
-    let back = photocraft_io::import("copy.psd", &std::fs::read(&out).unwrap()).unwrap().document;
+    let back = redrob_photo_io::import("copy.psd", &std::fs::read(&out).unwrap()).unwrap().document;
     assert_eq!(back.layers.len(), 2);
-    assert_eq!(back.depth, photocraft_color::SampleType::U16);
+    assert_eq!(back.depth, redrob_photo_color::SampleType::U16);
     // Flattened copy.
     let flat = join(&dir, "flat.psd");
     s.execute("file.saveACopy", json!({"path": flat, "layers": false})).unwrap();
-    assert_eq!(photocraft_io::import("flat.psd", &std::fs::read(&flat).unwrap()).unwrap().document.layers.len(), 1);
+    assert_eq!(redrob_photo_io::import("flat.psd", &std::fs::read(&flat).unwrap()).unwrap().document.layers.len(), 1);
     assert!(s.execute("file.saveACopy", json!({})).is_err());
 }
 
@@ -150,7 +150,7 @@ fn save_a_copy_writes_the_targa_bits_asked_for() {
         s.execute("file.saveACopy", p).unwrap();
         let bytes = std::fs::read(&out).unwrap();
         assert_eq!(bytes[16], bpp, "{params}");
-        let back = photocraft_io::import("a.tga", &bytes).unwrap().document;
+        let back = redrob_photo_io::import("a.tga", &bytes).unwrap().document;
         assert_eq!(back.channels.len(), usize::from(bpp == 32), "{params}: the selection reopens as Alpha 1");
     }
 }
@@ -170,7 +170,7 @@ fn save_a_copy_writes_the_dpx_bits_asked_for() {
         s.execute("file.saveACopy", p).unwrap();
         let bytes = std::fs::read(&out).unwrap();
         assert_eq!((&bytes[..4], bytes[803]), (&b"SDPX"[..], bits), "{depth}-bit {params}");
-        assert_eq!(photocraft_io::import("a.dpx", &bytes).unwrap().document.size, photocraft_geom::Size::new(12, 6));
+        assert_eq!(redrob_photo_io::import("a.dpx", &bytes).unwrap().document.size, redrob_photo_geom::Size::new(12, 6));
     }
     let mut s = session(8, 8, 8);
     for bad in [json!(24), json!(0), json!("10"), json!(10.5)] {
@@ -205,8 +205,8 @@ fn image_previews_preference_controls_the_psd_thumbnail() {
     let dir = tmp("previews");
     let mut s = session(300, 200, 16);
     let has_thumbnail = |path: &str| {
-        let file = photocraft_psd::PsdFile::from_bytes(&std::fs::read(path).unwrap()).unwrap();
-        file.resources.iter().any(|r| r.id == photocraft_psd::resources::ids::THUMBNAIL)
+        let file = redrob_photo_psd::PsdFile::from_bytes(&std::fs::read(path).unwrap()).unwrap();
+        file.resources.iter().any(|r| r.id == redrob_photo_psd::resources::ids::THUMBNAIL)
     };
     for (ask, expect) in [(Ask::Always, true), (Ask::Never, false), (Ask::Ask, true)] {
         s.edit_prefs(|p| p.file_handling.image_previews = ask);
@@ -227,7 +227,7 @@ fn maximize_compatibility_preference_controls_the_psd_merged_image() {
     let dir = tmp("maximize");
     let mut s = session(300, 200, 16);
     s.execute("layer.new.layer", json!({})).unwrap();
-    let real_merged = |path: &str| photocraft_psd::PsdFile::from_bytes(&std::fs::read(path).unwrap()).unwrap().has_real_merged_data();
+    let real_merged = |path: &str| redrob_photo_psd::PsdFile::from_bytes(&std::fs::read(path).unwrap()).unwrap().has_real_merged_data();
     for (ask, expect) in [(Ask::Always, true), (Ask::Never, false), (Ask::Ask, true)] {
         s.edit_prefs(|p| p.file_handling.maximize_psd_compatibility = ask);
         for ext in ["psd", "psb"] {
@@ -326,8 +326,8 @@ fn resize_image_during_place_preference_controls_the_fit() {
 /// is 20×40, red on top.
 fn rotated_jpeg(dir: &str) -> String {
     let px: Vec<u8> = (0..20).flat_map(|_| (0..40).flat_map(|x| if x < 20 { [230, 20, 20] } else { [20, 20, 230] })).collect();
-    let img = photocraft_codecs::Image::from_u8(40, 20, photocraft_codecs::ChannelLayout::Rgb, px).unwrap();
-    let jpeg = photocraft_codecs::encode(&img, photocraft_codecs::Format::Jpeg, &Default::default()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(40, 20, redrob_photo_codecs::ChannelLayout::Rgb, px).unwrap();
+    let jpeg = redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Jpeg, &Default::default()).unwrap();
     let mut seg = b"Exif\0\0II*\0\x08\0\0\0\x01\0\x12\x01\x03\0\x01\0\0\0\x06\0\0\0\0\0\0\0".to_vec();
     let mut file = vec![0xFF, 0xD8, 0xFF, 0xE1];
     file.extend_from_slice(&((seg.len() + 2) as u16).to_be_bytes());
@@ -373,7 +373,7 @@ fn file_info_round_trips_through_xmp_and_psd() {
     assert_eq!(read_file_info(Some(&xmp))["author"], "V. van Gogh");
     // PSD round trip.
     let (bytes, _) = encode(doc(&s), "x.psd", None).unwrap();
-    let back = photocraft_io::import("x.psd", &bytes).unwrap().document;
+    let back = redrob_photo_io::import("x.psd", &bytes).unwrap().document;
     let info = read_file_info(back.metadata.xmp.as_deref());
     assert_eq!(info["title"], "The Starry Night");
     assert_eq!(info["keywords"], json!(["stars", "night"]));
@@ -386,7 +386,7 @@ fn file_info_round_trips_through_xmp_and_psd() {
 }
 
 fn camera_exif() -> Vec<u8> {
-    photocraft_algo::exif::build(&photocraft_algo::exif::CameraInfo {
+    redrob_photo_algo::exif::build(&redrob_photo_algo::exif::CameraInfo {
         make: Some("SONY".into()),
         model: Some("ILCE-7RM5".into()),
         lens: Some("24-70mm F2.8".into()),
@@ -414,7 +414,7 @@ fn file_info_reads_camera_data_from_jpeg_and_psd_exif() {
     });
     for name in ["x.jpg", "x.psd"] {
         let (bytes, _) = encode(doc(&s), name, None).unwrap();
-        let back = photocraft_io::import(name, &bytes).unwrap().document;
+        let back = redrob_photo_io::import(name, &bytes).unwrap().document;
         let mut t = Session::new();
         t.add_document(back, None);
         assert_eq!(t.execute("file.fileInfo", json!({})).unwrap()["camera"], want, "{name}");
@@ -427,7 +427,7 @@ fn file_info_reads_camera_data_from_jpeg_and_psd_exif() {
 #[test]
 fn camera_data_formats_like_photoshop_and_falls_back_to_xmp() {
     let info = |t: Option<f64>, n: Option<f64>, f: Option<f64>| {
-        let exif = photocraft_algo::exif::build(&photocraft_algo::exif::CameraInfo { exposure_time: t, f_number: n, focal_length: f, ..Default::default() });
+        let exif = redrob_photo_algo::exif::build(&redrob_photo_algo::exif::CameraInfo { exposure_time: t, f_number: n, focal_length: f, ..Default::default() });
         camera_data(Some(&exif), None)
     };
     assert_eq!(info(Some(2.0), Some(2.8), Some(35.0)), json!({"exposure": "2 s", "fNumber": "f/2.8", "focalLength": "35 mm"}));
@@ -448,7 +448,7 @@ fn camera_data_formats_like_photoshop_and_falls_back_to_xmp() {
     });
     assert_eq!(camera_data(None, Some(xmp)), want);
     // EXIF wins; XMP only fills what EXIF lacks.
-    let exif = photocraft_algo::exif::build(&photocraft_algo::exif::CameraInfo { make: Some("Other".into()), ..Default::default() });
+    let exif = redrob_photo_algo::exif::build(&redrob_photo_algo::exif::CameraInfo { make: Some("Other".into()), ..Default::default() });
     let both = camera_data(Some(&exif), Some(xmp));
     assert_eq!(both["make"], "Other");
     assert_eq!(both["exposure"], "1/250 s");
@@ -517,7 +517,7 @@ fn file_info_translations_survive_undo_and_psd_round_trip() {
         assert!(s.redo());
         assert_eq!(doc(&s).metadata.xmp.as_deref(), Some(edited.as_str()));
         let (bytes, _) = encode(doc(&s), "x.psd", None).unwrap();
-        let back = photocraft_io::import("x.psd", &bytes).unwrap().document;
+        let back = redrob_photo_io::import("x.psd", &bytes).unwrap().document;
         assert_translations_kept(back.metadata.xmp.as_deref().unwrap());
         assert_eq!(read_file_info(back.metadata.xmp.as_deref())["keywords"], json!(["sunrise"]));
     }
@@ -568,9 +568,9 @@ fn flatten_all_layer_effects_and_masks() {
         s.edit("fx", |doc, _| {
             let l = doc.layer_mut(id).unwrap();
             l.effects.enabled = true;
-            l.effects.items.push(photocraft_doc::Effect::ColorOverlay {
-                common: photocraft_doc::effects::FxCommon::new(photocraft_color::BlendMode::Normal, 1.0),
-                color: photocraft_color::Color::rgb(0.0, 1.0, 0.0),
+            l.effects.items.push(redrob_photo_doc::Effect::ColorOverlay {
+                common: redrob_photo_doc::effects::FxCommon::new(redrob_photo_color::BlendMode::Normal, 1.0),
+                color: redrob_photo_color::Color::rgb(0.0, 1.0, 0.0),
             });
             Ok(())
         })
@@ -617,11 +617,11 @@ fn flatten_all_layer_effects_keeps_masks() {
         s.edit("fx", |doc, _| {
             let l = doc.layer_mut(id1).unwrap();
             l.effects.enabled = true;
-            l.effects.items.push(photocraft_doc::Effect::ColorOverlay {
-                common: photocraft_doc::effects::FxCommon::new(photocraft_color::BlendMode::Normal, 1.0),
-                color: photocraft_color::Color::rgb(0.0, 1.0, 0.0),
+            l.effects.items.push(redrob_photo_doc::Effect::ColorOverlay {
+                common: redrob_photo_doc::effects::FxCommon::new(redrob_photo_color::BlendMode::Normal, 1.0),
+                color: redrob_photo_color::Color::rgb(0.0, 1.0, 0.0),
             });
-            l.vector_mask = Some(photocraft_doc::VectorMask::new(photocraft_doc::Path::new(vec![photocraft_doc::Subpath::polygon(&[
+            l.vector_mask = Some(redrob_photo_doc::VectorMask::new(redrob_photo_doc::Path::new(vec![redrob_photo_doc::Subpath::polygon(&[
                 (15.0, 15.0),
                 (30.0, 15.0),
                 (30.0, 30.0),
@@ -641,9 +641,9 @@ fn flatten_all_layer_effects_keeps_masks() {
         s.edit("fx", |doc, _| {
             let l = doc.layer_mut(id2).unwrap();
             l.effects.enabled = true;
-            l.effects.items.push(photocraft_doc::Effect::ColorOverlay {
-                common: photocraft_doc::effects::FxCommon::new(photocraft_color::BlendMode::Normal, 1.0),
-                color: photocraft_color::Color::rgb(0.0, 1.0, 0.0),
+            l.effects.items.push(redrob_photo_doc::Effect::ColorOverlay {
+                common: redrob_photo_doc::effects::FxCommon::new(redrob_photo_color::BlendMode::Normal, 1.0),
+                color: redrob_photo_color::Color::rgb(0.0, 1.0, 0.0),
             });
             Ok(())
         })
@@ -743,15 +743,15 @@ fn load_files_into_stack_and_image_processor_and_batch() {
     let r = s.execute("file.scripts.imageProcessor", json!({"input": input, "output": out, "format": "jpg", "width": 20, "height": 20})).unwrap();
     let files = r["files"].as_array().unwrap();
     assert_eq!(files.len(), 2, "{r}");
-    let back = photocraft_io::import("a.jpg", &std::fs::read(files[0].as_str().unwrap()).unwrap()).unwrap().document;
+    let back = redrob_photo_io::import("a.jpg", &std::fs::read(files[0].as_str().unwrap()).unwrap()).unwrap().document;
     assert_eq!((back.size.width, back.size.height), (20, 10));
     // Batch: run an action (invert) over the folder, save PNGs.
     let out = join(&dir, "png");
     let r = s.execute("file.automate.batch", json!({"steps": [["image.adjustments.invert", {}]], "input": input, "output": out, "format": "png"})).unwrap();
     assert_eq!(r["files"].as_array().unwrap().len(), 2, "{r}");
     assert!(r["errors"].as_array().unwrap().is_empty());
-    let inv = photocraft_io::import("a.png", &std::fs::read(join(&out, "a.png")).unwrap()).unwrap().document;
-    let px = photocraft_compose::render(&inv, Rect::new(1, 1, 2, 2)).px[0];
+    let inv = redrob_photo_io::import("a.png", &std::fs::read(join(&out, "a.png")).unwrap()).unwrap().document;
+    let px = redrob_photo_compose::render(&inv, Rect::new(1, 1, 2, 2)).px[0];
     assert!(px[0] < 0.01 && px[1] > 0.99 && px[2] > 0.99, "red inverted to cyan: {px:?}");
     // A recorded Quick Export writes to the current document path, but Batch owns
     // the destination. Replaying it would fail for scratch documents with no save path.
@@ -796,14 +796,14 @@ fn cube_export_uses_only_selected_adjustments_in_document_order() {
     let first = s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap()["layer"].as_u64().unwrap();
     let second = s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap()["layer"].as_u64().unwrap();
     let both = s.execute("file.export.colorLookupTables", json!({"size": 3})).unwrap();
-    let all = photocraft_cms::lutfile::parse_cube(both["cube"].as_str().unwrap()).unwrap();
+    let all = redrob_photo_cms::lutfile::parse_cube(both["cube"].as_str().unwrap()).unwrap();
     assert_eq!(both["layerCount"], 2);
     assert!(all.data[0] < 0.001, "two Invert adjustments produce identity");
 
     // Selection comes from the Layers panel rather than the active layer alone.
     s.execute("layer.select", json!({"layer": first})).unwrap();
     let selected = s.execute("file.export.colorLookupTables", json!({"size": 3, "scope": "selected"})).unwrap();
-    let one = photocraft_cms::lutfile::parse_cube(selected["cube"].as_str().unwrap()).unwrap();
+    let one = redrob_photo_cms::lutfile::parse_cube(selected["cube"].as_str().unwrap()).unwrap();
     assert_eq!(selected["layerCount"], 1);
     assert!(one.data[0] > 0.999, "one invert maps black to white");
     assert_eq!(all.size, one.size);
@@ -862,7 +862,7 @@ fn exported_selected_cube_round_trips_through_lookup_importer() {
     assert_eq!(r["size"], 17);
     assert_eq!(r["layerCount"], 1);
     let text = std::fs::read_to_string(&path).unwrap();
-    let parsed = photocraft_cms::lutfile::parse_cube(&text).unwrap();
+    let parsed = redrob_photo_cms::lutfile::parse_cube(&text).unwrap();
     assert_eq!(parsed.size, 17);
     assert_eq!(parsed.data.len(), 17 * 17 * 17 * 3);
     assert!(parsed.data[..3].iter().all(|v| *v > 0.999));
@@ -965,8 +965,8 @@ fn batch_naming_serial_keeps_same_named_inputs_and_their_pixels() {
     assert_eq!(result["errors"], json!([]), "{result}");
     assert_eq!(result["files"], json!([join(&out, "photo_007.png"), join(&out, "photo_008.png")]));
     for (name, expected) in [("photo_007.png", [1.0, 0.0, 0.0, 1.0]), ("photo_008.png", [0.0, 0.0, 1.0, 1.0])] {
-        let saved = photocraft_io::import(name, &std::fs::read(join(&out, name)).unwrap()).unwrap().document;
-        let pixel = photocraft_compose::render(&saved, Rect::new(1, 1, 2, 2)).px[0];
+        let saved = redrob_photo_io::import(name, &std::fs::read(join(&out, name)).unwrap()).unwrap().document;
+        let pixel = redrob_photo_compose::render(&saved, Rect::new(1, 1, 2, 2)).px[0];
         assert_eq!(pixel, expected, "{name}");
     }
 }
@@ -1016,8 +1016,8 @@ fn batch_reports_inputs_that_share_an_output_name() {
     let out = join(&dir, "droplet");
     let r = s.execute("file.automate.runDroplet", json!({"droplet": droplet, "input": [join(&input, "a.png"), other], "output": out})).unwrap();
     assert_eq!((r["files"].as_array().unwrap().len(), r["errors"].as_array().unwrap().len()), (1, 1), "{r}");
-    let kept = photocraft_io::import("a.png", &std::fs::read(join(&out, "a.png")).unwrap()).unwrap().document;
-    let px = photocraft_compose::render(&kept, Rect::new(1, 1, 2, 2)).px[0];
+    let kept = redrob_photo_io::import("a.png", &std::fs::read(join(&out, "a.png")).unwrap()).unwrap().document;
+    let px = redrob_photo_compose::render(&kept, Rect::new(1, 1, 2, 2)).px[0];
     assert!(px[0] > 0.99 && px[1] < 0.01, "the first input's result is kept: {px:?}");
 }
 
@@ -1076,8 +1076,8 @@ fn batch_include_all_subfolders() {
     let files: Vec<String> = r["files"].as_array().unwrap().iter().map(|f| f.as_str().unwrap().replace('\\', "/")).collect();
     let o = out.replace('\\', "/");
     assert_eq!(files, vec![format!("{o}/a.png"), format!("{o}/sub/b.png"), format!("{o}/sub/deeper/a.png"), format!("{o}/z/a.png")]);
-    let deep = photocraft_io::import("a.png", &std::fs::read(join(&out, "sub/deeper/a.png")).unwrap()).unwrap().document;
-    let px = photocraft_compose::render(&deep, Rect::new(1, 1, 2, 2)).px[0];
+    let deep = redrob_photo_io::import("a.png", &std::fs::read(join(&out, "sub/deeper/a.png")).unwrap()).unwrap().document;
+    let px = redrob_photo_compose::render(&deep, Rect::new(1, 1, 2, 2)).px[0];
     assert!(px[0] > 0.99 && px[1] > 0.99 && px[2] < 0.01, "blue inverted to yellow: {px:?}");
     std::fs::remove_dir_all(&out).unwrap();
     // A naming template applies within each kept subfolder (output outside the input folder).
@@ -1224,8 +1224,8 @@ fn batch_naming_still_reports_collisions_instead_of_overwriting() {
     assert_eq!(result["files"], json!([join(&out, "constant.png")]));
     assert_eq!(result["errors"].as_array().unwrap().len(), 1, "{result}");
     assert!(result["errors"][0]["error"].as_str().unwrap().contains("not written"));
-    let saved = photocraft_io::import("constant.png", &std::fs::read(join(&out, "constant.png")).unwrap()).unwrap().document;
-    assert_eq!(photocraft_compose::render(&saved, Rect::new(1, 1, 2, 2)).px[0], [1.0, 0.0, 0.0, 1.0]);
+    let saved = redrob_photo_io::import("constant.png", &std::fs::read(join(&out, "constant.png")).unwrap()).unwrap().document;
+    assert_eq!(redrob_photo_compose::render(&saved, Rect::new(1, 1, 2, 2)).px[0], [1.0, 0.0, 0.0, 1.0]);
 }
 #[test]
 fn batch_naming_rejects_outputs_that_replace_inputs_before_processing() {

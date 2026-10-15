@@ -4,10 +4,10 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::text::{CharStyle, TextObject};
-use vectorcraft_doc::{Appearance, Effect, ImageBlob, ImageObject, Node, NodeKind, Symbol};
-use vectorcraft_geom::{Point, shapes};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::text::{CharStyle, TextObject};
+use redrob_vector_doc::{Appearance, Effect, ImageBlob, ImageObject, Node, NodeKind, Symbol};
+use redrob_vector_geom::{Point, shapes};
 
 use super::*;
 

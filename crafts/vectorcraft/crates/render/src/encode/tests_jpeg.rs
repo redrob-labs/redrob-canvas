@@ -1,7 +1,7 @@
-use vectorcraft_color::cms::{self, IccProfile, ProfileKind};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Node};
-use vectorcraft_geom::shapes;
+use redrob_vector_color::cms::{self, IccProfile, ProfileKind};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Node};
+use redrob_vector_geom::shapes;
 
 use super::jpeg::{self, ColorModel, JpegOptions, Method};
 use super::*;

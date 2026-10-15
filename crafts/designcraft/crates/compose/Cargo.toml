@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-compose"
+name = "redrob-layout-compose"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -12,15 +12,15 @@ workspace = true
 unicode-bidi = { workspace = true }
 unicode-segmentation = { workspace = true }
 unicode-bidi-mirroring = { workspace = true }
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
+redrob-layout-geom = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-doc = { workspace = true }
+redrob-layout-fonts = { workspace = true }
 log = { workspace = true }
 regex = { workspace = true }
 miniz_oxide = "0.8"
 hypher = { version = "0.1.8", default-features = false, features = ["alloc", "portuguese", "spanish", "norwegian"] }
 
 [dev-dependencies]
-designcraft-fonts = { workspace = true, features = ["testing"] }
+redrob-layout-fonts = { workspace = true, features = ["testing"] }
 proptest = { workspace = true }

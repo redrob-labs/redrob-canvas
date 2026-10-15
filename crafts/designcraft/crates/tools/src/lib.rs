@@ -24,9 +24,9 @@ mod text;
 pub mod thread;
 mod xform;
 
-use designcraft_compose::Cache;
-use designcraft_doc::{Document, Item, ItemId, Selection, SpreadRef};
-use designcraft_geom::{Affine, BezPath, Point, Rect, Unit, Vec2};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{Document, Item, ItemId, Selection, SpreadRef};
+use redrob_layout_geom::{Affine, BezPath, Point, Rect, Unit, Vec2};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -211,7 +211,7 @@ pub struct ToolContext<'a> {
     /// Screen pixels per point.
     pub zoom: f64,
     /// Layer new items go on.
-    pub layer: designcraft_doc::LayerId,
+    pub layer: redrob_layout_doc::LayerId,
     pub snap: SnapView,
     pub unit: Unit,
     /// The toolbox's Stroke box is in front: sampled colours go to strokes (the Eyedropper).
@@ -242,18 +242,18 @@ impl ToolContext<'_> {
         let (ppi, ppg) = self.doc.parent_page_for(page)?;
         let parent = &self.doc.parents[ppi];
         let pg = &spread.pages[pi];
-        let at = sp - designcraft_geom::Vec2::new(pg.x - parent.pages[ppg].x, 0.0);
+        let at = sp - redrob_layout_geom::Vec2::new(pg.x - parent.pages[ppg].x, 0.0);
         parent
             .items
             .iter()
             .rev()
-            .find(|it| !it.locked && !pg.overridden.contains(&it.id) && designcraft_doc::edit_hit(it, at, self.tol(4.0)))
+            .find(|it| !it.locked && !pg.overridden.contains(&it.id) && redrob_layout_doc::edit_hit(it, at, self.tol(4.0)))
             .map(|it| (page, it.id))
     }
 
     fn hit_parent(&self, sr: SpreadRef, sp: Point) -> Option<(SpreadRef, ItemId)> {
         let s = self.doc.spread(sr)?;
-        s.items.iter().rev().find(|it| !it.locked && designcraft_doc::edit_hit(it, sp, self.tol(4.0))).map(|it| (sr, it.id))
+        s.items.iter().rev().find(|it| !it.locked && redrob_layout_doc::edit_hit(it, sp, self.tol(4.0))).map(|it| (sr, it.id))
     }
 
     /// Spread-space → canvas transform of the spread holding item `id`.

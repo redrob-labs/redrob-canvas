@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-pptx"
+name = "redrob-layout-pptx"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,17 +9,17 @@ description = "DesignCraft PowerPoint (PPTX) export: pages as slides of editable
 workspace = true
 
 [dependencies]
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
-designcraft-compose = { workspace = true }
-designcraft-images = { workspace = true }
+redrob-layout-geom = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-doc = { workspace = true }
+redrob-layout-fonts = { workspace = true }
+redrob-layout-compose = { workspace = true }
+redrob-layout-images = { workspace = true }
 skrifa = { workspace = true }
 image = { workspace = true }
 thiserror = { workspace = true }
 zip = { workspace = true }
 
 [dev-dependencies]
-designcraft-fonts = { workspace = true, features = ["testing"] }
+redrob-layout-fonts = { workspace = true, features = ["testing"] }
 quick-xml = { workspace = true }

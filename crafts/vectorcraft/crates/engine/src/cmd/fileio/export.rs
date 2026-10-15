@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, Node, NodeId, NodeKind, SymbolBoxes};
+use redrob_vector_doc::{Document, Node, NodeId, NodeKind, SymbolBoxes};
 
 use crate::DocState;
 
@@ -27,21 +27,21 @@ pub(super) fn serialize(s: &mut Session, p: &Value) -> Result<Value> {
     // Text formats come back as text; an SVG in UTF-16 or ISO 8859-1 also as its bytes.
     let data = |bytes: &[u8]| match f.id {
         "svg" => {
-            let text = vectorcraft_svg::text_of(bytes).unwrap_or_else(|_| String::from_utf8_lossy(bytes));
+            let text = redrob_vector_svg::text_of(bytes).unwrap_or_else(|_| String::from_utf8_lossy(bytes));
             let mut v = json!({ "text": text });
             if text.as_bytes() != bytes {
-                v["dataBase64"] = json!(vectorcraft_format::base64_encode(bytes));
+                v["dataBase64"] = json!(redrob_vector_format::base64_encode(bytes));
             }
             v
         }
-        _ => json!({ "dataBase64": vectorcraft_format::base64_encode(bytes) }),
+        _ => json!({ "dataBase64": redrob_vector_format::base64_encode(bytes) }),
     };
     let mut out = merge(data(main.first().map_or(&[][..], |m| &m.1)), json!({ "warnings": enc.warnings }));
     if main.len() > 1 {
         out["files"] = main.iter().map(|(name, bytes)| merge(json!({ "name": name }), data(bytes))).collect();
     }
     if !linked.is_empty() {
-        out["linked"] = linked.iter().map(|(name, bytes)| json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(bytes) })).collect();
+        out["linked"] = linked.iter().map(|(name, bytes)| json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) })).collect();
     }
     Ok(out)
 }
@@ -98,21 +98,21 @@ fn selected_part(n: &Node, keep: &HashSet<NodeId>) -> Option<Node> {
 /// bounds clip them), as DXF's crop leaves them. Symbol instances are measured by their art, and
 /// the box of one whose art holds brushed strokes grows by as far as their brush art can paint
 /// ([`SymbolBoxes::with_brush_art`]). An object that holds a symbol instance also stays when what
-/// the canvas paints for it reaches `rect` ([`vectorcraft_render::painted_bounds`]: the effects in
+/// the canvas paints for it reaches `rect` ([`redrob_vector_render::painted_bounds`]: the effects in
 /// the symbols' art and its own effects). A clipping layer keeps every object, its clipping path
 /// among them. An artboard's file then holds its own art, not a whole document of artboards.
-pub(super) fn art_over(doc: &Document, rect: vectorcraft_geom::Rect) -> Document {
-    fn kept(n: &Arc<Node>, doc: &Document, symbols: &SymbolBoxes, rect: vectorcraft_geom::Rect) -> Option<Arc<Node>> {
+pub(super) fn art_over(doc: &Document, rect: redrob_vector_geom::Rect) -> Document {
+    fn kept(n: &Arc<Node>, doc: &Document, symbols: &SymbolBoxes, rect: redrob_vector_geom::Rect) -> Option<Arc<Node>> {
         if matches!(n.kind, NodeKind::Layer { clip: false, .. }) {
             let mut layer = Node::clone(n);
             let children = layer.children_mut()?;
             *children = children.iter().filter_map(|c| kept(c, doc, symbols, rect)).collect();
             return Some(Arc::new(layer));
         }
-        let over = |b: vectorcraft_geom::Rect| b.x0 <= rect.x1 && rect.x0 <= b.x1 && b.y0 <= rect.y1 && rect.y0 <= b.y1;
+        let over = |b: redrob_vector_geom::Rect| b.x0 <= rect.x1 && rect.x0 <= b.x1 && b.y0 <= rect.y1 && rect.y0 <= b.y1;
         let mut holds_instance = false;
         n.walk(&mut |c| holds_instance |= matches!(c.kind, NodeKind::SymbolInstance { .. }));
-        let painted = || holds_instance && vectorcraft_render::painted_bounds(doc, n).is_some_and(over);
+        let painted = || holds_instance && redrob_vector_render::painted_bounds(doc, n).is_some_and(over);
         (n.visual_bounds_with(symbols).is_none_or(over) || painted()).then(|| n.clone())
     }
     let symbols = doc.symbol_boxes().with_brush_art();
@@ -152,7 +152,7 @@ fn source<'a>(s: &'a mut Session, f: &Format, p: &Value, cmd: &str) -> Result<Co
 
 /// The selected objects (not on template layers) alone on one layer, with one artboard: their
 /// visual bounds.
-fn selection(s: &mut Session, cmd: &str) -> Result<(Document, vectorcraft_geom::Rect)> {
+fn selection(s: &mut Session, cmd: &str) -> Result<(Document, redrob_vector_geom::Rect)> {
     let ids = edit::selected_roots(s)?;
     let st = s.doc()?;
     let is_template = |id| st.doc.node(id).is_some_and(|l| matches!(l.kind, NodeKind::Layer { template: true, .. }));
@@ -165,12 +165,12 @@ fn selection(s: &mut Session, cmd: &str) -> Result<(Document, vectorcraft_geom::
 /// Objects `ids` of `doc` alone on one layer (in that order, back to front), with one artboard
 /// named `name`: their visual bounds, symbol instances measured by their art (`None` when they
 /// have none).
-pub(crate) fn isolated(doc: &Document, ids: &[NodeId], name: &str) -> Option<(Document, vectorcraft_geom::Rect)> {
+pub(crate) fn isolated(doc: &Document, ids: &[NodeId], name: &str) -> Option<(Document, redrob_vector_geom::Rect)> {
     let nodes: Vec<Arc<Node>> = ids.iter().filter_map(|id| doc.node(*id).cloned().map(Arc::new)).collect();
     let symbols = doc.symbol_boxes();
     let bounds = nodes.iter().filter_map(|n| n.visual_bounds_with(&symbols)).reduce(|a, b| a.union(b))?;
     let mut d = single_artboard(doc, bounds, name);
-    let mut layer = Node::layer(d.alloc_id(), name, vectorcraft_doc::LayerColor::Preset(0));
+    let mut layer = Node::layer(d.alloc_id(), name, redrob_vector_doc::LayerColor::Preset(0));
     if let Some(ch) = layer.children_mut() {
         *ch = nodes;
     }

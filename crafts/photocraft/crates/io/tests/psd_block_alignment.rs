@@ -5,12 +5,12 @@
 //! layer record's extra data unaligned: a Pattern Fill's `PtFl` came out 2 bytes short of the
 //! boundary for half of all pattern names.
 
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_doc::{Document, Fill, Layer, LayerContent, Pattern};
-use photocraft_geom::{Rect, Size};
-use photocraft_io::*;
-use photocraft_psd::PsdFile;
-use photocraft_raster::Surface;
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_doc::{Document, Fill, Layer, LayerContent, Pattern};
+use redrob_photo_geom::{Rect, Size};
+use redrob_photo_io::*;
+use redrob_photo_psd::PsdFile;
+use redrob_photo_raster::Surface;
 
 fn pattern(name: &str) -> Pattern {
     let mut s = Surface::new(PixelFormat::RGBA8);

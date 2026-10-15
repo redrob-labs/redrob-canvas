@@ -4,7 +4,7 @@
 use egui::{Modifiers, PointerButton, Pos2, Rect, accesskit::Role, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use photocraft_doc::LayerId;
+use redrob_photo_doc::LayerId;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -12,7 +12,7 @@ use crate::layer_row_ui::{Indicator, RowRects, recorded};
 
 /// `a` with a Drop Shadow and a Color Overlay, and `b` above it without effects.
 fn harness() -> (Harness<'static, PhotocraftApp>, LayerId, LayerId) {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let a = s.execute("layer.new.layer", json!({"name": "a"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.layerStyle.dropShadow", json!({})).unwrap();
@@ -41,7 +41,7 @@ fn effect_row(h: &Harness<'_, PhotocraftApp>, id: LayerId, name: &str) -> Rect {
 }
 
 fn effects(h: &Harness<'_, PhotocraftApp>, id: LayerId) -> Vec<&'static str> {
-    h.state().session.active().unwrap().doc.layer(id).unwrap().effects.items.iter().map(photocraft_doc::Effect::label).collect()
+    h.state().session.active().unwrap().doc.layer(id).unwrap().effects.items.iter().map(redrob_photo_doc::Effect::label).collect()
 }
 
 /// A real press, drag and release, `modifiers` held throughout.

@@ -13,8 +13,8 @@ use std::collections::HashMap;
 
 use egui::{Rect, Sense, Stroke, StrokeKind, Ui, vec2};
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
-use vectorcraft_engine::cmd::library::{ItemKind, LIBRARY_EXT, LIBRARY_EXTS, Library, LibraryGraphic};
+use redrob_vector_color::Paint;
+use redrob_vector_engine::cmd::library::{ItemKind, LIBRARY_EXT, LIBRARY_EXTS, Library, LibraryGraphic};
 
 use crate::theme::Tokens;
 use crate::widgets::{self, PanelDrag, menu_item, menu_item_name};
@@ -398,7 +398,7 @@ fn thumbnail(ctx: &egui::Context, library: &str, g: &LibraryGraphic) -> Option<e
     if let Some(t) = CACHE.with(|c| c.borrow().get(&key).cloned()) {
         return t;
     }
-    let tex = vectorcraft_format::base64_decode(&g.thumbnail)
+    let tex = redrob_vector_format::base64_decode(&g.thumbnail)
         .and_then(|png| image::load_from_memory_with_format(&png, image::ImageFormat::Png).ok())
         .map(|img| {
             let rgba = img.to_rgba8();
@@ -446,7 +446,7 @@ fn import_picked(app: &mut VectorcraftApp) {
 
 /// Export Library…: library `id` written to a picked file named after it (the web downloads it).
 fn export_picked(app: &mut VectorcraftApp, id: &str, name: &str) {
-    let file = format!("{}.{LIBRARY_EXT}", vectorcraft_engine::cmd::library::file_stem_for(name));
+    let file = format!("{}.{LIBRARY_EXT}", redrob_vector_engine::cmd::library::file_stem_for(name));
     let r = crate::io::save_command_output_named(app, "library.export", &file, json!({ "library": id }));
     report(app, r);
 }
@@ -501,7 +501,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
 
@@ -606,7 +606,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn libraries_are_exported_and_imported_from_the_panel_menu() {
-        let dir = vectorcraft_testkit::temp_dir("libraries-panel");
+        let dir = redrob_vector_testkit::temp_dir("libraries-panel");
         let path = dir.join("Brand.vclibrary").to_string_lossy().to_string();
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();

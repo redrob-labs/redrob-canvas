@@ -1,7 +1,7 @@
 //! Writes multi-gigabyte PSB files for large-file tests (#375, #216), straight from the Adobe
 //! PSD spec and independent of this crate's writer, so the fixtures don't inherit its limits.
 //!
-//! `cargo run --release -p photocraft-psd --example big_psb -- <out dir> [case...]`
+//! `cargo run --release -p redrob-photo-psd --example big_psb -- <out dir> [case...]`
 //!
 //! Every sample follows [`sample`], so a reader can check any pixel without the file. RLE cases
 //! keep each row constant (tiny files, full decoded size); raw cases vary along x too.

@@ -46,7 +46,7 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
         }
         if let Some(a) = doc.artboards.get(board) {
             label(ui, tl!("Size:"));
-            let (w, h) = vectorcraft_render::region_pixels(a.rect, ppi / 72.0);
+            let (w, h) = redrob_vector_render::region_pixels(a.rect, ppi / 72.0);
             ui.label(egui::RichText::new(format!("{w} × {h} px")).color(t.text));
             ui.end_row();
         }

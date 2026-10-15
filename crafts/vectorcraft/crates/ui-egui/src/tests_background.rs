@@ -5,9 +5,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{Appearance, Document, Node};
-use vectorcraft_engine::Session;
-use vectorcraft_geom::{Rect, shapes};
+use redrob_vector_doc::{Appearance, Document, Node};
+use redrob_vector_engine::Session;
+use redrob_vector_geom::{Rect, shapes};
 
 use crate::{Services, VectorcraftApp, background, io};
 
@@ -81,7 +81,7 @@ fn a_50k_path_save_returns_at_once_and_the_file_appears_later() {
     assert_eq!(st.path.as_deref(), Some("/docs/big.vectorcraft"));
     assert_eq!(app.ui.status, "Saved /docs/big.vectorcraft");
     let bytes = files.lock().unwrap()[0].1.clone();
-    assert_eq!(vectorcraft_format::load(&bytes).unwrap().node_count(), 50_001);
+    assert_eq!(redrob_vector_format::load(&bytes).unwrap().node_count(), 50_001);
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn the_dirty_state_follows_the_snapshot() {
     gate.open();
     background::wait_all(&mut app);
     assert!(app.session.doc().unwrap().is_dirty(), "the edit came after the snapshot");
-    let saved = vectorcraft_format::load(&files.lock().unwrap()[0].1).unwrap();
+    let saved = redrob_vector_format::load(&files.lock().unwrap()[0].1).unwrap();
     assert_eq!(saved.node_count(), 2, "the file holds the snapshot");
     // Undoing back to the snapshot is clean again.
     app.run("edit.undo", json!({})).unwrap();

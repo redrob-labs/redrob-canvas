@@ -4,8 +4,8 @@
 //! before Document Setup existed load unchanged.
 
 use serde::{Deserialize, Serialize};
-use vectorcraft_color::Color;
-use vectorcraft_geom::Rect;
+use redrob_vector_color::Color;
+use redrob_vector_geom::Rect;
 
 use crate::text::ScriptMetrics;
 

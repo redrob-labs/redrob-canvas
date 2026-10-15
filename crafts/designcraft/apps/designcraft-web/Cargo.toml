@@ -15,10 +15,10 @@ name = "designcraft-web"
 path = "src/main.rs"
 
 [dependencies]
-designcraft-engine = { workspace = true }
-designcraft-format = { workspace = true }
+redrob-layout-engine = { workspace = true }
+redrob-layout-format = { workspace = true }
 form_urlencoded = "1.2"
-designcraft-ui-egui = { workspace = true }
+redrob-layout-ui-egui = { workspace = true }
 egui = { workspace = true }
 log = { workspace = true }
 serde_json = { workspace = true }

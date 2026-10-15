@@ -11,7 +11,7 @@ mod visibility;
 pub use solid::{Bevel, BevelShape, Extrude, Facet, Inflate, View, extrude, inflate, plane};
 pub use visibility::{VisibleFace, visible_faces};
 
-use vectorcraft_geom::{BezPath, ParamCurve, PathData, Point, Rect};
+use redrob_vector_geom::{BezPath, ParamCurve, PathData, Point, Rect};
 
 /// Resource limits shared by desktop, CLI and browser evaluation.
 const MAX_PROFILE_POINTS: usize = 1024;

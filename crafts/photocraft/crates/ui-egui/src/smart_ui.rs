@@ -4,7 +4,7 @@
 //! drag it up or down its own stack to reorder it).
 
 use egui::{Align2, Color32, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
-use photocraft_doc::{Document, Layer, LayerContent, LayerId, SmartObject};
+use redrob_photo_doc::{Document, Layer, LayerContent, LayerId, SmartObject};
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
@@ -60,13 +60,13 @@ pub fn thumb_badge(ui: &egui::Ui, l: &Layer, thumb: Rect) {
 
 /// The display name of a smart filter (its command's label without the ellipsis). A Photoshop
 /// filter Redrob Canvas doesn't implement shows its own name and is marked as kept as is.
-fn filter_label(f: &photocraft_doc::SmartFilter) -> String {
+fn filter_label(f: &redrob_photo_doc::SmartFilter) -> String {
     let command = f.command.as_str();
-    if command == photocraft_engine::smart_cmds::UNSUPPORTED_FILTER {
+    if command == redrob_photo_engine::smart_cmds::UNSUPPORTED_FILTER {
         let name = f.params.get("name").and_then(Value::as_str).unwrap_or("Smart filter");
         return format!("{} (kept, not editable)", name.trim_end_matches("...").trim_end_matches('…'));
     }
-    photocraft_engine::commands::find(command)
+    redrob_photo_engine::commands::find(command)
         .map_or_else(|| command.rsplit('.').next().unwrap_or(command).to_string(), |c| tl!(c.label).trim_end_matches('…').to_string())
 }
 
@@ -156,7 +156,7 @@ pub(crate) fn drag_key() -> egui::Id {
 }
 
 /// The selected smart filter row of a document.
-fn selected_key(doc: photocraft_doc::DocId) -> egui::Id {
+fn selected_key(doc: redrob_photo_doc::DocId) -> egui::Id {
     egui::Id::new(("smart-filter-selected", doc))
 }
 
@@ -176,7 +176,7 @@ pub(crate) fn selected(ctx: &egui::Context, doc: &Document, active: Option<Layer
 
 /// Forgets the selected smart filter row: its smart object's own row was clicked, or the filter
 /// was deleted (its index would now name the next one).
-pub(crate) fn deselect(ctx: &egui::Context, doc: photocraft_doc::DocId) {
+pub(crate) fn deselect(ctx: &egui::Context, doc: redrob_photo_doc::DocId) {
     ctx.data_mut(|d| d.remove::<FilterDrag>(selected_key(doc)));
 }
 
@@ -280,8 +280,8 @@ pub(crate) fn trash_action((layer, filter): FilterDrag) -> (String, Value) {
 pub fn open_editor(app: &mut PhotocraftApp, ctx: &egui::Context, layer: u64, sm: &SmartObject, index: usize) {
     let Some(f) = sm.smart_filters.get(index) else { return };
     // Camera Raw has its own full-window dialog rather than a generic parameter form.
-    if f.command == photocraft_engine::lens_cmds::RAW {
-        if let Err(e) = crate::camera_raw_ui::open_smart_filter(app, ctx, photocraft_doc::LayerId(layer), index) {
+    if f.command == redrob_photo_engine::lens_cmds::RAW {
+        if let Err(e) = crate::camera_raw_ui::open_smart_filter(app, ctx, redrob_photo_doc::LayerId(layer), index) {
             app.ui.status = e;
             app.ui.status_error = true;
         }
@@ -289,7 +289,7 @@ pub fn open_editor(app: &mut PhotocraftApp, ctx: &egui::Context, layer: u64, sm:
     }
     // So has the Filter Gallery.
     if f.command == "filter.filterGallery" {
-        if let Err(e) = crate::gallery_ui::open_smart_filter(app, photocraft_doc::LayerId(layer), index) {
+        if let Err(e) = crate::gallery_ui::open_smart_filter(app, redrob_photo_doc::LayerId(layer), index) {
             app.ui.status = e;
             app.ui.status_error = true;
         }
@@ -341,7 +341,7 @@ mod tests {
 
     /// A pixel layer, a shape layer and a smart object, in that order.
     fn layers() -> [Layer; 3] {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         // An empty layer can't become a smart object: fill it first.
         s.execute("layer.new.layer", json!({})).unwrap();
@@ -350,7 +350,7 @@ mod tests {
         let shape = s.execute("shape.create", json!({"kind": "rect", "rect": [8, 8, 40, 24], "fill": "#cc3333"})).unwrap()["layer"].as_u64().unwrap();
         let pixel = s.execute("layer.new.layer", json!({})).unwrap()["layer"].as_u64().unwrap();
         let doc = &s.active().unwrap().doc;
-        [pixel, shape, smart].map(|id| doc.layer(photocraft_doc::LayerId(id)).unwrap().clone())
+        [pixel, shape, smart].map(|id| doc.layer(redrob_photo_doc::LayerId(id)).unwrap().clone())
     }
 
     /// Stack [A, B, C] (A at the bottom, drawn last): where a dragged filter lands.
@@ -425,14 +425,14 @@ mod tests {
     /// filter instead of stacking another.
     #[test]
     fn an_adjustment_smart_filter_opens_its_editor_and_updates_it() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         s.execute("edit.fill", json!({"contents": "black"})).unwrap();
         let id = s.execute("layer.smartObjects.convertToSmartObject", json!({})).unwrap()["layer"].as_u64().unwrap();
         s.execute("image.adjustments.brightnessContrast", json!({"brightness": 40, "contrast": -10})).unwrap();
         let mut app = PhotocraftApp::new(s, crate::Services::default());
-        let sm = match &app.session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().content {
+        let sm = match &app.session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content {
             LayerContent::Smart(sm) => sm.clone(),
             other => panic!("expected a smart object, got {other:?}"),
         };
@@ -445,7 +445,7 @@ mod tests {
         let dialog = d.id;
         // OK updates the recorded filter (one history step), it does not add a second filter.
         crate::dialogs::confirm(&mut app, dialog).unwrap();
-        let LayerContent::Smart(sm) = &app.session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().content else {
+        let LayerContent::Smart(sm) = &app.session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content else {
             panic!("the layer stays a smart object");
         };
         assert_eq!(sm.smart_filters.len(), 1, "no filter was stacked");

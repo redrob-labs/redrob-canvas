@@ -1,10 +1,10 @@
 //! Live blends, envelopes and gradient meshes, driven through `Session::execute`.
 
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::live::{self, BlendOrientation, BlendSpacing, EnvelopeKind};
-use vectorcraft_doc::{Node, NodeKind};
-use vectorcraft_geom::{Point, Rect};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::live::{self, BlendOrientation, BlendSpacing, EnvelopeKind};
+use redrob_vector_doc::{Node, NodeKind};
+use redrob_vector_geom::{Point, Rect};
 
 use super::*;
 
@@ -57,8 +57,8 @@ fn steps_of(s: &Session, id: NodeId) -> Vec<Node> {
     live::expand_live(&node(s, id))
 }
 
-fn render(s: &Session, region: Rect) -> vectorcraft_render::Rendered {
-    vectorcraft_render::Renderer::new().render_region(&s.doc().unwrap().doc, region, 1.0, true)
+fn render(s: &Session, region: Rect) -> redrob_vector_render::Rendered {
+    redrob_vector_render::Renderer::new().render_region(&s.doc().unwrap().doc, region, 1.0, true)
 }
 
 fn all_anchors(nodes: &[Node]) -> Vec<Point> {
@@ -478,7 +478,7 @@ fn envelope_transform_moves_mesh_points() {
     sel(&mut s, &[a]);
     let e = id_of(&s.execute("object.envelope.makeWithMesh", &json!({"rows": 1, "cols": 1})).unwrap());
     s.edit("move", |d, _| {
-        d.node_mut(e).unwrap().transform(vectorcraft_geom::Affine::translate((10.0, 20.0)), false);
+        d.node_mut(e).unwrap().transform(redrob_vector_geom::Affine::translate((10.0, 20.0)), false);
         Ok(())
     })
     .unwrap();
@@ -490,7 +490,7 @@ fn envelope_transform_moves_mesh_points() {
 
 // ---------- Gradient mesh ----------
 
-fn mesh_of(s: &Session, id: NodeId) -> vectorcraft_doc::GradientMesh {
+fn mesh_of(s: &Session, id: NodeId) -> redrob_vector_doc::GradientMesh {
     match &node(s, id).kind {
         NodeKind::Mesh(m) => m.clone(),
         k => panic!("{k:?}"),
@@ -556,7 +556,7 @@ fn mesh_point_colour_move_and_undo() {
     s.execute("object.mesh.movePoint", &json!({"id": a.0, "index": 3, "x": 120, "y": 130})).unwrap();
     assert_eq!(mesh_of(&s, a).points[3].p, Point::new(120.0, 130.0));
     s.execute("object.mesh.movePoint", &json!({"id": a.0, "index": 3, "x": 125, "y": 130, "handle": 1})).unwrap();
-    assert_eq!(mesh_of(&s, a).points[3].handles[1], vectorcraft_geom::Vec2::new(5.0, 0.0));
+    assert_eq!(mesh_of(&s, a).points[3].handles[1], redrob_vector_geom::Vec2::new(5.0, 0.0));
     s.execute("edit.undo", &json!({})).unwrap();
     s.execute("edit.undo", &json!({})).unwrap();
     assert_eq!(mesh_of(&s, a).points[3].p, Point::new(100.0, 100.0));
@@ -619,7 +619,7 @@ fn mesh_hit_test_inside() {
     sel(&mut s, &[a]);
     s.execute("object.mesh.create", &json!({"rows": 2, "cols": 2})).unwrap();
     let d = &s.doc().unwrap().doc;
-    let h = vectorcraft_doc::hit::hit_test(d, Point::new(50.0, 30.0), vectorcraft_doc::hit::HitOptions { tol: 1.0, ..Default::default() });
+    let h = redrob_vector_doc::hit::hit_test(d, Point::new(50.0, 30.0), redrob_vector_doc::hit::HitOptions { tol: 1.0, ..Default::default() });
     assert_eq!(h.map(|h| h.leaf), Some(a));
 }
 
@@ -664,8 +664,8 @@ fn live_doc() -> Session {
 fn live_objects_round_trip_through_native_format() {
     let s = live_doc();
     let d = &s.doc().unwrap().doc;
-    let bytes = vectorcraft_format::save(d, false);
-    let back = vectorcraft_format::load(&bytes).unwrap();
+    let bytes = redrob_vector_format::save(d, false);
+    let back = redrob_vector_format::load(&bytes).unwrap();
     assert_eq!(&back.layers, &d.layers);
     let mut kinds = vec![];
     back.walk(|n| kinds.push(n.kind_label()));
@@ -677,17 +677,17 @@ fn live_objects_round_trip_through_native_format() {
 #[test]
 fn svg_export_expands_live_objects() {
     let s = live_doc();
-    let svg = vectorcraft_svg::export(&s.doc().unwrap().doc, &Default::default());
+    let svg = redrob_vector_svg::export(&s.doc().unwrap().doc, &Default::default());
     // 4 blend objects + envelope content + 4 patches × 64 mesh pieces.
     let paths = svg.matches("<path").count();
     assert!(paths >= 4 + 1 + 256, "{paths}");
-    assert!(vectorcraft_svg::import(&svg).is_ok());
+    assert!(redrob_vector_svg::import(&svg).is_ok());
 }
 
 #[test]
 fn pdf_export_expands_live_objects() {
     let s = live_doc();
-    let pdf = vectorcraft_pdf::export(&s.doc().unwrap().doc, &Default::default()).unwrap();
+    let pdf = redrob_vector_pdf::export(&s.doc().unwrap().doc, &Default::default()).unwrap();
     assert!(pdf.starts_with(b"%PDF"));
 }
 
@@ -695,7 +695,7 @@ fn pdf_export_expands_live_objects() {
 fn old_documents_still_load() {
     let s = session();
     let d = &s.doc().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save(d, true)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(d, true)).unwrap();
     assert_eq!(back.layers.len(), d.layers.len());
 }
 

@@ -8,7 +8,7 @@
 //! `rightToLeft`), `columns` (the rows of a grid by column), `spacing` (pt) and `moveArtwork`.
 
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::newdoc::ArtboardLayout;
+use redrob_vector_engine::cmd::newdoc::ArtboardLayout;
 
 use super::{DialogSpec, form, run_and_close};
 use crate::state::Dialog;
@@ -116,7 +116,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// A frame of the open dialog with `events` → the texts painted. The dialog measures itself on
     /// its first frame, so a fresh context needs two.

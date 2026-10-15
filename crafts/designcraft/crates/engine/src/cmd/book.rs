@@ -36,7 +36,7 @@ fn save(_: &Book) -> Result<()> {
     Err(EngineError::Other("books need a file system".into()))
 }
 
-fn load(path: &str) -> Result<designcraft_doc::Document> {
+fn load(path: &str) -> Result<redrob_layout_doc::Document> {
     #[cfg(not(target_arch = "wasm32"))]
     let bytes = crate::io::read_file(path).map_err(EngineError::Other)?;
     #[cfg(target_arch = "wasm32")]
@@ -75,11 +75,11 @@ impl ChapterBatch {
         Ok(Self { directory, chapters: Vec::with_capacity(chapters), command })
     }
 
-    fn stage(&mut self, path: &str, doc: &designcraft_doc::Document) -> Result<()> {
+    fn stage(&mut self, path: &str, doc: &redrob_layout_doc::Document) -> Result<()> {
         use std::io::Write;
 
         // Propagate serialization errors; an empty fallback must never replace a chapter.
-        let bytes = designcraft_format::save(doc).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+        let bytes = redrob_layout_format::save(doc).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
         let mut file = tempfile::Builder::new()
             .prefix("chapter-")
             .tempfile_in(self.directory.path())
@@ -211,11 +211,11 @@ mod safety_tests;
 
 /// Make page numbering of `d` start at `n` (the first section).
 #[cfg(not(target_arch = "wasm32"))]
-fn start_at(d: &mut designcraft_doc::Document, n: u32) {
+fn start_at(d: &mut redrob_layout_doc::Document, n: u32) {
     if !d.sections.iter().any(|x| x.start == 0) {
         d.sections.insert(
             0,
-            designcraft_doc::Section {
+            redrob_layout_doc::Section {
                 start: 0,
                 start_number: None,
                 style: Default::default(),
@@ -314,14 +314,14 @@ pub fn specs() -> Vec<CommandSpec> {
                 let mut d = load(path)?;
                 // The chapter's own fonts, for this export (skipped font files are logged).
                 let _fonts = super::file::load_document_fonts(&mut d, path).0;
-                let cache = designcraft_compose::Cache::new();
-                let r = designcraft_pdf::export_pdf_with_report(&d, &cache, &designcraft_pdf::PdfOptions::default()).map_err(|e| EngineError::Other(e.to_string()))?;
-                let n = designcraft_render::pdf_page_count(&r.bytes).unwrap_or(0);
-                let sizes: Vec<(f32, f32)> = (0..n).filter_map(|i| designcraft_render::pdf_page_size(&r.bytes, i)).map(|(w, h)| (w as f32, h as f32)).collect();
+                let cache = redrob_layout_compose::Cache::new();
+                let r = redrob_layout_pdf::export_pdf_with_report(&d, &cache, &redrob_layout_pdf::PdfOptions::default()).map_err(|e| EngineError::Other(e.to_string()))?;
+                let n = redrob_layout_render::pdf_page_count(&r.bytes).unwrap_or(0);
+                let sizes: Vec<(f32, f32)> = (0..n).filter_map(|i| redrob_layout_render::pdf_page_size(&r.bytes, i)).map(|(w, h)| (w as f32, h as f32)).collect();
                 parts.push((r.bytes, sizes));
             }
             let pages: usize = parts.iter().map(|p| p.1.len()).sum();
-            let bytes = designcraft_pdf::merge_pdfs(&parts, None).map_err(|e| EngineError::Other(e.to_string()))?;
+            let bytes = redrob_layout_pdf::merge_pdfs(&parts, None).map_err(|e| EngineError::Other(e.to_string()))?;
             match str_param(p, "path") {
                 Some(path) => {
                     #[cfg(not(target_arch = "wasm32"))]
@@ -365,7 +365,7 @@ mod tests {
         let r = s.execute("book.exportPdf", &json!({})).unwrap();
         assert_eq!(r["pages"], 5);
         let bytes = super::super::file::base64_decode(r["base64"].as_str().unwrap());
-        assert_eq!(designcraft_render::pdf_page_count(&bytes), Some(5));
+        assert_eq!(redrob_layout_render::pdf_page_count(&bytes), Some(5));
         // A fresh session reopens the book.
         let mut t = Session::new();
         assert_eq!(t.execute("book.open", &json!({"path": p("book.dcbook")})).unwrap()["documents"], 2);

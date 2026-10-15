@@ -5,9 +5,9 @@
 use std::sync::{Arc, Mutex};
 
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeKind;
-use vectorcraft_engine::cmd::fileio;
-use vectorcraft_geom::Point;
+use redrob_vector_doc::NodeKind;
+use redrob_vector_engine::cmd::fileio;
+use redrob_vector_geom::Point;
 
 use crate::theme::{self, Tokens};
 use crate::{VectorcraftApp, io, widgets};
@@ -27,7 +27,7 @@ pub struct PlaceArrival {
 
 pub type PlaceInbox = Arc<Mutex<Vec<PlaceArrival>>>;
 
-/// Where files dropped on a canvas land: document `doc` ([`vectorcraft_engine::DocState::uid`]) at
+/// Where files dropped on a canvas land: document `doc` ([`redrob_vector_engine::DocState::uid`]) at
 /// `at` (document coordinates), embedded when Shift was held. The document is kept because the web
 /// reads dropped files asynchronously: another document may have become active when they arrive.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -171,7 +171,7 @@ fn open_dialog(app: &mut VectorcraftApp, files: Vec<Value>) {
 /// Is dialog file entry `file` a Redrob Canvas document on disk (what Link places as one locked
 /// object)?
 fn is_vectorcraft_file(file: &Value) -> bool {
-    let native = ["vectorcraft", vectorcraft_format::LEGACY_EXTENSION, "vctemplate"];
+    let native = ["vectorcraft", redrob_vector_format::LEGACY_EXTENSION, "vctemplate"];
     file.get("path").and_then(Value::as_str).is_some_and(|p| native.contains(&fileio::extension(p).as_str()))
 }
 
@@ -182,12 +182,12 @@ fn source(app: &VectorcraftApp, file: &Value) -> Option<Value> {
     }
     let name = file.get("name").and_then(Value::as_str)?;
     let bytes = app.place.picked.iter().find(|(n, _)| n == name).map(|(_, b)| b)?;
-    Some(json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(bytes) }))
+    Some(json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) }))
 }
 
 /// One line about `file` for the Place dialog ("300 × 150 px, 300 ppi, RGB (1 in × 0.5 in)"), or
 /// why it can't be placed.
-fn summary(app: &mut VectorcraftApp, file: &Value, units: vectorcraft_doc::Unit) -> String {
+fn summary(app: &mut VectorcraftApp, file: &Value, units: redrob_vector_doc::Unit) -> String {
     let Some(p) = source(app, file) else { return "not found".into() };
     let i = match app.session.execute("file.place.info", &p) {
         Ok(i) => i,
@@ -254,7 +254,7 @@ pub fn queue(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
         .into_iter()
         .flatten()
         .filter_map(|f| {
-            let png = vectorcraft_format::base64_decode(f["thumbnailBase64"].as_str()?)?;
+            let png = redrob_vector_format::base64_decode(f["thumbnailBase64"].as_str()?)?;
             let img = image::load_from_memory_with_format(&png, image::ImageFormat::Png).ok()?.to_rgba8();
             let color = egui::ColorImage::from_rgba_unmultiplied([img.width() as usize, img.height() as usize], img.as_raw());
             Some((f["name"].as_str()?.to_string(), Thumb { image: std::sync::Arc::new(color), tex: None }))
@@ -346,7 +346,7 @@ pub fn drop_files(app: &mut VectorcraftApp, mut files: Vec<(DropTarget, DropFile
             DropTarget::Place(DropAt { at, embed, .. }) => {
                 let mut p = match &path {
                     Some(path) => json!({ "path": path }),
-                    None => json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(&bytes) }),
+                    None => json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(&bytes) }),
                 };
                 p["at"] = json!([at.x, at.y]);
                 p["link"] = json!(!embed);

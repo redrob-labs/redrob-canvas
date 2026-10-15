@@ -4,7 +4,7 @@
 //!
 //! `--control <port>` (or `DESIGNCRAFT_CONTROL_PORT`) starts a localhost JSON-lines control server:
 //! `{"id":1,"method":"ui.inspect","params":{}}` → `{"id":1,"ok":true,"result":…}`.
-//! See `designcraft_ui_egui::control` for the methods.
+//! See `redrob_layout_ui_egui::control` for the methods.
 //!
 //! The graphics backend (DirectX 12, Vulkan, Metal or OpenGL) is chosen in `gpu` before the window
 //! exists, with a fallback for a driver that crashes at start-up; `WGPU_BACKEND` overrides it.
@@ -18,8 +18,8 @@ mod logging;
 mod native_menu;
 mod profile;
 
-use designcraft_engine::Session;
-use designcraft_ui_egui::{DesignApp, Services};
+use redrob_layout_engine::Session;
+use redrob_layout_ui_egui::{DesignApp, Services};
 
 struct App {
     app: DesignApp,
@@ -106,14 +106,14 @@ fn load_prefs(app: &mut DesignApp) {
     }
     if let Some(p) = prefs_path()
         && let Ok(bytes) = std::fs::read(&p)
-        && let Ok(ui) = designcraft_ui_egui::UiState::from_preferences_json(&bytes)
+        && let Ok(ui) = redrob_layout_ui_egui::UiState::from_preferences_json(&bytes)
     {
         app.ui = ui;
     }
     // Engine preferences (Preferences dialog, favourites…) live beside the UI state.
     if let Some(p) = prefs_path().map(|p| p.with_file_name("prefs.json"))
         && let Ok(bytes) = std::fs::read(&p)
-        && let Ok(prefs) = serde_json::from_slice::<designcraft_engine::Prefs>(&bytes)
+        && let Ok(prefs) = serde_json::from_slice::<redrob_layout_engine::Prefs>(&bytes)
     {
         app.session.prefs = prefs;
     }
@@ -209,7 +209,7 @@ fn services() -> Services {
         })),
         pick_save: Some(Box::new(|name: &str| rfd::FileDialog::new().set_file_name(name).save_file().map(|p| p.to_string_lossy().to_string()))),
         read: Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string()))),
-        write: Some(Box::new(|p: &str, b: &[u8]| designcraft_engine::atomic::write_atomic(std::path::Path::new(p), b).map_err(|e| e.to_string()))),
+        write: Some(Box::new(|p: &str, b: &[u8]| redrob_layout_engine::atomic::write_atomic(std::path::Path::new(p), b).map_err(|e| e.to_string()))),
         clipboard_text: Some(Box::new(|| arboard::Clipboard::new().and_then(|mut c| c.get_text()).ok())),
         ..Default::default()
     }
@@ -470,7 +470,7 @@ mod exit_recovery_tests {
         );
         assert!(std::sync::Arc::ptr_eq(&current.doc, &doc));
         assert!(current.is_dirty());
-        let recovered = designcraft_engine::cmd::from_bytes(&std::fs::read(dir.join(format!("{uid}.designcraft"))).unwrap()).unwrap();
+        let recovered = redrob_layout_engine::cmd::from_bytes(&std::fs::read(dir.join(format!("{uid}.designcraft"))).unwrap()).unwrap();
         assert_eq!(serde_json::to_value(&recovered).unwrap(), serde_json::to_value(doc.as_ref()).unwrap());
         std::fs::remove_dir_all(dir).unwrap();
     }
@@ -522,7 +522,7 @@ mod exit_recovery_tests {
             let ctx = egui::Context::default();
             close_frame(&mut app, &ctx, true);
             app.ui.dialog.as_mut().unwrap().fields.insert("discard".into(), json!(true));
-            designcraft_ui_egui::dialogs::confirm(&mut app).unwrap();
+            redrob_layout_ui_egui::dialogs::confirm(&mut app).unwrap();
             close_frame(&mut app, &ctx, false);
             if case == "stale" {
                 app.run("frame.create", json!({"rect": [200, 200, 300, 300]})).unwrap();
@@ -551,7 +551,7 @@ mod exit_recovery_tests {
                         "{case}"
                     );
                     assert!(std::sync::Arc::ptr_eq(&d.doc, &doc), "{case}");
-                    let recovered = designcraft_engine::cmd::from_bytes(&std::fs::read(dir.join(format!("{uid}.designcraft"))).unwrap()).unwrap();
+                    let recovered = redrob_layout_engine::cmd::from_bytes(&std::fs::read(dir.join(format!("{uid}.designcraft"))).unwrap()).unwrap();
                     assert_eq!(serde_json::to_value(&recovered).unwrap(), serde_json::to_value(doc.as_ref()).unwrap(), "{case}");
                 }
             }

@@ -3,8 +3,8 @@
 //! spot channels don't change the placed image; when the layer count is negative, the first extra
 //! channel is the composite's merged transparency.
 
-use designcraft_color::Color;
-use designcraft_color::cms::{Lab, lab::lab_to_srgb};
+use redrob_layout_color::Color;
+use redrob_layout_color::cms::{Lab, lab::lab_to_srgb};
 
 /// The largest decoded image, in RGBA bytes (the `image` crate's default allocation limit).
 const MAX_RGBA_BYTES: usize = 512 << 20;
@@ -607,7 +607,7 @@ mod tests {
         let y = plane(255, None);
         let k = plane(255, Some((6, 0, 12, 8, 127)));
         let rgb8 = |c: f32, m: f32, y: f32, k: f32| {
-            let [r, g, b] = designcraft_color::Color::cmyk(c, m, y, k).to_rgb_uncalibrated();
+            let [r, g, b] = redrob_layout_color::Color::cmyk(c, m, y, k).to_rgb_uncalibrated();
             [r, g, b].map(|v| (v * 255.0).round() as u8)
         };
         for rle in [false, true] {

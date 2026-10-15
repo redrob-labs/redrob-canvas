@@ -4,8 +4,8 @@
 
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use vectorcraft_doc::Document;
-use vectorcraft_svg::ExportOptions;
+use redrob_vector_doc::Document;
+use redrob_vector_svg::ExportOptions;
 
 use super::encode::{ARTBOARD_PARAMS, ArtboardPick, Encoded};
 use super::{ARTBOARD, ARTBOARDS, FormatOption, RANGE};
@@ -131,7 +131,7 @@ pub fn options_map(p: &Value) -> Result<Map<String, Value>, String> {
 fn plan(doc: &Document, p: &Value) -> Result<(ExportOptions, Vec<Option<usize>>, bool), String> {
     let mut m = options_map(p)?;
     // Fonts: unless chosen, Document Setup → Type → Export decides (appearance = outlines).
-    if !m.contains_key("outlineText") && doc.setup.export_text == vectorcraft_doc::ExportText::Appearance {
+    if !m.contains_key("outlineText") && doc.setup.export_text == redrob_vector_doc::ExportText::Appearance {
         m.insert("outlineText".into(), Value::Bool(true));
     }
     let picks: Map<String, Value> = ARTBOARD_PARAMS.iter().chain(["useArtboards"].iter()).filter_map(|k| m.remove_entry(*k)).collect();
@@ -152,7 +152,7 @@ fn plan(doc: &Document, p: &Value) -> Result<(ExportOptions, Vec<Option<usize>>,
 pub(super) fn encode(doc: &Document, p: &Value, compressed: bool) -> Result<Encoded, String> {
     let (opts, boards, chosen) = plan(doc, p)?;
     // Preserve editing embeds the native document (once, shared by every file).
-    let native = opts.preserve_editing.then(|| vectorcraft_format::save(doc, false));
+    let native = opts.preserve_editing.then(|| redrob_vector_format::save(doc, false));
     // Draw linked files as vectors when available, or their previews with a warning. Keep
     // that preparation out of the native attachment so missing links remain relinkable.
     let (full, warnings) = crate::cmd::place::document::full_documents(doc);
@@ -164,7 +164,7 @@ pub(super) fn encode(doc: &Document, p: &Value, compressed: bool) -> Result<Enco
     for artboard in boards {
         // A chosen artboard's file holds the art over it (#550).
         let over = artboard.filter(|_| chosen).and_then(|b| doc.artboards.get(b)).map(|a| super::export::art_over(doc, a.rect));
-        let mut out = vectorcraft_svg::export_full(over.as_ref().unwrap_or(doc), &ExportOptions { artboard, ..opts.clone() }, native.as_deref());
+        let mut out = redrob_vector_svg::export_full(over.as_ref().unwrap_or(doc), &ExportOptions { artboard, ..opts.clone() }, native.as_deref());
         let bytes = out.take_bytes();
         for l in out.linked {
             if !enc.linked.iter().any(|e| e.name == l.name) {
@@ -176,7 +176,7 @@ pub(super) fn encode(doc: &Document, p: &Value, compressed: bool) -> Result<Enco
                 enc.warnings.push(w);
             }
         }
-        enc.files.push((artboard, if compressed { vectorcraft_svg::compress_bytes(&bytes) } else { bytes }));
+        enc.files.push((artboard, if compressed { redrob_vector_svg::compress_bytes(&bytes) } else { bytes }));
     }
     // Live type names its fonts; outlines and embedded fonts are the fallback font's.
     if (opts.outline_text || opts.embed_fonts)

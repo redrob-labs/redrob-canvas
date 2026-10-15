@@ -111,7 +111,7 @@ pub fn badge(app: &PhotocraftApp, tool: Tool, m: egui::Modifiers) -> Option<Badg
     // there), four arrows on an anchor (a press drags it).
     if let Some(p) = app.hover_doc.filter(|_| tool == Tool::CurvaturePen) {
         return crate::direct_select::curvature_hover(app, p, m)
-            .map(|h| if matches!(h, photocraft_vector::edit::Hit::Segment(..)) { Badge::Add } else { Badge::Move });
+            .map(|h| if matches!(h, redrob_photo_vector::edit::Hit::Segment(..)) { Badge::Add } else { Badge::Move });
     }
     // The Pen over the active path with Auto Add/Delete on: what a click would do (#4144).
     if let Some(p) = app.hover_doc.filter(|_| tool == Tool::Pen) {
@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn badge_follows_modifiers_and_the_options_bar() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let none = egui::Modifiers::NONE;
         let (shift, alt) = (egui::Modifiers::SHIFT, egui::Modifiers::ALT);
         let both = egui::Modifiers { shift: true, alt: true, ..Default::default() };

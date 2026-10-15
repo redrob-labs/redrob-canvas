@@ -1,13 +1,13 @@
 //! Untrusted text files placed with File → Place never crash: any bytes, with any Text Import
 //! Options, place as area type or fail with an error.
 //!
-//! `PROPTEST_CASES=20000 cargo test -p vectorcraft-engine --test text_import_fuzz` runs a deeper search.
+//! `PROPTEST_CASES=20000 cargo test -p redrob-vector-engine --test text_import_fuzz` runs a deeper search.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
 use serde_json::json;
-use vectorcraft_testkit::catch_quiet;
+use redrob_vector_testkit::catch_quiet;
 
 proptest! {
     #![proptest_config(ProptestConfig { cases: 64, failure_persistence: None, ..ProptestConfig::default() })]
@@ -23,11 +23,11 @@ proptest! {
         spaces in prop::option::of(0u64..8),
     ) {
         // Exercise import/options/thumbnails with bundled fonts, independently of host font collections.
-        // Font lookup and fallback have dedicated tests in vectorcraft-text.
-        vectorcraft_text::FontDb::global().set_system_fallback(false);
+        // Font lookup and fallback have dedicated tests in redrob-vector-text.
+        redrob_vector_text::FontDb::global().set_system_fallback(false);
         let data = [bom, &bytes[..]].concat();
         let r = catch_quiet(|| {
-            let mut s = vectorcraft_engine::Session::new();
+            let mut s = redrob_vector_engine::Session::new();
             s.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
             let text = json!({
                 "characterSet": if ansi { "ansi" } else { "unicode" },
@@ -36,7 +36,7 @@ proptest! {
                 "removeParagraphReturns": paras,
                 "replaceSpaces": spaces,
             });
-            let p = json!({"name": "fuzz.txt", "dataBase64": vectorcraft_format::base64_encode(&data), "text": text, "thumbnail": 8});
+            let p = json!({"name": "fuzz.txt", "dataBase64": redrob_vector_format::base64_encode(&data), "text": text, "thumbnail": 8});
             let _ = s.execute("file.place.info", &p);
             let _ = s.execute("file.place", &p);
         });

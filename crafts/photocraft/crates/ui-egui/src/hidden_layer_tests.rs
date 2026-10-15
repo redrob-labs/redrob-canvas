@@ -2,8 +2,8 @@
 //! and painting on or moving a hidden target layer is refused at the press with Photoshop's
 //! "the target layer is hidden" instead of changing pixels nobody can see.
 
-use photocraft_doc::LayerId;
-use photocraft_geom::Rect;
+use redrob_photo_doc::LayerId;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -12,7 +12,7 @@ use crate::state::Tool;
 
 /// A 64×64 document with a painted layer covering (8..24)², hidden and active.
 fn app(tool: Tool) -> (PhotocraftApp, LayerId) {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
     app.sync_views();
     app.session.execute("layer.new.layer", json!({})).unwrap();

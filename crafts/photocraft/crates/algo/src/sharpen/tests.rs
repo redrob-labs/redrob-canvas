@@ -1,6 +1,6 @@
 use super::*;
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_raster::{Interrupt, Surface};
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_raster::{Interrupt, Surface};
 use std::time::Instant;
 
 #[path = "reference.rs"]

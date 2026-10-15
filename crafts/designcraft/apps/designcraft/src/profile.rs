@@ -22,13 +22,13 @@ fn config_dir_with(os: &str, env: impl Fn(&str) -> Option<OsString>) -> Option<P
 }
 
 pub fn recovery_dir() -> Option<PathBuf> {
-    recovery_dir_with(std::env::var_os("DESIGNCRAFT_CONFIG_DIR"), designcraft_engine::recovery::default_dir).and_then(own_run)
+    recovery_dir_with(std::env::var_os("DESIGNCRAFT_CONFIG_DIR"), redrob_layout_engine::recovery::default_dir).and_then(own_run)
 }
 
 /// This run's folder in the recovery folder `root`. A second running DesignCraft has its own, so
 /// neither writes over the other's documents nor takes them for a crash's.
 fn own_run(root: PathBuf) -> Option<PathBuf> {
-    match designcraft_engine::recovery::run_dir(&root) {
+    match redrob_layout_engine::recovery::run_dir(&root) {
         Ok(dir) => Some(dir),
         Err(e) => {
             log::warn!("recovery is unavailable because this run cannot be isolated: {e}");

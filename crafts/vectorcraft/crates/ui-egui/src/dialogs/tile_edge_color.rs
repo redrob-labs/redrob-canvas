@@ -5,8 +5,8 @@
 //! Fields: `color` (`#rrggbb`, or a preset's name such as "Light Blue").
 
 use serde_json::{Value, json};
-use vectorcraft_color::Color;
-use vectorcraft_doc::LAYER_COLORS;
+use redrob_vector_color::Color;
+use redrob_vector_doc::LAYER_COLORS;
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, run_and_close};
@@ -65,7 +65,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     #[test]
     fn presets_or_custom_colours_set_the_preference() {

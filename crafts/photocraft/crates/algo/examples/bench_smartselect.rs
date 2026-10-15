@@ -1,14 +1,14 @@
 //! Timing: smart selection on a large synthetic RGBA8 layer (default 6016×6016): a textured
 //! disc (radius = 1/3 of the size) on a noisy background.
-//! `cargo run --release -p photocraft-algo --example bench_smartselect [size]`
+//! `cargo run --release -p redrob-photo-algo --example bench_smartselect [size]`
 use std::time::Instant;
 
-use photocraft_algo::matting::{self, RefineParams};
-use photocraft_algo::segment::{Rng, SurfaceSampler, focus, grabcut, quick, subject};
-use photocraft_algo::selection::{Region, SelectionMode, combine_region};
-use photocraft_color::PixelFormat;
-use photocraft_geom::Rect;
-use photocraft_raster::Surface;
+use redrob_photo_algo::matting::{self, RefineParams};
+use redrob_photo_algo::segment::{Rng, SurfaceSampler, focus, grabcut, quick, subject};
+use redrob_photo_algo::selection::{Region, SelectionMode, combine_region};
+use redrob_photo_color::PixelFormat;
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::Surface;
 
 fn main() {
     let n: i32 = std::env::args().nth(1).and_then(|v| v.parse().ok()).unwrap_or(6016);

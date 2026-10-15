@@ -260,7 +260,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// Clicking a row makes its artboard the active one (the navigator's, Fit Artboard in Window's).
     #[test]
@@ -410,8 +410,8 @@ mod tests {
         assert_eq!(app.session.tool_options()["active"], json!(1));
         // And clicking an artboard with the tool makes it the active one, highlighted in the panel.
         let view = app.view_info();
-        for kind in [vectorcraft_tools::PointerKind::Down, vectorcraft_tools::PointerKind::Up] {
-            crate::canvas::dispatch(&mut app, &vectorcraft_tools::PointerEvent::new(kind, 100.0, 100.0), view);
+        for kind in [redrob_vector_tools::PointerKind::Down, redrob_vector_tools::PointerKind::Up] {
+            crate::canvas::dispatch(&mut app, &redrob_vector_tools::PointerEvent::new(kind, 100.0, 100.0), view);
         }
         assert_eq!((app.session.tool_options()["active"].clone(), selected(&app, 2)), (json!(0), 0));
     }
@@ -433,9 +433,9 @@ mod tests {
         app.run("tool.options", json!({"tool": "artboard"})).unwrap();
         assert_eq!(app.ui.dialog.take().unwrap().str("name"), "Artboard 2");
         let view = app.view_info();
-        crate::canvas::dispatch(&mut app, &vectorcraft_tools::PointerEvent::new(vectorcraft_tools::PointerKind::Move, 100.0, 75.0), view);
+        crate::canvas::dispatch(&mut app, &redrob_vector_tools::PointerEvent::new(redrob_vector_tools::PointerKind::Move, 100.0, 75.0), view);
         assert_eq!(selected(&app, 3), 1, "the pointer over Artboard 1 leaves Artboard 2 active");
-        let r = app.session.tool_key(vectorcraft_tools::ToolKey::Delete, Default::default(), view);
+        let r = app.session.tool_key(redrob_vector_tools::ToolKey::Delete, Default::default(), view);
         crate::canvas::apply_requests(&mut app, r);
         let names: Vec<String> = app.session.active().unwrap().doc.artboards.iter().map(|a| a.name.clone()).collect();
         assert_eq!(names, ["Artboard 1", "Artboard 3"], "Delete removes Artboard 2");

@@ -13,9 +13,9 @@
 //! Preset… returns to Define Grid) and `__original` (the saved preset an edit changes).
 
 use serde_json::{Value, json};
-use vectorcraft_doc::Unit;
-use vectorcraft_tools::distort::perspective::define::is_builtin;
-use vectorcraft_tools::distort::perspective::{GridDefinition, Rgb};
+use redrob_vector_doc::Unit;
+use redrob_vector_tools::distort::perspective::define::is_builtin;
+use redrob_vector_tools::distort::perspective::{GridDefinition, Rgb};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;

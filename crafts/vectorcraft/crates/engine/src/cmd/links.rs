@@ -25,9 +25,9 @@ use std::collections::BTreeMap;
 use std::path::{Component, Path};
 
 use serde_json::{Value, json};
-use vectorcraft_doc::links::{Align, Preserve, hash_bytes};
-use vectorcraft_doc::{Appearance, Document, ImageBlob, ImageObject, LinkInfo, Node, NodeId, NodeKind, PlacedDocument, PlacementOptions};
-use vectorcraft_geom::{Affine, Rect, shapes};
+use redrob_vector_doc::links::{Align, Preserve, hash_bytes};
+use redrob_vector_doc::{Appearance, Document, ImageBlob, ImageObject, LinkInfo, Node, NodeId, NodeKind, PlacedDocument, PlacementOptions};
+use redrob_vector_geom::{Affine, Rect, shapes};
 
 use super::fileio::{self, RasterImage, absolute_path, file_created, file_stamp, read_file, write_file};
 use super::*;
@@ -469,7 +469,7 @@ fn clip_image(d: &mut Document, id: NodeId, (frame, room): Clip) -> Result<()> {
     }
     let (par, index, _) = d.position(id).ok_or(EngineError::NoNode(id))?;
     let image = d.remove(id)?;
-    let none = vectorcraft_color::Paint::None;
+    let none = redrob_vector_color::Paint::None;
     let mut clip = Node::path(d.alloc_id(), path, Appearance::basic(none.clone(), none, 0.0));
     if let NodeKind::Path { clipping, .. } = &mut clip.kind {
         *clipping = true;
@@ -875,7 +875,7 @@ fn copy_into_folder(from: &str, bytes: &[u8], dir: &Path) -> Result<(String, boo
     // Each name it takes is checked against the automation roots in force.
     let create = |to: &Path| {
         crate::file_access::check_write(&to.to_string_lossy()).map_err(|e| std::io::Error::new(std::io::ErrorKind::PermissionDenied, e))?;
-        vectorcraft_format::write_new_with(to, |f| f.write_all(bytes))
+        redrob_vector_format::write_new_with(to, |f| f.write_all(bytes))
     };
     // A file there that automation may not read isn't taken for the same file.
     let same = |to: &Path, m: &std::fs::Metadata| {
@@ -1084,7 +1084,7 @@ fn embed(s: &mut Session, p: &Value) -> Result<Value> {
     let (mut documents, mut missing) = (vec![], vec![]);
     for id in ids.iter().copied() {
         let Some(NodeKind::PlacedDocument(p)) = kind(&id) else { continue };
-        let readable = st.doc.images.get(&p.key).is_some_and(|b| vectorcraft_doc::placed_document::full_bytes(p, b).is_some());
+        let readable = st.doc.images.get(&p.key).is_some_and(|b| redrob_vector_doc::placed_document::full_bytes(p, b).is_some());
         if readable { documents.push(id) } else { missing.push(id) }
     }
     let ids: Vec<NodeId> = ids.into_iter().filter(|id| matches!(kind(id), Some(NodeKind::Image(_)))).collect();
@@ -1159,7 +1159,7 @@ fn unembed(s: &mut Session, p: &Value) -> Result<Value> {
     let Some(path) = path else {
         let name = n.display_name();
         let stem = Path::new(&name).file_stem().map_or_else(|| name.clone(), |s| s.to_string_lossy().into_owned());
-        return Ok(json!({ "name": format!("{stem}.{ext}"), "dataBase64": vectorcraft_format::base64_encode(&bytes) }));
+        return Ok(json!({ "name": format!("{stem}.{ext}"), "dataBase64": redrob_vector_format::base64_encode(&bytes) }));
     };
     let path = absolute_path(&if fileio::extension(path).is_empty() { format!("{path}.{ext}") } else { path.to_string() });
     write_file(&path, &bytes)?;

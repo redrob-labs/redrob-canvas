@@ -12,7 +12,7 @@ use crate::state::Tool;
 use crate::vector_ui::PenPath;
 
 fn harness() -> Harness<'static, PhotocraftApp> {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 200, "height": 100})).unwrap();
     let mut h = Harness::builder().with_size(vec2(1280.0, 800.0)).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
@@ -159,7 +159,7 @@ fn thumbnail_selection_ctrl_click_shape_keeps_active_layer_and_supports_undo() {
     h.run_steps(2);
     click(&mut h, egui::pos2(row.row.left() + 46.0, row.row.center().y), command());
     assert_eq!(selection(&h), Some([40, 20, 60, 40]), "{}", h.state().ui.status);
-    assert_eq!(h.state().session.active().unwrap().active_layer, Some(photocraft_doc::LayerId(active)));
+    assert_eq!(h.state().session.active().unwrap().active_layer, Some(redrob_photo_doc::LayerId(active)));
     h.state_mut().run("edit.undo", json!({})).unwrap();
     assert!(selection(&h).is_none());
     h.state_mut().run("edit.redo", json!({})).unwrap();
@@ -254,7 +254,7 @@ fn clicking_shape_with_path_selection_selects_its_layer() {
 /// confirms the path's outline pixels are painted in the accent colour, proving the path is drawn.
 #[test]
 fn path_overlay_drawn_for_non_vector_tools() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
     app.sync_views();
     // Place a work path whose top edge runs exactly along y=10 in document space.

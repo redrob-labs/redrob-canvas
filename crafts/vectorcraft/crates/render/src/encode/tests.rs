@@ -1,6 +1,6 @@
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, CharStyle, Node, NodeKind, TextObject};
-use vectorcraft_geom::{Point, shapes};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, CharStyle, Node, NodeKind, TextObject};
+use redrob_vector_geom::{Point, shapes};
 
 use super::png::{PngOptions, encode, pixels_per_metre};
 use super::*;
@@ -193,7 +193,7 @@ fn anti_alias_none_is_the_same_on_every_thread_count() {
     let id = d.alloc_id();
     let mut n = Node::path(id, shapes::rectangle(Rect::new(20.5, 20.3, 60.4, 59.6)), Appearance::basic(Paint::solid(Color::BLACK), Paint::None, 0.0));
     let glow = serde_json::json!({"color": "#ffffff", "mode": "normal", "opacity": 100, "blur": 4});
-    n.appearance.effects = vec![vectorcraft_doc::Effect { id: "stylize.innerGlow".into(), params: glow, visible: true }];
+    n.appearance.effects = vec![redrob_vector_doc::Effect { id: "stylize.innerGlow".into(), params: glow, visible: true }];
     let l = d.layers[0].id;
     d.insert(Some(l), 0, n).unwrap();
     let opts = RenderOptions { anti_alias: AntiAlias::None, ..Default::default() };
@@ -234,11 +234,11 @@ fn art_bounds_take_in_the_effects_in_a_symbols_art() {
     let mut d = Document::new(100.0, 100.0);
     let black = Appearance::basic(Paint::solid(Color::BLACK), Paint::None, 0.0);
     let mut art = Node::path(d.alloc_id(), shapes::rectangle(Rect::new(0.0, 0.0, 10.0, 10.0)), black);
-    let shadow = vectorcraft_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 8, "y": 0, "blur": 0}), visible: true };
+    let shadow = redrob_vector_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 8, "y": 0, "blur": 0}), visible: true };
     art.appearance.effects.push(shadow);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Box".into(), art: std::sync::Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Box".into(), art: std::sync::Arc::new(art) });
     let (id, l) = (d.alloc_id(), d.layers[0].id);
-    let xf = vectorcraft_geom::Affine::translate((20.0, 20.0));
+    let xf = redrob_vector_geom::Affine::translate((20.0, 20.0));
     d.insert(Some(l), 0, Node::new(id, NodeKind::SymbolInstance { symbol: "Box".into(), xf })).unwrap();
     let b = art_bounds(&d).unwrap();
     assert!(b.x0 <= 20.0 && b.x1 >= 38.0, "the art from x 20 and its shadow to x 38: {b:?}");

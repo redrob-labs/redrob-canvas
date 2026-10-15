@@ -2,7 +2,7 @@
 //! strokes, duplicating and removing several items, Show All Hidden Attributes.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::Node;
+use redrob_vector_doc::Node;
 
 use super::*;
 

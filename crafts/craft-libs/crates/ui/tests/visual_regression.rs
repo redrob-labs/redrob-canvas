@@ -237,8 +237,8 @@ fn visual_comparisons_detect_color_spacing_and_stroke_mutations() {
 
 #[test]
 fn toolbar_fitting_matches_literal_group_and_overflow_positions() {
-    use craft_ui::buttons::IconButton;
-    use craft_ui::layout::fit_toolbar;
+    use redrob_craft_ui::buttons::IconButton;
+    use redrob_craft_ui::layout::fit_toolbar;
     use egui::{Align, Layout, Stroke, StrokeKind, UiBuilder, pos2, vec2};
 
     let mut renderer = WgpuTestRenderer::new();
@@ -292,7 +292,7 @@ fn toolbar_fitting_matches_literal_group_and_overflow_positions() {
 
 #[test]
 fn widget_palette_renders_all_five_states_with_existing_borders_and_expansion() {
-    use craft_ui::theme::WidgetPalette;
+    use redrob_craft_ui::theme::WidgetPalette;
     use egui::{CornerRadius, Stroke, StrokeKind, pos2, vec2};
 
     let mut renderer = WgpuTestRenderer::new();
@@ -353,7 +353,7 @@ fn widget_palette_renders_all_five_states_with_existing_borders_and_expansion() 
 
 #[test]
 fn svg_preparation_matches_literal_raster_references_at_all_scales() {
-    use craft_ui::icons::{SvgIconSet, SvgStyle};
+    use redrob_craft_ui::icons::{SvgIconSet, SvgStyle};
     use egui::{
         ImageSource,
         load::{Bytes, ImagePoll, SizeHint},

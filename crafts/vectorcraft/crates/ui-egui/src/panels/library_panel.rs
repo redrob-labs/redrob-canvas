@@ -10,7 +10,7 @@
 use egui::{CornerRadius, Rect, Sense, Ui, vec2};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::swatchlib::LibraryInfo;
+use redrob_vector_engine::cmd::swatchlib::LibraryInfo;
 
 use super::swatches::{View, click_selection, folder_tile, list_row, list_row_name, tile_grid};
 use super::{pstate, set_pstate};
@@ -153,7 +153,7 @@ pub(crate) fn pick_library_file(app: &mut VectorcraftApp, path: Option<String>) 
         return Ok(None);
     }
     path.or_else(|| {
-        let pick = crate::FilePick { filters: vectorcraft_engine::cmd::fileio::open_filters().collect(), ..Default::default() };
+        let pick = crate::FilePick { filters: redrob_vector_engine::cmd::fileio::open_filters().collect(), ..Default::default() };
         crate::picks::open(app, &pick)
     })
     .map(Some)
@@ -400,8 +400,8 @@ pub(crate) fn library_items(ui: &mut Ui, libs: &[LibraryRef], current: Option<&s
 mod tests {
     use egui::{Event, Modifiers, PointerButton, Pos2};
     use serde_json::Value;
-    use vectorcraft_color::Paint;
-    use vectorcraft_engine::Session;
+    use redrob_vector_color::Paint;
+    use redrob_vector_engine::Session;
 
     use super::*;
     use crate::panels::swatches::SwatchLibraries;
@@ -523,7 +523,7 @@ mod tests {
             .filter(|e| e.path == ["Window", "Swatch Libraries"] && e.command.as_deref() == Some("window.swatchLibrary"))
             .map(|e| e.params["library"].clone())
             .collect();
-        let all = vectorcraft_engine::cmd::swatchlib::libraries(&app.session);
+        let all = redrob_vector_engine::cmd::swatchlib::libraries(&app.session);
         let listed = |category: &str| all.iter().filter(|l| l.category == category).map(|l| json!(l.id)).collect::<Vec<_>>();
         assert_eq!(ids, listed("builtIn"));
         assert_eq!(ids, SWATCH_IDS.map(|i| json!(i)));
@@ -614,7 +614,7 @@ mod tests {
         for l in SwatchLibraries::list(&app) {
             assert_eq!(builtin_library(&l.id), !matches!(l.submenu, Some("User Defined" | "Other Libraries")), "{}", l.id);
         }
-        assert!(!builtin_library(&open.id) && builtin_library(vectorcraft_engine::cmd::swatchlib::DOCUMENT_SWATCHES));
+        assert!(!builtin_library(&open.id) && builtin_library(redrob_vector_engine::cmd::swatchlib::DOCUMENT_SWATCHES));
     }
 
     #[test]
@@ -640,7 +640,7 @@ mod tests {
         crate::dialogs::confirm(&mut app).unwrap();
         let (path, bytes) = written.borrow()[0].clone();
         assert_eq!(path, "/tmp/Brand Kit.ase", "the save panel suggests the name");
-        let lib = vectorcraft_color::palette_io::read_bytes(&bytes, "x").unwrap();
+        let lib = redrob_vector_color::palette_io::read_bytes(&bytes, "x").unwrap();
         let solid = app.session.doc().unwrap().doc.swatches_iter().filter(|w| w.paint.color().is_some()).count();
         assert_eq!(lib.len(), solid, "every solid color of the document");
         // The web downloads the file under that name.
@@ -667,7 +667,7 @@ mod tests {
     fn swatch_exchange_files_without_a_path_open_in_the_library_panel() {
         // A file opened on the web has no path; open_bytes passes its bytes as dataBase64.
         let mut app = app();
-        crate::io::open_bytes(&mut app, "Brand.ase", &vectorcraft_testkit::ase::sample(), None).unwrap();
+        crate::io::open_bytes(&mut app, "Brand.ase", &redrob_vector_testkit::ase::sample(), None).unwrap();
         let open = app.ui.library_panel.clone().unwrap();
         assert_eq!(open.id, "loaded/Brand.ase");
         let (_, lib) = SwatchLibraries::get(&app, &open.id).unwrap();

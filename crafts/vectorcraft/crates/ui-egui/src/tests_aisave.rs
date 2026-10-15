@@ -38,6 +38,6 @@ fn save_a_copy_as_ai_keeps_the_path() {
     app.run("file.saveCopy", json!({"compression": {"compressText": false}})).unwrap();
     let w = written.borrow();
     assert_eq!(w[0].0, "/tmp/copy.ai");
-    assert!(vectorcraft_pdf::editing(&w[0].1).is_some_and(|e| e.intact));
+    assert!(redrob_vector_pdf::editing(&w[0].1).is_some_and(|e| e.intact));
     assert_eq!(app.session.active().unwrap().path.as_deref(), Some("/tmp/doc.vectorcraft"));
 }

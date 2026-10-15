@@ -6,8 +6,8 @@
 
 use egui::Ui;
 use serde_json::{Value, json};
-use vectorcraft_doc::{Node, NodeKind, TraceView};
-use vectorcraft_engine::cmd::swatchlib::DOCUMENT_SWATCHES;
+use redrob_vector_doc::{Node, NodeKind, TraceView};
+use redrob_vector_engine::cmd::swatchlib::DOCUMENT_SWATCHES;
 
 use super::{first_selected, library_panel, pstate, set_pstate, swatches};
 use crate::VectorcraftApp;
@@ -468,12 +468,12 @@ mod tests {
     }
 
     fn traced_app() -> VectorcraftApp {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         let img = image::RgbaImage::from_fn(20, 20, |x, _| image::Rgba(if x < 10 { [0, 0, 0, 255] } else { [255, 255, 255, 255] }));
         let mut png = vec![];
         img.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
-        let data = vectorcraft_format::base64_encode(&png);
+        let data = redrob_vector_format::base64_encode(&png);
         app.run("file.place", json!({"name": "half.png", "dataBase64": data, "link": false})).unwrap();
         app.run("imageTrace.make", json!({"preset": "Default"})).unwrap();
         app
@@ -589,7 +589,7 @@ mod tests {
 
     #[test]
     fn panel_and_menu_draw_headless() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         app.session.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 10, "height": 10})).unwrap();
         for _ in 0..2 {

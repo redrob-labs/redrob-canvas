@@ -3,9 +3,9 @@
 
 use egui::{Event, PointerButton, Pos2, Rect, pos2, vec2};
 use serde_json::json;
-use vectorcraft_doc::{NodeId, NodeKind};
-use vectorcraft_engine::Session;
-use vectorcraft_geom::Point;
+use redrob_vector_doc::{NodeId, NodeKind};
+use redrob_vector_engine::Session;
+use redrob_vector_geom::Point;
 
 use crate::canvas::Xf;
 use crate::menus::{self, Item};
@@ -114,7 +114,7 @@ fn right_click_on_empty_canvas_offers_the_view_and_a_dismissing_click_does_nothi
 /// swaps them — the same effect as Preferences ▸ Units ▸ General (`document.setUnits`).
 #[test]
 fn right_clicking_a_ruler_swaps_the_document_units() {
-    use vectorcraft_doc::Unit;
+    use redrob_vector_doc::Unit;
     let mut app = app();
     app.ui.view.rulers = true;
     let ctx = egui::Context::default();

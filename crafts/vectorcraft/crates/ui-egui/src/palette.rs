@@ -11,7 +11,7 @@ use crate::{VectorcraftApp, menus};
 pub fn items() -> Vec<(String, String, String)> {
     let mut items = vec![];
     // Aliases kept for older scripts run a command that is listed already.
-    for c in vectorcraft_engine::command_specs().iter().filter(|c| !vectorcraft_engine::cmd::is_alias(c.id)) {
+    for c in redrob_vector_engine::command_specs().iter().filter(|c| !redrob_vector_engine::cmd::is_alias(c.id)) {
         let path = c.menu.join(" › ");
         let label = if path.is_empty() { c.label.to_string() } else { format!("{path} › {}", c.label) };
         items.push((label, c.id.to_string(), menus::shortcut_of(c.id).unwrap_or("").to_string()));
@@ -19,7 +19,7 @@ pub fn items() -> Vec<(String, String, String)> {
     for c in menus::UI_COMMANDS {
         items.push((c.1.to_string(), c.0.to_string(), menus::shortcut_of(c.0).unwrap_or("").to_string()));
     }
-    for tool in vectorcraft_tools::catalog::all_tools() {
+    for tool in redrob_vector_tools::catalog::all_tools() {
         items.push((tool.label.to_string(), format!("tool:{}", tool.id), crate::shortcut_editor::tool_shortcut(tool.id).unwrap_or("").to_string()));
     }
     items
@@ -178,7 +178,7 @@ mod tests {
         let items = items();
         let ids: Vec<&str> = items.iter().filter(|(label, ..)| label == "Cancel Key Object").map(|(_, id, _)| id.as_str()).collect();
         assert_eq!(ids, ["select.key"]);
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         let commands = crate::control::all_commands(&app);
         let key = commands.as_array().unwrap().iter().find(|c| c["id"] == "select.key").unwrap();
         assert_eq!(key["label"], "Cancel Key Object");
@@ -198,7 +198,7 @@ mod tests {
     /// from the first again.
     #[test]
     fn arrow_keys_move_the_highlighted_result() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.ui.palette_open = true;
         app.ui.palette_query = "zoom".into();
         let ctx = egui::Context::default();

@@ -4,16 +4,16 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
 use std::sync::Arc;
 
-use designcraft_color::cms::lab;
-use designcraft_color::{Color, ColorType, Gradient, GradientKind, GradientStop, Swatch, SwatchValue, swatch};
-use designcraft_doc::{
+use redrob_layout_color::cms::lab;
+use redrob_layout_color::{Color, ColorType, Gradient, GradientKind, GradientStop, Swatch, SwatchValue, swatch};
+use redrob_layout_doc::{
     Asset, AssetId, BaselineGrid, CellRange, CharAttrs, CharFormat, CharRun, CharacterStyle, Columns, ColumnsKind, Content, DocSettings, Document,
     DropShadow, Effects, Fill, GridAlign, GridRelative, Guide, Item, ItemId, Kerning, LAYER_COLORS, Layer, LayerId, ListType, Margins, ObjectStyle,
     Orientation, Page, PageId, PageSide, ParaAttrs, ParaFormat, ParagraphStyle, ParentInfo, RowHeightMode, Rule, Section, Shape, SpanColumns, Spread,
     SpreadId, Story, StoryId, Stroke, Styles, TabStop, Table, TextFrame, TextFrameOptions, TextWrap, story as st,
 };
-use designcraft_geom::corners::{Corner, CornerOptions};
-use designcraft_geom::{Affine, Anchor, PathData, Point, Rect, SubPath};
+use redrob_layout_geom::corners::{Corner, CornerOptions};
+use redrob_layout_geom::{Affine, Anchor, PathData, Point, Rect, SubPath};
 
 use crate::names::{self, CHAR_BUILTINS, OBJECT_BUILTINS, PARA_BUILTINS, unescape_id};
 use crate::xml::{El, Node, parse};
@@ -21,12 +21,12 @@ use crate::{IdmlError, MIMETYPE, Result, base64_decode, sniff_image};
 
 /// Preserve the legacy uniform field only when all four sides explicitly specify every
 /// property. Partial records must stay sparse so they can inherit from a parent style.
-fn uniform_cell_stroke(edges: &[designcraft_doc::CellStrokeAttrs; 4]) -> Option<designcraft_doc::CellStroke> {
+fn uniform_cell_stroke(edges: &[redrob_layout_doc::CellStrokeAttrs; 4]) -> Option<redrob_layout_doc::CellStroke> {
     let first = edges.first()?;
     if edges.iter().any(|edge| edge != first) {
         return None;
     }
-    Some(designcraft_doc::CellStroke { weight: first.weight?, color: first.color.clone()?, tint: first.tint?, kind: first.kind.clone()? })
+    Some(redrob_layout_doc::CellStroke { weight: first.weight?, color: first.color.clone()?, tint: first.tint?, kind: first.kind.clone()? })
 }
 
 /// Import an IDML package without reading its linked images from disk: this crate never touches
@@ -238,16 +238,16 @@ struct Importer<'r> {
     hidden_colors: HashMap<String, Color>,
     /// Unnamed swatches (gradients) added on first use.
     hidden_swatches: HashMap<String, Swatch>,
-    color_groups: Vec<designcraft_doc::ColorGroup>,
-    conditions: Vec<designcraft_doc::Condition>,
+    color_groups: Vec<redrob_layout_doc::ColorGroup>,
+    conditions: Vec<redrob_layout_doc::Condition>,
     condition_names: HashMap<String, String>,
-    inks: designcraft_doc::InkManager,
-    stroke_styles: Vec<designcraft_doc::StrokeStyleDef>,
+    inks: redrob_layout_doc::InkManager,
+    stroke_styles: Vec<redrob_layout_doc::StrokeStyleDef>,
     styles: Styles,
-    kinsoku: HashMap<String, designcraft_doc::cjk::Kinsoku>,
+    kinsoku: HashMap<String, redrob_layout_doc::cjk::Kinsoku>,
     para_names: HashMap<String, String>,
     char_names: HashMap<String, String>,
-    lists: Vec<designcraft_doc::NumberedList>,
+    lists: Vec<redrob_layout_doc::NumberedList>,
     object_names: HashMap<String, String>,
     cell_names: HashMap<String, String>,
     table_names: HashMap<String, String>,
@@ -268,18 +268,18 @@ struct Importer<'r> {
     linked_assets: HashMap<(String, u32), AssetId>,
     ctx: ItemCtx,
     sections: Vec<Section>,
-    footnote_options: designcraft_doc::FootnoteOptions,
+    footnote_options: redrob_layout_doc::FootnoteOptions,
     /// Text destination Self → anchor id.
     anchor_ids: HashMap<String, u64>,
     /// Cross-reference source Self → (story, index in its cross-references).
     xref_srcs: HashMap<String, (StoryId, usize)>,
     /// Cross-reference format Self → name.
     xref_format_names: HashMap<String, String>,
-    xref_formats: Vec<designcraft_doc::XrefFormat>,
+    xref_formats: Vec<redrob_layout_doc::XrefFormat>,
     /// Index topic Self → topic path and per-level sort keys; topic cross-references.
     index_topics: HashMap<String, IndexTopic>,
-    index_xrefs: Vec<designcraft_doc::IndexRef>,
-    toc: Option<designcraft_doc::Toc>,
+    index_xrefs: Vec<redrob_layout_doc::IndexRef>,
+    toc: Option<redrob_layout_doc::Toc>,
 }
 
 /// IDML stores a sort key on each topic, rather than on its page references.
@@ -372,7 +372,7 @@ fn tint(v: Option<f64>) -> Option<f32> {
 
 impl<'r> Importer<'r> {
     fn new(read_link: &'r dyn Fn(&str) -> Option<Vec<u8>>) -> Self {
-        let specials: Vec<Swatch> = designcraft_color::default_swatches().into_iter().filter(|s| s.locked).collect();
+        let specials: Vec<Swatch> = redrob_layout_color::default_swatches().into_iter().filter(|s| s.locked).collect();
         let mut swatch_names = HashMap::new();
         swatch_names.insert("Swatch/None".to_string(), swatch::NONE.to_string());
         swatch_names.insert("Color/Paper".to_string(), swatch::PAPER.to_string());
@@ -423,7 +423,7 @@ impl<'r> Importer<'r> {
             anchor_ids: HashMap::new(),
             xref_srcs: HashMap::new(),
             xref_format_names: HashMap::new(),
-            xref_formats: designcraft_doc::xref::default_formats(),
+            xref_formats: redrob_layout_doc::xref::default_formats(),
             index_topics: HashMap::new(),
             index_xrefs: Vec::new(),
             toc: None,
@@ -442,7 +442,7 @@ impl<'r> Importer<'r> {
                 "DocumentPreference" => self.doc_prefs(e),
                 "TransparencyPreference" => {
                     if let Some(v) = e.get("BlendingSpace") {
-                        self.settings.blend_space = if v == "RGB" { designcraft_doc::BlendSpace::Rgb } else { designcraft_doc::BlendSpace::Cmyk };
+                        self.settings.blend_space = if v == "RGB" { redrob_layout_doc::BlendSpace::Rgb } else { redrob_layout_doc::BlendSpace::Cmyk };
                     }
                 }
                 "TextPreference" => {
@@ -494,7 +494,7 @@ impl<'r> Importer<'r> {
         for e in top.iter().filter(|e| e.local() == "CompositeFont") {
             let entries = e
                 .find_all("CompositeFontEntry")
-                .map(|c| designcraft_doc::cjk::CompositeFontEntry {
+                .map(|c| redrob_layout_doc::cjk::CompositeFontEntry {
                     name: c.get("Name").unwrap_or("").into(),
                     characters: c.get("CustomCharacters").unwrap_or("").into(),
                     family: c.prop("AppliedFont").unwrap_or_default(),
@@ -506,13 +506,13 @@ impl<'r> Importer<'r> {
                     scale_option: c.boolean("ScaleOption").unwrap_or(true),
                 })
                 .collect();
-            self.styles.composite_fonts.push(designcraft_doc::cjk::CompositeFont { name: unescape_id(e.get("Name").unwrap_or("")), entries });
+            self.styles.composite_fonts.push(redrob_layout_doc::cjk::CompositeFont { name: unescape_id(e.get("Name").unwrap_or("")), entries });
         }
         for e in top.iter().filter(|e| e.local() == "KinsokuTable") {
             if e.get("CantBeginLineChars").is_some() || e.get("CantEndLineChars").is_some() {
                 self.kinsoku.insert(
                     e.get("Self").unwrap_or("").into(),
-                    designcraft_doc::cjk::Kinsoku {
+                    redrob_layout_doc::cjk::Kinsoku {
                         name: e.get("Name").unwrap_or("").into(),
                         no_start: e.get("CantBeginLineChars").unwrap_or("").into(),
                         no_end: e.get("CantEndLineChars").unwrap_or("").into(),
@@ -527,7 +527,7 @@ impl<'r> Importer<'r> {
                 .prop_el("OverrideMojikumiAkiList")
                 .map(|l| {
                     l.find_all("OverrideMojikumiAkiType")
-                        .map(|r| designcraft_doc::cjk::MojikumiAki {
+                        .map(|r| redrob_layout_doc::cjk::MojikumiAki {
                             target_class: r.num("TargetMojikumiClass").unwrap_or(0.0) as i16,
                             side_class: r.num("SideMojikumiClass").unwrap_or(0.0) as i16,
                             after: r.boolean("SideIsAfterTarget").unwrap_or(false),
@@ -540,7 +540,7 @@ impl<'r> Importer<'r> {
                         .collect()
                 })
                 .unwrap_or_default();
-            self.styles.mojikumi_tables.push(designcraft_doc::cjk::MojikumiTable {
+            self.styles.mojikumi_tables.push(redrob_layout_doc::cjk::MojikumiTable {
                 name: unescape_id(e.get("Name").unwrap_or("")),
                 based_on: e.get("BasedOnMojikumiSet").unwrap_or("").into(),
                 overrides,
@@ -706,9 +706,9 @@ impl<'r> Importer<'r> {
         }
         if let Some(i) = e.get("Intent") {
             s.intent = match i {
-                "WebIntent" => designcraft_doc::Intent::Web,
-                "MobileIntent" => designcraft_doc::Intent::Mobile,
-                _ => designcraft_doc::Intent::Print,
+                "WebIntent" => redrob_layout_doc::Intent::Web,
+                "MobileIntent" => redrob_layout_doc::Intent::Mobile,
+                _ => redrob_layout_doc::Intent::Print,
             };
         }
         if let Some(v) = e.boolean("CreatePrimaryTextFrame") {
@@ -808,14 +808,14 @@ impl<'r> Importer<'r> {
             let (Some(id), Some(name)) = (e.get("Self"), e.get("Name")) else { continue };
             let nums = |k: &str| e.get(k).unwrap_or("").split_whitespace().filter_map(|x| x.parse::<f64>().ok()).collect::<Vec<_>>();
             let kind = match e.local() {
-                "StripedStrokeStyle" => designcraft_doc::StrokeType::Stripes {
+                "StripedStrokeStyle" => redrob_layout_doc::StrokeType::Stripes {
                     bands: nums("StripeArray").as_chunks::<2>().0.iter().map(|c| (c[0] / 100.0, (c[1] - c[0]) / 100.0)).collect(),
                 },
-                "DashedStrokeStyle" => designcraft_doc::StrokeType::Dashed { pattern: nums("DashArray") },
-                _ => designcraft_doc::StrokeType::Dotted,
+                "DashedStrokeStyle" => redrob_layout_doc::StrokeType::Dashed { pattern: nums("DashArray") },
+                _ => redrob_layout_doc::StrokeType::Dotted,
             };
             let _ = id;
-            self.stroke_styles.push(designcraft_doc::StrokeStyleDef { name: name.to_string(), kind });
+            self.stroke_styles.push(redrob_layout_doc::StrokeStyleDef { name: name.to_string(), kind });
         }
         // Ink Manager.
         for e in top.iter().filter(|e| e.local() == "Ink") {
@@ -879,7 +879,7 @@ impl<'r> Importer<'r> {
         for g in top.iter().filter(|e| e.local() == "ColorGroup" && e.get("IsRootColorGroup") != Some("true")) {
             let swatches: Vec<String> =
                 g.find_all("ColorGroupSwatch").filter_map(|s| s.get("SwatchItemRef")).filter_map(|r| self.swatch_names.get(r).cloned()).collect();
-            self.color_groups.push(designcraft_doc::ColorGroup { name: g.get("Name").unwrap_or("Color Group").to_string(), swatches });
+            self.color_groups.push(redrob_layout_doc::ColorGroup { name: g.get("Name").unwrap_or("Color Group").to_string(), swatches });
         }
     }
 
@@ -899,7 +899,7 @@ impl<'r> Importer<'r> {
                 SwatchValue::Tint { base, tint } => {
                     let mut all: Vec<Swatch> = self.swatches.clone();
                     all.extend(pending.iter().map(|(_, s)| s.clone()));
-                    return designcraft_color::swatch::resolve(&all, base, *tint).unwrap_or(Color::BLACK);
+                    return redrob_layout_color::swatch::resolve(&all, base, *tint).unwrap_or(Color::BLACK);
                 }
                 _ => {}
             }
@@ -933,7 +933,7 @@ impl<'r> Importer<'r> {
         }
         if let Some(c) = self.hidden_colors.get(r).copied() {
             let name = match c {
-                Color::Cmyk { c, m, y, k } => designcraft_color::swatch::cmyk_name(c, m, y, k),
+                Color::Cmyk { c, m, y, k } => redrob_layout_color::swatch::cmyk_name(c, m, y, k),
                 Color::Rgb { r, g, b } => format!("R={} G={} B={}", (r * 255.0).round(), (g * 255.0).round(), (b * 255.0).round()),
                 Color::Gray { k } => format!("K={}", (k * 100.0).round()),
             };
@@ -967,13 +967,13 @@ impl<'r> Importer<'r> {
                 .collect();
             let color = if nums.len() == 3 { [nums[0], nums[1], nums[2]] } else { [79, 153, 255] };
             self.condition_names.insert(id.to_string(), name.to_string());
-            self.conditions.push(designcraft_doc::Condition { name: name.to_string(), color, visible: e.get("Visible") != Some("false") });
+            self.conditions.push(redrob_layout_doc::Condition { name: name.to_string(), color, visible: e.get("Visible") != Some("false") });
         }
         for e in top.iter().filter(|e| e.local() == "NumberingList") {
             let name = e.get("Name").unwrap_or("").to_string();
             if !name.is_empty() && !name.starts_with("$ID/") && !self.lists.iter().any(|l| l.name == name) {
                 self.lists
-                    .push(designcraft_doc::NumberedList { name, continue_across_stories: e.get("ContinueNumbersAcrossStories") == Some("true") });
+                    .push(redrob_layout_doc::NumberedList { name, continue_across_stories: e.get("ContinueNumbersAcrossStories") == Some("true") });
             }
         }
         let mut paras: Vec<(String, El)> = Vec::new();
@@ -1015,14 +1015,14 @@ impl<'r> Importer<'r> {
         }
         for (_, e) in &paras {
             let name = names::style_name_in(PARA_BUILTINS, e.get("Name").unwrap_or(""));
-            let based_on = if name == designcraft_doc::NO_PARA_STYLE { None } else { self.based_on(e, true) };
+            let based_on = if name == redrob_layout_doc::NO_PARA_STYLE { None } else { self.based_on(e, true) };
             let next_style = e.get("NextStyle").map(|n| self.para_style_ref(n)).filter(|n| *n != name);
             let para = self.para_attrs(e);
             let mut chars = self.char_attrs(e);
             // InDesign writes its CJK leading model (Aki Below) on [No paragraph style] of every
             // document; only the Japanese composers use it, so a document set with the Paragraph or
             // Single-line Composer spaces its lines baseline to baseline.
-            if name == designcraft_doc::NO_PARA_STYLE && !self.japanese_composer {
+            if name == redrob_layout_doc::NO_PARA_STYLE && !self.japanese_composer {
                 chars.leading_model = None;
             }
             let s = ParagraphStyle { name: name.clone(), based_on, next_style, para, chars, shortcut: String::new() };
@@ -1051,9 +1051,9 @@ impl<'r> Importer<'r> {
         }
         for (_, e) in &cell_styles {
             let name = names::style_name_in(names::CELL_BUILTINS, e.get("Name").unwrap_or(""));
-            let mut cs = designcraft_doc::CellStyle { name: name.clone(), ..Default::default() };
+            let mut cs = redrob_layout_doc::CellStyle { name: name.clone(), ..Default::default() };
             cs.based_on =
-                e.prop("BasedOn").map(|r| self.cell_style_ref(&r)).or_else(|| Some(designcraft_doc::NO_CELL_STYLE.into())).filter(|n| *n != name);
+                e.prop("BasedOn").map(|r| self.cell_style_ref(&r)).or_else(|| Some(redrob_layout_doc::NO_CELL_STYLE.into())).filter(|n| *n != name);
             cs.fill = e.prop("FillColor").map(|c| self.swatch_ref(&c));
             cs.fill_tint = tint(e.num("FillTint"));
             cs.inset_overrides = ["TopInset", "LeftInset", "BottomInset", "RightInset"].map(|k| e.num(k).map(|v| v.max(0.0)));
@@ -1067,7 +1067,7 @@ impl<'r> Importer<'r> {
                 cs.stroke = Some(stroke);
                 cs.strokes = Default::default();
             }
-            cs.paragraph_style = e.get("AppliedParagraphStyle").map(|r| self.para_style_ref(r)).filter(|n| n != designcraft_doc::NO_PARA_STYLE);
+            cs.paragraph_style = e.get("AppliedParagraphStyle").map(|r| self.para_style_ref(r)).filter(|n| n != redrob_layout_doc::NO_PARA_STYLE);
             match self.styles.cell.iter_mut().find(|c| c.name == name) {
                 Some(slot) => *slot = cs,
                 None => self.styles.cell.push(cs),
@@ -1075,16 +1075,16 @@ impl<'r> Importer<'r> {
         }
         for (_, e) in &table_styles {
             let name = names::style_name_in(names::TABLE_BUILTINS, e.get("Name").unwrap_or(""));
-            let mut ts = designcraft_doc::TableStyle { name: name.clone(), ..Default::default() };
+            let mut ts = redrob_layout_doc::TableStyle { name: name.clone(), ..Default::default() };
             ts.based_on =
-                e.prop("BasedOn").map(|r| self.table_style_ref(&r)).or_else(|| Some(designcraft_doc::NO_TABLE_STYLE.into())).filter(|n| *n != name);
-            ts.header = e.get("HeaderRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
-            ts.body = e.get("BodyRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
-            ts.footer = e.get("FooterRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+                e.prop("BasedOn").map(|r| self.table_style_ref(&r)).or_else(|| Some(redrob_layout_doc::NO_TABLE_STYLE.into())).filter(|n| *n != name);
+            ts.header = e.get("HeaderRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+            ts.body = e.get("BodyRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+            ts.footer = e.get("FooterRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.left_column =
-                e.get("LeftColumnRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+                e.get("LeftColumnRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.right_column =
-                e.get("RightColumnRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+                e.get("RightColumnRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.header_same_as_body = e.boolean("HeaderRegionSameAsBodyRegion");
             ts.footer_same_as_body = e.boolean("FooterRegionSameAsBodyRegion");
             ts.left_column_same_as_body = e.boolean("LeftColumnRegionSameAsBodyRegion");
@@ -1113,7 +1113,7 @@ impl<'r> Importer<'r> {
                     .cloned()
                     .unwrap_or_else(|| names::style_name_in(OBJECT_BUILTINS, &unescape_id(b.trim_start_matches("ObjectStyle/"))))
             });
-            let based_on = based_on.filter(|b| *b != designcraft_doc::NO_OBJECT_STYLE && *b != name);
+            let based_on = based_on.filter(|b| *b != redrob_layout_doc::NO_OBJECT_STYLE && *b != name);
             let enabled = |k: &str, attr: &str| match e.get(k) {
                 Some(v) => v == "true",
                 None => e.get(attr).is_some(),
@@ -1175,12 +1175,12 @@ impl<'r> Importer<'r> {
                 let topic = prefix.child(t);
                 for x in t.find_all("CrossReference") {
                     let target = x.get("ReferencedTopic").and_then(|r| self.index_topics.get(r)).map(|t| t.path.join(": ")).unwrap_or_default();
-                    use designcraft_doc::index::IndexRange as R;
+                    use redrob_layout_doc::index::IndexRange as R;
                     let range = match x.get("CrossReferenceType") {
                         Some("SeeAlso") | Some("SeeAlsoHerein") => R::SeeAlso(target),
                         _ => R::See(target),
                     };
-                    self.index_xrefs.push(designcraft_doc::IndexRef { topics: topic.path.clone(), sort: topic.sort.clone(), range });
+                    self.index_xrefs.push(redrob_layout_doc::IndexRef { topics: topic.path.clone(), sort: topic.sort.clone(), range });
                 }
                 stack.push((t, topic));
             }
@@ -1215,13 +1215,13 @@ impl<'r> Importer<'r> {
         }
         match self.xref_formats.iter_mut().find(|f| f.name == name) {
             Some(f) => f.definition = def,
-            None => self.xref_formats.push(designcraft_doc::XrefFormat { name, definition: def }),
+            None => self.xref_formats.push(redrob_layout_doc::XrefFormat { name, definition: def }),
         }
     }
 
     /// Preferences › `FootnoteOption` (after styles: it names the footnote text and marker styles).
     fn footnote_option(&mut self, e: &El) {
-        let mut o = designcraft_doc::FootnoteOptions::default();
+        let mut o = redrob_layout_doc::FootnoteOptions::default();
         if let Some(v) = e.num("StartAt") {
             o.start_at = v.max(0.0) as u32;
         }
@@ -1269,8 +1269,8 @@ impl<'r> Importer<'r> {
 
     /// The table of contents: the TOC style a story is generated from (`AppliedTOCStyle`), with
     /// its entries. Styles the document doesn't have fall back to the generated TOC styles.
-    fn toc_of(&self, top: &[El]) -> Option<designcraft_doc::Toc> {
-        use designcraft_doc::{TocEntry, TocPageNumber};
+    fn toc_of(&self, top: &[El]) -> Option<redrob_layout_doc::Toc> {
+        use redrob_layout_doc::{TocEntry, TocPageNumber};
         let (ts, story) = top.iter().filter(|e| e.local() == "TOCStyle").find_map(|ts| {
             let id = ts.get("Self")?;
             let story = top.iter().find(|e| e.local() == "Story" && e.get("AppliedTOCStyle") == Some(id))?;
@@ -1302,7 +1302,7 @@ impl<'r> Importer<'r> {
         }
         let title: String = ts.get("Title").unwrap_or("").chars().filter(|c| !matches!(c, '\n' | '\r' | '\u{2029}')).take(1024).collect();
         let title_style = known(ts.get("TitleStyle")).filter(|n| n != "TOC Title");
-        Some(designcraft_doc::Toc { story, title, entries, page_numbers: true, title_style })
+        Some(redrob_layout_doc::Toc { story, title, entries, page_numbers: true, title_style })
     }
 
     fn para_style_ref(&self, r: &str) -> String {
@@ -1389,20 +1389,20 @@ impl<'r> Importer<'r> {
         // OpenType features (only when the element sets any).
         let mut otf_list: Vec<String> = Vec::new();
         let mut any = false;
-        for (tag, _, attr) in designcraft_doc::otf::TOGGLES {
+        for (tag, _, attr) in redrob_layout_doc::otf::TOGGLES {
             if let Some(on) = e.boolean(attr) {
-                designcraft_doc::otf::set(&mut otf_list, tag, on);
+                redrob_layout_doc::otf::set(&mut otf_list, tag, on);
                 any = true;
             }
         }
         if let Some(fig) = e.prop("OTFFigureStyle")
-            && let Some((id, ..)) = designcraft_doc::otf::FIGURES.iter().find(|f| f.3 == fig.trim())
+            && let Some((id, ..)) = redrob_layout_doc::otf::FIGURES.iter().find(|f| f.3 == fig.trim())
         {
-            designcraft_doc::otf::set_figures(&mut otf_list, id);
+            redrob_layout_doc::otf::set_figures(&mut otf_list, id);
             any = true;
         }
         if let Some(m) = e.num("OTFStylisticSets") {
-            designcraft_doc::otf::set_stylistic_sets(&mut otf_list, m.max(0.0) as u32);
+            redrob_layout_doc::otf::set_stylistic_sets(&mut otf_list, m.max(0.0) as u32);
             any = true;
         }
         if any {
@@ -1453,9 +1453,9 @@ impl<'r> Importer<'r> {
         let frac = |k: &str| e.num(k).map(|v| v / 100.0);
         a.align = e.prop("Justification").and_then(|v| names::align_in(v.trim()));
         a.kinsoku_hang = e.prop("KinsokuHangType").and_then(|v| match v.as_str() {
-            "None" => Some(designcraft_doc::cjk::KinsokuHang::None),
-            "KinsokuHangRegular" => Some(designcraft_doc::cjk::KinsokuHang::Regular),
-            "KinsokuHangForce" => Some(designcraft_doc::cjk::KinsokuHang::Force),
+            "None" => Some(redrob_layout_doc::cjk::KinsokuHang::None),
+            "KinsokuHangRegular" => Some(redrob_layout_doc::cjk::KinsokuHang::Regular),
+            "KinsokuHangForce" => Some(redrob_layout_doc::cjk::KinsokuHang::Force),
             _ => None,
         });
         a.mojikumi = e.prop("Mojikumi");
@@ -1468,12 +1468,12 @@ impl<'r> Importer<'r> {
                 a.kinsoku = Some(Some(Default::default()));
             } else if let Some(set) = self.kinsoku.get(&k) {
                 a.kinsoku = Some(Some(set.clone()));
-            } else if let Some(set) = designcraft_doc::cjk::Kinsoku::named(&k) {
+            } else if let Some(set) = redrob_layout_doc::cjk::Kinsoku::named(&k) {
                 a.kinsoku = Some(Some(set));
             }
         }
         a.direction = e.prop("ParagraphDirection").map(|v| {
-            if v.trim() == "RightToLeftDirection" { designcraft_doc::TextDirection::RightToLeft } else { designcraft_doc::TextDirection::LeftToRight }
+            if v.trim() == "RightToLeftDirection" { redrob_layout_doc::TextDirection::RightToLeft } else { redrob_layout_doc::TextDirection::LeftToRight }
         });
         a.kashidas = e.prop("Kashidas").and_then(|s| crate::arabic::kashidas_in(&s));
         a.arabic_justification = e.prop("ParagraphJustification");
@@ -1494,12 +1494,12 @@ impl<'r> Importer<'r> {
         }
         // Nested and GREP styles.
         if let Some(l) = e.prop_el("AllNestedStyles") {
-            let v: Vec<designcraft_doc::NestedStyle> = l
+            let v: Vec<redrob_layout_doc::NestedStyle> = l
                 .find_all("ListItem")
                 .map(|it| {
                     let t = |k: &str| it.find(k).map(|x| x.text_content()).unwrap_or_default();
                     let d = it.find("Delimiter");
-                    designcraft_doc::NestedStyle {
+                    redrob_layout_doc::NestedStyle {
                         style: self.char_style_ref(t("AppliedCharacterStyle").trim()),
                         through: t("Inclusive").trim() != "false",
                         count: t("Repetition").trim().parse().unwrap_or(1),
@@ -1513,11 +1513,11 @@ impl<'r> Importer<'r> {
             a.nested_styles = Some(v);
         }
         if let Some(l) = e.prop_el("AllNestedLineStyles") {
-            let v: Vec<designcraft_doc::NestedLineStyle> = l
+            let v: Vec<redrob_layout_doc::NestedLineStyle> = l
                 .find_all("ListItem")
                 .map(|it| {
                     let t = |k: &str| it.find(k).map(|x| x.text_content()).unwrap_or_default();
-                    designcraft_doc::NestedLineStyle {
+                    redrob_layout_doc::NestedLineStyle {
                         style: self.char_style_ref(t("AppliedCharacterStyle").trim()),
                         lines: t("LineCount").trim().parse().unwrap_or(1),
                     }
@@ -1526,11 +1526,11 @@ impl<'r> Importer<'r> {
             a.nested_line_styles = Some(v);
         }
         if let Some(l) = e.prop_el("AllGREPStyles") {
-            let v: Vec<designcraft_doc::GrepStyle> = l
+            let v: Vec<redrob_layout_doc::GrepStyle> = l
                 .find_all("ListItem")
                 .map(|it| {
                     let t = |k: &str| it.find(k).map(|x| x.text_content()).unwrap_or_default();
-                    designcraft_doc::GrepStyle { style: self.char_style_ref(t("AppliedCharacterStyle").trim()), pattern: t("GrepExpression") }
+                    redrob_layout_doc::GrepStyle { style: self.char_style_ref(t("AppliedCharacterStyle").trim()), pattern: t("GrepExpression") }
                 })
                 .collect();
             a.grep_styles = Some(v);
@@ -1555,7 +1555,7 @@ impl<'r> Importer<'r> {
         }
         a.composer = e
             .prop("Composer")
-            .map(|c| if c.contains("Single") { designcraft_doc::Composer::SingleLine } else { designcraft_doc::Composer::Paragraph });
+            .map(|c| if c.contains("Single") { redrob_layout_doc::Composer::SingleLine } else { redrob_layout_doc::Composer::Paragraph });
         a.hyphenate = e.boolean("Hyphenation");
         a.hyph_min_word = u("HyphenateWordsLongerThan");
         a.hyph_after_first = u("HyphenateAfterFirst");
@@ -1655,7 +1655,7 @@ impl<'r> Importer<'r> {
         }
         if let Some(c) = e.prop(&format!("{k}Color")) {
             let c = c.trim();
-            if c == designcraft_doc::TEXT_COLOR {
+            if c == redrob_layout_doc::TEXT_COLOR {
                 r.color = c.to_string();
             } else if c.contains('/') {
                 r.color = self.swatch_ref(c);
@@ -1687,8 +1687,8 @@ impl<'r> Importer<'r> {
             .unwrap_or_else(|| names::style_name_in(names::TABLE_BUILTINS, &unescape_id(reference.trim_start_matches("TableStyle/"))))
     }
 
-    fn cell_stroke_attrs(&mut self, el: &El, prefix: &str) -> designcraft_doc::CellStrokeAttrs {
-        designcraft_doc::CellStrokeAttrs {
+    fn cell_stroke_attrs(&mut self, el: &El, prefix: &str) -> redrob_layout_doc::CellStrokeAttrs {
+        redrob_layout_doc::CellStrokeAttrs {
             weight: el.num(&format!("{prefix}StrokeWeight")).map(|v| v.max(0.0)),
             color: el.prop(&format!("{prefix}StrokeColor")).map(|v| self.swatch_ref(&v)),
             tint: tint(el.num(&format!("{prefix}StrokeTint"))),
@@ -1696,8 +1696,8 @@ impl<'r> Importer<'r> {
         }
     }
 
-    fn alt_fill_attrs(&mut self, el: &El, kind: &str) -> designcraft_doc::AltFillsAttrs {
-        designcraft_doc::AltFillsAttrs {
+    fn alt_fill_attrs(&mut self, el: &El, kind: &str) -> redrob_layout_doc::AltFillsAttrs {
+        redrob_layout_doc::AltFillsAttrs {
             first: el.num(&format!("Start{kind}FillCount")).map(|v| v.max(0.0) as u32),
             first_color: el.prop(&format!("Start{kind}FillColor")).map(|v| self.swatch_ref(&v)),
             first_tint: tint(el.num(&format!("Start{kind}FillTint"))),
@@ -1709,7 +1709,7 @@ impl<'r> Importer<'r> {
         }
     }
 
-    fn alt_stroke_attrs(&mut self, el: &El, kind: &str) -> designcraft_doc::AltStrokesAttrs {
+    fn alt_stroke_attrs(&mut self, el: &El, kind: &str) -> redrob_layout_doc::AltStrokesAttrs {
         let first_stroke = self.cell_stroke_attrs(el, &format!("Start{kind}"));
         let mut next_stroke = self.cell_stroke_attrs(el, &format!("End{kind}"));
         // IDML uses LineStyle for this one attribute (rather than StrokeType).
@@ -1718,7 +1718,7 @@ impl<'r> Importer<'r> {
         {
             next_stroke.kind = Some(names::stroke_type_in(&value));
         }
-        designcraft_doc::AltStrokesAttrs {
+        redrob_layout_doc::AltStrokesAttrs {
             first: el.num(&format!("Start{kind}StrokeCount")).map(|v| v.max(0.0) as u32),
             next: el.num(&format!("End{kind}StrokeCount")).map(|v| v.max(0.0) as u32),
             first_stroke,
@@ -1762,18 +1762,18 @@ impl<'r> Importer<'r> {
                 tables.insert(t.id, Arc::new(t));
             }
         }
-        let notes = notes.into_iter().enumerate().map(|(i, text)| Arc::new(designcraft_doc::Footnote { id: i as u64 + 1, text })).collect();
+        let notes = notes.into_iter().enumerate().map(|(i, text)| Arc::new(redrob_layout_doc::Footnote { id: i as u64 + 1, text })).collect();
         let mut anchor_list = Vec::new();
         for (k, (me, name)) in anchors.into_iter().enumerate() {
             let aid = (id.0 << 24) | (k as u64 + 1);
             self.anchor_ids.insert(me, aid);
-            anchor_list.push(Arc::new(designcraft_doc::TextAnchor { id: aid, name }));
+            anchor_list.push(Arc::new(redrob_layout_doc::TextAnchor { id: aid, name }));
         }
         let mut xref_list = Vec::new();
         for (k, (me, fmt)) in xrefs.into_iter().enumerate() {
             self.xref_srcs.insert(me, (id, k));
             let format = self.xref_format_names.get(&fmt).cloned().unwrap_or_else(|| "Full Paragraph & Page Number".into());
-            xref_list.push(Arc::new(designcraft_doc::CrossRef { target: 0, format }));
+            xref_list.push(Arc::new(redrob_layout_doc::CrossRef { target: 0, format }));
         }
         let mut st = Story {
             id,
@@ -1782,9 +1782,9 @@ impl<'r> Importer<'r> {
             chars,
             frames: vec![],
             direction: if e.find("StoryPreference").and_then(|p| p.get("StoryDirection")) == Some("RightToLeftDirection") {
-                designcraft_doc::TextDirection::RightToLeft
+                redrob_layout_doc::TextDirection::RightToLeft
             } else {
-                designcraft_doc::TextDirection::LeftToRight
+                redrob_layout_doc::TextDirection::LeftToRight
             },
             vertical: e.find("StoryPreference").and_then(|p| p.get("StoryOrientation")) == Some("Vertical"),
             rev: 0,
@@ -1820,9 +1820,9 @@ impl<'r> Importer<'r> {
         let nc = cols.len().max(1);
         let mut t = Table::new(id, nr, nc, 0, 0, 0.0);
         t.options.direction = if e.get("TableDirection") == Some("RightToLeftDirection") {
-            designcraft_doc::TextDirection::RightToLeft
+            redrob_layout_doc::TextDirection::RightToLeft
         } else {
-            designcraft_doc::TextDirection::LeftToRight
+            redrob_layout_doc::TextDirection::LeftToRight
         };
         for (r, re) in rows.iter().enumerate() {
             let auto = re.boolean("AutoGrow").unwrap_or(true);
@@ -1837,7 +1837,7 @@ impl<'r> Importer<'r> {
         if h.saturating_add(f) < nr {
             t.set_header_footer(h, f);
         }
-        let style_name = e.get("AppliedTableStyle").map(|r| self.table_style_ref(r)).unwrap_or_else(|| designcraft_doc::BASIC_TABLE.into());
+        let style_name = e.get("AppliedTableStyle").map(|r| self.table_style_ref(r)).unwrap_or_else(|| redrob_layout_doc::BASIC_TABLE.into());
         let style = self.styles.resolve_table_style(&style_name);
         style.apply_to(&mut t, &self.styles.cell);
         // IDML distinguishes an explicit AppliedCellStyle from the effective region style.
@@ -1883,11 +1883,11 @@ impl<'r> Importer<'r> {
             let rs = (ce.num("RowSpan").unwrap_or(1.0).max(1.0) as usize).min(nr - r);
             let cs = (ce.num("ColumnSpan").unwrap_or(1.0).max(1.0) as usize).min(nc - c);
             let mut cell = t.cell(r, c).cloned().unwrap_or_default();
-            let cell_style = ce.get("AppliedCellStyle").map(|r| self.cell_style_ref(r)).unwrap_or_else(|| designcraft_doc::NO_CELL_STYLE.into());
-            if cell_style != designcraft_doc::NO_CELL_STYLE {
-                designcraft_doc::resolve_cell_style(&self.styles.cell, &cell_style).apply_to(&mut cell);
+            let cell_style = ce.get("AppliedCellStyle").map(|r| self.cell_style_ref(r)).unwrap_or_else(|| redrob_layout_doc::NO_CELL_STYLE.into());
+            if cell_style != redrob_layout_doc::NO_CELL_STYLE {
+                redrob_layout_doc::resolve_cell_style(&self.styles.cell, &cell_style).apply_to(&mut cell);
             }
-            cell.style = if cell_style == designcraft_doc::NO_CELL_STYLE { String::new() } else { cell_style };
+            cell.style = if cell_style == redrob_layout_doc::NO_CELL_STYLE { String::new() } else { cell_style };
             let default_para = cell.text.paras.first().cloned().unwrap_or_default();
             cell.text = self.story_with_para(StoryId(0), ce, default_para);
             if let Some(fc) = ce.get("FillColor") {
@@ -2003,10 +2003,10 @@ impl<'r> Importer<'r> {
                     }
                     "HyperlinkTextDestination" | "ParagraphDestination" => {
                         b.anchors.push((c.get("Self").unwrap_or("").to_string(), c.get("Name").unwrap_or("Anchor").to_string()));
-                        b.push(&designcraft_doc::ANCHOR_MARK.to_string(), cf);
+                        b.push(&redrob_layout_doc::ANCHOR_MARK.to_string(), cf);
                     }
                     "PageReference" => {
-                        use designcraft_doc::index::IndexRange as R;
+                        use redrob_layout_doc::index::IndexRange as R;
                         let topic = c.get("ReferencedTopic").and_then(|r| self.index_topics.get(r)).cloned().unwrap_or_default();
                         let range = match c.get("PageReferenceType") {
                             Some("ToEndOfStory") | Some("ToEndOfDocument") | Some("ToEndOfSection") => R::ToEndOfStory,
@@ -2014,8 +2014,8 @@ impl<'r> Importer<'r> {
                             Some("SuppressPageNumbers") => R::SuppressPageRange,
                             _ => R::CurrentPage,
                         };
-                        b.index_refs.push(designcraft_doc::IndexRef { topics: topic.path, sort: topic.sort, range });
-                        b.push(&designcraft_doc::INDEX_MARK.to_string(), cf);
+                        b.index_refs.push(redrob_layout_doc::IndexRef { topics: topic.path, sort: topic.sort, range });
+                        b.push(&redrob_layout_doc::INDEX_MARK.to_string(), cf);
                     }
                     "CrossReferenceSource" => {
                         // The generated text is regenerated from the format.
@@ -2023,7 +2023,7 @@ impl<'r> Importer<'r> {
                         // A source at paragraph level wraps a range; inside a range it holds the
                         // text directly and takes that range's format.
                         let f = c.find("CharacterStyleRange").map_or_else(|| cf.clone(), |r| self.range_format(r, pchars));
-                        b.push(&designcraft_doc::XREF_MARK.to_string(), &f);
+                        b.push(&redrob_layout_doc::XREF_MARK.to_string(), &f);
                     }
                     "Footnote" => {
                         // The text starts with the number marker (ACE 4, dropped) and the separator.
@@ -2036,18 +2036,18 @@ impl<'r> Importer<'r> {
                         // The reference's position comes from the footnote options.
                         let mut rcf = cf.clone();
                         rcf.over.position = None;
-                        b.push(&designcraft_doc::FOOTNOTE_REF.to_string(), &rcf);
+                        b.push(&redrob_layout_doc::FOOTNOTE_REF.to_string(), &rcf);
                     }
                     // Not supported yet: skip their content entirely.
                     "Rectangle" | "Oval" | "Polygon" | "GraphicLine" | "Group" => {
                         // An anchored object (text frames inside stories aren't supported yet).
                         let has_text = c.find_all("TextFrame").next().is_some();
-                        if !has_text && let Some(item) = self.item(c, designcraft_geom::Affine::IDENTITY) {
-                            use designcraft_doc::anchored::AnchorAlign as A;
+                        if !has_text && let Some(item) = self.item(c, redrob_layout_geom::Affine::IDENTITY) {
+                            use redrob_layout_doc::anchored::AnchorAlign as A;
                             let set = c.find("AnchoredObjectSetting");
                             let get = |k: &str| set.and_then(|s| s.num(k)).unwrap_or(0.0);
                             let position = match set.and_then(|s| s.get("AnchoredPosition")) {
-                                Some("AboveLine") => designcraft_doc::AnchorPosition::AboveLine {
+                                Some("AboveLine") => redrob_layout_doc::AnchorPosition::AboveLine {
                                     align: match set.and_then(|s| s.get("HorizontalAlignment")) {
                                         Some("CenterAlign") => A::Center,
                                         Some("RightAlign") => A::Right,
@@ -2068,7 +2068,7 @@ impl<'r> Importer<'r> {
                                         "BottomAlign" => 2,
                                         _ => 0,
                                     };
-                                    designcraft_doc::AnchorPosition::Custom {
+                                    redrob_layout_doc::AnchorPosition::Custom {
                                         x_relative: names::anchor_rel_in(s("HorizontalReferencePoint")),
                                         y_relative: names::anchor_rel_in(s("VerticalReferencePoint")),
                                         x_offset: get("AnchorXoffset"),
@@ -2078,10 +2078,10 @@ impl<'r> Importer<'r> {
                                         keep_within_column: s("PinPosition") == "true",
                                     }
                                 }
-                                _ => designcraft_doc::AnchorPosition::Inline { y_offset: get("AnchorYoffset") },
+                                _ => redrob_layout_doc::AnchorPosition::Inline { y_offset: get("AnchorYoffset") },
                             };
-                            b.objects.push(designcraft_doc::AnchoredObject::new(item, position));
-                            b.push(&designcraft_doc::OBJECT_MARK.to_string(), cf);
+                            b.objects.push(redrob_layout_doc::AnchoredObject::new(item, position));
+                            b.push(&redrob_layout_doc::OBJECT_MARK.to_string(), cf);
                         }
                     }
                     "Properties" | "Note" | "TextFrame" | "StoryPreference" | "InCopyExportOption" | "TextVariableInstance" => {}
@@ -2332,7 +2332,7 @@ impl<'r> Importer<'r> {
                     .cloned()
                     .unwrap_or_else(|| names::style_name_in(OBJECT_BUILTINS, &unescape_id(r.trim_start_matches("ObjectStyle/"))))
             })
-            .unwrap_or_else(|| designcraft_doc::NO_OBJECT_STYLE.into());
+            .unwrap_or_else(|| redrob_layout_doc::NO_OBJECT_STYLE.into());
         // Fill and stroke.
         if tag != "Group" {
             if let Some(f) = self.attr_or_style(e, "FillColor") {
@@ -2443,13 +2443,13 @@ impl<'r> Importer<'r> {
             let story_self = tp.get("ParentStory").unwrap_or("n").to_string();
             if let Some(story) = self.story_ids.get(&story_self).copied() {
                 let options = TextFrameOptions {
-                    path: Some(designcraft_doc::PathType {
+                    path: Some(redrob_layout_doc::PathType {
                         start: tp.num("StartBracket").unwrap_or(0.0).max(0.0),
                         // At (or past) the path's length it is the path's end: no end bracket.
                         end: tp
                             .num("EndBracket")
                             .filter(|e| e.is_finite() && *e >= 0.0)
-                            .filter(|e| *e < designcraft_geom::warp::PathWarp::new(&it.path.to_bezpath(), false).length() - 0.01),
+                            .filter(|e| *e < redrob_layout_geom::warp::PathWarp::new(&it.path.to_bezpath(), false).length() - 0.01),
                         flip: tp.get("FlipPathEffect") == Some("Flipped"),
                         align: names::path_align_in(tp.get("TextAlignment").unwrap_or("")),
                     }),
@@ -2511,9 +2511,9 @@ impl<'r> Importer<'r> {
                         gr.crop = [ff.num("TopCrop"), ff.num("LeftCrop"), ff.num("BottomCrop"), ff.num("RightCrop")].map(|v| v.unwrap_or(0.0));
                         gr.fit_align = ff.get("FittingAlignment").map_or(4, names::anchor_in);
                         if ff.get("AutoFit") == Some("true") {
-                            gr.auto_fit = ff.get("FittingOnEmptyFrame").map_or(designcraft_doc::Fitting::FillProportionally, names::fitting_in);
-                            if gr.auto_fit == designcraft_doc::Fitting::None {
-                                gr.auto_fit = designcraft_doc::Fitting::FillProportionally;
+                            gr.auto_fit = ff.get("FittingOnEmptyFrame").map_or(redrob_layout_doc::Fitting::FillProportionally, names::fitting_in);
+                            if gr.auto_fit == redrob_layout_doc::Fitting::None {
+                                gr.auto_fit = redrob_layout_doc::Fitting::FillProportionally;
                             }
                         }
                     }
@@ -2546,7 +2546,7 @@ impl<'r> Importer<'r> {
         let link = g.find("Link");
         let uri = link.and_then(|k| k.get("LinkResourceURI")).map(uri_to_path);
         let graphic = |asset, size| {
-            Content::Graphic(designcraft_doc::Graphic {
+            Content::Graphic(redrob_layout_doc::Graphic {
                 asset,
                 size,
                 xf: gxf * Affine::translate((l, t)),
@@ -2601,7 +2601,7 @@ impl<'r> Importer<'r> {
         let fresh = AssetId(self.alloc());
         let link_path = uri.filter(|p| p.contains('/') || p.contains('\\'));
         let id =
-            designcraft_doc::insert_asset(&mut self.assets, Asset { page, id: fresh, name, mime, link: link_path, data: Arc::new(data), pixels });
+            redrob_layout_doc::insert_asset(&mut self.assets, Asset { page, id: fresh, name, mime, link: link_path, data: Arc::new(data), pixels });
         if let Some(key) = read_from {
             self.linked_assets.insert(key, id);
         }
@@ -2673,7 +2673,7 @@ impl<'r> Importer<'r> {
     /// cap style (the list's leading "through 1 Dropcap" entry, read into the drop cap style). A
     /// list of its own without that entry clears an inherited drop cap style.
     fn clear_inherited_drop_cap_styles(&mut self) {
-        let clears = |a: &designcraft_doc::ParaAttrs| a.drop_cap_style.is_none() && a.nested_styles.is_some();
+        let clears = |a: &redrob_layout_doc::ParaAttrs| a.drop_cap_style.is_none() && a.nested_styles.is_some();
         let cleared: Vec<String> = self
             .styles
             .paragraph
@@ -2724,11 +2724,11 @@ impl<'r> Importer<'r> {
             user_words: vec![],
             hyphenation_exceptions: vec![],
             toc: self.toc.take(),
-            text_variables: designcraft_doc::vars::defaults(),
+            text_variables: redrob_layout_doc::vars::defaults(),
             footnote_options: std::mem::take(&mut self.footnote_options),
             xref_formats: std::mem::take(&mut self.xref_formats),
             index: None,
-            created: designcraft_doc::vars::now(),
+            created: redrob_layout_doc::vars::now(),
             modified: 0,
             next_id: self.next_id,
             font_scope: 0,
@@ -2761,9 +2761,9 @@ struct StoryBuilder {
     notes: Vec<Story>,
     /// Text destinations (Self, name) and cross-reference sources (Self, format Self) in order.
     anchors: Vec<(String, String)>,
-    index_refs: Vec<designcraft_doc::IndexRef>,
+    index_refs: Vec<redrob_layout_doc::IndexRef>,
     xrefs: Vec<(String, String)>,
-    objects: Vec<designcraft_doc::AnchoredObject>,
+    objects: Vec<redrob_layout_doc::AnchoredObject>,
 }
 
 impl StoryBuilder {
@@ -3136,9 +3136,9 @@ mod frame_preference_safety_tests {
         let o = text_frame_options(&[&local, &base]);
         assert_eq!(o.columns_kind, ColumnsKind::FlexibleWidth);
         assert!(o.balance_columns && o.ignore_wrap && o.column_rule);
-        assert_eq!(o.vertical_justification, designcraft_doc::VerticalJustification::Bottom);
-        assert_eq!(o.first_baseline, designcraft_doc::FirstBaseline::Fixed);
-        assert_eq!(o.auto_size, designcraft_doc::AutoSize::HeightAndWidth);
+        assert_eq!(o.vertical_justification, redrob_layout_doc::VerticalJustification::Bottom);
+        assert_eq!(o.first_baseline, redrob_layout_doc::FirstBaseline::Fixed);
+        assert_eq!(o.auto_size, redrob_layout_doc::AutoSize::HeightAndWidth);
         assert_eq!(o.auto_size_ref, 8);
         let fixed = pref(&[], &[("UseFixedColumnWidth", "true")]);
         assert_eq!(text_frame_options(&[&fixed, &local, &base]).columns_kind, ColumnsKind::FixedWidth);
@@ -3220,9 +3220,9 @@ mod frame_preference_scalar_tests {
             let expected = text_frame_options(&[&clean]);
             assert_eq!(expected.columns_kind, if fixed { ColumnsKind::FixedWidth } else { ColumnsKind::FlexibleWidth });
             assert!(expected.balance_columns && expected.ignore_wrap && expected.column_rule);
-            assert_eq!(expected.vertical_justification, designcraft_doc::VerticalJustification::Bottom);
-            assert_eq!(expected.first_baseline, designcraft_doc::FirstBaseline::Fixed);
-            assert_eq!(expected.auto_size, designcraft_doc::AutoSize::HeightAndWidth);
+            assert_eq!(expected.vertical_justification, redrob_layout_doc::VerticalJustification::Bottom);
+            assert_eq!(expected.first_baseline, redrob_layout_doc::FirstBaseline::Fixed);
+            assert_eq!(expected.auto_size, redrob_layout_doc::AutoSize::HeightAndWidth);
             assert_eq!(expected.auto_size_ref, 8);
             for properties in [false, true] {
                 let padded = preference(properties, true, fixed);

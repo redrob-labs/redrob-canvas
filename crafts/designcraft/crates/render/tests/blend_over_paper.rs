@@ -1,11 +1,11 @@
 //! Blend modes blend with the objects below, never with the paper: over blank paper an object in
 //! Color Dodge (or any other mode) shows as it is, as in InDesign and in the exported PDF.
 
-use designcraft_color::{BlendMode, Color, Swatch};
-use designcraft_compose::Cache;
-use designcraft_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, build::NewDocument};
-use designcraft_geom::{Affine, Rect, shapes};
-use designcraft_render::{Placed, RenderOptions, Renderer};
+use redrob_layout_color::{BlendMode, Color, Swatch};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, build::NewDocument};
+use redrob_layout_geom::{Affine, Rect, shapes};
+use redrob_layout_render::{Placed, RenderOptions, Renderer};
 
 /// A 200 x 100 page: a mid-blue rectangle on the right half, and over both halves a black
 /// rectangle in `blend`.

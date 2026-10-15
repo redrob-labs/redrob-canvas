@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use super::*;
 
 fn app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 40, "height": 30, "background": "transparent"})).unwrap();
     app.run("tools.setColors", json!({"foreground": "#ff0000", "background": "#0000ff"})).unwrap();
     app
@@ -99,7 +99,7 @@ fn choices_persist_across_restarts() {
     fill(&mut app, json!({"contents": "gray", "mode": "multiply", "opacity": 40, "preserveTransparency": true})).unwrap();
     // A fresh app with the saved preferences opens the dialog with the same choices.
     let saved = app.session.prefs_to_json();
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.load_prefs_json(&saved).unwrap();
     let mut again = PhotocraftApp::new(s, Default::default());
     again.run("file.new", json!({"width": 10, "height": 10})).unwrap();
@@ -128,7 +128,7 @@ fn bad_fields_fail_gracefully() {
 fn harness() -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1280.0, 800.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 120})).unwrap();
         app
     });
@@ -172,7 +172,7 @@ fn menu_opens_the_dialog_and_params_skip_it() {
     crate::menus::invoke(h.state_mut(), &ctx, COMMAND, json!({"contents": "black"})).unwrap();
     assert_eq!(h.state().session.active().unwrap().history.past_len(), 1);
     // No document: an error, not a dialog.
-    let mut empty = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut empty = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     assert!(crate::menus::invoke(&mut empty, &ctx, COMMAND, json!({})).is_err());
     assert!(empty.ui.dialogs.is_empty());
 }

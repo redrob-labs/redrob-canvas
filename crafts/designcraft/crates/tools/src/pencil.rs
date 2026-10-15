@@ -1,8 +1,8 @@
 //! Pencil tool (N): draw freehand; the stroke becomes a smooth path. Alt while releasing closes
 //! it.
 
-use designcraft_doc::SpreadRef;
-use designcraft_geom::{BezPath, Point};
+use redrob_layout_doc::SpreadRef;
+use redrob_layout_geom::{BezPath, Point};
 use serde_json::json;
 
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext};
@@ -10,7 +10,7 @@ use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, Tool
 #[derive(Default)]
 pub struct PencilTool {
     /// Spread, its spread → canvas transform, and the canvas points so far.
-    stroke: Option<(SpreadRef, designcraft_geom::Affine, Vec<Point>)>,
+    stroke: Option<(SpreadRef, redrob_layout_geom::Affine, Vec<Point>)>,
 }
 
 impl Tool for PencilTool {
@@ -39,7 +39,7 @@ impl Tool for PencilTool {
                 let inv = xf.inverse();
                 let spread: Vec<Point> = pts.iter().map(|p| inv * *p).collect();
                 // Simplify to about two screen pixels.
-                let anchors = designcraft_geom::freehand::fit(&spread, cx.tol(2.0), ev.mods.alt);
+                let anchors = redrob_layout_geom::freehand::fit(&spread, cx.tol(2.0), ev.mods.alt);
                 if anchors.len() < 2 {
                     return vec![];
                 }
@@ -77,7 +77,7 @@ impl Tool for PencilTool {
 pub struct PathDragTool {
     erase: bool,
     /// Target path, its spread's spread → canvas transform, and the drag in spread coordinates.
-    drag: Option<(u64, designcraft_geom::Affine, Vec<Point>)>,
+    drag: Option<(u64, redrob_layout_geom::Affine, Vec<Point>)>,
 }
 
 impl PathDragTool {

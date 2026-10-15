@@ -9,7 +9,7 @@
 //! Visibility is a painter's algorithm, as for Revolve: faces of a closed solid that face away
 //! from the viewer are left out, the rest are drawn back to front.
 
-use vectorcraft_geom::{BezPath, FillRule, ParamCurve, PathData, Point, Rect};
+use redrob_vector_geom::{BezPath, FillRule, ParamCurve, PathData, Point, Rect};
 
 use crate::{MAX_FACES, Revolve, V3, eye_distance, perspective_scale};
 
@@ -279,7 +279,7 @@ const MAX_PLANE_POINTS: usize = 65536;
 
 /// How many straight pieces follow `c` within `tolerance` (Wang's bound on a cubic's distance from
 /// its chords), 1 to 32.
-fn pieces(c: vectorcraft_geom::CubicBez, tolerance: f64) -> u32 {
+fn pieces(c: redrob_vector_geom::CubicBez, tolerance: f64) -> u32 {
     let d = |a: Point, b: Point, c: Point| (a.to_vec2() - 2.0 * b.to_vec2() + c.to_vec2()).hypot();
     let bend = d(c.p0, c.p1, c.p2).max(d(c.p1, c.p2, c.p3));
     let n = (0.75 * bend / tolerance).sqrt().ceil();
@@ -1009,13 +1009,13 @@ impl Membrane {
 
 /// The part of `outline` inside `cell`, as rings (holes running the other way).
 fn material(outline: &PathData, cell: Rect) -> Option<Vec<Vec<Point>>> {
-    let r = PathData::single(vectorcraft_geom::SubPath::polyline(
+    let r = PathData::single(redrob_vector_geom::SubPath::polyline(
         &[Point::new(cell.x0, cell.y0), Point::new(cell.x1, cell.y0), Point::new(cell.x1, cell.y1), Point::new(cell.x0, cell.y1)],
         true,
     ));
     let rule = FillRule::NonZero;
     let part =
-        vectorcraft_pathops::try_boolean(&r, rule, outline, rule, vectorcraft_pathops::BoolOp::Intersect, vectorcraft_pathops::DEFAULT_PRECISION)
+        redrob_vector_pathops::try_boolean(&r, rule, outline, rule, redrob_vector_pathops::BoolOp::Intersect, redrob_vector_pathops::DEFAULT_PRECISION)
             .ok()?;
     rings(&part, rule, cell.width(), MAX_PLANE_POINTS).ok()
 }
@@ -1037,7 +1037,7 @@ pub fn inflate(path: &PathData, rule: FillRule, bounds: Rect, options: Inflate, 
     let (nx, ny) = (((bounds.width() / cell).ceil() as usize).max(1), ((bounds.height() / cell).ceil() as usize).max(1));
     let m = Membrane::solve(&rings, bounds.origin(), cell, nx + 1, ny + 1);
     let edges = Edges::new(&rings);
-    let outline = PathData::new(rings.iter().map(|r| vectorcraft_geom::SubPath::polyline(r, true)).collect());
+    let outline = PathData::new(rings.iter().map(|r| redrob_vector_geom::SubPath::polyline(r, true)).collect());
     // A circle of radius r puffs into a half sphere of radius r at 50 % (its membrane peaks at r²/4).
     let height = 2.0 * m.peak.sqrt() * o.volume / 50.0;
     let lift = |p: Point| {

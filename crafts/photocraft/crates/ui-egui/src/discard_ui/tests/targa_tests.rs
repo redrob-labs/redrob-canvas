@@ -3,7 +3,7 @@
 use super::*;
 use crate::{FileDialogAnswer, targa_options_ui};
 use egui_kittest::kittest::Queryable;
-use photocraft_io::TgaBits;
+use redrob_photo_io::TgaBits;
 use std::{cell::RefCell, rc::Rc};
 
 /// Each write: the path, and the Targa bits the export was asked for (as JSON).

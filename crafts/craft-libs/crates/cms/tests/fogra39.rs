@@ -2,7 +2,7 @@
 //! (`tests/data/FOGRA39.txt`), conversions to sRGB against reference values, and its generator:
 //!
 //! ```sh
-//! CRAFT_CMS_REGEN_PROFILES=1 cargo test -p craft-cms --release --test fogra39
+//! CRAFT_CMS_REGEN_PROFILES=1 cargo test -p redrob-craft-cms --release --test fogra39
 //! ```
 //!
 //! The generator fits a Yule–Nielsen modified Neugebauer model (free 16 overprints, per-ink
@@ -11,9 +11,9 @@
 //! samples the result into the AToB table. The BToA tables invert that table
 //! ([`synth::cmyk_profile_from_model`]).
 
-use craft_cms::math::{self, delta_e2000};
-use craft_cms::synth::{self, CmykParams, Forward};
-use craft_cms::{Builtin, Intent, Profile, Transform};
+use redrob_craft_cms::math::{self, delta_e2000};
+use redrob_craft_cms::synth::{self, CmykParams, Forward};
+use redrob_craft_cms::{Builtin, Intent, Profile, Transform};
 
 const DATA: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/FOGRA39.txt");
 const PROFILE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/profiles/craft-coated-fogra39.icc");
@@ -344,7 +344,7 @@ fn regen_coated_fogra39() {
     eprintln!("model n {:.3}: mean ΔE00 {:.2} p95 {:.2} max {:.2} at {:?}", f.model.n, s.mean, s.p95, s.max, s.worst);
     let params = CmykParams {
         description: Builtin::CoatedFogra39.description().into(),
-        copyright: craft_cms::builtin::COATED_FOGRA39_COPYRIGHT.into(),
+        copyright: redrob_craft_cms::builtin::COATED_FOGRA39_COPYRIGHT.into(),
         tac: 3.3,
         grid_b2a: 33,
         white_on_node: true,
@@ -517,7 +517,7 @@ fn builtins_by_document_profile_name() {
         assert_eq!(Builtin::stand_in_for(b.description()), Some(b), "{b:?}");
     }
     assert_eq!(Builtin::from_profile_name(" srgb iec61966-2.1 "), Some(Builtin::Srgb));
-    assert_eq!(Builtin::from_profile_name("coated fogra39 (FITTED, craft-cms)"), Some(Builtin::CoatedFogra39));
+    assert_eq!(Builtin::from_profile_name("coated fogra39 (FITTED, redrob-craft-cms)"), Some(Builtin::CoatedFogra39));
     for name in FOGRA39_STAND_IN_NAMES.into_iter().chain(["coated  FOGRA39 (iso 12647-2:2004)", "iso coated v2(eci)"]) {
         assert_eq!(Builtin::from_profile_name(name), None, "{name}");
         assert_eq!(Builtin::stand_in_for(name), Some(Builtin::CoatedFogra39), "{name}");

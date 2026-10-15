@@ -71,7 +71,7 @@ const UI_KEYS: [&str; 5] = ["mode", "path", "showCode", "allArtboards", "range"]
 /// and Responsive on (as the reference app's Export As starts). Hidden layers are left to the
 /// command (Save keeps them, Export leaves them out).
 pub(super) fn first_use() -> Map<String, Value> {
-    let mut m = serde_json::to_value(vectorcraft_svg::ExportOptions::default()).ok().and_then(|v| v.as_object().cloned()).unwrap_or_default();
+    let mut m = serde_json::to_value(redrob_vector_svg::ExportOptions::default()).ok().and_then(|v| v.as_object().cloned()).unwrap_or_default();
     m.remove("hiddenLayers");
     m.insert("styling".into(), json!("css"));
     m.insert("responsive".into(), json!(true));
@@ -84,7 +84,7 @@ pub(super) fn first_use() -> Map<String, Value> {
 pub fn open(app: &mut VectorcraftApp, mode: Mode, path: Option<&str>) {
     let mut fields = first_use();
     // Fonts start from Document Setup → Type → Export.
-    if app.session.active().is_some_and(|st| st.doc.setup.export_text == vectorcraft_doc::ExportText::Appearance) {
+    if app.session.active().is_some_and(|st| st.doc.setup.export_text == redrob_vector_doc::ExportText::Appearance) {
         fields.insert("outlineText".into(), json!(true));
     }
     // Only options saved with an SVG format are SVG options.
@@ -129,7 +129,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
     let opts = options(d);
     if Mode::of(d) == Mode::Export && d.bool("useArtboards") {
         let n = app.session.active().map_or(0, |st| st.doc.artboards.len());
-        let pick: vectorcraft_engine::cmd::fileio::ArtboardPick = serde_json::from_value(opts.clone()).map_err(|e| e.to_string())?;
+        let pick: redrob_vector_engine::cmd::fileio::ArtboardPick = serde_json::from_value(opts.clone()).map_err(|e| e.to_string())?;
         pick.resolve(n)?;
     }
     // Remembered for next time, without the document's artboard range.
@@ -210,7 +210,7 @@ pub(super) fn option_fields(ui: &mut egui::Ui, d: &mut Dialog, screens: bool) {
         widgets::field_label(ui, egui::RichText::new(tl!("Decimal:")).color(t.text_dim));
         let decimals = d.f64("decimals", 3.0);
         if let Some(v) = widgets::spin_plain(ui, "svg-decimals", decimals, "", 0, 70.0, 1.0, 1.0, &[]) {
-            let (lo, hi) = (*vectorcraft_svg::DECIMALS.start() as f64, *vectorcraft_svg::DECIMALS.end() as f64);
+            let (lo, hi) = (*redrob_vector_svg::DECIMALS.start() as f64, *redrob_vector_svg::DECIMALS.end() as f64);
             d.fields.insert("decimals".into(), json!(v.round().clamp(lo, hi) as u8));
         }
         ui.end_row();
@@ -272,13 +272,13 @@ fn code_view(app: &VectorcraftApp, ui: &mut egui::Ui, d: &Dialog) {
         Some((_, c)) => c,
         None => {
             const MAX: usize = 200_000;
-            let mut text = match vectorcraft_engine::cmd::fileio::encode_all(&st.doc, "svg", &json!({ "svg": opts })) {
+            let mut text = match redrob_vector_engine::cmd::fileio::encode_all(&st.doc, "svg", &json!({ "svg": opts })) {
                 // Shown as text whatever the file's encoding.
                 Ok(enc) => enc
                     .files
                     .into_iter()
                     .next()
-                    .map(|(_, b)| vectorcraft_svg::text_of(&b).map_or_else(|_| String::from_utf8_lossy(&b).into_owned(), |t| t.into_owned()))
+                    .map(|(_, b)| redrob_vector_svg::text_of(&b).map_or_else(|_| String::from_utf8_lossy(&b).into_owned(), |t| t.into_owned()))
                     .unwrap_or_default(),
                 Err(e) => e.to_string(),
             };
@@ -311,7 +311,7 @@ mod tests {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
     use crate::Services;
@@ -413,7 +413,7 @@ mod tests {
         assert_eq!(app.session.active().unwrap().path.as_deref(), Some("/tmp/doc.svg"));
         // A native Save As needs no options.
         app.run("file.saveAs", json!({"path": "/tmp/doc.vectorcraft"})).unwrap();
-        assert!(vectorcraft_format::sniff(&written.borrow()[3].1));
+        assert!(redrob_vector_format::sniff(&written.borrow()[3].1));
     }
 
     #[test]
@@ -433,7 +433,7 @@ mod tests {
         super::super::confirm(&mut app).unwrap();
         let bytes = written.borrow()[0].1.clone();
         assert!(bytes.starts_with(b"<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>"));
-        let svg = vectorcraft_svg::text_of(&bytes).unwrap();
+        let svg = redrob_vector_svg::text_of(&bytes).unwrap();
         assert!(svg.contains("baseProfile=\"tiny\"") && !svg.contains("<style>") && svg.contains("&#x20AC;"), "{svg}");
         // SVG 1.1 with embedded fonts: an @font-face rule for the type.
         app.run("file.export.svg", Value::Null).unwrap();

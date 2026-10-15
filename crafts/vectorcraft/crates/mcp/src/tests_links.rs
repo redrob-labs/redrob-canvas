@@ -19,8 +19,8 @@ fn headless_links_report_missing_files_and_relink() {
     let mut h = Headless::new();
     run(&mut h, "file.new", json!({"width": 300, "height": 200}));
     let png = run(&mut h, "document.serialize", json!({"format": "png"}));
-    std::fs::write(file("a.png"), vectorcraft_format::base64_decode(png["dataBase64"].as_str().unwrap()).unwrap()).unwrap();
-    std::fs::write(file("b.png"), vectorcraft_format::base64_decode(png["dataBase64"].as_str().unwrap()).unwrap()).unwrap();
+    std::fs::write(file("a.png"), redrob_vector_format::base64_decode(png["dataBase64"].as_str().unwrap()).unwrap()).unwrap();
+    std::fs::write(file("b.png"), redrob_vector_format::base64_decode(png["dataBase64"].as_str().unwrap()).unwrap()).unwrap();
     let id = run(&mut h, "file.place", json!({"path": file("a.png")}))["ids"][0].clone();
     run(&mut h, "document.save", json!({"path": file("doc.vectorcraft")}));
     std::fs::remove_file(file("a.png")).unwrap();

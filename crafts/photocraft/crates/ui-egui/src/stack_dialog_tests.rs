@@ -10,7 +10,7 @@ fn pngs(tag: &str, names: &[&str]) -> (String, Vec<String>) {
     let dir = std::env::temp_dir().join(format!("photocraft-load-stack-{tag}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 8, "height": 6, "background": "#406080"})).unwrap();
     let paths = names
         .iter()
@@ -27,7 +27,7 @@ fn harness(answers: Vec<Option<FileDialogAnswer>>) -> (Harness<'static, Photocra
     let (show, asked) = crate::file_dialog::fake(answers);
     let h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services { file_dialog: Some(show), ..Default::default() })
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services { file_dialog: Some(show), ..Default::default() })
     });
     (h, asked)
 }
@@ -62,7 +62,7 @@ fn statistics_menu_opens_a_source_file_list_with_stack_mode() {
 #[test]
 fn statistics_browse_and_mode_selection_compute_the_chosen_statistic() {
     let (_, paths) = pngs("statistics-mean", &["first.png", "second.png"]);
-    let mut source = photocraft_engine::Session::new();
+    let mut source = redrob_photo_engine::Session::new();
     source.execute("file.new", json!({"width": 8, "height": 6, "background": "#80a0c0"})).unwrap();
     source.execute("file.saveACopy", json!({"path": paths[1]})).unwrap();
     let (mut h, _) = harness(vec![Some(FileDialogAnswer::Paths(paths))]);
@@ -75,7 +75,7 @@ fn statistics_browse_and_mode_selection_compute_the_chosen_statistic() {
     assert!(h.get_by_label("first.png").rect().bottom() <= h.get_by_label("second.png").rect().top(), "source files must be vertical rows");
     h.get_by_value("Median").click();
     h.run_steps(2);
-    for mode in photocraft_doc::StackMode::ALL {
+    for mode in redrob_photo_doc::StackMode::ALL {
         assert!(h.query_by_label(mode.label()).is_some(), "missing {}", mode.label());
     }
     h.get_by_label("Mean").click();
@@ -86,9 +86,9 @@ fn statistics_browse_and_mode_selection_compute_the_chosen_statistic() {
     assert_eq!(h.state().session.documents().len(), 1);
     let doc = &h.state().session.active().unwrap().doc;
     assert_eq!(doc.layers.len(), 1);
-    let photocraft_doc::LayerContent::Smart(smart) = &doc.layers[0].content else { panic!("expected a stack smart object") };
-    assert_eq!(smart.stack_mode, Some(photocraft_doc::StackMode::Mean));
-    let pixel = photocraft_compose::flatten(doc).px[0];
+    let redrob_photo_doc::LayerContent::Smart(smart) = &doc.layers[0].content else { panic!("expected a stack smart object") };
+    assert_eq!(smart.stack_mode, Some(redrob_photo_doc::StackMode::Mean));
+    let pixel = redrob_photo_compose::flatten(doc).px[0];
     for (actual, expected) in pixel.iter().zip([96.0, 128.0, 160.0, 255.0]) {
         assert!((actual * 255.0 - expected).abs() < 1.5, "{pixel:?}");
     }
@@ -109,14 +109,14 @@ fn statistics_explicit_parameters_bypass_the_dialog() {
 fn statistics_folder_and_alignment_reach_the_engine() {
     let (dir, paths) = pngs("statistics-folder", &["one.png", "two.png"]);
     // Auto-Align needs identifiable detail, not a uniform tiny colour swatch.
-    let mut source = photocraft_engine::Session::new();
+    let mut source = redrob_photo_engine::Session::new();
     source.execute("file.new", json!({"width": 96, "height": 72, "background": "#606060"})).unwrap();
     source
         .edit("texture", |doc, active| {
             let surface = doc.layer_mut(active.unwrap()).unwrap().surface_mut().unwrap();
             for k in 0..40 {
                 let (x, y, v) = ((k * 37) % 88, (k * 23) % 66, (k % 7) as f32 / 6.0);
-                surface.fill_rect(photocraft_geom::Rect::new(x, y, x + 3 + k % 5, y + 2 + k % 4), &[v, 1.0 - v, 0.5, 1.0]);
+                surface.fill_rect(redrob_photo_geom::Rect::new(x, y, x + 3 + k % 5, y + 2 + k % 4), &[v, 1.0 - v, 0.5, 1.0]);
             }
             Ok(())
         })
@@ -137,8 +137,8 @@ fn statistics_folder_and_alignment_reach_the_engine() {
     assert_eq!(result["images"], 2);
     assert_eq!(result["mode"], "median");
     let doc = &h.state().session.active().unwrap().doc;
-    let photocraft_doc::LayerContent::Smart(smart) = &doc.layers[0].content else { panic!("expected a stack smart object") };
-    assert_eq!(smart.stack_mode, Some(photocraft_doc::StackMode::Median));
+    let redrob_photo_doc::LayerContent::Smart(smart) = &doc.layers[0].content else { panic!("expected a stack smart object") };
+    assert_eq!(smart.stack_mode, Some(redrob_photo_doc::StackMode::Median));
 }
 
 /// #4671 / #4696: the menu opens Photoshop's dialog, Browse… adds files (once each), Remove,
@@ -226,5 +226,5 @@ fn a_folder_loads_its_images() {
     crate::dialogs::confirm(h.state_mut(), id).unwrap();
     let d = &h.state().session.active().unwrap().doc;
     assert_eq!(d.layers.len(), 1);
-    assert!(matches!(d.layers[0].content, photocraft_doc::LayerContent::Smart(_)));
+    assert!(matches!(d.layers[0].content, redrob_photo_doc::LayerContent::Smart(_)));
 }

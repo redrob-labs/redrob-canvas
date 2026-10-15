@@ -1,9 +1,9 @@
 //! Synthetic regressions for gradients that previously aborted inside the PDF writer.
-use designcraft_color::{Color, Gradient, GradientKind, GradientStop, Swatch, SwatchValue};
-use designcraft_compose::Cache;
-use designcraft_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, build::NewDocument};
-use designcraft_geom::{Rect, shapes};
-use designcraft_pdf::{PdfOptions, Standard, export_pdf_with_report};
+use redrob_layout_color::{Color, Gradient, GradientKind, GradientStop, Swatch, SwatchValue};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, build::NewDocument};
+use redrob_layout_geom::{Rect, shapes};
+use redrob_layout_pdf::{PdfOptions, Standard, export_pdf_with_report};
 use hayro_syntax::{
     Pdf,
     object::{Array, Dict, Name},
@@ -140,7 +140,7 @@ fn homogeneous_gradients_keep_device_spaces_and_components() {
 #[test]
 fn mixed_gradient_booklet_reports_conversion() {
     let d = document(&[Color::cmyk(1.0, 0.0, 0.0, 0.0), Color::rgb(1.0, 0.0, 0.0)], GradientKind::Linear, 0.5, 1.0);
-    let report = designcraft_pdf::export_booklet(&d, &Cache::new(), &Default::default()).unwrap();
+    let report = redrob_layout_pdf::export_booklet(&d, &Cache::new(), &Default::default()).unwrap();
     assert_eq!(conversion_warnings(&report.warnings), 1);
     assert!(!Pdf::new(report.bytes).unwrap().pages().is_empty());
 }

@@ -5,9 +5,9 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{ImageBlob, ImageObject, Node, NodeId, NodeKind};
-use vectorcraft_geom::Affine;
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{ImageBlob, ImageObject, Node, NodeId, NodeKind};
+use redrob_vector_geom::Affine;
 
 use super::graphics::{Space, process};
 use super::interp::{Interp, matrix_of};

@@ -4,15 +4,15 @@
 use egui::{Rect, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use photocraft_doc::{Layer, LayerContent};
+use redrob_photo_doc::{Layer, LayerContent};
 use serde_json::json;
 
 use super::*;
 use crate::PhotocraftApp;
 
 /// A document with one layer of each kind; returns the session and the ids by kind.
-fn kinds() -> (photocraft_engine::Session, Vec<(&'static str, u64)>) {
-    let mut s = photocraft_engine::Session::new();
+fn kinds() -> (redrob_photo_engine::Session, Vec<(&'static str, u64)>) {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 400, "height": 300})).unwrap();
     let id = |v: serde_json::Value| v["layer"].as_u64().unwrap();
     let pixel = id(s.execute("layer.new.layer", json!({"name": "Paint"})).unwrap());
@@ -25,11 +25,11 @@ fn kinds() -> (photocraft_engine::Session, Vec<(&'static str, u64)>) {
 }
 
 fn layer_of(app: &PhotocraftApp, id: u64) -> Layer {
-    app.session.active().unwrap().doc.layer(photocraft_doc::LayerId(id)).unwrap().clone()
+    app.session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(id)).unwrap().clone()
 }
 
 /// Pro theme with only the Properties group expanded (it then fills the column).
-fn harness(session: photocraft_engine::Session, ppp: f32, dock_width: f32) -> Harness<'static, PhotocraftApp> {
+fn harness(session: redrob_photo_engine::Session, ppp: f32, dock_width: f32) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1440.0, 1600.0)).with_pixels_per_point(ppp).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
         PhotocraftApp::new(session, crate::Services::default())
@@ -76,7 +76,7 @@ fn quick_actions_fit_the_layer_kind() {
     }
     let ty = app.session.active().unwrap().doc.layers.iter().find(|l| matches!(l.content, LayerContent::Text(_))).unwrap().content.clone();
     assert_eq!(ids(&ty), ["type.convertToShape", "type.convertToParagraphText", "type.convertToPointText", "type.warpText", "type.rasterizeTypeLayer"]);
-    assert!(ids(&LayerContent::Adjustment(photocraft_doc::Adjustment::Invert)).is_empty());
+    assert!(ids(&LayerContent::Adjustment(redrob_photo_doc::Adjustment::Invert)).is_empty());
 }
 
 #[test]
@@ -270,9 +270,9 @@ fn layers_opacity_and_fill_share_one_right_column() {
 
 #[test]
 fn properties_distribute_buttons_move_selected_layers_and_undo_in_both_axes() {
-    use photocraft_doc::LayerId;
+    use redrob_photo_doc::LayerId;
     for horizontal in [true, false] {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 300, "height": 300, "background": "transparent"})).unwrap();
         let mut ids = Vec::new();
         for (i, at) in [10, 40, 160].into_iter().enumerate() {
@@ -319,8 +319,8 @@ fn properties_distribute_buttons_move_selected_layers_and_undo_in_both_axes() {
 /// align the selection: the Background stays, the other layer lines up with it.
 #[test]
 fn background_in_a_multiple_selection_keeps_align_and_distribute() {
-    use photocraft_doc::LayerId;
-    let mut s = photocraft_engine::Session::new();
+    use redrob_photo_doc::LayerId;
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 300, "height": 200})).unwrap();
     let bg = s.active().unwrap().doc.layers[0].id.0;
     let block = s.execute("layer.new.layer", json!({"name": "Block"})).unwrap()["layer"].as_u64().unwrap();

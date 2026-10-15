@@ -1,12 +1,12 @@
 //! File → Print as a print-ready PDF or a PostScript file (`file.print`), what it would print
 //! (`print.preview`) and the print settings saved with the document (`print.setup`,
-//! [`vectorcraft_doc::Document::print_setup`]).
+//! [`redrob_vector_doc::Document::print_setup`]).
 
 use serde::Deserialize;
 use serde_json::{Value, json};
-use vectorcraft_doc::Document;
-use vectorcraft_eps::{Level, PrintJob, PrintPage};
-use vectorcraft_pdf::{PrintOptions, PrintSettings};
+use redrob_vector_doc::Document;
+use redrob_vector_eps::{Level, PrintJob, PrintPage};
+use redrob_vector_pdf::{PrintOptions, PrintSettings};
 
 use super::fileio::pdf::{merge, pdf_error};
 use super::fileio::{extension, write_or_return};
@@ -90,7 +90,7 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
     let doc = &s.doc()?.doc;
     let set = settings(C, doc, p)?;
     super::printadvanced::flattener(C, &set, &s.prefs.flattener_presets)?;
-    let pv = vectorcraft_pdf::preview(doc, &set).map_err(|e| pdf_error(C, e))?;
+    let pv = redrob_vector_pdf::preview(doc, &set).map_err(|e| pdf_error(C, e))?;
     let mut v = serde_json::to_value(pv).map_err(|e| EngineError::Other(e.to_string()))?;
     v["settings"] = to_json(&set)?;
     Ok(v)
@@ -131,7 +131,7 @@ fn print(s: &mut Session, p: &Value) -> Result<Value> {
     let prepared = super::printadvanced::prepare(PRINT, doc, &set, &s.prefs.flattener_presets, s.prefs.black_output == "rich")?;
     let path = str_param(p, "path");
     if !postscript {
-        let r = vectorcraft_pdf::print(prepared.as_ref().unwrap_or(doc), &PrintOptions { settings: set, ..Default::default() })
+        let r = redrob_vector_pdf::print(prepared.as_ref().unwrap_or(doc), &PrintOptions { settings: set, ..Default::default() })
             .map_err(|e| pdf_error(PRINT, e))?;
         return write_or_return(path, &r.bytes, json!({ "pages": r.pages, "format": "pdf", "warnings": r.warnings }));
     }
@@ -143,15 +143,15 @@ fn print(s: &mut Session, p: &Value) -> Result<Value> {
         None => Level::default(),
     };
     let mut warnings = vec![];
-    let bitmap = set.advanced.print_as_bitmap && set.output.mode == vectorcraft_pdf::OutputMode::Composite;
+    let bitmap = set.advanced.print_as_bitmap && set.output.mode == redrob_vector_pdf::OutputMode::Composite;
     if !bitmap && doc.layers.iter().any(|l| l.shows_transparency()) {
         warnings.push("transparency is flattened into opaque art and images (PostScript has none): see flattenerPreset".to_string());
     }
-    if !set.color.profile.trim().is_empty() && set.output.mode == vectorcraft_pdf::OutputMode::Composite {
+    if !set.color.profile.trim().is_empty() && set.output.mode == redrob_vector_pdf::OutputMode::Composite {
         warnings.push("the printer profile converts the colours of PDF output: PostScript prints the document's colours".to_string());
     }
     let flatness = (!set.graphics.auto_flatness).then_some(set.graphics.flatness);
-    let plan = vectorcraft_pdf::plan(prepared.as_ref().unwrap_or(doc), &PrintOptions { settings: set, postscript: true, ..Default::default() })
+    let plan = redrob_vector_pdf::plan(prepared.as_ref().unwrap_or(doc), &PrintOptions { settings: set, postscript: true, ..Default::default() })
         .map_err(|e| pdf_error(PRINT, e))?;
     let pages: Vec<PrintPage> = plan
         .sheets
@@ -169,7 +169,7 @@ fn print(s: &mut Session, p: &Value) -> Result<Value> {
         })
         .collect();
     let job = PrintJob { level, title: plan.title.clone(), created: plan.created, flatness };
-    let out = vectorcraft_eps::print(&pages, &plan.order, &job).map_err(|e| bad(PRINT, e))?;
+    let out = redrob_vector_eps::print(&pages, &plan.order, &job).map_err(|e| bad(PRINT, e))?;
     for w in plan.warnings.iter().chain(&out.warnings) {
         if !warnings.contains(w) {
             warnings.push(w.clone());

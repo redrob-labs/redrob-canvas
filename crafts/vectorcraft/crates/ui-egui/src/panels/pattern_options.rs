@@ -5,8 +5,8 @@
 
 use egui::Ui;
 use serde_json::{Value, json};
-use vectorcraft_doc::pattern::{PatternDef, RepeatKind, TileType};
-use vectorcraft_doc::{NodeKind, Unit};
+use redrob_vector_doc::pattern::{PatternDef, RepeatKind, TileType};
+use redrob_vector_doc::{NodeKind, Unit};
 
 use super::{pstate, set_pstate};
 use crate::VectorcraftApp;
@@ -216,7 +216,7 @@ pub fn repeat_fields(app: &VectorcraftApp) -> Option<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// One headless frame of the panel with `events`: where each text was drawn.
     fn frame(app: &mut VectorcraftApp, ctx: &egui::Context, events: Vec<egui::Event>) -> Vec<(String, egui::Rect)> {

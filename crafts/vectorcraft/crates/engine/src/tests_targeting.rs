@@ -2,8 +2,8 @@
 //! appearances between objects (`appearance.transfer`).
 
 use serde_json::{Value, json};
-use vectorcraft_color::{BlendMode, Paint};
-use vectorcraft_doc::Node;
+use redrob_vector_color::{BlendMode, Paint};
+use redrob_vector_doc::Node;
 
 use super::*;
 

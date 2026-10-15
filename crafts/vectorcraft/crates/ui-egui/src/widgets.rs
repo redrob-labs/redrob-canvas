@@ -1,8 +1,8 @@
 //! Shared widgets in Illustrator's panel style. Colours come from theme tokens.
 
 use egui::{Color32, CornerRadius, Pos2, Rect, Response, Sense, Stroke, StrokeKind, Ui, Vec2, pos2, vec2};
-use vectorcraft_color::{BlendMode, Color, Paint};
-use vectorcraft_doc::Unit;
+use redrob_vector_color::{BlendMode, Color, Paint};
+use redrob_vector_doc::Unit;
 
 use crate::theme::{self, Tokens};
 use crate::{icons, scrub};
@@ -476,7 +476,7 @@ pub fn mixed_field(
     let read = |buf: &str| {
         let suffix = suffix.trim();
         let bare = if suffix.is_empty() { buf.to_string() } else { buf.replace(suffix, "") };
-        vectorcraft_doc::parse_number(&bare.replace(['%', '°'], ""))
+        redrob_vector_doc::parse_number(&bare.replace(['%', '°'], ""))
     };
     let shown = value.map(show).unwrap_or_default();
     take_dialog_focus(ui, id, &shown);
@@ -514,9 +514,9 @@ pub fn paint_chip(ui: &Ui, rect: Rect, paint: &Paint) {
 }
 
 /// Draw a gradient preview into `rect` (linear left to right; radial from the centre).
-pub fn gradient_chip(ui: &Ui, rect: Rect, gradient: &vectorcraft_color::Gradient) {
+pub fn gradient_chip(ui: &Ui, rect: Rect, gradient: &redrob_vector_color::Gradient) {
     let p = ui.painter();
-    let radial = gradient.kind == vectorcraft_color::GradientKind::Radial;
+    let radial = gradient.kind == redrob_vector_color::GradientKind::Radial;
     if radial {
         // Outer colour fills the corners beyond the largest circle.
         let (c, _) = gradient.sample(1.0);
@@ -1554,7 +1554,7 @@ pub enum PanelDrag {
     Paint { paint: Paint, params: serde_json::Value, rows: Option<SwatchRows> },
     /// The Appearance panel's thumbnail: art it is dropped on takes object `0`'s appearance
     /// (`appearance.copyFrom`); the Graphic Styles panel makes a style of it.
-    Appearance(vectorcraft_doc::NodeId),
+    Appearance(redrob_vector_doc::NodeId),
     /// A Graphic Styles panel style: art it is dropped on takes it (`graphicStyle.apply` with its
     /// `ids`); the panel moves it to where it is dropped.
     GraphicStyle(String),
@@ -1562,7 +1562,7 @@ pub enum PanelDrag {
     /// makes a style of the first object (`graphicStyle.new`), the Symbols panel a symbol of it all
     /// (`symbol.new`), the Swatches panel a pattern swatch of a copy (`object.pattern.make`) and the
     /// Brushes panel an Art brush (`brush.new`).
-    Art(Vec<vectorcraft_doc::NodeId>),
+    Art(Vec<redrob_vector_doc::NodeId>),
     /// A Symbols panel symbol: the canvas places an instance of it centred where it is dropped
     /// (`symbol.place`).
     Symbol(String),
@@ -1607,7 +1607,7 @@ impl PanelDrag {
         Self::Paint { params: crate::panels::paint_params(&paint), paint, rows: None }
     }
     /// The dragged colour (a solid paint's), which the Gradient panel's ramp takes.
-    pub fn color(&self) -> Option<vectorcraft_color::Color> {
+    pub fn color(&self) -> Option<redrob_vector_color::Color> {
         match self {
             Self::Paint { paint, .. } => paint.color(),
             _ => None,
@@ -1626,11 +1626,11 @@ pub fn drag_source(ui: &Ui, resp: &Response, drag: impl FnOnce() -> PanelDrag) {
 /// A small document rendered to a texture at the screen's pixel density (stroke previews: brushes,
 /// arrowheads), transparent where nothing paints. `build` makes the `w`×`h` pt document only when
 /// the texture for `key` at this size isn't cached yet.
-pub fn doc_preview(ui: &Ui, key: &str, size: Vec2, build: impl FnOnce(f64, f64) -> Option<vectorcraft_doc::Document>) -> Option<egui::TextureHandle> {
+pub fn doc_preview(ui: &Ui, key: &str, size: Vec2, build: impl FnOnce(f64, f64) -> Option<redrob_vector_doc::Document>) -> Option<egui::TextureHandle> {
     use std::cell::RefCell;
     use std::collections::HashMap;
     thread_local! {
-        static RENDERER: RefCell<vectorcraft_render::Renderer> = RefCell::new(vectorcraft_render::Renderer::new());
+        static RENDERER: RefCell<redrob_vector_render::Renderer> = RefCell::new(redrob_vector_render::Renderer::new());
         static CACHE: crate::graphics::TexCache<HashMap<String, egui::TextureHandle>> = crate::graphics::TexCache::default();
     }
     let ppp = ui.ctx().pixels_per_point() as f64;
@@ -1640,7 +1640,7 @@ pub fn doc_preview(ui: &Ui, key: &str, size: Vec2, build: impl FnOnce(f64, f64) 
         return Some(t);
     }
     let doc = build(w, h)?;
-    let img = RENDERER.with(|r| r.borrow_mut().render_region(&doc, vectorcraft_geom::Rect::new(0.0, 0.0, w, h), ppp, false));
+    let img = RENDERER.with(|r| r.borrow_mut().render_region(&doc, redrob_vector_geom::Rect::new(0.0, 0.0, w, h), ppp, false));
     let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
     let tex = ui.ctx().load_texture(format!("preview-{key}"), color, egui::TextureOptions::LINEAR);
     CACHE.with(|c| {
@@ -1852,10 +1852,10 @@ pub fn layout_button(ui: &mut Ui, tiles: &[(u8, u8)], selected: bool, tip: &str)
 /// (artboard and page thumbnails).
 pub fn region_texture(
     ctx: &egui::Context,
-    renderer: &mut vectorcraft_render::Renderer,
+    renderer: &mut redrob_vector_render::Renderer,
     name: &str,
-    doc: &vectorcraft_doc::Document,
-    region: vectorcraft_geom::Rect,
+    doc: &redrob_vector_doc::Document,
+    region: redrob_vector_geom::Rect,
     px: f64,
 ) -> egui::TextureHandle {
     let scale = px / region.width().max(region.height()).max(1.0);

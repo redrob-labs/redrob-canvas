@@ -4,14 +4,14 @@
 //! then draws a flare there with them (`shape.flare`, on the active perspective plane while the
 //! grid shows).
 //!
-//! Fields: the options (`vectorcraft_tools::extra::FLARE_OPTIONS`): `diameter` and `pathLength`
+//! Fields: the options (`redrob_vector_tools::extra::FLARE_OPTIONS`): `diameter` and `pathLength`
 //! (points), `opacity`, `brightness`, `growth`, `fuzziness`, `longest`, `rayFuzziness` and
 //! `largest` (%), `rays` and `rings` (counts), `direction` (degrees); `raysOn` and `ringsOn`; and
 //! `x`, `y` where a click opened it.
 
 use serde_json::{Map, Value, json};
-use vectorcraft_geom::Point;
-use vectorcraft_tools::extra::{FLARE_OPTIONS, flare_params};
+use redrob_vector_geom::Point;
+use redrob_vector_tools::extra::{FLARE_OPTIONS, flare_params};
 
 use super::document_setup::check;
 use super::{DialogResult, DialogSpec, form, run_and_close};
@@ -43,7 +43,7 @@ pub fn open(app: &mut VectorcraftApp, at: Option<Point>) -> Value {
 }
 
 /// A row for option `key`, kept within its range: a distance in `unit`, else a number.
-fn field(ui: &mut egui::Ui, d: &mut Dialog, unit: vectorcraft_doc::Unit, (key, label): (&str, &str)) {
+fn field(ui: &mut egui::Ui, d: &mut Dialog, unit: redrob_vector_doc::Unit, (key, label): (&str, &str)) {
     let Some(&(_, default, lo, hi)) = FLARE_OPTIONS.iter().find(|(k, ..)| *k == key) else { return };
     widgets::label_row(ui, label, LABEL_W, |ui| match key {
         "diameter" | "pathLength" => {
@@ -116,7 +116,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
     let options = run_and_close(app, "tool.setOption", json!({ "tool": "flare", "values": values }))?;
     let Some(at) = at else { return Ok(options) };
     let params = flare_params(&options, at);
-    match vectorcraft_engine::perspective_click(&app.session, "shape.flare", &params, at) {
+    match redrob_vector_engine::perspective_click(&app.session, "shape.flare", &params, at) {
         Some((id, p)) => app.run(&id, p),
         None => app.run("shape.flare", params),
     }
@@ -125,9 +125,9 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> DialogResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::doc::NodeKind;
-    use vectorcraft_tools::{PointerEvent, PointerKind};
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::doc::NodeKind;
+    use redrob_vector_tools::{PointerEvent, PointerKind};
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());

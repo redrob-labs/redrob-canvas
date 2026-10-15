@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-cad"
+name = "redrob-vector-cad"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,13 +9,13 @@ description = "VectorCraft CAD interchange: a hand-written ASCII DXF writer (R12
 workspace = true
 
 [dependencies]
-vectorcraft-geom = { workspace = true }
-vectorcraft-color = { workspace = true }
-vectorcraft-doc = { workspace = true }
-vectorcraft-effects = { workspace = true }
-vectorcraft-brush = { workspace = true }
-vectorcraft-pathops = { workspace = true }
-vectorcraft-text = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-effects = { workspace = true }
+redrob-vector-brush = { workspace = true }
+redrob-vector-pathops = { workspace = true }
+redrob-vector-text = { workspace = true }
 kurbo = { workspace = true }
 image = { workspace = true }
 

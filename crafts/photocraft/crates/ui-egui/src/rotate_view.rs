@@ -427,7 +427,7 @@ mod tests {
     }
 
     fn app_docs(n: usize) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         for i in 0..n {
             app.run("file.new", json!({"width": 200 + i as u32 * 10, "height": 100})).unwrap();
         }
@@ -438,7 +438,7 @@ mod tests {
     #[test]
     fn commands_rotate_reset_and_reject_without_a_document() {
         let ctx = egui::Context::default();
-        let mut empty = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut empty = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         assert_eq!(crate::menus::invoke(&mut empty, &ctx, "view.rotateView", json!({"angle": 30})).unwrap_err(), "no document open");
         assert_eq!(crate::menus::invoke(&mut empty, &ctx, "view.resetView", json!({})).unwrap_err(), "no document open");
 
@@ -479,7 +479,7 @@ mod tests {
         let crate::control::Outcome::Done(bad) = crate::control::handle(&mut app, &ctx, &req) else { panic!("nan") };
         assert_eq!(bad["ok"], false);
         assert_eq!(app.ui.views[0].rotation, 30.0);
-        let mut empty = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut empty = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let (req, _) = crate::control::ControlRequest::new("ui.set", json!({"tool": "RotateView"}));
         let crate::control::Outcome::Done(ok) = crate::control::handle(&mut empty, &ctx, &req) else { panic!("tool") };
         assert_eq!(ok["ok"], true, "{ok}");
@@ -508,7 +508,7 @@ mod tests {
     }
 
     fn harness() -> Harness<'static, PhotocraftApp> {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.sync_views();
         app.ui.extras.rulers = false;
@@ -582,7 +582,7 @@ mod tests {
         app.ui.views[0].rotation = 30.0;
         app.run("select.rect", json!({"x": 10, "y": 20, "width": 40, "height": 10})).unwrap();
         let st = app.session.active().unwrap();
-        let b = st.doc.selection.as_ref().and_then(|s| photocraft_compose::bounds::content_bounds(s).into()).expect("selection");
+        let b = st.doc.selection.as_ref().and_then(|s| redrob_photo_compose::bounds::content_bounds(s).into()).expect("selection");
         // Axis-aligned in the file: the outline is drawn rotated via ViewXform.
         assert!(b.width() >= 40 && b.height() >= 10, "{b:?}");
         let xf =

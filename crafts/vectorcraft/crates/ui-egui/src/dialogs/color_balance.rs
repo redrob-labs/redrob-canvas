@@ -7,7 +7,7 @@
 //! `k`, `gray`, `tint`, then `convert`, `fill`, `stroke` and `preview`.
 
 use serde_json::{Value, json};
-use vectorcraft_color::Color;
+use redrob_vector_color::Color;
 
 use super::{DialogSpec, form};
 use crate::VectorcraftApp;
@@ -122,10 +122,10 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn fill_hex(app: &VectorcraftApp, id: u64) -> String {
-        let n = app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().clone();
+        let n = app.session.doc().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().clone();
         n.appearance.fill_paint().color().unwrap().to_hex()
     }
 
@@ -165,7 +165,7 @@ mod tests {
         super::super::confirm(&mut app).unwrap();
         assert!(app.ui.dialog.is_none() && !app.session.in_interaction());
         assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
-        let lighter = vectorcraft_color::Color::from_hex(&fill_hex(&app, id)).unwrap().to_rgb()[0];
+        let lighter = redrob_vector_color::Color::from_hex(&fill_hex(&app, id)).unwrap().to_rgb()[0];
         assert!(lighter > 0.6, "{lighter}");
     }
 
@@ -183,8 +183,8 @@ mod tests {
         frame(&mut app);
         assert_eq!(params(app.ui.dialog.as_ref().unwrap())["tint"], json!(-20.0));
         super::super::confirm(&mut app).unwrap();
-        let n = app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().clone();
-        let vectorcraft_color::Paint::Solid { swatch, tint, .. } = n.appearance.fill_paint() else { panic!() };
+        let n = app.session.doc().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().clone();
+        let redrob_vector_color::Paint::Solid { swatch, tint, .. } = n.appearance.fill_paint() else { panic!() };
         assert_eq!(swatch.as_deref(), Some("Ink"), "the colour stays linked");
         assert!((tint - 0.3).abs() < 1e-6, "{tint}");
     }

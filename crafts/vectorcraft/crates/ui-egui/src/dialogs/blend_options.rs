@@ -134,9 +134,9 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_doc::NodeKind;
-    use vectorcraft_doc::live::{BlendOrientation, BlendSpacing};
-    use vectorcraft_engine::Session;
+    use redrob_vector_doc::NodeKind;
+    use redrob_vector_doc::live::{BlendOrientation, BlendSpacing};
+    use redrob_vector_engine::Session;
 
     fn frame(app: &mut VectorcraftApp) {
         let ctx = egui::Context::default();
@@ -145,8 +145,8 @@ mod tests {
         out.textures_delta.clear();
     }
 
-    fn spec(app: &VectorcraftApp, id: u64) -> vectorcraft_doc::BlendSpec {
-        match &app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
+    fn spec(app: &VectorcraftApp, id: u64) -> redrob_vector_doc::BlendSpec {
+        match &app.session.doc().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
             NodeKind::Blend { spec, .. } => (**spec).clone(),
             _ => panic!("not a blend"),
         }

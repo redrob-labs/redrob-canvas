@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-fonts"
+name = "redrob-layout-fonts"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,7 +9,7 @@ description = "DesignCraft fonts: font database (bundled OFL + system), metrics,
 workspace = true
 
 [features]
-# Synthetic fonts for other crates' tests (`designcraft_fonts::testing`).
+# Synthetic fonts for other crates' tests (`redrob_layout_fonts::testing`).
 testing = []
 
 [dependencies]

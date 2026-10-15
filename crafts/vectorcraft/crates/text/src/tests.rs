@@ -1,7 +1,7 @@
 use super::*;
 use kurbo::{Affine, Shape};
-use vectorcraft_doc::{CharStyle, Justify, TextKind, TextRun};
-use vectorcraft_geom::PathData;
+use redrob_vector_doc::{CharStyle, Justify, TextKind, TextRun};
+use redrob_vector_geom::PathData;
 
 /// The bundled fonts only: what these tests measure doesn't change with the fonts installed.
 fn db() -> &'static FontDb {
@@ -236,8 +236,8 @@ fn indents_and_paragraph_spacing() {
 fn each_paragraph_has_its_own_attributes() {
     let frame = Rect::new(0.0, 0.0, 200.0, 400.0);
     let mut t = area("left\ncentred\nright", style(10.0), frame, Justify::Left);
-    let centred = vectorcraft_doc::ParaStyle { justify: Justify::Center, space_before: 20.0, ..Default::default() };
-    let right = vectorcraft_doc::ParaStyle { justify: Justify::Right, left_indent: 7.0, ..Default::default() };
+    let centred = redrob_vector_doc::ParaStyle { justify: Justify::Center, space_before: 20.0, ..Default::default() };
+    let right = redrob_vector_doc::ParaStyle { justify: Justify::Right, left_indent: 7.0, ..Default::default() };
     t.set_paragraph_styles(vec![t.para.clone(), centred, right]);
     let l = layout(db(), &t);
     assert_eq!(l.lines.len(), 3);
@@ -341,7 +341,7 @@ fn on_path_placement() {
 
 #[test]
 fn on_path_effects_orient_glyphs() {
-    use vectorcraft_doc::PathEffect;
+    use redrob_vector_doc::PathEffect;
     let mut diag = BezPath::new();
     diag.move_to((0.0, 0.0));
     diag.line_to((400.0, 400.0));
@@ -438,7 +438,7 @@ fn layout_is_fast() {
 
 #[test]
 fn tab_stops_position_text() {
-    use vectorcraft_doc::{TabAlign, TabStop};
+    use redrob_vector_doc::{TabAlign, TabStop};
     let stop = |position: f64, align: TabAlign| TabStop { position, align, leader: String::new(), align_on: '.' };
     let x_of = |t: &TextObject, byte: usize| layout(db(), t).glyphs.iter().find(|g| g.byte == byte).map(|g| g.origin.x).unwrap();
     // Default stops every 36 pt.
@@ -468,7 +468,7 @@ fn tab_stops_position_text() {
 
 #[test]
 fn tab_leaders_line_up_from_line_to_line_and_stop_short_of_the_stop() {
-    use vectorcraft_doc::{TabAlign, TabStop};
+    use redrob_vector_doc::{TabAlign, TabStop};
     let mut t = point("A\t1\nAAAAA\t2", style(12.0));
     t.para.tabs = vec![TabStop { position: 120.0, align: TabAlign::Left, leader: ".".into(), align_on: '.' }];
     let lay = layout(db(), &t);
@@ -599,7 +599,7 @@ fn justified_japanese_lines_spread_between_characters() {
 /// with sizes mixed, a line's leading is the space below it (baseline leading: above it).
 #[test]
 fn em_box_top_leading_hangs_lines_from_the_line_above() {
-    use vectorcraft_doc::{LeadingModel, TextRun};
+    use redrob_vector_doc::{LeadingModel, TextRun};
     let st = |size: f64| CharStyle { size, leading: Some(size * 1.5), ..style(size) };
     let lay = |t: &TextObject, m: LeadingModel| {
         let mut t = t.clone();
@@ -635,7 +635,7 @@ fn em_box_top_leading_hangs_lines_from_the_line_above() {
 /// it; in area type a top-to-top first paragraph puts its em box on the frame's top.
 #[test]
 fn leading_model_is_per_paragraph() {
-    use vectorcraft_doc::{LeadingModel, ParaStyle, TextRun};
+    use redrob_vector_doc::{LeadingModel, ParaStyle, TextRun};
     let st = |size: f64| CharStyle { size, leading: Some(size * 1.5), ..style(size) };
     let model = |m: LeadingModel| ParaStyle { leading_model: m, ..ParaStyle::default() };
     let top = |size: f64| 0.88 * size;
@@ -675,7 +675,7 @@ fn leading_model_is_per_paragraph() {
 /// the column (top → right).
 #[test]
 fn character_alignment_lines_small_characters_up_with_the_largest_em_box() {
-    use vectorcraft_doc::{CharAlign, TextRun};
+    use redrob_vector_doc::{CharAlign, TextRun};
     for vertical_type in [false, true] {
         let place = |a: CharAlign| {
             let mut t = point("", style(40.0));
@@ -703,7 +703,7 @@ fn character_alignment_lines_small_characters_up_with_the_largest_em_box() {
 /// box). The Japanese faces need craft-fonts (skipped without them).
 #[test]
 fn character_alignment_on_the_icf_lines_small_characters_up_with_the_largest_face() {
-    use vectorcraft_doc::{CharAlign, TextRun};
+    use redrob_vector_doc::{CharAlign, TextRun};
     let place = |family: &str, a: CharAlign, vertical_type: bool| {
         let st = |size: f64| CharStyle { font_family: family.into(), ..style(size) };
         let mut t = point("", st(40.0));
@@ -741,7 +741,7 @@ fn character_alignment_on_the_icf_lines_small_characters_up_with_the_largest_fac
 /// Latin line ending in a full stop isn't shortened by Forced.
 #[test]
 fn burasagari_leaves_latin_commas_and_full_stops_inside_the_line() {
-    use vectorcraft_doc::Burasagari;
+    use redrob_vector_doc::Burasagari;
     let measure = width(&point("abcd", style(20.0)));
     let lay = |text: &str, b: Burasagari| {
         let mut t = area(text, style(20.0), Rect::new(0.0, 0.0, measure + 0.01, 400.0), Justify::JustifyLeft);

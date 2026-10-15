@@ -15,10 +15,10 @@ use std::sync::Arc;
 
 use egui::emath::GuiRounding;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
-use photocraft_compose::gradient_fill as gf;
-use photocraft_doc::{Document, Fill, GradientStyle, Layer, LayerContent, LayerId};
-use photocraft_engine::gradient_fill_cmds as cmds;
-use photocraft_engine::presets::gradients as gradient_presets;
+use redrob_photo_compose::gradient_fill as gf;
+use redrob_photo_doc::{Document, Fill, GradientStyle, Layer, LayerContent, LayerId};
+use redrob_photo_engine::gradient_fill_cmds as cmds;
+use redrob_photo_engine::presets::gradients as gradient_presets;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -92,17 +92,17 @@ pub fn live_mode(app: &PhotocraftApp) -> bool {
 }
 
 /// The active layer when it is a gradient fill layer: (layer, its frame, the canvas).
-fn active_gradient(app: &PhotocraftApp) -> Option<(Layer, Rect32, photocraft_geom::Rect)> {
+fn active_gradient(app: &PhotocraftApp) -> Option<(Layer, Rect32, redrob_photo_geom::Rect)> {
     let st = app.session.active()?;
     let l = st.doc.layer(st.active_layer?)?;
     if !matches!(l.content, LayerContent::Fill(Fill::Gradient { .. })) || !l.visible {
         return None;
     }
     let canvas = st.doc.bounds();
-    Some((l.clone(), photocraft_compose::fill_frame(l, canvas), canvas))
+    Some((l.clone(), redrob_photo_compose::fill_frame(l, canvas), canvas))
 }
 
-type Rect32 = photocraft_geom::Rect;
+type Rect32 = redrob_photo_geom::Rect;
 
 fn fill_of(l: &Layer) -> Option<&Fill> {
     match &l.content {
@@ -409,12 +409,12 @@ fn shown_fill(app: &PhotocraftApp) -> Option<(Fill, Rect32, Option<Grab>)> {
         Some(Drag::Draw { from, to, redraw: None }) => {
             let l = cmds::new_layer(&app.session, &st.doc, &create_params(app, *from, *to)).ok()?;
             let f = fill_of(&l)?.clone();
-            Some((f, photocraft_compose::fill_frame(&l, canvas), Some(Grab::End)))
+            Some((f, redrob_photo_compose::fill_frame(&l, canvas), Some(Grab::End)))
         }
         Some(Drag::Draw { from, to, redraw: Some(id) }) => {
             let l = st.doc.layer(*id)?;
             let f = edited_fill(app, l, canvas, cmds::SET, &json!({"from": from, "to": to}))?;
-            Some((f, photocraft_compose::fill_frame(l, canvas), Some(Grab::End)))
+            Some((f, redrob_photo_compose::fill_frame(l, canvas), Some(Grab::End)))
         }
         Some(Drag::Edit { layer, grab, commit, .. }) => {
             let l = st.doc.layer(*layer)?;
@@ -427,7 +427,7 @@ fn shown_fill(app: &PhotocraftApp) -> Option<(Fill, Rect32, Option<Grab>)> {
             };
             // A torn-off stop no longer exists: highlight nothing.
             let deleting = commit.as_ref().is_some_and(|(_, p)| p["action"] == "delete");
-            Some((f, photocraft_compose::fill_frame(l, canvas), (!deleting).then_some(*grab)))
+            Some((f, redrob_photo_compose::fill_frame(l, canvas), (!deleting).then_some(*grab)))
         }
         None => {
             let (l, frame, _) = active_gradient(app)?;
@@ -541,7 +541,7 @@ const THUMB_PX: u32 = 64;
 pub fn thumbnail_image(f: &Fill) -> Option<egui::ColorImage> {
     let Fill::Gradient { .. } = f else { return None };
     let n = THUMB_PX as i32;
-    let square = photocraft_geom::Rect::new(0, 0, n, n);
+    let square = redrob_photo_geom::Rect::new(0, 0, n, n);
     // No dither: it is invisible at this size and would only add noise.
     let mut plain = f.clone();
     if let Fill::Gradient { dither, .. } = &mut plain {
@@ -588,7 +588,7 @@ pub fn preset_swatch(app: &mut PhotocraftApp, ui: &mut egui::Ui) -> bool {
     let t = Tokens::get(ui.ctx());
     let stops = app.session.presets.gradient.resolve(app.session.tools.foreground, app.session.tools.background);
     let (r, resp) = ui.allocate_exact_size(vec2(96.0, 20.0), Sense::click());
-    paint_ramp(ui.painter(), r, |u| photocraft_algo::paint::sample_stops(&stops, u));
+    paint_ramp(ui.painter(), r, |u| redrob_photo_algo::paint::sample_stops(&stops, u));
     ui.painter().rect_stroke(r, 0.0, Stroke::new(1.0, t.field_border), StrokeKind::Outside);
     // Name the control for accessibility (and so tests and agents can find it).
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tl!("Gradient picker")));
@@ -1034,7 +1034,7 @@ mod tests {
     use super::*;
 
     fn app_with_gradient(style: &str) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 120})).unwrap();
         app.ui.tool = Tool::Gradient;
         app.ui.tool_options.gradient_style = style.into();
@@ -1058,7 +1058,7 @@ mod tests {
 
     #[test]
     fn thumbnails_show_the_gradient() {
-        use photocraft_color::Color;
+        use redrob_photo_color::Color;
         // Black to white, left to right: the left edge is dark, the right light, top = bottom.
         let f = Fill::gradient(vec![(0.0, Color::BLACK), (1.0, Color::WHITE)], 0.0, 1.0, GradientStyle::Linear, false);
         let img = thumbnail_image(&f).unwrap();
@@ -1179,7 +1179,7 @@ mod tests {
     fn classic_drag_preserves_preset_transparency_at_all_depths() {
         for depth in [8, 16, 32] {
             for reverse in [false, true] {
-                let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+                let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
                 app.run("file.new", json!({"width": 200, "height": 120, "depth": depth, "background": "transparent"})).unwrap();
                 app.ui.tool = Tool::Gradient;
                 app.ui.tool_options.gradient_classic = true;
@@ -1236,7 +1236,7 @@ mod tests {
 
     #[test]
     fn gradient_blend_mode_reaches_live_and_classic_drags() {
-        use photocraft_color::BlendMode;
+        use redrob_photo_color::BlendMode;
         for mode in [BlendMode::Difference, BlendMode::Multiply, BlendMode::Screen, BlendMode::Exclusion] {
             let mut live = app_with_gradient("linear");
             live.ui.tool_options.gradient_blend_mode = mode;
@@ -1266,7 +1266,7 @@ mod tests {
 
     #[test]
     fn changing_live_gradient_mode_updates_selected_fill_layer() {
-        use photocraft_color::BlendMode;
+        use redrob_photo_color::BlendMode;
         let mut app = app_with_gradient("linear");
         drag(&mut app, [20.0, 60.0], [180.0, 60.0]);
         let before = app.ui.tool_options.clone();
@@ -1352,7 +1352,7 @@ mod tests {
         };
 
         // Nothing selected.
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.ui.panels.gradient_editor = true;
         run(&mut app);
         assert!(app.ui.panels.gradient_editor, "the window stays open");

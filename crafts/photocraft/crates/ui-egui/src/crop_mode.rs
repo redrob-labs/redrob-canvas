@@ -287,7 +287,7 @@ mod tests {
     use crate::canvas::{ToolEvent, tool_event};
     use crate::crop_ui::{CropDrag, corners};
     use egui::{Modifiers, Pos2, pos2};
-    use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
+    use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
     use serde_json::json;
 
     const NONE: Modifiers = Modifiers::NONE;
@@ -295,7 +295,7 @@ mod tests {
     /// A 200 × 100 document in a 800 × 600 canvas at 100 %, centred, the Crop tool in default mode.
     fn app() -> PhotocraftApp {
         let doc = Document::with_background("crop", Size::new(200, 100), ColorMode::Rgb, SampleType::U8, Color::WHITE);
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.add_document(doc, None);
         let mut app = PhotocraftApp::new(s, crate::Services::default());
         app.sync_views();
@@ -703,7 +703,7 @@ mod tests {
         ctx.input_mut(|i| i.events.push(egui::Event::Key { key: egui::Key::P, physical_key: None, pressed: true, repeat: false, modifiers: NONE }));
         assert!(!crate::crop_shield::keys(&mut app, &ctx));
         assert!(!classic(&app));
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.ui.tool = Tool::Crop;
         press(&mut app);
         assert_ne!(app.ui.tool, Tool::Crop);
@@ -786,7 +786,7 @@ mod tests {
         assert_eq!(pivot_center([1.0, 2.0], [f64::NAN, 0.0], 0.0, 90.0, false), [1.0, 2.0]);
         assert_eq!(pivot_center([1.0, 2.0], [0.0, 0.0], f32::NAN, 90.0, true), [1.0, 2.0]);
         // No view at all (no document).
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.ui.tool = Tool::Crop;
         app.ui.crop_rect = Some([0.0, 0.0, 10.0, 10.0]);
         app.crop.editing = true;
@@ -868,7 +868,7 @@ mod tests {
                                 app.prefs_rt
                                     .snap_lines
                                     .iter()
-                                    .any(|l| l.vertical == vertical && l.pos == pos && l.kind == photocraft_engine::snap::SnapKind::LayerEdge)
+                                    .any(|l| l.vertical == vertical && l.pos == pos && l.kind == redrob_photo_engine::snap::SnapKind::LayerEdge)
                             };
                             (hx == 0 || on(true, if hx < 0 { hidden[0] } else { hidden[2] }))
                                 && (hy == 0 || on(false, if hy < 0 { hidden[1] } else { hidden[3] }))
@@ -898,7 +898,7 @@ mod tests {
                         let st = app.session.active().unwrap();
                         assert_eq!((st.doc.size.width, st.doc.size.height), ((x1 - x0) as u32, (y1 - y0) as u32), "{what}");
                         let layer = st.doc.walk().into_iter().map(|(_, _, l)| l.id).next().unwrap();
-                        let r = photocraft_engine::snap::layer_rect(&st.doc, layer).unwrap();
+                        let r = redrob_photo_engine::snap::layer_rect(&st.doc, layer).unwrap();
                         assert_eq!(r, [hidden[0] - x0, hidden[1] - y0, hidden[2] - x0, hidden[3] - y0], "{what}: no transparent strip");
                     }
                 }

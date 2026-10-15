@@ -2,7 +2,7 @@
 //! a 36 MP image). Built once per document revision; only adjustment parameters change while the
 //! slider moves, so the proxy's pixels stay valid and each preview frame composites ~1/k² pixels.
 
-use photocraft_doc::Document;
+use redrob_photo_doc::Document;
 
 /// Target pixel count for previews (fast enough to composite every frame on CPU).
 pub const PREVIEW_PIXELS: u64 = 2_500_000;
@@ -34,13 +34,13 @@ pub fn view_factor(k: u32, zoom: f32) -> u32 {
     k.min(crate::adjust_preview::proxy_factor(zoom)).max(1)
 }
 
-pub use photocraft_compose::proxy::{downsample, proxy_document};
+pub use redrob_photo_compose::proxy::{downsample, proxy_document};
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use photocraft_color::{Color, ColorMode, SampleType};
-    use photocraft_doc::Size;
+    use redrob_photo_color::{Color, ColorMode, SampleType};
+    use redrob_photo_doc::Size;
 
     #[test]
     fn factor_scales_with_size() {

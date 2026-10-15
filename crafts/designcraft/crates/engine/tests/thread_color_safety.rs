@@ -1,6 +1,6 @@
 //! Linked-story threading and text-color transaction safety.
-use designcraft_doc::{ParaFormat, Story, StoryId, table::Table};
-use designcraft_engine::Session;
+use redrob_layout_doc::{ParaFormat, Story, StoryId, table::Table};
+use redrob_layout_engine::Session;
 use serde_json::{Value, json};
 use std::sync::Arc;
 
@@ -123,7 +123,7 @@ fn nested_story(depth: usize, name: &str) -> Story {
     let mut st = Story::with_text(StoryId(0), "leaf", ParaFormat::default());
     st.chars[0].format.over.fill = Some(name.into());
     for _ in 0..depth {
-        let mut outer = Story::with_text(StoryId(0), &designcraft_doc::TABLE_ANCHOR.to_string(), ParaFormat::default());
+        let mut outer = Story::with_text(StoryId(0), &redrob_layout_doc::TABLE_ANCHOR.to_string(), ParaFormat::default());
         let mut t = Table::new(1, 1, 1, 0, 0, 100.);
         t.cells[0].text = st;
         outer.tables.insert(1, Arc::new(t));

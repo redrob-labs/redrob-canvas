@@ -13,8 +13,8 @@
 //! the outline drawn, in one history step, and an action replays that outline.
 
 use egui::{Color32, Key, Modifiers, Pos2, Rect, Stroke, vec2};
-use photocraft_algo::magnetic::{self, Settings};
-use photocraft_engine::magnetic_cmds::EdgeSource;
+use redrob_photo_algo::magnetic::{self, Settings};
+use redrob_photo_engine::magnetic_cmds::EdgeSource;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -439,7 +439,7 @@ pub fn draw(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform, hover:
 /// The cursor over the canvas: a crosshair; Preferences › Cursors › Other Cursors › Precise also
 /// shows the detection width around it.
 pub fn cursor(app: &PhotocraftApp, painter: &egui::Painter, p: Pos2, zoom: f32) -> egui::CursorIcon {
-    if app.session.prefs().cursors.other == photocraft_engine::prefs::OtherCursor::Precise {
+    if app.session.prefs().cursors.other == redrob_photo_engine::prefs::OtherCursor::Precise {
         let r = (app.ui.tool_options.magnetic_width.clamp(1.0, 256.0) * zoom).max(2.0);
         painter.circle_stroke(p, r + 0.5, Stroke::new(1.0, Color32::from_black_alpha(140)));
         painter.circle_stroke(p, r, Stroke::new(1.0, Color32::from_white_alpha(220)));

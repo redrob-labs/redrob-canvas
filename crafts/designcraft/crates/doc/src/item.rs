@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use designcraft_color::BlendMode;
-use designcraft_geom::corners::CornerOptions;
-use designcraft_geom::{Affine, PathData, Point, Rect};
+use redrob_layout_color::BlendMode;
+use redrob_layout_geom::corners::CornerOptions;
+use redrob_layout_geom::{Affine, PathData, Point, Rect};
 use serde::{Deserialize, Serialize};
 
 use crate::ids::{AssetId, ItemId, LayerId, StoryId};
@@ -37,12 +37,12 @@ impl Fill {
     /// box: by default it's centred and reaches the box's sides (an ellipse in a non-square box);
     /// with a Gradient Swatch tool vector it's centred at the vector's start, and the vector's
     /// length, measured with the box made square, sets its size.
-    pub fn radial_ellipse(&self, b: designcraft_geom::Rect) -> (designcraft_geom::Point, f64, f64) {
+    pub fn radial_ellipse(&self, b: redrob_layout_geom::Rect) -> (redrob_layout_geom::Point, f64, f64) {
         let k = if b.width() > 1e-9 && b.height() > 1e-9 { b.height() / b.width() } else { 1.0 };
         match self.gradient_vector {
             Some([x0, y0, x1, y1]) => {
-                let r = designcraft_geom::Vec2::new(x1 - x0, (y1 - y0) / k).hypot();
-                (designcraft_geom::Point::new(x0, y0), r, r * k)
+                let r = redrob_layout_geom::Vec2::new(x1 - x0, (y1 - y0) / k).hypot();
+                (redrob_layout_geom::Point::new(x0, y0), r, r * k)
             }
             // A box with no width or height (a straight line's) has no ellipse: a circle across
             // its length.
@@ -65,18 +65,18 @@ impl Fill {
         let a = self.gradient_angle.unwrap_or(0.0).to_radians();
         let half = (b.width() * a.cos().abs() + b.height() * a.sin().abs()) / 2.0;
         let half = if half > 1e-9 { half } else { b.width().max(b.height()).max(1e-3) / 2.0 };
-        let d = designcraft_geom::Vec2::new(a.cos(), -a.sin()) * half;
+        let d = redrob_layout_geom::Vec2::new(a.cos(), -a.sin()) * half;
         (b.center() - d, b.center() + d)
     }
 
     pub fn none() -> Self {
-        Fill { swatch: designcraft_color::swatch::NONE.into(), tint: 1.0, gradient_angle: None, gradient_vector: None, overprint: false }
+        Fill { swatch: redrob_layout_color::swatch::NONE.into(), tint: 1.0, gradient_angle: None, gradient_vector: None, overprint: false }
     }
     pub fn swatch(name: &str) -> Self {
         Fill { swatch: name.into(), ..Fill::none() }
     }
     pub fn is_none(&self) -> bool {
-        self.swatch == designcraft_color::swatch::NONE
+        self.swatch == redrob_layout_color::swatch::NONE
     }
 }
 
@@ -170,8 +170,8 @@ impl StrokeType {
 
     /// The filled area for types drawn as fills (stripes, wavy, hash); `None` for solid, dashed
     /// and dotted strokes (and unresolved named styles).
-    pub fn outline(&self, bp: &designcraft_geom::BezPath, weight: f64, tol: f64) -> Option<designcraft_geom::BezPath> {
-        use designcraft_geom::stroke_style as ss;
+    pub fn outline(&self, bp: &redrob_layout_geom::BezPath, weight: f64, tol: f64) -> Option<redrob_layout_geom::BezPath> {
+        use redrob_layout_geom::stroke_style as ss;
         match self {
             StrokeType::Wavy => Some(ss::wavy(bp, weight, tol)),
             StrokeType::Hashed => Some(ss::hashed(bp, weight, tol)),
@@ -273,7 +273,7 @@ impl Default for Stroke {
     /// InDesign's default for drawn shapes: 1 pt black.
     fn default() -> Self {
         Stroke {
-            swatch: designcraft_color::swatch::BLACK.into(),
+            swatch: redrob_layout_color::swatch::BLACK.into(),
             tint: 1.0,
             weight: 1.0,
             kind: StrokeType::Solid,
@@ -283,7 +283,7 @@ impl Default for Stroke {
             miter_limit: 4.0,
             start: Arrowhead::None,
             end: Arrowhead::None,
-            gap_swatch: designcraft_color::swatch::NONE.into(),
+            gap_swatch: redrob_layout_color::swatch::NONE.into(),
             gap_tint: 1.0,
             overprint: false,
             gap_overprint: false,
@@ -312,10 +312,10 @@ impl Stroke {
     }
 
     pub fn none() -> Self {
-        Stroke { swatch: designcraft_color::swatch::NONE.into(), ..Stroke::default() }
+        Stroke { swatch: redrob_layout_color::swatch::NONE.into(), ..Stroke::default() }
     }
     pub fn is_none(&self) -> bool {
-        self.swatch == designcraft_color::swatch::NONE || self.weight <= 0.0
+        self.swatch == redrob_layout_color::swatch::NONE || self.weight <= 0.0
     }
 }
 
@@ -446,7 +446,7 @@ impl Default for TextFrameOptions {
             auto_size_ref: 4,
             column_rule: false,
             column_rule_weight: 1.0,
-            column_rule_color: designcraft_color::swatch::BLACK.into(),
+            column_rule_color: redrob_layout_color::swatch::BLACK.into(),
             column_rule_tint: 1.0,
             column_rule_offset: 0.0,
             column_rule_top_inset: 0.0,
@@ -765,7 +765,7 @@ impl Default for DropShadow {
     fn default() -> Self {
         DropShadow {
             on: false,
-            color: designcraft_color::swatch::BLACK.into(),
+            color: redrob_layout_color::swatch::BLACK.into(),
             opacity: 0.75,
             angle: 135.0,
             distance: 7.0,
@@ -797,7 +797,7 @@ impl Default for InnerShadow {
     fn default() -> Self {
         InnerShadow {
             on: false,
-            color: designcraft_color::swatch::BLACK.into(),
+            color: redrob_layout_color::swatch::BLACK.into(),
             opacity: 0.75,
             angle: 135.0,
             distance: 7.0,
@@ -822,7 +822,7 @@ pub struct OuterGlow {
 
 impl Default for OuterGlow {
     fn default() -> Self {
-        OuterGlow { on: false, color: designcraft_color::swatch::BLACK.into(), opacity: 0.75, size: 7.0, spread: 0.0 }
+        OuterGlow { on: false, color: redrob_layout_color::swatch::BLACK.into(), opacity: 0.75, size: 7.0, spread: 0.0 }
     }
 }
 
@@ -879,7 +879,7 @@ pub struct InnerGlow {
 
 impl Default for InnerGlow {
     fn default() -> Self {
-        InnerGlow { on: false, color: designcraft_color::swatch::PAPER.into(), opacity: 0.75, size: 7.0, choke: 0.0, center: false }
+        InnerGlow { on: false, color: redrob_layout_color::swatch::PAPER.into(), opacity: 0.75, size: 7.0, choke: 0.0, center: false }
     }
 }
 
@@ -908,9 +908,9 @@ impl Default for Bevel {
             depth: 100.0,
             angle: 120.0,
             global_light: true,
-            highlight: designcraft_color::swatch::PAPER.into(),
+            highlight: redrob_layout_color::swatch::PAPER.into(),
             highlight_opacity: 0.75,
-            shadow: designcraft_color::swatch::BLACK.into(),
+            shadow: redrob_layout_color::swatch::BLACK.into(),
             shadow_opacity: 0.75,
         }
     }
@@ -931,7 +931,7 @@ pub struct Satin {
 
 impl Default for Satin {
     fn default() -> Self {
-        Satin { on: false, color: designcraft_color::swatch::BLACK.into(), opacity: 0.5, angle: 120.0, distance: 7.0, size: 7.0, invert: false }
+        Satin { on: false, color: redrob_layout_color::swatch::BLACK.into(), opacity: 0.5, angle: 120.0, distance: 7.0, size: 7.0, invert: false }
     }
 }
 
@@ -959,8 +959,8 @@ impl Default for GradientFeather {
 
 impl GradientFeather {
     /// The gradient's two points in item space for an object with inner bounds `b`.
-    pub fn points(&self, b: designcraft_geom::Rect) -> (designcraft_geom::Point, designcraft_geom::Point) {
-        use designcraft_geom::{Point, Vec2};
+    pub fn points(&self, b: redrob_layout_geom::Rect) -> (redrob_layout_geom::Point, redrob_layout_geom::Point) {
+        use redrob_layout_geom::{Point, Vec2};
         if let Some([x0, y0, x1, y1]) = self.vector {
             return (Point::new(x0, y0), Point::new(x1, y1));
         }
@@ -1298,7 +1298,7 @@ impl Item {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_geom::shapes;
+    use redrob_layout_geom::shapes;
 
     #[test]
     fn bounds_and_text_area() {
@@ -1321,13 +1321,13 @@ mod tests {
             it.stroke = Stroke { weight: 4.0, align, swatch: swatch.into(), ..Stroke::default() };
             it.text_area()
         };
-        let black = designcraft_color::swatch::BLACK;
+        let black = redrob_layout_color::swatch::BLACK;
         // The part of the stroke inside the frame, on every edge, then the inset.
         assert_eq!(stroked(StrokeAlign::Center, black), Rect::new(8.0, 7.0, 90.0, 41.0));
         assert_eq!(stroked(StrokeAlign::Inside, black), Rect::new(10.0, 9.0, 88.0, 39.0));
         assert_eq!(stroked(StrokeAlign::Outside, black), unstroked);
         // A stroke without a colour doesn't count.
-        assert_eq!(stroked(StrokeAlign::Inside, designcraft_color::swatch::NONE), unstroked);
+        assert_eq!(stroked(StrokeAlign::Inside, redrob_layout_color::swatch::NONE), unstroked);
         // Nor does a weight that isn't a number.
         it.stroke = Stroke { weight: f64::NAN, ..Stroke::default() };
         assert_eq!(it.text_area(), unstroked);

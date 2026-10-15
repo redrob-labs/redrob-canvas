@@ -14,7 +14,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-photocraft-raw = { path = ".." }
+redrob-photo-raw = { path = ".." }
 
 [profile.release]
 debug = 1

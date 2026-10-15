@@ -254,7 +254,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
 mod tests {
     use super::*;
     use crate::{PhotocraftApp, Services};
-    use photocraft_engine::Session;
+    use redrob_photo_engine::Session;
     use std::sync::{Arc, Mutex};
 
     #[test]

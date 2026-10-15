@@ -1,6 +1,6 @@
 //! The macOS menu bar, through muda (a standalone native menu crate, not Tauri: no webview, just
 //! AppKit menus behind a safe API, no GTK on macOS). The menus themselves, their Mac layout and how their keys reach PhotoCraft are in
-//! `photocraft_ui_egui::native_menu`; this file only builds and updates the `NSMenu`s.
+//! `redrob_photo_ui_egui::native_menu`; this file only builds and updates the `NSMenu`s.
 //!
 //! - Item ids are command ids; a command in two menus (Keyboard Shortcuts is in Edit and Window)
 //!   gets `id#2` for its second copy, as muda ids must be unique.
@@ -20,7 +20,7 @@ use muda::accelerator::{Accelerator, Code, Modifiers};
 use muda::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use objc2::MainThreadMarker;
 use objc2_app_kit::{NSApplication, NSEventModifierFlags, NSEventType};
-use photocraft_ui_egui::native_menu::{self, Backend, Chord, Event, MenuBar, MenuRole, Node, Standard};
+use redrob_photo_ui_egui::native_menu::{self, Backend, Chord, Event, MenuBar, MenuRole, Node, Standard};
 
 enum Handle {
     Plain(MenuItem),
@@ -144,11 +144,11 @@ impl MacMenu {
                 }
                 Node::Standard(item) => {
                     let p = match item {
-                        Standard::Services => PredefinedMenuItem::services(Some(photocraft_ui_egui::i18n::t("Services"))),
-                        Standard::HideOthers => PredefinedMenuItem::hide_others(Some(photocraft_ui_egui::i18n::t("Hide Others"))),
-                        Standard::ShowAll => PredefinedMenuItem::show_all(Some(photocraft_ui_egui::i18n::t("Show All"))),
+                        Standard::Services => PredefinedMenuItem::services(Some(redrob_photo_ui_egui::i18n::t("Services"))),
+                        Standard::HideOthers => PredefinedMenuItem::hide_others(Some(redrob_photo_ui_egui::i18n::t("Hide Others"))),
+                        Standard::ShowAll => PredefinedMenuItem::show_all(Some(redrob_photo_ui_egui::i18n::t("Show All"))),
                         Standard::Minimize => PredefinedMenuItem::minimize(None),
-                        Standard::Zoom => PredefinedMenuItem::maximize(Some(photocraft_ui_egui::i18n::t("Zoom"))),
+                        Standard::Zoom => PredefinedMenuItem::maximize(Some(redrob_photo_ui_egui::i18n::t("Zoom"))),
                         Standard::BringAllToFront => PredefinedMenuItem::bring_all_to_front(None),
                         Standard::CloseWindow => PredefinedMenuItem::close_window(None),
                     };
@@ -251,10 +251,10 @@ impl Backend for MacMenu {
 }
 
 /// Install the menu bar now (in eframe's creator closure, so winit's default menu doesn't stay).
-pub fn install(ctx: &egui::Context, app: &photocraft_ui_egui::PhotocraftApp) -> Option<native_menu::NativeMenu> {
+pub fn install(ctx: &egui::Context, app: &redrob_photo_ui_egui::PhotocraftApp) -> Option<native_menu::NativeMenu> {
     let language = &app.session.prefs().interface.language;
-    let lang = photocraft_ui_egui::i18n::Lang::from_pref(language);
-    let bar = native_menu::photocraft_layout(&photocraft_ui_egui::menus::menu_items(app), lang, language).bar;
+    let lang = redrob_photo_ui_egui::i18n::Lang::from_pref(language);
+    let bar = native_menu::photocraft_layout(&redrob_photo_ui_egui::menus::menu_items(app), lang, language).bar;
     // Never crash for a menu: if AppKit refuses, keep the in-window menus.
     let built = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let mut menu = MacMenu::new(ctx);
@@ -374,8 +374,8 @@ mod tests {
     /// Every shortcut the Mac menu shows becomes a key equivalent (or stays egui's, for bare keys).
     #[test]
     fn every_menu_shortcut_maps_to_a_key_equivalent() {
-        let app = photocraft_ui_egui::PhotocraftApp::new(photocraft_engine::Session::new(), photocraft_ui_egui::Services::default());
-        let bar = native_menu::photocraft_layout(&photocraft_ui_egui::menus::menu_items(&app), photocraft_ui_egui::i18n::Lang::EN, "auto").bar;
+        let app = redrob_photo_ui_egui::PhotocraftApp::new(redrob_photo_engine::Session::new(), redrob_photo_ui_egui::Services::default());
+        let bar = native_menu::photocraft_layout(&redrob_photo_ui_egui::menus::menu_items(&app), redrob_photo_ui_egui::i18n::Lang::EN, "auto").bar;
         let mut native = 0;
         for it in bar.items() {
             let Some(c) = it.shortcut.as_deref().and_then(Chord::parse) else { continue };

@@ -6,9 +6,9 @@
 use std::sync::Arc;
 
 use serde_json::Value;
-use vectorcraft_doc::{Document, ImageBlob, ImageObject, Node, NodeKind};
-use vectorcraft_format::{BLOB_MAGIC, FormatError, INLINE_MAX, SaveOptions, load, load_file, pdf_content, save_with};
-use vectorcraft_geom::Affine;
+use redrob_vector_doc::{Document, ImageBlob, ImageObject, Node, NodeKind};
+use redrob_vector_format::{BLOB_MAGIC, FormatError, INLINE_MAX, SaveOptions, load, load_file, pdf_content, save_with};
+use redrob_vector_geom::Affine;
 
 /// A document showing image `key` of `len` bytes.
 fn doc_with_image(key: &str, len: usize) -> Document {

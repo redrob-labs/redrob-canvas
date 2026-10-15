@@ -3,8 +3,8 @@
 //! them. The Layers panel's New Layer button makes a layer without asking, and ⌥-click opens the
 //! dialog, as in Photoshop.
 
-use photocraft_doc::{BlendMode, LabelColor};
-use photocraft_engine::new_layer::neutral_color;
+use redrob_photo_doc::{BlendMode, LabelColor};
+use redrob_photo_engine::new_layer::neutral_color;
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -30,7 +30,7 @@ pub fn open(app: &mut PhotocraftApp) -> Result<u64, String> {
 fn mode(f: &Map<String, Value>) -> BlendMode {
     f.get("mode")
         .and_then(Value::as_str)
-        .and_then(photocraft_engine::commands::blend_from_str)
+        .and_then(redrob_photo_engine::commands::blend_from_str)
         .filter(|m| *m != BlendMode::PassThrough)
         .unwrap_or(BlendMode::Normal)
 }
@@ -138,12 +138,12 @@ mod tests {
     use egui_kittest::kittest::{NodeT, Queryable};
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 16, "height": 16})).unwrap();
         app
     }
 
-    fn top(app: &PhotocraftApp) -> &photocraft_doc::Layer {
+    fn top(app: &PhotocraftApp) -> &redrob_photo_doc::Layer {
         app.session.active().unwrap().doc.layers.last().unwrap()
     }
 

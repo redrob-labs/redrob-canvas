@@ -10,7 +10,7 @@
 //! ([`super::save_style_library`]).
 
 use serde_json::{Value, json};
-use vectorcraft_color::palette_io::PaletteFormat;
+use redrob_vector_color::palette_io::PaletteFormat;
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, form, run_and_close};
@@ -124,7 +124,7 @@ pub(super) fn save(app: &mut VectorcraftApp, d: &Dialog, cmd: &str, ext: &str, p
     }
     app.ui.dialog = None;
     let name = Some(d.str("name").trim().to_string()).filter(|n| !n.is_empty()).or_else(|| document_name(app)).unwrap_or_default();
-    let file = vectorcraft_engine::cmd::swatchlib::library_file_name(&name, ext);
+    let file = redrob_vector_engine::cmd::swatchlib::library_file_name(&name, ext);
     crate::io::save_command_output_named(app, cmd, &file, p).map(|path| json!({ "path": path }))
 }
 

@@ -11,9 +11,9 @@ use std::io::Write;
 
 use super::{CommandSpec, bad, cmd, has_doc, str_param};
 use crate::{EngineError, Result, Session};
-use designcraft_compose::ComposedStory;
-use designcraft_doc::{AssetId, Document};
-use designcraft_fonts::{FaceRef, FontFace, FontSource};
+use redrob_layout_compose::ComposedStory;
+use redrob_layout_doc::{AssetId, Document};
+use redrob_layout_fonts::{FaceRef, FontFace, FontSource};
 use serde_json::{Value, json};
 
 const MAX_OUTPUT_COMPONENT_BYTES: usize = 200;
@@ -375,8 +375,8 @@ fn package(s: &mut Session, p: &Value) -> Result<Value> {
     root.write(&doc_path, &super::to_bytes(&packed))?;
     files.insert(0, doc_path);
     // The font files, and what the report says about each font.
-    let db = designcraft_fonts::FontDb::global().scoped(d.font_scope);
-    let fonts_dir = root.child(designcraft_fonts::DOCUMENT_FONTS_FOLDER)?;
+    let db = redrob_layout_fonts::FontDb::global().scoped(d.font_scope);
+    let fonts_dir = root.child(redrob_layout_fonts::DOCUMENT_FONTS_FOLDER)?;
     let (mut copied, mut taken) = (Vec::new(), Vec::new());
     let (mut font_lines, mut named) = (Vec::new(), Vec::new());
     for f in fonts.as_array().into_iter().flatten() {
@@ -401,12 +401,12 @@ fn package(s: &mut Session, p: &Value) -> Result<Value> {
         .collect();
     if p.get("idml").and_then(Value::as_bool).unwrap_or(true) {
         let path = package_output_path(&dir, &title, "idml")?;
-        root.write(&path, &designcraft_idml::export_idml(&packed))?;
+        root.write(&path, &redrob_layout_idml::export_idml(&packed))?;
         files.push(path);
     }
     if p.get("pdf").and_then(Value::as_bool).unwrap_or(false) {
         let path = package_output_path(&dir, &title, "pdf")?;
-        let bytes = designcraft_pdf::export_pdf(&packed, &s.cache, &Default::default()).map_err(|e| EngineError::Other(e.to_string()))?;
+        let bytes = redrob_layout_pdf::export_pdf(&packed, &s.cache, &Default::default()).map_err(|e| EngineError::Other(e.to_string()))?;
         root.write(&path, &bytes)?;
         files.push(path);
     }
@@ -460,7 +460,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("dc-package-relocation-{}-{nonce}", std::process::id()));
         let original = dir.join("original");
         let moved = dir.join("moved");
-        let png = designcraft_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
+        let png = redrob_layout_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
         let mut s = Session::new();
         s.execute("file.new", &json!({"title": "OwnedPackage", "width": 72, "height": 72})).unwrap();
         s.execute("file.place", &json!({"base64": super::super::base64_encode(&png), "name": "owned.png", "x": 5, "y": 5, "width": 16})).unwrap();
@@ -557,8 +557,8 @@ mod tests {
 
     #[test]
     fn package_copies_the_fonts_their_licences_allow() {
-        use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
-        use designcraft_fonts::testing::{font_with, with_fs_type};
+        use redrob_layout_fonts::DOCUMENT_FONTS_FOLDER;
+        use redrob_layout_fonts::testing::{font_with, with_fs_type};
         const FREE: &str = "DocFont Package Free";
         const RESTRICTED: &str = "DocFont Package Restricted";
         let dir = std::env::temp_dir().join(format!("dc-package-fonts-{}", std::process::id()));
@@ -604,7 +604,7 @@ mod tests {
         let report = r["report"].as_str().unwrap();
         assert!(report.contains(&format!("{RESTRICTED} Regular — not copied: its licence doesn't allow it")), "{report}");
         assert!(report.contains(&format!("{FREE} Regular\n")), "{report}");
-        assert!(report.contains(&format!("{} Regular — included with Redrob Canvas", designcraft_fonts::DEFAULT_FAMILY)), "{report}");
+        assert!(report.contains(&format!("{} Regular — included with Redrob Canvas", redrob_layout_fonts::DEFAULT_FAMILY)), "{report}");
         // The packaged document opens with its fonts.
         let doc = r["files"][0].as_str().unwrap().to_string();
         assert_eq!(Session::new().execute("file.open", &json!({"path": doc})).unwrap()["documentFonts"], 1);
@@ -617,8 +617,8 @@ mod tests {
 
     #[test]
     fn package_copies_the_fallback_fonts_that_draw_text() {
-        use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
-        use designcraft_fonts::testing::{font_with, with_fs_type};
+        use redrob_layout_fonts::DOCUMENT_FONTS_FOLDER;
+        use redrob_layout_fonts::testing::{font_with, with_fs_type};
         const NAMED: &str = "DocFont Fallback Named";
         const HELPER: &str = "DocFont Fallback Helper";
         const RESTRICTED: &str = "DocFont Fallback Restricted";
@@ -709,7 +709,7 @@ mod tests {
         s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": false})).unwrap();
         s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": false})).unwrap();
         assert!(super::super::from_bytes(&std::fs::read(&document).unwrap()).is_ok());
-        assert!(!dir.join(designcraft_fonts::DOCUMENT_FONTS_FOLDER).exists());
+        assert!(!dir.join(redrob_layout_fonts::DOCUMENT_FONTS_FOLDER).exists());
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;

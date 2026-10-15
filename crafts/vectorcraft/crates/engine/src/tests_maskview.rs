@@ -2,8 +2,8 @@
 //! edited; toggling it off shows the artwork again, and leaving editing by any route ends it.
 
 use serde_json::json;
-use vectorcraft_geom::Affine;
-use vectorcraft_render::{RenderOptions, Renderer};
+use redrob_vector_geom::Affine;
+use redrob_vector_render::{RenderOptions, Renderer};
 
 use super::*;
 

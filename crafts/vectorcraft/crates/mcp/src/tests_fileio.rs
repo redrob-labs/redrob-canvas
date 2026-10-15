@@ -31,7 +31,7 @@ fn two_boards() -> Headless {
 fn headless_opens_pdf_ai_and_templates() {
     let mut h = two_boards();
     let pdf = h.call("engine.execute", json!({"command": "document.serialize", "params": {"format": "pdf"}})).unwrap();
-    let pdf = vectorcraft_format::base64_decode(pdf["dataBase64"].as_str().unwrap()).unwrap();
+    let pdf = redrob_vector_format::base64_decode(pdf["dataBase64"].as_str().unwrap()).unwrap();
     for name in ["x.pdf", "x.ai"] {
         let path = tmp(name);
         std::fs::write(&path, &pdf).unwrap();
@@ -119,7 +119,7 @@ fn export_is_the_same_call_in_the_app_and_headless() {
     // Headless runs that very call: artboard 1 (40 pt wide) at scale 2.
     let mut h = two_boards();
     let r = text(&call_tool(&mut h, "export", &args));
-    let png = vectorcraft_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
+    let png = redrob_vector_format::base64_decode(r["dataBase64"].as_str().unwrap()).unwrap();
     assert_eq!(&png[16..20], 80u32.to_be_bytes(), "IHDR width");
     let direct = h.call("engine.execute", seen[0]["params"].clone()).unwrap();
     assert_eq!(direct["dataBase64"], r["dataBase64"]);
@@ -136,13 +136,13 @@ fn exporting_native_keeps_the_document_path() {
     assert_eq!(h.session.doc().unwrap().path.as_deref(), Some(doc.as_str()));
     // PDF range through the tool: one page.
     let pdf = text(&call_tool(&mut h, "export", &json!({"format": "pdf", "range": "2"})));
-    let pdf = vectorcraft_format::base64_decode(pdf["dataBase64"].as_str().unwrap()).unwrap();
+    let pdf = redrob_vector_format::base64_decode(pdf["dataBase64"].as_str().unwrap()).unwrap();
     assert_eq!(pdf_pages(&pdf), 1);
 }
 
 fn pdf_pages(pdf: &[u8]) -> usize {
     let mut h = Headless::new();
-    h.call("engine.execute", json!({"command": "document.open", "params": {"name": "p.pdf", "dataBase64": vectorcraft_format::base64_encode(pdf)}}))
+    h.call("engine.execute", json!({"command": "document.open", "params": {"name": "p.pdf", "dataBase64": redrob_vector_format::base64_encode(pdf)}}))
         .unwrap();
     h.session.doc().unwrap().doc.artboards.len()
 }

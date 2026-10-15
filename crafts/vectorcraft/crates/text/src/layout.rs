@@ -4,10 +4,10 @@ use std::ops::Range;
 
 use kurbo::{Affine, BezPath, PathEl, Point, Rect, Shape, Vec2};
 use unicode_bidi::{BidiInfo, Level};
-use vectorcraft_doc::{
+use redrob_vector_doc::{
     Burasagari, CharStyle, InlineArt, Justify, Kinsoku, LeadingModel, Mojikumi, ParaDirection, ParaStyle, PathAlign, PathEffect, TextKind, TextObject,
 };
-use vectorcraft_geom::{ArcPath, PathData};
+use redrob_vector_geom::{ArcPath, PathData};
 
 use crate::composer::{Breakpoint, Params, compose};
 use crate::fontdb::FontDb;
@@ -356,8 +356,8 @@ fn layout_once(db: &FontDb, t: &TextObject, opts: &LayoutOptions) -> TextLayout 
         TextKind::Point => flow(&mut cx, &paras, t, None),
         TextKind::Area { frame } => {
             let to_lines = line_xf.inverse();
-            let wrap: Vec<vectorcraft_doc::WrapShape> = if vertical {
-                t.wrap.iter().map(|w| vectorcraft_doc::WrapShape { path: w.path.transformed(to_lines), ..w.clone() }).collect()
+            let wrap: Vec<redrob_vector_doc::WrapShape> = if vertical {
+                t.wrap.iter().map(|w| redrob_vector_doc::WrapShape { path: w.path.transformed(to_lines), ..w.clone() }).collect()
             } else {
                 t.wrap.clone()
             };
@@ -527,8 +527,8 @@ fn glyph_em(g: &SGlyph) -> f64 {
 /// An inline graphic has its run's em (whatever its scale): it counts as one of the line's
 /// largest characters only when its run's size is, and moves with the text of its run (its art
 /// stays centred on that text's cap height).
-fn align_shift(g: &SGlyph, a: vectorcraft_doc::CharAlign, line_em: f64, vertical: bool) -> f64 {
-    use vectorcraft_doc::CharAlign;
+fn align_shift(g: &SGlyph, a: redrob_vector_doc::CharAlign, line_em: f64, vertical: bool) -> f64 {
+    use redrob_vector_doc::CharAlign;
     let icf = || g.face.icf_margins();
     let k = match a {
         CharAlign::RomanBaseline => return 0.0,
@@ -862,7 +862,7 @@ fn intersect_intervals(a: &[(f64, f64)], b: &[(f64, f64)]) -> Vec<(f64, f64)> {
 }
 
 impl Region {
-    fn cells(path: &BezPath, opts: &LayoutOptions, wrap: &[vectorcraft_doc::WrapShape]) -> Vec<Region> {
+    fn cells(path: &BezPath, opts: &LayoutOptions, wrap: &[redrob_vector_doc::WrapShape]) -> Vec<Region> {
         // A frame out of range has no cells, and a wrap shape out of range is left out.
         let Some(polys) = polygons(path) else { return vec![] };
         let wraps: Vec<(Vec<Vec<Point>>, f64, bool)> = wrap
@@ -1115,8 +1115,8 @@ impl Pen<'_> {
 /// Advance of a tab at pen position `x`: up to the next stop after it (explicit stops first, then
 /// every ½ inch), and the leader of that stop (default stops have none). Right, centre and decimal
 /// stops align the text that follows (`rest`, up to the next tab) on the stop.
-fn tab_advance<'t>(tabs: &'t [vectorcraft_doc::TabStop], origin: f64, x: f64, rest: &[SGlyph]) -> (f64, &'t str) {
-    use vectorcraft_doc::TabAlign;
+fn tab_advance<'t>(tabs: &'t [redrob_vector_doc::TabStop], origin: f64, x: f64, rest: &[SGlyph]) -> (f64, &'t str) {
+    use redrob_vector_doc::TabAlign;
     let rel = x - origin;
     let seg: Vec<&SGlyph> = rest.iter().take_while(|g| g.ch != '\t').collect();
     let width: f64 = seg.iter().map(|g| g.adv).sum();
@@ -1133,7 +1133,7 @@ fn tab_advance<'t>(tabs: &'t [vectorcraft_doc::TabStop], origin: f64, x: f64, re
     let (at, leader) = explicit.unwrap_or_else(|| {
         let last = tabs.iter().map(|t| t.position).fold(0.0, f64::max).max(0.0);
         let base = rel.max(last);
-        (((base / vectorcraft_doc::text::DEFAULT_TAB_INTERVAL).floor() + 1.0) * vectorcraft_doc::text::DEFAULT_TAB_INTERVAL, "")
+        (((base / redrob_vector_doc::text::DEFAULT_TAB_INTERVAL).floor() + 1.0) * redrob_vector_doc::text::DEFAULT_TAB_INTERVAL, "")
     });
     ((at - rel).max(0.0), leader)
 }

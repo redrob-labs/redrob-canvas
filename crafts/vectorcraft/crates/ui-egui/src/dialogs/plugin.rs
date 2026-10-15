@@ -8,7 +8,7 @@
 //! at once.
 
 use serde_json::{Map, Value, json};
-use vectorcraft_plugins::{Kind, registry};
+use redrob_vector_plugins::{Kind, registry};
 
 use super::{DialogSpec, form};
 use crate::VectorcraftApp;
@@ -54,7 +54,7 @@ pub fn object_menu() -> Vec<Item> {
 /// Effect › Plug-ins: the live-effect plug-ins (`None` while none is installed). Effects without
 /// options apply at once, as built-in ones do.
 pub fn effect_menu() -> Option<Item> {
-    let items: Vec<Item> = vectorcraft_effects::plugin_effects()
+    let items: Vec<Item> = redrob_vector_effects::plugin_effects()
         .into_iter()
         .map(|e| match e.defaults.as_object().is_some_and(|o| o.is_empty()) {
             true => Item::Cmd(e.label, "effect.apply", json!({ "effect": e.id })),

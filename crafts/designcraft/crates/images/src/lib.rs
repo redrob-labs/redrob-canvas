@@ -57,11 +57,11 @@ fn svg_options() -> &'static usvg::Options<'static> {
     static OPTS: OnceLock<usvg::Options<'static>> = OnceLock::new();
     OPTS.get_or_init(|| {
         let mut db = usvg::fontdb::Database::new();
-        for f in designcraft_fonts::bundled() {
+        for f in redrob_layout_fonts::bundled() {
             db.load_font_data(f.to_vec());
         }
         // Japanese text in SVGs: the craft-fonts faces (none without CRAFT_FONTS_DIR).
-        for f in designcraft_fonts::japanese_document_fonts() {
+        for f in redrob_layout_fonts::japanese_document_fonts() {
             db.load_font_data(f.bytes.to_vec());
         }
         db.set_serif_family("Source Serif 4");
@@ -80,7 +80,7 @@ fn svg_options() -> &'static usvg::Options<'static> {
 fn select_font() -> usvg::FontSelectionFn<'static> {
     let bundled = usvg::FontResolver::default_font_selector();
     Box::new(move |font, db| {
-        let fonts = designcraft_fonts::FontDb::global();
+        let fonts = redrob_layout_fonts::FontDb::global();
         for family in font.families() {
             if let usvg::FontFamily::Named(name) = family
                 && !has_family(db, name)
@@ -126,7 +126,7 @@ fn select_fallback() -> usvg::FallbackSelectionFn<'static> {
     let loaded = usvg::FontResolver::default_fallback_selector();
     Box::new(move |c, exclude, db| {
         loaded(c, exclude, db).or_else(|| {
-            let id = add_face(db, designcraft_fonts::FontDb::global().fallback_for(c, 0, None)?)?;
+            let id = add_face(db, redrob_layout_fonts::FontDb::global().fallback_for(c, 0, None)?)?;
             // usvg asks again until we run out: a face it already tried ends the search.
             (!exclude.contains(&id)).then_some(id)
         })
@@ -134,7 +134,7 @@ fn select_fallback() -> usvg::FallbackSelectionFn<'static> {
 }
 
 /// A shared face's bytes, handed to usvg without a copy.
-struct FaceBytes(Arc<designcraft_fonts::FontFace>);
+struct FaceBytes(Arc<redrob_layout_fonts::FontFace>);
 
 impl AsRef<[u8]> for FaceBytes {
     fn as_ref(&self) -> &[u8] {
@@ -143,7 +143,7 @@ impl AsRef<[u8]> for FaceBytes {
 }
 
 /// Add `face` to the SVG's font database (once) and return its id there.
-fn add_face(db: &mut Arc<usvg::fontdb::Database>, face: Arc<designcraft_fonts::FontFace>) -> Option<usvg::fontdb::ID> {
+fn add_face(db: &mut Arc<usvg::fontdb::Database>, face: Arc<redrob_layout_fonts::FontFace>) -> Option<usvg::fontdb::ID> {
     let same = |f: &usvg::fontdb::FaceInfo| {
         f.index == face.index()
             && matches!(&f.source, usvg::fontdb::Source::Binary(b) if std::ptr::eq(b.as_ref().as_ref().as_ptr(), face.data().as_ptr()))
@@ -465,8 +465,8 @@ mod tests {
 
     #[test]
     fn svg_text_uses_the_shared_fonts() {
-        let font = designcraft_fonts::testing::font_with("DC Test SVG Hangul", &['한', '글']).unwrap();
-        designcraft_fonts::FontDb::global().add_font(font);
+        let font = redrob_layout_fonts::testing::font_with("DC Test SVG Hangul", &['한', '글']).unwrap();
+        redrob_layout_fonts::FontDb::global().add_font(font);
         let text = |attrs: &str, body: &str| {
             format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><text y="30" font-size="20"{attrs}>{body}</text></svg>"#)
         };
@@ -503,8 +503,8 @@ mod tests {
         assert_eq!(text_face(r#" font-family="'SourceSerif4-Semibold'""#), "SourceSerif4-Semibold");
         assert_eq!(text_face(r#" font-family="sourceserif4-semibold""#), "SourceSerif4-Semibold");
         // A shared font (as an installed one would be).
-        let font = designcraft_fonts::testing::font_with("DC Test SVG PostScript", &['a', 'b']).unwrap();
-        designcraft_fonts::FontDb::global().add_font(font);
+        let font = redrob_layout_fonts::testing::font_with("DC Test SVG PostScript", &['a', 'b']).unwrap();
+        redrob_layout_fonts::FontDb::global().add_font(font);
         assert_eq!(text_face(r#" font-family="DCTestSVGPostScript-Regular""#), "DCTestSVGPostScript-Regular");
         // The name picks that face: font-weight and font-style don't change it.
         assert_eq!(text_face(r#" font-family="SourceSerif4-Semibold" font-weight="bold" font-style="italic""#), "SourceSerif4-Semibold");

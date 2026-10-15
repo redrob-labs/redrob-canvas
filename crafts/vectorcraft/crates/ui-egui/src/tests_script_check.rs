@@ -3,7 +3,7 @@
 //! files.
 
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use crate::{VectorcraftApp, dialogs, io, menus, theme};
 
@@ -54,7 +54,7 @@ fn file_scripts_holds_check_script_above_other_script() {
 #[test]
 fn check_script_shows_the_report_and_copy_report_copies_it() {
     let mut app = app();
-    let p = json!({"dataBase64": vectorcraft_format::base64_encode(SCRIPT.as_bytes()), "name": "Tidy.jsx"});
+    let p = json!({"dataBase64": redrob_vector_format::base64_encode(SCRIPT.as_bytes()), "name": "Tidy.jsx"});
     let r = menus::run_ui_command(&mut app, "ui.checkScript", &p).unwrap().unwrap();
     assert_eq!(report(&app), &r);
     assert_eq!((r["name"].as_str(), r["kind"].as_str()), (Some("Tidy.jsx"), Some("script")));
@@ -184,7 +184,7 @@ fn check_script_asks_off_the_ui_thread_and_needs_no_document() {
 #[test]
 fn every_id_a_report_holds_has_a_label() {
     use dialogs::script_check::{need_label, outside_label, problem_label, status_label};
-    use vectorcraft_engine::cmd::scripts::{IncludeStatus, Need, OUTSIDE, PROBLEMS};
+    use redrob_vector_engine::cmd::scripts::{IncludeStatus, Need, OUTSIDE, PROBLEMS};
     for need in Need::ALL {
         assert!(need_label(need.id()).is_some(), "{need:?}");
     }

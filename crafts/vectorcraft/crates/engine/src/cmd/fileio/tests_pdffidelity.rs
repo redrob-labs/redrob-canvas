@@ -1,14 +1,14 @@
 //! `document.open` PDF options `textAs` and `layers`.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeKind;
-use vectorcraft_pdf::TextAs;
-use vectorcraft_testkit::pdf::{PdfPage, first_extra, pdf, pdf_with_catalog};
+use redrob_vector_doc::NodeKind;
+use redrob_vector_pdf::TextAs;
+use redrob_vector_testkit::pdf::{PdfPage, first_extra, pdf, pdf_with_catalog};
 
 use super::*;
 
 fn open(s: &mut Session, bytes: &[u8], extra: Value) -> crate::Result<Value> {
-    let mut p = json!({"name": "art.pdf", "dataBase64": vectorcraft_format::base64_encode(bytes)});
+    let mut p = json!({"name": "art.pdf", "dataBase64": redrob_vector_format::base64_encode(bytes)});
     if let (Some(o), Value::Object(e)) = (p.as_object_mut(), extra) {
         o.extend(e);
     }
@@ -82,7 +82,7 @@ fn exports_that_draw_type_in_a_missing_font_say_it_is_the_fallback_font() {
     assert!(r["warnings"].to_string().contains(&family), "opening lists it: {r}");
     let warned = |s: &mut Session, p: Value| {
         let w = s.execute("document.serialize", &p).unwrap()["warnings"].to_string();
-        w.contains(&family) && w.contains(vectorcraft_text::FALLBACK_FAMILY)
+        w.contains(&family) && w.contains(redrob_vector_text::FALLBACK_FAMILY)
     };
     for p in [
         json!({"format": "pdf"}),

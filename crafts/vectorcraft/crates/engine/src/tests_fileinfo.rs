@@ -2,7 +2,7 @@
 //! PNG and SVG metadata it writes.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{CopyrightStatus, DocMetadata};
+use redrob_vector_doc::{CopyrightStatus, DocMetadata};
 
 use super::*;
 
@@ -26,7 +26,7 @@ fn info() -> Value {
 }
 
 fn b64(v: &Value) -> Vec<u8> {
-    vectorcraft_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
+    redrob_vector_format::base64_decode(v["dataBase64"].as_str().unwrap()).unwrap()
 }
 
 #[test]
@@ -86,15 +86,15 @@ fn file_info_round_trips_and_old_files_load() {
     let mut s = session();
     s.execute("file.info", &info()).unwrap();
     let d = &s.doc().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save_file(d)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save_file(d)).unwrap();
     assert_eq!(back.metadata, d.metadata);
     assert_eq!(back.metadata.copyright_status, CopyrightStatus::Copyrighted);
     // A document saved before File Info existed has none.
-    let mut old = vectorcraft_doc::Document::new(10.0, 10.0);
+    let mut old = redrob_vector_doc::Document::new(10.0, 10.0);
     old.metadata = DocMetadata::default();
-    let bytes = vectorcraft_format::save_file(&old);
+    let bytes = redrob_vector_format::save_file(&old);
     assert!(!String::from_utf8_lossy(&bytes).contains("\"metadata\""), "default File Info isn't written");
-    assert_eq!(vectorcraft_format::load(&bytes).unwrap().metadata, DocMetadata::default());
+    assert_eq!(redrob_vector_format::load(&bytes).unwrap().metadata, DocMetadata::default());
 }
 
 #[test]
@@ -106,7 +106,7 @@ fn saving_to_a_file_stamps_the_modified_date() {
     let st = s.doc().unwrap();
     assert!(st.doc.metadata.modified.is_some() && st.doc.metadata.created == created);
     assert!(!st.is_dirty(), "the stamped document is the saved one");
-    let back = vectorcraft_format::load(&std::fs::read(&path).unwrap()).unwrap();
+    let back = redrob_vector_format::load(&std::fs::read(&path).unwrap()).unwrap();
     assert_eq!(back.metadata.modified, st.doc.metadata.modified);
     let _ = std::fs::remove_file(&path);
     assert!(s.execute("file.info", &json!({})).unwrap()["modified"].is_string());
@@ -116,7 +116,7 @@ fn saving_to_a_file_stamps_the_modified_date() {
 fn pdf_info_carries_author_subject_and_keywords() {
     let mut s = session();
     s.execute("file.info", &info()).unwrap();
-    let pdf = crate::export_pdf(&s.doc().unwrap().doc, &vectorcraft_pdf::PdfOptions::uncompressed()).unwrap();
+    let pdf = crate::export_pdf(&s.doc().unwrap().doc, &redrob_vector_pdf::PdfOptions::uncompressed()).unwrap();
     let text = String::from_utf8_lossy(&pdf);
     // (The description has a line break, so it is written as UTF-16.)
     for want in ["/Author(Ada Lovelace)", "/Keywords(fair, Poster, print)", "/Title(Poster)", "/Subject<FEFF0041"] {

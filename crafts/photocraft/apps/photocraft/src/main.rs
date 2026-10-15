@@ -13,7 +13,7 @@
 //!
 //! `--control <port>` (or `PHOTOCRAFT_CONTROL_PORT`) starts a localhost JSON-lines control server.
 //! The first line must authenticate; subsequent request lines get reply lines.
-//! `{"id":1,"ok":true,"result":…}`. See `photocraft_ui_egui::control` for the methods.
+//! `{"id":1,"ok":true,"result":…}`. See `redrob_photo_ui_egui::control` for the methods.
 
 // Release builds on Windows are GUI-subsystem apps, so launching from the Start Menu or Explorer
 // doesn't open a console window. (`--version` output then only shows when redirected.)
@@ -52,14 +52,14 @@ mod tablet;
 mod ui_state;
 mod window_frame;
 
-use photocraft_engine::Session;
-use photocraft_ui_egui::PhotocraftApp;
+use redrob_photo_engine::Session;
+use redrob_photo_ui_egui::PhotocraftApp;
 
 /// Matches the `.desktop` file and hicolor icon name, so Wayland docks pick up the icon.
 const APP_ID: &str = "ai.storyteller.photocraft";
 
 /// Windows and Linux: no OS title bar; the app's top bar is the title bar, with its own caption
-/// buttons and edge resizing (`photocraft_ui_egui::titlebar`), as Photoshop does on Windows. macOS
+/// buttons and edge resizing (`redrob_photo_ui_egui::titlebar`), as Photoshop does on Windows. macOS
 /// keeps its traffic lights over the integrated title strip.
 const CUSTOM_TITLEBAR: bool = !cfg!(target_os = "macos");
 
@@ -67,7 +67,7 @@ const CUSTOM_TITLEBAR: bool = !cfg!(target_os = "macos");
 /// Interface › System Title Bar asks for the system's (#1271, #1316). Read from the saved
 /// preferences before the window opens; a missing or unreadable file keeps the default.
 fn custom_titlebar(prefs_file: Option<&std::path::Path>) -> bool {
-    let prefs: photocraft_engine::prefs::Preferences =
+    let prefs: redrob_photo_engine::prefs::Preferences =
         prefs_file.and_then(|p| std::fs::read_to_string(p).ok()).and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default();
     CUSTOM_TITLEBAR && !prefs.interface.system_title_bar
 }
@@ -172,7 +172,7 @@ fn main() -> eframe::Result {
     let logger = logging::install();
     crash_guard::install_hook();
     // The system font scan can take seconds (minutes on some Macs): run it off the UI thread.
-    photocraft_ui_egui::type_tool::warm_fonts();
+    redrob_photo_ui_egui::type_tool::warm_fonts();
     let mut control_port: Option<u16> = None;
     let mut control_arg_errors: Vec<String> = Vec::new();
     if let Some(value) = std::env::var("PHOTOCRAFT_CONTROL_PORT").ok().filter(|v| !v.trim().is_empty()) {
@@ -213,7 +213,7 @@ fn main() -> eframe::Result {
             Some("--safe-gpu") => safe_gpu = true,
             Some("--in-window-menus") => in_window_menus = true,
             Some("--version") => {
-                println!("photocraft {}", photocraft_engine::build_info::long_version());
+                println!("photocraft {}", redrob_photo_engine::build_info::long_version());
                 return Ok(());
             }
             // Old macOS passes a process serial number when launched from Finder.
@@ -237,7 +237,7 @@ fn main() -> eframe::Result {
     // and usage errors leave no file behind. Records logged until now are written to it first.
     if let (Some(logger), Some(dir)) = (logger, services::config_dir()) {
         match logger.attach_dir(&dir.join("logs")) {
-            Ok(path) => log::info!("PhotoCraft {}, log file {}", photocraft_engine::build_info::long_version(), path.display()),
+            Ok(path) => log::info!("PhotoCraft {}, log file {}", redrob_photo_engine::build_info::long_version(), path.display()),
             // Standard error only by now (`attach_dir` gave up on the file); unlike `eprintln!`, never panics.
             Err(e) => log::warn!("no log file: {e}"),
         }
@@ -254,7 +254,7 @@ fn main() -> eframe::Result {
     // run the window ($DISPLAY set, X11 libraries installed); otherwise the session's own.
     #[cfg(target_os = "linux")]
     let session = if session == linux_libs::DisplaySession::Wayland
-        && gpu_startup::read_display_server(services::prefs_file().as_deref()) == photocraft_engine::prefs::LinuxDisplayServer::X11
+        && gpu_startup::read_display_server(services::prefs_file().as_deref()) == redrob_photo_engine::prefs::LinuxDisplayServer::X11
         && std::env::var_os("DISPLAY").is_some_and(|d| !d.is_empty())
         && linux_libs::available(linux_libs::DisplaySession::X11)
     {
@@ -273,8 +273,8 @@ fn main() -> eframe::Result {
     }
 
     let control = if let Some(port) = control_port {
-        let (supplied, token_file) = photocraft_automation::security::token_inputs(control_token, control_token_file);
-        let token = match photocraft_automation::security::server_token(supplied.as_deref(), token_file.as_deref()) {
+        let (supplied, token_file) = redrob_photo_automation::security::token_inputs(control_token, control_token_file);
+        let token = match redrob_photo_automation::security::server_token(supplied.as_deref(), token_file.as_deref()) {
             Ok(token) => token,
             Err(e) => {
                 eprintln!("photocraft: cannot configure control authentication: {e}");
@@ -288,7 +288,7 @@ fn main() -> eframe::Result {
         } else {
             eprintln!("photocraft: using supplied control token");
         }
-        let workspace = match photocraft_automation::AuthorizedWorkspace::new(automation_read_root.as_deref(), automation_write_root.as_deref()) {
+        let workspace = match redrob_photo_automation::AuthorizedWorkspace::new(automation_read_root.as_deref(), automation_write_root.as_deref()) {
             Ok(workspace) => workspace,
             Err(error) => {
                 eprintln!("photocraft: cannot configure automation workspace: {error}");
@@ -320,7 +320,7 @@ fn main() -> eframe::Result {
     #[cfg(not(target_os = "linux"))]
     let monitor = monitor_profile::detect_async();
     // Brush presets load in the background; the app attaches them when they arrive.
-    let presets = services::presets_dir().map(photocraft_engine::preset_store::open_dir_async);
+    let presets = services::presets_dir().map(redrob_photo_engine::preset_store::open_dir_async);
     let custom_titlebar = custom_titlebar(services::prefs_file().as_deref());
     let mut options = native_options(custom_titlebar);
     // winit picks Wayland whenever `WAYLAND_DISPLAY` is set; open on X11 when that was chosen.
@@ -356,7 +356,7 @@ fn main() -> eframe::Result {
             Some(v) => format!("env:{v}"),
             None => plan.backend.name().to_string(),
         };
-        let marker = gpu_startup::Marker { backend, version: photocraft_engine::build_info::long_version().to_string(), ..Default::default() };
+        let marker = gpu_startup::Marker { backend, version: redrob_photo_engine::build_info::long_version().to_string(), ..Default::default() };
         if let Err(e) = s.write(marker) {
             log::warn!("GPU startup marker: {e}");
         }
@@ -366,7 +366,7 @@ fn main() -> eframe::Result {
     gpu_startup::configure(&mut options.wgpu_options.wgpu_setup, &plan, os, sentinel.clone(), gpu_note.clone());
     let sentinel_ms = t_sentinel.elapsed().as_secs_f64() * 1000.0;
     log::info!("GPU startup: {:?} ({sentinel_ms:.2} ms)", plan);
-    let retry_cpu = !safe_gpu && plan.backend != photocraft_engine::prefs::GpuBackend::Cpu;
+    let retry_cpu = !safe_gpu && plan.backend != redrob_photo_engine::prefs::GpuBackend::Cpu;
     let keep_marker = gpu_startup::keep_marker_after_error(&plan, os);
     let app_created = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let created_in_callback = app_created.clone();
@@ -412,10 +412,10 @@ fn main() -> eframe::Result {
                     app.services.read_displays = Some(std::sync::Arc::new(monitor_profile::detect_async));
                 }
                 match rx.recv_timeout(std::time::Duration::from_secs(2)) {
-                    Ok(r) => photocraft_ui_egui::monitor_status::apply(&mut app, r),
-                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => photocraft_ui_egui::monitor_status::pending(&mut app, rx),
+                    Ok(r) => redrob_photo_ui_egui::monitor_status::apply(&mut app, r),
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => redrob_photo_ui_egui::monitor_status::pending(&mut app, rx),
                     Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
-                        photocraft_ui_egui::monitor_status::apply(&mut app, Err("the display profile reader stopped without an answer".into()));
+                        redrob_photo_ui_egui::monitor_status::apply(&mut app, Err("the display profile reader stopped without an answer".into()));
                     }
                 }
             }
@@ -432,27 +432,27 @@ fn main() -> eframe::Result {
             if let Some(rs) = cc.wgpu_render_state.clone() {
                 app.perf.gpu_info.set_adapter(&rs.adapter.get_info());
                 let software_window = rs.adapter.get_info().device_type == eframe::wgpu::DeviceType::Cpu;
-                if software_window && mode != photocraft_engine::prefs::RenderingMode::Cpu {
+                if software_window && mode != redrob_photo_engine::prefs::RenderingMode::Cpu {
                     app.perf.gpu_info.fallback = Some("No compatible hardware graphics adapter; using software graphics.".into());
                 }
                 if !software_window
-                    && plan.backend != photocraft_engine::prefs::GpuBackend::Cpu
+                    && plan.backend != redrob_photo_engine::prefs::GpuBackend::Cpu
                     && std::env::var_os("PHOTOCRAFT_CPU_CANVAS").is_none()
-                    && app.session.prefs().performance.effective_rendering_mode() != photocraft_engine::prefs::RenderingMode::Cpu
+                    && app.session.prefs().performance.effective_rendering_mode() != redrob_photo_engine::prefs::RenderingMode::Cpu
                 {
                     app.set_wgpu(rs);
                 } else {
                     // The window still draws with wgpu: record its errors instead of panicking.
-                    let _ = photocraft_ui_egui::gpu_canvas::DeviceHealth::watch(&rs.device);
+                    let _ = redrob_photo_ui_egui::gpu_canvas::DeviceHealth::watch(&rs.device);
                 }
             }
             let fallback_reason = std::env::var("PHOTOCRAFT_GPU_STARTUP_FAILURE").ok().or_else(|| {
-                (app.perf.gpu_info.canvas == "cpu" && mode != photocraft_engine::prefs::RenderingMode::Cpu)
+                (app.perf.gpu_info.canvas == "cpu" && mode != redrob_photo_engine::prefs::RenderingMode::Cpu)
                     .then(|| app.perf.gpu_info.fallback.clone())
                     .flatten()
             });
             if let Some(reason) = fallback_reason {
-                photocraft_ui_egui::gpu_status::queue_fallback_notice(&mut app, &reason);
+                redrob_photo_ui_egui::gpu_status::queue_fallback_notice(&mut app, &reason);
             }
             app.perf.span("gpuSentinel", sentinel_ms);
             // CPU rendering after a failed GPU start is temporary. Only the
@@ -510,14 +510,14 @@ fn main() -> eframe::Result {
             // Paths on the command line (Linux/Windows file associations, `photocraft a.psd`).
             app.open_paths(&files);
             if !unreadable_paths.is_empty() {
-                use photocraft_ui_egui::i18n;
+                use redrob_photo_ui_egui::i18n;
                 let line = i18n::t("{path}: the path is not valid Unicode; rename the file and open it again.");
                 let lines = unreadable_paths.iter().map(|p| i18n::fmt(line, &[("path", p.as_str())])).collect();
-                photocraft_ui_egui::notices::post(&mut app, i18n::t("Could not open"), lines, true, None);
+                redrob_photo_ui_egui::notices::post(&mut app, i18n::t("Could not open"), lines, true, None);
             }
             // Portable marker found but its data folder isn't writable (#228): say where settings went.
             if let Some(w) = &app_dirs::current().warning {
-                photocraft_ui_egui::notices::post(&mut app, "Portable mode is off", vec![w.clone()], false, None);
+                redrob_photo_ui_egui::notices::post(&mut app, "Portable mode is off", vec![w.clone()], false, None);
             }
             Ok(Box::new(app))
         }),

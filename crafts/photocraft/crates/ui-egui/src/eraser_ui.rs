@@ -68,7 +68,7 @@ pub fn block_mode(app: &PhotocraftApp, tool: Tool) -> bool {
 
 /// The Block's edge in document pixels at the current zoom (what the engine erases).
 pub fn block_size(app: &PhotocraftApp) -> f32 {
-    photocraft_engine::brush_cmds::block_size(f64::from(app.point_zoom()))
+    redrob_photo_engine::brush_cmds::block_size(f64::from(app.point_zoom()))
 }
 
 /// The Eraser's Mode dropdown (Brush / Pencil / Block). Returns whether it changed.

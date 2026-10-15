@@ -4,7 +4,7 @@
 
 use egui::{Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
-use photocraft_geom::Rect;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -12,7 +12,7 @@ use crate::canvas::ViewXform;
 use crate::state::Tool;
 
 fn harness() -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     app.sync_views();
     app.ui.extras.rulers = false;
@@ -245,7 +245,7 @@ fn a_new_polygon_without_a_selection_adds_one_step() {
 #[test]
 fn lasso_tools_apply_the_options_bar_feather() {
     use crate::canvas::{ToolEvent, tool_event};
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
     app.sync_views();
     app.ui.tool_options.feather = 4.0;
@@ -275,7 +275,7 @@ fn lasso_tools_apply_the_options_bar_feather() {
 }
 
 fn polygon_app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300, "background": "transparent"})).unwrap();
     app.sync_views();
     app.ui.extras.snap = false;
@@ -309,7 +309,7 @@ fn cmd_drag_inside_the_selection_floats_it_with_the_polygonal_lasso() {
     ev(&mut app, "down", 20.0, 20.0, Modifiers::COMMAND);
     ev(&mut app, "move", 40.0, 20.0, Modifiers::COMMAND);
     ev(&mut app, "up", 40.0, 20.0, Modifiers::COMMAND);
-    let f = photocraft_engine::float_cmds::floating(app.session.active().unwrap()).map(|f| f.offset);
+    let f = redrob_photo_engine::float_cmds::floating(app.session.active().unwrap()).map(|f| f.offset);
     assert_eq!(f, Some((20, 0)));
     assert!(app.ui.polygon.is_empty(), "no polygon point was placed");
     app.run("select.drop", json!({})).unwrap();

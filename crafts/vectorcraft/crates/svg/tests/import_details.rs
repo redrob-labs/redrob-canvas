@@ -6,10 +6,10 @@
 
 use std::path::{Path, PathBuf};
 
-use vectorcraft_doc::{Document, ImageObject, LinkInfo, Node, NodeKind};
-use vectorcraft_geom::Rect;
-use vectorcraft_svg::{ImportOptions, import_with, import_with_report};
-use vectorcraft_testkit::raster::{Image, assert_similar, render_artboard};
+use redrob_vector_doc::{Document, ImageObject, LinkInfo, Node, NodeKind};
+use redrob_vector_geom::Rect;
+use redrob_vector_svg::{ImportOptions, import_with, import_with_report};
+use redrob_vector_testkit::raster::{Image, assert_similar, render_artboard};
 
 fn svg(body: &str) -> String {
     format!(r#"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="120">{body}</svg>"#)
@@ -64,7 +64,7 @@ fn folder(name: &str) -> PathBuf {
 /// Reads files as the app does (the link knows the size and hash).
 fn read(path: &str) -> Option<(Vec<u8>, LinkInfo)> {
     let bytes = std::fs::read(path).ok()?;
-    let link = LinkInfo { size: Some(bytes.len() as u64), hash: Some(vectorcraft_doc::links::hash_bytes(&bytes)), ..LinkInfo::new(path) };
+    let link = LinkInfo { size: Some(bytes.len() as u64), hash: Some(redrob_vector_doc::links::hash_bytes(&bytes)), ..LinkInfo::new(path) };
     Some((bytes, link))
 }
 
@@ -83,7 +83,7 @@ fn a_linked_png_resolves_against_the_svg_folder_and_stays_linked() {
     let [(_, im)] = images(&d)[..] else { panic!("{:?}", art(&d)) };
     let link = im.link.as_ref().unwrap();
     assert_eq!(Path::new(&link.path), dir.join("img").join("photo one.png"));
-    assert_eq!(link.hash, Some(vectorcraft_doc::links::hash_bytes(&bytes)));
+    assert_eq!(link.hash, Some(redrob_vector_doc::links::hash_bytes(&bytes)));
     assert_eq!((im.width, im.height), (40, 20));
     assert_eq!(*d.images[&im.key].bytes, bytes, "the file's pixels");
     let b = im.xf.transform_rect_bbox(Rect::new(0.0, 0.0, 40.0, 20.0));
@@ -113,7 +113,7 @@ fn svg_images_import_as_vector_art() {
     let inner =
         r##"<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10" viewBox="0 0 20 10"><rect width="10" height="10" fill="#f00"/></svg>"##;
     std::fs::write(dir.join("img").join("logo.svg"), inner).unwrap();
-    let data = format!("data:image/svg+xml;base64,{}", vectorcraft_svg::base64_encode(inner.as_bytes()));
+    let data = format!("data:image/svg+xml;base64,{}", redrob_vector_svg::base64_encode(inner.as_bytes()));
     let body =
         format!(r#"<image href="img/logo.svg" x="10" y="10" width="40" height="20"/><image href="{data}" x="100" y="10" width="40" height="20"/>"#);
     let (d, w) = open_in(&dir, &body);

@@ -32,9 +32,9 @@ pub mod raster;
 pub mod strategies;
 
 pub use serde_json::{Value, json};
-pub use vectorcraft_engine::{Session, doc::NodeId};
+pub use redrob_vector_engine::{Session, doc::NodeId};
 /// Re-exports so dependents without direct dependencies (e.g. app test crates) can use them.
-pub use {vectorcraft_doc as doc, vectorcraft_format as format, vectorcraft_render as render, vectorcraft_svg as svg};
+pub use {redrob_vector_doc as doc, redrob_vector_format as format, redrob_vector_render as render, redrob_vector_svg as svg};
 
 /// A per-process temporary directory for test output (created on first use).
 pub fn temp_dir(tag: &str) -> std::path::PathBuf {

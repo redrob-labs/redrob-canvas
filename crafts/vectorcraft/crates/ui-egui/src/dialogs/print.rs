@@ -19,9 +19,9 @@
 use std::sync::{Arc, LazyLock};
 
 use serde_json::{Value, json};
-use vectorcraft_color::cms::Intent;
-use vectorcraft_geom::Rect as DRect;
-use vectorcraft_pdf::{
+use redrob_vector_color::cms::Intent;
+use redrob_vector_geom::Rect as DRect;
+use redrob_vector_pdf::{
     Choice, Emulsion, FontDownload, Media, Orientation, Origin, OutputMode, PrintArtboards, PrintImage, PrintLayers, PrintOverprints, PrintScaling,
     PrintSettings,
 };
@@ -31,7 +31,7 @@ use super::{DialogSpec, form};
 use crate::state::Dialog;
 use crate::theme::{self, Tokens};
 use crate::{VectorcraftApp, widgets};
-use vectorcraft_engine::cmd::printpresets::DEFAULT_PRESET;
+use redrob_vector_engine::cmd::printpresets::DEFAULT_PRESET;
 
 pub(super) const KIND: &str = "print";
 
@@ -546,7 +546,7 @@ fn art_texture(app: &mut VectorcraftApp, ctx: &egui::Context, layers: PrintLayer
         return Some(tex);
     }
     let mut doc = (*st.doc).clone();
-    vectorcraft_pdf::keep_layers(&mut doc.layers, layers);
+    redrob_vector_pdf::keep_layers(&mut doc.layers, layers);
     let tex = widgets::region_texture(ctx, &mut app.canvas.renderer, "print-preview-art", &doc, area, px);
     ctx.data_mut(|m| m.insert_temp(key, (stamp, tex.clone())));
     Some(tex)
@@ -567,7 +567,7 @@ fn whole(ui: &mut egui::Ui, d: &mut Dialog, path: &str, range: std::ops::RangeIn
 fn general(app: &VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) {
     let unit = app.session.general_unit();
     row(ui, tl!("Copies:"), |ui| {
-        whole(ui, d, "copies", 1.0..=f64::from(vectorcraft_pdf::MAX_COPIES), true);
+        whole(ui, d, "copies", 1.0..=f64::from(redrob_vector_pdf::MAX_COPIES), true);
         ui.add_space(12.0);
         let copies = get(d, "copies").as_u64().unwrap_or(1);
         flag(ui, d, "collate", tl!("Collate"), copies > 1);
@@ -734,7 +734,7 @@ fn graphics(ui: &mut egui::Ui, d: &mut Dialog) {
 }
 
 fn color(ui: &mut egui::Ui, d: &mut Dialog) {
-    let profiles = vectorcraft_color::cms::profiles();
+    let profiles = redrob_vector_color::cms::profiles();
     let names: Vec<&str> = std::iter::once(SAME_AS_SOURCE).chain(profiles.iter().map(|p| p.name.as_str())).collect();
     row(ui, tl!("Printer profile:"), |ui| super::save_pdf::profile_pick(ui, d, "color.profile", &names, 1, true));
     note(ui, tl!("Composite colours are converted to it; separations separate with it when it is a CMYK profile."));
@@ -815,7 +815,7 @@ pub(super) fn labelled(changed: &mut [Value]) {
             "printLayers" => label::<PrintLayers>(id),
             "placement.origin" => label::<Origin>(id),
             "scaling" => label::<PrintScaling>(id),
-            "marks.kind" => label::<vectorcraft_pdf::MarkKind>(id),
+            "marks.kind" => label::<redrob_vector_pdf::MarkKind>(id),
             "output.mode" => label::<OutputMode>(id),
             "output.emulsion" => label::<Emulsion>(id),
             "output.image" => label::<PrintImage>(id),
@@ -853,7 +853,7 @@ fn summary(ui: &mut egui::Ui, d: &mut Dialog, pv: &Result<Value, String>, has_do
     }
     heading(ui, tl!("Options"));
     let mut changed = vec![];
-    vectorcraft_engine::cmd::fileio::pdf::changed("", &settings(d), &DEFAULTS, &mut changed);
+    redrob_vector_engine::cmd::fileio::pdf::changed("", &settings(d), &DEFAULTS, &mut changed);
     changed.sort_by_key(|c| section_of(c["option"].as_str().unwrap_or_default()).0);
     labelled(&mut changed);
     if changed.is_empty() {

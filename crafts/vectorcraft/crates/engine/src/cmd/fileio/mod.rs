@@ -75,7 +75,7 @@ pub use svg::options_map as svg_options;
 /// Atomic file writes (a temporary file renamed over the target: a failed write never damages the
 /// file it replaces), for the apps' own writers too.
 #[cfg(not(target_arch = "wasm32"))]
-pub use vectorcraft_format::write_atomic;
+pub use redrob_vector_format::write_atomic;
 
 use super::*;
 use crate::EngineError;
@@ -466,7 +466,7 @@ pub const FORMATS: &[Format] = &[
     Format {
         id: "vectorcraft",
         label: "Redrob Canvas",
-        extensions: &[vectorcraft_format::EXTENSION, vectorcraft_format::LEGACY_EXTENSION],
+        extensions: &[redrob_vector_format::EXTENSION, redrob_vector_format::LEGACY_EXTENSION],
         mime: "application/json",
         read: true,
         write: true,
@@ -793,7 +793,7 @@ pub(crate) fn write_file(path: &str, bytes: &[u8]) -> Result<()> {
 #[cfg(not(target_arch = "wasm32"))]
 pub fn write_file_with(path: &str, fill: &mut dyn FnMut(&mut dyn std::io::Write) -> std::io::Result<()>) -> Result<()> {
     may_write(path)?;
-    vectorcraft_format::write_atomic_with(std::path::Path::new(path), |f| fill(f)).map_err(|e| EngineError::Other(format!("{path}: {e}")))
+    redrob_vector_format::write_atomic_with(std::path::Path::new(path), |f| fill(f)).map_err(|e| EngineError::Other(format!("{path}: {e}")))
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -810,7 +810,7 @@ pub(crate) fn write_new_file(path: &str, bytes: &[u8]) -> Result<()> {
     may_write(path)?;
     let err = |e: std::io::Error| EngineError::Other(format!("{path}: {e}"));
     let mut f = std::fs::OpenOptions::new().write(true).create_new(true).open(path).map_err(err)?;
-    let written = f.write_all(bytes).and_then(|()| vectorcraft_format::sync_file(&f));
+    let written = f.write_all(bytes).and_then(|()| redrob_vector_format::sync_file(&f));
     drop(f);
     written.map_err(|e| {
         // Best effort: the partly written file is all there is to clean up.
@@ -988,7 +988,7 @@ pub(crate) fn write_new_file(path: &str, _: &[u8]) -> Result<()> {
 /// File-name parts for artboards `boards` of `doc`: the artboard's name with unsafe characters as
 /// `-`, `Artboard-N` when unnamed, and `-2`, `-3`… after a name already used (compared without
 /// case: `Icon` and `icon` are one file on most desktop file systems).
-pub fn artboard_file_names(doc: &vectorcraft_doc::Document, boards: &[usize]) -> Vec<String> {
+pub fn artboard_file_names(doc: &redrob_vector_doc::Document, boards: &[usize]) -> Vec<String> {
     unique_file_names(boards.iter().map(|&b| (doc.artboards.get(b).map_or("", |a| a.name.as_str()), format!("Artboard-{}", b + 1))))
 }
 
@@ -1019,12 +1019,12 @@ pub(crate) fn unique_file_names<'a>(names: impl IntoIterator<Item = (&'a str, St
 /// Write an export's files for the destination `path` → `{path, bytes, files?, linked?, …extra}`
 /// (`files`: every file when there are several; `linked`: the images it links to); with no path
 /// → the same with `dataBase64` and `{name, dataBase64}` rows, named after `name`.
-fn write_encoded(path: Option<&str>, name: &str, doc: &vectorcraft_doc::Document, enc: &Encoded, extra: Value) -> Result<Value> {
+fn write_encoded(path: Option<&str>, name: &str, doc: &redrob_vector_doc::Document, enc: &Encoded, extra: Value) -> Result<Value> {
     let files = enc.named(doc, path.unwrap_or(name));
     let (main, linked) = files.split_at(enc.files.len());
     let row = |(name, bytes): &(String, std::borrow::Cow<[u8]>)| match path {
         Some(_) => json!(name),
-        None => json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(bytes) }),
+        None => json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) }),
     };
     if path.is_some() {
         for (p, bytes) in &files {
@@ -1034,7 +1034,7 @@ fn write_encoded(path: Option<&str>, name: &str, doc: &vectorcraft_doc::Document
     let Some((first, bytes)) = main.first() else { return Err(EngineError::Other("the export wrote no file".into())) };
     let mut out = match path {
         Some(_) => json!({ "path": first, "bytes": bytes.len() }),
-        None => json!({ "dataBase64": vectorcraft_format::base64_encode(bytes), "bytes": bytes.len() }),
+        None => json!({ "dataBase64": redrob_vector_format::base64_encode(bytes), "bytes": bytes.len() }),
     };
     if main.len() > 1 {
         out["files"] = main.iter().map(row).collect();
@@ -1060,7 +1060,7 @@ pub(crate) fn with_black_output(s: &Session, p: &Value) -> Value {
 }
 
 /// A file name for bytes handed back without a path: the document's title with `ext`.
-pub(crate) fn default_name(doc: &vectorcraft_doc::Document, ext: &str) -> String {
+pub(crate) fn default_name(doc: &redrob_vector_doc::Document, ext: &str) -> String {
     let stem = std::path::Path::new(&doc.title).file_stem().map(|s| s.to_string_lossy().into_owned()).filter(|s| !s.is_empty());
     format!("{}.{ext}", stem.as_deref().unwrap_or("Untitled"))
 }
@@ -1072,7 +1072,7 @@ pub(crate) fn write_or_return(path: Option<&str>, bytes: &[u8], extra: Value) ->
             write_file(path, bytes)?;
             json!({ "path": path, "bytes": bytes.len() })
         }
-        None => json!({ "dataBase64": vectorcraft_format::base64_encode(bytes), "bytes": bytes.len() }),
+        None => json!({ "dataBase64": redrob_vector_format::base64_encode(bytes), "bytes": bytes.len() }),
     };
     Ok(merge(out, extra))
 }

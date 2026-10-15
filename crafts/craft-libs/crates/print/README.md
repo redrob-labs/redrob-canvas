@@ -1,11 +1,11 @@
-# craft-print
+# redrob-craft-print
 
 Submit a print-ready PDF to the system spooler. Used by PdfCraft and DesignCraft;
 there are no dependencies on either app or on a UI framework. Requires Rust 1.95.
 
 ```rust,no_run
-let job = craft_print::Job { title: "Report".into(), ..Default::default() };
-let receipt = craft_print::submit(&pdf_bytes, &job)?;
+let job = redrob_craft_print::Job { title: "Report".into(), ..Default::default() };
+let receipt = redrob_craft_print::submit(&pdf_bytes, &job)?;
 ```
 
 The caller generates the PDF, checks document permissions, and handles page selection,
@@ -86,7 +86,7 @@ refused; select supported options or flatten grayscale into the print-ready page
 Without an explicit duplex request, the queue default applies. Normal color output retains
 the driver's color policy. Single-page or single-copy jobs have no collating order to check.
 
-`cargo test -p craft-print` tests CUPS transport (including pipe-sized jobs and refusal),
+`cargo test -p redrob-craft-print` tests CUPS transport (including pipe-sized jobs and refusal),
 printer parsing, PPD options and argument mapping, and on every platform the Windows pieces that
 need no printer: the PrintTicket, the checks on the driver's validated ticket and capabilities,
 paper matching, job file names, and the PDF sheet reader and its update (classic and compressed
@@ -119,7 +119,7 @@ running `cargo deny` need a licence exception for `webpki-root-certs` (CDLA-Perm
 list data reqwest brings) and an advisory ignore for RUSTSEC-2024-0370 (`proc-macro-error`
 unmaintained, a compile-time proc macro of winprint's `fmt-derive`).
 
-`craft_print::rgb` exposes the safe `craft-winprint-gdi` API for native driver settings,
+`redrob_craft_print::rgb` exposes the safe `craft-winprint-gdi` API for native driver settings,
 printable geometry, RGB pages and caller-composed vector strokes. Applications retain ICC
 conversion, document layout, labels and print-mark composition. The shared transport validates
 single-copy DEVMODE settings before emitting manual copies and checks GDI errors. Color policy

@@ -6,7 +6,7 @@
 //! tracked by id, not tab index, so closing one elsewhere while the prompt is up can't retarget it.
 
 use egui::Key;
-use photocraft_doc::DocId;
+use redrob_photo_doc::DocId;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -392,7 +392,7 @@ mod tests {
     use super::*;
 
     fn app_with_docs(n: usize) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         for _ in 0..n {
             app.run("file.new", json!({"width": 8, "height": 8})).unwrap();
         }
@@ -411,12 +411,12 @@ mod tests {
 
     #[test]
     fn a_save_document_script_that_edits_the_document_keeps_the_prompt_up() {
-        use photocraft_engine::automate_cmds::ScriptBinding;
+        use redrob_photo_engine::automate_cmds::ScriptBinding;
         let mut app = app_with_docs(1);
         let ctx = egui::Context::default();
         make_dirty(&mut app, 0);
         app.session.active_mut().unwrap().path = Some("/pics/kept.psd".into());
-        app.services.export = Some(Box::new(|_: &photocraft_doc::Document, _: &str, _: &crate::ExportSettings| Ok((b"out".to_vec(), Vec::new()))));
+        app.services.export = Some(Box::new(|_: &redrob_photo_doc::Document, _: &str, _: &crate::ExportSettings| Ok((b"out".to_vec(), Vec::new()))));
         app.services.write = Some(Box::new(|_: &str, _: &[u8]| Ok(())));
         app.session.edit_prefs(|prefs| {
             prefs.script_events.enabled = true;
@@ -757,7 +757,7 @@ mod tests {
         let held = waiting.clone();
         let mut app = app_with_docs(1);
         make_dirty(&mut app, 0);
-        app.services.export = Some(Box::new(|_: &photocraft_doc::Document, _: &str, _: &crate::ExportSettings| Ok((b"out".to_vec(), Vec::new()))));
+        app.services.export = Some(Box::new(|_: &redrob_photo_doc::Document, _: &str, _: &crate::ExportSettings| Ok((b"out".to_vec(), Vec::new()))));
         app.services.write = Some(Box::new(move |p: &str, _: &[u8]| {
             w.borrow_mut().push(p.to_string());
             Ok(())

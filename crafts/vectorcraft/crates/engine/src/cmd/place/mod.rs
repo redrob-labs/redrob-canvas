@@ -32,10 +32,10 @@ mod text;
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
-use vectorcraft_doc::{Appearance, Document, ImageObject, LinkInfo, Node, NodeId, NodeKind, Scaling};
-use vectorcraft_geom::{Affine, Point, Rect, shapes};
-use vectorcraft_pdf::CropTo;
+use redrob_vector_color::Paint;
+use redrob_vector_doc::{Appearance, Document, ImageObject, LinkInfo, Node, NodeId, NodeKind, Scaling};
+use redrob_vector_geom::{Affine, Point, Rect, shapes};
+use redrob_vector_pdf::CropTo;
 
 use super::fileio::{self, Format, RasterImage};
 use super::*;
@@ -137,7 +137,7 @@ fn load(p: &Value, cmd: &str, board: Option<Rect>) -> Result<Loaded> {
     let src = fileio::source(p, cmd)?;
     let name = fileio::file_name(src.name);
     // An Affinity file is recognised by its signature, whatever its name says.
-    if fileio::TEXT_EXTS.contains(&fileio::extension(src.name).as_str()) && !vectorcraft_affinity::is_affinity(&src.bytes) {
+    if fileio::TEXT_EXTS.contains(&fileio::extension(src.name).as_str()) && !redrob_vector_affinity::is_affinity(&src.bytes) {
         let text = text::import(&src.bytes, text::TextOptions::parse(p, cmd)?, cmd)?;
         if text.trim().is_empty() {
             return Err(bad(cmd, format!("`{name}` has no text to place")));
@@ -157,7 +157,7 @@ fn load(p: &Value, cmd: &str, board: Option<Rect>) -> Result<Loaded> {
         opts.dxf.fit_to = (b.width(), b.height());
     }
     // PostScript .ai files are read like EPS.
-    let pdf = matches!(format.id, "pdf" | "ai" | "ait") && !vectorcraft_pdf::is_postscript(&src.bytes);
+    let pdf = matches!(format.id, "pdf" | "ai" | "ait") && !redrob_vector_pdf::is_postscript(&src.bytes);
     if !pdf && !matches!(opts.crop, CropTo::Crop | CropTo::Bounding) {
         return Err(bad(
             cmd,
@@ -232,7 +232,7 @@ fn load(p: &Value, cmd: &str, board: Option<Rect>) -> Result<Loaded> {
         let pages = if pdf { layers.get(index..=index).unwrap_or_default() } else { &layers[..] };
         (on_artboard(pages, board), crop.then_some(board))
     };
-    let natural = clip.or_else(|| nodes.iter().fold(None, |acc, n| vectorcraft_geom::union_opt(acc, n.visual_bounds())));
+    let natural = clip.or_else(|| nodes.iter().fold(None, |acc, n| redrob_vector_geom::union_opt(acc, n.visual_bounds())));
     let natural = natural.filter(|r| r.width() > 0.0 || r.height() > 0.0).ok_or_else(|| bad(cmd, format!("`{name}` has no art to place")))?;
     Ok(Loaded { name, format, art: Art::Vector { src: Box::new(doc), nodes, clip }, natural, warnings, link: None, board })
 }
@@ -305,8 +305,8 @@ fn build(d: &mut Document, l: Loaded, link: Option<LinkInfo>) -> Node {
 
 /// `node` moved and scaled by `m` as a whole: strokes, effects and pattern tiles go along.
 pub(crate) fn transformed(mut node: Node, m: Affine) -> Node {
-    node.transform(m, Scaling { strokes: true, effects: Some(vectorcraft_render::effects::scale_effect), ..Default::default() });
-    adopt::each_mut(&mut node, &mut |n| vectorcraft_doc::pattern::transform_pattern_paints(n, m));
+    node.transform(m, Scaling { strokes: true, effects: Some(redrob_vector_render::effects::scale_effect), ..Default::default() });
+    adopt::each_mut(&mut node, &mut |n| redrob_vector_doc::pattern::transform_pattern_paints(n, m));
     node
 }
 
@@ -539,8 +539,8 @@ fn thumbnail_png(l: Loaded, px: f64) -> Result<String> {
     let node = build(&mut d, l, None);
     d.insert(layer, 0, node)?;
     let k = px.clamp(1.0, MAX_THUMBNAIL) / natural.width().max(natural.height()).max(1e-9);
-    let png = vectorcraft_render::Renderer::new().render_region(&d, natural, k, false).to_png().map_err(EngineError::Other)?;
-    Ok(vectorcraft_format::base64_encode(&png))
+    let png = redrob_vector_render::Renderer::new().render_region(&d, natural, k, false).to_png().map_err(EngineError::Other)?;
+    Ok(redrob_vector_format::base64_encode(&png))
 }
 
 fn info(_: &mut Session, p: &Value) -> Result<Value> {

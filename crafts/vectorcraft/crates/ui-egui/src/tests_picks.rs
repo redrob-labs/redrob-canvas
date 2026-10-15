@@ -9,7 +9,7 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui::{Pos2, Rect, vec2};
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
+use redrob_vector_engine::Session;
 
 use crate::panels::graphic_styles::GraphicStyleLibraries;
 use crate::panels::library_panel::library_menu;
@@ -148,7 +148,7 @@ fn saved_document(app: &mut VectorcraftApp, tag: &str) -> (std::path::PathBuf, S
     let dir = std::env::temp_dir().join(format!("vc-picks-{tag}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("Poster.vectorcraft");
-    std::fs::write(&file, vectorcraft_format::base64_decode(&b64).unwrap()).unwrap();
+    std::fs::write(&file, redrob_vector_format::base64_decode(&b64).unwrap()).unwrap();
     (dir, file.to_string_lossy().into_owned())
 }
 
@@ -237,7 +237,7 @@ fn other_swatch_library_asks_off_the_ui_thread() {
     poll(&mut app);
     let open = app.ui.library_panel.clone().unwrap_or_else(|| panic!("no library open: {}", app.ui.status));
     assert_eq!(open.kind, "swatches");
-    let (_, lib) = vectorcraft_engine::cmd::swatchlib::library(&app.session, &open.id).unwrap();
+    let (_, lib) = redrob_vector_engine::cmd::swatchlib::library(&app.session, &open.id).unwrap();
     assert!(lib.swatch("Signal").is_some(), "{}", open.id);
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -257,7 +257,7 @@ fn other_graphic_style_library_asks_off_the_ui_thread() {
     poll(&mut app);
     let open = app.ui.library_panel.clone().unwrap_or_else(|| panic!("no library open: {}", app.ui.status));
     assert_eq!(open.kind, "graphicStyles");
-    let (_, lib) = vectorcraft_engine::cmd::stylelib::library(&app.session, &open.id).unwrap();
+    let (_, lib) = redrob_vector_engine::cmd::stylelib::library(&app.session, &open.id).unwrap();
     assert!(lib.style("Poster Look").is_some(), "{}", open.id);
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -345,7 +345,7 @@ fn a_folder_for_a_closed_dialog_is_dropped() {
 /// the UI thread and writes the selected preset where the dialog answers; the dialog stays open.
 #[test]
 fn preset_dialogs_export_asks_off_the_ui_thread() {
-    use vectorcraft_engine::cmd::{flatten, pdfcmds, perspgrid, printpresets};
+    use redrob_vector_engine::cmd::{flatten, pdfcmds, perspgrid, printpresets};
     let cases = [
         ("pdf.preset.save", json!({"name": "Mine"}), "ui.pdfPresetsDialog", pdfcmds::PRESET_FORMAT),
         ("print.presets.save", json!({"name": "Mine", "settings": {"copies": 2}}), "ui.printPresetsDialog", printpresets::PRESET_FORMAT),
@@ -597,7 +597,7 @@ fn a_refused_dialog_says_why() {
 fn a_panic_inside_an_entry_leaves_none_behind() {
     let (mut app, shown, written) = app();
     app.run("file.new", json!({"width": 100, "height": 80})).unwrap();
-    let r = vectorcraft_engine::guard::catch_panic(|| picks::button(&mut app, |_| panic!("a bug")));
+    let r = redrob_vector_engine::guard::catch_panic(|| picks::button(&mut app, |_| panic!("a bug")));
     assert!(r.is_err());
     app.picks.recover();
     assert!(app.picks.is_entry_free());

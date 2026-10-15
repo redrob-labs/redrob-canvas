@@ -9,13 +9,13 @@
 
 use std::fmt::{self, Debug, Write as _};
 
-use craft_pdf::interpret::Function;
-use craft_pdf::interpret::color::ColorSpace;
-use craft_pdf::syntax::Pdf;
-use craft_pdf::syntax::object::{Array, MaybeRef, Name, Object, Stream};
+use redrob_craft_pdf::interpret::Function;
+use redrob_craft_pdf::interpret::color::ColorSpace;
+use redrob_craft_pdf::syntax::Pdf;
+use redrob_craft_pdf::syntax::object::{Array, MaybeRef, Name, Object, Stream};
 use smallvec::SmallVec;
-use vectorcraft_color::swatch::REGISTRATION;
-use vectorcraft_color::{Color, Paint, Swatch};
+use redrob_vector_color::swatch::REGISTRATION;
+use redrob_vector_color::{Color, Paint, Swatch};
 
 /// The longest `Debug` text read: a colour whose space is longer (a big sampled tint transform)
 /// imports as RGB.
@@ -162,7 +162,7 @@ impl<'p> Colors<'p> {
     }
 
     /// A solid colour in its own model; `None`: use its RGB.
-    pub fn solid(&mut self, c: &craft_pdf::interpret::color::Color) -> Option<Native> {
+    pub fn solid(&mut self, c: &redrob_craft_pdf::interpret::color::Color) -> Option<Native> {
         let mapped = debug_text(c).and_then(|t| {
             let (space, comps) = split_color(&t)?;
             let space = self.space_of(space, comps.len());
@@ -431,7 +431,7 @@ fn lab_profile(profile: &Stream<'_>) -> bool {
     let mut head = vec![];
     match profile.filters().as_slice() {
         [] => head.extend(raw.iter().take(20)),
-        [craft_pdf::syntax::Filter::FlateDecode] => {
+        [redrob_craft_pdf::syntax::Filter::FlateDecode] => {
             let _ = flate2::read::ZlibDecoder::new(&*raw).take(20).read_to_end(&mut head); // a damaged profile reads as not Lab
         }
         _ => return false,

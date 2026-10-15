@@ -5,7 +5,7 @@
 //! module only turns the drag into it.
 
 use egui::{Pos2, Stroke};
-use photocraft_doc::LayerContent;
+use redrob_photo_doc::LayerContent;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -137,7 +137,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
 mod tests {
     use super::*;
     use crate::canvas::tool_event;
-    use photocraft_doc::LayerId;
+    use redrob_photo_doc::LayerId;
 
     fn drag(app: &mut PhotocraftApp, from: [f64; 2], to: [f64; 2]) {
         let m = egui::Modifiers::NONE;
@@ -150,7 +150,7 @@ mod tests {
     /// drawn rect; with the elliptical button the frame's corners are hidden.
     #[test]
     fn frame_tool_draws_rectangular_and_elliptical_frames() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.sync_views();
         app.ui.extras.snap = false;

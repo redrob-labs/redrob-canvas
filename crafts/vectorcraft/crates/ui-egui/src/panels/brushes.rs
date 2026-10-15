@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use egui::{Sense, Ui, vec2};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Appearance, Document, Node, PressureProfile, color::Color, color::Paint};
+use redrob_vector_doc::{Appearance, Document, Node, PressureProfile, color::Color, color::Paint};
 
 use super::{first_selected, pstate, set_pstate};
 use crate::VectorcraftApp;
@@ -40,13 +40,13 @@ fn preview(ui: &Ui, def: &Value, size: egui::Vec2) -> Option<egui::TextureHandle
         st.brush = Some(name);
         st.pressure = Some(PressureProfile::sample());
         // A gentle S-curve across the swatch.
-        let mut bp = vectorcraft_geom::BezPath::new();
+        let mut bp = redrob_vector_geom::BezPath::new();
         let (x0, x1) = (h * 0.5, w - h * 0.5);
         bp.move_to((x0, h * 0.5));
         bp.curve_to((x0 + (x1 - x0) * 0.35, h * 0.1), (x0 + (x1 - x0) * 0.65, h * 0.9), (x1, h * 0.5));
         let id = doc.alloc_id();
         let l = doc.layers[0].id;
-        doc.insert(Some(l), 0, Node::path(id, vectorcraft_geom::PathData::from_bezpath(&bp), ap)).ok()?;
+        doc.insert(Some(l), 0, Node::path(id, redrob_vector_geom::PathData::from_bezpath(&bp), ap)).ok()?;
         Some(doc)
     })
 }
@@ -251,8 +251,8 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use egui::{Pos2, Rect, pos2};
-    use vectorcraft_doc::NodeId;
-    use vectorcraft_engine::Session;
+    use redrob_vector_doc::NodeId;
+    use redrob_vector_engine::Session;
 
     use super::*;
 

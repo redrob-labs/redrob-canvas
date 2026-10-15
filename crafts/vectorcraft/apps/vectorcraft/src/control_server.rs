@@ -15,7 +15,7 @@ use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::Duration;
 
 use serde_json::{Value, json};
-use vectorcraft_ui_egui::ControlRequest;
+use redrob_vector_ui_egui::ControlRequest;
 
 #[path = "control_deadlines.rs"]
 mod deadlines;
@@ -35,7 +35,7 @@ const REPLY_WAIT: Duration = Duration::from_secs(60);
 /// The reply to a request the app didn't answer in [`REPLY_WAIT`]. One it had not started is
 /// withdrawn, so it never runs after its caller was told it failed; one it is running can't be
 /// stopped, and the reply says its outcome isn't known.
-fn timed_out(ticket: &vectorcraft_ui_egui::ControlTicket) -> Value {
+fn timed_out(ticket: &redrob_vector_ui_egui::ControlTicket) -> Value {
     let error = if ticket.give_up() {
         "timeout: the app did not start the request in time; it was withdrawn and will not run"
     } else {
@@ -606,7 +606,7 @@ mod tests {
             let read = s.try_clone().unwrap();
             serve_lines(read, s, |_, _| Some(reply.clone()));
         });
-        // The client sends each request line and reads its reply line through a `BufReader`, as `vectorcraft_mcp::Remote` does.
+        // The client sends each request line and reads its reply line through a `BufReader`, as `redrob_vector_mcp::Remote` does.
         let (tx, rx) = channel();
         std::thread::spawn(move || {
             let mut c = TcpStream::connect(addr).unwrap();

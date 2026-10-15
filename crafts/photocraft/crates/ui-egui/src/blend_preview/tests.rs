@@ -5,16 +5,16 @@ use egui::accesskit::Role;
 use egui::{PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_color::BlendMode;
-use photocraft_doc::LayerId;
+use redrob_photo_color::BlendMode;
+use redrob_photo_doc::LayerId;
 use serde_json::json;
 
 use super::{damage, display_doc, hover};
 use crate::PhotocraftApp;
 
 /// Background and a filled layer `top` (active).
-fn session() -> (photocraft_engine::Session, LayerId) {
-    let mut s = photocraft_engine::Session::new();
+fn session() -> (redrob_photo_engine::Session, LayerId) {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let top = s.execute("layer.new.layer", json!({"name": "top"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("select.rect", json!({"x": 8, "y": 8, "width": 16, "height": 16})).unwrap();
@@ -60,7 +60,7 @@ fn a_hovered_mode_shows_on_the_canvas_until_the_pointer_leaves() {
     assert!(display_doc(&mut app, 0).is_none(), "a stale hover previews nothing");
 }
 
-fn harness(session: photocraft_engine::Session) -> Harness<'static, PhotocraftApp> {
+fn harness(session: redrob_photo_engine::Session) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
         PhotocraftApp::new(session, crate::Services::default())

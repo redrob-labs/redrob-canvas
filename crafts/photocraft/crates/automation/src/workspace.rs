@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use cap_std::ambient_authority;
 use cap_std::fs::{Dir, OpenOptions};
-use photocraft_format::atomic::RenameRetry;
+use redrob_photo_format::atomic::RenameRetry;
 use serde_json::Value;
 
 use crate::AutomationError;
@@ -57,7 +57,7 @@ impl AuthorizedWorkspace {
     /// Load one `.pcraft` document in directory form — the native on-disk layout — below the
     /// read root. `read` serves regular files only (the zip form), so a regular file at the
     /// path is reported as `Ok(None)` for the caller to fall back to.
-    pub fn open_pcraft(&self, path: &str) -> Result<Option<photocraft_doc::Document>, AutomationError> {
+    pub fn open_pcraft(&self, path: &str) -> Result<Option<redrob_photo_doc::Document>, AutomationError> {
         let relative = request_path(path, self.read.as_ref())?;
         let root = self.read.as_ref().ok_or_else(|| AutomationError::BadRequest(format!("{DENIED}: read authority is absent")))?;
         let dir = match root.dir.open_dir(&relative) {
@@ -66,12 +66,12 @@ impl AuthorizedWorkspace {
             Err(e) => return Err(file_error("read", path, e)),
         };
         let source = DirHandle { dir };
-        Ok(Some(photocraft_format::load_bytes_source(&source, &photocraft_format::LoadOptions::default())?))
+        Ok(Some(redrob_photo_format::load_bytes_source(&source, &redrob_photo_format::LoadOptions::default())?))
     }
 
     /// Create or replace one file below the configured write root, crash-safely: the bytes go to
     /// a temporary file beside the target, which is synced and renamed over it (the same steps
-    /// as [`photocraft_format::atomic_write`], through the directory capability). On failure
+    /// as [`redrob_photo_format::atomic_write`], through the directory capability). On failure
     /// the previous file is untouched and the temporary file is removed.
     ///
     /// The parent directory must already exist. `cap-std` performs path
@@ -82,15 +82,15 @@ impl AuthorizedWorkspace {
         let root = self.write.as_ref().ok_or_else(|| AutomationError::BadRequest(format!("{DENIED}: write authority is absent")))?;
         let leaf = relative.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         let parent = relative.parent().map(Path::to_path_buf).unwrap_or_default();
-        let tmp = parent.join(photocraft_format::atomic::temp_name(&leaf));
+        let tmp = parent.join(redrob_photo_format::atomic::temp_name(&leaf));
         let mut options = OpenOptions::new();
         options.write(true).create_new(true);
         let written = root.dir.open_with(&tmp, &options).and_then(|mut file| {
             file.write_all(bytes)?;
             // Falls back to a plain fsync on shares that refuse a full flush (#1336).
-            photocraft_format::atomic::sync_file(&file.into_std())
+            redrob_photo_format::atomic::sync_file(&file.into_std())
         });
-        let renamed = written.and_then(|()| photocraft_format::atomic::retry_rename(RenameRetry::platform(), || root.dir.rename(&tmp, &root.dir, &relative)));
+        let renamed = written.and_then(|()| redrob_photo_format::atomic::retry_rename(RenameRetry::platform(), || root.dir.rename(&tmp, &root.dir, &relative)));
         if let Err(e) = renamed {
             let _ = root.dir.remove_file(&tmp);
             return Err(file_error("write", path, e));
@@ -100,7 +100,7 @@ impl AuthorizedWorkspace {
         {
             let dir = if parent.as_os_str().is_empty() { PathBuf::from(".") } else { parent };
             if let Ok(d) = root.dir.open(&dir) {
-                let _ = photocraft_format::atomic::sync_file(&d.into_std());
+                let _ = redrob_photo_format::atomic::sync_file(&d.into_std());
             }
         }
         Ok(())
@@ -220,16 +220,16 @@ struct DirHandle {
     dir: Dir,
 }
 
-impl photocraft_format::ByteSource for DirHandle {
-    fn get(&self, path: &str, max: usize) -> photocraft_format::Result<Vec<u8>> {
-        let missing = || photocraft_format::FormatError::Corrupt(format!("missing `{path}`"));
+impl redrob_photo_format::ByteSource for DirHandle {
+    fn get(&self, path: &str, max: usize) -> redrob_photo_format::Result<Vec<u8>> {
+        let missing = || redrob_photo_format::FormatError::Corrupt(format!("missing `{path}`"));
         let mut file = self.dir.open(path).map_err(|_| missing())?;
         let metadata = file.metadata().map_err(|_| missing())?;
         if !metadata.is_file() {
             // A FIFO or device would block the open and stream without end.
-            return Err(photocraft_format::FormatError::Corrupt(format!("`{path}` is not a regular file")));
+            return Err(redrob_photo_format::FormatError::Corrupt(format!("`{path}` is not a regular file")));
         }
-        photocraft_format::read_entry(&mut file, metadata.len(), max, path)
+        redrob_photo_format::read_entry(&mut file, metadata.len(), max, path)
     }
 }
 
@@ -303,15 +303,15 @@ pub fn authorize_desktop_engine_command(id: &str, params: &Value) -> Result<(), 
     Ok(())
 }
 
-/// [`authorize_engine_command`] as the function pointer [`photocraft_engine::Session::authorize`]
+/// [`authorize_engine_command`] as the function pointer [`redrob_photo_engine::Session::authorize`]
 /// stores. `actions.play` calls it for every nested step.
-pub fn authorize_engine_step(id: &str, params: &Value) -> photocraft_engine::Result<()> {
-    authorize_engine_command(id, params).map_err(|e| photocraft_engine::EngineError::Other(e.to_string()))
+pub fn authorize_engine_step(id: &str, params: &Value) -> redrob_photo_engine::Result<()> {
+    authorize_engine_command(id, params).map_err(|e| redrob_photo_engine::EngineError::Other(e.to_string()))
 }
 
-/// [`authorize_desktop_engine_command`] as a [`photocraft_engine::Session::authorize`] hook.
-pub fn authorize_desktop_engine_step(id: &str, params: &Value) -> photocraft_engine::Result<()> {
-    authorize_desktop_engine_command(id, params).map_err(|e| photocraft_engine::EngineError::Other(e.to_string()))
+/// [`authorize_desktop_engine_command`] as a [`redrob_photo_engine::Session::authorize`] hook.
+pub fn authorize_desktop_engine_step(id: &str, params: &Value) -> redrob_photo_engine::Result<()> {
+    authorize_desktop_engine_command(id, params).map_err(|e| redrob_photo_engine::EngineError::Other(e.to_string()))
 }
 
 fn params_contain_ambient_path(id: &str, params: &Value) -> bool {
@@ -513,8 +513,8 @@ mod tests {
     #[test]
     fn open_pcraft_loads_a_directory_below_the_read_root() {
         let (inside, _, workspace) = roots("pcraft-dir");
-        let doc = photocraft_doc::Document::new("Native", photocraft_doc::Size::new(16, 12), photocraft_doc::ColorMode::Rgb, photocraft_doc::SampleType::U8);
-        photocraft_format::PcraftWriter::new().save_dir(&doc, &inside.join("native.pcraft"), &photocraft_format::SaveOptions::default()).unwrap();
+        let doc = redrob_photo_doc::Document::new("Native", redrob_photo_doc::Size::new(16, 12), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::U8);
+        redrob_photo_format::PcraftWriter::new().save_dir(&doc, &inside.join("native.pcraft"), &redrob_photo_format::SaveOptions::default()).unwrap();
         let loaded = workspace.open_pcraft("native.pcraft").unwrap().expect("the directory form loads");
         assert_eq!(loaded.name, doc.name);
         assert_eq!((loaded.size.width, loaded.size.height), (16, 12));
@@ -523,9 +523,9 @@ mod tests {
     #[test]
     fn open_pcraft_reports_zip_files_and_missing_paths_clearly() {
         let (inside, _, workspace) = roots("pcraft-errors");
-        let doc = photocraft_doc::Document::new("Zipped", photocraft_doc::Size::new(4, 4), photocraft_doc::ColorMode::Rgb, photocraft_doc::SampleType::U8);
+        let doc = redrob_photo_doc::Document::new("Zipped", redrob_photo_doc::Size::new(4, 4), redrob_photo_doc::ColorMode::Rgb, redrob_photo_doc::SampleType::U8);
         let zip = inside.join("zipped.pcraft");
-        photocraft_format::PcraftWriter::new().save_path(&doc, &zip, &photocraft_format::SaveOptions::default()).unwrap();
+        redrob_photo_format::PcraftWriter::new().save_path(&doc, &zip, &redrob_photo_format::SaveOptions::default()).unwrap();
         assert!(zip.is_file());
         assert!(workspace.open_pcraft("zipped.pcraft").unwrap().is_none(), "the zip form falls back to the bytes path");
         let error = workspace.open_pcraft("missing.pcraft").unwrap_err().to_string();
@@ -718,13 +718,13 @@ mod tests {
         assert!(authorize_engine_step("file.open", &serde_json::json!({})).is_err());
         assert!(authorize_engine_step("actions.play", &serde_json::json!({})).is_ok());
         // An allowed command can't reach a denied one by running it on its own behalf.
-        let mut session = photocraft_engine::Session::new();
+        let mut session = redrob_photo_engine::Session::new();
         session.execute("file.new", serde_json::json!({"width": 4, "height": 4})).unwrap();
         session.authorize = Some(authorize_desktop_engine_step);
         let params = serde_json::json!({"to": "grayscale"});
         assert!(authorize_desktop_engine_command("file.automate.conditionalModeChange", &params).is_ok());
         assert!(session.execute("file.automate.conditionalModeChange", params).is_err());
-        assert_eq!(session.active().unwrap().doc.mode, photocraft_engine::doc::ColorMode::Rgb);
+        assert_eq!(session.active().unwrap().doc.mode, redrob_photo_engine::doc::ColorMode::Rgb);
         assert!(authorize_desktop_engine_step("file.saveACopy", &serde_json::json!({})).is_err());
     }
 
@@ -821,7 +821,7 @@ mod tests {
             "paths": ["/outside/photocraft-probe.psd"],
         });
         let preference_probe = serde_json::json!({"path": ".scriptEvents", "value": {}});
-        let unclassified: Vec<_> = photocraft_engine::command_specs()
+        let unclassified: Vec<_> = redrob_photo_engine::command_specs()
             .iter()
             .filter(|spec| documents_filesystem_path_params(spec.id, spec.params))
             .filter(|spec| {

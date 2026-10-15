@@ -10,12 +10,12 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_color::{BlendMode, Color, Paint};
-use vectorcraft_doc::{Appearance, Node, NodeId};
-use vectorcraft_geom::hit::fill_contains;
-use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, Point, Rect, shapes};
-use vectorcraft_pathops as po;
-use vectorcraft_pathops::BoolOp;
+use redrob_vector_color::{BlendMode, Color, Paint};
+use redrob_vector_doc::{Appearance, Node, NodeId};
+use redrob_vector_geom::hit::fill_contains;
+use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, Point, Rect, shapes};
+use redrob_vector_pathops as po;
+use redrob_vector_pathops::BoolOp;
 
 use super::edit::selected_roots;
 use super::menucmds::isolated_doc;
@@ -174,7 +174,7 @@ fn halftone(s: &mut Session, p: &Value) -> Result<Value> {
         })
         .collect();
     let outline = if clip {
-        vectorcraft_render::effects::clip_outline(&Node::group(NodeId(u64::MAX), nodes.iter().cloned().map(Arc::new).collect()))
+        redrob_vector_render::effects::clip_outline(&Node::group(NodeId(u64::MAX), nodes.iter().cloned().map(Arc::new).collect()))
     } else {
         None
     };
@@ -182,13 +182,13 @@ fn halftone(s: &mut Session, p: &Value) -> Result<Value> {
     let scale = (4.0 / cell).min((MAX_SAMPLE_PIXELS / b.area()).sqrt()).clamp(0.01, 16.0);
     let region = b.inflate(cell, cell);
     let tmp = isolated_doc(&st.doc, nodes);
-    let mut r = vectorcraft_render::Renderer::new();
-    let (w, h) = vectorcraft_render::region_pixels(region, scale);
+    let mut r = redrob_vector_render::Renderer::new();
+    let (w, h) = redrob_vector_render::region_pixels(region, scale);
     let (w, h) = (w as usize, h as usize);
     let px = if mono {
         r.render_region(&tmp, region, scale, true).pixels
     } else {
-        r.render_region_inks(&tmp, region, scale, &vectorcraft_render::RenderOptions { skip_templates: true, ..Default::default() })
+        r.render_region_inks(&tmp, region, scale, &redrob_vector_render::RenderOptions { skip_templates: true, ..Default::default() })
     };
     if px.len() < w * h * 4 {
         return Err(EngineError::Other("the art could not be sampled".into()));

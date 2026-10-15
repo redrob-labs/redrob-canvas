@@ -2,7 +2,7 @@
 //! applied in one undo step, and validation that rejects instead of reinterpreting.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeId;
+use redrob_vector_doc::NodeId;
 
 use super::*;
 
@@ -24,7 +24,7 @@ fn rect(s: &mut Session) -> NodeId {
 
 fn plain(s: &Session, id: NodeId) -> String {
     match &s.doc().unwrap().doc.node(id).unwrap().kind {
-        vectorcraft_doc::NodeKind::Text(t) => t.plain_text(),
+        redrob_vector_doc::NodeKind::Text(t) => t.plain_text(),
         _ => panic!("not text"),
     }
 }

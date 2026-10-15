@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 resolver = "3"
 
 [dependencies]
-craft-pdf = { path = "..", default-features = false, features = ["read"] }
+redrob-craft-pdf = { path = "..", default-features = false, features = ["read"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "=0.3.79"

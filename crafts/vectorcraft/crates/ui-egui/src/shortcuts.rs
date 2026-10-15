@@ -3,8 +3,8 @@
 
 use egui::{Key, KeyboardShortcut, Modifiers};
 use serde_json::json;
-use vectorcraft_engine::cmd::clipboard::{Flavour, TEXT};
-use vectorcraft_tools::{Mods, ToolKey};
+use redrob_vector_engine::cmd::clipboard::{Flavour, TEXT};
+use redrob_vector_tools::{Mods, ToolKey};
 
 use crate::VectorcraftApp;
 
@@ -58,7 +58,7 @@ pub(crate) fn is_modifier(key: Key) -> bool {
 /// command's params: `{}`, or `{panel}` for the panel shortcuts (`window.panel`).
 pub(crate) fn all_shortcuts() -> Vec<(KeyboardShortcut, &'static str, serde_json::Value)> {
     let mut v = vec![];
-    for c in vectorcraft_engine::command_specs() {
+    for c in redrob_vector_engine::command_specs() {
         if let Some(sc) = crate::menus::shortcut_of(c.id).and_then(parse) {
             v.push((sc, c.id, json!({})));
         }
@@ -262,7 +262,7 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
                 // Enter with a selection tool opens the Move dialog, as a double-click on its button
                 // does.
                 let tool = app.session.tool_id();
-                if app.ui.dialog.is_none() && vectorcraft_tools::catalog::is_selection_tool(tool) {
+                if app.ui.dialog.is_none() && redrob_vector_tools::catalog::is_selection_tool(tool) {
                     // Nothing selected: it fails and nothing opens (the menu item is disabled then too).
                     let _ = crate::toolbar::open_options(app, tool);
                 }
@@ -535,12 +535,12 @@ mod tests {
     /// Cmd+Shift+B while the Type tool edits text is Type › Bold, not Hide Bounding Box (#724).
     #[test]
     fn cmd_shift_b_while_typing_is_bold_not_the_bounding_box() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         app.select_tool("type");
         let view = app.view_info();
-        for kind in [vectorcraft_tools::PointerKind::Down, vectorcraft_tools::PointerKind::Up] {
-            app.session.pointer(&vectorcraft_tools::PointerEvent::new(kind, 50.0, 50.0), view).unwrap();
+        for kind in [redrob_vector_tools::PointerKind::Down, redrob_vector_tools::PointerKind::Up] {
+            app.session.pointer(&redrob_vector_tools::PointerEvent::new(kind, 50.0, 50.0), view).unwrap();
         }
         frame(&mut app, vec![egui::Event::Text("Bold".into())]);
         assert!(app.session.tool_wants_text());
@@ -561,14 +561,14 @@ mod tests {
     /// or while the Type tool edits text, those its selection touches.
     #[test]
     fn cmd_shift_letters_align_paragraphs() {
-        use vectorcraft_doc::Justify;
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        use redrob_vector_doc::Justify;
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         let id = app.session.execute("text.create", &json!({"x": 20, "y": 50, "text": "One\nTwo"})).unwrap()["id"].as_u64().unwrap();
         let chord =
             |key| egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::COMMAND | Modifiers::SHIFT };
-        let paras = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
-            vectorcraft_doc::NodeKind::Text(t) => (0..t.paragraph_count()).map(|i| t.para_at(i).justify).collect::<Vec<_>>(),
+        let paras = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
+            redrob_vector_doc::NodeKind::Text(t) => (0..t.paragraph_count()).map(|i| t.para_at(i).justify).collect::<Vec<_>>(),
             _ => panic!("text"),
         };
         app.session.execute("select.set", &json!({"ids": [id]})).unwrap();
@@ -584,7 +584,7 @@ mod tests {
         }
         // With the Type tool, only the paragraph its selection touches.
         app.select_tool("type");
-        app.session.apply_actions(vec![vectorcraft_tools::Action::Notify("text.editNew".into())]).unwrap();
+        app.session.apply_actions(vec![redrob_vector_tools::Action::Notify("text.editNew".into())]).unwrap();
         app.session.set_tool_option("select", &json!({"start": 5, "end": 6}));
         assert!(app.session.tool_wants_text());
         frame(&mut app, vec![chord(Key::R)]);
@@ -600,7 +600,7 @@ mod tests {
     /// work.
     #[test]
     fn tab_leaves_the_keyboard_to_the_shortcuts_and_the_type_tool() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         let ctx = egui::Context::default();
         let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1600.0, 850.0));
@@ -627,8 +627,8 @@ mod tests {
         // The Type tool: a, Tab, b is one text.
         app.select_tool("type");
         let view = app.view_info();
-        for kind in [vectorcraft_tools::PointerKind::Down, vectorcraft_tools::PointerKind::Up] {
-            app.session.pointer(&vectorcraft_tools::PointerEvent::new(kind, 50.0, 50.0), view).unwrap();
+        for kind in [redrob_vector_tools::PointerKind::Down, redrob_vector_tools::PointerKind::Up] {
+            app.session.pointer(&redrob_vector_tools::PointerEvent::new(kind, 50.0, 50.0), view).unwrap();
         }
         run(&mut app, vec![egui::Event::Text("a".into())]);
         run(&mut app, vec![press(Key::Tab)]);
@@ -639,7 +639,7 @@ mod tests {
 
     #[test]
     fn copy_and_paste_events_use_the_system_clipboard() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         let id = app.session.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 10, "height": 10})).unwrap()["id"].clone();
         app.session.execute("select.set", &json!({"ids": [id]})).unwrap();
@@ -665,8 +665,8 @@ mod tests {
     /// While a grid is dragged out, ↑/↓ change its rows and ←/→ its columns.
     #[test]
     fn arrows_while_dragging_a_grid_change_its_rows_and_columns() {
-        use vectorcraft_tools::{PointerEvent, PointerKind};
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        use redrob_vector_tools::{PointerEvent, PointerKind};
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
         app.select_tool("rectangularGrid");
         let view = app.view_info();
@@ -681,7 +681,7 @@ mod tests {
             app.session.pointer(&PointerEvent::new(PointerKind::Up, 300.0, 220.0), view).unwrap();
             let d = &app.session.doc().unwrap().doc;
             let g = d.layers[0].children().unwrap().last().unwrap().clone();
-            let vectorcraft_doc::NodeKind::Group { children, .. } = &g.kind else { panic!("not a grid: {:?}", g.kind) };
+            let redrob_vector_doc::NodeKind::Group { children, .. } = &g.kind else { panic!("not a grid: {:?}", g.kind) };
             let bounds: Vec<_> = children.iter().filter_map(|c| c.geometric_bounds()).collect();
             (bounds.iter().filter(|b| b.height() < 0.5).count(), bounds.iter().filter(|b| b.width() < 0.5).count())
         };
@@ -694,7 +694,7 @@ mod tests {
     /// Rotate, Scale, Reflect and Shear. The Enter that opens it isn't also its OK.
     #[test]
     fn enter_opens_the_tools_dialog_and_leaves_it_open() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 400, "height": 300})).unwrap();
         let ctx = egui::Context::default();
         let enter = || egui::Event::Key { key: Key::Enter, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE };
@@ -746,7 +746,7 @@ mod tests {
     /// alone.
     #[test]
     fn brackets_size_the_blob_brush_and_the_eraser() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         app.session.execute("stroke.set", &json!({"weight": 3})).unwrap();
         let size = |app: &mut VectorcraftApp| app.session.tool_options()["size"].as_f64().unwrap();
@@ -770,21 +770,21 @@ mod tests {
 
     #[test]
     fn comma_and_period_reapply_the_last_colour_and_gradient() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         app.session.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 10, "height": 10})).unwrap();
         app.session.execute("paint.setFill", &json!({"gradient": {"kind": "linear"}})).unwrap();
         app.session.execute("paint.setFill", &json!({"color": "#336699"})).unwrap();
         let fill = |app: &VectorcraftApp| crate::panels::current_paints(app).0;
         frame(&mut app, vec![egui::Event::Text(".".into())]);
-        assert!(matches!(fill(&app), vectorcraft_color::Paint::Gradient(_)), "`.` applies the last gradient");
+        assert!(matches!(fill(&app), redrob_vector_color::Paint::Gradient(_)), "`.` applies the last gradient");
         frame(&mut app, vec![egui::Event::Text(",".into())]);
         assert_eq!(fill(&app).color().unwrap().to_hex(), "#336699", "`,` applies the last colour");
     }
 
     #[test]
     fn shifted_punctuation_shortcuts_work_as_typed() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         let a = app.session.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 50, "height": 50})).unwrap()["id"].clone();
         let b = app.session.execute("shape.ellipse", &json!({"x": 20, "y": 20, "width": 50, "height": 50})).unwrap()["id"].clone();
@@ -817,7 +817,7 @@ mod tests {
     /// tool. A Latin layout keeps the letter typed: AZERTY's A (the Q key's place) is A.
     #[test]
     fn one_key_shortcuts_follow_the_key_on_layouts_without_latin_letters() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         let typed = |key, physical, text: &str| {
             vec![
@@ -837,7 +837,7 @@ mod tests {
     fn plus_typed_any_way_zooms_in() {
         assert_eq!(parse("Cmd++"), parse("Cmd+="), "`+` and `=` are one chord key");
         assert_eq!(crate::shortcut_editor::chord_from_event(Key::Plus, Modifiers::COMMAND).as_deref(), Some("Cmd+="), "a recorded `+` too");
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
         let zoom = |app: &mut VectorcraftApp| app.view_mut().unwrap().zoom;
         let press = |key, modifiers| egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers };
@@ -855,8 +855,8 @@ mod tests {
 
     #[test]
     fn digit_keys_reach_a_dragging_tool_once_per_press() {
-        use vectorcraft_tools::{PointerEvent, PointerKind};
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        use redrob_vector_tools::{PointerEvent, PointerKind};
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 800, "height": 600})).unwrap();
         app.session.execute("perspective.grid.preset", &json!({"kind": 2})).unwrap();
         let id = app.session.execute("shape.rectangle", &json!({"x": 450, "y": 380, "width": 60, "height": 60})).unwrap()["id"].clone();
@@ -864,7 +864,7 @@ mod tests {
         app.select_tool("perspectiveSelection");
         let v = app.view_info();
         let c =
-            app.session.doc().unwrap().doc.node(vectorcraft_engine::doc::NodeId(id.as_u64().unwrap())).unwrap().geometric_bounds().unwrap().center();
+            app.session.doc().unwrap().doc.node(redrob_vector_engine::doc::NodeId(id.as_u64().unwrap())).unwrap().geometric_bounds().unwrap().center();
         app.session.pointer(&PointerEvent::new(PointerKind::Down, c.x, c.y), v).unwrap();
         app.session.pointer(&PointerEvent::new(PointerKind::Drag, c.x + 30.0, c.y), v).unwrap();
         let key = |repeat| egui::Event::Key { key: Key::Num5, physical_key: None, pressed: true, repeat, modifiers: Modifiers::NONE };
@@ -907,7 +907,7 @@ mod tests {
 
     #[test]
     fn all_registered_shortcuts_parse() {
-        for c in vectorcraft_engine::command_specs() {
+        for c in redrob_vector_engine::command_specs() {
             if let Some(s) = c.shortcut
                 && s != "D"
                 && s != "X"

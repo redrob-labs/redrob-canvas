@@ -386,7 +386,7 @@ fn windows_powershell(script: &str, printer: &str) -> Result<String, String> {
 /// Windows, end to end: two jobs reach a paused test printer's queue, each as one job under its
 /// title. One mixes portrait and landscape Letter sheets at exact size (the landscape sheet is
 /// turned); the other is shrink-to-fit with a Tabloid sheet (reframed onto the driver's paper),
-/// so both kinds of update pass through Windows.Data.Pdf. craft-print starts no program to print
+/// so both kinds of update pass through Windows.Data.Pdf. redrob-craft-print starts no program to print
 /// them; the test uses PowerShell only to add, inspect and remove the printer. Its driver is the
 /// inbox "Generic / Text Only"; a machine that cannot add one (no rights, no driver) skips the
 /// test, unless `CRAFT_PRINT_REQUIRE_QUEUE=1` (CI) makes it mandatory.

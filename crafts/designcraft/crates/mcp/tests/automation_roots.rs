@@ -8,9 +8,9 @@
 
 use std::path::{Path, PathBuf};
 
-use designcraft_engine::Session;
-use designcraft_engine::file_access::AutomationRoots;
-use designcraft_mcp::{Headless, Server};
+use redrob_layout_engine::Session;
+use redrob_layout_engine::file_access::AutomationRoots;
+use redrob_layout_mcp::{Headless, Server};
 use serde_json::{Value, json};
 
 /// What the secret files hold, so a test can look for it in everything the agent is told.

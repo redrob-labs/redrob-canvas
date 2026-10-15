@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-render"
+name = "redrob-layout-render"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,16 +9,16 @@ description = "DesignCraft renderer: spreads, pages, frames, composed text and i
 workspace = true
 
 [dependencies]
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
-designcraft-compose = { workspace = true }
+redrob-layout-geom = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-doc = { workspace = true }
+redrob-layout-fonts = { workspace = true }
+redrob-layout-compose = { workspace = true }
 vello_cpu = { workspace = true }
 vello_common = { workspace = true }
 image = { workspace = true }
 hayro = { workspace = true }
-designcraft-images = { workspace = true }
+redrob-layout-images = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true }
 

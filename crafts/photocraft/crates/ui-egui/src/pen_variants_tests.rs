@@ -2,7 +2,7 @@
 //! the Pen does.
 
 use egui::Modifiers;
-use photocraft_doc::{LayerContent, Path};
+use redrob_photo_doc::{LayerContent, Path};
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -10,7 +10,7 @@ use crate::canvas::{ToolEvent, tool_event};
 use crate::state::Tool;
 
 fn app(tool: Tool) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
     app.ui.tool = tool;
     app

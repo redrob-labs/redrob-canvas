@@ -1,5 +1,5 @@
 [package]
-name = "craft-pdf"
+name = "redrob-craft-pdf"
 description = "Shared PDF reading, rendering and optional writing for Craft apps"
 version.workspace = true
 edition.workspace = true

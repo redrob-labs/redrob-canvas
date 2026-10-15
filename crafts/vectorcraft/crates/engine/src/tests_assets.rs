@@ -3,7 +3,7 @@
 //! exporting assets alone, cropped to their art.
 
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
+use redrob_vector_color::{Color, Paint};
 
 use super::*;
 
@@ -41,7 +41,7 @@ fn files(r: &Value) -> Vec<(String, Vec<u8>)> {
         .as_array()
         .unwrap()
         .iter()
-        .map(|f| (f["name"].as_str().unwrap().to_string(), vectorcraft_format::base64_decode(f["dataBase64"].as_str().unwrap()).unwrap()))
+        .map(|f| (f["name"].as_str().unwrap().to_string(), redrob_vector_format::base64_decode(f["dataBase64"].as_str().unwrap()).unwrap()))
         .collect()
 }
 
@@ -185,7 +185,7 @@ fn assets_round_trip_through_the_native_format() {
     let id = run(&mut s, "assets.add", json!({"ids": [c]}))["assets"][0].as_u64().unwrap();
     assert!(saved.iter().all(|x| x.id != id));
     // Documents without assets don't write the key, and files without it load.
-    let mut d = vectorcraft_doc::Document::new(10.0, 10.0);
+    let mut d = redrob_vector_doc::Document::new(10.0, 10.0);
     let text = serde_json::to_string(&d).unwrap();
     assert!(!text.contains("\"assets\""));
     d = serde_json::from_str(&text).unwrap();

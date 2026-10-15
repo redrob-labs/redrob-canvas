@@ -2,8 +2,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use super::*;
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_raster::Surface;
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_raster::Surface;
 use rayon::prelude::*;
 use serde_json::json;
 use std::time::Instant;

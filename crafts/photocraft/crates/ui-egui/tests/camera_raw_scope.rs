@@ -1,10 +1,10 @@
 //! Real dialog/controller acceptance: interactions never make a second document edit path.
 use egui::{Event, Modifiers, PointerButton, Pos2, Rect, pos2, vec2};
 use egui_kittest::{Harness, kittest::Queryable};
-use photocraft_ui_egui::{PhotocraftApp, camera_raw_ui, control, theme::ThemeKind};
+use redrob_photo_ui_egui::{PhotocraftApp, camera_raw_ui, control, theme::ThemeKind};
 use serde_json::{Value, json};
 
-use photocraft_testkit::gpu_lock;
+use redrob_photo_testkit::gpu_lock;
 
 fn menu(app: &mut PhotocraftApp, ctx: &egui::Context, p: Value) -> Result<Value, String> {
     camera_raw_ui::menu(app, ctx, "filter.cameraRaw", &p).ok_or("missing handler")?
@@ -25,7 +25,7 @@ fn fixture_render(theme: ThemeKind, gpu: bool) -> Harness<'static, PhotocraftApp
     let builder = if gpu { builder.wgpu() } else { builder };
     let mut h = builder.build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, theme);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.set_theme(&cc.egui_ctx, theme);
         app.run("file.new", json!({"width":64,"height":48})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
@@ -136,7 +136,7 @@ fn exact_clipping_rgb_lab_capped_samplers_and_reversible_tone_controls() {
     for mode in ["rgb", "grayscale"] {
         for depth in [8, 16, 32] {
             let ctx = egui::Context::default();
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             app.run("file.new", json!({"width":16,"height":8,"mode":mode,"depth":depth})).unwrap();
             app.run("layer.new.layer", json!({})).unwrap();
             app.run("edit.fill", json!({"color":"#808080"})).unwrap();
@@ -186,7 +186,7 @@ fn exact_clipping_rgb_lab_capped_samplers_and_reversible_tone_controls() {
 #[test]
 fn lab_readouts_respect_embedded_rgb_profile() {
     let ctx = egui::Context::default();
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width":4,"height":4})).unwrap();
     app.run("layer.new.layer", json!({})).unwrap();
     app.run("edit.fill", json!({"color":"#ff0000"})).unwrap();
@@ -276,7 +276,7 @@ fn real_shortcuts_triangles_menu_and_scope_preferences_roundtrip() {
         h.event(Event::PointerButton { pos: graph.center(), button: PointerButton::Secondary, pressed, modifiers: Modifiers::NONE });
     }
     h.run_steps(3);
-    let label = photocraft_ui_egui::i18n::tr(photocraft_ui_egui::i18n::current(), "Show Lab Color Readouts");
+    let label = redrob_photo_ui_egui::i18n::tr(redrob_photo_ui_egui::i18n::current(), "Show Lab Color Readouts");
     h.get_by_label(label).click();
     h.run_steps(3);
     assert_eq!(inspect(&h)["scope"]["lab"], true);
@@ -289,7 +289,7 @@ fn real_shortcuts_triangles_menu_and_scope_preferences_roundtrip() {
     assert_eq!(saved["samplers"], json!([]));
     assert_eq!(saved["vectorscope"], false);
     let prefs = serde_json::to_string(h.state().session.prefs()).unwrap();
-    let mut fresh = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut fresh = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     fresh.session.load_prefs_json(&prefs).unwrap();
     fresh.session.prefs.edit(|p| p.dialogs.get_mut("filter.cameraRaw.scope").unwrap()["vectorscope"] = json!(true));
     fresh.run("file.new", json!({"width":16,"height":16})).unwrap();
@@ -304,7 +304,7 @@ fn real_shortcuts_triangles_menu_and_scope_preferences_roundtrip() {
 #[test]
 fn selected_region_scope_and_preview_share_the_engine_selection_boundary() {
     let ctx = egui::Context::default();
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width":16,"height":8})).unwrap();
     app.run("layer.new.layer", json!({})).unwrap();
     app.run("edit.fill", json!({"color":"#808080"})).unwrap();
@@ -344,11 +344,11 @@ fn floating_window_is_above_the_dialog_and_can_be_dragged_back_to_the_dock() {
     }
     h.run_steps(3);
     for source in ["Undock Scope", "Dock Scope", "Color Sampler (S)", "Clear Samplers"] {
-        let label = photocraft_ui_egui::i18n::tr(photocraft_ui_egui::i18n::current(), source);
+        let label = redrob_photo_ui_egui::i18n::tr(redrob_photo_ui_egui::i18n::current(), source);
         assert!(h.query_by_label(label).is_none(), "removed action must not appear: {source}");
     }
     assert!(!h.state().ui.camera_raw_scope.vectorscope);
-    let label = photocraft_ui_egui::i18n::tr(photocraft_ui_egui::i18n::current(), "Show Vectorscope");
+    let label = redrob_photo_ui_egui::i18n::tr(redrob_photo_ui_egui::i18n::current(), "Show Vectorscope");
     h.get_by_label(label).click();
     h.run_steps(3);
     assert!(h.state().ui.camera_raw_scope.vectorscope, "context menu still enables the optional vectorscope");
@@ -411,7 +411,7 @@ fn both_clipping_warnings_leave_unclipped_preview_pixels_visible_on_gpu() {
     let _gpu = gpu_lock();
     let mut h = Harness::builder().with_step_dt(1.0 / 60.0).with_size(vec2(800.0, 600.0)).wgpu().build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, ThemeKind::Pro);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.set_theme(&cc.egui_ctx, ThemeKind::Pro);
         app.run("file.new", json!({"width":16,"height":16})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
@@ -447,10 +447,10 @@ fn curve_drag_moves_the_existing_point_without_creating_another() {
 }
 
 fn open_curve(h: &mut Harness<'_, PhotocraftApp>) -> Rect {
-    let lang = photocraft_ui_egui::i18n::current();
-    h.get_by_label(photocraft_ui_egui::i18n::tr_ctx(lang, "cameraRaw", "Light")).click();
+    let lang = redrob_photo_ui_egui::i18n::current();
+    h.get_by_label(redrob_photo_ui_egui::i18n::tr_ctx(lang, "cameraRaw", "Light")).click();
     h.run_steps(16);
-    h.get_by_label(photocraft_ui_egui::i18n::tr(lang, "Curve")).click();
+    h.get_by_label(redrob_photo_ui_egui::i18n::tr(lang, "Curve")).click();
     h.run_steps(16);
     rect(h, "curveRect")
 }
@@ -739,7 +739,7 @@ fn alt_drag_slider(h: &mut Harness<'_, PhotocraftApp>, label: &str) -> Value {
 
 #[test]
 fn alt_drag_diagnostics_follow_light_tone_sliders_not_same_named_ones() {
-    let tr = |s| photocraft_ui_egui::i18n::tr_ctx(photocraft_ui_egui::i18n::current(), "cameraRaw", s);
+    let tr = |s| redrob_photo_ui_egui::i18n::tr_ctx(redrob_photo_ui_egui::i18n::current(), "cameraRaw", s);
     let mut h = fixture(ThemeKind::Pro);
     let during = alt_drag_slider(&mut h, tr("Highlights"));
     assert_ne!(during["params"]["highlights"], 0.0, "the drag hit the Light slider");

@@ -2,9 +2,9 @@
 //! name) and checked against the pages it was written with.
 
 use serde_json::json;
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Document, Node};
-use vectorcraft_geom::{Rect, shapes};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Document, Node};
+use redrob_vector_geom::{Rect, shapes};
 
 use crate::*;
 

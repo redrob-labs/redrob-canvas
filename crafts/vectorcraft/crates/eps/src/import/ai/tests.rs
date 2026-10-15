@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use kurbo::{Point, Rect};
-use vectorcraft_color::gradient::GradientKind;
-use vectorcraft_color::{BlendMode, Color, Paint};
-use vectorcraft_doc::{AppearanceItem, ColorMode, Document, Knockout, LayerColor, LineCap, LineJoin, Node, NodeKind};
+use redrob_vector_color::gradient::GradientKind;
+use redrob_vector_color::{BlendMode, Color, Paint};
+use redrob_vector_doc::{AppearanceItem, ColorMode, Document, Knockout, LayerColor, LineCap, LineJoin, Node, NodeKind};
 
 use super::*;
 
@@ -111,7 +111,7 @@ fn paths_colours_and_strokes() {
     assert_eq!(path.bounds(), Some(Rect::new(0.0, 90.0, 10.0, 100.0)));
     assert!(path.subpaths[0].closed);
     assert_eq!(path.subpaths[0].anchors.len(), 4, "the closing point merges with the first");
-    assert_eq!(*rule, vectorcraft_geom::FillRule::EvenOdd);
+    assert_eq!(*rule, redrob_vector_geom::FillRule::EvenOdd);
     assert_eq!(fill(&a[0]).color(), Some(Color::rgb(1.0, 0.0, 0.0)));
     let st = a[0].appearance.stroke().unwrap();
     assert_eq!((st.width, st.cap, st.join, st.miter_limit), (3.0, LineCap::Round, LineJoin::Bevel, 4.0));
@@ -878,7 +878,7 @@ fn a_compound_clipping_path_with_a_fill_paints_once_under_its_clip() {
     let NodeKind::Group { children, clip: true } = &art(&doc)[0].kind else { panic!("a clipping group") };
     assert_eq!(children.len(), 3, "{children:#?}");
     let NodeKind::Compound { children: clip, rule } = &children[0].kind else { panic!("{:?}", children[0].kind) };
-    assert_eq!(*rule, vectorcraft_geom::FillRule::EvenOdd);
+    assert_eq!(*rule, redrob_vector_geom::FillRule::EvenOdd);
     assert_eq!(clip.len(), 2);
     assert!(clip.iter().all(|c| matches!(c.kind, NodeKind::Path { clipping: true, .. })));
     let NodeKind::Compound { children: painted, .. } = &children[1].kind else { panic!("{:?}", children[1].kind) };
@@ -979,7 +979,7 @@ fn a_gradient_mesh_reads_as_a_patch() {
     let NodeKind::Mesh(m) = &art(&doc)[0].kind else { panic!("{:?}", art(&doc)[0].kind) };
     let colors: Vec<_> = m.points.iter().map(|p| p.color).collect();
     assert_eq!(colors, [Color::rgb(1.0, 0.0, 0.0), Color::rgb(1.0, 1.0, 1.0), Color::rgb(0.0, 1.0, 0.0), Color::rgb(0.0, 0.0, 1.0)]);
-    use vectorcraft_doc::live::{H_DOWN, H_RIGHT};
+    use redrob_vector_doc::live::{H_DOWN, H_RIGHT};
     let first = &m.points[0];
     assert_eq!(
         (first.p, first.handles[H_DOWN], first.handles[H_RIGHT]),

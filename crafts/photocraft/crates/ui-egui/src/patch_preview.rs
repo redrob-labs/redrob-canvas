@@ -1,13 +1,13 @@
 //! Patch Tool drags shown live: while the patch is dragged, the canvas shows the document healed
-//! at the pointer's offset ([`photocraft_engine::retouch_cmds::patch_preview`]) and recomposites
+//! at the pointer's offset ([`redrob_photo_engine::retouch_cmds::patch_preview`]) and recomposites
 //! only the healed area. The preview solves the colour fit coarser for large selections, so it
 //! keeps up with the pointer; releasing commits the exact `paint.patch`, whose damage rect then
 //! refreshes the same area.
 
 use std::sync::Arc;
 
-use photocraft_doc::{DocId, Document};
-use photocraft_geom::Rect;
+use redrob_photo_doc::{DocId, Document};
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -69,12 +69,12 @@ pub(crate) fn display_doc(app: &mut PhotocraftApp, idx: usize) -> Option<(Arc<Do
         // Zoomed out, a finer colour fit than the screen shows is wasted.
         let min_step = (1.0 / app.point_zoom().max(1e-3)).floor().clamp(1.0, 64.0) as u32;
         let params = json!({"offset": offset, "mode": mode, "target": crate::canvas::paint_target(app)});
-        let result = photocraft_engine::retouch_cmds::patch_preview(&app.session, &params, MAX_CELLS, min_step);
+        let result = redrob_photo_engine::retouch_cmds::patch_preview(&app.session, &params, MAX_CELLS, min_step);
         let p = app.patch_preview.as_mut()?;
         match result {
             Ok((d, area)) => {
                 // Duotone documents display through their inks.
-                let d = photocraft_engine::mode_cmds::display_document(&d).unwrap_or(d);
+                let d = redrob_photo_engine::mode_cmds::display_document(&d).unwrap_or(d);
                 p.shown = Some(Arc::new(d));
                 p.offsets.push((offset, area));
             }
@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn dragging_the_patch_previews_the_heal_and_release_commits_it() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 100, "height": 60})).unwrap();
         app.run("paint.pencil", json!({"points": [[68, 30], [74, 30]], "size": 6, "color": "#ff0000"})).unwrap();
         app.run("select.lasso", json!({"points": [[60, 20], [84, 20], [84, 40], [60, 40]]})).unwrap();

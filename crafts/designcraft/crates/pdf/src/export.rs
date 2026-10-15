@@ -1,16 +1,16 @@
-//! Document → PDF. The item walk mirrors `designcraft-render`'s `draw_spread` / `draw_item`.
+//! Document → PDF. The item walk mirrors `redrob-layout-render`'s `draw_spread` / `draw_item`.
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use craft_pdf::write::backend as krilla;
-use craft_pdf::write::{self, Metadata, Writer};
-use designcraft_color::swatch::{ColorType, SwatchValue};
-use designcraft_color::{BlendMode as DcBlend, Color, GradientKind};
-use designcraft_compose::Cache;
-use designcraft_doc::{AssetId, Content, Document, Item, PageSide, Spread, StrokeAlign, StrokeType};
-use designcraft_geom::kurbo::{PathEl, Shape as _};
-use designcraft_geom::{Affine, BezPath, Rect, Vec2, corners};
+use redrob_craft_pdf::write::backend as krilla;
+use redrob_craft_pdf::write::{self, Metadata, Writer};
+use redrob_layout_color::swatch::{ColorType, SwatchValue};
+use redrob_layout_color::{BlendMode as DcBlend, Color, GradientKind};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{AssetId, Content, Document, Item, PageSide, Spread, StrokeAlign, StrokeType};
+use redrob_layout_geom::kurbo::{PathEl, Shape as _};
+use redrob_layout_geom::{Affine, BezPath, Rect, Vec2, corners};
 use krilla::color::{cmyk, luma, rgb};
 use krilla::configure::{Archival, PdfVersion};
 use krilla::geom::{Path, PathBuilder, Size, Transform};
@@ -201,7 +201,7 @@ fn export_pdf_with_report_inner(doc: &Document, cache: &Cache, opts: &PdfOptions
     let mut bytes = writer.finish().map_err(PdfError::from)?;
     // Transparency blends in the document's blend space: CMYK for print (and always in PDF/X).
     let mut warnings = ex.warnings;
-    if !ex.rgb_only && (doc.settings.blend_space == designcraft_doc::BlendSpace::Cmyk || opts.standard == Standard::PdfX4) {
+    if !ex.rgb_only && (doc.settings.blend_space == redrob_layout_doc::BlendSpace::Cmyk || opts.standard == Standard::PdfX4) {
         // The rewrite matches krilla's exact output; in PDF/X-4, `check_pdfx4` reports any
         // group that got past it, with its page.
         crate::pdfx::cmyk_group_spaces(&mut bytes);
@@ -378,7 +378,7 @@ fn export_booklet_inner(doc: &Document, cache: &Cache, opts: &BookletOptions) ->
     }
     ex.check_placed_versions()?;
     let mut bytes = writer.finish().map_err(PdfError::from)?;
-    if doc.settings.blend_space == designcraft_doc::BlendSpace::Cmyk {
+    if doc.settings.blend_space == redrob_layout_doc::BlendSpace::Cmyk {
         crate::pdfx::cmyk_group_spaces(&mut bytes);
     }
     let mut warnings = ex.warnings;
@@ -470,7 +470,7 @@ pub(crate) struct Exporter<'a> {
     /// Placed PDFs too new to embed in this version ("name is PDF 2.0"): the export fails.
     too_new: Vec<String>,
     /// Parsed placed SVGs.
-    svgs: HashMap<AssetId, Option<Arc<designcraft_images::usvg::Tree>>>,
+    svgs: HashMap<AssetId, Option<Arc<redrob_layout_images::usvg::Tree>>>,
     pub fonts: HashMap<u32, Option<krilla::text::Font>>,
     pub reverse_cmaps: HashMap<u32, Arc<HashMap<u32, char>>>,
     /// Convert CMYK to RGB (PDF/A: krilla needs a CMYK output profile we don't ship yet).
@@ -479,19 +479,19 @@ pub(crate) struct Exporter<'a> {
     interpolate: bool,
     /// Tagged PDF: the structure in reading order (stories gather their frames' content).
     tags: Vec<TagEntry>,
-    story_tags: HashMap<designcraft_doc::StoryId, Vec<Identifier>>,
+    story_tags: HashMap<redrob_layout_doc::StoryId, Vec<Identifier>>,
     /// While drawing a story's frame for the structure tree: the story (text runs are tagged
     /// per paragraph, everything else in the frame is an artifact).
-    pub(crate) tag_story: Option<designcraft_doc::StoryId>,
+    pub(crate) tag_story: Option<redrob_layout_doc::StoryId>,
     /// While drawing a frame's text: the frame's box in text space, which a gradient on the text
     /// spans (as InDesign lays it across the frame).
     pub(crate) text_area: Option<Rect>,
     /// Marked content of each (story, paragraph index).
-    pub(crate) para_tags: HashMap<(designcraft_doc::StoryId, usize), Vec<Identifier>>,
+    pub(crate) para_tags: HashMap<(redrob_layout_doc::StoryId, usize), Vec<Identifier>>,
 }
 
 enum TagEntry {
-    Story(designcraft_doc::StoryId),
+    Story(redrob_layout_doc::StoryId),
     Figure(TagGroup),
 }
 
@@ -586,7 +586,7 @@ pub(crate) fn solid_fill(c: krilla::color::Color, opacity: f32) -> Fill {
 impl Exporter<'_> {
     /// A print document, or a PDF/X file (whose output intent is CMYK).
     pub(crate) fn for_print(&self) -> bool {
-        self.doc.settings.intent == designcraft_doc::Intent::Print || self.opts.standard == Standard::PdfX4
+        self.doc.settings.intent == redrob_layout_doc::Intent::Print || self.opts.standard == Standard::PdfX4
     }
 
     pub(crate) fn warn(&mut self, w: impl Into<String>) {
@@ -622,7 +622,7 @@ impl Exporter<'_> {
                         self.doc.swatch(ink).filter(|w| matches!(w.value, SwatchValue::Color { color_type: ColorType::Spot, .. })).unwrap_or(sw);
                     let SwatchValue::Color { color, .. } = &target.value else { break };
                     if process {
-                        return Some(device(&designcraft_color::swatch::apply_tint(*color, t), self.rgb_only));
+                        return Some(device(&redrob_layout_color::swatch::apply_tint(*color, t), self.rgb_only));
                     }
                     let space = SeparationSpace::new(SeparationColorant::Custom(target.name.clone()), regular(color, self.rgb_only));
                     return Some(SepColor::new(q(t), space).into());
@@ -940,10 +940,10 @@ impl Exporter<'_> {
                 let cs = self.cache.get(doc, tfr.story, page);
                 if let (Some(ft), Some(pt)) = (cs.frame(it.id), &tfr.options.path) {
                     // Type on a path: the glyphs as outlines along the path.
-                    for (si, gp) in designcraft_compose::path_glyphs(&cs, ft, &bp, pt) {
+                    for (si, gp) in redrob_layout_compose::path_glyphs(&cs, ft, &bp, pt) {
                         let st = &cs.styles[si as usize];
                         // A gradient spans the path's box.
-                        let fill = designcraft_doc::Fill { swatch: st.fill.clone(), tint: st.fill_tint, ..designcraft_doc::Fill::none() };
+                        let fill = redrob_layout_doc::Fill { swatch: st.fill.clone(), tint: st.fill_tint, ..redrob_layout_doc::Fill::none() };
                         if let (Some(paint), Some(p)) = (self.fill_paint(&fill, bp.bounding_box()), to_path(&gp)) {
                             s.set_fill(Some(Fill { paint, opacity: NormalizedF32::ONE, rule: FillRule::NonZero }));
                             s.draw_path(&p);
@@ -998,15 +998,15 @@ impl Exporter<'_> {
     }
 
     /// A swatch fill (solid or gradient) in the item's inner space. `None` for [None]/unknown.
-    pub(crate) fn fill_paint(&mut self, fill: &designcraft_doc::Fill, bounds: Rect) -> Option<krilla::paint::Paint> {
+    pub(crate) fn fill_paint(&mut self, fill: &redrob_layout_doc::Fill, bounds: Rect) -> Option<krilla::paint::Paint> {
         self.fill_paint_in(fill, bounds, Affine::IDENTITY)
     }
 
     /// [`Self::fill_paint`] for a gradient laid out in a space that `xf` maps to the current one
     /// (text runs: the frame's text space under the run's origin).
-    pub(crate) fn fill_paint_in(&mut self, fill: &designcraft_doc::Fill, bounds: Rect, xf: Affine) -> Option<krilla::paint::Paint> {
+    pub(crate) fn fill_paint_in(&mut self, fill: &redrob_layout_doc::Fill, bounds: Rect, xf: Affine) -> Option<krilla::paint::Paint> {
         let (swatch, tint) = (fill.swatch.as_str(), fill.tint);
-        if let Some(g) = designcraft_color::swatch::resolve_gradient(&self.doc.swatches, swatch) {
+        if let Some(g) = redrob_layout_color::swatch::resolve_gradient(&self.doc.swatches, swatch) {
             let kind = g.kind;
             let mut expanded = g.expanded_stops();
             // Grey and CMYK stops blend as inks, so a grey stop beside a CMYK one is the K ink.
@@ -1089,7 +1089,7 @@ impl Exporter<'_> {
     fn stroke(&mut self, s: &mut Surface, it: &Item, bp: &BezPath, path: &Path) {
         let st = &it.stroke;
         // A gradient swatch runs across the path's box, as on a fill.
-        let paint: krilla::paint::Paint = if designcraft_color::swatch::resolve_gradient(&self.doc.swatches, &st.swatch).is_some() {
+        let paint: krilla::paint::Paint = if redrob_layout_color::swatch::resolve_gradient(&self.doc.swatches, &st.swatch).is_some() {
             let Some(p) = self.fill_paint(&st.as_fill(), bp.bounding_box()) else { return };
             p
         } else {
@@ -1098,9 +1098,9 @@ impl Exporter<'_> {
         };
         let closed = it.path.is_closed();
         let mut cap = match st.cap {
-            designcraft_doc::Cap::Butt => krilla::paint::LineCap::Butt,
-            designcraft_doc::Cap::Round => krilla::paint::LineCap::Round,
-            designcraft_doc::Cap::Projecting => krilla::paint::LineCap::Square,
+            redrob_layout_doc::Cap::Butt => krilla::paint::LineCap::Butt,
+            redrob_layout_doc::Cap::Round => krilla::paint::LineCap::Round,
+            redrob_layout_doc::Cap::Projecting => krilla::paint::LineCap::Square,
         };
         let kind = self.doc.stroke_kind(&st.kind);
         // Stripes, wavy and hash strokes: a filled outline (gap colour under it).
@@ -1109,7 +1109,7 @@ impl Exporter<'_> {
         {
             s.set_stroke(None);
             if let Some(g) = self.swatch_color(&st.gap_swatch, st.gap_tint)
-                && st.gap_swatch != designcraft_color::swatch::NONE
+                && st.gap_swatch != redrob_layout_color::swatch::NONE
             {
                 s.set_stroke(Some(Stroke { paint: g.into(), width: st.weight as f32, opacity: NormalizedF32::ONE, ..Default::default() }));
                 s.set_fill(None);
@@ -1135,7 +1135,7 @@ impl Exporter<'_> {
             }
             _ => None,
         };
-        let arrows = designcraft_doc::arrow::apply(bp, st, closed);
+        let arrows = redrob_layout_doc::arrow::apply(bp, st, closed);
         let trimmed = arrows.as_ref().and_then(|a| to_path(&a.0));
         let path = trimmed.as_ref().unwrap_or(path);
         let aligned = closed && st.align != StrokeAlign::Center;
@@ -1173,9 +1173,9 @@ impl Exporter<'_> {
             miter_limit: st.miter_limit.max(1.0) as f32,
             line_cap: cap,
             line_join: match st.join {
-                designcraft_doc::Join::Miter => krilla::paint::LineJoin::Miter,
-                designcraft_doc::Join::Round => krilla::paint::LineJoin::Round,
-                designcraft_doc::Join::Bevel => krilla::paint::LineJoin::Bevel,
+                redrob_layout_doc::Join::Miter => krilla::paint::LineJoin::Miter,
+                redrob_layout_doc::Join::Round => krilla::paint::LineJoin::Round,
+                redrob_layout_doc::Join::Bevel => krilla::paint::LineJoin::Bevel,
             },
             opacity: NormalizedF32::ONE,
             dash,
@@ -1208,7 +1208,7 @@ impl Exporter<'_> {
     /// file goes in as 1.6 (its header and catalog `/Version` relabelled, as
     /// `qpdf --force-version=1.6` does). A newer
     /// file is left out and the export fails naming it ([`Exporter::check_placed_versions`]).
-    fn placed_pdf(&mut self, asset: &designcraft_doc::Asset) -> Option<krilla::pdf::PdfDocument> {
+    fn placed_pdf(&mut self, asset: &redrob_layout_doc::Asset) -> Option<krilla::pdf::PdfDocument> {
         use hayro_syntax::PdfVersion as V;
         let Ok(pdf) = krilla::pdf::Pdf::new(asset.data.clone()) else {
             self.warn(format!("{}: can't read the placed PDF", asset.name));
@@ -1280,7 +1280,7 @@ impl Exporter<'_> {
             Some(image::ImageFormat::Jpeg) => jpeg(data.clone().into(), || embedded_icc(&data), mode),
             // A CMYK TIFF keeps its ink values (`image` decodes it to RGB, and 100% K would print
             // as four-colour black). PDF/A exports are RGB only.
-            Some(image::ImageFormat::Tiff) if !self.rgb_only && designcraft_images::is_cmyk_tiff(&data) => match cmyk_tiff(&data, mode) {
+            Some(image::ImageFormat::Tiff) if !self.rgb_only && redrob_layout_images::is_cmyk_tiff(&data) => match cmyk_tiff(&data, mode) {
                 Some(img) => Some(img),
                 None => {
                     warning = Some(CMYK_FALLBACK_WARNING);
@@ -1309,10 +1309,10 @@ impl Exporter<'_> {
         img
     }
 
-    pub(crate) fn graphic(&mut self, s: &mut Surface, g: &designcraft_doc::Graphic) {
+    pub(crate) fn graphic(&mut self, s: &mut Surface, g: &redrob_layout_doc::Graphic) {
         // Video / sound without a poster: a dark frame with a play mark.
         if let Some(asset) = self.doc.assets.get(&g.asset)
-            && designcraft_doc::media_kind(&asset.mime).is_some()
+            && redrob_layout_doc::media_kind(&asset.mime).is_some()
         {
             let (w, h) = g.size;
             let (cx, cy, r) = (w / 2.0, h / 2.0, w.min(h) * 0.18);
@@ -1356,10 +1356,10 @@ impl Exporter<'_> {
         }
         // Placed SVGs go in as vectors too.
         if let Some(asset) = self.doc.assets.get(&g.asset)
-            && designcraft_images::is_svg(&asset.data)
+            && redrob_layout_images::is_svg(&asset.data)
         {
             let Some(size) = Size::from_wh(g.size.0.max(1e-3) as f32, g.size.1.max(1e-3) as f32) else { return };
-            let tree = self.svgs.entry(g.asset).or_insert_with(|| designcraft_images::svg_tree(&asset.data).map(Arc::new)).clone();
+            let tree = self.svgs.entry(g.asset).or_insert_with(|| redrob_layout_images::svg_tree(&asset.data).map(Arc::new)).clone();
             match tree {
                 Some(tree) => {
                     use krilla_svg::SurfaceExt;
@@ -1479,7 +1479,7 @@ fn lossless(data: &Arc<Vec<u8>>, fmt: Option<image::ImageFormat>, mode: RasterMo
     // krilla reads PNG, GIF and WebP lazily: a damaged file is accepted here and fails the whole
     // export when the PDF is written. Decoding it first means it is skipped, like any other
     // image that can't be decoded.
-    let rgba = designcraft_images::decode_rgba(data)?;
+    let rgba = redrob_layout_images::decode_rgba(data)?;
     let direct = match fmt {
         Some(image::ImageFormat::Png | image::ImageFormat::Gif | image::ImageFormat::WebP) if mode.tag_rgb && untagged_rgb(data) => None,
         Some(image::ImageFormat::Png) => Image::from_png(data.clone().into(), i).ok(),
@@ -1547,7 +1547,7 @@ impl krilla::image::CustomImage for SrgbImage {
 /// the output intent's press, and tagging them with another CMYK profile would let a RIP
 /// convert 100% K to four-colour black.
 #[derive(Clone, Hash)]
-struct CmykImage(Arc<designcraft_images::CmykRaster>);
+struct CmykImage(Arc<redrob_layout_images::CmykRaster>);
 
 impl krilla::image::CustomImage for CmykImage {
     fn color_channel(&self) -> &[u8] {
@@ -1572,7 +1572,7 @@ impl krilla::image::CustomImage for CmykImage {
 
 /// A CMYK TIFF as a DeviceCMYK image. `None` when it can't be read as CMYK.
 fn cmyk_tiff(data: &[u8], mode: RasterMode) -> Option<Image> {
-    let r = designcraft_images::decode_cmyk_tiff(data)?;
+    let r = redrob_layout_images::decode_cmyk_tiff(data)?;
     // krilla panics when the channel lengths don't match the size.
     let pixels = usize::try_from(r.width).ok()?.checked_mul(usize::try_from(r.height).ok()?)?;
     if r.cmyk.len() != pixels.checked_mul(4)? || r.alpha.as_ref().is_some_and(|a| a.len() != pixels) {
@@ -1598,7 +1598,7 @@ fn recompress(data: &[u8], mode: RasterMode) -> Option<Image> {
 #[cfg(test)]
 mod image_content_cache_tests {
     use super::*;
-    use designcraft_doc::Asset;
+    use redrob_layout_doc::Asset;
 
     fn png(w: u32, h: u32, color: [u8; 4]) -> Vec<u8> {
         let image = image::RgbaImage::from_pixel(w, h, image::Rgba(color));
@@ -1709,9 +1709,9 @@ mod image_content_cache_tests {
     #[test]
     fn successful_cmyk_fallback_replays_each_asset_name_once_and_converts_once() {
         let bytes = crate::image_fixtures::cmyk_tiff(None, true);
-        assert!(designcraft_images::is_cmyk_tiff(&bytes));
-        assert!(designcraft_images::decode_cmyk_tiff(&bytes).is_none());
-        assert!(designcraft_images::decode_rgba(&bytes).is_some());
+        assert!(redrob_layout_images::is_cmyk_tiff(&bytes));
+        assert!(redrob_layout_images::decode_cmyk_tiff(&bytes).is_none());
+        assert!(redrob_layout_images::decode_rgba(&bytes).is_some());
         let mut d = Document::new(&Default::default());
         let a = asset(&mut d, bytes.clone(), "ink-a.tif");
         let b = asset(&mut d, bytes, "ink-b.tif");
@@ -1843,7 +1843,7 @@ mod unwind_tests {
             assert!(String::from_utf8_lossy(&output.stdout).contains("all three export entry points recovered"));
             return;
         }
-        let doc = Document::new(&designcraft_doc::build::NewDocument { pages: 1, ..Default::default() });
+        let doc = Document::new(&redrob_layout_doc::build::NewDocument { pages: 1, ..Default::default() });
         let cache = Cache::new();
         let source = export_pdf(&doc, &cache, &Default::default()).unwrap();
         let parts = [(source, vec![(612.0, 792.0)])];

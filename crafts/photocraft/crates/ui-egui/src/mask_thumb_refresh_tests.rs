@@ -4,8 +4,8 @@
 
 use egui::vec2;
 use egui_kittest::Harness;
-use photocraft_doc::LayerId;
-use photocraft_raster::Surface;
+use redrob_photo_doc::LayerId;
+use redrob_photo_raster::Surface;
 use serde_json::json;
 
 use crate::mask_thumbs_ui::THUMB_MASK;
@@ -13,7 +13,7 @@ use crate::{PhotocraftApp, surface_fingerprint};
 
 #[test]
 fn fingerprint_sees_the_default_pixel() {
-    let fmt = photocraft_color::PixelFormat::GRAY8;
+    let fmt = redrob_photo_color::PixelFormat::GRAY8;
     let white = Surface::with_default(fmt, &[1.0]);
     let black = Surface::with_default(fmt, &[0.0]);
     assert_eq!(white.tile_count(), 0);
@@ -23,7 +23,7 @@ fn fingerprint_sees_the_default_pixel() {
 
 #[test]
 fn inverting_a_tileless_mask_refreshes_its_thumbnail() {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 200, "height": 100})).unwrap();
     let id = s.execute("layer.new.layer", json!({"name": "Masked"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.layerMask.revealAll", json!({"layer": id})).unwrap();

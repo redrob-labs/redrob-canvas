@@ -7,7 +7,7 @@
 //!   "preview": { "mime": "image/png", "data": "<base64>" },
 //!   "profiles": { "<profile name>": { "mime": "application/vnd.iccprofile", "data": "<base64>" } },
 //!   "pdf": { "mime": "application/pdf", "data": "<base64>" },
-//!   "document": { …vectorcraft_doc::Document… },
+//!   "document": { …redrob_vector_doc::Document… },
 //!   "images": { "<key>": { "mime": "image/png", "data": "<base64>" } } }
 //! ```
 //! It is lossless for everything in the document model; foreign data lives in `document.unknown`
@@ -42,7 +42,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::io::{Read as _, Write};
 
 use serde::{Deserialize, Serialize};
-use vectorcraft_doc::{Document, ImageBlob};
+use redrob_vector_doc::{Document, ImageBlob};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use atomic::{sync_file, write_atomic, write_atomic_with, write_new_with};
@@ -160,7 +160,7 @@ fn is_packed(mime: &str) -> bool {
 
 /// The MIME type of a preview's bytes (JPEG or PNG).
 fn preview_mime(bytes: &[u8]) -> &'static str {
-    if bytes.starts_with(&[0xff, 0xd8]) { "image/jpeg" } else { vectorcraft_doc::links::PROXY_MIME }
+    if bytes.starts_with(&[0xff, 0xd8]) { "image/jpeg" } else { redrob_vector_doc::links::PROXY_MIME }
 }
 
 /// The JSON of a file and the data after it (v4), split at [`BLOB_MAGIC`] after the first JSON
@@ -675,8 +675,8 @@ mod tests {
         assert_eq!(load_info(v1.as_bytes()).unwrap().1, FileInfo { version: 1, legacy: false });
         assert!(load_info(v1.as_bytes()).unwrap().1.is_old());
     }
-    use vectorcraft_doc::{Appearance, ImageObject, Node, NodeKind};
-    use vectorcraft_geom::{Affine, Rect, shapes};
+    use redrob_vector_doc::{Appearance, ImageObject, Node, NodeKind};
+    use redrob_vector_geom::{Affine, Rect, shapes};
 
     #[test]
     fn roundtrip() {

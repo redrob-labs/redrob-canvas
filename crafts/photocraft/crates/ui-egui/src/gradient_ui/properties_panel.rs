@@ -220,7 +220,7 @@ mod tests {
     };
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 120})).unwrap();
         app.run(cmds::CREATE, json!({"from": [20, 60], "to": [180, 60], "stops": [[0, "#ff0000"], [1, "#0000ff"]], "transparency": [[0, 20], [1, 100]]}))
             .unwrap();
@@ -389,7 +389,7 @@ mod tests {
     #[test]
     fn selection_follows_sorted_stops_including_equal_positions() {
         let f = Fill::gradient(
-            vec![(0.0, photocraft_color::Color::BLACK), (0.5, photocraft_color::Color::WHITE), (1.0, photocraft_color::Color::WHITE)],
+            vec![(0.0, redrob_photo_color::Color::BLACK), (0.5, redrob_photo_color::Color::WHITE), (1.0, redrob_photo_color::Color::WHITE)],
             0.0,
             1.0,
             GradientStyle::Linear,

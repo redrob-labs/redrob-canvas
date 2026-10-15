@@ -8,7 +8,7 @@
 //! `dimPercent`. OK runs `layer.setProps`, `layer.new` or `layer.newSublayer`.
 
 use serde_json::{Value, json};
-use vectorcraft_doc::{LAYER_COLORS, LayerColor, Node, NodeId, NodeKind};
+use redrob_vector_doc::{LAYER_COLORS, LayerColor, Node, NodeId, NodeKind};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, form, run_and_close};
@@ -96,7 +96,7 @@ pub fn open_new(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     let sublayer = p.get("sublayer").and_then(Value::as_bool).unwrap_or(false);
     let color = LayerColor::Preset((layers.len() % LAYER_COLORS.len()) as u8);
     let name = format!("Layer {i}");
-    let name = if app.session.prefs.identify_objects_by == "xmlId" { vectorcraft_doc::xml_id::from_object_name(&name) } else { name };
+    let name = if app.session.prefs.identify_objects_by == "xmlId" { redrob_vector_doc::xml_id::from_object_name(&name) } else { name };
     let fields = json!({
         "mode": if sublayer { "newSublayer" } else { "new" }, "layer": true, "name": name, "color": color_field(color),
         "template": false, "locked": false, "visible": true, "printable": true, "preview": true, "dimImages": false, "dimPercent": 50,
@@ -161,7 +161,7 @@ fn body(_: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
                     .find(|(n, _)| n.eq_ignore_ascii_case(&cur))
                     .map(|(_, c)| *c)
                     .or_else(|| {
-                        vectorcraft_color::Color::from_hex(&cur).map(|c| {
+                        redrob_vector_color::Color::from_hex(&cur).map(|c| {
                             let [r, g, b, _] = c.to_rgba8(1.0);
                             [r, g, b]
                         })
@@ -244,7 +244,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());

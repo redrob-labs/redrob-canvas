@@ -5,9 +5,9 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use craft_pdf::syntax::Pdf;
-use craft_pdf::syntax::object::{Array, Dict, Object, ObjectIdentifier, Stream, String as PdfString};
-use craft_pdf::write::backend as krilla;
+use redrob_craft_pdf::syntax::Pdf;
+use redrob_craft_pdf::syntax::object::{Array, Dict, Object, ObjectIdentifier, Stream, String as PdfString};
+use redrob_craft_pdf::write::backend as krilla;
 use krilla::embed::{AssociationKind, EmbeddedFile, MimeType};
 use krilla::metadata::DateTime;
 

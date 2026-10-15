@@ -10,7 +10,7 @@ use std::sync::Arc;
 use egui::text::{LayoutJob, TextFormat};
 use egui::{FontId, Ui};
 use serde_json::{Value, json};
-use vectorcraft_svg::{CssOptions, CssUnits};
+use redrob_vector_svg::{CssOptions, CssUnits};
 
 use super::{pstate, set_pstate};
 use crate::theme::Tokens;
@@ -197,7 +197,7 @@ pub(crate) fn export_file(app: &mut VectorcraftApp, p: &Value) -> Result<Value, 
     let mut images = Vec::new();
     for im in r["images"].as_array().into_iter().flatten() {
         let (Some(name), Some(data)) = (im["name"].as_str(), im["dataBase64"].as_str()) else { continue };
-        let bytes = vectorcraft_format::base64_decode(data).ok_or("the export returned unreadable data")?;
+        let bytes = redrob_vector_format::base64_decode(data).ok_or("the export returned unreadable data")?;
         let at = folder.as_ref().map_or_else(|| name.to_string(), |f| f.join(name).to_string_lossy().into_owned());
         io::write_to(&mut app.services, &at, &bytes)?;
         images.push(at);

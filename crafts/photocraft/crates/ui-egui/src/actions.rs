@@ -8,13 +8,13 @@ use egui::{Align2, Color32, Rect, Sense, Stroke, pos2, vec2};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use photocraft_engine::actions_cmds::{self, Action};
+use redrob_photo_engine::actions_cmds::{self, Action};
 
 use crate::PhotocraftApp;
 use crate::theme::Tokens;
 
 /// Which row is selected and which rows are expanded. The action list itself is
-/// [`photocraft_engine::Session::actions`].
+/// [`redrob_photo_engine::Session::actions`].
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ActionsUi {
@@ -41,7 +41,7 @@ struct RenameAction {
 }
 
 pub(crate) fn label_of(id: &str) -> String {
-    photocraft_engine::commands::find(id)
+    redrob_photo_engine::commands::find(id)
         .map(|c| c.label)
         .or_else(|| crate::menus::UI_COMMANDS.iter().find(|c| c.0 == id).map(|c| c.1))
         // Shell menu items recorded as steps, like Save a Copy (#4373).
@@ -284,9 +284,9 @@ fn step_label(id: &str, params: &Value) -> String {
         let cond = params.get("if").and_then(Value::as_str).unwrap_or("?");
         let branch = |k: &str| params.get(k).and_then(Value::as_str).unwrap_or("–").to_string();
         format!("{}: {cond} → {} / {}", label_of(id), branch("then"), branch("else"))
-    } else if id == photocraft_engine::atn_cmds::STOP_MESSAGE {
+    } else if id == redrob_photo_engine::atn_cmds::STOP_MESSAGE {
         format!("{}: {}", label_of(id), params.get("message").and_then(Value::as_str).unwrap_or_default())
-    } else if id == photocraft_engine::atn_cmds::PHOTOSHOP_STEP {
+    } else if id == redrob_photo_engine::atn_cmds::PHOTOSHOP_STEP {
         // A step from a .atn file Redrob Canvas can't play yet: its Photoshop name, marked.
         let name = params.get("name").and_then(Value::as_str).filter(|n| !n.is_empty()).unwrap_or("?");
         crate::i18n::fmt(tl!("{name} (Photoshop)"), &[("name", name)])
@@ -303,7 +303,7 @@ fn source(name: &str, bytes: &[u8]) -> Value {
         return json!({"path": name});
     }
     let _ = name;
-    json!({"data": photocraft_engine::paint::tile::b64_encode(bytes)})
+    json!({"data": redrob_photo_engine::paint::tile::b64_encode(bytes)})
 }
 
 /// Load a `.atn` file's bytes into the Actions panel (the panel menu's Load Actions…).
@@ -356,7 +356,7 @@ fn save_dialog(app: &mut PhotocraftApp, set: Option<String>) -> Result<Value, St
         None => json!({"skipUnsupported": true}),
     };
     let r = app.run("actions.save", params)?;
-    let bytes = r["data"].as_str().and_then(photocraft_engine::paint::tile::b64_decode).ok_or("the export returned no data")?;
+    let bytes = r["data"].as_str().and_then(redrob_photo_engine::paint::tile::b64_decode).ok_or("the export returned no data")?;
     let n = r["actions"].as_array().map_or(0, Vec::len) as u64;
     let skipped = r["skipped"].as_array().map_or(0, Vec::len);
     let file = format!("{}.atn", r["set"].as_str().unwrap_or("Actions"));
@@ -416,7 +416,7 @@ pub fn insert_stop_confirm(app: &mut PhotocraftApp, fields: &serde_json::Map<Str
     let params = json!({
         "action": action,
         "at": fields.get("at").cloned().unwrap_or(Value::Null),
-        "id": photocraft_engine::atn_cmds::STOP_MESSAGE,
+        "id": redrob_photo_engine::atn_cmds::STOP_MESSAGE,
         "params": {"message": fields.get("message").cloned().unwrap_or(json!("")), "allowContinue": fields.get("allowContinue").cloned().unwrap_or(json!(false))},
     });
     let r = app.run("actions.insert", params)?;
@@ -991,7 +991,7 @@ mod tests {
     #[test]
     fn selected_layer_name_is_visible_during_recording_and_after_stop() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width":4,"height":4})).unwrap();
         app.run("layer.setProps", json!({"name":"Background"})).unwrap();
         let layer = app.session.active().unwrap().active_layer.unwrap();
@@ -1012,7 +1012,7 @@ mod tests {
     fn actions_list_grows_with_panel_and_keeps_footer_visible() {
         use egui_kittest::{Harness, kittest::Queryable};
         let bottom = |height: f32| {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             for i in 0..50 {
                 app.session.actions.list.push(Action { name: format!("Action {i}"), steps: vec![], disabled: Default::default(), ..Default::default() });
             }
@@ -1029,7 +1029,7 @@ mod tests {
     #[test]
     fn double_clicking_an_action_name_renames_it_in_place() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         app.session.actions.list.push(Action {
             name: "Action 1".into(),
@@ -1067,7 +1067,7 @@ mod tests {
 
     #[test]
     fn play_button_targets_first_action_if_nothing_is_selected() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         assert_eq!(playback_selection(&app), None);
         app.session.actions.list.push(Action {
@@ -1102,7 +1102,7 @@ mod tests {
     #[test]
     fn step_check_box_excludes_the_step_from_playback_and_batch() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 16, "height": 16})).unwrap();
         let steps = ["A", "B", "C"].map(|n| ("layer.new.layer".to_string(), json!({"name": n})));
         app.session.actions.list.push(Action::new("Three", steps.to_vec()));
@@ -1126,7 +1126,7 @@ mod tests {
     #[test]
     fn playback_errors_are_visible_in_status_bar() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         app.session.actions.list.push(Action {
             name: "Bad action".into(),
@@ -1145,7 +1145,7 @@ mod tests {
     #[test]
     fn recording_reveals_new_action_and_latest_step_in_a_long_panel() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width":4,"height":4})).unwrap();
         for i in 0..30 {
             app.session.actions.list.push(Action { name: format!("Existing {i}"), steps: vec![], disabled: Default::default(), ..Default::default() });
@@ -1168,7 +1168,7 @@ mod tests {
     #[test]
     fn drag_steps_and_action_headers_reorders_and_keeps_selection() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.actions.list.push(Action {
             name: "First".into(),
             steps: vec![("view.zoomOut".into(), json!({})), ("view.fitOnScreen".into(), json!({})), ("view.actualPixels".into(), json!({}))],
@@ -1209,7 +1209,7 @@ mod tests {
 
     #[test]
     fn nested_shell_actions_include_view_steps_and_propagate_failures() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width":40,"height":40})).unwrap();
         app.session.actions.list.push(Action {
             name: "Child".into(),
@@ -1227,7 +1227,7 @@ mod tests {
         assert!(r.get("failed").is_none(), "{r}");
         assert!(app.ui.views[0].fit_pending);
         app.session.authorize =
-            Some(|id, _| if id == "view.fitOnScreen" { Err(photocraft_engine::EngineError::Other("denied nested view".into())) } else { Ok(()) });
+            Some(|id, _| if id == "view.fitOnScreen" { Err(redrob_photo_engine::EngineError::Other("denied nested view".into())) } else { Ok(()) });
         let r = app.run("actions.play", json!({"action":"Parent"})).unwrap();
         assert!(r["failed"]["error"].as_str().unwrap().contains("denied nested view"));
         assert!(app.session.actions.playback_stack.is_empty());
@@ -1237,7 +1237,7 @@ mod tests {
     #[test]
     fn panel_shows_pending_steps_and_trash_deletes_only_the_clicked_step() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 40, "height": 40})).unwrap();
         begin_recording(&mut app, false);
         app.run("view.fitOnScreen", json!({})).unwrap();
@@ -1272,7 +1272,7 @@ mod tests {
 
     #[test]
     fn view_menu_commands_record_append_and_replay_after_resize() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         app.run("file.new", json!({"width": 160, "height": 100})).unwrap();
         begin_recording(&mut app, false);
@@ -1303,7 +1303,7 @@ mod tests {
 
     #[test]
     fn view_action_failure_resume_and_authorization() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.actions.list.push(Action {
             name: "Fit".into(),
             steps: vec![("view.fitOnScreen".into(), json!({})), ("view.actualPixels".into(), json!({}))],
@@ -1318,7 +1318,7 @@ mod tests {
         app.session.authorize =
             Some(
                 |id, _| {
-                    if id == "view.fitOnScreen" { Err(photocraft_engine::EngineError::BadParams { cmd: id.into(), msg: "denied view".into() }) } else { Ok(()) }
+                    if id == "view.fitOnScreen" { Err(redrob_photo_engine::EngineError::BadParams { cmd: id.into(), msg: "denied view".into() }) } else { Ok(()) }
                 },
             );
         let result = app.run("actions.play", json!({"action": 0})).unwrap();
@@ -1334,7 +1334,7 @@ mod tests {
 
     #[test]
     fn record_and_replay_on_another_document() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 40, "height": 40})).unwrap();
         app.sync_views();
         app.run("actions.record", json!({})).unwrap();
@@ -1361,7 +1361,7 @@ mod tests {
         let log = written.clone();
         let services = crate::Services {
             export: Some(Box::new(|doc, path, _| {
-                photocraft_io::export(doc, path, &Default::default()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string())
+                redrob_photo_io::export(doc, path, &Default::default()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string())
             })),
             write: Some(Box::new(move |path, _| {
                 log.borrow_mut().push(path.to_string());
@@ -1369,7 +1369,7 @@ mod tests {
             })),
             ..Default::default()
         };
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         let ctx = egui::Context::default();
         app.run("file.new", json!({"width": 16, "height": 16})).unwrap();
         app.run("actions.record", json!({})).unwrap();
@@ -1391,16 +1391,16 @@ mod tests {
     fn disk_app(answers: Vec<Option<crate::file_dialog::FileDialogAnswer>>) -> PhotocraftApp {
         let services = crate::Services {
             import: Some(Box::new(|name, bytes, depth| {
-                photocraft_io::import_with_svg_group_depth(name, bytes, depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
+                redrob_photo_io::import_with_svg_group_depth(name, bytes, depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
             })),
             export: Some(Box::new(|doc, path, _| {
-                photocraft_io::export(doc, path, &Default::default()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string())
+                redrob_photo_io::export(doc, path, &Default::default()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string())
             })),
             write: Some(Box::new(|path, bytes| std::fs::write(path, bytes).map_err(|e| e.to_string()))),
             file_dialog: Some(crate::file_dialog::fake(answers).0),
             ..Default::default()
         };
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         app.background_jobs = false;
         app
     }
@@ -1465,7 +1465,7 @@ mod tests {
     #[test]
     fn set_folders_group_actions_and_collapse() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let mut sharpen = Action::new("Sharpen", vec![("filter.sharpen.sharpen".into(), json!({}))]);
         sharpen.set = Some("Retouch".into());
         let mut soften = Action::new("Soften", vec![("filter.blur.blur".into(), json!({}))]);
@@ -1497,7 +1497,7 @@ mod tests {
 
     #[test]
     fn moving_an_action_next_to_another_set_joins_it() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let mut a = Action::new("A", vec![]);
         a.set = Some("One".into());
         let mut b = Action::new("B", vec![]);
@@ -1518,7 +1518,7 @@ mod tests {
 
     #[test]
     fn insert_stop_dialog_adds_a_stop_after_the_selected_step() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 8, "height": 8})).unwrap();
         app.session.actions.list.push(Action::new("A", vec![("select.all".into(), json!({})), ("select.inverse".into(), json!({}))]));
         assert!(insert_stop_dialog(&mut app).is_err(), "needs a selected action");
@@ -1532,7 +1532,7 @@ mod tests {
         d.fields.insert("allowContinue".into(), json!(true));
         crate::dialogs::confirm(&mut app, id).unwrap();
         let steps = &app.session.actions.list[0].steps;
-        assert_eq!(steps[1], (photocraft_engine::atn_cmds::STOP_MESSAGE.to_string(), json!({"message": "Check the mask", "allowContinue": true})));
+        assert_eq!(steps[1], (redrob_photo_engine::atn_cmds::STOP_MESSAGE.to_string(), json!({"message": "Check the mask", "allowContinue": true})));
         assert_eq!((app.ui.actions.selected, app.ui.actions.selected_step), (Some(0), Some(1)));
         assert_eq!(step_label(&steps[1].0, &steps[1].1), "Stop: Check the mask");
         // Without a selected step the stop goes last; the panel's menu wiring is exercised by name.
@@ -1545,7 +1545,7 @@ mod tests {
 
     #[test]
     fn a_dialog_toggled_step_pauses_playback_and_resumes_on_ok() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 16, "height": 16})).unwrap();
         let mut a = Action::new(
             "Blur",
@@ -1595,7 +1595,7 @@ mod tests {
     #[test]
     fn button_mode_plays_the_clicked_action_and_hides_its_steps() {
         use egui_kittest::{Harness, kittest::Queryable};
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 16, "height": 16})).unwrap();
         app.session.actions.list.push(Action::new("Print", vec![("layer.new.layer".into(), json!({}))]));
         app.session.actions.list[0].color = "blue".into();

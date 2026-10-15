@@ -3,7 +3,7 @@ use egui::{Event, Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::{Harness, kittest::Queryable};
 
 fn app() -> DesignApp {
-    DesignApp::new(designcraft_engine::Session::new(), Default::default())
+    DesignApp::new(redrob_layout_engine::Session::new(), Default::default())
 }
 
 #[test]
@@ -212,7 +212,7 @@ fn serialized_layout_actions_cover_geometry_reorder_accordion_and_atomic_rejecti
     app.run("window.panel.move", json!({"panel":"swatches","anchor":"layers","zone":"top"})).unwrap();
     app.run("window.panel.layout", json!({"action":{"ResizeSplit":{"path":[],"size":{"Ratio":0.35}}}})).unwrap();
     assert!(
-        matches!(app.ui.docking.as_ref().unwrap().root, Some(Node::Split { size: craft_ui::layout::SplitSize::Ratio(value), .. }) if (value - 0.35).abs() < 0.001)
+        matches!(app.ui.docking.as_ref().unwrap().root, Some(Node::Split { size: redrob_craft_ui::layout::SplitSize::Ratio(value), .. }) if (value - 0.35).abs() < 0.001)
     );
     app.run("window.panel.float", json!({"panel":"properties"})).unwrap();
     app.run("window.panel.layout", json!({"action":{"MoveFloating":{"panel":"properties","rect":[44,66,360,450]}}})).unwrap();
@@ -236,7 +236,7 @@ fn serialized_layout_actions_cover_geometry_reorder_accordion_and_atomic_rejecti
         assert_eq!(app.ui.docking_hidden, hidden);
     }
     app.ui.docking = Some(Layout {
-        root: Some(Node::Stack { entries: vec![craft_ui::docking::StackEntry { panel: "layers".into(), open: true, height: Some(100.0) }] }),
+        root: Some(Node::Stack { entries: vec![redrob_craft_ui::docking::StackEntry { panel: "layers".into(), open: true, height: Some(100.0) }] }),
         floating: Vec::new(),
     });
     app.run("window.panel.layout", json!({"action":{"SetStackOpen":{"panel":"layers","open":false}}})).unwrap();
@@ -286,7 +286,7 @@ fn populated_canvas_keeps_a_real_stroke_edit_after_floating_and_redocking() {
         h.run_steps(1);
     }
     h.run_steps(2);
-    assert_eq!(h.state().session.active().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().stroke.join, designcraft_doc::Join::Bevel);
+    assert_eq!(h.state().session.active().unwrap().doc.item(redrob_layout_doc::ItemId(id)).unwrap().stroke.join, redrob_layout_doc::Join::Bevel);
     if let Some(directory) = &directory {
         std::fs::create_dir_all(directory).unwrap();
         h.render().unwrap().save(directory.join("designcraft-populated-stroke-floating.png")).unwrap();
@@ -295,7 +295,7 @@ fn populated_canvas_keeps_a_real_stroke_edit_after_floating_and_redocking() {
     let to = h.ctx.read_response(egui::Id::new("designcraft-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
     drag(&mut h, from, to);
     assert!(h.state().ui.docking.as_ref().unwrap().floating.is_empty());
-    assert_eq!(h.state().session.active().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().stroke.join, designcraft_doc::Join::Bevel);
+    assert_eq!(h.state().session.active().unwrap().doc.item(redrob_layout_doc::ItemId(id)).unwrap().stroke.join, redrob_layout_doc::Join::Bevel);
     if let Some(directory) = &directory {
         h.render().unwrap().save(directory.join("designcraft-populated-stroke-redocked.png")).unwrap();
     }

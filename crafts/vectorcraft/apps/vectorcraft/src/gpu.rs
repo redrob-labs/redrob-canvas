@@ -1030,7 +1030,7 @@ mod tests {
     /// The preference the engine saves is the one the app reads back before the window opens.
     #[test]
     fn the_saved_engine_preference_is_found() {
-        let mut prefs = vectorcraft_engine::Prefs::default();
+        let mut prefs = redrob_vector_engine::Prefs::default();
         let saved = prefs.to_json();
         assert_eq!(saved.get("gpuPreference").and_then(serde_json::Value::as_str), Some("automatic"));
         for (value, power) in [("lowPower", PowerPreference::LowPower), ("highPerformance", PowerPreference::HighPerformance)] {
@@ -1039,7 +1039,7 @@ mod tests {
             assert_eq!(power_preference(saved.get("gpuPreference").and_then(serde_json::Value::as_str), None), power);
         }
         // Every choice Preferences offer means something here.
-        for (value, _) in vectorcraft_engine::cmd::prefscmds::GPU_PREFERENCES {
+        for (value, _) in redrob_vector_engine::cmd::prefscmds::GPU_PREFERENCES {
             assert!(["automatic", "lowPower", "highPerformance"].contains(value), "{value}");
         }
     }

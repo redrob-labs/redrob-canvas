@@ -1,9 +1,9 @@
 //! Inline graphics in text: `text.insertInline`, editing over them, undo, following their symbol.
 
 use serde_json::json;
-use vectorcraft_doc::text::INLINE_CHAR;
-use vectorcraft_doc::{NodeId, NodeKind, TextObject};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use redrob_vector_doc::text::INLINE_CHAR;
+use redrob_vector_doc::{NodeId, NodeKind, TextObject};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 
@@ -174,9 +174,9 @@ fn saved_documents_keep_inline_graphics() {
     let id = text(&mut s, "ab");
     s.execute("text.insertInline", &json!({"id": id.0, "at": 1, "symbol": "Dot", "scale": 2})).unwrap();
     let doc = (*s.doc().unwrap().doc).clone();
-    let bytes = vectorcraft_format::save(&doc, false);
+    let bytes = redrob_vector_format::save(&doc, false);
     assert!(String::from_utf8_lossy(&bytes).contains("\"inline\""));
-    let mut back = vectorcraft_format::load(&bytes).unwrap();
+    let mut back = redrob_vector_format::load(&bytes).unwrap();
     // Bounds aren't saved: opening resolves them.
     let mut s2 = Session::new();
     back.title = "copy".into();

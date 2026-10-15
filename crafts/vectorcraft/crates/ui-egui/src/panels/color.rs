@@ -13,7 +13,7 @@
 
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, Ui, vec2};
 use serde_json::json;
-use vectorcraft_color::{Color, GradientKind, Paint};
+use redrob_vector_color::{Color, GradientKind, Paint};
 
 use super::{active_paint, color_json, live_run, pstate, set_pstate};
 use crate::theme::Tokens;
@@ -182,7 +182,7 @@ pub fn spectrum_at(mode: Mode, x: f32, y: f32) -> Color {
             Color::cmyk(c0, m, yy, k)
         }
         Mode::WebSafe => web_safe(&c),
-        Mode::Lab => c.in_model(vectorcraft_color::cms::Model::Lab),
+        Mode::Lab => c.in_model(redrob_vector_color::cms::Model::Lab),
         _ => c,
     }
 }
@@ -702,7 +702,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
@@ -911,7 +911,7 @@ mod tests {
         assert_eq!((Mode::Lab.value_at(1, 0.0), Mode::Lab.value_at(0, 1.0)), (-128.0, 100.0));
         assert_eq!((Mode::Rgb.value_at(0, 0.5), Mode::WebSafe.value_at(0, 0.45)), (128.0, 102.0), "other modes as before");
         assert_eq!(track_color(Mode::Lab, &[50.0, -20.0, 30.0], 1, 0.0), Color::lab(50.0, -128.0, 30.0));
-        assert_eq!(convert_to(Mode::Lab, &Color::rgb(1.0, 0.0, 0.0)).model(), vectorcraft_color::cms::Model::Lab);
+        assert_eq!(convert_to(Mode::Lab, &Color::rgb(1.0, 0.0, 0.0)).model(), redrob_vector_color::cms::Model::Lab);
         // In the panel: a Lab fill shows L, a, b.
         let mut app = app();
         let ctx = egui::Context::default();

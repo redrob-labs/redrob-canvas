@@ -1,6 +1,6 @@
 //! Brushes (Brushes panel, Paintbrush, Expand) and Symbols (Symbols panel, symbolism tools).
 //!
-//! Brush definitions live in `vectorcraft-brush` and are stored in `Document::unknown["brushes"]`.
+//! Brush definitions live in `redrob-vector-brush` and are stored in `Document::unknown["brushes"]`.
 //! Symbol definitions are `Document::symbols`; symbols made here are *normalised*: the art is
 //! centred on the origin and scaled (non-uniformly, strokes untouched) into the ±10 pt box that
 //! `Node::geometric_bounds` assumes for instances, and each instance's `xf` scales it back. The
@@ -9,20 +9,20 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use vectorcraft_brush::{self as brush, Brush};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{AppearanceItem, Document, FillLayer, Node, NodeId, NodeKind, Symbol};
-use vectorcraft_geom::{Affine, Point, Vec2};
+use redrob_vector_brush::{self as brush, Brush};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{AppearanceItem, Document, FillLayer, Node, NodeId, NodeKind, Symbol};
+use redrob_vector_geom::{Affine, Point, Vec2};
 
 use super::edit::selected_roots;
 use super::pathops::{remove_each, separate};
 use super::*;
 use crate::EngineError;
 
-const SIZES_KEY: &str = vectorcraft_doc::SYMBOL_SIZES;
+const SIZES_KEY: &str = redrob_vector_doc::SYMBOL_SIZES;
 const CURRENT_SYMBOL: &str = "currentSymbol";
 /// Half the instance box `Node::geometric_bounds` uses for symbol instances.
-const HALF: f64 = vectorcraft_doc::SYMBOL_HALF;
+const HALF: f64 = redrob_vector_doc::SYMBOL_HALF;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
@@ -630,7 +630,7 @@ fn expanded_instance(d: &mut Document, inst: &Node) -> Option<Node> {
     }
     art.transform(*xf, false);
     let mut art = d.reid(&art);
-    if inst.opacity < 1.0 || inst.blend != vectorcraft_color::BlendMode::Normal {
+    if inst.opacity < 1.0 || inst.blend != redrob_vector_color::BlendMode::Normal {
         if !matches!(art.kind, NodeKind::Group { .. }) {
             let id = d.alloc_id();
             art = Node::group(id, vec![Arc::new(art)]);

@@ -5,7 +5,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 
-use designcraft_engine::{Session, doc::Document};
+use redrob_layout_engine::{Session, doc::Document};
 
 #[derive(Clone, Default)]
 pub(crate) struct GraphicsState(Arc<AtomicBool>);
@@ -38,7 +38,7 @@ impl RecoveryDocument {
     }
 
     pub(crate) fn save_copy(&self) -> Result<(String, Vec<u8>), String> {
-        let bytes = designcraft_format::save(&self.doc).map_err(|error| format!("Couldn't save a copy of {}: {error}", self.title))?;
+        let bytes = redrob_layout_format::save(&self.doc).map_err(|error| format!("Couldn't save a copy of {}: {error}", self.title))?;
         Ok((format!("{}.designcraft", self.doc.title), bytes))
     }
 }
@@ -73,10 +73,10 @@ mod tests {
         graphics.run_if_healthy(|| session.execute("file.place", &json!({"name": "red.png", "base64": PNG}))).unwrap().unwrap();
         graphics.run_if_healthy(|| session.execute("edit.undo", &json!({}))).unwrap().unwrap();
         let (_, undone) = recovery_document(&session, 0).unwrap();
-        assert!(designcraft_engine::cmd::from_bytes(&undone).unwrap().all_items().is_empty());
+        assert!(redrob_layout_engine::cmd::from_bytes(&undone).unwrap().all_items().is_empty());
         graphics.run_if_healthy(|| session.execute("edit.redo", &json!({}))).unwrap().unwrap();
         let (_, before) = recovery_document(&session, 0).unwrap();
-        assert_eq!(designcraft_engine::cmd::from_bytes(&before).unwrap().all_items().len(), 1);
+        assert_eq!(redrob_layout_engine::cmd::from_bytes(&before).unwrap().all_items().len(), 1);
 
         assert!(device_callback.fail());
         assert!(!graphics.fail(), "duplicate context/device notifications must not replace recovery controls");
@@ -100,7 +100,7 @@ mod tests {
         for (index, expected) in [first.clone(), second.clone()].iter().enumerate() {
             let (name, bytes) = recovery_document(&session, index).unwrap();
             assert_eq!(name, format!("{}.designcraft", expected.title));
-            let reopened = designcraft_engine::cmd::from_bytes(&bytes).unwrap();
+            let reopened = redrob_layout_engine::cmd::from_bytes(&bytes).unwrap();
             assert_eq!(reopened, **expected, "the copy must retain document content and embedded PNG bytes");
         }
         assert_eq!(session.active_index(), active);
@@ -119,7 +119,7 @@ mod tests {
         session.execute("frame.create", &json!({"rect": [0, 0, 100, 100]})).unwrap();
         session.doc_mut().unwrap().preview_stash = Some(template.clone());
         let (_, bytes) = recovery_document(&session, 0).unwrap();
-        let reopened = designcraft_engine::cmd::from_bytes(&bytes).unwrap();
+        let reopened = redrob_layout_engine::cmd::from_bytes(&bytes).unwrap();
         assert_eq!(reopened, *template);
         assert!(Arc::ptr_eq(session.doc().unwrap().preview_stash.as_ref().unwrap(), &template));
     }
@@ -150,7 +150,7 @@ mod tests {
             let (name, bytes) = snapshot.save_copy().unwrap();
             assert_eq!(name, format!("{}.designcraft", expected.title));
             assert!(bytes.starts_with(b"PK"));
-            let reopened = designcraft_engine::cmd::from_bytes(&bytes).unwrap();
+            let reopened = redrob_layout_engine::cmd::from_bytes(&bytes).unwrap();
             assert_eq!(reopened, *expected, "snapshots must retain every document and its embedded asset bytes");
             assert!(!reopened.assets.is_empty());
             assert!(reopened.assets.values().all(|asset| !asset.data.is_empty()));

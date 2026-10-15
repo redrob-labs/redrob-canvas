@@ -2,7 +2,7 @@
 //! through it, by the tool and by the width point commands given a member.
 
 use serde_json::json;
-use vectorcraft_tools::{PointerEvent, PointerKind};
+use redrob_vector_tools::{PointerEvent, PointerKind};
 
 use super::*;
 

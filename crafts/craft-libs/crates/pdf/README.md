@@ -1,4 +1,4 @@
-# craft-pdf
+# redrob-craft-pdf
 
 Shared PDF infrastructure with independent optional features. Applications own document
 models, editing, layout, font policy, worker scheduling, output presets and printing.
@@ -70,11 +70,11 @@ than exposing a partial page list. These changes do not imply full equivalence t
 the vendor notes record the boundaries. Existing consumers remain on their immutable
 revision until they explicitly adopt a new one.
 
-Consumers pin `craft-pdf` and their required root `[patch.crates-io]` entries to the same full
+Consumers pin `redrob-craft-pdf` and their required root `[patch.crates-io]` entries to the same full
 `https://github.com/storytold/craft-libs` revision. Cargo ignores dependency-local patches.
 Reader consumers patch `hayro-syntax`, `hayro-interpret` and `hayro-jbig2`; raster consumers
 also patch `hayro`. Writer consumers patch `krilla`. A plain `write` consumer does not need
-reader patches. Keep unrelated craft-ui/craft-print versions unchanged when adopting PDF.
+reader patches. Keep unrelated redrob-craft-ui/redrob-craft-print versions unchanged when adopting PDF.
 A pinned commit must be available remotely before a fresh public checkout can resolve it.
 
 Synthetic native and WASM contracts cover opening, caller limits, alpha, geometry, settings,
@@ -137,7 +137,7 @@ failures. Font preparation bounds do not impose a total memory, output-size or t
 PDF serialization. Individual unsupported fonts still follow each app's existing outline
 fallback and warning behavior.
 
-Run `cargo test -p craft-pdf --no-default-features --features write`, and repeat with
+Run `cargo test -p redrob-craft-pdf --no-default-features --features write`, and repeat with
 `--features write-pdf` and `--all-features`. The same writer contracts run with
 `--target wasm32-unknown-unknown` and a matching `wasm-bindgen-test-runner`. They exercise
 metadata, page sizes, versions, reproducibility, typed validation failures, malformed fonts,
@@ -150,7 +150,7 @@ Consumers pin both the facade and patched writer to the same full commit:
 
 ```toml
 [workspace.dependencies]
-craft-pdf = { git = "https://github.com/storytold/craft-libs", rev = "<full-commit-id>", version = "=0.1.0", default-features = false, features = ["write"] }
+redrob-craft-pdf = { git = "https://github.com/storytold/craft-libs", rev = "<full-commit-id>", version = "=0.1.0", default-features = false, features = ["write"] }
 
 [patch.crates-io]
 krilla = { git = "https://github.com/storytold/craft-libs", rev = "<full-commit-id>", version = "=0.8.2" }
@@ -165,7 +165,7 @@ The selected revision must be remotely available before fresh consumers can reso
 Local path replacements are development-only and should not be committed to an app.
 
 Run `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings` and
-`cargo test --workspace`, then test `craft-pdf` with `--features write` and
+`cargo test --workspace`, then test `redrob-craft-pdf` with `--features write` and
 `--features write-pdf` (the default feature set intentionally enables no PDF operations).
 Run the same writer contracts on `wasm32-unknown-unknown` with a matching
 `wasm-bindgen-test-runner`. Native recovery tests are subprocess or unwind checks;
@@ -197,7 +197,7 @@ one directory using the listed names, then run:
 ```sh
 CRAFT_PDF_TEST_FONT_DIR=/absolute/path/to/licensed-fonts \
 RUSTFLAGS="--cfg craft_pdf_unicode_fixtures" \
-cargo test -p craft-pdf --all-features --test unicode_writing
+cargo test -p redrob-craft-pdf --all-features --test unicode_writing
 ```
 
 Repeat with `--target wasm32-unknown-unknown` and the matching test runner for

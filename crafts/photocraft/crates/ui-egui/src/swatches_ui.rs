@@ -1,4 +1,4 @@
-//! Window › Swatches: the swatch library (`photocraft_engine::presets::swatches`) in the shared
+//! Window › Swatches: the swatch library (`redrob_photo_engine::presets::swatches`) in the shared
 //! preset browser: groups with disclosure triangles, a colour grid with name tooltips, a context
 //! menu (Rename, Delete, Move to), and the footer (size · New Group · New Swatch · Delete).
 //!
@@ -7,7 +7,7 @@
 //! panel menu (the group's "…" button) adds New Swatch, New Group, Import/Replace (`.aco`,
 //! `.ase`), Export (`.aco`) and Export for Exchange (`.ase`) and Reset. Every action is a
 //! `swatches.*` engine command; this module only draws and dispatches. Colours are shown in the
-//! RGB working space through `photocraft-cms` (cached per library revision and colour settings).
+//! RGB working space through `redrob-photo-cms` (cached per library revision and colour settings).
 
 use std::sync::Arc;
 
@@ -34,7 +34,7 @@ fn colors(app: &PhotocraftApp, ctx: &egui::Context) -> Arc<Vec<Vec<Color32>>> {
     if let Some(v) = ctx.data(|d| d.get_temp::<Arc<Vec<Vec<Color32>>>>(key)) {
         return v;
     }
-    let conv = photocraft_engine::presets::swatches::SwatchConv::new(&app.session);
+    let conv = redrob_photo_engine::presets::swatches::SwatchConv::new(&app.session);
     let v: Arc<Vec<Vec<Color32>>> = Arc::new(app.session.presets.swatches.iter().map(|g| g.items.iter().map(|s| c32(conv.rgb(&s.color))).collect()).collect());
     ctx.data_mut(|d| {
         // Only the newest table is kept.
@@ -145,7 +145,7 @@ fn source(name: &str, bytes: &[u8]) -> Value {
         return json!({"path": name});
     }
     let _ = name;
-    json!({"data": photocraft_engine::paint::tile::b64_encode(bytes)})
+    json!({"data": redrob_photo_engine::paint::tile::b64_encode(bytes)})
 }
 
 /// Import an `.aco`/`.ase` file's bytes (File › Open, drag and drop, the panel menu).
@@ -182,7 +182,7 @@ fn import_dialog(app: &mut PhotocraftApp, replace: bool) -> Result<Value, String
 
 fn export_dialog(app: &mut PhotocraftApp, format: &str) -> Result<Value, String> {
     let r = app.run("swatches.export", json!({"format": format}))?;
-    let bytes = r["data"].as_str().and_then(photocraft_engine::paint::tile::b64_decode).ok_or("the export returned no data")?;
+    let bytes = r["data"].as_str().and_then(redrob_photo_engine::paint::tile::b64_decode).ok_or("the export returned no data")?;
     let n = r["count"].as_u64().unwrap_or(0);
     app.pick_save(&format!("Swatches.{format}"), move |app, path| {
         let write = app.services.write.as_mut().ok_or("no writer configured")?;
@@ -308,7 +308,7 @@ mod tests {
     /// right edge lands on the second swatch; with the preset grids' 4 px gap it hit nothing.
     #[test]
     fn swatches_touch_without_a_gap() {
-        let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let second = app.session.presets.swatches.first().and_then(|g| g.items.get(1)).map(|s| s.name.clone()).unwrap();
         let mut h = Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(|ui, app: &mut PhotocraftApp| panel(app, ui), app);
         h.run_steps(2);
@@ -321,7 +321,7 @@ mod tests {
     /// Clicking a swatch while characters are selected recolours them, not just the foreground.
     #[test]
     fn clicking_a_swatch_recolours_selected_type() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 400, "height": 200})).unwrap();
         let id = app.run("type.create", json!({"text": "Hello world", "size": 40, "x": 20, "y": 100, "color": "#ffffff"})).unwrap()["layer"].as_u64().unwrap();
         app.ui.tool = Tool::Type;
@@ -345,7 +345,7 @@ mod tests {
         let red = [230.0 / 255.0, 40.0 / 255.0, 40.0 / 255.0, 1.0];
         assert_eq!(h.state().session.tools.foreground, red);
         let st = h.state().session.active().unwrap();
-        let Some(photocraft_doc::LayerContent::Text(t)) = st.doc.layer(photocraft_doc::LayerId(id)).map(|l| &l.content) else { panic!("type layer") };
+        let Some(redrob_photo_doc::LayerContent::Text(t)) = st.doc.layer(redrob_photo_doc::LayerId(id)).map(|l| &l.content) else { panic!("type layer") };
         let runs = t.char_runs();
         assert_eq!(runs[0].len, 5, "the selection is its own run");
         assert_eq!(runs[0].style.color.to_rgba8(), [230, 40, 40, 255]);
@@ -358,7 +358,7 @@ mod tests {
     fn the_footer_fits_below_a_full_list() {
         use egui_kittest::kittest::Queryable;
         for h_px in [80.0, 100.0, 120.0, 160.0, 300.0] {
-            let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             let mut h = Harness::builder().with_size(vec2(260.0, h_px)).build_ui_state(|ui, app: &mut PhotocraftApp| panel(app, ui), app);
             PhotocraftApp::setup_context(&h.ctx, Default::default());
             h.run_steps(3);
@@ -371,7 +371,7 @@ mod tests {
 
     #[test]
     fn alt_click_sets_the_background_and_selects() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.background = [0.0, 0.0, 1.0, 1.0];
         let mut h = Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(|ui, app: &mut PhotocraftApp| panel(app, ui), app);
         h.run_steps(2);
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn new_swatch_from_the_foreground_and_picker() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.tools.foreground = [0.5, 0.25, 1.0, 1.0];
         app.ui.presets_ui.selected.insert(PANEL.into(), "Dark Red".into());
         new_swatch(&mut app);
@@ -400,7 +400,7 @@ mod tests {
         f.insert("__cmyk".into(), json!([1.0, 0.0, 0.0, 0.0]));
         add_from_picker(&mut app, &f);
         let s = app.session.presets.swatches[0].items.last().unwrap();
-        assert_eq!(s.color, photocraft_engine::presets::swatches::SwatchColor::Cmyk([1.0, 0.0, 0.0, 0.0]));
+        assert_eq!(s.color, redrob_photo_engine::presets::swatches::SwatchColor::Cmyk([1.0, 0.0, 0.0, 0.0]));
     }
 
     #[test]
@@ -410,7 +410,7 @@ mod tests {
         let written: Written = Arc::default();
         let w = written.clone();
         let aco =
-            photocraft_psd::aco::write(&[photocraft_psd::aco::AcoSwatch { name: "Teal".into(), color: photocraft_psd::aco::AcoColor::Rgb([0, 32768, 32768]) }])
+            redrob_photo_psd::aco::write(&[redrob_photo_psd::aco::AcoSwatch { name: "Teal".into(), color: redrob_photo_psd::aco::AcoColor::Rgb([0, 32768, 32768]) }])
                 .unwrap();
         use crate::file_dialog::FileDialogAnswer;
         let answers = vec![
@@ -426,7 +426,7 @@ mod tests {
             })),
             ..Default::default()
         };
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         // Each dialog answers at the end of the frame.
         let frame = |app: &mut PhotocraftApp| app.poll_file_dialog(&egui::Context::default(), None);
         import_dialog(&mut app, false).unwrap();
@@ -446,7 +446,7 @@ mod tests {
     /// state (UI state is serde, so it saves and reloads with the rest of the panel state).
     #[test]
     fn dragging_a_group_header_reorders_and_persists() {
-        let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let mut h = Harness::builder().with_size(vec2(300.0, 4000.0)).build_ui_state(|ui, app: &mut PhotocraftApp| panel(app, ui), app);
         h.run_steps(2);
         let headers = crate::preset_panels::last_group_headers(&h.ctx, PANEL);

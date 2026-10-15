@@ -9,7 +9,7 @@
 //!
 //! Levels: `info` for VectorCraft's own crates, `warn` for everything else (wgpu and naga are
 //! chatty). `RUST_LOG` replaces that with env_logger-style directives: `debug`,
-//! `warn,vectorcraft_render=trace`, `wgpu_core=info`. A directive ending in `*` matches every
+//! `warn,redrob_vector_render=trace`, `wgpu_core=info`. A directive ending in `*` matches every
 //! target that starts with it (`vectorcraft*=debug`).
 //!
 //! Records logged before the settings directory is known are kept (up to [`MAX_PENDING`]) and
@@ -17,7 +17,7 @@
 //! written leaves standard error as the only sink.
 //!
 //! This is the desktop app's logger only. `vectorcraft-cli mcp` installs its own
-//! (`vectorcraft_mcp::logging`, MCP `notifications/message`); the two never share a process.
+//! (`redrob_vector_mcp::logging`, MCP `notifications/message`); the two never share a process.
 
 use std::fs::File;
 use std::io::Write;
@@ -309,8 +309,8 @@ mod tests {
         let f = Filter::parse(DEFAULT_FILTER);
         assert_eq!(f.level_for("vectorcraft"), LevelFilter::Info);
         assert_eq!(f.level_for("vectorcraft::window"), LevelFilter::Info);
-        assert_eq!(f.level_for("vectorcraft_engine::guard"), LevelFilter::Info);
-        assert_eq!(f.level_for("vectorcraft_ui_egui::io"), LevelFilter::Info);
+        assert_eq!(f.level_for("redrob_vector_engine::guard"), LevelFilter::Info);
+        assert_eq!(f.level_for("redrob_vector_ui_egui::io"), LevelFilter::Info);
         assert_eq!(f.level_for("wgpu_core::device"), LevelFilter::Warn);
         assert_eq!(f.level_for("naga"), LevelFilter::Warn);
         assert_eq!(f.max(), LevelFilter::Info);
@@ -318,16 +318,16 @@ mod tests {
 
     #[test]
     fn directives_follow_env_logger_and_the_most_specific_one_wins() {
-        let f = Filter::parse("info,wgpu_core=error,vectorcraft_render=trace,vectorcraft_render::tiles=off");
+        let f = Filter::parse("info,wgpu_core=error,redrob_vector_render=trace,redrob_vector_render::tiles=off");
         assert_eq!(f.level_for("eframe"), LevelFilter::Info);
         assert_eq!(f.level_for("wgpu_core::instance"), LevelFilter::Error);
-        assert_eq!(f.level_for("vectorcraft_render::canvas"), LevelFilter::Trace);
-        assert_eq!(f.level_for("vectorcraft_render::tiles"), LevelFilter::Off);
+        assert_eq!(f.level_for("redrob_vector_render::canvas"), LevelFilter::Trace);
+        assert_eq!(f.level_for("redrob_vector_render::tiles"), LevelFilter::Off);
         assert_eq!(f.max(), LevelFilter::Trace);
         // A module name is matched at `::` boundaries, not as a bare prefix.
         assert_eq!(f.level_for("wgpu_core_extra"), LevelFilter::Info);
         // A trailing `*` is a prefix.
-        assert_eq!(Filter::parse("vectorcraft*=debug").level_for("vectorcraft_text::shape"), LevelFilter::Debug);
+        assert_eq!(Filter::parse("vectorcraft*=debug").level_for("redrob_vector_text::shape"), LevelFilter::Debug);
         assert_eq!(Filter::parse("vectorcraft*=debug").level_for("eframe"), LevelFilter::Error);
         // A bare target name sets that target to the most verbose level, as env_logger does.
         assert_eq!(Filter::parse("naga").level_for("naga::front"), LevelFilter::Trace);
@@ -505,15 +505,15 @@ mod tests {
         let path = logger.attach_dir(&dir).expect("attach");
         assert_eq!(path, dir.join(LOG_FILE));
         record(log::Level::Warn, "wgpu_hal::vulkan", "a real warning");
-        record(log::Level::Error, "vectorcraft_engine::guard", "recovered from a panic: boom");
+        record(log::Level::Error, "redrob_vector_engine::guard", "recovered from a panic: boom");
         record(log::Level::Debug, "vectorcraft", "below info");
         let text = read(&path);
         let lines: Vec<&str> = text.lines().collect();
         assert_eq!(lines.len(), 3, "{text}");
         assert!(lines[0].contains(" INFO  [") && lines[0].ends_with("vectorcraft: before the settings directory"), "{text}");
         assert!(lines[1].ends_with("wgpu_hal::vulkan: a real warning"), "{text}");
-        assert!(lines[2].contains(" ERROR [") && lines[2].ends_with("vectorcraft_engine::guard: recovered from a panic: boom"), "{text}");
-        assert!(logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("vectorcraft_ui_egui").build()));
+        assert!(lines[2].contains(" ERROR [") && lines[2].ends_with("redrob_vector_engine::guard: recovered from a panic: boom"), "{text}");
+        assert!(logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("redrob_vector_ui_egui").build()));
         assert!(!logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("naga").build()));
         // Attaching again rotates: the first log becomes `.1`.
         logger.attach_dir(&dir).expect("attach again");

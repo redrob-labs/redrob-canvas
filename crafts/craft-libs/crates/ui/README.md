@@ -1,6 +1,6 @@
 # Craft UI
 
-`craft-ui` provides small egui components with application-supplied styles. `icons` prepares
+`redrob-craft-ui` provides small egui components with application-supplied styles. `icons` prepares
 embedded SVG catalogs; `buttons` paints accessible icon buttons; `tabs` handles tab fitting and
 interaction; `layout` provides toolbar fitting, split geometry and resize handles; `theme` shares widget-state styling.
 `docking` supplies transactional panel moves and an optional docking surface.
@@ -13,7 +13,7 @@ remain in each application. No icons, fonts or application engines are bundled.
 
 ```rust
 use std::sync::OnceLock;
-use craft_ui::icons::{SvgIconSet, SvgStyle};
+use redrob_craft_ui::icons::{SvgIconSet, SvgStyle};
 
 // Supply the application's own attributed assets here.
 static ICONS: &[(&str, &[u8])] = &[];
@@ -61,7 +61,7 @@ states. Selection wins over press and hover. `pressed: None` keeps ordinary hove
 `Some` supplies a separate press treatment. egui owns pointer capture and click cancellation.
 
 ```rust
-use craft_ui::buttons::{ButtonVisuals, IconButton, IconButtonStyle};
+use redrob_craft_ui::buttons::{ButtonVisuals, IconButton, IconButtonStyle};
 use egui::{Color32, CornerRadius, Stroke, Vec2};
 
 fn layer_button(ui: &mut egui::Ui, selected: bool) -> egui::Response {
@@ -112,7 +112,7 @@ The work is linear in tab count with at most 32 fitting passes; the caller caps 
 
 ```rust
 fn tab(ui: &mut egui::Ui, rect: egui::Rect, selected: bool) -> egui::Response {
-    craft_ui::tabs::Tab::new(ui.id().with("layers-tab"), "Layers", selected)
+    redrob_craft_ui::tabs::Tab::new(ui.id().with("layers-tab"), "Layers", selected)
         .sense(egui::Sense::click_and_drag())
         .show_at(ui, rect, |ui, response| {
             let fill = if response.hovered() { egui::Color32::GRAY } else { egui::Color32::DARK_GRAY };
@@ -136,7 +136,7 @@ are supplied by the application. Tiny areas relax the minimum to half the space 
 non-finite or inverted input returns `None` instead of panicking.
 
 ```rust
-use craft_ui::layout::{split_rect, SplitAxis, SplitSize};
+use redrob_craft_ui::layout::{split_rect, SplitAxis, SplitSize};
 
 fn two_panes(rect: egui::Rect) -> Option<(egui::Rect, egui::Rect)> {
     let split = split_rect(rect, SplitAxis::Horizontal, SplitSize::Ratio(0.5), 4.0, 20.0)?;
@@ -197,7 +197,7 @@ local tokens. It updates each state's strong/weak background fill, radius and fo
 expansion and all other visual settings are retained.
 
 ```rust
-use craft_ui::theme::WidgetPalette;
+use redrob_craft_ui::theme::WidgetPalette;
 use egui::{Color32, CornerRadius, Stroke};
 
 fn style_widgets(visuals: &mut egui::Visuals, palette: WidgetPalette, text: Color32) {
@@ -217,7 +217,7 @@ common operation and the differences preserved by the adapters.
 `printing::State` holds the transient printer selection, copies, duplex and grayscale settings,
 plus discovery and submission receivers. Hosts supply `Discover` and `Submit` workers; neither
 the state nor the controls invokes an OS spooler or generates PDF content. Apps map `Settings`
-to `craft-print::Job` and own the Print action, page selection, preview and export behavior.
+to `redrob-craft-print::Job` and own the Print action, page selection, preview and export behavior.
 
 `State::show` takes a stable `egui::Id` and app-localized `Labels`. It draws the settings only;
 apps render typed `Feedback` using their own translations. `poll` requests occasional repaints
@@ -244,7 +244,7 @@ Validation:
 cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-cargo check --target wasm32-unknown-unknown -p craft-ui
+cargo check --target wasm32-unknown-unknown -p redrob-craft-ui
 ```
 
 The [visual regression suite](../../docs/ui-visual-regressions.md) compares the actual controls
@@ -252,5 +252,5 @@ against independent reference painters, including exact mesh and RGBA checks, an
 color, spacing and stroke changes fail those comparisons. To retain reviewable PNG pairs:
 
 ```sh
-CRAFT_UI_VISUAL_DIR=/absolute/path/to/visuals cargo test -p craft-ui --test visual_regression
+CRAFT_UI_VISUAL_DIR=/absolute/path/to/visuals cargo test -p redrob-craft-ui --test visual_regression
 ```

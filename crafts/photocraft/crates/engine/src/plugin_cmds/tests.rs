@@ -1,5 +1,5 @@
 use super::*;
-use photocraft_geom::Rect;
+use redrob_photo_geom::Rect;
 
 /// The example Invert plug-in, built from `examples/plugins/invert-rs`.
 const INVERT: &[u8] = include_bytes!("../../../plugins/tests/fixtures/invert.wasm");
@@ -72,7 +72,7 @@ fn pixels(s: &Session) -> Vec<f32> {
 
 fn select_partial(s: &mut Session) {
     s.edit("sel", |doc, _| {
-        let mut sel = Surface::new(photocraft_color::PixelFormat::GRAY8);
+        let mut sel = Surface::new(redrob_photo_color::PixelFormat::GRAY8);
         sel.fill_rect(Rect::new(4, 4, 30, 20), &[1.0]);
         sel.fill_rect(Rect::new(4, 4, 30, 9), &[0.4]);
         doc.selection = Some(sel);
