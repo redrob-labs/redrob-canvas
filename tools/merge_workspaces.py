@@ -42,6 +42,8 @@ OUR_PACKAGE = {
 # Dependencies our own crates need that no upstream declares.
 OUR_DEPS = {
     "async-trait": "0.1",
+    # redrob-ai sends images to the local IOPaint server as PNG data URLs.
+    "base64": "0.22",
     # The shared Redrob Code daemon client; the agent crate talks to that daemon only.
     "redrob-engine-client": {"git": "https://github.com/redrob-labs/redrob-code", "tag": "v0.6.4"},
     "futures-util": "0.3",

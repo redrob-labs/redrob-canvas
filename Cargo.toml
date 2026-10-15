@@ -34,6 +34,7 @@ repository = "https://github.com/redrob-labs/redrob-canvas"
 arboard = { version = "3.6", default-features = false }
 arc-swap = "1"
 async-trait = "0.1"
+base64 = "0.22"
 bytemuck = { version = "1", features = ["derive"] }
 caseless = "0.2"
 clipboard-win = "5.4"
