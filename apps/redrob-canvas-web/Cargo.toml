@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+[package]
+name = "redrob-canvas-web"
+description = "Redrob Canvas in the browser: the same shell through eframe's web runner (WebGPU, WebGL2 fallback)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "redrob-canvas-web"
+path = "src/main.rs"
+
+# Everything is wasm32-only: on any other target the binary is a one-line notice (see main.rs),
+# so the workspace's host builds, clippy and tests pay nothing for this crate. The shell's own
+# sources are compiled into this crate by `#[path]` (src/main.rs), with the desktop-only modules
+# (`ai`, `services`, `update`) replaced by the wasm glue under src/.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# `wgpu` pulls egui-wgpu's defaults: WebGPU plus the WebGL2 fallback.
+eframe = { workspace = true, features = ["wgpu", "accesskit", "default_fonts"] }
+egui = { workspace = true }
+log = { workspace = true }
+serde_json = { workspace = true }
+# Pixels and Image Trace only: the IOPaint engine and the agent (tokio, reqwest) do not build for
+# wasm, and the AI dock says so.
+redrob-ai = { path = "../../crates/redrob-ai", default-features = false }
+photocraft-ui-egui = { workspace = true }
+photocraft-engine = { workspace = true }
+photocraft-io = { workspace = true }
+photocraft-format = { workspace = true }
+photocraft-codecs = { workspace = true }
+photocraft-doc = { workspace = true }
+photocraft-color = { workspace = true }
+photocraft-compose = { workspace = true }
+photocraft-geom = { workspace = true }
+photocraft-raster = { workspace = true }
+vectorcraft-ui-egui = { workspace = true }
+vectorcraft-engine = { workspace = true }
+vectorcraft-format = { workspace = true }
+vectorcraft-text = { workspace = true }
+vectorcraft-doc = { workspace = true }
+vectorcraft-geom = { workspace = true }
+vectorcraft-render = { workspace = true }
+vectorcraft-svg = { workspace = true }
+designcraft-ui-egui = { workspace = true }
+designcraft-engine = { workspace = true }
+designcraft-geom = { workspace = true }
+designcraft-images = { workspace = true }
+designcraft-render = { workspace = true }
+# The shell's `open_dialog` uses rfd's synchronous `FileDialog`, which rfd does not build for
+# wasm32. apps/redrob-canvas-web-rfd is the real rfd (its `AsyncFileDialog`, used by
+# src/services.rs) plus a `FileDialog` that answers "no files" and points at File > Open, so
+# shell.rs compiles unchanged.
+rfd = { package = "redrob-canvas-web-rfd", path = "../redrob-canvas-web-rfd" }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlElement", "HtmlCanvasElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "Location", "CssStyleDeclaration", "Storage", "Event", "EventTarget", "BeforeUnloadEvent", "Navigator"] }
+
+[lints]
+workspace = true

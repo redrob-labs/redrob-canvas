@@ -16,6 +16,18 @@ There is no Qt, CMake or aqtinstall anywhere here any more: the shell is egui an
 `cargo build --release -p redrob-canvas --target <triple>`. The macOS disk image and the Windows setup
 live in `installer/`.
 
+The release is exactly four targets (`tools/release_matrix.py`):
+
+| Target        | Assets                                                              | Built by                    |
+|---------------|---------------------------------------------------------------------|-----------------------------|
+| macOS arm64   | `redrob-canvas-<v>-macos-arm64.zip`, `redrob-canvas-<v>-macos-arm64.dmg` | `build` leg (`macos-15`), signed and notarized |
+| Linux x86_64  | `redrob-canvas-<v>-linux-x86_64.tar.gz`, `redrob-canvas-<v>-linux-x86_64.deb` | `build` leg (`ubuntu-24.04`) |
+| Windows x64   | `redrob-canvas-<v>-windows-x64-portable.zip`, `redrob-canvas-<v>-windows-x64-setup.exe` | `build` leg (`windows-2025`), Azure Artifact Signing |
+| Web (wasm)    | `redrob-canvas-web-<v>.zip`                                         | `web` job: `trunk build --release` in `apps/redrob-canvas-web`, `dist/` zipped |
+
+No other package format or architecture is built. The web zip is the only asset Redrob Launcher
+does not install; a host unzips it behind any static web server.
+
 ## Linux
 
 Rust 1.95 (`rust-toolchain.toml`), `dpkg-dev`, and the development headers egui, wgpu and rfd link

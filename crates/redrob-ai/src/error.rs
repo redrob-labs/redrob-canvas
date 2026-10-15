@@ -44,6 +44,7 @@ pub enum AiError {
     #[error("{0}")]
     Geometry(String),
 
+    #[cfg(feature = "engine")]
     #[error("HTTP transport failed")]
     Http(#[source] reqwest::Error),
 
@@ -56,10 +57,12 @@ pub enum AiError {
     #[error(transparent)]
     Trace(#[from] vectorcraft_trace::TraceError),
 
+    #[cfg(feature = "engine")]
     #[error(transparent)]
     Agent(#[from] redrob_agent::Error),
 }
 
+#[cfg(feature = "engine")]
 impl From<reqwest::Error> for AiError {
     fn from(error: reqwest::Error) -> Self {
         Self::Http(error)

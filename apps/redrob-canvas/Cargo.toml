@@ -48,6 +48,10 @@ designcraft-render = { workspace = true }
 rfd = { workspace = true }
 arboard = { workspace = true, features = ["image-data"] }
 webbrowser = { workspace = true }
+# The in-app update check (src/update.rs): GitHub's releases API over the async client the
+# workspace already has, on a current-thread runtime; the download is checked against SHA256SUMS.txt.
+reqwest = { workspace = true }
+sha2 = { workspace = true }
 
 [dev-dependencies]
 egui_kittest = { workspace = true }

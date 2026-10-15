@@ -19,12 +19,34 @@ the stem is the repository name, the os-arch token is one of the launcher's (lin
 macos-arm64, windows-x64 -- NOT windows-x86_64), and the Windows archive carries the `-portable`
 suffix because a `-setup.exe` is something the launcher cannot install and a plain `.zip` is
 something it does not recognise. tools/tests/test_release_asset_names.py holds the pattern.
+
+The release is exactly FOUR targets: the three native legs below and the web build (WEB), a
+trunk-built wasm bundle zipped as `redrob-canvas-web-<version>.zip`. The web zip is not a launcher
+asset (nothing installs it; a host unzips it behind a web server), so it carries no os-arch token
+and is built by its own job in release.yml rather than by the native matrix. Nothing else is
+built: no other Linux package format, no 32-bit Windows, no Intel or universal macOS build.
 """
 import json
 import os
 import sys
 
 STEM = "redrob-canvas"
+
+# The web build: `trunk build --release` in apps/redrob-canvas-web, `dist/` zipped. One asset,
+# no installer, no signing. `archive_name(version)` is the whole file name.
+WEB = {
+    "label": "Web (wasm)",
+    "runner": "ubuntu-24.04",
+    "target": "wasm32-unknown-unknown",
+    "slug": "web",
+    "notes": "Web (WebAssembly, for self-hosting)",
+}
+
+
+def web_asset_name(version):
+    """The web bundle's file name on the release: `redrob-canvas-web-<version>.zip`."""
+    return f"{STEM}-web-{version}.zip"
+
 
 LEGS = [
     {
@@ -70,17 +92,20 @@ LEGS = [
 MATRIX_KEYS = ("label", "runner", "target", "slug")
 
 
-def asset_names(version, legs=LEGS):
+def asset_names(version, legs=LEGS, web=True):
     """Every platform asset a release of `version` publishes, in the names the draft must carry.
 
-    The archive and the installer of each leg; the checksum files, the corresponding source and
-    the licence texts are not platform assets and are not listed.
+    The archive and the installer of each leg, then the web bundle (unless `web` is False); the
+    checksum files, the corresponding source and the licence texts are not platform assets and
+    are not listed.
     """
     names = []
     for leg in legs:
         names.append(f"{STEM}-{version}-{leg['archive_suffix']}")
         if leg.get("installer_suffix"):
             names.append(f"{STEM}-{version}-{leg['installer_suffix']}")
+    if web:
+        names.append(web_asset_name(version))
     return names
 
 
@@ -112,15 +137,18 @@ def main():
     # Installers are listed separately from the archives Redrob Launcher installs; release.yml builds
     # and demands both.
     installer_suffixes = [leg["installer_suffix"] for leg in included if leg.get("installer_suffix")]
-    notes_line = ", ".join(leg["notes"] for leg in included)
+    # The web bundle is always built (its job has no signing to be ready for); release.yml names
+    # it by hand as redrob-canvas-web-<version>.zip, which the tests hold to `web_asset_name`.
+    notes_line = ", ".join([leg["notes"] for leg in included] + [WEB["notes"]])
 
     if sys.argv[1:] == ["--notes"]:
         print(notes_line)
         sys.exit(0)
 
-    print(f"Building: {', '.join(leg['label'] for leg in included)}")
+    print(f"Building: {', '.join([leg['label'] for leg in included] + [WEB['label']])}")
     print(f"Platform archives required on the release: {' '.join(archive_suffixes)}")
     print(f"Installers required on the release: {' '.join(installer_suffixes) or '(none)'}")
+    print(f"Web bundle required on the release: {web_asset_name('<version>')}")
 
     output = os.environ.get("GITHUB_OUTPUT")
     if output:

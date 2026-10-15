@@ -14,11 +14,16 @@
 //!
 //! Pixels cross the boundary as the crate's own [`pixels::Rgba8Image`] and [`pixels::Mask`] so the
 //! shell can bridge any editor's buffers without this crate depending on one of them.
+//!
+//! The `engine` feature (default) is the IOPaint engine and the agent; without it only the pixel
+//! types and Image Trace are built, which is the wasm32 build the web shell makes.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
+#[cfg(feature = "engine")]
 pub mod agent;
 mod error;
+#[cfg(feature = "engine")]
 pub mod iopaint;
 pub mod pixels;
 pub mod vectorize;

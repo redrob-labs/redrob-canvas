@@ -53,6 +53,8 @@ OUR_DEPS = {
         "features": ["json", "rustls-tls", "stream"],
     },
     "tokio": {"version": "1", "features": ["rt-multi-thread", "macros", "sync", "time", "process"]},
+    # The in-app update check verifies the downloaded asset against the release's SHA256SUMS.txt.
+    "sha2": "0.10",
     "thiserror": "2",
     "tempfile": "3",
     "mockito": "1",

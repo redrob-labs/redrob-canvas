@@ -6086,6 +6086,7 @@ dependencies = [
  "arboard",
  "designcraft-engine",
  "designcraft-geom",
+ "designcraft-images",
  "designcraft-render",
  "designcraft-ui-egui",
  "eframe",
@@ -6103,17 +6104,67 @@ dependencies = [
  "photocraft-raster",
  "photocraft-ui-egui",
  "redrob-ai",
+ "reqwest 0.12.28",
  "rfd",
  "serde_json",
+ "sha2",
  "tokio",
  "vectorcraft-doc",
  "vectorcraft-engine",
  "vectorcraft-format",
  "vectorcraft-geom",
  "vectorcraft-render",
+ "vectorcraft-svg",
  "vectorcraft-text",
  "vectorcraft-ui-egui",
  "webbrowser",
+]
+
+[[package]]
+name = "redrob-canvas-web"
+version = "0.7.0"
+dependencies = [
+ "designcraft-engine",
+ "designcraft-geom",
+ "designcraft-images",
+ "designcraft-render",
+ "designcraft-ui-egui",
+ "eframe",
+ "egui",
+ "js-sys",
+ "log",
+ "photocraft-codecs",
+ "photocraft-color",
+ "photocraft-compose",
+ "photocraft-doc",
+ "photocraft-engine",
+ "photocraft-format",
+ "photocraft-geom",
+ "photocraft-io",
+ "photocraft-raster",
+ "photocraft-ui-egui",
+ "redrob-ai",
+ "redrob-canvas-web-rfd",
+ "serde_json",
+ "vectorcraft-doc",
+ "vectorcraft-engine",
+ "vectorcraft-format",
+ "vectorcraft-geom",
+ "vectorcraft-render",
+ "vectorcraft-svg",
+ "vectorcraft-text",
+ "vectorcraft-ui-egui",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "redrob-canvas-web-rfd"
+version = "0.7.0"
+dependencies = [
+ "log",
+ "rfd",
 ]
 
 [[package]]

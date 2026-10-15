@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+[package]
+name = "redrob-canvas-web-rfd"
+description = "rfd for the Redrob Canvas web shell: the real crate plus a no-op synchronous FileDialog for wasm32"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+log = { workspace = true }
+
+# The real rfd, re-exported whole. On wasm32 it has the async dialogs only; on every other target
+# this crate adds nothing (the desktop shell depends on rfd itself).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+rfd = { workspace = true }
+
+[lints]
+workspace = true

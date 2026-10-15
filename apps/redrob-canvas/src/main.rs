@@ -9,6 +9,7 @@ mod handoff;
 mod routing;
 mod services;
 mod shell;
+mod update;
 
 use shell::{Mode, ShellApp};
 

@@ -12,16 +12,23 @@ description = "AI tools shared by every Redrob Canvas mode: the local IOPaint en
 [lints]
 workspace = true
 
+[features]
+default = ["engine"]
+# The IOPaint engine, its HTTP client and the mode agent: tokio, reqwest and the Redrob Code client.
+# Off, the crate is the pixel types and Image Trace only, which is what builds for wasm32 (the web
+# shell shows "AI tools need the desktop app"); tokio with the workspace's features refuses wasm.
+engine = ["dep:async-trait", "dep:redrob-agent", "dep:reqwest", "dep:tokio"]
+
 [dependencies]
-async-trait.workspace = true
+async-trait = { workspace = true, optional = true }
 base64.workspace = true
 image.workspace = true
-redrob-agent = { path = "../redrob-agent" }
-reqwest.workspace = true
+redrob-agent = { path = "../redrob-agent", optional = true }
+reqwest = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, optional = true }
 vectorcraft-trace.workspace = true
 
 [dev-dependencies]

@@ -423,6 +423,7 @@ impl ShellApp {
                             ui.close();
                             self.about_open = true;
                         }
+                        crate::update::menu_items(ui);
                     });
                     self.status_line(ui);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -518,6 +519,7 @@ impl ShellApp {
     /// The right side of the top bar: the AI dock toggle.
     pub fn right_slot(&mut self, ui: &mut egui::Ui) {
         ai::panel::toggle(ui, &mut self.ai);
+        crate::update::top_bar(ui);
     }
 
     /// The AI dock, drawn before the editor area so the editor gets what is left. Returns the
