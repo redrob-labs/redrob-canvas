@@ -253,6 +253,9 @@ pub struct ShellApp {
     status: Option<Status>,
     /// Files dropped on the window that belong to another mode, routed at the next frame's start.
     pending_opens: Vec<(PathBuf, Route)>,
+    /// Shift state from the last frame; `RawInput` no longer carries modifiers in egui 0.36,
+    /// and `raw_input_hook` runs before the frame's input is assembled.
+    shift_held: bool,
     /// The exit confirm: every editor's unsaved-document count, while the dialog is up.
     exit_prompt: Option<Vec<(Mode, usize)>>,
     /// "Quit anyway" was clicked: the next close request passes to the active editor.
@@ -291,17 +294,13 @@ impl ShellApp {
             caps: Capabilities::none(Mode::default()),
             status: None,
             pending_opens: Vec::new(),
+            shift_held: false,
             exit_prompt: None,
             exit_approved: false,
             last_title: None,
             about_open: false,
             about_lockup: None,
         }
-    }
-
-    /// What the active mode's bridge could do at the start of this frame.
-    pub fn capabilities(&self) -> Capabilities {
-        self.caps
     }
 
     pub fn mode(&self) -> Mode {
@@ -437,12 +436,10 @@ impl ShellApp {
     /// The "Mode" menu: the shell's Open, and Send to Photo / Vector / Layout, each enabled when
     /// the active mode has a document and a hand-off to that mode ([`Handoff::between`]).
     fn mode_menu(&mut self, ui: &mut egui::Ui) {
-        let open = ui
-            .button("Open…")
-            .on_hover_text(format!(
-                "Open a file in the editor its type belongs to  ({})",
-                ui.ctx().format_shortcut(&OPEN_ANY_SHORTCUT)
-            ));
+        let open = ui.button("Open…").on_hover_text(format!(
+            "Open a file in the editor its type belongs to  ({})",
+            ui.ctx().format_shortcut(&OPEN_ANY_SHORTCUT)
+        ));
         if open.clicked() {
             ui.close();
             self.open_dialog();
@@ -483,6 +480,7 @@ impl ShellApp {
     }
 
     /// The status line, if one is showing.
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
     pub fn status(&self) -> Option<&Status> {
         self.status.as_ref()
     }
@@ -661,7 +659,7 @@ impl ShellApp {
     /// types, and everything while Shift is held) stay for the editor's own drop handling, which
     /// may place rather than open them.
     fn route_dropped_files(&mut self, raw: &mut egui::RawInput) {
-        if raw.dropped_files.is_empty() || raw.modifiers.shift {
+        if raw.dropped_files.is_empty() || self.shift_held {
             return;
         }
         let dropped = std::mem::take(&mut raw.dropped_files);
@@ -715,19 +713,34 @@ impl ShellApp {
     pub fn dirty_counts(&self) -> Vec<(Mode, usize)> {
         let mut out = Vec::new();
         if let Some(app) = &self.photo {
-            let n = app.session.documents().iter().filter(|d| d.is_dirty()).count();
+            let n = app
+                .session
+                .documents()
+                .iter()
+                .filter(|d| d.is_dirty())
+                .count();
             if n > 0 {
                 out.push((Mode::Photo, n));
             }
         }
         if let Some(app) = &self.vector {
-            let n = app.session.documents().iter().filter(|d| d.is_dirty()).count();
+            let n = app
+                .session
+                .documents()
+                .iter()
+                .filter(|d| d.is_dirty())
+                .count();
             if n > 0 {
                 out.push((Mode::Vector, n));
             }
         }
         if let Some(app) = &self.layout {
-            let n = app.session.documents().iter().filter(|d| d.is_dirty()).count();
+            let n = app
+                .session
+                .documents()
+                .iter()
+                .filter(|d| d.is_dirty())
+                .count();
             if n > 0 {
                 out.push((Mode::Layout, n));
             }
@@ -885,6 +898,7 @@ impl ShellApp {
     }
 
     /// The exit confirm is up (for tests).
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
     pub fn exit_prompt(&self) -> Option<&[(Mode, usize)]> {
         self.exit_prompt.as_deref()
     }
@@ -920,7 +934,6 @@ impl ShellApp {
             Action::Start => self.ai.start(),
             Action::Stop => self.ai.stop(),
             Action::SetModel => self.ai.set_model(),
-            Action::SwitchMode(mode) => self.set_mode(mode),
             Action::AgentSend(text) => self.ai.agent_send(text),
             Action::AgentReset => self.ai.agent_reset(),
             Action::CancelJob => {
@@ -1087,8 +1100,7 @@ impl ShellApp {
             }
         }
         let open_any = ctx.input_mut(|i| i.consume_shortcut(&OPEN_ANY_SHORTCUT));
-        let open =
-            self.shell_owns_focus() && ctx.input_mut(|i| i.consume_shortcut(&OPEN_SHORTCUT));
+        let open = self.shell_owns_focus() && ctx.input_mut(|i| i.consume_shortcut(&OPEN_SHORTCUT));
         if open_any || open {
             self.open_dialog();
         }
@@ -1184,6 +1196,7 @@ impl ShellApp {
 
 impl eframe::App for ShellApp {
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        self.shift_held = ctx.input(|i| i.modifiers.shift);
         self.handle_shortcuts(ctx);
         self.flush_pending_opens();
         self.sync_fonts(ctx);
@@ -1499,13 +1512,15 @@ mod tests {
             Arc::new(Dropped(PathBuf::from(name)))
         }
         let mut shell = ShellApp::new(None);
-        let mut raw = egui::RawInput::default();
-        raw.dropped_files = vec![
-            dropped("a.png"),
-            dropped("b.svg"),
-            dropped("c.idml"),
-            dropped("d.zip"),
-        ];
+        let mut raw = egui::RawInput {
+            dropped_files: vec![
+                dropped("a.png"),
+                dropped("b.svg"),
+                dropped("c.idml"),
+                dropped("d.zip"),
+            ],
+            ..Default::default()
+        };
         shell.route_dropped_files(&mut raw);
         // Photo is active: its own PNG and the unknown ZIP stay; SVG and IDML are routed.
         let kept: Vec<String> = raw
@@ -1529,7 +1544,7 @@ mod tests {
         // With Shift held, everything stays for the editor.
         let mut shell = ShellApp::new(None);
         let mut raw = egui::RawInput::default();
-        raw.modifiers.shift = true;
+        shell.shift_held = true;
         raw.dropped_files = vec![dropped("b.svg")];
         shell.route_dropped_files(&mut raw);
         assert_eq!(raw.dropped_files.len(), 1);
@@ -1546,12 +1561,15 @@ mod tests {
             .events
             .push(egui::ViewportEvent::Close);
         shell.intercept_close(&mut raw);
-        assert!(raw.viewport().close_requested(), "nothing dirty: the close stands");
+        assert!(
+            raw.viewport().close_requested(),
+            "nothing dirty: the close stands"
+        );
         assert_eq!(shell.exit_prompt(), None);
         // The shell-level Open shortcuts: Ctrl+Shift+O always, Ctrl+O only while the shell owns
         // the keyboard (here: no document open).
         assert_eq!(OPEN_SHORTCUT.logical_key, egui::Key::O);
-        assert!(OPEN_ANY_SHORTCUT.modifiers.shift && OPEN_ANY_SHORTCUT.modifiers.command);
+        const { assert!(OPEN_ANY_SHORTCUT.modifiers.shift && OPEN_ANY_SHORTCUT.modifiers.command) };
         assert!(shell.shell_owns_focus());
     }
 

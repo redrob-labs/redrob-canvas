@@ -44,7 +44,6 @@ pub enum Action {
     Stop,
     /// The model combo changed while the engine runs.
     SetModel,
-    SwitchMode(Mode),
     AgentSend(String),
     AgentReset,
     CancelJob,
@@ -264,7 +263,9 @@ impl AiPanel {
 
     /// Engine log lines since the last frame.
     pub fn drain_engine_log(&mut self) {
-        let Some(rx) = self.engine_log.as_mut() else { return };
+        let Some(rx) = self.engine_log.as_mut() else {
+            return;
+        };
         let mut lines = Vec::new();
         loop {
             match rx.try_recv() {
@@ -321,7 +322,9 @@ impl AiPanel {
     }
 
     pub fn stop(&mut self) {
-        let Some(engine) = self.engine.clone() else { return };
+        let Some(engine) = self.engine.clone() else {
+            return;
+        };
         self.spawn(async move { engine.stop().await });
     }
 
@@ -329,7 +332,9 @@ impl AiPanel {
     /// not downloaded yet).
     pub fn set_model(&mut self) {
         self.shown_model = self.settings.model.clone();
-        let Some(engine) = self.engine.clone() else { return };
+        let Some(engine) = self.engine.clone() else {
+            return;
+        };
         if !engine.is_running() {
             return;
         }
@@ -450,7 +455,9 @@ impl AiPanel {
 
     /// Moves the agent's events into the transcript.
     pub fn poll_agent(&mut self) {
-        let Some(handle) = &self.agent.handle else { return };
+        let Some(handle) = &self.agent.handle else {
+            return;
+        };
         let events = handle.poll();
         let alive = handle.is_alive();
         for event in events {
@@ -514,10 +521,7 @@ pub fn plugin_for(kind: ToolKind, settings: &ToolSettings) -> Option<&'static st
 }
 
 fn arg_u32(args: Option<&Value>, key: &str) -> Option<u32> {
-    args?
-        .get(key)?
-        .as_u64()
-        .and_then(|v| u32::try_from(v).ok())
+    args?.get(key)?.as_u64().and_then(|v| u32::try_from(v).ok())
 }
 
 fn arg_str<'a>(args: Option<&'a Value>, key: &str) -> Option<&'a str> {
@@ -590,7 +594,9 @@ pub fn gather_input(
             layer_name: redrob_ai::iopaint::client::plugin_layer_name("RemoveBG").to_owned(),
         },
         ToolKind::Upscale => {
-            let scale = arg_u32(args, "scale").unwrap_or(settings.upscale).clamp(2, 4);
+            let scale = arg_u32(args, "scale")
+                .unwrap_or(settings.upscale)
+                .clamp(2, 4);
             JobInput::PluginImage {
                 plugin: "RealESRGAN",
                 image,
@@ -650,7 +656,10 @@ mod tests {
             .start_job(ToolKind::Erase, JobInput::Erase { image, mask }, None)
             .unwrap_err();
         assert_eq!(err, "start the AI engine first");
-        assert!(!panel.jobs.is_busy(), "a refused job does not claim the queue");
+        assert!(
+            !panel.jobs.is_busy(),
+            "a refused job does not claim the queue"
+        );
     }
 
     #[test]
@@ -829,7 +838,9 @@ mod tests {
 
     #[test]
     fn engine_down_is_recognised_and_args_are_compacted() {
-        assert!(is_engine_down("The Redrob Code engine could not be started: x"));
+        assert!(is_engine_down(
+            "The Redrob Code engine could not be started: x"
+        ));
         assert!(!is_engine_down("tool panicked"));
         assert_eq!(
             compact_args(&serde_json::json!({ "prompt": "a tree", "scale": 2 })),

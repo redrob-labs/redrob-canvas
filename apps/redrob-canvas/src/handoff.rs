@@ -40,6 +40,7 @@ pub enum Handoff {
 }
 
 impl Handoff {
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
     pub const ALL: [Handoff; 5] = [
         Handoff::RasterToLayout,
         Handoff::VectorToLayout,
@@ -64,6 +65,7 @@ impl Handoff {
     }
 
     /// The mode the hand-off ends in.
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
     pub fn target(self) -> Mode {
         match self {
             Handoff::RasterToLayout | Handoff::VectorToLayout => Mode::Layout,
@@ -265,8 +267,8 @@ pub fn vector_svg(
 /// crafts/designcraft/crates/images/src/lib.rs L27; `designcraft_render::natural_size` reads the
 /// SVG's own size, crates/render/src/lib.rs L1149).
 pub fn vector_to_layout(shell: &mut ShellApp) -> Result<String, String> {
-    let (title, svg, natural) = vector_svg(shell.vector_app())
-        .ok_or_else(|| "open a Vector document first".to_owned())?;
+    let (title, svg, natural) =
+        vector_svg(shell.vector_app()).ok_or_else(|| "open a Vector document first".to_owned())?;
     if svg.trim().is_empty() {
         return Err("the Vector document exported as an empty SVG".to_owned());
     }
@@ -507,9 +509,9 @@ mod tests {
         // Every variant is reachable from some pair.
         for h in Handoff::ALL {
             assert!(
-                Mode::ALL
+                Mode::ALL.iter().any(|s| Mode::ALL
                     .iter()
-                    .any(|s| Mode::ALL.iter().any(|t| Handoff::between(*s, *t) == Some(h))),
+                    .any(|t| Handoff::between(*s, *t) == Some(h))),
                 "{h:?} unreachable"
             );
         }
@@ -531,7 +533,8 @@ mod tests {
         let path = shapes::rectangle(Rect::new(10.0, 10.0, 60.0, 50.0));
         let appearance =
             Appearance::basic(Paint::solid(Color::rgb8(200, 30, 30)), Paint::None, 0.0);
-        doc.insert(layer, usize::MAX, Node::path(id, path, appearance)).unwrap();
+        doc.insert(layer, usize::MAX, Node::path(id, path, appearance))
+            .unwrap();
         let opts = vectorcraft_svg::ExportOptions {
             artboard: Some(0),
             ..vectorcraft_svg::ExportOptions::default()

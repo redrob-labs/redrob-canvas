@@ -224,6 +224,7 @@ struct Running {
 
 /// Where the queue is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
 pub enum JobState {
     Idle,
     Running(ToolKind),
@@ -266,6 +267,7 @@ impl JobQueue {
         }
     }
 
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
     pub fn state(&self) -> JobState {
         match &self.running {
             Some(r) => JobState::Running(r.kind),
@@ -344,7 +346,9 @@ pub async fn run_job(engine: Option<Engine>, input: JobInput) -> Result<JobOutpu
         }
         other => {
             let engine = engine.ok_or_else(|| "the AI engine has no data directory".to_string())?;
-            run_engine_job(&engine, other).await.map_err(|e| e.to_string())
+            run_engine_job(&engine, other)
+                .await
+                .map_err(|e| e.to_string())
         }
     }
 }
@@ -370,9 +374,11 @@ async fn run_engine_job(engine: &Engine, input: JobInput) -> redrob_ai::Result<J
             options,
         } => {
             let result = engine
-                .request("Inpaint", "Painting the selection from the prompt…", |client| async move {
-                    client.inpaint(&image, &mask, &options).await
-                })
+                .request(
+                    "Inpaint",
+                    "Painting the selection from the prompt…",
+                    |client| async move { client.inpaint(&image, &mask, &options).await },
+                )
                 .await?;
             Ok(JobOutput::Layer {
                 name: "AI inpaint".into(),
@@ -416,9 +422,11 @@ async fn run_engine_job(engine: &Engine, input: JobInput) -> redrob_ai::Result<J
         }
         JobInput::SelectSubject { plugin, image } => {
             let mask = engine
-                .request("Select subject", "Finding the subject…", |client| async move {
-                    client.plugin_gen_mask(plugin, &image, &[]).await
-                })
+                .request(
+                    "Select subject",
+                    "Finding the subject…",
+                    |client| async move { client.plugin_gen_mask(plugin, &image, &[]).await },
+                )
                 .await?;
             Ok(JobOutput::Selection(mask))
         }

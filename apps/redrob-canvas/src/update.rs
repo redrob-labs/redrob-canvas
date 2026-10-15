@@ -440,7 +440,10 @@ impl Updater {
 
     /// The version a Downloading / Ready status is for.
     fn target_version(&self) -> Option<Version> {
-        self.target.lock().ok().and_then(|t| t.map(|(v, _)| v))
+        self.target
+            .lock()
+            .ok()
+            .and_then(|t| t.as_ref().map(|(v, _)| *v))
     }
 }
 
@@ -568,11 +571,10 @@ async fn download_verified(
             .map_err(|e| format!("{}: {e}", part.display()))?;
         hasher.update(&chunk);
         received += chunk.len() as u64;
-        let pct = if total > 0 {
-            (received.saturating_mul(100) / total).min(100) as u8
-        } else {
-            0
-        };
+        let pct = received
+            .saturating_mul(100)
+            .checked_div(total)
+            .map_or(0, |p| p.min(100) as u8);
         if pct != last_pct {
             last_pct = pct;
             progress(pct);
@@ -857,7 +859,7 @@ deadbeef  too-short.zip
                 assert_eq!(sums_url, "https://dl/sums");
                 assert!(release_url.ends_with("v9.0.0"));
             }
-            other => panic!("{other:?}"),
+            other => assert!(matches!(other, Status::Available { .. }), "{other:?}"),
         }
         let same = serde_json::json!({ "tag_name": format!("v{}", env!("CARGO_PKG_VERSION")), "assets": [] });
         assert_eq!(decide(&same, Version::current()).unwrap(), Status::UpToDate);

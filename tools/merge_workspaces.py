@@ -138,6 +138,7 @@ def main() -> None:
     # ours (1.95) craft-ui and photocraft-raw trip collapsible_match, and since `-D warnings`
     # covers every workspace member we cannot gate our crates without silencing it here.
     lints_clippy["collapsible_match"] = "allow"
+    lints_clippy["nonminimal_bool"] = "allow"
     for name, spec in OUR_DEPS.items():
         deps[name] = merge_spec(deps[name], spec) if name in deps else spec
 

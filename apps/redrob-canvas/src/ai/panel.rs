@@ -38,7 +38,11 @@ pub fn menu(ui: &mut egui::Ui, panel: &mut AiPanel, caps: &Capabilities) {
             }
         }
         ui.separator();
-        let label = if panel.open { "Hide AI panel" } else { "Show AI panel" };
+        let label = if panel.open {
+            "Hide AI panel"
+        } else {
+            "Show AI panel"
+        };
         if ui.button(label).clicked() {
             panel.open = !panel.open;
             ui.close();
@@ -168,10 +172,16 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
         {
             actions.push(Action::Install);
         }
-        if ui.add_enabled(startable, egui::Button::new("Start")).clicked() {
+        if ui
+            .add_enabled(startable, egui::Button::new("Start"))
+            .clicked()
+        {
             actions.push(Action::Start);
         }
-        if ui.add_enabled(stoppable, egui::Button::new("Stop")).clicked() {
+        if ui
+            .add_enabled(stoppable, egui::Button::new("Stop"))
+            .clicked()
+        {
             actions.push(Action::Stop);
         }
     });
@@ -369,9 +379,7 @@ fn card(
         if run.clicked() {
             actions.push(Action::Run(kind));
         }
-        if !available
-            && let Some(reason) = kind.unavailable_reason(caps)
-        {
+        if !available && let Some(reason) = kind.unavailable_reason(caps) {
             ui.label(RichText::new(reason).small().weak());
         }
     });
@@ -407,7 +415,11 @@ fn agent_tab(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) 
         });
     ui.separator();
     if let Some(error) = &panel.agent.error {
-        ui.label(RichText::new(error).color(ui.visuals().error_fg_color).small());
+        ui.label(
+            RichText::new(error)
+                .color(ui.visuals().error_fg_color)
+                .small(),
+        );
     }
     let response = ui.add(
         egui::TextEdit::multiline(&mut panel.agent.input)
@@ -424,7 +436,9 @@ fn agent_tab(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) 
         });
     ui.horizontal(|ui| {
         let can_send = !panel.agent.busy && !panel.agent.input.trim().is_empty();
-        let send_clicked = ui.add_enabled(can_send, egui::Button::new("Send")).clicked();
+        let send_clicked = ui
+            .add_enabled(can_send, egui::Button::new("Send"))
+            .clicked();
         if send_clicked || (send_shortcut && can_send) {
             actions.push(Action::AgentSend(std::mem::take(&mut panel.agent.input)));
         }
@@ -523,7 +537,10 @@ mod tests {
         harness.run();
         for kind in ToolKind::ALL {
             assert!(
-                !harness.get_by_label(kind.label()).accesskit_node().is_disabled(),
+                !harness
+                    .get_by_label(kind.label())
+                    .accesskit_node()
+                    .is_disabled(),
                 "{kind:?} in Photo"
             );
         }

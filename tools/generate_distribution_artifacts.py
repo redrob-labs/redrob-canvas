@@ -53,7 +53,9 @@ def sha256(data: bytes) -> str:
 def cargo_metadata() -> dict[str, Any]:
     cargo = os.environ.get("CARGO", "cargo")
     completed = subprocess.run(
-        [cargo, "metadata", "--locked", "--offline", "--format-version", "1"],
+        # --all-features: Cargo.lock pins every optional dependency (e.g. the AVIF encoder behind
+        # the upstream `avif` feature), so the notices must cover them too.
+        [cargo, "metadata", "--locked", "--offline", "--all-features", "--format-version", "1"],
         cwd=ROOT,
         check=False,
         stdout=subprocess.PIPE,

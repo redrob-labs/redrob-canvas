@@ -118,6 +118,7 @@ impl Capabilities {
     }
 
     /// What the Photo mode offers.
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
     pub fn photo(has_document: bool, has_selection: bool) -> Self {
         Self {
             mode: Mode::Photo,
@@ -131,6 +132,7 @@ impl Capabilities {
 
     /// What the Vector mode offers: images can be placed, there is no pixel selection and the
     /// artboard is not padded.
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
     pub fn vector(has_document: bool) -> Self {
         Self {
             mode: Mode::Vector,
@@ -143,6 +145,7 @@ impl Capabilities {
     }
 
     /// What the Layout mode offers: graphics can be placed on the page, nothing else.
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
     pub fn layout(has_document: bool) -> Self {
         Self {
             mode: Mode::Layout,
@@ -245,10 +248,8 @@ impl ModeBridge for PhotoBridge<'_> {
                 }
                 // `Layer::new(name, LayerContent::Raster(surface))` (doc/src/lib.rs L672),
                 // `Document::insert_above(above, layer) -> LayerId` (L1168).
-                let layer = photocraft_doc::Layer::new(
-                    name,
-                    photocraft_doc::LayerContent::Raster(surface),
-                );
+                let layer =
+                    photocraft_doc::Layer::new(name, photocraft_doc::LayerContent::Raster(surface));
                 let id = doc.insert_above(*active, layer);
                 *active = Some(id);
                 Ok(())
@@ -410,8 +411,10 @@ impl ModeBridge for VectorBridge<'_> {
                 // (crafts/vectorcraft/crates/doc/src/{lib.rs L607, links.rs L104}); an image node
                 // is `NodeKind::Image(Box<ImageObject>)` (node.rs L382), as the engine's own
                 // tests build it (crafts/vectorcraft/crates/engine/src/tests_build.rs L660).
-                doc.images
-                    .insert(key.clone(), vectorcraft_doc::ImageBlob::new("image/png", png));
+                doc.images.insert(
+                    key.clone(),
+                    vectorcraft_doc::ImageBlob::new("image/png", png),
+                );
                 let id = doc.alloc_id();
                 let image = vectorcraft_doc::ImageObject {
                     key,
@@ -625,10 +628,16 @@ mod tests {
         let caps = bridge.capabilities();
         assert!(caps.has_document && caps.has_selection && caps.selection && caps.expand);
         // An empty mask clears the selection.
-        bridge.set_selection(Mask::filled(4, 4, 0).unwrap()).unwrap();
+        bridge
+            .set_selection(Mask::filled(4, 4, 0).unwrap())
+            .unwrap();
         assert!(bridge.selection_mask().is_none());
         // A mask of the wrong size is refused, not silently resized.
-        assert!(bridge.set_selection(Mask::filled(3, 4, 255).unwrap()).is_err());
+        assert!(
+            bridge
+                .set_selection(Mask::filled(3, 4, 255).unwrap())
+                .is_err()
+        );
     }
 
     #[test]
