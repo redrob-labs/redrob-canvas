@@ -11,15 +11,12 @@ members = [
   "crafts/designcraft/crates/*",
   "crafts/craft-libs/crates/*",
 ]
-# Upstream binaries, xtasks and web shells are not built here; the Redrob Canvas shell in
-# apps/ hosts the three editors as modes. craft-libs vendors krilla/hayro, patched below.
+# Upstream binaries and web shells are not built here; the Redrob Canvas shell in apps/
+# hosts the three editors as modes. craft-libs vendors krilla/hayro, patched below.
 exclude = [
   "crafts/photocraft/apps",
-  "crafts/photocraft/xtask",
   "crafts/vectorcraft/apps",
-  "crafts/vectorcraft/xtask",
   "crafts/designcraft/apps",
-  "crafts/designcraft/xtask",
   "crafts/craft-libs/vendor",
 ]
 

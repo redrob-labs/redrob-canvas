@@ -20,6 +20,7 @@ whichever exists and renames it again.
 from __future__ import annotations
 
 import re
+import sys
 import tomllib
 from pathlib import Path
 
@@ -115,6 +116,14 @@ def main() -> None:
         parked = live.with_name("Cargo.upstream.toml")
         if live.exists():
             live.replace(parked)
+    # A pull brings upstream's docs, packaging, CI and READMEs back: drop that furniture before
+    # the manifests are read (tools/prune_upstream.py).
+    sys.path.insert(0, str(ROOT / "tools"))
+    import prune_upstream  # noqa: E402
+
+    prune_upstream.main([])
+    for craft in CRAFTS:
+        parked = ROOT / "crafts" / craft / "Cargo.upstream.toml"
         data = tomllib.load(parked.open("rb"))
         ws = data["workspace"]
         for name, spec in ws.get("dependencies", {}).items():
@@ -164,15 +173,12 @@ def main() -> None:
         '  "crafts/designcraft/crates/*",',
         '  "crafts/craft-libs/crates/*",',
         "]",
-        "# Upstream binaries, xtasks and web shells are not built here; the Redrob Canvas shell in",
-        "# apps/ hosts the three editors as modes. craft-libs vendors krilla/hayro, patched below.",
+        "# Upstream binaries and web shells are not built here; the Redrob Canvas shell in apps/",
+        "# hosts the three editors as modes. craft-libs vendors krilla/hayro, patched below.",
         "exclude = [",
         '  "crafts/photocraft/apps",',
-        '  "crafts/photocraft/xtask",',
         '  "crafts/vectorcraft/apps",',
-        '  "crafts/vectorcraft/xtask",',
         '  "crafts/designcraft/apps",',
-        '  "crafts/designcraft/xtask",',
         '  "crafts/craft-libs/vendor",',
         "]",
         "",
