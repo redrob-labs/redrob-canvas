@@ -132,6 +132,10 @@ def main() -> None:
             lints_rust.setdefault(k, v)
         for k, v in lints.get("clippy", {}).items():
             lints_clippy.setdefault(k, v)
+    # The upstream subtrees are linted by their own projects on their own clippy version; on
+    # ours (1.95) craft-ui and photocraft-raw trip collapsible_match, and since `-D warnings`
+    # covers every workspace member we cannot gate our crates without silencing it here.
+    lints_clippy["collapsible_match"] = "allow"
     for name, spec in OUR_DEPS.items():
         deps[name] = merge_spec(deps[name], spec) if name in deps else spec
 
