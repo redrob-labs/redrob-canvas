@@ -92,7 +92,7 @@ pub fn app_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                 crate::community::discord_button(app, ui, false);
             }
             if app.services.native_menu.is_some() {
-                let title = ui.painter().layout_no_wrap("VectorCraft".into(), egui::FontId::proportional(13.5), t.text);
+                let title = ui.painter().layout_no_wrap("Redrob Canvas".into(), egui::FontId::proportional(13.5), t.text);
                 let title_rect = egui::Rect::from_center_size(full.center(), title.size());
                 // Keep the title centered only while the interactive groups leave room for it.
                 if title_rect.left() >= menus_end + 8.0 && title_rect.right() <= ui.min_rect().left() - 8.0 {
@@ -121,8 +121,8 @@ pub fn system_title_bar(app: &VectorcraftApp) -> bool {
 pub fn window_title(app: &VectorcraftApp) -> String {
     app.session
         .active()
-        .map(|d| format!("{}{} \u{2014} VectorCraft", if d.is_dirty() { "*" } else { "" }, d.title()))
-        .unwrap_or_else(|| "VectorCraft".into())
+        .map(|d| format!("{}{} \u{2014} Redrob Canvas", if d.is_dirty() { "*" } else { "" }, d.title()))
+        .unwrap_or_else(|| "Redrob Canvas".into())
 }
 
 /// Keep the OS window title (and the taskbar / Alt-Tab entry) on the active file. Sends
