@@ -234,57 +234,22 @@
       "resources/icons/tools/lazybrush.svg"
     ]
   },
-  "generated": [
-    {
-      "file": "resources/icons/redrob-canvas.svg",
-      "generator": "tools/build_app_icon.py",
-      "from": "assets/Products/redrob-design-icon.svg, whose symbol path is lifted rather than retyped",
-      "sha256": "5c074a3657df7638430678b88dd2e16eef73a5fef3a0885587ed38209bda2eb8"
-    },
-    {
-      "file": "resources/icons/redrob-canvas-small.svg",
-      "generator": "tools/build_app_icon.py",
-      "from": "the same master, tile and symbol only, for 32px and below",
-      "sha256": "1046def70e8f1861576a1b99413e2f430e72b32e5c34009cd983241aadd7c63c"
-    },
-    {
-      "file": "resources/icons/redrob-canvas-macos.svg",
-      "generator": "tools/build_app_icon.py",
-      "from": "the same master on Apple's icon grid (tile 824 of 1024, centred), the macOS Dock icon",
-      "sha256": "c1bd1819eddc80cfa653098c83cfce4818c9392f3d917bf8f8509af8c3569198"
-    },
-    {
-      "file": "resources/icons/redrob-canvas.ico",
-      "generator": "tools/build_installer_assets.py",
-      "from": "redrob-canvas.svg (48px and up) and redrob-canvas-small.svg (32px and below), rasterised for Windows",
-      "sha256": "cf560e102779e034f9f757846950bde3f6a0eb502295e9cad993810f955a5721"
-    },
-    {
-      "file": "resources/icons/redrob-canvas.icns",
-      "generator": "tools/build_installer_assets.py",
-      "from": "redrob-canvas-macos.svg rasterised for the macOS bundle, 32 to 1024px",
-      "sha256": "4273dfed9ea21b9804c6a3e82bc97fa001163560f8267adf9619fede56fb92bb"
-    },
-    {
-      "file": "resources/brand/redrob-canvas-lockup.png",
-      "generator": "tools/build_lockup.py",
-      "from": "assets/Logos/redrob-logo-primary.png placed untouched, with the name built as assets/Products/README.md specifies; checked by rebuilding the shipped Browser lockup",
-      "sha256": "dc1af8940964be3737fb341b5533de742b3333ade1665d61f560c125fcda670a"
-    },
-    {
-      "file": "resources/brand/redrob-canvas-lockup-white.png",
-      "generator": "tools/build_lockup.py",
-      "from": "assets/Logos/redrob-logo-primary-white.png placed untouched, white name, for dark grounds",
-      "sha256": "2bb01618dab1fabb27b566baaa8b5a9d24d47f2c382297db66e9bfd5babb895d"
-    }
-  ],
-  "product_band": {
+  "brand": {
     "_why": [
-      "20-color.md closes the product spectrum at seven and states there is no eighth product colour.",
-      "10-logo.md's way out is that a new product ships as a feature of the product whose band it fits.",
-      "Canvas makes things, which is Design's band."
+      "The app icon, the lockups, the splash and the installer art under resources/ and installer/*/res",
+      "are built by scripts/build-brand-assets.py from the design system's shipped files only -- the",
+      "favicon set and the Primary lockup, never redrawn, recolored or re-proportioned -- and pinned by",
+      "sha256 of every input and output in brand/SOURCES.json. scripts/check-brand.py (run by",
+      "tools/check_design_system.py) refuses a drifted or unpinned file, and a GPL comment in an SVG.",
+      "",
+      "Canvas is not one of the seven suite products: 20-color.md closes the spectrum at seven and",
+      "assets/Products/README.md gives a doorway glyph only to a product. Canvas therefore carries the",
+      "group's own icon -- the Redrob favicon tile with its doorway empty -- as Redrob Shape does, until",
+      "the design system ships a Canvas glyph. Its lockup is the Primary lockup with 'Canvas' set by the",
+      "product-lockup rule, proven by rebuilding the shipped Browser lockup the same way first."
     ],
-    "band": "design",
-    "tile": "#C162F4"
+    "builder": "scripts/build-brand-assets.py --design-system <redrob-design-system>",
+    "checker": "scripts/check-brand.py",
+    "pins": "brand/SOURCES.json"
   }
 }

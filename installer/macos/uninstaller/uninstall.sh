@@ -10,7 +10,7 @@
 #   --silent [--delete-data]    no dialogs, for scripted removal and for tests; exit code is the result
 #
 # The app keeps its state in ~/Library/Application Support/Redrob Canvas (apps/redrob-canvas
-# services::config_dir). The "Redrob/Redrob Canvas" paths are where the 0.6 Qt shell kept its settings,
+# services::config_dir). The "Redrob/Redrob Canvas" paths are where the 0.6 shell kept its settings,
 # console key and AI engine; they are removed too so an upgrade-then-uninstall leaves nothing behind.
 # The shared "Redrob" folders hold other Redrob apps' data and are left alone.
 set -u

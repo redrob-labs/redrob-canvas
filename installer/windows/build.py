@@ -14,10 +14,11 @@ Usage:
 
 The payload is the release's own -portable.zip (tools/release/stage.py: bin/redrob-canvas.exe plus the licence
 set), already Authenticode-signed inside, so the setup must be built after signing and then signed itself
-(release workflow, Windows job). No Qt runtime is staged any more: the egui shell is one static executable.
+(release workflow, Windows job). Nothing else is staged: the egui shell is one static executable.
 
 The art is committed, not rendered here: res/background.png is res/background.html rasterised at
-1320x800, res/lockup.png (the product lockup, tools/build_lockup.py, scaled) comes from tools/build_installer_assets.py. Pretendard is embedded when the design
+1320x800; res/lockup.png (the product lockup, scaled) and resources/icons/redrob-canvas.ico come from
+scripts/build-brand-assets.py and are pinned in brand/SOURCES.json. Pretendard is embedded when the design
 system delivery is present (--design-system, default ../redrob-design-system) and fontTools is installed;
 otherwise the window uses Segoe UI Variable.
 
@@ -174,7 +175,7 @@ def main() -> None:
         sys.exit(f"--version must be X.Y.Z, got {args.version!r}")
     for f in (BACKGROUND, LOCKUP_PNG, ICON):
         if not f.exists():
-            sys.exit(f"missing committed asset {f}; run tools/build_installer_assets.py")
+            sys.exit(f"missing committed asset {f}; run scripts/build-brand-assets.py")
 
     out = Path(args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)

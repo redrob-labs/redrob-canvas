@@ -101,8 +101,8 @@ jobs:
       - name: Check the generated third-party notices
         run: python3 tools/generate_distribution_artifacts.py --check
 
-      # The design-system guard: pinned tokens and icons, the generated brand mark and lockups, no
-      # stray mark under resources/icons, no colour literal in the shell's chrome.
+      # The design-system guard: pinned tokens and icons, the brand assets against brand/SOURCES.json
+      # (scripts/check-brand.py), no stray mark under resources/, no colour literal in the shell's chrome.
       - name: Design system tokens and mark are current
         run: python3 tools/check_design_system.py
 

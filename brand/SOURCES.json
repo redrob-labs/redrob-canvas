@@ -1,0 +1,54 @@
+{
+  "//": "Written by scripts/build-brand-assets.py; checked by scripts/check-brand.py. Do not edit.",
+  "design_system": "redrob-design-system (the published distribution)",
+  "sources": {
+    "assets/Favicons/favicon-16x16.png": "da56595c43ae2a707c9c910aaf7c62624a9f2a6593c5386c098a923c5c574926",
+    "assets/Favicons/favicon-32x32.png": "e15e5d44332ebd83806de82691926ce69e829779957f70dfb1f3a102eea20e86",
+    "assets/Favicons/favicon-48x48.png": "cea52085a4011e2ad18a8b3ec2f41b9e4dbb3fdafd3d3223bd66721e4423351f",
+    "assets/Favicons/favicon-64x64.png": "113869795269f386b7f601dd83febd99d196fcb9414593d97745c2d8be0f9bd0",
+    "assets/Favicons/icon-512.png": "9c168d6215a4e1957456d9aff3041eb8e33c4c8c9189663bc77ff505c2401e17",
+    "assets/Favicons/favicon.svg": "fd971f9e388afffa3c0f21153be36e23abb242f335c91ee7d8d1522acf88e09b",
+    "assets/Logos/redrob-logo-primary.png": "08ebbff1bf720d22fd9fdf60d0b31163276b27a5cc9deeb8358ae35e4f618df4",
+    "assets/Logos/redrob-logo-primary-white.png": "aefab23bcb9f9184e08775ebad80768039d9187e370e67b73b1b124a7613c7a8",
+    "assets/Products/redrob-browser-lockup-white.png": "c63bad2a52944e64deafbeda48467f8e2fd88f9ab8266dba6ab8a6e94328553c",
+    "fonts/Pretendard-SemiBold.woff2": "837b16488ab5264761a8e8bf871ec1be16a2997d157ace3cc7355d0a809d8639",
+    "tokens.css": "846a49dab8397554f1fb2505252de675ab2964cbfd44e6f3a6e03b17bd961ba9"
+  },
+  "symbol_path_sha256": "bff33e6b4993876bde64dbd20861f620332b0294607569299450cfce9d05e08d",
+  "tokens": {
+    "blue-6": "#2b52ff",
+    "redrob-black": "#0a0b0c",
+    "ink-primary": "#0a0b0c"
+  },
+  "copied_unchanged": {
+    "resources/icons/redrob-canvas.svg": "assets/Favicons/favicon.svg",
+    "resources/icons/hicolor/16x16/apps/redrob-canvas.png": "assets/Favicons/favicon-16x16.png",
+    "resources/icons/hicolor/32x32/apps/redrob-canvas.png": "assets/Favicons/favicon-32x32.png",
+    "resources/icons/hicolor/48x48/apps/redrob-canvas.png": "assets/Favicons/favicon-48x48.png",
+    "resources/icons/hicolor/64x64/apps/redrob-canvas.png": "assets/Favicons/favicon-64x64.png",
+    "resources/icons/hicolor/512x512/apps/redrob-canvas.png": "assets/Favicons/icon-512.png"
+  },
+  "owned_dirs": [
+    "resources/icons",
+    "resources/brand"
+  ],
+  "outputs": {
+    "installer/macos/res/icon.png": "26ebd3ba903656f2b3bc39ae9a8fd40160a7e088ad864f9c2816930509653050",
+    "installer/windows/res/icon.png": "26ebd3ba903656f2b3bc39ae9a8fd40160a7e088ad864f9c2816930509653050",
+    "installer/windows/res/lockup.png": "c321e3c47ba97f1b01e542464a2067517fabd8a3141e05a78656d911c8f39463",
+    "resources/brand/redrob-canvas-lockup-white.png": "e0954569639bf467eb4c37ff5b59df010c39d9cbc2591feeb5d3a411217b32aa",
+    "resources/brand/redrob-canvas-lockup.png": "0949b6dd093b883b222f18f08ddb2cf1aacee4e2cd4d8dbc6c2cb53c283af775",
+    "resources/brand/redrob-canvas-splash.png": "769cee8aa227df25ee219c80f7f4499c8d762076e7e6e40a07b9806ac3ee0763",
+    "resources/icons/hicolor/128x128/apps/redrob-canvas.png": "ddd419d662f512151e577eb066d8d11fffe6231e6b60cd1248de8535b2b21afb",
+    "resources/icons/hicolor/16x16/apps/redrob-canvas.png": "da56595c43ae2a707c9c910aaf7c62624a9f2a6593c5386c098a923c5c574926",
+    "resources/icons/hicolor/256x256/apps/redrob-canvas.png": "26ebd3ba903656f2b3bc39ae9a8fd40160a7e088ad864f9c2816930509653050",
+    "resources/icons/hicolor/32x32/apps/redrob-canvas.png": "e15e5d44332ebd83806de82691926ce69e829779957f70dfb1f3a102eea20e86",
+    "resources/icons/hicolor/48x48/apps/redrob-canvas.png": "cea52085a4011e2ad18a8b3ec2f41b9e4dbb3fdafd3d3223bd66721e4423351f",
+    "resources/icons/hicolor/512x512/apps/redrob-canvas.png": "9c168d6215a4e1957456d9aff3041eb8e33c4c8c9189663bc77ff505c2401e17",
+    "resources/icons/hicolor/64x64/apps/redrob-canvas.png": "113869795269f386b7f601dd83febd99d196fcb9414593d97745c2d8be0f9bd0",
+    "resources/icons/redrob-canvas-small.svg": "91726578f96b8cf36af6ea1cb261aeb7cbf4d3f17c9c5008f30177fa828c9550",
+    "resources/icons/redrob-canvas.icns": "2610d619fecd51000bde5b12385393873988bc371ff5bcfddea5b09704371e8f",
+    "resources/icons/redrob-canvas.ico": "c4dd7386998aefbd2dd6356742503e3d46e80e2b97229bd5fa07e8a77ad778d7",
+    "resources/icons/redrob-canvas.svg": "fd971f9e388afffa3c0f21153be36e23abb242f335c91ee7d8d1522acf88e09b"
+  }
+}

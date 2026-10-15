@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/brand/redrob-canvas-lockup-white.png">
+  <img src="resources/brand/redrob-canvas-lockup.png" alt="레드롭 캔버스" height="48">
+</picture>
+
 # 레드롭 캔버스
 
 [English](./README.md) · **한국어**

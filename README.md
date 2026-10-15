@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/brand/redrob-canvas-lockup-white.png">
+  <img src="resources/brand/redrob-canvas-lockup.png" alt="Redrob Canvas" height="48">
+</picture>
+
 # Redrob Canvas
 
 **English** · [한국어](./README.ko.md)

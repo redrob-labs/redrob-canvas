@@ -4,11 +4,12 @@
 
   1. A drifted vendored token or icon file. The delivery is pinned by sha256 in DESIGN_SYSTEM_PIN.json;
      tools/generate_design_tokens.py --check verifies every pin, and this calls it.
-  2. A generated brand file edited by hand. tools/build_app_icon.py and tools/build_lockup.py have a
-     --check mode that rebuilds the mark and the lockups and compares hashes; this runs both.
-  3. A hand-drawn brand mark coming back. An earlier resources/icons/redrob.svg was a typed letter R in
-     an invented gradient, which 10-logo.md forbids; nothing in a build would reject it, so every file
-     under resources/icons/ must be one DESIGN_SYSTEM_PIN.json lists as generated.
+  2. A brand file edited by hand, or a hand-drawn brand mark coming back. Every file under
+     resources/icons/ and resources/brand/ is built by scripts/build-brand-assets.py from the design
+     system's shipped files and pinned by sha256 in brand/SOURCES.json; scripts/check-brand.py
+     refuses a drifted or unpinned one (an earlier resources/icons/redrob.svg was a typed letter R in
+     an invented gradient, which 10-logo.md forbids, and nothing in a build would have rejected it).
+  3. GPL text in a generated SVG: this tree is MIT OR Apache-2.0 (check-brand.py).
   4. A colour literal in the shell's own chrome. The egui shell paints from the vendored tokens; a
      hex literal in apps/redrob-canvas/src/**/*.rs stops following the theme. Allowed exceptions are
      named in ALLOWED below and must be the user's document, never chrome.
@@ -49,24 +50,15 @@ if SHELL.is_dir():
                     f" `// design-guard: document colour` and say why in a comment above."
                 )
 
-for generator in ("tools/generate_design_tokens.py", "tools/build_app_icon.py", "tools/build_lockup.py"):
-    result = subprocess.run(
-        [sys.executable, str(ROOT / generator), "--check"], cwd=ROOT, capture_output=True, text=True
-    )
+for check in (["tools/generate_design_tokens.py", "--check"], ["scripts/check-brand.py"]):
+    result = subprocess.run([sys.executable, str(ROOT / check[0]), *check[1:]], cwd=ROOT, capture_output=True, text=True)
     if result.returncode != 0:
-        failures.append(f"{generator} --check failed:\n    " + result.stderr.strip().replace("\n", "\n    "))
+        failures.append(f"{' '.join(check)} failed:\n    " + result.stderr.strip().replace("\n", "\n    "))
 
-# The mark is generated from the delivery's own master. A file that is not one of the generated set is
-# a hand-drawn mark finding its way back in.
+# DESIGN_SYSTEM_PIN.json names the brand pin file; the two must not drift apart.
 pin = json.loads((ROOT / "DESIGN_SYSTEM_PIN.json").read_text(encoding="utf-8"))
-expected = {pathlib.Path(entry["file"]).name for entry in pin["generated"]
-            if entry["file"].startswith("resources/icons/")}
-present = {p.name for p in (ROOT / "resources/icons").iterdir() if p.is_file()}
-for extra in sorted(present - expected):
-    failures.append(
-        f"resources/icons/{extra} is not generated from the design system.\n"
-        f"    10-logo.md: the artwork is never redrawn, restretched, recoloured or otherwise modified."
-    )
+if pin.get("brand", {}).get("pins") != "brand/SOURCES.json":
+    failures.append("DESIGN_SYSTEM_PIN.json no longer points brand.pins at brand/SOURCES.json")
 
 if failures:
     print(f"design system guard: {len(failures)} problem(s)\n", file=sys.stderr)

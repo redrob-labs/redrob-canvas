@@ -18,7 +18,7 @@ Canvas has no Chromium `mini_installer` to hand it to.
 - **Uninstall**: the same app built without a payload, written into the install folder as
   `Uninstall Redrob Canvas.exe`. It asks first, with "Also delete settings, the console connection and the AI
   engine" off by default, then removes the shortcuts, the entry and the folder. Settings are
-  `%APPDATA%\Redrob Canvas` (the egui shell's config directory); the 0.6 Qt shell's
+  `%APPDATA%\Redrob Canvas` (the egui shell's config directory); the 0.6 shell's
   `HKCU\Software\Redrob\Redrob Canvas` and `Redrob\Redrob Canvas` under `%LOCALAPPDATA%` and `%APPDATA%`
   are removed too, and the shared `Redrob` parents are left alone.
 - **Redrob Code**, opt-in on the first screen, off by default: downloaded from its latest release, checked
@@ -48,8 +48,8 @@ The release workflow builds it in two stages so every binary is signed before it
 (`.github/workflows/release.yml`, Windows leg; signing is the shared `redrob-labs/.github/actions/sign-windows`
 action through Azure Artifact Signing).
 
-The art is committed: `res/background.png` is `res/background.html` rasterised at 1320x800, `res/lockup.png` (the product lockup from `tools/build_lockup.py`, scaled) and
-`resources/icons/redrob-canvas.ico` come from `tools/build_installer_assets.py`.
+The art is committed: `res/background.png` is `res/background.html` rasterised at 1320x800, `res/lockup.png` (the product lockup, scaled) and
+`resources/icons/redrob-canvas.ico` come from `scripts/build-brand-assets.py` and are pinned in `brand/SOURCES.json`.
 
 ## Verify
 

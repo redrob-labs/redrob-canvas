@@ -41,6 +41,15 @@ pub const STATUS_SECS: f32 = 5.0;
 /// A status line with a button ("Open in Layout instead") stays longer.
 pub const STATUS_WITH_ACTION_SECS: f32 = 20.0;
 
+/// The About window's lockup: the Primary lockup with "Canvas", for a light ground, built by
+/// scripts/build-brand-assets.py from the design system and pinned in brand/SOURCES.json.
+const ABOUT_LOCKUP_PNG: &[u8] = include_bytes!("../../../resources/brand/redrob-canvas-lockup.png");
+/// The lockup's height in the About window (above the 18px minimum in 10-logo.md).
+const ABOUT_LOCKUP_HEIGHT: f32 = 40.0;
+/// The editors this app is built on (UPSTREAM_NOTICES.md).
+const ABOUT_ATTRIBUTION: &str =
+    "Built on PhotoCraft, VectorCraft and DesignCraft by the ArtCraft Team -- MIT OR Apache-2.0";
+
 /// Which editor the window shows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
 pub enum Mode {
@@ -250,6 +259,10 @@ pub struct ShellApp {
     exit_approved: bool,
     /// The window title the shell set last.
     last_title: Option<String>,
+    /// Help > About is open.
+    about_open: bool,
+    /// The About window's lockup, uploaded on first use.
+    about_lockup: Option<egui::TextureHandle>,
 }
 
 impl Default for ShellApp {
@@ -281,6 +294,8 @@ impl ShellApp {
             exit_prompt: None,
             exit_approved: false,
             last_title: None,
+            about_open: false,
+            about_lockup: None,
         }
     }
 
@@ -403,6 +418,12 @@ impl ShellApp {
                     ui.menu_button("Mode", |ui| self.mode_menu(ui));
                     ui.separator();
                     ai::panel::menu(ui, &mut self.ai, &caps);
+                    ui.menu_button("Help", |ui| {
+                        if ui.button(format!("About {}", services::APP_NAME)).clicked() {
+                            ui.close();
+                            self.about_open = true;
+                        }
+                    });
                     self.status_line(ui);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.add_space(8.0);
@@ -747,6 +768,63 @@ impl ShellApp {
         }
         info.events.retain(|e| *e != egui::ViewportEvent::Close);
         self.exit_prompt = Some(dirty);
+    }
+
+    /// Help > About: the lockup, the version and the upstream attribution.
+    fn about_window(&mut self, ctx: &egui::Context) {
+        if !self.about_open {
+            return;
+        }
+        // The pinned lockup (brand/SOURCES.json), decoded with the Photo editor's codecs so no
+        // image loader has to be installed on the context.
+        if self.about_lockup.is_none() {
+            let decoded = photocraft_codecs::decode(ABOUT_LOCKUP_PNG).ok().map(|img| {
+                let size = [img.width() as usize, img.height() as usize];
+                egui::ColorImage::from_rgba_unmultiplied(size, &img.to_rgba8())
+            });
+            if let Some(image) = decoded {
+                self.about_lockup = Some(ctx.load_texture(
+                    "redrob_canvas_about_lockup",
+                    image,
+                    egui::TextureOptions::LINEAR,
+                ));
+            }
+        }
+        let mut open = self.about_open;
+        egui::Window::new(format!("About {}", services::APP_NAME))
+            .id(egui::Id::new("redrob_canvas_about"))
+            .open(&mut open)
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .show(ctx, |ui| {
+                ui.set_width(420.0);
+                ui.vertical_centered(|ui| {
+                    ui.add_space(12.0);
+                    match &self.about_lockup {
+                        Some(texture) => {
+                            let size = texture.size_vec2();
+                            let shown = egui::vec2(
+                                size.x * ABOUT_LOCKUP_HEIGHT / size.y,
+                                ABOUT_LOCKUP_HEIGHT,
+                            );
+                            ui.add(
+                                egui::Image::from_texture((texture.id(), size))
+                                    .fit_to_exact_size(shown),
+                            );
+                        }
+                        None => {
+                            ui.label(egui::RichText::new(services::APP_NAME).heading());
+                        }
+                    }
+                    ui.add_space(8.0);
+                    ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
+                    ui.add_space(8.0);
+                    ui.label(ABOUT_ATTRIBUTION);
+                    ui.add_space(12.0);
+                });
+            });
+        self.about_open = open;
     }
 
     /// The exit confirm (a modal): the unsaved counts per mode, Cancel, Go to <mode>, Quit anyway.
@@ -1164,6 +1242,7 @@ impl eframe::App for ShellApp {
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(ui, |ui| self.editor_area(ui, frame));
+        self.about_window(ui.ctx());
         self.exit_dialog(ui.ctx());
         self.styles.insert(self.mode, StyleSnapshot::take(ui.ctx()));
     }

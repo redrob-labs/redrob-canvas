@@ -52,11 +52,26 @@ class DesignSystemGuard(unittest.TestCase):
             "does not match its pin",
         )
 
-    def test_rejects_a_hand_edited_icon(self) -> None:
+    def test_rejects_a_recoloured_icon(self) -> None:
         self._with_defect(
             "resources/icons/redrob-canvas.svg",
-            lambda b: b.replace(b'fill="#C162F4"', b'fill="#FF0000"', 1),
-            "build_app_icon.py --check failed",
+            lambda b: b.replace(b'fill="#2B52FF"', b'fill="#FF0000"', 1),
+            "was changed by hand",
+        )
+
+    def test_rejects_a_hand_edited_lockup(self) -> None:
+        self._with_defect(
+            "resources/brand/redrob-canvas-lockup.png",
+            lambda b: b + b"\n",
+            "was changed by hand",
+        )
+
+    def test_rejects_gpl_text_in_a_generated_svg(self) -> None:
+        # The byte pin fires first; the GPL rule is checked on its own by test_check_brand.
+        self._with_defect(
+            "resources/icons/redrob-canvas-small.svg",
+            lambda b: b"<!-- SPDX-License-Identifier: GPL-3.0-or-later -->\n" + b,
+            "was changed by hand",
         )
 
     def test_rejects_an_ungenerated_icon_file(self) -> None:
@@ -66,7 +81,7 @@ class DesignSystemGuard(unittest.TestCase):
         try:
             result = run_guard()
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("is not generated from the design system", result.stderr)
+            self.assertIn("is not built from the design system", result.stderr)
         finally:
             stray.unlink()
         self.assertEqual(run_guard().returncode, 0)

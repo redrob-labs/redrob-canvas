@@ -7,7 +7,7 @@
   /opt/redrob-canvas/...                     the tree as is (bin, share/redrob-canvas/licenses)
   /usr/bin/redrob-canvas                     a symlink, so a terminal finds it
   /usr/share/applications/redrob-canvas.desktop   the menu entry
-  /usr/share/icons/hicolor/{scalable,256x256}/apps/redrob-canvas.{svg,png}
+  /usr/share/icons/hicolor/{scalable,16x16..512x512}/apps/redrob-canvas.{svg,png}
   /usr/share/doc/redrob-canvas/copyright     the COPYRIGHT file
 
 Uninstalling is the system's own: `sudo apt remove redrob-canvas`, or the software centre. Nothing is
@@ -32,7 +32,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 ICON_SVG = ROOT / "resources" / "icons" / "redrob-canvas.svg"
-ICON_PNG = ROOT / "installer" / "windows" / "res" / "icon.png"  # 256px, same raster as the setup's
+HICOLOR = ROOT / "resources" / "icons" / "hicolor"  # scripts/build-brand-assets.py, pinned in brand/SOURCES.json
 # Libraries the binary links against, by soname, when dpkg -S cannot name them on the build machine
 # (GL is often diverted by a vendor driver package there; a user's machine gets it from the
 # distribution's GL packages).
@@ -125,9 +125,10 @@ def main() -> int:
         (apps / "redrob-canvas.desktop").write_text(DESKTOP)
         icons = root / "usr" / "share" / "icons" / "hicolor"
         (icons / "scalable" / "apps").mkdir(parents=True)
-        (icons / "256x256" / "apps").mkdir(parents=True)
         shutil.copyfile(ICON_SVG, icons / "scalable" / "apps" / "redrob-canvas.svg")
-        shutil.copyfile(ICON_PNG, icons / "256x256" / "apps" / "redrob-canvas.png")
+        for size_dir in sorted(HICOLOR.iterdir()):
+            (icons / size_dir.name / "apps").mkdir(parents=True)
+            shutil.copyfile(size_dir / "apps" / "redrob-canvas.png", icons / size_dir.name / "apps" / "redrob-canvas.png")
         docs = root / "usr" / "share" / "doc" / "redrob-canvas"
         docs.mkdir(parents=True)
         shutil.copyfile(ROOT / "COPYRIGHT", docs / "copyright")

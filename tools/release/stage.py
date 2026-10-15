@@ -78,7 +78,7 @@ def stage_macos(binary: Path, out: Path, version: str) -> None:
     shutil.copyfile(binary, dest)
     executable(dest)
     if not ICNS.is_file():
-        sys.exit(f"missing {ICNS}; run tools/build_installer_assets.py")
+        sys.exit(f"missing {ICNS}; run scripts/build-brand-assets.py")
     shutil.copyfile(ICNS, contents / "Resources" / "AppIcon.icns")
     copy_licenses(contents / "Resources" / "licenses")
     copy_licenses(out / "share" / "redrob-canvas" / "licenses")

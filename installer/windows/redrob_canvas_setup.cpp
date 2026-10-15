@@ -777,8 +777,8 @@ HRESULT SetupApp::DrawScene() {
                 D2D1::Point2F(minX + gl / 2, cy), ink.p, 1.6f);
 
   // ---- lockup (product mark + name), centred in the upper third ---------------
-  // resources/brand/redrob-canvas-lockup-white.png, built by tools/build_lockup.py as the design system
-  // builds its product lockups. Same size and place as the Redrob Browser setup's.
+  // resources/brand/redrob-canvas-lockup-white.png, built by scripts/build-brand-assets.py as the design
+  // system builds its product lockups. Same size and place as the Redrob Browser setup's.
   if (lockupBitmap_) {
     D2D1_SIZE_F ls = lockupBitmap_->GetSize();
     float lh = 34.0f;                       // >= 18px min screen (10-logo.md)
@@ -1296,7 +1296,7 @@ DWORD SetupApp::RunUninstall() {
   if (deleteData_) {
     // Where the app keeps its state on Windows: %APPDATA%\Redrob Canvas (apps/redrob-canvas
     // services::config_dir -- preferences, window geometry, each editor's folder). The three
-    // "Redrob\Redrob Canvas" places below are where the 0.6 Qt shell kept QSettings, the console key
+    // "Redrob\Redrob Canvas" places below are where the 0.6 shell kept its settings, the console key
     // and the AI engine; they are removed too so an upgrade-then-uninstall leaves nothing behind. The
     // shared "Redrob" parents belong to other Redrob apps and are left alone.
     const std::wstring roaming = KnownFolder(FOLDERID_RoamingAppData);
