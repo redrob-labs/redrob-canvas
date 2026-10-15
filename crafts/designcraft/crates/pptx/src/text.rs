@@ -26,7 +26,7 @@ const BASELINE_IN_LINE: f64 = 0.75;
 /// Largest drift (points) a run's character spacing may leave before a new run starts.
 const TOLERANCE: f64 = 0.3;
 
-/// Private-use characters DesignCraft stores for markers (page numbers, section markers, breaks).
+/// Private-use characters Redrob Canvas stores for markers (page numbers, section markers, breaks).
 fn is_marker(c: char) -> bool {
     ('\u{E000}'..='\u{E1FF}').contains(&c)
 }

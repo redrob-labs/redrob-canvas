@@ -1,4 +1,4 @@
-//! Placed documents: another VectorCraft file placed linked ([`PlacedDocument`]).
+//! Placed documents: another Redrob Canvas file placed linked ([`PlacedDocument`]).
 //!
 //! The object keeps the link to the file and the file's bytes, stored like image data in
 //! [`Document::images`] (with a small preview a save writes instead, as for linked images), so the
@@ -25,7 +25,7 @@ use vectorcraft_color::Paint;
 
 use crate::{AppearanceItem, Document, ImageBlob, ImageObject, LinkInfo, Node, NodeKind, PatternDef, PlacementOptions, Symbol};
 
-/// A placed document: an artboard of another VectorCraft file, shown as one locked object.
+/// A placed document: an artboard of another Redrob Canvas file, shown as one locked object.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PlacedDocument {
     /// The file (its `page` is the artboard shown, 1-based).

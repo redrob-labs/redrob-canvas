@@ -16,7 +16,7 @@
 //! Roots are in force on a thread inside [`confine`], and in the whole process after
 //! [`confine_process`] (`vectorcraft-cli mcp`, the desktop app with a control port), except inside
 //! [`unconfined`]: what the person at the keyboard does, and the app's own folders (preferences,
-//! Data Recovery, the library folders, VectorCraft's Fonts folder), which no agent names. Without
+//! Data Recovery, the library folders, Redrob Canvas's Fonts folder), which no agent names. Without
 //! roots nothing is checked.
 //!
 //! A path is checked, then opened: a process that can change the folders in between (swapping in

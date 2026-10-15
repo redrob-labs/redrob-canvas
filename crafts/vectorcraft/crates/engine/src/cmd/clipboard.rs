@@ -5,7 +5,7 @@
 //!
 //! System clipboard: the copied objects as SVG markup (what other apps paste), and SVG markup from
 //! other apps turned into clipboard objects (pasted with the Paste commands). The UI owns the
-//! platform clipboard; these commands only convert. Within VectorCraft the internal clipboard stays
+//! platform clipboard; these commands only convert. Within Redrob Canvas the internal clipboard stays
 //! lossless (live effects, masks, symbols); SVG is the outside format, with PNG, PDF and plain
 //! text besides it (see `flavours`).
 
@@ -276,7 +276,7 @@ mod tests {
         s.execute("edit.copy", &json!({})).unwrap();
         let svg = s.execute("clipboard.exportSvg", &json!({})).unwrap()["svg"].as_str().unwrap().to_string();
         assert!(looks_like_svg(&svg) && svg.contains("#12ab34"), "{svg}");
-        // As if pasted into another VectorCraft window.
+        // As if pasted into another Redrob Canvas window.
         let mut t = session();
         assert_eq!(t.execute("clipboard.importSvg", &json!({"svg": svg, "center": [200, 150]})).unwrap()["count"], 1);
         t.execute("edit.pasteInPlace", &json!({})).unwrap();

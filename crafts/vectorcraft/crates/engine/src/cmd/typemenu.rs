@@ -477,7 +477,7 @@ fn path_options(s: &mut Session, p: &Value) -> Result<Value> {
 
 // ---------- placeholder / insert ----------
 
-/// VectorCraft's own placeholder copy (not the classical Latin text).
+/// Redrob Canvas's own placeholder copy (not the classical Latin text).
 pub(crate) const PLACEHOLDER: &str = "Sample copy flows here while the layout takes shape. Swap these words for real text once the \
 design is settled. Every line is only a stand-in that shows size, rhythm and colour. Headlines, captions and body text all \
 start as rough drafts like this one. Keep going until the frame is full and the page feels balanced.";

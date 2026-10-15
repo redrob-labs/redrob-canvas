@@ -264,7 +264,7 @@ fn poster_with_placed_document(dir: &Folder) -> Session {
 }
 
 /// Every link must point to a packaged copy, including links inside a linked
-/// VectorCraft file. Validate after original assets have been removed.
+/// Redrob Canvas file. Validate after original assets have been removed.
 fn verify_portable_nested_package(folder: &std::path::Path) {
     let main = folder.join("poster.vectorcraft");
     let part = folder.join("Links/part.vectorcraft");
@@ -472,7 +472,7 @@ fn unreadable_placed_document_is_copied_unchanged_with_warning() {
     let dir = Folder::new("package-unreadable-placed");
     let mut parent = poster_with_placed_document(&dir);
     let damaged = dir.file("art/part.vectorcraft");
-    let bytes = b"not a parseable VectorCraft file".to_vec();
+    let bytes = b"not a parseable Redrob Canvas file".to_vec();
     write(&damaged, &bytes);
 
     let result = run(&mut parent, "file.package", json!({ "folder": dir.file("delivery") }));

@@ -29,7 +29,7 @@ pub(crate) const MAX_LINE_BYTES: usize = 16 * 1024 * 1024;
 /// older clients can make the server parse and answer at once (#1727).
 pub(crate) const MAX_BATCH_MESSAGES: usize = 64;
 
-const INSTRUCTIONS: &str = "VectorCraft is a professional vector illustration app. Coordinates are \
+const INSTRUCTIONS: &str = "Redrob Canvas is a professional vector illustration app. Coordinates are \
 points in document space (y down, origin at the first artboard's top-left; a new document is 612×792). \
 Draw with draw_shape / draw_path, change colours with set_paint, look with render_preview and doc_inspect. \
 Every menu action is a command: find it with command_list and run it with command_run (or command_batch for several). New objects become \
@@ -263,7 +263,7 @@ impl Server {
                         "completions": {},
                         "logging": {},
                     },
-                    "serverInfo": {"name": "vectorcraft", "title": "VectorCraft", "version": env!("CARGO_PKG_VERSION")},
+                    "serverInfo": {"name": "vectorcraft", "title": "Redrob Canvas", "version": env!("CARGO_PKG_VERSION")},
                     "instructions": format!("{INSTRUCTIONS} Backend: {}.", self.backend.describe()),
                 }))
             }

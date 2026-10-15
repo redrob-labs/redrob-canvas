@@ -1,4 +1,4 @@
-//! VectorCraft test helpers.
+//! Redrob Canvas test helpers.
 //!
 //! - [`fixtures`]: sessions and documents in known states (empty, single/multi selection, a "rich"
 //!   document touching most node kinds), plus a [`fixtures::DocBuilder`] for building documents

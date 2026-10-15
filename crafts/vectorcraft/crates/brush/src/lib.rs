@@ -1,4 +1,4 @@
-//! VectorCraft brushes: definitions (calligraphic, scatter, art, pattern, bristle), the default
+//! Redrob Canvas brushes: definitions (calligraphic, scatter, art, pattern, bristle), the default
 //! library, and the geometry that turns a brushed stroke into filled art.
 //!
 //! Brush definitions live in the document under `Document::unknown["brushes"]` (a JSON array of

@@ -101,7 +101,7 @@ fn safe_asset_name(name: &str) -> String {
     if name.is_empty() { "asset".into() } else { name.into() }
 }
 
-/// Collect dependencies depth-first so nested VectorCraft files are rewritten before
+/// Collect dependencies depth-first so nested Redrob Canvas files are rewritten before
 /// their parents: each parent can record the final hash of the rewritten child.
 /// Cycles, excessive nesting, and unreadable children are reported, not fatal.
 struct Collector<'a> {

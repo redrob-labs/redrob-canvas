@@ -17,7 +17,7 @@ pub type Preset = (&'static str, u32, u32, f32);
 
 /// Photoshop's New Document categories and their blank-document presets.
 pub const CATEGORIES: &[(&str, &[Preset])] = &[
-    ("Recent", &[("Default PhotoCraft Size", 2100, 1500, 300.0), ("HDTV 1080p", 1920, 1080, 72.0)]),
+    ("Recent", &[("Default Redrob Canvas Size", 2100, 1500, 300.0), ("HDTV 1080p", 1920, 1080, 72.0)]),
     (
         "Photo",
         &[
@@ -957,7 +957,7 @@ mod tests {
                 (CLIPBOARD, "20 x 30 px @ 72 ppi".to_string()),
                 ("Custom", "800 x 600 px @ 72 ppi".to_string()),
                 ("HDTV 1080p", "1920 x 1080 px @ 72 ppi".to_string()),
-                ("Default PhotoCraft Size", "7 x 5 in @ 300 ppi".to_string()),
+                ("Default Redrob Canvas Size", "7 x 5 in @ 300 ppi".to_string()),
             ]
         );
         assert!(holds(&f, &settings(20, 30, 72.0)) && !holds(&f, &settings(800, 600, 72.0)));
@@ -1430,7 +1430,7 @@ mod tests {
             let heading = h.get_by_label_contains("BLANK DOCUMENT PRESETS").rect();
             // Pick the second card, then the first (Clipboard) again.
             click_at(&mut h, heading.left_bottom() + egui::vec2(80.0 + 172.0, 60.0));
-            assert_eq!(fields(&h).get("__preset").and_then(|v| v.as_str()), Some("Default PhotoCraft Size"));
+            assert_eq!(fields(&h).get("__preset").and_then(|v| v.as_str()), Some("Default Redrob Canvas Size"));
             click_at(&mut h, heading.left_bottom() + egui::vec2(80.0, 60.0));
             assert_eq!(fields(&h).get("__preset").and_then(|v| v.as_str()), Some(super::super::CLIPBOARD));
             enter(&mut h);

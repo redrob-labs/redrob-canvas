@@ -21,7 +21,7 @@ pub enum ChannelLayout {
     /// Ink amounts, `0 = no ink`, `max = full ink` (not Adobe-inverted).
     Cmyk,
     CmykA,
-    /// CIE L*a*b* (D50), as PhotoCraft's Lab documents hold it: L* 0..100 as 0..1, a* and b*
+    /// CIE L*a*b* (D50), as Redrob Canvas's Lab documents hold it: L* 0..100 as 0..1, a* and b*
     /// −128..127 as `(v + 128) / 255` (Photoshop's unsigned encoding).
     Lab,
     LabA,

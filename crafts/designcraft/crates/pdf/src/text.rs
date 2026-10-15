@@ -57,7 +57,7 @@ fn paint_fill(paint: Paint) -> Fill {
     Fill { paint, opacity: NormalizedF32::ONE, rule: FillRule::NonZero }
 }
 
-/// Private-use characters DesignCraft stores for markers (page numbers, section markers, breaks).
+/// Private-use characters Redrob Canvas stores for markers (page numbers, section markers, breaks).
 fn is_marker(c: char) -> bool {
     ('\u{E000}'..='\u{E1FF}').contains(&c)
 }

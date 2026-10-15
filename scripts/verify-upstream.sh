@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Verifies the upstream pins: the four ArtCraft subtrees under crafts/ and the Redrob Code protocol
+# Verifies the upstream pins: the four upstream subtrees under crafts/ and the Redrob Code protocol
 # pin. The rules it enforces are listed in UPSTREAM.md ("What the boundary guard enforces"); this
 # header only says what it costs.
 #
@@ -145,7 +145,7 @@ if excluded:
             continue
         for prefix in excluded:
             if prefix in text or "artcraft-logo" in text or "artcraft-mark" in text:
-                problems.append(f"{rel} references the ArtCraft brand assets under {prefix}, which are trademarks")
+                problems.append(f"{rel} references the upstream brand assets under {prefix}, which are trademarks")
                 break
 
 # redrob_code: the tag the pin records is the tag Cargo.toml depends on.

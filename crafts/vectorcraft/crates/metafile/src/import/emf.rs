@@ -12,7 +12,7 @@ use crate::{Imported, Kind};
 const PT_PER_MM: f64 = 72.0 / 25.4;
 /// Most points one record may give (a hostile count can't make a huge allocation).
 const MAX_POINTS: usize = 1 << 22;
-/// Records that change nothing VectorCraft keeps (background mode and colour, raster modes,
+/// Records that change nothing Redrob Canvas keeps (background mode and colour, raster modes,
 /// palettes, colour management, comments…).
 const IGNORED: &[u32] =
     &[1, 13, 15, 16, 18, 20, 21, 23, 25, 28, 48, 50, 51, 52, 65, 66, 70, 98, 100, 101, 104, 110, 111, 112, 113, 115, 119, 120, 121];

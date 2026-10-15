@@ -25,7 +25,7 @@ fn patched(bytes: &[u8], from: &[u8], to: &[u8]) -> Vec<u8> {
 
 /// An EPS file of ours as another app would write it: without the document it carries.
 fn foreign(eps: &[u8]) -> Vec<u8> {
-    patched(eps, b"%VectorCraft_BeginData: native", b"%VectorCraft_BeginData: nativx")
+    patched(eps, b"%Redrob Canvas_BeginData: native", b"%Redrob Canvas_BeginData: nativx")
 }
 
 fn objects(s: &Session) -> usize {

@@ -1,4 +1,4 @@
-//! VectorCraft PDF export and import.
+//! Redrob Canvas PDF export and import.
 //!
 //! - [`export`] writes one PDF page per artboard with `krilla`: vector paths (fills, strokes with
 //!   caps/joins/miter/dashes, inside/outside alignment as clips, non-zero/even-odd; arrowheads,

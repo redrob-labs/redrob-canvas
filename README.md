@@ -11,14 +11,14 @@ Redrob Canvas is an agentic graphics editor: photo, vector and page layout in on
 tools layer across all three and an agent that edits the document beside you.
 
 It is one desktop application (`apps/redrob-canvas`, Rust and egui) with three modes, each a complete
-editor from the ArtCraft family by [storytold](https://github.com/storytold), vendored under `crafts/`
+editor, vendored under `crafts/` (origins and licences: UPSTREAM.md and NOTICE)
 and built from source:
 
-| Mode | Editor | What it is for |
+| Mode | Kind | What it is for |
 | --- | --- | --- |
-| **Photo** | [PhotoCraft](https://github.com/storytold/photocraft) | Layers, masks, adjustment layers, layer styles, brushes, type, colour management; real PSD files |
-| **Vector** | [VectorCraft](https://github.com/storytold/vectorcraft) | Paths, booleans, text on paths, gradients, artboards; SVG, AI, EPS, PDF, DXF |
-| **Layout** | [DesignCraft](https://github.com/storytold/designcraft) | Master pages, threaded text frames, hyphenation; IDML, PDF, PPTX, EPUB |
+| **Photo** | raster | Layers, masks, adjustment layers, layer styles, brushes, type, colour management; real PSD files |
+| **Vector** | vector | Paths, booleans, text on paths, gradients, artboards; SVG, AI, EPS, PDF, DXF |
+| **Layout** | page layout | Master pages, threaded text frames, hyphenation; IDML, PDF, PPTX, EPUB |
 
 The shell owns the window, the mode switch (`Ctrl+1` / `Ctrl+2` / `Ctrl+3`, or `--mode photo|vector|layout`),
 one config directory (`ai.redrob.canvas`) and the agent. Switching modes keeps every editor's open
@@ -104,10 +104,10 @@ and `scripts/verify-upstream.sh` checks the two pin files against each other, ag
 squash commits and against GitHub. Redrob Canvas adds the shell, the agent and the AI layer; it does
 not fork any editor's internals, so upstream improvements arrive by merge.
 
-Copyright (c) 2026 ArtCraft Team and the PhotoCraft, VectorCraft, DesignCraft and craft-libs
+Copyright (c) 2026 the upstream authors and the the four vendored editors
 contributors, MIT OR Apache-2.0. Their licence and NOTICE files stay intact under `crafts/<name>/`
-and are reproduced in [NOTICE](NOTICE). The ArtCraft name and logos under `crafts/*/docs/brand/` are
-trademarks of the ArtCraft Team, not open source, and are not used here.
+and are reproduced in [NOTICE](NOTICE). The upstream name and logos under `crafts/*/docs/brand/` are
+trademarks of the the upstream authors, not open source, and are not used here.
 
 ## Roadmap
 

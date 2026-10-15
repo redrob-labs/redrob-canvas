@@ -258,7 +258,7 @@ pub fn clipboard_keys(ctx: &egui::Context, typing: bool, raw: &mut egui::RawInpu
         // makes from the window's key and so never sends as key presses. A ⌘C / ⌘X / ⌘V press
         // here is the Mac menu's key equivalent (AppKit takes the key while Edit › Copy, Cut or
         // Paste is enabled), which a text field ignores: pasting text worked only while
-        // PhotoCraft's own clipboard was empty. Give those presses back as the events; Paste asks
+        // Redrob Canvas's own clipboard was empty. Give those presses back as the events; Paste asks
         // the window for the clipboard text, which arrives as a Paste event next frame.
         raw.events.retain_mut(|e| {
             let egui::Event::Key { key, pressed: true, modifiers: m, .. } = *e else { return true };

@@ -483,7 +483,7 @@ pub enum NodeKind {
     Mesh(GradientMesh),
     /// Live Repeat (radial / grid / mirror) of source art.
     Repeat(RepeatSpec),
-    /// A placed document: an artboard of another VectorCraft file, linked and locked (see
+    /// A placed document: an artboard of another Redrob Canvas file, linked and locked (see
     /// [`crate::placed_document`]).
     PlacedDocument(Box<crate::placed_document::PlacedDocument>),
 }

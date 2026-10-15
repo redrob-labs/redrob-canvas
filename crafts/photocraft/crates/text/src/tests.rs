@@ -685,8 +685,7 @@ fn dump_sample() {
     };
     let mut e = if std::env::var_os("PHOTOCRAFT_TEXT_SYSTEM").is_some() { TextEngine::with_system_fonts() } else { TextEngine::new() };
     let s = CharStyle { size_pt: 28.0, ..Default::default() };
-    let text =
-        "Photocraft Type\nBold faux, italic faux, underline\nשלום عربي mixed ✓\nJustified paragraph text wraps inside the box nicely and evenly across lines.";
+    let text = "Redrob Canvas Type\nBold faux, italic faux, underline\nשלום عربي mixed ✓\nJustified paragraph text wraps inside the box nicely and evenly across lines.";
     let runs = vec![
         TextRun { len: 16, style: CharStyle { size_pt: 40.0, color: Color::rgb(0.1, 0.3, 0.9), caps: Caps::Normal, ..s.clone() } },
         TextRun { len: 5, style: CharStyle { faux_bold: true, ..s.clone() } },
@@ -1133,7 +1132,7 @@ fn psd_text_fill_is_enabled_in_runs_and_new_default_styles() {
 #[test]
 fn psd_text_fill_is_enabled_after_editing_a_legacy_export() {
     use crate::engine_data::Value as E;
-    // A legacy PhotoCraft export has a normal style and character runs without FillFlag.
+    // A legacy Redrob Canvas export has a normal style and character runs without FillFlag.
     let mut t = point("Before", 40.0);
     let mut legacy = crate::psd::parse_tysh(&crate::psd::build_tysh(&t, 72.0, None)).unwrap();
     fn remove_fill_flags(value: &mut E) {
@@ -1834,7 +1833,7 @@ fn txt2_frame_moves_box_text_onto_its_bounds() {
     let TextShape::Box { x, y, .. } = l.shape else { panic!("not a box") };
     let o = l.transform.apply(photocraft_geom::Point::new(f64::from(x), f64::from(y)));
     assert!((o.x - 260.0).abs() < 1e-3 && (o.y - 0.0).abs() < 1e-3, "box top left at {o:?}");
-    // PhotoCraft's own `TySh` (bounds = the box, frame already folded in): unchanged.
+    // Redrob Canvas's own `TySh` (bounds = the box, frame already folded in): unchanged.
     let mut l = crate::psd::text_layer_from_tysh(&built, 72.0).unwrap();
     let before = l.transform;
     crate::psd::apply_txt2_frame(&mut l, &built, &txt2);

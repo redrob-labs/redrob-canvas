@@ -1605,7 +1605,7 @@ fn direct_selection_drags_segments() {
 #[test]
 fn text_create_has_bounds() {
     let mut s = session();
-    let r = s.execute("text.create", &json!({"x": 10, "y": 50, "text": "Hello VectorCraft", "size": 24})).unwrap();
+    let r = s.execute("text.create", &json!({"x": 10, "y": 50, "text": "Hello Redrob Canvas", "size": 24})).unwrap();
     let n = s.doc().unwrap().doc.node(NodeId(r["id"].as_u64().unwrap())).unwrap().clone();
     let b = n.geometric_bounds().unwrap();
     assert!(b.width() > 100.0, "{b:?}");

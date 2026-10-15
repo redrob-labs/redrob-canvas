@@ -511,7 +511,7 @@ impl<'a> Exporter<'a> {
                     return String::new();
                 }
             };
-            // PowerPoint's large heads come closest to DesignCraft's at the same weight.
+            // PowerPoint's large heads come closest to Redrob Canvas's at the same weight.
             format!("<a:{tag} type=\"{kind}\" w=\"lg\" len=\"lg\"/>")
         };
         let head = ends("headEnd", s.start, self);

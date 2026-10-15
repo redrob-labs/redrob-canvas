@@ -11,8 +11,11 @@
 //!
 //! Switched off by `REDROB_CANVAS_NO_UPDATE_CHECK=1` or the "Check for updates automatically"
 //! preference (Help menu, `<config dir>/update.json`); Help > "Check for updates…" still works.
-//! Under Redrob Launcher (`redrob-launcher.json` beside the binary, or `REDROB_LAUNCHER=1`) the
-//! launcher owns updates and the menu says so instead.
+//! Under Redrob Launcher the launcher owns updates and the menu says so instead. The launcher
+//! records every install in its `installed.json` (`<data-local>/redrob-launcher/installed.json`,
+//! `apps["redrob-canvas"].path` -- redrob-launcher `crates/native/src/{manifest,paths}.rs`); this
+//! copy is launcher-managed when its executable is that path or lives under it. `REDROB_LAUNCHER=1`
+//! forces the same answer for tests and wrappers.
 //!
 //! Everything lives behind one process-wide [`Updater`] (`OnceLock`) with a `tokio::sync::watch`
 //! channel from the worker thread to the UI, so the shell only calls [`menu_items`] and
@@ -43,8 +46,10 @@ pub const SUMS_NAME: &str = "SHA256SUMS.txt";
 pub const NO_CHECK_ENV: &str = "REDROB_CANVAS_NO_UPDATE_CHECK";
 /// `REDROB_LAUNCHER=1`: started by Redrob Launcher, which owns updates.
 pub const LAUNCHER_ENV: &str = "REDROB_LAUNCHER";
-/// The launcher's sentinel beside the binary (the launcher writes it into every install).
-pub const LAUNCHER_SENTINEL: &str = "redrob-launcher.json";
+/// The launcher's record of what it installed, under its per-user data-local directory.
+pub const LAUNCHER_MANIFEST: &str = "redrob-launcher/installed.json";
+/// Our id in that record (the launcher's catalog slug for Redrob Canvas).
+pub const LAUNCHER_APP_ID: &str = "redrob-canvas";
 /// The preference file under the config directory: `{ "auto_check": true }`.
 pub const PREFS_FILE: &str = "update.json";
 /// How long after the first frame the automatic check runs.
@@ -209,23 +214,72 @@ pub enum Policy {
     LauncherManaged,
 }
 
-/// Launcher-managed when `redrob-launcher.json` sits beside the binary (`exe_dir`) or the
-/// launcher set `REDROB_LAUNCHER=1`.
+/// The launcher's per-user data-local directory, as `dirs::data_local_dir()` resolves it in the
+/// launcher: `%LOCALAPPDATA%` on Windows, `~/Library/Application Support` on macOS, else
+/// `$XDG_DATA_HOME` or `~/.local/share`.
+pub fn launcher_manifest_path_with(
+    os: &str,
+    env: impl Fn(&str) -> Option<OsString>,
+) -> Option<PathBuf> {
+    let home = env("HOME").filter(|h| !h.is_empty()).map(PathBuf::from);
+    let base = match os {
+        "windows" => env("LOCALAPPDATA")
+            .filter(|v| !v.is_empty())
+            .map(PathBuf::from),
+        "macos" => home.map(|h| h.join("Library/Application Support")),
+        _ => env("XDG_DATA_HOME")
+            .filter(|v| !v.is_empty())
+            .map(PathBuf::from)
+            .or_else(|| home.map(|h| h.join(".local/share"))),
+    };
+    base.map(|b| b.join(LAUNCHER_MANIFEST))
+}
+
+/// Whether `exe` is the path the launcher recorded for us (or lives under it, for tree installs
+/// and app bundles). `manifest` is the text of the launcher's `installed.json`.
+pub fn recorded_by_launcher(manifest: &str, exe: &Path) -> bool {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(manifest) else {
+        return false;
+    };
+    let Some(recorded) = value
+        .get("apps")
+        .and_then(|a| a.get(LAUNCHER_APP_ID))
+        .and_then(|r| r.get("path"))
+        .and_then(serde_json::Value::as_str)
+    else {
+        return false;
+    };
+    let recorded = Path::new(recorded);
+    let same = |a: &Path, b: &Path| match (a.canonicalize(), b.canonicalize()) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => a == b,
+    };
+    same(exe, recorded) || exe.ancestors().skip(1).any(|dir| same(dir, recorded))
+}
+
+/// Launcher-managed when the launcher's `installed.json` records this executable, or the launcher
+/// set `REDROB_LAUNCHER=1`.
 pub fn launcher_managed_with(
-    exe_dir: Option<&Path>,
+    exe: Option<&Path>,
+    manifest: Option<&str>,
     env: impl Fn(&str) -> Option<OsString>,
 ) -> bool {
     if env(LAUNCHER_ENV).is_some_and(|v| v == "1" || v.eq_ignore_ascii_case("true")) {
         return true;
     }
-    exe_dir.is_some_and(|dir| dir.join(LAUNCHER_SENTINEL).is_file())
+    match (exe, manifest) {
+        (Some(exe), Some(manifest)) => recorded_by_launcher(manifest, exe),
+        _ => false,
+    }
 }
 
 fn launcher_managed() -> bool {
-    let exe_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(Path::to_path_buf));
-    launcher_managed_with(exe_dir.as_deref(), |key| std::env::var_os(key))
+    let exe = std::env::current_exe().ok();
+    let manifest = launcher_manifest_path_with(std::env::consts::OS, |key| std::env::var_os(key))
+        .and_then(|p| std::fs::read_to_string(p).ok());
+    launcher_managed_with(exe.as_deref(), manifest.as_deref(), |key| {
+        std::env::var_os(key)
+    })
 }
 
 /// `REDROB_CANVAS_NO_UPDATE_CHECK=1` (or anything but `0` / empty).
@@ -812,21 +866,31 @@ deadbeef  too-short.zip
     }
 
     #[test]
-    fn launcher_managed_is_the_sentinel_beside_the_binary_or_the_environment() {
+    fn launcher_managed_is_the_launcher_record_or_the_environment() {
         let none = |_: &str| None::<OsString>;
-        let dir =
-            std::env::temp_dir().join(format!("redrob-canvas-update-test-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        assert!(!launcher_managed_with(Some(&dir), none));
-        assert!(!launcher_managed_with(None, none));
-        std::fs::write(dir.join(LAUNCHER_SENTINEL), "{ \"schema\": 1 }\n").unwrap();
-        assert!(launcher_managed_with(Some(&dir), none));
-        std::fs::remove_dir_all(&dir).unwrap();
-        assert!(!launcher_managed_with(Some(&dir), none));
+        let exe =
+            Path::new("/home/u/.local/share/redrob-launcher/apps/redrob-canvas/redrob-canvas");
+        let tree = r#"{ "apps": { "redrob-canvas": { "version": "0.7.0", "kind": "TarGz",
+            "path": "/home/u/.local/share/redrob-launcher/apps/redrob-canvas", "installed_at": 1 } } }"#;
+        assert!(launcher_managed_with(Some(exe), Some(tree), none));
+        let exact = r#"{ "apps": { "redrob-canvas": { "version": "0.7.0", "kind": "AppImage",
+            "path": "/home/u/.local/share/redrob-launcher/apps/redrob-canvas/redrob-canvas", "installed_at": 1 } } }"#;
+        assert!(launcher_managed_with(Some(exe), Some(exact), none));
+        let other = r#"{ "apps": { "redrob-cad": { "version": "0.0.3", "kind": "TarGz",
+            "path": "/home/u/.local/share/redrob-launcher/apps/redrob-cad", "installed_at": 1 } } }"#;
+        assert!(!launcher_managed_with(Some(exe), Some(other), none));
+        assert!(!launcher_managed_with(
+            Some(Path::new("/opt/redrob-canvas/redrob-canvas")),
+            Some(tree),
+            none
+        ));
+        assert!(!launcher_managed_with(Some(exe), Some("not json"), none));
+        assert!(!launcher_managed_with(Some(exe), None, none));
+        assert!(!launcher_managed_with(None, Some(tree), none));
         let env_on = |key: &str| (key == LAUNCHER_ENV).then(|| OsString::from("1"));
-        assert!(launcher_managed_with(None, env_on));
+        assert!(launcher_managed_with(None, None, env_on));
         let env_off = |key: &str| (key == LAUNCHER_ENV).then(|| OsString::from("0"));
-        assert!(!launcher_managed_with(None, env_off));
+        assert!(!launcher_managed_with(None, None, env_off));
         // The opt-out is a separate switch.
         assert!(opted_out_with(
             |key| (key == NO_CHECK_ENV).then(|| OsString::from("1"))
@@ -898,5 +962,46 @@ deadbeef  too-short.zip
         let (program, args) = opener_for("windows", Path::new("C:\\x\\setup.exe"));
         assert_eq!(program, "C:\\x\\setup.exe");
         assert!(args.is_empty(), "the setup runs itself");
+    }
+}
+
+#[cfg(test)]
+mod launcher_paths {
+    use super::*;
+
+    #[test]
+    fn launcher_manifest_follows_the_launchers_data_local_dir() {
+        let env = |key: &str| match key {
+            "HOME" => Some(OsString::from("/home/u")),
+            "LOCALAPPDATA" => Some(OsString::from("C:\\Users\\u\\AppData\\Local")),
+            _ => None,
+        };
+        assert_eq!(
+            launcher_manifest_path_with("linux", env),
+            Some(PathBuf::from(
+                "/home/u/.local/share/redrob-launcher/installed.json"
+            ))
+        );
+        assert_eq!(
+            launcher_manifest_path_with("macos", env),
+            Some(PathBuf::from(
+                "/home/u/Library/Application Support/redrob-launcher/installed.json"
+            ))
+        );
+        assert_eq!(
+            launcher_manifest_path_with("windows", env),
+            Some(PathBuf::from(
+                "C:\\Users\\u\\AppData\\Local/redrob-launcher/installed.json"
+            ))
+        );
+        let xdg = |key: &str| match key {
+            "XDG_DATA_HOME" => Some(OsString::from("/data")),
+            "HOME" => Some(OsString::from("/home/u")),
+            _ => None,
+        };
+        assert_eq!(
+            launcher_manifest_path_with("linux", xdg),
+            Some(PathBuf::from("/data/redrob-launcher/installed.json"))
+        );
     }
 }

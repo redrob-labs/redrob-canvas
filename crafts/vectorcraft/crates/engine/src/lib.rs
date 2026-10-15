@@ -1,4 +1,4 @@
-//! The VectorCraft engine façade.
+//! The Redrob Canvas engine façade.
 //!
 //! Every user-visible action is a command with a stable id (`object.group`, `select.same.fillColor`,
 //! `shape.rectangle`…) and JSON parameters. The egui UI, the CLI, the control channel and the MCP
@@ -813,7 +813,7 @@ pub struct Prefs {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub pdf_presets: Vec<vectorcraft_pdf::PdfPreset>,
     // File Handling (continued)
-    /// Where Save as Template and New from Template start ("" = `Documents/VectorCraft Templates`).
+    /// Where Save as Template and New from Template start ("" = `Documents/Redrob Canvas Templates`).
     pub templates_folder: String,
     /// Open older native files as "<name> [Converted]" so Save asks for a new name.
     pub append_converted: bool,

@@ -6,7 +6,7 @@
 /// marks are the page), `body` (setup and layers), the trailer.
 pub fn editing_data(width: f64, height: f64, body: &str) -> String {
     format!(
-        "{PS_HEADER}\n%%Creator: VectorCraft tests\n%%BoundingBox: 0 0 {width} {height}\n%%HiResBoundingBox: 0 0 {width} {height}\n\
+        "{PS_HEADER}\n%%Creator: Redrob Canvas tests\n%%BoundingBox: 0 0 {width} {height}\n%%HiResBoundingBox: 0 0 {width} {height}\n\
          %AI5_FileFormat 14.0\n%AI3_Cropmarks: 0 0 {width} {height}\n%%EndComments\n\
          %%BeginProlog\n%%EndProlog\n%%BeginSetup\n%%EndSetup\n{body}\n%%PageTrailer\ngsave annotatepage grestore showpage\n%%Trailer\n%%EOF\n"
     )
@@ -92,7 +92,7 @@ pub fn page_pdf() -> &'static str {
 /// `data` after it, not compressed.
 pub fn eps(data: &[u8], page: &str) -> Vec<u8> {
     let mut out = format!(
-        "{PS_HEADER} EPSF-3.0\n%%Creator: VectorCraft tests\n%%BoundingBox: 0 0 200 100\n%%HiResBoundingBox: 0 0 200 100\n%%EndComments\n{page}showpage\n%%EOF\n%AI9_PrivateDataBegin\n"
+        "{PS_HEADER} EPSF-3.0\n%%Creator: Redrob Canvas tests\n%%BoundingBox: 0 0 200 100\n%%HiResBoundingBox: 0 0 200 100\n%%EndComments\n{page}showpage\n%%EOF\n%AI9_PrivateDataBegin\n"
     )
     .into_bytes();
     out.extend_from_slice(data);

@@ -11,9 +11,9 @@ renamed file the way its upstream does.
 
 | Extensions | Mode | Notes |
 | --- | --- | --- |
-| `.pcraft`, `.psd`, `.psb`, `.ora`, `.kra`, `.pdn`, `.tif`/`.tiff`, `.png`, `.jpg`/`.jpeg`, `.webp`, `.gif`, `.bmp`, `.tga`, `.ico`, `.qoi`, `.pnm`, `.exr`, `.hdr`, `.fits`, `.heic`/`.heif`, camera RAW extensions, `.af`/`.afphoto`/`.afdesign`/`.afpub` | Photo | PhotoCraft's codec crate; raster formats default here even though Vector and Layout can also place them |
+| `.pcraft`, `.psd`, `.psb`, `.ora`, `.kra`, `.pdn`, `.tif`/`.tiff`, `.png`, `.jpg`/`.jpeg`, `.webp`, `.gif`, `.bmp`, `.tga`, `.ico`, `.qoi`, `.pnm`, `.exr`, `.hdr`, `.fits`, `.heic`/`.heif`, camera RAW extensions, `.af`/`.afphoto`/`.afdesign`/`.afpub` | Photo | the Photo editor's codec crate; raster formats default here even though Vector and Layout can also place them |
 | `.vectorcraft`, `.svg`, `.svgz`, `.ai`, `.eps`, `.pdf`, `.dxf`, `.emf`, `.wmf` | Vector | PDF opens as editable vector pages here; Layout places PDFs as assets instead |
-| `.designcraft`, `.idml` | Layout | DesignCraft's native format and InDesign interchange |
+| `.designcraft`, `.idml` | Layout | the Layout editor's native format and InDesign interchange |
 
 Routing is the shell's (`apps/redrob-canvas`); a mode can still open or place any format its editor
 supports from its own menus, so the table above is the default, not a restriction. Routing by
@@ -30,8 +30,8 @@ extension at launch is 0.7 work; until it lands, open the mode first and use its
 
 ## Loss policy
 
-Each editor warns rather than silently degrades: PhotoCraft reports depth reduction on 8-bit targets
-and lists what an Affinity import could not model; VectorCraft and DesignCraft report what a PDF or
+Each editor warns rather than silently degrades: the Photo editor reports depth reduction on 8-bit targets
+and lists what an Affinity import could not model; the Vector editor and the Layout editor report what a PDF or
 IDML round trip drops. Redrob Canvas adds no conversion step of its own between modes. Moving work
 from one mode to another is an export from the first and an open or place in the second, so the
 formats in the table are the contract.

@@ -30,7 +30,7 @@ preferences and presets live where their upstream code expects.
 
 Each editor is constructed on first switch (`Session::new()` plus the ported `Services`) and kept
 alive, so switching modes preserves open documents. Only the active mode receives input and paints;
-PhotoCraft additionally gets `logic()` and `raw_input_hook()` forwarded and the wgpu render state
+the Photo editor additionally gets `logic()` and `raw_input_hook()` forwarded and the wgpu render state
 handed to `set_wgpu`, as its own binary does. The editors draw their own side panels inside the `Ui`
 the shell gives them; the shell does not reach into their document models.
 

@@ -408,7 +408,7 @@ fn fits_the_fogra39_data() {
     eprintln!("Coated FOGRA39 builtin: mean ΔE00 {:.2} p95 {:.2} max {:.2} at {:?}", s.mean, s.p95, s.max, s.worst);
     assert!(s.mean <= 0.15 && s.p95 <= 0.35 && s.max <= 0.8, "mean {} p95 {} max {}", s.mean, s.p95, s.max);
     let s = stats(&p, profile_lab(Builtin::CoatedCmyk.profile()));
-    eprintln!("Photocraft coated builtin: mean ΔE00 {:.2} p95 {:.2} max {:.2} at {:?}", s.mean, s.p95, s.max, s.worst);
+    eprintln!("Redrob Canvas coated builtin: mean ΔE00 {:.2} p95 {:.2} max {:.2} at {:?}", s.mean, s.p95, s.max, s.worst);
 }
 
 #[test]
@@ -468,7 +468,7 @@ const REFERENCE_SRGB: [([f64; 4], [u8; 3]); 15] = [
     ([0.0, 0.0, 0.0, 1.0], [29, 29, 27]),
     ([1.0, 1.0, 0.0, 0.0], [49, 39, 131]),
     ([0.0, 1.0, 1.0, 0.0], [227, 6, 19]),
-    // Reported DesignCraft orange: shown as 245,144,25 by the uncalibrated formula.
+    // Reported Redrob Canvas orange: shown as 245,144,25 by the uncalibrated formula.
     ([0.0, 0.41, 0.9, 0.04], [239, 161, 35]),
     // Grey, rich black, tint, skin tone, green and a near-neutral.
     ([0.0, 0.0, 0.0, 0.5], [157, 157, 156]),
@@ -504,7 +504,7 @@ fn matches_reference_srgb_values() {
         let (got, pc) = (ours(cmyk), photocraft(cmyk));
         let de = delta_e2000(srgb_lab(got), srgb_lab(want));
         let de_pc = delta_e2000(srgb_lab(pc), srgb_lab(want));
-        eprintln!("{cmyk:?}: reference {want:?} | FOGRA39 {got:?} ΔE00 {de:.2} | Photocraft {pc:?} ΔE00 {de_pc:.2}");
+        eprintln!("{cmyk:?}: reference {want:?} | FOGRA39 {got:?} ΔE00 {de:.2} | Redrob Canvas {pc:?} ΔE00 {de_pc:.2}");
         worst = worst.max(de);
     }
     assert!(worst <= 1.0, "worst ΔE00 {worst}");

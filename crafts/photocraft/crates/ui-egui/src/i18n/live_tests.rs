@@ -34,7 +34,7 @@ fn ukrainian_native_app_menu_keeps_product_and_language_names() {
     with_language(Lang::EN, || {
         let h = harness();
         let layout = crate::native_menu::photocraft_layout(&crate::menus::menu_items(h.state()), lang("uk"), "uk");
-        for (id, label) in [("help.about", "Про PhotoCraft"), (crate::native_menu::HIDE, "Приховати PhotoCraft"), ("file.exit", "Вийти з PhotoCraft")]
+        for (id, label) in [("help.about", "Про Redrob Canvas"), (crate::native_menu::HIDE, "Приховати Redrob Canvas"), ("file.exit", "Вийти з Redrob Canvas")]
         {
             assert_eq!(layout.bar.find(id).map(|item| item.label.as_str()), Some(label), "{id}");
         }
@@ -380,7 +380,7 @@ fn czech_status_notices_and_navigator_draw_translated_text() {
             crate::notices::post(
                 h.state_mut(),
                 "Preferences can't be saved",
-                vec!["PhotoCraft keeps retrying; until a save succeeds, preference changes are lost when it closes.".into()],
+                vec!["Redrob Canvas keeps retrying; until a save succeeds, preference changes are lost when it closes.".into()],
                 true,
                 None,
             );

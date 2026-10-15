@@ -33,7 +33,7 @@ the local AI engine bridge in `crates/redrob-ai`, and the build and distribution
 tooling under `scripts/` and `tools/`.
 
 Out of scope: vulnerabilities in the vendored upstream editors under `crafts/`
-(PhotoCraft, VectorCraft, DesignCraft, craft-libs) and in IOPaint -- report those
+(the Photo editor, the Vector editor, the Layout editor, craft-libs) and in IOPaint -- report those
 to their maintainers. If an upstream vulnerability is reachable *through* this
 project's integration or build configuration, that is in scope and we want to
 hear about it.

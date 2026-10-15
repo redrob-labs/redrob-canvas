@@ -16,7 +16,7 @@
 //! tools by name ([`plan_tools`]; the app knows the tools). A set saved on Windows spells the
 //! primary modifier Ctrl where a Mac set says Cmd ([`KysSet::windows`], [`to_ours`]).
 //! [`write`] saves a set the same way, with our command id on each row (`pc-id`, which
-//! Photoshop ignores), so PhotoCraft reads its own sets back exactly.
+//! Photoshop ignores), so Redrob Canvas reads its own sets back exactly.
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -30,7 +30,7 @@ pub const MAX_BYTES: usize = 4 << 20;
 pub struct KysCommand {
     pub name: String,
     pub shortcuts: Vec<String>,
-    /// Our command id, in sets PhotoCraft wrote ([`write`]'s `pc-id`): matched before the label.
+    /// Our command id, in sets Redrob Canvas wrote ([`write`]'s `pc-id`): matched before the label.
     pub id: Option<String>,
 }
 
@@ -42,7 +42,7 @@ pub struct KysSet {
     pub name: Option<String>,
     pub commands: Vec<KysCommand>,
     pub tool_keys: usize,
-    /// The `<tool>` rows with a key: the tool's name, its key, our id in sets PhotoCraft wrote.
+    /// The `<tool>` rows with a key: the tool's name, its key, our id in sets Redrob Canvas wrote.
     pub tools: Vec<KysCommand>,
     /// Saved by Photoshop on Windows: no key spells ⌘ or Opt, and Ctrl is the primary modifier,
     /// so `Ctrl` here is our `Cmd` (a Mac set's `Control` stays the Control key). See [`to_ours`].
@@ -183,7 +183,7 @@ pub fn plan(candidates: impl IntoIterator<Item = Candidate>, set: &KysSet) -> Pl
     let by_id: HashMap<&str, &(String, Option<String>)> = by_label.values().flatten().map(|c| (c.0.as_str(), c)).collect();
     let mut plan = Plan::default();
     for row in &set.commands {
-        // A set PhotoCraft wrote names the command itself, whatever its label says.
+        // A set Redrob Canvas wrote names the command itself, whatever its label says.
         let own = row.id.as_deref().and_then(|id| by_id.get(id)).map(|c| vec![(*c).clone()]);
         let Some(candidates) = own.as_ref().or_else(|| by_label.get(&key(&row.name))) else {
             plan.unknown.push(row.name.clone());
@@ -220,7 +220,7 @@ pub fn plan(candidates: impl IntoIterator<Item = Candidate>, set: &KysSet) -> Pl
 
 /// The tool keys of `set` matched to `tools` (our tool id and Photoshop's name for it, which is
 /// ours too: "Move Tool"): tool id → key (a single letter, upper case), and the names with no
-/// tool here. A row PhotoCraft wrote names the tool by id. A key that isn't one letter is skipped.
+/// tool here. A row Redrob Canvas wrote names the tool by id. A key that isn't one letter is skipped.
 pub fn plan_tools<'a>(tools: impl IntoIterator<Item = (&'a str, &'a str)>, set: &KysSet) -> (BTreeMap<String, String>, Vec<String>) {
     let tools: Vec<(&str, &str)> = tools.into_iter().collect();
     let mut keys = BTreeMap::new();
@@ -242,7 +242,7 @@ pub fn plan_tools<'a>(tools: impl IntoIterator<Item = (&'a str, &'a str)>, set: 
     (keys, unknown)
 }
 
-/// The attribute naming our command id on the rows PhotoCraft writes (Photoshop ignores it).
+/// The attribute naming our command id on the rows Redrob Canvas writes (Photoshop ignores it).
 pub const PC_ID: &str = "pc-id";
 
 /// One row to write: a command (or tool), its label and its keys, main key first.
@@ -276,7 +276,7 @@ fn xml_escape(s: &str) -> String {
 
 /// A `.kys` file for the set `name` (Edit › Keyboard Shortcuts › Save Set): every entry with a
 /// key, commands then tools, labels with Photoshop's `...`, keys in [`photoshop_key`] spelling,
-/// and our id on each row so PhotoCraft reads its own sets back exactly. Rows without a key are
+/// and our id on each row so Redrob Canvas reads its own sets back exactly. Rows without a key are
 /// left out, and a key that isn't one is skipped.
 pub fn write(name: &str, entries: &[Entry]) -> String {
     let name = xml_escape(name.trim());

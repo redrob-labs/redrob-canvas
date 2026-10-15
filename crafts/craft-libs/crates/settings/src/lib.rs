@@ -76,7 +76,7 @@ pub trait Settings: Serialize + DeserializeOwned + Default + Clone + PartialEq {
     const SCHEMA_VERSION: u32;
 
     /// File names next to the executable that turn on portable mode (any one; contents ignored).
-    /// Override to keep an existing portable layout, e.g. `&["portable.txt", "PhotoCraft.portable"]`.
+    /// Override to keep an existing portable layout, e.g. `&["portable.txt", "Redrob Canvas.portable"]`.
     const PORTABLE_MARKERS: &'static [&'static str] = paths_default::MARKERS;
 
     /// Folder beside the executable that holds settings in portable mode.

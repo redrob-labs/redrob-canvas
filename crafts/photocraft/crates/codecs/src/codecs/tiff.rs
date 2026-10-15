@@ -51,7 +51,7 @@ const TAG_PHOTOSHOP: u16 = 34377;
 const TAG_IMAGE_SOURCE_DATA: u16 = 37724;
 
 /// `true` when [`encode`] writes little-endian (`II`) files: the `tiff` encoder writes the
-/// running target's byte order, and every target PhotoCraft builds for is little-endian.
+/// running target's byte order, and every target Redrob Canvas builds for is little-endian.
 /// Byte-order-sensitive payloads (Photoshop layer data) must be produced to match.
 pub fn writes_little_endian() -> bool {
     cfg!(target_endian = "little")
@@ -533,7 +533,7 @@ fn decode_ifd(f: &File<'_>, dir: &Ifd, limits: &Limits) -> Result<Image, CodecEr
         None
     };
     // CIE L*a*b*: CIELab (8; a* and b* signed) and ICCLab (9; a* and b* offset) are handed to the
-    // `tiff` crate as RGB, then labelled Lab with a* and b* in PhotoCraft's encoding
+    // `tiff` crate as RGB, then labelled Lab with a* and b* in Redrob Canvas's encoding
     // (`convert_ab`).
     let lab = matches!(photometric, 8 | 9);
     if lab && (spp < 3 || !matches!(src, Src::U8 | Src::U16)) {
@@ -700,7 +700,7 @@ fn decode_ifd(f: &File<'_>, dir: &Ifd, limits: &Limits) -> Result<Image, CodecEr
 }
 
 /// The a* and b* samples (1 and 2 of every pixel) of a Lab image between the file's encoding and
-/// PhotoCraft's (8 bits: `a + 128`; 16 bits: `(a + 128) · 257`). In the file, CIELab holds them
+/// Redrob Canvas's (8 bits: `a + 128`; 16 bits: `(a + 128) · 257`). In the file, CIELab holds them
 /// signed (8 bits: `a`; 16 bits: `a · 256`) and ICCLab offset (8 bits: `a + 128`; 16 bits:
 /// `(a + 128) · 256`). `to_file` picks the direction; samples are native-endian.
 fn convert_ab(data: &mut [u8], channels: usize, sample: SampleType, signed: bool, to_file: bool) {

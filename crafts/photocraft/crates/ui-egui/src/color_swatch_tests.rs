@@ -1,4 +1,4 @@
-//! Colour swatches open PhotoCraft's Color Picker, not egui's compact popup (#2144: "use the same
+//! Colour swatches open Redrob Canvas's Color Picker, not egui's compact popup (#2144: "use the same
 //! color picker throughout the app"): filter dialog colours, Preferences colours, the Note and
 //! Count tools' colours and an artboard's custom background. OK sets that colour (in sRGB, as
 //! everywhere else); the foreground is untouched.

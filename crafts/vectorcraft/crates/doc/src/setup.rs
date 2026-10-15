@@ -52,7 +52,7 @@ const fn hex(v: u32) -> Color {
     Color::Rgb { r: ((v >> 16) & 0xff) as f32 / 255.0, g: ((v >> 8) & 0xff) as f32 / 255.0, b: (v & 0xff) as f32 / 255.0 }
 }
 
-/// Transparency grid colour presets (VectorCraft's own pairs). Any other pair is "Custom".
+/// Transparency grid colour presets (Redrob Canvas's own pairs). Any other pair is "Custom".
 pub const GRID_COLOR_PRESETS: &[(&str, [Color; 2])] = &[
     ("Light", [hex(0xffffff), hex(0xcccccc)]),
     ("Medium", [hex(0xb3b3b3), hex(0x8c8c8c)]),

@@ -1,4 +1,4 @@
-//! Desaturate: an example VectorCraft object filter plug-in (plug-in ABI v1, see
+//! Desaturate: an example Redrob Canvas object filter plug-in (plug-in ABI v1, see
 //! `docs/plugins.md`).
 //!
 //! It reads the selected paths as JSON, moves every colour (solid fills and strokes, gradient
@@ -12,7 +12,7 @@ const MANIFEST: &str = r#"{
   "name": "Desaturate",
   "version": "1.0.0",
   "kind": "filter",
-  "author": "VectorCraft contributors",
+  "author": "Redrob Canvas contributors",
   "description": "Moves the colours of the selected paths towards grey; an example of the plug-in ABI.",
   "params": {
     "amount": {"type": "number", "min": 0, "max": 100, "default": 100}

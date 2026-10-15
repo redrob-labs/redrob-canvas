@@ -2,7 +2,7 @@
 #
 # Takes upstream work into one or every vendored subtree under crafts/.
 #
-# Redrob Canvas vendors the four ArtCraft editors as git subtrees (UPSTREAM.md). Updating one is
+# Redrob Canvas vendors the four upstream editors as git subtrees (UPSTREAM.md). Updating one is
 # two commands that must run together -- the subtree pull, then the workspace regeneration -- and
 # this script is the one place they are spelled out, so a pull is never left without its
 # regenerated root Cargo.toml.

@@ -199,7 +199,7 @@ pub fn options_button(s: &mut CropShield, ui: &mut egui::Ui) -> bool {
     pick
 }
 
-/// Custom…: PhotoCraft's Color Picker on the custom shield colour; OK sets it
+/// Custom…: Redrob Canvas's Color Picker on the custom shield colour; OK sets it
 /// (`color_picker_ui::confirm`, target `cropShield`).
 pub fn pick_custom_color(app: &mut PhotocraftApp) -> u64 {
     let rgb = app.ui.tool_options.crop_shield.custom_color.map(|v| v as f32 / 255.0);

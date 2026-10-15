@@ -32,10 +32,10 @@ use crate::{DocState, EngineError, Result, Session};
 pub fn default_dir() -> Option<PathBuf> {
     let home = std::env::var_os("HOME").map(PathBuf::from);
     if cfg!(target_os = "macos") {
-        return home.map(|h| h.join("Library/Application Support/DesignCraft/Recovery"));
+        return home.map(|h| h.join("Library/Application Support/Redrob Canvas/Recovery"));
     }
     if cfg!(target_os = "windows") {
-        return std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("DesignCraft").join("Recovery"));
+        return std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("Redrob Canvas").join("Recovery"));
     }
     std::env::var_os("XDG_DATA_HOME").map(PathBuf::from).or_else(|| home.map(|h| h.join(".local/share"))).map(|d| d.join("designcraft/recovery"))
 }
@@ -318,8 +318,9 @@ fn access(dir: &Path, created: bool) -> Result<Access> {
 #[cfg(not(target_arch = "wasm32"))]
 fn check_unheld(dir: &Path) -> Result<()> {
     let path = dir.join(LOCK);
-    let in_use =
-        || EngineError::Other(format!("{}: another running DesignCraft keeps its recovery data here; choose another recovery folder", dir.display()));
+    let in_use = || {
+        EngineError::Other(format!("{}: another running Redrob Canvas keeps its recovery data here; choose another recovery folder", dir.display()))
+    };
     match std::fs::symlink_metadata(&path) {
         Ok(metadata) if is_link_like(&metadata) || !metadata.file_type().is_file() => return Err(in_use()),
         Ok(_) => {}

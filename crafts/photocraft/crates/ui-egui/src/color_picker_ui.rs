@@ -1002,7 +1002,7 @@ mod tests {
         assert_eq!(h.query_all_by_label("OK").count(), 1);
         let web = h.get_by_label("Only Web Colors").rect();
         assert!(web.left() < hue.left() && web.top() > hue.bottom());
-        // The full dialog should fit even in PhotoCraft's minimum 760 x 480 window.
+        // The full dialog should fit even in Redrob Canvas's minimum 760 x 480 window.
         assert!(black.bottom() - ok.top() < 360.0);
         assert!(black.right() - web.left() < 600.0);
         let hex = h.get_by_role(Role::TextInput).rect();
@@ -1011,7 +1011,7 @@ mod tests {
 
     /// The whole Color Picker window (title, frame and all) is no bigger than Photoshop's: about
     /// 534 x 376 points (Photoshop 27.11 on macOS, measured from a screenshot at the same scale as
-    /// PhotoCraft's, which was 682 x 438).
+    /// Redrob Canvas's, which was 682 x 438).
     #[test]
     fn the_picker_window_is_no_bigger_than_photoshops() {
         let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).with_max_steps(64).build_eframe(|cc| {

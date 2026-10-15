@@ -439,7 +439,7 @@ fn lab_profile(profile: &Stream<'_>) -> bool {
     head.get(16..20) == Some(b"Lab ")
 }
 
-/// An alternate-space colour (the tint transform's output) as a VectorCraft colour.
+/// An alternate-space colour (the tint transform's output) as a Redrob Canvas colour.
 fn alt_color(alt: Alt, v: &[f32]) -> Option<Color> {
     let c = |i: usize| v.get(i).copied().filter(|x| x.is_finite());
     let u = |i: usize| c(i).map(|x| round3(x.clamp(0.0, 1.0)));

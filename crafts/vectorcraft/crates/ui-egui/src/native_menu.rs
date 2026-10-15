@@ -4,11 +4,11 @@
 //!
 //! Pure and platform-free, so it is tested everywhere and builds for the web; only the backend
 //! touches AppKit. What the layout does ([`mac_layout`], Illustrator on the Mac as the reference):
-//! - an **app menu** named VectorCraft: About; Settings, a submenu with one item per Preferences
-//!   page (General… ⌘K first); Language; Appearance (the UI brightness); Services; Hide VectorCraft
+//! - an **app menu** named Redrob Canvas: About; Settings, a submenu with one item per Preferences
+//!   page (General… ⌘K first); Language; Appearance (the UI brightness); Services; Hide Redrob Canvas
 //!   ⌃⌘H (⌘H stays View › Hide Edges), Hide Others ⌥⌘H, Show All; and Quit ⌘Q, still the app's own
 //!   `app.quit`, so documents with unsaved changes are asked about. Language and Appearance have
-//!   no in-window menu (as in PhotoCraft) and are synthesized here; Quit is File › Exit in the
+//!   no in-window menu (as in Redrob Canvas) and are synthesized here; Quit is File › Exit in the
 //!   window and reads as Quit in the App menu. These leave the other menus (Edit › Preferences…,
 //!   Help › About), and Join Our Discord stays under Help only;
 //! - **Window** gets Minimize ⌃⌘M, Zoom and Bring All to Front, and **Help** the system's search
@@ -16,7 +16,7 @@
 //! - a system key already bound to a command keeps the command's: the system item goes without.
 //!
 //! **Keys stay with egui.** AppKit runs a menu's key equivalents before the window sees the key,
-//! which would skip VectorCraft's key rules (a focused text field takes ⌘A, ⌘C, ⌘V and ⌘Z; dialogs
+//! which would skip Redrob Canvas's key rules (a focused text field takes ⌘A, ⌘C, ⌘V and ⌘Z; dialogs
 //! and the Type tool's input method have the keyboard). So the backend reports a key equivalent as
 //! [`Event::Key`], and [`key_events`] feeds it to egui as the key press it was (the clipboard
 //! events egui's window integration makes of ⌘X, ⌘C and ⌘V): the shortcut runs through
@@ -39,7 +39,7 @@ use crate::menus::{self, Entry};
 use crate::theme::Brightness;
 
 pub const APP_NAME: &str = "Redrob Canvas";
-/// Hide VectorCraft: an item of ours (AppKit's always takes ⌘H, which is View › Hide Edges).
+/// Hide Redrob Canvas: an item of ours (AppKit's always takes ⌘H, which is View › Hide Edges).
 pub const HIDE: &str = "app.hide";
 /// Hide Others: an item of ours, so a command bound to ⌥⌘H keeps it.
 pub const HIDE_OTHERS: &str = "app.hideOthers";
@@ -49,7 +49,7 @@ pub const MINIMIZE: &str = "window.minimize";
 /// The labels the Mac layout adds to the menus (translated like every menu string:
 /// [`crate::menus::menu_strings`]).
 pub const MAC_LABELS: &[&str] =
-    &["Settings", "Appearance", "Services", "Hide VectorCraft", "Hide Others", "Show All", "Minimize", "Zoom", "Bring All to Front"];
+    &["Settings", "Appearance", "Services", "Hide Redrob Canvas", "Hide Others", "Show All", "Minimize", "Zoom", "Bring All to Front"];
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct MenuBar {
@@ -278,7 +278,7 @@ pub fn key_events(sc: KeyboardShortcut, paste_text: impl FnOnce() -> Option<Stri
 
 // ----------------------------------------------------------------------------- macOS layout
 
-/// A system key equivalent VectorCraft already uses for a command.
+/// A system key equivalent Redrob Canvas already uses for a command.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Clash {
     pub shortcut: &'static str,
@@ -295,7 +295,7 @@ pub struct Layout {
 }
 
 /// The Mac menu bar of `bar` (the in-window menus, [`from_tree`]): see the module docs.
-/// Language and Appearance have no in-window menu (as in PhotoCraft); when the tree doesn't
+/// Language and Appearance have no in-window menu (as in Redrob Canvas); when the tree doesn't
 /// carry them they are synthesized below, so the App menu keeps them.
 pub fn mac_layout(app: &VectorcraftApp, bar: &MenuBar, lang: Lang) -> Layout {
     let mut bar = bar.clone();
@@ -312,7 +312,7 @@ pub fn mac_layout(app: &VectorcraftApp, bar: &MenuBar, lang: Lang) -> Layout {
             None => Some(sc),
         }
     };
-    let hide = Item::system(HIDE, "Hide VectorCraft", key("Ctrl+Cmd+H", "Hide"), lang);
+    let hide = Item::system(HIDE, "Hide Redrob Canvas", key("Ctrl+Cmd+H", "Hide"), lang);
     let hide_others = Item::system(HIDE_OTHERS, "Hide Others", key("Cmd+Alt+H", "Hide Others"), lang);
     let minimize = Item::system(MINIMIZE, "Minimize", key("Ctrl+Cmd+M", "Minimize"), lang);
 
@@ -342,7 +342,7 @@ pub fn mac_layout(app: &VectorcraftApp, bar: &MenuBar, lang: Lang) -> Layout {
     app.extend([Node::Item(hide), Node::Item(hide_others), Node::Standard(Standard::ShowAll), Node::Separator]);
     // Quit is File › Exit in the window; in the App menu it reads as a Mac Quit item.
     app.extend(quit.map(|mut q| {
-        q.label = tr(lang, "Quit VectorCraft").into();
+        q.label = tr(lang, "Quit Redrob Canvas").into();
         Node::Item(q)
     }));
     bar.menus.insert(0, Menu { title: APP_NAME.into(), role: MenuRole::App, children: app });
@@ -456,7 +456,7 @@ fn take_submenu(bar: &mut MenuBar, command: &str) -> Option<Node> {
     sub
 }
 
-/// VectorCraft's menus as a Mac menu bar, as they show now.
+/// Redrob Canvas's menus as a Mac menu bar, as they show now.
 pub fn layout(app: &VectorcraftApp) -> Layout {
     let mut layout = mac_layout(app, &from_tree(app, &menus::menu_tree_named(app.session.prefs.font_names_in_english)), crate::i18n::current());
     if app.file_dialog_open() {
@@ -507,7 +507,7 @@ pub trait Backend {
     fn drain(&mut self) -> Vec<Event>;
 }
 
-/// The native menu bar, while VectorCraft uses one (the in-window menus are hidden then).
+/// The native menu bar, while Redrob Canvas uses one (the in-window menus are hidden then).
 pub struct NativeMenu {
     backend: Box<dyn Backend>,
     /// Hash of the state the menus were last read in ([`state_hash`]).
@@ -575,7 +575,7 @@ pub fn sync(app: &mut VectorcraftApp, ctx: &egui::Context) {
     let Some(menu) = app.services.native_menu.as_mut() else { return };
     if !menu.logged {
         for c in &layout.clashes {
-            log::info!("menu: {} is {} on macOS and {} in VectorCraft, which keeps it", c.shortcut, c.system, c.command);
+            log::info!("menu: {} is {} on macOS and {} in Redrob Canvas, which keeps it", c.shortcut, c.system, c.command);
         }
         menu.logged = true;
     }

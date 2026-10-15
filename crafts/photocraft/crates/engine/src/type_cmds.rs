@@ -1124,7 +1124,7 @@ mod tests {
         // layout still matches the requested weight instead of a nearby face's.
         apply_char_props(&mut style, &json!({"weight": 650}));
         assert!(style.postscript_name.is_none(), "{:?}", style.postscript_name);
-        // A family PhotoCraft does not have keeps no name; the export falls back as before.
+        // A family Redrob Canvas does not have keeps no name; the export falls back as before.
         let mut absent = CharStyle { font_family: "No Such Family 123".into(), ..Default::default() };
         apply_char_props(&mut absent, &json!({"font": "No Such Family 123"}));
         assert!(absent.postscript_name.is_none());

@@ -10,14 +10,14 @@
 
 ## 이것은 무엇이고, 무엇이 아닌가
 
-레드롭 캔버스는 **세 상류 편집기를 감싸는 셸이고, 그 어느 것의 포크도 아닙니다.** PhotoCraft, VectorCraft,
-DesignCraft(그리고 공유 craft-libs)는 `crafts/` 아래 git subtree로 통째로 들어와 Photo, Vector, Layout
+레드롭 캔버스는 **세 상류 편집기를 감싸는 셸이고, 그 어느 것의 포크도 아닙니다.** the Photo editor, the Vector editor,
+the Layout editor(그리고 공유 craft-libs)는 `crafts/` 아래 git subtree로 통째로 들어와 Photo, Vector, Layout
 모드로 돕니다. 레드롭의 코드는 셸(`apps/redrob-canvas`), 에이전트(`crates/redrob-agent`), AI 도구
 층(`crates/redrob-ai`)입니다.
 
 책임의 경계를 분명히 해 두어야 합니다.
 
-- **편집기의 동작은 그 상류의 것입니다.** PSD가 잘못 열리면 PhotoCraft의 버그이니
+- **편집기의 동작은 그 상류의 것입니다.** PSD가 잘못 열리면 the Photo editor의 버그이니
   [storytold/photocraft](https://github.com/storytold/photocraft)에서 고치고, 그 수정은
   `scripts/fetch-upstream.sh`로 여기에 돌아옵니다. `crafts/` 아래 파일을 직접 고치지 마세요. 다음 pull에서
   충돌이 되고, 다음 squash에서 사라집니다.
@@ -100,7 +100,7 @@ python3 -m unittest discover -s tools/tests -p "test_*.py"
 
 | 체크 | 확인하는 것 |
 | --- | --- |
-| **Upstream pins are well-formed and reachable** | `upstream-base.json`과 `docs/upstream-sources.toml`이 서로, subtree squash 커밋과, GitHub과 일치; 모든 `code` 핀이 허용적 라이선스; 귀속 문자열이 온전함; `crafts/` 밖에서 ArtCraft 브랜드 자산을 건드리지 않음 |
+| **Upstream pins are well-formed and reachable** | `upstream-base.json`과 `docs/upstream-sources.toml`이 서로, subtree squash 커밋과, GitHub과 일치; 모든 `code` 핀이 허용적 라이선스; 귀속 문자열이 온전함; `crafts/` 밖에서 upstream 브랜드 자산을 건드리지 않음 |
 | **Rust workspace** | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --workspace --locked`, 셸의 릴리스 빌드 링크 |
 | **Distribution artifacts are current** | 생성된 `THIRD_PARTY_NOTICES.md`가 `Cargo.lock`과 일치; 디자인 시스템 가드; 도구 테스트 |
 | **Rust security advisories** | 커밋된 락파일에 대한 `cargo audit` |

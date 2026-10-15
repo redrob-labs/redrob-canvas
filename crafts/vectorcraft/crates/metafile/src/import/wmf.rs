@@ -12,7 +12,7 @@ use crate::{Imported, Kind};
 
 /// Units an inch when the file doesn't say (twips).
 const DEFAULT_INCH: f64 = 1440.0;
-/// Records that change nothing VectorCraft keeps (background, raster and mapping details, palettes,
+/// Records that change nothing Redrob Canvas keeps (background, raster and mapping details, palettes,
 /// escapes).
 const IGNORED: &[u16] = &[
     0x0102, 0x0103, 0x0104, 0x0105, 0x0107, 0x0108, 0x0201, 0x020A, 0x020B, 0x020C, 0x020D, 0x020E, 0x020F, 0x0211, 0x0410, 0x0412, 0x0231, 0x0234,

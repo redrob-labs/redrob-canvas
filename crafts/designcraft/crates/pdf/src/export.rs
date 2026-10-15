@@ -118,8 +118,8 @@ fn export_pdf_with_report_inner(doc: &Document, cache: &Cache, opts: &PdfOptions
     let title = opts.title.clone().unwrap_or_else(|| doc.title.clone());
     let created = opts.created.or_else(now_unix);
     let metadata = Metadata {
-        creator: "DesignCraft".into(),
-        producer: "DesignCraft".into(),
+        creator: "Redrob Canvas".into(),
+        producer: "Redrob Canvas".into(),
         title: Some(title.clone()),
         authors: opts.author.iter().cloned().collect(),
         created: created.map(date_time),
@@ -244,7 +244,8 @@ pub fn merge_pdfs(parts: &[(Vec<u8>, Vec<(f32, f32)>)], title: Option<&str>) -> 
 }
 
 fn merge_pdfs_inner(parts: &[(Vec<u8>, Vec<(f32, f32)>)], title: Option<&str>) -> Result<Vec<u8>> {
-    let metadata = Metadata { creator: "DesignCraft".into(), producer: "DesignCraft".into(), title: title.map(str::to_owned), ..Default::default() };
+    let metadata =
+        Metadata { creator: "Redrob Canvas".into(), producer: "Redrob Canvas".into(), title: title.map(str::to_owned), ..Default::default() };
     let mut writer = Writer::new(krilla::SerializeSettings::default(), metadata);
     let pdf = writer.document_mut();
     let mut pages = 0;
@@ -312,7 +313,7 @@ fn export_booklet_inner(doc: &Document, cache: &Cache, opts: &BookletOptions) ->
     let pdf_opts = PdfOptions { title: opts.title.clone(), ..PdfOptions::default() };
     let settings = krilla::SerializeSettings { compress_content_streams: true, ..Default::default() };
     let title = opts.title.clone().unwrap_or_else(|| doc.title.clone());
-    let metadata = Metadata { creator: "DesignCraft".into(), producer: "DesignCraft".into(), title: Some(title), ..Default::default() };
+    let metadata = Metadata { creator: "Redrob Canvas".into(), producer: "Redrob Canvas".into(), title: Some(title), ..Default::default() };
     let mut writer = Writer::new(settings, metadata);
     let pdf = writer.document_mut();
     let mut ex = Exporter {
@@ -530,7 +531,7 @@ fn regular(c: &Color, rgb_only: bool) -> krilla::color::RegularColor {
     match *c {
         Color::Rgb { r, g, b } => R::Rgb(rgb::Color::new(q(r), q(g), q(b))),
         Color::Cmyk { c, m, y, k } => R::Cmyk(cmyk::Color::new(q(c), q(m), q(y), q(k))),
-        // DesignCraft grey is ink coverage (0 = white); PDF DeviceGray is lightness.
+        // Redrob Canvas grey is ink coverage (0 = white); PDF DeviceGray is lightness.
         Color::Gray { k } => R::Luma(luma::Color::new(q(1.0 - k))),
     }
 }
@@ -1203,7 +1204,7 @@ impl Exporter<'_> {
 
     /// A placed PDF as krilla embeds it. krilla refuses a PDF newer than the file it writes (the
     /// export fails at the end with `VersionMismatch(Pdf17)`), and PDF/X-4 is PDF 1.6 while
-    /// VectorCraft and most tools write 1.7. PDF 1.7 changed nothing in how a page draws, so a 1.7
+    /// Redrob Canvas and most tools write 1.7. PDF 1.7 changed nothing in how a page draws, so a 1.7
     /// file goes in as 1.6 (its header and catalog `/Version` relabelled, as
     /// `qpdf --force-version=1.6` does). A newer
     /// file is left out and the export fails naming it ([`Exporter::check_placed_versions`]).

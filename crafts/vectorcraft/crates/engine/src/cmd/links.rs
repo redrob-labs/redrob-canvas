@@ -17,7 +17,7 @@
 //! (`links.embed`) and Unembed writes an embedded image to a file it then links to
 //! (`links.unembed`).
 //!
-//! Placed documents ([`PlacedDocument`], VectorCraft documents placed with Link) link to their
+//! Placed documents ([`PlacedDocument`], Redrob Canvas documents placed with Link) link to their
 //! files the same way: checking, updating, relinking and finding them on open work alike, and they
 //! are listed. Embed (Break Link) turns one into an editable copy of its art.
 
@@ -357,7 +357,7 @@ fn read_image(f: &mut Found, base: &LinkInfo) -> Result<FileRead> {
 /// A linked file read for the objects that show it.
 enum Read {
     Image(FileRead),
-    /// A VectorCraft document read for placed documents: the link to it and what they show.
+    /// A Redrob Canvas document read for placed documents: the link to it and what they show.
     Document(LinkInfo, super::place::document::Source),
 }
 
@@ -974,7 +974,7 @@ fn format_label(d: &Document, im: &ImageObject) -> &'static str {
 /// A placed document's `links.list` fields: `format`, `document: true` and its artboard's size
 /// (`pageWidth`, `pageHeight`, pt) instead of pixels.
 fn document_row(p: &PlacedDocument) -> Value {
-    json!({ "format": "VectorCraft", "document": true, "pageWidth": p.width, "pageHeight": p.height })
+    json!({ "format": "Redrob Canvas", "document": true, "pageWidth": p.width, "pageHeight": p.height })
 }
 
 /// Sort rank of a `links.list` status: missing, modified, ok, embedded.

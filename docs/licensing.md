@@ -19,8 +19,8 @@ Every upstream in `docs/upstream-sources.toml` declares a `kind`:
 | `code` | Source is vendored into this repository as a git subtree under `crafts/` | Yes |
 | `protocol` | A wire format we speak (the Redrob Code daemon API) | No |
 
-The four `code` sources are PhotoCraft, VectorCraft, DesignCraft and craft-libs from
-[storytold](https://github.com/storytold), each MIT OR Apache-2.0, Copyright (c) 2026 ArtCraft Team
+The four `code` sources are the four vendored editors from
+[storytold](https://github.com/storytold), each MIT OR Apache-2.0, Copyright (c) 2026 the upstream authors
 and their contributors. Their `LICENSE-MIT`, `LICENSE-APACHE` and `NOTICE` files stay intact under
 `crafts/<name>/`; their NOTICE texts are reproduced verbatim in `NOTICE`; and `COPYRIGHT` names them
 beside us. The pins live in `upstream-base.json` and `docs/upstream-sources.toml`, which the script
@@ -32,8 +32,8 @@ are enforced here rather than described:
 - **Never replace an upstream copyright notice.** Ours goes beside theirs. `upstream-base.json`'s
   `attribution` list says which strings `NOTICE`, `COPYRIGHT`, `LICENSE-MIT` and `LICENSE-APACHE`
   must keep, and the script fails when one goes missing.
-- **Never use anything under a prefix upstream licenses separately.** The ArtCraft name, wordmark and
-  logos under `crafts/*/docs/brand/` are trademarks of the ArtCraft Team, not open source. They stay
+- **Never use anything under a prefix upstream licenses separately.** The upstream name, wordmark and
+  logos under `crafts/*/docs/brand/` are trademarks of the the upstream authors, not open source. They stay
   in the tree only because the subtree carries them; nothing outside `crafts/` may reference them,
   and the script greps for that. Redrob Canvas's mark comes from the Redrob design system
   (`DESIGN_SYSTEM_PIN.json`).

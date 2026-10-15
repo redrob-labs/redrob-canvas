@@ -20,7 +20,7 @@ fn export_pdf_converts_colours_writes_the_output_intent_and_real_text() {
     s.execute("text.create", &json!({"x": 80, "y": 60, "text": "Press ready"})).unwrap();
     let generic = vectorcraft_color::cms::GENERIC_CMYK;
     let p = json!({
-        "preset": "VectorCraft Default",
+        "preset": "Redrob Canvas Default",
         "compression": {"compressText": false},
         "output": {"conversion": "destination", "destination": generic, "profiles": "destination", "outputIntent": generic, "outputConditionId": "Generic press", "trapped": true},
         "advanced": {"outlineText": false},

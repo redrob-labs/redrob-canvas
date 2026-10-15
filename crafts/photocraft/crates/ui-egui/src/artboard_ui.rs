@@ -144,7 +144,7 @@ pub fn properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, layer: &Layer) {
         }
         if let ArtboardBackground::Custom(c) = a.background {
             let [r8, g8, b8, _] = c.to_rgba8();
-            // PhotoCraft's Color Picker, as everywhere else (#2144): OK sets the background.
+            // Redrob Canvas's Color Picker, as everywhere else (#2144): OK sets the background.
             if crate::widgets::color_swatch_button(ui, egui::Color32::from_rgb(r8, g8, b8), tl!("Color")).clicked() {
                 pick = Some(c.to_rgb());
             }

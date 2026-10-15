@@ -33,7 +33,7 @@ pub fn plan(app: &PhotocraftApp, set: &KysSet) -> Plan {
 }
 
 /// The set's tool keys matched to our tools by name (Photoshop's names are ours): tool
-/// shortcut id (`tools.select.move`) → letter, and the tools PhotoCraft doesn't have.
+/// shortcut id (`tools.select.move`) → letter, and the tools Redrob Canvas doesn't have.
 pub fn plan_tools(set: &KysSet) -> (BTreeMap<String, String>, Vec<String>) {
     let tools: Vec<(String, &str)> = crate::state::Tool::ALL.into_iter().map(|t| (crate::tool_shortcuts::id(t), t.label())).collect();
     photocraft_engine::kys::plan_tools(tools.iter().map(|(id, name)| (id.as_str(), *name)), set)
@@ -87,7 +87,7 @@ pub fn import_text(app: &mut PhotocraftApp, file_name: &str, text: &str) -> Resu
     if !plan.unknown.is_empty() || !unknown_tools.is_empty() {
         let u = (plan.unknown.len() + unknown_tools.len()).to_string();
         message.push(' ');
-        message.push_str(&crate::i18n::fmt(tl!("{n} commands are not in PhotoCraft."), &[("n", &u)]));
+        message.push_str(&crate::i18n::fmt(tl!("{n} commands are not in Redrob Canvas."), &[("n", &u)]));
     }
     f.insert("tab".into(), json!(0));
     f.insert("overrides".into(), json!(overrides));
@@ -217,7 +217,7 @@ pub fn show_offer(app: &mut PhotocraftApp, ctx: &egui::Context) {
     let n = offer.changes.to_string();
     let line = crate::i18n::fmt(
         tl!(
-            "PhotoCraft found your keyboard shortcut set {set} from another image editor on this computer: {n} of its shortcuts differ from PhotoCraft's. Import it?"
+            "Redrob Canvas found your keyboard shortcut set {set} from another image editor on this computer: {n} of its shortcuts differ from Redrob Canvas's. Import it?"
         ),
         &[("set", &offer.set), ("n", &n)],
     );

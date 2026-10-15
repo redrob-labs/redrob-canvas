@@ -1,4 +1,4 @@
-//! PDF → Document (hayro-interpret device that builds a VectorCraft node tree).
+//! PDF → Document (hayro-interpret device that builds a Redrob Canvas node tree).
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -1319,7 +1319,7 @@ impl<'p> Builder<'p> {
         true
     }
 
-    /// Convert a hayro paint to a VectorCraft paint and opacity (`stroke`: for a stroke).
+    /// Convert a hayro paint to a Redrob Canvas paint and opacity (`stroke`: for a stroke).
     fn paint(&mut self, p: &craft_pdf::interpret::Paint<'_>, stroke: bool) -> (Paint, f32) {
         match p {
             craft_pdf::interpret::Paint::Color(c) => {

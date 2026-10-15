@@ -1,4 +1,4 @@
-//! DesignCraft text composition.
+//! Redrob Canvas text composition.
 //!
 //! [`compose_story`] lays a story out through its chain of threaded frames:
 //! style resolution → shaping ([`shape`]) → line breaking ([`breaker`]: the paragraph composer is

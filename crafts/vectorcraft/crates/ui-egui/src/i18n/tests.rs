@@ -238,7 +238,7 @@ fn language_command_sets_the_preference() {
     // Every registered language is in the Mac App menu's Language, by its own name (the in-window
     // bar has no Language menu).
     let layout = crate::native_menu::mac_layout(&app, &crate::native_menu::from_tree(&app, &crate::menus::menu_tree()), Lang::EN);
-    let app_menu = layout.bar.menus.into_iter().find(|m| m.title == "VectorCraft").expect("App menu");
+    let app_menu = layout.bar.menus.into_iter().find(|m| m.title == "Redrob Canvas").expect("App menu");
     fn items(nodes: &[crate::native_menu::Node], out: &mut Vec<String>) {
         for n in nodes {
             match n {
@@ -458,7 +458,7 @@ const KEEPS_MENU_NAMES: [&str; 13] = ["cs", "de", "es", "fr", "hu", "it", "ja", 
 /// names and the perspective grid presets (names, shown untranslated wherever else they appear).
 /// Each language's own name in the Language menu is left alone too.
 const MENU_KEEP_AS_IS: &[&str] = &[
-    "VectorCraft",
+    "Redrob Canvas",
     "OpenType",
     "Essentials",
     "Essentials Classic",
@@ -1272,12 +1272,12 @@ fn czech_render_site_follow_up() {
         ("All placeable files", "Všechny soubory pro umístění"),
         ("SVG Compressed", "Komprimované SVG"),
         ("PDF-compatible .ai", ".ai kompatibilní s PDF"),
-        ("VectorCraft Template", "Šablona VectorCraft"),
+        ("Redrob Canvas Template", "Šablona Redrob Canvas"),
     ] {
         assert_eq!(tr_ctx(cs(), "file-filter", source), expected);
         assert_eq!(tr_ctx(Lang::EN, "file-filter", source), source);
     }
-    for source in ["SVG", "PNG", "VectorCraft", "unregistered filter"] {
+    for source in ["SVG", "PNG", "Redrob Canvas", "unregistered filter"] {
         assert_eq!(tr_ctx(cs(), "file-filter", source), source);
     }
     assert_eq!(tr_ctx(cs(), "diagnostics", "render"), "vykreslení");

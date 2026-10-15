@@ -4,7 +4,7 @@
 //! rectangles and ellipses, custom geometry otherwise) with their fills, strokes and effects,
 //! placed images become pictures cropped like their frames, and text frames become text boxes.
 //!
-//! Text keeps DesignCraft's composition by default ([`LineBreaks::Keep`]): each composed line ends
+//! Text keeps Redrob Canvas's composition by default ([`LineBreaks::Keep`]): each composed line ends
 //! in a line break, justified word spacing and tracking become character spacing, and leading
 //! becomes percentage line spacing (PowerPoint rounds exact point spacing to whole points; its
 //! 100% line is 1.2 em for every font, so a percentage is exact). A threaded story is split at its
@@ -37,7 +37,7 @@ pub use slide::needs_raster;
 /// How text frames become text boxes.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum LineBreaks {
-    /// Keep DesignCraft's line breaks, word spacing and leading (looks the same; edits don't
+    /// Keep Redrob Canvas's line breaks, word spacing and leading (looks the same; edits don't
     /// re-break lines).
     #[default]
     Keep,

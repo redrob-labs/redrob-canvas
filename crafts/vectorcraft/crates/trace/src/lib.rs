@@ -1,4 +1,4 @@
-//! VectorCraft Image Trace: raster → vector.
+//! Redrob Canvas Image Trace: raster → vector.
 //!
 //! A clean-room tracer built from the published ideas behind bitmap tracers (the potrace paper
 //! and classic colour quantisation), not from any existing implementation:

@@ -13,22 +13,22 @@ habits, an agent that edits beside you) is the same; almost every line under it 
 
 ### Changed
 
-- **One window, three modes.** `apps/redrob-canvas` (eframe) hosts PhotoCraft as the Photo mode,
-  VectorCraft as the Vector mode and DesignCraft as the Layout mode, switched with `Ctrl+1/2/3` or
+- **One window, three modes.** `apps/redrob-canvas` (eframe) hosts the Photo editor as the Photo mode,
+  the Vector editor as the Vector mode and the Layout editor as the Layout mode, switched with `Ctrl+1/2/3` or
   `--mode`. Each editor is created on first use and kept alive, so switching preserves open documents.
-  All four ArtCraft repositories (the three editors and craft-libs) are vendored as git subtrees under
+  All four upstream repositories (the three editors and craft-libs) are vendored as git subtrees under
   `crafts/` at pinned commits; the root `Cargo.toml` is generated from their manifests by
   `tools/merge_workspaces.py`.
 - **Licence: GPL-3.0-or-later becomes MIT OR Apache-2.0.** Every input is now permissive, so the
   project is too. `LICENSE` is replaced by `LICENSE-MIT` and `LICENSE-APACHE`; `COPYRIGHT` and `NOTICE`
-  name the ArtCraft Team beside us and reproduce each upstream NOTICE verbatim; `SOURCE_OFFER.md` and
+  name the the upstream authors beside us and reproduce each upstream NOTICE verbatim; `SOURCE_OFFER.md` and
   the corresponding-source bundle are gone because nothing copyleft remains to offer source for.
   `THIRD_PARTY_NOTICES.md` is still generated from `Cargo.lock`, now without the babl/lcms2/Qt notes.
 - **Upstream pins** move to the organisation shape: `UPSTREAM.md` plus `upstream-base.json`, with
   `docs/upstream-sources.toml` reduced to the four subtrees (`kind = "code"`) and the Redrob Code
   protocol pin. `scripts/verify-upstream.sh` checks the two pin files against each other, against the
   subtree squash commits and against GitHub, refuses any non-permissive `code` licence, and checks
-  that nothing outside `crafts/` touches the ArtCraft brand assets, which are trademarks.
+  that nothing outside `crafts/` touches the upstream brand assets, which are trademarks.
   `scripts/fetch-upstream.sh` is now the `git subtree pull --squash` recipe.
 - **Build and CI without Qt.** No CMake, no aqtinstall, no `windeployqt` or `macdeployqt`. CI runs the
   pins, `cargo fmt`, `clippy -D warnings`, `cargo test`, the notice check, the design-system guard,
@@ -63,11 +63,11 @@ What 0.6 did that 0.7 does through an upstream editor instead, and what is not b
 
 - Layers, masks, groups, blend modes, adjustment layers, layer styles, brushes with ABR/GBR tips,
   selections, channels and paths, type layers, PSD/PSB round trips, ORA and KRA: **regained** in the
-  Photo mode (PhotoCraft), in most cases with more than 0.6 had (16/32-bit, CMYK and Lab documents,
+  Photo mode (the Photo editor), in most cases with more than 0.6 had (16/32-bit, CMYK and Lab documents,
   layered TIFF, PDN, Affinity import, camera RAW).
 - Vector paths, booleans, text on paths, gradients, SVG/AI/EPS/PDF/DXF: **regained** in the Vector mode
-  (VectorCraft), replacing the limited SVG subset and the Graphite port.
-- Page layout: **new**, in the Layout mode (DesignCraft).
+  (the Vector editor), replacing the limited SVG subset and the Graphite port.
+- Page layout: **new**, in the Layout mode (the Layout editor).
 - Photoshop and Illustrator shortcut sets, the workspace switcher, the Essentials/Photography/Painting
   /Motion layouts and the panel icon strip of 0.5: **not back** in that form; each editor ships its own
   keymap and layout. A shell-level keymap chooser is on the roadmap.

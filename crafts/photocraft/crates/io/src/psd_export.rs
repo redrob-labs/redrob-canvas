@@ -587,7 +587,7 @@ impl Ex {
                 };
                 let cged = raw.iter().find(|(k, _)| k == b"CgEd").map(|(_, d)| d.clone());
                 let keep = raw.iter().any(|(k, d)| {
-                    // A previously saved PhotoCraft v2 Photo Filter block may be 18 bytes.
+                    // A previously saved Redrob Canvas v2 Photo Filter block may be 18 bytes.
                     // It parses here, but Photoshop requires four-byte alignment, so repair
                     // that legacy record on re-save rather than preserving the broken bytes.
                     let legacy_phfl = k == b"phfl" && d.starts_with(&[0, 2]) && d.len() % 4 != 0;
@@ -1863,7 +1863,7 @@ mod tests {
     }
 
     /// A flat 1-bit Bitmap file (no layers) opens in Photoshop as its Background; so does it in
-    /// PhotoCraft, and it is written back as one (no transparency channel).
+    /// Redrob Canvas, and it is written back as one (no transparency channel).
     #[test]
     fn a_flat_bitmap_file_opens_and_saves_as_a_background() {
         let file = photocraft_psd::testgen::merged_only(Version::Psd, PsdMode::Bitmap, 1, Compression::Raw, 8, 4);

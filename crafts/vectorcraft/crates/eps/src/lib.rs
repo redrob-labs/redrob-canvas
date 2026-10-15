@@ -237,10 +237,10 @@ pub fn export(doc: &Document, opts: &EpsOptions, preview: Option<&Raster>, thumb
     Ok(EpsOutput { bytes, warnings })
 }
 
-/// Comment lines that start a data section the file carries (`%VectorCraft_BeginData: <name>`)
+/// Comment lines that start a data section the file carries (`%Redrob Canvas_BeginData: <name>`)
 /// and end it; between them, ASCII85 lines after `% `.
-const BEGIN_DATA: &str = "%VectorCraft_BeginData: ";
-const END_DATA: &str = "%VectorCraft_EndData";
+const BEGIN_DATA: &str = "%Redrob Canvas_BeginData: ";
+const END_DATA: &str = "%Redrob Canvas_EndData";
 /// The data sections.
 const NATIVE: &str = "native";
 const THUMBNAIL: &str = "thumbnail";
@@ -251,7 +251,7 @@ const MAX_NATIVE: u64 = 1 << 30;
 /// language level, data, and the spot colours `custom` with their CMYK equivalents.
 pub(crate) fn comments(s: &mut String, title: &str, created: Option<i64>, level: Level, custom: &[(String, [f32; 4])]) {
     use std::fmt::Write;
-    let _ = writeln!(s, "%%Creator: VectorCraft {}", env!("CARGO_PKG_VERSION"));
+    let _ = writeln!(s, "%%Creator: Redrob Canvas {}", env!("CARGO_PKG_VERSION"));
     let _ = writeln!(s, "%%Title: {}", ps::string(title));
     if let Some(t) = created {
         let [y, mo, d, h, mi, se] = vectorcraft_doc::metadata::civil(t);

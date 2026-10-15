@@ -1,4 +1,4 @@
-//! VectorCraft Options after Save As: each artboard to a separate file (All or a range), Include
+//! Redrob Canvas Options after Save As: each artboard to a separate file (All or a range), Include
 //! Linked Files, Embed ICC Profiles, Create PDF-Compatible File, Use Compression and Preview; the
 //! web's Save As dialog shows them too.
 

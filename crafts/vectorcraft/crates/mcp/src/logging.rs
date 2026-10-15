@@ -1,6 +1,6 @@
 //! `logging/setLevel` and the `notifications/message` it turns on.
 //!
-//! VectorCraft's crates log through the `log` facade, and until now nothing installed a logger, so
+//! Redrob Canvas's crates log through the `log` facade, and until now nothing installed a logger, so
 //! every `log::debug!` went nowhere. This module is the sink for them: a `log` logger that turns
 //! records into MCP `notifications/message`, filtered to the level the client asked for.
 //!

@@ -50,20 +50,20 @@ fn memory_location_has_no_folder() {
 
 #[test]
 fn app_supplied_portable_names_are_used() {
-    const LEGACY: Portable = Portable { markers: &["portable.txt", "PhotoCraft.portable"], dir: "PhotoCraftData" };
-    for marker in ["portable.txt", "PhotoCraft.portable"] {
+    const LEGACY: Portable = Portable { markers: &["portable.txt", "Redrob Canvas.portable"], dir: "Redrob CanvasData" };
+    for marker in ["portable.txt", "Redrob Canvas.portable"] {
         let tmp = tempfile::tempdir().unwrap();
         std::fs::write(tmp.path().join(marker), "").unwrap();
         let probe = Probe { env: Box::new(|_| None), exe_dir: Some(tmp.path().to_path_buf()), platform_config_dir: Some(PathBuf::from("/platform")) };
         let r = resolve("testcraft", &LEGACY, &Location::Auto, &probe);
         assert_eq!(r.rule, Rule::Portable, "{marker}");
-        assert_eq!(r.dir, Some(tmp.path().join("PhotoCraftData")), "{marker}");
+        assert_eq!(r.dir, Some(tmp.path().join("Redrob CanvasData")), "{marker}");
     }
 }
 
 #[test]
 fn default_marker_is_ignored_when_the_app_uses_its_own() {
-    const LEGACY: Portable = Portable { markers: &["portable.txt"], dir: "PhotoCraftData" };
+    const LEGACY: Portable = Portable { markers: &["portable.txt"], dir: "Redrob CanvasData" };
     let tmp = tempfile::tempdir().unwrap();
     std::fs::write(tmp.path().join("portable"), "").unwrap();
     let probe = Probe { env: Box::new(|_| None), exe_dir: Some(tmp.path().to_path_buf()), platform_config_dir: Some(PathBuf::from("/platform")) };

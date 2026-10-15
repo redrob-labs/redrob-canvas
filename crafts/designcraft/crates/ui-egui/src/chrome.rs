@@ -119,7 +119,7 @@ pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
                             app.status("Export a PDF, IDML or package to share — no cloud account needed.");
                         }
                         ui.add_space(8.0);
-                        // Always one click away: the ArtCraft community Discord.
+                        // Always one click away: the Redrob community Discord.
                         if crate::about::discord_button(ui, "Discord", vec2(78.0, 22.0)) {
                             let _ = app.run("help.discord", json!({}));
                         }
@@ -828,7 +828,7 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
     let _ = Content::Unassigned;
 }
 
-/// Start screen: the ArtCraft community (Discord first) and project links.
+/// Start screen: the Redrob community (Discord first) and project links.
 fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     egui::Frame::NONE.fill(t.panel).corner_radius(10.0).inner_margin(egui::Margin::same(14)).show(ui, |ui| {
@@ -846,7 +846,7 @@ fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
                 ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
                 ui.label(crate::rtl::widget(
                     ui,
-                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Join the ArtCraft community")).font(semibold(14.0)).color(t.text_strong),
+                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Redrob community")).font(semibold(14.0)).color(t.text_strong),
                 ));
                 ui.label(crate::rtl::widget(
                     ui,
@@ -856,7 +856,7 @@ fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
                 ));
                 ui.add_space(4.0);
                 ui.horizontal(|ui| {
-                    for (text, id) in [("DesignCraft page", "help.appPage"), ("GitHub", "help.github"), ("getartcraft.com", "help.website")] {
+                    for (text, id) in [("Redrob Canvas page", "help.appPage"), ("GitHub", "help.github"), ("redrob.ai", "help.website")] {
                         let url = designcraft_engine::links::get(&id[5..]).unwrap_or_default();
                         let l = ui
                             .add(egui::Label::new(egui::RichText::new(text).size(12.0).color(t.accent).underline()).sense(Sense::click()))

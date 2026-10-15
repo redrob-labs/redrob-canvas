@@ -2,7 +2,7 @@
 //!
 //! Many Linux desktops move a window with Alt+drag: Cinnamon (Linux Mint's default), MATE, Xfce,
 //! and KDE before Plasma 6. Their window manager grabs every Alt+left press, so the click never
-//! reaches PhotoCraft: the Brush's ⌥ Eyedropper samples nothing, the Clone Stamp gets no source
+//! reaches Redrob Canvas: the Brush's ⌥ Eyedropper samples nothing, the Clone Stamp gets no source
 //! point and the Zoom tool does not zoom out (#3137), while the ⌥ cursor still shows (the keyboard is not grabbed until the press). Nothing in
 //! the app can win that grab back, but its signature is clear: the pointer "leaves" the window from
 //! well inside the canvas while ⌥ is held with a tool whose ⌥-click matters (X11 and Wayland report

@@ -198,7 +198,7 @@ pub mod photo {
     const SAVE_FILTERS: &[(&str, &[&str])] = &[
         ("PSD Document", &["psd", "psb"]),
         ("PDF", &["pdf"]),
-        ("PhotoCraft", &["pcraft"]),
+        ("Redrob Canvas photo document", &["pcraft"]),
         ("OpenRaster", &["ora"]),
         ("PNG", &["png"]),
         ("JPEG", &["jpg"]),
@@ -289,7 +289,10 @@ pub mod photo {
                             ),
                             None => dialog
                                 .add_filter("All Formats", &open_filter_extensions(OPEN_EXTS))
-                                .add_filter("PhotoCraft", &open_filter_extensions(&["pcraft"]))
+                                .add_filter(
+                                    "Redrob Canvas photo document",
+                                    &open_filter_extensions(&["pcraft"]),
+                                )
                                 .add_filter("OpenRaster", &open_filter_extensions(&["ora"]))
                                 .add_filter("SVG", &open_filter_extensions(&["svg", "svgz"])),
                         };
@@ -671,11 +674,11 @@ pub mod layout {
             ],
             _ => &[
                 OpenFilter {
-                    name: "DesignCraft or IDML",
+                    name: "Redrob Canvas layout or IDML",
                     extensions: &["designcraft", "idml"],
                 },
                 OpenFilter {
-                    name: "DesignCraft",
+                    name: "Redrob Canvas layout",
                     extensions: &["designcraft"],
                 },
                 OpenFilter {

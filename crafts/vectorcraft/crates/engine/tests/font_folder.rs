@@ -1,4 +1,4 @@
-//! VectorCraft's own Fonts folder: a missing font's file, found in a folder, is copied into it
+//! Redrob Canvas's own Fonts folder: a missing font's file, found in a folder, is copied into it
 //! without replacing a file there, and type set in the font redraws in it. One test in its own
 //! process, so the process-wide font database and Fonts folder start fresh, as when the app starts.
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).

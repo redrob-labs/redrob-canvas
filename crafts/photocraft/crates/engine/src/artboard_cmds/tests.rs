@@ -453,7 +453,7 @@ fn moving_an_artboard_past_the_canvas_keeps_its_shapes_whole() {
 }
 
 /// A type layer as a PSD import leaves it: Photoshop's rendering as the cache (deliberately not
-/// what PhotoCraft would draw, a solid block, so a re-render shows) and Photoshop's `TySh`.
+/// what Redrob Canvas would draw, a solid block, so a re-render shows) and Photoshop's `TySh`.
 fn add_imported_type(s: &mut Session, block: Rect) -> LayerId {
     s.edit("type", |doc, active| {
         let mut t = photocraft_doc::TextLayer { text: "Hello!".into(), font_family: "No Such Font".into(), size_pt: 26.0, ..Default::default() };

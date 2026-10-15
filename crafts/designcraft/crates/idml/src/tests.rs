@@ -1750,7 +1750,7 @@ fn absent_text_attributes_take_indesign_defaults() {
             assert_eq!(field(&r), *want, "{attr} written on the {}", if root.is_empty() { "style" } else { "root" });
         }
     }
-    // Product difference: InDesign's default face isn't available, so unset fonts are DesignCraft's.
+    // Product difference: InDesign's default face isn't available, so unset fonts are Redrob Canvas's.
     assert_eq!(omitted.1.font_family, designcraft_doc::CharProps::default().font_family);
 }
 

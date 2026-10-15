@@ -48,7 +48,7 @@ const ABOUT_LOCKUP_PNG: &[u8] = include_bytes!("../../../resources/brand/redrob-
 const ABOUT_LOCKUP_HEIGHT: f32 = 40.0;
 /// The editors this app is built on (UPSTREAM_NOTICES.md).
 const ABOUT_ATTRIBUTION: &str =
-    "Built on PhotoCraft, VectorCraft and DesignCraft by the ArtCraft Team -- MIT OR Apache-2.0";
+    "MIT OR Apache-2.0. Third-party notices: NOTICE and THIRD_PARTY_NOTICES.md.";
 
 /// Which editor the window shows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
@@ -749,7 +749,7 @@ impl ShellApp {
     }
 
     /// The window title is the shell's ([`window_title`]). Each editor sends its own on a document
-    /// change (`PhotoCraft`, `*name — VectorCraft`); the window reports it back the next frame and
+    /// change (`*name — <editor>`); the window reports it back the next frame and
     /// the shell sets its own again. Nothing is sent while the title is already right.
     fn sync_window_title(&mut self, ctx: &egui::Context) {
         let doc = self.active_document();

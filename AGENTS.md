@@ -8,7 +8,7 @@ run. Where a fact was not verified it says so.
 
 Redrob Canvas is an agentic graphics editor: one egui/eframe window (`apps/redrob-canvas`) hosting
 three complete editors as modes, each vendored whole as a git subtree under `crafts/` from
-[storytold](https://github.com/storytold): PhotoCraft (Photo), VectorCraft (Vector), DesignCraft
+[storytold](https://github.com/storytold): the Photo editor (Photo), the Vector editor (Vector), the Layout editor
 (Layout), plus their shared craft-libs. Redrob's own code is the shell, `crates/redrob-agent` (the
 Redrob Code client) and `crates/redrob-ai` (the AI tools layer, in progress). Everything is Rust;
 there is no Qt, CMake, Node or QML anywhere in the build. If a document, script or comment you find
@@ -27,7 +27,7 @@ translate GPL or LGPL source into this tree.
    `scripts/fetch-upstream.sh <name> <sha>`; a local edit turns the next pull into a conflict hunt and
    is lost at the next squash. The one exception is the parked `crafts/<name>/Cargo.upstream.toml`,
    which `tools/merge_workspaces.py` renames and which you also do not edit.
-2. **Never replace an upstream copyright notice, and never touch `crafts/*/docs/brand/`.** The ArtCraft
+2. **Never replace an upstream copyright notice, and never touch `crafts/*/docs/brand/`.** The upstream
    name and logos there are trademarks, not open source. `NOTICE` reproduces each upstream NOTICE
    verbatim beneath ours; `upstream-base.json`'s `attribution` list says which strings must stay, and
    the verify script fails when one goes missing or when anything outside `crafts/` references the

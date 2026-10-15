@@ -255,7 +255,7 @@ pub fn apply_txt2_frame(layer: &mut TextLayer, tysh: &[u8], txt2: &E) {
         return;
     }
     // The frame's origin (point text: the anchor; box text: the box's top left) must land in
-    // the text-space `bounds` Photoshop wrote beside it, and not already be there without it. A `TySh` PhotoCraft rewrote (an edited
+    // the text-space `bounds` Photoshop wrote beside it, and not already be there without it. A `TySh` Redrob Canvas rewrote (an edited
     // or moved layer whose text is unchanged keeps its old `Txt2` object and frame) already has
     // the frame folded into its transform and its `bounds` near the origin: applying the frame
     // again would move it twice.

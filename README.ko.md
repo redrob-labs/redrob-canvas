@@ -11,14 +11,14 @@
 가로지르는 AI 도구 층과 문서를 옆에서 함께 편집하는 에이전트가 있습니다.
 
 데스크톱 애플리케이션 하나(`apps/redrob-canvas`, Rust와 egui)에 세 모드가 있고, 각 모드는
-[storytold](https://github.com/storytold)의 ArtCraft 계열 편집기 하나를 통째로 담습니다. 네 저장소를
+편집기 하나를 통째로 담습니다 (출처와 라이선스: UPSTREAM.md, NOTICE). 네 저장소를
 `crafts/` 아래 git subtree로 가져와 소스에서 빌드합니다.
 
-| 모드 | 편집기 | 용도 |
+| 모드 | 종류 | 용도 |
 | --- | --- | --- |
-| **Photo** | [PhotoCraft](https://github.com/storytold/photocraft) | 레이어, 마스크, 조정 레이어, 레이어 스타일, 브러시, 문자, 색 관리; 실제 PSD 파일 |
-| **Vector** | [VectorCraft](https://github.com/storytold/vectorcraft) | 패스, 불리언, 패스 위 문자, 그레이디언트, 아트보드; SVG, AI, EPS, PDF, DXF |
-| **Layout** | [DesignCraft](https://github.com/storytold/designcraft) | 마스터 페이지, 이어지는 텍스트 프레임, 하이픈 처리; IDML, PDF, PPTX, EPUB |
+| **Photo** | 래스터 | 레이어, 마스크, 조정 레이어, 레이어 스타일, 브러시, 문자, 색 관리; 실제 PSD 파일 |
+| **Vector** | 벡터 | 패스, 불리언, 패스 위 문자, 그레이디언트, 아트보드; SVG, AI, EPS, PDF, DXF |
+| **Layout** | 페이지 레이아웃 | 마스터 페이지, 이어지는 텍스트 프레임, 하이픈 처리; IDML, PDF, PPTX, EPUB |
 
 셸은 창, 모드 전환(`Ctrl+1` / `Ctrl+2` / `Ctrl+3`, 또는 `--mode photo|vector|layout`), 하나의 설정
 디렉터리(`ai.redrob.canvas`), 그리고 에이전트를 맡습니다. 모드를 바꿔도 각 편집기에 열려 있던 문서는
@@ -103,9 +103,9 @@ docs/                   아키텍처, 포맷, 라이선스, 고정된 상류 목
 두 핀 파일을 서로, subtree squash 커밋과, GitHub과 대조합니다. 레드롭 캔버스가 더하는 것은 셸, 에이전트,
 AI 층입니다. 편집기 내부를 포크하지 않으므로 상류의 개선은 머지로 들어옵니다.
 
-Copyright (c) 2026 ArtCraft Team and the PhotoCraft, VectorCraft, DesignCraft and craft-libs
+Copyright (c) 2026 the upstream authors and the the four vendored editors
 contributors, MIT OR Apache-2.0. 각 편집기의 라이선스 파일과 NOTICE는 `crafts/<name>/` 아래 그대로 있고
-[NOTICE](NOTICE)에 원문대로 실려 있습니다. `crafts/*/docs/brand/`의 ArtCraft 이름과 로고는 ArtCraft Team의
+[NOTICE](NOTICE)에 원문대로 실려 있습니다. `crafts/*/docs/brand/`의 upstream 이름과 로고는 the upstream authors의
 상표이며 오픈 소스가 아니고, 여기서는 쓰지 않습니다.
 
 ## 로드맵

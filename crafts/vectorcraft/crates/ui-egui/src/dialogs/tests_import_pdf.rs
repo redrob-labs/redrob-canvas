@@ -166,7 +166,7 @@ fn placing_a_pdf_page_asks_for_the_page_and_crop_box() {
     assert_eq!(placed(&app).1.width(), 80.0);
 }
 
-/// A saved `.ai` with several artboards carries its VectorCraft document: opening it restores that
+/// A saved `.ai` with several artboards carries its Redrob Canvas document: opening it restores that
 /// document (artboards, layers) instead of asking which pages to import.
 #[test]
 fn opening_a_saved_ai_with_several_artboards_restores_it_without_asking() {
@@ -187,7 +187,7 @@ fn opening_a_saved_ai_with_several_artboards_restores_it_without_asking() {
     assert!(doc.layers.iter().any(|l| l.name.as_deref() == Some("Front")), "layers come back");
 }
 
-/// A PDF without a VectorCraft document still asks, and placing a saved `.ai` still asks for the page.
+/// A PDF without a Redrob Canvas document still asks, and placing a saved `.ai` still asks for the page.
 #[test]
 fn placing_a_saved_ai_still_asks_for_the_page() {
     let mut app = app();

@@ -35,7 +35,7 @@ const MAX_UNREAD: usize = 1000;
 const UNREAD_SHOWN: usize = 80;
 
 /// What `shortcutSet.read` says about a file that isn't a text shortcut set.
-pub const NOT_READABLE: &str = "This shortcut file is in a form VectorCraft can't read.";
+pub const NOT_READABLE: &str = "This shortcut file is in a form Redrob Canvas can't read.";
 
 /// The extensions of shortcut sets other apps save (File › Open lists them).
 pub const EXTS: &[&str] = &["kys"];

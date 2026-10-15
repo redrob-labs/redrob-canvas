@@ -83,15 +83,15 @@ impl Builtin {
         match self {
             Builtin::Srgb => "sRGB IEC61966-2.1",
             Builtin::DisplayP3 => "Display P3",
-            Builtin::AdobeRgbCompat => "Adobe RGB (1998)-compatible (PhotoCraft)",
-            Builtin::ProPhotoCompat => "ProPhoto RGB-compatible (ROMM primaries, PhotoCraft)",
-            Builtin::LinearSrgb => "Linear sRGB (PhotoCraft)",
-            Builtin::AcesCg => "ACEScg (AP1, linear, PhotoCraft)",
-            Builtin::Rec2020 => "Rec. ITU-R BT.2020 (PhotoCraft)",
-            Builtin::GrayGamma22 => "Gray Gamma 2.2 (PhotoCraft)",
-            Builtin::SGray => "sGray (sRGB tone curve, PhotoCraft)",
-            Builtin::DotGain20Compat => "Dot Gain 20%-compatible (gamma 1.732, PhotoCraft)",
-            Builtin::LabD50 => "Lab D50 identity (PhotoCraft)",
+            Builtin::AdobeRgbCompat => "Adobe RGB (1998)-compatible (Redrob Canvas)",
+            Builtin::ProPhotoCompat => "ProPhoto RGB-compatible (ROMM primaries, Redrob Canvas)",
+            Builtin::LinearSrgb => "Linear sRGB (Redrob Canvas)",
+            Builtin::AcesCg => "ACEScg (AP1, linear, Redrob Canvas)",
+            Builtin::Rec2020 => "Rec. ITU-R BT.2020 (Redrob Canvas)",
+            Builtin::GrayGamma22 => "Gray Gamma 2.2 (Redrob Canvas)",
+            Builtin::SGray => "sGray (sRGB tone curve, Redrob Canvas)",
+            Builtin::DotGain20Compat => "Dot Gain 20%-compatible (gamma 1.732, Redrob Canvas)",
+            Builtin::LabD50 => "Lab D50 identity (Redrob Canvas)",
             Builtin::CoatedCmyk => crate::synth::DESCRIPTION,
         }
     }
@@ -146,7 +146,7 @@ pub fn srgb() -> &'static Profile {
 /// only assigned to such files, never offered as a working space.
 pub fn linear_gray() -> &'static Profile {
     static PROFILE: OnceLock<Profile> = OnceLock::new();
-    PROFILE.get_or_init(|| gray("Linear Gray (PhotoCraft)", Curve::Gamma(1.0)))
+    PROFILE.get_or_init(|| gray("Linear Gray (Redrob Canvas)", Curve::Gamma(1.0)))
 }
 
 /// The ICC D65 used for the RGB spaces (chromaticity 0.3127, 0.3290).

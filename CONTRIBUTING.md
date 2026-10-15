@@ -11,14 +11,14 @@ disagree this file wins, because it knows its own build.
 
 ## What this is, and is not
 
-Redrob Canvas is **a shell around three upstream editors, not a fork of any of them.** PhotoCraft,
-VectorCraft and DesignCraft (and their shared craft-libs) are vendored whole as git subtrees under
+Redrob Canvas is **a shell around three upstream editors, not a fork of any of them.** the Photo editor,
+the Vector editor and the Layout editor (and their shared craft-libs) are vendored whole as git subtrees under
 `crafts/` and run as the Photo, Vector and Layout modes. Redrob's own code is the shell
 (`apps/redrob-canvas`), the agent (`crates/redrob-agent`) and the AI tools layer (`crates/redrob-ai`).
 
 The division of responsibility is the thing to keep straight:
 
-- **An editor's behaviour belongs to its upstream.** A bug in how a PSD opens is a PhotoCraft bug; fix
+- **An editor's behaviour belongs to its upstream.** A bug in how a PSD opens is a the Photo editor bug; fix
   it in [storytold/photocraft](https://github.com/storytold/photocraft) and it comes back here by
   `scripts/fetch-upstream.sh`. Do not patch a file under `crafts/`; the next pull turns it into a
   conflict and the next squash loses it.
@@ -104,7 +104,7 @@ fork gets the same run as one from a branch here.
 
 | Check | What it asserts |
 | --- | --- |
-| **Upstream pins are well-formed and reachable** | `upstream-base.json` and `docs/upstream-sources.toml` agree with each other, with the subtree squash commits and with GitHub; every `code` pin is permissive; the attribution strings are intact; nothing outside `crafts/` touches the ArtCraft brand assets |
+| **Upstream pins are well-formed and reachable** | `upstream-base.json` and `docs/upstream-sources.toml` agree with each other, with the subtree squash commits and with GitHub; every `code` pin is permissive; the attribution strings are intact; nothing outside `crafts/` touches the upstream brand assets |
 | **Rust workspace** | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --workspace --locked`, and the release build of the shell links |
 | **Distribution artifacts are current** | the generated `THIRD_PARTY_NOTICES.md` matches `Cargo.lock`; the design-system guard; the tool tests |
 | **Rust security advisories** | `cargo audit` against the committed lockfile |

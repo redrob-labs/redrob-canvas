@@ -4,7 +4,7 @@
 //! Each entry's name is matched against the tools, commands and panels Keyboard Shortcuts lists
 //! ([`vectorcraft_engine::namematch`]). Its key and modifier codes are decoded from the user's earlier
 //! answers (`importMatches`), from the two codes the format's public description gives (`/Key 48` is
-//! the 0 key and `/Modifiers 0` is none), and by agreement with VectorCraft's default shortcuts: each
+//! the 0 key and `/Modifiers 0` is none), and by agreement with Redrob Canvas's default shortcuts: each
 //! entry whose match has a default votes for what its codes stand for, and a code is proposed when at
 //! least two entries vote for it and four votes in five agree. The user answers the rest in the Keys
 //! section. Apply assigns the rows that are ready, in the file's order, through
@@ -32,7 +32,7 @@ use crate::{FilePick, VectorcraftApp, menus, widgets};
 /// The dialog kind.
 pub const KIND: &str = "shortcutImport";
 
-/// The files Keyboard Shortcuts' Import… lists: VectorCraft's own sets and sets another app saved as
+/// The files Keyboard Shortcuts' Import… lists: Redrob Canvas's own sets and sets another app saved as
 /// text.
 pub const IMPORT_EXTS: &[&str] = &["json", "kys"];
 
@@ -223,7 +223,7 @@ impl Review {
     }
 
     /// Codes that no earlier import, description or user answered take what agreement with
-    /// VectorCraft's default shortcuts proposes for them now.
+    /// Redrob Canvas's default shortcuts proposes for them now.
     pub fn decode(&mut self) {
         let mut defaults: HashMap<&str, Option<(String, String)>> = HashMap::new();
         let mut keys: BTreeMap<i64, HashMap<String, usize>> = BTreeMap::new();
@@ -469,7 +469,7 @@ pub fn command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     open_read(app, json!({ "path": path }))
 }
 
-/// Apply: the ready rows assigned in the file's order over VectorCraft's defaults (or the current
+/// Apply: the ready rows assigned in the file's order over Redrob Canvas's defaults (or the current
 /// shortcuts), and Keyboard Shortcuts shown with the result as its working set; its OK keeps it. With
 /// Remember My Choices on, the matches and codes used are kept for later imports (`importMatches.set`).
 /// → `{applied, rows}`
@@ -611,7 +611,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
         ui.add_space(4.0);
         ui.label(
             egui::RichText::new(tl!(
-                "Each entry of the file is matched to a VectorCraft tool, command or panel. Check the matches and answer what is left."
+                "Each entry of the file is matched to a Redrob Canvas tool, command or panel. Check the matches and answer what is left."
             ))
             .color(t.text_dim)
             .size(11.5),
@@ -620,7 +620,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
         ui.add_space(8.0);
         ui.horizontal(|ui| {
             let current = d.str("start") == "current";
-            if widgets::radio(ui, tl!("Start from VectorCraft Defaults"), !current, true) {
+            if widgets::radio(ui, tl!("Start from Redrob Canvas Defaults"), !current, true) {
                 d.fields.insert("start".into(), json!("defaults"));
             }
             ui.add_space(12.0);
@@ -789,7 +789,7 @@ fn code_notes(ui: &mut egui::Ui, c: &Code) {
     ui.add(egui::Label::new(egui::RichText::new(names).color(t.text_dim).size(11.0).italics()).truncate());
 }
 
-/// The rows: a check box, the name as the file writes it, what it stands for in VectorCraft (a
+/// The rows: a check box, the name as the file writes it, what it stands for in Redrob Canvas (a
 /// searchable picker), the shortcut and the status, in a list `height` points tall. → the list's
 /// height.
 fn rows_section(ui: &mut egui::Ui, d: &mut Dialog, review: &mut Review, statuses: &[(Status, Option<String>)], height: f32) -> f32 {
@@ -825,7 +825,7 @@ fn rows_section(ui: &mut egui::Ui, d: &mut Dialog, review: &mut Review, statuses
     let list = egui::Frame::NONE.fill(t.input).stroke(egui::Stroke::new(1.0, t.input_border)).inner_margin(egui::Margin::same(4)).show(ui, |ui| {
         ui.horizontal(|ui| {
             ui.add_space(22.0);
-            for (label, w) in [(tl!("In the File"), NAME_W), (tl!("In VectorCraft"), TARGET_W), (tl!("Shortcut"), CHORD_W)] {
+            for (label, w) in [(tl!("In the File"), NAME_W), (tl!("In Redrob Canvas"), TARGET_W), (tl!("Shortcut"), CHORD_W)] {
                 cell(ui, w, |ui| ui.label(egui::RichText::new(label).color(t.text_dim).size(11.0)));
             }
             ui.label(egui::RichText::new(tl!("Status")).color(t.text_dim).size(11.0));

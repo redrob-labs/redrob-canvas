@@ -12,14 +12,14 @@ are not promised; a milestone ships when its items are done.
 ## Where we are (0.7, in progress)
 
 0.7 is the rewrite. The Qt shell and the GPL-era core that ported Krita and GIMP behaviour are gone;
-in their place one egui window hosts three complete editors from the ArtCraft family as modes, taken
+in their place one egui window hosts three complete editors from the upstream family as modes, taken
 as git subtrees and updated by merge rather than reimplemented:
 
-- **Photo** mode (PhotoCraft): layers, masks, adjustment layers, layer styles, brushes, type,
+- **Photo** mode (the Photo editor): layers, masks, adjustment layers, layer styles, brushes, type,
   selections, channels, paths, colour management; PSD/PSB, ORA, KRA, layered TIFF, RAW and the rest.
-- **Vector** mode (VectorCraft): paths, booleans, text on paths, gradients, artboards; SVG, AI, EPS,
+- **Vector** mode (the Vector editor): paths, booleans, text on paths, gradients, artboards; SVG, AI, EPS,
   PDF, DXF.
-- **Layout** mode (DesignCraft): master pages, threaded text, hyphenation; IDML, PDF, PPTX, EPUB.
+- **Layout** mode (the Layout editor): master pages, threaded text, hyphenation; IDML, PDF, PPTX, EPUB.
 - The shell: one window, `Ctrl+1/2/3` mode switch, one config directory, documents preserved across
   switches.
 - The project is MIT OR Apache-2.0, the upstream pins follow the organisation shape, and CI and the

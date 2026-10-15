@@ -1,6 +1,6 @@
 //! Missing fonts: listed (`text.missingFonts`), their files found in a folder on threads of their
 //! own (`text.findFontFiles`), and copied into a folder without replacing a file there. These tests
-//! never set VectorCraft's Fonts folder and never add a font to the process's font database:
+//! never set Redrob Canvas's Fonts folder and never add a font to the process's font database:
 //! `tests/font_folder.rs` does both, in a process of its own.
 
 use std::path::{Path, PathBuf};

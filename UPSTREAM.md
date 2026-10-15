@@ -26,7 +26,7 @@ or Graphite were removed in `d4854f2`. The four ArtCraft trees arrived afterward
 therefore taken by merge, not file by file.
 
 Each upstream's own `Cargo.toml` is parked beside it as `crafts/<name>/Cargo.upstream.toml`, and
-`tools/merge_workspaces.py` generates the root `Cargo.toml` from the four. Only `crates/*` of each
+`tools/merge_workspaces.py` generates the root `Cargo.toml` from the four and `tools/rebrand_crafts.py` rebrands their user-visible strings. Only `crates/*` of each
 editor are workspace members; their `apps/`, `xtask` and web shells are excluded, because the one
 shell here is `apps/redrob-canvas`.
 

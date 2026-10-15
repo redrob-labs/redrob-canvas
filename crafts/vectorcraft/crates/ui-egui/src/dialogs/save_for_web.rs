@@ -181,7 +181,7 @@ pub(crate) fn browser_preview(app: &mut VectorcraftApp, p: &Value) -> Result<Val
 /// The folder browser previews go to.
 #[cfg(not(target_arch = "wasm32"))]
 fn temp_folder() -> Result<String, String> {
-    let dir = std::env::temp_dir().join("VectorCraft Save for Web");
+    let dir = std::env::temp_dir().join("Redrob Canvas Save for Web");
     std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     Ok(dir.to_string_lossy().replace('\\', "/"))
 }

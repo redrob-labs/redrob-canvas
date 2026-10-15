@@ -1,4 +1,4 @@
-//! VectorCraft text: font database, shaping, layout, glyph outlines.
+//! Redrob Canvas text: font database, shaping, layout, glyph outlines.
 //!
 //! API contract used by `vectorcraft-render`, `vectorcraft-tools` and the UI:
 //! - [`FontDb::global`]: process-wide database preloaded with the bundled OFL fonts.

@@ -27,6 +27,7 @@ commit you are moving to:
 ```bash
 git subtree pull --prefix crafts/<name> https://github.com/storytold/<name>.git <sha> --squash
 python3 tools/merge_workspaces.py
+python3 tools/rebrand_crafts.py   # user-visible strings and the embedded app icon read Redrob Canvas
 ```
 
 Then record `<sha>` in `upstream-base.json` (`lastSyncedUpstream`), `docs/upstream-sources.toml`

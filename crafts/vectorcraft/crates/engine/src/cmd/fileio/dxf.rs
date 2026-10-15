@@ -80,7 +80,7 @@ pub struct Unsupported {
     pub hint: &'static str,
 }
 
-/// Formats people ask for that VectorCraft doesn't read or write. Append-only.
+/// Formats people ask for that Redrob Canvas doesn't read or write. Append-only.
 pub const UNSUPPORTED: &[Unsupported] = &[
     Unsupported {
         id: "dwg",

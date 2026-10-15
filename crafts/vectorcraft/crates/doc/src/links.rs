@@ -281,7 +281,7 @@ impl Align {
 }
 
 impl Document {
-    /// Rewrite linked file locations in both raster images and placed VectorCraft documents,
+    /// Rewrite linked file locations in both raster images and placed Redrob Canvas documents,
     /// including those inside symbols, patterns and opacity masks. Used to make packages portable.
     pub fn update_links(&mut self, mut f: impl FnMut(&mut LinkInfo)) {
         fn walk(n: &mut Arc<Node>, f: &mut dyn FnMut(&mut LinkInfo)) {
