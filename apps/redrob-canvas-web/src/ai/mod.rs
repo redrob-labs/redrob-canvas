@@ -35,7 +35,6 @@ pub enum Action {
     Start,
     Stop,
     SetModel,
-    SwitchMode(Mode),
     AgentSend(String),
     AgentReset,
     CancelJob,
