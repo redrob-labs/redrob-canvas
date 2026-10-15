@@ -104,10 +104,10 @@ and `scripts/verify-upstream.sh` checks the two pin files against each other, ag
 squash commits and against GitHub. Redrob Canvas adds the shell, the agent and the AI layer; it does
 not fork any editor's internals, so upstream improvements arrive by merge.
 
-Copyright (c) 2026 the upstream authors and the the four vendored editors
-contributors, MIT OR Apache-2.0. Their licence and NOTICE files stay intact under `crafts/<name>/`
-and are reproduced in [NOTICE](NOTICE). The upstream name and logos under `crafts/*/docs/brand/` are
-trademarks of the the upstream authors, not open source, and are not used here.
+The four vendored editors are MIT OR Apache-2.0 and keep their authors' copyright: their licence and
+NOTICE files stay intact under `crafts/<name>/` and are reproduced in [NOTICE](NOTICE) and
+[COPYRIGHT](COPYRIGHT). Their original names and logos under `crafts/*/docs/brand/` are trademarks of
+their authors, not open source, and are not used here.
 
 ## Roadmap
 
