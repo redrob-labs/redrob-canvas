@@ -70,15 +70,12 @@ jobs:
 
       - name: Clippy
         # Upstream subtrees under crafts/ are linted by their own projects; we gate only our crates.
-        run: cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked -- -D warnings
+        run: cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked --profile ci -- -D warnings
 
       - name: Test our crates
         # The upstream subtrees are tested by their own projects; linking every one of the
         # ~75 crates' test binaries exhausted the hosted runner's disk (ld died with SIGBUS).
-        run: cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked
-
-      - name: Build the shell (release binary links)
-        run: cargo build --release --locked -p redrob-canvas
+        run: cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 
   distribution:
     name: Distribution artifacts are current

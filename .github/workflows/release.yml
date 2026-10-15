@@ -189,11 +189,9 @@ jobs:
 
       - name: Rust workspace
         run: |
+          # fmt/clippy/test already gated the commit on its pull request (verify-upstream.yml); a
+          # release re-running them cost 14 minutes per dispatch for no new information.
           cargo fmt --all -- --check
-          # Our crates only: the upstream subtrees are linted and tested by their own projects, and
-          # linking every workspace test binary exhausts the hosted runner (verify-upstream.yml does the same).
-          cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked -- -D warnings
-          cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked
 
   build:
     name: Build ${{ matrix.label }}

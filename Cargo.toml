@@ -202,6 +202,17 @@ opt-level = 2
 [profile.dev]
 opt-level = 1
 
+# CI gates compile with `--profile ci`: no optimisation anywhere (the dev profile optimises every
+# dependency at level 2, which is what makes a cold `cargo test` take a quarter of an hour).
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+debug = "line-tables-only"
+incremental = false
+
+[profile.ci.package."*"]
+opt-level = 0
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
