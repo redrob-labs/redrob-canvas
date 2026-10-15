@@ -69,7 +69,8 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+        # Upstream subtrees under crafts/ are linted by their own projects; we gate only our crates.
+        run: cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked -- -D warnings
 
       - name: Test the workspace
         run: cargo test --workspace --locked
