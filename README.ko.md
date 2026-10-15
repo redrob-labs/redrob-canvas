@@ -1,111 +1,146 @@
-# Redrob Canvas
+# 레드롭 캔버스
 
 [English](./README.md) · **한국어**
 
-Redrob Canvas는 Rust와 Qt Quick으로 만든 크로스플랫폼 에이전틱 그래픽 편집기입니다.
+레드롭 캔버스는 에이전틱 그래픽 편집기입니다. 사진, 벡터, 페이지 레이아웃을 한 창에서 다루고, 세 모드를
+가로지르는 AI 도구 층과 문서를 옆에서 함께 편집하는 에이전트가 있습니다.
 
-redrob-canvas는 UI 포크가 아니라 새로 설계한 제품 구조입니다. Krita와 GIMP는 실행 가능한 기준점으로 커밋에 고정된 채 남아 있고, 검증된 그 동작을 타입이 있는 Rust 커맨드 시스템과 현대적인 QML 경험 뒤로 옮깁니다. 페인팅 동작은 Krita를, 이미지 처리 동작은 GIMP/GEGL을 따르며, 제품 UX와 에이전트 워크플로는 redrob-canvas의 것입니다.
+데스크톱 애플리케이션 하나(`apps/redrob-canvas`, Rust와 egui)에 세 모드가 있고, 각 모드는
+[storytold](https://github.com/storytold)의 ArtCraft 계열 편집기 하나를 통째로 담습니다. 네 저장소를
+`crafts/` 아래 git subtree로 가져와 소스에서 빌드합니다.
+
+| 모드 | 편집기 | 용도 |
+| --- | --- | --- |
+| **Photo** | [PhotoCraft](https://github.com/storytold/photocraft) | 레이어, 마스크, 조정 레이어, 레이어 스타일, 브러시, 문자, 색 관리; 실제 PSD 파일 |
+| **Vector** | [VectorCraft](https://github.com/storytold/vectorcraft) | 패스, 불리언, 패스 위 문자, 그레이디언트, 아트보드; SVG, AI, EPS, PDF, DXF |
+| **Layout** | [DesignCraft](https://github.com/storytold/designcraft) | 마스터 페이지, 이어지는 텍스트 프레임, 하이픈 처리; IDML, PDF, PPTX, EPUB |
+
+셸은 창, 모드 전환(`Ctrl+1` / `Ctrl+2` / `Ctrl+3`, 또는 `--mode photo|vector|layout`), 하나의 설정
+디렉터리(`ai.redrob.canvas`), 그리고 에이전트를 맡습니다. 모드를 바꿔도 각 편집기에 열려 있던 문서는
+그대로 남습니다. 세 편집기가 공유하는 도킹, 색 관리, 인쇄 코드는 네 번째 subtree인
+[craft-libs](https://github.com/storytold/craft-libs)입니다.
+
+## AI 도구와 에이전트
+
+두 층이 특정 모드 안이 아니라 모드 전체를 가로지릅니다.
+
+- **에이전트**(`crates/redrob-agent`): 모델이 타입이 있는 도구 호출로 문서를 편집하고, 각 호출은 적용 전에
+  검토할 수 있는 채팅 패널입니다. **Redrob Code가 필요합니다.** 에이전트는 이 컴퓨터에 하나 있는 공유
+  Redrob Code 데몬(`~/.redrob/run/server.json`, 없으면 `redrob service start`)의
+  `<daemon>/v1/chat/completions`에 OpenAI 호환 스트리밍으로 말하고, 요청마다 `x-redrob-app: canvas`를
+  실어 보냅니다. Redrob 콘솔 키는 데몬이 보관하며, 이 앱은 자체 키를 갖지 않고 콘솔로 직접 가는 경로도
+  없습니다. 로그인은 Redrob Code, Redrob Launcher, 또는 여기서 한 번만 하면 됩니다. Redrob Code가 없으면
+  패널이 그렇게 말하고 [런처 최신 릴리스](https://github.com/redrob-labs/redrob-launcher/releases/latest)
+  링크를 보여 줍니다.
+- **AI 도구**(`crates/redrob-ai`, 0.7에서 진행 중): 인페인트, 아웃페인트, 지우기, 업스케일, 배경 제거,
+  피사체 선택을 앱이 직접 설치해 `127.0.0.1`에서 돌리는 로컬 IOPaint 엔진으로 처리하고, Vector 모드에는
+  벡터화를 더합니다. 모든 것이 이 컴퓨터에서 돌고 어디에도 업로드하지 않습니다.
+
+## 파일 포맷
+
+각 모드가 열고 저장하는 포맷은 그 편집기의 것입니다. 요약하면:
+
+| 모드 | 열기 | 저장 / 내보내기 |
+| --- | --- | --- |
+| Photo | PSD, PSB, `.pcraft`, ORA, KRA, 레이어 TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC(읽기), 카메라 RAW, Affinity(읽기) | `.pcraft`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF(선택 기능) |
+| Vector | `.vectorcraft`, SVG, SVGZ, AI(PDF 호환), EPS, PDF, DXF, EMF/WMF, 래스터 이미지, PSD/PSB(병합 이미지) | `.vectorcraft`, SVG, PDF(PDF/X 포함), AI, EPS, DXF, PNG, JPEG, WebP, PSD, 인쇄, 패키지 |
+| Layout | `.designcraft`, IDML, 배치 자산으로서의 이미지·PDF·벡터 | `.designcraft`, PDF(PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
+
+정본 표는 편집기 자신의 문서입니다: `crafts/photocraft/crates/codecs/README.md`,
+`crafts/vectorcraft/README.md`, `crafts/designcraft/README.md`. 셸이 파일을 어느 모드로 보내는지는
+`docs/formats.md`에 있습니다.
+
+## 빌드
+
+Rust 1.95(`rust-toolchain.toml`이 고정하고 `rustup`이 받아 갑니다). Linux에서는 egui, wgpu, rfd가 링크하는
+X11, Wayland, GL, GTK 개발 헤더가 필요합니다.
+
+```bash
+sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libgtk-3-dev
+cargo build --release -p redrob-canvas
+target/release/redrob-canvas
+```
+
+모든 풀 리퀘스트가 통과해야 하는 게이트를 CI(`.github/workflows/verify-upstream.yml`)가 돌리는 순서대로:
+
+```bash
+scripts/verify-upstream.sh
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+cargo fetch --locked && python3 tools/generate_distribution_artifacts.py --check
+python3 tools/check_design_system.py
+python3 -m unittest discover -s tools/tests -p "test_*.py"
+```
+
+빌드 어디에도 Qt, CMake, Node는 없습니다. 루트 `Cargo.toml`은 `tools/merge_workspaces.py`가 네 subtree의
+보관된 매니페스트(`crafts/*/Cargo.upstream.toml`)에서 **생성**합니다. 파일이 아니라 스크립트를 고치세요.
 
 ## 프로젝트 구조
 
 ```text
-crates/
-  redrob-core/       문서, 레이어, 래스터 엔진, 선택, 커맨드, 히스토리
-  redrob-agent/      Redrob 스트리밍 API, 도구 루프, 승인
-  redrob-ffi/        Qt 호스트가 사용하는 안정 C ABI
-native/qt/            Qt 6 호스트, QObject 모델, 캔버스 브리지
-qml/                  현대적인 Qt Quick 인터페이스
-docs/                 아키텍처, 호환성 표, 고정된 상류 목록
+apps/redrob-canvas/     셸: 창, 모드 전환, 서비스, 에이전트 패널 (egui / eframe)
+crates/redrob-agent/    Redrob Code 클라이언트: 스트리밍 채팅, 도구 루프, 승인
+crates/redrob-ai/       AI 도구 층 (IOPaint 엔진, 벡터화); 진행 중
+crafts/photocraft/      storytold/photocraft  (subtree)  Photo 모드
+crafts/vectorcraft/     storytold/vectorcraft (subtree)  Vector 모드
+crafts/designcraft/     storytold/designcraft (subtree)  Layout 모드
+crafts/craft-libs/      storytold/craft-libs  (subtree)  공유 UI, 색 관리, 인쇄, PDF 크레이트
+installer/              macOS 디스크 이미지와 Windows 설치 파일
+tools/                  워크스페이스 생성기, 고지 생성기, 디자인 시스템 가드, 릴리스 패키징
+docs/                   아키텍처, 포맷, 라이선스, 고정된 상류 목록
 ```
 
-## 아키텍처 규칙
+## 상류
 
-1. QML과 에이전트는 **같은** 타입 커맨드를 제출합니다.
-2. 문서를 바꾸는 모든 커맨드는 트랜잭션이며, 감사 가능하고, 되돌릴 수 있습니다.
-3. 렌더 스레드는 불변 스냅샷만 소비하고 문서 상태를 소유하지 않습니다.
-4. 상류 동작은 커밋으로 고정하고 기능 단위로 추적합니다.
-5. Krita/GIMP 코드는 명시적 어댑터 뒤에서만 통합하며, 상류 UI는 가져오지 않습니다.
-6. 파괴적 작업과 에이전트가 생성한 작업은 미리보기 또는 명시적 커밋 경계를 요구합니다.
+네 편집기는 git subtree로 가져오고 `git subtree pull --squash`로 갱신합니다. 핀은 `upstream-base.json`과
+`docs/upstream-sources.toml`에, 절차는 [UPSTREAM.md](UPSTREAM.md)에 있고, `scripts/verify-upstream.sh`가
+두 핀 파일을 서로, subtree squash 커밋과, GitHub과 대조합니다. 레드롭 캔버스가 더하는 것은 셸, 에이전트,
+AI 층입니다. 편집기 내부를 포크하지 않으므로 상류의 개선은 머지로 들어옵니다.
 
-## 빌드
-
-코어와 프로토콜 검사는 Qt가 필요 없습니다.
-
-```bash
-cargo test --workspace
-```
-
-데스크톱 셸은 Quick, Quick Controls 2, SVG를 포함한 Qt 6.11 이상이 필요합니다.
-
-```bash
-cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release
-cmake --build build/qt
-ctest --test-dir build/qt --output-on-failure
-./build/qt/qt/redrob-canvas
-```
-
-앱은 GIMP, GEGL, Krita 코드를 링크하지 않습니다. 그 동작은 Rust로 다시 구현했습니다. 선택 네이티브 어댑터는 babl과 Little-CMS 2(`REDROB_ENABLE_BABL`, `REDROB_ENABLE_LCMS`, 기본값 OFF)뿐이며, 판단 기준은 언제나 capability 보고서입니다. 헤드리스로 capability만 확인하려면:
-
-```bash
-cmake -S native -B build/adapters -DREDROB_BUILD_QT=OFF
-cmake --build build/adapters
-ctest --test-dir build/adapters --output-on-failure
-```
-
-## 코어 파일 포맷
-
-`redrob-core`는 RRG, PNG, JPEG, 무손실 WebP, OpenRaster, 그리고 의도적으로 제한한 결정적 SVG 부분집합에 대해 내용 기반으로 판별하는 타입 포맷 경계를 제공합니다. ABI v2 호환 심볼 `redrob_editor_import_file`과 `redrob_editor_export_file`이 이 포맷들을 엄격하고 한계가 정해진 JSON 옵션으로 라우팅하고, 실제 적용된 메타데이터와 기계가 읽을 수 있는 경고를 함께 돌려줍니다. 기본 옵션은 표현 손실을 거부합니다. JPEG의 알파 제거는 명시적인 불투명 매트나 불투명이 검증된 이미지를 요구하고, ORA/SVG 어댑터는 지원하지 않는 의미를 추측하지 않고 거부합니다. 기존 `save_project`/`load_project`, `import_png`/`export_png`와 그 C ABI 래퍼는 호환 동작을 유지한 채 그대로 사용할 수 있습니다.
-
-Qt/QML 셸은 편집 가능한 RRG 프로젝트 정체성과 교환 포맷을 분리합니다. 위쪽 바의 Open, Save, Save As는 RRG 전용이고, Import와 Export(현재 프레임)는 PNG, JPG/JPEG, 무손실 WebP, ORA, 제한된 SVG만 노출합니다. Import는 프로젝트 경로를 지우고, Export는 경로를 바꾸지도 타임라인을 이동하지도 않으며, 출력 게시는 `QSaveFile`을 사용하고, 손실 허용·JPEG 품질·불투명 매트 컨트롤이 명시적이라 조용한 품질 저하가 일어나지 않습니다. 정확한 경로와 한계는 `docs/formats.md`를 보세요.
-
-## Redrob
-
-**Redrob Code가 필요합니다.** 앱 안의 에이전트는 이 컴퓨터에 하나 있는 공유 Redrob Code 데몬(`~/.redrob/run/server.json`; 없으면 `redrob service start`로 띄움)의 `<daemon>/v1/chat/completions`에 말합니다. OpenAI 호환 스트리밍이고 기본 모델은 `auto`, 함수 도구를 지원합니다. 모든 요청에 데몬 자체의 인증, `x-redrob-app: canvas`, 그리고 문서 id가 `x-redrob-session`으로 실립니다. Redrob 콘솔 키는 데몬이 보관하고 데몬이 그 키로 콘솔을 부릅니다. 이 앱은 자체 키를 갖지 않고, 채팅을 위해 콘솔로 직접 가는 경로도 없습니다 -- 마스킹이 적용되는 곳이 한 곳이 되도록. 로그인은 한 번만: Redrob Code에서, Redrob Launcher에서, 또는 여기서. 에이전트 패널의 "Connect to Redrob console"은 콘솔의 디바이스 인증 흐름을 돌리고 승인된 키를 엔진에 넘깁니다(`PUT /auth/redrob`). 패널은 엔진이 로그인돼 있는지 `GET /provider`에서 읽고, 엔진이 쓰는 키가 런처의 것이면 "Redrob Launcher로 로그인됨"이라고 말합니다. Redrob Code가 없으면 패널은 "Redrob Code is not installed. Install it with Redrob Launcher."와 [런처 최신 릴리스](https://github.com/redrob-labs/redrob-launcher/releases/latest) 링크를 보이고, 결정적 로컬 제안 모드가 대신 돕니다. 이전 버전의 이 앱이 자기 설정 폴더에 저장했던 키는 한 번 엔진에 넘기고 지웁니다. 데몬 레코드와 바이너리는 `redrob-engine-client`(redrob-code `docs/LOCAL-ENGINE-API.md` 3절)가 찾고, `REDROB_RUN_DIR`와 `REDROB_CODE_BIN`은 테스트를 비공개 데몬으로 향하게 합니다.
-
-## 배포 산출물
-
-락파일 기반 고지 목록과 소스 제공 문서는 오직 `Cargo.lock`, 오프라인으로 고정된 Cargo 메타데이터, 로컬 크레이트 소스/라이선스 파일에서만 생성됩니다. 대응 소스 아카이브에는 락파일이 선택한 모든 레지스트리 패키지의 체크섬 검증 사본, git으로 고정된 모든 패키지를 락파일이 지정한 커밋에서 검증한 체크아웃 소스(저장소 루트의 라이선스 텍스트 포함), 그리고 오프라인 Cargo 소스 치환 설정이 들어 있습니다.
-
-```bash
-python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF
-cmake --build build/qt --target redrob_source_bundle
-cmake --install build/qt --prefix /desired/prefix
-```
-
-`redrob_distribution_check`는 독립 CMake 타깃으로도 실행할 수 있습니다. 설치 시 결정적 검사를 다시 돌리며 소스 번들, `THIRD_PARTY_NOTICES.md`, `SOURCE_OFFER.md`를 요구합니다. 의존성 상태 정책은 `docs/licensing.md`를 보세요.
+Copyright (c) 2026 ArtCraft Team and the PhotoCraft, VectorCraft, DesignCraft and craft-libs
+contributors, MIT OR Apache-2.0. 각 편집기의 라이선스 파일과 NOTICE는 `crafts/<name>/` 아래 그대로 있고
+[NOTICE](NOTICE)에 원문대로 실려 있습니다. `crafts/*/docs/brand/`의 ArtCraft 이름과 로고는 ArtCraft Team의
+상표이며 오픈 소스가 아니고, 여기서는 쓰지 않습니다.
 
 ## 로드맵
 
-앞으로 무엇을 어떤 순서로 만드는지는 [ROADMAP.md](ROADMAP.md)에 있습니다.
+앞으로 무엇을 어떤 순서로 만드는지는 [ROADMAP.md](ROADMAP.md)에, 변경 내역은 [CHANGELOG.md](CHANGELOG.md)에
+있습니다.
 
 ## 릴리스
 
-`main`에 `vMAJOR.MINOR.PATCH` 태그를 푸시한 뒤 `gh workflow run release.yml --ref main -f tag=vMAJOR.MINOR.PATCH`를 실행합니다. 워크플로(`.github/workflows/release.yml`)는 태그를 `origin/main`·`Cargo.toml`·체인지로그와 대조하고, 모든 플랫폼을 GitHub 러너에서 `aqtinstall`의 Qt 6.11.2로 빌드·테스트한 다음, macOS는 조직의 Developer ID로 서명·공증하고, Windows는 잡의 OpenID Connect 로그인으로 Azure Artifact Signing에서 서명합니다(인증서 파일도 클라이언트 시크릿도 없습니다. 앱을 먼저 서명한 뒤 zip으로 묶고, 제거 프로그램, 설치 파일 순으로 서명합니다). 그 결과물은 공유 redrob-labs 발행 잡(`redrob-labs/.github/.github/workflows/release-publish.yml`)이 받아 `SHA256SUMS.txt`와 `redrob-launcher.json`을 쓰고 릴리스를 latest로 **발행**합니다. `gh workflow run release.yml --ref <branch> -f dry_run=true`는 지정한 브랜치를 빌드·서명만 하고 아무것도 발행하지 않습니다. 풀 리퀘스트는 공유 gitflow 규칙(`redrob-labs/.github/.github/workflows/gitflow.yml`)이 지킵니다: 브랜치 이름은 조직 공통 타입 목록의 `<type>/<slug>`이고, `main`은 `develop`에 포함돼 있어야 합니다. `tools/release/`의 로컬 빌드 스크립트는 우리 기계에서 빌드를 리허설하는 용도로 남아 있으며 릴리스 경로는 아닙니다.
+`main`에 `vMAJOR.MINOR.PATCH` 태그를 푸시한 뒤 `gh workflow run release.yml --ref main -f tag=vMAJOR.MINOR.PATCH`를
+실행합니다. 워크플로(`.github/workflows/release.yml`)는 태그를 `origin/main`, `Cargo.toml`, 체인지로그와
+대조하고 모든 게이트를 돌린 다음, 플랫폼마다 `cargo build --release`로 `redrob-canvas`를 빌드하고, macOS는
+조직의 Developer ID로 서명·공증하고, Windows는 잡의 OpenID Connect 로그인으로 Azure Artifact Signing에서
+서명합니다(실행 파일을 zip 전에, 이어서 제거 프로그램, 설치 파일 순으로). 결과물은 공유 redrob-labs 발행
+잡(`redrob-labs/.github/.github/workflows/release-publish.yml`)이 받아 `SHA256SUMS.txt`와
+`redrob-launcher.json`을 쓰고 릴리스를 latest로 발행합니다. `-f dry_run=true`는 지정한 브랜치를 빌드·서명만
+하고 아무것도 발행하지 않습니다. 어느 플랫폼을 빌드하는지는 `tools/release_matrix.py`가 정하며, Windows x64는
+저장소 변수 `WINDOWS_SIGNING_READY`가 `"true"`일 때만 빌드하고 서명 없이는 절대 내보내지 않습니다.
 
-어떤 플랫폼을 빌드하는지는 `tools/release_matrix.py`가 결정하고, 검증 잡이 요구하는 목록과 릴리스 노트가 주장하는 목록도 같은 리스트에서 나옵니다 — 그래서 노트가 빌드되지 않은 바이너리를 약속할 수 없습니다. **Windows x64는 리포지터리 변수 `WINDOWS_SIGNING_READY`가 `"true"`가 된 뒤에만 빌드됩니다**. 그때까지는 서명 없는 실행 파일을 내보내는 대신 실행 로그에 이유를 남기고 건너뜁니다. Linux x86_64와 macOS arm64는 항상 빌드됩니다.
-
-Qt 핀은 최신 브랜치가 아니라 정착된 브랜치의 최신 패치입니다: 6.12.0은 릴리스 며칠 뒤에도 `download.qt.io`에 Windows 아카이브 체크섬이 없어 모든 플랫폼 레그가 실패했습니다. `redrob_qml_restricted_lint`는 qmllint에 `--only-explicit-categories` 지원 여부를 물어보고 있을 때만 사용하므로, Qt 6.12 이상에서는 더 엄격한 린트가 적용되면서도 그것이 빌드 필수 조건이 되지는 않습니다.
-
-| 플랫폼 | 빌드 | 서명 |
+| 플랫폼 | 산출물 | 서명 |
 | --- | --- | --- |
-| Linux x86_64 | Ninja, Qt 동봉(`tools/release/bundle_linux_qt.py`), `.deb`와 `.tar.gz` | 없음 — Linux에는 코드 서명 대상이 없으므로 공개된 SHA-256 합계로 검증 |
-| macOS arm64 (Apple 실리콘) | Ninja, `macdeployqt`, `.dmg`(`installer/macos/`)와 `.zip` | Developer ID + hardened runtime, App Store Connect API 키로 공증 후 staple — 앱과 디스크 이미지 각각, `spctl`로 Gatekeeper 판정 확인 |
-| Windows x64 | Ninja + MSVC, `windeployqt`, `-setup.exe`(`installer/windows/`)와 `-portable.zip` | `redrob-labs/.github/actions/sign-windows`로 Azure Artifact Signing(OIDC): 앱·제거 프로그램·설치 파일에 Authenticode SHA-256 + RFC 3161 타임스탬프, `signtool verify /pa`가 Valid이고 서명자 CN이 `McKinley Rice, Inc.`여야 함 |
+| Linux x86_64 | `.tar.gz`, `.deb`(`tools/release/make_deb.py`) | 없음. 공개된 SHA-256 합계로 검증 |
+| macOS arm64(Apple 실리콘) | `.dmg`(`installer/macos/`), `.zip` | Developer ID, hardened runtime, 공증 후 staple. 앱과 디스크 이미지 각각 |
+| Windows x64 | `-setup.exe`(`installer/windows/`), `-portable.zip` | 앱, 제거 프로그램, 설치 파일에 Azure Artifact Signing(OIDC) |
 
 ### 설치
 
 | 플랫폼 | 받을 파일 | 설치 | 제거 |
 | --- | --- | --- | --- |
-| Windows | `…-windows-x64-setup.exe` | 실행합니다. 사용자별 설치라 관리자 권한이 필요 없고, 시작 메뉴와 바탕화면에 바로가기가 생깁니다 | 설정 > 앱 > Redrob Canvas, 또는 설치 폴더의 `Uninstall Redrob Canvas.exe` |
+| Windows | `…-windows-x64-setup.exe` | 실행합니다. 사용자별 설치라 관리자 권한이 필요 없습니다 | 설정 > 앱 > Redrob Canvas |
 | macOS | `…-macos-arm64.dmg` | 열어서 Redrob Canvas를 Applications로 끌어 놓습니다 | 디스크 이미지의 `Uninstall Redrob Canvas`를 엽니다 |
 | Linux | `…-linux-x86_64.deb` | `sudo apt install ./redrob-canvas-…-linux-x86_64.deb` | `sudo apt remove redrob-canvas` |
 
-두 제거 프로그램 모두 먼저 묻고, 지우라고 하지 않으면 설정은 남깁니다. 실행 중인 Canvas를 닫지 않습니다. 손으로 풀고 싶은 분을 위해 `-portable.zip`과 `.tar.gz`도 계속 올리고, Redrob Launcher는 Windows에서 그 `-portable.zip`을, macOS에서 `.dmg`를, Linux에서 `.tar.gz`를 설치합니다.
-
-macOS 빌드는 arm64 전용이고 인텔 Mac은 지원하지 않습니다. 서명 자료는 org 시크릿에서 오고, 자격 증명이 없으면 서명 없는 산출물을 발행하는 대신 빌드를 실패시킵니다.
-
-이 프로젝트는 GPL-3.0-or-later이므로 대응 소스 없이 바이너리를 배포하는 것은 누락이 아니라 **라이선스 위반**입니다. 모든 아카이브가 바이너리와 함께 `LICENSE`, `COPYRIGHT`, `THIRD_PARTY_NOTICES.md`, `SOURCE_OFFER.md`를 담고, 대응 소스 아카이브가 릴리스에 첨부되며, 그 실행이 빌드한 모든 플랫폼의 아카이브와 위 라이선스 자산이 전부 있지 않으면 별도 잡이 릴리스를 실패시킵니다.
+Redrob Launcher는 Windows에서 `-portable.zip`을, macOS에서 `.dmg`를, Linux에서 `.tar.gz`를 설치합니다.
+자산 이름은 `redrob-canvas-<version>-<os>-<arch>[-portable].<ext>` 꼴입니다. 모든 아카이브가 바이너리
+옆에 `LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`, `NOTICE`, `THIRD_PARTY_NOTICES.md`를 담습니다.
 
 ## 라이선스
 
-GPL-3.0-or-later. `LICENSE`는 4조가 요구하는 GNU General Public License 버전 3 전문이고, `COPYRIGHT`는 이 프로젝트의 저작권 표시와 보증 부인을 담습니다. `docs/licensing.md`, `THIRD_PARTY_NOTICES.md`, `SOURCE_OFFER.md`도 함께 보세요.
+MIT 또는 Apache-2.0 중 선택: [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE),
+[COPYRIGHT](COPYRIGHT). 제3자 귀속은 [NOTICE](NOTICE), [UPSTREAM_NOTICES.md](UPSTREAM_NOTICES.md),
+생성되는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에, 정책은 [docs/licensing.md](docs/licensing.md)에
+있습니다.

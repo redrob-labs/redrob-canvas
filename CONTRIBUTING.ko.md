@@ -1,135 +1,127 @@
-# 기여 가이드
+# 기여하기
 
 [English](./CONTRIBUTING.md) · **한국어**
 
-도와주셔서 감사합니다. 이 문서는 저장소의 작업 규약입니다. 브랜치를 어떻게 이름 짓는지, 머지
-전에 무엇이 초록불이어야 하는지, 그리고 이 저장소를 특별하게 만드는 한 가지를 다룹니다.
+도와주셔서 감사합니다. 이 문서는 이 저장소의 작업 규약입니다: 브랜치 이름, 머지 전에 초록이어야 하는 것,
+그리고 이 저장소를 특별하게 만드는 한 가지. 조직 공통 규약인
+[redrob-labs/.github CONTRIBUTING.md](https://github.com/redrob-labs/.github/blob/main/CONTRIBUTING.md)와
+[FORKS.md](https://github.com/redrob-labs/.github/blob/main/FORKS.md)도 함께 적용되며, 둘이 다를 때는
+자기 빌드를 아는 이 문서가 우선합니다.
 
-## 무엇이고, 무엇이 아닌가
+## 이것은 무엇이고, 무엇이 아닌가
 
-레드롭 캔버스는 **UI 포크가 아니라 새로운 제품 아키텍처입니다.** Krita와 GIMP는 동작의 실행 가능한
-기준으로 핀되어 남아 있고, 그 동작은 타입이 있는 Rust 커맨드 시스템과 QML 표면 뒤로 옮겨집니다.
+레드롭 캔버스는 **세 상류 편집기를 감싸는 셸이고, 그 어느 것의 포크도 아닙니다.** PhotoCraft, VectorCraft,
+DesignCraft(그리고 공유 craft-libs)는 `crafts/` 아래 git subtree로 통째로 들어와 Photo, Vector, Layout
+모드로 돕니다. 레드롭의 코드는 셸(`apps/redrob-canvas`), 에이전트(`crates/redrob-agent`), AI 도구
+층(`crates/redrob-ai`)입니다.
 
-책임 분담은 반드시 분명히 지켜야 합니다.
+책임의 경계를 분명히 해 두어야 합니다.
 
-- **페인팅 동작은 Krita를 따릅니다.** 둘이 다르면 Krita가 맞고 버그는 우리 것입니다.
-- **이미지 처리는 GIMP와 GEGL을 따릅니다.**
-- **제품 UX와 에이전트 워크플로는 우리 것이고**, 둘 중 어느 쪽에도 빚지지 않습니다.
+- **편집기의 동작은 그 상류의 것입니다.** PSD가 잘못 열리면 PhotoCraft의 버그이니
+  [storytold/photocraft](https://github.com/storytold/photocraft)에서 고치고, 그 수정은
+  `scripts/fetch-upstream.sh`로 여기에 돌아옵니다. `crafts/` 아래 파일을 직접 고치지 마세요. 다음 pull에서
+  충돌이 되고, 다음 squash에서 사라집니다.
+- **셸, 에이전트, AI 층, 설치 프로그램, 그리고 이 저장소의 절차는 우리 것**이며, 그곳의 풀 리퀘스트는
+  상류에 아무것도 빚지지 않습니다.
 
-그래서 브러시 동작을 바꾸는 pull request는 어느 상류를 기준으로 확인했는지 밝혀야 합니다.
-"이게 더 느낌이 좋다"는 핀된 기준에서 벗어날 이유가 되지 않습니다. 기준을 실제로 측정해서 다르다는
-것을 확인한 것이 이유가 됩니다.
+그러므로 편집기 동작을 바꾸는 풀 리퀘스트는 두 가지입니다: 상류의 변경, 그리고 여기의 핀 올리기.
 
 ## 브랜치 모델
 
-오래 사는 브랜치는 둘입니다. `develop`은 작업이 들어오는 곳이고, `main`은 릴리스된 상태입니다.
+오래 사는 브랜치는 둘입니다. `develop`에 작업이 모이고, `main`은 릴리스된 상태입니다.
 
-- **`develop`**은 기본 브랜치이자 통합 브랜치입니다. 여기서 작업 브랜치를 떼고, pull request도 여기로
-  다시 엽니다. 저장소를 클론하면 `develop`에 있습니다.
-- **`main`**은 릴리스된 상태입니다. `release/*`와 `hotfix/*` 브랜치에서 온 pull request만 받고,
-  릴리스 태그는 여기서 뜹니다. 그 밖의 어떤 것도 여기로 머지되지 않습니다.
-- **작업 브랜치**는 `develop`에서 뗀 `<type>/<short-slug>` 형식입니다. 예: `fix/svg-namespace`, `feat/layer-blend`. 타입은 `feat`,
-  `fix`, `chore`, `docs`, `test`, `refactor`, `perf`입니다.
-- **머지는 squash만 합니다**, 그리고 머지할 때 브랜치는 삭제됩니다. pull request 하나가 커밋 하나가
-  되므로 `git log develop`은 그래프가 아니라 변경 목록으로 읽힙니다. squash 커밋의 본문은 작업 중에
-  쓴 메시지들을 이어붙인 것이 아니라 pull request 본문입니다.
+- **`develop`**은 기본 브랜치이자 통합 브랜치입니다. 작업 브랜치를 여기서 잘라 다시 여기로 풀 리퀘스트를
+  엽니다.
+- **`main`**은 릴리스된 상태입니다. `release/*`와 `hotfix/*` 브랜치의 풀 리퀘스트만 받고, 릴리스 태그는
+  여기서 찍습니다.
+- **작업 브랜치**는 `develop`에서 자른 `<type>/<short-slug>`입니다. 예: `fix/mode-switch-focus`,
+  `feat/ai-panel`. 타입 목록은 조직 공통의 한 목록이며 공유 `gitflow.yml`이 검사합니다:
+  `feat fix chore docs test refactor perf ci build sync hotfix release`. 브랜치 이름은 변경이
+  무엇인지를 말하고 무엇이 만들었는지는 말하지 않으므로, 도구나 에이전트 접두사는 실패합니다.
+- 작업 브랜치의 **머지는 squash만** 쓰고 머지 시 브랜치를 지웁니다. **상류 동기화
+  (`sync/upstream-<name>-<sha7>`)와 `main` 승격은 merge commit**입니다. 동기화를 squash하면 subtree의
+  merge base가 사라져 다음 pull이 이미 가져온 작업을 다시 재생합니다.
 
-이 목록은 리뷰하는 사람에게 맡기지 않고 `.github/workflows/gitflow.yml`이 검사합니다. **branch name
-follows the convention** 잡은 승격이나 back-merge로 pull request에 들어오는 `develop`과 `main`은 통과
-시키고, 그 밖에는 `<type>/<short-slug>` 형식에 타입이 `feat`, `fix`, `chore`, `docs`, `test`,
-`refactor`, `perf`, `release`, `hotfix` 중 하나여야 합니다. 브랜치 이름은 무엇이 그것을 만들었는지가
-아니라 변경이 무엇인지를 말하므로, `kiro/`처럼 도구나 에이전트 이름을 접두로 쓰면 실패합니다. 두 번째
-잡은 `main`으로의 푸시에서 돌고, `main`이 `develop`에 없는 커밋을 갖고 있는 동안 실패합니다. 그
-back-merge가 바로 건너뛰어지는 단계이고, 그러면 기본 브랜치에서 뗀 브랜치가 릴리스된 수정을 조용히
-빠뜨리기 때문입니다.
+두 브랜치는 GitHub 룰셋이 보호합니다: 직접 푸시 금지, force push 금지, 필수 체크, 리뷰 스레드 해결.
+릴리스 워크플로는 `origin/main`에서 도달할 수 없는 커밋의 태그를 빌드하지 않으므로, `develop`에서 바로
+태그를 찍으면 배포되는 대신 실패합니다.
 
-두 브랜치 모두 이 문서가 아니라 GitHub ruleset이 강제합니다.
-
-- 직접 푸시 금지 — 모든 변경은 pull request로 들어옵니다;
-- force push 금지, 브랜치 삭제 금지;
-- linear history;
-- 필수 상태 검사가 통과해야 합니다 — 가장 최신 팁을 기준으로 통과할 필요는 없으므로, 봇 업데이트가
-  줄지어 있어도 하나씩 리베이스하고 다시 돌릴 필요가 없습니다;
-- 리뷰 스레드는 머지 전에 해결되어야 합니다.
-
-ruleset은 pull request가 *어느* 브랜치에서 왔는지를 표현할 수 없으므로, "`release/*`와 `hotfix/*`만
-`main`으로 머지된다"는 이 문서가 담고 리뷰어가 지키는 관례입니다. 그중 한 부분은 기계가 검사합니다.
-릴리스 워크플로는 커밋이 `origin/main`에서 도달할 수 없는 태그의 빌드를 거부하므로, `develop`에서
-바로 태그를 뜨면 출시되는 대신 실패합니다.
-
-### 릴리스하기
+### 릴리스
 
 ```bash
 git switch develop && git pull
-git switch -c release/v0.2.0
-# bump the version, update the changelog, run the release check
-# open a pull request into main and merge it, then tag main:
+git switch -c release/v0.7.0
+# tools/merge_workspaces.py에서 버전을 올리고(Cargo.toml을 씀) 실행, CHANGELOG.md 갱신
+# main으로 풀 리퀘스트를 열어 merge commit으로 머지한 뒤 main에 태그:
 git switch main && git pull
-git tag -a v0.2.0 -m "Redrob Canvas v0.2.0"
-git push origin v0.2.0
-# bring main's release commit back so develop does not fall behind:
-git switch -c chore/sync-main-to-develop main
-# open a pull request into develop
+git tag -a v0.7.0 -m "Redrob Canvas v0.7.0"
+git push origin v0.7.0
+gh workflow run release.yml --ref main -f tag=v0.7.0
 ```
 
-핫픽스는 같은 모양인데 `hotfix/*`를 `develop`이 아니라 `main`에서 떼고, 양쪽으로 머지합니다.
+핫픽스는 `develop` 대신 `main`에서 자른 `hotfix/*`로 같은 모양이며 양쪽에 머지합니다. `main`을 `develop`에
+되돌리는 백머지는 공유 gitflow 잡이 엽니다.
 
-저장소를 포크하고, 브랜치를 자기 포크에 푸시한 뒤, 거기서 pull request를 엽니다. 기여하려면 쓰기 권한이
-필요하지 않고, 포크에서 온 pull request는 저장소 시크릿 없이 CI를 돕니다.
+저장소를 포크하고 브랜치를 포크에 푸시한 뒤 거기서 풀 리퀘스트를 여세요. 기여에 쓰기 권한은 필요 없고,
+포크의 풀 리퀘스트도 저장소 시크릿 없이 CI를 돕니다.
 
-## 매일 하는 일
+## 일상 작업
 
 ```bash
+export PATH="$HOME/.cargo/bin:$PATH"        # rust-toolchain.toml이 1.95.0을 고릅니다
 git switch develop && git pull
 git switch -c feat/short-description
 
+scripts/verify-upstream.sh
 cargo fmt --all
-cargo clippy --all-targets -- -D warnings
-cargo test --workspace
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+python3 tools/check_design_system.py
+python3 -m unittest discover -s tools/tests -p "test_*.py"
 
-# open a pull request into develop
+# develop으로 풀 리퀘스트
 ```
 
-커맨드는 `crates/redrob-core`의 타입이 있는 커맨드 시스템을 거칩니다. 문서를 직접 변경하는 QML 표면은
-이 아키텍처가 막으려고 존재하는 바로 그것입니다. history를 우회하므로 undo가 조용히 그 변경을 다루지
-않게 됩니다.
+루트 `Cargo.toml`은 `tools/merge_workspaces.py`가 생성합니다. 스크립트를 고치고 실행해 둘을 함께 커밋하세요.
+`Cargo.lock`이 움직였으면 `cargo fetch --locked` 뒤 `python3 tools/generate_distribution_artifacts.py --generate`를
+돌려 `THIRD_PARTY_NOTICES.md`를 커밋합니다.
+
+셸은 vendoring된 디자인 시스템 토큰(`third_party/redrob-ui/`)으로 그립니다. `apps/redrob-canvas/src`의 hex 색
+리터럴은 문서 색으로 표시하지 않으면 가드에서 실패합니다.
 
 ### 커밋
 
-제목은 명령형으로 씁니다. 본문에는 _왜_를 적고, 변경이 상류 기준을 따른 것이면 어느 버전을 기준으로
-확인했는지 밝힙니다.
+제목은 명령형, 소문자, 관례적 접두사. 본문에는 _왜_를 씁니다. 어디에도 em dash를 쓰지 않습니다.
 
 ## CI가 검사하는 것
 
-`.github/workflows/verify-upstream.yml`은 모든 pull request와 `main`, `develop`으로의 푸시에서 돕니다.
-`permissions: contents: read`를 선언하고 시크릿을 쓰지 않으므로, 포크에서 온 pull request도 이 저장소의
-브랜치에서 온 것과 같은 실행을 받습니다. 잡은 셋이고, 모두 머지 전에 필수입니다.
+`.github/workflows/verify-upstream.yml`은 모든 풀 리퀘스트와 `main`, `develop` 푸시에 돕니다.
+`permissions: contents: read`를 선언하고 시크릿을 쓰지 않으므로, 포크의 풀 리퀘스트도 같은 검사를 받습니다.
 
-| 검사 | 무엇을 단정하는가 |
+| 체크 | 확인하는 것 |
 | --- | --- |
-| **상류 핀이 형식에 맞고 도달 가능한가** | `docs/upstream-sources.toml`의 핀이 파싱되고, 상류에서 해석되며, `upstream/`은 여전히 커밋될 수 없다 |
-| **Rust 워크스페이스** | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --workspace --locked` |
-| **배포 산출물이 최신인가** | `tools/generate_distribution_artifacts.py --check` — 생성된 `THIRD_PARTY_NOTICES.md`와 `SOURCE_OFFER.md`가 트리와 일치한다 |
+| **Upstream pins are well-formed and reachable** | `upstream-base.json`과 `docs/upstream-sources.toml`이 서로, subtree squash 커밋과, GitHub과 일치; 모든 `code` 핀이 허용적 라이선스; 귀속 문자열이 온전함; `crafts/` 밖에서 ArtCraft 브랜드 자산을 건드리지 않음 |
+| **Rust workspace** | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --workspace --locked`, 셸의 릴리스 빌드 링크 |
+| **Distribution artifacts are current** | 생성된 `THIRD_PARTY_NOTICES.md`가 `Cargo.lock`과 일치; 디자인 시스템 가드; 도구 테스트 |
+| **Rust security advisories** | 커밋된 락파일에 대한 `cargo audit` |
 
-핀 잡은 "Krita를 따른다"를 주장이 아니라 검사 가능한 진술로 유지해 주는 것입니다. 이 잡은 의도적으로
-753 MB의 상류 트리를 **내려받지 않습니다**.
+배포 잡은 귀속 게이트입니다. 모든 아카이브가 `LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`, `NOTICE`,
+`THIRD_PARTY_NOTICES.md`를 담으므로, 오래된 고지 파일은 받는 이에게 한 약속의 결함입니다. 생성기는 의도적으로
+`--locked --offline`으로 Cargo 메타데이터를 읽으니, 캐시가 비어 있으면 먼저 `cargo fetch --locked`를 돌리세요.
 
-배포 잡은 정돈 게이트가 아니라 라이선스 게이트입니다. 이 프로젝트는 GPL-3.0-or-later이고 모든 설치본이
-고지와 대응 소스 아카이브를 함께 배포하므로, 그 둘이 낡아 있으면 컴플라이언스 결함입니다. 의존성,
-아카이브 이름, `LICENSE`, `COPYRIGHT`를 바꾸면
-`python3 tools/generate_distribution_artifacts.py --generate --gegl OFF --krita OFF`를 다시 돌리고 결과를
-커밋합니다. 생성기는 의도적으로 `--locked --offline`으로 Cargo 메타데이터를 읽습니다 — 그 오프라인성은
-고지 자체에 단정되어 있습니다 — 그러므로 캐시가 비어 있으면 먼저 `cargo fetch --locked`를 돌립니다.
+## 의존성 갱신
 
-## 의존성 업데이트
+Dependabot **버전 갱신은 꺼져 있습니다**. 풀 리퀘스트 대기열이 계속 쌓이고 각각 CI를 돌려야 해서, 이 저장소에서는
+잡아내는 것보다 비용이 컸습니다. 두 가지가 그 자리를 대신합니다.
 
-Dependabot **버전 업데이트는 꺼져 있습니다**. 상시로 pull request 대기열을 만들고 각각 CI를 한 번씩
-돌려야 했는데, 이 저장소에서는 그 비용이 잡아내는 것보다 컸습니다. 두 가지가 그 자리를 대신합니다.
+- **Dependabot 보안 갱신은 켜져 있습니다.** 알려진 취약점이 있는 의존성은 여전히 자동으로 풀 리퀘스트가 열립니다.
+- **보안 공지 잡이 모든 풀 리퀘스트를 막습니다.** 커밋된 락파일에 `cargo audit`을 돌리므로, 누가 경고를 읽지
+  않았더라도 취약한 의존성은 머지되지 않습니다.
 
-- **Dependabot 보안 업데이트는 켜져 있습니다.** 알려진 취약점이 있는 의존성에 대해서는 여전히
-  pull request가 자동으로 열립니다. 사람을 방해할 가치가 있는 쪽은 이것입니다.
-- **advisory 잡이 모든 pull request를 막습니다.** `cargo audit`이 커밋된 lockfile을 검사하므로,
-  아무도 알림을 읽지 않아도 취약한 의존성은 머지되지 않습니다. 보안 업데이트는 알림이고, 이것이 통제입니다.
+대부분의 의존성은 네 subtree의 매니페스트를 통해 들어오고 subtree를 pull할 때 움직입니다. 우리 자신의 버전 올리기는
+의도적으로 합니다. 지금 하는 변경에 필요한 것만, 같은 풀 리퀘스트에서, 본문에 이유를 적어서.
 
-그래서 일상적인 버전 올리기는 의도적으로 합니다. 지금 하는 변경에 필요한 것만 같은 pull request에서
-올리고, 이유를 본문에 적으세요. 관련 없는 버전 변경을 기능 브랜치에 쓸어 담지 않습니다.
+## 기여물의 라이선스
+
+기여하면 그 작업이 `LICENSE-MIT`와 `LICENSE-APACHE`의 라이선스, 즉 MIT OR Apache-2.0으로 공개되는 데 동의하는
+것입니다. CLA도 sign-off 요구도 없습니다. 상류의 저작권 고지는 절대 바꾸지 않습니다. 우리 고지는 그 옆에 둡니다.

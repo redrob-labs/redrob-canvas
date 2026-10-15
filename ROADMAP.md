@@ -1,64 +1,69 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # Roadmap
 
-Redrob Canvas aims to be the image editor a Photoshop or Illustrator user can open and start using
-on day one: the same layout, the same shortcuts, and their own files.
+Redrob Canvas aims to be the graphics editor a Photoshop, Illustrator or InDesign user can open and
+start using on day one: their own files, the habits they already have, and an agent that does the
+tedious parts beside them.
 
 This roadmap is ordered by that goal. Each milestone is a release. Detailed work lives in
 [GitHub Issues](https://github.com/redrob-labs/redrob-canvas/issues), grouped by milestone. Dates
 are not promised; a milestone ships when its items are done.
 
-## Where we are (0.5.x)
+## Where we are (0.7, in progress)
 
-- Photoshop-style layout, plus Photoshop and Illustrator shortcut sets chosen on first launch.
-- Layers with masks, groups, blend modes, locks, thumbnails, adjustments; Channels and Paths panels.
-- Opens and saves PSD, KRA, XCF and ORA with their layer stacks.
-- Brushes with ABR/GBR tips, perspective, puppet warp and liquify, outline fonts.
-- AI tools (inpaint, outpaint, select subject, remove background) through a local IOPaint engine.
-- A chat agent that edits the document with reviewable steps.
-- Installers for Windows, macOS (Apple silicon) and Linux.
+0.7 is the rewrite. The Qt shell and the GPL-era core that ported Krita and GIMP behaviour are gone;
+in their place one egui window hosts three complete editors from the ArtCraft family as modes, taken
+as git subtrees and updated by merge rather than reimplemented:
 
-## 0.6 — Your PSD comes back intact
+- **Photo** mode (PhotoCraft): layers, masks, adjustment layers, layer styles, brushes, type,
+  selections, channels, paths, colour management; PSD/PSB, ORA, KRA, layered TIFF, RAW and the rest.
+- **Vector** mode (VectorCraft): paths, booleans, text on paths, gradients, artboards; SVG, AI, EPS,
+  PDF, DXF.
+- **Layout** mode (DesignCraft): master pages, threaded text, hyphenation; IDML, PDF, PPTX, EPUB.
+- The shell: one window, `Ctrl+1/2/3` mode switch, one config directory, documents preserved across
+  switches.
+- The project is MIT OR Apache-2.0, the upstream pins follow the organisation shape, and CI and the
+  release pipeline build without Qt.
 
-Opening a file is not enough; a round trip must not lose work.
+Still to land inside 0.7:
 
-- PSD export writes layer masks (#150).
-- PSD adjustment layers are applied on import, not only kept (#151).
-- Layer styles stay live and editable (today they are baked into pixels), and round-trip via PSD
-  (#152).
-- View a single colour channel on the canvas (#142).
-- Pen tool draws work paths into the Paths panel (#143).
+- `crates/redrob-ai`: the AI tools layer (inpaint, outpaint, erase, upscale, remove background, select
+  subject through a local IOPaint engine; vectorize), ported from the 0.5 implementation, with its
+  panel in the shell's right slot reaching whichever mode is active.
+- The agent panel in the shell, with a tool set that spans the three modes.
+- Open-by-extension routing of a file to its mode (`docs/formats.md`).
 
-## 0.7 — Photographers
+## 0.8: habits
 
-- 16-bit and 32-bit float documents (today everything is 8-bit, and deeper files are narrowed) (#153).
-- Missing Photoshop keys: Quick Mask (`Q`), screen modes (`F`), Path Selection (`A`) (#144).
+- Shell-level keymap chooser (Photoshop, Illustrator, InDesign sets) applied over each mode's own.
+- Send-to: a selection or an artboard from one mode opened or placed in another without an export
+  dialog in between.
+- The editors' MCP/control servers reachable through the shell, so the agent and outside tools drive
+  all three the way each upstream binary allows.
 
-## 0.8 — Illustrator basics
+## 0.9: trust and reach
 
-- Direct Selection and anchor-point editing (`A`, `Shift+C`) (#154).
-- Path booleans and compound paths (`Ctrl+8`), outline stroke, join (`Ctrl+J`) (#155).
-- Remaining Illustrator keys from #144.
+- AI engine hardening: per-session token, no orphaned engine after a crash, clear install and model
+  download progress.
+- Linux builds that run on older distributions; a Linux aarch64 leg.
+- macOS build for Intel Macs, or a clear statement that there will not be one.
 
-## 0.9 — Trust and reach
+## 1.0: stable
 
-- AI engine: per-session token (#146) and no orphaned engine after a crash (#145).
-- Linux builds that run on older distributions (#147).
-- macOS build for Intel Macs (#148).
-
-## 1.0 — Stable
-
-- The `.rrg` project format is frozen, with a migration promise for older files (#156).
-- [docs/compatibility.md](docs/compatibility.md) and [docs/formats.md](docs/formats.md) match
-  what the app actually does, and stay checked in CI (#157).
-- Every scenario in [docs/workflow-scenarios.md](docs/workflow-scenarios.md) passes on all three
-  platforms (#158).
+- Each mode's native format is its upstream's, versioned there; the shell promises to open anything
+  a 0.x shell wrote.
+- Every upstream pin is at a tagged upstream release, and `scripts/fetch-upstream.sh` has moved each
+  subtree at least once without a hand-resolved conflict.
+- A GUI check per mode on all three platforms in the release pipeline.
 
 ## Not planned
 
+- Forking an editor's internals. A change an editor needs goes upstream and comes back by merge.
 - Copying Adobe code or assets. Formats are implemented from public specifications and permissively
   licensed open-source code, with attribution.
 - Requiring an account or the cloud. Everything works offline; AI runs locally.
+- Timeline and raster animation. 0.3 to 0.6 had one; none of the three editors is an animation tool,
+  and the Redrob product for that is a different app.
 
 ## Proposing changes
 
