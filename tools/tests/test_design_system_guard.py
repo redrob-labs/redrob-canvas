@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT OR Apache-2.0
 """Prove the design system guard fails when the thing it guards is broken.
 
 A guard that has never failed is a guard nobody has tested, and a green suite is exactly what a broken
@@ -38,30 +38,6 @@ class DesignSystemGuard(unittest.TestCase):
             target.write_bytes(original)
         self.assertEqual(run_guard().returncode, 0, "tree did not restore cleanly")
 
-    def test_rejects_a_colour_literal_in_qml(self) -> None:
-        self._with_defect(
-            "qml/Main.qml",
-            lambda b: b.replace(b"color: window.tokens.surfaceBase",
-                                b'color: "#17191d"', 1),
-            "colour literal",
-        )
-
-    def test_rejects_a_colour_literal_in_a_split_panel(self) -> None:
-        # P12: the rule follows panels moved out of Main.qml.
-        self._with_defect(
-            "qml/FilterBrowser.qml",
-            lambda b: b.replace(b"color: root.tokens.inkPrimary", b'color: "#17191d"', 1),
-            "FilterBrowser.qml",
-        )
-
-    def test_rejects_a_hand_edited_token_file(self) -> None:
-        self._with_defect(
-            "qml/RedrobTokens.qml",
-            lambda b: b.replace(b'readonly property color surfaceBase',
-                                b'readonly property color surfaceBaseX', 1),
-            "generate_design_tokens.py --check failed",
-        )
-
     def test_rejects_a_drifted_vendored_token_source(self) -> None:
         self._with_defect(
             "third_party/redrob-ui/tokens.json",
@@ -69,20 +45,11 @@ class DesignSystemGuard(unittest.TestCase):
             "does not match its pin",
         )
 
-    def test_rejects_a_tool_button_without_a_glyph(self) -> None:
-        # The rail went back to a letter once before; this is that defect.
+    def test_rejects_a_drifted_vendored_icon(self) -> None:
         self._with_defect(
-            "qml/Main.qml",
-            lambda b: b.replace(b'iconName: "brush"', b'text: "B"', 1),
-            "ToolRailButton without iconName",
-        )
-
-    def test_rejects_a_command_button_without_a_glyph(self) -> None:
-        # zoomOut, not zoomIn: the rail's Zoom tool also uses zoomIn and comes first in the file.
-        self._with_defect(
-            "qml/Main.qml",
-            lambda b: b.replace(b'iconName: "zoomOut"', b'// icon removed', 1),
-            "CommandButton without iconName",
+            "third_party/redrob-ui/icons/brush.svg",
+            lambda b: b + b"\n",
+            "does not match its pin",
         )
 
     def test_rejects_a_hand_edited_icon(self) -> None:

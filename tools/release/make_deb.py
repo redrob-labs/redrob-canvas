@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Package a bundled Linux tree (tools/release/bundle_linux_qt.py) as a .deb.
+# SPDX-License-Identifier: MIT OR Apache-2.0
+"""Package a staged Linux tree (tools/release/stage.py) as a .deb.
 
     make_deb.py <stage> <version> <out.deb>
 
-  /opt/redrob-canvas/...                     the tree as is (bin, lib, plugins, qml, share)
+  /opt/redrob-canvas/...                     the tree as is (bin, share/redrob-canvas/licenses)
   /usr/bin/redrob-canvas                     a symlink, so a terminal finds it
   /usr/share/applications/redrob-canvas.desktop   the menu entry
   /usr/share/icons/hicolor/{scalable,256x256}/apps/redrob-canvas.{svg,png}
+  /usr/share/doc/redrob-canvas/copyright     the COPYRIGHT file
 
 Uninstalling is the system's own: `sudo apt remove redrob-canvas`, or the software centre. Nothing is
 written outside the package's own files, so removal leaves nothing behind; a person's settings in
-~/.config/Redrob stay, as for every other app.
+~/.config/redrob-canvas stay, as for every other app.
 
-Depends is worked out the way dpkg-shlibdeps would: every library an ELF file in the tree needs that the
-tree does not carry is looked up with `dpkg -S` on this build machine. The few the Qt xcb plugin needs
-that a minimal machine may not have installed (so dpkg -S cannot name them) come from a fixed table.
+Depends is worked out the way dpkg-shlibdeps would: every library the ELF binary needs is looked up
+with `dpkg -S` on this build machine. The ones egui/winit/wgpu/rfd load at run time rather than link
+(X11, Wayland, GL, GTK for the file dialog) cannot be seen in NEEDED, so they come from a fixed table.
 Package names are this build machine's (e.g. the t64 names), which matches the archive's own promise:
 it runs on distributions at least as new as the one it was built on.
 """
@@ -31,42 +33,34 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 ICON_SVG = ROOT / "resources" / "icons" / "redrob-canvas.svg"
 ICON_PNG = ROOT / "installer" / "windows" / "res" / "icon.png"  # 256px, same raster as the setup's
-# Libraries Qt's xcb platform plugin needs that dpkg -S cannot name when they are not installed here.
+# Libraries the binary links against, by soname, when dpkg -S cannot name them on the build machine
+# (GL is often diverted by a vendor driver package there; a user's machine gets it from the
+# distribution's GL packages).
 KNOWN = {
-    "libxcb-cursor.so.0": "libxcb-cursor0",
-    "libxcb-icccm.so.4": "libxcb-icccm4",
-    "libxcb-image.so.0": "libxcb-image0",
-    "libxcb-keysyms.so.1": "libxcb-keysyms1",
-    "libxcb-render-util.so.0": "libxcb-render-util0",
-    # A clean runner (ubuntu-24.04) has no libxcb-shape0 installed, so dpkg -S cannot name it there.
-    "libxcb-shape.so.0": "libxcb-shape0",
-    "libxcb-shm.so.0": "libxcb-shm0",
-    "libxcb-sync.so.1": "libxcb-sync1",
-    "libxcb-xfixes.so.0": "libxcb-xfixes0",
-    "libxcb-xkb.so.1": "libxcb-xkb1",
-    "libxcb-util.so.1": "libxcb-util1",
-    "libxkbcommon-x11.so.0": "libxkbcommon-x11-0",
-    # GL is often diverted by a vendor driver package on the build machine (dpkg -S then names the
-    # driver); a user's machine gets it from the distribution's GL packages.
     "libGL.so.1": "libgl1",
     "libEGL.so.1": "libegl1",
     "libGLX.so.0": "libglx0",
     "libOpenGL.so.0": "libopengl0",
     "libz.so.1": "zlib1g",
 }
-# Loaded at run time rather than linked, so no ELF names them, but the xcb plugin needs them.
-ALWAYS = ["libxcb-cursor0", "libgl1", "libegl1", "libfontconfig1"]
+# Loaded at run time by winit (X11 and Wayland), wgpu (GL/Vulkan) and rfd (the GTK file dialog), so no
+# NEEDED entry names them, but the app does not start or cannot open a file without them.
+ALWAYS = [
+    "libx11-6", "libxcursor1", "libxrandr2", "libxi6", "libxkbcommon0", "libxkbcommon-x11-0",
+    "libwayland-client0", "libwayland-cursor0", "libwayland-egl1",
+    "libgl1", "libegl1", "libvulkan1", "libfontconfig1", "libgtk-3-0t64 | libgtk-3-0",
+]
 
 DESKTOP = """[Desktop Entry]
 Type=Application
 Name=Redrob Canvas
 GenericName=Image Editor
-Comment=Edit images, with an agent that works on the canvas beside you
+Comment=Photo, vector and layout editing in one window, with an agent that works beside you
 Exec=redrob-canvas %F
 Icon=redrob-canvas
 Terminal=false
-Categories=Graphics;2DGraphics;RasterGraphics;
-MimeType=image/png;image/jpeg;image/webp;image/tiff;image/bmp;image/gif;image/vnd.adobe.photoshop;
+Categories=Graphics;2DGraphics;RasterGraphics;VectorGraphics;Publishing;
+MimeType=image/png;image/jpeg;image/webp;image/tiff;image/avif;image/heif;image/vnd.adobe.photoshop;image/openraster;image/svg+xml;application/pdf;application/postscript;
 StartupWMClass=redrob-canvas
 """
 
@@ -80,7 +74,8 @@ def elf_files(stage: Path):
 
 
 def depends(stage: Path) -> list[str]:
-    carried = {p.name for p in (stage / "lib").iterdir()}
+    lib = stage / "lib"
+    carried = {p.name for p in lib.iterdir()} if lib.is_dir() else set()
     needed: set[str] = set()
     for elf in elf_files(stage):
         out = subprocess.run(["readelf", "-d", str(elf)], capture_output=True, text=True).stdout
@@ -115,10 +110,10 @@ def main() -> int:
     if len(sys.argv) != 4:
         sys.exit(__doc__)
     stage, version, out = Path(sys.argv[1]).resolve(), sys.argv[2], Path(sys.argv[3]).resolve()
-    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+    if not re.fullmatch(r"\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?", version):
         sys.exit("version must be X.Y.Z")
-    if not (stage / "lib" / "libQt6Core.so.6").exists():
-        sys.exit("the tree carries no Qt; run tools/release/bundle_linux_qt.py first")
+    if not (stage / "bin" / "redrob-canvas").is_file():
+        sys.exit("the tree has no bin/redrob-canvas; run tools/release/stage.py first")
     deps = depends(stage)
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "pkg"
@@ -148,10 +143,10 @@ def main() -> int:
             f"Installed-Size: {size_kb}\n"
             f"Depends: {', '.join(deps)}\n"
             "Homepage: https://github.com/redrob-labs/redrob-canvas\n"
-            "Description: Redrob Canvas image editor\n"
-            " Redrob Canvas is an agentic image editor: layers, selections, filters and\n"
-            " Photoshop or Illustrator shortcuts, with an agent that edits the canvas\n"
-            " beside you. Qt is bundled under /opt/redrob-canvas.\n")
+            "Description: Redrob Canvas photo, vector and layout editor\n"
+            " Redrob Canvas is an agentic graphics editor: one window with a Photo, a\n"
+            " Vector and a Layout mode, an AI tools layer across all three, and an agent\n"
+            " that edits the document beside you. Installed under /opt/redrob-canvas.\n")
         for p in root.rglob("*"):
             if p.is_symlink():
                 continue

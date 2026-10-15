@@ -1,4 +1,4 @@
-# Redrob Canvas — Windows setup
+# Redrob Canvas: Windows setup
 
 `redrob_canvas_setup.cpp` is the branded Windows setup and its uninstaller, in one small native Win32 app
 (Direct2D, DirectWrite, WIC; nothing beyond the Windows SDK). The window is adapted from the Redrob Browser
@@ -8,7 +8,8 @@ Canvas has no Chromium `mini_installer` to hand it to.
 ## What it does
 
 - **Install**, per user, no administrator rights, into `%LOCALAPPDATA%\Programs\Redrob Canvas`. The payload is
-  the release's own signed zip, unpacked with System32's `tar.exe` beside the old install and swapped in, so a
+  the release's own signed `-portable.zip` (`bin\redrob-canvas.exe` and the licence set, from
+  `tools/release/stage.py`), unpacked with System32's `tar.exe` beside the old install and swapped in, so a
   failed update never leaves a half-updated folder. A running Canvas is never closed for the person: the
   setup asks them to save and close it, then Retry.
 - **Shortcuts** in the Start menu and on the desktop, and a **Settings > Apps** entry
@@ -16,9 +17,10 @@ Canvas has no Chromium `mini_installer` to hand it to.
   size, `UninstallString`).
 - **Uninstall**: the same app built without a payload, written into the install folder as
   `Uninstall Redrob Canvas.exe`. It asks first, with "Also delete settings, the console connection and the AI
-  engine" off by default, then removes the shortcuts, the entry and the folder. Settings are Qt's for
-  organization `Redrob`, application `Redrob Canvas`: `HKCU\Software\Redrob\Redrob Canvas` and
-  `Redrob\Redrob Canvas` under `%LOCALAPPDATA%` and `%APPDATA%`; the shared `Redrob` parents are left alone.
+  engine" off by default, then removes the shortcuts, the entry and the folder. Settings are
+  `%APPDATA%\Redrob Canvas` (the egui shell's config directory); the 0.6 Qt shell's
+  `HKCU\Software\Redrob\Redrob Canvas` and `Redrob\Redrob Canvas` under `%LOCALAPPDATA%` and `%APPDATA%`
+  are removed too, and the shared `Redrob` parents are left alone.
 - **Redrob Code**, opt-in on the first screen, off by default: downloaded from its latest release, checked
   against that release's `SHA256SUMS`, installed silently per user. Its failure never fails the Canvas install.
 

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT OR Apache-2.0
 """Every release carries `redrob-launcher.json`, and the release gates refuse one that does not.
 
 tools/release_manifest.py writes the file and checks a release directory for it. The content is

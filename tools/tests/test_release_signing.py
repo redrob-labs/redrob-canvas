@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT OR Apache-2.0
 """The Windows signing rules of the shared redrob-labs release shape, checked against release.yml.
 
 The rules (redrob-labs/.github, actions/sign-windows): the Azure credential is the job's OpenID
@@ -38,11 +38,12 @@ class WindowsSigning(unittest.TestCase):
 
     def test_login_comes_after_the_build_and_before_the_first_signature(self) -> None:
         build_at = self.build.find("- name: Build\n")
-        deploy_at = self.build.find("- name: Deploy Qt runtime (Windows)")
+        stage_at = self.build.find("- name: Stage\n")
         login_at = self.build.find("uses: azure/login@")
         sign_at = self.build.find("uses: redrob-labs/.github/actions/sign-windows@")
         self.assertGreater(build_at, -1)
-        self.assertGreater(login_at, deploy_at, "azure/login runs before the Windows build is deployed")
+        self.assertGreater(stage_at, build_at, "the binary is staged before it is built")
+        self.assertGreater(login_at, stage_at, "azure/login runs before the Windows build is staged")
         self.assertGreater(sign_at, login_at, "signing runs before azure/login")
 
     def test_executable_is_signed_before_the_zip_and_the_setup(self) -> None:

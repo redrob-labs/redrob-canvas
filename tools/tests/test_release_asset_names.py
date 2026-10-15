@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT OR Apache-2.0
 """Release asset names are what Redrob Launcher reads.
 
 The launcher installs an asset only when its name is <stem>-<version>-<os>-<arch>[-portable].<ext>
@@ -59,7 +59,7 @@ INSTALLABLE_RE = re.compile(
     + r")$"
 )
 
-VERSION = "0.5.7"
+VERSION = "0.7.0"
 
 
 class AssetNames(unittest.TestCase):
@@ -101,8 +101,6 @@ class AssetNames(unittest.TestCase):
         slugs = {leg["slug"] for leg in release_matrix.LEGS}
         files = [
             ROOT / ".github" / "workflows" / "release.yml",
-            ROOT / "tools" / "release" / "build-windows.ps1",
-            ROOT / "tools" / "release" / "build-macos.sh",
             ROOT / "tools" / "release" / "build-linux.sh",
         ]
         pattern = re.compile(r"redrob-canvas-\$\{?(?:version|VERSION)\}?-((?:linux|macos|windows|freebsd)-[a-z0-9_]+)")
@@ -115,7 +113,10 @@ class AssetNames(unittest.TestCase):
                 self.assertIn(m.group(1), slugs, f"{path.name}: {m.group(0)!r} names a slug the matrix does not have")
             for m in suffix_pattern.finditer(text):
                 self.assertIn(m.group(1), slugs, f"{path.name}: SUFFIX {m.group(1)!r} is not a matrix slug")
-        self.assertIn("windows-x64", found, "release.yml/build-windows.ps1 no longer name the Windows archive")
+        # release.yml names platforms through the matrix slug, so the only hand-written slug left is the
+        # rehearsal script's Linux one; the Windows name is the generator's to keep.
+        self.assertIn("linux-x86_64", found, "build-linux.sh no longer names the Linux archive")
+        self.assertIn("windows-x64", slugs, "the matrix no longer has the Windows leg")
         for path in files + [ROOT / "README.md", ROOT / "README.ko.md", ROOT / "installer" / "windows" / "README.md"]:
             self.assertFalse("windows-x86_64" in path.read_text(encoding="utf-8"), f"{path.name} still says windows-x86_64")
 

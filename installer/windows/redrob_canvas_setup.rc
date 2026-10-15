@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT OR Apache-2.0
 // Resources for the Redrob Canvas setup and uninstaller. build.py writes build_defs.h with the file
 // paths and version; a build without a payload (the uninstaller, or a demo build) defines REDROB_NO_PAYLOAD.
 

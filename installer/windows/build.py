@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
 """Build the Redrob Canvas Windows setup (and its uninstaller).
 
 Standard library only. It:
@@ -11,8 +12,9 @@ Usage:
   build.py --out <dir> --payload <redrob-canvas-X-windows-x64-portable.zip> --version 0.5.6 [--name <exe>]
   build.py --out <dir> --version 0.5.6          # demo-only build (REDROB_NO_PAYLOAD): --demo flags only
 
-The payload is the release's own zip, already Authenticode-signed inside, so the setup must be built after
-signing and then signed itself (release workflow, Windows job).
+The payload is the release's own -portable.zip (tools/release/stage.py: bin/redrob-canvas.exe plus the licence
+set), already Authenticode-signed inside, so the setup must be built after signing and then signed itself
+(release workflow, Windows job). No Qt runtime is staged any more: the egui shell is one static executable.
 
 The art is committed, not rendered here: res/background.png is res/background.html rasterised at
 1320x800, res/lockup.png (the product lockup, tools/build_lockup.py, scaled) comes from tools/build_installer_assets.py. Pretendard is embedded when the design
