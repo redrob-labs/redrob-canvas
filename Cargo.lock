@@ -2817,6 +2817,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "rustls",
+ "rustls-native-certs",
  "tokio",
  "tokio-rustls",
  "tower-service",
@@ -5391,6 +5392,7 @@ dependencies = [
  "rfd",
  "serde_json",
  "sha2",
+ "sys-locale",
  "tokio",
  "webbrowser",
 ]
@@ -6627,6 +6629,7 @@ dependencies = [
  "pin-project-lite",
  "quinn",
  "rustls",
+ "rustls-native-certs",
  "rustls-pki-types",
  "serde",
  "serde_json",

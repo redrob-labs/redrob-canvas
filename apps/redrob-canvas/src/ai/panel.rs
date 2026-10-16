@@ -10,6 +10,7 @@ use redrob_ai::iopaint::{Device, EngineState, Plugin, models};
 use super::bridge::Capabilities;
 use super::jobs::ToolKind;
 use super::{Action, AiPanel, Speaker, Tab};
+use crate::i18n::t;
 use crate::shell::Mode;
 
 /// The dock's default width in points.
@@ -27,7 +28,7 @@ pub fn menu(ui: &mut egui::Ui, panel: &mut AiPanel, caps: &Capabilities) {
             let button = ui.add_enabled(enabled, egui::Button::new(kind.label()));
             let button = match kind.unavailable_reason(caps) {
                 Some(reason) if !enabled => button.on_disabled_hover_text(reason),
-                _ if busy => button.on_disabled_hover_text("an AI job is running"),
+                _ if busy => button.on_disabled_hover_text(t("an AI job is running")),
                 _ => button,
             };
             if button.clicked() {
@@ -39,15 +40,15 @@ pub fn menu(ui: &mut egui::Ui, panel: &mut AiPanel, caps: &Capabilities) {
         }
         ui.separator();
         let label = if panel.open {
-            "Hide AI panel"
+            t("Hide AI panel")
         } else {
-            "Show AI panel"
+            t("Show AI panel")
         };
         if ui.button(label).clicked() {
             panel.open = !panel.open;
             ui.close();
         }
-        if ui.button("Agent…").clicked() {
+        if ui.button(t("Agent…")).clicked() {
             panel.open = true;
             panel.tab = Tab::Agent;
             ui.close();
@@ -60,7 +61,7 @@ pub fn toggle(ui: &mut egui::Ui, panel: &mut AiPanel) {
     let text = if panel.is_busy() { "AI ◌" } else { "AI" };
     if ui
         .selectable_label(panel.open, text)
-        .on_hover_text("AI tools and agent (toggle the right panel)")
+        .on_hover_text(t("AI tools and agent (toggle the right panel)"))
         .clicked()
     {
         panel.open = !panel.open;
@@ -71,10 +72,10 @@ pub fn toggle(ui: &mut egui::Ui, panel: &mut AiPanel) {
 pub fn dock(ui: &mut egui::Ui, panel: &mut AiPanel, caps: &Capabilities) -> Vec<Action> {
     let mut actions = Vec::new();
     ui.horizontal(|ui| {
-        ui.selectable_value(&mut panel.tab, Tab::Tools, "Tools");
-        ui.selectable_value(&mut panel.tab, Tab::Agent, "Agent");
+        ui.selectable_value(&mut panel.tab, Tab::Tools, t("Tools"));
+        ui.selectable_value(&mut panel.tab, Tab::Agent, t("Agent"));
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.small_button("✕").on_hover_text("Hide").clicked() {
+            if ui.small_button("✕").on_hover_text(t("Hide")).clicked() {
                 panel.open = false;
             }
         });

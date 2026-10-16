@@ -6,6 +6,7 @@
 
 mod ai;
 mod handoff;
+mod i18n;
 mod routing;
 mod services;
 mod shell;
