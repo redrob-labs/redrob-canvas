@@ -291,7 +291,7 @@ pub struct UiState {
     pub task_bar_at: Option<[f32; 2]>,
     /// Help › About Redrob Canvas is open.
     pub about: bool,
-    /// The About window's tab: 0 About, 1 Contributors, 2 Models (`about::ABOUT_TABS`).
+    /// The About window's tab: 0 About, 1 Contributors (`about::ABOUT_TABS`).
     #[serde(skip)]
     pub about_tab: u8,
     /// URLs to open in the browser on the next frame (Help links, About, start screen).
