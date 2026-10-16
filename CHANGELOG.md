@@ -4,6 +4,25 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.8.1 — 2026-10-16
+
+### Fixed
+
+- **No blank frame when switching modes.** Fonts are built once at start-up with every editor's
+  families (one `set_fonts` per run instead of eight), Vector and Layout no longer rescan system
+  fonts or reset the global style on activation, and the editor area is painted while a mode warms.
+- **One look for all three modes.** The shell owns a single egui style (the Photo look); Vector and
+  Layout draw with it instead of their own spacing, rounding and text styles.
+- **One language for the whole app.** The shell detects the system language, remembers a choice
+  (Help > Language, the languages all three editors share) and pushes it into Photo, Vector and
+  Layout. Layout gains a Korean catalog.
+- **Quieter update check.** Trusts the system's root certificates and proxy, shows a small muted
+  note with the reason on hover instead of a red badge, stays silent on GitHub rate limits, and
+  checks automatically at most once a day (Help > Check for updates… always runs).
+- **No upstream brand or Discord left in the UI.** Every ArtCraft/Discord string, icon and link is
+  gone from menus, dialogs, help and translations; the dead Vector app-page link is removed and
+  Help offers Report an Issue (GitHub) instead. `tools/rebrand_crafts.py --check` guards it.
+
 ## 0.8.0 — 2026-10-16
 
 ### Changed
