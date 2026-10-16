@@ -1,5 +1,5 @@
 //! Help › About Redrob Canvas: tabs About · Contributors · Models. About is the splash with the
-//! Redrob mark, version, and community links (Discord first and largest), plus the other Redrob
+//! Redrob mark, version, the Report an Issue button and project links, plus the other Redrob
 //! apps; Contributors and Models are the compiled-in credits (`crate::credits`).
 
 use egui::{Color32, Rect, Sense, Stroke, pos2, vec2};
@@ -9,12 +9,10 @@ use serde_json::json;
 use crate::DesignApp;
 use crate::theme::{Tokens, semibold};
 
-/// Redrob brand blue (from `docs/brand/artcraft-mark.svg`).
+/// Redrob brand blue.
 pub const BRAND: Color32 = Color32::from_rgb(0x4e, 0x7b, 0xfb);
-/// Discord's brand colour, used for the "Join our Discord" buttons (colour only; no Discord artwork).
-pub const DISCORD: Color32 = Color32::from_rgb(0x58, 0x65, 0xf2);
 
-/// The Redrob mark outline (viewBox -10 -19.42 136.34 136.34), from `docs/brand/artcraft-mark.svg`.
+/// The Redrob mark outline (viewBox -10 -19.42 136.34 136.34).
 const MARK_PATH: &str = "M104.28,49.49L81.55,0h-31.23l-3.17,4.76L14.75,53.63,0,75.85l21.55,21.55,63.79-36.94,16.99,37.04,14.01-21.74-12.06-26.27ZM32.89,65.66l32.42-48.87,10.91,23.77-43.32,25.09Z";
 
 /// The other Redrob apps (app-page slug, name, what it is) — same list as the README.
@@ -36,7 +34,7 @@ pub fn paint_mark(ui: &egui::Ui, rect: Rect, color: Color32) {
     let ctx = ui.ctx();
     let ppp = ctx.pixels_per_point();
     let px = ((rect.width().min(rect.height()) * ppp).round() as u32).clamp(8, 1024);
-    let key = egui::Id::new(("artcraft_mark", px, color.to_array()));
+    let key = egui::Id::new(("redrob_mark", px, color.to_array()));
     let tex: Option<egui::TextureHandle> = ctx.data(|d| d.get_temp(key));
     let tex = tex.unwrap_or_else(|| {
         let mut rc = vello_cpu::RenderContext::new_with(px as u16, px as u16, vello_cpu::RenderSettings { num_threads: 0, ..Default::default() });
@@ -52,7 +50,7 @@ pub fn paint_mark(ui: &egui::Ui, rect: Rect, color: Color32) {
         let mut res = vello_cpu::Resources::new();
         rc.render(&mut pm, &mut res);
         let ci = egui::ColorImage::from_rgba_premultiplied([px as usize, px as usize], pm.data_as_u8_slice());
-        let t = crate::widgets::load_texture(ctx, "artcraft_mark", ci, egui::TextureOptions::LINEAR);
+        let t = crate::widgets::load_texture(ctx, "redrob_mark", ci, egui::TextureOptions::LINEAR);
         ctx.data_mut(|d| d.insert_temp(key, t.clone()));
         t
     });
@@ -61,7 +59,7 @@ pub fn paint_mark(ui: &egui::Ui, rect: Rect, color: Color32) {
     ui.painter().image(tex.id(), r, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
 }
 
-/// A speech-bubble glyph (drawn in code) for Discord buttons.
+/// A speech-bubble glyph (drawn in code) for the Report an Issue button.
 pub fn paint_chat_icon(p: &egui::Painter, c: egui::Pos2, s: f32, color: Color32) {
     let body = Rect::from_center_size(c - vec2(0.0, s * 0.06), vec2(s, s * 0.72));
     p.rect_filled(body, s * 0.24, color);
@@ -72,16 +70,16 @@ pub fn paint_chat_icon(p: &egui::Painter, c: egui::Pos2, s: f32, color: Color32)
     ];
     p.add(egui::Shape::convex_polygon(tail, color, Stroke::NONE));
     let eye = s * 0.09;
-    let bg = if color.r() as u32 + color.g() as u32 + color.b() as u32 > 380 { DISCORD } else { Color32::WHITE };
+    let bg = if color.r() as u32 + color.g() as u32 + color.b() as u32 > 380 { BRAND } else { Color32::WHITE };
     p.circle_filled(body.center() - vec2(s * 0.18, 0.0), eye, bg);
     p.circle_filled(body.center() + vec2(s * 0.18, 0.0), eye, bg);
 }
 
-/// The big "Join our Discord" button. Returns true when clicked.
-pub fn discord_button(ui: &mut egui::Ui, label: &str, size: egui::Vec2) -> bool {
+/// The big "Report an Issue" button (opens the GitHub issue tracker). Returns true when clicked.
+pub fn issues_button(ui: &mut egui::Ui, label: &str, size: egui::Vec2) -> bool {
     let (r, resp) = ui.allocate_exact_size(size, Sense::click());
-    let resp = resp.on_hover_text(links::DISCORD).on_hover_cursor(egui::CursorIcon::PointingHand);
-    let fill = if resp.hovered() { Color32::from_rgb(0x47, 0x52, 0xc4) } else { DISCORD };
+    let resp = resp.on_hover_text(links::ISSUES).on_hover_cursor(egui::CursorIcon::PointingHand);
+    let fill = if resp.hovered() { BRAND.gamma_multiply(0.85) } else { BRAND };
     ui.painter().rect_filled(r, size.y / 2.0, fill);
     let icon = size.y * 0.5;
     let font = semibold((size.y * 0.42).max(11.0));
@@ -172,23 +170,20 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
                 egui::RichText::new(crate::i18n::tr(&app.ui.language, "Part of the Redrob suite of agentic apps.")).size(12.0).color(t.text_dim),
             ));
             ui.add_space(16.0);
-            if discord_button(ui, "Redrob community", vec2(300.0, 40.0)) {
-                open = Some("discord");
+            if issues_button(ui, crate::i18n::tr(&app.ui.language, "Report an Issue"), vec2(300.0, 40.0)) {
+                open = Some("issues");
             }
             ui.add_space(4.0);
             ui.label(crate::rtl::widget(
                 ui,
-                egui::RichText::new(crate::i18n::tr(&app.ui.language, "discord.gg/artcraft — help, feedback and show-and-tell"))
-                    .size(11.0)
-                    .color(t.text_dim),
+                egui::RichText::new(crate::i18n::tr(&app.ui.language, "Bugs, feedback and feature requests on GitHub")).size(11.0).color(t.text_dim),
             ));
             ui.add_space(14.0);
             ui.horizontal(|ui| {
                 // Centre the row of links.
                 let w = 330.0;
                 ui.add_space(((ui.available_width() - w) / 2.0).max(0.0));
-                for (text, key) in [("Redrob Canvas page", "appPage"), ("GitHub", "github"), ("redrob.ai", "website"), ("Report an issue", "issues")]
-                {
+                for (text, key) in [("Releases", "appPage"), ("GitHub", "github"), ("redrob.ai", "website")] {
                     if link(ui, text, links::get(key).unwrap_or_default(), t.accent) {
                         open = Some(key);
                     }

@@ -45,7 +45,6 @@
 	Favorites	お気に入り
 	Flip	反転
 	Japanese	日本語
-	Join Our Discord	Discord に参加
 	Line-end Punctuation Half Width	行末約物半角
 	Mojikumi Set	文字組み
 	Kinsoku Set	禁則処理
@@ -646,7 +645,10 @@
 	Symbol Libraries	シンボルライブラリ
 	Help	ヘルプ
 	Redrob website	Redrob の Web サイト
-	Redrob Canvas on redrob.ai	redrob.ai の Redrob Canvas
+	Report an Issue…	問題を報告…
+	Report an Issue	問題を報告
+	Bugs, feedback and feature requests on GitHub	GitHub でバグ報告・フィードバック・機能リクエスト
+	Redrob Canvas releases	Redrob Canvas のリリース
 	Redrob Canvas on GitHub	GitHub の Redrob Canvas
 	Search Commands…	コマンドを検索…
 	Redrob Canvas Help…	Redrob Canvas ヘルプ…
@@ -854,7 +856,6 @@
 	Arrange: Bring to Front	重ね順: 最前面へ
 	Arrowheads:	矢印:
 	Art using a deleted global swatch keeps its colour.	削除したグローバルスウォッチを使っているアートは、そのカラーを保持します。
-	Redrob website	Redrob の Web サイト
 	Artboard Options	アートボードオプション
 	Artboard Options: edit with the Artboard tool	アートボードオプション: アートボードツールで編集
 	Artboard Options…	アートボードオプション…
@@ -1590,8 +1591,6 @@
 	Isolate Group	グループを分離
 	Italian	イタリア語
 	Join Tool	結合ツール
-	Join our Discord	Discord に参加
-	Redrob community on Discord (discord.gg/artcraft)	Discord で Redrob コミュニティに参加 (discord.gg/artcraft)
 	Join the lines of each paragraph	段落内の行を連結
 	Justification…	文字組み…
 	Keep Formatting	書式を保持
@@ -3041,7 +3040,6 @@
 	Delete these {n} graphic styles?	これら {n} 個のグラフィックスタイルを削除しますか？
 	Delete this {n} graphic style?	この {n} 個のグラフィックスタイルを削除しますか？
 	Discarded {} recovered document(s)	復元したドキュメント {} 個を破棄しました
-	Discord	Discord
 	Do Not Move	移動しない
 	Document Swatches	ドキュメントのスウォッチ
 	Document profile	ドキュメントプロファイル

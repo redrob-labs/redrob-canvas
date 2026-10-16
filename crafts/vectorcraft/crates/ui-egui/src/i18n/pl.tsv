@@ -30,7 +30,6 @@
 	About Redrob Canvas	O programie Redrob Canvas
 	Align to Path	Wyrównaj do ścieżki
 	Cut Path at Selected Anchor Points	Rozetnij ścieżkę w zaznaczonych punktach kontrolnych
-	Join Our Discord	Dołącz do naszego Discorda
 	Language	Język
 	UI Brightness	Jasność interfejsu
 	Dark	Ciemny
@@ -605,7 +604,10 @@
 	Symbol Libraries	Biblioteki symboli
 	Help	Pomoc
 	Redrob website	Strona Redrob
-	Redrob Canvas on redrob.ai	Redrob Canvas w redrob.ai
+	Report an Issue…	Zgłoś problem…
+	Report an Issue	Zgłoś problem
+	Bugs, feedback and feature requests on GitHub	Błędy, opinie i prośby o funkcje w serwisie GitHub
+	Redrob Canvas releases	Wydania Redrob Canvas
 	Redrob Canvas on GitHub	Redrob Canvas w serwisie GitHub
 	Search Commands…	Szukaj poleceń…
 	Redrob Canvas Help…	Pomoc Redrob Canvas…
@@ -3355,10 +3357,6 @@ effect	Regular	Normalny
 	Recent Files	Ostatnie pliki
 	Vector illustration — fast, open, scriptable.	Ilustracja wektorowa — szybka, otwarta, skryptowalna.
 	Welcome to Redrob Canvas	Witamy w Redrob Canvas
-	Redrob website	Strona Redrob
-	Discord	Discord
-	Join our Discord	Dołącz do naszego Discorda
-	Redrob community on Discord (discord.gg/artcraft)	Dołącz do społeczności Redrob na Discordzie (discord.gg/artcraft)
 	Source code on GitHub	Kod źródłowy w serwisie GitHub
 	All Tools	Wszystkie narzędzia
 	Draw	Rysuj

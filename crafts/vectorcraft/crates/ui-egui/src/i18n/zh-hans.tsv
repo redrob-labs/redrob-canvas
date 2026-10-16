@@ -187,7 +187,10 @@
 	Artboard:	画板：
 	Artboards	画板
 	Redrob website	Redrob 网站
-	Redrob website	Redrob 网站
+	Report an Issue…	报告问题…
+	Report an Issue	报告问题
+	Bugs, feedback and feature requests on GitHub	在 GitHub 上报告错误、反馈和功能请求
+	Redrob Canvas releases	Redrob Canvas 版本
 	Artwork Colors	图稿颜色
 	As Multiple Assets	作为多个资源
 	As Single Asset	作为单一资源
@@ -696,7 +699,6 @@
 	Discard Recovered Documents	丢弃已恢复的文档
 	Discard White Overprint in Output	输出时放弃白色叠印
 	Discarded {} recovered document(s)	已放弃 {} 份恢复的文档
-	Discord	Discord
 	Discretionary Hyphen	选择性连字号
 	Discretionary Ligatures	任意连字
 	Display All Blacks Accurately	准确显示所有黑色
@@ -1318,9 +1320,6 @@
 	Isolate Group	隔离编组
 	Italian	意大利语
 	Join	连接
-	Join Our Discord	加入 Discord
-	Join our Discord	加入我们的 Discord
-	Redrob community on Discord (discord.gg/artcraft)	在 Discord 加入 Redrob 社区 (discord.gg/artcraft)
 	Join the lines of each paragraph	合并每个段落的行
 	Join Tool	连接工具
 	Justification…	对齐设置…
@@ -3093,7 +3092,6 @@
 	Redrob Canvas	Redrob Canvas
 	Redrob Canvas didn't quit normally last time. These documents had unsaved changes:	Redrob Canvas 上次未正常退出。以下文档有未存储的更改：
 	Redrob Canvas Help…	Redrob Canvas 说明…
-	Redrob Canvas on redrob.ai	redrob.ai 上的 Redrob Canvas
 	Redrob Canvas on GitHub	GitHub 上的 Redrob Canvas
 	Vectors	矢量
 	Version {version} — open-source vector illustration in pure Rust.	版本 {version} — 以纯 Rust 打造的开放原始码矢量插画软件。
