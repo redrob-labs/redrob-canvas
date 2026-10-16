@@ -876,6 +876,15 @@ impl VectorcraftApp {
         std::mem::take(&mut self.prefs_changed)
     }
 
+    /// A host that owns the context's fonts and global style (`theme::set_host_owns_style`) and
+    /// has installed the UI's font families (`theme::font_definitions`) and the image loaders
+    /// calls this once: the first frame then draws instead of installing fonts and waiting a pass.
+    pub fn adopt_host_context(&mut self, ctx: &egui::Context) {
+        theme::apply(ctx, self.ui.brightness);
+        self.styled = true;
+        self.fonts_ready = true;
+    }
+
     /// Linked files another app changed while their document is open: every two seconds, and as
     /// soon as the window comes back to the front, stamp the active document's linked files on a
     /// worker thread and act on the changed ones as Preferences › File Handling › Update Links
