@@ -8,6 +8,7 @@ mod de;
 mod it;
 mod ja;
 mod ka;
+mod ko;
 mod pt_br;
 mod uk;
 
@@ -24,6 +25,7 @@ pub const LANGUAGES: &[(&str, &str)] = &[
     ("it", "Italiano"),
     ("uk", "Українська"),
     ("ka", "ქართული"),
+    ("ko", "한국어"),
 ];
 
 /// English → [German, French, Spanish, Japanese, Simplified Chinese].
@@ -3134,6 +3136,7 @@ pub fn tr<'a>(lang: &str, s: &'a str) -> &'a str {
     static PORTUGUESE_BR: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
     static ITALIAN: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
     static GEORGIAN: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
+    static KOREAN: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
     if lang == "ar" {
         return ARABIC.get_or_init(|| ar::TABLE.iter().copied().collect()).get(s).copied().unwrap_or(s);
     }
@@ -3157,6 +3160,9 @@ pub fn tr<'a>(lang: &str, s: &'a str) -> &'a str {
     }
     if lang == "ka" {
         return GEORGIAN.get_or_init(|| ka::TABLE.iter().copied().collect()).get(s).copied().unwrap_or(s);
+    }
+    if lang == "ko" {
+        return KOREAN.get_or_init(|| ko::TABLE.iter().copied().collect()).get(s).copied().unwrap_or(s);
     }
     if lang == "uk" {
         return UKRAINIAN.get_or_init(|| uk::TABLE.iter().copied().collect()).get(s).copied().unwrap_or(s);
@@ -3241,8 +3247,11 @@ mod tests {
         for (key, expected) in ka::TABLE {
             assert_eq!(tr("ka", key), *expected, "ka: {key}");
         }
+        for (key, expected) in ko::TABLE {
+            assert_eq!(tr("ko", key), *expected, "ko: {key}");
+        }
         let unknown = String::from("A user-defined untranslated label");
-        for lang in ["uk", "ar", "pt-br", "it", "ka", "zh", "ja", "de", "fr", "es", "", "unknown"] {
+        for lang in ["uk", "ar", "pt-br", "it", "ka", "ko", "zh", "ja", "de", "fr", "es", "", "unknown"] {
             assert!(std::ptr::eq(tr(lang, &unknown), unknown.as_str()));
         }
     }

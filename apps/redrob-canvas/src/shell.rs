@@ -2,7 +2,8 @@
 //! switchable modes. Editors are created lazily on their first switch and then kept alive, so
 //! switching modes preserves their open documents. The shell also owns what crosses the modes:
 //! the Mode menu's hand-offs (`handoff`), file routing by extension (`routing`) for Open and
-//! drops, the window title, and the exit confirm for editors that are not on screen.
+//! drops, the window title, the exit confirm for editors that are not on screen, and the one
+//! interface language (`i18n`), pushed into each editor's own preference.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
@@ -19,6 +20,7 @@ use crate::ai::jobs::{JobOutput, JobResult, ToolKind};
 use crate::ai::tools::{self, ToolReply, ToolRequest};
 use crate::ai::{self, Action, AiPanel};
 use crate::handoff::Handoff;
+use crate::i18n::{self, t, tf};
 use crate::routing::{self, Route};
 use crate::{handoff, services};
 
@@ -46,7 +48,7 @@ pub const STATUS_WITH_ACTION_SECS: f32 = 20.0;
 const ABOUT_LOCKUP_PNG: &[u8] = include_bytes!("../../../resources/brand/redrob-canvas-lockup.png");
 /// The lockup's height in the About window (above the 18px minimum in 10-logo.md).
 const ABOUT_LOCKUP_HEIGHT: f32 = 40.0;
-/// The editors this app is built on (UPSTREAM_NOTICES.md).
+/// The editors this app is built on (UPSTREAM_NOTICES.md); translated through `i18n`.
 const ABOUT_ATTRIBUTION: &str =
     "MIT OR Apache-2.0. Third-party notices: NOTICE and THIRD_PARTY_NOTICES.md.";
 
@@ -62,13 +64,18 @@ pub enum Mode {
 impl Mode {
     pub const ALL: [Mode; 3] = [Mode::Photo, Mode::Vector, Mode::Layout];
 
-    /// The segmented button's label.
+    /// The mode's English name: the identifier in tool replies, logs and file filters.
     pub fn label(self) -> &'static str {
         match self {
             Mode::Photo => "Photo",
             Mode::Vector => "Vector",
             Mode::Layout => "Layout",
         }
+    }
+
+    /// The segmented button's label, in the interface language.
+    pub fn name(self) -> &'static str {
+        t(self.label())
     }
 
     /// Ctrl+1 / Ctrl+2 / Ctrl+3.
@@ -266,6 +273,11 @@ pub struct ShellApp {
     about_open: bool,
     /// The About window's lockup, uploaded on first use.
     about_lockup: Option<egui::TextureHandle>,
+    /// The one interface language: the persisted preference against the system's.
+    language: i18n::Language,
+    /// The language value last written into each editor's own preference, so a change the editor
+    /// made itself (its own Language menu) is told apart from one the shell made.
+    pushed_language: HashMap<Mode, String>,
 }
 
 impl Default for ShellApp {
@@ -300,6 +312,161 @@ impl ShellApp {
             last_title: None,
             about_open: false,
             about_lockup: None,
+            language: i18n::Language::load(),
+            pushed_language: HashMap::new(),
+        }
+    }
+
+    /// The interface language.
+    #[cfg_attr(not(test), allow(dead_code))] // exercised by the unit tests
+    pub fn language(&self) -> &'static i18n::LangInfo {
+        self.language.effective()
+    }
+
+    /// Help > Language: `auto` or a code. Every existing editor takes it now, whatever it showed
+    /// (a choice in the shell outranks an editor's own), and new editors take it when created.
+    pub fn set_language(&mut self, pref: &str) {
+        self.language.set(pref);
+        let lang = self.language.effective();
+        i18n::set_current(lang);
+        self.pushed_language.clear();
+        for mode in Mode::ALL {
+            if self.editor_language(mode).is_some() {
+                self.write_editor_language(mode, lang);
+                self.pushed_language
+                    .insert(mode, Self::editor_value(mode, lang));
+            }
+        }
+    }
+
+    /// The language value an editor's own preference holds now (`auto` or a code for Photo and
+    /// Vector, the Layout code for Layout); `None` while the editor does not exist.
+    fn editor_language(&self, mode: Mode) -> Option<String> {
+        match mode {
+            Mode::Photo => self
+                .photo
+                .as_ref()
+                .map(|a| a.session.prefs().interface.language.clone()),
+            Mode::Vector => self
+                .vector
+                .as_ref()
+                .map(|a| a.session.prefs.interface_language.clone()),
+            Mode::Layout => self.layout.as_ref().map(|a| a.ui.language.clone()),
+        }
+    }
+
+    /// What `mode`'s preference should hold for `lang`.
+    fn editor_value(mode: Mode, lang: &i18n::LangInfo) -> String {
+        match mode {
+            Mode::Photo | Mode::Vector => lang.code.to_owned(),
+            Mode::Layout => lang.layout.to_owned(),
+        }
+    }
+
+    /// The shell preference an editor's own value means: `auto`, a common code, or `None` for a
+    /// language not every editor has (the editor keeps it; the shell does not fight it).
+    fn shell_pref_for(mode: Mode, value: &str) -> Option<String> {
+        match mode {
+            Mode::Photo | Mode::Vector => {
+                if value.eq_ignore_ascii_case(i18n::AUTO) {
+                    Some(i18n::AUTO.to_owned())
+                } else {
+                    i18n::by_code(value).map(|l| l.code.to_owned())
+                }
+            }
+            Mode::Layout => i18n::by_layout_code(value).map(|l| l.code.to_owned()),
+        }
+    }
+
+    /// Writes `lang` into `mode`'s own preference (the editor's Language menu and preferences
+    /// file follow: photocraft `interface.language`, vectorcraft `interfaceLanguage`,
+    /// designcraft `UiState::language`).
+    fn write_editor_language(&mut self, mode: Mode, lang: &i18n::LangInfo) {
+        let value = Self::editor_value(mode, lang);
+        let result = match mode {
+            Mode::Photo => self.photo.as_mut().map(|app| {
+                app.run(
+                    "prefs.set",
+                    json!({ "values": { "interface.language": value } }),
+                )
+            }),
+            Mode::Vector => self.vector.as_mut().map(|app| {
+                app.run(
+                    "prefs.set",
+                    json!({ "key": "interfaceLanguage", "value": value }),
+                )
+            }),
+            Mode::Layout => self.layout.as_mut().map(|app| {
+                app.ui.language = value;
+                Ok(Value::Null)
+            }),
+        };
+        if let Some(Err(e)) = result {
+            log::warn!("{}: couldn't set the language: {e}", mode.label());
+        }
+    }
+
+    /// One language everywhere: every existing editor's preference is made the shell's, and a
+    /// language an editor chose on its own (its menu) becomes the shell's for all of them.
+    fn sync_language(&mut self) {
+        // First: a value an editor changed on its own since the shell last wrote it is adopted.
+        for mode in Mode::ALL {
+            let Some(current) = self.editor_language(mode) else {
+                continue;
+            };
+            if self
+                .pushed_language
+                .get(&mode)
+                .is_some_and(|p| *p != current)
+                && let Some(pref) = Self::shell_pref_for(mode, &current)
+                && self.language.set(&pref)
+            {
+                i18n::set_current(self.language.effective());
+            }
+        }
+        // Then: every editor holds the shell's language, except one showing a language not all of
+        // them have (left as it is, and remembered so it is not taken for a new choice).
+        let lang = self.language.effective();
+        for mode in Mode::ALL {
+            let Some(current) = self.editor_language(mode) else {
+                continue;
+            };
+            if Self::shell_pref_for(mode, &current).is_none() {
+                self.pushed_language.insert(mode, current);
+                continue;
+            }
+            let want = Self::editor_value(mode, lang);
+            if current != want {
+                self.write_editor_language(mode, lang);
+            }
+            self.pushed_language.insert(mode, want);
+        }
+    }
+
+    /// Help > Language: the system's language, then every language all three editors have.
+    fn language_menu(&mut self, ui: &mut egui::Ui) {
+        let system = self.language.system();
+        let auto = ui
+            .radio(
+                self.language.is_auto(),
+                tf("System ({name})", &[("name", system.name)]),
+            )
+            .on_hover_text(t("Follow the operating system's language"));
+        if auto.clicked() {
+            ui.close();
+            self.set_language(i18n::AUTO);
+        }
+        ui.separator();
+        let effective = self.language.effective();
+        for lang in i18n::LANGUAGES {
+            let selected = !self.language.is_auto() && effective.code == lang.code;
+            let item = ui
+                .radio(selected, lang.name)
+                .on_hover_text(t("The same language in Photo, Vector and Layout"));
+            if item.clicked() {
+                ui.close();
+                self.set_language(lang.code);
+            }
         }
     }
 
@@ -400,10 +567,10 @@ impl ShellApp {
                     let mut next = self.mode;
                     for mode in Mode::ALL {
                         let selected = ui
-                            .selectable_label(self.mode == mode, mode.label())
+                            .selectable_label(self.mode == mode, mode.name())
                             .on_hover_text(format!(
                                 "{}  ({})",
-                                mode.label(),
+                                mode.name(),
                                 ui.ctx().format_shortcut(&mode.shortcut())
                             ));
                         if selected.clicked() {
@@ -414,14 +581,18 @@ impl ShellApp {
                         self.set_mode(next);
                     }
                     ui.separator();
-                    ui.menu_button("Mode", |ui| self.mode_menu(ui));
+                    ui.menu_button(t("Mode"), |ui| self.mode_menu(ui));
                     ui.separator();
                     ai::panel::menu(ui, &mut self.ai, &caps);
-                    ui.menu_button("Help", |ui| {
-                        if ui.button(format!("About {}", services::APP_NAME)).clicked() {
+                    ui.menu_button(t("Help"), |ui| {
+                        if ui
+                            .button(tf("About {app}", &[("app", services::APP_NAME)]))
+                            .clicked()
+                        {
                             ui.close();
                             self.about_open = true;
                         }
+                        ui.menu_button(t("Language"), |ui| self.language_menu(ui));
                         crate::update::menu_items(ui);
                     });
                     self.status_line(ui);
@@ -436,8 +607,9 @@ impl ShellApp {
     /// The "Mode" menu: the shell's Open, and Send to Photo / Vector / Layout, each enabled when
     /// the active mode has a document and a hand-off to that mode ([`Handoff::between`]).
     fn mode_menu(&mut self, ui: &mut egui::Ui) {
-        let open = ui.button("Open…").on_hover_text(format!(
-            "Open a file in the editor its type belongs to  ({})",
+        let open = ui.button(t("Open…")).on_hover_text(format!(
+            "{}  ({})",
+            t("Open a file in the editor its type belongs to"),
             ui.ctx().format_shortcut(&OPEN_ANY_SHORTCUT)
         ));
         if open.clicked() {
@@ -452,12 +624,12 @@ impl ShellApp {
             let enabled = has_document && handoff.is_some();
             let button = ui.add_enabled(
                 enabled,
-                egui::Button::new(format!("Send to {}", target.label())),
+                egui::Button::new(tf("Send to {mode}", &[("mode", target.name())])),
             );
             let button = match (handoff, has_document) {
                 (Some(h), true) => button.on_hover_text(h.description()),
-                (Some(_), false) => button.on_disabled_hover_text("open a document first"),
-                (None, _) => button.on_disabled_hover_text("this is the active mode"),
+                (Some(_), false) => button.on_disabled_hover_text(t("open a document first")),
+                (None, _) => button.on_disabled_hover_text(t("this is the active mode")),
             };
             if button.clicked() {
                 ui.close();
@@ -470,7 +642,13 @@ impl ShellApp {
     pub fn send_to(&mut self, target: Mode) {
         match handoff::send_to(self, target) {
             Ok(line) => self.set_status(line, false),
-            Err(e) => self.set_status(format!("Send to {}: {e}", target.label()), true),
+            Err(e) => self.set_status(
+                tf(
+                    "Send to {mode}: {error}",
+                    &[("mode", target.name()), ("error", &e)],
+                ),
+                true,
+            ),
         }
     }
 
@@ -504,7 +682,7 @@ impl ShellApp {
         ui.label(egui::RichText::new(&status.text).color(color.gamma_multiply(alpha)));
         if let Some(StatusAction::OpenIn(mode, path)) = &status.action
             && ui
-                .small_button(format!("Open in {} instead", mode.label()))
+                .small_button(tf("Open in {mode} instead", &[("mode", mode.name())]))
                 .clicked()
         {
             self.status = None;
@@ -588,10 +766,10 @@ impl ShellApp {
             .flat_map(|m| routing::extensions_for(*m).iter().copied())
             .collect();
         let mut dialog = rfd::FileDialog::new()
-            .set_title("Open in Redrob Canvas")
-            .add_filter("All documents", all.as_slice());
+            .set_title(t("Open in Redrob Canvas"))
+            .add_filter(t("All documents"), all.as_slice());
         for mode in Mode::ALL {
-            dialog = dialog.add_filter(mode.label(), routing::extensions_for(mode));
+            dialog = dialog.add_filter(mode.name(), routing::extensions_for(mode));
         }
         if let Some(paths) = dialog.pick_files() {
             self.open_paths(paths);
@@ -605,7 +783,10 @@ impl ShellApp {
             match routing::route(&path) {
                 Some(route) => self.open_in(route.mode, &path, route.alternative),
                 None => self.set_status(
-                    format!("{}: no editor opens this kind of file", file_name(&path)),
+                    tf(
+                        "{name}: no editor opens this kind of file",
+                        &[("name", &file_name(&path))],
+                    ),
                     true,
                 ),
             }
@@ -619,7 +800,13 @@ impl ShellApp {
         match self.editor_open(mode, path) {
             Ok(()) => {
                 self.set_mode(mode);
-                let mut status = Status::new(format!("Opened {name} in {}", mode.label()), false);
+                let mut status = Status::new(
+                    tf(
+                        "Opened {name} in {mode}",
+                        &[("name", &name), ("mode", mode.name())],
+                    ),
+                    false,
+                );
                 if let Some(alt) = alternative {
                     status.action = Some(StatusAction::OpenIn(alt, path.to_path_buf()));
                 }
@@ -808,7 +995,7 @@ impl ShellApp {
             }
         }
         let mut open = self.about_open;
-        egui::Window::new(format!("About {}", services::APP_NAME))
+        egui::Window::new(tf("About {app}", &[("app", services::APP_NAME)]))
             .id(egui::Id::new("redrob_canvas_about"))
             .open(&mut open)
             .collapsible(false)
@@ -835,9 +1022,12 @@ impl ShellApp {
                         }
                     }
                     ui.add_space(8.0);
-                    ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
+                    ui.label(tf(
+                        "Version {version}",
+                        &[("version", env!("CARGO_PKG_VERSION"))],
+                    ));
                     ui.add_space(8.0);
-                    ui.label(ABOUT_ATTRIBUTION);
+                    ui.label(t(ABOUT_ATTRIBUTION));
                     ui.add_space(12.0);
                 });
             });
@@ -853,27 +1043,36 @@ impl ShellApp {
         let id = egui::Id::new("redrob_canvas_exit_confirm");
         let modal = egui::Modal::new(id).show(ctx, |ui| {
             ui.set_width(380.0);
-            ui.heading("Unsaved changes");
+            ui.heading(t("Unsaved changes"));
             for (mode, n) in &dirty {
-                ui.label(format!(
-                    "{}: {n} document{} with unsaved changes",
-                    mode.label(),
-                    if *n == 1 { "" } else { "s" }
+                let template = if *n == 1 {
+                    "{mode}: {n} document with unsaved changes"
+                } else {
+                    "{mode}: {n} documents with unsaved changes"
+                };
+                ui.label(tf(
+                    template,
+                    &[("mode", mode.name()), ("n", &n.to_string())],
                 ));
             }
-            ui.label("Go to a mode to save its documents, or quit and lose them.");
+            ui.label(t(
+                "Go to a mode to save its documents, or quit and lose them.",
+            ));
             ui.add_space(8.0);
             let mut choice = ExitChoice::None;
             ui.horizontal(|ui| {
-                if ui.button("Cancel").clicked() {
+                if ui.button(t("Cancel")).clicked() {
                     choice = ExitChoice::Cancel;
                 }
                 for (mode, _) in dirty.iter().filter(|(mode, _)| *mode != active) {
-                    if ui.button(format!("Go to {}", mode.label())).clicked() {
+                    if ui
+                        .button(tf("Go to {mode}", &[("mode", mode.name())]))
+                        .clicked()
+                    {
                         choice = ExitChoice::GoTo(*mode);
                     }
                 }
-                if ui.button("Quit anyway").clicked() {
+                if ui.button(t("Quit anyway")).clicked() {
                     choice = ExitChoice::Quit;
                 }
             });
@@ -1204,6 +1403,8 @@ impl ShellApp {
 
 impl eframe::App for ShellApp {
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        i18n::set_current(self.language.effective());
+        self.sync_language();
         self.shift_held = ctx.input(|i| i.modifiers.shift);
         self.handle_shortcuts(ctx);
         self.flush_pending_opens();
@@ -1228,6 +1429,8 @@ impl eframe::App for ShellApp {
             }
             Mode::Layout => self.ensure_layout().logic(ctx),
         }
+        // An editor created this frame draws in the shell's language from its first frame.
+        self.sync_language();
         self.service_ai(ctx);
     }
 
@@ -1579,6 +1782,49 @@ mod tests {
         assert_eq!(OPEN_SHORTCUT.logical_key, egui::Key::O);
         const { assert!(OPEN_ANY_SHORTCUT.modifiers.shift && OPEN_ANY_SHORTCUT.modifiers.command) };
         assert!(shell.shell_owns_focus());
+    }
+
+    #[test]
+    fn the_shell_language_is_pushed_into_every_editor_and_adopted_back() {
+        let ko = i18n::by_code("ko").unwrap();
+        let mut shell = ShellApp::new(None);
+        shell.language = i18n::Language::new("ko".into(), i18n::english());
+        shell.ensure_vector();
+        shell.ensure_layout();
+        shell.sync_language();
+        assert_eq!(shell.editor_language(Mode::Vector).as_deref(), Some("ko"));
+        assert_eq!(shell.editor_language(Mode::Layout).as_deref(), Some("ko"));
+        assert_eq!(shell.vector.as_ref().unwrap().ui_language().code(), "ko");
+        assert_eq!(shell.language().code, ko.code);
+        // The Layout editor's own Interface Language menu picks Japanese: the shell adopts it and
+        // the Vector editor follows.
+        shell.layout.as_mut().unwrap().ui.language = "ja".into();
+        shell.sync_language();
+        assert_eq!(shell.language().code, "ja");
+        assert_eq!(shell.editor_language(Mode::Vector).as_deref(), Some("ja"));
+        // A language not every editor has stays the editor's own; the shell keeps its language.
+        shell
+            .vector
+            .as_mut()
+            .unwrap()
+            .run(
+                "prefs.set",
+                json!({ "key": "interfaceLanguage", "value": "ru" }),
+            )
+            .unwrap();
+        shell.sync_language();
+        assert_eq!(shell.language().code, "ja");
+        assert_eq!(shell.editor_language(Mode::Vector).as_deref(), Some("ru"));
+        assert_eq!(shell.editor_language(Mode::Layout).as_deref(), Some("ja"));
+        // Back to the system (English here) from the shell's menu: both follow.
+        shell.set_language(i18n::AUTO);
+        shell.sync_language();
+        assert_eq!(shell.editor_language(Mode::Vector).as_deref(), Some("en"));
+        assert_eq!(shell.editor_language(Mode::Layout).as_deref(), Some(""));
+        assert_eq!(Mode::Vector.name(), "Vector");
+        i18n::set_current(ko);
+        assert_eq!(Mode::Vector.name(), "벡터");
+        i18n::set_current(i18n::english());
     }
 
     #[test]

@@ -5,7 +5,7 @@ This file was generated without network access from the exact `Cargo.lock` resol
 
 Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). The four vendored editors under `crafts/` and their own NOTICE texts are recorded in `NOTICE` and `UPSTREAM_NOTICES.md`; the workspace crates they contribute appear in the inventory below as `workspace source`.
 
-- Cargo.lock SHA-256: `40c962e0e53916efb659a53b5f0f3f20f147982ed9e6b42e36b07cc81d853fa4`
+- Cargo.lock SHA-256: `cdef8ecc1bc499515cefd82f1329463291c9f627644ef7f71e05a444f0fb4fb9`
 - Resolved packages: **916**
 - Unique reproduced license/notice texts: **539**
 - Generation mode: `cargo metadata --locked --offline`; no network content was used.
