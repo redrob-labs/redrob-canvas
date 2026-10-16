@@ -19,6 +19,8 @@ egui = { workspace = true }
 log = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+# The system language on first run (Windows has no LANG): the Photo editor pins the same version.
+sys-locale = "=0.3.2"
 redrob-ai = { path = "../../crates/redrob-ai" }
 redrob-photo-ui-egui = { workspace = true }
 redrob-photo-engine = { workspace = true }

@@ -289,7 +289,7 @@ fn reshape_area_is_a_registered_command() {
     assert!(session().commands().iter().any(|c| c.id == "text.reshapeArea" && c.enabled));
 }
 
-/// The Discord report: type in a frame dragged with the Type tool, then the Selection tool. Its
+/// The user report: type in a frame dragged with the Type tool, then the Selection tool. Its
 /// bounding box resizes the type area (the text reflows at its size), it doesn't scale the type.
 #[test]
 fn type_in_a_dragged_frame_resizes_with_the_selection_tool() {

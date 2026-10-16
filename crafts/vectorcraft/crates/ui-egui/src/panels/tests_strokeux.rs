@@ -41,7 +41,7 @@ fn weights_and_dashes_show_in_the_stroke_unit_everywhere() {
 }
 
 /// The Properties panel's Stroke row is the Control bar's: the Stroke link opens the Stroke panel
-/// as a popover and the weight spinner lists the presets (Discord feedback).
+/// as a popover and the weight spinner lists the presets (user feedback).
 #[test]
 fn the_properties_stroke_link_and_weight_presets() {
     let ctx = egui::Context::default();

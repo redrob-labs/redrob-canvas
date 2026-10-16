@@ -964,7 +964,7 @@ fn segment_picks_and_deliberate_anchor_picks_delete_different_components() {
 
 #[test]
 fn pen_with_alt_moves_one_handle_and_converts_anchors() {
-    // Discord feedback: Alt held with the Pen moves a direction handle on its own (and works as
+    // User feedback: Alt held with the Pen moves a direction handle on its own (and works as
     // the Anchor Point tool on a selected path's anchors), while a path is being drawn too.
     let alt = Mods { alt: true, ..Mods::default() };
     let v = view();

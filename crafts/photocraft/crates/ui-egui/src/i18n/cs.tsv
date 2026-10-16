@@ -800,8 +800,8 @@
 	Redrob Canvas Website	Web Redrob Canvas
 	Redrob Canvas on GitHub	Redrob Canvas na GitHubu
 	Redrob website	Web Redrob
-	Redrob community…	Připojit se k Discordu Redrob…
 	Report an Issue…	Nahlásit problém…
+	Report an Issue	Nahlásit problém
 	WIA Support…	Podpora WIA…
 	Apply	Použít
 	HSB/HSL	HSB/HSL
@@ -1091,7 +1091,6 @@
 	Diffusion	Difuze
 	Discard the embedded profile (don't color manage)	Zahodit vložený profil (bez správy barev)
 	Discontiguous	Nesouvislé
-	Discord	Discord
 	Dismiss	Zavřít
 	Display P3	Display P3
 	Display Text	Zobrazený text
@@ -1226,7 +1225,6 @@
 	Invert All	Invertovat vše
 	Invert has no settings.	Invertovat nemá žádná nastavení.
 	Italic	Kurzíva
-	Join us on Discord	Přidejte se k nám na Discordu
 	Justify all	Do bloku vše
 	Justify last centered	Do bloku, poslední řádek na střed
 	Justify last left	Do bloku, poslední řádek vlevo
@@ -3698,7 +3696,6 @@ navigator	Zoom	Zvětšení
 	on	zapnuto
 	off	vypnuto
 	This adjustment ({key}) is kept as imported and can't be edited yet.	Tato úprava ({key}) se uchovává v importované podobě a zatím ji nelze měnit.
-	Redrob community ({url})	Přidejte se na Discord Redrob ({url})
 	{index} of {total}	{index} z {total}
 @plural	{n} step|{n} steps	{n} krok|{n} kroky|{n} kroků
 	{shortcut} assigned.	Zkratka {shortcut} přiřazena.

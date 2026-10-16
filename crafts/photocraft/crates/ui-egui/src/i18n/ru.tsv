@@ -533,8 +533,8 @@
 	Redrob Canvas Website	Сайт Redrob Canvas
 	Redrob Canvas on GitHub	Redrob Canvas на GitHub
 	Report an Issue…	Сообщить о проблеме…
+	Report an Issue	Сообщить о проблеме
 	Redrob website	Сайт Redrob
-	Redrob community…	Discord сообщества Redrob…
 	System Info…	Информация о системе…
 
 # Tools and options bar
@@ -1670,7 +1670,6 @@
 	Preserve Transparency	Сохранить прозрачность
 	Reverse	Обратить
 	Align with layer	По слою
-	Join us on Discord	Мы в Discord
 	Redrob Canvas website	Сайт Redrob Canvas
 	Redrob	Redrob
 	GitHub	GitHub
@@ -2097,7 +2096,6 @@
 	Delete tool preset	Удалить набор инструментов
 	Depth Jitter	Колебание глубины
 	Discontiguous	Несмежные пикселы
-	Discord	Discord
 	Display P3	Display P3
 	Display Text	Показывать текст
 	Divide…	Деление…

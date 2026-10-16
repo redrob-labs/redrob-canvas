@@ -1,20 +1,17 @@
-//! Community and project links: the Help menu, the About dialog, the start screen and the title
-//! bar all open these. URLs follow the crafting-app pattern (`getartcraft.com/apps/<app>`,
-//! `github.com/storytold/<app>`).
+//! Project links: the Help menu, the About dialog, the start screen and the title bar all open
+//! these. Only three targets exist: the Redrob website, the Redrob Canvas repository and its
+//! issue tracker.
 
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
 
-pub const DISCORD: &str = "https://github.com/redrob-labs/redrob-canvas/issues";
-pub const ARTCRAFT_WEBSITE: &str = "https://redrob.ai";
-pub const APP_PAGE: &str = "https://redrob.ai";
+pub const WEBSITE: &str = "https://redrob.ai";
 pub const GITHUB: &str = "https://github.com/redrob-labs/redrob-canvas";
 pub const ISSUES: &str = "https://github.com/redrob-labs/redrob-canvas/issues";
 
 /// Help-menu link commands: (id, url). Labels live in `menus::UI_COMMANDS`.
-pub const COMMANDS: &[(&str, &str)] =
-    &[("help.discord", DISCORD), ("help.website", APP_PAGE), ("help.artcraftWebsite", ARTCRAFT_WEBSITE), ("help.github", GITHUB), ("help.reportIssue", ISSUES)];
+pub const COMMANDS: &[(&str, &str)] = &[("help.website", WEBSITE), ("help.github", GITHUB), ("help.reportIssue", ISSUES)];
 
 pub fn url_for(id: &str) -> Option<&'static str> {
     COMMANDS.iter().find(|c| c.0 == id).map(|c| c.1)
@@ -32,20 +29,20 @@ pub fn open(app: &mut PhotocraftApp, ctx: &egui::Context, url: &str) -> Value {
     json!({"url": url})
 }
 
-/// The prominent "Join us on Discord" button.
-pub fn discord_button(app: &mut PhotocraftApp, ui: &mut egui::Ui, min_width: f32) -> egui::Response {
-    let r = crate::widgets::primary_button(ui, tl!("Join us on Discord"), min_width).on_hover_text(DISCORD);
+/// The prominent "Report an Issue" button (About dialog, start screen).
+pub fn issues_button(app: &mut PhotocraftApp, ui: &mut egui::Ui, min_width: f32) -> egui::Response {
+    let r = crate::widgets::primary_button(ui, tl!("Report an Issue"), min_width).on_hover_text(ISSUES);
     if r.clicked() {
-        open(app, ui.ctx(), DISCORD);
+        open(app, ui.ctx(), ISSUES);
     }
     r
 }
 
-/// "Redrob Canvas website · GitHub · Redrob" as links, centred. Clicks route through [`open`] (the
-/// platform browser service) rather than `ui.hyperlink_to`, which uses the unreliable `ctx.open_url`.
+/// "Redrob website · GitHub · Report an Issue" as links, centred. Clicks route through [`open`]
+/// (the platform browser service) rather than `ui.hyperlink_to`, which uses the unreliable `ctx.open_url`.
 pub fn link_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let t = crate::theme::Tokens::get(ui.ctx());
-    let links = [(tl!("Redrob Canvas website"), APP_PAGE), (tl!("GitHub"), GITHUB), (tl!("Redrob"), ARTCRAFT_WEBSITE)];
+    let links = [(tl!("Redrob website"), WEBSITE), (tl!("GitHub"), GITHUB), (tl!("Report an Issue"), ISSUES)];
     let font = egui::FontId::proportional(12.5);
     let sep = "  ·  ";
     let width: f32 = links.iter().map(|(l, _)| ui.painter().layout_no_wrap((*l).into(), font.clone(), t.text).size().x).sum::<f32>()
@@ -74,7 +71,7 @@ mod tests {
 
     #[test]
     fn links_open_through_the_platform_service() {
-        // Issue #14: links (Help menu, Discord button, start-page links) must open in the browser.
+        // Issue #14: links (Help menu, issues button, start-page links) must open in the browser.
         // They route through the `open_url` service rather than the unreliable `ctx.open_url`.
         use std::sync::{Arc, Mutex};
         let opened: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
@@ -93,16 +90,16 @@ mod tests {
             crate::menus::invoke(&mut app, &ctx, id, json!({})).unwrap();
             assert_eq!(opened.lock().unwrap().last().map(String::as_str), Some(*url), "{id}");
         }
-        // The direct open() helper (Discord button / start-page links) also uses it.
-        open(&mut app, &ctx, DISCORD);
-        assert_eq!(opened.lock().unwrap().last().map(String::as_str), Some(DISCORD));
+        // The direct open() helper (issues button / start-page links) also uses it.
+        open(&mut app, &ctx, ISSUES);
+        assert_eq!(opened.lock().unwrap().last().map(String::as_str), Some(ISSUES));
     }
 
     #[test]
     fn help_menu_lists_links_then_separator_then_system_info_and_about() {
         let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let help: Vec<String> = crate::menus::menu_items(&app).into_iter().filter(|i| i.path == ["Help"]).map(|i| i.id).collect();
-        assert_eq!(help, ["help.discord", "help.website", "help.artcraftWebsite", "help.github", "help.reportIssue", "---", "help.systemInfo", "help.about"]);
+        assert_eq!(help, ["help.website", "help.github", "help.reportIssue", "---", "help.systemInfo", "help.about"]);
         for (id, _) in COMMANDS {
             assert!(crate::menus::is_live(id) && crate::menus::is_enabled(&app, id), "{id}");
         }
@@ -113,9 +110,9 @@ mod tests {
         let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let ctx = egui::Context::default();
         for (id, url) in [
-            ("help.discord", "https://github.com/redrob-labs/redrob-canvas/issues"),
             ("help.website", "https://redrob.ai"),
             ("help.github", "https://github.com/redrob-labs/redrob-canvas"),
+            ("help.reportIssue", "https://github.com/redrob-labs/redrob-canvas/issues"),
         ] {
             let r = crate::menus::invoke(&mut app, &ctx, id, serde_json::json!({})).unwrap();
             assert_eq!(r["url"], url);

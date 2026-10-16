@@ -21,7 +21,7 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.8.0"
+version = "0.8.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
@@ -138,7 +138,11 @@ redrob-vector-tools = { path = "crafts/vectorcraft/crates/tools" }
 redrob-vector-trace = { path = "crafts/vectorcraft/crates/trace" }
 redrob-vector-ui-egui = { path = "crafts/vectorcraft/crates/ui-egui" }
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+# `rustls-tls` bundles the webpki roots; `rustls-tls-native-roots` adds the OS store, so a corporate
+# TLS-inspecting proxy's root (installed on Windows, not in webpki) still verifies; `system-proxy`
+# reads the OS proxy settings (the Windows registry, macOS SystemConfiguration, `HTTPS_PROXY`),
+# which `default-features = false` had switched off.
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "rustls-tls-native-roots", "system-proxy", "stream"] }
 resvg = { version = "0.47", default-features = false, features = ["text"] }
 rfd = "0.17"
 rustix = { version = "1.1", default-features = false }

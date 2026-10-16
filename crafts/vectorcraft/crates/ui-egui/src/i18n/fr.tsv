@@ -230,7 +230,10 @@
 	Artboard:	Plan de travail :
 	Artboards	Plans de travail
 	Redrob website	Site web d’Redrob
-	Redrob website	Site web d’Redrob
+	Report an Issue…	Signaler un problème…
+	Report an Issue	Signaler un problème
+	Bugs, feedback and feature requests on GitHub	Bugs, retours et demandes de fonctionnalités sur GitHub
+	Redrob Canvas releases	Versions de Redrob Canvas
 	Artwork Colors	Couleurs de l’illustration
 	As Multiple Assets	En plusieurs ressources
 	As Single Asset	En une seule ressource
@@ -743,7 +746,6 @@
 	Discard Recovered Documents	Ignorer les documents récupérés
 	Discard White Overprint in Output	Ignorer la surimpression du blanc en sortie
 	Discarded {} recovered document(s)	{} document(s) récupéré(s) ignoré(s)
-	Discord	Discord
 	Discretionary Hyphen	Tiret conditionnel
 	Discretionary Ligatures	Ligatures conditionnelles
 	Display All Blacks Accurately	Afficher tous les noirs avec précision
@@ -1373,9 +1375,6 @@
 	Italian	Italien
 	Japanese	Japonais
 	Join	Joindre
-	Join Our Discord	Rejoignez notre Discord
-	Join our Discord	Rejoignez notre Discord
-	Redrob community on Discord (discord.gg/artcraft)	Rejoignez la communauté Redrob sur Discord (discord.gg/artcraft)
 	Join the lines of each paragraph	Joindre les lignes de chaque paragraphe
 	Join Tool	Outil Jonction
 	Justification…	Justification…
@@ -3233,7 +3232,6 @@
 	Vector illustration — fast, open, scriptable.	Illustration vectorielle — rapide, ouverte, scriptable.
 	Redrob Canvas didn't quit normally last time. These documents had unsaved changes:	Redrob Canvas ne s’est pas fermé normalement la dernière fois. Ces documents comportaient des modifications non enregistrées :
 	Redrob Canvas Help…	Aide de Redrob Canvas…
-	Redrob Canvas on redrob.ai	Redrob Canvas sur redrob.ai
 	Redrob Canvas on GitHub	Redrob Canvas sur GitHub
 	Vectors	Vecteurs
 	Version {version} — open-source vector illustration in pure Rust.	Version {version} — illustration vectorielle open source en pur Rust.

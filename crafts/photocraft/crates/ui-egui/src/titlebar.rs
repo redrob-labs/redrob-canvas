@@ -680,12 +680,12 @@ mod tests {
     #[test]
     fn the_title_bar_promotes_no_community_chat() {
         // Issue #1726: only the always-visible title-bar button is removed. The start-screen
-        // and About buttons and Help › Discord remain available.
+        // and About buttons and Help › Report an Issue remain available.
         for width in [760.0, 1100.0, 1440.0] {
             let mut w = Win::new(width);
             w.frame(vec![]);
             let out = w.frame(vec![]);
-            assert!(!texts(&out).iter().any(|(t, _)| t.contains("Discord")), "no Discord in the bar at {width}");
+            assert!(!texts(&out).iter().any(|(t, _)| t.contains("Report an Issue")), "no issues button in the bar at {width}");
         }
     }
 

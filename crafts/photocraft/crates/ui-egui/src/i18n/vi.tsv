@@ -677,7 +677,6 @@
 	Histogram	Histogram
 	History	Lịch sử
 	Info	Thông tin
-	Redrob community…	Tham gia Discord Redrob…
 	Layer Comps	Tổ hợp lớp
 	Lock Workspace	Khóa không gian làm việc
 	Match All	Đồng bộ tất cả
@@ -705,6 +704,7 @@
 	Pro Theme	Chủ đề Pro
 	Properties	Thuộc tính
 	Report an Issue…	Báo cáo vấn đề…
+	Report an Issue	Báo cáo vấn đề
 	Reset Workspace	Đặt lại không gian làm việc
 	Shapes	Hình
 	Studio Light Theme	Chủ đề Studio sáng
@@ -1962,7 +1962,6 @@ colorRange	Invert	Đảo ngược
 
 # Visual QA finalization
 	New document…	Tài liệu mới…
-	Join us on Discord	Tham gia Discord
 	Redrob Canvas website	Trang web Redrob Canvas
 	Anchor:	Neo:
 	Canvas extension color:	Màu mở rộng canvas:
@@ -2334,7 +2333,6 @@ shape	Appearance	Diện mạo
 	current	hiện tại
 	Cycle Orientation	Đổi hướng khung
 	Difference	Hiệu
-	Discord	Discord
 	Display P3	Display P3
 	GitHub	GitHub
 	Gray Gamma 2.2	Gray Gamma 2.2

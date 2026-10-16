@@ -829,7 +829,33 @@ pub fn install_fonts(ctx: &egui::Context) {
 
 /// [`install_fonts`] with the CJK and other-script fallback fonts taken from `cjk` (tests swap the sources).
 pub fn install_fonts_with(ctx: &egui::Context, cjk: crate::cjk_fonts::Sources) {
-    // egui's default fonts stay last in the stack, for symbols and emoji Inter lacks.
+    install_font_definitions_with(ctx, font_definitions(ctx), cjk);
+}
+
+/// [`install_fonts_with`] with `fonts` (built by [`font_definitions`], possibly with a host's
+/// extra families merged in) as the definitions to install.
+pub fn install_font_definitions_with(ctx: &egui::Context, fonts: FontDefinitions, cjk: crate::cjk_fonts::Sources) {
+    let size = ui_font_size(ctx);
+    ctx.set_fonts(fonts);
+    // egui keeps the first plugin of a type, so a re-install (language change) resets the
+    // existing one. The new definitions land next pass: the plugin must not rescale before then.
+    if ctx
+        .with_plugin::<UiFontSizePlugin, _>(|plugin| {
+            plugin.applied = size;
+            plugin.defer_after_install = true;
+        })
+        .is_none()
+    {
+        ctx.add_plugin(UiFontSizePlugin { applied: size, defer_after_install: true });
+    }
+    // CJK, Thai, Arabic, Indic and other script fallback fonts (craft-fonts' Japanese ones if built in, then
+    // the system's) are registered on demand (cjk_fonts.rs).
+    crate::cjk_fonts::install_with(ctx, cjk);
+}
+
+/// The UI's font definitions: Inter and JetBrains Mono (sized for the UI font size preference)
+/// plus the named weights, with egui's defaults last for symbols and emoji Inter lacks.
+pub fn font_definitions(ctx: &egui::Context) -> FontDefinitions {
     let mut fonts = crate::egui_fonts::definitions();
     // The bundled fonts are inflated on first use (redrob_photo_text::fonts). Should one ever fail
     // to inflate (empty bytes), it is left out and egui's default fonts draw that text.
@@ -858,25 +884,10 @@ pub fn install_fonts_with(ctx: &egui::Context, cjk: crate::cjk_fonts::Sources) {
         stack.extend(fallback.iter().cloned());
         fonts.families.insert(FontFamily::Name(fam.into()), stack);
     }
-    let size = ui_font_size(ctx);
     for (name, data) in &mut fonts.font_data {
         size_ui_font(ctx, name, Arc::make_mut(data));
     }
-    ctx.set_fonts(fonts);
-    // egui keeps the first plugin of a type, so a re-install (language change) resets the
-    // existing one. The new definitions land next pass: the plugin must not rescale before then.
-    if ctx
-        .with_plugin::<UiFontSizePlugin, _>(|plugin| {
-            plugin.applied = size;
-            plugin.defer_after_install = true;
-        })
-        .is_none()
-    {
-        ctx.add_plugin(UiFontSizePlugin { applied: size, defer_after_install: true });
-    }
-    // CJK, Thai, Arabic, Indic and other script fallback fonts (craft-fonts' Japanese ones if built in, then
-    // the system's) are registered on demand (cjk_fonts.rs).
-    crate::cjk_fonts::install_with(ctx, cjk);
+    fonts
 }
 
 /// Has [`install_fonts`]'s stack reached the active fonts? Before that (the first pass, when

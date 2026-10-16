@@ -15,7 +15,7 @@
 //! designcraft-cli perf [--pages N] [--frames N] [--chars N] [--images N] [--runs N] [--strict]  # budgets on a synthetic stress document
 //! designcraft-cli bench FILE [--runs N]  # the same measurements on one document
 //! designcraft-cli validate-pdf FILE.pdf    # run the built-in PDF/X-4 conformance checks
-//! designcraft-cli links                   # Discord, website, app page and GitHub links
+//! designcraft-cli links                   # website, releases, GitHub and issues links
 //! designcraft-cli --version               # print the version
 //! ```
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
@@ -77,10 +77,10 @@ non-zero exit when a step fails."#;
 /// The links line under the usage block.
 fn usage_footer() -> String {
     format!(
-        "\nCommunity: {}  ·  {}  ·  {}",
-        redrob_layout_engine::links::DISCORD,
-        redrob_layout_engine::links::APP_PAGE,
-        redrob_layout_engine::links::GITHUB
+        "\nLinks: {}  ·  {}  ·  {}",
+        redrob_layout_engine::links::WEBSITE,
+        redrob_layout_engine::links::GITHUB,
+        redrob_layout_engine::links::ISSUES
     )
 }
 
@@ -124,7 +124,7 @@ fn main() -> ExitCode {
         Some("validate-pdf") => report(validate_pdf(args.get(1).map(String::as_str))),
         Some("links") => {
             use redrob_layout_engine::links::*;
-            outln!("Discord   {DISCORD}\nWebsite   {WEBSITE}\nApp page  {APP_PAGE}\nGitHub    {GITHUB}\nIssues    {ISSUES}");
+            outln!("Website   {WEBSITE}\nReleases  {APP_PAGE}\nGitHub    {GITHUB}\nIssues    {ISSUES}");
             ExitCode::SUCCESS
         }
         // Asking for help is not an error: it goes to stdout and succeeds. An unknown command

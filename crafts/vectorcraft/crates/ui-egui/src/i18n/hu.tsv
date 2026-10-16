@@ -335,7 +335,10 @@
 	Artboards	Rajztáblák
 	Artboards: {n}	Rajztáblák: {n}
 	Redrob website	Az Redrob webhelye
-	Redrob website	Az Redrob webhelye
+	Report an Issue…	Hiba jelentése…
+	Report an Issue	Hiba jelentése
+	Bugs, feedback and feature requests on GitHub	Hibák, visszajelzések és funkciókérések a GitHubon
+	Redrob Canvas releases	Redrob Canvas kiadások
 	Artwork Colors	Grafika színei
 	As Multiple Assets	Több elemként
 	As Single Asset	Egy elemként
@@ -982,7 +985,6 @@
 	Discard Recovered Documents	Helyreállított dokumentumok elvetése
 	Discard White Overprint in Output	Fehér felülnyomás elvetése a kimenetben
 	Discarded {} recovered document(s)	Elvetett helyreállított dokumentumok: {}
-	Discord	Discord
 	Discretionary Hyphen	Feltételes elválasztójel
 	Discretionary Ligatures	Választható ligatúrák
 	Display All Blacks Accurately	Minden fekete pontos megjelenítése
@@ -1753,9 +1755,6 @@
 	Its graphics, colors and text styles are deleted from this machine.	A grafikái, színei és szövegstílusai törlődnek erről a gépről.
 	Japanese	Japán
 	Join	Összekapcsolás
-	Join Our Discord	Csatlakozz a Discordunkhoz
-	Join our Discord	Csatlakozz a Discordunkhoz
-	Redrob community on Discord (discord.gg/artcraft)	Csatlakozz az Redrob-közösséghez a Discordon (discord.gg/artcraft)
 	Join the lines of each paragraph	Bekezdések sorainak összefűzése
 	Join Tool	Összekapcsolás
 	Joins	Csatlakozások
@@ -3877,7 +3876,6 @@
 	Redrob Canvas documents: one locked object, updated when the file changes.	Redrob Canvas-dokumentumok: egyetlen zárolt objektum, amely a fájl változásakor frissül.
 	Redrob Canvas Generic CMYK (SWOP-like)	Redrob Canvas általános CMYK (SWOP-szerű)
 	Redrob Canvas Help…	Redrob Canvas súgó…
-	Redrob Canvas on redrob.ai	A Redrob Canvas a redrob.ai oldalon
 	Redrob Canvas on GitHub	A Redrob Canvas a GitHubon
 	Redrob Canvas Swatches (.vcswatches)	Redrob Canvas-színminták (.vcswatches)
 	Vectors	Vektorok

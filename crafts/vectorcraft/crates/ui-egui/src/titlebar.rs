@@ -273,10 +273,11 @@ mod tests {
                     assert!(!a.shrink(0.5).intersects(b.shrink(0.5)), "{a:?} overlaps {b:?} at {width}");
                 }
             }
-            // Wide windows show the whole group; narrow ones drop Discord, then the search icon.
+            // Wide windows show the whole group; narrow ones drop the search icon. No community
+            // chat button lives in the bar at any width.
             let texts: Vec<String> = texts(&out).into_iter().map(|(t, _)| t).collect();
             let has = |s: &str| texts.iter().any(|t| t == s);
-            assert_eq!(has("Discord"), width > 1000.0, "{width}: {texts:?}");
+            assert!(!has("Report an Issue"), "{width}: {texts:?}");
             // Search is an icon only (as in Redrob Canvas): its label lives in the tooltip.
             assert!(!has("Search commands and tools"), "{width}: {texts:?}");
         }

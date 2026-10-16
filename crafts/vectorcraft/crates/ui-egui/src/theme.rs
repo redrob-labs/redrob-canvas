@@ -249,6 +249,28 @@ pub fn mono(size: f32) -> FontId {
 }
 
 pub fn install_fonts(ctx: &egui::Context) {
+    if host_owns_style() {
+        return;
+    }
+    ctx.set_fonts(font_definitions());
+}
+
+/// Whether a host application (Redrob Canvas) owns the egui context's fonts and global style:
+/// then [`install_fonts`] installs nothing and [`apply`] only publishes the tokens, and the host
+/// merges [`font_definitions`] into its own set once.
+static HOST_OWNS_STYLE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_host_owns_style(on: bool) {
+    HOST_OWNS_STYLE.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub fn host_owns_style() -> bool {
+    HOST_OWNS_STYLE.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// The UI's font definitions: Source Sans 3 (UI, semibold), JetBrains Mono, the craft-fonts
+/// Japanese faces as fallbacks, and egui's defaults last.
+pub fn font_definitions() -> FontDefinitions {
     let mut fonts = FontDefinitions::default();
     let add = |f: &mut FontDefinitions, name: &str, bytes: &'static [u8]| {
         f.font_data.insert(name.to_owned(), Arc::new(FontData::from_static(bytes)));
@@ -270,7 +292,7 @@ pub fn install_fonts(ctx: &egui::Context) {
     mono.extend(fallback);
     fonts.families.insert(FontFamily::Name(FONT_MONO.into()), mono);
     add_craft_fonts(&mut fonts);
-    ctx.set_fonts(fonts);
+    fonts
 }
 
 /// The egui name of a craft-fonts face.
@@ -295,6 +317,9 @@ fn add_craft_fonts(fonts: &mut FontDefinitions) {
 pub fn apply(ctx: &egui::Context, b: Brightness) {
     let t = Tokens::for_brightness(b);
     ctx.data_mut(|d| d.insert_temp(egui::Id::NULL, t));
+    if host_owns_style() {
+        return;
+    }
     let mut v = if t.dark { Visuals::dark() } else { Visuals::light() };
     v.panel_fill = t.panel;
     v.window_fill = t.panel;

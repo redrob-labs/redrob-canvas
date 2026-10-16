@@ -26,7 +26,6 @@
 	About Redrob Canvas	O aplikaci Redrob Canvas
 	Align to Path	Zarovnat k cestě
 	Cut Path at Selected Anchor Points	Rozdělit cestu ve vybraných kotevních bodech
-	Join Our Discord	Připojit se k našemu Discordu
 	Language	Jazyk
 	UI Brightness	Jas rozhraní
 	Dark	Tmavý
@@ -658,7 +657,10 @@
 	Symbol Libraries	Knihovny symbolů
 	Help	Nápověda
 	Redrob website	Web Redrob
-	Redrob Canvas on redrob.ai	Redrob Canvas na redrob.ai
+	Report an Issue…	Nahlásit problém…
+	Report an Issue	Nahlásit problém
+	Bugs, feedback and feature requests on GitHub	Chyby, zpětná vazba a návrhy funkcí na GitHubu
+	Redrob Canvas releases	Vydání Redrob Canvas
 	Redrob Canvas on GitHub	Redrob Canvas na GitHubu
 	Search Commands…	Hledat příkazy…
 	Redrob Canvas Help…	Nápověda Redrob Canvas…
@@ -3510,10 +3512,6 @@ effect	Regular	Pravidelný
 	Recent Files	Nedávné soubory
 	Vector illustration — fast, open, scriptable.	Vektorová ilustrace — rychlá, otevřená, skriptovatelná.
 	Welcome to Redrob Canvas	Vítejte ve Redrob Canvasu
-	Redrob website	Web Redrob
-	Discord	Discord
-	Join our Discord	Připojit se k našemu Discordu
-	Redrob community on Discord (discord.gg/artcraft)	Připojte se ke komunitě Redrob na Discordu (discord.gg/artcraft)
 	Source code on GitHub	Zdrojový kód na GitHubu
 	All Tools	Všechny nástroje
 	Draw	Kresba
