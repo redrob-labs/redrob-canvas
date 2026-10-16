@@ -118,11 +118,6 @@ pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
                         if icons::button(ui, "share", 22.0, false, crate::i18n::tr(&app.ui.language, "Share")).clicked() {
                             app.status("Export a PDF, IDML or package to share — no cloud account needed.");
                         }
-                        ui.add_space(8.0);
-                        // Always one click away: the Redrob community Discord.
-                        if crate::about::discord_button(ui, "Discord", vec2(78.0, 22.0)) {
-                            let _ = app.run("help.discord", json!({}));
-                        }
                         tools_start = ui.min_rect().min.x;
                         ui.min_rect().width()
                     });
@@ -832,7 +827,7 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
     let _ = Content::Unassigned;
 }
 
-/// Start screen: the Redrob community (Discord first) and project links.
+/// Start screen: the Report an Issue button and project links.
 fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     egui::Frame::NONE.fill(t.panel).corner_radius(10.0).inner_margin(egui::Margin::same(14)).show(ui, |ui| {
@@ -850,7 +845,7 @@ fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
                 ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
                 ui.label(crate::rtl::widget(
                     ui,
-                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Redrob community")).font(semibold(14.0)).color(t.text_strong),
+                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Report an Issue")).font(semibold(14.0)).color(t.text_strong),
                 ));
                 ui.label(crate::rtl::widget(
                     ui,
@@ -874,8 +869,8 @@ fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
                 });
             });
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if crate::about::discord_button(ui, crate::i18n::tr(&app.ui.language, "Join our Discord"), BUTTON) {
-                    let _ = app.run("help.discord", json!({}));
+                if crate::about::issues_button(ui, crate::i18n::tr(&app.ui.language, "Report an Issue"), BUTTON) {
+                    let _ = app.run("help.issues", json!({}));
                 }
             });
         });

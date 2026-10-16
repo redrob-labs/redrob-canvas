@@ -128,7 +128,7 @@ fn a_popover_tile_click_sets_the_fill() {
 }
 
 /// The Properties panel has the Control bar's Fill and Stroke chips and stroke weight, with
-/// nothing selected too, where they set up the next object drawn (Discord feedback).
+/// nothing selected too, where they set up the next object drawn (user feedback).
 #[test]
 fn the_properties_panel_has_the_control_bars_fill_and_stroke() {
     let mut app = app();
@@ -196,7 +196,7 @@ fn the_shortcut_table_maps_f6_to_color() {
     assert_eq!(color.shortcut, "F6");
 }
 
-/// Illustrator's other Window menu panel keys (Discord feedback: Shift+F7 for Align), the dock's
+/// Illustrator's other Window menu panel keys (user feedback: Shift+F7 for Align), the dock's
 /// Layers tab (F7) among them; the menu shows them and the Keyboard Shortcuts editor lists every
 /// panel, so they can be changed.
 #[test]

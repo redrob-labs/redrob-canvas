@@ -264,7 +264,10 @@
 	Artboards	Các bảng vẽ
 	Artboards: {n}	Bảng vẽ: {n}
 	Redrob website	Trang web Redrob
-	Redrob website	Trang web Redrob
+	Report an Issue…	Báo cáo sự cố…
+	Report an Issue	Báo cáo sự cố
+	Bugs, feedback and feature requests on GitHub	Báo lỗi, góp ý và yêu cầu tính năng trên GitHub
+	Redrob Canvas releases	Bản phát hành Redrob Canvas
 	Artistic	Nghệ thuật
 	Artwork Colors	Màu sắc tác phẩm
 	As Multiple Assets	Thành nhiều asset
@@ -875,7 +878,6 @@
 	Discard Recovered Documents	Loại bỏ tài liệu đã phục hồi
 	Discard White Overprint in Output	Loại bỏ in chồng màu trắng khi xuất
 	Discarded {} recovered document(s)	Đã loại bỏ {} tài liệu đã phục hồi
-	Discord	Discord
 	Discretionary Hyphen	Gạch nối tùy chọn
 	Discretionary Ligatures	Chữ ghép tùy chọn
 	Display All Blacks Accurately	Hiển thị tất cả màu đen chính xác
@@ -1619,9 +1621,6 @@
 	Its graphics, colors and text styles are deleted from this machine.	Đồ họa, màu sắc và kiểu văn bản của nó sẽ bị xóa khỏi máy này.
 	Japanese	Tiếng Nhật
 	Join	Nối
-	Join Our Discord	Tham gia Discord
-	Join our Discord	Tham gia Discord của chúng tôi
-	Redrob community on Discord (discord.gg/artcraft)	Tham gia cộng đồng Redrob trên Discord (discord.gg/artcraft)
 	Join the lines of each paragraph	Nối các dòng trong mỗi đoạn văn
 	Join Tool	Công cụ Nối
 	Joins	Kiểu nối
@@ -3544,7 +3543,6 @@
 	Redrob Canvas didn't quit normally last time. These documents had unsaved changes:	Redrob Canvas không thoát bình thường lần trước. Các tài liệu này có thay đổi chưa lưu:
 	Redrob Canvas documents: one locked object, updated when the file changes.	Tài liệu Redrob Canvas: một đối tượng bị khóa, cập nhật khi tệp thay đổi.
 	Redrob Canvas Help…	Trợ giúp Redrob Canvas…
-	Redrob Canvas on redrob.ai	Redrob Canvas trên redrob.ai
 	Redrob Canvas on GitHub	Redrob Canvas trên GitHub
 	Vectors	Vector
 	Version	Phiên bản

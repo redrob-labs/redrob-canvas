@@ -773,7 +773,6 @@
 	Redrob Canvas Website	Veb-sajt Redrob Canvas-a
 	Redrob Canvas on GitHub	Redrob Canvas na GitHub-u
 	Redrob website	Veb-sajt Redrob-a
-	Redrob community…	Pridružite se Redrob Discord zajednici…
 	Report an Issue…	Prijavi problem…
 	WIA Support…	WIA podrška…
 	Apply	Primeni
@@ -1048,7 +1047,6 @@
 	Diffusion	Difuzija
 	Discard the embedded profile (don't color manage)	Odbaci ugrađeni profil (bez upravljanja bojama)
 	Discontiguous	Nesusedno
-	Discord	Discord
 	Dismiss	Odbaci
 	Display P3	Display P3
 	Display Text	Tekst za prikaz
@@ -1174,7 +1172,6 @@
 	Invert All	Invertuj sve
 	Invert has no settings.	Invertovanje nema podešavanja.
 	Italic	Kurziv
-	Join us on Discord	Pridružite nam se na Discordu
 	Justify all	Obostrano poravnaj sve redove
 	Justify last centered	Obostrano, poslednji red centriran
 	Justify last left	Obostrano, poslednji red levo
@@ -3494,7 +3491,6 @@ layerLabel	No Color	Bez boje
 	Custom Pixel Aspect Ratio	Prilagođeni odnos stranica piksela
 	32-bit Preview Options	Opcije 32-bitnog pregleda
 	New Guide	Nova vodilja
-	Redrob community	Pridružite se Redrob Discord zajednici
 	Report an Issue	Prijavi problem
 	Load Files into Stack	Učitaj datoteke u stek
 	Statistics	Statistika
@@ -4049,7 +4045,6 @@ navigator	Zoom	Uvećanje
 	on	uključeno
 	off	isključeno
 	This adjustment ({key}) is kept as imported and can't be edited yet.	Ova korekcija ({key}) je zadržana onakva kakva je uvezena i još ne može da se uređuje.
-	Redrob community ({url})	Pridružite se Redrob Discord zajednici ({url})
 	{index} of {total}	{index} od {total}
 	{shortcut} assigned.	{shortcut} je dodeljena.
 	{shortcut} is already in use by {commands} and will be removed from it when you click OK.	{shortcut} već koristi {commands} i biće uklonjena odatle kada kliknete U redu.

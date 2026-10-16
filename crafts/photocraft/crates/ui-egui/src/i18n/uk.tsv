@@ -511,7 +511,6 @@
 	Redrob Canvas on GitHub	Redrob Canvas на GitHub
 	Report an Issue…	Повідомити про проблему…
 	Redrob website	Вебсайт Redrob
-	Redrob community…	Приєднатися до Discord Redrob…
 	System Info…	Інформація про систему…
 
 # Tools and options bar
@@ -1648,7 +1647,6 @@
 	Preserve Transparency	Зберігати прозорість
 	Reverse	Зворотний
 	Align with layer	Вирівняти за шаром
-	Join us on Discord	Приєднуйтеся до нас у Discord
 	Redrob Canvas website	Вебсайт Redrob Canvas
 	Redrob	Redrob
 	GitHub	GitHub
@@ -2080,7 +2078,6 @@
 	Delete tool preset	Видалити набір інструмента
 	Depth Jitter	Коливання глибини
 	Discontiguous	Несуміжні
-	Discord	Discord
 	Display P3	Display P3
 	Display Text	Показувати текст
 	Divide…	Розділити…
@@ -3333,7 +3330,6 @@ cameraRaw	Masking	Маскування
 	Custom Pixel Aspect Ratio	Довільне співвідношення сторін пікселя
 	32-bit Preview Options	Параметри 32-бітного перегляду
 	New Guide	Нова напрямна
-	Redrob community	Приєднатися до Discord Redrob
 	Report an Issue	Повідомити про проблему
 	WIA Support	Підтримка WIA
 	Load Files into Stack	Завантажити файли у стос

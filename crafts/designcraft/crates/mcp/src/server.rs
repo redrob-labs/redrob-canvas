@@ -136,9 +136,9 @@ impl Server {
                     "capabilities": {"tools": {}, "resources": {}},
                     "serverInfo": {"name": "designcraft", "title": "Redrob Canvas", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": redrob_layout_engine::links::APP_PAGE},
                     "instructions": format!(
-                        "{INSTRUCTIONS} Backend: {}. Community: {} (Discord), {} (app page), {} (source). The `app.links` command returns these links.",
+                        "{INSTRUCTIONS} Backend: {}. Links: {} (issues), {} (releases), {} (source). The `app.links` command returns these links.",
                         self.backend.describe(),
-                        redrob_layout_engine::links::DISCORD,
+                        redrob_layout_engine::links::ISSUES,
                         redrob_layout_engine::links::APP_PAGE,
                         redrob_layout_engine::links::GITHUB
                     ),

@@ -2075,13 +2075,13 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
     let panel = |label: &'static str, id: &'static str| cp(label, "window.panel", json!({ "panel": id }));
     vec![
         (
-            // The application menu: About and Discord only. The in-window bar never shows it (File
+            // The application menu: About and Report an Issue only. The in-window bar never shows it (File
             // is first there, as in Illustrator); on macOS `native_menu::mac_layout` composes the
             // App menu from this entry and the other menus (About from Help, Settings from Edit,
             // Quit from File, Language and Appearance synthesized). It stays first: `from_tree`
             // gives the first menu the App role.
             "Redrob Canvas",
-            vec![c("About Redrob Canvas", "help.about"), c("Join Our Discord", "help.discord")],
+            vec![c("About Redrob Canvas", "help.about"), c("Report an Issue…", "help.issues")],
         ),
         (
             "File",
@@ -2708,9 +2708,9 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
         (
             "Help",
             vec![
-                c("Join Our Discord", "help.discord"),
+                c("Report an Issue…", "help.issues"),
                 c("Redrob website", "help.website"),
-                c("Redrob Canvas on redrob.ai", "help.appPage"),
+                c("Redrob Canvas releases", "help.appPage"),
                 c("Redrob Canvas on GitHub", "help.github"),
                 Sep,
                 c("Search Commands…", "help.commandPalette"),
@@ -3270,7 +3270,7 @@ pub fn invoke(app: &mut VectorcraftApp, id: &str, p: Value) {
         return;
     }
     // Help links: the command returns the URL; a menu click opens it (agents just get the URL).
-    if matches!(id, "help.discord" | "help.website" | "help.appPage" | "help.github") {
+    if matches!(id, "help.issues" | "help.website" | "help.appPage" | "help.github") {
         app.open_link(id);
         return;
     }
