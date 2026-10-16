@@ -2322,9 +2322,18 @@ impl PhotocraftApp {
     /// Install fonts, image loaders and the theme. Call from the app creator when possible so the
     /// very first frame renders; otherwise `logic` does it and the first frame is skipped.
     pub fn setup_context(ctx: &egui::Context, kind: theme::ThemeKind) {
+        Self::setup_context_with_fonts(ctx, kind, |_| {});
+    }
+
+    /// [`setup_context`] with `extend` given the UI font definitions before they are installed:
+    /// a host that shows other editors in the same context merges their font families in here,
+    /// so the fonts are built once with every family present.
+    pub fn setup_context_with_fonts(ctx: &egui::Context, kind: theme::ThemeKind, extend: impl FnOnce(&mut egui::FontDefinitions)) {
         ctx.add_plugin(tool_cursor::CursorLifecycle);
         ctx.add_plugin(single_line_drag::SingleLineDrag::default());
-        theme::install_fonts(ctx);
+        let mut fonts = theme::font_definitions(ctx);
+        extend(&mut fonts);
+        theme::install_font_definitions_with(ctx, fonts, crate::cjk_fonts::Sources::system());
         egui_extras::install_image_loaders(ctx);
         theme::apply(ctx, kind);
         // Right-click in any text field: its Cut / Copy / Paste menu (text_field_menu.rs).
@@ -2334,6 +2343,13 @@ impl PhotocraftApp {
         ctx.options_mut(|o| o.zoom_with_keyboard = false);
         // ⌘/Ctrl + wheel scrolls sideways, as in Photoshop; only a pinch zooms (wheel_nav.rs).
         wheel_nav::configure(ctx);
+    }
+
+    /// The app creator ran [`setup_context`] before the first frame: `logic` must not run it
+    /// again, and the first frame draws (the fonts land at that pass's start).
+    pub fn context_ready(&mut self) {
+        self.styled = true;
+        self.fonts_ready = true;
     }
 }
 

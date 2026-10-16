@@ -258,14 +258,38 @@ impl Tokens {
 /// installed without waiting, and the caller installs again once they are (see
 /// [`system_fonts_ready`]) to add the installed faces for the scripts they lack.
 pub fn install_fonts(ctx: &egui::Context, lang: &str) -> bool {
+    if host_owns_style() {
+        return true;
+    }
+    let (defs, system) = ui_font_definitions(lang);
+    ctx.set_fonts(defs);
+    system
+}
+
+/// The UI's font definitions for the interface language `lang` (Source Sans 3, JetBrains Mono,
+/// the craft-fonts CJK and Arabic faces, the installed fonts for other scripts once cataloged),
+/// and whether the installed fonts were cataloged when they were built.
+pub fn ui_font_definitions(lang: &str) -> (FontDefinitions, bool) {
     let craft = redrob_layout_fonts::REDROB_CRAFT_FONTS;
     let mut defs = font_definitions(craft, lang);
     let system = system_ui_fonts(craft);
     if let Some(system) = system {
         add_system_fallbacks(&mut defs, system, lang);
     }
-    ctx.set_fonts(defs);
-    system.is_some()
+    (defs, system.is_some())
+}
+
+/// Whether a host application (Redrob Canvas) owns the egui context's fonts and global style:
+/// then [`install_fonts`] installs nothing and [`apply`] only publishes the tokens, and the host
+/// merges [`ui_font_definitions`] into its own set once.
+static HOST_OWNS_STYLE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_host_owns_style(on: bool) {
+    HOST_OWNS_STYLE.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub fn host_owns_style() -> bool {
+    HOST_OWNS_STYLE.load(std::sync::atomic::Ordering::Relaxed)
 }
 
 /// Whether [`install_fonts`] would find the installed fonts cataloged.
@@ -493,6 +517,9 @@ pub fn semibold(size: f32) -> FontId {
 
 pub fn apply(ctx: &egui::Context, t: &Tokens) {
     ctx.data_mut(|d| d.insert_temp(egui::Id::NULL, *t));
+    if host_owns_style() {
+        return;
+    }
     let text_styles: std::collections::BTreeMap<TextStyle, FontId> = [
         (TextStyle::Small, FontId::proportional(10.0)),
         (TextStyle::Body, FontId::proportional(11.0)),

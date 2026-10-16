@@ -665,6 +665,19 @@ impl DesignApp {
         self.ui.status = s.into();
     }
 
+    /// A host that owns the context's fonts and global style (`theme::set_host_owns_style`) and
+    /// has installed the UI's font families (`theme::ui_font_definitions`) calls this once: the
+    /// first frame then draws instead of installing fonts and waiting a pass.
+    pub fn adopt_host_context(&mut self, ctx: &egui::Context) {
+        ctx.options_mut(|o| o.zoom_with_keyboard = false);
+        theme::apply(ctx, &theme::Tokens::for_brightness(self.ui.brightness));
+        self.fonts_lang = self.ui.language.clone();
+        self.fonts_system = true;
+        self.styled = true;
+        self.restyle = false;
+        self.fonts_ready = true;
+    }
+
     /// THE entry point for every action (menus, shortcuts, palette, panels, control channel).
     pub fn run(&mut self, id: &str, params: Value) -> Result<Value, String> {
         if let Some(r) = menus::run_ui(self, id, &params) {

@@ -10,6 +10,7 @@ mod i18n;
 mod routing;
 mod services;
 mod shell;
+mod trace;
 mod update;
 
 use shell::{Mode, ShellApp};
@@ -31,7 +32,7 @@ fn native_options() -> eframe::NativeOptions {
 }
 
 /// `--mode photo|vector|layout`: the editor the window opens on.
-fn parse_mode(value: &str) -> Option<Mode> {
+pub fn parse_mode(value: &str) -> Option<Mode> {
     match value.trim().to_ascii_lowercase().as_str() {
         "photo" => Some(Mode::Photo),
         "vector" => Some(Mode::Vector),
@@ -41,6 +42,7 @@ fn parse_mode(value: &str) -> Option<Mode> {
 }
 
 fn main() -> eframe::Result {
+    trace::init();
     let mut mode = Mode::Photo;
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
@@ -86,6 +88,7 @@ fn main() -> eframe::Result {
                 );
             }
             let mut app = ShellApp::new(cc.wgpu_render_state.clone());
+            app.setup_context(&cc.egui_ctx);
             app.set_mode(mode);
             Ok(Box::new(app))
         }),

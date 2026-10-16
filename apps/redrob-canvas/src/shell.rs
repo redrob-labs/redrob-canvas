@@ -1,13 +1,14 @@
 //! The Redrob Canvas shell: one window, a thin top bar, and the three upstream editors hosted as
 //! switchable modes. Editors are created lazily on their first switch and then kept alive, so
-//! switching modes preserves their open documents. The shell also owns what crosses the modes:
+//! switching modes preserves their open documents. The shell owns the egui context's fonts and
+//! style ([`ShellApp::setup_context`]): the fonts are built once, at start-up, with every
+//! editor's families, and the style is the Photo editor's, which every mode draws with. The shell also owns what crosses the modes:
 //! the Mode menu's hand-offs (`handoff`), file routing by extension (`routing`) for Open and
 //! drops, the window title, the exit confirm for editors that are not on screen, and the one
 //! interface language (`i18n`), pushed into each editor's own preference.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use redrob_layout_ui_egui::DesignApp;
@@ -22,7 +23,7 @@ use crate::ai::{self, Action, AiPanel};
 use crate::handoff::Handoff;
 use crate::i18n::{self, t, tf};
 use crate::routing::{self, Route};
-use crate::{handoff, services};
+use crate::{handoff, services, trace};
 
 /// Height of the shell's own top bar, in points.
 pub const TOP_BAR_HEIGHT: f32 = 28.0;
@@ -162,74 +163,44 @@ enum ExitChoice {
     Quit,
 }
 
-/// The fonts an editor installed, by name: which font files and which families they form. Cheap
-/// to compare every frame, unlike `FontDefinitions` itself (that compares the font bytes).
-type FontSignature = (BTreeSet<String>, BTreeMap<String, Vec<String>>);
+/// The font families every editor draws with, added to the Photo editor's font definitions
+/// (the shell's): the Vector and Layout editors' own families (`ui`, `ui-semibold`, `mono`,
+/// `arabic`...) and the font files they name. The generic families (`Proportional`,
+/// `Monospace`) and a name both sides define stay the Photo editor's.
+fn merge_extra_fonts(into: &mut egui::FontDefinitions, extra: &egui::FontDefinitions) {
+    for (name, data) in &extra.font_data {
+        into.font_data
+            .entry(name.clone())
+            .or_insert_with(|| data.clone());
+    }
+    for (family, stack) in &extra.families {
+        if matches!(
+            family,
+            egui::FontFamily::Proportional | egui::FontFamily::Monospace
+        ) {
+            continue;
+        }
+        into.families
+            .entry(family.clone())
+            .or_insert_with(|| stack.clone());
+    }
+}
 
-fn font_signature(defs: &egui::FontDefinitions) -> FontSignature {
-    let names = defs.font_data.keys().cloned().collect();
-    let families = defs
-        .families
+/// The other editors' font definitions, for [`merge_extra_fonts`].
+fn extra_fonts() -> Vec<egui::FontDefinitions> {
+    vec![
+        redrob_vector_ui_egui::theme::font_definitions(),
+        redrob_layout_ui_egui::theme::ui_font_definitions("").0,
+    ]
+}
+
+/// Whether the live font definitions hold every family in `extra` (the Photo editor's own
+/// re-install, after a UI font size change, drops them).
+fn has_families(live: &egui::FontDefinitions, extra: &[egui::FontDefinitions]) -> bool {
+    extra
         .iter()
-        .map(|(family, stack)| (format!("{family:?}"), stack.clone()))
-        .collect();
-    (names, families)
-}
-
-/// The union of every editor's font definitions. Every editor's named families are present, so
-/// whichever editor draws finds its fonts; the generic families (`Proportional`, `Monospace`)
-/// and any name two editors share come from `active`'s own definitions.
-fn merge_fonts(all: &HashMap<Mode, egui::FontDefinitions>, active: Mode) -> egui::FontDefinitions {
-    let mut merged = egui::FontDefinitions::default();
-    merged.font_data.clear();
-    merged.families.clear();
-    let order = all
-        .keys()
-        .copied()
-        .filter(|m| *m != active)
-        .chain(all.contains_key(&active).then_some(active));
-    for mode in order {
-        if let Some(defs) = all.get(&mode) {
-            for (name, data) in &defs.font_data {
-                merged
-                    .font_data
-                    .entry(name.clone())
-                    .or_insert_with(|| data.clone());
-            }
-            for (family, stack) in &defs.families {
-                merged.families.insert(family.clone(), stack.clone());
-            }
-        }
-    }
-    merged
-}
-
-/// An editor's egui style, saved while it is active and restored when it is active again: each
-/// editor applies its theme to the shared context once, on its first frame.
-#[derive(Clone)]
-struct StyleSnapshot {
-    global: Arc<egui::Style>,
-    dark: Arc<egui::Style>,
-    light: Arc<egui::Style>,
-    theme: egui::ThemePreference,
-}
-
-impl StyleSnapshot {
-    fn take(ctx: &egui::Context) -> Self {
-        Self {
-            global: ctx.global_style(),
-            dark: ctx.style_of(egui::Theme::Dark),
-            light: ctx.style_of(egui::Theme::Light),
-            theme: ctx.options(|o| o.theme_preference),
-        }
-    }
-
-    fn restore(&self, ctx: &egui::Context) {
-        ctx.set_global_style(self.global.clone());
-        ctx.set_style_of(egui::Theme::Dark, self.dark.clone());
-        ctx.set_style_of(egui::Theme::Light, self.light.clone());
-        ctx.set_theme(self.theme);
-    }
+        .flat_map(|d| d.families.keys())
+        .all(|family| live.families.contains_key(family))
 }
 
 /// The eframe app: the shell plus its (lazily created) editors.
@@ -238,13 +209,11 @@ pub struct ShellApp {
     /// A switch asked for (button, shortcut, `--mode`) and applied at the next frame's start,
     /// once the shared fonts hold every editor's families.
     pending: Option<Mode>,
-    /// Each editor's own font definitions, read back after it installed them.
-    fonts: HashMap<Mode, egui::FontDefinitions>,
-    /// The signature of the merged definitions the shell installed last; `None` until an editor
-    /// installed fonts of its own.
-    merged_fonts: Option<FontSignature>,
-    /// Each editor's egui style, saved every frame it is active.
-    styles: HashMap<Mode, StyleSnapshot>,
+    /// The Vector and Layout editors' font definitions, merged into the shell's fonts at
+    /// start-up and again should the Photo editor re-install its own ([`has_families`]).
+    extra_fonts: Vec<egui::FontDefinitions>,
+    /// [`Self::setup_context`] ran: the fonts hold every editor's families from the first frame.
+    context_ready: bool,
     photo: Option<PhotocraftApp>,
     vector: Option<VectorcraftApp>,
     layout: Option<DesignApp>,
@@ -252,6 +221,8 @@ pub struct ShellApp {
     wgpu: Option<eframe::egui_wgpu::RenderState>,
     /// Modes whose editor has been created, in creation order (for tests and the status line).
     created: Vec<Mode>,
+    /// Modes whose editor was told the host owns the context ([`Self::adopt_context`]).
+    adopted: Vec<Mode>,
     /// The AI dock, menu, engine, job queue and agent.
     pub ai: AiPanel,
     /// What the active mode's bridge could do when this frame's logic ran.
@@ -278,6 +249,13 @@ pub struct ShellApp {
     /// The language value last written into each editor's own preference, so a change the editor
     /// made itself (its own Language menu) is told apart from one the shell made.
     pushed_language: HashMap<Mode, String>,
+    /// When the last switch was asked for and how many frames ran since it applied (trace).
+    switch_asked: Option<Instant>,
+    frames_since_switch: u32,
+    /// `REDROB_CANVAS_TRACE_SWITCH=vector,layout,photo`: switch to each in turn, 40 frames apart
+    /// (a measurement that needs no input device), then quit.
+    trace_switches: Vec<Mode>,
+    frame_count: u32,
 }
 
 impl Default for ShellApp {
@@ -294,14 +272,14 @@ impl ShellApp {
         Self {
             mode: Mode::default(),
             pending: None,
-            fonts: HashMap::new(),
-            merged_fonts: None,
-            styles: HashMap::new(),
+            extra_fonts: Vec::new(),
+            context_ready: false,
             photo: None,
             vector: None,
             layout: None,
             wgpu,
             created: Vec::new(),
+            adopted: Vec::new(),
             ai,
             caps: Capabilities::none(Mode::default()),
             status: None,
@@ -314,6 +292,13 @@ impl ShellApp {
             about_lockup: None,
             language: i18n::Language::load(),
             pushed_language: HashMap::new(),
+            switch_asked: None,
+            frames_since_switch: u32::MAX,
+            trace_switches: std::env::var("REDROB_CANVAS_TRACE_SWITCH")
+                .ok()
+                .map(|v| v.split(',').filter_map(crate::parse_mode).rev().collect())
+                .unwrap_or_default(),
+            frame_count: 0,
         }
     }
 
@@ -470,6 +455,43 @@ impl ShellApp {
         }
     }
 
+    /// Prepare the egui context once, before the first frame: the Photo editor's plugins, image
+    /// loaders, theme and fonts, with the other editors' font families merged into the one font
+    /// set, and the other editors told that the host owns the style. After this no editor
+    /// installs fonts or resets the global style, and a switch to any mode draws at once.
+    pub fn setup_context(&mut self, ctx: &egui::Context) {
+        redrob_vector_ui_egui::theme::set_host_owns_style(true);
+        redrob_layout_ui_egui::theme::set_host_owns_style(true);
+        self.extra_fonts = extra_fonts();
+        let theme = self.ensure_photo().ui.theme;
+        // The Photo editor's first frame re-installs its fonts when the context does not yet
+        // carry its language; mark it now, so the one install below is the only one. (Its own
+        // install here is replaced by the merged set before either lands: a pending `set_fonts`
+        // is one slot.)
+        let language = self
+            .ensure_photo()
+            .session
+            .prefs()
+            .interface
+            .language
+            .clone();
+        redrob_photo_ui_egui::i18n::sync_context(ctx, &language);
+        let extra = self.extra_fonts.clone();
+        PhotocraftApp::setup_context_with_fonts(ctx, theme, |fonts| {
+            for defs in &extra {
+                merge_extra_fonts(fonts, defs);
+            }
+        });
+        if let Some(photo) = self.photo.as_mut() {
+            photo.context_ready();
+        }
+        self.adopted.push(Mode::Photo);
+        self.context_ready = true;
+        trace::log(|| {
+            "shell set up the context: fonts built once with every mode's families".to_string()
+        });
+    }
+
     pub fn mode(&self) -> Mode {
         self.mode
     }
@@ -482,6 +504,10 @@ impl ShellApp {
     /// Ask for `mode`: the switch is applied at the start of the next frame ([`Self::apply_pending`]).
     /// The editor is created on its first visit and kept afterwards.
     pub fn set_mode(&mut self, mode: Mode) {
+        if mode != self.mode {
+            trace::log(|| format!("switch asked: {} -> {}", self.mode.label(), mode.label()));
+            self.switch_asked = Some(Instant::now());
+        }
         self.pending = Some(mode);
     }
 
@@ -490,9 +516,9 @@ impl ShellApp {
         self.pending
     }
 
-    /// Apply a requested switch. Not while an editor's own font definitions are the live ones
-    /// (another editor would draw with families they lack and egui would panic): the shell
-    /// installs the merged set first ([`Self::sync_fonts`]) and the switch waits one frame.
+    /// Apply a requested switch. The fonts hold every editor's families from the first frame
+    /// ([`Self::setup_context`]), so the new editor draws in this very frame; only after the Photo
+    /// editor re-installed its own fonts does the switch wait a pass for [`Self::sync_fonts`].
     pub fn apply_pending(&mut self, ctx: &egui::Context) {
         let Some(next) = self.pending else { return };
         if next == self.mode {
@@ -500,49 +526,47 @@ impl ShellApp {
             return;
         }
         if !self.fonts_settled(ctx) {
+            trace::log(|| "switch waits: fonts not settled".to_string());
             return;
         }
         self.pending = None;
-        self.styles.insert(self.mode, StyleSnapshot::take(ctx));
+        trace::log(|| {
+            format!(
+                "switch applied: {} -> {} ({:.1} ms after the ask)",
+                self.mode.label(),
+                next.label(),
+                self.switch_asked
+                    .map_or(0.0, |t| t.elapsed().as_secs_f64() * 1000.0)
+            )
+        });
+        self.frames_since_switch = 0;
         self.mode = next;
-        if let Some(style) = self.styles.get(&next) {
-            style.restore(ctx);
-        }
-        if self.fonts.contains_key(&next) {
-            let merged = merge_fonts(&self.fonts, next);
-            self.merged_fonts = Some(font_signature(&merged));
-            ctx.set_fonts(merged);
-        }
     }
 
-    /// Whether the live font definitions are egui's defaults or the shell's merged set.
+    /// Whether the live font definitions hold every editor's families.
     fn fonts_settled(&self, ctx: &egui::Context) -> bool {
-        match &self.merged_fonts {
-            None => self.fonts.is_empty(),
-            Some(merged) => ctx.fonts(|f| font_signature(f.definitions()) == *merged),
-        }
+        !self.context_ready || ctx.fonts(|f| has_families(f.definitions(), &self.extra_fonts))
     }
 
-    /// Each editor installs its own fonts with `Context::set_fonts`, replacing everyone else's.
-    /// When the live definitions are not the shell's merged set, the active editor just did
-    /// that: remember its set and install the union of all of them.
+    /// The Photo editor re-installs its fonts on its own when the UI font size or language
+    /// changes, replacing the shell's set: merge the other editors' families back in. A no-op
+    /// every other frame (one look at the family names).
     fn sync_fonts(&mut self, ctx: &egui::Context) {
-        let live = ctx.fonts(|f| font_signature(f.definitions()));
-        if self.merged_fonts.as_ref() == Some(&live) {
+        if !self.context_ready || self.fonts_settled(ctx) {
             return;
         }
-        if self.merged_fonts.is_none()
-            && self.fonts.is_empty()
-            && live == font_signature(&egui::FontDefinitions::default())
-        {
-            // Still egui's defaults: no editor has installed anything yet.
-            return;
+        let mut defs = ctx.fonts(|f| f.definitions().clone());
+        for extra in &self.extra_fonts {
+            merge_extra_fonts(&mut defs, extra);
         }
-        let defs = ctx.fonts(|f| f.definitions().clone());
-        self.fonts.insert(self.mode, defs);
-        let merged = merge_fonts(&self.fonts, self.mode);
-        self.merged_fonts = Some(font_signature(&merged));
-        ctx.set_fonts(merged);
+        trace::log(|| {
+            format!(
+                "shell set_fonts (re-merge after a Photo re-install): {} fonts, {} families",
+                defs.font_data.len(),
+                defs.families.len()
+            )
+        });
+        ctx.set_fonts(defs);
     }
 
     /// The shell's own top bar: brand, the mode buttons, the AI menu, and the right slot.
@@ -1312,7 +1336,8 @@ impl ShellApp {
             self.created.push(Mode::Photo);
         }
         let wgpu = self.wgpu.clone();
-        self.photo.get_or_insert_with(|| Self::build_photo(wgpu))
+        self.photo
+            .get_or_insert_with(|| timed("build Photo", || Self::build_photo(wgpu)))
     }
 
     fn build_photo(wgpu: Option<eframe::egui_wgpu::RenderState>) -> PhotocraftApp {
@@ -1341,7 +1366,22 @@ impl ShellApp {
         if self.vector.is_none() {
             self.created.push(Mode::Vector);
         }
-        self.vector.get_or_insert_with(Self::build_vector)
+        self.vector
+            .get_or_insert_with(|| timed("build Vector", Self::build_vector))
+    }
+
+    /// The editor `mode` draws with the context the shell prepared: created if need be, and told
+    /// once that the host owns the fonts and style.
+    fn adopt_context(&mut self, mode: Mode, ctx: &egui::Context) {
+        if !self.context_ready || self.adopted.contains(&mode) {
+            return;
+        }
+        match mode {
+            Mode::Photo => self.ensure_photo().context_ready(),
+            Mode::Vector => self.ensure_vector().adopt_host_context(ctx),
+            Mode::Layout => self.ensure_layout().adopt_host_context(ctx),
+        }
+        self.adopted.push(mode);
     }
 
     fn build_vector() -> VectorcraftApp {
@@ -1359,7 +1399,8 @@ impl ShellApp {
         if self.layout.is_none() {
             self.created.push(Mode::Layout);
         }
-        self.layout.get_or_insert_with(Self::build_layout)
+        self.layout
+            .get_or_insert_with(|| timed("build Layout", Self::build_layout))
     }
 
     fn build_layout() -> DesignApp {
@@ -1388,6 +1429,10 @@ impl ShellApp {
     /// The editor area below the top bar: the active editor draws its own panels inside it.
     fn editor_area(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let rect = ui.available_rect_before_wrap();
+        // The area is never left to the window's clear colour (black): the panel fill is under
+        // whatever the editor draws, including on the frame it is created.
+        ui.painter().rect_filled(rect, 0.0, ui.visuals().panel_fill);
+        self.adopt_context(self.mode(), ui.ctx());
         let mut child = ui.new_child(
             egui::UiBuilder::new()
                 .max_rect(rect)
@@ -1401,10 +1446,34 @@ impl ShellApp {
     }
 }
 
+/// Run `f`, tracing how long it took.
+fn timed<R>(what: &str, f: impl FnOnce() -> R) -> R {
+    let t = Instant::now();
+    let r = f();
+    trace::log(|| format!("{what}: {:.1} ms", t.elapsed().as_secs_f64() * 1000.0));
+    r
+}
+
 impl eframe::App for ShellApp {
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         i18n::set_current(self.language.effective());
         self.sync_language();
+        let t_logic = Instant::now();
+        self.frame_count += 1;
+        if !self.trace_switches.is_empty() {
+            ctx.request_repaint();
+            if self.frame_count.is_multiple_of(40) {
+                if let Some(next) = self.trace_switches.pop() {
+                    self.set_mode(next);
+                } else {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+            }
+        } else if self.frame_count == 200
+            && std::env::var_os("REDROB_CANVAS_TRACE_SWITCH").is_some()
+        {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
         self.shift_held = ctx.input(|i| i.modifiers.shift);
         self.handle_shortcuts(ctx);
         self.flush_pending_opens();
@@ -1415,6 +1484,7 @@ impl eframe::App for ShellApp {
             ctx.request_repaint();
         }
         // Only the active editor runs its frame logic (and so sees this frame's input).
+        self.adopt_context(self.mode, ctx);
         match self.mode {
             Mode::Photo => eframe::App::logic(self.ensure_photo(), ctx, frame),
             Mode::Vector => {
@@ -1432,6 +1502,21 @@ impl eframe::App for ShellApp {
         // An editor created this frame draws in the shell's language from its first frame.
         self.sync_language();
         self.service_ai(ctx);
+        if self.frames_since_switch < 12 {
+            let n = self.frames_since_switch;
+            trace::log(|| {
+                let (fonts, families) = ctx.fonts(|f| {
+                    (
+                        f.definitions().font_data.len(),
+                        f.definitions().families.len(),
+                    )
+                });
+                format!(
+                    "frame {n} logic: {:.1} ms (live fonts: {fonts} fonts, {families} families)",
+                    t_logic.elapsed().as_secs_f64() * 1000.0
+                )
+            });
+        }
     }
 
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
@@ -1459,6 +1544,7 @@ impl eframe::App for ShellApp {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        let t_ui = Instant::now();
         self.sync_window_title(ui.ctx());
         self.top_bar(ui);
         let actions = self.ai_dock(ui);
@@ -1470,7 +1556,19 @@ impl eframe::App for ShellApp {
             .show(ui, |ui| self.editor_area(ui, frame));
         self.about_window(ui.ctx());
         self.exit_dialog(ui.ctx());
-        self.styles.insert(self.mode, StyleSnapshot::take(ui.ctx()));
+        if self.frames_since_switch < 12 {
+            let n = self.frames_since_switch;
+            trace::log(|| {
+                format!(
+                    "frame {n} ui: {:.1} ms ({:.1} ms after the ask)",
+                    t_ui.elapsed().as_secs_f64() * 1000.0,
+                    self.switch_asked
+                        .map_or(0.0, |t| t.elapsed().as_secs_f64() * 1000.0)
+                )
+            });
+            self.frames_since_switch += 1;
+            ui.ctx().request_repaint();
+        }
     }
 
     fn on_exit(&mut self) {
@@ -1499,6 +1597,7 @@ impl eframe::App for ShellApp {
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
 
     #[test]
     fn modes_switch_and_each_has_a_distinct_shortcut() {
@@ -1555,9 +1654,15 @@ mod tests {
     }
 
     #[test]
-    fn a_switch_waits_until_the_merged_fonts_are_live() {
+    fn a_switch_applies_at_once_and_waits_only_for_a_photo_font_reinstall() {
         let ctx = egui::Context::default();
         let mut shell = ShellApp::new(None);
+        let named = |name: &str| {
+            let mut defs = egui::FontDefinitions::default();
+            defs.families
+                .insert(egui::FontFamily::Name(name.into()), vec!["Hack".into()]);
+            defs
+        };
         let frame = |shell: &mut ShellApp, f: &dyn Fn(&egui::Context)| {
             let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
                 f(ui.ctx());
@@ -1566,87 +1671,96 @@ mod tests {
             });
             out.textures_delta.clear();
         };
-        let named = |name: &str| {
-            let mut defs = egui::FontDefinitions::default();
-            defs.families
-                .insert(egui::FontFamily::Name(name.into()), vec!["Hack".into()]);
-            defs
-        };
-        // Frame 1: the Photo editor installs fonts of its own, with a named family.
-        frame(&mut shell, &|ctx| ctx.set_fonts(named("photo-ui")));
-        assert!(
-            shell.fonts.is_empty(),
-            "set_fonts applies at the next frame"
-        );
-        // Frame 2: the shell records them; one editor's set is the merged set, so a switch asked
-        // for now goes through at once.
+        // The shell's one font set: Photo's definitions with the other editors' families.
+        shell.extra_fonts = vec![named("vector-ui"), named("layout-ui")];
+        let mut all = named("photo-ui");
+        for extra in &shell.extra_fonts {
+            merge_extra_fonts(&mut all, extra);
+        }
+        ctx.set_fonts(all);
+        shell.context_ready = true;
+        frame(&mut shell, &|_| {});
+        assert!(shell.fonts_settled(&ctx));
+        // A switch goes through in the frame it is asked for.
         shell.set_mode(Mode::Vector);
         frame(&mut shell, &|_| {});
-        assert!(shell.fonts.contains_key(&Mode::Photo));
         assert_eq!((shell.mode(), shell.pending_mode()), (Mode::Vector, None));
-        // Frame 3: the Vector editor installs its own set, dropping Photo's family.
-        frame(&mut shell, &|ctx| ctx.set_fonts(named("vector-ui")));
-        // Frame 4: Vector's set is live and is not the merged one: a switch back must wait...
-        shell.set_mode(Mode::Photo);
+        // The Photo editor re-installs its own fonts (UI font size change), dropping the others'
+        // families: a switch asked for while that set is live waits one pass...
+        frame(&mut shell, &|ctx| ctx.set_fonts(named("photo-ui")));
+        shell.set_mode(Mode::Layout);
         frame(&mut shell, &|_| {});
-        assert!(shell.fonts.contains_key(&Mode::Vector));
         assert_eq!(
             (shell.mode(), shell.pending_mode()),
-            (Mode::Vector, Some(Mode::Photo))
+            (Mode::Vector, Some(Mode::Layout))
         );
-        // Frame 5: ...until the union is live: both named families present.
+        // ...for the shell to merge them back, once.
         frame(&mut shell, &|_| {});
         let live = ctx.fonts(|f| f.definitions().clone());
-        assert!(
-            live.families
-                .contains_key(&egui::FontFamily::Name("photo-ui".into()))
-        );
-        assert!(
-            live.families
-                .contains_key(&egui::FontFamily::Name("vector-ui".into()))
-        );
-        assert_eq!((shell.mode(), shell.pending_mode()), (Mode::Photo, None));
+        for family in ["photo-ui", "vector-ui", "layout-ui"] {
+            assert!(
+                live.families
+                    .contains_key(&egui::FontFamily::Name(family.into())),
+                "{family} is live"
+            );
+        }
+        assert_eq!((shell.mode(), shell.pending_mode()), (Mode::Layout, None));
         assert!(shell.fonts_settled(&ctx));
     }
 
     #[test]
-    fn merged_fonts_prefer_the_active_editors_generic_families() {
-        let mut a = egui::FontDefinitions::default();
-        a.families
+    fn extra_families_never_replace_the_generic_ones_or_a_shared_name() {
+        let mut into = egui::FontDefinitions::default();
+        into.families
             .insert(egui::FontFamily::Proportional, vec!["A".into()]);
-        a.families
+        into.families
             .insert(egui::FontFamily::Name("shared".into()), vec!["A".into()]);
-        let mut b = egui::FontDefinitions::default();
-        b.families
+        let mut extra = egui::FontDefinitions::default();
+        extra
+            .families
             .insert(egui::FontFamily::Proportional, vec!["B".into()]);
-        b.families
+        extra
+            .families
             .insert(egui::FontFamily::Name("shared".into()), vec!["B".into()]);
-        b.families
+        extra
+            .families
             .insert(egui::FontFamily::Name("only-b".into()), vec!["B".into()]);
-        let all = HashMap::from([(Mode::Photo, a), (Mode::Vector, b)]);
-        let merged = merge_fonts(&all, Mode::Photo);
+        merge_extra_fonts(&mut into, &extra);
         assert_eq!(
-            merged.families[&egui::FontFamily::Proportional],
+            into.families[&egui::FontFamily::Proportional],
             vec!["A".to_string()]
         );
         assert_eq!(
-            merged.families[&egui::FontFamily::Name("shared".into())],
+            into.families[&egui::FontFamily::Name("shared".into())],
             vec!["A".to_string()]
         );
-        assert!(
-            merged
-                .families
-                .contains_key(&egui::FontFamily::Name("only-b".into()))
-        );
-        let merged = merge_fonts(&all, Mode::Vector);
         assert_eq!(
-            merged.families[&egui::FontFamily::Proportional],
+            into.families[&egui::FontFamily::Name("only-b".into())],
             vec!["B".to_string()]
         );
         assert_eq!(
-            merged.font_data.len(),
+            into.font_data.len(),
             egui::FontDefinitions::default().font_data.len()
         );
+        assert!(has_families(&into, &[extra.clone()]));
+        assert!(!has_families(&egui::FontDefinitions::default(), &[extra]));
+    }
+
+    #[test]
+    fn every_editors_families_are_in_the_shells_font_set() {
+        let mut all = egui::FontDefinitions::default();
+        let extra = extra_fonts();
+        for defs in &extra {
+            merge_extra_fonts(&mut all, defs);
+        }
+        for family in ["ui", "ui-semibold", "mono", "semibold", "arabic"] {
+            assert!(
+                all.families
+                    .contains_key(&egui::FontFamily::Name(family.into())),
+                "{family}"
+            );
+        }
+        assert!(has_families(&all, &extra));
     }
 
     #[test]
