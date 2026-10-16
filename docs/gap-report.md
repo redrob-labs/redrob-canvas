@@ -171,3 +171,4 @@ AI 도크 엔진 (IOPaint 1.6 + rembg, `crates/redrob-ai` 가 쓰는 것과 동�
 - Photoshop: 이 호스트에 없다. 50개 작업 정의가 Photoshop 작업이므로 열은 참조값이다.
 - GPU: gui-box-gpu (L40S 46 GB, NICE DCV 실제 X 세션). 이 호스트와의 CPU 비교는 `:0` 이 Canvas 테스트에 쓰이고 있어 못 했다.
 - 두 번째·세 번째 Canvas 실행 에이전트가 중간에 멈춰 세 번에 나눠 돌렸다. 판정 파일은 이어 쓰기라 결과는 하나다.
+- 검증(Stage 5): Canvas 의 timed 값 12개는 전부 `run.log` 에서 다시 찾았다. 'O' 50개 중 45개는 스크린샷 파일이 있고, 5개(PS-01, PS-03, PS-05, EX-01, LO-01)는 스크린샷 없이 수치 근거(RMSE·내보낸 파일 검사)만 있다. GIMP·Krita 의 'O' 는 작업별 JSON 출력(`results/{gimp,krita}/json/<ID>.json`)이 근거다.
