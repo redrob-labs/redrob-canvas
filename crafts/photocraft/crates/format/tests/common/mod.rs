@@ -3,9 +3,9 @@
 
 use std::sync::Arc;
 
-use photocraft_color::{BlendMode, Color, ColorMode, SampleType};
-use photocraft_doc::text::{CharStyle, ParagraphRun, ParagraphStyle, TextRun, TextShape, TextWarp};
-use photocraft_doc::*;
+use redrob_photo_color::{BlendMode, Color, ColorMode, SampleType};
+use redrob_photo_doc::text::{CharStyle, ParagraphRun, ParagraphStyle, TextRun, TextShape, TextWarp};
+use redrob_photo_doc::*;
 use serde_json::json;
 
 pub struct Rng(u64);
@@ -82,7 +82,7 @@ pub fn rich_doc(mode: ColorMode, depth: SampleType) -> Document {
             saturation: -10.0,
             lightness: 5.0,
             colorize: false,
-            ranges: photocraft_doc::adjust::HueRange::defaults(),
+            ranges: redrob_photo_doc::adjust::HueRange::defaults(),
         }),
     );
     adj.visible = false;
@@ -186,8 +186,11 @@ pub fn rich_doc(mode: ColorMode, depth: SampleType) -> Document {
                 density: 0.75,
                 feather: 0.0,
             }),
-            warp: Some(photocraft_geom::warp::Warp::custom(photocraft_geom::warp::BezierMesh::identity([0.0, 0.0, 48.0, 24.0], 2, 1), [0.0, 0.0, 48.0, 24.0])),
-            stack_mode: Some(photocraft_doc::StackMode::Median),
+            warp: Some(redrob_photo_geom::warp::Warp::custom(
+                redrob_photo_geom::warp::BezierMesh::identity([0.0, 0.0, 48.0, 24.0], 2, 1),
+                [0.0, 0.0, 48.0, 24.0],
+            )),
+            stack_mode: Some(redrob_photo_doc::StackMode::Median),
             // Distort / Perspective placement, so the round trip covers it.
             perspective: Some([1.0, 0.1, 2.0, 0.05, 1.0, 3.0, 0.001, 0.0005, 1.0]),
         }),
@@ -215,17 +218,17 @@ pub fn rich_doc(mode: ColorMode, depth: SampleType) -> Document {
     let mut alpha = AlphaChannel::new("Alpha 1", ch.clone());
     alpha.color = Color::rgb(0.0, 0.5, 1.0);
     alpha.opacity = 0.35;
-    alpha.indicates = photocraft_doc::ColorIndicates::SelectedAreas;
+    alpha.indicates = redrob_photo_doc::ColorIndicates::SelectedAreas;
     d.channels.push(alpha);
     d.channels.push(AlphaChannel { spot: Some((Color::rgb(1.0, 0.0, 0.5), 0.7)), ..AlphaChannel::new("Spot", ch.clone()) });
     d.quick_mask = Some(AlphaChannel::new("Quick Mask", ch));
     d.quick_mask_unselected = true;
-    let mut pat = Surface::new(PixelFormat::new(photocraft_color::ColorMode::Rgb, photocraft_color::SampleType::U16, true));
+    let mut pat = Surface::new(PixelFormat::new(redrob_photo_color::ColorMode::Rgb, redrob_photo_color::SampleType::U16, true));
     scribble(&mut pat, 21, false);
-    d.patterns.push(photocraft_doc::Pattern::new("$$$/Patterns/Test=Scribble", pat, 32, 24));
-    d.color_table = Some(photocraft_doc::ColorTable { colors: vec![[0, 0, 0], [255, 128, 0]], transparent: Some(1) });
-    d.duotone = Some(photocraft_doc::Duotone {
-        inks: vec![photocraft_doc::DuotoneInk::new("Black", [0.0; 3]), photocraft_doc::DuotoneInk::new("PANTONE 151 C", [1.0, 0.5, 0.0])],
+    d.patterns.push(redrob_photo_doc::Pattern::new("$$$/Patterns/Test=Scribble", pat, 32, 24));
+    d.color_table = Some(redrob_photo_doc::ColorTable { colors: vec![[0, 0, 0], [255, 128, 0]], transparent: Some(1) });
+    d.duotone = Some(redrob_photo_doc::Duotone {
+        inks: vec![redrob_photo_doc::DuotoneInk::new("Black", [0.0; 3]), redrob_photo_doc::DuotoneInk::new("PANTONE 151 C", [1.0, 0.5, 0.0])],
         psd_raw: Some(vec![1, 2, 3]),
     });
     d.guides =
@@ -257,7 +260,7 @@ pub fn vector_path() -> Path {
             op: PathOp::Combine,
             knots: vec![
                 Knot::corner(1.5, 2.25),
-                Knot::smooth(photocraft_geom::Point::new(40.0, 5.0), photocraft_geom::Point::new(30.0, 0.0), photocraft_geom::Point::new(50.0, 10.0)),
+                Knot::smooth(redrob_photo_geom::Point::new(40.0, 5.0), redrob_photo_geom::Point::new(30.0, 0.0), redrob_photo_geom::Point::new(50.0, 10.0)),
                 Knot::corner(10.0, 60.0),
             ],
         },

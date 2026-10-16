@@ -26,9 +26,19 @@ or Graphite were removed in `d4854f2`. The four ArtCraft trees arrived afterward
 therefore taken by merge, not file by file.
 
 Each upstream's own `Cargo.toml` is parked beside it as `crafts/<name>/Cargo.upstream.toml`, and
-`tools/merge_workspaces.py` generates the root `Cargo.toml` from the four and `tools/rebrand_crafts.py` rebrands their user-visible strings. Only `crates/*` of each
-editor are workspace members; their `apps/`, `xtask` and web shells are excluded, because the one
-shell here is `apps/redrob-canvas`.
+`tools/merge_workspaces.py` generates the root `Cargo.toml` from the four. Before it reads them it
+runs three idempotent scripts, so the tree a pull brings back is turned into ours again:
+
+| Script | What it does to the subtree |
+|---|---|
+| `tools/prune_upstream.py` | deletes the upstream repository furniture (`docs/`, `book/`, `packaging/`, `.github/`, READMEs, `examples/`, `perf/`, `scorecard/`, `scripts/`, `xtask/`, `Dockerfile`); keeps `LICENSE-*`, `NOTICE`, `ATTRIBUTION.md`, `assets/`, `vendor/`, `licenses/`, `contributors/` |
+| `tools/rename_crates.py` | `photocraft-*` to `redrob-photo-*`, `vectorcraft-*` to `redrob-vector-*`, `designcraft-*` to `redrob-layout-*`, `craft-*` to `redrob-craft-*`, in every manifest, `use` path and the lock |
+| `tools/rename_identifiers.py` | file extensions (`.pcraft` to `.rphoto`, `.vectorcraft`/`.drawcraft` to `.rvector`, `.designcraft` to `.rlayout`), URI schemes (`redrob-photo://` ...), MIME types (`application/x-redrob-photo` ...) and env prefixes (`REDROB_PHOTO_*`, `REDROB_VECTOR_*`, `REDROB_LAYOUT_*`, `REDROB_CRAFT_*`) |
+
+`tools/rebrand_crafts.py` then rebrands the user-visible strings, and `scripts/check_upstream_ids.py`
+(the CI `checks` job) fails while any upstream identifier is left outside the attribution files
+and the `// legacy:` read paths. Only `crates/*` of each editor are workspace members; their `apps/`
+and web shells are excluded, because the one shell here is `apps/redrob-canvas`.
 
 ## The measured base
 
@@ -44,10 +54,22 @@ Recorded, not remembered: the commit is the one the subtree squash commit names,
 differs from it. It also asks GitHub whether each commit still exists, so a force-pushed or
 garbage-collected upstream commit is caught before it becomes a pin nobody can reproduce.
 
-Traces of the derivation are load-bearing and are deliberately left alone: crate names
-(`photocraft-*`, `vectorcraft-*`, `designcraft-*`, `craft-*`), the `.pcraft` document format, and
-the `[patch]` entries that point `krilla` and `hayro` at `crafts/craft-libs/vendor/`. Renaming a
-crate is how a merge conflict on every subsequent sync is manufactured.
+What a user can meet carries the Redrob name (crates, extensions, URI schemes, MIME types, env
+variables; the table above), and the renames are scripts so a sync re-applies them rather than
+hand-resolving a conflict in every manifest. What stays upstream's: the `[patch]` entries that point
+`krilla` and `hayro` at `crafts/craft-libs/vendor/`, the engines' internal format ids and the
+`"format"` value in the document headers (`"vectorcraft"`, `"designcraft"`), so a file written here
+still opens in an upstream build and vice versa.
+
+### Legacy read paths
+
+Old documents still open: `.pcraft` (by name and by content), `.vectorcraft` and `.drawcraft`,
+`.designcraft`, through the shell's routing (`apps/redrob-canvas/src/routing.rs`) and Open filters
+and each editor's own open path, recovery scan and template list. The MCP servers answer the old
+URI schemes (`photocraft://`, `vectorcraft://`, `designcraft://`) beside the new ones, and the
+user-facing environment variables are read under the new name first, then the upstream one.
+Writers emit only the Redrob values. Every such line is marked `// legacy:`; the marker is what
+`tools/rename_identifiers.py` skips and `scripts/check_upstream_ids.py` allows.
 
 ## Taking upstream work
 
@@ -56,19 +78,27 @@ scripts/fetch-upstream.sh photocraft <sha>     # git subtree pull --squash, then
 scripts/fetch-upstream.sh                      # every subtree, to the commit upstream-base.json records
 ```
 
-`fetch-upstream.sh` is the only thing that should run `git subtree pull` here; by hand the command is
+`fetch-upstream.sh` is the only thing that should run `git subtree pull` here; by hand the commands are
 
 ```bash
 git subtree pull --prefix crafts/<name> https://github.com/storytold/<name>.git <sha> --squash
-python3 tools/merge_workspaces.py
+python3 tools/merge_workspaces.py        # parks the manifest, prunes, renames, regenerates Cargo.toml
+python3 tools/rebrand_crafts.py
+cargo update --workspace --offline       # the lock follows the renamed crates
+python3 scripts/check_upstream_ids.py
 ```
+
+Expect conflicts in files the rename scripts rewrote (manifests, `use` paths, extension lists):
+take upstream's side, then re-run the scripts; they are idempotent. `--with-trees` compares the
+parked `Cargo.upstream.toml` with upstream's `Cargo.toml` byte for byte, which the crate rename
+makes false by design; run it only before `merge_workspaces.py` on a fresh pull.
 
 After taking anything:
 
 1. Set that entry's `base.commit` and `lastSyncedUpstream` in `upstream-base.json`, the `commit` in
    `docs/upstream-sources.toml`, and the pin in its `UPSTREAM_NOTICES.md` section.
-2. Run `scripts/verify-upstream.sh`, `cargo fmt --all -- --check`,
-   `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace`.
+2. Run `scripts/verify-upstream.sh`, `scripts/check_upstream_ids.py`, `cargo fmt --all -- --check`,
+   then clippy and the tests of our crates with `--profile ci` (the `rust` job in `ci.yml`).
 3. If `Cargo.lock` moved, `cargo fetch --locked` then
    `python3 tools/generate_distribution_artifacts.py --generate` and commit `THIRD_PARTY_NOTICES.md`.
 

@@ -10,7 +10,7 @@ use crate::canvas::{ToolEvent, ViewXform, pencil_cursor_rect, pencil_tip_is_roun
 use crate::state::Tool;
 
 fn app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
     app.run("file.new", json!({"width": 120, "height": 80, "background": "transparent"})).unwrap();
     app.run("tools.setColors", json!({"foreground": "#000000", "background": "#ffffff"})).unwrap();
     app.run("tools.setBrush", json!({"brush": {"size": 3, "hardness": 0.0}})).unwrap();
@@ -22,7 +22,7 @@ fn app() -> PhotocraftApp {
     app
 }
 
-fn layer(app: &PhotocraftApp) -> photocraft_engine::doc::Layer {
+fn layer(app: &PhotocraftApp) -> redrob_photo_engine::doc::Layer {
     let st = app.session.active().unwrap();
     st.doc.layer(st.active_layer.unwrap()).unwrap().clone()
 }
@@ -151,7 +151,7 @@ fn the_cursor_is_round_exactly_when_the_pencil_dab_is() {
     for n in 1..=12u32 {
         let (x, y) = (8.0 + f64::from((n - 1) % 6) * 18.0 + 0.3, 15.0 + f64::from((n - 1) / 6) * 30.0 + 0.6);
         app.run("paint.pencil", json!({"points": [[x, y]], "size": n})).unwrap();
-        let [x0, y0, ..] = photocraft_engine::paint::grid_square(x, y, n as f32);
+        let [x0, y0, ..] = redrob_photo_engine::paint::grid_square(x, y, n as f32);
         let corner = rgba(&app, x0 as i32, y0 as i32)[3] == 1.0;
         assert_eq!(pencil_tip_is_round(n as f32), !corner, "{n} px");
     }
@@ -218,7 +218,7 @@ fn the_eraser_in_block_mode_erases_a_16_screen_px_square() {
 fn b_cycles_brush_pencil_mixer_brush_and_color_replacement() {
     let mut h = Harness::builder().with_size(vec2(1280.0, 800.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 120})).unwrap();
         app
     });

@@ -29,8 +29,8 @@ mod xml;
 #[cfg(test)]
 mod tests;
 
-use designcraft_compose::Cache;
-use designcraft_doc::Document;
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::Document;
 
 pub use slide::needs_raster;
 

@@ -1,13 +1,13 @@
 use egui::{Event, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::{Fill, LayerContent, LayerId};
+use redrob_photo_doc::{Fill, LayerContent, LayerId};
 use serde_json::json;
 
 use super::*;
 
 fn app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 40, "height": 30, "depth": 16})).unwrap();
     app
 }
@@ -76,7 +76,7 @@ fn cancelling_a_new_pattern_fill_adds_nothing() {
     let r = crate::menus::invoke(&mut app, &ctx, cmds::CREATE, json!({"pattern": "Grid"})).unwrap();
     assert!(r["layer"].as_u64().is_some());
     // No document: an error, not a dialog or a panic.
-    let mut empty = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut empty = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     assert!(crate::menus::invoke(&mut empty, &ctx, cmds::CREATE, json!({})).is_err());
     assert!(empty.ui.dialogs.is_empty());
 }
@@ -119,7 +119,7 @@ fn content_options_edit_the_layer_and_cancel_restores() {
 }
 
 fn harness() -> (Harness<'static, PhotocraftApp>, LayerId) {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let id = LayerId(s.execute(cmds::CREATE, json!({"pattern": "Checkerboard"})).unwrap()["layer"].as_u64().unwrap());
     s.execute("layer.new.layer", json!({"name": "Other"})).unwrap();

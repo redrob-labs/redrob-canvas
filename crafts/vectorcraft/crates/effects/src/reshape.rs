@@ -9,8 +9,8 @@
 
 use std::sync::Arc;
 
-use vectorcraft_doc::{Appearance, AppearanceItem, Effect, Node, NodeKind};
-use vectorcraft_geom::{FillRule, PathData, Rect, shapes};
+use redrob_vector_doc::{Appearance, AppearanceItem, Effect, Node, NodeKind};
+use redrob_vector_geom::{FillRule, PathData, Rect, shapes};
 
 use crate::{GeomContext, apply_one, is_geometry, merged_params};
 
@@ -31,8 +31,8 @@ pub fn needs_outline(n: &Node) -> bool {
 }
 
 /// The glyph outlines of type `t` in text space: one path per run, and all of them as one.
-pub(crate) fn glyph_outlines(t: &vectorcraft_doc::TextObject) -> (Vec<kurbo::BezPath>, kurbo::BezPath) {
-    let layout = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), t);
+pub(crate) fn glyph_outlines(t: &redrob_vector_doc::TextObject) -> (Vec<kurbo::BezPath>, kurbo::BezPath) {
+    let layout = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), t);
     let mut runs = vec![kurbo::BezPath::new(); t.runs.len()];
     let mut all = kurbo::BezPath::new();
     for g in &layout.glyphs {
@@ -83,7 +83,7 @@ pub fn outline_art(n: &Node, symbol_art: Option<&Node>) -> Option<Node> {
             a.transform(*xf, false);
             Node::group(n.id, vec![Arc::new(a)])
         }
-        _ if vectorcraft_doc::live::is_live(n) => vectorcraft_doc::live::expand_deep(n, Some(hook)),
+        _ if redrob_vector_doc::live::is_live(n) => redrob_vector_doc::live::expand_deep(n, Some(hook)),
         _ => return None,
     };
     outline_nested_text(&mut art);
@@ -91,7 +91,7 @@ pub fn outline_art(n: &Node, symbol_art: Option<&Node>) -> Option<Node> {
     art.blend = Default::default();
     art.isolate = false;
     // One element: its pieces never knock each other out.
-    art.knockout = vectorcraft_doc::Knockout::Off;
+    art.knockout = redrob_vector_doc::Knockout::Off;
     art.extras_mut().mask = None;
     art.appearance.effects.clear();
     Some(art)
@@ -158,7 +158,7 @@ pub(crate) fn as_art(n: &Node, symbol_art: Option<&Node>) -> Option<Node> {
     out.blend = n.blend;
     out.isolate = n.isolate;
     // One element: its pieces never knock each other out.
-    out.knockout = vectorcraft_doc::Knockout::Off;
+    out.knockout = redrob_vector_doc::Knockout::Off;
     out.extras_mut().mask = n.extras().mask.clone();
     out.appearance.effects = n.appearance.effects.iter().filter(|e| !is_geometry(&e.id)).cloned().collect();
     Some(out)
@@ -166,13 +166,13 @@ pub(crate) fn as_art(n: &Node, symbol_art: Option<&Node>) -> Option<Node> {
 
 /// Map every path under `art` (and its gradients) through the projective map `h`, curves split
 /// finely enough to follow it.
-fn project_leaves(art: &mut Node, h: &vectorcraft_geom::Homography) {
-    let f = |p: vectorcraft_geom::Point| h.apply(p).unwrap_or(p);
+fn project_leaves(art: &mut Node, h: &redrob_vector_geom::Homography) {
+    let f = |p: redrob_vector_geom::Point| h.apply(p).unwrap_or(p);
     let piece = art.geometric_bounds().map_or(1.0, |b| (b.width().max(b.height()) / 64.0).max(0.25));
-    let project = |path: &mut PathData| *path = vectorcraft_doc::live::map_nonlinear(path, piece, f);
+    let project = |path: &mut PathData| *path = redrob_vector_doc::live::map_nonlinear(path, piece, f);
     for_each_leaf(art, &mut |leaf| {
         leaf.pin_gradients();
-        leaf.appearance.warp_gradients(&|p| h.affine_at(p).unwrap_or(vectorcraft_geom::Affine::IDENTITY));
+        leaf.appearance.warp_gradients(&|p| h.affine_at(p).unwrap_or(redrob_vector_geom::Affine::IDENTITY));
         match &mut leaf.kind {
             NodeKind::Path { path, live, .. } => {
                 project(path);
@@ -215,7 +215,7 @@ pub(crate) fn reshape_leaves(art: &mut Node, fx: &[&Effect]) {
 /// it reach every member.
 pub(crate) fn outlined_members(n: &Node) -> Node {
     let hook: &dyn Fn(&Node) -> Option<Node> = &outline_text;
-    let mut art = vectorcraft_doc::live::expand_deep(n, Some(hook));
+    let mut art = redrob_vector_doc::live::expand_deep(n, Some(hook));
     outline_nested_text(&mut art);
     art
 }

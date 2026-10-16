@@ -1,6 +1,6 @@
-//! Throughput check: `cargo test -p craft-cms --release --test bench -- --ignored --nocapture`.
+//! Throughput check: `cargo test -p redrob-craft-cms --release --test bench -- --ignored --nocapture`.
 
-use craft_cms::{Builtin, Intent, Transform};
+use redrob_craft_cms::{Builtin, Intent, Transform};
 
 #[test]
 #[ignore]

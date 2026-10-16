@@ -1,13 +1,13 @@
 //! Synthetic regressions for gradients that previously aborted inside the PDF writer.
-use designcraft_color::{Color, Gradient, GradientKind, GradientStop, Swatch, SwatchValue};
-use designcraft_compose::Cache;
-use designcraft_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, build::NewDocument};
-use designcraft_geom::{Rect, shapes};
-use designcraft_pdf::{PdfOptions, Standard, export_pdf_with_report};
 use hayro_syntax::{
     Pdf,
     object::{Array, Dict, Name},
 };
+use redrob_layout_color::{Color, Gradient, GradientKind, GradientStop, Swatch, SwatchValue};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, build::NewDocument};
+use redrob_layout_geom::{Rect, shapes};
+use redrob_layout_pdf::{PdfOptions, Standard, export_pdf_with_report};
 
 fn document(colors: &[Color], kind: GradientKind, midpoint: f32, opacity: f32) -> Document {
     let mut doc = Document::new(&NewDocument { width: 120.0, height: 120.0, facing_pages: false, ..Default::default() });
@@ -39,7 +39,7 @@ fn conversion_warnings(warnings: &[String]) -> usize {
 /// A subprocess is essential: the original assertion panicked again in Surface::drop and aborted.
 #[test]
 fn mixed_gradient_export_survives_in_subprocess() {
-    const CHILD: &str = "DESIGNCRAFT_TEST_MIXED_GRADIENT_CHILD";
+    const CHILD: &str = "REDROB_LAYOUT_TEST_MIXED_GRADIENT_CHILD";
     if std::env::var_os(CHILD).is_none() {
         let out = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "mixed_gradient_export_survives_in_subprocess", "--nocapture"])
@@ -140,7 +140,7 @@ fn homogeneous_gradients_keep_device_spaces_and_components() {
 #[test]
 fn mixed_gradient_booklet_reports_conversion() {
     let d = document(&[Color::cmyk(1.0, 0.0, 0.0, 0.0), Color::rgb(1.0, 0.0, 0.0)], GradientKind::Linear, 0.5, 1.0);
-    let report = designcraft_pdf::export_booklet(&d, &Cache::new(), &Default::default()).unwrap();
+    let report = redrob_layout_pdf::export_booklet(&d, &Cache::new(), &Default::default()).unwrap();
     assert_eq!(conversion_warnings(&report.warnings), 1);
     assert!(!Pdf::new(report.bytes).unwrap().pages().is_empty());
 }

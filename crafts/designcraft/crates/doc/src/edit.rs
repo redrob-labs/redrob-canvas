@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use designcraft_geom::{Affine, Point, Rect, shapes};
+use redrob_layout_geom::{Affine, Point, Rect, shapes};
 use serde::{Deserialize, Serialize};
 
 use crate::ids::{ItemId, LayerId, StoryId};
@@ -110,8 +110,8 @@ impl Document {
     }
 
     /// Spread-space transform of the parent group chain of the item at `loc` (identity at top level).
-    pub fn parent_xf(&self, loc: &ItemLoc) -> designcraft_geom::Affine {
-        let mut xf = designcraft_geom::Affine::IDENTITY;
+    pub fn parent_xf(&self, loc: &ItemLoc) -> redrob_layout_geom::Affine {
+        let mut xf = redrob_layout_geom::Affine::IDENTITY;
         if let Some(sp) = self.spread(loc.spread) {
             let mut items = &sp.items;
             for &i in &loc.path[..loc.path.len().saturating_sub(1)] {
@@ -579,12 +579,12 @@ pub fn item_hit(it: &Item, p: Point, tol: f64) -> bool {
     let inner = it.xf.inverse() * p;
     let bp = it.path.to_bezpath();
     let area = !it.fill.is_none() || matches!(it.content, Content::Text(_) | Content::Graphic(_)) || it.path.is_closed() && it.shape != Shape::Path;
-    if area && it.path.is_closed() && designcraft_geom::hit::fill_contains(&bp, designcraft_geom::FillRule::NonZero, inner) {
+    if area && it.path.is_closed() && redrob_layout_geom::hit::fill_contains(&bp, redrob_layout_geom::FillRule::NonZero, inner) {
         return true;
     }
     // Type on a path: the letters stand over the path, so a click on them hits it too.
     let reach = if it.text_frame().is_some_and(|t| t.options.path.is_some()) { PATH_TYPE_REACH } else { 0.0 };
-    designcraft_geom::hit::stroke_contains(&bp, it.stroke.weight.max(1.0), tol + reach, inner)
+    redrob_layout_geom::hit::stroke_contains(&bp, it.stroke.weight.max(1.0), tol + reach, inner)
 }
 
 /// How far from its path type on a path is hit (points): about a cap height of 12–18 pt type,

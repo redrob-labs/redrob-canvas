@@ -15,10 +15,10 @@ fn rejects(args: &[&str], message: &str) {
 fn rejects_with_env(args: &[&str], env: &[(&str, &str)], message: &str) {
     let mut child = Command::new(BIN)
         .args(args)
-        .env_remove("VECTORCRAFT_CONTROL_PORT")
-        .env_remove("VECTORCRAFT_AUTOMATION_READ_ROOT")
-        .env_remove("VECTORCRAFT_AUTOMATION_WRITE_ROOT")
-        .env("VECTORCRAFT_NO_PREFS", "1")
+        .env_remove("REDROB_VECTOR_CONTROL_PORT")
+        .env_remove("REDROB_VECTOR_AUTOMATION_READ_ROOT")
+        .env_remove("REDROB_VECTOR_AUTOMATION_WRITE_ROOT")
+        .env("REDROB_VECTOR_NO_PREFS", "1")
         .envs(env.iter().copied())
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -85,12 +85,12 @@ fn control_without_a_valid_port_fails_before_startup() {
     rejects(&["--control=0"], &format!("{need}, not `0`"));
     rejects(&["--control="], &format!("{need}, not ``"));
     rejects(&["--control", "7979", "--control", "7980"], "--control given twice");
-    rejects_with_env(&[], &[("VECTORCRAFT_CONTROL_PORT", "abc")], "VECTORCRAFT_CONTROL_PORT needs a port number from 1 to 65535, not `abc`");
+    rejects_with_env(&[], &[("REDROB_VECTOR_CONTROL_PORT", "abc")], "REDROB_VECTOR_CONTROL_PORT needs a port number from 1 to 65535, not `abc`");
 }
 
 #[test]
 fn version_wins_over_a_bad_control_port_variable() {
-    let out = Command::new(BIN).arg("--version").env("VECTORCRAFT_CONTROL_PORT", "abc").output().unwrap();
+    let out = Command::new(BIN).arg("--version").env("REDROB_VECTOR_CONTROL_PORT", "abc").output().unwrap();
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
     assert_eq!(String::from_utf8(out.stdout).unwrap(), format!("vectorcraft {}\n", env!("CARGO_PKG_VERSION")));
 }

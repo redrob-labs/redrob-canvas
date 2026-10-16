@@ -3,12 +3,12 @@
 
 use std::sync::Arc;
 
-use craft_pdf::syntax::Pdf;
+use redrob_craft_pdf::syntax::Pdf;
+use redrob_vector_color::cms::{self, Cms, ColorSettings, DEVICE_CMYK, GENERIC_CMYK, Intent};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Document, Node};
+use redrob_vector_geom::{Rect, shapes};
 use serde_json::{Value, json};
-use vectorcraft_color::cms::{self, Cms, ColorSettings, DEVICE_CMYK, GENERIC_CMYK, Intent};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Document, Node};
-use vectorcraft_geom::{Rect, shapes};
 
 use crate::*;
 

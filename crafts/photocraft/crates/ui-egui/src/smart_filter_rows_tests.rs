@@ -5,7 +5,7 @@
 use egui::accesskit::{Role, Toggled};
 use egui::{Modifiers, Pos2};
 use egui_kittest::kittest::{NodeT, Queryable};
-use photocraft_doc::{LayerContent, LayerId};
+use redrob_photo_doc::{LayerContent, LayerId};
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -13,9 +13,9 @@ use crate::PhotocraftApp;
 /// Smart objects "Smart A" (Gaussian Blur and Offset) and "Smart B" (no filters), and a pixel
 /// layer "Pixels" on top: (harness, A, B, pixels).
 fn panel() -> (egui_kittest::Harness<'static, PhotocraftApp>, u64, u64, u64) {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 16, "height": 16})).unwrap();
-    let smart = |s: &mut photocraft_engine::Session, name: &str| {
+    let smart = |s: &mut redrob_photo_engine::Session, name: &str| {
         s.execute("layer.new.layer", json!({})).unwrap();
         s.execute("edit.fill", json!({"contents": "black"})).unwrap();
         let id = s.execute("layer.smartObjects.convertToSmartObject", json!({})).unwrap()["layer"].as_u64().unwrap();

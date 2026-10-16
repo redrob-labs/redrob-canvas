@@ -2,12 +2,12 @@
 //! Preferences → File Handling → Data Recovery interval (written in the background like Background
 //! Save, the status bar showing it), and the dialog the first frame shows when the last session
 //! left copies behind (a crash). The copies themselves are the engine's
-//! ([`vectorcraft_engine::cmd::recovery`]).
+//! ([`redrob_vector_engine::cmd::recovery`]).
 
 use std::sync::Arc;
 
+use redrob_vector_engine::cmd::recovery::{self, RecoveryStore};
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::recovery::{self, RecoveryStore};
 
 use crate::VectorcraftApp;
 use crate::background::{self, Writer};

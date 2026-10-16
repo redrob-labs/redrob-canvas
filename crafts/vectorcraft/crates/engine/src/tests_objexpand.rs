@@ -2,10 +2,10 @@
 //! concentric ellipses or a gradient mesh inside a clip group, freeform gradients into a mesh, and
 //! Create Gradient Mesh taking a gradient fill's colours.
 
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Node, NodeKind};
+use redrob_vector_geom::Rect;
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Node, NodeKind};
-use vectorcraft_geom::Rect;
 
 use super::*;
 
@@ -55,20 +55,20 @@ fn fill_color(n: &Node) -> Color {
     n.appearance.fill_paint().color().unwrap_or_else(|| panic!("solid fill expected on {:?}", n.kind))
 }
 
-fn render(s: &Session) -> vectorcraft_render::Rendered {
+fn render(s: &Session) -> redrob_vector_render::Rendered {
     let doc = s.doc().unwrap().doc.clone();
-    let opts = vectorcraft_render::RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
-    vectorcraft_render::Renderer::new().render(&doc, 200, 200, vectorcraft_geom::Affine::IDENTITY, &opts)
+    let opts = redrob_vector_render::RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
+    redrob_vector_render::Renderer::new().render(&doc, 200, 200, redrob_vector_geom::Affine::IDENTITY, &opts)
 }
 
 /// The mean difference of the colour channels of two renders.
-fn mean_diff(a: &vectorcraft_render::Rendered, b: &vectorcraft_render::Rendered) -> f64 {
+fn mean_diff(a: &redrob_vector_render::Rendered, b: &redrob_vector_render::Rendered) -> f64 {
     let sum: u64 = a.pixels.iter().zip(b.pixels.iter()).map(|(x, y)| x.abs_diff(*y) as u64).sum();
     sum as f64 / a.pixels.len() as f64
 }
 
 /// Pixels (of 200×200) whose colour differs by more than `tol` in any channel.
-fn differing(a: &vectorcraft_render::Rendered, b: &vectorcraft_render::Rendered, tol: u8) -> usize {
+fn differing(a: &redrob_vector_render::Rendered, b: &redrob_vector_render::Rendered, tol: u8) -> usize {
     a.pixels
         .as_chunks::<4>()
         .0
@@ -137,7 +137,7 @@ fn a_radial_gradient_becomes_concentric_ellipses() {
     let (_, rings) = clip_parts(&g);
     let subpaths = |n: &Node| n.path_data().unwrap().subpaths.len();
     assert_eq!(rings.iter().map(|r| subpaths(r)).collect::<Vec<_>>(), [2, 2, 2, 1]);
-    let Some(vectorcraft_doc::AppearanceItem::Fill(f)) = rings[3].appearance.items.first() else { panic!() };
+    let Some(redrob_vector_doc::AppearanceItem::Fill(f)) = rings[3].appearance.items.first() else { panic!() };
     assert!(f.opacity < 1.0 && f.opacity > 0.5, "the centre band is translucent: {}", f.opacity);
 }
 

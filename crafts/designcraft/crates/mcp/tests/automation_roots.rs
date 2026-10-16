@@ -8,9 +8,9 @@
 
 use std::path::{Path, PathBuf};
 
-use designcraft_engine::Session;
-use designcraft_engine::file_access::AutomationRoots;
-use designcraft_mcp::{Headless, Server};
+use redrob_layout_engine::Session;
+use redrob_layout_engine::file_access::AutomationRoots;
+use redrob_layout_mcp::{Headless, Server};
 use serde_json::{Value, json};
 
 /// What the secret files hold, so a test can look for it in everything the agent is told.
@@ -23,7 +23,7 @@ const PNG: &[u8] = &[
     0x1f, 0x00, 0x05, 0x00, 0x01, 0xff, 0x89, 0x99, 0x3d, 0x1d, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
 ];
 
-/// A `.designcraft` file of `pages` pages with `text` in a frame on the first, made outside any roots.
+/// A `.rlayout` file of `pages` pages with `text` in a frame on the first, made outside any roots.
 fn designcraft_file(path: &Path, pages: u32, text: &str) {
     let mut s = Session::new();
     s.execute("file.new", &json!({"pages": pages})).unwrap();
@@ -43,7 +43,7 @@ fn confined(tag: &str, read: bool, write: bool) -> (Server, PathBuf) {
     }
     for (dir, text) in [("in", "Inside text"), ("outside", SECRET), ("in2", "Sibling")] {
         let dir = base.join(dir);
-        designcraft_file(&dir.join("doc.designcraft"), if dir.ends_with("in") { 1 } else { 3 }, text);
+        designcraft_file(&dir.join("doc.rlayout"), if dir.ends_with("in") { 1 } else { 3 }, text);
         std::fs::write(dir.join("pic.png"), PNG).unwrap();
         std::fs::write(dir.join("data.csv"), format!("name,city\n{text},Oslo\n")).unwrap();
         std::fs::write(dir.join("swatches.ase"), b"not a swatch file").unwrap();
@@ -113,11 +113,11 @@ fn outside_names(base: &Path) -> Vec<String> {
 fn documents_open_only_from_inside_the_read_root() {
     let (mut server, base) = confined("open", true, true);
     let sep = std::path::MAIN_SEPARATOR;
-    ok(&mut server, "open_document", json!({"path": s(&base.join("in/doc.designcraft"))}));
+    ok(&mut server, "open_document", json!({"path": s(&base.join("in/doc.rlayout"))}));
     assert_eq!(pages(&mut server), 1, "the file inside the root is the open document");
 
-    let escape = format!("{}{sep}..{sep}outside{sep}doc.designcraft", s(&base.join("in")));
-    let paths = [s(&base.join("outside/doc.designcraft")), escape, s(&base.join("in2/doc.designcraft")), s(&base.join("out/new.designcraft"))];
+    let escape = format!("{}{sep}..{sep}outside{sep}doc.rlayout", s(&base.join("in")));
+    let paths = [s(&base.join("outside/doc.rlayout")), escape, s(&base.join("in2/doc.rlayout")), s(&base.join("out/new.rlayout"))];
     for path in paths {
         let (error, text) = call(&mut server, "open_document", json!({"path": path}));
         assert!(error && text.contains("outside the read root"), "{path}: {text}");
@@ -168,7 +168,7 @@ fn every_command_that_reads_a_path_is_refused_outside_the_read_root() {
     let (error, text) = call(&mut server, "place_image", json!({"path": outside("pic.png")}));
     assert!(error && text.contains("outside the read root") && !text.contains(SECRET), "{text}");
     // The control-channel method behind `open_document`.
-    let (error, text) = call(&mut server, "execute", json!({"command": "app.open", "params": {"path": outside("doc.designcraft")}}));
+    let (error, text) = call(&mut server, "execute", json!({"command": "app.open", "params": {"path": outside("doc.rlayout")}}));
     assert!(error && !text.contains(SECRET), "app.open: {text}");
     assert_eq!(ok(&mut server, "inspect_document", json!({})), before, "the refused reads changed nothing");
     assert_eq!(run_ok(&mut server, "data.source.select", json!({"path": inside("data.csv")}))["records"], 1);
@@ -195,10 +195,10 @@ fn files_named_inside_a_document_are_read_through_the_roots_too() {
     std::fs::write(base.join("outside/linked.png"), PNG).unwrap();
     s.execute("file.place", &json!({"path": self::s(&base.join("outside/linked.png")), "x": 36, "y": 36, "width": 72})).unwrap();
     s.execute("data.source.select", &json!({"path": self::s(&base.join("outside/data.csv"))})).unwrap();
-    s.execute("file.save", &json!({"path": self::s(&base.join("in/linked.designcraft"))})).unwrap();
+    s.execute("file.save", &json!({"path": self::s(&base.join("in/linked.rlayout"))})).unwrap();
     assert_eq!(s.execute("links.list", &json!({})).unwrap()[0]["status"], "ok");
 
-    ok(&mut server, "open_document", json!({"path": self::s(&base.join("in/linked.designcraft"))}));
+    ok(&mut server, "open_document", json!({"path": self::s(&base.join("in/linked.rlayout"))}));
     let links = run_ok(&mut server, "links.list", json!({}));
     assert_eq!(links[0]["status"], "missing", "a link outside the read root reads as a file that isn't there: {links}");
     refused(&mut server, "data.source.update", json!({}), "outside the read root");
@@ -241,7 +241,7 @@ fn every_writing_command_is_refused_outside_the_write_root() {
     ];
     // A book with a chapter to export, so `book.exportPdf` gets as far as its path.
     run_ok(&mut server, "book.new", json!({"path": inside("first.dcbook")}));
-    run_ok(&mut server, "book.add", json!({"path": s(&base.join("in/doc.designcraft"))}));
+    run_ok(&mut server, "book.add", json!({"path": s(&base.join("in/doc.rlayout"))}));
     for (command, key) in &writes {
         let target = if *key == "dir" { outside("folder") } else { outside(&format!("out-{command}")) };
         refused(&mut server, command, json!({*key: target}), "outside the write root");
@@ -257,16 +257,13 @@ fn every_writing_command_is_refused_outside_the_write_root() {
     }
     // A sibling folder with the same prefix, `..` out of the root, and the read root.
     let sep = std::path::MAIN_SEPARATOR;
-    for path in [
-        s(&base.join("out2/x.designcraft")),
-        format!("{}{sep}..{sep}outside{sep}x.designcraft", s(&base.join("out"))),
-        s(&base.join("in/x.designcraft")),
-    ] {
+    for path in [s(&base.join("out2/x.rlayout")), format!("{}{sep}..{sep}outside{sep}x.rlayout", s(&base.join("out"))), s(&base.join("in/x.rlayout"))]
+    {
         let (error, text) = call(&mut server, "save_document", json!({"path": path}));
         assert!(error && text.contains("outside the write root"), "{path}: {text}");
     }
     assert_eq!(outside_names(&base), fixtures, "nothing was written outside beside the files made at the start");
-    assert!(!base.join("out2").exists() && !base.join("in/x.designcraft").exists());
+    assert!(!base.join("out2").exists() && !base.join("in/x.rlayout").exists());
 
     // Inside the write root every one of them works, and the files appear.
     for (command, key) in &writes {
@@ -287,7 +284,7 @@ fn every_writing_command_is_refused_outside_the_write_root() {
 #[test]
 fn one_root_grants_only_its_own_access() {
     let (mut read_only, base) = confined("read-only", true, false);
-    ok(&mut read_only, "open_document", json!({"path": s(&base.join("in/doc.designcraft"))}));
+    ok(&mut read_only, "open_document", json!({"path": s(&base.join("in/doc.rlayout"))}));
     run_ok(&mut read_only, "select.firstAbove", json!({}));
     for (command, key) in [("file.save", "path"), ("file.exportPdf", "path"), ("file.package", "dir"), ("file.exportText", "path")] {
         refused(&mut read_only, command, json!({key: s(&base.join("out/x"))}), "write authority is absent");
@@ -306,12 +303,12 @@ fn one_root_grants_only_its_own_access() {
     for (command, key) in
         [("file.open", "path"), ("file.place", "path"), ("swatch.load", "path"), ("data.source.select", "path"), ("file.recovery.list", "dir")]
     {
-        refused(&mut write_only, command, json!({key: s(&base.join("in/doc.designcraft"))}), "read authority is absent");
+        refused(&mut write_only, command, json!({key: s(&base.join("in/doc.rlayout"))}), "read authority is absent");
     }
     let (error, text) = call(&mut write_only, "place_image", json!({"path": s(&base.join("in/pic.png"))}));
     assert!(error && text.contains("read authority is absent"), "{text}");
-    ok(&mut write_only, "save_document", json!({"path": s(&base.join("out/x.designcraft"))}));
-    assert!(base.join("out/x.designcraft").exists());
+    ok(&mut write_only, "save_document", json!({"path": s(&base.join("out/x.rlayout"))}));
+    assert!(base.join("out/x.rlayout").exists());
     let _ = std::fs::remove_dir_all(base);
 }
 
@@ -319,16 +316,16 @@ fn one_root_grants_only_its_own_access() {
 #[test]
 fn links_out_of_a_root_are_refused() {
     let (mut server, base) = confined("links", true, true);
-    std::os::unix::fs::symlink(base.join("outside/doc.designcraft"), base.join("in/leak.designcraft")).unwrap();
+    std::os::unix::fs::symlink(base.join("outside/doc.rlayout"), base.join("in/leak.rlayout")).unwrap();
     std::os::unix::fs::symlink(base.join("outside/data.csv"), base.join("in/leak.csv")).unwrap();
     std::os::unix::fs::symlink(base.join("outside"), base.join("out/away")).unwrap();
-    std::os::unix::fs::symlink(base.join("outside/gone.designcraft"), base.join("out/dangling.designcraft")).unwrap();
-    refused(&mut server, "file.open", json!({"path": s(&base.join("in/leak.designcraft"))}), "outside the read root");
+    std::os::unix::fs::symlink(base.join("outside/gone.rlayout"), base.join("out/dangling.rlayout")).unwrap();
+    refused(&mut server, "file.open", json!({"path": s(&base.join("in/leak.rlayout"))}), "outside the read root");
     refused(&mut server, "data.source.select", json!({"path": s(&base.join("in/leak.csv"))}), "outside the read root");
-    refused(&mut server, "file.saveAs", json!({"path": s(&base.join("out/away/x.designcraft"))}), "outside the write root");
+    refused(&mut server, "file.saveAs", json!({"path": s(&base.join("out/away/x.rlayout"))}), "outside the write root");
     refused(&mut server, "file.exportPdf", json!({"path": s(&base.join("out/away/x.pdf"))}), "outside the write root");
-    refused(&mut server, "file.saveAs", json!({"path": s(&base.join("out/dangling.designcraft"))}), "a link that leads nowhere");
-    assert!(!base.join("outside/x.designcraft").exists() && !base.join("outside/x.pdf").exists() && !base.join("outside/gone.designcraft").exists());
+    refused(&mut server, "file.saveAs", json!({"path": s(&base.join("out/dangling.rlayout"))}), "a link that leads nowhere");
+    assert!(!base.join("outside/x.rlayout").exists() && !base.join("outside/x.pdf").exists() && !base.join("outside/gone.rlayout").exists());
     assert_eq!(pages(&mut server), 1, "nothing from the file the link led to reached the session");
     let _ = std::fs::remove_dir_all(base);
 }
@@ -338,12 +335,12 @@ fn without_roots_nothing_is_confined() {
     let base = std::env::temp_dir().join(format!("dc-mcp-roots-none-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&base);
     std::fs::create_dir_all(&base).unwrap();
-    designcraft_file(&base.join("a.designcraft"), 3, "Anywhere");
+    designcraft_file(&base.join("a.rlayout"), 3, "Anywhere");
     let mut server = Server::new(Box::new(Headless::with_document().with_automation_roots(AutomationRoots::new(None, None).unwrap())));
-    ok(&mut server, "open_document", json!({"path": s(&base.join("a.designcraft"))}));
+    ok(&mut server, "open_document", json!({"path": s(&base.join("a.rlayout"))}));
     assert_eq!(pages(&mut server), 3);
-    ok(&mut server, "save_document", json!({"path": s(&base.join("b.designcraft"))}));
+    ok(&mut server, "save_document", json!({"path": s(&base.join("b.rlayout"))}));
     ok(&mut server, "export_png", json!({"path": s(&base.join("b.png"))}));
-    assert!(base.join("b.designcraft").exists() && base.join("b.png").exists());
+    assert!(base.join("b.rlayout").exists() && base.join("b.png").exists());
     let _ = std::fs::remove_dir_all(base);
 }

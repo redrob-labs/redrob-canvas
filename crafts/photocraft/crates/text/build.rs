@@ -1,11 +1,11 @@
 //! Optional craft-fonts build input (https://github.com/storytold/craft-fonts, recipe from its
 //! `docs/integration.md`; rules in `craftrules/standards/fonts.md`).
 //!
-//! With `CRAFT_FONTS_DIR=<craft-fonts checkout>`, every font in its `fonts/manifest.txt` is
-//! embedded and exposed as `photocraft_text::CRAFT_FONTS`; unset, `CRAFT_FONTS` is empty and the
+//! With `REDROB_CRAFT_FONTS_DIR=<craft-fonts checkout>`, every font in its `fonts/manifest.txt` is
+//! embedded and exposed as `redrob_photo_text::REDROB_CRAFT_FONTS`; unset, `REDROB_CRAFT_FONTS` is empty and the
 //! build is exactly as before (an empty value counts as unset). Use an absolute path: build
 //! scripts run in the crate's directory, so a relative one resolves from `crates/text`. A bad
-//! checkout is a warning, or an error with `CRAFT_FONTS_REQUIRED=1` (release builds).
+//! checkout is a warning, or an error with `REDROB_CRAFT_FONTS_REQUIRED=1` (release builds).
 //!
 //! Redrob Canvas difference from the recipe: the web build (wasm32) embeds nothing. The wasm must
 //! stay under the 24 MiB gate in `packaging/web/package.sh` (#237; Cloudflare's per-file cap is
@@ -20,17 +20,22 @@ use std::fmt::Write as _;
 use std::path::PathBuf;
 
 fn main() {
-    println!("cargo::rerun-if-env-changed=CRAFT_FONTS_DIR");
-    println!("cargo::rerun-if-env-changed=CRAFT_FONTS_REQUIRED");
+    println!("cargo::rerun-if-env-changed=REDROB_CRAFT_FONTS_DIR");
+    println!("cargo::rerun-if-env-changed=REDROB_CRAFT_FONTS_REQUIRED");
     let wasm = std::env::var("CARGO_CFG_TARGET_ARCH").is_ok_and(|a| a == "wasm32");
-    let mut src = String::from("pub static CRAFT_FONTS: &[CraftFont] = &[\n");
-    if let Some(dir) = std::env::var_os("CRAFT_FONTS_DIR").filter(|d| !d.is_empty() && !wasm).map(PathBuf::from) {
+    let mut src = String::from("pub static REDROB_CRAFT_FONTS: &[CraftFont] = &[\n");
+    if let Some(dir) =
+        // legacy: the upstream variable is read when ours is unset
+        std::env::var_os("REDROB_CRAFT_FONTS_DIR").or_else(|| std::env::var_os("CRAFT_FONTS_DIR")).filter(|d| !d.is_empty() && !wasm).map(PathBuf::from)
+    {
+        // legacy: the upstream variable is read when ours is unset
         match craft_fonts(&dir) {
             Ok(entries) => src.push_str(&entries),
-            Err(e) if std::env::var_os("CRAFT_FONTS_REQUIRED").is_some() => {
-                println!("cargo::error=CRAFT_FONTS_DIR={}: {e}", dir.display());
+            Err(e) if std::env::var_os("REDROB_CRAFT_FONTS_REQUIRED").or_else(|| std::env::var_os("CRAFT_FONTS_REQUIRED")).is_some() => {
+                // legacy: the upstream variable is read when ours is unset
+                println!("cargo::error=REDROB_CRAFT_FONTS_DIR={}: {e}", dir.display());
             }
-            Err(e) => println!("cargo::warning=building without craft-fonts: CRAFT_FONTS_DIR={}: {e}", dir.display()),
+            Err(e) => println!("cargo::warning=building without craft-fonts: REDROB_CRAFT_FONTS_DIR={}: {e}", dir.display()),
         }
     }
     src.push_str("];\n");

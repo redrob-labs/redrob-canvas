@@ -62,42 +62,24 @@ impl TilingPattern {
             stream
         };
 
-        Self {
-            stream: pattern_stream,
-            transform,
-            base_opacity,
-            width,
-            height,
-        }
+        Self { stream: pattern_stream, transform, base_opacity, width, height }
     }
 }
 
 impl Cacheable for TilingPattern {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let mut chunk = sc.new_chunk();
 
         for validation_error in self.stream.validation_errors {
             sc.register_validation_error(validation_error);
         }
 
-        let pattern_stream = FilterStreamBuilder::new_from_content_stream(
-            &self.stream.content,
-            &sc.serialize_settings(),
-        )
-        .finish(&sc.serialize_settings());
+        let pattern_stream =
+            FilterStreamBuilder::new_from_content_stream(&self.stream.content, &sc.serialize_settings()).finish(&sc.serialize_settings());
         let mut tiling_pattern = chunk.tiling_pattern(root_ref, pattern_stream.encoded_data());
         pattern_stream.write_filters(tiling_pattern.deref_mut().deref_mut());
 
-        self.stream.resource_dictionary.to_pdf_resources(
-            &mut tiling_pattern,
-            sc,
-            &mut chunk_container.non_stream.resource_dictionaries,
-        );
+        self.stream.resource_dictionary.to_pdf_resources(&mut tiling_pattern, sc, &mut chunk_container.non_stream.resource_dictionaries);
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width, self.height);
 

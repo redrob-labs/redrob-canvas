@@ -1,8 +1,8 @@
 //! Stroke panel reach: `stroke.set` on groups, what the panel shows for a selection (mixed values,
 //! Align Stroke), Units > Stroke, and the stroke options `document.inspect` reports.
 
+use redrob_vector_doc::{NodeId, NodeKind, Unit};
 use serde_json::{Value, json};
-use vectorcraft_doc::{NodeId, NodeKind, Unit};
 
 use super::*;
 

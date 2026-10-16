@@ -10,8 +10,8 @@
 //! `side2` (the left and right widths, points), `linked`, `adjustAdjoining`; Delete sets `discard: true` and confirms.
 
 use egui::vec2;
+use redrob_vector_engine::doc::NodeId;
 use serde_json::{Value, json};
-use vectorcraft_engine::doc::NodeId;
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, run_and_close};
@@ -37,7 +37,7 @@ fn point(app: &VectorcraftApp, id: u64, index: usize) -> Option<(f64, f64, f64)>
 pub fn open(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
     let id = p.get("id").and_then(Value::as_u64).ok_or("give the path `id`")?;
     let doc = &app.session.active().ok_or("no document")?.doc;
-    let id = vectorcraft_tools::distort::stroke_owner(doc, NodeId(id)).0;
+    let id = redrob_vector_tools::distort::stroke_owner(doc, NodeId(id)).0;
     let index = match p.get("index").filter(|v| !v.is_null()) {
         Some(v) => Some(v.as_u64().and_then(|i| usize::try_from(i).ok()).ok_or("no such width point")?),
         None => None,
@@ -126,8 +126,8 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
-    use vectorcraft_tools::{PointerEvent, PointerKind};
+    use redrob_vector_engine::Session;
+    use redrob_vector_tools::{PointerEvent, PointerKind};
 
     /// A 10 pt line from (100, 150) to (300, 150) with a 4 + 4 pt width point in the middle.
     fn app() -> (VectorcraftApp, u64) {
@@ -297,7 +297,7 @@ mod tests {
         let after = app.session.doc().unwrap().doc.clone();
         assert_eq!(after.node(NodeId(id)).unwrap().kind, before.node(NodeId(id)).unwrap().kind, "path geometry remains unchanged");
         before.walk(|node| {
-            if node.id != NodeId(id) && matches!(node.kind, vectorcraft_engine::doc::NodeKind::Path { .. }) {
+            if node.id != NodeId(id) && matches!(node.kind, redrob_vector_engine::doc::NodeKind::Path { .. }) {
                 assert_eq!(after.node(node.id), Some(node), "other artwork remains unchanged");
             }
         });
@@ -500,7 +500,7 @@ mod tests {
         let after = app.session.doc().unwrap().doc.clone();
         assert_eq!(after.node(NodeId(id)).unwrap().kind, before.node(NodeId(id)).unwrap().kind);
         before.walk(|node| {
-            if node.id != NodeId(id) && matches!(node.kind, vectorcraft_engine::doc::NodeKind::Path { .. }) {
+            if node.id != NodeId(id) && matches!(node.kind, redrob_vector_engine::doc::NodeKind::Path { .. }) {
                 assert_eq!(after.node(node.id), Some(node), "other artwork remains unchanged");
             }
         });

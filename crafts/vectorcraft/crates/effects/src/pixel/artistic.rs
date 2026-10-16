@@ -6,7 +6,7 @@
 use super::PixelSpace;
 use super::pixelate::{Place, cell, rand};
 use super::texture::{luma, premultiply, straight};
-use vectorcraft_geom::Point;
+use redrob_vector_geom::Point;
 
 const SALT_FILM: u64 = 256;
 

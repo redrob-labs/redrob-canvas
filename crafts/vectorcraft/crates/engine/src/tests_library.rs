@@ -118,7 +118,7 @@ fn text_styles_come_from_the_selected_type_and_apply_in_one_step() {
     assert_eq!(r["style"], name);
     assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1, "one undo step");
     let size = |s: &Session| match &s.doc().unwrap().doc.node(NodeId(u.as_u64().unwrap())).unwrap().kind {
-        vectorcraft_doc::NodeKind::Text(t) => t.runs[0].style.size,
+        redrob_vector_doc::NodeKind::Text(t) => t.runs[0].style.size,
         _ => 0.0,
     };
     assert_eq!(size(&s), 31.0);
@@ -265,7 +265,7 @@ fn a_library_is_exported_and_imported() {
         assert_eq!(a[k], b[k], "{k}");
     }
     // Again: the next number; given a name, that name.
-    let b64 = vectorcraft_format::base64_encode(data.as_bytes());
+    let b64 = redrob_vector_format::base64_encode(data.as_bytes());
     assert_eq!(run(&mut s, "library.import", json!({"dataBase64": b64}))["name"], "Brand (3)");
     assert_eq!(run(&mut s, "library.import", json!({"data": data, "name": "Client"}))["name"], "Client");
     // Its graphic places in another document.
@@ -296,7 +296,7 @@ fn imported_libraries_are_made_consistent() {
         "name": "  ",
         "colors": [{"name": "Red", "color": {"model": "rgb", "r": 1, "g": 0, "b": 0}}, {"name": "Red", "color": {"model": "rgb", "r": 0, "g": 1, "b": 0}}, {"name": "", "color": {"model": "rgb", "r": 0, "g": 0, "b": 1}}],
         "graphics": [
-            {"id": "g", "name": "A", "width": 1, "height": 1, "data": "", "thumbnail": vectorcraft_format::base64_encode(&png)},
+            {"id": "g", "name": "A", "width": 1, "height": 1, "data": "", "thumbnail": redrob_vector_format::base64_encode(&png)},
             {"id": "g", "name": "B", "width": -5, "height": 1, "data": ""}
         ],
         "groups": [
@@ -321,7 +321,7 @@ fn imported_libraries_are_made_consistent() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_library_is_exported_to_a_file_and_imported_from_it() {
-    let dir = vectorcraft_testkit::temp_dir("library-export");
+    let dir = redrob_vector_testkit::temp_dir("library-export");
     let path = dir.join("Brand.vclibrary").to_string_lossy().to_string();
     let (mut s, g, ..) = brand();
     run(&mut s, "library.createGroup", json!({"name": "Logos", "items": [{"kind": "graphic", "item": g}]}));

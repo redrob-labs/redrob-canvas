@@ -16,7 +16,7 @@ fn harness(selection: bool) -> Harness<'static, PhotocraftApp> {
 
 /// [`harness`] with the Blur Gallery `command` open.
 fn harness_for(command: &str, selection: bool) -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     if selection {
         app.run("select.rect", json!({"x": 100, "y": 50, "width": 200, "height": 100})).unwrap();
@@ -384,7 +384,7 @@ fn spin_blur_handles_and_its_angle_ring() {
 /// gets the command's default shape back, and Spin Blur and Tilt-Shift their defaults too.
 #[test]
 fn alt_reset_starts_again_from_one_pin() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     let id = crate::filter_dialog::open(&mut app, COMMAND).unwrap();
     let mut fields = app.ui.dialog_mut(id).unwrap().fields.clone();

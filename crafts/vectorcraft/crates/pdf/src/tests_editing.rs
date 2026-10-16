@@ -1,10 +1,10 @@
 //! Preserve Editing: the native document as an embedded file, found again (also under its legacy
 //! name) and checked against the pages it was written with.
 
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Appearance, Document, Node};
+use redrob_vector_geom::{Rect, shapes};
 use serde_json::json;
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Appearance, Document, Node};
-use vectorcraft_geom::{Rect, shapes};
 
 use crate::*;
 

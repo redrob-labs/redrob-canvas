@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use photocraft_engine::web_cmds::{self, Optimized, WebSettings};
+use redrob_photo_engine::web_cmds::{self, Optimized, WebSettings};
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -85,7 +85,7 @@ pub fn invoke(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &V
             app,
             id,
             tl!("Contact Sheet II"),
-            json!({"input": dir, "units": "inches", "width": 8.0, "height": 10.0, "resolution": 300.0, "mode": "rgb", "depth": 8, "columns": 5, "rows": 6, "placeAcrossFirst": true, "autoSpacing": true, "rotateForBestFit": false, "caption": true, "font": photocraft_text::fonts::DEFAULT_FAMILY, "fontSize": 12.0, "flatten": false}),
+            json!({"input": dir, "units": "inches", "width": 8.0, "height": 10.0, "resolution": 300.0, "mode": "rgb", "depth": 8, "columns": 5, "rows": 6, "placeAcrossFirst": true, "autoSpacing": true, "rotateForBestFit": false, "caption": true, "font": redrob_photo_text::fonts::DEFAULT_FAMILY, "fontSize": 12.0, "flatten": false}),
             json!({"units": ["inches", "cm", "pixels"], "mode": ["rgb", "gray", "cmyk", "lab"]}),
         ),
         "file.automate.createDroplet" => {
@@ -116,7 +116,7 @@ pub fn invoke(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &V
         }
         "file.scripts.scriptEventsManager" => {
             let enabled = app.session.prefs().script_events.enabled;
-            let events: Vec<&str> = photocraft_engine::automate_cmds::EVENTS.iter().map(|e| e.0).collect();
+            let events: Vec<&str> = redrob_photo_engine::automate_cmds::EVENTS.iter().map(|e| e.0).collect();
             form(app, id, "Script Events Manager", json!({"enabled": enabled, "event": "openDocument", "script": "", "name": ""}), json!({"event": events}))
         }
         "file.package" => form(app, id, "Package", json!({"dir": dir}), json!({})),
@@ -306,7 +306,7 @@ fn web_pane(app: &PhotocraftApp, ui: &mut egui::Ui, size: egui::Vec2, p: Option<
             else {
                 return;
             };
-            let buf = photocraft_compose::flatten(&wd);
+            let buf = redrob_photo_compose::flatten(&wd);
             let v = (
                 Arc::new(buf.px),
                 wd.size.width,
@@ -439,7 +439,7 @@ fn advance_preview(frame: usize, duration: usize, fps: f32, last: f64, now: f64)
     (next, now - (elapsed_frames - steps) / fps)
 }
 
-fn web_playback(ui: &mut egui::Ui, f: &mut Map<String, Value>, doc: &photocraft_doc::Document) -> Option<usize> {
+fn web_playback(ui: &mut egui::Ui, f: &mut Map<String, Value>, doc: &redrob_photo_doc::Document) -> Option<usize> {
     let mut timeline = doc.timeline.clone()?;
     timeline.clamp();
     if timeline.duration < 2 {
@@ -470,12 +470,12 @@ fn web_playback(ui: &mut egui::Ui, f: &mut Map<String, Value>, doc: &photocraft_
 }
 
 /// Seek a preview copy, preserving any edits to the source's currently displayed frame.
-fn web_frame_document(doc: &photocraft_doc::Document, frame: Option<usize>) -> Result<photocraft_doc::Document, photocraft_engine::EngineError> {
+fn web_frame_document(doc: &redrob_photo_doc::Document, frame: Option<usize>) -> Result<redrob_photo_doc::Document, redrob_photo_engine::EngineError> {
     let Some(frame) = frame else { return Ok(doc.clone()) };
-    let mut preview = photocraft_engine::Session::new();
+    let mut preview = redrob_photo_engine::Session::new();
     preview.add_document(doc.clone(), None);
     preview.execute("timeline.setFrame", json!({"frame": frame}))?;
-    Ok((*preview.active().ok_or(photocraft_engine::EngineError::NoDocument)?.doc).clone())
+    Ok((*preview.active().ok_or(redrob_photo_engine::EngineError::NoDocument)?.doc).clone())
 }
 fn web_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Value>) {
     let t = Tokens::get(ui.ctx());
@@ -634,7 +634,7 @@ fn web_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
                         .color(t.text_dim)
                         .size(11.5),
                 );
-                let nslices = photocraft_doc::slices::resolve(&doc).len();
+                let nslices = redrob_photo_doc::slices::resolve(&doc).len();
                 if !doc.slices.is_empty() {
                     ui.add_space(6.0);
                     ui.label(egui::RichText::new(crate::i18n::trn(crate::i18n::current(), nslices as u64, "{n} slice", "{n} slices")).color(t.text_dim));
@@ -678,7 +678,7 @@ fn web_confirm(app: &mut PhotocraftApp, f: &Map<String, Value>) -> Result<Value,
     let has_slices = !doc.slices.is_empty();
     let html = b(f, "html", true);
     let st = WebSettings::from_params(&p, "file.export.saveForWebLegacy").map_err(|e| e.to_string())?;
-    let base = photocraft_doc::slices::base_name(&doc);
+    let base = redrob_photo_doc::slices::base_name(&doc);
     let suggested = if has_slices && html { format!("{base}.html") } else { format!("{base}.{}", st.format.ext()) };
     app.pick_save(&suggested, move |app, path| {
         app.refocus(doc.id)?;
@@ -716,7 +716,7 @@ fn download_for_web(app: &mut PhotocraftApp, mut p: Value) -> Result<Value, Stri
     // beside the downloaded page, matching the names handed to the platform service.
     p["imagesFolder"] = json!("");
     let write = app.services.write.as_mut().ok_or("no download service")?;
-    web_cmds::save_for_web_with_writer(&mut app.session, &p, &mut |path, bytes| write(path, bytes).map_err(photocraft_engine::EngineError::Other))
+    web_cmds::save_for_web_with_writer(&mut app.session, &p, &mut |path, bytes| write(path, bytes).map_err(redrob_photo_engine::EngineError::Other))
         .map_err(|e| e.to_string())
 }
 
@@ -758,7 +758,7 @@ pub fn open_print(app: &mut PhotocraftApp) -> u64 {
         f.entry(k.to_string()).or_insert(v);
     }
     // Windows: the system's printers, and the paper from the chosen printer's driver settings.
-    if let Ok(list) = craft_print::rgb::printers() {
+    if let Ok(list) = redrob_craft_print::rgb::printers() {
         f.insert("__printers".into(), json!(list.iter().map(|p| p.name.clone()).collect::<Vec<_>>()));
         let known = |n: &str| list.iter().any(|p| p.name == n);
         if !known(&s(&f, "printer", "")) {
@@ -773,8 +773,8 @@ pub fn open_print(app: &mut PhotocraftApp) -> u64 {
 /// Takes the paper from the printer's driver settings (Windows), as Photoshop does.
 fn driver_page(f: &mut Map<String, Value>) {
     let printer = s(f, "printer", "");
-    let settings = f.get("printerSettings").and_then(Value::as_str).and_then(|h| craft_print::rgb::DevMode::from_hex(h).ok());
-    match craft_print::rgb::page(&printer, settings.as_ref()) {
+    let settings = f.get("printerSettings").and_then(Value::as_str).and_then(|h| redrob_craft_print::rgb::DevMode::from_hex(h).ok());
+    match redrob_craft_print::rgb::page(&printer, settings.as_ref()) {
         Ok(pg) => {
             f.insert("paper".into(), json!([pg.paper.0, pg.paper.1]));
             f.insert("orientation".into(), json!("portrait"));
@@ -822,7 +822,7 @@ fn print_paper_size(value: Option<&Value>) -> (f64, f64) {
     let default = (612.0, 792.0);
     match value {
         Some(Value::Array(a)) => (a.first().and_then(Value::as_f64).unwrap_or(default.0), a.get(1).and_then(Value::as_f64).unwrap_or(default.1)),
-        Some(Value::String(name)) => photocraft_engine::print_cmds::PAPERS.iter().find(|p| p.0.eq_ignore_ascii_case(name)).map_or(default, |p| (p.1, p.2)),
+        Some(Value::String(name)) => redrob_photo_engine::print_cmds::PAPERS.iter().find(|p| p.0.eq_ignore_ascii_case(name)).map_or(default, |p| (p.1, p.2)),
         _ => default,
     }
 }
@@ -831,7 +831,7 @@ fn print_paper_controls(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
     let previous = f.get("paper").cloned();
     let mut selected = if previous.as_ref().is_some_and(Value::is_array) { "custom".to_string() } else { s(f, "paper", "letter") };
     ui.horizontal(|ui| {
-        let mut papers: Vec<_> = photocraft_engine::print_cmds::PAPERS.iter().map(|p| (p.0.to_string(), p.0)).collect();
+        let mut papers: Vec<_> = redrob_photo_engine::print_cmds::PAPERS.iter().map(|p| (p.0.to_string(), p.0)).collect();
         papers.push(("custom".to_string(), tl!("Custom")));
         if crate::widgets::dropdown(ui, "print-paper", &mut selected, &papers, 110.0) {
             if selected == "custom" {
@@ -889,7 +889,7 @@ fn print_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Va
         ui.vertical(|ui| {
             let (area, _) = ui.allocate_exact_size(egui::vec2(330.0, 400.0), egui::Sense::hover());
             ui.painter().rect_filled(area, 0.0, t.canvas);
-            match photocraft_engine::print_cmds::layout(&doc, &p, "file.print") {
+            match redrob_photo_engine::print_cmds::layout(&doc, &p, "file.print") {
                 Ok(l) => {
                     let (pw, ph) = l.paper;
                     let k = ((area.width() - 20.0) / pw as f32).min((area.height() - 20.0) / ph as f32);
@@ -906,7 +906,7 @@ fn print_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Va
                     let key = egui::Id::new(("print-thumb", doc.id.0, app.session.active().map_or(0, |d| d.revision)));
                     let tex: Option<Arc<egui::TextureHandle>> = ui.data(|d| d.get_temp(key));
                     let tex = tex.unwrap_or_else(|| {
-                        let th = photocraft_compose::thumbnail(&doc, 400);
+                        let th = redrob_photo_compose::thumbnail(&doc, 400);
                         let ci = egui::ColorImage::from_rgba_unmultiplied([th.width as usize, th.height as usize], &th.pixels);
                         let tx = Arc::new(ui.ctx().load_texture("print-thumb", ci, egui::TextureOptions::LINEAR));
                         ui.data_mut(|d| d.insert_temp(key, tx.clone()));
@@ -975,8 +975,8 @@ fn print_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Va
                     number(ui, f, "copies", tl!("Copies"), 1.0..=999.0, "", 1.0);
                     if ui.button(tl!("Print Settings…")).clicked() {
                         let printer = s(f, "printer", "");
-                        let current = f.get("printerSettings").and_then(Value::as_str).and_then(|h| craft_print::rgb::DevMode::from_hex(h).ok());
-                        match craft_print::rgb::settings_dialog(&printer, current.as_ref(), None) {
+                        let current = f.get("printerSettings").and_then(Value::as_str).and_then(|h| redrob_craft_print::rgb::DevMode::from_hex(h).ok());
+                        match redrob_craft_print::rgb::settings_dialog(&printer, current.as_ref(), None) {
                             Ok(Some(dm)) => {
                                 f.insert("printerSettings".into(), json!(dm.to_hex()));
                                 driver_page(f);
@@ -1026,9 +1026,9 @@ fn print_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Va
             if s(f, "colorHandling", "") == "photocraftManages" {
                 // Photoshop's Printer Profile menu: the built-ins, then every installed printer
                 // (output class) profile by its description.
-                let installed: Vec<_> = photocraft_engine::installed_profiles::installed()
+                let installed: Vec<_> = redrob_photo_engine::installed_profiles::installed()
                     .into_iter()
-                    .filter(|p| p.is_destination() && p.class == photocraft_cms::ProfileClass::Output)
+                    .filter(|p| p.is_destination() && p.class == redrob_photo_cms::ProfileClass::Output)
                     .collect();
                 let mut profiles: Vec<(&str, &str)> = vec![
                     ("coated-cmyk", tl!("Coated CMYK")),
@@ -1084,7 +1084,7 @@ fn print_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Va
             }
             check(ui, f, "scaleToFit", tl!("Scale to Fit Media"), false);
             // Scaled Print Size: Scale, Height and Width move together; Print Resolution follows.
-            if let Ok(l) = photocraft_engine::print_cmds::layout(&doc, &params(f), "file.print") {
+            if let Ok(l) = redrob_photo_engine::print_cmds::layout(&doc, &params(f), "file.print") {
                 let (_, _, w, h) = l.rect;
                 let (mut w2, mut h2) = (w, h);
                 let fit = b(f, "scaleToFit", false);
@@ -1167,7 +1167,7 @@ mod tests {
     use super::*;
 
     fn app() -> (PhotocraftApp, egui::Context) {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 120, "height": 80, "name": "web"})).unwrap();
         (app, egui::Context::default())
     }
@@ -1182,7 +1182,7 @@ mod tests {
         }
         #[cfg(not(target_os = "macos"))]
         assert_eq!(fallback, ".");
-        app.session.active_mut().unwrap().path = Some("/tmp/photocraft/drawing.pcraft".into());
+        app.session.active_mut().unwrap().path = Some("/tmp/photocraft/drawing.rphoto".into());
         assert_eq!(droplet_default_dir(&app), "/tmp/photocraft");
     }
 
@@ -1269,8 +1269,8 @@ mod tests {
 
     #[test]
     fn save_for_web_authorizes_before_opening_a_picker() {
-        fn deny(_: &str, _: &Value) -> photocraft_engine::Result<()> {
-            Err(photocraft_engine::EngineError::Other("export denied".into()))
+        fn deny(_: &str, _: &Value) -> redrob_photo_engine::Result<()> {
+            Err(redrob_photo_engine::EngineError::Other("export denied".into()))
         }
         for explicit_path in [false, true] {
             for synthetic_input in [false, true] {
@@ -1299,8 +1299,8 @@ mod tests {
 
     #[test]
     fn save_for_web_authorizes_generated_palette_before_opening_a_picker() {
-        fn deny_palette(_: &str, p: &Value) -> photocraft_engine::Result<()> {
-            if p.get("colorTable").is_some() { Err(photocraft_engine::EngineError::Other("palette denied".into())) } else { Ok(()) }
+        fn deny_palette(_: &str, p: &Value) -> redrob_photo_engine::Result<()> {
+            if p.get("colorTable").is_some() { Err(redrob_photo_engine::EngineError::Other("palette denied".into())) } else { Ok(()) }
         }
         for synthetic_input in [false, true] {
             let (mut app, _) = app();
@@ -1473,7 +1473,7 @@ mod web_playback_tests {
     use egui_kittest::{Harness, kittest::Queryable};
 
     fn animated_app(depth: u32) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 32, "height": 24, "depth": depth})).unwrap();
         app.run("timeline.create", json!({"duration": 3, "fps": 2})).unwrap();
         app.run("layer.videoLayers.newBlankVideoLayer", json!({})).unwrap();
@@ -1549,13 +1549,13 @@ mod web_playback_tests {
             for (frame, expected) in [[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]].iter().enumerate() {
                 let preview = web_frame_document(&source, Some(frame)).unwrap();
                 let (proxy, _, _) = web_cmds::web_document(&preview, &json!({"width":16,"height":12}), &WebSettings::default()).unwrap();
-                let pixels = photocraft_compose::flatten(&proxy);
+                let pixels = redrob_photo_compose::flatten(&proxy);
                 for (actual, expected) in pixels.px[0].iter().zip(expected) {
                     assert!((actual - expected).abs() < 0.002, "depth={depth} frame={frame}");
                 }
             }
             assert_eq!(source.timeline.as_ref().unwrap().current, 0);
-            assert_eq!(photocraft_compose::flatten(&source).px[0], [1.0, 0.0, 0.0, 1.0]);
+            assert_eq!(redrob_photo_compose::flatten(&source).px[0], [1.0, 0.0, 0.0, 1.0]);
         }
     }
 
@@ -1621,7 +1621,7 @@ mod web_playback_tests {
     #[test]
     fn still_documents_have_no_playback_controls() {
         for duration in [None, Some(1)] {
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
             app.run("file.new", json!({"width":32,"height":24})).unwrap();
             if let Some(duration) = duration {
                 app.run("timeline.create", json!({"duration":duration,"fps":2})).unwrap();
@@ -1641,8 +1641,8 @@ mod web_playback_tests {
         let source = app.session.active().unwrap().doc.clone();
         let edited = web_frame_document(&source, Some(0)).unwrap();
         let other = web_frame_document(&source, Some(1)).unwrap();
-        assert_eq!(photocraft_compose::flatten(&edited).px[0], [1.0, 1.0, 0.0, 1.0]);
-        assert_eq!(photocraft_compose::flatten(&other).px[0], [0.0, 1.0, 0.0, 1.0]);
+        assert_eq!(redrob_photo_compose::flatten(&edited).px[0], [1.0, 1.0, 0.0, 1.0]);
+        assert_eq!(redrob_photo_compose::flatten(&other).px[0], [0.0, 1.0, 0.0, 1.0]);
         assert!(Arc::ptr_eq(&source, &app.session.active().unwrap().doc));
         assert_eq!(source.timeline.as_ref().unwrap().current, 0);
     }
@@ -1655,8 +1655,8 @@ mod web_playback_tests {
             for (frame, expected) in [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]].iter().enumerate() {
                 let doc = web_frame_document(&app.session.active().unwrap().doc, Some(frame)).unwrap();
                 let (proxy, _, _) = web_cmds::web_document(&doc, &json!({"width":16,"height":12}), &settings).unwrap();
-                let pixels = photocraft_compose::flatten(&proxy);
-                let optimized = web_cmds::optimize(&pixels.px, 16, photocraft_geom::Rect::new(0, 0, 16, 12), &settings, None, None, 72.0, true).unwrap();
+                let pixels = redrob_photo_compose::flatten(&proxy);
+                let optimized = web_cmds::optimize(&pixels.px, 16, redrob_photo_geom::Rect::new(0, 0, 16, 12), &settings, None, None, 72.0, true).unwrap();
                 assert_eq!(&optimized.preview[..4], expected, "depth={depth} frame={frame}");
             }
         }

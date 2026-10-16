@@ -68,12 +68,7 @@ impl ExtGState {
 
     /// Create a new graphics state with a mask.
     #[must_use]
-    pub(crate) fn mask(
-        mut self,
-        mask: Mask,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-    ) -> Self {
+    pub(crate) fn mask(mut self, mask: Mask, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer) -> Self {
         let mask_ref = sc.register_cacheable(chunk_container, mask);
         Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self
@@ -81,10 +76,7 @@ impl ExtGState {
 
     /// Check whether the graphics state is empty.
     pub(crate) fn empty(&self) -> bool {
-        self.0.mask.is_none()
-            && self.0.stroking_alpha.is_none()
-            && self.0.non_stroking_alpha.is_none()
-            && self.0.blend_mode.is_none()
+        self.0.mask.is_none() && self.0.stroking_alpha.is_none() && self.0.non_stroking_alpha.is_none() && self.0.blend_mode.is_none()
     }
 
     /// Integrate another graphics state into the current one. This is done by replacing
@@ -110,12 +102,7 @@ impl ExtGState {
 }
 
 impl Cacheable for ExtGState {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let chunk = &mut chunk_container.non_stream.ext_g_states;
 
         let mut ext_st = chunk.ext_graphics(root_ref);
@@ -177,10 +164,7 @@ impl Hash for GraphicsState {
 
 impl Default for GraphicsState {
     fn default() -> Self {
-        Self {
-            ext_g_state: ExtGState::new(),
-            ctm: Transform::identity(),
-        }
+        Self { ext_g_state: ExtGState::new(), ctm: Transform::identity() }
     }
 }
 
@@ -211,9 +195,7 @@ pub struct GraphicsStates {
 
 impl GraphicsStates {
     pub(crate) fn new() -> Self {
-        GraphicsStates {
-            graphics_states: vec![GraphicsState::default()],
-        }
+        GraphicsStates { graphics_states: vec![GraphicsState::default()] }
     }
 
     pub(crate) fn cur(&self) -> &GraphicsState {

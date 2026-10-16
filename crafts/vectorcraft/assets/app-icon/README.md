@@ -31,8 +31,8 @@ artwork. Licence: see `LICENSE.txt`.
 | `vectorcraft-macos-512.png` | tile with Apple margin, 512 px | runtime Dock icon (`apps/vectorcraft/src/main.rs`) |
 | `vectorcraft.icns` | macOS icon set, 16 to 1024 px | `cargo xtask bundle` (`CFBundleIconFile`) |
 | `vectorcraft.ico` | Windows icon, 16 to 256 px | `apps/vectorcraft/build.rs` (embedded in the `.exe`) |
-| `hicolor/<size>/apps/ai.storyteller.vectorcraft.png` | Linux theme icons, 16 to 512 px; the 256 one is also the runtime icon on Windows and Linux, the 128 one the brand mark in the app bar and About box (`crates/ui-egui/src/brand.rs`) | `packaging/linux/ai.storyteller.vectorcraft.desktop` |
-| `hicolor/scalable/apps/ai.storyteller.vectorcraft.svg` | Linux scalable icon | as above |
+| `hicolor/<size>/apps/ai.storyteller.rvector.png` | Linux theme icons, 16 to 512 px; the 256 one is also the runtime icon on Windows and Linux, the 128 one the brand mark in the app bar and About box (`crates/ui-egui/src/brand.rs`) | `packaging/linux/ai.storyteller.rvector.desktop` |
+| `hicolor/scalable/apps/ai.storyteller.rvector.svg` | Linux scalable icon | as above |
 
 ## How it reaches each OS
 
@@ -40,9 +40,9 @@ artwork. Licence: see `LICENSE.txt`.
   `.app` from `cargo xtask bundle` carries `vectorcraft.icns`.
 - **Windows:** `build.rs` embeds `vectorcraft.ico` and VERSIONINFO with `winresource` (taskbar, Start
   menu, Explorer, Alt-Tab); the runtime icon covers the title bar.
-- **Linux:** install `packaging/linux/ai.storyteller.vectorcraft.desktop` to `share/applications/` and
+- **Linux:** install `packaging/linux/ai.storyteller.rvector.desktop` to `share/applications/` and
   `hicolor/` to `share/icons/`. The app sets its Wayland app ID / X11 class to
-  `ai.storyteller.vectorcraft`, so the dock matches the window to the launcher.
+  `ai.storyteller.rvector`, so the dock matches the window to the launcher.
 
 ## Regenerate
 

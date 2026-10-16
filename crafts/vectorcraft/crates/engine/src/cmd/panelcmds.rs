@@ -1,9 +1,9 @@
 //! Commands the panels need beyond the core set: artboard reorder, duplicate, copy and cut, and the advanced
 //! Character/Paragraph attributes.
 
+use redrob_vector_doc::{Composer, NodeKind, Scaling};
+use redrob_vector_geom::{Rect, Vec2};
 use serde_json::{Value, json};
-use vectorcraft_doc::{Composer, NodeKind, Scaling};
-use vectorcraft_geom::{Rect, Vec2};
 
 use super::*;
 use crate::{Clipboard, EngineError};
@@ -80,7 +80,7 @@ fn board_and_art(s: &Session, p: &Value) -> (usize, bool) {
 /// ones only with prefs moveLockedWithArtboard), in paint order.
 /// The artboards `cmd` acts on: `indices` (several), else `index` (one), each an artboard of `d`,
 /// in order and once each.
-pub(crate) fn artboard_indices(d: &vectorcraft_doc::Document, p: &Value, cmd: &str) -> Result<Vec<usize>> {
+pub(crate) fn artboard_indices(d: &redrob_vector_doc::Document, p: &Value, cmd: &str) -> Result<Vec<usize>> {
     let listed = match (p.get("indices"), p.get("index")) {
         (Some(v), _) => point_indices(v),
         (None, Some(i)) => point_indices(&json!([i])),
@@ -100,7 +100,7 @@ pub(crate) fn artboard_art(s: &Session, i: usize, art: bool) -> Result<Vec<NodeI
 }
 
 /// How far a copy of `rect` moves to sit right of the last artboard (Duplicate Artboards, Paste).
-pub(crate) fn beside_artboards(d: &vectorcraft_doc::Document, rect: Rect) -> Vec2 {
+pub(crate) fn beside_artboards(d: &redrob_vector_doc::Document, rect: Rect) -> Vec2 {
     let right = d.artboards.iter().map(|a| a.rect.x1).fold(f64::MIN, f64::max);
     Vec2::new(right + 20.0 - rect.x0, 0.0)
 }
@@ -151,7 +151,7 @@ pub(crate) fn artboard_copy(s: &mut Session, p: &Value, cut: bool) -> Result<Val
 /// Add a copy of artboard `i` moved by `dv`, with copies of its guides and of its `art` (each just
 /// above its original) moved along → (the copy's index, the art's copies). When `sc.patterns`, the
 /// pattern tiles of the art's copies move with them. Duplicate Artboards and Alt-drag.
-pub(crate) fn copy_artboard(d: &mut vectorcraft_doc::Document, i: usize, dv: Vec2, art: &[NodeId], sc: Scaling) -> Result<(usize, Vec<NodeId>)> {
+pub(crate) fn copy_artboard(d: &mut redrob_vector_doc::Document, i: usize, dv: Vec2, art: &[NodeId], sc: Scaling) -> Result<(usize, Vec<NodeId>)> {
     let src = d.artboards.get(i).cloned().ok_or_else(|| EngineError::Other("no such artboard".into()))?;
     let index = push_artboard_copy(d, &src, src.rect + dv);
     // Its guides come along.
@@ -164,7 +164,7 @@ pub(crate) fn copy_artboard(d: &mut vectorcraft_doc::Document, i: usize, dv: Vec
 
 /// Add a copy of artboard `src` at `rect`, with an id of its own and its name, or `<name> copy`
 /// (`<name> copy 2`…) when that is taken → its index.
-pub(crate) fn push_artboard_copy(d: &mut vectorcraft_doc::Document, src: &vectorcraft_doc::Artboard, rect: Rect) -> usize {
+pub(crate) fn push_artboard_copy(d: &mut redrob_vector_doc::Document, src: &redrob_vector_doc::Artboard, rect: Rect) -> usize {
     let mut a = src.clone();
     a.id = d.artboards.iter().map(|a| a.id).max().unwrap_or(0).saturating_add(1);
     let taken = |name: &str| d.artboards.iter().any(|a| a.name == name);
@@ -237,17 +237,17 @@ fn set_format(s: &mut Session, p: &Value) -> Result<Value> {
     let mojikumi = match p.get("mojikumi") {
         None => None,
         Some(v) => Some(match v.as_str() {
-            Some("none") => vectorcraft_doc::Mojikumi::None,
-            Some("lineEndHalf") => vectorcraft_doc::Mojikumi::LineEndHalf,
+            Some("none") => redrob_vector_doc::Mojikumi::None,
+            Some("lineEndHalf") => redrob_vector_doc::Mojikumi::LineEndHalf,
             _ => return Err(bad(C, "`mojikumi` must be \"none\" or \"lineEndHalf\"")),
         }),
     };
     let kinsoku = match p.get("kinsoku") {
         None => None,
         Some(v) => Some(match v.as_str() {
-            Some("none") => vectorcraft_doc::Kinsoku::None,
-            Some("hard") => vectorcraft_doc::Kinsoku::Hard,
-            Some("soft") => vectorcraft_doc::Kinsoku::Soft,
+            Some("none") => redrob_vector_doc::Kinsoku::None,
+            Some("hard") => redrob_vector_doc::Kinsoku::Hard,
+            Some("soft") => redrob_vector_doc::Kinsoku::Soft,
             _ => return Err(bad(C, "`kinsoku` must be \"none\", \"hard\" or \"soft\"")),
         }),
     };
@@ -255,31 +255,31 @@ fn set_format(s: &mut Session, p: &Value) -> Result<Value> {
         None => None,
         Some(v) => Some(match v.as_str() {
             Some("auto") => None,
-            Some("leftToRight") => Some(vectorcraft_doc::ParaDirection::LeftToRight),
-            Some("rightToLeft") => Some(vectorcraft_doc::ParaDirection::RightToLeft),
+            Some("leftToRight") => Some(redrob_vector_doc::ParaDirection::LeftToRight),
+            Some("rightToLeft") => Some(redrob_vector_doc::ParaDirection::RightToLeft),
             _ => return Err(bad(C, "`direction` must be \"auto\", \"leftToRight\" or \"rightToLeft\"")),
         }),
     };
     let leading_model = match p.get("leadingModel") {
         None => None,
         Some(v) => Some(match v.as_str() {
-            Some("romanBaseline") => vectorcraft_doc::LeadingModel::RomanBaseline,
-            Some("emBoxTop") => vectorcraft_doc::LeadingModel::EmBoxTop,
+            Some("romanBaseline") => redrob_vector_doc::LeadingModel::RomanBaseline,
+            Some("emBoxTop") => redrob_vector_doc::LeadingModel::EmBoxTop,
             _ => return Err(bad(C, "`leadingModel` must be \"romanBaseline\" or \"emBoxTop\"")),
         }),
     };
     let burasagari = match p.get("burasagari") {
         None => None,
         Some(v) => Some(match v.as_str() {
-            Some("none") => vectorcraft_doc::Burasagari::None,
-            Some("standard") => vectorcraft_doc::Burasagari::Standard,
-            Some("forced") => vectorcraft_doc::Burasagari::Forced,
+            Some("none") => redrob_vector_doc::Burasagari::None,
+            Some("standard") => redrob_vector_doc::Burasagari::Standard,
+            Some("forced") => redrob_vector_doc::Burasagari::Forced,
             _ => return Err(bad(C, "`burasagari` must be \"none\", \"standard\" or \"forced\"")),
         }),
     };
     let range = super::typecmd::TextRange::parse(p, C)?;
     // The character attributes, given the baseline shift and horizontal scale in the type's own units.
-    let chars = |st: &mut vectorcraft_doc::CharStyle, baseline_shift: Option<f64>, h_scale: Option<f64>| {
+    let chars = |st: &mut redrob_vector_doc::CharStyle, baseline_shift: Option<f64>, h_scale: Option<f64>| {
         if let Some(k) = kerning {
             st.kerning = k;
         }

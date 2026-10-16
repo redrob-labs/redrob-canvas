@@ -3,8 +3,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use redrob_vector_engine::Session;
 use serde_json::json;
-use vectorcraft_engine::Session;
 
 use super::*;
 
@@ -44,7 +44,7 @@ fn saved(dir: &Folder) -> VectorcraftApp {
         .unwrap();
     std::fs::write(dir.path("pic.png"), &png).unwrap();
     app.run("file.place", json!({"path": dir.path("pic.png")})).unwrap();
-    app.run("document.save", json!({"path": dir.path("card.vectorcraft")})).unwrap();
+    app.run("document.save", json!({"path": dir.path("card.rvector")})).unwrap();
     app
 }
 
@@ -76,7 +76,7 @@ fn package_writes_the_folder_then_offers_to_show_it() {
     let r = confirm(&mut app).unwrap();
     assert!(!app.session.active().unwrap().is_dirty());
     let root = std::path::Path::new(&out).join("card Folder");
-    assert!(root.join("card.vectorcraft").is_file() && root.join("Links/pic.png").is_file(), "{r}");
+    assert!(root.join("card.rvector").is_file() && root.join("Links/pic.png").is_file(), "{r}");
     let d = app.ui.dialog.as_ref().unwrap();
     assert_eq!((d.kind.as_str(), d.str("__command")), (confirm::KIND, "file.showPackage".to_string()));
     let opened: Rc<RefCell<Vec<String>>> = Rc::default();

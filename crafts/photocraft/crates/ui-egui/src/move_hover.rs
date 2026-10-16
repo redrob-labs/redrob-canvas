@@ -6,8 +6,8 @@
 //! pointer resting on the canvas costs nothing per frame.
 
 use egui::{Pos2, Stroke};
-use photocraft_doc::{DocId, Document, Layer, LayerContent, LayerId};
-use photocraft_geom::Rect;
+use redrob_photo_doc::{DocId, Document, Layer, LayerContent, LayerId};
+use redrob_photo_geom::Rect;
 
 use crate::PhotocraftApp;
 use crate::canvas::ViewXform;
@@ -52,7 +52,7 @@ pub(crate) fn target(app: &mut PhotocraftApp, at: Option<[f64; 2]>, command: boo
         app.canvas_hover_layer = h.target_layer;
         return h.bounds;
     }
-    let target_layer = photocraft_engine::pick_cmds::auto_select_target(&st.doc, at[0], at[1], group);
+    let target_layer = redrob_photo_engine::pick_cmds::auto_select_target(&st.doc, at[0], at[1], group);
     let bounds = target_layer.and_then(|id| outline(&st.doc, id));
     let target_layer = if bounds.is_some() { target_layer } else { None };
     app.move_hover = Some(Hover { doc, revision, at, group, target_layer, bounds });
@@ -79,7 +79,7 @@ fn bounds(doc: &Document, l: &Layer) -> Rect {
     if let Some(a) = l.artboard() {
         return a.rect;
     }
-    let content = |s| photocraft_compose::bounds::content_bounds(s);
+    let content = |s| redrob_photo_compose::bounds::content_bounds(s);
     match &l.content {
         LayerContent::Group(_) | LayerContent::Adjustment(_) => Rect::EMPTY,
         // A fill layer covers the canvas; its mask limits it.
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn rollover_outlines_the_layer_a_click_would_pick() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn layer_panel_hover_outlines_layer_on_canvas() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn canvas_hover_sets_canvas_hover_layer() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session

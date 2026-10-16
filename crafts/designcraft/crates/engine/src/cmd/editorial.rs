@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::{EditorialNote, NOTE_MARK, StoryId};
+use redrob_layout_doc::{EditorialNote, NOTE_MARK, StoryId};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, has_text, ok, str_param};
@@ -100,7 +100,7 @@ fn target(p: &Value) -> Result<(StoryId, u64)> {
 }
 
 /// Byte offset of note `id`'s anchor.
-fn anchor(st: &designcraft_doc::Story, id: u64) -> Option<usize> {
+fn anchor(st: &redrob_layout_doc::Story, id: u64) -> Option<usize> {
     let k = st.editorial.iter().position(|n: &Arc<EditorialNote>| n.id == id)?;
     st.text.match_indices(NOTE_MARK).nth(k).map(|(i, _)| i)
 }
@@ -116,7 +116,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Draft copy."})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = redrob_layout_doc::StoryId(r["story"].as_u64().unwrap());
         let end_x = |s: &Session| s.cache.get(&s.doc().unwrap().doc, sid, None).frames[0].lines[0].end_x;
         let before = end_x(&s);
         s.execute("text.select", &json!({"story": r["story"], "anchor": 5, "focus": 5})).unwrap();

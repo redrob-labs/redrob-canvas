@@ -8,7 +8,7 @@ use serde_json::json;
 use crate::PhotocraftApp;
 
 fn harness() -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 120, "height": 80})).unwrap();
     app.run("layer.new.layer", json!({"name": "Paint"})).unwrap();
     app.run("edit.fill", json!({"color": "#3366cc"})).unwrap();
@@ -95,7 +95,7 @@ fn cmd_alt_e_stamps_down() {
 
 #[test]
 fn keyboard_shortcuts_lists_the_stamps_with_layer() {
-    let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     let items = crate::prefs_ui::shortcut_items(&app);
     let find = |id: &str| items.iter().position(|i| i.0 == id);
     let (Some(v), Some(d)) = (find("layer.stampVisible"), find("layer.stampDown")) else { panic!("listed") };

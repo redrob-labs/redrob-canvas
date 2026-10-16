@@ -7,7 +7,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use vectorcraft_text::{FontDb, WEB_FONTS, WebFont};
+use redrob_vector_text::{FontDb, WEB_FONTS, WebFont};
 use wasm_bindgen::JsCast as _;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen_futures::JsFuture;

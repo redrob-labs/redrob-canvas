@@ -1,9 +1,9 @@
 //! Group, layer and type appearance through commands: their own fills, strokes and effects, the
 //! Contents (Characters) slot, `target: "contents"`, Target Contents and effects on layers.
 
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::{Node, NodeKind};
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::{Node, NodeKind};
 
 use super::*;
 
@@ -36,8 +36,8 @@ fn group(s: &mut Session) -> (NodeId, [NodeId; 2]) {
 
 fn pixel(s: &Session, x: u32, y: u32) -> [u8; 4] {
     let doc = s.doc().unwrap().doc.clone();
-    let opts = vectorcraft_render::RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
-    vectorcraft_render::Renderer::new().render(&doc, 200, 200, vectorcraft_geom::Affine::IDENTITY, &opts).pixel(x, y)
+    let opts = redrob_vector_render::RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
+    redrob_vector_render::Renderer::new().render(&doc, 200, 200, redrob_vector_geom::Affine::IDENTITY, &opts).pixel(x, y)
 }
 
 const GREEN: [u8; 4] = [0, 255, 0, 255];
@@ -103,7 +103,7 @@ fn effects_and_fills_apply_to_layers_by_id() {
     // Two undo steps take both off again.
     run(&mut s, "edit.undo", json!({}));
     run(&mut s, "edit.undo", json!({}));
-    assert_eq!(node(&s, layer).appearance, vectorcraft_doc::Appearance::default());
+    assert_eq!(node(&s, layer).appearance, redrob_vector_doc::Appearance::default());
     // Nothing selected and no ids: an error, not a silent no-op.
     assert!(s.execute("appearance.addFill", &json!({})).is_err());
 }
@@ -131,7 +131,7 @@ fn group_appearance_round_trips_and_expands() {
     run(&mut s, "appearance.moveItem", json!({"from": "contents", "to": 1}));
     run(&mut s, "effect.apply", json!({"effect": "distort.transform", "params": {"moveV": 50}}));
     let doc = s.doc().unwrap().doc.clone();
-    let back = vectorcraft_format::load(&vectorcraft_format::save(&doc, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(&doc, false)).unwrap();
     assert_eq!(back.node(g).unwrap().appearance, doc.node(g).unwrap().appearance);
     assert_eq!(back.node(g).unwrap().appearance.contents_index, Some(1));
     // Expand Appearance: the fill and stroke become paths below and above the moved members.

@@ -2,9 +2,9 @@
 //!
 //! Usage: `designcraft [--control <port>] [--sample] [files…]`
 //!
-//! `--control <port>` (or `DESIGNCRAFT_CONTROL_PORT`) starts a localhost JSON-lines control server:
+//! `--control <port>` (or `REDROB_LAYOUT_CONTROL_PORT`) starts a localhost JSON-lines control server:
 //! `{"id":1,"method":"ui.inspect","params":{}}` → `{"id":1,"ok":true,"result":…}`.
-//! See `designcraft_ui_egui::control` for the methods.
+//! See `redrob_layout_ui_egui::control` for the methods.
 //!
 //! The graphics backend (DirectX 12, Vulkan, Metal or OpenGL) is chosen in `gpu` before the window
 //! exists, with a fallback for a driver that crashes at start-up; `WGPU_BACKEND` overrides it.
@@ -18,8 +18,8 @@ mod logging;
 mod native_menu;
 mod profile;
 
-use designcraft_engine::Session;
-use designcraft_ui_egui::{DesignApp, Services};
+use redrob_layout_engine::Session;
+use redrob_layout_ui_egui::{DesignApp, Services};
 
 struct App {
     app: DesignApp,
@@ -44,7 +44,7 @@ impl eframe::App for App {
         self.frames = self.frames.saturating_add(1);
         #[cfg(target_os = "macos")]
         {
-            if self.menu.is_none() && std::env::var_os("DESIGNCRAFT_NO_NATIVE_MENU").is_none() {
+            if self.menu.is_none() && std::env::var_os("REDROB_LAYOUT_NO_NATIVE_MENU").is_none() {
                 self.menu = Some(native_menu::NativeMenu::install(&mut self.app, ctx));
             }
             if let Some(m) = &mut self.menu {
@@ -91,9 +91,9 @@ fn preserve_documents_on_exit(app: &mut DesignApp) -> Result<(), String> {
     app.run("file.recovery.save", serde_json::json!({})).map(|_| ())
 }
 
-/// `DESIGNCRAFT_NO_PREFS`: read and write nothing in the settings directory (tests, demos).
+/// `REDROB_LAYOUT_NO_PREFS`: read and write nothing in the settings directory (tests, demos).
 fn no_prefs() -> bool {
-    std::env::var_os("DESIGNCRAFT_NO_PREFS").is_some()
+    std::env::var_os("REDROB_LAYOUT_NO_PREFS").is_some()
 }
 
 fn prefs_path() -> Option<std::path::PathBuf> {
@@ -106,14 +106,14 @@ fn load_prefs(app: &mut DesignApp) {
     }
     if let Some(p) = prefs_path()
         && let Ok(bytes) = std::fs::read(&p)
-        && let Ok(ui) = designcraft_ui_egui::UiState::from_preferences_json(&bytes)
+        && let Ok(ui) = redrob_layout_ui_egui::UiState::from_preferences_json(&bytes)
     {
         app.ui = ui;
     }
     // Engine preferences (Preferences dialog, favourites…) live beside the UI state.
     if let Some(p) = prefs_path().map(|p| p.with_file_name("prefs.json"))
         && let Ok(bytes) = std::fs::read(&p)
-        && let Ok(prefs) = serde_json::from_slice::<designcraft_engine::Prefs>(&bytes)
+        && let Ok(prefs) = serde_json::from_slice::<redrob_layout_engine::Prefs>(&bytes)
     {
         app.session.prefs = prefs;
     }
@@ -209,14 +209,14 @@ fn services() -> Services {
         })),
         pick_save: Some(Box::new(|name: &str| rfd::FileDialog::new().set_file_name(name).save_file().map(|p| p.to_string_lossy().to_string()))),
         read: Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string()))),
-        write: Some(Box::new(|p: &str, b: &[u8]| designcraft_engine::atomic::write_atomic(std::path::Path::new(p), b).map_err(|e| e.to_string()))),
+        write: Some(Box::new(|p: &str, b: &[u8]| redrob_layout_engine::atomic::write_atomic(std::path::Path::new(p), b).map_err(|e| e.to_string()))),
         clipboard_text: Some(Box::new(|| arboard::Clipboard::new().and_then(|mut c| c.get_text()).ok())),
         ..Default::default()
     }
 }
 
 /// Desktop app ID: the Linux `.desktop` file name and hicolor icon name (Wayland matches windows by it).
-const APP_ID: &str = "ai.storyteller.designcraft";
+const APP_ID: &str = "ai.storyteller.rlayout";
 
 /// The window, Dock, taskbar and Alt-Tab icon. macOS gets Apple's icon grid (transparent margin);
 /// elsewhere the full tile. Regenerate with `packaging/icons.sh`.
@@ -224,11 +224,11 @@ fn app_icon() -> Option<egui::IconData> {
     #[cfg(target_os = "macos")]
     let png: &[u8] = include_bytes!("../../../assets/app-icon/designcraft-macos-512.png");
     #[cfg(not(target_os = "macos"))]
-    let png: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.designcraft.png");
+    let png: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.rlayout.png");
     eframe::icon_data::from_png_bytes(png).map_err(|e| log::warn!("app icon: {e}")).ok()
 }
 
-/// The control port from `--control <port>` or `DESIGNCRAFT_CONTROL_PORT` (`source`); a value that
+/// The control port from `--control <port>` or `REDROB_LAYOUT_CONTROL_PORT` (`source`); a value that
 /// is not a port is logged and ignored instead of silently starting no control channel.
 fn control_port_from(source: &str, value: Option<String>) -> Option<u16> {
     let value = value?;
@@ -243,7 +243,7 @@ fn main() -> eframe::Result {
     // First, so every start-up record (and the engine's panic hook, installed with the first
     // Session) is captured; see `logging`.
     let logger = logging::install();
-    let mut control_port = control_port_from("DESIGNCRAFT_CONTROL_PORT", std::env::var("DESIGNCRAFT_CONTROL_PORT").ok());
+    let mut control_port = control_port_from("REDROB_LAYOUT_CONTROL_PORT", std::env::var("REDROB_LAYOUT_CONTROL_PORT").ok());
     let mut files = Vec::new();
     let mut sample = false;
     let mut args = std::env::args().skip(1);
@@ -299,10 +299,10 @@ fn main() -> eframe::Result {
             create.instance_descriptor.flags.difference(eframe::wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL).with_env();
     }
     // winit has no file drag-and-drop on Wayland (only on X11), so dropping images from the file
-    // manager showed a "no" cursor. Run through XWayland when it's there; DESIGNCRAFT_WAYLAND=1
+    // manager showed a "no" cursor. Run through XWayland when it's there; REDROB_LAYOUT_WAYLAND=1
     // keeps the native Wayland backend.
     #[cfg(all(unix, not(target_os = "macos")))]
-    if std::env::var_os("DISPLAY").is_some() && std::env::var_os("DESIGNCRAFT_WAYLAND").is_none() {
+    if std::env::var_os("DISPLAY").is_some() && std::env::var_os("REDROB_LAYOUT_WAYLAND").is_none() {
         options.event_loop_builder = Some(Box::new(|b| {
             use winit::platform::x11::EventLoopBuilderExtX11;
             b.with_x11();
@@ -470,7 +470,7 @@ mod exit_recovery_tests {
         );
         assert!(std::sync::Arc::ptr_eq(&current.doc, &doc));
         assert!(current.is_dirty());
-        let recovered = designcraft_engine::cmd::from_bytes(&std::fs::read(dir.join(format!("{uid}.designcraft"))).unwrap()).unwrap();
+        let recovered = redrob_layout_engine::cmd::from_bytes(&std::fs::read(dir.join(format!("{uid}.rlayout"))).unwrap()).unwrap();
         assert_eq!(serde_json::to_value(&recovered).unwrap(), serde_json::to_value(doc.as_ref()).unwrap());
         std::fs::remove_dir_all(dir).unwrap();
     }
@@ -480,7 +480,7 @@ mod exit_recovery_tests {
         let (mut app, dir) = dirty_app("clean");
         let uid = app.session.active().unwrap().uid;
         app.run("file.recovery.save", json!({})).unwrap();
-        let entry = dir.join(format!("{uid}.designcraft"));
+        let entry = dir.join(format!("{uid}.rlayout"));
         assert!(entry.exists());
         app.run("edit.undo", json!({})).unwrap();
         assert!(!app.session.active().unwrap().is_dirty());
@@ -522,7 +522,7 @@ mod exit_recovery_tests {
             let ctx = egui::Context::default();
             close_frame(&mut app, &ctx, true);
             app.ui.dialog.as_mut().unwrap().fields.insert("discard".into(), json!(true));
-            designcraft_ui_egui::dialogs::confirm(&mut app).unwrap();
+            redrob_layout_ui_egui::dialogs::confirm(&mut app).unwrap();
             close_frame(&mut app, &ctx, false);
             if case == "stale" {
                 app.run("frame.create", json!({"rect": [200, 200, 300, 300]})).unwrap();
@@ -540,7 +540,7 @@ mod exit_recovery_tests {
             preserve_documents_on_exit(&mut app).unwrap();
             if case == "complete" {
                 assert!(app.session.documents().is_empty());
-                assert!(!dir.join(format!("{first_uid}.designcraft")).exists(), "accepted Don't Save must not be recovered");
+                assert!(!dir.join(format!("{first_uid}.rlayout")).exists(), "accepted Don't Save must not be recovered");
             } else {
                 assert_eq!(app.session.documents().len(), before.len(), "{case}");
                 assert_eq!(app.session.active().unwrap().uid, active, "{case}");
@@ -551,7 +551,7 @@ mod exit_recovery_tests {
                         "{case}"
                     );
                     assert!(std::sync::Arc::ptr_eq(&d.doc, &doc), "{case}");
-                    let recovered = designcraft_engine::cmd::from_bytes(&std::fs::read(dir.join(format!("{uid}.designcraft"))).unwrap()).unwrap();
+                    let recovered = redrob_layout_engine::cmd::from_bytes(&std::fs::read(dir.join(format!("{uid}.rlayout"))).unwrap()).unwrap();
                     assert_eq!(serde_json::to_value(&recovered).unwrap(), serde_json::to_value(doc.as_ref()).unwrap(), "{case}");
                 }
             }

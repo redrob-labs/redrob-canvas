@@ -193,7 +193,7 @@ pub enum NewFilePermissions {
 /// for settings and other private data. Existing files always stage privately before replacement.
 ///
 /// ```
-/// use craft_atomic::{NewFilePermissions, WriteOptions};
+/// use redrob_craft_atomic::{NewFilePermissions, WriteOptions};
 /// let private = WriteOptions::default().with_new_file_permissions(NewFilePermissions::Private);
 /// # let _ = private;
 /// ```
@@ -936,7 +936,7 @@ mod tests {
     fn normal_creation_needs_no_chmod_even_when_hard_links_fail() -> io::Result<()> {
         use std::os::unix::fs::PermissionsExt;
         use std::process::Command;
-        if std::env::var_os("CRAFT_ATOMIC_COPY_CHILD").is_none() {
+        if std::env::var_os("REDROB_CRAFT_ATOMIC_COPY_CHILD").is_none() {
             // Test both publication paths under real umasks without changing the test runner's
             // process-global mask. In particular, 002 must produce a shared 0664 final file.
             for mask in ["000", "002", "022", "027", "077"] {
@@ -948,7 +948,7 @@ mod tests {
                         mask,
                     ])
                     .arg(std::env::current_exe()?)
-                    .env("CRAFT_ATOMIC_COPY_CHILD", "1")
+                    .env("REDROB_CRAFT_ATOMIC_COPY_CHILD", "1")
                     .output()?;
                 assert!(output.status.success(), "umask {mask}: {}", String::from_utf8_lossy(&output.stdout));
                 assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));

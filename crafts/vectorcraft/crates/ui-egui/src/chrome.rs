@@ -3,8 +3,8 @@
 use std::borrow::Cow;
 
 use egui::{CornerRadius, Sense, Stroke, Ui, vec2};
+use redrob_vector_doc::NodeKind;
 use serde_json::json;
-use vectorcraft_doc::NodeKind;
 
 use crate::panels::stroke as stroke_panel;
 use crate::state::{ZOOM_STOPS, zoom_label};
@@ -162,7 +162,7 @@ pub fn anchor_controls(app: &VectorcraftApp) -> AnchorControls {
         return AnchorControls::All;
     }
     let paths = st.selection.objects.iter().any(|id| st.doc.node(*id).is_some_and(|n| matches!(n.kind, NodeKind::Path { .. })));
-    if paths && vectorcraft_tools::catalog::edits_anchors(app.session.tool_id()) { AnchorControls::Convert } else { AnchorControls::None }
+    if paths && redrob_vector_tools::catalog::edits_anchors(app.session.tool_id()) { AnchorControls::Convert } else { AnchorControls::None }
 }
 
 /// What the Control bar and the Properties panel offer for selected anchors ([`anchor_controls`]):
@@ -236,7 +236,7 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     Some(_) if sel.len() == 1 && anchors != AnchorControls::None => {
                         tl!("Anchor Point")
                     }
-                    Some(vectorcraft_doc::Node { kind: NodeKind::Image(im), .. }) if sel.len() == 1 => {
+                    Some(redrob_vector_doc::Node { kind: NodeKind::Image(im), .. }) if sel.len() == 1 => {
                         if im.link.is_some() {
                             tl!("Linked File")
                         } else {
@@ -337,11 +337,11 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
 
 /// A document tab's title: "Name* @ 66.67 % (RGB/Preview)", or while an opacity mask is edited
 /// "Name* @ 66.67 % (<Opacity Mask>/Opacity Mask)".
-fn tab_title(d: &vectorcraft_engine::DocState, zoom: f64, outline: bool) -> String {
+fn tab_title(d: &redrob_vector_engine::DocState, zoom: f64, outline: bool) -> String {
     let mode = if d.doc.mask_edit.is_some() {
         format!("<{0}>/{0}", tl!("Opacity Mask"))
     } else {
-        let color = if d.doc.color_mode == vectorcraft_doc::ColorMode::Cmyk { "CMYK" } else { "RGB" };
+        let color = if d.doc.color_mode == redrob_vector_doc::ColorMode::Cmyk { "CMYK" } else { "RGB" };
         format!("{color}/{}", if outline { tl!("Outline") } else { tl!("Preview") })
     };
     format!("{}{} @ {} ({mode})", d.title(), if d.is_dirty() { "*" } else { "" }, zoom_label(zoom).replace('%', " %"))
@@ -557,7 +557,7 @@ pub fn status_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     app.status(e);
                 }
                 ui.separator();
-                let tool = vectorcraft_tools::tool_info(app.session.tool_id())
+                let tool = redrob_vector_tools::tool_info(app.session.tool_id())
                     .map(|t| {
                         // The catalog keys carry the full label ("Selection Tool"); only English drops the suffix.
                         let shown = tl!(t.label);
@@ -775,7 +775,7 @@ fn hint_for(tool: &str) -> Option<&'static [(&'static str, bool)]> {
 /// can insist a complete language covers them.
 pub fn hint_strings() -> Vec<&'static str> {
     let mut v = Vec::new();
-    for tool in vectorcraft_tools::catalog::all_tools().map(|t| t.id).chain([ANIMATED_ZOOM_HINT]) {
+    for tool in redrob_vector_tools::catalog::all_tools().map(|t| t.id).chain([ANIMATED_ZOOM_HINT]) {
         for &(text, bold) in hint_for(tool).unwrap_or(&[]) {
             let text = if bold { text.rsplit_once('+').map_or(text, |(_, k)| k) } else { text };
             if !text.is_empty() && !text.chars().all(|c| c.is_ascii_digit()) && !v.contains(&text) {
@@ -858,13 +858,13 @@ mod tests {
         assert_eq!(super::first_tab_shown(&widths, None, 350.0), 0);
         assert_eq!(super::first_tab_shown(&widths, Some(4), 50.0), 4, "a tab wider than the room still shows");
     }
+    use redrob_vector_engine::Session;
     use serde_json::json;
-    use vectorcraft_engine::Session;
 
     #[test]
     fn hints_name_keys_as_the_menus_do() {
         let text = |tool: &str| super::hint_segments(tool).into_iter().map(|(s, _)| s).collect::<String>();
-        for tool in vectorcraft_tools::catalog::all_tools().map(|t| t.id) {
+        for tool in redrob_vector_tools::catalog::all_tools().map(|t| t.id) {
             let hint = text(tool);
             assert!(!hint.contains("Option"), "{tool}: {hint}");
             assert!(cfg!(target_os = "macos") || !hint.contains("Cmd"), "{tool}: {hint}");
@@ -935,7 +935,7 @@ mod tests {
 
     #[test]
     fn the_artboard_navigator_goes_to_artboards_and_fitting_shows_the_current_one() {
-        use vectorcraft_geom::Point;
+        use redrob_vector_geom::Point;
         let mut app = crate::VectorcraftApp::new(Session::new(), Default::default());
         // Three 200 × 100 artboards in a row, centred at x = 100, 320 and 540.
         app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
@@ -976,7 +976,7 @@ mod tests {
         assert!(app.run("view.goToArtboard", json!({"index": "sideways"})).is_err());
     }
 
-    fn artboard_navigation_app(tool: &str) -> (crate::VectorcraftApp, vectorcraft_doc::NodeId) {
+    fn artboard_navigation_app(tool: &str) -> (crate::VectorcraftApp, redrob_vector_doc::NodeId) {
         let mut app = crate::VectorcraftApp::new(Session::new(), Default::default());
         app.run("file.new", json!({"width": 200, "height": 100, "artboards": 3})).unwrap();
         let id = app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 30, "height": 20})).unwrap()["id"].as_u64().unwrap();
@@ -984,7 +984,7 @@ mod tests {
         app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(460.0, 260.0)));
         app.select_tool(tool);
         crate::i18n::set_current(crate::i18n::Lang::EN);
-        (app, vectorcraft_doc::NodeId(id))
+        (app, redrob_vector_doc::NodeId(id))
     }
 
     /// Click the actual status-bar Next control, without sending a canvas pointer event.
@@ -1278,14 +1278,14 @@ mod visual_regressions {
 
     #[test]
     fn capture_chrome_visual_fixtures() {
-        let Some(directory) = std::env::var_os("CRAFT_UI_VISUAL_FIXTURES").map(std::path::PathBuf::from) else {
+        let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_VISUAL_FIXTURES").map(std::path::PathBuf::from) else {
             return;
         };
         std::fs::create_dir_all(&directory).unwrap();
         for brightness in theme::Brightness::ALL {
             for width in [800.0, 1280.0] {
                 for scale in [1.0, 1.5, 2.0] {
-                    let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+                    let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
                     app.services.native_menu = Some(crate::native_menu::NativeMenu::new(Box::new(NativeMenus)));
                     app.ui.status = format!("Saved /Users/example/Documents/{}/illustration.svg", "long-folder-name/".repeat(10));
                     let mut ready = false;
@@ -1347,7 +1347,7 @@ mod visual_regressions {
                     egui_extras::install_image_loaders(&ctx);
                     theme::install_fonts(&ctx);
                     theme::apply(&ctx, brightness);
-                    let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+                    let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
                     app.services.native_menu = Some(crate::native_menu::NativeMenu::new(Box::new(NativeMenus)));
                     let mut output = ctx.run_ui(scaled_input(vec2(width, 640.0), scale), |ui| app_bar(&mut app, ui));
                     output.textures_delta.clear();
@@ -1388,7 +1388,7 @@ mod visual_regressions {
                     egui_extras::install_image_loaders(&ctx);
                     theme::install_fonts(&ctx);
                     theme::apply(&ctx, brightness);
-                    let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+                    let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
                     app.ui.status = format!("Saved /Users/example/Documents/{}/illustration.svg", "long-folder-name/".repeat(10));
                     let mut output = ctx.run_ui(scaled_input(vec2(width, 640.0), scale), |ui| status_bar(&mut app, ui));
                     output.textures_delta.clear();

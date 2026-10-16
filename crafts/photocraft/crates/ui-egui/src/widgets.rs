@@ -308,8 +308,8 @@ pub(crate) fn compact_wrapping_value_field(ui: &mut Ui, value: &mut f32, range: 
 }
 
 /// A size dialog's unit key (`px`, `in`, `cm`, `mm`, `pt`, `pica`, `percent`) as a unit.
-pub fn unit_of_key(key: &str) -> photocraft_engine::prefs::Unit {
-    use photocraft_engine::prefs::Unit;
+pub fn unit_of_key(key: &str) -> redrob_photo_engine::prefs::Unit {
+    use redrob_photo_engine::prefs::Unit;
     match key {
         "in" => Unit::Inches,
         "cm" => Unit::Centimeters,
@@ -322,7 +322,7 @@ pub fn unit_of_key(key: &str) -> photocraft_engine::prefs::Unit {
 }
 
 /// Decimal places for a size dialog's unit key (`px`, `in`, `cm`, `mm`, `pt`, `pica`, `percent`).
-/// The places themselves live on [`photocraft_engine::prefs::Unit`], so the dialogs, the Info
+/// The places themselves live on [`redrob_photo_engine::prefs::Unit`], so the dialogs, the Info
 /// panel and the rulers agree (#2434).
 pub fn unit_decimals(key: &str) -> u32 {
     unit_of_key(key).decimals() as u32
@@ -337,7 +337,7 @@ pub fn value_field_prec(ui: &mut Ui, value: &mut f32, range: std::ops::RangeIncl
 /// A field's unit and the resolution a typed unit converts at (`1in` in a px field).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FieldUnits {
-    pub unit: photocraft_engine::prefs::Unit,
+    pub unit: redrob_photo_engine::prefs::Unit,
     /// Pixels per inch.
     pub dpi: f64,
     /// Points per inch (72 PostScript, 72.27 traditional).
@@ -361,8 +361,8 @@ pub fn set_field_resolution(ctx: &egui::Context, dpi: f64, ppi: f64) {
 }
 
 /// The unit a field's suffix names (`px`, `in`, `cm`, `mm`, `pt`, `pica`/`pc`, `%`), if any.
-fn unit_of_suffix(suffix: &str) -> Option<photocraft_engine::prefs::Unit> {
-    use photocraft_engine::prefs::Unit;
+fn unit_of_suffix(suffix: &str) -> Option<redrob_photo_engine::prefs::Unit> {
+    use redrob_photo_engine::prefs::Unit;
     Some(match suffix {
         "px" => Unit::Pixels,
         "in" => Unit::Inches,
@@ -1302,7 +1302,7 @@ fn button_impl_h(ui: &mut Ui, label: &str, min_width: f32, height: Option<f32>, 
 }
 
 /// Cached RGB data; drawing work is bounded by the 256 display bins, never the image size.
-pub fn rgb_histogram(ui: &mut Ui, histogram: &photocraft_algo::histogram::RgbHistogram, height: f32) -> egui::Response {
+pub fn rgb_histogram(ui: &mut Ui, histogram: &redrob_photo_algo::histogram::RgbHistogram, height: f32) -> egui::Response {
     let t = Tokens::get(ui.ctx());
     let (rect, response) = ui.allocate_exact_size(egui::vec2(ui.available_width().max(1.0), height.max(1.0)), egui::Sense::hover());
     ui.painter().rect_filled(rect, t.radius_sm, t.histogram_background());
@@ -1736,9 +1736,9 @@ pub fn fmt_num(v: f64) -> String {
 
 /// Rounds `v` to `decimals` places (half away from zero) and drops trailing zeros, so a value is
 /// never shown with more precision than it has: `0.7995` at three places is `0.8`, `2.0` is `2`
-/// (#2434). [`photocraft_engine::prefs::Unit::decimals`] gives each ruler unit's places.
+/// (#2434). [`redrob_photo_engine::prefs::Unit::decimals`] gives each ruler unit's places.
 pub fn fmt_num_prec(v: f64, decimals: u32) -> String {
-    photocraft_engine::prefs::fmt_decimals(v, decimals as usize)
+    redrob_photo_engine::prefs::fmt_decimals(v, decimals as usize)
 }
 
 /// Two-decimal variant of [`fmt_num`] for small ranges: `1.05`, `0.78`, `2`.
@@ -2364,7 +2364,7 @@ mod tests {
     /// option hovered from the start (#2607).
     #[test]
     fn dropdown_list_keeps_its_width_while_scrolling() {
-        use photocraft_color::BlendMode;
+        use redrob_photo_color::BlendMode;
         let mut h = Harness::builder().with_size(egui::vec2(400.0, 700.0)).build_ui_state(
             |ui, mode: &mut BlendMode| {
                 let opts: Vec<(BlendMode, &str)> = BlendMode::LAYER_MODES.iter().map(|m| (*m, m.label())).collect();
@@ -2582,7 +2582,7 @@ mod screen_color_tests {
             ..Default::default()
         };
         let original = [0.123456, 0.234567, 0.345678];
-        let app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         let mut h = Harness::builder().with_size(vec2(600.0, 500.0)).build_ui_state(
             |ui, state: &mut (crate::PhotocraftApp, [f32; 3])| {
                 crate::screen_picker::tick(&mut state.0, ui.ctx());
@@ -2618,7 +2618,7 @@ mod screen_color_tests {
                 })),
                 ..Default::default()
             };
-            let app = crate::PhotocraftApp::new(photocraft_engine::Session::new(), services);
+            let app = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
             let mut h = Harness::builder().with_size(vec2(600.0, 500.0)).build_ui_state(
                 |ui, state: &mut (crate::PhotocraftApp, Color32, bool)| {
                     crate::screen_picker::tick(&mut state.0, ui.ctx());

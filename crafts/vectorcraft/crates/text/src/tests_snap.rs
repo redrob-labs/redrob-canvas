@@ -1,7 +1,7 @@
 //! Pixel snapping for type-optimized anti-aliasing.
 
 use kurbo::{Affine, Shape};
-use vectorcraft_doc::CharStyle;
+use redrob_vector_doc::CharStyle;
 
 use super::*;
 

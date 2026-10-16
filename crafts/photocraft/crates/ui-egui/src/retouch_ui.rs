@@ -106,7 +106,7 @@ pub fn finish_stroke(app: &mut PhotocraftApp, tool: Tool, points: &[[f64; 3]], m
             {
                 p["phase"] = json!(ph);
             }
-            if let Some(id) = photocraft_engine::presets::patterns::current(&app.session).or(app.session.patterns.items.first()).map(|x| x.id.clone()) {
+            if let Some(id) = redrob_photo_engine::presets::patterns::current(&app.session).or(app.session.patterns.items.first()).map(|x| x.id.clone()) {
                 p["pattern"] = json!(id);
             }
             ("paint.patternStamp", p)
@@ -640,7 +640,8 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
 
 fn pattern_stamp_options(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let opts: Vec<(String, String)> = app.session.patterns.items.iter().map(|p| (p.id.clone(), p.display_name().to_string())).collect();
-    let mut pat = photocraft_engine::presets::patterns::current(&app.session).or(app.session.patterns.items.first()).map(|p| p.id.clone()).unwrap_or_default();
+    let mut pat =
+        redrob_photo_engine::presets::patterns::current(&app.session).or(app.session.patterns.items.first()).map(|p| p.id.clone()).unwrap_or_default();
     let o = &mut app.ui.tool_options;
     crate::widgets::checkbox(ui, &mut o.pattern_stamp_aligned, tl!("Aligned"));
     crate::widgets::checkbox(ui, &mut o.pattern_stamp_impressionist, tl!("Impressionist"));
@@ -668,7 +669,7 @@ mod tests {
     use crate::canvas::{ToolEvent, tool_event};
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 100, "height": 60})).unwrap();
         app.run("tools.setBrush", json!({"brush": {"size": 16, "hardness": 1.0}})).unwrap();
         app
@@ -683,7 +684,7 @@ mod tests {
         assert!(!app.ui.status_error, "{tool:?}: {}", app.ui.status);
     }
 
-    fn active(app: &PhotocraftApp) -> &photocraft_doc::Layer {
+    fn active(app: &PhotocraftApp) -> &redrob_photo_doc::Layer {
         let st = app.session.active().unwrap();
         st.active_layer.and_then(|id| st.doc.layer(id)).unwrap()
     }

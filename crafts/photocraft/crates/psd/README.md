@@ -1,4 +1,4 @@
-# photocraft-psd
+# redrob-photo-psd
 
 A standalone reader and writer for Adobe Photoshop **PSD** (version 1) and **PSB** (version 2, "large document format") files. It keeps everything it reads, so an unmodified file writes back byte for byte. It depends on no other photocraft crate.
 
@@ -132,7 +132,7 @@ allocations for padded channels return an error on failure.
 
 ## Testing
 
-`cargo test -p photocraft-psd --all-features` runs the unit tests, integration tests and proptests:
+`cargo test -p redrob-photo-psd --all-features` runs the unit tests, integration tests and proptests:
 
 * Byte stability and model round-trips for every generated case: all depths, color modes and compressions, PSD and PSB.
 * PackBits edge cases.

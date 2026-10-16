@@ -8,9 +8,9 @@ use crate::{
     widgets,
 };
 use egui::{Atom, Key, Stroke, vec2};
-use photocraft_doc::Document;
-use photocraft_engine::symmetry_cmds::PaintingSymmetry;
-use photocraft_paint::symmetry::{PresetSymmetry, SymmetryMode};
+use redrob_photo_doc::Document;
+use redrob_photo_engine::symmetry_cmds::PaintingSymmetry;
+use redrob_photo_paint::symmetry::{PresetSymmetry, SymmetryMode};
 use serde::Serialize;
 use serde_json::json;
 use std::sync::Arc;

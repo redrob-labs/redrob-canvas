@@ -65,11 +65,7 @@ impl Display for KrillaError {
             KrillaError::Font(_, message) => write!(f, "failed to embed font: {message}"),
             KrillaError::Validation(errors) => {
                 let count = errors.len();
-                write!(
-                    f,
-                    "validation failed with {count} {}",
-                    if count == 1 { "error" } else { "errors" }
-                )
+                write!(f, "validation failed with {count} {}", if count == 1 { "error" } else { "errors" })
             }
             KrillaError::Limit(error) => write!(f, "PDF version limit exceeded: {error}"),
             KrillaError::DuplicateNamedDestination(name) => {
@@ -97,10 +93,7 @@ impl Display for KrillaError {
             }
             #[cfg(feature = "raster-images")]
             KrillaError::SixteenBitImage(_, location) => {
-                write!(
-                    f,
-                    "sixteen bit images require PDF 1.5 or newer, but the selected PDF version does not support them"
-                )?;
+                write!(f, "sixteen bit images require PDF 1.5 or newer, but the selected PDF version does not support them")?;
                 write_location(f, *location)
             }
         }
@@ -135,10 +128,7 @@ impl Display for LimitError {
             LimitError::TooLargeFloat => write!(f, "a float exceeded the maximum allowed size"),
             LimitError::TooLongArray => write!(f, "an array exceeded the maximum allowed length"),
             LimitError::TooLongDictionary => {
-                write!(
-                    f,
-                    "a dictionary exceeded the maximum allowed number of entries"
-                )
+                write!(f, "a dictionary exceeded the maximum allowed number of entries")
             }
         }
     }
@@ -147,11 +137,7 @@ impl Display for LimitError {
 impl Error for LimitError {}
 
 fn write_location(f: &mut Formatter<'_>, location: Option<Location>) -> fmt::Result {
-    if let Some(location) = location {
-        write!(f, " at location {location}")
-    } else {
-        Ok(())
-    }
+    if let Some(location) = location { write!(f, " at location {location}") } else { Ok(()) }
 }
 
 #[cfg(test)]
@@ -164,10 +150,7 @@ mod tests {
     fn krilla_error_implements_error() {
         let error = KrillaError::Limit(LimitError::TooLongArray);
 
-        assert_eq!(
-            error.to_string(),
-            "PDF version limit exceeded: an array exceeded the maximum allowed length"
-        );
+        assert_eq!(error.to_string(), "PDF version limit exceeded: an array exceeded the maximum allowed length");
         assert!(error.source().is_some());
     }
 }

@@ -8,7 +8,7 @@
 //!
 //! Levels: `info` for PhotoCraft's own crates, `warn` for everything else (wgpu and naga are
 //! chatty). `RUST_LOG` replaces that with env_logger-style directives: `debug`,
-//! `warn,photocraft_gpu=trace`, `wgpu_core=info`. A directive ending in `*` matches every target
+//! `warn,redrob_photo_gpu=trace`, `wgpu_core=info`. A directive ending in `*` matches every target
 //! that starts with it (`photocraft*=debug`).
 //!
 //! Records logged before the settings directory is known are kept (up to [`MAX_PENDING`]) and
@@ -271,7 +271,7 @@ mod tests {
         let f = Filter::parse(DEFAULT_FILTER);
         assert_eq!(f.level_for("photocraft"), LevelFilter::Info);
         assert_eq!(f.level_for("photocraft::gpu_startup"), LevelFilter::Info);
-        assert_eq!(f.level_for("photocraft_gpu::health"), LevelFilter::Info);
+        assert_eq!(f.level_for("redrob_photo_gpu::health"), LevelFilter::Info);
         assert_eq!(f.level_for("wgpu_core::device"), LevelFilter::Warn);
         assert_eq!(f.level_for("naga"), LevelFilter::Warn);
         assert_eq!(f.max(), LevelFilter::Info);
@@ -279,11 +279,11 @@ mod tests {
 
     #[test]
     fn directives_follow_env_logger_and_the_most_specific_one_wins() {
-        let f = Filter::parse("info,wgpu_core=error,photocraft_gpu=trace,photocraft_gpu::health=off");
+        let f = Filter::parse("info,wgpu_core=error,redrob_photo_gpu=trace,redrob_photo_gpu::health=off");
         assert_eq!(f.level_for("eframe"), LevelFilter::Info);
         assert_eq!(f.level_for("wgpu_core::instance"), LevelFilter::Error);
-        assert_eq!(f.level_for("photocraft_gpu::canvas"), LevelFilter::Trace);
-        assert_eq!(f.level_for("photocraft_gpu::health"), LevelFilter::Off);
+        assert_eq!(f.level_for("redrob_photo_gpu::canvas"), LevelFilter::Trace);
+        assert_eq!(f.level_for("redrob_photo_gpu::health"), LevelFilter::Off);
         assert_eq!(f.max(), LevelFilter::Trace);
         // A module name is matched at `::` boundaries, not as a bare prefix.
         assert_eq!(f.level_for("wgpu_core_extra"), LevelFilter::Info);
@@ -414,7 +414,7 @@ mod tests {
         assert!(text.contains(" INFO  [") && text.contains("photocraft::app_dirs: settings directory\n"), "{text}");
         assert!(text.contains("wgpu_hal::vulkan: a real warning\n"), "{text}");
         assert!(!text.contains("too chatty") && !text.contains("below info"), "{text}");
-        assert!(logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("photocraft_gpu").build()));
+        assert!(logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("redrob_photo_gpu").build()));
         assert!(!logger.enabled(&log::Metadata::builder().level(log::Level::Info).target("naga").build()));
         let _ = std::fs::remove_dir_all(&dir);
     }

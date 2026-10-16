@@ -10,9 +10,9 @@
 use std::sync::Arc;
 
 use egui::{Color32, Pos2, Stroke, TextureHandle, pos2};
-use photocraft_algo::perspective::{PerspectiveMap, Plane, Straighten, linked_corners, plane_point, straighten};
-use photocraft_doc::{Document, LayerId};
-use photocraft_geom::Rect;
+use redrob_photo_algo::perspective::{PerspectiveMap, Plane, Straighten, linked_corners, plane_point, straighten};
+use redrob_photo_doc::{Document, LayerId};
+use redrob_photo_geom::Rect;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -163,7 +163,7 @@ fn set_mode(s: &mut PerspSession, m: PerspMode) {
     s.mode = m;
     if m == PerspMode::Warp {
         // Linked corners share one position from here on.
-        photocraft_algo::perspective::unify(&mut s.planes);
+        redrob_photo_algo::perspective::unify(&mut s.planes);
     }
     s.update_grid();
 }
@@ -343,7 +343,7 @@ mod tests {
     #[test]
     fn layout_snaps_planes_then_warp_and_commit() {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("file.new", json!({"width": 200, "height": 120, "depth": 8})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session
@@ -389,7 +389,7 @@ mod tests {
         // release indexed the new, shorter one and panicked.
         for release in [false, true] {
             let ctx = egui::Context::default();
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             app.session.execute("file.new", json!({"width": 100, "height": 80, "depth": 8})).unwrap();
             app.session.execute("layer.new.layer", json!({})).unwrap();
             app.session

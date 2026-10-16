@@ -6,8 +6,8 @@
 //! `text` variable, a checkbox for a `visibility` one. `dataset.set` opens with the row's
 //! current values, so editing a row is editing what it already says.
 
+use redrob_vector_doc::{DataValue, VariableKind, Variables};
 use serde_json::{Value, json};
-use vectorcraft_doc::{DataValue, VariableKind, Variables};
 
 use super::{DialogSpec, run_and_close};
 use crate::VectorcraftApp;
@@ -286,8 +286,8 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tests {
+    use redrob_vector_engine::Session;
     use serde_json::json;
-    use vectorcraft_engine::Session;
 
     use super::*;
 

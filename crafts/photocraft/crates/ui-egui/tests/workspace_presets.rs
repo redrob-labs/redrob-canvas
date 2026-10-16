@@ -1,8 +1,8 @@
 //! #1120: workspace selection/reset must apply useful layouts, including saved layouts.
 
-use photocraft_engine::Session;
-use photocraft_ui_egui::dock::{self, Group};
-use photocraft_ui_egui::{PhotocraftApp, menus};
+use redrob_photo_engine::Session;
+use redrob_photo_ui_egui::dock::{self, Group};
+use redrob_photo_ui_egui::{PhotocraftApp, menus};
 use serde_json::{Value, json};
 
 const PRESETS: [(&str, &str, &[Group], bool); 6] = [
@@ -199,7 +199,7 @@ fn titlebar_picker_displays_every_selected_preset() {
         let mut texts = Vec::new();
         for _ in 0..3 {
             let input = egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1280.0, 900.0))), ..Default::default() };
-            let mut output = ctx.run_ui(input, |ui| photocraft_ui_egui::panels::title_bar(&mut app, ui));
+            let mut output = ctx.run_ui(input, |ui| redrob_photo_ui_egui::panels::title_bar(&mut app, ui));
             output.textures_delta.clear();
             texts.clear();
             for shape in output.shapes {

@@ -62,6 +62,10 @@ pub use load::{losses_summary, overwrite_losses};
 pub(crate) use native::preview_png;
 pub use native::with_compression_pref;
 pub use pdfimport::{LoadOptions, page_document};
+/// Atomic file writes (a temporary file renamed over the target: a failed write never damages the
+/// file it replaces), for the apps' own writers too.
+#[cfg(not(target_arch = "wasm32"))]
+pub use redrob_vector_format::write_atomic;
 pub(crate) use save::job_for;
 pub use save::{
     SAVE_FORMATS, SaveJob, SaveMode, SavePlan, StreamWrite, export_folder, save_filters, save_format, save_job, save_plan, save_with,
@@ -72,10 +76,6 @@ pub(crate) use screens::{
     SHARED_KEYS as SCREEN_SETTINGS_KEYS, check_settings as check_screen_settings, export as export_screens, store_settings as store_screen_settings,
 };
 pub use svg::options_map as svg_options;
-/// Atomic file writes (a temporary file renamed over the target: a failed write never damages the
-/// file it replaces), for the apps' own writers too.
-#[cfg(not(target_arch = "wasm32"))]
-pub use vectorcraft_format::write_atomic;
 
 use super::*;
 use crate::EngineError;
@@ -87,7 +87,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Open Document",
             [],
             None,
-            "{path | name | dataBase64 (a file's path, or its name with its bytes), pages?: \"2-3, 5\" (PDF/.ai: 1-based, default all; one artboard each) | page?: n, cropTo?: bounding|art|crop (default)|trim|bleed|media (the box each artboard gets; bounding: the art's bounds; trim: the bleed box round it becomes the document's bleed; a PDF-compatible .ai or a PDF saved with its editing data opens on its trim boxes for crop), password? (encrypted PDFs; see document.pdfInfo), textAs?: text (default: point type per line, lines wrapped in a frame as area type where they lay out the same, in the file's fonts by name; missing ones are listed in warnings) | outlines (glyph paths), layers?: true (default: optional content groups become layers with their visibility, print state and lock — art that is off comes in as a hidden layer; other art goes to a layer per page) | false (one layer per page, without the art that is off; Save then asks for a name), editingData?: true (default: an EPS, .ai or PDF that carries its editor's own copy of the art opens from it, with its layers, hidden objects, guides, artboards and the art outside them; a .ai or PDF whose type shows opens from its PDF part with textAs: outlines) | \"always\" (as true, and a .ai's editing copy is used even where it draws differently from its PDF part, which can be older; the warnings say so) | false (only what its page or PDF part prints, for print pipelines; a .ai saved without PDF compatibility then can't be opened), colorMode?: rgb|cmyk (the mode the document opens in, its colours converted as file.documentColorMode does, grays? as there; default: the file's — a PDF keeps CMYK, Gray and spot inks (spot swatches at a tint) and opens in CMYK when painted mostly in CMYK), grays?: as file.documentColorMode, dxf?: {layout?: \"Model\" (default) | a paper layout's name (document.dxfInfo lists them), unit?, scale? (the ratio: 1 unit of the art = scale drawing units; default: the drawing at 1:1 in its own unit), fit?: false (scale to fit an artboard of fitTo?: [612, 792], turned to the art's orientation), scaleLineweights?: false (lineweights scale with the art), center?: true (false: the drawing's origin on the artboard's bottom-left corner; fitted art's bottom-left corner), mergeLayers?: false (all art on one layer)} (DXF), crop?: as cropTo (its older name)} → {index, title, format, warnings, restored, missingLinks, modifiedLinks, updatedLinks: [{name, path, ids}]}; any readable format (see document.formats): .vectorcraft/.drawcraft, .svg/.svgz, .pdf/.ai, .ait, ASCII .dxf (each DXF layer with art a layer; blocks symbols; what can't come in is listed in warnings), PNG/JPEG/GIF/WebP/TIFF/BMP (an image opens as a document of its size at the resolution it declares, as file.place sizes it; 72 ppi, 1 px = 1 pt, when it declares none), .emf/.wmf (one artboard, the picture's frame; records Redrob Canvas doesn't read are skipped with one warning), .eps and PostScript .ai (one artboard, the bounding box: an EPS file Redrob Canvas wrote restores the document it carries, restored: true; other files are read by a PostScript interpreter — paths, colours and spot inks, clips, gradients, images, type in the fonts named — and come in as their TIFF preview, with a warning, when their PostScript can't be read). A PDF/.ai/.ait or SVG saved with Preserve Editing restores the native document it carries (restored: true; a PDF only when no pages are picked), unless the file was changed elsewhere since or the data can't be read: then its artwork is imported and the first warning says why. Templates (native templates, .ait) open as a new untitled document; a restored .ai keeps its path (Save writes .ai again). Linked images are read from their files (looked for at their path, then relative to the document): missing ones show their saved preview (links.relink), modified ones are read again only with Preferences › Update Links: Automatically (else links.update). An SVG's <image> files (relative links from the SVG's folder) stay linked, SVG files become art, missing ones a placeholder in their box (a warning and missingLinks)",
+            "{path | name | dataBase64 (a file's path, or its name with its bytes), pages?: \"2-3, 5\" (PDF/.ai: 1-based, default all; one artboard each) | page?: n, cropTo?: bounding|art|crop (default)|trim|bleed|media (the box each artboard gets; bounding: the art's bounds; trim: the bleed box round it becomes the document's bleed; a PDF-compatible .ai or a PDF saved with its editing data opens on its trim boxes for crop), password? (encrypted PDFs; see document.pdfInfo), textAs?: text (default: point type per line, lines wrapped in a frame as area type where they lay out the same, in the file's fonts by name; missing ones are listed in warnings) | outlines (glyph paths), layers?: true (default: optional content groups become layers with their visibility, print state and lock — art that is off comes in as a hidden layer; other art goes to a layer per page) | false (one layer per page, without the art that is off; Save then asks for a name), editingData?: true (default: an EPS, .ai or PDF that carries its editor's own copy of the art opens from it, with its layers, hidden objects, guides, artboards and the art outside them; a .ai or PDF whose type shows opens from its PDF part with textAs: outlines) | \"always\" (as true, and a .ai's editing copy is used even where it draws differently from its PDF part, which can be older; the warnings say so) | false (only what its page or PDF part prints, for print pipelines; a .ai saved without PDF compatibility then can't be opened), colorMode?: rgb|cmyk (the mode the document opens in, its colours converted as file.documentColorMode does, grays? as there; default: the file's — a PDF keeps CMYK, Gray and spot inks (spot swatches at a tint) and opens in CMYK when painted mostly in CMYK), grays?: as file.documentColorMode, dxf?: {layout?: \"Model\" (default) | a paper layout's name (document.dxfInfo lists them), unit?, scale? (the ratio: 1 unit of the art = scale drawing units; default: the drawing at 1:1 in its own unit), fit?: false (scale to fit an artboard of fitTo?: [612, 792], turned to the art's orientation), scaleLineweights?: false (lineweights scale with the art), center?: true (false: the drawing's origin on the artboard's bottom-left corner; fitted art's bottom-left corner), mergeLayers?: false (all art on one layer)} (DXF), crop?: as cropTo (its older name)} → {index, title, format, warnings, restored, missingLinks, modifiedLinks, updatedLinks: [{name, path, ids}]}; any readable format (see document.formats): .rvector, .svg/.svgz, .pdf/.ai, .ait, ASCII .dxf (each DXF layer with art a layer; blocks symbols; what can't come in is listed in warnings), PNG/JPEG/GIF/WebP/TIFF/BMP (an image opens as a document of its size at the resolution it declares, as file.place sizes it; 72 ppi, 1 px = 1 pt, when it declares none), .emf/.wmf (one artboard, the picture's frame; records Redrob Canvas doesn't read are skipped with one warning), .eps and PostScript .ai (one artboard, the bounding box: an EPS file Redrob Canvas wrote restores the document it carries, restored: true; other files are read by a PostScript interpreter — paths, colours and spot inks, clips, gradients, images, type in the fonts named — and come in as their TIFF preview, with a warning, when their PostScript can't be read). A PDF/.ai/.ait or SVG saved with Preserve Editing restores the native document it carries (restored: true; a PDF only when no pages are picked), unless the file was changed elsewhere since or the data can't be read: then its artwork is imported and the first warning says why. Templates (native templates, .ait) open as a new untitled document; a restored .ai keeps its path (Save writes .ai again). Linked images are read from their files (looked for at their path, then relative to the document): missing ones show their saved preview (links.relink), modified ones are read again only with Preferences › Update Links: Automatically (else links.update). An SVG's <image> files (relative links from the SVG's folder) stay linked, SVG files become art, missing ones a placeholder in their box (a warning and missingLinks)",
             always,
             load::open
         ),
@@ -466,7 +466,11 @@ pub const FORMATS: &[Format] = &[
     Format {
         id: "vectorcraft",
         label: "Redrob Canvas",
-        extensions: &[vectorcraft_format::EXTENSION, vectorcraft_format::LEGACY_EXTENSION],
+        extensions: &[
+            redrob_vector_format::EXTENSION,
+            redrob_vector_format::UPSTREAM_EXTENSION, // legacy: .vectorcraft still opens
+            redrob_vector_format::LEGACY_EXTENSION,   // legacy: .drawcraft still opens
+        ],
         mime: "application/json",
         read: true,
         write: true,
@@ -590,8 +594,9 @@ pub const FORMATS: &[Format] = &[
 
 /// Every extension `document.open` reads (the "All readable files" filter of open dialogs).
 pub const OPEN_EXTS: &[&str] = &[
-    "vectorcraft",
-    "drawcraft",
+    "rvector",
+    "vectorcraft", // legacy: upstream extension, still opened
+    "drawcraft",   // legacy: upstream's older extension, still opened
     "svg",
     "svgz",
     "pdf",
@@ -639,8 +644,9 @@ pub const TEXT_EXTS: &[&str] = &["txt"];
 
 /// Every extension File → Place reads: [`OPEN_EXTS`] and [`TEXT_EXTS`].
 pub const PLACE_EXTS: &[&str] = &[
-    "vectorcraft",
-    "drawcraft",
+    "rvector",
+    "vectorcraft", // legacy: upstream extension, still placed
+    "drawcraft",   // legacy: upstream's older extension, still placed
     "svg",
     "svgz",
     "pdf",
@@ -793,7 +799,7 @@ pub(crate) fn write_file(path: &str, bytes: &[u8]) -> Result<()> {
 #[cfg(not(target_arch = "wasm32"))]
 pub fn write_file_with(path: &str, fill: &mut dyn FnMut(&mut dyn std::io::Write) -> std::io::Result<()>) -> Result<()> {
     may_write(path)?;
-    vectorcraft_format::write_atomic_with(std::path::Path::new(path), |f| fill(f)).map_err(|e| EngineError::Other(format!("{path}: {e}")))
+    redrob_vector_format::write_atomic_with(std::path::Path::new(path), |f| fill(f)).map_err(|e| EngineError::Other(format!("{path}: {e}")))
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -810,7 +816,7 @@ pub(crate) fn write_new_file(path: &str, bytes: &[u8]) -> Result<()> {
     may_write(path)?;
     let err = |e: std::io::Error| EngineError::Other(format!("{path}: {e}"));
     let mut f = std::fs::OpenOptions::new().write(true).create_new(true).open(path).map_err(err)?;
-    let written = f.write_all(bytes).and_then(|()| vectorcraft_format::sync_file(&f));
+    let written = f.write_all(bytes).and_then(|()| redrob_vector_format::sync_file(&f));
     drop(f);
     written.map_err(|e| {
         // Best effort: the partly written file is all there is to clean up.
@@ -988,7 +994,7 @@ pub(crate) fn write_new_file(path: &str, _: &[u8]) -> Result<()> {
 /// File-name parts for artboards `boards` of `doc`: the artboard's name with unsafe characters as
 /// `-`, `Artboard-N` when unnamed, and `-2`, `-3`… after a name already used (compared without
 /// case: `Icon` and `icon` are one file on most desktop file systems).
-pub fn artboard_file_names(doc: &vectorcraft_doc::Document, boards: &[usize]) -> Vec<String> {
+pub fn artboard_file_names(doc: &redrob_vector_doc::Document, boards: &[usize]) -> Vec<String> {
     unique_file_names(boards.iter().map(|&b| (doc.artboards.get(b).map_or("", |a| a.name.as_str()), format!("Artboard-{}", b + 1))))
 }
 
@@ -1019,12 +1025,12 @@ pub(crate) fn unique_file_names<'a>(names: impl IntoIterator<Item = (&'a str, St
 /// Write an export's files for the destination `path` → `{path, bytes, files?, linked?, …extra}`
 /// (`files`: every file when there are several; `linked`: the images it links to); with no path
 /// → the same with `dataBase64` and `{name, dataBase64}` rows, named after `name`.
-fn write_encoded(path: Option<&str>, name: &str, doc: &vectorcraft_doc::Document, enc: &Encoded, extra: Value) -> Result<Value> {
+fn write_encoded(path: Option<&str>, name: &str, doc: &redrob_vector_doc::Document, enc: &Encoded, extra: Value) -> Result<Value> {
     let files = enc.named(doc, path.unwrap_or(name));
     let (main, linked) = files.split_at(enc.files.len());
     let row = |(name, bytes): &(String, std::borrow::Cow<[u8]>)| match path {
         Some(_) => json!(name),
-        None => json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(bytes) }),
+        None => json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(bytes) }),
     };
     if path.is_some() {
         for (p, bytes) in &files {
@@ -1034,7 +1040,7 @@ fn write_encoded(path: Option<&str>, name: &str, doc: &vectorcraft_doc::Document
     let Some((first, bytes)) = main.first() else { return Err(EngineError::Other("the export wrote no file".into())) };
     let mut out = match path {
         Some(_) => json!({ "path": first, "bytes": bytes.len() }),
-        None => json!({ "dataBase64": vectorcraft_format::base64_encode(bytes), "bytes": bytes.len() }),
+        None => json!({ "dataBase64": redrob_vector_format::base64_encode(bytes), "bytes": bytes.len() }),
     };
     if main.len() > 1 {
         out["files"] = main.iter().map(row).collect();
@@ -1060,7 +1066,7 @@ pub(crate) fn with_black_output(s: &Session, p: &Value) -> Value {
 }
 
 /// A file name for bytes handed back without a path: the document's title with `ext`.
-pub(crate) fn default_name(doc: &vectorcraft_doc::Document, ext: &str) -> String {
+pub(crate) fn default_name(doc: &redrob_vector_doc::Document, ext: &str) -> String {
     let stem = std::path::Path::new(&doc.title).file_stem().map(|s| s.to_string_lossy().into_owned()).filter(|s| !s.is_empty());
     format!("{}.{ext}", stem.as_deref().unwrap_or("Untitled"))
 }
@@ -1072,7 +1078,7 @@ pub(crate) fn write_or_return(path: Option<&str>, bytes: &[u8], extra: Value) ->
             write_file(path, bytes)?;
             json!({ "path": path, "bytes": bytes.len() })
         }
-        None => json!({ "dataBase64": vectorcraft_format::base64_encode(bytes), "bytes": bytes.len() }),
+        None => json!({ "dataBase64": redrob_vector_format::base64_encode(bytes), "bytes": bytes.len() }),
     };
     Ok(merge(out, extra))
 }

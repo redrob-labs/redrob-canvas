@@ -38,7 +38,9 @@ translate GPL or LGPL source into this tree.
 - `Cargo.toml` at the root is **generated** by `tools/merge_workspaces.py` from the four
   `crafts/*/Cargo.upstream.toml`; its header says so. Edit the script, run it, commit both. The
   workspace members are `crates/*`, `apps/*` and each subtree's `crates/*`; the subtrees' `apps/`,
-  `xtask` and web shells are excluded. `Cargo.lock` is one lock file for all of it.
+  web shells are excluded; `tools/prune_upstream.py` deletes their docs, packaging, CI and xtasks,
+  and `tools/rename_crates.py` / `tools/rename_identifiers.py` give crates, extensions, URI schemes,
+  MIME types and env variables the Redrob names (UPSTREAM.md). `Cargo.lock` is one lock file for all of it.
 - `apps/redrob-canvas/` is the shell: `main.rs` (args, eframe options), `shell.rs` (`Mode`, lazy
   editors, top bar), `services.rs` (config directory, prefs). Config lives in `ai.redrob.canvas`'s
   directory (`~/Library/Application Support/Redrob Canvas`, `%APPDATA%\Redrob Canvas`,
@@ -116,17 +118,16 @@ The verify script also checks that `redrob_code`'s tag in `docs/upstream-sources
 
 ## What CI actually runs
 
-`.github/workflows/verify-upstream.yml` runs on every pull request and on pushes to `develop` and
-`main`: `Upstream pins are well-formed and reachable`, `Rust workspace` (fmt, clippy, test, release
-build of the shell), `Distribution artifacts are current` (cargo fetch, the notice check, the design
-guard, the tool tests) and `Rust security advisories` (`cargo audit`). `Rust workspace` and
-`Distribution artifacts are current` are the two checks branch protection required before the rewrite;
-whether the protection rules were updated for this branch was not verified here.
+`.github/workflows/ci.yml` is the one pull-request workflow (no push or schedule triggers). Job
+`checks` (seconds to a couple of minutes): `scripts/verify-upstream.sh`, `scripts/check_upstream_ids.py`,
+`cargo fetch --locked` then the notice check, the design-system guard, the tool tests. Job `rust`:
+`cargo fmt --check`, then clippy and the tests of OUR crates only (`-p redrob-canvas -p redrob-ai
+-p redrob-agent`) with `--profile ci`; skipped when no Rust input changed or when the pull request
+targets `main`. There is no separate gitflow, packaging-lint, upstream-boundary or advisory
+workflow. Branch protection should require `checks` and `rust`.
 
-`.github/workflows/gitflow.yml` and `pr-policy.yml` are the organisation templates and only call
-`redrob-labs/.github`: branch names are `<type>/<slug>` from the org list
-(`feat fix chore docs test refactor perf ci build sync hotfix release`), `main` must be contained in
-`develop`, at most three open pull requests per author.
+`.github/workflows/pr-policy.yml` is the organisation template and only calls `redrob-labs/.github`
+(at most three open pull requests per author).
 
 `.github/workflows/release.yml` runs only on `workflow_dispatch`:
 `gh workflow run release.yml --ref main -f tag=vX.Y.Z` after the tag is pushed on `main`, or

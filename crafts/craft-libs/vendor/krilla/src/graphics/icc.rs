@@ -10,7 +10,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::stream::{deflate_encode, FilterStreamBuilder};
+use crate::stream::{FilterStreamBuilder, deflate_encode};
 use crate::util::Prehashed;
 
 /// An ICC profile.
@@ -30,10 +30,7 @@ impl<const C: u8> ICCProfile<C> {
             return None;
         }
 
-        Some(Self(Arc::new(Prehashed::new(Repr {
-            data: deflate_encode(data),
-            metadata,
-        }))))
+        Some(Self(Arc::new(Prehashed::new(Repr { data: deflate_encode(data), metadata }))))
     }
 
     pub(crate) fn metadata(&self) -> &ICCMetadata {
@@ -42,15 +39,9 @@ impl<const C: u8> ICCProfile<C> {
 }
 
 impl<const C: u8> Cacheable for ICCProfile<C> {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let mut chunk = sc.new_chunk();
-        let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
-            .finish(&sc.serialize_settings());
+        let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data).finish(&sc.serialize_settings());
 
         let mut icc_profile = chunk.icc_profile(root_ref, icc_stream.encoded_data());
         icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
@@ -81,12 +72,7 @@ impl GenericICCProfile {
 
 #[cfg(feature = "raster-images")]
 impl Cacheable for GenericICCProfile {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         match self {
             GenericICCProfile::Luma(l) => l.serialize(sc, chunk_container, root_ref),
             GenericICCProfile::Rgb(r) => r.serialize(sc, chunk_container, root_ref),
@@ -99,12 +85,7 @@ impl Cacheable for GenericICCProfile {
 pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile<C>);
 
 impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let icc_ref = sc.register_cacheable(chunk_container, self.0.clone());
 
         let chunk = &mut chunk_container.non_stream.color_spaces;
@@ -203,11 +184,7 @@ impl ICCMetadata {
             let marker = u32::from_be_bytes(data.get(16..20)?.try_into().ok()?);
             ICCColorSpace::try_from(marker).ok()?
         };
-        Some(Self {
-            major,
-            minor,
-            color_space,
-        })
+        Some(Self { major, minor, color_space })
     }
 }
 

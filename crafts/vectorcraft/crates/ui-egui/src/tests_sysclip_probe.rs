@@ -7,9 +7,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use redrob_vector_engine::Session;
+use redrob_vector_engine::cmd::clipboard::Flavour;
 use serde_json::json;
-use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::clipboard::Flavour;
 
 use crate::tests_sysclip::{copy_rect, run};
 use crate::{Services, SystemClipboard, VectorcraftApp, menus};

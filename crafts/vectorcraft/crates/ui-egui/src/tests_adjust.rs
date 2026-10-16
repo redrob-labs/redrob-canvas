@@ -1,8 +1,8 @@
 //! The colour adjustment effect dialogs (Effect → Color Adjustments) and Object → Vector Halftone
 //! in the menus.
 
+use redrob_vector_engine::Session;
 use serde_json::json;
-use vectorcraft_engine::Session;
 
 use crate::{VectorcraftApp, dialogs, menus, tests_labels::painted_text};
 
@@ -128,7 +128,7 @@ fn dragging_on_the_curves_graph_adds_and_moves_a_point() {
     }
     frame(&mut app, vec![button(to, false)]);
     let points = app.ui.dialog.as_ref().unwrap().str("points");
-    let pts: Vec<(f32, f32)> = vectorcraft_effects::curve_points(Some(&json!(points)));
+    let pts: Vec<(f32, f32)> = redrob_vector_effects::curve_points(Some(&json!(points)));
     assert_eq!(pts.len(), 4, "{points}");
     let (x, y) = pts[1];
     assert!((x - 0.25).abs() < 0.01 && (y - 0.6).abs() < 0.01, "{points}");

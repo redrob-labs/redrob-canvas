@@ -126,9 +126,9 @@ impl VectorcraftApp {
 mod tests {
     use std::sync::Arc;
 
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::cmd::recovery::{MemoryStore, RecoveryStore};
     use serde_json::json;
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::cmd::recovery::{MemoryStore, RecoveryStore};
 
     use super::*;
     use crate::Services;
@@ -195,7 +195,7 @@ mod tests {
         let preview = |ctx: &egui::Context| {
             let mut tex = None;
             ctx.run_ui(Default::default(), |ui| {
-                tex = crate::widgets::doc_preview(ui, "loss", egui::vec2(8.0, 8.0), |w, h| Some(vectorcraft_doc::Document::new(w, h)))
+                tex = crate::widgets::doc_preview(ui, "loss", egui::vec2(8.0, 8.0), |w, h| Some(redrob_vector_doc::Document::new(w, h)))
             })
             .textures_delta
             .clear();
@@ -224,7 +224,7 @@ mod tests {
         app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 50, "height": 20})).unwrap();
         app.session.prefs.autosave_recovery = false;
         assert!(app.graphics_lost("test"), "copied even with Data Recovery off");
-        assert_eq!(store.list().unwrap().iter().filter(|n| n.ends_with(".vectorcraft")).count(), 1);
+        assert_eq!(store.list().unwrap().iter().filter(|n| n.ends_with(".rvector")).count(), 1);
         // Without a store the work isn't safe.
         assert!(!self::app().graphics_lost("test"));
     }

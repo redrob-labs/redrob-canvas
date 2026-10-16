@@ -1228,83 +1228,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "craft-atomic"
-version = "0.7.0"
-dependencies = [
- "rustix 1.1.5",
-]
-
-[[package]]
-name = "craft-cms"
-version = "0.7.0"
-dependencies = [
- "moxcms",
- "rayon",
-]
-
-[[package]]
-name = "craft-pdf"
-version = "0.7.0"
-dependencies = [
- "bytemuck",
- "hayro",
- "hayro-cmap",
- "hayro-interpret",
- "hayro-syntax",
- "krilla",
- "kurbo 0.13.1",
- "thiserror 2.0.21",
- "ttf-parser",
- "wasm-bindgen-test",
-]
-
-[[package]]
-name = "craft-print"
-version = "0.7.0"
-dependencies = [
- "craft-winprint-gdi",
- "miniz_oxide 0.8.9",
- "roxmltree 0.20.0",
- "tempfile",
- "winprint",
- "winsafe",
-]
-
-[[package]]
-name = "craft-quit"
-version = "0.7.0"
-dependencies = [
- "dispatch2",
- "egui",
- "muda",
- "objc2 0.6.4",
- "objc2-app-kit 0.3.2",
-]
-
-[[package]]
-name = "craft-settings"
-version = "0.7.0"
-dependencies = [
- "craft-atomic",
- "dirs 7.0.0",
- "serde",
- "tempfile",
- "toml_edit",
-]
-
-[[package]]
-name = "craft-ui"
-version = "0.7.0"
-dependencies = [
- "egui",
- "egui_extras",
- "egui_kittest",
- "image",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "craft-winprint-gdi"
 version = "0.1.0"
 source = "git+https://github.com/storytold/winprint.rs?rev=417ac3c4d14d3da5485a99c7d5ce8f05664ec312#417ac3c4d14d3da5485a99c7d5ce8f05664ec312"
@@ -1514,272 +1437,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
-]
-
-[[package]]
-name = "designcraft-color"
-version = "0.7.0"
-dependencies = [
- "kurbo 0.13.1",
- "moxcms",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "designcraft-compose"
-version = "0.7.0"
-dependencies = [
- "designcraft-color",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "hypher",
- "log",
- "miniz_oxide 0.8.9",
- "proptest",
- "regex",
- "unicode-bidi",
- "unicode-bidi-mirroring",
- "unicode-segmentation",
-]
-
-[[package]]
-name = "designcraft-doc"
-version = "0.7.0"
-dependencies = [
- "designcraft-color",
- "designcraft-geom",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "designcraft-engine"
-version = "0.7.0"
-dependencies = [
- "caseless",
- "craft-print",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-epub",
- "designcraft-fonts",
- "designcraft-format",
- "designcraft-geom",
- "designcraft-idml",
- "designcraft-images",
- "designcraft-pdf",
- "designcraft-pptx",
- "designcraft-render",
- "designcraft-textimport",
- "designcraft-tools",
- "hayro-cmap",
- "hayro-interpret",
- "hayro-syntax",
- "kurbo 0.13.1",
- "log",
- "quick-xml",
- "regex",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.21",
- "unicode-segmentation",
- "wasm-bindgen-test",
- "zip",
-]
-
-[[package]]
-name = "designcraft-epub"
-version = "0.7.0"
-dependencies = [
- "designcraft-color",
- "designcraft-doc",
- "zip",
-]
-
-[[package]]
-name = "designcraft-fonts"
-version = "0.7.0"
-dependencies = [
- "harfrust 0.13.3",
- "kurbo 0.13.1",
- "log",
- "skrifa 0.47.0",
- "unicode-bidi",
- "unicode-script",
-]
-
-[[package]]
-name = "designcraft-format"
-version = "0.7.0"
-dependencies = [
- "designcraft-doc",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "zip",
-]
-
-[[package]]
-name = "designcraft-geom"
-version = "0.7.0"
-dependencies = [
- "flo_curves",
- "kurbo 0.13.1",
- "proptest",
- "qrcodegen",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "designcraft-idml"
-version = "0.7.0"
-dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-geom",
- "quick-xml",
- "thiserror 2.0.21",
- "zip",
-]
-
-[[package]]
-name = "designcraft-images"
-version = "0.7.0"
-dependencies = [
- "designcraft-color",
- "designcraft-fonts",
- "image",
- "resvg 0.47.0",
- "tiff",
-]
-
-[[package]]
-name = "designcraft-mcp"
-version = "0.7.0"
-dependencies = [
- "designcraft-engine",
- "designcraft-geom",
- "designcraft-render",
- "designcraft-tools",
- "image",
- "log",
- "serde_json",
-]
-
-[[package]]
-name = "designcraft-pdf"
-version = "0.7.0"
-dependencies = [
- "craft-pdf",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
- "hayro-cmap",
- "hayro-interpret",
- "hayro-syntax",
- "image",
- "krilla-svg",
- "kurbo 0.13.1",
- "log",
- "thiserror 2.0.21",
- "tiff",
-]
-
-[[package]]
-name = "designcraft-pptx"
-version = "0.7.0"
-dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
- "image",
- "quick-xml",
- "skrifa 0.47.0",
- "thiserror 2.0.21",
- "zip",
-]
-
-[[package]]
-name = "designcraft-render"
-version = "0.7.0"
-dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
- "hayro",
- "image",
- "log",
- "serde",
- "vello_common 0.2.0",
- "vello_cpu 0.2.0",
-]
-
-[[package]]
-name = "designcraft-textimport"
-version = "0.7.0"
-dependencies = [
- "designcraft-doc",
- "quick-xml",
- "zip",
-]
-
-[[package]]
-name = "designcraft-tools"
-version = "0.7.0"
-dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-geom",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "designcraft-ui-egui"
-version = "0.7.0"
-dependencies = [
- "craft-ui",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-engine",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-idml",
- "designcraft-render",
- "designcraft-tools",
- "egui",
- "egui_kittest",
- "log",
- "regex",
- "serde",
- "serde_json",
- "tempfile",
- "toml",
- "unicode-bidi",
- "unicode-bidi-mirroring",
- "unicode-segmentation",
- "zip",
 ]
 
 [[package]]
@@ -4986,388 +4643,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "photocraft-affinity"
-version = "0.7.0"
-dependencies = [
- "crc32fast",
- "flate2",
- "proptest",
- "ruzstd",
-]
-
-[[package]]
-name = "photocraft-algo"
-version = "0.7.0"
-dependencies = [
- "photocraft-color",
- "photocraft-geom",
- "photocraft-raster",
- "rayon",
- "rustfft",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "photocraft-automation"
-version = "0.7.0"
-dependencies = [
- "base64 0.22.1",
- "cap-std",
- "getrandom 0.3.4",
- "photocraft-codecs",
- "photocraft-compose",
- "photocraft-doc",
- "photocraft-engine",
- "photocraft-format",
- "photocraft-geom",
- "photocraft-io",
- "rmcp",
- "schemars",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "tokio",
-]
-
-[[package]]
-name = "photocraft-cms"
-version = "0.7.0"
-dependencies = [
- "moxcms",
- "rayon",
-]
-
-[[package]]
-name = "photocraft-codecs"
-version = "0.7.0"
-dependencies = [
- "exr",
- "flate2",
- "half",
- "image",
- "image-webp",
- "jpeg-encoder",
- "photocraft-heif",
- "png 0.18.1",
- "proptest",
- "rayon",
- "serde_json",
- "thiserror 2.0.21",
- "tiff",
- "zune-core 0.5.3",
- "zune-jpeg 0.5.15",
-]
-
-[[package]]
-name = "photocraft-color"
-version = "0.7.0"
-dependencies = [
- "photocraft-cms",
- "serde",
-]
-
-[[package]]
-name = "photocraft-compose"
-version = "0.7.0"
-dependencies = [
- "criterion",
- "photocraft-color",
- "photocraft-doc",
- "photocraft-geom",
- "photocraft-paint",
- "photocraft-raster",
- "photocraft-vector",
- "proptest",
- "rayon",
-]
-
-[[package]]
-name = "photocraft-doc"
-version = "0.7.0"
-dependencies = [
- "photocraft-color",
- "photocraft-geom",
- "photocraft-raster",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "photocraft-engine"
-version = "0.7.0"
-dependencies = [
- "blake3",
- "craft-print",
- "exr",
- "flate2",
- "photocraft-affinity",
- "photocraft-algo",
- "photocraft-cms",
- "photocraft-codecs",
- "photocraft-color",
- "photocraft-compose",
- "photocraft-doc",
- "photocraft-format",
- "photocraft-geom",
- "photocraft-io",
- "photocraft-ops",
- "photocraft-paint",
- "photocraft-plugins",
- "photocraft-psd",
- "photocraft-raster",
- "photocraft-raw",
- "photocraft-text",
- "photocraft-vector",
- "rayon",
- "roxmltree 0.20.0",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.21",
- "wat",
-]
-
-[[package]]
-name = "photocraft-format"
-version = "0.7.0"
-dependencies = [
- "blake3",
- "crc32fast",
- "flate2",
- "libc",
- "photocraft-codecs",
- "photocraft-color",
- "photocraft-doc",
- "photocraft-geom",
- "photocraft-raster",
- "proptest",
- "rustix 1.1.5",
- "ruzstd",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "photocraft-geom"
-version = "0.7.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "photocraft-gpu"
-version = "0.7.0"
-dependencies = [
- "half",
- "log",
- "photocraft-color",
- "photocraft-compose",
- "photocraft-doc",
- "photocraft-geom",
- "photocraft-raster",
- "photocraft-vector",
- "pollster 1.0.1",
- "rayon",
- "wgpu",
-]
-
-[[package]]
-name = "photocraft-heif"
-version = "0.7.0"
-dependencies = [
- "heic-rs",
-]
-
-[[package]]
-name = "photocraft-io"
-version = "0.7.0"
-dependencies = [
- "blake3",
- "crc32fast",
- "flate2",
- "photocraft-affinity",
- "photocraft-algo",
- "photocraft-cms",
- "photocraft-codecs",
- "photocraft-color",
- "photocraft-compose",
- "photocraft-doc",
- "photocraft-format",
- "photocraft-geom",
- "photocraft-paint",
- "photocraft-psd",
- "photocraft-raster",
- "photocraft-raw",
- "photocraft-text",
- "photocraft-vector",
- "proptest",
- "resvg 0.45.1",
- "roxmltree 0.20.0",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "photocraft-ops"
-version = "0.7.0"
-dependencies = [
- "photocraft-doc",
-]
-
-[[package]]
-name = "photocraft-paint"
-version = "0.7.0"
-dependencies = [
- "photocraft-color",
- "photocraft-geom",
- "photocraft-raster",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "photocraft-plugins"
-version = "0.7.0"
-dependencies = [
- "photocraft-color",
- "photocraft-geom",
- "photocraft-raster",
- "rayon",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "wasmi",
- "wat",
-]
-
-[[package]]
-name = "photocraft-psd"
-version = "0.7.0"
-dependencies = [
- "flate2",
- "photocraft-psd",
- "proptest",
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "photocraft-raster"
-version = "0.7.0"
-dependencies = [
- "photocraft-color",
- "photocraft-geom",
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "photocraft-raw"
-version = "0.7.0"
-dependencies = [
- "flate2",
- "image",
- "jxl-oxide",
- "photocraft-raw",
- "png 0.18.1",
- "rayon",
- "zune-core 0.5.3",
- "zune-jpeg 0.5.15",
- "zune-jpegxl",
-]
-
-[[package]]
-name = "photocraft-tablet"
-version = "0.7.0"
-dependencies = [
- "block2 0.6.2",
- "objc2 0.6.4",
- "objc2-app-kit 0.3.2",
- "objc2-core-graphics",
- "objc2-foundation 0.3.2",
- "x11rb",
-]
-
-[[package]]
-name = "photocraft-testkit"
-version = "0.7.0"
-dependencies = [
- "memory-stats",
- "photocraft-color",
- "photocraft-geom",
- "photocraft-raster",
- "serde_json",
-]
-
-[[package]]
-name = "photocraft-text"
-version = "0.7.0"
-dependencies = [
- "flate2",
- "parley",
- "photocraft-color",
- "photocraft-doc",
- "photocraft-geom",
- "photocraft-psd",
- "photocraft-raster",
- "skrifa 0.44.0",
-]
-
-[[package]]
-name = "photocraft-ui-egui"
-version = "0.7.0"
-dependencies = [
- "base64 0.22.1",
- "craft-print",
- "craft-ui",
- "eframe",
- "egui",
- "egui_extras",
- "egui_kittest",
- "epaint_default_fonts",
- "flate2",
- "log",
- "photocraft-algo",
- "photocraft-cms",
- "photocraft-codecs",
- "photocraft-color",
- "photocraft-compose",
- "photocraft-doc",
- "photocraft-engine",
- "photocraft-format",
- "photocraft-geom",
- "photocraft-gpu",
- "photocraft-io",
- "photocraft-paint",
- "photocraft-plugins",
- "photocraft-psd",
- "photocraft-raster",
- "photocraft-raw",
- "photocraft-testkit",
- "photocraft-text",
- "photocraft-vector",
- "rayon",
- "serde",
- "serde_json",
- "sys-locale",
- "toml",
- "winsafe",
-]
-
-[[package]]
-name = "photocraft-vector"
-version = "0.7.0"
-dependencies = [
- "photocraft-color",
- "photocraft-doc",
- "photocraft-geom",
- "photocraft-raster",
- "rayon",
-]
-
-[[package]]
 name = "pic-scale"
 version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6049,7 +5324,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-agent"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -6063,61 +5338,138 @@ dependencies = [
 
 [[package]]
 name = "redrob-ai"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
  "image",
  "redrob-agent",
+ "redrob-vector-trace",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror 2.0.21",
  "tokio",
- "vectorcraft-trace",
  "wiremock",
 ]
 
 [[package]]
 name = "redrob-canvas"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "arboard",
- "designcraft-engine",
- "designcraft-geom",
- "designcraft-images",
- "designcraft-render",
- "designcraft-ui-egui",
  "eframe",
  "egui",
  "egui_kittest",
  "log",
- "photocraft-codecs",
- "photocraft-color",
- "photocraft-compose",
- "photocraft-doc",
- "photocraft-engine",
- "photocraft-format",
- "photocraft-geom",
- "photocraft-io",
- "photocraft-raster",
- "photocraft-ui-egui",
  "redrob-ai",
+ "redrob-layout-engine",
+ "redrob-layout-geom",
+ "redrob-layout-images",
+ "redrob-layout-render",
+ "redrob-layout-ui-egui",
+ "redrob-photo-codecs",
+ "redrob-photo-color",
+ "redrob-photo-compose",
+ "redrob-photo-doc",
+ "redrob-photo-engine",
+ "redrob-photo-format",
+ "redrob-photo-geom",
+ "redrob-photo-io",
+ "redrob-photo-raster",
+ "redrob-photo-ui-egui",
+ "redrob-vector-doc",
+ "redrob-vector-engine",
+ "redrob-vector-format",
+ "redrob-vector-geom",
+ "redrob-vector-render",
+ "redrob-vector-svg",
+ "redrob-vector-text",
+ "redrob-vector-ui-egui",
  "reqwest 0.12.28",
  "rfd",
  "serde_json",
  "sha2",
  "tokio",
- "vectorcraft-doc",
- "vectorcraft-engine",
- "vectorcraft-format",
- "vectorcraft-geom",
- "vectorcraft-render",
- "vectorcraft-svg",
- "vectorcraft-text",
- "vectorcraft-ui-egui",
  "webbrowser",
+]
+
+[[package]]
+name = "redrob-craft-atomic"
+version = "0.8.0"
+dependencies = [
+ "rustix 1.1.5",
+]
+
+[[package]]
+name = "redrob-craft-cms"
+version = "0.8.0"
+dependencies = [
+ "moxcms",
+ "rayon",
+]
+
+[[package]]
+name = "redrob-craft-pdf"
+version = "0.8.0"
+dependencies = [
+ "bytemuck",
+ "hayro",
+ "hayro-cmap",
+ "hayro-interpret",
+ "hayro-syntax",
+ "krilla",
+ "kurbo 0.13.1",
+ "thiserror 2.0.21",
+ "ttf-parser",
+ "wasm-bindgen-test",
+]
+
+[[package]]
+name = "redrob-craft-print"
+version = "0.8.0"
+dependencies = [
+ "craft-winprint-gdi",
+ "miniz_oxide 0.8.9",
+ "roxmltree 0.20.0",
+ "tempfile",
+ "winprint",
+ "winsafe",
+]
+
+[[package]]
+name = "redrob-craft-quit"
+version = "0.8.0"
+dependencies = [
+ "dispatch2",
+ "egui",
+ "muda",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+]
+
+[[package]]
+name = "redrob-craft-settings"
+version = "0.8.0"
+dependencies = [
+ "dirs 7.0.0",
+ "redrob-craft-atomic",
+ "serde",
+ "tempfile",
+ "toml_edit",
+]
+
+[[package]]
+name = "redrob-craft-ui"
+version = "0.8.0"
+dependencies = [
+ "egui",
+ "egui_extras",
+ "egui_kittest",
+ "image",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -6131,6 +5483,1071 @@ dependencies = [
  "serde",
  "serde_json",
  "ureq",
+]
+
+[[package]]
+name = "redrob-layout-color"
+version = "0.8.0"
+dependencies = [
+ "kurbo 0.13.1",
+ "moxcms",
+ "proptest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-layout-compose"
+version = "0.8.0"
+dependencies = [
+ "hypher",
+ "log",
+ "miniz_oxide 0.8.9",
+ "proptest",
+ "redrob-layout-color",
+ "redrob-layout-doc",
+ "redrob-layout-fonts",
+ "redrob-layout-geom",
+ "regex",
+ "unicode-bidi",
+ "unicode-bidi-mirroring",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "redrob-layout-doc"
+version = "0.8.0"
+dependencies = [
+ "proptest",
+ "redrob-layout-color",
+ "redrob-layout-geom",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-layout-engine"
+version = "0.8.0"
+dependencies = [
+ "caseless",
+ "hayro-cmap",
+ "hayro-interpret",
+ "hayro-syntax",
+ "kurbo 0.13.1",
+ "log",
+ "quick-xml",
+ "redrob-craft-print",
+ "redrob-layout-color",
+ "redrob-layout-compose",
+ "redrob-layout-doc",
+ "redrob-layout-epub",
+ "redrob-layout-fonts",
+ "redrob-layout-format",
+ "redrob-layout-geom",
+ "redrob-layout-idml",
+ "redrob-layout-images",
+ "redrob-layout-pdf",
+ "redrob-layout-pptx",
+ "redrob-layout-render",
+ "redrob-layout-textimport",
+ "redrob-layout-tools",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "unicode-segmentation",
+ "wasm-bindgen-test",
+ "zip",
+]
+
+[[package]]
+name = "redrob-layout-epub"
+version = "0.8.0"
+dependencies = [
+ "redrob-layout-color",
+ "redrob-layout-doc",
+ "zip",
+]
+
+[[package]]
+name = "redrob-layout-fonts"
+version = "0.8.0"
+dependencies = [
+ "harfrust 0.13.3",
+ "kurbo 0.13.1",
+ "log",
+ "skrifa 0.47.0",
+ "unicode-bidi",
+ "unicode-script",
+]
+
+[[package]]
+name = "redrob-layout-format"
+version = "0.8.0"
+dependencies = [
+ "redrob-layout-doc",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
+name = "redrob-layout-geom"
+version = "0.8.0"
+dependencies = [
+ "flo_curves",
+ "kurbo 0.13.1",
+ "proptest",
+ "qrcodegen",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-layout-idml"
+version = "0.8.0"
+dependencies = [
+ "quick-xml",
+ "redrob-layout-color",
+ "redrob-layout-compose",
+ "redrob-layout-doc",
+ "redrob-layout-geom",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
+name = "redrob-layout-images"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "redrob-layout-color",
+ "redrob-layout-fonts",
+ "resvg 0.47.0",
+ "tiff",
+]
+
+[[package]]
+name = "redrob-layout-mcp"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "log",
+ "redrob-layout-engine",
+ "redrob-layout-geom",
+ "redrob-layout-render",
+ "redrob-layout-tools",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-layout-pdf"
+version = "0.8.0"
+dependencies = [
+ "hayro-cmap",
+ "hayro-interpret",
+ "hayro-syntax",
+ "image",
+ "krilla-svg",
+ "kurbo 0.13.1",
+ "log",
+ "redrob-craft-pdf",
+ "redrob-layout-color",
+ "redrob-layout-compose",
+ "redrob-layout-doc",
+ "redrob-layout-fonts",
+ "redrob-layout-geom",
+ "redrob-layout-images",
+ "thiserror 2.0.21",
+ "tiff",
+]
+
+[[package]]
+name = "redrob-layout-pptx"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "quick-xml",
+ "redrob-layout-color",
+ "redrob-layout-compose",
+ "redrob-layout-doc",
+ "redrob-layout-fonts",
+ "redrob-layout-geom",
+ "redrob-layout-images",
+ "skrifa 0.47.0",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
+name = "redrob-layout-render"
+version = "0.8.0"
+dependencies = [
+ "hayro",
+ "image",
+ "log",
+ "redrob-layout-color",
+ "redrob-layout-compose",
+ "redrob-layout-doc",
+ "redrob-layout-fonts",
+ "redrob-layout-geom",
+ "redrob-layout-images",
+ "serde",
+ "vello_common 0.2.0",
+ "vello_cpu 0.2.0",
+]
+
+[[package]]
+name = "redrob-layout-textimport"
+version = "0.8.0"
+dependencies = [
+ "quick-xml",
+ "redrob-layout-doc",
+ "zip",
+]
+
+[[package]]
+name = "redrob-layout-tools"
+version = "0.8.0"
+dependencies = [
+ "redrob-layout-color",
+ "redrob-layout-compose",
+ "redrob-layout-doc",
+ "redrob-layout-geom",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-layout-ui-egui"
+version = "0.8.0"
+dependencies = [
+ "egui",
+ "egui_kittest",
+ "log",
+ "redrob-craft-ui",
+ "redrob-layout-color",
+ "redrob-layout-compose",
+ "redrob-layout-doc",
+ "redrob-layout-engine",
+ "redrob-layout-fonts",
+ "redrob-layout-geom",
+ "redrob-layout-idml",
+ "redrob-layout-render",
+ "redrob-layout-tools",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "toml",
+ "unicode-bidi",
+ "unicode-bidi-mirroring",
+ "unicode-segmentation",
+ "zip",
+]
+
+[[package]]
+name = "redrob-photo-affinity"
+version = "0.8.0"
+dependencies = [
+ "crc32fast",
+ "flate2",
+ "proptest",
+ "ruzstd",
+]
+
+[[package]]
+name = "redrob-photo-algo"
+version = "0.8.0"
+dependencies = [
+ "rayon",
+ "redrob-photo-color",
+ "redrob-photo-geom",
+ "redrob-photo-raster",
+ "rustfft",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-photo-automation"
+version = "0.8.0"
+dependencies = [
+ "base64 0.22.1",
+ "cap-std",
+ "getrandom 0.3.4",
+ "redrob-photo-codecs",
+ "redrob-photo-compose",
+ "redrob-photo-doc",
+ "redrob-photo-engine",
+ "redrob-photo-format",
+ "redrob-photo-geom",
+ "redrob-photo-io",
+ "rmcp",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+]
+
+[[package]]
+name = "redrob-photo-cms"
+version = "0.8.0"
+dependencies = [
+ "moxcms",
+ "rayon",
+]
+
+[[package]]
+name = "redrob-photo-codecs"
+version = "0.8.0"
+dependencies = [
+ "exr",
+ "flate2",
+ "half",
+ "image",
+ "image-webp",
+ "jpeg-encoder",
+ "png 0.18.1",
+ "proptest",
+ "rayon",
+ "redrob-photo-heif",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tiff",
+ "zune-core 0.5.3",
+ "zune-jpeg 0.5.15",
+]
+
+[[package]]
+name = "redrob-photo-color"
+version = "0.8.0"
+dependencies = [
+ "redrob-photo-cms",
+ "serde",
+]
+
+[[package]]
+name = "redrob-photo-compose"
+version = "0.8.0"
+dependencies = [
+ "criterion",
+ "proptest",
+ "rayon",
+ "redrob-photo-color",
+ "redrob-photo-doc",
+ "redrob-photo-geom",
+ "redrob-photo-paint",
+ "redrob-photo-raster",
+ "redrob-photo-vector",
+]
+
+[[package]]
+name = "redrob-photo-doc"
+version = "0.8.0"
+dependencies = [
+ "redrob-photo-color",
+ "redrob-photo-geom",
+ "redrob-photo-raster",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-photo-engine"
+version = "0.8.0"
+dependencies = [
+ "blake3",
+ "exr",
+ "flate2",
+ "rayon",
+ "redrob-craft-print",
+ "redrob-photo-affinity",
+ "redrob-photo-algo",
+ "redrob-photo-cms",
+ "redrob-photo-codecs",
+ "redrob-photo-color",
+ "redrob-photo-compose",
+ "redrob-photo-doc",
+ "redrob-photo-format",
+ "redrob-photo-geom",
+ "redrob-photo-io",
+ "redrob-photo-ops",
+ "redrob-photo-paint",
+ "redrob-photo-plugins",
+ "redrob-photo-psd",
+ "redrob-photo-raster",
+ "redrob-photo-raw",
+ "redrob-photo-text",
+ "redrob-photo-vector",
+ "roxmltree 0.20.0",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "wat",
+]
+
+[[package]]
+name = "redrob-photo-format"
+version = "0.8.0"
+dependencies = [
+ "blake3",
+ "crc32fast",
+ "flate2",
+ "libc",
+ "proptest",
+ "redrob-photo-codecs",
+ "redrob-photo-color",
+ "redrob-photo-doc",
+ "redrob-photo-geom",
+ "redrob-photo-raster",
+ "rustix 1.1.5",
+ "ruzstd",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-photo-geom"
+version = "0.8.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "redrob-photo-gpu"
+version = "0.8.0"
+dependencies = [
+ "half",
+ "log",
+ "pollster 1.0.1",
+ "rayon",
+ "redrob-photo-color",
+ "redrob-photo-compose",
+ "redrob-photo-doc",
+ "redrob-photo-geom",
+ "redrob-photo-raster",
+ "redrob-photo-vector",
+ "wgpu",
+]
+
+[[package]]
+name = "redrob-photo-heif"
+version = "0.8.0"
+dependencies = [
+ "heic-rs",
+]
+
+[[package]]
+name = "redrob-photo-io"
+version = "0.8.0"
+dependencies = [
+ "blake3",
+ "crc32fast",
+ "flate2",
+ "proptest",
+ "redrob-photo-affinity",
+ "redrob-photo-algo",
+ "redrob-photo-cms",
+ "redrob-photo-codecs",
+ "redrob-photo-color",
+ "redrob-photo-compose",
+ "redrob-photo-doc",
+ "redrob-photo-format",
+ "redrob-photo-geom",
+ "redrob-photo-paint",
+ "redrob-photo-psd",
+ "redrob-photo-raster",
+ "redrob-photo-raw",
+ "redrob-photo-text",
+ "redrob-photo-vector",
+ "resvg 0.45.1",
+ "roxmltree 0.20.0",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-photo-ops"
+version = "0.8.0"
+dependencies = [
+ "redrob-photo-doc",
+]
+
+[[package]]
+name = "redrob-photo-paint"
+version = "0.8.0"
+dependencies = [
+ "redrob-photo-color",
+ "redrob-photo-geom",
+ "redrob-photo-raster",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-photo-plugins"
+version = "0.8.0"
+dependencies = [
+ "rayon",
+ "redrob-photo-color",
+ "redrob-photo-geom",
+ "redrob-photo-raster",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "wasmi",
+ "wat",
+]
+
+[[package]]
+name = "redrob-photo-psd"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+ "proptest",
+ "redrob-photo-psd",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-photo-raster"
+version = "0.8.0"
+dependencies = [
+ "proptest",
+ "redrob-photo-color",
+ "redrob-photo-geom",
+ "serde",
+]
+
+[[package]]
+name = "redrob-photo-raw"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+ "image",
+ "jxl-oxide",
+ "png 0.18.1",
+ "rayon",
+ "redrob-photo-raw",
+ "zune-core 0.5.3",
+ "zune-jpeg 0.5.15",
+ "zune-jpegxl",
+]
+
+[[package]]
+name = "redrob-photo-tablet"
+version = "0.8.0"
+dependencies = [
+ "block2 0.6.2",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+ "objc2-core-graphics",
+ "objc2-foundation 0.3.2",
+ "x11rb",
+]
+
+[[package]]
+name = "redrob-photo-testkit"
+version = "0.8.0"
+dependencies = [
+ "memory-stats",
+ "redrob-photo-color",
+ "redrob-photo-geom",
+ "redrob-photo-raster",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-photo-text"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+ "parley",
+ "redrob-photo-color",
+ "redrob-photo-doc",
+ "redrob-photo-geom",
+ "redrob-photo-psd",
+ "redrob-photo-raster",
+ "skrifa 0.44.0",
+]
+
+[[package]]
+name = "redrob-photo-ui-egui"
+version = "0.8.0"
+dependencies = [
+ "base64 0.22.1",
+ "eframe",
+ "egui",
+ "egui_extras",
+ "egui_kittest",
+ "epaint_default_fonts",
+ "flate2",
+ "log",
+ "rayon",
+ "redrob-craft-print",
+ "redrob-craft-ui",
+ "redrob-photo-algo",
+ "redrob-photo-cms",
+ "redrob-photo-codecs",
+ "redrob-photo-color",
+ "redrob-photo-compose",
+ "redrob-photo-doc",
+ "redrob-photo-engine",
+ "redrob-photo-format",
+ "redrob-photo-geom",
+ "redrob-photo-gpu",
+ "redrob-photo-io",
+ "redrob-photo-paint",
+ "redrob-photo-plugins",
+ "redrob-photo-psd",
+ "redrob-photo-raster",
+ "redrob-photo-raw",
+ "redrob-photo-testkit",
+ "redrob-photo-text",
+ "redrob-photo-vector",
+ "serde",
+ "serde_json",
+ "sys-locale",
+ "toml",
+ "winsafe",
+]
+
+[[package]]
+name = "redrob-photo-vector"
+version = "0.8.0"
+dependencies = [
+ "rayon",
+ "redrob-photo-color",
+ "redrob-photo-doc",
+ "redrob-photo-geom",
+ "redrob-photo-raster",
+]
+
+[[package]]
+name = "redrob-vector-affinity"
+version = "0.8.0"
+dependencies = [
+ "crc32fast",
+ "flate2",
+ "image",
+ "proptest",
+ "ruzstd",
+]
+
+[[package]]
+name = "redrob-vector-brush"
+version = "0.8.0"
+dependencies = [
+ "kurbo 0.13.1",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-geom",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-vector-cad"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "kurbo 0.13.1",
+ "redrob-vector-brush",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-effects",
+ "redrob-vector-geom",
+ "redrob-vector-pathops",
+ "redrob-vector-text",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-vector-color"
+version = "0.8.0"
+dependencies = [
+ "kurbo 0.13.1",
+ "moxcms",
+ "proptest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-vector-doc"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "jpeg-encoder",
+ "kurbo 0.13.1",
+ "proptest",
+ "redrob-vector-color",
+ "redrob-vector-geom",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tiff",
+ "zune-jpeg 0.5.15",
+]
+
+[[package]]
+name = "redrob-vector-effects"
+version = "0.8.0"
+dependencies = [
+ "kurbo 0.13.1",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-geom",
+ "redrob-vector-pathops",
+ "redrob-vector-plugins",
+ "redrob-vector-text",
+ "redrob-vector-three-d",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-vector-engine"
+version = "0.8.0"
+dependencies = [
+ "crc32fast",
+ "flate2",
+ "image",
+ "kurbo 0.13.1",
+ "log",
+ "proptest",
+ "redrob-vector-affinity",
+ "redrob-vector-brush",
+ "redrob-vector-cad",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-eps",
+ "redrob-vector-format",
+ "redrob-vector-geom",
+ "redrob-vector-metafile",
+ "redrob-vector-pathops",
+ "redrob-vector-pdf",
+ "redrob-vector-plugins",
+ "redrob-vector-render",
+ "redrob-vector-scriptcheck",
+ "redrob-vector-svg",
+ "redrob-vector-testkit",
+ "redrob-vector-text",
+ "redrob-vector-tools",
+ "redrob-vector-trace",
+ "ruzstd",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "wat",
+]
+
+[[package]]
+name = "redrob-vector-eps"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+ "image",
+ "kurbo 0.13.1",
+ "redrob-vector-brush",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-effects",
+ "redrob-vector-geom",
+ "redrob-vector-metafile",
+ "redrob-vector-pdf",
+ "redrob-vector-render",
+ "redrob-vector-testkit",
+ "redrob-vector-text",
+ "ruzstd",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-vector-format"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+ "proptest",
+ "redrob-vector-doc",
+ "redrob-vector-geom",
+ "redrob-vector-testkit",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-vector-geom"
+version = "0.8.0"
+dependencies = [
+ "kurbo 0.13.1",
+ "proptest",
+ "redrob-vector-testkit",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-vector-mcp"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "log",
+ "proptest",
+ "redrob-vector-doc",
+ "redrob-vector-engine",
+ "redrob-vector-format",
+ "redrob-vector-geom",
+ "redrob-vector-render",
+ "redrob-vector-svg",
+ "redrob-vector-testkit",
+ "redrob-vector-tools",
+ "serde_json",
+ "socket2",
+]
+
+[[package]]
+name = "redrob-vector-metafile"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "kurbo 0.13.1",
+ "redrob-vector-brush",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-effects",
+ "redrob-vector-geom",
+ "redrob-vector-text",
+]
+
+[[package]]
+name = "redrob-vector-pathops"
+version = "0.8.0"
+dependencies = [
+ "kurbo 0.13.1",
+ "linesweeper",
+ "proptest",
+ "redrob-vector-geom",
+ "redrob-vector-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-vector-pdf"
+version = "0.8.0"
+dependencies = [
+ "aes",
+ "flate2",
+ "image",
+ "jpeg-encoder",
+ "krilla",
+ "kurbo 0.13.1",
+ "log",
+ "md-5",
+ "redrob-craft-pdf",
+ "redrob-vector-brush",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-effects",
+ "redrob-vector-geom",
+ "redrob-vector-testkit",
+ "redrob-vector-text",
+ "serde",
+ "serde_json",
+ "sha2",
+ "skrifa 0.47.0",
+ "smallvec",
+ "thiserror 2.0.21",
+ "weezl",
+]
+
+[[package]]
+name = "redrob-vector-plugins"
+version = "0.8.0"
+dependencies = [
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-geom",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "wasmi",
+ "wat",
+]
+
+[[package]]
+name = "redrob-vector-render"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+ "gif 0.14.2",
+ "image",
+ "jpeg-encoder",
+ "log",
+ "proptest",
+ "psd",
+ "redrob-vector-brush",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-effects",
+ "redrob-vector-geom",
+ "redrob-vector-testkit",
+ "redrob-vector-text",
+ "serde_json",
+ "tiff",
+ "vello_common 0.2.0",
+ "vello_cpu 0.2.0",
+ "weezl",
+]
+
+[[package]]
+name = "redrob-vector-scriptcheck"
+version = "0.8.0"
+dependencies = [
+ "proptest",
+]
+
+[[package]]
+name = "redrob-vector-svg"
+version = "0.8.0"
+dependencies = [
+ "flate2",
+ "image",
+ "kurbo 0.13.1",
+ "proptest",
+ "redrob-vector-brush",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-effects",
+ "redrob-vector-geom",
+ "redrob-vector-testkit",
+ "redrob-vector-text",
+ "resvg 0.45.1",
+ "serde",
+ "serde_json",
+ "skrifa 0.47.0",
+ "svgtypes 0.16.1",
+ "thiserror 2.0.21",
+ "usvg 0.48.1",
+]
+
+[[package]]
+name = "redrob-vector-testkit"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "kurbo 0.13.1",
+ "proptest",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-engine",
+ "redrob-vector-format",
+ "redrob-vector-geom",
+ "redrob-vector-render",
+ "redrob-vector-svg",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-vector-text"
+version = "0.8.0"
+dependencies = [
+ "harfrust 0.13.3",
+ "icu_segmenter",
+ "kurbo 0.13.1",
+ "log",
+ "redrob-vector-doc",
+ "redrob-vector-geom",
+ "skrifa 0.47.0",
+ "subsetter",
+ "unicode-bidi",
+ "unicode-general-category",
+ "unicode-script",
+ "unicode-segmentation",
+ "windows-registry",
+ "write-fonts",
+]
+
+[[package]]
+name = "redrob-vector-three-d"
+version = "0.8.0"
+dependencies = [
+ "redrob-vector-geom",
+ "redrob-vector-pathops",
+]
+
+[[package]]
+name = "redrob-vector-tools"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "kurbo 0.13.1",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-geom",
+ "redrob-vector-pathops",
+ "redrob-vector-text",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "redrob-vector-trace"
+version = "0.8.0"
+dependencies = [
+ "image",
+ "kurbo 0.13.1",
+ "redrob-vector-geom",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-vector-ui-egui"
+version = "0.8.0"
+dependencies = [
+ "egui",
+ "egui_extras",
+ "egui_kittest",
+ "image",
+ "log",
+ "redrob-craft-ui",
+ "redrob-vector-brush",
+ "redrob-vector-cad",
+ "redrob-vector-color",
+ "redrob-vector-doc",
+ "redrob-vector-effects",
+ "redrob-vector-engine",
+ "redrob-vector-eps",
+ "redrob-vector-format",
+ "redrob-vector-geom",
+ "redrob-vector-pdf",
+ "redrob-vector-plugins",
+ "redrob-vector-render",
+ "redrob-vector-svg",
+ "redrob-vector-testkit",
+ "redrob-vector-text",
+ "redrob-vector-three-d",
+ "redrob-vector-tools",
+ "serde",
+ "serde_json",
+ "toml",
+ "wat",
+ "web-time",
 ]
 
 [[package]]
@@ -8120,423 +8537,6 @@ dependencies = [
  "aligned-vec",
  "num-traits",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "vectorcraft-affinity"
-version = "0.7.0"
-dependencies = [
- "crc32fast",
- "flate2",
- "image",
- "proptest",
- "ruzstd",
-]
-
-[[package]]
-name = "vectorcraft-brush"
-version = "0.7.0"
-dependencies = [
- "kurbo 0.13.1",
- "serde",
- "serde_json",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-geom",
-]
-
-[[package]]
-name = "vectorcraft-cad"
-version = "0.7.0"
-dependencies = [
- "image",
- "kurbo 0.13.1",
- "serde_json",
- "vectorcraft-brush",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-effects",
- "vectorcraft-geom",
- "vectorcraft-pathops",
- "vectorcraft-text",
-]
-
-[[package]]
-name = "vectorcraft-color"
-version = "0.7.0"
-dependencies = [
- "kurbo 0.13.1",
- "moxcms",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "vectorcraft-doc"
-version = "0.7.0"
-dependencies = [
- "image",
- "jpeg-encoder",
- "kurbo 0.13.1",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "tiff",
- "vectorcraft-color",
- "vectorcraft-geom",
- "zune-jpeg 0.5.15",
-]
-
-[[package]]
-name = "vectorcraft-effects"
-version = "0.7.0"
-dependencies = [
- "kurbo 0.13.1",
- "serde_json",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-geom",
- "vectorcraft-pathops",
- "vectorcraft-plugins",
- "vectorcraft-text",
- "vectorcraft-three-d",
-]
-
-[[package]]
-name = "vectorcraft-engine"
-version = "0.7.0"
-dependencies = [
- "crc32fast",
- "flate2",
- "image",
- "kurbo 0.13.1",
- "log",
- "proptest",
- "ruzstd",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "vectorcraft-affinity",
- "vectorcraft-brush",
- "vectorcraft-cad",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-eps",
- "vectorcraft-format",
- "vectorcraft-geom",
- "vectorcraft-metafile",
- "vectorcraft-pathops",
- "vectorcraft-pdf",
- "vectorcraft-plugins",
- "vectorcraft-render",
- "vectorcraft-scriptcheck",
- "vectorcraft-svg",
- "vectorcraft-testkit",
- "vectorcraft-text",
- "vectorcraft-tools",
- "vectorcraft-trace",
- "wat",
-]
-
-[[package]]
-name = "vectorcraft-eps"
-version = "0.7.0"
-dependencies = [
- "flate2",
- "image",
- "kurbo 0.13.1",
- "ruzstd",
- "serde_json",
- "vectorcraft-brush",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-effects",
- "vectorcraft-geom",
- "vectorcraft-metafile",
- "vectorcraft-pdf",
- "vectorcraft-render",
- "vectorcraft-testkit",
- "vectorcraft-text",
-]
-
-[[package]]
-name = "vectorcraft-format"
-version = "0.7.0"
-dependencies = [
- "flate2",
- "proptest",
- "rustix 1.1.5",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "vectorcraft-doc",
- "vectorcraft-geom",
- "vectorcraft-testkit",
-]
-
-[[package]]
-name = "vectorcraft-geom"
-version = "0.7.0"
-dependencies = [
- "kurbo 0.13.1",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "vectorcraft-testkit",
-]
-
-[[package]]
-name = "vectorcraft-mcp"
-version = "0.7.0"
-dependencies = [
- "image",
- "log",
- "proptest",
- "serde_json",
- "socket2",
- "vectorcraft-doc",
- "vectorcraft-engine",
- "vectorcraft-format",
- "vectorcraft-geom",
- "vectorcraft-render",
- "vectorcraft-svg",
- "vectorcraft-testkit",
- "vectorcraft-tools",
-]
-
-[[package]]
-name = "vectorcraft-metafile"
-version = "0.7.0"
-dependencies = [
- "image",
- "kurbo 0.13.1",
- "vectorcraft-brush",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-effects",
- "vectorcraft-geom",
- "vectorcraft-text",
-]
-
-[[package]]
-name = "vectorcraft-pathops"
-version = "0.7.0"
-dependencies = [
- "kurbo 0.13.1",
- "linesweeper",
- "proptest",
- "thiserror 2.0.21",
- "vectorcraft-geom",
- "vectorcraft-testkit",
-]
-
-[[package]]
-name = "vectorcraft-pdf"
-version = "0.7.0"
-dependencies = [
- "aes",
- "craft-pdf",
- "flate2",
- "image",
- "jpeg-encoder",
- "krilla",
- "kurbo 0.13.1",
- "log",
- "md-5",
- "serde",
- "serde_json",
- "sha2",
- "skrifa 0.47.0",
- "smallvec",
- "thiserror 2.0.21",
- "vectorcraft-brush",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-effects",
- "vectorcraft-geom",
- "vectorcraft-testkit",
- "vectorcraft-text",
- "weezl",
-]
-
-[[package]]
-name = "vectorcraft-plugins"
-version = "0.7.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-geom",
- "wasmi",
- "wat",
-]
-
-[[package]]
-name = "vectorcraft-render"
-version = "0.7.0"
-dependencies = [
- "flate2",
- "gif 0.14.2",
- "image",
- "jpeg-encoder",
- "log",
- "proptest",
- "psd",
- "serde_json",
- "tiff",
- "vectorcraft-brush",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-effects",
- "vectorcraft-geom",
- "vectorcraft-testkit",
- "vectorcraft-text",
- "vello_common 0.2.0",
- "vello_cpu 0.2.0",
- "weezl",
-]
-
-[[package]]
-name = "vectorcraft-scriptcheck"
-version = "0.7.0"
-dependencies = [
- "proptest",
-]
-
-[[package]]
-name = "vectorcraft-svg"
-version = "0.7.0"
-dependencies = [
- "flate2",
- "image",
- "kurbo 0.13.1",
- "proptest",
- "resvg 0.45.1",
- "serde",
- "serde_json",
- "skrifa 0.47.0",
- "svgtypes 0.16.1",
- "thiserror 2.0.21",
- "usvg 0.48.1",
- "vectorcraft-brush",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-effects",
- "vectorcraft-geom",
- "vectorcraft-testkit",
- "vectorcraft-text",
-]
-
-[[package]]
-name = "vectorcraft-testkit"
-version = "0.7.0"
-dependencies = [
- "image",
- "kurbo 0.13.1",
- "proptest",
- "serde_json",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-engine",
- "vectorcraft-format",
- "vectorcraft-geom",
- "vectorcraft-render",
- "vectorcraft-svg",
-]
-
-[[package]]
-name = "vectorcraft-text"
-version = "0.7.0"
-dependencies = [
- "harfrust 0.13.3",
- "icu_segmenter",
- "kurbo 0.13.1",
- "log",
- "skrifa 0.47.0",
- "subsetter",
- "unicode-bidi",
- "unicode-general-category",
- "unicode-script",
- "unicode-segmentation",
- "vectorcraft-doc",
- "vectorcraft-geom",
- "windows-registry",
- "write-fonts",
-]
-
-[[package]]
-name = "vectorcraft-three-d"
-version = "0.7.0"
-dependencies = [
- "vectorcraft-geom",
- "vectorcraft-pathops",
-]
-
-[[package]]
-name = "vectorcraft-tools"
-version = "0.7.0"
-dependencies = [
- "image",
- "kurbo 0.13.1",
- "serde",
- "serde_json",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-geom",
- "vectorcraft-pathops",
- "vectorcraft-text",
-]
-
-[[package]]
-name = "vectorcraft-trace"
-version = "0.7.0"
-dependencies = [
- "image",
- "kurbo 0.13.1",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "vectorcraft-geom",
-]
-
-[[package]]
-name = "vectorcraft-ui-egui"
-version = "0.7.0"
-dependencies = [
- "craft-ui",
- "egui",
- "egui_extras",
- "egui_kittest",
- "image",
- "log",
- "serde",
- "serde_json",
- "toml",
- "vectorcraft-brush",
- "vectorcraft-cad",
- "vectorcraft-color",
- "vectorcraft-doc",
- "vectorcraft-effects",
- "vectorcraft-engine",
- "vectorcraft-eps",
- "vectorcraft-format",
- "vectorcraft-geom",
- "vectorcraft-pdf",
- "vectorcraft-plugins",
- "vectorcraft-render",
- "vectorcraft-svg",
- "vectorcraft-testkit",
- "vectorcraft-text",
- "vectorcraft-three-d",
- "vectorcraft-tools",
- "wat",
- "web-time",
 ]
 
 [[package]]

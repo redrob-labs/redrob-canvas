@@ -5,11 +5,11 @@
 //! Check Spelling is not implemented: it needs a word list per language, and no permissively
 //! licensed dictionary small enough to bundle (or a pure-Rust checker with one) was available.
 
-use photocraft_color::{BlendMode, PixelFormat};
-use photocraft_doc::vector::Path;
-use photocraft_doc::{DocId, Document, Layer, LayerContent, LayerId};
-use photocraft_geom::Rect;
-use photocraft_raster::{Surface, from_rgba_into, to_rgba};
+use redrob_photo_color::{BlendMode, PixelFormat};
+use redrob_photo_doc::vector::Path;
+use redrob_photo_doc::{DocId, Document, Layer, LayerContent, LayerId};
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::{Surface, from_rgba_into, to_rgba};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -184,7 +184,7 @@ pub fn fade_surface(before: &Surface, after: &mut Surface, area: Rect, mode: Ble
         } else {
             let rb = to_rgba(&fmt, pb);
             let ra = to_rgba(&fmt, pa);
-            let blended = photocraft_color::blend::composite(mode, rb, ra, 1.0);
+            let blended = redrob_photo_color::blend::composite(mode, rb, ra, 1.0);
             let mut o = [0.0f32; 4];
             lerp_premul(&rb, &blended, &mut o, true);
             let mut enc = [0.0f32; 8];
@@ -227,7 +227,7 @@ fn history_bytes(s: &Session, all: bool) -> usize {
     // Purge keeps the snapshots, so the tiles they share with the states aren't freed.
     docs.iter()
         .map(|d| {
-            let snaps: Vec<&photocraft_doc::Document> = d.snapshots.iter().map(|s| &*s.doc).collect();
+            let snaps: Vec<&redrob_photo_doc::Document> = d.snapshots.iter().map(|s| &*s.doc).collect();
             d.history.unique_bytes_besides(&d.doc, &snaps)
         })
         .sum()
@@ -266,12 +266,12 @@ fn purge(s: &mut Session, what: &str) -> Result<Value> {
         }
     }
     if what == "all" {
-        let fx = photocraft_compose::purge_effect_cache();
+        let fx = redrob_photo_compose::purge_effect_cache();
         if fx > 0 {
             freed += fx;
             items.push("effect cache");
         }
-        let masks = photocraft_compose::masks::purge_cache();
+        let masks = redrob_photo_compose::masks::purge_cache();
         if masks > 0 {
             freed = freed.saturating_add(masks);
             items.push("mask cache");
@@ -281,7 +281,7 @@ fn purge(s: &mut Session, what: &str) -> Result<Value> {
             freed = freed.saturating_add(stages);
             items.push("smart filter cache");
         }
-        let strokes = photocraft_compose::shape_split::purge_cache();
+        let strokes = redrob_photo_compose::shape_split::purge_cache();
         if strokes > 0 {
             freed = freed.saturating_add(strokes);
             items.push("shape stroke cache");
@@ -303,7 +303,7 @@ fn can_purge_histories(s: &Session) -> std::result::Result<(), String> {
 }
 fn can_purge_all(s: &Session) -> std::result::Result<(), String> {
     can_purge_histories(s).or_else(|_| can_purge_clipboard(s)).or_else(|_| {
-        if photocraft_compose::effect_cache_bytes() > 0 || photocraft_compose::masks::cache_bytes() > 0 || crate::smart_cmds::stack_cache_bytes() > 0 {
+        if redrob_photo_compose::effect_cache_bytes() > 0 || redrob_photo_compose::masks::cache_bytes() > 0 || crate::smart_cmds::stack_cache_bytes() > 0 {
             Ok(())
         } else {
             Err("nothing to purge".into())
@@ -359,7 +359,7 @@ fn delete_and_fill(s: &mut Session, _: &Value) -> Result<Value> {
 }
 
 fn content_aware_fill_as(s: &mut Session, p: &Value, cmd: &'static str, label: &'static str) -> Result<Value> {
-    use photocraft_algo::content_aware::{FillOptions, auto_sampling_with, color_level, fill_owned, rotation_level};
+    use redrob_photo_algo::content_aware::{FillOptions, auto_sampling_with, color_level, fill_owned, rotation_level};
     let id = pixel_layer(s).map_err(EngineError::Other)?;
     let st = s.active().ok_or(EngineError::NoDocument)?;
     let doc = st.doc.clone();
@@ -447,7 +447,7 @@ fn content_aware_fill_as(s: &mut Session, p: &Value, cmd: &'static str, label: &
             ctx.check()?;
             // Auto: only what looks like the selection's surroundings.
             if sampling == "auto" {
-                source = auto_sampling_with(w, h, n, &img, &hole, &photocraft_raster::Interrupt::cancel_only(&cancel)).map_err(|_| EngineError::Cancelled)?;
+                source = auto_sampling_with(w, h, n, &img, &hole, &redrob_photo_raster::Interrupt::cancel_only(&cancel)).map_err(|_| EngineError::Cancelled)?;
             }
             ctx.check()?;
             // The fill changes only the selected pixels: keep the original and the coverage over
@@ -640,7 +640,7 @@ fn cas_pixels(
     (nw, nh): (usize, usize),
     amount: f32,
 ) -> Result<Vec<f32>> {
-    use photocraft_algo::seam::{carve_with, resize_bilinear, skin_mask};
+    use redrob_photo_algo::seam::{carve_with, resize_bilinear, skin_mask};
     let n = fmt.channels();
     if skin_tones {
         let rgba: Vec<f32> = img.chunks_exact(n).flat_map(|px| to_rgba(&fmt, px)).collect();
@@ -1064,7 +1064,7 @@ fn preset_manager(s: &mut Session, p: &Value) -> Result<Value> {
 pub struct PresetFile {
     pub format: String,
     pub version: u32,
-    pub brushes: Vec<photocraft_paint::BrushPreset>,
+    pub brushes: Vec<redrob_photo_paint::BrushPreset>,
     pub custom_shapes: Vec<CustomShape>,
 }
 
@@ -1084,7 +1084,7 @@ fn export_import(s: &mut Session, p: &Value) -> Result<Value> {
                 format: PRESET_FORMAT.into(),
                 version: 1,
                 brushes: if want("brushes") {
-                    let mut out: Vec<photocraft_paint::BrushPreset> =
+                    let mut out: Vec<redrob_photo_paint::BrushPreset> =
                         s.tools.presets.iter().filter(|b| !b.builtin || bool_or(p, "includeBuiltins", false)).cloned().collect();
                     // The file embeds every bitmap: load the tips the preset store keeps (#1843).
                     for b in &mut out {

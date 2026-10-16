@@ -5,8 +5,8 @@
 //! with `"erase": true`, so one undo step, with the pen pressure and tilt of a normal stroke.
 
 use egui::{PointerButton, Response};
-use photocraft_engine::BrushSettings;
-use photocraft_engine::prefs::RightClickPaint;
+use redrob_photo_engine::BrushSettings;
+use redrob_photo_engine::prefs::RightClickPaint;
 
 use crate::PhotocraftApp;
 use crate::state::Tool;
@@ -62,8 +62,8 @@ pub(crate) fn fresh_brush(current: &BrushSettings) -> BrushSettings {
 }
 
 /// Photoshop's 10 % stroke smoothing, what a tool's brush starts at.
-fn first_smoothing() -> photocraft_engine::paint::brush::Smoothing {
-    photocraft_engine::paint::brush::Smoothing { amount: 0.1, ..Default::default() }
+fn first_smoothing() -> redrob_photo_engine::paint::brush::Smoothing {
+    redrob_photo_engine::paint::brush::Smoothing { amount: 0.1, ..Default::default() }
 }
 
 /// Does a stroke with `tool` starting now paint in Photoshop's Clear mode, erasing with its own
@@ -220,7 +220,7 @@ mod tests {
     use crate::canvas::{ToolEvent, tool_event};
 
     fn harness(prefs: Option<&str>) -> Harness<'static, PhotocraftApp> {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.run("tools.setColors", json!({"foreground": "#0000ff"})).unwrap();
@@ -427,7 +427,7 @@ mod tests {
         h.state_mut().ui.brush_picker = Some([c.x, c.y]);
         h.run_steps(2);
         assert!(h.query_by_label("Hardness").is_some());
-        let sampled = h.state().session.tools.presets.iter().find(|p| p.brush.tip != photocraft_engine::paint::TipShape::Round).map(|p| p.name.clone());
+        let sampled = h.state().session.tools.presets.iter().find(|p| p.brush.tip != redrob_photo_engine::paint::TipShape::Round).map(|p| p.name.clone());
         h.state_mut().run("tools.setBrush", json!({ "preset": sampled.expect("a sampled preset") })).unwrap();
         h.run_steps(2);
         assert!(h.query_by_label("Hardness").is_none());
@@ -505,7 +505,7 @@ mod tests {
 
     #[test]
     fn right_stroke_erases_with_pen_pressure_through_the_control_channel_path() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 120, "height": 80})).unwrap();
         app.run("prefs.set", json!({"path": "tools.rightClickWithPaintingTools", "value": "erase"})).unwrap();
         app.ui.tool = Tool::Brush;
@@ -529,7 +529,7 @@ mod tests {
 
     #[test]
     fn the_brush_is_a_per_tool_option_that_presets_keep() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 64, "height": 64})).unwrap();
         let amount = |app: &PhotocraftApp| app.session.tools.brush.smoothing.amount;
         app.ui.tool = Tool::Brush;
@@ -567,7 +567,7 @@ mod tests {
     /// dynamics of one tool never leak into another's, and each tool gets its own back.
     #[test]
     fn each_tool_keeps_its_own_brush() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 64, "height": 64})).unwrap();
         let brush = |app: &PhotocraftApp| app.session.tools.brush.clone();
         let size = |b: &BrushSettings| b.size;
@@ -603,10 +603,10 @@ mod tests {
         app.run("tools.setBrush", json!({"brush": {"mode": "Screen", "opacity": 0.3}})).unwrap();
         app.ui.tool = Tool::Brush;
         sync_tool_brush(&mut app);
-        assert_eq!((mode(&brush(&app)), opacity(&brush(&app))), (photocraft_color::BlendMode::Multiply, 0.7), "the Brush's own mode and opacity");
+        assert_eq!((mode(&brush(&app)), opacity(&brush(&app))), (redrob_photo_color::BlendMode::Multiply, 0.7), "the Brush's own mode and opacity");
         app.ui.tool = Tool::CloneStamp;
         sync_tool_brush(&mut app);
-        assert_eq!((mode(&brush(&app)), opacity(&brush(&app))), (photocraft_color::BlendMode::Screen, 0.3), "the Clone Stamp keeps its own");
+        assert_eq!((mode(&brush(&app)), opacity(&brush(&app))), (redrob_photo_color::BlendMode::Screen, 0.3), "the Clone Stamp keeps its own");
 
         // The colours, the erase flag and the seed belong to the session, so a swap keeps what is
         // live now instead of restoring another tool's copy (a picked colour reaches every tool).
@@ -630,7 +630,7 @@ mod tests {
     #[test]
     fn eraser_tool_on_the_background_paints_the_background_colour() {
         // #76: the Eraser on the Background (locked transparency) paints the background colour.
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 120, "height": 80})).unwrap();
         app.run("tools.setColors", json!({"background": "#ff0000"})).unwrap();
         app.run("tools.setBrush", json!({"brush": {"size": 12, "hardness": 1.0}})).unwrap();

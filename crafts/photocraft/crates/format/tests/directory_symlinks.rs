@@ -3,10 +3,10 @@
 mod common;
 
 use common::temp_dir;
-use photocraft_color::{ColorMode, SampleType};
-use photocraft_doc::Document;
-use photocraft_format::{PcraftWriter, SaveOptions};
-use photocraft_geom::Size;
+use redrob_photo_color::{ColorMode, SampleType};
+use redrob_photo_doc::Document;
+use redrob_photo_format::{PcraftWriter, SaveOptions};
+use redrob_photo_geom::Size;
 
 fn empty_doc() -> Document {
     Document::new("clean", Size::new(1, 1), ColorMode::Rgb, SampleType::U8)
@@ -15,7 +15,7 @@ fn empty_doc() -> Document {
 #[test]
 fn directory_cleanup_preserves_unrelated_zst_files() {
     let root = temp_dir("unrelated-object");
-    let bundle = root.join("project.pcraft");
+    let bundle = root.join("project.rphoto");
     let mut writer = PcraftWriter::new();
     writer.save_dir(&empty_doc(), &bundle, &SaveOptions::default()).unwrap();
 
@@ -34,8 +34,8 @@ fn directory_cleanup_preserves_unrelated_zst_files() {
 #[cfg(any(target_os = "linux", target_os = "android", target_vendor = "apple"))]
 mod permissions {
     use super::*;
-    use photocraft_format::load_path;
-    use photocraft_raster::Rgba8Image;
+    use redrob_photo_format::load_path;
+    use redrob_photo_raster::Rgba8Image;
     use std::os::unix::fs::{PermissionsExt, symlink};
     use std::path::{Path, PathBuf};
 
@@ -61,7 +61,7 @@ mod permissions {
     #[test]
     fn directory_save_without_previews_does_not_require_composite_read_permission() {
         let root = temp_dir("composite-search-only");
-        let bundle = root.join("project.pcraft");
+        let bundle = root.join("project.rphoto");
         let mut writer = PcraftWriter::new();
         writer.save_dir(&empty_doc(), &bundle, &SaveOptions::default()).unwrap();
         let restricted = RestoreMode::set(&bundle.join("composite"), 0o300);
@@ -77,8 +77,8 @@ mod permissions {
     #[test]
     fn directory_save_cleans_stale_previews_through_search_only_root_and_composite() {
         let root = temp_dir("bundle-search-only");
-        let bundle = root.join("project.pcraft");
-        let link = root.join("linked.pcraft");
+        let bundle = root.join("project.rphoto");
+        let link = root.join("linked.rphoto");
         let mut writer = PcraftWriter::new();
         writer.save_dir(&empty_doc(), &bundle, &SaveOptions::default()).unwrap();
         symlink(&bundle, &link).unwrap();
@@ -105,7 +105,7 @@ mod permissions {
     #[test]
     fn directory_save_writes_current_preview_without_composite_read_permission() {
         let root = temp_dir("preview-search-only");
-        let bundle = root.join("project.pcraft");
+        let bundle = root.join("project.rphoto");
         let mut writer = PcraftWriter::new();
         writer.save_dir(&empty_doc(), &bundle, &SaveOptions::default()).unwrap();
         let restricted = RestoreMode::set(&bundle.join("composite"), 0o300);
@@ -123,7 +123,7 @@ mod permissions {
     #[test]
     fn denied_stale_preview_cleanup_preserves_the_previous_manifest() {
         let root = temp_dir("denied-preview-cleanup");
-        let bundle = root.join("project.pcraft");
+        let bundle = root.join("project.rphoto");
         let mut writer = PcraftWriter::new();
         let original = empty_doc();
         writer.save_dir(&original, &bundle, &SaveOptions::default()).unwrap();
@@ -151,7 +151,7 @@ mod permissions {
     #[test]
     fn denied_object_cleanup_remains_best_effort_after_manifest_commit() {
         let root = temp_dir("denied-object-cleanup");
-        let bundle = root.join("project.pcraft");
+        let bundle = root.join("project.rphoto");
         let mut writer = PcraftWriter::new();
         writer.save_dir(&empty_doc(), &bundle, &SaveOptions::default()).unwrap();
         let orphan = bundle.join("tiles").join(format!("{}.zst", "d".repeat(64)));

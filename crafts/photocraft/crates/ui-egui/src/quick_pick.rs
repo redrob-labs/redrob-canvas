@@ -40,7 +40,7 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) ->
 #[cfg(test)]
 mod tests {
     use egui::Modifiers;
-    use photocraft_geom::Rect;
+    use redrob_photo_geom::Rect;
     use serde_json::json;
 
     use super::*;
@@ -50,8 +50,8 @@ mod tests {
     const PICK: Modifiers = Modifiers { alt: true, ctrl: true, shift: false, mac_cmd: true, command: true };
 
     /// A 64×64 document with A painted at (8..24)² and B at (40..56)²; B is active.
-    fn app() -> (PhotocraftApp, photocraft_doc::LayerId) {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    fn app() -> (PhotocraftApp, redrob_photo_doc::LayerId) {
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
         app.sync_views();
         let mut first = None;

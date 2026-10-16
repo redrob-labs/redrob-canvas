@@ -18,8 +18,8 @@ fn main() {
     use objc2::rc::Retained;
     use objc2_app_kit::{NSApplication, NSEvent, NSEventMask, NSEventModifierFlags, NSEventSubtype, NSEventType, NSMenu};
     use objc2_foundation::{NSPoint, NSString};
-    use photocraft_ui_egui::PhotocraftApp;
-    use photocraft_ui_egui::native_menu;
+    use redrob_photo_ui_egui::PhotocraftApp;
+    use redrob_photo_ui_egui::native_menu;
     use serde_json::json;
 
     let mtm = MainThreadMarker::new().expect("harness = false runs on the main thread");
@@ -81,12 +81,12 @@ fn main() {
         .expect("an application-defined event")
     };
 
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), photocraft_ui_egui::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), redrob_photo_ui_egui::Services::default());
     let ctx = egui::Context::default();
     let frame = |app: &mut PhotocraftApp, raw: egui::RawInput| {
         let mut out = ctx.run_ui(raw, |ui| {
             native_menu::run(app, ui.ctx());
-            photocraft_ui_egui::shortcuts::handle(app, ui.ctx());
+            redrob_photo_ui_egui::shortcuts::handle(app, ui.ctx());
             native_menu::sync(app, ui.ctx());
         });
         out.textures_delta.clear();
@@ -137,7 +137,7 @@ fn main() {
     // AppKit took only the key-down; winit delivers the key-up itself (#1638).
     assert_eq!(keys, [(egui::Key::R, true, true)], "the key press");
     frame(&mut app, raw);
-    let ran: Vec<String> = photocraft_ui_egui::shortcut_dispatch::take_log(&ctx).into_iter().map(|(id, _)| id).collect();
+    let ran: Vec<String> = redrob_photo_ui_egui::shortcut_dispatch::take_log(&ctx).into_iter().map(|(id, _)| id).collect();
     assert_eq!(ran, ["view.rulers"], "⌘R ran Rulers, whichever ⌘R item AppKit matched");
     assert_eq!(app.ui.extras.rulers, !rulers, "⌘R toggled Rulers once");
 

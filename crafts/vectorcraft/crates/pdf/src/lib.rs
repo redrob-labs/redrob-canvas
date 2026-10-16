@@ -77,7 +77,7 @@ pub use presets::*;
 pub use print::*;
 pub use settings::*;
 
-use vectorcraft_doc::Document;
+use redrob_vector_doc::Document;
 
 /// Export options: the Save PDF settings plus what one export run decides (pages, title, date).
 #[derive(Clone, Debug, Default)]
@@ -89,7 +89,7 @@ pub struct PdfOptions {
     pub title: Option<String>,
     /// Creation date as Unix seconds (UTC); `None` = now (native) / omitted (wasm). PDF/A needs a date.
     pub created: Option<i64>,
-    /// The native document (`.vectorcraft` bytes) Preserve Editing embeds.
+    /// The native document (`.rvector` bytes) Preserve Editing embeds.
     pub native: Option<Vec<u8>>,
     /// The pages drawn small, in page order: what Embed Page Thumbnails embeds (the writer
     /// doesn't draw; [`page_areas`] says what each page shows).
@@ -220,8 +220,8 @@ pub enum PdfError {
     PlaceholderOnly,
 }
 
-impl From<craft_pdf::write::WriteError> for PdfError {
-    fn from(error: craft_pdf::write::WriteError) -> Self {
+impl From<redrob_craft_pdf::write::WriteError> for PdfError {
+    fn from(error: redrob_craft_pdf::write::WriteError) -> Self {
         Self::Write(error.to_string())
     }
 }

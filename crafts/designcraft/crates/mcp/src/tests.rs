@@ -1,6 +1,6 @@
 use std::io::{BufRead, BufReader, Write};
 
-use designcraft_engine::cmd::{base64_decode, base64_encode};
+use redrob_layout_engine::cmd::{base64_decode, base64_encode};
 use serde_json::{Value, json};
 
 use crate::{Backend, Headless, PROTOCOL_VERSION, Remote, Server, control_addr, tool_definitions};
@@ -85,7 +85,7 @@ fn protocol_round_trip_over_serve() {
         json!({"jsonrpc":"2.0","id":2,"method":"tools/list"}),
         json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_commands","arguments":{"filter":"frame.create"}}}),
         json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"execute","arguments":{"command":"frame.create","params":{"rect":[36,36,300,200],"content":"text","text":"Hi"}}}}),
-        json!({"jsonrpc":"2.0","id":5,"method":"resources/read","params":{"uri":"designcraft://document"}}),
+        json!({"jsonrpc":"2.0","id":5,"method":"resources/read","params":{"uri":"redrob-layout://document"}}),
     ]
     .map(|v| v.to_string())
     .join("\n");
@@ -290,7 +290,7 @@ fn ui_only_tools_explain_how_to_connect() {
 fn files_place_and_export() {
     let mut s = server();
     // A 4×2 red PNG made by the renderer's encoder.
-    let px = designcraft_render::Rendered { width: 4, height: 2, pixels: [255, 0, 0, 255].repeat(8) };
+    let px = redrob_layout_render::Rendered { width: 4, height: 2, pixels: [255, 0, 0, 255].repeat(8) };
     let png = px.to_png();
     let placed = ok(&mut s, "place_image", json!({"base64": base64_encode(&png), "name": "red.png", "x": 50, "y": 60, "width": 100}));
     assert!(placed["id"].is_u64() && placed["asset"].is_u64(), "{placed}");
@@ -309,7 +309,7 @@ fn files_place_and_export() {
     assert_eq!(r["isError"], false);
     assert!(std::fs::read(tmp("render.png")).unwrap().starts_with(PNG_MAGIC));
 
-    let doc_path = tmp("saved.designcraft");
+    let doc_path = tmp("saved.rlayout");
     let saved = ok(&mut s, "save_document", json!({"path": doc_path}));
     assert_eq!(saved["path"], doc_path.to_string_lossy().as_ref());
     let opened = ok(&mut s, "open_document", json!({"path": doc_path}));
@@ -356,7 +356,7 @@ fn fake_app() -> (String, std::sync::mpsc::Receiver<Value>) {
             let p = &req["params"];
             let reply = match req["method"].as_str().unwrap() {
                 "ui.screenshot" => {
-                    let px = designcraft_render::Rendered { width: 3, height: 3, pixels: vec![0; 36] };
+                    let px = redrob_layout_render::Rendered { width: 3, height: 3, pixels: vec![0; 36] };
                     std::fs::write(p["path"].as_str().unwrap(), px.to_png()).unwrap();
                     json!({"ok": true, "result": {"path": p["path"], "width": 3, "height": 3}})
                 }

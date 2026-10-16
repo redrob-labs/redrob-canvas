@@ -4,8 +4,8 @@
 use std::collections::BTreeMap;
 
 use egui::{Event, Key, Modifiers};
+use redrob_vector_engine::Session;
 use serde_json::json;
-use vectorcraft_engine::Session;
 
 use crate::{VectorcraftApp, shortcut_editor, shortcuts};
 

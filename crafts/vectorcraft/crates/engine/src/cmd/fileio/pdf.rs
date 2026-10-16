@@ -5,10 +5,10 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
+use redrob_vector_doc::{Document, Node, NodeKind};
+use redrob_vector_pdf::{Overprint, PdfError, PdfOptions, PdfPreset, PdfSettings, Standard, THUMBNAIL_SIZE, Thumbnail};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use vectorcraft_doc::{Document, Node, NodeKind};
-use vectorcraft_pdf::{Overprint, PdfError, PdfOptions, PdfPreset, PdfSettings, Standard, THUMBNAIL_SIZE, Thumbnail};
 
 use super::super::flatten::{FlattenOptions, flatten_document, see_through_images};
 use super::super::*;
@@ -18,7 +18,7 @@ use crate::EngineError;
 const C: &str = "document.exportPdf";
 
 /// The built-in preset every PDF export starts from.
-pub use vectorcraft_pdf::DEFAULT_PRESET;
+pub use redrob_vector_pdf::DEFAULT_PRESET;
 
 /// The PDF options `document.formats` lists; `document.exportPdf` documents every field.
 pub(super) const OPTIONS: &[FormatOption] = &[
@@ -132,13 +132,13 @@ pub fn presets(s: &Session) -> Vec<String> {
 
 /// The built-in preset names, then those of `saved`.
 fn names(saved: &[PdfPreset]) -> Vec<String> {
-    vectorcraft_pdf::builtin_presets().into_iter().map(|p| p.name).chain(saved.iter().map(|p| p.name.clone())).collect()
+    redrob_vector_pdf::builtin_presets().into_iter().map(|p| p.name).chain(saved.iter().map(|p| p.name.clone())).collect()
 }
 
 /// The preset `name` names: a built-in one (any case; `default` is the app default) or one of
 /// `saved`.
 pub fn find_preset(name: &str, saved: &[PdfPreset]) -> Option<PdfPreset> {
-    vectorcraft_pdf::builtin_preset(name).or_else(|| saved.iter().find(|p| p.name.eq_ignore_ascii_case(name.trim())).cloned())
+    redrob_vector_pdf::builtin_preset(name).or_else(|| saved.iter().find(|p| p.name.eq_ignore_ascii_case(name.trim())).cloned())
 }
 
 fn preset(cmd: &str, name: &str, saved: &[PdfPreset]) -> Result<PdfSettings> {
@@ -220,7 +220,7 @@ pub fn settings(cmd: &str, p: &Value) -> Result<PdfSettings> {
 /// built-in presets. Params naming none come back as they are.
 pub fn expand_preset<'a>(s: &Session, cmd: &str, p: &'a Value) -> Result<Cow<'a, Value>> {
     let expanded = match str_param(p, "preset") {
-        Some(name) if vectorcraft_pdf::builtin_preset(name).is_none() => {
+        Some(name) if redrob_vector_pdf::builtin_preset(name).is_none() => {
             let set = settings_with(cmd, p, &s.prefs.pdf_presets)?;
             let mut q = p.clone();
             merge(&mut q, &serde_json::to_value(set).map_err(|e| EngineError::Other(e.to_string()))?);
@@ -251,7 +251,7 @@ pub const EDITING_NEEDS_EVERY_ARTBOARD: &str =
 pub fn encode(cmd: &str, doc: &Document, p: &Value) -> Result<(Vec<u8>, Vec<String>)> {
     // Keep the editable object tree independent of preview fallbacks used by the drawn pages.
     let (full, mut warnings) = crate::cmd::place::document::full_documents(doc);
-    let (bytes, drawn_warnings) = encode_carrying(cmd, &full, p, || Ok(vectorcraft_format::save(doc, false)))?;
+    let (bytes, drawn_warnings) = encode_carrying(cmd, &full, p, || Ok(redrob_vector_format::save(doc, false)))?;
     warnings.extend(drawn_warnings);
     Ok((bytes, warnings))
 }
@@ -310,7 +310,7 @@ fn flatten_for(cmd: &str, doc: &Document, set: &PdfSettings, p: &Value) -> Resul
 /// the thumbnails Embed Page Thumbnails embeds. Layers the pages leave out (non-printing ones,
 /// unless asked for) are left out of them too.
 fn thumbnails(doc: &Document, opts: &PdfOptions) -> std::result::Result<Vec<Thumbnail>, PdfError> {
-    let areas = vectorcraft_pdf::page_areas(doc, opts)?;
+    let areas = redrob_vector_pdf::page_areas(doc, opts)?;
     let set = &opts.settings;
     let printed = if set.include_non_printing || set.create_layers { None } else { without_non_printing(&doc.layers) };
     let shown = printed.map(|layers| {
@@ -319,7 +319,7 @@ fn thumbnails(doc: &Document, opts: &PdfOptions) -> std::result::Result<Vec<Thum
         d
     });
     let doc = shown.as_ref().unwrap_or(doc);
-    let mut r = vectorcraft_render::Renderer::new();
+    let mut r = redrob_vector_render::Renderer::new();
     Ok(areas
         .into_iter()
         .map(|a| {

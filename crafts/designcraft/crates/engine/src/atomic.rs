@@ -72,7 +72,7 @@ pub fn write_atomic_with(path: &Path, fill: impl FnOnce(&mut File) -> io::Result
 /// volume). A short randomized name supports long destination names and skips existing entries.
 fn create_temp(dir: &Path, existing: Option<&std::fs::Metadata>) -> io::Result<tempfile::NamedTempFile> {
     let mut builder = tempfile::Builder::new();
-    builder.prefix(".designcraft-save-").suffix(".tmp");
+    builder.prefix(".rlayout-save-").suffix(".tmp");
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -181,21 +181,21 @@ mod tests {
     #[test]
     fn replaces_and_creates_without_leftovers() {
         let d = dir("replace");
-        let path = d.join("doc.designcraft");
+        let path = d.join("doc.rlayout");
         write_atomic(&path, b"first").unwrap();
         assert_eq!(std::fs::read(&path).unwrap(), b"first");
         write_atomic(&path, b"second, longer").unwrap();
         assert_eq!(std::fs::read(&path).unwrap(), b"second, longer");
         write_atomic(&path, b"3").unwrap();
         assert_eq!(std::fs::read(&path).unwrap(), b"3");
-        assert_eq!(names(&d), ["doc.designcraft"], "no temporary file is left");
+        assert_eq!(names(&d), ["doc.rlayout"], "no temporary file is left");
         let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]
     fn a_failed_write_leaves_the_original_and_no_temporary_file() {
         let d = dir("fail");
-        let path = d.join("doc.designcraft");
+        let path = d.join("doc.rlayout");
         std::fs::write(&path, b"original").unwrap();
         let r = write_atomic_with(&path, |f| {
             f.write_all(b"half a docu")?;
@@ -203,21 +203,21 @@ mod tests {
         });
         assert_eq!(r.unwrap_err().to_string(), "disk full");
         assert_eq!(std::fs::read(&path).unwrap(), b"original");
-        assert_eq!(names(&d), ["doc.designcraft"], "the temporary file is removed");
+        assert_eq!(names(&d), ["doc.rlayout"], "the temporary file is removed");
         // A folder that doesn't exist: an error, nothing written.
-        assert!(write_atomic(&d.join("missing").join("x.designcraft"), b"x").is_err());
-        assert_eq!(names(&d), ["doc.designcraft"]);
+        assert!(write_atomic(&d.join("missing").join("x.rlayout"), b"x").is_err());
+        assert_eq!(names(&d), ["doc.rlayout"]);
         // A folder in the way: an error, the folder stays and nothing is left beside it.
         std::fs::create_dir(d.join("folder")).unwrap();
         assert!(write_atomic(&d.join("folder"), b"x").is_err());
-        assert_eq!(names(&d), ["doc.designcraft", "folder"]);
+        assert_eq!(names(&d), ["doc.rlayout", "folder"]);
         let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]
     fn a_long_destination_name_does_not_lengthen_the_temporary_name() {
         let d = dir("long-name");
-        let name = format!("{}.designcraft", "a".repeat(235));
+        let name = format!("{}.rlayout", "a".repeat(235));
         let path = d.join(&name);
         std::fs::write(&path, b"old").unwrap();
         write_atomic(&path, b"new").unwrap();
@@ -231,7 +231,7 @@ mod tests {
     fn private_permissions_are_preserved_while_the_file_is_written() {
         use std::os::unix::fs::PermissionsExt as _;
         let d = dir("private-staging");
-        let path = d.join("private.designcraft");
+        let path = d.join("private.rlayout");
         std::fs::write(&path, b"old").unwrap();
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
         write_atomic_with(&path, |file| {
@@ -243,14 +243,14 @@ mod tests {
         .unwrap();
         assert_eq!(std::fs::read(&path).unwrap(), b"private document");
         assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
-        assert_eq!(names(&d), ["private.designcraft"]);
+        assert_eq!(names(&d), ["private.rlayout"]);
         let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]
     fn an_unwinding_writer_removes_its_partial_temporary_file() {
         let d = dir("unwinding-writer");
-        let path = d.join("private.designcraft");
+        let path = d.join("private.rlayout");
         std::fs::write(&path, b"old").unwrap();
         let result = std::panic::catch_unwind(|| {
             write_atomic_with(&path, |file| {
@@ -260,7 +260,7 @@ mod tests {
         });
         assert!(result.is_err());
         assert_eq!(std::fs::read(&path).unwrap(), b"old");
-        assert_eq!(names(&d), ["private.designcraft"]);
+        assert_eq!(names(&d), ["private.rlayout"]);
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -292,7 +292,7 @@ mod tests {
     fn permissions_are_kept_and_unwritable_files_are_not_replaced() {
         use std::os::unix::fs::PermissionsExt as _;
         let d = dir("perms");
-        let path = d.join("private.designcraft");
+        let path = d.join("private.rlayout");
         std::fs::write(&path, b"old").unwrap();
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
         write_atomic(&path, b"new").unwrap();
@@ -303,7 +303,7 @@ mod tests {
         if OpenOptions::new().write(true).open(&path).is_err() {
             assert!(write_atomic(&path, b"newer").is_err());
             assert_eq!(std::fs::read(&path).unwrap(), b"new");
-            assert_eq!(names(&d), ["private.designcraft"]);
+            assert_eq!(names(&d), ["private.rlayout"]);
         }
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
         let _ = std::fs::remove_dir_all(&d);
@@ -315,7 +315,7 @@ mod tests {
     fn an_unwritable_folder_fails_without_touching_the_file() {
         use std::os::unix::fs::PermissionsExt as _;
         let d = dir("ro-dir");
-        let path = d.join("doc.designcraft");
+        let path = d.join("doc.rlayout");
         std::fs::write(&path, b"original").unwrap();
         std::fs::set_permissions(&d, std::fs::Permissions::from_mode(0o555)).unwrap();
         // Root writes anyway; the check only means something for an ordinary user.
@@ -327,7 +327,7 @@ mod tests {
         }
         std::fs::set_permissions(&d, std::fs::Permissions::from_mode(0o755)).unwrap();
         let _ = std::fs::remove_file(&probe);
-        assert_eq!(names(&d), ["doc.designcraft"]);
+        assert_eq!(names(&d), ["doc.rlayout"]);
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -336,15 +336,15 @@ mod tests {
     fn a_symbolic_link_keeps_pointing_at_the_replaced_file() {
         let d = dir("link");
         std::fs::create_dir(d.join("real")).unwrap();
-        let target = d.join("real").join("doc.designcraft");
+        let target = d.join("real").join("doc.rlayout");
         std::fs::write(&target, b"old").unwrap();
-        let link = d.join("link.designcraft");
-        std::os::unix::fs::symlink("real/doc.designcraft", &link).unwrap();
+        let link = d.join("link.rlayout");
+        std::os::unix::fs::symlink("real/doc.rlayout", &link).unwrap();
         write_atomic(&link, b"new").unwrap();
         assert!(std::fs::symlink_metadata(&link).unwrap().file_type().is_symlink());
         assert_eq!(std::fs::read(&target).unwrap(), b"new");
-        assert_eq!(names(&d), ["link.designcraft", "real"]);
-        assert_eq!(names(&d.join("real")), ["doc.designcraft"]);
+        assert_eq!(names(&d), ["link.rlayout", "real"]);
+        assert_eq!(names(&d.join("real")), ["doc.rlayout"]);
         // A loop of links is an error, not a hang.
         std::os::unix::fs::symlink("b", d.join("a")).unwrap();
         std::os::unix::fs::symlink("a", d.join("b")).unwrap();

@@ -8,12 +8,12 @@ use egui::{CornerRadius, Rect, Response, Sense, Stroke, StrokeKind, Ui, pos2, ve
 
 use crate::theme::{self, Tokens};
 
-pub use craft_ui::tabs::TabFit;
+pub use redrob_craft_ui::tabs::TabFit;
 
 /// Fit tabs to a strip using the shared, bounded width policy. Local wrappers retain the
 /// application's themes, translated labels and panel/document overflow menus.
 pub fn fit(natural: &[f32], selected: usize, avail: f32, min_w: f32, chevron_w: f32) -> TabFit {
-    craft_ui::tabs::fit(natural, selected, avail, min_w, chevron_w)
+    redrob_craft_ui::tabs::fit(natural, selected, avail, min_w, chevron_w)
 }
 
 /// A label laid out on one row no wider than `max_w`, cut with '…' when it doesn't fit.
@@ -123,7 +123,7 @@ fn tabs_in(
         // The padding gives way (down to a third) before the label is cut.
         let galley = elided(ui, name, font.clone(), t.text, (w - pad / 3.0).max(1.0));
         let cut = galley.size().x + pad + 0.5 < natural.get(i).copied().unwrap_or(0.0) && galley.size().x + pad / 3.0 >= w - 0.5;
-        let resp = craft_ui::tabs::Tab::new(id.with(("tab", i)), name, i == *selected).sense(sense).focus_stroke(Stroke::new(1.0, t.accent)).show_at(
+        let resp = redrob_craft_ui::tabs::Tab::new(id.with(("tab", i)), name, i == *selected).sense(sense).focus_stroke(Stroke::new(1.0, t.accent)).show_at(
             ui,
             r,
             |ui, resp| paint_tab(ui, r, i, panel_id, galley, resp, active(i)),

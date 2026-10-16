@@ -24,7 +24,7 @@
 
 use std::collections::HashSet;
 
-use vectorcraft_geom::{PathData, Point};
+use redrob_vector_geom::{PathData, Point};
 
 use crate::Raster;
 use crate::fit;

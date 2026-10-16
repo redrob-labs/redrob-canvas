@@ -122,9 +122,9 @@ fn paint(ui: &Ui, glyph: Glyph, r: Rect, color: Color32) {
 
 #[cfg(test)]
 mod tests {
+    use redrob_vector_engine::Session;
+    use redrob_vector_geom::Point;
     use serde_json::json;
-    use vectorcraft_engine::Session;
-    use vectorcraft_geom::Point;
 
     use super::*;
     use crate::canvas::Xf;
@@ -190,7 +190,7 @@ mod tests {
         frame(&mut app, &ctx, vec![button(to, false)]);
         frame(&mut app, &ctx, vec![]);
         let st = app.session.active().unwrap();
-        let node = st.doc.node(vectorcraft_doc::NodeId(id.as_u64().unwrap())).unwrap();
+        let node = st.doc.node(redrob_vector_doc::NodeId(id.as_u64().unwrap())).unwrap();
         let pts: Vec<Point> = node.path_data().unwrap().anchors().map(|(.., a)| a.p).collect();
         let near = |q: Point| pts.iter().any(|p| p.distance(q) < 0.5);
         assert!(

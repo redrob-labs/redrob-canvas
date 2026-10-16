@@ -12,10 +12,10 @@
 //! the preset), plus `__mode` (`save`, `edit` or none for Define Grid), `__from` (`define`: Save
 //! Preset… returns to Define Grid) and `__original` (the saved preset an edit changes).
 
+use redrob_vector_doc::Unit;
+use redrob_vector_tools::distort::perspective::define::is_builtin;
+use redrob_vector_tools::distort::perspective::{GridDefinition, Rgb};
 use serde_json::{Value, json};
-use vectorcraft_doc::Unit;
-use vectorcraft_tools::distort::perspective::define::is_builtin;
-use vectorcraft_tools::distort::perspective::{GridDefinition, Rgb};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;

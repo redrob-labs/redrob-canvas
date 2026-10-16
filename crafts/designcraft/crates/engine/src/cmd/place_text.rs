@@ -2,8 +2,8 @@
 //! selected frame, or a new frame on the page; with autoflow, pages and threaded frames are added
 //! until the whole story fits (InDesign's Shift-click with a loaded text cursor).
 
-use designcraft_doc::{CharacterStyle, Content, Document, ParaFormat, ParagraphStyle, SpreadRef, Story, StoryId, TextFileLink, TextSel};
-use designcraft_geom::Rect;
+use redrob_layout_doc::{CharacterStyle, Content, Document, ParaFormat, ParagraphStyle, SpreadRef, Story, StoryId, TextFileLink, TextSel};
+use redrob_layout_geom::Rect;
 use serde_json::{Value, json};
 
 use super::bad;
@@ -45,7 +45,7 @@ impl Conflict {
 /// Returns `map` with the names Auto Rename chose.
 fn map_styles(
     d: &Document,
-    imp: &mut designcraft_textimport::Imported,
+    imp: &mut redrob_layout_textimport::Imported,
     map: &std::collections::HashMap<String, String>,
     conflict: Conflict,
 ) -> std::collections::HashMap<String, String> {
@@ -91,7 +91,7 @@ fn map_styles(
     rename
 }
 
-fn add_styles(d: &mut Document, imp: &designcraft_textimport::Imported, conflict: Conflict) {
+fn add_styles(d: &mut Document, imp: &redrob_layout_textimport::Imported, conflict: Conflict) {
     let st = d.styles_mut();
     if conflict == Conflict::Redefine {
         for s in &imp.para_styles {
@@ -109,7 +109,7 @@ fn add_styles(d: &mut Document, imp: &designcraft_textimport::Imported, conflict
         if st.para(&s.name).is_none() {
             st.paragraph.push(ParagraphStyle {
                 name: s.name.clone(),
-                based_on: s.based_on.clone().or_else(|| Some(designcraft_doc::story::BASIC_PARAGRAPH.into())),
+                based_on: s.based_on.clone().or_else(|| Some(redrob_layout_doc::story::BASIC_PARAGRAPH.into())),
                 next_style: None,
                 para: s.para.clone(),
                 chars: s.chars.clone(),
@@ -147,7 +147,7 @@ fn fill(story: &mut Story, from: &Story) {
 fn text_link(
     path: &str,
     bytes: &[u8],
-    before: Option<designcraft_doc::Fingerprint>,
+    before: Option<redrob_layout_doc::Fingerprint>,
     map: std::collections::HashMap<String, String>,
     conflict: Conflict,
     remove: bool,
@@ -172,12 +172,12 @@ pub(crate) fn reimport(
     sid: StoryId,
     path: &str,
     bytes: &[u8],
-    before: Option<designcraft_doc::Fingerprint>,
+    before: Option<redrob_layout_doc::Fingerprint>,
 ) -> Result<Vec<String>> {
     let link =
         d.story(sid).and_then(|s| s.file_link.clone()).ok_or_else(|| bad("links.update", format!("story {} isn't linked to a file", sid.0)))?;
     let name = std::path::Path::new(path).file_name().map_or_else(|| path.to_string(), |n| n.to_string_lossy().to_string());
-    let mut imp = designcraft_textimport::import(&name, bytes).map_err(|e| bad("links.update", format!("{name}: {e}")))?;
+    let mut imp = redrob_layout_textimport::import(&name, bytes).map_err(|e| bad("links.update", format!("{name}: {e}")))?;
     if link.remove_styles {
         strip(&mut imp.story);
         imp.para_styles.clear();
@@ -189,7 +189,7 @@ pub(crate) fn reimport(
         link.style_map.into_iter().filter(|(_, to)| d.styles.para(to).is_some() || d.styles.char_style(to).is_some()).collect();
     let map = map_styles(d, &mut imp, &map, conflict);
     add_styles(d, &imp, conflict);
-    let story = d.story_mut(sid).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+    let story = d.story_mut(sid).ok_or(redrob_layout_doc::DocError::NoStory(sid))?;
     fill(story, &imp.story);
     story.file_link = Some(text_link(path, bytes, before, map, conflict, link.remove_styles, story));
     Ok(imp.warnings)
@@ -199,9 +199,9 @@ pub(crate) fn reimport(
 /// A frame a column, frame or page break ends early is left out: it says nothing about how much
 /// a frame holds.
 fn fit(d: &Document, sid: StoryId) -> (Option<usize>, usize, usize) {
-    let cs = designcraft_compose::compose_story(d, sid, &Default::default());
+    let cs = redrob_layout_compose::compose_story(d, sid, &Default::default());
     let text = d.story(sid).map_or("", |s| s.text.as_str());
-    let is_break = |c: char| matches!(c, designcraft_doc::COLUMN_BREAK | designcraft_doc::FRAME_BREAK | designcraft_doc::PAGE_BREAK);
+    let is_break = |c: char| matches!(c, redrob_layout_doc::COLUMN_BREAK | redrob_layout_doc::FRAME_BREAK | redrob_layout_doc::PAGE_BREAK);
     let (mut held, mut full) = (0, 0);
     for f in &cs.frames {
         let Some(shown) = text.get(f.range.clone()) else { continue };
@@ -256,9 +256,9 @@ pub(super) fn place_text(
     name: &str,
     bytes: &[u8],
     path: Option<String>,
-    before: Option<designcraft_doc::Fingerprint>,
+    before: Option<redrob_layout_doc::Fingerprint>,
 ) -> Result<Value> {
-    let mut imp = designcraft_textimport::import(name, bytes).map_err(|e| bad("file.place", e.to_string()))?;
+    let mut imp = redrob_layout_textimport::import(name, bytes).map_err(|e| bad("file.place", e.to_string()))?;
     let remove = p.get("removeStyles").and_then(Value::as_bool).unwrap_or(false);
     if remove {
         strip(&mut imp.story);
@@ -295,7 +295,7 @@ pub(super) fn place_text(
         add_styles(d, &imp, conflict);
         let sid = if let Some(t) = caret {
             // Into the text at the insertion point (replacing the selection).
-            let story = d.story_mut(t.story).ok_or(designcraft_doc::DocError::NoStory(t.story))?;
+            let story = d.story_mut(t.story).ok_or(redrob_layout_doc::DocError::NoStory(t.story))?;
             let r = t.range();
             story.delete(r.clone());
             let end = story.insert_story(r.start, &imp.story);
@@ -325,16 +325,16 @@ pub(super) fn place_text(
                     ns.frames = vec![fid];
                     d.stories.insert(sid, std::sync::Arc::new(ns));
                     if let Some(it) = d.item_mut(fid) {
-                        it.content = Content::Text(designcraft_doc::TextFrame { story: sid, options: Default::default() });
+                        it.content = Content::Text(redrob_layout_doc::TextFrame { story: sid, options: Default::default() });
                     }
                     sid
                 }
                 None => return Err(bad("file.place", "no such frame")),
             };
-            let story = d.story_mut(sid).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+            let story = d.story_mut(sid).ok_or(redrob_layout_doc::DocError::NoStory(sid))?;
             fill(story, &imp.story);
             story.file_link = link.as_deref().map(|path| text_link(path, bytes, before, map.clone(), conflict, remove, story));
-            *sel = designcraft_doc::Selection::items(vec![fid]);
+            *sel = redrob_layout_doc::Selection::items(vec![fid]);
             sid
         };
         let pages = if autoflow_on { autoflow(d, sid, 2000, "file.place")? } else { 0 };
@@ -427,7 +427,7 @@ mod place_pdf_tests {
         let asset = d.assets.values().next().unwrap();
         assert_eq!(asset.mime, "application/pdf");
         // On screen: the square is black, the rest of the placed page white.
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = redrob_layout_render::Renderer::new();
         let img = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
         assert!(img.pixel(150, 150)[0] < 90, "{:?}", img.pixel(150, 150));
         assert!(img.pixel(250, 150)[0] > 200, "{:?}", img.pixel(250, 150));
@@ -460,7 +460,7 @@ mod place_pdf_tests {
         let b = d.spreads[0].items.last().unwrap().bounds();
         assert!((b.width() - 120.0).abs() < 1.0 && (b.height() - 60.0).abs() < 1.0, "160×80 px = 120×60 pt: {b:?}");
         assert_eq!(d.assets.values().next().unwrap().mime, "image/svg+xml");
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = redrob_layout_render::Renderer::new();
         let img = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
         let p = img.pixel(130, 130);
         assert!(p[2] > 200 && p[0] < 60, "blue square on screen: {p:?}");
@@ -485,20 +485,20 @@ mod reflow_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({"pages": 1, "primaryTextFrame": true})).unwrap();
         let sid = s.doc().unwrap().doc.settings.primary_story.expect("primary story").0;
-        assert_eq!(s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().frames.len(), 1);
+        assert_eq!(s.doc().unwrap().doc.story(redrob_layout_doc::StoryId(sid)).unwrap().frames.len(), 1);
         s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 0})).unwrap();
         let long = "Words keep coming and the page fills up quickly with them. ".repeat(250);
         s.execute("text.insert", &json!({"text": long})).unwrap();
         let pages = s.doc().unwrap().doc.page_count();
         assert!(pages >= 3, "pages added: {pages}");
         let d = s.doc().unwrap().doc.clone();
-        assert_eq!(d.story(designcraft_doc::StoryId(sid)).unwrap().frames.len(), pages);
+        assert_eq!(d.story(redrob_layout_doc::StoryId(sid)).unwrap().frames.len(), pages);
         // One undo takes the typing and its pages back.
         s.execute("edit.undo", &json!({})).unwrap();
         assert_eq!(s.doc().unwrap().doc.page_count(), 1);
         s.execute("edit.redo", &json!({})).unwrap();
         // Delete the text: the empty pages at the end go.
-        let n = s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().len();
+        let n = s.doc().unwrap().doc.story(redrob_layout_doc::StoryId(sid)).unwrap().len();
         s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": n})).unwrap();
         s.execute("text.delete", &json!({})).unwrap();
         assert_eq!(s.doc().unwrap().doc.page_count(), 1);
@@ -536,11 +536,11 @@ mod pdf_page_tests {
         let b = it.bounds();
         assert!((b.width() - 300.0).abs() < 1.0 && (b.height() - 150.0).abs() < 1.0, "page 2's size: {b:?}");
         assert_eq!(d.assets.values().next().unwrap().page, 1);
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = redrob_layout_render::Renderer::new();
         rr.threads = 0;
         let img = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
         assert!(img.pixel(250, 170)[0] < 60, "page 2 (black) shows: {:?}", img.pixel(250, 170));
-        let pdf = designcraft_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
+        let pdf = redrob_layout_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
         assert!(String::from_utf8_lossy(&pdf).contains("/Subtype /Form") || String::from_utf8_lossy(&pdf).contains("/Subtype/Form"));
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -580,7 +580,7 @@ mod pdf_page_tests {
             .execute("file.place", &json!({"base64": b64, "name": "a.docx", "styleMap": {"Title": "Headline"}, "styleConflicts": "autoRename"}))
             .unwrap();
         let d = &s.doc().unwrap().doc;
-        let st = d.story(designcraft_doc::StoryId(r["story"].as_u64().unwrap())).unwrap();
+        let st = d.story(redrob_layout_doc::StoryId(r["story"].as_u64().unwrap())).unwrap();
         assert_eq!(st.paras.iter().map(|p| p.style.as_str()).collect::<Vec<_>>(), ["Headline", "Body_wrd_1"]);
         assert!(d.styles.para("Title").is_none(), "mapped styles aren't imported");
         assert_eq!(d.styles.para("Body").unwrap().chars.size, Some(9.0), "the document's Body is untouched");
@@ -605,10 +605,10 @@ mod pdf_page_tests {
             w.write_all(c.as_bytes()).unwrap();
         }
         let b64 = crate::cmd::base64_encode(&w.finish().unwrap().into_inner());
-        let basic = designcraft_doc::story::BASIC_PARAGRAPH;
+        let basic = redrob_layout_doc::story::BASIC_PARAGRAPH;
         let placed = |s: &Session, story: &serde_json::Value| {
             let d = &s.doc().unwrap().doc;
-            let st = d.story(designcraft_doc::StoryId(story["story"].as_u64().unwrap())).unwrap();
+            let st = d.story(redrob_layout_doc::StoryId(story["story"].as_u64().unwrap())).unwrap();
             let (_, para_chars) = d.styles.resolve_para(&st.paras[0]);
             let c = d.styles.resolve_char(&para_chars, st.format_after(0));
             (st.paras[0].style.clone(), c.size, c.font_family)

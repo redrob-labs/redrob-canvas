@@ -74,8 +74,8 @@ fn move_group_reorders() {
     assert_eq!(l.order()[0], Group::Color);
 }
 
-fn app_with_layers() -> (PhotocraftApp, photocraft_doc::LayerId, photocraft_doc::LayerId) {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+fn app_with_layers() -> (PhotocraftApp, redrob_photo_doc::LayerId, redrob_photo_doc::LayerId) {
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
     app.run("layer.new.layer", json!({})).unwrap();
     let pixel = app.session.active().unwrap().active_layer.unwrap();
@@ -179,13 +179,13 @@ fn dragging_the_splitter_resizes_and_survives_a_ui_state_round_trip() {
 
     // Remembered in the preferences once the mouse is up, and restored at the next launch.
     let prefs = h.state().session.prefs_to_json();
-    let mut s2 = photocraft_engine::Session::new();
+    let mut s2 = redrob_photo_engine::Session::new();
     s2.load_prefs_json(&prefs).unwrap();
     let mut app3 = PhotocraftApp::new(s2, crate::Services::default());
     restore(&mut app3);
     assert_eq!(app3.ui.dock, h.state().ui.dock);
     // …unless Remember Workspace Changes is off.
-    let mut s3 = photocraft_engine::Session::new();
+    let mut s3 = redrob_photo_engine::Session::new();
     s3.load_prefs_json(&prefs).unwrap();
     s3.prefs.edit(|p| p.workspace.remember_workspace_changes = false);
     let mut app4 = PhotocraftApp::new(s3, crate::Services::default());
@@ -436,10 +436,10 @@ fn dragging_a_tab_onto_another_group_moves_only_that_panel() {
     drag(&mut h, source, destination);
 
     let layout = h.state().ui.docking.as_ref().expect("moving one native tab promotes to the shared layout");
-    fn tabs<'a>(node: &'a craft_ui::docking::Node<String>, panel: &str) -> Option<&'a [String]> {
+    fn tabs<'a>(node: &'a redrob_craft_ui::docking::Node<String>, panel: &str) -> Option<&'a [String]> {
         match node {
-            craft_ui::docking::Node::Tabs { panels, .. } if panels.iter().any(|id| id == panel) => Some(panels),
-            craft_ui::docking::Node::Split { first, second, .. } => tabs(first, panel).or_else(|| tabs(second, panel)),
+            redrob_craft_ui::docking::Node::Tabs { panels, .. } if panels.iter().any(|id| id == panel) => Some(panels),
+            redrob_craft_ui::docking::Node::Split { first, second, .. } => tabs(first, panel).or_else(|| tabs(second, panel)),
             _ => None,
         }
     }
@@ -469,10 +469,10 @@ fn dragging_a_reordered_tab_onto_another_group_moves_that_panel() {
     drag(&mut h, source, destination);
 
     let layout = h.state().ui.docking.as_ref().expect("moving one native tab promotes to the shared layout");
-    fn tabs<'a>(node: &'a craft_ui::docking::Node<String>, panel: &str) -> Option<&'a [String]> {
+    fn tabs<'a>(node: &'a redrob_craft_ui::docking::Node<String>, panel: &str) -> Option<&'a [String]> {
         match node {
-            craft_ui::docking::Node::Tabs { panels, .. } if panels.iter().any(|id| id == panel) => Some(panels),
-            craft_ui::docking::Node::Split { first, second, .. } => tabs(first, panel).or_else(|| tabs(second, panel)),
+            redrob_craft_ui::docking::Node::Tabs { panels, .. } if panels.iter().any(|id| id == panel) => Some(panels),
+            redrob_craft_ui::docking::Node::Split { first, second, .. } => tabs(first, panel).or_else(|| tabs(second, panel)),
             _ => None,
         }
     }
@@ -703,7 +703,7 @@ fn theme_switch_keeps_the_selected_color_group_panel() {
 fn app_harness_rows(size: egui::Vec2, theme: ThemeKind, n: usize) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(size).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, theme);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.ui.theme = theme;
         app.run("file.new", json!({"width": 200, "height": 150})).unwrap();
         for i in 0..n {
@@ -954,7 +954,7 @@ fn navigator_preview_fills_its_group_and_keeps_aspect() {
         for tall in [150.0, 260.0, 420.0] {
             let mut h = Harness::builder().with_size(vec2(1200.0, 1000.0)).with_max_steps(64).build_eframe(move |cc| {
                 PhotocraftApp::setup_context(&cc.egui_ctx, theme);
-                let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+                let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
                 app.ui.theme = theme;
                 app.ui.panels.navigator = true;
                 app.ui.dock.heights.insert(Group::Navigator, tall);
@@ -1123,7 +1123,7 @@ fn a_tab_dragged_off_the_strip_moves_the_group_and_locking_stops_reordering() {
 
 #[test]
 fn brush_settings_window_is_closed_on_restart_but_can_be_reopened() {
-    let mut first = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut first = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     first.ui.panels.brush_settings = true;
     first.ui.panels.history = true;
     let saved = snapshot(&first);
@@ -1133,7 +1133,7 @@ fn brush_settings_window_is_closed_on_restart_but_can_be_reopened() {
     });
     let persisted = first.session.prefs_to_json();
 
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.load_prefs_json(&persisted).unwrap();
     let mut next = PhotocraftApp::new(session, crate::Services::default());
     restore(&mut next);
@@ -1144,7 +1144,7 @@ fn brush_settings_window_is_closed_on_restart_but_can_be_reopened() {
     crate::menus::invoke(&mut next, &ctx, "window.toggle.brushSettings", json!({})).unwrap();
     assert!(next.ui.panels.brush_settings, "Window > Brush Settings can still open it");
 
-    let mut workspace = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut workspace = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     apply(&mut workspace, &saved);
     assert!(workspace.ui.panels.brush_settings, "switching workspaces still restores their saved layout");
 }

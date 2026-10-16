@@ -90,7 +90,7 @@ mod tests {
     /// nothing.
     #[test]
     fn a_drag_from_an_empty_spot_selects_the_layers_it_touches() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
         app.sync_views();
         let mut ids = Vec::new();
@@ -119,7 +119,7 @@ mod tests {
     /// open the move-lock dialog, and releasing selects the unlocked layer the box touches.
     #[test]
     fn a_drag_on_the_locked_background_selects_instead_of_erroring() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 80, "height": 60})).unwrap();
         app.sync_views();
         app.run("layer.new.layer", json!({})).unwrap();

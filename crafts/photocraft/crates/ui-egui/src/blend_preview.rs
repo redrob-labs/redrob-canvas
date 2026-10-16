@@ -6,9 +6,9 @@
 
 use std::sync::Arc;
 
-use photocraft_color::BlendMode;
-use photocraft_doc::{DocId, Document, LayerId};
-use photocraft_geom::Rect;
+use redrob_photo_color::BlendMode;
+use redrob_photo_doc::{DocId, Document, LayerId};
+use redrob_photo_geom::Rect;
 
 use crate::PhotocraftApp;
 
@@ -46,7 +46,7 @@ pub(crate) fn hover(app: &mut PhotocraftApp, layer: LayerId, mode: Option<BlendM
         return;
     }
     app.blend_preview = mode.and_then(|mode| {
-        let area = photocraft_compose::change_bounds(st.doc.layer(layer)?, st.doc.bounds());
+        let area = redrob_photo_compose::change_bounds(st.doc.layer(layer)?, st.doc.bounds());
         Some(BlendPreview { doc, revision, layer, mode: Some(mode), frame, area, shown: None })
     });
 }
@@ -67,7 +67,7 @@ pub(crate) fn display_doc(app: &mut PhotocraftApp, idx: usize) -> Option<(Arc<Do
     let l = doc.layer_mut(p.layer).filter(|l| l.blend != mode)?;
     l.blend = mode;
     // Duotone documents display through their inks.
-    let doc = Arc::new(photocraft_engine::mode_cmds::display_document(&doc).unwrap_or(doc));
+    let doc = Arc::new(redrob_photo_engine::mode_cmds::display_document(&doc).unwrap_or(doc));
     p.shown = Some((key, doc.clone()));
     Some((doc, key))
 }

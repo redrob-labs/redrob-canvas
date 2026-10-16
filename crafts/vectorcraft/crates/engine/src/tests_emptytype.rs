@@ -1,9 +1,9 @@
 //! Point type placed with the Type tool and left empty is discarded when editing ends, without a
 //! trace in the history; frames (dragged area type, type in or on a path) stay.
 
+use redrob_vector_doc::{NodeId, NodeKind, TextKind};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 use serde_json::json;
-use vectorcraft_doc::{NodeId, NodeKind, TextKind};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 

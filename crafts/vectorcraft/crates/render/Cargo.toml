@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-render"
+name = "redrob-vector-render"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,12 +9,12 @@ description = "VectorCraft renderer: document to pixels (vello_cpu backend)"
 workspace = true
 
 [dependencies]
-vectorcraft-geom = { workspace = true }
-vectorcraft-color = { workspace = true }
-vectorcraft-doc = { workspace = true }
-vectorcraft-text = { workspace = true }
-vectorcraft-effects = { workspace = true }
-vectorcraft-brush = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-text = { workspace = true }
+redrob-vector-effects = { workspace = true }
+redrob-vector-brush = { workspace = true }
 vello_cpu = { workspace = true }
 # Filter types (Gaussian blur, drop shadow) are not re-exported by vello_cpu 0.2.
 vello_common = { version = "0.2", default-features = false }
@@ -30,7 +30,7 @@ log = { workspace = true }
 vello_cpu = { workspace = true, features = ["multithreading"] }
 
 [dev-dependencies]
-vectorcraft-testkit = { workspace = true }
+redrob-vector-testkit = { workspace = true }
 # Decoders the export tests read their files back with.
 image = { workspace = true, features = ["tga"] }
 tiff = "0.11"

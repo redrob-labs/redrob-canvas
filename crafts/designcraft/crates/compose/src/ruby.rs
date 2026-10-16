@@ -1,8 +1,8 @@
 //! Ruby and kenten: small glyphs set over laid-out text (to its right in vertical frames, where
 //! the frame's turn carries "above" there). They don't change line breaks or leading.
 
-use designcraft_fonts::ScopedFonts;
-use designcraft_geom::Shape as _;
+use redrob_layout_fonts::ScopedFonts;
+use redrob_layout_geom::Shape as _;
 
 use crate::{PlacedGlyph, RunStyle, upright_in_vertical};
 
@@ -18,7 +18,7 @@ fn set(base: &PlacedGlyph, text: &str, size: f64, base_size: f64) -> (Vec<Placed
     let y = -(base_size * 0.88 + size * 0.2);
     let mut x = 0.0;
     let mut out = Vec::new();
-    for sg in designcraft_fonts::shape(face, text, &[], |c| c) {
+    for sg in redrob_layout_fonts::shape(face, text, &[], |c| c) {
         let ch = text[sg.cluster..].chars().next().unwrap_or(' ');
         let adv = sg.x_advance as f64 * k;
         out.push(PlacedGlyph {
@@ -51,14 +51,14 @@ fn kenten(db: &ScopedFonts<'_>, b: &PlacedGlyph, size: f64, character: &str, fal
         && !base.face.covers(c)
         && let Some(face) = db.fallback_for(c, base.face.id(), None)
     {
-        base.face = designcraft_fonts::FaceRef::of(&face);
+        base.face = redrob_layout_fonts::FaceRef::of(&face);
     }
     let (mut dot, mut w) = set(&base, character, size * SCALE, size);
     if fallback && dot.first().is_some_and(|d| d.gid == 0) {
         (dot, w) = set(b, "\u{2022}", size * SCALE, size);
     }
     // Centre the mark's ink (its advance may hold it off centre) and sit it just over the text.
-    let ink = dot.first().map(|d| designcraft_fonts::FontDb::global().outline(&d.face, d.gid).bounding_box()).filter(|r| r.width() > 0.0);
+    let ink = dot.first().map(|d| redrob_layout_fonts::FontDb::global().outline(&d.face, d.gid).bounding_box()).filter(|r| r.width() > 0.0);
     for d in &mut dot {
         match ink {
             Some(r) => {

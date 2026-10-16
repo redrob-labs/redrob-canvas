@@ -11,11 +11,11 @@
 //! Stacks with such adjustment layers render for display this way ([`render_lab`]); flattening
 //! ([`flatten_lab`]) keeps the stored values for any plain stack.
 
-use photocraft_color::blend::BlendMode;
-use photocraft_color::{ColorMode, PixelFormat, SampleType};
-use photocraft_doc::{Document, Layer, LayerContent, LayerMask};
-use photocraft_geom::Rect;
-use photocraft_raster::Surface;
+use redrob_photo_color::blend::BlendMode;
+use redrob_photo_color::{ColorMode, PixelFormat, SampleType};
+use redrob_photo_doc::{Document, Layer, LayerContent, LayerMask};
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::Surface;
 
 use crate::Buffer;
 use crate::adjust::{self, LabOp};
@@ -235,7 +235,7 @@ pub fn render_lab(doc: &Document, rect: Rect, tile: i32) -> Option<Buffer> {
         stack.composite(r, &mut acc, &mut src, &mut mv);
         for (o, p) in px.iter_mut().zip(&acc) {
             if p[LAB] > 0.0 {
-                let [r, g, b] = photocraft_color::convert::lab_to_srgb([p[0] * 100.0, p[1] * 255.0 - 128.0, p[2] * 255.0 - 128.0]);
+                let [r, g, b] = redrob_photo_color::convert::lab_to_srgb([p[0] * 100.0, p[1] * 255.0 - 128.0, p[2] * 255.0 - 128.0]);
                 *o = [r, g, b, p[LAB]];
             }
         }

@@ -242,7 +242,7 @@ pub(crate) fn panel_tabs(
         .map(|(i, label)| ui.painter().layout_no_wrap((*label).to_string(), font.clone(), if i == selected { t.text_strong } else { t.text_dim }))
         .collect();
     let natural: Vec<_> = galleys.iter().map(|g| g.size().x + 24.0).collect();
-    let fit = craft_ui::tabs::fit(&natural, selected, area.width(), 40.0, 18.0);
+    let fit = redrob_craft_ui::tabs::fit(&natural, selected, area.width(), 40.0, 18.0);
     let mut out = PanelTabs { responses: Vec::with_capacity(fit.shown.len()), picked: None, right: area.left() };
     for (i, width) in fit.shown {
         let Some((key, _)) = tabs.get(i) else { continue };
@@ -259,7 +259,7 @@ pub(crate) fn panel_tabs(
         } else {
             galley.clone()
         };
-        let resp = craft_ui::tabs::Tab::new(ui.id().with((id, key)), label, i == selected)
+        let resp = redrob_craft_ui::tabs::Tab::new(ui.id().with((id, key)), label, i == selected)
             .sense(Sense::click_and_drag())
             .focus_stroke(Stroke::new(1.0, t.accent))
             .show_at(ui, rect, |ui, _| {
@@ -419,8 +419,8 @@ pub(crate) fn panel_body(app: &mut VectorcraftApp, ui: &mut Ui, id: &str, width:
 
 #[cfg(test)]
 mod tests {
+    use redrob_vector_engine::Session;
     use serde_json::json;
-    use vectorcraft_engine::Session;
 
     use super::*;
     use crate::toolbar::tests::{wheel, widget_rects};

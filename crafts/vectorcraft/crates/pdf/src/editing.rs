@@ -5,19 +5,19 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use craft_pdf::syntax::Pdf;
-use craft_pdf::syntax::object::{Array, Dict, Object, ObjectIdentifier, Stream, String as PdfString};
-use craft_pdf::write::backend as krilla;
 use krilla::embed::{AssociationKind, EmbeddedFile, MimeType};
 use krilla::metadata::DateTime;
+use redrob_craft_pdf::syntax::Pdf;
+use redrob_craft_pdf::syntax::object::{Array, Dict, Object, ObjectIdentifier, Stream, String as PdfString};
+use redrob_craft_pdf::write::backend as krilla;
 
 use crate::PdfError;
 use crate::lab_spot::find;
 
 /// The embedded file holding the native document (its name among the PDF's attachments).
-pub const EDITING_FILE: &str = "vectorcraft-editing.vectorcraft";
+pub const EDITING_FILE: &str = "vectorcraft-editing.rvector";
 /// The editing file's name from before the project was renamed: still read.
-pub const LEGACY_EDITING_FILE: &str = "drawcraft-editing.drawcraft";
+pub const LEGACY_EDITING_FILE: &str = "drawcraft-editing.drawcraft"; // legacy: upstream extension still read
 
 /// The editing file's description: this text, then the hash of the pages.
 const DESCRIPTION: &str = "Redrob Canvas editing data; page hash ";

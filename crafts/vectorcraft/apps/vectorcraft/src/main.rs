@@ -3,15 +3,15 @@
 //! Usage: `vectorcraft [--control <port> [--automation-read-root <dir>] [--automation-write-root <dir>]]
 //! [--in-window-menus] [files…]`
 //!
-//! `--in-window-menus` (or `VECTORCRAFT_IN_WINDOW_MENUS=1`) keeps the menus inside the window on
+//! `--in-window-menus` (or `REDROB_VECTOR_IN_WINDOW_MENUS=1`) keeps the menus inside the window on
 //! macOS instead of the macOS menu bar (`mac_menu`).
 //!
-//! `--control <port>` (or `VECTORCRAFT_CONTROL_PORT`; a port from 1 to 65535, or the app doesn't
+//! `--control <port>` (or `REDROB_VECTOR_CONTROL_PORT`; a port from 1 to 65535, or the app doesn't
 //! start) starts a localhost JSON-lines control server:
 //! `{"id":1,"method":"ui.inspect","params":{}}` → `{"id":1,"ok":true,"result":…}`.
-//! See `vectorcraft_ui_egui::control` for the methods. `--automation-read-root` and
-//! `--automation-write-root` (or `VECTORCRAFT_AUTOMATION_READ_ROOT` / `_WRITE_ROOT`) confine the
-//! files its requests read and write (`vectorcraft_engine::file_access`); the person at the
+//! See `redrob_vector_ui_egui::control` for the methods. `--automation-read-root` and
+//! `--automation-write-root` (or `REDROB_VECTOR_AUTOMATION_READ_ROOT` / `_WRITE_ROOT`) confine the
+//! files its requests read and write (`redrob_vector_engine::file_access`); the person at the
 //! keyboard isn't confined.
 #![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
 
@@ -46,12 +46,12 @@ mod window;
 mod window_frame;
 mod xwayland;
 
-use vectorcraft_engine::Session;
-use vectorcraft_engine::cmd::fileio;
-use vectorcraft_engine::file_access::{self, AutomationRoots};
-use vectorcraft_ui_egui::graphics::GraphicsLoss;
-use vectorcraft_ui_egui::picks::PickRequest;
-use vectorcraft_ui_egui::{ClipboardProbeFactory, FilePick, Services, VectorcraftApp};
+use redrob_vector_engine::Session;
+use redrob_vector_engine::cmd::fileio;
+use redrob_vector_engine::file_access::{self, AutomationRoots};
+use redrob_vector_ui_egui::graphics::GraphicsLoss;
+use redrob_vector_ui_egui::picks::PickRequest;
+use redrob_vector_ui_egui::{ClipboardProbeFactory, FilePick, Services, VectorcraftApp};
 
 struct App {
     app: VectorcraftApp,
@@ -88,7 +88,7 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         #[cfg(target_os = "macos")]
         {
-            let bar = vectorcraft_ui_egui::chrome::APP_BAR_HEIGHT;
+            let bar = redrob_vector_ui_egui::chrome::APP_BAR_HEIGHT;
             let inset = mac_window::center_buttons(frame, ui.ctx().zoom_factor(), bar);
             self.app.titlebar_inset = inset.unwrap_or(mac_window::DEFAULT_INSET);
         }
@@ -130,7 +130,7 @@ impl App {
         if self.graphics_lost && ctx.input(|i| i.viewport().close_requested()) {
             // The window can't show the Save Changes question: it closes, and the next launch
             // offers the changes back.
-            vectorcraft_ui_egui::background::wait_all(&mut self.app);
+            redrob_vector_ui_egui::background::wait_all(&mut self.app);
             return;
         }
         // Files from the Finder and the Dock wait while a file dialog is open: what asked for it runs
@@ -171,7 +171,7 @@ fn end_before_teardown(frames: u64) {
 /// can't be opened is reported to the user and on stderr; the others still open.
 fn open_files(app: &mut VectorcraftApp, files: Vec<String>) {
     for f in files {
-        if let Err(e) = vectorcraft_ui_egui::io::open_reporting(app, &f) {
+        if let Err(e) = redrob_vector_ui_egui::io::open_reporting(app, &f) {
             eprintln!("vectorcraft: {f}: {e}");
         }
     }
@@ -205,13 +205,13 @@ fn log_dir() -> Option<std::path::PathBuf> {
     Some(prefs_path()?.parent()?.join("logs"))
 }
 
-/// Runs without preferences (`VECTORCRAFT_NO_PREFS`, agents' test runs) neither read nor write them.
+/// Runs without preferences (`REDROB_VECTOR_NO_PREFS`, agents' test runs) neither read nor write them.
 fn prefs_enabled() -> bool {
-    std::env::var_os("VECTORCRAFT_NO_PREFS").is_none()
+    std::env::var_os("REDROB_VECTOR_NO_PREFS").is_none()
 }
 
 /// The saved UI preferences, read before the window opens (they hold its size and position).
-fn read_prefs() -> Option<vectorcraft_ui_egui::UiState> {
+fn read_prefs() -> Option<redrob_vector_ui_egui::UiState> {
     if !prefs_enabled() {
         return None;
     }
@@ -221,19 +221,19 @@ fn read_prefs() -> Option<vectorcraft_ui_egui::UiState> {
 
 /// Recover only optional persisted docking metadata. Runtime UiState and command decoding
 /// remains strict, and an unreadable workspace layout cannot discard unrelated preferences.
-fn decode_saved_prefs(bytes: &[u8]) -> Option<vectorcraft_ui_egui::UiState> {
+fn decode_saved_prefs(bytes: &[u8]) -> Option<redrob_vector_ui_egui::UiState> {
     use serde_json::{Map, Value, json};
 
     fn recover(object: &mut Map<String, Value>, hidden_key: &str) {
         if let Some(layout) = object.get("docking")
-            && serde_json::from_value::<vectorcraft_ui_egui::UiState>(json!({"docking": layout})).is_err()
+            && serde_json::from_value::<redrob_vector_ui_egui::UiState>(json!({"docking": layout})).is_err()
         {
             object.remove("docking");
         }
         if let Some(hidden) = object.get_mut(hidden_key) {
             if let Value::Object(entries) = hidden {
                 entries.retain(|panel, location| {
-                    serde_json::from_value::<vectorcraft_ui_egui::UiState>(json!({"docking_hidden": {panel: location}})).is_ok()
+                    serde_json::from_value::<redrob_vector_ui_egui::UiState>(json!({"docking_hidden": {panel: location}})).is_ok()
                 });
             } else {
                 object.remove(hidden_key);
@@ -254,14 +254,14 @@ fn decode_saved_prefs(bytes: &[u8]) -> Option<vectorcraft_ui_egui::UiState> {
     serde_json::from_value(value).ok()
 }
 
-fn load_prefs(app: &mut VectorcraftApp, saved: Option<vectorcraft_ui_egui::UiState>) {
+fn load_prefs(app: &mut VectorcraftApp, saved: Option<redrob_vector_ui_egui::UiState>) {
     if !prefs_enabled() {
         return;
     }
     if let Some(ui) = saved {
         app.ui = ui.sanitized();
     }
-    vectorcraft_ui_egui::prefs_dialog::restore(app);
+    redrob_vector_ui_egui::prefs_dialog::restore(app);
 }
 
 fn save_prefs(app: &VectorcraftApp) {
@@ -320,8 +320,8 @@ fn dialog_for<D: DialogSettings>(d: D, request: &PickRequest) -> D {
     let pick = match request {
         PickRequest::Open(pick) | PickRequest::Save(pick) => pick,
         PickRequest::OpenMany => {
-            return fileio::place_filters().fold(d.title(vectorcraft_ui_egui::i18n::t("Place")), |d, (name, exts)| {
-                d.filter(vectorcraft_ui_egui::i18n::tr_ctx(vectorcraft_ui_egui::i18n::current(), "file-filter", name), exts)
+            return fileio::place_filters().fold(d.title(redrob_vector_ui_egui::i18n::t("Place")), |d, (name, exts)| {
+                d.filter(redrob_vector_ui_egui::i18n::tr_ctx(redrob_vector_ui_egui::i18n::current(), "file-filter", name), exts)
             });
         }
         PickRequest::Folder => return d,
@@ -329,7 +329,7 @@ fn dialog_for<D: DialogSettings>(d: D, request: &PickRequest) -> D {
     let d = pick
         .filters
         .iter()
-        .fold(d, |d, (name, exts)| d.filter(vectorcraft_ui_egui::i18n::tr_ctx(vectorcraft_ui_egui::i18n::current(), "file-filter", name), exts));
+        .fold(d, |d, (name, exts)| d.filter(redrob_vector_ui_egui::i18n::tr_ctx(redrob_vector_ui_egui::i18n::current(), "file-filter", name), exts));
     let d = match &pick.folder {
         Some(folder) => d.folder(folder),
         None => d,
@@ -510,7 +510,8 @@ fn services(parent: Parent, ui: egui::Context) -> Services {
         pick_save: Some(Box::new(move |pick: &FilePick| pick_now(PickRequest::Save(pick.clone()), &p3).into_iter().next())),
         // Linux shows dialogs on a thread of their own (#592), macOS as sheets (#867); Windows
         // dialogs run the window's events while they are open.
-        start_pick: cfg!(unix).then(|| Box::new(move |request: PickRequest| start_pick(request, &p5, &ui)) as vectorcraft_ui_egui::picks::StartPick),
+        start_pick: cfg!(unix)
+            .then(|| Box::new(move |request: PickRequest| start_pick(request, &p5, &ui)) as redrob_vector_ui_egui::picks::StartPick),
         dialogs_are_sheets: cfg!(target_os = "macos"),
         wayland,
         read: Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string()))),
@@ -561,12 +562,12 @@ fn open_file(path: &str) -> Result<(), String> {
 
 /// The window, Dock, taskbar and app-switcher icon (`assets/app-icon/`, see its README). macOS gets
 /// the version with Apple's transparent margin; elsewhere the full-bleed tile. The app ID matches
-/// `packaging/linux/ai.storyteller.vectorcraft.desktop` so Wayland docks find the launcher icon.
+/// `packaging/linux/ai.storyteller.rvector.desktop` so Wayland docks find the launcher icon.
 fn app_icon() -> egui::IconData {
     #[cfg(target_os = "macos")]
     let png: &[u8] = include_bytes!("../../../assets/app-icon/vectorcraft-macos-512.png");
     #[cfg(not(target_os = "macos"))]
-    let png: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.vectorcraft.png");
+    let png: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.rvector.png");
     eframe::icon_data::from_png_bytes(png).unwrap_or_default()
 }
 
@@ -588,14 +589,14 @@ fn adapter_summary(info: &eframe::wgpu::AdapterInfo) -> String {
     format!("{} ({:?}, {:?})", info.name.trim(), info.backend, info.device_type)
 }
 
-/// Windows and Linux: no OS title bar; the app bar is the title bar (`vectorcraft_ui_egui::titlebar`).
+/// Windows and Linux: no OS title bar; the app bar is the title bar (`redrob_vector_ui_egui::titlebar`).
 /// macOS keeps its traffic lights over the integrated title strip.
 const CUSTOM_TITLEBAR: bool = !cfg!(target_os = "macos");
 
 /// Whether this start draws its own title bar: Windows and Linux do, unless Preferences ›
 /// User Interface › System Title Bar asks for the system's. Read from the saved preferences
 /// before the window opens; a missing or unreadable value keeps the default.
-fn custom_titlebar(saved: Option<&vectorcraft_ui_egui::UiState>) -> bool {
+fn custom_titlebar(saved: Option<&redrob_vector_ui_egui::UiState>) -> bool {
     CUSTOM_TITLEBAR && !saved.map(|ui| ui.engine_prefs.get("systemTitleBar").and_then(serde_json::Value::as_bool).unwrap_or(false)).unwrap_or(false)
 }
 
@@ -611,7 +612,7 @@ fn native_options(custom_titlebar: bool) -> eframe::NativeOptions {
             .with_titlebar_shown(false)
             .with_title_shown(false)
             .with_icon(app_icon())
-            .with_app_id("ai.storyteller.vectorcraft"),
+            .with_app_id("ai.storyteller.rvector"),
         #[cfg(feature = "windows7")]
         renderer: eframe::Renderer::Glow,
         ..Default::default()
@@ -624,9 +625,9 @@ fn main() -> std::process::ExitCode {
     let mut control = automation_args::ControlArg::default();
     let root_env = |name: &str| std::env::var_os(name).filter(|v| !v.is_empty()).map(std::path::PathBuf::from);
     let mut roots_args =
-        automation_args::AutomationArgs::new(root_env("VECTORCRAFT_AUTOMATION_READ_ROOT"), root_env("VECTORCRAFT_AUTOMATION_WRITE_ROOT"));
+        automation_args::AutomationArgs::new(root_env("REDROB_VECTOR_AUTOMATION_READ_ROOT"), root_env("REDROB_VECTOR_AUTOMATION_WRITE_ROOT"));
     let mut files = Vec::new();
-    let mut in_window_menus = std::env::var_os("VECTORCRAFT_IN_WINDOW_MENUS").is_some_and(|v| !v.is_empty() && v != "0");
+    let mut in_window_menus = std::env::var_os("REDROB_VECTOR_IN_WINDOW_MENUS").is_some_and(|v| !v.is_empty() && v != "0");
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match roots_args.consume(&a, &mut args).and_then(|root| if root { Ok(true) } else { control.consume(&a, &mut args) }) {
@@ -650,7 +651,7 @@ fn main() -> std::process::ExitCode {
     // After the arguments: `--control` and `--version` win over a bad environment value.
     let control_port = match control.port {
         Some(port) => Some(port),
-        None => match automation_args::env_control_port(std::env::var_os("VECTORCRAFT_CONTROL_PORT")) {
+        None => match automation_args::env_control_port(std::env::var_os("REDROB_VECTOR_CONTROL_PORT")) {
             Ok(port) => port,
             Err(e) => {
                 eprintln!("vectorcraft: {e}");
@@ -660,7 +661,7 @@ fn main() -> std::process::ExitCode {
     };
     // Before desktop services, so every start-up warning is recorded (`logging`).
     let logger = logging::install();
-    vectorcraft_ui_egui::i18n::detect_system_lang_in_background();
+    redrob_vector_ui_egui::i18n::detect_system_lang_in_background();
     // Before the first font scan (the app's start): the fonts font services load (#579).
     #[cfg(all(windows, not(target_vendor = "win7")))]
     system_fonts::install();
@@ -790,7 +791,7 @@ fn main() -> std::process::ExitCode {
     #[cfg(feature = "wgpu")]
     let created = startup.clone();
     // A panic that ends the window (egui-wgpu's own, #502) is caught here: never a crash.
-    let outcome = vectorcraft_engine::guard::catch_panic(|| {
+    let outcome = redrob_vector_engine::guard::catch_panic(|| {
         eframe::run_native(
             "VectorCraft",
             options,
@@ -816,7 +817,7 @@ fn main() -> std::process::ExitCode {
                 }
                 // Data Recovery copies live next to the preferences too (none for runs without
                 // preferences, such as agents' test runs, unless the recoveryFolder preference is set).
-                if std::env::var_os("VECTORCRAFT_NO_PREFS").is_none() {
+                if std::env::var_os("REDROB_VECTOR_NO_PREFS").is_none() {
                     let recovery = prefs_path().and_then(|p| Some(p.parent()?.join("Data Recovery").to_string_lossy().to_string()));
                     app.session.recovery.set_default_folder(recovery);
                 }
@@ -893,19 +894,19 @@ fn main() -> std::process::ExitCode {
 mod tests {
     use super::*;
 
-    fn ui_state_with_prefs(engine_prefs: serde_json::Value) -> vectorcraft_ui_egui::UiState {
-        vectorcraft_ui_egui::UiState { engine_prefs, ..Default::default() }
+    fn ui_state_with_prefs(engine_prefs: serde_json::Value) -> redrob_vector_ui_egui::UiState {
+        redrob_vector_ui_egui::UiState { engine_prefs, ..Default::default() }
     }
 
     #[test]
     fn unreadable_saved_docking_keeps_preferences_and_every_workspace() {
         use serde_json::json;
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("window.panel.float", json!({"panel":"layers"})).unwrap();
         app.ui.toolbar = false;
         app.ui.engine_prefs = json!({"interfaceLanguage":"fr", "uiBrightness":"light"});
         app.ui.custom_workspaces =
-            vec![vectorcraft_ui_egui::workspaces::capture(&app.ui, "Future"), vectorcraft_ui_egui::workspaces::capture(&app.ui, "Valid")];
+            vec![redrob_vector_ui_egui::workspaces::capture(&app.ui, "Future"), redrob_vector_ui_egui::workspaces::capture(&app.ui, "Valid")];
         let original = serde_json::to_value(&app.ui).unwrap();
         let valid_location = original["docking_hidden"]["layers"].clone();
         assert!(valid_location.is_object());
@@ -916,7 +917,7 @@ mod tests {
                 raw["docking_hidden"] = invalid_hidden.clone();
                 raw["custom_workspaces"][0]["docking"] = invalid_layout.clone();
                 raw["custom_workspaces"][0]["dockingHidden"] = invalid_hidden.clone();
-                assert!(serde_json::from_value::<vectorcraft_ui_egui::UiState>(raw.clone()).is_err(), "runtime serde stays strict");
+                assert!(serde_json::from_value::<redrob_vector_ui_egui::UiState>(raw.clone()).is_err(), "runtime serde stays strict");
                 let loaded = decode_saved_prefs(&serde_json::to_vec(&raw).unwrap()).unwrap();
                 assert_eq!(loaded.engine_prefs, app.ui.engine_prefs);
                 assert!(!loaded.toolbar);

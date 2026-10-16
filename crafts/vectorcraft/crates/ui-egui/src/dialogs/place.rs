@@ -45,7 +45,7 @@ fn body(_: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
             for (i, f) in files.iter().enumerate() {
                 let path = f.get("path").and_then(Value::as_str);
                 let name = path
-                    .map(vectorcraft_engine::cmd::fileio::file_name)
+                    .map(redrob_vector_engine::cmd::fileio::file_name)
                     .or_else(|| f.get("name").and_then(Value::as_str).map(str::to_string))
                     .unwrap_or_default();
                 ui.horizontal(|ui| {

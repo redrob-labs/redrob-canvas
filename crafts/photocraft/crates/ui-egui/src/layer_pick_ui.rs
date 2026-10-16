@@ -119,7 +119,7 @@ mod tests {
     /// 200 × 200: a white Background, "Red" (a square in the middle), and "Hidden" (all over,
     /// hidden). Returns the app and the (background, red, hidden) ids.
     fn app() -> (PhotocraftApp, u64, u64, u64) {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 200, "height": 200})).unwrap();
         let bg = app.session.active().unwrap().active_layer.unwrap().0;
         app.run("layer.new.layer", json!({"name": "Red"})).unwrap();
@@ -158,7 +158,7 @@ mod tests {
             assert!(a.ui.layer_menu.is_none());
         }
         // A transparent document: nothing to list.
-        let mut b = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut b = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         assert!(!open(&mut b, &Context::default(), [0.0, 0.0], 1.0, 1.0), "no document");
         b.run("file.new", json!({"width": 20, "height": 20, "background": "transparent"})).unwrap();
         assert!(!open(&mut b, &Context::default(), [0.0, 0.0], 1.0, 1.0));

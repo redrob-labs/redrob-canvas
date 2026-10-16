@@ -1,7 +1,7 @@
 //! Render synthetic color-picker evidence without capturing the user's desktop.
-//! cargo run -p photocraft-ui-egui --example color_picker_demo -- /tmp/color-picker
+//! cargo run -p redrob-photo-ui-egui --example color_picker_demo -- /tmp/color-picker
 use egui_kittest::{Harness, kittest::Queryable};
-use photocraft_ui_egui::{
+use redrob_photo_ui_egui::{
     PhotocraftApp, Services,
     screen_picker::{self, Capture, Pending, ScreenImage},
 };
@@ -10,7 +10,7 @@ use serde_json::json;
 fn main() {
     let output = std::env::args().nth(1).unwrap_or_else(|| "/tmp/photocraft-color-picker".into());
     std::fs::create_dir_all(&output).expect("output directory");
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.execute("file.new", json!({"width":800,"height":500,"background":"white"})).unwrap();
     session.execute("type.create", json!({"text":"Color from anywhere","color":"#2070c0","size":48,"x":90,"y":200})).unwrap();
     let mut text = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).with_pixels_per_point(1.0).with_max_steps(64).wgpu().build_eframe(move |cc| {
@@ -24,7 +24,7 @@ fn main() {
             ..Default::default()
         };
         let mut app = PhotocraftApp::new(session, services);
-        app.ui.tool = photocraft_ui_egui::state::Tool::Type;
+        app.ui.tool = redrob_photo_ui_egui::state::Tool::Type;
         app
     });
     text.run_steps(8);
@@ -67,7 +67,7 @@ fn main() {
                 screen_picker::button(ui, egui::Id::new("demo"));
             }
         },
-        PhotocraftApp::new(photocraft_engine::Session::new(), services),
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), services),
     );
     loupe.run_steps(2);
     loupe.get_by_label("Pick screen color").click();

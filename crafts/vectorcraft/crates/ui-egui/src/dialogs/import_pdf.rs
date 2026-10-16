@@ -10,9 +10,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use redrob_vector_engine::cmd::fileio;
+use redrob_vector_pdf::{Choice, CropTo, PdfError};
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::fileio;
-use vectorcraft_pdf::{Choice, CropTo, PdfError};
 
 use super::DialogSpec;
 use crate::state::Dialog;
@@ -52,7 +52,7 @@ pub(super) fn place_source(app: &VectorcraftApp, p: &Value, wanted: impl Fn(&str
             let bytes = app.services.read.as_ref().and_then(|r| r(path).ok())?;
             Some((path.to_string(), bytes, Some(path.to_string())))
         }
-        (None, Some(b64)) => Some((s("name").unwrap_or("Untitled").to_string(), vectorcraft_format::base64_decode(b64)?, None)),
+        (None, Some(b64)) => Some((s("name").unwrap_or("Untitled").to_string(), redrob_vector_format::base64_decode(b64)?, None)),
         _ => None,
     }
 }
@@ -71,7 +71,7 @@ pub(super) fn with_file(p: Option<&Value>, d: &Dialog, file: &DialogFile) -> Val
         Some(path) => p["path"] = json!(path),
         None => {
             p["name"] = json!(d.str("name"));
-            p["dataBase64"] = json!(vectorcraft_format::base64_encode(&file.bytes));
+            p["dataBase64"] = json!(redrob_vector_format::base64_encode(&file.bytes));
         }
     }
     p
@@ -85,7 +85,7 @@ pub(super) fn preview_texture(
     key: egui::Id,
     name: &str,
     size: f32,
-    doc: impl FnOnce() -> Option<vectorcraft_engine::doc::Document>,
+    doc: impl FnOnce() -> Option<redrob_vector_engine::doc::Document>,
 ) -> Option<egui::TextureHandle> {
     if let Some(t) = ctx.data(|m| m.get_temp::<Option<egui::TextureHandle>>(key)) {
         return t;
@@ -122,10 +122,10 @@ pub fn offer(app: &mut VectorcraftApp, name: &str, bytes: &[u8], path: Option<St
     // A file carrying its Redrob Canvas document (a saved .ai, or a PDF saved with Preserve Editing)
     // opens as that document, every artboard and layer: there are no pages to pick. Placing still
     // asks, since a place takes one page.
-    if place.is_none() && vectorcraft_pdf::editing_with(bytes, None).is_some() {
+    if place.is_none() && redrob_vector_pdf::editing_with(bytes, None).is_some() {
         return false;
     }
-    let (pages, locked) = match vectorcraft_pdf::info(bytes, None) {
+    let (pages, locked) = match redrob_vector_pdf::info(bytes, None) {
         Ok(i) if i.pages.len() > 1 => (i.pages.len(), false),
         Err(PdfError::NeedsPassword) => (0, true),
         _ => return false,
@@ -184,7 +184,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
     let file = app.ui.dialog_file.clone().ok_or("the PDF is no longer loaded")?;
     let mut d = d.clone();
     if d.bool("__locked") {
-        let info = vectorcraft_pdf::info(&file.bytes, password(&d).as_deref()).map_err(|e| e.to_string())?;
+        let info = redrob_vector_pdf::info(&file.bytes, password(&d).as_deref()).map_err(|e| e.to_string())?;
         d.fields.insert("__locked".into(), json!(false));
         d.fields.insert("pageCount".into(), json!(info.pages.len()));
         if info.pages.len() > 1 {

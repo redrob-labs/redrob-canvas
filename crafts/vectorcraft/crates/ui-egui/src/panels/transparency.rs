@@ -5,10 +5,10 @@
 //! Page Knockout Group.
 
 use egui::{Sense, Stroke, StrokeKind, Ui, vec2};
+use redrob_vector_color::{BlendMode, Paint};
+use redrob_vector_doc::{Knockout, Node, NodeId, OpacityMask};
+use redrob_vector_engine::cmd::TransparencyInfo;
 use serde_json::json;
-use vectorcraft_color::{BlendMode, Paint};
-use vectorcraft_doc::{Knockout, Node, NodeId, OpacityMask};
-use vectorcraft_engine::cmd::TransparencyInfo;
 
 use super::{current_paints, current_transparency, live_run, pstate, selection_len, set_pstate};
 use crate::theme::Tokens;
@@ -18,7 +18,7 @@ use crate::{VectorcraftApp, icons};
 /// Interaction id of the mask thumbnail.
 pub(super) const MASK_THUMB: &str = "tr-mask-thumb";
 
-/// The panel's values ([`vectorcraft_engine::Session::transparency_info`]) and its first target
+/// The panel's values ([`redrob_vector_engine::Session::transparency_info`]) and its first target
 /// (the selection, or the object whose mask is being edited), recomputed only when the document
 /// or the selection changes.
 fn state(app: &VectorcraftApp, ctx: &egui::Context) -> (TransparencyInfo, Option<Node>) {
@@ -250,10 +250,10 @@ fn mask_items(mask: Option<&OpacityMask>, can_make: bool) -> [(&'static str, &'s
 /// A rendered thumbnail of `n` (which may live outside the tree, like mask art). One texture per
 /// slot, re-rendered only when the document revision, object or size changes, and not during a
 /// drag (every pointer move is a new revision): the last one stays until it ends.
-fn node_thumb(app: &VectorcraftApp, ui: &Ui, slot: &str, n: &vectorcraft_doc::Node, r: egui::Rect, bg: Option<[u8; 4]>) -> bool {
+fn node_thumb(app: &VectorcraftApp, ui: &Ui, slot: &str, n: &redrob_vector_doc::Node, r: egui::Rect, bg: Option<[u8; 4]>) -> bool {
     use std::cell::RefCell;
     thread_local! {
-        static RENDERER: RefCell<vectorcraft_render::Renderer> = RefCell::new(vectorcraft_render::Renderer::new());
+        static RENDERER: RefCell<redrob_vector_render::Renderer> = RefCell::new(redrob_vector_render::Renderer::new());
     }
     let Some(st) = app.session.active() else { return false };
     let px = (r.width().min(r.height()) * ui.ctx().pixels_per_point()).round().max(8.0) as u32;
@@ -279,7 +279,7 @@ fn node_thumb(app: &VectorcraftApp, ui: &Ui, slot: &str, n: &vectorcraft_doc::No
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// Run the panel and its menu for one headless frame: the texts drawn.
     fn frame(app: &mut VectorcraftApp) -> Vec<String> {
@@ -318,7 +318,7 @@ mod tests {
         assert!(texts.iter().any(|t| t == "60%"), "the masked object's opacity, not the mask art's: {texts:?}");
         assert!(texts.iter().any(|t| t == "Release"));
         let (info, n) = state(&app, &egui::Context::default());
-        assert_eq!((info.ids, n.as_ref().map(|n| n.id.0)), (vec![vectorcraft_doc::NodeId(a)], Some(a)));
+        assert_eq!((info.ids, n.as_ref().map(|n| n.id.0)), (vec![redrob_vector_doc::NodeId(a)], Some(a)));
         // The menu is enabled for the masked object while editing (Make is not).
         let items = mask_items(n.as_ref().and_then(|n| n.extras().mask.as_deref()), false);
         assert_eq!(items.map(|(_, _, on)| on), [false, true, true, true]);
@@ -328,7 +328,7 @@ mod tests {
         run(&mut app, "transparency.set", json!({"blend": "Multiply"}));
         frame(&mut app);
         let st = app.session.active().unwrap();
-        let obj = st.doc.node(vectorcraft_doc::NodeId(a)).unwrap();
+        let obj = st.doc.node(redrob_vector_doc::NodeId(a)).unwrap();
         let m = obj.extras().mask.as_ref().unwrap();
         assert!(!m.clip && !m.linked && obj.blend == BlendMode::Multiply);
         assert!(st.doc.mask_edit.is_some());

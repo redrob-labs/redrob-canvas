@@ -7,7 +7,7 @@
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, TryRecvError};
 use std::time::{Duration, Instant};
 
-use vectorcraft_engine::cmd::clipboard::PASTE_ORDER;
+use redrob_vector_engine::cmd::clipboard::PASTE_ORDER;
 
 use crate::sysclip::ClipboardProbeFactory;
 

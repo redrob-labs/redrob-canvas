@@ -21,7 +21,7 @@ fn clipping_indicator_points_down_inside_the_existing_row_slot() {
 }
 
 fn harness(theme: crate::theme::ThemeKind, width: f32, scale: f32, gpu: bool) -> Harness<'static, PhotocraftApp> {
-    let mut session = photocraft_engine::Session::new();
+    let mut session = redrob_photo_engine::Session::new();
     session.execute("prefs.set", json!({"path": "interface.language", "value": "en"})).unwrap();
     session.execute("file.new", json!({"width": 64, "height": 64, "background": "white"})).unwrap();
     let upper = session.execute("layer.newFillLayer.gradient", json!({"from": "#235b49", "to": "#a7d4ab", "angle": 90})).unwrap()["layer"].as_u64().unwrap();
@@ -99,8 +99,8 @@ fn write_clipping_indicator_preview() {
                     .unwrap();
                 let rgba = image.pixels.iter().flat_map(|pixel| pixel.to_array()).collect();
                 let image =
-                    photocraft_codecs::Image::from_u8(image.size[0] as u32, image.size[1] as u32, photocraft_codecs::ChannelLayout::Rgba, rgba).unwrap();
-                let png = photocraft_codecs::encode(&image, photocraft_codecs::Format::Png, &Default::default()).unwrap();
+                    redrob_photo_codecs::Image::from_u8(image.size[0] as u32, image.size[1] as u32, redrob_photo_codecs::ChannelLayout::Rgba, rgba).unwrap();
+                let png = redrob_photo_codecs::encode(&image, redrob_photo_codecs::Format::Png, &Default::default()).unwrap();
                 std::fs::write(output.join(format!("{}-{width:.0}-{scale:.0}x.png", theme.id())), png).unwrap();
             }
         }

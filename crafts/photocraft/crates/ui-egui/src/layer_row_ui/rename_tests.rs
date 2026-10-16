@@ -11,8 +11,8 @@ use super::{recorded, rename, renaming};
 use crate::PhotocraftApp;
 
 /// A document with layers "Alpha", "Beta" and "Gamma" (Gamma on top and active).
-fn session() -> (photocraft_engine::Session, [u64; 3]) {
-    let mut s = photocraft_engine::Session::new();
+fn session() -> (redrob_photo_engine::Session, [u64; 3]) {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     let ids = ["Alpha", "Beta", "Gamma"].map(|n| s.execute("layer.new.layer", json!({"name": n})).unwrap()["layer"].as_u64().unwrap());
     (s, ids)
@@ -33,7 +33,7 @@ fn harness(ppp: f32) -> (Harness<'static, PhotocraftApp>, [u64; 3]) {
 }
 
 fn name(h: &Harness<'_, PhotocraftApp>, layer: u64) -> String {
-    h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(layer)).unwrap().name.clone()
+    h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(layer)).unwrap().name.clone()
 }
 
 /// Where `layer`'s name is drawn in the Layers panel.
@@ -136,7 +136,7 @@ fn enter_and_tab_commit_and_escape_cancels() {
     key(&mut h, Key::Escape);
     assert_eq!((name(&h, c), renaming(&h.ctx)), ("Gamma".into(), None), "Esc cancels");
     // Esc only cancelled the rename: the document and the layer selection are untouched.
-    assert_eq!(h.state().session.active().unwrap().active_layer, Some(photocraft_doc::LayerId(c)));
+    assert_eq!(h.state().session.active().unwrap().active_layer, Some(redrob_photo_doc::LayerId(c)));
 
     // An empty or unchanged name renames nothing.
     start(&mut h, c);
@@ -207,7 +207,7 @@ fn a_rename_ends_when_its_layer_goes_away() {
     start(&mut h, a);
     h.state_mut().run("layer.select", json!({"layer": a})).unwrap();
     h.state_mut().run("layer.delete", json!({})).unwrap();
-    assert!(h.state().session.active().unwrap().doc.layer(photocraft_doc::LayerId(a)).is_none());
+    assert!(h.state().session.active().unwrap().doc.layer(redrob_photo_doc::LayerId(a)).is_none());
     h.run_steps(3);
     assert_eq!(renaming(&h.ctx), None);
     // The keyboard is back to the tools: V selects the Move tool.
@@ -249,7 +249,7 @@ fn double_click_beside_the_name_opens_layer_style() {
     double_click(&mut h, beside);
     assert_eq!(styles(&h), 1, "Layer Style opened");
     assert_eq!(renaming(&h.ctx), None, "not a rename");
-    assert_eq!(h.state().session.active().unwrap().active_layer, Some(photocraft_doc::LayerId(a)));
+    assert_eq!(h.state().session.active().unwrap().active_layer, Some(redrob_photo_doc::LayerId(a)));
     h.state_mut().ui.dialogs.clear();
     h.run_steps(2);
     // The name still renames.

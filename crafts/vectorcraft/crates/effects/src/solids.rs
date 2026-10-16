@@ -2,11 +2,11 @@
 //! exporter. Like Revolve, the source path stays editable and the effect draws its 3D faces.
 use std::sync::Arc;
 
+use redrob_vector_doc::color::{BlendMode, Color, Paint};
+use redrob_vector_doc::{Appearance, AppearanceItem, Effect, FillLayer, Node, NodeKind, StrokeLayer};
+use redrob_vector_geom::{FillRule, PathData, Rect};
+use redrob_vector_three_d::{Bevel, BevelShape, Extrude, Facet, Inflate, View};
 use serde_json::Value;
-use vectorcraft_doc::color::{BlendMode, Color, Paint};
-use vectorcraft_doc::{Appearance, AppearanceItem, Effect, FillLayer, Node, NodeKind, StrokeLayer};
-use vectorcraft_geom::{FillRule, PathData, Rect};
-use vectorcraft_three_d::{Bevel, BevelShape, Extrude, Facet, Inflate, View};
 
 use crate::util::{flag, num, text};
 use crate::{GeomContext, apply_geometry_with, is_geometry};
@@ -62,8 +62,8 @@ pub fn view_options(p: &Value) -> View {
         rotation_y: num(p, "rotationY", ROTATION_PRESETS[6].1[1]),
         rotation_z: num(p, "rotationZ", ROTATION_PRESETS[6].1[2]),
         perspective: num(p, "perspectiveAngle", 0.0),
-        light_rotation: num(p, "lightRotation", vectorcraft_three_d::DEFAULT_LIGHT.0),
-        light_height: num(p, "lightHeight", vectorcraft_three_d::DEFAULT_LIGHT.1),
+        light_rotation: num(p, "lightRotation", redrob_vector_three_d::DEFAULT_LIGHT.0),
+        light_height: num(p, "lightHeight", redrob_vector_three_d::DEFAULT_LIGHT.1),
         light_behind: flag(p, "lightBehind", false),
         light_intensity: num(p, "lightIntensity", 80.0) / 100.0,
         light_softness: num(p, "lightSoftness", 0.0) / 100.0,
@@ -116,9 +116,9 @@ fn profile(n: &Node) -> Option<(PathData, FillRule)> {
 fn facets(id: &str, path: &PathData, rule: FillRule, bounds: Rect, p: &Value) -> Result<Vec<Facet>, String> {
     let view = view_options(p);
     match id {
-        EXTRUDE => vectorcraft_three_d::extrude(path, rule, bounds, extrude_options(p), view),
-        INFLATE => vectorcraft_three_d::inflate(path, rule, bounds, inflate_options(p), view),
-        _ => vectorcraft_three_d::plane(path, rule, bounds, view),
+        EXTRUDE => redrob_vector_three_d::extrude(path, rule, bounds, extrude_options(p), view),
+        INFLATE => redrob_vector_three_d::inflate(path, rule, bounds, inflate_options(p), view),
+        _ => redrob_vector_three_d::plane(path, rule, bounds, view),
     }
 }
 

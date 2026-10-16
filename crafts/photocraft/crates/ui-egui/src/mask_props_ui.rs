@@ -1,6 +1,6 @@
 //! Non-destructive layer-mask controls (pixel and vector), shared by docked and floating Properties.
 
-use photocraft_doc::Layer;
+use redrob_photo_doc::Layer;
 use serde_json::json;
 
 use crate::props_layout::COL_GAP;

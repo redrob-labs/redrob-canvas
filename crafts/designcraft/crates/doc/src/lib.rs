@@ -44,8 +44,6 @@ pub use datamerge::{
     DataField, DataFieldKind, DataMerge, DataSource, Delimiter, Fingerprint, MergeOptions, Placeholder, PlaceholderAnchor, PlaceholderRole,
     SourceStatus,
 };
-pub use designcraft_color as color;
-pub use designcraft_geom as geom;
 pub use edit::{ItemLoc, ItemPath, SpreadRef, item_hit as edit_hit};
 pub use endnotes::{ENDNOTE_REF, EditorialNote, EndnoteOptions, NOTE_MARK};
 pub use flex::{FlexAlign, FlexDirection, FlexJustify, FlexLayout, FlexSize};
@@ -54,14 +52,16 @@ pub use index::{INDEX_MARK, IndexRef};
 pub use item::*;
 pub use notes::{FOOTNOTE_REF, FOOTNOTE_TABLE, Footnote, FootnoteOptions};
 pub use page::*;
+pub use redrob_layout_color as color;
+pub use redrob_layout_geom as geom;
 pub use selection::*;
 pub use story::*;
 pub use styles::*;
 pub use table::*;
 pub use xref::{ANCHOR_MARK, CrossRef, TextAnchor, XREF_MARK, XrefFormat};
 
-use designcraft_color::Swatch;
-use designcraft_geom::Unit;
+use redrob_layout_color::Swatch;
+use redrob_layout_geom::Unit;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, thiserror::Error, PartialEq)]
@@ -726,8 +726,8 @@ impl Document {
         if global { self.settings.global_light } else { angle }
     }
 
-    pub fn resolve_color(&self, swatch: &str, tint: f32) -> Option<designcraft_color::Color> {
-        designcraft_color::swatch::resolve(&self.swatches, swatch, tint)
+    pub fn resolve_color(&self, swatch: &str, tint: f32) -> Option<redrob_layout_color::Color> {
+        redrob_layout_color::swatch::resolve(&self.swatches, swatch, tint)
     }
 
     /// Validate structural invariants (ids unique, threads consistent, stories well-formed).

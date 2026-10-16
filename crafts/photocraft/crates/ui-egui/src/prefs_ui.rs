@@ -3,19 +3,19 @@
 //! [`crate::Services`], applying the interface theme, autosave and crash recovery, and the
 //! history log.
 //!
-//! The values live in the engine ([`photocraft_engine::prefs::Preferences`], so agents read and
+//! The values live in the engine ([`redrob_photo_engine::prefs::Preferences`], so agents read and
 //! change them with `prefs.get` / `prefs.set`); this module only edits a working copy in a dialog
 //! and commits it with those commands on Apply or OK.
 
 use std::collections::{BTreeMap, HashMap, VecDeque};
 
 use egui::{Color32, RichText, Sense, vec2};
-use photocraft_doc::DocId;
-use photocraft_engine::jobs::{JobEvent, JobId, JobOutcome, Started};
+use redrob_photo_doc::DocId;
+use redrob_photo_engine::jobs::{JobEvent, JobId, JobOutcome, Started};
 #[cfg(test)]
-use photocraft_engine::prefs::Theme;
-use photocraft_engine::prefs::{self, AppearanceMode, DarkTheme, LightTheme, SECTIONS, Theme as SavedTheme};
-use photocraft_engine::snap::{SnapLine, SnapTargets};
+use redrob_photo_engine::prefs::Theme;
+use redrob_photo_engine::prefs::{self, AppearanceMode, DarkTheme, LightTheme, SECTIONS, Theme as SavedTheme};
+use redrob_photo_engine::snap::{SnapLine, SnapTargets};
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -276,7 +276,7 @@ fn start_next_recovery(app: &mut PhotocraftApp) {
             move |ctx| {
                 ctx.check()?;
                 ctx.progress(0.0, "Loading recovery data");
-                let doc = (r.load)().map_err(photocraft_engine::EngineError::Other)?;
+                let doc = (r.load)().map_err(redrob_photo_engine::EngineError::Other)?;
                 ctx.check()?;
                 Ok(doc)
             },
@@ -284,7 +284,7 @@ fn start_next_recovery(app: &mut PhotocraftApp) {
                 let active = s.active().map(|st| st.doc.id);
                 let first = s.documents().is_empty();
                 s.add_document(doc, r.path);
-                let st = s.active_mut().ok_or(photocraft_engine::EngineError::NoDocument)?;
+                let st = s.active_mut().ok_or(redrob_photo_engine::EngineError::NoDocument)?;
                 st.saved_revision = 0;
                 let (id, revision) = (st.doc.id, st.revision);
                 if let Some(index) = active.and_then(|id| s.documents().iter().position(|st| st.doc.id == id)) {
@@ -600,7 +600,7 @@ pub(crate) fn save_preferences(app: &mut PhotocraftApp) -> Result<(), String> {
 /// Linked smart objects follow their files while the document is open, as in Photoshop: every two
 /// seconds, and as soon as the window comes back to the front (after saving in another app), stamp
 /// the active document's linked files on a worker thread and re-render the layers of the ones that
-/// changed ([`photocraft_engine::link_watch`]).
+/// changed ([`redrob_photo_engine::link_watch`]).
 #[cfg(not(target_arch = "wasm32"))]
 fn link_updates(app: &mut PhotocraftApp, ctx: &egui::Context) {
     match app.session.poll_link_scan() {
@@ -622,7 +622,7 @@ fn link_updates(app: &mut PhotocraftApp, ctx: &egui::Context) {
     let focused = ctx.input(|i| i.focused);
     let was_focused: bool = ctx.data(|d| d.get_temp(focus_key)).unwrap_or(focused);
     ctx.data_mut(|d| d.insert_temp(focus_key, focused));
-    let has_links = app.session.active().is_some_and(|d| !photocraft_engine::link_watch::linked_files(&d.doc).is_empty());
+    let has_links = app.session.active().is_some_and(|d| !redrob_photo_engine::link_watch::linked_files(&d.doc).is_empty());
     if !has_links {
         return;
     }
@@ -736,7 +736,7 @@ fn history_log(app: &mut PhotocraftApp) {
     let Some(append) = app.services.append_text.as_mut() else { return };
     let mut text = String::new();
     for (id, params) in &app.session.journal[start..] {
-        let label = photocraft_engine::commands::find(id).map_or(id.as_str(), |c| c.label).trim_end_matches('…');
+        let label = redrob_photo_engine::commands::find(id).map_or(id.as_str(), |c| c.label).trim_end_matches('…');
         match hl.detail {
             prefs::LogDetail::SessionsOnly => {
                 if matches!(id.as_str(), "file.new" | "file.open" | "file.close" | "file.openAs") {
@@ -771,10 +771,10 @@ pub fn shortcut_items(app: &PhotocraftApp) -> Vec<(String, String, Vec<String>, 
     // Commands without a menu item: the colour and fill keys (D, X, ⌥⌫…) sit under Tools, as
     // Photoshop lists its colour keys in the Tools shortcut set, after the rest; then the held
     // temporary tools (#249).
-    let tools_key = |id: &str| id.starts_with("tools.") || photocraft_engine::fill_key_cmds::IDS.contains(&id);
+    let tools_key = |id: &str| id.starts_with("tools.") || redrob_photo_engine::fill_key_cmds::IDS.contains(&id);
     let mut tools = Vec::new();
     let mut layer = Vec::new();
-    for c in photocraft_engine::command_specs() {
+    for c in redrob_photo_engine::command_specs() {
         if seen.insert(c.id.to_string()) && c.shortcut.is_some() {
             let item = (c.id.to_string(), c.label.to_string(), c.menu.iter().map(|s| s.to_string()).collect::<Vec<_>>(), c.shortcut.map(Into::into));
             if c.menu.is_empty() && tools_key(c.id) {
@@ -880,7 +880,7 @@ pub fn invoke(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &V
         }
         "edit.fade" | "edit.findAndReplaceText" | "edit.defineBrushPreset" | "edit.defineCustomShape" | "edit.autoAlignLayers" | "edit.autoBlendLayers" => {
             if !app.session.is_enabled(id) {
-                return Some(Err(photocraft_engine::commands::find(id)
+                return Some(Err(redrob_photo_engine::commands::find(id)
                     .map_or("not available".into(), |c| format!("{} is not available right now", c.label.trim_end_matches('…')))));
             }
             let d = crate::filter_dialog::open(app, id);
@@ -1860,7 +1860,7 @@ fn shortcuts_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String
                     });
                 } else {
                     // Edit › Menus, Keyboard Shortcuts, Preferences, Save and Exit always stay (#5096).
-                    let hideable = photocraft_engine::prefs::MenuCustomization::hideable(id);
+                    let hideable = redrob_photo_engine::prefs::MenuCustomization::hideable(id);
                     let mut visible = !hideable || !hidden.contains(id);
                     ui.add_enabled_ui(hideable, |ui| crate::widgets::checkbox(ui, &mut visible, tl!("Visible")));
                     if visible {
@@ -1972,7 +1972,7 @@ fn set_row(
     message: &mut String,
     warning: &mut bool,
 ) {
-    use photocraft_engine::shortcut_sets::{self, ShortcutSet};
+    use redrob_photo_engine::shortcut_sets::{self, ShortcutSet};
     let mut sets: BTreeMap<String, ShortcutSet> = f.get("sets").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or_default();
     let mut active = f.get("activeSet").and_then(Value::as_str).unwrap_or("").to_string();
     if !active.is_empty() && !sets.contains_key(&active) {
@@ -2055,16 +2055,16 @@ fn set_row(
     }
     if export || summarize {
         let result = if export {
-            let entries: Vec<photocraft_engine::kys::Entry> = items
+            let entries: Vec<redrob_photo_engine::kys::Entry> = items
                 .iter()
-                .map(|(id, label, _, def)| photocraft_engine::kys::Entry {
+                .map(|(id, label, _, def)| redrob_photo_engine::kys::Entry {
                     id: id.clone(),
                     label: label.clone(),
                     tool: id.starts_with("tools.select."),
                     keys: dialog_keys(overrides, alternates, id, def.as_deref()),
                 })
                 .collect();
-            let text = photocraft_engine::kys::write(&set_label, &entries);
+            let text = redrob_photo_engine::kys::write(&set_label, &entries);
             save_text(app, &format!("{set_label}.kys"), text)
         } else {
             let mut sections: Vec<shortcut_sets::Section> = Vec::new();
@@ -2381,7 +2381,7 @@ mod tests {
 
     #[test]
     fn quick_export_controls_match_selected_format() {
-        let mut obj = serde_json::to_value(photocraft_engine::prefs::Export::default()).unwrap().as_object().unwrap().clone();
+        let mut obj = serde_json::to_value(redrob_photo_engine::prefs::Export::default()).unwrap().as_object().unwrap().clone();
         assert!(!export_field_visible(&obj, "jpegQuality"));
         assert!(!export_field_visible(&obj, "webpLossless"));
         assert!(!export_field_visible(&obj, "webpQuality"));
@@ -2470,7 +2470,7 @@ mod tests {
     #[test]
     fn breeze_themes_are_chosen_by_preference_and_fix_the_matching_mode() {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         for (id, kind, mode) in [
             ("breezeLight", ThemeKind::BreezeLight, AppearanceMode::Light),
             ("breezeDark", ThemeKind::BreezeDark, AppearanceMode::Dark),
@@ -2503,7 +2503,7 @@ mod tests {
     #[test]
     fn appearance_button_cycles_modes_without_losing_theme_choices() {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("prefs.set", json!({"values": {"interface.darkTheme": "studio", "interface.lightTheme": "classic"}})).unwrap();
         for (mode, visible) in
             [(AppearanceMode::Auto, ThemeKind::Studio), (AppearanceMode::Light, ThemeKind::Classic), (AppearanceMode::Dark, ThemeKind::Studio)]
@@ -2519,7 +2519,7 @@ mod tests {
     #[test]
     fn darken_and_lighten_interface_step_through_photoshops_brightnesses_and_stop_at_the_ends() {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         sync_appearance(&mut app, &ctx);
         assert_eq!(app.ui.theme, ThemeKind::ProMedium, "Photoshop's default brightness");
         let press = |app: &mut PhotocraftApp, id: &str| crate::menus::invoke(app, &ctx, id, json!({})).unwrap();
@@ -2556,7 +2556,7 @@ mod tests {
             assert_eq!(crate::shortcuts::default_shortcut(id).as_deref(), Some(shortcut), "{id}");
         }
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         sync_appearance(&mut app, &ctx);
         let press = |app: &mut PhotocraftApp, key| {
             let modifiers = egui::Modifiers::COMMAND | egui::Modifiers::SHIFT;
@@ -2851,7 +2851,7 @@ mod tests {
     /// language that claims complete menus (Japanese, Traditional Chinese, ...).
     #[test]
     fn preference_labels_are_translated() {
-        let session = photocraft_engine::Session::new();
+        let session = redrob_photo_engine::Session::new();
         let v: Value = serde_json::from_str(&session.prefs_to_json()).expect("prefs json");
         for lang in crate::i18n::Lang::all().filter(|l| l.complete_menus()) {
             let mut missing = Vec::new();
@@ -2898,7 +2898,7 @@ mod tests {
             })),
             ..Default::default()
         };
-        PhotocraftApp::new(photocraft_engine::Session::new(), services)
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), services)
     }
 
     fn stored(store: &Arc<Mutex<Option<String>>>) -> Value {
@@ -3403,11 +3403,11 @@ mod tests {
 
     #[test]
     fn brush_preset_store_attaches_when_loaded_and_persists() {
-        use photocraft_engine::preset_store::{MemBackend, open};
+        use redrob_photo_engine::preset_store::{MemBackend, open};
         let mem = MemBackend::default();
         let ctx = egui::Context::default();
         let (tx, rx) = std::sync::mpsc::channel();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services { preset_store: Some(rx), ..Default::default() });
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services { preset_store: Some(rx), ..Default::default() });
         // Still loading: presets made now are kept and written once the store arrives.
         tick(&mut app, &ctx);
         app.run("brush.presets.save", json!({"name": "Early"})).unwrap();
@@ -3416,7 +3416,7 @@ mod tests {
         tick(&mut app, &ctx);
         assert!(app.services.preset_store.is_none() && app.session.preset_store.is_some());
         app.run("brush.presets.save", json!({"name": "Late"})).unwrap();
-        let mut s2 = photocraft_engine::Session::new();
+        let mut s2 = redrob_photo_engine::Session::new();
         assert!(s2.attach_preset_store(open(Box::new(mem))).is_empty());
         for n in ["Early", "Late"] {
             assert!(s2.tools.presets.iter().any(|p| p.name == n), "{n}");
@@ -3758,13 +3758,13 @@ mod tests {
         let saved: Saved = Arc::default();
         let s2 = saved.clone();
         let services = crate::Services {
-            autosave: Some(Box::new(move |doc: &Arc<photocraft_doc::Document>, rev: u64, _path: Option<&str>| {
+            autosave: Some(Box::new(move |doc: &Arc<redrob_photo_doc::Document>, rev: u64, _path: Option<&str>| {
                 s2.lock().unwrap().push((doc.id.0, rev));
                 Ok(())
             })),
             ..Default::default()
         };
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         let ctx = egui::Context::default();
         app.run("file.new", json!({"width": 8, "height": 8})).unwrap();
         tick(&mut app, &ctx);
@@ -3805,7 +3805,7 @@ mod tests {
         type Log = Arc<Mutex<Vec<String>>>;
         let log: Log = Arc::default();
         let (l1, l2, l3) = (log.clone(), log.clone(), log.clone());
-        use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
+        use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
         let doc = || Document::with_background("R", Size::new(4, 4), ColorMode::Rgb, SampleType::U8, Color::WHITE);
         let services = crate::Services {
             autosave: Some(Box::new(move |d: &Arc<Document>, _: u64, _: Option<&str>| {
@@ -3819,7 +3819,7 @@ mod tests {
             adopt_autosave: Some(Box::new(move |id: u64, key: &str| l3.lock().unwrap().push(format!("adopt {id} {key}")))),
             ..Default::default()
         };
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         let ctx = egui::Context::default();
         tick(&mut app, &ctx);
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);

@@ -1,6 +1,6 @@
-//! # photocraft-format
+//! # redrob-photo-format
 //!
-//! The native, lossless `.pcraft` document bundle (architecture §9).
+//! The native, lossless `.rphoto` document bundle (architecture §9).
 //!
 //! ```text
 //! manifest.json            versioned document tree (see [`manifest`])
@@ -18,7 +18,7 @@
 //! damaged or missing objects and garbage-collect unreferenced ones.
 //!
 //! This crate sits at L3 next to the compositor, so it does not render.
-//! Callers pass previews in [`SaveOptions`]; `photocraft-io` does that.
+//! Callers pass previews in [`SaveOptions`]; `redrob-photo-io` does that.
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
@@ -34,8 +34,8 @@ pub mod zip;
 
 use std::path::Path;
 
-use photocraft_doc::Document;
-use photocraft_raster::Rgba8Image;
+use redrob_photo_doc::Document;
+use redrob_photo_raster::Rgba8Image;
 
 pub use atomic::{atomic_write, atomic_write_progress};
 #[cfg(not(target_arch = "wasm32"))]
@@ -47,19 +47,22 @@ pub use read::read_file;
 pub use store::{ByteSource, DEFAULT_REVERIFY_BUDGET, PcraftWriter, SaveStats, read_entry};
 
 /// File extension of the native format.
-pub const EXTENSION: &str = "pcraft";
+pub const EXTENSION: &str = "rphoto";
+/// The extension the bundle had upstream. Still opened (by name here, by content in
+/// `is_pcraft`), never written: a save suggests [`EXTENSION`].
+pub const LEGACY_EXTENSION: &str = "pcraft"; // legacy: upstream extension, read only
 
 #[derive(Debug, thiserror::Error)]
 pub enum FormatError {
-    #[error("corrupt .pcraft bundle: {0}")]
+    #[error("corrupt .rphoto bundle: {0}")]
     Corrupt(String),
-    #[error("unsupported .pcraft feature: {0}")]
+    #[error("unsupported .rphoto feature: {0}")]
     Unsupported(String),
     #[error("bundle written by a newer version (format {found}, this build reads up to {supported})")]
     TooNew { found: u32, supported: u32 },
     #[error("limit exceeded: {0}")]
     LimitExceeded(String),
-    #[error("`{path}` is NaN or infinite, which a .pcraft manifest cannot hold; reset that value and save again")]
+    #[error("`{path}` is NaN or infinite, which a .rphoto manifest cannot hold; reset that value and save again")]
     NonFinite { path: String },
     #[error("I/O: {0}")]
     Io(#[from] std::io::Error),

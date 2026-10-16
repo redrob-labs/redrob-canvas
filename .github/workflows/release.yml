@@ -18,6 +18,8 @@ name: Release
 #     signed BEFORE it is zipped and before the setup embeds that zip; the uninstaller and the setup
 #     are signed in their turn. `release` is the environment the organization's federated credential
 #     names; any other name is refused.
+#   - validate is the repository scripts plus `cargo fmt --check`; clippy and the tests ran on the
+#     pull request (.github/workflows/ci.yml) and are not repeated here;
 #   - the publish job runs only for a real tag, and only when every job before it succeeded;
 #   - the release is published as latest unless the version carries a pre-release suffix.
 #
@@ -25,7 +27,7 @@ name: Release
 # egui shell, so a leg is `cargo build --release -p redrob-canvas --target <triple>` and a packaging
 # script. The Linux leg needs the X11/Wayland/GL development headers egui, wgpu and rfd link against.
 #
-# Exactly FOUR targets (tools/release_matrix.py is the list):
+# Exactly THREE targets (tools/release_matrix.py is the list):
 #   macOS arm64        redrob-canvas-<v>-macos-arm64.zip + .dmg          (Developer ID, notarized, stapled)
 #   Linux x86_64       redrob-canvas-<v>-linux-x86_64.tar.gz + .deb
 #   Windows x64        redrob-canvas-<v>-windows-x64-portable.zip + -setup.exe   (Azure Artifact Signing)
@@ -155,45 +157,34 @@ jobs:
           fi
           echo "version=${tag_version}" >> "$GITHUB_OUTPUT"
 
-      - name: Verify the upstream pins
-        run: ./scripts/verify-upstream.sh
+      # The repository scripts, as the CI `checks` job runs them: pins, upstream identifiers, the
+      # generated notices (an attribution defect blocks the release rather than being corrected
+      # afterwards) and the design system.
+      - name: Upstream pins and identifiers
+        run: |
+          ./scripts/verify-upstream.sh
+          python3 scripts/check_upstream_ids.py
 
       - name: Rust toolchain (rust-toolchain.toml)
         uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           toolchain: "1.95.0"
-          components: rustfmt, clippy
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: release-validate
-
-      - name: System libraries for the desktop app
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
-            libgl1-mesa-dev libgtk-3-dev
+          components: rustfmt
 
       # The generator reads Cargo metadata offline on purpose; populate the cache first.
-      - name: Populate the Cargo registry cache
-        run: cargo fetch --locked
-
-      # A stale notice inventory is an attribution defect, so it blocks the release rather than
-      # being corrected afterwards.
       - name: Check the generated third-party notices
-        run: python3 tools/generate_distribution_artifacts.py --check
+        run: |
+          cargo fetch --locked
+          python3 tools/generate_distribution_artifacts.py --check
 
       - name: Design system tokens and mark are current
         run: python3 tools/check_design_system.py
 
-      - name: Rust workspace
+      - name: Formatting
         run: |
+          # clippy and the tests already gated the commit on its pull request (ci.yml); a release
+          # re-running them cost 14 minutes per dispatch for no new information.
           cargo fmt --all -- --check
-          # Our crates only: the upstream subtrees are linted and tested by their own projects, and
-          # linking every workspace test binary exhausts the hosted runner (verify-upstream.yml does the same).
-          cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked -- -D warnings
-          cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked
 
   build:
     name: Build ${{ matrix.label }}

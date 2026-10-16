@@ -7,9 +7,9 @@
 //! (setting them on a saved preset saves it; a new `name` renames it once the field isn't being
 //! edited; on a built-in preset they go back).
 
+use redrob_vector_engine::cmd::FlattenOptions;
+use redrob_vector_engine::cmd::flatten::{PRESET_EXTS, PRESET_FORMAT};
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::FlattenOptions;
-use vectorcraft_engine::cmd::flatten::{PRESET_EXTS, PRESET_FORMAT};
 
 use super::flatten::{options_editor, put_options};
 use super::{DialogSpec, form};
@@ -206,7 +206,7 @@ fn run(app: &mut VectorcraftApp, d: &mut Dialog, act: Action, current: &str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn frame(app: &mut VectorcraftApp) {
         let ctx = egui::Context::default();

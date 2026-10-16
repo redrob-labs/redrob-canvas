@@ -1,7 +1,7 @@
 //! Photoshop keyboard shortcut sets (`.kys`, Edit › Keyboard Shortcuts › Save Set) imported
 //! into Edit › Keyboard Shortcuts (#1163): the dialog's Import Shortcuts… button, File › Open
 //! and a drop on the window. Parsing and matching rows to commands are the engine's
-//! ([`photocraft_engine::kys`], also behind `edit.keyboardShortcuts {"importKys": …}`); here
+//! ([`redrob_photo_engine::kys`], also behind `edit.keyboardShortcuts {"importKys": …}`); here
 //! the candidates are the app's menus, in Photoshop's menu order, so ties go its way.
 //!
 //! The import fills the open dialog's overrides, so OK applies them like hand-made changes
@@ -16,27 +16,27 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
-pub use photocraft_engine::kys::{KysCommand, KysSet, MAX_BYTES, Plan, parse};
+pub use redrob_photo_engine::kys::{KysCommand, KysSet, MAX_BYTES, Plan, parse};
 
 /// Match the rows to our commands: the menus' items first, then engine commands the menus list
 /// under another label (Preferences › General… is the Settings… item).
 pub fn plan(app: &PhotocraftApp, set: &KysSet) -> Plan {
-    use photocraft_engine::kys::Candidate;
+    use redrob_photo_engine::kys::Candidate;
     let items = crate::menus::menu_items(app);
     let menu = items.iter().filter(|i| i.label != "---" && crate::menus::is_live(&i.id)).map(|i| Candidate {
         id: i.id.clone(),
         label: i.label.clone(),
         default: crate::shortcuts::default_shortcut(&i.id),
     });
-    let specs = photocraft_engine::kys::command_candidates().into_iter().map(|c| Candidate { default: crate::shortcuts::default_shortcut(&c.id), ..c });
-    photocraft_engine::kys::plan(menu.chain(specs), set)
+    let specs = redrob_photo_engine::kys::command_candidates().into_iter().map(|c| Candidate { default: crate::shortcuts::default_shortcut(&c.id), ..c });
+    redrob_photo_engine::kys::plan(menu.chain(specs), set)
 }
 
 /// The set's tool keys matched to our tools by name (Photoshop's names are ours): tool
 /// shortcut id (`tools.select.move`) → letter, and the tools Redrob Canvas doesn't have.
 pub fn plan_tools(set: &KysSet) -> (BTreeMap<String, String>, Vec<String>) {
     let tools: Vec<(String, &str)> = crate::state::Tool::ALL.into_iter().map(|t| (crate::tool_shortcuts::id(t), t.label())).collect();
-    photocraft_engine::kys::plan_tools(tools.iter().map(|(id, name)| (id.as_str(), *name)), set)
+    redrob_photo_engine::kys::plan_tools(tools.iter().map(|(id, name)| (id.as_str(), *name)), set)
 }
 
 /// Put the plan into the open Keyboard Shortcuts dialog (opening one when none is), as
@@ -53,7 +53,7 @@ pub fn import_text(app: &mut PhotocraftApp, file_name: &str, text: &str) -> Resu
     let f = &mut app.ui.dialog_mut(id).ok_or("the Keyboard Shortcuts dialog is gone")?.fields;
     let mut overrides: BTreeMap<String, String> = f.get("overrides").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or_default();
     for (cmd, sc) in &plan.set {
-        let default = crate::shortcuts::default_shortcut(cmd).and_then(|d| photocraft_engine::prefs::normalize_shortcut(&d));
+        let default = crate::shortcuts::default_shortcut(cmd).and_then(|d| redrob_photo_engine::prefs::normalize_shortcut(&d));
         if default.as_deref() == Some(sc.as_str()) {
             overrides.remove(cmd);
         } else {
@@ -75,7 +75,7 @@ pub fn import_text(app: &mut PhotocraftApp, file_name: &str, text: &str) -> Resu
     let mut alternates: BTreeMap<String, Vec<String>> = f.get("alternates").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or_default();
     for (cmd, keys) in &plan.alternate_keys {
         let main = plan.set.get(cmd).map(String::as_str);
-        if photocraft_engine::prefs::Preferences::default().alternates(cmd, main) == *keys {
+        if redrob_photo_engine::prefs::Preferences::default().alternates(cmd, main) == *keys {
             alternates.remove(cmd);
         } else {
             alternates.insert(cmd.clone(), keys.clone());
@@ -175,7 +175,7 @@ pub fn offer_import(app: &mut PhotocraftApp) {
         }
     };
     let plan = plan(app, &set);
-    let default = |id: &str| crate::shortcuts::default_shortcut(id).and_then(|d| photocraft_engine::prefs::normalize_shortcut(&d));
+    let default = |id: &str| crate::shortcuts::default_shortcut(id).and_then(|d| redrob_photo_engine::prefs::normalize_shortcut(&d));
     let changes = plan.set.iter().filter(|(id, sc)| default(id).as_deref() != Some(sc.as_str())).count();
     if changes == 0 {
         return remember(app, &source, false);

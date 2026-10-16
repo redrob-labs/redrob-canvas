@@ -340,7 +340,7 @@ pub fn buttons(app: &mut DesignApp, ui: &mut egui::Ui) {
         return;
     };
     let cur = app.session.active().and_then(|d| d.doc.item(id)).and_then(|it| it.button.clone());
-    use designcraft_doc::ButtonAction as B;
+    use redrob_layout_doc::ButtonAction as B;
     let (kind, page, url) = match &cur {
         None => ("none", 0, String::new()),
         Some(B::GoToPage { page }) => ("page", *page, String::new()),
@@ -410,7 +410,7 @@ pub fn buttons(app: &mut DesignApp, ui: &mut egui::Ui) {
     // Form field.
     ui.separator();
     let ff = app.session.active().and_then(|d| d.doc.item(id)).and_then(|it| it.form_field.clone());
-    use designcraft_doc::FieldKind as K;
+    use redrob_layout_doc::FieldKind as K;
     let kinds = [
         (None, "Not a form field"),
         (Some(K::TextField), "Text Field"),
@@ -487,22 +487,22 @@ pub fn buttons(app: &mut DesignApp, ui: &mut egui::Ui) {
 }
 
 /// Liquid page rules in InDesign's order, with their menu labels.
-pub const LIQUID_RULES: [(designcraft_doc::LiquidRule, &str); 5] = [
-    (designcraft_doc::LiquidRule::Off, "Off"),
-    (designcraft_doc::LiquidRule::Scale, "Scale"),
-    (designcraft_doc::LiquidRule::ReCenter, "Re-center"),
-    (designcraft_doc::LiquidRule::ObjectBased, "Object-based"),
-    (designcraft_doc::LiquidRule::GuideBased, "Guide-based"),
+pub const LIQUID_RULES: [(redrob_layout_doc::LiquidRule, &str); 5] = [
+    (redrob_layout_doc::LiquidRule::Off, "Off"),
+    (redrob_layout_doc::LiquidRule::Scale, "Scale"),
+    (redrob_layout_doc::LiquidRule::ReCenter, "Re-center"),
+    (redrob_layout_doc::LiquidRule::ObjectBased, "Object-based"),
+    (redrob_layout_doc::LiquidRule::GuideBased, "Guide-based"),
 ];
 
 /// A liquid page rule's menu label.
-pub fn liquid_rule_label(rule: designcraft_doc::LiquidRule) -> &'static str {
+pub fn liquid_rule_label(rule: redrob_layout_doc::LiquidRule) -> &'static str {
     LIQUID_RULES.iter().find(|(r, _)| *r == rule).map_or("Off", |(_, l)| l)
 }
 
 /// Whether page `abs` follows the object-based rule (its own, or its parent page's).
-fn object_based(d: &designcraft_doc::Document, abs: usize) -> bool {
-    use designcraft_doc::LiquidRule as L;
+fn object_based(d: &redrob_layout_doc::Document, abs: usize) -> bool {
+    use redrob_layout_doc::LiquidRule as L;
     let Some((si, pi)) = d.page_loc(abs) else { return false };
     match d.spreads[si].pages[pi].liquid {
         L::ObjectBased => true,
@@ -554,8 +554,8 @@ pub fn liquid(app: &mut DesignApp, ui: &mut egui::Ui) {
         .filter(|it| d.page_of_item(it.id) == Some(page));
     // Content: Auto-Fit (graphic frames).
     crate::widgets::caption(ui, crate::i18n::tr(&lang, "Content:"));
-    let graphic = item.and_then(|it| if let designcraft_doc::Content::Graphic(g) = &it.content { Some(g.auto_fit) } else { None });
-    let mut auto = graphic.is_some_and(|f| f != designcraft_doc::Fitting::None);
+    let graphic = item.and_then(|it| if let redrob_layout_doc::Content::Graphic(g) = &it.content { Some(g.auto_fit) } else { None });
+    let mut auto = graphic.is_some_and(|f| f != redrob_layout_doc::Fitting::None);
     ui.indent("liquid_content", |ui| {
         let r = ui.add_enabled(graphic.is_some(), egui::Checkbox::new(&mut auto, crate::rtl::widget(ui, crate::i18n::tr(&lang, "Auto-Fit"))));
         if r.changed() {
@@ -567,7 +567,7 @@ pub fn liquid(app: &mut DesignApp, ui: &mut egui::Ui) {
     let on = item.is_some() && object_based(&d, page);
     let l = item
         .filter(|_| on)
-        .map(|it| it.liquid.unwrap_or(designcraft_doc::ObjectLiquid { resize_width: true, resize_height: true, ..Default::default() }))
+        .map(|it| it.liquid.unwrap_or(redrob_layout_doc::ObjectLiquid { resize_width: true, resize_height: true, ..Default::default() }))
         .unwrap_or_default();
     ui.indent("liquid_constraints", |ui| {
         ui.add_enabled_ui(on, |ui| {
@@ -660,7 +660,7 @@ pub fn transitions(app: &mut DesignApp, ui: &mut egui::Ui) {
     let Some(d) = app.session.active().map(|d| d.doc.clone()) else { return };
     let Some((si, _)) = d.page_loc(page) else { return };
     let cur = d.spreads[si].pages.first().and_then(|p| p.transition);
-    use designcraft_doc::TransitionKind as K;
+    use redrob_layout_doc::TransitionKind as K;
     crate::rtl::label(ui, egui::RichText::new(format!("{} {}", crate::i18n::tr(&app.ui.language, "Spread"), si + 1)).strong());
     let mut kind = cur.map(|c| c.kind);
     egui::ComboBox::from_id_salt("transition_kind")
@@ -781,7 +781,7 @@ mod liquid_panel_tests {
 
     #[test]
     fn object_constraints_set_the_selected_objects_pins_and_resizing() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(redrob_layout_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let id = app.run("frame.create", json!({"rect": [100, 100, 200, 200]})).unwrap()["id"].as_u64().unwrap();
         let mut h = Harness::builder().with_size(egui::vec2(260.0, 420.0)).build_ui_state(
@@ -797,7 +797,7 @@ mod liquid_panel_tests {
             app,
         );
         h.run_steps(3);
-        let l = |h: &Harness<'_, DesignApp>| h.state().session.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().liquid;
+        let l = |h: &Harness<'_, DesignApp>| h.state().session.doc().unwrap().doc.item(redrob_layout_doc::ItemId(id)).unwrap().liquid;
         // With the rule off the constraints don't apply.
         h.get_by_label("Right").click();
         h.run_steps(2);

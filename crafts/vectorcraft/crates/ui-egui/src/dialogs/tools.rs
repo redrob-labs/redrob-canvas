@@ -38,7 +38,7 @@ pub fn open_tool_dialog(app: &mut VectorcraftApp, kind: &str, p: Value) {
         }
         // A Flare tool click: the Flare Tool Options, with the tool's values; OK draws a flare there.
         "flare" => {
-            super::flare_options::open(app, Some(vectorcraft_geom::Point::new(x, y)));
+            super::flare_options::open(app, Some(redrob_vector_geom::Point::new(x, y)));
             return;
         }
         "rotate" | "reflect" | "scale" | "shear" | "artboardOptions" => {

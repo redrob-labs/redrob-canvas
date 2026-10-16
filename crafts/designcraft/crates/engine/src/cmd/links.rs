@@ -10,7 +10,7 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::{AssetId, Content, Document, Fingerprint, ItemId, Selection, Story, StoryId, TextFileLink};
+use redrob_layout_doc::{AssetId, Content, Document, Fingerprint, ItemId, Selection, Story, StoryId, TextFileLink};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, str_param};
@@ -124,7 +124,7 @@ fn uses(d: &Document, aid: AssetId) -> Vec<ItemId> {
 }
 
 /// Link status of an asset.
-pub fn status(a: &designcraft_doc::Asset) -> &'static str {
+pub fn status(a: &redrob_layout_doc::Asset) -> &'static str {
     let Some(path) = &a.link else { return "embedded" };
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -248,7 +248,7 @@ fn list(d: &Document, checks: &mut TextChecks) -> Vec<Value> {
                         }
                         let (pw, _) = a.pixels?;
                         let xf = d.parent_xf(&loc) * it.xf * g.xf;
-                        let shown_w = xf.transform_rect_bbox(designcraft_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1)).width();
+                        let shown_w = xf.transform_rect_bbox(redrob_layout_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1)).width();
                         (shown_w > 0.0).then(|| (pw as f64 / (shown_w / 72.0)).round())
                     })();
                     let page = d.page_of_item(id).map(|p| d.page_name(p));
@@ -301,7 +301,7 @@ fn reimport(d: &mut Document, sid: StoryId, path: &str, bytes: &[u8], before: Fi
 #[cfg(not(target_arch = "wasm32"))]
 fn reload(path: &str) -> Result<(Vec<u8>, (u32, u32))> {
     let b = crate::io::read_file(path).map_err(EngineError::Other)?;
-    let px = designcraft_render::image_size(&b).ok_or_else(|| bad("links", format!("{path}: unsupported or corrupt image")))?;
+    let px = redrob_layout_render::image_size(&b).ok_or_else(|| bad("links", format!("{path}: unsupported or corrupt image")))?;
     Ok((b, px))
 }
 
@@ -326,7 +326,7 @@ fn relink(s: &mut Session, p: &Value) -> Result<Value> {
     s.edit(|d, _| {
         let a = d.assets.get_mut(&aid).ok_or_else(|| bad("links.relink", "no such graphic"))?;
         let a = Arc::make_mut(a);
-        a.mime = designcraft_render::image_mime(&bytes).to_string();
+        a.mime = redrob_layout_render::image_mime(&bytes).to_string();
         a.data = Arc::new(bytes.clone());
         a.pixels = Some(px);
         a.name = name.clone();
@@ -427,7 +427,7 @@ mod tests {
     use super::*;
 
     fn png(w: u32, h: u32) -> Vec<u8> {
-        designcraft_render::Rendered { width: w, height: h, pixels: vec![200u8; (w * h * 4) as usize] }.to_png()
+        redrob_layout_render::Rendered { width: w, height: h, pixels: vec![200u8; (w * h * 4) as usize] }.to_png()
     }
 
     #[test]
@@ -504,7 +504,7 @@ mod shared_asset_tests {
     use super::*;
 
     fn png(w: u32, h: u32) -> Vec<u8> {
-        designcraft_render::Rendered { width: w, height: h, pixels: vec![200u8; (w * h * 4) as usize] }.to_png()
+        redrob_layout_render::Rendered { width: w, height: h, pixels: vec![200u8; (w * h * 4) as usize] }.to_png()
     }
 
     #[test]
@@ -529,7 +529,7 @@ mod shared_asset_tests {
         let d = &s.doc().unwrap().doc;
         assert_eq!(d.assets.len(), 3);
         assert_eq!(s.execute("links.list", &json!({})).unwrap().as_array().unwrap().len(), 2);
-        let back = designcraft_format::load(&designcraft_format::save(&s.doc().unwrap().doc).unwrap()).unwrap();
+        let back = redrob_layout_format::load(&redrob_layout_format::save(&s.doc().unwrap().doc).unwrap()).unwrap();
         let mut names: Vec<&str> = back.assets.values().map(|a| a.name.as_str()).collect();
         names.sort();
         assert_eq!(names, ["a.png", "c.png"]);
@@ -569,8 +569,8 @@ mod shared_asset_tests {
 
     #[test]
     fn pasted_graphics_reuse_the_identical_asset_of_the_target() {
-        use designcraft_doc::build::NewDocument;
-        use designcraft_doc::{Asset, Graphic, Item, ItemId, Shape, SpreadRef};
+        use redrob_layout_doc::build::NewDocument;
+        use redrob_layout_doc::{Asset, Graphic, Item, ItemId, Shape, SpreadRef};
         let asset = |id: u64, data: Vec<u8>| Asset {
             id: AssetId(id),
             name: "p.png".into(),
@@ -596,18 +596,18 @@ mod shared_asset_tests {
             iid,
             src.default_layer(),
             Shape::Rectangle,
-            designcraft_geom::shapes::rectangle(designcraft_geom::Rect::new(0.0, 0.0, 9.0, 9.0)),
+            redrob_layout_geom::shapes::rectangle(redrob_layout_geom::Rect::new(0.0, 0.0, 9.0, 9.0)),
         );
         it.content = Content::Graphic(Graphic {
             asset: sid,
             size: (4.0, 4.0),
-            xf: designcraft_geom::Affine::IDENTITY,
+            xf: redrob_layout_geom::Affine::IDENTITY,
             auto_fit: Default::default(),
             fit_align: 4,
             crop: [1.0; 4],
         });
         src.insert_item(SpreadRef::Doc(0), it, None).unwrap();
-        let ids = super::super::object::duplicate_from(&mut dst, &src, &[iid], SpreadRef::Doc(0), designcraft_geom::Vec2::ZERO).unwrap();
+        let ids = super::super::object::duplicate_from(&mut dst, &src, &[iid], SpreadRef::Doc(0), redrob_layout_geom::Vec2::ZERO).unwrap();
         let g = dst.item(ids[0]).and_then(|i| i.graphic()).unwrap();
         assert_eq!((g.asset, g.crop), (same, [1.0; 4]));
         assert_eq!(dst.assets.len(), 2);
@@ -615,8 +615,8 @@ mod shared_asset_tests {
 
     #[test]
     fn pasted_missing_graphic_does_not_show_an_unrelated_target_asset() {
-        use designcraft_doc::build::NewDocument;
-        use designcraft_doc::{Asset, Graphic, Item, ItemId, Shape, SpreadRef};
+        use redrob_layout_doc::build::NewDocument;
+        use redrob_layout_doc::{Asset, Graphic, Item, ItemId, Shape, SpreadRef};
         let mut src = Document::new(&NewDocument::default());
         let mut dst = Document::new(&NewDocument::default());
         // The source graphic points at an asset the source does not have; the target uses that id for another image.
@@ -638,18 +638,18 @@ mod shared_asset_tests {
             iid,
             src.default_layer(),
             Shape::Rectangle,
-            designcraft_geom::shapes::rectangle(designcraft_geom::Rect::new(0.0, 0.0, 9.0, 9.0)),
+            redrob_layout_geom::shapes::rectangle(redrob_layout_geom::Rect::new(0.0, 0.0, 9.0, 9.0)),
         );
         it.content = Content::Graphic(Graphic {
             asset: missing,
             size: (4.0, 4.0),
-            xf: designcraft_geom::Affine::IDENTITY,
+            xf: redrob_layout_geom::Affine::IDENTITY,
             auto_fit: Default::default(),
             fit_align: 4,
             crop: [1.0; 4],
         });
         src.insert_item(SpreadRef::Doc(0), it, None).unwrap();
-        let ids = super::super::object::duplicate_from(&mut dst, &src, &[iid], SpreadRef::Doc(0), designcraft_geom::Vec2::ZERO).unwrap();
+        let ids = super::super::object::duplicate_from(&mut dst, &src, &[iid], SpreadRef::Doc(0), redrob_layout_geom::Vec2::ZERO).unwrap();
         let g = dst.item(ids[0]).and_then(|i| i.graphic()).unwrap();
         assert_ne!(g.asset, missing);
         assert!(!dst.assets.contains_key(&g.asset));
@@ -661,7 +661,7 @@ mod text_link_tests {
     use serde_json::{Value, json};
 
     use crate::Session;
-    use designcraft_doc::{ItemId, StoryId};
+    use redrob_layout_doc::{ItemId, StoryId};
 
     /// A small Word file: a Title paragraph, then Body paragraphs (`body` is WordprocessingML).
     fn docx(body: &str) -> Vec<u8> {
@@ -689,11 +689,11 @@ mod text_link_tests {
         l.as_array().unwrap().iter().filter(|r| r.get("story").is_some()).cloned().collect()
     }
 
-    fn story(s: &Session, sid: StoryId) -> designcraft_doc::Story {
+    fn story(s: &Session, sid: StoryId) -> redrob_layout_doc::Story {
         s.doc().unwrap().doc.story(sid).unwrap().clone()
     }
 
-    fn styles(st: &designcraft_doc::Story) -> Vec<String> {
+    fn styles(st: &redrob_layout_doc::Story) -> Vec<String> {
         st.paras.iter().map(|p| p.style.clone()).collect()
     }
 
@@ -771,7 +771,7 @@ mod text_link_tests {
         s.execute("edit.redo", &json!({})).unwrap();
 
         // Saved and opened again: the link and its options are kept.
-        let back = designcraft_format::load(&designcraft_format::save(&s.doc().unwrap().doc).unwrap()).unwrap();
+        let back = redrob_layout_format::load(&redrob_layout_format::save(&s.doc().unwrap().doc).unwrap()).unwrap();
         assert_eq!(back.story(sid).unwrap().file_link, story(&s, sid).file_link);
         assert_eq!(super::text_status(back.story(sid).unwrap().file_link.as_ref().unwrap(), &mut Default::default()), "ok");
 
@@ -896,7 +896,7 @@ mod text_link_tests {
 mod text_link_read_tests {
     use std::time::Duration;
 
-    use designcraft_doc::TextFileLink;
+    use redrob_layout_doc::TextFileLink;
 
     use super::{MAX_TEXT_LINK_BYTES, read_text, text_status};
 

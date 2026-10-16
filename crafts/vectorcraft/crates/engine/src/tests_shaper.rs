@@ -1,9 +1,9 @@
 use super::*;
+use redrob_vector_doc::shaper::{FILL_PREFIX, SOURCES, STROKE_PREFIX};
+use redrob_vector_doc::{LiveShape, Node};
+use redrob_vector_geom::{Point, Shape as _};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
 use serde_json::json;
-use vectorcraft_doc::shaper::{FILL_PREFIX, SOURCES, STROKE_PREFIX};
-use vectorcraft_doc::{LiveShape, Node};
-use vectorcraft_geom::{Point, Shape as _};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind};
 
 fn session() -> Session {
     let mut s = Session::new();
@@ -154,7 +154,7 @@ fn shaper_source_move_resize_native_roundtrip_and_release_preserve_live_art() {
     s.execute("object.setBounds", &json!({"width":120.0,"height":110.0,"reference":0})).unwrap();
     assert!(matches!(node(&s, a).live_shape(), Some(LiveShape::Rectangle { .. })));
     let doc = &s.doc().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save(doc, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(doc, false)).unwrap();
     assert_eq!(back.layers, doc.layers);
     let originals = [node(&s, a).clone(), node(&s, b).clone()];
     s.execute("shaper.release", &json!({"id":g.0})).unwrap();
@@ -230,7 +230,7 @@ fn shaper_rejects_oversized_or_invalid_gestures_without_changing_art() {
 
 #[test]
 fn shaper_tool_trims_both_diagonal_ends_and_only_construction_can_pick_them() {
-    use vectorcraft_doc::hit::{HitOptions, hit_test};
+    use redrob_vector_doc::hit::{HitOptions, hit_test};
     let mut s = session();
     s.execute("paint.setFill", &json!({"color":"#ffff00"})).unwrap();
     s.execute("shape.ellipse", &json!({"x":100,"y":100,"width":100,"height":100})).unwrap();

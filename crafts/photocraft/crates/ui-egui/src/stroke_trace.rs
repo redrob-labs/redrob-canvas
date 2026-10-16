@@ -1,7 +1,7 @@
 //! Stroke latency trace (#1343): where each frame's time goes while a brush stroke is drawn, so
 //! a tester on any platform can report a per-stage breakdown instead of one input-to-pixel number.
 //!
-//! Set `PHOTOCRAFT_STROKE_TRACE` before launching: `1` prints a summary to stderr when each stroke
+//! Set `REDROB_PHOTO_STROKE_TRACE` before launching: `1` prints a summary to stderr when each stroke
 //! ends; a file path also appends every frame of every stroke to that CSV. The last summary is in
 //! the control channel's `perf` output (`strokeTrace`).
 //!
@@ -110,10 +110,10 @@ fn percentiles(mut v: Vec<f64>) -> [f64; 2] {
 }
 
 impl StrokeTrace {
-    /// Reads `PHOTOCRAFT_STROKE_TRACE` (off on the web, where there is no clock).
+    /// Reads `REDROB_PHOTO_STROKE_TRACE` (off on the web, where there is no clock).
     pub fn from_env() -> Self {
         #[cfg(not(target_arch = "wasm32"))]
-        if let Some(v) = std::env::var_os("PHOTOCRAFT_STROKE_TRACE").filter(|v| !v.is_empty()) {
+        if let Some(v) = std::env::var_os("REDROB_PHOTO_STROKE_TRACE").filter(|v| !v.is_empty()) {
             let output = if v == "1" || v == "stderr" { Output::Stderr } else { Output::Csv(v.into()) };
             return Self { output, ..Default::default() };
         }

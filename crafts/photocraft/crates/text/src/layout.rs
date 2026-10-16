@@ -21,8 +21,8 @@ use parley::{
     Alignment, AlignmentOptions, FontData, FontFamily, FontFeatures, FontStyle, FontVariations, FontWeight, IndentOptions, Layout, LayoutContext,
     PositionedLayoutItem, StyleProperty,
 };
-use photocraft_doc::TextLayer;
-use photocraft_doc::text::{Caps, CharStyle, Kerning, Orientation, TextAlign, TextDirection, TextShape};
+use redrob_photo_doc::TextLayer;
+use redrob_photo_doc::text::{Caps, CharStyle, Kerning, Orientation, TextAlign, TextDirection, TextShape};
 use skrifa::raw::types::Tag;
 
 use crate::fonts::FontDb;
@@ -1378,8 +1378,8 @@ fn first_ascent(line: &parley::Line<'_, RunBrush>) -> Option<f32> {
 #[cfg(test)]
 mod tests {
     use super::{SmallCapsMode, feature_list, small_caps_mode, variation_list};
-    use photocraft_doc::TextLayer;
-    use photocraft_doc::text::{Caps, CharStyle, FontVariation, TextRun};
+    use redrob_photo_doc::TextLayer;
+    use redrob_photo_doc::text::{Caps, CharStyle, FontVariation, TextRun};
 
     /// Reference: the lookup the layout used before it became a binary search.
     fn run_index_reference(starts: &[usize], off: usize) -> usize {

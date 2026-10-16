@@ -1,9 +1,9 @@
 //! Paragraph attributes per paragraph: ranged Paragraph panel commands, paragraph styles on one
 //! paragraph, splitting and merging paragraphs while editing, undo and threaded text.
 
+use redrob_vector_doc::{Justify, NodeId, NodeKind, TextObject};
+use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 use serde_json::json;
-use vectorcraft_doc::{Justify, NodeId, NodeKind, TextObject};
-use vectorcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
 
 use super::*;
 
@@ -47,7 +47,7 @@ fn ranged_paragraph_commands_touch_only_their_paragraphs() {
     assert!(t.runs.iter().any(|r| r.text == "two" && r.style.underline));
     assert!(t.runs.iter().any(|r| r.text.starts_with("one") && !r.style.underline));
     // The layout sees each paragraph's alignment.
-    let lay = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t);
+    let lay = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t);
     assert!(lay.lines[1].x0 > lay.lines[0].x0 + 20.0, "the centred line sits right of the left one");
     // No range: every paragraph (as before).
     s.execute("text.setStyle", &json!({"id": id, "justify": "right"})).unwrap();
@@ -102,7 +102,7 @@ fn return_in_the_type_tool_continues_the_paragraph_it_splits() {
     s.execute("text.setStyle", &json!({"id": id, "justify": "center", "start": 5, "end": 5})).unwrap();
     s.select_tool("type", v).unwrap();
     // Click into the first line (right-aligned: it ends at the origin), then End and Return.
-    let lay = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &text(&s, id));
+    let lay = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &text(&s, id));
     let l0 = &lay.lines[0];
     let (x, y) = (100.0 + (l0.x0 + l0.x1) / 2.0, 100.0 + l0.baseline - 5.0);
     for k in [PointerKind::Down, PointerKind::Up] {
@@ -182,7 +182,7 @@ fn threaded_frames_keep_each_paragraphs_style() {
 /// others: only the touched paragraphs change, and the layout reads each paragraph's own.
 #[test]
 fn ranged_set_format_sets_direction_mojikumi_and_leading_model_per_paragraph() {
-    use vectorcraft_doc::{LeadingModel, Mojikumi, ParaDirection};
+    use redrob_vector_doc::{LeadingModel, Mojikumi, ParaDirection};
     let mut s = session();
     let id = area(&mut s, "Hello.\nHello.");
     // A caret in the second paragraph (byte 9).
@@ -195,7 +195,7 @@ fn ranged_set_format_sets_direction_mojikumi_and_leading_model_per_paragraph() {
     let (p0, p1) = (t.para_at(0).clone(), t.para_at(1).clone());
     assert_eq!((p0.direction, p0.leading_model, p0.mojikumi), (None, LeadingModel::RomanBaseline, Mojikumi::LineEndHalf));
     assert_eq!((p1.direction, p1.leading_model, p1.mojikumi), (Some(ParaDirection::RightToLeft), LeadingModel::EmBoxTop, Mojikumi::None));
-    let lay = vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t);
+    let lay = redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t);
     assert!(!lay.lines[0].rtl && lay.lines[1].rtl, "each paragraph's direction");
     // Return in the right-to-left paragraph continues it.
     s.execute("text.editRange", &json!({"id": id, "start": 13, "end": 13, "insert": "\nX"})).unwrap();

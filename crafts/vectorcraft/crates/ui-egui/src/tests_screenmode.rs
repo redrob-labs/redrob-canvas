@@ -1,8 +1,8 @@
 //! Screen modes and Presentation Mode (#472): Escape leaves Presentation Mode, F cycles the three
 //! screen modes, and no screen mode is saved with the preferences.
 
+use redrob_vector_engine::Session;
 use serde_json::json;
-use vectorcraft_engine::Session;
 
 use crate::VectorcraftApp;
 

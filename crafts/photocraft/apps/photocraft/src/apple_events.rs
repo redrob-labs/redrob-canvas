@@ -10,7 +10,7 @@
 //! polls every frame.
 
 use fmv_macos_events::{Event, Inbox, Registration};
-use photocraft_ui_egui::OsEvent;
+use redrob_photo_ui_egui::OsEvent;
 
 /// Keeps the Apple-event handlers registered; hold it until the event loop returns.
 pub struct AppleEvents {
@@ -27,7 +27,7 @@ impl AppleEvents {
     }
 
     /// The queue the UI drains (see `Services::os_events`); events arriving later wake `ctx`.
-    pub fn connect(&self, ctx: &egui::Context) -> photocraft_ui_egui::OsEventsFn {
+    pub fn connect(&self, ctx: &egui::Context) -> redrob_photo_ui_egui::OsEventsFn {
         let ctx = ctx.clone();
         self.inbox.set_wake(move || ctx.request_repaint());
         let inbox = self.inbox.clone();

@@ -285,7 +285,7 @@ mod tests {
     /// The app with a layer "Alpha" being renamed (its name selected, as a rename starts) and the
     /// Rectangular Marquee, whose canvas has a context menu of its own.
     fn renaming() -> (Harness<'static, PhotocraftApp>, Id) {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         let layer = s.execute("layer.new.layer", json!({"name": "Alpha"})).unwrap()["layer"].as_u64().unwrap();
         let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_step_dt(1.0 / 60.0).with_max_steps(64).build_eframe(move |cc| {

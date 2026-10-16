@@ -8,7 +8,7 @@
 //! applies (or deletes the vector mask), `ui.dialog.set` with `"choice": "delete"` then
 //! `ui.dialog.confirm` deletes a layer mask, and `ui.dialog.cancel` keeps the mask.
 
-use photocraft_doc::LayerId;
+use redrob_photo_doc::LayerId;
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
@@ -80,7 +80,7 @@ pub fn confirm(app: &mut PhotocraftApp, fields: &Map<String, Value>) -> Result<V
     let vector = is_vector(fields);
     let layer = fields.get("layer").and_then(Value::as_u64);
     let same = fields.get("document").and_then(Value::as_u64) == Some(state.doc.id.0);
-    let has_mask = |l: &photocraft_doc::Layer| if vector { l.vector_mask.is_some() } else { l.mask.is_some() };
+    let has_mask = |l: &redrob_photo_doc::Layer| if vector { l.vector_mask.is_some() } else { l.mask.is_some() };
     let Some(layer) = layer.filter(|id| same && state.doc.layer(LayerId(*id)).is_some_and(has_mask)) else {
         return Err(tl!("The layer or its mask changed. Drag the mask onto the Trash again.").into());
     };

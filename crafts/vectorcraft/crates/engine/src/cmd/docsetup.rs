@@ -1,9 +1,9 @@
 //! File → Document Setup (`document.setup`): units, bleed, the transparency grid and simulated
 //! paper, output options and the document's type options.
 
+use redrob_vector_doc::setup::{DEFAULT_FLATTENER, GRID_COLOR_PRESETS, LANGUAGES, MAX_BLEED};
+use redrob_vector_doc::{Background, CharPosition, CharStyle, DocSetup, Document, ExportText, GridSize, NodeKind, Quotes, ScriptMetrics};
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::setup::{DEFAULT_FLATTENER, GRID_COLOR_PRESETS, LANGUAGES, MAX_BLEED};
-use vectorcraft_doc::{Background, CharPosition, CharStyle, DocSetup, Document, ExportText, GridSize, NodeKind, Quotes, ScriptMetrics};
 
 use super::flatten::{FlattenOptions, FlattenerPreset};
 
@@ -97,9 +97,9 @@ fn percent(k: &str, v: &Value, min: f64, max: f64) -> Result<f64> {
     v.as_f64().filter(|x| (min..=max).contains(x)).ok_or_else(|| bad(C, format!("{k} must be a number from {min} to {max}")))
 }
 
-fn apply(s: &mut DocSetup, units: &mut vectorcraft_doc::Unit, k: &str, v: &Value, saved: &[FlattenerPreset]) -> Result<()> {
+fn apply(s: &mut DocSetup, units: &mut redrob_vector_doc::Unit, k: &str, v: &Value, saved: &[FlattenerPreset]) -> Result<()> {
     match k {
-        "units" => *units = v.as_str().and_then(vectorcraft_doc::Unit::named).ok_or_else(|| bad(C, "unknown units"))?,
+        "units" => *units = v.as_str().and_then(redrob_vector_doc::Unit::named).ok_or_else(|| bad(C, "unknown units"))?,
         "bleed" => s.bleed = bleed_param(v, s.bleed, C)?,
         "outlineImages" => s.outline_images = flag(k, v)?,
         "highlightSubstitutedFonts" => s.highlight_substituted_fonts = flag(k, v)?,
@@ -181,7 +181,7 @@ pub(crate) fn bleed_param(v: &Value, current: [f64; 4], cmd: &str) -> Result<[f6
     }
 }
 
-fn grid_colors(v: &Value) -> Result<[vectorcraft_color::Color; 2]> {
+fn grid_colors(v: &Value) -> Result<[redrob_vector_color::Color; 2]> {
     if let Some(name) = v.as_str() {
         return GRID_COLOR_PRESETS.iter().find(|(n, _)| n.eq_ignore_ascii_case(name)).map(|(_, c)| *c).ok_or_else(|| {
             bad(C, format!("unknown grid colours `{name}` (one of {})", GRID_COLOR_PRESETS.iter().map(|(n, _)| *n).collect::<Vec<_>>().join(", ")))

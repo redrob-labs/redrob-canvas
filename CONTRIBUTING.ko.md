@@ -95,15 +95,13 @@ python3 -m unittest discover -s tools/tests -p "test_*.py"
 
 ## CI가 검사하는 것
 
-`.github/workflows/verify-upstream.yml`은 모든 풀 리퀘스트와 `main`, `develop` 푸시에 돕니다.
-`permissions: contents: read`를 선언하고 시크릿을 쓰지 않으므로, 포크의 풀 리퀘스트도 같은 검사를 받습니다.
+`.github/workflows/ci.yml`은 모든 풀 리퀘스트에 돕니다. `permissions: contents: read`를 선언하고 시크릿을
+쓰지 않으므로, 포크의 풀 리퀘스트도 같은 검사를 받습니다.
 
-| 체크 | 확인하는 것 |
+| 잡 | 확인하는 것 |
 | --- | --- |
-| **Upstream pins are well-formed and reachable** | `upstream-base.json`과 `docs/upstream-sources.toml`이 서로, subtree squash 커밋과, GitHub과 일치; 모든 `code` 핀이 허용적 라이선스; 귀속 문자열이 온전함; `crafts/` 밖에서 upstream 브랜드 자산을 건드리지 않음 |
-| **Rust workspace** | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --workspace --locked`, 셸의 릴리스 빌드 링크 |
-| **Distribution artifacts are current** | 생성된 `THIRD_PARTY_NOTICES.md`가 `Cargo.lock`과 일치; 디자인 시스템 가드; 도구 테스트 |
-| **Rust security advisories** | 커밋된 락파일에 대한 `cargo audit` |
+| **checks** | `upstream-base.json`과 `docs/upstream-sources.toml`이 서로, subtree squash 커밋과, GitHub과 일치; 모든 `code` 핀이 허용적 라이선스; 귀속 문자열이 온전함; `// legacy:` 읽기 경로 밖에 upstream 크레이트 이름·확장자 writer·URI 스킴·MIME·환경변수 접두사가 남지 않음(`scripts/check_upstream_ids.py`); 생성된 `THIRD_PARTY_NOTICES.md`가 `Cargo.lock`과 일치; 디자인 시스템 가드; 도구 테스트 |
+| **rust** | `cargo fmt --check`, 그 다음 우리 크레이트(`redrob-canvas`, `redrob-ai`, `redrob-agent`)만 `--profile ci`로 `cargo clippy -D warnings`와 `cargo test`; Rust 입력이 바뀌지 않았거나 PR이 `main`을 향하면 건너뜀 |
 
 배포 잡은 귀속 게이트입니다. 모든 아카이브가 `LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`, `NOTICE`,
 `THIRD_PARTY_NOTICES.md`를 담으므로, 오래된 고지 파일은 받는 이에게 한 약속의 결함입니다. 생성기는 의도적으로

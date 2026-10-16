@@ -15,7 +15,7 @@ use super::{TabStrip, pro_tab_title};
 fn harness(docs: usize, theme: ThemeKind) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1000.0, 700.0)).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, theme);
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         // The theme is an interface preference, applied on the first frame: set the preference.
         app.run("prefs.set", json!({"values": {"interface.theme": theme.id()}})).unwrap();
         for n in 1..=docs {

@@ -3,12 +3,12 @@
 //! All images and placed PDFs are tiny procedural fixtures.
 use std::sync::Arc;
 
-use craft_pdf::write::backend as krilla;
+use redrob_craft_pdf::write::backend as krilla;
 
-use designcraft_compose::Cache;
-use designcraft_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, Shape, SpreadRef};
-use designcraft_geom::{Affine, Rect, shapes};
-use designcraft_pdf::{BookletOptions, PdfOptions, Standard, export_booklet, export_pdf, export_pdf_with_report};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, Shape, SpreadRef};
+use redrob_layout_geom::{Affine, Rect, shapes};
+use redrob_layout_pdf::{BookletOptions, PdfOptions, Standard, export_booklet, export_pdf, export_pdf_with_report};
 
 use crate::image_fixtures as fixtures;
 

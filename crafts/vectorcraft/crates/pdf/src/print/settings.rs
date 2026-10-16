@@ -2,8 +2,8 @@
 //! falls back to its default, the checks that refuse values out of range, and the inks of a
 //! separation ([`PrintInk`]).
 
+use redrob_vector_color::cms::{self, Intent, ProfileKind};
 use serde::{Deserialize, Serialize};
-use vectorcraft_color::cms::{self, Intent, ProfileKind};
 
 use crate::settings::{choice, within};
 use crate::{BleedSettings, MarkSettings, PdfError};
@@ -171,7 +171,7 @@ choice! {
     } default Subset
 }
 
-/// File → Print settings (the dialog's sections; what [`vectorcraft_doc::Document::print_setup`]
+/// File → Print settings (the dialog's sections; what [`redrob_vector_doc::Document::print_setup`]
 /// stores).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]

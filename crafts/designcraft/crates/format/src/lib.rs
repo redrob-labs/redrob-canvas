@@ -1,7 +1,7 @@
-//! The native `.designcraft` format: a zip archive holding
+//! The native `.rlayout` format: a zip archive holding
 //!
-//! - `mimetype` (stored first, uncompressed): `application/vnd.designcraft+zip`
-//! - `document.json`: the [`Document`] (pretty JSON, documented by the serde model in `designcraft-doc`)
+//! - `mimetype` (stored first, uncompressed): `application/vnd.redrob-layout+zip`
+//! - `document.json`: the [`Document`] (pretty JSON, documented by the serde model in `redrob-layout-doc`)
 //! - `assets/<id>.<ext>`: embedded placed files, byte-for-byte: one per distinct file, and only
 //!   the ones the document references (see [`Document::compact_assets`])
 //! - `meta.json`: format version and generator
@@ -16,10 +16,14 @@ use std::hash::BuildHasher;
 use std::io::{Cursor, Read, Write};
 use std::sync::Arc;
 
-use designcraft_doc::{AssetId, Document, ParaAttrs, Story};
+use redrob_layout_doc::{AssetId, Document, ParaAttrs, Story};
 use serde_json::{Value, json};
 
-pub const MIME: &str = "application/vnd.designcraft+zip";
+pub const MIME: &str = "application/vnd.redrob-layout+zip";
+/// File extension of the native format.
+pub const EXTENSION: &str = "rlayout";
+/// The extension the format had upstream. Still opened, never written.
+pub const LEGACY_EXTENSION: &str = "designcraft"; // legacy: upstream extension, read only
 pub const VERSION: u32 = 2;
 
 #[derive(Debug, thiserror::Error)]
@@ -45,7 +49,7 @@ fn ext_for(mime: &str) -> &'static str {
     }
 }
 
-/// Serialize a document to `.designcraft` bytes. The file holds each distinct placed file once
+/// Serialize a document to `.rlayout` bytes. The file holds each distinct placed file once
 /// and leaves out assets nothing references; `doc` itself keeps them (undo can bring them back).
 pub fn save(doc: &Document) -> Result<Vec<u8>, FormatError> {
     let mut compact = doc.clone();
@@ -79,7 +83,7 @@ pub fn save(doc: &Document) -> Result<Vec<u8>, FormatError> {
     Ok(buf.into_inner())
 }
 
-/// Read `.designcraft` bytes (zip, or the legacy single JSON file).
+/// Read `.rlayout` bytes (zip, or the legacy single JSON file).
 pub fn load(bytes: &[u8]) -> Result<Document, FormatError> {
     if bytes.starts_with(b"PK") {
         return load_zip(bytes);
@@ -87,7 +91,7 @@ pub fn load(bytes: &[u8]) -> Result<Document, FormatError> {
     load_legacy_json(bytes)
 }
 
-/// Most entries a `.designcraft` archive may hold.
+/// Most entries a `.rlayout` archive may hold.
 const MAX_ENTRIES: usize = 100_000;
 /// Most bytes `meta.json` or `document.json` may expand to.
 const MAX_JSON_BYTES: u64 = 256 << 20;
@@ -305,9 +309,9 @@ fn base64_decode(s: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_doc::build::NewDocument;
-    use designcraft_doc::geom::Rect;
-    use designcraft_doc::{Asset, ParaFormat, SpreadRef};
+    use redrob_layout_doc::build::NewDocument;
+    use redrob_layout_doc::geom::Rect;
+    use redrob_layout_doc::{Asset, ParaFormat, SpreadRef};
 
     fn png_asset(d: &mut Document, data: &[u8]) -> AssetId {
         let aid = AssetId(d.alloc());
@@ -324,9 +328,9 @@ mod tests {
         aid
     }
 
-    fn place(d: &mut Document, asset: AssetId, crop: f64) -> designcraft_doc::ItemId {
-        use designcraft_doc::geom::{Affine, shapes};
-        use designcraft_doc::{Content, Graphic, Item, ItemId, Shape};
+    fn place(d: &mut Document, asset: AssetId, crop: f64) -> redrob_layout_doc::ItemId {
+        use redrob_layout_doc::geom::{Affine, shapes};
+        use redrob_layout_doc::{Content, Graphic, Item, ItemId, Shape};
         let id = ItemId(d.alloc());
         let mut it = Item::new(id, d.default_layer(), Shape::Rectangle, shapes::rectangle(Rect::new(0.0, 0.0, 50.0, 50.0)));
         it.content = Content::Graphic(Graphic {
@@ -388,12 +392,12 @@ mod tests {
         z.finish().unwrap().into_inner()
     }
 
-    fn para_style(name: &str, based_on: Option<&str>, keep_all_lines: Option<bool>) -> designcraft_doc::ParagraphStyle {
-        designcraft_doc::ParagraphStyle {
+    fn para_style(name: &str, based_on: Option<&str>, keep_all_lines: Option<bool>) -> redrob_layout_doc::ParagraphStyle {
+        redrob_layout_doc::ParagraphStyle {
             name: name.into(),
             based_on: based_on.map(str::to_string),
             next_style: None,
-            para: designcraft_doc::ParaAttrs { keep_lines_together: Some(true), keep_all_lines, ..Default::default() },
+            para: redrob_layout_doc::ParaAttrs { keep_lines_together: Some(true), keep_all_lines, ..Default::default() },
             chars: Default::default(),
             shortcut: String::new(),
         }
@@ -412,7 +416,7 @@ mod tests {
         st.paragraph.push(para_style("Loop A", Some("Loop B"), None));
         st.paragraph.push(para_style("Loop B", Some("Loop A"), None));
         let lid = d.default_layer();
-        let names = [designcraft_doc::story::BASIC_PARAGRAPH, "Root", "Child", "Explicit", "Under explicit", "Loop A", "Loop B", "Missing"];
+        let names = [redrob_layout_doc::story::BASIC_PARAGRAPH, "Root", "Child", "Explicit", "Under explicit", "Loop A", "Loop B", "Missing"];
         let text = names.join("\n");
         let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(10.0, 10.0, 200.0, 200.0), lid, &text, ParaFormat::default()).unwrap();
         {
@@ -441,7 +445,7 @@ mod tests {
         let now = load(&save(&d).unwrap()).unwrap();
         let p = &now.story(sid).unwrap().paras[0];
         assert!(!now.styles.resolve_para(p).0.keep_all_lines);
-        assert!(!designcraft_doc::ParaProps::default().keep_all_lines);
+        assert!(!redrob_layout_doc::ParaProps::default().keep_all_lines);
     }
 
     /// Format 1 wrote paragraph rules, text frame options and numbered lists in full, so their
@@ -451,18 +455,18 @@ mod tests {
     fn format_1_rules_frames_and_lists_load_as_saved() {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
-        let old_rule = designcraft_doc::Rule { on: true, color: designcraft_doc::color::swatch::BLACK.into(), ..Default::default() };
+        let old_rule = redrob_layout_doc::Rule { on: true, color: redrob_layout_doc::color::swatch::BLACK.into(), ..Default::default() };
         let (fid, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(10.0, 10.0, 200.0, 200.0), lid, "Ruled", ParaFormat::default()).unwrap();
         d.story_mut(sid).unwrap().paras[0].para.rule_above = Some(old_rule.clone());
         d.item_mut(fid).unwrap().text_frame_mut().unwrap().options.auto_size_ref = 1;
-        d.settings.lists.push(designcraft_doc::NumberedList { name: "Steps".into(), continue_across_stories: true });
+        d.settings.lists.push(redrob_layout_doc::NumberedList { name: "Steps".into(), continue_across_stories: true });
         let back = load(&save_v1(&d)).unwrap();
         assert_eq!(back.story(sid).unwrap().paras[0].para.rule_above, Some(old_rule));
         assert_eq!(back.item(fid).unwrap().text_frame().unwrap().options.auto_size_ref, 1);
         assert!(back.settings.lists[0].continue_across_stories);
-        assert_eq!(designcraft_doc::Rule::default().color, designcraft_doc::TEXT_COLOR);
-        assert_eq!(designcraft_doc::TextFrameOptions::default().auto_size_ref, 4);
-        assert!(!designcraft_doc::NumberedList::default().continue_across_stories);
+        assert_eq!(redrob_layout_doc::Rule::default().color, redrob_layout_doc::TEXT_COLOR);
+        assert_eq!(redrob_layout_doc::TextFrameOptions::default().auto_size_ref, 4);
+        assert!(!redrob_layout_doc::NumberedList::default().continue_across_stories);
     }
 
     /// Format 1 set drop caps without Align Left Edge: those documents still do where nothing set
@@ -472,8 +476,8 @@ mod tests {
         let mut d = Document::new(&NewDocument::default());
         let st = d.styles_mut();
         st.paragraph.push(para_style("Opener", None, None));
-        st.paragraph.push(designcraft_doc::ParagraphStyle {
-            para: designcraft_doc::ParaAttrs { drop_cap_align_left: Some(true), ..Default::default() },
+        st.paragraph.push(redrob_layout_doc::ParagraphStyle {
+            para: redrob_layout_doc::ParaAttrs { drop_cap_align_left: Some(true), ..Default::default() },
             ..para_style("Aligned", None, None)
         });
         let lid = d.default_layer();

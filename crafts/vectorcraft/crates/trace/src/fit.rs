@@ -1,6 +1,6 @@
 //! Loop → Bézier curves, and the pieces of that which centre lines use too.
 
-use vectorcraft_geom::{Anchor, AnchorKind, Point, SubPath};
+use redrob_vector_geom::{Anchor, AnchorKind, Point, SubPath};
 
 use crate::contour::Loop;
 use crate::logo::{Cubic, Stats, Style, all_within, fit_open, fit_outline, resample_closed, resample_open, sample_cubics};

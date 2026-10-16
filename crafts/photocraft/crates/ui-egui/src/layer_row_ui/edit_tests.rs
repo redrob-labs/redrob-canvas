@@ -2,12 +2,12 @@
 
 use egui::{Event, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
-use photocraft_doc::{LayerContent, LayerId};
+use redrob_photo_doc::{LayerContent, LayerId};
 use serde_json::json;
 
 use crate::PhotocraftApp;
 
-fn harness(session: photocraft_engine::Session, ppp: f32) -> Harness<'static, PhotocraftApp> {
+fn harness(session: redrob_photo_engine::Session, ppp: f32) -> Harness<'static, PhotocraftApp> {
     let mut h =
         Harness::builder().with_size(vec2(1440.0, 900.0)).with_pixels_per_point(ppp).with_step_dt(1.0 / 60.0).with_max_steps(64).build_eframe(move |cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
@@ -48,8 +48,8 @@ fn thumbnail(h: &Harness<'_, PhotocraftApp>, id: u64) -> Pos2 {
     pos2(r.left() + 6.0 + 28.0 + 12.0, r.center().y)
 }
 
-fn session() -> photocraft_engine::Session {
-    let mut s = photocraft_engine::Session::new();
+fn session() -> redrob_photo_engine::Session {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 640, "height": 480})).unwrap();
     s
 }
@@ -159,7 +159,7 @@ fn mask_double_click_launches_select_and_mask_with_preference() {
 
 #[test]
 fn edit_type_command_rejects_missing_or_non_type_layers_without_changes() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     for has_document in [false, true] {
         if has_document {
@@ -183,8 +183,8 @@ fn layer_reselection_commits_type_edit_and_cancel_preserves_committed_text() {
         let mut doc = (*st.doc).clone();
         let LayerContent::Text(t) = &mut doc.layer_mut(LayerId(id)).unwrap().content else { panic!("text") };
         let mut moved = t.clone();
-        moved.transform = photocraft_geom::Affine::translate(350.0, 280.0);
-        let cache = photocraft_text::shared().lock().unwrap().render(&moved, 72.0, photocraft_color::PixelFormat::RGBA8).1.surface;
+        moved.transform = redrob_photo_geom::Affine::translate(350.0, 280.0);
+        let cache = redrob_photo_text::shared().lock().unwrap().render(&moved, 72.0, redrob_photo_color::PixelFormat::RGBA8).1.surface;
         t.cache = Some(cache.clone());
         st.doc = std::sync::Arc::new(doc);
         st.revision += 1;

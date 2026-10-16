@@ -50,7 +50,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
     let sample = font_menu::sample_text(app);
     // Find in Folder… shows when the document misses fonts, fonts used only in its symbols included.
     let offer_folder = crate::picks::can(app, &crate::picks::PickRequest::Folder)
-        && app.session.active().is_some_and(|st| !vectorcraft_engine::cmd::fontfiles::missing_fonts(&st.doc).is_empty());
+        && app.session.active().is_some_and(|st| !redrob_vector_engine::cmd::fontfiles::missing_fonts(&st.doc).is_empty());
     let mut close = false;
     let mut find_in_folder = false;
     let mut act: Option<&str> = None;
@@ -89,7 +89,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
                 d.fields.insert("family".into(), json!(f));
                 d.fields.insert("style".into(), json!(style.unwrap_or_default()));
             }
-            let styles = vectorcraft_text::FontDb::global().styles(&d.str("family"));
+            let styles = redrob_vector_text::FontDb::global().styles(&d.str("family"));
             // "(closest)" is ours; the font's style names are shown as they are.
             let closest = tl!("(closest)");
             let mut opts: Vec<&str> = vec![closest];
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn dialog_draws_and_changes_all() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         app.session.execute("text.create", &json!({"x": 10, "y": 40, "text": "Hi", "font": "Missing Family"})).unwrap();
         open(&mut app);
@@ -184,9 +184,9 @@ mod tests {
 
     #[test]
     fn find_in_folder_puts_the_missing_fonts_dialog_in_find_fonts_place() {
-        let dir = std::fs::canonicalize(vectorcraft_testkit::temp_dir("find-font-folder")).unwrap();
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
-        app.session.search_rules = Some(vectorcraft_engine::cmd::findfiles::Rules { user_content: vec![dir.clone()], ..Default::default() });
+        let dir = std::fs::canonicalize(redrob_vector_testkit::temp_dir("find-font-folder")).unwrap();
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
+        app.session.search_rules = Some(redrob_vector_engine::cmd::findfiles::Rules { user_content: vec![dir.clone()], ..Default::default() });
         app.session.search_threads = Some(1);
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         assert!(!crate::menus::enabled(&app, "ui.findFontsInFolder"), "no folder picker (the web)");

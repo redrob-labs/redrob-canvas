@@ -51,8 +51,8 @@ mod prefs_dir;
 mod system_fonts;
 
 use serde_json::{Value, json};
-use vectorcraft_engine::file_access::{self, AutomationRoots};
-use vectorcraft_mcp::{Backend, DEFAULT_ADDR, Headless, Remote, Server};
+use redrob_vector_engine::file_access::{self, AutomationRoots};
+use redrob_vector_mcp::{Backend, DEFAULT_ADDR, Headless, Remote, Server};
 
 /// stdout went away. A reader that stopped early (a closed pipe) ends the program quietly, as
 /// ripgrep does; any other write error is reported.
@@ -114,7 +114,7 @@ USAGE:
 
 /// The usage text plus the formats `document.open` reads and `document.export` writes.
 fn usage() -> String {
-    use vectorcraft_engine::cmd::fileio::{OPEN_EXTS, export_extensions};
+    use redrob_vector_engine::cmd::fileio::{OPEN_EXTS, export_extensions};
     format!("{USAGE}\nReadable formats: .{}\nWritable formats: .{}\n", OPEN_EXTS.join(", ."), export_extensions().join(", ."))
 }
 
@@ -204,8 +204,8 @@ fn mcp(args: &[String]) -> Result<(), String> {
     };
     eprintln!("vectorcraft-cli: MCP server on stdio ({})", backend.describe());
     // The binary owns the logger, not the library: installing one here keeps an embedder that
-    // uses `vectorcraft_mcp` free to bring its own. Silent until a client sends logging/setLevel.
-    vectorcraft_mcp::logging::install();
+    // uses `redrob_vector_mcp` free to bring its own. Silent until a client sends logging/setLevel.
+    redrob_vector_mcp::logging::install();
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
     Server::new(backend).serve(stdin.lock(), stdout.lock()).map_err(|e| e.to_string())
@@ -335,12 +335,12 @@ fn run(args: &[String]) -> Result<(), String> {
     } else if !matches!(steps.first(), Some(Step::Cmd(id, _)) if id == "file.new") {
         h.ensure_document();
     }
-    // Each step's result, for later steps to refer to (`"$1.id"`, see `vectorcraft_engine::steps`).
+    // Each step's result, for later steps to refer to (`"$1.id"`, see `redrob_vector_engine::steps`).
     let mut results = vec![];
     for step in steps {
         let r = match step {
             Step::Cmd(id, params) => {
-                let params = vectorcraft_engine::steps::resolve(&params, &results).map_err(|e| format!("{id}: {e}"))?;
+                let params = redrob_vector_engine::steps::resolve(&params, &results).map_err(|e| format!("{id}: {e}"))?;
                 let r = h.call("engine.execute", json!({"command": id, "params": params})).map_err(|e| format!("{id}: {e}"))?;
                 emit(json!({"step": "cmd", "command": id, "result": r}))?;
                 r
@@ -379,13 +379,13 @@ fn bench(args: &[String]) -> Result<(), String> {
     let doc = hl.session.doc().map_err(|e| e.to_string())?.doc.clone();
     let b = doc.artboards.first().map(|a| a.rect).ok_or("document has no artboard")?;
     let z = (w as f64 / b.width()).min(h as f64 / b.height()) * 0.95;
-    let view = vectorcraft_geom::Affine::translate((w as f64 / 2.0, h as f64 / 2.0))
-        * vectorcraft_geom::Affine::scale(z)
-        * vectorcraft_geom::Affine::translate(-b.center().to_vec2());
-    let opts = vectorcraft_render::RenderOptions::default();
+    let view = redrob_vector_geom::Affine::translate((w as f64 / 2.0, h as f64 / 2.0))
+        * redrob_vector_geom::Affine::scale(z)
+        * redrob_vector_geom::Affine::translate(-b.center().to_vec2());
+    let opts = redrob_vector_render::RenderOptions::default();
     outln!("{file}: {} nodes, {w}x{h}", doc.layers.iter().map(|l| l.count()).sum::<usize>());
-    for threads in [vectorcraft_render::default_threads(), 0] {
-        let mut r = vectorcraft_render::Renderer::new();
+    for threads in [redrob_vector_render::default_threads(), 0] {
+        let mut r = redrob_vector_render::Renderer::new();
         r.threads = threads;
         r.render(&doc, w, h, view, &opts);
         let t = std::time::Instant::now();

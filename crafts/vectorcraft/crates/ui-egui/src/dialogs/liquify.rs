@@ -8,8 +8,8 @@
 //! (Twirl, −180–180°); `complexity` (0–15), `affectAnchors`, `affectIn`, `affectOut` (Scallop,
 //! Crystallize, Wrinkle); `horizontal`, `vertical` (Wrinkle, %); `showBrush`.
 
+use redrob_vector_tools::distort::liquify::LiquifyKind;
 use serde_json::{Map, Value, json};
-use vectorcraft_tools::distort::liquify::LiquifyKind;
 
 use super::document_setup::check;
 use super::{DialogSpec, form, run_and_close};
@@ -151,7 +151,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
@@ -223,7 +223,7 @@ mod tests {
         app.run("select.set", json!({"ids": []})).unwrap();
         app.select_tool("bloat");
         let view = app.view_info();
-        crate::canvas::dispatch(&mut app, &vectorcraft_tools::PointerEvent::new(vectorcraft_tools::PointerKind::Down, 105.0, 95.0), view);
+        crate::canvas::dispatch(&mut app, &redrob_vector_tools::PointerEvent::new(redrob_vector_tools::PointerKind::Down, 105.0, 95.0), view);
         assert!(app.ui.status.contains("Bloat left 1 object under the brush"), "{}", app.ui.status);
     }
 }

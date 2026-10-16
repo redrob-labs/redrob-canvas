@@ -11,9 +11,9 @@ use std::sync::Arc;
 
 use redrob_ai::Rgba8Image;
 use redrob_ai::vectorize::{TraceResult, TracedPath};
+use redrob_vector_doc::{Appearance, Document, Node, NodeId, color::Color, color::Paint};
+use redrob_vector_geom::Affine;
 use serde_json::json;
-use vectorcraft_doc::{Appearance, Document, Node, NodeId, color::Color, color::Paint};
-use vectorcraft_geom::Affine;
 
 use crate::ai::bridge::{LayoutBridge, ModeBridge, PhotoBridge, VectorBridge};
 use crate::shell::{Mode, ShellApp};
@@ -109,7 +109,7 @@ pub fn trace_to_nodes(
     result: &TraceResult,
     origin: (f64, f64),
     layer: Option<NodeId>,
-) -> Result<(NodeId, Vec<NodeId>), vectorcraft_doc::DocError> {
+) -> Result<(NodeId, Vec<NodeId>), redrob_vector_doc::DocError> {
     let shift = Affine::translate(origin);
     let mut ids = Vec::with_capacity(result.paths.len());
     let mut children = Vec::with_capacity(result.paths.len());
@@ -240,11 +240,11 @@ pub fn raster_to_layout(shell: &mut ShellApp) -> Result<String, String> {
     Ok(format!("Placed {file} on the Layout page"))
 }
 
-/// The Vector document's active artboard as an SVG string (`vectorcraft_svg::export`,
+/// The Vector document's active artboard as an SVG string (`redrob_vector_svg::export`,
 /// crafts/vectorcraft/crates/svg/src/lib.rs L321; `ExportOptions::artboard` sets the viewBox,
 /// L186), with the document's title and the artboard's size in points. `None` with no document.
 pub fn vector_svg(
-    app: &vectorcraft_ui_egui::VectorcraftApp,
+    app: &redrob_vector_ui_egui::VectorcraftApp,
 ) -> Option<(String, String, (f64, f64))> {
     let st = app.session.active()?;
     let index = app
@@ -254,17 +254,17 @@ pub fn vector_svg(
         .unwrap_or(0);
     let board = st.doc.artboards.get(index)?;
     let size = (board.rect.width(), board.rect.height());
-    let opts = vectorcraft_svg::ExportOptions {
+    let opts = redrob_vector_svg::ExportOptions {
         artboard: Some(index),
-        ..vectorcraft_svg::ExportOptions::default()
+        ..redrob_vector_svg::ExportOptions::default()
     };
-    let svg = vectorcraft_svg::export(&st.doc, &opts);
+    let svg = redrob_vector_svg::export(&st.doc, &opts);
     Some((st.title(), svg, size))
 }
 
 /// Vector artboard -> SVG -> Layout asset on the current page. SVG assets are kept as SVG and
-/// rasterised by resvg when drawn (`designcraft_images::is_svg`,
-/// crafts/designcraft/crates/images/src/lib.rs L27; `designcraft_render::natural_size` reads the
+/// rasterised by resvg when drawn (`redrob_layout_images::is_svg`,
+/// crafts/designcraft/crates/images/src/lib.rs L27; `redrob_layout_render::natural_size` reads the
 /// SVG's own size, crates/render/src/lib.rs L1149).
 pub fn vector_to_layout(shell: &mut ShellApp) -> Result<String, String> {
     let (title, svg, natural) =
@@ -311,10 +311,10 @@ fn place_in_layout(
         .content_box()
         .ok_or_else(|| "the Layout document has no page".to_owned())?;
     let width = natural.0.min(content.width()).max(1.0);
-    // `vectorcraft_svg::base64_encode` (crafts/vectorcraft/crates/svg/src/lib.rs L546): the
+    // `redrob_vector_svg::base64_encode` (crafts/vectorcraft/crates/svg/src/lib.rs L546): the
     // standard alphabet with padding, which `file.place`'s decoder reads.
     let params = json!({
-        "base64": vectorcraft_svg::base64_encode(bytes),
+        "base64": redrob_vector_svg::base64_encode(bytes),
         "name": file,
         "spread": spread,
         "x": content.x0,
@@ -327,22 +327,22 @@ fn place_in_layout(
 /// A new Photo document holding `image` as its one raster layer named `name`
 /// (`Document::new(name, size, mode, depth)`, crafts/photocraft/crates/doc/src/lib.rs L947;
 /// `Layer::new` L672; `Document::insert_above(None, layer)` L1168 appends at the top).
-pub fn photo_document_from(name: &str, image: &Rgba8Image) -> photocraft_doc::Document {
-    let size = photocraft_geom::Size::new(image.width, image.height);
-    let mut doc = photocraft_doc::Document::new(
+pub fn photo_document_from(name: &str, image: &Rgba8Image) -> redrob_photo_doc::Document {
+    let size = redrob_photo_geom::Size::new(image.width, image.height);
+    let mut doc = redrob_photo_doc::Document::new(
         name,
         size,
-        photocraft_color::ColorMode::Rgb,
-        photocraft_color::SampleType::U8,
+        redrob_photo_color::ColorMode::Rgb,
+        redrob_photo_color::SampleType::U8,
     );
-    let rect = photocraft_geom::Rect::new(0, 0, image.width as i32, image.height as i32);
-    let rgba8 = photocraft_color::PixelFormat::RGBA8;
-    let mut surface = photocraft_raster::Surface::from_interleaved(rgba8, rect, &image.data);
+    let rect = redrob_photo_geom::Rect::new(0, 0, image.width as i32, image.height as i32);
+    let rgba8 = redrob_photo_color::PixelFormat::RGBA8;
+    let mut surface = redrob_photo_raster::Surface::from_interleaved(rgba8, rect, &image.data);
     let want = doc.pixel_format();
     if want != rgba8 {
         surface = surface.convert(want);
     }
-    let layer = photocraft_doc::Layer::new(name, photocraft_doc::LayerContent::Raster(surface));
+    let layer = redrob_photo_doc::Layer::new(name, redrob_photo_doc::LayerContent::Raster(surface));
     doc.insert_above(None, layer);
     doc
 }
@@ -407,7 +407,7 @@ pub fn layout_page_to_photo(shell: &mut ShellApp) -> Result<String, String> {
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
-    use vectorcraft_geom::{PathData, Point, Rect, shapes};
+    use redrob_vector_geom::{PathData, Point, Rect, shapes};
 
     fn traced(x: f64, color: [u8; 3], stroke: Option<f64>) -> TracedPath {
         TracedPath {
@@ -535,16 +535,16 @@ mod tests {
             Appearance::basic(Paint::solid(Color::rgb8(200, 30, 30)), Paint::None, 0.0);
         doc.insert(layer, usize::MAX, Node::path(id, path, appearance))
             .unwrap();
-        let opts = vectorcraft_svg::ExportOptions {
+        let opts = redrob_vector_svg::ExportOptions {
             artboard: Some(0),
-            ..vectorcraft_svg::ExportOptions::default()
+            ..redrob_vector_svg::ExportOptions::default()
         };
-        let svg = vectorcraft_svg::export(&doc, &opts);
+        let svg = redrob_vector_svg::export(&doc, &opts);
         assert!(!svg.trim().is_empty());
         assert!(svg.contains("<svg"), "{svg}");
         assert!(svg.contains("<path"), "{svg}");
         // The SVG is what Layout stores as the asset: designcraft recognises it as SVG.
-        assert!(designcraft_images::is_svg(svg.as_bytes()));
+        assert!(redrob_layout_images::is_svg(svg.as_bytes()));
     }
 
     #[test]
@@ -555,7 +555,7 @@ mod tests {
         assert_eq!((doc.size.width, doc.size.height), (3, 2));
         assert_eq!(doc.layers.len(), 1);
         assert_eq!(doc.layers[0].name, "art.png");
-        let flat = photocraft_compose::flatten(&doc).to_rgba8();
+        let flat = redrob_photo_compose::flatten(&doc).to_rgba8();
         assert_eq!((flat.width, flat.height), (3, 2));
         assert_eq!(&flat.pixels[0..4], &[255, 0, 0, 255]);
     }

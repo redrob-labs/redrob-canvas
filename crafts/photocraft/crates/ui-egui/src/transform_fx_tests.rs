@@ -2,8 +2,8 @@
 //! canvas: at every bit depth and colour mode, for pixel layers and groups, following edits made
 //! while the box is open, and matching what the commit leaves.
 
-use photocraft_compose::Buffer;
-use photocraft_doc::{Layer, LayerId};
+use redrob_photo_compose::Buffer;
+use redrob_photo_doc::{Layer, LayerId};
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -12,7 +12,7 @@ use crate::transform_fx::Plan;
 /// A 200 × 160 document with a 40 × 20 blue block at (60, 60) on its own layer, wearing a 4 px
 /// red outside Stroke.
 fn app(mode: &str, depth: u32) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 160, "mode": mode, "depth": depth})).unwrap();
     app.run("layer.new.layer", json!({"name": "styled"})).unwrap();
     app.run("select.rect", json!({"x": 60, "y": 60, "width": 40, "height": 20})).unwrap();
@@ -103,7 +103,7 @@ fn the_preview_matches_the_committed_layer() {
         for l in solo.layers.iter_mut() {
             l.visible = l.id == id;
         }
-        let committed = photocraft_compose::render(&solo, plan.shown);
+        let committed = redrob_photo_compose::render(&solo, plan.shown);
         let premultiplied = |p: &[f32; 4]| [p[0] * p[3], p[1] * p[3], p[2] * p[3], p[3]];
         let (mut sum, mut off) = (0.0f64, 0usize);
         for (a, b) in shown.px.iter().zip(&committed.px) {
@@ -273,5 +273,5 @@ fn the_canvas_draws_the_styled_preview_and_reuses_it_between_frames() {
     let app = h.state();
     assert!(app.ui.transform.is_none() && app.transform_preview.is_none());
     let st = app.session.active().unwrap();
-    assert!(photocraft_compose::effects::has_effects(st.doc.layer(st.active_layer.unwrap()).unwrap()));
+    assert!(redrob_photo_compose::effects::has_effects(st.doc.layer(st.active_layer.unwrap()).unwrap()));
 }

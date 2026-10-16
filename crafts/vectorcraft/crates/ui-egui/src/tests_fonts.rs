@@ -1,8 +1,8 @@
 //! The font menus list the installed fonts without asking for them (#36).
 
+use redrob_vector_engine::Session;
+use redrob_vector_text::{FontDb, system_font_dirs};
 use serde_json::json;
-use vectorcraft_engine::Session;
-use vectorcraft_text::{FontDb, system_font_dirs};
 
 use crate::{VectorcraftApp, menus};
 

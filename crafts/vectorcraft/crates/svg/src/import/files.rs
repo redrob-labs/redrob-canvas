@@ -9,8 +9,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use redrob_vector_doc::LinkInfo;
 use usvg::{ImageHrefResolver, ImageKind, roxmltree};
-use vectorcraft_doc::LinkInfo;
 
 use super::{Edits, href};
 use crate::ImportOptions;

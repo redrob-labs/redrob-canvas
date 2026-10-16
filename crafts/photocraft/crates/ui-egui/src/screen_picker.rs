@@ -65,17 +65,17 @@ impl ScreenImage {
         let p = (pos - rect.min) / rect.size();
         Some((((p.x * self.width as f32) as usize).min(self.width.saturating_sub(1)), ((p.y * self.height as f32) as usize).min(self.height.saturating_sub(1))))
     }
-    fn conversion(&self) -> Result<Option<Arc<photocraft_cms::Transform>>, String> {
+    fn conversion(&self) -> Result<Option<Arc<redrob_photo_cms::Transform>>, String> {
         let Some(bytes) = &self.profile else { return Ok(None) };
-        let source = photocraft_cms::Profile::parse(bytes).map_err(|e| e.to_string())?;
-        if source.color_space != photocraft_cms::ColorSpace::Rgb {
+        let source = redrob_photo_cms::Profile::parse(bytes).map_err(|e| e.to_string())?;
+        if source.color_space != redrob_photo_cms::ColorSpace::Rgb {
             return Err("Screen profile must describe RGB pixels".into());
         }
-        photocraft_cms::Transform::new(&source, photocraft_cms::Builtin::Srgb.profile(), photocraft_cms::Intent::RelativeColorimetric, true)
+        redrob_photo_cms::Transform::new(&source, redrob_photo_cms::Builtin::Srgb.profile(), redrob_photo_cms::Intent::RelativeColorimetric, true)
             .map(|t| Some(Arc::new(t)))
             .map_err(|e| e.to_string())
     }
-    fn sample(&self, x: usize, y: usize, conversion: Option<&photocraft_cms::Transform>) -> Result<[f32; 3], String> {
+    fn sample(&self, x: usize, y: usize, conversion: Option<&redrob_photo_cms::Transform>) -> Result<[f32; 3], String> {
         let p = self.pixel(x, y).ok_or("Screen pixel is out of bounds")?;
         let mut rgb = [f32::from(p.r()) / 255.0, f32::from(p.g()) / 255.0, f32::from(p.b()) / 255.0];
         if let Some(t) = conversion {
@@ -88,9 +88,9 @@ impl ScreenImage {
 struct Snapshot {
     image: Arc<ScreenImage>,
     texture: egui::TextureHandle,
-    conversion: Option<Arc<photocraft_cms::Transform>>,
+    conversion: Option<Arc<redrob_photo_cms::Transform>>,
 }
-type Target = (Option<photocraft_doc::DocId>, Option<photocraft_doc::LayerId>, Option<u64>);
+type Target = (Option<redrob_photo_doc::DocId>, Option<redrob_photo_doc::LayerId>, Option<u64>);
 #[derive(Default)]
 struct Runtime {
     request: Option<Id>,
@@ -316,7 +316,7 @@ type Answer = Result<Option<[f32; 3]>, String>;
 /// and stays on top, so every way out must work (#4291): Esc, closing the window, a right-click,
 /// and a left click (or a press and release that moved) anywhere, which picks the pixel under
 /// it, or cancels when there's none to sample. Nothing it gets leaves the user stuck in it.
-fn frame(ui: &mut egui::Ui, shared: &Shared, image: &ScreenImage, texture: &egui::TextureHandle, conversion: Option<&photocraft_cms::Transform>) {
+fn frame(ui: &mut egui::Ui, shared: &Shared, image: &ScreenImage, texture: &egui::TextureHandle, conversion: Option<&redrob_photo_cms::Transform>) {
     let ctx = ui.ctx().clone();
     let answer = |a: Answer| {
         lock(shared).answer = Some(a);
@@ -454,7 +454,7 @@ mod tests {
         i.size.x = f32::NAN;
         assert!(i.validate().is_err());
         let mut i = image();
-        i.profile = Some(photocraft_cms::Builtin::LabD50.profile().to_bytes().as_ref().clone());
+        i.profile = Some(redrob_photo_cms::Builtin::LabD50.profile().to_bytes().as_ref().clone());
         assert!(i.conversion().is_err());
     }
     /// The picker window's frame over [`image`] (red | azure) filling a 200 × 100 window, with its
@@ -519,7 +519,7 @@ mod tests {
         assert_eq!(picker_answer(|h| h.key_press(egui::Key::Escape)), Some(Ok(None)), "Esc cancels");
     }
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", serde_json::json!({"width":8,"height":8})).unwrap();
         app
     }

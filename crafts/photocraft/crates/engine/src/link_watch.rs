@@ -20,7 +20,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Mutex, PoisonError};
 
-use photocraft_doc::{Document, LayerContent, LayerId, SmartSource};
+use redrob_photo_doc::{Document, LayerContent, LayerId, SmartSource};
 use serde_json::{Value, json};
 
 use crate::{EngineError, Result, Session};
@@ -152,7 +152,7 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
-    use photocraft_geom::Rect;
+    use redrob_photo_geom::Rect;
     use serde_json::json;
 
     use crate::Session;
@@ -193,7 +193,7 @@ mod tests {
     }
 
     fn centre(s: &Session) -> [f32; 3] {
-        let p = photocraft_compose::render(&s.active().unwrap().doc, Rect::new(20, 20, 21, 21)).px[0];
+        let p = redrob_photo_compose::render(&s.active().unwrap().doc, Rect::new(20, 20, 21, 21)).px[0];
         [p[0], p[1], p[2]]
     }
 

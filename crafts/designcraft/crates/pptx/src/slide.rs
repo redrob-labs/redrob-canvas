@@ -3,12 +3,12 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
-use designcraft_color::swatch::resolve_gradient;
-use designcraft_color::{BlendMode, GradientKind};
-use designcraft_compose::Cache;
-use designcraft_doc::{Arrowhead, AssetId, Cap, Content, Document, Graphic, Item, Join, Shape, Stroke, StrokeAlign, StrokeType};
-use designcraft_geom::kurbo::{PathEl, Shape as _};
-use designcraft_geom::{Affine, BezPath, Point, Rect, Vec2, corners};
+use redrob_layout_color::swatch::resolve_gradient;
+use redrob_layout_color::{BlendMode, GradientKind};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::{Arrowhead, AssetId, Cap, Content, Document, Graphic, Item, Join, Shape, Stroke, StrokeAlign, StrokeType};
+use redrob_layout_geom::kurbo::{PathEl, Shape as _};
+use redrob_layout_geom::{Affine, BezPath, Point, Rect, Vec2, corners};
 
 use crate::fonts::Fonts;
 use crate::package::{Media, REL_IMAGE, Rel, Slide};
@@ -411,7 +411,7 @@ impl<'a> Exporter<'a> {
         Some(srgb(c.to_rgb(), alpha))
     }
 
-    pub fn fill(&mut self, f: &designcraft_doc::Fill, closed: bool, opacity: f32) -> String {
+    pub fn fill(&mut self, f: &redrob_layout_doc::Fill, closed: bool, opacity: f32) -> String {
         if f.is_none() || !closed {
             return "<a:noFill/>".into();
         }
@@ -579,7 +579,7 @@ impl<'a> Exporter<'a> {
             return None;
         }
         let n = self.media.len() + 1;
-        let mime = designcraft_images::mime(data);
+        let mime = redrob_layout_images::mime(data);
         let ext = match mime {
             "image/png" => Some("png"),
             "image/jpeg" => Some("jpeg"),
@@ -592,7 +592,7 @@ impl<'a> Exporter<'a> {
             return Some((name, None));
         }
         if mime == "image/svg+xml" {
-            let png = designcraft_images::render_svg(data, 2048).and_then(|(px, w, h)| encode_png(unpremultiply(px), w, h));
+            let png = redrob_layout_images::render_svg(data, 2048).and_then(|(px, w, h)| encode_png(unpremultiply(px), w, h));
             let Some(png) = png else {
                 self.warn(format!("`{}` could not be read; left out", a.name));
                 return None;
@@ -610,7 +610,7 @@ impl<'a> Exporter<'a> {
             ));
             return None;
         }
-        let Some(img) = designcraft_images::decode_rgba(data) else {
+        let Some(img) = redrob_layout_images::decode_rgba(data) else {
             self.warn(format!("`{}` could not be read; left out", a.name));
             return None;
         };

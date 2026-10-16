@@ -11,34 +11,34 @@ rust-version = "1.95"
 repository = "https://github.com/storytold/vectorcraft"
 
 [workspace.dependencies]
-craft-pdf = { git = "https://github.com/storytold/craft-libs", rev = "ca50d63b773c99f96e75c77ce5a1d21e7c9cda0d", default-features = false, features = ["interpret", "write"] }
-craft-print = { git = "https://github.com/storytold/craft-libs", rev = "d991bf6792f8ade99c51358bf3c1d902c8cd96b5" }
-craft-ui = { git = "https://github.com/storytold/craft-libs", rev = "5c874d51eeb3de70e735c8ce87a59a7dedd47675", features = ["serde"] }
+redrob-craft-pdf = { git = "https://github.com/storytold/craft-libs", rev = "ca50d63b773c99f96e75c77ce5a1d21e7c9cda0d", default-features = false, features = ["interpret", "write"] }
+redrob-craft-print = { git = "https://github.com/storytold/craft-libs", rev = "d991bf6792f8ade99c51358bf3c1d902c8cd96b5" }
+redrob-craft-ui = { git = "https://github.com/storytold/craft-libs", rev = "5c874d51eeb3de70e735c8ce87a59a7dedd47675", features = ["serde"] }
 # internal
-vectorcraft-geom = { path = "crates/geom" }
-vectorcraft-color = { path = "crates/color" }
-vectorcraft-doc = { path = "crates/doc" }
-vectorcraft-pathops = { path = "crates/pathops" }
-vectorcraft-brush = { path = "crates/brush" }
-vectorcraft-trace = { path = "crates/trace" }
-vectorcraft-text = { path = "crates/text" }
-vectorcraft-effects = { path = "crates/effects" }
-vectorcraft-three-d = { path = "crates/three-d" }
-vectorcraft-render = { path = "crates/render" }
-vectorcraft-svg = { path = "crates/svg" }
-vectorcraft-pdf = { path = "crates/pdf" }
-vectorcraft-format = { path = "crates/format" }
-vectorcraft-tools = { path = "crates/tools" }
-vectorcraft-engine = { path = "crates/engine" }
-vectorcraft-ui-egui = { path = "crates/ui-egui" }
-vectorcraft-mcp = { path = "crates/mcp" }
-vectorcraft-testkit = { path = "crates/testkit" }
-vectorcraft-cad = { path = "crates/cad" }
-vectorcraft-eps = { path = "crates/eps" }
-vectorcraft-metafile = { path = "crates/metafile" }
-vectorcraft-plugins = { path = "crates/plugins" }
-vectorcraft-affinity = { path = "crates/affinity" }
-vectorcraft-scriptcheck = { path = "crates/scriptcheck" }
+redrob-vector-geom = { path = "crates/geom" }
+redrob-vector-color = { path = "crates/color" }
+redrob-vector-doc = { path = "crates/doc" }
+redrob-vector-pathops = { path = "crates/pathops" }
+redrob-vector-brush = { path = "crates/brush" }
+redrob-vector-trace = { path = "crates/trace" }
+redrob-vector-text = { path = "crates/text" }
+redrob-vector-effects = { path = "crates/effects" }
+redrob-vector-three-d = { path = "crates/three-d" }
+redrob-vector-render = { path = "crates/render" }
+redrob-vector-svg = { path = "crates/svg" }
+redrob-vector-pdf = { path = "crates/pdf" }
+redrob-vector-format = { path = "crates/format" }
+redrob-vector-tools = { path = "crates/tools" }
+redrob-vector-engine = { path = "crates/engine" }
+redrob-vector-ui-egui = { path = "crates/ui-egui" }
+redrob-vector-mcp = { path = "crates/mcp" }
+redrob-vector-testkit = { path = "crates/testkit" }
+redrob-vector-cad = { path = "crates/cad" }
+redrob-vector-eps = { path = "crates/eps" }
+redrob-vector-metafile = { path = "crates/metafile" }
+redrob-vector-plugins = { path = "crates/plugins" }
+redrob-vector-affinity = { path = "crates/affinity" }
+redrob-vector-scriptcheck = { path = "crates/scriptcheck" }
 
 # foundation
 kurbo = { version = "0.13", features = ["serde"] }
@@ -74,7 +74,7 @@ rustix = { version = "1.1", default-features = false }
 ruzstd = { version = "0.9.1", default-features = false, features = ["std"] }
 jpeg-encoder = { version = "0.6", default-features = false, features = ["std"] }
 gif = { version = "0.14", default-features = false, features = ["std", "raii_no_panic"] }
-# CMYK image samples (vectorcraft-doc's cmyk module): the image crate's own TIFF and JPEG
+# CMYK image samples (redrob-vector-doc's cmyk module): the image crate's own TIFF and JPEG
 # decoders, read directly (the image crate converts CMYK to RGB).
 tiff = "0.11"
 zune-jpeg = "0.5"

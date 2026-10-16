@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use photocraft_doc::{ColorMode, Document};
+use redrob_photo_doc::{ColorMode, Document};
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -26,7 +26,7 @@ pub struct Held {
     pub bytes: Option<Arc<Vec<u8>>>,
     /// The tab position a reopened file keeps.
     pub slot: Option<usize>,
-    /// The profile question ([`photocraft_engine::color_cmds::ColorState::open_question`]), or
+    /// The profile question ([`redrob_photo_engine::color_cmds::ColorState::open_question`]), or
     /// `None` to open without asking.
     pub question: Option<Value>,
     /// The Color Settings policy was already applied (a background open added it before it had
@@ -96,10 +96,10 @@ fn show(app: &mut PhotocraftApp) {
 
 /// The Color Settings policy that answers this mode's files when Ask On Mismatch is off.
 fn policy_key(mode: ColorMode) -> Option<&'static str> {
-    match photocraft_engine::color_cmds::mode_space(mode) {
-        photocraft_cms::ColorSpace::Rgb => Some("policyRgb"),
-        photocraft_cms::ColorSpace::Cmyk => Some("policyCmyk"),
-        photocraft_cms::ColorSpace::Gray => Some("policyGray"),
+    match redrob_photo_engine::color_cmds::mode_space(mode) {
+        redrob_photo_cms::ColorSpace::Rgb => Some("policyRgb"),
+        redrob_photo_cms::ColorSpace::Cmyk => Some("policyCmyk"),
+        redrob_photo_cms::ColorSpace::Gray => Some("policyGray"),
         _ => None,
     }
 }

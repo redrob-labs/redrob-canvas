@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Image Trace: raster to vector paths, a thin wrapper over `vectorcraft_trace` so every mode can
+//! Image Trace: raster to vector paths, a thin wrapper over `redrob_vector_trace` so every mode can
 //! trace a selection or a layer into paths without depending on the vector editor.
 
-pub use vectorcraft_trace::{
+pub use redrob_vector_trace::{
     MAX_PIXELS, Method, Mode, PRESET_NAMES, Palette, TraceError, TraceParams, TraceResult,
     TracedPath, enhanced_preset, preset, presets,
 };
@@ -36,8 +36,8 @@ pub fn vectorize_with(rgba: &Rgba8Image, params: &TraceParams) -> Result<TraceRe
     if rgba.is_empty() || rgba.data.len() != (pixels as usize) * 4 {
         return Ok(TraceResult::default());
     }
-    let raster = vectorcraft_trace::Raster::new(rgba.width, rgba.height, rgba.data.clone());
-    Ok(vectorcraft_trace::trace_within(
+    let raster = redrob_vector_trace::Raster::new(rgba.width, rgba.height, rgba.data.clone());
+    Ok(redrob_vector_trace::trace_within(
         &raster,
         params,
         usize::MAX,

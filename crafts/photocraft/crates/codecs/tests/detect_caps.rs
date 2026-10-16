@@ -3,7 +3,7 @@
 
 mod common;
 use common::*;
-use photocraft_codecs::*;
+use redrob_photo_codecs::*;
 
 // ---------------------------------------------------------------------------
 // Symmetric guarantee

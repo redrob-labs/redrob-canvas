@@ -1,5 +1,5 @@
 [package]
-name = "photocraft-tablet"
+name = "redrob-photo-tablet"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

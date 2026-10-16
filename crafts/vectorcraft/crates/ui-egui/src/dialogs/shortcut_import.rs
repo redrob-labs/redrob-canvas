@@ -2,7 +2,7 @@
 //! reviewed before it fills Edit › Keyboard Shortcuts' working set.
 //!
 //! Each entry's name is matched against the tools, commands and panels Keyboard Shortcuts lists
-//! ([`vectorcraft_engine::namematch`]). Its key and modifier codes are decoded from the user's earlier
+//! ([`redrob_vector_engine::namematch`]). Its key and modifier codes are decoded from the user's earlier
 //! answers (`importMatches`), from the two codes the format's public description gives (`/Key 48` is
 //! the 0 key and `/Modifiers 0` is none), and by agreement with Redrob Canvas's default shortcuts: each
 //! entry whose match has a default votes for what its codes stand for, and a code is proposed when at
@@ -20,9 +20,9 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::OnceLock;
 
+use redrob_vector_engine::namematch::{Candidate, Matcher, Proposal};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use vectorcraft_engine::namematch::{Candidate, Matcher, Proposal};
 
 use crate::shortcut_editor::{self, Entry};
 use crate::state::Dialog;
@@ -408,7 +408,7 @@ fn source(c: &Code) -> String {
 
 /// A file named as a shortcut set another app saves (`.kys`).
 pub fn is_kys(path: &str) -> bool {
-    vectorcraft_engine::cmd::shortcutset::EXTS.contains(&vectorcraft_engine::cmd::fileio::extension(path).as_str())
+    redrob_vector_engine::cmd::shortcutset::EXTS.contains(&redrob_vector_engine::cmd::fileio::extension(path).as_str())
 }
 
 /// A set another app saved as text: a `.kys` file, or text that starts with a slash name.
@@ -421,8 +421,8 @@ pub fn is_text_set(path: &str, bytes: &[u8]) -> bool {
 /// `{entries, unread}`. An open Keyboard Shortcuts dialog is kept to go back to.
 pub fn open(app: &mut VectorcraftApp, name: &str, bytes: &[u8]) -> Result<Value, String> {
     // Only the part `shortcutSet.read` takes in.
-    let head = bytes.get(..vectorcraft_engine::cmd::shortcutset::READ_LIMIT).unwrap_or(bytes);
-    open_read(app, json!({ "name": name, "dataBase64": vectorcraft_format::base64_encode(head) }))
+    let head = bytes.get(..redrob_vector_engine::cmd::shortcutset::READ_LIMIT).unwrap_or(bytes);
+    open_read(app, json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(head) }))
 }
 
 /// Open the review of the set `shortcutSet.read` reads with `params`.
@@ -462,7 +462,7 @@ pub fn command(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
         Some(path) => path,
         None if app.services.open_async.is_some() => return crate::io::open_dialog(app).map(|_| Value::Null),
         None => {
-            let pick = FilePick { filters: vec![("Shortcut sets", vectorcraft_engine::cmd::shortcutset::EXTS)], ..Default::default() };
+            let pick = FilePick { filters: vec![("Shortcut sets", redrob_vector_engine::cmd::shortcutset::EXTS)], ..Default::default() };
             crate::picks::open(app, &pick).ok_or("cancelled")?
         }
     };

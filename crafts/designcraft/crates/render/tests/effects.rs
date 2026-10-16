@@ -3,13 +3,13 @@
 //!
 //! Goldens live in `tests/golden/*.png` and are compared with a tolerance (antialiasing and blur
 //! rounding may differ by a few levels between SIMD levels). Regenerate them after an intended
-//! change with `DESIGNCRAFT_BLESS=1 cargo test -p designcraft-render --test effects`.
+//! change with `REDROB_LAYOUT_BLESS=1 cargo test -p redrob-layout-render --test effects`.
 
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Document, Fill, Item, ItemId, ParaFormat, Shape, SpreadRef};
-use designcraft_geom::{Affine, Rect, Vec2, shapes};
-use designcraft_render::{Placed, RenderOptions, Rendered, Renderer};
+use redrob_layout_compose::Cache;
+use redrob_layout_doc::build::NewDocument;
+use redrob_layout_doc::{Document, Fill, Item, ItemId, ParaFormat, Shape, SpreadRef};
+use redrob_layout_geom::{Affine, Rect, Vec2, shapes};
+use redrob_layout_render::{Placed, RenderOptions, Rendered, Renderer};
 
 const SIZE: u32 = 160;
 
@@ -46,7 +46,7 @@ const WHITE: u32 = 765;
 /// Tolerant comparison with `tests/golden/{name}.png` (written when missing or when blessing).
 fn golden(name: &str, img: &Rendered) {
     let path = format!("{}/tests/golden/{name}.png", env!("CARGO_MANIFEST_DIR"));
-    let bless = std::env::var_os("DESIGNCRAFT_BLESS").is_some();
+    let bless = std::env::var_os("REDROB_LAYOUT_BLESS").is_some();
     let Ok(bytes) = std::fs::read(&path).map_err(|_| ()).and_then(|b| if bless { Err(()) } else { Ok(b) }) else {
         std::fs::create_dir_all(format!("{}/tests/golden", env!("CARGO_MANIFEST_DIR"))).unwrap();
         std::fs::write(&path, img.to_png()).unwrap();
@@ -230,7 +230,7 @@ fn pasted_into(d: &mut Document) -> ItemId {
         fill: Fill::swatch("[Black]"),
         ..Item::new(ItemId(d.alloc()), d.default_layer(), Shape::Rectangle, shapes::rectangle(Rect::new(0.0, 0.0, 160.0, 160.0)))
     };
-    d.item_mut(id).unwrap().content = designcraft_doc::Content::Group { items: vec![std::sync::Arc::new(kid)] };
+    d.item_mut(id).unwrap().content = redrob_layout_doc::Content::Group { items: vec![std::sync::Arc::new(kid)] };
     assert!(d.item(id).unwrap().has_nested_items());
     id
 }

@@ -4,9 +4,9 @@
 
 use std::path::{Path, PathBuf};
 
+use redrob_vector_engine::Session;
+use redrob_vector_engine::file_access::AutomationRoots;
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
-use vectorcraft_engine::file_access::AutomationRoots;
 
 use crate::control::ControlRequest;
 use crate::{Services, VectorcraftApp};
@@ -24,7 +24,7 @@ fn confined(tag: &str) -> (VectorcraftApp, std::sync::mpsc::Sender<ControlReques
     std::fs::write(base.join("outside/b.svg"), svg).unwrap();
     let services = Services {
         read: Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string()))),
-        write: Some(Box::new(|p: &str, b: &[u8]| vectorcraft_format::write_atomic(Path::new(p), b).map_err(|e| e.to_string()))),
+        write: Some(Box::new(|p: &str, b: &[u8]| redrob_vector_format::write_atomic(Path::new(p), b).map_err(|e| e.to_string()))),
         ..Default::default()
     };
     let roots = AutomationRoots::new(Some(&base.join("in")), Some(&base.join("out"))).unwrap();
@@ -60,7 +60,7 @@ fn control_requests_stay_inside_the_roots() {
     assert!(base.join("out/a.png").is_file());
     for (method, params) in [
         ("app.export", json!({"path": s(base.join("outside/a.png")), "format": "png"})),
-        ("app.save", json!({"path": s(base.join("outside/a.vectorcraft"))})),
+        ("app.save", json!({"path": s(base.join("outside/a.rvector"))})),
         ("ui.render", json!({"path": s(base.join("outside/r.png"))})),
         // Refused at once, not when the frame comes.
         ("ui.screenshot", json!({"path": s(base.join("outside/w.png"))})),

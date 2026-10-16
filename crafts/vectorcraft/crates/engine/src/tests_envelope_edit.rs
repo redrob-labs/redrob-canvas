@@ -1,11 +1,11 @@
 //! Editing envelopes on the canvas: Edit Contents hit-testing, mesh points and handles.
 
+use redrob_vector_doc::hit::{HitOptions, hit_test};
+use redrob_vector_doc::live::{self, EnvelopeMap};
+use redrob_vector_doc::{EnvelopeKind, Node, NodeKind};
+use redrob_vector_geom::{Affine, Point, Vec2};
+use redrob_vector_tools::{PointerEvent, PointerKind};
 use serde_json::{Value, json};
-use vectorcraft_doc::hit::{HitOptions, hit_test};
-use vectorcraft_doc::live::{self, EnvelopeMap};
-use vectorcraft_doc::{EnvelopeKind, Node, NodeKind};
-use vectorcraft_geom::{Affine, Point, Vec2};
-use vectorcraft_tools::{PointerEvent, PointerKind};
 
 use super::*;
 
@@ -117,7 +117,7 @@ fn mesh_handles_turn_with_the_envelope_and_round_trip() {
     let want = Affine::rotate(-std::f64::consts::FRAC_PI_2) * Point::new(50.0, 0.0);
     assert!((h - want.to_vec2()).hypot() < 1e-9, "{h:?}");
     let d = &s.doc().unwrap().doc;
-    let back = vectorcraft_format::load(&vectorcraft_format::save(d, false)).unwrap();
+    let back = redrob_vector_format::load(&redrob_vector_format::save(d, false)).unwrap();
     assert_eq!(back.node(e), d.node(e));
     // Mesh envelopes saved before handles existed load as smooth meshes.
     let mut old = serde_json::to_value(node(&s, e)).unwrap();
@@ -130,7 +130,7 @@ fn mesh_handles_turn_with_the_envelope_and_round_trip() {
 fn reset_with_mesh_keeps_the_warp_shape_along_the_grid() {
     let mut s = session();
     let (_, e) = enveloped(&mut s, "object.envelope.makeWithWarp", json!({"style": "arc", "bend": 60}));
-    let warp = EnvelopeMap::of(&node(&s, e)).unwrap().surface_mesh(2, 2, vectorcraft_color::Color::BLACK);
+    let warp = EnvelopeMap::of(&node(&s, e)).unwrap().surface_mesh(2, 2, redrob_vector_color::Color::BLACK);
     s.execute("object.envelope.resetWithMesh", &json!({"rows": 2, "cols": 2})).unwrap();
     let (_, _, points, handles) = mesh(&s, e);
     for (q, (p, h)) in warp.points.iter().zip(points.iter().zip(&handles)) {

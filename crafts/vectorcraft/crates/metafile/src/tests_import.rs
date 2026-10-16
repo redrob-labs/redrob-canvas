@@ -1,9 +1,9 @@
 //! Metafiles read back: Redrob Canvas's own EMF and WMF round-trip, hand-built records of other
 //! writers play as they draw, and damaged files fail or import partly without a panic.
 
-use vectorcraft_color::{Gradient, GradientPaint, Paint};
-use vectorcraft_doc::{AppearanceItem, Dash, Document, Node, NodeKind};
-use vectorcraft_geom::{Affine, Rect, shapes};
+use redrob_vector_color::{Gradient, GradientPaint, Paint};
+use redrob_vector_doc::{AppearanceItem, Dash, Document, Node, NodeKind};
+use redrob_vector_geom::{Affine, Rect, shapes};
 
 use crate::bytes::Out;
 use crate::tests::*;
@@ -285,7 +285,7 @@ fn hand_built_wmf_plays_like_gdi() {
     assert_eq!(fill_rgb(&p[0]), Some([0, 0, 255]));
     assert!(near(p[0].geometric_bounds().unwrap(), Rect::new(0.0, 0.0, 72.0, 36.0), 1e-9));
     let st = p[0].appearance.stroke().unwrap();
-    assert!((st.width - 1.0).abs() < 1e-9 && st.cap == vectorcraft_doc::LineCap::Square);
+    assert!((st.width - 1.0).abs() < 1e-9 && st.cap == redrob_vector_doc::LineCap::Square);
     assert_eq!(fill_rgb(&p[1]), Some([0, 255, 0]), "the new brush took the freed slot");
 }
 
@@ -322,6 +322,6 @@ fn clips_nest_only_so_deep() {
         depth += 1;
         n = children.last().unwrap().clone();
     }
-    assert_eq!(depth, vectorcraft_doc::clipnest::MAX_NEST);
+    assert_eq!(depth, redrob_vector_doc::clipnest::MAX_NEST);
     assert!(back.warnings.iter().any(|w| w.contains("clips nested more than")), "{:?}", back.warnings);
 }

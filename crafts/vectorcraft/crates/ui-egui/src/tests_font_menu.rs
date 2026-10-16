@@ -1,9 +1,9 @@
 //! The font menu's samples, ↑/↓ highlight with live preview, and applying or undoing the preview.
 
+use redrob_vector_doc::NodeKind;
+use redrob_vector_engine::Session;
+use redrob_vector_text::FontDb;
 use serde_json::json;
-use vectorcraft_doc::NodeKind;
-use vectorcraft_engine::Session;
-use vectorcraft_text::FontDb;
 
 use crate::VectorcraftApp;
 use crate::font_menu::{FontPick, MenuLook, font_menu};
@@ -96,7 +96,7 @@ fn preview_changes_the_text_live_and_only_a_choice_is_a_step() {
     app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
     let id = app.session.execute("text.create", &json!({"x": 20, "y": 50, "text": "Gagaku", "font": "Inter"})).unwrap()["id"].as_u64().unwrap();
     app.session.execute("select.set", &json!({"ids": [id]})).unwrap();
-    let font = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
+    let font = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
         NodeKind::Text(t) => t.first_style().font_family,
         _ => String::new(),
     };
@@ -130,7 +130,7 @@ fn a_preview_left_open_by_a_menu_that_is_gone_is_undone() {
     assert!(app.session.in_interaction());
     crate::font_menu::end_stale_preview(&mut app, &ctx);
     assert!(!app.session.in_interaction(), "no menu drawn: the preview is undone");
-    let font = match &app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
+    let font = match &app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
         NodeKind::Text(t) => t.first_style().font_family,
         _ => String::new(),
     };
@@ -181,7 +181,7 @@ fn a_press_outside_the_menu_ends_the_preview_at_once() {
 
 #[test]
 fn bundled_families_are_classified() {
-    use vectorcraft_text::FontClass;
+    use redrob_vector_text::FontClass;
     let db = FontDb::global();
     let class = |f: &str| db.family_traits(f).class;
     assert_eq!(class("JetBrains Mono"), FontClass::Monospaced);
@@ -301,7 +301,7 @@ fn menus_that_only_pick_a_font_leave_the_document_alone() {
     app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
     let id = app.session.execute("text.create", &json!({"x": 20, "y": 50, "text": "Gagaku", "font": "Inter"})).unwrap()["id"].as_u64().unwrap();
     app.session.execute("select.set", &json!({"ids": [id]})).unwrap();
-    let font = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
+    let font = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
         NodeKind::Text(t) => t.first_style().font_family,
         _ => String::new(),
     };
@@ -382,7 +382,7 @@ fn a_preview_stays_put_while_the_menu_is_still() {
     app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
     let id = app.session.execute("text.create", &json!({"x": 20, "y": 50, "text": "Gagaku", "font": "Inter"})).unwrap()["id"].as_u64().unwrap();
     app.session.execute("select.set", &json!({"ids": [id]})).unwrap();
-    let font = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().kind {
+    let font = |app: &VectorcraftApp| match &app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().kind {
         NodeKind::Text(t) => t.first_style().font_family,
         _ => String::new(),
     };

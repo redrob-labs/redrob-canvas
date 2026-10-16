@@ -84,12 +84,18 @@ for name in "${targets[@]}"; do
 done
 
 echo "regenerating the root Cargo.toml from crafts/*/Cargo.upstream.toml"
-# The pull brings upstream's Cargo.toml back; merge_workspaces.py parks it as Cargo.upstream.toml
-# again and rewrites the root manifest, so both the rename and the root file are committed together.
+# The pull brings upstream's Cargo.toml back, its repository furniture, its crate names and its
+# file-format identifiers; merge_workspaces.py parks the manifest as Cargo.upstream.toml again,
+# prunes, renames (tools/prune_upstream.py, rename_crates.py, rename_identifiers.py) and rewrites
+# the root manifest. The display strings and the lock follow, and the checker confirms nothing
+# upstream-named is left outside the `// legacy:` read paths.
 python3 tools/merge_workspaces.py
-git add -A -- Cargo.toml crafts/
+python3 tools/rebrand_crafts.py
+cargo update --workspace --offline
+python3 scripts/check_upstream_ids.py
+git add -A -- Cargo.toml Cargo.lock crafts/
 if ! git diff --cached --quiet; then
   git commit -q -m "build: regenerate the workspace after the subtree pull"
-  echo "committed the regenerated Cargo.toml and the parked upstream manifests"
+  echo "committed the regenerated Cargo.toml, Cargo.lock and the renamed, pruned subtrees"
 fi
 echo "done. Record the new commit(s) in upstream-base.json, $pins and UPSTREAM_NOTICES.md, then run scripts/verify-upstream.sh"

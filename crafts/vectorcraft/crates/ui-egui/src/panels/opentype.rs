@@ -2,8 +2,8 @@
 //! ordinals, fractions, figure style) for the selected text or the Type tool's selected characters.
 
 use egui::Ui;
+use redrob_vector_text::OtFeatures;
 use serde_json::json;
-use vectorcraft_text::OtFeatures;
 
 use super::character::{text_editing, text_style};
 use crate::VectorcraftApp;
@@ -63,7 +63,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             *field(&mut next) = !on;
         }
     }
-    if cur.ligatures && vectorcraft_text::ligatures_suppressed_by(st.tracking) && !vectorcraft_text::explicit_ligatures(&st.features) {
+    if cur.ligatures && redrob_vector_text::ligatures_suppressed_by(st.tracking) && !redrob_vector_text::explicit_ligatures(&st.features) {
         widgets::dim_label(ui, tl!("Ligatures are off while the text is tracked."));
     }
     if next != cur {
@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn toggles_reach_the_text() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 100, "height": 100})).unwrap();
         let id = app.session.execute("text.create", &json!({"x": 10, "y": 40, "text": "fi 1/2"})).unwrap()["id"].clone();
         app.session.execute("select.set", &json!({"ids": [id]})).unwrap();

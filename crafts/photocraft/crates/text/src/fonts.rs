@@ -1,5 +1,5 @@
 //! Font database: bundled fonts (always available, also on the web), the optional craft-fonts
-//! Japanese fonts ([`crate::craft_fonts`], when built with `CRAFT_FONTS_DIR`), optional system
+//! Japanese fonts ([`crate::craft_fonts`], when built with `REDROB_CRAFT_FONTS_DIR`), optional system
 //! fonts found by scanning platform directories (plus Fontconfig's file list on Linux),
 //! user-registered font data, and PostScript-name lookup for PSD import.
 
@@ -222,9 +222,9 @@ impl FontDb {
         for (_, bytes) in BUNDLED {
             db.register_static_font(bytes.as_slice());
         }
-        // The optional craft-fonts (empty unless built with CRAFT_FONTS_DIR; always empty on
+        // The optional craft-fonts (empty unless built with REDROB_CRAFT_FONTS_DIR; always empty on
         // wasm32), before any system font.
-        for f in crate::craft_fonts::CRAFT_FONTS.iter().filter(|f| f.is_japanese()) {
+        for f in crate::craft_fonts::REDROB_CRAFT_FONTS.iter().filter(|f| f.is_japanese()) {
             db.register_static_font(f.bytes);
         }
         db.refresh_generics();
@@ -464,7 +464,7 @@ impl FontDb {
     /// Select an exact face for shaping. Private aliases are runtime-only: the document keeps
     /// its public family and PostScript name. CSS matching alone cannot distinguish e.g. the
     /// numeric subfamilies of Yoon fonts, all of which declare weight 400 / normal.
-    pub(crate) fn select_named_face(&mut self, style: &mut photocraft_doc::text::CharStyle) {
+    pub(crate) fn select_named_face(&mut self, style: &mut redrob_photo_doc::text::CharStyle) {
         let family = style.font_family.clone();
         let faces = self.faces(&family);
         let index = style.postscript_name.as_ref().and_then(|ps| faces.iter().position(|f| f.postscript_name.as_ref() == Some(ps))).or_else(|| {

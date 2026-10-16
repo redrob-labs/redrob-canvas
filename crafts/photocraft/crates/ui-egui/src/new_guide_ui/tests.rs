@@ -5,7 +5,7 @@ use crate::menus::invoke as menu;
 
 /// One 4 × 2 inch document at 100 ppi, with the rulers in `unit`.
 fn app(unit: &str) -> (PhotocraftApp, egui::Context) {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 200, "resolution": 100})).unwrap();
     app.run("prefs.set", json!({"path": "unitsAndRulers.rulers", "value": unit})).unwrap();
     app.sync_views();

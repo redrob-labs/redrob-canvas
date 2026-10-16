@@ -14,7 +14,7 @@
 //! both show, pick and organise presets the same way; each keeps its own view state.
 
 use egui::{Color32, RichText, Sense, Stroke, pos2, vec2};
-use photocraft_engine::paint::{BrushPreset, MAX_BRUSH_SIZE};
+use redrob_photo_engine::paint::{BrushPreset, MAX_BRUSH_SIZE};
 use serde_json::json;
 
 use crate::brush_panel::{BrushesPanelState, BrushesView, Renaming, UNGROUPED, commit_gesture, full_uv, grouped_presets, run_or_status};
@@ -110,7 +110,7 @@ pub fn group_key(presets: &[BrushPreset], label: &str) -> String {
 }
 
 /// Deepest nested folder the panel draws; deeper folders show at this depth.
-pub const MAX_VIEW_DEPTH: usize = photocraft_engine::brush_preset_cmds::MAX_FOLDER_DEPTH;
+pub const MAX_VIEW_DEPTH: usize = redrob_photo_engine::brush_preset_cmds::MAX_FOLDER_DEPTH;
 
 /// The collapse key of a nested folder of the group shown as `label` (`label` itself for the
 /// group).

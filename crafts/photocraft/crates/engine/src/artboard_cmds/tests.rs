@@ -1,5 +1,5 @@
 use super::*;
-use photocraft_geom::Rect;
+use redrob_photo_geom::Rect;
 
 fn session(depth: u32) -> Session {
     let mut s = Session::new();
@@ -15,7 +15,7 @@ fn add_square(s: &mut Session, r: Rect, rgba: [f32; 4]) -> LayerId {
     s.edit("sq", |doc, active| {
         let fmt = doc.pixel_format();
         let mut l = Layer::raster(doc.next_layer_name("Layer"), fmt);
-        l.surface_mut().unwrap().fill_rect(r, &photocraft_raster::from_rgba(&fmt, rgba));
+        l.surface_mut().unwrap().fill_rect(r, &redrob_photo_raster::from_rgba(&fmt, rgba));
         let id = doc.insert_above(None, l);
         *active = Some(id);
         Ok(id)
@@ -56,7 +56,7 @@ fn from_layers_and_group_then_compose_clips() {
         assert_eq!(doc(&s).artboard_of(red), Some(gid));
         // Grow the board; the white background shows around the square, nothing outside it.
         s.execute("layer.artboard.set", json!({"width": 40, "height": 40})).unwrap();
-        let px = |s: &Session, x, y| photocraft_compose::render(doc(s), Rect::new(x, y, x + 1, y + 1)).px[0];
+        let px = |s: &Session, x, y| redrob_photo_compose::render(doc(s), Rect::new(x, y, x + 1, y + 1)).px[0];
         assert!(px(&s, 40, 40)[0] > 0.99 && px(&s, 40, 40)[1] > 0.99, "{depth}");
         assert!(px(&s, 15, 15)[1] < 0.01);
         // Moving the board moves its contents.
@@ -148,13 +148,13 @@ fn export_to_files_and_pdf() {
     assert_eq!(files.len(), 2);
     assert!(files[0].ends_with("site_Empty_One.png"), "{files:?}");
     assert!(files[1].ends_with("site_Red Board.png"), "{files:?}");
-    let img = photocraft_io::import("x.png", &std::fs::read(&files[1]).unwrap()).unwrap().document;
+    let img = redrob_photo_io::import("x.png", &std::fs::read(&files[1]).unwrap()).unwrap().document;
     assert_eq!((img.size.width, img.size.height), (10, 10));
-    let img2 = photocraft_io::import("x.png", &std::fs::read(&files[0]).unwrap()).unwrap().document;
+    let img2 = redrob_photo_io::import("x.png", &std::fs::read(&files[0]).unwrap()).unwrap().document;
     assert_eq!((img2.size.width, img2.size.height), (30, 15));
     // Layered PSD keeps the board, moved to the origin.
     let r = s.execute("file.export.artboardsToFiles", json!({"dir": d, "prefix": "", "format": "psd", "artboards": [doc(&s).artboards()[0].0.0]})).unwrap();
-    let psd = photocraft_io::import("x.psd", &std::fs::read(r["files"][0].as_str().unwrap()).unwrap()).unwrap().document;
+    let psd = redrob_photo_io::import("x.psd", &std::fs::read(r["files"][0].as_str().unwrap()).unwrap()).unwrap().document;
     assert_eq!(psd.artboards()[0].2.rect, Rect::new(0, 0, 10, 10));
     let pdf = join(&d, "boards.pdf");
     let r = s.execute("file.export.artboardsToPdf", json!({"path": pdf})).unwrap();
@@ -341,7 +341,7 @@ fn board_with_square(s: &mut Session) -> LayerId {
 }
 
 fn red_at(s: &Session, x: i32, y: i32) -> bool {
-    let px = photocraft_compose::render(doc(s), Rect::new(x, y, x + 1, y + 1)).px[0];
+    let px = redrob_photo_compose::render(doc(s), Rect::new(x, y, x + 1, y + 1)).px[0];
     px[0] > 0.99 && px[1] < 0.01 && px[3] > 0.99
 }
 
@@ -456,12 +456,12 @@ fn moving_an_artboard_past_the_canvas_keeps_its_shapes_whole() {
 /// what Redrob Canvas would draw, a solid block, so a re-render shows) and Photoshop's `TySh`.
 fn add_imported_type(s: &mut Session, block: Rect) -> LayerId {
     s.edit("type", |doc, active| {
-        let mut t = photocraft_doc::TextLayer { text: "Hello!".into(), font_family: "No Such Font".into(), size_pt: 26.0, ..Default::default() };
-        t.transform = photocraft_geom::Affine::translate(f64::from(block.x0), f64::from(block.y1));
-        t.psd_raw = Some(std::sync::Arc::new(photocraft_text::psd::build_tysh(&t, 72.0, None)));
+        let mut t = redrob_photo_doc::TextLayer { text: "Hello!".into(), font_family: "No Such Font".into(), size_pt: 26.0, ..Default::default() };
+        t.transform = redrob_photo_geom::Affine::translate(f64::from(block.x0), f64::from(block.y1));
+        t.psd_raw = Some(std::sync::Arc::new(redrob_photo_text::psd::build_tysh(&t, 72.0, None)));
         let fmt = doc.pixel_format();
-        let mut cache = photocraft_raster::Surface::new(fmt);
-        cache.fill_rect(block, &photocraft_raster::from_rgba(&fmt, [0.4, 0.2, 0.6, 1.0]));
+        let mut cache = redrob_photo_raster::Surface::new(fmt);
+        cache.fill_rect(block, &redrob_photo_raster::from_rgba(&fmt, [0.4, 0.2, 0.6, 1.0]));
         t.cache = Some(cache);
         let id = doc.insert_above(None, Layer::new("Hello!", LayerContent::Text(t)));
         *active = Some(id);
@@ -470,7 +470,7 @@ fn add_imported_type(s: &mut Session, block: Rect) -> LayerId {
     .unwrap()
 }
 
-fn type_layer(doc: &Document, id: LayerId) -> photocraft_doc::TextLayer {
+fn type_layer(doc: &Document, id: LayerId) -> redrob_photo_doc::TextLayer {
     match &doc.layer(id).unwrap().content {
         LayerContent::Text(t) => t.clone(),
         other => panic!("not a type layer: {}", other.kind_name()),
@@ -496,9 +496,9 @@ fn artboard_export_keeps_imported_type_as_rendered() {
         // The same pixels, moved to the board's origin: not re-rendered.
         let c = t.cache.as_ref().unwrap();
         assert_eq!(c.content_bounds(), Rect::new(10, 10, 40, 20), "depth {depth}");
-        let px = photocraft_raster::to_rgba(&c.format(), &c.pixel(15, 15));
+        let px = redrob_photo_raster::to_rgba(&c.format(), &c.pixel(15, 15));
         assert!((px[0] - 0.4).abs() < 0.01 && (px[2] - 0.6).abs() < 0.01, "depth {depth}: {px:?}");
-        let tysh = photocraft_text::psd::parse_tysh(t.psd_raw.as_deref().unwrap()).unwrap();
+        let tysh = redrob_photo_text::psd::parse_tysh(t.psd_raw.as_deref().unwrap()).unwrap();
         assert_eq!((tysh.transform.m[4], tysh.transform.m[5]), (10.0, 20.0), "the PSD position moves with it");
     }
 }

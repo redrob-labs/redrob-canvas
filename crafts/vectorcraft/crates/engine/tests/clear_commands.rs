@@ -1,9 +1,9 @@
 //! Clear deletes its exact targets, including compound members (#786).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+use redrob_vector_doc::NodeId;
+use redrob_vector_engine::{EngineError, Session};
 use serde_json::json;
-use vectorcraft_doc::NodeId;
-use vectorcraft_engine::{EngineError, Session};
 
 fn compound() -> (Session, NodeId, NodeId, NodeId) {
     let mut s = Session::new();

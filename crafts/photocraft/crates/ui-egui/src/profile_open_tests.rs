@@ -9,8 +9,8 @@ use egui_kittest::{
     Harness,
     kittest::{NodeT, Queryable},
 };
-use photocraft_doc::{Color, ColorMode, Document, SampleType, Size};
-use photocraft_engine::Session;
+use redrob_photo_doc::{Color, ColorMode, Document, SampleType, Size};
+use redrob_photo_engine::Session;
 use serde_json::Value;
 
 const USE: &str = "Use the embedded profile (Adobe RGB (1998)-compatible (Photocraft))";
@@ -20,8 +20,8 @@ const DISCARD: &str = "Discard the embedded profile (don't color manage)";
 /// A PNG tagged with Adobe RGB, which doesn't match the sRGB working space.
 fn adobe_png() -> Vec<u8> {
     let mut d = Document::with_background("t", Size::new(8, 8), ColorMode::Rgb, SampleType::U8, Color::rgba(0.2, 0.6, 0.9, 1.0));
-    d.icc_profile = Some(photocraft_cms::Builtin::from_id("adobe-rgb-compat").unwrap().profile().to_bytes());
-    photocraft_io::export(&d, "t.png", &Default::default()).unwrap().bytes
+    d.icc_profile = Some(redrob_photo_cms::Builtin::from_id("adobe-rgb-compat").unwrap().profile().to_bytes());
+    redrob_photo_io::export(&d, "t.png", &Default::default()).unwrap().bytes
 }
 
 fn harness(background: bool) -> Harness<'static, PhotocraftApp> {
@@ -31,7 +31,7 @@ fn harness(background: bool) -> Harness<'static, PhotocraftApp> {
             Session::new(),
             Services {
                 import: Some(Box::new(|name, bytes, depth| {
-                    photocraft_io::import_with_svg_group_depth(name, bytes, depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
+                    redrob_photo_io::import_with_svg_group_depth(name, bytes, depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
                 })),
                 ..Default::default()
             },
@@ -94,7 +94,7 @@ fn answer(h: &mut Harness<'static, PhotocraftApp>, choice: &str) {
 
 fn profile(h: &Harness<'static, PhotocraftApp>, name: &str) -> Option<String> {
     let st = h.state().session.documents().iter().find(|d| d.doc.name == name).unwrap();
-    st.doc.icc_profile.as_ref().map(|b| photocraft_engine::color_cmds::profile_from_bytes(b).unwrap().description.clone())
+    st.doc.icc_profile.as_ref().map(|b| redrob_photo_engine::color_cmds::profile_from_bytes(b).unwrap().description.clone())
 }
 
 /// The file the prompt on screen asks about.
@@ -169,7 +169,7 @@ fn the_prompt_is_translated_and_still_names_its_file() {
     ] {
         let services = Services {
             import: Some(Box::new(|name, bytes, depth| {
-                photocraft_io::import_with_svg_group_depth(name, bytes, depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
+                redrob_photo_io::import_with_svg_group_depth(name, bytes, depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
             })),
             ..Default::default()
         };
@@ -203,7 +203,7 @@ fn a_held_file_still_reports_its_missing_fonts() {
     s.execute("file.new", serde_json::json!({"width": 40, "height": 20})).unwrap();
     s.execute("type.create", serde_json::json!({"text": "Hi", "x": 2, "y": 12, "size": 10, "font": MISSING})).unwrap();
     let mut doc = (*s.active().unwrap().doc).clone();
-    doc.icc_profile = Some(photocraft_cms::Builtin::from_id("adobe-rgb-compat").unwrap().profile().to_bytes());
+    doc.icc_profile = Some(redrob_photo_cms::Builtin::from_id("adobe-rgb-compat").unwrap().profile().to_bytes());
     let services = Services { import: Some(Box::new(move |_: &str, _: &[u8], _: usize| Ok((doc.clone(), Vec::new())))), ..Default::default() };
     let mut app = PhotocraftApp::new(Session::new(), services);
     app.run("edit.colorSettings", serde_json::json!({"askOnMismatch": true, "policyRgb": "preserve"})).unwrap();
@@ -279,7 +279,7 @@ fn remember_answers_the_waiting_files_and_stops_asking() {
             assert_eq!(profile(&h, name).as_deref(), Some("sRGB IEC61966-2.1"), "background {background}: {name} converted");
         }
         let settings = &h.state().session.color.settings;
-        assert_eq!(settings.policy(photocraft_doc::ColorMode::Rgb), photocraft_engine::color_cmds::Policy::Convert);
+        assert_eq!(settings.policy(redrob_photo_doc::ColorMode::Rgb), redrob_photo_engine::color_cmds::Policy::Convert);
         assert!(!settings.ask_on_mismatch, "background {background}");
         h.state_mut().open_file("/pics/d.png", &adobe_png()).unwrap();
         settle(&mut h);

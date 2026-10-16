@@ -191,12 +191,12 @@ fn tabs_for_spaces(s: &str, n: usize) -> String {
 }
 
 /// The area type of `text` filling `frame` (at the origin; placing moves it).
-pub(super) fn area_text(text: String, frame: Rect) -> vectorcraft_doc::TextObject {
-    let mut t = vectorcraft_doc::TextObject::point(Point::ORIGIN, "", vectorcraft_doc::CharStyle::default());
+pub(super) fn area_text(text: String, frame: Rect) -> redrob_vector_doc::TextObject {
+    let mut t = redrob_vector_doc::TextObject::point(Point::ORIGIN, "", redrob_vector_doc::CharStyle::default());
     if let Some(run) = t.runs.first_mut() {
         run.text = text;
     }
-    t.kind = vectorcraft_doc::TextKind::Area { frame: shapes::rectangle(Rect::from_origin_size(Point::ORIGIN, frame.size())) };
+    t.kind = redrob_vector_doc::TextKind::Area { frame: shapes::rectangle(Rect::from_origin_size(Point::ORIGIN, frame.size())) };
     crate::cmd::typecmd::refresh_bounds(&mut t);
     t
 }

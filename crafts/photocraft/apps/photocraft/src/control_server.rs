@@ -7,12 +7,12 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::Instant;
 
-use photocraft_automation::budgets::write_reply;
-use photocraft_automation::security::{
+use redrob_photo_automation::budgets::write_reply;
+use redrob_photo_automation::security::{
     ConnectionLimiter, LineRead, MAX_CONNECTIONS, MAX_REQUEST_BYTES, authentication_reply, configure_stream, read_bounded_line, repeat_auth_reply,
 };
-use photocraft_ui_egui::ControlRequest;
-use photocraft_ui_egui::control::REPLY_DEADLINE;
+use redrob_photo_ui_egui::ControlRequest;
+use redrob_photo_ui_egui::control::REPLY_DEADLINE;
 use serde_json::{Value, json};
 
 pub fn start(port: u16, token: String, ctx: egui::Context) -> Receiver<ControlRequest> {
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn oversized_reply_preserves_framing_id_and_the_next_control_request() {
-        use photocraft_automation::budgets::MAX_RESPONSE_BYTES;
+        use redrob_photo_automation::budgets::MAX_RESPONSE_BYTES;
         const TOKEN: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();

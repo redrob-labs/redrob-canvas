@@ -1,13 +1,13 @@
-//! The native `.vectorcraft` format.
+//! The native `.rvector` format.
 //!
-//! A `.vectorcraft` file is UTF-8 JSON, gzip-compressed when saved with Use Compression (told apart
+//! A `.rvector` file is UTF-8 JSON, gzip-compressed when saved with Use Compression (told apart
 //! by its magic bytes on open, whatever the version):
 //! ```json
 //! { "format": "vectorcraft", "version": 3, "generator": "Redrob Canvas 0.1.0",
 //!   "preview": { "mime": "image/png", "data": "<base64>" },
 //!   "profiles": { "<profile name>": { "mime": "application/vnd.iccprofile", "data": "<base64>" } },
 //!   "pdf": { "mime": "application/pdf", "data": "<base64>" },
-//!   "document": { …vectorcraft_doc::Document… },
+//!   "document": { …redrob_vector_doc::Document… },
 //!   "images": { "<key>": { "mime": "image/png", "data": "<base64>" } } }
 //! ```
 //! It is lossless for everything in the document model; foreign data lives in `document.unknown`
@@ -41,8 +41,8 @@ use std::borrow::Cow;
 use std::collections::{BTreeMap, HashSet};
 use std::io::{Read as _, Write};
 
+use redrob_vector_doc::{Document, ImageBlob};
 use serde::{Deserialize, Serialize};
-use vectorcraft_doc::{Document, ImageBlob};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use atomic::{sync_file, write_atomic, write_atomic_with, write_new_with};
@@ -60,9 +60,14 @@ pub const MIN_VERSION: u32 = 1;
 pub const COMPRESSED_SINCE: u32 = 3;
 /// Most pixels on the longer side of an embedded preview.
 pub const PREVIEW_MAX: u32 = 256;
-pub const EXTENSION: &str = "vectorcraft";
-/// Extension and format name from before the project was renamed (DrawCraft): still opened.
-pub const LEGACY_EXTENSION: &str = "drawcraft";
+pub const EXTENSION: &str = "rvector";
+/// The `"format"` field of the JSON header. Unchanged from upstream so a file written here opens
+/// there and vice versa; it is a format identity, not a name a user types.
+pub const FORMAT_NAME: &str = "vectorcraft";
+/// The extension the format had upstream. Still opened, never written.
+pub const UPSTREAM_EXTENSION: &str = "vectorcraft"; // legacy: upstream extension, read only
+/// Extension and format name from before upstream renamed itself (DrawCraft): still opened.
+pub const LEGACY_EXTENSION: &str = "drawcraft"; // legacy: upstream's own older extension, read only
 /// Most bytes the JSON of a compressed file may unpack to (a guard against decompression bombs,
 /// as are [`MAX_BLOB`] and [`MAX_BLOBS`]). A compressed save refuses a document past any of them,
 /// so every file Redrob Canvas writes reads back.
@@ -78,7 +83,9 @@ const MAX_UNPACKED: u64 = 512 << 20;
 
 /// Is `ext` (without the dot, any case) a native document extension?
 pub fn is_native_ext(ext: &str) -> bool {
-    ext.eq_ignore_ascii_case(EXTENSION) || ext.eq_ignore_ascii_case(LEGACY_EXTENSION)
+    ext.eq_ignore_ascii_case(EXTENSION)
+        || ext.eq_ignore_ascii_case(UPSTREAM_EXTENSION) // legacy: .vectorcraft and .drawcraft still open
+        || ext.eq_ignore_ascii_case(LEGACY_EXTENSION)
 }
 
 /// Does the file name or path end in a native document extension?
@@ -160,7 +167,7 @@ fn is_packed(mime: &str) -> bool {
 
 /// The MIME type of a preview's bytes (JPEG or PNG).
 fn preview_mime(bytes: &[u8]) -> &'static str {
-    if bytes.starts_with(&[0xff, 0xd8]) { "image/jpeg" } else { vectorcraft_doc::links::PROXY_MIME }
+    if bytes.starts_with(&[0xff, 0xd8]) { "image/jpeg" } else { redrob_vector_doc::links::PROXY_MIME }
 }
 
 /// The JSON of a file and the data after it (v4), split at [`BLOB_MAGIC`] after the first JSON
@@ -347,7 +354,7 @@ pub fn save_to(doc: &Document, o: &SaveOptions, w: impl Write) -> Result<(), For
     let mut out = if o.compress { Out::Gz(Box::new(Gz::new(w).map_err(encode_err)?)) } else { Out::Plain(w) };
     let mut env = Envelope { pretty, first: true };
     // Older apps only know the name from before the rename.
-    env.field(&mut out, "format", &if o.version < 3 { LEGACY_EXTENSION } else { EXTENSION })?;
+    env.field(&mut out, "format", &if o.version < 3 { LEGACY_EXTENSION } else { FORMAT_NAME })?;
     env.field(&mut out, "version", &o.version)?;
     env.field(&mut out, "generator", &format!("Redrob Canvas {}", env!("CARGO_PKG_VERSION")))?;
     if let Some(png) = &o.preview {
@@ -519,7 +526,7 @@ pub fn load_file(bytes: &[u8]) -> Result<NativeFile, FormatError> {
         let why = if e.to_string().contains("recursion limit") { format!("its objects are nested too deep ({e})") } else { e.to_string() };
         FormatError::NotVectorcraft(why)
     })?;
-    if f.format != EXTENSION && f.format != LEGACY_EXTENSION {
+    if f.format != FORMAT_NAME && f.format != LEGACY_EXTENSION {
         return Err(FormatError::NotVectorcraft(format!("format is `{}`", f.format)));
     }
     if f.version > VERSION {
@@ -588,7 +595,7 @@ pub fn pdf_content(bytes: &[u8]) -> Option<Vec<u8>> {
     head_member(bytes, |h| h.pdf)
 }
 
-/// Does this look like a `.vectorcraft` file (compressed or not)?
+/// Does this look like a `.rvector` file (compressed or not)?
 pub fn sniff(bytes: &[u8]) -> bool {
     const HEAD: usize = 256;
     let head: Cow<'_, [u8]> = if is_compressed(bytes) {
@@ -658,7 +665,7 @@ mod tests {
         assert!(legacy.contains("\"drawcraft\""));
         assert!(sniff(legacy.as_bytes()));
         assert_eq!(load(legacy.as_bytes()).unwrap().artboards[0].rect, d.artboards[0].rect);
-        assert!(is_native_name("old/Poster.DrawCraft") && is_native_name("new.vectorcraft") && !is_native_name("x.svg"));
+        assert!(is_native_name("old/Poster.DrawCraft") && is_native_name("new.rvector") && !is_native_name("x.svg"));
         assert!(load(br#"{"format":"other","version":1,"document":{}}"#).is_err());
     }
 
@@ -675,8 +682,8 @@ mod tests {
         assert_eq!(load_info(v1.as_bytes()).unwrap().1, FileInfo { version: 1, legacy: false });
         assert!(load_info(v1.as_bytes()).unwrap().1.is_old());
     }
-    use vectorcraft_doc::{Appearance, ImageObject, Node, NodeKind};
-    use vectorcraft_geom::{Affine, Rect, shapes};
+    use redrob_vector_doc::{Appearance, ImageObject, Node, NodeKind};
+    use redrob_vector_geom::{Affine, Rect, shapes};
 
     #[test]
     fn roundtrip() {

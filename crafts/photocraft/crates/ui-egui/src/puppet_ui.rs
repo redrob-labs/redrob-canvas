@@ -11,10 +11,10 @@
 use std::sync::Arc;
 
 use egui::{Color32, Stroke, TextureHandle, pos2, vec2};
-use photocraft_algo::puppet::{ITERATIONS, PuppetDensity, PuppetMesh, PuppetMode, PuppetPin, PuppetSolver, PuppetWarp, build_mesh};
-use photocraft_doc::{Document, LayerId};
-use photocraft_geom::Rect;
-use photocraft_raster::Surface;
+use redrob_photo_algo::puppet::{ITERATIONS, PuppetDensity, PuppetMesh, PuppetMode, PuppetPin, PuppetSolver, PuppetWarp, build_mesh};
+use redrob_photo_doc::{Document, LayerId};
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::Surface;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -458,7 +458,7 @@ mod tests {
     #[test]
     fn session_is_dropped_when_another_document_becomes_active() {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("file.new", json!({"width": 100, "height": 80, "depth": 8})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session
@@ -491,7 +491,7 @@ mod tests {
     #[test]
     fn pin_edits_undo_and_redo_inside_the_session() {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("file.new", json!({"width": 100, "height": 80, "depth": 8})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session
@@ -548,7 +548,7 @@ mod tests {
     #[test]
     fn pins_drag_and_commit_through_the_engine() {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("file.new", json!({"width": 100, "height": 80, "depth": 8})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session
@@ -593,7 +593,7 @@ mod tests {
         // #951: remeshing to no vertices rebound the pins to a vertex that doesn't exist and
         // panicked. -50 is the options bar's minimum and also empties this 20 px tall bar.
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("file.new", json!({"width": 100, "height": 80, "depth": 8})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session

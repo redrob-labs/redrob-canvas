@@ -2,8 +2,8 @@
 //! (moves, deletions), names, undo, the native round trip, the shared export settings and
 //! exporting assets alone, cropped to their art.
 
+use redrob_vector_color::{Color, Paint};
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
 
 use super::*;
 
@@ -41,7 +41,7 @@ fn files(r: &Value) -> Vec<(String, Vec<u8>)> {
         .as_array()
         .unwrap()
         .iter()
-        .map(|f| (f["name"].as_str().unwrap().to_string(), vectorcraft_format::base64_decode(f["dataBase64"].as_str().unwrap()).unwrap()))
+        .map(|f| (f["name"].as_str().unwrap().to_string(), redrob_vector_format::base64_decode(f["dataBase64"].as_str().unwrap()).unwrap()))
         .collect()
 }
 
@@ -178,14 +178,14 @@ fn assets_round_trip_through_the_native_format() {
     run(&mut s, "assets.add", json!({"ids": [a, b], "multiple": false, "name": "Both"}));
     let saved = s.doc().unwrap().doc.assets.clone();
     let b64 = run(&mut s, "document.serialize", json!({"format": "vectorcraft"}))["dataBase64"].as_str().unwrap().to_string();
-    run(&mut s, "document.open", json!({"name": "assets.vectorcraft", "dataBase64": b64}));
+    run(&mut s, "document.open", json!({"name": "assets.rvector", "dataBase64": b64}));
     assert_eq!(s.doc().unwrap().doc.assets, saved);
     // A new asset never takes an id already used.
     let c = rect(&mut s, 90.0, 10.0, 20.0, 20.0);
     let id = run(&mut s, "assets.add", json!({"ids": [c]}))["assets"][0].as_u64().unwrap();
     assert!(saved.iter().all(|x| x.id != id));
     // Documents without assets don't write the key, and files without it load.
-    let mut d = vectorcraft_doc::Document::new(10.0, 10.0);
+    let mut d = redrob_vector_doc::Document::new(10.0, 10.0);
     let text = serde_json::to_string(&d).unwrap();
     assert!(!text.contains("\"assets\""));
     d = serde_json::from_str(&text).unwrap();

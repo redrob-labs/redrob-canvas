@@ -1,10 +1,10 @@
 //! Pattern swatches, pattern editing mode and Repeat, driven through `Session::execute`.
 
+use redrob_vector_color::Paint;
+use redrob_vector_doc::pattern::{PATTERN_EDIT_LAYER, RepeatKind, TileType};
+use redrob_vector_doc::{Node, NodeKind};
+use redrob_vector_geom::{Point, Rect};
 use serde_json::{Value, json};
-use vectorcraft_color::Paint;
-use vectorcraft_doc::pattern::{PATTERN_EDIT_LAYER, RepeatKind, TileType};
-use vectorcraft_doc::{Node, NodeKind};
-use vectorcraft_geom::{Point, Rect};
 
 use super::*;
 
@@ -30,7 +30,7 @@ fn sel(s: &mut Session, ids: &[NodeId]) {
     s.execute("select.set", &json!({"ids": ids.iter().map(|i| i.0).collect::<Vec<_>>()})).unwrap();
 }
 
-fn doc(s: &Session) -> &vectorcraft_doc::Document {
+fn doc(s: &Session) -> &redrob_vector_doc::Document {
     &s.doc().unwrap().doc
 }
 
@@ -285,9 +285,9 @@ fn hit_testing_in_edit_mode_only_reaches_tile_layer() {
     sel(&mut s, &[r]);
     s.execute("object.pattern.make", &json!({"name": "P"})).unwrap();
     let d = doc(&s);
-    let opt = vectorcraft_doc::hit::HitOptions::default();
-    assert!(vectorcraft_doc::hit::hit_test(d, Point::new(220.0, 220.0), opt).is_none());
-    let h = vectorcraft_doc::hit::hit_test(d, Point::new(5.0, 5.0), opt).unwrap();
+    let opt = redrob_vector_doc::hit::HitOptions::default();
+    assert!(redrob_vector_doc::hit::hit_test(d, Point::new(220.0, 220.0), opt).is_none());
+    let h = redrob_vector_doc::hit::hit_test(d, Point::new(5.0, 5.0), opt).unwrap();
     assert_ne!(h.leaf, r);
     let _ = other;
 }
@@ -301,8 +301,8 @@ fn save_load_roundtrip_keeps_patterns_and_repeats() {
     let r = rect(&mut s, 300.0, 50.0, 10.0, 10.0);
     sel(&mut s, &[r]);
     s.execute("object.repeat.radial", &json!({"instances": 6})).unwrap();
-    let bytes = vectorcraft_format::save(doc(&s), false);
-    let back = vectorcraft_format::load(&bytes).unwrap();
+    let bytes = redrob_vector_format::save(doc(&s), false);
+    let back = redrob_vector_format::load(&bytes).unwrap();
     assert_eq!(back.patterns, doc(&s).patterns);
     assert_eq!(back.node(big).unwrap().appearance.fill_paint(), node(&s, big).appearance.fill_paint());
     assert!(back.layers[0].children().unwrap().iter().any(|n| matches!(n.kind, NodeKind::Repeat(_))));
@@ -314,7 +314,7 @@ fn svg_export_writes_pattern_def() {
     make_dots(&mut s);
     let big = rect(&mut s, 100.0, 100.0, 50.0, 50.0);
     s.execute("paint.setFill", &json!({"ids": [big.0], "swatch": "Dots"})).unwrap();
-    let svg = vectorcraft_svg::export(doc(&s), &vectorcraft_svg::ExportOptions::default());
+    let svg = redrob_vector_svg::export(doc(&s), &redrob_vector_svg::ExportOptions::default());
     assert!(svg.contains("<pattern id=\"pattern-1\""), "{svg}");
     assert!(svg.contains("patternUnits=\"userSpaceOnUse\""));
     assert!(svg.contains("width=\"20\" height=\"20\""));
@@ -331,7 +331,7 @@ fn pdf_export_expands_pattern_fills() {
     make_dots(&mut s);
     let big = rect(&mut s, 100.0, 100.0, 50.0, 50.0);
     s.execute("paint.setFill", &json!({"ids": [big.0], "swatch": "Dots"})).unwrap();
-    let rep = vectorcraft_pdf::export_with_report(doc(&s), &Default::default()).unwrap();
+    let rep = redrob_vector_pdf::export_with_report(doc(&s), &Default::default()).unwrap();
     assert!(rep.warnings.iter().all(|w| !w.contains("pattern")), "{:?}", rep.warnings);
     assert!(rep.bytes.len() > 500);
 }
@@ -514,10 +514,10 @@ fn repeat_hit_test_uses_instances() {
     sel(&mut s, &[r]);
     s.execute("object.repeat.radial", &json!({"instances": 4, "radius": 50})).unwrap();
     let d = doc(&s);
-    let opt = vectorcraft_doc::hit::HitOptions::default();
-    assert!(vectorcraft_doc::hit::hit_test(d, Point::new(250.0, 150.0), opt).is_some());
+    let opt = redrob_vector_doc::hit::HitOptions::default();
+    assert!(redrob_vector_doc::hit::hit_test(d, Point::new(250.0, 150.0), opt).is_some());
     // The empty centre of the ring is not the repeat.
-    assert!(vectorcraft_doc::hit::hit_test(d, Point::new(200.0, 150.0), opt).is_none());
+    assert!(redrob_vector_doc::hit::hit_test(d, Point::new(200.0, 150.0), opt).is_none());
 }
 
 #[test]

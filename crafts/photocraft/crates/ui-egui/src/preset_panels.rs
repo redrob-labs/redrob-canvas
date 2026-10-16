@@ -219,11 +219,11 @@ pub fn paint_gradient(ui: &egui::Ui, rect: Rect, stops: &[(f32, [f32; 4])]) {
     p.add(mesh);
 }
 
-fn pattern_texture(ctx: &egui::Context, pat: &photocraft_doc::Pattern) -> TextureHandle {
+fn pattern_texture(ctx: &egui::Context, pat: &redrob_photo_doc::Pattern) -> TextureHandle {
     cached_texture(ctx, ("pattern", pat.id.clone()), || {
         let (w, h) = (pat.width.max(1), pat.height.max(1));
         let fmt = pat.surface.format();
-        let px = pat.surface.read_region(photocraft_geom::Rect::new(0, 0, w as i32, h as i32));
+        let px = pat.surface.read_region(redrob_photo_geom::Rect::new(0, 0, w as i32, h as i32));
         let n = fmt.channels();
         // Tiles smaller than the swatch repeat; larger ones are shown shrunk.
         const S: u32 = 64;
@@ -234,7 +234,7 @@ fn pattern_texture(ctx: &egui::Context, pat: &photocraft_doc::Pattern) -> Textur
                 let sx = ((x as f32 * step) as u32) % w;
                 let sy = ((y as f32 * step) as u32) % h;
                 let i = (sy * w + sx) as usize * n;
-                img.pixels[(y * S + x) as usize] = c32(photocraft_raster::to_rgba(&fmt, &px[i..i + n]));
+                img.pixels[(y * S + x) as usize] = c32(redrob_photo_raster::to_rgba(&fmt, &px[i..i + n]));
             }
         }
         img
@@ -281,20 +281,20 @@ pub(crate) fn pattern_picker(app: &PhotocraftApp, ui: &mut egui::Ui, selected: &
     picked.filter(|id| id != selected)
 }
 
-pub(crate) fn style_texture(app: &PhotocraftApp, ctx: &egui::Context, st: &photocraft_engine::presets::styles::StylePreset) -> TextureHandle {
+pub(crate) fn style_texture(app: &PhotocraftApp, ctx: &egui::Context, st: &redrob_photo_engine::presets::styles::StylePreset) -> TextureHandle {
     let key = ("style", st.name.clone(), st.effects.len(), format!("{:?}{:?}", st.blend, st.fill_opacity));
     cached_texture(ctx, key, || {
         const S: u32 = 64;
-        let px = photocraft_engine::presets::styles::thumbnail(&app.session, st, S);
+        let px = redrob_photo_engine::presets::styles::thumbnail(&app.session, st, S);
         ColorImage::from_rgba_unmultiplied([S as usize, S as usize], &px)
     })
 }
 
-fn shape_texture(ctx: &egui::Context, sh: &photocraft_engine::presets::shapes::ShapePreset) -> TextureHandle {
+fn shape_texture(ctx: &egui::Context, sh: &redrob_photo_engine::presets::shapes::ShapePreset) -> TextureHandle {
     let knots: usize = sh.path.subpaths.iter().map(|s| s.knots.len()).sum();
     cached_texture(ctx, ("shape", sh.name.clone(), knots), || {
         const S: u32 = 64;
-        let cov = photocraft_engine::presets::shapes::thumbnail(&sh.path, S);
+        let cov = redrob_photo_engine::presets::shapes::thumbnail(&sh.path, S);
         ColorImage::new([S as usize, S as usize], cov.iter().map(|a| Color32::from_white_alpha((a.clamp(0.0, 1.0) * 255.0).round() as u8)).collect())
     })
 }
@@ -707,7 +707,7 @@ pub fn gradients_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 // ------------------------------------------------------------------ Patterns
 
 pub fn patterns_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
-    photocraft_engine::presets::patterns::sync(&mut app.session);
+    redrob_photo_engine::presets::patterns::sync(&mut app.session);
     let lib = app.session.patterns.items.clone();
     let groups: Vec<GroupView> = app
         .session
@@ -724,7 +724,7 @@ pub fn patterns_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 .collect(),
         })
         .collect();
-    let pats: Vec<Vec<photocraft_doc::Pattern>> =
+    let pats: Vec<Vec<redrob_photo_doc::Pattern>> =
         app.session.presets.pattern_groups.iter().map(|g| g.items.iter().filter_map(|id| lib.iter().find(|p| &p.id == id).cloned()).collect()).collect();
     let canvas = canvas_drop_rect(app);
     let mut st = std::mem::take(&mut app.ui.presets_ui);
@@ -871,7 +871,7 @@ pub fn styles_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 // ------------------------------------------------------------------ Shapes
 
 pub fn shapes_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
-    let src = photocraft_engine::presets::shapes::all_groups(&app.session);
+    let src = redrob_photo_engine::presets::shapes::all_groups(&app.session);
     let groups: Vec<GroupView> = src
         .iter()
         .map(|g| GroupView { name: g.name.clone(), items: g.items.iter().map(|i| ItemView { key: i.name.clone(), name: i.name.clone() }).collect() })
@@ -931,7 +931,7 @@ fn shape_fill(app: &PhotocraftApp) -> Value {
 pub fn shape_picker(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(tl!("Shape:")).color(t.text_dim).size(12.0));
-    let groups = photocraft_engine::presets::shapes::all_groups(&app.session);
+    let groups = redrob_photo_engine::presets::shapes::all_groups(&app.session);
     let cur = app.ui.presets_ui.shape().to_string();
     let ctx = ui.ctx().clone();
     let (r, resp) = ui.allocate_exact_size(vec2(36.0, 22.0), Sense::click());
@@ -986,7 +986,7 @@ pub fn shape_picker(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 pub fn finish_custom_shape(app: &mut PhotocraftApp, rect: [f64; 4], keep: bool, fill: Value, stroke: Value) {
     let name = app.ui.presets_ui.shape().to_string();
     let r = run(app, "shape.presets.place", json!({"preset": name, "rect": rect, "keepAspect": keep, "fill": fill, "stroke": stroke}));
-    if r.is_none() && !photocraft_engine::presets::shapes::all_groups(&app.session).iter().any(|g| g.items.iter().any(|s| s.name == name)) {
+    if r.is_none() && !redrob_photo_engine::presets::shapes::all_groups(&app.session).iter().any(|g| g.items.iter().any(|s| s.name == name)) {
         let template = "No custom shape \"{name}\": pick one in the options bar or Window › Shapes";
         app.ui.status = crate::i18n::fmt(tl!(template), &[("name", &name)]);
     }
@@ -1125,7 +1125,7 @@ pub fn clone_source_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     // The five source buttons.
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 4.0;
-        for i in 0..photocraft_engine::presets::clone_source::SLOTS {
+        for i in 0..redrob_photo_engine::presets::clone_source::SLOTS {
             let set = cs.slots[i].source.is_some();
             let tip = match cs.slots[i].source {
                 Some(s) => format!("Clone source {}: {:.0}, {:.0}", i + 1, s[0], s[1]),
@@ -1146,7 +1146,7 @@ pub fn clone_source_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     });
     ui.add_space(4.0);
     let src_line =
-        match (slot.source, slot.layer.and_then(|l| app.session.active().and_then(|d| d.doc.layer(photocraft_doc::LayerId(l)).map(|x| x.name.clone())))) {
+        match (slot.source, slot.layer.and_then(|l| app.session.active().and_then(|d| d.doc.layer(redrob_photo_doc::LayerId(l)).map(|x| x.name.clone())))) {
             (Some(_), Some(l)) => format!("Source: {} : {l}", app.session.active().map(|d| d.doc.name.clone()).unwrap_or_default()),
             (Some(_), None) => "Source: set".to_string(),
             _ => crate::i18n::fmt(tl!("Source: not set ({key}-click with Clone Stamp)"), &[("key", &crate::shortcuts::pretty("Alt"))]),
@@ -1243,7 +1243,7 @@ pub fn clone_source_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 /// Where the active clone source samples for document point `at` (for the canvas marker).
 /// The first stroke anchors at its press, so the marker follows before the stroke commits.
 pub fn clone_sample_point(app: &PhotocraftApp, at: Option<[f64; 2]>) -> Option<[f64; 2]> {
-    use photocraft_engine::presets::clone_source::{Mapping, transform_matrix};
+    use redrob_photo_engine::presets::clone_source::{Mapping, transform_matrix};
     let s = app.session.presets.clone.active();
     let src = s.source?;
     let stroking = app.drag.as_ref().filter(|d| matches!(d.tool, Tool::CloneStamp | Tool::Healing)).map(|d| d.start);
@@ -1265,7 +1265,7 @@ mod tests {
 
     fn app() -> (PhotocraftApp, egui::Context) {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 64, "height": 48})).unwrap();
         app.sync_views();
         (app, ctx)
@@ -1319,7 +1319,7 @@ mod tests {
         let d = app.session.active().unwrap();
         let l = d.doc.layer(d.active_layer.unwrap()).unwrap();
         assert_eq!(l.name, "Star");
-        assert!(matches!(l.content, photocraft_doc::LayerContent::Shape(_)));
+        assert!(matches!(l.content, redrob_photo_doc::LayerContent::Shape(_)));
     }
 
     /// #3658: a group/folder drag reorders by name, stores only a real reorder, and falls back to

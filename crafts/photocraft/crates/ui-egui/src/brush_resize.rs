@@ -12,7 +12,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use egui::{Color32, Pos2, Stroke, vec2};
-use photocraft_engine::paint::MAX_BRUSH_SIZE;
+use redrob_photo_engine::paint::MAX_BRUSH_SIZE;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -210,7 +210,7 @@ mod tests {
     const CTRL_ALT: Modifiers = Modifiers { alt: true, ctrl: true, shift: false, mac_cmd: false, command: false };
 
     fn app(tool: Tool) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 200, "background": "transparent"})).unwrap();
         app.run("tools.setBrush", json!({"brush": {"size": 40, "hardness": 0.2}})).unwrap();
         app.ui.tool = tool;

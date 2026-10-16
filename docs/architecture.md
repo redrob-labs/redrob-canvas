@@ -10,9 +10,9 @@ upstream code, vendored whole; the shell owns the window and the seams between t
  | top bar: "Redrob Canvas"  [Photo] [Vector] [Layout]       right slot  |
  +-----------------------------------------------------------------------+
  | active mode's ui()                                                    |
- |   Photo  = photocraft_ui_egui::PhotocraftApp   (crafts/photocraft)    |
- |   Vector = vectorcraft_ui_egui::VectorcraftApp (crafts/vectorcraft)   |
- |   Layout = designcraft_ui_egui::DesignApp      (crafts/designcraft)   |
+ |   Photo  = redrob_photo_ui_egui::PhotocraftApp   (crafts/photocraft)    |
+ |   Vector = redrob_vector_ui_egui::VectorcraftApp (crafts/vectorcraft)   |
+ |   Layout = redrob_layout_ui_egui::DesignApp      (crafts/designcraft)   |
  +-----------------------------------------------------------------------+
    services: config dir, prefs, persistence       crates/redrob-agent  (Redrob Code daemon)
    crafts/craft-libs: docking, CMS, print, PDF    crates/redrob-ai     (IOPaint, vectorize)
@@ -41,7 +41,7 @@ says how that routing will work).
 ## The editors (`crafts/*`)
 
 Four git subtrees, each squash-merged at a pinned upstream commit (`UPSTREAM.md`). Only their
-`crates/*` are workspace members; their `apps/`, `xtask` and web shells are excluded by
+`crates/*` are workspace members; their `apps/` and web shells are excluded by
 `tools/merge_workspaces.py`, which generates the root `Cargo.toml` from the four parked
 `Cargo.upstream.toml` files: dependencies unioned, craft-libs git dependencies turned into path
 dependencies on the subtree, and the `krilla` / `hayro` patches pointed at

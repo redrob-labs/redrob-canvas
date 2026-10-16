@@ -128,7 +128,7 @@ mod tests {
     use super::*;
 
     fn app(tool: Tool) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         app.run("layer.new.layer", json!({})).unwrap();
         app.ui.tool = tool;
@@ -191,7 +191,7 @@ mod tests {
         a.run("layer.select", json!({"layer": bg.0})).unwrap();
         press(&mut a, 5, false, 30000.0);
         assert_eq!(a.session.active().unwrap().doc.layers[0].opacity, 1.0);
-        let mut none = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut none = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         press(&mut none, 5, false, 0.0);
     }
 

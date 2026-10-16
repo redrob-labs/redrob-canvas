@@ -9,8 +9,8 @@
 //! commands: they hand the file to the system).
 
 use egui::{Sense, Ui, vec2};
+use redrob_vector_doc::NodeId;
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeId;
 
 use super::{pstate, set_pstate};
 use crate::theme::{self, Tokens};
@@ -88,7 +88,7 @@ fn cached(app: &mut VectorcraftApp, ctx: &egui::Context, o: &Options) -> Option<
 fn selected_images(app: &VectorcraftApp) -> Vec<u64> {
     let Some(st) = app.session.active() else { return vec![] };
     let image = |id: &NodeId| {
-        st.doc.node(*id).is_some_and(|n| matches!(n.kind, vectorcraft_doc::NodeKind::Image(_) | vectorcraft_doc::NodeKind::PlacedDocument(_)))
+        st.doc.node(*id).is_some_and(|n| matches!(n.kind, redrob_vector_doc::NodeKind::Image(_) | redrob_vector_doc::NodeKind::PlacedDocument(_)))
     };
     st.selection.objects.iter().filter(|id| image(id)).map(|id| id.0).collect()
 }
@@ -121,7 +121,7 @@ pub(crate) fn relink(app: &mut VectorcraftApp, ids: Vec<u64>) {
 }
 
 fn relink_picked(app: &mut VectorcraftApp, ids: Vec<u64>) {
-    let pick = crate::FilePick { filters: vectorcraft_engine::cmd::fileio::place_filters().collect(), ..Default::default() };
+    let pick = crate::FilePick { filters: redrob_vector_engine::cmd::fileio::place_filters().collect(), ..Default::default() };
     let Some(path) = crate::picks::open(app, &pick) else { return };
     let r = app.run("links.relink", json!({ "ids": ids, "path": path }));
     report(app, r, |v| format!("Relinked {} image(s)", v["relinked"].as_array().map_or(0, Vec::len)));
@@ -148,7 +148,7 @@ pub(crate) fn go_to(app: &mut VectorcraftApp, id: u64) {
     let Ok(r) = app.run("links.goTo", json!({ "id": id })) else { return };
     let b: Vec<f64> = r["bounds"].as_array().into_iter().flatten().filter_map(Value::as_f64).collect();
     if let (&[x0, y0, x1, y1], Some(v)) = (&b[..], app.view_mut()) {
-        v.center = vectorcraft_geom::Point::new((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+        v.center = redrob_vector_geom::Point::new((x0 + x1) / 2.0, (y0 + y1) / 2.0);
         v.fitted = true;
     }
 }
@@ -157,7 +157,7 @@ pub(crate) fn go_to(app: &mut VectorcraftApp, id: u64) {
 pub(crate) fn unembed(app: &mut VectorcraftApp, id: u64, name: &str) {
     if app.services.download.is_some() {
         if let Ok(v) = app.session.execute("links.unembed", &json!({ "id": id }))
-            && let (Some(name), Some(bytes)) = (v["name"].as_str(), v["dataBase64"].as_str().and_then(vectorcraft_format::base64_decode))
+            && let (Some(name), Some(bytes)) = (v["name"].as_str(), v["dataBase64"].as_str().and_then(redrob_vector_format::base64_decode))
         {
             // A download that can't start is said like any file that can't be written.
             let _ = crate::io::write_reporting(app, name, &bytes);
@@ -385,12 +385,12 @@ fn size_label(bytes: u64) -> String {
 
 /// Milliseconds since the Unix epoch as a UTC date and time.
 pub(crate) fn date_label(ms: u64) -> String {
-    let [y, mo, d, h, mi, _] = vectorcraft_doc::metadata::civil(i64::try_from(ms / 1000).unwrap_or(i64::MAX));
+    let [y, mo, d, h, mi, _] = redrob_vector_doc::metadata::civil(i64::try_from(ms / 1000).unwrap_or(i64::MAX));
     format!("{y:04}-{mo:02}-{d:02} {h:02}:{mi:02} UTC")
 }
 
 /// The Link Info section: the details of `info` (`links.info`), or a hint.
-fn link_info(ui: &mut Ui, info: Option<&Value>, units: vectorcraft_doc::Unit) {
+fn link_info(ui: &mut Ui, info: Option<&Value>, units: redrob_vector_doc::Unit) {
     widgets::divider(ui);
     let Some(i) = info else {
         widgets::dim_label(ui, tl!("Select an image to see its Link Info."));

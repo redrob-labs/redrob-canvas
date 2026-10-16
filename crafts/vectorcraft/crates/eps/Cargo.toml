@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-eps"
+name = "redrob-vector-eps"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,18 +9,18 @@ description = "VectorCraft Encapsulated PostScript: a hand-written EPS writer (P
 workspace = true
 
 [dependencies]
-vectorcraft-geom = { workspace = true }
-vectorcraft-color = { workspace = true }
-vectorcraft-doc = { workspace = true }
-vectorcraft-effects = { workspace = true }
-vectorcraft-brush = { workspace = true }
-vectorcraft-text = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-effects = { workspace = true }
+redrob-vector-brush = { workspace = true }
+redrob-vector-text = { workspace = true }
 # Windows metafile previews, opened when a file's PostScript can't be read.
-vectorcraft-metafile = { workspace = true }
+redrob-vector-metafile = { workspace = true }
 # Non-native art in Illustrator editing data (a placed PDF's content, kept as a PDF).
-vectorcraft-pdf = { workspace = true }
+redrob-vector-pdf = { workspace = true }
 # The TIFF writer (previews) and PackBits, shared with raster export.
-vectorcraft-render = { workspace = true }
+redrob-vector-render = { workspace = true }
 kurbo = { workspace = true }
 image = { workspace = true }
 flate2 = { workspace = true }
@@ -29,4 +29,4 @@ ruzstd = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
-vectorcraft-testkit = { workspace = true }
+redrob-vector-testkit = { workspace = true }

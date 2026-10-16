@@ -5,8 +5,8 @@
 //! Tool Options, which last). Reshape: drag a point of a selected path; the engine's
 //! `path.reshape` adds an anchor there if needed and moves the neighbourhood smoothly.
 
+use redrob_vector_geom::{Point, Vec2};
 use serde_json::{Value, json};
-use vectorcraft_geom::{Point, Vec2};
 
 use crate::distort::{BLUE, ellipse_path};
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
@@ -23,7 +23,7 @@ pub fn create(id: &str) -> Option<Box<dyn Tool>> {
 
 /// Whether `id` is one of the graph tools (`columnGraph`, `pieGraph`…).
 pub fn is_graph_tool(id: &str) -> bool {
-    id.ends_with("Graph") && vectorcraft_doc::GraphKind::parse(id).is_some()
+    id.ends_with("Graph") && redrob_vector_doc::GraphKind::parse(id).is_some()
 }
 
 /// The Flare Tool Options as `shape.flare` takes them: (key, default, least, most). The diameter
@@ -238,13 +238,13 @@ impl Tool for FlareTool {
 #[derive(Default)]
 pub struct ReshapeTool {
     /// (path, grab point) while dragging.
-    grab: Option<(vectorcraft_doc::NodeId, Point)>,
+    grab: Option<(redrob_vector_doc::NodeId, Point)>,
     began: bool,
 }
 
 impl ReshapeTool {
     /// The selected path under `p` (Reshape works on selected paths only, like Illustrator).
-    fn hit(cx: &ToolContext, p: Point) -> Option<(vectorcraft_doc::NodeId, Point)> {
+    fn hit(cx: &ToolContext, p: Point) -> Option<(redrob_vector_doc::NodeId, Point)> {
         let tol = cx.tol(4.0);
         cx.selection.objects.iter().copied().filter(|id| cx.doc.is_editable(*id)).find_map(|id| {
             let pd = cx.doc.node(id)?.path_data()?;
@@ -272,7 +272,7 @@ impl Tool for ReshapeTool {
                 let Some((id, at)) = self.grab else { return vec![] };
                 let mut d: Vec2 = ev.pos - at;
                 if ev.mods.shift {
-                    d = vectorcraft_geom::constrain_angle(d, 45.0);
+                    d = redrob_vector_geom::constrain_angle(d, 45.0);
                 }
                 let mut out = vec![];
                 if !self.began {
@@ -321,7 +321,7 @@ impl Tool for ShaperTool {
         !self.points.is_empty()
     }
     fn pointer(&mut self, cx: &ToolContext, ev: &PointerEvent) -> Vec<Action> {
-        use vectorcraft_geom::recognize::{Recognized, recognize};
+        use redrob_vector_geom::recognize::{Recognized, recognize};
         match ev.kind {
             PointerKind::Down => {
                 self.points = vec![ev.pos];
@@ -342,7 +342,7 @@ impl Tool for ShaperTool {
                 if pts.first().is_some_and(|first| pts.iter().all(|p| p.distance(*first) < cx.tol(3.0))) {
                     return vec![Action::Exec("shaper.select".into(), json!({"point": [ev.pos.x, ev.pos.y]}))];
                 }
-                let r = |x: vectorcraft_geom::Rect, rotation: f64| json!({ "x": x.x0, "y": x.y0, "width": x.width(), "height": x.height(), "rotation": rotation });
+                let r = |x: redrob_vector_geom::Rect, rotation: f64| json!({ "x": x.x0, "y": x.y0, "width": x.width(), "height": x.height(), "rotation": rotation });
                 match recognize(&pts) {
                     Some(Recognized::Line { a, b }) => vec![Action::Exec("shape.line".into(), json!({ "x1": a.x, "y1": a.y, "x2": b.x, "y2": b.y }))],
                     Some(Recognized::Rectangle { rect, rotation }) => vec![Action::Exec("shape.rectangle".into(), r(rect, rotation))],
@@ -398,7 +398,7 @@ impl GraphTool {
         Self { id, start: None, began: false }
     }
     fn kind(&self) -> &'static str {
-        vectorcraft_doc::GraphKind::parse(self.id).unwrap_or_default().id()
+        redrob_vector_doc::GraphKind::parse(self.id).unwrap_or_default().id()
     }
     fn params(&self, s: Point, p: Point, m: Mods) -> Value {
         let mut d = p - s;
@@ -406,7 +406,7 @@ impl GraphTool {
             let k = d.x.abs().max(d.y.abs());
             d = Vec2::new(k * d.x.signum(), k * d.y.signum());
         }
-        let r = if m.alt { vectorcraft_geom::Rect::from_points(s - d, s + d) } else { vectorcraft_geom::Rect::from_points(s, s + d) };
+        let r = if m.alt { redrob_vector_geom::Rect::from_points(s - d, s + d) } else { redrob_vector_geom::Rect::from_points(s, s + d) };
         json!({ "type": self.kind(), "x": r.x0, "y": r.y0, "width": r.width().max(1.0), "height": r.height().max(1.0) })
     }
 }

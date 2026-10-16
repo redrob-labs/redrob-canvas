@@ -5,10 +5,10 @@
 //! (Cmd/Ctrl held: it only slides). Each drag is one undo step of `type.pathOptions`. The tools
 //! draw the brackets from the same geometry they hit-test.
 
+use redrob_vector_doc::{NodeId, NodeKind, TextKind};
+use redrob_vector_geom::kurbo::{Line, ParamCurveNearest};
+use redrob_vector_geom::{Affine, ArcPath, Point, Vec2};
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::{NodeId, NodeKind, TextKind};
-use vectorcraft_geom::kurbo::{Line, ParamCurveNearest};
-use vectorcraft_geom::{Affine, ArcPath, Point, Vec2};
 
 use crate::{Action, Overlay, PointerEvent, ToolContext};
 
@@ -215,7 +215,7 @@ mod tests {
     use super::*;
     use crate::testutil::*;
     use crate::{Mods, PointerKind};
-    use vectorcraft_doc::Selection;
+    use redrob_vector_doc::Selection;
 
     fn selected(id: NodeId) -> Selection {
         let mut s = Selection::default();

@@ -93,7 +93,7 @@ fn global_override(key: &str) -> Option<&'static str> {
 
 /// Registry default shortcut of a command (engine or UI command).
 pub fn default_command_shortcut(id: &str) -> Option<&'static str> {
-    if let Some(c) = vectorcraft_engine::find_command(id) {
+    if let Some(c) = redrob_vector_engine::find_command(id) {
         return c.shortcut;
     }
     menus::UI_COMMANDS.iter().find(|c| c.0 == id).map(|c| c.2).filter(|s| !s.is_empty())
@@ -126,7 +126,7 @@ pub const PANEL_SHORTCUTS: &[(&str, &str)] = &[
 /// Default shortcut of an entry key (`tool:<id>`, `panel:<id>` or a command id).
 pub fn default_of(key: &str) -> Option<&'static str> {
     if let Some(t) = key.strip_prefix("tool:") {
-        return vectorcraft_tools::tool_info(t).and_then(|t| t.shortcut);
+        return redrob_vector_tools::tool_info(t).and_then(|t| t.shortcut);
     }
     if let Some(p) = key.strip_prefix("panel:") {
         return PANEL_SHORTCUTS.iter().find(|(id, _)| *id == p).map(|(_, sc)| *sc);
@@ -170,14 +170,14 @@ pub fn panel_shortcut(panel: &str) -> Option<&'static str> {
 /// Tool whose (effective) shortcut is `key` ("V", "Shift+M").
 pub fn tool_for_key(key: &str) -> Option<&'static str> {
     let n = normalize(key)?;
-    vectorcraft_tools::catalog::all_tools().find(|t| tool_shortcut(t.id).and_then(normalize).as_deref() == Some(n.as_str())).map(|t| t.id)
+    redrob_vector_tools::catalog::all_tools().find(|t| tool_shortcut(t.id).and_then(normalize).as_deref() == Some(n.as_str())).map(|t| t.id)
 }
 
 /// Command whose effective shortcut is exactly `key` (for single-key command shortcuts: X, D, /).
 pub fn command_for_key(key: &str) -> Option<&'static str> {
     let n = normalize(key)?;
     let hit = |id: &'static str| command_shortcut(id).and_then(normalize).as_deref() == Some(n.as_str());
-    vectorcraft_engine::command_specs().iter().map(|c| c.id).chain(menus::UI_COMMANDS.iter().map(|c| c.0)).find(|id| hit(id))
+    redrob_vector_engine::command_specs().iter().map(|c| c.id).chain(menus::UI_COMMANDS.iter().map(|c| c.0)).find(|id| hit(id))
 }
 
 // ---------- chords ----------
@@ -253,15 +253,15 @@ pub struct Entry {
 pub fn entries() -> &'static [Entry] {
     static E: OnceLock<Vec<Entry>> = OnceLock::new();
     E.get_or_init(|| {
-        let mut v: Vec<Entry> = vectorcraft_tools::catalog::all_tools()
+        let mut v: Vec<Entry> = redrob_vector_tools::catalog::all_tools()
             .map(|t| Entry { key: format!("tool:{}", t.id), label: t.label.to_string(), group: "Tools".into(), is_tool: true })
             .collect();
         let mut seen = HashSet::new();
-        for c in vectorcraft_engine::command_specs() {
+        for c in redrob_vector_engine::command_specs() {
             // Commands outside the menus (panel menu items) are
             // listed when a key alone can run them; queries and aliases never are.
             let listed = if c.menu.is_empty() {
-                c.shortcut.is_some() || (c.journal && !vectorcraft_engine::cmd::is_alias(c.id) && runs_without_params(c.params))
+                c.shortcut.is_some() || (c.journal && !redrob_vector_engine::cmd::is_alias(c.id) && runs_without_params(c.params))
             } else {
                 true
             };
@@ -854,7 +854,7 @@ mod tests {
 
     #[test]
     fn a_modifier_pressed_while_recording_waits_for_the_key() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         open(&mut app);
         app.ui.dialog.as_mut().unwrap().fields.insert("__recording".into(), json!("tool:groupSelection"));
         let ctx = egui::Context::default();

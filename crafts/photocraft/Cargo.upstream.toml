@@ -10,35 +10,35 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.95"
 
 [workspace.dependencies]
-craft-ui = { git = "https://github.com/storytold/craft-libs", rev = "5c874d51eeb3de70e735c8ce87a59a7dedd47675", features = ["serde"] }
+redrob-craft-ui = { git = "https://github.com/storytold/craft-libs", rev = "5c874d51eeb3de70e735c8ce87a59a7dedd47675", features = ["serde"] }
 # internal
-photocraft-geom = { path = "crates/geom" }
-photocraft-color = { path = "crates/color" }
-photocraft-cms = { path = "crates/cms" }
-photocraft-raster = { path = "crates/raster" }
-photocraft-doc = { path = "crates/doc" }
-photocraft-ops = { path = "crates/ops" }
-photocraft-psd = { path = "crates/psd" }
-photocraft-codecs = { path = "crates/codecs" }
-photocraft-raw = { path = "crates/raw" }
-photocraft-affinity = { path = "crates/affinity" }
-photocraft-compose = { path = "crates/compose" }
-photocraft-gpu = { path = "crates/gpu" }
-photocraft-paint = { path = "crates/paint" }
-photocraft-algo = { path = "crates/algo" }
-photocraft-io = { path = "crates/io" }
-photocraft-text = { path = "crates/text" }
-photocraft-vector = { path = "crates/vector" }
-photocraft-format = { path = "crates/format" }
-photocraft-automation = { path = "crates/automation" }
-photocraft-plugins = { path = "crates/plugins" }
-photocraft-engine = { path = "crates/engine" }
-photocraft-ui-egui = { path = "crates/ui-egui" }
-photocraft-testkit = { path = "crates/testkit" }
-photocraft-tablet = { path = "crates/tablet" }
+redrob-photo-geom = { path = "crates/geom" }
+redrob-photo-color = { path = "crates/color" }
+redrob-photo-cms = { path = "crates/cms" }
+redrob-photo-raster = { path = "crates/raster" }
+redrob-photo-doc = { path = "crates/doc" }
+redrob-photo-ops = { path = "crates/ops" }
+redrob-photo-psd = { path = "crates/psd" }
+redrob-photo-codecs = { path = "crates/codecs" }
+redrob-photo-raw = { path = "crates/raw" }
+redrob-photo-affinity = { path = "crates/affinity" }
+redrob-photo-compose = { path = "crates/compose" }
+redrob-photo-gpu = { path = "crates/gpu" }
+redrob-photo-paint = { path = "crates/paint" }
+redrob-photo-algo = { path = "crates/algo" }
+redrob-photo-io = { path = "crates/io" }
+redrob-photo-text = { path = "crates/text" }
+redrob-photo-vector = { path = "crates/vector" }
+redrob-photo-format = { path = "crates/format" }
+redrob-photo-automation = { path = "crates/automation" }
+redrob-photo-plugins = { path = "crates/plugins" }
+redrob-photo-engine = { path = "crates/engine" }
+redrob-photo-ui-egui = { path = "crates/ui-egui" }
+redrob-photo-testkit = { path = "crates/testkit" }
+redrob-photo-tablet = { path = "crates/tablet" }
 
 # external
-craft-print = { git = "https://github.com/storytold/craft-libs", rev = "3d37da389a3618ab9b76109da11416e9ca4ea719" }
+redrob-craft-print = { git = "https://github.com/storytold/craft-libs", rev = "3d37da389a3618ab9b76109da11416e9ca4ea719" }
 thiserror = "2"
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
@@ -100,25 +100,25 @@ strip = "debuginfo"
 opt-level = "s"
 
 # Decoding and rasterizing keep their speed.
-[profile.wasm-release.package.photocraft-codecs]
+[profile.wasm-release.package.redrob-photo-codecs]
 opt-level = "s"
-[profile.wasm-release.package.photocraft-raw]
+[profile.wasm-release.package.redrob-photo-raw]
 opt-level = "s"
-[profile.wasm-release.package.photocraft-heif]
+[profile.wasm-release.package.redrob-photo-heif]
 opt-level = "s"
-[profile.wasm-release.package.photocraft-vector]
+[profile.wasm-release.package.redrob-photo-vector]
 opt-level = "s"
 
 # Large crates off the per-frame and per-pixel paths: the document model, file parsers run once
 # per open/save, JSON (settings, presets, control channel), SVG parsing, and shader translation
 # (runs when a pipeline is created). "z" keeps the wasm well under the size gate.
-[profile.wasm-release.package.photocraft-doc]
+[profile.wasm-release.package.redrob-photo-doc]
 opt-level = "z"
-[profile.wasm-release.package.photocraft-psd]
+[profile.wasm-release.package.redrob-photo-psd]
 opt-level = "z"
-[profile.wasm-release.package.photocraft-format]
+[profile.wasm-release.package.redrob-photo-format]
 opt-level = "z"
-[profile.wasm-release.package.photocraft-affinity]
+[profile.wasm-release.package.redrob-photo-affinity]
 opt-level = "z"
 [profile.wasm-release.package.serde_json]
 opt-level = "z"
@@ -128,16 +128,16 @@ opt-level = "z"
 opt-level = "z"
 
 # Pixel processing keeps its speed-oriented optimization level.
-[profile.wasm-release.package.photocraft-raster]
+[profile.wasm-release.package.redrob-photo-raster]
 opt-level = 3
-[profile.wasm-release.package.photocraft-color]
+[profile.wasm-release.package.redrob-photo-color]
 opt-level = 3
-[profile.wasm-release.package.photocraft-cms]
+[profile.wasm-release.package.redrob-photo-cms]
 opt-level = 3
-[profile.wasm-release.package.photocraft-compose]
+[profile.wasm-release.package.redrob-photo-compose]
 opt-level = 3
-[profile.wasm-release.package.photocraft-algo]
+[profile.wasm-release.package.redrob-photo-algo]
 opt-level = 3
-[profile.wasm-release.package.photocraft-paint]
+[profile.wasm-release.package.redrob-photo-paint]
 opt-level = 3
 

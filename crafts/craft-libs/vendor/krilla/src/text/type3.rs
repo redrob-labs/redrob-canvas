@@ -19,10 +19,10 @@ use crate::resource::ResourceDictionaryBuilder;
 use crate::serialize::SerializeContext;
 use crate::stream::{FilterStreamBuilder, StreamBuilder};
 use crate::surface::Location;
+use crate::text::GlyphId;
 use crate::text::cid::write_cmap_entry;
 use crate::text::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::text::outline::glyph_path;
-use crate::text::GlyphId;
 use crate::text::{self, Font};
 use crate::util::NameExt;
 
@@ -38,10 +38,7 @@ pub(crate) struct ColoredGlyph {
 
 impl ColoredGlyph {
     pub(crate) fn new(glyph_id: GlyphId, context_color: rgb::Color) -> ColoredGlyph {
-        Self {
-            glyph_id,
-            context_color,
-        }
+        Self { glyph_id, context_color }
     }
 }
 
@@ -57,14 +54,7 @@ pub(crate) struct Type3Font {
 
 impl Type3Font {
     pub(crate) fn new(font: Font, index: usize) -> Self {
-        Self {
-            font,
-            glyphs: Vec::new(),
-            cmap_entries: FxHashMap::default(),
-            widths: Vec::new(),
-            glyph_set: HashSet::new(),
-            index,
-        }
+        Self { font, glyphs: Vec::new(), cmap_entries: FxHashMap::default(), widths: Vec::new(), glyph_set: HashSet::new(), index }
     }
 
     // Unlike CID fonts, the units per em of type 3 fonts does not have to be 1000.
@@ -87,10 +77,7 @@ impl Type3Font {
 
     #[inline]
     pub(crate) fn get_gid(&self, glyph: &ColoredGlyph) -> Option<u8> {
-        self.glyphs
-            .iter()
-            .position(|g| g == glyph)
-            .and_then(|n| u8::try_from(n).ok())
+        self.glyphs.iter().position(|g| g == glyph).and_then(|n| u8::try_from(n).ok())
     }
 
     #[inline]
@@ -102,8 +89,7 @@ impl Type3Font {
 
             self.glyph_set.insert(glyph);
             self.glyphs.push(glyph);
-            self.widths
-                .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
+            self.widths.push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
@@ -128,12 +114,7 @@ impl Type3Font {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    ) {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref) {
         let mut stream_chunk = sc.new_chunk();
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
@@ -148,13 +129,8 @@ impl Type3Font {
                 let mut surface = stream_surface.surface();
 
                 // In case this returns `None`, the surface is guaranteed to be empty.
-                let drawn_color_glyph = text::draw_color_glyph(
-                    self.font.clone(),
-                    glyph.context_color,
-                    glyph.glyph_id,
-                    Transform::default(),
-                    &mut surface,
-                );
+                let drawn_color_glyph =
+                    text::draw_color_glyph(self.font.clone(), glyph.context_color, glyph.glyph_id, Transform::default(), &mut surface);
 
                 if drawn_color_glyph.is_none() {
                     // If this code path is reached, either we are dealing with a glyph that has no outline
@@ -190,18 +166,14 @@ impl Type3Font {
                 let x_object = XObject::new(stream, false, false, None);
                 if !x_object.is_empty() {
                     font_bbox.expand(&x_object.bbox());
-                    let x_name = rd_builder
-                        .register_resource(sc.register_resourceable(chunk_container, x_object));
+                    let x_name = rd_builder.register_resource(sc.register_resourceable(chunk_container, x_object));
                     content.x_object(x_name.to_pdf_name());
                 }
 
                 let stream = content.finish();
 
-                let font_stream = FilterStreamBuilder::new_from_content_stream(
-                    stream.as_slice(),
-                    &sc.serialize_settings(),
-                )
-                .finish(&sc.serialize_settings());
+                let font_stream =
+                    FilterStreamBuilder::new_from_content_stream(stream.as_slice(), &sc.serialize_settings()).finish(&sc.serialize_settings());
 
                 let stream_ref = sc.new_ref();
                 let mut stream = stream_chunk.stream(stream_ref, font_stream.encoded_data());
@@ -214,20 +186,11 @@ impl Type3Font {
         let resource_dictionary = rd_builder.finish();
         let chunk = &mut chunk_container.non_stream.fonts;
 
-        let descriptor_ref = if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
-            Some(sc.new_ref())
-        } else {
-            None
-        };
+        let descriptor_ref = if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 { Some(sc.new_ref()) } else { None };
         let cmap_ref = sc.new_ref();
 
         let mut flags = FontFlags::empty();
-        flags.set(
-            FontFlags::SERIF,
-            self.font
-                .postscript_name()
-                .is_some_and(|n| n.contains("Serif")),
-        );
+        flags.set(FontFlags::SERIF, self.font.postscript_name().is_some_and(|n| n.contains("Serif")));
         flags.set(FontFlags::FIXED_PITCH, self.font.is_monospaced());
         flags.set(FontFlags::ITALIC, self.font.italic_angle() != 0.0);
         flags.insert(FontFlags::SYMBOLIC);
@@ -237,11 +200,7 @@ impl Type3Font {
         let ascender = font_bbox.bottom();
         let descender = font_bbox.top();
 
-        let mut gids = self
-            .glyph_set
-            .iter()
-            .map(|g| g.glyph_id)
-            .collect::<Vec<_>>();
+        let mut gids = self.glyph_set.iter().map(|g| g.glyph_id).collect::<Vec<_>>();
         gids.sort();
         let base_font = base_font_name(&self.font);
 
@@ -261,39 +220,19 @@ impl Type3Font {
                 // Unfortunately we have no way of determining the actual family name, so we just
                 // take the next best thing
                 .family(Str(base_font.as_bytes()))
-                .stretch(
-                    match skrifa::attribute::Stretch::new(self.font().stretch()) {
-                        skrifa::attribute::Stretch::ULTRA_CONDENSED => {
-                            pdf_writer::types::FontStretch::UltraCondensed
-                        }
-                        skrifa::attribute::Stretch::EXTRA_CONDENSED => {
-                            pdf_writer::types::FontStretch::ExtraCondensed
-                        }
-                        skrifa::attribute::Stretch::CONDENSED => {
-                            pdf_writer::types::FontStretch::Condensed
-                        }
-                        skrifa::attribute::Stretch::SEMI_CONDENSED => {
-                            pdf_writer::types::FontStretch::SemiCondensed
-                        }
-                        skrifa::attribute::Stretch::NORMAL => {
-                            pdf_writer::types::FontStretch::Normal
-                        }
-                        skrifa::attribute::Stretch::SEMI_EXPANDED => {
-                            pdf_writer::types::FontStretch::SemiExpanded
-                        }
-                        skrifa::attribute::Stretch::EXPANDED => {
-                            pdf_writer::types::FontStretch::Expanded
-                        }
-                        skrifa::attribute::Stretch::EXTRA_EXPANDED => {
-                            pdf_writer::types::FontStretch::ExtraExpanded
-                        }
-                        skrifa::attribute::Stretch::ULTRA_EXPANDED => {
-                            pdf_writer::types::FontStretch::UltraExpanded
-                        }
-                        // Fallback
-                        _ => pdf_writer::types::FontStretch::Normal,
-                    },
-                )
+                .stretch(match skrifa::attribute::Stretch::new(self.font().stretch()) {
+                    skrifa::attribute::Stretch::ULTRA_CONDENSED => pdf_writer::types::FontStretch::UltraCondensed,
+                    skrifa::attribute::Stretch::EXTRA_CONDENSED => pdf_writer::types::FontStretch::ExtraCondensed,
+                    skrifa::attribute::Stretch::CONDENSED => pdf_writer::types::FontStretch::Condensed,
+                    skrifa::attribute::Stretch::SEMI_CONDENSED => pdf_writer::types::FontStretch::SemiCondensed,
+                    skrifa::attribute::Stretch::NORMAL => pdf_writer::types::FontStretch::Normal,
+                    skrifa::attribute::Stretch::SEMI_EXPANDED => pdf_writer::types::FontStretch::SemiExpanded,
+                    skrifa::attribute::Stretch::EXPANDED => pdf_writer::types::FontStretch::Expanded,
+                    skrifa::attribute::Stretch::EXTRA_EXPANDED => pdf_writer::types::FontStretch::ExtraExpanded,
+                    skrifa::attribute::Stretch::ULTRA_EXPANDED => pdf_writer::types::FontStretch::UltraExpanded,
+                    // Fallback
+                    _ => pdf_writer::types::FontStretch::Normal,
+                })
                 .weight(match self.font.weight() as i32 {
                     150..250 => 200,
                     250..350 => 300,
@@ -315,23 +254,13 @@ impl Type3Font {
         }
 
         let mut type3_font = chunk.type3_font(root_ref);
-        resource_dictionary.to_pdf_resources(
-            &mut type3_font,
-            sc,
-            &mut chunk_container.non_stream.resource_dictionaries,
-        );
+        resource_dictionary.to_pdf_resources(&mut type3_font, sc, &mut chunk_container.non_stream.resource_dictionaries);
 
         // See https://github.com/typst/typst/issues/5067 as to why we write this.
         type3_font.name(Name(base_font.as_bytes()));
         type3_font.bbox(font_bbox.to_pdf_rect());
         type3_font.to_unicode(cmap_ref);
-        type3_font.matrix(
-            Transform::from_scale(
-                1.0 / (self.font.units_per_em()),
-                1.0 / (self.font.units_per_em()),
-            )
-            .to_pdf_transform(),
-        );
+        type3_font.matrix(Transform::from_scale(1.0 / (self.font.units_per_em()), 1.0 / (self.font.units_per_em())).to_pdf_transform());
         type3_font.first_char(0);
         type3_font.last_char(u8::try_from(self.glyphs.len() - 1).unwrap());
         type3_font.widths(self.widths.iter().copied());
@@ -345,14 +274,9 @@ impl Type3Font {
         }
         char_procs.finish();
 
-        let names = (0..self.glyphs.len() as u16)
-            .map(|gid| format!("g{gid}"))
-            .collect::<Vec<_>>();
+        let names = (0..self.glyphs.len() as u16).map(|gid| format!("g{gid}")).collect::<Vec<_>>();
 
-        type3_font
-            .encoding_custom()
-            .differences()
-            .consecutive(0, names.iter().map(|n| n.to_pdf_name()));
+        type3_font.encoding_custom().differences().consecutive(0, names.iter().map(|n| n.to_pdf_name()));
 
         type3_font.finish();
 
@@ -369,9 +293,7 @@ impl Type3Font {
         };
 
         let cmap_stream = cmap.finish();
-        let cmap_stream =
-            FilterStreamBuilder::new_from_content_stream(&cmap_stream, &sc.serialize_settings())
-                .finish(&sc.serialize_settings());
+        let cmap_stream = FilterStreamBuilder::new_from_content_stream(&cmap_stream, &sc.serialize_settings()).finish(&sc.serialize_settings());
         let mut cmap = stream_chunk.cmap(cmap_ref, cmap_stream.encoded_data());
         cmap_stream.write_filters(cmap.deref_mut().deref_mut());
         cmap.writing_mode(WMode::Horizontal);
@@ -392,10 +314,7 @@ pub(crate) struct Type3FontMapper {
 
 impl Type3FontMapper {
     pub(crate) fn new(font: Font) -> Type3FontMapper {
-        Self {
-            font,
-            fonts: Vec::new(),
-        }
+        Self { font, fonts: Vec::new() }
     }
 }
 
@@ -403,30 +322,18 @@ impl Type3FontMapper {
     /// Given a requested glyph coverage, find the corresponding font identifier of the
     /// font that contains it.
     pub(crate) fn id_from_glyph(&self, glyph: &ColoredGlyph) -> Option<FontIdentifier> {
-        self.fonts
-            .iter()
-            .position(|f| f.covers(glyph))
-            .map(|p| self.fonts[p].identifier())
+        self.fonts.iter().position(|f| f.covers(glyph)).map(|p| self.fonts[p].identifier())
     }
 
     /// Given a font identifier, return the corresponding Type3 font if it is part of
     /// that type 3 font mapper.
     pub(crate) fn font_from_id(&self, identifier: FontIdentifier) -> Option<&Type3Font> {
-        let pos = self
-            .fonts
-            .iter()
-            .position(|f| f.identifier() == identifier)?;
+        let pos = self.fonts.iter().position(|f| f.identifier() == identifier)?;
         self.fonts.get(pos)
     }
 
-    pub(crate) fn font_mut_from_id(
-        &mut self,
-        identifier: FontIdentifier,
-    ) -> Option<&mut Type3Font> {
-        let pos = self
-            .fonts
-            .iter()
-            .position(|f| f.identifier() == identifier)?;
+    pub(crate) fn font_mut_from_id(&mut self, identifier: FontIdentifier) -> Option<&mut Type3Font> {
+        let pos = self.fonts.iter().position(|f| f.identifier() == identifier)?;
         self.fonts.get_mut(pos)
     }
 
@@ -442,11 +349,7 @@ impl Type3FontMapper {
         // If the glyph has already been added, return the font identifier of
         // the type 3 font as well as the Type3 gid in that font.
         if let Some(id) = self.id_from_glyph(&glyph) {
-            let gid = self
-                .font_from_id(id.clone())
-                .unwrap()
-                .get_gid(&glyph)
-                .unwrap();
+            let gid = self.font_from_id(id.clone()).unwrap().get_gid(&glyph).unwrap();
             return (id, gid);
         }
 
@@ -488,9 +391,9 @@ pub(crate) fn base_font_name(font: &Font) -> String {
 #[cfg(test)]
 mod tests {
     use crate::color::rgb;
-    use crate::text::type3::{ColoredGlyph, Type3FontMapper};
     use crate::text::Font;
     use crate::text::GlyphId;
+    use crate::text::type3::{ColoredGlyph, Type3FontMapper};
     use crate::util::test_utils::NOTO_COLOR_EMOJI_COLR;
 
     #[test]
@@ -503,10 +406,7 @@ mod tests {
         }
 
         assert_eq!(t3.fonts.len(), 1);
-        assert_eq!(
-            t3.fonts[0].add_glyph(ColoredGlyph::new(GlyphId::new(20), rgb::Color::black())),
-            18
-        );
+        assert_eq!(t3.fonts[0].add_glyph(ColoredGlyph::new(GlyphId::new(20), rgb::Color::black())), 18);
 
         t3.add_glyph(ColoredGlyph::new(GlyphId::new(512), rgb::Color::black()));
         assert_eq!(t3.fonts.len(), 2);

@@ -55,7 +55,7 @@ pub enum AiError {
     Json(#[source] serde_json::Error),
 
     #[error(transparent)]
-    Trace(#[from] vectorcraft_trace::TraceError),
+    Trace(#[from] redrob_vector_trace::TraceError),
 
     #[cfg(feature = "engine")]
     #[error(transparent)]

@@ -8,8 +8,8 @@
 //! at several zooms, with smoothing, pressure, and 8- and 16-bit documents. Skips when no GPU
 //! adapter exists (like `color_managed_canvas.rs`).
 
-use photocraft_ui_egui::PhotocraftApp;
-use photocraft_ui_egui::control::{ControlRequest, handle};
+use redrob_photo_ui_egui::PhotocraftApp;
+use redrob_photo_ui_egui::control::{ControlRequest, handle};
 use serde_json::{Value, json};
 
 type Harness = egui_kittest::Harness<'static, PhotocraftApp>;
@@ -19,7 +19,7 @@ fn harness() -> Option<Harness> {
     let built = std::panic::catch_unwind(|| {
         egui_kittest::Harness::builder().with_size(egui::vec2(900.0, 640.0)).with_pixels_per_point(1.0).with_max_steps(64).wgpu().build_eframe(|cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-            let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+            let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
             if let Some(rs) = cc.wgpu_render_state.as_ref() {
                 app.set_wgpu(rs.clone());
             }
@@ -120,7 +120,7 @@ fn max_diff(a: &[[u8; 4]], b: &[[u8; 4]]) -> u8 {
 
 #[test]
 fn the_canvas_shows_the_committed_stroke_while_it_is_drawn() {
-    let _gpu = photocraft_testkit::gpu_lock();
+    let _gpu = redrob_photo_testkit::gpu_lock();
     let Some(mut h) = harness() else { return };
     h.run_steps(4);
     let mut cases = Vec::new();

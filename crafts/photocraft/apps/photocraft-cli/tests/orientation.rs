@@ -1,12 +1,12 @@
 //! EXIF orientation end to end through the `photocraft-cli` binary (#285): a
 //! phone-style JPEG (stored landscape, Orientation = 6) converts to an upright
-//! portrait, an explicit rotation turns it back, and a `.pcraft` round trip
+//! portrait, an explicit rotation turns it back, and a `.rphoto` round trip
 //! changes nothing.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use photocraft_codecs::{ChannelLayout, DecodeOptions, EncodeOptions, Format, Image, SampleType, decode, decode_with, exif_orientation};
+use redrob_photo_codecs::{ChannelLayout, DecodeOptions, EncodeOptions, Format, Image, SampleType, decode, decode_with, exif_orientation};
 use serde_json::Value;
 
 fn bin() -> Command {
@@ -61,7 +61,7 @@ fn phone_jpeg() -> Vec<u8> {
     }
     let stored = Image::from_u8(h as u32, w as u32, ChannelLayout::Rgb, px).unwrap();
     let jpeg =
-        photocraft_codecs::encode(&stored, Format::Jpeg, &EncodeOptions { jpeg_quality: 100, jpeg_chroma_subsampling: false, ..Default::default() }).unwrap();
+        redrob_photo_codecs::encode(&stored, Format::Jpeg, &EncodeOptions { jpeg_quality: 100, jpeg_chroma_subsampling: false, ..Default::default() }).unwrap();
     let mut seg = b"Exif\0\0".to_vec();
     seg.extend_from_slice(&exif(6));
     let mut out = jpeg[..2].to_vec();
@@ -121,8 +121,8 @@ fn orientation_6_jpeg_converts_upright_and_rotates_back() {
     assert!(near(at(28, 12), upright_color(12, 4)), "{:?}", at(28, 12));
     assert!(near(at(4, 8), upright_color(8, 28)), "{:?}", at(4, 8));
 
-    // .pcraft save, reopen and save again: identical document and pixels.
-    let (a, b) = (d.join("a.pcraft"), d.join("b.pcraft"));
+    // .rphoto save, reopen and save again: identical document and pixels.
+    let (a, b) = (d.join("a.rphoto"), d.join("b.rphoto"));
     ok(bin().arg("convert").arg(&jpg).arg(&a));
     ok(bin().arg("convert").arg(&a).arg(&b));
     // Everything but the file's own path and saved document name must match.
@@ -134,8 +134,8 @@ fn orientation_6_jpeg_converts_upright_and_rotates_back() {
     };
     let (mut ia, mut ib) = (info(&a), info(&b));
     assert_eq!((ia["width"].as_u64(), ia["height"].as_u64()), (Some(16), Some(32)));
-    assert_eq!(ia["name"], "a.pcraft");
-    assert_eq!(ib["name"], "b.pcraft");
+    assert_eq!(ia["name"], "a.rphoto");
+    assert_eq!(ib["name"], "b.rphoto");
     ia.as_object_mut().unwrap().remove("name");
     ib.as_object_mut().unwrap().remove("name");
     assert_eq!(ia, ib);
@@ -146,6 +146,6 @@ fn orientation_6_jpeg_converts_upright_and_rotates_back() {
     assert_eq!(xa.dimensions(), (16, 32));
     assert_eq!(xa.to_rgba8(), xb.to_rgba8());
     assert_eq!(xa.meta.exif, xb.meta.exif);
-    assert_eq!(xa.to_rgba8(), stored(&png).to_rgba8(), "the .pcraft round trip matches the direct conversion");
+    assert_eq!(xa.to_rgba8(), stored(&png).to_rgba8(), "the .rphoto round trip matches the direct conversion");
     std::fs::remove_dir_all(d).unwrap();
 }

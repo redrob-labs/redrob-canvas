@@ -2,7 +2,7 @@
 //! unavailable ones are greyed using the same enablement as the main menus. Items marked as menu
 //! invocations (`Value::Null` params) go through `menus::invoke`, so dialogs open like in the menu bar.
 
-use photocraft_doc::{LabelColor, Layer, LayerContent};
+use redrob_photo_doc::{LabelColor, Layer, LayerContent};
 use serde_json::{Value, json};
 
 /// One entry: label, command id. `None` = separator.
@@ -214,7 +214,7 @@ fn items(app: &crate::PhotocraftApp, ui: &mut egui::Ui, l: &Layer, on_set: bool,
             }
             Some((label, id)) => {
                 // Skip commands this build doesn't have rather than showing dead items.
-                if photocraft_engine::commands::find(id).is_none() && !crate::menu_catalog::CATALOG.iter().any(|m| m.3 == id) {
+                if redrob_photo_engine::commands::find(id).is_none() && !crate::menu_catalog::CATALOG.iter().any(|m| m.3 == id) {
                     continue;
                 }
                 last_sep = false;
@@ -314,7 +314,7 @@ mod tests {
 
     #[test]
     fn mask_toggle_label_follows_history_and_selected_layer() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         let mut app = crate::PhotocraftApp::new(s, Default::default());
@@ -356,7 +356,7 @@ mod tests {
         check(&app, Some("Enable Layer Mask"));
         app.session.active_mut().unwrap().active_layer = None;
         assert!(!crate::menus::is_enabled(&app, toggle));
-        let empty = crate::PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let empty = crate::PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         assert!(!crate::menus::is_enabled(&empty, toggle));
     }
 
@@ -367,7 +367,7 @@ mod tests {
         for language in ["en", "fr"] {
             let lang = crate::i18n::Lang::from_pref(language);
             let _language = crate::i18n::language_scope(lang);
-            let mut s = photocraft_engine::Session::new();
+            let mut s = redrob_photo_engine::Session::new();
             s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
             s.execute("layer.new.layer", json!({})).unwrap();
             s.execute("layer.layerMask.revealAll", json!({})).unwrap();
@@ -409,7 +409,7 @@ mod tests {
     /// offers Add Layer Mask only, whatever the clicked layer has, and does not hit the active layer.
     #[test]
     fn multi_selection_menu_has_no_per_layer_mask_items() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         s.execute("layer.layerMask.revealAll", json!({})).unwrap();
@@ -439,7 +439,7 @@ mod tests {
         }
 
         for ppp in [1.0, 2.0] {
-            let mut s = photocraft_engine::Session::new();
+            let mut s = redrob_photo_engine::Session::new();
             s.execute("file.new", json!({"width": 640, "height": 480})).unwrap();
             s.execute("layer.new.layer", json!({"name": "Smart source"})).unwrap();
             s.execute("paint.stroke", json!({"points": [[100, 100]], "size": 20})).unwrap();
@@ -465,7 +465,7 @@ mod tests {
             assert!(h.state().session.is_enabled("layer.smartObjects.saveContents"));
             assert!(h.state().session.active().unwrap().doc.walk().iter().any(|(_, _, l)| l.name == "Smart source"));
             h.state_mut().session.set_active(0);
-            assert_eq!(h.state().session.active().unwrap().active_layer, Some(photocraft_doc::LayerId(smart)));
+            assert_eq!(h.state().session.active().unwrap().active_layer, Some(redrob_photo_doc::LayerId(smart)));
         }
     }
 
@@ -487,7 +487,7 @@ mod tests {
             h.run_steps(3);
         }
 
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 100, "height": 60})).unwrap();
         s.execute("layer.new.layer", json!({"name": "Masked"})).unwrap();
         s.execute("select.rect", json!({"x": 60, "y": 0, "width": 40, "height": 60})).unwrap();
@@ -525,7 +525,7 @@ mod tests {
 
     #[test]
     fn a_long_layer_menu_stays_inside_a_short_window_and_scrolls() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 32, "height": 24})).unwrap();
         s.execute("layer.new.layer", json!({"name": "Paint"})).unwrap();
         let app = crate::PhotocraftApp::new(s, crate::Services::default());
@@ -562,10 +562,10 @@ mod tests {
 
     #[test]
     fn edit_contents_is_available_only_for_smart_objects() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 32, "height": 24})).unwrap();
         s.execute("layer.new.layer", json!({"name": "Source"})).unwrap();
-        let layer = |s: &photocraft_engine::Session| {
+        let layer = |s: &redrob_photo_engine::Session| {
             let st = s.active().unwrap();
             st.doc.layer(st.active_layer.unwrap()).unwrap().clone()
         };
@@ -581,7 +581,7 @@ mod tests {
     /// selection, whatever kind the clicked layer is, and no single-layer Smart Object items.
     #[test]
     fn multi_selection_menu_rasterizes_the_selection() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 32, "height": 24})).unwrap();
         s.execute("layer.new.layer", json!({"name": "Source"})).unwrap();
         s.execute("paint.stroke", json!({"points": [[12, 12]], "size": 8})).unwrap();
@@ -616,7 +616,7 @@ mod tests {
         use crate::PhotocraftApp;
         use egui::{PointerButton, pos2, vec2};
 
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 640, "height": 480})).unwrap();
         let text = s.execute("type.create", json!({"text": "Hi", "size": 24, "x": 20, "y": 60})).unwrap()["layer"].as_u64().unwrap();
         let shape = s.execute("shape.create", json!({"kind": "ellipse", "rect": [100, 100, 200, 160]})).unwrap()["layer"].as_u64().unwrap();
@@ -650,7 +650,7 @@ mod tests {
         let at = h.get_by_label("Rasterize Layers").rect().center();
         click(&mut h, at, egui::PointerButton::Primary);
         let doc = &h.state().session.active().unwrap().doc;
-        let raster = |id: u64| matches!(doc.layer(photocraft_doc::LayerId(id)).unwrap().content, photocraft_doc::LayerContent::Raster(_));
+        let raster = |id: u64| matches!(doc.layer(redrob_photo_doc::LayerId(id)).unwrap().content, redrob_photo_doc::LayerContent::Raster(_));
         assert!(raster(text) && raster(shape), "both selected layers are rasterized");
         assert!(!raster(other), "an unselected layer is left alone");
         assert_eq!(h.state().session.active().unwrap().selected_layers().len(), 2, "the selection survives");
@@ -719,7 +719,7 @@ mod tests {
         ] {
             assert!(!single_layer_only(id), "{id}");
         }
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         s.execute("layer.layerMask.revealAll", json!({})).unwrap();
@@ -731,7 +731,7 @@ mod tests {
 
     #[test]
     fn entries_follow_layer_state() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         let st = s.active().unwrap();
@@ -750,7 +750,7 @@ mod tests {
     /// merges the group itself (not into the layer below), and it is enabled.
     #[test]
     fn a_group_offers_merge_group() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         s.execute("layer.groupLayers", json!({"name": "G"})).unwrap();
@@ -777,7 +777,7 @@ mod tests {
         assert_eq!(add_mask_command(false, true), "layer.layerMask.hideAll");
         assert_eq!(add_mask_command(true, true), "layer.layerMask.hideSelection");
         // With a selection the new mask is the selection: inside revealed, outside hidden.
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
         s.execute("layer.new.layer", json!({})).unwrap();
         s.execute("select.rect", json!({"x": 0, "y": 0, "width": 4, "height": 10})).unwrap();
@@ -793,10 +793,10 @@ mod tests {
     #[test]
     fn mask_button_never_replaces_a_mask() {
         for alt in [false, true] {
-            let mut s = photocraft_engine::Session::new();
+            let mut s = redrob_photo_engine::Session::new();
             s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
             s.execute("layer.new.layer", json!({})).unwrap();
-            let layer = |s: &photocraft_engine::Session| {
+            let layer = |s: &redrob_photo_engine::Session| {
                 let st = s.active().unwrap();
                 st.doc.layer(st.active_layer.unwrap()).unwrap().clone()
             };
@@ -805,9 +805,9 @@ mod tests {
             s.execute(first, json!({})).unwrap();
             // Paint a stroke into the mask.
             s.edit("paint mask", |doc, active| {
-                let id = (*active).ok_or(photocraft_engine::EngineError::NoDocument)?;
-                let m = doc.layer_mut(id).and_then(|l| l.mask.as_mut()).ok_or(photocraft_engine::EngineError::NoDocument)?;
-                m.surface.fill_rect(photocraft_geom::Rect::new(2, 2, 5, 5), &[0.5]);
+                let id = (*active).ok_or(redrob_photo_engine::EngineError::NoDocument)?;
+                let m = doc.layer_mut(id).and_then(|l| l.mask.as_mut()).ok_or(redrob_photo_engine::EngineError::NoDocument)?;
+                m.surface.fill_rect(redrob_photo_geom::Rect::new(2, 2, 5, 5), &[0.5]);
                 Ok(())
             })
             .unwrap();
@@ -828,7 +828,7 @@ mod tests {
         // No layer: nothing to do.
         assert_eq!(mask_button_command(None, false, false), None);
         // A shape layer's path is already its vector mask: after the layer mask, nothing more.
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
         s.execute("shape.create", json!({"kind": "rect", "rect": [0, 0, 5, 5]})).unwrap();
         s.execute("layer.layerMask.revealAll", json!({})).unwrap();
@@ -839,12 +839,12 @@ mod tests {
 
     #[test]
     fn every_entry_is_a_known_command() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 10, "height": 10})).unwrap();
         let l = s.active().unwrap().doc.layers[0].clone();
         for (_, id) in entries(&l, false, true).into_iter().chain(entries(&l, false, false)).chain(entries(&l, true, false)).chain(effects_entries()).flatten()
         {
-            assert!(crate::menu_catalog::CATALOG.iter().any(|m| m.3 == id) || photocraft_engine::commands::find(id).is_some(), "{id}");
+            assert!(crate::menu_catalog::CATALOG.iter().any(|m| m.3 == id) || redrob_photo_engine::commands::find(id).is_some(), "{id}");
         }
     }
 }

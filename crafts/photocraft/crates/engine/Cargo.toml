@@ -1,5 +1,5 @@
 [package]
-name = "photocraft-engine"
+name = "redrob-photo-engine"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -12,41 +12,41 @@ workspace = true
 corpus = []
 
 [dependencies]
-photocraft-geom = { workspace = true }
-photocraft-color = { workspace = true }
-photocraft-cms = { workspace = true }
-photocraft-raster = { workspace = true }
-photocraft-doc = { workspace = true }
-photocraft-ops = { workspace = true }
-photocraft-compose = { workspace = true }
+redrob-photo-geom = { workspace = true }
+redrob-photo-color = { workspace = true }
+redrob-photo-cms = { workspace = true }
+redrob-photo-raster = { workspace = true }
+redrob-photo-doc = { workspace = true }
+redrob-photo-ops = { workspace = true }
+redrob-photo-compose = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 rayon = { workspace = true }
-photocraft-paint = { workspace = true }
-photocraft-algo = { workspace = true }
-photocraft-text = { workspace = true }
-photocraft-vector = { workspace = true }
-photocraft-io = { workspace = true }
-photocraft-psd = { workspace = true }
-photocraft-format = { workspace = true }
-photocraft-plugins = { workspace = true }
+redrob-photo-paint = { workspace = true }
+redrob-photo-algo = { workspace = true }
+redrob-photo-text = { workspace = true }
+redrob-photo-vector = { workspace = true }
+redrob-photo-io = { workspace = true }
+redrob-photo-psd = { workspace = true }
+redrob-photo-format = { workspace = true }
+redrob-photo-plugins = { workspace = true }
 blake3 = { version = "1.8", default-features = false, features = ["pure"] }
-photocraft-codecs = { workspace = true }
+redrob-photo-codecs = { workspace = true }
 flate2 = { workspace = true }
-craft-print = { workspace = true }
+redrob-craft-print = { workspace = true }
 
 # Photoshop `.kys` shortcut sets (`edit.keyboardShortcuts` `importKys`); already in the tree
-# through photocraft-ui-egui and usvg.
+# through redrob-photo-ui-egui and usvg.
 roxmltree = "0.20"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tempfile = "3"
 
 [dev-dependencies]
-photocraft-affinity = { workspace = true, features = ["synth"] }
+redrob-photo-affinity = { workspace = true, features = ["synth"] }
 # Synthetic camera raw files for the open tests.
-photocraft-raw = { workspace = true, features = ["testgen"] }
+redrob-photo-raw = { workspace = true, features = ["testgen"] }
 # WebAssembly text -> binary for plug-in test modules (Apache-2.0 WITH LLVM-exception).
 wat = "1.228"
 # Synthetic multi-part EXR fixtures for the parts-commands tests.

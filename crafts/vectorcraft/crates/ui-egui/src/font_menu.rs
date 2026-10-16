@@ -14,7 +14,7 @@ use std::sync::Arc;
 use egui::{Color32, Sense, Ui, vec2};
 use serde_json::json;
 
-use vectorcraft_text::FontClass;
+use redrob_vector_text::FontClass;
 
 use crate::VectorcraftApp;
 use crate::theme::Tokens;
@@ -98,7 +98,7 @@ fn script_label(i: usize) -> &'static str {
 
 /// Does a family of `traits` pass script filter `script` ([`SCRIPTS`])? Latin: neither Japanese
 /// nor Thai.
-fn script_matches(script: usize, traits: vectorcraft_text::FontTraits) -> bool {
+fn script_matches(script: usize, traits: redrob_vector_text::FontTraits) -> bool {
     match script {
         1 => traits.japanese,
         2 => !traits.japanese && !traits.thai,
@@ -273,7 +273,7 @@ fn list(ui: &mut Ui, state_id: egui::Id, st: &mut MenuState, current: &str, samp
         }
     });
     let enter = ui.input(|i| i.key_pressed(egui::Key::Enter));
-    let db = vectorcraft_text::FontDb::global();
+    let db = redrob_vector_text::FontDb::global();
     // The current family by its own name (a document may name it in Japanese: ヒラギノ角ゴシック),
     // as it was before any preview.
     let current = db.canonical(&st.current, "").0;
@@ -594,8 +594,8 @@ const MAX_ASPECT: f32 = 10.0;
 /// `text` (or [`FALLBACK_SAMPLE`] when the font lacks some of its characters) set in `family`,
 /// `px` pixels high: a coverage mask as white with alpha.
 fn render_sample(family: &str, style: &str, text: &str, px: u32) -> Option<egui::ColorImage> {
-    let db = vectorcraft_text::FontDb::global();
-    let face: Arc<vectorcraft_text::FontFace> = db.face(family, style)?;
+    let db = redrob_vector_text::FontDb::global();
+    let face: Arc<redrob_vector_text::FontFace> = db.face(family, style)?;
     let covers = |s: &str| !s.trim().is_empty() && s.chars().filter(|c| !c.is_whitespace()).all(|c| face.covers(c));
     let text = if covers(text) { text } else { FALLBACK_SAMPLE };
     if !covers(text) && !face.family.eq_ignore_ascii_case(family) {
@@ -605,16 +605,16 @@ fn render_sample(family: &str, style: &str, text: &str, px: u32) -> Option<egui:
     let em = (asc + desc).max(1.0) / face.units_per_em();
     // The em box fills the height with a little air.
     let size = px as f64 * 0.8 / em;
-    let style = vectorcraft_doc::CharStyle { font_family: face.family.clone(), font_style: face.style.clone(), size, ..Default::default() };
-    let t = vectorcraft_doc::TextObject::point(vectorcraft_geom::Point::ZERO, text, style);
-    let layout = vectorcraft_text::layout(db, &t);
+    let style = redrob_vector_doc::CharStyle { font_family: face.family.clone(), font_style: face.style.clone(), size, ..Default::default() };
+    let t = redrob_vector_doc::TextObject::point(redrob_vector_geom::Point::ZERO, text, style);
+    let layout = redrob_vector_text::layout(db, &t);
     let mut path = layout.to_bezpath();
     let b = layout.bounds;
     let w = (b.width().ceil() as u32 + 2).clamp(1, (px as f32 * MAX_ASPECT) as u32) as usize;
     let h = px as usize;
     // Baseline where the ascent fits the top (with the air above it).
     let baseline = px as f64 * 0.1 + asc / face.units_per_em() * size;
-    path.apply_affine(vectorcraft_geom::Affine::translate((1.0 - b.x0.min(0.0), baseline)));
+    path.apply_affine(redrob_vector_geom::Affine::translate((1.0 - b.x0.min(0.0), baseline)));
     let mask = crate::panels::glyphs::rasterize(&path, w, h);
     Some(egui::ColorImage::new([w, h], mask.iter().map(|&a| Color32::from_rgba_premultiplied(a, a, a, a)).collect()))
 }
@@ -746,11 +746,11 @@ pub(crate) fn sample_text(app: &VectorcraftApp) -> Option<String> {
     let doc = &app.session.active()?.doc;
     let text = match crate::panels::character::text_editing(app) {
         Some((id, a, b)) if b > a => match &doc.node(id)?.kind {
-            vectorcraft_doc::NodeKind::Text(t) => t.plain_text().get(a..b).map(str::to_string),
+            redrob_vector_doc::NodeKind::Text(t) => t.plain_text().get(a..b).map(str::to_string),
             _ => None,
         },
         _ => app.session.active()?.selection.objects.iter().find_map(|id| match &doc.node(*id)?.kind {
-            vectorcraft_doc::NodeKind::Text(t) => Some(t.plain_text()),
+            redrob_vector_doc::NodeKind::Text(t) => Some(t.plain_text()),
             _ => None,
         }),
     }?;
@@ -765,7 +765,7 @@ mod tests {
     /// Japanese.
     #[test]
     fn the_thai_filter_lists_fonts_with_thai() {
-        use vectorcraft_text::FontTraits;
+        use redrob_vector_text::FontTraits;
         let (thai, japanese, latin) =
             (FontTraits { thai: true, ..Default::default() }, FontTraits { japanese: true, ..Default::default() }, FontTraits::default());
         let passing = |t: FontTraits| (0..super::SCRIPTS).filter(|s| super::script_matches(*s, t)).collect::<Vec<_>>();

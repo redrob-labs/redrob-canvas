@@ -10,9 +10,9 @@
 //! other tools collect the drag polyline (shown as an overlay) and run
 //! one command on release.
 
+use redrob_vector_doc::NodeId;
+use redrob_vector_geom::Point;
 use serde_json::{Value, json};
-use vectorcraft_doc::NodeId;
-use vectorcraft_geom::Point;
 
 use super::{FEEDBACK, points_json, polyline};
 use crate::guides::DrawSnap;
@@ -324,7 +324,7 @@ impl Tool for GestureTool {
 mod tests {
     use super::*;
     use crate::testutil::*;
-    use vectorcraft_doc::Selection;
+    use redrob_vector_doc::Selection;
 
     fn drag(t: &mut GestureTool, cx: &ToolContext, pts: &[(f64, f64)], m: Mods) -> Vec<Vec<Action>> {
         let mut v = vec![t.pointer(cx, &PointerEvent::new(PointerKind::Down, pts[0].0, pts[0].1))];

@@ -6,7 +6,7 @@ use serde_json::json;
 use crate::PhotocraftApp;
 
 fn app() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 20, "height": 10})).unwrap();
     app
 }
@@ -15,7 +15,7 @@ fn app() -> PhotocraftApp {
 /// still Cycle Screen Mode.
 #[test]
 fn space_f_cycles_the_canvas_colour() {
-    use photocraft_engine::prefs::CanvasColor;
+    use redrob_photo_engine::prefs::CanvasColor;
     let mut app = app();
     let ctx = egui::Context::default();
     let frame = |app: &mut PhotocraftApp, events: Vec<egui::Event>| {

@@ -74,13 +74,7 @@ pub(crate) fn should_outline(font: &Font, glyph: GlyphId) -> bool {
 }
 
 /// Draw a color glyph or outline glyph to a surface.
-pub(crate) fn draw_glyph(
-    font: Font,
-    context_color: rgb::Color,
-    glyph: GlyphId,
-    base_transform: Transform,
-    surface: &mut Surface,
-) -> Option<()> {
+pub(crate) fn draw_glyph(font: Font, context_color: rgb::Color, glyph: GlyphId, base_transform: Transform, surface: &mut Surface) -> Option<()> {
     draw_color_glyph(font.clone(), context_color, glyph, base_transform, surface)
         .or_else(|| outline::draw_glyph(font, glyph, base_transform, surface))
 }
@@ -171,15 +165,7 @@ impl KrillaGlyph {
         range: Range<usize>,
         location: Option<crate::surface::Location>,
     ) -> Self {
-        Self {
-            glyph_id,
-            x_advance,
-            x_offset,
-            y_offset,
-            y_advance,
-            text_range: range,
-            location,
-        }
+        Self { glyph_id, x_advance, x_offset, y_offset, y_advance, text_range: range, location }
     }
 }
 

@@ -1,6 +1,6 @@
 # Craft Atomic
 
-`craft-atomic` provides crash-safe atomic file writing and replacement for the Craft suite.
+`redrob-craft-atomic` provides crash-safe atomic file writing and replacement for the Craft suite.
 
 Extracted from the storage engine in **PhotoCraft** (refs #2, #14), it guarantees that a failed save or abnormal termination never leaves user documents truncated, corrupted, or missing.
 
@@ -24,7 +24,7 @@ A replaced file is a new file (a new inode), so its owner and group, extended at
 
 ```rust
 use std::path::Path;
-use craft_atomic::atomic_write;
+use redrob_craft_atomic::atomic_write;
 
 let path = Path::new("project.craft");
 let data = b"precious document state";
@@ -39,7 +39,7 @@ atomic_write(path, data).expect("safe atomic write");
 ```rust
 use std::io::Write;
 use std::path::Path;
-use craft_atomic::atomic_write_with;
+use redrob_craft_atomic::atomic_write_with;
 
 let path = Path::new("large_project.craft");
 
@@ -54,7 +54,7 @@ atomic_write_with(path, |file| {
 
 ```rust
 use std::path::Path;
-use craft_atomic::write_new;
+use redrob_craft_atomic::write_new;
 
 let path = Path::new("export.png");
 
@@ -77,7 +77,7 @@ credentials and recovery data must opt into private creation **before writing an
 
 ```rust
 use std::path::Path;
-use craft_atomic::{NewFilePermissions, WriteOptions};
+use redrob_craft_atomic::{NewFilePermissions, WriteOptions};
 
 fn save_private_data() -> std::io::Result<()> {
     let private = WriteOptions::default().with_new_file_permissions(NewFilePermissions::Private);
@@ -89,7 +89,7 @@ fn save_private_data() -> std::io::Result<()> {
 `WriteOptions` and `NewFilePermissions` are non-exhaustive: start with `default()` and select
 the policy with the builder, so future options do not break callers. Downstream matches on the
 enum must include a fallback arm. Byte and streaming methods support both policies.
-`craft-settings` explicitly chooses `Private` for its config and backup writes.
+`redrob-craft-settings` explicitly chooses `Private` for its config and backup writes.
 
 Normal stages can be readable (or writable) by others allowed by the directory, umask and ACL
 while the callback is running, and can remain after a crash. Choose `Private` up front for
@@ -119,7 +119,7 @@ The options API supports the same injection for byte and streaming writes:
 
 ```rust
 use std::path::Path;
-use craft_atomic::{AtomicFs, NewFilePermissions, RenameRetry, WriteOptions};
+use redrob_craft_atomic::{AtomicFs, NewFilePermissions, RenameRetry, WriteOptions};
 
 fn save_with_faults(fs: &dyn AtomicFs, path: &Path) -> std::io::Result<()> {
     let options = WriteOptions::default().with_new_file_permissions(NewFilePermissions::Private);

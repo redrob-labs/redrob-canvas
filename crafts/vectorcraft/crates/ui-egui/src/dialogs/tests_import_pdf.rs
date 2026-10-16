@@ -1,9 +1,9 @@
 //! The Import PDF dialog: opening and placing multi-page and password-protected PDFs.
 
+use redrob_vector_doc::NodeKind;
+use redrob_vector_engine::Session;
+use redrob_vector_testkit::pdf::{PdfPage, pdf};
 use serde_json::json;
-use vectorcraft_doc::NodeKind;
-use vectorcraft_engine::Session;
-use vectorcraft_testkit::pdf::{PdfPage, pdf};
 
 use super::*;
 use crate::io;
@@ -117,7 +117,7 @@ fn a_password_protected_pdf_asks_for_its_password() {
 }
 
 /// The placed object: its kind (clip group or not) and bounds.
-fn placed(app: &VectorcraftApp) -> (bool, vectorcraft_geom::Rect) {
+fn placed(app: &VectorcraftApp) -> (bool, redrob_vector_geom::Rect) {
     let st = app.session.active().unwrap();
     let n = st.doc.node(st.selection.objects[0]).unwrap();
     let NodeKind::Group { clip, .. } = n.kind else { panic!("{:?}", n.kind) };
@@ -125,7 +125,7 @@ fn placed(app: &VectorcraftApp) -> (bool, vectorcraft_geom::Rect) {
 }
 
 fn place(app: &mut VectorcraftApp, bytes: &[u8], extra: serde_json::Value) -> Result<serde_json::Value, String> {
-    let mut p = json!({"name": "three.pdf", "dataBase64": vectorcraft_format::base64_encode(bytes)});
+    let mut p = json!({"name": "three.pdf", "dataBase64": redrob_vector_format::base64_encode(bytes)});
     if let (Some(o), serde_json::Value::Object(e)) = (p.as_object_mut(), extra) {
         o.extend(e);
     }
@@ -150,7 +150,7 @@ fn placing_a_pdf_page_asks_for_the_page_and_crop_box() {
     let (clip, b) = placed(&app);
     assert!(clip, "clipped to the art box");
     assert_eq!((b.width(), b.height()), (50.0, 60.0));
-    assert_eq!(b.center(), vectorcraft_geom::Point::new(100.0, 120.0), "where `at` asked");
+    assert_eq!(b.center(), redrob_vector_geom::Point::new(100.0, 120.0), "where `at` asked");
     assert_eq!(app.session.clipboard, clipboard, "the clipboard is untouched");
     assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1, "one undo step");
     // With a page, no dialog; Bounding Box places the art itself.
@@ -175,8 +175,8 @@ fn opening_a_saved_ai_with_several_artboards_restores_it_without_asking() {
     app.run("layer.new", json!({"name": "Front"})).unwrap();
     app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 50, "height": 40})).unwrap();
     let saved = app.run("document.save", json!({"format": "ai"})).unwrap();
-    let bytes = vectorcraft_format::base64_decode(saved["dataBase64"].as_str().unwrap()).unwrap();
-    assert!(vectorcraft_pdf::info(&bytes, None).unwrap().pages.len() > 1, "a page per artboard");
+    let bytes = redrob_vector_format::base64_decode(saved["dataBase64"].as_str().unwrap()).unwrap();
+    assert!(redrob_vector_pdf::info(&bytes, None).unwrap().pages.len() > 1, "a page per artboard");
 
     io::open_bytes(&mut app, "two.ai", &bytes, Some("/tmp/two.ai".into())).unwrap();
     assert!(app.ui.dialog.is_none(), "no Import PDF dialog");
@@ -193,7 +193,7 @@ fn placing_a_saved_ai_still_asks_for_the_page() {
     let mut app = app();
     app.run("artboard.new", json!({"width": 200, "height": 100})).unwrap();
     let saved = app.run("document.save", json!({"format": "ai"})).unwrap();
-    let bytes = vectorcraft_format::base64_decode(saved["dataBase64"].as_str().unwrap()).unwrap();
+    let bytes = redrob_vector_format::base64_decode(saved["dataBase64"].as_str().unwrap()).unwrap();
     assert!(import_pdf::offer(&mut app, "two.ai", &bytes, None, Some(&json!({}))));
     assert_eq!(app.ui.dialog.as_ref().unwrap().str("mode"), "place");
 }

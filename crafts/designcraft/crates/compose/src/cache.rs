@@ -8,7 +8,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use designcraft_doc::{Document, Item, Story, StoryId, Styles, WrapMode};
+use redrob_layout_doc::{Document, Item, Story, StoryId, Styles, WrapMode};
 
 use crate::vars::RunningIndex;
 use crate::{ComposeOptions, ComposedStory};
@@ -85,7 +85,7 @@ impl Cache {
             (name, &section_marker).hash(&mut h);
             sig.push(h.finish() as usize);
         }
-        if story.text.contains(designcraft_doc::story::SECTION_MARKER) {
+        if story.text.contains(redrob_layout_doc::story::SECTION_MARKER) {
             // Frames on document pages show their section's marker text.
             use std::hash::{Hash, Hasher};
             let mut h = std::collections::hash_map::DefaultHasher::new();
@@ -200,7 +200,7 @@ impl Cache {
     }
 
     /// Frames whose composed content differs between two compositions of a story.
-    pub fn changed_frames(a: &ComposedStory, b: &ComposedStory) -> Vec<designcraft_doc::ItemId> {
+    pub fn changed_frames(a: &ComposedStory, b: &ComposedStory) -> Vec<redrob_layout_doc::ItemId> {
         let same_line = |x: &crate::Line, y: &crate::Line| {
             x.range == y.range
                 && (x.baseline - y.baseline).abs() < 1e-9

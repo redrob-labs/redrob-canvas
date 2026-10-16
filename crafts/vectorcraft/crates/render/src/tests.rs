@@ -1,7 +1,7 @@
 use super::*;
-use vectorcraft_color::{Color, Gradient, GradientPaint, Paint};
-use vectorcraft_doc::{Appearance, Node};
-use vectorcraft_geom::shapes;
+use redrob_vector_color::{Color, Gradient, GradientPaint, Paint};
+use redrob_vector_doc::{Appearance, Node};
+use redrob_vector_geom::shapes;
 
 fn rect_node(d: &mut Document, r: Rect, fill: Paint, stroke: Paint, w: f64) -> Node {
     let id = d.alloc_id();
@@ -134,7 +134,7 @@ fn multiply_blend() {
     let mut d = Document::new(100.0, 100.0);
     let a = rect_node(&mut d, Rect::new(0.0, 0.0, 100.0, 100.0), Paint::solid(Color::rgb(1.0, 1.0, 0.0)), Paint::None, 0.0);
     let mut b = rect_node(&mut d, Rect::new(0.0, 0.0, 100.0, 100.0), Paint::solid(Color::rgb(0.0, 1.0, 1.0)), Paint::None, 0.0);
-    b.blend = vectorcraft_color::BlendMode::Multiply;
+    b.blend = redrob_vector_color::BlendMode::Multiply;
     let l = d.layers[0].id;
     d.insert(Some(l), 0, a).unwrap();
     d.insert(Some(l), 1, b).unwrap();
@@ -192,7 +192,7 @@ fn hidden_and_culled() {
 fn far_instance(art: Rect) -> Document {
     let mut d = Document::new(100.0, 100.0);
     let art = rect_node(&mut d, art, Paint::solid(Color::rgb(1.0, 0.0, 0.0)), Paint::None, 0.0);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Far".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Far".into(), art: Arc::new(art) });
     let (id, l) = (d.alloc_id(), d.layers[0].id);
     d.insert(Some(l), 0, Node::new(id, NodeKind::SymbolInstance { symbol: "Far".into(), xf: Affine::translate((-50.0, -50.0)) })).unwrap();
     d
@@ -220,9 +220,9 @@ fn an_instance_is_culled_by_the_effects_in_its_art() {
     // 8 pt to the right, reaches into it.
     let mut d = Document::new(100.0, 100.0);
     let mut art = rect_node(&mut d, Rect::new(-1.0, -1.0, 1.0, 1.0), Paint::solid(Color::BLACK), Paint::None, 0.0);
-    let shadow = vectorcraft_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 8, "y": 0, "blur": 0}), visible: true };
+    let shadow = redrob_vector_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 8, "y": 0, "blur": 0}), visible: true };
     art.appearance.effects.push(shadow);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
     let (id, l) = (d.alloc_id(), d.layers[0].id);
     d.insert(Some(l), 0, Node::new(id, NodeKind::SymbolInstance { symbol: "Dot".into(), xf: Affine::translate((-5.0, 20.0)) })).unwrap();
     let img = Renderer::new().render(&d, 100, 100, Affine::IDENTITY, &RenderOptions::default());
@@ -234,14 +234,14 @@ fn a_repeat_of_an_instance_is_culled_by_the_effects_in_its_art() {
     // The instance of the test above as the one copy of a one-by-one grid repeat.
     let mut d = Document::new(100.0, 100.0);
     let mut art = rect_node(&mut d, Rect::new(-1.0, -1.0, 1.0, 1.0), Paint::solid(Color::BLACK), Paint::None, 0.0);
-    let shadow = vectorcraft_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 8, "y": 0, "blur": 0}), visible: true };
+    let shadow = redrob_vector_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 8, "y": 0, "blur": 0}), visible: true };
     art.appearance.effects.push(shadow);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
     let instance = Node::new(d.alloc_id(), NodeKind::SymbolInstance { symbol: "Dot".into(), xf: Affine::translate((-5.0, 20.0)) });
-    let grid = vectorcraft_doc::TileType::Grid;
+    let grid = redrob_vector_doc::TileType::Grid;
     let kind =
-        vectorcraft_doc::RepeatKind::Grid { h_spacing: 0.0, v_spacing: 0.0, rows: 1, cols: 1, grid_type: grid, flip_rows: false, flip_cols: false };
-    let repeat = Node::new(d.alloc_id(), NodeKind::Repeat(vectorcraft_doc::RepeatSpec { kind, source: vec![Arc::new(instance)] }));
+        redrob_vector_doc::RepeatKind::Grid { h_spacing: 0.0, v_spacing: 0.0, rows: 1, cols: 1, grid_type: grid, flip_rows: false, flip_cols: false };
+    let repeat = Node::new(d.alloc_id(), NodeKind::Repeat(redrob_vector_doc::RepeatSpec { kind, source: vec![Arc::new(instance)] }));
     let l = d.layers[0].id;
     d.insert(Some(l), 0, repeat).unwrap();
     let img = Renderer::new().render(&d, 100, 100, Affine::IDENTITY, &RenderOptions::default());
@@ -257,13 +257,13 @@ fn past_the_measured_placements_an_instance_is_culled_by_an_estimate_of_its_art_
     // after them: its square lies left of the view, and the shadow reaches into it.
     let mut d = Document::new(100.0, 100.0);
     let mut art = rect_node(&mut d, Rect::new(-1.0, -1.0, 1.0, 1.0), Paint::solid(Color::BLACK), Paint::None, 0.0);
-    let shadow = vectorcraft_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 8, "y": 0, "blur": 0}), visible: true };
+    let shadow = redrob_vector_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 8, "y": 0, "blur": 0}), visible: true };
     art.appearance.effects.push(shadow);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Spot".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Spot".into(), art: Arc::new(art) });
     for name in ["Dot", "Late"] {
         let spot = Node::new(d.alloc_id(), NodeKind::SymbolInstance { symbol: "Spot".into(), xf: Affine::IDENTITY });
         let group = Node::group(d.alloc_id(), vec![Arc::new(spot)]);
-        d.symbols.push(vectorcraft_doc::Symbol { name: name.into(), art: Arc::new(group) });
+        d.symbols.push(redrob_vector_doc::Symbol { name: name.into(), art: Arc::new(group) });
     }
     let l = d.layers[0].id;
     for i in 0..4100 {
@@ -281,12 +281,12 @@ fn past_the_measured_placements_an_instance_is_culled_by_an_estimate_of_its_art_
 /// instances drawn from the first are all placed differently. Symbol 30 holds a square with a drop
 /// shadow. An instance of symbol 0 lies far left of the view. With `effect`, every instance has
 /// that effect of its own. The renderer must cull the instance of symbol 0 within 30 s.
-fn nested_instances_are_culled_in_bounded_time(effect: Option<vectorcraft_doc::Effect>) {
+fn nested_instances_are_culled_in_bounded_time(effect: Option<redrob_vector_doc::Effect>) {
     let mut d = Document::new(100.0, 100.0);
     let mut art = rect_node(&mut d, Rect::new(0.0, 0.0, 1.0, 1.0), Paint::solid(Color::BLACK), Paint::None, 0.0);
-    let shadow = vectorcraft_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 2, "y": 0, "blur": 0}), visible: true };
+    let shadow = redrob_vector_doc::Effect { id: "stylize.dropShadow".into(), params: serde_json::json!({"x": 2, "y": 0, "blur": 0}), visible: true };
     art.appearance.effects.push(shadow);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "S30".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "S30".into(), art: Arc::new(art) });
     let instance = |d: &mut Document, symbol: String, xf: Affine| {
         let mut n = Node::new(d.alloc_id(), NodeKind::SymbolInstance { symbol, xf });
         n.appearance.effects.extend(effect.clone());
@@ -299,7 +299,7 @@ fn nested_instances_are_culled_in_bounded_time(effect: Option<vectorcraft_doc::E
             pair.push(Arc::new(instance(&mut d, next.clone(), xf)));
         }
         let group = Node::group(d.alloc_id(), pair);
-        d.symbols.push(vectorcraft_doc::Symbol { name: format!("S{i}"), art: Arc::new(group) });
+        d.symbols.push(redrob_vector_doc::Symbol { name: format!("S{i}"), art: Arc::new(group) });
     }
     let first = instance(&mut d, "S0".into(), Affine::translate((-100_000.0, 0.0)));
     let l = d.layers[0].id;
@@ -323,7 +323,7 @@ fn nested_instances_with_effects_are_culled_in_bounded_time() {
 #[test]
 fn nested_instances_with_geometry_effects_of_their_own_are_culled_in_bounded_time() {
     // Each instance's Transform effect reshapes the art it shows before the effects in that art run.
-    let moved = vectorcraft_doc::Effect { id: "distort.transform".into(), params: serde_json::json!({"moveH": 1}), visible: true };
+    let moved = redrob_vector_doc::Effect { id: "distort.transform".into(), params: serde_json::json!({"moveH": 1}), visible: true };
     nested_instances_are_culled_in_bounded_time(Some(moved));
 }
 
@@ -334,9 +334,10 @@ fn a_scaled_instance_is_culled_by_the_effects_in_its_art_as_placed() {
     // (10, 110).
     let mut d = Document::new(100.0, 100.0);
     let mut art = rect_node(&mut d, Rect::new(-1.0, -1.0, 1.0, 1.0), Paint::solid(Color::rgb(1.0, 0.0, 0.0)), Paint::None, 0.0);
-    let double = vectorcraft_doc::Effect { id: "distort.transform".into(), params: serde_json::json!({"scaleH": 200, "scaleV": 200}), visible: true };
+    let double =
+        redrob_vector_doc::Effect { id: "distort.transform".into(), params: serde_json::json!({"scaleH": 200, "scaleV": 200}), visible: true };
     art.appearance.effects.push(double);
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
     let (id, l) = (d.alloc_id(), d.layers[0].id);
     let xf = Affine::translate((-50.0, 50.0)) * Affine::scale(30.0);
     d.insert(Some(l), 0, Node::new(id, NodeKind::SymbolInstance { symbol: "Dot".into(), xf })).unwrap();
@@ -352,7 +353,7 @@ fn an_instance_with_a_geometry_effect_is_culled_by_its_reshaped_art() {
     let id = d.layers[0].children().unwrap()[0].id;
     let inst = d.node_mut(id).unwrap();
     inst.kind = NodeKind::SymbolInstance { symbol: "Far".into(), xf: Affine::translate((-100.0, 10.0)) };
-    let effect = vectorcraft_doc::Effect { id: "distort.transform".into(), params: serde_json::json!({"moveH": 150}), visible: true };
+    let effect = redrob_vector_doc::Effect { id: "distort.transform".into(), params: serde_json::json!({"moveH": 150}), visible: true };
     inst.appearance.effects.push(effect);
     assert_eq!(Renderer::new().render(&d, 100, 100, Affine::IDENTITY, &RenderOptions::default()).pixel(60, 20), [255, 0, 0, 255]);
 }
@@ -365,10 +366,10 @@ fn an_instance_with_a_geometry_effect_is_culled_by_the_effects_in_its_reshaped_a
     // reaches into the view.
     let mut d = Document::new(100.0, 100.0);
     let scale = serde_json::json!({"scaleH": 400, "scaleV": 400});
-    let effect = || vectorcraft_doc::Effect { id: "distort.transform".into(), params: scale.clone(), visible: true };
+    let effect = || redrob_vector_doc::Effect { id: "distort.transform".into(), params: scale.clone(), visible: true };
     let mut art = rect_node(&mut d, Rect::new(-1.0, -1.0, 1.0, 1.0), Paint::solid(Color::rgb(1.0, 0.0, 0.0)), Paint::None, 0.0);
     art.appearance.effects.push(effect());
-    d.symbols.push(vectorcraft_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
+    d.symbols.push(redrob_vector_doc::Symbol { name: "Dot".into(), art: Arc::new(art) });
     let (id, l) = (d.alloc_id(), d.layers[0].id);
     let mut instance = Node::new(id, NodeKind::SymbolInstance { symbol: "Dot".into(), xf: Affine::translate((-11.0, 20.0)) });
     instance.appearance.effects.push(effect());
@@ -410,7 +411,7 @@ fn outline_doc() -> (Document, Vec<(&'static str, NodeId)>) {
     let mut d = Document::new(100.0, 100.0);
     let mut ids = vec![];
     let black = || Paint::solid(Color::BLACK);
-    let offset = |by: f64| vectorcraft_doc::Effect { id: "path.offsetPath".into(), params: serde_json::json!({ "offset": by }), visible: true };
+    let offset = |by: f64| redrob_vector_doc::Effect { id: "path.offsetPath".into(), params: serde_json::json!({ "offset": by }), visible: true };
     let compound = |d: &mut Document, outer: Rect, hole: Rect| {
         let children = [outer, hole].map(|r| Arc::new(rect_node(d, r, Paint::None, Paint::None, 0.0))).to_vec();
         let mut n = Node::new(d.alloc_id(), NodeKind::Compound { children, rule: FillRule::EvenOdd });
@@ -481,7 +482,7 @@ fn outline_doc() -> (Document, Vec<(&'static str, NodeId)>) {
     for n in [square, holed, fx_path, fx_compound, guide, clip, traced] {
         d.insert(Some(l), usize::MAX, Arc::unwrap_or_clone(n)).unwrap();
     }
-    let layer = Node::layer(d.alloc_id(), "Preview off", vectorcraft_doc::LayerColor::Preset(1));
+    let layer = Node::layer(d.alloc_id(), "Preview off", redrob_vector_doc::LayerColor::Preset(1));
     let off = d.insert(None, usize::MAX, layer).unwrap();
     if let Some(NodeKind::Layer { preview, .. }) = d.node_mut(off).map(|n| &mut n.kind) {
         *preview = false;
@@ -620,8 +621,8 @@ fn arrowheads_render() {
     assert!(r.pixel(85, 50)[0] > 200, "nothing past the tip");
 }
 
-use vectorcraft_doc::Arrowhead;
-use vectorcraft_geom::Point;
+use redrob_vector_doc::Arrowhead;
+use redrob_vector_geom::Point;
 
 /// A red 10..90 square masked by a white square covering only its left half (10..50),
 /// plus a mid-grey strip (50..70) — rendered both multi- and single-threaded.
@@ -632,7 +633,7 @@ fn masked_doc(clip: bool, invert: bool) -> Document {
     let grey = rect_node(&mut d, Rect::new(50.0, 10.0, 70.0, 90.0), Paint::solid(Color::rgb(0.5, 0.5, 0.5)), Paint::None, 0.0);
     let gid = d.alloc_id();
     let art = Node::group(gid, vec![Arc::new(white), Arc::new(grey)]);
-    let mut m = vectorcraft_doc::OpacityMask::new(art, clip);
+    let mut m = redrob_vector_doc::OpacityMask::new(art, clip);
     m.invert = invert;
     n.extras_mut().mask = Some(Box::new(m));
     let l = d.layers[0].id;
@@ -702,7 +703,7 @@ fn trim_view_clips_to_artboards() {
 fn drop_shadow_profile_and_cache() {
     let mut d = Document::new(100.0, 100.0);
     let mut n = rect_node(&mut d, Rect::new(20.0, 20.0, 60.0, 60.0), Paint::solid(Color::WHITE), Paint::None, 0.0);
-    n.appearance.effects.push(vectorcraft_doc::Effect {
+    n.appearance.effects.push(redrob_vector_doc::Effect {
         id: "stylize.dropShadow".into(),
         params: serde_json::json!({"x": 10.0, "y": 10.0, "blur": 4.0, "opacity": 75.0}),
         visible: true,
@@ -734,7 +735,7 @@ fn blend_mode_on_a_single_fill_is_exact_without_a_layer() {
     let mut d = Document::new(100.0, 100.0);
     let red = rect_node(&mut d, Rect::new(0.0, 0.0, 50.0, 100.0), Paint::solid(Color::rgb(1.0, 0.0, 0.0)), Paint::None, 0.0);
     let mut over = rect_node(&mut d, Rect::new(25.0, 0.0, 75.0, 100.0), Paint::solid(Color::rgb(0.5, 0.5, 1.0)), Paint::None, 0.0);
-    over.blend = vectorcraft_color::BlendMode::Multiply;
+    over.blend = redrob_vector_color::BlendMode::Multiply;
     let l = d.layers[0].id;
     d.insert(Some(l), 0, red).unwrap();
     d.insert(Some(l), 1, over).unwrap();
@@ -760,8 +761,8 @@ fn invalid_dash_pattern_strokes_solid() {
         bp.move_to((10.0, 50.0));
         bp.line_to((90.0, 50.0));
         let id = d.alloc_id();
-        let mut n = Node::path(id, vectorcraft_geom::PathData::from_bezpath(&bp), Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 6.0));
-        n.appearance.stroke_mut().unwrap().dash = dash.map(|pattern| vectorcraft_doc::Dash { pattern, ..Default::default() });
+        let mut n = Node::path(id, redrob_vector_geom::PathData::from_bezpath(&bp), Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 6.0));
+        n.appearance.stroke_mut().unwrap().dash = dash.map(|pattern| redrob_vector_doc::Dash { pattern, ..Default::default() });
         let l = d.layers[0].id;
         d.insert(Some(l), 0, n).unwrap();
         d
@@ -781,7 +782,7 @@ fn invalid_dash_pattern_strokes_solid() {
 /// Anti-aliased Images off, #394).
 #[test]
 fn images_take_their_nearest_pixel_without_smoothing() {
-    use vectorcraft_doc::{ImageBlob, ImageObject, NodeKind};
+    use redrob_vector_doc::{ImageBlob, ImageObject, NodeKind};
     let img = image::RgbaImage::from_fn(2, 1, |x, _| image::Rgba(if x == 0 { [0, 0, 0, 255] } else { [255, 255, 255, 255] }));
     let mut png = vec![];
     img.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
@@ -809,13 +810,13 @@ fn supersampled_art_leaves_no_seam_between_shapes_that_meet() {
     let layer = d.layers[0].id;
     // Two triangles sharing the diagonal of the square (10, 10)–(90, 90).
     for pts in [[(10.0, 10.0), (90.0, 10.0), (90.0, 90.0)], [(10.0, 10.0), (90.0, 90.0), (10.0, 90.0)]] {
-        let mut b = vectorcraft_geom::BezPath::new();
+        let mut b = redrob_vector_geom::BezPath::new();
         b.move_to(pts[0]);
         b.line_to(pts[1]);
         b.line_to(pts[2]);
         b.close_path();
         let id = d.alloc_id();
-        d.insert(Some(layer), 0, Node::path(id, vectorcraft_geom::PathData::from_bezpath(&b), Appearance::basic(red(), Paint::None, 0.0))).unwrap();
+        d.insert(Some(layer), 0, Node::path(id, redrob_vector_geom::PathData::from_bezpath(&b), Appearance::basic(red(), Paint::None, 0.0))).unwrap();
     }
     let draw = |supersample: bool| {
         let opts = RenderOptions { background: Some([255, 255, 255, 255]), precise: true, supersample, ..Default::default() };
@@ -842,7 +843,7 @@ fn supersampled_art_leaves_no_seam_between_shapes_that_meet() {
 /// under a butt cap (PDF 32000-1 8.5.3.2, SVG 2 "Path data" zero-length segments).
 #[test]
 fn zero_length_subpaths_draw_dots_with_their_cap() {
-    let dots = |cap: vectorcraft_doc::LineCap| {
+    let dots = |cap: redrob_vector_doc::LineCap| {
         let mut d = Document::new(100.0, 100.0);
         let mut bp = BezPath::new();
         for at in [(30.0, 50.0), (70.0, 50.0)] {
@@ -850,25 +851,25 @@ fn zero_length_subpaths_draw_dots_with_their_cap() {
             bp.line_to(at);
         }
         let id = d.alloc_id();
-        let mut n = Node::path(id, vectorcraft_geom::PathData::from_bezpath(&bp), Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 10.0));
+        let mut n = Node::path(id, redrob_vector_geom::PathData::from_bezpath(&bp), Appearance::basic(Paint::None, Paint::solid(Color::BLACK), 10.0));
         n.appearance.stroke_mut().unwrap().cap = cap;
         let l = d.layers[0].id;
         d.insert(Some(l), 0, n).unwrap();
         render(&d)
     };
     let (black, white) = ([0, 0, 0, 255], [255, 255, 255, 255]);
-    let round = dots(vectorcraft_doc::LineCap::Round);
+    let round = dots(redrob_vector_doc::LineCap::Round);
     for x in [30, 70] {
         assert_eq!(round.pixel(x, 50), black, "round dot at {x}");
         assert_eq!(round.pixel(x + 2, 52), black, "inside the round dot at {x}");
         assert_eq!(round.pixel(x + 4, 54), white, "the round dot's corner at {x}");
     }
-    let square = dots(vectorcraft_doc::LineCap::Square);
+    let square = dots(redrob_vector_doc::LineCap::Square);
     for x in [30, 70] {
         assert_eq!(square.pixel(x, 50), black, "square dot at {x}");
         assert_eq!(square.pixel(x + 4, 54), black, "the square dot's corner at {x}");
         assert_eq!(square.pixel(x + 6, 50), white, "past the square dot at {x}");
     }
-    let butt = dots(vectorcraft_doc::LineCap::Butt);
+    let butt = dots(redrob_vector_doc::LineCap::Butt);
     assert_eq!(butt.pixels.iter().filter(|&&p| p != 255).count(), 0, "a butt cap draws no dot");
 }

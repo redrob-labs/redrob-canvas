@@ -16,8 +16,8 @@
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
-use photocraft_doc::DocId;
-use photocraft_engine::DocState;
+use redrob_photo_doc::DocId;
+use redrob_photo_engine::DocState;
 
 /// What a run of nudges needs to find unchanged to go on: the document, and its revisions (every
 /// edit, Undo, Redo and layer selection moves `revision`, a save moves `saved_revision`).

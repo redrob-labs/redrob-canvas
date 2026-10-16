@@ -11,20 +11,17 @@ members = [
   "crafts/designcraft/crates/*",
   "crafts/craft-libs/crates/*",
 ]
-# Upstream binaries, xtasks and web shells are not built here; the Redrob Canvas shell in
-# apps/ hosts the three editors as modes. craft-libs vendors krilla/hayro, patched below.
+# Upstream binaries and web shells are not built here; the Redrob Canvas shell in apps/
+# hosts the three editors as modes. craft-libs vendors krilla/hayro, patched below.
 exclude = [
   "crafts/photocraft/apps",
-  "crafts/photocraft/xtask",
   "crafts/vectorcraft/apps",
-  "crafts/vectorcraft/xtask",
   "crafts/designcraft/apps",
-  "crafts/designcraft/xtask",
   "crafts/craft-libs/vendor",
 ]
 
 [workspace.package]
-version = "0.7.0"
+version = "0.8.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
@@ -38,33 +35,8 @@ base64 = "0.22"
 bytemuck = { version = "1", features = ["derive"] }
 caseless = "0.2"
 clipboard-win = "5.4"
-craft-atomic = { path = "crafts/craft-libs/crates/atomic" }
-craft-cms = { path = "crafts/craft-libs/crates/cms" }
-craft-pdf = { default-features = false, features = ["interpret", "write"], path = "crafts/craft-libs/crates/pdf" }
-craft-print = { path = "crafts/craft-libs/crates/print" }
-craft-quit = { path = "crafts/craft-libs/crates/quit" }
-craft-settings = { path = "crafts/craft-libs/crates/settings" }
-craft-ui = { features = ["serde"], path = "crafts/craft-libs/crates/ui" }
 crc32fast = "1.5"
 criterion = { version = "0.5", default-features = false }
-designcraft-color = { path = "crafts/designcraft/crates/color" }
-designcraft-compose = { path = "crafts/designcraft/crates/compose" }
-designcraft-doc = { path = "crafts/designcraft/crates/doc" }
-designcraft-engine = { path = "crafts/designcraft/crates/engine" }
-designcraft-epub = { path = "crafts/designcraft/crates/epub" }
-designcraft-fonts = { path = "crafts/designcraft/crates/fonts" }
-designcraft-format = { path = "crafts/designcraft/crates/format" }
-designcraft-geom = { path = "crafts/designcraft/crates/geom" }
-designcraft-idml = { path = "crafts/designcraft/crates/idml" }
-designcraft-images = { path = "crafts/designcraft/crates/images" }
-designcraft-mcp = { path = "crafts/designcraft/crates/mcp" }
-designcraft-pdf = { path = "crafts/designcraft/crates/pdf" }
-designcraft-pptx = { path = "crafts/designcraft/crates/pptx" }
-designcraft-render = { path = "crafts/designcraft/crates/render" }
-designcraft-testkit = { path = "crafts/designcraft/crates/testkit" }
-designcraft-textimport = { path = "crafts/designcraft/crates/textimport" }
-designcraft-tools = { path = "crafts/designcraft/crates/tools" }
-designcraft-ui-egui = { path = "crafts/designcraft/crates/ui-egui" }
 eframe = { version = "0.36", default-features = false }
 egui = { version = "0.36", default-features = false }
 egui_extras = { version = "0.36", default-features = false, features = ["svg"] }
@@ -87,35 +59,84 @@ linesweeper = "0.5"
 log = "0.4"
 mockito = "1"
 peniko = "0.6"
-photocraft-affinity = { path = "crafts/photocraft/crates/affinity" }
-photocraft-algo = { path = "crafts/photocraft/crates/algo" }
-photocraft-automation = { path = "crafts/photocraft/crates/automation" }
-photocraft-cms = { path = "crafts/photocraft/crates/cms" }
-photocraft-codecs = { path = "crafts/photocraft/crates/codecs" }
-photocraft-color = { path = "crafts/photocraft/crates/color" }
-photocraft-compose = { path = "crafts/photocraft/crates/compose" }
-photocraft-doc = { path = "crafts/photocraft/crates/doc" }
-photocraft-engine = { path = "crafts/photocraft/crates/engine" }
-photocraft-format = { path = "crafts/photocraft/crates/format" }
-photocraft-geom = { path = "crafts/photocraft/crates/geom" }
-photocraft-gpu = { path = "crafts/photocraft/crates/gpu" }
-photocraft-io = { path = "crafts/photocraft/crates/io" }
-photocraft-ops = { path = "crafts/photocraft/crates/ops" }
-photocraft-paint = { path = "crafts/photocraft/crates/paint" }
-photocraft-plugins = { path = "crafts/photocraft/crates/plugins" }
-photocraft-psd = { path = "crafts/photocraft/crates/psd" }
-photocraft-raster = { path = "crafts/photocraft/crates/raster" }
-photocraft-raw = { path = "crafts/photocraft/crates/raw" }
-photocraft-tablet = { path = "crafts/photocraft/crates/tablet" }
-photocraft-testkit = { path = "crafts/photocraft/crates/testkit" }
-photocraft-text = { path = "crafts/photocraft/crates/text" }
-photocraft-ui-egui = { path = "crafts/photocraft/crates/ui-egui" }
-photocraft-vector = { path = "crafts/photocraft/crates/vector" }
 proptest = "1"
 qrcodegen = "1.8"
 quick-xml = "0.41"
 rayon = "1"
+redrob-craft-atomic = { path = "crafts/craft-libs/crates/atomic" }
+redrob-craft-cms = { path = "crafts/craft-libs/crates/cms" }
+redrob-craft-pdf = { default-features = false, features = ["interpret", "write"], path = "crafts/craft-libs/crates/pdf" }
+redrob-craft-print = { path = "crafts/craft-libs/crates/print" }
+redrob-craft-quit = { path = "crafts/craft-libs/crates/quit" }
+redrob-craft-settings = { path = "crafts/craft-libs/crates/settings" }
+redrob-craft-ui = { features = ["serde"], path = "crafts/craft-libs/crates/ui" }
 redrob-engine-client = { git = "https://github.com/redrob-labs/redrob-code", tag = "v0.6.4" }
+redrob-layout-color = { path = "crafts/designcraft/crates/color" }
+redrob-layout-compose = { path = "crafts/designcraft/crates/compose" }
+redrob-layout-doc = { path = "crafts/designcraft/crates/doc" }
+redrob-layout-engine = { path = "crafts/designcraft/crates/engine" }
+redrob-layout-epub = { path = "crafts/designcraft/crates/epub" }
+redrob-layout-fonts = { path = "crafts/designcraft/crates/fonts" }
+redrob-layout-format = { path = "crafts/designcraft/crates/format" }
+redrob-layout-geom = { path = "crafts/designcraft/crates/geom" }
+redrob-layout-idml = { path = "crafts/designcraft/crates/idml" }
+redrob-layout-images = { path = "crafts/designcraft/crates/images" }
+redrob-layout-mcp = { path = "crafts/designcraft/crates/mcp" }
+redrob-layout-pdf = { path = "crafts/designcraft/crates/pdf" }
+redrob-layout-pptx = { path = "crafts/designcraft/crates/pptx" }
+redrob-layout-render = { path = "crafts/designcraft/crates/render" }
+redrob-layout-testkit = { path = "crafts/designcraft/crates/testkit" }
+redrob-layout-textimport = { path = "crafts/designcraft/crates/textimport" }
+redrob-layout-tools = { path = "crafts/designcraft/crates/tools" }
+redrob-layout-ui-egui = { path = "crafts/designcraft/crates/ui-egui" }
+redrob-photo-affinity = { path = "crafts/photocraft/crates/affinity" }
+redrob-photo-algo = { path = "crafts/photocraft/crates/algo" }
+redrob-photo-automation = { path = "crafts/photocraft/crates/automation" }
+redrob-photo-cms = { path = "crafts/photocraft/crates/cms" }
+redrob-photo-codecs = { path = "crafts/photocraft/crates/codecs" }
+redrob-photo-color = { path = "crafts/photocraft/crates/color" }
+redrob-photo-compose = { path = "crafts/photocraft/crates/compose" }
+redrob-photo-doc = { path = "crafts/photocraft/crates/doc" }
+redrob-photo-engine = { path = "crafts/photocraft/crates/engine" }
+redrob-photo-format = { path = "crafts/photocraft/crates/format" }
+redrob-photo-geom = { path = "crafts/photocraft/crates/geom" }
+redrob-photo-gpu = { path = "crafts/photocraft/crates/gpu" }
+redrob-photo-io = { path = "crafts/photocraft/crates/io" }
+redrob-photo-ops = { path = "crafts/photocraft/crates/ops" }
+redrob-photo-paint = { path = "crafts/photocraft/crates/paint" }
+redrob-photo-plugins = { path = "crafts/photocraft/crates/plugins" }
+redrob-photo-psd = { path = "crafts/photocraft/crates/psd" }
+redrob-photo-raster = { path = "crafts/photocraft/crates/raster" }
+redrob-photo-raw = { path = "crafts/photocraft/crates/raw" }
+redrob-photo-tablet = { path = "crafts/photocraft/crates/tablet" }
+redrob-photo-testkit = { path = "crafts/photocraft/crates/testkit" }
+redrob-photo-text = { path = "crafts/photocraft/crates/text" }
+redrob-photo-ui-egui = { path = "crafts/photocraft/crates/ui-egui" }
+redrob-photo-vector = { path = "crafts/photocraft/crates/vector" }
+redrob-vector-affinity = { path = "crafts/vectorcraft/crates/affinity" }
+redrob-vector-brush = { path = "crafts/vectorcraft/crates/brush" }
+redrob-vector-cad = { path = "crafts/vectorcraft/crates/cad" }
+redrob-vector-color = { path = "crafts/vectorcraft/crates/color" }
+redrob-vector-doc = { path = "crafts/vectorcraft/crates/doc" }
+redrob-vector-effects = { path = "crafts/vectorcraft/crates/effects" }
+redrob-vector-engine = { path = "crafts/vectorcraft/crates/engine" }
+redrob-vector-eps = { path = "crafts/vectorcraft/crates/eps" }
+redrob-vector-format = { path = "crafts/vectorcraft/crates/format" }
+redrob-vector-geom = { path = "crafts/vectorcraft/crates/geom" }
+redrob-vector-mcp = { path = "crafts/vectorcraft/crates/mcp" }
+redrob-vector-metafile = { path = "crafts/vectorcraft/crates/metafile" }
+redrob-vector-pathops = { path = "crafts/vectorcraft/crates/pathops" }
+redrob-vector-pdf = { path = "crafts/vectorcraft/crates/pdf" }
+redrob-vector-plugins = { path = "crafts/vectorcraft/crates/plugins" }
+redrob-vector-render = { path = "crafts/vectorcraft/crates/render" }
+redrob-vector-scriptcheck = { path = "crafts/vectorcraft/crates/scriptcheck" }
+redrob-vector-svg = { path = "crafts/vectorcraft/crates/svg" }
+redrob-vector-testkit = { path = "crafts/vectorcraft/crates/testkit" }
+redrob-vector-text = { path = "crafts/vectorcraft/crates/text" }
+redrob-vector-three-d = { path = "crafts/vectorcraft/crates/three-d" }
+redrob-vector-tools = { path = "crafts/vectorcraft/crates/tools" }
+redrob-vector-trace = { path = "crafts/vectorcraft/crates/trace" }
+redrob-vector-ui-egui = { path = "crafts/vectorcraft/crates/ui-egui" }
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 resvg = { version = "0.47", default-features = false, features = ["text"] }
@@ -136,30 +157,6 @@ unicode-bidi-mirroring = "0.4"
 unicode-script = "0.5"
 unicode-segmentation = "1"
 usvg = "0.48"
-vectorcraft-affinity = { path = "crafts/vectorcraft/crates/affinity" }
-vectorcraft-brush = { path = "crafts/vectorcraft/crates/brush" }
-vectorcraft-cad = { path = "crafts/vectorcraft/crates/cad" }
-vectorcraft-color = { path = "crafts/vectorcraft/crates/color" }
-vectorcraft-doc = { path = "crafts/vectorcraft/crates/doc" }
-vectorcraft-effects = { path = "crafts/vectorcraft/crates/effects" }
-vectorcraft-engine = { path = "crafts/vectorcraft/crates/engine" }
-vectorcraft-eps = { path = "crafts/vectorcraft/crates/eps" }
-vectorcraft-format = { path = "crafts/vectorcraft/crates/format" }
-vectorcraft-geom = { path = "crafts/vectorcraft/crates/geom" }
-vectorcraft-mcp = { path = "crafts/vectorcraft/crates/mcp" }
-vectorcraft-metafile = { path = "crafts/vectorcraft/crates/metafile" }
-vectorcraft-pathops = { path = "crafts/vectorcraft/crates/pathops" }
-vectorcraft-pdf = { path = "crafts/vectorcraft/crates/pdf" }
-vectorcraft-plugins = { path = "crafts/vectorcraft/crates/plugins" }
-vectorcraft-render = { path = "crafts/vectorcraft/crates/render" }
-vectorcraft-scriptcheck = { path = "crafts/vectorcraft/crates/scriptcheck" }
-vectorcraft-svg = { path = "crafts/vectorcraft/crates/svg" }
-vectorcraft-testkit = { path = "crafts/vectorcraft/crates/testkit" }
-vectorcraft-text = { path = "crafts/vectorcraft/crates/text" }
-vectorcraft-three-d = { path = "crafts/vectorcraft/crates/three-d" }
-vectorcraft-tools = { path = "crafts/vectorcraft/crates/tools" }
-vectorcraft-trace = { path = "crafts/vectorcraft/crates/trace" }
-vectorcraft-ui-egui = { path = "crafts/vectorcraft/crates/ui-egui" }
 vello_common = { version = "0.2", default-features = false }
 vello_cpu = { version = "0.2", features = ["f32_pipeline"] }
 wasmi = { version = "2.0.0", default-features = false, features = ["std", "validate", "stable", "portable-dispatch"] }
@@ -201,6 +198,17 @@ opt-level = 2
 
 [profile.dev]
 opt-level = 1
+
+# CI gates compile with `--profile ci`: no optimisation anywhere (the dev profile optimises every
+# dependency at level 2, which is what makes a cold `cargo test` take a quarter of an hour).
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+debug = "line-tables-only"
+incremental = false
+
+[profile.ci.package."*"]
+opt-level = 0
 
 [profile.release]
 lto = "thin"

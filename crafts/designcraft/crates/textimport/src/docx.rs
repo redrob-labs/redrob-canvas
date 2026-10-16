@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 use std::io::Read;
 
-use designcraft_doc::story::{BASIC_PARAGRAPH, NO_CHAR_STYLE};
-use designcraft_doc::{CharAttrs, CharFormat, ListType, ParaAttrs, ParaFormat, Story, StoryId, Table};
 use quick_xml::events::Event;
+use redrob_layout_doc::story::{BASIC_PARAGRAPH, NO_CHAR_STYLE};
+use redrob_layout_doc::{CharAttrs, CharFormat, ListType, ParaAttrs, ParaFormat, Story, StoryId, Table};
 
 use crate::docx_numbering::{ListPara, Numbering};
 use crate::{ImportError, Imported, ImportedStyle};
@@ -178,13 +178,13 @@ fn run_attrs(rpr: Option<&El>) -> CharAttrs {
         a.font_family = Some(f.to_string());
     }
     if r.on("caps") == Some(true) {
-        a.capitalization = Some(designcraft_doc::Capitalization::AllCaps);
+        a.capitalization = Some(redrob_layout_doc::Capitalization::AllCaps);
     }
     if let Some(v) = r.val("vertAlign") {
         a.position = Some(match v.as_str() {
-            "superscript" => designcraft_doc::Position::Superscript,
-            "subscript" => designcraft_doc::Position::Subscript,
-            _ => designcraft_doc::Position::Normal,
+            "superscript" => redrob_layout_doc::Position::Superscript,
+            "subscript" => redrob_layout_doc::Position::Subscript,
+            _ => redrob_layout_doc::Position::Normal,
         });
     }
     a
@@ -206,10 +206,10 @@ fn para_attrs(ppr: Option<&El>) -> ParaAttrs {
     }
     if let Some(j) = p.val("jc") {
         a.align = Some(match j.as_str() {
-            "center" => designcraft_doc::Align::Center,
-            "right" | "end" => designcraft_doc::Align::Right,
-            "both" | "distribute" => designcraft_doc::Align::LeftJustified,
-            _ => designcraft_doc::Align::Left,
+            "center" => redrob_layout_doc::Align::Center,
+            "right" | "end" => redrob_layout_doc::Align::Right,
+            "both" | "distribute" => redrob_layout_doc::Align::LeftJustified,
+            _ => redrob_layout_doc::Align::Left,
         });
     }
     a
@@ -331,7 +331,7 @@ impl Ctx {
                 "p" => {
                     let mut st = Story::new(StoryId(0));
                     self.inline(e, &mut st, false);
-                    let is_break = |c: char| matches!(c, designcraft_doc::PAGE_BREAK | designcraft_doc::COLUMN_BREAK);
+                    let is_break = |c: char| matches!(c, redrob_layout_doc::PAGE_BREAK | redrob_layout_doc::COLUMN_BREAK);
                     out.push(st.text.chars().map(|c| if is_break(c) { '\n' } else { c }).collect());
                 }
                 "sdt" => {
@@ -366,9 +366,9 @@ impl Ctx {
                 "t" => e.text(),
                 "tab" => "\t".into(),
                 "br" => match e.attr("type") {
-                    Some("page") => designcraft_doc::PAGE_BREAK.to_string(),
-                    Some("column") => designcraft_doc::COLUMN_BREAK.to_string(),
-                    _ => designcraft_doc::FORCED_LINE_BREAK.to_string(),
+                    Some("page") => redrob_layout_doc::PAGE_BREAK.to_string(),
+                    Some("column") => redrob_layout_doc::COLUMN_BREAK.to_string(),
+                    _ => redrob_layout_doc::FORCED_LINE_BREAK.to_string(),
                 },
                 "noBreakHyphen" => "\u{2011}".into(),
                 "softHyphen" => "\u{AD}".into(),
@@ -632,7 +632,7 @@ mod tests {
         );
         let st = import(&docx(&document, &styles, "")).unwrap().story;
         st.check().unwrap();
-        let (pb, cb) = (designcraft_doc::PAGE_BREAK, designcraft_doc::COLUMN_BREAK);
+        let (pb, cb) = (redrob_layout_doc::PAGE_BREAK, redrob_layout_doc::COLUMN_BREAK);
         assert_eq!(st.text, format!("End of one{pb}\n{pb}\nTwo{cb}\n"));
         let styles: Vec<&str> = st.paras.iter().map(|p| p.style.as_str()).collect();
         assert_eq!(styles, [BASIC_PARAGRAPH, "Chapter", "Chapter", "Chapter"]);
@@ -676,7 +676,7 @@ mod tests {
 
     /// The label the model gives paragraph `i` when its number is `n`.
     fn label(st: &Story, i: usize, n: u32) -> String {
-        let mut p = designcraft_doc::ParaProps::default();
+        let mut p = redrob_layout_doc::ParaProps::default();
         p.apply(&st.paras[i].para);
         match p.list_type {
             ListType::Numbers => p.number_label(n),
@@ -709,7 +709,7 @@ mod tests {
         let types: Vec<Option<ListType>> = st.paras.iter().map(|p| p.para.list_type).collect();
         assert_eq!(types, [None, Some(ListType::Bullets), Some(ListType::Bullets), Some(ListType::Numbers), Some(ListType::Numbers)]);
         assert_eq!(label(&st, 1, 1), "•\t");
-        assert_eq!(st.paras[3].para.number_style, Some(designcraft_doc::NumberStyle::Arabic));
+        assert_eq!(st.paras[3].para.number_style, Some(redrob_layout_doc::NumberStyle::Arabic));
         assert_eq!((label(&st, 3, 1), label(&st, 4, 2)), ("1.\t".to_string(), "2.\t".to_string()));
         // The model's own counter already starts at 1 and carries on: no Start At needed.
         assert_eq!((st.paras[3].para.start_at, st.paras[4].para.start_at), (None, None));

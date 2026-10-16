@@ -2,8 +2,8 @@
 //! visible layer with pixels under the pointer (or its outermost group in Group mode) and the drag
 //! then moves it; ⌘/Ctrl held at the press inverts the option for that click.
 
-use photocraft_doc::LayerId;
-use photocraft_geom::Rect;
+use redrob_photo_doc::LayerId;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -12,7 +12,7 @@ use crate::state::{Tool, ToolOptions};
 
 /// A 64×64 document with two painted layers: A covers (8..24)², B covers (40..56)². B is active.
 fn app() -> (PhotocraftApp, LayerId, LayerId) {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
     app.sync_views();
     let mut ids = Vec::new();
@@ -185,7 +185,7 @@ fn every_theme_shows_the_type_options() {
     use egui_kittest::Harness;
     use egui_kittest::kittest::{NodeT, Queryable};
     // The font menus show "Loading fonts…" until the font scan is done (#3021): wait for it.
-    let _ = photocraft_text::shared();
+    let _ = redrob_photo_text::shared();
     for theme in crate::theme::ThemeKind::ALL {
         let (mut app, _, _) = app();
         app.ui.tool = Tool::Type;
@@ -240,7 +240,7 @@ fn every_theme_shows_the_gradient_options() {
 #[test]
 fn shift_click_adds_shape_layers_one_after_another() {
     // Shapes, as in Photoshop: a click selects one, each ⇧-click adds the one under it.
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", json!({"width": 200, "height": 200})).unwrap();
     for rect in [[10, 10, 40, 40], [80, 10, 40, 40], [10, 100, 40, 40]] {
         app.session.execute("shape.create", json!({"kind": "rect", "rect": rect, "fill": "#ff0000"})).unwrap();

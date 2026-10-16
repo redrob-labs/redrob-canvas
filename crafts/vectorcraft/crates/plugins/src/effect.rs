@@ -10,8 +10,8 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::Mutex;
 
+use redrob_vector_geom::{FillRule, PathData, Rect};
 use serde_json::{Value, json};
-use vectorcraft_geom::{FillRule, PathData, Rect};
 
 use crate::objects::{decode, output_geometry};
 use crate::{Error, Kind, Limits, Result, registry};

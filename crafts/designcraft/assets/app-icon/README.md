@@ -37,12 +37,12 @@ craftrules' `assets/logo-options/_tools/vectorize_tile.py`: `designcraft.svg` is
 | `designcraft-macos-512.png` | Runtime Dock icon on macOS (embedded by `apps/designcraft`) |
 | `designcraft.icns` | macOS bundle icon (`CFBundleIconFile`) |
 | `designcraft.ico` | Windows exe icon, 16–256 px (embedded by `apps/designcraft/build.rs`) |
-| `hicolor/<size>/apps/ai.storyteller.designcraft.png` | Linux icon theme, 16–512 px; the 256 px one is also the runtime window icon on Windows and Linux |
-| `hicolor/scalable/apps/ai.storyteller.designcraft.svg` | Linux scalable icon |
+| `hicolor/<size>/apps/ai.storyteller.rlayout.png` | Linux icon theme, 16–512 px; the 256 px one is also the runtime window icon on Windows and Linux |
+| `hicolor/scalable/apps/ai.storyteller.rlayout.svg` | Linux scalable icon |
 | `LICENSE.txt` | MIT OR Apache-2.0 |
 
-The app ID is `ai.storyteller.designcraft`. It's used for the hicolor icon names, the Wayland app ID and
-`packaging/linux/ai.storyteller.designcraft.desktop`.
+The app ID is `ai.storyteller.rlayout`. It's used for the hicolor icon names, the Wayland app ID and
+`packaging/linux/ai.storyteller.rlayout.desktop`.
 
 ## Regenerate
 

@@ -1,10 +1,10 @@
 //! Painting a previously unpainted zero-width stroke restores the existing 1 pt default.
 #![allow(clippy::unwrap_used)]
 
+use redrob_vector_doc::NodeId;
+use redrob_vector_engine::{Session, ViewInfo};
+use redrob_vector_tools::{PointerEvent, PointerKind};
 use serde_json::json;
-use vectorcraft_doc::NodeId;
-use vectorcraft_engine::{Session, ViewInfo};
-use vectorcraft_tools::{PointerEvent, PointerKind};
 
 fn fixture() -> (Session, NodeId) {
     let mut s = Session::new();

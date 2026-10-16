@@ -6,9 +6,9 @@
 
 use std::path::{Path, PathBuf};
 
-use designcraft_doc::{DataField, DataFieldKind, Delimiter, Fingerprint, SourceStatus};
-use designcraft_geom::Rect;
-use designcraft_textimport::{DATA_MERGE_MAX_COLS, DATA_MERGE_MAX_ROWS};
+use redrob_layout_doc::{DataField, DataFieldKind, Delimiter, Fingerprint, SourceStatus};
+use redrob_layout_geom::Rect;
+use redrob_layout_textimport::{DATA_MERGE_MAX_COLS, DATA_MERGE_MAX_ROWS};
 use serde_json::Value;
 
 /// A parsed table. `rows` does not include the header. Every row matches `fields` in length.

@@ -10,11 +10,11 @@
 //! action or agent can replay it exactly.
 
 use egui::{Color32, Pos2, Stroke, TextureHandle, pos2};
-use photocraft_algo::transform::Homography;
-use photocraft_algo::vanishing::{PlaneCheck, Scene, VpPlane};
-use photocraft_doc::{LayerContent, LayerId};
-use photocraft_engine::vp_cmds::VP;
-use photocraft_geom::Rect;
+use redrob_photo_algo::transform::Homography;
+use redrob_photo_algo::vanishing::{PlaneCheck, Scene, VpPlane};
+use redrob_photo_doc::{LayerContent, LayerId};
+use redrob_photo_engine::vp_cmds::VP;
+use redrob_photo_geom::Rect;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -589,7 +589,7 @@ mod tests {
 
     fn app_with_layer() -> (egui::Context, PhotocraftApp) {
         let ctx = egui::Context::default();
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), Default::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         app.session.execute("file.new", json!({"width": 240, "height": 160, "depth": 16})).unwrap();
         app.session.execute("layer.new.layer", json!({})).unwrap();
         app.session.execute("edit.fill", json!({"color": "#4080c0"})).unwrap();

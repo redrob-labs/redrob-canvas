@@ -10,9 +10,9 @@
 use std::sync::Arc;
 
 use egui::{Color32, ColorImage};
-use photocraft_doc::{Document, LayerContent, LayerId};
-use photocraft_geom::Rect;
-use photocraft_raster::Surface;
+use redrob_photo_doc::{Document, LayerContent, LayerId};
+use redrob_photo_geom::Rect;
+use redrob_photo_raster::Surface;
 use serde_json::{Value, json};
 
 use crate::PhotocraftApp;
@@ -28,7 +28,7 @@ pub struct Distort {
     /// Filter Gallery dialog (gallery_ui).
     pub gallery: Option<crate::gallery_ui::GalleryDialog>,
     /// The document the open sessions belong to, noted by [`drop_foreign`] on the first frame they are open.
-    owner: Option<photocraft_doc::DocId>,
+    owner: Option<redrob_photo_doc::DocId>,
 }
 
 impl Distort {

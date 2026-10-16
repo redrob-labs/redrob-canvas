@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn open_palette_interrupts_the_ime_only_when_it_takes_focus() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx);
         // Fonts bind on the next pass; this one opens nothing.
@@ -303,7 +303,7 @@ mod tests {
     fn the_palette_records_and_replays_recent_commands_on_an_empty_query() {
         let mut h = Harness::builder().with_size(vec2(1200.0, 800.0)).with_max_steps(64).build_eframe(|cc| {
             PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-            PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+            PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
         });
         h.state_mut().run("file.new", json!({"width": 64, "height": 64})).unwrap();
         h.state_mut().sync_views();
@@ -343,7 +343,7 @@ mod tests {
     /// palette with blank "---" rows.
     #[test]
     fn separators_are_not_palette_hits() {
-        let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let menus = crate::menus::menu_items(&app);
         assert!(menus.iter().any(|m| m.label == "---"), "the menus have separators to filter");
         for q in ["f", "file", "filter", "", "-"] {
@@ -378,7 +378,7 @@ mod tests {
         for with_doc in [false, true] {
             let mut h = Harness::builder().with_size(vec2(1200.0, 800.0)).with_max_steps(64).build_eframe(|cc| {
                 PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-                PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+                PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
             });
             if with_doc {
                 h.state_mut().run("file.new", json!({"width": 64, "height": 64})).unwrap();

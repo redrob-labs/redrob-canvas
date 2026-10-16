@@ -5,9 +5,9 @@
 
 use std::sync::Arc;
 
-use photocraft_color::PixelFormat;
-use photocraft_geom::{Rect, TILE_SIZE, TileCoord};
-use photocraft_raster::Surface;
+use redrob_photo_color::PixelFormat;
+use redrob_photo_geom::{Rect, TILE_SIZE, TileCoord};
+use redrob_photo_raster::Surface;
 use serde::{Deserialize, Serialize};
 
 use crate::photo_util::{par_map, par_rows};

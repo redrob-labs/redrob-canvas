@@ -4,11 +4,11 @@
 
 use std::sync::Arc;
 
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::text::{CharStyle, TextObject};
+use redrob_vector_doc::{Appearance, Effect, ImageBlob, ImageObject, Node, NodeKind, Symbol};
+use redrob_vector_geom::{Point, shapes};
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::text::{CharStyle, TextObject};
-use vectorcraft_doc::{Appearance, Effect, ImageBlob, ImageObject, Node, NodeKind, Symbol};
-use vectorcraft_geom::{Point, shapes};
 
 use super::*;
 
@@ -42,20 +42,20 @@ const WHITE: u32 = 765;
 
 #[test]
 fn revolve_canvas_matches_baked_art_and_shades_its_surface() {
-    let mut bp = vectorcraft_geom::BezPath::new();
+    let mut bp = redrob_vector_geom::BezPath::new();
     bp.move_to((50.0, 15.0));
     bp.line_to((75.0, 30.0));
     bp.line_to((75.0, 75.0));
     bp.line_to((50.0, 90.0));
     let mut n = Node::path(
         NodeId(0),
-        vectorcraft_geom::PathData::from_bezpath(&bp),
+        redrob_vector_geom::PathData::from_bezpath(&bp),
         Appearance::basic(Paint::solid(Color::rgb(0.9, 0.2, 0.1)), Paint::None, 0.0),
     );
     n.appearance.effects.push(fx("threeD.revolve", json!({"rotationX":0,"rotationY":0})));
     let d = doc_with(Document::new(100.0, 100.0), n);
     let live = render(&d);
-    let baked = vectorcraft_effects::bake_document(&d).unwrap();
+    let baked = redrob_vector_effects::bake_document(&d).unwrap();
     let exported = render(&baked);
     assert_eq!(live.pixels, exported.pixels, "canvas and baked/exported faces agree");
     let reds: Vec<_> =
@@ -78,13 +78,13 @@ fn solid_effects_canvas_matches_baked_art_and_shades_their_faces() {
     ] {
         let mut n = Node::path(
             NodeId(0),
-            shapes::rectangle(vectorcraft_geom::Rect::new(30.0, 30.0, 70.0, 70.0)),
+            shapes::rectangle(redrob_vector_geom::Rect::new(30.0, 30.0, 70.0, 70.0)),
             Appearance::basic(Paint::solid(Color::rgb(0.9, 0.2, 0.1)), Paint::None, 0.0),
         );
         n.appearance.effects.push(fx(effect, params));
         let d = doc_with(Document::new(100.0, 100.0), n);
         let live = render(&d);
-        let exported = render(&vectorcraft_effects::bake_document(&d).unwrap());
+        let exported = render(&redrob_vector_effects::bake_document(&d).unwrap());
         assert_eq!(live.pixels, exported.pixels, "{effect}: canvas and baked/exported faces agree");
         assert_eq!(live.pixels, render_threads(&d, 4).pixels, "{effect}");
         let reds: Vec<_> =
@@ -101,12 +101,12 @@ fn solid_effects_canvas_matches_baked_art_and_shades_their_faces() {
 
 #[test]
 fn revolve_visible_surface_expansion_preserves_the_view_and_transparent_art() {
-    let mut bp = vectorcraft_geom::BezPath::new();
+    let mut bp = redrob_vector_geom::BezPath::new();
     bp.move_to((50.0, 15.0));
     bp.curve_to((80.0, 25.0), (80.0, 75.0), (50.0, 90.0));
     let mut n = Node::path(
         NodeId(0),
-        vectorcraft_geom::PathData::from_bezpath(&bp),
+        redrob_vector_geom::PathData::from_bezpath(&bp),
         Appearance::basic(Paint::solid(Color::rgb(0.2, 0.55, 0.9)), Paint::None, 0.0),
     );
     for (angle, rotation, perspective, opacity) in
@@ -122,8 +122,9 @@ fn revolve_visible_surface_expansion_preserves_the_view_and_transparent_art() {
         let mut expanded = d.clone();
         let id = expanded.layers[0].children().unwrap()[0].id;
         let source = expanded.node(id).unwrap().clone();
-        let mut stroke = |_: &mut Document, _: &vectorcraft_geom::PathData, _: vectorcraft_geom::FillRule, _: &vectorcraft_doc::StrokeLayer| None;
-        let art = vectorcraft_effects::expand_leaf(&mut expanded, &source, &mut stroke).unwrap();
+        let mut stroke =
+            |_: &mut Document, _: &redrob_vector_geom::PathData, _: redrob_vector_geom::FillRule, _: &redrob_vector_doc::StrokeLayer| None;
+        let art = redrob_vector_effects::expand_leaf(&mut expanded, &source, &mut stroke).unwrap();
         *expanded.node_mut(id).unwrap() = art;
         let flat = render(&expanded);
         let difference: u64 = live.pixels.iter().zip(&flat.pixels).map(|(a, b)| a.abs_diff(*b) as u64).sum();
@@ -133,7 +134,7 @@ fn revolve_visible_surface_expansion_preserves_the_view_and_transparent_art() {
             assert_eq!(live.pixels, flat.pixels);
         }
         // Export baking keeps every face, even when the expansion checkbox is checked.
-        assert_eq!(live.pixels, render(&vectorcraft_effects::bake_document(&d).unwrap()).pixels);
+        assert_eq!(live.pixels, render(&redrob_vector_effects::bake_document(&d).unwrap()).pixels);
     }
 }
 
@@ -227,7 +228,7 @@ fn geometry_effects_reshape_type_through_its_outlines() {
     assert!(changed > 100, "{changed} pixels changed");
     // The reshaped art is plain paths painted with the text's fill.
     let n = &d.layers[0].children().unwrap()[0];
-    let art = vectorcraft_effects::reshape(n, None).unwrap();
+    let art = redrob_vector_effects::reshape(n, None).unwrap();
     let (mut text, mut black) = (0, 0);
     art.walk(&mut |m| {
         text += usize::from(matches!(m.kind, NodeKind::Text(_)));

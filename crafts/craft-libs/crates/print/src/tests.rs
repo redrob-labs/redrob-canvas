@@ -72,7 +72,7 @@ fn driverless_printers_join_the_list_without_a_queue() {
 }
 
 /// Set on the child process when a test runs this test binary as a stand-in for `lp`.
-const STAND_IN_LP: &str = "CRAFT_STAND_IN_LP";
+const STAND_IN_LP: &str = "REDROB_CRAFT_STAND_IN_LP";
 
 /// Not a test of its own: [`stand_in_lp`] re-runs this binary with only this test selected, and it
 /// then plays `lp`. It records its arguments and stdin in the folder named by [`STAND_IN_LP`], or,

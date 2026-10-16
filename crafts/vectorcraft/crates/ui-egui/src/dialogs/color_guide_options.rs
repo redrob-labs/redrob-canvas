@@ -5,8 +5,8 @@
 //! Fields: `steps` (1–20) and `amount` (0–100).
 
 use egui::{Rect, Sense, vec2};
+use redrob_vector_color::harmony::{GuideOptions, variation};
 use serde_json::{Value, json};
-use vectorcraft_color::harmony::{GuideOptions, variation};
 
 use super::{DialogSpec, form};
 use crate::VectorcraftApp;
@@ -66,7 +66,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     #[test]
     fn ok_sets_the_panel_options() {

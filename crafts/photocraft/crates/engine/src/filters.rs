@@ -1,13 +1,13 @@
-//! `filter.*` commands (Photoshop's Filter menu) backed by `photocraft-algo`.
+//! `filter.*` commands (Photoshop's Filter menu) backed by `redrob-photo-algo`.
 //!
 //! Every command acts on the active pixel layer (or the cached pixels of a
 //! smart object, recording a smart filter), respects the selection, and is
 //! undoable. `filter.lastFilter` re-runs the most recent filter command.
 
-use photocraft_algo::{
+use redrob_photo_algo::{
     self as algo, Distribution, FilterParams, PolarMode, Preserve, RadialMethod, RadialQuality, RippleSize, SpherizeMode, UndefinedAreas, WaveType,
 };
-use photocraft_doc::{LayerContent, SmartFilter};
+use redrob_photo_doc::{LayerContent, SmartFilter};
 use serde_json::{Value, json};
 
 use crate::commands::CommandSpec;
@@ -179,11 +179,11 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
 pub fn apply_filter_to_surface(
     id: &str,
     params: &Value,
-    surf: &photocraft_raster::Surface,
-    bounds: photocraft_geom::Rect,
-    selection: Option<&photocraft_raster::Surface>,
-    canvas: photocraft_geom::Rect,
-) -> Option<photocraft_raster::Surface> {
+    surf: &redrob_photo_raster::Surface,
+    bounds: redrob_photo_geom::Rect,
+    selection: Option<&redrob_photo_raster::Surface>,
+    canvas: redrob_photo_geom::Rect,
+) -> Option<redrob_photo_raster::Surface> {
     // Liquify / Puppet Warp / Perspective Warp smart filters (distort_cmds).
     if let Some(out) = crate::distort_cmds::apply_to_surface(id, params, surf, canvas) {
         return Some(out);
@@ -204,7 +204,7 @@ pub fn apply_filter_to_surface(
     // A map that can no longer be read (moved or deleted since) leaves the pixels alone, like an
     // unknown filter; the command itself already refused an unreadable map when it was added.
     crate::filters_ext::resolve_map_path(&mut fp, params).ok()?;
-    let sel_bounds = selection.map(photocraft_raster::Surface::content_bounds);
+    let sel_bounds = selection.map(redrob_photo_raster::Surface::content_bounds);
     let content = surf.content_bounds();
     let area = algo::output_area(&fp, content, bounds, sel_bounds);
     Some(algo::apply_in(surf, &fp, area, bounds, selection, canvas.union(&content)))
@@ -233,7 +233,7 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
     let mut fp = params_for(id, p).ok_or_else(|| EngineError::Other(format!("unknown filter {id}")))?;
     crate::filters_ext::resolve(s, &mut fp, p)?;
     let layer = match p.get("layer").and_then(Value::as_u64) {
-        Some(l) => photocraft_doc::LayerId(l),
+        Some(l) => redrob_photo_doc::LayerId(l),
         None => s.active().and_then(|d| d.active_layer).ok_or(EngineError::Other("no active layer".into()))?,
     };
     let label = preset(id).map_or(fp.label(), |(name, _)| name).to_string();
@@ -251,11 +251,11 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
         s,
         &label,
         move |doc, _, ctx| {
-            let filter = |surf: &photocraft_raster::Surface, fp: &FilterParams, area, bounds, sel: Option<&photocraft_raster::Surface>, extent| {
+            let filter = |surf: &redrob_photo_raster::Surface, fp: &FilterParams, area, bounds, sel: Option<&redrob_photo_raster::Surface>, extent| {
                 ctx.stage(0.0, 1.0, &msg, |ctl| algo::apply_in_with(surf, fp, area, bounds, sel, extent, ctl)).ok_or(EngineError::Cancelled)
             };
             let selection = doc.selection.clone();
-            let sel_bounds = selection.as_ref().map(photocraft_raster::Surface::content_bounds);
+            let sel_bounds = selection.as_ref().map(redrob_photo_raster::Surface::content_bounds);
             // Distortions centre on the selection when there is one, else the canvas.
             let doc_bounds = doc.bounds();
             let bounds = sel_bounds.filter(|b| !b.is_empty()).unwrap_or(doc_bounds);
@@ -288,7 +288,7 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
                 LayerContent::Smart(_) => {
                     // Non-destructive: record the filter and re-render the smart object from its source.
                     let sf =
-                        SmartFilter { command: id.clone(), params: params.clone(), blend: photocraft_color::BlendMode::Normal, opacity: 1.0, visible: true };
+                        SmartFilter { command: id.clone(), params: params.clone(), blend: redrob_photo_color::BlendMode::Normal, opacity: 1.0, visible: true };
                     return crate::smart_cmds::add_smart_filter(doc, layer, sf, selection.as_ref()).map(|()| fp);
                 }
                 _ => return Err(EngineError::Other("not a pixel layer".into())),
@@ -307,7 +307,7 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
 }
 
 /// Lock transparency: put the layer's alpha back after a filter, in the tiles it changed.
-fn keep_alpha(old: &photocraft_raster::Surface, new: &mut photocraft_raster::Surface) {
+fn keep_alpha(old: &redrob_photo_raster::Surface, new: &mut redrob_photo_raster::Surface) {
     if old.format() != new.format() || !new.format().alpha {
         return;
     }
@@ -451,7 +451,7 @@ mod tests {
     fn active_pixels(s: &Session) -> Vec<f32> {
         let d = s.active().unwrap();
         let l = d.doc.layer(d.active_layer.unwrap()).unwrap();
-        l.surface().unwrap().read_region(photocraft_geom::Rect::new(0, 0, 48, 32))
+        l.surface().unwrap().read_region(redrob_photo_geom::Rect::new(0, 0, 48, 32))
     }
 
     fn mask_session(reveal_selection: bool) -> Session {
@@ -733,7 +733,7 @@ mod tests {
         assert_ne!(active_pixels(&s), before, "the active layer is filtered");
         let d = s.active().unwrap();
         let l = d.doc.layer(first).unwrap();
-        assert_eq!(l.surface().unwrap().read_region(photocraft_geom::Rect::new(0, 0, 48, 32)), first_once, "the first layer is left alone");
+        assert_eq!(l.surface().unwrap().read_region(redrob_photo_geom::Rect::new(0, 0, 48, 32)), first_once, "the first layer is left alone");
     }
 
     #[test]
@@ -760,7 +760,7 @@ mod tests {
             // A white dot on black.
             s.edit("dot", |doc, active| {
                 let surf = doc.layer_mut(active.unwrap()).unwrap().surface_mut().unwrap();
-                surf.fill_rect(photocraft_geom::Rect::new(0, 0, 48, 32), &[0.0, 0.0, 0.0, 1.0]);
+                surf.fill_rect(redrob_photo_geom::Rect::new(0, 0, 48, 32), &[0.0, 0.0, 0.0, 1.0]);
                 surf.write_pixel(24, 16, &[1.0, 1.0, 1.0, 1.0]);
                 Ok(())
             })
@@ -789,17 +789,17 @@ mod tests {
 
     #[test]
     fn smart_object_records_smart_filter() {
-        use photocraft_doc::{Layer, SmartObject, SmartSource};
+        use redrob_photo_doc::{Layer, SmartObject, SmartSource};
         let mut s = session();
         s.edit("smart", |doc, active| {
-            let mut cache = photocraft_raster::Surface::new(doc.pixel_format());
-            cache.fill_rect(photocraft_geom::Rect::new(0, 0, 10, 10), &[1.0, 0.0, 0.0, 1.0]);
+            let mut cache = redrob_photo_raster::Surface::new(doc.pixel_format());
+            cache.fill_rect(redrob_photo_geom::Rect::new(0, 0, 10, 10), &[1.0, 0.0, 0.0, 1.0]);
             let l = Layer::new(
                 "so",
                 LayerContent::Smart(SmartObject {
-                    contents_id: photocraft_doc::SmartContentsId::fresh(),
+                    contents_id: redrob_photo_doc::SmartContentsId::fresh(),
                     source: SmartSource::Linked { path: String::new() },
-                    transform: photocraft_geom::Affine::IDENTITY,
+                    transform: redrob_photo_geom::Affine::IDENTITY,
                     smart_filters: vec![],
                     cache: Some(cache),
                     psd_raw: None,

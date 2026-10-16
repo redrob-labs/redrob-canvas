@@ -4,8 +4,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use egui::{Event, Pos2, Rect, Shape, vec2};
+use redrob_vector_engine::Session;
 use serde_json::json;
-use vectorcraft_engine::Session;
 
 use crate::{Services, VectorcraftApp};
 

@@ -6,8 +6,8 @@
 //! channel, Delete deletes it, and Load Channel as Selection loads it.
 
 use egui::{Align2, Color32, Rect, RichText, Sense, Stroke, StrokeKind, pos2, vec2};
-use photocraft_doc::ColorIndicates;
-use photocraft_engine::channel_cmds::{self, ChannelTarget};
+use redrob_photo_doc::ColorIndicates;
+use redrob_photo_engine::channel_cmds::{self, ChannelTarget};
 use serde_json::{Value, json};
 
 use crate::theme::{self, Tokens};
@@ -56,8 +56,8 @@ pub fn show(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let doc = st.doc.clone();
     let view = st.channel_view.clone();
     // ⌥-click mask view (#196): gray shows the mask alone (colour eyes off), overlay over the composite.
-    let mask_view = photocraft_engine::mask_view_cmds::current(st).map(|v| v.mode);
-    let gray_view = mask_view == Some(photocraft_engine::mask_view_cmds::MaskViewMode::Gray);
+    let mask_view = redrob_photo_engine::mask_view_cmds::current(st).map(|v| v.mode);
+    let gray_view = mask_view == Some(redrob_photo_engine::mask_view_cmds::MaskViewMode::Gray);
     let active_layer = st.active_layer;
     let mode = doc.pixel_format().mode;
     let colors = mode.color_channels();
@@ -72,7 +72,7 @@ pub fn show(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         && (view.target == ChannelTarget::Composite || view.target == ChannelTarget::LayerMask)
         && !quick;
     // Multichannel images are their ink channels only (no composite or colour rows).
-    let multichannel = doc.mode == photocraft_doc::ColorMode::Multichannel;
+    let multichannel = doc.mode == redrob_photo_doc::ColorMode::Multichannel;
     let mut rows = if multichannel { Vec::new() } else { vec![Row::Composite] };
     if colors > 1 && !multichannel {
         rows.extend((0..colors).map(Row::Color));
@@ -148,7 +148,7 @@ pub fn show(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             eye_resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, format!("Visibility {name}")));
             let layer_id = masked.as_ref().map(|l| l.id.0);
             if eye_resp.clicked() {
-                let view_cmd = photocraft_engine::mask_view_cmds::ID.to_string();
+                let view_cmd = redrob_photo_engine::mask_view_cmds::ID.to_string();
                 match row {
                     // The mask's eye: the overlay on, or the mask view off.
                     Row::LayerMask => actions.push((view_cmd, json!({ "layer": layer_id, "mode": if visible { "off" } else { "overlay" } }))),
@@ -472,7 +472,7 @@ mod tests {
 
     #[test]
     fn rename_field_interrupts_the_ime_only_when_it_takes_focus() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         app.run("channel.new", json!({})).unwrap();
         let ctx = egui::Context::default();
@@ -494,7 +494,7 @@ mod tests {
 
     #[test]
     fn channel_thumbs_honours_show_channels_in_color() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 16, "height": 16})).unwrap();
         let ctx = egui::Context::default();
         let thumbs_gray = app.channel_thumbs(&ctx);
@@ -509,7 +509,7 @@ mod tests {
     /// textures rather than new ones (#4518).
     #[test]
     fn channel_thumbs_skip_selection_steps_and_reuse_textures() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 64, "height": 48})).unwrap();
         let ctx = egui::Context::default();
         // Texture uploads one pass makes (new textures and updates both count).
@@ -536,7 +536,7 @@ mod tests {
     /// The Channels tab (the Layers card's second tab) of a 64×48 white document with a layer
     /// mask on "Masked" and one alpha channel.
     fn channels_harness() -> (egui_kittest::Harness<'static, PhotocraftApp>, u64) {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
         let masked = s.execute("layer.new.layer", json!({"name": "Masked"})).unwrap()["layer"].as_u64().unwrap();
         s.execute("layer.layerMask.revealAll", json!({"layer": masked})).unwrap();
@@ -612,7 +612,7 @@ mod tests {
         // Colour channels stay: Photoshop would turn the image into Multichannel.
         drag_to(&mut h, "Green", "Delete current channel");
         assert_eq!(alphas(&h), ["Alpha 1", "Red copy", "Masked Mask copy"]);
-        assert_eq!(h.state().session.active().unwrap().doc.mode, photocraft_doc::ColorMode::Rgb);
+        assert_eq!(h.state().session.active().unwrap().doc.mode, redrob_photo_doc::ColorMode::Rgb);
 
         assert!(h.state().session.active().unwrap().doc.selection.is_none());
         drag_to(&mut h, "Red copy", "Load channel as selection");
@@ -710,6 +710,6 @@ mod tests {
         drag_to(&mut h, "Masked Mask", "Delete current channel");
         assert!(h.state().ui.dialogs.iter().any(|d| crate::mask_trash_prompt::owns(&d.fields)), "the prompt is open");
         let st = h.state().session.active().unwrap();
-        assert!(st.doc.layer(photocraft_doc::LayerId(masked)).unwrap().mask.is_some(), "nothing deleted yet");
+        assert!(st.doc.layer(redrob_photo_doc::LayerId(masked)).unwrap().mask.is_some(), "nothing deleted yet");
     }
 }

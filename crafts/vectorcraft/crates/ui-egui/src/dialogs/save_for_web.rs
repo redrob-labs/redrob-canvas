@@ -16,13 +16,13 @@
 
 use std::sync::Arc;
 
-use serde_json::{Map, Value, json};
-use vectorcraft_engine::cmd::webexport::{
+use redrob_vector_engine::cmd::webexport::{
     self, SPEEDS, SliceScope, TableColor, WebFormat, WebMetadata, WebOutput, WebRender, WebSettings, download_seconds, hex,
 };
-use vectorcraft_render::AntiAlias;
-use vectorcraft_render::encode::quantize::{Dither, Reduction};
-use vectorcraft_render::encode::web::ColorSort;
+use redrob_vector_render::AntiAlias;
+use redrob_vector_render::encode::quantize::{Dither, Reduction};
+use redrob_vector_render::encode::web::ColorSort;
+use serde_json::{Map, Value, json};
 
 use super::png_options::color_button;
 use super::{DialogSpec, form};
@@ -141,7 +141,7 @@ pub(crate) fn save(app: &mut VectorcraftApp, mut p: Value) -> Result<Value, Stri
         let mut names = vec![];
         for f in r["files"].as_array().into_iter().flatten() {
             let (Some(name), Some(data)) = (f["name"].as_str(), f["dataBase64"].as_str()) else { continue };
-            let bytes = vectorcraft_format::base64_decode(data).ok_or("the export returned unreadable data")?;
+            let bytes = redrob_vector_format::base64_decode(data).ok_or("the export returned unreadable data")?;
             io::write_to(&mut app.services, name, &bytes)?;
             names.push(json!(name));
         }
@@ -165,7 +165,7 @@ pub(crate) fn browser_preview(app: &mut VectorcraftApp, p: &Value) -> Result<Val
     if io::is_web(app) {
         return Err("Preview in Browser needs the desktop app (the web downloads files instead)".into());
     }
-    let stem = app.session.active().map(|st| vectorcraft_engine::cmd::fileio::file_stem(&st.doc.title)).ok_or("no document")?;
+    let stem = app.session.active().map(|st| redrob_vector_engine::cmd::fileio::file_stem(&st.doc.title)).ok_or("no document")?;
     let dir = temp_folder()?;
     let path = format!("{dir}/{}.html", if stem.trim().is_empty() { "Untitled" } else { stem.as_str() });
     let mut q = if p.is_object() { p.clone() } else { json!({}) };
@@ -279,7 +279,7 @@ fn previews(app: &VectorcraftApp, ctx: &egui::Context, s: &WebSettings, panes: &
     (original, shots)
 }
 
-fn optimise(ctx: &egui::Context, doc: &vectorcraft_doc::Document, r: &WebRender, s: &WebSettings, pane: usize) -> Result<Shot, String> {
+fn optimise(ctx: &egui::Context, doc: &redrob_vector_doc::Document, r: &WebRender, s: &WebSettings, pane: usize) -> Result<Shot, String> {
     let o = webexport::preview_image(doc, &r.rgba, r.width, r.height, s)?;
     let (px, w, h) = webexport::decode(&o)?;
     Ok(Shot {
@@ -728,7 +728,7 @@ fn color_table(ui: &mut egui::Ui, d: &mut Dialog, s: Option<&WebSettings>) {
         if c.locked {
             p.rect_filled(egui::Rect::from_min_size(r.right_bottom() - egui::vec2(5.0, 5.0), egui::vec2(4.0, 4.0)), 0.0, mark);
         }
-        if !c.transparent && vectorcraft_render::encode::quantize::web_safe(c.color) == c.color {
+        if !c.transparent && redrob_vector_render::encode::quantize::web_safe(c.color) == c.color {
             let m = r.center();
             p.add(egui::Shape::convex_polygon(
                 vec![m + egui::vec2(0.0, -2.5), m + egui::vec2(2.5, 0.0), m + egui::vec2(0.0, 2.5), m + egui::vec2(-2.5, 0.0)],
@@ -802,7 +802,7 @@ fn image_size(app: &VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog, s: Option
     widgets::subheader(ui, tl!("Image Size"));
     let Some(st) = app.session.active() else { return };
     let region = s.and_then(|s| webexport::region(&st.doc, s).ok());
-    let (w, h) = region.map_or((0, 0), |(r, scale)| vectorcraft_render::region_pixels(r, scale));
+    let (w, h) = region.map_or((0, 0), |(r, scale)| redrob_vector_render::region_pixels(r, scale));
     let set = |d: &mut Dialog, key: &str, v: Value| {
         for k in ["width", "height", "percent"] {
             d.fields.insert(k.into(), Value::Null);

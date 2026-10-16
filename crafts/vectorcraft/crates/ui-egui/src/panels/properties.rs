@@ -1,9 +1,9 @@
 //! The Properties panel: context-sensitive sections like Illustrator's.
 
 use egui::Ui;
+use redrob_vector_doc::{LiveShape, NodeKind, Unit};
+use redrob_vector_engine::cmd::newdoc;
 use serde_json::json;
-use vectorcraft_doc::{LiveShape, NodeKind, Unit};
-use vectorcraft_engine::cmd::newdoc;
 
 use super::{corner_radius_row, first_selected, pstate, set_pstate};
 use crate::theme::Tokens;
@@ -160,7 +160,7 @@ fn image_section(app: &mut VectorcraftApp, ui: &mut Ui) {
 
 /// The one selected Image Trace object: its preset (choosing another traces it again with that
 /// one), view, Expand and Release.
-fn trace_section(app: &mut VectorcraftApp, ui: &mut Ui, preset: &str, view: vectorcraft_doc::TraceView) {
+fn trace_section(app: &mut VectorcraftApp, ui: &mut Ui, preset: &str, view: redrob_vector_doc::TraceView) {
     section_header(ui, tl!("Image Trace"));
     ui.horizontal(|ui| {
         dim_label(ui, tl!("Preset:"));
@@ -473,9 +473,9 @@ pub fn transform_section(app: &mut VectorcraftApp, ui: &mut Ui) {
         && let NodeKind::Path { live: Some(live), .. } = &n.kind
     {
         match &**live {
-            vectorcraft_doc::LiveShape::Rectangle { .. } => corner_radius_row(app, ui, &n, "radius"),
-            vectorcraft_doc::LiveShape::Polygon { .. } => super::transform::polygon_rows(app, ui, &n, live, "props-polygon"),
-            vectorcraft_doc::LiveShape::Ellipse { pie, .. } => super::transform::pie_rows(app, ui, *pie, "props-pie"),
+            redrob_vector_doc::LiveShape::Rectangle { .. } => corner_radius_row(app, ui, &n, "radius"),
+            redrob_vector_doc::LiveShape::Polygon { .. } => super::transform::polygon_rows(app, ui, &n, live, "props-polygon"),
+            redrob_vector_doc::LiveShape::Ellipse { pie, .. } => super::transform::pie_rows(app, ui, *pie, "props-pie"),
             _ => {}
         }
     }
@@ -557,7 +557,7 @@ pub fn type_sections(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use egui::{Event, PointerButton, Pos2, Rect, vec2};
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
 
@@ -643,9 +643,9 @@ mod tests {
         let texts = frame(&mut app, &ctx, vec![]);
         assert!(has(&texts, "Draw:") && has(&texts, "Points") && has(&texts, "Lines"), "{texts:?}");
         click(&mut app, &ctx, &texts, "Lines");
-        let fill = app.session.doc().unwrap().doc.node(vectorcraft_doc::NodeId(id)).unwrap().appearance.fill_paint();
-        let vectorcraft_color::Paint::Gradient(g) = fill else { panic!("{fill:?}") };
-        assert_eq!(super::super::gradient::shown_points(&g).mode, vectorcraft_color::FreeformMode::Lines);
+        let fill = app.session.doc().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().appearance.fill_paint();
+        let redrob_vector_color::Paint::Gradient(g) = fill else { panic!("{fill:?}") };
+        assert_eq!(super::super::gradient::shown_points(&g).mode, redrob_vector_color::FreeformMode::Lines);
     }
 
     /// #696: the number fields are all as wide: the Transform fields, the rotation, the corner
@@ -767,11 +767,11 @@ mod tests {
                 );
                 let d = &app.session.doc().unwrap().doc;
                 assert_eq!(d.artboards[0].rect.x0, 1.0, "the focused X field steps its position");
-                assert_eq!(d.node(vectorcraft_doc::NodeId(id)).unwrap().geometric_bounds().unwrap().x0, if move_art { 11.0 } else { 10.0 });
+                assert_eq!(d.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap().x0, if move_art { 11.0 } else { 10.0 });
                 app.run("edit.undo", json!({})).unwrap();
                 let d = &app.session.doc().unwrap().doc;
                 assert_eq!(d.artboards[0].rect.x0, 0.0);
-                assert_eq!(d.node(vectorcraft_doc::NodeId(id)).unwrap().geometric_bounds().unwrap().x0, 10.0);
+                assert_eq!(d.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap().x0, 10.0);
             }
         }
     }
@@ -1267,7 +1267,7 @@ mod tests {
         let d = &app.session.active().unwrap().doc;
         let ab = d.artboards[0].rect;
         assert_eq!((ab.width(), ab.height()), (100.0, 200.0));
-        let b = d.node(vectorcraft_doc::NodeId(r)).unwrap().geometric_bounds().unwrap();
+        let b = d.node(redrob_vector_doc::NodeId(r)).unwrap().geometric_bounds().unwrap();
         assert_eq!((b.x0, b.y0, b.width(), b.height()), (10.0, 40.0, 20.0, 80.0));
     }
 }

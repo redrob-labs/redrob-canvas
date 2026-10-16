@@ -15,8 +15,8 @@
 //! being edited), `decimals` (null: as typed), `width` (digits), `__graph` (the graph's id) and
 //! `__scatter`.
 
+use redrob_vector_doc::{MAX_GRAPH_CATEGORIES, MAX_GRAPH_SERIES};
 use serde_json::{Value, json};
-use vectorcraft_doc::{MAX_GRAPH_CATEGORIES, MAX_GRAPH_SERIES};
 
 use super::DialogSpec;
 use crate::state::Dialog;
@@ -53,7 +53,7 @@ pub fn open(app: &mut VectorcraftApp) -> Result<Value, String> {
     let v = app.session.execute("graph.setData", &json!({})).map_err(|e| e.to_string())?;
     let graph = app.session.active().and_then(|st| st.selection.objects.iter().find_map(|id| graph_of(&st.doc, *id)).map(|id| (st, id)));
     let scatter = graph.is_some_and(|(st, id)| {
-        st.doc.node(id).and_then(|n| n.extras().graph.as_deref()).is_some_and(|g| g.kind == vectorcraft_doc::GraphKind::Scatter)
+        st.doc.node(id).and_then(|n| n.extras().graph.as_deref()).is_some_and(|g| g.kind == redrob_vector_doc::GraphKind::Scatter)
     });
     let id = graph.map(|(_, id)| id.0);
     let grid = grid_from_data(&v);
@@ -66,7 +66,7 @@ pub fn open(app: &mut VectorcraftApp) -> Result<Value, String> {
 }
 
 /// The graph `id` belongs to (itself, or the graph its parts are in).
-fn graph_of(doc: &vectorcraft_doc::Document, id: vectorcraft_doc::NodeId) -> Option<vectorcraft_doc::NodeId> {
+fn graph_of(doc: &redrob_vector_doc::Document, id: redrob_vector_doc::NodeId) -> Option<redrob_vector_doc::NodeId> {
     let mut cur = Some(id);
     while let Some(c) = cur {
         if doc.node(c).is_some_and(|n| n.extras().graph.is_some()) {
@@ -470,7 +470,7 @@ mod tests {
     }
 
     fn app_with(csv: &str, ty: &str) -> (VectorcraftApp, u64) {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         let id =
             app.run("graph.create", json!({"type": ty, "x": 0, "y": 0, "width": 200, "height": 150, "csv": csv})).unwrap()["id"].as_u64().unwrap();
@@ -596,7 +596,7 @@ mod tests {
     #[test]
     fn a_full_size_sheet_draws_only_what_is_in_view() {
         let rows: Vec<Vec<f64>> = (0..MAX_GRAPH_CATEGORIES).map(|i| vec![i as f64; 256]).collect();
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.run("graph.create", json!({"type": "column", "x": 0, "y": 0, "width": 200, "height": 150, "rows": rows})).unwrap();
         open(&mut app).unwrap();

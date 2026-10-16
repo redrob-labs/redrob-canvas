@@ -3,8 +3,8 @@
 //! is a tool of its own, in the Pen's flyout.
 
 use egui::Modifiers;
-use photocraft_doc::vector::Path;
-use photocraft_geom::Point;
+use redrob_photo_doc::vector::Path;
+use redrob_photo_geom::Point;
 use serde_json::json;
 
 use super::{Drag, PathRef};
@@ -13,7 +13,7 @@ use crate::canvas::{ToolEvent, tool_event};
 use crate::state::Tool;
 
 fn app(tool: Tool) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", json!({"width": 200, "height": 200})).unwrap();
     app.sync_views();
     app.ui.tool = tool;
@@ -204,7 +204,7 @@ fn pen_with_alt_converts_points() {
     let mut app = app(Tool::Pen);
     with_path(&mut app);
     click(&mut app, [120.0, 40.0], Modifiers::ALT);
-    assert_eq!(work(&app).subpaths[0].knots[1], photocraft_doc::Knot::corner(120.0, 40.0), "⌥-click makes a corner");
+    assert_eq!(work(&app).subpaths[0].knots[1], redrob_photo_doc::Knot::corner(120.0, 40.0), "⌥-click makes a corner");
     drag(&mut app, [40.0, 120.0], [40.0, 140.0], Modifiers::ALT);
     let k = work(&app).subpaths[0].knots[3];
     assert_eq!((k.in_ctrl, k.out_ctrl, k.smooth), (Point::new(40.0, 100.0), Point::new(40.0, 140.0), true), "⌥-drag pulls out smooth handles");
@@ -232,7 +232,7 @@ fn the_convert_point_tool_converts_points_without_a_modifier() {
     with_path(&mut app);
     let n = steps(&app);
     click(&mut app, [120.0, 40.0], Modifiers::NONE);
-    assert_eq!(work(&app).subpaths[0].knots[1], photocraft_doc::Knot::corner(120.0, 40.0), "a click makes a corner");
+    assert_eq!(work(&app).subpaths[0].knots[1], redrob_photo_doc::Knot::corner(120.0, 40.0), "a click makes a corner");
     assert_eq!(steps(&app), n + 1);
     assert_eq!(app.ui.direct_selection.anchors, vec![[0, 1]], "the converted anchor is selected");
     drag(&mut app, [40.0, 120.0], [40.0, 140.0], Modifiers::NONE);
@@ -399,7 +399,7 @@ fn a_closed_curvature_pen_path_stays_editable_with_the_curvature_pen() {
     assert_eq!((work(&app).subpaths.len(), steps(&app)), (1, n + 1));
     // The whole loop reflows through the moved anchor, as the Curvature Pen drew it.
     let pts = [[40.0, 40.0], [160.0, 40.0], [100.0, 180.0]];
-    let want = photocraft_vector::edit::curvature_knots(&pts, &[false; 3], true);
+    let want = redrob_photo_vector::edit::curvature_knots(&pts, &[false; 3], true);
     for (k, w) in work(&app).subpaths[0].knots.iter().zip(want) {
         assert_eq!([[k.anchor.x, k.anchor.y], [k.in_ctrl.x, k.in_ctrl.y], [k.out_ctrl.x, k.out_ctrl.y]], w);
     }

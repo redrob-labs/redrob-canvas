@@ -15,11 +15,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, SyncSender, TryRecvError};
 
-use photocraft_doc::{DocId, Document};
-use photocraft_engine::display_color::CanvasDisplay;
-use photocraft_geom::Rect;
 #[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
+use redrob_photo_doc::{DocId, Document};
+use redrob_photo_engine::display_color::CanvasDisplay;
+use redrob_photo_geom::Rect;
 
 use crate::PhotocraftApp;
 use crate::gpu_canvas::GpuCanvas;
@@ -236,7 +236,7 @@ fn draw(
         #[cfg(target_arch = "wasm32")]
         let batch = batch.iter();
         let pieces: Vec<Piece> = batch
-            .map(|&block| Piece { block, texels: crate::gpu_canvas::display_texels(format, display, &photocraft_compose::render(doc, blocks[block])) })
+            .map(|&block| Piece { block, texels: crate::gpu_canvas::display_texels(format, display, &redrob_photo_compose::render(doc, blocks[block])) })
             .collect();
         for p in pieces {
             if stop.load(Ordering::Relaxed) || tx.send(p).is_err() {

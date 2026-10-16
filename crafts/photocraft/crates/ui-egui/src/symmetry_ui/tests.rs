@@ -4,7 +4,7 @@ use egui_kittest::{
     Harness,
     kittest::{NodeT, Queryable},
 };
-use photocraft_engine::Session;
+use redrob_photo_engine::Session;
 
 fn app() -> PhotocraftApp {
     let mut app = PhotocraftApp::new(Session::new(), crate::Services::default());

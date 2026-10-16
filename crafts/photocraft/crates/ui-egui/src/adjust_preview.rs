@@ -37,9 +37,9 @@
 
 use std::sync::Arc;
 
-use photocraft_color::ColorMode;
-use photocraft_doc::{Adjustment, DocId, Document, Layer, LayerContent, LayerId, LayerMask};
-use photocraft_geom::Rect;
+use redrob_photo_color::ColorMode;
+use redrob_photo_doc::{Adjustment, DocId, Document, Layer, LayerContent, LayerId, LayerMask};
+use redrob_photo_geom::Rect;
 use serde_json::Value;
 
 use crate::PhotocraftApp;
@@ -64,7 +64,7 @@ pub fn unsupported(doc: &Document, target: LayerId) -> Option<&'static str> {
     if l.clipped {
         return Some("the target is clipped");
     }
-    if photocraft_compose::blend_if_active(l, doc.mode) {
+    if redrob_photo_compose::blend_if_active(l, doc.mode) {
         return Some(tl!("Blend If"));
     }
     let shows_default = !s.format().alpha || s.default_pixel().last().is_some_and(|a| *a > 0.0);
@@ -115,7 +115,7 @@ pub fn with_settings(base: &Document, kind: &str, params: &Value) -> Result<Docu
 }
 
 fn set_adjustment(base: &Document, layer: LayerId, kind: &str, params: &Value) -> Result<Document, String> {
-    let adj = photocraft_engine::adjust_params::from_params(kind, params, None, base.mode).map_err(|e| e.to_string())?;
+    let adj = redrob_photo_engine::adjust_params::from_params(kind, params, None, base.mode).map_err(|e| e.to_string())?;
     if base.mode == ColorMode::Grayscale && !keeps_gray(&adj) {
         return Err("colour result in a grayscale document".into());
     }
@@ -221,7 +221,7 @@ fn update(app: &mut PhotocraftApp, idx: usize) -> Option<&AdjustPreview> {
     let (doc_id, revision, target) = (st.doc.id, st.revision, st.active_layer?);
     // Commands that target a channel (Channels panel / Quick Mask) or a layer mask keep the proxy
     // preview.
-    let channel_target = st.channel_view.target != photocraft_engine::channel_cmds::ChannelTarget::Composite
+    let channel_target = st.channel_view.target != redrob_photo_engine::channel_cmds::ChannelTarget::Composite
         || st.doc.quick_mask.is_some()
         || !app.with_mask_target(&format!("image.adjustments.{kind}"), Value::Null).is_null();
     let session = hash(&[&doc_id.0.to_le_bytes(), &revision.to_le_bytes(), &target.0.to_le_bytes(), &[u8::from(channel_target)]]);
@@ -361,8 +361,8 @@ pub fn proxy_factor(zoom: f32) -> u32 {
 /// A [`base_document`] scaled down by `k` with its own document and layer ids (so the GPU keeps
 /// its textures beside the full-size document's).
 pub fn proxy_base(base: &Document, k: u32) -> Document {
-    let mut d = photocraft_compose::proxy::proxy_document(base, k);
-    d.id = photocraft_doc::DocId(base.id.0 ^ PROXY_DOC_BIT);
+    let mut d = redrob_photo_compose::proxy::proxy_document(base, k);
+    d.id = redrob_photo_doc::DocId(base.id.0 ^ PROXY_DOC_BIT);
     flip_ids(&mut d.layers);
     d
 }
@@ -396,7 +396,7 @@ pub fn gpu_proxy(app: &mut PhotocraftApp, idx: usize, zoom: f32) -> Option<Proxy
     p.shown.as_ref()?;
     let base = p.base.clone()?;
     let k = proxy_factor(zoom);
-    if k < 2 || base.size.area() <= PROXY_MIN_PIXELS || !photocraft_compose::proxy::proxy_faithful(&base) {
+    if k < 2 || base.size.area() <= PROXY_MIN_PIXELS || !redrob_photo_compose::proxy::proxy_faithful(&base) {
         return None;
     }
     if p.proxy.as_ref().is_none_or(|g| g.k != k) {

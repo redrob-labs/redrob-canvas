@@ -7,8 +7,8 @@
 use std::sync::Arc;
 
 use egui::{Color32, Rect, Sense, vec2};
-use photocraft_doc::adjust::ToneSpace;
-use photocraft_doc::{Document, Layer, LayerId};
+use redrob_photo_doc::adjust::ToneSpace;
+use redrob_photo_doc::{Document, Layer, LayerId};
 
 use crate::PhotocraftApp;
 use crate::theme::Tokens;
@@ -42,7 +42,7 @@ pub enum HistSource {
     Layer(LayerId),
     /// The gray plane a Curves target edits: a layer mask, a saved channel or the Quick Mask.
     /// The dialog shows this plane's own levels, not the colour layers beneath (#5335).
-    Channel { layer: LayerId, surface: photocraft_engine::channel_cmds::GraySurface },
+    Channel { layer: LayerId, surface: redrob_photo_engine::channel_cmds::GraySurface },
 }
 
 fn tag(source: HistSource, space: ToneSpace) -> u64 {
@@ -50,9 +50,9 @@ fn tag(source: HistSource, space: ToneSpace) -> u64 {
         HistSource::BelowLayer(l) => (1u64, l.0),
         HistSource::Layer(l) => (2, l.0),
         HistSource::Channel { layer, surface } => match surface {
-            photocraft_engine::channel_cmds::GraySurface::LayerMask => (3, layer.0),
-            photocraft_engine::channel_cmds::GraySurface::Alpha(i) => (4, i as u64),
-            photocraft_engine::channel_cmds::GraySurface::QuickMask => (5, layer.0),
+            redrob_photo_engine::channel_cmds::GraySurface::LayerMask => (3, layer.0),
+            redrob_photo_engine::channel_cmds::GraySurface::Alpha(i) => (4, i as u64),
+            redrob_photo_engine::channel_cmds::GraySurface::QuickMask => (5, layer.0),
         },
     };
     let s = match space {
@@ -89,9 +89,9 @@ pub fn compute_histograms(doc: &Document, source: HistSource, space: ToneSpace) 
         // colour mode (#5335).
         HistSource::Channel { layer, surface } => {
             let surf = match surface {
-                photocraft_engine::channel_cmds::GraySurface::LayerMask => doc.layer(layer).and_then(|l| l.mask.as_ref()).map(|m| &m.surface),
-                photocraft_engine::channel_cmds::GraySurface::Alpha(i) => doc.channels.get(i).map(|c| &c.surface),
-                photocraft_engine::channel_cmds::GraySurface::QuickMask => doc.quick_mask.as_ref().map(|c| &c.surface),
+                redrob_photo_engine::channel_cmds::GraySurface::LayerMask => doc.layer(layer).and_then(|l| l.mask.as_ref()).map(|m| &m.surface),
+                redrob_photo_engine::channel_cmds::GraySurface::Alpha(i) => doc.channels.get(i).map(|c| &c.surface),
+                redrob_photo_engine::channel_cmds::GraySurface::QuickMask => doc.quick_mask.as_ref().map(|c| &c.surface),
             };
             if let Some(s) = surf
                 && let Some(bin) = h.first_mut()
@@ -120,7 +120,7 @@ fn composite_bins(doc: &Document, source: HistSource, space: ToneSpace, h: &mut 
         }
         HistSource::Channel { .. } => {}
     }
-    let img = photocraft_compose::thumbnail(&d, 384);
+    let img = redrob_photo_compose::thumbnail(&d, 384);
     let bin = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as usize;
     for p in img.pixels.as_chunks::<4>().0 {
         if p[3] == 0 {
@@ -135,7 +135,7 @@ fn composite_bins(doc: &Document, source: HistSource, space: ToneSpace, h: &mut 
             }
             ToneSpace::Cmyk => {
                 let rgb = [p[0], p[1], p[2]].map(|v| f32::from(v) / 255.0);
-                let ink = photocraft_color::convert::rgb_to_cmyk(rgb);
+                let ink = redrob_photo_color::convert::rgb_to_cmyk(rgb);
                 for (c, v) in ink.iter().enumerate() {
                     h[c + 1][bin(1.0 - v)] += 1;
                 }
@@ -143,7 +143,7 @@ fn composite_bins(doc: &Document, source: HistSource, space: ToneSpace, h: &mut 
             }
             ToneSpace::Lab => {
                 let rgb = [p[0], p[1], p[2]].map(|v| f32::from(v) / 255.0);
-                let l = photocraft_color::convert::srgb_to_lab(rgb);
+                let l = redrob_photo_color::convert::srgb_to_lab(rgb);
                 h[0][bin(l[0] / 100.0)] += 1;
                 h[1][bin((l[1] + 128.0) / 255.0)] += 1;
                 h[2][bin((l[2] + 128.0) / 255.0)] += 1;
@@ -154,7 +154,7 @@ fn composite_bins(doc: &Document, source: HistSource, space: ToneSpace, h: &mut 
 
 /// 256-bin histogram of a gray plane: its levels in 0–255, sampled like the engine's auto-tone
 /// histograms so a big canvas costs no more than about a megapixel here (#5335).
-fn gray_bins(surf: &photocraft_raster::Surface, area: photocraft_geom::Rect) -> [u32; 256] {
+fn gray_bins(surf: &redrob_photo_raster::Surface, area: redrob_photo_geom::Rect) -> [u32; 256] {
     let mut h = [0u32; 256];
     let step = ((u64::from(area.width()) * u64::from(area.height())) / 1_000_000).max(1).isqrt().max(1) as i32;
     let mut y = area.y0;
@@ -201,7 +201,7 @@ pub fn histograms(app: &mut PhotocraftApp, source: HistSource, space: ToneSpace)
 
 /// Whether the latest revision changed no pixels (selecting a layer, say): cached histograms of
 /// the previous revision still hold (#125).
-fn view_only(st: &photocraft_engine::DocState) -> bool {
+fn view_only(st: &redrob_photo_engine::DocState) -> bool {
     st.last_damage.is_some_and(|r| r.is_empty())
 }
 
@@ -345,7 +345,7 @@ pub fn histogram_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         }
     }
     let Some((_, _, _, h)) = app.doc_hist.clone() else { return };
-    let size = app.session.active().map_or(photocraft_doc::Size::new(0, 0), |s| s.doc.size);
+    let size = app.session.active().map_or(redrob_photo_doc::Size::new(0, 0), |s| s.doc.size);
     // Statistics come from a downsampled cache (like Photoshop's cache levels).
     let level = (size.width.max(size.height) as f32 / 384.0).max(1.0).log2().ceil() as u32 + 1;
     let ch = channel_picker(ui, egui::Id::new("histogram-panel-ch"), "Channel:");
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn histogram_ignores_the_edited_adjustment() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 64, "height": 64})).unwrap(); // white
         s.execute("layer.newAdjustmentLayer.invert", json!({})).unwrap();
         let st = s.active().unwrap();
@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     fn layer_histogram_sees_only_that_layer_and_spaces_have_their_channels() {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 32, "height": 32})).unwrap(); // white background
         let bg = s.active().unwrap().doc.layers[0].id;
         s.execute("layer.new.layer", json!({})).unwrap();
@@ -423,15 +423,15 @@ mod tests {
     /// spike at 25% grey, not at black.
     #[test]
     fn channel_histogram_describes_the_gray_plane() {
-        use photocraft_engine::channel_cmds::GraySurface;
-        let mut s = photocraft_engine::Session::new();
+        use redrob_photo_engine::channel_cmds::GraySurface;
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 32, "height": 32})).unwrap(); // white background
         s.execute("layer.new.layer", json!({})).unwrap();
         s.execute("select.rect", json!({"x": 0, "y": 0, "width": 32, "height": 32})).unwrap();
         s.execute("edit.fill", json!({"color": "#000000"})).unwrap();
         s.execute("channel.new", json!({"name": "Sky sel", "fill": "white"})).unwrap();
         s.execute("layer.layerMask.revealAll", json!({})).unwrap();
-        let b = photocraft_geom::Rect::from_xywh(0, 0, 32, 32);
+        let b = redrob_photo_geom::Rect::from_xywh(0, 0, 32, 32);
         s.edit("fill-planes", |doc, active| {
             doc.channels[0].surface.fill_rect(b, &[0.25]);
             doc.layer_mut(active.unwrap()).unwrap().mask.as_mut().unwrap().surface.fill_rect(b, &[0.0]);
@@ -465,7 +465,7 @@ mod hist_async_tests {
     /// frame), the receiver delivers, and a stale result cannot overwrite a newer revision.
     #[test]
     fn panel_histogram_is_computed_off_the_ui_thread() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         let _ = &ctx;
         app.run("file.new", json!({"width": 640, "height": 480})).unwrap();
@@ -506,7 +506,7 @@ mod hist_async_tests {
     /// frame schedules a new one instead of waiting forever.
     #[test]
     fn a_dead_histogram_worker_clears_the_job() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 64, "height": 48})).unwrap();
         let (doc_id, rev) = {
             let st = app.session.active().unwrap();

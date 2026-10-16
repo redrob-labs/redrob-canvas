@@ -772,7 +772,7 @@ mod tests {
     use serde_json::json;
 
     fn app(doc: bool) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         if doc {
             app.run("file.new", json!({"width": 64, "height": 48})).unwrap();
             app.sync_views();
@@ -873,7 +873,7 @@ mod tests {
         assert_eq!(l.bar.find("window.theme.system").unwrap().checked, Some(false));
         let window = ids(&l.bar.menu(MenuRole::Window).unwrap().children);
         assert!(!window.iter().any(|id| id.starts_with("window.theme.") || id == "[Theme]"), "{window:?}");
-        a.session.prefs.edit(|p| p.interface.appearance_mode = photocraft_engine::prefs::AppearanceMode::Auto);
+        a.session.prefs.edit(|p| p.interface.appearance_mode = redrob_photo_engine::prefs::AppearanceMode::Auto);
         for palette in [crate::theme::ThemeKind::Classic, crate::theme::ThemeKind::ProMedium] {
             a.ui.theme = palette;
             let automatic = photocraft_layout(&crate::menus::menu_items(&a), Lang::EN, "auto");
@@ -1128,7 +1128,8 @@ mod tests {
             let synced = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
             let mut app = app(true);
             let ctx = egui::Context::default();
-            let id = photocraft_doc::LayerId(app.run("type.create", json!({"text": "Hello", "size": 12, "x": 4, "y": 24})).unwrap()["layer"].as_u64().unwrap());
+            let id =
+                redrob_photo_doc::LayerId(app.run("type.create", json!({"text": "Hello", "size": 12, "x": 4, "y": 24})).unwrap()["layer"].as_u64().unwrap());
             crate::menus::invoke(&mut app, &ctx, "type.editText", json!({})).unwrap();
             let edit = app.ui.text_edit.as_ref().unwrap();
             assert_eq!((edit.anchor, edit.caret), (0, 5));
@@ -1149,7 +1150,7 @@ mod tests {
             });
             out.textures_delta.clear();
             assert_eq!(out.platform_output.commands, [egui::OutputCommand::CopyText("Hello".into())]);
-            let photocraft_doc::LayerContent::Text(text) = &app.session.active().unwrap().doc.layer(id).unwrap().content else {
+            let redrob_photo_doc::LayerContent::Text(text) = &app.session.active().unwrap().doc.layer(id).unwrap().content else {
                 panic!("type layer changed kind")
             };
             assert!(text.text.is_empty());
@@ -1166,7 +1167,7 @@ mod tests {
         let synced = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
         let mut app = app(true);
         let ctx = egui::Context::default();
-        let id = photocraft_doc::LayerId(app.run("type.create", json!({"text": "Hello", "size": 12, "x": 4, "y": 24})).unwrap()["layer"].as_u64().unwrap());
+        let id = redrob_photo_doc::LayerId(app.run("type.create", json!({"text": "Hello", "size": 12, "x": 4, "y": 24})).unwrap()["layer"].as_u64().unwrap());
         crate::menus::invoke(&mut app, &ctx, "type.editText", json!({})).unwrap();
         if let Some(e) = app.ui.text_edit.as_mut() {
             (e.anchor, e.caret) = (5, 5);
@@ -1184,7 +1185,7 @@ mod tests {
             out
         };
         let text = |app: &PhotocraftApp| match &app.session.active().unwrap().doc.layer(id).unwrap().content {
-            photocraft_doc::LayerContent::Text(t) => t.text.clone(),
+            redrob_photo_doc::LayerContent::Text(t) => t.text.clone(),
             _ => panic!("type layer changed kind"),
         };
 

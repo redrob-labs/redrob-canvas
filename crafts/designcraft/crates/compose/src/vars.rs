@@ -4,8 +4,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use designcraft_doc::vars::{Use, VarKind, var_index};
-use designcraft_doc::{Document, SpreadRef, Story, StoryId};
+use redrob_layout_doc::vars::{Use, VarKind, var_index};
+use redrob_layout_doc::{Document, SpreadRef, Story, StoryId};
 
 use crate::ComposedStory;
 

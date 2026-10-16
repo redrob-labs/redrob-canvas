@@ -46,13 +46,13 @@ What each mode opens and saves comes from its editor. The short list:
 
 | Mode | Open | Save / export |
 | --- | --- | --- |
-| Photo | PSD, PSB, `.pcraft`, ORA, KRA, layered TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC (read), camera RAW, Affinity (read) | `.pcraft`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF (optional feature) |
-| Vector | `.vectorcraft`, SVG, SVGZ, AI (PDF-compatible), EPS, PDF, DXF, EMF/WMF, raster images, PSD/PSB as merged image | `.vectorcraft`, SVG, PDF (with PDF/X), AI, EPS, DXF, PNG, JPEG, WebP, PSD, Print, Package |
-| Layout | `.designcraft`, IDML, images, PDFs and vectors as placed assets | `.designcraft`, PDF (PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
+| Photo | PSD, PSB, `.rphoto`, ORA, KRA, layered TIFF, PDN, SVG, PNG, JPEG, TIFF, WebP, GIF, BMP, OpenEXR, HDR, HEIF/HEIC (read), camera RAW, Affinity (read) | `.rphoto`, PSD, PSB, ORA, TIFF, PNG, JPEG, WebP, GIF, BMP, OpenEXR, AVIF (optional feature) |
+| Vector | `.rvector`, SVG, SVGZ, AI (PDF-compatible), EPS, PDF, DXF, EMF/WMF, raster images, PSD/PSB as merged image | `.rvector`, SVG, PDF (with PDF/X), AI, EPS, DXF, PNG, JPEG, WebP, PSD, Print, Package |
+| Layout | `.rlayout`, IDML, images, PDFs and vectors as placed assets | `.rlayout`, PDF (PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
 
-The authoritative tables are the editors' own: `crafts/photocraft/crates/codecs/README.md`,
-`crafts/vectorcraft/README.md` and `crafts/designcraft/README.md`. `docs/formats.md` says how the
-shell routes a file to a mode.
+`docs/formats.md` says how the shell routes a file to a mode, where each editor's format tables
+live in the code, and which upstream extensions (`.pcraft`, `.vectorcraft`, `.designcraft`) still
+open.
 
 ## Build
 
@@ -65,16 +65,18 @@ cargo build --release -p redrob-canvas
 target/release/redrob-canvas
 ```
 
-The gates every pull request must pass, in the order CI runs them (`.github/workflows/verify-upstream.yml`):
+The gates every pull request must pass, as CI runs them (`.github/workflows/ci.yml`: the `checks`
+job, then `rust` over our crates only with `--profile ci`):
 
 ```bash
 scripts/verify-upstream.sh
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
+python3 scripts/check_upstream_ids.py
 cargo fetch --locked && python3 tools/generate_distribution_artifacts.py --check
 python3 tools/check_design_system.py
 python3 -m unittest discover -s tools/tests -p "test_*.py"
+cargo fmt --all -- --check
+cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked --profile ci -- -D warnings
+cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 ```
 
 There is no Qt, CMake or Node anywhere in the build. The root `Cargo.toml` is **generated** by
@@ -106,8 +108,8 @@ not fork any editor's internals, so upstream improvements arrive by merge.
 
 The four vendored editors are MIT OR Apache-2.0 and keep their authors' copyright: their licence and
 NOTICE files stay intact under `crafts/<name>/` and are reproduced in [NOTICE](NOTICE) and
-[COPYRIGHT](COPYRIGHT). Their original names and logos under `crafts/*/docs/brand/` are trademarks of
-their authors, not open source, and are not used here.
+[COPYRIGHT](COPYRIGHT). Their original names and logos are trademarks of their authors, not open
+source, and are not used or shipped here (their `docs/` are removed from the tree after every pull).
 
 ## Roadmap
 

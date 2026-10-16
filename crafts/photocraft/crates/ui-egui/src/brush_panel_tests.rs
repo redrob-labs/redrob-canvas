@@ -1,11 +1,11 @@
 use egui::vec2;
 use egui_kittest::Harness;
-use photocraft_engine::paint::{Control, GrayTile, MaskMode, Pattern, PatternStyle, TipShape};
+use redrob_photo_engine::paint::{Control, GrayTile, MaskMode, Pattern, PatternStyle, TipShape};
 
 use super::*;
 
 fn app() -> PhotocraftApp {
-    PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+    PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
 }
 
 fn last_journal(app: &PhotocraftApp) -> Option<(String, Value)> {
@@ -147,7 +147,7 @@ fn every_section_round_trips_through_set_brush() {
         let got = app.session.execute("brush.get", json!({})).unwrap();
         assert_eq!(serde_json::from_value::<BrushSettings>(got).unwrap(), after, "section {i}");
         // Replaying the journaled call onto a fresh session gives the same brush (drivable).
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute(&id, p).unwrap();
         assert_eq!(s.tools.brush, after, "replay of section {i}");
     }
@@ -324,7 +324,7 @@ fn clone_stamp_opacity_and_flow_are_journaled_per_gesture() {
     let params = crate::retouch_ui::clone_params(h.state()).unwrap();
     assert_eq!(params["opacity"], json!(h.state().session.tools.brush.opacity * 100.0));
     assert_eq!(params["flow"], json!(h.state().session.tools.brush.flow * 100.0));
-    let mut replay = photocraft_engine::Session::new();
+    let mut replay = redrob_photo_engine::Session::new();
     for (id, params) in &h.state().session.journal {
         replay.execute(id, params.clone()).unwrap();
     }
@@ -372,7 +372,7 @@ fn options_bar_edits_are_one_set_brush_per_gesture() {
     assert_eq!(h.state().session.journal.len(), n + 2);
     assert_eq!(h.state().session.journal.last().unwrap().1["brush"], json!({"pressureSize": !was}));
     // Replaying the journal gives the same brush.
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     for (id, p) in &h.state().session.journal {
         s.execute(id, p.clone()).unwrap();
     }
@@ -393,7 +393,7 @@ fn brush_mode_dropdown_shows_outside_the_pro_themes() {
     h.run();
     h.key_press(egui::Key::ArrowDown);
     h.run_steps(3);
-    assert_eq!(h.state().session.tools.brush.mode, photocraft_doc::BlendMode::Dissolve);
+    assert_eq!(h.state().session.tools.brush.mode, redrob_photo_doc::BlendMode::Dissolve);
     let j = &h.state().session.journal;
     assert_eq!(j.len(), n + 1, "{:?}", &j[n..]);
     assert_eq!(j[n].0, "tools.setBrush");
@@ -517,7 +517,7 @@ fn drop_targets_and_actions_reorder_presets() {
     apply(&mut app, vec![Action::Move { name: "A2".into(), group: "Beta".into(), folder: None, index: None }]);
     assert_eq!(names(&app, "Beta"), ["B1", "A2"]);
     apply(&mut app, vec![Action::MoveGroup { group: "Beta".into(), folder: vec![], before: Some("Alpha".into()) }]);
-    let order = photocraft_engine::brush_preset_cmds::group_order(&app.session.tools.presets);
+    let order = redrob_photo_engine::brush_preset_cmds::group_order(&app.session.tools.presets);
     assert!(order.iter().position(|g| g == "Beta") < order.iter().position(|g| g == "Alpha"));
     // Rename and delete from the context menu.
     apply(&mut app, vec![Action::Rename(Renaming { group: false, name: "A3".into(), folder: vec![], text: "Third".into() })]);
@@ -613,7 +613,7 @@ fn hue_jitter_amount_edits_keep_percentage_units_and_command_routing() {
     expected.color_dynamics.hue_jitter = 1.0;
     assert_eq!(h.state().session.tools.brush, expected, "the amount clamps at 100% and preserves neighboring settings");
     assert_eq!(last_journal(h.state()).unwrap().0, "tools.setBrush");
-    let mut replay = photocraft_engine::Session::new();
+    let mut replay = redrob_photo_engine::Session::new();
     for (id, params) in h.state().session.journal.clone() {
         replay.execute(&id, params).unwrap();
     }
@@ -933,7 +933,7 @@ fn folder_actions_become_folder_commands() {
     apply(&mut app, vec![Action::Move { name: "Kit Pen".into(), group: "Kit".into(), folder: Some(vec!["Dry".into()]), index: None }]);
     assert_eq!(paint::presets::find(&app.session.tools.presets, "Kit Pen").unwrap().folder, ["Dry"]);
     apply(&mut app, vec![Action::MoveGroup { group: "Kit".into(), folder: vec!["Dry".into()], before: Some("Inks".into()) }]);
-    assert_eq!(photocraft_engine::brush_preset_cmds::subfolder_order(&app.session.tools.presets, "Kit", &[]), ["Dry", "Inks"]);
+    assert_eq!(redrob_photo_engine::brush_preset_cmds::subfolder_order(&app.session.tools.presets, "Kit", &[]), ["Dry", "Inks"]);
     assert_eq!(last_journal(&app).unwrap(), ("brush.presets.moveGroup".to_string(), json!({ "group": "Kit", "folder": ["Dry"], "before": "Inks" })));
 }
 
@@ -989,7 +989,7 @@ fn folder_drops_map_to_move_commands() {
     apply(&mut app, vec![out]);
     let chalk = paint::presets::find(&app.session.tools.presets, "Kit Chalk").unwrap();
     assert_eq!((chalk.group.as_str(), chalk.folder.clone()), ("Fine", v(&["Dry"])));
-    let order = photocraft_engine::brush_preset_cmds::group_order(&app.session.tools.presets);
+    let order = redrob_photo_engine::brush_preset_cmds::group_order(&app.session.tools.presets);
     assert!(order.iter().position(|g| g == "Fine") < order.iter().position(|g| g == "Kit"));
 }
 
@@ -1353,7 +1353,7 @@ fn brush_settings_hamburger_menu_actions() {
     h.run_steps(2);
     h.get_by_label("Reset All Locked Settings").click();
     h.run_steps(2);
-    assert_eq!(h.state().session.tools.brush.locks, photocraft_paint::brush::SectionLocks::default());
+    assert_eq!(h.state().session.tools.brush.locks, redrob_photo_paint::brush::SectionLocks::default());
 
     // 5. Copy Texture to Other Tools copies texture to other tools with texture enabled
     let mut h = harness(0, 0);

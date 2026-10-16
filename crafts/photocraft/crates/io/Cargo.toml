@@ -1,5 +1,5 @@
 [package]
-name = "photocraft-io"
+name = "redrob-photo-io"
 description = "Import/export between photocraft documents and PSD/PSB and flat raster formats"
 version.workspace = true
 edition.workspace = true
@@ -12,25 +12,25 @@ workspace = true
 [features]
 # Real-file corpus tests (opt-in; `cargo xtask test-corpus`). Fail when the corpus is missing.
 corpus = []
-# HEIC/HEIF decode (forwarded to photocraft-codecs; see its `heif` feature).
-heif = ["photocraft-codecs/heif"]
+# HEIC/HEIF decode (forwarded to redrob-photo-codecs; see its `heif` feature).
+heif = ["redrob-photo-codecs/heif"]
 
 [dependencies]
-photocraft-geom = { workspace = true }
-photocraft-color = { workspace = true }
-photocraft-cms = { workspace = true }
-photocraft-raster = { workspace = true }
-photocraft-doc = { workspace = true }
-photocraft-compose = { workspace = true }
-photocraft-algo = { workspace = true }
-photocraft-psd = { workspace = true }
-photocraft-codecs = { workspace = true }
-photocraft-raw = { workspace = true }
-photocraft-affinity = { workspace = true }
-photocraft-text = { workspace = true }
-photocraft-paint = { workspace = true }
-photocraft-vector = { workspace = true }
-photocraft-format = { path = "../format" }
+redrob-photo-geom = { workspace = true }
+redrob-photo-color = { workspace = true }
+redrob-photo-cms = { workspace = true }
+redrob-photo-raster = { workspace = true }
+redrob-photo-doc = { workspace = true }
+redrob-photo-compose = { workspace = true }
+redrob-photo-algo = { workspace = true }
+redrob-photo-psd = { workspace = true }
+redrob-photo-codecs = { workspace = true }
+redrob-photo-raw = { workspace = true }
+redrob-photo-affinity = { workspace = true }
+redrob-photo-text = { workspace = true }
+redrob-photo-paint = { workspace = true }
+redrob-photo-vector = { workspace = true }
+redrob-photo-format = { path = "../format" }
 thiserror = { workspace = true }
 serde_json = { workspace = true }
 blake3 = { version = "1.8", default-features = false, features = ["pure"] }
@@ -49,8 +49,8 @@ resvg = { version = "0.45", default-features = false, features = ["text", "raste
 
 [dev-dependencies]
 crc32fast = "1.5"
-photocraft-affinity = { workspace = true, features = ["synth"] }
+redrob-photo-affinity = { workspace = true, features = ["synth"] }
 flate2 = { workspace = true }
-photocraft-psd = { workspace = true, features = ["testgen"] }
-photocraft-raw = { workspace = true, features = ["testgen"] }
+redrob-photo-psd = { workspace = true, features = ["testgen"] }
+redrob-photo-raw = { workspace = true, features = ["testgen"] }
 proptest = { workspace = true }

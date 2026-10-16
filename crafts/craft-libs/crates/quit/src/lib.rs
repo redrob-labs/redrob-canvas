@@ -25,7 +25,7 @@
 //!         ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
 //!         self.show_save_prompt = true;
 //!     }
-//!     craft_quit::on_close_request(ctx); // last, so it sees the app's `CancelClose`
+//!     redrob_craft_quit::on_close_request(ctx); // last, so it sees the app's `CancelClose`
 //! }
 //!
 //! fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {

@@ -1,7 +1,7 @@
 //! Paint conversion (solid, gradients, patterns) and image decoding.
 
-use vectorcraft_color::{GradientKind, Paint};
-use vectorcraft_geom::{Rect, Vec2};
+use redrob_vector_color::{GradientKind, Paint};
+use redrob_vector_geom::{Rect, Vec2};
 use vello_cpu::RenderContext;
 use vello_cpu::peniko::{self, ColorStop};
 

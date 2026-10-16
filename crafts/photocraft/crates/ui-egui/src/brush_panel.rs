@@ -15,8 +15,8 @@
 //! (`locks` in the brush, applied by the engine). The Brushes tab lives in [`crate::brushes_tab`].
 
 use egui::{Color32, CornerRadius, Sense, Stroke, vec2};
-use photocraft_engine::BrushSettings;
-use photocraft_engine::paint;
+use redrob_photo_engine::BrushSettings;
+use redrob_photo_engine::paint;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
@@ -26,7 +26,7 @@ use crate::{PhotocraftApp, icons, widgets};
 
 pub use crate::brush_preview::{preview_pixels, preview_sig};
 pub use crate::brush_sections::section_body;
-pub use photocraft_engine::brush_cmds::brush_patch;
+pub use redrob_photo_engine::brush_cmds::brush_patch;
 
 /// Sections in Photoshop's order. The bool says whether the section has an enable box.
 pub const SECTIONS: [(&str, bool); 13] = [
@@ -475,11 +475,11 @@ pub fn panel_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         commit(app, &before, &cleared);
         ui.close();
     }
-    let has_locks = app.session.tools.brush.locks != photocraft_paint::brush::SectionLocks::default();
+    let has_locks = app.session.tools.brush.locks != redrob_photo_paint::brush::SectionLocks::default();
     if ui.add_enabled(has_locks, egui::Button::new(tl!("Reset All Locked Settings"))).clicked() {
         let before = app.session.tools.brush.clone();
         let mut after = before.clone();
-        after.locks = photocraft_paint::brush::SectionLocks::default();
+        after.locks = redrob_photo_paint::brush::SectionLocks::default();
         commit(app, &before, &after);
         ui.close();
     }

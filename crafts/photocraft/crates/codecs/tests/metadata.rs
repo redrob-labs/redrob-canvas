@@ -2,7 +2,7 @@
 
 mod common;
 use common::*;
-use photocraft_codecs::*;
+use redrob_photo_codecs::*;
 
 fn rich_image(layout: ChannelLayout) -> Image {
     let mut img = test_image(layout, SampleType::U8);

@@ -1,9 +1,9 @@
 //! #1212: ruler coordinates are saved metadata, independent of the artwork's coordinates.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+use redrob_vector_engine::Session;
+use redrob_vector_format::{SaveOptions, load, save, save_with};
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
-use vectorcraft_format::{SaveOptions, load, save, save_with};
 
 fn session() -> Session {
     let mut s = Session::new();

@@ -24,7 +24,7 @@ const LABEL: f32 = 104.0;
 /// Is the file `p` names (`path` or `name`) a text file?
 pub fn is_text(p: &Value) -> bool {
     let name = p.get("path").or_else(|| p.get("name")).and_then(Value::as_str).unwrap_or_default();
-    vectorcraft_engine::cmd::fileio::TEXT_EXTS.contains(&vectorcraft_engine::cmd::fileio::extension(name).as_str())
+    redrob_vector_engine::cmd::fileio::TEXT_EXTS.contains(&redrob_vector_engine::cmd::fileio::extension(name).as_str())
 }
 
 /// Ask how to place the text file `params` (`file.place` params) names.
@@ -98,8 +98,8 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::doc::NodeKind;
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::doc::NodeKind;
 
     fn frame(app: &mut VectorcraftApp) -> String {
         crate::tests_labels::painted_text(app, |app, ui| super::super::show(app, ui.ctx()))
@@ -110,7 +110,7 @@ mod tests {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());
         app.run("file.new", json!({"width": 300, "height": 200})).unwrap();
         let text = b"one\r\ntwo\r\n\r\nthree\r\n";
-        let file = json!({"name": "notes.txt", "dataBase64": vectorcraft_format::base64_encode(text)});
+        let file = json!({"name": "notes.txt", "dataBase64": redrob_vector_format::base64_encode(text)});
         let r = app.run("file.place", file).unwrap();
         assert_eq!(r["dialog"], KIND);
         let text = frame(&mut app);
@@ -135,7 +135,7 @@ mod tests {
         let r = super::super::confirm(&mut app).unwrap();
         assert!(app.ui.dialog.is_none());
         let st = app.session.doc().unwrap();
-        let n = st.doc.node(vectorcraft_engine::doc::NodeId(r["ids"][0].as_u64().unwrap())).unwrap();
+        let n = st.doc.node(redrob_vector_engine::doc::NodeId(r["ids"][0].as_u64().unwrap())).unwrap();
         let NodeKind::Text(t) = &n.kind else { panic!("type") };
         assert_eq!(t.plain_text(), "one two\nthree", "one paragraph per block");
         assert_eq!(st.history.undo.len(), 1);

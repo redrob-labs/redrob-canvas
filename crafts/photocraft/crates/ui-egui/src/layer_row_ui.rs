@@ -8,8 +8,8 @@
 //! The rects drawn each frame are recorded ([`recorded`]) for tests and automation.
 
 use egui::{Align2, FontId, Galley, Painter, Pos2, Rect, Sense, Shape, Stroke, pos2, vec2};
-use photocraft_color::BlendMode;
-use photocraft_doc::Layer;
+use redrob_photo_color::BlendMode;
+use redrob_photo_doc::Layer;
 use serde_json::{Value, json};
 use std::sync::Arc;
 

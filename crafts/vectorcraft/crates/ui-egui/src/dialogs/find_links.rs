@@ -73,10 +73,10 @@ pub(super) fn from_missing_links(app: &mut VectorcraftApp, d: &mut Dialog, folde
 /// The selected linked images and placed documents of the active document.
 fn selected_linked(app: &VectorcraftApp) -> Vec<Value> {
     let Some(st) = app.session.active() else { return vec![] };
-    let linked = |id: &vectorcraft_doc::NodeId| {
+    let linked = |id: &redrob_vector_doc::NodeId| {
         st.doc.node(*id).is_some_and(|n| match &n.kind {
-            vectorcraft_doc::NodeKind::Image(im) => im.link.is_some(),
-            vectorcraft_doc::NodeKind::PlacedDocument(_) => true,
+            redrob_vector_doc::NodeKind::Image(im) => im.link.is_some(),
+            redrob_vector_doc::NodeKind::PlacedDocument(_) => true,
             _ => false,
         })
     };
@@ -115,7 +115,7 @@ pub(crate) fn find_in_folder_command(app: &mut VectorcraftApp, folder: Option<St
 fn is_image(app: &VectorcraftApp, id: &Value) -> bool {
     let Some(id) = id.as_u64() else { return false };
     let st = app.session.active();
-    st.and_then(|st| st.doc.node(vectorcraft_doc::NodeId(id))).is_some_and(|n| matches!(n.kind, vectorcraft_doc::NodeKind::Image(_)))
+    st.and_then(|st| st.doc.node(redrob_vector_doc::NodeId(id))).is_some_and(|n| matches!(n.kind, redrob_vector_doc::NodeKind::Image(_)))
 }
 
 /// Make the dialog's document the active one: it may be another tab's.
@@ -205,7 +205,7 @@ pub(super) fn stop_when_closed(app: &mut VectorcraftApp) {
     let open = app.ui.dialog.as_ref().is_some_and(|d| d.kind == KIND && d.fields.get("search").and_then(Value::as_u64) == Some(id));
     if !open {
         app.ui.links_search = None;
-        vectorcraft_engine::cmd::linkfiles::stop(&mut app.session, id);
+        redrob_vector_engine::cmd::linkfiles::stop(&mut app.session, id);
     }
 }
 
@@ -386,8 +386,8 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::time::Instant;
 
-    use vectorcraft_engine::Session;
-    use vectorcraft_engine::cmd::findfiles::Rules;
+    use redrob_vector_engine::Session;
+    use redrob_vector_engine::cmd::findfiles::Rules;
 
     use super::*;
 
@@ -397,10 +397,10 @@ mod tests {
 
     /// A fresh temporary folder (canonical, as a search reports it).
     fn folder(tag: &str) -> PathBuf {
-        let dir = vectorcraft_testkit::temp_dir(&format!("find-links-{tag}"));
+        let dir = redrob_vector_testkit::temp_dir(&format!("find-links-{tag}"));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        vectorcraft_engine::cmd::findfiles::plain(std::fs::canonicalize(&dir).unwrap())
+        redrob_vector_engine::cmd::findfiles::plain(std::fs::canonicalize(&dir).unwrap())
     }
 
     /// An app that reads files, shows a folder picker and whose searches may go anywhere in `root`,
@@ -433,7 +433,7 @@ mod tests {
         out
     }
 
-    /// A document linking to files `names` in `root/orig`, saved as `root/doc/doc.vectorcraft`; the
+    /// A document linking to files `names` in `root/orig`, saved as `root/doc/doc.rvector`; the
     /// files are then deleted and the document opened again → each file's bytes.
     fn opened_without(app: &mut VectorcraftApp, root: &Path, names: &[&str]) -> Vec<Vec<u8>> {
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
@@ -444,7 +444,7 @@ mod tests {
             app.run("file.place", json!({"path": path})).unwrap();
             files.push(png(n));
         }
-        let doc = at(root, "doc/doc.vectorcraft");
+        let doc = at(root, "doc/doc.rvector");
         std::fs::create_dir_all(doc.parent().unwrap()).unwrap();
         app.run("document.save", json!({"path": doc})).unwrap();
         std::fs::remove_dir_all(root.join("orig")).unwrap();
@@ -641,14 +641,14 @@ mod tests {
         let mut app = app_for(&root);
         app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
         app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 50, "height": 50})).unwrap();
-        let badge = at(&root, "orig/badge.vectorcraft");
+        let badge = at(&root, "orig/badge.rvector");
         std::fs::create_dir_all(badge.parent().unwrap()).unwrap();
         app.run("document.save", json!({"path": badge})).unwrap();
-        let found = at(&root, "found/badge.vectorcraft");
+        let found = at(&root, "found/badge.rvector");
         write(&found, &std::fs::read(&badge).unwrap());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.run("file.place", json!({"path": badge, "link": true})).unwrap();
-        let doc = at(&root, "doc/doc.vectorcraft");
+        let doc = at(&root, "doc/doc.rvector");
         std::fs::create_dir_all(doc.parent().unwrap()).unwrap();
         app.run("document.save", json!({"path": doc})).unwrap();
         std::fs::remove_dir_all(root.join("orig")).unwrap();
@@ -659,7 +659,7 @@ mod tests {
         app.ui.dialog.as_mut().unwrap().fields.insert("copy".into(), json!(true));
         let r = super::super::confirm(&mut app).unwrap();
         assert_eq!((r["relinked"].as_array().unwrap().len(), &r["failed"]), (1, &json!([])), "{r}");
-        assert!(!at(&root, "doc/badge.vectorcraft").exists());
+        assert!(!at(&root, "doc/badge.rvector").exists());
         assert_eq!(app.run("links.check", json!({})).unwrap()["links"][0]["path"], json!(found));
     }
 

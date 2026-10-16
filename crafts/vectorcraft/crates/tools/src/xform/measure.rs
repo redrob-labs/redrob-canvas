@@ -2,8 +2,8 @@
 //! 45°). The result stays on screen (and in the tool options, for agents) until the next drag; the
 //! document is never changed.
 
+use redrob_vector_geom::{Point, Vec2};
 use serde_json::{Value, json};
-use vectorcraft_geom::{Point, Vec2};
 
 use super::CYAN;
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext};
@@ -39,7 +39,7 @@ impl Tool for MeasureTool {
             PointerKind::Drag | PointerKind::Up if self.dragging => {
                 if let Some((a, _)) = self.line {
                     let b = if ev.mods.shift {
-                        a + vectorcraft_geom::constrain_angle(ev.pos - a, 45.0)
+                        a + redrob_vector_geom::constrain_angle(ev.pos - a, 45.0)
                     } else {
                         crate::guides::snap_draw(cx, ev.pos, &[]).0
                     };
@@ -86,7 +86,7 @@ impl Tool for MeasureTool {
 mod tests {
     use super::*;
     use crate::testutil::*;
-    use vectorcraft_doc::Selection;
+    use redrob_vector_doc::Selection;
 
     #[test]
     fn drag_reports_distance_and_angle() {

@@ -5,10 +5,10 @@
 //! being made is panel state.
 
 use egui::{Rect, Sense, Ui, vec2};
+use redrob_vector_color::Color;
+use redrob_vector_color::harmony::{Harmony, THEME_SIZE, move_on_wheel};
+use redrob_vector_engine::cmd::colortheme::ColorTheme;
 use serde_json::{Value, json};
-use vectorcraft_color::Color;
-use vectorcraft_color::harmony::{Harmony, THEME_SIZE, move_on_wheel};
-use vectorcraft_engine::cmd::colortheme::ColorTheme;
 
 use super::{active_paint, c32, color_json, empty_state, pstate, set_pstate};
 use crate::VectorcraftApp;
@@ -348,7 +348,7 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     fn app() -> VectorcraftApp {
         let mut app = VectorcraftApp::new(Session::new(), Default::default());

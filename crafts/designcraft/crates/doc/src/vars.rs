@@ -189,7 +189,7 @@ impl Document {
             VarKind::ChapterNumber => self.settings.chapter_number.max(1).to_string(),
             VarKind::FileName { extension } => {
                 if *extension {
-                    format!("{}.designcraft", self.title)
+                    format!("{}.rlayout", self.title)
                 } else {
                     self.title.clone()
                 }

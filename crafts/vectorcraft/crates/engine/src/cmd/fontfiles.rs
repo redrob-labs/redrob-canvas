@@ -7,9 +7,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use redrob_vector_doc::Document;
+use redrob_vector_text::{FontDb, FontMatch, WantedFont, WantedFonts};
 use serde_json::{Value, json};
-use vectorcraft_doc::Document;
-use vectorcraft_text::{FontDb, FontMatch, WantedFont, WantedFonts};
 
 use super::findfiles::{self, Limits, Visitor};
 use super::*;
@@ -190,12 +190,12 @@ impl Visitor for FontFiles {
     fn wants(&self, name: &str) -> bool {
         let path = Path::new(name);
         // A suitcase font (macOS) has no extension, or `.suit`.
-        vectorcraft_text::is_font_file(path) || cfg!(target_os = "macos") && path.extension().is_none_or(|e| e.eq_ignore_ascii_case("suit"))
+        redrob_vector_text::is_font_file(path) || cfg!(target_os = "macos") && path.extension().is_none_or(|e| e.eq_ignore_ascii_case("suit"))
     }
     fn worth_reading(&self, path: &Path) -> bool {
         // A search reads font files and suitcase fonts of at most [`MAX_FONT_FILE`] bytes, the files
         // `text.addFontFiles` copies.
-        (vectorcraft_text::is_font_file(path) || vectorcraft_text::is_suitcase(path))
+        (redrob_vector_text::is_font_file(path) || redrob_vector_text::is_suitcase(path))
             && std::fs::metadata(path).is_ok_and(|m| m.len() <= MAX_FONT_FILE)
     }
     fn items(&self, path: &Path) -> Vec<usize> {
@@ -335,7 +335,7 @@ fn add(s: &mut Session, p: &Value) -> Result<Value> {
         .ok_or_else(|| bad(C, "`files` must be 1 to 1000 paths of font files the last text.findFontFiles search found"))?;
     files.sort();
     files.dedup();
-    let dir = vectorcraft_text::app_font_dir()
+    let dir = redrob_vector_text::app_font_dir()
         .ok_or_else(|| EngineError::Other("Redrob Canvas's Fonts folder isn't set here: the desktop app and vectorcraft-cli set it".into()))?;
     let found: Vec<PathBuf> =
         s.font_search.as_ref().map(|f| f.search.progress().hits.into_iter().map(|(path, _)| path).collect()).unwrap_or_default();
@@ -398,7 +398,7 @@ fn copy_one(from: &Path, dir: &Path, total: &mut u64) -> std::result::Result<sup
     }
     let font = from.extension().and_then(|e| e.to_str()).is_some_and(|e| FONT_EXTENSIONS.iter().any(|x| e.eq_ignore_ascii_case(x)));
     // A suitcase font's fonts are in its resource fork, which is copied with it, whatever its name.
-    let fork = match (vectorcraft_text::is_suitcase(from), font) {
+    let fork = match (redrob_vector_text::is_suitcase(from), font) {
         (true, _) => Some(read_fork(from)?),
         (false, true) => None,
         (false, false) => return Err(NOT_A_FONT.into()),
@@ -426,8 +426,8 @@ fn copy_one(from: &Path, dir: &Path, total: &mut u64) -> std::result::Result<sup
 /// resource fork is `fork`; never in place of a file.
 #[cfg(not(target_arch = "wasm32"))]
 fn create_copy(from: &Path, to: &Path, fork: Option<&[u8]>) -> std::io::Result<()> {
-    let Some(fork) = fork else { return vectorcraft_format::write_new_with(to, |f| copy_capped(from, f)) };
-    vectorcraft_format::write_new_with(to, |_| Ok(()))?;
+    let Some(fork) = fork else { return redrob_vector_format::write_new_with(to, |f| copy_capped(from, f)) };
+    redrob_vector_format::write_new_with(to, |_| Ok(()))?;
     std::fs::write(fork_path(to), fork).inspect_err(|_| {
         // Best effort: the empty file just made is all there is to clean up.
         let _ = std::fs::remove_file(to);

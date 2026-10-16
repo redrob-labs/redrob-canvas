@@ -21,7 +21,7 @@
 //! - [`clip_outline`] is the region a clip group clips to, shared by the renderer and the SVG and
 //!   PDF writers.
 //! - **Plug-in effects** (`plugin.<plug-in id>`, Effect › Plug-ins) are geometry effects run by an
-//!   installed WebAssembly plug-in (`vectorcraft-plugins`); [`effect_info`] describes them like
+//!   installed WebAssembly plug-in (`redrob-vector-plugins`); [`effect_info`] describes them like
 //!   built-in ones, and an effect whose plug-in isn't installed leaves the geometry as it is.
 //! - **Colour adjustments** (Brightness/Contrast, Curves, Levels, Hue/Saturation, Shift to Color,
 //!   Temperature/Tint) recolour what an object paints with: [`adjust`] evaluates them for the
@@ -54,9 +54,9 @@ mod tests;
 #[cfg(test)]
 mod tests_scale;
 
+use redrob_vector_doc::{AppearanceItem, Effect, Node, NodeKind, StrokeLayer};
+use redrob_vector_geom::{BezPath, FillRule, PathData, Rect};
 use serde_json::{Map, Value, json};
-use vectorcraft_doc::{AppearanceItem, Effect, Node, NodeKind, StrokeLayer};
-use vectorcraft_geom::{BezPath, FillRule, PathData, Rect};
 
 pub use adjust::{ADJUSTMENTS, ColorMap, ImageHook, adjust, adjust_in_document, color_map, curve_at, curve_points, has_adjustment, is_adjustment};
 pub use bake::{StrokeArt, bake_appearance, bake_document, expand_art, expand_leaf, fresh_ids, needs_bake};
@@ -614,8 +614,8 @@ pub fn effect_info(id: &str) -> Option<EffectInfo> {
 
 /// The catalogue entry of the installed effect plug-in with effect id `id` (`plugin.<id>`).
 fn plugin_info(id: &str) -> Option<EffectInfo> {
-    use vectorcraft_plugins::registry::intern;
-    let p = vectorcraft_plugins::effect::installed(id)?;
+    use redrob_vector_plugins::registry::intern;
+    let p = redrob_vector_plugins::effect::installed(id)?;
     let m = p.manifest();
     let dots = if m.params.is_empty() || m.name.ends_with('…') { "" } else { "…" };
     Some(EffectInfo {
@@ -631,7 +631,7 @@ fn plugin_info(id: &str) -> Option<EffectInfo> {
 
 /// The installed effect plug-ins as catalogue entries (Effect › Plug-ins), by plug-in id.
 pub fn plugin_effects() -> Vec<EffectInfo> {
-    vectorcraft_plugins::registry::list().iter().filter_map(|p| plugin_info(&vectorcraft_plugins::effect::effect_id(p.id()))).collect()
+    redrob_vector_plugins::registry::list().iter().filter_map(|p| plugin_info(&redrob_vector_plugins::effect::effect_id(p.id()))).collect()
 }
 
 /// Dialog defaults for `id` (`None` for unknown effects).
@@ -648,7 +648,7 @@ pub fn merged_params(id: &str, params: &Value) -> Value {
     let mut out = match catalog_index().get(id).map(|e| &e.defaults) {
         Some(Value::Object(m)) => m.clone(),
         Some(_) => Map::new(),
-        None => vectorcraft_plugins::effect::installed(id).map(|p| p.manifest().defaults()).unwrap_or_default(),
+        None => redrob_vector_plugins::effect::installed(id).map(|p| p.manifest().defaults()).unwrap_or_default(),
     };
     // Upgraded before the defaults are under it: a default angle is no angle given.
     if let Value::Object(p) = upgrade_params(id, params) {
@@ -683,7 +683,7 @@ fn upgrade_light(id: &str, m: &mut Map<String, Value>) {
         return;
     }
     let degrees = |v: Option<Value>, default: f64| v.and_then(|v| v.as_f64()).unwrap_or(default);
-    let (rotation, height, behind) = vectorcraft_three_d::light_from_azimuth_elevation(degrees(azimuth, -45.0), degrees(elevation, 45.0));
+    let (rotation, height, behind) = redrob_vector_three_d::light_from_azimuth_elevation(degrees(azimuth, -45.0), degrees(elevation, 45.0));
     m.insert("lightRotation".into(), json!(rotation));
     m.insert("lightHeight".into(), json!(height));
     m.insert("lightBehind".into(), json!(behind));
@@ -695,7 +695,7 @@ fn upgrade_perspective(id: &str, m: &mut Map<String, Value>) {
     }
     let Some(strength) = m.remove("perspective") else { return };
     if !m.contains_key("perspectiveAngle") {
-        let angle = vectorcraft_three_d::perspective_from_strength(strength.as_f64().unwrap_or(0.0) / 100.0);
+        let angle = redrob_vector_three_d::perspective_from_strength(strength.as_f64().unwrap_or(0.0) / 100.0);
         m.insert("perspectiveAngle".into(), json!(angle));
     }
 }
@@ -703,7 +703,7 @@ fn upgrade_perspective(id: &str, m: &mut Map<String, Value>) {
 /// A new effect record with default parameters (overridden by `params`).
 pub fn new_effect(id: &str, params: &Value) -> Option<Effect> {
     if !catalog_index().contains_key(id) {
-        vectorcraft_plugins::effect::installed(id)?;
+        redrob_vector_plugins::effect::installed(id)?;
     }
     Some(Effect { id: id.to_string(), params: merged_params(id, params), visible: true })
 }
@@ -741,7 +741,7 @@ pub fn is_geometry(id: &str) -> bool {
         && !is_adjustment(id)
         && id != CROP_MARKS
         && !is_three_d(id)
-        && (catalog_index().contains_key(id) || vectorcraft_plugins::effect::plugin_id(id).is_some())
+        && (catalog_index().contains_key(id) || redrob_vector_plugins::effect::plugin_id(id).is_some())
 }
 
 /// Any visible geometry effect in the list?
@@ -816,8 +816,8 @@ pub fn apply_geometry_bez(effects: &[Effect], path: &BezPath, bounds: Rect, ctx:
 
 pub(crate) fn apply_one(id: &str, p: &Value, path: &PathData, b: Rect, ctx: &GeomContext) -> PathData {
     use util::*;
-    if let Some(plugin) = vectorcraft_plugins::effect::plugin_id(id) {
-        return vectorcraft_plugins::effect::apply(plugin, p, path, b, ctx.rule).unwrap_or_else(|| path.clone());
+    if let Some(plugin) = redrob_vector_plugins::effect::plugin_id(id) {
+        return redrob_vector_plugins::effect::apply(plugin, p, path, b, ctx.rule).unwrap_or_else(|| path.clone());
     }
     match id {
         "distort.freeDistort" => distort::free_distort(path, b, p),
@@ -832,14 +832,14 @@ pub(crate) fn apply_one(id: &str, p: &Value, path: &PathData, b: Rect, ctx: &Geo
             if off.abs() < 1e-9 {
                 return path.clone();
             }
-            vectorcraft_pathops::offset_path(path, off, join(p, "joins"), num(p, "miterLimit", 4.0).clamp(1.0, 500.0))
+            redrob_vector_pathops::offset_path(path, off, join(p, "joins"), num(p, "miterLimit", 4.0).clamp(1.0, 500.0))
         }
         "path.outlineStroke" => {
             let fallback;
             let base = match ctx.stroke {
                 Some(s) => s,
                 None => {
-                    fallback = StrokeLayer::new(vectorcraft_doc::color::Paint::None, 1.0);
+                    fallback = StrokeLayer::new(redrob_vector_doc::color::Paint::None, 1.0);
                     &fallback
                 }
             };

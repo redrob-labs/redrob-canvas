@@ -16,7 +16,7 @@ use crate::configure::validate::ValidationStore;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
 use crate::error::{KrillaError, KrillaResult, LimitError};
 use crate::geom::Size;
-use crate::graphics::color::{rgb, ColorSpace};
+use crate::graphics::color::{ColorSpace, rgb};
 use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
@@ -131,8 +131,7 @@ impl SerializeSettings {
 
     /// Whether the `/AF` key is supported, accounting for the PDF version and active standards.
     pub(crate) fn supports_associated_files(&self) -> bool {
-        self.configuration.version().specifies_associated_files()
-            || self.configuration.validators().specifies_associated_files()
+        self.configuration.version().specifies_associated_files() || self.configuration.validators().specifies_associated_files()
     }
 }
 
@@ -172,11 +171,7 @@ pub(crate) enum PageInfo {
     },
     /// A page embedded from an external PDF file.
     #[allow(dead_code)]
-    Pdf {
-        ref_: Ref,
-        size: Size,
-        page_label: PageLabel,
-    },
+    Pdf { ref_: Ref, size: Size, page_label: PageLabel },
 }
 
 impl PageInfo {
@@ -286,14 +281,9 @@ impl SerializeContext {
 
         let mut cur_ref = Ref::new(1);
         let page_tree_ref = cur_ref.bump();
-        let pdf2_ns = Pdf2Namespaces {
-            ssn_ref: cur_ref.bump(),
-            krilla_ref: cur_ref.bump(),
-        };
+        let pdf2_ns = Pdf2Namespaces { ssn_ref: cur_ref.bump(), krilla_ref: cur_ref.bump() };
 
-        let chunk_settings = Settings {
-            pretty: serialize_settings.pretty,
-        };
+        let chunk_settings = Settings { pretty: serialize_settings.pretty };
 
         Self {
             poisoned: false,
@@ -323,13 +313,7 @@ impl SerializeContext {
     pub(crate) fn set_outline(&mut self, outline: Outline) {
         // Only set it if it's not empty or if the current validator requires an
         // outline.
-        if !outline.is_empty()
-            || self
-                .serialize_settings
-                .validators()
-                .prohibits(&ValidationError::MissingDocumentOutline)
-                .is_some()
-        {
+        if !outline.is_empty() || self.serialize_settings.validators().prohibits(&ValidationError::MissingDocumentOutline).is_some() {
             self.global_objects.outline = MaybeTaken::new(Some(outline));
         }
     }
@@ -342,23 +326,10 @@ impl SerializeContext {
         self.location = None
     }
 
-    pub(crate) fn embed_file(
-        &mut self,
-        chunk_container: &mut ChunkContainer,
-        file: EmbeddedFile,
-    ) -> Option<()> {
+    pub(crate) fn embed_file(&mut self, chunk_container: &mut ChunkContainer, file: EmbeddedFile) -> Option<()> {
         let name = file.path.clone();
         let ref_ = self.register_cacheable(chunk_container, file);
-        if self
-            .global_objects
-            .embedded_files
-            .insert(name, ref_)
-            .is_some()
-        {
-            None
-        } else {
-            Some(())
-        }
+        if self.global_objects.embedded_files.insert(name, ref_).is_some() { None } else { Some(()) }
     }
 
     pub(crate) fn set_tag_tree(&mut self, root: TagTree) {
@@ -411,9 +382,7 @@ impl SerializeContext {
                 // In case the page doesn't exist, we will catch the error later, so just use
                 // a dummy size.
                 .unwrap_or(Size::from_wh(1.0, 1.0).unwrap());
-            self.global_objects
-                .pdf_ctx
-                .add_page(pdf, *page_idx, page_ref, self.location);
+            self.global_objects.pdf_ctx.add_page(pdf, *page_idx, page_ref, self.location);
             self.page_infos.push(PageInfo::Pdf {
                 ref_: page_ref,
                 size,
@@ -428,9 +397,7 @@ impl SerializeContext {
         let xobj_ref = self.new_ref();
 
         // Note that `add_xobject` might return a different ref than the one we created.
-        self.global_objects
-            .pdf_ctx
-            .add_xobject(pdf, page_idx, xobj_ref, self.location)
+        self.global_objects.pdf_ctx.add_xobject(pdf, page_idx, xobj_ref, self.location)
     }
 
     pub(crate) fn page_tree_ref(&mut self) -> Ref {
@@ -438,11 +405,7 @@ impl SerializeContext {
     }
 
     pub(crate) fn register_font_container(&mut self, font: Font) -> Rc<RefCell<FontContainer>> {
-        self.global_objects
-            .font_map
-            .entry(font.clone())
-            .or_insert_with(|| Rc::new(RefCell::new(FontContainer::new(font.clone()))))
-            .clone()
+        self.global_objects.font_map.entry(font.clone()).or_insert_with(|| Rc::new(RefCell::new(FontContainer::new(font.clone())))).clone()
     }
 
     pub(crate) fn validation_store(&mut self) -> &mut ValidationStore {
@@ -513,20 +476,14 @@ impl SerializeContext {
         self.limits.merge(limits);
     }
 
-    pub(crate) fn register_page_struct_parent(
-        &mut self,
-        page_index: usize,
-        num_mcids: i32,
-    ) -> Option<i32> {
+    pub(crate) fn register_page_struct_parent(&mut self, page_index: usize, num_mcids: i32) -> Option<i32> {
         if self.serialize_settings.enable_tagging {
             if num_mcids == 0 {
                 return None;
             }
 
             let id = self.global_objects.struct_parents.len();
-            self.global_objects
-                .struct_parents
-                .push(StructParentElement::Page(page_index, num_mcids));
+            self.global_objects.struct_parents.push(StructParentElement::Page(page_index, num_mcids));
             Some(i32::try_from(id).unwrap())
         } else {
             None
@@ -538,9 +495,7 @@ impl SerializeContext {
     pub(crate) fn register_annotation_parent(&mut self, ai: AnnotationIdentifier) -> Option<i32> {
         if self.serialize_settings.enable_tagging {
             let id = self.global_objects.struct_parents.len();
-            self.global_objects
-                .struct_parents
-                .push(StructParentElement::Annotation(ai));
+            self.global_objects.struct_parents.push(StructParentElement::Annotation(ai));
             Some(i32::try_from(id).unwrap())
         } else {
             None
@@ -548,16 +503,12 @@ impl SerializeContext {
     }
 
     pub(crate) fn register_named_destination(&mut self, nd: NamedDestination) -> Option<Ref> {
-        if let Some((dest_ref, existing)) =
-            self.global_objects.named_destinations.get(nd.name.as_ref())
-        {
+        if let Some((dest_ref, existing)) = self.global_objects.named_destinations.get(nd.name.as_ref()) {
             return (existing == nd.xyz_dest.as_ref()).then_some(*dest_ref);
         }
 
         let dest_ref = self.register_xyz_destination((*nd.xyz_dest).clone());
-        self.global_objects
-            .named_destinations
-            .insert(nd.name.clone(), (dest_ref, (*nd.xyz_dest).clone()));
+        self.global_objects.named_destinations.insert(nd.name.clone(), (dest_ref, (*nd.xyz_dest).clone()));
         Some(dest_ref)
     }
 
@@ -573,11 +524,7 @@ impl SerializeContext {
         self.global_objects.pages.push((ref_, page));
     }
 
-    fn register_cached<T: SipHashable>(
-        &mut self,
-        item: T,
-        mut func: impl FnMut(&mut Self, T, Ref),
-    ) -> Ref {
+    fn register_cached<T: SipHashable>(&mut self, item: T, mut func: impl FnMut(&mut Self, T, Ref)) -> Ref {
         let hash = item.sip_hash();
         if let Some(_ref) = self.cached_mappings.get(&hash) {
             *_ref
@@ -589,11 +536,7 @@ impl SerializeContext {
         }
     }
 
-    pub(crate) fn register_cacheable<T>(
-        &mut self,
-        chunk_container: &mut ChunkContainer,
-        object: T,
-    ) -> Ref
+    pub(crate) fn register_cacheable<T>(&mut self, chunk_container: &mut ChunkContainer, object: T) -> Ref
     where
         T: Cacheable,
     {
@@ -602,11 +545,7 @@ impl SerializeContext {
         })
     }
 
-    pub(crate) fn register_resourceable<T>(
-        &mut self,
-        chunk_container: &mut ChunkContainer,
-        object: T,
-    ) -> T::Resource
+    pub(crate) fn register_resourceable<T>(&mut self, chunk_container: &mut ChunkContainer, object: T) -> T::Resource
     where
         T: Resourceable,
     {
@@ -614,11 +553,7 @@ impl SerializeContext {
     }
 
     #[cfg(feature = "raster-images")]
-    pub(crate) fn register_image(
-        &mut self,
-        chunk_container: &mut ChunkContainer,
-        image: Image,
-    ) -> Ref {
+    pub(crate) fn register_image(&mut self, chunk_container: &mut ChunkContainer, image: Image) -> Ref {
         self.register_cached(image, |sc, object, root_ref| {
             object.serialize(sc, chunk_container, root_ref);
         })
@@ -630,11 +565,7 @@ impl SerializeContext {
         })
     }
 
-    pub(crate) fn register_page_label(
-        &mut self,
-        chunk_container: &mut ChunkContainer,
-        page_label: PageLabel,
-    ) -> Ref {
+    pub(crate) fn register_page_label(&mut self, chunk_container: &mut ChunkContainer, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
         page_label.serialize(chunk_container, ref_);
         ref_
@@ -651,34 +582,20 @@ impl SerializeContext {
         }
     }
 
-    pub(crate) fn register_colorspace(
-        &mut self,
-        chunk_container: &mut ChunkContainer,
-        cs: ColorSpace,
-    ) -> MaybeDeviceColorSpace {
+    pub(crate) fn register_colorspace(&mut self, chunk_container: &mut ChunkContainer, cs: ColorSpace) -> MaybeDeviceColorSpace {
         match cs {
-            ColorSpace::CieBased(CieBasedColorSpace::Srgb) => {
-                MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(
-                    chunk_container,
-                    ICCBasedColorSpace(self.serialize_settings.pdf_version().rgb_icc()),
-                ))
-            }
-            ColorSpace::CieBased(CieBasedColorSpace::Luma) => {
-                MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(
-                    chunk_container,
-                    ICCBasedColorSpace(self.serialize_settings.pdf_version().grey_icc()),
-                ))
-            }
-            ColorSpace::CieBased(CieBasedColorSpace::Cmyk(cs)) => {
-                MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(chunk_container, cs))
-            }
+            ColorSpace::CieBased(CieBasedColorSpace::Srgb) => MaybeDeviceColorSpace::ColorSpace(
+                self.register_resourceable(chunk_container, ICCBasedColorSpace(self.serialize_settings.pdf_version().rgb_icc())),
+            ),
+            ColorSpace::CieBased(CieBasedColorSpace::Luma) => MaybeDeviceColorSpace::ColorSpace(
+                self.register_resourceable(chunk_container, ICCBasedColorSpace(self.serialize_settings.pdf_version().grey_icc())),
+            ),
+            ColorSpace::CieBased(CieBasedColorSpace::Cmyk(cs)) => MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(chunk_container, cs)),
             ColorSpace::Device(DeviceColorSpace::Gray) => MaybeDeviceColorSpace::DeviceGray,
             ColorSpace::Device(DeviceColorSpace::Rgb) => MaybeDeviceColorSpace::DeviceRgb,
             ColorSpace::Device(DeviceColorSpace::Cmyk) => MaybeDeviceColorSpace::DeviceCMYK,
             ColorSpace::Special(SpecialColorSpace::Separation(s)) => {
-                MaybeDeviceColorSpace::ColorSpace(
-                    self.register_resourceable(chunk_container, SeparationColorSpace::new(s)),
-                )
+                MaybeDeviceColorSpace::ColorSpace(self.register_resourceable(chunk_container, SeparationColorSpace::new(s)))
             }
         }
     }
@@ -689,48 +606,32 @@ impl SerializeContext {
 impl SerializeContext {
     fn serialize_destination_profiles(&mut self, chunk_container: &mut ChunkContainer) {
         let validators = self.serialize_settings.validators();
-        chunk_container.non_stream.destination_profiles =
-            validators.output_intent().map(|subtype| {
-                let root_ref = self.new_ref();
-                let mut chunk = self.new_chunk();
+        chunk_container.non_stream.destination_profiles = validators.output_intent().map(|subtype| {
+            let root_ref = self.new_ref();
+            let mut chunk = self.new_chunk();
 
-                let oi_ref = self.new_ref();
-                let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-                let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
+            let oi_ref = self.new_ref();
+            let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
+            let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
 
-                oi.dest_output_profile(
-                    self.register_cacheable(chunk_container, icc_profile.clone()),
-                )
+            oi.dest_output_profile(self.register_cacheable(chunk_container, icc_profile.clone()))
                 .subtype(subtype)
                 .output_condition_identifier(TextStr("Custom"))
                 .output_condition(TextStr("sRGB"))
                 .registry_name(TextStr(""))
-                .info(TextStr(
-                    format!(
-                        "sRGB v{}.{}",
-                        icc_profile.metadata().major,
-                        icc_profile.metadata().minor
-                    )
-                    .as_str(),
-                ));
-                oi.finish();
+                .info(TextStr(format!("sRGB v{}.{}", icc_profile.metadata().major, icc_profile.metadata().minor).as_str()));
+            oi.finish();
 
-                let mut array = chunk.indirect(root_ref).array();
-                array.item(oi_ref);
-                array.finish();
+            let mut array = chunk.indirect(root_ref).array();
+            array.item(oi_ref);
+            array.finish();
 
-                (root_ref, chunk)
-            });
+            (root_ref, chunk)
+        });
     }
 
     fn serialize_page_label_tree(&mut self, chunk_container: &mut ChunkContainer) {
-        if let Some(container) = PageLabelContainer::new(
-            &self
-                .page_infos
-                .iter()
-                .map(|page| page.page_label().clone())
-                .collect::<Vec<_>>(),
-        ) {
+        if let Some(container) = PageLabelContainer::new(&self.page_infos.iter().map(|page| page.page_label().clone()).collect::<Vec<_>>()) {
             let page_label_tree_ref = self.new_ref();
             container.serialize(self, chunk_container, page_label_tree_ref);
         }
@@ -747,10 +648,7 @@ impl SerializeContext {
     }
 
     #[cfg(feature = "pdf")]
-    fn serialize_embedded_pdfs(
-        &mut self,
-        chunk_container: &mut ChunkContainer,
-    ) -> KrillaResult<()> {
+    fn serialize_embedded_pdfs(&mut self, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {
         let pdf_ctx = self.global_objects.pdf_ctx.take();
 
         pdf_ctx.serialize(self, chunk_container)
@@ -770,9 +668,7 @@ impl SerializeContext {
 
             if !borrowed.cid_font().is_empty() {
                 let f = self.register_font_identifier(borrowed.cid_font().identifier());
-                borrowed
-                    .cid_font()
-                    .serialize(self, chunk_container, f.get_ref())?;
+                borrowed.cid_font().serialize(self, chunk_container, f.get_ref())?;
             }
         }
 
@@ -790,17 +686,11 @@ impl SerializeContext {
 
     fn serialize_page_tree(&mut self, chunk_container: &mut ChunkContainer) {
         let mut page_tree_chunk = self.new_chunk();
-        page_tree_chunk
-            .pages(self.page_tree_ref)
-            .count(self.page_infos.len() as i32)
-            .kids(self.page_infos.iter().map(|i| i.ref_()));
+        page_tree_chunk.pages(self.page_tree_ref).count(self.page_infos.len() as i32).kids(self.page_infos.iter().map(|i| i.ref_()));
         chunk_container.non_stream.page_tree = Some((self.page_tree_ref, page_tree_chunk));
     }
 
-    fn serialize_xyz_destinations(
-        &mut self,
-        chunk_container: &mut ChunkContainer,
-    ) -> KrillaResult<()> {
+    fn serialize_xyz_destinations(&mut self, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {
         let xyz_destinations = self.global_objects.xyz_destinations.take();
         for (ref_, dest) in &xyz_destinations {
             dest.serialize(self, chunk_container, *ref_);
@@ -816,20 +706,12 @@ impl SerializeContext {
             let mut parent_tree_map = HashMap::new();
             let mut id_tree_map = BTreeMap::new();
             let struct_tree_root_ref = self.new_ref();
-            let document_ref = root.serialize(
-                self,
-                chunk_container,
-                &mut parent_tree_map,
-                &mut id_tree_map,
-                struct_tree_root_ref,
-            )?;
+            let document_ref = root.serialize(self, chunk_container, &mut parent_tree_map, &mut id_tree_map, struct_tree_root_ref)?;
 
             root.validate(&id_tree_map)?;
 
             let mut chunk = self.new_chunk();
-            let mut tree = chunk
-                .indirect(struct_tree_root_ref)
-                .start::<StructTreeRoot>();
+            let mut tree = chunk.indirect(struct_tree_root_ref).start::<StructTreeRoot>();
 
             let mut sub_chunks = vec![];
 
@@ -863,9 +745,11 @@ impl SerializeContext {
                 ns.ns(TextStr("https://github.com/LaurenzV/krilla"));
 
                 // Custom structure elements.
-                ns.role_map_ns()
-                    .to_pdf_2_0(Name(b"Datetime"), StructRole2::Span, self.pdf2_ns.ssn_ref)
-                    .to_pdf_2_0(Name(b"Terms"), StructRole2::Part, self.pdf2_ns.ssn_ref);
+                ns.role_map_ns().to_pdf_2_0(Name(b"Datetime"), StructRole2::Span, self.pdf2_ns.ssn_ref).to_pdf_2_0(
+                    Name(b"Terms"),
+                    StructRole2::Part,
+                    self.pdf2_ns.ssn_ref,
+                );
 
                 ns.finish();
                 sub_chunks.push(ns_chunk);
@@ -886,11 +770,11 @@ impl SerializeContext {
 
                             for mcid in 0..num_mcids {
                                 let rci = PageTagIdentifier::new(page_index, mcid);
-                                refs.item(parent_tree_map.get(&rci.into()).unwrap_or_else(|| {
-                                    panic!(
-                                        "page tag identifier {rci:?} doesn't appear in the tag tree"
-                                    )
-                                }));
+                                refs.item(
+                                    parent_tree_map
+                                        .get(&rci.into())
+                                        .unwrap_or_else(|| panic!("page tag identifier {rci:?} doesn't appear in the tag tree")),
+                                );
                             }
 
                             refs.finish();
@@ -905,10 +789,10 @@ impl SerializeContext {
                             // > (see 14.7.5.3, "PDF objects as content items"), the value shall be an
                             // > indirect reference to the parent structure element.
                             let page_annotations = &self.page_infos[ai.page_index].annotations();
-                            let parent_ref =
-                                *page_annotations[ai.annot_index].1.get().unwrap_or_else(|| {
-                                    panic!("annotation identifier {ai:?} doesn't appear in the tag tree")
-                                });
+                            let parent_ref = *page_annotations[ai.annot_index]
+                                .1
+                                .get()
+                                .unwrap_or_else(|| panic!("annotation identifier {ai:?} doesn't appear in the tag tree"));
                             tree_nums.insert(index as i32, parent_ref);
                         }
                     }
@@ -1095,10 +979,5 @@ impl GlobalObjects {
 }
 
 pub(crate) trait Cacheable: SipHashable {
-    fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        root_ref: Ref,
-    );
+    fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer, root_ref: Ref);
 }

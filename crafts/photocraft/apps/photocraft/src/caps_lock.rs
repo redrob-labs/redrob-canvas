@@ -21,7 +21,7 @@ pub use platform::service;
 mod platform {
     use core_graphics2::event_source::CGEventSource;
     use core_graphics2::event_types::{CGEventFlags, CGEventSourceStateID};
-    use photocraft_ui_egui::CapsLockFn;
+    use redrob_photo_ui_egui::CapsLockFn;
 
     pub fn service(_cc: &eframe::CreationContext<'_>) -> Option<CapsLockFn> {
         Some(Box::new(|| {
@@ -33,7 +33,7 @@ mod platform {
 
 #[cfg(target_os = "windows")]
 mod platform {
-    use photocraft_ui_egui::CapsLockFn;
+    use redrob_photo_ui_egui::CapsLockFn;
 
     pub fn service(_cc: &eframe::CreationContext<'_>) -> Option<CapsLockFn> {
         Some(Box::new(|| {
@@ -47,7 +47,7 @@ mod platform {
 #[cfg(target_os = "linux")]
 mod platform {
     use eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle};
-    use photocraft_ui_egui::CapsLockFn;
+    use redrob_photo_ui_egui::CapsLockFn;
     use x11rb::protocol::xkb::{self, ConnectionExt as _};
     use x11rb::protocol::xproto::ModMask;
     use x11rb::rust_connection::RustConnection;
@@ -113,7 +113,7 @@ mod platform {
 
 #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 mod platform {
-    use photocraft_ui_egui::CapsLockFn;
+    use redrob_photo_ui_egui::CapsLockFn;
 
     pub fn service(_cc: &eframe::CreationContext<'_>) -> Option<CapsLockFn> {
         None

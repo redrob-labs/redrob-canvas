@@ -12,13 +12,13 @@ mod wmf;
 
 use std::sync::Arc;
 
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::clipnest::{Clip, Drawn, MAX_NEST, deep_clips, nest};
-use vectorcraft_doc::{
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::clipnest::{Clip, Drawn, MAX_NEST, deep_clips, nest};
+use redrob_vector_doc::{
     Appearance, AppearanceItem, CharStyle, Dash, Document, FillLayer, ImageBlob, ImageObject, Justify, LayerColor, LineCap, LineJoin, Node, NodeKind,
     StrokeLayer, TextObject,
 };
-use vectorcraft_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, Vec2, shapes};
+use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, PathEl, Point, Rect, Shape, Vec2, shapes};
 
 use crate::dib::Rgba;
 use crate::{Imported, Kind};
@@ -549,7 +549,7 @@ impl Player {
         if items.is_empty() {
             return;
         }
-        let mut n = Node::path(vectorcraft_doc::NodeId(0), PathData::from_bezpath(&bp), Appearance { items, ..Appearance::default() });
+        let mut n = Node::path(redrob_vector_doc::NodeId(0), PathData::from_bezpath(&bp), Appearance { items, ..Appearance::default() });
         if let NodeKind::Path { rule, .. } = &mut n.kind {
             *rule = self.dc.fill_rule;
         }
@@ -789,7 +789,7 @@ impl Player {
             return;
         }
         let im = ImageObject { key, width: img.width, height: img.height, xf, link: None, placement: Default::default() };
-        let mut n = Node::new(vectorcraft_doc::NodeId(0), NodeKind::Image(Box::new(im)));
+        let mut n = Node::new(redrob_vector_doc::NodeId(0), NodeKind::Image(Box::new(im)));
         n.opacity = opacity.clamp(0.0, 1.0) as f32;
         self.push(n);
     }
@@ -834,8 +834,8 @@ impl Player {
             0x02 => Justify::Right,
             _ => Justify::Left,
         };
-        t.cached_bounds = Some(vectorcraft_text::layout(vectorcraft_text::FontDb::global(), &t).bounds);
-        self.push(Node::new(vectorcraft_doc::NodeId(0), NodeKind::Text(Box::new(t))));
+        t.cached_bounds = Some(redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t).bounds);
+        self.push(Node::new(redrob_vector_doc::NodeId(0), NodeKind::Text(Box::new(t))));
     }
 
     // ---------- the document ----------

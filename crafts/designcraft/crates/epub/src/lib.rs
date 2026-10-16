@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::io::Write;
 
-use designcraft_doc::{
+use redrob_layout_doc::{
     Align, CharAttrs, CharProps, Content, Document, ENDNOTE_REF, FOOTNOTE_REF, Item, ItemId, ParaProps, SpreadRef, Story, StoryId, Styles, Table,
     story,
 };
@@ -53,7 +53,7 @@ pub fn stylesheet_fonts(doc: &Document) -> Vec<(String, String)> {
     let st: &Styles = &doc.styles;
     let mut out: Vec<(String, String)> = Vec::new();
     for ps in &st.paragraph {
-        if ps.name == designcraft_doc::NO_PARA_STYLE {
+        if ps.name == redrob_layout_doc::NO_PARA_STYLE {
             continue;
         }
         let (_, cp) = st.resolve_para_style(&ps.name);
@@ -423,8 +423,8 @@ fn char_css(doc: &Document, c: &CharProps, base_size: f64, generics: &BTreeMap<S
         let _ = write!(out, "letter-spacing: {:.3}em; ", c.tracking / 1000.0);
     }
     match c.capitalization {
-        designcraft_doc::Capitalization::AllCaps => out.push_str("text-transform: uppercase; "),
-        designcraft_doc::Capitalization::SmallCaps | designcraft_doc::Capitalization::OpenTypeAllSmallCaps => {
+        redrob_layout_doc::Capitalization::AllCaps => out.push_str("text-transform: uppercase; "),
+        redrob_layout_doc::Capitalization::SmallCaps | redrob_layout_doc::Capitalization::OpenTypeAllSmallCaps => {
             out.push_str("font-variant: small-caps; ")
         }
         _ => {}
@@ -489,13 +489,13 @@ fn stylesheet_with(doc: &Document, generics: &BTreeMap<String, String>, fonts: &
     );
     let (pc, cc) = (para_classes(st), char_classes(st));
     for ps in &st.paragraph {
-        if ps.name == designcraft_doc::NO_PARA_STYLE {
+        if ps.name == redrob_layout_doc::NO_PARA_STYLE {
             continue;
         }
         let (pp, cp) = st.resolve_para_style(&ps.name);
         let lead = match cp.leading {
-            designcraft_doc::Leading::Auto => pp.auto_leading,
-            designcraft_doc::Leading::Points(v) => v / cp.size.max(1.0),
+            redrob_layout_doc::Leading::Auto => pp.auto_leading,
+            redrob_layout_doc::Leading::Points(v) => v / cp.size.max(1.0),
         };
         let mut rule = String::new();
         para_css(&pp, base, lead, &mut rule);
@@ -555,7 +555,7 @@ fn override_css(doc: &Document, o: &CharAttrs) -> String {
     if o.underline == Some(true) {
         s.push_str("text-decoration: underline; ");
     }
-    if o.capitalization == Some(designcraft_doc::Capitalization::AllCaps) {
+    if o.capitalization == Some(redrob_layout_doc::Capitalization::AllCaps) {
         s.push_str("text-transform: uppercase; ");
     }
     s.trim_end().to_string()
@@ -648,7 +648,7 @@ impl<'a> StoryWriter<'a> {
     /// With `ids`, every heading (`h1`–`h6`) gets an `id`, `{prefix}-p{paragraph index}` (the
     /// targets of the table of contents), and each `h1` starts a chapter. Each anchored object is
     /// written where it is anchored as the markup `object` returns for it.
-    fn story(&mut self, sid: StoryId, ids: Option<&str>, object: &mut dyn FnMut(&designcraft_doc::AnchoredObject) -> String) -> String {
+    fn story(&mut self, sid: StoryId, ids: Option<&str>, object: &mut dyn FnMut(&redrob_layout_doc::AnchoredObject) -> String) -> String {
         let Some(st) = self.doc.story(sid) else { return String::new() };
         self.next_footnote = self.doc.footnote_start(sid);
         self.next_endnote = self.doc.endnote_start(sid);
@@ -667,7 +667,7 @@ impl<'a> StoryWriter<'a> {
         depth: usize,
         lead: &str,
         ids: Option<&str>,
-        object: &mut dyn FnMut(&designcraft_doc::AnchoredObject) -> String,
+        object: &mut dyn FnMut(&redrob_layout_doc::AnchoredObject) -> String,
         out: &mut String,
     ) {
         let doc = self.doc;
@@ -691,15 +691,15 @@ impl<'a> StoryWriter<'a> {
                 // Export Tagging: the style's element and class.
                 let (tag, class) = export_mapping(&doc.styles, &pf.style, false, &self.pc);
                 let props = doc.styles.resolve_para(pf).0;
-                let rtl = props.direction == designcraft_doc::TextDirection::RightToLeft;
+                let rtl = props.direction == redrob_layout_doc::TextDirection::RightToLeft;
                 let continues_pre = tag == "pre" && lead.is_empty() && pre.as_ref() == Some(&(class.clone(), rtl));
                 if !continues_pre && pre.take().is_some() {
                     out.push_str("</pre>\n");
                 }
                 let list_tag = (tag == "li").then_some(match props.list_type {
-                    designcraft_doc::ListType::Numbers => "ol",
-                    designcraft_doc::ListType::Bullets => "ul",
-                    designcraft_doc::ListType::None => "ul style=\"list-style:none\"",
+                    redrob_layout_doc::ListType::Numbers => "ol",
+                    redrob_layout_doc::ListType::Bullets => "ul",
+                    redrob_layout_doc::ListType::None => "ul style=\"list-style:none\"",
                 });
                 if list != list_tag {
                     if let Some(l) = list {
@@ -758,7 +758,7 @@ impl<'a> StoryWriter<'a> {
         st: &Story,
         para: std::ops::Range<usize>,
         depth: usize,
-        object: &mut dyn FnMut(&designcraft_doc::AnchoredObject) -> String,
+        object: &mut dyn FnMut(&redrob_layout_doc::AnchoredObject) -> String,
         out: &mut String,
         after: &mut String,
     ) {
@@ -770,21 +770,21 @@ impl<'a> StoryWriter<'a> {
                 continue;
             }
             // Hidden conditional text isn't exported.
-            if f.over.conditions.as_deref().is_some_and(|c| doc.conditions_hide(c)) || f.over.change == Some(designcraft_doc::ChangeMark::Deleted) {
+            if f.over.conditions.as_deref().is_some_and(|c| doc.conditions_hide(c)) || f.over.change == Some(redrob_layout_doc::ChangeMark::Deleted) {
                 continue;
             }
             let Some(raw) = st.text.get(a..b) else { continue };
             let mut t = String::new();
             let mut seg_start = 0;
             // Each anchored object's markup in place of its mark.
-            let mut mark = st.text.get(..a).map_or(0, |t| t.matches(designcraft_doc::OBJECT_MARK).count());
+            let mut mark = st.text.get(..a).map_or(0, |t| t.matches(redrob_layout_doc::OBJECT_MARK).count());
             for (i, c) in raw.char_indices() {
-                if c != FOOTNOTE_REF && c != ENDNOTE_REF && c != designcraft_doc::OBJECT_MARK {
+                if c != FOOTNOTE_REF && c != ENDNOTE_REF && c != redrob_layout_doc::OBJECT_MARK {
                     continue;
                 }
                 t.push_str(&run_text(doc, raw.get(seg_start..i).unwrap_or_default()));
                 seg_start = i + c.len_utf8();
-                if c == designcraft_doc::OBJECT_MARK {
+                if c == redrob_layout_doc::OBJECT_MARK {
                     if let Some(o) = st.objects.get(mark) {
                         t.push_str(&object(o));
                     }
@@ -821,7 +821,7 @@ impl<'a> StoryWriter<'a> {
         st: &Story,
         pos: usize,
         depth: usize,
-        object: &mut dyn FnMut(&designcraft_doc::AnchoredObject) -> String,
+        object: &mut dyn FnMut(&redrob_layout_doc::AnchoredObject) -> String,
         out: &mut String,
         after: &mut String,
     ) {
@@ -851,7 +851,7 @@ impl<'a> StoryWriter<'a> {
         st: &Story,
         pos: usize,
         depth: usize,
-        object: &mut dyn FnMut(&designcraft_doc::AnchoredObject) -> String,
+        object: &mut dyn FnMut(&redrob_layout_doc::AnchoredObject) -> String,
         out: &mut String,
     ) {
         let Some(note) = st.endnotes.get(st.endnotes_before(pos)) else { return };
@@ -890,7 +890,7 @@ impl<'a> StoryWriter<'a> {
 
     /// A table: header rows as `thead`, footer rows as `tfoot`, merged cells as row and column
     /// spans (kept within their row group).
-    fn table(&mut self, t: &Table, depth: usize, object: &mut dyn FnMut(&designcraft_doc::AnchoredObject) -> String, out: &mut String) {
+    fn table(&mut self, t: &Table, depth: usize, object: &mut dyn FnMut(&redrob_layout_doc::AnchoredObject) -> String, out: &mut String) {
         let (nr, nc) = (t.nrows(), t.ncols());
         if nr.checked_mul(nc) != Some(t.cells.len()) {
             return;
@@ -942,10 +942,10 @@ impl<'a> StoryWriter<'a> {
 
 /// Run text with variables replaced by their values.
 fn run_text(doc: &Document, raw: &str) -> String {
-    if raw.chars().any(|c| designcraft_doc::vars::var_index(c).is_some()) {
+    if raw.chars().any(|c| redrob_layout_doc::vars::var_index(c).is_some()) {
         let sub: String = raw
             .chars()
-            .map(|c| match designcraft_doc::vars::var_index(c) {
+            .map(|c| match redrob_layout_doc::vars::var_index(c) {
                 Some(i) => doc.variable_value(i, None).unwrap_or_default(),
                 None => c.to_string(),
             })
@@ -1163,7 +1163,7 @@ pub fn reading_order(doc: &Document) -> Vec<Block> {
 /// Package path of an asset: `{dir}/{name}-{id}.{ext}`, the name from its original file name
 /// (lowercase ASCII, so the package stays readable) and the id keeping two assets of the same
 /// name apart.
-fn asset_path(dir: &str, a: &designcraft_doc::Asset, mime: &str) -> String {
+fn asset_path(dir: &str, a: &redrob_layout_doc::Asset, mime: &str) -> String {
     let stem = a.name.rsplit(['/', '\\']).next().unwrap_or("");
     let stem = stem.rsplit_once('.').map_or(stem, |(s, _)| s);
     let name: String = stem.chars().map(|c| if c.is_ascii_alphanumeric() { c.to_ascii_lowercase() } else { '-' }).collect();
@@ -1206,7 +1206,7 @@ fn graphic_html<'a>(
     }
     let mime = safe_mime(&a.mime);
     // Video and sound: an HTML5 player (with the poster, when there is one).
-    if let Some(kind) = designcraft_doc::media_kind(mime) {
+    if let Some(kind) = redrob_layout_doc::media_kind(mime) {
         let name = asset_path("media", a, mime);
         images.insert(name.clone(), (mime, a.data.as_slice()));
         let m = it.media.clone().unwrap_or_default();
@@ -1258,7 +1258,7 @@ fn body_html<'a>(
                 let anchor = format!("s{k}");
                 // Anchored objects go where they are anchored: their graphics in the text, an
                 // above-line object as a block of its own.
-                let mut object = |o: &designcraft_doc::AnchoredObject| {
+                let mut object = |o: &redrob_layout_doc::AnchoredObject| {
                     let mut out = String::new();
                     o.item.walk(&mut |it| {
                         if let Some((markup, _)) = graphic_html(doc, it, &mut images, img_src) {
@@ -1266,11 +1266,11 @@ fn body_html<'a>(
                         }
                     });
                     match &o.position {
-                        designcraft_doc::AnchorPosition::AboveLine { align, .. } if !out.is_empty() => {
+                        redrob_layout_doc::AnchorPosition::AboveLine { align, .. } if !out.is_empty() => {
                             let align = match align {
-                                designcraft_doc::anchored::AnchorAlign::Left => "left",
-                                designcraft_doc::anchored::AnchorAlign::Center => "center",
-                                designcraft_doc::anchored::AnchorAlign::Right => "right",
+                                redrob_layout_doc::anchored::AnchorAlign::Left => "left",
+                                redrob_layout_doc::anchored::AnchorAlign::Center => "center",
+                                redrob_layout_doc::anchored::AnchorAlign::Right => "right",
                             };
                             format!("<span class=\"anchored\" style=\"display:block;text-align:{align}\">{out}</span>")
                         }
@@ -1320,7 +1320,7 @@ pub fn images_without_alt(doc: &Document) -> Vec<String> {
         let Some(it) = doc.item(iid) else { continue };
         let Content::Graphic(g) = &it.content else { continue };
         let Some(a) = doc.assets.get(&g.asset) else { continue };
-        if !a.data.is_empty() && designcraft_doc::media_kind(safe_mime(&a.mime)).is_none() && it.alt_text.trim().is_empty() {
+        if !a.data.is_empty() && redrob_layout_doc::media_kind(safe_mime(&a.mime)).is_none() && it.alt_text.trim().is_empty() {
             out.push(a.name.clone());
         }
     }
@@ -1481,9 +1481,9 @@ pub fn export_epub(doc: &Document, opts: &EpubOptions) -> Result<Vec<u8>, EpubEr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_doc::build::NewDocument;
-    use designcraft_doc::geom::{Affine, Rect, shapes};
-    use designcraft_doc::{Asset, AssetId, Content, Graphic, Item, ItemId, ParaFormat, Shape, SpreadRef, Story, StoryId, Table};
+    use redrob_layout_doc::build::NewDocument;
+    use redrob_layout_doc::geom::{Affine, Rect, shapes};
+    use redrob_layout_doc::{Asset, AssetId, Content, Graphic, Item, ItemId, ParaFormat, Shape, SpreadRef, Story, StoryId, Table};
     use std::io::Read;
     use std::sync::Arc;
 
@@ -1541,10 +1541,14 @@ mod tests {
             });
             item
         };
-        let inline = designcraft_doc::AnchoredObject::new(graphic(&mut d, "inline"), designcraft_doc::AnchorPosition::Inline { y_offset: 0.0 });
-        let above = designcraft_doc::AnchoredObject::new(
+        let inline = redrob_layout_doc::AnchoredObject::new(graphic(&mut d, "inline"), redrob_layout_doc::AnchorPosition::Inline { y_offset: 0.0 });
+        let above = redrob_layout_doc::AnchoredObject::new(
             graphic(&mut d, "above"),
-            designcraft_doc::AnchorPosition::AboveLine { align: designcraft_doc::anchored::AnchorAlign::Center, space_before: 0.0, space_after: 0.0 },
+            redrob_layout_doc::AnchorPosition::AboveLine {
+                align: redrob_layout_doc::anchored::AnchorAlign::Center,
+                space_before: 0.0,
+                space_after: 0.0,
+            },
         );
         let st = d.story_mut(sid).unwrap();
         st.insert_object(1, inline);
@@ -1577,13 +1581,13 @@ mod tests {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
         for (name, tag, list) in [
-            ("Bullet", "li", Some(designcraft_doc::ListType::Bullets)),
-            ("Number", "li", Some(designcraft_doc::ListType::Numbers)),
+            ("Bullet", "li", Some(redrob_layout_doc::ListType::Bullets)),
+            ("Number", "li", Some(redrob_layout_doc::ListType::Numbers)),
             ("Typed", "li", None),
             ("Code", "pre", None),
         ] {
-            let para = designcraft_doc::ParaAttrs { list_type: list, ..Default::default() };
-            d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+            let para = redrob_layout_doc::ParaAttrs { list_type: list, ..Default::default() };
+            d.styles_mut().paragraph.push(redrob_layout_doc::ParagraphStyle {
                 name: name.into(),
                 based_on: None,
                 next_style: None,
@@ -1591,7 +1595,7 @@ mod tests {
                 chars: CharAttrs::default(),
                 shortcut: String::new(),
             });
-            d.styles_mut().export_tags.insert(format!("p:{name}"), designcraft_doc::ExportTag { tag: tag.into(), class: String::new() });
+            d.styles_mut().export_tags.insert(format!("p:{name}"), redrob_layout_doc::ExportTag { tag: tag.into(), class: String::new() });
         }
         let text = "Intro\nfirst\nsecond\none\ntwo\nx = 1\ny = 2\nEnd\n• typed";
         let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 300.0), lid, text, ParaFormat::default()).unwrap();
@@ -1626,7 +1630,7 @@ mod tests {
         let mut d = Document::new(&NewDocument { pages: 2, ..Default::default() });
         let lid = d.default_layer();
         for (name, tag) in [("Chapter", "h1"), ("Section", "h2")] {
-            d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+            d.styles_mut().paragraph.push(redrob_layout_doc::ParagraphStyle {
                 name: name.into(),
                 based_on: None,
                 next_style: None,
@@ -1634,7 +1638,7 @@ mod tests {
                 chars: CharAttrs::default(),
                 shortcut: String::new(),
             });
-            d.styles_mut().export_tags.insert(format!("p:{name}"), designcraft_doc::ExportTag { tag: tag.into(), class: String::new() });
+            d.styles_mut().export_tags.insert(format!("p:{name}"), redrob_layout_doc::ExportTag { tag: tag.into(), class: String::new() });
         }
         let text = "One\nBody\nOne point one\nMore\nTwo\nText";
         let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 300.0), lid, text, ParaFormat::default()).unwrap();
@@ -1692,7 +1696,7 @@ mod tests {
     fn chapters_are_split_at_h1() {
         let mut d = Document::new(&NewDocument { pages: 3, ..Default::default() });
         let lid = d.default_layer();
-        d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+        d.styles_mut().paragraph.push(redrob_layout_doc::ParagraphStyle {
             name: "Chapter".into(),
             based_on: None,
             next_style: None,
@@ -1700,7 +1704,7 @@ mod tests {
             chars: CharAttrs::default(),
             shortcut: String::new(),
         });
-        d.styles_mut().export_tags.insert("p:Chapter".into(), designcraft_doc::ExportTag { tag: "h1".into(), class: String::new() });
+        d.styles_mut().export_tags.insert("p:Chapter".into(), redrob_layout_doc::ExportTag { tag: "h1".into(), class: String::new() });
         // A title page without a heading, then a story that opens with a chapter and has a
         // second one in the middle.
         d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 100.0), lid, "Title page", ParaFormat::default()).unwrap();
@@ -1819,7 +1823,7 @@ mod tests {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
         for (name, size) in [("見出し", 30.0), ("本文", 10.0), ("Body Text", 12.0), ("Body-Text", 20.0)] {
-            d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+            d.styles_mut().paragraph.push(redrob_layout_doc::ParagraphStyle {
                 name: name.into(),
                 based_on: None,
                 next_style: None,
@@ -1979,7 +1983,7 @@ mod tests {
         let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 100.0), lid, "A&B <C> \"D\"", ParaFormat::default()).unwrap();
         d.styles_mut()
             .export_tags
-            .insert(format!("p:{}", story::BASIC_PARAGRAPH), designcraft_doc::ExportTag { tag: "h2".into(), class: "Primary \"Copy\"".into() });
+            .insert(format!("p:{}", story::BASIC_PARAGRAPH), redrob_layout_doc::ExportTag { tag: "h2".into(), class: "Primary \"Copy\"".into() });
         if let Some(basic) = d.styles_mut().paragraph.iter_mut().find(|s| s.name == story::BASIC_PARAGRAPH) {
             basic.chars.font_family = Some("Quoted \"Serif\" <Alt>".into());
         }

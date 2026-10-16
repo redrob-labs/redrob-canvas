@@ -6,7 +6,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, Event, EventTarget, IdbDatabase, IdbRequest, IdbTransactionMode};
 
 use crate::preset_bridge::{Batch, Bridge, MAX_RECORDS, record_limit};
-use photocraft_engine::preset_store::MAX_STORE_BYTES;
+use redrob_photo_engine::preset_store::MAX_STORE_BYTES;
 
 const DATABASE: &str = "photocraft.presets";
 const FILES: &str = "files";

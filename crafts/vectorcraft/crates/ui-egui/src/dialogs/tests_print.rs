@@ -4,8 +4,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use redrob_vector_engine::Session;
 use serde_json::{Value, json};
-use vectorcraft_engine::Session;
 
 use super::print::{KIND, SECTIONS};
 use crate::print::{PrintJob, PrintService, Printer};
@@ -57,7 +57,7 @@ fn set(app: &mut VectorcraftApp, field: &str, value: Value) {
 }
 
 fn pages(pdf: &[u8]) -> usize {
-    vectorcraft_pdf::info(pdf, None).unwrap().pages.len()
+    redrob_vector_pdf::info(pdf, None).unwrap().pages.len()
 }
 
 #[test]

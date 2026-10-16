@@ -6,7 +6,7 @@
 //! The document is untouched until then, so the move stays one History step.
 
 use egui::{CursorIcon, Modifiers, Pos2};
-use photocraft_algo::transform::Homography;
+use redrob_photo_algo::transform::Homography;
 
 use crate::PhotocraftApp;
 use crate::canvas::{ToolEvent, ViewXform};

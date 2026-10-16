@@ -8,26 +8,26 @@
 //! appended at the lowest priority to every family, so Latin text keeps Inter.
 //!
 //! Other scripts the bundled fonts lack (Thai, Arabic, Hebrew, Devanagari and the other Indic
-//! scripts, ...: [`photocraft_text::scripts`]) work the same way, each with its own attempt state,
+//! scripts, ...: [`redrob_photo_text::scripts`]) work the same way, each with its own attempt state,
 //! independent of the CJK order: the first installed candidate file whose character map really
 //! has the missing character is registered, once per script. egui shapes each font run with
 //! HarfRust, so Thai marks and Arabic joining come from the font; it has no bidi reordering yet.
 //!
-//! Script order follows the UI locale ([`photocraft_text::cjk::script_order`]): Kana prefers a
+//! Script order follows the UI locale ([`redrob_photo_text::cjk::script_order`]): Kana prefers a
 //! Japanese font, Hangul a Korean one, Bopomofo a Traditional Chinese one, and Han the
 //! locale's script (Japanese forms only for a Japanese locale). At most one font is read per
 //! frame, each file at most once, and once every script has been tried the scan stops.
 //!
-//! Builds made with the optional craft-fonts input (`CRAFT_FONTS_DIR`,
-//! [`photocraft_text::craft_fonts`]) carry Japanese fonts (BIZ UDPGothic first): they are tried
+//! Builds made with the optional craft-fonts input (`REDROB_CRAFT_FONTS_DIR`,
+//! [`redrob_photo_text::craft_fonts`]) carry Japanese fonts (BIZ UDPGothic first): they are tried
 //! before the system Japanese fonts, in the Japanese slot of the same locale order. Without
 //! craft-fonts (and on the web, which never embeds them) nothing changes.
 
 use egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
 use egui::{FontData, FontFamily, FontId, Shape};
-use photocraft_text::cjk::{self, CjkChar, CjkScript, FontFile};
-use photocraft_text::craft_fonts::{self, CraftFont};
-use photocraft_text::scripts::{self, Script};
+use redrob_photo_text::cjk::{self, CjkChar, CjkScript, FontFile};
+use redrob_photo_text::craft_fonts::{self, CraftFont};
+use redrob_photo_text::scripts::{self, Script};
 use std::path::PathBuf;
 
 /// Skip absurdly large files (a corrupt or non-font path must not eat memory).
@@ -430,13 +430,13 @@ mod tests {
 
     #[test]
     fn lazy_fallbacks_follow_ui_font_size_and_survive_size_changes() {
-        use photocraft_engine::prefs::UiFontSize;
+        use redrob_photo_engine::prefs::UiFontSize;
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx);
         ctx.run_ui(Default::default(), |_| {}).textures_delta.clear();
         crate::theme::set_ui_font_size(&ctx, UiFontSize::Large);
         let name = "test-lazy-fallback".to_string();
-        add_to_all_families(&ctx, name.clone(), FontData::from_static(photocraft_text::fonts::INTER_REGULAR.as_slice()));
+        add_to_all_families(&ctx, name.clone(), FontData::from_static(redrob_photo_text::fonts::INTER_REGULAR.as_slice()));
         for (size, scale) in [(UiFontSize::Large, 16.0 / 12.0), (UiFontSize::Tiny, 10.0 / 12.0), (UiFontSize::Small, 1.0)] {
             crate::theme::set_ui_font_size(&ctx, size);
             for _ in 0..2 {
@@ -501,7 +501,7 @@ mod tests {
         assert_eq!(regular_weight(&fvar_font(&[(b"wght", 500.0, 600.0, 900.0)], false), 0), Some(500.0), "Regular clamped into the axis");
         assert_eq!(regular_weight(&fvar_font(&[(b"wght", 100.0, 400.0, 900.0)], false), 0), None, "already Regular");
         assert_eq!(regular_weight(&fvar_font(&[(b"wdth", 75.0, 100.0, 100.0)], false), 0), None, "no weight axis");
-        assert_eq!(regular_weight(photocraft_text::fonts::INTER_REGULAR.as_slice(), 0), None, "static font");
+        assert_eq!(regular_weight(redrob_photo_text::fonts::INTER_REGULAR.as_slice(), 0), None, "static font");
         for bad in [&thin[..thin.len() - 9], &thin[..30], &b"ttcf"[..], &[][..]] {
             assert_eq!(regular_weight(bad, 1), None);
         }
@@ -509,7 +509,7 @@ mod tests {
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx);
         ctx.run_ui(Default::default(), |_| {}).textures_delta.clear();
-        add_to_all_families(&ctx, "test-static".into(), FontData::from_static(photocraft_text::fonts::INTER_REGULAR.as_slice()));
+        add_to_all_families(&ctx, "test-static".into(), FontData::from_static(redrob_photo_text::fonts::INTER_REGULAR.as_slice()));
         ctx.run_ui(Default::default(), |_| {}).textures_delta.clear();
         let fonts = ctx.fonts(|f| f.definitions().clone());
         assert_eq!(fonts.font_data.get("test-static").map(|d| d.tweak.coords.clone()), Some(Default::default()));
@@ -865,7 +865,7 @@ mod tests {
     #[test]
     fn craft_fonts_render_japanese_without_system_fonts() {
         let Some(ui_font) = craft_fonts::japanese_for_ui().first().copied() else {
-            eprintln!("skipping: built without craft-fonts (set CRAFT_FONTS_DIR to a craft-fonts checkout)");
+            eprintln!("skipping: built without craft-fonts (set REDROB_CRAFT_FONTS_DIR to a craft-fonts checkout)");
             return;
         };
         // An English locale tries Chinese first (none here), then Japanese: the craft font.
@@ -904,7 +904,7 @@ mod tests {
         assert!(!render(&ctx, "日本語の文字"));
         let n = ctx.fonts(|f| f.definitions().font_data.keys().filter(|k| k.starts_with(FONT_PREFIX)).count());
         assert_eq!(n, 0);
-        if craft_fonts::CRAFT_FONTS.is_empty() {
+        if craft_fonts::REDROB_CRAFT_FONTS.is_empty() {
             assert!(craft_embedded(CjkScript::Japanese).is_empty());
         }
     }

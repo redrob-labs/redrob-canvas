@@ -412,7 +412,7 @@ pub(crate) fn printer_list(queues: impl IntoIterator<Item = (String, Option<bool
     queues.into_iter().map(|(name, two_sided)| Printer { default: default == Some(name.as_str()), name, two_sided }).collect()
 }
 
-/// A printer list in the text form craft-print's former PowerShell backend printed: one per line,
+/// A printer list in the text form redrob-craft-print's former PowerShell backend printed: one per line,
 /// `*` before the system default, followed by a tab and 2/1 for duplex support. The first `*`
 /// wins when a broken spooler marks more than one. [`printers`] no longer uses it; it stays for
 /// callers that parse lists in this form.

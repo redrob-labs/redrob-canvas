@@ -6,8 +6,8 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
-use hayro_write::hayro_syntax::page::Page;
 use hayro_write::hayro_syntax::PdfVersion as HayroPdfVersion;
+use hayro_write::hayro_syntax::page::Page;
 use hayro_write::{ExtractionError, ExtractionQuery};
 use pdf_writer::{Name, Ref};
 
@@ -39,11 +39,9 @@ impl Display for PdfError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             PdfError::InvalidPage(index) => write!(f, "invalid page index {index}"),
-            PdfError::VersionMismatch(version) => write!(
-                f,
-                "embedded PDF requires {}, which is newer than the selected PDF version",
-                version.as_str()
-            ),
+            PdfError::VersionMismatch(version) => {
+                write!(f, "embedded PDF requires {}, which is newer than the selected PDF version", version.as_str())
+            }
         }
     }
 }
@@ -94,10 +92,7 @@ pub(crate) struct PdfDocumentInfo {
 
 impl PdfDocumentInfo {
     pub(crate) fn new(counter: u64) -> Self {
-        Self {
-            counter,
-            ..Self::default()
-        }
+        Self { counter, ..Self::default() }
     }
 }
 
@@ -108,13 +103,7 @@ pub(crate) struct PdfSerializerContext {
 }
 
 impl PdfSerializerContext {
-    pub(crate) fn add_page(
-        &mut self,
-        document: &PdfDocument,
-        page_index: usize,
-        ref_: Ref,
-        location: Option<Location>,
-    ) {
+    pub(crate) fn add_page(&mut self, document: &PdfDocument, page_index: usize, ref_: Ref, location: Option<Location>) {
         // Unlike XObject's, we cannot cache page refs since Acrobat doesn't like duplicate page
         // refs in the page tree.
         let info = self.get_info(document);
@@ -135,13 +124,7 @@ impl PdfSerializerContext {
 
     #[must_use = "This method might not use the original ref and could return a different one that \
     was previously cached."]
-    pub(crate) fn add_xobject(
-        &mut self,
-        document: &PdfDocument,
-        page_index: usize,
-        ref_: Ref,
-        location: Option<Location>,
-    ) -> Ref {
+    pub(crate) fn add_xobject(&mut self, document: &PdfDocument, page_index: usize, ref_: Ref, location: Option<Location>) -> Ref {
         let info = self.get_info(document);
 
         if let Some(cached_ref) = info.cached_xobjects.get(&page_index) {
@@ -157,11 +140,7 @@ impl PdfSerializerContext {
         ref_
     }
 
-    pub(crate) fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-    ) -> KrillaResult<()> {
+    pub(crate) fn serialize(self, sc: &mut SerializeContext, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {
         let page_tree_parent_ref = sc.page_tree_ref();
         let krilla_version = sc.serialize_settings().configuration.version();
 
@@ -179,10 +158,7 @@ impl PdfSerializerContext {
             // but we just always allocate it if we have at least one PDF,
             // regardless of how the files are embedded. We can change this in the
             // future, but it keeps the code simpler.
-            let xobject_group_color_space = sc.register_colorspace(
-                chunk_container,
-                rgb::color_space(sc.serialize_settings().no_device_cs).into(),
-            );
+            let xobject_group_color_space = sc.register_colorspace(chunk_container, rgb::color_space(sc.serialize_settings().no_device_cs).into());
             let chunk_settings = sc.chunk_settings();
 
             let deferred_chunk = Deferred::new(move || {
@@ -198,9 +174,7 @@ impl PdfSerializerContext {
                 // actually points to the colorspace that is embedded in the full PDF.
                 let (assigned_cs_ref, should_cs_ref) = match &xobject_group_color_space {
                     MaybeDeviceColorSpace::DeviceRgb => (None, None),
-                    MaybeDeviceColorSpace::ColorSpace(cs) => {
-                        (Some(new_ref.bump()), Some(cs.get_ref()))
-                    }
+                    MaybeDeviceColorSpace::ColorSpace(cs) => (Some(new_ref.bump()), Some(cs.get_ref())),
                     MaybeDeviceColorSpace::DeviceGray | MaybeDeviceColorSpace::DeviceCMYK => {
                         unreachable!()
                     }
@@ -212,11 +186,7 @@ impl PdfSerializerContext {
                 let pdf_version = convert_pdf_version(pdf.version());
 
                 if krilla_version < pdf_version {
-                    return Err(KrillaError::Pdf(
-                        doc.clone(),
-                        PdfError::VersionMismatch(pdf_version),
-                        first_location,
-                    ));
+                    return Err(KrillaError::Pdf(doc.clone(), PdfError::VersionMismatch(pdf_version), first_location));
                 }
 
                 let extracted = hayro_write::extract(
@@ -225,9 +195,7 @@ impl PdfSerializerContext {
                     chunk_settings,
                     |group| {
                         if let Some(local_group_color_space_ref) = assigned_cs_ref {
-                            group
-                                .insert(Name(b"CS"))
-                                .primitive(local_group_color_space_ref);
+                            group.insert(Name(b"CS")).primitive(local_group_color_space_ref);
                         } else {
                             // If we aren't using an ICC color space, just use
                             // the device RGB color space.
@@ -244,32 +212,17 @@ impl PdfSerializerContext {
 
                 root_ref_mappings.insert(result.page_tree_parent_ref, page_tree_parent_ref);
 
-                if let (Some(local_group_color_space_ref), Some(group_color_space_ref)) =
-                    (assigned_cs_ref, should_cs_ref)
-                {
+                if let (Some(local_group_color_space_ref), Some(group_color_space_ref)) = (assigned_cs_ref, should_cs_ref) {
                     root_ref_mappings.insert(local_group_color_space_ref, group_color_space_ref);
                 }
 
-                for ((should_ref, extraction_result), location) in info
-                    .query_refs
-                    .iter()
-                    .zip(result.root_refs)
-                    .zip(&info.locations)
-                {
-                    let assigned_ref = convert_extraction_result(
-                        extraction_result,
-                        &doc,
-                        location.clone().as_ref(),
-                    )?;
+                for ((should_ref, extraction_result), location) in info.query_refs.iter().zip(result.root_refs).zip(&info.locations) {
+                    let assigned_ref = convert_extraction_result(extraction_result, &doc, location.clone().as_ref())?;
 
                     root_ref_mappings.insert(assigned_ref, *should_ref);
                 }
 
-                Ok(EmbeddedPdfChunk {
-                    root_ref_mappings,
-                    original_chunk: result.chunk,
-                    new_chunk: OnceLock::new(),
-                })
+                Ok(EmbeddedPdfChunk { root_ref_mappings, original_chunk: result.chunk, new_chunk: OnceLock::new() })
             });
 
             chunk_container.mixed.embedded_pdfs.push(deferred_chunk);
@@ -298,11 +251,7 @@ fn convert_pdf_version(version: HayroPdfVersion) -> PdfVersion {
     }
 }
 
-fn convert_extraction_result<T>(
-    result: Result<T, ExtractionError>,
-    doc: &PdfDocument,
-    location: Option<&Location>,
-) -> KrillaResult<T> {
+fn convert_extraction_result<T>(result: Result<T, ExtractionError>, doc: &PdfDocument, location: Option<&Location>) -> KrillaResult<T> {
     result.map_err(|e| {
         let pdf_error = match e {
             ExtractionError::InvalidPageIndex(i) => PdfError::InvalidPage(i),

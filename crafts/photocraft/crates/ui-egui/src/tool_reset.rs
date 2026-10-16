@@ -197,7 +197,7 @@ mod tests {
     use super::*;
 
     fn app() -> PhotocraftApp {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width": 8, "height": 8})).unwrap();
         PhotocraftApp::new(s, crate::Services::default())
     }

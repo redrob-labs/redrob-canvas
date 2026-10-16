@@ -4,7 +4,7 @@
 //! scale, colour handling with printer profile / intent / black-point compensation, corner and
 //! centre crop marks, registration marks, description and label) with a small PDF writer
 //! (ISO 32000: one page, a Flate-compressed image XObject, vector marks, Helvetica text), then
-//! hands its bytes to `craft-print` (CUPS on macOS/Linux, Windows PDF printing on Windows).
+//! hands its bytes to `redrob-craft-print` (CUPS on macOS/Linux, Windows PDF printing on Windows).
 //! `"dryRun": true` reports the backend command without spooling; a PDF is kept only at an
 //! explicit output path. Shared spooler transport files are private and automatically removed.
 //!
@@ -16,8 +16,8 @@ use std::io::Write as _;
 
 mod windows_marks;
 
-use photocraft_color::ColorMode;
-use photocraft_doc::{Document, LayerContent, SmartSource};
+use redrob_photo_color::ColorMode;
+use redrob_photo_doc::{Document, LayerContent, SmartSource};
 use serde_json::{Value, json};
 
 use crate::commands::CommandSpec;
@@ -245,7 +245,7 @@ fn print_image(doc: &Document, p: &Value, cmd: &str) -> Result<(PrintImage, Valu
     // RGB and Grayscale: the composite over white is the print image (no layer flatten).
     if matches!(d.mode, ColorMode::Rgb | ColorMode::Grayscale) {
         let gray = d.mode == ColorMode::Grayscale;
-        let buf = photocraft_compose::flatten(d).over_background([1.0, 1.0, 1.0]);
+        let buf = redrob_photo_compose::flatten(d).over_background([1.0, 1.0, 1.0]);
         let to8 = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
         let data: Vec<u8> =
             if gray { buf.px.iter().map(|p| to8(p[0])).collect() } else { buf.px.iter().flat_map(|p| [to8(p[0]), to8(p[1]), to8(p[2])]).collect() };
@@ -406,16 +406,16 @@ fn render_and_spool(doc: &Document, p: &Value, cmd: &str) -> Result<Value> {
         return Err(other("the selected color profile or page text requires PDF printing. Save as PDF, or clear Print Settings to use PDF printing."));
     }
     let pdf = print_pdf(&page);
-    let job = craft_print::Job {
+    let job = redrob_craft_print::Job {
         printer: p.get("printer").and_then(Value::as_str).filter(|v| !v.is_empty()).map(str::to_string),
         copies,
         title: doc.name.clone(),
         // Redrob Canvas already placed and scaled the image on its physical sheet. Scaling again
         // in the driver would change the preview, print resolution and crop-mark positions.
-        scaling: craft_print::Scaling::Exact,
+        scaling: redrob_craft_print::Scaling::Exact,
         ..Default::default()
     };
-    let command = if send { json!(craft_print::command_preview(&job).map_err(other)?) } else { Value::Null };
+    let command = if send { json!(redrob_craft_print::command_preview(&job).map_err(other)?) } else { Value::Null };
     let pdf_path = match output {
         Some(path) => {
             write_file(&path, &pdf)?;
@@ -427,7 +427,7 @@ fn render_and_spool(doc: &Document, p: &Value, cmd: &str) -> Result<Value> {
     let mut spool = Value::Null;
     if send && !dry {
         require_printing_enabled()?;
-        spool = json!(craft_print::submit(&pdf, &job).map_err(other)?);
+        spool = json!(redrob_craft_print::submit(&pdf, &job).map_err(other)?);
         sent = true;
     }
     Ok(
@@ -461,13 +461,13 @@ fn printer_name(p: &Value) -> Result<String> {
     if let Some(name) = p.get("printer").and_then(Value::as_str).filter(|v| !v.trim().is_empty()) {
         return Ok(name.to_string());
     }
-    craft_print::rgb::default_printer().map_err(other)?.ok_or_else(|| other("no printer chosen and no default printer is set"))
+    redrob_craft_print::rgb::default_printer().map_err(other)?.ok_or_else(|| other("no printer chosen and no default printer is set"))
 }
 
 /// The driver settings chosen with Print Settings… (`printerSettings`, hex), when any.
-fn printer_settings(p: &Value) -> Result<Option<craft_print::rgb::DevMode>> {
+fn printer_settings(p: &Value) -> Result<Option<redrob_craft_print::rgb::DevMode>> {
     match p.get("printerSettings").and_then(Value::as_str).filter(|v| !v.is_empty()) {
-        Some(hex) => craft_print::rgb::DevMode::from_hex(hex).map(Some).map_err(|e| bad("file.print", e.to_string())),
+        Some(hex) => redrob_craft_print::rgb::DevMode::from_hex(hex).map(Some).map_err(|e| bad("file.print", e.to_string())),
         None => Ok(None),
     }
 }
@@ -507,20 +507,20 @@ pub fn page_rect_top_left(page: &PrintPage) -> (f64, f64, f64, f64) {
 fn print_windows(page: &PrintPage, p: &Value, title: &str, copies: u32) -> Result<Value> {
     let printer = printer_name(p)?;
     let settings = printer_settings(p)?;
-    let device_page = craft_print::rgb::page(&printer, settings.as_ref()).map_err(other)?;
+    let device_page = redrob_craft_print::rgb::page(&printer, settings.as_ref()).map_err(other)?;
     if (device_page.paper.0 - page.paper.0).abs() > 2.0 || (device_page.paper.1 - page.paper.1).abs() > 2.0 {
         return Err(other("the driver paper or orientation differs from the print layout; choose the matching paper in Print Settings before printing"));
     }
     let rgb = page_rgb(page)?;
-    let image = craft_print::rgb::RgbImage { width: page.image.width, height: page.image.height, data: &rgb };
+    let image = redrob_craft_print::rgb::RgbImage { width: page.image.width, height: page.image.height, data: &rgb };
     let rect = page_rect_top_left(page);
     let primitives = windows_marks::primitives(page.marks, rect);
     let color_policy = match p.get("colorHandling").and_then(Value::as_str) {
-        Some("photocraftManages" | "photoshopManages") => craft_print::rgb::ColorPolicy::ApplicationManaged,
-        Some("noColorManagement") => craft_print::rgb::ColorPolicy::Unmanaged,
-        _ => craft_print::rgb::ColorPolicy::DriverManaged,
+        Some("photocraftManages" | "photoshopManages") => redrob_craft_print::rgb::ColorPolicy::ApplicationManaged,
+        Some("noColorManagement") => redrob_craft_print::rgb::ColorPolicy::Unmanaged,
+        _ => redrob_craft_print::rgb::ColorPolicy::DriverManaged,
     };
-    let job = craft_print::rgb::Job {
+    let job = redrob_craft_print::rgb::Job {
         printer: &printer,
         settings: settings.as_ref(),
         title,
@@ -529,23 +529,23 @@ fn print_windows(page: &PrintPage, p: &Value, title: &str, copies: u32) -> Resul
         color_policy,
         primitives: &primitives,
     };
-    let done = craft_print::rgb::print(&job, &image, rect).map_err(other)?;
+    let done = redrob_craft_print::rgb::print(&job, &image, rect).map_err(other)?;
     Ok(
         json!({"printer": printer, "dpi": [done.dpi.0, done.dpi.1], "deviceRect": [done.device_rect.0, done.device_rect.1, done.device_rect.2, done.device_rect.3]}),
     )
 }
 
 fn printers(_: &mut Session, _: &Value) -> Result<Value> {
-    match craft_print::rgb::printers() {
+    match redrob_craft_print::rgb::printers() {
         Ok(list) => Ok(json!({"supported": true, "printers": list.iter().map(|p| json!({"name": p.name, "default": p.default})).collect::<Vec<_>>()})),
-        Err(craft_print::rgb::PrintError::Unsupported) => Ok(json!({"supported": false, "printers": []})),
+        Err(redrob_craft_print::rgb::PrintError::Unsupported) => Ok(json!({"supported": false, "printers": []})),
         Err(e) => Err(other(e)),
     }
 }
 
 fn printer_page(_: &mut Session, p: &Value) -> Result<Value> {
     let printer = printer_name(p)?;
-    let pg = craft_print::rgb::page(&printer, printer_settings(p)?.as_ref()).map_err(other)?;
+    let pg = redrob_craft_print::rgb::page(&printer, printer_settings(p)?.as_ref()).map_err(other)?;
     Ok(
         json!({"printer": printer, "paper": [pg.paper.0, pg.paper.1], "printable": [pg.printable.0, pg.printable.1, pg.printable.2, pg.printable.3], "dpi": [pg.dpi.0, pg.dpi.1]}),
     )
@@ -555,19 +555,20 @@ fn printer_page(_: &mut Session, p: &Value) -> Result<Value> {
 static PRINTING_DISABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Refuse to spool anything from this process from now on (tests, fuzzing). The
-/// `PHOTOCRAFT_NO_PRINT` environment variable does the same for a whole shell (CI).
+/// `REDROB_PHOTO_NO_PRINT` environment variable does the same for a whole shell (CI).
 pub fn disable_printing() {
     PRINTING_DISABLED.store(true, std::sync::atomic::Ordering::Relaxed);
 }
 
-/// Whether spooling is blocked by [`disable_printing`] or `PHOTOCRAFT_NO_PRINT`.
+/// Whether spooling is blocked by [`disable_printing`] or `REDROB_PHOTO_NO_PRINT`.
 pub fn printing_disabled() -> bool {
-    PRINTING_DISABLED.load(std::sync::atomic::Ordering::Relaxed) || std::env::var_os("PHOTOCRAFT_NO_PRINT").is_some_and(|v| !v.is_empty() && v != "0")
+    PRINTING_DISABLED.load(std::sync::atomic::Ordering::Relaxed)
+        || std::env::var_os("REDROB_PHOTO_NO_PRINT").or_else(|| std::env::var_os("PHOTOCRAFT_NO_PRINT")).is_some_and(|v| !v.is_empty() && v != "0") // legacy: the upstream variable is read when ours is unset
 }
 
 fn require_printing_enabled() -> Result<()> {
     if printing_disabled() {
-        Err(other("printing is disabled in this process (photocraft_engine::print_cmds::disable_printing or PHOTOCRAFT_NO_PRINT); use dryRun: true"))
+        Err(other("printing is disabled in this process (redrob_photo_engine::print_cmds::disable_printing or REDROB_PHOTO_NO_PRINT); use dryRun: true"))
     } else {
         Ok(())
     }
@@ -576,7 +577,7 @@ fn require_printing_enabled() -> Result<()> {
 /// The printers the system spooler knows (Print's Printer menu): CUPS queues and driverless
 /// destinations on macOS and Linux, `Win32_Printer` on Windows, none in the browser.
 fn system_printers(_: &mut Session, _: &Value) -> Result<Value> {
-    let list = craft_print::printers();
+    let list = redrob_craft_print::printers();
     let default = list.iter().find(|p| p.default).map(|p| p.name.clone());
     let printers: Vec<Value> = list.into_iter().map(|p| json!({"name": p.name, "default": p.default})).collect();
     Ok(json!({"printers": printers, "default": default}))
@@ -608,15 +609,15 @@ fn package(s: &mut Session, p: &Value) -> Result<Value> {
     // The native format keeps external links; our PSD writer has no `lnkE` (external linked
     // file) support yet, so a PSD package would embed or flatten them.
     let ext = match p.get("format").and_then(Value::as_str) {
-        Some(f @ ("psd" | "psb" | "pcraft")) => f.to_string(),
-        Some(f) => return Err(bad(cmd, format!("unknown package format `{f}` (pcraft|psd|psb)"))),
-        None => "pcraft".into(),
+        Some(f @ ("psd" | "psb" | "rphoto")) => f.to_string(),
+        Some(f) => return Err(bad(cmd, format!("unknown package format `{f}` (rphoto|psd|psb)"))),
+        None => "rphoto".into(),
     };
     let folder = join(dir, &crate::file_cmds::sanitize(&name));
     let links_dir = join(&folder, "Links");
     // Copy every linked file once; relink the copy of the document to the copies.
     let mut copied: Vec<(String, String)> = Vec::new();
-    let mut relinks: Vec<(photocraft_doc::LayerId, String)> = Vec::new();
+    let mut relinks: Vec<(redrob_photo_doc::LayerId, String)> = Vec::new();
     let mut missing = Vec::new();
     for (_, _, l) in doc.walk() {
         let LayerContent::Smart(so) = &l.content else { continue };
@@ -663,7 +664,7 @@ pub fn paths_to_ai(doc: &Document, which: &str) -> Result<(String, usize)> {
     let dpi = f64::from(doc.resolution_dpi.max(1.0));
     let k = 72.0 / dpi;
     let (w, h) = (f64::from(doc.size.width) * k, f64::from(doc.size.height) * k);
-    let mut chosen: Vec<(String, &photocraft_doc::Path)> = Vec::new();
+    let mut chosen: Vec<(String, &redrob_photo_doc::Path)> = Vec::new();
     match which {
         "all" => {
             chosen.extend(doc.paths.iter().map(|p| (p.name.clone(), &p.path)));
@@ -798,7 +799,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Package…",
             &["File"],
             None,
-            r##"{"dir":folder,"format":"pcraft|psd|psb"="pcraft"} → {folder, document, links, missing} (copies the document and its linked files into <dir>/<name>/, relinked to Links/)"##,
+            r##"{"dir":folder,"format":"rphoto|psd|psb"="rphoto"} → {folder, document, links, missing} (copies the document and its linked files into <dir>/<name>/, relinked to Links/)"##,
             native_doc,
             package
         ),

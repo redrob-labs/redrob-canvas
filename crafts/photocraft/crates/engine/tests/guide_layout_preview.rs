@@ -1,4 +1,4 @@
-use photocraft_engine::{Session, guide_layout};
+use redrob_photo_engine::{Session, guide_layout};
 use serde_json::json;
 
 fn session() -> Session {

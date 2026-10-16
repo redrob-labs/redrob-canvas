@@ -1,5 +1,5 @@
 [package]
-name = "designcraft-idml"
+name = "redrob-layout-idml"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,12 +9,12 @@ description = "DesignCraft IDML (InDesign Markup Language) import and export"
 workspace = true
 
 [dependencies]
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
+redrob-layout-geom = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-doc = { workspace = true }
 thiserror = { workspace = true }
 quick-xml = { workspace = true }
 zip = { workspace = true }
 
 [dev-dependencies]
-designcraft-compose = { workspace = true }
+redrob-layout-compose = { workspace = true }

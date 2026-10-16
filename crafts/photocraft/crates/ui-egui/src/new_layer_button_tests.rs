@@ -9,7 +9,7 @@ use serde_json::json;
 use crate::PhotocraftApp;
 
 fn panel() -> egui_kittest::Harness<'static, PhotocraftApp> {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 8, "height": 8})).unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1200.0, 800.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());

@@ -485,7 +485,7 @@ mod tests {
     }
 
     fn crop_app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.run("file.new", serde_json::json!({"width": 200, "height": 120})).unwrap();
         app.ui.tool = Tool::Crop;
         crate::crop_ui::ensure_frame(&mut app);
@@ -512,7 +512,7 @@ mod tests {
     #[test]
     fn o_stays_the_dodge_key_without_a_crop_box() {
         // No document: the Crop tool shows no box, so O picks the Dodge tool.
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.ui.tool = Tool::Crop;
         press(&mut app, Modifiers::NONE);
         assert_eq!(app.ui.tool, Tool::Dodge);

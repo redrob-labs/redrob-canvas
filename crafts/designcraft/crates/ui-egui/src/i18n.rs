@@ -3188,7 +3188,7 @@ pub fn count_label(lang: &str, noun: &str, count: usize) -> String {
 /// Localize reserved built-in style names only; user-defined names are document data.
 pub fn style_name<'a>(lang: &str, name: &'a str) -> &'a str {
     match name {
-        designcraft_doc::NO_PARA_STYLE | designcraft_doc::BASIC_PARAGRAPH | designcraft_doc::NO_CHAR_STYLE => tr(lang, name),
+        redrob_layout_doc::NO_PARA_STYLE | redrob_layout_doc::BASIC_PARAGRAPH | redrob_layout_doc::NO_CHAR_STYLE => tr(lang, name),
         _ => name,
     }
 }

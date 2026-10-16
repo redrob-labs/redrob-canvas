@@ -6,7 +6,7 @@
 //! are shown as errors (status bar + notice); import warnings as a notice.
 
 use crate::{PhotocraftApp, notices};
-use photocraft_engine::file_cmds::{is_template, untitled_name};
+use redrob_photo_engine::file_cmds::{is_template, untitled_name};
 
 /// A request from the operating system, delivered by the platform shell through
 /// [`Services::os_events`](crate::Services::os_events).
@@ -45,8 +45,8 @@ pub(crate) fn with_missing_fonts(app: &PhotocraftApp, warnings: Vec<String>) -> 
 
 /// [`with_missing_fonts`] for `doc` itself: a file held back for its profile prompt
 /// (`open_prompt`) isn't the active document yet.
-pub(crate) fn with_missing_fonts_of(doc: &photocraft_doc::Document, mut warnings: Vec<String>) -> Vec<String> {
-    for w in photocraft_engine::type_extra_cmds::missing_font_warnings(doc) {
+pub(crate) fn with_missing_fonts_of(doc: &redrob_photo_doc::Document, mut warnings: Vec<String>) -> Vec<String> {
+    for w in redrob_photo_engine::type_extra_cmds::missing_font_warnings(doc) {
         if !warnings.contains(&w) {
             warnings.push(w);
         }
@@ -109,10 +109,10 @@ impl PhotocraftApp {
         // would block the window). Preset files (brushes, gradients) go the usual way.
         let ext = std::path::Path::new(path).extension().map(|e| e.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
         if self.background_jobs && !crate::preset_files_ui::PRESET_EXTS.contains(&ext.as_str()) {
-            crate::jobs_ui::start_open(self, &display_name(path), Some(path.to_string()), photocraft_engine::jobs::OpenSource::Path(path.to_string()))?;
+            crate::jobs_ui::start_open(self, &display_name(path), Some(path.to_string()), redrob_photo_engine::jobs::OpenSource::Path(path.to_string()))?;
             return Ok(Vec::new());
         }
-        let bytes = photocraft_format::read_file(std::path::Path::new(path)).map_err(|e| format!("{path}: {e}"))?;
+        let bytes = redrob_photo_format::read_file(std::path::Path::new(path)).map_err(|e| format!("{path}: {e}"))?;
         self.open_file(path, &bytes)
     }
 
@@ -250,7 +250,7 @@ impl PhotocraftApp {
     /// Place a file's bytes as a smart object layer (File › Place; `linked`: Place Linked, to that
     /// path), for files that weren't read from a path the command can read.
     pub(crate) fn place_bytes(&mut self, name: &str, bytes: Vec<u8>, linked: Option<String>) -> Result<serde_json::Value, String> {
-        let r = photocraft_engine::file_cmds::place_bytes(&mut self.session, name, bytes, linked, &serde_json::json!({})).map_err(|e| e.to_string());
+        let r = redrob_photo_engine::file_cmds::place_bytes(&mut self.session, name, bytes, linked, &serde_json::json!({})).map_err(|e| e.to_string());
         self.sync_views();
         r
     }

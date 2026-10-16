@@ -1,13 +1,13 @@
 //! Interactive PDF: hyperlink annotations (frames and text ranges → URLs, e-mail, pages) and the
 //! bookmark outline.
 
-use craft_pdf::write::backend as krilla;
-use designcraft_doc::{Bookmark, Document, HyperlinkDest, HyperlinkSource, SpreadRef};
-use designcraft_geom::{Affine, Rect};
 use krilla::action::{Action, LinkAction};
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::destination::XyzDestination;
 use krilla::outline::{Outline, OutlineNode};
+use redrob_craft_pdf::write::backend as krilla;
+use redrob_layout_doc::{Bookmark, Document, HyperlinkDest, HyperlinkSource, SpreadRef};
+use redrob_layout_geom::{Affine, Rect};
 
 use crate::export::Sheet;
 
@@ -19,7 +19,7 @@ pub(crate) fn sheet_of_page(doc: &Document, sheets: &[Sheet], abs: usize) -> Opt
 }
 
 /// Spread-space rectangles covered by a hyperlink source on spread `si`.
-fn source_rects(doc: &Document, cache: &designcraft_compose::Cache, src: &HyperlinkSource, si: usize) -> Vec<Rect> {
+fn source_rects(doc: &Document, cache: &redrob_layout_compose::Cache, src: &HyperlinkSource, si: usize) -> Vec<Rect> {
     match src {
         HyperlinkSource::Item { id } => match (doc.find(*id), doc.item(*id)) {
             (Some(loc), Some(it)) if loc.spread == SpreadRef::Doc(si) => vec![doc.parent_xf(&loc).transform_rect_bbox(it.bounds())],
@@ -50,7 +50,7 @@ fn source_rects(doc: &Document, cache: &designcraft_compose::Cache, src: &Hyperl
 }
 
 /// Link annotations for the sheet at `idx`.
-pub(crate) fn annotations(doc: &Document, cache: &designcraft_compose::Cache, sheets: &[Sheet], idx: usize) -> Vec<Annotation> {
+pub(crate) fn annotations(doc: &Document, cache: &redrob_layout_compose::Cache, sheets: &[Sheet], idx: usize) -> Vec<Annotation> {
     let sh = &sheets[idx];
     let mut out = Vec::new();
     for h in &doc.hyperlinks {
@@ -82,7 +82,7 @@ pub(crate) fn annotations(doc: &Document, cache: &designcraft_compose::Cache, sh
         let first = doc.spreads[..sh.spread].iter().map(|s| s.pages.len()).sum::<usize>();
         sp.pages.iter().position(|p| p.bounds().intersect(sh.trim).area() > 0.0).map(|i| first + i)
     });
-    let mut stack: Vec<(Affine, &std::sync::Arc<designcraft_doc::Item>)> =
+    let mut stack: Vec<(Affine, &std::sync::Arc<redrob_layout_doc::Item>)> =
         doc.spreads.get(sh.spread).map(|sp| sp.items.iter().map(|it| (Affine::IDENTITY, it)).collect()).unwrap_or_default();
     while let Some((xf, it)) = stack.pop() {
         stack.extend(it.shown_children().map(|c| (xf * it.xf, c)));
@@ -98,7 +98,7 @@ pub(crate) fn annotations(doc: &Document, cache: &designcraft_compose::Cache, sh
             (r.y1 - sh.media.y0) as f32,
         );
         let Some(rect) = rect.filter(|_| r.width() > 0.0 && r.height() > 0.0) else { continue };
-        use designcraft_doc::ButtonAction as B;
+        use redrob_layout_doc::ButtonAction as B;
         let total = doc.page_count();
         let page = match action {
             B::GoToUrl { url } => {
@@ -122,9 +122,9 @@ pub(crate) fn annotations(doc: &Document, cache: &designcraft_compose::Cache, sh
     if doc.stories.values().any(|st| !st.xrefs.is_empty()) {
         let index = cache.xref_index(doc);
         for st in doc.stories.values().filter(|st| !st.xrefs.is_empty()) {
-            for ((pos, _), x) in st.text.match_indices(designcraft_doc::XREF_MARK).zip(&st.xrefs) {
+            for ((pos, _), x) in st.text.match_indices(redrob_layout_doc::XREF_MARK).zip(&st.xrefs) {
                 let Some(i) = index.page_index(x.target).and_then(|p| sheet_of_page(doc, sheets, p)) else { continue };
-                let src = HyperlinkSource::Text { story: st.id, start: pos, end: pos + designcraft_doc::XREF_MARK.len_utf8() };
+                let src = HyperlinkSource::Text { story: st.id, start: pos, end: pos + redrob_layout_doc::XREF_MARK.len_utf8() };
                 for r in source_rects(doc, cache, &src, sh.spread) {
                     let r = r.intersect(sh.bleed);
                     let rect = krilla::geom::Rect::from_ltrb(

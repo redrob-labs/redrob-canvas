@@ -40,7 +40,7 @@ pub fn check(app: &mut PhotocraftApp, ctx: &egui::Context) {
 
 /// Drop the GPU canvas after `fault`: free its resources, send every view through the CPU
 /// path, record why, and tell the user. Documents are untouched.
-pub fn fall_back(app: &mut PhotocraftApp, fault: &photocraft_gpu::Fault) {
+pub fn fall_back(app: &mut PhotocraftApp, fault: &redrob_photo_gpu::Fault) {
     let Some(gpu) = app.gpu.take() else { return };
     log::error!("{fault}; using the CPU renderer for the rest of the session");
     gpu.release();
@@ -65,7 +65,7 @@ pub fn system_info(app: &PhotocraftApp) -> Vec<String> {
 
 /// Help › System Info's on-screen text: version, platform and the graphics state.
 pub fn system_info_ui(app: &PhotocraftApp) -> Vec<String> {
-    let mut v = vec![format!("Redrob Canvas {}", photocraft_engine::build_info::long_version()), {
+    let mut v = vec![format!("Redrob Canvas {}", redrob_photo_engine::build_info::long_version()), {
         let template = "Platform: {os} {arch}";
         crate::i18n::fmt(tl!(template), &[("os", std::env::consts::OS), ("arch", std::env::consts::ARCH)])
     }];
@@ -77,7 +77,7 @@ pub fn system_info_ui(app: &PhotocraftApp) -> Vec<String> {
 /// The `help.systemInfo` result: the same facts as JSON.
 pub fn system_info_json(app: &PhotocraftApp) -> serde_json::Value {
     json!({
-        "version": photocraft_engine::build_info::long_version(),
+        "version": redrob_photo_engine::build_info::long_version(),
         "os": std::env::consts::OS,
         "arch": std::env::consts::ARCH,
         "gpu": app.perf.gpu_info,
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn system_info_copy_and_api_stay_english_in_czech_ui() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.perf.gpu_info.adapter = "Test GPU".into();
         app.perf.gpu_info.preference = "auto".into();
         let english = crate::i18n::with_language(crate::i18n::Lang::EN, || system_info(&app));
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn system_info_translates_empty_and_stored_auto_only_for_display() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         // Hardware names are opaque even when they happen to match a lookup key.
         app.perf.gpu_info.adapter = "auto".into();
         crate::i18n::with_language(crate::i18n::Lang::from_code("cs").unwrap(), || {
@@ -192,7 +192,7 @@ mod tests {
 
     #[test]
     fn fallback_warning_keeps_reason_in_inspectable_state() {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         queue_fallback_notice(&mut app, "device unavailable");
         let state = serde_json::to_value(&app.ui).unwrap();
         assert_eq!(state["gpu_fallback_notice"], "device unavailable");
@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn failed_preference_save_keeps_recovery_warning_open() {
         let services = crate::Services { save_prefs: Some(Box::new(|_| Err("disk full".into()))), ..Default::default() };
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         queue_fallback_notice(&mut app, "GPU fault");
         assert!(choose_recovery(&mut app, true).is_err());
         assert_eq!(app.ui.gpu_fallback_notice.as_deref(), Some("GPU fault"));
@@ -220,7 +220,7 @@ mod tests {
             })),
             ..Default::default()
         };
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), services);
         queue_fallback_notice(&mut app, "device unavailable");
         choose_recovery(&mut app, false).unwrap();
         assert!(!app.session.prefs().performance.use_gpu);

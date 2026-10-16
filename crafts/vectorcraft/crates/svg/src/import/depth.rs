@@ -16,10 +16,10 @@ use usvg::roxmltree;
 use super::css::{Styles, XNode, parse_decls};
 
 /// The deepest an SVG's elements may nest, references followed. Far beyond what drawing apps
-/// write, and deeper than a document's objects may nest ([`vectorcraft_doc::MAX_DEPTH`]: wrappers
+/// write, and deeper than a document's objects may nest ([`redrob_vector_doc::MAX_DEPTH`]: wrappers
 /// that hold one object aren't kept, and what is still deeper is merged into the group around
 /// it). usvg uses about 15 kB of stack for each level: the importer runs on a thread with 16 MB
-/// ([`vectorcraft_doc::depth::with_deep_stack`]), except on the web, where there is the one
+/// ([`redrob_vector_doc::depth::with_deep_stack`]), except on the web, where there is the one
 /// stack: [`WEB_DEPTH`] there.
 pub const MAX_ELEMENT_DEPTH: usize = if cfg!(target_arch = "wasm32") { WEB_DEPTH } else { 256 };
 

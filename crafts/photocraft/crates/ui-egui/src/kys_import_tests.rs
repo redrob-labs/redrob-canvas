@@ -54,7 +54,7 @@ const SAMPLE: &str = "\u{feff}<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 ";
 
 fn app() -> PhotocraftApp {
-    PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default())
+    PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default())
 }
 
 #[test]
@@ -124,7 +124,7 @@ fn import_button_fills_the_dialog_and_ok_applies_the_set() {
     let services = crate::Services { file_dialog: Some(crate::file_dialog::fake(answers).0), ..Default::default() };
     let mut h = Harness::builder().with_size(egui::vec2(1100.0, 760.0)).with_max_steps(64).build_eframe(|cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
-        PhotocraftApp::new(photocraft_engine::Session::new(), services)
+        PhotocraftApp::new(redrob_photo_engine::Session::new(), services)
     });
     let ctx = h.ctx.clone();
     // A hand-made override the file agrees with the default on: the import clears it.
@@ -230,7 +230,7 @@ fn with_photoshop(set: &'static str, saved_prefs: Option<&'static str>) -> (Phot
         })),
         ..Default::default()
     };
-    (PhotocraftApp::new(photocraft_engine::Session::new(), services), store)
+    (PhotocraftApp::new(redrob_photo_engine::Session::new(), services), store)
 }
 
 /// First launch beside Photoshop: its live set is offered, not applied. Import applies it,
@@ -349,8 +349,8 @@ fn a_windows_set_with_tool_keys_imports_as_photoshop_meant_it() {
     assert_eq!(f["overrides"]["tools.select.pencil"], json!("N"));
     let levels = f["overrides"].as_object().unwrap().iter().find(|(id, _)| id.contains("levels")).map(|(_, v)| v.clone());
     assert_eq!(
-        levels.as_ref().and_then(Value::as_str).and_then(photocraft_engine::prefs::normalize_shortcut),
-        photocraft_engine::prefs::normalize_shortcut("Cmd+Alt+Shift+L")
+        levels.as_ref().and_then(Value::as_str).and_then(redrob_photo_engine::prefs::normalize_shortcut),
+        redrob_photo_engine::prefs::normalize_shortcut("Cmd+Alt+Shift+L")
     );
     crate::dialogs::confirm(&mut app, id).unwrap();
     assert_eq!(crate::tool_shortcuts::shortcut(&app, crate::state::Tool::Pencil).as_deref(), Some("N"));

@@ -8,9 +8,9 @@ use std::collections::HashMap;
 use std::sync::{Arc, PoisonError};
 
 use egui::{Color32, Pos2, Stroke};
-use photocraft_doc::{Document, LayerContent, LayerId, TextLayer};
-use photocraft_geom::{Affine, Point};
-use photocraft_text::TextLayout;
+use redrob_photo_doc::{Document, LayerContent, LayerId, TextLayer};
+use redrob_photo_geom::{Affine, Point};
+use redrob_photo_text::TextLayout;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -27,7 +27,7 @@ fn text_layer(doc: &Document, id: LayerId) -> Option<&TextLayer> {
 }
 
 fn byte_of(text: &str, ci: usize) -> usize {
-    photocraft_text::byte_index(text, ci)
+    redrob_photo_text::byte_index(text, ci)
 }
 
 /// Layout of a type layer (cached per document revision) and its text → document transform.
@@ -42,7 +42,7 @@ pub fn layout(app: &mut PhotocraftApp, id: LayerId) -> Option<(Arc<TextLayout>, 
     {
         return Some((l.clone(), transform, t.text.clone()));
     }
-    let l = Arc::new(photocraft_text::shared().lock().ok()?.layout(t, doc.resolution_dpi));
+    let l = Arc::new(redrob_photo_text::shared().lock().ok()?.layout(t, doc.resolution_dpi));
     app.type_layout = Some((key, l.clone()));
     Some((l, transform, t.text.clone()))
 }
@@ -75,7 +75,7 @@ fn hit_layer(app: &mut PhotocraftApp, x: f64, y: f64) -> Option<LayerId> {
         });
         let Some((l, aff, _)) = layout(app, *id) else { return shown };
         let (tx, ty) = to_text(&aff, x, y);
-        shown || photocraft_text::text_point_inside(&l, tx, ty, slop)
+        shown || redrob_photo_text::text_point_inside(&l, tx, ty, slop)
     })
 }
 
@@ -84,7 +84,7 @@ fn hit_layer(app: &mut PhotocraftApp, x: f64, y: f64) -> Option<LayerId> {
 /// they sit somewhere else than the glyphs the caret and selection are placed on.
 pub(crate) fn shows_own_layout(doc: &Document, t: &TextLayer) -> bool {
     let Some(cache) = &t.cache else { return false };
-    let mut eng = photocraft_text::shared().lock().unwrap_or_else(PoisonError::into_inner);
+    let mut eng = redrob_photo_text::shared().lock().unwrap_or_else(PoisonError::into_inner);
     let ours = eng.render(t, doc.resolution_dpi, doc.pixel_format()).1.surface.content_bounds();
     let have = cache.content_bounds();
     [(ours.x0, have.x0), (ours.y0, have.y0), (ours.x1, have.x1), (ours.y1, have.y1)].iter().all(|(a, b)| (a - b).abs() <= 1)
@@ -120,7 +120,7 @@ pub fn edit_active(app: &mut PhotocraftApp) -> Result<(), String> {
         ed.anchor = 0;
         ed.caret = n;
     }
-    let vertical = app.session.active().and_then(|st| text_layer(&st.doc, id)).is_some_and(|t| t.orientation == photocraft_doc::text::Orientation::Vertical);
+    let vertical = app.session.active().and_then(|st| text_layer(&st.doc, id)).is_some_and(|t| t.orientation == redrob_photo_doc::text::Orientation::Vertical);
     app.ui.text_edit_return_tool = None;
     app.ui.tool = if vertical { crate::state::Tool::VerticalType } else { crate::state::Tool::Type };
     app.ui.mask_target = false;
@@ -145,7 +145,7 @@ pub fn edit_at(app: &mut PhotocraftApp, x: f64, y: f64) -> bool {
     let off = hit_offset(app, id, x, y);
     app.ui.text_edit =
         Some(TextEdit { layer: id.0, caret: off, anchor: off, session: key, created: false, mask: false, dragging: false, resize: None, preedit: None });
-    let vertical = app.session.active().and_then(|st| text_layer(&st.doc, id)).is_some_and(|t| t.orientation == photocraft_doc::text::Orientation::Vertical);
+    let vertical = app.session.active().and_then(|st| text_layer(&st.doc, id)).is_some_and(|t| t.orientation == redrob_photo_doc::text::Orientation::Vertical);
     if !previous_tool.is_type() {
         app.ui.text_edit_return_tool = Some(previous_tool);
     }
@@ -163,7 +163,7 @@ fn hit_offset(app: &mut PhotocraftApp, id: LayerId, x: f64, y: f64) -> usize {
 pub(crate) fn offset_at(app: &mut PhotocraftApp, id: LayerId, x: f64, y: f64) -> usize {
     let Some((l, aff, text)) = layout(app, id) else { return 0 };
     let (tx, ty) = to_text(&aff, x, y);
-    photocraft_text::hit_char(&l, &text, tx, ty).0
+    redrob_photo_text::hit_char(&l, &text, tx, ty).0
 }
 
 fn hex(c: [f32; 4]) -> String {
@@ -190,7 +190,7 @@ fn handle_sides(i: u8) -> (bool, bool, bool, bool) {
 
 pub(crate) fn box_shape(app: &PhotocraftApp, id: LayerId) -> Option<(f32, f32, f32, f32)> {
     match app.session.active().and_then(|s| text_layer(&s.doc, id).map(|t| t.shape.clone()))? {
-        photocraft_doc::text::TextShape::Box { x, y, width, height } => Some((x, y, width, height)),
+        redrob_photo_doc::text::TextShape::Box { x, y, width, height } => Some((x, y, width, height)),
         _ => None,
     }
 }
@@ -484,9 +484,9 @@ pub(crate) enum CharToggle {
 }
 
 impl CharToggle {
-    fn is_on(self, st: &photocraft_doc::text::CharStyle) -> bool {
+    fn is_on(self, st: &redrob_photo_doc::text::CharStyle) -> bool {
         match self {
-            Self::AllCaps => st.caps == photocraft_doc::text::Caps::AllCaps,
+            Self::AllCaps => st.caps == redrob_photo_doc::text::Caps::AllCaps,
             Self::Underline => st.underline,
             Self::FauxBold => st.faux_bold,
             Self::FauxItalic => st.faux_italic,
@@ -513,7 +513,7 @@ fn byte_range(text: &str, a: usize, b: usize) -> (usize, usize) {
 
 /// The character styles of the selection, or of the typing style when the text is empty. Empty
 /// when nothing is selected in non-empty text.
-fn selected_styles(t: &TextLayer, a: usize, b: usize) -> Vec<photocraft_doc::text::CharStyle> {
+fn selected_styles(t: &TextLayer, a: usize, b: usize) -> Vec<redrob_photo_doc::text::CharStyle> {
     let runs = t.char_runs();
     if t.text.is_empty() {
         return runs.into_iter().take(1).map(|r| r.style).collect();
@@ -637,7 +637,7 @@ fn ime_update(app: &mut PhotocraftApp, s: &str, commit: bool) {
 
 /// Character index of the previous / next word boundary (shared with `type.navigate`).
 fn word_boundary(text: &str, from: usize, forward: bool) -> usize {
-    photocraft_text::word_boundary(text, from, forward)
+    redrob_photo_text::word_boundary(text, from, forward)
 }
 
 /// Most clicks in a run that select more: 2 a word, 3 a line, 4 a paragraph, 5 all text. The
@@ -680,8 +680,8 @@ pub(crate) fn click_selection(layout: Option<&TextLayout>, text: &str, caret: us
         }
         3 => {
             let Some(l) = layout else { return paragraph_of(text, c) };
-            let ln = line.and_then(|i| l.lines.get(i)).or_else(|| l.lines.get(photocraft_text::line_index(l, byte_of(text, c))));
-            ln.map_or((c, c), |ln| (photocraft_text::char_index(text, ln.range.start), photocraft_text::char_index(text, ln.range.end)))
+            let ln = line.and_then(|i| l.lines.get(i)).or_else(|| l.lines.get(redrob_photo_text::line_index(l, byte_of(text, c))));
+            ln.map_or((c, c), |ln| (redrob_photo_text::char_index(text, ln.range.start), redrob_photo_text::char_index(text, ln.range.end)))
         }
         4 => paragraph_of(text, c),
         5 => (0, n),
@@ -692,10 +692,10 @@ pub(crate) fn click_selection(layout: Option<&TextLayout>, text: &str, caret: us
 /// Characters of the paragraph holding character `c`, without its hard return.
 fn paragraph_of(text: &str, c: usize) -> (usize, usize) {
     let b = byte_of(text, c);
-    let paras = photocraft_text::layout::split_paragraphs(text);
+    let paras = redrob_photo_text::layout::split_paragraphs(text);
     let Some(r) = paras.iter().find(|r| b >= r.start && b < r.end).or_else(|| paras.last()) else { return (c, c) };
     let body = text.get(r.clone()).unwrap_or("").trim_end_matches(['\r', '\n']);
-    let start = photocraft_text::char_index(text, r.start);
+    let start = redrob_photo_text::char_index(text, r.start);
     (start, start + body.chars().count())
 }
 
@@ -719,7 +719,7 @@ pub fn multi_click(app: &mut PhotocraftApp, egui_count: u32, x: f64, y: f64) {
     let (caret, line) = match &laid {
         Some((l, aff, t)) if *t == text && x.is_finite() && y.is_finite() => {
             let (tx, ty) = to_text(aff, x, y);
-            let (ci, line) = photocraft_text::hit_char(l, t, tx, ty);
+            let (ci, line) = redrob_photo_text::hit_char(l, t, tx, ty);
             (ci, Some(line))
         }
         _ => (ed.caret, None),
@@ -735,11 +735,11 @@ pub fn multi_click(app: &mut PhotocraftApp, egui_count: u32, x: f64, y: f64) {
 fn line_step(app: &mut PhotocraftApp, id: LayerId, caret: usize, dir: i32) -> usize {
     let Some((l, _, text)) = layout(app, id) else { return caret };
     let x = l.caret(byte_of(&text, caret)).0;
-    photocraft_text::line_step(&l, &text, caret, x, dir)
+    redrob_photo_text::line_step(&l, &text, caret, x, dir)
 }
 
 fn is_vertical(app: &PhotocraftApp, id: LayerId) -> bool {
-    app.session.active().and_then(|s| text_layer(&s.doc, id)).is_some_and(|t| t.orientation == photocraft_doc::text::Orientation::Vertical)
+    app.session.active().and_then(|s| text_layer(&s.doc, id)).is_some_and(|t| t.orientation == redrob_photo_doc::text::Orientation::Vertical)
 }
 
 /// Arrow keys follow the text flow: in vertical type ↑/↓ move along the column (previous/next
@@ -762,7 +762,7 @@ pub(crate) fn flow_key(key: egui::Key, vertical: bool) -> egui::Key {
 /// Line start / end for the caret's line.
 fn line_edge(app: &mut PhotocraftApp, id: LayerId, caret: usize, end: bool) -> usize {
     let Some((l, _, text)) = layout(app, id) else { return caret };
-    photocraft_text::line_edge(&l, &text, caret, end)
+    redrob_photo_text::line_edge(&l, &text, caret, end)
 }
 
 /// Keyboard input while editing. Returns true when a type edit session is active (single-key
@@ -992,7 +992,7 @@ pub fn commit_with(app: &mut PhotocraftApp, mods: egui::Modifiers) {
     if text.trim().is_empty() && ed.created {
         let _ = app.run("layer.delete", json!({"layer": ed.layer}));
     } else if ed.created {
-        let name = photocraft_engine::type_cmds::layer_name(&text);
+        let name = redrob_photo_engine::type_cmds::layer_name(&text);
         let _ = app.run("type.edit", json!({"layer": ed.layer, "name": name, "coalesce": ed.session}));
     }
 }
@@ -1031,7 +1031,7 @@ pub fn draw_overlay(app: &mut PhotocraftApp, painter: &egui::Painter, xf: &ViewX
     let shape = app.session.active().and_then(|s| text_layer(&s.doc, id).map(|t| t.shape.clone()));
     let frame = Stroke::new(1.0, t.accent);
     match shape {
-        Some(photocraft_doc::text::TextShape::Box { x, y, width, height }) => {
+        Some(redrob_photo_doc::text::TextShape::Box { x, y, width, height }) => {
             if !has_transform {
                 let c = [scr_t(x, y), scr_t(x + width, y), scr_t(x + width, y + height), scr_t(x, y + height)];
                 painter.add(egui::Shape::closed_line(c.to_vec(), frame));
@@ -1107,16 +1107,16 @@ fn draw_mask_overlay(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXfor
         let q = |v: f32| (v.clamp(0.0, 1.0) * a * 255.0 + 0.5) as u8;
         Color32::from_rgba_premultiplied(q(rgb[0]), q(rgb[1]), q(rgb[2]), (a * 255.0 + 0.5) as u8)
     };
-    let corners = |r: photocraft_geom::Rect| -> Vec<Pos2> {
+    let corners = |r: redrob_photo_geom::Rect| -> Vec<Pos2> {
         let (x0, y0, x1, y1) = (r.x0 as f32, r.y0 as f32, r.x1 as f32, r.y1 as f32);
         vec![xf.to_screen(x0, y0), xf.to_screen(x1, y0), xf.to_screen(x1, y1), xf.to_screen(x0, y1)]
     };
     let surface = text_layer(&st.doc, id).and_then(|t| t.cache.as_ref());
-    let area = surface.map(|s| s.content_bounds().intersect(&canvas)).unwrap_or(photocraft_geom::Rect::EMPTY);
+    let area = surface.map(|s| s.content_bounds().intersect(&canvas)).unwrap_or(redrob_photo_geom::Rect::EMPTY);
     // One unfeathered mesh, so the bands and the text's box meet without seams.
     let mut bands = egui::Mesh::default();
     let mut band = |x0: i32, y0: i32, x1: i32, y1: i32| {
-        let r = photocraft_geom::Rect { x0, y0, x1, y1 };
+        let r = redrob_photo_geom::Rect { x0, y0, x1, y1 };
         if !r.is_empty() {
             let base = bands.vertices.len() as u32;
             for p in corners(r) {
@@ -1147,7 +1147,7 @@ fn draw_mask_overlay(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXfor
         let mut row = vec![[0.0f32; 4]; area.width() as usize];
         let mut px = Vec::with_capacity(w * h);
         for y in (area.y0..area.y1).step_by(factor as usize) {
-            surface.read_rgba_into(photocraft_geom::Rect { x0: area.x0, y0: y, x1: area.x1, y1: y + 1 }, &mut row);
+            surface.read_rgba_into(redrob_photo_geom::Rect { x0: area.x0, y0: y, x1: area.x1, y1: y + 1 }, &mut row);
             px.extend(row.iter().step_by(factor as usize).take(w).map(|p| tint(1.0 - p[3])));
         }
         px.resize(w * h, tint(1.0));
@@ -1165,20 +1165,20 @@ fn draw_mask_overlay(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXfor
     painter.add(egui::Shape::mesh(mesh));
 }
 
-/// Font families: bundled, system, and those the host serves (`photocraft_text::served`, fetched
+/// Font families: bundled, system, and those the host serves (`redrob_photo_text::served`, fetched
 /// when picked). Cached until the shared engine registers fonts or the served catalog changes.
 pub fn families() -> Arc<Vec<String>> {
     type Cached = Option<((u64, u64), Arc<Vec<String>>)>;
     static FAMILIES: std::sync::Mutex<Cached> = std::sync::Mutex::new(None);
-    let key = (photocraft_text::fonts::shared_generation(), photocraft_text::served::generation());
+    let key = (redrob_photo_text::fonts::shared_generation(), redrob_photo_text::served::generation());
     let mut cached = FAMILIES.lock().unwrap_or_else(PoisonError::into_inner);
     if let Some((k, v)) = cached.as_ref()
         && *k == key
     {
         return v.clone();
     }
-    let mut v = photocraft_text::shared().lock().map(|mut e| e.fonts.families()).unwrap_or_default();
-    for f in photocraft_text::served::families() {
+    let mut v = redrob_photo_text::shared().lock().map(|mut e| e.fonts.families()).unwrap_or_default();
+    for f in redrob_photo_text::served::families() {
         if !v.contains(&f) {
             v.push(f);
         }
@@ -1212,14 +1212,14 @@ pub fn sync_font_names(ctx: &egui::Context, show_in_english: bool) {
 fn localized_families() -> Arc<HashMap<String, String>> {
     type Cached = Option<(u64, Arc<HashMap<String, String>>)>;
     static LOCALIZED: std::sync::Mutex<Cached> = std::sync::Mutex::new(None);
-    let key = photocraft_text::fonts::shared_generation();
+    let key = redrob_photo_text::fonts::shared_generation();
     let mut cached = LOCALIZED.lock().unwrap_or_else(PoisonError::into_inner);
     if let Some((k, v)) = cached.as_ref()
         && *k == key
     {
         return v.clone();
     }
-    let v = Arc::new(photocraft_text::shared().lock().map(|mut e| e.fonts.localized_family_names()).unwrap_or_default());
+    let v = Arc::new(redrob_photo_text::shared().lock().map(|mut e| e.fonts.localized_family_names()).unwrap_or_default());
     *cached = Some((key, v.clone()));
     v
 }
@@ -1257,7 +1257,7 @@ fn weight_name(w: f32) -> &'static str {
 /// Style names available for a family: each face's actual OpenType subfamily (including numeric
 /// and nonstandard ones), plus the standard weights a variable face's `wght` axis covers.
 pub fn styles(family: &str) -> Vec<String> {
-    let faces = photocraft_text::shared().lock().unwrap_or_else(|e| e.into_inner()).fonts.faces(family);
+    let faces = redrob_photo_text::shared().lock().unwrap_or_else(|e| e.into_inner()).fonts.faces(family);
     let v = style_names(&faces);
     if v.is_empty() { vec!["Regular".into()] } else { v }
 }
@@ -1265,7 +1265,7 @@ pub fn styles(family: &str) -> Vec<String> {
 /// [`styles`] of these faces, lightest first. A variable face reports only its default instance
 /// (Montserrat's is Thin), yet the layout draws any weight its `wght` axis covers, so the standard
 /// weights in that range are listed too.
-fn style_names(faces: &[photocraft_text::FaceInfo]) -> Vec<String> {
+fn style_names(faces: &[redrob_photo_text::FaceInfo]) -> Vec<String> {
     let label = |weight: f32, italic: bool| {
         let name = match (weight_name(weight), italic) {
             ("Regular", true) => "Italic".to_string(),
@@ -1290,12 +1290,12 @@ fn style_names(faces: &[photocraft_text::FaceInfo]) -> Vec<String> {
     names
 }
 
-/// A variable-font axis: (tag, min, default, max), as [`photocraft_text::FaceInfo::axes`].
+/// A variable-font axis: (tag, min, default, max), as [`redrob_photo_text::FaceInfo::axes`].
 pub(crate) type Axis = (String, f32, f32, f32);
 
 /// The axes the Character section shows as sliders (#2985): those of the faces matching the
 /// style's italic, else of any face. Optical size has none: it follows the type size.
-pub(crate) fn slider_axes(faces: &[photocraft_text::FaceInfo], italic: bool) -> Vec<Axis> {
+pub(crate) fn slider_axes(faces: &[redrob_photo_text::FaceInfo], italic: bool) -> Vec<Axis> {
     let pick = |want: Option<bool>| {
         let mut v: Vec<Axis> = Vec::new();
         for f in faces.iter().filter(|f| want.is_none_or(|w| f.italic == w)) {
@@ -1314,7 +1314,7 @@ pub(crate) fn slider_axes(faces: &[photocraft_text::FaceInfo], italic: bool) -> 
 
 /// The value an axis slider shows: the style's own value for the axis, else what the layout
 /// draws (the style's weight on `wght`, the axis default otherwise), within the axis range.
-pub(crate) fn axis_value(c: &photocraft_doc::text::CharStyle, (tag, min, default, max): &Axis) -> f32 {
+pub(crate) fn axis_value(c: &redrob_photo_doc::text::CharStyle, (tag, min, default, max): &Axis) -> f32 {
     let v = c.variations.iter().find(|v| &v.axis == tag).map(|v| v.value).unwrap_or_else(|| match tag.as_str() {
         "wght" => f32::from(c.weight),
         "ital" if c.italic => *max,
@@ -1337,9 +1337,9 @@ fn axis_label(tag: &str) -> String {
 }
 
 /// One slider row per variable-font axis of the style's font, below the font style (#2985).
-fn axis_sliders(app: &mut PhotocraftApp, ui: &mut egui::Ui, c: &photocraft_doc::text::CharStyle) {
+fn axis_sliders(app: &mut PhotocraftApp, ui: &mut egui::Ui, c: &redrob_photo_doc::text::CharStyle) {
     // Drawn every frame: no sliders until the background font scan is done (#3021).
-    let Some(engine) = photocraft_text::try_shared() else { return };
+    let Some(engine) = redrob_photo_text::try_shared() else { return };
     let axes = {
         let faces = engine.lock().unwrap_or_else(PoisonError::into_inner).fonts.faces(&c.font_family);
         slider_axes(&faces, c.italic)
@@ -1370,10 +1370,10 @@ fn axis_sliders(app: &mut PhotocraftApp, ui: &mut egui::Ui, c: &photocraft_doc::
 }
 
 /// PSD text can identify a face only by its PostScript name. Show its real subfamily too.
-pub(crate) fn selected_style(style: &photocraft_doc::text::CharStyle) -> String {
+pub(crate) fn selected_style(style: &redrob_photo_doc::text::CharStyle) -> String {
     // Drawn every frame: while the font scan runs, the stored style name stands in.
     if let Some(ps) = &style.postscript_name
-        && let Some(engine) = photocraft_text::try_shared()
+        && let Some(engine) = redrob_photo_text::try_shared()
     {
         let faces = engine.lock().unwrap_or_else(|e| e.into_inner()).fonts.faces(&style.font_family);
         if let Some(face) = faces.into_iter().find(|f| f.postscript_name.as_ref() == Some(ps)) {
@@ -1393,15 +1393,15 @@ pub fn style_label(style: &str) -> String {
 /// Starts scanning the installed fonts on a background thread (desktop start-up), so choosing
 /// the Type tool doesn't stall the UI while they are read (#3021). Does nothing on the web.
 pub fn warm_fonts() {
-    photocraft_text::warm_shared();
+    redrob_photo_text::warm_shared();
 }
 
 /// Whether the font database is ready. The installed fonts are scanned on a background thread
-/// from launch (`photocraft_text::warm_shared`); until that finishes, font menus draw this
+/// from launch (`redrob_photo_text::warm_shared`); until that finishes, font menus draw this
 /// disabled "Loading fonts…" box `width` wide instead of blocking the UI, and a repaint picks the
 /// menus up once the scan is done.
 pub(crate) fn fonts_ready(ui: &mut egui::Ui, width: f32) -> bool {
-    if photocraft_text::try_shared().is_some() {
+    if redrob_photo_text::try_shared().is_some() {
         return true;
     }
     let label = tl!("Loading fonts…").to_string();
@@ -1411,7 +1411,7 @@ pub(crate) fn fonts_ready(ui: &mut egui::Ui, width: f32) -> bool {
 }
 
 /// Searchable font-family combo box.
-fn font_picker(ui: &mut egui::Ui, current: &mut String, width: f32, preview: photocraft_engine::prefs::FontPreview) -> bool {
+fn font_picker(ui: &mut egui::Ui, current: &mut String, width: f32, preview: redrob_photo_engine::prefs::FontPreview) -> bool {
     family_picker_in(ui, "type-font", current, width, &families(), preview)
 }
 
@@ -1420,7 +1420,7 @@ const FONT_MENU_HEIGHT: f32 = 460.0;
 
 /// [`font_picker`] over a given family list (tests pass their own).
 #[cfg(test)]
-fn font_picker_in(ui: &mut egui::Ui, current: &mut String, width: f32, families: &[String], preview: photocraft_engine::prefs::FontPreview) -> bool {
+fn font_picker_in(ui: &mut egui::Ui, current: &mut String, width: f32, families: &[String], preview: redrob_photo_engine::prefs::FontPreview) -> bool {
     family_picker_in(ui, "type-font", current, width, families, preview)
 }
 
@@ -1432,7 +1432,7 @@ pub(crate) fn family_picker_in(
     current: &mut String,
     width: f32,
     families: &[String],
-    preview: photocraft_engine::prefs::FontPreview,
+    preview: redrob_photo_engine::prefs::FontPreview,
 ) -> bool {
     let mut changed = false;
     let search_id = ui.id().with(("font-search", salt));
@@ -1488,7 +1488,7 @@ pub(crate) fn family_picker_in(
                 changed = **f != *current;
                 current.clone_from(f);
                 // A served family not fetched yet: start now, as a click does.
-                photocraft_text::served::request(f);
+                redrob_photo_text::served::request(f);
             }
         }
         let accept = enter && rows.iter().any(|(f, _)| *f == current);
@@ -1521,7 +1521,7 @@ pub(crate) fn family_picker_in(
             if press.chosen(ui, &response) {
                 *current = f.clone();
                 // A served family not fetched yet: start now, before any text needs it.
-                photocraft_text::served::request(f);
+                redrob_photo_text::served::request(f);
                 changed = true;
                 ui.data_mut(|d| d.remove::<String>(search_id));
                 hovered = None;
@@ -1557,7 +1557,7 @@ pub(crate) fn family_picker_in(
             && **f != *current
         {
             current.clone_from(f);
-            photocraft_text::served::request(f);
+            redrob_photo_text::served::request(f);
             changed = true;
         }
     }
@@ -1638,9 +1638,9 @@ fn shown_scale(app: &PhotocraftApp) -> f32 {
 pub(crate) fn type_unit(app: &PhotocraftApp) -> (f32, &'static str) {
     let dpi = app.session.active().map_or(72.0, |d| d.doc.resolution_dpi.max(1.0));
     match app.session.prefs().units_and_rulers.type_units {
-        photocraft_engine::prefs::TypeUnit::Points => (1.0, "pt"),
-        photocraft_engine::prefs::TypeUnit::Pixels => (dpi / 72.0, "px"),
-        photocraft_engine::prefs::TypeUnit::Millimeters => (25.4 / 72.0, "mm"),
+        redrob_photo_engine::prefs::TypeUnit::Points => (1.0, "pt"),
+        redrob_photo_engine::prefs::TypeUnit::Pixels => (dpi / 72.0, "px"),
+        redrob_photo_engine::prefs::TypeUnit::Millimeters => (25.4 / 72.0, "mm"),
     }
 }
 
@@ -1753,7 +1753,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     }
     let mut aa = target(app)
         .and_then(|(id, _)| app.session.active().and_then(|st| text_layer(&st.doc, LayerId(id))))
-        .map(|t| photocraft_engine::type_extra_cmds::aa_name(t.antialias).to_string())
+        .map(|t| redrob_photo_engine::type_extra_cmds::aa_name(t.antialias).to_string())
         .unwrap_or_else(|| o.type_aa.clone());
     let aa_opts = [
         ("none".to_string(), tl!("None")),
@@ -1820,7 +1820,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 }
 
 /// Character and paragraph style at the target (selection start, else the layer's first run).
-pub(crate) fn styles_at(app: &PhotocraftApp) -> Option<(photocraft_doc::text::CharStyle, photocraft_doc::text::ParagraphStyle)> {
+pub(crate) fn styles_at(app: &PhotocraftApp) -> Option<(redrob_photo_doc::text::CharStyle, redrob_photo_doc::text::ParagraphStyle)> {
     let (layer, range) = target(app)?;
     let st = app.session.active()?;
     let t = text_layer(&st.doc, LayerId(layer))?;
@@ -1844,7 +1844,7 @@ pub(crate) fn styles_at(app: &PhotocraftApp) -> Option<(photocraft_doc::text::Ch
 
 /// Kerning shown for the target: at a collapsed caret, the pair before it (Photoshop's
 /// Character panel); else the style at the selection.
-fn kerning_at(app: &PhotocraftApp) -> Option<(photocraft_doc::text::Kerning, f32)> {
+fn kerning_at(app: &PhotocraftApp) -> Option<(redrob_photo_doc::text::Kerning, f32)> {
     let ed = app.ui.text_edit.as_ref().filter(|e| e.caret == e.anchor && e.caret > 0)?;
     let st = app.session.active()?;
     let t = text_layer(&st.doc, LayerId(ed.layer))?;
@@ -1860,8 +1860,8 @@ fn kerning_at(app: &PhotocraftApp) -> Option<(photocraft_doc::text::Kerning, f32
 }
 
 /// The Character panel's kerning text: "Metrics", "Optical" or the manual value.
-pub(crate) fn kerning_label((mode, kern): (photocraft_doc::text::Kerning, f32)) -> String {
-    use photocraft_doc::text::Kerning;
+pub(crate) fn kerning_label((mode, kern): (redrob_photo_doc::text::Kerning, f32)) -> String {
+    use redrob_photo_doc::text::Kerning;
     match mode {
         _ if kern != 0.0 && kern.is_finite() => format!("{}", kern.round() as i64),
         Kerning::Metrics => "Metrics".into(),
@@ -1963,8 +1963,8 @@ fn num_field(ui: &mut egui::Ui, label: &str, tip: &str, v: f32, range: std::ops:
 
 /// Photoshop's paragraph alignment glyphs: four text lines whose widths/offsets show the mode
 /// (justify variants run full width, with the last line placed left/centre/right).
-fn align_glyph(p: &egui::Painter, r: egui::Rect, a: photocraft_doc::text::TextAlign, c: Color32) {
-    use photocraft_doc::text::TextAlign as A;
+fn align_glyph(p: &egui::Painter, r: egui::Rect, a: redrob_photo_doc::text::TextAlign, c: Color32) {
+    use redrob_photo_doc::text::TextAlign as A;
     let widths = [1.0, 0.62, 1.0, 0.62];
     for (i, w) in widths.iter().enumerate() {
         let y = r.top() + i as f32 * r.height() / 3.0;
@@ -2020,13 +2020,13 @@ pub(crate) const OPENTYPE_BUTTONS: [(&str, &str, &str); 8] = [
 /// Photoshop's OpenType button row: each shows pressed while its feature is on at the type
 /// target (the selection start, else the layer) and toggles it through the Type › OpenType
 /// command, on the same scope as the other Character controls.
-fn opentype_row(app: &mut PhotocraftApp, ui: &mut egui::Ui, c: &photocraft_doc::text::CharStyle, full: f32) {
+fn opentype_row(app: &mut PhotocraftApp, ui: &mut egui::Ui, c: &redrob_photo_doc::text::CharStyle, full: f32) {
     let cw = cell_width(full, OPENTYPE_BUTTONS.len());
     let mut clicked = None;
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 2.0;
         for (tag, id, tip) in OPENTYPE_BUTTONS {
-            let on = photocraft_engine::type_extra_cmds::feature_on(c, tag);
+            let on = redrob_photo_engine::type_extra_cmds::feature_on(c, tag);
             if toggle_cell(ui, cw, on, tip, |ui, r, col| opentype_glyph(ui.painter(), r, tag, col)) {
                 clicked = Some((id, on));
             }
@@ -2230,14 +2230,14 @@ fn type_sections(app: &mut PhotocraftApp, ui: &mut egui::Ui, character: bool, pa
             (
                 "TT",
                 "All Caps",
-                caps == photocraft_doc::text::Caps::AllCaps,
-                json!({"caps": if caps == photocraft_doc::text::Caps::AllCaps { "normal" } else { "allCaps" }}),
+                caps == redrob_photo_doc::text::Caps::AllCaps,
+                json!({"caps": if caps == redrob_photo_doc::text::Caps::AllCaps { "normal" } else { "allCaps" }}),
             ),
             (
                 "Tᴛ",
                 "Small Caps",
-                caps == photocraft_doc::text::Caps::SmallCaps,
-                json!({"caps": if caps == photocraft_doc::text::Caps::SmallCaps { "normal" } else { "smallCaps" }}),
+                caps == redrob_photo_doc::text::Caps::SmallCaps,
+                json!({"caps": if caps == redrob_photo_doc::text::Caps::SmallCaps { "normal" } else { "smallCaps" }}),
             ),
             ("T", "Underline", c.underline, json!({"underline": !c.underline})),
             ("T", "Strikethrough", c.strikethrough, json!({"strikethrough": !c.strikethrough})),
@@ -2278,7 +2278,7 @@ fn type_sections(app: &mut PhotocraftApp, ui: &mut egui::Ui, character: bool, pa
         ui.add_space(ROW_GAP);
     }
     if paragraph && section(ui, "paragraph", tl!("Paragraph")) {
-        use photocraft_doc::text::TextAlign as A;
+        use redrob_photo_doc::text::TextAlign as A;
         let full = ui.available_width();
         let w = field_width(full, 2, LABEL_W);
         let items = [
@@ -2342,7 +2342,7 @@ fn type_options(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         .session
         .active()
         .and_then(|st| text_layer(&st.doc, LayerId(layer)))
-        .map(|t| (photocraft_engine::type_extra_cmds::aa_name(t.antialias).to_string(), t.orientation == photocraft_doc::text::Orientation::Vertical))
+        .map(|t| (redrob_photo_engine::type_extra_cmds::aa_name(t.antialias).to_string(), t.orientation == redrob_photo_doc::text::Orientation::Vertical))
     else {
         return;
     };
@@ -2365,7 +2365,7 @@ fn type_options(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             let mut cur = aa.clone();
             let opts: Vec<(String, &str)> = ["none", "sharp", "crisp", "strong", "smooth", "windowsLcd", "windows"]
                 .into_iter()
-                .filter_map(|k| photocraft_engine::commands::find(&format!("type.antiAlias.{k}")).map(|c| (k.to_string(), c.label)))
+                .filter_map(|k| redrob_photo_engine::commands::find(&format!("type.antiAlias.{k}")).map(|c| (k.to_string(), c.label)))
                 .collect();
             if crate::widgets::dropdown(ui, "props-type-aa", &mut cur, &opts, dd_w) {
                 run = Some(format!("type.antiAlias.{cur}"));
@@ -2434,7 +2434,7 @@ mod tests {
     use super::*;
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", json!({"width": 400, "height": 200})).unwrap();
         app.sync_views();
         app.ui.tool = crate::state::Tool::Type;

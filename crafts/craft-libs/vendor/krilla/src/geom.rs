@@ -63,9 +63,7 @@ impl Hash for Rect {
 impl Rect {
     /// Creates new `Rect`.
     pub fn from_ltrb(left: f32, top: f32, right: f32, bottom: f32) -> Option<Self> {
-        Some(Self(tiny_skia_path::Rect::from_ltrb(
-            left, top, right, bottom,
-        )?))
+        Some(Self(tiny_skia_path::Rect::from_ltrb(left, top, right, bottom)?))
     }
 
     /// Apply a transform to the rect.
@@ -125,12 +123,7 @@ impl Rect {
     }
 
     pub(crate) fn to_pdf_rect(self) -> pdf_writer::Rect {
-        pdf_writer::Rect::new(
-            self.left(),
-            self.top(),
-            self.left() + self.width(),
-            self.top() + self.height(),
-        )
+        pdf_writer::Rect::new(self.left(), self.top(), self.left() + self.width(), self.top() + self.height())
     }
 }
 
@@ -268,9 +261,7 @@ impl Transform {
     }
 
     pub(crate) fn to_pdf_transform(self) -> [f32; 6] {
-        [
-            self.0.sx, self.0.ky, self.0.kx, self.0.sy, self.0.tx, self.0.ty,
-        ]
+        [self.0.sx, self.0.ky, self.0.kx, self.0.sy, self.0.tx, self.0.ty]
     }
 }
 

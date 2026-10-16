@@ -3,9 +3,9 @@
 
 use std::fmt::Write as _;
 
-use designcraft_compose::{FrameText, PlacedCell, StrokeSeg, TableFrag};
-use designcraft_doc::StrokeType;
-use designcraft_geom::{Affine, Rect};
+use redrob_layout_compose::{FrameText, PlacedCell, StrokeSeg, TableFrag};
+use redrob_layout_doc::StrokeType;
+use redrob_layout_geom::{Affine, Rect};
 
 use crate::slide::{Exporter, box_of};
 use crate::text::{paragraphs, seg_rect, segments};

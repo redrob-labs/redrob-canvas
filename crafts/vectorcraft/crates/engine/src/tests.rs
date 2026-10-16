@@ -1,8 +1,8 @@
 use serde_json::json;
 
 use super::*;
-use vectorcraft_geom::Point;
-use vectorcraft_tools::{PointerEvent, PointerKind, ToolKey};
+use redrob_vector_geom::Point;
+use redrob_vector_tools::{PointerEvent, PointerKind, ToolKey};
 
 fn session() -> Session {
     let mut s = Session::new();
@@ -187,7 +187,7 @@ fn fill_and_stroke_commands() {
     assert_eq!(n.appearance.fill_paint().color().unwrap().to_hex(), "#ff0000");
     let st = n.appearance.stroke().unwrap();
     assert_eq!(st.width, 4.0);
-    assert_eq!(st.cap, vectorcraft_doc::LineCap::Round);
+    assert_eq!(st.cap, redrob_vector_doc::LineCap::Round);
     assert_eq!(st.dash.as_ref().unwrap().pattern, vec![3.0, 2.0]);
     s.execute("paint.swap", &json!({})).unwrap();
     assert_eq!(s.doc().unwrap().doc.node(a).unwrap().appearance.stroke_paint().color().unwrap().to_hex(), "#ff0000");
@@ -1064,10 +1064,10 @@ fn live_shape_properties_already_set_record_no_undo_step() {
         let d = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().doc);
         let NodeKind::Path { path, live: Some(live), .. } = &mut d.node_mut(r).unwrap().kind else { panic!("not a live rectangle") };
         let xf = Affine::scale_non_uniform(2.0, 1.0);
-        **live = vectorcraft_doc::LiveShape::Rectangle { w: 50.0, h: 60.0, radii: [10.0; 4], kinds: Default::default(), xf };
+        **live = redrob_vector_doc::LiveShape::Rectangle { w: 50.0, h: 60.0, radii: [10.0; 4], kinds: Default::default(), xf };
         *path = live.to_path();
     }
-    let shown = vectorcraft_doc::LiveCorners::of(s.doc().unwrap().doc.node(r).unwrap()).unwrap().radius(0);
+    let shown = redrob_vector_doc::LiveCorners::of(s.doc().unwrap().doc.node(r).unwrap()).unwrap().radius(0);
     let undo = history(&s).0;
     s.execute("object.setLiveShape", &json!({"id": r.0, "radius": shown})).unwrap();
     assert_eq!(history(&s).0, undo + 1, "a stretched rectangle");
@@ -1137,8 +1137,8 @@ fn pen_click_on_a_selected_path_adds_an_anchor_unless_disabled() {
 /// Pen interactions exercised through the real preview/commit and undo machinery.
 mod pen_interactions {
     use super::*;
-    use vectorcraft_geom::{AnchorKind, PathData, Point};
-    use vectorcraft_tools::{Cursor, Mods};
+    use redrob_vector_geom::{AnchorKind, PathData, Point};
+    use redrob_vector_tools::{Cursor, Mods};
 
     fn gesture(s: &mut Session, pts: &[(f64, f64)], mods: Mods, v: ViewInfo) {
         let (first, last) = (pts[0], pts[pts.len() - 1]);
@@ -1288,7 +1288,7 @@ mod pen_interactions {
         let moved = path(&s, id);
         let last = moved.subpaths[0].anchors[1];
         assert_eq!(last.h_in, before.subpaths[0].anchors[1].h_in);
-        assert_eq!(last.h_out, last.p + vectorcraft_geom::constrain_angle(Point::new(243.0, 353.0) - last.p, 45.0));
+        assert_eq!(last.h_out, last.p + redrob_vector_geom::constrain_angle(Point::new(243.0, 353.0) - last.p, 45.0));
         assert_eq!(moved.to_bezpath(), before.to_bezpath());
         assert_eq!(s.doc().unwrap().history.undo.len(), steps + 1, "all previews are one undo step");
         s.execute("edit.undo", &json!({})).unwrap();
@@ -1337,7 +1337,7 @@ mod pen_interactions {
         let a = extended.subpaths[0].anchors[2];
         assert_eq!(a.p, Point::new(320.0, 450.0));
         assert_eq!(a.h_in, Point::new(290.0, 430.0), "Alt freezes the incoming handle and Space translates it");
-        assert_eq!(a.h_out, a.p + vectorcraft_geom::constrain_angle(Point::new(380.0, 490.0) - a.p, 45.0));
+        assert_eq!(a.h_out, a.p + redrob_vector_geom::constrain_angle(Point::new(380.0, 490.0) - a.p, 45.0));
         assert_eq!(a.kind, AnchorKind::Corner);
         assert!(!s.in_interaction());
         assert_eq!(s.doc().unwrap().history.undo.len(), steps + 1);
@@ -1502,8 +1502,8 @@ fn direct_selection_moves_one_anchor() {
     s.pointer(&PointerEvent::new(PointerKind::Drag, 90.0, 90.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, 90.0, 90.0), v).unwrap();
     let p = s.doc().unwrap().doc.node(a).unwrap().path_data().unwrap().clone();
-    assert_eq!(p.subpaths[0].anchors[0].p, vectorcraft_geom::Point::new(90.0, 90.0));
-    assert_eq!(p.subpaths[0].anchors[1].p, vectorcraft_geom::Point::new(200.0, 100.0));
+    assert_eq!(p.subpaths[0].anchors[0].p, redrob_vector_geom::Point::new(90.0, 90.0));
+    assert_eq!(p.subpaths[0].anchors[1].p, redrob_vector_geom::Point::new(200.0, 100.0));
 }
 
 /// #1816: with Snap to Grid on, a dragged anchor lands on the grid's subdivisions, not on whole
@@ -1523,7 +1523,7 @@ fn direct_selection_snaps_anchors_to_the_grid() {
     let p = s.doc().unwrap().doc.node(a).unwrap().path_data().unwrap().clone();
     let moved = p.subpaths[0].anchors[0].p;
     assert!(on_grid(moved.x) && on_grid(moved.y), "anchor at {moved:?}, grid step {step}");
-    assert_eq!(p.subpaths[0].anchors[1].p, vectorcraft_geom::Point::new(201.0, 101.0));
+    assert_eq!(p.subpaths[0].anchors[1].p, redrob_vector_geom::Point::new(201.0, 101.0));
 }
 
 /// Follow-up to #1254: toggling or adding anchors of a path selected as a whole starts from all
@@ -1557,7 +1557,7 @@ fn direct_selection_shift_click_deselects_one_anchor_of_a_whole_path() {
     assert_eq!(s.doc().unwrap().selection.objects, vec![a]);
     assert!(s.doc().unwrap().selection.partial(a).is_none(), "selected whole");
     s.select_tool("directSelection", v).unwrap();
-    let shift = vectorcraft_tools::Mods { shift: true, ..Default::default() };
+    let shift = redrob_vector_tools::Mods { shift: true, ..Default::default() };
     for kind in [PointerKind::Down, PointerKind::Up] {
         s.pointer(&PointerEvent::new(kind, 100.0, 100.0).with_mods(shift), v).unwrap();
     }
@@ -1588,7 +1588,7 @@ fn direct_selection_drags_segments() {
     drag(&mut s, (200.0, 125.0), (200.0, 85.0));
     let sp = s.doc().unwrap().doc.node(arch).unwrap().path_data().unwrap().subpaths[0].clone();
     let (a, b) = (sp.anchors[0], sp.anchors[1]);
-    assert_eq!((a.p, b.p), (vectorcraft_geom::Point::new(100.0, 200.0), vectorcraft_geom::Point::new(300.0, 200.0)), "the anchors stay");
+    assert_eq!((a.p, b.p), (redrob_vector_geom::Point::new(100.0, 200.0), redrob_vector_geom::Point::new(300.0, 200.0)), "the anchors stay");
     assert!(a.h_out.y < 100.0 && b.h_in.y < 100.0, "the curve bent up: {a:?} {b:?}");
     assert_eq!(steps(&s), before + 1);
     // The square's top edge, 40 up: its two anchors move, the bottom two stay.
@@ -1989,8 +1989,8 @@ fn graph_tool_drag_creates_a_graph_and_asks_for_data() {
     let st = s.doc().unwrap();
     assert_eq!(st.history.undo.len(), undo_before + 1);
     let g = st.doc.node(st.selection.objects[0]).unwrap();
-    assert_eq!(g.extras().graph.as_ref().unwrap().kind, vectorcraft_doc::GraphKind::Pie);
-    assert_eq!(g.extras().graph.as_ref().unwrap().rect, vectorcraft_geom::Rect::new(100.0, 100.0, 300.0, 250.0));
+    assert_eq!(g.extras().graph.as_ref().unwrap().kind, redrob_vector_doc::GraphKind::Pie);
+    assert_eq!(g.extras().graph.as_ref().unwrap().rect, redrob_vector_geom::Rect::new(100.0, 100.0, 300.0, 250.0));
 }
 
 #[test]
@@ -2031,12 +2031,12 @@ fn object_mosaic_tiles_follow_the_image_colours() {
     let st = s.doc().unwrap();
     let g = st.doc.node(NodeId(r["id"].as_u64().unwrap())).unwrap();
     let tiles = g.children().unwrap();
-    let fill = |n: &vectorcraft_doc::Node| n.appearance.fill_paint();
-    assert_eq!(fill(&tiles[0]), vectorcraft_color::Paint::solid(vectorcraft_color::Color::rgb(1.0, 0.0, 0.0)));
-    assert_eq!(fill(&tiles[1]), vectorcraft_color::Paint::solid(vectorcraft_color::Color::rgb(0.0, 0.0, 1.0)));
+    let fill = |n: &redrob_vector_doc::Node| n.appearance.fill_paint();
+    assert_eq!(fill(&tiles[0]), redrob_vector_color::Paint::solid(redrob_vector_color::Color::rgb(1.0, 0.0, 0.0)));
+    assert_eq!(fill(&tiles[1]), redrob_vector_color::Paint::solid(redrob_vector_color::Color::rgb(0.0, 0.0, 1.0)));
     // 4 pt spacing: each 50 pt tile shrinks to 46 pt; the image is gone.
     assert!((tiles[0].geometric_bounds().unwrap().width() - 46.0).abs() < 1e-6);
-    assert!(!st.doc.layers[0].children().unwrap().iter().any(|n| matches!(n.kind, vectorcraft_doc::NodeKind::Image(_))));
+    assert!(!st.doc.layers[0].children().unwrap().iter().any(|n| matches!(n.kind, redrob_vector_doc::NodeKind::Image(_))));
 }
 
 #[test]
@@ -2084,7 +2084,7 @@ fn shaper_turns_rough_strokes_into_live_shapes_and_scribbles_punch_fills() {
     stroke(&mut s, &rect);
     let id = s.doc().unwrap().selection.objects[0];
     let n = s.doc().unwrap().doc.node(id).unwrap().clone();
-    assert!(matches!(n.live_shape(), Some(vectorcraft_doc::LiveShape::Rectangle { .. })), "{:?}", n.kind_label());
+    assert!(matches!(n.live_shape(), Some(redrob_vector_doc::LiveShape::Rectangle { .. })), "{:?}", n.kind_label());
     // A zig-zag inside it clears its fill while retaining the editable original and stroke.
     let zig: Vec<(f64, f64)> = (0..30).map(|i| (150.0 + (i % 2) as f64 * 80.0, 120.0 + i as f64 * 2.0)).collect();
     stroke(&mut s, &zig);
@@ -2112,7 +2112,7 @@ fn shaper_square_started_mid_edge_closes_on_pointer_release_and_undoes_once() {
         s.pointer(&PointerEvent::new(kind, x, y), v).unwrap();
     }
     let id = *s.doc().unwrap().selection.objects.first().expect("recognized square");
-    assert!(matches!(s.doc().unwrap().doc.node(id).unwrap().live_shape(), Some(vectorcraft_doc::LiveShape::Rectangle { .. })));
+    assert!(matches!(s.doc().unwrap().doc.node(id).unwrap().live_shape(), Some(redrob_vector_doc::LiveShape::Rectangle { .. })));
     assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1);
     s.execute("edit.undo", &json!({})).unwrap();
     assert!(s.doc().unwrap().doc.node(id).is_none());
@@ -2148,7 +2148,7 @@ fn shaper_creates_upright_or_inverted_live_triangles_with_one_undo_step() {
         s.pointer(&PointerEvent::new(PointerKind::Up, pts[0].x, pts[0].y), v).unwrap();
         let id = *s.doc().unwrap().selection.objects.first().expect("recognized triangle");
         let node = s.doc().unwrap().doc.node(id).unwrap().clone();
-        let Some(vectorcraft_doc::LiveShape::Polygon { sides: 3, xf, .. }) = node.live_shape() else {
+        let Some(redrob_vector_doc::LiveShape::Polygon { sides: 3, xf, .. }) = node.live_shape() else {
             panic!("expected live triangle, got {:?}", node.kind_label());
         };
         let [a, b, c, d, _, _] = xf.as_coeffs();
@@ -2439,7 +2439,7 @@ fn a_compound_path_has_holes_where_its_paths_overlap() {
     s.execute("select.set", &json!({"ids": [square.0, diamond.0]})).unwrap();
     let c = NodeId(s.execute("object.compoundPath.make", &json!({})).unwrap()["id"].as_u64().unwrap());
     let hit =
-        |x: f64, y: f64| vectorcraft_doc::hit::hit_test(&s.doc().unwrap().doc, Point::new(x, y), Default::default()).map(|h| h.top_object(None));
+        |x: f64, y: f64| redrob_vector_doc::hit::hit_test(&s.doc().unwrap().doc, Point::new(x, y), Default::default()).map(|h| h.top_object(None));
     assert_eq!(hit(50.0, 50.0), None, "the overlap is a hole");
     assert_eq!(hit(3.0, 3.0), Some(c), "the square's corner is filled");
     assert_eq!(hit(110.0, 50.0), Some(c), "the diamond's point outside the square is filled");

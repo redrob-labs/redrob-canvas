@@ -14,14 +14,15 @@ use crate::shell::Mode;
 /// crafts/photocraft/crates/engine/src/file_cmds.rs L121 (`OPENABLE`), without SVG (editable in
 /// Vector) and the Affinity family it takes as previews.
 pub const PHOTO_EXTENSIONS: &[&str] = &[
-    "psd", "psb", "pcraft", "ora", "kra", "krz", "pdn", "tif", "tiff", "png", "jpg", "jpeg",
+    "psd", "psb", "rphoto", "ora", "kra", "krz", "pdn", "tif", "tiff", "png", "jpg", "jpeg",
     "webp", "avif", "heic", "heif", "hif", "gif", "bmp", "tga", "exr", "hdr", "qoi", "ico", "pnm",
     "ppm", "pgm", "dpx", "fits", "fit", "fts", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef",
     "raf", "orf", "rw2", "afphoto",
+    "pcraft", // legacy: the Photo document's upstream extension; still opened, never written
 ];
 
 /// Extensions that open in Vector mode: SVG, Illustrator, PostScript, PDF, CAD and the Windows
-/// metafiles, plus the native document (`vectorcraft_ui_egui::io::open_path`,
+/// metafiles, plus the native document (`redrob_vector_ui_egui::io::open_path`,
 /// crafts/vectorcraft/crates/ui-egui/src/io.rs L218).
 pub const VECTOR_EXTENSIONS: &[&str] = &[
     "svg",
@@ -32,17 +33,20 @@ pub const VECTOR_EXTENSIONS: &[&str] = &[
     "dxf",
     "emf",
     "wmf",
-    "vectorcraft",
+    "rvector",
+    "vectorcraft", // legacy: the Vector document's upstream extension; still opened, never written
+    "drawcraft",   // legacy: upstream's own earlier name for the same format
     "afdesign",
 ];
 
 /// Extensions that open in Layout mode. The layouts themselves open as documents
-/// (`designcraft_ui_egui::opens_as_document`, crafts/designcraft/crates/ui-egui/src/lib.rs
+/// (`redrob_layout_ui_egui::opens_as_document`, crafts/designcraft/crates/ui-egui/src/lib.rs
 /// L1452); word-processing and spreadsheet files are placed into frames by `file.place`
 /// (`DesignApp::open_dropped`, L1140).
 pub const LAYOUT_EXTENSIONS: &[&str] = &[
     "idml",
-    "designcraft",
+    "rlayout",
+    "designcraft", // legacy: the Layout document's upstream extension; still opened, never written
     "indd",
     "indt",
     "docx",
@@ -129,9 +133,13 @@ mod tests {
             ("art.ai", Mode::Vector),
             ("plan.dxf", Mode::Vector),
             ("clip.wmf", Mode::Vector),
-            ("doc.vectorcraft", Mode::Vector),
+            ("doc.rvector", Mode::Vector),
+            ("old.vectorcraft", Mode::Vector), // legacy: upstream extensions still route
+            ("older.drawcraft", Mode::Vector), // legacy:
             ("book.idml", Mode::Layout),
-            ("poster.designcraft", Mode::Layout),
+            ("poster.rlayout", Mode::Layout),
+            ("poster.designcraft", Mode::Layout), // legacy:
+            ("shot.pcraft", Mode::Photo),         // legacy:
             ("text.docx", Mode::Layout),
             ("notes.md", Mode::Layout),
             ("table.xlsx", Mode::Layout),

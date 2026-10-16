@@ -1,11 +1,11 @@
 //! #647: Export As's Metadata: None (`XmpEmbed::None`) embeds none of the document's XMP (the
 //! packet lists the text of every type layer and one id per placed document); the default,
-//! `XmpEmbed::All`, keeps it as Save As does, and layered saves (PSD, `.pcraft`) always keep it.
+//! `XmpEmbed::All`, keeps it as Save As does, and layered saves (PSD, `.rphoto`) always keep it.
 
-use photocraft_color::{ColorMode, SampleType};
-use photocraft_doc::{Document, Layer, LayerContent, Size};
-use photocraft_io::{ExportOptions, XmpEmbed, export};
-use photocraft_raster::Surface;
+use redrob_photo_color::{ColorMode, SampleType};
+use redrob_photo_doc::{Document, Layer, LayerContent, Size};
+use redrob_photo_io::{ExportOptions, XmpEmbed, export};
+use redrob_photo_raster::Surface;
 
 const XMP: &str = "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF>\
 <photoshop:DocumentAncestors><rdf:Bag><rdf:li>xmp.did:11111111-2222-3333-4444-555555555555</rdf:li></rdf:Bag></photoshop:DocumentAncestors>\
@@ -15,7 +15,7 @@ const XMP: &str = "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF>\
 fn doc_with_xmp() -> Document {
     let mut d = Document::new("x", Size::new(8, 6), ColorMode::Rgb, SampleType::U8);
     let mut s = Surface::new(d.pixel_format());
-    s.fill_rect(photocraft_geom::Rect::new(0, 0, 8, 6), &[0.5, 0.4, 0.3, 1.0]);
+    s.fill_rect(redrob_photo_geom::Rect::new(0, 0, 8, 6), &[0.5, 0.4, 0.3, 1.0]);
     d.layers.push(Layer::new("flat", LayerContent::Raster(s)));
     d.metadata.xmp = Some(XMP.to_string());
     d
@@ -50,7 +50,7 @@ fn layered_saves_keep_the_xmp_whatever_the_option() {
     for opts in [ExportOptions::default(), ExportOptions { xmp: XmpEmbed::None, ..ExportOptions::default() }] {
         let psd = export(&doc_with_xmp(), "out.psd", &opts).expect("psd");
         assert!(leaks_xmp(&psd.bytes), "PSD always keeps the document XMP");
-        let pcraft = export(&doc_with_xmp(), "out.pcraft", &opts).expect("pcraft");
-        assert!(leaks_xmp(&pcraft.bytes), ".pcraft always keeps the document XMP");
+        let rphoto = export(&doc_with_xmp(), "out.rphoto", &opts).expect("rphoto");
+        assert!(leaks_xmp(&rphoto.bytes), ".rphoto always keeps the document XMP");
     }
 }

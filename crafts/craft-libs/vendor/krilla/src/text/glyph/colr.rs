@@ -1,37 +1,27 @@
+use skrifa::MetadataProvider;
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
-use skrifa::raw::types::BoundingBox;
 use skrifa::raw::TableProvider;
-use skrifa::MetadataProvider;
+use skrifa::raw::types::BoundingBox;
 use tiny_skia_path::{Path, PathBuilder};
 
 use crate::geom::Transform;
 use crate::graphics::blend::BlendMode;
 use crate::graphics::color::rgb;
 use crate::graphics::mask::{Mask, MaskType};
-use crate::graphics::paint::{
-    Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient,
-};
+use crate::graphics::paint::{Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
 use crate::num::NormalizedF32;
 use crate::surface::Surface;
-use crate::text::outline::OutlineBuilder;
 use crate::text::Font;
 use crate::text::GlyphId;
+use crate::text::outline::OutlineBuilder;
 
 pub(crate) fn has_colr_data(font: &Font, glyph: GlyphId) -> bool {
-    font.font_ref()
-        .color_glyphs()
-        .get(glyph.to_skrifa())
-        .is_some()
+    font.font_ref().color_glyphs().get(glyph.to_skrifa()).is_some()
 }
 
 /// Draw a COLR-based glyph on a surface.
-pub(crate) fn draw_glyph(
-    font: Font,
-    context_color: rgb::Color,
-    glyph: GlyphId,
-    surface: &mut Surface,
-) -> Option<()> {
+pub(crate) fn draw_glyph(font: Font, context_color: rgb::Color, glyph: GlyphId, surface: &mut Surface) -> Option<()> {
     // Drawing COLR glyphs is a bit tricky, because it's possible that an error
     // occurs while we are drawing, in which case we cannot revert it anymore since
     // we already drew the instructions onto the surface. Because of this, we first
@@ -42,9 +32,7 @@ pub(crate) fn draw_glyph(
     let colr_glyph = colr_glyphs.get(glyph.to_skrifa())?;
 
     let mut colr_canvas = ColrBuilder::new(font.clone(), context_color);
-    colr_glyph
-        .paint(font.location_ref(), &mut colr_canvas)
-        .ok()?;
+    colr_glyph.paint(font.location_ref(), &mut colr_canvas).ok()?;
     let instructions = colr_canvas.finish()?;
 
     surface.push_transform(&Transform::from_scale(1.0, -1.0));
@@ -66,11 +54,7 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
                 surface.pop();
                 surface.pop();
             }
-            Instruction::Composite {
-                source,
-                mode,
-                backdrop,
-            } => interpret_composite(source, mode, backdrop, surface),
+            Instruction::Composite { source, mode, backdrop } => interpret_composite(source, mode, backdrop, surface),
             Instruction::Filled(fill, mut clips) => {
                 let filled = clips.split_off(clips.len() - 1);
 
@@ -98,12 +82,7 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
     }
 }
 
-fn interpret_composite(
-    source: Vec<Instruction>,
-    mode: CompositeMode,
-    backdrop: Vec<Instruction>,
-    surface: &mut Surface,
-) {
+fn interpret_composite(source: Vec<Instruction>, mode: CompositeMode, backdrop: Vec<Instruction>, surface: &mut Surface) {
     match mode {
         CompositeMode::Clear => {}
         CompositeMode::Src => {
@@ -179,11 +158,7 @@ struct ColrBuilder {
 /// A bytecode instruction for drawing a COLR glyph.
 enum Instruction {
     Layer(CompositeMode, Vec<Instruction>),
-    Composite {
-        source: Vec<Instruction>,
-        mode: CompositeMode,
-        backdrop: Vec<Instruction>,
-    },
+    Composite { source: Vec<Instruction>, mode: CompositeMode, backdrop: Vec<Instruction> },
     Filled(Box<Fill>, Vec<Path>),
 }
 
@@ -217,15 +192,7 @@ impl CompositeModeExt for CompositeMode {
 
 impl ColrBuilder {
     pub fn new(font: Font, context_color: rgb::Color) -> Self {
-        Self {
-            font,
-            context_color,
-            stack: vec![vec![]],
-            transforms: vec![Transform::identity()],
-            clips: vec![vec![]],
-            layers: vec![],
-            error: false,
-        }
+        Self { font, context_color, stack: vec![vec![]], transforms: vec![Transform::identity()], clips: vec![vec![]], layers: vec![], error: false }
     }
 
     pub fn finish(mut self) -> Option<Vec<Instruction>> {
@@ -240,24 +207,11 @@ impl ColrBuilder {
 }
 
 impl ColrBuilder {
-    fn palette_index_to_color(
-        &self,
-        palette_index: u16,
-        alpha: f32,
-    ) -> Option<(rgb::Color, NormalizedF32)> {
+    fn palette_index_to_color(&self, palette_index: u16, alpha: f32) -> Option<(rgb::Color, NormalizedF32)> {
         if palette_index != u16::MAX {
-            let color = self
-                .font
-                .font_ref()
-                .cpal()
-                .ok()?
-                .color_records_array()?
-                .ok()?[palette_index as usize];
+            let color = self.font.font_ref().cpal().ok()?.color_records_array()?.ok()?[palette_index as usize];
 
-            Some((
-                rgb::Color::new(color.red, color.green, color.blue),
-                NormalizedF32::new(alpha * color.alpha as f32 / 255.0)?,
-            ))
+            Some((rgb::Color::new(color.red, color.green, color.blue), NormalizedF32::new(alpha * color.alpha as f32 / 255.0)?))
         } else {
             Some((self.context_color, NormalizedF32::new(alpha)?))
         }
@@ -269,11 +223,7 @@ impl ColrBuilder {
         for stop in stops {
             let (color, alpha) = self.palette_index_to_color(stop.palette_index, stop.alpha)?;
 
-            converted_stops.push(Stop {
-                offset: NormalizedF32::new(stop.offset)?,
-                color: color.into(),
-                opacity: alpha,
-            })
+            converted_stops.push(Stop { offset: NormalizedF32::new(stop.offset)?, color: color.into(), opacity: alpha })
         }
 
         Some(converted_stops)
@@ -302,14 +252,8 @@ impl ColorPainter for ColrBuilder {
             return;
         };
 
-        let new_transform = last_transform.pre_concat(Transform::from_row(
-            transform.xx,
-            transform.yx,
-            transform.xy,
-            transform.yy,
-            transform.dx,
-            transform.dy,
-        ));
+        let new_transform =
+            last_transform.pre_concat(Transform::from_row(transform.xx, transform.yx, transform.xy, transform.yy, transform.dx, transform.dy));
         self.transforms.push(new_transform);
     }
 
@@ -333,18 +277,13 @@ impl ColorPainter for ColrBuilder {
             return;
         };
 
-        let Ok(_) = outline_glyph.draw(
-            DrawSettings::unhinted(skrifa::instance::Size::unscaled(), self.font.location_ref()),
-            &mut glyph_builder,
-        ) else {
+        let Ok(_) = outline_glyph.draw(DrawSettings::unhinted(skrifa::instance::Size::unscaled(), self.font.location_ref()), &mut glyph_builder)
+        else {
             self.error = true;
             return;
         };
 
-        let Some(path) = glyph_builder
-            .finish()
-            .and_then(|p| p.transform(self.transforms.last()?.to_tsp()))
-        else {
+        let Some(path) = glyph_builder.finish().and_then(|p| p.transform(self.transforms.last()?.to_tsp())) else {
             self.error = true;
             return;
         };
@@ -367,10 +306,7 @@ impl ColorPainter for ColrBuilder {
         path_builder.line_to(clip_box.x_max, clip_box.y_min);
         path_builder.close();
 
-        let Some(path) = path_builder
-            .finish()
-            .and_then(|p| p.transform(self.transforms.last()?.to_tsp()))
-        else {
+        let Some(path) = path_builder.finish().and_then(|p| p.transform(self.transforms.last()?.to_tsp())) else {
             self.error = true;
             return;
         };
@@ -388,10 +324,7 @@ impl ColorPainter for ColrBuilder {
 
     fn fill(&mut self, brush: Brush<'_>) {
         if let Some(fill) = match brush {
-            Brush::Solid {
-                palette_index,
-                alpha,
-            } => {
+            Brush::Solid { palette_index, alpha } => {
                 let (color, alpha) = match self.palette_index_to_color(palette_index, alpha) {
                     Some(c) => c,
                     None => {
@@ -399,18 +332,9 @@ impl ColorPainter for ColrBuilder {
                         return;
                     }
                 };
-                Some(Fill {
-                    paint: color.into(),
-                    opacity: alpha,
-                    rule: Default::default(),
-                })
+                Some(Fill { paint: color.into(), opacity: alpha, rule: Default::default() })
             }
-            Brush::LinearGradient {
-                p0,
-                p1,
-                color_stops,
-                extend,
-            } => {
+            Brush::LinearGradient { p0, p1, color_stops, extend } => {
                 let stops = match self.stops(color_stops) {
                     Some(s) => s,
                     None => {
@@ -435,20 +359,9 @@ impl ColorPainter for ColrBuilder {
                     anti_alias: false,
                 };
 
-                Some(Fill {
-                    paint: linear.into(),
-                    opacity: NormalizedF32::ONE,
-                    rule: Default::default(),
-                })
+                Some(Fill { paint: linear.into(), opacity: NormalizedF32::ONE, rule: Default::default() })
             }
-            Brush::RadialGradient {
-                c0,
-                r0,
-                c1,
-                r1,
-                color_stops,
-                extend,
-            } => {
+            Brush::RadialGradient { c0, r0, c1, r1, color_stops, extend } => {
                 let stops = match self.stops(color_stops) {
                     Some(s) => s,
                     None => {
@@ -475,19 +388,9 @@ impl ColorPainter for ColrBuilder {
                     anti_alias: false,
                 };
 
-                Some(Fill {
-                    paint: radial.into(),
-                    opacity: NormalizedF32::ONE,
-                    rule: Default::default(),
-                })
+                Some(Fill { paint: radial.into(), opacity: NormalizedF32::ONE, rule: Default::default() })
             }
-            Brush::SweepGradient {
-                c0,
-                start_angle,
-                end_angle,
-                color_stops,
-                extend,
-            } => {
+            Brush::SweepGradient { c0, start_angle, end_angle, color_stops, extend } => {
                 let stops = match self.stops(color_stops) {
                     Some(s) => s,
                     None => {
@@ -517,11 +420,7 @@ impl ColorPainter for ColrBuilder {
                     anti_alias: false,
                 };
 
-                Some(Fill {
-                    paint: sweep.into(),
-                    opacity: NormalizedF32::ONE,
-                    rule: Default::default(),
-                })
+                Some(Fill { paint: sweep.into(), opacity: NormalizedF32::ONE, rule: Default::default() })
             }
         } {
             // The proper implementation would be to apply all clip paths and then draw the
@@ -548,8 +447,7 @@ impl ColorPainter for ColrBuilder {
     }
 
     fn pop_layer(&mut self) {
-        let (Some(composite), Some(mut instructions)) = (self.layers.pop(), self.stack.pop())
-        else {
+        let (Some(composite), Some(mut instructions)) = (self.layers.pop(), self.stack.pop()) else {
             self.error = true;
             return;
         };
@@ -567,11 +465,7 @@ impl ColorPainter for ColrBuilder {
                 let Some(Instruction::Layer(mode, source)) = instructions.pop() else {
                     unreachable!();
                 };
-                stack.push(Instruction::Composite {
-                    source,
-                    mode,
-                    backdrop: instructions,
-                });
+                stack.push(Instruction::Composite { source, mode, backdrop: instructions });
                 return;
             }
         }

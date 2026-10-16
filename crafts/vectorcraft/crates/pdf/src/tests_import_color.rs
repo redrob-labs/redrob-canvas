@@ -1,11 +1,11 @@
 //! Imported colours keep their model: CMYK, Gray, spot inks (Separation, DeviceN) at a tint, in
 //! solid paints and shading stops; a CMYK file opens as a CMYK document.
 
-use vectorcraft_color::swatch::REGISTRATION;
-use vectorcraft_color::{Color, Gradient, GradientKind, GradientPaint, GradientStop, Paint, Swatch};
-use vectorcraft_doc::{Appearance, AppearanceItem, ColorMode, Document, Node, NodeId, NodeKind};
-use vectorcraft_geom::{Rect, shapes};
-use vectorcraft_testkit::pdf::{PdfPage, first_extra, pdf, pdf_with};
+use redrob_vector_color::swatch::REGISTRATION;
+use redrob_vector_color::{Color, Gradient, GradientKind, GradientPaint, GradientStop, Paint, Swatch};
+use redrob_vector_doc::{Appearance, AppearanceItem, ColorMode, Document, Node, NodeId, NodeKind};
+use redrob_vector_geom::{Rect, shapes};
+use redrob_vector_testkit::pdf::{PdfPage, first_extra, pdf, pdf_with};
 
 use crate::import_color::{Colors, Space};
 use crate::*;
@@ -195,7 +195,7 @@ fn ink_names_never_clash_with_the_document_swatches() {
 
 #[test]
 fn colour_spaces_are_read_from_the_interpreters_debug_form() {
-    let pdf = craft_pdf::syntax::Pdf::new(pdf(&[PdfPage::new(10.0, 10.0, "")], None)).unwrap();
+    let pdf = redrob_craft_pdf::syntax::Pdf::new(pdf(&[PdfPage::new(10.0, 10.0, "")], None)).unwrap();
     let mut c = Colors::new(&pdf, vec![]);
     for (text, n, want) in [
         ("ColorSpace(DeviceCmyk)", 4, Space::Cmyk),
@@ -250,7 +250,7 @@ fn spot_colours_with_an_icc_lab_alternate_keep_their_lab_values() {
 fn rgb_numbers_stand_in_editor_documents_only() {
     // GUARDS: an editor's document keeps its `ICCBased` RGB numbers; a PDF's profile stands.
     let f = first_extra(1);
-    let icc = vectorcraft_color::cms::icc_bytes(vectorcraft_color::cms::PROPHOTO_RGB).unwrap();
+    let icc = redrob_vector_color::cms::icc_bytes(redrob_vector_color::cms::PROPHOTO_RGB).unwrap();
     let hex: String = icc.iter().map(|b| format!("{b:02x}")).collect();
     let profile = format!("<< /N 3 /Filter /ASCIIHexDecode /Length {} >>\nstream\n{hex}>\nendstream", hex.len() + 1);
     let mut page = page_with(&format!("/CS0 [/ICCBased {f} 0 R]"), &[("CS0", "0.2 0.6 0.4")]);

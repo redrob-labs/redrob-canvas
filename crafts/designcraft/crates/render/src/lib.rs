@@ -12,11 +12,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use designcraft_color::BlendMode as DcBlend;
-use designcraft_compose::{Cache, ComposedStory};
-use designcraft_doc::{Content, Document, Item, PageSide, SpreadRef, StoryId, StrokeAlign, StrokeType};
-use designcraft_geom::corners;
-use designcraft_geom::{Affine, BezPath, Rect, Shape, Vec2};
+use redrob_layout_color::BlendMode as DcBlend;
+use redrob_layout_compose::{Cache, ComposedStory};
+use redrob_layout_doc::{Content, Document, Item, PageSide, SpreadRef, StoryId, StrokeAlign, StrokeType};
+use redrob_layout_geom::corners;
+use redrob_layout_geom::{Affine, BezPath, Rect, Shape, Vec2};
 use vello_cpu::kurbo;
 use vello_cpu::peniko::{self, BlendMode, Compose, Mix};
 use vello_cpu::{Pixmap, RenderContext, Resources};
@@ -122,7 +122,7 @@ pub struct RenderOptions {
     /// Skip non-printing items and layers (Preview mode, export).
     pub printing_only: bool,
     /// Items not to draw (live drag previews).
-    pub hidden: Vec<designcraft_doc::ItemId>,
+    pub hidden: Vec<redrob_layout_doc::ItemId>,
     /// Draw text smaller than this many pixels as grey bars ("greeking"); 0 = never.
     pub greek_below_px: f64,
     /// Drop shadow on pages (screen view).
@@ -261,7 +261,9 @@ pub fn default_threads() -> u16 {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        if let Some(n) = std::env::var("DESIGNCRAFT_RENDER_THREADS").ok().and_then(|v| v.parse().ok()) {
+        // legacy: the upstream variable is read when ours is unset
+        let threads = std::env::var("REDROB_LAYOUT_RENDER_THREADS").or_else(|_| std::env::var("DESIGNCRAFT_RENDER_THREADS"));
+        if let Some(n) = threads.ok().and_then(|v| v.parse().ok()) {
             return n;
         }
         std::thread::available_parallelism().map(|n| (n.get().saturating_sub(1)).clamp(0, 8) as u16).unwrap_or(0)
@@ -383,7 +385,7 @@ impl Renderer {
         if let Some(pm) = vello_cpu::PixmapMut::new(w, h, &mut pixels) {
             ctx.render(pm, &mut self.resources);
         }
-        if opts.blend_space_view && doc.settings.blend_space == designcraft_doc::BlendSpace::Cmyk && opts.plate.is_none() {
+        if opts.blend_space_view && doc.settings.blend_space == redrob_layout_doc::BlendSpace::Cmyk && opts.plate.is_none() {
             let mut img = Rendered { width: w as u32, height: h as u32, pixels };
             for pl in spreads {
                 let Some(sp) = doc.spread(pl.spread) else { continue };
@@ -427,7 +429,7 @@ impl Renderer {
         let Some(sp) = doc.spread(sr) else { return };
         // Paper.
         if f.opts.paper {
-            let paper = doc.resolve_color(designcraft_color::swatch::PAPER, 1.0).unwrap_or(designcraft_color::Color::WHITE);
+            let paper = doc.resolve_color(redrob_layout_color::swatch::PAPER, 1.0).unwrap_or(redrob_layout_color::Color::WHITE);
             if f.opts.page_shadow {
                 ctx.set_transform(f.view);
                 ctx.set_paint(peniko::Color::from_rgba8(0, 0, 0, 90));
@@ -651,7 +653,7 @@ impl Renderer {
             ctx.set_paint(screen_color([60, 110, 220], 200));
             ctx.set_stroke(kurbo::Stroke::new(0.75));
             ctx.stroke_path(&r.to_path(0.1));
-            if ff.kind == designcraft_doc::FieldKind::CheckBox && !ff.value.is_empty() && ff.value != "Off" {
+            if ff.kind == redrob_layout_doc::FieldKind::CheckBox && !ff.value.is_empty() && ff.value != "Off" {
                 let (w, h) = (r.width(), r.height());
                 let mut c = BezPath::new();
                 c.move_to((r.x0 + w * 0.22, r.y0 + h * 0.48));
@@ -685,19 +687,20 @@ impl Renderer {
     fn draw_stroke_painted(&mut self, ctx: &mut RenderContext, f: &Frame, it: &Item, bp: &BezPath, xf: Affine) {
         let st = &it.stroke;
         let (paint, bounds) = (st.as_fill(), bp.bounding_box());
-        if f.doc.resolve_color(&st.swatch, st.tint).is_none() && designcraft_color::swatch::resolve_gradient(&f.doc.swatches, &st.swatch).is_none() {
+        if f.doc.resolve_color(&st.swatch, st.tint).is_none() && redrob_layout_color::swatch::resolve_gradient(&f.doc.swatches, &st.swatch).is_none()
+        {
             return;
         }
         let mut stroke = kurbo::Stroke::new(st.weight)
             .with_caps(match st.cap {
-                designcraft_doc::Cap::Butt => kurbo::Cap::Butt,
-                designcraft_doc::Cap::Round => kurbo::Cap::Round,
-                designcraft_doc::Cap::Projecting => kurbo::Cap::Square,
+                redrob_layout_doc::Cap::Butt => kurbo::Cap::Butt,
+                redrob_layout_doc::Cap::Round => kurbo::Cap::Round,
+                redrob_layout_doc::Cap::Projecting => kurbo::Cap::Square,
             })
             .with_join(match st.join {
-                designcraft_doc::Join::Miter => kurbo::Join::Miter,
-                designcraft_doc::Join::Round => kurbo::Join::Round,
-                designcraft_doc::Join::Bevel => kurbo::Join::Bevel,
+                redrob_layout_doc::Join::Miter => kurbo::Join::Miter,
+                redrob_layout_doc::Join::Round => kurbo::Join::Round,
+                redrob_layout_doc::Join::Bevel => kurbo::Join::Bevel,
             })
             .with_miter_limit(st.miter_limit);
         let kind = f.doc.stroke_kind(&st.kind);
@@ -712,7 +715,7 @@ impl Renderer {
         }
         let closed = it.path.is_closed();
         // Arrowheads: the path is shortened under them; they're drawn after it.
-        let arrows = designcraft_doc::arrow::apply(bp, st, closed);
+        let arrows = redrob_layout_doc::arrow::apply(bp, st, closed);
         let bp = arrows.as_ref().map_or(bp, |a| &a.0);
         // Gap colour under dashes and dots: the whole path, undashed.
         let gap = if matches!(kind, StrokeType::Solid) { None } else { f.doc.resolve_color(&st.gap_swatch, st.gap_tint) };
@@ -789,9 +792,9 @@ impl Renderer {
         }
     }
 
-    pub(crate) fn draw_graphic(&mut self, ctx: &mut RenderContext, f: &Frame, g: &designcraft_doc::Graphic, xf: Affine) {
+    pub(crate) fn draw_graphic(&mut self, ctx: &mut RenderContext, f: &Frame, g: &redrob_layout_doc::Graphic, xf: Affine) {
         let Some(asset) = f.doc.assets.get(&g.asset) else { return };
-        if designcraft_doc::media_kind(&asset.mime).is_some() {
+        if redrob_layout_doc::media_kind(&asset.mime).is_some() {
             // Video / sound: a dark frame with a play mark (the poster, when set, is drawn by the item).
             ctx.set_transform(f.view * xf * g.xf);
             ctx.set_paint(screen_color([48, 48, 52], 255));
@@ -843,17 +846,17 @@ const CMYK_N: usize = 17;
 /// sample it with [`cmyk_in`]. Fetch it once for many pixels.
 pub(crate) fn cmyk_table() -> std::sync::Arc<Vec<[f32; 4]>> {
     const N: usize = CMYK_N;
-    type Lut = (designcraft_color::cms::ColorSettings, std::sync::Arc<Vec<[f32; 4]>>);
+    type Lut = (redrob_layout_color::cms::ColorSettings, std::sync::Arc<Vec<[f32; 4]>>);
     static LUT: std::sync::Mutex<Option<Lut>> = std::sync::Mutex::new(None);
-    let settings = designcraft_color::cms::active_settings();
+    let settings = redrob_layout_color::cms::active_settings();
     let mut g = LUT.lock().unwrap_or_else(|e| e.into_inner());
     match g.as_ref() {
         Some((s, t)) if *s == settings => t.clone(),
         _ => {
-            let cms = designcraft_color::cms::active();
+            let cms = redrob_layout_color::cms::active();
             let step = |i: usize| i as f32 / (N - 1) as f32;
             let t: Vec<[f32; 4]> = (0..N * N * N)
-                .map(|i| cms.srgb_to_cmyk([step(i / (N * N)), step(i / N % N), step(i % N)], designcraft_color::cms::Intent::RelativeColorimetric))
+                .map(|i| cms.srgb_to_cmyk([step(i / (N * N)), step(i / N % N), step(i % N)], redrob_layout_color::cms::Intent::RelativeColorimetric))
                 .collect();
             let t = std::sync::Arc::new(t);
             *g = Some((settings, t.clone()));
@@ -888,11 +891,11 @@ fn plate_pixmap(pm: &std::sync::Arc<vello_cpu::Pixmap>, plate: u8) -> std::sync:
     // Keep source allocations alive (their addresses are keys), invalidate on colour settings,
     // and cap derived raster memory rather than merely counting differently sized images.
     type Entry = (std::sync::Arc<vello_cpu::Pixmap>, std::sync::Arc<vello_cpu::Pixmap>);
-    type Cache = (designcraft_color::cms::ColorSettings, std::collections::HashMap<(usize, u8), Entry>, usize);
+    type Cache = (redrob_layout_color::cms::ColorSettings, std::collections::HashMap<(usize, u8), Entry>, usize);
     const BUDGET: usize = 64 << 20;
     static CACHE: std::sync::Mutex<Option<Cache>> = std::sync::Mutex::new(None);
     let key = (std::sync::Arc::as_ptr(pm) as usize, plate);
-    let settings = designcraft_color::cms::active_settings();
+    let settings = redrob_layout_color::cms::active_settings();
     {
         let mut guard = CACHE.lock().unwrap_or_else(|e| e.into_inner());
         if let Some((previous, map, _)) = guard.as_ref() {
@@ -961,14 +964,14 @@ pub(crate) fn screen_color(rgb: [u8; 3], alpha: u8) -> peniko::Color {
         return peniko::Color::from_rgba8(rgb[0], rgb[1], rgb[2], alpha);
     }
     let [c, m, y, k] = cmyk_in(&cmyk_table(), rgb.map(|v| v as f32 / 255.0));
-    color_of(&designcraft_color::Color::Cmyk { c, m, y, k }, alpha as f32 / 255.0)
+    color_of(&redrob_layout_color::Color::Cmyk { c, m, y, k }, alpha as f32 / 255.0)
 }
 
-pub fn color_of(c: &designcraft_color::Color, alpha: f32) -> peniko::Color {
+pub fn color_of(c: &redrob_layout_color::Color, alpha: f32) -> peniko::Color {
     if let Some(p) = PLATE.with(|p| p.get()) {
         let cmyk = match *c {
-            designcraft_color::Color::Cmyk { c, m, y, k } => [c, m, y, k],
-            _ => c.to_cmyk_managed(designcraft_color::cms::Intent::RelativeColorimetric),
+            redrob_layout_color::Color::Cmyk { c, m, y, k } => [c, m, y, k],
+            _ => c.to_cmyk_managed(redrob_layout_color::cms::Intent::RelativeColorimetric),
         };
         let a = (alpha.clamp(0.0, 1.0) * 255.0).round() as u8;
         let ink = |i: usize| ((1.0 - cmyk[i].clamp(0.0, 1.0)) * 255.0).round() as u8;
@@ -979,7 +982,7 @@ pub fn color_of(c: &designcraft_color::Color, alpha: f32) -> peniko::Color {
         return peniko::Color::from_rgba8(v, v, v, a);
     }
     if RICH_BLACK.with(|r| r.get())
-        && let designcraft_color::Color::Cmyk { c: cc, m, y, k } = *c
+        && let redrob_layout_color::Color::Cmyk { c: cc, m, y, k } = *c
         && cc <= 1e-3
         && m <= 1e-3
         && y <= 1e-3
@@ -992,9 +995,9 @@ pub fn color_of(c: &designcraft_color::Color, alpha: f32) -> peniko::Color {
 }
 
 /// Set a swatch fill (solid or gradient) as the paint. Returns false for [None]/unknown.
-fn set_fill_paint(ctx: &mut RenderContext, doc: &Document, fill: &designcraft_doc::Fill, bounds: Rect) -> bool {
+fn set_fill_paint(ctx: &mut RenderContext, doc: &Document, fill: &redrob_layout_doc::Fill, bounds: Rect) -> bool {
     let (swatch, tint) = (fill.swatch.as_str(), fill.tint);
-    if let Some(g) = designcraft_color::swatch::resolve_gradient(&doc.swatches, swatch) {
+    if let Some(g) = redrob_layout_color::swatch::resolve_gradient(&doc.swatches, swatch) {
         // Sampled so process colours blend as inks, as InDesign shows them (and as the PDF's CMYK
         // shading prints).
         let stops: Vec<peniko::ColorStop> = g.display_stops().iter().map(|(o, c, a)| peniko::ColorStop::from((*o, color_of(c, *a)))).collect();
@@ -1003,7 +1006,7 @@ fn set_fill_paint(ctx: &mut RenderContext, doc: &Document, fill: &designcraft_do
         }
         let grad = match (g.kind, fill.gradient_vector) {
             // Radial: a circle stretched into the object's ellipse (the paint transform).
-            (designcraft_color::GradientKind::Radial, _) => {
+            (redrob_layout_color::GradientKind::Radial, _) => {
                 let (c, rx, ry) = fill.radial_ellipse(bounds);
                 let rx = rx.max(1e-3);
                 ctx.set_paint_transform(Affine::translate(c.to_vec2()) * Affine::scale_non_uniform(1.0, ry / rx) * Affine::translate(-c.to_vec2()));
@@ -1029,12 +1032,12 @@ fn set_fill_paint(ctx: &mut RenderContext, doc: &Document, fill: &designcraft_do
 /// Overprint Preview: does this paint overprint (its own flag, or 100% [Black], which
 /// overprints by default)? It's then multiplied over what's beneath.
 pub(crate) fn overprints(f: &Frame, swatch: &str, tint: f32, flag: bool) -> bool {
-    f.opts.overprint_preview && (flag || (f.doc.settings.overprint_black && swatch == designcraft_color::swatch::BLACK && tint >= 0.999))
+    f.opts.overprint_preview && (flag || (f.doc.settings.overprint_black && swatch == redrob_layout_color::swatch::BLACK && tint >= 0.999))
 }
 
 /// Does any item on the spread, or on the parent pages it shows, use a blend mode other than
 /// Normal (groups and pasted-in items included)?
-fn spread_blends(doc: &Document, sp: &designcraft_doc::Spread) -> bool {
+fn spread_blends(doc: &Document, sp: &redrob_layout_doc::Spread) -> bool {
     let blends = |it: &Item| {
         let mut any = false;
         it.walk(&mut |i| any |= i.blend != Default::default());
@@ -1076,12 +1079,12 @@ pub fn decode_pixmap_page(bytes: &[u8], page: u32) -> Option<Pixmap> {
     if is_pdf(bytes) {
         return render_pdf_page(bytes, page as usize, 3000);
     }
-    if designcraft_images::is_svg(bytes) {
-        let (px, w, h) = designcraft_images::render_svg(bytes, 3000)?;
+    if redrob_layout_images::is_svg(bytes) {
+        let (px, w, h) = redrob_layout_images::render_svg(bytes, 3000)?;
         let data = px.as_chunks::<4>().0.iter().map(|p| vello_cpu::color::PremulRgba8 { r: p[0], g: p[1], b: p[2], a: p[3] }).collect();
         return Some(Pixmap::from_parts(data, w.min(u16::MAX as u32) as u16, h.min(u16::MAX as u32) as u16));
     }
-    let img = designcraft_images::decode_rgba(bytes)?;
+    let img = redrob_layout_images::decode_rgba(bytes)?;
     let (w, h) = img.dimensions();
     if w == 0 || h == 0 || w > u16::MAX as u32 || h > u16::MAX as u32 {
         return None;
@@ -1137,11 +1140,11 @@ pub fn image_size(bytes: &[u8]) -> Option<(u32, u32)> {
         // Placed PDFs are sized by their page (crop box) in points.
         return pdf_page_size(bytes, 0).map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32));
     }
-    if designcraft_images::is_svg(bytes) {
+    if redrob_layout_images::is_svg(bytes) {
         // SVGs by their width and height (CSS pixels → points).
-        return designcraft_images::natural_size(bytes).map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32));
+        return redrob_layout_images::natural_size(bytes).map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32));
     }
-    designcraft_images::pixel_size(bytes)
+    redrob_layout_images::pixel_size(bytes)
 }
 
 /// Natural size of a placed graphic, unrounded: a PDF page (crop box) and an SVG in points, a raster
@@ -1150,7 +1153,7 @@ pub fn natural_size(bytes: &[u8], page: usize) -> Option<(f64, f64)> {
     if is_pdf(bytes) {
         return pdf_page_size(bytes, page).map(|(w, h)| (w.max(1e-3), h.max(1e-3)));
     }
-    designcraft_images::natural_size(bytes)
+    redrob_layout_images::natural_size(bytes)
 }
 
 /// MIME type guess for encoded image bytes.
@@ -1225,8 +1228,8 @@ pub fn pdf_page_box(bytes: &[u8], page: usize, kind: &str) -> Option<(f64, f64, 
 /// Pixels are separated with a plain GCR (black = 1 − max(r, g, b)), so it's a preview.
 /// View › Proof Colors: simulate the proof target (a press, another RGB space, colour-vision
 /// deficiencies) through the active colour settings' proof table.
-pub fn proof_view(img: &mut Rendered, setup: &designcraft_color::cms::ProofSetup) {
-    let lut = designcraft_color::cms::active().proof_lut(setup);
+pub fn proof_view(img: &mut Rendered, setup: &redrob_layout_color::cms::ProofSetup) {
+    let lut = redrob_layout_color::cms::active().proof_lut(setup);
     for px in img.pixels.as_chunks_mut::<4>().0 {
         let a = px[3];
         if a == 0 {
@@ -1245,8 +1248,8 @@ pub fn proof_view(img: &mut Rendered, setup: &designcraft_color::cms::ProofSetup
 /// A CMYK transparency blend space on screen: the pixels of `area` (device space) through the
 /// working CMYK profile and back, as a spread composited in that space looks.
 fn blend_space_view(img: &mut Rendered, area: Rect) {
-    use designcraft_color::cms::{ProofSetup, ProofTarget};
-    let lut = designcraft_color::cms::active().proof_lut(&ProofSetup { target: ProofTarget::WorkingCmyk, ..Default::default() });
+    use redrob_layout_color::cms::{ProofSetup, ProofTarget};
+    let lut = redrob_layout_color::cms::active().proof_lut(&ProofSetup { target: ProofTarget::WorkingCmyk, ..Default::default() });
     let (w, h) = (img.width as i64, img.height as i64);
     let (x0, y0) = ((area.x0.floor() as i64).clamp(0, w), (area.y0.floor() as i64).clamp(0, h));
     let (x1, y1) = ((area.x1.ceil() as i64).clamp(0, w), (area.y1.ceil() as i64).clamp(0, h));
@@ -1293,14 +1296,14 @@ pub fn separation_view(img: &mut Rendered, plate: Option<u8>, ink_limit: Option<
 }
 
 pub fn image_mime(bytes: &[u8]) -> &'static str {
-    designcraft_images::mime(bytes)
+    redrob_layout_images::mime(bytes)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_doc::build::NewDocument;
-    use designcraft_doc::{Fill, ParaFormat};
+    use redrob_layout_doc::build::NewDocument;
+    use redrob_layout_doc::{Fill, ParaFormat};
 
     /// `Rendered` has public fields: a buffer that doesn't match the stated size used to panic
     /// in `to_png`.
@@ -1330,7 +1333,7 @@ mod tests {
 
     #[test]
     fn proof_view_simulates_the_target() {
-        use designcraft_color::cms::{ProofSetup, ProofTarget};
+        use redrob_layout_color::cms::{ProofSetup, ProofTarget};
         let red = |a: u8| Rendered { width: 1, height: 1, pixels: vec![a, 0, 0, a] };
         let mut img = red(255);
         proof_view(&mut img, &ProofSetup { target: ProofTarget::Protanopia, ..Default::default() });
@@ -1351,9 +1354,9 @@ mod tests {
         let lid = d.default_layer();
         let (fid, _) =
             d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 576.0, 300.0), lid, "Hello Redrob Canvas", ParaFormat::default()).unwrap();
-        let id = designcraft_doc::ItemId(d.alloc());
+        let id = redrob_layout_doc::ItemId(d.alloc());
         let mut box_ =
-            Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(36.0, 400.0, 136.0, 500.0)));
+            Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(36.0, 400.0, 136.0, 500.0)));
         box_.fill = Fill::swatch("C=100 M=0 Y=0 K=0");
         d.insert_item(SpreadRef::Doc(0), box_, None).unwrap();
         let cache = Cache::new();
@@ -1377,16 +1380,16 @@ mod tests {
     fn inside_strokes_are_inset_by_half_the_weight() {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
-        let id = designcraft_doc::ItemId(d.alloc());
+        let id = redrob_layout_doc::ItemId(d.alloc());
         let mut it =
-            Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 300.0, 300.0)));
-        it.stroke = designcraft_doc::Stroke {
-            swatch: designcraft_color::swatch::BLACK.into(),
+            Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(100.0, 100.0, 300.0, 300.0)));
+        it.stroke = redrob_layout_doc::Stroke {
+            swatch: redrob_layout_color::swatch::BLACK.into(),
             weight: 10.0,
-            align: designcraft_doc::StrokeAlign::Inside,
+            align: redrob_layout_doc::StrokeAlign::Inside,
             ..Default::default()
         };
-        it.corners = designcraft_geom::corners::CornerOptions::uniform(designcraft_geom::corners::CornerShape::Rounded, 20.0);
+        it.corners = redrob_layout_geom::corners::CornerOptions::uniform(redrob_layout_geom::corners::CornerShape::Rounded, 20.0);
         d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
         let cache = Cache::new();
         let mut r = Renderer::new();
@@ -1406,24 +1409,24 @@ mod tests {
     fn arrowheads_draw_at_line_ends() {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
-        let id = designcraft_doc::ItemId(d.alloc());
-        let path = designcraft_geom::shapes::line(designcraft_geom::Point::new(100.0, 400.0), designcraft_geom::Point::new(400.0, 400.0));
-        let mut line = Item::new(id, lid, designcraft_doc::Shape::GraphicLine, path);
-        line.stroke = designcraft_doc::Stroke {
-            swatch: designcraft_color::swatch::BLACK.into(),
+        let id = redrob_layout_doc::ItemId(d.alloc());
+        let path = redrob_layout_geom::shapes::line(redrob_layout_geom::Point::new(100.0, 400.0), redrob_layout_geom::Point::new(400.0, 400.0));
+        let mut line = Item::new(id, lid, redrob_layout_doc::Shape::GraphicLine, path);
+        line.stroke = redrob_layout_doc::Stroke {
+            swatch: redrob_layout_color::swatch::BLACK.into(),
             weight: 2.0,
-            end: designcraft_doc::Arrowhead::TriangleWide,
+            end: redrob_layout_doc::Arrowhead::TriangleWide,
             ..Default::default()
         };
         d.insert_item(SpreadRef::Doc(0), line, None).unwrap();
         // A dashed line with a gap colour: the gaps are painted.
-        let id = designcraft_doc::ItemId(d.alloc());
-        let path = designcraft_geom::shapes::line(designcraft_geom::Point::new(100.0, 500.0), designcraft_geom::Point::new(400.0, 500.0));
-        let mut dashed = Item::new(id, lid, designcraft_doc::Shape::GraphicLine, path);
-        dashed.stroke = designcraft_doc::Stroke {
-            swatch: designcraft_color::swatch::BLACK.into(),
+        let id = redrob_layout_doc::ItemId(d.alloc());
+        let path = redrob_layout_geom::shapes::line(redrob_layout_geom::Point::new(100.0, 500.0), redrob_layout_geom::Point::new(400.0, 500.0));
+        let mut dashed = Item::new(id, lid, redrob_layout_doc::Shape::GraphicLine, path);
+        dashed.stroke = redrob_layout_doc::Stroke {
+            swatch: redrob_layout_color::swatch::BLACK.into(),
             weight: 4.0,
-            kind: designcraft_doc::StrokeType::Dashed { pattern: vec![12.0, 4.0] },
+            kind: redrob_layout_doc::StrokeType::Dashed { pattern: vec![12.0, 4.0] },
             gap_swatch: "C=100 M=0 Y=0 K=0".into(),
             ..Default::default()
         };
@@ -1447,9 +1450,9 @@ mod tests {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
         for (sw, op) in [("C=0 M=0 Y=100 K=0", false), ("C=0 M=100 Y=0 K=0", true)] {
-            let id = designcraft_doc::ItemId(d.alloc());
+            let id = redrob_layout_doc::ItemId(d.alloc());
             let mut it =
-                Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+                Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
             it.fill = Fill { overprint: op, ..Fill::swatch(sw) };
             d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
         }
@@ -1468,11 +1471,11 @@ mod tests {
     #[test]
     fn cmyk_blend_space_shows_transparent_spreads_in_cmyk() {
         let mut d = Document::new(&NewDocument::default());
-        d.swatches.push(designcraft_color::swatch::Swatch::color("Green", designcraft_color::Color::rgb8(0, 255, 0)));
+        d.swatches.push(redrob_layout_color::swatch::Swatch::color("Green", redrob_layout_color::Color::rgb8(0, 255, 0)));
         let lid = d.default_layer();
-        let id = designcraft_doc::ItemId(d.alloc());
+        let id = redrob_layout_doc::ItemId(d.alloc());
         let mut it =
-            Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+            Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
         it.fill = Fill::swatch("Green");
         d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
         let cache = Cache::new();
@@ -1487,7 +1490,7 @@ mod tests {
         d.item_mut(id).unwrap().opacity = 0.99;
         let cmyk = px(&d, &mut r);
         assert!(cmyk[0] > 20 || cmyk[1] < 240, "{cmyk:?}");
-        d.settings.blend_space = designcraft_doc::BlendSpace::Rgb;
+        d.settings.blend_space = redrob_layout_doc::BlendSpace::Rgb;
         let rgb = px(&d, &mut r);
         assert!(rgb[1] > 245 && rgb[0] < 10, "{rgb:?}");
     }
@@ -1498,17 +1501,17 @@ mod tests {
         // in Color Dodge: in CMYK the black clears the lilac's inks (white), over the paper it
         // shows as it is; in RGB, dodging with black changes nothing.
         let mut d = Document::new(&NewDocument::default());
-        d.swatches.push(designcraft_color::swatch::Swatch::color("Lilac", designcraft_color::Color::rgb8(171, 154, 227)));
+        d.swatches.push(redrob_layout_color::swatch::Swatch::color("Lilac", redrob_layout_color::Color::rgb8(171, 154, 227)));
         let lid = d.default_layer();
         let rect = |d: &mut Document, r: Rect, fill: &str| {
-            let id = designcraft_doc::ItemId(d.alloc());
-            let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+            let id = redrob_layout_doc::ItemId(d.alloc());
+            let mut it = Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(r));
             it.fill = Fill::swatch(fill);
             d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
             id
         };
         rect(&mut d, Rect::new(100.0, 100.0, 300.0, 200.0), "Lilac");
-        let black = rect(&mut d, Rect::new(150.0, 150.0, 250.0, 250.0), designcraft_color::swatch::BLACK);
+        let black = rect(&mut d, Rect::new(150.0, 150.0, 250.0, 250.0), redrob_layout_color::swatch::BLACK);
         d.item_mut(black).unwrap().blend = DcBlend::ColorDodge;
         let cache = Cache::new();
         let mut r = Renderer::new();
@@ -1523,9 +1526,9 @@ mod tests {
         let lilac = px(&d, &mut r, 120, 150);
         assert!(lilac[2] > lilac[1] + 25, "the lilac beside it: {lilac:?}");
         // Inside a group, the group's blend mode.
-        let g = designcraft_doc::ItemId(d.alloc());
+        let g = redrob_layout_doc::ItemId(d.alloc());
         let it = d.remove_item(black).unwrap();
-        let mut grp = Item::new(g, lid, designcraft_doc::Shape::Group, Default::default());
+        let mut grp = Item::new(g, lid, redrob_layout_doc::Shape::Group, Default::default());
         let mut inner = (*it).clone();
         inner.blend = DcBlend::Normal;
         grp.content = Content::Group { items: vec![Arc::new(inner)] };
@@ -1535,7 +1538,7 @@ mod tests {
         assert!(grouped[..3].iter().all(|v| *v > 235), "{grouped:?}");
         // An RGB blend space: still lilac under the black (lightened a little: [Black] shows as a
         // dark grey in RGB).
-        d.settings.blend_space = designcraft_doc::BlendSpace::Rgb;
+        d.settings.blend_space = redrob_layout_doc::BlendSpace::Rgb;
         let rgb = px(&d, &mut r, 200, 175);
         assert!(rgb[2] > rgb[1] + 25 && rgb[1] < 220, "{rgb:?}");
     }
@@ -1546,16 +1549,17 @@ mod tests {
         let lid = d.default_layer();
         let mut kids = Vec::new();
         for (sw, x) in [("C=0 M=0 Y=100 K=0", 100.0), ("C=0 M=100 Y=0 K=0", 150.0)] {
-            let id = designcraft_doc::ItemId(d.alloc());
+            let id = redrob_layout_doc::ItemId(d.alloc());
             let mut it =
-                Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(x, 100.0, x + 100.0, 200.0)));
+                Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(x, 100.0, x + 100.0, 200.0)));
             it.fill = Fill::swatch(sw);
             it.opacity = 0.5;
             kids.push(std::sync::Arc::new(it));
         }
-        let gid = designcraft_doc::ItemId(d.alloc());
-        let mut g = Item::new(gid, lid, designcraft_doc::Shape::Group, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 250.0, 200.0)));
-        g.content = designcraft_doc::Content::Group { items: kids };
+        let gid = redrob_layout_doc::ItemId(d.alloc());
+        let mut g =
+            Item::new(gid, lid, redrob_layout_doc::Shape::Group, redrob_layout_geom::shapes::rectangle(Rect::new(100.0, 100.0, 250.0, 200.0)));
+        g.content = redrob_layout_doc::Content::Group { items: kids };
         d.insert_item(SpreadRef::Doc(0), g, None).unwrap();
         let cache = Cache::new();
         let mut r = Renderer::new();
@@ -1589,11 +1593,12 @@ mod tests {
     fn black_overprints_only_with_the_preference() {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
-        for (sw, r) in
-            [("C=100 M=0 Y=0 K=0", Rect::new(100.0, 100.0, 200.0, 200.0)), (designcraft_color::swatch::BLACK, Rect::new(150.0, 100.0, 250.0, 200.0))]
-        {
-            let id = designcraft_doc::ItemId(d.alloc());
-            let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+        for (sw, r) in [
+            ("C=100 M=0 Y=0 K=0", Rect::new(100.0, 100.0, 200.0, 200.0)),
+            (redrob_layout_color::swatch::BLACK, Rect::new(150.0, 100.0, 250.0, 200.0)),
+        ] {
+            let id = redrob_layout_doc::ItemId(d.alloc());
+            let mut it = Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(r));
             it.fill = Fill::swatch(sw);
             d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
         }
@@ -1613,10 +1618,10 @@ mod tests {
     fn appearance_of_black_on_screen() {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
-        let id = designcraft_doc::ItemId(d.alloc());
+        let id = redrob_layout_doc::ItemId(d.alloc());
         let mut it =
-            Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
-        it.fill = Fill::swatch(designcraft_color::swatch::BLACK);
+            Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+        it.fill = Fill::swatch(redrob_layout_color::swatch::BLACK);
         d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
         let cache = Cache::new();
         let mut r = Renderer::new();
@@ -1637,10 +1642,10 @@ mod tests {
         image::RgbaImage::from_pixel(4, 4, image::Rgba([255, 0, 0, 255]))
             .write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
             .unwrap();
-        let aid = designcraft_doc::AssetId(d.alloc());
+        let aid = redrob_layout_doc::AssetId(d.alloc());
         d.assets.insert(
             aid,
-            Arc::new(designcraft_doc::Asset {
+            Arc::new(redrob_layout_doc::Asset {
                 page: 0,
                 id: aid,
                 name: "red.png".into(),
@@ -1650,10 +1655,10 @@ mod tests {
                 pixels: Some((4, 4)),
             }),
         );
-        let id = designcraft_doc::ItemId(d.alloc());
+        let id = redrob_layout_doc::ItemId(d.alloc());
         let mut it =
-            Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
-        it.content = designcraft_doc::Content::Graphic(designcraft_doc::Graphic {
+            Item::new(id, lid, redrob_layout_doc::Shape::Rectangle, redrob_layout_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+        it.content = redrob_layout_doc::Content::Graphic(redrob_layout_doc::Graphic {
             asset: aid,
             size: (100.0, 100.0),
             xf: Affine::translate((100.0, 100.0)),
@@ -1700,7 +1705,7 @@ mod tests {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
         let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 336.0, 400.0), lid, "", ParaFormat::default()).unwrap();
-        let mut t = designcraft_doc::Table::new(5, 3, 3, 1, 0, 300.0);
+        let mut t = redrob_layout_doc::Table::new(5, 3, 3, 1, 0, 300.0);
         for c in 0..3 {
             let cell = t.cell_mut(0, c).unwrap();
             cell.fill = "C=100 M=0 Y=0 K=0".into();

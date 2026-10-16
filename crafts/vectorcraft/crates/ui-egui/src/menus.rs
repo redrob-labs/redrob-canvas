@@ -7,7 +7,7 @@
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use vectorcraft_engine::cmd::fileio::SaveMode;
+use redrob_vector_engine::cmd::fileio::SaveMode;
 
 use crate::VectorcraftApp;
 use crate::io;
@@ -929,7 +929,7 @@ pub(crate) fn opt_bool(p: &Value, key: &str) -> Result<Option<bool>, String> {
 /// `params` has only keys the params description of engine command `id` names, or the parameter
 /// error naming the one it doesn't (#1442). The UI's own commands aren't checked yet: their
 /// descriptions haven't been audited against what they read.
-pub fn check_params(session: &vectorcraft_engine::Session, id: &str, params: &Value) -> Result<(), String> {
+pub fn check_params(session: &redrob_vector_engine::Session, id: &str, params: &Value) -> Result<(), String> {
     if UI_COMMANDS.iter().any(|c| c.0 == id) {
         return Ok(());
     }
@@ -1021,7 +1021,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         }
         "file.exportForScreens" => io::export_for_screens(app, p.clone()),
         "file.export.png" if s("path").is_none() => io::target_path(app, None, "png").and_then(|path| {
-            let f = vectorcraft_engine::cmd::fileio::format("png").ok_or("no PNG encoder")?;
+            let f = redrob_vector_engine::cmd::fileio::format("png").ok_or("no PNG encoder")?;
             let mut params = if p.is_object() { p.clone() } else { json!({}) };
             params["format"] = json!("png");
             params["path"] = json!(path);
@@ -1090,7 +1090,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "view.gradientAnnotator" => flag(&mut app.ui.view.gradient_annotator),
         "effect.last" => match app.last_effect.clone() {
             Some((e, params)) => {
-                let label = vectorcraft_effects::effect_info(&e).map(|i| i.label.trim_end_matches('…').to_string()).unwrap_or_else(|| e.clone());
+                let label = redrob_vector_effects::effect_info(&e).map(|i| i.label.trim_end_matches('…').to_string()).unwrap_or_else(|| e.clone());
                 let mut fields = params.as_object().cloned().unwrap_or_default();
                 fields.insert("__effect".into(), json!(e));
                 fields.insert("__label".into(), json!(label));
@@ -1141,8 +1141,10 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         }
         "view.setZoom" => {
             let z = p.get("zoom").and_then(Value::as_f64).unwrap_or(100.0) / 100.0;
-            let center =
-                p.get("center").and_then(Value::as_array).and_then(|a| Some(vectorcraft_geom::Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
+            let center = p
+                .get("center")
+                .and_then(Value::as_array)
+                .and_then(|a| Some(redrob_vector_geom::Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
             match app.view_mut() {
                 Some(v) => {
                     v.zoom = z.clamp(0.0313, 640.0);
@@ -1273,7 +1275,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         },
         "window.newWindow" => Err("multiple windows land with M11.5".into()),
         "tool.select" => match s("tool") {
-            Some(t) if vectorcraft_tools::tool_info(&t).is_some() => {
+            Some(t) if redrob_vector_tools::tool_info(&t).is_some() => {
                 app.select_tool(&t);
                 Ok(json!({"tool": app.session.tool_id()}))
             }
@@ -1285,7 +1287,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "ui.recolorDialog" => crate::dialogs::recolor::open(app, p),
         "ui.cropImage" if !selected_image(app, |_| true) => Err("select an image".into()),
         "ui.cropImage" => {
-            app.select_tool(vectorcraft_tools::cropimage::ID);
+            app.select_tool(redrob_vector_tools::cropimage::ID);
             Ok(json!({"tool": app.session.tool_id()}))
         }
         "ui.paramDialog" => {
@@ -1526,7 +1528,7 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
     let selected_text = |onpath: bool| {
         let st = app.session.active()?;
         st.selection.objects.iter().find_map(|id| match st.doc.node(*id).map(|n| &n.kind) {
-            Some(vectorcraft_engine::doc::NodeKind::Text(t)) if !onpath || matches!(t.kind, vectorcraft_engine::doc::TextKind::OnPath { .. }) => {
+            Some(redrob_vector_engine::doc::NodeKind::Text(t)) if !onpath || matches!(t.kind, redrob_vector_engine::doc::TextKind::OnPath { .. }) => {
                 Some(t)
             }
             _ => None,
@@ -1577,26 +1579,26 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
         "window.brightness" => p.get("brightness").and_then(Value::as_str).and_then(Brightness::parse) == Some(app.ui.brightness),
         "view.slices.lock" => app.session.slices_locked(),
         "object.slice.clipToArtboard" => app.session.active().is_some_and(|d| d.doc.slices_clip_to_artboard),
-        "view.proofColors" => vectorcraft_render::proof::view().proof_colors,
-        "view.overprintPreview" => vectorcraft_render::proof::view().overprint,
-        "view.proofSetup" => p.get("target").and_then(Value::as_str) == Some(vectorcraft_render::proof::view().setup.target.id().as_str()),
+        "view.proofColors" => redrob_vector_render::proof::view().proof_colors,
+        "view.overprintPreview" => redrob_vector_render::proof::view().overprint,
+        "view.proofSetup" => p.get("target").and_then(Value::as_str) == Some(redrob_vector_render::proof::view().setup.target.id().as_str()),
         "perspective.grid.snap" => perspective_grid(app).is_some_and(|g| g.snap),
         "perspective.grid.lockStation" => perspective_grid(app).is_some_and(|g| g.lock_station),
         "file.documentColorMode" | "object.convertDocumentColorMode" => {
-            let cmyk = app.session.active().is_some_and(|d| d.doc.color_mode == vectorcraft_engine::doc::ColorMode::Cmyk);
+            let cmyk = app.session.active().is_some_and(|d| d.doc.color_mode == redrob_vector_engine::doc::ColorMode::Cmyk);
             p.get("mode").and_then(Value::as_str) == Some(if cmyk { "cmyk" } else { "rgb" })
         }
         // The ruler context menu lists the document units, the current one checked.
         "document.setUnits" => {
-            p.get("units").and_then(Value::as_str).and_then(vectorcraft_engine::doc::Unit::named) == Some(app.session.general_unit())
+            p.get("units").and_then(Value::as_str).and_then(redrob_vector_engine::doc::Unit::named) == Some(app.session.general_unit())
         }
         _ => return None,
     })
 }
 
 /// The active document's perspective grid (View → Perspective Grid toggles).
-fn perspective_grid(app: &VectorcraftApp) -> Option<vectorcraft_tools::distort::perspective::PerspectiveGrid> {
-    app.session.active().map(|d| vectorcraft_tools::distort::perspective::PerspectiveGrid::current(&d.doc))
+fn perspective_grid(app: &VectorcraftApp) -> Option<redrob_vector_tools::distort::perspective::PerspectiveGrid> {
+    app.session.active().map(|d| redrob_vector_tools::distort::perspective::PerspectiveGrid::current(&d.doc))
 }
 
 /// Label for toggles whose text flips (Outline/Preview, Hide/Show …).
@@ -1611,7 +1613,7 @@ pub fn dynamic_label(app: &VectorcraftApp, id: &str, label: &str) -> String {
         "type.hiddenCharacters" => if v.hidden_chars { "Hide Hidden Characters" } else { "Show Hidden Characters" }.into(),
         "view.gradientAnnotator" => if v.gradient_annotator { "Hide Gradient Annotator" } else { "Show Gradient Annotator" }.into(),
         "effect.last" => match &app.last_effect {
-            Some((e, _)) => format!("Last Effect: {}", vectorcraft_effects::effect_info(e).map(|i| i.label).unwrap_or(e.as_str())),
+            Some((e, _)) => format!("Last Effect: {}", redrob_vector_effects::effect_info(e).map(|i| i.label).unwrap_or(e.as_str())),
             None => label.into(),
         },
         id if id.starts_with("type.recentFont") => {
@@ -1643,8 +1645,8 @@ pub fn dynamic_label(app: &VectorcraftApp, id: &str, label: &str) -> String {
                 st.selection
                     .objects
                     .first()
-                    .and_then(|id| vectorcraft_doc::live::envelope_of(&st.doc, *id))
-                    .is_some_and(|e| matches!(e.kind, vectorcraft_doc::NodeKind::Envelope { editing: true, .. }))
+                    .and_then(|id| redrob_vector_doc::live::envelope_of(&st.doc, *id))
+                    .is_some_and(|e| matches!(e.kind, redrob_vector_doc::NodeKind::Envelope { editing: true, .. }))
             });
             if editing { "Edit Envelope" } else { "Edit Contents" }.into()
         }
@@ -1683,7 +1685,7 @@ fn shows_a_name(id: &str, label: &str) -> bool {
         || saved_selection_slot(id).is_some()
         || matches!(id, "text.setStyle" | "plugin.dialog")
         || (id == "window.workspace" && !crate::workspaces::is_builtin(label))
-        || (matches!(id, "effect.apply" | "effect.dialog") && vectorcraft_effects::plugin_effects().iter().any(|e| e.label == label))
+        || (matches!(id, "effect.apply" | "effect.dialog") && redrob_vector_effects::plugin_effects().iter().any(|e| e.label == label))
 }
 
 /// The label of a menu item as drawn: [`dynamic_label`] in the UI language. Labels assembled
@@ -1708,7 +1710,7 @@ pub fn display_label(app: &VectorcraftApp, id: &str, label: &str) -> String {
         }
         "effect.last" => match &app.last_effect {
             Some((e, _)) => {
-                let name = vectorcraft_effects::effect_info(e).map(|i| i.label).unwrap_or(e.as_str());
+                let name = redrob_vector_effects::effect_info(e).map(|i| i.label).unwrap_or(e.as_str());
                 fmt(tl!("Last Effect: {name}"), &[("name", crate::i18n::tr_id(lang, e, name))])
             }
             None => crate::i18n::tr_id(lang, id, label).to_string(),
@@ -1877,7 +1879,7 @@ pub fn entry<'a>(app: &VectorcraftApp, it: &'a Item) -> Option<Entry<'a>> {
 /// Changes whenever a plug-in is installed or removed: Object › Plug-ins and Effect › Plug-ins
 /// list them (the command palette's cache follows it).
 pub fn plugin_revision() -> u64 {
-    vectorcraft_plugins::registry::revision()
+    redrob_vector_plugins::registry::revision()
 }
 
 /// View → Perspective Grid → One/Two/Three Point Perspective: the saved-preset slots of each type.
@@ -1906,7 +1908,7 @@ const PERSPECTIVE_SLOTS: [[&str; crate::dialogs::perspective_presets::SLOTS]; 3]
 ];
 
 /// Select → saved selections: the n-th saved selection of the active document.
-const SAVED_SELECTION_IDS: [&str; vectorcraft_engine::doc::SavedSelection::MAX] = [
+const SAVED_SELECTION_IDS: [&str; redrob_vector_engine::doc::SavedSelection::MAX] = [
     "select.recall1",
     "select.recall2",
     "select.recall3",
@@ -1979,7 +1981,7 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
     if waits_for_ime(app, id) {
         return false;
     }
-    if let Some(c) = vectorcraft_engine::find_command(id) {
+    if let Some(c) = redrob_vector_engine::find_command(id) {
         // The system clipboard's contents can be pasted with an empty internal clipboard.
         return (c.enabled)(&app.session).is_ok() || app.system_paste && id.starts_with("edit.paste");
     }
@@ -2050,14 +2052,14 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
 /// Is a placed document selected?
 fn selected_placed(app: &VectorcraftApp) -> bool {
     app.session.active().is_some_and(|st| {
-        st.selection.objects.iter().any(|id| st.doc.node(*id).is_some_and(|n| matches!(n.kind, vectorcraft_doc::NodeKind::PlacedDocument(_))))
+        st.selection.objects.iter().any(|id| st.doc.node(*id).is_some_and(|n| matches!(n.kind, redrob_vector_doc::NodeKind::PlacedDocument(_))))
     })
 }
 
 /// Is an image `keep` accepts selected?
-fn selected_image(app: &VectorcraftApp, keep: impl Fn(&vectorcraft_doc::ImageObject) -> bool) -> bool {
+fn selected_image(app: &VectorcraftApp, keep: impl Fn(&redrob_vector_doc::ImageObject) -> bool) -> bool {
     app.session.active().is_some_and(|st| {
-        st.selection.objects.iter().any(|id| st.doc.node(*id).is_some_and(|n| matches!(&n.kind, vectorcraft_doc::NodeKind::Image(im) if keep(im))))
+        st.selection.objects.iter().any(|id| st.doc.node(*id).is_some_and(|n| matches!(&n.kind, redrob_vector_doc::NodeKind::Image(im) if keep(im))))
     })
 }
 
@@ -2752,9 +2754,9 @@ fn arrange_items() -> Vec<Item> {
 /// The canvas context menu (right-click): what applies to the selection, or to the view when
 /// nothing is selected. Commands that can't run now are left out rather than greyed out.
 pub fn context_items(app: &VectorcraftApp) -> Vec<Item> {
-    use vectorcraft_doc::NodeKind;
+    use redrob_vector_doc::NodeKind;
     let Some(st) = app.session.active() else { return vec![] };
-    let roots: Vec<&vectorcraft_doc::Node> = st.selection.objects.iter().filter_map(|id| st.doc.node(*id)).collect();
+    let roots: Vec<&redrob_vector_doc::Node> = st.selection.objects.iter().filter_map(|id| st.doc.node(*id)).collect();
     let any = |f: fn(&NodeKind) -> bool| roots.iter().any(|n| f(&n.kind));
     let several = roots.len() >= 2;
     let mut v = vec![c("Undo", "edit.undo"), c("Redo", "edit.redo"), Sep];
@@ -2861,7 +2863,7 @@ pub fn context_menu_body(app: &VectorcraftApp, ui: &mut egui::Ui, clicked: &mut 
 /// The document units a right-click on a ruler offers: each runs `document.setUnits`, exactly as
 /// Preferences ▸ Units ▸ General does, with the current one checked ([`checked`]).
 pub fn ruler_unit_items() -> Vec<Item> {
-    vectorcraft_engine::doc::Unit::ALL.iter().map(|u| cp(u.label(), "document.setUnits", json!({ "units": u.label() }))).collect()
+    redrob_vector_engine::doc::Unit::ALL.iter().map(|u| cp(u.label(), "document.setUnits", json!({ "units": u.label() }))).collect()
 }
 
 /// The ruler context menu's popup (right-click a ruler or the origin box); the unit clicked goes in
@@ -3213,7 +3215,7 @@ pub fn invoke(app: &mut VectorcraftApp, id: &str, p: Value) {
     }
     // Save Selection…: a name dialog, starting from the first free "Selection N".
     if id == "select.save" && p.as_object().is_none_or(|o| o.is_empty()) {
-        let name = app.session.active().map(|d| vectorcraft_engine::doc::SavedSelection::default_name(&d.doc.saved_selections)).unwrap_or_default();
+        let name = app.session.active().map(|d| redrob_vector_engine::doc::SavedSelection::default_name(&d.doc.saved_selections)).unwrap_or_default();
         let _ = app.run("ui.paramDialog", json!({"command": id, "label": "Save Selection", "params": {"name": name}}));
         return;
     }
@@ -3434,11 +3436,11 @@ fn insert_items(list: &[(&'static str, &'static str)]) -> Vec<Item> {
 /// Type → Font: one item per available family, the installed fonts included. Built again only when
 /// the fonts or Show Font Names in English change (the menu tree is built every frame); labels are
 /// interned once each, so rebuilding doesn't allocate forever. The command still sets the English
-/// family name ([`vectorcraft_text::FontDb::canonical`]).
+/// family name ([`redrob_vector_text::FontDb::canonical`]).
 fn font_items(english_names: bool) -> Vec<Item> {
     static NAMES: std::sync::Mutex<std::collections::BTreeSet<&'static str>> = std::sync::Mutex::new(std::collections::BTreeSet::new());
     static ITEMS: std::sync::Mutex<(u64, bool, Vec<Item>)> = std::sync::Mutex::new((u64::MAX, true, Vec::new()));
-    let db = vectorcraft_text::FontDb::global();
+    let db = redrob_vector_text::FontDb::global();
     // Read first: fonts that load meanwhile make the next frame build the list again.
     let generation = db.generation();
     let fams = db.menu_family_list();
@@ -3488,7 +3490,7 @@ const RASTER_MENUS: [(&str, &[&str]); 8] = [
 
 /// The Effect menu, built from the effects catalogue (vector effects), plus raster effects.
 fn effect_menu() -> Vec<Item> {
-    let cat = vectorcraft_effects::effect_catalog();
+    let cat = redrob_vector_effects::effect_catalog();
     let mut out = vec![
         c("Apply Last Effect", "effect.applyLast"),
         c("Last Effect…", "effect.last"),
@@ -3510,7 +3512,7 @@ fn effect_menu() -> Vec<Item> {
         "SVG Filters",
         "Warp",
     ];
-    let top_level = |e: &vectorcraft_effects::EffectInfo| e.menu == ["Effect"] && order.contains(&e.label);
+    let top_level = |e: &redrob_vector_effects::EffectInfo| e.menu == ["Effect"] && order.contains(&e.label);
     // The effects whose catalogue menu path is `path`.
     let items_at = |path: &[&str]| -> Vec<Item> {
         cat.iter()
@@ -3564,7 +3566,7 @@ fn effect_menu() -> Vec<Item> {
         out.extend(raster);
     }
     // Anything not placed above (future effects) still shows up.
-    let placed = |e: &vectorcraft_effects::EffectInfo| {
+    let placed = |e: &redrob_vector_effects::EffectInfo| {
         top_level(e) || order.iter().any(|s| e.menu == ["Effect", *s]) || RASTER_MENUS.iter().any(|(_, path)| e.menu == *path)
     };
     for e in cat.iter().filter(|e| !placed(e)) {
@@ -3678,22 +3680,22 @@ pub fn menu_strings() -> std::collections::BTreeSet<String> {
     out.extend(DYNAMIC_LABELS.iter().map(|s| s.to_string()));
     out.extend(CONTEXT_LABELS.iter().map(|s| s.to_string()));
     out.extend(UI_COMMANDS.iter().map(|c| c.1.to_string()));
-    for c in vectorcraft_engine::cmd::command_specs() {
+    for c in redrob_vector_engine::cmd::command_specs() {
         out.insert(c.label.to_string());
         out.extend(c.menu.iter().map(|m| m.to_string()));
     }
     out.extend(crate::state::all_panels().map(|(_, label)| label.to_string()));
-    out.extend(vectorcraft_tools::catalog::all_tools().map(|t| t.label.to_string()));
+    out.extend(redrob_vector_tools::catalog::all_tools().map(|t| t.label.to_string()));
     out.extend(crate::toolbar::BASIC.iter().map(|c| c.0.to_string()));
-    out.extend(vectorcraft_color::BlendMode::ALL.iter().map(|m| m.label().to_string()));
-    out.extend(vectorcraft_effects::effect_catalog().iter().map(|e| e.label.to_string()));
-    out.extend(vectorcraft_engine::cmd::prefscmds::PREF_CATEGORIES.iter().map(|c| c.to_string()));
-    for sp in vectorcraft_engine::cmd::prefscmds::PREF_SPECS {
+    out.extend(redrob_vector_color::BlendMode::ALL.iter().map(|m| m.label().to_string()));
+    out.extend(redrob_vector_effects::effect_catalog().iter().map(|e| e.label.to_string()));
+    out.extend(redrob_vector_engine::cmd::prefscmds::PREF_CATEGORIES.iter().map(|c| c.to_string()));
+    for sp in redrob_vector_engine::cmd::prefscmds::PREF_SPECS {
         out.insert(sp.label.to_string());
         if !sp.section.is_empty() {
             out.insert(sp.section.to_string());
         }
-        if let vectorcraft_engine::cmd::prefscmds::PrefKind::Choice(opts) = sp.kind {
+        if let redrob_vector_engine::cmd::prefscmds::PrefKind::Choice(opts) = sp.kind {
             out.extend(opts.iter().map(|o| o.1.to_string()));
         }
     }
@@ -3750,7 +3752,7 @@ mod tests {
     /// No application menu in the window (as in Illustrator): the bar starts at File.
     #[test]
     fn the_bar_starts_at_file() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         theme::install_fonts(&ctx);
         theme::apply(&ctx, Default::default());
@@ -3777,7 +3779,7 @@ mod tests {
 
     #[test]
     fn hovering_another_title_switches_the_open_menu() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         theme::install_fonts(&ctx);
         theme::apply(&ctx, Default::default());
@@ -3860,7 +3862,7 @@ mod tests {
 
     #[test]
     fn last_effect_dialog_and_view_toggles() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.run("shape.rectangle", json!({"x": 10, "y": 10, "width": 50, "height": 50})).unwrap();
         assert!(!enabled(&app, "effect.last"));
@@ -3893,7 +3895,7 @@ mod tests {
         assert_eq!(normalize_panel("  Stroke  "), Some("stroke"));
         assert_eq!(normalize_panel("nope"), None);
 
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.run("window.panel", json!({"panel": "Layers"})).unwrap();
         assert_eq!(app.ui.dock_tab, crate::state::DockTab::Layers);
@@ -3911,12 +3913,12 @@ mod tests {
 
     #[test]
     fn saved_views_store_and_restore_the_view() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         {
             let v = app.view_mut().unwrap();
             v.zoom = 3.0;
-            v.center = vectorcraft_geom::Point::new(120.0, 80.0);
+            v.center = redrob_vector_geom::Point::new(120.0, 80.0);
         }
         app.run("view.saved.new", json!({"name": "Detail"})).unwrap();
         assert!(enabled(&app, "view.goto1") && !enabled(&app, "view.goto2"));
@@ -3930,7 +3932,7 @@ mod tests {
     }
 
     fn app_with_a_rectangle() -> VectorcraftApp {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.run("shape.rectangle", json!({"x": 0, "y": 0, "width": 10, "height": 10})).unwrap();
         app
@@ -4002,9 +4004,9 @@ mod tests {
 
     #[test]
     fn recent_fonts_and_corner_widget_toggle() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
-        let fams = vectorcraft_text::FontDb::global().families();
+        let fams = redrob_vector_text::FontDb::global().families();
         let (a, b) = (fams[0].clone(), fams[fams.len() - 1].clone());
         app.run("text.create", json!({"x": 10, "y": 10, "text": "Hi"})).unwrap();
         app.run("text.setStyle", json!({"font": a})).unwrap();
@@ -4023,7 +4025,7 @@ mod tests {
     /// writes General › Use Precise Cursors, the value the dialog and the saved preferences read.
     #[test]
     fn precise_cursors_command_toggles_the_preference() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         assert!(!app.session.prefs.use_precise_cursors);
         assert_eq!(app.run("view.preciseCursors", json!({})).unwrap(), json!(true));
         assert!(app.session.prefs.use_precise_cursors);
@@ -4055,7 +4057,7 @@ mod tests {
     /// The command is a preference, not an edit: no undo step, no unsaved changes, with a document open.
     #[test]
     fn precise_cursors_command_is_not_an_edit() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let steps = |app: &VectorcraftApp| {
             let st = app.session.active().unwrap();
@@ -4072,7 +4074,7 @@ mod tests {
     /// selection to the middle; off, they keep the view's centre.
     #[test]
     fn zoom_to_selection_centres_the_selection() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
         app.run("shape.rectangle", json!({"x": 10, "y": 20, "width": 40, "height": 20})).unwrap();
         let center = |app: &VectorcraftApp| app.view().unwrap().center;
@@ -4082,13 +4084,13 @@ mod tests {
         assert_eq!(center(&app), start, "off: the view's centre stays");
         app.run("prefs.set", json!({"key": "zoomToSelection", "value": true})).unwrap();
         app.run("view.zoomOut", json!({})).unwrap();
-        assert_eq!(center(&app), vectorcraft_geom::Point::new(30.0, 30.0), "on: the selection's centre");
+        assert_eq!(center(&app), redrob_vector_geom::Point::new(30.0, 30.0), "on: the selection's centre");
     }
 
     /// Preferences › Type › Number of Recent Fonts (#394): Type › Recent Fonts lists that many.
     #[test]
     fn number_of_recent_fonts_sets_how_many_are_listed() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.ui.recent_fonts = (1..=15).map(|i| format!("Font {i}")).collect();
         let listed = |app: &VectorcraftApp| RECENT_FONT_IDS.iter().filter(|id| enabled(app, id)).count();
@@ -4106,7 +4108,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("dc-recent-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let mut app = VectorcraftApp::new(
-            vectorcraft_engine::Session::new(),
+            redrob_vector_engine::Session::new(),
             crate::Services {
                 read: Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string()))),
                 write: Some(Box::new(|p: &str, b: &[u8]| std::fs::write(p, b).map_err(|e| e.to_string()))),
@@ -4114,12 +4116,12 @@ mod tests {
             },
         );
         app.run("file.new", json!({"width": 100, "height": 100})).unwrap();
-        let (a, b) = (dir.join("a.vectorcraft"), dir.join("b.vectorcraft"));
+        let (a, b) = (dir.join("a.rvector"), dir.join("b.rvector"));
         for p in [&a, &b, &a] {
             app.run("file.saveAs", json!({"path": p.to_string_lossy()})).unwrap();
         }
         assert_eq!(app.ui.recent_files, [a.to_string_lossy(), b.to_string_lossy()]);
-        assert_eq!(dynamic_label(&app, "file.openRecent2", ""), "b.vectorcraft");
+        assert_eq!(dynamic_label(&app, "file.openRecent2", ""), "b.rvector");
         assert!(enabled(&app, "file.openRecent2") && !enabled(&app, "file.openRecent3"));
         app.run("file.openRecent2", json!({})).unwrap();
         assert_eq!(app.session.documents().len(), 2);
@@ -4135,7 +4137,7 @@ mod tests {
             for it in items {
                 match it {
                     Item::Cmd(_, id, _)
-                        if vectorcraft_engine::find_command(id).is_none()
+                        if redrob_vector_engine::find_command(id).is_none()
                             && !UI_COMMANDS.iter().any(|c| c.0 == *id)
                             && !id.starts_with("object.path.")
                             && *id != "type.createOutlines" =>
@@ -4167,7 +4169,7 @@ mod tests {
     /// with no form asking for a preset's name.
     #[test]
     fn image_trace_make_traces_with_the_default_preset() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         for cmd in ["imageTrace.make", "imageTrace.makeAndExpand"] {
             let e = menu_entries(&app).into_iter().find(|e| e.command.as_deref() == Some(cmd)).unwrap();
@@ -4178,7 +4180,7 @@ mod tests {
 
     #[test]
     fn expand_appearance_is_an_object_menu_item_only() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let paths: Vec<Vec<String>> =
             menu_entries(&app).into_iter().filter(|e| e.command.as_deref() == Some("effect.expandAppearance")).map(|e| e.path).collect();
@@ -4188,7 +4190,7 @@ mod tests {
     #[test]
     fn menus_are_as_wide_as_their_items() {
         // Items size the popup to the widest label and shortcut instead of the widest a menu may be.
-        let app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx);
         let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1600.0, 1000.0));
@@ -4213,7 +4215,7 @@ mod tests {
     fn long_menus_scroll_inside_a_short_window() {
         // The Window menu is taller than a 600 pt window: it stops above the bottom edge and
         // scrolls instead of running off screen.
-        let app = VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
+        let app = VectorcraftApp::new(redrob_vector_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx);
         let tree = menu_tree();

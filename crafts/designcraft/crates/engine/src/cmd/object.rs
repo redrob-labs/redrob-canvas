@@ -4,12 +4,12 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use designcraft_color::BlendMode;
-use designcraft_doc::{
+use redrob_layout_color::BlendMode;
+use redrob_layout_doc::{
     AssetId, Content, Document, Fill, Item, ItemId, ParaFormat, Selection, Shape, SpreadRef, Story, StoryId, Stroke, TextFrame, TextFrameOptions,
     TextSel,
 };
-use designcraft_geom::{Affine, Point, Rect, Vec2, shapes};
+use redrob_layout_geom::{Affine, Point, Rect, Vec2, shapes};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, bool_or, cmd, f64_or, has_doc, has_selection, ok, point_param, rect_param, spread_param, str_param, targets};
@@ -17,7 +17,7 @@ use crate::{Result, Session};
 
 /// `name` must be a swatch of the document: an unknown name would paint nothing. The error names
 /// the swatch it was probably meant to be (`Paper` → `[Paper]`, a different case).
-fn known_swatch(doc: &designcraft_doc::Document, name: &str, cmd: &str, key: &str) -> Result<()> {
+fn known_swatch(doc: &redrob_layout_doc::Document, name: &str, cmd: &str, key: &str) -> Result<()> {
     if doc.swatch(name).is_some() {
         return Ok(());
     }
@@ -107,7 +107,7 @@ pub fn specs() -> Vec<CommandSpec> {
             has_selection,
             |s, p| {
                 let from = super::id_param(p, "from").ok_or_else(|| bad("object.matchAttributes", "missing from"))?;
-                let src = s.doc()?.doc.item(from).cloned().ok_or(designcraft_doc::DocError::NoItem(from))?;
+                let src = s.doc()?.doc.item(from).cloned().ok_or(redrob_layout_doc::DocError::NoItem(from))?;
                 set_flag(
                     s,
                     p,
@@ -574,9 +574,9 @@ pub fn specs() -> Vec<CommandSpec> {
             has_selection,
             |s, p| {
                 let shape =
-                    p.get("shape").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or(designcraft_geom::corners::CornerShape::Rounded);
+                    p.get("shape").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or(redrob_layout_geom::corners::CornerShape::Rounded);
                 let size = f64_or(p, "size", 12.0);
-                set_flag(s, p, move |i| i.corners = designcraft_geom::corners::CornerOptions::uniform(shape, size), false)
+                set_flag(s, p, move |i| i.corners = redrob_layout_geom::corners::CornerOptions::uniform(shape, size), false)
             }
         ),
         cmd!(
@@ -587,7 +587,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "{mode: none|boundingBox|contour|jumpObject|jumpToNextColumn, offset?: number|[t,l,b,r], invert?: bool, ids?}",
             has_selection,
             |s, p| {
-                let mode = p.get("mode").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or(designcraft_doc::WrapMode::BoundingBox);
+                let mode = p.get("mode").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or(redrob_layout_doc::WrapMode::BoundingBox);
                 let off = match p.get("offset") {
                     Some(Value::Number(n)) => Some([n.as_f64().unwrap_or(0.0); 4]),
                     Some(v) => serde_json::from_value(v.clone()).ok(),
@@ -739,7 +739,7 @@ pub fn specs() -> Vec<CommandSpec> {
                     }
                 }
                 let sel: Vec<ItemId> = ids.iter().filter_map(Value::as_u64).map(ItemId).collect();
-                s.doc_mut()?.selection = designcraft_doc::Selection::items(sel);
+                s.doc_mut()?.selection = redrob_layout_doc::Selection::items(sel);
                 Ok(json!({"ids": ids}))
             }
         ),
@@ -891,7 +891,7 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"ids": ids}))
         }),
         cmd!("object.setLayer", "Move to Layer", [], None, "{layer, ids?}", has_selection, |s, p| {
-            let l = designcraft_doc::LayerId(p.get("layer").and_then(Value::as_u64).unwrap_or(0));
+            let l = redrob_layout_doc::LayerId(p.get("layer").and_then(Value::as_u64).unwrap_or(0));
             set_flag(s, p, move |i| i.layer = l, false)
         }),
     ]
@@ -947,7 +947,7 @@ fn frame_create(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// A polygon (or, with a star inset, a star with `sides` points) fitted to `r`.
-pub(crate) fn polygon_in(r: Rect, sides: u32, inset: f64) -> designcraft_geom::PathData {
+pub(crate) fn polygon_in(r: Rect, sides: u32, inset: f64) -> redrob_layout_geom::PathData {
     let c = r.center();
     let mut p =
         if inset > 0.0 { shapes::star(Point::ZERO, 1.0, (1.0 - inset).max(0.0), sides, 0.0) } else { shapes::polygon(Point::ZERO, 1.0, sides, 0.0) };
@@ -1023,13 +1023,13 @@ fn renumber(dst: &mut Document, src: &Document, it: &mut Item, stories: &mut Has
                     let mut st = src.story(tf.story).cloned().unwrap_or_else(|| Story::new(n));
                     st.id = n;
                     let mut assets = HashMap::new();
-                    for a in designcraft_doc::story_asset_refs(&st) {
+                    for a in redrob_layout_doc::story_asset_refs(&st) {
                         let na = adopt_or_dangle(dst, src, a);
                         if na != a {
                             assets.insert(a, na);
                         }
                     }
-                    designcraft_doc::remap_story_assets(&mut st, &assets);
+                    redrob_layout_doc::remap_story_assets(&mut st, &assets);
                     st.frames.clear();
                     dst.stories.insert(n, Arc::new(st));
                     stories.insert(tf.story, n);
@@ -1081,7 +1081,7 @@ fn transform_move(s: &mut Session, p: &Value) -> Result<Value> {
                 let it = d.remove_item_keep_story(*id)?;
                 d.insert_item(target, it, None)?;
             }
-            let it = d.item_mut(*id).ok_or(designcraft_doc::DocError::NoItem(*id))?;
+            let it = d.item_mut(*id).ok_or(redrob_layout_doc::DocError::NoItem(*id))?;
             if it.locked {
                 continue;
             }
@@ -1114,7 +1114,7 @@ fn transform_resize(s: &mut Session, p: &Value) -> Result<Value> {
     let strokes = s.prefs.scale_strokes;
     s.edit(|d, _| {
         for id in &ids {
-            let it = d.item_mut(*id).ok_or(designcraft_doc::DocError::NoItem(*id))?;
+            let it = d.item_mut(*id).ok_or(redrob_layout_doc::DocError::NoItem(*id))?;
             if it.locked {
                 continue;
             }
@@ -1153,10 +1153,10 @@ fn resize_container(it: &mut Item, m: Affine) {
     let after = it.inner_bounds();
     if let Some(f) = it.flex.as_mut() {
         if (after.width() - before.width()).abs() > 1e-6 {
-            f.width = designcraft_doc::FlexSize::Fixed;
+            f.width = redrob_layout_doc::FlexSize::Fixed;
         }
         if (after.height() - before.height()).abs() > 1e-6 {
-            f.height = designcraft_doc::FlexSize::Fixed;
+            f.height = redrob_layout_doc::FlexSize::Fixed;
         }
     }
 }
@@ -1285,7 +1285,7 @@ fn transform_rotate(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// The transform an item's panel values are measured from: its own (relative to its container)
 /// or, with Transformations are Totals, the whole chain to the pasteboard.
-fn measured_xf(d: &designcraft_doc::Document, id: ItemId, totals: bool) -> Option<(Affine, Affine)> {
+fn measured_xf(d: &redrob_layout_doc::Document, id: ItemId, totals: bool) -> Option<(Affine, Affine)> {
     let loc = d.find(id)?;
     let it = d.item_at(&loc)?;
     let parent = if totals { d.parent_xf(&loc) } else { Affine::IDENTITY };
@@ -1293,7 +1293,7 @@ fn measured_xf(d: &designcraft_doc::Document, id: ItemId, totals: bool) -> Optio
 }
 
 fn values_json(m: Affine) -> Value {
-    let v = designcraft_geom::decompose::decompose(m);
+    let v = redrob_layout_geom::decompose::decompose(m);
     let r = |x: f64| (x * 1e4).round() / 1e4;
     json!({"scaleX": r(v.scale_x * 100.0), "scaleY": r(v.scale_y * 100.0), "rotation": r(v.rotation), "shear": r(v.shear)})
 }
@@ -1326,9 +1326,9 @@ fn transform_values(s: &mut Session, p: &Value, ids: &[ItemId], rf: usize) -> Re
             let Some(it) = d.item(*id) else { continue };
             // The reference point, on the pasteboard, then in the measuring space.
             let full = d.find(*id).map_or(Affine::IDENTITY, |l| d.parent_xf(&l));
-            let spread_a = designcraft_geom::reference_point((full * it.xf).transform_rect_bbox(it.inner_bounds()), rf);
+            let spread_a = redrob_layout_geom::reference_point((full * it.xf).transform_rect_bbox(it.inner_bounds()), rf);
             let a = if totals { spread_a } else { full.inverse() * spread_a };
-            let v = designcraft_geom::decompose::decompose(cur);
+            let v = redrob_layout_geom::decompose::decompose(cur);
             let mut t = v;
             if let Some(r) = rot {
                 t.rotation = r;
@@ -1340,10 +1340,10 @@ fn transform_values(s: &mut Session, p: &Value, ids: &[ItemId], rf: usize) -> Re
                 let c = m.as_coeffs();
                 Affine::new([c[0], c[1], c[2], c[3], 0.0, 0.0])
             };
-            let delta = designcraft_geom::decompose::compose(&t) * lin(cur).inverse();
+            let delta = redrob_layout_geom::decompose::compose(&t) * lin(cur).inverse();
             // Δ in measuring space about `a`, brought into the item's container space.
             let m = parent.inverse() * Affine::translate(a.to_vec2()) * delta * Affine::translate(-a.to_vec2()) * parent;
-            let it = d.item_mut(*id).ok_or(designcraft_doc::DocError::NoItem(*id))?;
+            let it = d.item_mut(*id).ok_or(redrob_layout_doc::DocError::NoItem(*id))?;
             it.xf = m * it.xf;
             // Scale: relative to what is shown (frames show 100% — their scale lives in the geometry).
             if sx.is_some() || sy.is_some() {
@@ -1383,7 +1383,7 @@ fn transform_set(s: &mut Session, p: &Value) -> Result<Value> {
         let pad = (geom.x0 - from.x0, geom.y0 - from.y0, from.x1 - geom.x1, from.y1 - geom.y1);
         let w = f64_or(p, "width", from.width()).max(0.01);
         let h = f64_or(p, "height", from.height()).max(0.01);
-        let anchor = designcraft_geom::reference_point(from, rf);
+        let anchor = redrob_layout_geom::reference_point(from, rf);
         // New rect keeping the reference point fixed, then moved so the ref point lands on x/y.
         let fx = [0.0, 0.5, 1.0][rf % 3];
         let fy = [0.0, 0.5, 1.0][(rf / 3).min(2)];
@@ -1492,7 +1492,7 @@ fn group(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad("object.group", "select at least two objects"));
     }
     s.edit(|d, sel| {
-        let sr = d.find(ids[0]).map(|l| l.spread).ok_or(designcraft_doc::DocError::NoItem(ids[0]))?;
+        let sr = d.find(ids[0]).map(|l| l.spread).ok_or(redrob_layout_doc::DocError::NoItem(ids[0]))?;
         // Keep stacking order: collect in z-order.
         let order: Vec<ItemId> = d.spread(sr).map(|sp| sp.items.iter().map(|i| i.id).filter(|i| ids.contains(i)).collect()).unwrap_or_default();
         let front = d.spread(sr).and_then(|sp| sp.items.iter().position(|i| Some(&i.id) == order.last())).unwrap_or(0);
@@ -1502,7 +1502,7 @@ fn group(s: &mut Session, p: &Value) -> Result<Value> {
             kids.push(d.remove_item_keep_story(*id)?);
         }
         let gid = ItemId(d.alloc());
-        let mut g = Item::new(gid, layer, Shape::Group, designcraft_geom::PathData::default());
+        let mut g = Item::new(gid, layer, Shape::Group, redrob_layout_geom::PathData::default());
         g.content = Content::Group { items: kids.into_iter().map(Arc::new).collect() };
         let at = front + 1 - order.len();
         d.insert_item(sr, g, Some(at))?;
@@ -1558,7 +1558,7 @@ fn unlocked(d: &Document, it: &Item) -> bool {
 
 /// Refuses a path edit on `id` when it, a group it sits in, or its layer is locked.
 pub(super) fn path_editable(d: &Document, id: ItemId, cmd: &str) -> Result<()> {
-    let loc = d.find(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+    let loc = d.find(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
     let mut items = d.spread(loc.spread).map(|sp| &sp.items[..]).unwrap_or_default();
     for &i in &loc.path {
         let Some(it) = items.get(i) else { break };
@@ -1599,7 +1599,7 @@ fn edit_unlocked(s: &mut Session, p: &Value, f: impl Fn(&mut Item)) -> Result<Va
 
 /// A stroke that gets a colour needs a weight to show it.
 fn visible_weight(st: &mut Stroke) {
-    if st.swatch != designcraft_color::swatch::NONE && st.weight <= 0.0 {
+    if st.swatch != redrob_layout_color::swatch::NONE && st.weight <= 0.0 {
         st.weight = Stroke::default().weight;
     }
 }
@@ -1613,8 +1613,8 @@ fn swap_fill_stroke(it: &mut Item) {
 }
 
 fn default_fill_stroke(it: &mut Item) {
-    it.fill = Fill { swatch: designcraft_color::swatch::NONE.into(), tint: 1.0, ..it.fill.clone() };
-    it.stroke.swatch = designcraft_color::swatch::BLACK.into();
+    it.fill = Fill { swatch: redrob_layout_color::swatch::NONE.into(), tint: 1.0, ..it.fill.clone() };
+    it.stroke.swatch = redrob_layout_color::swatch::BLACK.into();
     it.stroke.tint = 1.0;
     visible_weight(&mut it.stroke);
 }
@@ -1770,7 +1770,7 @@ fn text_frame_options(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// The gap at `p` on spread `sr`: (vertical gap?, edge a, edge b, ids ending at a, ids starting at b).
-pub(crate) fn find_gap(d: &Document, sr: designcraft_doc::SpreadRef, p: Point) -> Option<(bool, f64, f64, Vec<ItemId>, Vec<ItemId>)> {
+pub(crate) fn find_gap(d: &Document, sr: redrob_layout_doc::SpreadRef, p: Point) -> Option<(bool, f64, f64, Vec<ItemId>, Vec<ItemId>)> {
     let sp = d.spread(sr)?;
     let page = sp.page_at_x(p.x).and_then(|i| sp.pages.get(i)).map(|pg| pg.bounds())?;
     let items: Vec<(ItemId, Rect)> = sp
@@ -1855,14 +1855,14 @@ fn clipping_path(s: &mut Session, p: &Value) -> Result<Value> {
     let threshold = p.get("threshold").and_then(Value::as_f64).unwrap_or(25.0).clamp(0.0, 255.0);
     let tol = p.get("tolerance").and_then(Value::as_f64).unwrap_or(2.0).max(0.1);
     // Trace each graphic (outside the edit: decoding is the slow part).
-    let mut paths: Vec<(ItemId, designcraft_geom::PathData)> = Vec::new();
+    let mut paths: Vec<(ItemId, redrob_layout_geom::PathData)> = Vec::new();
     {
         let d = &s.doc()?.doc;
         for id in &ids {
             let Some(it) = d.item(*id) else { continue };
             let Some(g) = it.graphic() else { continue };
             let Some(asset) = d.assets.get(&g.asset) else { continue };
-            let Some(px) = designcraft_render::decode_pixmap_page(&asset.data, asset.page) else { continue };
+            let Some(px) = redrob_layout_render::decode_pixmap_page(&asset.data, asset.page) else { continue };
             let (pw, ph) = (px.width() as usize, px.height() as usize);
             // A grid of at most 400 cells on the long side.
             let step = (pw.max(ph) as f64 / 400.0).max(1.0);
@@ -1882,7 +1882,7 @@ fn clipping_path(s: &mut Session, p: &Value) -> Result<Value> {
                 })
                 .collect();
             // The tolerance is in image pixels; the grid cells are `step` pixels.
-            let rings = designcraft_geom::trace::trace(&mask, w, h, tol / step, 4.0);
+            let rings = redrob_layout_geom::trace::trace(&mask, w, h, tol / step, 4.0);
             if rings.is_empty() {
                 return Err(bad(ID, "nothing to trace (the image is empty at this threshold)"));
             }
@@ -1891,10 +1891,10 @@ fn clipping_path(s: &mut Session, p: &Value) -> Result<Value> {
                 .into_iter()
                 .map(|r| {
                     let pts: Vec<Point> = r.into_iter().map(|q| g.xf * Point::new(q.x * sx, q.y * sy)).collect();
-                    designcraft_geom::path::SubPath::polyline(&pts, true)
+                    redrob_layout_geom::path::SubPath::polyline(&pts, true)
                 })
                 .collect();
-            paths.push((*id, designcraft_geom::PathData::new(subpaths)));
+            paths.push((*id, redrob_layout_geom::PathData::new(subpaths)));
         }
     }
     if paths.is_empty() {
@@ -1908,7 +1908,7 @@ fn clipping_path(s: &mut Session, p: &Value) -> Result<Value> {
                 it.shape = Shape::Path;
                 it.corners = Default::default();
                 if let Content::Graphic(g) = &mut it.content {
-                    g.auto_fit = designcraft_doc::Fitting::None;
+                    g.auto_fit = redrob_layout_doc::Fitting::None;
                 }
             }
         }
@@ -1916,8 +1916,8 @@ fn clipping_path(s: &mut Session, p: &Value) -> Result<Value> {
     })
 }
 
-fn fitting_mode(s: &str) -> Option<designcraft_doc::Fitting> {
-    use designcraft_doc::Fitting as F;
+fn fitting_mode(s: &str) -> Option<redrob_layout_doc::Fitting> {
+    use redrob_layout_doc::Fitting as F;
     Some(match s {
         "none" => F::None,
         "fillProportionally" => F::FillProportionally,
@@ -1959,11 +1959,11 @@ fn fitting_options(s: &mut Session, p: &Value) -> Result<Value> {
             let mode = fitting.unwrap_or(g.auto_fit);
             if let Some(a) = auto {
                 g.auto_fit = if a {
-                    if mode == designcraft_doc::Fitting::None { designcraft_doc::Fitting::FillProportionally } else { mode }
+                    if mode == redrob_layout_doc::Fitting::None { redrob_layout_doc::Fitting::FillProportionally } else { mode }
                 } else {
-                    designcraft_doc::Fitting::None
+                    redrob_layout_doc::Fitting::None
                 };
-            } else if fitting.is_some() && g.auto_fit != designcraft_doc::Fitting::None {
+            } else if fitting.is_some() && g.auto_fit != redrob_layout_doc::Fitting::None {
                 g.auto_fit = mode;
             }
             if let Some(xf) = g.fitted(r, mode) {
@@ -1990,7 +1990,7 @@ fn fit(s: &mut Session, p: &Value) -> Result<Value> {
                 continue;
             }
             let m = fitting_mode(&mode)
-                .filter(|m| *m != designcraft_doc::Fitting::None)
+                .filter(|m| *m != redrob_layout_doc::Fitting::None)
                 .ok_or_else(|| bad("object.fit", format!("unknown mode `{mode}`")))?;
             if let Some(xf) = g.fitted(r, m) {
                 g.xf = xf;
@@ -2007,11 +2007,11 @@ pub(crate) trait RemoveKeep {
 /// Detach an item without touching story threads (moving between spreads, grouping).
 impl RemoveKeep for Document {
     fn remove_item_keep_story(&mut self, id: ItemId) -> Result<Item> {
-        let loc = self.find(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let loc = self.find(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         if loc.path.len() != 1 {
             return Err(bad("object", "nested items can't be detached"));
         }
-        let sp = self.spread_mut(loc.spread).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let sp = self.spread_mut(loc.spread).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         Ok(Arc::unwrap_or_clone(sp.items.remove(loc.path[0])))
     }
 }
@@ -2114,7 +2114,7 @@ fn distribute(s: &mut Session, p: &Value) -> Result<Value> {
     })
 }
 
-fn anchor_from(v: &Value) -> Option<designcraft_geom::Anchor> {
+fn anchor_from(v: &Value) -> Option<redrob_layout_geom::Anchor> {
     let pt = |k: &str| -> Option<Point> {
         let a = v.get(k)?.as_array()?;
         Some(Point::new(a.first()?.as_f64()?, a.get(1)?.as_f64()?))
@@ -2123,16 +2123,16 @@ fn anchor_from(v: &Value) -> Option<designcraft_geom::Anchor> {
     let h_in = pt("in").unwrap_or(p);
     let h_out = pt("out").unwrap_or(p);
     let smooth = (h_in - p).hypot() > 1e-9 || (h_out - p).hypot() > 1e-9;
-    Some(designcraft_geom::Anchor {
+    Some(redrob_layout_geom::Anchor {
         p,
         h_in,
         h_out,
-        kind: if smooth { designcraft_geom::AnchorKind::Smooth } else { designcraft_geom::AnchorKind::Corner },
+        kind: if smooth { redrob_layout_geom::AnchorKind::Smooth } else { redrob_layout_geom::AnchorKind::Corner },
     })
 }
 
 fn path_create(s: &mut Session, p: &Value) -> Result<Value> {
-    let anchors: Vec<designcraft_geom::Anchor> =
+    let anchors: Vec<redrob_layout_geom::Anchor> =
         p.get("anchors").and_then(Value::as_array).map(|a| a.iter().filter_map(anchor_from).collect()).unwrap_or_default();
     if anchors.len() < 2 {
         return Err(bad("path.create", "a path needs at least two anchors"));
@@ -2143,7 +2143,7 @@ fn path_create(s: &mut Session, p: &Value) -> Result<Value> {
     s.edit(|d, sel| {
         let id = ItemId(d.alloc());
         let shape = if anchors.len() == 2 && !closed { Shape::GraphicLine } else { Shape::Path };
-        let mut it = Item::new(id, lid, shape, designcraft_geom::PathData::single(designcraft_geom::SubPath::new(anchors, closed)));
+        let mut it = Item::new(id, lid, shape, redrob_layout_geom::PathData::single(redrob_layout_geom::SubPath::new(anchors, closed)));
         it.stroke = Stroke::default();
         d.insert_item(sr, it, None)?;
         *sel = Selection::items(vec![id]);
@@ -2157,9 +2157,9 @@ fn path_append(s: &mut Session, p: &Value) -> Result<Value> {
     let subpath = p.get("subpath").and_then(Value::as_u64);
     s.edit(|d, _| {
         path_editable(d, id, "path.appendAnchor")?;
-        let loc = d.find(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let loc = d.find(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         let inv = (d.parent_xf(&loc) * d.item_at(&loc).map(|i| i.xf).unwrap_or_default()).inverse();
-        let it = d.item_mut(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let it = d.item_mut(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         let sp = match subpath {
             Some(i) => {
                 usize::try_from(i).ok().and_then(|i| it.path.subpaths.get_mut(i)).ok_or_else(|| bad("path.appendAnchor", "no such subpath"))?
@@ -2193,9 +2193,9 @@ fn path_set_anchor(s: &mut Session, p: &Value) -> Result<Value> {
     let which = p.get("anchor").cloned().unwrap_or(Value::Null);
     s.edit(|d, _| {
         path_editable(d, id, ID)?;
-        let loc = d.find(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let loc = d.find(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         let inv = (d.parent_xf(&loc) * d.item_at(&loc).map(|i| i.xf).unwrap_or_default()).inverse();
-        let it = d.item_mut(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let it = d.item_mut(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         let sp = match subpath {
             Some(i) => usize::try_from(i).ok().and_then(|i| it.path.subpaths.get_mut(i)),
             None => it.path.subpaths.last_mut(),
@@ -2223,7 +2223,7 @@ fn path_set_anchor(s: &mut Session, p: &Value) -> Result<Value> {
         if new_in.is_some() && new_out.is_some() {
             let (i, o) = (a.h_in - a.p, a.h_out - a.p);
             let collinear = (i.x * o.y - i.y * o.x).abs() <= 1e-6 * i.hypot().max(1.0) * o.hypot().max(1.0) && i.dot(o) <= 0.0;
-            a.kind = if collinear { designcraft_geom::AnchorKind::Smooth } else { designcraft_geom::AnchorKind::Corner };
+            a.kind = if collinear { redrob_layout_geom::AnchorKind::Smooth } else { redrob_layout_geom::AnchorKind::Corner };
         }
         ok()
     })
@@ -2272,7 +2272,7 @@ fn path_close(s: &mut Session, p: &Value) -> Result<Value> {
     let only = p.get("subpath").and_then(Value::as_u64).map(|i| usize::try_from(i).unwrap_or(usize::MAX));
     s.edit(|d, _| {
         path_editable(d, id, "path.close")?;
-        let it = d.item_mut(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let it = d.item_mut(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         if only.is_some_and(|i| i >= it.path.subpaths.len()) {
             return Err(bad("path.close", "no such subpath"));
         }
@@ -2295,24 +2295,24 @@ fn path_move_anchors(s: &mut Session, p: &Value) -> Result<Value> {
     let handle = str_param(p, "handle").map(str::to_string);
     s.edit(|d, _| {
         path_editable(d, id, "path.moveAnchors")?;
-        let loc = d.find(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let loc = d.find(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         let m = d.parent_xf(&loc) * d.item_at(&loc).map(|i| i.xf).unwrap_or_default();
         // Spread-space delta → inner-space delta (linear part only).
         let inv = m.inverse();
         let dv = (inv * Point::new(d0.x, d0.y)) - (inv * Point::ZERO);
-        let it = d.item_mut(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+        let it = d.item_mut(id).ok_or(redrob_layout_doc::DocError::NoItem(id))?;
         for (si, ai) in &which {
             let Some(a) = it.path.anchor_mut(*si, *ai) else { continue };
             match handle.as_deref() {
                 Some("in") => {
                     a.h_in += dv;
-                    if a.kind == designcraft_geom::AnchorKind::Smooth {
+                    if a.kind == redrob_layout_geom::AnchorKind::Smooth {
                         a.h_out = a.p - (a.h_in - a.p);
                     }
                 }
                 Some("out") => {
                     a.h_out += dv;
-                    if a.kind == designcraft_geom::AnchorKind::Smooth {
+                    if a.kind == redrob_layout_geom::AnchorKind::Smooth {
                         a.h_in = a.p - (a.h_out - a.p);
                     }
                 }
@@ -2892,8 +2892,8 @@ mod attributes_tests {
         let it = s.doc().unwrap().doc.item(ItemId(a)).unwrap().clone();
         assert!(it.fill.overprint && it.stroke.gap_overprint && it.nonprinting && !it.stroke.overprint);
         // IDML keeps them.
-        let bytes = designcraft_idml::export_idml(&s.doc().unwrap().doc);
-        let back = designcraft_idml::import_idml(&bytes).unwrap();
+        let bytes = redrob_layout_idml::export_idml(&s.doc().unwrap().doc);
+        let back = redrob_layout_idml::import_idml(&bytes).unwrap();
         let it = back.spreads.iter().flat_map(|sp| sp.items.iter()).find(|i| i.fill.overprint).expect("overprint fill survives");
         assert!(it.stroke.gap_overprint);
     }
@@ -2913,9 +2913,9 @@ mod fitting_tests {
         s.execute("object.fill", &json!({"swatch": "[Black]", "ids": [k]})).unwrap();
         let d = s.doc().unwrap().doc.clone();
         let plate = |p: u8| {
-            let mut rr = designcraft_render::Renderer::new();
+            let mut rr = redrob_layout_render::Renderer::new();
             rr.threads = 0;
-            rr.render_page(&d, &s.cache, 0, 1.0, false, &designcraft_render::RenderOptions { plate: Some(p), ..Default::default() }).unwrap()
+            rr.render_page(&d, &s.cache, 0, 1.0, false, &redrob_layout_render::RenderOptions { plate: Some(p), ..Default::default() }).unwrap()
         };
         let (cyan, black) = (plate(0), plate(3));
         // Cyan ink only on the cyan frame; black ink only on the black one (no rich-black guess).
@@ -2932,7 +2932,7 @@ mod fitting_tests {
         s.execute("object.fill", &json!({"swatch": "C=100 M=0 Y=0 K=0", "ids": [id]})).unwrap();
         let shot = |s: &Session| {
             let d = s.doc().unwrap().doc.clone();
-            let mut rr = designcraft_render::Renderer::new();
+            let mut rr = redrob_layout_render::Renderer::new();
             rr.threads = 0;
             rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap()
         };
@@ -2996,7 +2996,7 @@ mod fitting_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         // A 40×20 pt image placed into a 200×200 frame.
-        let png = designcraft_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
+        let png = redrob_layout_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
         let f = s.execute("frame.create", &json!({"rect": [100, 100, 300, 300]})).unwrap()["id"].as_u64().unwrap();
         s.execute("file.place", &json!({"base64": super::super::file::base64_encode(&png), "name": "a.png", "frame": f})).unwrap();
         let content = |s: &Session| {
@@ -3018,9 +3018,9 @@ mod fitting_tests {
         let c = content(&s);
         assert!((c.width() - 400.0).abs() < 1e-6, "fills the wider frame: {c:?}");
         // IDML keeps the options.
-        let back = designcraft_idml::import_idml(&designcraft_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
+        let back = redrob_layout_idml::import_idml(&redrob_layout_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
         let g = back.spreads.iter().flat_map(|sp| sp.items.iter()).find_map(|i| i.graphic().cloned()).unwrap();
-        assert_eq!(g.auto_fit, designcraft_doc::Fitting::FillProportionally);
+        assert_eq!(g.auto_fit, redrob_layout_doc::Fitting::FillProportionally);
     }
 }
 
@@ -3061,7 +3061,7 @@ mod clipping_tests {
                 }
             }
         }
-        let png = designcraft_render::Rendered { width: 40, height: 40, pixels: px }.to_png();
+        let png = redrob_layout_render::Rendered { width: 40, height: 40, pixels: px }.to_png();
         let f = s.execute("frame.create", &json!({"rect": [100, 100, 140, 140]})).unwrap()["id"].as_u64().unwrap();
         s.execute("file.place", &json!({"base64": super::super::file::base64_encode(&png), "name": "disc.png", "frame": f})).unwrap();
         s.execute("object.clippingPath", &json!({"ids": [f], "tolerance": 0.5})).unwrap();
@@ -3103,7 +3103,7 @@ mod line_end_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [36, 36, 300, 300], "content": "text", "text": "One\rTwo\r\nThree"})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = redrob_layout_doc::StoryId(r["story"].as_u64().unwrap());
         let story = |s: &Session| s.doc().unwrap().doc.story(sid).unwrap().clone();
         assert_eq!(story(&s).text, "One\nTwo\nThree");
         assert_eq!(story(&s).paras.len(), 3);
@@ -3210,7 +3210,7 @@ mod column_rule_tests {
 
 #[cfg(test)]
 mod blend_mode_tests {
-    use designcraft_color::BlendMode;
+    use redrob_layout_color::BlendMode;
 
     use super::*;
 
@@ -3287,7 +3287,7 @@ mod copy_ids_tests {
         assert_eq!(ids(&s.execute("transform.move", &json!({"dx": 5, "dy": 0, "ids": [a]})).unwrap()), [a]);
         let r = s.execute("transform.move", &json!({"dx": 100, "dy": 0, "copy": true, "ids": [a]})).unwrap();
         let copy = ids(&r);
-        assert!(copy.len() == 1 && copy[0] != a && s.doc().unwrap().doc.item(designcraft_doc::ItemId(copy[0])).is_some(), "{r}");
+        assert!(copy.len() == 1 && copy[0] != a && s.doc().unwrap().doc.item(redrob_layout_doc::ItemId(copy[0])).is_some(), "{r}");
         assert_eq!(selected(&s), copy);
         // Edit › Duplicate.
         let r = s.execute("edit.duplicate", &json!({})).unwrap();
@@ -3297,7 +3297,7 @@ mod copy_ids_tests {
         // Step and Repeat: every copy.
         let r = s.execute("edit.stepAndRepeat", &json!({"count": 3, "dx": 0, "dy": 60, "ids": [a]})).unwrap();
         assert_eq!((r["created"].as_u64(), ids(&r).len()), (Some(3), 3), "{r}");
-        assert!(ids(&r).iter().all(|i| s.doc().unwrap().doc.item(designcraft_doc::ItemId(*i)).is_some()));
+        assert!(ids(&r).iter().all(|i| s.doc().unwrap().doc.item(redrob_layout_doc::ItemId(*i)).is_some()));
     }
 }
 
@@ -3335,8 +3335,8 @@ mod swatch_name_tests {
 
 #[cfg(test)]
 mod path_edit_tests {
-    use designcraft_doc::ItemId;
-    use designcraft_geom::Point;
+    use redrob_layout_doc::ItemId;
+    use redrob_layout_geom::Point;
     use serde_json::json;
 
     fn session_with_path() -> (crate::Session, u64) {
@@ -3353,7 +3353,7 @@ mod path_edit_tests {
         (s, id)
     }
 
-    fn anchors(s: &crate::Session, id: u64) -> Vec<designcraft_geom::Anchor> {
+    fn anchors(s: &crate::Session, id: u64) -> Vec<redrob_layout_geom::Anchor> {
         let d = &s.doc().unwrap().doc;
         let it = d.item(ItemId(id)).unwrap();
         let xf = d.parent_xf(&d.find(ItemId(id)).unwrap()) * it.xf;
@@ -3379,7 +3379,7 @@ mod path_edit_tests {
         // Direction lines on the last anchor: collinear and opposite make it smooth.
         s.execute("path.setAnchor", &json!({"id": id, "anchor": "last", "in": [380, 230], "out": [420, 270]})).unwrap();
         let last = *anchors(&s, id).last().unwrap();
-        assert_eq!((last.h_in, last.h_out, last.kind), (Point::new(380.0, 230.0), Point::new(420.0, 270.0), designcraft_geom::AnchorKind::Smooth));
+        assert_eq!((last.h_in, last.h_out, last.kind), (Point::new(380.0, 230.0), Point::new(420.0, 270.0), redrob_layout_geom::AnchorKind::Smooth));
         s.execute("path.setAnchor", &json!({"id": id, "anchor": 0, "p": [90, 110]})).unwrap();
         assert_eq!(anchors(&s, id)[0].p, Point::new(90.0, 110.0));
         assert!(s.execute("path.setAnchor", &json!({"id": id, "anchor": 9, "p": [0, 0]})).is_err());

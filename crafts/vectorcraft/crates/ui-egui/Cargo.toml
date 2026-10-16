@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-ui-egui"
+name = "redrob-vector-ui-egui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,23 +9,23 @@ description = "VectorCraft egui frontend (menus, panels, tools and canvas); swap
 workspace = true
 
 [dependencies]
-craft-ui = { workspace = true }
-vectorcraft-geom = { workspace = true }
-vectorcraft-color = { workspace = true }
-vectorcraft-doc = { workspace = true }
-vectorcraft-brush = { workspace = true }
-vectorcraft-render = { workspace = true }
-vectorcraft-text = { workspace = true }
-vectorcraft-tools = { workspace = true }
-vectorcraft-engine = { workspace = true }
-vectorcraft-svg = { workspace = true }
-vectorcraft-effects = { workspace = true }
-vectorcraft-three-d = { workspace = true }
-vectorcraft-plugins = { workspace = true }
-vectorcraft-pdf = { workspace = true }
-vectorcraft-cad = { workspace = true }
-vectorcraft-eps = { workspace = true }
-vectorcraft-format = { workspace = true }
+redrob-craft-ui = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-brush = { workspace = true }
+redrob-vector-render = { workspace = true }
+redrob-vector-text = { workspace = true }
+redrob-vector-tools = { workspace = true }
+redrob-vector-engine = { workspace = true }
+redrob-vector-svg = { workspace = true }
+redrob-vector-effects = { workspace = true }
+redrob-vector-three-d = { workspace = true }
+redrob-vector-plugins = { workspace = true }
+redrob-vector-pdf = { workspace = true }
+redrob-vector-cad = { workspace = true }
+redrob-vector-eps = { workspace = true }
+redrob-vector-format = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true }
 image = { workspace = true }
@@ -40,7 +40,7 @@ web-time = "1"
 
 [dev-dependencies]
 egui_kittest = { workspace = true, features = ["wgpu", "snapshot"] }
-vectorcraft-testkit = { workspace = true }
+redrob-vector-testkit = { workspace = true }
 wat = { workspace = true }
 
 [build-dependencies]

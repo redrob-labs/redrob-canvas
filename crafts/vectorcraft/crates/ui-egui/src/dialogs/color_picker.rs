@@ -9,11 +9,11 @@
 //! and `swatches`. `stroke` and `original` come from the opener.
 
 use egui::{Rect, Sense, Ui, vec2};
+use redrob_vector_color::cms::{self, Lab};
+use redrob_vector_color::{Color, Paint};
+use redrob_vector_doc::ColorMode;
+use redrob_vector_engine::cmd::color_value;
 use serde_json::{Value, json};
-use vectorcraft_color::cms::{self, Lab};
-use vectorcraft_color::{Color, Paint};
-use vectorcraft_doc::ColorMode;
-use vectorcraft_engine::cmd::color_value;
 
 use super::DialogSpec;
 use super::form::PREVIEWED;
@@ -410,7 +410,7 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tests {
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     use super::*;
     use crate::panels::color::in_gamut;

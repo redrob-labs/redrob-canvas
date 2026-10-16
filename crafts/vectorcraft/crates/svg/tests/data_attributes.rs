@@ -1,10 +1,10 @@
 //! Synthetic XML 1.0/SVG round trips: https://www.w3.org/TR/xml/#AVNormalize
 //! https://www.w3.org/TR/xml/#NT-NameChar https://www.w3.org/TR/xml/#charsets
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+use redrob_vector_doc::{Document, Node};
+use redrob_vector_svg::{Encoding, ExportOptions, ObjectIds, Output, Styling, export, export_full, import};
 use std::collections::HashSet;
 use usvg::roxmltree;
-use vectorcraft_doc::{Document, Node};
-use vectorcraft_svg::{Encoding, ExportOptions, ObjectIds, Output, Styling, export, export_full, import};
 
 fn svg(body: &str) -> String {
     format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">{body}</svg>"#)
@@ -26,7 +26,7 @@ fn xml(text: &str) -> roxmltree::Document<'_> {
 }
 fn native_data(raw: &str) -> Document {
     let mut doc = import(&svg(r#"<rect id="shape" width="20" height="20"/>"#)).unwrap();
-    let attrs = serde_json::from_str::<vectorcraft_doc::node::ObjectAttributes>(raw).unwrap();
+    let attrs = serde_json::from_str::<redrob_vector_doc::node::ObjectAttributes>(raw).unwrap();
     let id = named(&doc, "shape").id;
     doc.node_mut(id).unwrap().edit_attrs(|a| *a = attrs);
     doc
@@ -215,10 +215,10 @@ fn symbol_document(name: &str) -> Document {
     let mut doc = import(&svg(r#"<rect id="instance" width="20" height="20"/>"#)).unwrap();
     let id = named(&doc, "instance").id;
     let art = doc.node(id).unwrap().clone();
-    doc.symbols.push(vectorcraft_doc::Symbol { name: name.into(), art: std::sync::Arc::new(art) });
+    doc.symbols.push(redrob_vector_doc::Symbol { name: name.into(), art: std::sync::Arc::new(art) });
     let instance = doc.node_mut(id).unwrap();
-    instance.appearance = vectorcraft_doc::Appearance::default().into();
-    instance.kind = vectorcraft_doc::NodeKind::SymbolInstance { symbol: name.into(), xf: vectorcraft_geom::Affine::IDENTITY };
+    instance.appearance = redrob_vector_doc::Appearance::default().into();
+    instance.kind = redrob_vector_doc::NodeKind::SymbolInstance { symbol: name.into(), xf: redrob_vector_geom::Affine::IDENTITY };
     doc
 }
 

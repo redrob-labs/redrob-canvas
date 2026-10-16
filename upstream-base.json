@@ -99,7 +99,7 @@
     "crafts/vectorcraft/docs/brand/",
     "crafts/designcraft/docs/brand/"
   ],
-  "excludedReason": "Every upstream is MIT OR Apache-2.0 throughout, so no directory is excluded for licence reasons. docs/brand/ under each editor holds the ArtCraft name, wordmark and logos, which upstream's NOTICE marks as trademarks outside the open-source licence; they stay in the tree because the subtree carries them, and nothing in Redrob Canvas may reference, display or package a file under these prefixes.",
+  "excludedReason": "Every upstream is MIT OR Apache-2.0 throughout, so no directory is excluded for licence reasons. docs/brand/ under each editor holds the ArtCraft name, wordmark and logos, which upstream's NOTICE marks as trademarks outside the open-source licence. tools/prune_upstream.py deletes each subtree's docs/ (with the rest of the upstream repository furniture) after every pull, and nothing in Redrob Canvas may reference, display or package a file under these prefixes.",
   "attribution": [
     {
       "path": "NOTICE",

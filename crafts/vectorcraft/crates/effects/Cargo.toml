@@ -1,5 +1,5 @@
 [package]
-name = "vectorcraft-effects"
+name = "redrob-vector-effects"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,14 +9,14 @@ description = "VectorCraft live effects evaluated to geometry"
 workspace = true
 
 [dependencies]
-vectorcraft-geom = { workspace = true }
-vectorcraft-three-d = { workspace = true }
-vectorcraft-doc = { workspace = true }
-vectorcraft-pathops = { workspace = true }
-vectorcraft-text = { workspace = true }
-vectorcraft-plugins = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-three-d = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-pathops = { workspace = true }
+redrob-vector-text = { workspace = true }
+redrob-vector-plugins = { workspace = true }
 kurbo = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
-vectorcraft-color = { workspace = true }
+redrob-vector-color = { workspace = true }

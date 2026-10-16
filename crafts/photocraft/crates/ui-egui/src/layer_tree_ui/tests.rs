@@ -3,15 +3,15 @@
 use egui::{Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::{Document, LayerContent, LayerId};
+use redrob_photo_doc::{Document, LayerContent, LayerId};
 use serde_json::json;
 
 use super::display_rows;
 use crate::PhotocraftApp;
 
 /// Background, then `outer { in-outer, inner { deep } }` with a pixel layer above it all.
-fn layered() -> photocraft_engine::Session {
-    let mut s = photocraft_engine::Session::new();
+fn layered() -> redrob_photo_engine::Session {
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 64, "height": 48})).unwrap();
     s.execute("layer.new.layer", json!({"name": "deep"})).unwrap();
     let inner = s.execute("layer.groupLayers", json!({"name": "inner"})).unwrap()["layer"].as_u64().unwrap();
@@ -24,7 +24,7 @@ fn layered() -> photocraft_engine::Session {
     s
 }
 
-fn harness_with(session: photocraft_engine::Session, ppp: f32) -> Harness<'static, PhotocraftApp> {
+fn harness_with(session: redrob_photo_engine::Session, ppp: f32) -> Harness<'static, PhotocraftApp> {
     let mut h = Harness::builder().with_size(vec2(1440.0, 900.0)).with_pixels_per_point(ppp).with_max_steps(64).build_eframe(move |cc| {
         PhotocraftApp::setup_context(&cc.egui_ctx, Default::default());
         PhotocraftApp::new(session, crate::Services::default())
@@ -125,9 +125,9 @@ fn state_survives_psd_export_and_import_and_imported_groups_toggle() {
     let p = triangle(&mut h, "inner").unwrap();
     click(&mut h, p, Modifiers::NONE);
     let doc = (*h.state().session.active().unwrap().doc).clone();
-    let bytes = photocraft_io::export(&doc, "groups.psd", &Default::default()).unwrap().bytes;
-    let back = photocraft_io::import("groups.psd", &bytes).unwrap().document;
-    let mut s = photocraft_engine::Session::new();
+    let bytes = redrob_photo_io::export(&doc, "groups.psd", &Default::default()).unwrap().bytes;
+    let back = redrob_photo_io::import("groups.psd", &bytes).unwrap().document;
+    let mut s = redrob_photo_engine::Session::new();
     s.add_document(back, None);
     let mut h = harness_with(s, 2.0);
     assert!(group(&h, "outer").1 && !group(&h, "inner").1, "open/closed state round-trips through PSD");

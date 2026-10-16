@@ -17,7 +17,7 @@ fn session() -> Session {
 
 fn export(s: &mut Session, p: Value) -> Vec<u8> {
     let r = s.execute("document.export", &p).unwrap();
-    vectorcraft_format::base64_decode(r["dataBase64"].as_str().expect("dataBase64")).unwrap()
+    redrob_vector_format::base64_decode(r["dataBase64"].as_str().expect("dataBase64")).unwrap()
 }
 
 /// A TIFF's first directory: tag → (type, count, value or offset), in the file's byte order.
@@ -80,10 +80,10 @@ fn tiff_options_reach_the_file() {
     assert_eq!((tags(&gray)[&262].2, tags(&gray)[&277].2), (1, 1), "grey, no alpha");
     assert!(s.execute("document.export", &json!({"format": "tiff", "byteOrder": "middle"})).is_err());
     // The file opens again.
-    let r = s.execute("document.open", &json!({"name": "back.tif", "dataBase64": vectorcraft_format::base64_encode(&mm)})).unwrap();
+    let r = s.execute("document.open", &json!({"name": "back.tif", "dataBase64": redrob_vector_format::base64_encode(&mm)})).unwrap();
     assert_eq!(r["format"], "tiff");
     for file in [&cmyk, &gray, &rgb] {
-        s.execute("document.open", &json!({"name": "back.tif", "dataBase64": vectorcraft_format::base64_encode(file)})).unwrap();
+        s.execute("document.open", &json!({"name": "back.tif", "dataBase64": redrob_vector_format::base64_encode(file)})).unwrap();
     }
 }
 
@@ -116,7 +116,7 @@ fn bmp_options_reach_the_file() {
         let e = s.execute("document.export", &merge(json!({"format": "bmp"}), bad.clone())).unwrap_err();
         assert!(matches!(e, EngineError::BadParams { .. }), "{bad}: {e}");
     }
-    let r = s.execute("document.open", &json!({"name": "back.bmp", "dataBase64": vectorcraft_format::base64_encode(&rle)})).unwrap();
+    let r = s.execute("document.open", &json!({"name": "back.bmp", "dataBase64": redrob_vector_format::base64_encode(&rle)})).unwrap();
     assert_eq!(r["format"], "bmp");
 }
 

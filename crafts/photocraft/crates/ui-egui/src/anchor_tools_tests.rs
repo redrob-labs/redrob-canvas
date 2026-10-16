@@ -2,8 +2,8 @@
 //! paths Direct Selection edits, one history step per click.
 
 use egui::Modifiers;
-use photocraft_doc::vector::Path;
-use photocraft_geom::Point;
+use redrob_photo_doc::vector::Path;
+use redrob_photo_geom::Point;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -12,7 +12,7 @@ use crate::direct_select::PathRef;
 use crate::state::Tool;
 
 fn app(tool: Tool) -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", json!({"width": 200, "height": 200})).unwrap();
     app.sync_views();
     app.ui.tool = tool;
@@ -77,7 +77,7 @@ fn add_on_a_curve_splits_it_where_clicked() {
     let mut app = app(Tool::AddAnchorPoint);
     with_path(&mut app);
     let seg = work(&app).subpaths[0].segments()[0];
-    let on = photocraft_vector::edit::eval(&seg, 0.5);
+    let on = redrob_photo_vector::edit::eval(&seg, 0.5);
     click(&mut app, [on.x, on.y], Modifiers::NONE);
     let p = work(&app);
     let k = p.subpaths[0].knots[1];
@@ -85,10 +85,10 @@ fn add_on_a_curve_splits_it_where_clicked() {
     // The two halves still pass through the old curve's quarter points.
     let halves = &p.subpaths[0].segments()[..2];
     for t in [0.25, 0.75] {
-        let old = photocraft_vector::edit::eval(&seg, t);
+        let old = redrob_photo_vector::edit::eval(&seg, t);
         let near = halves
             .iter()
-            .flat_map(|s| (0..=400).map(move |i| photocraft_vector::edit::eval(s, f64::from(i) / 400.0)))
+            .flat_map(|s| (0..=400).map(move |i| redrob_photo_vector::edit::eval(s, f64::from(i) / 400.0)))
             .fold(f64::MAX, |d, q| d.min((q.x - old.x).hypot(q.y - old.y)));
         assert!(near < 0.1, "t={t}: {near}");
     }

@@ -9,9 +9,9 @@
 //! art back into it.
 
 use egui::Ui;
+use redrob_vector_doc::{NodeId, NodeKind, VariableKind};
+use redrob_vector_engine::DocState;
 use serde_json::json;
-use vectorcraft_doc::{NodeId, NodeKind, VariableKind};
-use vectorcraft_engine::DocState;
 
 use crate::VectorcraftApp;
 use crate::widgets;
@@ -74,7 +74,7 @@ struct Picked {
     single_type: bool,
 }
 
-fn picked(st: &vectorcraft_engine::DocState) -> Picked {
+fn picked(st: &redrob_vector_engine::DocState) -> Picked {
     let selected: Vec<u64> = st.selection.objects.iter().map(|i| i.0).collect();
     let selection_bound = selected.iter().any(|id| st.doc.variables.bindings.contains_key(&NodeId(*id)));
     let single_type = matches!(selected.as_slice(), [one] if st.doc.node(NodeId(*one)).is_some_and(|n| matches!(n.kind, NodeKind::Text(_))));
@@ -297,7 +297,7 @@ mod tests {
     use super::*;
 
     fn app_with_data() -> VectorcraftApp {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 300, "height": 200})).unwrap();
         let t = app.session.execute("text.create", &json!({"x": 10, "y": 40, "text": "Alice"})).unwrap()["id"].as_u64().unwrap();
         app.session.execute("variable.define", &json!({"name": "Name", "kind": "text"})).unwrap();
@@ -370,7 +370,7 @@ mod tests {
     /// selection lands on what the row drives with the binding intact, and the others remain.
     #[test]
     fn selecting_and_deleting_act_on_the_highlighted_row_only() {
-        let mut app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let mut app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         app.session.execute("file.new", &json!({"width": 300, "height": 200})).unwrap();
         let a = app.session.execute("text.create", &json!({"x": 10, "y": 40, "text": "Alice"})).unwrap()["id"].as_u64().unwrap();
         let b = app.session.execute("text.create", &json!({"x": 10, "y": 80, "text": "Bob"})).unwrap()["id"].as_u64().unwrap();
@@ -435,7 +435,7 @@ mod tests {
     /// the panel, its menu and the command palette.
     #[test]
     fn window_variables_opens_the_panel() {
-        let app = VectorcraftApp::new(vectorcraft_engine::Session::new(), Default::default());
+        let app = VectorcraftApp::new(redrob_vector_engine::Session::new(), Default::default());
         let entries = crate::menus::menu_entries(&app);
         let panel = entries
             .iter()

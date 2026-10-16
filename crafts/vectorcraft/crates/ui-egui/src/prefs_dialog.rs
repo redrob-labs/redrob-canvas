@@ -4,9 +4,9 @@
 //! through `prefs.set`. Also: persistence of engine prefs inside `UiState` and the per-frame
 //! application of the UI-side preferences (brightness, canvas colour, UI scaling, render threads).
 
+use redrob_vector_engine::Prefs;
+use redrob_vector_engine::cmd::prefscmds::{GPU_PREFERENCES, PREF_CATEGORIES, PREF_GROUPS, PREF_SPECS, PrefKind};
 use serde_json::{Map, Value, json};
-use vectorcraft_engine::Prefs;
-use vectorcraft_engine::cmd::prefscmds::{GPU_PREFERENCES, PREF_CATEGORIES, PREF_GROUPS, PREF_SPECS, PrefKind};
 
 use crate::state::Dialog;
 use crate::theme::{self, Brightness, Tokens};
@@ -22,7 +22,7 @@ pub const UI_FIELDS: &[(&str, &str, &str)] = &[
 pub fn open(app: &mut VectorcraftApp, category: Option<&str>) {
     // One field per preference key or group (the flattener presets have commands of their own).
     let mut fields: Map<String, Value> = app.session.prefs.to_json().as_object().cloned().unwrap_or_default();
-    fields.retain(|k, _| vectorcraft_engine::cmd::prefscmds::spec(k).is_some() || PREF_GROUPS.contains(&k.as_str()));
+    fields.retain(|k, _| redrob_vector_engine::cmd::prefscmds::spec(k).is_some() || PREF_GROUPS.contains(&k.as_str()));
     // Units ▸ General shows (and OK sets) the open document's units.
     if let Some(st) = app.session.active() {
         fields.insert("unitsGeneral".into(), json!(st.doc.units.key()));
@@ -133,8 +133,8 @@ pub fn apply_runtime(app: &mut VectorcraftApp, ctx: &egui::Context) {
             ctx.data_mut(|d| d.insert_temp(egui::Id::NULL, t));
         }
         if prev.is_some_and(|pr| pr.threads != want.threads) {
-            vectorcraft_render::set_default_threads(u16::try_from(want.threads).ok());
-            app.canvas.renderer.threads = vectorcraft_render::default_threads();
+            redrob_vector_render::set_default_threads(u16::try_from(want.threads).ok());
+            app.canvas.renderer.threads = redrob_vector_render::default_threads();
             app.canvas.worker = None;
             app.canvas.worker_started = false;
         }
@@ -286,7 +286,7 @@ fn category_fields(ui: &mut egui::Ui, d: &mut Dialog, cat: &str) {
             }
             PrefKind::Length { min, max, measure } => {
                 // In the dialog's own Units choice, so a change there shows right away.
-                let unit = vectorcraft_doc::Unit::named(&d.str(measure.pref_key())).unwrap_or_default();
+                let unit = redrob_vector_doc::Unit::named(&d.str(measure.pref_key())).unwrap_or_default();
                 let x = d.f64(sp.key, min);
                 labeled(ui, sp.label, |ui| {
                     if let Some(x) = widgets::num_field(ui, sp.key, Some(x), unit, 110.0) {
@@ -326,7 +326,7 @@ fn category_fields(ui: &mut egui::Ui, d: &mut Dialog, cat: &str) {
             PrefKind::Color => {
                 labeled(ui, sp.label, |ui| {
                     let hex = v.as_str().unwrap_or("#000000");
-                    let c = vectorcraft_color::Color::from_hex(hex).map(|c| c.to_rgba8(1.0)).unwrap_or([0, 0, 0, 255]);
+                    let c = redrob_vector_color::Color::from_hex(hex).map(|c| c.to_rgba8(1.0)).unwrap_or([0, 0, 0, 255]);
                     let mut rgb = [c[0], c[1], c[2]];
                     if ui.color_edit_button_srgb(&mut rgb).changed() {
                         d.fields.insert(sp.key.into(), json!(format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2])));
@@ -362,7 +362,7 @@ fn category_fields(ui: &mut egui::Ui, d: &mut Dialog, cat: &str) {
 
 /// Is one of the dialog's Units (General, Stroke, Type, East Asian Type) Picas?
 fn picas_in_use(d: &Dialog) -> bool {
-    ["unitsGeneral", "unitsStroke", "unitsType", "unitsAsianType"].iter().any(|k| d.str(k) == vectorcraft_doc::Unit::Picas.key())
+    ["unitsGeneral", "unitsStroke", "unitsType", "unitsAsianType"].iter().any(|k| d.str(k) == redrob_vector_doc::Unit::Picas.key())
 }
 
 fn bool_row(ui: &mut egui::Ui, d: &mut Dialog, key: &str, label: &str) {
@@ -388,7 +388,7 @@ fn labeled(ui: &mut egui::Ui, label: &str, add: impl FnOnce(&mut egui::Ui)) {
 mod tests {
     use super::*;
     use crate::Services;
-    use vectorcraft_engine::Session;
+    use redrob_vector_engine::Session;
 
     /// A resting checkbox must have a visible outline in both states and every brightness.
     #[test]
@@ -641,12 +641,12 @@ mod tests {
             });
             out.textures_delta.clear();
         };
-        let read = |ctx: &egui::Context| widgets::typed_unit(ctx, vectorcraft_doc::Unit::Picas);
+        let read = |ctx: &egui::Context| widgets::typed_unit(ctx, redrob_vector_doc::Unit::Picas);
         frame(&mut a);
-        assert_eq!(read(&ctx), vectorcraft_doc::Unit::Points, "on by default");
+        assert_eq!(read(&ctx), redrob_vector_doc::Unit::Points, "on by default");
         a.run("prefs.set", json!({"key": "numbersWithoutUnitsArePoints", "value": false})).unwrap();
         frame(&mut a);
-        assert_eq!(read(&ctx), vectorcraft_doc::Unit::Picas, "off");
+        assert_eq!(read(&ctx), redrob_vector_doc::Unit::Picas, "off");
         // The checkbox: dimmed with every unit in points, enabled once a unit is Picas.
         open(&mut a, Some("Units"));
         let d = a.ui.dialog.as_mut().unwrap();
@@ -697,7 +697,7 @@ mod tests {
         struct Clear;
         impl Drop for Clear {
             fn drop(&mut self) {
-                vectorcraft_text::set_hyphenation_exceptions("");
+                redrob_vector_text::set_hyphenation_exceptions("");
             }
         }
         let _clear = Clear;
@@ -709,8 +709,8 @@ mod tests {
         confirm(&mut a).unwrap();
         assert!(a.ui.dialog.is_none());
         assert_eq!(a.session.prefs.hyphenation_exceptions, "typography, hap-pen");
-        assert_eq!(vectorcraft_text::hyphenation_exceptions(), "typography, hap-pen");
-        assert!(vectorcraft_text::hyphen::hyphen_points("typography").is_empty());
-        assert_eq!(vectorcraft_text::hyphen::hyphen_points("happen"), vec![3]);
+        assert_eq!(redrob_vector_text::hyphenation_exceptions(), "typography, hap-pen");
+        assert!(redrob_vector_text::hyphen::hyphen_points("typography").is_empty());
+        assert_eq!(redrob_vector_text::hyphen::hyphen_points("happen"), vec![3]);
     }
 }

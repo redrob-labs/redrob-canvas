@@ -4,7 +4,7 @@ use egui::accesskit::Role;
 use egui::{Modifiers, PointerButton, Pos2, Rect, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::LayerId;
+use redrob_photo_doc::LayerId;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -14,7 +14,7 @@ use crate::state::Tool;
 /// "source-doc" (40×30) with a red 10×10 square at (4, 6) on layer "paint", and "dest-doc"
 /// (60×50). The source is active.
 fn harness() -> (Harness<'static, PhotocraftApp>, LayerId) {
-    let mut s = photocraft_engine::Session::new();
+    let mut s = redrob_photo_engine::Session::new();
     s.execute("file.new", json!({"width": 40, "height": 30, "name": "source-doc"})).unwrap();
     let paint = LayerId(s.execute("layer.new.layer", json!({"name": "paint"})).unwrap()["layer"].as_u64().unwrap());
     s.execute("select.rect", json!({"x": 4, "y": 6, "width": 10, "height": 10})).unwrap();
@@ -63,13 +63,13 @@ fn copy(h: &Harness<'_, PhotocraftApp>) -> (String, Rect) {
     let st = h.state().session.active().unwrap();
     assert_eq!(st.doc.name, "dest-doc", "the destination is shown");
     let l = st.active_layer.and_then(|id| st.doc.layer(id)).unwrap();
-    let b = photocraft_engine::layer_multi_cmds::layer_bounds(l).unwrap();
+    let b = redrob_photo_engine::layer_multi_cmds::layer_bounds(l).unwrap();
     (l.name.clone(), Rect::from_min_max(egui::pos2(b.x0 as f32, b.y0 as f32), egui::pos2(b.x1 as f32, b.y1 as f32)))
 }
 
-fn source_square(h: &Harness<'_, PhotocraftApp>, paint: LayerId) -> photocraft_geom::Rect {
+fn source_square(h: &Harness<'_, PhotocraftApp>, paint: LayerId) -> redrob_photo_geom::Rect {
     let doc = &h.state().session.documents()[0].doc;
-    photocraft_engine::layer_multi_cmds::layer_bounds(doc.layer(paint).unwrap()).unwrap()
+    redrob_photo_engine::layer_multi_cmds::layer_bounds(doc.layer(paint).unwrap()).unwrap()
 }
 
 #[test]

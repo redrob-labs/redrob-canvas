@@ -1,8 +1,8 @@
 //! Command params written by tools and panels: the inverse of the engine's paint parsers, so a
 //! paint read from the document and sent back through a command arrives unchanged.
 
+use redrob_vector_color::{Color, Freeform, FreeformPoint, GradientPaint, GradientStop};
 use serde_json::{Value, json};
-use vectorcraft_color::{Color, Freeform, FreeformPoint, GradientPaint, GradientStop};
 
 /// A colour as a `color` param in its own model: `[r,g,b]`, `{c,m,y,k}`, `{gray}` or `{l,a,b}`.
 pub fn color_json(c: &Color) -> Value {
@@ -75,8 +75,8 @@ pub fn gradient_params(g: &GradientPaint) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vectorcraft_color::{Gradient, GradientGeom, GradientKind};
-    use vectorcraft_geom::Point;
+    use redrob_vector_color::{Gradient, GradientGeom, GradientKind};
+    use redrob_vector_geom::Point;
 
     #[test]
     fn gradient_params_carry_placement_only_when_placed() {

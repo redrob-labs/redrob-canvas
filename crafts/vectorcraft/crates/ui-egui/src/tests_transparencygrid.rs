@@ -1,8 +1,8 @@
 //! The canvas draws the transparency grid behind the artboards of the documents that show it
 //! (M3.88), and the View menu item follows the active document.
 
+use redrob_vector_engine::Session;
 use serde_json::json;
-use vectorcraft_engine::Session;
 
 use crate::{VectorcraftApp, canvas, menus};
 

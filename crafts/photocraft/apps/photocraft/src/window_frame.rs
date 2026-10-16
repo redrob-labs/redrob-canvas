@@ -28,7 +28,7 @@ pub use platform::service;
 #[cfg(target_os = "windows")]
 mod platform {
     use eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle};
-    use photocraft_ui_egui::WindowFrameFn;
+    use redrob_photo_ui_egui::WindowFrameFn;
     use winsafe::{HWND, HwndPlace, POINT, SIZE, co};
 
     /// A guard that keeps the window borderless each frame, or `None` when the app uses the
@@ -226,7 +226,7 @@ mod platform {
 
 #[cfg(not(target_os = "windows"))]
 mod platform {
-    use photocraft_ui_egui::WindowFrameFn;
+    use redrob_photo_ui_egui::WindowFrameFn;
 
     pub fn service(_cc: &eframe::CreationContext<'_>, _custom_titlebar: bool) -> Option<WindowFrameFn> {
         None

@@ -29,7 +29,7 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, optional = true }
-vectorcraft-trace.workspace = true
+redrob-vector-trace.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

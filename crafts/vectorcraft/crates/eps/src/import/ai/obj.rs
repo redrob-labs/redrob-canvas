@@ -125,7 +125,7 @@ pub(super) fn close(o: &mut Obj, stack: &mut Vec<V>, base: usize) {
 
 /// An object name from its XML id (`AI10_ArtUID`).
 pub(super) fn xml_name(id: &str) -> String {
-    vectorcraft_doc::xml_id::to_object_name(id)
+    redrob_vector_doc::xml_id::to_object_name(id)
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@
 use egui::{Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_geom::Rect;
+use redrob_photo_geom::Rect;
 use serde_json::json;
 
 use crate::PhotocraftApp;
@@ -13,7 +13,7 @@ use crate::canvas::ViewXform;
 use crate::state::Tool;
 
 fn harness(tool: Tool) -> Harness<'static, PhotocraftApp> {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 300})).unwrap();
     app.sync_views();
     app.ui.extras.rulers = false;
@@ -426,11 +426,11 @@ fn shift_alt_before_the_drag_intersects_the_selection() {
     assert!(sel.sample_channel(260, 260, 0) < 0.01, "a point only in the dragged rectangle is dropped (not replace)");
 }
 
-/// `cargo test --release -p photocraft-ui-egui marquee_drag_bench -- --ignored --nocapture`
+/// `cargo test --release -p redrob-photo-ui-egui marquee_drag_bench -- --ignored --nocapture`
 #[test]
 #[ignore]
 fn marquee_drag_bench() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 6000, "height": 4000})).unwrap();
     app.run("filter.render.clouds", json!({})).unwrap();
     app.sync_views();
@@ -461,8 +461,8 @@ fn marquee_drag_bench() {
 }
 
 /// An 80×60 transparent document, red over (10..30)², that square selected, Rectangular Marquee.
-fn painted() -> (PhotocraftApp, photocraft_doc::LayerId) {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+fn painted() -> (PhotocraftApp, redrob_photo_doc::LayerId) {
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 80, "height": 60, "background": "transparent"})).unwrap();
     app.sync_views();
     app.ui.extras.snap = false;
@@ -506,9 +506,9 @@ fn drag_inside_the_selection_moves_the_outline() {
 fn cmd_drag_floats_the_selected_pixels() {
     use crate::canvas::{ToolEvent, tool_event};
     let (mut app, layer) = painted();
-    let alpha = |d: &photocraft_doc::Document, x, y| d.layer(layer).unwrap().surface().unwrap().rgba(x, y)[3];
+    let alpha = |d: &redrob_photo_doc::Document, x, y| d.layer(layer).unwrap().surface().unwrap().rgba(x, y)[3];
     let doc = |app: &PhotocraftApp| app.session.active().unwrap().doc.clone();
-    let offset = |app: &PhotocraftApp| photocraft_engine::float_cmds::floating(app.session.active().unwrap()).map(|f| f.offset);
+    let offset = |app: &PhotocraftApp| redrob_photo_engine::float_cmds::floating(app.session.active().unwrap()).map(|f| f.offset);
     let steps = app.session.active().unwrap().history.past_len();
     tool_event(&mut app, ToolEvent::Down { x: 20.0, y: 20.0, pressure: 1.0 }, Modifiers::COMMAND);
     tool_event(&mut app, ToolEvent::Move { x: 35.0, y: 20.0, pressure: 1.0 }, Modifiers::COMMAND);
@@ -625,7 +625,7 @@ fn arrow_keys_without_a_selection_do_nothing() {
 #[test]
 fn cmd_alt_drag_floats_a_copy() {
     let (mut app, layer) = painted();
-    let alpha = |d: &photocraft_doc::Document, x, y| d.layer(layer).unwrap().surface().unwrap().rgba(x, y)[3];
+    let alpha = |d: &redrob_photo_doc::Document, x, y| d.layer(layer).unwrap().surface().unwrap().rgba(x, y)[3];
     let cmd_alt = Modifiers { alt: true, ..Modifiers::COMMAND };
     drag(&mut app, [20.0, 20.0], [45.0, 20.0], cmd_alt);
     app.run("select.drop", json!({})).unwrap();
@@ -665,7 +665,7 @@ fn error_dialogs(app: &PhotocraftApp) -> Vec<String> {
 /// selection, a position-locked layer; a plain click says nothing, and the drag never starts.
 #[test]
 fn move_on_the_background_without_a_selection_shows_photoshops_lock_message() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 80, "height": 60})).unwrap();
     app.sync_views();
     app.ui.tool = Tool::Move;
@@ -716,7 +716,7 @@ fn move_on_the_background_without_a_selection_shows_photoshops_lock_message() {
 /// selection as with the Move tool.
 #[test]
 fn selected_pixels_move_off_the_background_but_not_off_a_fully_locked_layer() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 80, "height": 60})).unwrap();
     app.sync_views();
     app.ui.extras.snap = false;
@@ -725,7 +725,7 @@ fn selected_pixels_move_off_the_background_but_not_off_a_fully_locked_layer() {
     app.run("select.rect", json!({"x": 10, "y": 10, "width": 20, "height": 20})).unwrap();
     drag(&mut app, [20.0, 20.0], [50.0, 20.0], Modifiers::COMMAND);
     assert!(error_dialogs(&app).is_empty());
-    assert_eq!(photocraft_engine::float_cmds::floating(app.session.active().unwrap()).map(|f| f.offset), Some((30, 0)));
+    assert_eq!(redrob_photo_engine::float_cmds::floating(app.session.active().unwrap()).map(|f| f.offset), Some((30, 0)));
     let (mut app, layer) = painted();
     app.session
         .edit("lock", |doc, _| {
@@ -738,7 +738,7 @@ fn selected_pixels_move_off_the_background_but_not_off_a_fully_locked_layer() {
         app.ui.tool = tool;
         drag(&mut app, [20.0, 20.0], [40.0, 20.0], m);
         assert_eq!(error_dialogs(&app), [crate::move_lock::MESSAGE], "{tool:?}");
-        assert!(photocraft_engine::float_cmds::floating(app.session.active().unwrap()).is_none(), "{tool:?}");
+        assert!(redrob_photo_engine::float_cmds::floating(app.session.active().unwrap()).is_none(), "{tool:?}");
         app.ui.dialogs.clear();
     }
 }
@@ -793,7 +793,7 @@ fn click_with(app: &mut PhotocraftApp, tool: Tool, x: f64, y: f64, m: Modifiers)
 /// whole canvas; ⇧ adds, ⌥ subtracts, as with the other marquees.
 #[test]
 fn single_row_and_column_marquee_select_one_pixel_lines() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 200, "height": 100})).unwrap();
     app.ui.extras.snap = false;
     let bounds = |app: &PhotocraftApp| app.session.active().unwrap().doc.selection.as_ref().map_or(Rect::EMPTY, |s| s.content_bounds());
@@ -820,7 +820,7 @@ fn single_row_and_column_marquee_select_one_pixel_lines() {
 /// Rectangular and Elliptical Marquee, as in Photoshop; automation picks them by name.
 #[test]
 fn m_cycles_only_the_rectangular_and_elliptical_marquee() {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     app.ui.tool = Tool::SingleRowMarquee;
     let mut seen = Vec::new();
@@ -844,7 +844,7 @@ fn m_cycles_only_the_rectangular_and_elliptical_marquee() {
 
 #[test]
 fn size_readout_follows_the_ruler_unit() {
-    use photocraft_engine::prefs::{Unit, UnitsAndRulers};
+    use redrob_photo_engine::prefs::{Unit, UnitsAndRulers};
     let mut ur = UnitsAndRulers::default();
     // 1644 × 2659 px at 72 dpi: 58 cm wide
     let r = [0.0, 0.0, 1644.0, 2659.0];

@@ -1,8 +1,8 @@
 //! The Width tool in the UI: its cursors and hint.
 
+use redrob_vector_engine::Session;
+use redrob_vector_tools::Cursor;
 use serde_json::json;
-use vectorcraft_engine::Session;
-use vectorcraft_tools::Cursor;
 
 use crate::{VectorcraftApp, chrome, tests_labels::painted_text};
 

@@ -20,8 +20,8 @@
 //! with [`apply`], so every change is a journaled command (Rule 1).
 
 use egui::{CursorIcon, RichText, Stroke, vec2};
-use photocraft_engine::BrushSettings;
-use photocraft_engine::paint::{BrushPreset, MAX_BRUSH_SIZE, TipShape};
+use redrob_photo_engine::BrushSettings;
+use redrob_photo_engine::paint::{BrushPreset, MAX_BRUSH_SIZE, TipShape};
 use serde_json::{Value, json};
 
 use crate::brush_panel::{BrushesPanelState, Renaming};

@@ -7,8 +7,8 @@
 //! - [`Remote`] talks to a running desktop app through its loopback JSON-lines control channel
 //!   (`designcraft --control 7979`): one `{"id","method","params"}` line in, one
 //!   `{"id","ok","result"|"error"}` line out (see `docs/control-protocol.md`).
-//! - [`Headless`] hosts an in-process [`designcraft_engine::Session`] and implements the
-//!   engine-level control-channel methods itself (rendering pages with `designcraft-render`), so
+//! - [`Headless`] hosts an in-process [`redrob_layout_engine::Session`] and implements the
+//!   engine-level control-channel methods itself (rendering pages with `redrob-layout-render`), so
 //!   agents can build layouts and look at them without a window.
 //!
 //! Entry points: [`Server::serve`] (stdio loop) and [`Server::handle_line`] (one message).

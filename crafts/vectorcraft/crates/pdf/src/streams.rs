@@ -6,9 +6,9 @@
 use std::borrow::Cow;
 use std::io::Read;
 
-use craft_pdf::syntax::content::TypedIter;
-use craft_pdf::syntax::content::ops::TypedInstruction;
-use craft_pdf::syntax::object::{Array, Dict, FromBytes, MaybeRef, Name, Object, Stream};
+use redrob_craft_pdf::syntax::content::TypedIter;
+use redrob_craft_pdf::syntax::content::ops::TypedInstruction;
+use redrob_craft_pdf::syntax::object::{Array, Dict, FromBytes, MaybeRef, Name, Object, Stream};
 
 /// The most a stream may decode to: 256 MB, the pixels of the largest image the app reads (64
 /// million, 4 bytes each).

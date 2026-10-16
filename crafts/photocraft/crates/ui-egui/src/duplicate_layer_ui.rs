@@ -112,7 +112,7 @@ pub fn confirm(app: &mut PhotocraftApp, fields: &Map<String, Value>) -> Result<V
 mod tests {
     use super::*;
     fn make_app() -> PhotocraftApp {
-        let mut s = photocraft_engine::Session::new();
+        let mut s = redrob_photo_engine::Session::new();
         s.execute("file.new", json!({"width":8,"height":8,"name":"Poster"})).unwrap();
         s.execute("layer.new.layer", json!({"name":"Ink"})).unwrap();
         PhotocraftApp::new(s, crate::Services::default())

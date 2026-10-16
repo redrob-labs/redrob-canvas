@@ -9,11 +9,11 @@
 //! Writing starts from the layer's original `TySh` (when present) and patches only the text, runs,
 //! paragraphs, fonts, shape and transform, so Photoshop-only settings survive an edit.
 
-use photocraft_color::{Color, ColorMode};
-use photocraft_doc::TextLayer;
-use photocraft_doc::text::{AntiAlias, Caps, CharStyle, Kerning, Orientation, ParagraphRun, ParagraphStyle, TextAlign, TextRun, TextShape, TextWarp};
-use photocraft_geom::{Affine, Point};
-use photocraft_psd::descriptor::{Descriptor, Id, UnicodeString, Value as D, VersionedDescriptor};
+use redrob_photo_color::{Color, ColorMode};
+use redrob_photo_doc::TextLayer;
+use redrob_photo_doc::text::{AntiAlias, Caps, CharStyle, Kerning, Orientation, ParagraphRun, ParagraphStyle, TextAlign, TextRun, TextShape, TextWarp};
+use redrob_photo_geom::{Affine, Point};
+use redrob_photo_psd::descriptor::{Descriptor, Id, UnicodeString, Value as D, VersionedDescriptor};
 
 use crate::engine_data::{self as ed, Value as E};
 use crate::fonts::guess_from_postscript;
@@ -307,7 +307,7 @@ pub const TXT2_STYLISTIC_SETS: &str = "85";
 fn add_txt2_features(style: &mut CharStyle, txt2_style: &E) {
     let mut set = |tag: String, value: u16| {
         if !style.features.iter().any(|f| f.tag == tag) {
-            style.features.push(photocraft_doc::text::FontFeature { tag, value });
+            style.features.push(redrob_photo_doc::text::FontFeature { tag, value });
         }
     };
     for (key, tag) in TXT2_FEATURES {
@@ -613,7 +613,7 @@ pub(crate) fn char_style(base: Option<&E>, d: &E, fonts: &[String], k: f32) -> C
     s.discretionary_ligatures = flag("DLigatures").unwrap_or(false);
     for (key, tag) in OPENTYPE_KEYS {
         if flag(key) == Some(true) {
-            s.features.push(photocraft_doc::text::FontFeature { tag: tag.to_string(), value: 1 });
+            s.features.push(redrob_photo_doc::text::FontFeature { tag: tag.to_string(), value: 1 });
         }
     }
     s.kerning = if flag("AutoKerning") == Some(false) { Kerning::Off } else { Kerning::Metrics };

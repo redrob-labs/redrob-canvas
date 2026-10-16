@@ -14,15 +14,15 @@ path = "src/main.rs"
 workspace = true
 
 [dependencies]
-vectorcraft-color = { workspace = true }
-vectorcraft-doc = { workspace = true }
-vectorcraft-engine = { workspace = true }
-vectorcraft-format = { workspace = true }
-vectorcraft-geom = { workspace = true }
-vectorcraft-svg = { workspace = true }
-vectorcraft-mcp = { workspace = true }
-vectorcraft-render = { workspace = true }
-vectorcraft-text = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-engine = { workspace = true }
+redrob-vector-format = { workspace = true }
+redrob-vector-geom = { workspace = true }
+redrob-vector-svg = { workspace = true }
+redrob-vector-mcp = { workspace = true }
+redrob-vector-render = { workspace = true }
+redrob-vector-text = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 
@@ -44,5 +44,5 @@ objc2-core-foundation = { version = "0.3", default-features = false, features = 
 objc2-core-text = { version = "0.3", default-features = false, features = ["std", "CTFontManager"] }
 
 [dev-dependencies]
-vectorcraft-testkit = { workspace = true }
+redrob-vector-testkit = { workspace = true }
 serde_json = { workspace = true }

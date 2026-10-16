@@ -1,7 +1,7 @@
 //! MCP resources: the fixed documents, the templates an agent can address parts of the
 //! document by, and reading either.
 //!
-//! The templates matter for long sessions. `vectorcraft://document/json` returns the whole model,
+//! The templates matter for long sessions. `redrob-vector://document/json` returns the whole model,
 //! which on a real document is thousands of lines an agent pays for again on every change; the
 //! templates hand out one object, one command definition or one effect's parameters instead, and
 //! they are what `completion/complete` suggests ids and names from.
@@ -12,12 +12,12 @@ use crate::backend::Backend;
 use crate::prompts::Live;
 
 /// The active document's summary: artboards, layer tree, selection, history.
-pub const DOC_URI: &str = "vectorcraft://document";
+pub const DOC_URI: &str = "redrob-vector://document";
 /// The whole document model as JSON.
-pub const DOC_JSON_URI: &str = "vectorcraft://document/json";
+pub const DOC_JSON_URI: &str = "redrob-vector://document/json";
 
 /// The live command catalog, including enabled state.
-pub const COMMANDS_URI: &str = "vectorcraft://commands";
+pub const COMMANDS_URI: &str = "redrob-vector://commands";
 
 /// Why a resource could not be read. The distinction matters: the server turns it into `-32002`
 /// (no such resource) or `-32602` (bad URI), and guessing from the message text would not hold.
@@ -44,7 +44,7 @@ pub struct Template {
 /// Every template, in `resources/templates/list` order.
 pub static TEMPLATES: &[Template] = &[
     Template {
-        uri: "vectorcraft://object/{id}",
+        uri: "redrob-vector://object/{id}",
         name: "object",
         title: "One layer or object",
         description: "The layer or object with this id, with its children, bounds and paint (document.node {summary: true}). Large containers can be sliced with run_command document.node {id, summary, depth, childLimit}: truncated levels report childCount",
@@ -52,7 +52,7 @@ pub static TEMPLATES: &[Template] = &[
         live: Live::Objects,
     },
     Template {
-        uri: "vectorcraft://command/{id}",
+        uri: "redrob-vector://command/{id}",
         name: "command",
         title: "One command",
         description: "The command with this id: label, menu path, shortcut, parameter description and whether it is enabled now (engine.commands)",
@@ -60,7 +60,7 @@ pub static TEMPLATES: &[Template] = &[
         live: Live::Commands,
     },
     Template {
-        uri: "vectorcraft://effect/{id}",
+        uri: "redrob-vector://effect/{id}",
         name: "effect",
         title: "One live effect",
         description: "The live effect with this id and its parameters with their defaults (effect.list)",
@@ -68,7 +68,7 @@ pub static TEMPLATES: &[Template] = &[
         live: Live::Effects,
     },
     Template {
-        uri: "vectorcraft://swatch/{name}",
+        uri: "redrob-vector://swatch/{name}",
         name: "swatch",
         title: "One swatch",
         description: "The swatch or gradient/pattern swatch with this name (swatch.list)",
@@ -108,6 +108,9 @@ pub fn template_source(uri: &str) -> (&str, Option<Live>) {
 
 /// `resources/read`: the document behind a resource URI.
 pub fn read(b: &mut dyn Backend, uri: &str) -> Result<Value, ReadError> {
+    // A client built against the upstream server still names its resources by the old scheme.
+    let legacy = uri.strip_prefix("vectorcraft://").map(|rest| format!("redrob-vector://{rest}")); // legacy: old URI scheme still read
+    let uri = legacy.as_deref().unwrap_or(uri);
     if uri == COMMANDS_URI {
         return b.call("engine.commands", json!({})).map_err(ReadError::Backend);
     }
@@ -213,19 +216,19 @@ mod tests {
 
     #[test]
     fn variables_are_split_out_and_decoded() {
-        assert_eq!(variable("vectorcraft://object/42", "vectorcraft://object/{id}"), "42");
-        assert_eq!(variable("vectorcraft://swatch/Brand%2040%25", "vectorcraft://swatch/{name}"), "Brand 40%");
-        assert_eq!(variable("vectorcraft://swatch/a%zzb", "vectorcraft://swatch/{name}"), "a%zzb");
-        assert_eq!(variable("vectorcraft://other", "vectorcraft://object/{id}"), "");
-        assert_eq!(variable_name("vectorcraft://swatch/{name}"), "name");
+        assert_eq!(variable("redrob-vector://object/42", "redrob-vector://object/{id}"), "42");
+        assert_eq!(variable("redrob-vector://swatch/Brand%2040%25", "redrob-vector://swatch/{name}"), "Brand 40%");
+        assert_eq!(variable("redrob-vector://swatch/a%zzb", "redrob-vector://swatch/{name}"), "a%zzb");
+        assert_eq!(variable("redrob-vector://other", "redrob-vector://object/{id}"), "");
+        assert_eq!(variable_name("redrob-vector://swatch/{name}"), "name");
         assert_eq!(variable_name("no template"), "");
     }
 
     #[test]
     fn templates_are_addressable() {
-        assert_eq!(template_source("vectorcraft://object/7"), ("vectorcraft://object/{id}", Some(Live::Objects)));
-        assert_eq!(template_source("vectorcraft://command/paint.setFill").1, Some(Live::Commands));
-        assert_eq!(template_source("vectorcraft://document").1, None);
+        assert_eq!(template_source("redrob-vector://object/7"), ("redrob-vector://object/{id}", Some(Live::Objects)));
+        assert_eq!(template_source("redrob-vector://command/paint.setFill").1, Some(Live::Commands));
+        assert_eq!(template_source("redrob-vector://document").1, None);
     }
 
     #[test]
@@ -245,16 +248,16 @@ mod tests {
     #[test]
     fn missing_and_unknown_uris_are_errors() {
         let mut b = Box::new(crate::Headless::with_document());
-        assert!(read(b.as_mut(), "vectorcraft://nope").is_err());
-        assert!(read(b.as_mut(), "vectorcraft://object/").is_err());
-        assert!(read(b.as_mut(), "vectorcraft://object/99999").is_err());
+        assert!(read(b.as_mut(), "redrob-vector://nope").is_err());
+        assert!(read(b.as_mut(), "redrob-vector://object/").is_err());
+        assert!(read(b.as_mut(), "redrob-vector://object/99999").is_err());
         assert!(read(b.as_mut(), DOC_URI).is_ok());
         // An id that names nothing is a bad value; without a document the backend says why.
-        for uri in ["vectorcraft://object/99999", "vectorcraft://object/abc"] {
+        for uri in ["redrob-vector://object/99999", "redrob-vector://object/abc"] {
             assert!(matches!(read(b.as_mut(), uri), Err(ReadError::Invalid(_))), "{uri}");
         }
         let mut empty = Box::new(crate::Headless::new());
-        assert!(matches!(read(empty.as_mut(), "vectorcraft://object/1"), Err(ReadError::Backend(_))));
+        assert!(matches!(read(empty.as_mut(), "redrob-vector://object/1"), Err(ReadError::Backend(_))));
     }
 
     #[test]
@@ -262,14 +265,14 @@ mod tests {
         let mut b = Box::new(crate::Headless::with_document());
         let made = b.call("engine.execute", json!({"command": "shape.rectangle", "params": {"x": 10, "y": 10, "width": 50, "height": 40}})).unwrap();
         let id = made["id"].as_i64().unwrap_or_default().to_string();
-        let v = read(b.as_mut(), &format!("vectorcraft://object/{id}")).unwrap();
+        let v = read(b.as_mut(), &format!("redrob-vector://object/{id}")).unwrap();
         assert_eq!(v["id"].to_string(), id);
         assert!(v["bounds"].is_object(), "{v}");
         // Layers resolve too, not just drawn objects.
         let inspect = b.call("document.inspect", json!({})).unwrap();
         let layer = inspect["layers"].as_array().and_then(|l| l.first()).expect("a layer");
         let lid = layer["id"].to_string();
-        let v = read(b.as_mut(), &format!("vectorcraft://object/{lid}")).unwrap();
+        let v = read(b.as_mut(), &format!("redrob-vector://object/{lid}")).unwrap();
         assert_eq!(v["id"].to_string(), lid);
     }
 }

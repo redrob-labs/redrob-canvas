@@ -4,15 +4,15 @@
 use egui::vec2;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use photocraft_doc::text::TextWarp;
-use photocraft_doc::{Document, LayerContent};
+use redrob_photo_doc::text::TextWarp;
+use redrob_photo_doc::{Document, LayerContent};
 use serde_json::{Map, Value, json};
 
 use crate::PhotocraftApp;
 
 /// A document with one type layer, active.
 fn app_with_type() -> PhotocraftApp {
-    let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+    let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 400, "height": 200})).unwrap();
     app.run("type.create", json!({"x": 20, "y": 120, "text": "Warp", "size": 60})).unwrap();
     app
@@ -27,7 +27,7 @@ fn warp(app: &PhotocraftApp) -> Option<TextWarp> {
     warp_of(&st.doc, st.active_layer.unwrap())
 }
 
-fn warp_of(doc: &Document, id: photocraft_doc::LayerId) -> Option<TextWarp> {
+fn warp_of(doc: &Document, id: redrob_photo_doc::LayerId) -> Option<TextWarp> {
     match &doc.layer(id).unwrap().content {
         LayerContent::Text(t) => t.warp.clone(),
         _ => panic!("the layer is a type layer"),
@@ -150,7 +150,7 @@ fn warp_text_dialog_previews_the_warp_without_editing_the_document() {
     let app = h.state();
     let shown = app.filter_preview.as_ref().and_then(|p| p.result.clone()).expect("a preview");
     assert_eq!(warp_of(&shown, layer).map(|w| (w.style, w.value)), Some(("warpArc".to_string(), 40.0)));
-    assert_ne!(photocraft_compose::flatten(&shown).px, photocraft_compose::flatten(&original).px, "the preview shows the warp");
+    assert_ne!(redrob_photo_compose::flatten(&shown).px, redrob_photo_compose::flatten(&original).px, "the preview shows the warp");
     let st = app.session.active().unwrap();
     assert_eq!(st.revision, revision);
     assert_eq!(warp(app), None, "the document is not edited");

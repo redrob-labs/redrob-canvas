@@ -1,4 +1,4 @@
-//! Redrob Canvas's egui frontend: an Illustrator-style UI over `vectorcraft-engine`.
+//! Redrob Canvas's egui frontend: an Illustrator-style UI over `redrob-vector-engine`.
 //!
 //! The UI is thin: every action goes through [`VectorcraftApp::run`], which dispatches UI commands
 //! (view/window) here and everything else to the engine. The same entry point serves menus,
@@ -157,10 +157,10 @@ mod tests_widthtool;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
+use redrob_vector_engine::cmd::fileio;
+use redrob_vector_engine::file_access::{self, AutomationRoots};
+use redrob_vector_engine::{Session, ViewInfo};
 use serde_json::{Value, json};
-use vectorcraft_engine::cmd::fileio;
-use vectorcraft_engine::file_access::{self, AutomationRoots};
-use vectorcraft_engine::{Session, ViewInfo};
 
 pub use control::{ControlRequest, ControlResponse, Ticket as ControlTicket};
 pub use state::{UiState, View};
@@ -248,8 +248,8 @@ pub struct Services {
     /// Show a folder picker; returns its path (desktop: Relink to Folder, Package).
     pub pick_folder: Option<Box<dyn FnMut() -> Option<String>>>,
     /// Where Data Recovery keeps its copies when not in a folder (the web's browser storage;
-    /// tests): installed into the session ([`vectorcraft_engine::cmd::recovery`]).
-    pub recovery_store: Option<std::sync::Arc<dyn vectorcraft_engine::cmd::recovery::RecoveryStore>>,
+    /// tests): installed into the session ([`redrob_vector_engine::cmd::recovery`]).
+    pub recovery_store: Option<std::sync::Arc<dyn redrob_vector_engine::cmd::recovery::RecoveryStore>>,
     /// File → Print: the system's printers and print queue (desktop), the browser's print dialog
     /// (web). Without it Print saves the job as a PDF.
     pub print: Option<Box<dyn print::PrintService>>,
@@ -270,12 +270,12 @@ pub struct Services {
 
 /// Cached canvas raster.
 pub struct CanvasCache {
-    pub renderer: vectorcraft_render::Renderer,
+    pub renderer: redrob_vector_render::Renderer,
     pub texture: Option<egui::TextureHandle>,
     pub key: Option<CacheKey>,
     pub last_ms: f64,
     /// The frame shown drew raster effects from rasters made before their objects moved
-    /// ([`vectorcraft_render::FrameStats::moved`]): the next frame outside an interaction runs
+    /// ([`redrob_vector_render::FrameStats::moved`]): the next frame outside an interaction runs
     /// them again, on the worker when there is one.
     pub moved: bool,
     pub worker: Option<render_worker::Worker>,
@@ -288,24 +288,24 @@ pub struct CanvasCache {
     /// that does not draw them drops them ([`canvas::show`]).
     pub hidden_chars: canvas::HiddenChars,
     /// [`VectorcraftApp::selection_box`] for (document uid, revision, Use Preview Bounds).
-    pub selection_box: Option<((u64, u64, bool), Option<vectorcraft_doc::OrientedBox>)>,
+    pub selection_box: Option<((u64, u64, bool), Option<redrob_vector_doc::OrientedBox>)>,
     /// [`VectorcraftApp::selection_bounds`] for (document uid, revision).
-    pub selection_bounds: Option<((u64, u64), Option<vectorcraft_geom::Rect>)>,
+    pub selection_bounds: Option<((u64, u64), Option<redrob_vector_geom::Rect>)>,
     /// The tools' cursors as OS cursor bitmaps.
     pub cursors: cursors::Images,
 }
 
 /// [`CanvasCache::slices`]: the layout of the slices of (document uid, revision).
-pub type SliceCache = ((u64, u64), std::sync::Arc<Vec<vectorcraft_doc::SliceArea>>);
+pub type SliceCache = ((u64, u64), std::sync::Arc<Vec<redrob_vector_doc::SliceArea>>);
 
 /// [`CanvasCache::print_tiling`]: the print tiling of (document uid, revision).
-pub type PrintTilingCache = ((u64, u64), std::sync::Arc<Vec<vectorcraft_pdf::TilingPage>>);
+pub type PrintTilingCache = ((u64, u64), std::sync::Arc<Vec<redrob_vector_pdf::TilingPage>>);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CacheKey {
     pub doc: usize,
     pub revision: u64,
-    /// An interaction is in progress ([`vectorcraft_render::RenderOptions::interacting`]).
+    /// An interaction is in progress ([`redrob_vector_render::RenderOptions::interacting`]).
     pub interacting: bool,
     pub zoom: f64,
     pub cx: f64,
@@ -319,19 +319,19 @@ pub struct CacheKey {
     pub rot: f64,
     /// General › Anti-aliased Artwork.
     pub anti_alias: bool,
-    /// [`vectorcraft_render::placed_document::generation`]: placed documents' bitmaps made since.
+    /// [`redrob_vector_render::placed_document::generation`]: placed documents' bitmaps made since.
     pub placed: u64,
     /// View › Pixel Preview: the document pixels rendered (x0, y0, x1, y1), one per point, shown
     /// with hard edges. None: the art is rendered for the screen.
     pub pixel: Option<[i64; 4]>,
-    /// Images sampled smoothly ([`vectorcraft_render::RenderOptions::smooth_images`]).
+    /// Images sampled smoothly ([`redrob_vector_render::RenderOptions::smooth_images`]).
     pub smooth_images: bool,
-    /// Isolation mode's group or layer ([`vectorcraft_render::RenderOptions::isolated`]).
+    /// Isolation mode's group or layer ([`redrob_vector_render::RenderOptions::isolated`]).
     pub isolated: Option<u64>,
     /// Appearance of Black › On Screen › Display All Blacks as Rich Black
-    /// ([`vectorcraft_render::RenderOptions::rich_black`]).
+    /// ([`redrob_vector_render::RenderOptions::rich_black`]).
     pub rich_black: bool,
-    /// Colour and style of guide paths ([`vectorcraft_render::RenderOptions::guide`]).
+    /// Colour and style of guide paths ([`redrob_vector_render::RenderOptions::guide`]).
     pub guide: ([u8; 3], bool),
 }
 
@@ -376,13 +376,13 @@ pub struct VectorcraftApp {
     /// Canvas rect of the last frame (screen points), for control-channel coordinate mapping.
     pub canvas_rect: Option<egui::Rect>,
     /// Hover position in document coordinates.
-    pub hover_doc: Option<vectorcraft_geom::Point>,
+    pub hover_doc: Option<redrob_vector_geom::Point>,
     /// System clipboard: SVG to publish next frame, the last SVG we published (so pasting it back
     /// uses the lossless internal clipboard) and what came with a paste (a Paste event's text, a
     /// picture or file the host read: [`Self::paste_from_host`]).
     clipboard_out: Option<String>,
     clipboard_published: Option<String>,
-    pub(crate) clipboard_in: Option<vectorcraft_engine::cmd::clipboard::Flavour>,
+    pub(crate) clipboard_in: Option<redrob_vector_engine::cmd::clipboard::Flavour>,
     /// A URL to open through egui next frame (when the host has no `open_url` service).
     pending_url: Option<String>,
     /// Windows and Linux: the window has no OS decorations, so the app bar is the title bar (drag,
@@ -459,7 +459,7 @@ const SYSTEM_CLIPBOARD_POLL: f64 = 0.25;
 impl VectorcraftApp {
     pub fn new(mut session: Session, services: Services) -> Self {
         // The font menus and the first file opened need the installed fonts: catalog them now.
-        vectorcraft_text::FontDb::global().scan_in_background();
+        redrob_vector_text::FontDb::global().scan_in_background();
         if let Some(store) = &services.recovery_store {
             session.recovery.set_store(store.clone());
         }
@@ -470,7 +470,7 @@ impl VectorcraftApp {
             views,
             services,
             canvas: CanvasCache {
-                renderer: vectorcraft_render::Renderer::new(),
+                renderer: redrob_vector_render::Renderer::new(),
                 texture: None,
                 key: None,
                 last_ms: 0.0,
@@ -600,13 +600,13 @@ impl VectorcraftApp {
     }
 
     /// The zero point shown by rulers and position fields; command coordinates stay absolute.
-    pub(crate) fn ruler_origin(&self) -> vectorcraft_geom::Point {
-        let origin = self.session.active().map_or(vectorcraft_geom::Point::ZERO, |d| d.doc.ruler_origin);
+    pub(crate) fn ruler_origin(&self) -> redrob_vector_geom::Point {
+        let origin = self.session.active().map_or(redrob_vector_geom::Point::ZERO, |d| d.doc.ruler_origin);
         // An untrusted file cannot make the ruler's tick loop or position fields overflow.
-        if origin.is_finite() && origin.x.abs() <= vectorcraft_engine::MAX_COORD && origin.y.abs() <= vectorcraft_engine::MAX_COORD {
+        if origin.is_finite() && origin.x.abs() <= redrob_vector_engine::MAX_COORD && origin.y.abs() <= redrob_vector_engine::MAX_COORD {
             origin
         } else {
-            vectorcraft_geom::Point::ZERO
+            redrob_vector_geom::Point::ZERO
         }
     }
     pub fn view_mut(&mut self) -> Option<&mut View> {
@@ -631,11 +631,11 @@ impl VectorcraftApp {
     }
 
     /// The canvas on screen in document coordinates (none before it is laid out).
-    pub fn screen_frame(&self) -> Option<vectorcraft_tools::ScreenFrame> {
+    pub fn screen_frame(&self) -> Option<redrob_vector_tools::ScreenFrame> {
         let (rect, view) = (self.canvas_rect?, self.view()?);
         let xf = canvas::Xf::new(rect, view);
         let px = |x: f32, y: f32| xf.delta_to_doc(egui::vec2(x, y));
-        Some(vectorcraft_tools::ScreenFrame {
+        Some(redrob_vector_tools::ScreenFrame {
             origin: xf.to_doc(rect.left_top()),
             right: px(1.0, 0.0),
             down: px(0.0, 1.0),
@@ -667,7 +667,7 @@ impl VectorcraftApp {
         let mut params = params;
         // Paste in place, in front, in back (#693), Select › All on Active Artboard (#1006) and Align to
         // Artboard: onto, on or to the active artboard, the view's. A batch passes it on to those steps.
-        if (vectorcraft_engine::ON_ACTIVE_ARTBOARD.contains(&id) || id == "command.batch")
+        if (redrob_vector_engine::ON_ACTIVE_ARTBOARD.contains(&id) || id == "command.batch")
             && params.get("artboard").is_none()
             && self.view().is_some()
             && let Some(n) = self.session.active().map(|d| d.doc.artboards.len())
@@ -757,7 +757,7 @@ impl VectorcraftApp {
         {
             panels::artboards::select(self, panels::artboards::selected(self, n));
         }
-        if let Some(g) = vectorcraft_tools::catalog::group_of(id)
+        if let Some(g) = redrob_vector_tools::catalog::group_of(id)
             && let Some(slot) = self.ui.group_tool.get_mut(g)
         {
             *slot = id.to_string();
@@ -781,7 +781,7 @@ impl VectorcraftApp {
             // Guarded per request: a panic must not drop the channel (taken out of `self` above).
             let roots = self.automation_roots.clone();
             self.ui.answering_control = true;
-            let answer = file_access::confine(roots.as_ref(), || vectorcraft_engine::guard::catch_panic(|| control::handle(self, ctx, &req)));
+            let answer = file_access::confine(roots.as_ref(), || redrob_vector_engine::guard::catch_panic(|| control::handle(self, ctx, &req)));
             self.ui.answering_control = false;
             let outcome = match answer {
                 Ok(outcome) => outcome,
@@ -879,7 +879,7 @@ impl VectorcraftApp {
     /// Linked files another app changed while their document is open: every two seconds, and as
     /// soon as the window comes back to the front, stamp the active document's linked files on a
     /// worker thread and act on the changed ones as Preferences › File Handling › Update Links
-    /// says ([`vectorcraft_engine::link_watch`]). No look starts while a dialog is open, so an
+    /// says ([`redrob_vector_engine::link_watch`]). No look starts while a dialog is open, so an
     /// Ask When Modified question never goes unseen.
     #[cfg(not(target_arch = "wasm32"))]
     fn tick_link_updates(&mut self, ctx: &egui::Context, now: f64) {
@@ -996,7 +996,7 @@ impl VectorcraftApp {
     /// anchors selected with Direct Selection, the box around them square to the page, which
     /// `object.setBounds` then edits (#1824). The canvas and the transform fields read it every
     /// frame: it is measured once per revision.
-    pub fn selection_box(&mut self) -> Option<vectorcraft_doc::OrientedBox> {
+    pub fn selection_box(&mut self) -> Option<redrob_vector_doc::OrientedBox> {
         let st = self.session.active()?;
         let key = (st.uid, st.revision, self.session.prefs.use_preview_bounds);
         if let Some((k, b)) = self.canvas.selection_box
@@ -1005,7 +1005,7 @@ impl VectorcraftApp {
             return b;
         }
         let b = match st.selection.anchor_bounds(&st.doc, self.session.prefs.use_preview_bounds) {
-            Some(r) => Some(vectorcraft_doc::OrientedBox::aligned(r)),
+            Some(r) => Some(redrob_vector_doc::OrientedBox::aligned(r)),
             None => self.session.transform_box(&st.selection.objects),
         };
         self.canvas.selection_box = Some((key, b));
@@ -1015,7 +1015,7 @@ impl VectorcraftApp {
     /// The selection's visual bounds (stroke and effects included), square to the page: measured
     /// once per revision, as the canvas reads it every frame (a traced photo selects a group of
     /// hundreds of thousands of paths).
-    pub fn selection_bounds(&mut self) -> Option<vectorcraft_geom::Rect> {
+    pub fn selection_bounds(&mut self) -> Option<redrob_vector_geom::Rect> {
         let st = self.session.active()?;
         let key = (st.uid, st.revision);
         if let Some((k, b)) = self.canvas.selection_bounds
@@ -1044,7 +1044,7 @@ impl VectorcraftApp {
     /// one frame and shows an error, instead of closing the app with unsaved work.
     pub fn logic(&mut self, ctx: &egui::Context) {
         let confined = self.synthetic_frame.then(|| self.automation_roots.clone()).flatten();
-        if let Err(msg) = file_access::confine(confined.as_ref(), || vectorcraft_engine::guard::catch_panic(|| self.logic_frame(ctx))) {
+        if let Err(msg) = file_access::confine(confined.as_ref(), || redrob_vector_engine::guard::catch_panic(|| self.logic_frame(ctx))) {
             self.picks.recover();
             self.status(format!("Internal error: {msg} (please report this bug)"));
         }
@@ -1114,7 +1114,7 @@ impl VectorcraftApp {
                 }
             } else {
                 // Quitting with nothing unsaved: no copies to leave behind.
-                vectorcraft_engine::cmd::recovery::forget_all(&mut self.session);
+                redrob_vector_engine::cmd::recovery::forget_all(&mut self.session);
             }
         }
         if let Some(wait) = recovery::frame(self, now) {
@@ -1160,7 +1160,7 @@ impl VectorcraftApp {
         let mut files = vec![];
         for f in dropped {
             let path = Some(f.path().to_string_lossy().to_string()).filter(|s| !s.is_empty());
-            let name = path.as_deref().map_or_else(|| "dropped".into(), vectorcraft_engine::cmd::fileio::file_name);
+            let name = path.as_deref().map_or_else(|| "dropped".into(), redrob_vector_engine::cmd::fileio::file_name);
             // Native file drops usually carry a path. Use the same file reader as File → Open
             // (and File → Place), even if the drop handle can't supply the bytes itself.
             let bytes = if path.is_some() && self.services.read.is_some() { Ok(vec![]) } else { f.bytes() };
@@ -1192,7 +1192,7 @@ impl VectorcraftApp {
         let (tx, rx) = std::sync::mpsc::channel();
         let look = move || {
             // The UI gone meanwhile has nothing to refresh.
-            let _ = tx.send(vectorcraft_text::FontDb::global().installed_fonts_changed());
+            let _ = tx.send(redrob_vector_text::FontDb::global().installed_fonts_changed());
         };
         let spawned =
             if cfg!(target_arch = "wasm32") { None } else { std::thread::Builder::new().name("font-check".into()).spawn(look.clone()).ok() };
@@ -1283,7 +1283,7 @@ impl VectorcraftApp {
     /// Lay out the whole window.
     pub fn ui(&mut self, ui: &mut egui::Ui) {
         let confined = self.synthetic_frame.then(|| self.automation_roots.clone()).flatten();
-        if let Err(msg) = file_access::confine(confined.as_ref(), || vectorcraft_engine::guard::catch_panic(|| self.ui_frame(ui))) {
+        if let Err(msg) = file_access::confine(confined.as_ref(), || redrob_vector_engine::guard::catch_panic(|| self.ui_frame(ui))) {
             self.picks.recover();
             self.status(format!("Internal error: {msg} (please report this bug)"));
         }
