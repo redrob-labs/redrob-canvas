@@ -24,6 +24,7 @@ pub struct Contributor {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
 pub struct Model {
     pub company: &'static str,
     pub model: &'static str,
@@ -291,32 +292,6 @@ fn table(ui: &mut egui::Ui, list: &[&Contributor], v: &mut View) {
             ui.label(day(c.last_commit));
             ui.end_row();
         }
-    });
-}
-
-/// About ▸ Models: AI models credited in Co-Authored-By trailers.
-pub fn models_ui(ui: &mut egui::Ui) {
-    if MODELS.is_empty() {
-        ui.label("No model credits were built into this copy.");
-        return;
-    }
-    let assisted: u64 = MODELS.iter().map(|m| m.commits).max().unwrap_or(0).max(1);
-    egui::ScrollArea::both().auto_shrink([false, false]).show(ui, |ui| {
-        egui::Grid::new("credits_models").striped(true).num_columns(6).show(ui, |ui| {
-            for h in ["Company", "Model", "Version", "Commits", "% of all commits", "Lines +/−"] {
-                ui.label(RichText::new(h).strong());
-            }
-            ui.end_row();
-            for m in MODELS {
-                ui.label(m.company);
-                ui.label(m.model);
-                ui.label(m.version);
-                ui.label(group(m.commits));
-                ui.label(format!("{:.0}%", 100.0 * m.commits as f64 / TOTAL_COMMITS.max(assisted) as f64));
-                ui.label(format!("+{} / −{}", group(m.lines_added), group(m.lines_deleted)));
-                ui.end_row();
-            }
-        });
     });
 }
 
