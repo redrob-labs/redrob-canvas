@@ -61,7 +61,6 @@ fn main() -> eframe::Result {
             other => eprintln!("redrob-canvas: ignoring argument {other:?}"),
         }
     }
-    // TODO(control server): no control / MCP server yet; see `services` for the upstream paths.
     let mut options = native_options();
     // Nothing draws or dispatches indirectly, so wgpu's indirect-call validation only costs a
     // compute shader at start-up that some drivers cannot compile (as the upstream apps found).
@@ -90,6 +89,8 @@ fn main() -> eframe::Result {
             let mut app = ShellApp::new(cc.wgpu_render_state.clone());
             app.setup_context(&cc.egui_ctx);
             app.set_mode(mode);
+            // The Redrob Code daemon's agent drives the window through this (optional).
+            app.start_bridge(&cc.egui_ctx);
             Ok(Box::new(app))
         }),
     )
