@@ -1,0 +1,446 @@
+# Stage 2-B verdicts: Krita 5.3.4.1 (AppImage, pykrita extension batch inside the GUI on DISPLAY=:0)
+# generated 2026-10-16T17:39:21+0000 by tools/build_verdicts.py
+# verdict: works|slow|broken|missing. gui_only=true means the feature exists only in the GUI and was NOT exercised
+# (no scripting entry point); its verdict rests on the feature being present, not on a measured run.
+# ms is the measured operation time for timed tasks (null when not applicable). evidence quotes the measurement.
+app = "krita"
+version = "Krita 5.3.4.1 (AppImage, pykrita extension batch inside the GUI on DISPLAY=:0)"
+# totals: 50 tasks, broken=9, missing=10, slow=3, works=28
+
+[[result]]
+id = "BR-01"
+area = "brush"
+verdict = "works"
+timed = true
+ms = 0
+evidence = "Node.paintPath S-curve with preset 'b) Basic-5 Size' (pressure->size preset), 40px: 54324 non-transparent px; paintPath call returned in 0 ms and the stroke was rendered within the 1 s event-loop settle (async stroke, exact latency not exposed). Scripted path carries no pressure so width variation untested; preset is pressure-mapped by design."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/BR-01-layer.png"
+wall_ms = 4825
+
+[[result]]
+id = "BR-02"
+area = "brush"
+verdict = "works"
+evidence = "Freehand brush tool options expose Brush Smoothing: None/Basic/Weighted (distance, stroke ending, smooth pressure)/Stabilizer (delay, finish line, stabilize sensors) in the GUI; not reachable from the scripting API, so 60%-vs-0% curvature was not measured. Raw zigzag stroke exported as control."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/BR-02-raw.png"
+gui_only = true
+wall_ms = 3188
+
+[[result]]
+id = "BR-03"
+area = "brush"
+verdict = "works"
+evidence = ".abr (1 sampled brush tip) copied to the user brushes folder before launch; brush resources 84->85, new names matching the file: ['gap-sample_1']. Krita imports .abr as brush tips (not full presets), so a preset using the tip must be created by hand; stroke-shape comparison not done."
+output = ""
+wall_ms = 18
+
+[[result]]
+id = "BR-04"
+area = "brush"
+verdict = "works"
+evidence = "Clone brush preset 'v) Clone Tool' exists (Ctrl+click sets source, Aligned/healing options in brush editor); the scripting API cannot set the clone source, so std reduction was not measured."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "BR-05"
+area = "brush"
+verdict = "works"
+evidence = "Color Smudge engine preset 'k) Blender Smear' 50px, 3 back-and-forth passes across red|blue edge: purple (R>80&&B>80) fraction in 40px band = 0.67"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/BR-05.png"
+wall_ms = 2060
+
+[[result]]
+id = "BR-06"
+area = "brush"
+verdict = "works"
+evidence = "Mirror tools (horizontal/vertical mirror toggles with movable axis in the toolbar) and the Multibrush tool (symmetry, mirror, translate, snowflake) exist in the GUI; not scriptable, so mirrored-stroke RMSE not measured."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "SEL-01"
+area = "selection"
+verdict = "works"
+evidence = "Selection.select 1000x600 + feather(30) -> transparency mask on a white layer (Edit>Fill equivalent): alpha across edge (10px steps) = [0.0, 0.01, 0.15, 0.32, 0.51, 0.7, 0.87, 1.0, 1.0], center 1.00, monotonic=True"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/SEL-01-layer.png"
+wall_ms = 42524
+
+[[result]]
+id = "SEL-02"
+area = "selection"
+verdict = "works"
+evidence = "Contiguous Selection tool (Fuzziness, 'Contiguous'/'Select all layers' options) exists in the GUI but has no scripting entry point; the selection here was computed externally (magick floodfill, tolerance 32) and loaded via Selection.setPixelData + invert (RMSE vs reference 0.0000). Tool accuracy itself not measured."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/SEL-02-mask.png"
+gui_only = true
+wall_ms = 1691
+
+[[result]]
+id = "SEL-03"
+area = "selection"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No Quick Selection (brush-grown, edge-aware) tool in Krita 5.3; only Contiguous / Similar Color / Magnetic / Bezier / Freehand selection tools."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "SEL-04"
+area = "selection"
+verdict = "works"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "Similar Color Selection tool (Fuzziness slider, add/subtract modes with Shift/Alt) is the Color Range analogue in the GUI; no scripting entry point and no live dialog preview, so sky IoU and preview latency were not measured."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "SEL-05"
+area = "selection"
+verdict = "works"
+evidence = "Magnetic Selection tool exists (Filter radius, Threshold, Search radius, Anchor gap; Backspace removes last anchor); GUI-only, contour distance not measured."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "SEL-06"
+area = "selection"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No Select and Mask / Refine Edge workspace and no Decontaminate Colors in Krita 5.3 (selection can only be feathered/grown/smoothed)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "TR-01"
+area = "transform"
+verdict = "works"
+evidence = "Node.scaleNode 50% + rotateNode 15deg (Transform tool Free mode in GUI): bounds 613x613, expected 612.4. Undo x2 restores original hash / redo x2 RMSE vs transformed = (True, 0.0)"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/TR-01.png"
+wall_ms = 8665
+
+[[result]]
+id = "TR-02"
+area = "transform"
+verdict = "broken"
+evidence = "Transform tool Warp mode has an editable control-point grid (and Cage mode) but no Arc/Bend presets; Arc 30% must be shaped by hand. GUI-only, not measured."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "TR-03"
+area = "transform"
+verdict = "works"
+evidence = "No Perspective Crop tool; Transform tool Perspective mode (drag 4 corners) followed by Crop reproduces it in the GUI. Not scriptable (no perspective transform API), edge-parallelism not measured."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "TR-04"
+area = "transform"
+verdict = "works"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "Transform tool Liquify mode (Move/Scale/Rotate/Offset/Undo brushes, size/amount/flow/spacing) is the Liquify analogue; GUI-only, jawline displacement and 4k preview latency not measured. No face-aware mode."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "LY-01"
+area = "layer"
+verdict = "works"
+evidence = "paint layer 50% gray, blending 'multiply', opacity 153/255 (60%): max |out-expected| over 10 points = 0.70/255 (deltas [0.2, 0.1, 0.2, 0.1, 0.4, 0.2, 0.2, 0.7, 0.5, 0.3]); Krita blends 8-bit in perceptual space like Photoshop"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/LY-01.png"
+wall_ms = 2660
+
+[[result]]
+id = "LY-02"
+area = "layer"
+verdict = "works"
+evidence = "PSD opened with 12 nodes; top 3 layers moved into a group layer, group opacity 50%, Document.flatten (Merge Visible) -> 1 layer; RMSE grouped vs merged = 0.000/255"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/LY-02-after.png"
+wall_ms = 19224
+
+[[result]]
+id = "LY-03"
+area = "layer"
+verdict = "works"
+evidence = "Layer Styles (PSD fx) exist in Krita (Layer > Layer Style dialog). Via scripting (ASL XML only): Drop Shadow (Dstn 10, blur 15, Opct 75) + Stroke (Sz 3, OutF, white) merged from the PSD's effect layers and applied with setLayerStyleFromAsl -> True; DrSh keys ['DrSh', 'enab', 'Md  ', 'Clr ', 'Rd  ', 'Grn ', 'Bl  ', 'Opct', 'uglg', 'lagl', 'Dstn', 'Ckmt'], FrFX keys ['FrFX', 'enab', 'Styl', 'PntT', 'Md  ', 'Opct', 'Sz  ', 'Clr ', 'Rd  ', 'Grn ', 'Bl  ']; mean gray of the 3px ring outside the cut-out 0.96 (white stroke expected ~1), of the 4-14px ring 0.87 vs 1.00 without the style (shadow should darken it)"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/LY-03.png"
+wall_ms = 15090
+
+[[result]]
+id = "LY-04"
+area = "layer"
+verdict = "works"
+evidence = "Clipping via group + 'Inherit alpha' on the photo above a vector text layer: alpha outside glyph (100,100) = 0.0 before / 0.0 after Node.move(+50,+50); opaque fraction 0.114 -> 0.114"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/LY-04-moved.png"
+wall_ms = 78689
+
+[[result]]
+id = "LY-05"
+area = "layer"
+verdict = "works"
+evidence = "Filter Layer (adjustment layer) 'levels' gamma 1.5 then re-edited via FilterLayer.setFilter to 1.15: mean 0.598->0.698->0.634 (monotonic), base pixels unchanged (hash equal=True). Curves exists as 'perchannel' filter layer too (curve string config)."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/LY-05-edit2.png"
+wall_ms = 44893
+
+[[result]]
+id = "MK-01"
+area = "mask"
+verdict = "works"
+evidence = "Transparency mask from selection (TransparencyMask.setSelection): MAE vs selection 0.000/255; black brush stroke on the mask -> mask value at painted spot 0.000. Mask solo view = 'Show mask' overlay / isolate layer in GUI."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/MK-01-mask2.png"
+wall_ms = 9794
+
+[[result]]
+id = "MK-02"
+area = "mask"
+verdict = "missing"
+evidence = "Krita transparency masks have no non-destructive Density/Feather properties (mask opacity/feather must be painted or filtered destructively; a filter mask on a mask is not supported)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "MK-03"
+area = "mask"
+verdict = "broken"
+evidence = "Krita's Channels docker cannot load a channel as a selection (no Ctrl+click / 'channel to selection'); the 255-Blue mask here was computed externally and loaded with Selection.setPixelData (max |mask-(255-B)| = 0.00/255). Step 1 of the task is unavailable in the UI."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/MK-03-mask.png"
+wall_ms = 55939
+
+[[result]]
+id = "AD-01"
+area = "adjust"
+verdict = "works"
+evidence = "Filter 'levels' blackvalue 20 whitevalue 235 gammavalue 1.10 applied: RMSE vs magick -level 7.84%,92.16% gamma 1.10 = 2.300/255, gamma 1/1.10 = 13.075/255, linear-light gamma 1.10 = 20.452/255; clipped-black fraction 0.0007, clipped-white 0.0005"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/AD-01.png"
+wall_ms = 46336
+
+[[result]]
+id = "AD-02"
+area = "adjust"
+verdict = "works"
+evidence = "Filter 'perchannel' (Curves): probed virtual-channel order {0: (219, 255, 255), 1: (219, 150, 200), 2: (100, 255, 200), 3: (100, 150, 255), 4: (100, 150, 200), 5: (200, 100, 100), 6: (0, 100, 200), 7: (212, 255, 255)} -> RGB index 0, Red index 1; S-curve (64,48),(192,208) on RGB then (128,136) on Red: RMSE src->S-curve 11.9/255, green max change after the red step 0.00/255, red mean change 5.60/255"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/AD-02.png"
+wall_ms = 27914
+
+[[result]]
+id = "AD-03"
+area = "adjust"
+verdict = "broken"
+evidence = "HSV/HSL Adjustment filter is global only (no Reds/Yellows... range selector): hue +40 / sat -20 applied to all pixels; red pixels (n=954808) shifted 0.0 deg, blue pixels (n=1986) shifted 54.1 deg (should be <=2). Per-range edit is unavailable."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/AD-03.png"
+wall_ms = 3761
+
+[[result]]
+id = "AD-04"
+area = "adjust"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No Shadows/Highlights filter in Krita 5.3 (filter list: levels, perchannel, hsvadjustment, colorbalance, asc-cdl, autocontrast...)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "AD-05"
+area = "adjust"
+verdict = "broken"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "Opening photo/raw-sample.dng crashed Krita (SIGSEGV in the headless kritarunner probe, see run.log); the bundled raw import has no Camera Raw style develop panel (temperature/exposure/dehaze). Not retried inside the batch to protect the other tasks."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "FL-01"
+area = "filter"
+verdict = "slow"
+timed = true
+ms = 26945
+evidence = "Filter 'gaussian blur' radius 20 on 8900x6675: 26945 ms; closest magick gaussian sigma 6.67 gives RMSE 0.693/255 (Krita radius != PS radius; kernel shape differs)"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/FL-01.png"
+wall_ms = 121240
+
+[[result]]
+id = "FL-02"
+area = "filter"
+verdict = "broken"
+evidence = "Filter 'unsharp' (scripting config halfSize/amount/threshold): threshold=3 amount=0.8 halfSize=1.5 -> Sobel-edge std -27.5%, RMSE vs src 1.64/255, flat patch max change 6.0/255; threshold=0 amount=0.8 halfSize=1.5 -> Sobel-edge std -27.4%, RMSE vs src 1.68/255, flat patch max change 6.0/255; threshold=0 amount=2.0 halfSize=2 -> Sobel-edge std -34.6%, RMSE vs src 2.01/255, flat patch max change 7.0/255; threshold=sharpen-filter amount=- halfSize=- -> Sobel-edge std +73.2%, RMSE vs src 5.58/255, flat patch max change 0.0/255. Edge energy is measured against the source re-encoded by Krita."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/FL-02-t3-a0.8.png"
+wall_ms = 92825
+
+[[result]]
+id = "FL-03"
+area = "filter"
+verdict = "works"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "Smart Patch tool (content-aware heal: paint over the object, patch synthesised from surroundings; Accuracy/Patch radius options) exists in the GUI; it is a brush-style tool, not a selection-based Content-Aware Fill with 'Output to new layer'. Not scriptable, fill statistics not measured."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "FL-04"
+area = "filter"
+verdict = "missing"
+evidence = "No Lens Correction filter in Krita 5.3 (no geometric-distortion or vignette correction, no lens profiles); the DNG also crashes on open (AD-05)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "FL-05"
+area = "filter"
+verdict = "works"
+evidence = "Filter Mask (non-destructive, re-editable) 'gaussianhighpass' blurAmount 3 -> 6: Laplacian std 0.0436->0.0648; source pixels unchanged (hash equal=True). No Smart Object concept needed."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/FL-05-r6.png"
+wall_ms = 37027
+
+[[result]]
+id = "TX-01"
+area = "text"
+verdict = "works"
+evidence = "Vector text shape (addShapesFromSvg <text>, DejaVu Sans Bold 72px; Pretendard not installed) stays editable text (shape types ['KoSvgTextShapeID']); mean opaque glyph color rgb(255,59,48) (max delta 0); glyph bbox 598x56++57++415"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/TX-01.png"
+wall_ms = 4517
+
+[[result]]
+id = "TX-02"
+area = "text"
+verdict = "broken"
+evidence = "SVG text with inline-size:800 (wrapping), text-align:justify, line-height 1.4 via vector layer: shape bbox 235.89562499998118x116.29265624999066 (shape units), wrapped lines rendered; rightmost ink column at 788px of the 800px box (justified lines should reach 800±2; shorter = justify not applied to wrapped lines). Krita 5.3 text tool supports wrapping/alignment but has no hyphenation; justify-all (last line) not available."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/TX-02.png"
+wall_ms = 32707
+
+[[result]]
+id = "TX-03"
+area = "text"
+verdict = "works"
+evidence = "Text on path (SVG textPath on a quadratic arc) in a vector layer, editable text shape (['KoSvgTextShapeID']): glyph top at centre column vs left column differs by 110px (>= 0.4*90px glyph height required). This is text-on-path, not a Warp Text Arc/Bend dialog."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/TX-03.png"
+wall_ms = 3864
+
+[[result]]
+id = "PS-01"
+area = "psd"
+verdict = "broken"
+evidence = "PSD opened: 12 nodes [('paintlayer', 'Background', 'normal'), ('vectorlayer', 'Bevel', 'normal'), ('vectorlayer', 'Emboss', 'normal'), ('vectorlayer', 'Outer Glow', 'normal'), ('vectorlayer', 'Inner Glow', 'normal'), ('vectorlayer', 'Inner Shadow', 'normal'), ('vectorlayer', 'Color Fill', 'normal'), ('vectorlayer', 'Drop Shadow', 'normal'), ('vectorlayer', 'Gradient Overlay', 'normal'), ('vectorlayer', 'Pattern Overlay', 'normal'), ('vectorlayer', 'Stroke', 'normal'), ('vectorlayer', 'Satin', 'normal')]; layers with layer styles (ASL) = ['Background', 'Bevel', 'Emboss', 'Outer Glow', 'Inner Glow', 'Inner Shadow', 'Color Fill', 'Drop Shadow', 'Gradient Overlay', 'Pattern Overlay', 'Stroke', 'Satin']; export vs embedded merged preview (GIMP file-psd-load-merged export) RMSE = 19.322/255"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/PS-01.png"
+wall_ms = 11758
+
+[[result]]
+id = "PS-02"
+area = "psd"
+verdict = "missing"
+evidence = "Smart objects open as raster paint layers (2 nodes: [('paintlayer', 'picture'), ('paintlayer', 'kitty')]); no Edit Contents / embedded document round-trip in Krita."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/PS-02.png"
+wall_ms = 1850
+
+[[result]]
+id = "PS-03"
+area = "psd"
+verdict = "broken"
+evidence = "adjustment-layers.psd: 36 nodes, imported as ['paintlayer', 'transparencymask', 'vectorlayer']; adjustment layers become empty paint layers + transparency masks (0 filter/fill layers recovered), so they are not editable; composite vs merged preview RMSE = 40.410/255"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/PS-03.png"
+wall_ms = 2081
+
+[[result]]
+id = "PS-04"
+area = "psd"
+verdict = "works"
+evidence = "text-layers.psd: 2 nodes types ['vectorlayer']; editable (vector/text) layers = 2; raster render vs merged preview RMSE 15.160/255. PSD TySh imports as raster, no missing-font dialog."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/PS-04.png"
+wall_ms = 1870
+
+[[result]]
+id = "PS-05"
+area = "psd"
+verdict = "slow"
+timed = true
+ms = 23966
+ms_open = 18980
+ms_save = 4986
+evidence = "large-8k.psd (289 MB): open 18980 ms, saveAs psd 4986 ms (ok=True), re-open: nodes 5->5, type/name/mode identical=True, composite RMSE 0.000/255"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/PS-05-resaved.psd"
+wall_ms = 56202
+
+[[result]]
+id = "EX-01"
+area = "export"
+verdict = "works"
+evidence = "exportImage jpg quality 80 saveProfile: 5760 3840 srgb  3.0 JPEG, icc='sRGB IEC61966-2.1', PSNR vs source 42.7 dB"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/EX-01.jpg"
+wall_ms = 8852
+
+[[result]]
+id = "EX-02"
+area = "export"
+verdict = "works"
+evidence = "background removed via transparency mask (external contiguous mask, see SEL-02) + scaleImage 50% + exportImage webp: 500 500 srgba 4.0 WEBP, corner alpha 0.0"
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/EX-02.webp"
+wall_ms = 5451
+
+[[result]]
+id = "EX-03"
+area = "export"
+verdict = "slow"
+timed = true
+ms = 12267
+evidence = "2-layer (multiply 60%) 8900x6675 PNG exportImage: 12267 ms, 8900 6675 srgba 4.0 PNGidentify: invalid profile length `/home/ubuntu/workplace/canvas-gap/results/krita/out/EX-03.png' @ warning/png.c/MagickPNGWarningHandler/1531."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/EX-03.png"
+wall_ms = 31092
+
+[[result]]
+id = "VC-01"
+area = "vector"
+verdict = "broken"
+evidence = "SVG opened as vector layer: 0 shapes (0 KoPathShape) vs 3053 <path> in source; one whole path shape moved +20px via Shape.setPosition (single-anchor editing exists only in the GUI Edit Shapes tool); VectorLayer.toSvg wrote 0 <path>. Anchor-only diff not verifiable from script."
+output = "/home/ubuntu/workplace/canvas-gap/results/krita/out/VC-01.svg"
+gui_only = true
+wall_ms = 1571
+
+[[result]]
+id = "VC-02"
+area = "vector"
+verdict = "missing"
+evidence = "No Pathfinder / boolean path operations (Unite, Minus, Intersect) in Krita 5.3's vector tools."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "LO-01"
+area = "layout"
+verdict = "missing"
+evidence = "No IDML import and no page-layout mode; PDF import (poppler) hung without a view in the headless probe and only rasterises pages; no PDF/X export."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "AI-01"
+area = "ai"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No Select Subject / Remove Background in Krita 5.3 (no ML-based selection)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "AI-02"
+area = "ai"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No Generative Fill / prompt-based inpainting in Krita 5.3 (third-party AI plug-ins not installed)."
+output = ""
+wall_ms = 0

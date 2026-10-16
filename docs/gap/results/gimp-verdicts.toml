@@ -1,0 +1,440 @@
+# Stage 2-B verdicts: GIMP 3.2.6 (AppImage, python-fu-eval batch, one process per task)
+# generated 2026-10-16T17:39:21+0000 by tools/build_verdicts.py
+# verdict: works|slow|broken|missing. gui_only=true means the feature exists only in the GUI and was NOT exercised
+# (no scripting entry point); its verdict rests on the feature being present, not on a measured run.
+# ms is the measured operation time for timed tasks (null when not applicable). evidence quotes the measurement.
+app = "gimp"
+version = "GIMP 3.2.6 (AppImage, python-fu-eval batch, one process per task)"
+# totals: 50 tasks, broken=10, missing=12, slow=1, works=27
+
+[[result]]
+id = "BR-01"
+area = "brush"
+verdict = "works"
+timed = true
+ms = 23
+evidence = "S stroke painted 56027 non-transparent px in 23 ms via gimp-paintbrush-default (Hardness 050, 40px). Pressure: 18 paint-dynamics presets incl 'Pressure Size'=True; PDB strokes carry no pressure so width response untested."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/BR-01-layer.png"
+wall_ms = 3314
+
+[[result]]
+id = "BR-02"
+area = "brush"
+verdict = "works"
+evidence = "GIMP paint tool options expose 'Smooth stroke' (Quality 1-100, Weight 0-100) in the GUI; not reachable from the PDB, so the 60% vs 0% curvature comparison was not measured. Raw zigzag stroke exported as control."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/BR-02-raw.png"
+gui_only = true
+wall_ms = 2725
+
+[[result]]
+id = "BR-03"
+area = "brush"
+verdict = "broken"
+evidence = ".abr (v6, 3 'samp' sampled tip(s)) copied to brushes dir; brushes 59->59 after refresh; new: []. GIMP loads .abr as brush tips, not full presets (the 'simple' fixture with computed-only brushes was rejected: 'Unable to decode abr format version 6'); no brush added"
+output = ""
+wall_ms = 76
+
+[[result]]
+id = "BR-04"
+area = "brush"
+verdict = "works"
+evidence = "gimp-clone IMAGE mode with src offset (= Alt+click source), Hardness 050 60px, 3 short strokes over the most textured 64x64 face patch at (2608,1608) from smooth source (2608,1864): patch std 0.3386->0.0046 (99% reduction)."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/BR-04.png"
+wall_ms = 75443
+
+[[result]]
+id = "BR-05"
+area = "brush"
+verdict = "works"
+evidence = "gimp-smudge pressure 70, 50px, 3 passes across red|blue edge; purple (R>80&&B>80) fraction in 40px band = 1.00"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/BR-05.png"
+wall_ms = 536
+
+[[result]]
+id = "BR-06"
+area = "brush"
+verdict = "works"
+evidence = "Symmetry Painting dock (Mirror horizontal/vertical/diagonal with movable axis, Tiling, Mandala) exists in the GUI; not exposed to the PDB so mirrored-stroke RMSE was not measured."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "SEL-01"
+area = "selection"
+verdict = "works"
+evidence = "select_rectangle 1000x600 + Selection.feather(30) + fill white on new layer: alpha across edge (10px steps) = [0.0, 0.0, 0.02, 0.14, 0.52, 0.88, 0.98, 1.0, 1.0], center alpha 1.00, monotonic=True"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/SEL-01-layer.png"
+wall_ms = 12371
+
+[[result]]
+id = "SEL-02"
+area = "selection"
+verdict = "works"
+evidence = "select_contiguous_color threshold 32 at (5,5) + invert; IoU vs magick floodfill(fuzz 12.5%) reference = 1.000; interior unselected islands (>=4px) = 0"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/SEL-02-mask.png"
+wall_ms = 1487
+
+[[result]]
+id = "SEL-03"
+area = "selection"
+verdict = "missing"
+timed = true
+ms = 533
+evidence = "No Quick Selection (brush-grown, edge-aware) tool in GIMP 3.2; closest is Foreground Select (matting-levin) via Drawable.foreground_extract with a rectangle trimap: 533 ms on 4k, mask coverage 0.00. No GT mask in corpus so IoU not computed; Alt-drag subtract is GUI-only."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/SEL-03-mask.png"
+wall_ms = 2480
+
+[[result]]
+id = "SEL-04"
+area = "selection"
+verdict = "works"
+timed = true
+ms = 599
+evidence = "Select by Color (select_color, threshold 60/255 = Fuzziness) + 2 add-samples on 8k: 599 ms; top-20% band selected 0.82, bottom-20% band 0.02. No GT sky mask; dialog preview latency is GUI-only."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/SEL-04-mask.png"
+wall_ms = 7804
+
+[[result]]
+id = "SEL-05"
+area = "selection"
+verdict = "works"
+evidence = "Intelligent Scissors tool (magnetic lasso analogue) exists: click anchors along edge, close at start, Backspace removes last node; no Width/Contrast/Frequency parameters and no PDB access, so contour distance was not measured."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "SEL-06"
+area = "selection"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No Select and Mask / Refine Edge workspace in GIMP 3.2; Foreground Select offers Levin matting and a preview mask but no refine-edge brush and no Decontaminate Colors."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "TR-01"
+area = "transform"
+verdict = "works"
+evidence = "transform_scale to 50% + transform_rotate 15deg (Unified Transform in GUI): layer bbox 614x614, expected 612.4px for a rotated 500px square. Undo/Redo is GUI-only (not in PDB), hash check skipped."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/TR-01.png"
+wall_ms = 3518
+
+[[result]]
+id = "TR-02"
+area = "transform"
+verdict = "broken"
+evidence = "Warp Transform tool exists (brush-based move/grow/shrink/swirl) but has no Arc/Bend presets and no editable control-point mesh; PDB 'plug-in-warp' is a displacement-map filter. Arc 30% + custom mesh drag cannot be reproduced."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "TR-03"
+area = "transform"
+verdict = "works"
+evidence = "No Perspective Crop tool; Perspective tool in Corrective (Backward) direction + Image>Crop reproduces it: 4 corners mapped to axis-aligned bounds (transform_perspective BACKWARD), result 1000 1000 srgb  3.0 PNG. Edge-parallelism vs GT not measured (product-1k has no straight-edged box)."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/TR-03.png"
+wall_ms = 12192
+
+[[result]]
+id = "TR-04"
+area = "transform"
+verdict = "works"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "Warp Transform tool (Move pixels, size/hardness/strength, live preview) is the Liquify Forward Warp analogue; GUI-only (no PDB/GEGL op), so jawline displacement and 4k preview latency were not measured. No Face-Aware mode."
+output = ""
+gui_only = true
+wall_ms = 0
+
+[[result]]
+id = "LY-01"
+area = "layer"
+verdict = "works"
+evidence = "new layer 50% gray, Multiply, opacity 60, flatten+export: max |out-expected| over 10 points = 1.55/255 (expected base*0.4+base*0.5*0.6, evaluated in GIMP 3 default linear blend space or perceptual, nearer one; perceptual-only deltas [13.2, 12.9, 4.2, 13.1, 13.4, 12.8, 12.8, 13.7, 3.5, 3.3])"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/LY-01.png"
+wall_ms = 4223
+
+[[result]]
+id = "LY-02"
+area = "layer"
+verdict = "works"
+evidence = "PSD opened with 12 items; 3 top layers moved into a GroupLayer, group opacity 50%, merge_visible_layers -> 1 layer; RMSE grouped-composite vs merged = 0.003/255"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/LY-02-after.png"
+wall_ms = 3222
+
+[[result]]
+id = "LY-03"
+area = "layer"
+verdict = "works"
+evidence = "Layer effects are non-destructive GEGL filters in GIMP 3 (fx icon): Drop Shadow = gegl:dropshadow (x/y 7, radius 15, opacity .75) appended; Stroke has no effect op -> Alpha to Selection > Grow 3px > fill white on a layer below. Composite differs from cut-out by RMSE 5.7/255."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/LY-03.png"
+wall_ms = 1525
+
+[[result]]
+id = "LY-04"
+area = "layer"
+verdict = "missing"
+evidence = "GIMP 3.2 has no clipping masks (no Layer > Create Clipping Mask, no PDB clip procedure). Workaround: Alpha to Selection on the text layer -> layer mask on the photo, which does not follow a later Move."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "LY-05"
+area = "layer"
+verdict = "works"
+evidence = "Non-destructive layer effect (DrawableFilter appended, re-edited via get_config/update): gimp:curves config props ['channel', 'curve', 'trc'] have no PDB-settable curve, so gimp:levels gamma 1.5 -> 1.15 used as the re-editable adjustment; mean 0.703->0.636 (monotonic), underlying pixels unchanged (hash equal=True), filters on layer=1. Adjustment *layers* (affecting layers below) do not exist."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/LY-05-edit2.png"
+wall_ms = 172109
+
+[[result]]
+id = "MK-01"
+area = "mask"
+verdict = "works"
+evidence = "Layer mask from selection (AddMaskType.SELECTION): MAE vs selection = 0.000/255; black brush on mask -> painted area mask value 0.000; show-mask toggle = Layer.set_show_mask"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/MK-01-mask2.png"
+wall_ms = 4349
+
+[[result]]
+id = "MK-02"
+area = "mask"
+verdict = "missing"
+evidence = "GIMP layer masks have no non-destructive Density/Feather properties (a mask is a plain channel; opacity/feather must be painted or filtered destructively)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "MK-03"
+area = "mask"
+verdict = "broken"
+evidence = "Channel.new_from_component(BLUE) -> select_item -> invert -> layer mask: vs 255-B (encoded sRGB) max 76.00/255 MAE 30.502/255; vs 1-B_linear re-encoded: max 43.00/255 MAE 11.156/255 (GIMP 3 extracts components in linear light)"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/MK-03-mask.png"
+wall_ms = 63845
+
+[[result]]
+id = "AD-01"
+area = "adjust"
+verdict = "broken"
+evidence = "Drawable.levels(VALUE, in 20..235, gamma 1.10): RMSE vs magick -level 7.84%,92.16%,1.10 = 21.396/255; clipped-black fraction 0.1139, clipped-white 0.0000"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/AD-01.png"
+wall_ms = 41187
+
+[[result]]
+id = "AD-02"
+area = "adjust"
+verdict = "works"
+evidence = "curves_spline VALUE pts (64,48),(192,208) then RED (128,136): green channel max change after the red step 0.00/255, red mean change 5.72/255; overall gray mean shift +6.4/255. Spline-vs-reference RMSE not computed."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/AD-02.png"
+wall_ms = 64310
+
+[[result]]
+id = "AD-03"
+area = "adjust"
+verdict = "works"
+evidence = "hue_saturation(RED, hue +40, sat -20): product-1k is a grey shoe (saturated red pixels are rare; whole-image RMSE 0.01/255), so a red|blue swatch was also processed: red swatch hue 0->39.9 deg (+39.9), blue swatch hue 240->240.0 (0.0 deg change)"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/AD-03.png"
+wall_ms = 4022
+
+[[result]]
+id = "AD-04"
+area = "adjust"
+verdict = "works"
+timed = true
+ms = 1833
+evidence = "Drawable.shadows_highlights(shadows +50, highlights -30) on 8900x6675: 1833 ms (GEGL op, excluding export). Dark-bucket mean 0.0447->0.0451, bright-bucket mean 0.1704->0.0585 (bucket means, not 10th-percentile L)."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/AD-04.png"
+wall_ms = 53003
+
+[[result]]
+id = "AD-05"
+area = "adjust"
+verdict = "missing"
+timed = true
+ms = 51
+evidence = "DNG open failed after 51 ms: GIMP delegates raw to darktable/RawTherapee/ART (file-raw-placeholder-dng-load) and none is installed; no built-in Camera Raw style develop (temperature/exposure/dehaze). Error: Argument 1 does not allow None as a value"
+output = ""
+wall_ms = 51
+
+[[result]]
+id = "FL-01"
+area = "filter"
+verdict = "works"
+timed = true
+ms = 1517
+evidence = "gegl:gaussian-blur std-dev 6.67 (PS radius 20px) merged on 8900x6675: 1517 ms; RMSE vs magick gaussian sigma 6.67 in sRGB space 3.546/255, in linear light 0.837/255 (GEGL blurs linear)"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/FL-01.png"
+wall_ms = 168531
+
+[[result]]
+id = "FL-02"
+area = "filter"
+verdict = "works"
+evidence = "gegl:unsharp-mask std-dev 1.5 scale 0.8 threshold 3/255: global Sobel-edge std +64.4% (edge-local +30% criterion approximated globally), flat corner patch max change 7.0/255"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/FL-02.png"
+wall_ms = 24270
+
+[[result]]
+id = "FL-03"
+area = "filter"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No Content-Aware Fill in GIMP 3.2 core (Resynthesizer 'Heal Selection' is a third-party plug-in, not installed; the GEGL operation list has no inpaint op)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "FL-04"
+area = "filter"
+verdict = "broken"
+evidence = "Filters > Distorts > Lens Distortion (gegl:lens-distortion: main/edge/zoom/shift/brighten) is manual only; no EXIF lens-profile auto correction (no lensfun) and no auto vignette. The Auto Correction step cannot be performed."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "FL-05"
+area = "filter"
+verdict = "works"
+evidence = "Non-destructive layer effect (GIMP 3 Smart-Filter analogue, no smart object needed): gegl:high-pass std-dev 3 re-edited to 6; Laplacian std 0.0350->0.0361; source pixels unchanged (hash equal=True). Smart Object conversion is not a GIMP concept."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/FL-05-r6.png"
+wall_ms = 220972
+
+[[result]]
+id = "TX-01"
+area = "text"
+verdict = "works"
+evidence = "TextLayer.new 'Redrob Canvas' Sans-serif Bold 72pt (Pretendard not installed), set_color #FF3B30; layer stays editable text (is_text_layer=True); mean opaque glyph color rgb(255,59,48) (max delta 0); glyph bbox 599x56++57++412 at 72.0 dpi (72pt = 72px em; bbox height incl. ascenders); cap-height not isolated"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/TX-01.png"
+wall_ms = 3506
+
+[[result]]
+id = "TX-02"
+area = "text"
+verdict = "broken"
+evidence = "Paragraph box via TextLayer.resize(800x400) + justification FILL + line spacing; layer 800x400 (box fixed, overflow is clipped without an indicator). GIMP has no hyphenation and no 'Justify All' (last line) option, so the task's third step is not available."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/TX-02.png"
+wall_ms = 2427
+
+[[result]]
+id = "TX-03"
+area = "text"
+verdict = "missing"
+evidence = "No Warp Text (Arc/Bend) in GIMP; Text along Path exists but produces a path stroke/raster and loses text editability."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "PS-01"
+area = "psd"
+verdict = "broken"
+evidence = "PSD opened: 12 items [('Satin', 'normal'), ('Stroke', 'normal'), ('Pattern Overlay', 'normal'), ('Gradient Overlay', 'normal'), ('Drop Shadow', 'normal'), ('Color Fill', 'normal'), ('Inner Shadow', 'normal'), ('Inner Glow', 'normal'), ('Outer Glow', 'normal'), ('Emboss', 'normal'), ('Bevel', 'normal'), ('Background', 'normal')]; layers carrying effects (filters) = ['Drop Shadow', 'Color Fill', 'Inner Shadow', 'Outer Glow', 'Background']; export vs embedded merged preview RMSE = 27.440/255; psd-tools reference: "
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/PS-01.png"
+wall_ms = 2785
+
+[[result]]
+id = "PS-02"
+area = "psd"
+verdict = "missing"
+evidence = "Smart objects open as flattened raster layers in GIMP (2 items: ['kitty', 'picture'], link layers: 0); no Edit Contents / embedded document round-trip."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/PS-02.png"
+wall_ms = 1122
+
+[[result]]
+id = "PS-03"
+area = "psd"
+verdict = "broken"
+evidence = "adjustment-layers.psd: 20 items; non-destructive filters recovered on layers: 0 {}; composite vs merged preview RMSE = 111.081/255. Adjustment layers are not an editable type in GIMP (imported as raster/empty layers)."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/PS-03.png"
+wall_ms = 1896
+
+[[result]]
+id = "PS-04"
+area = "psd"
+verdict = "broken"
+evidence = "text-layers.psd: 2 layers, editable text layers = 0 []; raster render vs merged preview RMSE 252.719/255. GIMP imports PSD TySh as raster (no missing-font dialog)."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/PS-04.png"
+wall_ms = 1316
+
+[[result]]
+id = "PS-05"
+area = "psd"
+verdict = "works"
+timed = true
+ms = 19080
+ms_open = 2704
+ms_save = 16376
+evidence = "large-8k.psd (289 MB): open 2704 ms, save 16376 ms, re-open: layers 5->5, name/mode/mask identical=True, composite RMSE 0.000/255"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/PS-05-resaved.psd"
+wall_ms = 78854
+
+[[result]]
+id = "EX-01"
+area = "export"
+verdict = "works"
+evidence = "file-jpeg-export quality .80 include-color-profile: 5760 3840 srgb  3.0 JPEG, icc='sRGB IEC61966-2.1', PSNR vs source 43.0 dB"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/EX-01.jpg"
+wall_ms = 3819
+
+[[result]]
+id = "EX-02"
+area = "export"
+verdict = "works"
+evidence = "background cleared via contiguous select + Image.scale 50% + file-webp-export: 500 500 srgba 4.0 WEBP, corner alpha 0.0"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/EX-02.webp"
+wall_ms = 3284
+
+[[result]]
+id = "EX-03"
+area = "export"
+verdict = "slow"
+timed = true
+ms = 107824
+evidence = "2-layer (Multiply 60%) 8900x6675 PNG export via file_save (auto-merge): 107824 ms, 8900 6675 srgba 4.0 PNG"
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/EX-03.png"
+wall_ms = 111068
+
+[[result]]
+id = "VC-01"
+area = "vector"
+verdict = "broken"
+evidence = "svg/icons.svg: Vector image loading plug-in failed: dimensions could neither be extracted nor computed from the vector image's data. ; svg/text-paths.svg imported (rasterised layer + 6 path objects / 6 strokes vs 3 <path> in source); one stroke translated 20px via Path.stroke_translate; file-svg-export status success, output <path> count 0. Paths lose fill/stroke styling and the export embeds the raster, so it is not a vector round trip."
+output = "/home/ubuntu/workplace/canvas-gap/results/gimp/out/VC-01.svg"
+wall_ms = 716
+
+[[result]]
+id = "VC-02"
+area = "vector"
+verdict = "missing"
+evidence = "No Pathfinder/boolean path operations in GIMP (paths are outlines only; Unite/Minus/Intersect absent)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "LO-01"
+area = "layout"
+verdict = "missing"
+evidence = "No IDML import and no layout mode; PDF imports as a raster page (3508 4961 srgb  3.0 PNG); File > Export As PDF exists but has no PDF/X-4 output intent and no editable text frames."
+output = ""
+wall_ms = 5901
+
+[[result]]
+id = "AI-01"
+area = "ai"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No one-click Select Subject / Remove Background in GIMP 3.2 (Foreground Select needs a hand-painted trimap; see SEL-03)."
+output = ""
+wall_ms = 0
+
+[[result]]
+id = "AI-02"
+area = "ai"
+verdict = "missing"
+timed = true
+ms = -1  # timed task, operation not measurable (feature missing or GUI-only)
+evidence = "No Generative Fill / prompt-based inpainting in GIMP 3.2 core (third-party GIMP-ML / Stable Diffusion plug-ins not installed)."
+output = ""
+wall_ms = 0
