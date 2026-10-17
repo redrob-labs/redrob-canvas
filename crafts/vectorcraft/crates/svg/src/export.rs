@@ -1594,12 +1594,12 @@ impl Writer<'_> {
         let region = bounds.map(|b| self.xf.transform_rect_bbox(b).inflate(reach, reach));
         let mut opened = 0;
         for f in fx.iter().rev() {
-            if matches!(f, RasterFx::Pixel(_)) {
+            if matches!(f, RasterFx::Pixel(p) if !matches!(p, redrob_vector_effects::PixelFx::ColorMatrix { .. })) {
                 self.warn("SVG has no pixel effects such as Radial Blur, Smart Blur or Unsharp Mask: they are left out");
                 continue;
             }
             let fid = self.fresh_id("filter");
-            let region_attr = match region {
+            let mut region_attr = match region {
                 Some(r) => format!(
                     " filterUnits=\"userSpaceOnUse\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
                     self.num(r.x0),
@@ -1646,7 +1646,25 @@ impl Writer<'_> {
                     sd(*radius)
                 ),
                 RasterFx::GaussianBlur { radius } => format!("<feGaussianBlur in=\"SourceGraphic\" stdDeviation=\"{}\"/>", sd(*radius)),
+                RasterFx::Pixel(redrob_vector_effects::PixelFx::ColorMatrix { matrix }) => format!(
+                    "<feColorMatrix in=\"SourceGraphic\" type=\"matrix\" values=\"{}\"/>",
+                    matrix.iter().map(|v| fmt_num(f64::from(*v), 4)).collect::<Vec<_>>().join(" ")
+                ),
                 RasterFx::Pixel(_) => continue,
+                RasterFx::Graph(g) => {
+                    // The graph's own region replaces the one around every raster effect; lights
+                    // sit against the object's top-left corner.
+                    let b = bounds.map(|b| self.xf.transform_rect_bbox(b)).unwrap_or_default();
+                    let r = g.region_rect(b);
+                    region_attr = format!(
+                        " filterUnits=\"userSpaceOnUse\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
+                        self.num(r.x0),
+                        self.num(r.y0),
+                        self.num(r.width()),
+                        self.num(r.height())
+                    );
+                    crate::filter_graph::graph_markup(g, (b.x0, b.y0))
+                }
             };
             // Filters composite normally: a shadow's or glow's other blend mode is recorded for import.
             let mode = match f {

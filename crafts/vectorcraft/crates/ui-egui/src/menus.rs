@@ -2664,6 +2664,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 panel("Color Themes", "colorThemes"),
                 panel("CSS Properties", crate::panels::css_properties::ID),
                 panel("Document Info", "docInfo"),
+                panel("Filter Editor", crate::panels::filter_editor::ID),
                 panel("Flattener Preview", crate::panels::flattener_preview::ID),
                 panel("Gradient", "gradient"),
                 panel("Graphic Styles", "graphicStyles"),
@@ -3516,7 +3517,7 @@ fn effect_menu() -> Vec<Item> {
     // The effects whose catalogue menu path is `path`.
     let items_at = |path: &[&str]| -> Vec<Item> {
         cat.iter()
-            .filter(|e| e.menu == path)
+            .filter(|e| e.menu == path && e.id != redrob_vector_effects::FILTER_GRAPH)
             .map(|e| match e.defaults.as_object().is_some_and(|o| o.is_empty()) {
                 // No options (Effect → Pathfinder): apply directly, like Illustrator.
                 true => Item::Cmd(e.label, "effect.apply", json!({ "effect": e.id })),
@@ -3539,6 +3540,11 @@ fn effect_menu() -> Vec<Item> {
             out.push(sub(sub_name, placeholder));
         } else {
             let mut items = items;
+            if sub_name == "SVG Filters" {
+                // The filter graph is built in its panel.
+                items.push(Item::Cmd("Filter Graph", "effect.apply", json!({ "effect": redrob_vector_effects::FILTER_GRAPH, "item": null })));
+                items.push(cp("Filter Editor", "window.panel", json!({ "panel": crate::panels::filter_editor::ID })));
+            }
             if sub_name == "3D and Materials" {
                 // In the panel's order of 3D types, then Materials (not built yet).
                 let rank = |label: &str| ["Extrude & Bevel…", "Revolve…", "Inflate…", "Rotate…"].iter().position(|l| *l == label).unwrap_or(9);

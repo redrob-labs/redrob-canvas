@@ -46,6 +46,7 @@ mod revolve;
 mod solids;
 pub mod stroke;
 mod stylize;
+pub mod svgfilter;
 mod util;
 mod warp;
 
@@ -75,6 +76,7 @@ pub use solids::{
     EXTRUDE, INFLATE, ROTATE, ROTATION_PRESETS, SOLIDS, extrude_options, has_solid, inflate_options, is_three_d, solid_art, validate_solid,
     view_options,
 };
+pub use svgfilter::{FILTER_GRAPH, FilterGraph};
 pub use warp::{WarpStyle, warp_point};
 
 /// Catalogue entry for one effect.
@@ -171,6 +173,10 @@ const VIDEO: &[&str] = &["Effect", "Video"];
 const PATHFINDER: &[&str] = &["Effect", "Pathfinder"];
 const PLUGINS: &[&str] = &["Effect", "Plug-ins"];
 const ADJUST: &[&str] = &["Effect", "Color Adjustments"];
+const SVG_FILTERS: &[&str] = &["Effect", "SVG Filters"];
+
+/// The colour matrix primitive as an effect of its own (Effect › SVG Filters › Color Matrix…).
+pub const COLOR_MATRIX: &str = "filter.colorMatrix";
 
 /// The warp styles in Illustrator's Style menu order: (id suffix, label).
 pub const WARP_STYLES: [(&str, &str); 15] = [
@@ -525,6 +531,20 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
         ),
     ];
     v.extend([
+        r(
+            COLOR_MATRIX,
+            "Color Matrix…",
+            SVG_FILTERS,
+            "{type: \"matrix\"|\"saturate\"|\"hueRotate\"|\"luminanceToAlpha\" (\"saturate\"), values: \"n n …\" (matrix: the 20 numbers of a 5 × 4 matrix over R, G, B, A, 1, row by row, \"1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0\"), amount: number (saturate: 0..1+, 1 keeps the colours (0.5); hueRotate: degrees)} recolours the object's composite as SVG's feColorMatrix does",
+            json!({"type": "saturate", "values": "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0", "amount": 0.5}),
+        ),
+        r(
+            FILTER_GRAPH,
+            "Filter Graph",
+            SVG_FILTERS,
+            "{region: [x, y, w, h] (fractions of the object's bounds; [-0.1, -0.1, 1.2, 1.2]), primitives: [{type: gaussianBlur|offset|flood|merge|composite|colorMatrix|componentTransfer|convolveMatrix|morphology|turbulence|displacementMap|diffuseLighting|specularLighting|blend|dropShadow|tile, result?: name, in?: \"\" (the previous result)|SourceGraphic|SourceAlpha|a result name, in2?, inputs? (merge), …the SVG attributes, camel-cased, lengths in pt}]} an SVG filter graph on the object's composite, edited in the Filter Editor panel and written to SVG as a <filter>",
+            json!({"region": [-0.1, -0.1, 1.2, 1.2], "primitives": []}),
+        ),
         g(
             "adjust.brightnessContrast",
             "Brightness/Contrast…",
@@ -712,6 +732,12 @@ pub fn new_effect(id: &str, params: &Value) -> Option<Effect> {
 /// [`EffectInfo::lengths`]). A distance left at its default is written out scaled; one the
 /// effect doesn't have (Outline Stroke's weight following its stroke) stays absent.
 pub fn scale_effect(e: &mut Effect, s: f64) {
+    if e.id == FILTER_GRAPH {
+        let mut g = FilterGraph::from_params(&e.params);
+        g.scale(s);
+        e.params = g.to_params();
+        return;
+    }
     let Some(info) = catalog_index().get(e.id.as_str()) else { return };
     let merged = merged_params(&e.id, &e.params);
     let relative = util::flag(&merged, "relative", false);
@@ -728,7 +754,7 @@ pub fn scale_effect(e: &mut Effect, s: f64) {
 
 /// Is `id` a raster (painted) effect?
 pub fn is_raster(id: &str) -> bool {
-    matches!(id, "stylize.dropShadow" | "stylize.innerGlow" | "stylize.outerGlow" | "stylize.feather" | "blur.gaussian")
+    matches!(id, "stylize.dropShadow" | "stylize.innerGlow" | "stylize.outerGlow" | "stylize.feather" | "blur.gaussian" | COLOR_MATRIX | FILTER_GRAPH)
         || PIXEL_EFFECTS.contains(&id)
 }
 

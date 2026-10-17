@@ -140,6 +140,10 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
         None if id == TRANSFORM => transform_fields(ui, d, app.session.general_unit()),
         None if id == ZIG_ZAG => zig_zag_fields(ui, d, app.session.general_unit()),
         None if id == "artistic.filmGrain" => film_grain_fields(ui, d),
+        None if id == redrob_vector_effects::FILTER_GRAPH => {
+            ui.label(egui::RichText::new(tl!("The primitives of a filter graph are edited in the Filter Editor panel.")).color(Tokens::get(ui.ctx()).text_dim));
+            false
+        }
         None => {
             let doc = redrob_vector_effects::effect_info(&id).map(|e| e.params).unwrap_or_default();
             let unit = app.session.general_unit();
@@ -196,6 +200,9 @@ fn choices(effect: &str, key: &str) -> Option<form::Choices> {
         ("texture.texturizer", "lightDirection") => Some(&redrob_vector_effects::pixel::LIGHT_DIRECTIONS),
         ("video.deinterlace", "eliminate") => Some(&[("Odd Fields", "odd"), ("Even Fields", "even")]),
         ("video.deinterlace", "create") => Some(&[("Duplication", "duplication"), ("Interpolation", "interpolation")]),
+        ("filter.colorMatrix", "type") => {
+            Some(&[("Matrix", "matrix"), ("Saturate", "saturate"), ("Hue Rotate", "hueRotate"), ("Luminance to Alpha", "luminanceToAlpha")])
+        }
         ("stylize.innerGlow", "source") => Some(&[("Center", "center"), ("Edge", "edge")]),
         ("path.offsetPath", "joins") => Some(&[("Miter", "miter"), ("Round", "round"), ("Bevel", "bevel")]),
         ("distort.roughen" | "distort.zigZag", "points") => Some(&[("Smooth", "smooth"), ("Corner", "corner")]),
