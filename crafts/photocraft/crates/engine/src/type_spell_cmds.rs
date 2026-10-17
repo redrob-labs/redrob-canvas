@@ -322,7 +322,7 @@ mod tests {
         assert_eq!(s.prefs().user_dictionary, vec!["Redrob".to_string()]);
         let r = s.execute("edit.checkSpelling", json!({})).unwrap();
         assert_eq!(r["count"], 1);
-        s.execute("edit.checkSpelling", json!({"action": "removeFromDictionary", "word": "photocraft"})).unwrap();
+        s.execute("edit.checkSpelling", json!({"action": "removeFromDictionary", "word": "redrob"})).unwrap();
         assert!(s.prefs().user_dictionary.is_empty());
         assert!(s.execute("edit.checkSpelling", json!({"action": "bogus"})).is_err());
         let r = s.execute("edit.checkSpelling", json!({"action": "suggest", "word": "recieve"})).unwrap();
