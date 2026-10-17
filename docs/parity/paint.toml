@@ -1942,9 +1942,9 @@ name = "Ruler assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Straight line between two handles; strokes snap onto it."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/guide_layout_ui.rs"
-gap = "guides snap positions, not stroke paths"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1966,8 +1966,8 @@ name = "Parallel ruler"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Strokes stay parallel to the handle direction anywhere on canvas."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 1
 
@@ -2038,9 +2038,9 @@ name = "Perspective grid assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Four-corner plane with a grid; perspective sensor reads it; strokes snap to its lines."
-ours = "none"
-ours_where = ""
-gap = "Vanishing Point filter has planes but no stroke snapping"
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+gap = "strokes snap to the grid's two receding directions; no perspective brush-size sensor"
 priority = 1
 
 [[feature]]
@@ -2050,9 +2050,9 @@ name = "Vanishing point assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "A point all strokes converge to; multiple points for 1/2/3-point setups; Alt keeps it on the horizon."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+gap = "several points for 1/2/3-point setups; no Alt-to-horizon constraint while dragging"
 priority = 1
 
 [[feature]]
@@ -2098,8 +2098,8 @@ name = "Assistant tool: create, move, delete"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
 behaviour = "Place and edit assistants; handles on canvas; delete all; save/load .paintingassistant sets."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 1
 

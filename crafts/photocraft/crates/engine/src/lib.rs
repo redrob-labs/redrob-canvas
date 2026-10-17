@@ -15,6 +15,7 @@ pub mod align_cmds;
 mod allocation;
 pub mod analysis_cmds;
 pub mod artboard_cmds;
+pub mod assistant_cmds;
 pub mod atn_cmds;
 pub mod automate_cmds;
 pub mod background_cmds;
@@ -219,6 +220,10 @@ pub struct DocState {
     /// Wrap-around mode (`paint.wrapAround`): strokes repeat shifted by the canvas size so the
     /// image tiles seamlessly; the view shows the tiles (view state, not history).
     pub wrap_around: bool,
+    /// Painting assistants (`paint.assistants.*`) brush strokes snap to, and whether they do
+    /// (tool state, not history).
+    pub assistants: Vec<redrob_photo_paint::assistants::Assistant>,
+    pub assistants_snap: bool,
     /// Layers panel: layers whose effects list is collapsed under their row (the fx triangle;
     /// view state, not history). Effects lists start open.
     pub fx_collapsed: Vec<LayerId>,
@@ -275,6 +280,8 @@ impl DocState {
             isolated_layers: Vec::new(),
             symmetry: None,
             wrap_around: false,
+            assistants: Vec::new(),
+            assistants_snap: true,
             fx_collapsed: Vec::new(),
             show_only: None,
             floating: None,

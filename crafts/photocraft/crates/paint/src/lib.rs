@@ -18,6 +18,7 @@ use redrob_photo_geom::{Point, Rect};
 use redrob_photo_raster::Surface;
 use serde::{Deserialize, Serialize};
 
+pub mod assistants;
 pub mod bg_erase;
 pub mod brush;
 pub mod curve;

@@ -23,6 +23,7 @@ mod alt_grab;
 pub mod analysis_ui;
 pub mod anchor_tools;
 pub mod artboard_tool;
+pub mod assistant_ui;
 pub mod artboard_ui;
 pub(crate) mod background_redraw;
 mod blend_keys;

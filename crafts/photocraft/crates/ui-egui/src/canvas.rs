@@ -3853,6 +3853,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         crate::retouch_ui::draw_source_marker(app, &painter, &xf);
         crate::vector_ui::draw_overlay(app, &painter, &xf, &doc);
         crate::symmetry_ui::draw(app, &painter, &xf);
+        crate::assistant_ui::draw(app, &painter, &xf);
         crate::analysis_ui::draw_overlay(app, &painter, &xf);
         crate::gradient_ui::draw_overlay(app, &painter, &xf);
         crate::slice_ui::draw_overlay(app, &painter, &xf);
@@ -5242,6 +5243,12 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
     if crate::analysis_ui::pointer(app, ev, mods) {
         return;
     }
+    // Assistant tool: place, move and delete painting assistants.
+    if crate::assistant_ui::pointer(app, ev, mods) {
+        return;
+    }
+    // Painting tools: strokes follow the painting assistants.
+    let ev = crate::assistant_ui::filter_event(app, ev);
     // Slice and Slice Select tools.
     if crate::slice_ui::pointer(app, ev, mods) {
         return;

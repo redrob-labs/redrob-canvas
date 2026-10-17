@@ -135,10 +135,13 @@ pub enum Tool {
     Slice,
     SliceSelect,
     Frame,
+    /// Painting assistants: place, move and delete rulers, vanishing points and perspective
+    /// grids that brush strokes snap to (`assistant_ui`).
+    Assistant,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 67] = [
+    pub const ALL: [Tool; 68] = [
         Tool::Move,
         Tool::Artboard,
         Tool::RectMarquee,
@@ -206,6 +209,7 @@ impl Tool {
         Tool::Slice,
         Tool::SliceSelect,
         Tool::Frame,
+        Tool::Assistant,
     ];
 
     pub fn label(self) -> &'static str {
@@ -237,6 +241,7 @@ impl Tool {
             Tool::Slice => "Slice Tool",
             Tool::SliceSelect => "Slice Select Tool",
             Tool::Frame => "Frame Tool",
+            Tool::Assistant => "Assistant Tool",
             Tool::Gradient => "Gradient Tool",
             Tool::PaintBucket => "Paint Bucket Tool",
             Tool::Type => "Horizontal Type Tool",
@@ -322,7 +327,7 @@ impl Tool {
             Tool::RectMarquee | Tool::EllipseMarquee => 'M',
             Tool::Brush | Tool::Pencil | Tool::MixerBrush | Tool::ColorReplacement => 'B',
             Tool::Eraser | Tool::BackgroundEraser | Tool::MagicEraser => 'E',
-            Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count => 'I',
+            Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count | Tool::Assistant => 'I',
             Tool::Lasso | Tool::PolygonLasso | Tool::MagneticLasso => 'L',
             Tool::MagicWand => 'W',
             Tool::Crop | Tool::PerspectiveCrop | Tool::Slice | Tool::SliceSelect => 'C',
@@ -1435,6 +1440,9 @@ pub struct UiState {
     /// Ruler/Count/Note tools, Measurement Log and Notes panels (see `analysis_ui`).
     #[serde(default)]
     pub analysis: crate::analysis_ui::AnalysisUi,
+    /// Assistant tool and the stroke snapping to painting assistants (see `assistant_ui`).
+    #[serde(default)]
+    pub assistants: crate::assistant_ui::AssistantUi,
     pub timeline: crate::timeline_ui::TimelineUi,
     /// Slice and Slice Select tools (see `slice_ui`).
     #[serde(default)]
@@ -1585,6 +1593,7 @@ impl Default for UiState {
             presets_ui: Default::default(),
             type_panels: Default::default(),
             analysis: Default::default(),
+            assistants: Default::default(),
             timeline: Default::default(),
             slices: Default::default(),
             frame_tool: Default::default(),
@@ -1702,7 +1711,7 @@ mod tests {
         assert!(!Tool::RedEye.is_brushlike());
         assert_eq!(Tool::from_name("patternStamp"), Some(Tool::PatternStamp));
         assert_eq!(Tool::from_name("Pattern Stamp Tool"), Some(Tool::PatternStamp));
-        assert_eq!(Tool::ALL.len(), 67);
+        assert_eq!(Tool::ALL.len(), 68);
         assert_eq!(Tool::from_name("Vertical Type Mask Tool"), Some(Tool::VerticalTypeMask));
         assert_eq!(Tool::from_name("addAnchorPoint"), Some(Tool::AddAnchorPoint));
         assert_eq!(Tool::from_name("Delete Anchor Point Tool"), Some(Tool::DeleteAnchorPoint));
