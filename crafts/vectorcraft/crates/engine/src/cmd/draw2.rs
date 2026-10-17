@@ -670,7 +670,7 @@ fn mode_param(p: &Value, cmd: &str) -> Result<SplineMode> {
 pub(crate) const STROKE_SHAPES: [&str; 5] = ["none", "triangleIn", "triangleOut", "ellipse", "fromClipboard"];
 
 /// The `shape` param: one of [`STROKE_SHAPES`], `None` when absent (the stroke is left as it is).
-fn shape_param(p: &Value, cmd: &str) -> Result<Option<&str>> {
+fn shape_param<'a>(p: &'a Value, cmd: &str) -> Result<Option<&'a str>> {
     match p.get("shape").filter(|v| !v.is_null()) {
         None => Ok(None),
         Some(v) => v

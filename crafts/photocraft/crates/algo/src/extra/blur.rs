@@ -236,7 +236,7 @@ pub(crate) fn snn(src: &Image, out: Rect, ctx: &Ctx, radius: f32, pairs: u32) ->
         let (x, y) = (out.x0 + (i % w) as i32, out.y0 + (i / w) as i32);
         let centre = window_px(&buf, win, x, y);
         let mut acc = [0.0f32; 4];
-        let mut cnt = 0.0;
+        let mut cnt: f32 = 0.0;
         let mut push = |c: [f32; 4]| {
             acc[0] += c[0] * c[3];
             acc[1] += c[1] * c[3];

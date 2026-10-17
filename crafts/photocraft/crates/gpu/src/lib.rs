@@ -874,7 +874,7 @@ impl Compositor {
                 if noisy {
                     return Err(Unsupported(format!("effect noise on `{}` uses the CPU path", f.layer.name)));
                 }
-                for s in fx::program_with(e, &doc.global_light, false, &doc.patterns, (0.0, 0.0)).stages {
+                for s in fx::program_with(&e, &doc.global_light, false, &doc.patterns, (0.0, 0.0)).stages {
                     if s.lut.as_ref().is_some_and(|l| l.len() > 4096) {
                         return Err(Unsupported(format!("effect blur on `{}` too wide for the GPU path", f.layer.name)));
                     }

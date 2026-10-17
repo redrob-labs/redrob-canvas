@@ -1807,15 +1807,6 @@ pub fn mode_index(m: BlendMode) -> i32 {
         BlendMode::HsvSaturation => 35,
         BlendMode::HsvValue => 36,
         BlendMode::Luminance => 37,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use redrob_photo_color::{Color, ColorMode, SampleType};
-    use redrob_photo_geom::Size;
-
         BlendMode::BinaryAnd => 38,
         BlendMode::BinaryOr => 39,
         BlendMode::BinaryNand => 40,
@@ -1838,6 +1829,15 @@ mod tests {
         BlendMode::ReflectFreeze => 57,
         BlendMode::FreezeReflect => 58,
         BlendMode::HeatGlowFreezeReflectHybrid => 59,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use redrob_photo_color::{Color, ColorMode, SampleType};
+    use redrob_photo_geom::Size;
+
     #[test]
     fn stops_closer_than_one_lut_step_stay_on_the_cpu() {
         assert!(check_gradient_stops(&[(0.4999_f32, ()), (0.5, ())]).is_err());
