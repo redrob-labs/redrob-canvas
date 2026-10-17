@@ -3398,3 +3398,48 @@ curves	Smooth	Lisser
 	Tile Seamless	Rendre raccordable
 	Unoptimize	Désoptimiser
 	Waves…	Vagues…
+	Binary AND	Binaire AND
+	Binary OR	Binaire OR
+	Binary NAND	Binaire NAND
+	Binary NOR	Binaire NOR
+	Binary XNOR	Binaire XNOR
+	Binary Implication	Binaire implication
+	Binary Not Implication	Binaire non-implication
+	Binary Converse	Binaire réciproque
+	Binary Not Converse	Binaire non-réciproque
+	Modulo	Modulo
+	Modulo Continuous	Modulo continu
+	Divisive Modulo	Modulo divisif
+	Divisive Modulo Continuous	Modulo divisif continu
+	Modulo Shift	Modulo décalé
+	Modulo Shift Continuous	Modulo décalé continu
+	Freeze	Gel
+	Heat	Chaleur
+	Glow-Heat	Lueur-Chaleur
+	Heat-Glow	Chaleur-Lueur
+	Reflect-Freeze	Reflet-Gel
+	Freeze-Reflect	Gel-Reflet
+	Heat-Glow and Freeze-Reflect Hybrid	Hybride Chaleur-Lueur et Gel-Reflet
+	Wrap Around Mode	Mode enveloppant
+	Rotational Multibrush	Multi-brosse rotative
+	Mirror copies	Copies en miroir
+	All Tags	Toutes les étiquettes
+	Tags	Étiquettes
+	Assistant Tool	Outil Assistant
+	Assistant	Assistant
+	Parallel Ruler	Règle parallèle
+	Vanishing Point	Point de fuite
+	Perspective Grid	Grille de perspective
+	Snap to Assistants	Magnétisme des assistants
+	Show Assistants	Afficher les assistants
+	Delete All	Tout supprimer
+	Mirror painting across the vertical axis	Peinture en miroir sur l'axe vertical
+	Choose a gradient file (.grd or .ggr).	Choisissez un fichier de dégradé (.grd ou .ggr).
+	Save Group to Document	Enregistrer le groupe dans le document
+	Load Document Palettes	Charger les palettes du document
+	Cumulative undo	Annulation cumulative
+	Cumulative undo interval	Intervalle d'annulation cumulative
+	Cumulative undo duration	Durée d'annulation cumulative
+	Popup palette	Palette contextuelle
+	Smear	Étalement
+	Smudge Radius	Rayon de maculage

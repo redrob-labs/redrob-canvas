@@ -4064,3 +4064,47 @@ curves	Smooth	スムーズ
 	Tile Seamless	シームレスタイル
 	Unoptimize	最適化解除
 	Waves…	波…
+	Binary AND	二項 AND
+	Binary OR	二項 OR
+	Binary NAND	二項 NAND
+	Binary NOR	二項 NOR
+	Binary XNOR	二項 XNOR
+	Binary Implication	二項 含意
+	Binary Not Implication	二項 非含意
+	Binary Converse	二項 逆含意
+	Binary Not Converse	二項 非逆含意
+	Modulo	モジュロ
+	Modulo Continuous	モジュロ (連続)
+	Divisive Modulo	除算モジュロ
+	Divisive Modulo Continuous	除算モジュロ (連続)
+	Modulo Shift	モジュロシフト
+	Modulo Shift Continuous	モジュロシフト (連続)
+	Freeze	フリーズ
+	Heat	ヒート
+	Glow-Heat	グロー・ヒート
+	Heat-Glow	ヒート・グロー
+	Reflect-Freeze	リフレクト・フリーズ
+	Freeze-Reflect	フリーズ・リフレクト
+	Heat-Glow and Freeze-Reflect Hybrid	ヒート・グローとフリーズ・リフレクトの混合
+	Wrap Around Mode	ラップアラウンドモード
+	Rotational Multibrush	回転マルチブラシ
+	Mirror copies	コピーを反転
+	All Tags	すべてのタグ
+	Tags	タグ
+	Assistant Tool	アシスタントツール
+	Assistant	アシスタント
+	Parallel Ruler	平行ルーラー
+	Perspective Grid	パース グリッド
+	Snap to Assistants	アシスタントにスナップ
+	Show Assistants	アシスタントを表示
+	Delete All	すべて削除
+	Mirror painting across the vertical axis	垂直軸でペイントを反転
+	Choose a gradient file (.grd or .ggr).	グラデーションファイル (.grd または .ggr) を選択してください。
+	Save Group to Document	グループをドキュメントに保存
+	Load Document Palettes	ドキュメントのパレットを読み込む
+	Cumulative undo	累積取り消し
+	Cumulative undo interval	累積取り消しの間隔
+	Cumulative undo duration	累積取り消しの最長時間
+	Popup palette	ポップアップパレット
+	Smear	スミア
+	Smudge Radius	スマッジ半径

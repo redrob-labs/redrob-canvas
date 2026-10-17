@@ -1816,6 +1816,28 @@ mod tests {
     use redrob_photo_color::{Color, ColorMode, SampleType};
     use redrob_photo_geom::Size;
 
+        BlendMode::BinaryAnd => 38,
+        BlendMode::BinaryOr => 39,
+        BlendMode::BinaryNand => 40,
+        BlendMode::BinaryNor => 41,
+        BlendMode::BinaryXnor => 42,
+        BlendMode::BinaryImplication => 43,
+        BlendMode::BinaryNotImplication => 44,
+        BlendMode::BinaryConverse => 45,
+        BlendMode::BinaryNotConverse => 46,
+        BlendMode::Modulo => 47,
+        BlendMode::ModuloContinuous => 48,
+        BlendMode::DivisiveModulo => 49,
+        BlendMode::DivisiveModuloContinuous => 50,
+        BlendMode::ModuloShift => 51,
+        BlendMode::ModuloShiftContinuous => 52,
+        BlendMode::Freeze => 53,
+        BlendMode::Heat => 54,
+        BlendMode::GlowHeat => 55,
+        BlendMode::HeatGlow => 56,
+        BlendMode::ReflectFreeze => 57,
+        BlendMode::FreezeReflect => 58,
+        BlendMode::HeatGlowFreezeReflectHybrid => 59,
     #[test]
     fn stops_closer_than_one_lut_step_stay_on_the_cpu() {
         assert!(check_gradient_stops(&[(0.4999_f32, ()), (0.5, ())]).is_err());

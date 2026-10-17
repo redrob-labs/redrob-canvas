@@ -4306,3 +4306,47 @@ cameraRaw	Yellow	Sárga
 	Tile Seamless	Varratmentes csempe
 	Unoptimize	Optimalizálás visszavonása
 	Waves…	Hullámok…
+	Binary AND	Bináris AND
+	Binary OR	Bináris OR
+	Binary NAND	Bináris NAND
+	Binary NOR	Bináris NOR
+	Binary XNOR	Bináris XNOR
+	Binary Implication	Bináris implikáció
+	Binary Not Implication	Bináris nem-implikáció
+	Binary Converse	Bináris megfordítás
+	Binary Not Converse	Bináris nem-megfordítás
+	Modulo	Modulo
+	Modulo Continuous	Modulo folytonos
+	Divisive Modulo	Osztó modulo
+	Divisive Modulo Continuous	Osztó modulo folytonos
+	Modulo Shift	Modulo eltolás
+	Modulo Shift Continuous	Modulo eltolás folytonos
+	Freeze	Fagyasztás
+	Heat	Hő
+	Glow-Heat	Ragyogás-Hő
+	Heat-Glow	Hő-Ragyogás
+	Reflect-Freeze	Tükrözés-Fagyasztás
+	Freeze-Reflect	Fagyasztás-Tükrözés
+	Heat-Glow and Freeze-Reflect Hybrid	Hő-Ragyogás és Fagyasztás-Tükrözés hibrid
+	Wrap Around Mode	Körbefutó mód
+	Rotational Multibrush	Forgó többszörös ecset
+	Mirror copies	Másolatok tükrözése
+	All Tags	Minden címke
+	Tags	Címkék
+	Assistant Tool	Segédvonal eszköz
+	Assistant	Segédvonal
+	Parallel Ruler	Párhuzamos vonalzó
+	Perspective Grid	Perspektíva rács
+	Snap to Assistants	Illesztés a segédvonalakhoz
+	Show Assistants	Segédvonalak megjelenítése
+	Delete All	Összes törlése
+	Mirror painting across the vertical axis	Festés tükrözése a függőleges tengelyen
+	Choose a gradient file (.grd or .ggr).	Válasszon színátmenetfájlt (.grd vagy .ggr).
+	Save Group to Document	Csoport mentése a dokumentumba
+	Load Document Palettes	Dokumentum palettáinak betöltése
+	Cumulative undo	Összevont visszavonás
+	Cumulative undo interval	Összevont visszavonás időköze
+	Cumulative undo duration	Összevont visszavonás időtartama
+	Popup palette	Felugró paletta
+	Smear	Elkenés
+	Smudge Radius	Maszatolási sugár

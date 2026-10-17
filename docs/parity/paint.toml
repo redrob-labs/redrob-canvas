@@ -23,8 +23,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/color_smudge_engine.html"
 behaviour = "Picks colour from under the tip and drags it; two modes (smear copies the previous dab area, dulling fills the dab with the average under it); colour rate adds foreground paint, smudge length and radius, smear alpha, overlay to sample all layers, paint thickness height map, gradient source, HSV jitter."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/mixer.rs"
-gap = "smear vs dulling modes, smudge radius, paint-thickness height map, gradient source; our Mixer Brush has wet/load/mix and sample-all-layers only"
+ours_where = "crafts/photocraft/crates/paint/src/mixer.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+gap = "wet/load/mix/flow, sample all layers, smear vs dulling modes and a smudge radius; no paint-thickness height map, gradient source or HSV jitter"
 priority = 1
 
 [[feature]]
@@ -1030,9 +1030,9 @@ name = "Preset tagging"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/tag_management.html"
 behaviour = "Add, assign, rename, delete tags on presets; tag filter in every chooser; default tags (Digital, Erasers, FX, Favorites, Ink, Paint, Pixel_Art, Sketch, Textures)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/preset_store.rs"
-gap = "folders/groups instead of tags; a preset is in one group only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs, crafts/photocraft/crates/ui-egui/src/brushes_tab.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1138,9 +1138,9 @@ name = "Pop-up palette"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
 behaviour = "Right-click ring: foreground/background, canvas rotation slider, tagged presets, hue ring and triangle, colour history, tag list, zoom slider, 100%, canvas-only, mirror."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/popup_palette.rs, crafts/photocraft/crates/ui-egui/src/paint_mouse.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+gap = "right-click ring (Preferences > Tools > Right-click: Popup Palette): tagged presets, hue ring + saturation/brightness square, colour history, fg/bg swap, zoom, rotation, mirror, 100%, tag list; no canvas-only toggle"
 priority = 1
 
 [[feature]]
@@ -1283,8 +1283,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_gradients.html"
 behaviour = "Stop and segmented gradients; editor with colour model per segment (RGB, HSV cw/ccw), foreground/background variables and transparency; .ggr and .svg files."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
-gap = "stop gradients with .grd import; no segmented gradients or .ggr/.svg"
+ours_where = "crafts/photocraft/crates/io/src/ggr.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs, crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
+gap = "segmented gradients (.ggr: six blend functions, RGB/HSV cw/ccw, foreground/background ends, alpha) are read, evaluated and imported as sampled stop gradients with live FG/BG ends; no segment editor, no .svg gradients"
 priority = 1
 
 [[feature]]
@@ -1295,8 +1295,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Import .gpl, .riff, .act, .psp, .aco, .xml (Scribus), .sbz, .ase, .acb; native .kpl; stored in resource folder or in the document."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs"
-gap = ".aco and .ase only; no document-stored palettes"
+ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/doc/src/lib.rs, crafts/photocraft/crates/format/src/manifest.rs"
+gap = ".aco/.ase import plus palettes stored in the document (saved in .rphoto, undoable); no .gpl/.riff/.act/.psp/.xml/.sbz/.acb readers"
 priority = 1
 
 [[feature]]
@@ -1450,8 +1450,8 @@ name = "Multibrush: rotational symmetry"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "N copies around a centre at even angles; count slider; centre draggable."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/symmetry_ui.rs"
 gap = ""
 priority = 1
 
@@ -1786,9 +1786,9 @@ name = "Wrap-around mode"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
 behaviour = "W tiles the canvas infinitely while painting so seamless textures can be painted across edges."
-ours = "none"
-ours_where = ""
-gap = "Offset filter and pattern preview only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1942,9 +1942,9 @@ name = "Ruler assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Straight line between two handles; strokes snap onto it."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/guide_layout_ui.rs"
-gap = "guides snap positions, not stroke paths"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1966,8 +1966,8 @@ name = "Parallel ruler"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Strokes stay parallel to the handle direction anywhere on canvas."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 1
 
@@ -2038,9 +2038,9 @@ name = "Perspective grid assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Four-corner plane with a grid; perspective sensor reads it; strokes snap to its lines."
-ours = "none"
-ours_where = ""
-gap = "Vanishing Point filter has planes but no stroke snapping"
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+gap = "strokes snap to the grid's two receding directions; no perspective brush-size sensor"
 priority = 1
 
 [[feature]]
@@ -2050,9 +2050,9 @@ name = "Vanishing point assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "A point all strokes converge to; multiple points for 1/2/3-point setups; Alt keeps it on the horizon."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+gap = "several points for 1/2/3-point setups; no Alt-to-horizon constraint while dragging"
 priority = 1
 
 [[feature]]
@@ -2098,8 +2098,8 @@ name = "Assistant tool: create, move, delete"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
 behaviour = "Place and edit assistants; handles on canvas; delete all; save/load .paintingassistant sets."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 1
 
@@ -2170,9 +2170,9 @@ name = "Colour history and common colours patches"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
 behaviour = "Recent colours and colours sampled from the image, size, count, direction, scrolling."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_history.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/popup_palette.rs"
+gap = "recent painted colours (24) in the Color panel and the pop-up palette; no common-colours-from-image patches, fixed size and count"
 priority = 1
 
 [[feature]]
@@ -2255,8 +2255,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Swatch grid with groups, column count, rename, spot colours, names and IDs, stored in resources or in the document."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs"
-gap = "groups, rename, import/export; no per-document palettes or spot flag"
+ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs"
+gap = "groups, rename, import/export, spot flag kept, per-document palettes (Save Group to Document / Load Document Palettes); no column-count setting or swatch IDs"
 priority = 1
 
 [[feature]]
@@ -2771,8 +2771,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
 behaviour = "About 100 modes grouped (arithmetic, binary, darken, HSX, lighten, misc, mix, modulo, negative, quadratic) with favourites and letter shortcuts."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs"
-gap = "34 PSD-compatible modes; no binary, modulo, quadratic or IFS families"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs, crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs"
+gap = "59 modes incl. binary (9 + XOR), modulo (6) and quadratic (Reflect/Glow + 7) families with BlendMode::family(); the Layers dropdown lists them flat, no favourites or letter shortcuts"
 priority = 1
 
 [[feature]]
@@ -2890,9 +2890,9 @@ name = "Undo history docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/undo_history.html"
 behaviour = "List of steps; cumulative undo merges strokes by interval and duration."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/edit_history.rs"
-gap = "history panel with snapshots; no cumulative merge"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/edit_history.rs, crafts/photocraft/crates/engine/src/lib.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+gap = ""
 priority = 1
 
 [[feature]]

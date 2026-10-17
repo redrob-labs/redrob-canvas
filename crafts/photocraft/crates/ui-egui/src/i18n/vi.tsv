@@ -3876,3 +3876,47 @@ curves	Smooth	Làm mượt
 	Tile Seamless	Lát không viền
 	Unoptimize	Bỏ tối ưu hóa
 	Waves…	Sóng…
+	Binary AND	Nhị phân AND
+	Binary OR	Nhị phân OR
+	Binary NAND	Nhị phân NAND
+	Binary NOR	Nhị phân NOR
+	Binary XNOR	Nhị phân XNOR
+	Binary Implication	Nhị phân kéo theo
+	Binary Not Implication	Nhị phân không kéo theo
+	Binary Converse	Nhị phân đảo
+	Binary Not Converse	Nhị phân không đảo
+	Modulo	Modulo
+	Modulo Continuous	Modulo liên tục
+	Divisive Modulo	Modulo chia
+	Divisive Modulo Continuous	Modulo chia liên tục
+	Modulo Shift	Modulo dịch
+	Modulo Shift Continuous	Modulo dịch liên tục
+	Freeze	Đóng băng
+	Heat	Nhiệt
+	Glow-Heat	Phát sáng-Nhiệt
+	Heat-Glow	Nhiệt-Phát sáng
+	Reflect-Freeze	Phản chiếu-Đóng băng
+	Freeze-Reflect	Đóng băng-Phản chiếu
+	Heat-Glow and Freeze-Reflect Hybrid	Lai Nhiệt-Phát sáng và Đóng băng-Phản chiếu
+	Wrap Around Mode	Chế độ bao quanh
+	Rotational Multibrush	Đa cọ xoay
+	Mirror copies	Phản chiếu bản sao
+	All Tags	Tất cả thẻ
+	Tags	Thẻ
+	Assistant Tool	Công cụ Trợ lý
+	Assistant	Trợ lý
+	Parallel Ruler	Thước song song
+	Perspective Grid	Lưới phối cảnh
+	Snap to Assistants	Bắt dính vào trợ lý
+	Show Assistants	Hiện trợ lý
+	Delete All	Xóa tất cả
+	Mirror painting across the vertical axis	Phản chiếu nét vẽ qua trục dọc
+	Choose a gradient file (.grd or .ggr).	Chọn tệp chuyển sắc (.grd hoặc .ggr).
+	Save Group to Document	Lưu nhóm vào tài liệu
+	Load Document Palettes	Tải bảng màu của tài liệu
+	Cumulative undo	Hoàn tác tích lũy
+	Cumulative undo interval	Khoảng cách hoàn tác tích lũy
+	Cumulative undo duration	Thời lượng hoàn tác tích lũy
+	Popup palette	Bảng màu bật lên
+	Smear	Miết
+	Smudge Radius	Bán kính nhòe

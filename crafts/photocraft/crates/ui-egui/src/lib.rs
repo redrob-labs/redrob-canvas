@@ -23,6 +23,7 @@ mod alt_grab;
 pub mod analysis_ui;
 pub mod anchor_tools;
 pub mod artboard_tool;
+pub mod assistant_ui;
 pub mod artboard_ui;
 pub(crate) mod background_redraw;
 mod blend_keys;
@@ -54,6 +55,7 @@ pub mod channels_panel;
 pub mod chrome_ui;
 pub mod cjk_fonts;
 pub mod clip_line_ui;
+pub mod color_history;
 pub mod color_picker_ui;
 pub mod color_range_ui;
 pub mod comps_ui;
@@ -164,6 +166,7 @@ pub mod plugin_ui;
 pub mod point_curve;
 pub mod prefs_ui;
 pub mod preset_files_ui;
+pub mod popup_palette;
 pub mod preset_panels;
 pub mod press_menu;
 mod pressure_curve_ui;
@@ -555,6 +558,9 @@ pub struct PhotocraftApp {
     monitors: monitor_status::State,
     checker: Option<egui::TextureHandle>,
     drag: Option<canvas::Drag>,
+    /// The running painting stroke's foreground colour is already in the colour history
+    /// (`color_history::track`).
+    color_history_recorded: bool,
     /// A Move-tool press landed on a locked layer: the first pointer move shows Photoshop's
     /// message (`move_lock`), a plain click shows nothing.
     pub(crate) move_blocked: bool,
@@ -825,6 +831,7 @@ impl PhotocraftApp {
             monitors: Default::default(),
             checker: None,
             drag: None,
+            color_history_recorded: false,
             move_blocked: false,
             tool_override: None,
             live_stroke: None,
@@ -1990,6 +1997,8 @@ impl eframe::App for PhotocraftApp {
         // remembered once the pointer is up. Here, after every panel, rather than in the
         // picker's own code: the control channel can set it while the picker is closed.
         brush_picker::persist(self, &ctx);
+        // The colour a painting stroke starts with joins the colour history.
+        color_history::track(self);
         // The tool's brush (settings and tip references) is remembered the same way. Like the
         // picker's view, in the frame loop, so the control channel can set it with the panels
         // closed; the engine's revision counter keeps an unchanged brush free.

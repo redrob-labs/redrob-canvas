@@ -4148,3 +4148,47 @@ curves	Smooth	Vloeiend maken
 	Tile Seamless	Naadloos tegelen
 	Unoptimize	Optimalisatie ongedaan maken
 	Waves…	Golven…
+	Binary AND	Binair AND
+	Binary OR	Binair OR
+	Binary NAND	Binair NAND
+	Binary NOR	Binair NOR
+	Binary XNOR	Binair XNOR
+	Binary Implication	Binair implicatie
+	Binary Not Implication	Binair niet-implicatie
+	Binary Converse	Binair omgekeerde
+	Binary Not Converse	Binair niet-omgekeerde
+	Modulo	Modulo
+	Modulo Continuous	Modulo continu
+	Divisive Modulo	Delend modulo
+	Divisive Modulo Continuous	Delend modulo continu
+	Modulo Shift	Modulo verschuiving
+	Modulo Shift Continuous	Modulo verschuiving continu
+	Freeze	Bevriezen
+	Heat	Hitte
+	Glow-Heat	Gloed-Hitte
+	Heat-Glow	Hitte-Gloed
+	Reflect-Freeze	Reflectie-Bevriezen
+	Freeze-Reflect	Bevriezen-Reflectie
+	Heat-Glow and Freeze-Reflect Hybrid	Hybride Hitte-Gloed en Bevriezen-Reflectie
+	Wrap Around Mode	Omloopmodus
+	Rotational Multibrush	Roterend meervoudig penseel
+	Mirror copies	Kopieën spiegelen
+	All Tags	Alle tags
+	Tags	Tags
+	Assistant Tool	Assistent-gereedschap
+	Assistant	Assistent
+	Parallel Ruler	Parallelle liniaal
+	Perspective Grid	Perspectiefraster
+	Snap to Assistants	Uitlijnen op assistenten
+	Show Assistants	Assistenten tonen
+	Delete All	Alles verwijderen
+	Mirror painting across the vertical axis	Schilderen spiegelen over de verticale as
+	Choose a gradient file (.grd or .ggr).	Kies een verloopbestand (.grd of .ggr).
+	Save Group to Document	Groep in document opslaan
+	Load Document Palettes	Documentpaletten laden
+	Cumulative undo	Cumulatief ongedaan maken
+	Cumulative undo interval	Interval cumulatief ongedaan maken
+	Cumulative undo duration	Duur cumulatief ongedaan maken
+	Popup palette	Pop-uppalet
+	Smear	Uitsmeren
+	Smudge Radius	Smeerradius

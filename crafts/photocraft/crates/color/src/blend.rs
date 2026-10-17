@@ -52,6 +52,42 @@ pub enum BlendMode {
     HsvValue,
     /// Luminance (linear-light Y) of the source, chromaticity of the backdrop.
     Luminance,
+    // ---- Binary family: bitwise operations on the 8-bit channel values ----
+    BinaryAnd,
+    BinaryOr,
+    BinaryNand,
+    BinaryNor,
+    BinaryXnor,
+    /// `!backdrop | source`.
+    BinaryImplication,
+    /// `backdrop & !source`.
+    BinaryNotImplication,
+    /// `backdrop | !source`.
+    BinaryConverse,
+    /// `!backdrop & source`.
+    BinaryNotConverse,
+    // ---- Modulo family: remainders, plain (sawtooth) or continuous (triangle wave) ----
+    Modulo,
+    ModuloContinuous,
+    DivisiveModulo,
+    DivisiveModuloContinuous,
+    ModuloShift,
+    ModuloShiftContinuous,
+    // ---- Quadratic family: Reflect and Glow's relatives ----
+    /// `1 - (1 - cb)² / cs`.
+    Freeze,
+    /// `1 - (1 - cs)² / cb` (Freeze with the operands swapped).
+    Heat,
+    /// Glow applied to the result of Heat.
+    GlowHeat,
+    /// Heat applied to the result of Glow.
+    HeatGlow,
+    /// Reflect applied to the result of Freeze.
+    ReflectFreeze,
+    /// Freeze applied to the result of Reflect.
+    FreezeReflect,
+    /// The mean of Heat-Glow and Freeze-Reflect.
+    HeatGlowFreezeReflectHybrid,
 }
 
 impl BlendMode {
@@ -63,13 +99,59 @@ impl BlendMode {
     /// and takes the source's linear-light luminance. None has a PSD equivalent.
     pub const EXTENDED_MODES: [BlendMode; 4] = [Self::HsvHue, Self::HsvSaturation, Self::HsvValue, Self::Luminance];
 
-    /// All editable layer modes, with the extended and Paint.NET modes after Photoshop's menu order.
+    /// The binary family: the 8-bit channel values combined bitwise (XOR is [`Self::Xor`]).
+    pub const BINARY_MODES: [BlendMode; 9] = [
+        Self::BinaryAnd,
+        Self::BinaryOr,
+        Self::BinaryNand,
+        Self::BinaryNor,
+        Self::BinaryXnor,
+        Self::BinaryImplication,
+        Self::BinaryNotImplication,
+        Self::BinaryConverse,
+        Self::BinaryNotConverse,
+    ];
+
+    /// The modulo family: remainders of the backdrop by the source, as a sawtooth or folded into
+    /// a continuous triangle wave.
+    pub const MODULO_MODES: [BlendMode; 6] =
+        [Self::Modulo, Self::ModuloContinuous, Self::DivisiveModulo, Self::DivisiveModuloContinuous, Self::ModuloShift, Self::ModuloShiftContinuous];
+
+    /// The quadratic family beyond Reflect and Glow (which Paint.NET also has).
+    pub const QUADRATIC_MODES: [BlendMode; 7] =
+        [Self::Freeze, Self::Heat, Self::GlowHeat, Self::HeatGlow, Self::ReflectFreeze, Self::FreezeReflect, Self::HeatGlowFreezeReflectHybrid];
+
+    /// All editable layer modes, with the extended, Paint.NET, binary, modulo and quadratic modes
+    /// after Photoshop's menu order.
     pub fn layer_modes() -> impl Iterator<Item = Self> {
-        Self::LAYER_MODES.into_iter().chain(Self::EXTENDED_MODES).chain(Self::PAINT_NET_MODES)
+        Self::LAYER_MODES
+            .into_iter()
+            .chain(Self::EXTENDED_MODES)
+            .chain(Self::PAINT_NET_MODES)
+            .chain(Self::BINARY_MODES)
+            .chain(Self::MODULO_MODES)
+            .chain(Self::QUADRATIC_MODES)
+    }
+
+    /// The family a mode belongs to in a grouped blend-mode menu.
+    pub fn family(self) -> &'static str {
+        if self == Self::PassThrough || Self::LAYER_MODES.contains(&self) {
+            "Photoshop"
+        } else if Self::EXTENDED_MODES.contains(&self) {
+            "HSV"
+        } else if Self::BINARY_MODES.contains(&self) || self == Self::Xor {
+            "Binary"
+        } else if Self::MODULO_MODES.contains(&self) {
+            "Modulo"
+        } else if Self::QUADRATIC_MODES.contains(&self) || matches!(self, Self::Reflect | Self::Glow) {
+            "Quadratic"
+        } else {
+            "Paint.NET"
+        }
     }
 
     pub fn has_psd_equivalent(self) -> bool {
-        !Self::PAINT_NET_MODES.contains(&self) && !Self::EXTENDED_MODES.contains(&self)
+        self == Self::PassThrough || Self::LAYER_MODES.contains(&self)
     }
     /// Photoshop modes except PassThrough, in Photoshop menu order.
     pub const LAYER_MODES: [BlendMode; 27] = [
@@ -142,6 +224,28 @@ impl BlendMode {
             BlendMode::HsvSaturation => "HSV Saturation",
             BlendMode::HsvValue => "HSV Value",
             BlendMode::Luminance => "Luminance",
+            BlendMode::BinaryAnd => "Binary AND",
+            BlendMode::BinaryOr => "Binary OR",
+            BlendMode::BinaryNand => "Binary NAND",
+            BlendMode::BinaryNor => "Binary NOR",
+            BlendMode::BinaryXnor => "Binary XNOR",
+            BlendMode::BinaryImplication => "Binary Implication",
+            BlendMode::BinaryNotImplication => "Binary Not Implication",
+            BlendMode::BinaryConverse => "Binary Converse",
+            BlendMode::BinaryNotConverse => "Binary Not Converse",
+            BlendMode::Modulo => "Modulo",
+            BlendMode::ModuloContinuous => "Modulo Continuous",
+            BlendMode::DivisiveModulo => "Divisive Modulo",
+            BlendMode::DivisiveModuloContinuous => "Divisive Modulo Continuous",
+            BlendMode::ModuloShift => "Modulo Shift",
+            BlendMode::ModuloShiftContinuous => "Modulo Shift Continuous",
+            BlendMode::Freeze => "Freeze",
+            BlendMode::Heat => "Heat",
+            BlendMode::GlowHeat => "Glow-Heat",
+            BlendMode::HeatGlow => "Heat-Glow",
+            BlendMode::ReflectFreeze => "Reflect-Freeze",
+            BlendMode::FreezeReflect => "Freeze-Reflect",
+            BlendMode::HeatGlowFreezeReflectHybrid => "Heat-Glow and Freeze-Reflect Hybrid",
         }
     }
 
@@ -177,16 +281,7 @@ impl BlendMode {
             BlendMode::Saturation => b"sat ",
             BlendMode::Color => b"colr",
             BlendMode::Luminosity => b"lum ",
-            BlendMode::Reflect
-            | BlendMode::Glow
-            | BlendMode::Negation
-            | BlendMode::Xor
-            | BlendMode::PaintNetColorBurn
-            | BlendMode::PaintNetColorDodge
-            | BlendMode::HsvHue
-            | BlendMode::HsvSaturation
-            | BlendMode::HsvValue
-            | BlendMode::Luminance => b"norm",
+            _ => b"norm",
         }
     }
 
@@ -298,6 +393,40 @@ fn channel(mode: BlendMode, cb: f32, cs: f32, hi: f32) -> f32 {
                 (cb / (1.0 - cs)).min(1.0)
             }
         }
+        BlendMode::BinaryAnd => binary(cb, cs, |b, s| b & s),
+        BlendMode::BinaryOr => binary(cb, cs, |b, s| b | s),
+        BlendMode::BinaryNand => binary(cb, cs, |b, s| !(b & s)),
+        BlendMode::BinaryNor => binary(cb, cs, |b, s| !(b | s)),
+        BlendMode::BinaryXnor => binary(cb, cs, |b, s| !(b ^ s)),
+        BlendMode::BinaryImplication => binary(cb, cs, |b, s| !b | s),
+        BlendMode::BinaryNotImplication => binary(cb, cs, |b, s| b & !s),
+        BlendMode::BinaryConverse => binary(cb, cs, |b, s| b | !s),
+        BlendMode::BinaryNotConverse => binary(cb, cs, |b, s| !b & s),
+        BlendMode::Modulo => modulo(cb, cs),
+        BlendMode::ModuloContinuous => modulo_continuous(cb, cs),
+        BlendMode::DivisiveModulo => {
+            if cs <= 0.0 {
+                0.0
+            } else {
+                modulo(cb / cs, 1.0)
+            }
+        }
+        BlendMode::DivisiveModuloContinuous => {
+            if cs <= 0.0 {
+                0.0
+            } else {
+                modulo_continuous(cb / cs, 1.0)
+            }
+        }
+        BlendMode::ModuloShift => modulo(cb + cs, 1.0),
+        BlendMode::ModuloShiftContinuous => modulo_continuous(cb + cs, 1.0),
+        BlendMode::Freeze => freeze(cb, cs),
+        BlendMode::Heat => freeze(cs, cb),
+        BlendMode::GlowHeat => reflect(freeze(cs, cb), cb),
+        BlendMode::HeatGlow => freeze(reflect(cs, cb), cb),
+        BlendMode::ReflectFreeze => reflect(cb, freeze(cb, cs)),
+        BlendMode::FreezeReflect => freeze(cb, reflect(cb, cs)),
+        BlendMode::HeatGlowFreezeReflectHybrid => 0.5 * (freeze(reflect(cs, cb), cb) + freeze(cb, reflect(cb, cs))),
         // Non-separable modes are handled by `blend_rgb`; fall back to source.
         BlendMode::DarkerColor
         | BlendMode::LighterColor
@@ -314,6 +443,52 @@ fn channel(mode: BlendMode, cb: f32, cs: f32, hi: f32) -> f32 {
 
 fn reflect(cb: f32, cs: f32) -> f32 {
     if cs >= 1.0 { 1.0 } else { (cb * cb / (1.0 - cs)).min(1.0) }
+}
+
+/// Freeze: `1 - (1 - cb)² / cs`, 0 where the source is black (the limit of the formula).
+#[inline]
+fn freeze(cb: f32, cs: f32) -> f32 {
+    if cs <= 0.0 {
+        0.0
+    } else {
+        let d = 1.0 - cb.clamp(0.0, 1.0);
+        (1.0 - d * d / cs).max(0.0)
+    }
+}
+
+/// The binary family works on the 8-bit channel values even in a floating-point compositor,
+/// as [`BlendMode::Xor`] does.
+#[inline]
+fn binary(cb: f32, cs: f32, op: impl Fn(u8, u8) -> u8) -> f32 {
+    let b = (cb.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let s = (cs.clamp(0.0, 1.0) * 255.0).round() as u8;
+    f32::from(op(b, s)) / 255.0
+}
+
+/// `a mod m` as a sawtooth in `0..m`; 0 where the modulus vanishes.
+#[inline]
+fn modulo(a: f32, m: f32) -> f32 {
+    if m <= 1e-6 || !a.is_finite() {
+        return 0.0;
+    }
+    let r = a - m * (a / m).floor();
+    r.clamp(0.0, 1.0)
+}
+
+/// `a mod m` folded into a triangle wave, so the result is continuous where the sawtooth jumps:
+/// odd periods run backwards.
+#[inline]
+fn modulo_continuous(a: f32, m: f32) -> f32 {
+    if m <= 1e-6 || !a.is_finite() {
+        return 0.0;
+    }
+    let t = a / m;
+    let k = t.floor();
+    let mut r = t - k;
+    if (k as i64).rem_euclid(2) == 1 {
+        r = 1.0 - r;
+    }
+    (r * m).clamp(0.0, 1.0)
 }
 
 #[inline]
@@ -623,7 +798,42 @@ mod tests {
                 }
             }
         }
-        assert_eq!(BlendMode::layer_modes().count(), 37);
+        assert_eq!(BlendMode::layer_modes().count(), 59);
+    }
+
+    #[test]
+    fn binary_modulo_and_quadratic_families_stay_in_gamut_and_match_their_definitions() {
+        for mode in BlendMode::BINARY_MODES.into_iter().chain(BlendMode::MODULO_MODES).chain(BlendMode::QUADRATIC_MODES) {
+            assert!(!mode.has_psd_equivalent());
+            assert_eq!(mode.psd_key(), *b"norm");
+            assert!(mode.is_separable());
+            assert!(BlendMode::layer_modes().any(|m| m == mode));
+            for b in [0.0, 0.1, 0.5, 0.75, 1.0] {
+                for s in [0.0, 0.1, 0.5, 0.75, 1.0] {
+                    let v = blend_channel(mode, b, s);
+                    assert!(v.is_finite() && (0.0..=1.0).contains(&v), "{mode:?} ({b}, {s}) = {v}");
+                }
+            }
+        }
+        // 0xF0 AND 0x3C = 0x30; NAND is its complement.
+        assert!(close(blend_channel(BlendMode::BinaryAnd, 240.0 / 255.0, 60.0 / 255.0), 48.0 / 255.0));
+        assert!(close(blend_channel(BlendMode::BinaryNand, 240.0 / 255.0, 60.0 / 255.0), 207.0 / 255.0));
+        assert!(close(blend_channel(BlendMode::BinaryOr, 240.0 / 255.0, 60.0 / 255.0), 252.0 / 255.0));
+        // 0.7 mod 0.3 = 0.1; the continuous form runs the odd period backwards (0.3 − 0.1).
+        assert!(close(blend_channel(BlendMode::Modulo, 0.7, 0.3), 0.1));
+        assert!(close(blend_channel(BlendMode::ModuloContinuous, 0.7, 0.3), 0.3 - 0.1));
+        assert!(close(blend_channel(BlendMode::ModuloShift, 0.8, 0.5), 0.3));
+        assert!(close(blend_channel(BlendMode::ModuloShiftContinuous, 0.8, 0.5), 0.7));
+        assert_eq!(blend_channel(BlendMode::Modulo, 0.5, 0.0), 0.0);
+        // Freeze = 1 − (1 − cb)² / cs; Heat swaps the operands.
+        assert!(close(blend_channel(BlendMode::Freeze, 0.5, 0.5), 0.5));
+        assert!(close(blend_channel(BlendMode::Freeze, 0.8, 0.2), 0.8));
+        assert!(close(blend_channel(BlendMode::Heat, 0.2, 0.8), 0.8));
+        assert_eq!(blend_channel(BlendMode::Freeze, 0.5, 0.0), 0.0);
+        assert_eq!(BlendMode::Modulo.family(), "Modulo");
+        assert_eq!(BlendMode::Xor.family(), "Binary");
+        assert_eq!(BlendMode::Glow.family(), "Quadratic");
+        assert_eq!(BlendMode::Multiply.family(), "Photoshop");
     }
 
     #[test]

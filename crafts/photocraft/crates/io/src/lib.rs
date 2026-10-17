@@ -44,6 +44,7 @@ pub mod effects_map;
 pub mod exr_parts;
 mod flat;
 pub mod gbr;
+pub mod ggr;
 mod gradient_bake;
 pub use gradient_bake::{Method as GradientMethod, bake as bake_gradient};
 mod kra;

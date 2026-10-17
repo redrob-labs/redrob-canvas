@@ -3385,3 +3385,48 @@ curves	Smooth	Haluskan
 	Tile Seamless	Ubin mulus
 	Unoptimize	Batalkan optimalisasi
 	Waves…	Gelombang…
+	Binary AND	Biner AND
+	Binary OR	Biner OR
+	Binary NAND	Biner NAND
+	Binary NOR	Biner NOR
+	Binary XNOR	Biner XNOR
+	Binary Implication	Biner implikasi
+	Binary Not Implication	Biner bukan implikasi
+	Binary Converse	Biner konvers
+	Binary Not Converse	Biner bukan konvers
+	Modulo	Modulo
+	Modulo Continuous	Modulo kontinu
+	Divisive Modulo	Modulo pembagi
+	Divisive Modulo Continuous	Modulo pembagi kontinu
+	Modulo Shift	Modulo geser
+	Modulo Shift Continuous	Modulo geser kontinu
+	Freeze	Beku
+	Heat	Panas
+	Glow-Heat	Cahaya-Panas
+	Heat-Glow	Panas-Cahaya
+	Reflect-Freeze	Pantul-Beku
+	Freeze-Reflect	Beku-Pantul
+	Heat-Glow and Freeze-Reflect Hybrid	Hibrida Panas-Cahaya dan Beku-Pantul
+	Wrap Around Mode	Mode membungkus
+	Rotational Multibrush	Kuas ganda rotasi
+	Mirror copies	Cerminkan salinan
+	All Tags	Semua tag
+	Tags	Tag
+	Assistant Tool	Alat Asisten
+	Assistant	Asisten
+	Parallel Ruler	Penggaris paralel
+	Vanishing Point	Titik hilang
+	Perspective Grid	Kisi perspektif
+	Snap to Assistants	Jepret ke asisten
+	Show Assistants	Tampilkan asisten
+	Delete All	Hapus semua
+	Mirror painting across the vertical axis	Cerminkan lukisan pada sumbu vertikal
+	Choose a gradient file (.grd or .ggr).	Pilih berkas gradien (.grd atau .ggr).
+	Save Group to Document	Simpan grup ke dokumen
+	Load Document Palettes	Muat palet dokumen
+	Cumulative undo	Urungkan kumulatif
+	Cumulative undo interval	Interval urungkan kumulatif
+	Cumulative undo duration	Durasi urungkan kumulatif
+	Popup palette	Palet sembul
+	Smear	Oles
+	Smudge Radius	Radius smudge

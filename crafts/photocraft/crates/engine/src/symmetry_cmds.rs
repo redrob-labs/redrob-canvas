@@ -4,7 +4,7 @@
 use redrob_photo_doc::{LayerContent, vector::Path};
 use redrob_photo_paint::{
     StrokePoint,
-    symmetry::{PresetSymmetry, SymmetryMode},
+    symmetry::{PresetSymmetry, RotationalSymmetry, SymmetryMode, wrapped_passes},
 };
 use serde_json::{Value, json};
 
@@ -25,39 +25,115 @@ pub struct SymmetryAxis {
 pub enum PaintingSymmetry {
     Path(SymmetryAxis),
     Preset(PresetSymmetry),
+    /// Rotational multibrush (`paint.setMultibrush`).
+    Rotational(RotationalSymmetry),
+    /// Wrap-around mode: the stroke (and its `inner` symmetry copies, if any) repeated shifted by
+    /// the canvas size in every direction. Built by [`stroke_passes`], never stored in
+    /// `DocState::symmetry`.
+    Tiled { inner: Option<Box<PaintingSymmetry>>, size: [f64; 2] },
 }
 
 impl PaintingSymmetry {
     pub fn preset(&self) -> Option<PresetSymmetry> {
         match self {
             Self::Preset(p) => Some(*p),
-            Self::Path(_) => None,
+            Self::Tiled { inner: Some(inner), .. } => inner.preset(),
+            _ => None,
+        }
+    }
+    pub fn rotational(&self) -> Option<RotationalSymmetry> {
+        match self {
+            Self::Rotational(r) => Some(*r),
+            Self::Tiled { inner: Some(inner), .. } => inner.rotational(),
+            _ => None,
         }
     }
     pub fn path_source(&self) -> Option<&str> {
         match self {
             Self::Path(p) => Some(&p.source),
-            Self::Preset(_) => None,
+            Self::Tiled { inner: Some(inner), .. } => inner.path_source(),
+            _ => None,
         }
     }
     pub fn mirror_count(&self) -> usize {
         match self {
             Self::Path(_) => 1,
             Self::Preset(p) => p.mirror_count(),
+            Self::Rotational(r) => r.mirror_count(),
+            Self::Tiled { inner, .. } => (1 + inner.as_ref().map_or(0, |i| i.mirror_count())) * 9 - 1,
         }
     }
     pub fn reflected_passes(&self, points: &[StrokePoint]) -> Vec<Vec<StrokePoint>> {
         match self {
             Self::Path(axis) => vec![axis.reflect_points(points)],
             Self::Preset(p) => p.reflected_passes(points),
+            Self::Rotational(r) => r.copies(points),
+            Self::Tiled { inner, size } => {
+                // The inner copies first, then the eight shifted tiles of the stroke and of each
+                // copy: a fixed order, so pass `k` stays the same renderer for the whole stroke.
+                let copies = inner.as_ref().map(|i| i.reflected_passes(points)).unwrap_or_default();
+                let mut out = copies.clone();
+                out.extend(wrapped_passes(points, *size));
+                for c in &copies {
+                    out.extend(wrapped_passes(c, *size));
+                }
+                out
+            }
         }
     }
     pub fn inspect(&self) -> Value {
         match self {
             Self::Path(axis) => json!({"mode":"path", "source":axis.source, "segments":axis.segments.len()}),
             Self::Preset(p) => json!({"mode":p.mode.id(), "center":p.center, "rotation":p.rotation}),
+            Self::Rotational(r) => json!({"mode":"rotational", "center":r.center, "count":r.count, "mirror":r.mirror}),
+            Self::Tiled { inner, size } => json!({"mode":"wrap", "size":size, "inner":inner.as_ref().map(|i| i.inspect())}),
         }
     }
+}
+
+/// The passes a brush stroke on `st` renders besides itself: its painting symmetry, wrapped
+/// around the canvas when wrap-around mode is on.
+pub fn stroke_passes(st: &crate::DocState) -> Option<PaintingSymmetry> {
+    if st.wrap_around {
+        let size = [f64::from(st.doc.size.width), f64::from(st.doc.size.height)];
+        Some(PaintingSymmetry::Tiled { inner: st.symmetry.clone().map(Box::new), size })
+    } else {
+        st.symmetry.clone()
+    }
+}
+
+fn set_multibrush(s: &mut Session, p: &Value) -> Result<Value> {
+    let fail = || EngineError::Other(format!("multibrush requires a finite [x,y] centre and a count of {}..={}", RotationalSymmetry::MIN_COUNT, RotationalSymmetry::MAX_COUNT));
+    let st = s.active().ok_or(EngineError::NoDocument)?;
+    let current = st.symmetry.as_ref().and_then(PaintingSymmetry::rotational);
+    let center = match p.get("center") {
+        None => current.map_or([f64::from(st.doc.size.width) / 2.0, f64::from(st.doc.size.height) / 2.0], |r| r.center),
+        Some(v) => {
+            let values = v.as_array().filter(|v| v.len() == 2).ok_or_else(fail)?;
+            [values.first().and_then(Value::as_f64).ok_or_else(fail)?, values.get(1).and_then(Value::as_f64).ok_or_else(fail)?]
+        }
+    };
+    let count = match p.get("count") {
+        None => current.map_or(6, |r| r.count),
+        Some(v) => v.as_u64().and_then(|c| u32::try_from(c).ok()).ok_or_else(fail)?,
+    };
+    let mirror = match p.get("mirror") {
+        None => current.is_some_and(|r| r.mirror),
+        Some(v) => v.as_bool().ok_or_else(fail)?,
+    };
+    let symmetry = PaintingSymmetry::Rotational(RotationalSymmetry::new(center, count, mirror).ok_or_else(fail)?);
+    let result = symmetry.inspect();
+    s.active_mut().ok_or(EngineError::NoDocument)?.symmetry = Some(symmetry);
+    Ok(result)
+}
+
+fn wrap_around(s: &mut Session, p: &Value) -> Result<Value> {
+    let st = s.active_mut().ok_or(EngineError::NoDocument)?;
+    st.wrap_around = match p.get("enabled") {
+        None => !st.wrap_around,
+        Some(v) => v.as_bool().ok_or_else(|| EngineError::Other("enabled must be a boolean".into()))?,
+    };
+    Ok(json!({"enabled": st.wrap_around}))
 }
 
 fn set_preset(s: &mut Session, p: &Value) -> Result<Value> {
@@ -207,6 +283,26 @@ pub fn specs() -> Vec<CommandSpec> {
             journal: true,
         },
         CommandSpec {
+            id: "paint.setMultibrush",
+            label: "Set Rotational Multibrush",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"center":[x,y]?,"count":2..64=6,"mirror":bool=false} — repeat Brush, Pencil and Eraser strokes around the centre"#,
+            enabled: |s| s.active().map(|_| ()).ok_or_else(|| "no document open".into()),
+            run: set_multibrush,
+            journal: true,
+        },
+        CommandSpec {
+            id: "paint.wrapAround",
+            label: "Wrap Around Mode",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"enabled":bool?} — toggle: strokes wrap across the canvas edges so the image tiles seamlessly"#,
+            enabled: |s| s.active().map(|_| ()).ok_or_else(|| "no document open".into()),
+            run: wrap_around,
+            journal: true,
+        },
+        CommandSpec {
             id: "paint.symmetryDisable",
             label: "Disable Painting Symmetry",
             menu: &[],
@@ -271,6 +367,30 @@ mod tests {
         s.execute("paint.symmetryDisable", json!({})).unwrap();
         s.execute("paint.stroke", json!({"points": [[15, 35]], "size": 5, "hardness": 1.0, "color": "#0000ff"})).unwrap();
         assert!(s.active().unwrap().doc.layer(id).unwrap().surface().unwrap().rgba(65, 35)[0] > 0.8, "white remains without a mirrored blue stroke");
+    }
+
+    #[test]
+    fn multibrush_and_wrap_around_paint_their_copies() {
+        let mut s = Session::new();
+        s.execute("file.new", json!({"width": 80, "height": 80, "background": "white"})).unwrap();
+        let r = s.execute("paint.setMultibrush", json!({"count": 4})).unwrap();
+        assert_eq!(r["mode"], "rotational");
+        assert_eq!(r["count"], 4);
+        assert!(s.execute("paint.setMultibrush", json!({"count": 1})).is_err());
+        s.execute("paint.stroke", json!({"points": [[60, 40]], "size": 5, "hardness": 1.0, "color": "#ff0000", "smoothing": 0.0})).unwrap();
+        let id = s.active().unwrap().active_layer.unwrap();
+        let surface = s.active().unwrap().doc.layer(id).unwrap().surface().unwrap();
+        for (x, y) in [(60, 40), (40, 60), (20, 40), (40, 20)] {
+            assert!(surface.rgba(x, y)[1] < 0.2, "copy at ({x},{y}) painted: {:?}", surface.rgba(x, y));
+        }
+        assert!(surface.rgba(40, 40)[1] > 0.8, "centre stays white");
+        s.execute("paint.symmetryDisable", json!({})).unwrap();
+        assert_eq!(s.execute("paint.wrapAround", json!({})).unwrap()["enabled"], true);
+        s.execute("paint.stroke", json!({"points": [[1, 30]], "size": 8, "hardness": 1.0, "color": "#0000ff", "smoothing": 0.0})).unwrap();
+        let surface = s.active().unwrap().doc.layer(id).unwrap().surface().unwrap();
+        assert!(surface.rgba(79, 30)[0] < 0.2, "paint leaving the left edge comes back on the right: {:?}", surface.rgba(79, 30));
+        assert_eq!(s.execute("paint.wrapAround", json!({"enabled": false})).unwrap()["enabled"], false);
+        assert!(stroke_passes(s.active().unwrap()).is_none());
     }
 
     #[test]

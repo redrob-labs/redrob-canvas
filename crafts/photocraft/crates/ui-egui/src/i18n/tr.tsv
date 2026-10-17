@@ -4118,3 +4118,47 @@ cameraData	Lens	Lens
 	Tile Seamless	Dikişsiz döşeme
 	Unoptimize	En iyileştirmeyi geri al
 	Waves…	Dalgalar…
+	Binary AND	İkili AND
+	Binary OR	İkili OR
+	Binary NAND	İkili NAND
+	Binary NOR	İkili NOR
+	Binary XNOR	İkili XNOR
+	Binary Implication	İkili gerektirme
+	Binary Not Implication	İkili gerektirmeme
+	Binary Converse	İkili evrik
+	Binary Not Converse	İkili evrik olmayan
+	Modulo	Modülo
+	Modulo Continuous	Modülo sürekli
+	Divisive Modulo	Bölücü modülo
+	Divisive Modulo Continuous	Bölücü modülo sürekli
+	Modulo Shift	Modülo kaydırma
+	Modulo Shift Continuous	Modülo kaydırma sürekli
+	Freeze	Dondur
+	Heat	Isı
+	Glow-Heat	Parıltı-Isı
+	Heat-Glow	Isı-Parıltı
+	Reflect-Freeze	Yansıt-Dondur
+	Freeze-Reflect	Dondur-Yansıt
+	Heat-Glow and Freeze-Reflect Hybrid	Isı-Parıltı ve Dondur-Yansıt karışımı
+	Wrap Around Mode	Sarma modu
+	Rotational Multibrush	Dönel çoklu fırça
+	Mirror copies	Kopyaları yansıt
+	All Tags	Tüm etiketler
+	Tags	Etiketler
+	Assistant Tool	Yardımcı aracı
+	Assistant	Yardımcı
+	Parallel Ruler	Paralel cetvel
+	Perspective Grid	Perspektif ızgarası
+	Snap to Assistants	Yardımcılara yasla
+	Show Assistants	Yardımcıları göster
+	Delete All	Tümünü sil
+	Mirror painting across the vertical axis	Boyamayı dikey eksende yansıt
+	Choose a gradient file (.grd or .ggr).	Bir gradyan dosyası seçin (.grd veya .ggr).
+	Save Group to Document	Grubu belgeye kaydet
+	Load Document Palettes	Belge paletlerini yükle
+	Cumulative undo	Birikimli geri alma
+	Cumulative undo interval	Birikimli geri alma aralığı
+	Cumulative undo duration	Birikimli geri alma süresi
+	Popup palette	Açılır palet
+	Smear	Sürme
+	Smudge Radius	Bulaştırma yarıçapı

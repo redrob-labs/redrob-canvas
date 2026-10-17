@@ -4087,3 +4087,47 @@ curves	Smooth	Згладити
 	Tile Seamless	Безшовна плитка
 	Unoptimize	Деоптимізувати
 	Waves…	Хвилі…
+	Binary AND	Бінарне AND
+	Binary OR	Бінарне OR
+	Binary NAND	Бінарне NAND
+	Binary NOR	Бінарне NOR
+	Binary XNOR	Бінарне XNOR
+	Binary Implication	Бінарна імплікація
+	Binary Not Implication	Бінарна неімплікація
+	Binary Converse	Бінарна конверсія
+	Binary Not Converse	Бінарна неконверсія
+	Modulo	Модуло
+	Modulo Continuous	Модуло неперервне
+	Divisive Modulo	Дільне модуло
+	Divisive Modulo Continuous	Дільне модуло неперервне
+	Modulo Shift	Модуло зі зсувом
+	Modulo Shift Continuous	Модуло зі зсувом неперервне
+	Freeze	Заморожування
+	Heat	Нагрівання
+	Glow-Heat	Сяйво-Нагрівання
+	Heat-Glow	Нагрівання-Сяйво
+	Reflect-Freeze	Відбиття-Заморожування
+	Freeze-Reflect	Заморожування-Відбиття
+	Heat-Glow and Freeze-Reflect Hybrid	Гібрид Нагрівання-Сяйво та Заморожування-Відбиття
+	Wrap Around Mode	Режим обгортання
+	Rotational Multibrush	Обертова мультикисть
+	Mirror copies	Дзеркальні копії
+	All Tags	Усі мітки
+	Tags	Мітки
+	Assistant Tool	Інструмент «Асистент»
+	Assistant	Асистент
+	Parallel Ruler	Паралельна лінійка
+	Perspective Grid	Перспективна сітка
+	Snap to Assistants	Прилипання до асистентів
+	Show Assistants	Показувати асистентів
+	Delete All	Видалити всі
+	Mirror painting across the vertical axis	Дзеркальне малювання по вертикальній осі
+	Choose a gradient file (.grd or .ggr).	Виберіть файл градієнта (.grd або .ggr).
+	Save Group to Document	Зберегти групу в документі
+	Load Document Palettes	Завантажити палітри документа
+	Cumulative undo	Накопичувальне скасування
+	Cumulative undo interval	Інтервал накопичувального скасування
+	Cumulative undo duration	Тривалість накопичувального скасування
+	Popup palette	Спливна палітра
+	Smear	Розмазування
+	Smudge Radius	Радіус розмазування

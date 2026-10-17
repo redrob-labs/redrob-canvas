@@ -2048,6 +2048,8 @@ pub fn document_area(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     crate::layer_transfer::finish(app, ui.ctx());
     // Once a frame, not per document view: the right-click or options-bar Brush Preset picker.
     crate::paint_mouse::show_picker(app, ui.ctx());
+    // And the right-click pop-up palette, when the preference chooses it instead.
+    crate::popup_palette::show(app, ui.ctx());
 }
 
 /// Window › Arrange tiles: each document shown with its tile in `rect`, or `None` when the
@@ -2989,14 +2991,16 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         // Crop tool: the layers' pixels past the canvas while a frame is edited, under the canvas
         // (whose edge blends into them) and without its shadow.
         let beyond = draw_beyond_canvas(app, &painter, &xf, idx, output);
-        // View › Pattern Preview (#1067): copies of the document around it, from the same texture.
-        let pattern = if app.ui.view.pattern_preview {
+        // View › Pattern Preview (#1067) and Wrap Around Mode: copies of the document around it,
+        // from the same texture.
+        let tiled = app.ui.view.pattern_preview || app.session.documents()[idx].wrap_around;
+        let pattern = if tiled {
             let v = visible_doc_rect(&xf);
             crate::pattern_preview::copies([v.x0, v.y0, v.x1, v.y1].map(f64::from), size)
         } else {
             Vec::new()
         };
-        let drop_shadow = drop_shadow && !beyond && !app.ui.view.pattern_preview;
+        let drop_shadow = drop_shadow && !beyond && !tiled;
         // Live adjustment previews on big documents use a downsampled proxy (see proxy.rs), unless
         // Preferences › Performance › Low Resolution Previews is off.
         let mut on_gpu = false;
@@ -3851,6 +3855,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         crate::retouch_ui::draw_source_marker(app, &painter, &xf);
         crate::vector_ui::draw_overlay(app, &painter, &xf, &doc);
         crate::symmetry_ui::draw(app, &painter, &xf);
+        crate::assistant_ui::draw(app, &painter, &xf);
         crate::analysis_ui::draw_overlay(app, &painter, &xf);
         crate::gradient_ui::draw_overlay(app, &painter, &xf);
         crate::slice_ui::draw_overlay(app, &painter, &xf);
@@ -5240,6 +5245,12 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
     if crate::analysis_ui::pointer(app, ev, mods) {
         return;
     }
+    // Assistant tool: place, move and delete painting assistants.
+    if crate::assistant_ui::pointer(app, ev, mods) {
+        return;
+    }
+    // Painting tools: strokes follow the painting assistants.
+    let ev = crate::assistant_ui::filter_event(app, ev);
     // Slice and Slice Select tools.
     if crate::slice_ui::pointer(app, ev, mods) {
         return;

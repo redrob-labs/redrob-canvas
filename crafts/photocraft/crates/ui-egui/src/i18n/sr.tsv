@@ -4460,3 +4460,47 @@ shape	Appearance	Izgled
 	Tile Seamless	Pločice bez šavova
 	Unoptimize	Poništi optimizaciju
 	Waves…	Talasi…
+	Binary AND	Binarno AND
+	Binary OR	Binarno OR
+	Binary NAND	Binarno NAND
+	Binary NOR	Binarno NOR
+	Binary XNOR	Binarno XNOR
+	Binary Implication	Binarna implikacija
+	Binary Not Implication	Binarna neimplikacija
+	Binary Converse	Binarna konverzija
+	Binary Not Converse	Binarna nekonverzija
+	Modulo	Modulo
+	Modulo Continuous	Modulo neprekidno
+	Divisive Modulo	Deljivo modulo
+	Divisive Modulo Continuous	Deljivo modulo neprekidno
+	Modulo Shift	Modulo pomak
+	Modulo Shift Continuous	Modulo pomak neprekidno
+	Freeze	Zamrzavanje
+	Heat	Toplota
+	Glow-Heat	Sjaj-Toplota
+	Heat-Glow	Toplota-Sjaj
+	Reflect-Freeze	Odraz-Zamrzavanje
+	Freeze-Reflect	Zamrzavanje-Odraz
+	Heat-Glow and Freeze-Reflect Hybrid	Hibrid Toplota-Sjaj i Zamrzavanje-Odraz
+	Wrap Around Mode	Režim prelamanja
+	Rotational Multibrush	Rotaciona višestruka četkica
+	Mirror copies	Odrazi kopije
+	All Tags	Sve oznake
+	Tags	Oznake
+	Assistant Tool	Alatka Pomoćnik
+	Assistant	Pomoćnik
+	Parallel Ruler	Paralelni lenjir
+	Perspective Grid	Perspektivna mreža
+	Snap to Assistants	Prijanjaj uz pomoćnike
+	Show Assistants	Prikaži pomoćnike
+	Delete All	Obriši sve
+	Mirror painting across the vertical axis	Odrazi slikanje preko vertikalne ose
+	Choose a gradient file (.grd or .ggr).	Izaberite datoteku preliva (.grd ili .ggr).
+	Save Group to Document	Sačuvaj grupu u dokument
+	Load Document Palettes	Učitaj palete dokumenta
+	Cumulative undo	Kumulativno opozivanje
+	Cumulative undo interval	Interval kumulativnog opozivanja
+	Cumulative undo duration	Trajanje kumulativnog opozivanja
+	Popup palette	Iskačuća paleta
+	Smear	Razmazivanje
+	Smudge Radius	Poluprečnik razmazivanja

@@ -3010,3 +3010,49 @@ curves	Smooth	平滑
 	Tile Seamless	无缝拼贴
 	Unoptimize	取消优化
 	Waves…	波浪…
+	Binary AND	二元 AND
+	Binary OR	二元 OR
+	Binary NAND	二元 NAND
+	Binary NOR	二元 NOR
+	Binary XNOR	二元 XNOR
+	Binary Implication	二元蕴含
+	Binary Not Implication	二元非蕴含
+	Binary Converse	二元逆蕴含
+	Binary Not Converse	二元非逆蕴含
+	Modulo	取模
+	Modulo Continuous	取模（连续）
+	Divisive Modulo	除法取模
+	Divisive Modulo Continuous	除法取模（连续）
+	Modulo Shift	取模偏移
+	Modulo Shift Continuous	取模偏移（连续）
+	Freeze	冻结
+	Heat	加热
+	Glow-Heat	发光-加热
+	Heat-Glow	加热-发光
+	Reflect-Freeze	反射-冻结
+	Freeze-Reflect	冻结-反射
+	Heat-Glow and Freeze-Reflect Hybrid	加热-发光与冻结-反射混合
+	Wrap Around Mode	环绕模式
+	Rotational Multibrush	旋转多重画笔
+	Mirror copies	镜像副本
+	All Tags	所有标签
+	Tags	标签
+	Assistant Tool	辅助线工具
+	Assistant	辅助线
+	Ruler	直尺
+	Parallel Ruler	平行直尺
+	Vanishing Point	消失点
+	Perspective Grid	透视网格
+	Snap to Assistants	吸附到辅助线
+	Show Assistants	显示辅助线
+	Delete All	全部删除
+	Mirror painting across the vertical axis	沿垂直轴镜像绘画
+	Choose a gradient file (.grd or .ggr).	请选择渐变文件（.grd 或 .ggr）。
+	Save Group to Document	将组保存到文档
+	Load Document Palettes	载入文档调色板
+	Cumulative undo	累积撤销
+	Cumulative undo interval	累积撤销间隔
+	Cumulative undo duration	累积撤销时长
+	Popup palette	弹出调色板
+	Smear	涂抹
+	Smudge Radius	涂抹半径

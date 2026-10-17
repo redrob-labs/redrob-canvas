@@ -23,7 +23,7 @@ const TOOL_SECTIONS: &[&[&[Tool]]] = &[
         &[Tool::ObjectSelection, Tool::QuickSelection, Tool::MagicWand],
         &[Tool::Crop, Tool::PerspectiveCrop, Tool::Slice, Tool::SliceSelect],
         &[Tool::Frame],
-        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count],
+        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count, Tool::Assistant],
     ],
     &[
         &[Tool::Remove, Tool::SpotHealing, Tool::Healing, Tool::Patch, Tool::ContentAwareMove, Tool::RedEye],
@@ -979,6 +979,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     || crate::retouch_ui::options_bar(app, ui, tool)
                     || crate::vector_ui::options_bar(app, ui, tool)
                     || crate::analysis_ui::options_bar(app, ui, tool)
+                    || crate::assistant_ui::options_bar(app, ui, tool)
                     || crate::slice_ui::options_bar(app, ui, tool)
                     || crate::frame_tool::options_bar(app, ui, tool)
                     || crate::artboard_tool::options_bar(app, ui, tool)
@@ -1104,6 +1105,13 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         }
                         widgets::vline(ui, 22.0);
                         widgets::checkbox(ui, &mut b.mixer.sample_all_layers, tl!("Sample All Layers"));
+                        // Smear drags the pixels along; off, the dab takes the average colour (dulling).
+                        widgets::checkbox(ui, &mut b.mixer.smear, tl!("Smear"));
+                        ui.label(RichText::new(tl!("Smudge Radius")).color(t.text_dim));
+                        let mut radius = b.mixer.smudge_radius * 100.0;
+                        if widgets::value_field(ui, &mut radius, 50.0..=300.0, "%", 62.0).changed() {
+                            b.mixer.smudge_radius = (radius / 100.0).clamp(0.5, 3.0);
+                        }
                     }
                     Tool::RectMarquee | Tool::EllipseMarquee | Tool::SingleRowMarquee | Tool::SingleColumnMarquee if t.pro => {
                         ui.spacing_mut().item_spacing.x = 2.0;
@@ -2256,8 +2264,9 @@ fn simple_lock_toggle(background: bool, l: &Layer) -> (String, Value) {
     ("layer.setProps".into(), json!({"layer": l.id.0, "locks": locks}))
 }
 
-/// The Layers panel's blend modes: Photoshop's, then the HSV / Luminance component modes, plus the
-/// layer's own Paint.NET mode when it has one (an imported `.pdn`).
+/// The Layers panel's blend modes: Photoshop's, then the HSV / Luminance component modes, the
+/// binary, modulo and quadratic families, plus the layer's own Paint.NET mode when it has one (an
+/// imported `.pdn`).
 fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static str)> {
     let own = Some(current).filter(|m| BlendMode::PAINT_NET_MODES.contains(m));
     std::iter::once(BlendMode::PassThrough)
@@ -2268,6 +2277,9 @@ fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static s
         .map(|m| (m, m.label()))
         .collect()
 }
+        .chain(BlendMode::BINARY_MODES)
+        .chain(BlendMode::MODULO_MODES)
+        .chain(BlendMode::QUADRATIC_MODES)
 
 /// Scroll the Layers panel while holding a layer drag over its top/bottom edge or past them.
 ///
@@ -3829,6 +3841,8 @@ fn color_field(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             }
         }
     });
+    // Recent colours (the colour history): a click picks one, Alt-click as the background.
+    color_history_row(app, ui);
 }
 
 /// Tool colours are sRGB-encoded floats; egui's Hsva works on sRGB bytes via these helpers
@@ -3855,6 +3869,15 @@ fn hsva_srgb(h: egui::ecolor::Hsva) -> [f32; 4] {
 fn hsva_color32(h: egui::ecolor::Hsva) -> Color32 {
     let [r, g, b] = srgb_bytes(hsva_srgb(h));
     Color32::from_rgb(r, g, b)
+}
+
+/// The Color panel's row of recent colours (`color_history`), under the readout.
+fn color_history_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+    if app.ui.color_history.is_empty() {
+        return;
+    }
+    ui.add_space(4.0);
+    crate::color_history::patches(app, ui, 14.0, 16);
 }
 
 /// The Color panel's editable colour readout: a hex field and R, G, B fields, all drawn like the

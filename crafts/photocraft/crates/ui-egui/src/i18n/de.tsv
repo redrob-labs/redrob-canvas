@@ -3392,3 +3392,48 @@ curves	Smooth	Glätten
 	Tile Seamless	Nahtlos kacheln
 	Unoptimize	Optimierung aufheben
 	Waves…	Wellen…
+	Binary AND	Binär AND
+	Binary OR	Binär OR
+	Binary NAND	Binär NAND
+	Binary NOR	Binär NOR
+	Binary XNOR	Binär XNOR
+	Binary Implication	Binär Implikation
+	Binary Not Implication	Binär Nicht-Implikation
+	Binary Converse	Binär Umkehrung
+	Binary Not Converse	Binär Nicht-Umkehrung
+	Modulo	Modulo
+	Modulo Continuous	Modulo kontinuierlich
+	Divisive Modulo	Divisives Modulo
+	Divisive Modulo Continuous	Divisives Modulo kontinuierlich
+	Modulo Shift	Modulo verschoben
+	Modulo Shift Continuous	Modulo verschoben kontinuierlich
+	Freeze	Frost
+	Heat	Hitze
+	Glow-Heat	Leuchten-Hitze
+	Heat-Glow	Hitze-Leuchten
+	Reflect-Freeze	Reflexion-Frost
+	Freeze-Reflect	Frost-Reflexion
+	Heat-Glow and Freeze-Reflect Hybrid	Hybrid aus Hitze-Leuchten und Frost-Reflexion
+	Wrap Around Mode	Umbruchmodus
+	Rotational Multibrush	Rotations-Mehrfachpinsel
+	Mirror copies	Kopien spiegeln
+	All Tags	Alle Tags
+	Tags	Tags
+	Assistant Tool	Assistent-Werkzeug
+	Assistant	Assistent
+	Parallel Ruler	Parallellineal
+	Vanishing Point	Fluchtpunkt
+	Perspective Grid	Perspektivraster
+	Snap to Assistants	An Assistenten ausrichten
+	Show Assistants	Assistenten anzeigen
+	Delete All	Alle löschen
+	Mirror painting across the vertical axis	Malen an der vertikalen Achse spiegeln
+	Choose a gradient file (.grd or .ggr).	Wählen Sie eine Verlaufsdatei (.grd oder .ggr).
+	Save Group to Document	Gruppe im Dokument speichern
+	Load Document Palettes	Dokumentpaletten laden
+	Cumulative undo	Kumulatives Rückgängig
+	Cumulative undo interval	Intervall des kumulativen Rückgängig
+	Cumulative undo duration	Dauer des kumulativen Rückgängig
+	Popup palette	Pop-up-Palette
+	Smear	Verschmieren
+	Smudge Radius	Verwischradius

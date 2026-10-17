@@ -4698,3 +4698,46 @@ navigator	Zoom	Zoom
 	Y Tiles	Mosaicos Y
 	Y1	Y1
 	Y2	Y2
+	Binary AND	Binario AND
+	Binary OR	Binario OR
+	Binary NAND	Binario NAND
+	Binary NOR	Binario NOR
+	Binary XNOR	Binario XNOR
+	Binary Implication	Binario implicación
+	Binary Not Implication	Binario no implicación
+	Binary Converse	Binario recíproca
+	Binary Not Converse	Binario no recíproca
+	Modulo	Módulo
+	Modulo Continuous	Módulo continuo
+	Divisive Modulo	Módulo divisivo
+	Divisive Modulo Continuous	Módulo divisivo continuo
+	Modulo Shift	Módulo desplazado
+	Modulo Shift Continuous	Módulo desplazado continuo
+	Freeze	Congelar
+	Heat	Calor
+	Glow-Heat	Resplandor-Calor
+	Heat-Glow	Calor-Resplandor
+	Reflect-Freeze	Reflejar-Congelar
+	Freeze-Reflect	Congelar-Reflejar
+	Heat-Glow and Freeze-Reflect Hybrid	Híbrido Calor-Resplandor y Congelar-Reflejar
+	Wrap Around Mode	Modo envolvente
+	Rotational Multibrush	Multipincel rotacional
+	Mirror copies	Reflejar copias
+	All Tags	Todas las etiquetas
+	Tags	Etiquetas
+	Assistant Tool	Herramienta Asistente
+	Assistant	Asistente
+	Parallel Ruler	Regla paralela
+	Perspective Grid	Cuadrícula de perspectiva
+	Snap to Assistants	Ajustar a asistentes
+	Show Assistants	Mostrar asistentes
+	Delete All	Eliminar todo
+	Mirror painting across the vertical axis	Reflejar la pintura en el eje vertical
+	Choose a gradient file (.grd or .ggr).	Elige un archivo de degradado (.grd o .ggr).
+	Save Group to Document	Guardar grupo en el documento
+	Load Document Palettes	Cargar paletas del documento
+	Cumulative undo	Deshacer acumulativo
+	Cumulative undo interval	Intervalo de deshacer acumulativo
+	Cumulative undo duration	Duración de deshacer acumulativo
+	Popup palette	Paleta emergente
+	Smudge Radius	Radio de difuminado

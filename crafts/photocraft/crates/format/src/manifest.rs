@@ -105,6 +105,9 @@ pub struct DocM {
     /// Web slices (user and layer-based; layer ids are remapped on load).
     #[serde(default, skip_serializing_if = "redrob_photo_doc::Slices::is_empty")]
     pub slices: redrob_photo_doc::Slices,
+    /// Palettes stored in the document (Swatches panel).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub palettes: Vec<redrob_photo_doc::DocPalette>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

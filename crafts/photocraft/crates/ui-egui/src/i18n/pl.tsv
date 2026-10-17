@@ -3986,3 +3986,47 @@ curves	Smooth	Wygładź
 	Tile Seamless	Kafelki bez szwów
 	Unoptimize	Cofnij optymalizację
 	Waves…	Fale…
+	Binary AND	Binarne AND
+	Binary OR	Binarne OR
+	Binary NAND	Binarne NAND
+	Binary NOR	Binarne NOR
+	Binary XNOR	Binarne XNOR
+	Binary Implication	Binarna implikacja
+	Binary Not Implication	Binarna nieimplikacja
+	Binary Converse	Binarna odwrotna implikacja
+	Binary Not Converse	Binarna odwrotna nieimplikacja
+	Modulo	Modulo
+	Modulo Continuous	Modulo ciągłe
+	Divisive Modulo	Modulo dzielące
+	Divisive Modulo Continuous	Modulo dzielące ciągłe
+	Modulo Shift	Modulo z przesunięciem
+	Modulo Shift Continuous	Modulo z przesunięciem ciągłe
+	Freeze	Zamrożenie
+	Heat	Żar
+	Glow-Heat	Blask-Żar
+	Heat-Glow	Żar-Blask
+	Reflect-Freeze	Odbicie-Zamrożenie
+	Freeze-Reflect	Zamrożenie-Odbicie
+	Heat-Glow and Freeze-Reflect Hybrid	Hybryda Żar-Blask i Zamrożenie-Odbicie
+	Wrap Around Mode	Tryb zawijania
+	Rotational Multibrush	Pędzel wielokrotny obrotowy
+	Mirror copies	Odbij kopie
+	All Tags	Wszystkie etykiety
+	Tags	Etykiety
+	Assistant Tool	Narzędzie Asystent
+	Assistant	Asystent
+	Parallel Ruler	Linijka równoległa
+	Perspective Grid	Siatka perspektywy
+	Snap to Assistants	Przyciągaj do asystentów
+	Show Assistants	Pokaż asystentów
+	Delete All	Usuń wszystko
+	Mirror painting across the vertical axis	Odbij malowanie względem osi pionowej
+	Choose a gradient file (.grd or .ggr).	Wybierz plik gradientu (.grd lub .ggr).
+	Save Group to Document	Zapisz grupę w dokumencie
+	Load Document Palettes	Wczytaj palety dokumentu
+	Cumulative undo	Skumulowane cofanie
+	Cumulative undo interval	Odstęp skumulowanego cofania
+	Cumulative undo duration	Czas trwania skumulowanego cofania
+	Popup palette	Paleta podręczna
+	Smear	Rozmazywanie
+	Smudge Radius	Promień rozmazywania

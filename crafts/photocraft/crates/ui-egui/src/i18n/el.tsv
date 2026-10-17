@@ -4088,3 +4088,47 @@ curves	Smooth	Εξομάλυνση
 	Tile Seamless	Πλακίδια χωρίς ραφές
 	Unoptimize	Αναίρεση βελτιστοποίησης
 	Waves…	Κύματα…
+	Binary AND	Δυαδικό AND
+	Binary OR	Δυαδικό OR
+	Binary NAND	Δυαδικό NAND
+	Binary NOR	Δυαδικό NOR
+	Binary XNOR	Δυαδικό XNOR
+	Binary Implication	Δυαδική συνεπαγωγή
+	Binary Not Implication	Δυαδική μη συνεπαγωγή
+	Binary Converse	Δυαδική αντίστροφη
+	Binary Not Converse	Δυαδική μη αντίστροφη
+	Modulo	Υπόλοιπο
+	Modulo Continuous	Υπόλοιπο συνεχές
+	Divisive Modulo	Διαιρετικό υπόλοιπο
+	Divisive Modulo Continuous	Διαιρετικό υπόλοιπο συνεχές
+	Modulo Shift	Υπόλοιπο μετατόπισης
+	Modulo Shift Continuous	Υπόλοιπο μετατόπισης συνεχές
+	Freeze	Πάγωμα
+	Heat	Θερμότητα
+	Glow-Heat	Λάμψη-Θερμότητα
+	Heat-Glow	Θερμότητα-Λάμψη
+	Reflect-Freeze	Αντανάκλαση-Πάγωμα
+	Freeze-Reflect	Πάγωμα-Αντανάκλαση
+	Heat-Glow and Freeze-Reflect Hybrid	Υβρίδιο Θερμότητα-Λάμψη και Πάγωμα-Αντανάκλαση
+	Wrap Around Mode	Λειτουργία αναδίπλωσης
+	Rotational Multibrush	Περιστροφικό πολυπινέλο
+	Mirror copies	Κατοπτρικά αντίγραφα
+	All Tags	Όλες οι ετικέτες
+	Tags	Ετικέτες
+	Assistant Tool	Εργαλείο βοηθού
+	Assistant	Βοηθός
+	Parallel Ruler	Παράλληλος χάρακας
+	Perspective Grid	Πλέγμα προοπτικής
+	Snap to Assistants	Προσκόλληση στους βοηθούς
+	Show Assistants	Εμφάνιση βοηθών
+	Delete All	Διαγραφή όλων
+	Mirror painting across the vertical axis	Κατοπτρική ζωγραφική στον κάθετο άξονα
+	Choose a gradient file (.grd or .ggr).	Επιλέξτε αρχείο διαβάθμισης (.grd ή .ggr).
+	Save Group to Document	Αποθήκευση ομάδας στο έγγραφο
+	Load Document Palettes	Φόρτωση παλετών εγγράφου
+	Cumulative undo	Σωρευτική αναίρεση
+	Cumulative undo interval	Διάστημα σωρευτικής αναίρεσης
+	Cumulative undo duration	Διάρκεια σωρευτικής αναίρεσης
+	Popup palette	Αναδυόμενη παλέτα
+	Smear	Επάλειψη
+	Smudge Radius	Ακτίνα μουτζούρας

@@ -135,10 +135,13 @@ pub enum Tool {
     Slice,
     SliceSelect,
     Frame,
+    /// Painting assistants: place, move and delete rulers, vanishing points and perspective
+    /// grids that brush strokes snap to (`assistant_ui`).
+    Assistant,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 67] = [
+    pub const ALL: [Tool; 68] = [
         Tool::Move,
         Tool::Artboard,
         Tool::RectMarquee,
@@ -206,6 +209,7 @@ impl Tool {
         Tool::Slice,
         Tool::SliceSelect,
         Tool::Frame,
+        Tool::Assistant,
     ];
 
     pub fn label(self) -> &'static str {
@@ -237,6 +241,7 @@ impl Tool {
             Tool::Slice => "Slice Tool",
             Tool::SliceSelect => "Slice Select Tool",
             Tool::Frame => "Frame Tool",
+            Tool::Assistant => "Assistant Tool",
             Tool::Gradient => "Gradient Tool",
             Tool::PaintBucket => "Paint Bucket Tool",
             Tool::Type => "Horizontal Type Tool",
@@ -322,7 +327,7 @@ impl Tool {
             Tool::RectMarquee | Tool::EllipseMarquee => 'M',
             Tool::Brush | Tool::Pencil | Tool::MixerBrush | Tool::ColorReplacement => 'B',
             Tool::Eraser | Tool::BackgroundEraser | Tool::MagicEraser => 'E',
-            Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count => 'I',
+            Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count | Tool::Assistant => 'I',
             Tool::Lasso | Tool::PolygonLasso | Tool::MagneticLasso => 'L',
             Tool::MagicWand => 'W',
             Tool::Crop | Tool::PerspectiveCrop | Tool::Slice | Tool::SliceSelect => 'C',
@@ -1338,6 +1343,19 @@ pub struct UiState {
     /// Temporary symmetry-axis editing, exposed to automation but never restored from settings.
     #[serde(default, skip_deserializing)]
     pub symmetry_transform: Option<crate::symmetry_ui::Transform>,
+    /// The rotational multibrush centre being dragged on the canvas (its preview position);
+    /// committed with `paint.setMultibrush` on release.
+    #[serde(skip)]
+    pub multibrush_drag: Option<[f64; 2]>,
+    /// Foreground colours painted with, most recent first (`color_history`).
+    #[serde(default)]
+    pub color_history: Vec<[f32; 4]>,
+    /// The pop-up palette's screen centre while it is open (`popup_palette`); never restored.
+    #[serde(default, skip_deserializing)]
+    pub popup_palette: Option<[f32; 2]>,
+    /// The preset tag the pop-up palette's ring shows (empty: every preset).
+    #[serde(default)]
+    pub popup_tag: String,
     /// The Properties panel's armed Levels/Curves eyedropper on an adjustment layer (`layer_picker`),
     /// exposed to automation but never restored from settings.
     #[serde(default, skip_deserializing)]
@@ -1431,6 +1449,9 @@ pub struct UiState {
     /// Ruler/Count/Note tools, Measurement Log and Notes panels (see `analysis_ui`).
     #[serde(default)]
     pub analysis: crate::analysis_ui::AnalysisUi,
+    /// Assistant tool and the stroke snapping to painting assistants (see `assistant_ui`).
+    #[serde(default)]
+    pub assistants: crate::assistant_ui::AssistantUi,
     pub timeline: crate::timeline_ui::TimelineUi,
     /// Slice and Slice Select tools (see `slice_ui`).
     #[serde(default)]
@@ -1558,6 +1579,10 @@ impl Default for UiState {
             transform_unlinked: false,
             transform_options: TransformOptions::DEFAULT,
             symmetry_transform: None,
+            multibrush_drag: None,
+            color_history: Vec::new(),
+            popup_palette: None,
+            popup_tag: String::new(),
             layer_picker: None,
             mask_target: false,
             vector_mask_target: false,
@@ -1580,6 +1605,7 @@ impl Default for UiState {
             presets_ui: Default::default(),
             type_panels: Default::default(),
             analysis: Default::default(),
+            assistants: Default::default(),
             timeline: Default::default(),
             slices: Default::default(),
             frame_tool: Default::default(),
@@ -1697,7 +1723,7 @@ mod tests {
         assert!(!Tool::RedEye.is_brushlike());
         assert_eq!(Tool::from_name("patternStamp"), Some(Tool::PatternStamp));
         assert_eq!(Tool::from_name("Pattern Stamp Tool"), Some(Tool::PatternStamp));
-        assert_eq!(Tool::ALL.len(), 67);
+        assert_eq!(Tool::ALL.len(), 68);
         assert_eq!(Tool::from_name("Vertical Type Mask Tool"), Some(Tool::VerticalTypeMask));
         assert_eq!(Tool::from_name("addAnchorPoint"), Some(Tool::AddAnchorPoint));
         assert_eq!(Tool::from_name("Delete Anchor Point Tool"), Some(Tool::DeleteAnchorPoint));

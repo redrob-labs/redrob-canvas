@@ -4856,3 +4856,46 @@ shape	Appearance	Aspetto
 	Y Tiles	Tessere Y
 	Y1	Y1
 	Y2	Y2
+	Binary AND	Binario AND
+	Binary OR	Binario OR
+	Binary NAND	Binario NAND
+	Binary NOR	Binario NOR
+	Binary XNOR	Binario XNOR
+	Binary Implication	Binario implicazione
+	Binary Not Implication	Binario non implicazione
+	Binary Converse	Binario inversa
+	Binary Not Converse	Binario non inversa
+	Modulo	Modulo
+	Modulo Continuous	Modulo continuo
+	Divisive Modulo	Modulo divisivo
+	Divisive Modulo Continuous	Modulo divisivo continuo
+	Modulo Shift	Modulo spostato
+	Modulo Shift Continuous	Modulo spostato continuo
+	Freeze	Congela
+	Heat	Calore
+	Glow-Heat	Bagliore-Calore
+	Heat-Glow	Calore-Bagliore
+	Reflect-Freeze	Riflesso-Congela
+	Freeze-Reflect	Congela-Riflesso
+	Heat-Glow and Freeze-Reflect Hybrid	Ibrido Calore-Bagliore e Congela-Riflesso
+	Wrap Around Mode	Modalità avvolgente
+	Rotational Multibrush	Multipennello rotazionale
+	Mirror copies	Rifletti le copie
+	All Tags	Tutti i tag
+	Tags	Tag
+	Assistant Tool	Strumento Assistente
+	Assistant	Assistente
+	Parallel Ruler	Righello parallelo
+	Perspective Grid	Griglia prospettica
+	Snap to Assistants	Aggancia agli assistenti
+	Show Assistants	Mostra assistenti
+	Delete All	Elimina tutto
+	Mirror painting across the vertical axis	Rifletti la pittura sull'asse verticale
+	Choose a gradient file (.grd or .ggr).	Scegli un file sfumatura (.grd o .ggr).
+	Save Group to Document	Salva il gruppo nel documento
+	Load Document Palettes	Carica le tavolozze del documento
+	Cumulative undo	Annulla cumulativo
+	Cumulative undo interval	Intervallo dell'annulla cumulativo
+	Cumulative undo duration	Durata dell'annulla cumulativo
+	Popup palette	Tavolozza a comparsa
+	Smudge Radius	Raggio sfumino
