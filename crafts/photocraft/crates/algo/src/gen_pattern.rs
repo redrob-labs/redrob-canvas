@@ -49,7 +49,7 @@ pub(crate) fn bayer_matrix(src: &Image, out: Rect, ctx: &Ctx, spec: &BayerSpec) 
     let (xs, ys) = (spec.x_scale.max(1) as i32, spec.y_scale.max(1) as i32);
     let b = ctx.bounds;
     generate(src, out, ctx, |x, y| {
-        let (mut ix, mut iy) =
+        let (mut ix, iy) =
             (((x - b.x0 as f32).floor() as i32 + spec.x_offset).div_euclid(xs), ((y - b.y0 as f32).floor() as i32 + spec.y_offset).div_euclid(ys));
         if spec.reflect {
             ix = -ix - 1;
@@ -65,6 +65,7 @@ pub(crate) fn bayer_matrix(src: &Image, out: Rect, ctx: &Ctx, spec: &BayerSpec) 
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn checkerboard(src: &Image, out: Rect, ctx: &Ctx, width: f32, height: f32, x_offset: f32, y_offset: f32, c1: [f32; 4], c2: [f32; 4]) -> Vec<f32> {
     let (w, h) = (width.max(1.0), height.max(1.0));
     let b = ctx.bounds;

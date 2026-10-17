@@ -524,6 +524,7 @@ pub(crate) fn map_object(src: &Image, out: Rect, ctx: &Ctx, spec: &MapObjectSpec
 
 /// Small Tiles: the bounds shrunk into `segments` × `segments` copies; the selected copies are
 /// flipped; `opacity` (%) mixes the tiled result over the original.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn small_tiles(src: &Image, out: Rect, ctx: &Ctx, segments: u32, flip: TileFlip, which: TileSelection, opacity: f32) -> Vec<f32> {
     let n = src.ch;
     let b = ctx.bounds;
