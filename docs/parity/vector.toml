@@ -1,0 +1,503 @@
+# Vector mode feature inventory (clean room) -- redrob-canvas v0.9.0 parity round
+#
+# Reference apps: the Inkscape 1.4 series (1.4.4 AppImage, run as a black box on :0; its
+# published SHA256 was checked before the first run) and the vector layers of Krita 5.3.4.
+# Sources: the official manuals and release notes linked in `manual` (every URL answered 200 to
+# curl when this file was written), the application's own `--action-list` / `--list-input-types`
+# output, and watching the running application. No reference source code or binary internals were
+# read. Behaviour text is paraphrased in our own words.
+#
+# `ours` grades OUR crates only (crafts/vectorcraft/crates/*, apps/*): none | partial | full.
+# `priority`: 1 = a daily tool, 2 = common, 3 = rare.
+#
+# Abbreviations in `manual`:
+#   RTD  = https://inkscape-manuals.readthedocs.io/en/latest/
+#   KEYS = https://inkscape.org/doc/keys.html
+#   RN   = https://wiki.inkscape.org/wiki/Release_notes/<version>
+#   KR   = https://docs.krita.org/en/
+# (URLs below are written out in full; the abbreviations are only for this comment.)
+
+# ---------------------------------------------------------------------------------------------
+# tools
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-TOOL-001"
+group = "tools"
+name = "Selector tool (select, move, scale, rotate, skew)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/selector-tool.html"
+behaviour = "Click selects an object, drag moves it; eight corner/side handles scale, a second click on the object switches the handles to rotate/skew; rubber-band drag selects many; Shift adds to the selection, Alt-drag draws a touch-select path, Ctrl keeps proportions, Alt selects under the pointer; Tab/Shift+Tab walks objects in z-order."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/select.rs, crafts/vectorcraft/crates/tools/src/bbox.rs"
+gap = "no second-click toggle to rotate/skew handles (rotation is a separate tool and the bounding-box corner gesture); no touch-select Alt-drag path"
+priority = 1
+evidence = "docs/parity/evidence/VEC-main.png"
+
+[[feature]]
+id = "VE-TOOL-002"
+group = "tools"
+name = "Selector toolbar: numeric X/Y/W/H and lock ratio"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/selector-tool.html"
+behaviour = "The tool controls bar shows the selection's position and size in the document unit with a lock toggle for proportional size edits, plus buttons to rotate 90 degrees either way, flip horizontally/vertically, raise/lower in z-order, and toggles for which attributes (strokes, rounded corners, gradients, patterns) scale with the object."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/control.rs, crafts/vectorcraft/crates/ui-egui/src/panels/transform.rs"
+gap = "flip/rotate-90 buttons live in the Transform panel menu rather than the control bar"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-003"
+group = "tools"
+name = "Node tool (edit path nodes and handles)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/editing-paths.html"
+behaviour = "Shows every node of the selected paths; nodes are dragged singly or as a rubber-band set, handles are dragged to reshape segments, a segment itself can be dragged to bend it; double-click a segment adds a node, Delete removes nodes while keeping the shape; also edits live shapes' own handles and clip/mask paths in place."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs, crafts/vectorcraft/crates/engine/src/cmd/path.rs"
+gap = "segment-drag bending exists only through the Reshape/Anchor Point tools, not as the default drag on a segment"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-004"
+group = "tools"
+name = "Rectangle tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/squares-and-rectangles.html"
+behaviour = "Drag draws a live rectangle; Ctrl constrains to a square or integer ratio, Shift draws from the centre; two corner handles set horizontal and vertical corner radii independently and the toolbar exposes W, H, Rx, Ry fields and a 'make corners sharp' button."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs, crafts/vectorcraft/crates/doc/src/corners.rs"
+gap = "corner radii are per-corner but symmetric (no separate Rx/Ry ellipse corners)"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-005"
+group = "tools"
+name = "Ellipse / arc tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/circles-ellipses-and-arcs.html"
+behaviour = "Drag draws a live ellipse (Ctrl for a circle); two on-shape handles set start and end angles, turning it into a pie slice, a chord or an open arc, selectable in the toolbar; a button restores the whole ellipse."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs, crafts/vectorcraft/crates/tools/src/extra.rs (arc tool)"
+gap = "no start/end-angle handles on a live ellipse (pie/chord/arc); the separate Arc tool draws a quarter-arc segment only"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-006"
+group = "tools"
+name = "Star / polygon tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/stars-and-polygons.html"
+behaviour = "Toolbar toggle between polygon and star; fields for corner count, spoke ratio, rounding and randomisation; two live handles move the outer tip and inner notch, Ctrl snaps angles, Shift-drag rounds the tips, Alt-drag randomises; the shape stays editable afterwards."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs, crafts/vectorcraft/crates/geom/src/shapes.rs"
+gap = "corner count and inner radius are set in the draw dialog or by arrow keys while dragging; no rounding or randomise parameter; the result is a plain path, not a live star"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-007"
+group = "tools"
+name = "3D box tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/3d-boxes.html"
+behaviour = "Draws a box in perspective governed by three vanishing points shown as draggable targets; each of the six faces is a separately styled path inside a group; the toolbar sets each axis to a finite or infinite vanishing point and its angle; boxes share a document perspective."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/distort/perspective.rs, crafts/vectorcraft/crates/three-d/src/solid.rs"
+gap = "perspective grid draws planar art in 1/2/3-point perspective and the 3D effect extrudes a face, but there is no live box primitive with draggable vanishing points"
+priority = 3
+
+[[feature]]
+id = "VE-TOOL-008"
+group = "tools"
+name = "Spiral tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/spirals.html"
+behaviour = "Drag draws a spiral; toolbar sets turns, divergence (how fast the radius grows) and inner radius; two handles adjust inner and outer ends, Alt/Ctrl on the handles change divergence or roll the spiral in or out."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/extra.rs"
+gap = "turns, decay and segments set in a dialog; no live handles after drawing"
+priority = 3
+
+[[feature]]
+id = "VE-TOOL-009"
+group = "tools"
+name = "Pencil (freehand) tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/pencil-tool.html"
+behaviour = "Drag draws a path, smoothed by a 1-100 slider; click-click draws straight segments; modes: regular Bezier, Spiro, BSpline; a shape can be applied along the stroke (triangle in/out, ellipse, from clipboard, bend from clipboard); 'LPE based interactive simplify'; pressure-sensitive width when a tablet is used ('PowerPencil')."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/draw2.rs, crafts/vectorcraft/crates/pathops/src/fit.rs, crafts/vectorcraft/crates/engine/src/cmd/draw2.rs"
+gap = "no Spiro or BSpline mode, no shape-along-stroke option on the freehand tool (brushes do that), no pressure width while drawing"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-010"
+group = "tools"
+name = "Pen (Bezier) tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/pen-tool.html"
+behaviour = "Click places corner nodes, click-drag places smooth nodes with handles; Ctrl snaps angles to 15 degree steps, Shift locks handle length, Enter or double-click ends the path, clicking the start closes it; modes: regular Bezier, Spiro spline, BSpline, straight segments, paraxial (axis-aligned) segments; same shape-along-stroke options as the pencil."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/pen.rs, crafts/vectorcraft/crates/tools/src/draw2/family.rs"
+gap = "no Spiro, BSpline or paraxial modes; rubber-band preview of the next segment exists but no shape-along-path option"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-011"
+group = "tools"
+name = "Calligraphy tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/calligraphy-tool.html"
+behaviour = "Draws a filled stroke whose width follows velocity (thinning), pen angle, fixation, caps, tremor, wiggle and mass settings; presets Dip pen, Marker, Brush, Wiggly, Splotchy, Tracing; pressure and tilt from a tablet can drive width and angle; Alt-drag on an existing stroke engraves hatching guided by it."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs, crafts/vectorcraft/crates/engine/src/cmd/brushsym.rs"
+gap = "calligraphic brush has angle, roundness, diameter and pressure variation; no thinning-by-speed, tremor, wiggle, mass or guided hatching"
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-012"
+group = "tools"
+name = "Text tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/writing-text.html"
+behaviour = "Click creates point text, drag creates a flowed text frame; the toolbar sets font family, style, size, line height, alignment, superscript/subscript, letter/word spacing, kerning shifts and rotation of selected letters, and writing direction; text stays editable."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/text.rs, crafts/vectorcraft/crates/text/src/"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-013"
+group = "tools"
+name = "Gradient tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/creating-gradients.html"
+behaviour = "Drag over an object creates a linear gradient (Ctrl-drag angle snaps); on-canvas stops are draggable, double-click adds a stop, Delete removes it, clicking a stop then a palette colour recolours it; the toolbar chooses linear/radial, repeat mode (none, reflected, direct), and the stop list; gradients can be shared between objects."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/xform/gradient.rs, crafts/vectorcraft/crates/ui-egui/src/panels/gradient.rs, crafts/vectorcraft/crates/color/src/gradient.rs"
+gap = "no reflected/direct repeat beyond the end stops"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-014"
+group = "tools"
+name = "Mesh gradient tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/creating-a-mesh-gradient.html"
+behaviour = "Creates an SVG 2 mesh gradient of rows x columns over a shape, including a conical preset; corner nodes are dragged and coloured, Bezier side handles bend the patch edges, nodes can be smoothed or toggled to bicubic shading; selected nodes can be scaled/rotated as a set."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/meshedit.rs, crafts/vectorcraft/crates/doc/src/live.rs (GradientMesh)"
+gap = "no conical preset, no bicubic toggle; mesh exports to SVG only as a raster-free approximation"
+priority = 3
+
+[[feature]]
+id = "VE-TOOL-015"
+group = "tools"
+name = "Dropper tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/copying-a-color.html"
+behaviour = "Click picks the colour under the pointer into the fill of the selection, Shift-click into the stroke; drag averages an area; toggles for picking and assigning alpha; Ctrl+C copies the colour as text."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/xform/eyedropper.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/eyedropper.rs"
+gap = "picks appearance attributes rather than averaging a dragged pixel area"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-016"
+group = "tools"
+name = "Paint bucket tool"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Click fills a region bounded by visible rendered edges (any object, including bitmaps) with a new path; threshold for colour similarity, grow/shrink the result, fill by visible colours or a single channel, Shift-click unions with the previous fill, Alt-click fills every region of the same colour."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/builder.rs (Live Paint Bucket), crafts/vectorcraft/crates/tools/src/xform/wand.rs"
+gap = "Live Paint fills faces of a planar group of vector paths; no rendered-pixel flood fill across bitmaps, no threshold or grow/shrink"
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-017"
+group = "tools"
+name = "Tweak tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/tweak-tool.html"
+behaviour = "Brush-like sculpting of objects or paths: move, move in/out, move randomly, scale, rotate, duplicate, push, shrink/grow, attract/repel, roughen, paint colour, jitter colour, blur; width and force sliders, pressure option; Shift inverts the mode."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/distort/liquify.rs, crafts/vectorcraft/crates/tools/src/symbolism.rs"
+gap = "liquify tools cover warp/twirl/pucker/bloat/scallop/crystallize/wrinkle on paths; object-level modes (move objects, duplicate, paint/jitter colour, blur) exist only for symbol sets"
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-018"
+group = "tools"
+name = "Spray tool"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Sprays copies of the selected object(s) as copies, clones or a single united path; width, amount, rotation and scale variation, scatter and focus, pressure options; 1.4 adds an option to use picked colour from the object below."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/symbolism.rs, crafts/vectorcraft/crates/engine/src/cmd/brushsym.rs"
+gap = "sprays symbol instances only (not copies of arbitrary objects or a united path)"
+priority = 3
+
+[[feature]]
+id = "VE-TOOL-019"
+group = "tools"
+name = "Eraser tool"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Three modes: delete whole objects touched, cut out the stroked area from paths (a boolean difference), or clip (the area is removed by a clip path); width, thinning, caps, tremor and mass like calligraphy; pressure option."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.eraseRegion), crafts/vectorcraft/crates/tools/src/cut.rs"
+gap = "no clip-instead-of-cut mode"
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-020"
+group = "tools"
+name = "Connector tool"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Draws lines that stay attached to the objects they connect and reroute around objects marked as obstacles; polyline or orthogonal routing, curvature, spacing, graph auto-layout of connected objects."
+ours = "none"
+ours_where = ""
+gap = "no connector objects"
+priority = 3
+
+[[feature]]
+id = "VE-TOOL-021"
+group = "tools"
+name = "Measure tool"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Drag measures length and angle and shows intersections with crossed paths and the lengths between them; options: unit, precision, scale percentage, show hidden intersections, measure all layers, reverse, phantom measure, convert the measurement into a group of paths or a guide, mark dimension lines, 'measure only selected'."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/xform/measure.rs, crafts/vectorcraft/crates/ui-egui/src/panels/info.rs"
+gap = "no segment intersections along the measured line, no convert-to-dimension-lines"
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-022"
+group = "tools"
+name = "Zoom tool and view navigation"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Click zooms in, Shift-click out, drag a rectangle to zoom to it; numeric keys 1-5 jump to 1:1, 1:2, fit selection, fit drawing, fit page; mouse wheel scrolls, Ctrl+wheel zooms, Ctrl+arrows pan; canvas rotation (Ctrl+Shift+wheel) and canvas mirroring; zoom field in the status bar."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/canvas.rs, crafts/vectorcraft/crates/tools/src/catalog.rs (zoom, hand, rotateView)"
+gap = "no canvas mirroring"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-023"
+group = "tools"
+name = "Page tool (multi-page documents)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Page_tool"
+behaviour = "Draws, moves, resizes and deletes pages in one document; toolbar sets page size from presets or custom, page label, fit page to selection or drawing, margins and bleed; pages export as a multi-page PDF; 1.3 adds page-relative origin, 1.4 lets a page be rotated."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/xform/artboard.rs, crafts/vectorcraft/crates/ui-egui/src/panels/artboards.rs"
+gap = "no per-page rotation; artboards have no individual margin boxes"
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-024"
+group = "tools"
+name = "Shape builder tool"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Shape_Builder_Tool"
+behaviour = "With several overlapping shapes selected, click or drag across regions to union them into one path, Shift-drag to delete regions; the result replaces the inputs; 1.4 keeps the original style and lets single regions be extracted."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/builder.rs, crafts/vectorcraft/crates/pathops/src/planar.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-025"
+group = "tools"
+name = "Tool switching shortcuts and sticky tool keys"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Every tool has a letter key (S, N, R, E, B, P, T, G, Z and so on) and an F-key alias; Space toggles back to the selector temporarily; the tool's own controls bar changes with the tool; Esc deselects; keyboard arrows nudge by a preference step, Shift multiplies, Alt moves one screen pixel."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/catalog.rs, crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-026"
+group = "tools"
+name = "Pressure and tilt from a graphics tablet"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/tutorials/calligraphy/tutorial-calligraphy.html"
+behaviour = "Calligraphy, pencil (PowerPencil), tweak, spray and eraser read stylus pressure when their 'use pressure' toggle is on; calligraphy also reads tilt for pen angle."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs, crafts/vectorcraft/crates/ui-egui/src/touch.rs"
+gap = "pressure drives calligraphic brush width and liquify tools; no tilt input"
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-027"
+group = "tools"
+name = "Keyboard transform of the selection"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "With the selector: < and > scale by a preference step, [ and ] rotate by 15 degrees (Ctrl: 90), Alt variants work in screen pixels; Ctrl+> and Ctrl+< scale by a factor of two; H and V flip; Home/End/PgUp/PgDn change z-order."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs, crafts/vectorcraft/crates/engine/src/cmd/xform.rs"
+gap = "arrow nudges and z-order keys exist; no bracket-key rotation or angle-bracket scaling"
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-028"
+group = "tools"
+name = "On-canvas alignment handles"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#On-Canvas_Alignment"
+behaviour = "A toolbar toggle shows alignment buttons around the selection bounding box on the canvas; clicking one aligns the selected objects to that edge or centre, Shift-click moves the anchor object instead."
+ours = "none"
+ours_where = ""
+gap = "alignment only through the Align panel"
+priority = 3
+
+[[feature]]
+id = "VE-TOOL-029"
+group = "tools"
+name = "Shape tool (Krita): rectangle"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/rectangle.html"
+behaviour = "On a vector layer the rectangle tool creates a shape object with the current fill and stroke; on a paint layer it paints the rectangle with the brush; Shift constrains to a square, Alt draws from centre, tool options set fill and outline mode and corner rounding."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-030"
+group = "tools"
+name = "Shape tool (Krita): ellipse"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/ellipse.html"
+behaviour = "Drag draws an ellipse shape; Shift for a circle, Alt from centre; on a vector layer the result is an editable shape."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-031"
+group = "tools"
+name = "Polygon and polyline tools (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/polygon.html"
+behaviour = "Click places successive corners, double-click or Enter finishes; polygon closes the shape, polyline leaves it open; Shift constrains angles; on a vector layer the result is a path shape."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/pen.rs (click-only corner placement)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-032"
+group = "tools"
+name = "Bezier path tool (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/path.html"
+behaviour = "Click for corner points, drag for curve points, double-click to finish; tool options offer automatic stroke smoothing; Shift+click modifies handle behaviour; on vector layers the path keeps its nodes editable."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/pen.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-033"
+group = "tools"
+name = "Freehand path tool (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_path.html"
+behaviour = "Drag draws a freehand path; the stroke is fit to a Bezier path when released; on a vector layer it becomes a shape."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/draw2.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-034"
+group = "tools"
+name = "Calligraphy tool (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/calligraphy.html"
+behaviour = "Draws vector calligraphic strokes with width, thinning, angle, fixation, caps, mass and drag settings and assistant following; saves named profiles; pressure can drive width."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs"
+gap = "no thinning, mass/drag or saved calligraphy profiles"
+priority = 3
+
+[[feature]]
+id = "VE-TOOL-035"
+group = "tools"
+name = "Shape selection tool (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/shape_selection.html"
+behaviour = "Selects shapes on a vector layer by click or rubber band, moves/scales/rotates/shears via handles; tool options show geometry (X, Y, W, H, keep aspect), fill, stroke and a shape-specific tab; right-click menu offers group, boolean ops, order, edit shape, convert to path."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/select.rs, crafts/vectorcraft/crates/ui-egui/src/panels/properties.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-036"
+group = "tools"
+name = "Shape edit (node) tool (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/shape_edit.html"
+behaviour = "Edits the nodes of a path shape: add/remove points, join/break at points, segment to line/curve, corner/smooth/symmetric point types, insert point, merge points; for text and other shape types it edits their own handles."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs, crafts/vectorcraft/crates/engine/src/cmd/path.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-037"
+group = "tools"
+name = "Text tool (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/text.html"
+behaviour = "Drag creates a text shape and opens an editor with rich and SVG-source modes; sets font, size, weight, style, alignment, letter spacing, line height, fill and stroke colour, underline/strike, superscript/subscript, vertical writing; text is stored as SVG text."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/text.rs, crafts/vectorcraft/crates/ui-egui/src/panels/character.rs"
+gap = "no SVG-source editing mode for a text object"
+priority = 1
+
+[[feature]]
+id = "VE-TOOL-038"
+group = "tools"
+name = "Gradient drawing on shapes (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
+behaviour = "On a vector layer the gradient tool edits a shape's fill gradient with on-canvas handles for start/end and stops; shape properties switch fill between solid, gradient and pattern."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/xform/gradient.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-TOOL-039"
+group = "tools"
+name = "Measure tool (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/measure.html"
+behaviour = "Drag shows distance and angle in the tool options, in a chosen unit."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/xform/measure.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-TOOL-040"
+group = "tools"
+name = "Transform tool on vector shapes (Krita)"
+reference = "Krita"
+manual = "https://docs.krita.org/en/reference_manual/tools/transform.html"
+behaviour = "Free transform (move, scale, rotate, shear, perspective) applies to selected shapes on a vector layer as a matrix without rasterising; warp/cage/liquify/mesh modes rasterise vector content."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/free_transform.rs, crafts/vectorcraft/crates/tools/src/xform/free.rs"
+gap = ""
+priority = 1
