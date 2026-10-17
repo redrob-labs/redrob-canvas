@@ -3803,3 +3803,17 @@ curves	Smooth	Wygładź
 	Free select: clicks and drags build one editable outline	Zaznaczenie odręczne: kliknięcia i przeciągnięcia tworzą jeden edytowalny obrys
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Kliknięcie dodaje punkt, przeciągnięcie rysuje odręcznie · przeciągnij punkt, aby go przesunąć · {del} usuwa ostatni · {key} zamyka · Esc anuluje
 	Click to place points, drag to draw freehand; the outline stays editable until closed	Klikaj, aby stawiać punkty, przeciągaj, aby rysować odręcznie; obrys można edytować do zamknięcia
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Kierunek:
+	Corrective	Korekcyjny
+	Clipping:	Przycinanie:
+	Adjust	Dopasuj
+	Clip	Przytnij do płótna
+	Crop with Aspect	Kadruj z proporcjami
+	Guides:	Prowadnice:
+	Center Lines	Linie środkowe
+	Golden Sections	Złote podziały
+	Diagonals	Przekątne
+	Lines:	Linii:

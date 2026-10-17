@@ -138,20 +138,58 @@ impl Homography {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum Interp {
+    /// No interpolation: the nearest source pixel (a transform tool's "None").
     Nearest,
     Bilinear,
     #[default]
     Bicubic,
+    /// Lanczos-3: the sinc windowed by sinc(x / 3), a 6 × 6 support. Sharper than Bicubic on
+    /// enlargements with less ringing than a wider window.
+    Lanczos3,
 }
 
 impl Interp {
     pub fn parse(s: &str) -> Self {
         match s {
-            "nearest" | "nearestNeighbor" => Interp::Nearest,
-            "bilinear" => Interp::Bilinear,
+            "nearest" | "nearestNeighbor" | "none" => Interp::Nearest,
+            "bilinear" | "linear" => Interp::Bilinear,
+            "lanczos3" | "lanczos" => Interp::Lanczos3,
             _ => Interp::Bicubic,
         }
     }
+
+    /// The command parameter spelling ([`Interp::parse`] reads it back).
+    pub fn name(self) -> &'static str {
+        match self {
+            Interp::Nearest => "nearest",
+            Interp::Bilinear => "bilinear",
+            Interp::Bicubic => "bicubic",
+            Interp::Lanczos3 => "lanczos3",
+        }
+    }
+}
+
+/// Lanczos-3 weights of the six source pixels around a sample `t` (0..1) past the third: taps at
+/// offsets −2…3 from the pixel before the sample, normalised so a flat field stays flat.
+pub(crate) fn lanczos3(t: f64) -> [f64; 6] {
+    fn l(x: f64) -> f64 {
+        if x.abs() < 1e-9 {
+            1.0
+        } else if x.abs() >= 3.0 {
+            0.0
+        } else {
+            let px = std::f64::consts::PI * x;
+            3.0 * px.sin() * (px / 3.0).sin() / (px * px)
+        }
+    }
+    let mut w = [l(2.0 + t), l(1.0 + t), l(t), l(1.0 - t), l(2.0 - t), l(3.0 - t)];
+    let sum: f64 = w.iter().sum();
+    if sum.abs() > 1e-12 {
+        for v in &mut w {
+            *v /= sum;
+        }
+    }
+    w
 }
 
 /// Photoshop's Bicubic: the Keys cubic at a = −0.75 (Catmull-Rom is −0.5), the weights of the
@@ -295,9 +333,10 @@ fn warp(
     // brought down by the whole local scale first and the warp samples it at about 1:1; a plain
     // 4×4 kernel at 50 % aliased (Photoshop 27.11 Free Transform, 50 % of an impulse image).
     // Bilinear samples the source directly, as Photoshop's does (exact at 50 % without a prefilter).
-    if interp == Interp::Bicubic && scale < 0.999 && scale > 0.0 {
+    // Lanczos-3 reduces the same way, through its own kernel.
+    if matches!(interp, Interp::Bicubic | Interp::Lanczos3) && scale < 0.999 && scale > 0.0 {
         let f = scale.max(1.0 / 64.0);
-        reduced = resize_surface(src, f, f, Resample::Bicubic);
+        reduced = resize_surface(src, f, f, if interp == Interp::Lanczos3 { Resample::Lanczos } else { Resample::Bicubic });
         src = &reduced;
         h = h.mul(&Homography([1.0 / f, 0.0, 0.0, 0.0, 1.0 / f, 0.0, 0.0, 0.0, 1.0]));
         src_rect = crate::resample::scaled_rect(src_rect, f, f);
@@ -452,6 +491,21 @@ fn warp(
                                 let k = wxi * wyj;
                                 for (c, s) in acc.iter_mut().enumerate().take(n) {
                                     *s += clamped(ix - 1 + i as i32, iy - 1 + j as i32, c) * k;
+                                }
+                            }
+                        }
+                    }
+                    Interp::Lanczos3 => {
+                        let (ix, iy) = (u.floor() as i32, v.floor() as i32);
+                        let (wx, wy) = (lanczos3(u - ix as f64), lanczos3(v - iy as f64));
+                        for (j, wyj) in wy.iter().enumerate() {
+                            for (i, wxi) in wx.iter().enumerate() {
+                                let k = wxi * wyj;
+                                if k == 0.0 {
+                                    continue;
+                                }
+                                for (c, s) in acc.iter_mut().enumerate().take(n) {
+                                    *s += clamped(ix - 2 + i as i32, iy - 2 + j as i32, c) * k;
                                 }
                             }
                         }

@@ -2824,3 +2824,17 @@ curves	Smooth	平滑
 	Free select: clicks and drags build one editable outline	自由选择：单击和拖动构成一个可编辑的轮廓
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	单击添加点，拖动自由绘制 · 拖动点可移动 · {del} 删除最后一段 · {key} 闭合 · Esc 取消
 	Click to place points, drag to draw freehand; the outline stays editable until closed	单击放置点，拖动自由绘制；闭合前轮廓始终可编辑
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	方向:
+	Corrective	校正
+	Clipping:	剪裁:
+	Adjust	调整
+	Clip	剪裁
+	Crop with Aspect	按比例裁剪
+	Guides:	参考线:
+	Center Lines	中心线
+	Golden Sections	黄金分割
+	Diagonals	对角线
+	Lines:	线数:

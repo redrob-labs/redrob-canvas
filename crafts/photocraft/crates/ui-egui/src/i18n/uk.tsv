@@ -3904,3 +3904,17 @@ curves	Smooth	Згладити
 	Free select: clicks and drags build one editable outline	Вільне виділення: клацання й перетягування утворюють один редагований контур
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Клацання додає точку, перетягування малює від руки · перетягніть точку, щоб перемістити · {del} видаляє останню · {key} замикає · Esc скасовує
 	Click to place points, drag to draw freehand; the outline stays editable until closed	Клацайте, щоб ставити точки, перетягуйте для малювання від руки; контур можна редагувати до замикання
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Ланцош
+	Direction:	Напрямок:
+	Corrective	Коригувальне
+	Clipping:	Обрізання:
+	Adjust	Підігнати
+	Clip	Обрізати за полотном
+	Crop with Aspect	Кадрувати з пропорціями
+	Guides:	Напрямні:
+	Center Lines	Центральні лінії
+	Golden Sections	Золоті перетини
+	Diagonals	Діагоналі
+	Lines:	Ліній:

@@ -682,8 +682,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tools-transform.html"
 behaviour = "Every transform tool shares: transform layer/selection/path target, direction normal/corrective, interpolation none/linear/cubic/NoHalo/LoHalo, clipping adjust/clip/crop/crop-with-aspect, composited preview with opacity, guide overlays, and a readjust button."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/transform_tool.rs, crafts/photocraft/crates/ui-egui/src/transform_fx.rs"
-gap = "interpolation nearest/bilinear/bicubic; no NoHalo/LoHalo, no corrective direction, no clipping modes other than adjust"
+ours_where = "crafts/photocraft/crates/ui-egui/src/transform_tool.rs, crafts/photocraft/crates/ui-egui/src/state.rs, crafts/photocraft/crates/engine/src/transform_cmds.rs, crafts/photocraft/crates/algo/src/transform.rs, crafts/photocraft/crates/algo/src/warp.rs"
+gap = "interpolation none/bilinear/bicubic/Lanczos3 (no NoHalo/LoHalo); direction normal/corrective, clipping adjust/clip/crop/cropAspect and guide overlays done; direction and clipping apply to layer transforms only (not Transform Selection or paths); no readjust button"
 priority = 1
 
 [[feature]]

@@ -3208,3 +3208,17 @@ curves	Smooth	Glätten
 	Free select: clicks and drags build one editable outline	Freie Auswahl: Klicks und Ziehen bilden einen einzigen bearbeitbaren Umriss
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Klick fügt einen Punkt hinzu, Ziehen zeichnet freihändig · Punkt ziehen verschiebt ihn · {del} entfernt den letzten · {key} schließt · Esc bricht ab
 	Click to place points, drag to draw freehand; the outline stays editable until closed	Klicke, um Punkte zu setzen, ziehe für Freihand; der Umriss bleibt bis zum Schließen bearbeitbar
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Richtung:
+	Corrective	Korrigierend
+	Clipping:	Beschneidung:
+	Adjust	Anpassen
+	Clip	Auf Leinwand beschneiden
+	Crop with Aspect	Mit Seitenverhältnis zuschneiden
+	Guides:	Hilfslinien:
+	Center Lines	Mittellinien
+	Golden Sections	Goldene Schnitte
+	Diagonals	Diagonalen
+	Lines:	Linien:

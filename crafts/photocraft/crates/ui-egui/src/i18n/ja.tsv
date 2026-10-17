@@ -3881,3 +3881,17 @@ curves	Smooth	スムーズ
 	Free select: clicks and drags build one editable outline	自由選択: クリックとドラッグで編集可能なひとつの輪郭を作ります
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	クリックで点を追加、ドラッグでフリーハンド · 点をドラッグして移動 · {del} で最後を削除 · {key} で閉じる · Esc でキャンセル
 	Click to place points, drag to draw freehand; the outline stays editable until closed	クリックで点を置き、ドラッグでフリーハンド描画。閉じるまで輪郭は編集できます
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	方向:
+	Corrective	補正
+	Clipping:	クリッピング:
+	Adjust	調整
+	Clip	クリップ
+	Crop with Aspect	縦横比を保って切り抜き
+	Guides:	ガイド:
+	Center Lines	中心線
+	Golden Sections	黄金分割
+	Diagonals	対角線
+	Lines:	線数:

@@ -4325,3 +4325,17 @@ shape	Appearance	Aspetto
 	Free select: clicks and drags build one editable outline	Selezione libera: clic e trascinamenti formano un unico contorno modificabile
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Il clic aggiunge un punto, il trascinamento disegna a mano libera · trascina un punto per spostarlo · {del} rimuove l'ultimo · {key} chiude · Esc annulla
 	Click to place points, drag to draw freehand; the outline stays editable until closed	Fai clic per posare i punti, trascina per disegnare a mano libera; il contorno resta modificabile finché non viene chiuso
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Direzione:
+	Corrective	Correttiva
+	Clipping:	Ritaglio:
+	Adjust	Adatta
+	Clip	Taglia alla tela
+	Crop with Aspect	Ritaglia con proporzioni
+	Guides:	Guide:
+	Center Lines	Linee centrali
+	Golden Sections	Sezioni auree
+	Diagonals	Diagonali
+	Lines:	Linee:

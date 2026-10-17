@@ -3814,3 +3814,17 @@ navigator	Zoom	Zvětšení
 	Free select: clicks and drags build one editable outline	Volný výběr: kliknutí a tažení tvoří jeden upravitelný obrys
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Kliknutí přidá bod, tažení kreslí od ruky · bod přesunete tažením · {del} odebere poslední · {key} uzavře · Esc zruší
 	Click to place points, drag to draw freehand; the outline stays editable until closed	Klikáním umisťujte body, tažením kreslete od ruky; obrys lze upravovat, dokud není uzavřen
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Směr:
+	Corrective	Korekční
+	Clipping:	Oříznutí:
+	Adjust	Přizpůsobit
+	Clip	Oříznout na plátno
+	Crop with Aspect	Oříznout se zachováním poměru
+	Guides:	Vodítka:
+	Center Lines	Středové čáry
+	Golden Sections	Zlaté řezy
+	Diagonals	Diagonály
+	Lines:	Čar:

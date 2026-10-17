@@ -4166,3 +4166,17 @@ navigator	Zoom	Zoom
 	Free select: clicks and drags build one editable outline	Selección libre: los clics y los arrastres forman un único contorno editable
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Clic añade un punto, arrastrar dibuja a mano alzada · arrastra un punto para moverlo · {del} quita el último · {key} cierra · Esc cancela
 	Click to place points, drag to draw freehand; the outline stays editable until closed	Haz clic para colocar puntos, arrastra para dibujar a mano alzada; el contorno sigue editable hasta cerrarlo
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Dirección:
+	Corrective	Correctivo
+	Clipping:	Recorte:
+	Adjust	Ajustar
+	Clip	Recortar al lienzo
+	Crop with Aspect	Recortar con proporción
+	Guides:	Guías:
+	Center Lines	Líneas centrales
+	Golden Sections	Secciones áureas
+	Diagonals	Diagonales
+	Lines:	Líneas:

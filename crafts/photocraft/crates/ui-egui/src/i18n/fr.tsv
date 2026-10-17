@@ -3212,3 +3212,17 @@ curves	Smooth	Lisser
 	Free select: clicks and drags build one editable outline	Sélection libre : les clics et les glissements forment un seul contour modifiable
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Un clic ajoute un point, un glissement dessine à main levée · glissez un point pour le déplacer · {del} retire le dernier · {key} ferme · Échap annule
 	Click to place points, drag to draw freehand; the outline stays editable until closed	Cliquez pour placer des points, glissez pour dessiner à main levée ; le contour reste modifiable jusqu'à sa fermeture
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Direction :
+	Corrective	Correctif
+	Clipping:	Rognage :
+	Adjust	Ajuster
+	Clip	Rogner au canevas
+	Crop with Aspect	Recadrer avec proportions
+	Guides:	Guides :
+	Center Lines	Lignes centrales
+	Golden Sections	Sections dorées
+	Diagonals	Diagonales
+	Lines:	Lignes :

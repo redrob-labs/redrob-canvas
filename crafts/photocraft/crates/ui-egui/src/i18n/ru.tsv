@@ -3177,3 +3177,17 @@ curves	Smooth	Сгладить
 	Free select: clicks and drags build one editable outline	Свободное выделение: щелчки и перетаскивания образуют один редактируемый контур
 	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Щелчок добавляет точку, перетаскивание рисует от руки · перетащите точку, чтобы переместить · {del} удаляет последнюю · {key} замыкает · Esc отменяет
 	Click to place points, drag to draw freehand; the outline stays editable until closed	Щёлкайте, чтобы ставить точки, перетаскивайте для рисования от руки; контур можно править до замыкания
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Ланцош
+	Direction:	Направление:
+	Corrective	Корректирующее
+	Clipping:	Обрезка:
+	Adjust	Подогнать
+	Clip	Обрезать по холсту
+	Crop with Aspect	Кадрировать с пропорциями
+	Guides:	Направляющие:
+	Center Lines	Центральные линии
+	Golden Sections	Золотые сечения
+	Diagonals	Диагонали
+	Lines:	Линий:
