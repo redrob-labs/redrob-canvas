@@ -2821,3 +2821,6 @@ curves	Smooth	平滑
 	Ink below	墨线阈值
 	Close gaps	闭合缝隙
 	Under ink	伸入墨线
+	HSV Hue	HSV 色相
+	HSV Saturation	HSV 饱和度
+	HSV Value	HSV 明度

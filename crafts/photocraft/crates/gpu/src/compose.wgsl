@@ -243,10 +243,78 @@ fn set_sat(c: vec3<f32>, s: f32) -> vec3<f32> {
     return vec3(0.0);
 }
 
+// redrob_photo_color::blend::rgb_to_hsv / hsv_to_rgb: hue in 0..6, 0 for greys.
+fn rgb_to_hsv(c: vec3<f32>) -> vec3<f32> {
+    let mx = max(max(c.r, c.g), c.b);
+    let mn = min(min(c.r, c.g), c.b);
+    let d = mx - mn;
+    var h = 0.0;
+    if (d > 0.0) {
+        if (mx == c.r) {
+            h = (c.g - c.b) / d;
+            h = h - 6.0 * floor(h / 6.0);
+        } else if (mx == c.g) {
+            h = (c.b - c.r) / d + 2.0;
+        } else {
+            h = (c.r - c.g) / d + 4.0;
+        }
+    }
+    let s = select(0.0, d / mx, mx > 0.0);
+    return vec3(h, s, mx);
+}
+fn hsv_to_rgb(h_in: f32, s: f32, v: f32) -> vec3<f32> {
+    let h = h_in - 6.0 * floor(h_in / 6.0);
+    let c = v * s;
+    let x = c * (1.0 - abs((h - 2.0 * floor(h / 2.0)) - 1.0));
+    let m = v - c;
+    let i = i32(floor(h));
+    var rgb = vec3(c, 0.0, x);
+    switch i {
+        case 0: { rgb = vec3(c, x, 0.0); }
+        case 1: { rgb = vec3(x, c, 0.0); }
+        case 2: { rgb = vec3(0.0, c, x); }
+        case 3: { rgb = vec3(0.0, x, c); }
+        case 4: { rgb = vec3(x, 0.0, c); }
+        default: { rgb = vec3(c, 0.0, x); }
+    }
+    return rgb + m;
+}
+// redrob_photo_color::blend::luminance_y / luminance_blend: linear-light Y, chromaticity kept.
+fn luminance_y(c: vec3<f32>) -> f32 {
+    let l = vec3(srgb_to_linear(max(c.r, 0.0)), srgb_to_linear(max(c.g, 0.0)), srgb_to_linear(max(c.b, 0.0)));
+    return 0.2126 * l.r + 0.7152 * l.g + 0.0722 * l.b;
+}
+fn luminance_blend(cb: vec3<f32>, cs: vec3<f32>, top: f32) -> vec3<f32> {
+    let yb = luminance_y(cb);
+    let ys = luminance_y(cs);
+    var lin = vec3(ys);
+    if (yb > 1e-7) {
+        let k = ys / yb;
+        lin = vec3(srgb_to_linear(max(cb.r, 0.0)), srgb_to_linear(max(cb.g, 0.0)), srgb_to_linear(max(cb.b, 0.0))) * k;
+    }
+    return min(vec3(linear_to_srgb(lin.r), linear_to_srgb(lin.g), linear_to_srgb(lin.b)), vec3(top));
+}
+
 fn blend_rgb(mode: i32, cb: vec3<f32>, cs: vec3<f32>) -> vec3<f32> {
     // blend_rgb_within: 32-bit documents keep values above 1 (f32::MAX).
     let top = select(1.0, F32_MAX, (op.flags & F_HDR) != 0u);
     switch mode {
+        case 34: {                                                       // HSV Hue
+            let b = rgb_to_hsv(cb);
+            let s = rgb_to_hsv(cs);
+            return hsv_to_rgb(s.x, b.y, b.z);
+        }
+        case 35: {                                                       // HSV Saturation
+            let b = rgb_to_hsv(cb);
+            let s = rgb_to_hsv(cs);
+            return hsv_to_rgb(b.x, s.y, b.z);
+        }
+        case 36: {                                                       // HSV Value
+            let b = rgb_to_hsv(cb);
+            let s = rgb_to_hsv(cs);
+            return hsv_to_rgb(b.x, b.y, min(s.z, top));
+        }
+        case 37: { return luminance_blend(cb, cs, top); }                // Luminance
         case 24: { return set_lum(set_sat(cs, sat(cb)), lum(cb), top); } // Hue
         case 25: { return set_lum(set_sat(cb, sat(cs)), lum(cb), top); } // Saturation
         case 26: { return set_lum(cs, lum(cb), top); }                  // Color

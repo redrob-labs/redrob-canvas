@@ -3429,9 +3429,9 @@ name = "Layer mode: HSV Hue"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Hue of the upper layer with saturation and value of the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Hue)"
-gap = "hue mode computed in the Photoshop HSY-style model, not HSV"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvHue), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3441,9 +3441,9 @@ name = "Layer mode: HSV Saturation"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Saturation from the upper layer, hue and value from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Saturation)"
-gap = "same model difference"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvSaturation), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3465,9 +3465,9 @@ name = "Layer mode: HSV Value"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Value from the upper, hue and saturation from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminosity)"
-gap = "luminosity instead of HSV value"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvValue), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3525,8 +3525,8 @@ name = "Layer mode: Luminance"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Luminance from the upper layer, chromaticity from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminosity)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminance), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 2
 

@@ -1803,6 +1803,10 @@ pub fn mode_index(m: BlendMode) -> i32 {
         BlendMode::Xor => 31,
         BlendMode::PaintNetColorBurn => 32,
         BlendMode::PaintNetColorDodge => 33,
+        BlendMode::HsvHue => 34,
+        BlendMode::HsvSaturation => 35,
+        BlendMode::HsvValue => 36,
+        BlendMode::Luminance => 37,
     }
 }
 
