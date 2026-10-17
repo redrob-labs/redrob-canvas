@@ -40,6 +40,22 @@ Two layers sit across the modes rather than inside any one of them:
   background and select subject through a local IOPaint engine the app installs and runs on
   `127.0.0.1`; vectorize for the Vector mode. Everything runs on the machine; nothing is uploaded.
 
+## Control from Redrob Code
+
+While the window is open it hands its own tools to the shared Redrob Code daemon
+(`redrob-app-bridge`, MCP on `127.0.0.1`), so the agent in any Redrob surface -- a phone chat
+included -- can drive the open document as MCP server `app:canvas`. Without a daemon the app runs as
+before. The tools:
+
+- `document_info` -- path (or untitled), active mode (raster, vector, design), size, layer count, unsaved changes.
+- `open_file {path}` -- opens the file in the editor its type belongs to; answers the mode.
+- `switch_mode {mode: raster|vector|design}` -- switches the window, as Ctrl+1/2/3 do.
+- `list_layers {max?}` -- the active document's layers: id, name, visible, selected.
+- `select_layer {id|name}` -- makes a layer the active one.
+- `set_layer_visible {id, visible}` -- shows or hides a layer.
+- `export {format: png|svg|pdf, path?, scale?}` -- exports the current page or artboard; answers the path (svg in vector mode only).
+- `save` -- saves to the document's own file; an untitled document is refused with Save As named.
+
 ## Formats
 
 What each mode opens and saves comes from its editor. The short list:

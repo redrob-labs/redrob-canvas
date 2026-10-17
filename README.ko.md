@@ -41,6 +41,21 @@
   피사체 선택을 앱이 직접 설치해 `127.0.0.1`에서 돌리는 로컬 IOPaint 엔진으로 처리하고, Vector 모드에는
   벡터화를 더합니다. 모든 것이 이 컴퓨터에서 돌고 어디에도 업로드하지 않습니다.
 
+## Redrob Code에서 제어
+
+창이 열려 있는 동안 앱은 자기 도구를 공유 Redrob Code 데몬에 넘겨(`redrob-app-bridge`,
+`127.0.0.1`의 MCP) 어느 Redrob 화면의 에이전트든 -- 휴대폰 채팅까지 -- 열린 문서를 MCP 서버
+`app:canvas`로 다룰 수 있습니다. 데몬이 없으면 앱은 전과 같이 동작합니다. 도구:
+
+- `document_info` -- 경로(또는 무제), 현재 모드(raster, vector, design), 크기, 레이어 수, 저장 안 된 변경.
+- `open_file {path}` -- 파일 종류에 맞는 편집기로 열고 그 모드를 답합니다.
+- `switch_mode {mode: raster|vector|design}` -- Ctrl+1/2/3처럼 창의 모드를 바꿉니다.
+- `list_layers {max?}` -- 현재 문서의 레이어: id, 이름, 표시 여부, 선택 여부.
+- `select_layer {id|name}` -- 레이어를 활성 레이어로 만듭니다.
+- `set_layer_visible {id, visible}` -- 레이어를 보이거나 숨깁니다.
+- `export {format: png|svg|pdf, path?, scale?}` -- 현재 페이지/아트보드를 내보내고 경로를 답합니다(svg는 vector 모드만).
+- `save` -- 문서를 자기 파일에 저장합니다. 무제 문서는 Save As를 안내하며 거절합니다.
+
 ## 파일 포맷
 
 각 모드가 열고 저장하는 포맷은 그 편집기의 것입니다. 요약하면:
