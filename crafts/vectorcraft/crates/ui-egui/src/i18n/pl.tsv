@@ -4659,3 +4659,23 @@ mark-style	Japanese	Japońskie
 	Dashed Stroke	Kreskowany obrys
 	Taper Stroke…	Zwężający się obrys…
 	Taper Stroke	Zwężający się obrys
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Równolegle do osi
+	Triangle In	Trójkąt do wewnątrz
+	Triangle Out	Trójkąt na zewnątrz
+	From Clipboard	Ze schowka
+	Segment:	Segment:
+	Curve	Krzywa
+	Make Selected Segments Lines	Zamień zaznaczone segmenty na linie
+	Make Selected Segments Curves	Zamień zaznaczone segmenty na krzywe
+	Show Handles	Pokaż uchwyty
+	Shape Along Stroke	Kształt wzdłuż obrysu
+	Segment Type	Typ segmentu
+	Next Anchor	Następny punkt kontrolny
+	Grow Anchor Selection	Rozszerz zaznaczenie punktów kontrolnych
+	Touch Select Anchors	Zaznacz dotknięte punkty kontrolne
+	Make Segment Line	Zamień segment na linię
+	Make Segment Curve	Zamień segment na krzywą
+	X:	X:
+	Y:	Y:

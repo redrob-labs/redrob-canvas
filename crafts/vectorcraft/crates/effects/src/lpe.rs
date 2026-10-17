@@ -117,7 +117,7 @@ pub fn bspline(path: &PathData, p: &Value) -> PathData {
             .iter()
             .map(|sp| {
                 let pts: Vec<Point> = sp.anchors.iter().map(|a| a.p).collect();
-                redrob_vector_geom::bspline_to_bezier(&pts, sp.closed, weight)
+                redrob_vector_geom::bspline_to_bezier_weighted(&pts, sp.closed, weight)
             })
             .collect(),
     )
@@ -134,7 +134,7 @@ pub fn spiro(path: &PathData, p: &Value) -> PathData {
             .map(|sp| {
                 let pts: Vec<Point> = sp.anchors.iter().map(|a| a.p).collect();
                 let corners: Vec<bool> = sp.anchors.iter().map(|a| cusps && a.kind == AnchorKind::Corner && !a.has_in() && !a.has_out()).collect();
-                redrob_vector_geom::spiro_approx_to_bezier(&pts, sp.closed, Some(&corners))
+                redrob_vector_geom::spiro_approx_to_bezier_corners(&pts, sp.closed, Some(&corners))
             })
             .collect(),
     )

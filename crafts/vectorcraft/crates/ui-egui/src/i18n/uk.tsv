@@ -4368,3 +4368,23 @@ lighting	Light	Світло
 	Dashed Stroke	Пунктирне обведення
 	Taper Stroke…	Звужене обведення…
 	Taper Stroke	Звужене обведення
+	Spiro	Спіро
+	BSpline	B-сплайн
+	Paraxial	Паралельно осям
+	Triangle In	Трикутник усередину
+	Triangle Out	Трикутник назовні
+	From Clipboard	З буфера обміну
+	Segment:	Сегмент:
+	Curve	Крива
+	Make Selected Segments Lines	Зробити вибрані сегменти прямими
+	Make Selected Segments Curves	Зробити вибрані сегменти кривими
+	Show Handles	Показати маніпулятори
+	Shape Along Stroke	Форма вздовж обведення
+	Segment Type	Тип сегмента
+	Next Anchor	Наступна опорна точка
+	Grow Anchor Selection	Розширити виділення опорних точок
+	Touch Select Anchors	Виділити торкнуті опорні точки
+	Make Segment Line	Зробити сегмент прямим
+	Make Segment Curve	Зробити сегмент кривим
+	X:	X:
+	Y:	Y:

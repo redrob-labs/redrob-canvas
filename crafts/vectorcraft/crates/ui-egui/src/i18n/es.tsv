@@ -4772,3 +4772,21 @@ mark-style	Japanese	Japonesas
 	End Taper	Afilado final
 	Smoothing	Suavizado
 	Direction	Dirección
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Paraxial
+	Triangle In	Triángulo hacia dentro
+	Triangle Out	Triángulo hacia fuera
+	From Clipboard	Desde el portapapeles
+	Segment:	Segmento:
+	Curve	Curva
+	Make Selected Segments Lines	Convertir los segmentos seleccionados en líneas
+	Make Selected Segments Curves	Convertir los segmentos seleccionados en curvas
+	Show Handles	Mostrar manejadores
+	Shape Along Stroke	Forma a lo largo del trazo
+	Segment Type	Tipo de segmento
+	Next Anchor	Siguiente punto de ancla
+	Grow Anchor Selection	Ampliar la selección de anclas
+	Touch Select Anchors	Seleccionar anclas tocadas
+	Make Segment Line	Convertir segmento en línea
+	Make Segment Curve	Convertir segmento en curva

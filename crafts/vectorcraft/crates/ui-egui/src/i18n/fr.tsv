@@ -4831,3 +4831,21 @@ theme	Appearance	Apparence
 	End Taper	Effilement à la fin
 	Smoothing	Lissage
 	Direction	Direction
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Paraxial
+	Triangle In	Triangle entrant
+	Triangle Out	Triangle sortant
+	From Clipboard	Depuis le presse-papiers
+	Segment:	Segment :
+	Curve	Courbe
+	Make Selected Segments Lines	Convertir les segments sélectionnés en lignes
+	Make Selected Segments Curves	Convertir les segments sélectionnés en courbes
+	Show Handles	Afficher les poignées
+	Shape Along Stroke	Forme le long du contour
+	Segment Type	Type de segment
+	Next Anchor	Point d’ancrage suivant
+	Grow Anchor Selection	Étendre la sélection de points d’ancrage
+	Touch Select Anchors	Sélectionner les points d’ancrage touchés
+	Make Segment Line	Convertir le segment en ligne
+	Make Segment Curve	Convertir le segment en courbe

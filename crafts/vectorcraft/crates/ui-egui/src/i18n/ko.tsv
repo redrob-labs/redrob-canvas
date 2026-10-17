@@ -4367,3 +4367,23 @@ lighting	Light	광원
 	End Taper	끝 가늘기
 	Smoothing	부드럽게
 	Direction	방향
+	Spiro	스피로
+	BSpline	B-스플라인
+	Paraxial	축 평행
+	Triangle In	삼각형 안쪽
+	Triangle Out	삼각형 바깥쪽
+	From Clipboard	클립보드에서
+	Segment:	세그먼트:
+	Curve	곡선
+	Make Selected Segments Lines	선택한 세그먼트를 직선으로
+	Make Selected Segments Curves	선택한 세그먼트를 곡선으로
+	Show Handles	핸들 표시
+	Shape Along Stroke	선을 따르는 모양
+	Segment Type	세그먼트 종류
+	Next Anchor	다음 앵커
+	Grow Anchor Selection	앵커 선택 확장
+	Touch Select Anchors	스쳐 지나간 앵커 선택
+	Make Segment Line	세그먼트를 직선으로
+	Make Segment Curve	세그먼트를 곡선으로
+	X:	X:
+	Y:	Y:

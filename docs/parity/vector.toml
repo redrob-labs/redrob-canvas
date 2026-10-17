@@ -126,8 +126,8 @@ reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/pencil-tool.html"
 behaviour = "Drag draws a path, smoothed by a 1-100 slider; click-click draws straight segments; modes: regular Bezier, Spiro, BSpline; a shape can be applied along the stroke (triangle in/out, ellipse, from clipboard, bend from clipboard); 'LPE based interactive simplify'; pressure-sensitive width when a tablet is used ('PowerPencil')."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/draw2.rs, crafts/vectorcraft/crates/pathops/src/fit.rs, crafts/vectorcraft/crates/engine/src/cmd/draw2.rs"
-gap = "no Spiro or BSpline mode, no shape-along-stroke option on the freehand tool (brushes do that), no pressure width while drawing"
+ours_where = "crafts/vectorcraft/crates/tools/src/draw2/gesture.rs, crafts/vectorcraft/crates/geom/src/spline.rs, crafts/vectorcraft/crates/pathops/src/fit.rs, crafts/vectorcraft/crates/engine/src/cmd/draw2.rs (path.freehand mode/shape, path.strokeShape), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (Mode and Shape dropdowns)"
+gap = "Spiro is a documented approximation (chord-bisector tangents, arc handles, curvature relaxation), not a clothoid solver; no 'LPE based interactive simplify'; no pressure width while drawing (the Paintbrush keeps pressure, the Pencil does not)"
 priority = 1
 
 [[feature]]
@@ -137,9 +137,9 @@ name = "Pen (Bezier) tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/pen-tool.html"
 behaviour = "Click places corner nodes, click-drag places smooth nodes with handles; Ctrl snaps angles to 15 degree steps, Shift locks handle length, Enter or double-click ends the path, clicking the start closes it; modes: regular Bezier, Spiro spline, BSpline, straight segments, paraxial (axis-aligned) segments; same shape-along-stroke options as the pencil."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/pen.rs, crafts/vectorcraft/crates/tools/src/draw2/family.rs"
-gap = "no Spiro, BSpline or paraxial modes; rubber-band preview of the next segment exists but no shape-along-path option"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/pen.rs (mode: regular, spiro, bspline, paraxial; shape), crafts/vectorcraft/crates/geom/src/spline.rs, crafts/vectorcraft/crates/engine/src/cmd/draw2.rs (path.strokeShape), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -573,9 +573,9 @@ name = "Segment type: make line / make curve"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
 behaviour = "Selected segments are converted to straight lines (handles removed) or to curves (handles created so the shape is unchanged, then editable)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.setHandle, path.convertAnchors)"
-gap = "straightening happens by converting the end anchors to corners; no explicit per-segment line/curve toggle"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/nodeops.rs (path.segmentType), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (Segment: Line / Curve)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -586,8 +586,8 @@ reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Rubber band selects nodes (Shift adds), Alt-drag touch-selects along a stroke, Tab/Shift+Tab walk nodes, Ctrl+A selects all nodes of the path, Ctrl+Alt+A all across subpaths, PgUp/PgDn grow or shrink the selection spatially or along the path, ! inverts."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs"
-gap = "rubber band and Shift-add only; no Tab walk, spatial grow or lasso touch select for nodes (Lasso tool selects anchors by a freehand region)"
+ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs (Alt-drag lasso, Tab, Page Up/Down), crafts/vectorcraft/crates/engine/src/cmd/nodeops.rs (select.anchorStep, select.anchorGrow, select.anchorsTouching)"
+gap = "Page Up/Down grow spatially only (not along the path); no Ctrl+Alt+A across subpaths and no ! invert for anchors"
 priority = 2
 
 [[feature]]
@@ -622,8 +622,8 @@ reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/editing-paths.html"
 behaviour = "The node toolbar shows the X/Y of the selected node(s) in a chosen unit for numeric editing, plus toggles: show clipping path, show mask, show transform handles, show Bezier handles, show path outline, edit the live path effect parameters on canvas."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/control.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Show/Hide Edges, Direction Handles)"
-gap = "no numeric X/Y for a single anchor in the control bar; handle visibility is a view preference"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (node_options: X/Y fields, Show Handles toggle), crafts/vectorcraft/crates/ui-egui/src/state.rs (ViewFlags.show_handles), crafts/vectorcraft/crates/ui-egui/src/canvas.rs"
+gap = "X/Y edit one selected anchor only; no clipping-path, mask, transform-handle, path-outline or LPE-parameter toggles in the node toolbar"
 priority = 2
 
 [[feature]]
