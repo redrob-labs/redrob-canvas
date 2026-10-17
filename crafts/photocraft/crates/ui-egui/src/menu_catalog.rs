@@ -100,6 +100,7 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["Edit"], "Content-Aware Scale", Some("Cmd+Alt+Shift+C"), "edit.contentAwareScale"),
     (&["Edit"], "Puppet Warp", None, "edit.puppetWarp"),
     (&["Edit"], "Perspective Warp", None, "edit.perspectiveWarp"),
+    (&["Edit"], "Cage Transform", None, "edit.cageTransform"),
     (&["Edit"], "Free Transform", Some("Cmd+T"), "edit.freeTransform"),
     (&["Edit", "Transform"], "Again", Some("Cmd+Shift+T"), "edit.transform.again"),
     (&["Edit", "Transform"], "---", None, "---"),

@@ -23,6 +23,7 @@ mod artistic;
 mod artistic_fx;
 mod blur;
 mod blur2;
+pub mod cage;
 pub mod camera_raw;
 pub mod color_to_alpha;
 pub mod content_aware;

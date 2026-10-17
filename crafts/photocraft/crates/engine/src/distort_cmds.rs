@@ -12,6 +12,7 @@
 
 use std::cell::RefCell;
 
+use redrob_photo_algo::cage::Cage;
 use redrob_photo_algo::liquify::{LiquifyField, LiquifyStroke, apply_liquify, auto_cell};
 use redrob_photo_algo::perspective::{PerspectiveMap, Plane, Straighten, straighten};
 use redrob_photo_algo::puppet::{PuppetDensity, PuppetMode, PuppetPin, PuppetWarp, puppet_warp, puppet_warp_with_mask};
@@ -32,6 +33,7 @@ pub const PUPPET: &str = "edit.puppetWarp";
 pub const PUPPET_SMART: &str = "layer.smartObjects.puppetWarp";
 pub const PERSPECTIVE: &str = "edit.perspectiveWarp";
 pub const PERSPECTIVE_SMART: &str = "layer.smartObjects.perspectiveWarp";
+pub const CAGE: &str = "edit.cageTransform";
 
 fn bad(cmd: &str, msg: impl Into<String>) -> EngineError {
     EngineError::BadParams { cmd: cmd.into(), msg: msg.into() }
@@ -108,6 +110,21 @@ pub fn perspective_params(cmd: &str, p: &Value) -> Result<Vec<Plane>> {
     Ok(planes)
 }
 
+/// Cage Transform params: the cage's vertices before and after the edit.
+pub fn cage_params(cmd: &str, p: &Value) -> Result<Cage> {
+    let ring = |k: &str| -> Result<Vec<[f64; 2]>> {
+        match p.get(k) {
+            Some(v) => serde_json::from_value(v.clone()).map_err(|e| bad(cmd, format!("bad `{k}` (a list of [x, y] vertices): {e}"))),
+            None => Err(bad(cmd, format!("pass `{k}`: [[x, y], …]"))),
+        }
+    };
+    let (src, dst) = (ring("cage")?, ring("deformed")?);
+    if src.len() > 4096 {
+        return Err(bad(cmd, "the cage has more than 4096 vertices"));
+    }
+    Cage::new(src, dst).ok_or_else(|| bad(cmd, "`cage` and `deformed` need the same three or more finite vertices"))
+}
+
 fn interp(p: &Value) -> Interp {
     Interp::parse(p.get("interpolation").and_then(Value::as_str).unwrap_or("bicubic"))
 }
@@ -173,10 +190,20 @@ pub fn perspective_surface(surf: &Surface, planes: &[Plane], interp: Interp) -> 
     warp_mesh_surface(surf, b, &|x, y| m.map(x, y), interp)
 }
 
+/// Cage-transforms a surface's content (the pixels inside the cage follow its moved vertices).
+pub fn cage_surface(surf: &Surface, cage: &Cage, interp: Interp) -> Surface {
+    let b = surf.content_bounds();
+    if cage.is_identity() || b.is_empty() {
+        return surf.clone();
+    }
+    warp_mesh_surface(surf, b, &|x, y| cage.map(x, y), interp)
+}
+
 /// Smart-filter hook: re-applies a stored Liquify / Puppet / Perspective Warp to a rendered
 /// smart object (`None` for other ids).
 pub fn apply_to_surface(id: &str, params: &Value, surf: &Surface, canvas: Rect) -> Option<Surface> {
     match id {
+        CAGE => Some(cage_surface(surf, &cage_params(id, params).ok()?, interp(params))),
         LIQUIFY => {
             let (strokes, cell) = liquify_params(id, params, canvas).ok()?;
             Some(liquify_surface(surf, &strokes, cell, canvas))
@@ -381,7 +408,26 @@ fn perspective(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
     Ok(r)
 }
 
+fn cage(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
+    let cage = cage_params(cmd, p)?;
+    let id = target(s, p)?;
+    if cage.is_identity() {
+        return Ok(json!({"layer": id.0, "changed": false}));
+    }
+    let it = interp(p);
+    let mask_fn = |m: &Surface, sel: Option<&Surface>| {
+        let f = |x, y| cage.map(x, y);
+        let whole = |m: &Surface| Ok(warp_mesh_gray(m, &f, Interp::Bilinear));
+        match sel {
+            Some(sel) => crate::transform_cmds::move_gray_selected(m, sel, &|lifted, src| Ok(warp_mesh_surface(lifted, src, &f, Interp::Bilinear)), &whole),
+            None => whole(m),
+        }
+    };
+    run_on_layer(s, cmd, "Cage Transform", p, true, &|surf, sel, _| deform_selected(surf, sel, &|x| Ok(cage_surface(x, &cage, it))), Some(&mask_fn))
+}
+
 pub fn specs() -> Vec<CommandSpec> {
+    const C: &str = r##"{"cage":[[x,y],…] (closed polygon around the part to deform),"deformed":[[x,y],…] (the same vertices moved),"interpolation":"bicubic|bilinear|nearest","layer":id?} — the pixels inside the cage follow its vertices by mean value coordinates; outside nothing moves"##;
     const L: &str = r##"{"strokes":[{"tool":"forwardWarp|reconstruct|smooth|twirlCw|twirlCcw|pucker|bloat|pushLeft|freeze|thaw|lassoMask|reconstructAll","size":px=100,"density":0-100=50,"pressure":0-100=100,"rate":0-100=80,"points":[[x,y,pressure?]…],"amount":%? (reconstructAll; lassoMask: 1 freezes the polygon in points, 0 thaws it)}…],"meshSize":px? (field resolution, px per node; default 2, or 4 above 4 MP),"layer":id?} — strokes replay in order on a fresh field; a selection limits the effect; on a smart object it becomes a smart filter"##;
     const P: &str = r##"{"pins":[{"src":[x,y],"dst":[x,y],"rotate":deg?,"depth":n?}…],"mode":"rigid|normal|distort"="normal","density":"fewer|normal|more"="normal","expansion":px=2,"interpolation":"bicubic|bilinear|nearest","layer":id?} — mesh over the opaque region, as-rigid-as-possible; on a smart object it becomes a smart filter"##;
     const Q: &str = r##"{"planes":[{"src":[[x,y]×4],"dst":[[x,y]×4]}…] (corners clockwise from top-left; corners that coincide in src are linked),"straighten":"horizontal|vertical|auto"?,"interpolation":"bicubic|bilinear|nearest","layer":id?}"##;
@@ -415,6 +461,16 @@ pub fn specs() -> Vec<CommandSpec> {
             enabled: smart_layer,
             journal: true,
             run: |s, p| puppet(s, p, PUPPET_SMART),
+        },
+        CommandSpec {
+            id: CAGE,
+            label: "Cage Transform",
+            menu: &["Edit"],
+            shortcut: None,
+            params: C,
+            enabled: pixel_layer,
+            journal: true,
+            run: |s, p| cage(s, p, CAGE),
         },
         CommandSpec {
             id: PERSPECTIVE,
