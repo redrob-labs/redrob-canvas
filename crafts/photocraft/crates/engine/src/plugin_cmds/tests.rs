@@ -170,7 +170,9 @@ fn hostile_plugins_fail_without_touching_the_document() {
         let undo_before = s.active().unwrap().history.can_undo();
         let t = std::time::Instant::now();
         assert!(s.execute("plugin.run", json!({"id": &id})).is_err(), "{id}");
-        assert!(t.elapsed() < std::time::Duration::from_secs(10), "{id} took {:?}", t.elapsed());
+        // The runtime cuts a spinning plug-in off at its 10 s budget; the unoptimised test
+        // profile on a loaded host adds under two seconds of overhead on top.
+        assert!(t.elapsed() < std::time::Duration::from_secs(12), "{id} took {:?}", t.elapsed());
         assert_eq!(pixels(&s), before, "{id}");
         assert_eq!(s.active().unwrap().history.can_undo(), undo_before, "{id}: no undo step");
         Session::new().execute("plugin.remove", json!({"id": &id})).unwrap();
