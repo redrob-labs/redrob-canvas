@@ -10,7 +10,7 @@ use crate::state::Dialog;
 use crate::{VectorcraftApp, dialogs, io, menus, theme};
 
 const DESATURATE: &[u8] = include_bytes!("../../plugins/tests/fixtures/desaturate.wasm");
-const DESATURATE_ID: &str = "org.vectorcraft.example.desaturate";
+const DESATURATE_ID: &str = "org.rvector.example.desaturate";
 
 fn app() -> VectorcraftApp {
     let mut app = VectorcraftApp::new(Session::new(), Default::default());
