@@ -4429,3 +4429,199 @@ shape	Appearance	Aspetto
 	Import Swatches from Image	Importa campioni dall'immagine
 	Export Swatches as CSS…	Esporta campioni come CSS…
 	Cage Transform	Trasformazione gabbia
+	Antialias	Antialias
+	Blinds…	Veneziane…
+	CIE lch Noise…	Rumore CIE LCh…
+	Cubism…	Cubismo…
+	Decor	Decorazioni
+	Difference of Gaussians…	Differenza di gaussiane…
+	Distance Map…	Mappa di distanza…
+	Engrave…	Incisione…
+	Filmstrip…	Pellicola…
+	Fuzzy Border…	Bordo sfumato…
+	Gradient Flare…	Riflesso a gradiente…
+	HSV Noise…	Rumore HSV…
+	Hurl…	Scaglia…
+	Image Gradient…	Gradiente immagine…
+	Impressionist…	Impressionista…
+	Kaleidoscope…	Caleidoscopio…
+	Light and Shadow	Luce e ombra
+	Long Shadow…	Ombra lunga…
+	Mean Curvature Blur…	Sfocatura a curvatura media…
+	NL Filter…	Filtro NL…
+	Normal Map…	Mappa delle normali…
+	Operation Graph…	Grafo di operazioni…
+	Page Curl…	Pagina arricciata…
+	Perspective Shadow…	Ombra prospettica…
+	Pick…	Preleva…
+	SLIC…	SLIC…
+	Shift…	Sposta…
+	Slur…	Sciogli…
+	Sparkle…	Scintille…
+	Supernova…	Supernova…
+	Symmetric Nearest Neighbor…	Vicino più prossimo simmetrico…
+	Tileable Blur…	Sfocatura piastrellabile…
+	Value Propagate…	Propaga valore…
+	Van Gogh (LIC)…	Van Gogh (LIC)…
+	Video Degradation…	Degradazione video…
+	Waterpixels…	Waterpixels…
+	Weave…	Tessuto…
+	Xach-Effect…	Effetto Xach…
+	Add Border	Aggiungi bordo
+	Add Shadow	Aggiungi ombra
+	Additive	Additivo
+	Allow Resizing	Consenti ridimensionamento
+	Alpha Trimmed Mean	Media alfa troncata
+	At Bottom	In basso
+	At Top	In alto
+	Blur Border	Sfuma bordo
+	Blur Horizontally	Sfoca orizzontalmente
+	Blur Radius	Raggio sfocatura
+	Blur Type	Tipo di sfocatura
+	Blur Vertically	Sfoca verticalmente
+	Border Size	Dimensione bordo
+	Box	Riquadro
+	Brush Shape	Forma pennello
+	Chebyshev	Chebyshev
+	Clip Result	Ritaglia risultato
+	Color Type	Tipo di colore
+	Compactness	Compattezza
+	Composition	Composizione
+	Convolve	Convoluzione
+	Cubic	Cubica
+	Current Gradient	Gradiente corrente
+	Current Gradient Reversed	Gradiente corrente invertito
+	Derivative	Derivata
+	Displacement	Spostamento
+	Drop Shadow Blur Radius	Raggio sfocatura ombra
+	Drop Shadow Color	Colore ombra
+	Drop Shadow Opacity	Opacità ombra
+	Drop Shadow X Offset	Scostamento X ombra
+	Drop Shadow Y Offset	Scostamento Y ombra
+	Dulling	Attenuazione
+	Edge Enhancement	Miglioramento bordi
+	Effect Channel	Canale effetto
+	Effect Operator	Operatore effetto
+	Ellipse	Ellisse
+	Euclidean	Euclidea
+	Evenly	Uniformemente
+	Fading	Dissolvenza
+	Fading Fixed Length	Dissolvenza a lunghezza fissa
+	Film Color	Colore pellicola
+	Filter Length	Lunghezza filtro
+	Finite	Finita
+	Flare Intensity	Intensità riflesso
+	Flowing	Fluente
+	Foreground Background	Primo piano/sfondo
+	Foreground To Peaks	Primo piano ai picchi
+	Full Z	Z completo
+	Gradient Smoothness	Levigatezza gradiente
+	Granularity	Granularità
+	Graph	Grafo
+	Grayscale Averaging	Media in scala di grigi
+	Hex	Esagonale
+	Highlight Color	Colore luce
+	Highlight Opacity	Opacità luce
+	Highlight X Offset	Scostamento X luce
+	Highlight Y Offset	Scostamento Y luce
+	Hole Height	Altezza foro
+	Hole Offset	Scostamento foro
+	Hole Spacing	Spaziatura fori
+	Hole Width	Larghezza foro
+	Hue Rotation	Rotazione tonalità
+	Integration Steps	Passi di integrazione
+	Iterations	Iterazioni
+	Keep Original	Mantieni originale
+	Large Staggered	Scalato grande
+	Large Three By Three	3×3 grande
+	Limit Line Width	Limita spessore linea
+	Long Staggered	Scalato lungo
+	Lower Left	In basso a sinistra
+	Lower Right	In basso a destra
+	Lower Threshold	Soglia inferiore
+	Luminosity Threshold	Soglia di luminosità
+	Magnitude	Modulo
+	Manhattan	Manhattan
+	Maximum Value	Valore massimo
+	Metric	Metrica
+	Middle Value	Valore medio
+	Minimum Value	Valore minimo
+	Mirror Rotation	Rotazione specchi
+	Mirrors	Specchi
+	More Black	Più nero
+	More Opaque	Più opaco
+	More Transparent	Più trasparente
+	More White	Più bianco
+	Natural Color	Colore naturale
+	Noise Magnitude	Ampiezza rumore
+	Normalize	Normalizza
+	Number Color	Colore numeri
+	Only Background	Solo sfondo
+	Only Foreground	Solo primo piano
+	Optimal Estimation	Stima ottimale
+	Orientation Type	Tipo di orientamento
+	Pairs	Coppie
+	Paper Relief	Rilievo carta
+	Placement	Posizionamento
+	Propagating Rate	Velocità di propagazione
+	Radius1	Raggio 1
+	Radius2	Raggio 2
+	Random Hue	Tonalità casuale
+	Random Saturation	Saturazione casuale
+	Randomization	Casualità
+	Randomly	Casualmente
+	Rays	Raggi
+	Regions Size	Dimensione regioni
+	Relative Distance	Distanza relativa
+	Result Rotation	Rotazione risultato
+	Ribbon Spacing	Spaziatura nastri
+	Ribbon Width	Larghezza nastri
+	Rotated	Ruotato
+	Second Flares	Riflessi secondari
+	Segments	Segmenti
+	Shade	Ombreggiatura
+	Shadow Darkness	Oscurità ombra
+	Shadow Depth	Profondità ombra
+	Shadow Length	Lunghezza ombra
+	Shadow Minus Image	Ombra meno immagine
+	Shadow Only	Solo ombra
+	Shadow Plus Image	Ombra più immagine
+	Shadow Weight	Peso ombra
+	Size Variation	Variazione dimensione
+	Spatial Regularization	Regolarizzazione spaziale
+	Spike Angle	Angolo punte
+	Spike Density	Densità punte
+	Spike Length	Lunghezza punte
+	Spike Points	Numero punte
+	Splotch	Macchia
+	Spokes	Raggi
+	Staggered	Scalato
+	Start Index	Indice iniziale
+	Striped	A strisce
+	Stroke Density	Densità tratti
+	Superpixels Color	Colore superpixel
+	Superpixels Size	Dimensione superpixel
+	Thread Density	Densità fili
+	Thread Intensity	Intensità fili
+	Thread Length	Lunghezza fili
+	Three By Three	3×3
+	Threshold High	Soglia alta
+	Threshold Low	Soglia bassa
+	Tile Saturation	Saturazione tessere
+	Tileable	Piastrellabile
+	To Bottom	Verso il basso
+	To Left	Verso sinistra
+	To Right	Verso destra
+	To Top	Verso l'alto
+	Trim X	Ritaglio X
+	Trim Y	Ritaglio Y
+	Upper Left	In alto a sinistra
+	Upper Right	In alto a destra
+	Upper Threshold	Soglia superiore
+	Vector Angle	Angolo vettore
+	Vector Length	Lunghezza vettore
+	Wide Striped	A strisce larghe
+	With Source Image	Con immagine sorgente
+	With White Noise	Con rumore bianco
+	X Component	Componente X
+	Y Component	Componente Y

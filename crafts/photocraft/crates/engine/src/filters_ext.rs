@@ -414,13 +414,15 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             interpolate: s(p, "createBy", "interpolation") != "duplication",
         },
         "filter.video.ntscColors" => FilterParams::NtscColors,
-        _ => return crate::gallery_cmds::params_for(id, p),
+        _ => return crate::filters_extra::params_for(id, p).or_else(|| crate::gallery_cmds::params_for(id, p)),
     })
 }
 
 /// Ids whose rendering uses the foreground/background colours.
 fn uses_colours(id: &str) -> bool {
-    matches!(id, "filter.render.fibers" | "filter.stylize.tiles" | "filter.pixelate.pointillize") || crate::gallery_cmds::uses_colours(id)
+    matches!(id, "filter.render.fibers" | "filter.stylize.tiles" | "filter.pixelate.pointillize")
+        || crate::filters_extra::uses_colours(id)
+        || crate::gallery_cmds::uses_colours(id)
 }
 
 /// Fills in session state a filter reads (the current colours) as explicit params, so the

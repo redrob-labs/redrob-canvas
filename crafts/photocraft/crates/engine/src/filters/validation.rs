@@ -130,6 +130,62 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         }
         "filter.other.hsbHsl" => &[("inputMode", "rgb|hsb|hsl"), ("rowOrder", "hsb|hsl|rgb")],
         "filter.video.deInterlace" => &[("eliminate", "oddFields|evenFields"), ("createBy", "interpolation|duplication")],
+        // Third batch.
+        "filter.blur.tileableBlur" => &[("blurType", "gaussian|box")],
+        "filter.noise.nlFilter" => &[("mode", "alphaTrimmedMean|optimalEstimation|edgeEnhancement")],
+        "filter.distort.shift" => &[("direction", "horizontal|vertical")],
+        "filter.distort.valuePropagate" => {
+            &[("mode", "moreWhite|moreBlack|middleValue|foregroundToPeaks|onlyForeground|onlyBackground|moreOpaque|moreTransparent")]
+        }
+        "filter.distort.videoDegradation" => {
+            &[("pattern", "staggered|largeStaggered|striped|wideStriped|longStaggered|threeByThree|largeThreeByThree|hex|dots")]
+        }
+        "filter.distort.blinds" => &[("orientation", "horizontal|vertical")],
+        "filter.distort.pageCurl" => &[
+            ("location", "upperLeft|upperRight|lowerLeft|lowerRight"),
+            ("orientation", "horizontal|vertical"),
+            ("colors", "foregroundBackground|currentGradient|currentGradientReversed"),
+        ],
+        "filter.lightShadow.sparkle" => &[("colorType", "naturalColor|foregroundColor|backgroundColor")],
+        "filter.lightShadow.longShadow" => {
+            &[("style", "finite|infinite|fading|fadingFixedLength"), ("composition", "shadowPlusImage|shadowOnly|shadowMinusImage")]
+        }
+        "filter.lightShadow.perspectiveShadow" => &[("interpolation", "none|linear|cubic")],
+        "filter.stylize.imageGradient" => &[("output", "magnitude|direction|both")],
+        "filter.other.distanceMap" => &[("metric", "euclidean|manhattan|chebyshev")],
+        "filter.other.normalMap" => &[("xComponent", "red|green|blue"), ("yComponent", "red|green|blue")],
+        "filter.artistic.waterpixels" => &[("superpixelsColor", "average|random")],
+        "filter.artistic.impressionist" => &[
+            ("orientationType", "value|radius|random|radial|flowing|hue|adaptive"),
+            ("brushShape", "ellipse|square|line|splotch"),
+            ("placement", "randomly|evenly"),
+            ("strokeColor", "average|center"),
+            ("background", "keepOriginal|solidColor|transparent"),
+        ],
+        "filter.artistic.vanGogh" => {
+            &[("effectChannel", "brightness|hue|saturation"), ("effectOperator", "derivative|gradient"), ("convolve", "withWhiteNoise|withSourceImage")]
+        }
+        "filter.blur.meanCurvatureBlur"
+        | "filter.blur.symmetricNearestNeighbor"
+        | "filter.other.antialias"
+        | "filter.other.operationGraph"
+        | "filter.noise.cieLchNoise"
+        | "filter.noise.hsvNoise"
+        | "filter.noise.hurl"
+        | "filter.noise.pick"
+        | "filter.noise.slur"
+        | "filter.distort.engrave"
+        | "filter.distort.kaleidoscope"
+        | "filter.lightShadow.supernova"
+        | "filter.lightShadow.gradientFlare"
+        | "filter.lightShadow.xachEffect"
+        | "filter.stylize.differenceOfGaussians"
+        | "filter.stylize.laplace"
+        | "filter.artistic.cubism"
+        | "filter.artistic.slic"
+        | "filter.artistic.weave"
+        | "filter.decor.filmstrip"
+        | "filter.decor.fuzzyBorder" => &[],
         _ => return None,
     })
 }
@@ -328,7 +384,7 @@ mod tests {
     #[test]
     fn extended_filter_choices_match_their_specs_and_reject_unlisted_values() {
         let mut s = session(8);
-        let specs = crate::filters_ext::specs();
+        let specs: Vec<_> = crate::filters_ext::specs().into_iter().chain(crate::filters_extra::specs()).collect();
         let ids = [
             "filter.pixelate.mezzotint",
             "filter.stylize.diffuse",
@@ -345,6 +401,22 @@ mod tests {
             "filter.blur.lensBlur",
             "filter.other.hsbHsl",
             "filter.video.deInterlace",
+            "filter.blur.tileableBlur",
+            "filter.noise.nlFilter",
+            "filter.distort.shift",
+            "filter.distort.valuePropagate",
+            "filter.distort.videoDegradation",
+            "filter.distort.blinds",
+            "filter.distort.pageCurl",
+            "filter.lightShadow.sparkle",
+            "filter.lightShadow.longShadow",
+            "filter.lightShadow.perspectiveShadow",
+            "filter.stylize.imageGradient",
+            "filter.other.distanceMap",
+            "filter.other.normalMap",
+            "filter.artistic.waterpixels",
+            "filter.artistic.impressionist",
+            "filter.artistic.vanGogh",
         ];
         for id in ids {
             let doc = specs.iter().find(|spec| spec.id == id).unwrap().params;
