@@ -2,8 +2,8 @@
 //! Spiro-like G2 approximation with per-point corners. The pen tool's unweighted variants live
 //! in [`crate::spline`]; the two modules are kept apart so each keeps its own helpers.
 //! Splines through control points, converted to the anchor model: the cubic uniform B-spline
-//! ([`bspline_to_bezier`]) and a clean-room approximation of a Spiro-like G2 spline
-//! ([`spiro_approx_to_bezier`]). Both serve the pen and pencil drawing modes and the live path
+//! ([`bspline_to_bezier_weighted`]) and a clean-room approximation of a Spiro-like G2 spline
+//! ([`spiro_approx_to_bezier_corners`]). Both serve the pen and pencil drawing modes and the live path
 //! effects of the same names.
 //!
 //! The Spiro approximation is deliberately not a clothoid solver: each node takes the tangent of
