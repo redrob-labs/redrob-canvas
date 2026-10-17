@@ -340,7 +340,12 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
                 DialogKind::Command if fields.contains_key("__export") => crate::export_dialog::body(app, ui, &mut fields),
                 // Image Size and Canvas Size open on Width, selected (#2329).
                 DialogKind::Command if fields.contains_key("__sizing") => first_field_focused(ui, id, |ui| crate::sizing::body(ui, &mut fields)),
-                DialogKind::Command if crate::adjust_dialog::owns(&fields) => crate::adjust_dialog::body(app, ui, &mut fields),
+                DialogKind::Command if crate::adjust_dialog::owns(&fields) => {
+                    // Shadows/Highlights (ten sliders) and the like outgrow a 1080 px screen: the
+                    // editor scrolls so the OK / Cancel row below it stays on the screen.
+                    let room = (ctx.content_rect().height() - DIALOG_CHROME).max(160.0);
+                    egui::ScrollArea::vertical().id_salt(id.with("body")).max_height(room).show(ui, |ui| crate::adjust_dialog::body(app, ui, &mut fields));
+                }
                 DialogKind::Command if crate::blur_pins::owns(&fields) => crate::blur_pins::body(ui, &mut fields),
                 DialogKind::Command if fields.contains_key("__filter") => {
                     // Color Settings: the monitor profile in use can change while it is open.
@@ -474,13 +479,18 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
         });
         // The picker has a larger frame margin; include that whole frame in the canvas hit guard.
         shown.push(if color_picker { modal.response.rect } else { modal.inner });
-        // Pin once laid out at its real size (the first frame is an invisible sizing pass).
-        if !sizing && (web || pinned.is_none() || drag != egui::Vec2::ZERO) {
+        // Pin once laid out at its real size (the first frame is an invisible sizing pass), and
+        // keep the pin inside the screen every frame after: a dialog that grows once placed (a
+        // preview window appearing, a parameter list unfolding, Show More Options) moves up
+        // rather than pushing its OK / Cancel row off the bottom of the screen.
+        if !sizing {
             let screen = ctx.content_rect();
             // Keep the whole dialog (and so its title bar) on screen.
             let room = (screen.size() - modal.response.rect.size()).max(egui::Vec2::ZERO);
             let offset = (pinned.unwrap_or(modal.response.rect.min - screen.min) + drag).clamp(egui::Vec2::ZERO, room);
-            ctx.data_mut(|m| m.insert_temp(id, offset));
+            if web || pinned != Some(offset) {
+                ctx.data_mut(|m| m.insert_temp(id, offset));
+            }
             // A dialog the user moved reopens there (Photoshop remembers each dialog's place).
             if drag != egui::Vec2::ZERO {
                 ctx.data_mut(|m| m.insert_persisted(place, offset));

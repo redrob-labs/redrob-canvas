@@ -1619,7 +1619,14 @@ pub(crate) fn formatting_params(app: &PhotocraftApp) -> Option<serde_json::Value
         return Some(params);
     }
     let st = app.session.active()?;
-    let layers: Vec<u64> = st.selected_layers().into_iter().filter(|id| text_layer(&st.doc, *id).is_some()).map(|id| id.0).collect();
+    let mut layers: Vec<u64> = st.selected_layers().into_iter().filter(|id| text_layer(&st.doc, *id).is_some()).map(|id| id.0).collect();
+    // The controls show the target layer's style ([`target`]): what they show is what they edit,
+    // so an active type layer outside the selection is formatted too, rather than nothing.
+    if layers.is_empty()
+        && let Some((id, _)) = target(app)
+    {
+        layers.push(id);
+    }
     (!layers.is_empty()).then(|| json!({"layers": layers}))
 }
 
@@ -1663,7 +1670,12 @@ fn apply(app: &mut PhotocraftApp, ctx: &egui::Context, props: serde_json::Value)
     if let Some(key) = app.ui.text_edit.as_ref().map(|ed| ed.session.clone()).or_else(|| drag_key(ctx)) {
         p["coalesce"] = json!(key);
     }
-    let _ = app.run("type.setStyle", p);
+    // A refused edit (a size out of range, a font the engine has no face for) says so in the
+    // status bar instead of leaving the control changed and the layer not.
+    if let Err(e) = app.run("type.setStyle", p) {
+        app.ui.status = e;
+        app.ui.status_error = true;
+    }
 }
 
 /// `props` aimed at the type target: its layer, the selected characters while typing, and the
@@ -1716,14 +1728,28 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         Some((f, s, z, _)) => (f.clone(), if s.is_empty() { "Regular".into() } else { s.clone() }, *z),
         None => (o.type_font.clone(), o.type_style.clone(), o.type_size),
     };
-    if crate::icons::button(ui, "text-cursor", 24.0, false, tl!("Toggle text orientation")).clicked()
-        && let Some((layer, _)) = target(app)
-        && let Some(params) = formatting_params(app)
-    {
-        let to = if is_vertical(app, LayerId(layer)) { "horizontal" } else { "vertical" };
-        if let Err(e) = app.run(&format!("type.orientation.{to}"), params) {
-            app.ui.status = e;
-            app.ui.status_error = true;
+    // The button is lit while the target (else the tool) sets type vertically, so a column of
+    // glyphs can be read as the orientation it is and toggled back.
+    let vertical_now = target(app).map_or(app.ui.tool.is_vertical_type(), |(layer, _)| is_vertical(app, LayerId(layer)));
+    if crate::icons::button(ui, "text-cursor", 24.0, vertical_now, tl!("Toggle text orientation")).clicked() {
+        match (target(app), formatting_params(app)) {
+            (Some((layer, _)), Some(params)) => {
+                let to = if is_vertical(app, LayerId(layer)) { "horizontal" } else { "vertical" };
+                if let Err(e) = app.run(&format!("type.orientation.{to}"), params) {
+                    app.ui.status = e;
+                    app.ui.status_error = true;
+                }
+            }
+            // No type layer to turn: the tool itself turns, for the next layer it makes.
+            _ => {
+                app.ui.tool = match app.ui.tool {
+                    crate::state::Tool::Type => crate::state::Tool::VerticalType,
+                    crate::state::Tool::VerticalType => crate::state::Tool::Type,
+                    crate::state::Tool::HorizontalTypeMask => crate::state::Tool::VerticalTypeMask,
+                    crate::state::Tool::VerticalTypeMask => crate::state::Tool::HorizontalTypeMask,
+                    other => other,
+                };
+            }
         }
     }
     // Font family and style menus (one placeholder in their place while the fonts load).

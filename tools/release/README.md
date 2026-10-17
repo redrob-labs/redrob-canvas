@@ -31,3 +31,9 @@ does not install; a host unzips it behind any static web server.
 
 Rust 1.95 (`rust-toolchain.toml`), `dpkg-dev`, and the development headers egui, wgpu and rfd link
 against: `libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libgtk-3-dev`.
+
+At run time the binary loads `libxkbcommon.so.0` and `libxkbcommon-x11.so.0` (winit's X11 keyboard
+path, via dlopen, so no `NEEDED` entry names them) and aborts at start when they are missing. The
+`.deb` depends on `libxkbcommon0` and `libxkbcommon-x11-0` for that reason; the `.tar.gz` carries no
+dependency list, so a host installing from it needs `libxkbcommon-x11-0` (Debian, Ubuntu) or
+`libxkbcommon-x11` (Fedora) installed.

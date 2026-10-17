@@ -5,7 +5,7 @@
 //! applies after the frame's drawing.
 
 use egui::RichText;
-use redrob_ai::iopaint::{Device, EngineState, Plugin, models};
+use redrob_ai::iopaint::{Device, EngineState, Plugin, TransportMode, models};
 
 use super::bridge::Capabilities;
 use super::jobs::ToolKind;
@@ -186,20 +186,9 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
             actions.push(Action::Stop);
         }
     });
+    let choices = model_choices(panel, true);
     ui.horizontal(|ui| {
         ui.label("Model");
-        let mut choices: Vec<String> = models::ERASE_MODELS
-            .iter()
-            .chain(models::DIFFUSION_MODELS.iter())
-            .map(|m| (*m).to_owned())
-            .collect();
-        if let Some(config) = panel.engine().and_then(|e| e.config()) {
-            for downloaded in config.downloaded_models() {
-                if !choices.contains(&downloaded) {
-                    choices.push(downloaded);
-                }
-            }
-        }
         egui::ComboBox::from_id_salt("redrob_canvas_ai_model")
             .selected_text(short_model(&panel.settings.model))
             .width(ui.available_width().min(200.0))
@@ -210,7 +199,30 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
                 }
             });
     });
-    if panel.settings.model != panel.shown_model {
+    ui.horizontal(|ui| {
+        ui.label("Transport");
+        for mode in TransportMode::ALL {
+            ui.selectable_value(&mut panel.settings.transport, mode, mode.as_str())
+                .on_hover_text(mode.label());
+        }
+        if let Some(engine) = panel.engine()
+            && engine.is_running()
+        {
+            let in_use = engine.transport_in_use();
+            if in_use != panel.settings.transport {
+                ui.label(
+                    RichText::new(format!("using {}", in_use.as_str()))
+                        .small()
+                        .weak(),
+                )
+                .on_hover_text(
+                    "The running engine has no file routes (started without the shim, or \
+                     not on this machine); pixels go as base64 until it is restarted.",
+                );
+            }
+        }
+    });
+    if panel.engine_settings_changed() {
         actions.push(Action::SetModel);
     }
     ui.horizontal(|ui| {
@@ -243,6 +255,60 @@ pub fn short_model(name: &str) -> String {
     name.rsplit('/').next().unwrap_or(name).to_owned()
 }
 
+/// The models a combo offers: the built-in diffusion list (plus the erase list when
+/// `with_erase`), then whatever else the running server has downloaded.
+fn model_choices(panel: &AiPanel, with_erase: bool) -> Vec<String> {
+    let mut choices: Vec<String> = Vec::new();
+    if with_erase {
+        choices.extend(models::ERASE_MODELS.iter().map(|m| (*m).to_owned()));
+    }
+    choices.extend(models::DIFFUSION_MODELS.iter().map(|m| (*m).to_owned()));
+    if let Some(config) = panel.engine().and_then(|e| e.config()) {
+        for downloaded in config.downloaded_models() {
+            let is_erase = models::ERASE_MODELS.contains(&downloaded.as_str());
+            if !choices.contains(&downloaded) && (with_erase || !is_erase) {
+                choices.push(downloaded);
+            }
+        }
+    }
+    choices
+}
+
+/// The RemoveBG models a combo offers: the built-in list, then what the running plugin reports.
+fn remove_bg_choices(panel: &AiPanel) -> Vec<String> {
+    let mut choices: Vec<String> = models::REMOVE_BG_MODELS
+        .iter()
+        .map(|m| (*m).to_owned())
+        .collect();
+    if let Some(config) = panel.engine().and_then(|e| e.config())
+        && let Some(plugin) = config.plugin_models.get("RemoveBG")
+    {
+        for choice in &plugin.choices {
+            if !choices.contains(choice) {
+                choices.push(choice.clone());
+            }
+        }
+    }
+    choices
+}
+
+/// The "Subject model" combo shared by the Remove background and Select subject cards.
+fn remove_bg_model_combo(ui: &mut egui::Ui, panel: &mut AiPanel, id: &str) {
+    let choices = remove_bg_choices(panel);
+    ui.horizontal(|ui| {
+        ui.label("Subject model");
+        egui::ComboBox::from_id_salt(id)
+            .selected_text(short_model(&panel.settings.remove_bg_model))
+            .width(ui.available_width().min(180.0))
+            .show_ui(ui, |ui| {
+                for choice in choices {
+                    let label = short_model(&choice);
+                    ui.selectable_value(&mut panel.settings.remove_bg_model, choice, label);
+                }
+            });
+    });
+}
+
 /// One tool card: its parameters, a Run button and the reason it is disabled.
 fn card(
     ui: &mut egui::Ui,
@@ -252,10 +318,26 @@ fn card(
     actions: &mut Vec<Action>,
 ) {
     let available = kind.available(caps);
+    let fill_models = if kind == ToolKind::GenerativeFill {
+        model_choices(panel, false)
+    } else {
+        Vec::new()
+    };
     let frame = egui::Frame::group(ui.style());
     frame.show(ui, |ui| {
         ui.set_width(ui.available_width());
         ui.label(RichText::new(kind.label()).strong());
+        if matches!(kind, ToolKind::RemoveBackground | ToolKind::SelectSubject) {
+            remove_bg_model_combo(
+                ui,
+                panel,
+                if kind == ToolKind::RemoveBackground {
+                    "redrob_canvas_ai_remove_bg_model"
+                } else {
+                    "redrob_canvas_ai_subject_model"
+                },
+            );
+        }
         let settings = &mut panel.settings;
         match kind {
             ToolKind::Erase => {
@@ -301,6 +383,38 @@ fn card(
                             .color(ui.visuals().warn_fg_color),
                     );
                 }
+            }
+            ToolKind::GenerativeFill => {
+                ui.add(
+                    egui::TextEdit::multiline(&mut settings.fill_prompt)
+                        .hint_text("What to generate in the selection")
+                        .desired_rows(2)
+                        .desired_width(f32::INFINITY),
+                );
+                ui.add(
+                    egui::TextEdit::singleline(&mut settings.fill_negative_prompt)
+                        .hint_text("Negative prompt")
+                        .desired_width(f32::INFINITY),
+                );
+                ui.horizontal(|ui| {
+                    ui.label("Fill model");
+                    egui::ComboBox::from_id_salt("redrob_canvas_ai_fill_model")
+                        .selected_text(short_model(&settings.fill_model))
+                        .width(ui.available_width().min(200.0))
+                        .show_ui(ui, |ui| {
+                            for choice in fill_models {
+                                let label = short_model(&choice);
+                                ui.selectable_value(&mut settings.fill_model, choice, label);
+                            }
+                        });
+                });
+                ui.label(
+                    RichText::new(
+                        "Selection + prompt on a new layer masked by the selection. Loads the \
+                         fill model (a download the first time); Erase switches back to lama.",
+                    )
+                    .small(),
+                );
             }
             ToolKind::Outpaint => {
                 ui.horizontal_wrapped(|ui| {
@@ -521,6 +635,13 @@ mod tests {
                 "{kind:?} in Layout"
             );
         }
+        assert!(
+            harness
+                .get_by_label(ToolKind::GenerativeFill.label())
+                .accesskit_node()
+                .is_disabled(),
+            "Generative Fill needs a pixel selection"
+        );
         // Clicking an enabled item queues the run and opens the dock on the Tools tab.
         harness.get_by_label(ToolKind::Vectorize.label()).click();
         harness.run();
@@ -556,7 +677,7 @@ mod tests {
             actions: Vec<Action>,
         }
         let mut harness = egui_kittest::Harness::builder()
-            .with_size(egui::vec2(360.0, 1400.0))
+            .with_size(egui::vec2(360.0, 1800.0))
             .build_ui_state(
                 |ui, state: &mut State| {
                     let actions = dock(ui, &mut state.panel, &state.caps);
@@ -570,6 +691,8 @@ mod tests {
             );
         harness.run();
         harness.get_by_label("Engine");
+        harness.get_by_label("Transport");
+        harness.get_by_label("Fill model");
         for kind in ToolKind::ALL {
             harness.get_by_label(kind.label());
         }

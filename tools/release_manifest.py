@@ -15,6 +15,10 @@ listed in them like every other asset.
 
 The content is a constant, not a template: the launcher compares it field by field, and a
 release that carried a different shape would silently fall back to the launcher's built-in table.
+The published copy carries one more field, `"icon": "redrob-canvas.png"`: the shared publish job
+(release-publish.yml, `launcher_icon`) writes it over this file once the 512 px app icon is among
+the release assets, so the launcher's catalog shows this release's own logo. `--check` accepts
+either shape; it never checks for the icon because the local Linux build has no such asset.
 """
 from __future__ import annotations
 

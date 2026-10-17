@@ -5,9 +5,9 @@ This file was generated without network access from the exact `Cargo.lock` resol
 
 Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). The four vendored editors under `crafts/` and their own NOTICE texts are recorded in `NOTICE` and `UPSTREAM_NOTICES.md`; the workspace crates they contribute appear in the inventory below as `workspace source`.
 
-- Cargo.lock SHA-256: `0063a33db89a83dd5cb9561d457a88fe26ed6b3695fe9ecb78b12b4a5e53a130`
-- Resolved packages: **916**
-- Unique reproduced license/notice texts: **539**
+- Cargo.lock SHA-256: `a84192742da808369ada992cad832851bbda96773f68e373f3327ad2c59fdd9a`
+- Resolved packages: **921**
+- Unique reproduced license/notice texts: **544**
 - Generation mode: `cargo metadata --locked --offline`; no network content was used.
 
 ## Cargo.lock package inventory
@@ -47,6 +47,7 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `arrayvec` | `0.7.8` | registry+https://github.com/rust-lang/crates.io-index | `d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@4da95ec4ecb65b73` |
 | `as-raw-xcb-connection` | `1.0.1` | registry+https://github.com/rust-lang/crates.io-index | `175571dd1d178ced59193a6fc02dde1b972eb0bc56c892cde9beeceac5bf0f6b` | `MIT OR Apache-2.0` | `LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@9520ccef8aacc5e4` |
 | `as-slice` | `0.2.1` | registry+https://github.com/rust-lang/crates.io-index | `516b6b4f0e40d50dcda9365d53964ec74560ad4284da2e7fc97122cd83174516` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@c986bcdb83103d4d` |
+| `ascii` | `1.1.0` | registry+https://github.com/rust-lang/crates.io-index | `d92bec98840b8f03a5ff5413de5293bfcd8bf96467cf5452609f939ec6f5de16` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@fabba0cb7d00a4b3`<br>`LICENSE-MIT@7e4b8a17b118d3d7` |
 | `ash` | `0.38.0+1.3.281` | registry+https://github.com/rust-lang/crates.io-index | `0bb44936d800fea8f016d7f2311c6a4f97aebd5dc86f09906139ec848cf3a46f` | `MIT OR Apache-2.0` | `LICENSE-APACHE@0e8a410375e1ee5c`<br>`LICENSE-MIT@c733ccf8ab25df17` |
 | `assert-json-diff` | `2.0.2` | registry+https://github.com/rust-lang/crates.io-index | `47e4f2b81832e72834d7518d8487a0396a28cc408186a2e8854c0f98011faf12` | `MIT` | `LICENSE@65eac389b5c3fda1` |
 | `async-broadcast` | `0.7.2` | registry+https://github.com/rust-lang/crates.io-index | `435a87a52755b8f27fcf321ac4f04b2802e337c8c4872923137471ec39c37532` | `MIT OR Apache-2.0` | `LICENSE-APACHE@e4705ddab847449a`<br>`LICENSE-MIT@24e5860bf589d850` |
@@ -109,6 +110,7 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `cgl` | `0.3.2` | registry+https://github.com/rust-lang/crates.io-index | `0ced0551234e87afee12411d535648dd89d2e7f34c78b753395567aff3d447ff` | `MIT / Apache-2.0` | `COPYING@ec82b96487e9e778`<br>`LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@62065228e42caebc` |
 | `chacha20` | `0.10.2` | registry+https://github.com/rust-lang/crates.io-index | `65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@b8c6939380a400f5` |
 | `chrono` | `0.4.45` | registry+https://github.com/rust-lang/crates.io-index | `1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327` | `MIT OR Apache-2.0` | `LICENSE.txt@946c9835d8034d24` |
+| `chunked_transfer` | `1.5.0` | registry+https://github.com/rust-lang/crates.io-index | `6e4de3bc4ea267985becf712dc6d9eed8b04c953b3fcfb339ebc87acd9804901` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@5eda8c6538e7d543` |
 | `ciborium` | `0.2.2` | registry+https://github.com/rust-lang/crates.io-index | `42e69ffd6f0917f5c029256a24d0161db17cea3997d185db0d35926308770f0e` | `Apache-2.0` | `LICENSE@c71d239df91726fc` |
 | `ciborium-io` | `0.2.2` | registry+https://github.com/rust-lang/crates.io-index | `05afea1e0a06c9be33d539b876f1ce3692f4afea2cb41f740e7743225ed1c757` | `Apache-2.0` | `LICENSE@c71d239df91726fc` |
 | `ciborium-ll` | `0.2.2` | registry+https://github.com/rust-lang/crates.io-index | `57663b653d948a338bfb3eeba9bb2fd5fcfaecb9e199e87e1eda4d9e8b240fd9` | `Apache-2.0` | `LICENSE@c71d239df91726fc` |
@@ -528,83 +530,85 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `redox_syscall` | `0.5.18` | registry+https://github.com/rust-lang/crates.io-index | `ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d` | `MIT` | `LICENSE@efcfee7981ff7243` |
 | `redox_syscall` | `0.9.4` | registry+https://github.com/rust-lang/crates.io-index | `737970939a87c6fa31e7acad13307bccbb017a073b695b6089a2c484f929e20e` | `MIT` | `LICENSE@efcfee7981ff7243` |
 | `redox_users` | `0.5.3` | registry+https://github.com/rust-lang/crates.io-index | `60dc65c0ff1a7ae1294b0c67b9f14baf70b644404010370171787bfac1038fc0` | `MIT` | `LICENSE@e6a8ae2d79608378` |
-| `redrob-agent` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-ai` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-canvas` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-craft-atomic` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@fb67c10761d3ffb3` |
-| `redrob-craft-cms` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c7d57e9f7841bec6` |
-| `redrob-craft-pdf` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f53fe018b7f736a7` |
-| `redrob-craft-print` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f39ce60244ba2e06` |
-| `redrob-craft-quit` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-craft-settings` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f23849cce108c0d8` |
-| `redrob-craft-ui` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@3be7273263326119` |
+| `redrob-agent` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-ai` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-app-bridge` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.7.0#31a7dd330c33961f506a7346ad1fe9943691a6f5 | `git:31a7dd330c33961f506a7346ad1fe9943691a6f5` | `MIT` | `README.md@9280297c7cdba747` |
+| `redrob-canvas` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-craft-atomic` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@fb67c10761d3ffb3` |
+| `redrob-craft-cms` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c7d57e9f7841bec6` |
+| `redrob-craft-pdf` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f53fe018b7f736a7` |
+| `redrob-craft-print` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f39ce60244ba2e06` |
+| `redrob-craft-quit` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-craft-settings` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f23849cce108c0d8` |
+| `redrob-craft-ui` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@3be7273263326119` |
 | `redrob-engine-client` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.6.4#bcb8af0dc6f3b97c95208259da4c6a993e4935d9 | `git:bcb8af0dc6f3b97c95208259da4c6a993e4935d9` | `MIT` | (none shipped) |
-| `redrob-layout-color` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-compose` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-doc` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-engine` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-epub` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-fonts` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-format` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-geom` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-idml` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-images` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-mcp` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-pdf` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-pptx` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-render` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-textimport` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-tools` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-ui-egui` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-affinity` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@62589fc118626005` |
-| `redrob-photo-algo` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-automation` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-cms` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@451de5fd712baafa` |
-| `redrob-photo-codecs` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@5ccb43e3c0a9dcdd` |
-| `redrob-photo-color` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-compose` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-doc` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-engine` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-format` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-geom` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-gpu` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-heif` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27523bf034ac593e` |
-| `redrob-photo-io` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-ops` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-paint` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-plugins` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-psd` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@9cfd886fb5f2ce20` |
-| `redrob-photo-raster` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-raw` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c132a1c34a60f72a` |
-| `redrob-photo-tablet` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-testkit` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-text` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-ui-egui` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-vector` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-affinity` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27134d28cc9b5938` |
-| `redrob-vector-brush` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-cad` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-color` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-doc` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-effects` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-engine` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-eps` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-format` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-geom` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-mcp` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-metafile` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-pathops` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@66a9483fc1edeb17` |
-| `redrob-vector-pdf` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-plugins` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-render` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-scriptcheck` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-svg` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-testkit` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-text` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-three-d` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-tools` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-trace` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-ui-egui` | `0.8.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-engine-client` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.7.0#31a7dd330c33961f506a7346ad1fe9943691a6f5 | `git:31a7dd330c33961f506a7346ad1fe9943691a6f5` | `MIT` | (none shipped) |
+| `redrob-layout-color` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-compose` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-doc` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-engine` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-epub` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-fonts` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-format` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-geom` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-idml` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-images` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-mcp` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-pdf` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-pptx` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-render` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-textimport` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-tools` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-ui-egui` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-affinity` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@62589fc118626005` |
+| `redrob-photo-algo` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-automation` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-cms` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@451de5fd712baafa` |
+| `redrob-photo-codecs` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@5ccb43e3c0a9dcdd` |
+| `redrob-photo-color` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-compose` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-doc` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-engine` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-format` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-geom` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-gpu` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-heif` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27523bf034ac593e` |
+| `redrob-photo-io` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-ops` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-paint` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-plugins` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-psd` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@9cfd886fb5f2ce20` |
+| `redrob-photo-raster` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-raw` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c132a1c34a60f72a` |
+| `redrob-photo-tablet` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-testkit` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-text` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-ui-egui` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-vector` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-affinity` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27134d28cc9b5938` |
+| `redrob-vector-brush` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-cad` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-color` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-doc` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-effects` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-engine` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-eps` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-format` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-geom` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-mcp` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-metafile` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-pathops` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@66a9483fc1edeb17` |
+| `redrob-vector-pdf` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-plugins` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-render` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-scriptcheck` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-svg` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-testkit` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-text` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-three-d` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-tools` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-trace` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-ui-egui` | `0.9.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `ref-cast` | `1.0.27` | registry+https://github.com/rust-lang/crates.io-index | `7e440fb4e4b4147295338efb76001ab9e4efc0e5839df2c47fc5ac2381d365c3` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `ref-cast-impl` | `1.0.27` | registry+https://github.com/rust-lang/crates.io-index | `92ecd8964f8453721699a1ed72037b0db49ce2f5a5138486ee89bed6f67cdf3a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `regex` | `1.13.1` | registry+https://github.com/rust-lang/crates.io-index | `f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@6485b8ed310d3f03` |
@@ -729,6 +733,7 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `tiny-skia` | `0.12.0` | registry+https://github.com/rust-lang/crates.io-index | `47ffee5eaaf5527f630fb0e356b90ebdec84d5d18d937c5e440350f88c5a91ea` | `BSD-3-Clause` | `LICENSE@6d41e05f1d54fe72` |
 | `tiny-skia-path` | `0.11.4` | registry+https://github.com/rust-lang/crates.io-index | `9c9e7fc0c2e86a30b117d0462aa261b72b7a99b7ebd7deb3a14ceda95c5bdc93` | `BSD-3-Clause` | `LICENSE@6d41e05f1d54fe72` |
 | `tiny-skia-path` | `0.12.0` | registry+https://github.com/rust-lang/crates.io-index | `edca365c3faccca67d06593c5980fa6c57687de727a03131735bb85f01fdeeb9` | `BSD-3-Clause` | `LICENSE@6d41e05f1d54fe72` |
+| `tiny_http` | `0.12.0` | registry+https://github.com/rust-lang/crates.io-index | `389915df6413a2e74fb181895f933386023c71110878cd0825588928e64cdc82` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@e69bb98ae371fc43` |
 | `tinystr` | `0.8.4` | registry+https://github.com/rust-lang/crates.io-index | `b1e27c91459209c2986af3dcf603a5a74a4368754ce37414f59acc971167f643` | `Unicode-3.0` | `LICENSE@f367c1b8e1aa2624` |
 | `tinytemplate` | `1.2.1` | registry+https://github.com/rust-lang/crates.io-index | `be4d6b5f19ff7664e8c98d03e2139cb510db9b0a60b55f8e8709b689d939b6bc` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@b6d10b8851a36aa6` |
 | `tinyvec` | `1.13.3` | registry+https://github.com/rust-lang/crates.io-index | `fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee` | `Zlib OR Apache-2.0 OR MIT` | `LICENSE-APACHE.md@cfc7749b96f63bd3`<br>`LICENSE-MIT.md@fd80a26fbb3f644a`<br>`LICENSE-ZLIB.md@84b34dd7608f7fb9` |
@@ -6327,7 +6332,7 @@ Software.
 ### `27134d28cc9b59382a58cf09ef56dddf8eaf8bb36fb4d0c758dd1d6dea5fffbe`
 
 Used by:
-- redrob-vector-affinity 0.8.1 - README.md
+- redrob-vector-affinity 0.9.0 - README.md
 
 Original byte length: `10879`; trailing newline: `yes`.
 
@@ -6509,7 +6514,7 @@ see that for related crates.
 ### `27523bf034ac593e83b838309d61b9a687be8ef1c4003bc44fc03327a8ac85f8`
 
 Used by:
-- redrob-photo-heif 0.8.1 - README.md
+- redrob-photo-heif 0.9.0 - README.md
 
 Original byte length: `2117`; trailing newline: `yes`.
 
@@ -9452,7 +9457,7 @@ see that for related crates.
 ### `3be727326332611977840d101e9cd326a5ceb542a19aa465791a2e5589214732`
 
 Used by:
-- redrob-craft-ui 0.8.1 - README.md
+- redrob-craft-ui 0.9.0 - README.md
 
 Original byte length: `14450`; trailing newline: `yes`.
 
@@ -10333,7 +10338,7 @@ THE SOFTWARE.
 ### `451de5fd712baafadc5aa8e95781e3daf5f4955857e8bdb21304be2068ed3ec3`
 
 Used by:
-- redrob-photo-cms 0.8.1 - README.md
+- redrob-photo-cms 0.9.0 - README.md
 
 Original byte length: `4800`; trailing newline: `yes`.
 
@@ -13345,7 +13350,7 @@ SOFTWARE.
 ### `5ccb43e3c0a9dcdd55edc6bd44b4e4e935b6ebebbb62bf1a69f26169a66ce0ab`
 
 Used by:
-- redrob-photo-codecs 0.8.1 - README.md
+- redrob-photo-codecs 0.9.0 - README.md
 
 Original byte length: `18808`; trailing newline: `yes`.
 
@@ -13663,6 +13668,39 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+````
+
+### `5eda8c6538e7d543efe31ebad3fc0e66a7c4df056ddb901a5bdfbf5ef397e116`
+
+Used by:
+- chunked_transfer 1.5.0 - LICENSE-MIT
+
+Original byte length: `1151`; trailing newline: `yes`.
+
+````text
+The MIT License (MIT)
+
+Copyright (c) 2015 The tiny-http Contributors
+Copyright (c) 2015 The rust-chunked-transfer Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ````
 
@@ -14201,7 +14239,7 @@ This is the Windows adapter for [AccessKit](https://accesskit.dev/). It exposes 
 ### `62589fc11862600571d597382badeafaf0901647957f4b6d7c322698209bc440`
 
 Used by:
-- redrob-photo-affinity 0.8.1 - README.md
+- redrob-photo-affinity 0.9.0 - README.md
 
 Original byte length: `10404`; trailing newline: `yes`.
 
@@ -15401,7 +15439,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 ### `66a9483fc1edeb17dc7631224f22b53a397c28dbf706e544bea1b42dfbea0965`
 
 Used by:
-- redrob-vector-pathops 0.8.1 - README.md
+- redrob-vector-pathops 0.9.0 - README.md
 
 Original byte length: `6173`; trailing newline: `yes`.
 
@@ -19173,6 +19211,39 @@ For more information, please refer to <http://unlicense.org/>
 
 ````
 
+### `7e4b8a17b118d3d7fd7a362a4b6563e0bd98b098a24c4c7f07dd22042091a847`
+
+Used by:
+- ascii 1.1.0 - LICENSE-MIT
+
+Original byte length: `1132`; trailing newline: `yes`.
+
+````text
+MIT License
+
+Copyright (c) 2017 Thomas Bahn and contributors
+Copyright (c) 2014 The Rust Project Developers
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `7e5886959f67f8c75063a9d55cd3cb08c5a8cbea9a944fa1df2d4ae038f53721`
 
 Used by:
@@ -22309,6 +22380,84 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ````
 
+### `9280297c7cdba747b8bc6ef526a6744365ae9d338d00abf867dd417b979e0ee9`
+
+Used by:
+- redrob-app-bridge 0.1.0 - README.md
+
+Original byte length: `3413`; trailing newline: `yes`.
+
+````text
+# redrob-app-bridge
+
+Expose a Rust Redrob app's tools to the shared Redrob Code daemon in one call. The crate
+serves the tools over MCP (streamable HTTP) on `127.0.0.1` at a free port from a plain std
+thread -- no async runtime, so an egui app calls it from its setup code -- and registers
+that server with the daemon through [`redrob-engine-client`](../engine-client)'s
+`bridge_app`, which heartbeats and registers again after a daemon restart. Stopping or
+dropping the bridge unregisters and stops the server. The contract is the engine's
+[`docs/APP-BRIDGE.md`](../../docs/APP-BRIDGE.md).
+
+```toml
+[dependencies]
+redrob-app-bridge = { git = "https://github.com/redrob-labs/redrob-code", tag = "v0.6.3" }
+```
+
+## Example
+
+```rust
+use redrob_app_bridge::{AppBridge, AppBridgeConfig, Tool};
+use serde_json::json;
+
+fn bridge(doc: std::sync::Arc<std::sync::Mutex<Document>>) -> Result<AppBridge, String> {
+    let select = {
+        let doc = doc.clone();
+        Tool::new(
+            "select",
+            "Select the layer with the given name.",
+            json!({ "type": "object", "properties": { "layer": { "type": "string" } }, "required": ["layer"] }),
+            move |args| {
+                let layer = args["layer"].as_str().ok_or("layer is required")?;
+                doc.lock().map_err(|e| e.to_string())?.select(layer).map_err(|e| e.to_string())?;
+                Ok(format!("selected {layer}"))
+            },
+        )
+    };
+    let export_png = Tool::new("export_png", "Export the document as PNG; answers the path.", json!({ "type": "object" }), move |_| {
+        doc.lock().map_err(|e| e.to_string())?.export_png().map_err(|e| e.to_string())
+    });
+    AppBridge::start(AppBridgeConfig { version: Some(env!("CARGO_PKG_VERSION").into()), ..AppBridgeConfig::new("canvas", vec![select, export_png]) })
+}
+// Keep the returned `AppBridge` in the app's state; `bridge.stop()` (or dropping it) on quit.
+```
+
+While the bridge stands, any Redrob surface's agent sees the tools as MCP server
+`app:canvas` with `select` and `export_png` under it; `redrob apps list` shows the
+registration. A handler's `Err(text)` reaches the agent as a failed tool result
+(`isError: true`), a panic in a handler is caught and reported the same way.
+
+## What the server speaks
+
+`POST` with a JSON-RPC 2.0 body (one message or a batch) at any path; every reply is an
+`application/json` body. `initialize` (protocol `2025-03-26`, `capabilities.tools`,
+`serverInfo`), `ping`, `tools/list`, `tools/call` (`{ content: [{ type: "text", text }], isError }`).
+Notifications (`notifications/initialized`, ...) are answered `202` with no body. `GET` and
+`DELETE` are `405`: there is no server-to-client stream and no session. Each request runs on
+its own thread, so a slow tool call never holds up the daemon's `ping`.
+
+## API
+
+- `AppBridge::start(AppBridgeConfig) -> Result<AppBridge, String>` -- find or start the
+  daemon (as the app's name), serve, register.
+- `AppBridge::start_with(&Record, AppBridgeConfig)` -- the same against a daemon the app
+  already connected to.
+- `AppBridge::{port, mcp_url, id, stop}`; `Drop` does what `stop` does.
+- `AppBridgeConfig { name, version, tools, idle_exit_minutes }`, `AppBridgeConfig::new(name, tools)`.
+- `Tool { name, description, input_schema, handler }`, `Tool::new(name, description, schema, handler)`;
+  `handler: Arc<dyn Fn(Value) -> Result<String, String> + Send + Sync>`.
+
+````
+
 ### `92b81db30f7ab6d693e0af5661a40d273ca1947e891123ed823924192c10cbc7`
 
 Used by:
@@ -23551,7 +23700,7 @@ SOFTWARE.
 ### `9cfd886fb5f2ce20bf68b2ff83f5a76912a24e84823d04f9608e10acb16202c7`
 
 Used by:
-- redrob-photo-psd 0.8.1 - README.md
+- redrob-photo-psd 0.9.0 - README.md
 
 Original byte length: `12847`; trailing newline: `yes`.
 
@@ -24894,6 +25043,7 @@ Used by:
 - cc 1.8.0 - LICENSE-APACHE
 - cfg-if 1.0.5 - LICENSE-APACHE
 - cgl 0.3.2 - LICENSE-APACHE
+- chunked_transfer 1.5.0 - LICENSE-APACHE
 - cmake 0.1.58 - LICENSE-APACHE
 - concurrent-queue 2.5.0 - LICENSE-APACHE
 - core-foundation 0.10.1 - LICENSE-APACHE
@@ -25021,6 +25171,7 @@ Used by:
 - tar 0.4.46 - LICENSE-APACHE
 - tempfile 3.27.0 - LICENSE-APACHE
 - thread_local 1.1.10 - LICENSE-APACHE
+- tiny_http 0.12.0 - LICENSE-APACHE
 - tinytemplate 1.2.1 - LICENSE-APACHE
 - ttf-parser 0.25.1 - LICENSE-APACHE
 - unicode-bidi 0.3.18 - LICENSE-APACHE
@@ -30062,7 +30213,7 @@ The current MSRV is 1.69.0. For this project, it is primarily driven by the few 
 ### `c132a1c34a60f72a4bdc0107e57e644e3cc8f5222df5d92623e03376c2f99b73`
 
 Used by:
-- redrob-photo-raw 0.8.1 - README.md
+- redrob-photo-raw 0.9.0 - README.md
 
 Original byte length: `13736`; trailing newline: `yes`.
 
@@ -31217,7 +31368,7 @@ DEALINGS IN THE SOFTWARE.
 ### `c7d57e9f7841bec62a0bf157475c5af4e07a76a766bbea3c0431cb780d1c121a`
 
 Used by:
-- redrob-craft-cms 0.8.1 - README.md
+- redrob-craft-cms 0.9.0 - README.md
 
 Original byte length: `11133`; trailing newline: `yes`.
 
@@ -34443,6 +34594,42 @@ fn fallback_simple_impl() { ... }
 
 ````
 
+### `e69bb98ae371fc43e5ef9cb1fc648762faf92edd93a8afd71411fac419b1b550`
+
+Used by:
+- tiny_http 0.12.0 - LICENSE-MIT
+
+Original byte length: `1075`; trailing newline: `yes`.
+
+````text
+Copyright (c) 2014-2019 The tiny-http contributors
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+````
+
 ### `e6a8ae2d796083783efc94b1e66271aa2929dc4dfb231d34239aa9c7db8396db`
 
 Used by:
@@ -35171,7 +35358,7 @@ SOFTWARE.
 ### `f23849cce108c0d894838046a0e0d22a33080b638ef9999ba28c7246f85b9ff5`
 
 Used by:
-- redrob-craft-settings 0.8.1 - README.md
+- redrob-craft-settings 0.9.0 - README.md
 
 Original byte length: `8518`; trailing newline: `yes`.
 
@@ -35474,7 +35661,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 ### `f39ce60244ba2e0651d722968fac8b00f7807f495d3f9d6386d947cb0cc64e8b`
 
 Used by:
-- redrob-craft-print 0.8.1 - README.md
+- redrob-craft-print 0.9.0 - README.md
 
 Original byte length: `10418`; trailing newline: `yes`.
 
@@ -35799,7 +35986,7 @@ see that for related crates.
 ### `f53fe018b7f736a75eff9483c1d8d4cbcb2021c19018839fa7aa02faba322299`
 
 Used by:
-- redrob-craft-pdf 0.8.1 - README.md
+- redrob-craft-pdf 0.9.0 - README.md
 
 Original byte length: `14327`; trailing newline: `yes`.
 
@@ -37950,6 +38137,218 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 ````
 
+### `fabba0cb7d00a4b3211fdc13699223ab2d22f88678ccd608494cf2b332b903e9`
+
+Used by:
+- ascii 1.1.0 - LICENSE-APACHE
+
+Original byte length: `11326`; trailing newline: `yes`.
+
+````text
+  Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "{}"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+````
+
 ### `fb252fecf98d9af8f1d9201c5860319a514f5a8a24700dc84fc6ea287a7a4958`
 
 Used by:
@@ -37989,7 +38388,7 @@ DEALINGS IN THE SOFTWARE.
 ### `fb67c10761d3ffb3ee394e0cb3a055ba040da32d78207291e72f6c8bc1a4ddb5`
 
 Used by:
-- redrob-craft-atomic 0.8.1 - README.md
+- redrob-craft-atomic 0.9.0 - README.md
 
 Original byte length: `8625`; trailing newline: `yes`.
 

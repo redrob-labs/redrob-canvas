@@ -4,6 +4,42 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.9.0 — 2026-10-17
+
+### Added
+
+- **Control from Redrob Code.** The shell registers with the shared Redrob Code daemon as
+  `app:canvas` and serves eight tools — `document_info`, `open_file`, `switch_mode`, `list_layers`,
+  `select_layer`, `set_layer_visible`, `export` (PNG/SVG/PDF) and `save` — answered against the
+  real editor state with the same operations the menus run. A daemon that cannot be reached is
+  logged and the app runs without the bridge.
+- **Generative Fill.** Selection + prompt into a diffusion inpaint model, result on a new layer
+  clipped to the selection; its own prompt, negative prompt and model choice on the Tools tab and a
+  `generative_fill` agent tool.
+- **Launcher icon.** Each release ships `redrob-canvas.png` and names it in `redrob-launcher.json`,
+  so Redrob Launcher's catalog shows this release's own logo.
+
+### Changed
+
+- **Faster local AI.** IOPaint is started through a shim that exchanges raw pixel files instead of
+  base64 PNG; Erase, Inpaint and Generative Fill send only the mask's region of interest; outpaint
+  walks a large canvas in feathered 1024 px tiles instead of one request; Remove background defaults
+  to `isnet-general-use`.
+
+### Fixed
+
+- Dialogs that grow after placement keep their OK / Cancel row on screen; adjustment dialogs scroll
+  inside the same height budget as filter dialogs.
+- Type tool options format the type layer shown when the selection holds none, report a refused
+  style instead of dropping it, and the orientation toggle reflects the target.
+- Export As gains a Canvas Size pair under Image Size; Layer > Export As seeds its size from the
+  layer.
+- An SVG icon sprite (only `<symbol>`s, nothing used) imports every symbol into the Symbols panel
+  with one instance on the artboard.
+- Camera Raw white balance / exposure preview decodes with the document's own curve and agrees with
+  the Open result; a developed raw carries its EXIF focal length into Lens Correction.
+- Linux `.deb` no longer depends on `lib32gcc-s1`; it installs on a clean amd64 host.
+
 ## 0.8.1 — 2026-10-16
 
 ### Fixed

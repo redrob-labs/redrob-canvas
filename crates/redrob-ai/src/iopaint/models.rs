@@ -34,6 +34,30 @@ pub const DIFFUSION_MODELS: &[&str] = &[
     "timbrooks/instruct-pix2pix",
 ];
 
+/// The diffusion model Generative Fill loads when none was chosen: Stable Diffusion 2
+/// inpainting, a local SD-inpaint model that is still published and runs on 8 GB of VRAM.
+pub const DEFAULT_FILL_MODEL: &str = "stabilityai/stable-diffusion-2-inpainting";
+
+/// The RemoveBG plugin's model for Select subject / Remove background when none was chosen:
+/// isnet, which cut the cleanest subject masks in the GPU round (`docs/gap/results/gpu-ai.toml`).
+pub const DEFAULT_REMOVE_BG_MODEL: &str = "isnet-general-use";
+
+/// The models IOPaint's RemoveBG plugin can switch between (`RemoveBGModel` in
+/// `iopaint/schema.py`); u2net stays selectable.
+pub const REMOVE_BG_MODELS: &[&str] = &[
+    "isnet-general-use",
+    "u2net",
+    "u2netp",
+    "u2net_human_seg",
+    "u2net_cloth_seg",
+    "silueta",
+    "briaai/RMBG-1.4",
+    "briaai/RMBG-2.0",
+    "birefnet-general",
+    "birefnet-general-lite",
+    "birefnet-portrait",
+];
+
 /// PowerPaint's task choices (`powerpaint_task` in an inpaint request).
 pub const POWERPAINT_TASKS: &[&str] = &[
     "text-guided",
@@ -80,5 +104,8 @@ mod tests {
         assert!(!is_diffusion_model("lama"));
         assert!(is_paint_by_example("Fantasy-Studio/Paint-by-Example"));
         assert!(is_powerpaint(DIFFUSION_MODELS[0]));
+        assert!(is_diffusion_model(DEFAULT_FILL_MODEL));
+        assert_eq!(REMOVE_BG_MODELS[0], DEFAULT_REMOVE_BG_MODEL);
+        assert!(REMOVE_BG_MODELS.contains(&"u2net"));
     }
 }
