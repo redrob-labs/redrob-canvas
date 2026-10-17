@@ -3947,3 +3947,4 @@ curves	Smooth	Εξομάλυνση
 	Grow the filled area outward	Επέκταση της γεμισμένης περιοχής προς τα έξω
 	Gaps in the boundary up to this are closed	Κενά στο όριο έως αυτό το μέγεθος κλείνουν
 	Fill until this colour instead of over similar colours	Γέμισμα έως αυτό το χρώμα αντί πάνω από παρόμοια χρώματα
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Σύρετε μια ευθεία γραμμή με το πινέλο· το Shift κουμπώνει τη γωνία ανά 15°

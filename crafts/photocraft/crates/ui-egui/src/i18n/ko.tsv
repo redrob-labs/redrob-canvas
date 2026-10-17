@@ -3425,3 +3425,4 @@ curves	Smooth	매끄럽게
 	Grow the filled area outward	채운 영역을 바깥으로 넓힘
 	Gaps in the boundary up to this are closed	경계의 이 크기까지의 틈을 메움
 	Fill until this colour instead of over similar colours	비슷한 색 위가 아니라 이 색까지 채움
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	드래그로 브러시 직선을 그립니다. Shift로 각도를 15° 단위로 고정

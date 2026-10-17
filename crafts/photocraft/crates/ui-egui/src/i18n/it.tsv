@@ -4367,3 +4367,4 @@ shape	Appearance	Aspetto
 	Grow the filled area outward	Espandi l'area riempita verso l'esterno
 	Gaps in the boundary up to this are closed	Gli spazi nel limite fino a questa misura vengono chiusi
 	Fill until this colour instead of over similar colours	Riempi fino a questo colore invece che sui colori simili
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Trascina una linea retta dipinta con il pennello; Maiusc blocca l'angolo a passi di 15°

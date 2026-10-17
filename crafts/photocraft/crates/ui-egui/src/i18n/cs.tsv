@@ -3856,3 +3856,4 @@ navigator	Zoom	Zvětšení
 	Grow the filled area outward	Rozšířit vyplněnou oblast směrem ven
 	Gaps in the boundary up to this are closed	Mezery v hranici až do této velikosti se uzavřou
 	Fill until this colour instead of over similar colours	Vyplnit až k této barvě místo přes podobné barvy
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Tažením nakreslíte rovnou čáru štětcem; Shift přichytí úhel po 15°

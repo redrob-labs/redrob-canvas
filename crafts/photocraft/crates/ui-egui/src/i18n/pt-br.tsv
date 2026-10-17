@@ -4037,3 +4037,4 @@ layerLabel	No Color	Sem cor
 	Grow the filled area outward	Expandir a área preenchida para fora
 	Gaps in the boundary up to this are closed	Lacunas no limite até este tamanho são fechadas
 	Fill until this colour instead of over similar colours	Preencher até esta cor em vez de sobre cores semelhantes
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Arraste uma linha reta pintada com o pincel; Shift ajusta o ângulo em passos de 15°

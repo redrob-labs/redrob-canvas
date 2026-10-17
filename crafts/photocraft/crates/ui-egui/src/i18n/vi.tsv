@@ -3735,3 +3735,4 @@ curves	Smooth	Làm mượt
 	Grow the filled area outward	Mở rộng vùng tô ra ngoài
 	Gaps in the boundary up to this are closed	Khe hở trên ranh giới đến mức này được đóng
 	Fill until this colour instead of over similar colours	Tô đến màu này thay vì tô trên các màu tương tự
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Kéo một đường thẳng vẽ bằng cọ; Shift khớp góc theo bước 15°

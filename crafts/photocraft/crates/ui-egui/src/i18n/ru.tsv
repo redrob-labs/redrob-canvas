@@ -3222,3 +3222,4 @@ curves	Smooth	Сгладить
 	Grow the filled area outward	Расширить залитую область наружу
 	Gaps in the boundary up to this are closed	Разрывы в границе до этого размера закрываются
 	Fill until this colour instead of over similar colours	Заливать до этого цвета, а не по похожим цветам
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Проведите прямую линию кистью; Shift привязывает угол к шагам 15°

@@ -1007,6 +1007,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             paint_mode_dropdown(ui, "brush-mode", b, &mut app.ui.tool_options.brush_clear, held);
                             erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
+                        line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
                         ui.add_enabled_ui(!block, |ui| {
                             percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, 62.0);
                             if icons::button(ui, "circle-dot", 24.0, b.pressure_opacity, tl!("Always use pressure for opacity")).clicked() {
@@ -1043,6 +1044,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         let held = app.held_erase;
                         paint_mode_dropdown(ui, "pencil-mode", b, &mut app.ui.tool_options.pencil_clear, held);
                         erase_toggle(ui, &mut app.ui.tool_options.pencil_clear, held);
+                        line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
                         percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, if t.pro { 62.0 } else { 66.0 });
                         opt_label(ui, tl!("Smoothing"));
                         smoothing_field(ui, b, if t.pro { 58.0 } else { 66.0 });
@@ -1069,6 +1071,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             paint_mode_dropdown(ui, "brush-mode", b, &mut app.ui.tool_options.brush_clear, held);
                             erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
+                        line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
                         // A Pencil-mode Eraser is always hard and at full flow (Photoshop).
                         let fixed = block || crate::eraser_ui::pencil_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!fixed, |ui| percent_field(ui, tl!("Hardness"), &mut b.hardness, 0.0..=100.0, 66.0));
@@ -3919,6 +3922,13 @@ fn erase_toggle(ui: &mut egui::Ui, clear: &mut bool, held: bool) {
     if icons::button(ui, "eraser", 24.0, *clear || held, tl!("Erase with the current brush (Clear mode)")).clicked() {
         *clear = !*clear;
     }
+}
+
+/// Options-bar Line mode toggle (Brush, Pencil, Eraser): a drag paints one straight stroke from
+/// the press to the release, the pen pressure recorded along the drag replayed along the line;
+/// ⇧ snaps the angle to 15° steps.
+fn line_mode_toggle(ui: &mut egui::Ui, on: &mut bool) {
+    widgets::checkbox(ui, on, tl!("Line")).on_hover_text(tl!("Drag a straight line painted with the brush; Shift snaps the angle to 15° steps"));
 }
 
 /// Options-bar Smoothing % (the brush's stroke smoothing; the live stroke and the commit use it).

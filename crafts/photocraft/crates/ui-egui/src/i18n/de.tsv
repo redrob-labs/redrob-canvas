@@ -3250,3 +3250,4 @@ curves	Smooth	Glätten
 	Grow the filled area outward	Den gefüllten Bereich nach außen erweitern
 	Gaps in the boundary up to this are closed	Lücken in der Begrenzung bis zu dieser Größe werden geschlossen
 	Fill until this colour instead of over similar colours	Bis zu dieser Farbe füllen statt über ähnliche Farben
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Eine gerade Linie mit dem Pinsel ziehen; Umschalt rastet den Winkel in 15°-Schritten ein

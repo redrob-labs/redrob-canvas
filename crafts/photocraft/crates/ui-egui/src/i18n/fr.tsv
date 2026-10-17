@@ -3256,3 +3256,4 @@ curves	Smooth	Lisser
 	Grow the filled area outward	Étendre la zone remplie vers l'extérieur
 	Gaps in the boundary up to this are closed	Les écarts de la limite jusqu'à cette taille sont fermés
 	Fill until this colour instead of over similar colours	Remplir jusqu'à cette couleur plutôt que sur les couleurs similaires
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Tracez une ligne droite au pinceau ; Maj aligne l'angle par pas de 15°

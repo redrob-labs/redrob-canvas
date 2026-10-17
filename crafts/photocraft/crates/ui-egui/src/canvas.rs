@@ -4837,6 +4837,14 @@ fn draw_drag_preview(app: &mut PhotocraftApp, painter: &egui::Painter, xf: &View
         draw_marquee_readout(app, painter.ctx(), xf.to_screen(last[0] as f32, last[1] as f32), size_readout(app, r));
     }
     match d.tool {
+        // Line mode: the straight stroke the release will paint, as a rubber band.
+        t if line_mode(app, t) => {
+            let shift = d.live.shift || d.modifiers.shift;
+            let pts = crate::stroke_constraint::straighten(&[[d.start[0], d.start[1], 1.0], [last[0], last[1], 1.0]], shift);
+            if let (Some(a), Some(b)) = (pts.first(), pts.last()) {
+                draw_smoothing_string(painter, xf, ([a[0], a[1]], [b[0], b[1]]));
+            }
+        }
         // The canvas shows the live stroke itself (`LiveStroke`); a stroke that couldn't start one
         // (Sample All Layers, say) keeps the trail.
         t if strokes_live(t) && app.live_stroke.is_some() => {
@@ -5476,7 +5484,8 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
             if from.is_some() {
                 app.stylus.record_point();
             }
-            app.live_stroke = if strokes_live(tool) { begin_live_stroke(app) } else { None };
+            // Line mode shows a rubber band instead of the live stroke; the release paints the line.
+            app.live_stroke = if strokes_live(tool) && !line_mode(app, tool) { begin_live_stroke(app) } else { None };
         }
         ToolEvent::Move { x, y, pressure } => {
             // Polygonal Lasso: ⌥ held while the button is down draws freehand into the polygon;
@@ -5695,7 +5704,19 @@ fn finish_selection_drag(app: &mut PhotocraftApp, floating: bool, start: [f64; 2
 /// Commit a Brush, Pencil or Eraser drag. The live stroke already rendered it: its pixels are
 /// offered to the commit (`Session::offer_live_stroke`), so release costs no second render, and
 /// the canvas then refreshes only what it hadn't shown yet (`CommittedStroke`).
+/// Is a stroke with `tool` in Line mode (one straight stroke per drag, pressure replayed)?
+pub(crate) fn line_mode(app: &PhotocraftApp, tool: Tool) -> bool {
+    crate::stroke_constraint::has_line_mode(tool) && app.ui.tool_options.brush_line_mode
+}
+
 fn commit_brush_stroke(app: &mut PhotocraftApp, d: &Drag) {
+    if line_mode(app, d.tool) {
+        app.live_stroke = None;
+        let pts = crate::stroke_constraint::straighten(&d.points, d.live.shift || d.modifiers.shift);
+        let p = stroke_params(app, d, &app.stylus.stroke_points(&pts));
+        let _ = app.run(stroke_command(app, d.tool), p);
+        return;
+    }
     let live = app.live_stroke.take();
     let mut p = stroke_params(app, d, &app.stylus.stroke_points(&d.points));
     if let Some(seed) = live.as_ref().and_then(|l| l.stroke.seed()) {

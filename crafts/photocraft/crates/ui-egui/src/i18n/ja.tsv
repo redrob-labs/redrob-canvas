@@ -3923,3 +3923,4 @@ curves	Smooth	スムーズ
 	Grow the filled area outward	塗りつぶし領域を外側に広げる
 	Gaps in the boundary up to this are closed	境界のこの幅までの隙間を閉じる
 	Fill until this colour instead of over similar colours	似た色の上ではなく、この色までを塗りつぶす
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	ドラッグでブラシの直線を描く。Shift で角度を 15° 単位にスナップ

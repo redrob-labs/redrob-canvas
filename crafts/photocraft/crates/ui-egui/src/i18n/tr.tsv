@@ -3977,3 +3977,4 @@ cameraData	Lens	Lens
 	Grow the filled area outward	Dolgu alanını dışa doğru büyüt
 	Gaps in the boundary up to this are closed	Sınırdaki bu boyuta kadar boşluklar kapatılır
 	Fill until this colour instead of over similar colours	Benzer renkler üzerine değil, bu renge kadar doldur
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Fırçayla düz bir çizgi sürükleyin; Shift açıyı 15° adımlara kilitler

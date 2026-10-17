@@ -4208,3 +4208,4 @@ navigator	Zoom	Zoom
 	Grow the filled area outward	Expandir el área rellena hacia fuera
 	Gaps in the boundary up to this are closed	Se cierran los huecos del límite hasta este tamaño
 	Fill until this colour instead of over similar colours	Rellenar hasta este color en vez de sobre colores similares
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Arrastra una línea recta pintada con el pincel; Mayús ajusta el ángulo a pasos de 15°

@@ -3845,3 +3845,4 @@ curves	Smooth	Wygładź
 	Grow the filled area outward	Rozszerz wypełniony obszar na zewnątrz
 	Gaps in the boundary up to this are closed	Luki w granicy do tej wielkości są zamykane
 	Fill until this colour instead of over similar colours	Wypełniaj do tego koloru zamiast po podobnych kolorach
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Przeciągnij prostą linię pędzlem; Shift przyciąga kąt co 15°

@@ -548,6 +548,11 @@ pub struct ToolOptions {
     /// Blend mode used by both live and classic gradient drags.
     pub gradient_blend_mode: redrob_photo_color::BlendMode,
     pub fill_opacity: f32,
+    /// Brush / Pencil / Eraser Line mode: a drag paints one straight stroke from the press to the
+    /// release, with the pressure recorded along the drag replayed along the line (⇧ snaps the
+    /// angle to 15° steps).
+    #[serde(default)]
+    pub brush_line_mode: bool,
     /// Paint Bucket fill source: false = Foreground colour, true = Pattern (Patterns panel selection).
     pub bucket_fill_pattern: bool,
     /// Paint Bucket fill source: the background colour instead of the foreground (not with a pattern).
@@ -857,6 +862,7 @@ impl Default for ToolOptions {
             gradient_classic: false,
             gradient_blend_mode: redrob_photo_color::BlendMode::Normal,
             fill_opacity: 100.0,
+            brush_line_mode: false,
             bucket_fill_pattern: false,
             bucket_fill_background: false,
             bucket_pattern_scale: 100.0,

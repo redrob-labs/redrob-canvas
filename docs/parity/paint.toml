@@ -1523,8 +1523,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/line.html"
 behaviour = "Drag a line painted with the brush; Shift constrains 15 degrees, Alt moves; use sensors along the path; preview line."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/stroke_constraint.rs"
-gap = "shift-click straight segments; no separate line tool with sensor replay"
+ours_where = "crafts/photocraft/crates/ui-egui/src/stroke_constraint.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+gap = "Line mode is an options-bar toggle on the Brush, Pencil and Eraser rather than a separate tool; Alt-drag to move the line while drawing is not implemented"
 priority = 1
 
 [[feature]]

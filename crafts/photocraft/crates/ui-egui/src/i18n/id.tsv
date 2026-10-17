@@ -3243,3 +3243,4 @@ curves	Smooth	Haluskan
 	Grow the filled area outward	Perluas area terisi ke luar
 	Gaps in the boundary up to this are closed	Celah pada batas hingga ukuran ini ditutup
 	Fill until this colour instead of over similar colours	Isi hingga warna ini, bukan di atas warna serupa
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Seret garis lurus dengan kuas; Shift mengunci sudut ke kelipatan 15°

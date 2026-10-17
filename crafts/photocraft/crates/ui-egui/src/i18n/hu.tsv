@@ -4165,3 +4165,4 @@ cameraRaw	Yellow	Sárga
 	Grow the filled area outward	A kitöltött terület kifelé növelése
 	Gaps in the boundary up to this are closed	A határ ekkora hézagai záródnak
 	Fill until this colour instead of over similar colours	Kitöltés eddig a színig a hasonló színek helyett
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Húzzon egyenes vonalat az ecsettel; a Shift 15°-os lépésekre igazítja a szöget

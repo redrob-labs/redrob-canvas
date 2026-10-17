@@ -3946,3 +3946,4 @@ curves	Smooth	Згладити
 	Grow the filled area outward	Розширити залиту область назовні
 	Gaps in the boundary up to this are closed	Розриви в межі до цього розміру закриваються
 	Fill until this colour instead of over similar colours	Заливати до цього кольору, а не по схожих кольорах
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Проведіть пряму лінію пензлем; Shift прив'язує кут до кроків 15°

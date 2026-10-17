@@ -2853,3 +2853,4 @@ curves	Smooth	平滑
 	Grow the filled area outward	向外擴展填滿區域
 	Gaps in the boundary up to this are closed	閉合邊界中不超過此寬度的間隙
 	Fill until this colour instead of over similar colours	填滿直到此顏色，而不是填滿相似顏色
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	拖曳繪製筆刷直線；Shift 以 15° 為步長吸附角度

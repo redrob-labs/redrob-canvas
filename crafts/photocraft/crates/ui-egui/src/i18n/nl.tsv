@@ -4007,3 +4007,4 @@ curves	Smooth	Vloeiend maken
 	Grow the filled area outward	Het gevulde gebied naar buiten vergroten
 	Gaps in the boundary up to this are closed	Openingen in de grens tot deze grootte worden gesloten
 	Fill until this colour instead of over similar colours	Vullen tot deze kleur in plaats van over gelijkende kleuren
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Sleep een rechte lijn met het penseel; Shift klikt de hoek vast in stappen van 15°
