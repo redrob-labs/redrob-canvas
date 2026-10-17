@@ -4388,3 +4388,23 @@ lighting	Light	Світло
 	Make Segment Curve	Зробити сегмент кривим
 	X:	X:
 	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	Перетворити вибрані опорні точки на симетричні
+	Convert Selected Anchor Points to Auto-Smooth	Перетворити вибрані опорні точки на автозгладжені
+	Add Anchor Points At	Додати опорні точки в
+	Add Anchor Points at Extremes	Додати опорні точки в екстремумах
+	Minimum X	Мінімум X
+	Maximum X	Максимум X
+	Minimum Y	Мінімум Y
+	Maximum Y	Максимум Y
+	Pie	Сектор
+	Chord	Сегмент
+	Close As:	Замикати як:
+	Whole Ellipse	Цілий еліпс
+	Corners:	Кути:
+	Spoke Ratio:	Відношення променів:
+	Rounded:	Заокруглення:
+	Randomized:	Випадковість:
+	Decay:	Затухання:
+	Segments:	Сегменти:
+	Star Properties:	Властивості зірки:
+	Spiral Properties:	Властивості спіралі:

@@ -4834,3 +4834,23 @@ mark-style	Japanese	Japonské
 	Touch Select Anchors	Vybrat dotknuté kotevní body
 	Make Segment Line	Převést segment na úsečku
 	Make Segment Curve	Převést segment na křivku
+	Convert Selected Anchor Points to Symmetric	Převést vybrané kotevní body na symetrické
+	Convert Selected Anchor Points to Auto-Smooth	Převést vybrané kotevní body na automaticky hladké
+	Add Anchor Points At	Přidat kotevní body v
+	Add Anchor Points at Extremes	Přidat kotevní body v extrémech
+	Minimum X	Minimum X
+	Maximum X	Maximum X
+	Minimum Y	Minimum Y
+	Maximum Y	Maximum Y
+	Pie	Výseč
+	Chord	Úseč
+	Close As:	Uzavřít jako:
+	Whole Ellipse	Celá elipsa
+	Corners:	Rohy:
+	Spoke Ratio:	Poměr paprsků:
+	Rounded:	Zaoblení:
+	Randomized:	Náhodnost:
+	Decay:	Útlum:
+	Segments:	Segmenty:
+	Star Properties:	Vlastnosti hvězdy:
+	Spiral Properties:	Vlastnosti spirály:

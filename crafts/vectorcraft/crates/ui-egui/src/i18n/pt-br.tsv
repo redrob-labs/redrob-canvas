@@ -3778,3 +3778,23 @@ axis	Both	Ambos
 	Next Anchor	Próximo ponto de ancoragem
 	Grow Anchor Selection	Ampliar seleção de pontos de ancoragem
 	Touch Select Anchors	Selecionar pontos de ancoragem tocados
+	Convert Selected Anchor Points to Symmetric	Converter pontos de ancoragem selecionados em simétricos
+	Convert Selected Anchor Points to Auto-Smooth	Converter pontos de ancoragem selecionados em suavização automática
+	Add Anchor Points At	Adicionar pontos de ancoragem em
+	Add Anchor Points at Extremes	Adicionar pontos de ancoragem nos extremos
+	Minimum X	X mínimo
+	Maximum X	X máximo
+	Minimum Y	Y mínimo
+	Maximum Y	Y máximo
+	Pie	Setor
+	Chord	Segmento
+	Close As:	Fechar como:
+	Whole Ellipse	Elipse inteira
+	Corners:	Vértices:
+	Spoke Ratio:	Proporção dos raios:
+	Rounded:	Arredondado:
+	Randomized:	Aleatório:
+	Decay:	Decaimento:
+	Segments:	Segmentos:
+	Star Properties:	Propriedades da estrela:
+	Spiral Properties:	Propriedades da espiral:

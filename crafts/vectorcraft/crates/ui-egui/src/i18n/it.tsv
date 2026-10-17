@@ -4423,3 +4423,23 @@ lighting	Light	Luce
 	Make Segment Curve	Converti segmento in curva
 	X:	X:
 	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	Converti i punti di ancoraggio selezionati in punti simmetrici
+	Convert Selected Anchor Points to Auto-Smooth	Converti i punti di ancoraggio selezionati in punti curvi automatici
+	Add Anchor Points At	Aggiungi punti di ancoraggio in
+	Add Anchor Points at Extremes	Aggiungi punti di ancoraggio agli estremi
+	Minimum X	X minima
+	Maximum X	X massima
+	Minimum Y	Y minima
+	Maximum Y	Y massima
+	Pie	Settore
+	Chord	Segmento
+	Close As:	Chiudi come:
+	Whole Ellipse	Ellisse intera
+	Corners:	Vertici:
+	Spoke Ratio:	Rapporto raggi:
+	Rounded:	Arrotondamento:
+	Randomized:	Casualità:
+	Decay:	Decadimento:
+	Segments:	Segmenti:
+	Star Properties:	Proprietà della stella:
+	Spiral Properties:	Proprietà della spirale:

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use redrob_vector_color::BlendMode;
 use redrob_vector_geom::corners::cut_corners;
-use redrob_vector_geom::shapes::{self, CornerKind};
+use redrob_vector_geom::shapes::{self, ArcKind, CornerKind};
 use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, Point, Rect};
 use serde::{Deserialize, Serialize};
 
@@ -98,6 +98,9 @@ pub enum LiveShape {
         h: f64,
         /// Pie start/end angles in degrees (0/360 = full ellipse).
         pie: (f64, f64),
+        /// How the cut ellipse is closed: a pie (the default), a chord or an open arc.
+        #[serde(default, skip_serializing_if = "ArcKind::is_pie")]
+        arc: ArcKind,
         xf: Affine,
     },
     Polygon {
@@ -110,6 +113,33 @@ pub enum LiveShape {
         /// Corner kinds, in the same order (none: round).
         #[serde(default, skip_serializing_if = "all_round")]
         kinds: Vec<CornerKind>,
+    },
+    /// A star that keeps its parameters (Star tool): tips of outer radius `r1` and inner radius
+    /// `r2` about the origin, the first tip straight up; `xf` turns and places it (and scales it
+    /// once transformed, see [`LiveShape::transform`]).
+    Star {
+        r1: f64,
+        r2: f64,
+        points: u32,
+        /// How far every tip and notch is rounded, 0 (sharp) to 1.
+        #[serde(default, skip_serializing_if = "crate::skip::is_default")]
+        rounding: f64,
+        /// How far the vertices are moved off their places, 0 (none) to 1, in the pattern `seed`
+        /// fixes.
+        #[serde(default, skip_serializing_if = "crate::skip::is_default")]
+        randomized: f64,
+        #[serde(default, skip_serializing_if = "crate::skip::is_default")]
+        seed: u32,
+        xf: Affine,
+    },
+    /// A spiral that keeps its parameters (Spiral tool): its outer end `radius` from the origin
+    /// at 3 o'clock, winding in by `decay` percent a quarter turn, `segments` quarter turns.
+    Spiral {
+        radius: f64,
+        decay: f64,
+        segments: u32,
+        clockwise: bool,
+        xf: Affine,
     },
     Line {
         a: Point,
@@ -137,6 +167,8 @@ impl LiveShape {
             LiveShape::Rectangle { .. } => "Rectangle",
             LiveShape::Ellipse { .. } => "Ellipse",
             LiveShape::Polygon { .. } => "Polygon",
+            LiveShape::Star { .. } => "Star",
+            LiveShape::Spiral { .. } => "Spiral",
             LiveShape::Line { .. } => "Line",
             LiveShape::Path { .. } => "Path",
         }
@@ -147,8 +179,14 @@ impl LiveShape {
             LiveShape::Rectangle { w, h, radii, kinds, xf } => {
                 shapes::rectangle_with_corners(Rect::new(0.0, 0.0, *w, *h), *radii, *kinds).transformed(*xf)
             }
-            LiveShape::Ellipse { w, h, pie, xf } => shapes::ellipse_pie(Rect::new(0.0, 0.0, *w, *h), pie.0, pie.1).transformed(*xf),
+            LiveShape::Ellipse { w, h, pie, arc, xf } => shapes::ellipse_arc(Rect::new(0.0, 0.0, *w, *h), pie.0, pie.1, *arc).transformed(*xf),
             LiveShape::Polygon { radii, kinds, .. } => cut_corners(&self.polygon_outline(), radii, kinds).0,
+            LiveShape::Star { r1, r2, points, rounding, randomized, seed, xf } => {
+                shapes::star_live(Point::ZERO, *r1, *r2, *points, 0.0, *rounding, *randomized, *seed).transformed(*xf)
+            }
+            LiveShape::Spiral { radius, decay, segments, clockwise, xf } => {
+                shapes::spiral(Point::ZERO, *radius, *decay, *segments, *clockwise).transformed(*xf)
+            }
             LiveShape::Line { a, b } => shapes::line(*a, *b),
             LiveShape::Path { base, radii, kinds } => cut_corners(base, radii, kinds).0,
         }
@@ -159,6 +197,31 @@ impl LiveShape {
             LiveShape::Polygon { radius, sides, xf, .. } => shapes::polygon(Point::ZERO, *radius, *sides, 0.0).transformed(*xf),
             _ => PathData::default(),
         }
+    }
+    /// A live ellipse's box in its own space (origin at its top-left) and the transform into the
+    /// document. None for other shapes.
+    pub fn ellipse_box(&self) -> Option<(Rect, Affine)> {
+        let LiveShape::Ellipse { w, h, xf, .. } = self else { return None };
+        Some((Rect::new(0.0, 0.0, *w, *h), *xf))
+    }
+    /// Where a live ellipse's arc starts and ends, in the document: the two arc handles (a whole
+    /// ellipse has both at 3 o'clock). None for other shapes.
+    pub fn arc_handles(&self) -> Option<(Point, Point)> {
+        let LiveShape::Ellipse { pie, .. } = self else { return None };
+        let (r, xf) = self.ellipse_box()?;
+        Some((xf * shapes::ellipse_point_at(r, pie.0), xf * shapes::ellipse_point_at(r, pie.1)))
+    }
+    /// The arc angle (degrees, counterclockwise from 3 o'clock) a document point `p` sets when an
+    /// arc handle of a live ellipse is dragged there, and whether `p` lies inside the ellipse (a
+    /// handle dragged inside makes a pie, outside an open arc). None for other shapes or at the
+    /// centre.
+    pub fn arc_angle_toward(&self, p: Point) -> Option<(f64, bool)> {
+        let (r, xf) = self.ellipse_box()?;
+        let local = xf.inverse() * p;
+        let a = shapes::ellipse_angle_toward(r, local)?;
+        let c = r.center();
+        let (nx, ny) = ((local.x - c.x) / (r.width() / 2.0), (local.y - c.y) / (r.height() / 2.0));
+        Some((a, nx.hypot(ny) < 1.0))
     }
     /// Give a polygon `n` sides (3–1000). Its corners keep the radius and kind they shared; else
     /// the corners past the old last one are sharp.
@@ -230,6 +293,107 @@ impl LiveShape {
         *xf = Affine::translate((e, f)) * Affine::rotate(b.atan2(a)) * flip;
         *radius = r;
     }
+    /// The mean scale of a star's or spiral's `xf` (the square root of its determinant): what its
+    /// own lengths are multiplied by in the document. None for other shapes.
+    fn turned_scale(&self) -> Option<f64> {
+        match self {
+            LiveShape::Star { xf, .. } | LiveShape::Spiral { xf, .. } => Some(xf.determinant().abs().sqrt()),
+            _ => None,
+        }
+    }
+    /// A star's or spiral's centre in the document. None for other shapes.
+    pub fn turned_centre(&self) -> Option<Point> {
+        match self {
+            LiveShape::Star { xf, .. } | LiveShape::Spiral { xf, .. } => Some(*xf * Point::ZERO),
+            _ => None,
+        }
+    }
+    /// A star's or spiral's turn: the degrees clockwise on screen its first tip (a star) or outer
+    /// end (a spiral) is turned by from where it was drawn, in [0, 360). None for other shapes.
+    pub fn turned_angle(&self) -> Option<f64> {
+        self.turned_scale()?;
+        let a = self.angle_deg().rem_euclid(360.0);
+        Some(if a > 360.0 - 1e-9 { 0.0 } else { a })
+    }
+    /// Turn a star or spiral about its centre to `angle` (degrees, as [`LiveShape::turned_angle`]).
+    pub fn set_turned_angle(&mut self, angle: f64) {
+        let (Some(now), Some(centre)) = (self.turned_angle(), self.turned_centre()) else { return };
+        if let (LiveShape::Star { xf, .. } | LiveShape::Spiral { xf, .. }) = self
+            && angle.is_finite()
+        {
+            *xf = Affine::rotate_about((angle - now).to_radians(), centre) * *xf;
+        }
+    }
+    /// A star's outer radius (centre to tip) in the document. None for other shapes.
+    pub fn star_radius(&self) -> Option<f64> {
+        let LiveShape::Star { r1, .. } = self else { return None };
+        Some(r1 * self.turned_scale()?)
+    }
+    /// Give a star the document outer radius `r`, keeping its spoke ratio.
+    pub fn set_star_radius(&mut self, r: f64) {
+        let Some(k) = self.turned_scale().filter(|k| *k > 1e-12) else { return };
+        if let LiveShape::Star { r1, r2, .. } = self
+            && r.is_finite()
+            && *r1 > 1e-12
+        {
+            let ratio = *r2 / *r1;
+            *r1 = r.max(0.01) / k;
+            *r2 = *r1 * ratio;
+        }
+    }
+    /// Where a star's first tip and the notch after it are, in the document (its handles). None
+    /// for other shapes.
+    pub fn star_handles(&self) -> Option<(Point, Point)> {
+        let LiveShape::Star { r1, r2, points, xf, .. } = self else { return None };
+        let step = std::f64::consts::PI / f64::from((*points).max(2));
+        let a = -std::f64::consts::FRAC_PI_2;
+        Some((*xf * Point::new(r1 * a.cos(), r1 * a.sin()), *xf * Point::new(r2 * (a + step).cos(), r2 * (a + step).sin())))
+    }
+    /// A document point `p` about a star's or spiral's centre: its distance in the document and
+    /// the turn (degrees clockwise on screen from straight up for a star, from 3 o'clock for a
+    /// spiral) that puts the first tip or the outer end toward it. None for other shapes or at
+    /// the centre.
+    pub fn turned_polar(&self, p: Point) -> Option<(f64, f64)> {
+        let c = self.turned_centre()?;
+        let v = p - c;
+        if v.hypot() <= 1e-9 {
+            return None;
+        }
+        let up = matches!(self, LiveShape::Star { .. });
+        let turn = if up { v.x.atan2(-v.y) } else { v.y.atan2(v.x) };
+        Some((v.hypot(), turn.to_degrees().rem_euclid(360.0)))
+    }
+    /// A spiral's outer radius in the document. None for other shapes.
+    pub fn spiral_radius(&self) -> Option<f64> {
+        let LiveShape::Spiral { radius, .. } = self else { return None };
+        Some(radius * self.turned_scale()?)
+    }
+    /// Give a spiral the document outer radius `r`.
+    pub fn set_spiral_radius(&mut self, r: f64) {
+        let Some(k) = self.turned_scale().filter(|k| *k > 1e-12) else { return };
+        if let LiveShape::Spiral { radius, .. } = self
+            && r.is_finite()
+        {
+            *radius = r.max(0.01) / k;
+        }
+    }
+    /// Where a spiral's outer and inner ends are, in the document (its handles). None for other
+    /// shapes.
+    pub fn spiral_handles(&self) -> Option<(Point, Point)> {
+        let LiveShape::Spiral { radius, decay, segments, clockwise, xf } = self else { return None };
+        let d = (decay / 100.0).clamp(0.05, 0.9999);
+        let dir = if *clockwise { 1.0 } else { -1.0 };
+        let a = dir * f64::from(*segments) * std::f64::consts::FRAC_PI_2;
+        let r = radius * d.powi(*segments as i32);
+        Some((*xf * Point::new(*radius, 0.0), *xf * Point::new(r * a.cos(), r * a.sin())))
+    }
+    /// The decay (percent a quarter turn) that puts a spiral's inner end at `share` of its outer
+    /// radius. None for other shapes.
+    pub fn spiral_decay_for_inner(&self, share: f64) -> Option<f64> {
+        let LiveShape::Spiral { segments, .. } = self else { return None };
+        let share = share.clamp(1e-6, 0.9999);
+        Some((share.powf(1.0 / f64::from((*segments).max(1))) * 100.0).clamp(5.0, 99.99))
+    }
     /// Apply `a` to the shape. True when the shape is no longer `a` applied to the old path, so
     /// the caller must regenerate the path with [`LiveShape::to_path`].
     ///
@@ -254,6 +418,10 @@ impl LiveShape {
             LiveShape::Polygon { xf, radii, .. } => {
                 *xf = a * *xf;
                 scale_radii(radii, a)
+            }
+            LiveShape::Star { xf, .. } | LiveShape::Spiral { xf, .. } => {
+                *xf = a * *xf;
+                false
             }
             LiveShape::Path { base, radii, .. } => {
                 base.transform(a);
@@ -301,7 +469,7 @@ impl LiveShape {
         let radii: &mut [f64] = match self {
             LiveShape::Rectangle { radii, .. } => radii,
             LiveShape::Polygon { radii, .. } | LiveShape::Path { radii, .. } => radii,
-            LiveShape::Ellipse { .. } | LiveShape::Line { .. } => return false,
+            LiveShape::Ellipse { .. } | LiveShape::Line { .. } | LiveShape::Star { .. } | LiveShape::Spiral { .. } => return false,
         };
         if !radii.iter().any(|r| *r > 0.0) || k <= 1e-12 {
             return false;
@@ -312,7 +480,11 @@ impl LiveShape {
     /// Rotation angle of the live shape in degrees, clockwise on the page (y points down).
     pub fn angle_deg(&self) -> f64 {
         match self {
-            LiveShape::Rectangle { xf, .. } | LiveShape::Ellipse { xf, .. } | LiveShape::Polygon { xf, .. } => {
+            LiveShape::Rectangle { xf, .. }
+            | LiveShape::Ellipse { xf, .. }
+            | LiveShape::Polygon { xf, .. }
+            | LiveShape::Star { xf, .. }
+            | LiveShape::Spiral { xf, .. } => {
                 let c = xf.as_coeffs();
                 c[1].atan2(c[0]).to_degrees()
             }
@@ -2043,7 +2215,7 @@ mod tests {
         let LiveShape::Polygon { xf, .. } = &p else { panic!("polygon") };
         assert_eq!(*xf * Point::ZERO, Point::new(100.0, 50.0));
         // Other shapes have none of it.
-        let e = LiveShape::Ellipse { w: 1.0, h: 1.0, pie: (0.0, 360.0), xf: Affine::IDENTITY };
+        let e = LiveShape::Ellipse { w: 1.0, h: 1.0, pie: (0.0, 360.0), arc: ArcKind::Pie, xf: Affine::IDENTITY };
         assert_eq!((e.polygon_radius(), e.polygon_angle()), (None, None));
     }
 

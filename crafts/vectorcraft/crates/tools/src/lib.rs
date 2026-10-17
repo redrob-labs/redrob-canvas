@@ -29,6 +29,7 @@ pub mod rulerguide;
 pub mod select;
 pub mod settings;
 pub mod shape;
+pub mod shapehandles;
 pub mod slice;
 pub mod symbolism;
 pub mod text;

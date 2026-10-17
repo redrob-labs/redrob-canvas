@@ -4849,3 +4849,23 @@ theme	Appearance	Apparence
 	Touch Select Anchors	Sélectionner les points d’ancrage touchés
 	Make Segment Line	Convertir le segment en ligne
 	Make Segment Curve	Convertir le segment en courbe
+	Convert Selected Anchor Points to Symmetric	Convertir les points d’ancrage sélectionnés en points symétriques
+	Convert Selected Anchor Points to Auto-Smooth	Convertir les points d’ancrage sélectionnés en points auto-lissés
+	Add Anchor Points At	Ajouter des points d’ancrage à
+	Add Anchor Points at Extremes	Ajouter des points d’ancrage aux extrêmes
+	Minimum X	X minimal
+	Maximum X	X maximal
+	Minimum Y	Y minimal
+	Maximum Y	Y maximal
+	Pie	Secteur
+	Chord	Corde
+	Close As:	Fermer en :
+	Whole Ellipse	Ellipse entière
+	Corners:	Sommets :
+	Spoke Ratio:	Rapport des rayons :
+	Rounded:	Arrondi :
+	Randomized:	Aléatoire :
+	Decay:	Décroissance :
+	Segments:	Segments :
+	Star Properties:	Propriétés de l’étoile :
+	Spiral Properties:	Propriétés de la spirale :

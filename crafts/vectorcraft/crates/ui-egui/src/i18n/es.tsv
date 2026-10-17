@@ -4790,3 +4790,23 @@ mark-style	Japanese	Japonesas
 	Touch Select Anchors	Seleccionar anclas tocadas
 	Make Segment Line	Convertir segmento en línea
 	Make Segment Curve	Convertir segmento en curva
+	Convert Selected Anchor Points to Symmetric	Convertir los puntos de ancla seleccionados en simétricos
+	Convert Selected Anchor Points to Auto-Smooth	Convertir los puntos de ancla seleccionados en suavizado automático
+	Add Anchor Points At	Añadir puntos de ancla en
+	Add Anchor Points at Extremes	Añadir puntos de ancla en los extremos
+	Minimum X	X mínima
+	Maximum X	X máxima
+	Minimum Y	Y mínima
+	Maximum Y	Y máxima
+	Pie	Sector
+	Chord	Segmento
+	Close As:	Cerrar como:
+	Whole Ellipse	Elipse completa
+	Corners:	Vértices:
+	Spoke Ratio:	Proporción de radios:
+	Rounded:	Redondeado:
+	Randomized:	Aleatorio:
+	Decay:	Decaimiento:
+	Segments:	Segmentos:
+	Star Properties:	Propiedades de la estrella:
+	Spiral Properties:	Propiedades de la espiral:

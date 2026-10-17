@@ -99,7 +99,7 @@ fn ellipses_round_fully_and_options_change_units_and_names() {
     let mut e =
         Node::path(d.alloc_id(), shapes::ellipse(Rect::new(0.0, 0.0, 72.0, 36.0)), Appearance::basic(Paint::solid(Color::BLACK), Paint::None, 0.0));
     if let NodeKind::Path { live, .. } = &mut e.kind {
-        *live = Some(Box::new(LiveShape::Ellipse { w: 72.0, h: 36.0, pie: (0.0, 360.0), xf: Affine::IDENTITY }));
+        *live = Some(Box::new(LiveShape::Ellipse { w: 72.0, h: 36.0, pie: (0.0, 360.0), arc: Default::default(), xf: Affine::IDENTITY }));
     }
     let e = add(&mut d, e);
     let a = rect(&mut d, (0.0, 0.0, 10.0, 10.0), 0.0);

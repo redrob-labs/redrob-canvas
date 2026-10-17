@@ -41,6 +41,7 @@ use crate::meshedit::MeshEdit;
 use crate::pathtype::{self, BracketDrag, over_bracket};
 use crate::rulerguide::GuideEdit;
 use crate::select::{MoveSnap, is_area_type, matrix_json};
+use crate::shapehandles::{self, ShapeHandleDrag};
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
 
 #[derive(Clone, Debug)]
@@ -88,6 +89,8 @@ enum State {
         toggle: bool,
     },
     Corner(CornerDrag),
+    /// Dragging a live shape handle (an ellipse's arc angles, a star's tip or notch).
+    ShapeHandle(ShapeHandleDrag),
     /// Dragging a bracket of type on a path.
     Bracket(BracketDrag),
     /// Dragging a point of a blend's spine from `from`.
@@ -393,7 +396,7 @@ impl Tool for DirectSelectionTool {
                 _ => vec![Action::Exec("select.anchorGrow".into(), json!({"grow": false}))],
             };
         }
-        if key != ToolKey::Escape || matches!(self.state, State::Idle | State::Mesh | State::Corner(_) | State::Bracket(_)) {
+        if key != ToolKey::Escape || matches!(self.state, State::Idle | State::Mesh | State::Corner(_) | State::ShapeHandle(_) | State::Bracket(_)) {
             return vec![];
         }
         self.state = State::Idle;
@@ -444,6 +447,10 @@ impl Tool for DirectSelectionTool {
             (PointerKind::Down, _) => {
                 self.click = None;
                 self.click_segment = None;
+                if let Some(h) = ShapeHandleDrag::hit(cx, ev) {
+                    self.state = State::ShapeHandle(h);
+                    return vec![];
+                }
                 if let Some(c) = CornerDrag::hit(cx, ev, true) {
                     self.state = State::Corner(c);
                     return vec![];
@@ -718,6 +725,15 @@ impl Tool for DirectSelectionTool {
                 self.state = State::Idle;
                 c.finish()
             }
+            (PointerKind::Drag, State::ShapeHandle(mut h)) => {
+                let out = h.drag(cx, p, ev.mods);
+                self.state = State::ShapeHandle(h);
+                out
+            }
+            (PointerKind::Up, State::ShapeHandle(h)) => {
+                self.state = State::Idle;
+                h.finish()
+            }
             (PointerKind::Drag, State::Bracket(mut b)) => {
                 let out = b.drag(cx, p, ev.mods.cmd);
                 self.state = State::Bracket(b);
@@ -792,6 +808,7 @@ impl Tool for DirectSelectionTool {
                 vec![Overlay::Path { path: crate::draw2::polyline(points), color: crate::draw2::FEEDBACK, width: 1.0, dashed: true }]
             }
             State::Corner(c) => c.overlays(cx),
+            State::ShapeHandle(h) => h.overlays(),
             _ => {
                 let mut out = self.spine_overlays(cx);
                 out.extend(self.mesh.overlays(cx));
@@ -813,6 +830,9 @@ impl Tool for DirectSelectionTool {
     fn cursor(&self, cx: &ToolContext, p: Point, _m: Mods) -> Cursor {
         if !self.group && (matches!(self.state, State::Corner(_)) || over_widget(cx, p, true)) {
             return Cursor::CornerRadius;
+        }
+        if !self.group && (matches!(self.state, State::ShapeHandle(_)) || shapehandles::over_handle(cx, p)) {
+            return Cursor::Move;
         }
         if !self.group && (matches!(self.state, State::Bracket(_)) || over_bracket(cx, p)) {
             return Cursor::PathBracket;

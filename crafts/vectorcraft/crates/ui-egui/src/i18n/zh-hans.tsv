@@ -3998,3 +3998,23 @@ lighting	Light	光源
 	Touch Select Anchors	选择触碰到的锚点
 	Make Segment Line	线段变为直线
 	Make Segment Curve	线段变为曲线
+	Convert Selected Anchor Points to Symmetric	将所选锚点转换为对称
+	Convert Selected Anchor Points to Auto-Smooth	将所选锚点转换为自动平滑
+	Add Anchor Points At	在极值处添加锚点
+	Add Anchor Points at Extremes	在极值处添加锚点
+	Minimum X	最小 X
+	Maximum X	最大 X
+	Minimum Y	最小 Y
+	Maximum Y	最大 Y
+	Pie	扇形
+	Chord	弓形
+	Close As:	闭合方式:
+	Whole Ellipse	完整椭圆
+	Corners:	角数:
+	Spoke Ratio:	辐条比:
+	Rounded:	圆角:
+	Randomized:	随机化:
+	Decay:	衰减:
+	Segments:	段数:
+	Star Properties:	星形属性:
+	Spiral Properties:	螺旋属性:

@@ -4390,3 +4390,23 @@ theme	Appearance	Giao diện
 	Make Segment Curve	Chuyển đoạn thành đường cong
 	X:	X:
 	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	Chuyển điểm neo đã chọn thành đối xứng
+	Convert Selected Anchor Points to Auto-Smooth	Chuyển điểm neo đã chọn thành trơn tự động
+	Add Anchor Points At	Thêm điểm neo tại
+	Add Anchor Points at Extremes	Thêm điểm neo tại cực trị
+	Minimum X	X nhỏ nhất
+	Maximum X	X lớn nhất
+	Minimum Y	Y nhỏ nhất
+	Maximum Y	Y lớn nhất
+	Pie	Hình quạt
+	Chord	Hình viên phân
+	Close As:	Đóng thành:
+	Whole Ellipse	Toàn bộ hình elip
+	Corners:	Số góc:
+	Spoke Ratio:	Tỉ lệ nan:
+	Rounded:	Bo tròn:
+	Randomized:	Ngẫu nhiên:
+	Decay:	Suy giảm:
+	Segments:	Số đoạn:
+	Star Properties:	Thuộc tính ngôi sao:
+	Spiral Properties:	Thuộc tính xoắn ốc:

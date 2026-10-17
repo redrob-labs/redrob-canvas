@@ -34,7 +34,7 @@ const ROWS: &[Row] = &[
     (&["smooth"], None, &["fidelity"]),
     (&["blobBrush", "eraser"], None, &["size"]),
     (&["polygon"], None, &["sides"]),
-    (&["star"], None, &["points"]),
+    (&["star"], None, &["points", "starRatio", "rounding", "randomized"]),
     (&["freeTransform"], None, &["constrain"]),
     (&["artboard"], None, &["moveArt", "scaleArt"]),
     // Flare Tool Options (`extra::FLARE_OPTIONS` and the Rays and Rings checkboxes).

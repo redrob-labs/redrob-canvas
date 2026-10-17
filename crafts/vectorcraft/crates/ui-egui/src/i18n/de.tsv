@@ -4378,3 +4378,23 @@ theme	Appearance	Erscheinungsbild
 	Make Segment Curve	Segment in Kurve umwandeln
 	X:	X:
 	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	Ausgewählte Ankerpunkte in symmetrische Punkte umwandeln
+	Convert Selected Anchor Points to Auto-Smooth	Ausgewählte Ankerpunkte in automatisch glatte Punkte umwandeln
+	Add Anchor Points At	Ankerpunkte hinzufügen bei
+	Add Anchor Points at Extremes	Ankerpunkte an Extremen hinzufügen
+	Minimum X	Minimales X
+	Maximum X	Maximales X
+	Minimum Y	Minimales Y
+	Maximum Y	Maximales Y
+	Pie	Kreissektor
+	Chord	Kreisabschnitt
+	Close As:	Schließen als:
+	Whole Ellipse	Ganze Ellipse
+	Corners:	Ecken:
+	Spoke Ratio:	Zackenverhältnis:
+	Rounded:	Abrundung:
+	Randomized:	Zufall:
+	Decay:	Abnahme:
+	Segments:	Segmente:
+	Star Properties:	Stern-Eigenschaften:
+	Spiral Properties:	Spiral-Eigenschaften:

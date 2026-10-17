@@ -3784,3 +3784,23 @@ lighting	Light	光源
 	Make Segment Curve	線段變為曲線
 	X:	X:
 	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	將所選錨點轉換為對稱
+	Convert Selected Anchor Points to Auto-Smooth	將所選錨點轉換為自動平滑
+	Add Anchor Points At	在極值處新增錨點
+	Add Anchor Points at Extremes	在極值處新增錨點
+	Minimum X	最小 X
+	Maximum X	最大 X
+	Minimum Y	最小 Y
+	Maximum Y	最大 Y
+	Pie	扇形
+	Chord	弓形
+	Close As:	閉合方式:
+	Whole Ellipse	完整橢圓
+	Corners:	角數:
+	Spoke Ratio:	輻條比:
+	Rounded:	圓角:
+	Randomized:	隨機化:
+	Decay:	衰減:
+	Segments:	段數:
+	Star Properties:	星形屬性:
+	Spiral Properties:	螺旋屬性:
