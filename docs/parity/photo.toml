@@ -1617,9 +1617,9 @@ name = "Wavelet Decompose"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-wavelet-decompose.html"
 behaviour = "Splits the layer into N detail scales plus residual as a layer group for frequency editing."
-ours = "none"
-ours_where = ""
-gap = "high pass gives a single scale"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs (filter.other.waveletDecompose: Residual plus Scale 1..n Linear Light layers in a group), crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 2
 
 [[feature]]

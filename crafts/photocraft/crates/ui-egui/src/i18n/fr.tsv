@@ -3239,3 +3239,6 @@ curves	Smooth	Lisser
 	Offset Y	Décalage Y
 	Active Path	Tracé actif
 	Equidistance	Équidistance
+	Wavelet Decompose…	Décomposition en ondelettes…
+	Wavelet Decompose	Décomposition en ondelettes
+	Scales	Échelles

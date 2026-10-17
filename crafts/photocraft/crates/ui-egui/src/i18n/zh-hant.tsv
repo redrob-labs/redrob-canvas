@@ -2836,3 +2836,6 @@ curves	Smooth	平滑
 	Offset Y	偏移 Y
 	Active Path	作用中路徑
 	Equidistance	等距
+	Wavelet Decompose…	小波分解…
+	Wavelet Decompose	小波分解
+	Scales	尺度

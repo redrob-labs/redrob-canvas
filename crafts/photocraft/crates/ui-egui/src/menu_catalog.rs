@@ -616,6 +616,7 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["Filter", "Other…"], "Custom…", None, "filter.other.custom"),
     (&["Filter", "Other…"], "HSB/HSL", None, "filter.other.hsbHsl"),
     (&["Filter", "Other…"], "High Pass…", None, "filter.other.highPass"),
+    (&["Filter", "Other…"], "Wavelet Decompose…", None, "filter.other.waveletDecompose"),
     (&["Filter", "Other…"], "Maximum…", None, "filter.other.maximum"),
     (&["Filter", "Other…"], "Minimum…", None, "filter.other.minimum"),
     (&["Filter", "Other…"], "Offset…", None, "filter.other.offset"),

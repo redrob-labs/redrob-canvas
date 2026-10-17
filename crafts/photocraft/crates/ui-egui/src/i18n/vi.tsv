@@ -3720,3 +3720,6 @@ curves	Smooth	Làm mượt
 	Offset Y	Độ lệch Y
 	Active Path	Đường dẫn hiện hoạt
 	Equidistance	Cách đều
+	Wavelet Decompose…	Phân tách wavelet…
+	Wavelet Decompose	Phân tách wavelet
+	Scales	Thang

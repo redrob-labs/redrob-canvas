@@ -131,6 +131,72 @@ fn map_pixels(s: &mut Session, label: &str, p: &Value, f: impl FnOnce(Rect, &mut
     Ok(Value::Null)
 }
 
+/// Filter › Other › Wavelet Decompose: splits the active pixel layer into `scales` detail layers
+/// (each the difference between two successive Gaussian blurs of radius 1, 2, 4, … px, stored as
+/// 50 % grey ± half the difference in Linear Light so they add back exactly) and a Residual
+/// (the last blur), in a Normal group above the layer. Scale 1 (finest) is on top.
+fn wavelet_decompose(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "filter.other.waveletDecompose";
+    let scales = match p.get("scales") {
+        None | Some(Value::Null) => 5,
+        Some(v) => v
+            .as_f64()
+            .filter(|n| n.is_finite() && (1.0..=7.0).contains(n))
+            .ok_or_else(|| EngineError::BadParams { cmd: CMD.into(), msg: "scales must be a number from 1 to 7".into() })? as usize,
+    };
+    let id = layer_param(s, p)?;
+    let gid = s.edit("Wavelet Decompose", |doc, active| {
+        let canvas = doc.bounds();
+        let l = doc.layer(id).ok_or(EngineError::NoLayer(id))?;
+        let source = l.surface().ok_or_else(|| EngineError::Other("Wavelet Decompose needs a pixel layer".into()))?.clone();
+        let fmt = source.format();
+        let area = source.content_bounds().intersect(&canvas);
+        if area.is_empty() {
+            return Err(EngineError::Other("the layer has no pixels to decompose".into()));
+        }
+        let n = fmt.channels();
+        let cc = if fmt.alpha { n - 1 } else { n };
+        let mut prev = source;
+        let mut detail: Vec<Layer> = Vec::with_capacity(scales);
+        for i in 0..scales {
+            let radius = f64::from(1u32 << i);
+            let blurred = crate::filters::apply_filter_to_surface("filter.blur.gaussianBlur", &json!({"radius": radius}), &prev, canvas, None, canvas)
+                .ok_or_else(|| EngineError::Other("Gaussian Blur is unavailable".into()))?;
+            let fine = prev.read_region(area);
+            let coarse = blurred.read_region(area);
+            let mut out = fine.clone();
+            for (o, (a, b)) in out.chunks_exact_mut(n).zip(fine.chunks_exact(n).zip(coarse.chunks_exact(n))) {
+                for c in 0..cc {
+                    o[c] = (0.5 + (a[c] - b[c]) * 0.5).clamp(0.0, 1.0);
+                }
+            }
+            let mut layer = Layer::raster(format!("Scale {}", i + 1), fmt);
+            if let Some(surf) = layer.surface_mut() {
+                surf.write_region(area, &out);
+                surf.prune();
+            }
+            layer.blend = redrob_photo_color::BlendMode::LinearLight;
+            detail.push(layer);
+            prev = blurred;
+        }
+        let mut residual = Layer::raster("Residual", fmt);
+        if let Some(surf) = residual.surface_mut() {
+            surf.write_region(area, &prev.read_region(area));
+            surf.prune();
+        }
+        // Bottom to top: the residual, then the coarsest to the finest scale.
+        let mut children = vec![residual];
+        children.extend(detail.into_iter().rev());
+        let mut group = Layer::group("Wavelet decompose", children);
+        // Normal (isolated) so the Linear Light sum is formed over the residual alone.
+        group.blend = redrob_photo_color::BlendMode::Normal;
+        let gid = doc.insert_above(Some(id), group);
+        *active = Some(gid);
+        Ok(gid)
+    })?;
+    Ok(json!({ "group": gid.0, "scales": scales }))
+}
+
 /// Edit › Stroke with a paint `tool` or a `dash` pattern: the selection outline (or the layer's
 /// opaque edge) is traced into a path and stroked along it like Stroke Path, so the stroke is
 /// painted by that tool's brush and can be dashed.
@@ -840,6 +906,15 @@ pub fn specs() -> Vec<CommandSpec> {
             r##"{"width":1..250=1,"color":"#rrggbb|[r,g,b,a]"=foreground,"location":"inside|center|outside"="center","mode":"any layer blend mode"="normal","opacity":0..100=100,"preserveTransparency":bool=false,"tool":"brush|pencil|eraser|…"? (paint the outline with that tool's brush, as Stroke Path),"dash":[on,off,…] px?,"dashOffset":px=0}"##,
             has_pixels,
             stroke
+        ),
+        spec!(
+            "filter.other.waveletDecompose",
+            "Wavelet Decompose…",
+            &["Filter", "Other"],
+            None,
+            r##"{"scales":1..7=5,"layer":id? (pixel layer, default active)} → {group, scales} (a Normal group above the layer: Residual plus Scale 1..n detail layers in Linear Light)"##,
+            has_pixels,
+            wavelet_decompose
         ),
         spec!("edit.transform.rotate180", "Rotate 180°", &["Edit", "Transform"], None, TRANSFORM_TARGET, has_layer, |s, p| transform_preset(
             s,

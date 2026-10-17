@@ -3204,3 +3204,6 @@ curves	Smooth	Сгладить
 	Offset Y	Смещение Y
 	Active Path	Активный контур
 	Equidistance	Равные расстояния
+	Wavelet Decompose…	Вейвлет-разложение…
+	Wavelet Decompose	Вейвлет-разложение
+	Scales	Масштабы
