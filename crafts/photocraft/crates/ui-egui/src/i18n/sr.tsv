@@ -4274,3 +4274,6 @@ shape	Appearance	Izgled
 	Ink below	Праг мастила
 	Close gaps	Затвори процепе
 	Under ink	Под мастило
+	Free select: clicks and drags build one editable outline	Слободни избор: кликови и превлачења граде једну контуру коју можете уређивати
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Клик додаје тачку, превлачење црта слободном руком · превуците тачку да је померите · {del} уклања последњу · {key} затвара · Esc отказује
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Кликните да поставите тачке, превуците за цртање слободном руком; контура се може уређивати док се не затвори

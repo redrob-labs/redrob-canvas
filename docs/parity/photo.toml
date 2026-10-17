@@ -33,9 +33,9 @@ name = "Free select (lasso and polygon in one tool)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-free-select.html"
 behaviour = "Dragging draws a freehand outline, single clicks place straight polygon segments, both can be mixed in one outline; the outline stays editable (move points, add segments) until confirmed with Enter or a double click. Backspace removes the last segment."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/lasso_ui.rs, crafts/photocraft/crates/ui-egui/src/polygon_lasso_tests.rs"
-gap = "lasso and polygon lasso are two separate tools; no post-hoc editing of the outline before committing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/lasso_ui.rs (free select: ToolOptions::lasso_free_select, vertex handles, grab/insert, Backspace drops the last segment), crafts/photocraft/crates/ui-egui/src/canvas.rs (anchor handles on the open outline), crafts/photocraft/crates/ui-egui/src/panels.rs (options-bar toggle and hints), crafts/photocraft/crates/ui-egui/src/polygon_lasso_tests.rs"
+gap = ""
 priority = 1
 
 [[feature]]

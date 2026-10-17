@@ -3962,3 +3962,6 @@ curves	Smooth	Vloeiend maken
 	Ink below	Inkt onder
 	Close gaps	Gaten sluiten
 	Under ink	Onder de inkt
+	Free select: clicks and drags build one editable outline	Vrije selectie: klikken en slepen vormen één bewerkbare omtrek
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Klik voegt een punt toe, slepen tekent uit de vrije hand · sleep een punt om het te verplaatsen · {del} verwijdert het laatste · {key} sluit · Esc annuleert
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Klik om punten te plaatsen, sleep om uit de vrije hand te tekenen; de omtrek blijft bewerkbaar tot hij gesloten is

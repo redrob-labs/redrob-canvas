@@ -3690,3 +3690,6 @@ curves	Smooth	Làm mượt
 	Ink below	Ngưỡng mực
 	Close gaps	Bịt khe
 	Under ink	Dưới nét mực
+	Free select: clicks and drags build one editable outline	Chọn tự do: nhấp và kéo tạo thành một đường viền có thể chỉnh sửa
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Nhấp thêm điểm, kéo vẽ tự do · kéo điểm để di chuyển · {del} xóa đoạn cuối · {key} đóng · Esc hủy
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Nhấp để đặt điểm, kéo để vẽ tự do; đường viền vẫn chỉnh sửa được cho đến khi đóng

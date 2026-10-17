@@ -4322,3 +4322,6 @@ shape	Appearance	Aspetto
 	Ink below	Inchiostro sotto
 	Close gaps	Chiudi vuoti
 	Under ink	Sotto l’inchiostro
+	Free select: clicks and drags build one editable outline	Selezione libera: clic e trascinamenti formano un unico contorno modificabile
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Il clic aggiunge un punto, il trascinamento disegna a mano libera · trascina un punto per spostarlo · {del} rimuove l'ultimo · {key} chiude · Esc annulla
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Fai clic per posare i punti, trascina per disegnare a mano libera; il contorno resta modificabile finché non viene chiuso

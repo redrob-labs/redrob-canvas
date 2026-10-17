@@ -714,6 +714,10 @@ pub struct ToolOptions {
     pub magnetic_contrast: f32,
     pub magnetic_frequency: f32,
     pub magnetic_pressure: bool,
+    /// Lasso › Free select: clicks place polygon vertices and drags draw freehand in one outline
+    /// that stays open and editable until it is closed (`lasso_ui`).
+    #[serde(default)]
+    pub lasso_free_select: bool,
     /// Red Eye: pupil search size (1–100) and how far corrected pixels darken (0–100).
     #[serde(default = "fifty")]
     pub red_eye_pupil_size: f32,
@@ -900,6 +904,7 @@ impl Default for ToolOptions {
             magnetic_contrast: 10.0,
             magnetic_frequency: 57.0,
             magnetic_pressure: false,
+            lasso_free_select: false,
             red_eye_pupil_size: 50.0,
             red_eye_darken: 50.0,
             eyedropper_size: 1,

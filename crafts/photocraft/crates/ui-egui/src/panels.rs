@@ -1168,10 +1168,25 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             }
                             widgets::vline(ui, 22.0);
                         }
+                        if app.ui.tool == Tool::Lasso {
+                            let o = &mut app.ui.tool_options;
+                            if icons::button(ui, "pentagon", 24.0, o.lasso_free_select, tl!("Free select: clicks and drags build one editable outline")).clicked() {
+                                o.lasso_free_select = !o.lasso_free_select;
+                            }
+                            widgets::vline(ui, 22.0);
+                        }
                         if widgets::secondary_button(ui, tl!("Select and Mask…"), 0.0).clicked() {
                             let _ = crate::menus::invoke(app, ui.ctx(), "select.selectAndMask", json!({}));
                         }
-                        if crate::lasso_ui::active(app) || (app.ui.tool == Tool::PolygonLasso && !app.ui.polygon.is_empty()) {
+                        if crate::lasso_ui::free_select_active(app) {
+                            hint(
+                                ui,
+                                &crate::i18n::fmt(
+                                    tl!("Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels"),
+                                    &[("key", &crate::shortcuts::pretty("Enter")), ("del", &crate::shortcuts::pretty("Backspace"))],
+                                ),
+                            );
+                        } else if crate::lasso_ui::active(app) || (app.ui.tool == Tool::PolygonLasso && !app.ui.polygon.is_empty()) {
                             hint(
                                 ui,
                                 &crate::i18n::fmt(
@@ -1179,6 +1194,8 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                                     &[("key", &crate::shortcuts::pretty("Enter"))],
                                 ),
                             );
+                        } else if app.ui.tool == Tool::Lasso && app.ui.tool_options.lasso_free_select {
+                            hint(ui, tl!("Click to place points, drag to draw freehand; the outline stays editable until closed"));
                         } else if app.ui.tool == Tool::Lasso {
                             hint(ui, tl!("Hold Alt while drawing for straight segments"));
                         }

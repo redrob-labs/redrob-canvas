@@ -3205,3 +3205,6 @@ curves	Smooth	Glätten
 	Ink below	Tusche unter
 	Close gaps	Lücken schließen
 	Under ink	Unter die Tusche
+	Free select: clicks and drags build one editable outline	Freie Auswahl: Klicks und Ziehen bilden einen einzigen bearbeitbaren Umriss
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Klick fügt einen Punkt hinzu, Ziehen zeichnet freihändig · Punkt ziehen verschiebt ihn · {del} entfernt den letzten · {key} schließt · Esc bricht ab
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Klicke, um Punkte zu setzen, ziehe für Freihand; der Umriss bleibt bis zum Schließen bearbeitbar

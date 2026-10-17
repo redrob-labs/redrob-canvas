@@ -3878,3 +3878,6 @@ curves	Smooth	スムーズ
 	Ink below	インク基準
 	Close gaps	隙間を閉じる
 	Under ink	線の下へ
+	Free select: clicks and drags build one editable outline	自由選択: クリックとドラッグで編集可能なひとつの輪郭を作ります
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	クリックで点を追加、ドラッグでフリーハンド · 点をドラッグして移動 · {del} で最後を削除 · {key} で閉じる · Esc でキャンセル
+	Click to place points, drag to draw freehand; the outline stays editable until closed	クリックで点を置き、ドラッグでフリーハンド描画。閉じるまで輪郭は編集できます

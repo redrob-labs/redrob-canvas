@@ -4903,13 +4903,26 @@ fn draw_drag_preview(app: &mut PhotocraftApp, painter: &egui::Painter, xf: &View
         }
         Tool::Lasso | Tool::Patch | Tool::ContentAwareMove => {
             let mut pts: Vec<Pos2> = d.points.iter().map(|p| xf.to_screen(p[0] as f32, p[1] as f32)).collect();
-            if let Some(lasso) = &d.lasso {
-                pts.push(xf.to_screen(lasso.cursor[0] as f32, lasso.cursor[1] as f32));
-            }
             // On pixel centres like the marquee's ants, so a 1 pt line stays crisp wherever the
             // canvas sits (a pixel edge would blur it to grey).
-            let pts: Vec<Pos2> = pts.into_iter().map(|p| p.round() + vec2(0.5, 0.5)).collect();
+            let crisp = |p: Pos2| p.round() + vec2(0.5, 0.5);
+            // Free select: the vertices are handles, drawn like the Pen's anchors; the one being
+            // dragged is filled. No rubber band while a vertex is dragged.
+            let handles: Vec<(Pos2, bool)> = d
+                .lasso
+                .as_ref()
+                .filter(|l| l.free())
+                .map(|l| l.vertices().iter().filter_map(|&i| pts.get(i).map(|&p| (crisp(p), l.grabbed() == Some(i)))).collect::<Vec<_>>())
+                .unwrap_or_default();
+            if let Some(lasso) = d.lasso.as_ref().filter(|l| l.grabbed().is_none()) {
+                pts.push(xf.to_screen(lasso.cursor[0] as f32, lasso.cursor[1] as f32));
+            }
+            let pts: Vec<Pos2> = pts.into_iter().map(crisp).collect();
             crate::tool_feedback::draw_ants(painter, &pts, false);
+            let accent = crate::theme::Tokens::get(painter.ctx()).accent;
+            for (p, grabbed) in handles {
+                crate::vector_ui::draw_anchor(painter, p, grabbed, accent);
+            }
         }
         Tool::Gradient => {
             let a = xf.to_screen(d.start[0] as f32, d.start[1] as f32);
