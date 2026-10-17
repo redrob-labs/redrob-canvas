@@ -285,9 +285,9 @@ name = "Fill and stroke selection outline"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-stroke.html"
 behaviour = "Fill the selected area with FG, BG or a pattern (Edit > Fill with ...), or draws along the selection outline either as a solid or dashed line (width, cap, join, miter, dash preset, antialias) or by emulating a chosen paint tool with its current brush and dynamics."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (edit.stroke)"
-gap = "solid colour stroke with width and position only; no dash pattern, no paint-tool emulation"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs (edit.stroke: tool and dash/dashOffset trace the outline and stroke it as a path), crafts/photocraft/crates/engine/src/vector_cmds.rs (dash_lines, stroke_path_geometry)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3993,9 +3993,9 @@ name = "Path properties and stroking a path"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-using-paths-stroking.html"
 behaviour = "Stroke dialog with solid line (width, cap, join, miter, dash) or paint-tool emulation; fill path with colour or pattern."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/path_edit_cmds.rs (path.stroke, path.fill)"
-gap = "no dash pattern or paint-tool emulation"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/path_edit_cmds.rs, crafts/photocraft/crates/engine/src/vector_cmds.rs (path.stroke: tool emulation plus dash/dashOffset pattern, path.fill)"
+gap = ""
 priority = 2
 
 [[feature]]

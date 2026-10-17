@@ -1257,7 +1257,7 @@ fn stroke_points(pts: &[(f64, f64)], closed: bool, simulate: bool) -> Vec<redrob
 /// history step. Only `path.stroke` itself is journalled, so a recorded action replays it once.
 fn stroke_with_command(s: &mut Session, p: &Value, cmd: &str, lines: &[vector::Polyline], simulate: bool) -> Result<Value> {
     let mut params = p.as_object().cloned().unwrap_or_default();
-    for k in ["name", "tool", "simulatePressure", "coalesce"] {
+    for k in ["name", "tool", "simulatePressure", "coalesce", "dash", "dashOffset"] {
         params.remove(k);
     }
     let journal = s.journal.len();
@@ -1294,15 +1294,104 @@ fn stroke_with_command(s: &mut Session, p: &Value, cmd: &str, lines: &[vector::P
     Ok(json!({ "damage": [dmg.x0, dmg.y0, dmg.width(), dmg.height()] }))
 }
 
+/// `dash` (on/off lengths in px, an odd list repeated to even it out) cuts each line into open
+/// dashes, the pattern starting `dashOffset` px in (as a CSS/SVG stroke-dasharray). No `dash`
+/// keeps the lines whole.
+fn dash_lines(lines: Vec<vector::Polyline>, p: &Value, cmd: &str) -> Result<Vec<vector::Polyline>> {
+    let pattern: Vec<f64> = match p.get("dash") {
+        None | Some(Value::Null) => return Ok(lines),
+        Some(Value::Array(a)) => a
+            .iter()
+            .map(|v| v.as_f64().filter(|x| x.is_finite() && *x >= 0.0))
+            .collect::<Option<Vec<f64>>>()
+            .ok_or_else(|| bad(cmd, "`dash` must be an array of non-negative lengths in px"))?,
+        Some(_) => return Err(bad(cmd, "`dash` must be an array of lengths in px")),
+    };
+    if pattern.is_empty() || pattern.iter().sum::<f64>() <= 0.0 {
+        return Ok(lines);
+    }
+    let pattern = if pattern.len() % 2 == 1 { [pattern.clone(), pattern].concat() } else { pattern };
+    let total: f64 = pattern.iter().sum();
+    let offset = f64p(p, "dashOffset").filter(|v| v.is_finite()).unwrap_or(0.0).rem_euclid(total);
+    let mut out = Vec::new();
+    let emit = |out: &mut Vec<vector::Polyline>, cur: &mut Vec<(f64, f64)>| {
+        if cur.len() >= 2 {
+            let pts = std::mem::take(cur);
+            out.push(vector::Polyline { knot: vec![true; pts.len()], pts, closed: false });
+        }
+        cur.clear();
+    };
+    for pl in lines {
+        let mut pts = pl.pts.clone();
+        if pl.closed
+            && let Some(&first) = pts.first()
+        {
+            pts.push(first);
+        }
+        if pts.len() < 2 {
+            continue;
+        }
+        // Pattern state: element `idx` with `rem` px of it left; even elements are drawn.
+        let (mut idx, mut rem) = (0usize, pattern[0]);
+        let mut adv = offset;
+        while adv > 0.0 {
+            if adv >= rem {
+                adv -= rem;
+                idx = (idx + 1) % pattern.len();
+                rem = pattern[idx];
+            } else {
+                rem -= adv;
+                adv = 0.0;
+            }
+        }
+        let mut cur: Vec<(f64, f64)> = Vec::new();
+        if idx % 2 == 0 {
+            cur.push(pts[0]);
+        }
+        for w in pts.windows(2) {
+            let (a, b) = (w[0], w[1]);
+            let len = (b.0 - a.0).hypot(b.1 - a.1);
+            let mut t = 0.0;
+            while len - t > rem {
+                t += rem;
+                let q = (a.0 + (b.0 - a.0) * t / len, a.1 + (b.1 - a.1) * t / len);
+                if idx % 2 == 0 {
+                    cur.push(q);
+                    emit(&mut out, &mut cur);
+                } else {
+                    cur.clear();
+                    cur.push(q);
+                }
+                idx = (idx + 1) % pattern.len();
+                rem = pattern[idx];
+            }
+            rem -= len - t;
+            if idx % 2 == 0 {
+                cur.push(b);
+            }
+        }
+        if idx % 2 == 0 {
+            emit(&mut out, &mut cur);
+        }
+    }
+    Ok(out)
+}
+
 fn path_stroke(s: &mut Session, p: &Value) -> Result<Value> {
     let path = resolve_path(s, p.get("name").and_then(Value::as_str))?;
+    stroke_path_geometry(s, p, &path, "path.stroke")
+}
+
+/// Strokes `path` with the tool, brush and dash settings of `p` (`path.stroke`, and Edit › Stroke
+/// with a tool or dash, which traces the selection into a path first).
+pub(crate) fn stroke_path_geometry(s: &mut Session, p: &Value, path: &Path, cmd_name: &str) -> Result<Value> {
     let tool = p.get("tool").and_then(Value::as_str).unwrap_or("brush");
     let simulate = match p.get("simulatePressure") {
         None | Some(Value::Null) => false,
-        Some(v) => v.as_bool().ok_or_else(|| bad("path.stroke", "`simulatePressure` must be true or false"))?,
+        Some(v) => v.as_bool().ok_or_else(|| bad(cmd_name, "`simulatePressure` must be true or false"))?,
     };
     if let Some(&(_, cmd)) = STROKE_PATH_TOOLS.iter().find(|(t, _)| *t == tool) {
-        let lines = vector::flatten_path(&path, 0.1);
+        let lines = dash_lines(vector::flatten_path(path, 0.1), p, cmd_name)?;
         return stroke_with_command(s, p, cmd, &lines, simulate);
     }
     let base = s.tools.brush.clone();
@@ -1325,11 +1414,11 @@ fn path_stroke(s: &mut Session, p: &Value) -> Result<Value> {
         "brush" | "eraser" => {}
         o => {
             let tools: Vec<&str> = ["brush", "pencil", "eraser"].into_iter().chain(STROKE_PATH_TOOLS.iter().map(|(t, _)| *t)).collect();
-            return Err(bad("path.stroke", format!("unknown tool `{o}` ({})", tools.join("|"))));
+            return Err(bad(cmd_name, format!("unknown tool `{o}` ({})", tools.join("|"))));
         }
     }
-    crate::brush_cmds::validate_brush(&brush, "path.stroke")?;
-    let lines = vector::flatten_path(&path, 0.1);
+    crate::brush_cmds::validate_brush(&brush, cmd_name)?;
+    let lines = dash_lines(vector::flatten_path(path, 0.1), p, cmd_name)?;
     let id = layer_id(s, p)?;
     let bg = s.tools.background;
     let dmg = s.edit("Stroke Path", |doc, _| {
@@ -1809,7 +1898,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "path.stroke",
             "Stroke Path",
             [],
-            r##"{"name":str|"work"|"layer"="work","layer":id? (pixel layer),"tool":"brush|pencil|eraser|backgroundEraser|cloneStamp|patternStamp|healingBrush|spotHealingBrush|historyBrush|blur|sharpen|smudge|dodge|burn|sponge|colorReplacement|mixerBrush"="brush","simulatePressure":bool=false (taper both ends when the brush follows pen pressure),"size":0.5..5000 px?,"hardness":0..1?,"opacity":0..100?,"color":"#rrggbb"=foreground} (current brush settings otherwise; tools past the Eraser run their paint.* command along the path and take its params)"##,
+            r##"{"name":str|"work"|"layer"="work","layer":id? (pixel layer),"tool":"brush|pencil|eraser|backgroundEraser|cloneStamp|patternStamp|healingBrush|spotHealingBrush|historyBrush|blur|sharpen|smudge|dodge|burn|sponge|colorReplacement|mixerBrush"="brush","simulatePressure":bool=false (taper both ends when the brush follows pen pressure),"size":0.5..5000 px?,"hardness":0..1?,"opacity":0..100?,"color":"#rrggbb"=foreground,"dash":[on,off,…] px?,"dashOffset":px=0} (current brush settings otherwise; tools past the Eraser run their paint.* command along the path and take its params; a dash pattern strokes only its on lengths)"##,
             has_layer,
             path_stroke
         ),

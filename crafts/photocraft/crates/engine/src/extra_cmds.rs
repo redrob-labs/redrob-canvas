@@ -131,8 +131,41 @@ fn map_pixels(s: &mut Session, label: &str, p: &Value, f: impl FnOnce(Rect, &mut
     Ok(Value::Null)
 }
 
+/// Edit › Stroke with a paint `tool` or a `dash` pattern: the selection outline (or the layer's
+/// opaque edge) is traced into a path and stroked along it like Stroke Path, so the stroke is
+/// painted by that tool's brush and can be dashed.
+fn stroke_with_tool(s: &mut Session, p: &Value) -> Result<Value> {
+    let id = layer_param(s, p)?;
+    let d = s.active().ok_or(EngineError::NoDocument)?;
+    let canvas = d.doc.bounds();
+    let mask: Vec<f32> = match &d.doc.selection {
+        Some(m) => sel::mask_from_surface(Some(m), canvas),
+        None => {
+            let l = d.doc.layer(id).ok_or(EngineError::NoLayer(id))?;
+            let surf = l.surface().ok_or_else(|| EngineError::Other("not a pixel layer".into()))?;
+            let mut px = vec![[0.0f32; 4]; (canvas.width() * canvas.height()) as usize];
+            surf.read_rgba_into(canvas, &mut px);
+            px.iter().map(|p| p[3]).collect()
+        }
+    };
+    let path = redrob_photo_vector::trace::trace_mask(&mask, canvas, 0.0, 1.0);
+    let mut q = p.as_object().cloned().unwrap_or_default();
+    // Stroke's width is the brush size; its colour, opacity and layer pass through.
+    if let Some(w) = q.remove("width") {
+        q.entry("size").or_insert(w);
+    }
+    q.insert("layer".into(), json!(id.0));
+    q.remove("location");
+    q.remove("mode");
+    q.remove("preserveTransparency");
+    crate::vector_cmds::stroke_path_geometry(s, &Value::Object(q), &path, "edit.stroke")
+}
+
 /// Edit › Stroke: a band along the selection edge (or the layer's opaque edge without a selection).
 fn stroke(s: &mut Session, p: &Value) -> Result<Value> {
+    if p.get("tool").is_some_and(|v| !v.is_null()) || p.get("dash").is_some_and(|v| !v.is_null()) {
+        return stroke_with_tool(s, p);
+    }
     // Whole pixels, rounded up, as in Photoshop (0.5 px strokes 1 px).
     let width = p.get("width").and_then(Value::as_f64).filter(|w| w.is_finite()).unwrap_or(1.0).clamp(1.0, 250.0).ceil() as usize;
     let color = color_param(p, "color", s.tools.foreground);
@@ -804,7 +837,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Stroke…",
             &["Edit"],
             None,
-            r##"{"width":1..250=1,"color":"#rrggbb|[r,g,b,a]"=foreground,"location":"inside|center|outside"="center","mode":"any layer blend mode"="normal","opacity":0..100=100,"preserveTransparency":bool=false}"##,
+            r##"{"width":1..250=1,"color":"#rrggbb|[r,g,b,a]"=foreground,"location":"inside|center|outside"="center","mode":"any layer blend mode"="normal","opacity":0..100=100,"preserveTransparency":bool=false,"tool":"brush|pencil|eraser|…"? (paint the outline with that tool's brush, as Stroke Path),"dash":[on,off,…] px?,"dashOffset":px=0}"##,
             has_pixels,
             stroke
         ),
