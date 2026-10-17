@@ -319,6 +319,15 @@ pub struct UiState {
     #[serde(default)]
     pub toolbar_pos: Option<[f32; 2]>,
     pub status_bar: bool,
+    /// Window › Palette Strip: the colour strip along the bottom of the window.
+    #[serde(default = "yes")]
+    pub palette_strip: bool,
+    /// The palette the strip shows: `document` or a swatch library id.
+    #[serde(default = "document_swatches")]
+    pub palette_strip_library: String,
+    /// The strip's chip side (points).
+    #[serde(default = "default_chip")]
+    pub palette_strip_size: f32,
     pub dock: bool,
     pub view: ViewFlags,
     pub dialog: Option<Dialog>,
@@ -702,6 +711,9 @@ impl Default for UiState {
             docking_generation: 0,
             toolbar_pos: None,
             status_bar: true,
+            palette_strip: true,
+            palette_strip_library: document_swatches(),
+            palette_strip_size: default_chip(),
             dock: true,
             view: ViewFlags::default(),
             dialog: None,
@@ -752,6 +764,14 @@ impl Default for UiState {
 
 fn yes() -> bool {
     true
+}
+
+fn document_swatches() -> String {
+    "document".into()
+}
+
+fn default_chip() -> f32 {
+    16.0
 }
 
 fn default_shortcut_set() -> String {

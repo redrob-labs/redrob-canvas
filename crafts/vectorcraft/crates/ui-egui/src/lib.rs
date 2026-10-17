@@ -38,6 +38,7 @@ pub mod menus;
 pub mod native_menu;
 pub mod opening;
 pub mod palette;
+pub mod palette_strip;
 mod panel_docking;
 pub mod panels;
 pub mod picks;
@@ -1320,6 +1321,9 @@ impl VectorcraftApp {
         if self.ui.status_bar && self.ui.screen_mode < 3 {
             chrome::status_bar(self, ui);
             chrome::hint_bar(self, ui);
+        }
+        if self.ui.palette_strip && self.ui.screen_mode < 3 {
+            palette_strip::show(self, ui);
         }
         if self.ui.toolbar && self.ui.screen_mode < 3 {
             toolbar::show(self, ui);

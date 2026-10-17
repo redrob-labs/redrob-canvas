@@ -302,6 +302,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{} put the current (Basic or Advanced) toolbar back as it ships, undoing Edit Toolbar's changes; returns its slots",
     ),
     ("window.taskBar", "Contextual Task Bar", "", "{}"),
+    ("window.paletteStrip", "Palette Strip", "", "{} show or hide the colour strip along the bottom of the window; toggles"),
     (
         "window.taskBar.pin",
         "Pin Bar Position",
@@ -1213,6 +1214,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             crate::toolbar::float_group(app, &tool, floating).map(Value::Bool)
         }
         "window.taskBar" => flag(&mut app.ui.task_bar),
+        "window.paletteStrip" => flag(&mut app.ui.palette_strip),
         "window.taskBar.pin" => {
             let place = &mut app.ui.task_bar_place;
             opt_bool(p, "pinned").map(|pinned| {
@@ -1575,6 +1577,7 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
             app.ui.floating_flyouts.iter().any(|f| f.tools.iter().any(|id| id == tool))
         }
         "window.taskBar" => app.ui.task_bar,
+        "window.paletteStrip" => app.ui.palette_strip,
         "window.taskBar.pin" => app.ui.task_bar_place.pinned,
         "window.panel" => {
             let panel = p.get("panel").and_then(Value::as_str).unwrap_or("");
@@ -2671,6 +2674,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 Sep,
                 c("Control", "window.control"),
                 c("Contextual Task Bar", "window.taskBar"),
+                c("Palette Strip", "window.paletteStrip"),
                 c("Tools", "window.toolbar"),
                 sub("Toolbars", vec![c("Advanced", "window.toolbarAdvanced"), c("Double Column", "window.toolbarColumns")]),
                 Sep,
