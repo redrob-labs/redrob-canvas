@@ -3834,6 +3834,8 @@ fn color_field(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             }
         }
     });
+    // Recent colours (the colour history): a click picks one, Alt-click as the background.
+    color_history_row(app, ui);
 }
 
 /// Tool colours are sRGB-encoded floats; egui's Hsva works on sRGB bytes via these helpers
@@ -3860,6 +3862,15 @@ fn hsva_srgb(h: egui::ecolor::Hsva) -> [f32; 4] {
 fn hsva_color32(h: egui::ecolor::Hsva) -> Color32 {
     let [r, g, b] = srgb_bytes(hsva_srgb(h));
     Color32::from_rgb(r, g, b)
+}
+
+/// The Color panel's row of recent colours (`color_history`), under the readout.
+fn color_history_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+    if app.ui.color_history.is_empty() {
+        return;
+    }
+    ui.add_space(4.0);
+    crate::color_history::patches(app, ui, 14.0, 16);
 }
 
 /// The Color panel's editable colour readout: a hex field and R, G, B fields, all drawn like the

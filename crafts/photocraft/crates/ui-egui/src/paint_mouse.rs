@@ -122,7 +122,7 @@ pub fn canvas_buttons(app: &mut PhotocraftApp, response: &Response, tool: Tool) 
         && has_brush_picker(tool)
         && let Some(p) = response.interact_pointer_pos()
     {
-        crate::brush_picker::open(&mut app.ui, &response.ctx, [p.x, p.y]);
+        open_right_click_popup(app, &response.ctx, [p.x, p.y]);
     }
     let erase_click = erase && right_click;
     app.secondary_erase = right_start || erase_click;
@@ -150,9 +150,19 @@ pub fn pointer_secondary(app: &mut PhotocraftApp, ctx: &egui::Context, down: boo
         return true;
     }
     if down && has_brush_picker(tool) {
-        crate::brush_picker::open(&mut app.ui, ctx, at);
+        open_right_click_popup(app, ctx, at);
     }
     false
+}
+
+/// What a right-click with a painting tool opens at `at`: the Brush Preset picker, or the pop-up
+/// palette when Preferences › Tools › Right-click with painting tools says so.
+fn open_right_click_popup(app: &mut PhotocraftApp, ctx: &egui::Context, at: [f32; 2]) {
+    if app.session.prefs().tools.right_click_with_painting_tools == RightClickPaint::PopupPalette {
+        crate::popup_palette::open(&mut app.ui, ctx, at);
+    } else {
+        crate::brush_picker::open(&mut app.ui, ctx, at);
+    }
 }
 
 /// The Brush Preset picker a right-click or the options-bar brush chip opened, at the pointer. It

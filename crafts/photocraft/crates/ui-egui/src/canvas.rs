@@ -2048,6 +2048,8 @@ pub fn document_area(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     crate::layer_transfer::finish(app, ui.ctx());
     // Once a frame, not per document view: the right-click or options-bar Brush Preset picker.
     crate::paint_mouse::show_picker(app, ui.ctx());
+    // And the right-click pop-up palette, when the preference chooses it instead.
+    crate::popup_palette::show(app, ui.ctx());
 }
 
 /// Window › Arrange tiles: each document shown with its tile in `rect`, or `None` when the

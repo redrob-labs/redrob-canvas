@@ -1347,6 +1347,15 @@ pub struct UiState {
     /// committed with `paint.setMultibrush` on release.
     #[serde(skip)]
     pub multibrush_drag: Option<[f64; 2]>,
+    /// Foreground colours painted with, most recent first (`color_history`).
+    #[serde(default)]
+    pub color_history: Vec<[f32; 4]>,
+    /// The pop-up palette's screen centre while it is open (`popup_palette`); never restored.
+    #[serde(default, skip_deserializing)]
+    pub popup_palette: Option<[f32; 2]>,
+    /// The preset tag the pop-up palette's ring shows (empty: every preset).
+    #[serde(default)]
+    pub popup_tag: String,
     /// The Properties panel's armed Levels/Curves eyedropper on an adjustment layer (`layer_picker`),
     /// exposed to automation but never restored from settings.
     #[serde(default, skip_deserializing)]
@@ -1571,6 +1580,9 @@ impl Default for UiState {
             transform_options: TransformOptions::DEFAULT,
             symmetry_transform: None,
             multibrush_drag: None,
+            color_history: Vec::new(),
+            popup_palette: None,
+            popup_tag: String::new(),
             layer_picker: None,
             mask_target: false,
             vector_mask_target: false,

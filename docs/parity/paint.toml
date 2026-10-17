@@ -1138,9 +1138,9 @@ name = "Pop-up palette"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
 behaviour = "Right-click ring: foreground/background, canvas rotation slider, tagged presets, hue ring and triangle, colour history, tag list, zoom slider, 100%, canvas-only, mirror."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/popup_palette.rs, crafts/photocraft/crates/ui-egui/src/paint_mouse.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+gap = "right-click ring (Preferences > Tools > Right-click: Popup Palette): tagged presets, hue ring + saturation/brightness square, colour history, fg/bg swap, zoom, rotation, mirror, 100%, tag list; no canvas-only toggle"
 priority = 1
 
 [[feature]]
@@ -2170,9 +2170,9 @@ name = "Colour history and common colours patches"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
 behaviour = "Recent colours and colours sampled from the image, size, count, direction, scrolling."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_history.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/popup_palette.rs"
+gap = "recent painted colours (24) in the Color panel and the pop-up palette; no common-colours-from-image patches, fixed size and count"
 priority = 1
 
 [[feature]]
