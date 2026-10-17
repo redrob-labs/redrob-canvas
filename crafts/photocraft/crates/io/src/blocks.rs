@@ -295,6 +295,9 @@ pub(crate) fn gradient_stops_editable(grad: &Descriptor, method: Option<&[u8]>) 
 }
 
 fn gradient_stops_raw(grad: &Descriptor) -> RawStops {
+    if enum_of(grad, "GrdF") == Some(b"ClNs") {
+        return noise_gradient_stops(grad);
+    }
     let mut stops = Vec::new();
     let mut mids = Vec::new();
     let mut opacity = Vec::new();
@@ -327,6 +330,99 @@ fn gradient_stops_raw(grad: &Descriptor) -> RawStops {
         }
     }
     RawStops { stops: sorted, mids, opacity, smooth }
+}
+
+/// Stops for a noise gradient (`GrdF` = `ClNs`), which the file describes by a recipe rather than
+/// by stops: a random seed (`RndS`), a roughness (`Smth`, 0..4096, high = smoother), a colour model
+/// (`ClrS`: `RGBC`, `HSBl` or `LbCl`), per-channel ranges (`Mnm `/`Mxm `, 0..100), and the flags
+/// `VctC` (keep colours printable, i.e. pull saturation in) and `ShTr` (random transparency).
+/// Photoshop's own generator is not public, so this is an approximation with the same statistics:
+/// a seeded generator lays down one random colour per band, the band count follows the roughness,
+/// and the compositor interpolates between them. Without it the stroke / overlay / fill falls back
+/// to a flat default and the whole effect is the wrong colour; with it the hue spread, value range
+/// and band frequency match even though the exact pattern cannot.
+fn noise_gradient_stops(grad: &Descriptor) -> RawStops {
+    let seed = num(grad.get("RndS")).unwrap_or(0.0).abs() as u64;
+    let smooth = (num(grad.get("Smth")).unwrap_or(2048.0) / 4096.0).clamp(0.0, 1.0) as f32;
+    let range = |key: &str, default: f32| -> [f32; 4] {
+        match grad.get(key) {
+            Some(Value::List(v)) => {
+                let mut out = [default; 4];
+                for (i, x) in v.iter().take(4).enumerate() {
+                    out[i] = num(Some(x)).unwrap_or(f64::from(default) * 100.0) as f32 / 100.0;
+                }
+                out
+            }
+            _ => [default; 4],
+        }
+    };
+    let lo = range("Mnm ", 0.0);
+    let hi = range("Mxm ", 1.0);
+    let model = enum_of(grad, "ClrS").unwrap_or(b"RGBC");
+    let vivid = bool_of(grad, "VctC");
+    let transparent = bool_of(grad, "ShTr");
+    // Rough = many narrow bands, smooth = a few wide ones.
+    let bands = (4.0 + (1.0 - smooth) * 28.0).round() as usize;
+    // Linear congruential generator (Numerical Recipes constants) seeded from `RndS`, so the same
+    // file renders the same way every time.
+    let mut state = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    let mut rnd = move || -> f32 {
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        ((state >> 33) as u32) as f32 / u32::MAX as f32
+    };
+    let mut stops = Vec::with_capacity(bands);
+    let mut opacity = Vec::new();
+    for k in 0..bands {
+        let t = k as f32 / (bands - 1).max(1) as f32;
+        let u: [f32; 3] = [rnd(), rnd(), rnd()];
+        let mix = |i: usize| lo[i] + (hi[i] - lo[i]).max(0.0) * u[i];
+        let color = match model {
+            b"HSBl" => {
+                let (h, mut s, b) = (mix(0), mix(1), mix(2));
+                if vivid {
+                    s *= 0.75;
+                }
+                hsb_to_rgb(h, s, b)
+            }
+            b"LbCl" => Color { mode: ColorMode::Lab, c: [mix(0), mix(1), mix(2), 0.0], alpha: 1.0 },
+            _ => {
+                let mut c = [mix(0), mix(1), mix(2)];
+                if vivid {
+                    // Pull every channel towards the mean: the printable-gamut option desaturates.
+                    let m = (c[0] + c[1] + c[2]) / 3.0;
+                    for x in &mut c {
+                        *x = m + (*x - m) * 0.75;
+                    }
+                }
+                Color::rgb(c[0], c[1], c[2])
+            }
+        };
+        stops.push((t, color));
+        if transparent {
+            opacity.push((t, 0.25 + 0.75 * rnd()));
+        }
+    }
+    let mids = vec![0.5; stops.len().saturating_sub(1)];
+    RawStops { stops, mids, opacity, smooth: 0.0 }
+}
+
+/// HSB (all 0..1) to an RGB colour.
+fn hsb_to_rgb(h: f32, s: f32, b: f32) -> Color {
+    let h6 = (h.rem_euclid(1.0)) * 6.0;
+    let i = h6.floor();
+    let f = h6 - i;
+    let p = b * (1.0 - s);
+    let q = b * (1.0 - s * f);
+    let t = b * (1.0 - s * (1.0 - f));
+    let (r, g, bl) = match i as i32 {
+        0 => (b, t, p),
+        1 => (q, b, p),
+        2 => (p, b, t),
+        3 => (p, q, b),
+        4 => (t, p, b),
+        _ => (b, p, q),
+    };
+    Color::rgb(r, g, bl)
 }
 
 /// A `Grdn` descriptor for colour and opacity stops.

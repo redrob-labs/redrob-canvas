@@ -978,8 +978,10 @@ fn pattern_sample(d: vec2<i32>) -> vec4<f32> {
     let dy = f32(d.y) + 0.5 - op.p3.y;
     let c = op.p3.z;
     let s = op.p3.w;
-    let u = (dx * c - dy * s) * op.p4.x - 0.5;
-    let v = (dx * s + dy * c) * op.p4.x - 0.5;
+    // Scale about pixel centres (see compose::pattern::Placement::map), then the -0.5 of the
+    // bilinear sample.
+    let u = ((dx * c - dy * s) - 0.5) * op.p4.x;
+    let v = ((dx * s + dy * c) - 0.5) * op.p4.x;
     let x0 = floor(u);
     let y0 = floor(v);
     let fx = u - x0;
