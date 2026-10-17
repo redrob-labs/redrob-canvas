@@ -34,7 +34,7 @@ fn every_new_preset_button_opens_the_dialog_and_cancel_saves_nothing() {
     let brush = h.state().session.tools.brush.clone();
     let mut opened = 0;
     let mut cancel = |h: &mut Harness<'_, PhotocraftApp>| {
-        dialog(h).expect("the dialog opened");
+        dialog(h).unwrap_or_else(|| panic!("the dialog opened (button {})", opened + 1));
         h.run_steps(2);
         h.get_by_label("Cancel").click();
         h.run_steps(3);
@@ -66,6 +66,8 @@ fn every_new_preset_button_opens_the_dialog_and_cancel_saves_nothing() {
     cancel(&mut h);
     h.state_mut().ui.brush_tab = 1;
     h.run_steps(3);
+    eprintln!("DBG plus {:?} screen {:?}", h.get_by_label("Create new brush from the current settings").rect(), h.ctx.content_rect());
+    eprintln!("DBG tabs {:?}", h.get_by_label("Create new brush from the current settings").parent().map(|n| n.rect()));
     h.get_by_label("Create new brush from the current settings").click();
     h.run_steps(3);
     cancel(&mut h);

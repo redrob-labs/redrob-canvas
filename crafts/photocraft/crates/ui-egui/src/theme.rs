@@ -974,6 +974,12 @@ impl egui::Plugin for UiFontSizePlugin {
 pub fn medium(size: f32) -> FontId {
     FontId::new(size, FontFamily::Name("medium".into()))
 }
+/// [`medium`] where the UI fonts are installed; egui's proportional face where they are not
+/// (a bare test context draws a dialog body before any font is installed).
+pub fn medium_or_default(ctx: &egui::Context, size: f32) -> FontId {
+    let family = FontFamily::Name("medium".into());
+    if ctx.fonts(|f| f.definitions().families.contains_key(&family)) { FontId::new(size, family) } else { FontId::proportional(size) }
+}
 pub fn semibold(size: f32) -> FontId {
     FontId::new(size, FontFamily::Name("semibold".into()))
 }

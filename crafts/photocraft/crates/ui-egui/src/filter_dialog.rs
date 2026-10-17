@@ -923,11 +923,22 @@ fn blending_options(ui: &mut egui::Ui, cmd: &str, f: &mut Map<String, Value>) {
         ui.label(egui::RichText::new(tl!("Mode")).color(t.text_dim));
         crate::widgets::dropdown(ui, &format!("flt-{cmd}-blend"), &mut cur, &opts, 170.0);
     });
-    f.insert(BLEND.into(), json!(cur));
+    // Normal at 100 % is no blending at all: the params (and so the journal and the remembered
+    // values) carry the keys only when the section is set to something.
+    if cur == "Normal" {
+        f.remove(BLEND);
+    } else {
+        f.insert(BLEND.into(), json!(cur));
+    }
     let mut opacity = f.get(OPACITY).and_then(Value::as_f64).unwrap_or(100.0) as f32;
     let gestures = crate::widgets::RowGestures { reset: Some(100.0), wheel_step: None };
     crate::widgets::slider_row_with(ui, tl!("Opacity"), &mut opacity, 0.0..=100.0, "%", None, gestures);
-    f.insert(OPACITY.into(), json!(opacity.round().clamp(0.0, 100.0)));
+    let opacity = opacity.round().clamp(0.0, 100.0);
+    if opacity >= 100.0 {
+        f.remove(OPACITY);
+    } else {
+        f.insert(OPACITY.into(), json!(opacity));
+    }
 }
 
 /// A new seed for a dialog's Random button: 0..=30000 (what the field takes), never `current`.

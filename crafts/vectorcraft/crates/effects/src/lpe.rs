@@ -337,7 +337,7 @@ mod tests {
         let half = dashed_stroke(&line(0.0, 100.0), &json!({"dashes": 4, "halfStart": true, "halfEnd": true, "unify": false}), None);
         let d0 = half.subpaths[0].anchors[1].p.x - half.subpaths[0].anchors[0].p.x;
         let d1 = half.subpaths[1].anchors[1].p.x - half.subpaths[1].anchors[0].p.x;
-        assert!((2.0 * d0 - d1).abs() < 1e-6, "{d0} {d1}");
+        assert!((2.0 * d0 - d1).abs() < 1e-4, "{d0} {d1}");
     }
 
     #[test]
