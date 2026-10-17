@@ -305,8 +305,11 @@ pub fn parse(bytes: &[u8]) -> Result<SegmentedGradient, String> {
         if f.len() < 13 {
             return Err(format!("segment {} has {} fields, 13 or 15 expected", i + 1, f.len()));
         }
-        let num = |j: usize| -> Result<f32, String> { f[j].parse::<f32>().ok().filter(|v| v.is_finite()).ok_or_else(|| format!("segment {}: bad number `{}`", i + 1, f[j])) };
-        let int = |j: usize| -> Result<i64, String> { f.get(j).map_or(Ok(0), |s| s.parse::<i64>().map_err(|_| format!("segment {}: bad integer `{s}`", i + 1))) };
+        let num = |j: usize| -> Result<f32, String> {
+            f[j].parse::<f32>().ok().filter(|v| v.is_finite()).ok_or_else(|| format!("segment {}: bad number `{}`", i + 1, f[j]))
+        };
+        let int =
+            |j: usize| -> Result<i64, String> { f.get(j).map_or(Ok(0), |s| s.parse::<i64>().map_err(|_| format!("segment {}: bad integer `{s}`", i + 1))) };
         let seg = Segment {
             left: num(0)?,
             middle: num(1)?,

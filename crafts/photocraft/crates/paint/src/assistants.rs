@@ -115,9 +115,7 @@ impl Assistant {
         match self {
             Self::Ruler { a, b } | Self::ParallelRuler { a, b } => finite(*a) && finite(*b) && dist(*a, *b) >= 1e-6,
             Self::VanishingPoint { p } => finite(*p),
-            Self::PerspectiveGrid { corners } => {
-                corners.iter().all(|c| finite(*c)) && (0..4).all(|i| (i + 1..4).all(|j| dist(corners[i], corners[j]) >= 1e-6))
-            }
+            Self::PerspectiveGrid { corners } => corners.iter().all(|c| finite(*c)) && (0..4).all(|i| (i + 1..4).all(|j| dist(corners[i], corners[j]) >= 1e-6)),
         }
     }
 
@@ -247,13 +245,20 @@ impl Assistant {
                 let step = (size[0].min(size[1]) / 6.0).max(8.0);
                 (-6..=6).map(|k| along([a[0] + n[0] * step * f64::from(k), a[1] + n[1] * step * f64::from(k)], d)).collect()
             }
-            Self::VanishingPoint { p } => {
-                [[0.0, 0.0], [size[0], 0.0], [size[0], size[1]], [0.0, size[1]], [size[0] / 2.0, 0.0], [size[0] / 2.0, size[1]], [0.0, size[1] / 2.0], [size[0], size[1] / 2.0]]
-                    .into_iter()
-                    .filter(|c| dist(*c, *p) >= 1e-6)
-                    .map(|c| [*p, c])
-                    .collect()
-            }
+            Self::VanishingPoint { p } => [
+                [0.0, 0.0],
+                [size[0], 0.0],
+                [size[0], size[1]],
+                [0.0, size[1]],
+                [size[0] / 2.0, 0.0],
+                [size[0] / 2.0, size[1]],
+                [0.0, size[1] / 2.0],
+                [size[0], size[1] / 2.0],
+            ]
+            .into_iter()
+            .filter(|c| dist(*c, *p) >= 1e-6)
+            .map(|c| [*p, c])
+            .collect(),
             Self::PerspectiveGrid { corners } => {
                 let [tl, tr, br, bl] = *corners;
                 let mut out = vec![[tl, tr], [tr, br], [br, bl], [bl, tl]];
@@ -274,12 +279,7 @@ impl Assistant {
 
 /// Pick the assistant among `assistants` that best fits a stroke from `start` to `p`.
 pub fn choose(assistants: &[Assistant], start: [f64; 2], p: [f64; 2]) -> Option<usize> {
-    assistants
-        .iter()
-        .enumerate()
-        .filter_map(|(i, a)| a.fit(start, p).map(|f| (i, f)))
-        .min_by(|x, y| x.1.total_cmp(&y.1))
-        .map(|(i, _)| i)
+    assistants.iter().enumerate().filter_map(|(i, a)| a.fit(start, p).map(|f| (i, f))).min_by(|x, y| x.1.total_cmp(&y.1)).map(|(i, _)| i)
 }
 
 #[cfg(test)]

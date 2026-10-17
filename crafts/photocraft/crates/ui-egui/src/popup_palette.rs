@@ -128,7 +128,10 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
     let key_close = ctx.input(|i| i.key_pressed(egui::Key::Escape));
     let screen = ctx.content_rect();
     let size = vec2(2.0 * DISK + 16.0, 2.0 * DISK + 16.0 + CONTROLS_H);
-    let pos = pos2((x - size.x / 2.0).clamp(screen.left(), (screen.right() - size.x).max(screen.left())), (y - DISK - 8.0).clamp(screen.top(), (screen.bottom() - size.y).max(screen.top())));
+    let pos = pos2(
+        (x - size.x / 2.0).clamp(screen.left(), (screen.right() - size.x).max(screen.left())),
+        (y - DISK - 8.0).clamp(screen.top(), (screen.bottom() - size.y).max(screen.top())),
+    );
     let id = palette_id();
     let mut closes = false;
     let area = egui::Area::new(id).order(egui::Order::Foreground).fixed_pos(pos).show(ctx, |ui| {
@@ -227,9 +230,15 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
             let mut opts: Vec<(String, &str)> = vec![(String::new(), all)];
             opts.extend(tags.iter().map(|x| (x.clone(), x.as_str())));
             widgets::dropdown_literal(ui, "popup-palette-tag", &mut app.ui.popup_tag, &opts, 110.0);
-            let mirrored = app.session.active().and_then(|st| st.symmetry.as_ref()).and_then(|s| s.preset()).is_some_and(|p| p.mode == redrob_photo_paint::symmetry::SymmetryMode::Vertical);
+            let mirrored = app
+                .session
+                .active()
+                .and_then(|st| st.symmetry.as_ref())
+                .and_then(|s| s.preset())
+                .is_some_and(|p| p.mode == redrob_photo_paint::symmetry::SymmetryMode::Vertical);
             if crate::icons::button(ui, "symmetry-vertical", 24.0, mirrored, tl!("Mirror painting across the vertical axis")).clicked() {
-                let _ = app.run(if mirrored { "paint.symmetryDisable" } else { "paint.setSymmetry" }, if mirrored { json!({}) } else { json!({"mode": "vertical"}) });
+                let _ = app
+                    .run(if mirrored { "paint.symmetryDisable" } else { "paint.setSymmetry" }, if mirrored { json!({}) } else { json!({"mode": "vertical"}) });
             }
             if widgets::secondary_button(ui, "100%", 0.0).clicked()
                 && let Some(i) = app.session.active_index()

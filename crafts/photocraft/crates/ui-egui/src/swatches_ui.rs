@@ -231,9 +231,12 @@ pub fn panel_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     // come back into the library.
     let has_doc = app.session.active().is_some();
     let doc_palettes = app.session.active().map_or(0, |d| d.doc.palettes.len());
-    let selected_group = app.ui.presets_ui.selected.get(PANEL).and_then(|name| {
-        app.session.presets.swatches.iter().find(|g| g.items.iter().any(|sw| sw.name == *name)).map(|g| g.name.clone())
-    });
+    let selected_group = app
+        .ui
+        .presets_ui
+        .selected
+        .get(PANEL)
+        .and_then(|name| app.session.presets.swatches.iter().find(|g| g.items.iter().any(|sw| sw.name == *name)).map(|g| g.name.clone()));
     if ui.add_enabled(has_doc && selected_group.is_some(), egui::Button::new(tl!("Save Group to Document"))).clicked() {
         act = Some("saveToDocument");
     }

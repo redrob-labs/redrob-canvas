@@ -253,8 +253,22 @@ pub struct DocState {
 
 /// The history labels cumulative undo may merge: painting-tool strokes.
 fn is_stroke_label(label: &str) -> bool {
-    matches!(label, "Brush Tool" | "Pencil" | "Eraser" | "Mixer Brush" | "Clone Stamp" | "Pattern Stamp" | "History Brush" | "Smudge" | "Blur" | "Sharpen" | "Dodge" | "Burn" | "Sponge")
-        || label.ends_with(" Stroke")
+    matches!(
+        label,
+        "Brush Tool"
+            | "Pencil"
+            | "Eraser"
+            | "Mixer Brush"
+            | "Clone Stamp"
+            | "Pattern Stamp"
+            | "History Brush"
+            | "Smudge"
+            | "Blur"
+            | "Sharpen"
+            | "Dodge"
+            | "Burn"
+            | "Sponge"
+    ) || label.ends_with(" Stroke")
 }
 
 impl DocState {

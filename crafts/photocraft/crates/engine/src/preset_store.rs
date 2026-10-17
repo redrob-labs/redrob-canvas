@@ -983,11 +983,8 @@ impl PresetStore {
         };
         let order = if builtins_in_order && order == default_order { Vec::new() } else { order };
         // Tags of presets that still exist, with no empty tag lists.
-        let tags: BTreeMap<String, Vec<String>> = tags
-            .iter()
-            .filter(|(n, t)| !t.is_empty() && presets.iter().any(|p| p.name.eq_ignore_ascii_case(n)))
-            .map(|(n, t)| (n.clone(), t.clone()))
-            .collect();
+        let tags: BTreeMap<String, Vec<String>> =
+            tags.iter().filter(|(n, t)| !t.is_empty() && presets.iter().any(|p| p.name.eq_ignore_ascii_case(n))).map(|(n, t)| (n.clone(), t.clone())).collect();
         let want = IndexFile { version: 1, groups, hidden_builtins: hidden, order, tags };
         let same = self
             .index

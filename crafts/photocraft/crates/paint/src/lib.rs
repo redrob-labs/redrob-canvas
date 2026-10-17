@@ -36,9 +36,9 @@ pub mod symmetry;
 pub mod tile;
 
 pub use brush::{
-    BrushPreset, BrushSettings, ColorDynamics, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, HoseDimension, HoseSelection, ImageHose, MAX_BRUSH_SIZE,
-    MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering, SectionLocks, Sensor, SensorCombine,
-    ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
+    BrushPreset, BrushSettings, ColorDynamics, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, HoseDimension, HoseSelection, ImageHose,
+    MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering, SectionLocks, Sensor,
+    SensorCombine, ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
 };
 pub use curve::ResponseCurve;
 pub use dynamics_preset::{DynInput, DynOutput, DynamicsPreset, DynamicsRow};

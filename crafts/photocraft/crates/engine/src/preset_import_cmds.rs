@@ -392,7 +392,12 @@ fn import_grd(s: &mut Session, p: &Value) -> Result<Value> {
 /// A segmented gradient as a stop gradient preset: the segment ends and, inside every segment
 /// whose blend or colouring is not a straight RGB line, `subdivisions` sampled stops. Ends that
 /// follow the foreground or background colour stay live.
-pub fn ggr_to_preset(g: &redrob_photo_io::ggr::SegmentedGradient, name: &str, subdivisions: usize, live: redrob_photo_io::ggr::LiveColors) -> crate::presets::gradients::GradientPreset {
+pub fn ggr_to_preset(
+    g: &redrob_photo_io::ggr::SegmentedGradient,
+    name: &str,
+    subdivisions: usize,
+    live: redrob_photo_io::ggr::LiveColors,
+) -> crate::presets::gradients::GradientPreset {
     use crate::presets::gradients::{GradientPreset, StopColor};
     use redrob_photo_io::ggr::EndColor;
     let (samples, live_ends) = g.sample(subdivisions, live);

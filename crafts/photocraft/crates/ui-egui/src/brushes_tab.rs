@@ -323,7 +323,9 @@ pub fn apply(app: &mut PhotocraftApp, acts: Vec<Action>) {
                 }
             }
             Action::Delete(name) => run_or_status(app, "brush.presets.delete", json!({ "name": name })),
-            Action::ToggleTag { name, tag, on } => run_or_status(app, if on { "brush.presets.tag" } else { "brush.presets.untag" }, json!({ "name": name, "tag": tag })),
+            Action::ToggleTag { name, tag, on } => {
+                run_or_status(app, if on { "brush.presets.tag" } else { "brush.presets.untag" }, json!({ "name": name, "tag": tag }))
+            }
             Action::DeleteGroup { group, folder } => {
                 let mut p = json!({ "group": group });
                 if !folder.is_empty() {

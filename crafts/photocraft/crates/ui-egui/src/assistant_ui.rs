@@ -174,7 +174,10 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) ->
 
 /// Does a stroke with `tool` snap to the assistants?
 fn snaps(tool: Tool) -> bool {
-    matches!(tool, Tool::Brush | Tool::Pencil | Tool::Eraser | Tool::MixerBrush | Tool::ColorReplacement | Tool::CloneStamp | Tool::PatternStamp | Tool::HistoryBrush)
+    matches!(
+        tool,
+        Tool::Brush | Tool::Pencil | Tool::Eraser | Tool::MixerBrush | Tool::ColorReplacement | Tool::CloneStamp | Tool::PatternStamp | Tool::HistoryBrush
+    )
 }
 
 /// Snap a painting tool's pointer event to the document's assistants. The press records the

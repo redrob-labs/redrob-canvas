@@ -30,7 +30,10 @@ pub enum PaintingSymmetry {
     /// Wrap-around mode: the stroke (and its `inner` symmetry copies, if any) repeated shifted by
     /// the canvas size in every direction. Built by [`stroke_passes`], never stored in
     /// `DocState::symmetry`.
-    Tiled { inner: Option<Box<PaintingSymmetry>>, size: [f64; 2] },
+    Tiled {
+        inner: Option<Box<PaintingSymmetry>>,
+        size: [f64; 2],
+    },
 }
 
 impl PaintingSymmetry {
@@ -103,7 +106,13 @@ pub fn stroke_passes(st: &crate::DocState) -> Option<PaintingSymmetry> {
 }
 
 fn set_multibrush(s: &mut Session, p: &Value) -> Result<Value> {
-    let fail = || EngineError::Other(format!("multibrush requires a finite [x,y] centre and a count of {}..={}", RotationalSymmetry::MIN_COUNT, RotationalSymmetry::MAX_COUNT));
+    let fail = || {
+        EngineError::Other(format!(
+            "multibrush requires a finite [x,y] centre and a count of {}..={}",
+            RotationalSymmetry::MIN_COUNT,
+            RotationalSymmetry::MAX_COUNT
+        ))
+    };
     let st = s.active().ok_or(EngineError::NoDocument)?;
     let current = st.symmetry.as_ref().and_then(PaintingSymmetry::rotational);
     let center = match p.get("center") {

@@ -163,10 +163,13 @@ fn load_from_document(s: &mut Session, p: &Value) -> Result<Value> {
     let doc = s.active().ok_or(crate::EngineError::NoDocument)?.doc.clone();
     let palettes: Vec<&redrob_photo_doc::DocPalette> = doc.palettes.iter().filter(|x| only.as_deref().is_none_or(|n| n == x.name)).collect();
     if palettes.is_empty() {
-        return Err(bad(CMD, match only {
-            Some(n) => format!("the document has no palette \"{n}\""),
-            None => "the document has no palettes".to_string(),
-        }));
+        return Err(bad(
+            CMD,
+            match only {
+                Some(n) => format!("the document has no palette \"{n}\""),
+                None => "the document has no palettes".to_string(),
+            },
+        ));
     }
     let incoming: usize = palettes.iter().map(|x| x.swatches.len()).sum();
     if s.presets.swatches.len() + palettes.len() > MAX_GROUPS || total(&s.presets.swatches) + incoming > MAX_SWATCHES {

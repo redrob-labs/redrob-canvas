@@ -1843,7 +1843,9 @@ pub(crate) fn ensure_filter_preview(app: &mut PhotocraftApp, idx: usize, ctx: &e
 /// drag costs a splice and a texture upload, never a filter run; a preview already spliced at
 /// `want` is left alone.
 pub(crate) fn apply_filter_split(app: &mut PhotocraftApp, idx: usize, want: Option<crate::filter_split::Split>) {
-    let Some((k, unsplit)) = app.filter_preview.as_ref().filter(|p| !p.committing && p.split != want).and_then(|p| p.unsplit.clone().map(|unsplit| (p.key.k, unsplit))) else {
+    let Some((k, unsplit)) =
+        app.filter_preview.as_ref().filter(|p| !p.committing && p.split != want).and_then(|p| p.unsplit.clone().map(|unsplit| (p.key.k, unsplit)))
+    else {
         return;
     };
     let Some(doc) = app.session.documents().get(idx).map(|st| st.doc.clone()) else { return };
