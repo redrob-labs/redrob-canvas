@@ -28,6 +28,7 @@ mod depth;
 mod files;
 mod fx;
 mod spread;
+mod symbol_sheet;
 mod symbol_units;
 mod text;
 mod vector_effect;
@@ -573,6 +574,8 @@ impl Edits {
 ///   ([`MADE_UP_ID`]…), recorded with its URL or symbol;
 /// * undisplayed objects (`display: none`, as Save writes hidden layers) are shown and recorded,
 ///   to come back hidden; one something links to (a `<use>` template) stays as it is;
+/// * a symbol sheet (only `<symbol>`s, nothing showing them) gets a `<use>` of every symbol in a
+///   grid, and the root the grid's size ([`symbol_sheet`]);
 /// * shapes with a non-scaling stroke get an id when they have none, recorded ([`vector_effect`]);
 /// * linked files are read ([`files`]);
 /// * percentage lengths in a `<symbol>` with a `viewBox` become numbers ([`symbol_units`]);
@@ -584,7 +587,9 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
     let not = svg.contains(":not(");
     if !css_transform
         && !not
-        && !["<a", "display", "<use", ":use", "<image", ":image", vector_effect::NON_SCALING, "data-", "groupmode"].iter().any(|t| svg.contains(t))
+        && !["<a", "display", "<use", ":use", "<symbol", ":symbol", "<image", ":image", vector_effect::NON_SCALING, "data-", "groupmode"]
+            .iter()
+            .any(|t| svg.contains(t))
     {
         return (svg.into(), found);
     }
@@ -609,6 +614,9 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
         if let Some(sym) = href(u).and_then(|h| h.strip_prefix('#')).filter(|s| symbols.contains(s)) {
             found.uses.insert(edits.id(svg, u), sym.to_string());
         }
+    }
+    if !symbols.is_empty() {
+        found.uses.extend(symbol_sheet::lay_out(svg, xml, &mut edits));
     }
     let (display, non_scaling) = (svg.contains("display"), svg.contains(vector_effect::NON_SCALING));
     if display || non_scaling || not {

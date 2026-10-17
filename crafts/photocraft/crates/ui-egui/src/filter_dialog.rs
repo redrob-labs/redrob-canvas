@@ -388,6 +388,26 @@ fn apply_command_defaults(app: &PhotocraftApp, command: &str, fields: &mut Map<S
     if command == "edit.assignProfile" {
         assign_profile_defaults(app, fields);
     }
+    if command == "filter.lensCorrection" {
+        lens_correction_defaults(app, fields);
+    }
+}
+
+/// Lens Correction starts from the photo's own lens, as Photoshop's Auto Correction does: the
+/// focal length (35 mm equivalent when the camera wrote one) from the document's EXIF, and the
+/// profile on `auto` so Correct Distortion / Vignette / CA have a lens to correct for. A document
+/// without camera data keeps the schema's defaults, and a remembered focal length is kept.
+fn lens_correction_defaults(app: &PhotocraftApp, fields: &mut Map<String, Value>) {
+    let Some(st) = app.session.active() else { return };
+    let Some(exif) = st.doc.metadata.exif.as_deref() else { return };
+    let info = redrob_photo_algo::exif::read(exif);
+    let Some(focal) = info.focal_length_35mm.or(info.focal_length).filter(|f| f.is_finite() && *f > 0.0) else { return };
+    if fields.get("focalLength").and_then(Value::as_f64).is_none_or(|f| f <= 0.0) {
+        fields.insert("focalLength".into(), json!((focal * 10.0).round() / 10.0));
+    }
+    if fields.get("profile").and_then(Value::as_str).is_none_or(|p| p == "none") {
+        fields.insert("profile".into(), json!("auto"));
+    }
 }
 
 /// Assign Profile offers only the profiles the document's colour mode can take (#4951): the

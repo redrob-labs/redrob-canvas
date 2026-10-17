@@ -42,6 +42,11 @@ KNOWN = {
     "libGLX.so.0": "libglx0",
     "libOpenGL.so.0": "libopengl0",
     "libz.so.1": "zlib1g",
+    # dpkg -S also names the multilib copies (lib32gcc-s1, libx32gcc-s1); the 0.8.1 package
+    # depended on lib32gcc-s1, which a clean amd64 machine without the i386 architecture cannot
+    # install. The binary is 64-bit: it needs the host's own libgcc.
+    "libgcc_s.so.1": "libgcc-s1",
+    "libstdc++.so.6": "libstdc++6",
 }
 # Loaded at run time by winit (X11 and Wayland), wgpu (GL/Vulkan) and rfd (the GTK file dialog), so no
 # NEEDED entry names them, but the app does not start or cannot open a file without them.
@@ -96,7 +101,8 @@ def depends(stage: Path) -> list[str]:
             for owner in line.split(": /", 1)[0].split(","):
                 owners.add(owner.strip().split(":")[0])
         # Only distribution library packages: anything else is this build machine's own software.
-        owners = {o for o in owners if o.startswith("lib") and not o.endswith("-dev")}
+        # Multilib packages (lib32*, libx32*) hold 32-bit copies the 64-bit binary never loads.
+        owners = {o for o in owners if o.startswith("lib") and not o.endswith("-dev") and not o.startswith(("lib32", "libx32"))}
         if not owners:
             unresolved.append(name)
             continue

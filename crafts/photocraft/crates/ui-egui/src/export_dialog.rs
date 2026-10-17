@@ -116,6 +116,12 @@ pub fn open_layer(app: &mut PhotocraftApp, layer: redrob_photo_doc::LayerId) -> 
         d.fields.insert("__label".into(), json!(crate::i18n::fmt(crate::i18n::t("Export As: {name}"), &[("name", &ldoc.name)])));
         d.fields.insert("__w".into(), json!(ldoc.size.width));
         d.fields.insert("__h".into(), json!(ldoc.size.height));
+        // The pixel fields were seeded from the document: a layer is its trimmed size, so the
+        // dialog opens on that size (and a remembered exact size is not applied to the layer).
+        if let Ok(size) = resize_from_scale(f64::from(ldoc.size.width), f64::from(ldoc.size.height), n(&d.fields, "scale", 100.0)) {
+            write_size(&mut d.fields, size, "scale");
+        }
+        d.fields.insert(CANVAS_FOLLOWS.into(), json!(true));
     }
     Ok(id)
 }
@@ -257,11 +263,61 @@ fn export_document(doc: &Document, f: &Map<String, Value>, max_side: Option<u32>
             .execute("image.imageSize", json!({"width": w, "height": h, "resample": if max_side.is_some() { "bilinear" } else { "bicubic" }}))
             .map_err(|e| e.to_string())?;
     }
+    // Canvas Size: the file's pixel size when it differs from the image's (the image sits centred,
+    // the extension transparent; the flatten below fills it white when the file has no alpha).
+    // The preview is reduced by the same factor as the image.
+    if let Some((cw, ch)) = canvas_pixels(f) {
+        let (full_w, full_h) = export_pixels(f64::from(doc.size.width), f64::from(doc.size.height), f, None)?;
+        let k = if max_side.is_some() && full_w > 0.0 && full_h > 0.0 { (w / full_w).min(h / full_h) } else { 1.0 };
+        let (cw, ch) = ((cw * k).round().max(1.0), (ch * k).round().max(1.0));
+        if (cw - w).abs() >= 1.0 || (ch - h).abs() >= 1.0 {
+            session
+                .execute("image.canvasSize", json!({"width": cw, "height": ch, "anchor": "center", "extensionColor": "transparent"}))
+                .map_err(|e| e.to_string())?;
+        }
+    }
     let fmt = s_fmt(f);
     if !f.get("transparency").and_then(Value::as_bool).unwrap_or(true) || fmt == "jpg" {
         session.execute("layer.flattenImage", json!({})).map_err(|e| e.to_string())?;
     }
     session.active().map(|d| (*d.doc).clone()).ok_or_else(|| "export failed".into())
+}
+
+/// Whether the canvas size follows the image size (the default) rather than the user's own pixels.
+const CANVAS_FOLLOWS: &str = "__canvasFollows";
+
+/// The Canvas Size fields in output pixels, when the user set them apart from the image size.
+fn canvas_pixels(f: &Map<String, Value>) -> Option<(f64, f64)> {
+    if f.get(CANVAS_FOLLOWS).and_then(Value::as_bool).unwrap_or(true) {
+        return None;
+    }
+    let cw = f.get("canvasWidth").and_then(Value::as_f64).filter(|v| v.is_finite() && *v >= 1.0)?;
+    let ch = f.get("canvasHeight").and_then(Value::as_f64).filter(|v| v.is_finite() && *v >= 1.0)?;
+    Some((cw.round().min(MAX_PX), ch.round().min(MAX_PX)))
+}
+
+/// Canvas Size: width and height of the file in pixels. They follow the image size until edited;
+/// a smaller canvas crops the image, a larger one pads it (centred).
+fn canvas_fields(ui: &mut egui::Ui, f: &mut Map<String, Value>, img_w: f64, img_h: f64) {
+    let t = Tokens::get(ui.ctx());
+    let follows = f.get(CANVAS_FOLLOWS).and_then(Value::as_bool).unwrap_or(true);
+    let (stored_w, stored_h) = if follows { (img_w, img_h) } else { (n(f, "canvasWidth", img_w), n(f, "canvasHeight", img_h)) };
+    let (mut width, mut height) = (stored_w.clamp(1.0, MAX_PX) as f32, stored_h.clamp(1.0, MAX_PX) as f32);
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Width")).color(t.text_dim));
+        crate::widgets::value_field(ui, &mut width, 1.0..=MAX_PX as f32, "px", 70.0);
+    });
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Height")).color(t.text_dim));
+        crate::widgets::value_field(ui, &mut height, 1.0..=MAX_PX as f32, "px", 70.0);
+    });
+    let (w_r, h_r) = (f64::from(width).round(), f64::from(height).round());
+    let edited = (w_r - stored_w.round()).abs() > 0.01 || (h_r - stored_h.round()).abs() > 0.01;
+    if edited || !follows {
+        f.insert(CANVAS_FOLLOWS.into(), json!(false));
+        f.insert("canvasWidth".into(), json!(w_r));
+        f.insert("canvasHeight".into(), json!(h_r));
+    }
 }
 
 /// The exported pixel size: each side scaled and rounded on its own, never below 1 px. The
@@ -776,6 +832,14 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
             if fmt == "ico" && (w > 256.0 || h > 256.0) {
                 ui.label(egui::RichText::new(tl!("ICO is limited to 256 × 256 pixels")).color(t.warning));
             }
+            ui.add_space(8.0);
+            // The menu command's label, without its ellipsis.
+            let canvas_size = tl!("Canvas Size…");
+            ui.label(egui::RichText::new(canvas_size.trim_end_matches('…')).font(crate::theme::semibold(12.0)).color(t.text));
+            canvas_fields(ui, f, w, h);
+            if let Some((cw, ch)) = canvas_pixels(f) {
+                ui.label(egui::RichText::new(format!("{cw} × {ch} px")).color(t.text_dim).size(11.5));
+            }
             preset_fields(app, ui, f, bw, bh);
         });
         ui.add_space(12.0);
@@ -784,7 +848,7 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
             let layer = f.get("__layer").and_then(Value::as_u64);
             let key = egui::Id::new(("export-preview", doc.id.0, app.session.active().map_or(0, |s| s.revision), layer));
             let sig = format!(
-                "{}{}{}{}{}{}{}{}{}{}{}{}",
+                "{}{}{}{}{}{}{}{}{}{}{}{}{:?}",
                 s_fmt(f),
                 n(f, "quality", 85.0),
                 lossless(f),
@@ -796,7 +860,8 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
                 s(f, "tgaBits"),
                 s(f, "profile"),
                 f.get("embedProfile").and_then(Value::as_bool).unwrap_or(true),
-                s(f, "sizing")
+                s(f, "sizing"),
+                canvas_pixels(f)
             );
             let cached: Option<CachedPreview> = ui.data(|d| d.get_temp(key));
             let preview = match cached.filter(|cached| cached.signature == sig) {
