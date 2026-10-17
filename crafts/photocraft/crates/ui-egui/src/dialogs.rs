@@ -340,7 +340,12 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
                 DialogKind::Command if fields.contains_key("__export") => crate::export_dialog::body(app, ui, &mut fields),
                 // Image Size and Canvas Size open on Width, selected (#2329).
                 DialogKind::Command if fields.contains_key("__sizing") => first_field_focused(ui, id, |ui| crate::sizing::body(ui, &mut fields)),
-                DialogKind::Command if crate::adjust_dialog::owns(&fields) => crate::adjust_dialog::body(app, ui, &mut fields),
+                DialogKind::Command if crate::adjust_dialog::owns(&fields) => {
+                    // Shadows/Highlights (ten sliders) and the like outgrow a 1080 px screen: the
+                    // editor scrolls so the OK / Cancel row below it stays on the screen.
+                    let room = (ctx.content_rect().height() - DIALOG_CHROME).max(160.0);
+                    egui::ScrollArea::vertical().id_salt(id.with("body")).max_height(room).show(ui, |ui| crate::adjust_dialog::body(app, ui, &mut fields));
+                }
                 DialogKind::Command if crate::blur_pins::owns(&fields) => crate::blur_pins::body(ui, &mut fields),
                 DialogKind::Command if fields.contains_key("__filter") => {
                     // Color Settings: the monitor profile in use can change while it is open.
