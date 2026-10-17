@@ -1643,8 +1643,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
 behaviour = "Linear, bilinear, radial, square, conical, conical-symmetric, spiral, reverse spiral, shaped (follows selection)."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/paint.rs"
-gap = "linear, radial, angle, reflected, diamond; no spiral, square or shaped"
+ours_where = "crafts/photocraft/crates/algo/src/paint.rs, crafts/photocraft/crates/engine/src/fill_cmds.rs"
+gap = "linear, radial, angle (conical), reflected (bilinear), diamond, square, conical-symmetric, spiral, reverse spiral; no shaped (follows selection) gradient"
 priority = 1
 
 [[feature]]
