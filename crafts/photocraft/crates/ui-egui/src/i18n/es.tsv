@@ -4163,3 +4163,17 @@ navigator	Zoom	Zoom
 	Ink below	Tinta bajo
 	Close gaps	Cerrar huecos
 	Under ink	Bajo la tinta
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Dirección:
+	Corrective	Correctivo
+	Clipping:	Recorte:
+	Adjust	Ajustar
+	Clip	Recortar al lienzo
+	Crop with Aspect	Recortar con proporción
+	Guides:	Guías:
+	Center Lines	Líneas centrales
+	Golden Sections	Secciones áureas
+	Diagonals	Diagonales
+	Lines:	Líneas:

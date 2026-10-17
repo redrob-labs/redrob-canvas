@@ -3690,3 +3690,17 @@ curves	Smooth	Làm mượt
 	Ink below	Ngưỡng mực
 	Close gaps	Bịt khe
 	Under ink	Dưới nét mực
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Hướng:
+	Corrective	Hiệu chỉnh
+	Clipping:	Cắt xén:
+	Adjust	Điều chỉnh
+	Clip	Cắt theo khung vẽ
+	Crop with Aspect	Cắt giữ tỷ lệ
+	Guides:	Đường gióng:
+	Center Lines	Đường tâm
+	Golden Sections	Phân đoạn vàng
+	Diagonals	Đường chéo
+	Lines:	Số đường:

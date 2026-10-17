@@ -4120,3 +4120,17 @@ cameraRaw	Yellow	Sárga
 	Ink below	Tinta küszöb
 	Close gaps	Rések zárása
 	Under ink	Tinta alá
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Irány:
+	Corrective	Korrekciós
+	Clipping:	Vágás:
+	Adjust	Igazítás
+	Clip	Vágás a vászonra
+	Crop with Aspect	Vágás arány megtartásával
+	Guides:	Segédvonalak:
+	Center Lines	Középvonalak
+	Golden Sections	Aranymetszések
+	Diagonals	Átlók
+	Lines:	Vonalak:

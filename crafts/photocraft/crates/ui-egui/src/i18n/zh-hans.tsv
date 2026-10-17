@@ -2821,3 +2821,17 @@ curves	Smooth	平滑
 	Ink below	墨线阈值
 	Close gaps	闭合缝隙
 	Under ink	伸入墨线
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	方向:
+	Corrective	校正
+	Clipping:	剪裁:
+	Adjust	调整
+	Clip	剪裁
+	Crop with Aspect	按比例裁剪
+	Guides:	参考线:
+	Center Lines	中心线
+	Golden Sections	黄金分割
+	Diagonals	对角线
+	Lines:	线数:

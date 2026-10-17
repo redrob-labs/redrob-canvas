@@ -3811,3 +3811,17 @@ navigator	Zoom	Zvětšení
 	Ink below	Prah tuše
 	Close gaps	Zavřít mezery
 	Under ink	Pod tuš
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Směr:
+	Corrective	Korekční
+	Clipping:	Oříznutí:
+	Adjust	Přizpůsobit
+	Clip	Oříznout na plátno
+	Crop with Aspect	Oříznout se zachováním poměru
+	Guides:	Vodítka:
+	Center Lines	Středové čáry
+	Golden Sections	Zlaté řezy
+	Diagonals	Diagonály
+	Lines:	Čar:

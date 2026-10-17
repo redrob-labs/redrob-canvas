@@ -3932,3 +3932,17 @@ cameraData	Lens	Lens
 	Ink below	Mürekkep eşiği
 	Close gaps	Boşlukları kapat
 	Under ink	Mürekkep altına
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Yön:
+	Corrective	Düzeltici
+	Clipping:	Kırpma:
+	Adjust	Ayarla
+	Clip	Tuvale kırp
+	Crop with Aspect	Oranı koruyarak kırp
+	Guides:	Kılavuzlar:
+	Center Lines	Merkez çizgileri
+	Golden Sections	Altın kesitler
+	Diagonals	Köşegenler
+	Lines:	Çizgi:

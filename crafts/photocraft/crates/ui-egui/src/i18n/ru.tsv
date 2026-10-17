@@ -3174,3 +3174,17 @@ curves	Smooth	Сгладить
 	Ink below	Порог туши
 	Close gaps	Закрыть разрывы
 	Under ink	Под тушь
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Ланцош
+	Direction:	Направление:
+	Corrective	Корректирующее
+	Clipping:	Обрезка:
+	Adjust	Подогнать
+	Clip	Обрезать по холсту
+	Crop with Aspect	Кадрировать с пропорциями
+	Guides:	Направляющие:
+	Center Lines	Центральные линии
+	Golden Sections	Золотые сечения
+	Diagonals	Диагонали
+	Lines:	Линий:

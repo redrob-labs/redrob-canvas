@@ -3800,3 +3800,17 @@ curves	Smooth	Wygładź
 	Ink below	Próg tuszu
 	Close gaps	Domknij przerwy
 	Under ink	Pod tusz
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Kierunek:
+	Corrective	Korekcyjny
+	Clipping:	Przycinanie:
+	Adjust	Dopasuj
+	Clip	Przytnij do płótna
+	Crop with Aspect	Kadruj z proporcjami
+	Guides:	Prowadnice:
+	Center Lines	Linie środkowe
+	Golden Sections	Złote podziały
+	Diagonals	Przekątne
+	Lines:	Linii:

@@ -3962,3 +3962,17 @@ curves	Smooth	Vloeiend maken
 	Ink below	Inkt onder
 	Close gaps	Gaten sluiten
 	Under ink	Onder de inkt
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Richting:
+	Corrective	Corrigerend
+	Clipping:	Bijsnijden:
+	Adjust	Aanpassen
+	Clip	Afsnijden op canvas
+	Crop with Aspect	Bijsnijden met verhouding
+	Guides:	Hulplijnen:
+	Center Lines	Middellijnen
+	Golden Sections	Gulden sneden
+	Diagonals	Diagonalen
+	Lines:	Lijnen:

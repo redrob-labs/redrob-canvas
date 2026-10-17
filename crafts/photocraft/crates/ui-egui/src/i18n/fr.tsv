@@ -3209,3 +3209,17 @@ curves	Smooth	Lisser
 	Ink below	Encre sous
 	Close gaps	Fermer les trous
 	Under ink	Sous l’encre
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Direction :
+	Corrective	Correctif
+	Clipping:	Rognage :
+	Adjust	Ajuster
+	Clip	Rogner au canevas
+	Crop with Aspect	Recadrer avec proportions
+	Guides:	Guides :
+	Center Lines	Lignes centrales
+	Golden Sections	Sections dorées
+	Diagonals	Diagonales
+	Lines:	Lignes :

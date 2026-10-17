@@ -3205,3 +3205,17 @@ curves	Smooth	Glätten
 	Ink below	Tusche unter
 	Close gaps	Lücken schließen
 	Under ink	Unter die Tusche
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Richtung:
+	Corrective	Korrigierend
+	Clipping:	Beschneidung:
+	Adjust	Anpassen
+	Clip	Auf Leinwand beschneiden
+	Crop with Aspect	Mit Seitenverhältnis zuschneiden
+	Guides:	Hilfslinien:
+	Center Lines	Mittellinien
+	Golden Sections	Goldene Schnitte
+	Diagonals	Diagonalen
+	Lines:	Linien:

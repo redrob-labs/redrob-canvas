@@ -3196,3 +3196,17 @@ curves	Smooth	Haluskan
 	Ink below	Ambang tinta
 	Close gaps	Tutup celah
 	Under ink	Di bawah tinta
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Arah:
+	Corrective	Korektif
+	Clipping:	Pemotongan:
+	Adjust	Sesuaikan
+	Clip	Potong ke kanvas
+	Crop with Aspect	Pangkas dengan rasio
+	Guides:	Panduan:
+	Center Lines	Garis tengah
+	Golden Sections	Bagian emas
+	Diagonals	Diagonal
+	Lines:	Garis:

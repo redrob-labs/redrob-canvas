@@ -3902,3 +3902,17 @@ curves	Smooth	Εξομάλυνση
 	Ink below	Όριο μελανιού
 	Close gaps	Κλείσιμο κενών
 	Under ink	Κάτω από το μελάνι
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Κατεύθυνση:
+	Corrective	Διορθωτική
+	Clipping:	Αποκοπή:
+	Adjust	Προσαρμογή
+	Clip	Αποκοπή στον καμβά
+	Crop with Aspect	Περικοπή με αναλογία
+	Guides:	Οδηγοί:
+	Center Lines	Κεντρικές γραμμές
+	Golden Sections	Χρυσές τομές
+	Diagonals	Διαγώνιοι
+	Lines:	Γραμμές:

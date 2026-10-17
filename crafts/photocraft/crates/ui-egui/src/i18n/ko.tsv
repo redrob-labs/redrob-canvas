@@ -3380,3 +3380,17 @@ curves	Smooth	매끄럽게
 	Ink below	잉크 기준
 	Close gaps	틈 메우기
 	Under ink	선 밑으로
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	방향:
+	Corrective	보정
+	Clipping:	클리핑:
+	Adjust	맞춤
+	Clip	캔버스로 자르기
+	Crop with Aspect	비율 유지 자르기
+	Guides:	가이드:
+	Center Lines	중심선
+	Golden Sections	황금 분할
+	Diagonals	대각선
+	Lines:	선 수:

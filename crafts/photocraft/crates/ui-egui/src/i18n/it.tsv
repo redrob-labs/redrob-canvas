@@ -4322,3 +4322,17 @@ shape	Appearance	Aspetto
 	Ink below	Inchiostro sotto
 	Close gaps	Chiudi vuoti
 	Under ink	Sotto l’inchiostro
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Direzione:
+	Corrective	Correttiva
+	Clipping:	Ritaglio:
+	Adjust	Adatta
+	Clip	Taglia alla tela
+	Crop with Aspect	Ritaglia con proporzioni
+	Guides:	Guide:
+	Center Lines	Linee centrali
+	Golden Sections	Sezioni auree
+	Diagonals	Diagonali
+	Lines:	Linee:
