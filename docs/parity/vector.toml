@@ -2944,3 +2944,843 @@ ours = "partial"
 ours_where = "crafts/vectorcraft/crates/svg/src/import/fx.rs, crafts/vectorcraft/crates/svg/src/export.rs"
 gap = "blur, drop shadow, glows and feather chains are recognised and written back; other filter graphs are dropped on import"
 priority = 2
+
+# ---------------------------------------------------------------------------------------------
+# dialogs, canvas and workspace
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-UI-001"
+group = "ui"
+name = "XML editor"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#XML_Editor"
+behaviour = "A tree of the document's SVG nodes with attribute list editing (add, delete, edit values with syntax highlighting), node create/delete/duplicate/indent/raise/lower, drag reorder, and selection sync with the canvas; path data can be rounded; changes apply live."
+ours = "none"
+ours_where = ""
+gap = "no document tree/attribute editor (CSS Properties panel and Attributes panel cover a few attributes)"
+priority = 2
+evidence = "docs/parity/evidence/VEC-xml-editor.png"
+
+[[feature]]
+id = "VE-UI-002"
+group = "ui"
+name = "Selectors and CSS dialog"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Selectors_and_CSS_.5BExperimental.2C_hidden.5D"
+behaviour = "Creates CSS classes and selectors in the document stylesheet, assigns them to objects, and edits the rules' properties so many objects share one style."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/css_properties.rs, crafts/vectorcraft/crates/engine/src/cmd/css.rs"
+gap = "CSS Properties shows/exports the selection's style as CSS and named character/graphic styles export as classes; no rule editing in a stylesheet"
+priority = 3
+
+[[feature]]
+id = "VE-UI-003"
+group = "ui"
+name = "Command palette"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Command_Palette"
+behaviour = "The ? key opens a searchable list of every action with its shortcut and description; actions can take arguments; recent commands and a history mode; also opens files and runs extensions."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/palette.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/command.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-UI-004"
+group = "ui"
+name = "Snapping controls and categories"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Snapping"
+behaviour = "A snap popover with simple/advanced modes toggles snapping to bounding boxes (edges, corners, midpoints, centres), nodes (cusp, smooth, path intersections, midpoints, line midpoints, object centres, rotation centres, text baselines), alignment (edges/centres of other objects, with distribution snapping), grids, guides, page borders and margins; snap delay and weight in preferences; % toggles all."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/snap.rs, crafts/vectorcraft/crates/engine/src/tooling.rs (Smart Guides, Snap to Point/Grid/Pixel), crafts/vectorcraft/crates/ui-egui/src/menus.rs"
+gap = "no per-category snap toggles (Smart Guides are one switch); no distribution (equal-gap) snapping"
+priority = 1
+
+[[feature]]
+id = "VE-UI-005"
+group = "ui"
+name = "Grids: rectangular, axonometric, modular"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Grids"
+behaviour = "Document Properties defines any number of grids: rectangular (origin, spacing, major line every N, colours, dots or lines, visible/enabled), axonometric (angles for isometric drawing), and in 1.4 modular (block grids with gaps and margins); # toggles the grid, snapping to grid lines and intersections."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/background.rs (document grid), crafts/vectorcraft/crates/engine/src/cmd/prefscmds.rs (gridline every, subdivisions, colour, style), crafts/vectorcraft/crates/tools/src/distort/perspective.rs"
+gap = "one rectangular grid per document; no axonometric or modular grids (perspective grid is a drawing aid, not a snap grid)"
+priority = 2
+
+[[feature]]
+id = "VE-UI-006"
+group = "ui"
+name = "Document properties: size, units, scale, viewBox"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Document_properties"
+behaviour = "Page size from presets or custom with orientation, display unit, user-unit scale (with 1.4 scale lock), viewBox editing, resize page to content with margins, page checkerboard/background colour, desk colour, border on top/shadow, antialiasing toggle, and clip to page on export."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/dialogs/document_setup.rs, crafts/vectorcraft/crates/engine/src/cmd/docsetup.rs, crafts/vectorcraft/crates/engine/src/units.rs"
+gap = "no user-unit scale factor (document units are physical)"
+priority = 1
+evidence = "docs/parity/evidence/VEC-doc-props.png"
+
+[[feature]]
+id = "VE-UI-007"
+group = "ui"
+name = "Document metadata and licence"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92#Document_Properties:_Licences"
+behaviour = "A Metadata tab stores Dublin Core fields (title, date, creator, rights, publisher, identifier, source, relation, language, keywords, coverage, description) and a licence chosen from Creative Commons and other presets, written as RDF inside the SVG."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/dialogs/file_info.rs, crafts/vectorcraft/crates/doc/src/metadata.rs"
+gap = "no licence preset list"
+priority = 3
+
+[[feature]]
+id = "VE-UI-008"
+group = "ui"
+name = "Document scripting tab (embedded/external scripts)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Document_Properties"
+behaviour = "Lists script elements in the SVG, adds external script references or embedded JavaScript, for interactive SVG."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-UI-009"
+group = "ui"
+name = "Preferences dialog"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Preferences"
+behaviour = "Sections for every tool's defaults and style, interface (theme, icons, handles size/colour, windows, toolbars, dialogs docking, keyboard shortcuts), behaviour (selecting, transforms, scrolling, snapping, steps, clones, clipping, masks, markers, cleanup), input/output (import, export, autosave, SVG output, openclipart), system (paths, caches), rendering, spellcheck, bitmaps; searchable."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/prefs_dialog.rs, crafts/vectorcraft/crates/engine/src/cmd/prefscmds.rs"
+gap = ""
+priority = 1
+evidence = "docs/parity/evidence/VEC-prefs.png"
+
+[[feature]]
+id = "VE-UI-010"
+group = "ui"
+name = "Undo history dialog"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Lists every undoable action with its icon, grouped by type; clicking jumps to that state; Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/history.rs, crafts/vectorcraft/crates/engine/src/journal.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-UI-011"
+group = "ui"
+name = "Display modes: normal, outline, outline overlay, no filters, visible hairlines"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Views_and_Display_Modes"
+behaviour = "Ctrl+5 (keypad) cycles display modes; outline draws paths only, outline overlay draws outlines over a faded render, no-filters skips filters, visible hairlines widens thin strokes; a colour mode toggle (grayscale, print colours preview) is separate."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/menus.rs (Outline, Preview, Pixel Preview, Overprint Preview, Proof Colors)"
+gap = "no outline-overlay or no-filters mode"
+priority = 1
+
+[[feature]]
+id = "VE-UI-012"
+group = "ui"
+name = "Split view and X-ray"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Split_View_Mode"
+behaviour = "Split view shows normal rendering on one side of a draggable divider and outline on the other; X-ray shows an outline circle around the pointer (Alt+6)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-UI-013"
+group = "ui"
+name = "Canvas rotation and mirroring"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Canvas_Rotation"
+behaviour = "Ctrl+Shift+scroll (or the status-bar angle field) rotates the whole view; View > Canvas Orientation flips it horizontally or vertically; a lock prevents accidental rotation."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/catalog.rs (Rotate View tool), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Reset Rotate View)"
+gap = "no flip of the view"
+priority = 2
+
+[[feature]]
+id = "VE-UI-014"
+group = "ui"
+name = "Rulers with unit, origin and guide creation"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Rulers"
+behaviour = "Rulers show the document unit with the origin at the page corner (1.3: or current page), follow canvas rotation, show the pointer position and the selection extent, and dragging off them creates guides; Ctrl+R toggles."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/canvas.rs (rulers), crafts/vectorcraft/crates/engine/src/units.rs, crafts/vectorcraft/crates/tools/src/rulerguide.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-UI-015"
+group = "ui"
+name = "Welcome screen and templates"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Templates"
+behaviour = "A start dialog picks theme and default keys, shows recent files and creates documents from template categories (print, screen, video, social, icons, desktop, generic) with size presets; user templates saved from any file; 1.4 reworked templates with more metadata."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/opening.rs (Home), crafts/vectorcraft/crates/ui-egui/src/dialogs/new_document.rs, crafts/vectorcraft/crates/engine/src/cmd/newdoc.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-UI-016"
+group = "ui"
+name = "Keyboard shortcut customisation"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/custom-keyboard-shortcuts.html"
+behaviour = "Preferences > Interface > Keyboard lists every action, lets a shortcut be reassigned, searched, imported/exported as XML, and offers preset key sets (Inkscape default, Illustrator-like, CorelDRAW-like, Xara, Macromedia, Zoner)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/shortcut_editor.rs, crafts/vectorcraft/crates/engine/src/cmd/shortcutset.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/shortcut_import.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-UI-017"
+group = "ui"
+name = "Themes, icon sets, dark mode and handle styling"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Customization_.2F_Theming"
+behaviour = "Any installed GTK theme, dark variant, symbolic icons with a chosen colour, icon size per toolbar, and (1.4) customisable on-canvas handle size, shape and colour via CSS."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/theme.rs, crafts/vectorcraft/crates/engine/src/cmd/colortheme.rs"
+gap = "fixed design-system themes; handle style not user-customisable"
+priority = 2
+
+[[feature]]
+id = "VE-UI-018"
+group = "ui"
+name = "Dockable dialogs and saved layout"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/managing-workspace.html"
+behaviour = "Dialogs dock in tabbed columns beside the canvas or float; the arrangement persists; 1.1 introduced the docking system with drag to dock/undock; dialogs can be closed with Ctrl+W and the whole panel hidden with F12."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/dock.rs, crafts/vectorcraft/crates/ui-egui/src/panel_docking.rs, crafts/vectorcraft/crates/ui-egui/src/workspaces.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-UI-019"
+group = "ui"
+name = "Toolbar customisation"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Toolbar"
+behaviour = "Preferences > Interface > Toolbars shows/hides individual tools in the toolbox; the toolbox wraps to the window height; the commands and snap bars can be hidden."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/edit_toolbar.rs (Edit Toolbar: Basic/Advanced, drag tools in and out)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-UI-020"
+group = "ui"
+name = "Status bar"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/interface.html"
+behaviour = "Shows style indicator, current layer menu with lock/hide, a context message describing what the tool does with the selection, pointer coordinates, zoom and rotation fields; 1.2 made its sections hideable."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/chrome.rs (status bar), crafts/vectorcraft/crates/ui-egui/src/control.rs"
+gap = "no live hint describing the current selection and tool"
+priority = 2
+
+[[feature]]
+id = "VE-UI-021"
+group = "ui"
+name = "Multiple windows and views of one document"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Several documents open in separate windows; Ctrl+Shift+N... View > Duplicate Window opens a second view of the same document kept in sync; each window has its own zoom."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/floating.rs (New Window, New View), crafts/vectorcraft/crates/engine/src/cmd/views.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-UI-022"
+group = "ui"
+name = "Autosave and crash recovery"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/saving.html"
+behaviour = "Preferences enable autosave at an interval to a folder with a maximum count; on a crash an emergency save is written and offered on next start."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/recovery.rs, crafts/vectorcraft/crates/ui-egui/src/recovery.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-UI-023"
+group = "ui"
+name = "Input devices dialog (tablet mapping)"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Lists pointer devices and sets each one's mode (disabled, screen, window), axes and key mapping; pressure/tilt curves are per tool."
+ours = "none"
+ours_where = ""
+gap = "tablet input is used as the OS delivers it; no per-device configuration"
+priority = 3
+
+[[feature]]
+id = "VE-UI-024"
+group = "ui"
+name = "Clipboard: copy as SVG, paste SVG/PNG from other apps"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1#Paste_text_as_SVG_data"
+behaviour = "Copy puts SVG and a PNG rendering on the clipboard; Paste accepts SVG, text containing SVG markup (1.1), PDF/EMF where the platform allows, and images, and pastes at the pointer."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/clipboard/flavours.rs (SVG, PDF, EMF, PNG, TIFF, BMP), crafts/vectorcraft/crates/ui-egui/src/sysclip.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-UI-025"
+group = "ui"
+name = "Page / canvas background and checkerboard"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92#Checkerboard_Background"
+behaviour = "Document Properties sets a page background colour/alpha and desk colour, and a checkerboard toggle to visualise transparency; the background exports when opaque."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/background.rs (Transparency Grid), crafts/vectorcraft/crates/engine/src/cmd/docsetup.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-UI-026"
+group = "ui"
+name = "Zoom correction and HiDPI"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#High_Resolution_Screens"
+behaviour = "Preferences has a zoom correction factor so 100 percent matches physical size on the monitor; the interface and canvas scale on high-resolution displays."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/canvas.rs (pixels per point), apps/redrob-canvas/src/main.rs"
+gap = "no zoom correction factor preference"
+priority = 3
+
+[[feature]]
+id = "VE-UI-027"
+group = "ui"
+name = "GPU-accelerated canvas (experimental OpenGL)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Experimental_OpenGL_.28GPU.29_Accelerated_Canvas_Rendering"
+behaviour = "An optional OpenGL path uploads rendered tiles to the GPU for smoother panning and zooming; rendering itself is still CPU."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/render_worker.rs, crafts/vectorcraft/crates/render/src/lib.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-UI-028"
+group = "ui"
+name = "Interface language"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Translations"
+behaviour = "Preferences > Interface picks the UI language from about 90 translations independent of the system locale."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/i18n/"
+gap = "fewer languages"
+priority = 3
+
+# ---------------------------------------------------------------------------------------------
+# import / export
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-IO-001"
+group = "io"
+name = "Native format: SVG with editor namespace"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/saving.html"
+behaviour = "Documents are saved as SVG 1.1 (with SVG 2 features where used) plus editor-specific attributes in a private namespace for live shapes, effects, grids and view state; any SVG viewer renders them."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/format/src/ (native document format), crafts/vectorcraft/crates/svg/src/export.rs"
+gap = "native documents are a separate container format; SVG export is a faithful translation but round-trips only what SVG can express plus a few private attributes"
+priority = 1
+
+[[feature]]
+id = "VE-IO-002"
+group = "io"
+name = "Plain SVG and Optimized SVG export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/saving.html"
+behaviour = "Plain SVG strips the editor namespace; Optimized SVG (Scour) additionally shortens ids, removes metadata and unused defs, rounds coordinates, collapses groups and can embed rasters, with a dialog of options."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/dialogs/svg_options.rs (precision, CSS vs presentation attributes, embed/link images, responsive, minify, inline/external CSS), crafts/vectorcraft/crates/svg/src/export.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-IO-003"
+group = "io"
+name = "Compressed SVG (.svgz)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/saving.html"
+behaviour = "Gzip-compressed SVG opens and saves transparently."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/format/src/unpack.rs, crafts/vectorcraft/crates/svg/src/import/files.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-004"
+group = "io"
+name = "SVG import (embed, link or open as pages)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#SVG_Import"
+behaviour = "Importing an SVG asks whether to include it as editable objects, as a linked image, as an embedded image, or (1.2) to add its pages to the document; DPI and smoothing options for the image variants."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/place/document.rs (Place: link or embed, as editable objects or placed document), crafts/vectorcraft/crates/svg/src/import.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-IO-005"
+group = "io"
+name = "SVG import fidelity (CSS, filters, markers, symbols, mesh, text)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#SVG_Standards_Compliance"
+behaviour = "Reads SVG 1.1 and most of SVG 2 (mesh gradients, hatches via polyfill, flowed text, blend modes, context-fill markers, href without xlink), CSS stylesheets and classes, use/symbol, nested svg, filters, clip/mask, patterns, embedded images and foreignObject (preserved)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/svg/src/import.rs, crafts/vectorcraft/crates/svg/src/import/css.rs, crafts/vectorcraft/crates/svg/src/import/symbol_units.rs, crafts/vectorcraft/crates/svg/src/import/text.rs"
+gap = "mesh gradients, hatch paint servers and arbitrary filter graphs are not imported; markers map to arrowheads where a match exists"
+priority = 1
+
+[[feature]]
+id = "VE-IO-006"
+group = "io"
+name = "PDF import"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-other-formats.html"
+behaviour = "Opens a chosen page (or all pages, 1.2) with options: precision of mesh approximation, font substitution strategy, import text as text or paths, embed images, clip to media/crop/trim/bleed/art box; internal or poppler-based importer; 1.3 reworked text and font handling."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pdf/src/import.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/import_pdf.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-IO-007"
+group = "io"
+name = "PDF export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/export-pdf.html"
+behaviour = "Options: PDF version (1.4/1.5), text to paths / embed fonts / omit text and create LaTeX file, rasterise filter effects at a DPI, export area (page/drawing), bleed margin, multiple pages in one PDF; no PDF/X or printer marks natively (extensions add marks)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pdf/src/export.rs, crafts/vectorcraft/crates/pdf/src/pdfx.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/save_pdf.rs (presets, compression, marks and bleeds, security)"
+gap = "no PDF+LaTeX text export"
+priority = 1
+
+[[feature]]
+id = "VE-IO-008"
+group = "io"
+name = "PostScript / EPS import"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-other-formats.html"
+behaviour = "PS and EPS files are converted through Ghostscript to PDF and then imported with the PDF options."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/eps/src/import/ (own PostScript interpreter), crafts/vectorcraft/crates/engine/src/cmd/fileio/eps.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-IO-009"
+group = "io"
+name = "PostScript / EPS export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/export-other-formats.html"
+behaviour = "PS level 2/3, EPS with text to path or embed, rasterise filters, bleed, export area; EPS has no transparency so it is flattened."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/eps/src/print/, crafts/vectorcraft/crates/ui-egui/src/dialogs/eps_options.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-IO-010"
+group = "io"
+name = "Adobe Illustrator (.ai) import"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-other-formats.html"
+behaviour = "PDF-based .ai files (version 9 and later) are imported through the PDF importer; older PostScript-based .ai via Ghostscript; the native private data is ignored."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/eps/src/import/ai/ (private data: layers, names, meshes), crafts/vectorcraft/crates/engine/src/cmd/fileio/tests_aiimport.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-IO-011"
+group = "io"
+name = "DXF import and export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-other-formats.html"
+behaviour = "AutoCAD DXF R12-R14 import with scale, character encoding, layer handling and text options; export as DXF R14 (polylines or splines, units) or R12 lines via extension."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/cad/src/import/, crafts/vectorcraft/crates/cad/src/writer.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/dxf_import.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-IO-012"
+group = "io"
+name = "EMF / WMF import and export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-other-formats.html"
+behaviour = "Windows metafiles open natively and can be saved, including text and bitmaps; used for clipboard interchange on Windows."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/metafile/src/, crafts/vectorcraft/crates/engine/src/cmd/fileio/metafile.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-IO-013"
+group = "io"
+name = "Affinity Designer (.afdesign) import"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Affinity_Designer_File_Import"
+behaviour = "1.4 opens Affinity Designer documents through a bundled importer, converting shapes, text, fills, strokes and layers."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/affinity/src/, crafts/vectorcraft/crates/engine/src/cmd/fileio/affinity.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-014"
+group = "io"
+name = "CGM import"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Computer_Graphics_Metafaile"
+behaviour = "1.4 adds import of Computer Graphics Metafile drawings."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-015"
+group = "io"
+name = "CorelDRAW (.cdr/.cmx/.ccx/.cdt) import"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-other-formats.html"
+behaviour = "Opened through the libcdr library (when built in)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-016"
+group = "io"
+name = "Visio (.vsd/.vsdx/.vdx/.vsdm) import"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-other-formats.html"
+behaviour = "Opened through the libvisio library (when built in)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-017"
+group = "io"
+name = "WordPerfect Graphics (.wpg) and XFig (.fig) import"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-other-formats.html"
+behaviour = "Legacy vector formats imported via libwpg and the fig2dev extension."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-018"
+group = "io"
+name = "XAML import and export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/export-other-formats.html"
+behaviour = "Microsoft XAML (Silverlight/WPF drawing) via XSLT-based extension, with options for canvas vs drawing-brush output."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-019"
+group = "io"
+name = "HPGL plotter import/export and plot extension"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Improved_HPGL_import"
+behaviour = "HPGL files import as paths (1.3 improved); export writes pen moves with resolution, pen number, overcut, tool offset and precut options; Extensions > Export > Plot sends directly to a serial plotter."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-020"
+group = "io"
+name = "PNG export dialog"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/export-png.html"
+behaviour = "Export area: page, drawing, selection or custom coordinates; DPI or pixel width/height; background colour; antialiasing level; bit depth and colour mode (RGBA 8/16, grey, palette); dithering (1.2); hide all except selected; export hints saved in the document; filename and Export button; 1.2 merged single and batch modes."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/dialogs/export_as.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/png_options.rs, crafts/vectorcraft/crates/engine/src/cmd/fileio/export.rs"
+gap = "no bit-depth/palette choice for PNG beyond interlace and background"
+priority = 1
+evidence = "docs/parity/evidence/VEC-export.png"
+
+[[feature]]
+id = "VE-IO-021"
+group = "io"
+name = "Export to JPEG, WebP, TIFF, BMP and other raster formats"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Available_Export_File_Formats"
+behaviour = "The export dialog's format menu lists every raster output (PNG, JPEG with quality/progressive, WebP with quality/lossless, TIFF with compression, BMP) and vector outputs, with the same area/DPI controls."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/render/src/encode/ (png, jpeg, web, tiff, bmp, gif, tga, psd), crafts/vectorcraft/crates/engine/src/cmd/fileio/encode.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-IO-022"
+group = "io"
+name = "Batch export (selected objects, layers or pages as separate files)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Batch_Export"
+behaviour = "The Batch tab exports each selected object, each layer or each page to its own file, with a name prefix/suffix, a per-item preview and any output format; 1.3 adds export-only-selected and 1.4 adds margins."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/asset_export.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/export_for_screens.rs (artboards or assets, scales, suffixes, formats), crafts/vectorcraft/crates/engine/src/cmd/fileio/batch.rs"
+gap = "no per-layer batch"
+priority = 2
+
+[[feature]]
+id = "VE-IO-023"
+group = "io"
+name = "Export hints stored in the document"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/export-png.html"
+behaviour = "The last export filename and DPI are written into the SVG (document and per object) so a repeat export uses the same settings."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/rastersettings.rs, crafts/vectorcraft/crates/engine/src/cmd/fileio/export.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-024"
+group = "io"
+name = "Open Document Drawing (.odg) export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/export-other-formats.html"
+behaviour = "Writes an OpenOffice/LibreOffice Draw file via extension."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-025"
+group = "io"
+name = "LaTeX (PSTricks/TikZ-like) and PDF+LaTeX export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/export-other-formats.html"
+behaviour = "Exports the drawing as LaTeX macros, or as PDF/EPS plus a .tex overlay so text is typeset by LaTeX."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-026"
+group = "io"
+name = "HTML5 canvas, FXG, POV-Ray, Synfig, GIMP XCF export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/export-other-formats.html"
+behaviour = "Extension-based outputs: JavaScript canvas drawing commands, Flash FXG, POV-Ray scene, Synfig animation file, and layered GIMP XCF (via GIMP)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/render/src/encode/psd.rs (layered PSD export), crafts/vectorcraft/crates/engine/src/cmd/fileio/imagemap.rs (HTML image map)"
+gap = "no canvas/FXG/POV/Synfig/XCF"
+priority = 3
+
+[[feature]]
+id = "VE-IO-027"
+group = "io"
+name = "Bitmap import formats"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-pictures.html"
+behaviour = "PNG, JPEG, GIF, BMP, TIFF, WebP, ICO/CUR/ICNS, PNM, XBM/XPM, TGA and others via GdkPixbuf; the import dialog chooses link/embed, DPI source and rendering mode and can be remembered."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/fileio/load.rs (png, jpeg, gif, bmp, tiff, webp, tga, psd), crafts/vectorcraft/crates/ui-egui/src/dialogs/place.rs"
+gap = "no ICO/ICNS/PNM/XBM/XPM"
+priority = 1
+
+[[feature]]
+id = "VE-IO-028"
+group = "io"
+name = "Import web image (URL)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Particular_extensions"
+behaviour = "Extensions > Images > Import Web Image downloads an image from a URL and embeds it."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-029"
+group = "io"
+name = "Palette import (GPL) and 1.4 palette export"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Palettes"
+behaviour = "GIMP palette files dropped in the palettes folder appear in the palette menu; 1.4 can import a GPL file from the Swatches dialog and export the document's swatches as GPL."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/color/src/palette_io.rs (.gpl, .ase, .acb), crafts/vectorcraft/crates/engine/src/cmd/swatchlib.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-030"
+group = "io"
+name = "Save a copy, revert, recent files, templates"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/saving.html"
+behaviour = "Save, Save As, Save a Copy (does not change the document's filename), Revert to the saved file, Open Recent list, Save Template with name/author/description/keywords."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/fileio/save.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Save, Save As, Save a Copy, Revert, Open Recent Files)"
+gap = "no save-as-template"
+priority = 1
+
+[[feature]]
+id = "VE-IO-031"
+group = "io"
+name = "Command-line export and actions"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Command_line"
+behaviour = "inkscape --export-type=png,pdf,svg... --export-area-page/drawing --export-dpi --export-id --export-background --export-text-to-path, plus --actions to run any action chain (select, transform, path ops, save) in batch and a --shell mode."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/mcp/src/ (headless MCP server and tools), crafts/vectorcraft/crates/engine/src/cmd/scripts.rs"
+gap = "automation is through the MCP tool protocol and scripts rather than CLI flags"
+priority = 2
+
+[[feature]]
+id = "VE-IO-032"
+group = "io"
+name = "Printing"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/saving.html"
+behaviour = "File > Print uses the system print dialog with a Rendering tab choosing vector or bitmap output at a DPI."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/print.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/print.rs (marks, bleed, tiling, separations, presets)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-IO-033"
+group = "io"
+name = "Linked files panel and missing-link handling"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-pictures.html"
+behaviour = "Linked images that cannot be found render as a broken-image placeholder; the path is edited in the XML editor or Object Properties; 1.2 improved relative-path handling."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/links.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/missing_links.rs, crafts/vectorcraft/crates/engine/src/link_watch.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-IO-034"
+group = "io"
+name = "Export slices (web slicer)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Extensions"
+behaviour = "Extensions > Web > Slicer creates slice rectangles with per-slice format/quality/DPI and exports them with an HTML/CSS layout; Export Layer Slices exports each top-level layer."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/slice.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/slices.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/save_for_web.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-IO-035"
+group = "io"
+name = "Document DPI conversion (90 to 96 legacy fix)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92#Important_changes"
+behaviour = "Files from versions before 0.92 (90 DPI) are offered a scaling or viewBox fix on open so physical sizes stay right."
+ours = "none"
+ours_where = ""
+gap = "not applicable to our native format; legacy SVG DPI is not adjusted"
+priority = 3
+
+[[feature]]
+id = "VE-TRACE-001"
+group = "trace"
+name = "Trace bitmap: single scan (brightness cutoff)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/tracing-an-image.html"
+behaviour = "A placed raster is turned into one filled path by splitting it at a brightness threshold (0-1); options invert, speckle suppression, corner smoothing and curve optimisation; the result is a new path placed over the image."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/trace/src/lib.rs (Mode::BlackAndWhite, threshold, noise, corners, paths), crafts/vectorcraft/crates/ui-egui/src/place.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TRACE-002"
+group = "trace"
+name = "Trace bitmap: edge detection and colour quantisation scans"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/tracing-an-image.html"
+behaviour = "Single-scan alternatives: an edge-detection pass that outlines where brightness changes sharply, and a quantisation pass that reduces the image to N colours and traces the boundary of the result as one path."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/trace/src/quantize.rs, lib.rs Mode::Grayscale"
+gap = "no edge-detection scan; quantisation is only available through the multicolour modes, not as a single-path scan"
+priority = 2
+
+[[feature]]
+id = "VE-TRACE-003"
+group = "trace"
+name = "Trace bitmap: multiple scans (brightness steps, colours, greys)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/tracing-an-image.html"
+behaviour = "Produces one path per tone or colour: brightness steps (N levels), colours (N quantised colours) or greys; options smooth before scanning, stack scans so layers overlap without gaps (or leave them abutting), and remove the background layer."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/trace/src/lib.rs (Mode::Color/Grayscale/Logo, Palette, colors, Method::Abutting/Overlapping, ignore_white, ignore_color, auto_grouping)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TRACE-004"
+group = "trace"
+name = "Trace bitmap: centerline tracing"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/tracing-an-image.html"
+behaviour = "For line art and handwriting, follows the middle of each stroke and emits stroked (not filled) open paths with a chosen stroke width; a despeckle filter and a corner threshold tune the result."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/trace/src/centerline.rs, lib.rs (strokes, stroke_width)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-TRACE-005"
+group = "trace"
+name = "Trace bitmap: pixel art mode"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/tracing-an-image.html"
+behaviour = "Low-resolution images are vectorised so that each pixel region becomes a clean shape with heuristics for curves, islands and sparse pixels, and the output can be voronoi cells or B-spline curves."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/trace/src/mosaic.rs, shapes.rs"
+gap = "no voronoi output and no per-heuristic weights; mosaic mode gives square cells only"
+priority = 3
+
+[[feature]]
+id = "VE-TRACE-006"
+group = "trace"
+name = "Trace bitmap: live preview, presets and shape/gradient recovery"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/tracing-an-image.html"
+behaviour = "The trace dialog previews the result on the selected image before applying; the recognised shapes become geometric primitives where possible and smooth tone ramps can be recovered as gradients instead of banded fills."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/trace/src/lib.rs (presets, shapes, gradients, anchor_count budget), gradient.rs, shapes.rs"
+gap = ""
+priority = 2
