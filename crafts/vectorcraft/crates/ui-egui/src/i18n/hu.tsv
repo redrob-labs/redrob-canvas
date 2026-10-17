@@ -293,7 +293,6 @@
 	Apply Last Effect	Legutóbbi effektus alkalmazása
 	Apply Last Gradient	Legutóbbi színátmenet alkalmazása
 	Apply Paragraph Style	Bekezdésstílus alkalmazása
-	Apply SVG Filter…	SVG-szűrő alkalmazása…
 	Apply to All	Alkalmazás az összesre
 	Apply to All ({count} more missing)	Alkalmazás mindegyikre (további hiányzók: {count})
 	Approximate path	Útvonal közelítése
@@ -4912,3 +4911,10 @@ imageTrace	Outline	Körvonal
 	The object has no SVG filter graph yet.	Az objektumnak még nincs SVG-szűrőgráfja.
 	Select an object to edit its SVG filter.	Válasszon objektumot az SVG-szűrője szerkesztéséhez.
 	Open a document to see its element tree.	Nyisson meg egy dokumentumot az elemfájának megtekintéséhez.
+@msg	a clone can't be linked to itself	egy klón nem kapcsolható önmagához
+@msg	copy an object first (Edit › Copy)	először másolj egy objektumot (Szerkesztés › Másolás)
+@msg	no such object	nincs ilyen objektum
+@msg	nothing to clone	nincs mit klónozni
+@msg	select a clone	jelölj ki egy klónt
+@msg	select an object	jelölj ki egy objektumot
+@msg	the copied object is no longer in this document	a másolt objektum már nincs ebben a dokumentumban

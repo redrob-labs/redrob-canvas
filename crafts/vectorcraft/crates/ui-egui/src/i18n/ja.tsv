@@ -439,7 +439,6 @@
 	Outer Glow…	光彩 (外側)…
 	Feather…	ぼかし…
 	SVG Filters	SVG フィルター
-	Apply SVG Filter…	SVG フィルターを適用…
 	Warp	ワープ
 	Arc…	円弧…
 	Arc Lower…	円弧 (下弦)…
@@ -4529,3 +4528,11 @@ lighting	Light	ライト
 	The object has no SVG filter graph yet.	このオブジェクトにはまだ SVG フィルターグラフがありません。
 	Select an object to edit its SVG filter.	SVG フィルターを編集するオブジェクトを選択してください。
 	Open a document to see its element tree.	要素ツリーを表示するにはドキュメントを開いてください。
+@msg	a clone can't be linked to itself	クローンを自身にリンクすることはできません
+@msg	copy an object first (Edit › Copy)	先にオブジェクトをコピーしてください（編集 › コピー）
+@msg	no such object	そのオブジェクトはありません
+@msg	nothing to clone	クローンするものがありません
+@msg	select a clone	クローンを選択してください
+@msg	select an object	オブジェクトを選択してください
+@msg	the copied object is no longer in this document	コピーしたオブジェクトはこのドキュメントにもうありません
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	「シミュレート」はオーバープリントプレビューの表示どおりにオーバープリントをプリントします。分版では常に保持されます。プリセットはプリント前に透明部分を分割・統合します（PostScript ファイルでは常に分割・統合されます）。

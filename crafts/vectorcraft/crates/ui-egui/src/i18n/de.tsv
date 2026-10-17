@@ -182,7 +182,6 @@
 	Apply Last Effect	Letzten Effekt anwenden
 	Apply Last Gradient	Letzten Verlauf anwenden
 	Apply Paragraph Style	Absatzformat anwenden
-	Apply SVG Filter…	SVG-Filter anwenden…
 	Apply to All	Auf alle anwenden
 	Apply to All ({count} more missing)	Auf alle anwenden ({count} weitere fehlen)
 	Arc	Bogen
@@ -4490,3 +4489,11 @@ theme	Appearance	Erscheinungsbild
 	The object has no SVG filter graph yet.	Das Objekt hat noch keinen SVG-Filtergraphen.
 	Select an object to edit its SVG filter.	Wählen Sie ein Objekt, um seinen SVG-Filter zu bearbeiten.
 	Open a document to see its element tree.	Öffnen Sie ein Dokument, um seinen Elementbaum zu sehen.
+@msg	a clone can't be linked to itself	ein Klon kann nicht mit sich selbst verknüpft werden
+@msg	copy an object first (Edit › Copy)	kopieren Sie zuerst ein Objekt (Bearbeiten › Kopieren)
+@msg	no such object	kein solches Objekt
+@msg	nothing to clone	nichts zu klonen
+@msg	select a clone	wählen Sie einen Klon aus
+@msg	select an object	wählen Sie ein Objekt aus
+@msg	the copied object is no longer in this document	das kopierte Objekt ist nicht mehr in diesem Dokument
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	„Simulieren“ druckt Überdrucken so, wie es die Überdruckenvorschau zeigt; Separationen behalten es immer. Eine Vorgabe reduziert die Transparenz vor dem Drucken (PostScript-Dateien reduzieren sie immer).

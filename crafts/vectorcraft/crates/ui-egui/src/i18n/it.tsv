@@ -200,7 +200,6 @@
 	Apply Last Effect	Applica ultimo effetto
 	Apply Last Gradient	Applica ultima sfumatura
 	Apply Paragraph Style	Applica stile paragrafo
-	Apply SVG Filter…	Applica filtro SVG…
 	Apply to All	Applica a tutti
 	Apply to All ({count} more missing)	Applica a tutti (ne mancano altri {count})
 	Arc	Arco
@@ -4535,3 +4534,11 @@ lighting	Light	Luce
 	The object has no SVG filter graph yet.	L’oggetto non ha ancora un grafo filtro SVG.
 	Select an object to edit its SVG filter.	Seleziona un oggetto per modificarne il filtro SVG.
 	Open a document to see its element tree.	Apri un documento per vederne l’albero degli elementi.
+@msg	a clone can't be linked to itself	un clone non può essere collegato a sé stesso
+@msg	copy an object first (Edit › Copy)	copia prima un oggetto (Modifica › Copia)
+@msg	no such object	nessun oggetto con questo nome
+@msg	nothing to clone	niente da clonare
+@msg	select a clone	seleziona un clone
+@msg	select an object	seleziona un oggetto
+@msg	the copied object is no longer in this document	l’oggetto copiato non è più in questo documento
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Simula» stampa le sovrastampe come le mostra l’Anteprima sovrastampa; le separazioni le mantengono sempre. Una preimpostazione converte la trasparenza prima della stampa (i file PostScript la convertono sempre).

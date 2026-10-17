@@ -3592,7 +3592,6 @@ fn effect_menu() -> Vec<Item> {
         if items.is_empty() {
             let placeholder = match sub_name {
                 "3D and Materials" => vec![todo("Extrude & Bevel…"), todo("Revolve…"), todo("Inflate…"), todo("Rotate…"), todo("Materials…")],
-                "SVG Filters" => vec![todo("Apply SVG Filter…")],
                 _ => continue,
             };
             out.push(sub(sub_name, placeholder));

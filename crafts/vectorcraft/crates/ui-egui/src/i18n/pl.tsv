@@ -399,7 +399,6 @@
 	Outer Glow…	Blask zewnętrzny…
 	Feather…	Wtapianie…
 	SVG Filters	Filtry SVG
-	Apply SVG Filter…	Zastosuj filtr SVG…
 	Warp	Wypaczenie
 	Arc…	Łuk…
 	Arc Lower…	Łuk dolny…
@@ -4790,3 +4789,10 @@ mark-style	Japanese	Japońskie
 	The object has no SVG filter graph yet.	Obiekt nie ma jeszcze grafu filtru SVG.
 	Select an object to edit its SVG filter.	Wybierz obiekt, aby edytować jego filtr SVG.
 	Open a document to see its element tree.	Otwórz dokument, aby zobaczyć jego drzewo elementów.
+@msg	a clone can't be linked to itself	klonu nie można połączyć z nim samym
+@msg	copy an object first (Edit › Copy)	najpierw skopiuj obiekt (Edycja › Kopiuj)
+@msg	no such object	nie ma takiego obiektu
+@msg	nothing to clone	nie ma czego klonować
+@msg	select a clone	zaznacz klon
+@msg	select an object	zaznacz obiekt
+@msg	the copied object is no longer in this document	skopiowanego obiektu nie ma już w tym dokumencie

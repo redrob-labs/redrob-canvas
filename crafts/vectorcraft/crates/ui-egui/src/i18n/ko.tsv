@@ -435,7 +435,6 @@
 	Outer Glow…	외부 광선…
 	Feather…	페더…
 	SVG Filters	SVG 필터
-	Apply SVG Filter…	SVG 필터 적용…
 	Warp	왜곡
 	Arc…	호…
 	Arc Lower…	아래쪽 호…
@@ -4499,3 +4498,11 @@ lighting	Light	광원
 	The object has no SVG filter graph yet.	이 오브젝트에는 아직 SVG 필터 그래프가 없습니다.
 	Select an object to edit its SVG filter.	SVG 필터를 편집할 오브젝트를 선택하세요.
 	Open a document to see its element tree.	요소 트리를 보려면 문서를 여세요.
+@msg	a clone can't be linked to itself	클론을 자기 자신에 연결할 수 없습니다
+@msg	copy an object first (Edit › Copy)	먼저 개체를 복사하세요 (편집 › 복사)
+@msg	no such object	그런 개체가 없습니다
+@msg	nothing to clone	클론할 대상이 없습니다
+@msg	select a clone	클론을 선택하세요
+@msg	select an object	개체를 선택하세요
+@msg	the copied object is no longer in this document	복사한 개체가 이 문서에 더 이상 없습니다
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	‘시뮬레이션’은 겹쳐찍기 미리 보기에 표시되는 대로 겹쳐찍기를 인쇄하고, 분판은 항상 겹쳐찍기를 유지합니다. 사전 설정은 인쇄 전에 투명도를 병합합니다 (PostScript 파일은 항상 병합합니다).

@@ -198,7 +198,6 @@
 	Apply Last Effect	Применить последний эффект
 	Apply Last Gradient	Применить последний градиент
 	Apply Paragraph Style	Применить стиль абзаца
-	Apply SVG Filter…	Применить фильтр SVG…
 	Apply to All	Применить ко всем
 	Apply to All ({count} more missing)	Применить ко всем (ещё {count} отсутствуют)
 	Arc	Дуга
@@ -4516,3 +4515,11 @@ lighting	Light	Свет
 	The object has no SVG filter graph yet.	У объекта ещё нет графа фильтра SVG.
 	Select an object to edit its SVG filter.	Выберите объект, чтобы изменить его фильтр SVG.
 	Open a document to see its element tree.	Откройте документ, чтобы увидеть дерево его элементов.
+@msg	a clone can't be linked to itself	клон нельзя связать с самим собой
+@msg	copy an object first (Edit › Copy)	сначала скопируйте объект (Правка › Копировать)
+@msg	no such object	нет такого объекта
+@msg	nothing to clone	нечего клонировать
+@msg	select a clone	выделите клон
+@msg	select an object	выделите объект
+@msg	the copied object is no longer in this document	скопированного объекта больше нет в этом документе
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Имитировать» печатает наложение так, как его показывает просмотр наложения; цветоделение всегда сохраняет его. Набор сводит прозрачность перед печатью (файлы PostScript всегда сводят её).

@@ -206,7 +206,6 @@
 	Apply Last Effect	Aplicar Último Efeito
 	Apply Last Gradient	Aplicar Último Gradiente
 	Apply Paragraph Style	Aplicar Estilo de Parágrafo
-	Apply SVG Filter…	Aplicar Filtro SVG…
 	Apply to All	Aplicar a Todos
 	Apply to All ({count} more missing)	Aplicar a Todos ({count} mais faltando)
 	Arc	Arco
@@ -3763,15 +3762,10 @@ axis	Both	Ambos
 	Ambient Light	Luz ambiente
 	Light behind the object	Luz atrás do objeto
 	Bend…	Curvar…
-	Bend	Curvar
 	B-Spline…	B-spline…
-	B-Spline	B-spline
 	Spiro Spline…	Spline Spiro…
-	Spiro Spline	Spline Spiro
 	Dashed Stroke…	Traçado Tracejado…
-	Dashed Stroke	Traçado Tracejado
 	Taper Stroke…	Traçado Afunilado…
-	Taper Stroke	Traçado Afunilado
 	Segment:	Segmento:
 	Shape Along Stroke	Forma ao longo do traçado
 	Segment Type	Tipo de segmento
@@ -3813,9 +3807,11 @@ axis	Both	Ambos
 	Relink to Copied	Revincular ao copiado
 	Select Original	Selecionar original
 	Object Properties…	Propriedades do objeto…
-	Text content	Conteúdo do texto
-	ID	ID
-	Label	Rótulo
-	Title	Título
-	Object type	Tipo de objeto
-	Current layer	Camada atual
+	Canvas Orientation	Orientação da tela
+	Color Matrix…	Matriz de cores…
+	Filter Editor	Editor de filtros
+	Filter Graph	Grafo de filtros
+	Palette Strip	Faixa de paleta
+	Reset Canvas Orientation	Redefinir orientação da tela
+	XML Editor	Editor XML
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	Simular imprime as sobreimpressões como a Visualização de sobreimpressão as mostra; as separações sempre as mantêm. Uma predefinição achata a transparência antes de imprimir (arquivos PostScript sempre a achatam).

@@ -439,7 +439,6 @@
 	Outer Glow…	Vnější záře…
 	Feather…	Měkké okraje…
 	SVG Filters	Filtry SVG
-	Apply SVG Filter…	Použít filtr SVG…
 	Warp	Pokřivení
 	Arc…	Oblouk…
 	Arc Lower…	Dolní oblouk…
@@ -4945,3 +4944,10 @@ mark-style	Japanese	Japonské
 	The object has no SVG filter graph yet.	Objekt zatím nemá graf filtru SVG.
 	Select an object to edit its SVG filter.	Vyberte objekt, jehož filtr SVG chcete upravit.
 	Open a document to see its element tree.	Otevřete dokument a zobrazte strom jeho prvků.
+@msg	a clone can't be linked to itself	klon nelze propojit sám se sebou
+@msg	copy an object first (Edit › Copy)	nejprve zkopírujte objekt (Úpravy › Kopírovat)
+@msg	no such object	žádný takový objekt
+@msg	nothing to clone	není co klonovat
+@msg	select a clone	vyberte klon
+@msg	select an object	vyberte objekt
+@msg	the copied object is no longer in this document	zkopírovaný objekt už v tomto dokumentu není

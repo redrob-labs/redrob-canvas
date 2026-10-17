@@ -200,7 +200,6 @@
 	Apply Last Effect	Aplicar último efecto
 	Apply Last Gradient	Aplicar último degradado
 	Apply Paragraph Style	Aplicar estilo de párrafo
-	Apply SVG Filter…	Aplicar filtro SVG…
 	Apply to All	Aplicar a todo
 	Apply to All ({count} more missing)	Aplicar a todo (faltan {count} más)
 	Arc	Arco
@@ -4901,3 +4900,10 @@ mark-style	Japanese	Japonesas
 	The object has no SVG filter graph yet.	El objeto aún no tiene un grafo de filtros SVG.
 	Select an object to edit its SVG filter.	Seleccione un objeto para editar su filtro SVG.
 	Open a document to see its element tree.	Abra un documento para ver su árbol de elementos.
+@msg	a clone can't be linked to itself	un clon no puede vincularse a sí mismo
+@msg	copy an object first (Edit › Copy)	copia un objeto primero (Edición › Copiar)
+@msg	no such object	no existe el objeto
+@msg	nothing to clone	no hay nada que clonar
+@msg	select a clone	selecciona un clon
+@msg	select an object	selecciona un objeto
+@msg	the copied object is no longer in this document	el objeto copiado ya no está en este documento

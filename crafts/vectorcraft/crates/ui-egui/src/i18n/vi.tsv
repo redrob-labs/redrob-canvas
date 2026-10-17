@@ -228,7 +228,6 @@
 	Apply Last Effect	Áp dụng hiệu ứng cuối
 	Apply Last Gradient	Áp dụng chuyển sắc cuối
 	Apply Paragraph Style	Áp dụng kiểu đoạn văn
-	Apply SVG Filter…	Áp dụng bộ lọc SVG…
 	Apply to All	Áp dụng cho tất cả
 	Apply to All ({count} more missing)	Áp dụng cho tất cả ({count} còn thiếu)
 	Approximate path	Đường dẫn xấp xỉ
@@ -4502,3 +4501,11 @@ theme	Appearance	Giao diện
 	The object has no SVG filter graph yet.	Đối tượng chưa có đồ thị bộ lọc SVG.
 	Select an object to edit its SVG filter.	Chọn một đối tượng để sửa bộ lọc SVG của nó.
 	Open a document to see its element tree.	Mở một tài liệu để xem cây phần tử của nó.
+@msg	a clone can't be linked to itself	không thể liên kết bản sao với chính nó
+@msg	copy an object first (Edit › Copy)	hãy sao chép một đối tượng trước (Chỉnh sửa › Sao chép)
+@msg	no such object	không có đối tượng nào như vậy
+@msg	nothing to clone	không có gì để tạo bản sao
+@msg	select a clone	hãy chọn một bản sao
+@msg	select an object	hãy chọn một đối tượng
+@msg	the copied object is no longer in this document	đối tượng đã sao chép không còn trong tài liệu này
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	Mô phỏng in các in chồng như Xem trước in chồng hiển thị; tách màu luôn giữ chúng. Một cài đặt sẵn làm phẳng độ trong suốt trước khi in (tệp PostScript luôn làm phẳng nó).

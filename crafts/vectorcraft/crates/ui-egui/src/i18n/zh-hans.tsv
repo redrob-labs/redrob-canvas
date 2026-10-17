@@ -158,7 +158,6 @@
 	Apply Last Effect	应用上一次效果
 	Apply Last Gradient	应用上一次渐变
 	Apply Paragraph Style	应用段落样式
-	Apply SVG Filter…	应用 SVG 滤镜…
 	Apply to All	应用到全部
 	Apply to All ({count} more missing)	全部应用 (另有 {count} 个缺失)
 	Arc	弧形
@@ -4110,3 +4109,4 @@ lighting	Light	光源
 	The object has no SVG filter graph yet.	此对象尚无 SVG 滤镜图。
 	Select an object to edit its SVG filter.	选择对象以编辑其 SVG 滤镜。
 	Open a document to see its element tree.	打开文档以查看其元素树。
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	“模拟”按叠印预览所示打印叠印；分色始终保留叠印。预设在打印前拼合透明度（PostScript 文件始终拼合）。
