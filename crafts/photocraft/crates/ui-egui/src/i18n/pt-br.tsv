@@ -4032,3 +4032,8 @@ layerLabel	No Color	Sem cor
 	Erase with the current brush (Clear mode)	Apagar com o pincel atual (modo Limpar)
 	Blend:	Mesclar:
 	How much of the sample goes into the current colour	Quanto da amostra entra na cor atual
+	Close gap	Fechar lacuna
+	Boundary colour	Cor de limite
+	Grow the filled area outward	Expandir a área preenchida para fora
+	Gaps in the boundary up to this are closed	Lacunas no limite até este tamanho são fechadas
+	Fill until this colour instead of over similar colours	Preencher até esta cor em vez de sobre cores semelhantes

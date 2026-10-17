@@ -4160,3 +4160,8 @@ cameraRaw	Yellow	Sárga
 	Erase with the current brush (Clear mode)	Törlés az aktuális ecsettel (Törlés mód)
 	Blend:	Keverés:
 	How much of the sample goes into the current colour	A minta mekkora része kerül az aktuális színbe
+	Close gap	Hézag zárása
+	Boundary colour	Határszín
+	Grow the filled area outward	A kitöltött terület kifelé növelése
+	Gaps in the boundary up to this are closed	A határ ekkora hézagai záródnak
+	Fill until this colour instead of over similar colours	Kitöltés eddig a színig a hasonló színek helyett

@@ -3251,3 +3251,8 @@ curves	Smooth	Lisser
 	Erase with the current brush (Clear mode)	Effacer avec le pinceau actuel (mode Effacer)
 	Blend:	Mélange :
 	How much of the sample goes into the current colour	Part de l'échantillon mélangée à la couleur actuelle
+	Close gap	Fermer l'écart
+	Boundary colour	Couleur de limite
+	Grow the filled area outward	Étendre la zone remplie vers l'extérieur
+	Gaps in the boundary up to this are closed	Les écarts de la limite jusqu'à cette taille sont fermés
+	Fill until this colour instead of over similar colours	Remplir jusqu'à cette couleur plutôt que sur les couleurs similaires

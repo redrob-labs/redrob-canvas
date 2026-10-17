@@ -3918,3 +3918,8 @@ curves	Smooth	スムーズ
 	Erase with the current brush (Clear mode)	現在のブラシで消す (消去モード)
 	Blend:	ブレンド:
 	How much of the sample goes into the current colour	サンプルを現在の色にどれだけ混ぜるか
+	Close gap	隙間を閉じる
+	Boundary colour	境界色
+	Grow the filled area outward	塗りつぶし領域を外側に広げる
+	Gaps in the boundary up to this are closed	境界のこの幅までの隙間を閉じる
+	Fill until this colour instead of over similar colours	似た色の上ではなく、この色までを塗りつぶす

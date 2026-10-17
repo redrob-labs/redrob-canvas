@@ -3942,3 +3942,8 @@ curves	Smooth	Εξομάλυνση
 	Erase with the current brush (Clear mode)	Σβήσιμο με το τρέχον πινέλο (λειτουργία Καθαρισμός)
 	Blend:	Ανάμειξη:
 	How much of the sample goes into the current colour	Πόσο από το δείγμα μπαίνει στο τρέχον χρώμα
+	Close gap	Κλείσιμο κενού
+	Boundary colour	Χρώμα ορίου
+	Grow the filled area outward	Επέκταση της γεμισμένης περιοχής προς τα έξω
+	Gaps in the boundary up to this are closed	Κενά στο όριο έως αυτό το μέγεθος κλείνουν
+	Fill until this colour instead of over similar colours	Γέμισμα έως αυτό το χρώμα αντί πάνω από παρόμοια χρώματα

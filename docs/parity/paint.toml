@@ -1570,9 +1570,9 @@ name = "Fill tool: source"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Foreground, background, or pattern with scale and rotation."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
-gap = "foreground or pattern; no background source, pattern scale/rotation"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1583,8 +1583,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Threshold, opaque spread, close-gap size (5.3), fill until a boundary colour, selection as boundary."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
-gap = "tolerance only; no spread, close gap or boundary colour"
+ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/algo/src/selection.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = "boundary-colour and close-gap fills are hard-edged (no anti-aliasing); the selection already bounds every fill"
 priority = 1
 
 [[feature]]

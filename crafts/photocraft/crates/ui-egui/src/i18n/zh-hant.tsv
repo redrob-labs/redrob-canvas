@@ -2848,3 +2848,8 @@ curves	Smooth	平滑
 	Erase with the current brush (Clear mode)	用目前筆刷擦除 (清除模式)
 	Blend:	混合:
 	How much of the sample goes into the current colour	取樣顏色混入目前顏色的比例
+	Close gap	閉合間隙
+	Boundary colour	邊界顏色
+	Grow the filled area outward	向外擴展填滿區域
+	Gaps in the boundary up to this are closed	閉合邊界中不超過此寬度的間隙
+	Fill until this colour instead of over similar colours	填滿直到此顏色，而不是填滿相似顏色

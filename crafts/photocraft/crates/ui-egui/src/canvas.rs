@@ -5416,8 +5416,15 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
                 }
                 Tool::PaintBucket => {
                     let o = app.ui.tool_options.clone();
-                    let contents = if o.bucket_fill_pattern { "pattern" } else { "foreground" };
-                    let _ = app.run("paint.bucket", json!({"x": x.floor(), "y": y.floor(), "tolerance": o.tolerance, "contiguous": o.contiguous, "antiAlias": o.anti_alias, "sampleAllLayers": o.sample_all_layers, "diagonal": o.wand_diagonal, "criterion": o.wand_criterion, "lineArt": o.bucket_line_art, "lineArtThreshold": o.line_art_threshold, "lineArtGap": o.line_art_gap, "lineArtGrow": o.line_art_grow, "opacity": o.fill_opacity, "contents": contents, "target": paint_target(app)}));
+                    let contents = if o.bucket_fill_pattern {
+                        "pattern"
+                    } else if o.bucket_fill_background {
+                        "background"
+                    } else {
+                        "foreground"
+                    };
+                    let boundary = o.bucket_use_boundary.then(|| o.bucket_boundary_color.to_vec());
+                    let _ = app.run("paint.bucket", json!({"x": x.floor(), "y": y.floor(), "tolerance": o.tolerance, "contiguous": o.contiguous, "antiAlias": o.anti_alias, "sampleAllLayers": o.sample_all_layers, "diagonal": o.wand_diagonal, "criterion": o.wand_criterion, "lineArt": o.bucket_line_art, "lineArtThreshold": o.line_art_threshold, "lineArtGap": o.line_art_gap, "lineArtGrow": o.line_art_grow, "opacity": o.fill_opacity, "contents": contents, "scale": o.bucket_pattern_scale, "angle": o.bucket_pattern_angle, "spread": o.bucket_spread, "closeGap": o.bucket_close_gap, "boundaryColor": boundary, "target": paint_target(app)}));
                     return;
                 }
                 Tool::RedEye => {

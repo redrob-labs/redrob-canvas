@@ -3420,3 +3420,8 @@ curves	Smooth	매끄럽게
 	Erase with the current brush (Clear mode)	현재 브러시로 지우기 (지우기 모드)
 	Blend:	혼합:
 	How much of the sample goes into the current colour	샘플을 현재 색상에 얼마나 섞을지
+	Close gap	틈 메우기
+	Boundary colour	경계 색상
+	Grow the filled area outward	채운 영역을 바깥으로 넓힘
+	Gaps in the boundary up to this are closed	경계의 이 크기까지의 틈을 메움
+	Fill until this colour instead of over similar colours	비슷한 색 위가 아니라 이 색까지 채움

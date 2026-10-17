@@ -4314,3 +4314,8 @@ shape	Appearance	Izgled
 	Erase with the current brush (Clear mode)	Бриши тренутном четкицом (режим Чишћење)
 	Blend:	Мешање:
 	How much of the sample goes into the current colour	Колико узорка улази у тренутну боју
+	Close gap	Затвори процеп
+	Boundary colour	Боја границе
+	Grow the filled area outward	Прошири испуњену област ка споља
+	Gaps in the boundary up to this are closed	Процепи у граници до ове величине се затварају
+	Fill until this colour instead of over similar colours	Испуни до ове боје уместо преко сличних боја

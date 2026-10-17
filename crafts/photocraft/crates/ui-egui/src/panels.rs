@@ -1215,9 +1215,17 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     }
                     Tool::PaintBucket if t.pro => {
                         opt_label(ui, tl!("Fill"));
-                        let mut src = u8::from(app.ui.tool_options.bucket_fill_pattern);
-                        if widgets::dropdown(ui, "bucket-src", &mut src, &[(0u8, tl!("Foreground")), (1, tl!("Pattern"))], 100.0) {
-                            app.ui.tool_options.bucket_fill_pattern = src == 1;
+                        let o = &mut app.ui.tool_options;
+                        let mut src = if o.bucket_fill_pattern { 2u8 } else { u8::from(o.bucket_fill_background) };
+                        if widgets::dropdown(ui, "bucket-src", &mut src, &[(0u8, tl!("Foreground")), (1, tl!("Background")), (2, tl!("Pattern"))], 100.0) {
+                            o.bucket_fill_pattern = src == 2;
+                            o.bucket_fill_background = src == 1;
+                        }
+                        if o.bucket_fill_pattern {
+                            opt_label(ui, tl!("Scale"));
+                            widgets::value_field(ui, &mut o.bucket_pattern_scale, 1.0..=1000.0, "%", 62.0);
+                            opt_label(ui, tl!("Angle"));
+                            widgets::value_field(ui, &mut o.bucket_pattern_angle, -180.0..=180.0, "°", 58.0);
                         }
                         opt_label(ui, tl!("Opacity"));
                         widgets::value_field(ui, &mut app.ui.tool_options.fill_opacity, 1.0..=100.0, "%", 62.0);
@@ -1240,6 +1248,22 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             widgets::value_field(ui, &mut o.line_art_gap, 0.0..=128.0, "px", 58.0);
                             opt_label(ui, tl!("Under ink"));
                             widgets::value_field(ui, &mut o.line_art_grow, 0.0..=64.0, "px", 52.0);
+                        } else {
+                            opt_label(ui, tl!("Spread"));
+                            widgets::value_field(ui, &mut o.bucket_spread, 0.0..=64.0, "px", 52.0).on_hover_text(tl!("Grow the filled area outward"));
+                            opt_label(ui, tl!("Close gap"));
+                            widgets::value_field(ui, &mut o.bucket_close_gap, 0.0..=128.0, "px", 58.0).on_hover_text(tl!("Gaps in the boundary up to this are closed"));
+                            widgets::checkbox(ui, &mut o.bucket_use_boundary, tl!("Boundary colour")).on_hover_text(tl!("Fill until this colour instead of over similar colours"));
+                            if o.bucket_use_boundary {
+                                let mut c = egui::Color32::from_rgb(
+                                    (o.bucket_boundary_color[0].clamp(0.0, 1.0) * 255.0).round() as u8,
+                                    (o.bucket_boundary_color[1].clamp(0.0, 1.0) * 255.0).round() as u8,
+                                    (o.bucket_boundary_color[2].clamp(0.0, 1.0) * 255.0).round() as u8,
+                                );
+                                if widgets::color_edit_button_srgba(ui, &mut c).changed() {
+                                    o.bucket_boundary_color = [f32::from(c.r()) / 255.0, f32::from(c.g()) / 255.0, f32::from(c.b()) / 255.0];
+                                }
+                            }
                         }
                     }
                     Tool::Gradient => {

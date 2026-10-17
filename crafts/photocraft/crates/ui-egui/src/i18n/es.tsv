@@ -4203,3 +4203,8 @@ navigator	Zoom	Zoom
 	Erase with the current brush (Clear mode)	Borrar con el pincel actual (modo Borrar)
 	Blend:	Mezcla:
 	How much of the sample goes into the current colour	Cuánto de la muestra entra en el color actual
+	Close gap	Cerrar hueco
+	Boundary colour	Color de límite
+	Grow the filled area outward	Expandir el área rellena hacia fuera
+	Gaps in the boundary up to this are closed	Se cierran los huecos del límite hasta este tamaño
+	Fill until this colour instead of over similar colours	Rellenar hasta este color en vez de sobre colores similares

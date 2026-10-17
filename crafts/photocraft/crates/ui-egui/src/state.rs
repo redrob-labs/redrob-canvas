@@ -550,6 +550,27 @@ pub struct ToolOptions {
     pub fill_opacity: f32,
     /// Paint Bucket fill source: false = Foreground colour, true = Pattern (Patterns panel selection).
     pub bucket_fill_pattern: bool,
+    /// Paint Bucket fill source: the background colour instead of the foreground (not with a pattern).
+    #[serde(default)]
+    pub bucket_fill_background: bool,
+    /// Paint Bucket pattern scale (%) and rotation (degrees).
+    #[serde(default = "hundred")]
+    pub bucket_pattern_scale: f32,
+    #[serde(default)]
+    pub bucket_pattern_angle: f32,
+    /// Paint Bucket: grow the filled area outward by this many pixels (Spread).
+    #[serde(default)]
+    pub bucket_spread: f32,
+    /// Paint Bucket: close gaps in the boundary up to this many pixels (plain fills; Line Art has
+    /// its own `line_art_gap`).
+    #[serde(default)]
+    pub bucket_close_gap: f32,
+    /// Paint Bucket: fill until the boundary colour (`bucket_boundary_color`) instead of over
+    /// similar colours.
+    #[serde(default)]
+    pub bucket_use_boundary: bool,
+    #[serde(default)]
+    pub bucket_boundary_color: [f32; 3],
     /// Type tool: family, style name, size (pt), anti-aliasing and paragraph alignment.
     pub type_font: String,
     pub type_style: String,
@@ -764,6 +785,10 @@ fn default_line_art_threshold() -> f32 {
     0.92
 }
 
+fn hundred() -> f32 {
+    100.0
+}
+
 fn default_line_art_gap() -> f32 {
     16.0
 }
@@ -833,6 +858,13 @@ impl Default for ToolOptions {
             gradient_blend_mode: redrob_photo_color::BlendMode::Normal,
             fill_opacity: 100.0,
             bucket_fill_pattern: false,
+            bucket_fill_background: false,
+            bucket_pattern_scale: 100.0,
+            bucket_pattern_angle: 0.0,
+            bucket_spread: 0.0,
+            bucket_close_gap: 0.0,
+            bucket_use_boundary: false,
+            bucket_boundary_color: [0.0, 0.0, 0.0],
             type_font: "Inter".into(),
             type_style: "Regular".into(),
             type_size: 48.0,

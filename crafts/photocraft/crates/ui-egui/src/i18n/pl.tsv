@@ -3840,3 +3840,8 @@ curves	Smooth	Wygładź
 	Erase with the current brush (Clear mode)	Wymazuj bieżącym pędzlem (tryb Wyczyść)
 	Blend:	Mieszanie:
 	How much of the sample goes into the current colour	Jaka część próbki trafia do bieżącego koloru
+	Close gap	Zamknij lukę
+	Boundary colour	Kolor granicy
+	Grow the filled area outward	Rozszerz wypełniony obszar na zewnątrz
+	Gaps in the boundary up to this are closed	Luki w granicy do tej wielkości są zamykane
+	Fill until this colour instead of over similar colours	Wypełniaj do tego koloru zamiast po podobnych kolorach
