@@ -203,6 +203,7 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["Image", "Adjustments"], "HDR Toning…", None, "image.adjustments.hdrToning"),
     (&["Image", "Adjustments"], "---", None, "---"),
     (&["Image", "Adjustments"], "Desaturate", Some("Cmd+Shift+U"), "image.adjustments.desaturate"),
+    (&["Image", "Adjustments"], "Desaturate…", None, "filter.adjust.desaturate"),
     (&["Image", "Adjustments"], "Match Color…", None, "image.adjustments.matchColor"),
     (&["Image", "Adjustments"], "Replace Color…", None, "image.adjustments.replaceColor"),
     (&["Image", "Adjustments"], "Equalize", None, "image.adjustments.equalize"),

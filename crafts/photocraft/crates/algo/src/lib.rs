@@ -156,6 +156,23 @@ pub enum Preserve {
     Roundness,
 }
 
+/// How Desaturate measures a colour's lightness.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum DesaturateMode {
+    /// Rec. 709 luminance of the linear-light colour (perceptual grey of light).
+    #[default]
+    Luminance,
+    /// Rec. 601 weights on the gamma-encoded values (the classic video grey).
+    Luma,
+    /// HSL lightness, (max + min) / 2.
+    Lightness,
+    /// Plain mean of the three channels.
+    Average,
+    /// HSV value, max of the three channels.
+    Value,
+}
+
 /// Spherize mode.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -283,7 +300,10 @@ pub enum FilterParams {
     FindEdges,
     Solarize,
     Invert,
-    Desaturate,
+    /// Greyscale by one of several measures of a colour's lightness.
+    Desaturate {
+        mode: DesaturateMode,
+    },
     /// Angle −999…999 degrees.
     Twirl {
         angle: f32,
@@ -565,7 +585,7 @@ impl FilterParams {
             FilterParams::Mosaic { cell_size } => Halo::Radius(cell_size.max(1.0).ceil() as i32 + 1),
             FilterParams::Emboss { height, .. } => Halo::Radius(height.abs().ceil() as i32 + 2),
             FilterParams::FindEdges => Halo::Radius(1),
-            FilterParams::AddNoise { .. } | FilterParams::Solarize | FilterParams::Invert | FilterParams::Desaturate => Halo::Radius(0),
+            FilterParams::AddNoise { .. } | FilterParams::Solarize | FilterParams::Invert | FilterParams::Desaturate { .. } => Halo::Radius(0),
             FilterParams::RadialBlur { .. }
             | FilterParams::Offset { .. }
             | FilterParams::Twirl { .. }
@@ -629,7 +649,7 @@ impl FilterParams {
             FilterParams::FindEdges => "Find Edges",
             FilterParams::Solarize => "Solarize",
             FilterParams::Invert => "Invert",
-            FilterParams::Desaturate => "Desaturate",
+            FilterParams::Desaturate { .. } => "Desaturate",
             FilterParams::Twirl { .. } => "Twirl",
             FilterParams::Pinch { .. } => "Pinch",
             FilterParams::Spherize { .. } => "Spherize",
@@ -751,7 +771,7 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
         FilterParams::FindEdges => stylize::find_edges(src, out, ctx),
         FilterParams::Solarize => stylize::solarize(src, out, ctx),
         FilterParams::Invert => stylize::per_pixel(src, out, ctx, |v| 1.0 - v),
-        FilterParams::Desaturate => stylize::desaturate(src, out, ctx),
+        FilterParams::Desaturate { mode } => stylize::desaturate(src, out, ctx, *mode),
         FilterParams::Twirl { angle } => distort::twirl(src, out, ctx, *angle),
         FilterParams::Pinch { amount } => distort::pinch(src, out, ctx, *amount),
         FilterParams::Spherize { amount, mode } => distort::spherize(src, out, ctx, *amount, *mode),

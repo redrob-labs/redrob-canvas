@@ -5,7 +5,8 @@
 //! undoable. `filter.lastFilter` re-runs the most recent filter command.
 
 use redrob_photo_algo::{
-    self as algo, Distribution, FilterParams, PolarMode, Preserve, RadialMethod, RadialQuality, RippleSize, SpherizeMode, UndefinedAreas, WaveType,
+    self as algo, DesaturateMode, Distribution, FilterParams, PolarMode, Preserve, RadialMethod, RadialQuality, RippleSize, SpherizeMode, UndefinedAreas,
+    WaveType,
 };
 use redrob_photo_doc::{LayerContent, SmartFilter};
 use serde_json::{Value, json};
@@ -132,6 +133,15 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
         }
         "filter.stylize.findEdges" => FilterParams::FindEdges,
         "filter.stylize.solarize" => FilterParams::Solarize,
+        "filter.adjust.desaturate" => FilterParams::Desaturate {
+            mode: match s(p, "mode", "luminance") {
+                "luma" => DesaturateMode::Luma,
+                "lightness" => DesaturateMode::Lightness,
+                "average" => DesaturateMode::Average,
+                "value" => DesaturateMode::Value,
+                _ => DesaturateMode::Luminance,
+            },
+        },
         "filter.distort.twirl" => FilterParams::Twirl { angle: f(p, "angle", 50.0).clamp(-999.0, 999.0) },
         "filter.distort.pinch" => FilterParams::Pinch { amount: f(p, "amount", 50.0).clamp(-100.0, 100.0) },
         "filter.distort.spherize" => FilterParams::Spherize {
@@ -386,6 +396,7 @@ pub fn specs() -> Vec<CommandSpec> {
         filter_cmd!("filter.stylize.emboss", "Emboss…", ["Filter", "Stylize"], r##"{"angle":-180..180=135,"height":1..100=3,"amount":1..500=100}"##),
         filter_cmd!("filter.stylize.findEdges", "Find Edges", ["Filter", "Stylize"], "{}"),
         filter_cmd!("filter.stylize.solarize", "Solarize", ["Filter", "Stylize"], "{}"),
+        filter_cmd!("filter.adjust.desaturate", "Desaturate…", ["Image", "Adjustments"], r##"{"mode":"luminance|luma|lightness|average|value"}"##),
         filter_cmd!("filter.distort.twirl", "Twirl…", ["Filter", "Distort"], r##"{"angle":-999..999=50}"##),
         filter_cmd!("filter.distort.pinch", "Pinch…", ["Filter", "Distort"], r##"{"amount":-100..100=50}"##),
         filter_cmd!("filter.distort.spherize", "Spherize…", ["Filter", "Distort"], r##"{"amount":-100..100=100,"mode":"normal|horizontalOnly|verticalOnly"}"##),

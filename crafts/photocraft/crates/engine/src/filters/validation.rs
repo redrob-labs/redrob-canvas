@@ -75,6 +75,7 @@ fn fields(id: &str) -> Option<&'static [(&'static str, Rule)]> {
         "filter.distort.twirl" => &[("angle", Number(-999.0, 999.0))],
         "filter.distort.pinch" => &[("amount", Number(-100.0, 100.0))],
         "filter.distort.spherize" => &[("amount", Number(-100.0, 100.0)), ("mode", Choice("normal|horizontalOnly|verticalOnly"))],
+        "filter.adjust.desaturate" => &[("mode", Choice("luminance|luma|lightness|average|value"))],
         "filter.distort.wave" => &[
             ("generators", Number(1.0, 999.0)),
             ("wavelengthMin", Number(1.0, 998.0)),
