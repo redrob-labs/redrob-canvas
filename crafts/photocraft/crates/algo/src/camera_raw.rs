@@ -585,15 +585,18 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, float: bo
     }
     let ps = p.pixel_scale.clamp(0.01, 1.0);
     let long = w.max(h) as f32;
-    // 1. White balance + exposure in linear light.
+    // 1. White balance + exposure in linear light: the document's own curve decodes it (a raw
+    // opens in ProPhoto, gamma 1.8). Decoded as sRGB, a gamma-1.8 document got 2^(EV·1.8/2.2) of
+    // the asked exposure, so the dialog's preview was dimmer than the developed result.
     if !p.wb_neutral() {
+        let enc = Encoding::of(p.encoding_gamma);
         let mut g = white_balance_gains(p.temperature, p.tint);
         let norm = luma(g);
         g = g.map(|v| v / norm * 2f32.powf(p.exposure));
         par_rows(px, w, 1, |_, row| {
             for q in row.iter_mut() {
                 for c in 0..3 {
-                    q[c] = linear_to_srgb((srgb_to_linear(q[c]) * g[c]).max(0.0));
+                    q[c] = enc.encode((enc.decode(q[c]) * g[c]).max(0.0));
                 }
             }
         });
