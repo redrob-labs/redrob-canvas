@@ -2953,3 +2953,5 @@ curves	Smooth	平滑
 	Delete All	全部刪除
 	Mirror painting across the vertical axis	沿垂直軸鏡像繪畫
 	Choose a gradient file (.grd or .ggr).	請選擇漸層檔案（.grd 或 .ggr）。
+	Save Group to Document	將群組儲存至文件
+	Load Document Palettes	載入文件調色盤

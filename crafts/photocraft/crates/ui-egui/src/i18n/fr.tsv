@@ -3355,3 +3355,5 @@ curves	Smooth	Lisser
 	Delete All	Tout supprimer
 	Mirror painting across the vertical axis	Peinture en miroir sur l'axe vertical
 	Choose a gradient file (.grd or .ggr).	Choisissez un fichier de dégradé (.grd ou .ggr).
+	Save Group to Document	Enregistrer le groupe dans le document
+	Load Document Palettes	Charger les palettes du document

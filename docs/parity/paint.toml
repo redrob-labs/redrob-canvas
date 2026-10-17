@@ -1295,8 +1295,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Import .gpl, .riff, .act, .psp, .aco, .xml (Scribus), .sbz, .ase, .acb; native .kpl; stored in resource folder or in the document."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs"
-gap = ".aco and .ase only; no document-stored palettes"
+ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/doc/src/lib.rs, crafts/photocraft/crates/format/src/manifest.rs"
+gap = ".aco/.ase import plus palettes stored in the document (saved in .rphoto, undoable); no .gpl/.riff/.act/.psp/.xml/.sbz/.acb readers"
 priority = 1
 
 [[feature]]
@@ -2255,8 +2255,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Swatch grid with groups, column count, rename, spot colours, names and IDs, stored in resources or in the document."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs"
-gap = "groups, rename, import/export; no per-document palettes or spot flag"
+ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs"
+gap = "groups, rename, import/export, spot flag kept, per-document palettes (Save Group to Document / Load Document Palettes); no column-count setting or swatch IDs"
 priority = 1
 
 [[feature]]

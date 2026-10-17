@@ -117,6 +117,121 @@ fn swatch_json(conv: &SwatchConv, sw: &Swatch) -> Value {
     v
 }
 
+// ------------------------------------------------------------------ document palettes
+
+/// Most palettes a document holds.
+pub const MAX_DOC_PALETTES: usize = 256;
+
+fn doc_swatch(sw: &Swatch) -> redrob_photo_doc::DocSwatch {
+    redrob_photo_doc::DocSwatch { name: sw.name.clone(), color: serde_json::to_value(sw.color).unwrap_or(Value::Null), spot: sw.kind == SwatchKind::Spot }
+}
+
+fn library_swatch(sw: &redrob_photo_doc::DocSwatch) -> Option<Swatch> {
+    let color: SwatchColor = serde_json::from_value(sw.color.clone()).ok()?;
+    Some(Swatch { name: sw.name.clone(), color, kind: if sw.spot { SwatchKind::Spot } else { SwatchKind::Process } })
+}
+
+/// `swatches.saveToDocument`: copy a library group into the active document as a palette (one
+/// of the same name is replaced). A history step: the palette is part of the document.
+fn save_to_document(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.saveToDocument";
+    let group = name_param(p, "group", CMD)?.ok_or_else(|| bad(CMD, "missing `group`"))?;
+    let gi = group_of(s, &group, CMD)?;
+    let palette_name = name_param(p, "palette", CMD)?.unwrap_or_else(|| group.clone());
+    let palette = redrob_photo_doc::DocPalette { name: palette_name.clone(), swatches: s.presets.swatches[gi].items.iter().map(doc_swatch).collect() };
+    let count = palette.swatches.len();
+    let n = s.edit("Save Palette to Document", |d, _| {
+        match d.palettes.iter_mut().find(|x| x.name == palette.name) {
+            Some(x) => *x = palette,
+            None => {
+                if d.palettes.len() >= MAX_DOC_PALETTES {
+                    return Err(bad(CMD, format!("a document holds at most {MAX_DOC_PALETTES} palettes")));
+                }
+                d.palettes.push(palette);
+            }
+        }
+        Ok(d.palettes.len())
+    })?;
+    Ok(json!({"palette": palette_name, "count": count, "palettes": n}))
+}
+
+/// `swatches.loadFromDocument`: copy the active document's palettes (or the one named) into the
+/// library as groups.
+fn load_from_document(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.loadFromDocument";
+    let only = name_param(p, "palette", CMD)?;
+    let doc = s.active().ok_or(crate::EngineError::NoDocument)?.doc.clone();
+    let palettes: Vec<&redrob_photo_doc::DocPalette> = doc.palettes.iter().filter(|x| only.as_deref().is_none_or(|n| n == x.name)).collect();
+    if palettes.is_empty() {
+        return Err(bad(CMD, match only {
+            Some(n) => format!("the document has no palette \"{n}\""),
+            None => "the document has no palettes".to_string(),
+        }));
+    }
+    let incoming: usize = palettes.iter().map(|x| x.swatches.len()).sum();
+    if s.presets.swatches.len() + palettes.len() > MAX_GROUPS || total(&s.presets.swatches) + incoming > MAX_SWATCHES {
+        return Err(bad(CMD, "the Swatches panel is full"));
+    }
+    let mut groups = Vec::new();
+    let mut skipped = 0;
+    for pal in palettes {
+        let name = unique_group(&s.presets.swatches, &pal.name);
+        let mut items = Vec::with_capacity(pal.swatches.len());
+        for sw in &pal.swatches {
+            match library_swatch(sw) {
+                Some(mut sw) => {
+                    sw.name = unique_name(&s.presets.swatches, &clip(&sw.name));
+                    items.push(sw);
+                }
+                None => skipped += 1,
+            }
+        }
+        s.presets.swatches.push(Group::new(&name, items));
+        groups.push(name);
+    }
+    s.presets_changed();
+    Ok(json!({"groups": groups, "count": incoming - skipped, "skipped": skipped}))
+}
+
+/// `swatches.deleteDocumentPalette`: remove a palette from the active document.
+fn delete_document_palette(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.deleteDocumentPalette";
+    let name = name_param(p, "palette", CMD)?.ok_or_else(|| bad(CMD, "missing `palette`"))?;
+    let n = s.edit("Delete Document Palette", |d, _| {
+        let before = d.palettes.len();
+        d.palettes.retain(|x| x.name != name);
+        if d.palettes.len() == before {
+            return Err(bad(CMD, format!("the document has no palette \"{name}\"")));
+        }
+        Ok(d.palettes.len())
+    })?;
+    Ok(json!({"palettes": n}))
+}
+
+/// `swatches.documentPalettes`: the active document's palettes.
+fn document_palettes(s: &mut Session, _: &Value) -> Result<Value> {
+    let conv = SwatchConv::new(s);
+    let doc = &s.active().ok_or(crate::EngineError::NoDocument)?.doc;
+    let palettes: Vec<Value> = doc
+        .palettes
+        .iter()
+        .map(|pal| {
+            json!({"name": pal.name, "swatches": pal.swatches.iter().map(|sw| match library_swatch(sw) {
+                Some(l) => swatch_json(&conv, &l),
+                None => json!({"name": sw.name}),
+            }).collect::<Vec<_>>()})
+        })
+        .collect();
+    Ok(json!({"palettes": palettes, "count": doc.palettes.len()}))
+}
+
+fn has_doc(s: &Session) -> std::result::Result<(), String> {
+    s.active().map(|_| ()).ok_or_else(|| "no document open".into())
+}
+fn has_doc_palettes(s: &Session) -> std::result::Result<(), String> {
+    s.active().filter(|st| !st.doc.palettes.is_empty()).map(|_| ()).ok_or_else(|| "the document has no palettes".into())
+}
+
 // ------------------------------------------------------------------ commands
 
 fn list(s: &mut Session, _: &Value) -> Result<Value> {
@@ -968,6 +1083,46 @@ pub fn specs() -> Vec<CommandSpec> {
             enabled: always,
             run: from_gradient,
             journal: true,
+        },
+        CommandSpec {
+            id: "swatches.saveToDocument",
+            label: "Save Swatch Group to Document",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"group":name,"palette":name?=group} → {palette,count,palettes} — the group becomes a palette stored in the document (a history step)"##,
+            enabled: has_doc,
+            run: save_to_document,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.loadFromDocument",
+            label: "Load Document Palettes",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"palette":name?=all} → {groups,count,skipped} — the document's palettes join the library as groups"##,
+            enabled: has_doc_palettes,
+            run: load_from_document,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.deleteDocumentPalette",
+            label: "Delete Document Palette",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"palette":name} → {palettes}"##,
+            enabled: has_doc_palettes,
+            run: delete_document_palette,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.documentPalettes",
+            label: "List Document Palettes",
+            menu: &[],
+            shortcut: None,
+            params: "{} → {palettes:[{name,swatches}],count}",
+            enabled: has_doc,
+            run: document_palettes,
+            journal: false,
         },
         CommandSpec {
             id: "swatches.export",

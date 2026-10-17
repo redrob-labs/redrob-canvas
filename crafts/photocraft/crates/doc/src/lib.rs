@@ -938,6 +938,28 @@ pub struct Document {
     /// How the document's lossy file was encoded (its JPEG quality, WebP lossy or lossless), so
     /// a save writes it back the same way rather than at fixed defaults.
     pub file_encoding: FileEncoding,
+    /// Palettes stored with the document (Window › Swatches › Save Group to Document): swatch
+    /// groups that travel with the file instead of the preset library.
+    pub palettes: Vec<DocPalette>,
+}
+
+/// A palette kept in the document: a named list of swatches.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DocPalette {
+    pub name: String,
+    pub swatches: Vec<DocSwatch>,
+}
+
+/// One swatch of a document palette. `color` is the swatch colour as the Swatches library
+/// serialises it (`{"model": …, "values": …}`), so every colour model the library knows survives
+/// the round trip; `spot` marks a spot colour.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DocSwatch {
+    pub name: String,
+    pub color: serde_json::Value,
+    pub spot: bool,
 }
 
 /// The encoder settings a document's file was opened or saved with: what File › Save and the
@@ -1002,6 +1024,7 @@ impl Document {
             variables: Variables::default(),
             timeline: None,
             file_encoding: FileEncoding::default(),
+            palettes: Vec::new(),
         }
     }
 

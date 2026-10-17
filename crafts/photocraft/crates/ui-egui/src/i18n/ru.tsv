@@ -3321,3 +3321,5 @@ curves	Smooth	Сгладить
 	Delete All	Удалить все
 	Mirror painting across the vertical axis	Зеркальное рисование по вертикальной оси
 	Choose a gradient file (.grd or .ggr).	Выберите файл градиента (.grd или .ggr).
+	Save Group to Document	Сохранить группу в документе
+	Load Document Palettes	Загрузить палитры документа
