@@ -91,6 +91,7 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
         files,
         non_scaling: found.non_scaling,
         data: found.data,
+        descriptions: found.descriptions,
         sublayers: found.sublayers,
         sublayer_groups: HashSet::new(),
         screen: k,
@@ -373,6 +374,8 @@ struct Importer {
     non_scaling: HashSet<String>,
     /// The `data-*` attributes of elements, by id ([`user_data`]).
     data: HashMap<String, Vec<(String, String)>>,
+    /// The `<title>` and `<desc>` of elements, by id ([`descriptions`]).
+    descriptions: HashMap<String, (String, String)>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
     /// The groups made of them, made sublayers where they sit in a layer ([`promote_sublayers`]).
@@ -489,6 +492,8 @@ struct Found {
     non_scaling: HashSet<String>,
     /// The `data-*` attributes of elements, by id ([`user_data`]).
     data: HashMap<String, Vec<(String, String)>>,
+    /// The `<title>` and `<desc>` of elements (Object Properties), by id ([`descriptions`]).
+    descriptions: HashMap<String, (String, String)>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
     warnings: Vec<String>,
@@ -587,9 +592,23 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
     let not = svg.contains(":not(");
     if !css_transform
         && !not
-        && !["<a", "display", "<use", ":use", "<symbol", ":symbol", "<image", ":image", vector_effect::NON_SCALING, "data-", "groupmode"]
-            .iter()
-            .any(|t| svg.contains(t))
+        && ![
+            "<a",
+            "display",
+            "<use",
+            ":use",
+            "<symbol",
+            ":symbol",
+            "<image",
+            ":image",
+            vector_effect::NON_SCALING,
+            "data-",
+            "groupmode",
+            "<title",
+            "<desc",
+        ]
+        .iter()
+        .any(|t| svg.contains(t))
     {
         return (svg.into(), found);
     }
@@ -605,6 +624,21 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
             let data = user_data(e);
             if !data.is_empty() {
                 found.data.insert(edits.id(svg, e), data);
+            }
+        }
+    }
+    if svg.contains("<title") || svg.contains("<desc") {
+        for e in elements().filter(|e| OBJECT_ELEMENTS.contains(&e.tag_name().name())) {
+            if let Some(d) = descriptions(e) {
+                // A group holding one object besides them (how our export wraps a described
+                // object, and a group usvg may dissolve) describes that object too.
+                let mut inner = e.children().filter(|c| c.is_element() && !matches!(c.tag_name().name(), "title" | "desc"));
+                if let (Some(only), None, "g") = (inner.next(), inner.next(), e.tag_name().name())
+                    && OBJECT_ELEMENTS.contains(&only.tag_name().name())
+                {
+                    found.descriptions.insert(edits.id(svg, only), d.clone());
+                }
+                found.descriptions.insert(edits.id(svg, e), d);
             }
         }
     }
@@ -706,6 +740,18 @@ fn user_data(e: XNode) -> Vec<(String, String)> {
         .take(MAX_DATA)
         .map(|(k, v)| (k.to_string(), v.to_string()))
         .collect()
+}
+
+/// The `<title>` and `<desc>` children of element `e` (Object Properties), if it has either.
+fn descriptions(e: XNode) -> Option<(String, String)> {
+    let text = |tag: &str| {
+        e.children()
+            .find(|c| c.is_element() && c.tag_name().name() == tag)
+            .map(|c| c.descendants().filter_map(|t| t.text()).collect::<String>().trim().chars().take(4096).collect::<String>())
+            .unwrap_or_default()
+    };
+    let (title, desc) = (text("title"), text("desc"));
+    (!(title.is_empty() && desc.is_empty())).then_some((title, desc))
 }
 
 /// Make `n` link to `url`, unless it links somewhere already (an inner link wins).
@@ -861,6 +907,17 @@ impl Importer {
     fn keep_data(&self, id: &str, n: &mut Node) {
         if let Some(data) = self.data.get(id).filter(|_| n.extras().attrs.as_ref().is_none_or(|a| a.data.is_empty())) {
             n.edit_attrs(|a| a.data = data.clone());
+        }
+        // Its title and description too, unless an inner element gave it some.
+        if let Some((title, desc)) = self.descriptions.get(id) {
+            n.edit_attrs(|a| {
+                if a.title.is_empty() {
+                    a.title.clone_from(title);
+                }
+                if a.description.is_empty() {
+                    a.description.clone_from(desc);
+                }
+            });
         }
     }
 
