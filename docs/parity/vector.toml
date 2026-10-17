@@ -501,3 +501,1084 @@ ours = "full"
 ours_where = "crafts/vectorcraft/crates/ui-egui/src/free_transform.rs, crafts/vectorcraft/crates/tools/src/xform/free.rs"
 gap = ""
 priority = 1
+
+# ---------------------------------------------------------------------------------------------
+# node editing
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-NODE-001"
+group = "node"
+name = "Node types: cusp, smooth, symmetric, auto-smooth"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-types.html"
+behaviour = "Each node is one of four kinds shown by its marker shape: cusp (independent handles), smooth (collinear handles of free length), symmetric (collinear, equal length), auto-smooth (handles recomputed from neighbours when the node moves); toolbar buttons and Shift+C/S/Y/A convert, Ctrl-click cycles."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs, crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.convertAnchor)"
+gap = "corner and smooth only; no symmetric or auto-smooth node kinds"
+priority = 1
+
+[[feature]]
+id = "VE-NODE-002"
+group = "node"
+name = "Insert node (midpoint, by double-click, at min/max X/Y)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
+behaviour = "Insert adds a node in the middle of every selected segment; a dropdown also inserts at the segment's extreme X or Y; double-clicking a segment adds a node there."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.insertAnchor, path.appendAnchor)"
+gap = "Add Anchor Points inserts midpoints and the Add Anchor tool inserts at a click; no insert-at-extremum"
+priority = 1
+
+[[feature]]
+id = "VE-NODE-003"
+group = "node"
+name = "Delete node preserving shape"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
+behaviour = "Delete removes selected nodes and refits the neighbouring handles so the curve changes as little as possible; Ctrl+Delete removes without refitting; 1.3 improved the shape preservation."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.deleteAnchors, path.removeAnchors)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-NODE-004"
+group = "node"
+name = "Join nodes / join with segment"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
+behaviour = "Two selected end nodes are merged into one node (positioned between them) or connected by a new straight segment; works across subpaths of one path."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.join, path.average), crafts/vectorcraft/crates/tools/src/catalog.rs (join tool)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-NODE-005"
+group = "node"
+name = "Break path at node / delete segment"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
+behaviour = "Break splits the path at a selected node into two end nodes; delete segment removes the segment between two selected nodes leaving an open path."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.cutAtAnchors, path.eraseSegments), crafts/vectorcraft/crates/tools/src/cut.rs (scissors)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-NODE-006"
+group = "node"
+name = "Segment type: make line / make curve"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
+behaviour = "Selected segments are converted to straight lines (handles removed) or to curves (handles created so the shape is unchanged, then editable)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.setHandle, path.convertAnchors)"
+gap = "straightening happens by converting the end anchors to corners; no explicit per-segment line/curve toggle"
+priority = 2
+
+[[feature]]
+id = "VE-NODE-007"
+group = "node"
+name = "Node selection: rubber band, Tab walk, grow by Page keys, nearest"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Rubber band selects nodes (Shift adds), Alt-drag touch-selects along a stroke, Tab/Shift+Tab walk nodes, Ctrl+A selects all nodes of the path, Ctrl+Alt+A all across subpaths, PgUp/PgDn grow or shrink the selection spatially or along the path, ! inverts."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs"
+gap = "rubber band and Shift-add only; no Tab walk, spatial grow or lasso touch select for nodes (Lasso tool selects anchors by a freehand region)"
+priority = 2
+
+[[feature]]
+id = "VE-NODE-008"
+group = "node"
+name = "Transform selected nodes as a set (scale/rotate/flip handles)"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "A toggle shows a transformation handle box around the selected nodes so they can be scaled, rotated or skewed together; < > [ ] keys scale/rotate the node set; H/V flip the nodes."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/xform.rs, crafts/vectorcraft/crates/tools/src/xform/transform.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-NODE-009"
+group = "node"
+name = "Align and distribute nodes"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/align-and-distribute.html"
+behaviour = "With the node tool active the Align and Distribute dialog aligns the selected nodes on a horizontal or vertical line and distributes them evenly; Ctrl+Alt+arrow keys align nodes directly."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/align.rs, crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.average)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-NODE-010"
+group = "node"
+name = "Node toolbar X/Y fields and handle visibility toggles"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/editing-paths.html"
+behaviour = "The node toolbar shows the X/Y of the selected node(s) in a chosen unit for numeric editing, plus toggles: show clipping path, show mask, show transform handles, show Bezier handles, show path outline, edit the live path effect parameters on canvas."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/control.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Show/Hide Edges, Direction Handles)"
+gap = "no numeric X/Y for a single anchor in the control bar; handle visibility is a view preference"
+priority = 2
+
+[[feature]]
+id = "VE-NODE-011"
+group = "node"
+name = "Edit clip path and mask in place"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/clipping-and-masking.html"
+behaviour = "With the node tool the clipping path or mask of the selected object is shown (green/blue outline) and its nodes edited without releasing it."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/maskedit.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Edit Clipping Path, Edit Contents)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-NODE-012"
+group = "node"
+name = "On-canvas corner (fillet/chamfer) editing"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#On-canvas_Corners_Editing"
+behaviour = "A node-toolbar button adds the Corners path effect and shows per-node knots that drag a fillet or chamfer radius on any path node, with inverse and chamfer variants via modifier keys."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/corners.rs, crafts/vectorcraft/crates/doc/src/corners.rs"
+gap = "live corners are round, inverted round or chamfer per corner; stored as a path property, not an effect"
+priority = 1
+
+[[feature]]
+id = "VE-NODE-013"
+group = "node"
+name = "On-canvas pattern editing"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#On-Canvas_Pattern_Editing"
+behaviour = "When a pattern-filled object is selected with the node tool, handles move, scale and rotate the pattern tile independently of the object; Shift applies to stroke pattern."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/patterncmds.rs, crafts/vectorcraft/crates/ui-egui/src/panels/pattern_options.rs"
+gap = "pattern transform via Transform dialog's Transform Patterns option and Edit Pattern mode, not drag handles on the fill"
+priority = 3
+
+[[feature]]
+id = "VE-NODE-014"
+group = "node"
+name = "Edit blur on canvas"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Edit_Blur_on_Canvas"
+behaviour = "A simple blur filter on the selected object shows a draggable knot in the node tool that changes the blur radius."
+ours = "none"
+ours_where = ""
+gap = "blur radius edited only in the Appearance panel / effect dialog"
+priority = 3
+
+[[feature]]
+id = "VE-NODE-015"
+group = "node"
+name = "Live shape handles in the node tool"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/shape-tools.html"
+behaviour = "Rectangles, ellipses, stars and spirals keep their defining parameters and show their own handles (corner radius, arc angles, star tips) in the node tool until converted to a path."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (LiveShape: Rectangle, Ellipse, Polygon), crafts/vectorcraft/crates/tools/src/corners.rs"
+gap = "rectangles, ellipses and polygons are live (size, corners, sides); stars and spirals become plain paths"
+priority = 1
+
+# ---------------------------------------------------------------------------------------------
+# path menu
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-PATH-001"
+group = "path"
+name = "Object to path"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/objects-to-paths.html"
+behaviour = "Converts live shapes, text and other objects into plain Bezier paths (text becomes a group of glyph paths); 1.3 keeps the original object as a hidden 'original' when requested by some effects."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/expand.rs, crafts/vectorcraft/crates/engine/src/cmd/typecmd.rs (Create Outlines)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PATH-002"
+group = "path"
+name = "Stroke to path"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/objects-to-paths.html"
+behaviour = "Replaces the stroke by a filled path of its outline, honouring width, joins, caps, dashes and markers; since 1.0 the fill is kept as a separate path in a group so nothing is lost."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/stroke/outline.rs, crafts/vectorcraft/crates/engine/src/cmd/pathops.rs (path.outlineStroke)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PATH-003"
+group = "path"
+name = "Union"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/boolean-operations.html"
+behaviour = "Merges all selected paths into one path covering their combined area; the style of the bottom object is kept."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (Unite), crafts/vectorcraft/crates/ui-egui/src/panels/pathfinder.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PATH-004"
+group = "path"
+name = "Difference"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/boolean-operations.html"
+behaviour = "Subtracts the top path from the bottom path (exactly two objects)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (MinusFront, MinusBack)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PATH-005"
+group = "path"
+name = "Intersection"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/boolean-operations.html"
+behaviour = "Keeps only the area common to all selected paths."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (Intersect)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PATH-006"
+group = "path"
+name = "Exclusion"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/boolean-operations.html"
+behaviour = "Keeps the areas covered by an odd number of the selected paths (XOR)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (Exclude)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-PATH-007"
+group = "path"
+name = "Division"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/boolean-operations.html"
+behaviour = "Cuts the bottom path into pieces along the top path's outline; every piece becomes its own filled path."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (Divide), crafts/vectorcraft/crates/engine/src/cmd/cut.rs (Divide Objects Below)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-PATH-008"
+group = "path"
+name = "Cut path"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/boolean-operations.html"
+behaviour = "Cuts the bottom path's stroke where the top path crosses it, leaving open stroked segments without fill."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (Outline, Trim), crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.knife, path.lineCut)"
+gap = "Pathfinder Outline splits strokes at all intersections of all objects; no 'cut bottom by top only' variant"
+priority = 3
+
+[[feature]]
+id = "VE-PATH-009"
+group = "path"
+name = "Combine / Break apart"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/boolean-operations.html"
+behaviour = "Combine makes one path with several subpaths (holes follow the fill rule); Break apart splits every subpath into its own path."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/object.rs (Make/Release Compound Path)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PATH-010"
+group = "path"
+name = "Split path (non-overlapping subpaths)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Path_Operations"
+behaviour = "Like break apart but keeps subpaths that lie inside another (holes) together, so letters keep their counters."
+ours = "none"
+ours_where = ""
+gap = "Release Compound Path always separates every subpath"
+priority = 3
+
+[[feature]]
+id = "VE-PATH-011"
+group = "path"
+name = "Fracture"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Fracture_Paths"
+behaviour = "Splits all selected overlapping paths into non-overlapping pieces, each piece keeping the style of the topmost path that covered it."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (Divide)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-PATH-012"
+group = "path"
+name = "Flatten"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Flatten_Paths"
+behaviour = "Removes the hidden parts of overlapping paths so the visible picture is unchanged but nothing overlaps."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (Merge, Trim)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-PATH-013"
+group = "path"
+name = "Inset / Outset by preference step"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Ctrl+( and Ctrl+) shrink or grow the path outline by the preference step (default 2 px), Alt variants by one pixel; applies to the path geometry, not a stroke."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/pathops/src/offset.rs, crafts/vectorcraft/crates/engine/src/cmd/pathops.rs (Offset Path)"
+gap = "offset is entered in a dialog, not a keyboard step"
+priority = 2
+
+[[feature]]
+id = "VE-PATH-014"
+group = "path"
+name = "Dynamic offset"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Turns the path into an offset object with a draggable handle in the node tool that sets the inset/outset distance live; the original can later be restored."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/effectcmd.rs (path.offsetPath live effect)"
+gap = "live Offset Path effect is edited numerically in the Appearance panel; no on-canvas drag handle"
+priority = 3
+
+[[feature]]
+id = "VE-PATH-015"
+group = "path"
+name = "Linked offset"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Creates an offset object that stays linked to the source path and follows its edits, with the same draggable distance handle."
+ours = "none"
+ours_where = ""
+gap = "no offset object linked to another path (the live effect lives on the object itself)"
+priority = 3
+
+[[feature]]
+id = "VE-PATH-016"
+group = "path"
+name = "Simplify"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Ctrl+L reduces the node count of the selection by a preference threshold; pressing it repeatedly within a short time increases the strength; also offered live as the Simplify path effect."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/pathops.rs (object.path.simplify), crafts/vectorcraft/crates/pathops/src/fit.rs"
+gap = "dialog with curve precision/angle threshold/straight-lines options; no accelerating repeat"
+priority = 1
+
+[[feature]]
+id = "VE-PATH-017"
+group = "path"
+name = "Reverse path direction"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Flips the node order of the selected paths so markers, text on path and dash phase start at the other end."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.reverse)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-PATH-018"
+group = "path"
+name = "Fill between paths (path menu)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1"
+behaviour = "Creates a new path filling the region bounded by the selected paths, kept live by the Fill between many effect."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/pathops/src/planar.rs (Live Paint / Shape Builder faces)"
+gap = "Shape Builder extracts a bounded region as a static path; no linked live fill"
+priority = 3
+
+[[feature]]
+id = "VE-PATH-019"
+group = "path"
+name = "Remove overlaps (arrange)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/align-and-distribute.html"
+behaviour = "Moves the selected objects apart by the smallest amount so their bounding boxes no longer overlap, with optional horizontal and vertical gaps."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-PATH-020"
+group = "path"
+name = "Make a bitmap copy"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Alt+B renders the selection to a PNG at the preference resolution and inserts it as an image above the originals."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Rasterize)"
+gap = "Rasterize replaces the selection; keep-original needs a duplicate first"
+priority = 2
+
+[[feature]]
+id = "VE-PATH-021"
+group = "path"
+name = "Path effects (apply, stack, edit, remove, paste)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "The Path Effects dialog adds any number of live effects to a path, group or shape, each with its own parameter panel, visibility toggle, drag-reorder, favourites and a search gallery; effects can be copied and pasted between objects, flattened (Object to Path), or removed; the original path remains editable underneath."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/appearance.rs, crafts/vectorcraft/crates/doc/src/appearance.rs (Effect stack)"
+gap = "effects stack in the Appearance panel per fill/stroke/object; no searchable gallery"
+priority = 1
+evidence = "docs/parity/evidence/VEC-path-effects.png"
+
+# ---------------------------------------------------------------------------------------------
+# live path effects (every effect in the 1.4 gallery)
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-LPE-001"
+group = "lpe"
+name = "Attach path"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Links the start or end of the path to a point on another path so that it follows when the other path is edited; optional curve handles at the attachment."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-002"
+group = "lpe"
+name = "Bend"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Deforms the object along a bend path that is drawn or pasted; the bend path is edited on canvas with the node tool; width scaling and original-width options."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/live.rs (Envelope with WarpStyle), crafts/vectorcraft/crates/effects/src/warp.rs"
+gap = "fifteen fixed warp styles with bend/distortion sliders and a freehand envelope mesh; no 'bend along an arbitrary drawn path'"
+priority = 2
+
+[[feature]]
+id = "VE-LPE-003"
+group = "lpe"
+name = "Bounding box"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Replaces the path by a live rectangle tracking the bounding box of a linked object (visual or geometric)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-004"
+group = "lpe"
+name = "BSpline"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Interprets the path's nodes as B-spline control points producing a smooth curve that never passes through them; a weight per node and 'apply without weight' option; also a pen/pencil drawing mode."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-005"
+group = "lpe"
+name = "Boolean operation (live)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1"
+behaviour = "Applies union, difference, intersection, exclusion, cut or division between the path and a linked operand path non-destructively; the operand stays editable and can be hidden."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/group.rs (PATHFINDER_EFFECTS on groups)"
+gap = "live pathfinder effects act on a group's members rather than one linked operand"
+priority = 2
+
+[[feature]]
+id = "VE-LPE-006"
+group = "lpe"
+name = "Clone original"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Makes the path a live copy of another path's geometry (and optionally its style or whole attribute set) so edits to the source propagate; the copy can carry its own style and further effects."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/symbols.rs, crafts/vectorcraft/crates/doc/src/node.rs (SymbolInstance)"
+gap = "symbol instances copy the whole symbol; no per-path geometry link with independent style"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-007"
+group = "lpe"
+name = "Construct grid"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "From a path of three nodes builds a (possibly skewed) grid of the chosen number of rows and columns."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/tools/src/extra.rs (Rectangular Grid, Polar Grid tools)"
+gap = "grids are drawn as static paths by a tool; not live from a three-node path"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-008"
+group = "lpe"
+name = "Corners (fillet / chamfer)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Rounds or chamfers the corners of a path with a per-node radius or a global one, in absolute units or a percentage; fillet, inverse fillet, chamfer and inverse chamfer; chamfer steps; knots on canvas."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/corners.rs, crafts/vectorcraft/crates/effects/src/stylize.rs (stylize.roundCorners)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-LPE-009"
+group = "lpe"
+name = "Dashed stroke"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Turns the path into a chosen number of dashes per segment (or by length) with hole factor, half-start/half-end, split at segment ends; the result is real geometry so the dashes can be styled further."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/stroke/dash.rs, crafts/vectorcraft/crates/doc/src/appearance.rs (dash arrays, Align Dashes to Corners)"
+gap = "dashing is a stroke attribute (with corner alignment) and can be outlined; no 'N dashes per segment' geometry effect"
+priority = 2
+
+[[feature]]
+id = "VE-LPE-010"
+group = "lpe"
+name = "Ellipse by 5 points"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Fits an ellipse through the first five nodes of the path."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-011"
+group = "lpe"
+name = "Ellipse from points"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Builds a circle or ellipse (optionally an arc, slice or isometric circle) from 2 to 5 nodes with several construction methods; draws optional axes and frame."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-012"
+group = "lpe"
+name = "Embroidery stitch"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Connects the subpaths of a path into one continuous stitching path, with ordering, connection and jump options for machine embroidery."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-013"
+group = "lpe"
+name = "Envelope deformation"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Deforms the object between four editable bend paths (top, right, bottom, left); each path can be enabled or disabled."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/live.rs (EnvelopeKind), crafts/vectorcraft/crates/engine/src/cmd/distortcmds.rs (Envelope Distort: Make with Warp/Mesh/Top Object)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-014"
+group = "lpe"
+name = "Fill between many"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1"
+behaviour = "The path becomes the live fill of the region enclosed by a list of linked paths, following them as they move; join and close options, and an option to keep the fill when the effect is flattened."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-015"
+group = "lpe"
+name = "Fill between strokes"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Fills the area between two linked stroked paths, optionally reversing one of them and closing the result."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-016"
+group = "lpe"
+name = "Gears"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Turns a chain of nodes into a chain of meshing gears, each node giving a gear's centre, with teeth count and pressure angle."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-017"
+group = "lpe"
+name = "Hatches (rough)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Fills the shape with hand-drawn-looking hatch lines; frequency, growth, direction, randomness, bend and thickness variation, with on-canvas handles for direction and bend."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/stylize.rs (stylize.scribble)"
+gap = "Scribble gives sketchy strokes along a direction with curviness and spacing variation but no bend handle or thickness variation"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-018"
+group = "lpe"
+name = "Interpolate points"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Draws a smooth curve through the path's nodes using an interpolator (cubic Bezier fit, centripetal Catmull-Rom, spiro, linear)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-019"
+group = "lpe"
+name = "Interpolate sub-paths"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/tutorials/interpolate/tutorial-interpolate.html"
+behaviour = "Generates a set number of intermediate shapes between the subpaths of a path (or via the Interpolate extension, between two selected paths), optionally along a trajectory and with style interpolation."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/live.rs (Blend), crafts/vectorcraft/crates/engine/src/cmd/live.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-020"
+group = "lpe"
+name = "Join type"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Replaces the stroke by an outlined path whose joins can be of extra kinds (round, bevel, miter, extrapolated arc variants) and whose width is editable live."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (LineJoin), crafts/vectorcraft/crates/effects/src/stroke/outline.rs"
+gap = "standard miter/round/bevel joins and Outline Stroke; no extrapolated-arc joins"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-021"
+group = "lpe"
+name = "Knot"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Adds over/under gaps where the path crosses itself (or other subpaths) so it reads as a knot; gap width, switcher knot on canvas, interrupt width."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-022"
+group = "lpe"
+name = "Lattice deformation 2"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Deforms the object by a 5x5 grid of control points that are dragged on canvas; horizontal/vertical mirroring of the lattice; live update."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/live.rs (Envelope mesh), crafts/vectorcraft/crates/tools/src/distort/arap.rs, crafts/vectorcraft/crates/tools/src/distort/puppet.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-023"
+group = "lpe"
+name = "Measure segments"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Draws dimension lines with length labels for every segment of the path (or only selected ones), with unit, precision, scale, offsets, arrows, text style and the option to hide collinear measurements."
+ours = "none"
+ours_where = ""
+gap = "Measure tool shows a reading but writes no dimension objects"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-024"
+group = "lpe"
+name = "Mirror symmetry"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Mirrors the path across a line (free, horizontal/vertical page or bbox axes) with an on-canvas line handle; options to discard the original, split and fuse at the axis, and keep the result as separate paths."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (Repeat mirror), crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Repeat Options)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-025"
+group = "lpe"
+name = "Offset (live)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Offset"
+behaviour = "Insets or outsets the path by a distance with a draggable knot; join type, miter limit, unit, and 'update on knot move only' for speed; 1.2 improved closed-shape handling."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lib.rs (path.offsetPath), crafts/vectorcraft/crates/pathops/src/offset.rs"
+gap = "no on-canvas knot"
+priority = 2
+
+[[feature]]
+id = "VE-LPE-026"
+group = "lpe"
+name = "Pattern along path"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Stretches or repeats a pattern path (drawn, pasted or linked) along the skeleton path; single/single stretched/repeated/repeated stretched, width, spacing, normal and tangential offsets, pattern vertical, fuse nearby ends."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/brushsym.rs (art and pattern brushes), crafts/vectorcraft/crates/ui-egui/src/panels/brushes.rs"
+gap = "art brush stretches or repeats a saved brush along the path; the pattern cannot be an arbitrary live linked path"
+priority = 2
+
+[[feature]]
+id = "VE-LPE-027"
+group = "lpe"
+name = "Perspective / envelope"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Four draggable corner knots deform the object either as a true perspective projection or as a bilinear envelope; horizontal/vertical mirror options."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/distort.rs (distort.freeDistort), crafts/vectorcraft/crates/tools/src/distort/perspective.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-028"
+group = "lpe"
+name = "Power clip"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Applied to a clipped group it keeps the clip editable as a live effect, with inverse clip and 'hide clip' options so the clip path can be reused after release."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/maskedit.rs, crafts/vectorcraft/crates/doc/src/clipnest.rs"
+gap = "clipping masks are editable in place but there is no inverse clip option"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-029"
+group = "lpe"
+name = "Power mask"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Same for masks: keeps the mask editable, inverts it, optionally adds a background and hides the mask."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/opacitymask.rs, crafts/vectorcraft/crates/ui-egui/src/panels/transparency.rs"
+gap = "opacity masks have clip and invert toggles; no background option"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-030"
+group = "lpe"
+name = "Power stroke"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Power_Stroke_LPE"
+behaviour = "Variable-width stroke defined by width knots dragged along the path; interpolator type, start/end cap shapes (zero width, square, round, peak, butt), join type, miter limit, scale width by stroke, and Ctrl-click to add/remove width points."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/distort/width.rs, crafts/vectorcraft/crates/effects/src/stroke/width.rs, crafts/vectorcraft/crates/doc/src/appearance.rs (WidthProfile, SavedProfile)"
+gap = "caps follow the stroke's cap setting; no peak cap"
+priority = 1
+
+[[feature]]
+id = "VE-LPE-031"
+group = "lpe"
+name = "Rotate copies"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Rotate_copies"
+behaviour = "Repeats the path N times around a centre knot with starting angle, rotation angle per copy, gap, mirror copies, split and fuse options, and the result can be kept as separate paths."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (Repeat radial), crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-032"
+group = "lpe"
+name = "Roughen"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Roughen_LPE"
+behaviour = "Randomly displaces nodes and handles; subdivision by segment count or length, global/local displacement, handle shift, spray tool friendly mode, fixed seed."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/distort.rs (distort.roughen)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-033"
+group = "lpe"
+name = "Ruler"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Ruler"
+behaviour = "Draws tick marks along the path at a given interval with major/minor marks, offset, mark direction and length; 1.4 adds unit-aware mark distance."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-034"
+group = "lpe"
+name = "Show handles"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Renders the path's nodes and Bezier handles as visible geometry (for tutorials), with sizes and options for which parts to draw."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-035"
+group = "lpe"
+name = "Simplify (live)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Live node reduction with steps, threshold, smooth angles, helper size and 'paths separately' options; also used by the pencil tool's interactive simplify."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/pathops.rs (object.path.simplify)"
+gap = "simplify is a one-shot command, not a live effect"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-036"
+group = "lpe"
+name = "Sketch"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Replaces the path by several overlapping pencil-like strokes with length, overlap, displacement, tremble and construction-line parameters."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/stylize.rs (stylize.scribble), crafts/vectorcraft/crates/effects/src/pixel/brushstrokes.rs"
+gap = "Scribble is a fill-area hatching; no stroke-following sketch lines"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-037"
+group = "lpe"
+name = "Slice"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1"
+behaviour = "Splits the object along a draggable line into two live halves (with recursive slicing), each half keeping its own style; allows 'split and fuse' back."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.lineCut, path.mirrorCut)"
+gap = "Line Cut and Mirror & Cut tools cut destructively"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-038"
+group = "lpe"
+name = "Spiro spline"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Interprets the nodes as a Spiro curve: smooth nodes become G2-continuous clothoid segments, corner nodes stay sharp; also a pen/pencil drawing mode."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-LPE-039"
+group = "lpe"
+name = "Stitch sub-paths"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Connects consecutive subpaths by a number of stitch lines whose shape is a pattern path, with start/end spacing and variation."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-040"
+group = "lpe"
+name = "Taper stroke"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Taper_Stroke"
+behaviour = "Outlines the stroke with tapering ends: width, start/end taper lengths (knots on canvas), taper smoothing, join type, and in 1.4 the taper direction and per-subpath handling."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (WidthProfile presets), crafts/vectorcraft/crates/effects/src/stroke/width.rs"
+gap = "width profile presets taper the ends; no separate taper-length knots or smoothing parameter"
+priority = 2
+
+[[feature]]
+id = "VE-LPE-041"
+group = "lpe"
+name = "Tiling"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Tiling"
+behaviour = "Repeats the object in rows and columns with gaps, offsets, mirroring per row/column, rotation and scale increments, interpolation of style, and a 'split' option; replaces the old Tiled Clones dialog for most uses."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (Repeat grid), crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Repeat Options)"
+gap = "no per-row/column rotation or scale increments; no style interpolation across tiles"
+priority = 2
+
+[[feature]]
+id = "VE-LPE-042"
+group = "lpe"
+name = "Transform by 2 points"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
+behaviour = "Two knots define a start and end point; moving them translates, rotates and scales the object between them, with elastic and lock-length/angle options; used for fitting an element between two places."
+ours = "none"
+ours_where = ""
+gap = "Free Transform tool does the same by hand without live knots"
+priority = 3
+
+[[feature]]
+id = "VE-LPE-043"
+group = "lpe"
+name = "VonKoch"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Applies a fractal generator: each segment is replaced by a scaled copy of the path a chosen number of times, with reference segment, max complexity and 'draw all generations' options."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-044"
+group = "lpe"
+name = "Angle bisector (experimental)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "From a three-node path draws the bisector of the angle at the middle node, with start/end lengths."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-045"
+group = "lpe"
+name = "Circle by 3 points (experimental)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Replaces a three-node path by the circle through those points."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-046"
+group = "lpe"
+name = "Circle by centre and radius (experimental)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "First node is the centre, second gives the radius; the path becomes that circle."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-047"
+group = "lpe"
+name = "Extrude (experimental)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Extrudes the path along a direction vector knot, producing the side faces as one path."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/three-d/src/solid.rs, crafts/vectorcraft/crates/effects/src/solids.rs (threeD.extrude)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-048"
+group = "lpe"
+name = "Line segment (experimental)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Turns the path into a straight line through its first two nodes: closed, open at one end or infinite."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-049"
+group = "lpe"
+name = "Parallel (experimental)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Draws a line parallel to the segment between the first two nodes through an offset knot."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-050"
+group = "lpe"
+name = "Perpendicular bisector (experimental)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Draws the perpendicular bisector of the segment between the first two nodes."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-051"
+group = "lpe"
+name = "Tangent to curve (experimental)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
+behaviour = "Draws the tangent line at a draggable point on the curve, with start/end lengths and angle offset."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-LPE-052"
+group = "lpe"
+name = "Live effects on groups, shapes and text"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1"
+behaviour = "Most path effects can be put on a group (applied to every member), on a live shape (which stays a shape), and since 1.1 on text; fill preservation keeps the original fill when the effect produces an outline."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/group.rs, crafts/vectorcraft/crates/doc/src/appearance.rs (Appearance on Layer/Group/Text)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-LPE-053"
+group = "lpe"
+name = "Select path effect parent object"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Select_Path_Effect_Parent_Object"
+behaviour = "When an effect links to another path (bend path, boolean operand, clone source) a button in its panel selects that linked object."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/symbols.rs (Edit Symbol), crafts/vectorcraft/crates/engine/src/cmd/live.rs (Replace Spine)"
+gap = "only blends (spine) and symbols have a jump to the linked object"
+priority = 3
