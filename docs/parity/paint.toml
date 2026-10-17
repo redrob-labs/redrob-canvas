@@ -1,0 +1,4012 @@
+# Paint-depth feature inventory for Redrob Canvas v0.9.0 parity (clean room).
+# Reference: Krita 5.3 as observed through its official manual (docs.krita.org) and by running the
+# installed binary as a black box. Behaviour text is our own wording; no reference source was read.
+# ours: none | partial | full against our crates (crafts/*, apps/*). priority: 1 daily, 2 common, 3 rare.
+
+[[feature]]
+id = "PT-ENG-001"
+group = "engine"
+name = "Pixel brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/pixel_brush_engine.html"
+behaviour = "Default dab engine: stamps a generated, bitmap or text tip along the stroke at a spacing; every parameter (size, opacity, flow, ratio, rotation, scatter, softness, sharpness, mirror, source, mix, darken, HSV, airbrush, texture, masked tip) can be driven by sensors; multithreaded tips."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "per-dab HSV/darken from sensors, mix between two colours, gradient and random sources are missing"
+priority = 1
+
+[[feature]]
+id = "PT-ENG-002"
+group = "engine"
+name = "Colour smudge engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/color_smudge_engine.html"
+behaviour = "Picks colour from under the tip and drags it; two modes (smear copies the previous dab area, dulling fills the dab with the average under it); colour rate adds foreground paint, smudge length and radius, smear alpha, overlay to sample all layers, paint thickness height map, gradient source, HSV jitter."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/mixer.rs"
+gap = "smear vs dulling modes, smudge radius, paint-thickness height map, gradient source; our Mixer Brush has wet/load/mix and sample-all-layers only"
+priority = 1
+
+[[feature]]
+id = "PT-ENG-003"
+group = "engine"
+name = "Clone brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/clone_engine.html"
+behaviour = "Paints a copy of another area; source set with a modifier-click; healing mode blends texture only; per-dab or per-stroke source movement; reset source each stroke; clone from all visible layers; source may be another layer."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/retouch.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-ENG-004"
+group = "engine"
+name = "Filter brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/filter_brush_engine.html"
+behaviour = "Applies any filter (blur, sharpen, dodge, levels, ...) through a brush tip instead of separate retouch tools; the filter's own dialog appears in the brush editor."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/retouch_cmds.rs"
+gap = "only fixed retouch tools (blur, sharpen, smudge, dodge, burn, sponge); no arbitrary filter through a brush"
+priority = 2
+
+[[feature]]
+id = "PT-ENG-005"
+group = "engine"
+name = "Deform brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/deform_brush_engine.html"
+behaviour = "Fast pixel-pushing brush: grow, shrink, swirl both ways, move, colour deform, lens zoom in/out; deform amount, bilinear interpolation, counter, option to sample the undeformed image."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/liquify_ui.rs"
+gap = "Liquify is a modal filter with its own mesh, not a live brush engine; lens zoom and colour deform modes missing"
+priority = 2
+
+[[feature]]
+id = "PT-ENG-006"
+group = "engine"
+name = "Sketch brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/sketch_brush_engine.html"
+behaviour = "Line-based 'harmony' brush: connects the current point to nearby earlier points inside the tip area; line width, offset scale, density, distance density, magnetify, random RGB/opacity, distance opacity, simple mode, antialiasing."
+ours = "none"
+ours_where = ""
+gap = "no line-connecting sketch engine"
+priority = 2
+
+[[feature]]
+id = "PT-ENG-007"
+group = "engine"
+name = "Hatching brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/hatching_brush_engine.html"
+behaviour = "Reveals a fixed hatching pattern through the tip: angle, separation, thickness, origin, crosshatch styles (none, perpendicular, +45/-45 orders, moire), separation and thickness dynamics, antialiased lines, coloured background."
+ours = "none"
+ours_where = ""
+gap = "no hatching engine; closest is a pattern-textured tip"
+priority = 3
+
+[[feature]]
+id = "PT-ENG-008"
+group = "engine"
+name = "Spray brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/spray_brush_engine.html"
+behaviour = "Scatters many particles (shapes or a tip bitmap) in an area: diameter, aspect, angle, scale, spacing, jitter; count or density; angular and radial distributions (uniform, gaussian, cluster, curve); particle shape dynamics and colour options."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "our Scattering jitters one dab per step with a count; no per-area particle shapes, radial/angular distribution curves or per-particle colour options"
+priority = 2
+
+[[feature]]
+id = "PT-ENG-009"
+group = "engine"
+name = "Shape brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/shape_brush_engine.html"
+behaviour = "Experimental contour brush: the stroke outline becomes a filled shape; speed, smooth, displace, winding fill, hard edge."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ENG-010"
+group = "engine"
+name = "Quick brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/quick_brush_engine.html"
+behaviour = "Round dabs only, size, spacing and blend mode; optimised for filling large areas fast."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/render.rs"
+gap = "computed round tip covers this"
+priority = 2
+
+[[feature]]
+id = "PT-ENG-011"
+group = "engine"
+name = "Grid brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/grid_brush_engine.html"
+behaviour = "Draws particles (ellipse, rectangle, line, pixel, antialiased pixel) on a grid under the cursor for halftone and retro effects; grid size, division (optionally by pressure), borders, jitter; random HSV/opacity, per-particle colour, sample input layer, fill background."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ENG-012"
+group = "engine"
+name = "Particle brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/particle_brush_engine.html"
+behaviour = "Draws wires that follow the cursor with gravity and iterations; particle count, opacity weight, distance scales."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ENG-013"
+group = "engine"
+name = "Curve brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/curve_engine.html"
+behaviour = "Evenly spaced lines plus extra curve lines connecting the stroke to earlier points; line width with dynamics, history size, curve opacity with dynamics, connection line toggle; mouse users get pressure-like width by speed."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ENG-014"
+group = "engine"
+name = "Bristle brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/bristle_engine.html"
+behaviour = "Simulates individual bristles seeded from the tip: scale, random offset, shear, density, mouse-speed pressure, threshold, connect hairs, antialiasing, composite bristles; ink depletion over time (opacity, saturation, curve) and soaking colour from the canvas."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/procedural.rs"
+gap = "we ship procedural bristle tip textures, not per-bristle trails, depletion or soak"
+priority = 2
+
+[[feature]]
+id = "PT-ENG-015"
+group = "engine"
+name = "Dyna brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/dyna_brush_engine.html"
+behaviour = "Removed in 4.0; mass and drag satellite motion with circle, two, line, polygon, wire shapes. Kept in the manual for old presets."
+ours = "none"
+ours_where = ""
+gap = "deprecated upstream, not worth porting"
+priority = 3
+
+[[feature]]
+id = "PT-ENG-016"
+group = "engine"
+name = "Chalk brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/chalk_engine.html"
+behaviour = "Removed in 4.0; round chalky tip with opacity and saturation fade. Kept for old presets."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/presets.rs"
+gap = "our dry-media chalk presets cover the look"
+priority = 3
+
+[[feature]]
+id = "PT-ENG-017"
+group = "engine"
+name = "Tangent normal brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/tangen_normal_brush_engine.html"
+behaviour = "Paints normal-map colours from stylus tilt (or drawing direction or rotation) so a 3D surface can be painted directly; tangent channel encoding, elevation sensitivity; used with a normalize filter and a phong bump filter for live preview."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ENG-018"
+group = "engine"
+name = "MyPaint brush engine"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/mypaint_engine.html"
+behaviour = "Runs MyPaint brushes: nine inputs (pressure, fine/gross speed, random, stroke, direction, declination, ascension, custom) mapped by curves to radius, hardness, eraser, radius by random, antialiasing, elliptical dab angle and ratio, direction filter, colour hue/lightness/value change, speed, dabs, opacity, tracking, smudge, stroke and custom input groups; logarithmic radius."
+ours = "none"
+ours_where = ""
+gap = "no MyPaint engine or .myb reader"
+priority = 2
+
+[[feature]]
+id = "PT-ENG-019"
+group = "engine"
+name = "Text as brush tip"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Any string in a chosen font becomes the tip; spacing and pipe mode (one character per dab) let a word be laid along the stroke."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-TIP-001"
+group = "tip"
+name = "Generated tip shapes"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Circle or square generated tips with three mask types: default (fast), soft (fade by curve), gaussian."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "round computed tip only; no square tip, no soft-curve or gaussian mask types"
+priority = 1
+
+[[feature]]
+id = "PT-TIP-002"
+group = "tip"
+name = "Generated tip parameters"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Diameter, ratio, fade (lockable horizontal/vertical), angle, spikes, density, randomness, spacing with auto (quadratic) spacing, smooth lines antialiasing, precision 1-5 with auto precision by size."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "no spikes, density/randomness noise, separate H/V fade, precision levels or auto spacing"
+priority = 1
+
+[[feature]]
+id = "PT-TIP-003"
+group = "tip"
+name = "Predefined bitmap tips"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Bitmap tips from .gbr, .gih and .abr; initial size scale, rotation and spacing per tip; all tips shown in one chooser."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/io/src/abr_map.rs"
+gap = "ABR tips and defined-from-selection tips only; no .gbr/.gih readers"
+priority = 1
+
+[[feature]]
+id = "PT-TIP-004"
+group = "tip"
+name = "Tip mode: alpha mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Coloured tips are read as greyscale coverage and painted in the foreground colour; lighter means more transparent."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/tile.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-TIP-005"
+group = "tip"
+name = "Tip mode: colour image stamp"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Tip bitmap painted with its own colours, for image stamps."
+ours = "none"
+ours_where = ""
+gap = "sampled tips are greyscale coverage only"
+priority = 2
+
+[[feature]]
+id = "PT-TIP-006"
+group = "tip"
+name = "Tip mode: lightness map"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Tip transparency kept, tip colours replaced by foreground colour but tip lightness preserved, giving impasto highlights and shadows; neutral point, brightness, contrast sliders."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-TIP-007"
+group = "tip"
+name = "Tip mode: gradient map"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Tip lightness indexes the active gradient so one stamp paints many colours; same adjustment sliders."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-TIP-008"
+group = "tip"
+name = "Image hose ordering"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Multi-image tips can cycle in order, at random, or by pressure/tilt/angle selection ranks."
+ours = "none"
+ours_where = ""
+gap = "no .gih support"
+priority = 3
+
+[[feature]]
+id = "PT-TIP-009"
+group = "tip"
+name = "Tip size as base for dynamics"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Predefined tip scale is the base for sensor-driven size; tips can be large native bitmaps."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-TIP-010"
+group = "tip"
+name = "Define a tip from the canvas"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "A selection or layer can be saved as a new predefined tip or stamp; via the predefined tip chooser's stamp/clipboard buttons."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_cmds.rs"
+gap = "brush.defineFromSelection and brush.presets.importImage"
+priority = 2
+
+[[feature]]
+id = "PT-TIP-011"
+group = "tip"
+name = "Align outline to pixel grid"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "With Sharpness on, the brush outline can snap to the pixel grid for pixel art."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-TIP-012"
+group = "tip"
+name = "Lock the tip across presets"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/locked_brush_settings.html"
+behaviour = "The tip (and any other option) can be locked so switching presets keeps it; unlock drops or keeps the locked value."
+ours = "none"
+ours_where = ""
+gap = "no locked settings"
+priority = 2
+
+[[feature]]
+id = "PT-SET-001"
+group = "settings"
+name = "Size curve"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Size option is the sensor curve applied to the tip diameter, not the diameter itself; concave pressure curves give fine lines; fuzzy or perspective sensors are common."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "ShapeDynamics size with Dynamic.curve"
+priority = 1
+
+[[feature]]
+id = "PT-SET-002"
+group = "settings"
+name = "Opacity"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/opacity_and_flow.html"
+behaviour = "Stroke transparency; with sensors it multiplies with flow (since 4.2); old additive behaviour switchable."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Transfer.opacity"
+priority = 1
+
+[[feature]]
+id = "PT-SET-003"
+group = "settings"
+name = "Flow"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/opacity_and_flow.html"
+behaviour = "Per-dab transparency, separate from stroke opacity; multiplies with opacity."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Transfer.flow"
+priority = 1
+
+[[feature]]
+id = "PT-SET-004"
+group = "settings"
+name = "Painting mode: build-up vs wash"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/opacity_and_flow.html"
+behaviour = "Build-up treats opacity like flow and accumulates per dab; wash caps the whole stroke at the opacity (indirect painting)."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/render.rs"
+gap = "build-up toggle; stroke buffer composites once at stroke opacity"
+priority = 1
+
+[[feature]]
+id = "PT-SET-005"
+group = "settings"
+name = "Ratio"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Aspect ratio of the tip, sensor-driven, also for predefined tips."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "ShapeDynamics roundness"
+priority = 1
+
+[[feature]]
+id = "PT-SET-006"
+group = "settings"
+name = "Spacing with sensors"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Spacing between dabs driven by sensors; isotropic spacing uses the diameter only instead of the ratio."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "fixed spacing fraction or speed-based; no sensor curve on spacing, no isotropic toggle"
+priority = 1
+
+[[feature]]
+id = "PT-SET-007"
+group = "settings"
+name = "Mirror tip"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Mirror the tip mask horizontally and/or vertically, per dab by sensor."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "ShapeDynamics flip_x/flip_y jitter"
+priority = 2
+
+[[feature]]
+id = "PT-SET-008"
+group = "settings"
+name = "Softness"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Sensor-driven fade of the tip edge; noticeable on large soft tips."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "hardness is static; no sensor on it"
+priority = 2
+
+[[feature]]
+id = "PT-SET-009"
+group = "settings"
+name = "Sharpness"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Threshold over the tip mask for crisp pixel-art strokes; strength by sensor, soften edge slider."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-SET-010"
+group = "settings"
+name = "Rotation"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Tip angle plus sensor contribution; pressure-like sensors rotate around a 50% neutral point; tilt direction and drawing angle map the tip axis to stylus or stroke direction; fuzzy, distance, fade."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "angle jitter with Direction/InitialDirection/Rotation/Tilt controls"
+priority = 1
+
+[[feature]]
+id = "PT-SET-011"
+group = "settings"
+name = "Scatter"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Random dab placement along (X) and across (Y) the drawing direction, sensor-driven."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "scatter is radial or both-axes; no separate along/across amounts"
+priority = 1
+
+[[feature]]
+id = "PT-SET-012"
+group = "settings"
+name = "Source: plain colour"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Dabs use the foreground colour."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-SET-013"
+group = "settings"
+name = "Source: gradient"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Dabs take their colour from the active gradient, position chosen by the Mix sensor."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-SET-014"
+group = "settings"
+name = "Source: uniform / total random"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Uniform random gives every dab one random colour; total random paints noise."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "ColorDynamics hue/sat/brightness jitter approximates uniform random; no noise source"
+priority = 3
+
+[[feature]]
+id = "PT-SET-015"
+group = "settings"
+name = "Source: pattern / locked pattern"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Dabs paint the active pattern, aligned per stroke or locked to the dab."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/stamp_cmds.rs"
+gap = "pattern stamp tool with aligned/impressionist; not a pixel-brush source"
+priority = 2
+
+[[feature]]
+id = "PT-SET-016"
+group = "settings"
+name = "Mix"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Sensor blends between foreground and background colour (or picks a gradient position)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "ColorDynamics foreground/background jitter is random only, no sensor control"
+priority = 2
+
+[[feature]]
+id = "PT-SET-017"
+group = "settings"
+name = "Darken"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Sensor-driven darkening of the source colour towards black."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-SET-018"
+group = "settings"
+name = "Hue / saturation / value"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Three sensor-driven HSV offsets on the source colour; all three on fuzzy gives rich colour texture."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "ColorDynamics jitter is random only; no per-sensor HSV curves"
+priority = 2
+
+[[feature]]
+id = "PT-SET-019"
+group = "settings"
+name = "Airbrush"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Keeps depositing paint while the stylus is held still; rate slider."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-SET-020"
+group = "settings"
+name = "Lightness strength"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
+behaviour = "Sensor-driven contrast of a lightness-map tip for variable impasto."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-SET-021"
+group = "settings"
+name = "Texture: pattern, scale, offset"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
+behaviour = "A pattern multiplies the stroke: scale, horizontal/vertical offset, random offset per stroke, cutoff, invert."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Texture section"
+priority = 1
+
+[[feature]]
+id = "PT-SET-022"
+group = "settings"
+name = "Texture: strength sensor and soft texturing"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
+behaviour = "Strength option drives how much texture applies; soft texturing toggle (5.3) replicates Photoshop-style soft application for most modes."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Texture depth dynamic"
+priority = 1
+
+[[feature]]
+id = "PT-SET-023"
+group = "settings"
+name = "Texture modes: multiply, subtract, darken, overlay"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
+behaviour = "Alpha-based texturing modes: multiply (soft), subtract (harsh), darken (minimum alpha), overlay (soft, full coverage at high strength)."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-SET-024"
+group = "settings"
+name = "Texture modes: colour dodge, burn, linear dodge, linear burn"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
+behaviour = "Dodge modes make the tip more opaque where the texture is bright; burn modes make it more transparent where dark."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-SET-025"
+group = "settings"
+name = "Texture modes: hard mix, hard mix softer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
+behaviour = "Aliased or antialiased hard-threshold texturing giving full coverage at high strength."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-SET-026"
+group = "settings"
+name = "Texture modes: height, linear height"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
+behaviour = "Height-style texturing with wider strength range; linear height adds multiply for softer transitions."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-SET-027"
+group = "settings"
+name = "Texture modes: lightness map, gradient map"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
+behaviour = "Texture lightness painted into the colour (or mapped to the active gradient) instead of the alpha."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-SET-028"
+group = "settings"
+name = "Masked brush (second tip)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/masked_brush.html"
+behaviour = "A second tip masks the first per dab: own tip, blend mode, size, opacity/flow, ratio, mirror, rotation, scatter; size relative to the main tip; wash mode only."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "DualBrush"
+priority = 1
+
+[[feature]]
+id = "PT-SET-029"
+group = "settings"
+name = "Blend mode per brush"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
+behaviour = "Any of the ~100 blend modes can be set on a preset, independent of the layer."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "our 34 modes only"
+priority = 1
+
+[[feature]]
+id = "PT-SET-030"
+group = "settings"
+name = "Eraser switch size/opacity"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Toggling erase mode (E) can remember a separate size and opacity for the same preset."
+ours = "none"
+ours_where = ""
+gap = "erase is a separate tool, no per-preset eraser size"
+priority = 2
+
+[[feature]]
+id = "PT-SET-031"
+group = "settings"
+name = "Temporarily save tweaks to preset"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Changes made in the editor are kept while switching presets in the session without overwriting the file; a reload button reverts."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs"
+gap = "PresetCaptures keeps tool options per preset; no explicit dirty/reload"
+priority = 2
+
+[[feature]]
+id = "PT-SET-032"
+group = "settings"
+name = "Instant preview per brush"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/instant_preview.html"
+behaviour = "Large brushes paint a low-resolution preview first and refine; per-preset threshold and global toggle (Shift+L)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-SET-033"
+group = "settings"
+name = "Sensor curve combination modes"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Several sensors on one option combine by multiply, addition, maximum, minimum or difference; share curve across all settings."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "one control plus jitter per option; no multi-sensor combination"
+priority = 1
+
+[[feature]]
+id = "PT-SET-034"
+group = "settings"
+name = "Per-option sensor curve editor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Each option has an editable response curve per sensor, with preset curve shapes."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/curve.rs"
+gap = "ResponseCurve per Dynamic"
+priority = 1
+
+[[feature]]
+id = "PT-SET-035"
+group = "settings"
+name = "Enable pen settings toggle"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "A checkbox turns all sensors for an option off while keeping the curves."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Control::Off per dynamic; locks per section"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-001"
+group = "sensor"
+name = "Pressure sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Stylus pressure in and out, 0-1, through the option curve."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Control::PenPressure"
+priority = 1
+
+[[feature]]
+id = "PT-SEN-002"
+group = "sensor"
+name = "Pressure-in sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Only rising pressure counts; easing off does not shrink the value within a stroke."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-SEN-003"
+group = "sensor"
+name = "X-tilt sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Stylus tilt about the X axis as a separate input."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "PenTilt is a single combined tilt magnitude"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-004"
+group = "sensor"
+name = "Y-tilt sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Stylus tilt about the Y axis as a separate input."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "PenTilt is a single combined tilt magnitude"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-005"
+group = "sensor"
+name = "Tilt direction sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Compass direction the stylus leans in, -180 to 180 degrees; left-handed offset in tablet settings."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "tilt direction drives Brush Pose only, not an arbitrary option"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-006"
+group = "sensor"
+name = "Tilt elevation sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "How upright the stylus is, 0 (flat) to 90 (vertical)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "PenTilt magnitude is equivalent but not exposed under this name on every option"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-007"
+group = "sensor"
+name = "Speed sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Drawing speed, smoothed by tablet settings, drives any option."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs"
+gap = "speed only affects spacing when the spacing checkbox is off"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-008"
+group = "sensor"
+name = "Drawing angle sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Stroke direction as input; lock to the start angle, fan corners with a threshold, angle offset."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Direction/InitialDirection on angle only; no fan corners or offset, not usable on other options"
+priority = 1
+
+[[feature]]
+id = "PT-SEN-009"
+group = "sensor"
+name = "Rotation sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Barrel rotation of the stylus where supported."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Control::Rotation"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-010"
+group = "sensor"
+name = "Distance sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Value changes with stroke length in pixels (curve editable, repeatable)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Fade over N spacing steps approximates distance once, no repeat"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-011"
+group = "sensor"
+name = "Time sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Value changes with elapsed stroke time in seconds."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-SEN-012"
+group = "sensor"
+name = "Fuzzy (per dab) sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Random value per dab."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "jitter per Dynamic"
+priority = 1
+
+[[feature]]
+id = "PT-SEN-013"
+group = "sensor"
+name = "Fuzzy stroke sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "One random value per stroke, for speed-paint variation."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-SEN-014"
+group = "sensor"
+name = "Fade sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Value changes over stroke length proportional to brush size."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Control::Fade"
+priority = 1
+
+[[feature]]
+id = "PT-SEN-015"
+group = "sensor"
+name = "Perspective sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Value from the perspective assistant: dabs farther away come out smaller."
+ours = "none"
+ours_where = ""
+gap = "no assistants"
+priority = 3
+
+[[feature]]
+id = "PT-SEN-016"
+group = "sensor"
+name = "Tangential pressure (airbrush wheel) sensor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
+behaviour = "Finger wheel on airbrush styli."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Control::StylusWheel"
+priority = 2
+
+[[feature]]
+id = "PT-SEN-017"
+group = "sensor"
+name = "Global pressure curve"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
+behaviour = "One curve in preferences remaps pressure for all brushes before per-option curves."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_cmds.rs"
+gap = "tools.pressureCurve"
+priority = 1
+
+[[feature]]
+id = "PT-SEN-018"
+group = "sensor"
+name = "Brush speed source and smoothing"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
+behaviour = "Speed can come from tablet driver timestamps; maximum speed and speed smoothing settings."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-PRE-001"
+group = "preset"
+name = "Brush preset docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/brush_preset_docker.html"
+behaviour = "Grid or list of presets filtered by tag and by name; click to switch; resize thumbnails; right-click tags."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/brushes_tab.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-PRE-002"
+group = "preset"
+name = "Preset tagging"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/tag_management.html"
+behaviour = "Add, assign, rename, delete tags on presets; tag filter in every chooser; default tags (Digital, Erasers, FX, Favorites, Ink, Paint, Pixel_Art, Sketch, Textures)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/preset_store.rs"
+gap = "folders/groups instead of tags; a preset is in one group only"
+priority = 1
+
+[[feature]]
+id = "PT-PRE-003"
+group = "preset"
+name = "Brush preset history docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/brush_preset_history.html"
+behaviour = "Recently used presets; forget one, clear, static position / move to top / bubble up, count."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-PRE-004"
+group = "preset"
+name = "Brush settings editor (F5)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Six-part editor: engine chooser and name, preset chooser, scratch pad, option list with lock icons, option widget with sensor curves, misc toggles."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-PRE-005"
+group = "preset"
+name = "Scratch pad"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Live test area in the editor: fill with preset icon, current image, gradient, background colour, or reset to white."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/brush_preview.rs"
+gap = "stroke preview only, no paintable pad"
+priority = 2
+
+[[feature]]
+id = "PT-PRE-006"
+group = "preset"
+name = "Save new / overwrite preset"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Save dialog with name, thumbnail from existing icon, scratch pad, image file or icon library; overwrite in place."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs"
+gap = "brush.presets.save/update"
+priority = 1
+
+[[feature]]
+id = "PT-PRE-007"
+group = "preset"
+name = "Icon library for thumbnails"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Compose a preset thumbnail from stock icon backgrounds, tool emblems and optional text."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-PRE-008"
+group = "preset"
+name = "Reload preset"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Reload button discards session tweaks and reverts to the stored preset."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/brush_cmds.rs"
+gap = "brush.restore resets to defaults, not to the stored preset"
+priority = 2
+
+[[feature]]
+id = "PT-PRE-009"
+group = "preset"
+name = "Switch engine of a preset"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "The engine dropdown changes which engine a preset uses, resetting engine-specific options."
+ours = "none"
+ours_where = ""
+gap = "single engine"
+priority = 2
+
+[[feature]]
+id = "PT-PRE-010"
+group = "preset"
+name = "On-canvas brush editor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/oncanvas_brush_editor.html"
+behaviour = "Compact popup (now a docker) with size, opacity, flow and a few chosen sliders reachable from the pop-up palette."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/brush_picker.rs"
+gap = "options bar picker; no configurable mini editor"
+priority = 2
+
+[[feature]]
+id = "PT-PRE-011"
+group = "preset"
+name = "Pop-up palette"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
+behaviour = "Right-click ring: foreground/background, canvas rotation slider, tagged presets, hue ring and triangle, colour history, tag list, zoom slider, 100%, canvas-only, mirror."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-PRE-012"
+group = "preset"
+name = "Ten brushes shortcuts"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/default_python_plugins.html"
+behaviour = "Assign ten presets to shortcut keys; next/previous preset actions."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-PRE-013"
+group = "preset"
+name = "Edit preset thumbnail"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management/paintoppresets.html"
+behaviour = "Thumbnail editable in the save dialog; preset file is a PNG with the settings embedded."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/preset_store.rs"
+gap = "thumbnails are generated, not edited"
+priority = 3
+
+[[feature]]
+id = "PT-PRE-014"
+group = "preset"
+name = "Preset file structure"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management/paintoppresets.html"
+behaviour = "A preset is a PNG whose metadata holds the engine XML, plus required tip and pattern names."
+ours = "none"
+ours_where = ""
+gap = "our presets are JSON; no .kpp reader or writer"
+priority = 2
+
+[[feature]]
+id = "PT-RES-001"
+group = "resource"
+name = "Import Photoshop .abr"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_brushtips.html"
+behaviour = "Load an ABR brush library: tips appear in the predefined chooser; a tip is turned into a preset with Save to Presets; many ABR features honoured, some advanced ones not."
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/abr_map.rs"
+gap = "brush.presets.importAbr maps tips and full brush descriptors"
+priority = 1
+
+[[feature]]
+id = "PT-RES-002"
+group = "resource"
+name = "Import .gbr tips"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Single bitmap tip, greyscale or colour."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-RES-003"
+group = "resource"
+name = "Import .gih image hose"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
+behaviour = "Multi-image tip with ordering rules; partially supported."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-RES-004"
+group = "resource"
+name = "Import MyPaint .myb"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/mypaint_engine.html"
+behaviour = "MyPaint brush files load as presets of the MyPaint engine; saved back only as native presets."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-RES-005"
+group = "resource"
+name = "Import/export native .kpp presets"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
+behaviour = "Single preset files import by drag or Import Resources; sharing needs the tip and pattern files too."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-RES-006"
+group = "resource"
+name = "Resource bundles (.bundle)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
+behaviour = "Zip-based bundle of presets, tips, patterns, gradients, palettes, workspaces with metadata; import, create (choose resources and tags, details, location), deactivate, delete."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-RES-007"
+group = "resource"
+name = "Adobe style library (.asl)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
+behaviour = "Layer-style libraries load as a resource storage."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-RES-008"
+group = "resource"
+name = "Import patterns"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_patterns.html"
+behaviour = "Patterns from .pat and image files; temporary patterns generated from the canvas; patterns docker with tags and global pattern."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/pattern_cmds.rs"
+gap = "pattern.import, define from selection"
+priority = 1
+
+[[feature]]
+id = "PT-RES-009"
+group = "resource"
+name = "Gradient resources"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_gradients.html"
+behaviour = "Stop and segmented gradients; editor with colour model per segment (RGB, HSV cw/ccw), foreground/background variables and transparency; .ggr and .svg files."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
+gap = "stop gradients with .grd import; no segmented gradients or .ggr/.svg"
+priority = 1
+
+[[feature]]
+id = "PT-RES-010"
+group = "resource"
+name = "Palette files"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
+behaviour = "Import .gpl, .riff, .act, .psp, .aco, .xml (Scribus), .sbz, .ase, .acb; native .kpl; stored in resource folder or in the document."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs"
+gap = ".aco and .ase only; no document-stored palettes"
+priority = 1
+
+[[feature]]
+id = "PT-RES-011"
+group = "resource"
+name = "Resource folder and storage kinds"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
+behaviour = "Resources come from the user folder, bundles, Adobe brush/style libraries, documents and memory; each can be activated/deactivated."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/preset_store.rs"
+gap = "single preset store"
+priority = 2
+
+[[feature]]
+id = "PT-RES-012"
+group = "resource"
+name = "Manage resources dialog"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
+behaviour = "Browse by type, filter, tag, import, delete, show deleted, return to a previous version, delete backups."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-RES-013"
+group = "resource"
+name = "Workspace resources"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_workspace.html"
+behaviour = "Save and switch docker layouts as named workspaces; shareable in bundles."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/workspace_ui.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-RES-014"
+group = "resource"
+name = "Style presets for text"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_style_presets.html"
+behaviour = "Reusable character/paragraph style resources."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/type_styles_cmds.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-RES-015"
+group = "resource"
+name = "SeExpr script resources"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/resource_management/seexpr_scripts.html"
+behaviour = "Saved generator scripts for the SeExpr fill layer."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-RES-016"
+group = "resource"
+name = "Default preset bundle"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/krita_4_preset_bundle.html"
+behaviour = "Ships a curated bundle of presets grouped by tag (ink, paint, sketch, pixel art, textures, erasers, fx, digital)."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/presets.rs"
+gap = "built-in general/dry/wet/special presets"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-001"
+group = "tool"
+name = "Freehand brush tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Main painting tool (B): paints with the current preset; Ctrl samples colour, Shift-drag resizes, V sticky straight line."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/stroke_ui.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-002"
+group = "tool"
+name = "Smoothing: none / basic"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Raw input, or light smoothing for old tablets."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "Smoothing.enabled false"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-003"
+group = "tool"
+name = "Weighted smoothing"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Distance, stroke ending, smooth pressure, scalable distance."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs"
+gap = "Smoother has amount, catch-up, zoom scaling; no pressure smoothing"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-004"
+group = "tool"
+name = "Stabilizer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Averages inputs with sample counts at min and max speed (5.3), delay dead zone, finish line, stabilize sensors, scalable distance."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+gap = "pulled-string lazy mouse only; no speed-dependent sample counts or sensor stabilizing"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-005"
+group = "tool"
+name = "Pixel smoothing"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Keeps one-pixel lines single width without L corners for pixel art (5.3)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-TOOL-006"
+group = "tool"
+name = "Snap to assistants"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Toggle and magnetism slider; eraser snapping toggle; Ctrl+Shift+L."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-007"
+group = "tool"
+name = "Multibrush: rotational symmetry"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
+behaviour = "N copies around a centre at even angles; count slider; centre draggable."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-008"
+group = "tool"
+name = "Multibrush: mirror"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
+behaviour = "Reflect over X, Y or both axes around a movable centre."
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs"
+gap = "vertical/horizontal/dual/diagonal axes with rotation"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-009"
+group = "tool"
+name = "Multibrush: translate / copy translate / interval"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
+behaviour = "Copies at a radius, at user-placed offsets, or on an orthogonal interval grid (5.3, up to 50)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-TOOL-010"
+group = "tool"
+name = "Multibrush: snowflake"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
+behaviour = "Mirrored rotational symmetry."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-011"
+group = "tool"
+name = "Symmetry along a curve"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/tools_menu.html"
+behaviour = "Our extra: reflect strokes across an arbitrary path."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/symmetry_cmds.rs"
+gap = "paint.symmetryFromPath (not in the reference app)"
+priority = 3
+
+[[feature]]
+id = "PT-TOOL-012"
+group = "tool"
+name = "Horizontal / vertical mirror tools"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/mirror_tools.html"
+behaviour = "Toolbar toggles mirror every tool's output across a draggable axis line; lock line, hide handle, rotate axis with Alt."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/symmetry_ui.rs"
+gap = "applies to paint tools only"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-013"
+group = "tool"
+name = "Straight line tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/line.html"
+behaviour = "Drag a line painted with the brush; Shift constrains 15 degrees, Alt moves; use sensors along the path; preview line."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/stroke_constraint.rs"
+gap = "shift-click straight segments; no separate line tool with sensor replay"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-014"
+group = "tool"
+name = "Dynamic brush tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/dyna.html"
+behaviour = "Mass and drag physics smooth the stroke like a weight on a string."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-TOOL-015"
+group = "tool"
+name = "Erase mode (E)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Any preset erases when the erase toggle is on; separate eraser presets exist too."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/eraser_ui.rs"
+gap = "dedicated eraser tool, no erase toggle on the current preset"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-016"
+group = "tool"
+name = "Fill tool: fill modes"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
+behaviour = "Fill current selection, a contiguous region, or all regions of similar colour."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
+gap = "contiguous and non-contiguous; no selection-shape fill mode"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-017"
+group = "tool"
+name = "Fill tool: source"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
+behaviour = "Foreground, background, or pattern with scale and rotation."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
+gap = "foreground or pattern; no background source, pattern scale/rotation"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-018"
+group = "tool"
+name = "Fill tool: threshold, spread, close gap, boundary"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
+behaviour = "Threshold, opaque spread, close-gap size (5.3), fill until a boundary colour, selection as boundary."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
+gap = "tolerance only; no spread, close gap or boundary colour"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-019"
+group = "tool"
+name = "Fill tool: antialias, grow, feather"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
+behaviour = "Antialiasing, grow with stop at darkest/most opaque pixels, feather radius."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
+gap = "antialias only"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-020"
+group = "tool"
+name = "Fill tool: reference layers"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
+behaviour = "Fill from current layer, all layers, or layers with chosen colour labels."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
+gap = "sample all layers; no colour-label reference"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-021"
+group = "tool"
+name = "Fill tool: drag-fill"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
+behaviour = "Dragging fills every region passed over (any colour or similar colours)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-022"
+group = "tool"
+name = "Enclose and fill tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/enclose_and_fill.html"
+behaviour = "Draw an enclosing rectangle, ellipse, bezier, lasso or brush and fill the regions inside by rule (all, specific colour, transparent, surrounded by, exclusions)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-023"
+group = "tool"
+name = "Gradient tool shapes"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
+behaviour = "Linear, bilinear, radial, square, conical, conical-symmetric, spiral, reverse spiral, shaped (follows selection)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/algo/src/paint.rs"
+gap = "linear, radial, angle, reflected, diamond; no spiral, square or shaped"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-024"
+group = "tool"
+name = "Gradient repeat, reverse, antialias, dither"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
+behaviour = "None, forward, alternating repeat; antialias threshold; reverse; dither (5.0)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
+gap = "reverse and dither; no repeat modes"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-025"
+group = "tool"
+name = "On-canvas gradient editing"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
+behaviour = "Handles stay editable after drawing until Enter."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
+gap = "gradient.fill.set"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-026"
+group = "tool"
+name = "Colour sampler tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/color_sampler.html"
+behaviour = "Sample from all layers or current; radius, blend with current colour; add to palette; info box with channel values."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
+gap = "eyedropper with sample size and all-layers; no blend percentage or add-to-palette"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-027"
+group = "tool"
+name = "Smart patch tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/smart_patch.html"
+behaviour = "Paint over an object to remove it with texture synthesis; accuracy and patch size."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/retouch_cmds.rs"
+gap = "spot healing / remove tool"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-028"
+group = "tool"
+name = "Colorize mask tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/colorize_mask.html"
+behaviour = "Key strokes of colour inside a line-art layer are propagated into regions; edit key strokes, show output, limit to layer bounds, edge detection, gap close hint, clean up, transparent key."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-029"
+group = "tool"
+name = "Reference images tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/reference_images_tool.html"
+behaviour = "Place images on the canvas as floating references: add, paste, load/save set, keep aspect, opacity, saturation, embed or link."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-030"
+group = "tool"
+name = "Measure tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/measure.html"
+behaviour = "Distance and angle between two points in chosen units."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/tool_shortcuts.rs"
+gap = "Ruler tool"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-031"
+group = "tool"
+name = "Quick brush resize (Shift-drag)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Drag with Shift to resize the brush on canvas; shortcuts to step size up/down."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/brush_resize.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-032"
+group = "tool"
+name = "Brush outline and cursor"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/general_settings.html"
+behaviour = "Cursor shapes (tool icon, arrow, crosshair, dot, none, triangles, pixel) and outline (none, circle, preview, tilt); show outline while painting, effective outline size."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/brush_cursor.rs"
+gap = "precise/outline cursor; no tilt outline or triangle cursors"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-033"
+group = "tool"
+name = "Canvas rotation"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/getting_started/navigation.html"
+behaviour = "Rotate the view (Ctrl+[ / ], 4/6, Shift+Space drag) without transforming pixels; reset with 5."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/view_cmds.rs"
+gap = "view.rotateView"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-034"
+group = "tool"
+name = "Mirror view"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
+behaviour = "Flip the view horizontally (M), optionally around the cursor (Alt+M)."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/view_cmds.rs"
+gap = "view.flipHorizontal"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-035"
+group = "tool"
+name = "Wrap-around mode"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
+behaviour = "W tiles the canvas infinitely while painting so seamless textures can be painted across edges."
+ours = "none"
+ours_where = ""
+gap = "Offset filter and pattern preview only"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-036"
+group = "tool"
+name = "Canvas-only mode"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/canvas_only_mode.html"
+behaviour = "Tab hides all dockers, toolbars and menus; configurable what stays."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/view_cmds.rs"
+gap = "view.screenMode"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-037"
+group = "tool"
+name = "Instant preview"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/instant_preview.html"
+behaviour = "Low-resolution preview during heavy brush, geometry, move and filter operations, refined afterwards."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-038"
+group = "tool"
+name = "Stroke selection"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/stroke_selection.html"
+behaviour = "Outline the current selection with the brush or a solid line of given width."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/edit_menu_cmds.rs"
+gap = "Edit > Stroke"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-039"
+group = "tool"
+name = "Fill with foreground/background/pattern (opacity variants)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/edit_menu.html"
+behaviour = "Edit menu fills the selection, with variants honouring the brush opacity."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
+gap = "fills exist; no opacity-honouring variants"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-040"
+group = "tool"
+name = "Move tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/move.html"
+behaviour = "Move layer, selection or group; shortcuts nudge; show coordinates."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/transform_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-041"
+group = "tool"
+name = "Transform tool"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/transform.html"
+behaviour = "Free, perspective, warp, cage, liquify and mesh modes in one tool, with recursive transform of groups."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/warp_cmds.rs"
+gap = "free, perspective, warp, liquify, puppet-style mesh"
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-042"
+group = "tool"
+name = "Colour sample while painting (Ctrl)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
+behaviour = "Hold Ctrl to pick foreground; Ctrl+Alt picks background."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/alt_grab.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-TOOL-043"
+group = "tool"
+name = "Canvas input profiles"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/canvas_input_settings.html"
+behaviour = "Every canvas gesture (pan, zoom, rotate, pick, resize) is remappable to mouse/key/stylus combos in profiles."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/shortcut_sets.rs"
+gap = "keyboard shortcut sets; mouse gesture mapping fixed"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-044"
+group = "tool"
+name = "Tablet settings and tester"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
+behaviour = "Pressure curve, tilt offset, speed source, input API (WinTab / Pointer), screen mapping, tablet tester."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/tablet/src/lib.rs"
+gap = "pressure curve and raw tablet events; no tester or mapping"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-045"
+group = "tool"
+name = "Touch docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/touch_docker.html"
+behaviour = "Big-button panel for tablets: file, undo, opacity, size, rotation, zoom, preset switching."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-TOOL-046"
+group = "tool"
+name = "Snapping"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/snapping.html"
+behaviour = "Snap tools to grid, guides, orthogonal, node, extension, intersection, bounding box, image bounds, image centre, pixel."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/snap.rs"
+gap = "guides, grid, layers, bounds, slices; no node/extension/intersection"
+priority = 2
+
+[[feature]]
+id = "PT-TOOL-047"
+group = "tool"
+name = "Grids and guides docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/grids_and_guides.html"
+behaviour = "Rectangle or isometric grid with spacing, subdivision, styles, offset; guides with lock and snap."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/guide_layout_ui.rs"
+gap = "rectangular grid and guides; no isometric grid"
+priority = 2
+
+[[feature]]
+id = "PT-AST-001"
+group = "assistant"
+name = "Ruler assistant"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Straight line between two handles; strokes snap onto it."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/guide_layout_ui.rs"
+gap = "guides snap positions, not stroke paths"
+priority = 1
+
+[[feature]]
+id = "PT-AST-002"
+group = "assistant"
+name = "Infinite ruler"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Line through two handles extended both ways."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-AST-003"
+group = "assistant"
+name = "Parallel ruler"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Strokes stay parallel to the handle direction anywhere on canvas."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-AST-004"
+group = "assistant"
+name = "Ruler subdivisions"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Notches with major and minor subdivisions on rulers."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-AST-005"
+group = "assistant"
+name = "Ellipse assistant"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Three handles define an ellipse; third handle snaps to a circle; strokes follow the rim."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-AST-006"
+group = "assistant"
+name = "Concentric ellipse"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Ellipse whose rim snapping works at any scale around the same centre."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-AST-007"
+group = "assistant"
+name = "Perspective ellipse"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Ellipse fitted inside a four-handle quad as a circle in perspective."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-AST-008"
+group = "assistant"
+name = "Spline assistant"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Four-handle bezier the stroke follows."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-AST-009"
+group = "assistant"
+name = "Perspective grid assistant"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Four-corner plane with a grid; perspective sensor reads it; strokes snap to its lines."
+ours = "none"
+ours_where = ""
+gap = "Vanishing Point filter has planes but no stroke snapping"
+priority = 1
+
+[[feature]]
+id = "PT-AST-010"
+group = "assistant"
+name = "Vanishing point assistant"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "A point all strokes converge to; multiple points for 1/2/3-point setups; Alt keeps it on the horizon."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-AST-011"
+group = "assistant"
+name = "2-point perspective assistant"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Two vanishing points plus a horizon with density and optional vertical ruler (5.0)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-AST-012"
+group = "assistant"
+name = "Fish-eye point assistant"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Curved perspective lines for wide-angle views."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-AST-013"
+group = "assistant"
+name = "Curvilinear perspective (5.3)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
+behaviour = "Five-point curvilinear grid."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-AST-014"
+group = "assistant"
+name = "Assistant tool: create, move, delete"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
+behaviour = "Place and edit assistants; handles on canvas; delete all; save/load .paintingassistant sets."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-AST-015"
+group = "assistant"
+name = "Assistant colour and opacity"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
+behaviour = "Global or per-assistant colour and opacity; control widget visibility."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-AST-016"
+group = "assistant"
+name = "Limit assistant to an area"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
+behaviour = "Two extra handles clip where the assistant draws and snaps (5.3), for comic panels."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-AST-017"
+group = "assistant"
+name = "Show painting assistants / previews"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
+behaviour = "View menu toggles for assistants and their previews."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-COL-001"
+group = "color"
+name = "Advanced colour selector"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
+behaviour = "Configurable main selector: wheel/triangle/square shapes, HSV/HSL/HSI/HSY models, luma coefficients, gamma, colour space, resize behaviour, zoom popup."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
+gap = "HSB field and sliders in a dialog; no shape or model options, no HSY"
+priority = 1
+
+[[feature]]
+id = "PT-COL-002"
+group = "color"
+name = "Shade selector"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
+behaviour = "Strip of shades around the current colour (MyPaint-style or simple), with update rules."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-COL-003"
+group = "color"
+name = "Colour history and common colours patches"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
+behaviour = "Recent colours and colours sampled from the image, size, count, direction, scrolling."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-COL-004"
+group = "color"
+name = "Artistic colour selector"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/artistic_color_selector.html"
+behaviour = "Stepped hue ring with value/saturation rings; continuous mode; gamut masks applied over it."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-COL-005"
+group = "color"
+name = "Wide gamut colour selector (5.2)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/wide_gamut_color_selector.html"
+behaviour = "Selector in a chosen wide colour space with static/dynamic hue ring, pop-up size, patches layout, shade selector, proofing to the painting space."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-COL-006"
+group = "color"
+name = "Specific colour selector"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/specific_color_selector.html"
+behaviour = "Sliders per channel of a chosen colour space and depth; hex field; HSV sliders (5.1); colour space chooser (5.3)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
+gap = "RGB/HSB/Lab/CMYK fields; no arbitrary space or 16/32-bit values"
+priority = 1
+
+[[feature]]
+id = "PT-COL-007"
+group = "color"
+name = "Small colour selector"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/small_color_selector.html"
+behaviour = "Hue bar plus value/saturation square; the only selector that shows HDR values."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-COL-008"
+group = "color"
+name = "Colour sliders docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/color_sliders.html"
+behaviour = "Hue, saturation, lightness bars."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-COL-009"
+group = "color"
+name = "Digital colour mixer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/digital_color_mixer.html"
+behaviour = "Six columns mixing the current colour with a chosen colour by a slider; gradient slider at the bottom."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-COL-010"
+group = "color"
+name = "Palette docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
+behaviour = "Swatch grid with groups, column count, rename, spot colours, names and IDs, stored in resources or in the document."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs"
+gap = "groups, rename, import/export; no per-document palettes or spot flag"
+priority = 1
+
+[[feature]]
+id = "PT-COL-011"
+group = "color"
+name = "Edit swatch dialog"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
+behaviour = "Colour, name, ID, spot colour per swatch."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs"
+gap = "colour and name only"
+priority = 2
+
+[[feature]]
+id = "PT-COL-012"
+group = "color"
+name = "Gamut masks"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/gamut_masks.html"
+behaviour = "Shape masks over the artistic/advanced wheel limit the pickable hues; create, edit, duplicate, delete; rotate the mask."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-COL-013"
+group = "color"
+name = "Foreground / background colours"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
+behaviour = "Two active colours, swap (X), reset to black/white (D); background used by mix and gradients."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/color_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-COL-014"
+group = "color"
+name = "LUT management (OCIO) docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
+behaviour = "OpenColorIO display transform with configuration file, input space, display, view, look, components, exposure (Y key drag) and gamma, locked colour."
+ours = "none"
+ours_where = ""
+gap = "32-bit preview exposure only"
+priority = 2
+
+[[feature]]
+id = "PT-COL-015"
+group = "color"
+name = "Colour models and depths"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/general_concepts/colors/color_models.html"
+behaviour = "RGB, Gray, CMYK, XYZ, Lab, YCbCr in 8/16-bit integer, 16/32-bit float; per-document space with ICC profile."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/color/src/lib.rs"
+gap = "RGB/Gray/CMYK/Lab/Indexed/Bitmap/Duotone/Multichannel at 8/16-bit and 32-bit float; no XYZ, YCbCr or 16-bit float"
+priority = 2
+
+[[feature]]
+id = "PT-COL-016"
+group = "color"
+name = "Enforce palette colours"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
+behaviour = "Snap every picked colour to the nearest palette entry."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-COL-017"
+group = "color"
+name = "Colour history in pop-up palette"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
+behaviour = "Last used colours around the ring."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-LAY-001"
+group = "layer"
+name = "Paint layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/paint_layers.html"
+behaviour = "Raster layer in the document's colour space; Ins adds one."
+ours = "full"
+ours_where = "crafts/photocraft/crates/doc/src/lib.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-002"
+group = "layer"
+name = "Group layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/group_layers.html"
+behaviour = "Folder of layers; pass-through or isolated compositing; quick group / ungroup; quick clipping group."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/clip_group.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-003"
+group = "layer"
+name = "Clone layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/clone_layers.html"
+behaviour = "Live copy of another layer that updates when the source changes; own masks, filters and position; change source."
+ours = "none"
+ours_where = ""
+gap = "smart object duplicates share a source but not a live layer link"
+priority = 1
+
+[[feature]]
+id = "PT-LAY-004"
+group = "layer"
+name = "File layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/file_layers.html"
+behaviour = "Layer that shows an external image file and reloads when it changes; no scaling, scale to image, adapt to resolution; scaling filter (5.2)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/smart_cmds.rs"
+gap = "linked smart objects reload from disk; no auto-scaling modes"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-005"
+group = "layer"
+name = "Fill layer: colour"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
+behaviour = "Generated layer of a solid colour, editable later."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/solid_fill_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-006"
+group = "layer"
+name = "Fill layer: gradient"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
+behaviour = "Generated gradient with shape, repeat, dither, editable later."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-007"
+group = "layer"
+name = "Fill layer: pattern"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
+behaviour = "Generated pattern with scale, rotation, offset, editable later."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/pattern_fill_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-008"
+group = "layer"
+name = "Fill layer: multigrid"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
+behaviour = "Generated quasi-periodic tiling (de Bruijn multigrid) with colours and line widths."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-LAY-009"
+group = "layer"
+name = "Fill layer: screentone"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
+behaviour = "Generated halftone dots/lines with pattern, shape, size, rotation, interpolation, brightness/contrast."
+ours = "none"
+ours_where = ""
+gap = "Color Halftone filter is destructive"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-010"
+group = "layer"
+name = "Fill layer: SeExpr script"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
+behaviour = "Procedural texture written in the SeExpr language with live preview and saved scripts."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-LAY-011"
+group = "layer"
+name = "Fill layer: simplex noise"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
+behaviour = "Generated seamless noise with frequency and ratio."
+ours = "none"
+ours_where = ""
+gap = "Add Noise filter is destructive"
+priority = 3
+
+[[feature]]
+id = "PT-LAY-012"
+group = "layer"
+name = "Painting on a fill layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
+behaviour = "Painting on a generated layer edits its transparency mask."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/fill_layer_mode_tests.rs"
+gap = "fill layers carry a mask"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-013"
+group = "layer"
+name = "Filter layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/filter_layers.html"
+behaviour = "Any filter applied non-destructively to everything below; editable; own mask."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = "adjustment layers cover the colour adjustments only; blur, noise, etc. cannot be a layer"
+priority = 1
+
+[[feature]]
+id = "PT-LAY-014"
+group = "layer"
+name = "Filter mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/filter_masks.html"
+behaviour = "A filter attached to one layer, limited by a paintable mask; stackable."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/smart_cmds.rs"
+gap = "smart filters on a smart object with one shared mask; not on plain paint layers"
+priority = 1
+
+[[feature]]
+id = "PT-LAY-015"
+group = "layer"
+name = "Colour overlay filter mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/filter_masks.html"
+behaviour = "Quick colour tint mask for silhouettes."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = "Color Overlay style"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-016"
+group = "layer"
+name = "Transparency mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/transparency_masks.html"
+behaviour = "Greyscale mask hiding parts of a layer; paintable; several per layer; convert selection to mask."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_mask_props_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-017"
+group = "layer"
+name = "Transform mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/transformation_masks.html"
+behaviour = "Non-destructive transform (free, perspective, warp, cage, liquify) kept as a mask; editable and animatable."
+ours = "none"
+ours_where = ""
+gap = "smart objects keep one affine transform only"
+priority = 1
+
+[[feature]]
+id = "PT-LAY-018"
+group = "layer"
+name = "Local selection mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/selection_masks.html"
+behaviour = "Stored selections attached to a layer; one active; show as overlay; global selection mask shown in the stack."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/channel_cmds.rs"
+gap = "alpha channels store selections; no per-layer local selections"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-019"
+group = "layer"
+name = "Colorize mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/tools/colorize_mask.html"
+behaviour = "Mask that fills line-art regions from colour key strokes; lock, update, show output."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-LAY-020"
+group = "layer"
+name = "Vector layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/vector_layers.html"
+behaviour = "Shape layer with SVG objects (covered by the vector inventory)."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/vector_cmds.rs"
+gap = "see vector inventory"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-021"
+group = "layer"
+name = "Layer style: drop and inner shadow"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
+behaviour = "PSD-compatible shadows with blend, opacity, angle, global light, distance, spread, size, contour, noise."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-022"
+group = "layer"
+name = "Layer style: outer and inner glow"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
+behaviour = "Glows with colour or gradient, technique, spread/choke, size, contour, range, jitter."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-023"
+group = "layer"
+name = "Layer style: bevel and emboss"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
+behaviour = "Styles, technique, depth, direction, size, soften, shading, contour and texture sub-effects."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-LAY-024"
+group = "layer"
+name = "Layer style: satin"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
+behaviour = "Interior satin sheen with contour."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-LAY-025"
+group = "layer"
+name = "Layer style: colour / gradient / pattern overlay"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
+behaviour = "Fills over the layer content with blend and opacity."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-026"
+group = "layer"
+name = "Layer style: stroke"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
+behaviour = "Outline inside/outside/centre with colour, gradient or pattern."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-027"
+group = "layer"
+name = "Layer style: blending options"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
+behaviour = "Fill opacity, channel knockout, blend interior/clipped layers, blend-if ranges."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = "blendingOptions"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-028"
+group = "layer"
+name = "Layer style presets (.asl)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
+behaviour = "Save, load and apply named style combinations; import Adobe style libraries (5.0)."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-LAY-029"
+group = "layer"
+name = "FX toggle in the layer stack"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
+behaviour = "Click the fx badge to enable/disable the style quickly."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/fx_visibility_cmds.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-LAY-030"
+group = "layer"
+name = "Alpha inheritance"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
+behaviour = "Layer is clipped to the combined alpha of the layers below it in the group."
+ours = "full"
+ours_where = "crafts/photocraft/crates/compose/src/lib.rs"
+gap = "clipping mask"
+priority = 1
+
+[[feature]]
+id = "PT-LAY-031"
+group = "layer"
+name = "Alpha lock"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
+behaviour = "Painting cannot change transparency, only colour."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs"
+gap = "lock transparent pixels"
+priority = 1
+
+[[feature]]
+id = "PT-LAY-032"
+group = "layer"
+name = "Layer lock"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
+behaviour = "Prevent edits to a layer."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_menu_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-033"
+group = "layer"
+name = "Colour labels"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
+behaviour = "Colour tag per layer; filter the stack by label; used by fill and select tools."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_label_cmds.rs"
+gap = "filtering only in panel"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-034"
+group = "layer"
+name = "Filter the layer stack"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
+behaviour = "Filter by name or colour label; display settings for thumbnail size and blend info detail."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/layer_filter_ui.rs"
+gap = "by kind/name/label; no blend-detail display modes"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-035"
+group = "layer"
+name = "Isolate layer / group"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
+behaviour = "Show only the active layer or group while painting."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/hidden_target.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-LAY-036"
+group = "layer"
+name = "Blend mode categories and favourites"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
+behaviour = "About 100 modes grouped (arithmetic, binary, darken, HSX, lighten, misc, mix, modulo, negative, quadratic) with favourites and letter shortcuts."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs"
+gap = "34 PSD-compatible modes; no binary, modulo, quadratic or IFS families"
+priority = 1
+
+[[feature]]
+id = "PT-LAY-037"
+group = "layer"
+name = "Blend mode hotkeys"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
+behaviour = "Alt+Shift+letter sets a blend mode; + and - cycle."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/blend_keys.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-LAY-038"
+group = "layer"
+name = "Split alpha"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/split_alpha.html"
+behaviour = "Alpha into a mask, write mask back as alpha, save merged with colour under transparency."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-LAY-039"
+group = "layer"
+name = "Convert layer kinds"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
+behaviour = "Convert between paint layer, masks, file layer, vector; convert group to animated layer; convert layer colour space."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/layer_menu_cmds.rs"
+gap = "rasterize and mask conversions; no per-layer colour space"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-040"
+group = "layer"
+name = "Import image as layer or mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
+behaviour = "Import a file as paint layer, transparency, filter or selection mask."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/file_cmds.rs"
+gap = "place as layer only"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-041"
+group = "layer"
+name = "New layer from visible"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
+behaviour = "Flatten visible into a new layer."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_copy_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-LAY-042"
+group = "layer"
+name = "Select layers by state"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
+behaviour = "Select all, visible, invisible, locked, unlocked layers."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/layer_multi_cmds.rs"
+gap = "select all; no by-state"
+priority = 3
+
+[[feature]]
+id = "PT-LAY-043"
+group = "layer"
+name = "Clones array"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/clones_array.html"
+behaviour = "Generate a grid of clone layers with offsets, distance, angle."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-LAY-044"
+group = "layer"
+name = "Image split"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/image_split.html"
+behaviour = "Cut the image into N by M files."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/slice_cmds.rs"
+gap = "slices export"
+priority = 3
+
+[[feature]]
+id = "PT-LAY-045"
+group = "layer"
+name = "Separate image into channels"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/separate_image.html"
+behaviour = "Channels to layers or files, with alpha options."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/channel_cmds.rs"
+gap = "split channels"
+priority = 2
+
+[[feature]]
+id = "PT-LAY-046"
+group = "layer"
+name = "Undo history docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/undo_history.html"
+behaviour = "List of steps; cumulative undo merges strokes by interval and duration."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/edit_history.rs"
+gap = "history panel with snapshots; no cumulative merge"
+priority = 1
+
+[[feature]]
+id = "PT-FLT-001"
+group = "filter"
+name = "Dodge filter"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Lighten shadows, midtones or highlights by an exposure amount, as a filter or filter layer."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/retouch_cmds.rs"
+gap = "dodge is a brush tool, not a whole-layer filter"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-002"
+group = "filter"
+name = "Burn filter"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Darken shadows/midtones/highlights by exposure."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/retouch_cmds.rs"
+gap = "burn tool only"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-003"
+group = "filter"
+name = "Levels"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Input/output black, white and gamma per channel with histogram; auto levels; 5.0 adds per-channel editing."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-004"
+group = "filter"
+name = "Colour adjustment curves"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Per-channel curves incl. alpha, lightness and hue/saturation curves; pick colour on canvas."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-005"
+group = "filter"
+name = "Cross-channel colour adjustment"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Drive one channel (e.g. saturation) by a curve over another (e.g. hue)."
+ours = "none"
+ours_where = ""
+gap = "Hue/Saturation per-range is the closest"
+priority = 3
+
+[[feature]]
+id = "PT-FLT-006"
+group = "filter"
+name = "Brightness / contrast curve"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Lightness curve with brightness and contrast handles."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-007"
+group = "filter"
+name = "Colour balance"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Shadows/midtones/highlights cyan-red, magenta-green, yellow-blue; preserve luminosity."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-008"
+group = "filter"
+name = "Desaturate"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Lightness, luminosity (sRGB/linear), average, min, max methods."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-009"
+group = "filter"
+name = "Invert"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Invert colour channels."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-010"
+group = "filter"
+name = "Auto contrast"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Stretch channels to full range automatically."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = "auto tone/contrast"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-011"
+group = "filter"
+name = "HSV / HSL adjustment"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Hue, saturation, lightness/value with HSV, HSL, HSI, HSY models; colourize."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-012"
+group = "filter"
+name = "Threshold"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Binary split at a level with histogram."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-FLT-013"
+group = "filter"
+name = "Slope, offset, power (ASC CDL)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
+behaviour = "Per-channel slope/offset/power and saturation like film grading."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-014"
+group = "filter"
+name = "Halftone"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
+behaviour = "Dot screen with pattern, angle, size, colour per channel or intensity."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "Color Halftone"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-015"
+group = "filter"
+name = "Index colour"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
+behaviour = "Reduce to a ramp-based palette with dithering, for pixel art."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs"
+gap = "Indexed Color mode without ramp editor"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-016"
+group = "filter"
+name = "Pixelize"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
+behaviour = "Mosaic with separate width/height."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "Mosaic"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-017"
+group = "filter"
+name = "Raindrops"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
+behaviour = "Random lens droplets with drop size, number, fish-eye."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-018"
+group = "filter"
+name = "Oilpaint"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
+behaviour = "Brush size and smoothness painterly look."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "Oil Paint"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-019"
+group = "filter"
+name = "Posterize"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
+behaviour = "Reduce levels per channel."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-FLT-020"
+group = "filter"
+name = "Gaussian blur"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
+behaviour = "Separate horizontal/vertical radius, lock aspect."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-021"
+group = "filter"
+name = "Motion blur"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
+behaviour = "Angle and length."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-022"
+group = "filter"
+name = "Blur (box/shape)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
+behaviour = "Width, height, strength, angle and shape (circle, triangle, quadrilateral, pentagon, hexagon, octagon)."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "box blur and shape blur with custom shape; no fixed polygon list"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-023"
+group = "filter"
+name = "Lens blur"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
+behaviour = "Iris shape, radius, rotation, brightness, threshold."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-FLT-024"
+group = "filter"
+name = "Colour to alpha"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
+behaviour = "Turn a chosen colour and threshold into transparency."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/color_to_alpha_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-025"
+group = "filter"
+name = "Fast colour overlay"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
+behaviour = "Blend a colour over the layer with mode and opacity, as a mask-friendly filter."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+gap = "Color Overlay style / fill layer"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-026"
+group = "filter"
+name = "Colour transfer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
+behaviour = "Match colours to a reference image."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = "Match Color"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-027"
+group = "filter"
+name = "Maximize channel"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
+behaviour = "Push the strongest channel of each pixel to full."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-028"
+group = "filter"
+name = "Minimize channel"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
+behaviour = "Push the weakest channel to zero."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-029"
+group = "filter"
+name = "Propagate colours"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
+behaviour = "Spread colour from opaque pixels into transparent ones (for texture edges)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-030"
+group = "filter"
+name = "Edge detection"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/edge_detection.html"
+behaviour = "Prewitt, Sobel, Simple methods; horizontal/vertical radius; output as alpha or colour."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "Find Edges only; no method or radius choice"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-031"
+group = "filter"
+name = "Gaussian high pass"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/edge_detection.html"
+behaviour = "Keep detail above a radius for frequency separation."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "High Pass"
+priority = 1
+
+[[feature]]
+id = "PT-FLT-032"
+group = "filter"
+name = "Height to normal map"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/edge_detection.html"
+behaviour = "Convert greyscale height to a tangent normal map with channel swizzle and radius."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-033"
+group = "filter"
+name = "Emboss family"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/emboss.html"
+behaviour = "Horizontal, vertical, both, all directions, Laplacian, variable depth emboss."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "one Emboss filter with angle/height; no Laplacian or variable depth"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-034"
+group = "filter"
+name = "Sharpen"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
+behaviour = "Simple 3x3 sharpen."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-035"
+group = "filter"
+name = "Mean removal"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
+behaviour = "Sharpen by subtracting the mean."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-036"
+group = "filter"
+name = "Unsharp mask"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
+behaviour = "Radius, amount, threshold; lightness only option."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-037"
+group = "filter"
+name = "Gaussian noise reduction"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
+behaviour = "Threshold and window size."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "Reduce Noise"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-038"
+group = "filter"
+name = "Wavelet noise reducer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
+behaviour = "Noise removal by wavelet threshold."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-039"
+group = "filter"
+name = "Small tiles"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
+behaviour = "Tile the layer N times."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-040"
+group = "filter"
+name = "Phong bumpmap"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
+behaviour = "Light a height or normal map with up to four lights, ambient/diffuse/specular, shininess."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "Lighting Effects with texture channel"
+priority = 3
+
+[[feature]]
+id = "PT-FLT-041"
+group = "filter"
+name = "Round corners"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
+behaviour = "Round the layer's corners by a radius."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-042"
+group = "filter"
+name = "Normalize"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
+behaviour = "Normalize normal-map vectors."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-043"
+group = "filter"
+name = "Gradient map"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
+behaviour = "Map lightness to a gradient; blend, nearest or dither colour modes."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-FLT-044"
+group = "filter"
+name = "Palettize"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
+behaviour = "Quantize to a palette with colour space, dithering threshold/colour/alpha modes."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs"
+gap = "Indexed mode with dither; no palette resource input"
+priority = 2
+
+[[feature]]
+id = "PT-FLT-045"
+group = "filter"
+name = "Wave"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
+behaviour = "Horizontal/vertical sine or triangle wave with wavelength, shift, amplitude."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-FLT-046"
+group = "filter"
+name = "Random noise"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
+behaviour = "Noise level and opacity."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+gap = "Add Noise"
+priority = 1
+
+[[feature]]
+id = "PT-FLT-047"
+group = "filter"
+name = "Reset transparent"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
+behaviour = "Zero colour under fully transparent pixels."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-048"
+group = "filter"
+name = "Random pick"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
+behaviour = "Swap pixels with random neighbours."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-FLT-049"
+group = "filter"
+name = "Wavelet decompose"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters/wavelet_decompose.html"
+behaviour = "Split a layer into N frequency scales as layers for retouching."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-FLT-050"
+group = "filter"
+name = "G'MIC plugin"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/g_mic_settings.html"
+behaviour = "Hundreds of external filters via the G'MIC-Qt plugin with update files."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-FLT-051"
+group = "filter"
+name = "Filter dialog with preview and presets"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/filters.html"
+behaviour = "Every filter dialog previews on canvas and can save/load named settings; reapply last filter (Ctrl+F)."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/filter_dialog.rs"
+gap = "lastFilter"
+priority = 1
+
+[[feature]]
+id = "PT-ANI-001"
+group = "animation"
+name = "Animation timeline docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/animation_timeline.html"
+behaviour = "Frame table per layer with keyframes, hold frames, clone frames, playback range, frame rate, zoom, audio."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/timeline_cmds.rs"
+gap = "video timeline with frames; no per-layer raster keyframes"
+priority = 3
+
+[[feature]]
+id = "PT-ANI-002"
+group = "animation"
+name = "Raster keyframes per layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/animation_timeline.html"
+behaviour = "Add blank or duplicated keyframes, move, copy, clone with drag; cached frames shown."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-003"
+group = "animation"
+name = "Onion skin docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/onion_skin.html"
+behaviour = "Tinted previous/next frames with per-offset opacity and colours."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-004"
+group = "animation"
+name = "Animation curves docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/animation_curves.html"
+behaviour = "Scalar channels (opacity, transform mask) keyed and interpolated with bezier handles."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-005"
+group = "animation"
+name = "Render animation"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/render_animation.html"
+behaviour = "Export image sequence or video through ffmpeg with codec, size, fps, audio, HDR metadata."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/video_cmds.rs"
+gap = "renders frames/video of the timeline"
+priority = 3
+
+[[feature]]
+id = "PT-ANI-006"
+group = "animation"
+name = "Import animation frames / video"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/import_animation.html"
+behaviour = "Import image sequences with ordering and timing, or a video via ffmpeg with scale and range."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-007"
+group = "animation"
+name = "Audio for animation"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/audio_for_animation.html"
+behaviour = "Attach an audio track, scrub and mute."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-008"
+group = "animation"
+name = "Storyboard docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/storyboard_docker.html"
+behaviour = "Scenes with thumbnails, durations and comments, exported to PDF/SVG layouts."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-009"
+group = "animation"
+name = "Animated transform masks"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/animation.html"
+behaviour = "Key the transform of a mask for tweened motion (5.0)."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-010"
+group = "animation"
+name = "Convert group to animated layer"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
+behaviour = "Each child becomes one frame."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-011"
+group = "animation"
+name = "Recorder docker (timelapse)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/recorder_docker.html"
+behaviour = "Capture snapshots while painting and export a timelapse video with ffmpeg."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-ANI-012"
+group = "animation"
+name = "Snapshot docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/snapshot_docker.html"
+behaviour = "Save and restore full document states during the session."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/history_cmds.rs"
+gap = "history snapshots"
+priority = 2
+
+[[feature]]
+id = "PT-CMS-001"
+group = "colormgmt"
+name = "Colour-managed workflow"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/general_concepts/colors/color_managed_workflow.html"
+behaviour = "Working space per document with ICC, monitor profile, rendering intents, black point compensation; convert vs assign."
+ours = "full"
+ours_where = "crafts/photocraft/crates/cms/src/lib.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-CMS-002"
+group = "colormgmt"
+name = "Display profile settings"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
+behaviour = "System monitor profile or chosen profile per screen, intent, canvas surface space and bit depth (Rec 709 / Rec 2020 PQ), unmanaged mode."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/display_color.rs"
+gap = "monitor profile and intent; no HDR surface options"
+priority = 2
+
+[[feature]]
+id = "PT-CMS-003"
+group = "colormgmt"
+name = "Assume profile when pasting"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
+behaviour = "Assume sRGB, monitor profile, or ask per paste."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/prefs.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-CMS-004"
+group = "colormgmt"
+name = "Soft proofing"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/soft_proofing.html"
+behaviour = "Preview in a target profile with intent, BPC, adaptation; Ctrl+Y."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/proof_sim.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-CMS-005"
+group = "colormgmt"
+name = "Out-of-gamut warning"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/soft_proofing.html"
+behaviour = "Colour the pixels the proof profile cannot show; Ctrl+Shift+Y."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/proof_sim.rs"
+gap = "view.gamutWarning"
+priority = 2
+
+[[feature]]
+id = "PT-CMS-006"
+group = "colormgmt"
+name = "OpenColorIO display"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
+behaviour = "Scene-linear display transforms from an OCIO config with exposure and gamma."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-CMS-007"
+group = "colormgmt"
+name = "Exposure / gamma view"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
+behaviour = "Drag with Y to change view exposure; gamma slider; lock colour."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/float_cmds.rs"
+gap = "32-bit preview options exposure/gamma"
+priority = 3
+
+[[feature]]
+id = "PT-CMS-008"
+group = "colormgmt"
+name = "HDR display painting"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/hdr_display.html"
+behaviour = "Paint on HDR monitors in Rec 2020 PQ with float documents; HDR video export."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-CMS-009"
+group = "colormgmt"
+name = "Scene-linear painting"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/general_concepts/colors/scene_linear_painting.html"
+behaviour = "32-bit float linear documents with blending in linear light."
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/lib.rs"
+gap = "F32 sample type"
+priority = 2
+
+[[feature]]
+id = "PT-CMS-010"
+group = "colormgmt"
+name = "Bit depth choices"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/general_concepts/colors/bit_depth.html"
+behaviour = "8/16-bit integer, 16/32-bit float per document."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/color/src/lib.rs"
+gap = "no 16-bit float"
+priority = 2
+
+[[feature]]
+id = "PT-WF-001"
+group = "workflow"
+name = "Python scripting API"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/python_scripting/introduction_to_python_scripting.html"
+behaviour = "Embedded Python with document, node, view, filter and action API; scripter console; plugins with dockers and actions."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/automation/src/lib.rs"
+gap = "MCP/JSON command automation and recorded actions; no embedded Python"
+priority = 1
+
+[[feature]]
+id = "PT-WF-002"
+group = "workflow"
+name = "Python plugin manager"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/python_plugin_manager.html"
+behaviour = "Enable/disable installed plugins; import plugin zips."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/plugin_cmds.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-WF-003"
+group = "workflow"
+name = "Pre-installed plugins"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/default_python_plugins.html"
+behaviour = "Ten brushes, ten scripts, quick settings, batch exporter, comics manager, channels to layers, export layers, last documents, high pass, filter manager, script starter."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/automate_cmds.rs"
+gap = "export layers and batch via actions; others missing"
+priority = 2
+
+[[feature]]
+id = "PT-WF-004"
+group = "workflow"
+name = "Macro recording and playback"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/main_menu/tools_menu.html"
+behaviour = "Record actions to a macro, edit and play back."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/actions_cmds.rs"
+gap = "actions record/play"
+priority = 2
+
+[[feature]]
+id = "PT-WF-005"
+group = "workflow"
+name = "Task sets docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/task_sets.html"
+behaviour = "Save a sequence of actions as a one-click set."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/actions_cmds.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-WF-006"
+group = "workflow"
+name = "Compositions docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/compositions.html"
+behaviour = "Named layer visibility states; export all."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/comps_cmds.rs"
+gap = "layer comps"
+priority = 2
+
+[[feature]]
+id = "PT-WF-007"
+group = "workflow"
+name = "Overview docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/overview.html"
+behaviour = "Thumbnail navigation with zoom slider, mirror and rotation controls."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/dock.rs"
+gap = "navigator"
+priority = 2
+
+[[feature]]
+id = "PT-WF-008"
+group = "workflow"
+name = "Histogram docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/histogram_docker.html"
+behaviour = "Live histogram per channel."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/analysis_ui.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-WF-009"
+group = "workflow"
+name = "Channels docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/channels_docker.html"
+behaviour = "View and toggle channels; thumbnails."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/channels_panel.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-WF-010"
+group = "workflow"
+name = "Reference images docker"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/dockers/reference_images_docker.html"
+behaviour = "Browse folders and show one image beside the canvas with zoom."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "PT-WF-011"
+group = "workflow"
+name = "Action search (5.0)"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/getting_started/navigation.html"
+behaviour = "Type to find and run any action."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-WF-012"
+group = "workflow"
+name = "Configurable shortcuts and schemes"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/shortcut_settings.html"
+behaviour = "Every action rebindable; schemes incl. Photoshop-like; export/import."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/shortcut_sets.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "PT-WF-013"
+group = "workflow"
+name = "Workspace switcher and docker layout"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/getting_started/navigation.html"
+behaviour = "Dockers float, dock, tab; save as workspace."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/dock.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-WF-014"
+group = "workflow"
+name = "Document templates"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/templates.html"
+behaviour = "New-from-template categories (comic, design, DSLR, texture, animation) and custom templates."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/document_preset_cmds.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-WF-015"
+group = "workflow"
+name = "Autosave and backup files"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/autosave.html"
+behaviour = "Periodic autosave, numbered backups, recovery on crash."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/file_cmds.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-WF-016"
+group = "workflow"
+name = "Performance settings"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/performance_settings.html"
+behaviour = "Memory limits, swap, undo limit, threads, canvas acceleration (OpenGL/ANGLE), scaling filters, pixel grid threshold."
+ours = "partial"
+ours_where = "crafts/photocraft/crates/ui-egui/src/prefs_ui.rs"
+gap = "GPU canvas and memory prefs; no thread/swap controls"
+priority = 3
+
+[[feature]]
+id = "PT-WF-017"
+group = "workflow"
+name = "Display settings"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/display_settings.html"
+behaviour = "Canvas border colour, transparency checkers, pixel grid colour and zoom threshold, selection outline, cursor colour."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/prefs_ui.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-WF-018"
+group = "workflow"
+name = "General preferences"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/preferences/general_settings.html"
+behaviour = "Cursor shape, outline, window behaviour, tool options location, kinetic scrolling, undo stack size, file dialog."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/prefs_ui.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "PT-WF-019"
+group = "workflow"
+name = "Photoshop-user mapping"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/user_manual/introduction_from_other_software/introduction_from_photoshop.html"
+behaviour = "Guide mapping PS concepts to the app; Photoshop-compatible shortcut scheme."
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/shortcut_sets.rs"
+gap = "our shell follows the PS model natively"
+priority = 3
+
+[[feature]]
+id = "PT-WF-020"
+group = "workflow"
+name = "Welcome screen"
+reference = "Krita 5.3"
+manual = "https://docs.krita.org/en/reference_manual/welcome_screen.html"
+behaviour = "Recent files, news, links on start."
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/empty_workspace_tests.rs"
+gap = ""
+priority = 3
