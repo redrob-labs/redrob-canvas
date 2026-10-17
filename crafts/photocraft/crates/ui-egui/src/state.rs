@@ -1741,7 +1741,6 @@ mod tests {
         assert_eq!(Tool::from_name("nope"), None);
     }
 
-
     #[test]
     fn dialogs_open_and_close() {
         let mut s = UiState::default();

@@ -590,6 +590,12 @@ impl<'a> Planner<'a> {
     /// composite_layer, honouring the layer's channel restrictions.
     fn layer(&mut self, layer: &'a Layer, clipped: &'a [Layer], backdrop: Slot) -> Result<Slot, Unsupported> {
         self.check_advanced(layer, clipped)?;
+        // The modulo family is a sawtooth in the source channel: one unit of float rounding on
+        // either side of a period boundary moves the result by a whole modulus, so GPU and CPU
+        // cannot be held to the same pixels. Those layers composite on the CPU.
+        if BlendMode::MODULO_MODES.contains(&layer.blend) || clipped.iter().any(|c| BlendMode::MODULO_MODES.contains(&c.blend)) {
+            return Err(Unsupported(format!("modulo blend on `{}` (composited on the CPU)", layer.name)));
+        }
         self.restricted(layer, backdrop, |s, b| s.layer_any(layer, clipped, b))
     }
 
