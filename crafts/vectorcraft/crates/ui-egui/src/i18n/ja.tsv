@@ -4437,3 +4437,24 @@ lighting	Light	ライト
 	Segments:	セグメント:
 	Star Properties:	スターのプロパティ:
 	Spiral Properties:	スパイラルのプロパティ:
+	Hairline	ヘアライン
+	Mid markers:	中間マーカー:
+	Auto, start reversed	自動、開始を反転
+	Fixed angle	固定角度
+	Scale with stroke	線幅に合わせて拡大縮小
+	ID:	ID:
+	Label:	ラベル:
+	Title:	タイトル:
+	Hyperlink:	ハイパーリンク:
+	Clone	クローン
+	Create Clone	クローンを作成
+	Unlink Clone	クローンのリンクを解除
+	Relink to Copied	コピーした対象に再リンク
+	Select Original	オリジナルを選択
+	Object Properties…	オブジェクトのプロパティ…
+	Text content	テキストの内容
+	ID	ID
+	Label	ラベル
+	Title	タイトル
+	Object type	オブジェクトの種類
+	Current layer	現在のレイヤー

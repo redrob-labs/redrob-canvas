@@ -50,6 +50,7 @@ pub(crate) mod modal;
 pub mod new_color_group;
 mod new_document;
 pub mod new_swatch;
+pub mod object_properties;
 pub mod office_export;
 pub mod package;
 pub(crate) mod path_ops;
@@ -304,6 +305,7 @@ registry! {
     EditSelection: [edit_selection::KIND] => edit_selection::SPEC,
     PerspectivePlane: [perspective_plane::KIND] => perspective_plane::SPEC,
     LayerOptions: [layer_options::KIND] => layer_options::SPEC,
+    ObjectProperties: [object_properties::KIND] => object_properties::SPEC,
     LayersPanelOptions: [layers_panel_options::KIND] => layers_panel_options::SPEC,
     RearrangeArtboards: [rearrange_artboards::KIND] => rearrange_artboards::SPEC,
     ShortcutImport: [shortcut_import::KIND] => DialogSpec::window(shortcut_import::show, shortcut_import::confirm),

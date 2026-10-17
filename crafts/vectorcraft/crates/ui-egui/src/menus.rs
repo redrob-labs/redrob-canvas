@@ -486,6 +486,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{names: [two or more styles]} open Graphic Style Options (dialog `graphicStyleOptions`, field `name`) to name the style OK merges from them (graphicStyle.merge)",
     ),
     (
+        "ui.objectProperties",
+        "Object Properties…",
+        "",
+        "{ids?|id?} open Object Properties for the selected objects (or ids), filled in from the first: dialog `objectProperties`, fields id (the XML id, stored as the object name), label, title, description, url (hyperlink), hidden, locked. OK runs layer.setProps and attributes.set",
+    ),
+    (
         "ui.layerOptions",
         "Options for Selection…",
         "",
@@ -1361,6 +1367,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             crate::dialogs::graphic_style_options::open_merge(app, names.unwrap_or_default())
         }
         "ui.tileEdgeColor" => crate::dialogs::tile_edge_color::open(app),
+        "ui.objectProperties" => crate::dialogs::object_properties::open(app, p),
         "ui.layerOptions" => crate::dialogs::layer_options::open(app, p),
         "ui.newLayer" => crate::dialogs::layer_options::open_new(app, p),
         "ui.layersPanelOptions" => crate::dialogs::layers_panel_options::open(app),
@@ -2028,7 +2035,7 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
         id if id.starts_with(crate::panels::graphic_styles::USER_SLOT) => crate::panels::graphic_styles::user_library(app, id).is_some(),
         "ui.expandDialog" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.spotColors" => app.session.active().is_some(),
-        "ui.menuDialog" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
+        "ui.menuDialog" | "ui.objectProperties" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.dxfOptionsDialog" => app.session.active().is_some(),
         "links.editOriginal" | "links.reveal" => selected_image(app, |im| im.link.is_some()) || selected_placed(app),
         "ui.placementOptionsDialog" => selected_image(app, |_| true) || selected_placed(app),
@@ -2155,7 +2162,11 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Paste without Formatting", "edit.pasteWithoutFormatting"),
                 c("Clear", "edit.clear"),
                 Sep,
-                cp("Find and Replace…", "edit.findReplace", json!({"find": "", "replace": "", "matchCase": false, "wholeWord": false})),
+                cp(
+                    "Find and Replace…",
+                    "edit.findReplace",
+                    json!({"find": "", "replace": "", "in": "text", "scope": "all", "matchCase": false, "wholeWord": false, "exact": false, "includeHidden": false, "includeLocked": false}),
+                ),
                 cp("Find Next", "edit.findNext", json!({"find": ""})),
                 sub("Spelling", vec![todo("Auto Spell Check"), todos("Check Spelling…", "Cmd+I"), todo("Edit Custom Dictionary…")]),
                 Sep,
@@ -2234,6 +2245,17 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     vec![c("Selection", "object.hide"), c("All Artwork Above", "object.hide.above"), c("Other Layers", "object.hide.otherLayers")],
                 ),
                 c("Show All", "object.showAll"),
+                Sep,
+                sub(
+                    "Clone",
+                    vec![
+                        c("Create Clone", "object.clone"),
+                        c("Unlink Clone", "object.unlinkClone"),
+                        c("Relink to Copied", "object.relinkClone"),
+                        c("Select Original", "object.selectOriginal"),
+                    ],
+                ),
+                c("Object Properties…", "ui.objectProperties"),
                 Sep,
                 c("Expand…", "ui.expandDialog"),
                 c("Expand Appearance", "effect.expandAppearance"),

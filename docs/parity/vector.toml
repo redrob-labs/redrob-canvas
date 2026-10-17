@@ -1848,9 +1848,8 @@ name = "Stroke width with unit"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/strokes.html"
 behaviour = "Width field with a unit menu (px, pt, mm, in, percent of current...); a hairline option (1.0) renders one screen pixel regardless of zoom and exports as vector-effect non-scaling-stroke."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs, crafts/vectorcraft/crates/svg/src/import/vector_effect.rs"
-gap = "non-scaling stroke is honoured on SVG import and rendered, but there is no hairline/non-scaling toggle in the Stroke panel"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (StrokeLayer::hairline), crafts/vectorcraft/crates/render/src/lib.rs (draw_stroke), crafts/vectorcraft/crates/svg/src/export.rs (stroke_props: vector-effect), crafts/vectorcraft/crates/pdf/src/export.rs (width 0), crafts/vectorcraft/crates/engine/src/cmd/stroke.rs (stroke.set hairline), crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs (Hairline, unit dropdown px/pt/mm/in/%)"
 priority = 1
 
 [[feature]]
@@ -1872,9 +1871,9 @@ name = "Markers (start, mid, end)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/markers.html"
 behaviour = "Three marker menus pick an arrowhead or other shape for the start node, every middle node and the end node; 1.2 adds a marker editor with size, orientation (auto, auto-start-reverse, fixed angle), offset, scale with stroke, and colouring by stroke colour."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (Arrowhead x12, start/end scale, align), crafts/vectorcraft/crates/effects/src/stroke/arrow.rs"
-gap = "no mid markers, no fixed-angle orientation"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (mid_arrow, MarkerOrient, markers_scale), crafts/vectorcraft/crates/effects/src/stroke/arrow.rs (mid markers, orientation), crafts/vectorcraft/crates/svg/src/export.rs (marker_def: <marker> defs, marker-start/mid/end), crafts/vectorcraft/crates/engine/src/cmd/stroke.rs, crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs (Mid markers, Orientation, Scale with stroke)"
+gap = "mid markers share the start head's scale; a fixed-angle head's tip is written on the end point in SVG"
 priority = 1
 
 [[feature]]
@@ -2094,9 +2093,9 @@ name = "Clone (linked copy), unlink, relink, select original"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/cloning-objects.html"
 behaviour = "Alt+D makes a clone (an SVG use element) that follows every edit of the original but has its own transform and, when the original's paint is unset, its own colour; unlink makes it independent (recursively for nested clones in 1.3), relink to copied object, Shift+D selects the original, 'unlink clones for path operations' (1.0)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/symbols.rs, crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Symbol Instance: Edit Symbol, Break Link)"
-gap = "linked copies exist only as symbol instances; no clone of an arbitrary in-place object, no inherited (unset) paint"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (CloneRef in NodeExtras, transform follows), crafts/vectorcraft/crates/engine/src/cmd/clones.rs (object.clone Alt+D, unlinkClone, relinkClone, selectOriginal, refresh after every edit), crafts/vectorcraft/crates/svg/src/export.rs (<use>), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Clone)"
+gap = "SVG import still expands <use> of plain objects into copies (symbols stay instances); a clone's own paint is kept once painted (no unset-paint inheritance)"
 priority = 1
 evidence = "docs/parity/evidence/VEC-clones.png"
 
@@ -2157,8 +2156,8 @@ reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Object_Properties"
 behaviour = "A dialog sets the SVG id, label, title and description, hide/lock flags, preserve aspect ratio for images, DPI, a hyperlink (wraps in an anchor; 1.4 adds Create Anchor), highlight colour, and JavaScript event handlers (onclick, onmouseover...)."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/layers.rs (names, lock, hide), crafts/vectorcraft/crates/doc/src/xml_id.rs, crafts/vectorcraft/crates/ui-egui/src/panels/attributes.rs (Attributes: image map URL)"
-gap = "no title/description, no JavaScript event attributes (SVG Interactivity is a placeholder)"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/dialogs/object_properties.rs (id, label, title, description, hyperlink, hide, lock), crafts/vectorcraft/crates/doc/src/node.rs (ObjectAttributes title/description), crafts/vectorcraft/crates/engine/src/cmd/attributes.rs, crafts/vectorcraft/crates/svg/src/export.rs (<title>, <desc>, <a>), crafts/vectorcraft/crates/svg/src/import.rs (title/desc read back)"
+gap = "no JavaScript event attributes, highlight colour, DPI or preserve-aspect-ratio"
 priority = 2
 
 [[feature]]
@@ -2204,9 +2203,9 @@ name = "Find / Replace dialog"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1#Find.2FReplace_dialog"
 behaviour = "Searches objects by text content, id, style, attribute name/value, font, description or title with replace, scope (all/selection/current layer), include hidden/locked, exact/case-sensitive matching, and object-type filters."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (Find and Replace in text), crafts/vectorcraft/crates/engine/src/cmd/select.rs"
-gap = "find/replace works on text content only; object search by attribute/style is via Select Same"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (edit.findReplace: in text|id|label|title|description|style|type, scope all|selection|layer, exact, includeHidden, includeLocked; matches selected, replace in fields and colours), crafts/vectorcraft/crates/ui-egui/src/dialogs/command.rs (dropdowns), crafts/vectorcraft/crates/ui-egui/src/menus.rs"
+gap = "no font or attribute-name search; style search covers fill, stroke and stroke width"
 priority = 2
 evidence = "docs/parity/evidence/VEC-find.png"
 

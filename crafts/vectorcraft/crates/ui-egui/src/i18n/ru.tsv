@@ -4424,3 +4424,24 @@ lighting	Light	Свет
 	Segments:	Сегменты:
 	Star Properties:	Свойства звезды:
 	Spiral Properties:	Свойства спирали:
+	Hairline	Волосяная линия
+	Mid markers:	Средние маркеры:
+	Auto, start reversed	Авто, начало развёрнуто
+	Fixed angle	Фиксированный угол
+	Scale with stroke	Масштабировать с обводкой
+	ID:	ID:
+	Label:	Метка:
+	Title:	Заголовок:
+	Hyperlink:	Гиперссылка:
+	Clone	Клон
+	Create Clone	Создать клон
+	Unlink Clone	Отвязать клон
+	Relink to Copied	Привязать к скопированному
+	Select Original	Выделить оригинал
+	Object Properties…	Свойства объекта…
+	Text content	Содержимое текста
+	ID	ID
+	Label	Метка
+	Title	Заголовок
+	Object type	Тип объекта
+	Current layer	Текущий слой

@@ -3804,3 +3804,24 @@ lighting	Light	光源
 	Segments:	段數:
 	Star Properties:	星形屬性:
 	Spiral Properties:	螺旋屬性:
+	Hairline	細線
+	Mid markers:	中間標記:
+	Auto, start reversed	自動，起點反向
+	Fixed angle	固定角度
+	Scale with stroke	隨筆畫縮放
+	ID:	ID:
+	Label:	標籤:
+	Title:	標題:
+	Hyperlink:	超連結:
+	Clone	複本
+	Create Clone	建立複本
+	Unlink Clone	取消複本連結
+	Relink to Copied	重新連結到已複製物件
+	Select Original	選取原始物件
+	Object Properties…	物件屬性…
+	Text content	文字內容
+	ID	ID
+	Label	標籤
+	Title	標題
+	Object type	物件類型
+	Current layer	目前圖層

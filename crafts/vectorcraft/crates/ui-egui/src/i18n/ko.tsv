@@ -4407,3 +4407,24 @@ lighting	Light	광원
 	Segments:	세그먼트:
 	Star Properties:	별 속성:
 	Spiral Properties:	나선 속성:
+	Hairline	헤어라인
+	Mid markers:	중간 마커:
+	Auto, start reversed	자동, 시작 반전
+	Fixed angle	고정 각도
+	Scale with stroke	선과 함께 크기 조절
+	ID:	ID:
+	Label:	레이블:
+	Title:	제목:
+	Hyperlink:	하이퍼링크:
+	Clone	클론
+	Create Clone	클론 만들기
+	Unlink Clone	클론 링크 끊기
+	Relink to Copied	복사한 개체에 다시 연결
+	Select Original	원본 선택
+	Object Properties…	개체 속성…
+	Text content	텍스트 내용
+	ID	ID
+	Label	레이블
+	Title	제목
+	Object type	개체 유형
+	Current layer	현재 레이어

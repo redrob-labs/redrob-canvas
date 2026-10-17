@@ -6,6 +6,7 @@ mod attributes;
 mod brushsym;
 mod buildcmds;
 pub mod clipboard;
+pub(crate) mod clones;
 mod colorcmds;
 pub mod colormgmt;
 pub mod colortheme;
@@ -225,6 +226,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(pathops::specs());
         v.extend(typecmd::specs());
         v.extend(menucmds::specs());
+        v.extend(clones::specs());
         v.extend(live::specs());
         v.extend(colorcmds::specs());
         v.extend(colormgmt::specs());

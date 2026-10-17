@@ -30,7 +30,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Attributes",
             [],
             None,
-            "{ids?|id?, item?, target?: \"object\"|\"contents\"} → {ids, overprintFill, overprintStroke, showCenter, imageMap: \"none\"|\"rectangle\"|\"polygon\", url, note, fillRule: \"nonZero\"|\"evenOdd\" (of the paths and compound paths in them), reversed (their subpaths run counter-clockwise on screen: Reverse Path Direction On), recentUrls: [newest first]} the Attributes panel's values for `ids` or the selection, overprint aimed as object.setOverprint aims; a value is null where they differ (or nothing has a fill, stroke or path)",
+            "{ids?|id?, item?, target?: \"object\"|\"contents\"} → {ids, overprintFill, overprintStroke, showCenter, imageMap: \"none\"|\"rectangle\"|\"polygon\", url, note, title, description, fillRule: \"nonZero\"|\"evenOdd\" (of the paths and compound paths in them), reversed (their subpaths run counter-clockwise on screen: Reverse Path Direction On), recentUrls: [newest first]} the Attributes panel's values for `ids` or the selection, overprint aimed as object.setOverprint aims; a value is null where they differ (or nothing has a fill, stroke or path)",
             has_doc,
             |s, p| Ok(attributes(s, p)?.to_json())
         ),
@@ -51,6 +51,9 @@ pub struct AttributesInfo {
     pub image_map: Option<ImageMap>,
     pub url: Option<String>,
     pub note: Option<String>,
+    /// Object Properties: SVG title and description.
+    pub title: Option<String>,
+    pub description: Option<String>,
     /// Fill rule of the paths and compound paths in the targets.
     pub fill_rule: Option<FillRule>,
     /// Whether their subpaths run counter-clockwise on screen (Reverse Path Direction On).
@@ -69,6 +72,8 @@ impl AttributesInfo {
             "imageMap": self.image_map,
             "url": self.url,
             "note": self.note,
+            "title": self.title,
+            "description": self.description,
             "fillRule": self.fill_rule.map(super::attributes::rule_name),
             "reversed": self.reversed,
             "recentUrls": self.recent_urls,

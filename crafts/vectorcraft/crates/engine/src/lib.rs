@@ -1468,6 +1468,8 @@ impl Session {
                 Ok(()) => {
                     // Inline graphics in text follow their symbols.
                     cmd::inline::refresh(&before, Arc::make_mut(&mut st.doc));
+                    // Clones follow their originals.
+                    cmd::clones::refresh(&before, Arc::make_mut(&mut st.doc));
                     // Text Wrap: area type follows its wrap objects; then threads re-flow.
                     cmd::textwrap::refresh(Arc::make_mut(&mut st.doc));
                     // Opacity-mask editing: the mask follows its art on the editing layer.
