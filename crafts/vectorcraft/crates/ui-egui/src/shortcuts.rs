@@ -490,6 +490,16 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         // Shift+~ arrives as `~`).
         let shifted = m.shift.then(|| format!("Shift+{text}"));
         let lookup = |find: fn(&str) -> Option<&'static str>| find(&key).or_else(|| find(&text)).or_else(|| shifted.as_deref().and_then(find));
+        // Node kinds: with Direct Selection and anchor points selected, Shift+C/S/Y/A make them
+        // corner, smooth, symmetric or auto-smooth (the tool shortcuts on those keys yield).
+        if m.shift
+            && app.session.tool_id() == "directSelection"
+            && app.session.active().is_some_and(|d| !d.selection.anchors.is_empty())
+            && let Some(kind) = node_kind_for_key(&key)
+        {
+            let _ = app.run("path.convertAnchors", json!({"to": kind}));
+            continue;
+        }
         // Single-key command shortcuts (X, Shift+X, D, /, Shift+D, F, Shift+F by default).
         if let Some(id) = lookup(crate::shortcut_editor::command_for_key) {
             let _ = app.run(id, json!({}));
@@ -498,6 +508,18 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         if let Some(t) = lookup(crate::shortcut_editor::tool_for_key) {
             app.select_tool(t);
         }
+    }
+}
+
+/// The node kind the single-key chord `key` (`Shift+C`, `Shift+S`, `Shift+Y`, `Shift+A`) converts
+/// selected anchor points to, as `path.convertAnchors` names it.
+fn node_kind_for_key(key: &str) -> Option<&'static str> {
+    match key {
+        "Shift+C" => Some("corner"),
+        "Shift+S" => Some("smooth"),
+        "Shift+Y" => Some("symmetric"),
+        "Shift+A" => Some("autoSmooth"),
+        _ => None,
     }
 }
 

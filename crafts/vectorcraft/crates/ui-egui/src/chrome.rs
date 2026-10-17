@@ -172,6 +172,8 @@ pub fn anchor_buttons(app: &mut VectorcraftApp, ui: &mut Ui, controls: AnchorCon
             &[
                 ("dc-anchor", tl!("Convert Selected Anchor Points to Corner"), "path.convertAnchors", Some("corner")),
                 ("dc-anchor-smooth", tl!("Convert Selected Anchor Points to Smooth"), "path.convertAnchors", Some("smooth")),
+                ("dc-anchor-symmetric", tl!("Convert Selected Anchor Points to Symmetric"), "path.convertAnchors", Some("symmetric")),
+                ("dc-anchor-auto", tl!("Convert Selected Anchor Points to Auto-Smooth"), "path.convertAnchors", Some("autoSmooth")),
             ],
         ),
         (

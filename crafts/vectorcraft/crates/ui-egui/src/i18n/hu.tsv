@@ -4773,3 +4773,5 @@ imageTrace	Outline	Körvonal
 	Softness	Lágyság
 	Ambient Light	Környezeti fény
 	Light behind the object	Fény az objektum mögött
+	Convert Selected Anchor Points to Symmetric	Kijelölt horgonypontok átalakítása szimmetrikus ponttá
+	Convert Selected Anchor Points to Auto-Smooth	Kijelölt horgonypontok átalakítása automatikusan simított ponttá

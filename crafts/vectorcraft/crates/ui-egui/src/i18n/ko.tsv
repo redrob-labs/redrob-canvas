@@ -4342,3 +4342,5 @@ lighting	Light	광원
 	Softness	부드러움
 	Ambient Light	주변광
 	Light behind the object	개체 뒤의 조명
+	Convert Selected Anchor Points to Symmetric	선택한 앵커 포인트를 대칭으로 변환
+	Convert Selected Anchor Points to Auto-Smooth	선택한 앵커 포인트를 자동 부드러운 곡선으로 변환

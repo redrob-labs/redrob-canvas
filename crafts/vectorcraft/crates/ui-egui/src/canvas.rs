@@ -1529,6 +1529,20 @@ fn anchor_square(p: &egui::Painter, c: Pos2, color: Color32, filled: bool, size:
     }
 }
 
+/// An anchor drawn for its node kind (with Direct Selection): corner and smooth anchors are the
+/// square, a symmetric anchor the square with a dot at its centre, an auto-smooth anchor a circle.
+fn anchor_marker(p: &egui::Painter, c: Pos2, color: Color32, filled: bool, size: f32, kind: redrob_vector_geom::AnchorKind) {
+    use redrob_vector_geom::AnchorKind;
+    match kind {
+        AnchorKind::AutoSmooth => curve_point(p, c, color, filled, size + 1.0),
+        AnchorKind::Symmetric => {
+            anchor_square(p, c, color, filled, size);
+            p.circle_filled(c, 1.0, if filled { Color32::WHITE } else { color });
+        }
+        AnchorKind::Corner | AnchorKind::Smooth => anchor_square(p, c, color, filled, size),
+    }
+}
+
 fn curve_point(p: &egui::Painter, c: Pos2, color: Color32, filled: bool, size: f32) {
     p.circle(c, size / 2.0, if filled { color } else { Color32::WHITE }, Stroke::new(1.0, color));
 }
@@ -1835,8 +1849,10 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
                 let ink = if anchor_selected && partial.is_some() { selected_anchor(color) } else { color };
                 if curvature {
                     curve_point(p, sp, ink, anchor_selected && partial.is_some(), grow + 6.0);
+                } else if direct || partial.is_some() {
+                    anchor_marker(p, sp, ink, anchor_selected, anchor(true), a.kind);
                 } else {
-                    anchor_square(p, sp, ink, anchor_selected, anchor(partial.is_some() || direct));
+                    anchor_square(p, sp, ink, anchor_selected, anchor(false));
                 }
             }
         });

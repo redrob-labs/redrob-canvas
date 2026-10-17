@@ -3739,3 +3739,5 @@ lighting	Light	光源
 	Softness	柔和度
 	Ambient Light	環境光
 	Light behind the object	光源位於物件後方
+	Convert Selected Anchor Points to Symmetric	將所選錨點轉換為對稱
+	Convert Selected Anchor Points to Auto-Smooth	將所選錨點轉換為自動平滑

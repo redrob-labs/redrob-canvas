@@ -86,7 +86,7 @@ impl Corner {
         let n = sp.anchors.len();
         let (prev, next) = if sp.closed { ((i + n).checked_sub(1)? % n, (i + 1) % n) } else { (i.checked_sub(1)?, i + 1) };
         let (a, prev, next) = (sp.anchors.get(i)?, sp.anchors.get(prev)?, sp.anchors.get(next)?);
-        if a.kind == AnchorKind::Smooth {
+        if a.kind.collinear() {
             return None;
         }
         let side_u = Side { curve: CubicBez::new(a.p, a.h_in, prev.h_out, prev.p) };

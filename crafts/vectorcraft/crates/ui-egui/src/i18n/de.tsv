@@ -4333,3 +4333,5 @@ theme	Appearance	Erscheinungsbild
 	Softness	Weichheit
 	Ambient Light	Umgebungslicht
 	Light behind the object	Licht hinter dem Objekt
+	Convert Selected Anchor Points to Symmetric	Ausgewählte Ankerpunkte in symmetrische Punkte umwandeln
+	Convert Selected Anchor Points to Auto-Smooth	Ausgewählte Ankerpunkte in automatisch glatte Punkte umwandeln

@@ -4374,3 +4374,5 @@ lighting	Light	Свет
 	Softness	Мягкость
 	Ambient Light	Окружающий свет
 	Light behind the object	Свет позади объекта
+	Convert Selected Anchor Points to Symmetric	Преобразовать выбранные опорные точки в симметричные
+	Convert Selected Anchor Points to Auto-Smooth	Преобразовать выбранные опорные точки в автосглаженные

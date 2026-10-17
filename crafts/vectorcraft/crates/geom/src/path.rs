@@ -24,6 +24,52 @@ pub enum AnchorKind {
     Corner,
     /// Handles stay collinear (dragging one rotates the other).
     Smooth,
+    /// Handles stay collinear and as long as each other (dragging one mirrors it).
+    Symmetric,
+    /// Handles are recomputed from the neighbouring anchors whenever one of them or this anchor
+    /// moves ([`SubPath::auto_smooth_anchor`]); dragging a handle by hand makes it [`Smooth`].
+    AutoSmooth,
+}
+
+impl AnchorKind {
+    /// Every kind, in the order the node controls list them.
+    pub const ALL: [AnchorKind; 4] = [AnchorKind::Corner, AnchorKind::Smooth, AnchorKind::Symmetric, AnchorKind::AutoSmooth];
+
+    /// The kind's name in commands: `corner`, `smooth`, `symmetric` or `autoSmooth`.
+    pub fn name(self) -> &'static str {
+        match self {
+            AnchorKind::Corner => "corner",
+            AnchorKind::Smooth => "smooth",
+            AnchorKind::Symmetric => "symmetric",
+            AnchorKind::AutoSmooth => "autoSmooth",
+        }
+    }
+
+    /// The kind named `s` ([`AnchorKind::name`]; `cusp` and `auto` are accepted too).
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "corner" | "cusp" => Some(AnchorKind::Corner),
+            "smooth" => Some(AnchorKind::Smooth),
+            "symmetric" => Some(AnchorKind::Symmetric),
+            "autoSmooth" | "auto" => Some(AnchorKind::AutoSmooth),
+            _ => None,
+        }
+    }
+
+    /// Whether the handles stay in line with each other (every kind but a corner).
+    pub fn collinear(self) -> bool {
+        self != AnchorKind::Corner
+    }
+
+    /// The kind after this one (Ctrl-clicking a node cycles them).
+    pub fn next(self) -> Self {
+        match self {
+            AnchorKind::Corner => AnchorKind::Smooth,
+            AnchorKind::Smooth => AnchorKind::Symmetric,
+            AnchorKind::Symmetric => AnchorKind::AutoSmooth,
+            AnchorKind::AutoSmooth => AnchorKind::Corner,
+        }
+    }
 }
 
 /// One anchor point with absolute handle positions. A handle equal to `p` means "no handle".
@@ -143,17 +189,22 @@ impl Anchor {
         self.h_out += d;
     }
     /// Place the end of the outgoing (`out`) or incoming handle at `pos`. `independent` makes the
-    /// anchor a corner first; a smooth anchor keeps its other handle in line, at its length.
+    /// anchor a corner first; a smooth anchor keeps its other handle in line, at its length; a
+    /// symmetric one mirrors the moved handle; an auto-smooth one becomes smooth (its handles are
+    /// now set by hand).
     pub fn set_handle(&mut self, out: bool, pos: Point, independent: bool) {
         if independent {
             self.kind = AnchorKind::Corner;
         }
+        if self.kind == AnchorKind::AutoSmooth {
+            self.kind = AnchorKind::Smooth;
+        }
         let p = self.p;
-        let smooth = self.kind == AnchorKind::Smooth;
+        let (collinear, symmetric) = (self.kind.collinear(), self.kind == AnchorKind::Symmetric);
         let (moved, other) = if out { (&mut self.h_out, &mut self.h_in) } else { (&mut self.h_in, &mut self.h_out) };
         *moved = pos;
-        if smooth {
-            let len = (*other - p).hypot();
+        if collinear {
+            let len = if symmetric { (pos - p).hypot() } else { (*other - p).hypot() };
             let dir = p - pos;
             let l = dir.hypot();
             if l > 1e-9 {
@@ -288,10 +339,9 @@ impl SubPath {
         self.anchors.insert(seg + 1, mid);
         seg + 1
     }
-    /// Make anchor `i` smooth: handles in line with its neighbours (its one neighbour at an open
-    /// end), each a third of the way to that side's neighbour. A smooth anchor with both handles
-    /// keeps them. False when there is no such anchor or no direction (the neighbours coincide).
-    pub fn smooth_anchor(&mut self, i: usize) -> bool {
+    /// The anchors before and after `i` (round the closing segment of a closed subpath; none past
+    /// the ends of an open one).
+    fn neighbours(&self, i: usize) -> (Option<usize>, Option<usize>) {
         let n = self.anchors.len();
         let prev = if i > 0 {
             Some(i - 1)
@@ -307,10 +357,18 @@ impl SubPath {
         } else {
             None
         };
+        (prev, next)
+    }
+    /// Make anchor `i` smooth: handles in line with its neighbours (its one neighbour at an open
+    /// end), each a third of the way to that side's neighbour. A smooth anchor with both handles
+    /// keeps them. False when there is no such anchor or no direction (the neighbours coincide).
+    pub fn smooth_anchor(&mut self, i: usize) -> bool {
+        let (prev, next) = self.neighbours(i);
         let at = |j: Option<usize>| j.and_then(|j| self.anchors.get(j)).map(|a| a.p);
         let (prev, next) = (at(prev), at(next));
         let Some(a) = self.anchors.get_mut(i) else { return false };
-        if a.kind == AnchorKind::Smooth && a.has_in() && a.has_out() {
+        if a.kind.collinear() && a.has_in() && a.has_out() {
+            a.kind = AnchorKind::Smooth;
             return true;
         }
         let (pp, nn) = (prev.unwrap_or(a.p), next.unwrap_or(a.p));
@@ -324,6 +382,53 @@ impl SubPath {
         a.h_out = a.p + u * (a.p.distance(nn) / 3.0);
         a.kind = AnchorKind::Smooth;
         true
+    }
+    /// Make anchor `i` symmetric: smooth ([`SubPath::smooth_anchor`]), then both handles as long
+    /// as each other (their mean length). False as `smooth_anchor` is.
+    pub fn symmetric_anchor(&mut self, i: usize) -> bool {
+        if !self.smooth_anchor(i) {
+            return false;
+        }
+        let Some(a) = self.anchors.get_mut(i) else { return false };
+        let (vi, vo) = (a.h_in - a.p, a.h_out - a.p);
+        let (li, lo) = (vi.hypot(), vo.hypot());
+        if li > 1e-9 && lo > 1e-9 {
+            let len = (li + lo) / 2.0;
+            a.h_in = a.p + vi * (len / li);
+            a.h_out = a.p + vo * (len / lo);
+        }
+        a.kind = AnchorKind::Symmetric;
+        true
+    }
+    /// Make anchor `i` auto-smooth and compute its handles from its neighbours: along the chord
+    /// between them, each a third of the way to that side's neighbour (a Catmull-Rom tangent). At
+    /// an open end the one handle points along the segment. False when there is no such anchor;
+    /// an anchor whose neighbours coincide keeps its handles and only changes kind.
+    pub fn auto_smooth_anchor(&mut self, i: usize) -> bool {
+        let (prev, next) = self.neighbours(i);
+        let at = |j: Option<usize>| j.and_then(|j| self.anchors.get(j)).map(|a| a.p);
+        let (prev, next) = (at(prev), at(next));
+        let Some(a) = self.anchors.get_mut(i) else { return false };
+        a.kind = AnchorKind::AutoSmooth;
+        let (pp, nn) = (prev.unwrap_or(a.p), next.unwrap_or(a.p));
+        let dir = nn - pp;
+        let l = dir.hypot();
+        if l <= 1e-9 {
+            return true;
+        }
+        let u = dir / l;
+        a.h_in = if prev.is_some() { a.p - u * (a.p.distance(pp) / 3.0) } else { a.p };
+        a.h_out = if next.is_some() { a.p + u * (a.p.distance(nn) / 3.0) } else { a.p };
+        true
+    }
+    /// Recompute the handles of every auto-smooth anchor from its neighbours (after anchors moved,
+    /// were added or removed). True when some anchor is auto-smooth.
+    pub fn refresh_auto_smooth(&mut self) -> bool {
+        let auto: Vec<usize> = self.anchors.iter().enumerate().filter(|(_, a)| a.kind == AnchorKind::AutoSmooth).map(|(i, _)| i).collect();
+        for i in &auto {
+            self.auto_smooth_anchor(*i);
+        }
+        !auto.is_empty()
     }
     /// Cut at the anchors `at`: each becomes the end of one open piece and the start of the next,
     /// its handle off each piece retracted (the shape doesn't change). A closed subpath opens at
@@ -511,6 +616,15 @@ impl PathData {
     }
     pub fn anchor_mut(&mut self, si: usize, ai: usize) -> Option<&mut Anchor> {
         self.subpaths.get_mut(si)?.anchors.get_mut(ai)
+    }
+    /// Recompute every auto-smooth anchor's handles from its neighbours
+    /// ([`SubPath::refresh_auto_smooth`]). True when some anchor is auto-smooth.
+    pub fn refresh_auto_smooth(&mut self) -> bool {
+        let mut any = false;
+        for sp in &mut self.subpaths {
+            any |= sp.refresh_auto_smooth();
+        }
+        any
     }
     pub fn reverse(&mut self) {
         for sp in &mut self.subpaths {

@@ -4360,3 +4360,5 @@ theme	Appearance	Giao diện
 	Softness	Độ mềm
 	Ambient Light	Ánh sáng môi trường
 	Light behind the object	Ánh sáng phía sau đối tượng
+	Convert Selected Anchor Points to Symmetric	Chuyển điểm neo đã chọn thành đối xứng
+	Convert Selected Anchor Points to Auto-Smooth	Chuyển điểm neo đã chọn thành trơn tự động

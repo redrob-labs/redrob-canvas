@@ -69,7 +69,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Convert Anchor Point",
             [],
             None,
-            "{id, subpath, anchor, to: \"corner\"|\"smooth\", x?, y?} (smooth with x/y: out handle there, in handle mirrored)",
+            "{id, subpath, anchor, to: \"corner\"|\"smooth\"|\"symmetric\"|\"autoSmooth\", x?, y?} (smooth with x/y: out handle there, in handle mirrored)",
             has_doc,
             convert_anchor
         ),
@@ -811,7 +811,8 @@ fn convert_anchor(s: &mut Session, p: &Value) -> Result<Value> {
     let id = id_param(p, "id").ok_or_else(|| bad(C, "missing id"))?;
     let si = p.get("subpath").and_then(Value::as_u64).unwrap_or(0) as usize;
     let ai = usize_req(p, "anchor", C)?;
-    let smooth = str_param(p, "to") == Some("smooth");
+    let kind = str_param(p, "to").and_then(redrob_vector_geom::AnchorKind::parse).unwrap_or_default();
+    let smooth = kind != redrob_vector_geom::AnchorKind::Corner;
     let target = match (p.get("x").and_then(Value::as_f64), p.get("y").and_then(Value::as_f64)) {
         (Some(x), Some(y)) => Some(Point::new(x, y)),
         _ => None,
@@ -824,10 +825,19 @@ fn convert_anchor(s: &mut Session, p: &Value) -> Result<Value> {
             _ if !smooth => a.retract(),
             Some(t) if t.distance(a.p) > 1e-9 => *a = Anchor::smooth(a.p, t),
             Some(_) => a.retract(),
-            None => {
-                sp.smooth_anchor(ai);
-            }
+            None => match kind {
+                redrob_vector_geom::AnchorKind::Symmetric => {
+                    sp.symmetric_anchor(ai);
+                }
+                redrob_vector_geom::AnchorKind::AutoSmooth => {
+                    sp.auto_smooth_anchor(ai);
+                }
+                _ => {
+                    sp.smooth_anchor(ai);
+                }
+            },
         }
+        path.refresh_auto_smooth();
         Ok(())
     })?;
     ok()

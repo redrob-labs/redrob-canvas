@@ -4372,3 +4372,5 @@ lighting	Light	ライト
 	Softness	柔らかさ
 	Ambient Light	環境光
 	Light behind the object	オブジェクトの背後のライト
+	Convert Selected Anchor Points to Symmetric	選択したアンカーポイントを対称ポイントに変換
+	Convert Selected Anchor Points to Auto-Smooth	選択したアンカーポイントを自動スムーズポイントに変換

@@ -4806,3 +4806,5 @@ theme	Appearance	Apparence
 	Softness	Douceur
 	Ambient Light	Lumière ambiante
 	Light behind the object	Lumière derrière l'objet
+	Convert Selected Anchor Points to Symmetric	Convertir les points d’ancrage sélectionnés en points symétriques
+	Convert Selected Anchor Points to Auto-Smooth	Convertir les points d’ancrage sélectionnés en points auto-lissés
