@@ -15,12 +15,14 @@ use std::sync::{Arc, mpsc};
 use redrob_ai::{
     Expand,
     agent::{AgentEvent, AgentHandle, AgentOptions},
-    iopaint::{Device, Engine, EnginePaths, EngineState, InpaintOptions, Plugin, models},
+    iopaint::{
+        Device, Engine, EnginePaths, EngineState, InpaintOptions, Plugin, TransportMode, models,
+    },
 };
 use serde_json::Value;
 use tokio::sync::broadcast;
 
-use self::jobs::{JobInput, JobQueue, JobResult, ToolKind};
+use self::jobs::{JobInput, JobQueue, JobResult, ModelChoice, ToolKind};
 use self::tools::{ModeInfo, ShellTools, ToolRequest};
 use crate::shell::Mode;
 
@@ -42,7 +44,7 @@ pub enum Action {
     Install,
     Start,
     Stop,
-    /// The model combo changed while the engine runs.
+    /// The model, subject model or transport setting changed; the running engine follows.
     SetModel,
     AgentSend(String),
     AgentReset,
@@ -57,6 +59,16 @@ pub struct ToolSettings {
     pub plugins: Vec<Plugin>,
     pub prompt: String,
     pub negative_prompt: String,
+    /// Generative Fill's prompt (its own, so an erase model can stay selected above).
+    pub fill_prompt: String,
+    pub fill_negative_prompt: String,
+    /// The diffusion model Generative Fill loads (one of `models::DIFFUSION_MODELS` or a
+    /// downloaded model).
+    pub fill_model: String,
+    /// How pixels reach the engine: `file` (default, local engine) or `base64`.
+    pub transport: TransportMode,
+    /// The RemoveBG plugin's model for Select subject / Remove background (isnet by default).
+    pub remove_bg_model: String,
     pub steps: u32,
     pub strength: f32,
     pub guidance: f32,
@@ -78,6 +90,11 @@ impl Default for ToolSettings {
             plugins: Plugin::DEFAULT.to_vec(),
             prompt: String::new(),
             negative_prompt: String::new(),
+            fill_prompt: String::new(),
+            fill_negative_prompt: String::new(),
+            fill_model: models::DEFAULT_FILL_MODEL.to_owned(),
+            transport: TransportMode::default(),
+            remove_bg_model: models::DEFAULT_REMOVE_BG_MODEL.to_owned(),
             steps: 25,
             strength: 1.0,
             guidance: 7.5,
@@ -114,6 +131,30 @@ impl ToolSettings {
             sd_seed: Some(self.seed),
             sd_keep_unmasked_area: Some(true),
             ..InpaintOptions::default()
+        }
+    }
+
+    /// The options a Generative Fill sends: the fill card's prompt (overridden by `prompt`), the
+    /// shared sampling settings, the result clipped to the selection.
+    pub fn fill_options(&self, prompt: Option<&str>, negative: Option<&str>) -> InpaintOptions {
+        let prompt = prompt.unwrap_or(&self.fill_prompt).trim().to_owned();
+        let negative = negative
+            .unwrap_or(&self.fill_negative_prompt)
+            .trim()
+            .to_owned();
+        InpaintOptions {
+            prompt: (!prompt.is_empty()).then_some(prompt),
+            negative_prompt: (!negative.is_empty()).then_some(negative),
+            ..self.inpaint_options(Some(""), Some(""))
+        }
+    }
+
+    /// The model, device and plugins Generative Fill holds.
+    pub fn fill_model_choice(&self) -> ModelChoice {
+        ModelChoice {
+            model: self.fill_model.clone(),
+            device: self.device,
+            plugins: self.plugins.clone(),
         }
     }
 }
@@ -161,7 +202,8 @@ pub fn is_engine_down(error: &str) -> bool {
 pub const SYSTEM_PROMPT: &str = "You are the Redrob Canvas agent. The window hosts three editors \
 as modes: Photo (pixels, layers, selections), Vector (paths on artboards) and Layout (pages). Use \
 snapshot_info first to learn the mode and document. Tools that need a selection or a pixel canvas \
-work in Photo mode; remove_background, upscale, face_restore and vectorize work in every mode. \
+work in Photo mode (generative_fill paints a prompt into the selection); remove_background, \
+upscale, face_restore and vectorize work in every mode. \
 vectorize switches to Vector mode with the traced paths. Say briefly what you did; do not invent \
 results a tool did not return.";
 
@@ -175,6 +217,9 @@ pub struct AiPanel {
     pub settings: ToolSettings,
     /// The model the combo showed last frame, to notice a change.
     pub shown_model: String,
+    /// The subject model and transport the engine row showed last frame, likewise.
+    pub shown_remove_bg_model: String,
+    pub shown_transport: TransportMode,
     pub jobs: JobQueue,
     pub log: Vec<String>,
     /// The last job's outcome, shown under the cards (`true` = error).
@@ -214,6 +259,8 @@ impl AiPanel {
             engine,
             engine_log,
             shown_model: settings.model.clone(),
+            shown_remove_bg_model: settings.remove_bg_model.clone(),
+            shown_transport: settings.transport,
             settings,
             jobs: JobQueue::new(),
             log: Vec::new(),
@@ -314,7 +361,11 @@ impl AiPanel {
         let model = self.settings.model.clone();
         let device = self.settings.device;
         let plugins = self.settings.plugins.clone();
+        engine.set_transport_mode(self.settings.transport);
+        let remove_bg_model = self.settings.remove_bg_model.clone();
         self.spawn(async move {
+            // Not running yet, so this only records the model the start passes.
+            let _ = engine.set_remove_bg_model(&remove_bg_model).await;
             if let Err(e) = engine.start(&model, device, &plugins).await {
                 log::warn!("AI engine start: {e}");
             }
@@ -328,14 +379,29 @@ impl AiPanel {
         self.spawn(async move { engine.stop().await });
     }
 
-    /// The combo picked another model: switch the running server (a restart when the model is
-    /// not downloaded yet).
+    /// The engine row changed: the transport setting applies at once; a new subject model is
+    /// switched on the running server; a new model switches the running server (a restart when
+    /// the model is not downloaded yet).
     pub fn set_model(&mut self) {
+        let model_changed = self.settings.model != self.shown_model;
+        let subject_changed = self.settings.remove_bg_model != self.shown_remove_bg_model;
         self.shown_model = self.settings.model.clone();
+        self.shown_remove_bg_model = self.settings.remove_bg_model.clone();
+        self.shown_transport = self.settings.transport;
         let Some(engine) = self.engine.clone() else {
             return;
         };
-        if !engine.is_running() {
+        engine.set_transport_mode(self.settings.transport);
+        if subject_changed {
+            let engine = engine.clone();
+            let remove_bg_model = self.settings.remove_bg_model.clone();
+            self.spawn(async move {
+                if let Err(e) = engine.set_remove_bg_model(&remove_bg_model).await {
+                    log::warn!("AI subject model: {e}");
+                }
+            });
+        }
+        if !model_changed || !engine.is_running() {
             return;
         }
         let model = self.settings.model.clone();
@@ -346,6 +412,13 @@ impl AiPanel {
                 log::warn!("AI engine model: {e}");
             }
         });
+    }
+
+    /// Whether the engine row's settings differ from what the engine was last told.
+    pub fn engine_settings_changed(&self) -> bool {
+        self.settings.model != self.shown_model
+            || self.settings.remove_bg_model != self.shown_remove_bg_model
+            || self.settings.transport != self.shown_transport
     }
 
     /// Starts `input` as the one running job. `reply` is the agent's pending tool call, answered
@@ -551,6 +624,7 @@ pub fn gather_input(
         ToolKind::Erase => JobInput::Erase {
             mask: selection()?,
             image,
+            model: ModelChoice::erase(&settings.model, settings.device, &settings.plugins),
         },
         ToolKind::Inpaint => {
             let mask = selection()?;
@@ -566,6 +640,25 @@ pub fn gather_input(
                 image,
                 mask,
                 options,
+            }
+        }
+        ToolKind::GenerativeFill => {
+            let mask = selection()?;
+            let options =
+                settings.fill_options(arg_str(args, "prompt"), arg_str(args, "negative_prompt"));
+            if !options.is_prompted() {
+                return Err("type a prompt".into());
+            }
+            let model = settings.fill_model_choice();
+            let known_diffusion = models::is_diffusion_model(&model.model);
+            if !known_diffusion && models::ERASE_MODELS.contains(&model.model.as_str()) {
+                return Err("pick a diffusion model for Generative Fill".into());
+            }
+            JobInput::GenerativeFill {
+                image,
+                mask,
+                options,
+                model,
             }
         }
         ToolKind::Outpaint => {
@@ -652,8 +745,9 @@ mod tests {
         assert!(!panel.is_busy());
         let image = redrob_ai::Rgba8Image::filled(2, 2, [0, 0, 0, 255]).unwrap();
         let mask = redrob_ai::Mask::filled(2, 2, 255).unwrap();
+        let model = ModelChoice::erase("lama", Device::Cpu, &[]);
         let err = panel
-            .start_job(ToolKind::Erase, JobInput::Erase { image, mask }, None)
+            .start_job(ToolKind::Erase, JobInput::Erase { image, mask, model }, None)
             .unwrap_err();
         assert_eq!(err, "start the AI engine first");
         assert!(
@@ -723,6 +817,21 @@ mod tests {
         assert_eq!(overridden.prompt.as_deref(), Some("a tree"));
         assert_eq!(overridden.negative_prompt.as_deref(), Some("blur"));
         assert!(redrob_ai::vectorize::preset_names().contains(&settings.preset.as_str()));
+        // Generative Fill has its own prompt and model; sampling settings are shared.
+        let fill = settings.fill_options(None, None);
+        assert_eq!(fill.prompt, None);
+        assert_eq!(fill.sd_steps, Some(30));
+        let fill = ToolSettings {
+            fill_prompt: " a red door ".into(),
+            ..ToolSettings::default()
+        };
+        let options = fill.fill_options(None, Some("blur"));
+        assert_eq!(options.prompt.as_deref(), Some("a red door"));
+        assert_eq!(options.negative_prompt.as_deref(), Some("blur"));
+        assert_eq!(options.sd_keep_unmasked_area, Some(true));
+        assert_eq!(fill.fill_model_choice().model, models::DEFAULT_FILL_MODEL);
+        assert_eq!(fill.transport, TransportMode::File);
+        assert_eq!(fill.remove_bg_model, models::DEFAULT_REMOVE_BG_MODEL);
     }
 
     /// A pixel-mode bridge over one image, with or without a selection.
@@ -783,10 +892,30 @@ mod tests {
             "select the area first"
         );
         fake.selection = Some(redrob_ai::Mask::filled(3, 2, 255).unwrap());
-        assert!(matches!(
-            gather_input(&mut fake, ToolKind::Erase, &settings, None).unwrap(),
-            JobInput::Erase { .. }
-        ));
+        match gather_input(&mut fake, ToolKind::Erase, &settings, None).unwrap() {
+            JobInput::Erase { model, .. } => assert_eq!(model.model, "lama"),
+            other => panic!("{other:?}"),
+        }
+        // Generative Fill needs a prompt (its own, or the agent's) and holds the fill model.
+        assert_eq!(
+            gather_input(&mut fake, ToolKind::GenerativeFill, &settings, None).unwrap_err(),
+            "type a prompt"
+        );
+        let args = serde_json::json!({ "prompt": "a red door" });
+        match gather_input(&mut fake, ToolKind::GenerativeFill, &settings, Some(&args)).unwrap() {
+            JobInput::GenerativeFill { options, model, .. } => {
+                assert_eq!(options.prompt.as_deref(), Some("a red door"));
+                assert_eq!(model.model, models::DEFAULT_FILL_MODEL);
+            }
+            other => panic!("{other:?}"),
+        }
+        settings.fill_model = "lama".into();
+        assert!(
+            gather_input(&mut fake, ToolKind::GenerativeFill, &settings, Some(&args))
+                .unwrap_err()
+                .starts_with("pick a diffusion model")
+        );
+        settings.fill_model = models::DEFAULT_FILL_MODEL.to_owned();
         // Inpaint needs a prompt and a diffusion model.
         assert_eq!(
             gather_input(&mut fake, ToolKind::Inpaint, &settings, None).unwrap_err(),
@@ -834,6 +963,7 @@ mod tests {
         }
         assert_eq!(plugin_for(ToolKind::FaceRestore, &settings), Some("GFPGAN"));
         assert_eq!(plugin_for(ToolKind::Erase, &settings), None);
+        assert_eq!(plugin_for(ToolKind::GenerativeFill, &settings), None);
     }
 
     #[test]

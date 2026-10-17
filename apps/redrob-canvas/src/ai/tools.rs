@@ -151,6 +151,20 @@ pub fn tool_list() -> Vec<FunctionTool> {
             true,
         ),
         tool(
+            ToolKind::GenerativeFill.tool_name(),
+            object(
+                json!({
+                    "prompt": { "type": "string", "description": "What to generate in the selection" },
+                    "negative_prompt": { "type": "string" },
+                }),
+                &["prompt"],
+            ),
+            "Generative Fill: generate what the prompt describes inside the current selection \
+             with the fill model, on a new layer masked by the selection (Photo mode, needs a \
+             selection; loads the fill model first).",
+            true,
+        ),
+        tool(
             ToolKind::Outpaint.tool_name(),
             object(
                 json!({
