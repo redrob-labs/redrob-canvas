@@ -3761,3 +3761,39 @@ curves	Smooth	Làm mượt
 	Save the brush's dynamics as a new preset	Lưu động lực cọ thành cài sẵn mới
 	Delete this dynamics preset	Xóa cài sẵn động lực này
 	Velocity	Tốc độ
+	HSV Hue	Sắc màu HSV
+	HSV Saturation	Độ bão hòa HSV
+	HSV Value	Giá trị HSV
+	Edge…	Cạnh…
+	Algorithm	Thuật toán
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Vi phân
+	Laplace	Laplace
+	Color Temperature…	Nhiệt độ màu…
+	Color Temperature	Nhiệt độ màu
+	Original Temperature	Nhiệt độ gốc
+	Intended Temperature	Nhiệt độ mong muốn
+	Hue-Chroma…	Sắc màu-Sắc độ…
+	Hue-Chroma	Sắc màu-Sắc độ
+	Chroma	Sắc độ
+	Corner Threshold	Ngưỡng góc
+	Corner Surround	Vùng quanh góc
+	Min Area	Diện tích tối thiểu
+	Airbrush paints only while moving (motion only)	Súng phun chỉ tô khi di chuyển (chỉ khi di chuyển)
+	Airbrush motion only	Súng phun chỉ khi di chuyển
+	Configure Grid…	Cấu hình lưới…
+	Configure Grid	Cấu hình lưới
+	Spacing X	Khoảng cách X
+	Spacing Y	Khoảng cách Y
+	Offset X	Độ lệch X
+	Offset Y	Độ lệch Y
+	Active Path	Đường dẫn hiện hoạt
+	Equidistance	Cách đều
+	Wavelet Decompose…	Phân tách wavelet…
+	Wavelet Decompose	Phân tách wavelet
+	Scales	Thang
+	Import Swatches from Image	Nhập mẫu màu từ ảnh
+	Export Swatches as CSS…	Xuất mẫu màu dạng CSS…
+	Cage Transform	Biến dạng theo khung

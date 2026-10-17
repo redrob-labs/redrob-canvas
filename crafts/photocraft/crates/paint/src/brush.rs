@@ -923,6 +923,9 @@ pub struct BrushSettings {
     pub build_up: bool,
     /// Build-up rate in dabs per second.
     pub build_up_rate: f32,
+    /// Airbrush "motion only": the timed dabs are deposited only while the pointer moves, so a
+    /// held pointer does not build up.
+    pub build_up_motion_only: bool,
     pub smoothing: Smoothing,
     /// Keep the current texture (pattern + scale) when switching to another textured preset.
     pub protect_texture: bool,
@@ -973,6 +976,7 @@ impl Default for BrushSettings {
             wet_edges: false,
             build_up: false,
             build_up_rate: 20.0,
+            build_up_motion_only: false,
             smoothing: Smoothing::default(),
             protect_texture: false,
             locks: SectionLocks::default(),
@@ -1053,6 +1057,7 @@ impl BrushSettings {
         if l.build_up {
             b.build_up = current.build_up;
             b.build_up_rate = current.build_up_rate;
+            b.build_up_motion_only = current.build_up_motion_only;
         }
         if l.protect_texture {
             b.protect_texture = current.protect_texture;

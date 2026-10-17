@@ -22,12 +22,18 @@ pub enum SnapKind {
     LayerEdge,
     LayerCenter,
     Selection,
+    /// An anchor (or the bounds) of the active path (the work path, else the active layer's
+    /// shape path or vector mask).
+    Path,
+    /// A position that puts the moving object the same distance from a neighbour as that
+    /// neighbour is from the next object (equal spacing).
+    Equidistance,
 }
 
 impl SnapKind {
     /// Layer-to-layer and document-centre alignments are what Photoshop shows as smart guides.
     pub fn is_smart(self) -> bool {
-        matches!(self, SnapKind::LayerEdge | SnapKind::LayerCenter | SnapKind::DocumentCenter)
+        matches!(self, SnapKind::LayerEdge | SnapKind::LayerCenter | SnapKind::DocumentCenter | SnapKind::Equidistance)
     }
 }
 
@@ -59,13 +65,31 @@ pub struct SnapOptions {
     pub layers: bool,
     pub document: bool,
     pub selection: bool,
+    /// The active path's anchors and bounds.
+    pub path: bool,
+    /// Equal spacing between layers (a moved layer lands as far from its neighbour as that
+    /// neighbour is from the next).
+    pub equidistance: bool,
     /// Grid subdivision spacing in document pixels, independently for x and y.
     pub grid_step: [f64; 2],
+    /// Position of a gridline from the document's top-left, document pixels (an image's own grid
+    /// may be offset; the Preferences grid starts at 0).
+    pub grid_offset: [f64; 2],
 }
 
 impl Default for SnapOptions {
     fn default() -> Self {
-        Self { guides: true, grid: false, layers: true, document: true, selection: true, grid_step: [18.0; 2] }
+        Self {
+            guides: true,
+            grid: false,
+            layers: true,
+            document: true,
+            selection: true,
+            path: false,
+            equidistance: false,
+            grid_step: [18.0; 2],
+            grid_offset: [0.0; 2],
+        }
     }
 }
 
@@ -78,6 +102,9 @@ pub struct SnapTargets {
     pub y: Vec<Target>,
     /// Grid subdivision spacing on the x and y axes (document px).
     pub grid: Option<[f64; 2]>,
+    /// A gridline's position on each axis (document px): the grid's lines are at
+    /// `grid_offset + n × step`.
+    pub grid_offset: [f64; 2],
     /// Extent used for grid lines and guides ([x0, y0, x1, y1]).
     pub extent: [f64; 4],
 }
@@ -86,6 +113,21 @@ pub struct SnapTargets {
 /// groups and maskless adjustment layers).
 pub fn layer_rect(doc: &Document, id: LayerId) -> Option<[f64; 4]> {
     rect_of(doc, doc.layer(id)?)
+}
+
+/// Most layer rectangles [`SnapTargets::add_equidistance`] pairs up.
+const MAX_EQUIDISTANCE_RECTS: usize = 64;
+
+/// The active path: the work path, else the shape path or vector mask of the first visible
+/// shape or masked layer not being moved (the document has no notion of an active layer here).
+fn active_path(doc: &Document, exclude: &[LayerId]) -> Option<&redrob_photo_doc::Path> {
+    if let Some(p) = &doc.work_path {
+        return Some(p);
+    }
+    doc.walk().into_iter().filter(|(_, _, l)| l.visible && !exclude.contains(&l.id)).find_map(|(_, _, l)| match &l.content {
+        LayerContent::Shape(sh) => Some(&sh.path),
+        _ => l.vector_mask.as_ref().map(|v| &v.path),
+    })
 }
 
 fn rect_of(doc: &Document, l: &redrob_photo_doc::Layer) -> Option<[f64; 4]> {
@@ -115,16 +157,29 @@ impl SnapTargets {
         }
         if opts.grid && opts.grid_step.iter().all(|step| step.is_finite() && *step > 0.0) {
             t.grid = Some(opts.grid_step);
+            t.grid_offset = opts.grid_offset.map(|o| if o.is_finite() { o } else { 0.0 });
         }
-        if opts.layers {
+        if opts.layers || opts.equidistance {
+            let mut rects = Vec::new();
             for (_, _, l) in doc.walk() {
                 if !l.visible || exclude.contains(&l.id) {
                     continue;
                 }
                 if let Some(r) = rect_of(doc, l) {
-                    t.add_rect(r, SnapKind::LayerEdge, SnapKind::LayerCenter);
+                    if opts.layers {
+                        t.add_rect(r, SnapKind::LayerEdge, SnapKind::LayerCenter);
+                    }
+                    rects.push(r);
                 }
             }
+            if opts.equidistance {
+                t.add_equidistance(&rects);
+            }
+        }
+        if opts.path
+            && let Some(path) = active_path(doc, exclude)
+        {
+            t.add_path(path);
         }
         if opts.selection
             && let Some(sel) = &doc.selection
@@ -139,6 +194,65 @@ impl SnapTargets {
             }
         }
         t
+    }
+
+    /// Equal-spacing targets from every pair of layer rectangles that face each other on an axis
+    /// with a gap `g`: a moving object snaps where it sits `g` past the pair's outer edges.
+    /// Bounded to the first [`MAX_EQUIDISTANCE_RECTS`] rectangles (pairs grow quadratically).
+    pub fn add_equidistance(&mut self, rects: &[[f64; 4]]) {
+        let rects = &rects[..rects.len().min(MAX_EQUIDISTANCE_RECTS)];
+        for (i, a) in rects.iter().enumerate() {
+            for b in rects.iter().skip(i + 1) {
+                for (lo, hi) in [(a, b), (b, a)] {
+                    // Horizontal neighbours: `lo` left of `hi`, overlapping vertically.
+                    let gap = hi[0] - lo[2];
+                    if gap > 0.0 && lo[3] > hi[1] && hi[3] > lo[1] {
+                        let span = (lo[1].min(hi[1]), lo[3].max(hi[3]));
+                        self.x.push(Target { pos: hi[2] + gap, kind: SnapKind::Equidistance, span });
+                        self.x.push(Target { pos: lo[0] - gap, kind: SnapKind::Equidistance, span });
+                    }
+                    // Vertical neighbours: `lo` above `hi`, overlapping horizontally.
+                    let gap = hi[1] - lo[3];
+                    if gap > 0.0 && lo[2] > hi[0] && hi[2] > lo[0] {
+                        let span = (lo[0].min(hi[0]), lo[2].max(hi[2]));
+                        self.y.push(Target { pos: hi[3] + gap, kind: SnapKind::Equidistance, span });
+                        self.y.push(Target { pos: lo[1] - gap, kind: SnapKind::Equidistance, span });
+                    }
+                }
+            }
+        }
+    }
+
+    /// Targets on a path: a vertical and a horizontal line through every anchor, plus the bounds
+    /// of each subpath (its curves' extreme control points).
+    pub fn add_path(&mut self, path: &redrob_photo_doc::Path) {
+        for sp in &path.subpaths {
+            if sp.knots.is_empty() {
+                continue;
+            }
+            let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+            for k in &sp.knots {
+                for p in [k.anchor, k.in_ctrl, k.out_ctrl] {
+                    x0 = x0.min(p.x);
+                    y0 = y0.min(p.y);
+                    x1 = x1.max(p.x);
+                    y1 = y1.max(p.y);
+                }
+            }
+            if !(x0.is_finite() && y0.is_finite() && x1.is_finite() && y1.is_finite()) {
+                continue;
+            }
+            for k in &sp.knots {
+                self.x.push(Target { pos: k.anchor.x, kind: SnapKind::Path, span: (y0, y1) });
+                self.y.push(Target { pos: k.anchor.y, kind: SnapKind::Path, span: (x0, x1) });
+            }
+            if sp.knots.len() > 1 {
+                self.x.push(Target { pos: x0, kind: SnapKind::Path, span: (y0, y1) });
+                self.x.push(Target { pos: x1, kind: SnapKind::Path, span: (y0, y1) });
+                self.y.push(Target { pos: y0, kind: SnapKind::Path, span: (x0, x1) });
+                self.y.push(Target { pos: y1, kind: SnapKind::Path, span: (x0, x1) });
+            }
+        }
     }
 
     /// Add a rectangle's edges and centre lines.
@@ -158,6 +272,7 @@ impl SnapTargets {
             x: self.x.iter().copied().filter(|t| keep(t.kind)).collect(),
             y: self.y.iter().copied().filter(|t| keep(t.kind)).collect(),
             grid: self.grid.filter(|_| keep(SnapKind::Grid)),
+            grid_offset: self.grid_offset,
             extent: self.extent,
         }
     }
@@ -186,8 +301,9 @@ impl SnapTargets {
         };
         list.iter().copied().for_each(&mut consider);
         if let Some(steps) = self.grid {
-            let step = steps[usize::from(!vertical)];
-            let g = (v / step).round() * step;
+            let axis = usize::from(!vertical);
+            let (step, o) = (steps[axis], self.grid_offset[axis]);
+            let g = ((v - o) / step).round() * step + o;
             let span = if vertical { (self.extent[1], self.extent[3]) } else { (self.extent[0], self.extent[2]) };
             consider(Target { pos: g, kind: SnapKind::Grid, span });
         }
@@ -237,8 +353,8 @@ impl SnapTargets {
                 let hit = hit.or_else(|| {
                     self.grid
                         .filter(|steps| {
-                            let step = steps[axis];
-                            ((moved / step).round() * step - moved).abs() < 1e-6
+                            let (step, o) = (steps[axis], self.grid_offset[axis]);
+                            (((moved - o) / step).round() * step + o - moved).abs() < 1e-6
                         })
                         .map(|_| Target { pos: moved, kind: SnapKind::Grid, span: other })
                 });

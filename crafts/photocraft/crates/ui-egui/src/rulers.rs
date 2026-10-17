@@ -122,30 +122,48 @@ pub(crate) fn grid_major_px(g: &GuidesGridAndSlices, dpi: f64, size: [f64; 2], p
     size.map(|extent| g.major_px(dpi, extent, ppi))
 }
 
-/// View › Show › Grid, from Preferences › Guides, Grid & Slices (spacing, subdivisions, colour,
-/// style). Photoshop's default is a gridline every inch with 4 subdivisions.
-pub fn draw_grid(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform, doc: &Document) {
+/// The grid in force for `doc`: its own (Image › Configure Grid) when set, else the Preferences
+/// grid. Returns the major spacing and offset in document pixels and the subdivisions.
+pub(crate) fn effective_grid(app: &PhotocraftApp, doc: &Document) -> ([f64; 2], [f64; 2], u32) {
+    if let Some(g) = &doc.grid {
+        return (g.spacing.map(|v| v.max(1e-3)), g.offset, g.subdivisions.max(1));
+    }
     let g = &app.session.prefs().guides_grid_and_slices;
     let ppi = app.session.prefs().units_and_rulers.point_size.per_inch();
     let (w, h) = (doc.size.width as f64, doc.size.height as f64);
-    let major = grid_major_px(g, doc.resolution_dpi.max(1.0) as f64, [w, h], ppi);
-    let minor = major.map(|step| step / g.subdivisions.max(1) as f64);
-    let base = pref_color(&g.grid_color, Color32::from_gray(140));
+    (grid_major_px(g, doc.resolution_dpi.max(1.0) as f64, [w, h], ppi), [0.0, 0.0], g.subdivisions.max(1))
+}
+
+/// View › Show › Grid, from Preferences › Guides, Grid & Slices (spacing, subdivisions, colour,
+/// style) or the image's own grid. Photoshop's default is a gridline every inch with 4 subdivisions.
+pub fn draw_grid(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform, doc: &Document) {
+    let g = &app.session.prefs().guides_grid_and_slices;
+    let (w, h) = (doc.size.width as f64, doc.size.height as f64);
+    let (major, offset, subdivisions) = effective_grid(app, doc);
+    let minor = major.map(|step| step / subdivisions as f64);
+    let own_color = doc.grid.as_ref().map(|g| g.color.as_str()).filter(|c| !c.is_empty());
+    let base = pref_color(own_color.unwrap_or(&g.grid_color), Color32::from_gray(140));
     for (steps, alpha) in [(minor, 0.45f32), (major, 1.0)] {
-        if alpha < 1.0 && g.subdivisions <= 1 {
+        if alpha < 1.0 && subdivisions <= 1 {
             continue;
         }
         let st = Stroke::new(1.0, base.gamma_multiply(alpha));
         let [step_x, step_y] = steps;
         if step_x * (xf.zoom_x() as f64) >= 6.0 {
-            let mut x = step_x;
+            let mut x = offset[0].rem_euclid(step_x);
+            if x <= 0.0 {
+                x += step_x;
+            }
             while x < w {
                 styled_line(painter, xf.to_screen(x as f32, 0.0), xf.to_screen(x as f32, h as f32), st, g.grid_style);
                 x += step_x;
             }
         }
         if step_y * (xf.zoom as f64) >= 6.0 {
-            let mut y = step_y;
+            let mut y = offset[1].rem_euclid(step_y);
+            if y <= 0.0 {
+                y += step_y;
+            }
             while y < h {
                 styled_line(painter, xf.to_screen(0.0, y as f32), xf.to_screen(w as f32, y as f32), st, g.grid_style);
                 y += step_y;

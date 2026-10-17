@@ -4393,3 +4393,39 @@ shape	Appearance	Aspetto
 	Save the brush's dynamics as a new preset	Salva la dinamica del pennello come nuovo predefinito
 	Delete this dynamics preset	Elimina questo predefinito di dinamica
 	Velocity	Velocità
+	HSV Hue	Tonalità HSV
+	HSV Saturation	Saturazione HSV
+	HSV Value	Valore HSV
+	Edge…	Bordo…
+	Algorithm	Algoritmo
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Differenziale
+	Laplace	Laplace
+	Color Temperature…	Temperatura colore…
+	Color Temperature	Temperatura colore
+	Original Temperature	Temperatura originale
+	Intended Temperature	Temperatura desiderata
+	Hue-Chroma…	Tonalità-croma…
+	Hue-Chroma	Tonalità-croma
+	Chroma	Croma
+	Corner Threshold	Soglia angolo
+	Corner Surround	Intorno angolo
+	Min Area	Area minima
+	Airbrush paints only while moving (motion only)	L'aerografo dipinge solo in movimento (solo movimento)
+	Airbrush motion only	Aerografo solo movimento
+	Configure Grid…	Configura griglia…
+	Configure Grid	Configura griglia
+	Spacing X	Spaziatura X
+	Spacing Y	Spaziatura Y
+	Offset X	Scostamento X
+	Offset Y	Scostamento Y
+	Active Path	Tracciato attivo
+	Equidistance	Equidistanza
+	Wavelet Decompose…	Decomposizione wavelet…
+	Wavelet Decompose	Decomposizione wavelet
+	Scales	Scale
+	Import Swatches from Image	Importa campioni dall'immagine
+	Export Swatches as CSS…	Esporta campioni come CSS…
+	Cage Transform	Trasformazione gabbia

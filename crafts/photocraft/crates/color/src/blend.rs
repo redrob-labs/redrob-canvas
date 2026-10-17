@@ -44,19 +44,32 @@ pub enum BlendMode {
     Xor,
     PaintNetColorBurn,
     PaintNetColorDodge,
+    /// Hue of the source in the HSV model, saturation and value of the backdrop.
+    HsvHue,
+    /// Saturation of the source in the HSV model, hue and value of the backdrop.
+    HsvSaturation,
+    /// Value (max channel) of the source, hue and saturation of the backdrop.
+    HsvValue,
+    /// Luminance (linear-light Y) of the source, chromaticity of the backdrop.
+    Luminance,
 }
 
 impl BlendMode {
     /// Paint.NET modes without an exact Photoshop equivalent.
     pub const PAINT_NET_MODES: [BlendMode; 6] = [Self::Reflect, Self::Glow, Self::Negation, Self::Xor, Self::PaintNetColorBurn, Self::PaintNetColorDodge];
 
-    /// All editable layer modes, with Paint.NET modes after Photoshop's menu order.
+    /// The HSV and luminance component modes: the HSV family picks one HSV component from the
+    /// source and keeps the other two of the backdrop; Luminance keeps the backdrop's chromaticity
+    /// and takes the source's linear-light luminance. None has a PSD equivalent.
+    pub const EXTENDED_MODES: [BlendMode; 4] = [Self::HsvHue, Self::HsvSaturation, Self::HsvValue, Self::Luminance];
+
+    /// All editable layer modes, with the extended and Paint.NET modes after Photoshop's menu order.
     pub fn layer_modes() -> impl Iterator<Item = Self> {
-        Self::LAYER_MODES.into_iter().chain(Self::PAINT_NET_MODES)
+        Self::LAYER_MODES.into_iter().chain(Self::EXTENDED_MODES).chain(Self::PAINT_NET_MODES)
     }
 
     pub fn has_psd_equivalent(self) -> bool {
-        !Self::PAINT_NET_MODES.contains(&self)
+        !Self::PAINT_NET_MODES.contains(&self) && !Self::EXTENDED_MODES.contains(&self)
     }
     /// Photoshop modes except PassThrough, in Photoshop menu order.
     pub const LAYER_MODES: [BlendMode; 27] = [
@@ -125,6 +138,10 @@ impl BlendMode {
             BlendMode::Xor => "XOR",
             BlendMode::PaintNetColorBurn => "Color Burn (Paint.NET)",
             BlendMode::PaintNetColorDodge => "Color Dodge (Paint.NET)",
+            BlendMode::HsvHue => "HSV Hue",
+            BlendMode::HsvSaturation => "HSV Saturation",
+            BlendMode::HsvValue => "HSV Value",
+            BlendMode::Luminance => "Luminance",
         }
     }
 
@@ -160,9 +177,16 @@ impl BlendMode {
             BlendMode::Saturation => b"sat ",
             BlendMode::Color => b"colr",
             BlendMode::Luminosity => b"lum ",
-            BlendMode::Reflect | BlendMode::Glow | BlendMode::Negation | BlendMode::Xor | BlendMode::PaintNetColorBurn | BlendMode::PaintNetColorDodge => {
-                b"norm"
-            }
+            BlendMode::Reflect
+            | BlendMode::Glow
+            | BlendMode::Negation
+            | BlendMode::Xor
+            | BlendMode::PaintNetColorBurn
+            | BlendMode::PaintNetColorDodge
+            | BlendMode::HsvHue
+            | BlendMode::HsvSaturation
+            | BlendMode::HsvValue
+            | BlendMode::Luminance => b"norm",
         }
     }
 
@@ -171,7 +195,19 @@ impl BlendMode {
     }
 
     pub fn is_separable(self) -> bool {
-        !matches!(self, BlendMode::Hue | BlendMode::Saturation | BlendMode::Color | BlendMode::Luminosity | BlendMode::DarkerColor | BlendMode::LighterColor)
+        !matches!(
+            self,
+            BlendMode::Hue
+                | BlendMode::Saturation
+                | BlendMode::Color
+                | BlendMode::Luminosity
+                | BlendMode::DarkerColor
+                | BlendMode::LighterColor
+                | BlendMode::HsvHue
+                | BlendMode::HsvSaturation
+                | BlendMode::HsvValue
+                | BlendMode::Luminance
+        )
     }
 }
 
@@ -263,7 +299,16 @@ fn channel(mode: BlendMode, cb: f32, cs: f32, hi: f32) -> f32 {
             }
         }
         // Non-separable modes are handled by `blend_rgb`; fall back to source.
-        BlendMode::DarkerColor | BlendMode::LighterColor | BlendMode::Hue | BlendMode::Saturation | BlendMode::Color | BlendMode::Luminosity => cs,
+        BlendMode::DarkerColor
+        | BlendMode::LighterColor
+        | BlendMode::Hue
+        | BlendMode::Saturation
+        | BlendMode::Color
+        | BlendMode::Luminosity
+        | BlendMode::HsvHue
+        | BlendMode::HsvSaturation
+        | BlendMode::HsvValue
+        | BlendMode::Luminance => cs,
     }
 }
 
@@ -395,6 +440,65 @@ fn set_sat(c: [f32; 3], s: f32) -> [f32; 3] {
     out
 }
 
+// ---- HSV component modes and Luminance ----
+
+/// RGB → (hue in 0..6, saturation, value). Hue is 0 for greys.
+#[inline]
+fn rgb_to_hsv(c: [f32; 3]) -> [f32; 3] {
+    let mx = c[0].max(c[1]).max(c[2]);
+    let mn = c[0].min(c[1]).min(c[2]);
+    let d = mx - mn;
+    let h = if d <= 0.0 {
+        0.0
+    } else if mx == c[0] {
+        ((c[1] - c[2]) / d).rem_euclid(6.0)
+    } else if mx == c[1] {
+        (c[2] - c[0]) / d + 2.0
+    } else {
+        (c[0] - c[1]) / d + 4.0
+    };
+    let s = if mx > 0.0 { d / mx } else { 0.0 };
+    [h, s, mx]
+}
+
+/// (hue in 0..6, saturation, value) → RGB.
+#[inline]
+fn hsv_to_rgb(h: f32, s: f32, v: f32) -> [f32; 3] {
+    let h = h.rem_euclid(6.0);
+    let c = v * s;
+    let x = c * (1.0 - ((h % 2.0) - 1.0).abs());
+    let m = v - c;
+    let (r, g, b) = match h as i32 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+    [r + m, g + m, b + m]
+}
+
+/// Linear-light luminance (Rec. 709 / sRGB primaries) of an encoded sRGB triple.
+#[inline]
+fn luminance_y(c: [f32; 3]) -> f32 {
+    let l = c.map(|v| crate::convert::srgb_to_linear(v.max(0.0)));
+    0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]
+}
+
+/// `cb` with its luminance scaled in linear light to `cs`'s, keeping its chromaticity: a black
+/// backdrop (no chromaticity) becomes the grey of the source's luminance. Clipped at `top`.
+fn luminance_blend(cb: [f32; 3], cs: [f32; 3], top: f32) -> [f32; 3] {
+    let (yb, ys) = (luminance_y(cb), luminance_y(cs));
+    let lin: [f32; 3] = if yb <= 1e-7 {
+        [ys; 3]
+    } else {
+        let k = ys / yb;
+        cb.map(|v| crate::convert::srgb_to_linear(v.max(0.0)) * k)
+    };
+    lin.map(|v| crate::convert::linear_to_srgb(v).min(top))
+}
+
 /// Blend a whole RGB triple: `B(Cb, Cs)` including non-separable modes.
 pub fn blend_rgb(mode: BlendMode, cb: [f32; 3], cs: [f32; 3]) -> [f32; 3] {
     blend_rgb_within(mode, cb, cs, 1.0)
@@ -408,6 +512,19 @@ pub fn blend_rgb_within(mode: BlendMode, cb: [f32; 3], cs: [f32; 3], top: f32) -
         BlendMode::Saturation => set_lum_within(set_sat(cb, sat(cs)), lum(cb), top),
         BlendMode::Color => set_lum_within(cs, lum(cb), top),
         BlendMode::Luminosity => set_lum_within(cb, lum(cs), top),
+        BlendMode::HsvHue => {
+            let (b, s) = (rgb_to_hsv(cb), rgb_to_hsv(cs));
+            hsv_to_rgb(s[0], b[1], b[2])
+        }
+        BlendMode::HsvSaturation => {
+            let (b, s) = (rgb_to_hsv(cb), rgb_to_hsv(cs));
+            hsv_to_rgb(b[0], s[1], b[2])
+        }
+        BlendMode::HsvValue => {
+            let (b, s) = (rgb_to_hsv(cb), rgb_to_hsv(cs));
+            hsv_to_rgb(b[0], b[1], s[2].min(top))
+        }
+        BlendMode::Luminance => luminance_blend(cb, cs, top),
         BlendMode::DarkerColor => {
             if lum(cs) < lum(cb) {
                 cs
@@ -506,7 +623,7 @@ mod tests {
                 }
             }
         }
-        assert_eq!(BlendMode::layer_modes().count(), 33);
+        assert_eq!(BlendMode::layer_modes().count(), 37);
     }
 
     #[test]
@@ -787,6 +904,49 @@ mod tests {
             let a = blend_rgb_within(m, [2.0, 2.0, 2.0], [4.0, 4.0, 4.0], f32::MAX);
             let b = blend_rgb_within(m, [2.0, 2.0, 1.999_999], [4.0, 3.999_999, 4.0], f32::MAX);
             assert!(a.iter().zip(b).all(|(x, y)| (x - y).abs() <= 1e-4), "{m:?}: {a:?} {b:?}");
+        }
+    }
+
+    #[test]
+    fn hsv_component_modes_take_one_component_from_the_source() {
+        let cb = [0.8, 0.2, 0.2]; // red-ish: h=0, s=0.75, v=0.8
+        let cs = [0.1, 0.1, 0.9]; // blue-ish: h=4, s=0.889, v=0.9
+        let h = blend_rgb(BlendMode::HsvHue, cb, cs);
+        let hh = rgb_to_hsv(h);
+        assert!(close(hh[0], 4.0) && close(hh[1], 0.75) && close(hh[2], 0.8), "{h:?}");
+        let s = blend_rgb(BlendMode::HsvSaturation, cb, cs);
+        let sh = rgb_to_hsv(s);
+        assert!(close(sh[0], 0.0) && close(sh[1], (0.9 - 0.1) / 0.9) && close(sh[2], 0.8), "{s:?}");
+        let v = blend_rgb(BlendMode::HsvValue, cb, cs);
+        let vh = rgb_to_hsv(v);
+        assert!(close(vh[0], 0.0) && close(vh[1], 0.75) && close(vh[2], 0.9), "{v:?}");
+        // A grey source keeps the backdrop's hue and value in HSV Hue and saturation 0 in HSV Saturation.
+        let g = blend_rgb(BlendMode::HsvSaturation, cb, [0.5; 3]);
+        assert!(close(g[0], g[1]) && close(g[1], g[2]) && close(g[0], 0.8), "{g:?}");
+        for c in [0.0f32, 0.25, 0.5, 1.0] {
+            let rt = hsv_to_rgb(rgb_to_hsv([c, 1.0 - c, 0.5])[0], rgb_to_hsv([c, 1.0 - c, 0.5])[1], rgb_to_hsv([c, 1.0 - c, 0.5])[2]);
+            assert!(close(rt[0], c) && close(rt[1], 1.0 - c) && close(rt[2], 0.5), "{rt:?}");
+        }
+    }
+
+    #[test]
+    fn luminance_mode_keeps_chromaticity_and_takes_source_luminance() {
+        let cb = [0.8, 0.2, 0.2];
+        let cs = [0.1, 0.1, 0.9];
+        let r = blend_rgb(BlendMode::Luminance, cb, cs);
+        assert!((luminance_y(r) - luminance_y(cs)).abs() < 1e-4, "{r:?}");
+        // Chromaticity (ratios in linear light) of the backdrop is kept.
+        let (lb, lr) = (cb.map(crate::convert::srgb_to_linear), r.map(crate::convert::srgb_to_linear));
+        assert!(close(lb[1] / lb[0], lr[1] / lr[0]) && close(lb[2] / lb[0], lr[2] / lr[0]), "{r:?}");
+        // Black backdrop has no chromaticity: it becomes the source's grey.
+        let g = blend_rgb(BlendMode::Luminance, [0.0; 3], cs);
+        assert!(close(g[0], g[1]) && close(g[1], g[2]) && (luminance_y(g) - luminance_y(cs)).abs() < 1e-4, "{g:?}");
+        // Integer depths clip at 1.
+        let w = blend_rgb(BlendMode::Luminance, [0.9, 0.1, 0.1], [1.0; 3]);
+        assert!(w.iter().all(|v| *v <= 1.0 + E), "{w:?}");
+        for m in BlendMode::EXTENDED_MODES {
+            assert!(!m.has_psd_equivalent() && !m.is_separable());
+            assert_eq!(m.psd_key(), *b"norm");
         }
     }
 

@@ -1021,6 +1021,13 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             if crate::brush_picker::named(airbrush, "Enable airbrush-style build-up effects").clicked() {
                                 b.build_up = !b.build_up;
                             }
+                            if b.build_up {
+                                // Motion only: the airbrush deposits only while the pointer moves.
+                                let motion = icons::button(ui, "move", 24.0, b.build_up_motion_only, tl!("Airbrush paints only while moving (motion only)"));
+                                if crate::brush_picker::named(motion, "Airbrush motion only").clicked() {
+                                    b.build_up_motion_only = !b.build_up_motion_only;
+                                }
+                            }
                         });
                         opt_label(ui, tl!("Smoothing"));
                         smoothing_field(ui, b, 58.0);
@@ -2249,11 +2256,17 @@ fn simple_lock_toggle(background: bool, l: &Layer) -> (String, Value) {
     ("layer.setProps".into(), json!({"layer": l.id.0, "locks": locks}))
 }
 
-/// The Layers panel's blend modes: Photoshop's, plus the layer's own Paint.NET mode when it has one
-/// (an imported `.pdn`), so the menu matches Photoshop's for every other layer.
+/// The Layers panel's blend modes: Photoshop's, then the HSV / Luminance component modes, plus the
+/// layer's own Paint.NET mode when it has one (an imported `.pdn`).
 fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static str)> {
-    let own = Some(current).filter(|m| !m.has_psd_equivalent());
-    std::iter::once(BlendMode::PassThrough).filter(|_| groups).chain(BlendMode::LAYER_MODES).chain(own).map(|m| (m, m.label())).collect()
+    let own = Some(current).filter(|m| BlendMode::PAINT_NET_MODES.contains(m));
+    std::iter::once(BlendMode::PassThrough)
+        .filter(|_| groups)
+        .chain(BlendMode::LAYER_MODES)
+        .chain(BlendMode::EXTENDED_MODES)
+        .chain(own)
+        .map(|m| (m, m.label()))
+        .collect()
 }
 
 /// Scroll the Layers panel while holding a layer drag over its top/bottom edge or past them.

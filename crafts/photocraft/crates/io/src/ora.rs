@@ -141,7 +141,7 @@ pub(crate) fn krita_id(mode: BlendMode) -> Option<&'static str> {
         B::Reflect => "reflect",
         B::Glow => "glow",
         B::Negation => "negation",
-        B::Xor | B::PaintNetColorBurn | B::PaintNetColorDodge => return None,
+        B::Xor | B::PaintNetColorBurn | B::PaintNetColorDodge | B::HsvHue | B::HsvSaturation | B::HsvValue | B::Luminance => return None,
     })
 }
 

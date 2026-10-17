@@ -4003,3 +4003,39 @@ cameraData	Lens	Lens
 	Save the brush's dynamics as a new preset	Fırça dinamiğini yeni ön ayar olarak kaydet
 	Delete this dynamics preset	Bu dinamik ön ayarını sil
 	Velocity	Hız
+	HSV Hue	HSV Renk Tonu
+	HSV Saturation	HSV Doygunluk
+	HSV Value	HSV Değer
+	Edge…	Kenar…
+	Algorithm	Algoritma
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferansiyel
+	Laplace	Laplace
+	Color Temperature…	Renk Sıcaklığı…
+	Color Temperature	Renk Sıcaklığı
+	Original Temperature	Özgün Sıcaklık
+	Intended Temperature	Hedef Sıcaklık
+	Hue-Chroma…	Renk Tonu-Kroma…
+	Hue-Chroma	Renk Tonu-Kroma
+	Chroma	Kroma
+	Corner Threshold	Köşe Eşiği
+	Corner Surround	Köşe Çevresi
+	Min Area	En Küçük Alan
+	Airbrush paints only while moving (motion only)	Airbrush yalnızca hareket ederken boyar (yalnızca hareket)
+	Airbrush motion only	Airbrush yalnızca hareket
+	Configure Grid…	Izgarayı Yapılandır…
+	Configure Grid	Izgarayı Yapılandır
+	Spacing X	Aralık X
+	Spacing Y	Aralık Y
+	Offset X	Kaydırma X
+	Offset Y	Kaydırma Y
+	Active Path	Etkin Yol
+	Equidistance	Eşit Uzaklık
+	Wavelet Decompose…	Dalgacık Ayrıştırma…
+	Wavelet Decompose	Dalgacık Ayrıştırma
+	Scales	Ölçekler
+	Import Swatches from Image	Görüntüden Renk Örneklerini İçe Aktar
+	Export Swatches as CSS…	Renk Örneklerini CSS Olarak Dışa Aktar…
+	Cage Transform	Kafes Dönüşümü

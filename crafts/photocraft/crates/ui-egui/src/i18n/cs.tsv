@@ -3882,3 +3882,39 @@ navigator	Zoom	Zvětšení
 	Save the brush's dynamics as a new preset	Uložit dynamiku štětce jako novou předvolbu
 	Delete this dynamics preset	Smazat tuto předvolbu dynamiky
 	Velocity	Rychlost
+	HSV Hue	Odstín HSV
+	HSV Saturation	Sytost HSV
+	HSV Value	Hodnota HSV
+	Edge…	Hrana…
+	Algorithm	Algoritmus
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferenciální
+	Laplace	Laplace
+	Color Temperature…	Teplota barev…
+	Color Temperature	Teplota barev
+	Original Temperature	Původní teplota
+	Intended Temperature	Cílová teplota
+	Hue-Chroma…	Odstín-chroma…
+	Hue-Chroma	Odstín-chroma
+	Chroma	Chroma
+	Corner Threshold	Prah rohu
+	Corner Surround	Okolí rohu
+	Min Area	Min. plocha
+	Airbrush paints only while moving (motion only)	Rozprašovač maluje jen při pohybu (pouze pohyb)
+	Airbrush motion only	Rozprašovač pouze pohyb
+	Configure Grid…	Nastavit mřížku…
+	Configure Grid	Nastavit mřížku
+	Spacing X	Rozestup X
+	Spacing Y	Rozestup Y
+	Offset X	Posun X
+	Offset Y	Posun Y
+	Active Path	Aktivní cesta
+	Equidistance	Stejné vzdálenosti
+	Wavelet Decompose…	Vlnkový rozklad…
+	Wavelet Decompose	Vlnkový rozklad
+	Scales	Měřítka
+	Import Swatches from Image	Importovat vzorky z obrázku
+	Export Swatches as CSS…	Exportovat vzorky jako CSS…
+	Cage Transform	Transformace klecí

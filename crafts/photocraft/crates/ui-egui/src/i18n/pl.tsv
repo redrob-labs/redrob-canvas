@@ -3871,3 +3871,39 @@ curves	Smooth	Wygładź
 	Save the brush's dynamics as a new preset	Zapisz dynamikę pędzla jako nowe ustawienie
 	Delete this dynamics preset	Usuń to ustawienie dynamiki
 	Velocity	Prędkość
+	HSV Hue	Odcień HSV
+	HSV Saturation	Nasycenie HSV
+	HSV Value	Wartość HSV
+	Edge…	Krawędź…
+	Algorithm	Algorytm
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Różnicowy
+	Laplace	Laplace
+	Color Temperature…	Temperatura barwowa…
+	Color Temperature	Temperatura barwowa
+	Original Temperature	Temperatura oryginalna
+	Intended Temperature	Temperatura docelowa
+	Hue-Chroma…	Odcień-chroma…
+	Hue-Chroma	Odcień-chroma
+	Chroma	Chroma
+	Corner Threshold	Próg narożnika
+	Corner Surround	Otoczenie narożnika
+	Min Area	Min. powierzchnia
+	Airbrush paints only while moving (motion only)	Aerograf maluje tylko w ruchu (tylko ruch)
+	Airbrush motion only	Aerograf tylko ruch
+	Configure Grid…	Konfiguruj siatkę…
+	Configure Grid	Konfiguruj siatkę
+	Spacing X	Odstęp X
+	Spacing Y	Odstęp Y
+	Offset X	Przesunięcie X
+	Offset Y	Przesunięcie Y
+	Active Path	Aktywna ścieżka
+	Equidistance	Równe odległości
+	Wavelet Decompose…	Dekompozycja falkowa…
+	Wavelet Decompose	Dekompozycja falkowa
+	Scales	Skale
+	Import Swatches from Image	Importuj próbki z obrazu
+	Export Swatches as CSS…	Eksportuj próbki jako CSS…
+	Cage Transform	Przekształcenie klatką

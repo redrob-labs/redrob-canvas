@@ -4234,3 +4234,39 @@ navigator	Zoom	Zoom
 	Save the brush's dynamics as a new preset	Guardar la dinámica del pincel como ajuste nuevo
 	Delete this dynamics preset	Eliminar este ajuste de dinámica
 	Velocity	Velocidad
+	HSV Hue	Tono HSV
+	HSV Saturation	Saturación HSV
+	HSV Value	Valor HSV
+	Edge…	Borde…
+	Algorithm	Algoritmo
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferencial
+	Laplace	Laplace
+	Color Temperature…	Temperatura de color…
+	Color Temperature	Temperatura de color
+	Original Temperature	Temperatura original
+	Intended Temperature	Temperatura deseada
+	Hue-Chroma…	Tono-croma…
+	Hue-Chroma	Tono-croma
+	Chroma	Croma
+	Corner Threshold	Umbral de esquina
+	Corner Surround	Entorno de esquina
+	Min Area	Área mínima
+	Airbrush paints only while moving (motion only)	El aerógrafo pinta solo al moverse (solo movimiento)
+	Airbrush motion only	Aerógrafo solo movimiento
+	Configure Grid…	Configurar cuadrícula…
+	Configure Grid	Configurar cuadrícula
+	Spacing X	Espaciado X
+	Spacing Y	Espaciado Y
+	Offset X	Desplazamiento X
+	Offset Y	Desplazamiento Y
+	Active Path	Trazado activo
+	Equidistance	Equidistancia
+	Wavelet Decompose…	Descomposición wavelet…
+	Wavelet Decompose	Descomposición wavelet
+	Scales	Escalas
+	Import Swatches from Image	Importar muestras desde la imagen
+	Export Swatches as CSS…	Exportar muestras como CSS…
+	Cage Transform	Transformación de jaula

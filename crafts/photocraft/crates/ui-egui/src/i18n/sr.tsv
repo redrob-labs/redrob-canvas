@@ -4345,3 +4345,39 @@ shape	Appearance	Izgled
 	Save the brush's dynamics as a new preset	Сачувај динамику четкице као нову поставку
 	Delete this dynamics preset	Обриши ову поставку динамике
 	Velocity	Брзина
+	HSV Hue	HSV nijansa
+	HSV Saturation	HSV zasićenost
+	HSV Value	HSV vrednost
+	Edge…	Ivica…
+	Algorithm	Algoritam
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferencijalni
+	Laplace	Laplace
+	Color Temperature…	Temperatura boje…
+	Color Temperature	Temperatura boje
+	Original Temperature	Izvorna temperatura
+	Intended Temperature	Ciljna temperatura
+	Hue-Chroma…	Nijansa-hroma…
+	Hue-Chroma	Nijansa-hroma
+	Chroma	Hroma
+	Corner Threshold	Prag ugla
+	Corner Surround	Okolina ugla
+	Min Area	Min. površina
+	Airbrush paints only while moving (motion only)	Sprej boji samo u pokretu (samo pokret)
+	Airbrush motion only	Sprej samo u pokretu
+	Configure Grid…	Podesi mrežu…
+	Configure Grid	Podesi mrežu
+	Spacing X	Razmak X
+	Spacing Y	Razmak Y
+	Offset X	Pomak X
+	Offset Y	Pomak Y
+	Active Path	Aktivna putanja
+	Equidistance	Jednaka rastojanja
+	Wavelet Decompose…	Talasić razlaganje…
+	Wavelet Decompose	Talasić razlaganje
+	Scales	Razmere
+	Import Swatches from Image	Uvezi uzorke iz slike
+	Export Swatches as CSS…	Izvezi uzorke kao CSS…
+	Cage Transform	Transformacija kavezom

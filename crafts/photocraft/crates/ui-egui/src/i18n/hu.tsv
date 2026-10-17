@@ -4191,3 +4191,39 @@ cameraRaw	Yellow	Sárga
 	Save the brush's dynamics as a new preset	Az ecset dinamikájának mentése új előbeállításként
 	Delete this dynamics preset	Ennek a dinamika-előbeállításnak a törlése
 	Velocity	Sebesség
+	HSV Hue	HSV színárnyalat
+	HSV Saturation	HSV telítettség
+	HSV Value	HSV érték
+	Edge…	Él…
+	Algorithm	Algoritmus
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Differenciális
+	Laplace	Laplace
+	Color Temperature…	Színhőmérséklet…
+	Color Temperature	Színhőmérséklet
+	Original Temperature	Eredeti hőmérséklet
+	Intended Temperature	Kívánt hőmérséklet
+	Hue-Chroma…	Színárnyalat-kroma…
+	Hue-Chroma	Színárnyalat-kroma
+	Chroma	Kroma
+	Corner Threshold	Sarok küszöb
+	Corner Surround	Sarok környezet
+	Min Area	Min. terület
+	Airbrush paints only while moving (motion only)	A festékszóró csak mozgás közben fest (csak mozgás)
+	Airbrush motion only	Festékszóró csak mozgás
+	Configure Grid…	Rács beállítása…
+	Configure Grid	Rács beállítása
+	Spacing X	Távolság X
+	Spacing Y	Távolság Y
+	Offset X	Eltolás X
+	Offset Y	Eltolás Y
+	Active Path	Aktív útvonal
+	Equidistance	Egyenlő távolság
+	Wavelet Decompose…	Wavelet felbontás…
+	Wavelet Decompose	Wavelet felbontás
+	Scales	Skálák
+	Import Swatches from Image	Színminták importálása képből
+	Export Swatches as CSS…	Színminták exportálása CSS-ként…
+	Cage Transform	Ketrec-átalakítás

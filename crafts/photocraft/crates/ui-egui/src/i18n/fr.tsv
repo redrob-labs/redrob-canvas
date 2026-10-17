@@ -3282,3 +3282,39 @@ curves	Smooth	Lisser
 	Save the brush's dynamics as a new preset	Enregistrer la dynamique du pinceau comme nouveau préréglage
 	Delete this dynamics preset	Supprimer ce préréglage de dynamique
 	Velocity	Vitesse
+	HSV Hue	Teinte TSV
+	HSV Saturation	Saturation TSV
+	HSV Value	Valeur TSV
+	Edge…	Contour…
+	Algorithm	Algorithme
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Différentiel
+	Laplace	Laplace
+	Color Temperature…	Température de couleur…
+	Color Temperature	Température de couleur
+	Original Temperature	Température d'origine
+	Intended Temperature	Température souhaitée
+	Hue-Chroma…	Teinte-chroma…
+	Hue-Chroma	Teinte-chroma
+	Chroma	Chroma
+	Corner Threshold	Seuil d'angle
+	Corner Surround	Voisinage d'angle
+	Min Area	Aire minimale
+	Airbrush paints only while moving (motion only)	L'aérographe peint seulement en mouvement (mouvement seul)
+	Airbrush motion only	Aérographe mouvement seul
+	Configure Grid…	Configurer la grille…
+	Configure Grid	Configurer la grille
+	Spacing X	Espacement X
+	Spacing Y	Espacement Y
+	Offset X	Décalage X
+	Offset Y	Décalage Y
+	Active Path	Tracé actif
+	Equidistance	Équidistance
+	Wavelet Decompose…	Décomposition en ondelettes…
+	Wavelet Decompose	Décomposition en ondelettes
+	Scales	Échelles
+	Import Swatches from Image	Importer les nuances depuis l'image
+	Export Swatches as CSS…	Exporter les nuances en CSS…
+	Cage Transform	Transformation par cage

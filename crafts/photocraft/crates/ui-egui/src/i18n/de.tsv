@@ -3276,3 +3276,39 @@ curves	Smooth	Glätten
 	Save the brush's dynamics as a new preset	Pinseldynamik als neue Vorgabe speichern
 	Delete this dynamics preset	Diese Dynamikvorgabe löschen
 	Velocity	Geschwindigkeit
+	HSV Hue	HSV-Farbton
+	HSV Saturation	HSV-Sättigung
+	HSV Value	HSV-Wert
+	Edge…	Kante…
+	Algorithm	Algorithmus
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Differenziell
+	Laplace	Laplace
+	Color Temperature…	Farbtemperatur…
+	Color Temperature	Farbtemperatur
+	Original Temperature	Ursprüngliche Temperatur
+	Intended Temperature	Zieltemperatur
+	Hue-Chroma…	Farbton-Chroma…
+	Hue-Chroma	Farbton-Chroma
+	Chroma	Chroma
+	Corner Threshold	Eckenschwelle
+	Corner Surround	Eckenumgebung
+	Min Area	Mindestfläche
+	Airbrush paints only while moving (motion only)	Airbrush malt nur bei Bewegung (nur Bewegung)
+	Airbrush motion only	Airbrush nur Bewegung
+	Configure Grid…	Raster konfigurieren…
+	Configure Grid	Raster konfigurieren
+	Spacing X	Abstand X
+	Spacing Y	Abstand Y
+	Offset X	Versatz X
+	Offset Y	Versatz Y
+	Active Path	Aktiver Pfad
+	Equidistance	Gleiche Abstände
+	Wavelet Decompose…	Wavelet-Zerlegung…
+	Wavelet Decompose	Wavelet-Zerlegung
+	Scales	Skalen
+	Import Swatches from Image	Farbfelder aus Bild importieren
+	Export Swatches as CSS…	Farbfelder als CSS exportieren…
+	Cage Transform	Käfig-Transformation

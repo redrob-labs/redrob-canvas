@@ -3949,3 +3949,39 @@ curves	Smooth	スムーズ
 	Save the brush's dynamics as a new preset	ブラシのダイナミクスを新しいプリセットとして保存
 	Delete this dynamics preset	このダイナミクスプリセットを削除
 	Velocity	速度
+	HSV Hue	HSV 色相
+	HSV Saturation	HSV 彩度
+	HSV Value	HSV 明度
+	Edge…	エッジ…
+	Algorithm	アルゴリズム
+	Sobel	ソーベル
+	Prewitt	プレヴィット
+	Roberts	ロバーツ
+	Differential	差分
+	Laplace	ラプラス
+	Color Temperature…	色温度…
+	Color Temperature	色温度
+	Original Temperature	元の色温度
+	Intended Temperature	目標の色温度
+	Hue-Chroma…	色相・クロマ…
+	Hue-Chroma	色相・クロマ
+	Chroma	クロマ
+	Corner Threshold	コーナーのしきい値
+	Corner Surround	コーナーの範囲
+	Min Area	最小面積
+	Airbrush paints only while moving (motion only)	エアブラシは動いている間だけ描く（モーションのみ）
+	Airbrush motion only	エアブラシ モーションのみ
+	Configure Grid…	グリッドの設定…
+	Configure Grid	グリッドの設定
+	Spacing X	間隔 X
+	Spacing Y	間隔 Y
+	Offset X	オフセット X
+	Offset Y	オフセット Y
+	Active Path	アクティブなパス
+	Equidistance	等間隔
+	Wavelet Decompose…	ウェーブレット分解…
+	Wavelet Decompose	ウェーブレット分解
+	Scales	スケール数
+	Import Swatches from Image	画像からスウォッチを読み込み
+	Export Swatches as CSS…	スウォッチを CSS として書き出し…
+	Cage Transform	ケージ変形

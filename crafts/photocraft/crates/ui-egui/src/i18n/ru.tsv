@@ -3248,3 +3248,39 @@ curves	Smooth	Сгладить
 	Save the brush's dynamics as a new preset	Сохранить динамику кисти как новый набор
 	Delete this dynamics preset	Удалить этот набор динамики
 	Velocity	Скорость
+	HSV Hue	Тон HSV
+	HSV Saturation	Насыщенность HSV
+	HSV Value	Значение HSV
+	Edge…	Край…
+	Algorithm	Алгоритм
+	Sobel	Собель
+	Prewitt	Превитт
+	Roberts	Робертс
+	Differential	Дифференциальный
+	Laplace	Лаплас
+	Color Temperature…	Цветовая температура…
+	Color Temperature	Цветовая температура
+	Original Temperature	Исходная температура
+	Intended Temperature	Целевая температура
+	Hue-Chroma…	Тон-цветность…
+	Hue-Chroma	Тон-цветность
+	Chroma	Цветность
+	Corner Threshold	Порог угла
+	Corner Surround	Окружение угла
+	Min Area	Мин. площадь
+	Airbrush paints only while moving (motion only)	Аэрограф рисует только при движении (только движение)
+	Airbrush motion only	Аэрограф: только движение
+	Configure Grid…	Настроить сетку…
+	Configure Grid	Настроить сетку
+	Spacing X	Интервал X
+	Spacing Y	Интервал Y
+	Offset X	Смещение X
+	Offset Y	Смещение Y
+	Active Path	Активный контур
+	Equidistance	Равные расстояния
+	Wavelet Decompose…	Вейвлет-разложение…
+	Wavelet Decompose	Вейвлет-разложение
+	Scales	Масштабы
+	Import Swatches from Image	Импорт образцов из изображения
+	Export Swatches as CSS…	Экспорт образцов как CSS…
+	Cage Transform	Трансформация по клетке

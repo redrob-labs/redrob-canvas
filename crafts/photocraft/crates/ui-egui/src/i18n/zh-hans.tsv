@@ -2894,3 +2894,39 @@ curves	Smooth	平滑
 	Save the brush's dynamics as a new preset	将画笔动态保存为新预设
 	Delete this dynamics preset	删除此动态预设
 	Velocity	速度
+	HSV Hue	HSV 色相
+	HSV Saturation	HSV 饱和度
+	HSV Value	HSV 明度
+	Edge…	边缘…
+	Algorithm	算法
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	差分
+	Laplace	拉普拉斯
+	Color Temperature…	色温…
+	Color Temperature	色温
+	Original Temperature	原始色温
+	Intended Temperature	目标色温
+	Hue-Chroma…	色相-色度…
+	Hue-Chroma	色相-色度
+	Chroma	色度
+	Corner Threshold	拐角阈值
+	Corner Surround	拐角范围
+	Min Area	最小面积
+	Airbrush paints only while moving (motion only)	喷枪仅在移动时绘制（仅运动）
+	Airbrush motion only	喷枪仅运动
+	Configure Grid…	配置网格…
+	Configure Grid	配置网格
+	Spacing X	间距 X
+	Spacing Y	间距 Y
+	Offset X	偏移 X
+	Offset Y	偏移 Y
+	Active Path	活动路径
+	Equidistance	等距
+	Wavelet Decompose…	小波分解…
+	Wavelet Decompose	小波分解
+	Scales	尺度
+	Import Swatches from Image	从图像导入色板
+	Export Swatches as CSS…	将色板导出为 CSS…
+	Cage Transform	笼形变换

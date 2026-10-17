@@ -4033,3 +4033,39 @@ curves	Smooth	Vloeiend maken
 	Save the brush's dynamics as a new preset	Penseeldynamiek opslaan als nieuwe voorinstelling
 	Delete this dynamics preset	Deze dynamiekvoorinstelling verwijderen
 	Velocity	Snelheid
+	HSV Hue	HSV-kleurtoon
+	HSV Saturation	HSV-verzadiging
+	HSV Value	HSV-waarde
+	Edge…	Rand…
+	Algorithm	Algoritme
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Differentieel
+	Laplace	Laplace
+	Color Temperature…	Kleurtemperatuur…
+	Color Temperature	Kleurtemperatuur
+	Original Temperature	Oorspronkelijke temperatuur
+	Intended Temperature	Gewenste temperatuur
+	Hue-Chroma…	Kleurtoon-chroma…
+	Hue-Chroma	Kleurtoon-chroma
+	Chroma	Chroma
+	Corner Threshold	Hoekdrempel
+	Corner Surround	Hoekomgeving
+	Min Area	Min. oppervlak
+	Airbrush paints only while moving (motion only)	Airbrush schildert alleen bij beweging (alleen beweging)
+	Airbrush motion only	Airbrush alleen beweging
+	Configure Grid…	Raster instellen…
+	Configure Grid	Raster instellen
+	Spacing X	Afstand X
+	Spacing Y	Afstand Y
+	Offset X	Verschuiving X
+	Offset Y	Verschuiving Y
+	Active Path	Actief pad
+	Equidistance	Gelijke afstand
+	Wavelet Decompose…	Wavelet-decompositie…
+	Wavelet Decompose	Wavelet-decompositie
+	Scales	Schalen
+	Import Swatches from Image	Stalen importeren uit afbeelding
+	Export Swatches as CSS…	Stalen exporteren als CSS…
+	Cage Transform	Kooitransformatie

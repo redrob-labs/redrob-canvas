@@ -3269,3 +3269,39 @@ curves	Smooth	Haluskan
 	Save the brush's dynamics as a new preset	Simpan dinamika kuas sebagai prasetel baru
 	Delete this dynamics preset	Hapus prasetel dinamika ini
 	Velocity	Kecepatan
+	HSV Hue	Hue HSV
+	HSV Saturation	Saturasi HSV
+	HSV Value	Nilai HSV
+	Edge…	Tepi…
+	Algorithm	Algoritma
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferensial
+	Laplace	Laplace
+	Color Temperature…	Suhu Warna…
+	Color Temperature	Suhu Warna
+	Original Temperature	Suhu Asli
+	Intended Temperature	Suhu Tujuan
+	Hue-Chroma…	Hue-Kroma…
+	Hue-Chroma	Hue-Kroma
+	Chroma	Kroma
+	Corner Threshold	Ambang Sudut
+	Corner Surround	Sekitar Sudut
+	Min Area	Luas Minimum
+	Airbrush paints only while moving (motion only)	Airbrush hanya melukis saat bergerak (hanya gerakan)
+	Airbrush motion only	Airbrush hanya gerakan
+	Configure Grid…	Atur Kisi…
+	Configure Grid	Atur Kisi
+	Spacing X	Jarak X
+	Spacing Y	Jarak Y
+	Offset X	Offset X
+	Offset Y	Offset Y
+	Active Path	Jalur Aktif
+	Equidistance	Jarak Sama
+	Wavelet Decompose…	Dekomposisi Wavelet…
+	Wavelet Decompose	Dekomposisi Wavelet
+	Scales	Skala
+	Import Swatches from Image	Impor Swatch dari Gambar
+	Export Swatches as CSS…	Ekspor Swatch sebagai CSS…
+	Cage Transform	Transformasi Sangkar

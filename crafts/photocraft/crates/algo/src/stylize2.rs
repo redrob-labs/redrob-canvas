@@ -1,4 +1,4 @@
-//! Stylize: Diffuse, Extrude, Tiles, Trace Contour, Wind.
+//! Stylize: Diffuse, Extrude, Tiles, Trace Contour, Wind, Edge.
 
 use redrob_photo_geom::Rect;
 
@@ -8,7 +8,7 @@ mod wind;
 use crate::fxutil::{MAXC, luma, native, ncol, subtractive, xy};
 use crate::image::Image;
 use crate::noise::hash01;
-use crate::{Ctx, DiffuseMode, ExtrudeType, TileFill, WindMethod};
+use crate::{Ctx, DiffuseMode, EdgeAlgorithm, ExtrudeType, TileFill, WindMethod};
 
 fn read_px(src: &Image, x: i32, y: i32, buf: &mut [f32]) {
     for (c, v) in buf.iter_mut().enumerate() {
@@ -348,6 +348,56 @@ pub(crate) fn trace_contour(src: &Image, out: Rect, ctx: &Ctx, level: f32, upper
             let line = me == upper && [(1, 0), (-1, 0), (0, 1), (0, -1)].iter().any(|(dx, dy)| (bright(x + dx, y + dy, c) > t) != me);
             let paper = if line { 0.0 } else { 1.0 };
             *v = if sub { 1.0 - paper } else { paper };
+        }
+    }
+    res
+}
+
+/// Edge: per channel, the gradient magnitude of one of six operators as a light edge on black
+/// (ink in subtractive models). Each operator is normalised so a full step edge reads 1 at
+/// `amount` 2; higher amounts strengthen faint edges, lower ones keep only strong ones.
+pub(crate) fn edge(src: &Image, out: Rect, ctx: &Ctx, algorithm: EdgeAlgorithm, amount: f32) -> Vec<f32> {
+    let n = src.ch;
+    let cc = ncol(ctx, n);
+    let sub = subtractive(ctx);
+    let bounds = ctx.bounds.intersect(&src.rect);
+    let area = if bounds.is_empty() { src.rect } else { bounds };
+    let k = amount.clamp(1.0, 10.0) / 2.0;
+    let mut res = src.crop(out);
+    for (i, px) in res.chunks_exact_mut(n).enumerate() {
+        let (x, y) = xy(out, i);
+        for (c, v) in px.iter_mut().enumerate().take(cc) {
+            let g = |dx: i32, dy: i32| src.get_edge(x + dx, y + dy, c, crate::image::Edge::Repeat, area);
+            let mag = match algorithm {
+                EdgeAlgorithm::Sobel => {
+                    let gx = (g(1, -1) + 2.0 * g(1, 0) + g(1, 1)) - (g(-1, -1) + 2.0 * g(-1, 0) + g(-1, 1));
+                    let gy = (g(-1, 1) + 2.0 * g(0, 1) + g(1, 1)) - (g(-1, -1) + 2.0 * g(0, -1) + g(1, -1));
+                    (gx * gx + gy * gy).sqrt() / 4.0
+                }
+                EdgeAlgorithm::Prewitt => {
+                    let gx = (g(1, -1) + g(1, 0) + g(1, 1)) - (g(-1, -1) + g(-1, 0) + g(-1, 1));
+                    let gy = (g(-1, 1) + g(0, 1) + g(1, 1)) - (g(-1, -1) + g(0, -1) + g(1, -1));
+                    (gx * gx + gy * gy).sqrt() / 3.0
+                }
+                EdgeAlgorithm::Gradient => {
+                    let gx = g(1, 0) - g(-1, 0);
+                    let gy = g(0, 1) - g(0, -1);
+                    (gx * gx + gy * gy).sqrt()
+                }
+                EdgeAlgorithm::Roberts => {
+                    let gx = g(0, 0) - g(1, 1);
+                    let gy = g(1, 0) - g(0, 1);
+                    (gx * gx + gy * gy).sqrt()
+                }
+                EdgeAlgorithm::Differential => {
+                    let gx = (g(1, 0) - g(0, 0) + g(1, 1) - g(0, 1)) * 0.5;
+                    let gy = (g(0, 1) - g(0, 0) + g(1, 1) - g(1, 0)) * 0.5;
+                    (gx * gx + gy * gy).sqrt()
+                }
+                EdgeAlgorithm::Laplace => (4.0 * g(0, 0) - g(1, 0) - g(-1, 0) - g(0, 1) - g(0, -1)).abs() / 2.0,
+            };
+            let e = (mag * k).clamp(0.0, 1.0);
+            *v = if sub { 1.0 - e } else { e };
         }
     }
     res

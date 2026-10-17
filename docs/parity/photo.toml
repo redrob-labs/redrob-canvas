@@ -46,8 +46,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-foreground-select.html"
 behaviour = "Rough outline round the subject, then paint over foreground (and optionally background) strokes; a matting engine (two algorithms selectable) grows a mask with a preview overlay in a chosen colour; adjustable stroke width, preview mode (colour or grayscale), and commit to a selection or a layer mask."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/matting/, crafts/photocraft/crates/engine/src/smartselect_cmds.rs, crafts/photocraft/crates/ui-egui/src/select_mask_view.rs"
-gap = "no two-stage outline-then-paint workflow with explicit foreground/background strokes; closest is Quick Selection plus Select and Mask refinement"
+ours_where = "crafts/photocraft/crates/algo/src/segment/grabcut.rs (foreground_select: outline + foreground/background marks), crafts/photocraft/crates/engine/src/smartselect_cmds.rs (select.foreground), crafts/photocraft/crates/ui-egui/src/select_mask_view.rs"
+gap = "the two-stage outline-then-mark workflow is an engine command (select.foreground) driven by scripts and actions; no dedicated canvas tool yet (Quick Selection plus Select and Mask stand in)"
 priority = 2
 
 [[feature]]
@@ -81,9 +81,9 @@ name = "Scissors select (edge-following)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-iscissors.html"
 behaviour = "Click control points around an object; the segment between points snaps to the strongest nearby edge; points can be dragged after placement, segments re-snapped, then the closed curve is converted to a selection by clicking inside; option to interactively show boundary."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/magnetic_lasso_ui.rs, crafts/photocraft/crates/engine/src/magnetic_cmds.rs"
-gap = "magnetic lasso follows edges continuously but has no editable control points after placement"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/magnetic_lasso_ui.rs (anchor_at, move_anchor: drag a fastening point to re-trace both sides), crafts/photocraft/crates/engine/src/magnetic_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -273,9 +273,9 @@ name = "Selection to path"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-to-path.html"
 behaviour = "Traces the selection outline into a Bezier path; an advanced dialog exposes tracing tolerances (corner threshold, error threshold, filter iterations, etc.)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/select_extra_cmds.rs (select.toWorkPath)"
-gap = "single tolerance value, no advanced tracing options"
+ours = "full"
+ours_where = "crafts/photocraft/crates/vector/src/trace.rs (TraceOptions, trace_mask_with), crafts/photocraft/crates/engine/src/vector_cmds.rs (select.toWorkPath: tolerance, threshold, cornerThreshold, cornerSurround, minArea, smooth), crafts/photocraft/crates/ui-egui/src/canvas_tool_menu.rs (Make Work Path dialog)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -285,9 +285,9 @@ name = "Fill and stroke selection outline"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-stroke.html"
 behaviour = "Fill the selected area with FG, BG or a pattern (Edit > Fill with ...), or draws along the selection outline either as a solid or dashed line (width, cap, join, miter, dash preset, antialias) or by emulating a chosen paint tool with its current brush and dynamics."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (edit.stroke)"
-gap = "solid colour stroke with width and position only; no dash pattern, no paint-tool emulation"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs (edit.stroke: tool and dash/dashOffset trace the outline and stroke it as a path), crafts/photocraft/crates/engine/src/vector_cmds.rs (dash_lines, stroke_path_geometry)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -381,9 +381,9 @@ name = "Airbrush"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-airbrush.html"
 behaviour = "Low-flow paint that accumulates while the pointer rests; rate and flow sliders; motion-only option so paint is laid down only when moving."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs (airbrush build-up), crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
-gap = "airbrush mode of the brush tool; no motion-only switch"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs (build_up, build_up_rate, build_up_motion_only), crafts/photocraft/crates/paint/src/dynamics.rs (PathWalker::motion_only), crafts/photocraft/crates/ui-egui/src/panels.rs (airbrush and motion-only toggles)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -658,8 +658,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-cage.html"
 behaviour = "Draw a polygon cage round a region then drag its vertices to deform the enclosed pixels; option to fill the vacated plain colour."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (edit.puppetWarp), crafts/photocraft/crates/ui-egui/src/puppet_ui.rs"
-gap = "puppet warp pins and mesh instead of a polygon cage"
+ours_where = "crafts/photocraft/crates/algo/src/cage.rs (mean value coordinates), crafts/photocraft/crates/engine/src/distort_cmds.rs (edit.cageTransform), crafts/photocraft/crates/ui-egui/src/puppet_ui.rs"
+gap = "the polygon cage deformation is a command (edit.cageTransform: cage and deformed vertex rings) with no on-canvas cage editing yet; Puppet Warp is the interactive tool"
 priority = 2
 
 [[feature]]
@@ -777,9 +777,9 @@ name = "Colour Temperature"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-color-temperature.html"
 behaviour = "Re-balance from an original to an intended black-body temperature in kelvin with presets for common illuminants."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.photoFilter)"
-gap = "warming/cooling filters by colour and density, not kelvin pairs"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/adjust_ext.rs (color_temperature), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.adjust.colorTemperature: originalTemperature/intendedTemperature in kelvin)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -789,9 +789,9 @@ name = "Hue Chroma"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-hue-chroma.html"
 behaviour = "Shift hue, chroma and lightness in the CIE LCh space."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.hueSaturation)"
-gap = "HSL based, no LCh variant"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/adjust_ext.rs (hue_chroma, CIE LCh(ab)), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.adjust.hueChroma)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1617,9 +1617,9 @@ name = "Wavelet Decompose"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-wavelet-decompose.html"
 behaviour = "Splits the layer into N detail scales plus residual as a layer group for frequency editing."
-ours = "none"
-ours_where = ""
-gap = "high pass gives a single scale"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs (filter.other.waveletDecompose: Residual plus Scale 1..n Linear Light layers in a group), crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2109,9 +2109,9 @@ name = "Edge"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-edge.html"
 behaviour = "Edge detection with algorithm (Sobel, Prewitt, gradient, Roberts, differential, Laplace), amount and border behaviour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs (filter.stylize.findEdges)"
-gap = "one algorithm, no amount"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/stylize2.rs (edge), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.stylize.edge: algorithm sobel|prewitt|gradient|roberts|differential|laplace, amount 1..10)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3429,9 +3429,9 @@ name = "Layer mode: HSV Hue"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Hue of the upper layer with saturation and value of the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Hue)"
-gap = "hue mode computed in the Photoshop HSY-style model, not HSV"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvHue), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3441,9 +3441,9 @@ name = "Layer mode: HSV Saturation"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Saturation from the upper layer, hue and value from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Saturation)"
-gap = "same model difference"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvSaturation), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3465,9 +3465,9 @@ name = "Layer mode: HSV Value"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Value from the upper, hue and saturation from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminosity)"
-gap = "luminosity instead of HSV value"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvValue), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3525,8 +3525,8 @@ name = "Layer mode: Luminance"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Luminance from the upper layer, chromaticity from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminosity)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminance), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 2
 
@@ -3993,9 +3993,9 @@ name = "Path properties and stroking a path"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-using-paths-stroking.html"
 behaviour = "Stroke dialog with solid line (width, cap, join, miter, dash) or paint-tool emulation; fill path with colour or pattern."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/path_edit_cmds.rs (path.stroke, path.fill)"
-gap = "no dash pattern or paint-tool emulation"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/path_edit_cmds.rs, crafts/photocraft/crates/engine/src/vector_cmds.rs (path.stroke: tool emulation plus dash/dashOffset pattern, path.fill)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -4269,9 +4269,9 @@ name = "Configure Grid"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-image-configure-grid.html"
 behaviour = "Line style (intersections, solid, dashed, double dashed), fg/bg colours, spacing and offset per axis with units."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/prefs (edit.preferences.guidesGridAndSlices)"
-gap = "grid configured globally in preferences, not per image"
+ours = "full"
+ours_where = "crafts/photocraft/crates/doc/src/lib.rs (DocGrid, Document.grid), crafts/photocraft/crates/engine/src/edit_cmds.rs (image.configureGrid), crafts/photocraft/crates/ui-egui/src/rulers.rs (effective_grid, draw_grid), crafts/photocraft/crates/engine/src/snap.rs (grid_offset), crafts/photocraft/crates/format/src/manifest.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -5013,9 +5013,9 @@ name = "Snap to guides / grid / canvas / active path / bounding boxes / equidist
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-view-snap-to-guides.html"
 behaviour = "Six snapping targets, 3.0 adding bounding boxes of layers and equidistance between items."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/snap.rs (view.snapTo.guides/grid/layers/documentBounds/slices)"
-gap = "no snap to path or equidistance"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/snap.rs (SnapKind::Path, SnapKind::Equidistance, add_path, add_equidistance), crafts/photocraft/crates/ui-egui/src/view_cmds.rs (view.snapTo.activePath, view.snapTo.equidistance), crafts/photocraft/crates/ui-egui/src/snap_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -5145,9 +5145,9 @@ name = "Palettes dialog and palette editor"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-palette-dialog.html"
 behaviour = "List of palettes; editor with colour grid, add/delete/zoom/columns; import palette dialog from gradient/image/file; export to text, CSS, PHP, Python, Java."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs"
-gap = "no palette import from image/gradient or code export"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs (swatches.fromImage, swatches.fromGradient, swatches.export css|txt)"
+gap = ""
 priority = 2
 
 [[feature]]

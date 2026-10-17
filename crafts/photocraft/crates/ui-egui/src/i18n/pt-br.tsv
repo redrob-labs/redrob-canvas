@@ -4063,3 +4063,39 @@ layerLabel	No Color	Sem cor
 	Save the brush's dynamics as a new preset	Salvar a dinâmica do pincel como nova predefinição
 	Delete this dynamics preset	Excluir esta predefinição de dinâmica
 	Velocity	Velocidade
+	HSV Hue	Matiz HSV
+	HSV Saturation	Saturação HSV
+	HSV Value	Valor HSV
+	Edge…	Borda…
+	Algorithm	Algoritmo
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferencial
+	Laplace	Laplace
+	Color Temperature…	Temperatura de cor…
+	Color Temperature	Temperatura de cor
+	Original Temperature	Temperatura original
+	Intended Temperature	Temperatura desejada
+	Hue-Chroma…	Matiz-croma…
+	Hue-Chroma	Matiz-croma
+	Chroma	Croma
+	Corner Threshold	Limite de canto
+	Corner Surround	Entorno do canto
+	Min Area	Área mínima
+	Airbrush paints only while moving (motion only)	O aerógrafo pinta só em movimento (somente movimento)
+	Airbrush motion only	Aerógrafo somente movimento
+	Configure Grid…	Configurar grade…
+	Configure Grid	Configurar grade
+	Spacing X	Espaçamento X
+	Spacing Y	Espaçamento Y
+	Offset X	Deslocamento X
+	Offset Y	Deslocamento Y
+	Active Path	Demarcador ativo
+	Equidistance	Equidistância
+	Wavelet Decompose…	Decomposição wavelet…
+	Wavelet Decompose	Decomposição wavelet
+	Scales	Escalas
+	Import Swatches from Image	Importar amostras da imagem
+	Export Swatches as CSS…	Exportar amostras como CSS…
+	Cage Transform	Transformação por gaiola

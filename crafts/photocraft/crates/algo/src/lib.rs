@@ -18,10 +18,12 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+mod adjust_ext;
 mod artistic;
 mod artistic_fx;
 mod blur;
 mod blur2;
+pub mod cage;
 pub mod camera_raw;
 pub mod color_to_alpha;
 pub mod content_aware;
@@ -405,6 +407,23 @@ pub enum FilterParams {
         from_right: bool,
         seed: u32,
     },
+    /// Edge: light edges on black by one of six operators, scaled by `amount` (1–10; 2 maps a
+    /// full step to white).
+    Edge {
+        algorithm: EdgeAlgorithm,
+        amount: f32,
+    },
+    /// Colour Temperature: the light source changes from `original` to `intended` kelvin.
+    ColorTemperature {
+        original: f32,
+        intended: f32,
+    },
+    /// Hue-Chroma: hue rotation in degrees, chroma and lightness offsets (−100..100) in LCh(ab).
+    HueChroma {
+        hue: f32,
+        chroma: f32,
+        lightness: f32,
+    },
 
     // ---- Distort ----
     /// Scales in % (−999…999; 100 % = 128 px at full map contrast). The map is
@@ -667,6 +686,9 @@ impl FilterParams {
             FilterParams::OilPaint { .. } => "Oil Paint",
             FilterParams::Tiles { .. } => "Tiles",
             FilterParams::TraceContour { .. } => "Trace Contour",
+            FilterParams::Edge { .. } => "Edge",
+            FilterParams::ColorTemperature { .. } => "Color Temperature",
+            FilterParams::HueChroma { .. } => "Hue-Chroma",
             FilterParams::Wind { .. } => "Wind",
             FilterParams::Displace { .. } => "Displace",
             FilterParams::Shear { .. } => "Shear",
@@ -711,7 +733,8 @@ fn halo_ext(p: &FilterParams) -> Halo {
         FilterParams::Extrude { size, depth, .. } => r(stylize2::extrude_reach(*depth) + size.clamp(2.0, 255.0) * 3.0 + 1.0),
         FilterParams::OilPaint { stylization, scale, .. } => r(oil::reach(*stylization, *scale)),
         FilterParams::Tiles { .. } => Halo::Bounds,
-        FilterParams::TraceContour { .. } => r(1.0),
+        FilterParams::TraceContour { .. } | FilterParams::Edge { .. } => r(1.0),
+        FilterParams::ColorTemperature { .. } | FilterParams::HueChroma { .. } => Halo::Radius(0),
         FilterParams::Wind { method, .. } => r(stylize2::wind_reach(*method)),
         FilterParams::Displace { .. } | FilterParams::Shear { .. } | FilterParams::ZigZag { .. } | FilterParams::SpinBlur { .. } => Halo::Bounds,
         // Generators and per-pixel renders only need the bounds geometry (always in the context).
@@ -829,6 +852,9 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
             stylize2::tiles(src, out, ctx, *count, *max_offset, *fill, (*foreground, *background), *seed)
         }
         FilterParams::TraceContour { level, upper } => stylize2::trace_contour(src, out, ctx, *level, *upper),
+        FilterParams::Edge { algorithm, amount } => stylize2::edge(src, out, ctx, *algorithm, *amount),
+        FilterParams::ColorTemperature { original, intended } => adjust_ext::color_temperature(src, out, ctx, *original, *intended),
+        FilterParams::HueChroma { hue, chroma, lightness } => adjust_ext::hue_chroma(src, out, ctx, *hue, *chroma, *lightness),
         FilterParams::Wind { method, from_right, seed } => stylize2::wind(src, out, ctx, *method, *from_right, *seed),
         FilterParams::Displace { horizontal, vertical, stretch, undefined, map } => {
             distort2::displace(src, out, ctx, (*horizontal, *vertical), *stretch, *undefined, map.as_deref())

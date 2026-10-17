@@ -3973,3 +3973,39 @@ curves	Smooth	Εξομάλυνση
 	Save the brush's dynamics as a new preset	Αποθήκευση της δυναμικής του πινέλου ως νέα προεπιλογή
 	Delete this dynamics preset	Διαγραφή αυτής της προεπιλογής δυναμικής
 	Velocity	Ταχύτητα
+	HSV Hue	Απόχρωση HSV
+	HSV Saturation	Κορεσμός HSV
+	HSV Value	Τιμή HSV
+	Edge…	Άκρο…
+	Algorithm	Αλγόριθμος
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Διαφορικό
+	Laplace	Laplace
+	Color Temperature…	Θερμοκρασία χρώματος…
+	Color Temperature	Θερμοκρασία χρώματος
+	Original Temperature	Αρχική θερμοκρασία
+	Intended Temperature	Επιθυμητή θερμοκρασία
+	Hue-Chroma…	Απόχρωση-χρώμα…
+	Hue-Chroma	Απόχρωση-χρώμα
+	Chroma	Χρώμα
+	Corner Threshold	Κατώφλι γωνίας
+	Corner Surround	Περιοχή γωνίας
+	Min Area	Ελάχ. εμβαδόν
+	Airbrush paints only while moving (motion only)	Ο αερογράφος ζωγραφίζει μόνο όταν κινείται (μόνο κίνηση)
+	Airbrush motion only	Αερογράφος μόνο κίνηση
+	Configure Grid…	Ρύθμιση πλέγματος…
+	Configure Grid	Ρύθμιση πλέγματος
+	Spacing X	Διάστημα X
+	Spacing Y	Διάστημα Y
+	Offset X	Μετατόπιση X
+	Offset Y	Μετατόπιση Y
+	Active Path	Ενεργή διαδρομή
+	Equidistance	Ίσες αποστάσεις
+	Wavelet Decompose…	Αποσύνθεση κυματιδίων…
+	Wavelet Decompose	Αποσύνθεση κυματιδίων
+	Scales	Κλίμακες
+	Import Swatches from Image	Εισαγωγή δειγμάτων από εικόνα
+	Export Swatches as CSS…	Εξαγωγή δειγμάτων ως CSS…
+	Cage Transform	Μετασχηματισμός κλωβού
