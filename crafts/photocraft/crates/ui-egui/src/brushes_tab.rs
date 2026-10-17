@@ -140,8 +140,16 @@ pub struct ListLayout {
 /// The Brushes tab's list.
 pub const PANEL_LIST: ListLayout = ListLayout { id: "brush-presets", max_height: 400.0, cell: 52.0, indent: 20.0, cards: false };
 
+/// Height of the row below the list (the preset count, [+], Delete, Import) with its hairline,
+/// spacing and the panel's bottom margin.
+const FOOTER_RESERVE: f32 = 56.0;
+
+/// The list's height: what the panel has left, but never past the screen's bottom edge minus
+/// the footer row, so the [+] / Delete / Import buttons stay on screen however many presets the
+/// library holds (the Brush Settings window sizes itself to its content).
 fn responsive_list_layout(ui: &egui::Ui) -> ListLayout {
-    let height = ui.available_height().clamp(180.0, 640.0);
+    let on_screen = ui.ctx().content_rect().bottom() - ui.cursor().top() - FOOTER_RESERVE;
+    let height = ui.available_height().min(on_screen).clamp(180.0, 640.0);
     ListLayout { max_height: height, ..PANEL_LIST }
 }
 

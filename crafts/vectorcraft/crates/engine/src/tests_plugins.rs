@@ -11,7 +11,8 @@ use super::*;
 
 /// The example Desaturate plug-in (built from `crates/plugins/example`).
 const DESATURATE: &[u8] = include_bytes!("../../plugins/tests/fixtures/desaturate.wasm");
-const DESATURATE_ID: &str = "org.rvector.example.desaturate";
+// The id the prebuilt fixture declares (it predates the product name).
+const DESATURATE_ID: &str = "org.vectorcraft.example.desaturate";
 
 fn run(s: &mut Session, cmd: &str, p: Value) -> Value {
     s.execute(cmd, &p).unwrap_or_else(|e| panic!("{cmd}: {e}"))

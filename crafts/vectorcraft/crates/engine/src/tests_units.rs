@@ -96,7 +96,7 @@ fn length_preferences_take_typed_units_and_say_what_they_follow() {
     assert_eq!(row("baselineShiftIncrement")["measure"], json!("type"));
     assert!(row("snappingTolerance")["measure"].is_null(), "a screen distance");
     let lengths = PREF_SPECS.iter().filter(|p| matches!(p.kind, PrefKind::Length { .. })).count();
-    assert_eq!(lengths, 6);
+    assert_eq!(lengths, 8);
 }
 
 #[test]

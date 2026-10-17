@@ -223,6 +223,58 @@ const FULL_RESOLUTION_PREVIEW: &[&str] = &[
     "filter.stylize.findEdges",
     "filter.stylize.emboss",
     "filter.noise.despeckle",
+    // The GIMP-family filters build their features in document pixels too: per-pixel noise seeded
+    // by pixel position (CIE lch / HSV Noise, Hurl, Pick, Slur, Shift's per-row offsets, Value
+    // Propagate's one-pixel kernel, Mean Curvature Blur's per-step kernel, Difference of
+    // Gaussians' fixed radii), tiles, strokes and superpixels placed by a seed on the pixel grid
+    // (Cubism, SLIC, Waterpixels, Impressionist, Van Gogh, Weave, Fuzzy Border, Slide, Engrave's
+    // line rows, Supernova's spokes, Rippling and Waves' phases), and the pattern renderers whose
+    // cells, lines, orbits and iterations are in pixels (Checkerboard, Grid, Maze, Bayer Matrix,
+    // Sinus, Linear Sinusoid, Spiral, Spirograph, Jigsaw, Line Nova, Circuit, Diffraction
+    // Patterns, CML Explorer, Fractal Explorer, IFS Fractal, Fractal Trace, Sphere Designer,
+    // Cell Noise, Simplex Noise, Lava). On a reduced proxy they draw k times too large or a
+    // different pattern, so they preview at full resolution as well.
+    "filter.noise.cieLchNoise",
+    "filter.noise.hsvNoise",
+    "filter.noise.hurl",
+    "filter.noise.pick",
+    "filter.noise.slur",
+    "filter.distort.shift",
+    "filter.distort.valuePropagate",
+    "filter.distort.engrave",
+    "filter.blur.meanCurvatureBlur",
+    "filter.stylize.differenceOfGaussians",
+    "filter.lightShadow.supernova",
+    "filter.artistic.cubism",
+    "filter.artistic.slic",
+    "filter.artistic.waterpixels",
+    "filter.artistic.impressionist",
+    "filter.artistic.vanGogh",
+    "filter.artistic.weave",
+    "filter.decor.fuzzyBorder",
+    "filter.decor.slide",
+    "filter.animation.rippling",
+    "filter.animation.waves",
+    "filter.map.fractalTrace",
+    "filter.render.fractalExplorer",
+    "filter.render.ifsFractal",
+    "filter.render.sphereDesigner",
+    "filter.render.cellNoise",
+    "filter.render.simplexNoise",
+    "filter.render.lava",
+    "filter.render.circuit",
+    "filter.render.cmlExplorer",
+    "filter.render.bayerMatrix",
+    "filter.render.checkerboard",
+    "filter.render.diffractionPatterns",
+    "filter.render.grid",
+    "filter.render.linearSinusoid",
+    "filter.render.maze",
+    "filter.render.sinus",
+    "filter.render.spiral",
+    "filter.render.jigsaw",
+    "filter.render.lineNova",
+    "filter.render.spirograph",
 ];
 
 /// Whether `command` with `params` previews at full resolution: [`FULL_RESOLUTION_PREVIEW`], every
@@ -2070,6 +2122,19 @@ mod tests {
         assert_eq!(sm.smart_filters.len(), 1, "the preview adds the Curves smart filter");
         assert_eq!(shown.size, crate::proxy::proxy_document(&doc, k).size);
         // The 16 px square at (16, 16) is a 4 px square at (4, 4) on the proxy, not 16 px at (16, 16).
+        {
+            let c = sm.cache.as_ref().unwrap();
+            eprintln!("DBG cache bounds {:?} transform {:?}", c.content_bounds(), sm.transform);
+            eprintln!("DBG shown alpha {} px {:?}", alpha(&shown, 5, 5), c.pixel(5, 5));
+            let prox = crate::proxy::proxy_document(&doc, k);
+            eprintln!("DBG proxy alpha {} orig {}", alpha(&prox, 5, 5), alpha(&doc, 20, 20));
+            let full = preview_document(&doc, Some(layer), "image.adjustments.curves", &json!({"points": [[0, 20], [90, 150], [255, 230]]}), 1).unwrap();
+            eprintln!("DBG full alpha {}", alpha(&full, 20, 20));
+            let fp = crate::proxy::proxy_document(&full, k);
+            for (x, y) in [(4, 4), (5, 6), (7, 7), (3, 3), (8, 8)] {
+                eprintln!("DBG ({x},{y}) shown {} fullproxy {} plainproxy {}", alpha(&shown, x, y), alpha(&fp, x, y), alpha(&prox, x, y));
+            }
+        }
         for (x, y) in [(4, 4), (5, 6), (7, 7)] {
             assert!(alpha(&shown, x, y) > 0.99, "({x}, {y}) is inside the reduced square");
         }

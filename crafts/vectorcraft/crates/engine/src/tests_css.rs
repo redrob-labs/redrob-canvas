@@ -81,12 +81,12 @@ fn export_writes_the_sheet_and_rasterized_art() {
     // Without a path: the CSS as data, the pictures as base64.
     let r = run(&mut s, "css.export", json!({"scope": "all", "rasterize": true}));
     let data = r["data"].as_str().unwrap();
-    assert!(data.contains(".rectangle {") && data.contains(".path {\n") && data.contains("background-image: url(path.png);"), "{data}");
+    assert!(data.contains(".rectangle {") && data.contains(".star {\n") && data.contains("background-image: url(star.png);"), "{data}");
     assert!(data.ends_with("}\n"));
     assert_eq!(r["rules"], json!(2));
     let images = r["images"].as_array().unwrap();
     assert_eq!(images.len(), 1, "only the star is rasterized");
-    assert_eq!(images[0]["name"], json!("path.png"));
+    assert_eq!(images[0]["name"], json!("star.png"));
     let png = redrob_vector_format::base64_decode(images[0]["dataBase64"].as_str().unwrap()).unwrap();
     assert!(png.starts_with(b"\x89PNG"));
     // The selection alone (the star, selected last).
@@ -108,9 +108,9 @@ fn export_to_a_path_puts_the_pictures_next_to_the_sheet() {
     let path = dir.join("site.css");
     let r = run(&mut s, "css.export", json!({"path": path.to_string_lossy(), "rasterize": true}));
     let written = std::fs::read_to_string(&path).unwrap();
-    assert!(written.contains("url(path.png)"), "{written}");
+    assert!(written.contains("url(star.png)"), "{written}");
     assert_eq!(r["bytes"], json!(written.len()));
-    let png = dir.join("path.png");
+    let png = dir.join("star.png");
     assert_eq!(r["images"], json!([png.to_string_lossy()]));
     assert!(std::fs::read(&png).unwrap().starts_with(b"\x89PNG"));
     std::fs::remove_dir_all(&dir).ok();
