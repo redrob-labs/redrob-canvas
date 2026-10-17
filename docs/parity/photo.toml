@@ -81,9 +81,9 @@ name = "Scissors select (edge-following)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-iscissors.html"
 behaviour = "Click control points around an object; the segment between points snaps to the strongest nearby edge; points can be dragged after placement, segments re-snapped, then the closed curve is converted to a selection by clicking inside; option to interactively show boundary."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/magnetic_lasso_ui.rs, crafts/photocraft/crates/engine/src/magnetic_cmds.rs"
-gap = "magnetic lasso follows edges continuously but has no editable control points after placement"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/magnetic_lasso_ui.rs (anchor_at, move_anchor: drag a fastening point to re-trace both sides), crafts/photocraft/crates/engine/src/magnetic_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
