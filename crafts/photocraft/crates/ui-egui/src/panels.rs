@@ -2273,13 +2273,13 @@ fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static s
         .filter(|_| groups)
         .chain(BlendMode::LAYER_MODES)
         .chain(BlendMode::EXTENDED_MODES)
+        .chain(BlendMode::BINARY_MODES)
+        .chain(BlendMode::MODULO_MODES)
+        .chain(BlendMode::QUADRATIC_MODES)
         .chain(own)
         .map(|m| (m, m.label()))
         .collect()
 }
-        .chain(BlendMode::BINARY_MODES)
-        .chain(BlendMode::MODULO_MODES)
-        .chain(BlendMode::QUADRATIC_MODES)
 
 /// Scroll the Layers panel while holding a layer drag over its top/bottom edge or past them.
 ///
