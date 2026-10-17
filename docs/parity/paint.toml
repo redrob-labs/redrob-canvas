@@ -1030,9 +1030,9 @@ name = "Preset tagging"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/tag_management.html"
 behaviour = "Add, assign, rename, delete tags on presets; tag filter in every chooser; default tags (Digital, Erasers, FX, Favorites, Ink, Paint, Pixel_Art, Sketch, Textures)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/preset_store.rs"
-gap = "folders/groups instead of tags; a preset is in one group only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs, crafts/photocraft/crates/ui-egui/src/brushes_tab.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1450,8 +1450,8 @@ name = "Multibrush: rotational symmetry"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "N copies around a centre at even angles; count slider; centre draggable."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/symmetry_ui.rs"
 gap = ""
 priority = 1
 
@@ -1786,9 +1786,9 @@ name = "Wrap-around mode"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
 behaviour = "W tiles the canvas infinitely while painting so seamless textures can be painted across edges."
-ours = "none"
-ours_where = ""
-gap = "Offset filter and pattern preview only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 1
 
 [[feature]]

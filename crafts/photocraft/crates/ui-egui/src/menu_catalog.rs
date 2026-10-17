@@ -712,6 +712,7 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["View"], "Clear Slices", None, "view.clearSlices"),
     (&["View"], "---", None, "---"),
     (&["View"], "Pattern Preview", None, "view.patternPreview"),
+    (&["View"], "Wrap Around Mode", None, "paint.wrapAround"),
     (&["View"], "Pixel Art Preview", None, "view.pixelArtPreview"),
     (&["Window", "Arrange"], "Tile All Vertically", None, "window.arrange.tileAllVertically"),
     (&["Window", "Arrange"], "Tile All Horizontally", None, "window.arrange.tileAllHorizontally"),

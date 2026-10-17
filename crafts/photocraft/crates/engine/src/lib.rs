@@ -213,8 +213,12 @@ pub struct DocState {
     pub channel_view: channel_cmds::ChannelView,
     /// Select › Isolate Layers: the Layers panel lists only these layers (empty = off; view state).
     pub isolated_layers: Vec<LayerId>,
-    /// Painting symmetry preset or sampled path (tool state, not document pixels).
+    /// Painting symmetry preset, sampled path or rotational multibrush (tool state, not document
+    /// pixels).
     pub symmetry: Option<symmetry_cmds::PaintingSymmetry>,
+    /// Wrap-around mode (`paint.wrapAround`): strokes repeat shifted by the canvas size so the
+    /// image tiles seamlessly; the view shows the tiles (view state, not history).
+    pub wrap_around: bool,
     /// Layers panel: layers whose effects list is collapsed under their row (the fx triangle;
     /// view state, not history). Effects lists start open.
     pub fx_collapsed: Vec<LayerId>,
@@ -270,6 +274,7 @@ impl DocState {
             channel_view: Default::default(),
             isolated_layers: Vec::new(),
             symmetry: None,
+            wrap_around: false,
             fx_collapsed: Vec::new(),
             show_only: None,
             floating: None,
@@ -340,6 +345,10 @@ pub struct ToolState {
     pub dynamics_presets: Vec<redrob_photo_paint::DynamicsPreset>,
     /// Name of the dynamics preset last applied to the brush (`brush.dynamics.apply`).
     pub current_dynamics: Option<String>,
+    /// Brush preset tags (`brush.presets.tag`): preset name → its tags, sorted, de-duplicated.
+    /// A preset may carry any number of tags; the preset store keeps them in its index. Bumping
+    /// `presets_rev` syncs them.
+    pub preset_tags: std::collections::BTreeMap<String, Vec<String>>,
 }
 
 impl ToolState {
@@ -409,6 +418,7 @@ impl Default for ToolState {
             cmyk_picks: Vec::new(),
             dynamics_presets: redrob_photo_paint::dynamics_preset::builtin(),
             current_dynamics: None,
+            preset_tags: Default::default(),
         }
     }
 }

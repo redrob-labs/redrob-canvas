@@ -1338,6 +1338,10 @@ pub struct UiState {
     /// Temporary symmetry-axis editing, exposed to automation but never restored from settings.
     #[serde(default, skip_deserializing)]
     pub symmetry_transform: Option<crate::symmetry_ui::Transform>,
+    /// The rotational multibrush centre being dragged on the canvas (its preview position);
+    /// committed with `paint.setMultibrush` on release.
+    #[serde(skip)]
+    pub multibrush_drag: Option<[f64; 2]>,
     /// The Properties panel's armed Levels/Curves eyedropper on an adjustment layer (`layer_picker`),
     /// exposed to automation but never restored from settings.
     #[serde(default, skip_deserializing)]
@@ -1558,6 +1562,7 @@ impl Default for UiState {
             transform_unlinked: false,
             transform_options: TransformOptions::DEFAULT,
             symmetry_transform: None,
+            multibrush_drag: None,
             layer_picker: None,
             mask_target: false,
             vector_mask_target: false,

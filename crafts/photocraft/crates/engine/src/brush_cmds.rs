@@ -267,7 +267,7 @@ pub(crate) fn doc_cmyk_space(s: &Session) -> Option<std::sync::Arc<redrob_photo_
 fn stroke_with(s: &mut Session, cmd: &str, p: &Value, label: &str, brush: BrushSettings, pts: Vec<StrokePoint>, auto_erase: bool) -> Result<Value> {
     let bg = s.tools.background;
     let fg = brush.color;
-    let symmetry = s.active().and_then(|st| st.symmetry.clone());
+    let symmetry = s.active().and_then(crate::symmetry_cmds::stroke_passes);
     let (id, brush, zoom) = stroke_target(s, p, brush)?;
     let cmyk = doc_cmyk_space(s);
     // The live stroke the canvas already rendered for exactly these params: take its pixels
@@ -511,7 +511,7 @@ impl LiveStroke {
             apply_auto_erase(&mut brush, surf, pts.first(), fg, s.tools.background);
         }
         let renderer = StrokeRenderer::new(&brush, Some(surf.format()), zoom);
-        let symmetry = s.active().and_then(|st| st.symmetry.clone());
+        let symmetry = s.active().and_then(crate::symmetry_cmds::stroke_passes);
         let mirrors: Vec<_> = (0..symmetry.as_ref().map_or(0, |s| s.mirror_count())).map(|_| StrokeRenderer::new(&brush, Some(surf.format()), zoom)).collect();
         let mirror_distinct = vec![false; mirrors.len()];
         let pre = surf.clone();

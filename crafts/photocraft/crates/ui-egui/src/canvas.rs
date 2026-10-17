@@ -2989,14 +2989,16 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         // Crop tool: the layers' pixels past the canvas while a frame is edited, under the canvas
         // (whose edge blends into them) and without its shadow.
         let beyond = draw_beyond_canvas(app, &painter, &xf, idx, output);
-        // View › Pattern Preview (#1067): copies of the document around it, from the same texture.
-        let pattern = if app.ui.view.pattern_preview {
+        // View › Pattern Preview (#1067) and Wrap Around Mode: copies of the document around it,
+        // from the same texture.
+        let tiled = app.ui.view.pattern_preview || app.session.documents()[idx].wrap_around;
+        let pattern = if tiled {
             let v = visible_doc_rect(&xf);
             crate::pattern_preview::copies([v.x0, v.y0, v.x1, v.y1].map(f64::from), size)
         } else {
             Vec::new()
         };
-        let drop_shadow = drop_shadow && !beyond && !app.ui.view.pattern_preview;
+        let drop_shadow = drop_shadow && !beyond && !tiled;
         // Live adjustment previews on big documents use a downsampled proxy (see proxy.rs), unless
         // Preferences › Performance › Low Resolution Previews is off.
         let mut on_gpu = false;
