@@ -77,6 +77,48 @@ pub enum Action {
         group: String,
         folder: Vec<String>,
     },
+    /// Give preset `name` tag `tag` (`on`) or take it away (`brush.presets.tag` / `untag`).
+    ToggleTag {
+        name: String,
+        tag: String,
+        on: bool,
+    },
+}
+
+/// The session's preset tags as a list sees them: every tag offered (the defaults and those in
+/// use) and each preset's tags.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TagSnapshot {
+    pub all: Vec<String>,
+    pub by_preset: std::collections::BTreeMap<String, Vec<String>>,
+}
+
+impl TagSnapshot {
+    /// Does preset `name` carry `tag`?
+    pub fn has(&self, name: &str, tag: &str) -> bool {
+        self.by_preset.iter().find(|(n, _)| n.eq_ignore_ascii_case(name)).is_some_and(|(_, t)| t.iter().any(|x| x.eq_ignore_ascii_case(tag)))
+    }
+}
+
+/// Take the session's preset tags for a list ([`BrushesPanelState::tags`]).
+pub fn tag_snapshot(session: &redrob_photo_engine::Session) -> std::sync::Arc<TagSnapshot> {
+    std::sync::Arc::new(TagSnapshot { all: redrob_photo_engine::brush_preset_cmds::all_tags(session), by_preset: session.tools.preset_tags.clone() })
+}
+
+/// The key the preset list stores its tag snapshot under, for the rows' context menus.
+fn tags_key() -> egui::Id {
+    egui::Id::new("brush-list-tags")
+}
+
+/// A tag filter dropdown: `All Tags` or one tag. Returns true when the filter changed.
+pub fn tag_filter(ui: &mut egui::Ui, id: &str, st: &mut BrushesPanelState, width: f32) -> bool {
+    let all_label = tl!("All Tags");
+    let mut opts: Vec<(String, &str)> = vec![(String::new(), all_label)];
+    opts.extend(st.tags.all.iter().map(|t| (t.clone(), t.as_str())));
+    if !st.tag_filter.is_empty() && !st.tags.all.iter().any(|t| t.eq_ignore_ascii_case(&st.tag_filter)) {
+        st.tag_filter.clear();
+    }
+    widgets::dropdown_literal(ui, id, &mut st.tag_filter, &opts, width)
 }
 
 /// How a preset list is laid out: the Brushes tab's, or the Brush Preset picker's (narrower,
@@ -281,6 +323,7 @@ pub fn apply(app: &mut PhotocraftApp, acts: Vec<Action>) {
                 }
             }
             Action::Delete(name) => run_or_status(app, "brush.presets.delete", json!({ "name": name })),
+            Action::ToggleTag { name, tag, on } => run_or_status(app, if on { "brush.presets.tag" } else { "brush.presets.untag" }, json!({ "name": name, "tag": tag })),
             Action::DeleteGroup { group, folder } => {
                 let mut p = json!({ "group": group });
                 if !folder.is_empty() {
@@ -326,6 +369,18 @@ fn preset_interactions(ui: &egui::Ui, resp: &egui::Response, r: egui::Rect, p: &
         if ui.button(tl!("Delete Brush")).clicked() {
             acts.push(Action::Delete(p.name.clone()));
             ui.close();
+        }
+        // Tags: one check item per tag the library offers (the default tags and those in use).
+        if let Some(tags) = ui.ctx().data(|d| d.get_temp::<std::sync::Arc<TagSnapshot>>(tags_key())) {
+            ui.menu_button(tl!("Tags"), |ui| {
+                for tag in &tags.all {
+                    let mut on = tags.has(&p.name, tag);
+                    if ui.checkbox(&mut on, tag.as_str()).changed() {
+                        acts.push(Action::ToggleTag { name: p.name.clone(), tag: tag.clone(), on });
+                        ui.close();
+                    }
+                }
+            });
         }
     });
 }
@@ -883,6 +938,9 @@ pub fn preset_list(ui: &mut egui::Ui, presets: &[BrushPreset], current: Option<&
     let filter = st.filter.trim().to_lowercase();
     let grid = st.view == BrushesView::Grid;
     let show = (st.show_name, st.show_stroke, st.show_tip);
+    let tags = st.tags.clone();
+    ui.ctx().data_mut(|d| d.insert_temp(tags_key(), tags.clone()));
+    let tag = st.tag_filter.trim().to_string();
     let collapsed = &st.collapsed;
     egui::ScrollArea::vertical().id_salt(layout.id).max_height(layout.max_height).auto_shrink([false, true]).show(ui, |ui| {
         // A preset, group or folder dragged to the list's top or bottom edge (or past it) scrolls
@@ -896,8 +954,12 @@ pub fn preset_list(ui: &mut egui::Ui, presets: &[BrushPreset], current: Option<&
         }
         ui.spacing_mut().item_spacing.y = 1.0;
         for (label, items) in grouped_presets(presets) {
-            let items: Vec<&BrushPreset> =
-                items.into_iter().filter_map(|i| presets.get(i)).filter(|p| filter.is_empty() || p.name.to_lowercase().contains(&filter)).collect();
+            let items: Vec<&BrushPreset> = items
+                .into_iter()
+                .filter_map(|i| presets.get(i))
+                .filter(|p| filter.is_empty() || p.name.to_lowercase().contains(&filter))
+                .filter(|p| tag.is_empty() || tags.has(&p.name, &tag))
+                .collect();
             if items.is_empty() {
                 continue;
             }
@@ -990,8 +1052,10 @@ pub fn show(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         icons::paint(ui, egui::Rect::from_min_size(ui.cursor().min + vec2(0.0, 3.0), vec2(16.0, 16.0)), "search", 14.0, t.text_faint);
         ui.add_space(20.0);
-        let search_w = (inner_w - 112.0).clamp(90.0, inner_w - 40.0);
+        let search_w = (inner_w - 226.0).clamp(60.0, inner_w - 40.0);
         widgets::text_field(ui, ui.id().with("brush-search"), &mut app.ui.brushes_panel.filter, tl!("Search Brushes"), search_w, false);
+        app.ui.brushes_panel.tags = tag_snapshot(&app.session);
+        tag_filter(ui, "brush-tag-filter", &mut app.ui.brushes_panel, 110.0);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             let view = &mut app.ui.brushes_panel.view;
             let grid_tip = "Grid view";

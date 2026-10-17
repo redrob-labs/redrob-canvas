@@ -375,6 +375,9 @@ struct IndexFile {
     hidden_builtins: Vec<String>,
     /// Every preset's name in library (panel) order; empty when it is the default order.
     order: Vec<String>,
+    /// Preset tags ([`crate::ToolState::preset_tags`]): preset name → tags. Missing in stores
+    /// written before tags existed.
+    tags: BTreeMap<String, Vec<String>>,
 }
 
 /// The group's file name: a readable, sanitised prefix plus a hash of the exact name, so
@@ -595,6 +598,8 @@ pub struct Opened {
     pub hidden_builtins: Vec<String>,
     /// The saved library order (preset names), empty when none was saved.
     pub order: Vec<String>,
+    /// The saved preset tags (preset name → tags).
+    pub tags: BTreeMap<String, Vec<String>>,
     /// Files that were skipped (corrupt, oversized, missing tips).
     pub warnings: Vec<String>,
     /// Recorded actions (`actions.json`). Empty when the file is missing or unreadable.
@@ -742,9 +747,10 @@ pub fn open(backend: Box<dyn PresetBackend>) -> Opened {
         }
     }
     let hidden_builtins = index.as_ref().map(|i| i.hidden_builtins.clone()).unwrap_or_default();
+    let tags = index.as_ref().map(|i| i.tags.clone()).unwrap_or_default();
     let order = index.as_ref().map(|i| i.order.clone()).unwrap_or_default();
     store.index = index;
-    Opened { store, presets, hidden_builtins, order, warnings, actions, dynamics }
+    Opened { store, presets, hidden_builtins, order, tags, warnings, actions, dynamics }
 }
 
 /// `actions.json`: a missing file is an empty list. Anything else unreadable is a warning.
@@ -910,7 +916,7 @@ impl PresetStore {
     /// Bring the files in line with `presets` (built-ins skipped): write changed groups, delete
     /// removed ones and their unreferenced tips, update the index. The bitmaps of every group
     /// written become stored tiles (#1843): the files hold them, so the presets keep previews only.
-    pub fn sync(&mut self, presets: &mut [BrushPreset]) {
+    pub fn sync(&mut self, presets: &mut [BrushPreset], tags: &BTreeMap<String, Vec<String>>) {
         // User presets by group, in first-appearance order.
         let mut order: Vec<(String, Vec<usize>)> = Vec::new();
         for (i, p) in presets.iter().enumerate().filter(|(_, p)| !p.builtin) {
@@ -976,10 +982,19 @@ impl PresetStore {
             .is_some()
         };
         let order = if builtins_in_order && order == default_order { Vec::new() } else { order };
-        let want = IndexFile { version: 1, groups, hidden_builtins: hidden, order };
-        let same = self.index.as_ref().is_some_and(|i| i.groups == want.groups && i.hidden_builtins == want.hidden_builtins && i.order == want.order);
+        // Tags of presets that still exist, with no empty tag lists.
+        let tags: BTreeMap<String, Vec<String>> = tags
+            .iter()
+            .filter(|(n, t)| !t.is_empty() && presets.iter().any(|p| p.name.eq_ignore_ascii_case(n)))
+            .map(|(n, t)| (n.clone(), t.clone()))
+            .collect();
+        let want = IndexFile { version: 1, groups, hidden_builtins: hidden, order, tags };
+        let same = self
+            .index
+            .as_ref()
+            .is_some_and(|i| i.groups == want.groups && i.hidden_builtins == want.hidden_builtins && i.order == want.order && i.tags == want.tags);
         if !same {
-            let empty = want.groups.is_empty() && want.hidden_builtins.is_empty() && want.order.is_empty();
+            let empty = want.groups.is_empty() && want.hidden_builtins.is_empty() && want.order.is_empty() && want.tags.is_empty();
             let r = if empty && self.index.is_none() {
                 Ok(())
             } else {
@@ -1139,7 +1154,11 @@ impl Session {
     /// built-in of the same name; presets created before the store finished loading win), hide
     /// deleted built-ins, then sync. Returns the load warnings.
     pub fn attach_preset_store(&mut self, opened: Opened) -> Vec<String> {
-        let Opened { store, presets, hidden_builtins, order, mut warnings, actions: disk, dynamics } = opened;
+        let Opened { store, presets, hidden_builtins, order, tags, mut warnings, actions: disk, dynamics } = opened;
+        // Saved tags fill in for presets not tagged in this session yet.
+        for (name, t) in tags {
+            self.tools.preset_tags.entry(name).or_insert(t);
+        }
         // Disk dynamics presets replace a built-in or in-memory preset of the same name.
         for d in dynamics {
             match self.tools.dynamics_presets.iter_mut().find(|x| x.name.eq_ignore_ascii_case(&d.name)) {
@@ -1197,7 +1216,7 @@ impl Session {
         let actions_rev = self.actions.rev;
         if let Some(st) = self.preset_store.as_mut() {
             if st.synced_rev != Some(rev) {
-                st.sync(&mut self.tools.presets);
+                st.sync(&mut self.tools.presets, &self.tools.preset_tags);
                 st.synced_rev = Some(rev);
                 if link_stored_tips(st, &mut self.tools.brush) {
                     // An embedded tip became a store reference: what the last-brush

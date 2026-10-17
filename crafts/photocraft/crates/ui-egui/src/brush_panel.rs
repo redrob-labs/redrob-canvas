@@ -104,6 +104,12 @@ pub struct BrushesPanelState {
     /// width all the way — the text holds its 1.0 size, and at or below the compact threshold
     /// the tips drop the size number under them and take their cell whole.
     pub scale: f32,
+    /// Tag filter: only presets carrying this tag are listed (empty = every preset).
+    pub tag_filter: String,
+    /// The session's preset tags as the list last saw them (`crate::brushes_tab::tag_snapshot`,
+    /// refreshed by the panel and the picker before they draw the list); never saved.
+    #[serde(skip)]
+    pub tags: std::sync::Arc<crate::brushes_tab::TagSnapshot>,
 }
 
 impl Default for BrushesPanelState {
@@ -117,6 +123,8 @@ impl Default for BrushesPanelState {
             show_stroke: true,
             show_tip: true,
             scale: 1.0,
+            tag_filter: String::new(),
+            tags: Default::default(),
         }
     }
 }

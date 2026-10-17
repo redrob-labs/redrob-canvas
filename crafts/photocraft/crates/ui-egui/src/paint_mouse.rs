@@ -185,6 +185,7 @@ pub fn show_picker(app: &mut PhotocraftApp, ctx: &egui::Context) {
     let area = egui::Area::new(id).order(egui::Order::Foreground).fixed_pos(pos).show(ctx, |ui| {
         let before = app.session.tools.brush.clone();
         let mut b = before.clone();
+        app.ui.brush_picker_list.tags = crate::brushes_tab::tag_snapshot(&app.session);
         let list = &mut app.ui.brush_picker_list;
         let frame = egui::Frame::popup(ui.style())
             .show(ui, |ui| crate::brush_picker::body(ui, &mut b, &app.session.tools.presets, app.session.tools.current_preset.as_deref(), list, content));
