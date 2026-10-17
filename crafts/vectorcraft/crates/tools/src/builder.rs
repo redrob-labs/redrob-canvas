@@ -670,6 +670,12 @@ impl Tool for LivePaintBucketTool {
             PointerKind::Down => {
                 self.hover = LpHover::None;
                 let point = json!([p.x, p.y]);
+                // Alt-click floods the rendered picture under the pointer, whatever draws it
+                // (`paint.floodFill`); so does a click on nothing Live Paint can fill.
+                let flood = || vec![Action::Exec("paint.floodFill".into(), json!({ "x": p.x, "y": p.y }))];
+                if ev.mods.alt {
+                    return flood();
+                }
                 if ev.mods.shift {
                     let mut group = live_paint_at(cx.doc, p);
                     if group.is_none() {
@@ -694,7 +700,7 @@ impl Tool for LivePaintBucketTool {
                     let roots = sorted_roots(cx.doc, &cx.selection.objects);
                     return vec![Action::Exec("livePaint.fill".into(), json!({ "ids": json_ids(&roots), "point": point }))];
                 }
-                vec![]
+                flood()
             }
             _ => vec![],
         }
