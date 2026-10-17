@@ -211,6 +211,8 @@ pub struct BrushContext {
     pub brush: BrushSettings,
     tip: Option<Arc<Mips>>,
     dual_tip: Option<Arc<Mips>>,
+    /// Image hose cells ([`BrushSettings::hose`]), indexed by [`Dab::cell`]; empty without a hose.
+    cells: Vec<Arc<Mips>>,
     texture: Option<Arc<PatternImage>>,
 }
 
@@ -248,11 +250,25 @@ impl BrushContext {
             Some(g) if g.is_valid() => Some(Arc::new(Mips::new(g))),
             _ => None,
         };
+        let cells: Vec<Arc<Mips>> = match &brush.hose {
+            Some(h) if h.is_active() => h.cells.iter().map(|g| Arc::new(Mips::new(g))).collect(),
+            _ => Vec::new(),
+        };
         Self {
             tip: mips(&brush.tip),
             dual_tip: if brush.dual_brush.enabled { mips(&brush.dual_brush.tip) } else { None },
+            cells,
             texture: prepare_pattern(&brush),
             brush,
+        }
+    }
+
+    /// The sampled tip a primary dab paints with: its image hose cell, else the brush tip.
+    #[inline]
+    fn primary_mips(&self, d: &Dab) -> Option<&Mips> {
+        match self.cells.len() {
+            0 => self.tip.as_deref(),
+            n => self.cells.get(d.cell as usize % n).map(Arc::as_ref),
         }
     }
 
@@ -275,7 +291,7 @@ impl BrushContext {
 
     /// Bounding rectangle of a dab (rotated sampled tips need the corner reach).
     pub fn dab_rect(&self, d: &Dab, dual: bool) -> Rect {
-        let sampled = if dual { self.dual_tip.is_some() } else { self.tip.is_some() };
+        let sampled = if dual { self.dual_tip.is_some() } else { self.tip.is_some() || !self.cells.is_empty() };
         let hardness = if dual { self.brush.dual_brush.hardness } else { self.brush.hardness };
         // A computed soft tip paints past its nominal radius (see `tip_shape`).
         let aliased = self.brush.aliased && !dual;
@@ -309,7 +325,7 @@ impl BrushContext {
             dp.resize(w * h, 0.0);
         }
         let b = &self.brush;
-        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { (b.hardness, self.tip.as_deref()) };
+        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { (b.hardness, self.primary_mips(d)) };
         let aliased = b.aliased && !dual;
         // The generated-tip path: outline, mask type, fade per axis, spikes, density, randomness.
         let generated = (!dual && !aliased && mips.is_none() && b.generated.is_custom()).then_some(&b.generated);

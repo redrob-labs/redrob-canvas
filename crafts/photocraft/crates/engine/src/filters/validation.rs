@@ -159,6 +159,9 @@ pub(crate) fn validate_params(id: &str, params: &Value) -> Result<()> {
             match key.as_str() {
                 "layer" => (value.as_u64().is_some(), "an unsigned layer id".into()),
                 "coalesce" => (value.is_string(), "a string".into()),
+                // The dialog's Blending Options, shared by every filter (checked in `run_filter`).
+                "blend" => (value.as_str().is_some_and(|name| crate::commands::blend_from_str(name).is_some()), "a blend mode name".into()),
+                "opacity" => (value.as_f64().is_some_and(|o| o.is_finite() && (0.0..=100.0).contains(&o)), "a number in 0..100".into()),
                 "target" => (
                     value.as_str().is_some_and(|s| matches!(s, "pixels" | "mask" | "quickMask"))
                         || value.as_object().is_some_and(|o| o.len() == 1 && o.get("channel").and_then(Value::as_u64).is_some()),

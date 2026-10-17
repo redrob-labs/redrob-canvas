@@ -4320,3 +4320,28 @@ shape	Appearance	Izgled
 	Gaps in the boundary up to this are closed	Процепи у граници до ове величине се затварају
 	Fill until this colour instead of over similar colours	Испуни до ове боје уместо преко сличних боја
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Превуци праву линију четкицом; Shift закључава угао на кораке од 15°
+	Free select: clicks and drags build one editable outline	Слободни избор: кликови и превлачења граде једну контуру коју можете уређивати
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Клик додаје тачку, превлачење црта слободном руком · превуците тачку да је померите · {del} уклања последњу · {key} затвара · Esc отказује
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Кликните да поставите тачке, превуците за цртање слободном руком; контура се може уређивати док се не затвори
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Smer:
+	Corrective	Korektivno
+	Clipping:	Isecanje:
+	Adjust	Prilagodi
+	Clip	Iseci po platnu
+	Crop with Aspect	Opseci sa razmerom
+	Guides:	Vođice:
+	Center Lines	Središnje linije
+	Golden Sections	Zlatni preseci
+	Diagonals	Dijagonale
+	Lines:	Linija:
+	Split View	Podeljeni prikaz
+	No Dynamics Preset	Без поставке динамике
+	Dynamics:	Динамика:
+	Applied dynamics preset {name} ({note})	Примењена поставка динамике {name} ({note})
+	Applied dynamics preset {name}	Примењена поставка динамике {name}
+	Save the brush's dynamics as a new preset	Сачувај динамику четкице као нову поставку
+	Delete this dynamics preset	Обриши ову поставку динамике
+	Velocity	Брзина

@@ -4166,3 +4166,28 @@ cameraRaw	Yellow	Sárga
 	Gaps in the boundary up to this are closed	A határ ekkora hézagai záródnak
 	Fill until this colour instead of over similar colours	Kitöltés eddig a színig a hasonló színek helyett
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Húzzon egyenes vonalat az ecsettel; a Shift 15°-os lépésekre igazítja a szöget
+	Free select: clicks and drags build one editable outline	Szabad kijelölés: a kattintások és húzások egy szerkeszthető körvonalat alkotnak
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Kattintás pontot ad, húzás szabadkézzel rajzol · pont húzása áthelyezi · {del} törli az utolsót · {key} bezárja · Esc megszakítja
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Kattintással pontokat helyezhet el, húzással szabadkézzel rajzol; a körvonal bezárásig szerkeszthető
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Irány:
+	Corrective	Korrekciós
+	Clipping:	Vágás:
+	Adjust	Igazítás
+	Clip	Vágás a vászonra
+	Crop with Aspect	Vágás arány megtartásával
+	Guides:	Segédvonalak:
+	Center Lines	Középvonalak
+	Golden Sections	Aranymetszések
+	Diagonals	Átlók
+	Lines:	Vonalak:
+	Split View	Osztott nézet
+	No Dynamics Preset	Nincs dinamika-előbeállítás
+	Dynamics:	Dinamika:
+	Applied dynamics preset {name} ({note})	A(z) {name} dinamika-előbeállítás alkalmazva ({note})
+	Applied dynamics preset {name}	A(z) {name} dinamika-előbeállítás alkalmazva
+	Save the brush's dynamics as a new preset	Az ecset dinamikájának mentése új előbeállításként
+	Delete this dynamics preset	Ennek a dinamika-előbeállításnak a törlése
+	Velocity	Sebesség

@@ -3846,3 +3846,28 @@ curves	Smooth	Wygładź
 	Gaps in the boundary up to this are closed	Luki w granicy do tej wielkości są zamykane
 	Fill until this colour instead of over similar colours	Wypełniaj do tego koloru zamiast po podobnych kolorach
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Przeciągnij prostą linię pędzlem; Shift przyciąga kąt co 15°
+	Free select: clicks and drags build one editable outline	Zaznaczenie odręczne: kliknięcia i przeciągnięcia tworzą jeden edytowalny obrys
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Kliknięcie dodaje punkt, przeciągnięcie rysuje odręcznie · przeciągnij punkt, aby go przesunąć · {del} usuwa ostatni · {key} zamyka · Esc anuluje
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Klikaj, aby stawiać punkty, przeciągaj, aby rysować odręcznie; obrys można edytować do zamknięcia
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Kierunek:
+	Corrective	Korekcyjny
+	Clipping:	Przycinanie:
+	Adjust	Dopasuj
+	Clip	Przytnij do płótna
+	Crop with Aspect	Kadruj z proporcjami
+	Guides:	Prowadnice:
+	Center Lines	Linie środkowe
+	Golden Sections	Złote podziały
+	Diagonals	Przekątne
+	Lines:	Linii:
+	Split View	Widok podzielony
+	No Dynamics Preset	Brak ustawienia dynamiki
+	Dynamics:	Dynamika:
+	Applied dynamics preset {name} ({note})	Zastosowano ustawienie dynamiki {name} ({note})
+	Applied dynamics preset {name}	Zastosowano ustawienie dynamiki {name}
+	Save the brush's dynamics as a new preset	Zapisz dynamikę pędzla jako nowe ustawienie
+	Delete this dynamics preset	Usuń to ustawienie dynamiki
+	Velocity	Prędkość

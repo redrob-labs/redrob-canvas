@@ -363,7 +363,13 @@ fn preference_uses_ambient_filesystem(path: &str) -> bool {
 
 fn command_uses_ambient_path(id: &str, params: &Value) -> bool {
     match id {
-        "actions.load" | "brush.presets.importAbr" | "brush.presets.importImage" | "gradient.presets.importGrd" | "plugin.install" | "swatches.import" => {
+        "actions.load"
+        | "brush.presets.importAbr"
+        | "brush.presets.importBrushFile"
+        | "brush.presets.importImage"
+        | "gradient.presets.importGrd"
+        | "plugin.install"
+        | "swatches.import" => {
             // `data` wins over `path` in these commands; any `path` without it reads the filesystem.
             params.get("data").is_none() && params.get("path").is_some()
         }

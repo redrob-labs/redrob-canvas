@@ -58,6 +58,8 @@ pub mod stream {
     pub const SPACING: u64 = 21;
     pub const RANDOM: u64 = 22;
     pub const SCATTER_ALONG: u64 = 23;
+    /// Image hose: a random cell per dab (one stream per dimension, `HOSE + dim`).
+    pub const HOSE: u64 = 32;
 }
 
 /// Seed derived from arbitrary bytes (FNV-1a then mixed), for commands without an explicit seed.

@@ -35,6 +35,9 @@ pub enum Control {
     StylusWheel,
     /// Barrel rotation of the stylus.
     Rotation,
+    /// Pointer speed: 0 at rest, 1 from [`crate::dynamics::VELOCITY_FULL_PX_PER_MS`] on. Input
+    /// without timestamps reads 0 (the dynamic's minimum).
+    Velocity,
     /// Angle only: the direction of the first stroke segment.
     InitialDirection,
     /// Angle only: the current stroke direction.
@@ -42,8 +45,6 @@ pub enum Control {
     /// The stroke direction as a 0..1 scalar (a full turn, after [`DrawingAngle::offset`]), usable
     /// on every option; with [`DrawingAngle::lock`] the direction of the first segment.
     DrawingAngle,
-    /// Pointer speed, 0 (still) .. 1 (at [`crate::dynamics::MAX_SPEED_PX_MS`] or faster).
-    Speed,
     /// A fresh random value per dab.
     Random,
 }
@@ -127,6 +128,66 @@ fn is_true(v: &bool) -> bool {
 
 fn is_default_dynamic(d: &Dynamic) -> bool {
     *d == Dynamic::controlled(Control::Off)
+}
+
+/// How an image hose (animated brush) picks the cell each dab paints with, per dimension.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HoseSelection {
+    /// Cells in order, one per dab, wrapping around.
+    #[default]
+    Incremental,
+    /// By the stroke direction: the full circle is split evenly over the cells.
+    Angular,
+    /// A random cell per dab (deterministic from the stroke seed).
+    Random,
+    /// By pointer speed (see [`Control::Velocity`]).
+    Velocity,
+    /// By pen pressure.
+    Pressure,
+    /// By the pen's x tilt (-90..90 over the cells).
+    TiltX,
+    /// By the pen's y tilt.
+    TiltY,
+}
+
+/// One dimension of an image hose: how many cells it spans and how they are picked.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct HoseDimension {
+    /// Cells along this dimension (at least 1).
+    pub rank: u32,
+    pub selection: HoseSelection,
+}
+
+impl Default for HoseDimension {
+    fn default() -> Self {
+        Self { rank: 1, selection: HoseSelection::Incremental }
+    }
+}
+
+/// An animated brush ("image hose"): a set of sampled cells, one of which paints each dab. The
+/// cells are indexed row-major over `dims` (the first dimension varies slowest); a hose whose
+/// `dims` multiply to more than `cells.len()` wraps. `tip` holds the first cell so previews,
+/// outlines and the tip grid show the brush like any sampled tip.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ImageHose {
+    pub cells: Vec<GrayTile>,
+    pub dims: Vec<HoseDimension>,
+}
+
+impl Default for ImageHose {
+    fn default() -> Self {
+        Self { cells: Vec::new(), dims: vec![HoseDimension::default()] }
+    }
+}
+
+impl ImageHose {
+    /// Is there anything to animate (at least one valid cell)?
+    pub fn is_active(&self) -> bool {
+        !self.cells.is_empty() && self.cells.iter().all(GrayTile::is_valid)
+    }
 }
 
 /// One dynamic parameter: random jitter plus a controller with a floor.
@@ -743,7 +804,7 @@ pub struct Smoothing {
     pub stabilizer: bool,
     /// Samples averaged while the pointer moves slowly.
     pub samples_slow: u32,
-    /// Samples averaged while the pointer moves fast ([`crate::dynamics::MAX_SPEED_PX_MS`]).
+    /// Samples averaged while the pointer moves fast ([`crate::dynamics::VELOCITY_FULL_PX_PER_MS`]).
     pub samples_fast: u32,
     /// Stabilizer dead zone: the brush does not move while the pointer stays within this many
     /// screen pixels of it.
@@ -842,6 +903,10 @@ pub struct BrushSettings {
     /// ([`crate::grid_square`]), whatever its angle or roundness. The Eraser's Block mode.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub square: bool,
+    /// Animated brush (an imported `.gih` image hose): the cell each dab paints with is picked
+    /// per dab from these instead of `tip`, which keeps the first cell for previews.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hose: Option<ImageHose>,
     // --- dynamics sections ---
     pub shape_dynamics: ShapeDynamics,
     pub scattering: Scattering,
@@ -896,6 +961,7 @@ impl Default for BrushSettings {
             flip_y: false,
             aliased: false,
             square: false,
+            hose: None,
             shape_dynamics: ShapeDynamics::default(),
             scattering: Scattering::default(),
             texture: Texture::default(),

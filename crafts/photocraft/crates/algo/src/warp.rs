@@ -17,7 +17,7 @@ use redrob_photo_color::PixelFormat;
 use redrob_photo_geom::Rect;
 use redrob_photo_raster::Surface;
 
-use crate::transform::{Interp, bicubic};
+use crate::transform::{Interp, bicubic, lanczos3};
 
 /// Grid cell size (source px) used to approximate the map.
 const CELL: f64 = 4.0;
@@ -335,6 +335,25 @@ pub fn warp_triangles(src: &Surface, src_rect: Rect, verts: &[([f64; 2], [f64; 2
                             }
                             for (c, s) in acc.iter_mut().enumerate().take(n) {
                                 *s += at(ix - 1 + i as i32, iy - 1 + j as i32, c) * k;
+                            }
+                        }
+                    }
+                }
+                Interp::Lanczos3 => {
+                    let snap = |t: f64| {
+                        if (t - t.round()).abs() < 1e-7 { t.round() } else { t }
+                    };
+                    let (u, v) = (snap(u), snap(v));
+                    let (ix, iy) = (u.floor() as i32, v.floor() as i32);
+                    let (wx, wy) = (lanczos3(u - f64::from(ix)), lanczos3(v - f64::from(iy)));
+                    for (j, wyj) in wy.iter().enumerate() {
+                        for (i, wxi) in wx.iter().enumerate() {
+                            let k = wxi * wyj;
+                            if k == 0.0 {
+                                continue;
+                            }
+                            for (c, s) in acc.iter_mut().enumerate().take(n) {
+                                *s += at(ix - 2 + i as i32, iy - 2 + j as i32, c) * k;
                             }
                         }
                     }

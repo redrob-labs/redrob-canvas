@@ -4038,3 +4038,28 @@ layerLabel	No Color	Sem cor
 	Gaps in the boundary up to this are closed	Lacunas no limite até este tamanho são fechadas
 	Fill until this colour instead of over similar colours	Preencher até esta cor em vez de sobre cores semelhantes
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Arraste uma linha reta pintada com o pincel; Shift ajusta o ângulo em passos de 15°
+	Free select: clicks and drags build one editable outline	Seleção livre: cliques e arrastos formam um único contorno editável
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Clique adiciona um ponto, arrastar desenha à mão livre · arraste um ponto para movê-lo · {del} remove o último · {key} fecha · Esc cancela
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Clique para colocar pontos, arraste para desenhar à mão livre; o contorno continua editável até ser fechado
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Direção:
+	Corrective	Corretiva
+	Clipping:	Recorte:
+	Adjust	Ajustar
+	Clip	Recortar na tela
+	Crop with Aspect	Recortar com proporção
+	Guides:	Guias:
+	Center Lines	Linhas centrais
+	Golden Sections	Seções douradas
+	Diagonals	Diagonais
+	Lines:	Linhas:
+	Split View	Visualização dividida
+	No Dynamics Preset	Sem predefinição de dinâmica
+	Dynamics:	Dinâmica:
+	Applied dynamics preset {name} ({note})	Predefinição de dinâmica {name} aplicada ({note})
+	Applied dynamics preset {name}	Predefinição de dinâmica {name} aplicada
+	Save the brush's dynamics as a new preset	Salvar a dinâmica do pincel como nova predefinição
+	Delete this dynamics preset	Excluir esta predefinição de dinâmica
+	Velocity	Velocidade

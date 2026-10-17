@@ -3244,3 +3244,28 @@ curves	Smooth	Haluskan
 	Gaps in the boundary up to this are closed	Celah pada batas hingga ukuran ini ditutup
 	Fill until this colour instead of over similar colours	Isi hingga warna ini, bukan di atas warna serupa
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Seret garis lurus dengan kuas; Shift mengunci sudut ke kelipatan 15°
+	Free select: clicks and drags build one editable outline	Seleksi bebas: klik dan seret membentuk satu garis luar yang dapat disunting
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Klik menambah titik, seret menggambar bebas · seret titik untuk memindahkannya · {del} menghapus yang terakhir · {key} menutup · Esc membatalkan
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Klik untuk menempatkan titik, seret untuk menggambar bebas; garis luar tetap dapat disunting sampai ditutup
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Arah:
+	Corrective	Korektif
+	Clipping:	Pemotongan:
+	Adjust	Sesuaikan
+	Clip	Potong ke kanvas
+	Crop with Aspect	Pangkas dengan rasio
+	Guides:	Panduan:
+	Center Lines	Garis tengah
+	Golden Sections	Bagian emas
+	Diagonals	Diagonal
+	Lines:	Garis:
+	Split View	Tampilan terpisah
+	No Dynamics Preset	Tanpa prasetel dinamika
+	Dynamics:	Dinamika:
+	Applied dynamics preset {name} ({note})	Prasetel dinamika {name} diterapkan ({note})
+	Applied dynamics preset {name}	Prasetel dinamika {name} diterapkan
+	Save the brush's dynamics as a new preset	Simpan dinamika kuas sebagai prasetel baru
+	Delete this dynamics preset	Hapus prasetel dinamika ini
+	Velocity	Kecepatan

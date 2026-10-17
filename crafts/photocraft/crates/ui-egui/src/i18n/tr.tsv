@@ -3978,3 +3978,28 @@ cameraData	Lens	Lens
 	Gaps in the boundary up to this are closed	Sınırdaki bu boyuta kadar boşluklar kapatılır
 	Fill until this colour instead of over similar colours	Benzer renkler üzerine değil, bu renge kadar doldur
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Fırçayla düz bir çizgi sürükleyin; Shift açıyı 15° adımlara kilitler
+	Free select: clicks and drags build one editable outline	Serbest seçim: tıklamalar ve sürüklemeler düzenlenebilir tek bir dış çizgi oluşturur
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Tıklama nokta ekler, sürükleme serbest çizer · noktayı taşımak için sürükleyin · {del} sonuncuyu kaldırır · {key} kapatır · Esc iptal eder
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Nokta koymak için tıklayın, serbest çizmek için sürükleyin; dış çizgi kapatılana kadar düzenlenebilir
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Yön:
+	Corrective	Düzeltici
+	Clipping:	Kırpma:
+	Adjust	Ayarla
+	Clip	Tuvale kırp
+	Crop with Aspect	Oranı koruyarak kırp
+	Guides:	Kılavuzlar:
+	Center Lines	Merkez çizgileri
+	Golden Sections	Altın kesitler
+	Diagonals	Köşegenler
+	Lines:	Çizgi:
+	Split View	Bölünmüş görünüm
+	No Dynamics Preset	Dinamik ön ayarı yok
+	Dynamics:	Dinamik:
+	Applied dynamics preset {name} ({note})	{name} dinamik ön ayarı uygulandı ({note})
+	Applied dynamics preset {name}	{name} dinamik ön ayarı uygulandı
+	Save the brush's dynamics as a new preset	Fırça dinamiğini yeni ön ayar olarak kaydet
+	Delete this dynamics preset	Bu dinamik ön ayarını sil
+	Velocity	Hız

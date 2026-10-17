@@ -4008,3 +4008,28 @@ curves	Smooth	Vloeiend maken
 	Gaps in the boundary up to this are closed	Openingen in de grens tot deze grootte worden gesloten
 	Fill until this colour instead of over similar colours	Vullen tot deze kleur in plaats van over gelijkende kleuren
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Sleep een rechte lijn met het penseel; Shift klikt de hoek vast in stappen van 15°
+	Free select: clicks and drags build one editable outline	Vrije selectie: klikken en slepen vormen één bewerkbare omtrek
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Klik voegt een punt toe, slepen tekent uit de vrije hand · sleep een punt om het te verplaatsen · {del} verwijdert het laatste · {key} sluit · Esc annuleert
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Klik om punten te plaatsen, sleep om uit de vrije hand te tekenen; de omtrek blijft bewerkbaar tot hij gesloten is
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Richting:
+	Corrective	Corrigerend
+	Clipping:	Bijsnijden:
+	Adjust	Aanpassen
+	Clip	Afsnijden op canvas
+	Crop with Aspect	Bijsnijden met verhouding
+	Guides:	Hulplijnen:
+	Center Lines	Middellijnen
+	Golden Sections	Gulden sneden
+	Diagonals	Diagonalen
+	Lines:	Lijnen:
+	Split View	Gesplitste weergave
+	No Dynamics Preset	Geen dynamiekvoorinstelling
+	Dynamics:	Dynamiek:
+	Applied dynamics preset {name} ({note})	Dynamiekvoorinstelling {name} toegepast ({note})
+	Applied dynamics preset {name}	Dynamiekvoorinstelling {name} toegepast
+	Save the brush's dynamics as a new preset	Penseeldynamiek opslaan als nieuwe voorinstelling
+	Delete this dynamics preset	Deze dynamiekvoorinstelling verwijderen
+	Velocity	Snelheid

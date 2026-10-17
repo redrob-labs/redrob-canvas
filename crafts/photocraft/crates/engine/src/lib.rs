@@ -35,6 +35,7 @@ pub mod cutout_cmds;
 pub mod display_color;
 pub mod distort_cmds;
 pub mod document_preset_cmds;
+pub mod dynamics_cmds;
 pub mod edit_cmds;
 pub mod edit_menu_cmds;
 pub mod eraser_cmds;
@@ -335,6 +336,10 @@ pub struct ToolState {
     /// the inks the person picked (#4196). Matched by colour, so it follows a swap, a reset or a
     /// mask pair without bookkeeping.
     pub cmyk_picks: Vec<([f32; 3], [f32; 4])>,
+    /// Paint dynamics presets (built-ins plus the user's `.rdyn` files; see `brush.dynamics.*`).
+    pub dynamics_presets: Vec<redrob_photo_paint::DynamicsPreset>,
+    /// Name of the dynamics preset last applied to the brush (`brush.dynamics.apply`).
+    pub current_dynamics: Option<String>,
 }
 
 impl ToolState {
@@ -402,6 +407,8 @@ impl Default for ToolState {
             mask_targeted: false,
             other_colors: Self::MASK_COLORS,
             cmyk_picks: Vec::new(),
+            dynamics_presets: redrob_photo_paint::dynamics_preset::builtin(),
+            current_dynamics: None,
         }
     }
 }

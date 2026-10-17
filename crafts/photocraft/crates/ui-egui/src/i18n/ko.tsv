@@ -3426,3 +3426,28 @@ curves	Smooth	매끄럽게
 	Gaps in the boundary up to this are closed	경계의 이 크기까지의 틈을 메움
 	Fill until this colour instead of over similar colours	비슷한 색 위가 아니라 이 색까지 채움
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	드래그로 브러시 직선을 그립니다. Shift로 각도를 15° 단위로 고정
+	Free select: clicks and drags build one editable outline	자유 선택: 클릭과 드래그로 편집 가능한 하나의 외곽선을 만듭니다
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	클릭하면 점 추가, 드래그하면 자유 곡선 · 점을 드래그해 이동 · {del}로 마지막 구간 제거 · {key}로 닫기 · Esc로 취소
+	Click to place points, drag to draw freehand; the outline stays editable until closed	클릭해 점을 놓고 드래그해 자유 곡선을 그립니다. 닫기 전까지 외곽선을 편집할 수 있습니다
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	방향:
+	Corrective	보정
+	Clipping:	클리핑:
+	Adjust	맞춤
+	Clip	캔버스로 자르기
+	Crop with Aspect	비율 유지 자르기
+	Guides:	가이드:
+	Center Lines	중심선
+	Golden Sections	황금 분할
+	Diagonals	대각선
+	Lines:	선 수:
+	Split View	분할 보기
+	No Dynamics Preset	다이내믹 사전 설정 없음
+	Dynamics:	다이내믹:
+	Applied dynamics preset {name} ({note})	다이내믹 사전 설정 {name} 적용됨 ({note})
+	Applied dynamics preset {name}	다이내믹 사전 설정 {name} 적용됨
+	Save the brush's dynamics as a new preset	브러시 다이내믹을 새 사전 설정으로 저장
+	Delete this dynamics preset	이 다이내믹 사전 설정 삭제
+	Velocity	속도

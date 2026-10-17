@@ -6,7 +6,7 @@
 
 use redrob_photo_geom::Point;
 
-use crate::brush::{BrushSettings, Control, Dynamic, SensorCombine, Smoothing};
+use crate::brush::{BrushSettings, Control, Dynamic, HoseSelection, ImageHose, SensorCombine, Smoothing};
 use crate::rng::{rand_signed, rand01, stream};
 use crate::{Dab, StrokePoint};
 
@@ -19,16 +19,17 @@ pub const SMOOTHING_STEP_MS: f64 = 16.0;
 /// space their dabs further apart (Photoshop: "the speed of the cursor determines the spacing").
 pub const SPEED_SPACING_MS: f64 = 8.0;
 
-/// Pointer speed (document pixels per millisecond) that reads as 1 on the Speed sensor and picks
-/// the stabilizer's fast sample count.
-pub const MAX_SPEED_PX_MS: f64 = 4.0;
+/// Longest pixel-grid segment (in pixels) before falling back to distance spacing.
+const MAX_GRID_STEPS: f64 = 1e7;
+
+/// Pointer speed, in pixels per millisecond of stroke time, at which [`Control::Velocity`] (and an
+/// image hose's velocity selection) reads 1: 2000 px/s is a fast flick on any tablet.
+pub const VELOCITY_FULL_PX_PER_MS: f32 = 2.0;
+
 /// Most input points the stabilizer averages.
 pub const MAX_STABILIZER_SAMPLES: usize = 200;
 /// Most extra dabs a fanned corner inserts between two steps.
 const MAX_FAN_DABS: u32 = 64;
-
-/// Longest pixel-grid segment (in pixels) before falling back to distance spacing.
-const MAX_GRID_STEPS: f64 = 1e7;
 
 /// Densest speed spacing, in pixels between dabs (a slow, long stroke never floods the buffer).
 const MIN_SPEED_STEP: f64 = 0.5;
@@ -109,7 +110,7 @@ impl Smoother {
     fn sample_count(&self, speed: f64) -> usize {
         let slow = self.cfg.samples_slow.clamp(1, MAX_STABILIZER_SAMPLES as u32) as f64;
         let fast = self.cfg.samples_fast.clamp(1, MAX_STABILIZER_SAMPLES as u32) as f64;
-        let t = if speed.is_finite() { (speed / MAX_SPEED_PX_MS).clamp(0.0, 1.0) } else { 0.0 };
+        let t = if speed.is_finite() { (speed / f64::from(VELOCITY_FULL_PX_PER_MS)).clamp(0.0, 1.0) } else { 0.0 };
         (slow + (fast - slow) * t).round().clamp(1.0, MAX_STABILIZER_SAMPLES as f64) as usize
     }
 
@@ -271,8 +272,8 @@ pub struct StepInput {
     pub initial_direction: f32,
     /// Sequential step number (0 = first).
     pub step: u64,
-    /// Pointer speed over the current segment, document pixels per millisecond (0 without
-    /// timestamps).
+    /// Pointer speed over the segment this step lies on, in pixels per millisecond of stroke
+    /// time; 0 when the input carries no timestamps.
     pub speed: f32,
 }
 
@@ -293,8 +294,9 @@ pub struct PathWalker {
     pending_first: Option<StrokePoint>,
     initial_dir: Option<f32>,
     dir: f32,
-    speed: f32,
     step: u64,
+    /// Speed over the current segment (px/ms), 0 without timestamps.
+    speed: f32,
     /// Airbrush interval in ms (None = off).
     interval: Option<f64>,
     time_acc: f64,
@@ -314,8 +316,8 @@ impl PathWalker {
             pending_first: None,
             initial_dir: None,
             dir: 0.0,
-            speed: 0.0,
             step: 0,
+            speed: 0.0,
             interval: build_up_interval_ms,
             time_acc: 0.0,
             speed: None,
@@ -453,7 +455,7 @@ impl PathWalker {
 // Dynamics
 // ---------------------------------------------------------------------------
 
-/// Scalar control value in 0..1. The drawing-angle, Speed and Random controls need the dynamic's
+/// Scalar control value in 0..1. The drawing-angle and Random controls need the dynamic's
 /// settings and a random value: see [`sensor_value`]; here they read 1.
 pub fn control_value(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
     let p = &s.point;
@@ -465,8 +467,14 @@ pub fn control_value(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
         Control::PenTilt => 1.0 - (p.tilt_x.hypot(p.tilt_y) / 90.0).clamp(0.0, 1.0),
         Control::StylusWheel => p.wheel.clamp(0.0, 1.0),
         Control::Rotation => (p.rotation.rem_euclid(360.0)) / 360.0,
-        Control::Speed => (f64::from(s.speed) / MAX_SPEED_PX_MS).clamp(0.0, 1.0) as f32,
+        Control::Velocity => velocity_value(s.speed),
     }
+}
+
+/// Pointer speed as a 0..1 control value (see [`VELOCITY_FULL_PX_PER_MS`]).
+#[inline]
+pub fn velocity_value(speed: f32) -> f32 {
+    if speed.is_finite() { (speed / VELOCITY_FULL_PX_PER_MS).clamp(0.0, 1.0) } else { 0.0 }
 }
 
 /// Does a control have a 0..1 input its response curve shapes?
@@ -540,10 +548,10 @@ pub fn control_angle(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
         }
         Control::StylusWheel => 360.0 * p.wheel.clamp(0.0, 1.0),
         Control::Rotation => p.rotation,
+        Control::Velocity => 360.0 * velocity_value(s.speed),
         Control::InitialDirection => s.initial_direction.to_degrees(),
         Control::Direction => s.direction.to_degrees(),
         Control::DrawingAngle => s.direction.to_degrees(),
-        Control::Speed => 360.0 * (f64::from(s.speed) / MAX_SPEED_PX_MS).clamp(0.0, 1.0) as f32,
         Control::Random => 0.0,
     }
 }
@@ -650,6 +658,41 @@ pub fn spacing_px(b: &BrushSettings, s: &StepInput) -> f64 {
     f64::from(step).max(0.5)
 }
 
+/// The image hose cell a dab paints with: each dimension picks an index below its rank by its
+/// selection mode, and the indices combine row-major (the first dimension slowest). `index` is
+/// the dab's position in the stroke (Incremental steps it; Random keys on it).
+pub fn hose_cell(h: &ImageHose, s: &StepInput, seed: u64, index: u64) -> u32 {
+    let n = h.cells.len() as u64;
+    if n == 0 {
+        return 0;
+    }
+    let p = &s.point;
+    // A 0..1 value spread over `rank` cells (1 lands in the last one).
+    let spread = |v: f32, rank: u64| -> u64 { ((v.clamp(0.0, 1.0) * rank as f32) as u64).min(rank - 1) };
+    let single = [crate::brush::HoseDimension { rank: n as u32, selection: HoseSelection::Incremental }];
+    let dims: &[crate::brush::HoseDimension] = if h.dims.is_empty() { &single } else { &h.dims };
+    let mut cell: u64 = 0;
+    for (di, d) in dims.iter().enumerate() {
+        let rank = u64::from(d.rank.max(1));
+        let i = match d.selection {
+            HoseSelection::Incremental => index % rank,
+            // Direction is counter-clockwise, y up; the cells go clockwise from a stroke
+            // heading right, so a hose drawn for the reference's angular mode turns the same way.
+            HoseSelection::Angular => {
+                let turn = (-f64::from(s.direction)).rem_euclid(std::f64::consts::TAU) / std::f64::consts::TAU;
+                spread(turn as f32, rank)
+            }
+            HoseSelection::Random => spread(rand01(seed, index, stream::HOSE + di as u64), rank),
+            HoseSelection::Velocity => spread(velocity_value(s.speed), rank),
+            HoseSelection::Pressure => spread(p.pressure, rank),
+            HoseSelection::TiltX => spread(p.tilt_x / 180.0 + 0.5, rank),
+            HoseSelection::TiltY => spread(p.tilt_y / 180.0 + 0.5, rank),
+        };
+        cell = cell * rank + i;
+    }
+    (cell % n) as u32
+}
+
 /// Builds the primary dabs of a step (Shape Dynamics, Scattering, Transfer, Color, Texture depth).
 #[derive(Clone, Debug)]
 pub struct DabBuilder {
@@ -693,7 +736,7 @@ impl DabBuilder {
         }
         dyns.push(&b.spacing_dynamic);
         dyns.iter()
-            .filter(|d| d.drawing_angle.fan_corners && (d.reads_drawing_angle() || matches!(d.control, Control::Direction)))
+            .filter(|d| d.drawing_angle.fan_corners && (d.reads_drawing_angle() || d.control == Control::Direction))
             .map(|d| d.drawing_angle.fan_angle.clamp(1.0, 180.0).to_radians())
             .reduce(f32::min)
     }
@@ -833,6 +876,8 @@ impl DabBuilder {
             let tx = &b.texture;
             let depth =
                 if tx.enabled && tx.each_tip { tx.depth.clamp(0.0, 1.0) * scalar(&tx.depth_jitter, s, r(stream::DEPTH)) } else { tx.depth.clamp(0.0, 1.0) };
+            // Image hose: which cell this dab paints with.
+            let cell = b.hose.as_ref().filter(|h| h.is_active()).map_or(0, |h| hose_cell(h, s, seed, i));
             out.push(Dab {
                 center: c,
                 radius,
@@ -849,6 +894,7 @@ impl DabBuilder {
                 proj_scale,
                 wet,
                 mix,
+                cell,
             });
         }
     }
@@ -904,6 +950,7 @@ impl DualBuilder {
                 proj_scale: 1.0,
                 wet: 1.0,
                 mix: 1.0,
+                cell: 0,
             });
         }
     }

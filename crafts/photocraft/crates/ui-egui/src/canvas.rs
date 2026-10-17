@@ -1755,7 +1755,8 @@ pub(crate) fn ensure_filter_preview(app: &mut PhotocraftApp, idx: usize, ctx: &e
                 // Errors stay on the exact request: a value the pointer has already dragged past
                 // must not raise a notice, and a still one will raise it when it is recomputed.
                 Err(error) if finished == request => {
-                    app.filter_preview = Some(crate::filter_dialog::FilterPreview { key: finished, result: None, committing: false });
+                    app.filter_preview =
+                        Some(crate::filter_dialog::FilterPreview { key: finished, result: None, committing: false, split: None, unsplit: None });
                     crate::notices::error(app, error);
                 }
                 Err(_) => {}
@@ -1784,13 +1785,15 @@ pub(crate) fn ensure_filter_preview(app: &mut PhotocraftApp, idx: usize, ctx: &e
                 });
                 crate::filter_preview_worker::Computed { result, ms: crate::gpu_canvas::now_ms() - t0 }
             }) {
-                app.filter_preview = Some(crate::filter_dialog::FilterPreview { key: request.clone(), result: None, committing: false });
+                app.filter_preview =
+                    Some(crate::filter_dialog::FilterPreview { key: request.clone(), result: None, committing: false, split: None, unsplit: None });
                 crate::notices::error(app, error);
             }
         }
         if app.filter_preview_worker.busy() {
             ctx.request_repaint_after(std::time::Duration::from_millis(16));
         }
+        apply_filter_split(app, idx, crate::filter_split::current(app));
         let preview = app.filter_preview.as_ref()?;
         // Keep the last preview during a drag, but never one from another source or dialog.
         if !preview.key.same_target(&request) {
@@ -1829,9 +1832,38 @@ pub(crate) fn ensure_filter_preview(app: &mut PhotocraftApp, idx: usize, ctx: &e
         let buffer = result.as_ref().map(|r| redrob_photo_compose::flatten(r));
         publish_filter_preview(app, idx, request, result.zip(buffer), crate::gpu_canvas::now_ms() - t0);
     }
+    apply_filter_split(app, idx, crate::filter_split::current(app));
     let preview = app.filter_preview.as_ref()?;
     let result = preview.result.as_ref()?;
     Some((preview.key.k, key, [result.size.width, result.size.height]))
+}
+
+/// Split View (PH-FLT-002): show the filter preview spliced with the unfiltered proxy at `want`'s
+/// divider (`None`: the whole filtered proxy). Reuses the published filtered proxy, so a divider
+/// drag costs a splice and a texture upload, never a filter run; a preview already spliced at
+/// `want` is left alone.
+pub(crate) fn apply_filter_split(app: &mut PhotocraftApp, idx: usize, want: Option<crate::filter_split::Split>) {
+    let Some((k, unsplit)) = app.filter_preview.as_ref().filter(|p| !p.committing && p.split != want).and_then(|p| p.unsplit.clone().map(|unsplit| (p.key.k, unsplit))) else {
+        return;
+    };
+    let Some(doc) = app.session.documents().get(idx).map(|st| st.doc.clone()) else { return };
+    let result = match want {
+        None => unsplit,
+        Some(split) => std::sync::Arc::new(crate::filter_split::splice(&crate::proxy::proxy_document(&doc, k), &unsplit, split)),
+    };
+    let t0 = crate::gpu_canvas::now_ms();
+    if let Some(key) = app.filter_preview.as_ref().map(|p| p.key.doc.0 ^ (1u64 << 61)) {
+        let buffer = redrob_photo_compose::flatten(&result);
+        let (display, _) = canvas_display(app, &doc, None);
+        if let Some(gpu) = app.gpu.as_ref() {
+            gpu.upload_buffer_full(key, &texture_buffer(display.as_deref(), &buffer), doc.depth);
+        }
+    }
+    app.perf.record("filter-split", result.size.area(), 0.0, crate::gpu_canvas::now_ms() - t0);
+    if let Some(p) = app.filter_preview.as_mut() {
+        p.result = Some(result);
+        p.split = want;
+    }
 }
 
 /// Channel overlays must use the filter's current proxy too, including on the CPU canvas.
@@ -1864,7 +1896,8 @@ fn publish_filter_preview(
         app.perf.record("filter-preview", result.size.area(), ms, crate::gpu_canvas::now_ms() - t0);
         Some(result)
     });
-    app.filter_preview = Some(crate::filter_dialog::FilterPreview { key: request, result, committing: false });
+    // The whole filtered proxy is kept for Split View to splice (`apply_filter_split`).
+    app.filter_preview = Some(crate::filter_dialog::FilterPreview { key: request, unsplit: result.clone(), result, committing: false, split: None });
 }
 
 /// After a filter dialog's OK: `Some(shown)` while its preview stands in for the background job
@@ -3315,11 +3348,19 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             primary && app.ui.dialogs.last().is_some_and(|d| crate::select_mask_view::owns(&d.fields) && crate::select_mask_view::brush_on(&d.fields));
         // Field Blur's pins are placed and dragged on the image (`blur_pins`).
         let pinning = primary && app.ui.dialogs.last().is_some_and(|d| crate::blur_pins::owns(&d.fields));
+        // A filter dialog's Split View divider is dragged on the image (`filter_split`).
+        let splitting = primary && !picking && app.ui.dialogs.last().is_some_and(|d| crate::filter_split::owns(&d.fields));
         // Layer Style on a Drop or Inner Shadow page: a drag on the image moves the shadow (#5701).
         let shadow_drag =
             !picking && app.ui.dialogs.last().is_some_and(|d| d.kind == crate::state::DialogKind::LayerStyle && crate::layer_style::drags_shadow(&d.fields));
         let hand = app.ui.tool == Tool::Hand && !picking && !range_picking && !refine_brushing && !pinning && !shadow_drag;
-        if let Some(d) = crate::dialogs::pan_delta(&ctx, rect, hand) {
+        // The divider comes first: on it, a drag moves it whatever the tool (Space still pans).
+        if splitting
+            && !middle
+            && let Some(p) = crate::dialogs::free_pointer_over(&ctx, rect)
+            && crate::filter_split::canvas(app, &ctx, &xf, p, crate::dialogs::free_press(&ctx, rect))
+        {
+        } else if let Some(d) = crate::dialogs::pan_delta(&ctx, rect, hand) {
             let d = xf.unmap_vec(d) / (view.zoom / ppp);
             view.center[0] -= d.x;
             view.center[1] -= d.y;
@@ -4645,6 +4686,7 @@ fn draw_tool_state(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform,
     }
     crate::crop_straighten::draw(app, painter, |p| xf.to_screen(p[0] as f32, p[1] as f32), hover);
     crate::blur_pins::draw(app, painter, xf);
+    crate::filter_split::draw(app, painter, xf);
     if let Some(c) = app.ui.crop_rect {
         let deg = crate::crop_ui::angle(app);
         let shield = crate::crop_shield::current(app, painter.ctx());
@@ -4911,13 +4953,26 @@ fn draw_drag_preview(app: &mut PhotocraftApp, painter: &egui::Painter, xf: &View
         }
         Tool::Lasso | Tool::Patch | Tool::ContentAwareMove => {
             let mut pts: Vec<Pos2> = d.points.iter().map(|p| xf.to_screen(p[0] as f32, p[1] as f32)).collect();
-            if let Some(lasso) = &d.lasso {
-                pts.push(xf.to_screen(lasso.cursor[0] as f32, lasso.cursor[1] as f32));
-            }
             // On pixel centres like the marquee's ants, so a 1 pt line stays crisp wherever the
             // canvas sits (a pixel edge would blur it to grey).
-            let pts: Vec<Pos2> = pts.into_iter().map(|p| p.round() + vec2(0.5, 0.5)).collect();
+            let crisp = |p: Pos2| p.round() + vec2(0.5, 0.5);
+            // Free select: the vertices are handles, drawn like the Pen's anchors; the one being
+            // dragged is filled. No rubber band while a vertex is dragged.
+            let handles: Vec<(Pos2, bool)> = d
+                .lasso
+                .as_ref()
+                .filter(|l| l.free())
+                .map(|l| l.vertices().iter().filter_map(|&i| pts.get(i).map(|&p| (crisp(p), l.grabbed() == Some(i)))).collect::<Vec<_>>())
+                .unwrap_or_default();
+            if let Some(lasso) = d.lasso.as_ref().filter(|l| l.grabbed().is_none()) {
+                pts.push(xf.to_screen(lasso.cursor[0] as f32, lasso.cursor[1] as f32));
+            }
+            let pts: Vec<Pos2> = pts.into_iter().map(crisp).collect();
             crate::tool_feedback::draw_ants(painter, &pts, false);
+            let accent = crate::theme::Tokens::get(painter.ctx()).accent;
+            for (p, grabbed) in handles {
+                crate::vector_ui::draw_anchor(painter, p, grabbed, accent);
+            }
         }
         Tool::Gradient => {
             let a = xf.to_screen(d.start[0] as f32, d.start[1] as f32);

@@ -3857,3 +3857,28 @@ navigator	Zoom	Zvětšení
 	Gaps in the boundary up to this are closed	Mezery v hranici až do této velikosti se uzavřou
 	Fill until this colour instead of over similar colours	Vyplnit až k této barvě místo přes podobné barvy
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Tažením nakreslíte rovnou čáru štětcem; Shift přichytí úhel po 15°
+	Free select: clicks and drags build one editable outline	Volný výběr: kliknutí a tažení tvoří jeden upravitelný obrys
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Kliknutí přidá bod, tažení kreslí od ruky · bod přesunete tažením · {del} odebere poslední · {key} uzavře · Esc zruší
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Klikáním umisťujte body, tažením kreslete od ruky; obrys lze upravovat, dokud není uzavřen
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Směr:
+	Corrective	Korekční
+	Clipping:	Oříznutí:
+	Adjust	Přizpůsobit
+	Clip	Oříznout na plátno
+	Crop with Aspect	Oříznout se zachováním poměru
+	Guides:	Vodítka:
+	Center Lines	Středové čáry
+	Golden Sections	Zlaté řezy
+	Diagonals	Diagonály
+	Lines:	Čar:
+	Split View	Rozdělený náhled
+	No Dynamics Preset	Bez předvolby dynamiky
+	Dynamics:	Dynamika:
+	Applied dynamics preset {name} ({note})	Použita předvolba dynamiky {name} ({note})
+	Applied dynamics preset {name}	Použita předvolba dynamiky {name}
+	Save the brush's dynamics as a new preset	Uložit dynamiku štětce jako novou předvolbu
+	Delete this dynamics preset	Smazat tuto předvolbu dynamiky
+	Velocity	Rychlost

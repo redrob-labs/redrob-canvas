@@ -20,15 +20,15 @@ pub const CONTROLS: [(Control, &str); 11] = [
     (Control::PenTilt, "Pen Tilt"),
     (Control::StylusWheel, "Stylus Wheel"),
     (Control::Rotation, "Rotation"),
+    (Control::Velocity, "Velocity"),
     (Control::DrawingAngle, "Drawing Angle"),
-    (Control::Speed, "Speed"),
     (Control::Random, "Random"),
     (Control::InitialDirection, "Initial Direction"),
     (Control::Direction, "Direction"),
 ];
 
-/// The controls with a 0..1 value, usable on every option (the first entries of [`CONTROLS`]).
-const SCALAR_CONTROLS: usize = 9;
+/// How many of [`CONTROLS`] have a 0..1 value (the rest are the angle-only direction controls).
+pub const SCALAR_CONTROLS: usize = 9;
 
 const COMBINES: [(SensorCombine, &str); 5] = [
     (SensorCombine::Multiply, "Multiply"),
@@ -98,8 +98,8 @@ pub(crate) fn takes_curve(control: Control, angle: bool) -> bool {
                 | Control::PenTilt
                 | Control::StylusWheel
                 | Control::Rotation
+                | Control::Velocity
                 | Control::DrawingAngle
-                | Control::Speed
                 | Control::Random
         )
 }

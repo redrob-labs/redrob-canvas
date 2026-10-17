@@ -621,9 +621,19 @@ fn transform(s: &mut Session, p: &Value) -> Result<Value> {
     } else {
         return Err(bad("pass `quad` (where the rect's corners go), `matrix`, or `scaleX`/`scaleY`/`rotate`/`dx`/`dy`"));
     };
+    // Corrective ("backward") direction: the box describes the distortion to undo, so the pixels
+    // take the inverse map.
+    let h = match p.get("direction").and_then(Value::as_str).unwrap_or("normal") {
+        "corrective" | "backward" => h.inverse().ok_or_else(|| bad("the transform collapses the layer"))?,
+        "normal" | "forward" => h,
+        other => {
+            return Err(bad(format!("`direction` must be normal|corrective, not {other:?}")));
+        }
+    };
     if h.inverse().is_none() {
         return Err(bad("the transform collapses the layer"));
     }
+    let clipping = Clipping::parse(p.get("clipping").and_then(Value::as_str).unwrap_or("adjust"))?;
     let m = h.0;
     let affine =
         (m[6].abs() < 1e-12 && m[7].abs() < 1e-12).then(|| Affine { m: [m[0] / m[8], m[3] / m[8], m[1] / m[8], m[4] / m[8], m[2] / m[8], m[5] / m[8]] });
@@ -635,9 +645,212 @@ fn transform(s: &mut Session, p: &Value) -> Result<Value> {
     crate::jobs::edit_job(
         s,
         "Free Transform",
-        move |doc, _, ctx| ctx.stage(0.0, 1.0, "Transforming", |ctl| transform_doc(doc, id, &p, lone, &h, affine, interp, ctl)),
+        move |doc, _, ctx| {
+            ctx.stage(0.0, 1.0, "Transforming", |ctl| {
+                transform_doc(doc, id, &p, lone, &h, affine, interp, ctl)?;
+                clip_result(doc, id, rect, &h, clipping)
+            })
+        },
         move |()| json!({"rect": rect}),
     )
+}
+
+/// What becomes of the pixels a transform pushes past the canvas (the shared transform tools'
+/// Clipping option).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+enum Clipping {
+    /// The layer keeps every transformed pixel; the canvas is left alone.
+    #[default]
+    Adjust,
+    /// The canvas stays and the layer is cut to it.
+    Clip,
+    /// The canvas shrinks to the largest upright rectangle the transformed frame fully covers.
+    Crop,
+    /// [`Clipping::Crop`], keeping the canvas's aspect ratio.
+    CropAspect,
+}
+
+impl Clipping {
+    fn parse(s: &str) -> Result<Self> {
+        Ok(match s {
+            "adjust" => Clipping::Adjust,
+            "clip" => Clipping::Clip,
+            "crop" => Clipping::Crop,
+            "cropAspect" | "cropWithAspect" => Clipping::CropAspect,
+            other => {
+                return Err(bad(format!("`clipping` must be adjust|clip|crop|cropAspect, not {other:?}")));
+            }
+        })
+    }
+}
+
+/// Applies the Clipping option after the pixels moved: cuts the layer to the canvas, or crops the
+/// canvas to the transformed frame. A frame that reaches the horizon (a corner at infinity) or
+/// covers no upright rectangle leaves the document as it is.
+fn clip_result(doc: &mut Document, id: Option<LayerId>, rect: [f64; 4], h: &Homography, clipping: Clipping) -> Result<()> {
+    let canvas = doc.bounds();
+    match clipping {
+        Clipping::Adjust => Ok(()),
+        Clipping::Clip => {
+            if let Some(l) = id.and_then(|id| doc.layer_mut(id)) {
+                clip_layer(l, canvas);
+            }
+            Ok(())
+        }
+        Clipping::Crop | Clipping::CropAspect => {
+            let corners = [(rect[0], rect[1]), (rect[2], rect[1]), (rect[2], rect[3]), (rect[0], rect[3])].map(|(x, y)| h.apply(x, y));
+            if corners.iter().any(|c| !c.0.is_finite() || !c.1.is_finite()) {
+                return Ok(());
+            }
+            let quad = corners.map(|(x, y)| [x, y]);
+            let aspect = (clipping == Clipping::CropAspect).then(|| f64::from(canvas.width().max(1)) / f64::from(canvas.height().max(1)));
+            let Some(r) = inscribed_rect(&quad, aspect) else {
+                return Ok(());
+            };
+            let r = Rect::new(r[0].ceil() as i32, r[1].ceil() as i32, r[2].floor() as i32, r[3].floor() as i32);
+            if r.is_empty() || r == canvas {
+                return Ok(());
+            }
+            crate::image_cmds::crop_doc(doc, "edit.transform", r, true, [0.0; 4])
+        }
+    }
+}
+
+/// Cuts a layer (and its raster mask) to `keep`; a group cuts each child.
+fn clip_layer(l: &mut Layer, keep: Rect) {
+    if let LayerContent::Group(g) = &mut l.content {
+        for c in g.children.iter_mut() {
+            clip_layer(c, keep);
+        }
+    } else if let Some(surf) = l.surface_mut() {
+        *surf = redrob_photo_algo::resample::crop_surface(surf, keep);
+    }
+    if let Some(m) = &mut l.mask {
+        m.surface = redrob_photo_algo::resample::crop_surface(&m.surface, keep);
+    }
+}
+
+/// The horizontal extent of a convex polygon at height `y`, if it crosses it.
+fn span_at(poly: &[[f64; 2]], y: f64) -> Option<(f64, f64)> {
+    let (mut lo, mut hi) = (f64::MAX, f64::MIN);
+    for i in 0..poly.len() {
+        let (a, b) = (poly[i], poly[(i + 1) % poly.len()]);
+        if (a[1] - y) * (b[1] - y) > 0.0 {
+            continue;
+        }
+        if (a[1] - b[1]).abs() < 1e-12 {
+            lo = lo.min(a[0].min(b[0]));
+            hi = hi.max(a[0].max(b[0]));
+        } else {
+            let x = a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0]);
+            lo = lo.min(x);
+            hi = hi.max(x);
+        }
+    }
+    (lo <= hi).then_some((lo, hi))
+}
+
+/// The largest upright rectangle `[x0, y0, x1, y1]` inside the convex quad `q` (any winding), or
+/// with `aspect` (width / height) when given. Between two heights a convex polygon's horizontal
+/// extent is at least the overlap of the extents at those heights, so the free search sweeps pairs
+/// of heights; the fixed-aspect search bisects the size and tests whether the polygon shrunk by the
+/// rectangle's half-extents still has a point.
+fn inscribed_rect(q: &[[f64; 2]; 4], aspect: Option<f64>) -> Option<[f64; 4]> {
+    let ys: Vec<f64> = {
+        let (y0, y1) = (q.iter().map(|p| p[1]).fold(f64::MAX, f64::min), q.iter().map(|p| p[1]).fold(f64::MIN, f64::max));
+        if y1 <= y0 {
+            return None;
+        }
+        const N: usize = 192;
+        let mut v: Vec<f64> = (0..=N).map(|i| y0 + (y1 - y0) * i as f64 / N as f64).collect();
+        v.extend(q.iter().map(|p| p[1]));
+        v.sort_by(f64::total_cmp);
+        v.dedup();
+        v
+    };
+    match aspect {
+        None => {
+            let spans: Vec<Option<(f64, f64)>> = ys.iter().map(|&y| span_at(q, y)).collect();
+            let mut best: Option<([f64; 4], f64)> = None;
+            for (i, &ya) in ys.iter().enumerate() {
+                let Some((la, ha)) = spans[i] else { continue };
+                for (j, &yb) in ys.iter().enumerate().skip(i + 1) {
+                    let Some((lb, hb)) = spans[j] else { continue };
+                    let (lo, hi) = (la.max(lb), ha.min(hb));
+                    let area = (hi - lo) * (yb - ya);
+                    if hi > lo && best.is_none_or(|(_, a)| area > a) {
+                        best = Some(([lo, ya, hi, yb], area));
+                    }
+                }
+            }
+            best.map(|(r, _)| r)
+        }
+        Some(aspect) if aspect.is_finite() && aspect > 0.0 => {
+            // Inward normals of each edge: the polygon as half-planes n·p >= d.
+            let area2: f64 = (0..4).map(|i| q[i][0] * q[(i + 1) % 4][1] - q[(i + 1) % 4][0] * q[i][1]).sum();
+            if area2.abs() < 1e-9 {
+                return None;
+            }
+            let sign = if area2 > 0.0 { 1.0 } else { -1.0 };
+            let planes: Vec<([f64; 2], f64)> = (0..4)
+                .map(|i| {
+                    let (a, b) = (q[i], q[(i + 1) % 4]);
+                    let (ex, ey) = (b[0] - a[0], b[1] - a[1]);
+                    let len = ex.hypot(ey).max(1e-12);
+                    // For a counter-clockwise (area2 > 0) polygon the inward normal is the left normal.
+                    let n = [-ey / len * sign, ex / len * sign];
+                    (n, n[0] * a[0] + n[1] * a[1])
+                })
+                .collect();
+            // A rectangle of half-size (hw, hh) fits centred at c iff c satisfies every half-plane
+            // shifted inward by its support: n·c >= d + |nx|·hw + |ny|·hh.
+            let centre = |hw: f64, hh: f64| -> Option<[f64; 2]> {
+                let shifted: Vec<([f64; 2], f64)> = planes.iter().map(|&(n, d)| (n, d + n[0].abs() * hw + n[1].abs() * hh)).collect();
+                let inside = |p: [f64; 2]| shifted.iter().all(|&(n, d)| n[0] * p[0] + n[1] * p[1] >= d - 1e-7);
+                let mut sum = [0.0; 2];
+                let mut count = 0.0;
+                for (i, &(n1, d1)) in shifted.iter().enumerate() {
+                    for &(n2, d2) in shifted.iter().skip(i + 1) {
+                        let det = n1[0] * n2[1] - n1[1] * n2[0];
+                        if det.abs() < 1e-12 {
+                            continue;
+                        }
+                        let p = [(d1 * n2[1] - d2 * n1[1]) / det, (n1[0] * d2 - n2[0] * d1) / det];
+                        if inside(p) {
+                            sum[0] += p[0];
+                            sum[1] += p[1];
+                            count += 1.0;
+                        }
+                    }
+                }
+                (count > 0.0).then(|| [sum[0] / count, sum[1] / count])
+            };
+            let (x0, x1) = (q.iter().map(|p| p[0]).fold(f64::MAX, f64::min), q.iter().map(|p| p[0]).fold(f64::MIN, f64::max));
+            let (y0, y1) = (ys[0], ys[ys.len() - 1]);
+            // Height h gives width aspect·h; bisect the height between 0 and the bounding box.
+            let mut hi = (y1 - y0).min((x1 - x0) / aspect);
+            let mut lo = 0.0;
+            if centre(hi * aspect / 2.0, hi / 2.0).is_some() {
+                lo = hi;
+            } else {
+                for _ in 0..48 {
+                    let mid = (lo + hi) / 2.0;
+                    if centre(mid * aspect / 2.0, mid / 2.0).is_some() {
+                        lo = mid;
+                    } else {
+                        hi = mid;
+                    }
+                }
+            }
+            if lo <= 0.0 {
+                return None;
+            }
+            let (hw, hh) = (lo * aspect / 2.0, lo / 2.0);
+            let c = centre(hw, hh)?;
+            Some([c[0] - hw, c[1] - hh, c[0] + hw, c[1] + hh])
+        }
+        Some(_) => None,
+    }
 }
 
 /// The edit of [`transform`]: the layer (or a lone mask or channel) and the selection outline.
@@ -700,7 +913,7 @@ pub fn specs() -> Vec<CommandSpec> {
         label: "Free Transform",
         menu: &[],
         shortcut: None,
-        params: r##"{"layer":id?,"rect":[x0,y0,x1,y1]? (source frame; default = layer content ∩ selection),"quad":[[x,y]×4]? (where the frame's corners go, clockwise from top-left),"matrix":[a,b,c,d,e,f]? (affine alternative),"scaleX":%?,"scaleY":%?,"rotate":deg?,"dx":px?,"dy":px? (relative alternative: scale and rotate about the frame's centre, then move, as a Photoshop action records a Free Transform),"interpolation":"bicubic|bilinear|nearest"="bicubic","target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target (an unlinked mask, an alpha channel or the Quick Mask transforms alone; a linked mask moves with its layer)}"##,
+        params: r##"{"layer":id?,"rect":[x0,y0,x1,y1]? (source frame; default = layer content ∩ selection),"quad":[[x,y]×4]? (where the frame's corners go, clockwise from top-left),"matrix":[a,b,c,d,e,f]? (affine alternative),"scaleX":%?,"scaleY":%?,"rotate":deg?,"dx":px?,"dy":px? (relative alternative: scale and rotate about the frame's centre, then move, as a Photoshop action records a Free Transform),"interpolation":"bicubic|bilinear|nearest|lanczos3"="bicubic","direction":"normal|corrective"="normal" (corrective: the box describes the distortion to undo, so the pixels take the inverse map),"clipping":"adjust|clip|crop|cropAspect"="adjust" (clip: the layer is cut to the canvas; crop: the canvas shrinks to the largest upright rectangle the transformed frame covers, cropAspect keeping its proportions),"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target (an unlinked mask, an alpha channel or the Quick Mask transforms alone; a linked mask moves with its layer)}"##,
         enabled: has_layer,
         journal: true,
         run: transform,

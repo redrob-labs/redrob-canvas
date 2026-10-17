@@ -2854,3 +2854,28 @@ curves	Smooth	平滑
 	Gaps in the boundary up to this are closed	閉合邊界中不超過此寬度的間隙
 	Fill until this colour instead of over similar colours	填滿直到此顏色，而不是填滿相似顏色
 	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	拖曳繪製筆刷直線；Shift 以 15° 為步長吸附角度
+	Free select: clicks and drags build one editable outline	自由選取：點按與拖曳構成一個可編輯的輪廓
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	點按新增點，拖曳自由繪製 · 拖曳點可移動 · {del} 刪除最後一段 · {key} 閉合 · Esc 取消
+	Click to place points, drag to draw freehand; the outline stays editable until closed	點按放置點，拖曳自由繪製；閉合前輪廓皆可編輯
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	方向:
+	Corrective	校正
+	Clipping:	剪裁:
+	Adjust	調整
+	Clip	剪裁
+	Crop with Aspect	依比例裁切
+	Guides:	參考線:
+	Center Lines	中心線
+	Golden Sections	黃金分割
+	Diagonals	對角線
+	Lines:	線數:
+	Split View	分割檢視
+	No Dynamics Preset	無動態預設
+	Dynamics:	動態:
+	Applied dynamics preset {name} ({note})	已套用動態預設 {name} ({note})
+	Applied dynamics preset {name}	已套用動態預設 {name}
+	Save the brush's dynamics as a new preset	將筆刷動態儲存為新預設
+	Delete this dynamics preset	刪除此動態預設
+	Velocity	速度

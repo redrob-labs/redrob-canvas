@@ -740,6 +740,10 @@ pub struct ToolOptions {
     pub magnetic_contrast: f32,
     pub magnetic_frequency: f32,
     pub magnetic_pressure: bool,
+    /// Lasso › Free select: clicks place polygon vertices and drags draw freehand in one outline
+    /// that stays open and editable until it is closed (`lasso_ui`).
+    #[serde(default)]
+    pub lasso_free_select: bool,
     /// Red Eye: pupil search size (1–100) and how far corrected pixels darken (0–100).
     #[serde(default = "fifty")]
     pub red_eye_pupil_size: f32,
@@ -764,10 +768,22 @@ pub struct ToolOptions {
     /// Eyedropper › Add to Swatches: every click also adds the sampled colour to the Swatches panel.
     #[serde(default)]
     pub eyedropper_add_swatch: bool,
+    /// Filter dialogs › Split View (PH-FLT-002): on, and the divider's position (a fraction of the
+    /// image) and orientation, as the last filter dialog left them.
+    #[serde(default)]
+    pub filter_split: bool,
+    #[serde(default = "half")]
+    pub filter_split_pos: f32,
+    #[serde(default)]
+    pub filter_split_horizontal: bool,
 }
 
 fn one_f32() -> f32 {
     1.0
+}
+
+fn half() -> f32 {
+    0.5
 }
 
 fn yes() -> bool {
@@ -949,6 +965,7 @@ impl Default for ToolOptions {
             magnetic_contrast: 10.0,
             magnetic_frequency: 57.0,
             magnetic_pressure: false,
+            lasso_free_select: false,
             red_eye_pupil_size: 50.0,
             red_eye_darken: 50.0,
             eyedropper_size: 1,
@@ -956,6 +973,9 @@ impl Default for ToolOptions {
             eyedropper_ring: true,
             eyedropper_blend: 1.0,
             eyedropper_add_swatch: false,
+            filter_split: false,
+            filter_split_pos: 0.5,
+            filter_split_horizontal: false,
         }
     }
 }
@@ -989,6 +1009,131 @@ impl TransformMode {
             _ => Self::Free,
         }
     }
+}
+
+/// Which way the transform tools read the box: Normal moves the frame's corners to the handles;
+/// Corrective ("backward") treats the handles as the distortion to undo and applies the inverse,
+/// so fitting the box to a leaning edge straightens it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformDirection {
+    #[default]
+    Normal,
+    Corrective,
+}
+
+impl TransformDirection {
+    /// `edit.transform`'s `direction` parameter.
+    pub fn param(self) -> &'static str {
+        match self {
+            TransformDirection::Normal => "normal",
+            TransformDirection::Corrective => "corrective",
+        }
+    }
+}
+
+/// What the transform tools do with pixels pushed past the canvas (`edit.transform`'s `clipping`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformClipping {
+    /// The layer keeps everything; the canvas stays.
+    #[default]
+    Adjust,
+    /// The canvas stays and the layer is cut to it.
+    Clip,
+    /// The canvas shrinks to the largest upright rectangle the result covers.
+    Crop,
+    /// [`TransformClipping::Crop`] keeping the canvas's proportions.
+    CropAspect,
+}
+
+impl TransformClipping {
+    pub const ALL: [TransformClipping; 4] = [TransformClipping::Adjust, TransformClipping::Clip, TransformClipping::Crop, TransformClipping::CropAspect];
+
+    /// `edit.transform`'s `clipping` parameter.
+    pub fn param(self) -> &'static str {
+        match self {
+            TransformClipping::Adjust => "adjust",
+            TransformClipping::Clip => "clip",
+            TransformClipping::Crop => "crop",
+            TransformClipping::CropAspect => "cropAspect",
+        }
+    }
+
+    pub fn parse(s: &str) -> Self {
+        Self::ALL.into_iter().find(|c| c.param() == s).unwrap_or_default()
+    }
+}
+
+/// The guide overlay drawn through the transform box while it is open (ui only).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformGuides {
+    #[default]
+    None,
+    CenterLines,
+    RuleOfThirds,
+    GoldenSections,
+    Diagonals,
+    /// An n × n grid; `n` is [`TransformOptions::grid_lines`].
+    Grid,
+}
+
+impl TransformGuides {
+    pub const ALL: [TransformGuides; 6] = [
+        TransformGuides::None,
+        TransformGuides::CenterLines,
+        TransformGuides::RuleOfThirds,
+        TransformGuides::GoldenSections,
+        TransformGuides::Diagonals,
+        TransformGuides::Grid,
+    ];
+
+    pub fn key(self) -> &'static str {
+        match self {
+            TransformGuides::None => "none",
+            TransformGuides::CenterLines => "centerLines",
+            TransformGuides::RuleOfThirds => "ruleOfThirds",
+            TransformGuides::GoldenSections => "goldenSections",
+            TransformGuides::Diagonals => "diagonals",
+            TransformGuides::Grid => "grid",
+        }
+    }
+
+    pub fn parse(s: &str) -> Self {
+        Self::ALL.into_iter().find(|g| g.key() == s).unwrap_or_default()
+    }
+}
+
+/// The transform tools' shared options bar settings, kept across sessions: direction, clipping and
+/// the guide overlay. Interpolation lives on the session ([`TransformSession::interpolation`]) and
+/// starts from the preference each time.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransformOptions {
+    #[serde(default)]
+    pub direction: TransformDirection,
+    #[serde(default)]
+    pub clipping: TransformClipping,
+    #[serde(default)]
+    pub guides: TransformGuides,
+    /// Lines per side of the [`TransformGuides::Grid`] overlay.
+    #[serde(default = "default_transform_grid_lines")]
+    pub grid_lines: u32,
+}
+
+fn default_transform_grid_lines() -> u32 {
+    8
+}
+
+impl Default for TransformOptions {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+impl TransformOptions {
+    pub const DEFAULT: TransformOptions =
+        TransformOptions { direction: TransformDirection::Normal, clipping: TransformClipping::Adjust, guides: TransformGuides::None, grid_lines: 8 };
 }
 
 /// Free Transform in progress: the source frame `rect` and where its corners currently are.
@@ -1187,6 +1332,9 @@ pub struct UiState {
     /// drags stretch freely (⇧ keeps the proportions), as in Photoshop (#4174).
     #[serde(default)]
     pub transform_unlinked: bool,
+    /// The transform tools' Direction, Clipping and Guides options (#PH-TRF-014).
+    #[serde(default)]
+    pub transform_options: TransformOptions,
     /// Temporary symmetry-axis editing, exposed to automation but never restored from settings.
     #[serde(default, skip_deserializing)]
     pub symmetry_transform: Option<crate::symmetry_ui::Transform>,
@@ -1408,6 +1556,7 @@ impl Default for UiState {
             cam_transform: None,
             transform: None,
             transform_unlinked: false,
+            transform_options: TransformOptions::DEFAULT,
             symmetry_transform: None,
             layer_picker: None,
             mask_target: false,
