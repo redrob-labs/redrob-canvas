@@ -19,6 +19,7 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 mod adjust_ext;
+pub mod anim;
 mod artistic;
 mod artistic_fx;
 mod blur;
@@ -27,17 +28,23 @@ pub mod cage;
 pub mod camera_raw;
 pub mod color_to_alpha;
 pub mod content_aware;
+mod decor;
 mod denoise;
 pub mod dff;
 pub mod direct;
 mod distort;
 mod distort2;
+mod distort3;
 pub mod erase;
 pub mod exif;
 mod extra;
 pub mod features;
 mod fxutil;
 mod gallery;
+mod gen_fractal;
+mod gen_noise;
+mod gen_pattern;
+mod gen_util;
 pub mod hdr;
 pub mod histogram;
 mod image;
@@ -91,9 +98,11 @@ pub use artistic::{GALLERY_CATEGORIES, GalleryEffect, GalleryFilter, GalleryPara
 pub use image::{Edge, Image};
 pub use params_ext::*;
 pub use params_extra::*;
+pub use params_gen::*;
 
 mod params_ext;
 mod params_extra;
+mod params_gen;
 
 use redrob_photo_color::ColorMode;
 use redrob_photo_geom::Rect;
@@ -899,6 +908,320 @@ pub enum FilterParams {
         shadow_weight: f32,
         seed: u32,
     },
+    // ---- Map ----
+    /// Fractal Trace: the image traced through a Mandelbrot or Julia set over the complex window
+    /// `x1..x2` × `y1..y2`, `depth` iterations, `bailout` radius; `abyss` fills samples outside.
+    FractalTrace {
+        kind: FractalKind,
+        x1: f32,
+        x2: f32,
+        y1: f32,
+        y2: f32,
+        jx: f32,
+        jy: f32,
+        depth: u32,
+        bailout: f32,
+        abyss: FractalAbyss,
+    },
+    /// Illusion: `division` kaleidoscopic copies.
+    Illusion {
+        division: u32,
+        kind: IllusionType,
+    },
+    /// Little Planet: stereographic projection of an equirectangular panorama. Angles in
+    /// degrees, zoom in %.
+    LittlePlanet {
+        pan: f32,
+        tilt: f32,
+        spin: f32,
+        zoom: f32,
+        inverse: bool,
+    },
+    /// Recursive Transform: scale %, angle degrees, offset as fractions of the bounds; copies
+    /// `first..=last`; `fade` straight RGBA (its alpha is the fade strength).
+    RecursiveTransform {
+        scale: f32,
+        angle: f32,
+        offset_x: f32,
+        offset_y: f32,
+        first: u32,
+        last: u32,
+        fade: [f32; 4],
+        paste_below: bool,
+    },
+    TileSeamless,
+    /// Map Object: rotations in degrees, light position in bounds units, material 0…1,
+    /// `highlight` the shininess exponent, `radius` of the solid in bounds units.
+    MapObject {
+        shape: MapShape,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        light_x: f32,
+        light_y: f32,
+        light_z: f32,
+        ambient: f32,
+        diffuse: f32,
+        specular: f32,
+        highlight: f32,
+        radius: f32,
+        transparent_background: bool,
+    },
+    /// Small Tiles: `segments` per side, flipped tiles, opacity %.
+    SmallTiles {
+        segments: u32,
+        flip: TileFlip,
+        which: TileSelection,
+        opacity: f32,
+    },
+
+    // ---- Render: fractals ----
+    /// Fractal Explorer: window, iterations, Julia seed, colour bands, RGB intensity 0…1 and
+    /// inversion.
+    FractalExplorer {
+        kind: ExplorerFractal,
+        x1: f32,
+        x2: f32,
+        y1: f32,
+        y2: f32,
+        iterations: u32,
+        cx: f32,
+        cy: f32,
+        colors: u32,
+        red: f32,
+        green: f32,
+        blue: f32,
+        invert_red: bool,
+        invert_green: bool,
+        invert_blue: bool,
+    },
+    /// IFS Fractal: preset map set, iterations ×1000, spot radius px, placement.
+    IfsFractal {
+        preset: IfsPreset,
+        iterations: u32,
+        spot_radius: f32,
+        x: f32,
+        y: f32,
+        scale: f32,
+        angle: f32,
+        color: [f32; 4],
+        seed: u32,
+    },
+    /// Sphere Designer: ray-traced textured sphere.
+    SphereDesigner {
+        texture: SphereTexture,
+        color1: [f32; 4],
+        color2: [f32; 4],
+        scale: f32,
+        turbulence: f32,
+        amount: f32,
+        exponent: f32,
+        light_x: f32,
+        light_y: f32,
+        light_z: f32,
+        ambient: f32,
+        bump: f32,
+        radius: f32,
+        transparent_background: bool,
+    },
+
+    // ---- Render: noise ----
+    /// Cell Noise: feature size px, metric exponent, rank 1–3, octaves, palettize, seed.
+    CellNoise {
+        scale: f32,
+        shape: f32,
+        rank: u32,
+        iterations: u32,
+        palettize: bool,
+        seed: u32,
+    },
+    /// Simplex Noise: feature size px, octaves, seed.
+    SimplexNoise {
+        scale: f32,
+        iterations: u32,
+        seed: u32,
+    },
+    /// Lava: seed, feature size px, roughness (octaves), gradient.
+    Lava {
+        seed: u32,
+        size: f32,
+        roughness: f32,
+        gradient: LavaGradient,
+    },
+    /// Circuit: trace pitch px, seed, transparent gaps.
+    Circuit {
+        mask_size: f32,
+        seed: u32,
+        no_background: bool,
+    },
+    /// Qbist: random texture program chosen by `seed`.
+    Qbist {
+        seed: u32,
+        antialias: bool,
+        oversample: u32,
+    },
+    /// CML Explorer: per-channel maps, map parameter `k` 0–10, coupling 0–1, lattice zoom px,
+    /// start row, seed.
+    CmlExplorer {
+        hue: CmlFunction,
+        saturation: CmlFunction,
+        value: CmlFunction,
+        k: f32,
+        coupling: f32,
+        zoom: f32,
+        start_offset: u32,
+        seed: u32,
+    },
+
+    // ---- Render: pattern ----
+    BayerMatrix {
+        subdivisions: u32,
+        x_scale: u32,
+        y_scale: u32,
+        rotation: QuarterTurn,
+        reflect: bool,
+        amplitude: f32,
+        offset: f32,
+        exponent: f32,
+        x_offset: i32,
+        y_offset: i32,
+    },
+    /// Checkerboard: cell size px, offsets px, two straight RGBA colours.
+    Checkerboard {
+        width: f32,
+        height: f32,
+        x_offset: f32,
+        y_offset: f32,
+        color1: [f32; 4],
+        color2: [f32; 4],
+    },
+    DiffractionPatterns {
+        red_frequency: f32,
+        green_frequency: f32,
+        blue_frequency: f32,
+        red_contours: f32,
+        green_contours: f32,
+        blue_contours: f32,
+        red_edges: f32,
+        green_edges: f32,
+        blue_edges: f32,
+        brightness: f32,
+        scattering: f32,
+        polarization: f32,
+    },
+    /// Grid: spacings, offsets, line width and height in px; straight RGBA colour.
+    Grid {
+        x_spacing: f32,
+        y_spacing: f32,
+        x_offset: f32,
+        y_offset: f32,
+        line_width: f32,
+        line_height: f32,
+        color: [f32; 4],
+    },
+    LinearSinusoid {
+        x_period: f32,
+        y_period: f32,
+        x_amplitude: f32,
+        y_amplitude: f32,
+        x_phase: f32,
+        y_phase: f32,
+        angle: f32,
+        offset: f32,
+        exponent: f32,
+        x_offset: f32,
+        y_offset: f32,
+        rotation: f32,
+        supersampling: u32,
+    },
+    Maze {
+        cell_width: f32,
+        cell_height: f32,
+        algorithm: MazeAlgorithm,
+        tileable: bool,
+        seed: u32,
+        foreground: [f32; 4],
+        background: [f32; 4],
+    },
+    Sinus {
+        x_scale: f32,
+        y_scale: f32,
+        complexity: f32,
+        seed: u32,
+        tileable: bool,
+        perturbation: bool,
+        blend: SinusBlend,
+        exponent: f32,
+        color1: [f32; 4],
+        color2: [f32; 4],
+    },
+    /// Spiral: origin as fractions of the bounds, radius px per turn, log base, balance −1…1,
+    /// rotation degrees.
+    Spiral {
+        kind: SpiralType,
+        x: f32,
+        y: f32,
+        radius: f32,
+        base: f32,
+        balance: f32,
+        rotation: f32,
+        direction: SpinDirection,
+        color1: [f32; 4],
+        color2: [f32; 4],
+    },
+    Jigsaw {
+        x_tiles: u32,
+        y_tiles: u32,
+        bevel_width: f32,
+        highlight: f32,
+        style: JigsawStyle,
+    },
+    /// Line Nova: rays from the centre in `color`.
+    LineNova {
+        lines: u32,
+        sharpness: f32,
+        offset_radius: f32,
+        randomness: f32,
+        seed: u32,
+        color: [f32; 4],
+    },
+    /// Spirograph curve stroked in `color`.
+    Spirograph {
+        curve: SpyroCurve,
+        shape: SpyroShape,
+        fixed_teeth: u32,
+        moving_teeth: u32,
+        hole: f32,
+        sides: u32,
+        morph: f32,
+        rotation: f32,
+        line_width: f32,
+        color: [f32; 4],
+    },
+
+    // ---- Decor / Web ----
+    /// Slide: film-slide frame with a caption and a number in `color`; `font_size` px.
+    Slide {
+        text: String,
+        number: String,
+        font_size: f32,
+        color: [f32; 4],
+    },
+    CoffeeStain {
+        stains: u32,
+        darken_only: bool,
+        seed: u32,
+    },
+    /// Stencil Carve: the grey `map` (supplied by the caller) carved into the image.
+    StencilCarve {
+        carve_white: bool,
+        #[serde(skip)]
+        map: Option<std::sync::Arc<Image>>,
+    },
+    /// Semi-Flatten against `background` (straight sRGB RGBA).
+    SemiFlatten {
+        background: [f32; 4],
+    },
     /// Filter Gallery: a stack of gallery effects applied in order.
     FilterGallery {
         effects: Vec<GalleryEffect>,
@@ -962,7 +1285,7 @@ impl FilterParams {
     /// the reference bounds even where the layer is transparent, as Photoshop's does on an
     /// empty layer, while still reading no neighbourhood.
     pub fn renders_from_nothing(&self) -> bool {
-        matches!(self, FilterParams::Fibers { .. })
+        matches!(self, FilterParams::Fibers { .. }) || gen_renders_from_nothing(self)
     }
 
     /// Human-readable name.
@@ -1071,7 +1394,77 @@ impl FilterParams {
                 [one] => one.filter.name(),
                 _ => "Filter Gallery",
             },
+            other => gen_label(other),
         }
+    }
+}
+
+/// Whether a third-batch filter renders the whole bounds without reading the layer's pixels
+/// (generators), or paints over them from nothing (the drawing filters), so an empty layer
+/// still gets the result.
+fn gen_renders_from_nothing(p: &FilterParams) -> bool {
+    matches!(
+        p,
+        FilterParams::FractalExplorer { .. }
+            | FilterParams::IfsFractal { .. }
+            | FilterParams::SphereDesigner { .. }
+            | FilterParams::CellNoise { .. }
+            | FilterParams::SimplexNoise { .. }
+            | FilterParams::Lava { .. }
+            | FilterParams::Circuit { .. }
+            | FilterParams::Qbist { .. }
+            | FilterParams::CmlExplorer { .. }
+            | FilterParams::BayerMatrix { .. }
+            | FilterParams::Checkerboard { .. }
+            | FilterParams::DiffractionPatterns { .. }
+            | FilterParams::Grid { .. }
+            | FilterParams::LinearSinusoid { .. }
+            | FilterParams::Maze { .. }
+            | FilterParams::Sinus { .. }
+            | FilterParams::Spiral { .. }
+            | FilterParams::Jigsaw { .. }
+            | FilterParams::LineNova { .. }
+            | FilterParams::Spirograph { .. }
+            | FilterParams::Slide { .. }
+            | FilterParams::CoffeeStain { .. }
+    )
+}
+
+/// Labels of the third filter batch (map, render, decor).
+fn gen_label(p: &FilterParams) -> &'static str {
+    match p {
+        FilterParams::FractalTrace { .. } => "Fractal Trace",
+        FilterParams::Illusion { .. } => "Illusion",
+        FilterParams::LittlePlanet { .. } => "Little Planet",
+        FilterParams::RecursiveTransform { .. } => "Recursive Transform",
+        FilterParams::TileSeamless => "Tile Seamless",
+        FilterParams::MapObject { .. } => "Map Object",
+        FilterParams::SmallTiles { .. } => "Small Tiles",
+        FilterParams::FractalExplorer { .. } => "Fractal Explorer",
+        FilterParams::IfsFractal { .. } => "IFS Fractal",
+        FilterParams::SphereDesigner { .. } => "Sphere Designer",
+        FilterParams::CellNoise { .. } => "Cell Noise",
+        FilterParams::SimplexNoise { .. } => "Simplex Noise",
+        FilterParams::Lava { .. } => "Lava",
+        FilterParams::Circuit { .. } => "Circuit",
+        FilterParams::Qbist { .. } => "Qbist",
+        FilterParams::CmlExplorer { .. } => "CML Explorer",
+        FilterParams::BayerMatrix { .. } => "Bayer Matrix",
+        FilterParams::Checkerboard { .. } => "Checkerboard",
+        FilterParams::DiffractionPatterns { .. } => "Diffraction Patterns",
+        FilterParams::Grid { .. } => "Grid",
+        FilterParams::LinearSinusoid { .. } => "Linear Sinusoid",
+        FilterParams::Maze { .. } => "Maze",
+        FilterParams::Sinus { .. } => "Sinus",
+        FilterParams::Spiral { .. } => "Spiral",
+        FilterParams::Jigsaw { .. } => "Jigsaw",
+        FilterParams::LineNova { .. } => "Line Nova",
+        FilterParams::Spirograph { .. } => "Spirograph",
+        FilterParams::Slide { .. } => "Slide",
+        FilterParams::CoffeeStain { .. } => "Coffee Stain",
+        FilterParams::StencilCarve { .. } => "Stencil Carve",
+        FilterParams::SemiFlatten { .. } => "Semi-Flatten",
+        _ => "Filter",
     }
 }
 
@@ -1151,6 +1544,16 @@ fn halo_extra(p: &FilterParams) -> Halo {
         FilterParams::Impressionist { brush_size, size_variation, .. } => r(extra::artistic::impressionist_reach(*brush_size, *size_variation)),
         FilterParams::VanGogh { integration_steps, .. } => r(extra::artistic::lic_reach(*integration_steps) + 2.0),
         FilterParams::Weave { .. } | FilterParams::FuzzyBorder { .. } => Halo::Radius(0),
+        FilterParams::FractalTrace { .. }
+        | FilterParams::Illusion { .. }
+        | FilterParams::LittlePlanet { .. }
+        | FilterParams::RecursiveTransform { .. }
+        | FilterParams::TileSeamless
+        | FilterParams::MapObject { .. }
+        | FilterParams::SmallTiles { .. }
+        | FilterParams::SphereDesigner { .. }
+        | FilterParams::CmlExplorer { .. } => Halo::Bounds,
+        // The other generators and the per-pixel decor filters only need the bounds geometry.
         _ => Halo::Radius(0),
     }
 }
@@ -1645,6 +2048,345 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
             },
         ),
         FilterParams::FilterGallery { effects } => artistic_fx::run(effects, src, out, ctx),
+        other => kernel_gen(other, src, out, ctx),
+    }
+}
+
+/// Kernels of the third filter batch (map, render, decor).
+fn kernel_gen(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f32> {
+    match params {
+        FilterParams::FractalTrace { kind, x1, x2, y1, y2, jx, jy, depth, bailout, abyss } => distort3::fractal_trace(
+            src,
+            out,
+            ctx,
+            &distort3::FractalTraceSpec { kind: *kind, x1: *x1, x2: *x2, y1: *y1, y2: *y2, jx: *jx, jy: *jy, depth: *depth, bailout: *bailout, abyss: *abyss },
+        ),
+        FilterParams::Illusion { division, kind } => distort3::illusion(src, out, ctx, *division, *kind),
+        FilterParams::LittlePlanet { pan, tilt, spin, zoom, inverse } => {
+            distort3::little_planet(src, out, ctx, &distort3::PlanetSpec { pan: *pan, tilt: *tilt, spin: *spin, zoom: *zoom, inverse: *inverse })
+        }
+        FilterParams::RecursiveTransform { scale, angle, offset_x, offset_y, first, last, fade, paste_below } => distort3::recursive_transform(
+            src,
+            out,
+            ctx,
+            &distort3::RecursiveSpec {
+                scale: *scale,
+                angle: *angle,
+                offset_x: *offset_x,
+                offset_y: *offset_y,
+                first: *first,
+                last: *last,
+                fade: *fade,
+                paste_below: *paste_below,
+            },
+        ),
+        FilterParams::TileSeamless => distort3::tile_seamless(src, out, ctx),
+        FilterParams::MapObject {
+            shape,
+            rot_x,
+            rot_y,
+            rot_z,
+            light_x,
+            light_y,
+            light_z,
+            ambient,
+            diffuse,
+            specular,
+            highlight,
+            radius,
+            transparent_background,
+        } => distort3::map_object(
+            src,
+            out,
+            ctx,
+            &distort3::MapObjectSpec {
+                shape: *shape,
+                rot_x: *rot_x,
+                rot_y: *rot_y,
+                rot_z: *rot_z,
+                light_x: *light_x,
+                light_y: *light_y,
+                light_z: *light_z,
+                ambient: *ambient,
+                diffuse: *diffuse,
+                specular: *specular,
+                highlight: *highlight,
+                radius: *radius,
+                transparent_background: *transparent_background,
+            },
+        ),
+        FilterParams::SmallTiles { segments, flip, which, opacity } => distort3::small_tiles(src, out, ctx, *segments, *flip, *which, *opacity),
+        FilterParams::FractalExplorer { kind, x1, x2, y1, y2, iterations, cx, cy, colors, red, green, blue, invert_red, invert_green, invert_blue } => {
+            gen_fractal::fractal_explorer(
+                src,
+                out,
+                ctx,
+                &gen_fractal::ExplorerSpec {
+                    kind: *kind,
+                    x1: *x1,
+                    x2: *x2,
+                    y1: *y1,
+                    y2: *y2,
+                    iterations: *iterations,
+                    cx: *cx,
+                    cy: *cy,
+                    colors: *colors,
+                    intensity: [*red, *green, *blue],
+                    invert: [*invert_red, *invert_green, *invert_blue],
+                },
+            )
+        }
+        FilterParams::IfsFractal { preset, iterations, spot_radius, x, y, scale, angle, color, seed } => gen_fractal::ifs_fractal(
+            src,
+            out,
+            ctx,
+            &gen_fractal::IfsSpec {
+                preset: *preset,
+                iterations: *iterations,
+                spot_radius: *spot_radius,
+                x: *x,
+                y: *y,
+                scale: *scale,
+                angle: *angle,
+                color: *color,
+                seed: *seed,
+            },
+        ),
+        FilterParams::SphereDesigner {
+            texture,
+            color1,
+            color2,
+            scale,
+            turbulence,
+            amount,
+            exponent,
+            light_x,
+            light_y,
+            light_z,
+            ambient,
+            bump,
+            radius,
+            transparent_background,
+        } => gen_fractal::sphere_designer(
+            src,
+            out,
+            ctx,
+            &gen_fractal::SphereSpec {
+                texture: *texture,
+                color1: *color1,
+                color2: *color2,
+                scale: *scale,
+                turbulence: *turbulence,
+                amount: *amount,
+                exponent: *exponent,
+                light_x: *light_x,
+                light_y: *light_y,
+                light_z: *light_z,
+                ambient: *ambient,
+                bump: *bump,
+                radius: *radius,
+                transparent_background: *transparent_background,
+            },
+        ),
+        FilterParams::CellNoise { scale, shape, rank, iterations, palettize, seed } => gen_noise::cell_noise(
+            src,
+            out,
+            ctx,
+            &gen_noise::CellSpec { scale: *scale, shape: *shape, rank: *rank, iterations: *iterations, palettize: *palettize, seed: *seed },
+        ),
+        FilterParams::SimplexNoise { scale, iterations, seed } => gen_noise::simplex_noise(src, out, ctx, *scale, *iterations, *seed),
+        FilterParams::Lava { seed, size, roughness, gradient } => gen_noise::lava(src, out, ctx, *seed, *size, *roughness, *gradient),
+        FilterParams::Circuit { mask_size, seed, no_background } => gen_noise::circuit(src, out, ctx, *mask_size, *seed, *no_background),
+        FilterParams::Qbist { seed, antialias, oversample } => gen_noise::qbist(src, out, ctx, *seed, *antialias, *oversample),
+        FilterParams::CmlExplorer { hue, saturation, value, k, coupling, zoom, start_offset, seed } => gen_noise::cml_explorer(
+            src,
+            out,
+            ctx,
+            &gen_noise::CmlSpec {
+                hue: *hue,
+                saturation: *saturation,
+                value: *value,
+                k: *k,
+                coupling: *coupling,
+                zoom: *zoom,
+                start_offset: *start_offset,
+                seed: *seed,
+            },
+        ),
+        FilterParams::BayerMatrix { subdivisions, x_scale, y_scale, rotation, reflect, amplitude, offset, exponent, x_offset, y_offset } => {
+            gen_pattern::bayer_matrix(
+                src,
+                out,
+                ctx,
+                &gen_pattern::BayerSpec {
+                    subdivisions: *subdivisions,
+                    x_scale: *x_scale,
+                    y_scale: *y_scale,
+                    rotation: *rotation,
+                    reflect: *reflect,
+                    amplitude: *amplitude,
+                    offset: *offset,
+                    exponent: *exponent,
+                    x_offset: *x_offset,
+                    y_offset: *y_offset,
+                },
+            )
+        }
+        FilterParams::Checkerboard { width, height, x_offset, y_offset, color1, color2 } => {
+            gen_pattern::checkerboard(src, out, ctx, *width, *height, *x_offset, *y_offset, *color1, *color2)
+        }
+        FilterParams::DiffractionPatterns {
+            red_frequency,
+            green_frequency,
+            blue_frequency,
+            red_contours,
+            green_contours,
+            blue_contours,
+            red_edges,
+            green_edges,
+            blue_edges,
+            brightness,
+            scattering,
+            polarization,
+        } => gen_pattern::diffraction(
+            src,
+            out,
+            ctx,
+            &gen_pattern::DiffractionSpec {
+                frequencies: [*red_frequency, *green_frequency, *blue_frequency],
+                contours: [*red_contours, *green_contours, *blue_contours],
+                edges: [*red_edges, *green_edges, *blue_edges],
+                brightness: *brightness,
+                scattering: *scattering,
+                polarization: *polarization,
+            },
+        ),
+        FilterParams::Grid { x_spacing, y_spacing, x_offset, y_offset, line_width, line_height, color } => {
+            gen_pattern::grid(src, out, ctx, *x_spacing, *y_spacing, *x_offset, *y_offset, *line_width, *line_height, *color)
+        }
+        FilterParams::LinearSinusoid {
+            x_period,
+            y_period,
+            x_amplitude,
+            y_amplitude,
+            x_phase,
+            y_phase,
+            angle,
+            offset,
+            exponent,
+            x_offset,
+            y_offset,
+            rotation,
+            supersampling,
+        } => gen_pattern::linear_sinusoid(
+            src,
+            out,
+            ctx,
+            &gen_pattern::SinusoidSpec {
+                x_period: *x_period,
+                y_period: *y_period,
+                x_amplitude: *x_amplitude,
+                y_amplitude: *y_amplitude,
+                x_phase: *x_phase,
+                y_phase: *y_phase,
+                angle: *angle,
+                offset: *offset,
+                exponent: *exponent,
+                x_offset: *x_offset,
+                y_offset: *y_offset,
+                rotation: *rotation,
+                supersampling: *supersampling,
+            },
+        ),
+        FilterParams::Maze { cell_width, cell_height, algorithm, tileable, seed, foreground, background } => gen_pattern::maze(
+            src,
+            out,
+            ctx,
+            &gen_pattern::MazeSpec {
+                cell_width: *cell_width,
+                cell_height: *cell_height,
+                algorithm: *algorithm,
+                tileable: *tileable,
+                seed: *seed,
+                foreground: *foreground,
+                background: *background,
+            },
+        ),
+        FilterParams::Sinus { x_scale, y_scale, complexity, seed, tileable, perturbation, blend, exponent, color1, color2 } => gen_pattern::sinus(
+            src,
+            out,
+            ctx,
+            &gen_pattern::SinusSpec {
+                x_scale: *x_scale,
+                y_scale: *y_scale,
+                complexity: *complexity,
+                seed: *seed,
+                tileable: *tileable,
+                perturbation: *perturbation,
+                blend: *blend,
+                exponent: *exponent,
+                color1: *color1,
+                color2: *color2,
+            },
+        ),
+        FilterParams::Spiral { kind, x, y, radius, base, balance, rotation, direction, color1, color2 } => gen_pattern::spiral(
+            src,
+            out,
+            ctx,
+            &gen_pattern::SpiralSpec {
+                kind: *kind,
+                x: *x,
+                y: *y,
+                radius: *radius,
+                base: *base,
+                balance: *balance,
+                rotation: *rotation,
+                direction: *direction,
+                color1: *color1,
+                color2: *color2,
+            },
+        ),
+        FilterParams::Jigsaw { x_tiles, y_tiles, bevel_width, highlight, style } => gen_pattern::jigsaw(
+            src,
+            out,
+            ctx,
+            &gen_pattern::JigsawSpec { x_tiles: *x_tiles, y_tiles: *y_tiles, bevel_width: *bevel_width, highlight: *highlight, style: *style },
+        ),
+        FilterParams::LineNova { lines, sharpness, offset_radius, randomness, seed, color } => gen_pattern::line_nova(
+            src,
+            out,
+            ctx,
+            &gen_pattern::LineNovaSpec {
+                lines: *lines,
+                sharpness: *sharpness,
+                offset_radius: *offset_radius,
+                randomness: *randomness,
+                seed: *seed,
+                color: *color,
+            },
+        ),
+        FilterParams::Spirograph { curve, shape, fixed_teeth, moving_teeth, hole, sides, morph, rotation, line_width, color } => gen_pattern::spyro(
+            src,
+            out,
+            ctx,
+            &gen_pattern::SpyroSpec {
+                curve: *curve,
+                shape: *shape,
+                fixed_teeth: *fixed_teeth,
+                moving_teeth: *moving_teeth,
+                hole: *hole,
+                sides: *sides,
+                morph: *morph,
+                rotation: *rotation,
+                line_width: *line_width,
+                color: *color,
+            },
+        ),
+        FilterParams::Slide { text, number, font_size, color } => decor::slide(src, out, ctx, text, number, *font_size, *color),
+        FilterParams::CoffeeStain { stains, darken_only, seed } => decor::coffee_stain(src, out, ctx, *stains, *darken_only, *seed),
+        FilterParams::StencilCarve { carve_white, map } => decor::stencil_carve(src, out, ctx, *carve_white, map.as_deref()),
+        FilterParams::SemiFlatten { background } => decor::semi_flatten(src, out, ctx, *background),
+        _ => src.crop(out),
     }
 }
 

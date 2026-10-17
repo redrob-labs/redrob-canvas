@@ -48,6 +48,7 @@ pub mod fill_key_cmds;
 pub mod filters;
 pub mod filters_ext;
 pub mod filters_extra;
+pub mod filters_gen;
 pub mod float_cmds;
 mod frame_cmds;
 pub mod fx_view_cmds;

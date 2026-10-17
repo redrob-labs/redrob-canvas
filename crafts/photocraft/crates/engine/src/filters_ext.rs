@@ -414,7 +414,11 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             interpolate: s(p, "createBy", "interpolation") != "duplication",
         },
         "filter.video.ntscColors" => FilterParams::NtscColors,
-        _ => return crate::filters_extra::params_for(id, p).or_else(|| crate::gallery_cmds::params_for(id, p)),
+        _ => {
+            return crate::filters_extra::params_for(id, p)
+                .or_else(|| crate::filters_gen::params_for(id, p))
+                .or_else(|| crate::gallery_cmds::params_for(id, p));
+        }
     })
 }
 
@@ -423,6 +427,7 @@ fn uses_colours(id: &str) -> bool {
     matches!(id, "filter.render.fibers" | "filter.stylize.tiles" | "filter.pixelate.pointillize")
         || crate::filters_extra::uses_colours(id)
         || crate::gallery_cmds::uses_colours(id)
+        || crate::filters_gen::uses_colours(id)
 }
 
 /// Fills in session state a filter reads (the current colours) as explicit params, so the
@@ -453,7 +458,7 @@ fn map_from_document(doc: &Document, layer: Option<u64>) -> Option<algo::Image> 
 /// Resolves inputs that live outside the target layer: Displace's map (`mapPath`, or
 /// `mapDocument` index with optional `mapLayer` id).
 pub(crate) fn resolve(s: &Session, fp: &mut FilterParams, p: &Value) -> Result<()> {
-    let FilterParams::Displace { map, .. } = fp else { return Ok(()) };
+    let Some(map) = map_slot(fp) else { return Ok(()) };
     if map.is_some() {
         return Ok(());
     }
@@ -469,10 +474,19 @@ pub(crate) fn resolve(s: &Session, fp: &mut FilterParams, p: &Value) -> Result<(
         let ds = found.ok_or_else(|| EngineError::Other("displacement map document not found".into()))?;
         map_from_document(&ds.doc, layer)
     } else {
-        return Err(EngineError::Other("Displace needs a displacement map: pass `mapPath` or `mapDocument`".into()));
+        return Err(EngineError::Other("this filter needs a map image: pass `mapPath` or `mapDocument`".into()));
     };
     *map = Some(Arc::new(img.ok_or_else(|| EngineError::Other("the displacement map is empty".into()))?));
     Ok(())
+}
+
+/// The external-image slot of the filters that take one: Displace's map and Stencil Carve's
+/// stencil (both `mapPath` / `mapDocument`).
+fn map_slot(fp: &mut FilterParams) -> Option<&mut Option<Arc<algo::Image>>> {
+    match fp {
+        FilterParams::Displace { map, .. } | FilterParams::StencilCarve { map, .. } => Some(map),
+        _ => None,
+    }
 }
 
 fn map_path(p: &Value) -> Option<&str> {
@@ -490,7 +504,7 @@ fn map_from_path(path: &str, layer: Option<u64>) -> Result<Option<algo::Image>> 
 /// the map, so their re-render reads the map again here; without it the filter passed the pixels
 /// through. `mapDocument` needs the session and is left unresolved.
 pub(crate) fn resolve_map_path(fp: &mut FilterParams, p: &Value) -> Result<()> {
-    if let FilterParams::Displace { map, .. } = fp
+    if let Some(map) = map_slot(fp)
         && map.is_none()
         && let Some(path) = map_path(p)
     {

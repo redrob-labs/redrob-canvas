@@ -186,6 +186,42 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         | "filter.artistic.weave"
         | "filter.decor.filmstrip"
         | "filter.decor.fuzzyBorder" => &[],
+        // Map / Render / Decor batch (filters_gen): choices checked, numbers clamp in params_for.
+        "filter.map.fractalTrace" => &[("fractal", "mandelbrot|julia"), ("abyss", "loop|clamp|black|white|transparent")],
+        "filter.map.illusion" => &[("type", "type1|type2")],
+        "filter.map.mapObject" => &[("mapTo", "plane|sphere|box|cylinder")],
+        "filter.map.smallTiles" => &[("flip", "none|horizontal|vertical|both"), ("flipWhich", "all|alternate|explicit")],
+        "filter.render.fractalExplorer" => &[("fractalType", "mandelbrot|julia|barnsley1|barnsley2|barnsley3|spider|manOWar|lambda|sierpinski")],
+        "filter.render.ifsFractal" => &[("preset", "fern|sierpinski|dragon|spiral|tree|snowflake")],
+        "filter.render.sphereDesigner" => &[("texture", "solid|checker|marble|lizard|phong|noise|wood|spiral|spots")],
+        "filter.render.lava" => &[("gradient", "incandescent|germanFlag|caribbeanBlues|golden|fullSpectrum")],
+        "filter.render.cmlExplorer" => &[
+            ("hueFunction", "keepImage|keepFirstValue|fillWithK|logistic|deltaSinCurve|sinCurve|sinCurveStep|random"),
+            ("saturationFunction", "keepImage|keepFirstValue|fillWithK|logistic|deltaSinCurve|sinCurve|sinCurveStep|random"),
+            ("valueFunction", "keepImage|keepFirstValue|fillWithK|logistic|deltaSinCurve|sinCurve|sinCurveStep|random"),
+        ],
+        "filter.render.bayerMatrix" => &[("rotation", "none|quarter|half|threeQuarters")],
+        "filter.render.maze" => &[("algorithm", "depthFirst|prim")],
+        "filter.render.sinus" => &[("blendMode", "linear|bilinear|sinusoidal")],
+        "filter.render.spiral" => &[("type", "linear|logarithmic"), ("direction", "clockwise|counterClockwise")],
+        "filter.render.jigsaw" => &[("style", "square|curved")],
+        "filter.render.spirograph" => &[("curveType", "spirograph|epitrochoid|sine|lissajous"), ("shape", "circle|polygon|star|sine|bumps|rack|frame")],
+        "filter.map.littlePlanet"
+        | "filter.map.recursiveTransform"
+        | "filter.map.tileSeamless"
+        | "filter.render.cellNoise"
+        | "filter.render.simplexNoise"
+        | "filter.render.circuit"
+        | "filter.render.qbist"
+        | "filter.render.checkerboard"
+        | "filter.render.diffractionPatterns"
+        | "filter.render.grid"
+        | "filter.render.linearSinusoid"
+        | "filter.render.lineNova"
+        | "filter.decor.slide"
+        | "filter.decor.coffeeStain"
+        | "filter.decor.stencilCarve"
+        | "filter.web.semiFlatten" => &[],
         _ => return None,
     })
 }

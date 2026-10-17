@@ -4466,3 +4466,235 @@ navigator	Zoom	Zoom
 	With White Noise	Con ruido blanco
 	X Component	Componente X
 	Y Component	Componente Y
+	Animation	Animación
+	Bayer Matrix…	Matriz de Bayer…
+	Bayer Matrix	Matriz de Bayer
+	Blend…	Fundir…
+	Burn-In…	Quemado…
+	Burn-In	Quemado
+	CML Explorer…	Explorador CML…
+	CML Explorer	Explorador CML
+	Cell Noise…	Ruido celular…
+	Cell Noise	Ruido celular
+	Checkerboard…	Tablero de ajedrez…
+	Checkerboard	Tablero de ajedrez
+	Circuit…	Circuito…
+	Circuit	Circuito
+	Coffee Stain…	Mancha de café…
+	Coffee Stain	Mancha de café
+	Diffraction Patterns…	Patrones de difracción…
+	Diffraction Patterns	Patrones de difracción
+	Fractal Explorer…	Explorador de fractales…
+	Fractal Explorer	Explorador de fractales
+	Fractal Trace…	Traza fractal…
+	Fractal Trace	Traza fractal
+	Fractals	Fractales
+	Grid…	Rejilla…
+	IFS Fractal…	Fractal IFS…
+	IFS Fractal	Fractal IFS
+	Illusion…	Ilusión…
+	Illusion	Ilusión
+	Jigsaw…	Rompecabezas…
+	Jigsaw	Rompecabezas
+	Lava…	Lava…
+	Lava	Lava
+	Line Nova…	Línea nova…
+	Line Nova	Línea nova
+	Linear Sinusoid…	Sinusoide lineal…
+	Linear Sinusoid	Sinusoide lineal
+	Little Planet…	Pequeño planeta…
+	Little Planet	Pequeño planeta
+	Map	Mapa
+	Map Object…	Mapear objeto…
+	Map Object	Mapear objeto
+	Maze…	Laberinto…
+	Maze	Laberinto
+	Optimize (for GIF)	Optimizar (para GIF)
+	Qbist…	Qbist…
+	Qbist	Qbist
+	Recursive Transform…	Transformación recursiva…
+	Recursive Transform	Transformación recursiva
+	Rippling…	Ondulación…
+	Rippling	Ondulación
+	Semi-Flatten	Semiaplanar
+	Simplex Noise…	Ruido símplex…
+	Simplex Noise	Ruido símplex
+	Sinus…	Sinus…
+	Sinus	Sinus
+	Slide…	Diapositiva…
+	Slide	Diapositiva
+	Small Tiles…	Mosaicos pequeños…
+	Small Tiles	Mosaicos pequeños
+	Sphere Designer…	Diseñador de esferas…
+	Sphere Designer	Diseñador de esferas
+	Spinning Globe…	Globo giratorio…
+	Spinning Globe	Globo giratorio
+	Spiral…	Espiral…
+	Spiral	Espiral
+	Spirograph…	Espirógrafo…
+	Spirograph	Espirógrafo
+	Stencil Carve…	Tallar estarcido…
+	Stencil Carve	Tallar estarcido
+	Tile Seamless	Mosaico sin costuras
+	Unoptimize	Desoptimizar
+	Waves…	Olas…
+	Abyss	Abismo
+	Add Glowing	Añadir brillo
+	After Glow	Resplandor posterior
+	Alternate	Alternos
+	Amplitude	Amplitud
+	Antialiasing	Suavizado
+	Bailout	Límite de escape
+	Barnsley1	Barnsley 1
+	Barnsley2	Barnsley 2
+	Barnsley3	Barnsley 3
+	Base	Base
+	Bevel Width	Anchura del bisel
+	Blue Contours	Contornos azules
+	Blue Frequency	Frecuencia azul
+	Blue Inversion	Inversión azul
+	Blue Sharp Edges	Bordes nítidos azules
+	Bump	Relieve
+	Bumps	Protuberancias
+	Caribbean Blues	Azules caribeños
+	Carve White	Tallar el blanco
+	Cell Height	Altura de celda
+	Cell Width	Anchura de celda
+	Checker	Damero
+	Circuit Seed	Semilla del circuito
+	Clamp	Fijar
+	Clockwise	Horario
+	Color1	Color 1
+	Color2	Color 2
+	Complexity	Complejidad
+	Corner Radius	Radio de esquina
+	Counter Clockwise	Antihorario
+	Coupling	Acoplamiento
+	Curve Type	Tipo de curva
+	Curved	Curvo
+	Cx	Cx
+	Cy	Cy
+	Cylinder	Cilindro
+	Delta Sin Curve	Curva delta seno
+	Depth First	Primero en profundidad
+	Division	División
+	Dragon	Dragón
+	Edge Behavior	Comportamiento del borde
+	Epitrochoid	Epitrocoide
+	Explicit	Explícito
+	Exponent	Exponente
+	Fade Color	Color de fundido
+	Fade Opacity	Opacidad del fundido
+	Fadeout	Desvanecimiento
+	Fadeout Width	Anchura del desvanecimiento
+	Fern	Helecho
+	Fill With K	Rellenar con K
+	First Iteration	Primera iteración
+	Fixed Gear Teeth	Dientes del engranaje fijo
+	Flip Which	Cuáles voltear
+	Font Color	Color de fuente
+	Font Size	Tamaño de fuente
+	Fractal	Fractal
+	Fractal Type	Tipo de fractal
+	Frames	Fotogramas
+	Full Spectrum	Espectro completo
+	German Flag	Bandera alemana
+	Golden	Dorado
+	Green Contours	Contornos verdes
+	Green Frequency	Frecuencia verde
+	Green Inversion	Inversión verde
+	Green Sharp Edges	Bordes nítidos verdes
+	Half	Mitad
+	Hole Percent	Porcentaje del agujero
+	Hue Function	Función de tono
+	Incandescent	Incandescente
+	Intermediate Frames	Fotogramas intermedios
+	Invert Direction	Invertir dirección
+	Julia	Julia
+	Jx	Jx
+	Jy	Jy
+	Keep First Value	Mantener el primer valor
+	Keep Image	Mantener la imagen
+	Lambda	Lambda
+	Last Iteration	Última iteración
+	Line Height	Altura de línea
+	Line Width	Anchura de línea
+	Lissajous	Lissajous
+	Lizard	Lagarto
+	Logarithmic	Logarítmico
+	Logistic	Logística
+	Looped	En bucle
+	Man O War	Man o' War
+	Mandelbrot	Mandelbrot
+	Map To	Mapear en
+	Marble	Mármol
+	Max Blur Radius	Radio máximo de desenfoque
+	Morph	Morfología
+	Moving Gear Teeth	Dientes del engranaje móvil
+	No Background	Sin fondo
+	Offset Radius	Radio de desplazamiento
+	Oilify Mask Size	Tamaño de máscara de óleo
+	Oversample	Sobremuestreo
+	Palettize	Paletizar
+	Pan	Panorámica
+	Parameter K	Parámetro K
+	Paste Below	Pegar debajo
+	Perturbation	Perturbación
+	Phong	Phong
+	Polarization	Polarización
+	Polygon	Polígono
+	Prim	Prim
+	Quarter	Un cuarto
+	Rack	Cremallera
+	Rank	Rango
+	Red Contours	Contornos rojos
+	Red Frequency	Frecuencia roja
+	Red Inversion	Inversión roja
+	Red Sharp Edges	Bordes nítidos rojos
+	Rotation X	Rotación X
+	Rotation Y	Rotación Y
+	Rotation Z	Rotación Z
+	Saturation Function	Función de saturación
+	Separate Layer	Capa separada
+	Sierpinski	Sierpinski
+	Sin Curve	Curva seno
+	Sin Curve Step	Curva seno escalonada
+	Sinusoidal	Sinusoidal
+	Smear	Manchar
+	Snowflake	Copo de nieve
+	Specular	Especular
+	Sphere	Esfera
+	Spider	Araña
+	Spot Radius	Radio del punto
+	Spots	Manchas
+	Stains	Manchas de café
+	Start Offset	Desplazamiento inicial
+	Supersampling	Supermuestreo
+	Text	Texto
+	Three Quarters	Tres cuartos
+	Transparent Background	Fondo transparente
+	Turbulence	Turbulencia
+	Turn Left	Girar a la izquierda
+	Type1	Tipo 1
+	Type2	Tipo 2
+	Value Function	Función de valor
+	Wavelength	Longitud de onda
+	Wood	Madera
+	X Amplitude	Amplitud X
+	X Offset	Desplazamiento X
+	X Period	Periodo X
+	X Phase	Fase X
+	X Scale	Escala X
+	X Spacing	Espaciado X
+	X Tiles	Mosaicos X
+	X1	X1
+	X2	X2
+	Y Amplitude	Amplitud Y
+	Y Offset	Desplazamiento Y
+	Y Period	Periodo Y
+	Y Phase	Fase Y
+	Y Scale	Escala Y
+	Y Spacing	Espaciado Y
+	Y Tiles	Mosaicos Y
+	Y1	Y1
+	Y2	Y2
