@@ -1,5 +1,5 @@
 //! Live path effects on the path's own geometry (Effect › Path): Bend along a spine, B-Spline and
-//! Spiro splines through the anchors, Dashed Stroke as real geometry.
+//! Spiro splines through the anchors, Dashed Stroke and Taper Stroke as real geometry.
 //!
 //! - [`bend`]: the object's box is laid along one cubic spine (four points in box coordinates):
 //!   its long axis follows the spine's arc length, its other axis the spine's normal, scaled by
@@ -9,13 +9,15 @@
 //! - [`dashed_stroke`]: each segment becomes `dashes` dashes separated by holes `holeFactor` of a
 //!   period wide, optionally unified to one dash length along the subpath, with half dashes at the
 //!   ends and bare offsets, as open subpaths or as the outline of the stroke along them.
+//! - [`taper_stroke`]: the outline of a stroke of `width` tapering to a point over `startTaper`
+//!   and `endTaper` points of each subpath, with a smoothing curve, a join and a side.
 
-use redrob_vector_doc::StrokeLayer;
+use redrob_vector_doc::{LineCap, LineJoin, StrokeLayer, WidthProfile};
 use redrob_vector_geom::kurbo::ParamCurveArclen;
-use redrob_vector_geom::{Anchor, AnchorKind, CubicBez, ParamCurve, PathData, Point, Rect, SubPath, Vec2};
+use redrob_vector_geom::{Anchor, AnchorKind, BezPath, CubicBez, ParamCurve, PathData, Point, Rect, SubPath, Vec2};
 use serde_json::Value;
 
-use crate::stroke::{OUTLINE_TOL, style};
+use crate::stroke::{OUTLINE_TOL, style, width_outline};
 use crate::util::*;
 
 /// Arc-length accuracy of the dashes and the bend (document points).
@@ -26,9 +28,16 @@ pub const BEND: &str = "path.bend";
 pub const BSPLINE: &str = "path.bspline";
 pub const SPIRO: &str = "path.spiro";
 pub const DASHED_STROKE: &str = "path.dashedStroke";
+pub const TAPER_STROKE: &str = "path.taperStroke";
 
 /// The default spine of Bend: a gentle arch from the box's left middle to its right middle.
 pub const BEND_SPINE: &str = "0,0.5 0.3,0 0.7,0 1,0.5";
+
+/// The sides Taper Stroke tapers on: (label, value).
+pub const TAPER_DIRECTIONS: [(&str, &str); 3] = [("Center", "center"), ("Left", "left"), ("Right", "right")];
+
+/// The joins of Taper Stroke's corners: (label, value).
+pub const TAPER_JOINS: [(&str, &str); 3] = [("Round", "round"), ("Miter", "miter"), ("Bevel", "bevel")];
 
 /// Four points `x,y x,y x,y x,y` (or `[[x, y], …]`) in box coordinates, else the default spine.
 fn spine_points(p: &Value) -> [Point; 4] {
@@ -222,8 +231,89 @@ pub fn dashed_stroke(path: &PathData, p: &Value, stroke: Option<&StrokeLayer>) -
     redrob_vector_pathops::stroke_region(&[outline])
 }
 
+/// The width factor `smoothing` of the way from a straight taper to an eased one, at `t` of the
+/// taper (0 at the tip, 1 where the full width begins).
+fn taper_shape(t: f64, smoothing: f64) -> f64 {
+    let eased = t * t * (3.0 - 2.0 * t);
+    t + (eased - t) * smoothing
+}
+
+/// Taper Stroke: the outline of a stroke `width` wide along `path` whose ends taper to a point.
+pub fn taper_stroke(path: &PathData, p: &Value) -> PathData {
+    let width = num(p, "width", 4.0).clamp(0.0, 1e4);
+    if width <= 0.0 {
+        return PathData::default();
+    }
+    let start = num(p, "startTaper", 20.0).clamp(0.0, 1e6);
+    let end = num(p, "endTaper", 20.0).clamp(0.0, 1e6);
+    let smoothing = num(p, "smoothing", 0.5).clamp(0.0, 1.0);
+    let side = text(p, "direction", "center").to_ascii_lowercase();
+    let mut st = StrokeLayer::new(redrob_vector_doc::color::Paint::None, width);
+    st.cap = LineCap::Butt;
+    st.join = match text(p, "join", "round").to_ascii_lowercase().as_str() {
+        "miter" => LineJoin::Miter,
+        "bevel" => LineJoin::Bevel,
+        _ => LineJoin::Round,
+    };
+    st.miter_limit = 4.0;
+    // Which side carries the width: (left, right) factors of the full width.
+    let sides = |f: f64| -> (f64, f64) {
+        match side.as_str() {
+            "left" => (2.0 * f, 0.0),
+            "right" => (0.0, 2.0 * f),
+            _ => (f, f),
+        }
+    };
+    const STEPS: usize = 8;
+    let mut parts = Vec::new();
+    for sp in &path.subpaths {
+        if sp.anchors.len() < 2 {
+            continue;
+        }
+        let len = PathData::single(sp.clone()).length();
+        if len <= 1e-9 {
+            continue;
+        }
+        let mut points: Vec<(f64, f64, f64)> = Vec::new();
+        if sp.closed {
+            // A closed subpath has no ends to taper: a plain ring.
+            let (l, r) = sides(1.0);
+            points.extend([(0.0, l, r), (1.0, l, r)]);
+        } else {
+            // Tapers longer than the path shrink together to share it.
+            let (mut fs, mut fe) = (start / len, end / len);
+            let sum = fs + fe;
+            if sum > 1.0 {
+                fs /= sum;
+                fe /= sum;
+            }
+            for k in 0..=STEPS {
+                let u = k as f64 / STEPS as f64;
+                let (l, r) = sides(taper_shape(u, smoothing));
+                points.push((fs * u, l, r));
+            }
+            for k in 0..=STEPS {
+                let u = k as f64 / STEPS as f64;
+                let (l, r) = sides(taper_shape(1.0 - u, smoothing));
+                points.push((1.0 - fe + fe * u, l, r));
+            }
+            points.retain(|q| q.0.is_finite());
+            points.sort_by(|a, b| a.0.total_cmp(&b.0));
+        }
+        let profile = WidthProfile { points };
+        let mut bp = BezPath::new();
+        sp.to_bezpath_into(&mut bp);
+        parts.push(width_outline(&bp, width, &profile, &st, OUTLINE_TOL));
+    }
+    if parts.is_empty() {
+        return PathData::default();
+    }
+    redrob_vector_pathops::stroke_region(&parts)
+}
+
 #[cfg(test)]
 mod tests {
+    use redrob_vector_geom::Shape;
     use serde_json::json;
 
     use super::*;
@@ -262,6 +352,19 @@ mod tests {
         let filled = dashed_stroke(&pd, &json!({"dashes": 2, "strokeToPath": true}), None);
         assert!(filled.subpaths.iter().all(|s| s.closed));
         assert!(filled.bounds().is_some());
+    }
+
+    #[test]
+    fn taper_outline_is_thin_at_the_ends_and_full_in_the_middle() {
+        let out = taper_stroke(&line(0.0, 100.0), &json!({"width": 10.0, "startTaper": 20.0, "endTaper": 20.0, "smoothing": 0.0}));
+        let bp = out.to_bezpath();
+        assert!(bp.contains(Point::new(50.0, 4.0)) && bp.contains(Point::new(50.0, -4.0)));
+        assert!(!bp.contains(Point::new(2.0, 2.0)) && !bp.contains(Point::new(98.0, -2.0)));
+        assert!(bp.contains(Point::new(10.0, 2.0)));
+        // One-sided: everything lies on the right (+y) of the path.
+        let right = taper_stroke(&line(0.0, 100.0), &json!({"width": 10.0, "direction": "right"})).to_bezpath();
+        let bb = right.bounding_box();
+        assert!(bb.y0 > -1e-6 && bb.y1 > 9.0, "{bb:?}");
     }
 
     #[test]
