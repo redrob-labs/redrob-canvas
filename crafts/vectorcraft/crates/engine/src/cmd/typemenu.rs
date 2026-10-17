@@ -79,7 +79,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Find and Replace…",
             ["Edit"],
             None,
-            "{find, replace?: \"\", matchCase?: false, wholeWord?: false, ids?} replace in every text object (or ids) → {count}. Matches never span style runs.",
+            "{find, replace?: \"\", matchCase?: false, wholeWord?: false, ids?, in?: \"text\" (default)|\"id\"|\"label\"|\"title\"|\"description\"|\"style\"|\"type\", scope?: \"all\" (default)|\"selection\"|\"layer\", exact?: false (the whole value must match), includeHidden?: false, includeLocked?: false} In text (the default, with no scope or ids): replace in every text object (or ids) → {count}; matches never span style runs. Searching another field (or text with a scope): finds the objects whose id (the XML id of the name), label (name), title, description, style (`fill:#rrggbb;stroke:#rrggbb;stroke-width:N`) or type (Path, Group, Type, Image…) matches, selects them and, with `replace` given, replaces the match in ids, labels, titles and descriptions and a colour in styles → {count, ids}",
             has_doc,
             find_replace
         ),
@@ -645,11 +645,194 @@ fn all_texts(d: &Document) -> Vec<NodeId> {
     v
 }
 
+/// Which object field Find and Replace searches.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum FindIn {
+    Text,
+    Id,
+    Label,
+    Title,
+    Description,
+    Style,
+    Type,
+}
+
+impl FindIn {
+    fn parse(s: &str) -> Option<Self> {
+        Some(match s.to_ascii_lowercase().as_str() {
+            "text" => FindIn::Text,
+            "id" => FindIn::Id,
+            "label" | "name" => FindIn::Label,
+            "title" => FindIn::Title,
+            "description" | "desc" => FindIn::Description,
+            "style" => FindIn::Style,
+            "type" | "kind" => FindIn::Type,
+            _ => return None,
+        })
+    }
+}
+
+/// The searched value of `n` in field `field` (`None`: the object has no such value).
+fn field_value(n: &redrob_vector_doc::Node, field: FindIn) -> Option<String> {
+    let attrs = || n.extras().attrs.as_deref();
+    match field {
+        FindIn::Text => match &n.kind {
+            NodeKind::Text(t) => Some(t.plain_text()),
+            _ => None,
+        },
+        FindIn::Id => n.name.as_deref().map(redrob_vector_doc::xml_id::from_object_name),
+        FindIn::Label => n.name.clone(),
+        FindIn::Title => attrs().map(|a| a.title.clone()).filter(|t| !t.is_empty()),
+        FindIn::Description => attrs().map(|a| a.description.clone()).filter(|t| !t.is_empty()),
+        FindIn::Style => Some(style_string(n)),
+        FindIn::Type => Some(n.kind_label().to_string()),
+    }
+}
+
+/// `fill:#rrggbb;stroke:#rrggbb;stroke-width:N` for `n` (`none` without a paint).
+fn style_string(n: &redrob_vector_doc::Node) -> String {
+    let hex = |p: Option<&redrob_vector_color::Paint>| p.and_then(|p| p.color()).map_or_else(|| "none".to_string(), |c| c.to_hex());
+    let fill = hex(n.appearance.fill().map(|f| &f.paint));
+    let stroke = n.appearance.stroke();
+    let width = stroke.map_or(0.0, |s| s.width);
+    format!("fill:{fill};stroke:{};stroke-width:{}", hex(stroke.map(|s| &s.paint)), (width * 1000.0).round() / 1000.0)
+}
+
+/// Does `value` match `find`: the whole of it (`exact`), else somewhere in it?
+fn matches(value: &str, find: &str, exact: bool, mc: bool, ww: bool) -> bool {
+    if exact { if mc { value == find } else { value.to_lowercase() == find.to_lowercase() } } else { !find_all(value, find, mc, ww).is_empty() }
+}
+
+/// `value` with `find` replaced by `rep` (the whole value when `exact`).
+fn replaced(value: &str, find: &str, rep: &str, exact: bool, mc: bool, ww: bool) -> String {
+    if exact {
+        return rep.to_string();
+    }
+    let mut out = String::with_capacity(value.len());
+    let mut last = 0;
+    for (a, b) in find_all(value, find, mc, ww) {
+        out.push_str(&value[last..a]);
+        out.push_str(rep);
+        last = b;
+    }
+    out.push_str(&value[last..]);
+    out
+}
+
+/// Find and Replace over object fields: the objects in scope whose field matches, selected, and
+/// with a replacement the field rewritten.
+fn find_objects(s: &mut Session, p: &Value, find: &str, rep: Option<&str>, field: FindIn, mc: bool, ww: bool) -> Result<Value> {
+    const C: &str = "edit.findReplace";
+    let exact = bool_or(p, "exact", false);
+    let (hidden, locked) = (bool_or(p, "includeHidden", false), bool_or(p, "includeLocked", false));
+    let scope = str_param(p, "scope").unwrap_or("all");
+    let st = s.doc()?;
+    let d = &st.doc;
+    let roots: Vec<NodeId> = match (ids_param(p, "ids"), scope) {
+        (Some(ids), _) => ids,
+        (None, "selection") => st.selection.objects.clone(),
+        (None, "layer") => st.current_layer().into_iter().collect(),
+        (None, "all") => d.layers.iter().map(|l| l.id).collect(),
+        (None, o) => {
+            return Err(bad(C, format!("scope must be all|selection|layer, got {o}")));
+        }
+    };
+    let mut hits = vec![];
+    for root in roots {
+        let Some(n) = d.node(root) else { continue };
+        n.walk(&mut |c| {
+            if c.is_layer() || (!locked && c.locked) || hits.contains(&c.id) {
+                return;
+            }
+            if field_value(c, field).is_some_and(|v| matches(&v, find, exact, mc, ww)) {
+                hits.push(c.id);
+            }
+        });
+    }
+    if !hidden {
+        hits.retain(|id| d.is_visible(*id));
+    }
+    if hits.is_empty() {
+        return Ok(json!({ "count": 0, "ids": [] }));
+    }
+    let can_replace = !matches!(field, FindIn::Type);
+    match rep {
+        Some(rep) if can_replace => {
+            let colour = (field == FindIn::Style).then(|| redrob_vector_color::Color::from_hex(find).zip(redrob_vector_color::Color::from_hex(rep)));
+            if field == FindIn::Style && colour.is_none() {
+                return Err(bad(C, "replacing in styles takes two colours (#rrggbb) as `find` and `replace`"));
+            }
+            let xml_id = s.prefs.identify_objects_by == "xmlId";
+            let ids = hits.clone();
+            s.edit("Find and Replace", |d, sel| {
+                for id in &ids {
+                    let Some(n) = d.node_mut(*id) else { continue };
+                    match field {
+                        FindIn::Text => {
+                            if let NodeKind::Text(t) = &mut n.kind {
+                                for r in &mut t.runs {
+                                    r.text = replaced(&r.text, find, rep, exact, mc, ww);
+                                }
+                                refresh_bounds(t);
+                            }
+                        }
+                        FindIn::Id | FindIn::Label => {
+                            let Some(value) = field_value(n, field) else {
+                                continue;
+                            };
+                            let new = replaced(&value, find, rep, exact, mc, ww);
+                            let name = if field == FindIn::Id || xml_id { redrob_vector_doc::xml_id::to_object_name(&new) } else { new };
+                            n.name = Some(name).filter(|v| !v.trim().is_empty());
+                        }
+                        FindIn::Title => {
+                            let Some(value) = field_value(n, field) else {
+                                continue;
+                            };
+                            n.edit_attrs(|a| a.title = replaced(&value, find, rep, exact, mc, ww));
+                        }
+                        FindIn::Description => {
+                            let Some(value) = field_value(n, field) else {
+                                continue;
+                            };
+                            n.edit_attrs(|a| a.description = replaced(&value, find, rep, exact, mc, ww));
+                        }
+                        FindIn::Style => {
+                            if let Some((from, to)) = colour.flatten() {
+                                let same = |p: &redrob_vector_color::Paint| p.color().is_some_and(|c| c.to_hex() == from.to_hex());
+                                if n.appearance.fill().is_some_and(|f| same(&f.paint)) {
+                                    n.appearance.set_fill(redrob_vector_color::Paint::solid(to));
+                                }
+                                if n.appearance.stroke().is_some_and(|s| same(&s.paint)) {
+                                    n.appearance.set_stroke(redrob_vector_color::Paint::solid(to));
+                                }
+                            }
+                        }
+                        FindIn::Type => {}
+                    }
+                }
+                sel.set(ids.iter().copied());
+                Ok(())
+            })?;
+        }
+        _ => s.select(|_, sel| sel.set(hits.iter().copied()))?,
+    }
+    Ok(json!({ "count": hits.len(), "ids": hits.iter().map(|i| i.0).collect::<Vec<_>>() }))
+}
+
 fn find_replace(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "edit.findReplace";
     let find = str_param(p, "find").filter(|f| !f.is_empty()).ok_or_else(|| bad(C, "missing `find`"))?.to_string();
-    let rep = str_param(p, "replace").unwrap_or("").to_string();
     let (mc, ww) = (bool_or(p, "matchCase", false), bool_or(p, "wholeWord", false));
+    let field = match str_param(p, "in") {
+        None => FindIn::Text,
+        Some(f) => FindIn::parse(f).ok_or_else(|| bad(C, format!("`in` must be text|id|label|title|description|style|type, got {f}")))?,
+    };
+    if field != FindIn::Text || p.get("scope").is_some() || p.get("exact").is_some() {
+        // An empty replacement finds (and selects) alone: the dialog always carries the field.
+        let rep = str_param(p, "replace").filter(|r| !r.is_empty());
+        return find_objects(s, p, &find, rep, field, mc, ww);
+    }
+    let rep = str_param(p, "replace").unwrap_or("").to_string();
     let ids = match ids_param(p, "ids") {
         Some(v) => text_ids(&s.doc()?.doc, &v),
         None => all_texts(&s.doc()?.doc),
