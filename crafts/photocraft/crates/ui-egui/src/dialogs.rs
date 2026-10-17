@@ -645,6 +645,10 @@ pub fn confirm(app: &mut PhotocraftApp, id: u64) -> Result<Value, String> {
                 return Err("dialog has no command".into());
             };
             let (cmd, params) = crate::smart_ui::confirm_command(&d.fields, cmd, crate::filter_dialog::params_of(&d.fields));
+            // A Split View preview standing in for the job must show the whole filtered result.
+            if let Some(idx) = app.session.active_index() {
+                crate::canvas::apply_filter_split(app, idx, None);
+            }
             let result = app.run(&cmd, params.clone());
             // A filter that runs as a background job keeps its preview on screen until the job
             // lands (`canvas::committed_filter_preview`) instead of flashing the unfiltered image.
@@ -738,7 +742,8 @@ mod tests {
             params: serde_json::json!({"radius": 4.0}),
             k: 1,
         };
-        app.filter_preview = Some(crate::filter_dialog::FilterPreview { key, result: result.map(std::sync::Arc::new), committing: false });
+        let result = result.map(std::sync::Arc::new);
+        app.filter_preview = Some(crate::filter_dialog::FilterPreview { key, unsplit: result.clone(), result, committing: false, split: None });
         (app, id)
     }
 

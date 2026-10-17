@@ -327,6 +327,7 @@ fn restore_remembered(app: &PhotocraftApp, command: &str, spec: &str, fields: &m
 
 /// Remember successful built-in schema dialogs; failed or cancelled dialogs do not persist.
 pub(crate) fn remember(app: &mut PhotocraftApp, command: &str, fields: &Map<String, Value>) {
+    crate::filter_split::remember(app, fields);
     if !fields.contains_key("__filter") || fields.contains_key("__spec") {
         return;
     }
@@ -449,6 +450,11 @@ pub fn reset_fields(app: &PhotocraftApp, fields: &mut Map<String, Value>) {
     // Drop user params; keep private `__` chrome (and fixed keys outside the schema for `__spec`).
     let schema_keys: std::collections::HashSet<String> = parse_spec(&spec).into_iter().map(|p| p.key).collect();
     fields.retain(|k, _| k.starts_with("__") || !schema_keys.contains(k));
+    // The Blending Options are not in the schema: back to Normal at 100%.
+    if supports_blending(fields) {
+        fields.remove(BLEND);
+        fields.remove(OPACITY);
+    }
     for p in parse_spec(&spec) {
         if let Some(v) = default_value(app, &command, &p) {
             fields.insert(p.key, v);
@@ -471,6 +477,8 @@ pub fn open(app: &mut PhotocraftApp, command: &str) -> Option<u64> {
     if command.starts_with("filter.") || PREVIEWED.contains(&command) || command == crate::select_mask_view::COMMAND {
         fields.insert("__preview".into(), json!(true));
     }
+    // Split View starts as the last filter dialog left it (PH-FLT-002).
+    crate::filter_split::init(app, &mut fields);
     for p in parse_spec(spec.params) {
         if let Some(v) = default_value(app, command, &p) {
             fields.insert(p.key, v);
@@ -857,11 +865,67 @@ pub fn body(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
         ui.add_space(4.0);
         ui.add(egui::Label::new(egui::RichText::new(note).color(t.text_dim)).wrap());
     }
+    if supports_blending(f) {
+        blending_options(ui, &cmd, f);
+    }
     if let Some(mut preview) = f.get("__preview").and_then(Value::as_bool) {
         ui.add_space(4.0);
         crate::widgets::checkbox(ui, &mut preview, tl!("Preview"));
         f.insert("__preview".into(), json!(preview));
     }
+    crate::filter_split::controls(ui, f);
+}
+
+/// The dialog's Blending Options (PH-FLT-002): the `blend` mode and `opacity` the engine
+/// composites the filter's result with before it lands, as Edit › Fade would afterwards. Unset
+/// (Normal at 100%) the result replaces the pixels, so the params only carry the keys once the
+/// section has drawn.
+const BLEND: &str = "blend";
+const OPACITY: &str = "opacity";
+
+/// Filter commands run by something other than the shared filter runner, which is where
+/// `blend` / `opacity` are applied: these get no Blending Options (Edit › Fade still works).
+const OWN_RUNNER: &[&str] = &[
+    "filter.lensCorrection",
+    "filter.adaptiveWideAngle",
+    "filter.cameraRaw",
+    "filter.liquify",
+    "filter.vanishingPoint",
+    "filter.render.flame",
+    "filter.render.pictureFrame",
+    "filter.render.tree",
+    "filter.render.clouds",
+    "filter.render.differenceClouds",
+    "filter.filterGallery",
+];
+
+/// Whether the dialog with fields `f` gets Blending Options: a Filter menu dialog on the shared
+/// runner, with the command's own parameters (a plug-in's spec or a smart filter being re-edited,
+/// which has its own blending options in the Layers panel, does not).
+pub(crate) fn supports_blending(f: &Map<String, Value>) -> bool {
+    if !f.contains_key("__filter") || f.contains_key("__spec") || f.contains_key("__smartFilter") {
+        return false;
+    }
+    let Some(cmd) = f.get("__command").and_then(Value::as_str) else { return false };
+    cmd.starts_with("filter.") && !OWN_RUNNER.contains(&cmd) && redrob_photo_engine::commands::find(cmd).is_some()
+}
+
+fn blending_options(ui: &mut egui::Ui, cmd: &str, f: &mut Map<String, Value>) {
+    let t = Tokens::get(ui.ctx());
+    ui.add_space(6.0);
+    crate::widgets::section_label(ui, "Blending Options");
+    let modes = redrob_photo_color::BlendMode::LAYER_MODES;
+    let mut cur = f.get(BLEND).and_then(Value::as_str).unwrap_or("Normal").to_string();
+    let opts: Vec<(String, &str)> = modes.iter().map(|m| (format!("{m:?}"), tl!(m.label()))).collect();
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Mode")).color(t.text_dim));
+        crate::widgets::dropdown(ui, &format!("flt-{cmd}-blend"), &mut cur, &opts, 170.0);
+    });
+    f.insert(BLEND.into(), json!(cur));
+    let mut opacity = f.get(OPACITY).and_then(Value::as_f64).unwrap_or(100.0) as f32;
+    let gestures = crate::widgets::RowGestures { reset: Some(100.0), wheel_step: None };
+    crate::widgets::slider_row_with(ui, tl!("Opacity"), &mut opacity, 0.0..=100.0, "%", None, gestures);
+    f.insert(OPACITY.into(), json!(opacity.round().clamp(0.0, 100.0)));
 }
 
 /// A new seed for a dialog's Random button: 0..=30000 (what the field takes), never `current`.
@@ -1001,6 +1065,11 @@ pub struct FilterPreview {
     /// OK was pressed and the filter runs as a background job: the preview stays on screen until
     /// the job lands, so the canvas doesn't flash the unfiltered image in between.
     pub committing: bool,
+    /// Split View (PH-FLT-002): the divider `result` was spliced with, and the whole filtered proxy
+    /// it was spliced from, so moving the divider reuses it instead of rerunning the filter
+    /// (`canvas::apply_filter_split`). `split` is `None` when `result` is the whole filtered proxy.
+    pub split: Option<crate::filter_split::Split>,
+    pub unsplit: Option<Arc<Document>>,
 }
 
 /// Identity of one filter dialog's live preview.
