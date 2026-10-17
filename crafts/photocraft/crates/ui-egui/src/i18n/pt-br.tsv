@@ -3995,3 +3995,10 @@ layerLabel	No Color	Sem cor
 	HSV Hue	Matiz HSV
 	HSV Saturation	Saturação HSV
 	HSV Value	Valor HSV
+	Edge…	Borda…
+	Algorithm	Algoritmo
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferencial
+	Laplace	Laplace

@@ -405,6 +405,12 @@ pub enum FilterParams {
         from_right: bool,
         seed: u32,
     },
+    /// Edge: light edges on black by one of six operators, scaled by `amount` (1–10; 2 maps a
+    /// full step to white).
+    Edge {
+        algorithm: EdgeAlgorithm,
+        amount: f32,
+    },
 
     // ---- Distort ----
     /// Scales in % (−999…999; 100 % = 128 px at full map contrast). The map is
@@ -667,6 +673,7 @@ impl FilterParams {
             FilterParams::OilPaint { .. } => "Oil Paint",
             FilterParams::Tiles { .. } => "Tiles",
             FilterParams::TraceContour { .. } => "Trace Contour",
+            FilterParams::Edge { .. } => "Edge",
             FilterParams::Wind { .. } => "Wind",
             FilterParams::Displace { .. } => "Displace",
             FilterParams::Shear { .. } => "Shear",
@@ -711,7 +718,7 @@ fn halo_ext(p: &FilterParams) -> Halo {
         FilterParams::Extrude { size, depth, .. } => r(stylize2::extrude_reach(*depth) + size.clamp(2.0, 255.0) * 3.0 + 1.0),
         FilterParams::OilPaint { stylization, scale, .. } => r(oil::reach(*stylization, *scale)),
         FilterParams::Tiles { .. } => Halo::Bounds,
-        FilterParams::TraceContour { .. } => r(1.0),
+        FilterParams::TraceContour { .. } | FilterParams::Edge { .. } => r(1.0),
         FilterParams::Wind { method, .. } => r(stylize2::wind_reach(*method)),
         FilterParams::Displace { .. } | FilterParams::Shear { .. } | FilterParams::ZigZag { .. } | FilterParams::SpinBlur { .. } => Halo::Bounds,
         // Generators and per-pixel renders only need the bounds geometry (always in the context).
@@ -829,6 +836,7 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
             stylize2::tiles(src, out, ctx, *count, *max_offset, *fill, (*foreground, *background), *seed)
         }
         FilterParams::TraceContour { level, upper } => stylize2::trace_contour(src, out, ctx, *level, *upper),
+        FilterParams::Edge { algorithm, amount } => stylize2::edge(src, out, ctx, *algorithm, *amount),
         FilterParams::Wind { method, from_right, seed } => stylize2::wind(src, out, ctx, *method, *from_right, *seed),
         FilterParams::Displace { horizontal, vertical, stretch, undefined, map } => {
             distort2::displace(src, out, ctx, (*horizontal, *vertical), *stretch, *undefined, map.as_deref())

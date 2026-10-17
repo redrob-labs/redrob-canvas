@@ -3935,3 +3935,10 @@ cameraData	Lens	Lens
 	HSV Hue	HSV Renk Tonu
 	HSV Saturation	HSV Doygunluk
 	HSV Value	HSV Değer
+	Edge…	Kenar…
+	Algorithm	Algoritma
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferansiyel
+	Laplace	Laplace

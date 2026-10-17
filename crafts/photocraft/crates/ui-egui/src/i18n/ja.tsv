@@ -3881,3 +3881,10 @@ curves	Smooth	スムーズ
 	HSV Hue	HSV 色相
 	HSV Saturation	HSV 彩度
 	HSV Value	HSV 明度
+	Edge…	エッジ…
+	Algorithm	アルゴリズム
+	Sobel	ソーベル
+	Prewitt	プレヴィット
+	Roberts	ロバーツ
+	Differential	差分
+	Laplace	ラプラス

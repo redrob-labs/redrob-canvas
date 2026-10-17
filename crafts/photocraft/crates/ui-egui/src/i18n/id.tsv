@@ -3199,3 +3199,10 @@ curves	Smooth	Haluskan
 	HSV Hue	Hue HSV
 	HSV Saturation	Saturasi HSV
 	HSV Value	Nilai HSV
+	Edge…	Tepi…
+	Algorithm	Algoritma
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferensial
+	Laplace	Laplace

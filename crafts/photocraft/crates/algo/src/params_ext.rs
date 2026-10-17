@@ -51,6 +51,19 @@ pub enum TileFill {
     Unaltered,
 }
 
+/// Edge detection operator of the Edge filter.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum EdgeAlgorithm {
+    #[default]
+    Sobel,
+    Prewitt,
+    Gradient,
+    Roberts,
+    Differential,
+    Laplace,
+}
+
 /// Wind method.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]

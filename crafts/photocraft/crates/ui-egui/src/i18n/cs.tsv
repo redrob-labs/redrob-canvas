@@ -3814,3 +3814,10 @@ navigator	Zoom	Zvětšení
 	HSV Hue	Odstín HSV
 	HSV Saturation	Sytost HSV
 	HSV Value	Hodnota HSV
+	Edge…	Hrana…
+	Algorithm	Algoritmus
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferenciální
+	Laplace	Laplace

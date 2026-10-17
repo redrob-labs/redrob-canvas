@@ -3965,3 +3965,10 @@ curves	Smooth	Vloeiend maken
 	HSV Hue	HSV-kleurtoon
 	HSV Saturation	HSV-verzadiging
 	HSV Value	HSV-waarde
+	Edge…	Rand…
+	Algorithm	Algoritme
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Differentieel
+	Laplace	Laplace

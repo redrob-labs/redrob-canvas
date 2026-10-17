@@ -213,6 +213,7 @@ const FULL_RESOLUTION_PREVIEW: &[&str] = &[
     "filter.other.custom",
     "filter.video.deInterlace",
     "filter.stylize.traceContour",
+    "filter.stylize.edge",
     "filter.stylize.wind",
     "filter.stylize.extrude",
     "filter.render.tree",

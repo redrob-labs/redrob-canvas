@@ -4123,3 +4123,10 @@ cameraRaw	Yellow	Sárga
 	HSV Hue	HSV színárnyalat
 	HSV Saturation	HSV telítettség
 	HSV Value	HSV érték
+	Edge…	Él…
+	Algorithm	Algoritmus
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Differenciális
+	Laplace	Laplace

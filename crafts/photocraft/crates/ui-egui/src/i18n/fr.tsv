@@ -3212,3 +3212,10 @@ curves	Smooth	Lisser
 	HSV Hue	Teinte TSV
 	HSV Saturation	Saturation TSV
 	HSV Value	Valeur TSV
+	Edge…	Contour…
+	Algorithm	Algorithme
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Différentiel
+	Laplace	Laplace

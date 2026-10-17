@@ -3693,3 +3693,10 @@ curves	Smooth	Làm mượt
 	HSV Hue	Sắc màu HSV
 	HSV Saturation	Độ bão hòa HSV
 	HSV Value	Giá trị HSV
+	Edge…	Cạnh…
+	Algorithm	Thuật toán
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Vi phân
+	Laplace	Laplace

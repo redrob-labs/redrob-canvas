@@ -3383,3 +3383,10 @@ curves	Smooth	매끄럽게
 	HSV Hue	HSV 색조
 	HSV Saturation	HSV 채도
 	HSV Value	HSV 명도
+	Edge…	가장자리…
+	Algorithm	알고리즘
+	Sobel	소벨
+	Prewitt	프리윗
+	Roberts	로버츠
+	Differential	미분
+	Laplace	라플라스

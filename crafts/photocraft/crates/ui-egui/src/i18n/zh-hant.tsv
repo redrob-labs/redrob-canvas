@@ -2809,3 +2809,10 @@ curves	Smooth	平滑
 	HSV Hue	HSV 色相
 	HSV Saturation	HSV 飽和度
 	HSV Value	HSV 明度
+	Edge…	邊緣…
+	Algorithm	演算法
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	差分
+	Laplace	拉普拉斯

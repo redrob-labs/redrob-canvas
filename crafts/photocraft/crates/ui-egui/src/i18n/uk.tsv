@@ -3904,3 +3904,10 @@ curves	Smooth	Згладити
 	HSV Hue	Тон HSV
 	HSV Saturation	Насиченість HSV
 	HSV Value	Значення HSV
+	Edge…	Край…
+	Algorithm	Алгоритм
+	Sobel	Собель
+	Prewitt	Превітт
+	Roberts	Робертс
+	Differential	Диференційний
+	Laplace	Лаплас

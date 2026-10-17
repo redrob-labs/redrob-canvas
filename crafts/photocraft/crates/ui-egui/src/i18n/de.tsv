@@ -3208,3 +3208,10 @@ curves	Smooth	Glätten
 	HSV Hue	HSV-Farbton
 	HSV Saturation	HSV-Sättigung
 	HSV Value	HSV-Wert
+	Edge…	Kante…
+	Algorithm	Algorithmus
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Differenziell
+	Laplace	Laplace

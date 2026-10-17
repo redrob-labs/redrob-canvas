@@ -3905,3 +3905,10 @@ curves	Smooth	Εξομάλυνση
 	HSV Hue	Απόχρωση HSV
 	HSV Saturation	Κορεσμός HSV
 	HSV Value	Τιμή HSV
+	Edge…	Άκρο…
+	Algorithm	Αλγόριθμος
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Διαφορικό
+	Laplace	Laplace

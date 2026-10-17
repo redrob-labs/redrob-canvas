@@ -4277,3 +4277,10 @@ shape	Appearance	Izgled
 	HSV Hue	HSV nijansa
 	HSV Saturation	HSV zasićenost
 	HSV Value	HSV vrednost
+	Edge…	Ivica…
+	Algorithm	Algoritam
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferencijalni
+	Laplace	Laplace

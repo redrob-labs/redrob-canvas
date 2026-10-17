@@ -4166,3 +4166,10 @@ navigator	Zoom	Zoom
 	HSV Hue	Tono HSV
 	HSV Saturation	Saturación HSV
 	HSV Value	Valor HSV
+	Edge…	Borde…
+	Algorithm	Algoritmo
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferencial
+	Laplace	Laplace

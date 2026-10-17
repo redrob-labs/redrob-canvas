@@ -606,6 +606,7 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["Filter", "Stylize"], "Solarize", None, "filter.stylize.solarize"),
     (&["Filter", "Stylize"], "Tiles…", None, "filter.stylize.tiles"),
     (&["Filter", "Stylize"], "Trace Contour…", None, "filter.stylize.traceContour"),
+    (&["Filter", "Stylize"], "Edge…", None, "filter.stylize.edge"),
     (&["Filter", "Stylize"], "Wind…", None, "filter.stylize.wind"),
     (&["Filter", "Video"], "De-Interlace…", None, "filter.video.deInterlace"),
     (&["Filter", "Video"], "NTSC Colors", None, "filter.video.ntscColors"),

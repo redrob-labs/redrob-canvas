@@ -4325,3 +4325,10 @@ shape	Appearance	Aspetto
 	HSV Hue	Tonalità HSV
 	HSV Saturation	Saturazione HSV
 	HSV Value	Valore HSV
+	Edge…	Bordo…
+	Algorithm	Algoritmo
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Differenziale
+	Laplace	Laplace

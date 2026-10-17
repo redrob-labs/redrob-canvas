@@ -2109,9 +2109,9 @@ name = "Edge"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-edge.html"
 behaviour = "Edge detection with algorithm (Sobel, Prewitt, gradient, Roberts, differential, Laplace), amount and border behaviour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs (filter.stylize.findEdges)"
-gap = "one algorithm, no amount"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/stylize2.rs (edge), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.stylize.edge: algorithm sobel|prewitt|gradient|roberts|differential|laplace, amount 1..10)"
+gap = ""
 priority = 2
 
 [[feature]]

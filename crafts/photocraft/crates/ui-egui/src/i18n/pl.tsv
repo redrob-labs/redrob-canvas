@@ -3803,3 +3803,10 @@ curves	Smooth	Wygładź
 	HSV Hue	Odcień HSV
 	HSV Saturation	Nasycenie HSV
 	HSV Value	Wartość HSV
+	Edge…	Krawędź…
+	Algorithm	Algorytm
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Różnicowy
+	Laplace	Laplace
