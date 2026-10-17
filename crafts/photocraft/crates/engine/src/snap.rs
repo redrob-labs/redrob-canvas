@@ -61,11 +61,14 @@ pub struct SnapOptions {
     pub selection: bool,
     /// Grid subdivision spacing in document pixels, independently for x and y.
     pub grid_step: [f64; 2],
+    /// Position of a gridline from the document's top-left, document pixels (an image's own grid
+    /// may be offset; the Preferences grid starts at 0).
+    pub grid_offset: [f64; 2],
 }
 
 impl Default for SnapOptions {
     fn default() -> Self {
-        Self { guides: true, grid: false, layers: true, document: true, selection: true, grid_step: [18.0; 2] }
+        Self { guides: true, grid: false, layers: true, document: true, selection: true, grid_step: [18.0; 2], grid_offset: [0.0; 2] }
     }
 }
 
@@ -78,6 +81,9 @@ pub struct SnapTargets {
     pub y: Vec<Target>,
     /// Grid subdivision spacing on the x and y axes (document px).
     pub grid: Option<[f64; 2]>,
+    /// A gridline's position on each axis (document px): the grid's lines are at
+    /// `grid_offset + n × step`.
+    pub grid_offset: [f64; 2],
     /// Extent used for grid lines and guides ([x0, y0, x1, y1]).
     pub extent: [f64; 4],
 }
@@ -115,6 +121,7 @@ impl SnapTargets {
         }
         if opts.grid && opts.grid_step.iter().all(|step| step.is_finite() && *step > 0.0) {
             t.grid = Some(opts.grid_step);
+            t.grid_offset = opts.grid_offset.map(|o| if o.is_finite() { o } else { 0.0 });
         }
         if opts.layers {
             for (_, _, l) in doc.walk() {
@@ -158,6 +165,7 @@ impl SnapTargets {
             x: self.x.iter().copied().filter(|t| keep(t.kind)).collect(),
             y: self.y.iter().copied().filter(|t| keep(t.kind)).collect(),
             grid: self.grid.filter(|_| keep(SnapKind::Grid)),
+            grid_offset: self.grid_offset,
             extent: self.extent,
         }
     }
@@ -186,8 +194,9 @@ impl SnapTargets {
         };
         list.iter().copied().for_each(&mut consider);
         if let Some(steps) = self.grid {
-            let step = steps[usize::from(!vertical)];
-            let g = (v / step).round() * step;
+            let axis = usize::from(!vertical);
+            let (step, o) = (steps[axis], self.grid_offset[axis]);
+            let g = ((v - o) / step).round() * step + o;
             let span = if vertical { (self.extent[1], self.extent[3]) } else { (self.extent[0], self.extent[2]) };
             consider(Target { pos: g, kind: SnapKind::Grid, span });
         }
@@ -237,8 +246,8 @@ impl SnapTargets {
                 let hit = hit.or_else(|| {
                     self.grid
                         .filter(|steps| {
-                            let step = steps[axis];
-                            ((moved / step).round() * step - moved).abs() < 1e-6
+                            let (step, o) = (steps[axis], self.grid_offset[axis]);
+                            (((moved - o) / step).round() * step + o - moved).abs() < 1e-6
                         })
                         .map(|_| Target { pos: moved, kind: SnapKind::Grid, span: other })
                 });

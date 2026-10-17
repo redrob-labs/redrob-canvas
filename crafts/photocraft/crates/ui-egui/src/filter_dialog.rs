@@ -301,6 +301,7 @@ pub fn has_dialog(command: &str) -> bool {
                 | "image.mode.colorTable"
                 | "edit.definePattern"
                 | "select.convertToShape"
+                | "image.configureGrid"
         ))
         && redrob_photo_engine::commands::find(command).is_some_and(|c| !parse_spec(c.params).is_empty())
 }

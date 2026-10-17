@@ -3900,3 +3900,9 @@ curves	Smooth	スムーズ
 	Min Area	最小面積
 	Airbrush paints only while moving (motion only)	エアブラシは動いている間だけ描く（モーションのみ）
 	Airbrush motion only	エアブラシ モーションのみ
+	Configure Grid…	グリッドの設定…
+	Configure Grid	グリッドの設定
+	Spacing X	間隔 X
+	Spacing Y	間隔 Y
+	Offset X	オフセット X
+	Offset Y	オフセット Y

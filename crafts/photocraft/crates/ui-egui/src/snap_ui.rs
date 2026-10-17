@@ -53,11 +53,9 @@ pub struct ActiveSnap {
 pub fn options(app: &PhotocraftApp) -> SnapOptions {
     let st = &app.ui.view.snap_to;
     let e = &app.ui.extras;
-    let grid_step = app.session.active().map_or([18.0; 2], |d| {
-        let g = &app.session.prefs().guides_grid_and_slices;
-        let ppi = app.session.prefs().units_and_rulers.point_size.per_inch();
-        crate::rulers::grid_major_px(g, d.doc.resolution_dpi.max(1.0) as f64, [d.doc.size.width as f64, d.doc.size.height as f64], ppi)
-            .map(|step| step / g.subdivisions.max(1) as f64)
+    let (grid_step, grid_offset) = app.session.active().map_or(([18.0; 2], [0.0; 2]), |d| {
+        let (major, offset, subdivisions) = crate::rulers::effective_grid(app, &d.doc);
+        (major.map(|step| step / subdivisions as f64), offset)
     });
     SnapOptions {
         guides: st.guides && e.guides && app.ui.view.shows(app.ui.view.show.canvas_guides),
@@ -66,6 +64,7 @@ pub fn options(app: &PhotocraftApp) -> SnapOptions {
         document: st.document_bounds,
         selection: true,
         grid_step,
+        grid_offset,
     }
 }
 
@@ -85,8 +84,11 @@ fn snap_on(app: &PhotocraftApp) -> bool {
 /// Targets of the active document (smart = layer alignments only).
 fn build(app: &PhotocraftApp, exclude: &[LayerId], smart: bool) -> SnapTargets {
     let Some(st) = app.session.active() else { return SnapTargets::default() };
-    let opts =
-        if smart { SnapOptions { guides: false, grid: false, layers: true, document: true, selection: false, grid_step: [0.0; 2] } } else { options(app) };
+    let opts = if smart {
+        SnapOptions { guides: false, grid: false, layers: true, document: true, selection: false, grid_step: [0.0; 2], grid_offset: [0.0; 2] }
+    } else {
+        options(app)
+    };
     let t = SnapTargets::from_document(&st.doc, &opts, exclude);
     if smart { t.filtered(SnapKind::is_smart) } else { t }
 }

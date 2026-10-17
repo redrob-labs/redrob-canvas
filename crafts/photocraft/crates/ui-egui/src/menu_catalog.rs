@@ -226,6 +226,7 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["Image"], "Crop", None, "image.crop"),
     (&["Image"], "Trim…", None, "image.trim"),
     (&["Image"], "Reveal All", None, "image.revealAll"),
+    (&["Image"], "Configure Grid…", None, "image.configureGrid"),
     (&["Image"], "---", None, "---"),
     (&["Image"], "Duplicate…", None, "image.duplicate"),
     (&["Image"], "Apply Image…", None, "image.applyImage"),
