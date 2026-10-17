@@ -27,6 +27,7 @@ Schema (one `[[feature]]` table per row):
 |---|---|---:|---|
 | `photo.toml` | GIMP 3 (Photo mode: selection, paint, transform, colour, filters, layers, channels, image, formats, dialogs, scripting) | 450 | 119 / 85 / 246 |
 | `paint.toml` | Krita 5.3 (paint depth: brush engines, settings, sensors, presets, resources, tools, assistants, colour, layers, filters, animation, colour management, workflow) | 334 | 116 / 89 / 129 |
+| `vector.toml` | Inkscape 1.4 + Krita vector layers (Vector mode: tools, node editing, path operations, live path effects, paint, stroke, objects, text, filters, UI, import/export, trace) | 309 | 52 / 73 / 184 |
 
 ## photo.toml -- Photo mode (450 rows)
 
@@ -59,3 +60,11 @@ modes. Priority-1 rows with `partial` are the first targets.
 
 By group: engine 19, tip 12, settings 35, sensor 18, preset 14, resource 16, tool 47, assistant 17,
 color 17, layer 46, filter 51, animation 12, colormgmt 10, workflow 20. Totals: none 116, partial 89, full 129.
+
+## vector.toml -- Vector mode (309 rows)
+
+By group: tools 40, node 15, path 21, lpe 53, paint 21, stroke 10, object 30, text 20, filter 30, ui 28,
+io 35, trace 6. Totals: none 52, partial 73, full 184. The `none` column is mostly live path effects
+(the reference ships ~50; we have the common dozen) and SVG filter primitives; the daily tools, node
+editing, boolean operations and import/export are covered. Evidence screenshots for the tool panels are
+under `docs/parity/evidence/`.
