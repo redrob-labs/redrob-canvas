@@ -411,6 +411,7 @@ impl Region {
     /// This region grown by `px` pixels in every direction (a square dilation), clipped to
     /// `area` (Spread: the fill reaches under anti-aliased edges). Grown pixels take full
     /// coverage; the original coverage stays where it was.
+    #[allow(clippy::needless_range_loop)]
     pub fn grow(&self, px: u32, area: Rect) -> Region {
         let r = (px as usize).min(256);
         if r == 0 {

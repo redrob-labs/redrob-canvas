@@ -1037,7 +1037,7 @@ impl Writer<'_> {
         let outline = stroke::head_outline(kind, tip, dir, hw);
         let orient = if fixed { s.marker_orient.svg() } else { "auto".to_string() };
         let fill = self.paint(&s.paint, None);
-        let opacity = (s.opacity < 1.0).then(|| format!(" fill-opacity=\"{}\"", fmt_num(s.opacity as f64, 3))).unwrap_or_default();
+        let opacity = if s.opacity < 1.0 { format!(" fill-opacity=\"{}\"", fmt_num(s.opacity as f64, 3)) } else { String::new() };
         let d = self.path_d(&PathData::from_bezpath(&outline), Affine::IDENTITY);
         let b = outline.bounding_box().inflate(0.5, 0.5);
         let key = format!("{units}|{orient}|{d}|{fill}|{opacity}");
