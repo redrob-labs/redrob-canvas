@@ -555,6 +555,24 @@ pub struct NodeExtras {
     pub slice: Option<Box<crate::SliceOptions>>,
     /// Object › Perspective: the perspective grid plane the object is attached to.
     pub perspective: Option<Box<crate::PerspectiveAttachment>>,
+    /// Object › Clone: this object is a linked copy of another ([`CloneRef`]); its kind is
+    /// refreshed from the original after every edit.
+    pub clone_of: Option<Box<CloneRef>>,
+}
+
+/// A clone (Object › Clone › Make): a linked copy of `original`, the SVG `<use>` element. The
+/// clone's own geometry is the original's mapped by `xf`, kept up to date by the engine after
+/// every edit; `xf` takes every transform the clone is given. Deleting the original unlinks the
+/// clone (it keeps the last geometry it had).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CloneRef {
+    pub original: NodeId,
+    /// Maps the original's geometry to the clone's.
+    #[serde(default, skip_serializing_if = "crate::skip::is_default")]
+    pub xf: Affine,
+    /// The clone keeps its own appearance (the user painted it) instead of the original's.
+    #[serde(default, skip_serializing_if = "crate::skip::is_default")]
+    pub own_paint: bool,
 }
 
 /// No extras: what [`Node::extras`] gives for a node without any.
@@ -569,6 +587,7 @@ static NO_EXTRAS: NodeExtras = NodeExtras {
     attrs: None,
     slice: None,
     perspective: None,
+    clone_of: None,
 };
 
 /// A node's [`NodeExtras`], if it has any ([`Node::extras`]). Extras that are all unset equal
@@ -699,6 +718,7 @@ impl Serialize for Node {
             e.slice.is_none(),
             is_default(&self.bbox_angle),
             e.perspective.is_none(),
+            e.clone_of.is_none(),
         ];
         let mut st = s.serialize_struct("Node", skips.iter().filter(|s| !**s).count())?;
         let mut skip = skips.into_iter();
@@ -733,6 +753,7 @@ impl Serialize for Node {
         field!("slice", &e.slice);
         field!("bbox_angle", &self.bbox_angle);
         field!("perspective", &e.perspective);
+        field!("clone", &e.clone_of);
         st.end()
     }
 }
@@ -784,6 +805,8 @@ struct NodeWire {
     bbox_angle: f64,
     #[serde(default)]
     perspective: Option<Box<crate::PerspectiveAttachment>>,
+    #[serde(default, rename = "clone")]
+    clone_of: Option<Box<CloneRef>>,
 }
 
 impl From<NodeWire> for Node {
@@ -799,6 +822,7 @@ impl From<NodeWire> for Node {
             attrs: w.attrs,
             slice: w.slice,
             perspective: w.perspective,
+            clone_of: w.clone_of,
         };
         Node {
             id: w.id,
@@ -1164,6 +1188,10 @@ impl Node {
         }
         // Type and symbols in perspective keep looking the same, moved by `a`.
         self.transform_projection(a);
+        // A clone keeps its place relative to its original.
+        if let Some(c) = self.extras_if_any().and_then(|e| e.clone_of.as_deref_mut()) {
+            c.xf = a * c.xf;
+        }
         // Refitting an unplaced gradient only reproduces moves and uniform scales.
         if !keeps_gradient_fit(a) {
             self.pin_gradients();
@@ -1612,6 +1640,12 @@ pub struct ObjectAttributes {
     /// URL the object links to (SVG `<a href>`; empty: none).
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub url: String,
+    /// Object Properties › Title (SVG `<title>`, the tooltip of browsers; empty: none).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub title: String,
+    /// Object Properties › Description (SVG `<desc>`; empty: none).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub description: String,
     /// The note shown in the Attributes panel.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub note: String,
