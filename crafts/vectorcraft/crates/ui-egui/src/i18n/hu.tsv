@@ -4775,3 +4775,9 @@ imageTrace	Outline	Körvonal
 	Light behind the object	Fény az objektum mögött
 	Convert Selected Anchor Points to Symmetric	Kijelölt horgonypontok átalakítása szimmetrikus ponttá
 	Convert Selected Anchor Points to Auto-Smooth	Kijelölt horgonypontok átalakítása automatikusan simított ponttá
+	Add Anchor Points At	Horgonypontok hozzáadása itt
+	Add Anchor Points at Extremes	Horgonypontok hozzáadása a szélső pontokon
+	Minimum X	Minimális X
+	Maximum X	Maximális X
+	Minimum Y	Minimális Y
+	Maximum Y	Maximális Y

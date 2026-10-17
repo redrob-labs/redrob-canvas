@@ -3957,3 +3957,9 @@ lighting	Light	光源
 	Light behind the object	光源位于对象后方
 	Convert Selected Anchor Points to Symmetric	将所选锚点转换为对称
 	Convert Selected Anchor Points to Auto-Smooth	将所选锚点转换为自动平滑
+	Add Anchor Points At	在极值处添加锚点
+	Add Anchor Points at Extremes	在极值处添加锚点
+	Minimum X	最小 X
+	Maximum X	最大 X
+	Minimum Y	最小 Y
+	Maximum Y	最大 Y

@@ -4374,3 +4374,9 @@ lighting	Light	ライト
 	Light behind the object	オブジェクトの背後のライト
 	Convert Selected Anchor Points to Symmetric	選択したアンカーポイントを対称ポイントに変換
 	Convert Selected Anchor Points to Auto-Smooth	選択したアンカーポイントを自動スムーズポイントに変換
+	Add Anchor Points At	位置を指定してアンカーポイントを追加
+	Add Anchor Points at Extremes	極値にアンカーポイントを追加
+	Minimum X	X の最小値
+	Maximum X	X の最大値
+	Minimum Y	Y の最小値
+	Maximum Y	Y の最大値

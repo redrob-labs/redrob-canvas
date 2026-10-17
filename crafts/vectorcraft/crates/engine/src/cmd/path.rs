@@ -106,6 +106,15 @@ pub fn specs() -> Vec<CommandSpec> {
         ),
         cmd!("path.insertAnchor", "Add Anchor Point", [], None, "{id, subpath, segment, t: 0..1}", has_doc, insert_anchor),
         cmd!(
+            "path.insertAnchorsAtExtremes",
+            "Add Anchor Points at Extremes",
+            [],
+            None,
+            "{axis: \"x\"|\"y\", end: \"min\"|\"max\"} add an anchor where each segment reaches its least or greatest x or y, to the selected segments, else the segments between direct-selected anchors, else every segment of the selected paths (one undo step; a segment whose extreme is at an end, as a line's is, gets none) → {added}",
+            has_selection,
+            insert_anchors_at_extremes
+        ),
+        cmd!(
             "path.cutAtAnchors",
             "Cut Path at Selected Anchor Points",
             [],
@@ -725,6 +734,80 @@ fn insert_anchor(s: &mut Session, p: &Value) -> Result<Value> {
         Ok(idx)
     })?;
     Ok(json!({ "anchor": idx }))
+}
+
+/// The segments `(subpath, segment)` of each selected path that Add Anchor Points at Extremes works
+/// on: the selected segments, else those with both ends direct-selected, else all of them.
+fn segment_targets(s: &Session) -> Result<Vec<(NodeId, Vec<(usize, usize)>)>> {
+    let st = s.doc()?;
+    let mut out = vec![];
+    for id in &st.selection.objects {
+        let Some(pd) = st.doc.node(*id).and_then(|n| n.path_data()) else { continue };
+        let segs: Vec<(usize, usize)> = if let Some(set) = st.selection.segments.get(id) {
+            set.iter().copied().collect()
+        } else if let Some(set) = st.selection.anchors.get(id) {
+            pd.subpaths
+                .iter()
+                .enumerate()
+                .flat_map(|(si, sp)| {
+                    let n = sp.anchors.len();
+                    (0..sp.segment_count())
+                        .filter(move |seg| set.contains(&(si, *seg)) && set.contains(&(si, (seg + 1) % n.max(1))))
+                        .map(move |seg| (si, seg))
+                })
+                .collect()
+        } else {
+            pd.subpaths.iter().enumerate().flat_map(|(si, sp)| (0..sp.segment_count()).map(move |seg| (si, seg))).collect()
+        };
+        if !segs.is_empty() {
+            out.push((*id, segs));
+        }
+    }
+    Ok(out)
+}
+
+fn insert_anchors_at_extremes(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "path.insertAnchorsAtExtremes";
+    let horizontal = match str_param(p, "axis") {
+        Some("x") | None => true,
+        Some("y") => false,
+        _ => return Err(bad(C, "`axis` must be \"x\" or \"y\"")),
+    };
+    let max = match str_param(p, "end") {
+        Some("max") => true,
+        Some("min") | None => false,
+        _ => return Err(bad(C, "`end` must be \"min\" or \"max\"")),
+    };
+    let targets = segment_targets(s)?;
+    if targets.is_empty() {
+        return Err(bad(C, "select paths, segments or anchor points"));
+    }
+    let added = s.edit("Add Anchor Points", |d, sel| {
+        let mut added = 0usize;
+        for (id, segs) in &targets {
+            let path = path_mut(d, *id)?;
+            // Later segments first, so the indices of the earlier ones hold as anchors go in.
+            let mut segs = segs.clone();
+            segs.sort_unstable_by(|a, b| b.cmp(a));
+            let mut here = 0usize;
+            for (si, seg) in segs {
+                let Some(sp) = path.subpaths.get_mut(si) else { continue };
+                if let Some(t) = sp.segment_extremum(seg, horizontal, max) {
+                    sp.insert_anchor(seg, t);
+                    here += 1;
+                }
+            }
+            added += here;
+            if here > 0 {
+                path.refresh_auto_smooth();
+                // The anchor and segment indices moved: the path stays selected whole.
+                sel.anchors.remove(id);
+                sel.segments.remove(id);
+            }
+        }
+        Ok(added)
+    })?;
+    Ok(json!({ "added": added }))
 }
 
 fn cut_at_anchors(s: &mut Session, _: &Value) -> Result<Value> {

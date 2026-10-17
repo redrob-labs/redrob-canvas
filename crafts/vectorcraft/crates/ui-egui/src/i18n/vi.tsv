@@ -4362,3 +4362,9 @@ theme	Appearance	Giao diện
 	Light behind the object	Ánh sáng phía sau đối tượng
 	Convert Selected Anchor Points to Symmetric	Chuyển điểm neo đã chọn thành đối xứng
 	Convert Selected Anchor Points to Auto-Smooth	Chuyển điểm neo đã chọn thành trơn tự động
+	Add Anchor Points At	Thêm điểm neo tại
+	Add Anchor Points at Extremes	Thêm điểm neo tại cực trị
+	Minimum X	X nhỏ nhất
+	Maximum X	X lớn nhất
+	Minimum Y	Y nhỏ nhất
+	Maximum Y	Y lớn nhất

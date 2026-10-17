@@ -4344,3 +4344,9 @@ lighting	Light	광원
 	Light behind the object	개체 뒤의 조명
 	Convert Selected Anchor Points to Symmetric	선택한 앵커 포인트를 대칭으로 변환
 	Convert Selected Anchor Points to Auto-Smooth	선택한 앵커 포인트를 자동 부드러운 곡선으로 변환
+	Add Anchor Points At	지정 위치에 앵커 포인트 추가
+	Add Anchor Points at Extremes	극값에 앵커 포인트 추가
+	Minimum X	최소 X
+	Maximum X	최대 X
+	Minimum Y	최소 Y
+	Maximum Y	최대 Y

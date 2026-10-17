@@ -2281,6 +2281,15 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                         Sep,
                         c("Simplify…", "object.path.simplify"),
                         c("Add Anchor Points", "object.path.addAnchorPoints"),
+                        sub(
+                            "Add Anchor Points At",
+                            vec![
+                                cp("Minimum X", "path.insertAnchorsAtExtremes", json!({"axis": "x", "end": "min"})),
+                                cp("Maximum X", "path.insertAnchorsAtExtremes", json!({"axis": "x", "end": "max"})),
+                                cp("Minimum Y", "path.insertAnchorsAtExtremes", json!({"axis": "y", "end": "min"})),
+                                cp("Maximum Y", "path.insertAnchorsAtExtremes", json!({"axis": "y", "end": "max"})),
+                            ],
+                        ),
                         c("Remove Anchor Points", "path.removeAnchors"),
                         c("Divide Objects Below", "object.path.divideObjectsBelow"),
                         c("Split Into Grid…", "object.path.splitIntoGrid"),

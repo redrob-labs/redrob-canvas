@@ -4376,3 +4376,9 @@ lighting	Light	Свет
 	Light behind the object	Свет позади объекта
 	Convert Selected Anchor Points to Symmetric	Преобразовать выбранные опорные точки в симметричные
 	Convert Selected Anchor Points to Auto-Smooth	Преобразовать выбранные опорные точки в автосглаженные
+	Add Anchor Points At	Добавить опорные точки в
+	Add Anchor Points at Extremes	Добавить опорные точки в экстремумах
+	Minimum X	Минимум X
+	Maximum X	Максимум X
+	Minimum Y	Минимум Y
+	Maximum Y	Максимум Y

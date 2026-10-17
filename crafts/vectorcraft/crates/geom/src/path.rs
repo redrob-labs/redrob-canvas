@@ -272,6 +272,31 @@ impl SubPath {
         let b = &self.anchors[(i + 1) % n];
         !a.has_out() && !b.has_in()
     }
+    /// Where segment `i` reaches its least (`max` false) or greatest x (`horizontal`) or y, as a
+    /// parameter strictly inside the segment: an anchor could be inserted there (Add Anchor Points
+    /// at the extreme). None when the extreme is at an end of the segment (always, for a line),
+    /// or there is no such segment.
+    pub fn segment_extremum(&self, i: usize, horizontal: bool, max: bool) -> Option<f64> {
+        use kurbo::ParamCurveExtrema;
+        if i >= self.segment_count() {
+            return None;
+        }
+        let c = self.segment(i);
+        let coord = |p: Point| if horizontal { p.x } else { p.y };
+        let better = |a: f64, b: f64| if max { a > b + 1e-9 } else { a < b - 1e-9 };
+        let ends = if max { coord(c.p0).max(coord(c.p3)) } else { coord(c.p0).min(coord(c.p3)) };
+        let mut best: Option<(f64, f64)> = None;
+        for t in c.extrema() {
+            if !(t > 1e-6 && t < 1.0 - 1e-6) {
+                continue;
+            }
+            let v = coord(c.eval(t));
+            if better(v, ends) && best.is_none_or(|(_, bv)| better(v, bv)) {
+                best = Some((t, v));
+            }
+        }
+        best.map(|(t, _)| t)
+    }
     pub fn to_bezpath_into(&self, out: &mut BezPath) {
         let Some(first) = self.anchors.first() else { return };
         out.move_to(first.p);
