@@ -10,6 +10,8 @@
 //!   Unsharp Mask and Glowing Edges) are described by
 //!   [`raster_effects`] and painted by the renderer; [`outset`] says how far they reach beyond
 //!   the geometry.
+//! - **Live path effects** ([`lpe`]: Bend along a spine, B-Spline, Spiro) rewrite a path from its
+//!   own anchors and are geometry effects like the others.
 //! - **Stroke geometry** ([`stroke`]): arrowheads, dash patterns and width profiles, shared by the
 //!   renderer, the exporters and Outline Stroke.
 //! - [`effect_catalog`] lists every effect with its menu path, parameter documentation and
@@ -38,6 +40,7 @@ mod clip;
 mod distort;
 mod group;
 mod live;
+pub mod lpe;
 mod marks;
 pub mod pixel;
 mod raster;
@@ -66,6 +69,7 @@ pub use group::{
     pathfinder_children,
 };
 pub use live::{expand_live, expand_live_deep, expanded_live_group, text_outliner};
+pub use lpe::{BEND, BEND_SPINE, BSPLINE, SPIRO};
 pub use marks::{CROP_MARKS, crop_marks_art, has_crop_marks};
 pub use pixel::{PIXEL_EFFECTS, PixelFx, PixelSpace};
 pub use raster::{RasterFx, outset, raster_effects};
@@ -298,11 +302,25 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
         ),
         g("stylize.roundCorners", "Round Corners…", STYLIZE, "{radius: pt (10)}", json!({"radius": 10.0})),
         g(
-            "stylize.scribble",
-            "Scribble…",
-            STYLIZE,
-            "{angle: deg (30), overlap: pt (0), strokeWidth: pt (3), curviness: % (5), spacing: pt (5), variation: pt (0.5), seed: int (0)} (simplified: a single hatching scribble outlined to a filled shape)",
-            json!({"angle": 30.0, "overlap": 0.0, "strokeWidth": 3.0, "curviness": 5.0, "spacing": 5.0, "variation": 0.5, "seed": 0}),
+            lpe::BEND,
+            "Bend…",
+            DT,
+            "{spine: \"x,y x,y x,y x,y\" (the four points of one cubic spine in box coordinates, 0,0 the top left and 1,1 the bottom right of the object's bounds; \"0,0.5 0.3,0 0.7,0 1,0.5\", a gentle arch), widthScale: % (0..1000, 100; how far across the spine the object reaches), vertical: bool (false; true lays the object's vertical axis along the spine)} lays the object along the spine: its length follows the spine's arc length, its other axis the spine's normal; the original path stays editable",
+            json!({"spine": BEND_SPINE, "widthScale": 100.0, "vertical": false}),
+        ),
+        g(
+            lpe::BSPLINE,
+            "B-Spline…",
+            PATH,
+            "{weight: % (0..100, 100; 100 is the cubic uniform B-spline whose control points the anchors are, lower pulls the curve toward them, 0 is the control polygon)} a smooth curve near the anchors that never passes through them (an open run is clamped to its end anchors)",
+            json!({"weight": 100.0}),
+        ),
+        g(
+            lpe::SPIRO,
+            "Spiro Spline…",
+            PATH,
+            "{cusps: bool (false; true keeps corner anchors without handles sharp)} a smooth G2-like spline through the anchors (an approximation of a Spiro clothoid spline: circle tangents at the anchors, arc-fitted handles, curvature relaxed to agree across each anchor)",
+            json!({"cusps": false}),
         ),
         r(
             "stylize.dropShadow",
@@ -854,6 +872,9 @@ pub(crate) fn apply_one(id: &str, p: &Value, path: &PathData, b: Rect, ctx: &Geo
         }
         "convertToShape.rectangle" | "convertToShape.roundedRectangle" | "convertToShape.ellipse" => stylize::convert_to_shape(id, b, p),
         "stylize.roundCorners" => stylize::round_corners(path, num(p, "radius", 10.0)),
+        lpe::BEND => lpe::bend(path, b, p),
+        lpe::BSPLINE => lpe::bspline(path, p),
+        lpe::SPIRO => lpe::spiro(path, p),
         "stylize.scribble" => stylize::scribble(path, b, p),
         _ => match id.strip_prefix("warp.").and_then(WarpStyle::from_id) {
             Some(style) => warp::warp(path, b, style, p),
