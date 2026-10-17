@@ -58,8 +58,8 @@ fn opens_every_readable_format() {
     let svgz = redrob_vector_svg::compress(&svg);
 
     for (name, bytes, format) in [
-        ("a.rvector", native.clone(), "rvector"),
-        ("a.drawcraft", native, "rvector"), // legacy: upstream extension still read
+        ("a.rvector", native.clone(), "vectorcraft"),
+        ("a.drawcraft", native, "vectorcraft"), // legacy: upstream extension still read
         ("a.svg", svg.into_bytes(), "svg"),
         ("a.svgz", svgz, "svgz"),
         ("a.pdf", pdf.clone(), "pdf"),
@@ -67,7 +67,7 @@ fn opens_every_readable_format() {
     ] {
         let r = open(&mut s, name, &bytes);
         assert_eq!(r["format"], format, "{name}");
-        assert_eq!(r["title"], if format == "rvector" { "Untitled-1" } else { name }, "{name}");
+        assert_eq!(r["title"], if format == "vectorcraft" { "Untitled-1" } else { name }, "{name}");
         assert!(s.doc().unwrap().doc.node_count() >= 2, "{name}: the rectangle came through");
     }
     for (name, kind) in [
@@ -208,7 +208,7 @@ fn formats_query_lists_readers_writers_and_options() {
     assert_eq!(
         ids("writable"),
         [
-            "rvector",
+            "vectorcraft",
             "svg",
             "svgz",
             "pdf",
@@ -278,7 +278,7 @@ fn export_without_path_returns_bytes_and_never_retargets() {
     s.execute("document.save", &json!({"path": doc_path})).unwrap();
     let copy = dir.join("copy.rvector").to_string_lossy().to_string();
     let r = s.execute("document.export", &json!({"path": copy})).unwrap();
-    assert_eq!(r["format"], "rvector");
+    assert_eq!(r["format"], "vectorcraft");
     assert!(redrob_vector_format::sniff(&std::fs::read(&copy).unwrap()));
     assert_eq!(s.doc().unwrap().path.as_deref(), Some(doc_path.as_str()), "exporting the native format keeps the document's path");
     let r = s.execute("document.export", &json!({"format": "jpg"})).unwrap();
@@ -348,7 +348,7 @@ fn export_for_screens_one_page_per_pdf_unique_names() {
     let r = s.execute("document.exportForScreens", &json!({"range": "3", "formats": [{"format": "jpg", "scale": 0.5}]})).unwrap();
     assert_eq!(r["files"][0]["name"], "Artboard-3@0.5x.jpg");
     assert_eq!(image::load_from_memory(&b64(&r["files"][0])).unwrap().width(), 50);
-    assert!(s.execute("document.exportForScreens", &json!({"formats": [{"format": "rvector"}]})).is_err());
+    assert!(s.execute("document.exportForScreens", &json!({"formats": [{"format": "vectorcraft"}]})).is_err());
     let _ = std::fs::remove_dir_all(dir);
 }
 
