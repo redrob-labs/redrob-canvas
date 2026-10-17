@@ -4773,3 +4773,24 @@ imageTrace	Outline	Körvonal
 	Softness	Lágyság
 	Ambient Light	Környezeti fény
 	Light behind the object	Fény az objektum mögött
+	Hairline	Hajszálvonal
+	Mid markers:	Középső jelölők:
+	Auto, start reversed	Automatikus, kezdet megfordítva
+	Fixed angle	Rögzített szög
+	Scale with stroke	Méretezés a körvonallal
+	ID:	Azonosító:
+	Label:	Címke:
+	Title:	Cím:
+	Hyperlink:	Hiperhivatkozás:
+	Clone	Klón
+	Create Clone	Klón létrehozása
+	Unlink Clone	Klón leválasztása
+	Relink to Copied	Újracsatolás a másolthoz
+	Select Original	Eredeti kijelölése
+	Object Properties…	Objektum tulajdonságai…
+	Text content	Szöveg tartalma
+	ID	Azonosító
+	Label	Címke
+	Title	Cím
+	Object type	Objektum típusa
+	Current layer	Aktuális réteg

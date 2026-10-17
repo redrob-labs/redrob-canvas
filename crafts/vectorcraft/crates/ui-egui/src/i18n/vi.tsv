@@ -4360,3 +4360,24 @@ theme	Appearance	Giao diện
 	Softness	Độ mềm
 	Ambient Light	Ánh sáng môi trường
 	Light behind the object	Ánh sáng phía sau đối tượng
+	Hairline	Nét mảnh
+	Mid markers:	Điểm đánh dấu giữa:
+	Auto, start reversed	Tự động, đảo đầu
+	Fixed angle	Góc cố định
+	Scale with stroke	Co giãn theo nét
+	ID:	ID:
+	Label:	Nhãn:
+	Title:	Tiêu đề:
+	Hyperlink:	Siêu liên kết:
+	Clone	Bản sao liên kết
+	Create Clone	Tạo bản sao liên kết
+	Unlink Clone	Ngắt liên kết bản sao
+	Relink to Copied	Liên kết lại với đối tượng đã sao chép
+	Select Original	Chọn bản gốc
+	Object Properties…	Thuộc tính đối tượng…
+	Text content	Nội dung văn bản
+	ID	ID
+	Label	Nhãn
+	Title	Tiêu đề
+	Object type	Loại đối tượng
+	Current layer	Lớp hiện tại

@@ -4358,3 +4358,24 @@ lighting	Light	Світло
 	Softness	М'якість
 	Ambient Light	Навколишнє світло
 	Light behind the object	Світло позаду об'єкта
+	Hairline	Волосяна лінія
+	Mid markers:	Середні маркери:
+	Auto, start reversed	Авто, початок обернено
+	Fixed angle	Фіксований кут
+	Scale with stroke	Масштабувати з обведенням
+	ID:	ID:
+	Label:	Мітка:
+	Title:	Заголовок:
+	Hyperlink:	Гіперпосилання:
+	Clone	Клон
+	Create Clone	Створити клон
+	Unlink Clone	Відв’язати клон
+	Relink to Copied	Прив’язати до скопійованого
+	Select Original	Вибрати оригінал
+	Object Properties…	Властивості об’єкта…
+	Text content	Вміст тексту
+	ID	ID
+	Label	Мітка
+	Title	Заголовок
+	Object type	Тип об’єкта
+	Current layer	Поточний шар
