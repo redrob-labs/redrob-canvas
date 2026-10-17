@@ -5,6 +5,11 @@
 //!
 //! The server has no authentication of its own; it listens on loopback only and is started with
 //! no input folder, so its file manager stays off. The child is killed when the [`Engine`] drops.
+//!
+//! The server is started through `redrob_shim.py` (written next to the venv), which runs IOPaint's
+//! own command line and adds the raw-file routes `super::transport` uses; the shim may only read
+//! and write inside [`EnginePaths::exchange_dir`]. A venv without a usable interpreter starts the
+//! `iopaint` entry point directly and the client stays on base64.
 
 use std::{
     collections::VecDeque,
@@ -21,7 +26,15 @@ use tokio::{
 };
 
 use super::client::{Client, ServerConfig};
+use super::models::DEFAULT_REMOVE_BG_MODEL;
+use super::transport::{FileExchange, Transport, TransportMode};
 use crate::{AiError, Result};
+
+/// The Python file the engine starts IOPaint through.
+pub const SHIM_SOURCE: &str = include_str!("redrob_shim.py");
+
+/// The environment variable the shim reads the exchange directory from.
+pub const EXCHANGE_DIR_ENV: &str = "REDROB_AI_EXCHANGE_DIR";
 
 /// Lines of engine log kept for a snapshot.
 pub const MAX_LOG_LINES: usize = 300;
@@ -175,6 +188,21 @@ impl EnginePaths {
         } else {
             "iopaint"
         })
+    }
+
+    /// Where the shim is written before a start.
+    pub fn shim_path(&self) -> PathBuf {
+        self.root.join("redrob_shim.py")
+    }
+
+    /// Where the client and the shim exchange raw pixel files: `/dev/shm` (memory) on Linux when
+    /// it exists, else `<root>/exchange`. Per process, so two running apps never share a file.
+    pub fn exchange_dir(&self) -> PathBuf {
+        let shm = Path::new("/dev/shm");
+        if self.target_os == "linux" && shm.is_dir() {
+            return shm.join(format!("redrob-canvas-{}", std::process::id()));
+        }
+        self.root.join("exchange")
     }
 
     /// The venv's interpreter.
@@ -352,13 +380,15 @@ pub fn install_steps(
 }
 
 /// `iopaint start ...` arguments. Loopback only: the server has no authentication. No `--input`,
-/// so its file manager is off. Plugin flags exactly as IOPaint 1.6.0 names them.
+/// so its file manager is off. Plugin flags exactly as IOPaint 1.6.0 names them;
+/// `remove_bg_model` is one of [`super::models::REMOVE_BG_MODELS`] (default isnet).
 pub fn server_arguments(
     port: u16,
     model: &str,
     device: Device,
     model_dir: &Path,
     plugins: &[Plugin],
+    remove_bg_model: &str,
 ) -> Vec<String> {
     let d = device.as_str();
     let mut args: Vec<String> = [
@@ -388,7 +418,13 @@ pub fn server_arguments(
         ]);
     }
     if plugins.contains(&Plugin::RemoveBG) {
-        push(&["--enable-remove-bg", "--remove-bg-device", d]);
+        push(&[
+            "--enable-remove-bg",
+            "--remove-bg-device",
+            d,
+            "--remove-bg-model",
+            remove_bg_model,
+        ]);
     }
     if plugins.contains(&Plugin::AnimeSeg) {
         push(&["--enable-anime-seg"]);
@@ -491,6 +527,14 @@ struct Inner {
     running: Mutex<Option<Running>>,
     config: Mutex<Option<ServerConfig>>,
     install_running: Mutex<bool>,
+    /// The user's transport setting.
+    transport_mode: Mutex<TransportMode>,
+    /// Whether the running server answered `/api/v1/redrob/transport`.
+    shim_has_files: Mutex<bool>,
+    /// The RemoveBG model the next start passes (and a running server is switched to).
+    remove_bg_model: Mutex<String>,
+    /// The model the running server was started with or switched to.
+    current_model: Mutex<Option<String>>,
 }
 
 impl Drop for Inner {
@@ -549,6 +593,10 @@ impl Engine {
                 running: Mutex::new(None),
                 config: Mutex::new(None),
                 install_running: Mutex::new(false),
+                transport_mode: Mutex::new(TransportMode::default()),
+                shim_has_files: Mutex::new(false),
+                remove_bg_model: Mutex::new(DEFAULT_REMOVE_BG_MODEL.to_owned()),
+                current_model: Mutex::new(None),
             }),
         }
     }
@@ -595,9 +643,70 @@ impl Engine {
         lock(&self.inner.running).as_ref().map(|r| r.port)
     }
 
-    /// A client for the running server, or `None` when it is not running.
+    /// A client for the running server, or `None` when it is not running. Pixels go over the
+    /// file transport when the user asked for it and the shim is up, else as base64.
     pub fn client(&self) -> Option<Client> {
-        self.port().and_then(|port| Client::for_port(port).ok())
+        let port = self.port()?;
+        let base_url = format!("http://127.0.0.1:{port}");
+        let transport = Transport::choose(
+            self.transport_mode(),
+            &base_url,
+            Some(&self.inner.paths.exchange_dir()),
+            *lock(&self.inner.shim_has_files),
+        );
+        Client::with_transport(base_url, transport).ok()
+    }
+
+    /// The user's transport setting (`file` by default).
+    pub fn transport_mode(&self) -> TransportMode {
+        *lock(&self.inner.transport_mode)
+    }
+
+    /// Changes the transport setting; the next request uses it (no restart needed).
+    pub fn set_transport_mode(&self, mode: TransportMode) {
+        *lock(&self.inner.transport_mode) = mode;
+    }
+
+    /// The transport requests actually take right now: `File` only while the shim's routes are
+    /// up and the setting asks for it.
+    pub fn transport_in_use(&self) -> TransportMode {
+        self.client()
+            .map(|c| c.transport().mode())
+            .unwrap_or(TransportMode::Base64)
+    }
+
+    /// The RemoveBG model the next start loads.
+    pub fn remove_bg_model(&self) -> String {
+        lock(&self.inner.remove_bg_model).clone()
+    }
+
+    /// Sets the RemoveBG model for the next start; a running server with the plugin is switched
+    /// in place.
+    pub async fn set_remove_bg_model(&self, model: &str) -> Result<()> {
+        *lock(&self.inner.remove_bg_model) = model.to_owned();
+        let has_plugin = self.config().is_some_and(|c| c.has_plugin("RemoveBG"));
+        if self.state() != EngineState::Ready || !has_plugin {
+            return Ok(());
+        }
+        let model = model.to_owned();
+        self.request(
+            "Subject model",
+            format!("Loading {model}…"),
+            |client| async move { client.switch_plugin_model("RemoveBG", &model).await },
+        )
+        .await?;
+        if let Some(mut config) = self.config()
+            && let Some(entry) = config.plugin_models.get_mut("RemoveBG")
+        {
+            entry.current = self.remove_bg_model();
+            *lock(&self.inner.config) = Some(config);
+        }
+        Ok(())
+    }
+
+    /// The model the running server holds, once it is ready.
+    pub fn current_model(&self) -> Option<String> {
+        lock(&self.inner.current_model).clone()
     }
 
     pub fn is_running(&self) -> bool {
@@ -775,11 +884,33 @@ impl Engine {
             }
         };
         std::fs::create_dir_all(paths.model_dir())?;
-        let args = server_arguments(port, model, device, &paths.model_dir(), plugins);
-        let mut child = Command::new(paths.iopaint_executable())
+        let remove_bg_model = self.remove_bg_model();
+        let args = server_arguments(
+            port,
+            model,
+            device,
+            &paths.model_dir(),
+            plugins,
+            &remove_bg_model,
+        );
+        let exchange = FileExchange::new(paths.exchange_dir());
+        let (program, args) = match self.write_shim() {
+            Ok(shim) => {
+                let mut argv = vec![s(&shim)];
+                argv.extend(args);
+                (paths.python(), argv)
+            }
+            Err(e) => {
+                self.append_log(&format!("file transport off: {e}"));
+                (paths.iopaint_executable(), args)
+            }
+        };
+        *lock(&self.inner.shim_has_files) = false;
+        let mut child = Command::new(program)
             .args(&args)
             .env("PYTHONUTF8", "1")
             .env("PYTHONUNBUFFERED", "1")
+            .env(EXCHANGE_DIR_ENV, exchange.dir())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -817,9 +948,22 @@ impl Engine {
             }
             let probe = tokio::time::timeout(Duration::from_secs(5), client.server_config()).await;
             if let Ok(Ok(config)) = probe {
+                let has_files =
+                    tokio::time::timeout(Duration::from_secs(5), client.has_file_transport())
+                        .await
+                        .unwrap_or(false);
+                *lock(&self.inner.shim_has_files) = has_files;
                 *lock(&self.inner.config) = Some(config.clone());
+                *lock(&self.inner.current_model) = Some(model.to_owned());
                 self.set_state(EngineState::Ready);
-                self.set_message(format!("AI engine ready · {model}"));
+                self.set_message(format!(
+                    "AI engine ready · {model} · {} transport",
+                    if has_files && self.transport_mode() == TransportMode::File {
+                        "file"
+                    } else {
+                        "base64"
+                    }
+                ));
                 self.watch_exit();
                 return Ok(config);
             }
@@ -830,6 +974,23 @@ impl Engine {
         ));
         self.set_message("The AI engine did not become ready");
         Err(AiError::NotReadyInTime)
+    }
+
+    /// Writes the shim next to the venv so the start can run IOPaint through it. Fails when the
+    /// venv has no interpreter or the folder is not writable, in which case the plain entry point
+    /// is used.
+    fn write_shim(&self) -> Result<PathBuf> {
+        let paths = &self.inner.paths;
+        if !paths.python().is_file() {
+            return Err(AiError::Process(
+                "the AI engine's interpreter is missing".into(),
+            ));
+        }
+        let shim = paths.shim_path();
+        if std::fs::read_to_string(&shim).ok().as_deref() != Some(SHIM_SOURCE) {
+            std::fs::write(&shim, SHIM_SOURCE)?;
+        }
+        Ok(shim)
     }
 
     /// Exit status if the child has exited.
@@ -851,6 +1012,9 @@ impl Engine {
 
     fn finish_stopped(&self, code: Option<i32>) {
         *lock(&self.inner.config) = None;
+        *lock(&self.inner.current_model) = None;
+        *lock(&self.inner.shim_has_files) = false;
+        FileExchange::new(self.inner.paths.exchange_dir()).clear();
         if self.state() == EngineState::Installing {
             return;
         }
@@ -889,6 +1053,9 @@ impl Engine {
             let _ = tokio::time::timeout(Duration::from_secs(3), r.child.wait()).await;
         }
         *lock(&self.inner.config) = None;
+        *lock(&self.inner.current_model) = None;
+        *lock(&self.inner.shim_has_files) = false;
+        FileExchange::new(self.inner.paths.exchange_dir()).clear();
         if !matches!(self.state(), EngineState::Installing | EngineState::Missing) {
             self.set_state(EngineState::Stopped);
         }
@@ -945,6 +1112,7 @@ impl Engine {
                 client.set_model(name).await
             })
             .await?;
+            *lock(&self.inner.current_model) = Some(name.to_owned());
             self.set_message(format!("AI engine ready · {name}"));
             return Ok(());
         }
@@ -1048,7 +1216,13 @@ mod tests {
             (
                 &[Plugin::RemoveBG],
                 Device::Cuda,
-                vec!["--enable-remove-bg", "--remove-bg-device", "cuda"],
+                vec![
+                    "--enable-remove-bg",
+                    "--remove-bg-device",
+                    "cuda",
+                    "--remove-bg-model",
+                    "isnet-general-use",
+                ],
             ),
             (&[Plugin::AnimeSeg], Device::Cpu, vec!["--enable-anime-seg"]),
             (
@@ -1068,17 +1242,18 @@ mod tests {
             ),
         ];
         for (plugins, device, extra) in cases {
-            let args = server_arguments(8123, "lama", device, &model_dir, plugins);
+            let args = server_arguments(8123, "lama", device, &model_dir, plugins, "isnet-general-use");
             let mut expected = base(device.as_str(), "8123");
             expected.extend(extra.iter().map(|s| (*s).to_owned()));
             assert_eq!(args, expected, "{plugins:?}");
         }
         // Order is fixed by the plugin order, not the caller's.
-        let all = server_arguments(1, "lama", Device::Cpu, &model_dir, &Plugin::ALL);
+        let all = server_arguments(1, "lama", Device::Cpu, &model_dir, &Plugin::ALL, "u2net");
         let seg = all.iter().position(|a| a == "--enable-interactive-seg");
         let rf = all.iter().position(|a| a == "--enable-restoreformer");
         assert!(seg < rf);
         assert!(!all.iter().any(|a| a == "--input"));
+        assert!(all.iter().any(|a| a == "u2net"));
     }
 
     #[test]
@@ -1204,6 +1379,14 @@ mod tests {
         assert!(win.iopaint_executable().ends_with("iopaint.exe"));
         assert!(win.python().to_string_lossy().contains("Scripts"));
         assert!(!linux.is_installed());
+        assert!(linux.shim_path().ends_with("iopaint/redrob_shim.py"));
+        assert!(win.exchange_dir().ends_with("iopaint/exchange"));
+        let shm = linux.exchange_dir();
+        assert!(
+            shm.starts_with("/dev/shm") || shm.ends_with("iopaint/exchange"),
+            "{shm:?}"
+        );
+        assert!(SHIM_SOURCE.contains("/api/v1/redrob/transport"));
     }
 
     #[test]
@@ -1238,6 +1421,14 @@ mod tests {
         let engine = Engine::new(EnginePaths::new(dir.path()));
         assert_eq!(engine.state(), EngineState::Missing);
         assert!(engine.client().is_none());
+        assert_eq!(engine.transport_mode(), TransportMode::File);
+        assert_eq!(engine.transport_in_use(), TransportMode::Base64);
+        engine.set_transport_mode(TransportMode::Base64);
+        assert_eq!(engine.transport_mode(), TransportMode::Base64);
+        assert_eq!(engine.remove_bg_model(), "isnet-general-use");
+        engine.set_remove_bg_model("u2net").await.unwrap();
+        assert_eq!(engine.remove_bg_model(), "u2net");
+        assert_eq!(engine.current_model(), None);
         assert!(matches!(
             engine.start("lama", Device::Cpu, &[]).await,
             Err(AiError::NotInstalled)

@@ -1,20 +1,89 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! The IOPaint client against a fake server (wiremock on 127.0.0.1): readiness, request bodies,
-//! PNG round trips, outpaint geometry, plugin masks, and the `{detail}` error shape. Offline.
+//! PNG round trips, the region of interest, the raw-file transport, outpaint tiling, plugin
+//! masks, and the `{detail}` error shape. Offline; every image is built in memory.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use redrob_ai::{
-    AiError, Expand, Mask, Rgba8Image,
-    iopaint::{Client, InpaintOptions},
+    AiError, Expand, Mask, Rect, Rgba8Image,
+    iopaint::{
+        Client, InpaintOptions, Transport,
+        transport::{FileExchange, TransportMode},
+    },
     pixels::png_from_data_url,
+    region,
 };
 use serde_json::{Value, json};
 use wiremock::{
-    Mock, MockServer, Request, ResponseTemplate,
+    Mock, MockServer, Request, Respond, ResponseTemplate,
     matchers::{method, path},
 };
+
+/// Answers an inpaint the way the server would: a solid `fill` image of the size that was sent
+/// (base64 body), so a test can check what crossed the wire from the result alone.
+struct EchoSize {
+    fill: [u8; 4],
+}
+
+impl Respond for EchoSize {
+    fn respond(&self, request: &Request) -> ResponseTemplate {
+        let body = body_of(request);
+        let sent =
+            Rgba8Image::from_png(&png_from_data_url(body["image"].as_str().unwrap()).unwrap())
+                .unwrap();
+        let out = Rgba8Image::filled(sent.width, sent.height, self.fill).unwrap();
+        png_response(out.to_png().unwrap())
+    }
+}
+
+/// The shim's file routes: reads the raw input the client wrote, writes a raw result next to it
+/// (RGB for inpaint, RGBA for a plugin image, L8 for a plugin mask), answers with its geometry.
+struct FileRoutes;
+
+impl Respond for FileRoutes {
+    fn respond(&self, request: &Request) -> ResponseTemplate {
+        let body = body_of(request);
+        let width = body["width"].as_u64().unwrap() as u32;
+        let height = body["height"].as_u64().unwrap() as u32;
+        let out_path = body["output_path"].as_str().unwrap();
+        let image_bytes = std::fs::read(body["image_path"].as_str().unwrap()).unwrap();
+        let pixels = (width * height) as usize;
+        let channels = match request.url.path() {
+            "/api/v1/redrob/inpaint" => {
+                assert_eq!(image_bytes.len(), pixels * 3, "RGB in");
+                let mask = std::fs::read(body["mask_path"].as_str().unwrap()).unwrap();
+                assert_eq!(mask.len(), pixels, "L8 mask in");
+                // Invert the picture: easy to check, and no pixel is left as it came.
+                let out: Vec<u8> = image_bytes.iter().map(|b| 255 - b).collect();
+                std::fs::write(out_path, out).unwrap();
+                3
+            }
+            "/api/v1/redrob/plugin_gen_image" => {
+                assert_eq!(image_bytes.len(), pixels * 4, "RGBA in");
+                let scale = body["scale"].as_f64().unwrap() as u32;
+                let out = Rgba8Image::filled(width * scale, height * scale, [9, 8, 7, 255])
+                    .unwrap();
+                std::fs::write(out_path, &out.data).unwrap();
+                return ResponseTemplate::new(200).set_body_json(json!({
+                    "width": width * scale, "height": height * scale, "channels": 4
+                }));
+            }
+            "/api/v1/redrob/plugin_gen_mask" => {
+                assert_eq!(image_bytes.len(), pixels * 4, "RGBA in");
+                let mut mask = vec![0u8; pixels];
+                mask[0] = 255;
+                std::fs::write(out_path, mask).unwrap();
+                1
+            }
+            other => panic!("unexpected route {other}"),
+        };
+        ResponseTemplate::new(200).set_body_json(json!({
+            "width": width, "height": height, "channels": channels
+        }))
+    }
+}
 
 fn checker(w: u32, h: u32) -> Rgba8Image {
     let mut data = Vec::new();
@@ -411,4 +480,210 @@ async fn a_non_png_200_is_a_png_error() {
             .await,
         Err(AiError::Png(_))
     ));
+}
+
+#[tokio::test]
+async fn inpaint_sends_only_the_region_around_the_mask_and_places_it_back() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/api/v1/inpaint"))
+        .respond_with(EchoSize {
+            fill: [0, 255, 0, 255],
+        })
+        .mount(&server)
+        .await;
+    let client = Client::new(server.uri()).unwrap();
+    let image = Rgba8Image::filled(2048, 1024, [40, 40, 40, 255]).unwrap();
+    let mut mask = Mask::filled(2048, 1024, 0).unwrap();
+    mask.fill_rect(Rect::new(1000, 500, 100, 80), 255);
+
+    let (painted, (x, y)) = client
+        .inpaint_region(&image, &mask, &InpaintOptions::default())
+        .await
+        .unwrap();
+    let region = region::inpaint_region(&mask, region::ROI_MARGIN).unwrap();
+    assert_eq!((x, y), (region.x, region.y));
+    assert_eq!((painted.width, painted.height), (region.width, region.height));
+    assert!(painted.width <= 100 + 2 * region::ROI_MARGIN + 64);
+    // Green only inside the mask; the margin came back transparent.
+    assert_eq!(painted.pixel(1000 - x, 500 - y), [0, 255, 0, 255]);
+    assert_eq!(painted.pixel(0, 0)[3], 0);
+
+    // The wire carried the region, not the 2K canvas.
+    let requests = server.received_requests().await.unwrap();
+    let body = body_of(&requests[0]);
+    let sent =
+        Rgba8Image::from_png(&png_from_data_url(body["image"].as_str().unwrap()).unwrap()).unwrap();
+    assert_eq!((sent.width, sent.height), (region.width, region.height));
+
+    // `inpaint` pastes the region into a canvas-sized transparent layer.
+    let full = client
+        .inpaint(&image, &mask, &InpaintOptions::default())
+        .await
+        .unwrap();
+    assert_eq!((full.width, full.height), (2048, 1024));
+    assert_eq!(full.pixel(1050, 540), [0, 255, 0, 255]);
+    assert_eq!(full.pixel(0, 0)[3], 0);
+    assert_eq!(full.pixel(2047, 1023)[3], 0);
+
+    // A prompted fill takes more context; an empty selection never reaches the server.
+    let prompted = InpaintOptions {
+        prompt: Some("a bench".into()),
+        ..InpaintOptions::default()
+    };
+    let (wide, _) = client.inpaint_region(&image, &mask, &prompted).await.unwrap();
+    assert!(wide.width > painted.width);
+    let before = server.received_requests().await.unwrap().len();
+    assert!(matches!(
+        client
+            .inpaint(&image, &Mask::filled(2048, 1024, 0).unwrap(), &prompted)
+            .await,
+        Err(AiError::Geometry(_))
+    ));
+    assert_eq!(server.received_requests().await.unwrap().len(), before);
+}
+
+#[tokio::test]
+async fn file_transport_writes_raw_files_sends_paths_and_cleans_up() {
+    let server = MockServer::start().await;
+    for route in [
+        "/api/v1/redrob/inpaint",
+        "/api/v1/redrob/plugin_gen_image",
+        "/api/v1/redrob/plugin_gen_mask",
+    ] {
+        Mock::given(method("POST"))
+            .and(path(route))
+            .respond_with(FileRoutes)
+            .mount(&server)
+            .await;
+    }
+    Mock::given(method("GET"))
+        .and(path("/api/v1/redrob/transport"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "file": true })))
+        .mount(&server)
+        .await;
+    let tmp = tempfile::tempdir().unwrap();
+    let exchange_dir = tmp.path().join("exchange");
+    let transport = Transport::choose(
+        TransportMode::File,
+        &server.uri(),
+        Some(&exchange_dir),
+        true,
+    );
+    assert!(transport.is_file(), "wiremock is on loopback");
+    let client = Client::with_transport(server.uri(), transport).unwrap();
+    assert!(client.has_file_transport().await);
+
+    // Inpaint: a small picture goes whole; the shim inverts it.
+    let image = checker(4, 4);
+    let mask = Mask::new(4, 4, {
+        let mut m = vec![0u8; 16];
+        m[5] = 255;
+        m
+    })
+    .unwrap();
+    let result = client
+        .inpaint(&image, &mask, &InpaintOptions::default())
+        .await
+        .unwrap();
+    // (1, 1) is a red checker cell (200, 30, 30) over white -> inverted (55, 225, 225).
+    assert_eq!(result.pixel(1, 1), [55, 225, 225, 255]);
+    assert_eq!(result.pixel(0, 0)[3], 0);
+    let requests = server.received_requests().await.unwrap();
+    let body = body_of(&requests[1]);
+    assert!(body.get("image").is_none(), "no base64 in the body");
+    assert!(body["image_path"].as_str().unwrap().starts_with(exchange_dir.to_str().unwrap()));
+    assert_eq!(body["width"], 4);
+    assert_eq!(body["sd_keep_unmasked_area"], Value::Null);
+    // The per-request files are gone once the result is read.
+    assert_eq!(std::fs::read_dir(&exchange_dir).unwrap().count(), 0);
+
+    // Plugin image: RGBA in, RGBA out at the plugin's size.
+    let up = client.plugin_gen_image("RealESRGAN", &image, 2.0).await.unwrap();
+    assert_eq!((up.width, up.height), (8, 8));
+    assert_eq!(up.pixel(7, 7), [9, 8, 7, 255]);
+    // Plugin mask: L8 out.
+    let subject = client.plugin_gen_mask("RemoveBG", &image, &[]).await.unwrap();
+    assert_eq!(subject.coverage(), 1);
+    assert_eq!(subject.get(0, 0), 255);
+    assert_eq!(std::fs::read_dir(&exchange_dir).unwrap().count(), 0);
+
+    // A server error on the file route is the same typed error.
+    server.reset().await;
+    Mock::given(method("POST"))
+        .and(path("/api/v1/redrob/inpaint"))
+        .respond_with(ResponseTemplate::new(500).set_body_json(json!({ "detail": "oom" })))
+        .mount(&server)
+        .await;
+    match client.inpaint(&image, &mask, &InpaintOptions::default()).await {
+        Err(AiError::Server { status, detail }) => {
+            assert_eq!(status, 500);
+            assert_eq!(detail, "oom");
+        }
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(std::fs::read_dir(&exchange_dir).unwrap().count(), 0);
+}
+
+#[tokio::test]
+async fn a_plain_server_has_no_file_transport() {
+    let server = MockServer::start().await;
+    let client = Client::new(server.uri()).unwrap();
+    assert!(!client.has_file_transport().await);
+    assert_eq!(client.transport().mode(), TransportMode::Base64);
+}
+
+#[tokio::test]
+async fn outpaint_past_the_tile_size_walks_the_border_in_tiles() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/api/v1/inpaint"))
+        .respond_with(EchoSize {
+            fill: [7, 7, 7, 255],
+        })
+        .mount(&server)
+        .await;
+    let client = Client::new(server.uri()).unwrap();
+    // 1500 × 300 grown 600 px to the right and 100 px on top: 2100 × 400, wider than a tile.
+    let image = Rgba8Image::filled(1500, 300, [10, 20, 30, 255]).unwrap();
+    let expand = Expand {
+        left: 0,
+        top: 100,
+        right: 600,
+        bottom: 0,
+    };
+    let result = client
+        .outpaint(&image, expand, &InpaintOptions::default())
+        .await
+        .unwrap();
+    assert_eq!((result.width, result.height), (2100, 400));
+    // Border painted, picture transparent.
+    assert_eq!(result.pixel(2099, 399), [7, 7, 7, 255]);
+    assert_eq!(result.pixel(1500, 200), [7, 7, 7, 255]);
+    assert_eq!(result.pixel(0, 0), [7, 7, 7, 255]);
+    assert_eq!(result.pixel(1000, 50), [7, 7, 7, 255]);
+    assert_eq!(result.pixel(0, 100)[3], 0);
+    assert_eq!(result.pixel(1499, 399)[3], 0);
+    let requests = server.received_requests().await.unwrap();
+    let expected = region::outpaint_tiles(Rect::new(0, 100, 1500, 300), 2100, 400);
+    assert_eq!(requests.len(), expected.len());
+    assert!(requests.len() >= 3, "{} tiles", requests.len());
+    for (request, tile) in requests.iter().zip(&expected) {
+        let body = body_of(request);
+        let sent =
+            Rgba8Image::from_png(&png_from_data_url(body["image"].as_str().unwrap()).unwrap())
+                .unwrap();
+        assert!(sent.width <= region::TILE && sent.height <= region::TILE);
+        assert_eq!((sent.width, sent.height), (tile.rect.width, tile.rect.height));
+        let sent_mask =
+            Mask::from_png(&png_from_data_url(body["mask"].as_str().unwrap()).unwrap()).unwrap();
+        assert_eq!(sent_mask.coverage(), tile.paint.area() as usize);
+    }
+    // Every tile carried known context: never a mask covering the whole tile.
+    for request in &requests {
+        let body = body_of(request);
+        let sent_mask =
+            Mask::from_png(&png_from_data_url(body["mask"].as_str().unwrap()).unwrap()).unwrap();
+        assert!(sent_mask.coverage() < sent_mask.data.len());
+    }
 }
