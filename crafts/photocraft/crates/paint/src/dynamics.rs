@@ -303,7 +303,7 @@ pub struct PathWalker {
     motion_only: bool,
     time_acc: f64,
     /// Speed spacing (Spacing unchecked): one step per this many ms of stroke time.
-    speed: Option<f64>,
+    speed_interval: Option<f64>,
     speed_acc: f64,
     /// Pixel-grid stepping for small aliased tips: the dab-centre offset inside a pixel (see
     /// [`PathWalker::pixel_grid`]).
@@ -323,7 +323,7 @@ impl PathWalker {
             interval: build_up_interval_ms,
             motion_only: false,
             time_acc: 0.0,
-            speed: None,
+            speed_interval: None,
             speed_acc: 0.0,
             grid: None,
         }
@@ -369,7 +369,7 @@ impl PathWalker {
     /// Space steps by stroke time instead of distance ([`SPEED_SPACING_MS`]): faster movement
     /// spreads them out. Segments without timestamps are spaced by distance.
     pub fn speed_spacing(mut self, interval_ms: f64) -> Self {
-        self.speed = Some(interval_ms.max(0.1));
+        self.speed_interval = Some(interval_ms.max(0.1));
         self
     }
 
@@ -403,7 +403,7 @@ impl PathWalker {
             // Speed spacing needs the segment's duration; without timestamps (a straight ⇧-click
             // line, or input that carries no times) the segment is spaced by distance instead.
             let dt = p.time - a.time;
-            match self.speed.filter(|_| dt > 0.0 && dt.is_finite()) {
+            match self.speed_interval.filter(|_| dt > 0.0 && dt.is_finite()) {
                 None => {
                     if !self.grid.is_some_and(|g| self.grid_steps(&a, &p, g, out)) {
                         while self.next_at <= len + 1e-9 {
