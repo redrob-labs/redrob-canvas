@@ -2930,3 +2930,25 @@ curves	Smooth	平滑
 	Import Swatches from Image	从图像导入色板
 	Export Swatches as CSS…	将色板导出为 CSS…
 	Cage Transform	笼形变换
+	Binary AND	二元 AND
+	Binary OR	二元 OR
+	Binary NAND	二元 NAND
+	Binary NOR	二元 NOR
+	Binary XNOR	二元 XNOR
+	Binary Implication	二元蕴含
+	Binary Not Implication	二元非蕴含
+	Binary Converse	二元逆蕴含
+	Binary Not Converse	二元非逆蕴含
+	Modulo	取模
+	Modulo Continuous	取模（连续）
+	Divisive Modulo	除法取模
+	Divisive Modulo Continuous	除法取模（连续）
+	Modulo Shift	取模偏移
+	Modulo Shift Continuous	取模偏移（连续）
+	Freeze	冻结
+	Heat	加热
+	Glow-Heat	发光-加热
+	Heat-Glow	加热-发光
+	Reflect-Freeze	反射-冻结
+	Freeze-Reflect	冻结-反射
+	Heat-Glow and Freeze-Reflect Hybrid	加热-发光与冻结-反射混合

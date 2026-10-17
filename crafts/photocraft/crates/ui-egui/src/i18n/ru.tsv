@@ -3284,3 +3284,25 @@ curves	Smooth	Сгладить
 	Import Swatches from Image	Импорт образцов из изображения
 	Export Swatches as CSS…	Экспорт образцов как CSS…
 	Cage Transform	Трансформация по клетке
+	Binary AND	Бинарное AND
+	Binary OR	Бинарное OR
+	Binary NAND	Бинарное NAND
+	Binary NOR	Бинарное NOR
+	Binary XNOR	Бинарное XNOR
+	Binary Implication	Бинарная импликация
+	Binary Not Implication	Бинарная неимпликация
+	Binary Converse	Бинарная конверсия
+	Binary Not Converse	Бинарная неконверсия
+	Modulo	Модуло
+	Modulo Continuous	Модуло непрерывное
+	Divisive Modulo	Делительное модуло
+	Divisive Modulo Continuous	Делительное модуло непрерывное
+	Modulo Shift	Модуло со сдвигом
+	Modulo Shift Continuous	Модуло со сдвигом непрерывное
+	Freeze	Заморозка
+	Heat	Нагрев
+	Glow-Heat	Свечение-Нагрев
+	Heat-Glow	Нагрев-Свечение
+	Reflect-Freeze	Отражение-Заморозка
+	Freeze-Reflect	Заморозка-Отражение
+	Heat-Glow and Freeze-Reflect Hybrid	Гибрид Нагрев-Свечение и Заморозка-Отражение

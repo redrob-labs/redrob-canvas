@@ -3907,3 +3907,25 @@ curves	Smooth	Wygładź
 	Import Swatches from Image	Importuj próbki z obrazu
 	Export Swatches as CSS…	Eksportuj próbki jako CSS…
 	Cage Transform	Przekształcenie klatką
+	Binary AND	Binarne AND
+	Binary OR	Binarne OR
+	Binary NAND	Binarne NAND
+	Binary NOR	Binarne NOR
+	Binary XNOR	Binarne XNOR
+	Binary Implication	Binarna implikacja
+	Binary Not Implication	Binarna nieimplikacja
+	Binary Converse	Binarna odwrotna implikacja
+	Binary Not Converse	Binarna odwrotna nieimplikacja
+	Modulo	Modulo
+	Modulo Continuous	Modulo ciągłe
+	Divisive Modulo	Modulo dzielące
+	Divisive Modulo Continuous	Modulo dzielące ciągłe
+	Modulo Shift	Modulo z przesunięciem
+	Modulo Shift Continuous	Modulo z przesunięciem ciągłe
+	Freeze	Zamrożenie
+	Heat	Żar
+	Glow-Heat	Blask-Żar
+	Heat-Glow	Żar-Blask
+	Reflect-Freeze	Odbicie-Zamrożenie
+	Freeze-Reflect	Zamrożenie-Odbicie
+	Heat-Glow and Freeze-Reflect Hybrid	Hybryda Żar-Blask i Zamrożenie-Odbicie

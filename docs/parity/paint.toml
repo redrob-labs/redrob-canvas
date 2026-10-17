@@ -2771,8 +2771,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
 behaviour = "About 100 modes grouped (arithmetic, binary, darken, HSX, lighten, misc, mix, modulo, negative, quadratic) with favourites and letter shortcuts."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs"
-gap = "34 PSD-compatible modes; no binary, modulo, quadratic or IFS families"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs, crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs"
+gap = "59 modes incl. binary (9 + XOR), modulo (6) and quadratic (Reflect/Glow + 7) families with BlendMode::family(); the Layers dropdown lists them flat, no favourites or letter shortcuts"
 priority = 1
 
 [[feature]]

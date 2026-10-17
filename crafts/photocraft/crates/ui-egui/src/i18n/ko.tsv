@@ -3487,3 +3487,25 @@ curves	Smooth	매끄럽게
 	Import Swatches from Image	이미지에서 색상 견본 가져오기
 	Export Swatches as CSS…	색상 견본을 CSS로 내보내기…
 	Cage Transform	케이지 변형
+	Binary AND	이진 AND
+	Binary OR	이진 OR
+	Binary NAND	이진 NAND
+	Binary NOR	이진 NOR
+	Binary XNOR	이진 XNOR
+	Binary Implication	이진 함의
+	Binary Not Implication	이진 비함의
+	Binary Converse	이진 역함의
+	Binary Not Converse	이진 비역함의
+	Modulo	모듈로
+	Modulo Continuous	모듈로 연속
+	Divisive Modulo	나눗셈 모듈로
+	Divisive Modulo Continuous	나눗셈 모듈로 연속
+	Modulo Shift	모듈로 이동
+	Modulo Shift Continuous	모듈로 이동 연속
+	Freeze	동결
+	Heat	가열
+	Glow-Heat	광선-가열
+	Heat-Glow	가열-광선
+	Reflect-Freeze	반사-동결
+	Freeze-Reflect	동결-반사
+	Heat-Glow and Freeze-Reflect Hybrid	가열-광선과 동결-반사 혼합

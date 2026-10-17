@@ -4270,3 +4270,25 @@ navigator	Zoom	Zoom
 	Import Swatches from Image	Importar muestras desde la imagen
 	Export Swatches as CSS…	Exportar muestras como CSS…
 	Cage Transform	Transformación de jaula
+	Binary AND	Binario AND
+	Binary OR	Binario OR
+	Binary NAND	Binario NAND
+	Binary NOR	Binario NOR
+	Binary XNOR	Binario XNOR
+	Binary Implication	Binario implicación
+	Binary Not Implication	Binario no implicación
+	Binary Converse	Binario recíproca
+	Binary Not Converse	Binario no recíproca
+	Modulo	Módulo
+	Modulo Continuous	Módulo continuo
+	Divisive Modulo	Módulo divisivo
+	Divisive Modulo Continuous	Módulo divisivo continuo
+	Modulo Shift	Módulo desplazado
+	Modulo Shift Continuous	Módulo desplazado continuo
+	Freeze	Congelar
+	Heat	Calor
+	Glow-Heat	Resplandor-Calor
+	Heat-Glow	Calor-Resplandor
+	Reflect-Freeze	Reflejar-Congelar
+	Freeze-Reflect	Congelar-Reflejar
+	Heat-Glow and Freeze-Reflect Hybrid	Híbrido Calor-Resplandor y Congelar-Reflejar

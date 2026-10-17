@@ -4039,3 +4039,25 @@ cameraData	Lens	Lens
 	Import Swatches from Image	Görüntüden Renk Örneklerini İçe Aktar
 	Export Swatches as CSS…	Renk Örneklerini CSS Olarak Dışa Aktar…
 	Cage Transform	Kafes Dönüşümü
+	Binary AND	İkili AND
+	Binary OR	İkili OR
+	Binary NAND	İkili NAND
+	Binary NOR	İkili NOR
+	Binary XNOR	İkili XNOR
+	Binary Implication	İkili gerektirme
+	Binary Not Implication	İkili gerektirmeme
+	Binary Converse	İkili evrik
+	Binary Not Converse	İkili evrik olmayan
+	Modulo	Modülo
+	Modulo Continuous	Modülo sürekli
+	Divisive Modulo	Bölücü modülo
+	Divisive Modulo Continuous	Bölücü modülo sürekli
+	Modulo Shift	Modülo kaydırma
+	Modulo Shift Continuous	Modülo kaydırma sürekli
+	Freeze	Dondur
+	Heat	Isı
+	Glow-Heat	Parıltı-Isı
+	Heat-Glow	Isı-Parıltı
+	Reflect-Freeze	Yansıt-Dondur
+	Freeze-Reflect	Dondur-Yansıt
+	Heat-Glow and Freeze-Reflect Hybrid	Isı-Parıltı ve Dondur-Yansıt karışımı

@@ -4008,3 +4008,25 @@ curves	Smooth	Згладити
 	Import Swatches from Image	Імпорт зразків із зображення
 	Export Swatches as CSS…	Експорт зразків як CSS…
 	Cage Transform	Перетворення за кліткою
+	Binary AND	Бінарне AND
+	Binary OR	Бінарне OR
+	Binary NAND	Бінарне NAND
+	Binary NOR	Бінарне NOR
+	Binary XNOR	Бінарне XNOR
+	Binary Implication	Бінарна імплікація
+	Binary Not Implication	Бінарна неімплікація
+	Binary Converse	Бінарна конверсія
+	Binary Not Converse	Бінарна неконверсія
+	Modulo	Модуло
+	Modulo Continuous	Модуло неперервне
+	Divisive Modulo	Дільне модуло
+	Divisive Modulo Continuous	Дільне модуло неперервне
+	Modulo Shift	Модуло зі зсувом
+	Modulo Shift Continuous	Модуло зі зсувом неперервне
+	Freeze	Заморожування
+	Heat	Нагрівання
+	Glow-Heat	Сяйво-Нагрівання
+	Heat-Glow	Нагрівання-Сяйво
+	Reflect-Freeze	Відбиття-Заморожування
+	Freeze-Reflect	Заморожування-Відбиття
+	Heat-Glow and Freeze-Reflect Hybrid	Гібрид Нагрівання-Сяйво та Заморожування-Відбиття

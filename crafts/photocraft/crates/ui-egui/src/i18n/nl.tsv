@@ -4069,3 +4069,25 @@ curves	Smooth	Vloeiend maken
 	Import Swatches from Image	Stalen importeren uit afbeelding
 	Export Swatches as CSS…	Stalen exporteren als CSS…
 	Cage Transform	Kooitransformatie
+	Binary AND	Binair AND
+	Binary OR	Binair OR
+	Binary NAND	Binair NAND
+	Binary NOR	Binair NOR
+	Binary XNOR	Binair XNOR
+	Binary Implication	Binair implicatie
+	Binary Not Implication	Binair niet-implicatie
+	Binary Converse	Binair omgekeerde
+	Binary Not Converse	Binair niet-omgekeerde
+	Modulo	Modulo
+	Modulo Continuous	Modulo continu
+	Divisive Modulo	Delend modulo
+	Divisive Modulo Continuous	Delend modulo continu
+	Modulo Shift	Modulo verschuiving
+	Modulo Shift Continuous	Modulo verschuiving continu
+	Freeze	Bevriezen
+	Heat	Hitte
+	Glow-Heat	Gloed-Hitte
+	Heat-Glow	Hitte-Gloed
+	Reflect-Freeze	Reflectie-Bevriezen
+	Freeze-Reflect	Bevriezen-Reflectie
+	Heat-Glow and Freeze-Reflect Hybrid	Hybride Hitte-Gloed en Bevriezen-Reflectie

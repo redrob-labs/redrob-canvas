@@ -3918,3 +3918,25 @@ navigator	Zoom	Zvětšení
 	Import Swatches from Image	Importovat vzorky z obrázku
 	Export Swatches as CSS…	Exportovat vzorky jako CSS…
 	Cage Transform	Transformace klecí
+	Binary AND	Binární AND
+	Binary OR	Binární OR
+	Binary NAND	Binární NAND
+	Binary NOR	Binární NOR
+	Binary XNOR	Binární XNOR
+	Binary Implication	Binární implikace
+	Binary Not Implication	Binární neimplikace
+	Binary Converse	Binární obrácená implikace
+	Binary Not Converse	Binární obrácená neimplikace
+	Modulo	Modulo
+	Modulo Continuous	Modulo spojité
+	Divisive Modulo	Dělicí modulo
+	Divisive Modulo Continuous	Dělicí modulo spojité
+	Modulo Shift	Modulo s posunem
+	Modulo Shift Continuous	Modulo s posunem spojité
+	Freeze	Zmrazení
+	Heat	Žár
+	Glow-Heat	Záře-Žár
+	Heat-Glow	Žár-Záře
+	Reflect-Freeze	Odraz-Zmrazení
+	Freeze-Reflect	Zmrazení-Odraz
+	Heat-Glow and Freeze-Reflect Hybrid	Hybrid Žár-Záře a Zmrazení-Odraz

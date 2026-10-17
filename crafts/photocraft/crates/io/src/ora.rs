@@ -141,7 +141,9 @@ pub(crate) fn krita_id(mode: BlendMode) -> Option<&'static str> {
         B::Reflect => "reflect",
         B::Glow => "glow",
         B::Negation => "negation",
-        B::Xor | B::PaintNetColorBurn | B::PaintNetColorDodge | B::HsvHue | B::HsvSaturation | B::HsvValue | B::Luminance => return None,
+        // Paint.NET, HSV, binary, modulo and quadratic modes have no composite-op id here; the
+        // exporter reports the layer and writes Normal.
+        _ => return None,
     })
 }
 

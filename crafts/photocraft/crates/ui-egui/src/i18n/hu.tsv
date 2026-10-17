@@ -4227,3 +4227,25 @@ cameraRaw	Yellow	Sárga
 	Import Swatches from Image	Színminták importálása képből
 	Export Swatches as CSS…	Színminták exportálása CSS-ként…
 	Cage Transform	Ketrec-átalakítás
+	Binary AND	Bináris AND
+	Binary OR	Bináris OR
+	Binary NAND	Bináris NAND
+	Binary NOR	Bináris NOR
+	Binary XNOR	Bináris XNOR
+	Binary Implication	Bináris implikáció
+	Binary Not Implication	Bináris nem-implikáció
+	Binary Converse	Bináris megfordítás
+	Binary Not Converse	Bináris nem-megfordítás
+	Modulo	Modulo
+	Modulo Continuous	Modulo folytonos
+	Divisive Modulo	Osztó modulo
+	Divisive Modulo Continuous	Osztó modulo folytonos
+	Modulo Shift	Modulo eltolás
+	Modulo Shift Continuous	Modulo eltolás folytonos
+	Freeze	Fagyasztás
+	Heat	Hő
+	Glow-Heat	Ragyogás-Hő
+	Heat-Glow	Hő-Ragyogás
+	Reflect-Freeze	Tükrözés-Fagyasztás
+	Freeze-Reflect	Fagyasztás-Tükrözés
+	Heat-Glow and Freeze-Reflect Hybrid	Hő-Ragyogás és Fagyasztás-Tükrözés hibrid

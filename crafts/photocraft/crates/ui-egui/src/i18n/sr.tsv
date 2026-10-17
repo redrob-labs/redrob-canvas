@@ -4381,3 +4381,25 @@ shape	Appearance	Izgled
 	Import Swatches from Image	Uvezi uzorke iz slike
 	Export Swatches as CSS…	Izvezi uzorke kao CSS…
 	Cage Transform	Transformacija kavezom
+	Binary AND	Binarno AND
+	Binary OR	Binarno OR
+	Binary NAND	Binarno NAND
+	Binary NOR	Binarno NOR
+	Binary XNOR	Binarno XNOR
+	Binary Implication	Binarna implikacija
+	Binary Not Implication	Binarna neimplikacija
+	Binary Converse	Binarna konverzija
+	Binary Not Converse	Binarna nekonverzija
+	Modulo	Modulo
+	Modulo Continuous	Modulo neprekidno
+	Divisive Modulo	Deljivo modulo
+	Divisive Modulo Continuous	Deljivo modulo neprekidno
+	Modulo Shift	Modulo pomak
+	Modulo Shift Continuous	Modulo pomak neprekidno
+	Freeze	Zamrzavanje
+	Heat	Toplota
+	Glow-Heat	Sjaj-Toplota
+	Heat-Glow	Toplota-Sjaj
+	Reflect-Freeze	Odraz-Zamrzavanje
+	Freeze-Reflect	Zamrzavanje-Odraz
+	Heat-Glow and Freeze-Reflect Hybrid	Hibrid Toplota-Sjaj i Zamrzavanje-Odraz

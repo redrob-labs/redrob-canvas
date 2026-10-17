@@ -4429,3 +4429,25 @@ shape	Appearance	Aspetto
 	Import Swatches from Image	Importa campioni dall'immagine
 	Export Swatches as CSS…	Esporta campioni come CSS…
 	Cage Transform	Trasformazione gabbia
+	Binary AND	Binario AND
+	Binary OR	Binario OR
+	Binary NAND	Binario NAND
+	Binary NOR	Binario NOR
+	Binary XNOR	Binario XNOR
+	Binary Implication	Binario implicazione
+	Binary Not Implication	Binario non implicazione
+	Binary Converse	Binario inversa
+	Binary Not Converse	Binario non inversa
+	Modulo	Modulo
+	Modulo Continuous	Modulo continuo
+	Divisive Modulo	Modulo divisivo
+	Divisive Modulo Continuous	Modulo divisivo continuo
+	Modulo Shift	Modulo spostato
+	Modulo Shift Continuous	Modulo spostato continuo
+	Freeze	Congela
+	Heat	Calore
+	Glow-Heat	Bagliore-Calore
+	Heat-Glow	Calore-Bagliore
+	Reflect-Freeze	Riflesso-Congela
+	Freeze-Reflect	Congela-Riflesso
+	Heat-Glow and Freeze-Reflect Hybrid	Ibrido Calore-Bagliore e Congela-Riflesso

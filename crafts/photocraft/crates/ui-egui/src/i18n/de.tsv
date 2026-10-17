@@ -3312,3 +3312,25 @@ curves	Smooth	Glätten
 	Import Swatches from Image	Farbfelder aus Bild importieren
 	Export Swatches as CSS…	Farbfelder als CSS exportieren…
 	Cage Transform	Käfig-Transformation
+	Binary AND	Binär AND
+	Binary OR	Binär OR
+	Binary NAND	Binär NAND
+	Binary NOR	Binär NOR
+	Binary XNOR	Binär XNOR
+	Binary Implication	Binär Implikation
+	Binary Not Implication	Binär Nicht-Implikation
+	Binary Converse	Binär Umkehrung
+	Binary Not Converse	Binär Nicht-Umkehrung
+	Modulo	Modulo
+	Modulo Continuous	Modulo kontinuierlich
+	Divisive Modulo	Divisives Modulo
+	Divisive Modulo Continuous	Divisives Modulo kontinuierlich
+	Modulo Shift	Modulo verschoben
+	Modulo Shift Continuous	Modulo verschoben kontinuierlich
+	Freeze	Frost
+	Heat	Hitze
+	Glow-Heat	Leuchten-Hitze
+	Heat-Glow	Hitze-Leuchten
+	Reflect-Freeze	Reflexion-Frost
+	Freeze-Reflect	Frost-Reflexion
+	Heat-Glow and Freeze-Reflect Hybrid	Hybrid aus Hitze-Leuchten und Frost-Reflexion

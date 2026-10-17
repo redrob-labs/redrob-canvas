@@ -4009,3 +4009,25 @@ curves	Smooth	Εξομάλυνση
 	Import Swatches from Image	Εισαγωγή δειγμάτων από εικόνα
 	Export Swatches as CSS…	Εξαγωγή δειγμάτων ως CSS…
 	Cage Transform	Μετασχηματισμός κλωβού
+	Binary AND	Δυαδικό AND
+	Binary OR	Δυαδικό OR
+	Binary NAND	Δυαδικό NAND
+	Binary NOR	Δυαδικό NOR
+	Binary XNOR	Δυαδικό XNOR
+	Binary Implication	Δυαδική συνεπαγωγή
+	Binary Not Implication	Δυαδική μη συνεπαγωγή
+	Binary Converse	Δυαδική αντίστροφη
+	Binary Not Converse	Δυαδική μη αντίστροφη
+	Modulo	Υπόλοιπο
+	Modulo Continuous	Υπόλοιπο συνεχές
+	Divisive Modulo	Διαιρετικό υπόλοιπο
+	Divisive Modulo Continuous	Διαιρετικό υπόλοιπο συνεχές
+	Modulo Shift	Υπόλοιπο μετατόπισης
+	Modulo Shift Continuous	Υπόλοιπο μετατόπισης συνεχές
+	Freeze	Πάγωμα
+	Heat	Θερμότητα
+	Glow-Heat	Λάμψη-Θερμότητα
+	Heat-Glow	Θερμότητα-Λάμψη
+	Reflect-Freeze	Αντανάκλαση-Πάγωμα
+	Freeze-Reflect	Πάγωμα-Αντανάκλαση
+	Heat-Glow and Freeze-Reflect Hybrid	Υβρίδιο Θερμότητα-Λάμψη και Πάγωμα-Αντανάκλαση

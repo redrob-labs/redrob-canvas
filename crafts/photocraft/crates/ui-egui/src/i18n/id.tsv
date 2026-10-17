@@ -3305,3 +3305,25 @@ curves	Smooth	Haluskan
 	Import Swatches from Image	Impor Swatch dari Gambar
 	Export Swatches as CSS…	Ekspor Swatch sebagai CSS…
 	Cage Transform	Transformasi Sangkar
+	Binary AND	Biner AND
+	Binary OR	Biner OR
+	Binary NAND	Biner NAND
+	Binary NOR	Biner NOR
+	Binary XNOR	Biner XNOR
+	Binary Implication	Biner implikasi
+	Binary Not Implication	Biner bukan implikasi
+	Binary Converse	Biner konvers
+	Binary Not Converse	Biner bukan konvers
+	Modulo	Modulo
+	Modulo Continuous	Modulo kontinu
+	Divisive Modulo	Modulo pembagi
+	Divisive Modulo Continuous	Modulo pembagi kontinu
+	Modulo Shift	Modulo geser
+	Modulo Shift Continuous	Modulo geser kontinu
+	Freeze	Beku
+	Heat	Panas
+	Glow-Heat	Cahaya-Panas
+	Heat-Glow	Panas-Cahaya
+	Reflect-Freeze	Pantul-Beku
+	Freeze-Reflect	Beku-Pantul
+	Heat-Glow and Freeze-Reflect Hybrid	Hibrida Panas-Cahaya dan Beku-Pantul

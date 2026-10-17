@@ -3797,3 +3797,25 @@ curves	Smooth	Làm mượt
 	Import Swatches from Image	Nhập mẫu màu từ ảnh
 	Export Swatches as CSS…	Xuất mẫu màu dạng CSS…
 	Cage Transform	Biến dạng theo khung
+	Binary AND	Nhị phân AND
+	Binary OR	Nhị phân OR
+	Binary NAND	Nhị phân NAND
+	Binary NOR	Nhị phân NOR
+	Binary XNOR	Nhị phân XNOR
+	Binary Implication	Nhị phân kéo theo
+	Binary Not Implication	Nhị phân không kéo theo
+	Binary Converse	Nhị phân đảo
+	Binary Not Converse	Nhị phân không đảo
+	Modulo	Modulo
+	Modulo Continuous	Modulo liên tục
+	Divisive Modulo	Modulo chia
+	Divisive Modulo Continuous	Modulo chia liên tục
+	Modulo Shift	Modulo dịch
+	Modulo Shift Continuous	Modulo dịch liên tục
+	Freeze	Đóng băng
+	Heat	Nhiệt
+	Glow-Heat	Phát sáng-Nhiệt
+	Heat-Glow	Nhiệt-Phát sáng
+	Reflect-Freeze	Phản chiếu-Đóng băng
+	Freeze-Reflect	Đóng băng-Phản chiếu
+	Heat-Glow and Freeze-Reflect Hybrid	Lai Nhiệt-Phát sáng và Đóng băng-Phản chiếu

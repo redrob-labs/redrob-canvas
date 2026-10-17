@@ -2256,8 +2256,9 @@ fn simple_lock_toggle(background: bool, l: &Layer) -> (String, Value) {
     ("layer.setProps".into(), json!({"layer": l.id.0, "locks": locks}))
 }
 
-/// The Layers panel's blend modes: Photoshop's, then the HSV / Luminance component modes, plus the
-/// layer's own Paint.NET mode when it has one (an imported `.pdn`).
+/// The Layers panel's blend modes: Photoshop's, then the HSV / Luminance component modes, the
+/// binary, modulo and quadratic families, plus the layer's own Paint.NET mode when it has one (an
+/// imported `.pdn`).
 fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static str)> {
     let own = Some(current).filter(|m| BlendMode::PAINT_NET_MODES.contains(m));
     std::iter::once(BlendMode::PassThrough)
@@ -2268,6 +2269,9 @@ fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static s
         .map(|m| (m, m.label()))
         .collect()
 }
+        .chain(BlendMode::BINARY_MODES)
+        .chain(BlendMode::MODULO_MODES)
+        .chain(BlendMode::QUADRATIC_MODES)
 
 /// Scroll the Layers panel while holding a layer drag over its top/bottom edge or past them.
 ///

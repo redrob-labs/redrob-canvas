@@ -4099,3 +4099,25 @@ layerLabel	No Color	Sem cor
 	Import Swatches from Image	Importar amostras da imagem
 	Export Swatches as CSS…	Exportar amostras como CSS…
 	Cage Transform	Transformação por gaiola
+	Binary AND	Binário AND
+	Binary OR	Binário OR
+	Binary NAND	Binário NAND
+	Binary NOR	Binário NOR
+	Binary XNOR	Binário XNOR
+	Binary Implication	Binário implicação
+	Binary Not Implication	Binário não implicação
+	Binary Converse	Binário recíproca
+	Binary Not Converse	Binário não recíproca
+	Modulo	Módulo
+	Modulo Continuous	Módulo contínuo
+	Divisive Modulo	Módulo divisivo
+	Divisive Modulo Continuous	Módulo divisivo contínuo
+	Modulo Shift	Módulo deslocado
+	Modulo Shift Continuous	Módulo deslocado contínuo
+	Freeze	Congelar
+	Heat	Calor
+	Glow-Heat	Brilho-Calor
+	Heat-Glow	Calor-Brilho
+	Reflect-Freeze	Refletir-Congelar
+	Freeze-Reflect	Congelar-Refletir
+	Heat-Glow and Freeze-Reflect Hybrid	Híbrido Calor-Brilho e Congelar-Refletir

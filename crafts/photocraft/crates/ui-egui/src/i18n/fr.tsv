@@ -3318,3 +3318,25 @@ curves	Smooth	Lisser
 	Import Swatches from Image	Importer les nuances depuis l'image
 	Export Swatches as CSS…	Exporter les nuances en CSS…
 	Cage Transform	Transformation par cage
+	Binary AND	Binaire AND
+	Binary OR	Binaire OR
+	Binary NAND	Binaire NAND
+	Binary NOR	Binaire NOR
+	Binary XNOR	Binaire XNOR
+	Binary Implication	Binaire implication
+	Binary Not Implication	Binaire non-implication
+	Binary Converse	Binaire réciproque
+	Binary Not Converse	Binaire non-réciproque
+	Modulo	Modulo
+	Modulo Continuous	Modulo continu
+	Divisive Modulo	Modulo divisif
+	Divisive Modulo Continuous	Modulo divisif continu
+	Modulo Shift	Modulo décalé
+	Modulo Shift Continuous	Modulo décalé continu
+	Freeze	Gel
+	Heat	Chaleur
+	Glow-Heat	Lueur-Chaleur
+	Heat-Glow	Chaleur-Lueur
+	Reflect-Freeze	Reflet-Gel
+	Freeze-Reflect	Gel-Reflet
+	Heat-Glow and Freeze-Reflect Hybrid	Hybride Chaleur-Lueur et Gel-Reflet

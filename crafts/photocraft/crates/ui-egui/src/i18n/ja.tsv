@@ -3985,3 +3985,25 @@ curves	Smooth	スムーズ
 	Import Swatches from Image	画像からスウォッチを読み込み
 	Export Swatches as CSS…	スウォッチを CSS として書き出し…
 	Cage Transform	ケージ変形
+	Binary AND	二項 AND
+	Binary OR	二項 OR
+	Binary NAND	二項 NAND
+	Binary NOR	二項 NOR
+	Binary XNOR	二項 XNOR
+	Binary Implication	二項 含意
+	Binary Not Implication	二項 非含意
+	Binary Converse	二項 逆含意
+	Binary Not Converse	二項 非逆含意
+	Modulo	モジュロ
+	Modulo Continuous	モジュロ (連続)
+	Divisive Modulo	除算モジュロ
+	Divisive Modulo Continuous	除算モジュロ (連続)
+	Modulo Shift	モジュロシフト
+	Modulo Shift Continuous	モジュロシフト (連続)
+	Freeze	フリーズ
+	Heat	ヒート
+	Glow-Heat	グロー・ヒート
+	Heat-Glow	ヒート・グロー
+	Reflect-Freeze	リフレクト・フリーズ
+	Freeze-Reflect	フリーズ・リフレクト
+	Heat-Glow and Freeze-Reflect Hybrid	ヒート・グローとフリーズ・リフレクトの混合
