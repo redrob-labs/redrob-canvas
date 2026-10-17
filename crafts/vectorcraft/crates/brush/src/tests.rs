@@ -393,7 +393,7 @@ fn pressure_maps_to_size_along_the_stroke() {
 /// Angle and roundness follow the pressure the same way, clamped to their ranges.
 #[test]
 fn pressure_varies_angle_and_roundness() {
-    let c = |modes| Calligraphic { angle: 0.0, roundness: 60.0, size: 10.0, variation: [90.0, 60.0, 0.0], modes: Some(modes) };
+    let c = |modes| Calligraphic { angle: 0.0, roundness: 60.0, size: 10.0, variation: [90.0, 60.0, 0.0], modes: Some(modes), ..Default::default() };
     let horizontal = line(0.0, 0.0, 100.0, 0.0);
     let draw = |c: Calligraphic, p: f64| {
         let b = Brush { name: "a".into(), kind: BrushKind::Calligraphic(c) };

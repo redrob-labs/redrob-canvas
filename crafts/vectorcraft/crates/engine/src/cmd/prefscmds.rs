@@ -82,6 +82,7 @@ pub const UNITS: &[(&str, &str)] = &[
     ("feet", "Feet"),
 ];
 const LINE_STYLE: &[(&str, &str)] = &[("lines", "Lines"), ("dots", "Dots")];
+const GRID_KINDS: &[(&str, &str)] = &[("rectangular", "Rectangular"), ("axonometric", "Axonometric"), ("modular", "Modular")];
 /// Performance › Graphics Processor (`gpuPreference`), read by the desktop app at startup. The
 /// values are WebGPU's power preferences plus `automatic`; 0.5.0's default, `powerSaving`, reads as
 /// `automatic` (#502).
@@ -206,6 +207,11 @@ pub const PREF_SPECS: &[PrefSpec] = &[
     p!("gridStyle", "Guides & Grid", "Grid", "Style", choice(LINE_STYLE)),
     p!("gridlineEvery", "Guides & Grid", "Grid", "Gridline every", len(1.0, 16383.0, General)),
     p!("gridSubdivisions", "Guides & Grid", "Grid", "Subdivisions", int(1, 1000)),
+    p!("gridKind", "Guides & Grid", "Grid", "Grid Kind", choice(GRID_KINDS)),
+    p!("gridAngleX", "Guides & Grid", "Grid", "Axonometric Angle X", num(1.0, 89.0, "°")),
+    p!("gridAngleZ", "Guides & Grid", "Grid", "Axonometric Angle Z", num(1.0, 89.0, "°")),
+    p!("gridGapX", "Guides & Grid", "Grid", "Modular Gap X", len(0.0, 16383.0, General)),
+    p!("gridGapY", "Guides & Grid", "Grid", "Modular Gap Y", len(0.0, 16383.0, General)),
     p!("gridsInBack", "Guides & Grid", "Grid", "Grids In Back", bool),
     p!("showPixelGrid", "Guides & Grid", "Grid", "Show Pixel Grid (Above 600% Zoom)", bool),
     // Smart Guides
@@ -507,7 +513,20 @@ impl Prefs {
 
     /// The document grid Guides & Grid › Gridline every and Subdivisions set.
     pub fn grid(&self) -> GridPrefs {
-        GridPrefs { spacing: self.gridline_every, subdivisions: self.grid_subdivisions }
+        let kind = match self.grid_kind.as_str() {
+            "axonometric" => redrob_vector_doc::GridKind::Axonometric,
+            "modular" => redrob_vector_doc::GridKind::Modular,
+            _ => redrob_vector_doc::GridKind::Rectangular,
+        };
+        GridPrefs {
+            spacing: self.gridline_every,
+            subdivisions: self.grid_subdivisions,
+            kind,
+            angle_x: self.grid_angle_x,
+            angle_z: self.grid_angle_z,
+            gap_x: self.grid_gap_x,
+            gap_y: self.grid_gap_y,
+        }
     }
 }
 
@@ -520,7 +539,7 @@ impl Session {
         for e in self.prefs.keep_folders(&mut p) {
             log::warn!("{e}");
         }
-        let grid_changed = p.gridline_every != self.prefs.gridline_every || p.grid_subdivisions != self.prefs.grid_subdivisions;
+        let grid_changed = p.grid() != self.prefs.grid();
         let history_changed = p.history_states != self.prefs.history_states;
         let tile_edge_changed = p.pattern_tile_edge_color != self.prefs.pattern_tile_edge_color;
         let fonts_folder_changed = p.fonts_folder != self.prefs.fonts_folder;

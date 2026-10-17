@@ -4458,3 +4458,74 @@ lighting	Light	ライト
 	Title	タイトル
 	Object type	オブジェクトの種類
 	Current layer	現在のレイヤー
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	属性を追加
+	Add Filter	フィルターを追加
+	Add Input	入力を追加
+	Add Primitive	プリミティブを追加
+	Axonometric	軸測
+	Axonometric Angle X	軸測角度 X
+	Axonometric Angle Z	軸測角度 Z
+	Canvas Orientation	カンバスの向き
+	Collapse All	すべて折りたたむ
+	Color Matrix	カラーマトリックス
+	Color Matrix…	カラーマトリックス…
+	Component Transfer	コンポーネント転送
+	Composite	合成
+	Convolve Matrix	畳み込み行列
+	Delete Node	ノードを削除
+	Diffuse Lighting	拡散光
+	Displacement Map	置き換えマップ
+	Drop Shadow Preset	ドロップシャドウのプリセット
+	Duplicate Node	ノードを複製
+	Duplicate Primitive	プリミティブを複製
+	Edge Detection	エッジ検出
+	Edge Threshold	エッジのしきい値
+	Expand All	すべて展開
+	Fill Rendered Pixels	描画ピクセルを塗る
+	Filter Editor	フィルターエディター
+	Filter Graph	フィルターグラフ
+	Filter Region	フィルター領域
+	Flood	塗りつぶし
+	Grid Kind	グリッドの種類
+	Hide Palette Strip	パレットバーを隠す
+	Input	入力
+	Large Chips	大きいチップ
+	Lower Node	ノードを下げる
+	Mass:	質量:
+	Medium Chips	中くらいのチップ
+	Modular	モジュール
+	Modular Gap X	モジュール間隔 X
+	Modular Gap Y	モジュール間隔 Y
+	Morphology	モルフォロジー
+	No colours in this palette	このパレットに色はありません
+	No primitives. Add one below.	プリミティブがありません。下から追加してください。
+	Node Data	ノードのデータ
+	Palette Strip	パレットバー
+	Palette Strip Menu	パレットバーメニュー
+	Previous Result	前の結果
+	Primitive	プリミティブ
+	Quantization	量子化
+	Raise Node	ノードを上げる
+	Rectangular	矩形
+	Remove Attribute	属性を削除
+	Remove Filter	フィルターを削除
+	Remove Input	入力を削除
+	Remove Primitive	プリミティブを削除
+	Reset Canvas Orientation	カンバスの向きをリセット
+	Result:	結果:
+	Select a node to edit its attributes.	属性を編集するノードを選択してください。
+	Small Chips	小さいチップ
+	Specular Lighting	鏡面光
+	The document has no layers.	ドキュメントにレイヤーがありません。
+	The primitives of a filter graph are edited in the Filter Editor panel.	フィルターグラフのプリミティブはフィルターエディターパネルで編集します。
+	Thinning:	細り:
+	Tremor:	震え:
+	Turbulence	乱流
+	Wiggle:	揺れ:
+	XML Editor	XML エディター
+	attribute	属性
+	No Filter	フィルターなし
+	The object has no SVG filter graph yet.	このオブジェクトにはまだ SVG フィルターグラフがありません。
+	Select an object to edit its SVG filter.	SVG フィルターを編集するオブジェクトを選択してください。
+	Open a document to see its element tree.	要素ツリーを表示するにはドキュメントを開いてください。

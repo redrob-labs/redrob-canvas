@@ -3773,7 +3773,6 @@ curves	Smooth	매끄럽게
 	Blue Frequency	파랑 주파수
 	Blue Inversion	파랑 반전
 	Blue Sharp Edges	파랑 선명한 가장자리
-	Box	상자
 	Bump	범프
 	Bumps	돌기
 	Caribbean Blues	카리브 블루
@@ -3830,7 +3829,6 @@ curves	Smooth	매끄럽게
 	Incandescent	백열
 	Intermediate Frames	중간 프레임
 	Invert Direction	방향 반전
-	Iterations	반복
 	Julia	줄리아
 	Jx	Jx
 	Jy	Jy
@@ -3877,7 +3875,6 @@ curves	Smooth	매끄럽게
 	Rotation Y	Y 회전
 	Rotation Z	Z 회전
 	Saturation Function	채도 함수
-	Segments	분할 수
 	Separate Layer	별도 레이어
 	Sierpinski	시에르핀스키
 	Sin Curve	사인 곡선

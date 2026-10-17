@@ -138,11 +138,25 @@ pub struct Calligraphic {
     /// where the variation is non-zero, else Fixed — see [`Calligraphic::modes`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modes: Option<[Variation; 3]>,
+    /// Thinning (−100..100 %): how much faster-drawn parts of the stroke thin (negative: thicken).
+    /// Speed is read from how far apart the path's anchors were put down (a freehand stroke
+    /// samples the pen at a steady rate, so long segments were drawn fast).
+    #[serde(default)]
+    pub thinning: f64,
+    /// Mass (0..100): how much the stroke's edges are smoothed, as if the pen had inertia.
+    #[serde(default)]
+    pub mass: f64,
+    /// Tremor (0..100): random unevenness of the stroke's width along it.
+    #[serde(default)]
+    pub tremor: f64,
+    /// Wiggle (0..100): a slow random wandering of the nib off the path.
+    #[serde(default)]
+    pub wiggle: f64,
 }
 
 impl Default for Calligraphic {
     fn default() -> Self {
-        Self { angle: 0.0, roundness: 100.0, size: 3.0, variation: [0.0; 3], modes: None }
+        Self { angle: 0.0, roundness: 100.0, size: 3.0, variation: [0.0; 3], modes: None, thinning: 0.0, mass: 0.0, tremor: 0.0, wiggle: 0.0 }
     }
 }
 
@@ -158,6 +172,10 @@ impl Calligraphic {
     /// Does the pen's pressure change the nib?
     pub fn uses_pressure(&self) -> bool {
         self.modes().contains(&Variation::Pressure)
+    }
+    /// Does the nib change along the stroke (pressure, thinning or tremor)?
+    pub fn varies_along(&self) -> bool {
+        self.uses_pressure() || self.thinning != 0.0 || self.tremor > 0.0
     }
 }
 

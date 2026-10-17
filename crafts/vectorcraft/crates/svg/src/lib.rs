@@ -81,6 +81,7 @@
 
 mod css;
 mod export;
+mod filter_graph;
 mod import;
 
 pub use css::{CssOptions, CssRule, CssSheet, CssUnits, css_rules};

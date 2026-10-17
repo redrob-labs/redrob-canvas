@@ -4875,3 +4875,73 @@ mark-style	Japanese	Japonské
 	Title	Název
 	Object type	Typ objektu
 	Current layer	Aktuální vrstva
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Přidat atribut
+	Add Filter	Přidat filtr
+	Add Input	Přidat vstup
+	Add Primitive	Přidat primitivum
+	Axonometric	Axonometrická
+	Axonometric Angle X	Axonometrický úhel X
+	Axonometric Angle Z	Axonometrický úhel Z
+	Canvas Orientation	Orientace plátna
+	Collapse All	Sbalit vše
+	Color Matrix	Barevná matice
+	Color Matrix…	Barevná matice…
+	Component Transfer	Přenos složek
+	Convolve Matrix	Konvoluční matice
+	Delete Node	Odstranit uzel
+	Diffuse Lighting	Difuzní osvětlení
+	Displacement Map	Mapa posunutí
+	Drop Shadow Preset	Předvolba vrženého stínu
+	Duplicate Node	Duplikovat uzel
+	Duplicate Primitive	Duplikovat primitivum
+	Edge Detection	Detekce hran
+	Edge Threshold	Prahová hodnota hran
+	Expand All	Rozbalit vše
+	Fill Rendered Pixels	Vyplnit vykreslené pixely
+	Filter Editor	Editor filtrů
+	Filter Graph	Graf filtru
+	Filter Region	Oblast filtru
+	Flood	Výplň
+	Grid Kind	Druh mřížky
+	Hide Palette Strip	Skrýt pruh palety
+	Input	Vstup
+	Large Chips	Velké vzorky
+	Lower Node	Snížit uzel
+	Mass:	Hmotnost:
+	Medium Chips	Střední vzorky
+	Modular	Modulární
+	Modular Gap X	Modulární mezera X
+	Modular Gap Y	Modulární mezera Y
+	Morphology	Morfologie
+	No colours in this palette	V této paletě nejsou žádné barvy
+	No primitives. Add one below.	Žádná primitiva. Přidejte je níže.
+	Node Data	Data uzlu
+	Palette Strip	Pruh palety
+	Palette Strip Menu	Nabídka pruhu palety
+	Previous Result	Předchozí výsledek
+	Primitive	Primitivum
+	Quantization	Kvantizace
+	Raise Node	Zvýšit uzel
+	Rectangular	Pravoúhlá
+	Remove Attribute	Odebrat atribut
+	Remove Filter	Odebrat filtr
+	Remove Input	Odebrat vstup
+	Remove Primitive	Odebrat primitivum
+	Reset Canvas Orientation	Obnovit orientaci plátna
+	Result:	Výsledek:
+	Select a node to edit its attributes.	Vyberte uzel, jehož atributy chcete upravit.
+	Small Chips	Malé vzorky
+	Specular Lighting	Zrcadlové osvětlení
+	The document has no layers.	Dokument nemá žádné vrstvy.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Primitiva grafu filtru se upravují v panelu Editor filtrů.
+	Thinning:	Zužování:
+	Tremor:	Chvění:
+	Turbulence	Turbulence
+	Wiggle:	Vlnění:
+	XML Editor	Editor XML
+	attribute	atribut
+	No Filter	Žádný filtr
+	The object has no SVG filter graph yet.	Objekt zatím nemá graf filtru SVG.
+	Select an object to edit its SVG filter.	Vyberte objekt, jehož filtr SVG chcete upravit.
+	Open a document to see its element tree.	Otevřete dokument a zobrazte strom jeho prvků.

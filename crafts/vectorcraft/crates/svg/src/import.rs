@@ -1087,7 +1087,7 @@ impl Importer {
         // Blurs, shadows and glows become live effects (see [`fx`]).
         let effects = match g.filters() {
             [] => vec![],
-            filters => fx::effects(filters, ts, &self.blends).unwrap_or_else(|| {
+            filters => fx::effects(filters, ts, &self.blends).or_else(|| fx::graphs(filters, ts, g)).unwrap_or_else(|| {
                 // usvg wraps a filtered element in a group of its own: name the element then.
                 let on = match g.children() {
                     [usvg::Node::Group(_)] | [] => label.clone(),

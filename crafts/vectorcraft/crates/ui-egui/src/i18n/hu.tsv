@@ -4842,3 +4842,73 @@ imageTrace	Outline	Körvonal
 	Title	Cím
 	Object type	Objektum típusa
 	Current layer	Aktuális réteg
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Attribútum hozzáadása
+	Add Filter	Szűrő hozzáadása
+	Add Input	Bemenet hozzáadása
+	Add Primitive	Primitív hozzáadása
+	Axonometric	Axonometrikus
+	Axonometric Angle X	Axonometrikus szög X
+	Axonometric Angle Z	Axonometrikus szög Z
+	Canvas Orientation	Rajzvászon tájolása
+	Collapse All	Összes összecsukása
+	Color Matrix	Színmátrix
+	Color Matrix…	Színmátrix…
+	Component Transfer	Komponensátvitel
+	Convolve Matrix	Konvolúciós mátrix
+	Delete Node	Csomópont törlése
+	Diffuse Lighting	Szórt megvilágítás
+	Displacement Map	Elmozdulástérkép
+	Drop Shadow Preset	Vetett árnyék előbeállítás
+	Duplicate Node	Csomópont duplikálása
+	Duplicate Primitive	Primitív duplikálása
+	Edge Detection	Élfelismerés
+	Edge Threshold	Élküszöb
+	Expand All	Összes kibontása
+	Fill Rendered Pixels	Renderelt képpontok kitöltése
+	Filter Editor	Szűrőszerkesztő
+	Filter Graph	Szűrőgráf
+	Filter Region	Szűrőterület
+	Flood	Kitöltés
+	Grid Kind	Rács típusa
+	Hide Palette Strip	Palettasáv elrejtése
+	Input	Bemenet
+	Large Chips	Nagy minták
+	Lower Node	Csomópont hátrébb
+	Mass:	Tömeg:
+	Medium Chips	Közepes minták
+	Modular	Moduláris
+	Modular Gap X	Modulhézag X
+	Modular Gap Y	Modulhézag Y
+	Morphology	Morfológia
+	No colours in this palette	Nincsenek színek ebben a palettában
+	No primitives. Add one below.	Nincs primitív. Adjon hozzá lentebb.
+	Node Data	Csomópont adatai
+	Palette Strip	Palettasáv
+	Palette Strip Menu	Palettasáv menü
+	Previous Result	Előző eredmény
+	Primitive	Primitív
+	Quantization	Kvantálás
+	Raise Node	Csomópont előrébb
+	Rectangular	Négyzetes
+	Remove Attribute	Attribútum eltávolítása
+	Remove Filter	Szűrő eltávolítása
+	Remove Input	Bemenet eltávolítása
+	Remove Primitive	Primitív eltávolítása
+	Reset Canvas Orientation	Rajzvászon tájolásának visszaállítása
+	Result:	Eredmény:
+	Select a node to edit its attributes.	Válasszon csomópontot az attribútumai szerkesztéséhez.
+	Small Chips	Kis minták
+	Specular Lighting	Tükröző megvilágítás
+	The document has no layers.	A dokumentumnak nincsenek rétegei.
+	The primitives of a filter graph are edited in the Filter Editor panel.	A szűrőgráf primitívjei a Szűrőszerkesztő panelen szerkeszthetők.
+	Thinning:	Vékonyodás:
+	Tremor:	Remegés:
+	Turbulence	Turbulencia
+	Wiggle:	Imbolygás:
+	XML Editor	XML-szerkesztő
+	attribute	attribútum
+	No Filter	Nincs szűrő
+	The object has no SVG filter graph yet.	Az objektumnak még nincs SVG-szűrőgráfja.
+	Select an object to edit its SVG filter.	Válasszon objektumot az SVG-szűrője szerkesztéséhez.
+	Open a document to see its element tree.	Nyisson meg egy dokumentumot az elemfájának megtekintéséhez.

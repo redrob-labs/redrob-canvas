@@ -4431,3 +4431,74 @@ theme	Appearance	Giao diện
 	Title	Tiêu đề
 	Object type	Loại đối tượng
 	Current layer	Lớp hiện tại
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Thêm thuộc tính
+	Add Filter	Thêm bộ lọc
+	Add Input	Thêm đầu vào
+	Add Primitive	Thêm nguyên tố
+	Axonometric	Trục đo
+	Axonometric Angle X	Góc trục đo X
+	Axonometric Angle Z	Góc trục đo Z
+	Canvas Orientation	Hướng khung vẽ
+	Collapse All	Thu gọn tất cả
+	Color Matrix	Ma trận màu
+	Color Matrix…	Ma trận màu…
+	Component Transfer	Chuyển thành phần
+	Composite	Tổng hợp
+	Convolve Matrix	Ma trận tích chập
+	Delete Node	Xóa nút
+	Diffuse Lighting	Chiếu sáng khuếch tán
+	Displacement Map	Bản đồ dịch chuyển
+	Drop Shadow Preset	Mẫu đổ bóng
+	Duplicate Node	Nhân đôi nút
+	Duplicate Primitive	Nhân đôi nguyên tố
+	Edge Detection	Phát hiện cạnh
+	Edge Threshold	Ngưỡng cạnh
+	Expand All	Mở rộng tất cả
+	Fill Rendered Pixels	Tô các điểm ảnh đã kết xuất
+	Filter Editor	Trình sửa bộ lọc
+	Filter Graph	Đồ thị bộ lọc
+	Filter Region	Vùng bộ lọc
+	Flood	Tô tràn
+	Grid Kind	Loại lưới
+	Hide Palette Strip	Ẩn dải bảng màu
+	Input	Đầu vào
+	Large Chips	Ô lớn
+	Lower Node	Hạ nút
+	Mass:	Khối lượng:
+	Medium Chips	Ô vừa
+	Modular	Mô-đun
+	Modular Gap X	Khe mô-đun X
+	Modular Gap Y	Khe mô-đun Y
+	Morphology	Hình thái
+	No colours in this palette	Bảng màu này không có màu
+	No primitives. Add one below.	Chưa có nguyên tố. Hãy thêm bên dưới.
+	Node Data	Dữ liệu nút
+	Palette Strip	Dải bảng màu
+	Palette Strip Menu	Menu dải bảng màu
+	Previous Result	Kết quả trước
+	Primitive	Nguyên tố
+	Quantization	Lượng tử hóa
+	Raise Node	Nâng nút
+	Rectangular	Hình chữ nhật
+	Remove Attribute	Xóa thuộc tính
+	Remove Filter	Xóa bộ lọc
+	Remove Input	Xóa đầu vào
+	Remove Primitive	Xóa nguyên tố
+	Reset Canvas Orientation	Đặt lại hướng khung vẽ
+	Result:	Kết quả:
+	Select a node to edit its attributes.	Chọn một nút để sửa thuộc tính của nó.
+	Small Chips	Ô nhỏ
+	Specular Lighting	Chiếu sáng phản chiếu
+	The document has no layers.	Tài liệu không có lớp nào.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Các nguyên tố của đồ thị bộ lọc được sửa trong bảng Trình sửa bộ lọc.
+	Thinning:	Mảnh dần:
+	Tremor:	Rung:
+	Turbulence	Nhiễu loạn
+	Wiggle:	Lắc:
+	XML Editor	Trình sửa XML
+	attribute	thuộc tính
+	No Filter	Không có bộ lọc
+	The object has no SVG filter graph yet.	Đối tượng chưa có đồ thị bộ lọc SVG.
+	Select an object to edit its SVG filter.	Chọn một đối tượng để sửa bộ lọc SVG của nó.
+	Open a document to see its element tree.	Mở một tài liệu để xem cây phần tử của nó.

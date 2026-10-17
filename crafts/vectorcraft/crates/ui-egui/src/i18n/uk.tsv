@@ -4429,3 +4429,74 @@ lighting	Light	Світло
 	Title	Заголовок
 	Object type	Тип об’єкта
 	Current layer	Поточний шар
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Додати атрибут
+	Add Filter	Додати фільтр
+	Add Input	Додати вхід
+	Add Primitive	Додати примітив
+	Axonometric	Аксонометрична
+	Axonometric Angle X	Аксонометричний кут X
+	Axonometric Angle Z	Аксонометричний кут Z
+	Canvas Orientation	Орієнтація полотна
+	Collapse All	Згорнути все
+	Color Matrix	Колірна матриця
+	Color Matrix…	Колірна матриця…
+	Component Transfer	Перенесення компонентів
+	Composite	Композиція
+	Convolve Matrix	Матриця згортки
+	Delete Node	Видалити вузол
+	Diffuse Lighting	Дифузне освітлення
+	Displacement Map	Карта зміщення
+	Drop Shadow Preset	Набір «Тінь»
+	Duplicate Node	Дублювати вузол
+	Duplicate Primitive	Дублювати примітив
+	Edge Detection	Виявлення країв
+	Edge Threshold	Поріг країв
+	Expand All	Розгорнути все
+	Fill Rendered Pixels	Залити відтворені пікселі
+	Filter Editor	Редактор фільтрів
+	Filter Graph	Граф фільтра
+	Filter Region	Область фільтра
+	Flood	Заливка
+	Grid Kind	Тип сітки
+	Hide Palette Strip	Сховати смугу палітри
+	Input	Вхід
+	Large Chips	Великі зразки
+	Lower Node	Опустити вузол
+	Mass:	Маса:
+	Medium Chips	Середні зразки
+	Modular	Модульна
+	Modular Gap X	Модульний проміжок X
+	Modular Gap Y	Модульний проміжок Y
+	Morphology	Морфологія
+	No colours in this palette	У цій палітрі немає кольорів
+	No primitives. Add one below.	Немає примітивів. Додайте нижче.
+	Node Data	Дані вузла
+	Palette Strip	Смуга палітри
+	Palette Strip Menu	Меню смуги палітри
+	Previous Result	Попередній результат
+	Primitive	Примітив
+	Quantization	Квантування
+	Raise Node	Підняти вузол
+	Rectangular	Прямокутна
+	Remove Attribute	Видалити атрибут
+	Remove Filter	Видалити фільтр
+	Remove Input	Видалити вхід
+	Remove Primitive	Видалити примітив
+	Reset Canvas Orientation	Скинути орієнтацію полотна
+	Result:	Результат:
+	Select a node to edit its attributes.	Виберіть вузол, щоб змінити його атрибути.
+	Small Chips	Малі зразки
+	Specular Lighting	Дзеркальне освітлення
+	The document has no layers.	У документі немає шарів.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Примітиви графа фільтра редагуються на панелі «Редактор фільтрів».
+	Thinning:	Стоншення:
+	Tremor:	Тремтіння:
+	Turbulence	Турбулентність
+	Wiggle:	Коливання:
+	XML Editor	Редактор XML
+	attribute	атрибут
+	No Filter	Немає фільтра
+	The object has no SVG filter graph yet.	Об’єкт ще не має графа фільтра SVG.
+	Select an object to edit its SVG filter.	Виберіть об’єкт, щоб змінити його фільтр SVG.
+	Open a document to see its element tree.	Відкрийте документ, щоб побачити дерево його елементів.

@@ -4720,3 +4720,73 @@ mark-style	Japanese	Japońskie
 	Title	Tytuł
 	Object type	Typ obiektu
 	Current layer	Bieżąca warstwa
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Dodaj atrybut
+	Add Filter	Dodaj filtr
+	Add Input	Dodaj wejście
+	Add Primitive	Dodaj prymityw
+	Axonometric	Aksonometryczna
+	Axonometric Angle X	Kąt aksonometryczny X
+	Axonometric Angle Z	Kąt aksonometryczny Z
+	Canvas Orientation	Orientacja kanwy
+	Collapse All	Zwiń wszystko
+	Color Matrix	Macierz kolorów
+	Color Matrix…	Macierz kolorów…
+	Component Transfer	Transfer składowych
+	Convolve Matrix	Macierz splotu
+	Delete Node	Usuń węzeł
+	Diffuse Lighting	Oświetlenie rozproszone
+	Displacement Map	Mapa przemieszczeń
+	Drop Shadow Preset	Ustawienie wstępne cienia
+	Duplicate Node	Duplikuj węzeł
+	Duplicate Primitive	Duplikuj prymityw
+	Edge Detection	Wykrywanie krawędzi
+	Edge Threshold	Próg krawędzi
+	Expand All	Rozwiń wszystko
+	Fill Rendered Pixels	Wypełnij wyrenderowane piksele
+	Filter Editor	Edytor filtrów
+	Filter Graph	Graf filtru
+	Filter Region	Obszar filtru
+	Flood	Zalanie
+	Grid Kind	Rodzaj siatki
+	Hide Palette Strip	Ukryj pasek palety
+	Input	Wejście
+	Large Chips	Duże próbki
+	Lower Node	Obniż węzeł
+	Mass:	Masa:
+	Medium Chips	Średnie próbki
+	Modular	Modułowa
+	Modular Gap X	Odstęp modułowy X
+	Modular Gap Y	Odstęp modułowy Y
+	Morphology	Morfologia
+	No colours in this palette	Brak kolorów w tej palecie
+	No primitives. Add one below.	Brak prymitywów. Dodaj poniżej.
+	Node Data	Dane węzła
+	Palette Strip	Pasek palety
+	Palette Strip Menu	Menu paska palety
+	Previous Result	Poprzedni wynik
+	Primitive	Prymityw
+	Quantization	Kwantyzacja
+	Raise Node	Podnieś węzeł
+	Rectangular	Prostokątna
+	Remove Attribute	Usuń atrybut
+	Remove Filter	Usuń filtr
+	Remove Input	Usuń wejście
+	Remove Primitive	Usuń prymityw
+	Reset Canvas Orientation	Resetuj orientację kanwy
+	Result:	Wynik:
+	Select a node to edit its attributes.	Wybierz węzeł, aby edytować jego atrybuty.
+	Small Chips	Małe próbki
+	Specular Lighting	Oświetlenie odbłyskowe
+	The document has no layers.	Dokument nie ma warstw.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Prymitywy grafu filtru edytuje się w panelu Edytor filtrów.
+	Thinning:	Pocienianie:
+	Tremor:	Drżenie:
+	Turbulence	Turbulencja
+	Wiggle:	Chwianie:
+	XML Editor	Edytor XML
+	attribute	atrybut
+	No Filter	Brak filtru
+	The object has no SVG filter graph yet.	Obiekt nie ma jeszcze grafu filtru SVG.
+	Select an object to edit its SVG filter.	Wybierz obiekt, aby edytować jego filtr SVG.
+	Open a document to see its element tree.	Otwórz dokument, aby zobaczyć jego drzewo elementów.

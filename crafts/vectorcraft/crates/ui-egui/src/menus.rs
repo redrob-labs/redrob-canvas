@@ -253,6 +253,9 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ("view.presentation", "Presentation Mode", "Shift+F", "{}"),
     ("view.screenMode", "Screen Mode", "F", "{mode?: 0..2} (no param cycles)"),
     ("view.rotateReset", "Reset Rotate View", "Cmd+Shift+1", "{}"),
+    ("view.flipHorizontal", "Flip Horizontal", "", "{} mirror the view left to right (View › Canvas Orientation); toggles"),
+    ("view.flipVertical", "Flip Vertical", "", "{} mirror the view top to bottom (View › Canvas Orientation); toggles"),
+    ("view.flipReset", "Reset Canvas Orientation", "", "{} undo both view flips"),
     ("window.control", "Control", "", "{}"),
     ("window.toolbar", "Tools", "", "{}"),
     (
@@ -299,6 +302,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{} put the current (Basic or Advanced) toolbar back as it ships, undoing Edit Toolbar's changes; returns its slots",
     ),
     ("window.taskBar", "Contextual Task Bar", "", "{}"),
+    ("window.paletteStrip", "Palette Strip", "", "{} show or hide the colour strip along the bottom of the window; toggles"),
     (
         "window.taskBar.pin",
         "Pin Bar Position",
@@ -1188,6 +1192,17 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             }
             Ok(Value::Null)
         }
+        "view.flipHorizontal" | "view.flipVertical" | "view.flipReset" => {
+            let flipped = app.view_mut().map(|v| {
+                match id {
+                    "view.flipHorizontal" => v.flip_h = !v.flip_h,
+                    "view.flipVertical" => v.flip_v = !v.flip_v,
+                    _ => (v.flip_h, v.flip_v) = (false, false),
+                }
+                (v.flip_h, v.flip_v)
+            });
+            Ok(flipped.map_or(Value::Null, |(h, v)| json!({ "horizontal": h, "vertical": v })))
+        }
         "window.control" => flag(&mut app.ui.control_bar),
         "window.toolbar" => flag(&mut app.ui.toolbar),
         "window.toolbarColumns" => opt_bool(p, "double").map(|on| {
@@ -1205,6 +1220,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             crate::toolbar::float_group(app, &tool, floating).map(Value::Bool)
         }
         "window.taskBar" => flag(&mut app.ui.task_bar),
+        "window.paletteStrip" => flag(&mut app.ui.palette_strip),
         "window.taskBar.pin" => {
             let place = &mut app.ui.task_bar_place;
             opt_bool(p, "pinned").map(|pinned| {
@@ -1568,6 +1584,7 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
             app.ui.floating_flyouts.iter().any(|f| f.tools.iter().any(|id| id == tool))
         }
         "window.taskBar" => app.ui.task_bar,
+        "window.paletteStrip" => app.ui.palette_strip,
         "window.taskBar.pin" => app.ui.task_bar_place.pinned,
         "window.panel" => {
             let panel = p.get("panel").and_then(Value::as_str).unwrap_or("");
@@ -2608,6 +2625,14 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Actual Size", "view.actualSize"),
                 Sep,
                 c("Reset Rotate View", "view.rotateReset"),
+                sub(
+                    "Canvas Orientation",
+                    vec![
+                        c("Flip Horizontal", "view.flipHorizontal"),
+                        c("Flip Vertical", "view.flipVertical"),
+                        c("Reset Canvas Orientation", "view.flipReset"),
+                    ],
+                ),
                 Sep,
                 c("Hide Edges", "view.edges"),
                 c("Hide Artboards", "view.artboards"),
@@ -2680,6 +2705,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 Sep,
                 c("Control", "window.control"),
                 c("Contextual Task Bar", "window.taskBar"),
+                c("Palette Strip", "window.paletteStrip"),
                 c("Tools", "window.toolbar"),
                 sub("Toolbars", vec![c("Advanced", "window.toolbarAdvanced"), c("Double Column", "window.toolbarColumns")]),
                 Sep,
@@ -2695,6 +2721,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 panel("Color Themes", "colorThemes"),
                 panel("CSS Properties", crate::panels::css_properties::ID),
                 panel("Document Info", "docInfo"),
+                panel("Filter Editor", crate::panels::filter_editor::ID),
                 panel("Flattener Preview", crate::panels::flattener_preview::ID),
                 panel("Gradient", "gradient"),
                 panel("Graphic Styles", "graphicStyles"),
@@ -2729,6 +2756,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     ],
                 ),
                 panel("Variables", crate::panels::variables::ID),
+                panel("XML Editor", crate::panels::xml_editor::ID),
                 Sep,
                 sub("Brush Libraries", library_placeholders()),
                 sub("Graphic Style Libraries", crate::panels::graphic_styles::window_menu()),
@@ -3547,7 +3575,7 @@ fn effect_menu() -> Vec<Item> {
     // The effects whose catalogue menu path is `path`.
     let items_at = |path: &[&str]| -> Vec<Item> {
         cat.iter()
-            .filter(|e| e.menu == path)
+            .filter(|e| e.menu == path && e.id != redrob_vector_effects::FILTER_GRAPH)
             .map(|e| match e.defaults.as_object().is_some_and(|o| o.is_empty()) {
                 // No options (Effect → Pathfinder): apply directly, like Illustrator.
                 true => Item::Cmd(e.label, "effect.apply", json!({ "effect": e.id })),
@@ -3570,6 +3598,11 @@ fn effect_menu() -> Vec<Item> {
             out.push(sub(sub_name, placeholder));
         } else {
             let mut items = items;
+            if sub_name == "SVG Filters" {
+                // The filter graph is built in its panel.
+                items.push(Item::Cmd("Filter Graph", "effect.apply", json!({ "effect": redrob_vector_effects::FILTER_GRAPH, "item": null })));
+                items.push(cp("Filter Editor", "window.panel", json!({ "panel": crate::panels::filter_editor::ID })));
+            }
             if sub_name == "3D and Materials" {
                 // In the panel's order of 3D types, then Materials (not built yet).
                 let rank = |label: &str| ["Extrude & Bevel…", "Revolve…", "Inflate…", "Rotate…"].iter().position(|l| *l == label).unwrap_or(9);

@@ -25,6 +25,7 @@ pub(crate) mod fileinfo;
 pub mod fileio;
 pub mod findfiles;
 pub mod flatten;
+mod floodfill;
 pub mod fontfiles;
 mod fonts;
 pub(crate) mod freeform;
@@ -209,6 +210,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(nodeops::specs());
         v.extend(select::specs());
         v.extend(wand::specs());
+        v.extend(floodfill::specs());
         v.extend(paint::specs());
         // Split out of `paint` (M3.8); kept next to it so lists in registry order (the command
         // palette, `engine.commands`) show them where they always were.

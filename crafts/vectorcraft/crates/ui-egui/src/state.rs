@@ -21,11 +21,24 @@ pub struct View {
     /// Size show it.
     #[serde(default)]
     pub artboard: usize,
+    /// View › Canvas Orientation › Flip Horizontal: the view mirrored left to right.
+    #[serde(default)]
+    pub flip_h: bool,
+    /// View › Canvas Orientation › Flip Vertical: the view mirrored top to bottom.
+    #[serde(default)]
+    pub flip_v: bool,
 }
 
 impl Default for View {
     fn default() -> Self {
-        Self { zoom: 1.0, center: Point::new(306.0, 396.0), fitted: false, rotation: 0.0, artboard: 0 }
+        Self { zoom: 1.0, center: Point::new(306.0, 396.0), fitted: false, rotation: 0.0, artboard: 0, flip_h: false, flip_v: false }
+    }
+}
+
+impl View {
+    /// The signs the flips put on the view's x and y axes.
+    pub fn flip_signs(&self) -> (f64, f64) {
+        (if self.flip_h { -1.0 } else { 1.0 }, if self.flip_v { -1.0 } else { 1.0 })
     }
 }
 
@@ -39,6 +52,8 @@ impl View {
                 fitted: true,
                 rotation: if v.rotation.is_finite() { v.rotation } else { 0.0 },
                 artboard: 0,
+                flip_h: false,
+                flip_v: false,
             },
             _ => Self::default(),
         }
@@ -139,6 +154,8 @@ pub const ICON_PANELS: &[(&str, &str, &str)] = &[
     (crate::panels::asset_export::ID, "Asset Export", "share-2"),
     (crate::panels::css_properties::ID, "CSS Properties", "globe"),
     (crate::panels::variables::ID, "Variables", "chart-column"),
+    (crate::panels::filter_editor::ID, "Filter Editor", "dc-fx"),
+    (crate::panels::xml_editor::ID, "XML Editor", "dc-list-view"),
 ];
 
 /// Groups of icon panels separated by dividers in the collapsed column.
@@ -307,6 +324,15 @@ pub struct UiState {
     #[serde(default)]
     pub toolbar_pos: Option<[f32; 2]>,
     pub status_bar: bool,
+    /// Window › Palette Strip: the colour strip along the bottom of the window.
+    #[serde(default = "yes")]
+    pub palette_strip: bool,
+    /// The palette the strip shows: `document` or a swatch library id.
+    #[serde(default = "document_swatches")]
+    pub palette_strip_library: String,
+    /// The strip's chip side (points).
+    #[serde(default = "default_chip")]
+    pub palette_strip_size: f32,
     pub dock: bool,
     pub view: ViewFlags,
     pub dialog: Option<Dialog>,
@@ -690,6 +716,9 @@ impl Default for UiState {
             docking_generation: 0,
             toolbar_pos: None,
             status_bar: true,
+            palette_strip: true,
+            palette_strip_library: document_swatches(),
+            palette_strip_size: default_chip(),
             dock: true,
             view: ViewFlags::default(),
             dialog: None,
@@ -740,6 +769,14 @@ impl Default for UiState {
 
 fn yes() -> bool {
     true
+}
+
+fn document_swatches() -> String {
+    "document".into()
+}
+
+fn default_chip() -> f32 {
+    16.0
 }
 
 fn default_shortcut_set() -> String {

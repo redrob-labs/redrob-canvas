@@ -440,15 +440,100 @@ impl Guide {
     }
 }
 
+/// The kind of document grid (Preferences › Guides & Grid › Grid Kind).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum GridKind {
+    /// Vertical and horizontal gridlines.
+    #[default]
+    Rectangular,
+    /// Vertical gridlines and two families of angled ones (isometric drawing).
+    Axonometric,
+    /// Blocks of `spacing` × `spacing` with gaps between them (a modular grid).
+    Modular,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GridPrefs {
     pub spacing: f64,
     pub subdivisions: u32,
+    #[serde(default)]
+    pub kind: GridKind,
+    /// Axonometric: the angle (degrees from horizontal) of the lines rising to the right.
+    #[serde(default = "default_grid_angle")]
+    pub angle_x: f64,
+    /// Axonometric: the angle (degrees from horizontal) of the lines rising to the left.
+    #[serde(default = "default_grid_angle")]
+    pub angle_z: f64,
+    /// Modular: the gap between blocks along x and y.
+    #[serde(default)]
+    pub gap_x: f64,
+    #[serde(default)]
+    pub gap_y: f64,
+}
+
+fn default_grid_angle() -> f64 {
+    30.0
 }
 
 impl Default for GridPrefs {
     fn default() -> Self {
-        Self { spacing: 72.0, subdivisions: 8 }
+        Self { spacing: 72.0, subdivisions: 8, kind: GridKind::Rectangular, angle_x: 30.0, angle_z: 30.0, gap_x: 0.0, gap_y: 0.0 }
+    }
+}
+
+impl GridPrefs {
+    /// What Snap to Grid snaps to along one axis: the subdivisions (or the lines without any).
+    pub fn step(&self) -> f64 {
+        self.spacing / self.subdivisions.max(1) as f64
+    }
+
+    /// The angled gridline families of an axonometric grid as (slope dy/dx, the spacing of the
+    /// family measured along y): the lines rising to the right (angle x) and to the left (angle z).
+    pub fn axon_families(&self) -> [(f64, f64); 2] {
+        let fam = |deg: f64, sign: f64| {
+            let a = deg.clamp(1.0, 89.0).to_radians();
+            // Lines of slope −tan a (screen y grows down) through the x gridlines' crossings with y = 0.
+            (-sign * a.tan(), self.step() * a.tan())
+        };
+        [fam(self.angle_x, 1.0), fam(self.angle_z, -1.0)]
+    }
+
+    /// Modular: the x (or y) extent of the block containing `v`: `(start, end)`, or `None` in a gap.
+    pub fn module(&self, v: f64, gap: f64) -> Option<(f64, f64)> {
+        let period = self.spacing + gap.max(0.0);
+        if period <= 0.0 {
+            return None;
+        }
+        let k = (v / period).floor();
+        let start = k * period;
+        (v - start <= self.spacing).then_some((start, start + self.spacing))
+    }
+
+    /// `p` snapped to the grid: the nearest crossing of two gridline families (rectangular and
+    /// modular grids: the subdivisions' crossings; axonometric: a vertical line with an angled one).
+    pub fn snap_point(&self, p: Point) -> Point {
+        let s = self.step();
+        if s <= 0.0 {
+            return p;
+        }
+        match self.kind {
+            GridKind::Rectangular | GridKind::Modular => Point::new((p.x / s).round() * s, (p.y / s).round() * s),
+            GridKind::Axonometric => {
+                let x = (p.x / s).round() * s;
+                // On the vertical line at `x`, the nearest crossing with either angled family.
+                let mut best = Point::new(x, (p.y / s).round() * s);
+                for (slope, dy) in self.axon_families() {
+                    // The family's lines are y = slope·x + j·dy.
+                    let c = p.y - slope * x;
+                    let y = x * slope + (c / dy).round() * dy;
+                    if (y - p.y).abs() < (best.y - p.y).abs() {
+                        best = Point::new(x, y);
+                    }
+                }
+                best
+            }
+        }
     }
 }
 
