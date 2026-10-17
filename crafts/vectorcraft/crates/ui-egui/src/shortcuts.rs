@@ -433,6 +433,46 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
             return;
         }
     }
+    // Keyboard transforms of the selection: `[` and `]` rotate by 15°, `<` and `>` scale by the
+    // keyboard increment (with Alt, by one screen pixel), as typed. (Cmd/Ctrl with the brackets
+    // is Arrange's; a 90° step is a dialog away: Object › Transform › Rotate.)
+    if !typing && !m.command && app.session.active().is_some_and(|d| !d.selection.is_empty()) {
+        let typed: Vec<String> = ctx.input(|i| {
+            i.events
+                .iter()
+                .filter_map(|e| match e {
+                    egui::Event::Text(t) if matches!(t.as_str(), "[" | "]" | "<" | ">") => Some(t.clone()),
+                    _ => None,
+                })
+                .collect()
+        });
+        let mut taken = false;
+        for text in typed {
+            let p = match text.as_str() {
+                "[" => Some(("object.rotate", json!({ "angle": 15.0 }))),
+                "]" => Some(("object.rotate", json!({ "angle": -15.0 }))),
+                "<" | ">" => {
+                    let grow = text == ">";
+                    let step = if m.alt { 1.0 / view.zoom.max(1e-6) } else { app.session.prefs.keyboard_increment };
+                    let w = app.selection_bounds().map_or(0.0, |b| b.width().max(b.height()));
+                    if w <= 0.0 {
+                        continue;
+                    }
+                    let factor = ((w + if grow { step } else { -step }) / w).max(0.01);
+                    Some(("object.scale", json!({ "sx": factor * 100.0, "sy": factor * 100.0 })))
+                }
+                _ => None,
+            };
+            if let Some((cmd, params)) = p {
+                ctx.input_mut(|i| i.events.retain(|e| !matches!(e, egui::Event::Text(t) if *t == text)));
+                let _ = app.run(cmd, params);
+                taken = true;
+            }
+        }
+        if taken {
+            return;
+        }
+    }
     // Command shortcuts.
     let mut fire = None;
     for (sc, id, p) in all_shortcuts() {
