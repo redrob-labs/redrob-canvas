@@ -4115,3 +4115,8 @@ cameraRaw	Yellow	Sárga
 	Conical Gradient (symmetric)	Kúpos színátmenet (szimmetrikus)
 	Spiral Gradient (clockwise)	Spirális színátmenet (óramutató irányába)
 	Spiral Gradient (counter-clockwise)	Spirális színátmenet (óramutatóval ellentétes)
+	Line Art	Vonalrajz
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Kitölti a tinta által körbezárt területet, bezárja a kis réseket és kissé a vonalak alá nyúlik
+	Ink below	Tinta küszöb
+	Close gaps	Rések zárása
+	Under ink	Tinta alá

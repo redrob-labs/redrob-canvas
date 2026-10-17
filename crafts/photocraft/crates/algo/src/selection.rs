@@ -210,6 +210,125 @@ pub fn magic_wand(px: &[[f32; 4]], area: Rect, seed: (i32, i32), tolerance: f32,
     m
 }
 
+/// Line-art fill: the region around `seed` bounded by line art rather than by colour. A pixel is
+/// line where its luma is under `threshold` (0..1; a transparent pixel is never line, so line art
+/// on its own layer works too). Gaps in the lines up to `gap` px are closed before the fill so
+/// colour does not leak through an unclosed stroke, and the fill then grows `grow` px under the
+/// lines so no light seam is left between colour and ink; where a line is only partly dark
+/// (its anti-aliased edge) the colour goes under it in proportion. `None` when the seed is off
+/// the area or itself on a line.
+pub fn line_art_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), threshold: f32, gap: u32, grow: u32) -> Option<Region> {
+    if !area.contains(seed.0, seed.1) {
+        return None;
+    }
+    let (w, h) = (area.width() as usize, area.height() as usize);
+    if w.checked_mul(h).is_none_or(|n| n > img.len()) || w == 0 || h == 0 {
+        return None;
+    }
+    // Darkness of each pixel, 0 = not line, 255 = fully dark line.
+    let thr = (threshold.clamp(0.01, 1.0) * 255.0) as i32;
+    let darkness: Vec<u8> = img
+        .iter()
+        .take(w * h)
+        .map(|p| {
+            if p[3] == 0 {
+                return 0;
+            }
+            let luma = (i32::from(p[0]) * 299 + i32::from(p[1]) * 587 + i32::from(p[2]) * 114) / 1000;
+            let luma = luma * i32::from(p[3]) / 255 + 255 * (255 - i32::from(p[3])) / 255;
+            if luma >= thr { 0 } else { ((thr - luma) * 255 / thr).clamp(0, 255) as u8 }
+        })
+        .collect();
+    let si = (seed.1 - area.y0) as usize * w + (seed.0 - area.x0) as usize;
+    if darkness[si] > 0 {
+        return None;
+    }
+    // Close gaps: a line mask thickened by half the gap on each side joins strokes that end up to
+    // `gap` px apart.
+    let line: Vec<bool> = darkness.iter().map(|d| *d > 0).collect();
+    let half_gap = (gap as usize).div_ceil(2).min(64);
+    let closed = dilate(&line, w, h, half_gap);
+    // Flood from the seed over everything that is not (closed) line, 4-connected.
+    let mut region = vec![false; w * h];
+    let mut stack = vec![si];
+    region[si] = true;
+    while let Some(i) = stack.pop() {
+        let (x, y) = (i % w, i / w);
+        let mut visit = |j: usize| {
+            if !region[j] && !closed[j] {
+                region[j] = true;
+                stack.push(j);
+            }
+        };
+        if x > 0 {
+            visit(i - 1);
+        }
+        if x + 1 < w {
+            visit(i + 1);
+        }
+        if y > 0 {
+            visit(i - w);
+        }
+        if y + 1 < h {
+            visit(i + w);
+        }
+    }
+    // Grow back over the closing band and `grow` px under the real lines, but never into another
+    // open region: the growth only enters pixels the closing had claimed.
+    let grown = dilate(&region, w, h, half_gap + (grow as usize).min(64));
+    let (mut bx0, mut by0, mut bx1, mut by1) = (usize::MAX, usize::MAX, 0usize, 0usize);
+    let mut cover = vec![0u8; w * h];
+    for i in 0..w * h {
+        let inside = region[i] || (grown[i] && (closed[i] || line[i]));
+        if !inside {
+            continue;
+        }
+        // Under a line the fill shows in proportion to what the ink leaves uncovered.
+        let v = if line[i] && !region[i] { 255 - darkness[i] } else { 255 };
+        if v == 0 {
+            continue;
+        }
+        cover[i] = v;
+        let (x, y) = (i % w, i / w);
+        (bx0, bx1, by0, by1) = (bx0.min(x), bx1.max(x), by0.min(y), by1.max(y));
+    }
+    if bx0 == usize::MAX {
+        return None;
+    }
+    let bw = bx1 + 1 - bx0;
+    let mut mask = Vec::with_capacity(bw * (by1 + 1 - by0));
+    for y in by0..=by1 {
+        mask.extend_from_slice(&cover[y * w + bx0..y * w + bx1 + 1]);
+    }
+    Some(Region { bbox: Rect::new(area.x0 + bx0 as i32, area.y0 + by0 as i32, area.x0 + bx1 as i32 + 1, area.y0 + by1 as i32 + 1), mask })
+}
+
+/// Binary dilation by a square of radius `r` (separable: rows then columns).
+fn dilate(m: &[bool], w: usize, h: usize, r: usize) -> Vec<bool> {
+    if r == 0 {
+        return m.to_vec();
+    }
+    let mut rows = vec![false; w * h];
+    for y in 0..h {
+        let row = &m[y * w..(y + 1) * w];
+        let out = &mut rows[y * w..(y + 1) * w];
+        for x in 0..w {
+            let lo = x.saturating_sub(r);
+            let hi = (x + r).min(w - 1);
+            out[x] = row[lo..=hi].iter().any(|v| *v);
+        }
+    }
+    let mut out = vec![false; w * h];
+    for x in 0..w {
+        for y in 0..h {
+            let lo = y.saturating_sub(r);
+            let hi = (y + r).min(h - 1);
+            out[y * w + x] = (lo..=hi).any(|yy| rows[yy * w + x]);
+        }
+    }
+    out
+}
+
 /// Straight RGBA8 copy of `area` of a surface, read in parallel bands on native.
 pub fn rgba8_image(s: &Surface, area: Rect) -> Vec<[u8; 4]> {
     let (w, h) = (area.width() as usize, area.height() as usize);

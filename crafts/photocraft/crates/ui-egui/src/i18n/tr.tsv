@@ -3927,3 +3927,8 @@ cameraData	Lens	Lens
 	Conical Gradient (symmetric)	Konik Gradyan (simetrik)
 	Spiral Gradient (clockwise)	Spiral Gradyan (saat yönünde)
 	Spiral Gradient (counter-clockwise)	Spiral Gradyan (saat yönünün tersine)
+	Line Art	Çizgi Çalışması
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Mürekkebin çevrelediği alanı doldurur, küçük boşlukları kapatır ve çizgilerin biraz altına girer
+	Ink below	Mürekkep eşiği
+	Close gaps	Boşlukları kapat
+	Under ink	Mürekkep altına

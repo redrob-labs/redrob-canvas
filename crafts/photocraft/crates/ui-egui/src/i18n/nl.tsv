@@ -3957,3 +3957,8 @@ curves	Smooth	Vloeiend maken
 	Conical Gradient (symmetric)	Kegelvormig verloop (symmetrisch)
 	Spiral Gradient (clockwise)	Spiraalverloop (met de klok mee)
 	Spiral Gradient (counter-clockwise)	Spiraalverloop (tegen de klok in)
+	Line Art	Lijntekening
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Vult het gebied dat de inkt omsluit, sluit kleine gaten en gaat iets onder de lijnen
+	Ink below	Inkt onder
+	Close gaps	Gaten sluiten
+	Under ink	Onder de inkt

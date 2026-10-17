@@ -3191,3 +3191,8 @@ curves	Smooth	Haluskan
 	Conical Gradient (symmetric)	Gradien Kerucut (simetris)
 	Spiral Gradient (clockwise)	Gradien Spiral (searah jarum jam)
 	Spiral Gradient (counter-clockwise)	Gradien Spiral (berlawanan jarum jam)
+	Line Art	Garis Seni
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Mengisi area yang dikelilingi tinta, menutup celah kecil dan sedikit masuk di bawah garis
+	Ink below	Ambang tinta
+	Close gaps	Tutup celah
+	Under ink	Di bawah tinta

@@ -3873,3 +3873,8 @@ curves	Smooth	スムーズ
 	Conical Gradient (symmetric)	円錐形グラデーション (対称)
 	Spiral Gradient (clockwise)	螺旋グラデーション (時計回り)
 	Spiral Gradient (counter-clockwise)	螺旋グラデーション (反時計回り)
+	Line Art	線画
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	線が囲む領域を塗ります。小さな隙間を閉じ、線の下に少し入り込みます
+	Ink below	インク基準
+	Close gaps	隙間を閉じる
+	Under ink	線の下へ

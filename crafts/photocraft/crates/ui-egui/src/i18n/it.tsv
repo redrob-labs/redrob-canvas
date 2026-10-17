@@ -4317,3 +4317,8 @@ shape	Appearance	Aspetto
 	Conical Gradient (symmetric)	Sfumatura conica (simmetrica)
 	Spiral Gradient (clockwise)	Sfumatura a spirale (oraria)
 	Spiral Gradient (counter-clockwise)	Sfumatura a spirale (antioraria)
+	Line Art	Linea
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Riempie l’area chiusa dall’inchiostro, chiude piccoli vuoti e passa leggermente sotto le linee
+	Ink below	Inchiostro sotto
+	Close gaps	Chiudi vuoti
+	Under ink	Sotto l’inchiostro

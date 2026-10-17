@@ -3200,3 +3200,8 @@ curves	Smooth	Glätten
 	Conical Gradient (symmetric)	Kegelförmiger Verlauf (symmetrisch)
 	Spiral Gradient (clockwise)	Spiralverlauf (im Uhrzeigersinn)
 	Spiral Gradient (counter-clockwise)	Spiralverlauf (gegen den Uhrzeigersinn)
+	Line Art	Strichzeichnung
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Füllt die von der Tusche umschlossene Fläche, schließt kleine Lücken und reicht etwas unter die Linien
+	Ink below	Tusche unter
+	Close gaps	Lücken schließen
+	Under ink	Unter die Tusche

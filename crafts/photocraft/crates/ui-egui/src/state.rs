@@ -518,6 +518,17 @@ pub struct ToolOptions {
     pub wand_diagonal: bool,
     #[serde(default = "default_wand_criterion")]
     pub wand_criterion: String,
+    /// Paint Bucket › Fill by: similar colours (false) or the area the line art encloses (true),
+    /// with the ink threshold, the gap length that is still closed and how far under the ink the
+    /// colour goes.
+    #[serde(default)]
+    pub bucket_line_art: bool,
+    #[serde(default = "default_line_art_threshold")]
+    pub line_art_threshold: f32,
+    #[serde(default = "default_line_art_gap")]
+    pub line_art_gap: f32,
+    #[serde(default = "default_line_art_grow")]
+    pub line_art_grow: f32,
     /// Object Selection › Object Finder: hovering highlights the object a click selects (#4087).
     pub object_finder: bool,
     /// Remove tool: the fill goes to a new layer above the target (Photoshop's Create a new layer).
@@ -738,6 +749,18 @@ fn default_curve_fit() -> f32 {
     2.0
 }
 
+fn default_line_art_threshold() -> f32 {
+    0.92
+}
+
+fn default_line_art_gap() -> f32 {
+    16.0
+}
+
+fn default_line_art_grow() -> f32 {
+    2.0
+}
+
 fn default_wand_criterion() -> String {
     "composite".into()
 }
@@ -784,6 +807,10 @@ impl Default for ToolOptions {
             sample_all_layers: false,
             wand_diagonal: false,
             wand_criterion: default_wand_criterion(),
+            bucket_line_art: false,
+            line_art_threshold: default_line_art_threshold(),
+            line_art_gap: default_line_art_gap(),
+            line_art_grow: default_line_art_grow(),
             object_finder: true,
             remove_new_layer: false,
             remove_after_each_stroke: true,

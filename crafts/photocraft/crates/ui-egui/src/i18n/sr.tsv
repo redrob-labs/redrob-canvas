@@ -4269,3 +4269,8 @@ shape	Appearance	Izgled
 	Conical Gradient (symmetric)	Конусни прелив (симетричан)
 	Spiral Gradient (clockwise)	Спирални прелив (у смеру казаљке)
 	Spiral Gradient (counter-clockwise)	Спирални прелив (супротно казаљци)
+	Line Art	Линијски цртеж
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Попуњава подручје које линије затварају, затвара мале процепе и мало улази под линије
+	Ink below	Праг мастила
+	Close gaps	Затвори процепе
+	Under ink	Под мастило

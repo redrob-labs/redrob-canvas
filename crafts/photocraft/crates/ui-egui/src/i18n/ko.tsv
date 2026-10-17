@@ -3375,3 +3375,8 @@ curves	Smooth	매끄럽게
 	Conical Gradient (symmetric)	원뿔형 그라디언트 (대칭)
 	Spiral Gradient (clockwise)	나선형 그라디언트 (시계 방향)
 	Spiral Gradient (counter-clockwise)	나선형 그라디언트 (반시계 방향)
+	Line Art	라인 아트
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	선이 둘러싼 영역을 채웁니다. 작은 틈을 메우고 선 밑으로 조금 들어갑니다
+	Ink below	잉크 기준
+	Close gaps	틈 메우기
+	Under ink	선 밑으로

@@ -2801,3 +2801,8 @@ curves	Smooth	平滑
 	Conical Gradient (symmetric)	圓錐漸層 (對稱)
 	Spiral Gradient (clockwise)	螺旋漸層 (順時針)
 	Spiral Gradient (counter-clockwise)	螺旋漸層 (逆時針)
+	Line Art	線稿
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	填滿線條圍成的區域，閉合小縫隙並略微伸到線條下方
+	Ink below	墨線閾值
+	Close gaps	閉合縫隙
+	Under ink	伸入墨線

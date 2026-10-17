@@ -3795,3 +3795,8 @@ curves	Smooth	Wygładź
 	Conical Gradient (symmetric)	Gradient stożkowy (symetryczny)
 	Spiral Gradient (clockwise)	Gradient spiralny (w prawo)
 	Spiral Gradient (counter-clockwise)	Gradient spiralny (w lewo)
+	Line Art	Kreska
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Wypełnia obszar zamknięty tuszem, domyka małe przerwy i lekko wchodzi pod linie
+	Ink below	Próg tuszu
+	Close gaps	Domknij przerwy
+	Under ink	Pod tusz

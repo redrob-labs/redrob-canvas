@@ -3204,3 +3204,8 @@ curves	Smooth	Lisser
 	Conical Gradient (symmetric)	Dégradé conique (symétrique)
 	Spiral Gradient (clockwise)	Dégradé en spirale (horaire)
 	Spiral Gradient (counter-clockwise)	Dégradé en spirale (antihoraire)
+	Line Art	Dessin au trait
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Remplit la zone close par l’encre, ferme les petits trous et passe un peu sous les traits
+	Ink below	Encre sous
+	Close gaps	Fermer les trous
+	Under ink	Sous l’encre

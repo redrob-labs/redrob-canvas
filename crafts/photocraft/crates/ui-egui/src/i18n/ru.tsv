@@ -3169,3 +3169,8 @@ curves	Smooth	Сгладить
 	Conical Gradient (symmetric)	Конический градиент (симметричный)
 	Spiral Gradient (clockwise)	Спиральный градиент (по часовой)
 	Spiral Gradient (counter-clockwise)	Спиральный градиент (против часовой)
+	Line Art	Контур
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Заливает область внутри контура, закрывая мелкие разрывы и слегка заходя под линии
+	Ink below	Порог туши
+	Close gaps	Закрыть разрывы
+	Under ink	Под тушь

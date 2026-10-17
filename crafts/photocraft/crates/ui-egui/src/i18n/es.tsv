@@ -4158,3 +4158,8 @@ navigator	Zoom	Zoom
 	Conical Gradient (symmetric)	Degradado cónico (simétrico)
 	Spiral Gradient (clockwise)	Degradado en espiral (horario)
 	Spiral Gradient (counter-clockwise)	Degradado en espiral (antihorario)
+	Line Art	Línea de arte
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Rellena el área que encierra la tinta, cerrando huecos pequeños y entrando un poco bajo las líneas
+	Ink below	Tinta bajo
+	Close gaps	Cerrar huecos
+	Under ink	Bajo la tinta

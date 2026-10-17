@@ -3806,3 +3806,8 @@ navigator	Zoom	Zvětšení
 	Conical Gradient (symmetric)	Kónický přechod (symetrický)
 	Spiral Gradient (clockwise)	Spirálový přechod (po směru)
 	Spiral Gradient (counter-clockwise)	Spirálový přechod (proti směru)
+	Line Art	Linka
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Vyplní plochu uzavřenou linkou, uzavře malé mezery a zasáhne mírně pod linky
+	Ink below	Prah tuše
+	Close gaps	Zavřít mezery
+	Under ink	Pod tuš

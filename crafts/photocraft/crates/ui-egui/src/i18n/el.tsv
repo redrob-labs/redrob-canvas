@@ -3897,3 +3897,8 @@ curves	Smooth	Εξομάλυνση
 	Conical Gradient (symmetric)	Κωνική διαβάθμιση (συμμετρική)
 	Spiral Gradient (clockwise)	Σπειροειδής διαβάθμιση (δεξιόστροφα)
 	Spiral Gradient (counter-clockwise)	Σπειροειδής διαβάθμιση (αριστερόστροφα)
+	Line Art	Γραμμικό σχέδιο
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Γεμίζει την περιοχή που κλείνει το μελάνι, κλείνοντας μικρά κενά και μπαίνοντας λίγο κάτω από τις γραμμές
+	Ink below	Όριο μελανιού
+	Close gaps	Κλείσιμο κενών
+	Under ink	Κάτω από το μελάνι

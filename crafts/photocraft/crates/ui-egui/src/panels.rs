@@ -1224,6 +1224,20 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("All Layers"));
                         crate::eraser_ui::wand_options(ui, &mut app.ui.tool_options);
+                        widgets::vline(ui, 22.0);
+                        let o = &mut app.ui.tool_options;
+                        widgets::checkbox(ui, &mut o.bucket_line_art, tl!("Line Art")).on_hover_text(tl!("Fill the area the ink encloses, closing small gaps and going slightly under the lines"));
+                        if o.bucket_line_art {
+                            opt_label(ui, tl!("Ink below"));
+                            let mut pct = o.line_art_threshold * 100.0;
+                            if widgets::value_field(ui, &mut pct, 1.0..=100.0, "%", 58.0).changed() {
+                                o.line_art_threshold = pct / 100.0;
+                            }
+                            opt_label(ui, tl!("Close gaps"));
+                            widgets::value_field(ui, &mut o.line_art_gap, 0.0..=128.0, "px", 58.0);
+                            opt_label(ui, tl!("Under ink"));
+                            widgets::value_field(ui, &mut o.line_art_grow, 0.0..=64.0, "px", 52.0);
+                        }
                     }
                     Tool::Gradient => {
                         // Live "Gradient" (a Gradient Fill layer) or "Classic gradient" (pixels).

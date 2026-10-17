@@ -49,8 +49,18 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
     let opts = crate::selection_cmds::wand_options(p, "paint.bucket")?;
     let opacity = opacity(p, "paint.bucket")?;
     let all = b(p, "sampleAllLayers", false) && crate::channel_cmds::target_of(p) == crate::channel_cmds::Target::Pixels;
+    let line_art = b(p, "lineArt", false);
     // Other visible layers can define the region, but the fill still writes only to the target.
-    let region = if all {
+    // A line-art fill always samples up front: its boundary is the ink, not the target's colours.
+    let region = if line_art {
+        let threshold = crate::eraser_cmds::number(p, "paint.bucket", "lineArtThreshold", 0.92, 0.01..=1.0)? as f32;
+        let gap = crate::eraser_cmds::number(p, "paint.bucket", "lineArtGap", 16.0, 0.0..=128.0)? as u32;
+        let grow = crate::eraser_cmds::number(p, "paint.bucket", "lineArtGrow", 2.0, 0.0..=64.0)? as u32;
+        let (area, img) = crate::selection_cmds::sample_rgba8(s, all)?;
+        let region = redrob_photo_algo::selection::line_art_region(&img, area, (x, y), threshold, gap, grow);
+        drop(img);
+        region
+    } else if all {
         let (area, img) = crate::selection_cmds::sample_rgba8(s, true)?;
         let region = redrob_photo_algo::selection::wand_region_with(&img, area, (x, y), tol, contiguous, aa, opts);
         drop(img);
@@ -75,7 +85,7 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
         let area = doc.bounds();
         let sel = doc.selection.clone();
         let (surf, lock) = crate::channel_cmds::target_surface(doc, *active, p)?;
-        let ok = if all && region.is_none() {
+        let ok = if (all || line_art) && region.is_none() {
             false
         } else if let Some((tile, scale, angle, phase)) = &pattern {
             // Render the pattern over the canvas once, then sample it at each filled pixel.
@@ -167,7 +177,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Paint Bucket",
             menu: &[],
             shortcut: None,
-            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","contents":"foreground|pattern"="foreground","color":"#rrggbb"=foreground,"pattern":id|name (contents=pattern),"scale":%=100,"angle":deg,"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
+            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","lineArt":bool=false (fill the area the ink encloses instead of similar colours),"lineArtThreshold":0.01..1=0.92 (luma under which a pixel is ink),"lineArtGap":px=16 (gaps in the ink up to this are closed),"lineArtGrow":px=2 (the fill goes this far under the ink),"contents":"foreground|pattern"="foreground","color":"#rrggbb"=foreground,"pattern":id|name (contents=pattern),"scale":%=100,"angle":deg,"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
             enabled: crate::commands::has_paintable,
             run: bucket,
             journal: true,
