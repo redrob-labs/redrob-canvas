@@ -212,7 +212,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Live Shape Properties",
             [],
             None,
-            "{id?, ids?, radius?: pt, kind?: \"round\"|\"invertedRound\"|\"chamfer\", corners?: [i…], items?: [{id, corners?: [i…]}] (several objects, each with its own corners, in place of ids and corners: the canvas's corner widgets across a selection), sides?: n, polygonAngle?: degrees (counterclockwise from its first vertex straight up), polygonRadius?: pt (centre to vertex), sideLength?: pt (sets the radius), makeSidesEqual?: true (a polygon scaled unevenly: drops the uneven scale and shear, keeping its centre, angle and mean radius), pieStart?, pieEnd?: degrees (an ellipse's pie, counterclockwise from 3 o'clock; 0 to 360 is the whole ellipse), invertPie?: true (swaps them: the other part of the ellipse), arcKind?: \"pie\"|\"chord\"|\"arc\" (how a cut ellipse closes: through the centre, straight from end to start, or open), wholeEllipse?: true (0 to 360 again)} (Live Corners on any path: radius and kind set its corners (anchors that aren't smooth, where two sides, straight or curved (#1144), meet at an angle): `corners` (anchor indices of the path with its corners uncut, counting every subpath's anchors in order: a rectangle's 0 top-left, 1 top-right, 2 bottom-right, 3 bottom-left; a polygon's from the first vertex clockwise), else the corners with a Direct-Selected anchor, else every corner; each radius is drawn no larger than half the corner's shorter side allows; a path that isn't a live shape keeps its uncut outline so its corners stay editable, and is plain again once none is cut; sides: a polygon's, which keep the radius they shared; the polygon params apply in that order: sides, makeSidesEqual, polygonAngle, then sideLength or else polygonRadius)",
+            "{id?, ids?, radius?: pt, kind?: \"round\"|\"invertedRound\"|\"chamfer\", corners?: [i…], items?: [{id, corners?: [i…]}] (several objects, each with its own corners, in place of ids and corners: the canvas's corner widgets across a selection), sides?: n, polygonAngle?: degrees (counterclockwise from its first vertex straight up), polygonRadius?: pt (centre to vertex), sideLength?: pt (sets the radius), makeSidesEqual?: true (a polygon scaled unevenly: drops the uneven scale and shear, keeping its centre, angle and mean radius), pieStart?, pieEnd?: degrees (an ellipse's pie, counterclockwise from 3 o'clock; 0 to 360 is the whole ellipse), invertPie?: true (swaps them: the other part of the ellipse), arcKind?: \"pie\"|\"chord\"|\"arc\" (how a cut ellipse closes: through the centre, straight from end to start, or open), wholeEllipse?: true (0 to 360 again), points?: n (a live star's tips, 2–1000), spokeRatio?: 0.01–1 (its inner radius as a share of the outer), rounding?: 0–1 (rounds every tip and notch), randomized?: 0–1 (moves its vertices off their places), starRadius?: pt (centre to tip), starAngle?: degrees (clockwise from its first tip straight up), spiralRadius?: pt, spiralAngle?: degrees (a live spiral's outer end, clockwise from 3 o'clock), spiralDecay?: % a quarter turn (5–99.99), segments?: n (quarter turns, 2–1000), clockwise?: bool} (Live Corners on any path: radius and kind set its corners (anchors that aren't smooth, where two sides, straight or curved (#1144), meet at an angle): `corners` (anchor indices of the path with its corners uncut, counting every subpath's anchors in order: a rectangle's 0 top-left, 1 top-right, 2 bottom-right, 3 bottom-left; a polygon's from the first vertex clockwise), else the corners with a Direct-Selected anchor, else every corner; each radius is drawn no larger than half the corner's shorter side allows; a path that isn't a live shape keeps its uncut outline so its corners stay editable, and is plain again once none is cut; sides: a polygon's, which keep the radius they shared; the polygon params apply in that order: sides, makeSidesEqual, polygonAngle, then sideLength or else polygonRadius)",
             has_selection,
             set_live_shape
         ),
@@ -1901,6 +1901,19 @@ fn set_live_shape(s: &mut Session, p: &Value) -> Result<Value> {
                 .ok_or_else(|| bad("object.setLiveShape", format!("`arcKind` must be \"pie\", \"chord\" or \"arc\", not {v}")))?,
         ),
     };
+    // A live star's and spiral's parameters.
+    let unit = |k: &str| number(k, |x| (0.0..=1.0).contains(&x), "a share from 0 to 1");
+    let (spoke_ratio, rounding, randomized) = (unit("spokeRatio")?, unit("rounding")?, unit("randomized")?);
+    let (star_radius, star_angle) = (length("starRadius")?, angle("starAngle")?);
+    let (spiral_radius, spiral_angle) = (length("spiralRadius")?, angle("spiralAngle")?);
+    let spiral_decay = number("spiralDecay", |x| (5.0..=99.99).contains(&x), "a percentage from 5 to 99.99")?;
+    let star_points = p.get("points").and_then(Value::as_u64);
+    let spiral_segments = p.get("segments").and_then(Value::as_u64);
+    let spiral_clockwise = p.get("clockwise").and_then(Value::as_bool);
+    let star_given =
+        spoke_ratio.is_some() || rounding.is_some() || randomized.is_some() || star_radius.is_some() || star_angle.is_some() || star_points.is_some();
+    let spiral_given =
+        spiral_radius.is_some() || spiral_angle.is_some() || spiral_decay.is_some() || spiral_segments.is_some() || spiral_clockwise.is_some();
     // A polygon's Polygon Properties: its angle, radius or side length, Make Sides Equal.
     let (polygon_angle, polygon_radius, side) = (angle("polygonAngle")?, length("polygonRadius")?, length("sideLength")?);
     let equal = p.get("makeSidesEqual").and_then(Value::as_bool) == Some(true);
@@ -1929,6 +1942,8 @@ fn set_live_shape(s: &mut Session, p: &Value) -> Result<Value> {
                 return false;
             }
             Some(LiveShape::Ellipse { pie, arc, .. }) if pie_of(*pie) != *pie || arc_kind.is_some_and(|k| k != *arc) => return false,
+            Some(LiveShape::Star { .. }) if star_given => return false,
+            Some(LiveShape::Spiral { .. }) if spiral_given => return false,
             _ => {}
         }
         if radius.is_none() && kind.is_none() {
@@ -1974,6 +1989,53 @@ fn set_live_shape(s: &mut Session, p: &Value) -> Result<Value> {
                     *pie = pie_of(*pie);
                     if let Some(k) = arc_kind {
                         *arc = k;
+                    }
+                }
+                *path = l.to_path();
+            }
+            if let Some(l @ LiveShape::Star { .. }) = live.as_deref_mut()
+                && star_given
+            {
+                if let Some(r) = star_radius {
+                    l.set_star_radius(r);
+                }
+                if let Some(a) = star_angle {
+                    l.set_turned_angle(a);
+                }
+                if let LiveShape::Star { r1, r2, points, rounding: rd, randomized: rz, .. } = l {
+                    if let Some(n) = star_points {
+                        *points = n.clamp(2, 1000) as u32;
+                    }
+                    if let Some(k) = spoke_ratio {
+                        *r2 = *r1 * k.max(0.01);
+                    }
+                    if let Some(v) = rounding {
+                        *rd = v;
+                    }
+                    if let Some(v) = randomized {
+                        *rz = v;
+                    }
+                }
+                *path = l.to_path();
+            }
+            if let Some(l @ LiveShape::Spiral { .. }) = live.as_deref_mut()
+                && spiral_given
+            {
+                if let Some(r) = spiral_radius {
+                    l.set_spiral_radius(r);
+                }
+                if let Some(a) = spiral_angle {
+                    l.set_turned_angle(a);
+                }
+                if let LiveShape::Spiral { decay, segments, clockwise, .. } = l {
+                    if let Some(v) = spiral_decay {
+                        *decay = v;
+                    }
+                    if let Some(n) = spiral_segments {
+                        *segments = n.clamp(2, 1000) as u32;
+                    }
+                    if let Some(c) = spiral_clockwise {
+                        *clockwise = c;
                     }
                 }
                 *path = l.to_path();

@@ -240,6 +240,59 @@ pub fn straight_star_inner_radius(r1: f64, points: u32) -> f64 {
     r1 * (PI / n * 2.0).cos() / (PI / n).cos()
 }
 
+/// A unit in [-1, 1] that depends only on `seed` and `i` (a small integer hash), so a randomised
+/// star keeps its shape from one regeneration to the next.
+fn unit_noise(seed: u32, i: u32) -> f64 {
+    let mut x = seed.wrapping_mul(0x9E37_79B9) ^ i.wrapping_mul(0x85EB_CA6B).wrapping_add(0x1234_5678);
+    x ^= x >> 15;
+    x = x.wrapping_mul(0x2C1B_3C6D);
+    x ^= x >> 12;
+    x = x.wrapping_mul(0x297A_2D39);
+    x ^= x >> 15;
+    f64::from(x >> 8) / f64::from(1u32 << 24) * 2.0 - 1.0
+}
+
+/// A live star: `points` tips (≥ 2) of outer radius `r1` and inner radius `r2` about `center`,
+/// the first tip straight up turned by `rotation_deg` clockwise on screen. `rounding` (0..1)
+/// rounds every tip and notch: each gets handles along its tangent, as long as that share of half
+/// the way to the next vertex (0: sharp). `randomized` (0..1) moves each vertex off its place by
+/// up to that share of the radius, in a pattern `seed` fixes.
+#[allow(clippy::too_many_arguments)]
+pub fn star_live(center: Point, r1: f64, r2: f64, points: u32, rotation_deg: f64, rounding: f64, randomized: f64, seed: u32) -> PathData {
+    let n = points.max(2) * 2;
+    let rot = rotation_deg.to_radians();
+    let (rounding, randomized) = (rounding.clamp(0.0, 1.0), randomized.clamp(0.0, 1.0));
+    let step = TAU / n as f64;
+    let pts: Vec<Point> = (0..n)
+        .map(|i| {
+            let mut r = if i % 2 == 0 { r1 } else { r2 };
+            let mut a = -PI / 2.0 + rot + step * i as f64;
+            if randomized > 0.0 {
+                r *= 1.0 + randomized * 0.5 * unit_noise(seed, 2 * i);
+                a += randomized * step * 0.5 * unit_noise(seed, 2 * i + 1);
+            }
+            Point::new(center.x + r * a.cos(), center.y + r * a.sin())
+        })
+        .collect();
+    if rounding <= 0.0 {
+        return PathData::single(SubPath::polyline(&pts, true));
+    }
+    let count = pts.len();
+    let anchors = (0..count)
+        .map(|i| {
+            let (p, prev, next) = (pts[i], pts[(i + count - 1) % count], pts[(i + 1) % count]);
+            // The tangent runs across the radial direction, forward along the outline.
+            let radial = p - center;
+            let t = Vec2::new(-radial.y, radial.x);
+            let t = if t.hypot() > 1e-12 { t / t.hypot() } else { Vec2::new(1.0, 0.0) };
+            let t = if t.dot(next - prev) < 0.0 { -t } else { t };
+            let (l_in, l_out) = (p.distance(prev) * rounding / 2.0, p.distance(next) * rounding / 2.0);
+            Anchor { p, h_in: p - t * l_in, h_out: p + t * l_out, kind: AnchorKind::Smooth }
+        })
+        .collect();
+    PathData::single(SubPath::new(anchors, true))
+}
+
 /// Open straight line.
 pub fn line(a: Point, b: Point) -> PathData {
     PathData::single(SubPath::polyline(&[a, b], false))

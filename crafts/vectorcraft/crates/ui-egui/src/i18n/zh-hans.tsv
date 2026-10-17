@@ -3967,3 +3967,11 @@ lighting	Light	光源
 	Chord	弓形
 	Close As:	闭合方式:
 	Whole Ellipse	完整椭圆
+	Corners:	角数:
+	Spoke Ratio:	辐条比:
+	Rounded:	圆角:
+	Randomized:	随机化:
+	Decay:	衰减:
+	Segments:	段数:
+	Star Properties:	星形属性:
+	Spiral Properties:	螺旋属性:

@@ -20,7 +20,15 @@ pub fn specs() -> Vec<CommandSpec> {
         ),
         cmd!("shape.ellipse", "Ellipse", [], None, "{x, y, width, height, rotation?: deg (about centre)} → {id}", has_doc, ellipse),
         cmd!("shape.polygon", "Polygon", [], None, "{cx, cy, radius, sides=6, rotation?: deg} → {id}", has_doc, polygon),
-        cmd!("shape.star", "Star", [], None, "{cx, cy, radius1, radius2, points=5, rotation?: deg} → {id}", has_doc, star),
+        cmd!(
+            "shape.star",
+            "Star",
+            [],
+            None,
+            "{cx, cy, radius1, radius2, points=5, rotation?: deg, rounding?: 0..1 (rounds every tip and notch), randomized?: 0..1 (moves the vertices off their places), seed?} → {id} a live star (object.setLiveShape edits it)",
+            has_doc,
+            star
+        ),
         cmd!(
             "shape.flare",
             "Flare",
@@ -31,7 +39,15 @@ pub fn specs() -> Vec<CommandSpec> {
             flare
         ),
         cmd!("shape.line", "Line Segment", [], None, "{x1, y1, x2, y2} → {id}", has_doc, line),
-        cmd!("shape.spiral", "Spiral", [], None, "{cx, cy, radius, decay=80 (%), segments=10, clockwise?} → {id}", has_doc, spiral),
+        cmd!(
+            "shape.spiral",
+            "Spiral",
+            [],
+            None,
+            "{cx, cy, radius, decay=80 (%), segments=10, clockwise?, rotation?: deg} → {id} a live spiral (object.setLiveShape edits it)",
+            has_doc,
+            spiral
+        ),
         cmd!("shape.arc", "Arc", [], None, "{x1, y1, x2, y2, closed?} → {id}", has_doc, arc),
         cmd!(
             "shape.rectangularGrid",
@@ -234,8 +250,12 @@ fn star(s: &mut Session, p: &Value) -> Result<Value> {
     let r1 = f64_req(p, "radius1", "shape.star")?.abs();
     let r2 = f64_or(p, "radius2", r1 / 2.0).abs();
     let n = p.get("points").and_then(Value::as_u64).unwrap_or(5).clamp(2, 1000) as u32;
-    let path = shapes::star(c, r1, r2, n, f64_or(p, "rotation", 0.0));
-    add_art(s, "Star", path_kind(path, None), None)
+    let rounding = f64_or(p, "rounding", 0.0).clamp(0.0, 1.0);
+    let randomized = f64_or(p, "randomized", 0.0).clamp(0.0, 1.0);
+    let seed = p.get("seed").and_then(Value::as_u64).unwrap_or(1) as u32;
+    let xf = Affine::translate(c.to_vec2()) * Affine::rotate(f64_or(p, "rotation", 0.0).to_radians());
+    let live = LiveShape::Star { r1, r2, points: n, rounding, randomized, seed, xf };
+    add_art(s, "Star", path_kind(live.to_path(), Some(live)), None)
 }
 
 /// Flare tool: a lens flare built from radial-gradient paths in Screen mode — a bright centre, a halo
@@ -352,14 +372,14 @@ fn line(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn spiral(s: &mut Session, p: &Value) -> Result<Value> {
     let c = Point::new(f64_req(p, "cx", "shape.spiral")?, f64_req(p, "cy", "shape.spiral")?);
-    let path = shapes::spiral(
-        c,
-        f64_req(p, "radius", "shape.spiral")?,
-        f64_or(p, "decay", 80.0),
-        p.get("segments").and_then(Value::as_u64).unwrap_or(10).clamp(2, 1000) as u32,
-        bool_or(p, "clockwise", true),
-    );
-    add_art(s, "Spiral", path_kind(path, None), None)
+    let live = LiveShape::Spiral {
+        radius: f64_req(p, "radius", "shape.spiral")?.abs(),
+        decay: f64_or(p, "decay", 80.0),
+        segments: p.get("segments").and_then(Value::as_u64).unwrap_or(10).clamp(2, 1000) as u32,
+        clockwise: bool_or(p, "clockwise", true),
+        xf: Affine::translate(c.to_vec2()) * Affine::rotate(f64_or(p, "rotation", 0.0).to_radians()),
+    };
+    add_art(s, "Spiral", path_kind(live.to_path(), Some(live)), None)
 }
 
 fn arc(s: &mut Session, p: &Value) -> Result<Value> {

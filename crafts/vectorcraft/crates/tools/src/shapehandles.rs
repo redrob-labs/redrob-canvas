@@ -2,7 +2,10 @@
 //! on the shape itself, which a drag edits through `object.setLiveShape` (the shape stays live).
 //! An ellipse shows where its arc starts and ends (both at 3 o'clock on a whole ellipse): dragging
 //! one sets that angle, inside the ellipse as a pie, outside as an open arc; Shift keeps to 15°
-//! steps. The canvas draws the handles from the same geometry.
+//! steps. A star shows its first tip and the notch after it: the tip sets the outer radius and
+//! turns the star, the notch the inner radius (the spoke ratio); with Shift the drag rounds the
+//! corners, with Alt it randomises them. A spiral shows its outer end (radius and turn) and its
+//! inner end (how fast it winds in). The canvas draws the handles from the same geometry.
 
 use redrob_vector_doc::{Document, LiveShape, NodeId, NodeKind, Selection};
 use redrob_vector_geom::Point;
@@ -18,6 +21,14 @@ pub enum HandleKind {
     ArcStart,
     /// Where an ellipse's arc ends.
     ArcEnd,
+    /// A star's first tip: its outer radius and its turn.
+    StarTip,
+    /// The notch after a star's first tip: its inner radius.
+    StarNotch,
+    /// A spiral's outer end: its radius and its turn.
+    SpiralOuter,
+    /// A spiral's inner end: its decay.
+    SpiralInner,
 }
 
 /// One handle on one live shape.
@@ -45,12 +56,24 @@ fn handles_of(id: NodeId, live: &LiveShape) -> Vec<ShapeHandle> {
             }
             None => vec![],
         },
+        LiveShape::Star { .. } => match live.star_handles() {
+            Some((tip, notch)) => {
+                vec![ShapeHandle { id, kind: HandleKind::StarTip, at: tip }, ShapeHandle { id, kind: HandleKind::StarNotch, at: notch }]
+            }
+            None => vec![],
+        },
+        LiveShape::Spiral { .. } => match live.spiral_handles() {
+            Some((outer, inner)) => {
+                vec![ShapeHandle { id, kind: HandleKind::SpiralOuter, at: outer }, ShapeHandle { id, kind: HandleKind::SpiralInner, at: inner }]
+            }
+            None => vec![],
+        },
         _ => vec![],
     }
 }
 
 impl ShapeHandles {
-    /// The handles of the selected live ellipses that can be edited, if any.
+    /// The handles of the selected live ellipses, stars and spirals that can be edited, if any.
     pub fn of(doc: &Document, selection: &Selection) -> Option<Self> {
         let mut handles = vec![];
         for id in &selection.objects {
@@ -111,7 +134,7 @@ impl ShapeHandleDrag {
     }
 
     /// The `object.setLiveShape` params for the pointer at `p` with `m` held, and the readout.
-    fn params(&mut self, _cx: &ToolContext, p: Point, m: Mods) -> Option<Value> {
+    fn params(&mut self, cx: &ToolContext, p: Point, m: Mods) -> Option<Value> {
         let id = self.handle.id.0;
         match self.handle.kind {
             HandleKind::ArcStart | HandleKind::ArcEnd => {
@@ -129,6 +152,45 @@ impl ShapeHandleDrag {
                 let key = if self.handle.kind == HandleKind::ArcStart { "pieStart" } else { "pieEnd" };
                 self.label = format!("{}: {a:.1}°", if key == "pieStart" { "Start" } else { "End" });
                 Some(json!({ "id": id, key: a, "arcKind": kind.name() }))
+            }
+            HandleKind::StarTip | HandleKind::StarNotch => {
+                let (r, turn) = self.live.turned_polar(p)?;
+                let radius = self.live.star_radius()?.max(1e-9);
+                // Shift rounds the corners, Alt randomises them: how far the pointer went, as a
+                // share of the radius.
+                let share = ((p - self.start).hypot() / radius).clamp(0.0, 1.0);
+                if m.shift {
+                    self.label = format!("Rounded: {:.0} %", share * 100.0);
+                    return Some(json!({ "id": id, "rounding": share }));
+                }
+                if m.alt {
+                    self.label = format!("Randomized: {:.0} %", share * 100.0);
+                    return Some(json!({ "id": id, "randomized": share }));
+                }
+                if self.handle.kind == HandleKind::StarTip {
+                    let turn = if m.cmd { snap_angle(turn, 15.0) } else { turn };
+                    self.label = format!("Radius: {}\nAngle: {turn:.1}°", cx.len(r));
+                    Some(json!({ "id": id, "starRadius": r, "starAngle": turn }))
+                } else {
+                    let ratio = (r / radius).clamp(0.01, 1.0);
+                    self.label = format!("Spoke Ratio: {:.0} %", ratio * 100.0);
+                    Some(json!({ "id": id, "spokeRatio": ratio }))
+                }
+            }
+            HandleKind::SpiralOuter | HandleKind::SpiralInner => {
+                let (r, turn) = self.live.turned_polar(p)?;
+                if self.handle.kind == HandleKind::SpiralOuter {
+                    let turn = if m.cmd { snap_angle(turn, 15.0) } else { turn };
+                    self.label = format!("Radius: {}\nAngle: {turn:.1}°", cx.len(r));
+                    Some(json!({ "id": id, "spiralRadius": r, "spiralAngle": turn }))
+                } else {
+                    // The inner end's distance from the centre, as a share of the radius, sets how
+                    // fast the spiral winds in.
+                    let outer = self.live.spiral_radius()?.max(1e-9);
+                    let decay = self.live.spiral_decay_for_inner((r / outer).clamp(0.001, 0.999))?;
+                    self.label = format!("Decay: {decay:.1} %");
+                    Some(json!({ "id": id, "spiralDecay": decay }))
+                }
             }
         }
     }

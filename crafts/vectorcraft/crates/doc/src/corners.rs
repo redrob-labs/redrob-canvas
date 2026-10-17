@@ -40,6 +40,9 @@ impl<'a> LiveCorners<'a> {
             }
             Some(l @ LiveShape::Polygon { radii, kinds, .. }) => (Cow::Owned(l.polygon_outline()), Affine::IDENTITY, radii.clone(), kinds.clone()),
             Some(LiveShape::Path { base, radii, kinds }) => (Cow::Borrowed(base), Affine::IDENTITY, radii.clone(), kinds.clone()),
+            // A star's or spiral's corners are the path's own (cutting one makes it a path with
+            // live corners, see [`set_corners`]).
+            Some(LiveShape::Star { .. } | LiveShape::Spiral { .. }) => (Cow::Borrowed(path), Affine::IDENTITY, vec![], vec![]),
             Some(LiveShape::Ellipse { .. } | LiveShape::Line { .. }) => return None,
         };
         let sources = if radii.iter().any(|r| *r > 0.0) {
@@ -158,6 +161,11 @@ pub fn set_corners(path: &mut PathData, live: &mut Option<Box<LiveShape>>, corne
             kinds.clear();
         }
     }
+    // A live star or spiral whose corners are cut keeps its outline as a path with live corners:
+    // the cut corners are then editable, its star parameters no longer.
+    if matches!(live.as_deref(), Some(LiveShape::Star { .. } | LiveShape::Spiral { .. })) {
+        *live = None;
+    }
     let l = live.get_or_insert_with(|| Box::new(LiveShape::Path { base: path.clone(), radii: vec![], kinds: vec![] }));
     // Radii are document lengths and corners circular, also on a rectangle from a file that kept
     // an uneven scale in its transform (#442).
@@ -166,7 +174,7 @@ pub fn set_corners(path: &mut PathData, live: &mut Option<Box<LiveShape>>, corne
         LiveShape::Rectangle { radii, kinds, .. } => edit(radii, kinds, corners, radius, kind),
         LiveShape::Polygon { sides, radii, kinds, .. } => edit_vec(*sides as usize, radii, kinds, corners, radius, kind),
         LiveShape::Path { base, radii, kinds } => edit_vec(base.anchor_count(), radii, kinds, corners, radius, kind),
-        LiveShape::Ellipse { .. } | LiveShape::Line { .. } => return,
+        LiveShape::Ellipse { .. } | LiveShape::Line { .. } | LiveShape::Star { .. } | LiveShape::Spiral { .. } => return,
     }
     match live.as_deref_mut() {
         Some(LiveShape::Path { base, radii, kinds }) if radii.is_empty() && kinds.is_empty() => {

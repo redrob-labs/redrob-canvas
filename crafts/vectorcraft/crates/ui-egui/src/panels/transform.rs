@@ -235,6 +235,14 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 widgets::subheader(ui, tl!("Ellipse Properties:"));
                 pie_rows(app, ui, (*pie, *arc), "xfp-pie");
             }
+            redrob_vector_doc::LiveShape::Star { .. } => {
+                widgets::subheader(ui, tl!("Star Properties:"));
+                ui.horizontal_wrapped(|ui| star_fields(app, ui, live, "xfp-star"));
+            }
+            redrob_vector_doc::LiveShape::Spiral { .. } => {
+                widgets::subheader(ui, tl!("Spiral Properties:"));
+                ui.horizontal_wrapped(|ui| spiral_fields(app, ui, live, "xfp-spiral"));
+            }
             _ => {
                 widgets::subheader(ui, tl!("Shape Properties:"));
                 widgets::dim_label(ui, tl!(n.kind_label()));
@@ -300,6 +308,11 @@ pub(crate) fn pie_rows(app: &mut VectorcraftApp, ui: &mut Ui, (pie, arc): ((f64,
 /// The Control bar's live shape fields for one selected live shape: an ellipse's arc start and end
 /// angles, how the cut closes and Whole Ellipse.
 pub(crate) fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
+    // The Star tool's own options: what the next star drawn gets.
+    if app.session.tool_id() == "star" && app.session.active().is_some_and(|st| st.selection.objects.is_empty()) {
+        star_tool_options(app, ui);
+        return;
+    }
     let Some(n) = first_selected(app) else { return };
     if app.session.active().is_none_or(|st| st.selection.objects.len() != 1) {
         return;
@@ -307,19 +320,87 @@ pub(crate) fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
     let NodeKind::Path { live: Some(live), .. } = &n.kind else { return };
     let t = Tokens::get(ui.ctx());
     let label = |ui: &mut Ui, s: &str| widgets::field_label(ui, egui::RichText::new(s).size(12.0).color(t.text_dim));
-    if let LiveShape::Ellipse { pie, arc, .. } = &**live {
-        for (lbl, key, v) in [(tl!("Start:"), "pieStart", pie.0), (tl!("End:"), "pieEnd", pie.1)] {
-            label(ui, lbl);
-            if let Some(a) = widgets::plain_field(ui, ("cb-arc", key), v, "°", 1, 64.0) {
-                app.run("object.setLiveShape", json!({ key: a })).ok();
+    match &**live {
+        LiveShape::Ellipse { pie, arc, .. } => {
+            for (lbl, key, v) in [(tl!("Start:"), "pieStart", pie.0), (tl!("End:"), "pieEnd", pie.1)] {
+                label(ui, lbl);
+                if let Some(a) = widgets::plain_field(ui, ("cb-arc", key), v, "°", 1, 64.0) {
+                    app.run("object.setLiveShape", json!({ key: a })).ok();
+                }
             }
+            arc_kind_dropdown(app, ui, *arc, "cb-arc");
+            if widgets::flat_button(ui, tl!("Whole Ellipse"), 100.0).clicked() {
+                app.run("object.setLiveShape", json!({"wholeEllipse": true})).ok();
+            }
+            ui.separator();
         }
-        arc_kind_dropdown(app, ui, *arc, "cb-arc");
-        if widgets::flat_button(ui, tl!("Whole Ellipse"), 100.0).clicked() {
-            app.run("object.setLiveShape", json!({"wholeEllipse": true})).ok();
+        LiveShape::Star { .. } => {
+            star_fields(app, ui, live, "cb-star");
+            ui.separator();
         }
-        ui.separator();
+        LiveShape::Spiral { .. } => {
+            spiral_fields(app, ui, live, "cb-spiral");
+            ui.separator();
+        }
+        _ => {}
     }
+}
+
+/// A live star's fields (Control bar and panels), each an `object.setLiveShape` param: corners,
+/// spoke ratio, rounding and randomisation.
+pub(crate) fn star_fields(app: &mut VectorcraftApp, ui: &mut Ui, live: &LiveShape, id: &str) {
+    let LiveShape::Star { r1, r2, points, rounding, randomized, .. } = live else { return };
+    let t = Tokens::get(ui.ctx());
+    let label = |ui: &mut Ui, s: &str| widgets::field_label(ui, egui::RichText::new(s).size(12.0).color(t.text_dim));
+    label(ui, tl!("Corners:"));
+    if let Some(v) = widgets::plain_field(ui, (id, "points"), f64::from(*points), "", 0, 48.0) {
+        app.run("object.setLiveShape", json!({"points": v.round().clamp(2.0, 1000.0) as u64})).ok();
+    }
+    let ratio = if *r1 > 1e-12 { r2 / r1 } else { 0.5 };
+    for (lbl, key, v) in
+        [(tl!("Spoke Ratio:"), "spokeRatio", ratio), (tl!("Rounded:"), "rounding", *rounding), (tl!("Randomized:"), "randomized", *randomized)]
+    {
+        label(ui, lbl);
+        if let Some(v) = widgets::plain_field(ui, (id, key), v * 100.0, "%", 0, 56.0) {
+            app.run("object.setLiveShape", json!({ key: (v / 100.0).clamp(0.0, 1.0) })).ok();
+        }
+    }
+}
+
+/// A live spiral's fields (Control bar and panels): decay and segments.
+pub(crate) fn spiral_fields(app: &mut VectorcraftApp, ui: &mut Ui, live: &LiveShape, id: &str) {
+    let LiveShape::Spiral { decay, segments, .. } = live else { return };
+    let t = Tokens::get(ui.ctx());
+    let label = |ui: &mut Ui, s: &str| widgets::field_label(ui, egui::RichText::new(s).size(12.0).color(t.text_dim));
+    label(ui, tl!("Decay:"));
+    if let Some(v) = widgets::plain_field(ui, (id, "decay"), *decay, "%", 1, 56.0) {
+        app.run("object.setLiveShape", json!({"spiralDecay": v.clamp(5.0, 99.99)})).ok();
+    }
+    label(ui, tl!("Segments:"));
+    if let Some(v) = widgets::plain_field(ui, (id, "segments"), f64::from(*segments), "", 0, 48.0) {
+        app.run("object.setLiveShape", json!({"segments": v.round().clamp(2.0, 1000.0) as u64})).ok();
+    }
+}
+
+/// The Star tool's options in the Control bar (`tool.setOption`): corners, spoke ratio, rounding
+/// and randomisation of the next star drawn.
+fn star_tool_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let opts = app.session.tool_options();
+    let t = Tokens::get(ui.ctx());
+    let label = |ui: &mut Ui, s: &str| widgets::field_label(ui, egui::RichText::new(s).size(12.0).color(t.text_dim));
+    label(ui, tl!("Corners:"));
+    if let Some(v) = widgets::plain_field(ui, ("cb-startool", "points"), opts["points"].as_f64().unwrap_or(5.0), "", 0, 48.0) {
+        app.run("tool.setOption", json!({"key": "points", "value": v.round().clamp(3.0, 1000.0) as u64})).ok();
+    }
+    for (lbl, key, default) in [(tl!("Spoke Ratio:"), "starRatio", 0.5), (tl!("Rounded:"), "rounding", 0.0), (tl!("Randomized:"), "randomized", 0.0)]
+    {
+        label(ui, lbl);
+        let v = opts[key].as_f64().unwrap_or(default);
+        if let Some(v) = widgets::plain_field(ui, ("cb-startool", key), v * 100.0, "%", 0, 56.0) {
+            app.run("tool.setOption", json!({"key": key, "value": (v / 100.0).clamp(0.0, 1.0)})).ok();
+        }
+    }
+    ui.separator();
 }
 
 /// A live polygon's Polygon Properties (Transform and Properties panels): its side count, angle
