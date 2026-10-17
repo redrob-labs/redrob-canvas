@@ -3896,3 +3896,10 @@ curves	Smooth	スムーズ
 	Diagonals	対角線
 	Lines:	線数:
 	Split View	分割表示
+	No Dynamics Preset	ダイナミクスプリセットなし
+	Dynamics:	ダイナミクス:
+	Applied dynamics preset {name} ({note})	ダイナミクスプリセット {name} を適用しました ({note})
+	Applied dynamics preset {name}	ダイナミクスプリセット {name} を適用しました
+	Save the brush's dynamics as a new preset	ブラシのダイナミクスを新しいプリセットとして保存
+	Delete this dynamics preset	このダイナミクスプリセットを削除
+	Velocity	速度

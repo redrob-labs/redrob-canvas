@@ -3223,3 +3223,10 @@ curves	Smooth	Glätten
 	Diagonals	Diagonalen
 	Lines:	Linien:
 	Split View	Geteilte Ansicht
+	No Dynamics Preset	Keine Dynamikvorgabe
+	Dynamics:	Dynamik:
+	Applied dynamics preset {name} ({note})	Dynamikvorgabe {name} angewendet ({note})
+	Applied dynamics preset {name}	Dynamikvorgabe {name} angewendet
+	Save the brush's dynamics as a new preset	Pinseldynamik als neue Vorgabe speichern
+	Delete this dynamics preset	Diese Dynamikvorgabe löschen
+	Velocity	Geschwindigkeit

@@ -4010,3 +4010,10 @@ layerLabel	No Color	Sem cor
 	Diagonals	Diagonais
 	Lines:	Linhas:
 	Split View	Visualização dividida
+	No Dynamics Preset	Sem predefinição de dinâmica
+	Dynamics:	Dinâmica:
+	Applied dynamics preset {name} ({note})	Predefinição de dinâmica {name} aplicada ({note})
+	Applied dynamics preset {name}	Predefinição de dinâmica {name} aplicada
+	Save the brush's dynamics as a new preset	Salvar a dinâmica do pincel como nova predefinição
+	Delete this dynamics preset	Excluir esta predefinição de dinâmica
+	Velocity	Velocidade

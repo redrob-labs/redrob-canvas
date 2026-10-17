@@ -3829,3 +3829,10 @@ navigator	Zoom	Zvětšení
 	Diagonals	Diagonály
 	Lines:	Čar:
 	Split View	Rozdělený náhled
+	No Dynamics Preset	Bez předvolby dynamiky
+	Dynamics:	Dynamika:
+	Applied dynamics preset {name} ({note})	Použita předvolba dynamiky {name} ({note})
+	Applied dynamics preset {name}	Použita předvolba dynamiky {name}
+	Save the brush's dynamics as a new preset	Uložit dynamiku štětce jako novou předvolbu
+	Delete this dynamics preset	Smazat tuto předvolbu dynamiky
+	Velocity	Rychlost

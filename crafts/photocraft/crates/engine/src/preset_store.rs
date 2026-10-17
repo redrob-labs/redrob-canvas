@@ -67,6 +67,10 @@ pub const MAX_INDEX_BYTES: u64 = 4 << 20;
 pub const ACTIONS_FILE: &str = "actions.json";
 /// Largest Actions file read or written.
 pub const MAX_ACTIONS_BYTES: u64 = 16 << 20;
+/// Paint dynamics preset files (`<name>-<hash>.rdyn`, see `redrob_photo_paint::dynamics_preset`).
+pub const DYNAMICS_EXT: &str = redrob_photo_paint::dynamics_preset::FILE_EXT;
+/// Largest dynamics preset file read or written.
+pub const MAX_DYNAMICS_BYTES: u64 = 1 << 20;
 /// The whole store never grows beyond this; further groups are skipped with a warning.
 pub const MAX_STORE_BYTES: u64 = 2 << 30;
 /// Largest tip side accepted from disk.
@@ -385,6 +389,33 @@ pub fn group_file_name(group: &str) -> String {
     format!("{stem}-{}.{GROUP_EXT}", &h[..8])
 }
 
+/// A dynamics preset's file name, built like [`group_file_name`] from its (case-folded) name.
+pub fn dynamics_file_name(name: &str) -> String {
+    let key = name.trim().to_lowercase();
+    let mut stem: String = name.trim().chars().map(|c| if c.is_ascii_alphanumeric() || matches!(c, ' ' | '_' | '-') { c } else { '_' }).take(48).collect();
+    stem = stem.trim().to_string();
+    if stem.is_empty() {
+        stem = "Dynamics".into();
+    }
+    let h = blake3::hash(key.as_bytes()).to_hex();
+    format!("{stem}-{}.{DYNAMICS_EXT}", &h[..8])
+}
+
+/// Every readable dynamics preset in the store, by file name order; unreadable files are warned.
+fn load_dynamics(backend: &dyn PresetBackend, files: &[(String, u64)], warnings: &mut Vec<String>) -> Vec<redrob_photo_paint::DynamicsPreset> {
+    let suffix = format!(".{DYNAMICS_EXT}");
+    let mut names: Vec<&String> = files.iter().map(|(n, _)| n).filter(|n| !n.contains('/') && n.ends_with(&suffix)).collect();
+    names.sort();
+    let mut out = Vec::new();
+    for name in names {
+        match backend.read(name, MAX_DYNAMICS_BYTES).and_then(|b| redrob_photo_paint::DynamicsPreset::from_json(&b)) {
+            Ok(p) => out.push(redrob_photo_paint::DynamicsPreset { builtin: false, ..p }),
+            Err(e) => warnings.push(format!("dynamics presets: {name} skipped: {e}")),
+        }
+    }
+    out
+}
+
 /// A preset bitmap as the settings hold it: embedded, or already a store reference.
 enum Bitmap<'a> {
     Full(&'a GrayTile),
@@ -568,6 +599,8 @@ pub struct Opened {
     pub warnings: Vec<String>,
     /// Recorded actions (`actions.json`). Empty when the file is missing or unreadable.
     pub actions: Vec<crate::actions_cmds::Action>,
+    /// The user's paint dynamics presets (`*.rdyn`).
+    pub dynamics: Vec<redrob_photo_paint::DynamicsPreset>,
 }
 
 /// Load a store (any thread; the desktop app does this in the background at start).
@@ -644,6 +677,7 @@ pub fn open(backend: Box<dyn PresetBackend>) -> Opened {
     let loaded_actions = load_actions(backend.as_ref(), &mut warnings);
     let actions_skipped = loaded_actions.is_none();
     let actions = loaded_actions.unwrap_or_default();
+    let dynamics = load_dynamics(backend.as_ref(), &files, &mut warnings);
     let mut store = PresetStore {
         backend,
         synced_rev: None,
@@ -710,7 +744,7 @@ pub fn open(backend: Box<dyn PresetBackend>) -> Opened {
     let hidden_builtins = index.as_ref().map(|i| i.hidden_builtins.clone()).unwrap_or_default();
     let order = index.as_ref().map(|i| i.order.clone()).unwrap_or_default();
     store.index = index;
-    Opened { store, presets, hidden_builtins, order, warnings, actions }
+    Opened { store, presets, hidden_builtins, order, warnings, actions, dynamics }
 }
 
 /// `actions.json`: a missing file is an empty list. Anything else unreadable is a warning.
@@ -1073,6 +1107,20 @@ impl PresetStore {
             Err(e) => self.warnings.push(format!("Couldn't save actions: {e}")),
         }
     }
+
+    /// Write a dynamics preset as its own `.rdyn` file (replacing one of the same name).
+    pub fn write_dynamics(&self, p: &redrob_photo_paint::DynamicsPreset) -> Result<(), String> {
+        let bytes = p.to_json()?;
+        if bytes.len() as u64 > MAX_DYNAMICS_BYTES {
+            return Err(format!("the dynamics preset is too large to save ({} KB limit)", MAX_DYNAMICS_BYTES >> 10));
+        }
+        self.backend.write(&dynamics_file_name(&p.name), &bytes)
+    }
+
+    /// Delete a dynamics preset's file; a missing file is fine.
+    pub fn remove_dynamics(&self, name: &str) -> Result<(), String> {
+        self.backend.remove(&dynamics_file_name(name))
+    }
 }
 
 fn builtin_names() -> &'static [String] {
@@ -1091,7 +1139,14 @@ impl Session {
     /// built-in of the same name; presets created before the store finished loading win), hide
     /// deleted built-ins, then sync. Returns the load warnings.
     pub fn attach_preset_store(&mut self, opened: Opened) -> Vec<String> {
-        let Opened { store, presets, hidden_builtins, order, mut warnings, actions: disk } = opened;
+        let Opened { store, presets, hidden_builtins, order, mut warnings, actions: disk, dynamics } = opened;
+        // Disk dynamics presets replace a built-in or in-memory preset of the same name.
+        for d in dynamics {
+            match self.tools.dynamics_presets.iter_mut().find(|x| x.name.eq_ignore_ascii_case(&d.name)) {
+                Some(x) => *x = d,
+                None => self.tools.dynamics_presets.push(d),
+            }
+        }
         let lib = &mut self.tools.presets;
         lib.retain(|p| !(p.builtin && hidden_builtins.iter().any(|h| h.eq_ignore_ascii_case(&p.name))));
         for p in presets {

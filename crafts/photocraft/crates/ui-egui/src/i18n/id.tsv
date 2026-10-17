@@ -3214,3 +3214,10 @@ curves	Smooth	Haluskan
 	Diagonals	Diagonal
 	Lines:	Garis:
 	Split View	Tampilan terpisah
+	No Dynamics Preset	Tanpa prasetel dinamika
+	Dynamics:	Dinamika:
+	Applied dynamics preset {name} ({note})	Prasetel dinamika {name} diterapkan ({note})
+	Applied dynamics preset {name}	Prasetel dinamika {name} diterapkan
+	Save the brush's dynamics as a new preset	Simpan dinamika kuas sebagai prasetel baru
+	Delete this dynamics preset	Hapus prasetel dinamika ini
+	Velocity	Kecepatan

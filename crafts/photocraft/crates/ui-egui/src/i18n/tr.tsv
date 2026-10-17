@@ -3950,3 +3950,10 @@ cameraData	Lens	Lens
 	Diagonals	Köşegenler
 	Lines:	Çizgi:
 	Split View	Bölünmüş görünüm
+	No Dynamics Preset	Dinamik ön ayarı yok
+	Dynamics:	Dinamik:
+	Applied dynamics preset {name} ({note})	{name} dinamik ön ayarı uygulandı ({note})
+	Applied dynamics preset {name}	{name} dinamik ön ayarı uygulandı
+	Save the brush's dynamics as a new preset	Fırça dinamiğini yeni ön ayar olarak kaydet
+	Delete this dynamics preset	Bu dinamik ön ayarını sil
+	Velocity	Hız

@@ -3192,3 +3192,10 @@ curves	Smooth	Сгладить
 	Diagonals	Диагонали
 	Lines:	Линий:
 	Split View	Разделённый просмотр
+	No Dynamics Preset	Без набора динамики
+	Dynamics:	Динамика:
+	Applied dynamics preset {name} ({note})	Применён набор динамики {name} ({note})
+	Applied dynamics preset {name}	Применён набор динамики {name}
+	Save the brush's dynamics as a new preset	Сохранить динамику кисти как новый набор
+	Delete this dynamics preset	Удалить этот набор динамики
+	Velocity	Скорость

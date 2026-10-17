@@ -4340,3 +4340,10 @@ shape	Appearance	Aspetto
 	Diagonals	Diagonali
 	Lines:	Linee:
 	Split View	Vista divisa
+	No Dynamics Preset	Nessun predefinito di dinamica
+	Dynamics:	Dinamica:
+	Applied dynamics preset {name} ({note})	Predefinito di dinamica {name} applicato ({note})
+	Applied dynamics preset {name}	Predefinito di dinamica {name} applicato
+	Save the brush's dynamics as a new preset	Salva la dinamica del pennello come nuovo predefinito
+	Delete this dynamics preset	Elimina questo predefinito di dinamica
+	Velocity	Velocità

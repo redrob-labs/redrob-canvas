@@ -3920,3 +3920,10 @@ curves	Smooth	Εξομάλυνση
 	Diagonals	Διαγώνιοι
 	Lines:	Γραμμές:
 	Split View	Διαιρεμένη προβολή
+	No Dynamics Preset	Χωρίς προεπιλογή δυναμικής
+	Dynamics:	Δυναμική:
+	Applied dynamics preset {name} ({note})	Εφαρμόστηκε η προεπιλογή δυναμικής {name} ({note})
+	Applied dynamics preset {name}	Εφαρμόστηκε η προεπιλογή δυναμικής {name}
+	Save the brush's dynamics as a new preset	Αποθήκευση της δυναμικής του πινέλου ως νέα προεπιλογή
+	Delete this dynamics preset	Διαγραφή αυτής της προεπιλογής δυναμικής
+	Velocity	Ταχύτητα

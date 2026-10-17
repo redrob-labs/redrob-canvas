@@ -89,13 +89,24 @@ fn import_abr(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn add_abr_presets(s: &mut Session, p: &Value, group: String, imp: redrob_photo_io::abr_map::AbrImport) -> Result<Value> {
+    let names = add_imported_presets(s, p, &group, imp.presets, "brush.presets.importAbr")?;
+    // Distinct folder paths the file brought (its Photoshop folders, nested inside `group`).
+    let folders: std::collections::BTreeSet<&[String]> =
+        s.tools.presets.iter().filter(|x| !x.builtin && x.group == group).flat_map(|x| (1..=x.folder.len()).filter_map(|d| x.folder.get(..d))).collect();
+    let folders = folders.len();
+    Ok(json!({ "group": group, "imported": names, "count": names.len(), "folders": folders, "version": imp.version, "warnings": imp.warnings }))
+}
+
+/// Add imported presets to the library as group `group` (replacing a group of that name unless
+/// `replace` is false) and make the first current when `select`. Returns the final names.
+fn add_imported_presets(s: &mut Session, p: &Value, group: &str, presets: Vec<redrob_photo_paint::BrushPreset>, cmd: &str) -> Result<Vec<String>> {
     // Re-importing a file replaces its group instead of duplicating it.
     if p.get("replace").and_then(Value::as_bool).unwrap_or(true) {
         s.tools.presets.retain(|x| x.builtin || x.group != group);
     }
     let mut taken: Vec<String> = s.tools.presets.iter().map(|x| x.name.clone()).collect();
-    let mut names = Vec::with_capacity(imp.presets.len());
-    for mut preset in imp.presets {
+    let mut names = Vec::with_capacity(presets.len());
+    for mut preset in presets {
         preset.name = unique(&preset.name, &taken);
         taken.push(preset.name.clone());
         names.push(preset.name.clone());
@@ -107,15 +118,37 @@ fn add_abr_presets(s: &mut Session, p: &Value, group: String, imp: redrob_photo_
         && let Some(pr) = redrob_photo_paint::presets::find(&s.tools.presets, first)
     {
         let mut b = pr.brush.clone().picked_over(&s.tools.brush);
-        s.load_brush_tips(&mut b).map_err(|e| bad("brush.presets.importAbr", e))?;
+        s.load_brush_tips(&mut b).map_err(|e| bad(cmd, e))?;
         s.tools.brush = b;
         s.tools.brush_changed();
     }
-    // Distinct folder paths the file brought (its Photoshop folders, nested inside `group`).
-    let folders: std::collections::BTreeSet<&[String]> =
-        s.tools.presets.iter().filter(|x| !x.builtin && x.group == group).flat_map(|x| (1..=x.folder.len()).filter_map(|d| x.folder.get(..d))).collect();
-    let folders = folders.len();
-    Ok(json!({ "group": group, "imported": names, "count": names.len(), "folders": folders, "version": imp.version, "warnings": imp.warnings }))
+    Ok(names)
+}
+
+/// `brush.presets.importBrushFile`: a bitmap brush (`.gbr`) or an animated image hose (`.gih`)
+/// joins the library as one preset in a group named after the file; a hose paints with the cell
+/// its selection modes pick per dab (see `redrob_photo_paint::ImageHose`).
+fn import_brush_file(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "brush.presets.importBrushFile";
+    let (bytes, stem) = file_bytes(p, cmd, ".gbr or .gih file")?;
+    let file_name = match p.get("fileName") {
+        None => None,
+        Some(v) => Some(v.as_str().map(str::trim).filter(|n| !n.is_empty()).ok_or_else(|| bad(cmd, "`fileName` must be a non-empty string"))?),
+    };
+    let stem = if stem.is_empty() {
+        file_name.and_then(|n| std::path::Path::new(n).file_stem()).map(|s| s.to_string_lossy().trim().to_string()).unwrap_or_default()
+    } else {
+        stem
+    };
+    let group = match p.get("group") {
+        Some(v) => v.as_str().map(str::trim).filter(|g| !g.is_empty()).ok_or_else(|| bad(cmd, "`group` must be a non-empty string"))?.to_string(),
+        None if !stem.is_empty() => stem.clone(),
+        None => "Imported Brushes".to_string(),
+    };
+    let imp = redrob_photo_io::gbr::read_brush_file(&bytes, &group, &stem).map_err(|e| bad(cmd, e))?;
+    let animated = imp.presets.iter().any(|x| x.brush.hose.is_some());
+    let names = add_imported_presets(s, p, &group, imp.presets, cmd)?;
+    Ok(json!({ "group": group, "imported": names, "count": names.len(), "animated": animated, "warnings": imp.warnings }))
 }
 
 /// The image's paint amount (darkness × alpha of its composite, as Define Brush Preset reads a
@@ -220,6 +253,16 @@ pub fn specs() -> Vec<CommandSpec> {
             params: r##"{"path":"image file (PNG, JPEG, TIFF, PSD…)"?,"data":base64 bytes?,"fileName":string? (with data: the file's name, for its format and the default preset name),"name":string?=file name,"select":bool=true (make it the current brush)} → {name, width, height}"##,
             enabled: always,
             run: import_image,
+            journal: true,
+        },
+        CommandSpec {
+            id: "brush.presets.importBrushFile",
+            label: "Import Brush File…",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"path":".gbr or .gih file"?,"data":base64 bytes?,"fileName":string? (with data: the file's name, for the default group),"group":string?=file name,"replace":bool=true (replace a group of the same name),"select":bool=false (make the imported preset current)} → {group, imported, count, animated (a .gih image hose), warnings}"##,
+            enabled: always,
+            run: import_brush_file,
             journal: true,
         },
         CommandSpec {

@@ -263,8 +263,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Bitmap tips from .gbr, .gih and .abr; initial size scale, rotation and spacing per tip; all tips shown in one chooser."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/io/src/abr_map.rs"
-gap = "ABR tips and defined-from-selection tips only; no .gbr/.gih readers"
+ours_where = "crafts/photocraft/crates/io/src/abr_map.rs, crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs (importBrushFile)"
+gap = "ABR, .gbr and .gih tips import (a .gih becomes an animated tip set whose selection modes pick the cell per dab); no per-tip initial scale/rotation fields in one chooser (size, angle and spacing live on the preset)"
 priority = 1
 
 [[feature]]

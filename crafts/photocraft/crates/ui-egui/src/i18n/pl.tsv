@@ -3818,3 +3818,10 @@ curves	Smooth	Wygładź
 	Diagonals	Przekątne
 	Lines:	Linii:
 	Split View	Widok podzielony
+	No Dynamics Preset	Brak ustawienia dynamiki
+	Dynamics:	Dynamika:
+	Applied dynamics preset {name} ({note})	Zastosowano ustawienie dynamiki {name} ({note})
+	Applied dynamics preset {name}	Zastosowano ustawienie dynamiki {name}
+	Save the brush's dynamics as a new preset	Zapisz dynamikę pędzla jako nowe ustawienie
+	Delete this dynamics preset	Usuń to ustawienie dynamiki
+	Velocity	Prędkość

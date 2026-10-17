@@ -22,6 +22,7 @@ pub mod bg_erase;
 pub mod brush;
 pub mod curve;
 pub mod dynamics;
+pub mod dynamics_preset;
 pub mod mixer;
 pub mod outline;
 pub mod presets;
@@ -34,10 +35,11 @@ pub mod symmetry;
 pub mod tile;
 
 pub use brush::{
-    BrushPreset, BrushSettings, ColorDynamics, Control, DualBrush, Dynamic, MAX_BRUSH_SIZE, MAX_SCATTER, MaskMode, Pattern, PatternStyle, Pose, PresetCaptures,
-    Scattering, SectionLocks, ShapeDynamics, Smoothing, Texture, TipShape, Transfer,
+    BrushPreset, BrushSettings, ColorDynamics, Control, DualBrush, Dynamic, HoseDimension, HoseSelection, ImageHose, MAX_BRUSH_SIZE, MAX_SCATTER, MaskMode,
+    Pattern, PatternStyle, Pose, PresetCaptures, Scattering, SectionLocks, ShapeDynamics, Smoothing, Texture, TipShape, Transfer,
 };
 pub use curve::ResponseCurve;
+pub use dynamics_preset::{DynInput, DynOutput, DynamicsPreset, DynamicsRow};
 pub use mixer::MixerSettings;
 pub use render::{BrushContext, StrokeRenderer, UnionLive, grid_center, grid_square, render_stroke};
 pub use tile::{GrayTile, StoredTile};
@@ -106,6 +108,8 @@ pub struct Dab {
     /// Mixer Brush multipliers of Wet and Mix (Transfer › Wetness/Mix Jitter), 1 = as set.
     pub wet: f32,
     pub mix: f32,
+    /// Image hose cell this dab paints with ([`BrushSettings::hose`]); 0 for a plain tip.
+    pub cell: u32,
 }
 
 impl Dab {
@@ -127,6 +131,7 @@ impl Dab {
             proj_scale: 1.0,
             wet: 1.0,
             mix: 1.0,
+            cell: 0,
         }
     }
 }

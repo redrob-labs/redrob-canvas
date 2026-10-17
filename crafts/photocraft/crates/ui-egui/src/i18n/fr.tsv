@@ -3227,3 +3227,10 @@ curves	Smooth	Lisser
 	Diagonals	Diagonales
 	Lines:	Lignes :
 	Split View	Vue partagée
+	No Dynamics Preset	Aucun préréglage de dynamique
+	Dynamics:	Dynamique :
+	Applied dynamics preset {name} ({note})	Préréglage de dynamique {name} appliqué ({note})
+	Applied dynamics preset {name}	Préréglage de dynamique {name} appliqué
+	Save the brush's dynamics as a new preset	Enregistrer la dynamique du pinceau comme nouveau préréglage
+	Delete this dynamics preset	Supprimer ce préréglage de dynamique
+	Velocity	Vitesse

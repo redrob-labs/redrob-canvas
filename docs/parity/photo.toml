@@ -298,8 +298,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-dynamics.html"
 behaviour = "A dynamics preset maps input sensors (pressure, velocity, direction, tilt, wheel, random, fade) onto brush properties (opacity, size, angle, colour, hardness, force, aspect ratio, spacing, rate, flow, jitter) through a matrix of checkboxes plus per-property curves; presets such as Pressure Opacity, Velocity Tapering, Track Direction ship by default and users create their own in a dynamics editor; fade length and repeat mode and colour-from-gradient live in the tool options."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/pressure_curve_ui.rs, crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
-gap = "pressure, tilt, velocity and fade drive size/opacity/flow/angle/scatter via the brush panel; no saveable dynamics presets with editable per-sensor curves, no colour-from-gradient along the stroke"
+ours_where = "crafts/photocraft/crates/paint/src/dynamics_preset.rs, crafts/photocraft/crates/paint/src/dynamics.rs (Control::Velocity), crafts/photocraft/crates/engine/src/dynamics_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs (.rdyn), crafts/photocraft/crates/ui-egui/src/brush_panel.rs (Dynamics row)"
+gap = "named dynamics presets (inputs pressure/velocity/direction/tilt/wheel/random/fade onto opacity/size/angle/colour/aspect/flow/jitter, per-row curve and minimum) with 9 built-ins, saved as .rdyn in the preset store and applied from the brush panel; hardness, force, spacing and rate outputs have no per-dab brush dynamic and are reported as unmapped; no matrix editor dialog yet (presets are edited through brush.dynamics.save / the brush sections), no colour-from-gradient along the stroke"
 priority = 1
 
 [[feature]]
@@ -490,8 +490,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-brushes.html"
 behaviour = "Brushes are parametric (editor: shape, radius, spikes, hardness, aspect, angle, spacing), bitmap (.gbr grayscale or colour), animated image hoses (.gih cycling cells by pressure/direction/random), or the clipboard image; .abr import; bracket keys and a configurable wheel resize the active brush."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/presets.rs, crafts/photocraft/crates/engine/src/brush_preset_cmds.rs (importAbr, importImage), crafts/photocraft/crates/ui-egui/src/brush_preset_dialog.rs"
-gap = "ABR and image brushes yes; no animated image-hose brushes, no .gbr/.gih files"
+ours_where = "crafts/photocraft/crates/paint/src/presets.rs, crafts/photocraft/crates/io/src/gbr.rs (.gbr/.gih readers), crafts/photocraft/crates/paint/src/brush.rs (ImageHose), crafts/photocraft/crates/paint/src/dynamics.rs (hose_cell), crafts/photocraft/crates/engine/src/preset_import_cmds.rs (importAbr, importImage, importBrushFile), crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
+gap = "ABR, image, .gbr and .gih (animated hose: incremental/angular/random/velocity/pressure/tilt cell selection per dimension) brushes import from the Brushes panel and File > Open; colour .gbr/.gih cells paint with the brush colour (their colours become the mask); no parametric brush editor (spikes), clipboard brush is Define Brush Preset only"
 priority = 1
 
 [[feature]]

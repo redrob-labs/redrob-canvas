@@ -4138,3 +4138,10 @@ cameraRaw	Yellow	Sárga
 	Diagonals	Átlók
 	Lines:	Vonalak:
 	Split View	Osztott nézet
+	No Dynamics Preset	Nincs dinamika-előbeállítás
+	Dynamics:	Dinamika:
+	Applied dynamics preset {name} ({note})	A(z) {name} dinamika-előbeállítás alkalmazva ({note})
+	Applied dynamics preset {name}	A(z) {name} dinamika-előbeállítás alkalmazva
+	Save the brush's dynamics as a new preset	Az ecset dinamikájának mentése új előbeállításként
+	Delete this dynamics preset	Ennek a dinamika-előbeállításnak a törlése
+	Velocity	Sebesség
