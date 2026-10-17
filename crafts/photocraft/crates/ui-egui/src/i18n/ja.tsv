@@ -3915,3 +3915,4 @@ curves	Smooth	スムーズ
 	Smooth Pressure	筆圧をスムージング
 	Smooth the pen pressure along with the position	位置と一緒に筆圧もスムージングする
 	Drawing Angle	描画角度
+	Erase with the current brush (Clear mode)	現在のブラシで消す (消去モード)

@@ -1546,9 +1546,9 @@ name = "Erase mode (E)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Any preset erases when the erase toggle is on; separate eraser presets exist too."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/eraser_ui.rs"
-gap = "dedicated eraser tool, no erase toggle on the current preset"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/paint_mouse.rs, crafts/photocraft/crates/ui-egui/src/eraser_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]

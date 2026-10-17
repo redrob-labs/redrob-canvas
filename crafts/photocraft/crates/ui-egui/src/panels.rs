@@ -1005,6 +1005,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             opt_label(ui, tl!("Mode"));
                             let held = app.held_erase;
                             paint_mode_dropdown(ui, "brush-mode", b, &mut app.ui.tool_options.brush_clear, held);
+                            erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
                         ui.add_enabled_ui(!block, |ui| {
                             percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, 62.0);
@@ -1041,6 +1042,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         opt_label(ui, tl!("Mode"));
                         let held = app.held_erase;
                         paint_mode_dropdown(ui, "pencil-mode", b, &mut app.ui.tool_options.pencil_clear, held);
+                        erase_toggle(ui, &mut app.ui.tool_options.pencil_clear, held);
                         percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, if t.pro { 62.0 } else { 66.0 });
                         opt_label(ui, tl!("Smoothing"));
                         smoothing_field(ui, b, if t.pro { 58.0 } else { 66.0 });
@@ -1065,6 +1067,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             opt_label(ui, tl!("Mode"));
                             let held = app.held_erase;
                             paint_mode_dropdown(ui, "brush-mode", b, &mut app.ui.tool_options.brush_clear, held);
+                            erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
                         // A Pencil-mode Eraser is always hard and at full flow (Photoshop).
                         let fixed = block || crate::eraser_ui::pencil_mode(app, app.ui.tool);
@@ -3882,6 +3885,15 @@ fn paint_mode_dropdown(ui: &mut egui::Ui, id: &str, b: &mut redrob_photo_engine:
         if let Some(m) = mode {
             b.mode = m;
         }
+    }
+}
+
+/// Options-bar erase toggle beside the Mode dropdown: the current preset erases (Clear mode) while
+/// it is on, so any brush doubles as an eraser without switching tools. Lit too while the erase
+/// key is held.
+fn erase_toggle(ui: &mut egui::Ui, clear: &mut bool, held: bool) {
+    if icons::button(ui, "eraser", 24.0, *clear || held, tl!("Erase with the current brush (Clear mode)")).clicked() {
+        *clear = !*clear;
     }
 }
 
