@@ -44,7 +44,7 @@ pub fn close(ui: &mut crate::state::UiState) {
 
 /// The presets shown around the ring: those carrying the palette's tag (every preset when no tag
 /// is chosen), the current preset always among them, at most [`PRESET_SLOTS`].
-pub fn ring_presets<'a>(app: &'a PhotocraftApp) -> Vec<&'a BrushPreset> {
+pub fn ring_presets(app: &PhotocraftApp) -> Vec<&BrushPreset> {
     let tag = app.ui.popup_tag.trim();
     let session = &app.session;
     let mut list: Vec<&BrushPreset> = session
