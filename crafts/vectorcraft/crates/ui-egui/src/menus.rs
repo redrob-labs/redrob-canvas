@@ -253,6 +253,9 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ("view.presentation", "Presentation Mode", "Shift+F", "{}"),
     ("view.screenMode", "Screen Mode", "F", "{mode?: 0..2} (no param cycles)"),
     ("view.rotateReset", "Reset Rotate View", "Cmd+Shift+1", "{}"),
+    ("view.flipHorizontal", "Flip Horizontal", "", "{} mirror the view left to right (View › Canvas Orientation); toggles"),
+    ("view.flipVertical", "Flip Vertical", "", "{} mirror the view top to bottom (View › Canvas Orientation); toggles"),
+    ("view.flipReset", "Reset Canvas Orientation", "", "{} undo both view flips"),
     ("window.control", "Control", "", "{}"),
     ("window.toolbar", "Tools", "", "{}"),
     (
@@ -1181,6 +1184,17 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
                 v.rotation = 0.0;
             }
             Ok(Value::Null)
+        }
+        "view.flipHorizontal" | "view.flipVertical" | "view.flipReset" => {
+            let flipped = app.view_mut().map(|v| {
+                match id {
+                    "view.flipHorizontal" => v.flip_h = !v.flip_h,
+                    "view.flipVertical" => v.flip_v = !v.flip_v,
+                    _ => (v.flip_h, v.flip_v) = (false, false),
+                }
+                (v.flip_h, v.flip_v)
+            });
+            Ok(flipped.map_or(Value::Null, |(h, v)| json!({ "horizontal": h, "vertical": v })))
         }
         "window.control" => flag(&mut app.ui.control_bar),
         "window.toolbar" => flag(&mut app.ui.toolbar),
@@ -2577,6 +2591,14 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Actual Size", "view.actualSize"),
                 Sep,
                 c("Reset Rotate View", "view.rotateReset"),
+                sub(
+                    "Canvas Orientation",
+                    vec![
+                        c("Flip Horizontal", "view.flipHorizontal"),
+                        c("Flip Vertical", "view.flipVertical"),
+                        c("Reset Canvas Orientation", "view.flipReset"),
+                    ],
+                ),
                 Sep,
                 c("Hide Edges", "view.edges"),
                 c("Hide Artboards", "view.artboards"),

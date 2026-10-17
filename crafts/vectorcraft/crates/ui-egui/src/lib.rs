@@ -317,6 +317,8 @@ pub struct CacheKey {
     pub ppp: f32,
     pub hidden: Vec<u64>,
     pub rot: f64,
+    /// Canvas Orientation: the view flipped horizontally, vertically.
+    pub flip: (bool, bool),
     /// General › Anti-aliased Artwork.
     pub anti_alias: bool,
     /// [`redrob_vector_render::placed_document::generation`]: placed documents' bitmaps made since.

@@ -141,7 +141,10 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
         None if id == ZIG_ZAG => zig_zag_fields(ui, d, app.session.general_unit()),
         None if id == "artistic.filmGrain" => film_grain_fields(ui, d),
         None if id == redrob_vector_effects::FILTER_GRAPH => {
-            ui.label(egui::RichText::new(tl!("The primitives of a filter graph are edited in the Filter Editor panel.")).color(Tokens::get(ui.ctx()).text_dim));
+            ui.label(
+                egui::RichText::new(tl!("The primitives of a filter graph are edited in the Filter Editor panel."))
+                    .color(Tokens::get(ui.ctx()).text_dim),
+            );
             false
         }
         None => {

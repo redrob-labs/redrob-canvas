@@ -21,11 +21,24 @@ pub struct View {
     /// Size show it.
     #[serde(default)]
     pub artboard: usize,
+    /// View › Canvas Orientation › Flip Horizontal: the view mirrored left to right.
+    #[serde(default)]
+    pub flip_h: bool,
+    /// View › Canvas Orientation › Flip Vertical: the view mirrored top to bottom.
+    #[serde(default)]
+    pub flip_v: bool,
 }
 
 impl Default for View {
     fn default() -> Self {
-        Self { zoom: 1.0, center: Point::new(306.0, 396.0), fitted: false, rotation: 0.0, artboard: 0 }
+        Self { zoom: 1.0, center: Point::new(306.0, 396.0), fitted: false, rotation: 0.0, artboard: 0, flip_h: false, flip_v: false }
+    }
+}
+
+impl View {
+    /// The signs the flips put on the view's x and y axes.
+    pub fn flip_signs(&self) -> (f64, f64) {
+        (if self.flip_h { -1.0 } else { 1.0 }, if self.flip_v { -1.0 } else { 1.0 })
     }
 }
 
@@ -39,6 +52,8 @@ impl View {
                 fitted: true,
                 rotation: if v.rotation.is_finite() { v.rotation } else { 0.0 },
                 artboard: 0,
+                flip_h: false,
+                flip_v: false,
             },
             _ => Self::default(),
         }
