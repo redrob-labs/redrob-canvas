@@ -120,7 +120,7 @@ const MAX_EQUIDISTANCE_RECTS: usize = 64;
 
 /// The active path: the work path, else the shape path or vector mask of the first visible
 /// shape or masked layer not being moved (the document has no notion of an active layer here).
-fn active_path(doc: &Document, exclude: &[LayerId]) -> Option<&redrob_photo_doc::Path> {
+fn active_path<'a>(doc: &'a Document, exclude: &[LayerId]) -> Option<&'a redrob_photo_doc::Path> {
     if let Some(p) = &doc.work_path {
         return Some(p);
     }
