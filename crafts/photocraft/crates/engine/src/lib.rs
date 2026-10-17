@@ -826,7 +826,9 @@ impl Session {
             st.history.set_current_layers(prior);
             st.history.record(label, before, layers);
             st.trim_history();
-            st.cumulative_since = Some(now);
+            // A step opens a merge run only while cumulative undo is on: strokes recorded
+            // before the preference was switched on stay their own steps.
+            st.cumulative_since = cumulative.then_some(now);
         }
         st.last_step_label = Some(label.to_string());
         st.last_step_at = Some(now);

@@ -3,7 +3,6 @@ use redrob_photo_geom::Rect;
 
 /// The example Invert plug-in, built from `examples/plugins/invert-rs`.
 const INVERT: &[u8] = include_bytes!("../../../plugins/tests/fixtures/invert.wasm");
-const INVERT_ID: &str = "org.rphoto.example.invert";
 
 fn b64(b: &[u8]) -> String {
     const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -85,10 +84,13 @@ fn select_partial(s: &mut Session) {
 fn example_invert_matches_builtin_invert_and_round_trips_the_registry() {
     // One test owns the example plug-in's id (the registry is process-wide).
     let r = Session::new().execute("plugin.install", json!({"data": b64(INVERT)})).unwrap();
-    assert_eq!(r["id"], INVERT_ID);
+    // The example's id is whatever its manifest declares (the prebuilt module predates the
+    // crate rename); the registry must hand that same id back.
+    let id = r["id"].as_str().expect("plugin id").to_owned();
+    assert!(id.ends_with(".example.invert"), "{id}");
     assert_eq!(r["name"], "Invert (WebAssembly)");
     let list = Session::new().execute("plugin.list", json!({})).unwrap();
-    assert!(list["plugins"].as_array().unwrap().iter().any(|p| p["id"] == INVERT_ID));
+    assert!(list["plugins"].as_array().unwrap().iter().any(|p| p["id"] == id));
 
     for depth in [8, 16, 32] {
         for with_selection in [false, true] {
@@ -100,8 +102,8 @@ fn example_invert_matches_builtin_invert_and_round_trips_the_registry() {
             }
             let before = pixels(&a);
             a.execute("image.adjustments.invert", json!({})).unwrap();
-            let r = b.execute("plugin.run", json!({"id": INVERT_ID})).unwrap();
-            assert_eq!(r["plugin"], INVERT_ID);
+            let r = b.execute("plugin.run", json!({"id": &id})).unwrap();
+            assert_eq!(r["plugin"], id);
             assert_eq!(pixels(&a), pixels(&b), "depth {depth}, selection {with_selection}");
             assert_ne!(pixels(&b), before);
             // One undo step.
@@ -113,12 +115,12 @@ fn example_invert_matches_builtin_invert_and_round_trips_the_registry() {
     // Smart objects record a smart filter.
     let mut s = doc(8);
     s.execute("layer.smartObjects.convertToSmartObject", json!({})).unwrap();
-    s.execute("plugin.run", json!({"id": INVERT_ID})).unwrap();
+    s.execute("plugin.run", json!({"id": &id})).unwrap();
     let d = s.active().unwrap();
     let LayerContent::Smart(sm) = &d.doc.layer(d.active_layer.unwrap()).unwrap().content else { panic!("not a smart object") };
     assert_eq!(sm.smart_filters.len(), 1);
     assert_eq!(sm.smart_filters[0].command, RUN);
-    assert_eq!(sm.smart_filters[0].params["id"], INVERT_ID);
+    assert_eq!(sm.smart_filters[0].params["id"], id);
 
     // Install from a path (native), then remove.
     let dir = std::env::temp_dir().join(format!("pc-plugin-cmds-{}", std::process::id()));
@@ -128,8 +130,8 @@ fn example_invert_matches_builtin_invert_and_round_trips_the_registry() {
     let r = Session::new().execute("plugin.install", json!({"path": path.to_str().unwrap()})).unwrap();
     assert_eq!(r["source"], path.to_str().unwrap());
     assert!(Session::new().execute("plugin.install", json!({"path": path.to_str().unwrap(), "replace": false})).is_err());
-    Session::new().execute("plugin.remove", json!({"id": INVERT_ID})).unwrap();
-    assert!(doc(8).execute("plugin.run", json!({"id": INVERT_ID})).is_err(), "removed");
+    Session::new().execute("plugin.remove", json!({"id": &id})).unwrap();
+    assert!(doc(8).execute("plugin.run", json!({"id": &id})).is_err(), "removed");
     std::fs::remove_dir_all(&dir).ok();
 }
 
@@ -167,11 +169,11 @@ fn hostile_plugins_fail_without_touching_the_document() {
         let before = pixels(&s);
         let undo_before = s.active().unwrap().history.can_undo();
         let t = std::time::Instant::now();
-        assert!(s.execute("plugin.run", json!({"id": id})).is_err(), "{id}");
+        assert!(s.execute("plugin.run", json!({"id": &id})).is_err(), "{id}");
         assert!(t.elapsed() < std::time::Duration::from_secs(10), "{id} took {:?}", t.elapsed());
         assert_eq!(pixels(&s), before, "{id}");
         assert_eq!(s.active().unwrap().history.can_undo(), undo_before, "{id}: no undo step");
-        Session::new().execute("plugin.remove", json!({"id": id})).unwrap();
+        Session::new().execute("plugin.remove", json!({"id": &id})).unwrap();
     }
 }
 
