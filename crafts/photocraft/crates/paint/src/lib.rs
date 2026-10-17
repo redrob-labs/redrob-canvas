@@ -34,8 +34,9 @@ pub mod symmetry;
 pub mod tile;
 
 pub use brush::{
-    BrushPreset, BrushSettings, ColorDynamics, Control, DualBrush, Dynamic, MAX_BRUSH_SIZE, MAX_SCATTER, MaskMode, Pattern, PatternStyle, Pose, PresetCaptures,
-    Scattering, SectionLocks, ShapeDynamics, Smoothing, Texture, TipShape, Transfer,
+    BrushPreset, BrushSettings, ColorDynamics, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER,
+    MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering, SectionLocks, Sensor, SensorCombine, ShapeDynamics, Smoothing, Texture,
+    TipGeometry, TipShape, Transfer,
 };
 pub use curve::ResponseCurve;
 pub use mixer::MixerSettings;
@@ -169,7 +170,7 @@ pub fn tip_shape(radius: f32, hardness: f32) -> (f32, f32) {
 /// `exp(-u)` as `(1 − u/64)⁶⁴` by six squarings: within 1/255 of `exp` where it matters, exact
 /// arithmetic (the same on every platform) and exactly 0 from `u = 64`.
 #[inline]
-fn soft_exp(u: f32) -> f32 {
+pub(crate) fn soft_exp(u: f32) -> f32 {
     let mut g = (1.0 - u / 64.0).clamp(0.0, 1.0);
     for _ in 0..6 {
         g *= g;

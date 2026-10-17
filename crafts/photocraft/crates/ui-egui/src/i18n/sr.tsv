@@ -4274,3 +4274,40 @@ shape	Appearance	Izgled
 	Ink below	Праг мастила
 	Close gaps	Затвори процепе
 	Under ink	Под мастило
+	Angle Offset:	Померај угла:
+	Read the direction of the first stroke segment for the whole stroke	Користи смер првог сегмента за цео потез
+	Fan Corners	Лепезасти углови
+	Turn sharper than this is fanned	Оштрији заокрет од овог се лепезасто шири
+	Sensor:	Сензор:
+	Combine:	Комбиновање:
+	Auto Spacing	Аутоматски размак
+	Spacing grows with the square root of the size	Размак расте са квадратним кореном величине
+	Auto spacing coefficient	Коефицијент аутоматског размака
+	Minimum Spacing	Најмањи размак
+	Isotropic Spacing	Изотропни размак
+	Space dabs by the diameter alone, not by the roundness	Размак само по пречнику, не по заобљености
+	Mask:	Маска:
+	Fade X	Избледи X
+	Fade Y	Избледи Y
+	Lock Fade	Закључај бледење
+	The vertical fade follows the horizontal one	Вертикално бледење прати хоризонтално
+	Soft curve:	Мека крива:
+	Spikes	Шиљци
+	Randomness	Насумичност
+	Anti-aliasing	Умекшавање ивица
+	Auto Precision	Аутоматска тачност
+	Precision	Тачност
+	Separate Axes	Одвојене осе
+	Scatter along and across the stroke by different amounts	Расипање дуж и попреко потеза различитим износима
+	Along	Дуж
+	Across	Попреко
+	Stabilizer	Стабилизатор
+	Average the last input points; the sample count follows the speed	Просек последњих улазних тачака; број узорака прати брзину
+	Samples (slow)	Узорци (споро)
+	Samples (fast)	Узорци (брзо)
+	Delay	Кашњење
+	Finish Line	Доврши линију
+	Stabilize Sensors	Стабилизуј сензоре
+	Smooth Pressure	Углади притисак
+	Smooth the pen pressure along with the position	Углади притисак оловке заједно са положајем
+	Drawing Angle	Угао цртања

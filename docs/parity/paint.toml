@@ -238,9 +238,9 @@ name = "Generated tip shapes"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Circle or square generated tips with three mask types: default (fast), soft (fade by curve), gaussian."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "round computed tip only; no square tip, no soft-curve or gaussian mask types"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -251,8 +251,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Diameter, ratio, fade (lockable horizontal/vertical), angle, spikes, density, randomness, spacing with auto (quadratic) spacing, smooth lines antialiasing, precision 1-5 with auto precision by size."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "no spikes, density/randomness noise, separate H/V fade, precision levels or auto spacing"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = "precision snaps the dab size instead of caching coarser tips; the fade per axis applies to the soft and gaussian masks only (the default mask keeps hardness)"
 priority = 1
 
 [[feature]]
@@ -442,9 +442,9 @@ name = "Spacing with sensors"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Spacing between dabs driven by sensors; isotropic spacing uses the diameter only instead of the ratio."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "fixed spacing fraction or speed-based; no sensor curve on spacing, no isotropic toggle"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -502,9 +502,9 @@ name = "Scatter"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Random dab placement along (X) and across (Y) the drawing direction, sensor-driven."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "scatter is radial or both-axes; no separate along/across amounts"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -767,8 +767,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Several sensors on one option combine by multiply, addition, maximum, minimum or difference; share curve across all settings."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "one control plus jitter per option; no multi-sensor combination"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = "up to three extra sensors per option; no 'share curve across all settings'"
 priority = 1
 
 [[feature]]
@@ -886,9 +886,9 @@ name = "Drawing angle sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Stroke direction as input; lock to the start angle, fan corners with a threshold, angle offset."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "Direction/InitialDirection on angle only; no fan corners or offset, not usable on other options"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1402,9 +1402,9 @@ name = "Weighted smoothing"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Distance, stroke ending, smooth pressure, scalable distance."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs"
-gap = "Smoother has amount, catch-up, zoom scaling; no pressure smoothing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1414,9 +1414,9 @@ name = "Stabilizer"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Averages inputs with sample counts at min and max speed (5.3), delay dead zone, finish line, stabilize sensors, scalable distance."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "pulled-string lazy mouse only; no speed-dependent sample counts or sensor stabilizing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 1
 
 [[feature]]

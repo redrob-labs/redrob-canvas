@@ -3174,3 +3174,42 @@ curves	Smooth	Сгладить
 	Ink below	Порог туши
 	Close gaps	Закрыть разрывы
 	Under ink	Под тушь
+	Angle Offset:	Смещение угла:
+	Read the direction of the first stroke segment for the whole stroke	Использовать направление первого сегмента для всего штриха
+	Fan Corners	Веерные углы
+	Turn sharper than this is fanned	Поворот круче этого раскладывается веером
+	Sensor:	Датчик:
+	Combine:	Объединение:
+	Auto Spacing	Автоинтервал
+	Spacing grows with the square root of the size	Интервал растёт с квадратным корнем размера
+	Auto spacing coefficient	Коэффициент автоинтервала
+	Minimum Spacing	Минимальный интервал
+	Isotropic Spacing	Изотропный интервал
+	Space dabs by the diameter alone, not by the roundness	Интервал только по диаметру, без учёта округлости
+	Mask:	Маска:
+	Fade X	Затухание X
+	Fade Y	Затухание Y
+	Lock Fade	Связать затухание
+	The vertical fade follows the horizontal one	Вертикальное затухание повторяет горизонтальное
+	Soft curve:	Мягкая кривая:
+	Spikes	Лучи
+	Randomness	Случайность
+	Anti-aliasing	Сглаживание
+	Auto Precision	Автоточность
+	Precision	Точность
+	Separate Axes	Раздельные оси
+	Scatter along and across the stroke by different amounts	Разброс вдоль и поперёк штриха разной величины
+	Along	Вдоль
+	Across	Поперёк
+	Stabilizer	Стабилизатор
+	Average the last input points; the sample count follows the speed	Усреднение последних точек ввода; число выборок зависит от скорости
+	Samples (slow)	Выборки (медленно)
+	Samples (fast)	Выборки (быстро)
+	Delay	Задержка
+	Finish Line	Дорисовать линию
+	Stabilize Sensors	Стабилизировать датчики
+	Smooth Pressure	Сглаживать нажим
+	Smooth the pen pressure along with the position	Сглаживать нажим пера вместе с положением
+	Drawing Angle	Угол рисования
+	Speed	Скорость
+	Circle	Круг

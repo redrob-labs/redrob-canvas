@@ -4120,3 +4120,40 @@ cameraRaw	Yellow	Sárga
 	Ink below	Tinta küszöb
 	Close gaps	Rések zárása
 	Under ink	Tinta alá
+	Angle Offset:	Szögeltolás:
+	Read the direction of the first stroke segment for the whole stroke	Az első szakasz irányát használja az egész vonásra
+	Fan Corners	Legyezős sarkok
+	Turn sharper than this is fanned	Az ennél élesebb fordulat legyezőszerűen kitöltődik
+	Sensor:	Érzékelő:
+	Combine:	Kombinálás:
+	Auto Spacing	Automatikus távolság
+	Spacing grows with the square root of the size	A távolság a méret négyzetgyökével nő
+	Auto spacing coefficient	Automatikus távolság együtthatója
+	Minimum Spacing	Minimális távolság
+	Isotropic Spacing	Izotróp távolság
+	Space dabs by the diameter alone, not by the roundness	Csak az átmérő szerinti távolság, a kerekség nélkül
+	Mask:	Maszk:
+	Fade X	Elhalványulás X
+	Fade Y	Elhalványulás Y
+	Lock Fade	Elhalványulás zárolása
+	The vertical fade follows the horizontal one	A függőleges elhalványulás követi a vízszintest
+	Soft curve:	Lágy görbe:
+	Spikes	Csúcsok
+	Randomness	Véletlenszerűség
+	Anti-aliasing	Élsimítás
+	Auto Precision	Automatikus pontosság
+	Precision	Pontosság
+	Separate Axes	Külön tengelyek
+	Scatter along and across the stroke by different amounts	A vonás mentén és rá merőlegesen eltérő mértékű szórás
+	Along	Mentén
+	Across	Keresztben
+	Stabilizer	Stabilizátor
+	Average the last input points; the sample count follows the speed	Az utolsó bemeneti pontok átlaga; a mintaszám a sebességet követi
+	Samples (slow)	Minták (lassú)
+	Samples (fast)	Minták (gyors)
+	Delay	Késleltetés
+	Finish Line	Vonal befejezése
+	Stabilize Sensors	Érzékelők stabilizálása
+	Smooth Pressure	Nyomás simítása
+	Smooth the pen pressure along with the position	A toll nyomásának simítása a pozícióval együtt
+	Drawing Angle	Rajzolási szög

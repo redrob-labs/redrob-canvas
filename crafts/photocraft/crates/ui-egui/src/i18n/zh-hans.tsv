@@ -2821,3 +2821,42 @@ curves	Smooth	平滑
 	Ink below	墨线阈值
 	Close gaps	闭合缝隙
 	Under ink	伸入墨线
+	Angle Offset:	角度偏移:
+	Read the direction of the first stroke segment for the whole stroke	整个笔画都使用第一段的方向
+	Fan Corners	扇形拐角
+	Turn sharper than this is fanned	比此更急的转向将被展开
+	Sensor:	传感器:
+	Combine:	组合:
+	Auto Spacing	自动间距
+	Spacing grows with the square root of the size	间距随尺寸的平方根增大
+	Auto spacing coefficient	自动间距系数
+	Minimum Spacing	最小间距
+	Isotropic Spacing	各向同性间距
+	Space dabs by the diameter alone, not by the roundness	仅按直径而非圆度决定间距
+	Mask:	蒙版:
+	Fade X	渐隐 X
+	Fade Y	渐隐 Y
+	Lock Fade	锁定渐隐
+	The vertical fade follows the horizontal one	垂直渐隐跟随水平渐隐
+	Soft curve:	柔化曲线:
+	Spikes	尖刺
+	Randomness	随机性
+	Anti-aliasing	抗锯齿
+	Auto Precision	自动精度
+	Precision	精度
+	Separate Axes	分离轴
+	Scatter along and across the stroke by different amounts	沿笔画方向与横向使用不同的散布量
+	Along	沿向
+	Across	横向
+	Stabilizer	稳定器
+	Average the last input points; the sample count follows the speed	平均最近的输入点，采样数随速度变化
+	Samples (slow)	采样数 (慢)
+	Samples (fast)	采样数 (快)
+	Delay	延迟
+	Finish Line	补完线条
+	Stabilize Sensors	稳定传感器
+	Smooth Pressure	平滑压力
+	Smooth the pen pressure along with the position	随位置一起平滑笔压
+	Drawing Angle	绘制角度
+	Speed	速度
+	Circle	圆形

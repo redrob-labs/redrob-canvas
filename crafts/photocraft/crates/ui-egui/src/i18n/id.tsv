@@ -3196,3 +3196,42 @@ curves	Smooth	Haluskan
 	Ink below	Ambang tinta
 	Close gaps	Tutup celah
 	Under ink	Di bawah tinta
+	Angle Offset:	Offset sudut:
+	Read the direction of the first stroke segment for the whole stroke	Gunakan arah segmen pertama untuk seluruh sapuan
+	Fan Corners	Sudut kipas
+	Turn sharper than this is fanned	Belokan lebih tajam dari ini dikipaskan
+	Sensor:	Sensor:
+	Combine:	Gabungkan:
+	Auto Spacing	Jarak otomatis
+	Spacing grows with the square root of the size	Jarak bertambah seiring akar kuadrat ukuran
+	Auto spacing coefficient	Koefisien jarak otomatis
+	Minimum Spacing	Jarak minimum
+	Isotropic Spacing	Jarak isotropik
+	Space dabs by the diameter alone, not by the roundness	Jarak hanya menurut diameter, bukan kebulatan
+	Mask:	Mask:
+	Fade X	Pudar X
+	Fade Y	Pudar Y
+	Lock Fade	Kunci pudar
+	The vertical fade follows the horizontal one	Pudar vertikal mengikuti yang horizontal
+	Soft curve:	Kurva lembut:
+	Spikes	Duri
+	Randomness	Keacakan
+	Anti-aliasing	Anti-alias
+	Auto Precision	Presisi otomatis
+	Precision	Presisi
+	Separate Axes	Sumbu terpisah
+	Scatter along and across the stroke by different amounts	Sebar sepanjang dan melintang sapuan dengan jumlah berbeda
+	Along	Sepanjang
+	Across	Melintang
+	Stabilizer	Penstabil
+	Average the last input points; the sample count follows the speed	Rata-rata titik masukan terakhir; jumlah sampel mengikuti kecepatan
+	Samples (slow)	Sampel (lambat)
+	Samples (fast)	Sampel (cepat)
+	Delay	Tunda
+	Finish Line	Selesaikan garis
+	Stabilize Sensors	Stabilkan sensor
+	Smooth Pressure	Haluskan tekanan
+	Smooth the pen pressure along with the position	Haluskan tekanan pena bersama posisinya
+	Drawing Angle	Sudut gambar
+	Speed	Kecepatan
+	Circle	Lingkaran

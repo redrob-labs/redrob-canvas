@@ -4163,3 +4163,40 @@ navigator	Zoom	Zoom
 	Ink below	Tinta bajo
 	Close gaps	Cerrar huecos
 	Under ink	Bajo la tinta
+	Angle Offset:	Desfase de ángulo:
+	Read the direction of the first stroke segment for the whole stroke	Usar la dirección del primer segmento para todo el trazo
+	Fan Corners	Esquinas en abanico
+	Turn sharper than this is fanned	Un giro más cerrado que este se abre en abanico
+	Sensor:	Sensor:
+	Combine:	Combinar:
+	Auto Spacing	Espaciado automático
+	Spacing grows with the square root of the size	El espaciado crece con la raíz cuadrada del tamaño
+	Auto spacing coefficient	Coeficiente de espaciado automático
+	Minimum Spacing	Espaciado mínimo
+	Isotropic Spacing	Espaciado isotrópico
+	Space dabs by the diameter alone, not by the roundness	Espaciar las pinceladas solo por el diámetro, no por la redondez
+	Mask:	Máscara:
+	Fade X	Desvanecer X
+	Fade Y	Desvanecer Y
+	Lock Fade	Bloquear desvanecimiento
+	The vertical fade follows the horizontal one	El desvanecimiento vertical sigue al horizontal
+	Soft curve:	Curva suave:
+	Spikes	Picos
+	Randomness	Aleatoriedad
+	Anti-aliasing	Suavizado
+	Auto Precision	Precisión automática
+	Precision	Precisión
+	Separate Axes	Ejes separados
+	Scatter along and across the stroke by different amounts	Dispersar a lo largo y a través del trazo en cantidades distintas
+	Along	A lo largo
+	Across	A través
+	Stabilizer	Estabilizador
+	Average the last input points; the sample count follows the speed	Promedia los últimos puntos de entrada; el número de muestras sigue la velocidad
+	Samples (slow)	Muestras (lento)
+	Samples (fast)	Muestras (rápido)
+	Delay	Retardo
+	Finish Line	Terminar la línea
+	Stabilize Sensors	Estabilizar sensores
+	Smooth Pressure	Suavizar presión
+	Smooth the pen pressure along with the position	Suavizar la presión del lápiz junto con la posición
+	Drawing Angle	Ángulo de dibujo

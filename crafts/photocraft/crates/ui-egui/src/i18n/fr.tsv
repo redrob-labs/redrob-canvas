@@ -3209,3 +3209,42 @@ curves	Smooth	Lisser
 	Ink below	Encre sous
 	Close gaps	Fermer les trous
 	Under ink	Sous l’encre
+	Angle Offset:	Décalage d'angle :
+	Read the direction of the first stroke segment for the whole stroke	Utiliser la direction du premier segment pour tout le tracé
+	Fan Corners	Coins en éventail
+	Turn sharper than this is fanned	Un virage plus serré que ceci est ouvert en éventail
+	Sensor:	Capteur :
+	Combine:	Combinaison :
+	Auto Spacing	Espacement automatique
+	Spacing grows with the square root of the size	L'espacement croît avec la racine carrée de la taille
+	Auto spacing coefficient	Coefficient d'espacement automatique
+	Minimum Spacing	Espacement minimal
+	Isotropic Spacing	Espacement isotrope
+	Space dabs by the diameter alone, not by the roundness	Espacer les touches selon le diamètre seul, pas la rondeur
+	Mask:	Masque :
+	Fade X	Fondu X
+	Fade Y	Fondu Y
+	Lock Fade	Verrouiller le fondu
+	The vertical fade follows the horizontal one	Le fondu vertical suit le fondu horizontal
+	Soft curve:	Courbe douce :
+	Spikes	Pointes
+	Randomness	Aléa
+	Anti-aliasing	Anticrénelage
+	Auto Precision	Précision automatique
+	Precision	Précision
+	Separate Axes	Axes séparés
+	Scatter along and across the stroke by different amounts	Disperser le long et en travers du tracé par des quantités différentes
+	Along	Le long
+	Across	En travers
+	Stabilizer	Stabilisateur
+	Average the last input points; the sample count follows the speed	Moyenne des derniers points d'entrée ; le nombre d'échantillons suit la vitesse
+	Samples (slow)	Échantillons (lent)
+	Samples (fast)	Échantillons (rapide)
+	Delay	Délai
+	Finish Line	Terminer la ligne
+	Stabilize Sensors	Stabiliser les capteurs
+	Smooth Pressure	Lisser la pression
+	Smooth the pen pressure along with the position	Lisser la pression du stylet avec la position
+	Drawing Angle	Angle de dessin
+	Speed	Vitesse
+	Circle	Cercle

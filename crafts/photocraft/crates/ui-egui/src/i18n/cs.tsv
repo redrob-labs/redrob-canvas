@@ -3811,3 +3811,40 @@ navigator	Zoom	Zvětšení
 	Ink below	Prah tuše
 	Close gaps	Zavřít mezery
 	Under ink	Pod tuš
+	Angle Offset:	Posun úhlu:
+	Read the direction of the first stroke segment for the whole stroke	Použít směr prvního segmentu pro celý tah
+	Fan Corners	Vějířové rohy
+	Turn sharper than this is fanned	Ostřejší zatočení než toto se rozloží do vějíře
+	Sensor:	Senzor:
+	Combine:	Kombinace:
+	Auto Spacing	Automatické rozestupy
+	Spacing grows with the square root of the size	Rozestup roste s druhou odmocninou velikosti
+	Auto spacing coefficient	Koeficient automatických rozestupů
+	Minimum Spacing	Minimální rozestup
+	Isotropic Spacing	Izotropní rozestupy
+	Space dabs by the diameter alone, not by the roundness	Rozestupy jen podle průměru, ne podle kulatosti
+	Mask:	Maska:
+	Fade X	Zeslabení X
+	Fade Y	Zeslabení Y
+	Lock Fade	Uzamknout zeslabení
+	The vertical fade follows the horizontal one	Svislé zeslabení sleduje vodorovné
+	Soft curve:	Měkká křivka:
+	Spikes	Hroty
+	Randomness	Náhodnost
+	Anti-aliasing	Vyhlazování
+	Auto Precision	Automatická přesnost
+	Precision	Přesnost
+	Separate Axes	Oddělené osy
+	Scatter along and across the stroke by different amounts	Rozptyl podél a napříč tahu různou měrou
+	Along	Podél
+	Across	Napříč
+	Stabilizer	Stabilizátor
+	Average the last input points; the sample count follows the speed	Průměr posledních vstupních bodů; počet vzorků sleduje rychlost
+	Samples (slow)	Vzorky (pomalu)
+	Samples (fast)	Vzorky (rychle)
+	Delay	Prodleva
+	Finish Line	Dokončit čáru
+	Stabilize Sensors	Stabilizovat senzory
+	Smooth Pressure	Vyhladit tlak
+	Smooth the pen pressure along with the position	Vyhladit tlak pera spolu s polohou
+	Drawing Angle	Úhel kresby

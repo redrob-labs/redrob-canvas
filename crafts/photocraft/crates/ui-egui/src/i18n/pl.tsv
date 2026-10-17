@@ -3800,3 +3800,40 @@ curves	Smooth	Wygładź
 	Ink below	Próg tuszu
 	Close gaps	Domknij przerwy
 	Under ink	Pod tusz
+	Angle Offset:	Przesunięcie kąta:
+	Read the direction of the first stroke segment for the whole stroke	Użyj kierunku pierwszego segmentu dla całego pociągnięcia
+	Fan Corners	Narożniki wachlarzowe
+	Turn sharper than this is fanned	Ostrzejszy skręt rozkładany jest wachlarzowo
+	Sensor:	Czujnik:
+	Combine:	Łączenie:
+	Auto Spacing	Automatyczne odstępy
+	Spacing grows with the square root of the size	Odstęp rośnie z pierwiastkiem kwadratowym rozmiaru
+	Auto spacing coefficient	Współczynnik automatycznych odstępów
+	Minimum Spacing	Minimalny odstęp
+	Isotropic Spacing	Odstępy izotropowe
+	Space dabs by the diameter alone, not by the roundness	Odstępy tylko według średnicy, nie zaokrąglenia
+	Mask:	Maska:
+	Fade X	Zanikanie X
+	Fade Y	Zanikanie Y
+	Lock Fade	Zablokuj zanikanie
+	The vertical fade follows the horizontal one	Zanikanie pionowe podąża za poziomym
+	Soft curve:	Krzywa miękka:
+	Spikes	Kolce
+	Randomness	Losowość
+	Anti-aliasing	Antyaliasing
+	Auto Precision	Automatyczna precyzja
+	Precision	Precyzja
+	Separate Axes	Osobne osie
+	Scatter along and across the stroke by different amounts	Rozrzut wzdłuż i w poprzek pociągnięcia o różnych wartościach
+	Along	Wzdłuż
+	Across	W poprzek
+	Stabilizer	Stabilizator
+	Average the last input points; the sample count follows the speed	Uśrednia ostatnie punkty wejściowe; liczba próbek zależy od szybkości
+	Samples (slow)	Próbki (wolno)
+	Samples (fast)	Próbki (szybko)
+	Delay	Opóźnienie
+	Finish Line	Dokończ linię
+	Stabilize Sensors	Stabilizuj czujniki
+	Smooth Pressure	Wygładź nacisk
+	Smooth the pen pressure along with the position	Wygładzaj nacisk pióra razem z położeniem
+	Drawing Angle	Kąt rysowania

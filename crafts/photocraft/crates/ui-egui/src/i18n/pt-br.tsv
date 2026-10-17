@@ -3992,3 +3992,40 @@ layerLabel	No Color	Sem cor
 	Ink below	Tinta abaixo de
 	Close gaps	Fechar vãos
 	Under ink	Sob a tinta
+	Angle Offset:	Deslocamento do ângulo:
+	Read the direction of the first stroke segment for the whole stroke	Usar a direção do primeiro segmento em todo o traço
+	Fan Corners	Cantos em leque
+	Turn sharper than this is fanned	Curvas mais fechadas que esta são abertas em leque
+	Sensor:	Sensor:
+	Combine:	Combinar:
+	Auto Spacing	Espaçamento automático
+	Spacing grows with the square root of the size	O espaçamento cresce com a raiz quadrada do tamanho
+	Auto spacing coefficient	Coeficiente do espaçamento automático
+	Minimum Spacing	Espaçamento mínimo
+	Isotropic Spacing	Espaçamento isotrópico
+	Space dabs by the diameter alone, not by the roundness	Espaçar pelo diâmetro apenas, não pela redondeza
+	Mask:	Máscara:
+	Fade X	Esmaecer X
+	Fade Y	Esmaecer Y
+	Lock Fade	Travar esmaecimento
+	The vertical fade follows the horizontal one	O esmaecimento vertical segue o horizontal
+	Soft curve:	Curva suave:
+	Spikes	Pontas
+	Randomness	Aleatoriedade
+	Anti-aliasing	Suavização de serrilhado
+	Auto Precision	Precisão automática
+	Precision	Precisão
+	Separate Axes	Eixos separados
+	Scatter along and across the stroke by different amounts	Dispersar ao longo e através do traço em quantidades diferentes
+	Along	Ao longo
+	Across	Através
+	Stabilizer	Estabilizador
+	Average the last input points; the sample count follows the speed	Faz a média dos últimos pontos de entrada; a contagem segue a velocidade
+	Samples (slow)	Amostras (lento)
+	Samples (fast)	Amostras (rápido)
+	Delay	Atraso
+	Finish Line	Concluir a linha
+	Stabilize Sensors	Estabilizar sensores
+	Smooth Pressure	Suavizar pressão
+	Smooth the pen pressure along with the position	Suavizar a pressão da caneta junto com a posição
+	Drawing Angle	Ângulo do desenho

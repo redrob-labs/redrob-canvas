@@ -55,6 +55,9 @@ pub mod stream {
     pub const DUAL_FLIP: u64 = 18;
     pub const WET: u64 = 19;
     pub const MIX: u64 = 20;
+    pub const SPACING: u64 = 21;
+    pub const RANDOM: u64 = 22;
+    pub const SCATTER_ALONG: u64 = 23;
 }
 
 /// Seed derived from arbitrary bytes (FNV-1a then mixed), for commands without an explicit seed.

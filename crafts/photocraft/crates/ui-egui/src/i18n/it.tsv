@@ -4322,3 +4322,40 @@ shape	Appearance	Aspetto
 	Ink below	Inchiostro sotto
 	Close gaps	Chiudi vuoti
 	Under ink	Sotto l’inchiostro
+	Angle Offset:	Scostamento angolo:
+	Read the direction of the first stroke segment for the whole stroke	Usa la direzione del primo segmento per tutto il tratto
+	Fan Corners	Angoli a ventaglio
+	Turn sharper than this is fanned	Una svolta più stretta di questa viene aperta a ventaglio
+	Sensor:	Sensore:
+	Combine:	Combina:
+	Auto Spacing	Spaziatura automatica
+	Spacing grows with the square root of the size	La spaziatura cresce con la radice quadrata della dimensione
+	Auto spacing coefficient	Coefficiente della spaziatura automatica
+	Minimum Spacing	Spaziatura minima
+	Isotropic Spacing	Spaziatura isotropa
+	Space dabs by the diameter alone, not by the roundness	Spazia le impronte solo per il diametro, non per la rotondità
+	Mask:	Maschera:
+	Fade X	Dissolvenza X
+	Fade Y	Dissolvenza Y
+	Lock Fade	Blocca dissolvenza
+	The vertical fade follows the horizontal one	La dissolvenza verticale segue quella orizzontale
+	Soft curve:	Curva morbida:
+	Spikes	Punte
+	Randomness	Casualità
+	Anti-aliasing	Antialiasing
+	Auto Precision	Precisione automatica
+	Precision	Precisione
+	Separate Axes	Assi separati
+	Scatter along and across the stroke by different amounts	Dispersione lungo e attraverso il tratto con quantità diverse
+	Along	Lungo
+	Across	Attraverso
+	Stabilizer	Stabilizzatore
+	Average the last input points; the sample count follows the speed	Media gli ultimi punti di input; il numero di campioni segue la velocità
+	Samples (slow)	Campioni (lento)
+	Samples (fast)	Campioni (rapido)
+	Delay	Ritardo
+	Finish Line	Completa la linea
+	Stabilize Sensors	Stabilizza i sensori
+	Smooth Pressure	Smussa la pressione
+	Smooth the pen pressure along with the position	Smussa la pressione della penna insieme alla posizione
+	Drawing Angle	Angolo di disegno

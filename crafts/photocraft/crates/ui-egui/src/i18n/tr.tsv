@@ -3932,3 +3932,40 @@ cameraData	Lens	Lens
 	Ink below	Mürekkep eşiği
 	Close gaps	Boşlukları kapat
 	Under ink	Mürekkep altına
+	Angle Offset:	Açı kayması:
+	Read the direction of the first stroke segment for the whole stroke	İlk parçanın yönünü tüm vuruş için kullan
+	Fan Corners	Yelpaze köşeler
+	Turn sharper than this is fanned	Bundan keskin dönüşler yelpaze yapılır
+	Sensor:	Sensör:
+	Combine:	Birleştir:
+	Auto Spacing	Otomatik aralık
+	Spacing grows with the square root of the size	Aralık, boyutun kareköküyle büyür
+	Auto spacing coefficient	Otomatik aralık katsayısı
+	Minimum Spacing	En az aralık
+	Isotropic Spacing	İzotropik aralık
+	Space dabs by the diameter alone, not by the roundness	Aralığı yuvarlaklığa değil yalnızca çapa göre belirle
+	Mask:	Maske:
+	Fade X	Soldurma X
+	Fade Y	Soldurma Y
+	Lock Fade	Soldurmayı kilitle
+	The vertical fade follows the horizontal one	Dikey soldurma yatay olanı izler
+	Soft curve:	Yumuşak eğri:
+	Spikes	Sivri uçlar
+	Randomness	Rastgelelik
+	Anti-aliasing	Kenar yumuşatma
+	Auto Precision	Otomatik hassasiyet
+	Precision	Hassasiyet
+	Separate Axes	Ayrı eksenler
+	Scatter along and across the stroke by different amounts	Vuruş boyunca ve enine farklı miktarlarda dağıt
+	Along	Boyunca
+	Across	Enine
+	Stabilizer	Dengeleyici
+	Average the last input points; the sample count follows the speed	Son giriş noktalarının ortalaması; örnek sayısı hızı izler
+	Samples (slow)	Örnekler (yavaş)
+	Samples (fast)	Örnekler (hızlı)
+	Delay	Gecikme
+	Finish Line	Çizgiyi tamamla
+	Stabilize Sensors	Sensörleri dengele
+	Smooth Pressure	Basıncı yumuşat
+	Smooth the pen pressure along with the position	Kalem basıncını konumla birlikte yumuşat
+	Drawing Angle	Çizim açısı

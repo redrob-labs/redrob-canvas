@@ -3205,3 +3205,40 @@ curves	Smooth	Glätten
 	Ink below	Tusche unter
 	Close gaps	Lücken schließen
 	Under ink	Unter die Tusche
+	Angle Offset:	Winkelversatz:
+	Read the direction of the first stroke segment for the whole stroke	Richtung des ersten Segments für den ganzen Strich verwenden
+	Fan Corners	Ecken auffächern
+	Turn sharper than this is fanned	Schärfere Wendungen werden aufgefächert
+	Sensor:	Sensor:
+	Combine:	Kombinieren:
+	Auto Spacing	Automatischer Abstand
+	Spacing grows with the square root of the size	Der Abstand wächst mit der Quadratwurzel der Größe
+	Auto spacing coefficient	Koeffizient des automatischen Abstands
+	Minimum Spacing	Minimaler Abstand
+	Isotropic Spacing	Isotroper Abstand
+	Space dabs by the diameter alone, not by the roundness	Abstand nur nach Durchmesser, nicht nach Rundheit
+	Mask:	Maske:
+	Fade X	Verblassen X
+	Fade Y	Verblassen Y
+	Lock Fade	Verblassen koppeln
+	The vertical fade follows the horizontal one	Das vertikale Verblassen folgt dem horizontalen
+	Soft curve:	Weiche Kurve:
+	Spikes	Spitzen
+	Randomness	Zufälligkeit
+	Anti-aliasing	Kantenglättung
+	Auto Precision	Automatische Genauigkeit
+	Precision	Genauigkeit
+	Separate Axes	Getrennte Achsen
+	Scatter along and across the stroke by different amounts	Entlang und quer zum Strich unterschiedlich streuen
+	Along	Entlang
+	Across	Quer
+	Stabilizer	Stabilisator
+	Average the last input points; the sample count follows the speed	Mittelt die letzten Eingabepunkte; die Anzahl folgt der Geschwindigkeit
+	Samples (slow)	Proben (langsam)
+	Samples (fast)	Proben (schnell)
+	Delay	Verzögerung
+	Finish Line	Linie beenden
+	Stabilize Sensors	Sensoren stabilisieren
+	Smooth Pressure	Druck glätten
+	Smooth the pen pressure along with the position	Den Stiftdruck zusammen mit der Position glätten
+	Drawing Angle	Zeichenwinkel

@@ -3962,3 +3962,40 @@ curves	Smooth	Vloeiend maken
 	Ink below	Inkt onder
 	Close gaps	Gaten sluiten
 	Under ink	Onder de inkt
+	Angle Offset:	Hoekverschuiving:
+	Read the direction of the first stroke segment for the whole stroke	Richting van het eerste segment voor de hele streek gebruiken
+	Fan Corners	Hoeken uitwaaieren
+	Turn sharper than this is fanned	Een scherpere bocht dan dit wordt uitgewaaierd
+	Sensor:	Sensor:
+	Combine:	Combineren:
+	Auto Spacing	Automatische tussenruimte
+	Spacing grows with the square root of the size	De tussenruimte groeit met de vierkantswortel van de grootte
+	Auto spacing coefficient	Coëfficiënt automatische tussenruimte
+	Minimum Spacing	Minimale tussenruimte
+	Isotropic Spacing	Isotrope tussenruimte
+	Space dabs by the diameter alone, not by the roundness	Tussenruimte alleen op diameter, niet op rondheid
+	Mask:	Masker:
+	Fade X	Vervagen X
+	Fade Y	Vervagen Y
+	Lock Fade	Vervagen koppelen
+	The vertical fade follows the horizontal one	Het verticale vervagen volgt het horizontale
+	Soft curve:	Zachte curve:
+	Spikes	Punten
+	Randomness	Willekeur
+	Anti-aliasing	Anti-aliasing
+	Auto Precision	Automatische precisie
+	Precision	Precisie
+	Separate Axes	Gescheiden assen
+	Scatter along and across the stroke by different amounts	Langs en dwars op de streek verschillend verstrooien
+	Along	Langs
+	Across	Dwars
+	Stabilizer	Stabilisator
+	Average the last input points; the sample count follows the speed	Middelt de laatste invoerpunten; het aantal volgt de snelheid
+	Samples (slow)	Samples (langzaam)
+	Samples (fast)	Samples (snel)
+	Delay	Vertraging
+	Finish Line	Lijn afmaken
+	Stabilize Sensors	Sensoren stabiliseren
+	Smooth Pressure	Druk vloeiend maken
+	Smooth the pen pressure along with the position	De pendruk samen met de positie vloeiend maken
+	Drawing Angle	Tekenhoek

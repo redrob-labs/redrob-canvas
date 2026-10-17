@@ -3902,3 +3902,40 @@ curves	Smooth	Εξομάλυνση
 	Ink below	Όριο μελανιού
 	Close gaps	Κλείσιμο κενών
 	Under ink	Κάτω από το μελάνι
+	Angle Offset:	Μετατόπιση γωνίας:
+	Read the direction of the first stroke segment for the whole stroke	Χρήση της κατεύθυνσης του πρώτου τμήματος για όλη την πινελιά
+	Fan Corners	Γωνίες βεντάλιας
+	Turn sharper than this is fanned	Στροφή πιο απότομη από αυτή ανοίγει σε βεντάλια
+	Sensor:	Αισθητήρας:
+	Combine:	Συνδυασμός:
+	Auto Spacing	Αυτόματη απόσταση
+	Spacing grows with the square root of the size	Η απόσταση αυξάνεται με την τετραγωνική ρίζα του μεγέθους
+	Auto spacing coefficient	Συντελεστής αυτόματης απόστασης
+	Minimum Spacing	Ελάχιστη απόσταση
+	Isotropic Spacing	Ισότροπη απόσταση
+	Space dabs by the diameter alone, not by the roundness	Απόσταση μόνο κατά τη διάμετρο, όχι κατά τη στρογγυλότητα
+	Mask:	Μάσκα:
+	Fade X	Ξεθώριασμα X
+	Fade Y	Ξεθώριασμα Y
+	Lock Fade	Κλείδωμα ξεθωριάσματος
+	The vertical fade follows the horizontal one	Το κάθετο ξεθώριασμα ακολουθεί το οριζόντιο
+	Soft curve:	Μαλακή καμπύλη:
+	Spikes	Ακίδες
+	Randomness	Τυχαιότητα
+	Anti-aliasing	Εξομάλυνση
+	Auto Precision	Αυτόματη ακρίβεια
+	Precision	Ακρίβεια
+	Separate Axes	Ξεχωριστοί άξονες
+	Scatter along and across the stroke by different amounts	Διασπορά κατά μήκος και κάθετα στην πινελιά με διαφορετικά ποσά
+	Along	Κατά μήκος
+	Across	Κάθετα
+	Stabilizer	Σταθεροποιητής
+	Average the last input points; the sample count follows the speed	Μέσος όρος των τελευταίων σημείων εισόδου· ο αριθμός δειγμάτων ακολουθεί την ταχύτητα
+	Samples (slow)	Δείγματα (αργά)
+	Samples (fast)	Δείγματα (γρήγορα)
+	Delay	Καθυστέρηση
+	Finish Line	Ολοκλήρωση γραμμής
+	Stabilize Sensors	Σταθεροποίηση αισθητήρων
+	Smooth Pressure	Εξομάλυνση πίεσης
+	Smooth the pen pressure along with the position	Εξομάλυνση της πίεσης της γραφίδας μαζί με τη θέση
+	Drawing Angle	Γωνία σχεδίασης

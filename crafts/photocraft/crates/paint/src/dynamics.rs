@@ -6,7 +6,7 @@
 
 use redrob_photo_geom::Point;
 
-use crate::brush::{BrushSettings, Control, Dynamic, Smoothing};
+use crate::brush::{BrushSettings, Control, Dynamic, SensorCombine, Smoothing};
 use crate::rng::{rand_signed, rand01, stream};
 use crate::{Dab, StrokePoint};
 
@@ -18,6 +18,14 @@ pub const SMOOTHING_STEP_MS: f64 = 16.0;
 /// With Spacing unchecked, one dab per this many milliseconds of stroke time, so faster strokes
 /// space their dabs further apart (Photoshop: "the speed of the cursor determines the spacing").
 pub const SPEED_SPACING_MS: f64 = 8.0;
+
+/// Pointer speed (document pixels per millisecond) that reads as 1 on the Speed sensor and picks
+/// the stabilizer's fast sample count.
+pub const MAX_SPEED_PX_MS: f64 = 4.0;
+/// Most input points the stabilizer averages.
+pub const MAX_STABILIZER_SAMPLES: usize = 200;
+/// Most extra dabs a fanned corner inserts between two steps.
+const MAX_FAN_DABS: u32 = 64;
 
 /// Longest pixel-grid segment (in pixels) before falling back to distance spacing.
 const MAX_GRID_STEPS: f64 = 1e7;
@@ -53,16 +61,86 @@ pub struct Smoother {
     zoom: f64,
     pos: Option<StrokePoint>,
     last_input: Option<StrokePoint>,
+    /// Stabilizer window (most recent last).
+    window: std::collections::VecDeque<StrokePoint>,
+}
+
+/// The mean of a window of points (position, and with `sensors` the stylus channels too; the
+/// time is the last point's).
+fn window_mean(win: &std::collections::VecDeque<StrokePoint>, last: StrokePoint, sensors: bool) -> StrokePoint {
+    let n = win.len().max(1) as f64;
+    let mut m = StrokePoint { x: 0.0, y: 0.0, pressure: 0.0, tilt_x: 0.0, tilt_y: 0.0, rotation: 0.0, wheel: 0.0, time: last.time };
+    for q in win {
+        m.x += q.x / n;
+        m.y += q.y / n;
+        m.pressure += q.pressure / n as f32;
+        m.tilt_x += q.tilt_x / n as f32;
+        m.tilt_y += q.tilt_y / n as f32;
+        m.rotation += q.rotation / n as f32;
+        m.wheel += q.wheel / n as f32;
+    }
+    if !sensors {
+        m = StrokePoint { x: m.x, y: m.y, ..last };
+    }
+    m
 }
 
 impl Smoother {
     /// `zoom` is the view zoom (only used with `adjust_for_zoom`).
     pub fn new(cfg: &Smoothing, zoom: f32) -> Self {
-        Self { cfg: cfg.clone(), zoom: f64::from(zoom.max(0.01)), pos: None, last_input: None }
+        Self { cfg: cfg.clone(), zoom: f64::from(zoom.max(0.01)), pos: None, last_input: None, window: std::collections::VecDeque::new() }
     }
 
     fn active(&self) -> bool {
-        self.cfg.enabled && self.cfg.amount > 0.0
+        self.cfg.enabled && (self.cfg.amount > 0.0 || self.stabilizing())
+    }
+
+    fn stabilizing(&self) -> bool {
+        self.cfg.enabled && self.cfg.stabilizer
+    }
+
+    /// Smooth Pressure: the output point's pressure follows the input with the same lag as its
+    /// position (the exponential factor `step`).
+    fn smooth_pressure(&self, prev: &StrokePoint, p: &StrokePoint, step: f64) -> f32 {
+        if self.cfg.smooth_pressure { prev.pressure + (p.pressure - prev.pressure) * step as f32 } else { p.pressure }
+    }
+
+    /// Stabilizer: how many of the latest points to average at this speed (px/ms, screen space).
+    fn sample_count(&self, speed: f64) -> usize {
+        let slow = self.cfg.samples_slow.clamp(1, MAX_STABILIZER_SAMPLES as u32) as f64;
+        let fast = self.cfg.samples_fast.clamp(1, MAX_STABILIZER_SAMPLES as u32) as f64;
+        let t = if speed.is_finite() { (speed / MAX_SPEED_PX_MS).clamp(0.0, 1.0) } else { 0.0 };
+        (slow + (fast - slow) * t).round().clamp(1.0, MAX_STABILIZER_SAMPLES as f64) as usize
+    }
+
+    fn push_stabilized(&mut self, prev_input: Option<StrokePoint>, p: StrokePoint, out: &mut Vec<StrokePoint>) {
+        let Some(pos) = self.pos else {
+            self.pos = Some(p);
+            self.window.clear();
+            self.window.push_back(p);
+            out.push(p);
+            return;
+        };
+        // Dead zone: the pointer has to leave `delay` screen pixels around the brush.
+        let mut delay = f64::from(self.cfg.delay.max(0.0));
+        if self.cfg.adjust_for_zoom {
+            delay /= self.zoom;
+        }
+        if delay > 0.0 && (p.x - pos.x).hypot(p.y - pos.y) <= delay {
+            return;
+        }
+        let speed = match prev_input {
+            Some(q) if p.time > q.time && (p.time - q.time).is_finite() => (p.x - q.x).hypot(p.y - q.y) * self.zoom / (p.time - q.time),
+            _ => 0.0,
+        };
+        let n = self.sample_count(speed);
+        self.window.push_back(p);
+        while self.window.len() > n {
+            self.window.pop_front();
+        }
+        let np = window_mean(&self.window, p, self.cfg.stabilize_sensors);
+        self.pos = Some(np);
+        out.push(np);
     }
 
     /// Feed one input point; returns the brush positions to paint through.
@@ -70,6 +148,10 @@ impl Smoother {
         let prev_input = self.last_input.replace(p);
         if !self.active() {
             out.push(p);
+            return;
+        }
+        if self.stabilizing() {
+            self.push_stabilized(prev_input, p, out);
             return;
         }
         let Some(pos) = self.pos else {
@@ -87,7 +169,7 @@ impl Smoother {
             let d = (dx * dx + dy * dy).sqrt();
             if d > len {
                 let k = (d - len) / d;
-                let np = StrokePoint { x: pos.x + dx * k, y: pos.y + dy * k, ..p };
+                let np = StrokePoint { x: pos.x + dx * k, y: pos.y + dy * k, pressure: self.smooth_pressure(&pos, &p, k), ..p };
                 self.pos = Some(np);
                 out.push(np);
             }
@@ -113,7 +195,7 @@ impl Smoother {
         };
         let mut cur = pos;
         for _ in 0..iters {
-            cur = StrokePoint { x: cur.x + (p.x - cur.x) * step, y: cur.y + (p.y - cur.y) * step, ..p };
+            cur = StrokePoint { x: cur.x + (p.x - cur.x) * step, y: cur.y + (p.y - cur.y) * step, pressure: self.smooth_pressure(&cur, &p, step), ..p };
             out.push(cur);
         }
         self.pos = Some(cur);
@@ -122,7 +204,7 @@ impl Smoother {
     /// Is Stroke Catch-Up still pulling the brush towards a pointer that has stopped? Then the
     /// stroke needs time to keep passing (repeats of the last point) while the pointer is held.
     pub fn lagging(&self) -> bool {
-        match (self.active() && self.cfg.catch_up && !self.cfg.pulled_string, self.pos, self.last_input) {
+        match (self.active() && self.cfg.catch_up && !self.cfg.pulled_string && !self.stabilizing(), self.pos, self.last_input) {
             (true, Some(pos), Some(last)) => (pos.x - last.x).abs() + (pos.y - last.y).abs() > 0.01,
             _ => false,
         }
@@ -138,7 +220,22 @@ impl Smoother {
 
     /// End of stroke: with Catch-Up On Stroke End the brush finishes at the last pointer position.
     pub fn finish(&mut self, out: &mut Vec<StrokePoint>) {
-        if !self.active() || !self.cfg.catch_up_on_end {
+        if !self.active() {
+            return;
+        }
+        if self.stabilizing() {
+            // Finish Line: the stroke runs on to the last pointer position; otherwise it stops
+            // where the average left it.
+            if self.cfg.finish_line
+                && let (Some(pos), Some(last)) = (self.pos, self.last_input)
+                && (pos.x != last.x || pos.y != last.y)
+            {
+                self.pos = Some(last);
+                out.push(last);
+            }
+            return;
+        }
+        if !self.cfg.catch_up_on_end {
             return;
         }
         if let (Some(pos), Some(last)) = (self.pos, self.last_input)
@@ -174,6 +271,16 @@ pub struct StepInput {
     pub initial_direction: f32,
     /// Sequential step number (0 = first).
     pub step: u64,
+    /// Pointer speed over the current segment, document pixels per millisecond (0 without
+    /// timestamps).
+    pub speed: f32,
+}
+
+impl StepInput {
+    /// A step at `point` with no direction or speed (for spacing lookups before the path exists).
+    pub fn at(point: StrokePoint) -> Self {
+        Self { point, direction: 0.0, initial_direction: 0.0, step: 0, speed: 0.0 }
+    }
 }
 
 /// Walks a polyline and emits steps every `step_len(point)` pixels, plus airbrush steps in time.
@@ -186,6 +293,7 @@ pub struct PathWalker {
     pending_first: Option<StrokePoint>,
     initial_dir: Option<f32>,
     dir: f32,
+    speed: f32,
     step: u64,
     /// Airbrush interval in ms (None = off).
     interval: Option<f64>,
@@ -206,6 +314,7 @@ impl PathWalker {
             pending_first: None,
             initial_dir: None,
             dir: 0.0,
+            speed: 0.0,
             step: 0,
             interval: build_up_interval_ms,
             time_acc: 0.0,
@@ -254,7 +363,7 @@ impl PathWalker {
     }
 
     fn emit(&mut self, point: StrokePoint, out: &mut impl FnMut(StepInput)) {
-        let s = StepInput { point, direction: self.dir, initial_direction: self.initial_dir.unwrap_or(self.dir), step: self.step };
+        let s = StepInput { point, direction: self.dir, initial_direction: self.initial_dir.unwrap_or(self.dir), step: self.step, speed: self.speed };
         self.step += 1;
         out(s);
     }
@@ -273,6 +382,8 @@ impl PathWalker {
             if self.initial_dir.is_none() {
                 self.initial_dir = Some(self.dir);
             }
+            let dt = p.time - a.time;
+            self.speed = if dt > 0.0 && dt.is_finite() { (len / dt) as f32 } else { 0.0 };
         }
         if let Some(f) = self.pending_first.take() {
             self.emit(f, out);
@@ -342,28 +453,75 @@ impl PathWalker {
 // Dynamics
 // ---------------------------------------------------------------------------
 
-/// Scalar control value in 0..1.
+/// Scalar control value in 0..1. The drawing-angle, Speed and Random controls need the dynamic's
+/// settings and a random value: see [`sensor_value`]; here they read 1.
 pub fn control_value(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
     let p = &s.point;
     match c {
-        Control::Off | Control::InitialDirection | Control::Direction => 1.0,
+        Control::Off | Control::InitialDirection | Control::Direction | Control::DrawingAngle | Control::Random => 1.0,
         Control::Fade => 1.0 - (s.step as f32 / fade_steps.max(1) as f32).min(1.0),
         Control::PenPressure => p.pressure.clamp(0.0, 1.0),
         // Upright pen = 1, flat pen = 0 (a mouse reports no tilt, so paints at full value).
         Control::PenTilt => 1.0 - (p.tilt_x.hypot(p.tilt_y) / 90.0).clamp(0.0, 1.0),
         Control::StylusWheel => p.wheel.clamp(0.0, 1.0),
         Control::Rotation => (p.rotation.rem_euclid(360.0)) / 360.0,
+        Control::Speed => (f64::from(s.speed) / MAX_SPEED_PX_MS).clamp(0.0, 1.0) as f32,
     }
 }
 
-/// A dynamic's control value passed through its own response curve ([`Dynamic::curve`]). Controls
-/// with no 0..1 input (Off, the direction controls) read 1 and skip the curve.
+/// Does a control have a 0..1 input its response curve shapes?
+pub fn takes_curve(c: Control) -> bool {
+    !matches!(c, Control::Off | Control::InitialDirection | Control::Direction)
+}
+
+/// The drawing angle of a step as the sensor reads it, in degrees 0..360: the stroke direction
+/// (or the first segment's with `lock`) plus `offset`.
+pub fn drawing_angle_deg(d: &Dynamic, s: &StepInput) -> f32 {
+    let dir = if d.drawing_angle.lock { s.initial_direction } else { s.direction };
+    (dir.to_degrees() + d.drawing_angle.offset).rem_euclid(360.0)
+}
+
+/// One sensor's 0..1 value for a dynamic, through `curve`. `rnd` is the dab's random value for
+/// [`Control::Random`].
+fn sensor_value(d: &Dynamic, c: Control, fade_steps: u32, curve: &crate::curve::ResponseCurve, s: &StepInput, rnd: f32) -> f32 {
+    let v = match c {
+        Control::DrawingAngle => drawing_angle_deg(d, s) / 360.0,
+        Control::Random => rnd.clamp(0.0, 1.0),
+        _ => control_value(c, fade_steps, s),
+    };
+    if takes_curve(c) { curve.eval(v) } else { v }
+}
+
+/// A dynamic's control value passed through its own response curve ([`Dynamic::curve`]), combined
+/// with its extra sensors by [`Dynamic::combine`]. Controls with no 0..1 input (Off, the direction
+/// controls) read 1 and skip the curve. Random sensors read 1 here (no dab index): use
+/// [`dynamic_value_rnd`] where a dab's random stream is at hand.
 pub fn dynamic_value(d: &Dynamic, s: &StepInput) -> f32 {
-    let v = control_value(d.control, d.fade_steps, s);
-    match d.control {
-        Control::Off | Control::InitialDirection | Control::Direction => v,
-        Control::Fade | Control::PenPressure | Control::PenTilt | Control::StylusWheel | Control::Rotation => d.curve.eval(v),
+    dynamic_value_rnd(d, s, 1.0)
+}
+
+/// [`dynamic_value`] with `rnd` as the value of a [`Control::Random`] sensor.
+pub fn dynamic_value_rnd(d: &Dynamic, s: &StepInput, rnd: f32) -> f32 {
+    let mut acc: Option<f32> = (d.control != Control::Off).then(|| sensor_value(d, d.control, d.fade_steps, &d.curve, s, rnd));
+    for (k, sen) in d.sensors.iter().enumerate() {
+        if sen.control == Control::Off {
+            continue;
+        }
+        // Each Random sensor draws its own value.
+        let r = if k == 0 { rnd } else { (rnd * (k as f32 + 1.0) * 0.618_034).fract() };
+        let v = sensor_value(d, sen.control, sen.fade_steps, &sen.curve, s, r);
+        acc = Some(match acc {
+            None => v,
+            Some(a) => match d.combine {
+                SensorCombine::Multiply => a * v,
+                SensorCombine::Add => (a + v).min(1.0),
+                SensorCombine::Max => a.max(v),
+                SensorCombine::Min => a.min(v),
+                SensorCombine::Difference => (a - v).abs(),
+            },
+        });
     }
+    acc.unwrap_or(1.0).clamp(0.0, 1.0)
 }
 
 /// Angle contributed by a control, in degrees (counter-clockwise).
@@ -384,6 +542,19 @@ pub fn control_angle(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
         Control::Rotation => p.rotation,
         Control::InitialDirection => s.initial_direction.to_degrees(),
         Control::Direction => s.direction.to_degrees(),
+        Control::DrawingAngle => s.direction.to_degrees(),
+        Control::Speed => 360.0 * (f64::from(s.speed) / MAX_SPEED_PX_MS).clamp(0.0, 1.0) as f32,
+        Control::Random => 0.0,
+    }
+}
+
+/// [`control_angle`] for a dynamic: the drawing-angle sensor adds its offset and may lock to the
+/// first segment; a Random control turns the tip by a random angle.
+pub fn dynamic_angle(d: &Dynamic, s: &StepInput, rnd: f32) -> f32 {
+    match d.control {
+        Control::DrawingAngle => drawing_angle_deg(d, s),
+        Control::Random => 360.0 * rnd.clamp(0.0, 1.0),
+        c => control_angle(c, d.fade_steps, s),
     }
 }
 
@@ -394,7 +565,8 @@ fn scalar(d: &Dynamic, s: &StepInput, r: f32) -> f32 {
         return 1.0;
     }
     let min = d.minimum.clamp(0.0, 1.0);
-    let cv = dynamic_value(d, s);
+    // The jitter draw doubles as the Random sensor's value.
+    let cv = dynamic_value_rnd(d, s, r);
     let v = (min + (1.0 - min) * cv) * (1.0 - d.jitter.clamp(0.0, 1.0) * r);
     v.max(min)
 }
@@ -435,7 +607,7 @@ pub fn dynamic_color(b: &BrushSettings, s: &StepInput, seed: u64, index: u64) ->
     let cd = &b.color_dynamics;
     let (fg, bg) = (b.color, b.background);
     let r = |st: u64| rand01(seed, index, st);
-    let base = if cd.fg_bg.control != Control::Off { 1.0 - dynamic_value(&cd.fg_bg, s) } else { 0.0 };
+    let base = if cd.fg_bg.control != Control::Off || cd.fg_bg.has_sensors() { 1.0 - dynamic_value_rnd(&cd.fg_bg, s, r(stream::RANDOM)) } else { 0.0 };
     let t = (base + (1.0 - base) * cd.fg_bg.jitter.clamp(0.0, 1.0) * r(stream::FG_BG)).clamp(0.0, 1.0);
     let rgb = [fg[0] + (bg[0] - fg[0]) * t, fg[1] + (bg[1] - fg[1]) * t, fg[2] + (bg[2] - fg[2]) * t];
     let [mut h, mut sat, mut v] = rgb_to_hsv(rgb);
@@ -452,13 +624,30 @@ pub fn dynamic_color(b: &BrushSettings, s: &StepInput, seed: u64, index: u64) ->
 pub fn base_diameter(b: &BrushSettings, s: &StepInput) -> f32 {
     let sd = &b.shape_dynamics;
     let mut f = 1.0;
-    if sd.enabled && sd.size.control != Control::Off {
+    if sd.enabled && (sd.size.control != Control::Off || sd.size.has_sensors()) {
         let min = sd.size.minimum.clamp(0.0, 1.0);
         f = min + (1.0 - min) * dynamic_value(&sd.size, s);
     } else if b.pressure_size {
         f = s.point.pressure.clamp(0.0, 1.0);
     }
     b.size * f
+}
+
+/// Distance to the next dab at a step: the spacing fraction of the base diameter (or the
+/// auto-spacing law, `coeff × √diameter` pixels), scaled by the spacing sensor and, without
+/// isotropic spacing, by the tip's roundness.
+pub fn spacing_px(b: &BrushSettings, s: &StepInput) -> f64 {
+    let d = base_diameter(b, s).max(1.0);
+    let g = &b.generated;
+    let mut step = if g.auto_spacing { g.auto_spacing_coeff.max(0.01) * d.sqrt() } else { d * b.spacing.max(0.01) };
+    let sp = &b.spacing_dynamic;
+    if sp.is_active() {
+        step *= scalar(sp, s, rand01(b.seed, s.step, stream::SPACING)).max(0.01);
+    }
+    if !b.isotropic_spacing {
+        step *= b.roundness.clamp(0.05, 1.0);
+    }
+    f64::from(step).max(0.5)
 }
 
 /// Builds the primary dabs of a step (Shape Dynamics, Scattering, Transfer, Color, Texture depth).
@@ -469,20 +658,70 @@ pub struct DabBuilder {
     /// Per-stroke colour (Color Dynamics with per-tip off), computed at the first step.
     stroke_color: Option<[f32; 4]>,
     next_index: u64,
+    /// Direction of the previous step, for Fan Corners.
+    last_direction: Option<f32>,
 }
 
 impl DabBuilder {
     pub fn new(brush: &BrushSettings) -> Self {
-        Self { brush: brush.clone(), seed: brush.seed, stroke_color: None, next_index: 0 }
+        Self { brush: brush.clone(), seed: brush.seed, stroke_color: None, next_index: 0, last_direction: None }
     }
 
     pub fn step_len(&self, p: &StrokePoint) -> f64 {
-        let s = StepInput { point: *p, direction: 0.0, initial_direction: 0.0, step: 0 };
-        let d = base_diameter(&self.brush, &s).max(1.0);
-        f64::from(d * self.brush.spacing.max(0.01)).max(0.5)
+        spacing_px(&self.brush, &StepInput::at(*p))
     }
 
+    /// The dynamics that read the drawing angle and ask for fanned corners, if any: the smallest
+    /// fan threshold in radians.
+    fn fan_threshold(&self) -> Option<f32> {
+        let b = &self.brush;
+        let mut dyns: Vec<&Dynamic> = Vec::new();
+        if b.shape_dynamics.enabled {
+            dyns.extend([&b.shape_dynamics.size, &b.shape_dynamics.angle, &b.shape_dynamics.roundness]);
+        }
+        if b.scattering.enabled {
+            dyns.extend([&b.scattering.scatter, &b.scattering.count_jitter]);
+        }
+        if b.transfer.enabled {
+            dyns.extend([&b.transfer.opacity, &b.transfer.flow, &b.transfer.wetness, &b.transfer.mix]);
+        }
+        if b.color_dynamics.enabled {
+            dyns.push(&b.color_dynamics.fg_bg);
+        }
+        if b.texture.enabled && b.texture.each_tip {
+            dyns.push(&b.texture.depth_jitter);
+        }
+        dyns.push(&b.spacing_dynamic);
+        dyns.iter()
+            .filter(|d| d.drawing_angle.fan_corners && (d.reads_drawing_angle() || matches!(d.control, Control::Direction)))
+            .map(|d| d.drawing_angle.fan_angle.clamp(1.0, 180.0).to_radians())
+            .reduce(f32::min)
+    }
+
+    /// Build the dabs of a step; at a corner sharper than the fan threshold, extra dabs at the
+    /// same point turn the direction through the corner first (Fan Corners).
     pub fn build(&mut self, s: &StepInput, out: &mut Vec<Dab>) {
+        if let (Some(th), Some(prev)) = (self.fan_threshold(), self.last_direction) {
+            let mut turn = s.direction - prev;
+            while turn > std::f32::consts::PI {
+                turn -= std::f32::consts::TAU;
+            }
+            while turn < -std::f32::consts::PI {
+                turn += std::f32::consts::TAU;
+            }
+            if turn.abs() > th && turn.is_finite() {
+                let n = ((turn.abs() / th).ceil() as u32).clamp(1, MAX_FAN_DABS);
+                for k in 1..n {
+                    let dir = prev + turn * (k as f32 / n as f32);
+                    self.build_one(&StepInput { direction: dir, ..*s }, out);
+                }
+            }
+        }
+        self.last_direction = Some(s.direction);
+        self.build_one(s, out);
+    }
+
+    fn build_one(&mut self, s: &StepInput, out: &mut Vec<Dab>) {
         let b = &self.brush;
         let seed = self.seed;
         let sd = &b.shape_dynamics;
@@ -510,8 +749,13 @@ impl DabBuilder {
                     let f = (1.0 - sd.size.jitter.clamp(0.0, 1.0) * r(stream::SIZE)).max(min);
                     diameter *= f;
                 }
-                angle +=
-                    control_angle(sd.angle.control, sd.angle.fade_steps, s) + rand_signed(seed, i, stream::ANGLE) * sd.angle.jitter.clamp(0.0, 1.0) * 180.0;
+                angle += dynamic_angle(&sd.angle, s, r(stream::RANDOM)) + rand_signed(seed, i, stream::ANGLE) * sd.angle.jitter.clamp(0.0, 1.0) * 180.0;
+                // Extra sensors on Angle turn the tip by their share of a full turn.
+                if sd.angle.has_sensors() {
+                    let mut d = sd.angle;
+                    d.control = Control::Off;
+                    angle += 360.0 * dynamic_value_rnd(&d, s, r(stream::RANDOM));
+                }
                 roundness = (roundness * scalar(&sd.roundness, s, r(stream::ROUNDNESS))).clamp(0.01, 1.0);
                 if sd.flip_x_jitter && r(stream::FLIP_X) < 0.5 {
                     fx = !fx;
@@ -536,11 +780,26 @@ impl DabBuilder {
                     }
                 }
             }
+            // Precision: coarse levels snap the dab size to steps (cheaper tip caches upstream;
+            // here it keeps the look of a low-precision preset).
+            if matches!(b.tip, crate::brush::TipShape::Round) {
+                diameter = b.generated.snap_diameter(diameter);
+            }
             let radius = (diameter / 2.0).max(0.5);
             // Scatter.
             let mut c = Point::new(s.point.x, s.point.y);
-            if sc.enabled && sc.scatter.jitter > 0.0 {
-                let cv = dynamic_value(&sc.scatter, s);
+            if sc.enabled && sc.separate_axes && (sc.along > 0.0 || sc.across > 0.0) {
+                let cv = dynamic_value_rnd(&sc.scatter, s, r(stream::RANDOM));
+                let along = f64::from(sc.along.clamp(0.0, crate::brush::MAX_SCATTER) * cv * radius);
+                let across = f64::from(sc.across.clamp(0.0, crate::brush::MAX_SCATTER) * cv * radius);
+                let oa = rand_signed(seed, i, stream::SCATTER_ALONG) as f64 * along;
+                let ox = rand_signed(seed, i, stream::SCATTER_X) as f64 * across;
+                // Along = the direction of travel, across = perpendicular to it (y-down image space).
+                let (dx, dy) = (f64::from(s.direction.cos()), -f64::from(s.direction.sin()));
+                c.x += dx * oa - dy * ox;
+                c.y += dy * oa + dx * ox;
+            } else if sc.enabled && sc.scatter.jitter > 0.0 {
+                let cv = dynamic_value_rnd(&sc.scatter, s, r(stream::RANDOM));
                 let amt = f64::from(sc.scatter.jitter * cv * radius);
                 let (ox, oy) = (rand_signed(seed, i, stream::SCATTER_X) as f64 * amt, rand_signed(seed, i, stream::SCATTER_Y) as f64 * amt);
                 if sc.both_axes {
@@ -561,7 +820,7 @@ impl DabBuilder {
                 flow *= scalar(&tr.flow, s, r(stream::FLOW));
             }
             let (wet, mix) = if tr.enabled { (scalar(&tr.wetness, s, r(stream::WET)), scalar(&tr.mix, s, r(stream::MIX))) } else { (1.0, 1.0) };
-            if b.pressure_opacity && !(tr.enabled && tr.opacity.control != Control::Off) {
+            if b.pressure_opacity && !(tr.enabled && (tr.opacity.control != Control::Off || tr.opacity.has_sensors())) {
                 opacity *= s.point.pressure.clamp(0.0, 1.0);
             }
             // Colour.

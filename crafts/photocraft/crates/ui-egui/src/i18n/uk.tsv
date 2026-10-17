@@ -3901,3 +3901,40 @@ curves	Smooth	Згладити
 	Ink below	Поріг туші
 	Close gaps	Закрити розриви
 	Under ink	Під туш
+	Angle Offset:	Зсув кута:
+	Read the direction of the first stroke segment for the whole stroke	Використовувати напрямок першого сегмента для всього штриха
+	Fan Corners	Віялоподібні кути
+	Turn sharper than this is fanned	Поворот крутіший за цей розкладається віялом
+	Sensor:	Датчик:
+	Combine:	Поєднання:
+	Auto Spacing	Автоінтервал
+	Spacing grows with the square root of the size	Інтервал зростає з квадратним коренем розміру
+	Auto spacing coefficient	Коефіцієнт автоінтервалу
+	Minimum Spacing	Мінімальний інтервал
+	Isotropic Spacing	Ізотропний інтервал
+	Space dabs by the diameter alone, not by the roundness	Інтервал лише за діаметром, без урахування округлості
+	Mask:	Маска:
+	Fade X	Згасання X
+	Fade Y	Згасання Y
+	Lock Fade	Зв'язати згасання
+	The vertical fade follows the horizontal one	Вертикальне згасання повторює горизонтальне
+	Soft curve:	М'яка крива:
+	Spikes	Промені
+	Randomness	Випадковість
+	Anti-aliasing	Згладжування
+	Auto Precision	Автоточність
+	Precision	Точність
+	Separate Axes	Окремі осі
+	Scatter along and across the stroke by different amounts	Розсіювання вздовж і впоперек штриха різної величини
+	Along	Уздовж
+	Across	Упоперек
+	Stabilizer	Стабілізатор
+	Average the last input points; the sample count follows the speed	Усереднення останніх точок вводу; кількість вибірок залежить від швидкості
+	Samples (slow)	Вибірки (повільно)
+	Samples (fast)	Вибірки (швидко)
+	Delay	Затримка
+	Finish Line	Домалювати лінію
+	Stabilize Sensors	Стабілізувати датчики
+	Smooth Pressure	Згладжувати натиск
+	Smooth the pen pressure along with the position	Згладжувати натиск пера разом із положенням
+	Drawing Angle	Кут малювання

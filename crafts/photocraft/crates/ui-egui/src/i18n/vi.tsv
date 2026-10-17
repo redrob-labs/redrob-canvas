@@ -3690,3 +3690,40 @@ curves	Smooth	Làm mượt
 	Ink below	Ngưỡng mực
 	Close gaps	Bịt khe
 	Under ink	Dưới nét mực
+	Angle Offset:	Độ lệch góc:
+	Read the direction of the first stroke segment for the whole stroke	Dùng hướng của đoạn đầu cho cả nét vẽ
+	Fan Corners	Góc hình quạt
+	Turn sharper than this is fanned	Khúc ngoặt gắt hơn mức này được xòe ra
+	Sensor:	Cảm biến:
+	Combine:	Kết hợp:
+	Auto Spacing	Khoảng cách tự động
+	Spacing grows with the square root of the size	Khoảng cách tăng theo căn bậc hai của kích cỡ
+	Auto spacing coefficient	Hệ số khoảng cách tự động
+	Minimum Spacing	Khoảng cách tối thiểu
+	Isotropic Spacing	Khoảng cách đẳng hướng
+	Space dabs by the diameter alone, not by the roundness	Đặt khoảng cách chỉ theo đường kính, không theo độ tròn
+	Mask:	Mặt nạ:
+	Fade X	Mờ dần X
+	Fade Y	Mờ dần Y
+	Lock Fade	Khóa mờ dần
+	The vertical fade follows the horizontal one	Mờ dần dọc theo mờ dần ngang
+	Soft curve:	Đường cong mềm:
+	Spikes	Gai
+	Randomness	Độ ngẫu nhiên
+	Anti-aliasing	Khử răng cưa
+	Auto Precision	Độ chính xác tự động
+	Precision	Độ chính xác
+	Separate Axes	Tách trục
+	Scatter along and across the stroke by different amounts	Phân tán dọc và ngang nét vẽ với mức khác nhau
+	Along	Dọc
+	Across	Ngang
+	Stabilizer	Bộ ổn định
+	Average the last input points; the sample count follows the speed	Trung bình các điểm nhập gần nhất; số mẫu theo tốc độ
+	Samples (slow)	Mẫu (chậm)
+	Samples (fast)	Mẫu (nhanh)
+	Delay	Độ trễ
+	Finish Line	Hoàn tất đường
+	Stabilize Sensors	Ổn định cảm biến
+	Smooth Pressure	Làm mượt lực nhấn
+	Smooth the pen pressure along with the position	Làm mượt lực nhấn bút cùng với vị trí
+	Drawing Angle	Góc vẽ
