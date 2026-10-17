@@ -2334,3 +2334,613 @@ ours = "full"
 ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/graphic_styles.rs, crafts/vectorcraft/crates/engine/src/cmd/stylelib.rs"
 gap = ""
 priority = 2
+
+# ---------------------------------------------------------------------------------------------
+# text
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-TEXT-001"
+group = "text"
+name = "Point text and flowed (area) text"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/flowing-text-into-frame.html"
+behaviour = "Click gives a single-anchor text; drag gives a frame whose text wraps and is clipped (SVG 2 shape-inside, with a browser-compatible fallback); frame corners resize live; text can also flow into any shape via Text > Flow into Frame and excluded regions via Subtract Frame; convert between the two kinds."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/text.rs (Type, Area Type), crafts/vectorcraft/crates/engine/src/cmd/textwrap.rs, crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (Convert to Area/Point Type)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TEXT-002"
+group = "text"
+name = "Text on path"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/putting-text-on-path.html"
+behaviour = "Select a text and a path, Text > Put on Path attaches the text to the path baseline, following its edits; offset by dragging or kerning; Remove from Path detaches; works with shapes after conversion to path."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/pathtype.rs, crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (Type on a Path: Rainbow, Skew, 3D Ribbon, Stair Step, Gravity; Align to Path)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TEXT-003"
+group = "text"
+name = "Text and Font dialog"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/styling-text.html"
+behaviour = "Font family list with preview and search, style, size, line spacing, alignment, and a Features tab; a Text tab edits the content; 1.3 adds font collections (user-defined groups of fonts) and a recent/favourites filter; 1.4 offers an experimental alternative layout."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/character.rs, crafts/vectorcraft/crates/ui-egui/src/panels/paragraph.rs, crafts/vectorcraft/crates/ui-egui/src/font_menu.rs"
+gap = "no user font collections (favourites/recent only)"
+priority = 1
+evidence = "docs/parity/evidence/VEC-text-font.png"
+
+[[feature]]
+id = "VE-TEXT-004"
+group = "text"
+name = "Kerning, letter spacing, word spacing, baseline shift, rotation of letters"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/moving-and-rotating-letters.html"
+behaviour = "Alt+arrows shift the letters after the cursor horizontally/vertically (manual kerns), Alt+[ ] rotate them; toolbar fields set letter spacing, word spacing, horizontal/vertical kern and character rotation; Text > Remove Manual Kerns clears them."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/typewidget.rs (Touch Type), crafts/vectorcraft/crates/ui-egui/src/panels/character.rs (kerning, tracking, baseline shift, rotation)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TEXT-005"
+group = "text"
+name = "Line height and its units"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Better_Line_Height_Settings"
+behaviour = "Line height is set in the toolbar in unitless multiples, percent, em, px or pt; a lock toggle decides whether changing font size rescales it; adaptive per line."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/character.rs (leading, auto leading)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TEXT-006"
+group = "text"
+name = "Superscript and subscript"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/styling-text.html"
+behaviour = "Toolbar toggles set the selected characters to superscript or subscript (baseline shift plus size)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/character.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-TEXT-007"
+group = "text"
+name = "OpenType font features"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92#Font_Features"
+behaviour = "The Features tab of Text and Font lists the OpenType features the font offers (ligatures, small caps, numerals, stylistic sets...) as toggles and shows a preview; written as font-feature-settings."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/opentype.rs, crafts/vectorcraft/crates/text/src/features.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-TEXT-008"
+group = "text"
+name = "Variable fonts"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Variable_Font_Support"
+behaviour = "Variable fonts expose their axes (weight, width, slant and custom) as sliders in the Text and Font dialog; stored as font-variation-settings."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/text/src/fontdb.rs (variation axes), crafts/vectorcraft/crates/ui-egui/src/panels/character.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-TEXT-009"
+group = "text"
+name = "Vertical and right-to-left text"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92#Vertical_Text"
+behaviour = "Toolbar buttons switch writing mode to vertical (upright or sideways CJK) and text direction to right-to-left; bidi runs are shaped correctly."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/text.rs (Vertical Type tools), crafts/vectorcraft/crates/text/src/layout.rs (bidi)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-TEXT-010"
+group = "text"
+name = "Unicode character entry and Unicode Characters dialog"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Ctrl+U in the text tool enters a hex code-point typing mode; Text > Unicode Characters dialog browses by script and range with a font preview and inserts glyphs."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/glyphs.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Insert Special Character)"
+gap = "no hex code-point typing mode"
+priority = 2
+
+[[feature]]
+id = "VE-TEXT-011"
+group = "text"
+name = "Spell check"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Text > Check Spelling walks the document's text with system dictionaries (several languages), offering replacements, ignore and add-to-dictionary."
+ours = "none"
+ours_where = ""
+gap = "Spelling menu items are placeholders"
+priority = 3
+
+[[feature]]
+id = "VE-TEXT-012"
+group = "text"
+name = "Text to path (outline)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/objects-to-paths.html"
+behaviour = "Object to Path converts text to a group of glyph outlines; 1.3 can keep the text as a hidden original."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/typecmd.rs (Create Outlines)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TEXT-013"
+group = "text"
+name = "Text colour, fill/stroke on glyphs and partial selection styling"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/changing-text-color.html"
+behaviour = "Any run of selected characters can take its own fill, stroke, font, size and other style, stored as tspan spans."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/text.rs (CharStyle runs), crafts/vectorcraft/crates/engine/src/cmd/textedit.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TEXT-014"
+group = "text"
+name = "SVG font editor"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/creating-custom-fonts.html"
+behaviour = "A dialog creates an SVG font inside the document: glyph list with unicode, name and advance, 'get curves from selection', kerning pairs, and a preview string; typography extensions turn glyph layers into a font and back."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-TEXT-015"
+group = "text"
+name = "Alignment and justification"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/styling-text.html"
+behaviour = "Left, centre, right and (for flowed text) justified alignment; the anchor of point text moves accordingly."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/paragraph.rs (7 alignments, indents, space before/after)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-TEXT-016"
+group = "text"
+name = "Change case, split/merge text (extensions)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Extensions"
+behaviour = "Extensions > Text offers Change Case (upper, lower, title, sentence, flip, random), Split text into lines/words/letters, Merge texts, Extract text, Replace font and Braille conversion."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (Change Case, Find Font)"
+gap = "no split/merge text objects or Braille"
+priority = 3
+
+[[feature]]
+id = "VE-TEXT-017"
+group = "text"
+name = "Lorem ipsum / placeholder text"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Extensions"
+behaviour = "Extensions > Text > Lorem ipsum fills a flowed frame with a given number of paragraphs of filler text."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (Fill with Placeholder Text)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-TEXT-018"
+group = "text"
+name = "Paragraph and character styles"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/styling-text.html"
+behaviour = "Inkscape styles text directly (and via Selectors and CSS); it has no named character/paragraph style sheets."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/text_styles.rs, crafts/vectorcraft/crates/engine/src/cmd/textstyles.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-TEXT-019"
+group = "text"
+name = "Hyphenation, tabs, threaded text"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/flowing-text-into-frame.html"
+behaviour = "Flowed text wraps at word boundaries; there is no automatic hyphenation, tab stops or linking of overflow between frames (overflow is simply clipped)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/text/src/hyphen.rs, crafts/vectorcraft/crates/ui-egui/src/panels/tabs.rs, crafts/vectorcraft/crates/engine/src/cmd/threads.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-TEXT-020"
+group = "text"
+name = "Text selection and editing keys"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Standard caret movement, Shift-select, Ctrl+A select all text, Ctrl+B/I bold/italic, Ctrl+arrows by word, Home/End, Enter new line; double-click selects a word, triple-click a line; drag-select across letters; Esc leaves editing."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/text/src/edit.rs, crafts/vectorcraft/crates/engine/src/cmd/textedit.rs"
+gap = ""
+priority = 1
+
+# ---------------------------------------------------------------------------------------------
+# filters (SVG filter editor, primitives, preset gallery)
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-FILT-001"
+group = "filter"
+name = "Filter Editor dialog"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Filter_Editor"
+behaviour = "Lists the document's filters, lets one be built from a chain of primitives drawn as a connection graph (inputs: source graphic, source alpha, background, fill/stroke paint, previous result), with per-primitive parameter panels, a filter region (x, y, w, h), rename, duplicate and apply to the selection; 1.3 reworked the layout and primitive settings."
+ours = "none"
+ours_where = ""
+gap = "no SVG filter graph editing; live effects are a fixed catalogue"
+priority = 2
+evidence = "docs/parity/evidence/VEC-filter-editor.png"
+
+[[feature]]
+id = "VE-FILT-002"
+group = "filter"
+name = "Filter Gallery (preset browser)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Filter_Gallery"
+behaviour = "1.4 adds a gallery with rendered thumbnails of every stock filter, grouped by category, with search and one-click apply; the Filters menu still lists them by category."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect menu), crafts/vectorcraft/crates/ui-egui/src/dialogs/effect.rs"
+gap = "effects are chosen from a menu with a dialog; no thumbnail gallery"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-003"
+group = "filter"
+name = "Remove filters / filter visibility"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Filters > Remove Filters strips every filter from the selection; View > Display mode 'No Filters' renders without them for speed."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/appearance.rs (effect visibility, delete), crafts/vectorcraft/crates/engine/src/cmd/appearance.rs (Reduce to Basic Appearance)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-FILT-004"
+group = "filter"
+name = "Primitive: Gaussian blur"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Blurs the input with separate horizontal and vertical standard deviation; the common building block of shadows and glows."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/blur.rs, crafts/vectorcraft/crates/svg/src/import/fx.rs"
+gap = "single radius (plus radial and smart blur variants)"
+priority = 1
+
+[[feature]]
+id = "VE-FILT-005"
+group = "filter"
+name = "Primitive: drop shadow"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "SVG 2 feDropShadow (and the classic offset+blur+flood+merge chain): dx, dy, blur, colour, opacity; the preset Drop Shadow dialog in Filters > Shadows and Glows exposes blur, offset, colour, type (outer/inner/outer cutout/inner cutout/shadow only)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/stylize.rs (stylize.dropShadow, innerGlow, outerGlow), crafts/vectorcraft/crates/svg/src/import/fx.rs (round-trip)"
+gap = "no cutout variants"
+priority = 1
+
+[[feature]]
+id = "VE-FILT-006"
+group = "filter"
+name = "Primitive: colour matrix (matrix, saturate, hue rotate, luminance to alpha)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Applies a 5x4 matrix or one of the shorthand modes to the input's colours."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/adjust.rs (Saturate, Adjust Color Balance, Invert, Convert to Grayscale as document edits)"
+gap = "colour adjustments are applied to the objects' paint, not as a live raster primitive on the composite"
+priority = 2
+
+[[feature]]
+id = "VE-FILT-007"
+group = "filter"
+name = "Primitive: component transfer"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Per-channel identity/table/discrete/linear/gamma functions, the basis of the Posterize, Brightness-Contrast and Solarize presets."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/artistic.rs, crafts/vectorcraft/crates/render/src/fx.rs"
+gap = "no table/discrete/gamma transfer primitive; posterize-like looks only via raster effects"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-008"
+group = "filter"
+name = "Primitive: composite (over, in, out, atop, xor, arithmetic)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Combines two inputs with a Porter-Duff operator or an arithmetic k1..k4 formula; used for cutouts and knockouts."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (Knockout groups), crafts/vectorcraft/crates/render/src/group.rs"
+gap = "knockout and blend compositing at the group level only"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-009"
+group = "filter"
+name = "Primitive: convolve matrix"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Arbitrary NxM kernel with divisor, bias, target, edge mode and alpha preservation (sharpen, emboss, edge detect)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/sharpen.rs (Unsharp Mask), crafts/vectorcraft/crates/effects/src/pixel/edges.rs (Glowing Edges)"
+gap = "fixed kernels only"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-010"
+group = "filter"
+name = "Primitives: diffuse and specular lighting"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Light the input's alpha as a height map with a distant, point or spot light; surface scale, constants, exponent and light colour; the basis of bevel, bump and 3D-shader presets."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-FILT-011"
+group = "filter"
+name = "Primitive: displacement map"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Displaces the pixels of one input by the channels of another (usually turbulence) with a scale; the basis of the Distort presets."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/distort.rs (Glass, Ocean Ripple, Diffuse Glow)"
+gap = "fixed displacement looks; no user-supplied map"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-012"
+group = "filter"
+name = "Primitives: flood, merge, offset, tile, image"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Flood fills the region with a colour, Merge stacks inputs, Offset shifts by dx/dy, Tile repeats the input, Image brings in an external or document image as an input."
+ours = "none"
+ours_where = ""
+gap = "these appear only implicitly inside the fixed shadow/glow effects"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-013"
+group = "filter"
+name = "Primitive: morphology (erode / dilate)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Shrinks or grows the alpha shape by a radius; used for outlines and ink-blot presets."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/pathops/src/offset.rs (vector Offset Path)"
+gap = "geometric offset of paths; no raster erode/dilate of the composite"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-014"
+group = "filter"
+name = "Primitive: turbulence (fractal noise)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Perlin turbulence or fractal noise with base frequency, octaves, seed and stitching; the texture source for most Texture, Materials and Scatter presets."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs (Grain, Texturizer, Craquelure), crafts/vectorcraft/crates/effects/src/pixel/artistic.rs (Film Grain)"
+gap = "noise is baked into specific texture effects"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-015"
+group = "filter"
+name = "Primitive: blend (16 modes between two inputs)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Blends two filter inputs with any of the CSS blend modes inside the filter graph."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/color/src/blend.rs"
+gap = "blend modes apply between objects/fills, not between filter results"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-016"
+group = "filter"
+name = "Preset category: Bevels"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Lighting-based raised looks (bloom, button, matte jelly, neon, specular light, stained glass, translucent...) applied with one click and editable afterwards in the editor."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs (Stained Glass), crafts/vectorcraft/crates/effects/src/solids.rs (3D Extrude & Bevel)"
+gap = "no lighting-based bevel/emboss raster effect on flat art"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-017"
+group = "filter"
+name = "Preset category: Blurs"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Blur, Blur content, Blur double, Cross blur, Fancy blur, Feather, Motion blur, Noisy blur, Out of focus, Apparition, Evanescent, Image blur, Blur edge (Fade)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/blur.rs (Gaussian, Radial spin/zoom, Smart), crafts/vectorcraft/crates/effects/src/stylize.rs (Feather)"
+gap = "no motion blur or cross blur"
+priority = 2
+
+[[feature]]
+id = "VE-FILT-018"
+group = "filter"
+name = "Preset category: Bumps"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Relief looks from turbulence and lighting: bump, canvas bumps, dark/light bumps, embossed leather, lead pencil, paper bump, wax bump, HSL bumps, bubbly, fuzzy, rough paper..."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs (Texturizer, Craquelure, Grain, Mosaic Tiles, Patchwork)"
+gap = "texture effects without lighting direction control"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-019"
+group = "filter"
+name = "Preset category: Colour"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Brilliance, Channel transparency, Colour blindness simulation, Colour shift, Colorize, Duochrome, Extract channel, Fade to black or white, Greyscale, Invert, Lightness-contrast, Nudge RGB/CMY, Quadritone, Simple blend, Solarize, Tritone."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/adjust.rs, crafts/vectorcraft/crates/engine/src/cmd/colorcmds.rs (Edit Colors: Adjust Color Balance, Saturate, Invert Colors, Convert to Grayscale/CMYK/RGB, Blend Front to Back, Recolor Artwork)"
+gap = "adjustments edit vector paint (and recolour), none run as live filters on rasters; no colour-blindness simulation or duotone presets"
+priority = 2
+
+[[feature]]
+id = "VE-FILT-020"
+group = "filter"
+name = "Preset category: Distort"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Chalk and sponge, Felt feather, Lapping, Noise transparency, Pixel smear, Roughen, Rough and dilate, Swirl, Torn edges, Waves..."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/distort.rs (Glass, Ocean Ripple, Diffuse Glow), crafts/vectorcraft/crates/effects/src/distort.rs (vector Roughen, Zig Zag, Twist, Tweak)"
+gap = "no swirl or torn-edges raster looks"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-021"
+group = "filter"
+name = "Preset category: Fill and Overlays"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Noise fill, Silhouette, Felt, HSL noise, light eraser, and overlay textures (alpha fill, noise, spots, swirls, tartan, marbled ink...)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs, crafts/vectorcraft/crates/effects/src/pixel/artistic.rs (Film Grain)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-FILT-022"
+group = "filter"
+name = "Preset category: Image Effects and Image Paint and Draw"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Photographic looks (Film grain, Old postcard, Sepia, Sharpen, Soft focus, Vignette...) and painterly conversions (Pencil, Chalk, Drawing, Posterize, Point engraving, Cross engraving, Watercolor, Oil...)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/brushstrokes.rs (Accented Edges, Angled Strokes, Crosshatch, Ink Outlines, Spatter, Sprayed Strokes, Sumi-e), crafts/vectorcraft/crates/effects/src/pixel/artistic.rs, crafts/vectorcraft/crates/effects/src/pixel/sharpen.rs"
+gap = "no sepia/vignette presets"
+priority = 2
+
+[[feature]]
+id = "VE-FILT-023"
+group = "filter"
+name = "Preset category: Materials and Non-realistic 3D shaders"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Surface looks (3D marble, wood, mother of pearl, metallized paint, gold, chrome, leather, ink paint...) and comic/cel shading presets (aluminium, comics cream, dark and glow, fluorescent...)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/solids.rs (3D Extrude/Revolve/Inflate with plastic/diffuse shading)"
+gap = "no flat-art material filters"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-024"
+group = "filter"
+name = "Preset category: Morphology and Protrusions and Ridges"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Outline, Cross-smooth, Ink blot, Smooth edges, Black hole, Dilate/erode looks; Protrusions (spikes, blobs); Ridges (dragee, glowing metal, matte ridge, thin membrane)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/pixelate.rs (Crystallize, Pointillize, Mezzotint, Color Halftone), crafts/vectorcraft/crates/effects/src/lib.rs (path.offsetPath)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-FILT-025"
+group = "filter"
+name = "Preset category: Scatter"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Air spray, Cubes, Leopard fur, Pixel smear, Point engraving, Pointillism, Smash, Stone wall..."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/pixelate.rs (Pointillize, Crystallize), crafts/vectorcraft/crates/effects/src/pixel/brushstrokes.rs (Spatter)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-FILT-026"
+group = "filter"
+name = "Preset category: Shadows and Glows"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Drop shadow (with its dialog), Cutout glow, Dark and glow, Fuzzy glow, Glow, In and out, Inner glow, Inner shadow, Inset..."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/stylize.rs (Drop Shadow, Inner Glow, Outer Glow, Feather, Glowing Edges)"
+gap = "no inner shadow preset"
+priority = 1
+
+[[feature]]
+id = "VE-FILT-027"
+group = "filter"
+name = "Preset category: Textures and Transparency utilities"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Cracked glass, Ink splash, Rough transparency, Sun burst, Watercolour; utilities that turn luminance or a channel into transparency (channel to alpha, light eraser, saturation map, blend-mode helpers)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs, crafts/vectorcraft/crates/engine/src/cmd/opacitymask.rs"
+gap = "no luminance-to-alpha utility"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-028"
+group = "filter"
+name = "Raster (bitmap) extensions on images"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Extensions"
+behaviour = "Extensions > Raster offers about 35 destructive image operations (adaptive threshold, add noise, blur, charcoal, colorize, contrast, crop, despeckle, edge, emboss, enhance, equalize, implode, level, median, modulate, negate, normalize, oil paint, raise, reduce noise, sample, shade, sharpen, solarize, spread, swirl, unsharp mask, wave...) applied to the embedded bitmap."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/, crafts/vectorcraft/crates/engine/src/cmd/rasterfx.rs (live raster effects on any object, with Document Raster Effects Settings resolution)"
+gap = "no destructive edit of an embedded image's own pixels (effects stay live on the object)"
+priority = 3
+
+[[feature]]
+id = "VE-FILT-029"
+group = "filter"
+name = "Filter rendering quality and raster effect resolution"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Preferences set filter rendering quality (best to worst) and a 'blur quality' for display; PNG export rasterises filters at the export DPI; filters can be excluded on export."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/rasterfx.rs (Document Raster Effects Settings: resolution, background, antialias, clipping mask, preserve spot colors), crafts/vectorcraft/crates/render/src/fx.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-FILT-030"
+group = "filter"
+name = "SVG filter round-trip on import and export"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
+behaviour = "Every filter is stored as SVG and comes back unchanged when the file is reopened; filters from other SVG tools render as the SVG specification says."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/svg/src/import/fx.rs, crafts/vectorcraft/crates/svg/src/export.rs"
+gap = "blur, drop shadow, glows and feather chains are recognised and written back; other filter graphs are dropped on import"
+priority = 2
