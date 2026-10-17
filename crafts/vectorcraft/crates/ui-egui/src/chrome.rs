@@ -253,6 +253,7 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                 // An image or an Image Trace object shows its own controls in place of Fill and Stroke.
                 let image = crate::place::control_bar_details(app, ui) || crate::panels::image_trace::control_bar(app, ui);
                 crate::toolbar::control_bar_options(app, ui);
+                crate::panels::transform::control_bar(app, ui);
                 crate::dialogs::envelope::control_bar(app, ui);
                 let opacity = if first.is_some() { crate::panels::current_transparency(app).map_or(1.0, |t| t.0) } else { 1.0 };
                 if !image {

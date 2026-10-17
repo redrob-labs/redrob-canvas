@@ -209,7 +209,7 @@ mod tests {
         assert_eq!(c.style(&set(&[1])), (Some(10.0), Some(CornerKind::Round)));
         assert_eq!(c.style(&set(&[0, 1])), (None, Some(CornerKind::Round)));
         assert_eq!(c.style(&set(&[0, 2, 3])), (Some(0.0), Some(CornerKind::Round)));
-        let e = LiveShape::Ellipse { w: 1.0, h: 1.0, pie: (0.0, 360.0), xf: Affine::IDENTITY };
+        let e = LiveShape::Ellipse { w: 1.0, h: 1.0, pie: (0.0, 360.0), arc: Default::default(), xf: Affine::IDENTITY };
         assert!(LiveCorners::new(&e.to_path(), Some(&e)).is_none());
     }
 

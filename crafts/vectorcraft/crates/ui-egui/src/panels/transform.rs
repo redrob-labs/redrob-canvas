@@ -6,7 +6,7 @@
 use egui::Ui;
 use redrob_vector_doc::{LiveShape, Node, NodeKind};
 use redrob_vector_geom::Rect;
-use redrob_vector_geom::shapes::CornerKind;
+use redrob_vector_geom::shapes::{ArcKind, CornerKind};
 use serde_json::json;
 
 use super::{corner_radius_row, first_selected, pstate, set_pstate};
@@ -231,9 +231,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 widgets::subheader(ui, tl!("Polygon Properties:"));
                 polygon_rows(app, ui, &n, live, "xfp-polygon");
             }
-            redrob_vector_doc::LiveShape::Ellipse { pie, .. } => {
+            redrob_vector_doc::LiveShape::Ellipse { pie, arc, .. } => {
                 widgets::subheader(ui, tl!("Ellipse Properties:"));
-                pie_rows(app, ui, *pie, "xfp-pie");
+                pie_rows(app, ui, (*pie, *arc), "xfp-pie");
             }
             _ => {
                 widgets::subheader(ui, tl!("Shape Properties:"));
@@ -254,9 +254,27 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
 }
 
+/// The label of an arc kind (how a cut ellipse closes).
+pub(crate) fn arc_kind_label(k: ArcKind) -> &'static str {
+    match k {
+        ArcKind::Pie => tl!("Pie"),
+        ArcKind::Chord => tl!("Chord"),
+        ArcKind::Arc => tl!("Arc"),
+    }
+}
+
+/// The arc kind dropdown (pie, chord or open arc) of a live ellipse cut as `arc`.
+fn arc_kind_dropdown(app: &mut VectorcraftApp, ui: &mut Ui, arc: ArcKind, id: &str) {
+    let labels: Vec<&str> = ArcKind::ALL.iter().map(|k| arc_kind_label(*k)).collect();
+    if let Some(k) = widgets::dropdown(ui, (id, "arc-kind"), arc_kind_label(arc), &labels, 80.0).and_then(|i| ArcKind::ALL.get(i)) {
+        app.run("object.setLiveShape", json!({"arcKind": k.name()})).ok();
+    }
+}
+
 /// An ellipse's Pie Start and End Angle (degrees, counterclockwise from 3 o'clock; 0 to 360 is the
-/// whole ellipse) and Invert Pie, which shows the other part of it (Transform and Properties panels).
-pub(crate) fn pie_rows(app: &mut VectorcraftApp, ui: &mut Ui, pie: (f64, f64), id: &str) {
+/// whole ellipse), how the cut closes (pie, chord or open arc), Invert Pie, which shows the other
+/// part of it, and Whole Ellipse (Transform and Properties panels).
+pub(crate) fn pie_rows(app: &mut VectorcraftApp, ui: &mut Ui, (pie, arc): ((f64, f64), ArcKind), id: &str) {
     for (label, key, v) in [(tl!("Pie Start Angle:"), "pieStart", pie.0), (tl!("Pie End Angle:"), "pieEnd", pie.1)] {
         ui.horizontal(|ui| {
             widgets::dim_label(ui, label);
@@ -265,8 +283,42 @@ pub(crate) fn pie_rows(app: &mut VectorcraftApp, ui: &mut Ui, pie: (f64, f64), i
             }
         });
     }
-    if widgets::flat_button(ui, tl!("Invert Pie"), 90.0).clicked() {
-        app.run("object.setLiveShape", json!({"invertPie": true})).ok();
+    ui.horizontal(|ui| {
+        widgets::dim_label(ui, tl!("Close As:"));
+        arc_kind_dropdown(app, ui, arc, id);
+    });
+    ui.horizontal(|ui| {
+        if widgets::flat_button(ui, tl!("Invert Pie"), 90.0).clicked() {
+            app.run("object.setLiveShape", json!({"invertPie": true})).ok();
+        }
+        if widgets::flat_button(ui, tl!("Whole Ellipse"), 100.0).clicked() {
+            app.run("object.setLiveShape", json!({"wholeEllipse": true})).ok();
+        }
+    });
+}
+
+/// The Control bar's live shape fields for one selected live shape: an ellipse's arc start and end
+/// angles, how the cut closes and Whole Ellipse.
+pub(crate) fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let Some(n) = first_selected(app) else { return };
+    if app.session.active().is_none_or(|st| st.selection.objects.len() != 1) {
+        return;
+    }
+    let NodeKind::Path { live: Some(live), .. } = &n.kind else { return };
+    let t = Tokens::get(ui.ctx());
+    let label = |ui: &mut Ui, s: &str| widgets::field_label(ui, egui::RichText::new(s).size(12.0).color(t.text_dim));
+    if let LiveShape::Ellipse { pie, arc, .. } = &**live {
+        for (lbl, key, v) in [(tl!("Start:"), "pieStart", pie.0), (tl!("End:"), "pieEnd", pie.1)] {
+            label(ui, lbl);
+            if let Some(a) = widgets::plain_field(ui, ("cb-arc", key), v, "°", 1, 64.0) {
+                app.run("object.setLiveShape", json!({ key: a })).ok();
+            }
+        }
+        arc_kind_dropdown(app, ui, *arc, "cb-arc");
+        if widgets::flat_button(ui, tl!("Whole Ellipse"), 100.0).clicked() {
+            app.run("object.setLiveShape", json!({"wholeEllipse": true})).ok();
+        }
+        ui.separator();
     }
 }
 

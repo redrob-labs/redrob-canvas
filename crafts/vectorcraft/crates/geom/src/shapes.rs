@@ -86,11 +86,61 @@ pub fn ellipse(r: Rect) -> PathData {
     PathData::single(SubPath::new(anchors, true))
 }
 
+/// How an ellipse cut between two angles is closed: as a pie (through the centre), as a chord
+/// (straight from end to start) or left open as an arc.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ArcKind {
+    /// The arc closed through the centre: a slice.
+    #[default]
+    Pie,
+    /// The arc closed by a straight line from its end to its start.
+    Chord,
+    /// The arc alone, open.
+    Arc,
+}
+
+impl ArcKind {
+    pub const ALL: [ArcKind; 3] = [ArcKind::Pie, ArcKind::Chord, ArcKind::Arc];
+
+    /// The kind's name in commands: `pie`, `chord` or `arc`.
+    pub fn name(self) -> &'static str {
+        match self {
+            ArcKind::Pie => "pie",
+            ArcKind::Chord => "chord",
+            ArcKind::Arc => "arc",
+        }
+    }
+
+    /// The kind named `s` ([`ArcKind::name`]; `slice` and `segment` are accepted too).
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "pie" | "slice" => Some(ArcKind::Pie),
+            "chord" | "segment" => Some(ArcKind::Chord),
+            "arc" => Some(ArcKind::Arc),
+            _ => None,
+        }
+    }
+
+    /// Whether this is the default, a pie (what files leave out).
+    pub fn is_pie(&self) -> bool {
+        *self == ArcKind::Pie
+    }
+}
+
 /// The ellipse inscribed in `r` cut as a pie: from `start` to `end` degrees, measured
 /// counterclockwise on screen from 3 o'clock (as Illustrator's Pie Start and End Angle are), then
 /// back through the centre. A pie spanning the whole turn (or nothing) is the whole [`ellipse`].
 /// The arc is one cubic per quarter turn at most: the centre, then the arc's anchors.
 pub fn ellipse_pie(r: Rect, start: f64, end: f64) -> PathData {
+    ellipse_arc(r, start, end, ArcKind::Pie)
+}
+
+/// The ellipse inscribed in `r` cut from `start` to `end` degrees (counterclockwise on screen
+/// from 3 o'clock) and closed as `kind` says: through the centre (a pie, whose first anchor is the
+/// centre), straight from end to start (a chord) or not at all (an open arc). A cut spanning the
+/// whole turn (or nothing) is the whole [`ellipse`] whatever the kind.
+pub fn ellipse_arc(r: Rect, start: f64, end: f64, kind: ArcKind) -> PathData {
     let span = (end - start).rem_euclid(360.0);
     if !(start.is_finite() && end.is_finite()) || span < 1e-9 || 360.0 - span < 1e-9 {
         return ellipse(r);
@@ -118,16 +168,43 @@ pub fn ellipse_pie(r: Rect, start: f64, end: f64) -> PathData {
     };
     let step = span / f64::from(pieces);
     let k = 4.0 / 3.0 * (step.to_radians() / 4.0).tan();
-    let mut anchors = vec![Anchor::corner(c)];
+    let mut anchors = if kind == ArcKind::Pie { vec![Anchor::corner(c)] } else { vec![] };
     for i in 0..=pieces {
         let a = start + step * f64::from(i);
         let (p, d) = (at(a), tangent(a) * k);
         let h_in = if i == 0 { p } else { p - d };
         let h_out = if i == pieces { p } else { p + d };
-        let kind = if i == 0 || i == pieces { AnchorKind::Corner } else { AnchorKind::Smooth };
-        anchors.push(Anchor { p, h_in, h_out, kind });
+        let ak = if i == 0 || i == pieces { AnchorKind::Corner } else { AnchorKind::Smooth };
+        anchors.push(Anchor { p, h_in, h_out, kind: ak });
     }
-    PathData::single(SubPath::new(anchors, true))
+    PathData::single(SubPath::new(anchors, kind != ArcKind::Arc))
+}
+
+/// The angle (degrees, counterclockwise on screen from 3 o'clock, in [0, 360)) at which the
+/// ellipse inscribed in `r` passes nearest the direction of `p` from its centre: what an arc
+/// handle dragged to `p` sets. None when `p` is the centre.
+pub fn ellipse_angle_toward(r: Rect, p: Point) -> Option<f64> {
+    let r = r.abs();
+    let c = r.center();
+    let (rx, ry) = (r.width() / 2.0, r.height() / 2.0);
+    if rx <= 1e-12 || ry <= 1e-12 {
+        return None;
+    }
+    // Normalise to the unit circle (y up), where the parametric angle is the direction.
+    let (x, y) = ((p.x - c.x) / rx, -(p.y - c.y) / ry);
+    if x.hypot(y) <= 1e-12 {
+        return None;
+    }
+    Some(y.atan2(x).to_degrees().rem_euclid(360.0))
+}
+
+/// The point at `deg` degrees (counterclockwise on screen from 3 o'clock) on the ellipse
+/// inscribed in `r`.
+pub fn ellipse_point_at(r: Rect, deg: f64) -> Point {
+    let r = r.abs();
+    let c = r.center();
+    let t = deg.to_radians();
+    Point::new(c.x + r.width() / 2.0 * t.cos(), c.y - r.height() / 2.0 * t.sin())
 }
 
 /// Regular polygon with `sides` (≥ 3), first vertex straight up from the centre.

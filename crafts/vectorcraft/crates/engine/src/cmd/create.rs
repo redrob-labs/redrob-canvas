@@ -214,7 +214,8 @@ fn rectangle(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn ellipse(s: &mut Session, p: &Value) -> Result<Value> {
     let r = rect_of(p, "shape.ellipse")?;
-    let live = LiveShape::Ellipse { w: r.width(), h: r.height(), pie: (0.0, 360.0), xf: rect_transform(r, p, "shape.ellipse")? };
+    let live =
+        LiveShape::Ellipse { w: r.width(), h: r.height(), pie: (0.0, 360.0), arc: Default::default(), xf: rect_transform(r, p, "shape.ellipse")? };
     add_art(s, "Ellipse", path_kind(live.to_path(), Some(live)), None)
 }
 

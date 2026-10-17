@@ -212,7 +212,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Live Shape Properties",
             [],
             None,
-            "{id?, ids?, radius?: pt, kind?: \"round\"|\"invertedRound\"|\"chamfer\", corners?: [i…], items?: [{id, corners?: [i…]}] (several objects, each with its own corners, in place of ids and corners: the canvas's corner widgets across a selection), sides?: n, polygonAngle?: degrees (counterclockwise from its first vertex straight up), polygonRadius?: pt (centre to vertex), sideLength?: pt (sets the radius), makeSidesEqual?: true (a polygon scaled unevenly: drops the uneven scale and shear, keeping its centre, angle and mean radius), pieStart?, pieEnd?: degrees (an ellipse's pie, counterclockwise from 3 o'clock; 0 to 360 is the whole ellipse), invertPie?: true (swaps them: the other part of the ellipse)} (Live Corners on any path: radius and kind set its corners (anchors that aren't smooth, where two sides, straight or curved (#1144), meet at an angle): `corners` (anchor indices of the path with its corners uncut, counting every subpath's anchors in order: a rectangle's 0 top-left, 1 top-right, 2 bottom-right, 3 bottom-left; a polygon's from the first vertex clockwise), else the corners with a Direct-Selected anchor, else every corner; each radius is drawn no larger than half the corner's shorter side allows; a path that isn't a live shape keeps its uncut outline so its corners stay editable, and is plain again once none is cut; sides: a polygon's, which keep the radius they shared; the polygon params apply in that order: sides, makeSidesEqual, polygonAngle, then sideLength or else polygonRadius)",
+            "{id?, ids?, radius?: pt, kind?: \"round\"|\"invertedRound\"|\"chamfer\", corners?: [i…], items?: [{id, corners?: [i…]}] (several objects, each with its own corners, in place of ids and corners: the canvas's corner widgets across a selection), sides?: n, polygonAngle?: degrees (counterclockwise from its first vertex straight up), polygonRadius?: pt (centre to vertex), sideLength?: pt (sets the radius), makeSidesEqual?: true (a polygon scaled unevenly: drops the uneven scale and shear, keeping its centre, angle and mean radius), pieStart?, pieEnd?: degrees (an ellipse's pie, counterclockwise from 3 o'clock; 0 to 360 is the whole ellipse), invertPie?: true (swaps them: the other part of the ellipse), arcKind?: \"pie\"|\"chord\"|\"arc\" (how a cut ellipse closes: through the centre, straight from end to start, or open), wholeEllipse?: true (0 to 360 again)} (Live Corners on any path: radius and kind set its corners (anchors that aren't smooth, where two sides, straight or curved (#1144), meet at an angle): `corners` (anchor indices of the path with its corners uncut, counting every subpath's anchors in order: a rectangle's 0 top-left, 1 top-right, 2 bottom-right, 3 bottom-left; a polygon's from the first vertex clockwise), else the corners with a Direct-Selected anchor, else every corner; each radius is drawn no larger than half the corner's shorter side allows; a path that isn't a live shape keeps its uncut outline so its corners stay editable, and is plain again once none is cut; sides: a polygon's, which keep the radius they shared; the polygon params apply in that order: sides, makeSidesEqual, polygonAngle, then sideLength or else polygonRadius)",
             has_selection,
             set_live_shape
         ),
@@ -1892,6 +1892,15 @@ fn set_live_shape(s: &mut Session, p: &Value) -> Result<Value> {
     // An ellipse's pie (Ellipse Properties: Pie Start and End Angle, degrees; Invert Pie swaps them).
     let (pie_start, pie_end) = (angle("pieStart")?, angle("pieEnd")?);
     let invert = p.get("invertPie").and_then(Value::as_bool) == Some(true);
+    let whole = p.get("wholeEllipse").and_then(Value::as_bool) == Some(true);
+    let arc_kind = match p.get("arcKind").filter(|v| !v.is_null()) {
+        None => None,
+        Some(v) => Some(
+            v.as_str()
+                .and_then(redrob_vector_geom::shapes::ArcKind::parse)
+                .ok_or_else(|| bad("object.setLiveShape", format!("`arcKind` must be \"pie\", \"chord\" or \"arc\", not {v}")))?,
+        ),
+    };
     // A polygon's Polygon Properties: its angle, radius or side length, Make Sides Equal.
     let (polygon_angle, polygon_radius, side) = (angle("polygonAngle")?, length("polygonRadius")?, length("sideLength")?);
     let equal = p.get("makeSidesEqual").and_then(Value::as_bool) == Some(true);
@@ -1899,6 +1908,9 @@ fn set_live_shape(s: &mut Session, p: &Value) -> Result<Value> {
     // ellipse as 0° to 360°).
     let end_of = |a: f64| if a == 0.0 { 360.0 } else { a };
     let pie_of = |pie: (f64, f64)| {
+        if whole {
+            return (0.0, 360.0);
+        }
         let pie = (pie_start.unwrap_or(pie.0), pie_end.map_or(pie.1, end_of));
         if invert { (pie.1.rem_euclid(360.0), end_of(pie.0)) } else { pie }
     };
@@ -1916,7 +1928,7 @@ fn set_live_shape(s: &mut Session, p: &Value) -> Result<Value> {
             {
                 return false;
             }
-            Some(LiveShape::Ellipse { pie, .. }) if pie_of(*pie) != *pie => return false,
+            Some(LiveShape::Ellipse { pie, arc, .. }) if pie_of(*pie) != *pie || arc_kind.is_some_and(|k| k != *arc) => return false,
             _ => {}
         }
         if radius.is_none() && kind.is_none() {
@@ -1956,10 +1968,13 @@ fn set_live_shape(s: &mut Session, p: &Value) -> Result<Value> {
                 *path = l.to_path();
             }
             if let Some(l @ LiveShape::Ellipse { .. }) = live.as_deref_mut()
-                && (pie_start.is_some() || pie_end.is_some() || invert)
+                && (pie_start.is_some() || pie_end.is_some() || invert || whole || arc_kind.is_some())
             {
-                if let LiveShape::Ellipse { pie, .. } = l {
+                if let LiveShape::Ellipse { pie, arc, .. } = l {
                     *pie = pie_of(*pie);
+                    if let Some(k) = arc_kind {
+                        *arc = k;
+                    }
                 }
                 *path = l.to_path();
             }

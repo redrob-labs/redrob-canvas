@@ -1912,6 +1912,17 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             p.circle_filled(sp, 1.0, color);
         }
     }
+    // Live shape handles (Direct Selection on a live ellipse, star or spiral): diamonds on the shape.
+    if tool == "directSelection"
+        && let Some(h) = redrob_vector_tools::shapehandles::ShapeHandles::of(&st.doc, &st.selection)
+    {
+        for handle in h.visible_on() {
+            let (c, color) = (xf.to_screen(handle.at), c32(st.doc.layer_color(handle.id)));
+            let d = 4.0 + grow / 2.0;
+            let pts = vec![c + vec2(0.0, -d), c + vec2(d, 0.0), c + vec2(0.0, d), c + vec2(-d, 0.0)];
+            p.add(Shape::convex_polygon(pts, Color32::WHITE, Stroke::new(1.0, color)));
+        }
+    }
     // Bounding box with handles (Selection tool).
     if let Some(b) = bbox {
         let color = c32(st.doc.layer_color(st.selection.objects[0]));

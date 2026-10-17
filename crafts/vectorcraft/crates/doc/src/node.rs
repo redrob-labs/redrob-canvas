@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use redrob_vector_color::BlendMode;
 use redrob_vector_geom::corners::cut_corners;
-use redrob_vector_geom::shapes::{self, CornerKind};
+use redrob_vector_geom::shapes::{self, ArcKind, CornerKind};
 use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, Point, Rect};
 use serde::{Deserialize, Serialize};
 
@@ -98,6 +98,9 @@ pub enum LiveShape {
         h: f64,
         /// Pie start/end angles in degrees (0/360 = full ellipse).
         pie: (f64, f64),
+        /// How the cut ellipse is closed: a pie (the default), a chord or an open arc.
+        #[serde(default, skip_serializing_if = "ArcKind::is_pie")]
+        arc: ArcKind,
         xf: Affine,
     },
     Polygon {
@@ -147,7 +150,7 @@ impl LiveShape {
             LiveShape::Rectangle { w, h, radii, kinds, xf } => {
                 shapes::rectangle_with_corners(Rect::new(0.0, 0.0, *w, *h), *radii, *kinds).transformed(*xf)
             }
-            LiveShape::Ellipse { w, h, pie, xf } => shapes::ellipse_pie(Rect::new(0.0, 0.0, *w, *h), pie.0, pie.1).transformed(*xf),
+            LiveShape::Ellipse { w, h, pie, arc, xf } => shapes::ellipse_arc(Rect::new(0.0, 0.0, *w, *h), pie.0, pie.1, *arc).transformed(*xf),
             LiveShape::Polygon { radii, kinds, .. } => cut_corners(&self.polygon_outline(), radii, kinds).0,
             LiveShape::Line { a, b } => shapes::line(*a, *b),
             LiveShape::Path { base, radii, kinds } => cut_corners(base, radii, kinds).0,
@@ -159,6 +162,31 @@ impl LiveShape {
             LiveShape::Polygon { radius, sides, xf, .. } => shapes::polygon(Point::ZERO, *radius, *sides, 0.0).transformed(*xf),
             _ => PathData::default(),
         }
+    }
+    /// A live ellipse's box in its own space (origin at its top-left) and the transform into the
+    /// document. None for other shapes.
+    pub fn ellipse_box(&self) -> Option<(Rect, Affine)> {
+        let LiveShape::Ellipse { w, h, xf, .. } = self else { return None };
+        Some((Rect::new(0.0, 0.0, *w, *h), *xf))
+    }
+    /// Where a live ellipse's arc starts and ends, in the document: the two arc handles (a whole
+    /// ellipse has both at 3 o'clock). None for other shapes.
+    pub fn arc_handles(&self) -> Option<(Point, Point)> {
+        let LiveShape::Ellipse { pie, .. } = self else { return None };
+        let (r, xf) = self.ellipse_box()?;
+        Some((xf * shapes::ellipse_point_at(r, pie.0), xf * shapes::ellipse_point_at(r, pie.1)))
+    }
+    /// The arc angle (degrees, counterclockwise from 3 o'clock) a document point `p` sets when an
+    /// arc handle of a live ellipse is dragged there, and whether `p` lies inside the ellipse (a
+    /// handle dragged inside makes a pie, outside an open arc). None for other shapes or at the
+    /// centre.
+    pub fn arc_angle_toward(&self, p: Point) -> Option<(f64, bool)> {
+        let (r, xf) = self.ellipse_box()?;
+        let local = xf.inverse() * p;
+        let a = shapes::ellipse_angle_toward(r, local)?;
+        let c = r.center();
+        let (nx, ny) = ((local.x - c.x) / (r.width() / 2.0), (local.y - c.y) / (r.height() / 2.0));
+        Some((a, nx.hypot(ny) < 1.0))
     }
     /// Give a polygon `n` sides (3–1000). Its corners keep the radius and kind they shared; else
     /// the corners past the old last one are sharp.
@@ -2043,7 +2071,7 @@ mod tests {
         let LiveShape::Polygon { xf, .. } = &p else { panic!("polygon") };
         assert_eq!(*xf * Point::ZERO, Point::new(100.0, 50.0));
         // Other shapes have none of it.
-        let e = LiveShape::Ellipse { w: 1.0, h: 1.0, pie: (0.0, 360.0), xf: Affine::IDENTITY };
+        let e = LiveShape::Ellipse { w: 1.0, h: 1.0, pie: (0.0, 360.0), arc: ArcKind::Pie, xf: Affine::IDENTITY };
         assert_eq!((e.polygon_radius(), e.polygon_angle()), (None, None));
     }
 
