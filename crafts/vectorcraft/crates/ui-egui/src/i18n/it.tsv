@@ -4378,3 +4378,74 @@ lighting	Light	Luce
 	Softness	Morbidezza
 	Ambient Light	Luce ambientale
 	Light behind the object	Luce dietro l'oggetto
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Aggiungi attributo
+	Add Filter	Aggiungi filtro
+	Add Input	Aggiungi ingresso
+	Add Primitive	Aggiungi primitiva
+	Axonometric	Assonometrica
+	Axonometric Angle X	Angolo assonometrico X
+	Axonometric Angle Z	Angolo assonometrico Z
+	Canvas Orientation	Orientamento della tela
+	Collapse All	Comprimi tutto
+	Color Matrix	Matrice colore
+	Color Matrix…	Matrice colore…
+	Component Transfer	Trasferimento componenti
+	Composite	Composizione
+	Convolve Matrix	Matrice di convoluzione
+	Delete Node	Elimina nodo
+	Diffuse Lighting	Illuminazione diffusa
+	Displacement Map	Mappa di spostamento
+	Drop Shadow Preset	Predefinito ombra esterna
+	Duplicate Node	Duplica nodo
+	Duplicate Primitive	Duplica primitiva
+	Edge Detection	Rilevamento bordi
+	Edge Threshold	Soglia bordi
+	Expand All	Espandi tutto
+	Fill Rendered Pixels	Riempi pixel renderizzati
+	Filter Editor	Editor filtri
+	Filter Graph	Grafo filtro
+	Filter Region	Area filtro
+	Flood	Riempimento
+	Grid Kind	Tipo di griglia
+	Hide Palette Strip	Nascondi barra palette
+	Input	Ingresso
+	Large Chips	Campioni grandi
+	Lower Node	Abbassa nodo
+	Mass:	Massa:
+	Medium Chips	Campioni medi
+	Modular	Modulare
+	Modular Gap X	Spazio modulare X
+	Modular Gap Y	Spazio modulare Y
+	Morphology	Morfologia
+	No colours in this palette	Nessun colore in questa palette
+	No primitives. Add one below.	Nessuna primitiva. Aggiungine una sotto.
+	Node Data	Dati nodo
+	Palette Strip	Barra palette
+	Palette Strip Menu	Menu barra palette
+	Previous Result	Risultato precedente
+	Primitive	Primitiva
+	Quantization	Quantizzazione
+	Raise Node	Alza nodo
+	Rectangular	Rettangolare
+	Remove Attribute	Rimuovi attributo
+	Remove Filter	Rimuovi filtro
+	Remove Input	Rimuovi ingresso
+	Remove Primitive	Rimuovi primitiva
+	Reset Canvas Orientation	Ripristina orientamento tela
+	Result:	Risultato:
+	Select a node to edit its attributes.	Seleziona un nodo per modificarne gli attributi.
+	Small Chips	Campioni piccoli
+	Specular Lighting	Illuminazione speculare
+	The document has no layers.	Il documento non ha livelli.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Le primitive di un grafo filtro si modificano nel pannello Editor filtri.
+	Thinning:	Assottigliamento:
+	Tremor:	Tremolio:
+	Turbulence	Turbolenza
+	Wiggle:	Oscillazione:
+	XML Editor	Editor XML
+	attribute	attributo
+	No Filter	Nessun filtro
+	The object has no SVG filter graph yet.	L’oggetto non ha ancora un grafo filtro SVG.
+	Select an object to edit its SVG filter.	Seleziona un oggetto per modificarne il filtro SVG.
+	Open a document to see its element tree.	Apri un documento per vederne l’albero degli elementi.

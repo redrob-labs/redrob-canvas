@@ -4342,3 +4342,74 @@ lighting	Light	광원
 	Softness	부드러움
 	Ambient Light	주변광
 	Light behind the object	개체 뒤의 조명
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	속성 추가
+	Add Filter	필터 추가
+	Add Input	입력 추가
+	Add Primitive	프리미티브 추가
+	Axonometric	축측
+	Axonometric Angle X	축측 각도 X
+	Axonometric Angle Z	축측 각도 Z
+	Canvas Orientation	캔버스 방향
+	Collapse All	모두 접기
+	Color Matrix	색상 행렬
+	Color Matrix…	색상 행렬…
+	Component Transfer	성분 전달
+	Composite	합성
+	Convolve Matrix	합성곱 행렬
+	Delete Node	노드 삭제
+	Diffuse Lighting	확산 조명
+	Displacement Map	변위 맵
+	Drop Shadow Preset	그림자 사전 설정
+	Duplicate Node	노드 복제
+	Duplicate Primitive	프리미티브 복제
+	Edge Detection	가장자리 감지
+	Edge Threshold	가장자리 임계값
+	Expand All	모두 펼치기
+	Fill Rendered Pixels	렌더링된 픽셀 채우기
+	Filter Editor	필터 편집기
+	Filter Graph	필터 그래프
+	Filter Region	필터 영역
+	Flood	채우기
+	Grid Kind	격자 종류
+	Hide Palette Strip	팔레트 바 숨기기
+	Input	입력
+	Large Chips	큰 칩
+	Lower Node	노드 내리기
+	Mass:	질량:
+	Medium Chips	중간 칩
+	Modular	모듈
+	Modular Gap X	모듈 간격 X
+	Modular Gap Y	모듈 간격 Y
+	Morphology	형태학
+	No colours in this palette	이 팔레트에 색상이 없습니다
+	No primitives. Add one below.	프리미티브가 없습니다. 아래에서 추가하세요.
+	Node Data	노드 데이터
+	Palette Strip	팔레트 바
+	Palette Strip Menu	팔레트 바 메뉴
+	Previous Result	이전 결과
+	Primitive	프리미티브
+	Quantization	양자화
+	Raise Node	노드 올리기
+	Rectangular	직사각형
+	Remove Attribute	속성 제거
+	Remove Filter	필터 제거
+	Remove Input	입력 제거
+	Remove Primitive	프리미티브 제거
+	Reset Canvas Orientation	캔버스 방향 재설정
+	Result:	결과:
+	Select a node to edit its attributes.	속성을 편집할 노드를 선택하세요.
+	Small Chips	작은 칩
+	Specular Lighting	반사 조명
+	The document has no layers.	문서에 레이어가 없습니다.
+	The primitives of a filter graph are edited in the Filter Editor panel.	필터 그래프의 프리미티브는 필터 편집기 패널에서 편집합니다.
+	Thinning:	가늘어짐:
+	Tremor:	떨림:
+	Turbulence	난류
+	Wiggle:	흔들림:
+	XML Editor	XML 편집기
+	attribute	속성
+	No Filter	필터 없음
+	The object has no SVG filter graph yet.	이 오브젝트에는 아직 SVG 필터 그래프가 없습니다.
+	Select an object to edit its SVG filter.	SVG 필터를 편집할 오브젝트를 선택하세요.
+	Open a document to see its element tree.	요소 트리를 보려면 문서를 여세요.

@@ -3955,3 +3955,74 @@ lighting	Light	光源
 	Softness	柔和度
 	Ambient Light	环境光
 	Light behind the object	光源位于对象后方
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	添加属性
+	Add Filter	添加滤镜
+	Add Input	添加输入
+	Add Primitive	添加基元
+	Axonometric	轴测
+	Axonometric Angle X	轴测角度 X
+	Axonometric Angle Z	轴测角度 Z
+	Canvas Orientation	画布方向
+	Collapse All	全部折叠
+	Color Matrix	颜色矩阵
+	Color Matrix…	颜色矩阵…
+	Component Transfer	分量转换
+	Composite	合成
+	Convolve Matrix	卷积矩阵
+	Delete Node	删除节点
+	Diffuse Lighting	漫射光照
+	Displacement Map	置换贴图
+	Drop Shadow Preset	投影预设
+	Duplicate Node	复制节点
+	Duplicate Primitive	复制基元
+	Edge Detection	边缘检测
+	Edge Threshold	边缘阈值
+	Expand All	全部展开
+	Fill Rendered Pixels	填充渲染像素
+	Filter Editor	滤镜编辑器
+	Filter Graph	滤镜图
+	Filter Region	滤镜区域
+	Flood	填色
+	Grid Kind	网格类型
+	Hide Palette Strip	隐藏调色板栏
+	Input	输入
+	Large Chips	大色块
+	Lower Node	下移节点
+	Mass:	质量:
+	Medium Chips	中色块
+	Modular	模块
+	Modular Gap X	模块间距 X
+	Modular Gap Y	模块间距 Y
+	Morphology	形态学
+	No colours in this palette	此调色板没有颜色
+	No primitives. Add one below.	没有基元。请在下方添加。
+	Node Data	节点数据
+	Palette Strip	调色板栏
+	Palette Strip Menu	调色板栏菜单
+	Previous Result	上一个结果
+	Primitive	基元
+	Quantization	量化
+	Raise Node	上移节点
+	Rectangular	矩形
+	Remove Attribute	移除属性
+	Remove Filter	移除滤镜
+	Remove Input	移除输入
+	Remove Primitive	移除基元
+	Reset Canvas Orientation	重置画布方向
+	Result:	结果:
+	Select a node to edit its attributes.	选择节点以编辑其属性。
+	Small Chips	小色块
+	Specular Lighting	镜面光照
+	The document has no layers.	文档没有图层。
+	The primitives of a filter graph are edited in the Filter Editor panel.	滤镜图的基元在“滤镜编辑器”面板中编辑。
+	Thinning:	变细:
+	Tremor:	颤抖:
+	Turbulence	扰流
+	Wiggle:	摇摆:
+	XML Editor	XML 编辑器
+	attribute	属性
+	No Filter	没有滤镜
+	The object has no SVG filter graph yet.	此对象尚无 SVG 滤镜图。
+	Select an object to edit its SVG filter.	选择对象以编辑其 SVG 滤镜。
+	Open a document to see its element tree.	打开文档以查看其元素树。

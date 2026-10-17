@@ -4333,3 +4333,74 @@ theme	Appearance	Erscheinungsbild
 	Softness	Weichheit
 	Ambient Light	Umgebungslicht
 	Light behind the object	Licht hinter dem Objekt
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Attribut hinzufügen
+	Add Filter	Filter hinzufügen
+	Add Input	Eingang hinzufügen
+	Add Primitive	Primitive hinzufügen
+	Axonometric	Axonometrisch
+	Axonometric Angle X	Axonometrischer Winkel X
+	Axonometric Angle Z	Axonometrischer Winkel Z
+	Canvas Orientation	Ausrichtung der Zeichenfläche
+	Collapse All	Alle einklappen
+	Color Matrix	Farbmatrix
+	Color Matrix…	Farbmatrix …
+	Component Transfer	Komponententransfer
+	Composite	Zusammensetzen
+	Convolve Matrix	Faltungsmatrix
+	Delete Node	Knoten löschen
+	Diffuse Lighting	Diffuse Beleuchtung
+	Displacement Map	Verschiebungskarte
+	Drop Shadow Preset	Schlagschatten-Vorgabe
+	Duplicate Node	Knoten duplizieren
+	Duplicate Primitive	Primitive duplizieren
+	Edge Detection	Kantenerkennung
+	Edge Threshold	Kantenschwellenwert
+	Expand All	Alle ausklappen
+	Fill Rendered Pixels	Gerenderte Pixel füllen
+	Filter Editor	Filter-Editor
+	Filter Graph	Filtergraph
+	Filter Region	Filterbereich
+	Flood	Flutung
+	Grid Kind	Rasterart
+	Hide Palette Strip	Palettenleiste ausblenden
+	Input	Eingang
+	Large Chips	Große Felder
+	Lower Node	Knoten nach hinten
+	Mass:	Masse:
+	Medium Chips	Mittlere Felder
+	Modular	Modular
+	Modular Gap X	Modulabstand X
+	Modular Gap Y	Modulabstand Y
+	Morphology	Morphologie
+	No colours in this palette	Keine Farben in dieser Palette
+	No primitives. Add one below.	Keine Primitive. Fügen Sie unten eine hinzu.
+	Node Data	Knotendaten
+	Palette Strip	Palettenleiste
+	Palette Strip Menu	Menü der Palettenleiste
+	Previous Result	Vorheriges Ergebnis
+	Primitive	Primitive
+	Quantization	Quantisierung
+	Raise Node	Knoten nach vorne
+	Rectangular	Rechteckig
+	Remove Attribute	Attribut entfernen
+	Remove Filter	Filter entfernen
+	Remove Input	Eingang entfernen
+	Remove Primitive	Primitive entfernen
+	Reset Canvas Orientation	Ausrichtung der Zeichenfläche zurücksetzen
+	Result:	Ergebnis:
+	Select a node to edit its attributes.	Wählen Sie einen Knoten, um seine Attribute zu bearbeiten.
+	Small Chips	Kleine Felder
+	Specular Lighting	Spiegelnde Beleuchtung
+	The document has no layers.	Das Dokument hat keine Ebenen.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Die Primitive eines Filtergraphen werden im Bedienfeld „Filter-Editor“ bearbeitet.
+	Thinning:	Ausdünnung:
+	Tremor:	Zittern:
+	Turbulence	Turbulenz
+	Wiggle:	Wackeln:
+	XML Editor	XML-Editor
+	attribute	Attribut
+	No Filter	Kein Filter
+	The object has no SVG filter graph yet.	Das Objekt hat noch keinen SVG-Filtergraphen.
+	Select an object to edit its SVG filter.	Wählen Sie ein Objekt, um seinen SVG-Filter zu bearbeiten.
+	Open a document to see its element tree.	Öffnen Sie ein Dokument, um seinen Elementbaum zu sehen.

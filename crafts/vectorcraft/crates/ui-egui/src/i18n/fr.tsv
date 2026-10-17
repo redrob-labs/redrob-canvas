@@ -4806,3 +4806,73 @@ theme	Appearance	Apparence
 	Softness	Douceur
 	Ambient Light	Lumière ambiante
 	Light behind the object	Lumière derrière l'objet
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Ajouter un attribut
+	Add Filter	Ajouter un filtre
+	Add Input	Ajouter une entrée
+	Add Primitive	Ajouter une primitive
+	Axonometric	Axonométrique
+	Axonometric Angle X	Angle axonométrique X
+	Axonometric Angle Z	Angle axonométrique Z
+	Canvas Orientation	Orientation du canevas
+	Collapse All	Tout réduire
+	Color Matrix	Matrice de couleurs
+	Color Matrix…	Matrice de couleurs…
+	Component Transfer	Transfert de composantes
+	Convolve Matrix	Matrice de convolution
+	Delete Node	Supprimer le nœud
+	Diffuse Lighting	Éclairage diffus
+	Displacement Map	Carte de déplacement
+	Drop Shadow Preset	Préréglage d’ombre portée
+	Duplicate Node	Dupliquer le nœud
+	Duplicate Primitive	Dupliquer la primitive
+	Edge Detection	Détection des contours
+	Edge Threshold	Seuil des contours
+	Expand All	Tout développer
+	Fill Rendered Pixels	Remplir les pixels rendus
+	Filter Editor	Éditeur de filtres
+	Filter Graph	Graphe de filtre
+	Filter Region	Région du filtre
+	Flood	Remplissage
+	Grid Kind	Type de grille
+	Hide Palette Strip	Masquer la barre de palette
+	Input	Entrée
+	Large Chips	Grandes pastilles
+	Lower Node	Abaisser le nœud
+	Mass:	Masse :
+	Medium Chips	Pastilles moyennes
+	Modular	Modulaire
+	Modular Gap X	Écart modulaire X
+	Modular Gap Y	Écart modulaire Y
+	Morphology	Morphologie
+	No colours in this palette	Aucune couleur dans cette palette
+	No primitives. Add one below.	Aucune primitive. Ajoutez-en une ci-dessous.
+	Node Data	Données du nœud
+	Palette Strip	Barre de palette
+	Palette Strip Menu	Menu de la barre de palette
+	Previous Result	Résultat précédent
+	Primitive	Primitive
+	Quantization	Quantification
+	Raise Node	Élever le nœud
+	Rectangular	Rectangulaire
+	Remove Attribute	Supprimer l’attribut
+	Remove Filter	Supprimer le filtre
+	Remove Input	Supprimer l’entrée
+	Remove Primitive	Supprimer la primitive
+	Reset Canvas Orientation	Réinitialiser l’orientation du canevas
+	Result:	Résultat :
+	Select a node to edit its attributes.	Sélectionnez un nœud pour modifier ses attributs.
+	Small Chips	Petites pastilles
+	Specular Lighting	Éclairage spéculaire
+	The document has no layers.	Le document n’a aucun calque.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Les primitives d’un graphe de filtre se modifient dans le panneau Éditeur de filtres.
+	Thinning:	Amincissement :
+	Tremor:	Tremblement :
+	Turbulence	Turbulence
+	Wiggle:	Oscillation :
+	XML Editor	Éditeur XML
+	attribute	attribut
+	No Filter	Aucun filtre
+	The object has no SVG filter graph yet.	L’objet n’a pas encore de graphe de filtre SVG.
+	Select an object to edit its SVG filter.	Sélectionnez un objet pour modifier son filtre SVG.
+	Open a document to see its element tree.	Ouvrez un document pour voir son arbre d’éléments.

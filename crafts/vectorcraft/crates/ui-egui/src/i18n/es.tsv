@@ -4747,3 +4747,73 @@ mark-style	Japanese	Japonesas
 	Softness	Suavidad
 	Ambient Light	Luz ambiental
 	Light behind the object	Luz detrás del objeto
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Añadir atributo
+	Add Filter	Añadir filtro
+	Add Input	Añadir entrada
+	Add Primitive	Añadir primitiva
+	Axonometric	Axonométrica
+	Axonometric Angle X	Ángulo axonométrico X
+	Axonometric Angle Z	Ángulo axonométrico Z
+	Canvas Orientation	Orientación del lienzo
+	Collapse All	Contraer todo
+	Color Matrix	Matriz de color
+	Color Matrix…	Matriz de color…
+	Component Transfer	Transferencia de componentes
+	Convolve Matrix	Matriz de convolución
+	Delete Node	Eliminar nodo
+	Diffuse Lighting	Iluminación difusa
+	Displacement Map	Mapa de desplazamiento
+	Drop Shadow Preset	Ajuste preestablecido de sombra paralela
+	Duplicate Node	Duplicar nodo
+	Duplicate Primitive	Duplicar primitiva
+	Edge Detection	Detección de bordes
+	Edge Threshold	Umbral de bordes
+	Expand All	Expandir todo
+	Fill Rendered Pixels	Rellenar píxeles renderizados
+	Filter Editor	Editor de filtros
+	Filter Graph	Grafo de filtros
+	Filter Region	Región del filtro
+	Flood	Inundación
+	Grid Kind	Tipo de cuadrícula
+	Hide Palette Strip	Ocultar barra de paleta
+	Input	Entrada
+	Large Chips	Muestras grandes
+	Lower Node	Bajar nodo
+	Mass:	Masa:
+	Medium Chips	Muestras medianas
+	Modular	Modular
+	Modular Gap X	Separación modular X
+	Modular Gap Y	Separación modular Y
+	Morphology	Morfología
+	No colours in this palette	No hay colores en esta paleta
+	No primitives. Add one below.	No hay primitivas. Añada una abajo.
+	Node Data	Datos del nodo
+	Palette Strip	Barra de paleta
+	Palette Strip Menu	Menú de la barra de paleta
+	Previous Result	Resultado anterior
+	Primitive	Primitiva
+	Quantization	Cuantización
+	Raise Node	Subir nodo
+	Rectangular	Rectangular
+	Remove Attribute	Quitar atributo
+	Remove Filter	Quitar filtro
+	Remove Input	Quitar entrada
+	Remove Primitive	Quitar primitiva
+	Reset Canvas Orientation	Restablecer orientación del lienzo
+	Result:	Resultado:
+	Select a node to edit its attributes.	Seleccione un nodo para editar sus atributos.
+	Small Chips	Muestras pequeñas
+	Specular Lighting	Iluminación especular
+	The document has no layers.	El documento no tiene capas.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Las primitivas de un grafo de filtros se editan en el panel Editor de filtros.
+	Thinning:	Afinamiento:
+	Tremor:	Temblor:
+	Turbulence	Turbulencia
+	Wiggle:	Oscilación:
+	XML Editor	Editor XML
+	attribute	atributo
+	No Filter	Sin filtro
+	The object has no SVG filter graph yet.	El objeto aún no tiene un grafo de filtros SVG.
+	Select an object to edit its SVG filter.	Seleccione un objeto para editar su filtro SVG.
+	Open a document to see its element tree.	Abra un documento para ver su árbol de elementos.
