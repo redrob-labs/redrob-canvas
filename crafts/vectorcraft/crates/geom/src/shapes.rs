@@ -86,11 +86,61 @@ pub fn ellipse(r: Rect) -> PathData {
     PathData::single(SubPath::new(anchors, true))
 }
 
+/// How an ellipse cut between two angles is closed: as a pie (through the centre), as a chord
+/// (straight from end to start) or left open as an arc.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ArcKind {
+    /// The arc closed through the centre: a slice.
+    #[default]
+    Pie,
+    /// The arc closed by a straight line from its end to its start.
+    Chord,
+    /// The arc alone, open.
+    Arc,
+}
+
+impl ArcKind {
+    pub const ALL: [ArcKind; 3] = [ArcKind::Pie, ArcKind::Chord, ArcKind::Arc];
+
+    /// The kind's name in commands: `pie`, `chord` or `arc`.
+    pub fn name(self) -> &'static str {
+        match self {
+            ArcKind::Pie => "pie",
+            ArcKind::Chord => "chord",
+            ArcKind::Arc => "arc",
+        }
+    }
+
+    /// The kind named `s` ([`ArcKind::name`]; `slice` and `segment` are accepted too).
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "pie" | "slice" => Some(ArcKind::Pie),
+            "chord" | "segment" => Some(ArcKind::Chord),
+            "arc" => Some(ArcKind::Arc),
+            _ => None,
+        }
+    }
+
+    /// Whether this is the default, a pie (what files leave out).
+    pub fn is_pie(&self) -> bool {
+        *self == ArcKind::Pie
+    }
+}
+
 /// The ellipse inscribed in `r` cut as a pie: from `start` to `end` degrees, measured
 /// counterclockwise on screen from 3 o'clock (as Illustrator's Pie Start and End Angle are), then
 /// back through the centre. A pie spanning the whole turn (or nothing) is the whole [`ellipse`].
 /// The arc is one cubic per quarter turn at most: the centre, then the arc's anchors.
 pub fn ellipse_pie(r: Rect, start: f64, end: f64) -> PathData {
+    ellipse_arc(r, start, end, ArcKind::Pie)
+}
+
+/// The ellipse inscribed in `r` cut from `start` to `end` degrees (counterclockwise on screen
+/// from 3 o'clock) and closed as `kind` says: through the centre (a pie, whose first anchor is the
+/// centre), straight from end to start (a chord) or not at all (an open arc). A cut spanning the
+/// whole turn (or nothing) is the whole [`ellipse`] whatever the kind.
+pub fn ellipse_arc(r: Rect, start: f64, end: f64, kind: ArcKind) -> PathData {
     let span = (end - start).rem_euclid(360.0);
     if !(start.is_finite() && end.is_finite()) || span < 1e-9 || 360.0 - span < 1e-9 {
         return ellipse(r);
@@ -118,16 +168,43 @@ pub fn ellipse_pie(r: Rect, start: f64, end: f64) -> PathData {
     };
     let step = span / f64::from(pieces);
     let k = 4.0 / 3.0 * (step.to_radians() / 4.0).tan();
-    let mut anchors = vec![Anchor::corner(c)];
+    let mut anchors = if kind == ArcKind::Pie { vec![Anchor::corner(c)] } else { vec![] };
     for i in 0..=pieces {
         let a = start + step * f64::from(i);
         let (p, d) = (at(a), tangent(a) * k);
         let h_in = if i == 0 { p } else { p - d };
         let h_out = if i == pieces { p } else { p + d };
-        let kind = if i == 0 || i == pieces { AnchorKind::Corner } else { AnchorKind::Smooth };
-        anchors.push(Anchor { p, h_in, h_out, kind });
+        let ak = if i == 0 || i == pieces { AnchorKind::Corner } else { AnchorKind::Smooth };
+        anchors.push(Anchor { p, h_in, h_out, kind: ak });
     }
-    PathData::single(SubPath::new(anchors, true))
+    PathData::single(SubPath::new(anchors, kind != ArcKind::Arc))
+}
+
+/// The angle (degrees, counterclockwise on screen from 3 o'clock, in [0, 360)) at which the
+/// ellipse inscribed in `r` passes nearest the direction of `p` from its centre: what an arc
+/// handle dragged to `p` sets. None when `p` is the centre.
+pub fn ellipse_angle_toward(r: Rect, p: Point) -> Option<f64> {
+    let r = r.abs();
+    let c = r.center();
+    let (rx, ry) = (r.width() / 2.0, r.height() / 2.0);
+    if rx <= 1e-12 || ry <= 1e-12 {
+        return None;
+    }
+    // Normalise to the unit circle (y up), where the parametric angle is the direction.
+    let (x, y) = ((p.x - c.x) / rx, -(p.y - c.y) / ry);
+    if x.hypot(y) <= 1e-12 {
+        return None;
+    }
+    Some(y.atan2(x).to_degrees().rem_euclid(360.0))
+}
+
+/// The point at `deg` degrees (counterclockwise on screen from 3 o'clock) on the ellipse
+/// inscribed in `r`.
+pub fn ellipse_point_at(r: Rect, deg: f64) -> Point {
+    let r = r.abs();
+    let c = r.center();
+    let t = deg.to_radians();
+    Point::new(c.x + r.width() / 2.0 * t.cos(), c.y - r.height() / 2.0 * t.sin())
 }
 
 /// Regular polygon with `sides` (≥ 3), first vertex straight up from the centre.
@@ -161,6 +238,59 @@ pub fn star(center: Point, r1: f64, r2: f64, points: u32, rotation_deg: f64) -> 
 pub fn straight_star_inner_radius(r1: f64, points: u32) -> f64 {
     let n = points.max(3) as f64;
     r1 * (PI / n * 2.0).cos() / (PI / n).cos()
+}
+
+/// A unit in [-1, 1] that depends only on `seed` and `i` (a small integer hash), so a randomised
+/// star keeps its shape from one regeneration to the next.
+fn unit_noise(seed: u32, i: u32) -> f64 {
+    let mut x = seed.wrapping_mul(0x9E37_79B9) ^ i.wrapping_mul(0x85EB_CA6B).wrapping_add(0x1234_5678);
+    x ^= x >> 15;
+    x = x.wrapping_mul(0x2C1B_3C6D);
+    x ^= x >> 12;
+    x = x.wrapping_mul(0x297A_2D39);
+    x ^= x >> 15;
+    f64::from(x >> 8) / f64::from(1u32 << 24) * 2.0 - 1.0
+}
+
+/// A live star: `points` tips (≥ 2) of outer radius `r1` and inner radius `r2` about `center`,
+/// the first tip straight up turned by `rotation_deg` clockwise on screen. `rounding` (0..1)
+/// rounds every tip and notch: each gets handles along its tangent, as long as that share of half
+/// the way to the next vertex (0: sharp). `randomized` (0..1) moves each vertex off its place by
+/// up to that share of the radius, in a pattern `seed` fixes.
+#[allow(clippy::too_many_arguments)]
+pub fn star_live(center: Point, r1: f64, r2: f64, points: u32, rotation_deg: f64, rounding: f64, randomized: f64, seed: u32) -> PathData {
+    let n = points.max(2) * 2;
+    let rot = rotation_deg.to_radians();
+    let (rounding, randomized) = (rounding.clamp(0.0, 1.0), randomized.clamp(0.0, 1.0));
+    let step = TAU / n as f64;
+    let pts: Vec<Point> = (0..n)
+        .map(|i| {
+            let mut r = if i % 2 == 0 { r1 } else { r2 };
+            let mut a = -PI / 2.0 + rot + step * i as f64;
+            if randomized > 0.0 {
+                r *= 1.0 + randomized * 0.5 * unit_noise(seed, 2 * i);
+                a += randomized * step * 0.5 * unit_noise(seed, 2 * i + 1);
+            }
+            Point::new(center.x + r * a.cos(), center.y + r * a.sin())
+        })
+        .collect();
+    if rounding <= 0.0 {
+        return PathData::single(SubPath::polyline(&pts, true));
+    }
+    let count = pts.len();
+    let anchors = (0..count)
+        .map(|i| {
+            let (p, prev, next) = (pts[i], pts[(i + count - 1) % count], pts[(i + 1) % count]);
+            // The tangent runs across the radial direction, forward along the outline.
+            let radial = p - center;
+            let t = Vec2::new(-radial.y, radial.x);
+            let t = if t.hypot() > 1e-12 { t / t.hypot() } else { Vec2::new(1.0, 0.0) };
+            let t = if t.dot(next - prev) < 0.0 { -t } else { t };
+            let (l_in, l_out) = (p.distance(prev) * rounding / 2.0, p.distance(next) * rounding / 2.0);
+            Anchor { p, h_in: p - t * l_in, h_out: p + t * l_out, kind: AnchorKind::Smooth }
+        })
+        .collect();
+    PathData::single(SubPath::new(anchors, true))
 }
 
 /// Open straight line.

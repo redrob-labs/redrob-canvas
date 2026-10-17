@@ -169,7 +169,6 @@
 	Apply Last Effect	套用上次的效果
 	Apply Last Gradient	套用上次的漸層
 	Apply Paragraph Style	套用段落樣式
-	Apply SVG Filter…	套用 SVG 濾鏡…
 	Apply to All	全部套用
 	Apply to All ({count} more missing)	全部套用 (另有 {count} 個遺失)
 	Arc	弧形
@@ -3739,3 +3738,161 @@ lighting	Light	光源
 	Softness	柔和度
 	Ambient Light	環境光
 	Light behind the object	光源位於物件後方
+	Bend…	彎曲…
+	Bend	彎曲
+	B-Spline…	B 雲形線…
+	B-Spline	B 雲形線
+	Spiro Spline…	Spiro 雲形線…
+	Spiro Spline	Spiro 雲形線
+	Dashed Stroke…	虛線筆畫…
+	Dashed Stroke	虛線筆畫
+	Taper Stroke…	漸細筆畫…
+	Taper Stroke	漸細筆畫
+	Spine	骨架路徑
+	Width Scale	寬度比例
+	Cusps	保留尖角
+	Dashes	虛線數
+	Hole Factor	空隙比例
+	Unify	統一長度
+	Half Start	起點半段
+	Half End	終點半段
+	Start Offset	起點偏移
+	End Offset	終點偏移
+	Stroke To Path	筆畫轉路徑
+	Start Taper	起點漸細
+	End Taper	終點漸細
+	Smoothing	平滑
+	Direction	方向
+	Spiro	螺旋曲線
+	BSpline	B 樣條
+	Paraxial	軸對齊
+	Triangle In	三角形（向內）
+	Triangle Out	三角形（向外）
+	From Clipboard	從剪貼簿
+	Segment:	線段：
+	Curve	曲線
+	Make Selected Segments Lines	將選取的線段變為直線
+	Make Selected Segments Curves	將選取的線段變為曲線
+	Show Handles	顯示控制桿
+	Shape Along Stroke	沿筆畫的形狀
+	Segment Type	線段類型
+	Next Anchor	下一個錨點
+	Grow Anchor Selection	擴大錨點選取
+	Touch Select Anchors	選取觸碰到的錨點
+	Make Segment Line	線段變為直線
+	Make Segment Curve	線段變為曲線
+	X:	X:
+	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	將所選錨點轉換為對稱
+	Convert Selected Anchor Points to Auto-Smooth	將所選錨點轉換為自動平滑
+	Add Anchor Points At	在極值處新增錨點
+	Add Anchor Points at Extremes	在極值處新增錨點
+	Minimum X	最小 X
+	Maximum X	最大 X
+	Minimum Y	最小 Y
+	Maximum Y	最大 Y
+	Pie	扇形
+	Chord	弓形
+	Close As:	閉合方式:
+	Whole Ellipse	完整橢圓
+	Corners:	角數:
+	Spoke Ratio:	輻條比:
+	Rounded:	圓角:
+	Randomized:	隨機化:
+	Decay:	衰減:
+	Segments:	段數:
+	Star Properties:	星形屬性:
+	Spiral Properties:	螺旋屬性:
+	Hairline	細線
+	Mid markers:	中間標記:
+	Auto, start reversed	自動，起點反向
+	Fixed angle	固定角度
+	Scale with stroke	隨筆畫縮放
+	ID:	ID:
+	Label:	標籤:
+	Title:	標題:
+	Hyperlink:	超連結:
+	Clone	複本
+	Create Clone	建立複本
+	Unlink Clone	取消複本連結
+	Relink to Copied	重新連結到已複製物件
+	Select Original	選取原始物件
+	Object Properties…	物件屬性…
+	Text content	文字內容
+	ID	ID
+	Label	標籤
+	Title	標題
+	Object type	物件類型
+	Current layer	目前圖層
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	新增屬性
+	Add Filter	新增濾鏡
+	Add Input	新增輸入
+	Add Primitive	新增基元
+	Axonometric	軸測
+	Axonometric Angle X	軸測角度 X
+	Axonometric Angle Z	軸測角度 Z
+	Canvas Orientation	畫布方向
+	Collapse All	全部收合
+	Color Matrix	色彩矩陣
+	Color Matrix…	色彩矩陣…
+	Component Transfer	分量轉換
+	Composite	合成
+	Convolve Matrix	卷積矩陣
+	Delete Node	刪除節點
+	Diffuse Lighting	漫射光照
+	Displacement Map	置換貼圖
+	Drop Shadow Preset	陰影預設
+	Duplicate Node	複製節點
+	Duplicate Primitive	複製基元
+	Edge Detection	邊緣偵測
+	Edge Threshold	邊緣閾值
+	Expand All	全部展開
+	Fill Rendered Pixels	填滿渲染像素
+	Filter Editor	濾鏡編輯器
+	Filter Graph	濾鏡圖
+	Filter Region	濾鏡區域
+	Flood	填色
+	Grid Kind	網格類型
+	Hide Palette Strip	隱藏調色盤列
+	Input	輸入
+	Large Chips	大色塊
+	Lower Node	下移節點
+	Mass:	質量:
+	Medium Chips	中色塊
+	Modular	模組
+	Modular Gap X	模組間距 X
+	Modular Gap Y	模組間距 Y
+	Morphology	形態學
+	No colours in this palette	此調色盤沒有顏色
+	No primitives. Add one below.	沒有基元。請在下方新增。
+	Node Data	節點資料
+	Palette Strip	調色盤列
+	Palette Strip Menu	調色盤列選單
+	Previous Result	上一個結果
+	Primitive	基元
+	Quantization	量化
+	Raise Node	上移節點
+	Rectangular	矩形
+	Remove Attribute	移除屬性
+	Remove Filter	移除濾鏡
+	Remove Input	移除輸入
+	Remove Primitive	移除基元
+	Reset Canvas Orientation	重設畫布方向
+	Result:	結果:
+	Select a node to edit its attributes.	選取節點以編輯其屬性。
+	Small Chips	小色塊
+	Specular Lighting	鏡面光照
+	The document has no layers.	文件沒有圖層。
+	The primitives of a filter graph are edited in the Filter Editor panel.	濾鏡圖的基元在「濾鏡編輯器」面板中編輯。
+	Thinning:	變細:
+	Tremor:	顫抖:
+	Turbulence	擾流
+	Wiggle:	搖擺:
+	XML Editor	XML 編輯器
+	attribute	屬性
+	No Filter	沒有濾鏡
+	The object has no SVG filter graph yet.	此物件尚無 SVG 濾鏡圖。
+	Select an object to edit its SVG filter.	選取物件以編輯其 SVG 濾鏡。
+	Open a document to see its element tree.	開啟文件以檢視其元素樹。
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	「模擬」依疊印預視所示列印疊印；分色一律保留疊印。預設集在列印前平面化透明度（PostScript 檔案一律平面化）。

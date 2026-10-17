@@ -592,6 +592,7 @@ impl Rules<'_> {
                 RasterFx::GaussianBlur { radius } => filter = Some(format!("blur({})", self.len(radius / 2.0))),
                 RasterFx::InnerGlow { .. } | RasterFx::Feather { .. } => art.unsupported("inner glows or feathering"),
                 RasterFx::Pixel(_) => art.unsupported("pixel effects"),
+                RasterFx::Graph(_) => art.unsupported("SVG filter graphs"),
             }
         }
         if !shadows.is_empty() {
@@ -638,7 +639,13 @@ fn corners(path: &PathData, live: Option<&LiveShape>) -> Option<Corners> {
             (sweep < 1e-6 || (sweep - 360.0).abs() < 1e-6).then_some(Corners::Ellipse)
         }
         Some(
-            LiveShape::Rectangle { .. } | LiveShape::Ellipse { .. } | LiveShape::Polygon { .. } | LiveShape::Line { .. } | LiveShape::Path { .. },
+            LiveShape::Rectangle { .. }
+            | LiveShape::Ellipse { .. }
+            | LiveShape::Polygon { .. }
+            | LiveShape::Star { .. }
+            | LiveShape::Spiral { .. }
+            | LiveShape::Line { .. }
+            | LiveShape::Path { .. },
         ) => None,
         None => is_upright_rectangle(path).then_some(Corners::Square),
     }

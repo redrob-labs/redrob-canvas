@@ -514,6 +514,66 @@ pub struct StrokeLayer {
     /// art leave it behind ([`Appearance::without_pressure`]).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pressure: Option<PressureProfile>,
+    /// Hairline: the stroke is drawn one device pixel wide at any zoom and exported as SVG's
+    /// `vector-effect="non-scaling-stroke"` at 1 px (PDF: the thinnest line, width 0). `width` is
+    /// kept for when it is turned off; markers scale by it as before.
+    #[serde(default, skip_serializing_if = "crate::skip::is_default")]
+    pub hairline: bool,
+    /// Mid marker: a head at every node between the ends of each subpath (and at a closed
+    /// subpath's start), centred on the node and pointing along the path's bisector there; its
+    /// weight is the start scale's.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mid_arrow: Option<Arrowhead>,
+    /// How the arrowheads and markers turn.
+    #[serde(default, skip_serializing_if = "crate::skip::is_default")]
+    pub marker_orient: MarkerOrient,
+    /// Markers scale with the stroke weight (SVG `markerUnits="strokeWidth"`); off, their weight
+    /// is their scale of 1 pt.
+    #[serde(default = "yes", skip_serializing_if = "crate::skip::is_true")]
+    pub markers_scale: bool,
+}
+
+/// How a stroke's arrowheads and markers turn (SVG `orient`). Saved by variant name: new
+/// orientations are appended, never renamed.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "mode", rename_all = "camelCase")]
+pub enum MarkerOrient {
+    /// Along the path: ends point outward, mid markers along the bisector of their node.
+    #[default]
+    Auto,
+    /// As Auto, with the start head turned round to point along the path (SVG
+    /// `auto-start-reverse`).
+    AutoStartReverse,
+    /// Every head points at this angle (degrees, clockwise from +x on the page).
+    Fixed { angle: f64 },
+}
+
+impl MarkerOrient {
+    /// The name commands use (`auto`, `autoStartReverse`; a fixed angle is its number).
+    pub fn name(self) -> &'static str {
+        match self {
+            MarkerOrient::Auto => "auto",
+            MarkerOrient::AutoStartReverse => "autoStartReverse",
+            MarkerOrient::Fixed { .. } => "fixed",
+        }
+    }
+    /// The SVG `orient` value.
+    pub fn svg(self) -> String {
+        match self {
+            MarkerOrient::Auto => "auto".into(),
+            MarkerOrient::AutoStartReverse => "auto-start-reverse".into(),
+            MarkerOrient::Fixed { angle } => format!("{angle}"),
+        }
+    }
+    /// Parse a mode name (any case) or an angle in degrees.
+    pub fn parse(s: &str) -> Option<Self> {
+        let k = s.trim().to_ascii_lowercase().replace(['-', '_', ' '], "");
+        match k.as_str() {
+            "auto" => Some(MarkerOrient::Auto),
+            "autostartreverse" | "startreverse" | "reverse" => Some(MarkerOrient::AutoStartReverse),
+            _ => k.trim_end_matches("deg").parse::<f64>().ok().filter(|a| a.is_finite()).map(|angle| MarkerOrient::Fixed { angle }),
+        }
+    }
 }
 
 /// How a gradient on a stroke is laid out (the Gradient panel's Stroke buttons). Saved by variant
@@ -585,13 +645,30 @@ impl StrokeLayer {
             overprint: false,
             gradient_mode: StrokeGradientMode::Within,
             pressure: None,
+            hairline: false,
+            mid_arrow: None,
+            marker_orient: MarkerOrient::Auto,
+            markers_scale: true,
         }
+    }
+    /// Weight of the mid markers: the start scale of the stroke's weight (or of 1 pt when markers
+    /// don't scale), at least a quarter point.
+    pub fn mid_weight(&self) -> f64 {
+        (self.marker_base() * self.arrow_scale.0 / 100.0).max(0.25)
+    }
+    /// What the arrowheads' scale applies to: the stroke weight, or 1 pt when markers don't scale.
+    fn marker_base(&self) -> f64 {
+        if self.markers_scale { self.width } else { 1.0 }
+    }
+    /// Does this stroke place any arrowhead or marker?
+    pub fn has_heads(&self) -> bool {
+        self.start_arrow.is_some() || self.end_arrow.is_some() || self.mid_arrow.is_some()
     }
     /// Weight of the start (`end == false`) or end arrowhead: stroke weight × its scale, at least
     /// a quarter point. A head of weight `hw` fits a box about `4·hw` long and wide.
     pub fn arrow_weight(&self, end: bool) -> f64 {
         let pct = if end { self.arrow_scale.1 } else { self.arrow_scale.0 };
-        (self.width * pct / 100.0).max(0.25)
+        (self.marker_base() * pct / 100.0).max(0.25)
     }
     /// How far the start (`end == false`) or end arrowhead can reach from its end point (0
     /// without one): the head's diagonal, or with [`ArrowAlign::Extend`] its length, plus the cap.
@@ -601,7 +678,8 @@ impl StrokeLayer {
     }
     /// How far the arrowheads can reach from the path's end points (0 without heads).
     pub fn arrow_reach(&self) -> f64 {
-        self.head_reach(false).max(self.head_reach(true))
+        let mid = self.mid_arrow.map_or(0.0, |_| HEAD_REACH * self.mid_weight() + self.width / 2.0);
+        self.head_reach(false).max(self.head_reach(true)).max(mid)
     }
     /// The widest the width profile makes the stroke, as a factor of its weight (1 without one).
     pub fn profile_max(&self) -> f64 {

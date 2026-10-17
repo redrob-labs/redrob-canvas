@@ -402,7 +402,8 @@ fn imaged(n: &Node, which: Which) -> bool {
     let fx = raster_fx(n);
     match which {
         Which::All => !fx.is_empty(),
-        Which::Pixel => fx.iter().any(|f| matches!(f, RasterFx::Pixel(_))),
+        // A colour matrix is an SVG primitive: the SVG writer keeps it live.
+        Which::Pixel => fx.iter().any(|f| matches!(f, RasterFx::Pixel(p) if !matches!(p, effects::PixelFx::ColorMatrix { .. }))),
     }
 }
 

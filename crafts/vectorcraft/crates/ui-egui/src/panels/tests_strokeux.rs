@@ -106,11 +106,12 @@ fn the_weight_presets_run_from_a_quarter_point_to_a_hundred() {
     assert!(pt.contains(&0.25) && pt.contains(&100.0));
     let ctx = egui::Context::default();
     let mut app = app_with_rect();
-    // The chevron at the right end of the 120 px weight spinner opens them.
+    // The chevron at the right end of the 72 px weight spinner (the unit dropdown follows it)
+    // opens them.
     let t = texts(&ctx, &mut app, stroke::show);
     let r = text_rect(&t, "Weight:");
     let sp = ctx.global_style().spacing.item_spacing.x;
-    click(&ctx, &mut app, egui::pos2(r.right() + sp + 110.0, r.center().y), stroke::show);
+    click(&ctx, &mut app, egui::pos2(r.right() + sp + 62.0, r.center().y), stroke::show);
     let t = texts(&ctx, &mut app, stroke::show);
     assert!(shows(&t, "0.25 pt") && shows(&t, "100 pt"), "{t:?}");
 }

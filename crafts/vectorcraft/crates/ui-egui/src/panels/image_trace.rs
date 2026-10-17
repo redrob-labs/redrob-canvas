@@ -13,7 +13,14 @@ use super::{first_selected, library_panel, pstate, set_pstate, swatches};
 use crate::VectorcraftApp;
 use crate::widgets::{self, menu_item};
 
-const MODES: [(&str, &str); 4] = [("blackAndWhite", "Black and White"), ("grayscale", "Grayscale"), ("color", "Color"), ("logo", "Flat Logo")];
+const MODES: [(&str, &str); 6] = [
+    ("blackAndWhite", "Black and White"),
+    ("grayscale", "Grayscale"),
+    ("color", "Color"),
+    ("logo", "Flat Logo"),
+    ("edgeDetection", "Edge Detection"),
+    ("quantized", "Quantization"),
+];
 
 /// Color mode's palettes (`palette` param ids), in panel order.
 const PALETTES: [&str; 4] = ["limited", "fullTone", "automatic", "documentLibrary"];
@@ -298,6 +305,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     // Full Tone and Automatic: how many colours (Less … More); else a count or the threshold.
     let (key, label, range, suffix) = match mode.as_str() {
         "blackAndWhite" => ("threshold", tl!("Threshold"), 0.0..=255.0, ""),
+        // Edge Detection: how sharp a brightness change counts as an edge.
+        "edgeDetection" => ("threshold", tl!("Edge Threshold"), 1.0..=255.0, ""),
+        "quantized" => ("colors", tl!("Colors"), 2.0..=64.0, ""),
         "grayscale" => ("colors", tl!("Grays"), 2.0..=256.0, ""),
         // Flat Logo finds a handful of flat colours: more than ten is almost always noise.
         "logo" => ("colors", tl!("Colors"), 2.0..=10.0, ""),

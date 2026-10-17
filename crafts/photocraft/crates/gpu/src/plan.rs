@@ -590,6 +590,12 @@ impl<'a> Planner<'a> {
     /// composite_layer, honouring the layer's channel restrictions.
     fn layer(&mut self, layer: &'a Layer, clipped: &'a [Layer], backdrop: Slot) -> Result<Slot, Unsupported> {
         self.check_advanced(layer, clipped)?;
+        // The modulo family is a sawtooth in the source channel: one unit of float rounding on
+        // either side of a period boundary moves the result by a whole modulus, so GPU and CPU
+        // cannot be held to the same pixels. Those layers composite on the CPU.
+        if BlendMode::MODULO_MODES.contains(&layer.blend) || clipped.iter().any(|c| BlendMode::MODULO_MODES.contains(&c.blend)) {
+            return Err(Unsupported(format!("modulo blend on `{}` (composited on the CPU)", layer.name)));
+        }
         self.restricted(layer, backdrop, |s, b| s.layer_any(layer, clipped, b))
     }
 
@@ -1803,6 +1809,32 @@ pub fn mode_index(m: BlendMode) -> i32 {
         BlendMode::Xor => 31,
         BlendMode::PaintNetColorBurn => 32,
         BlendMode::PaintNetColorDodge => 33,
+        BlendMode::HsvHue => 34,
+        BlendMode::HsvSaturation => 35,
+        BlendMode::HsvValue => 36,
+        BlendMode::Luminance => 37,
+        BlendMode::BinaryAnd => 38,
+        BlendMode::BinaryOr => 39,
+        BlendMode::BinaryNand => 40,
+        BlendMode::BinaryNor => 41,
+        BlendMode::BinaryXnor => 42,
+        BlendMode::BinaryImplication => 43,
+        BlendMode::BinaryNotImplication => 44,
+        BlendMode::BinaryConverse => 45,
+        BlendMode::BinaryNotConverse => 46,
+        BlendMode::Modulo => 47,
+        BlendMode::ModuloContinuous => 48,
+        BlendMode::DivisiveModulo => 49,
+        BlendMode::DivisiveModuloContinuous => 50,
+        BlendMode::ModuloShift => 51,
+        BlendMode::ModuloShiftContinuous => 52,
+        BlendMode::Freeze => 53,
+        BlendMode::Heat => 54,
+        BlendMode::GlowHeat => 55,
+        BlendMode::HeatGlow => 56,
+        BlendMode::ReflectFreeze => 57,
+        BlendMode::FreezeReflect => 58,
+        BlendMode::HeatGlowFreezeReflectHybrid => 59,
     }
 }
 

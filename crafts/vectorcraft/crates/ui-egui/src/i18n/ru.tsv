@@ -198,7 +198,6 @@
 	Apply Last Effect	Применить последний эффект
 	Apply Last Gradient	Применить последний градиент
 	Apply Paragraph Style	Применить стиль абзаца
-	Apply SVG Filter…	Применить фильтр SVG…
 	Apply to All	Применить ко всем
 	Apply to All ({count} more missing)	Применить ко всем (ещё {count} отсутствуют)
 	Arc	Дуга
@@ -4374,3 +4373,153 @@ lighting	Light	Свет
 	Softness	Мягкость
 	Ambient Light	Окружающий свет
 	Light behind the object	Свет позади объекта
+	Bend…	Изгиб…
+	Bend	Изгиб
+	B-Spline…	B-сплайн…
+	B-Spline	B-сплайн
+	Spiro Spline…	Сплайн Spiro…
+	Spiro Spline	Сплайн Spiro
+	Dashed Stroke…	Пунктирная обводка…
+	Dashed Stroke	Пунктирная обводка
+	Taper Stroke…	Сужающаяся обводка…
+	Taper Stroke	Сужающаяся обводка
+	Spiro	Спиро
+	BSpline	B-сплайн
+	Paraxial	Параллельно осям
+	Triangle In	Треугольник внутрь
+	Triangle Out	Треугольник наружу
+	From Clipboard	Из буфера обмена
+	Segment:	Сегмент:
+	Curve	Кривая
+	Make Selected Segments Lines	Сделать выбранные сегменты прямыми
+	Make Selected Segments Curves	Сделать выбранные сегменты кривыми
+	Show Handles	Показать манипуляторы
+	Shape Along Stroke	Форма вдоль обводки
+	Segment Type	Тип сегмента
+	Next Anchor	Следующая опорная точка
+	Grow Anchor Selection	Расширить выделение опорных точек
+	Touch Select Anchors	Выделить затронутые опорные точки
+	Make Segment Line	Сделать сегмент прямым
+	Make Segment Curve	Сделать сегмент кривым
+	X:	X:
+	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	Преобразовать выбранные опорные точки в симметричные
+	Convert Selected Anchor Points to Auto-Smooth	Преобразовать выбранные опорные точки в автосглаженные
+	Add Anchor Points At	Добавить опорные точки в
+	Add Anchor Points at Extremes	Добавить опорные точки в экстремумах
+	Minimum X	Минимум X
+	Maximum X	Максимум X
+	Minimum Y	Минимум Y
+	Maximum Y	Максимум Y
+	Pie	Сектор
+	Chord	Сегмент
+	Close As:	Замыкать как:
+	Whole Ellipse	Целый эллипс
+	Corners:	Углы:
+	Spoke Ratio:	Отношение лучей:
+	Rounded:	Закругление:
+	Randomized:	Случайность:
+	Decay:	Затухание:
+	Segments:	Сегменты:
+	Star Properties:	Свойства звезды:
+	Spiral Properties:	Свойства спирали:
+	Hairline	Волосяная линия
+	Mid markers:	Средние маркеры:
+	Auto, start reversed	Авто, начало развёрнуто
+	Fixed angle	Фиксированный угол
+	Scale with stroke	Масштабировать с обводкой
+	ID:	ID:
+	Label:	Метка:
+	Title:	Заголовок:
+	Hyperlink:	Гиперссылка:
+	Clone	Клон
+	Create Clone	Создать клон
+	Unlink Clone	Отвязать клон
+	Relink to Copied	Привязать к скопированному
+	Select Original	Выделить оригинал
+	Object Properties…	Свойства объекта…
+	Text content	Содержимое текста
+	ID	ID
+	Label	Метка
+	Title	Заголовок
+	Object type	Тип объекта
+	Current layer	Текущий слой
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Добавить атрибут
+	Add Filter	Добавить фильтр
+	Add Input	Добавить вход
+	Add Primitive	Добавить примитив
+	Axonometric	Аксонометрическая
+	Axonometric Angle X	Аксонометрический угол X
+	Axonometric Angle Z	Аксонометрический угол Z
+	Canvas Orientation	Ориентация холста
+	Collapse All	Свернуть все
+	Color Matrix	Цветовая матрица
+	Color Matrix…	Цветовая матрица…
+	Component Transfer	Перенос компонентов
+	Composite	Композиция
+	Convolve Matrix	Матрица свёртки
+	Delete Node	Удалить узел
+	Diffuse Lighting	Диффузное освещение
+	Displacement Map	Карта смещения
+	Drop Shadow Preset	Набор «Тень»
+	Duplicate Node	Дублировать узел
+	Duplicate Primitive	Дублировать примитив
+	Edge Detection	Определение краёв
+	Edge Threshold	Порог краёв
+	Expand All	Развернуть все
+	Fill Rendered Pixels	Залить отрисованные пиксели
+	Filter Editor	Редактор фильтров
+	Filter Graph	Граф фильтра
+	Filter Region	Область фильтра
+	Flood	Заливка
+	Grid Kind	Тип сетки
+	Hide Palette Strip	Скрыть полосу палитры
+	Input	Вход
+	Large Chips	Крупные образцы
+	Lower Node	Опустить узел
+	Mass:	Масса:
+	Medium Chips	Средние образцы
+	Modular	Модульная
+	Modular Gap X	Модульный зазор X
+	Modular Gap Y	Модульный зазор Y
+	Morphology	Морфология
+	No colours in this palette	В этой палитре нет цветов
+	No primitives. Add one below.	Нет примитивов. Добавьте ниже.
+	Node Data	Данные узла
+	Palette Strip	Полоса палитры
+	Palette Strip Menu	Меню полосы палитры
+	Previous Result	Предыдущий результат
+	Primitive	Примитив
+	Quantization	Квантование
+	Raise Node	Поднять узел
+	Rectangular	Прямоугольная
+	Remove Attribute	Удалить атрибут
+	Remove Filter	Удалить фильтр
+	Remove Input	Удалить вход
+	Remove Primitive	Удалить примитив
+	Reset Canvas Orientation	Сбросить ориентацию холста
+	Result:	Результат:
+	Select a node to edit its attributes.	Выберите узел, чтобы изменить его атрибуты.
+	Small Chips	Мелкие образцы
+	Specular Lighting	Зеркальное освещение
+	The document has no layers.	В документе нет слоёв.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Примитивы графа фильтра редактируются на панели «Редактор фильтров».
+	Thinning:	Утончение:
+	Tremor:	Дрожание:
+	Turbulence	Турбулентность
+	Wiggle:	Колебание:
+	XML Editor	Редактор XML
+	attribute	атрибут
+	No Filter	Нет фильтра
+	The object has no SVG filter graph yet.	У объекта ещё нет графа фильтра SVG.
+	Select an object to edit its SVG filter.	Выберите объект, чтобы изменить его фильтр SVG.
+	Open a document to see its element tree.	Откройте документ, чтобы увидеть дерево его элементов.
+@msg	a clone can't be linked to itself	клон нельзя связать с самим собой
+@msg	copy an object first (Edit › Copy)	сначала скопируйте объект (Правка › Копировать)
+@msg	no such object	нет такого объекта
+@msg	nothing to clone	нечего клонировать
+@msg	select a clone	выделите клон
+@msg	select an object	выделите объект
+@msg	the copied object is no longer in this document	скопированного объекта больше нет в этом документе
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Имитировать» печатает наложение так, как его показывает просмотр наложения; цветоделение всегда сохраняет его. Набор сводит прозрачность перед печатью (файлы PostScript всегда сводят её).

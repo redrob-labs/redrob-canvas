@@ -1323,7 +1323,9 @@ mod tests {
 
     #[test]
     fn a_panel_dropped_on_the_dock_lights_up_and_pops_out_of_its_icon() {
-        let mut h = Harness::new();
+        // Tall enough for every icon (the palette strip along the bottom shortens the column,
+        // which otherwise scrolls), so the count compares like with like.
+        let mut h = Harness::on(vec2(1400.0, 1600.0));
         let count = h.icons().len();
         h.drag(h.icons()[0].center(), pos2(500.0, 400.0));
         assert_eq!(h.groups(), [["color"]]);
@@ -1563,7 +1565,9 @@ mod tests {
 
     #[test]
     fn a_double_click_on_a_tab_collapses_a_floating_group_and_another_expands_it() {
-        let mut h = Harness::new();
+        // Tall enough for Layers with the Stroke panel (hairline, mid markers, orientation rows)
+        // stacked under it: a stack taller than the window is pushed up against the top.
+        let mut h = Harness::on(vec2(1400.0, 1600.0));
         h.app.run("window.panel.float", json!({"panel": "layers", "x": 500, "y": 150})).unwrap();
         h.app.run("window.panel.float", json!({"panel": "stroke", "below": "layers"})).unwrap();
         h.settle();

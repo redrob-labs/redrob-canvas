@@ -75,6 +75,7 @@ fn fields(id: &str) -> Option<&'static [(&'static str, Rule)]> {
         "filter.distort.twirl" => &[("angle", Number(-999.0, 999.0))],
         "filter.distort.pinch" => &[("amount", Number(-100.0, 100.0))],
         "filter.distort.spherize" => &[("amount", Number(-100.0, 100.0)), ("mode", Choice("normal|horizontalOnly|verticalOnly"))],
+        "filter.adjust.desaturate" => &[("mode", Choice("luminance|luma|lightness|average|value"))],
         "filter.distort.wave" => &[
             ("generators", Number(1.0, 999.0)),
             ("wavelengthMin", Number(1.0, 998.0)),
@@ -117,6 +118,7 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         "filter.stylize.extrude" => &[("type", "blocks|pyramids"), ("depthMode", "random|levelBased")],
         "filter.stylize.tiles" => &[("fill", "background|foreground|inverse|unaltered")],
         "filter.stylize.traceContour" => &[("edge", "lower|upper")],
+        "filter.stylize.edge" => &[("algorithm", "sobel|prewitt|gradient|roberts|differential|laplace")],
         "filter.stylize.wind" => &[("method", "wind|blast|stagger"), ("direction", "fromRight|fromLeft")],
         "filter.distort.displace" => &[("fit", "stretch|tile"), ("undefinedAreas", "repeat|wrap")],
         "filter.distort.shear" => &[("undefinedAreas", "wrap|repeat")],
@@ -128,6 +130,98 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         }
         "filter.other.hsbHsl" => &[("inputMode", "rgb|hsb|hsl"), ("rowOrder", "hsb|hsl|rgb")],
         "filter.video.deInterlace" => &[("eliminate", "oddFields|evenFields"), ("createBy", "interpolation|duplication")],
+        // Third batch.
+        "filter.blur.tileableBlur" => &[("blurType", "gaussian|box")],
+        "filter.noise.nlFilter" => &[("mode", "alphaTrimmedMean|optimalEstimation|edgeEnhancement")],
+        "filter.distort.shift" => &[("direction", "horizontal|vertical")],
+        "filter.distort.valuePropagate" => {
+            &[("mode", "moreWhite|moreBlack|middleValue|foregroundToPeaks|onlyForeground|onlyBackground|moreOpaque|moreTransparent")]
+        }
+        "filter.distort.videoDegradation" => {
+            &[("pattern", "staggered|largeStaggered|striped|wideStriped|longStaggered|threeByThree|largeThreeByThree|hex|dots")]
+        }
+        "filter.distort.blinds" => &[("orientation", "horizontal|vertical")],
+        "filter.distort.pageCurl" => &[
+            ("location", "upperLeft|upperRight|lowerLeft|lowerRight"),
+            ("orientation", "horizontal|vertical"),
+            ("colors", "foregroundBackground|currentGradient|currentGradientReversed"),
+        ],
+        "filter.lightShadow.sparkle" => &[("colorType", "naturalColor|foregroundColor|backgroundColor")],
+        "filter.lightShadow.longShadow" => {
+            &[("style", "finite|infinite|fading|fadingFixedLength"), ("composition", "shadowPlusImage|shadowOnly|shadowMinusImage")]
+        }
+        "filter.lightShadow.perspectiveShadow" => &[("interpolation", "none|linear|cubic")],
+        "filter.stylize.imageGradient" => &[("output", "magnitude|direction|both")],
+        "filter.other.distanceMap" => &[("metric", "euclidean|manhattan|chebyshev")],
+        "filter.other.normalMap" => &[("xComponent", "red|green|blue"), ("yComponent", "red|green|blue")],
+        "filter.artistic.waterpixels" => &[("superpixelsColor", "average|random")],
+        "filter.artistic.impressionist" => &[
+            ("orientationType", "value|radius|random|radial|flowing|hue|adaptive"),
+            ("brushShape", "ellipse|square|line|splotch"),
+            ("placement", "randomly|evenly"),
+            ("strokeColor", "average|center"),
+            ("background", "keepOriginal|solidColor|transparent"),
+        ],
+        "filter.artistic.vanGogh" => {
+            &[("effectChannel", "brightness|hue|saturation"), ("effectOperator", "derivative|gradient"), ("convolve", "withWhiteNoise|withSourceImage")]
+        }
+        "filter.blur.meanCurvatureBlur"
+        | "filter.blur.symmetricNearestNeighbor"
+        | "filter.other.antialias"
+        | "filter.other.operationGraph"
+        | "filter.noise.cieLchNoise"
+        | "filter.noise.hsvNoise"
+        | "filter.noise.hurl"
+        | "filter.noise.pick"
+        | "filter.noise.slur"
+        | "filter.distort.engrave"
+        | "filter.distort.kaleidoscope"
+        | "filter.lightShadow.supernova"
+        | "filter.lightShadow.gradientFlare"
+        | "filter.lightShadow.xachEffect"
+        | "filter.stylize.differenceOfGaussians"
+        | "filter.stylize.laplace"
+        | "filter.artistic.cubism"
+        | "filter.artistic.slic"
+        | "filter.artistic.weave"
+        | "filter.decor.filmstrip"
+        | "filter.decor.fuzzyBorder" => &[],
+        // Map / Render / Decor batch (filters_gen): choices checked, numbers clamp in params_for.
+        "filter.map.fractalTrace" => &[("fractal", "mandelbrot|julia"), ("abyss", "loop|clamp|black|white|transparent")],
+        "filter.map.illusion" => &[("type", "type1|type2")],
+        "filter.map.mapObject" => &[("mapTo", "plane|sphere|box|cylinder")],
+        "filter.map.smallTiles" => &[("flip", "none|horizontal|vertical|both"), ("flipWhich", "all|alternate|explicit")],
+        "filter.render.fractalExplorer" => &[("fractalType", "mandelbrot|julia|barnsley1|barnsley2|barnsley3|spider|manOWar|lambda|sierpinski")],
+        "filter.render.ifsFractal" => &[("preset", "fern|sierpinski|dragon|spiral|tree|snowflake")],
+        "filter.render.sphereDesigner" => &[("texture", "solid|checker|marble|lizard|phong|noise|wood|spiral|spots")],
+        "filter.render.lava" => &[("gradient", "incandescent|germanFlag|caribbeanBlues|golden|fullSpectrum")],
+        "filter.render.cmlExplorer" => &[
+            ("hueFunction", "keepImage|keepFirstValue|fillWithK|logistic|deltaSinCurve|sinCurve|sinCurveStep|random"),
+            ("saturationFunction", "keepImage|keepFirstValue|fillWithK|logistic|deltaSinCurve|sinCurve|sinCurveStep|random"),
+            ("valueFunction", "keepImage|keepFirstValue|fillWithK|logistic|deltaSinCurve|sinCurve|sinCurveStep|random"),
+        ],
+        "filter.render.bayerMatrix" => &[("rotation", "none|quarter|half|threeQuarters")],
+        "filter.render.maze" => &[("algorithm", "depthFirst|prim")],
+        "filter.render.sinus" => &[("blendMode", "linear|bilinear|sinusoidal")],
+        "filter.render.spiral" => &[("type", "linear|logarithmic"), ("direction", "clockwise|counterClockwise")],
+        "filter.render.jigsaw" => &[("style", "square|curved")],
+        "filter.render.spirograph" => &[("curveType", "spirograph|epitrochoid|sine|lissajous"), ("shape", "circle|polygon|star|sine|bumps|rack|frame")],
+        "filter.map.littlePlanet"
+        | "filter.map.recursiveTransform"
+        | "filter.map.tileSeamless"
+        | "filter.render.cellNoise"
+        | "filter.render.simplexNoise"
+        | "filter.render.circuit"
+        | "filter.render.qbist"
+        | "filter.render.checkerboard"
+        | "filter.render.diffractionPatterns"
+        | "filter.render.grid"
+        | "filter.render.linearSinusoid"
+        | "filter.render.lineNova"
+        | "filter.decor.slide"
+        | "filter.decor.coffeeStain"
+        | "filter.decor.stencilCarve"
+        | "filter.web.semiFlatten" => &[],
         _ => return None,
     })
 }
@@ -158,6 +252,9 @@ pub(crate) fn validate_params(id: &str, params: &Value) -> Result<()> {
             match key.as_str() {
                 "layer" => (value.as_u64().is_some(), "an unsigned layer id".into()),
                 "coalesce" => (value.is_string(), "a string".into()),
+                // The dialog's Blending Options, shared by every filter (checked in `run_filter`).
+                "blend" => (value.as_str().is_some_and(|name| crate::commands::blend_from_str(name).is_some()), "a blend mode name".into()),
+                "opacity" => (value.as_f64().is_some_and(|o| o.is_finite() && (0.0..=100.0).contains(&o)), "a number in 0..100".into()),
                 "target" => (
                     value.as_str().is_some_and(|s| matches!(s, "pixels" | "mask" | "quickMask"))
                         || value.as_object().is_some_and(|o| o.len() == 1 && o.get("channel").and_then(Value::as_u64).is_some()),
@@ -323,13 +420,14 @@ mod tests {
     #[test]
     fn extended_filter_choices_match_their_specs_and_reject_unlisted_values() {
         let mut s = session(8);
-        let specs = crate::filters_ext::specs();
+        let specs: Vec<_> = crate::filters_ext::specs().into_iter().chain(crate::filters_extra::specs()).collect();
         let ids = [
             "filter.pixelate.mezzotint",
             "filter.stylize.diffuse",
             "filter.stylize.extrude",
             "filter.stylize.tiles",
             "filter.stylize.traceContour",
+            "filter.stylize.edge",
             "filter.stylize.wind",
             "filter.distort.displace",
             "filter.distort.shear",
@@ -339,6 +437,22 @@ mod tests {
             "filter.blur.lensBlur",
             "filter.other.hsbHsl",
             "filter.video.deInterlace",
+            "filter.blur.tileableBlur",
+            "filter.noise.nlFilter",
+            "filter.distort.shift",
+            "filter.distort.valuePropagate",
+            "filter.distort.videoDegradation",
+            "filter.distort.blinds",
+            "filter.distort.pageCurl",
+            "filter.lightShadow.sparkle",
+            "filter.lightShadow.longShadow",
+            "filter.lightShadow.perspectiveShadow",
+            "filter.stylize.imageGradient",
+            "filter.other.distanceMap",
+            "filter.other.normalMap",
+            "filter.artistic.waterpixels",
+            "filter.artistic.impressionist",
+            "filter.artistic.vanGogh",
         ];
         for id in ids {
             let doc = specs.iter().find(|spec| spec.id == id).unwrap().params;

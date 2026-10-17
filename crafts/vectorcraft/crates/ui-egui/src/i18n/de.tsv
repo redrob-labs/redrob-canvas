@@ -182,7 +182,6 @@
 	Apply Last Effect	Letzten Effekt anwenden
 	Apply Last Gradient	Letzten Verlauf anwenden
 	Apply Paragraph Style	Absatzformat anwenden
-	Apply SVG Filter…	SVG-Filter anwenden…
 	Apply to All	Auf alle anwenden
 	Apply to All ({count} more missing)	Auf alle anwenden ({count} weitere fehlen)
 	Arc	Bogen
@@ -4333,3 +4332,168 @@ theme	Appearance	Erscheinungsbild
 	Softness	Weichheit
 	Ambient Light	Umgebungslicht
 	Light behind the object	Licht hinter dem Objekt
+	Bend…	Biegen…
+	Bend	Biegen
+	B-Spline…	B-Spline…
+	B-Spline	B-Spline
+	Spiro Spline…	Spiro-Spline…
+	Spiro Spline	Spiro-Spline
+	Dashed Stroke…	Gestrichelte Kontur…
+	Dashed Stroke	Gestrichelte Kontur
+	Taper Stroke…	Verjüngte Kontur…
+	Taper Stroke	Verjüngte Kontur
+	Spine	Leitpfad
+	Width Scale	Breitenskalierung
+	Cusps	Ecken behalten
+	Dashes	Striche
+	Hole Factor	Lückenfaktor
+	Unify	Vereinheitlichen
+	Half Start	Halber Anfang
+	Half End	Halbes Ende
+	Start Offset	Anfangsversatz
+	End Offset	Endversatz
+	Stroke To Path	Kontur in Pfad
+	Start Taper	Verjüngung am Anfang
+	End Taper	Verjüngung am Ende
+	Smoothing	Glättung
+	Direction	Richtung
+	Spiro	Spiro
+	BSpline	B-Spline
+	Paraxial	Achsenparallel
+	Triangle In	Dreieck hinein
+	Triangle Out	Dreieck hinaus
+	From Clipboard	Aus der Zwischenablage
+	Segment:	Segment:
+	Curve	Kurve
+	Make Selected Segments Lines	Ausgewählte Segmente in Linien umwandeln
+	Make Selected Segments Curves	Ausgewählte Segmente in Kurven umwandeln
+	Show Handles	Griffe einblenden
+	Shape Along Stroke	Form entlang der Kontur
+	Segment Type	Segmenttyp
+	Next Anchor	Nächster Ankerpunkt
+	Grow Anchor Selection	Ankerpunktauswahl erweitern
+	Touch Select Anchors	Berührte Ankerpunkte auswählen
+	Make Segment Line	Segment in Linie umwandeln
+	Make Segment Curve	Segment in Kurve umwandeln
+	X:	X:
+	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	Ausgewählte Ankerpunkte in symmetrische Punkte umwandeln
+	Convert Selected Anchor Points to Auto-Smooth	Ausgewählte Ankerpunkte in automatisch glatte Punkte umwandeln
+	Add Anchor Points At	Ankerpunkte hinzufügen bei
+	Add Anchor Points at Extremes	Ankerpunkte an Extremen hinzufügen
+	Minimum X	Minimales X
+	Maximum X	Maximales X
+	Minimum Y	Minimales Y
+	Maximum Y	Maximales Y
+	Pie	Kreissektor
+	Chord	Kreisabschnitt
+	Close As:	Schließen als:
+	Whole Ellipse	Ganze Ellipse
+	Corners:	Ecken:
+	Spoke Ratio:	Zackenverhältnis:
+	Rounded:	Abrundung:
+	Randomized:	Zufall:
+	Decay:	Abnahme:
+	Segments:	Segmente:
+	Star Properties:	Stern-Eigenschaften:
+	Spiral Properties:	Spiral-Eigenschaften:
+	Hairline	Haarlinie
+	Mid markers:	Mittlere Marker:
+	Auto, start reversed	Automatisch, Anfang umgekehrt
+	Fixed angle	Fester Winkel
+	Scale with stroke	Mit Kontur skalieren
+	ID:	ID:
+	Label:	Beschriftung:
+	Title:	Titel:
+	Hyperlink:	Hyperlink:
+	Clone	Klon
+	Create Clone	Klon erstellen
+	Unlink Clone	Klon-Verknüpfung lösen
+	Relink to Copied	Mit Kopiertem neu verknüpfen
+	Select Original	Original auswählen
+	Object Properties…	Objekteigenschaften…
+	Text content	Textinhalt
+	ID	ID
+	Label	Beschriftung
+	Title	Titel
+	Object type	Objekttyp
+	Current layer	Aktuelle Ebene
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Attribut hinzufügen
+	Add Filter	Filter hinzufügen
+	Add Input	Eingang hinzufügen
+	Add Primitive	Primitive hinzufügen
+	Axonometric	Axonometrisch
+	Axonometric Angle X	Axonometrischer Winkel X
+	Axonometric Angle Z	Axonometrischer Winkel Z
+	Canvas Orientation	Ausrichtung der Zeichenfläche
+	Collapse All	Alle einklappen
+	Color Matrix	Farbmatrix
+	Color Matrix…	Farbmatrix …
+	Component Transfer	Komponententransfer
+	Composite	Zusammensetzen
+	Convolve Matrix	Faltungsmatrix
+	Delete Node	Knoten löschen
+	Diffuse Lighting	Diffuse Beleuchtung
+	Displacement Map	Verschiebungskarte
+	Drop Shadow Preset	Schlagschatten-Vorgabe
+	Duplicate Node	Knoten duplizieren
+	Duplicate Primitive	Primitive duplizieren
+	Edge Detection	Kantenerkennung
+	Edge Threshold	Kantenschwellenwert
+	Expand All	Alle ausklappen
+	Fill Rendered Pixels	Gerenderte Pixel füllen
+	Filter Editor	Filter-Editor
+	Filter Graph	Filtergraph
+	Filter Region	Filterbereich
+	Flood	Flutung
+	Grid Kind	Rasterart
+	Hide Palette Strip	Palettenleiste ausblenden
+	Input	Eingang
+	Large Chips	Große Felder
+	Lower Node	Knoten nach hinten
+	Mass:	Masse:
+	Medium Chips	Mittlere Felder
+	Modular	Modular
+	Modular Gap X	Modulabstand X
+	Modular Gap Y	Modulabstand Y
+	Morphology	Morphologie
+	No colours in this palette	Keine Farben in dieser Palette
+	No primitives. Add one below.	Keine Primitive. Fügen Sie unten eine hinzu.
+	Node Data	Knotendaten
+	Palette Strip	Palettenleiste
+	Palette Strip Menu	Menü der Palettenleiste
+	Previous Result	Vorheriges Ergebnis
+	Primitive	Primitive
+	Quantization	Quantisierung
+	Raise Node	Knoten nach vorne
+	Rectangular	Rechteckig
+	Remove Attribute	Attribut entfernen
+	Remove Filter	Filter entfernen
+	Remove Input	Eingang entfernen
+	Remove Primitive	Primitive entfernen
+	Reset Canvas Orientation	Ausrichtung der Zeichenfläche zurücksetzen
+	Result:	Ergebnis:
+	Select a node to edit its attributes.	Wählen Sie einen Knoten, um seine Attribute zu bearbeiten.
+	Small Chips	Kleine Felder
+	Specular Lighting	Spiegelnde Beleuchtung
+	The document has no layers.	Das Dokument hat keine Ebenen.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Die Primitive eines Filtergraphen werden im Bedienfeld „Filter-Editor“ bearbeitet.
+	Thinning:	Ausdünnung:
+	Tremor:	Zittern:
+	Turbulence	Turbulenz
+	Wiggle:	Wackeln:
+	XML Editor	XML-Editor
+	attribute	Attribut
+	No Filter	Kein Filter
+	The object has no SVG filter graph yet.	Das Objekt hat noch keinen SVG-Filtergraphen.
+	Select an object to edit its SVG filter.	Wählen Sie ein Objekt, um seinen SVG-Filter zu bearbeiten.
+	Open a document to see its element tree.	Öffnen Sie ein Dokument, um seinen Elementbaum zu sehen.
+@msg	a clone can't be linked to itself	ein Klon kann nicht mit sich selbst verknüpft werden
+@msg	copy an object first (Edit › Copy)	kopieren Sie zuerst ein Objekt (Bearbeiten › Kopieren)
+@msg	no such object	kein solches Objekt
+@msg	nothing to clone	nichts zu klonen
+@msg	select a clone	wählen Sie einen Klon aus
+@msg	select an object	wählen Sie ein Objekt aus
+@msg	the copied object is no longer in this document	das kopierte Objekt ist nicht mehr in diesem Dokument
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	„Simulieren“ druckt Überdrucken so, wie es die Überdruckenvorschau zeigt; Separationen behalten es immer. Eine Vorgabe reduziert die Transparenz vor dem Drucken (PostScript-Dateien reduzieren sie immer).

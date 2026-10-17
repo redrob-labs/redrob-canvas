@@ -639,7 +639,7 @@ fn gradient_map_picker_imports_grd_without_editing_the_map() {
         ..Default::default()
     }]);
     h.state_mut().services.file_dialog = Some(Box::new(move |request, _, reply| {
-        assert!(matches!(request, crate::FileDialogRequest::Open { multiple: false, extensions: Some(ref exts), .. } if exts == &["grd"]));
+        assert!(matches!(request, crate::FileDialogRequest::Open { multiple: false, extensions: Some(ref exts), .. } if exts == &["grd", "ggr"]));
         reply.send(Some(crate::FileDialogAnswer::Contents("My Gradients.GRD".into(), bytes.clone())));
     }));
     import_gradients_from_picker(&mut h);
@@ -698,7 +698,7 @@ fn gradient_map_dialog_import_preserves_pending_settings() {
     let id = crate::adjust_dialog::open(h.state_mut(), "image.adjustments.gradientMap").unwrap();
     let fields = h.state_mut().ui.dialog_mut(id).unwrap().fields.clone();
     h.state_mut().services.file_dialog = Some(Box::new(|request, _, reply| {
-        assert!(matches!(request, crate::FileDialogRequest::Open { extensions: Some(ref exts), .. } if exts == &["grd"]));
+        assert!(matches!(request, crate::FileDialogRequest::Open { extensions: Some(ref exts), .. } if exts == &["grd", "ggr"]));
         reply.send(None);
     }));
     h.run_steps(3);

@@ -4146,3 +4146,598 @@ navigator	Zoom	Zoom
 	There are too many sets: delete one first.	Hay demasiados conjuntos: elimine uno primero.
 	set name	nombre del conjunto
 	{set} (modified)	{set} (modificado)
+	Desaturate…	Desaturar…
+	Anti-erase	Antiborrado
+	Restore erased pixels instead of erasing	Restaura los píxeles borrados en lugar de borrar
+	Luma	Luma
+	Value	Valor
+	Grow through corners as well as edges	Crece también por las esquinas, no solo por los bordes
+	By:	Por:
+	Composite	Compuesto
+	Square Gradient	Degradado cuadrado
+	Conical Gradient (symmetric)	Degradado cónico (simétrico)
+	Spiral Gradient (clockwise)	Degradado en espiral (horario)
+	Spiral Gradient (counter-clockwise)	Degradado en espiral (antihorario)
+	Line Art	Línea de arte
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Rellena el área que encierra la tinta, cerrando huecos pequeños y entrando un poco bajo las líneas
+	Ink below	Tinta bajo
+	Close gaps	Cerrar huecos
+	Under ink	Bajo la tinta
+	Angle Offset:	Desfase de ángulo:
+	Read the direction of the first stroke segment for the whole stroke	Usar la dirección del primer segmento para todo el trazo
+	Fan Corners	Esquinas en abanico
+	Turn sharper than this is fanned	Un giro más cerrado que este se abre en abanico
+	Sensor:	Sensor:
+	Combine:	Combinar:
+	Auto Spacing	Espaciado automático
+	Spacing grows with the square root of the size	El espaciado crece con la raíz cuadrada del tamaño
+	Auto spacing coefficient	Coeficiente de espaciado automático
+	Minimum Spacing	Espaciado mínimo
+	Isotropic Spacing	Espaciado isotrópico
+	Space dabs by the diameter alone, not by the roundness	Espaciar las pinceladas solo por el diámetro, no por la redondez
+	Mask:	Máscara:
+	Fade X	Desvanecer X
+	Fade Y	Desvanecer Y
+	Lock Fade	Bloquear desvanecimiento
+	The vertical fade follows the horizontal one	El desvanecimiento vertical sigue al horizontal
+	Soft curve:	Curva suave:
+	Spikes	Picos
+	Randomness	Aleatoriedad
+	Anti-aliasing	Suavizado
+	Auto Precision	Precisión automática
+	Precision	Precisión
+	Separate Axes	Ejes separados
+	Scatter along and across the stroke by different amounts	Dispersar a lo largo y a través del trazo en cantidades distintas
+	Along	A lo largo
+	Across	A través
+	Stabilizer	Estabilizador
+	Average the last input points; the sample count follows the speed	Promedia los últimos puntos de entrada; el número de muestras sigue la velocidad
+	Samples (slow)	Muestras (lento)
+	Samples (fast)	Muestras (rápido)
+	Delay	Retardo
+	Finish Line	Terminar la línea
+	Stabilize Sensors	Estabilizar sensores
+	Smooth Pressure	Suavizar presión
+	Smooth the pen pressure along with the position	Suavizar la presión del lápiz junto con la posición
+	Drawing Angle	Ángulo de dibujo
+	Erase with the current brush (Clear mode)	Borrar con el pincel actual (modo Borrar)
+	Blend:	Mezcla:
+	How much of the sample goes into the current colour	Cuánto de la muestra entra en el color actual
+	Close gap	Cerrar hueco
+	Boundary colour	Color de límite
+	Grow the filled area outward	Expandir el área rellena hacia fuera
+	Gaps in the boundary up to this are closed	Se cierran los huecos del límite hasta este tamaño
+	Fill until this colour instead of over similar colours	Rellenar hasta este color en vez de sobre colores similares
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Arrastra una línea recta pintada con el pincel; Mayús ajusta el ángulo a pasos de 15°
+	Free select: clicks and drags build one editable outline	Selección libre: los clics y los arrastres forman un único contorno editable
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Clic añade un punto, arrastrar dibuja a mano alzada · arrastra un punto para moverlo · {del} quita el último · {key} cierra · Esc cancela
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Haz clic para colocar puntos, arrastra para dibujar a mano alzada; el contorno sigue editable hasta cerrarlo
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Dirección:
+	Corrective	Correctivo
+	Clipping:	Recorte:
+	Adjust	Ajustar
+	Clip	Recortar al lienzo
+	Crop with Aspect	Recortar con proporción
+	Guides:	Guías:
+	Center Lines	Líneas centrales
+	Golden Sections	Secciones áureas
+	Diagonals	Diagonales
+	Lines:	Líneas:
+	Split View	Vista dividida
+	No Dynamics Preset	Sin ajuste de dinámica
+	Dynamics:	Dinámica:
+	Applied dynamics preset {name} ({note})	Dinámica {name} aplicada ({note})
+	Applied dynamics preset {name}	Dinámica {name} aplicada
+	Save the brush's dynamics as a new preset	Guardar la dinámica del pincel como ajuste nuevo
+	Delete this dynamics preset	Eliminar este ajuste de dinámica
+	Velocity	Velocidad
+	HSV Hue	Tono HSV
+	HSV Saturation	Saturación HSV
+	HSV Value	Valor HSV
+	Edge…	Borde…
+	Algorithm	Algoritmo
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferencial
+	Laplace	Laplace
+	Color Temperature…	Temperatura de color…
+	Color Temperature	Temperatura de color
+	Original Temperature	Temperatura original
+	Intended Temperature	Temperatura deseada
+	Hue-Chroma…	Tono-croma…
+	Hue-Chroma	Tono-croma
+	Chroma	Croma
+	Corner Threshold	Umbral de esquina
+	Corner Surround	Entorno de esquina
+	Min Area	Área mínima
+	Airbrush paints only while moving (motion only)	El aerógrafo pinta solo al moverse (solo movimiento)
+	Airbrush motion only	Aerógrafo solo movimiento
+	Configure Grid…	Configurar cuadrícula…
+	Configure Grid	Configurar cuadrícula
+	Spacing X	Espaciado X
+	Spacing Y	Espaciado Y
+	Offset X	Desplazamiento X
+	Offset Y	Desplazamiento Y
+	Active Path	Trazado activo
+	Equidistance	Equidistancia
+	Wavelet Decompose…	Descomposición wavelet…
+	Wavelet Decompose	Descomposición wavelet
+	Scales	Escalas
+	Import Swatches from Image	Importar muestras desde la imagen
+	Export Swatches as CSS…	Exportar muestras como CSS…
+	Cage Transform	Transformación de jaula
+	Antialias	Antialias
+	Blinds…	Persianas…
+	CIE lch Noise…	Ruido CIE LCh…
+	Cubism…	Cubismo…
+	Decor	Decoración
+	Difference of Gaussians…	Diferencia de gaussianas…
+	Distance Map…	Mapa de distancia…
+	Engrave…	Grabado…
+	Filmstrip…	Tira de película…
+	Fuzzy Border…	Borde difuso…
+	Gradient Flare…	Destello de degradado…
+	HSV Noise…	Ruido HSV…
+	Hurl…	Lanzar…
+	Image Gradient…	Gradiente de imagen…
+	Impressionist…	Impresionista…
+	Kaleidoscope…	Caleidoscopio…
+	Light and Shadow	Luz y sombra
+	Long Shadow…	Sombra larga…
+	Mean Curvature Blur…	Desenfoque de curvatura media…
+	NL Filter…	Filtro NL…
+	Normal Map…	Mapa de normales…
+	Operation Graph…	Grafo de operaciones…
+	Page Curl…	Esquina doblada…
+	Perspective Shadow…	Sombra en perspectiva…
+	Pick…	Escoger…
+	SLIC…	SLIC…
+	Shift…	Desplazar…
+	Slur…	Derretir…
+	Sparkle…	Destellos…
+	Supernova…	Supernova…
+	Symmetric Nearest Neighbor…	Vecino más cercano simétrico…
+	Tileable Blur…	Desenfoque enlosable…
+	Value Propagate…	Propagar valor…
+	Van Gogh (LIC)…	Van Gogh (LIC)…
+	Video Degradation…	Degradación de vídeo…
+	Waterpixels…	Waterpixels…
+	Weave…	Tejido…
+	Xach-Effect…	Efecto Xach…
+	Add Border	Añadir borde
+	Add Shadow	Añadir sombra
+	Additive	Aditivo
+	Allow Resizing	Permitir redimensionar
+	Alpha Trimmed Mean	Media recortada alfa
+	At Bottom	Abajo
+	At Top	Arriba
+	Blur Border	Desenfocar borde
+	Blur Horizontally	Desenfocar horizontalmente
+	Blur Radius	Radio de desenfoque
+	Blur Type	Tipo de desenfoque
+	Blur Vertically	Desenfocar verticalmente
+	Border Size	Tamaño del borde
+	Box	Caja
+	Brush Shape	Forma del pincel
+	Chebyshev	Chebyshev
+	Clip Result	Recortar resultado
+	Color Type	Tipo de color
+	Compactness	Compacidad
+	Composition	Composición
+	Convolve	Convolución
+	Cubic	Cúbica
+	Current Gradient	Degradado actual
+	Current Gradient Reversed	Degradado actual invertido
+	Derivative	Derivada
+	Displacement	Desplazamiento
+	Drop Shadow Blur Radius	Radio de desenfoque de la sombra
+	Drop Shadow Color	Color de la sombra
+	Drop Shadow Opacity	Opacidad de la sombra
+	Drop Shadow X Offset	Desplazamiento X de la sombra
+	Drop Shadow Y Offset	Desplazamiento Y de la sombra
+	Dulling	Atenuación
+	Edge Enhancement	Realce de bordes
+	Effect Channel	Canal del efecto
+	Effect Operator	Operador del efecto
+	Ellipse	Elipse
+	Euclidean	Euclídea
+	Evenly	Uniformemente
+	Fading	Desvanecimiento
+	Fading Fixed Length	Desvanecimiento de longitud fija
+	Film Color	Color de la película
+	Filter Length	Longitud del filtro
+	Finite	Finita
+	Flare Intensity	Intensidad del destello
+	Flowing	Fluido
+	Foreground Background	Frente/fondo
+	Foreground To Peaks	Frente a los picos
+	Full Z	Z completo
+	Gradient Smoothness	Suavidad del gradiente
+	Granularity	Granularidad
+	Graph	Grafo
+	Grayscale Averaging	Promedio en escala de grises
+	Hex	Hexagonal
+	Highlight Color	Color del resalte
+	Highlight Opacity	Opacidad del resalte
+	Highlight X Offset	Desplazamiento X del resalte
+	Highlight Y Offset	Desplazamiento Y del resalte
+	Hole Height	Altura del agujero
+	Hole Offset	Desplazamiento del agujero
+	Hole Spacing	Espaciado de agujeros
+	Hole Width	Anchura del agujero
+	Hue Rotation	Rotación de tono
+	Integration Steps	Pasos de integración
+	Iterations	Iteraciones
+	Keep Original	Mantener original
+	Large Staggered	Escalonado grande
+	Large Three By Three	3×3 grande
+	Limit Line Width	Limitar anchura de línea
+	Long Staggered	Escalonado largo
+	Lower Left	Inferior izquierda
+	Lower Right	Inferior derecha
+	Lower Threshold	Umbral inferior
+	Luminosity Threshold	Umbral de luminosidad
+	Magnitude	Magnitud
+	Manhattan	Manhattan
+	Maximum Value	Valor máximo
+	Metric	Métrica
+	Middle Value	Valor medio
+	Minimum Value	Valor mínimo
+	Mirror Rotation	Rotación de espejos
+	Mirrors	Espejos
+	More Black	Más negro
+	More Opaque	Más opaco
+	More Transparent	Más transparente
+	More White	Más blanco
+	Natural Color	Color natural
+	Noise Magnitude	Magnitud del ruido
+	Normalize	Normalizar
+	Number Color	Color de los números
+	Only Background	Solo fondo
+	Only Foreground	Solo frente
+	Optimal Estimation	Estimación óptima
+	Orientation Type	Tipo de orientación
+	Pairs	Pares
+	Paper Relief	Relieve del papel
+	Placement	Colocación
+	Propagating Rate	Tasa de propagación
+	Radius1	Radio 1
+	Radius2	Radio 2
+	Random Hue	Tono aleatorio
+	Random Saturation	Saturación aleatoria
+	Randomization	Aleatoriedad
+	Randomly	Aleatoriamente
+	Rays	Rayos
+	Regions Size	Tamaño de regiones
+	Relative Distance	Distancia relativa
+	Result Rotation	Rotación del resultado
+	Ribbon Spacing	Espaciado de cintas
+	Ribbon Width	Anchura de cintas
+	Rotated	Rotado
+	Second Flares	Destellos secundarios
+	Segments	Segmentos
+	Shade	Sombreado
+	Shadow Darkness	Oscuridad de la sombra
+	Shadow Depth	Profundidad de la sombra
+	Shadow Length	Longitud de la sombra
+	Shadow Minus Image	Sombra menos imagen
+	Shadow Only	Solo sombra
+	Shadow Plus Image	Sombra más imagen
+	Shadow Weight	Peso de la sombra
+	Size Variation	Variación de tamaño
+	Spatial Regularization	Regularización espacial
+	Spike Angle	Ángulo de las puntas
+	Spike Density	Densidad de puntas
+	Spike Length	Longitud de las puntas
+	Spike Points	Número de puntas
+	Splotch	Mancha
+	Spokes	Radios
+	Staggered	Escalonado
+	Start Index	Índice inicial
+	Striped	A rayas
+	Stroke Density	Densidad de trazos
+	Superpixels Color	Color de superpíxeles
+	Superpixels Size	Tamaño de superpíxeles
+	Thread Density	Densidad de hilos
+	Thread Intensity	Intensidad de hilos
+	Thread Length	Longitud de hilos
+	Three By Three	3×3
+	Threshold High	Umbral alto
+	Threshold Low	Umbral bajo
+	Tile Saturation	Saturación de teselas
+	Tileable	Enlosable
+	To Bottom	Hacia abajo
+	To Left	Hacia la izquierda
+	To Right	Hacia la derecha
+	To Top	Hacia arriba
+	Trim X	Recorte X
+	Trim Y	Recorte Y
+	Upper Left	Superior izquierda
+	Upper Right	Superior derecha
+	Upper Threshold	Umbral superior
+	Vector Angle	Ángulo del vector
+	Vector Length	Longitud del vector
+	Wide Striped	A rayas anchas
+	With Source Image	Con la imagen de origen
+	With White Noise	Con ruido blanco
+	X Component	Componente X
+	Y Component	Componente Y
+	Animation	Animación
+	Bayer Matrix…	Matriz de Bayer…
+	Bayer Matrix	Matriz de Bayer
+	Blend…	Fundir…
+	Burn-In…	Quemado…
+	Burn-In	Quemado
+	CML Explorer…	Explorador CML…
+	CML Explorer	Explorador CML
+	Cell Noise…	Ruido celular…
+	Cell Noise	Ruido celular
+	Checkerboard…	Tablero de ajedrez…
+	Checkerboard	Tablero de ajedrez
+	Circuit…	Circuito…
+	Circuit	Circuito
+	Coffee Stain…	Mancha de café…
+	Coffee Stain	Mancha de café
+	Diffraction Patterns…	Patrones de difracción…
+	Diffraction Patterns	Patrones de difracción
+	Fractal Explorer…	Explorador de fractales…
+	Fractal Explorer	Explorador de fractales
+	Fractal Trace…	Traza fractal…
+	Fractal Trace	Traza fractal
+	Fractals	Fractales
+	Grid…	Rejilla…
+	IFS Fractal…	Fractal IFS…
+	IFS Fractal	Fractal IFS
+	Illusion…	Ilusión…
+	Illusion	Ilusión
+	Jigsaw…	Rompecabezas…
+	Jigsaw	Rompecabezas
+	Lava…	Lava…
+	Lava	Lava
+	Line Nova…	Línea nova…
+	Line Nova	Línea nova
+	Linear Sinusoid…	Sinusoide lineal…
+	Linear Sinusoid	Sinusoide lineal
+	Little Planet…	Pequeño planeta…
+	Little Planet	Pequeño planeta
+	Map	Mapa
+	Map Object…	Mapear objeto…
+	Map Object	Mapear objeto
+	Maze…	Laberinto…
+	Maze	Laberinto
+	Optimize (for GIF)	Optimizar (para GIF)
+	Qbist…	Qbist…
+	Qbist	Qbist
+	Recursive Transform…	Transformación recursiva…
+	Recursive Transform	Transformación recursiva
+	Rippling…	Ondulación…
+	Rippling	Ondulación
+	Semi-Flatten	Semiaplanar
+	Simplex Noise…	Ruido símplex…
+	Simplex Noise	Ruido símplex
+	Sinus…	Sinus…
+	Sinus	Sinus
+	Slide…	Diapositiva…
+	Slide	Diapositiva
+	Small Tiles…	Mosaicos pequeños…
+	Small Tiles	Mosaicos pequeños
+	Sphere Designer…	Diseñador de esferas…
+	Sphere Designer	Diseñador de esferas
+	Spinning Globe…	Globo giratorio…
+	Spinning Globe	Globo giratorio
+	Spiral…	Espiral…
+	Spiral	Espiral
+	Spirograph…	Espirógrafo…
+	Spirograph	Espirógrafo
+	Stencil Carve…	Tallar estarcido…
+	Stencil Carve	Tallar estarcido
+	Tile Seamless	Mosaico sin costuras
+	Unoptimize	Desoptimizar
+	Waves…	Olas…
+	Abyss	Abismo
+	Add Glowing	Añadir brillo
+	After Glow	Resplandor posterior
+	Alternate	Alternos
+	Amplitude	Amplitud
+	Antialiasing	Suavizado
+	Bailout	Límite de escape
+	Barnsley1	Barnsley 1
+	Barnsley2	Barnsley 2
+	Barnsley3	Barnsley 3
+	Base	Base
+	Bevel Width	Anchura del bisel
+	Blue Contours	Contornos azules
+	Blue Frequency	Frecuencia azul
+	Blue Inversion	Inversión azul
+	Blue Sharp Edges	Bordes nítidos azules
+	Bump	Relieve
+	Bumps	Protuberancias
+	Caribbean Blues	Azules caribeños
+	Carve White	Tallar el blanco
+	Cell Height	Altura de celda
+	Cell Width	Anchura de celda
+	Checker	Damero
+	Circuit Seed	Semilla del circuito
+	Clamp	Fijar
+	Clockwise	Horario
+	Color1	Color 1
+	Color2	Color 2
+	Complexity	Complejidad
+	Corner Radius	Radio de esquina
+	Counter Clockwise	Antihorario
+	Coupling	Acoplamiento
+	Curve Type	Tipo de curva
+	Curved	Curvo
+	Cx	Cx
+	Cy	Cy
+	Cylinder	Cilindro
+	Delta Sin Curve	Curva delta seno
+	Depth First	Primero en profundidad
+	Division	División
+	Dragon	Dragón
+	Edge Behavior	Comportamiento del borde
+	Epitrochoid	Epitrocoide
+	Explicit	Explícito
+	Exponent	Exponente
+	Fade Color	Color de fundido
+	Fade Opacity	Opacidad del fundido
+	Fadeout	Desvanecimiento
+	Fadeout Width	Anchura del desvanecimiento
+	Fern	Helecho
+	Fill With K	Rellenar con K
+	First Iteration	Primera iteración
+	Fixed Gear Teeth	Dientes del engranaje fijo
+	Flip Which	Cuáles voltear
+	Font Color	Color de fuente
+	Font Size	Tamaño de fuente
+	Fractal	Fractal
+	Fractal Type	Tipo de fractal
+	Frames	Fotogramas
+	Full Spectrum	Espectro completo
+	German Flag	Bandera alemana
+	Golden	Dorado
+	Green Contours	Contornos verdes
+	Green Frequency	Frecuencia verde
+	Green Inversion	Inversión verde
+	Green Sharp Edges	Bordes nítidos verdes
+	Half	Mitad
+	Hole Percent	Porcentaje del agujero
+	Hue Function	Función de tono
+	Incandescent	Incandescente
+	Intermediate Frames	Fotogramas intermedios
+	Invert Direction	Invertir dirección
+	Julia	Julia
+	Jx	Jx
+	Jy	Jy
+	Keep First Value	Mantener el primer valor
+	Keep Image	Mantener la imagen
+	Lambda	Lambda
+	Last Iteration	Última iteración
+	Line Height	Altura de línea
+	Line Width	Anchura de línea
+	Lissajous	Lissajous
+	Lizard	Lagarto
+	Logarithmic	Logarítmico
+	Logistic	Logística
+	Looped	En bucle
+	Man O War	Man o' War
+	Mandelbrot	Mandelbrot
+	Map To	Mapear en
+	Marble	Mármol
+	Max Blur Radius	Radio máximo de desenfoque
+	Morph	Morfología
+	Moving Gear Teeth	Dientes del engranaje móvil
+	No Background	Sin fondo
+	Offset Radius	Radio de desplazamiento
+	Oilify Mask Size	Tamaño de máscara de óleo
+	Oversample	Sobremuestreo
+	Palettize	Paletizar
+	Pan	Panorámica
+	Parameter K	Parámetro K
+	Paste Below	Pegar debajo
+	Perturbation	Perturbación
+	Phong	Phong
+	Polarization	Polarización
+	Polygon	Polígono
+	Prim	Prim
+	Quarter	Un cuarto
+	Rack	Cremallera
+	Rank	Rango
+	Red Contours	Contornos rojos
+	Red Frequency	Frecuencia roja
+	Red Inversion	Inversión roja
+	Red Sharp Edges	Bordes nítidos rojos
+	Rotation X	Rotación X
+	Rotation Y	Rotación Y
+	Rotation Z	Rotación Z
+	Saturation Function	Función de saturación
+	Separate Layer	Capa separada
+	Sierpinski	Sierpinski
+	Sin Curve	Curva seno
+	Sin Curve Step	Curva seno escalonada
+	Sinusoidal	Sinusoidal
+	Smear	Manchar
+	Snowflake	Copo de nieve
+	Specular	Especular
+	Sphere	Esfera
+	Spider	Araña
+	Spot Radius	Radio del punto
+	Spots	Manchas
+	Stains	Manchas de café
+	Start Offset	Desplazamiento inicial
+	Supersampling	Supermuestreo
+	Text	Texto
+	Three Quarters	Tres cuartos
+	Transparent Background	Fondo transparente
+	Turbulence	Turbulencia
+	Turn Left	Girar a la izquierda
+	Type1	Tipo 1
+	Type2	Tipo 2
+	Value Function	Función de valor
+	Wavelength	Longitud de onda
+	Wood	Madera
+	X Amplitude	Amplitud X
+	X Offset	Desplazamiento X
+	X Period	Periodo X
+	X Phase	Fase X
+	X Scale	Escala X
+	X Spacing	Espaciado X
+	X Tiles	Mosaicos X
+	X1	X1
+	X2	X2
+	Y Amplitude	Amplitud Y
+	Y Offset	Desplazamiento Y
+	Y Period	Periodo Y
+	Y Phase	Fase Y
+	Y Scale	Escala Y
+	Y Spacing	Espaciado Y
+	Y Tiles	Mosaicos Y
+	Y1	Y1
+	Y2	Y2
+	Binary AND	Binario AND
+	Binary OR	Binario OR
+	Binary NAND	Binario NAND
+	Binary NOR	Binario NOR
+	Binary XNOR	Binario XNOR
+	Binary Implication	Binario implicación
+	Binary Not Implication	Binario no implicación
+	Binary Converse	Binario recíproca
+	Binary Not Converse	Binario no recíproca
+	Modulo	Módulo
+	Modulo Continuous	Módulo continuo
+	Divisive Modulo	Módulo divisivo
+	Divisive Modulo Continuous	Módulo divisivo continuo
+	Modulo Shift	Módulo desplazado
+	Modulo Shift Continuous	Módulo desplazado continuo
+	Freeze	Congelar
+	Heat	Calor
+	Glow-Heat	Resplandor-Calor
+	Heat-Glow	Calor-Resplandor
+	Reflect-Freeze	Reflejar-Congelar
+	Freeze-Reflect	Congelar-Reflejar
+	Heat-Glow and Freeze-Reflect Hybrid	Híbrido Calor-Resplandor y Congelar-Reflejar
+	Wrap Around Mode	Modo envolvente
+	Rotational Multibrush	Multipincel rotacional
+	Mirror copies	Reflejar copias
+	All Tags	Todas las etiquetas
+	Tags	Etiquetas
+	Assistant Tool	Herramienta Asistente
+	Assistant	Asistente
+	Parallel Ruler	Regla paralela
+	Perspective Grid	Cuadrícula de perspectiva
+	Snap to Assistants	Ajustar a asistentes
+	Show Assistants	Mostrar asistentes
+	Delete All	Eliminar todo
+	Mirror painting across the vertical axis	Reflejar la pintura en el eje vertical
+	Choose a gradient file (.grd or .ggr).	Elige un archivo de degradado (.grd o .ggr).
+	Save Group to Document	Guardar grupo en el documento
+	Load Document Palettes	Cargar paletas del documento
+	Cumulative undo	Deshacer acumulativo
+	Cumulative undo interval	Intervalo de deshacer acumulativo
+	Cumulative undo duration	Duración de deshacer acumulativo
+	Popup palette	Paleta emergente
+	Smudge Radius	Radio de difuminado

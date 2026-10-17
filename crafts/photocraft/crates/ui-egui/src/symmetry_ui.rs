@@ -10,7 +10,7 @@ use crate::{
 use egui::{Atom, Key, Stroke, vec2};
 use redrob_photo_doc::Document;
 use redrob_photo_engine::symmetry_cmds::PaintingSymmetry;
-use redrob_photo_paint::symmetry::{PresetSymmetry, SymmetryMode};
+use redrob_photo_paint::symmetry::{PresetSymmetry, RotationalSymmetry, SymmetryMode};
 use serde::Serialize;
 use serde_json::json;
 use std::sync::Arc;
@@ -53,6 +53,20 @@ fn label(mode: SymmetryMode) -> &'static str {
 }
 fn preset(app: &PhotocraftApp) -> Option<PresetSymmetry> {
     app.session.active()?.symmetry.as_ref()?.preset()
+}
+fn rotational(app: &PhotocraftApp) -> Option<RotationalSymmetry> {
+    app.session.active()?.symmetry.as_ref()?.rotational()
+}
+/// The multibrush as the canvas shows it: with its centre where the drag has taken it.
+fn rotational_preview(app: &PhotocraftApp) -> Option<RotationalSymmetry> {
+    let r = rotational(app)?;
+    Some(match app.ui.multibrush_drag {
+        Some(center) => RotationalSymmetry { center, ..r },
+        None => r,
+    })
+}
+fn paints(tool: Tool) -> bool {
+    matches!(tool, Tool::Brush | Tool::Pencil | Tool::Eraser)
 }
 
 pub fn can_transform(app: &PhotocraftApp) -> bool {
@@ -191,6 +205,23 @@ pub fn menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     ui.close();
                 }
             }
+            ui.separator();
+            let rotational = current.as_ref().and_then(PaintingSymmetry::rotational);
+            let enabled = crate::menus::is_enabled(app, "paint.setMultibrush");
+            if ui.add_enabled(enabled, egui::Button::selectable(rotational.is_some(), tl!("Rotational Multibrush"))).clicked() {
+                run = Some(("paint.setMultibrush", json!({})));
+                ui.close();
+            }
+            let mut count = rotational.map_or(6, |r| r.count);
+            let mut mirror = rotational.is_some_and(|r| r.mirror);
+            ui.horizontal(|ui| {
+                ui.label(egui::RichText::new(tl!("Copies")).color(Tokens::get(ui.ctx()).text_dim));
+                let field = ui.add_enabled(enabled, egui::DragValue::new(&mut count).range(RotationalSymmetry::MIN_COUNT..=RotationalSymmetry::MAX_COUNT));
+                let check = ui.add_enabled(enabled, egui::Checkbox::new(&mut mirror, tl!("Mirror copies")));
+                if field.changed() || check.changed() {
+                    run = Some(("paint.setMultibrush", json!({"count": count, "mirror": mirror})));
+                }
+            });
             if let Some(st) = app.session.active() {
                 use crate::vector_ui::{PathRow, path_rows};
                 let rows = path_rows(&st.doc, st.active_layer);
@@ -229,10 +260,50 @@ fn rotation_handle(p: PresetSymmetry, size: [f64; 2]) -> [f64; 2] {
     let r = (size[0].min(size[1]) * 0.35).max(1.0);
     [p.center[0] + r * d[0], p.center[1] + r * d[1]]
 }
+/// A press on the rotational multibrush's centre handle drags the centre with a painting tool;
+/// the release commits it. True while that drag owns the pointer.
+fn multibrush_pointer(app: &mut PhotocraftApp, ev: ToolEvent) -> bool {
+    if !paints(app.ui.tool) || app.ui.symmetry_transform.is_some() {
+        app.ui.multibrush_drag = None;
+        return false;
+    }
+    let Some(r) = rotational(app) else {
+        app.ui.multibrush_drag = None;
+        return false;
+    };
+    match ev {
+        ToolEvent::Down { x, y, .. } => {
+            let Some(xf) = ViewXform::active(app) else { return false };
+            let tol = 8.0 / f64::from(xf.zoom.max(0.001));
+            if app.drag.is_none() && (x - r.center[0]).hypot(y - r.center[1]) <= tol {
+                app.ui.multibrush_drag = Some(r.center);
+                return true;
+            }
+            false
+        }
+        ToolEvent::Move { x, y, .. } => {
+            if app.ui.multibrush_drag.is_some() {
+                app.ui.multibrush_drag = Some([x, y]);
+                return true;
+            }
+            false
+        }
+        ToolEvent::Up { x, y } => {
+            if app.ui.multibrush_drag.take().is_some() {
+                let _ = app.run("paint.setMultibrush", json!({"center": [x, y]}));
+                return true;
+            }
+            false
+        }
+    }
+}
 /// True throughout transform editing, including clicks outside a handle: never paint by accident.
 pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) -> bool {
     if app.ui.symmetry_transform.as_ref().is_some_and(|t| !valid(app, t)) {
         app.ui.symmetry_transform = None;
+    }
+    if multibrush_pointer(app, ev) {
+        return true;
     }
     if app.ui.symmetry_transform.is_none() {
         return false;
@@ -284,15 +355,24 @@ pub fn draw(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform) {
     let Some(st) = app.session.active() else {
         return;
     };
+    let size = [f64::from(st.doc.size.width), f64::from(st.doc.size.height)];
+    let painter = painter.with_clip_rect(painter.clip_rect().intersect(xf.rect));
+    let screen = |p: [f64; 2]| xf.to_screen(p[0] as f32, p[1] as f32);
+    let t = Tokens::get(painter.ctx());
+    if let Some(r) = rotational_preview(app) {
+        // Spokes between the copies, out to the canvas corners, and the draggable centre.
+        let reach = size[0].hypot(size[1]);
+        for d in r.spokes() {
+            painter.line_segment([screen(r.center), screen([r.center[0] + reach * d[0], r.center[1] + reach * d[1]])], Stroke::new(1.0, t.accent));
+        }
+        crate::vector_ui::draw_anchor(&painter, screen(r.center), app.ui.multibrush_drag.is_some(), t.accent);
+        return;
+    }
     let edit = app.ui.symmetry_transform.as_ref().filter(|t| app.session.active_index() == Some(t.document));
     let preview = edit.map(|t| t.preview).or_else(|| preset(app));
     let Some(p) = preview else {
         return;
     };
-    let size = [f64::from(st.doc.size.width), f64::from(st.doc.size.height)];
-    let painter = painter.with_clip_rect(painter.clip_rect().intersect(xf.rect));
-    let screen = |p: [f64; 2]| xf.to_screen(p[0] as f32, p[1] as f32);
-    let t = Tokens::get(painter.ctx());
     for [a, b] in p.segments(size) {
         painter.line_segment([screen(a), screen(b)], Stroke::new(1.0, t.accent));
     }

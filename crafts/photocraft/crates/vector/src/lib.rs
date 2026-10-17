@@ -471,8 +471,11 @@ impl CompiledShape {
     /// Compiles the shape at flattening tolerance `tol`. `canvas` is the frame gradients
     /// without "Align with layer" are laid out in.
     pub fn new(shape: &ShapeLayer, tol: f64, canvas: Rect) -> Self {
-        let pb = shape.path.control_bounds().unwrap_or((0.0, 0.0, 0.0, 0.0));
         let cb = (f64::from(canvas.x0), f64::from(canvas.y0), f64::from(canvas.x1), f64::from(canvas.y1));
+        // A path without geometry (an inverted empty path fills the whole canvas: a fill layer
+        // whose vector mask reveals everything) lays its gradient out over the canvas, as
+        // Photoshop does; a degenerate frame would collapse the gradient to one value.
+        let pb = shape.path.control_bounds().unwrap_or(cb);
         let area = fill_rasterizer(&shape.path, tol);
         let mut bounds = None;
         let fill = shape.fill.as_ref().map(|f| {

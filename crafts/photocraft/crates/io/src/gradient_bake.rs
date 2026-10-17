@@ -104,9 +104,9 @@ fn smooth_ease(u: f32) -> f32 {
 }
 
 /// Colour at `t` for sorted stops (positions in 0..1) in `m`'s space.
-fn eval(stops: &[(f32, [f32; 3])], mids: &[f32], smooth: f32, t: f32, m: Method) -> [f32; 3] {
+fn eval<const N: usize>(stops: &[(f32, [f32; N])], mids: &[f32], smooth: f32, t: f32, m: Method) -> [f32; N] {
     let n = stops.len();
-    let (Some(first), Some(last)) = (stops.first(), stops.last()) else { return [0.0; 3] };
+    let (Some(first), Some(last)) = (stops.first(), stops.last()) else { return [0.0; N] };
     // A lone stop (even at a NaN position, which neither test below catches) is the colour.
     if t <= first.0 || n < 2 {
         return first.1;
@@ -128,7 +128,7 @@ fn eval(stops: &[(f32, [f32; 3])], mids: &[f32], smooth: f32, t: f32, m: Method)
         return std::array::from_fn(|c| p0[c] + (p1[c] - p0[c]) * e);
     }
     // Catmull-Rom tangents per unit t; the ends use half the chord slope.
-    let tangent = |k: usize| -> [f32; 3] {
+    let tangent = |k: usize| -> [f32; N] {
         let (a, b) = match k {
             0 => (0, 1),
             k if k == n - 1 => (n - 2, n - 1),
@@ -157,8 +157,11 @@ fn eval(stops: &[(f32, [f32; 3])], mids: &[f32], smooth: f32, t: f32, m: Method)
 pub fn bake(stops: Vec<(f32, Color)>, midpoints: &[f32], smoothness: f32, method: Method) -> Vec<(f32, Color)> {
     let plain_mids = midpoints.iter().all(|m| (m - 0.5).abs() < 1e-3);
     // Classic interpolates in the stops' own model: Lab stops (Lab documents) blend in L*a*b*, which the
-    // compositors' sRGB interpolation can't reproduce (psd-tools 4x4_16bit_lab).
+    // compositors' sRGB interpolation can't reproduce (psd-tools 4x4_16bit_lab); CMYK stops (CMYK
+    // documents) blend ink by ink, which converting them to sRGB first would bend (psd-tools
+    // 4x4_16bit_cmyk: a 3-stop reflected gradient 23/255 off at its middle).
     let lab = method == Method::Classic && stops.iter().all(|(_, c)| c.mode == ColorMode::Lab);
+    let cmyk = method == Method::Classic && stops.iter().all(|(_, c)| c.mode == ColorMode::Cmyk);
     if stops.len() < 2 || (smoothness <= 0.0 && method == Method::Classic && plain_mids && !lab) {
         return stops;
     }
@@ -168,12 +171,25 @@ pub fn bake(stops: Vec<(f32, Color)>, midpoints: &[f32], smoothness: f32, method
         // Stop colours carry no alpha in Photoshop (opacity has its own stops); keep the nearest.
         s.iter().min_by(|a, b| (a.0 - t).abs().total_cmp(&(b.0 - t).abs())).map_or(1.0, |x| x.1.alpha)
     };
-    let pts: Vec<(f32, [f32; 3])> = s.iter().map(|(t, c)| (*t, if lab { [c.c[0], c.c[1], c.c[2]] } else { into_space(method, c.to_rgb()) })).collect();
     const N: usize = 96;
+    let smooth = smoothness.clamp(0.0, 1.0);
+    if cmyk {
+        let pts: Vec<(f32, [f32; 4])> = s.iter().map(|(t, c)| (*t, c.c)).collect();
+        let mut out: Vec<(f32, Color)> = (0..=N)
+            .map(|k| {
+                let t = k as f32 / N as f32;
+                let v = eval(&pts, midpoints, smooth, t, method);
+                (t, Color { mode: ColorMode::Cmyk, c: v.map(|x| x.clamp(0.0, 1.0)), alpha: alpha(t) })
+            })
+            .collect();
+        out.dedup_by(|a, b| (a.0 - b.0).abs() < 1e-6);
+        return out;
+    }
+    let pts: Vec<(f32, [f32; 3])> = s.iter().map(|(t, c)| (*t, if lab { [c.c[0], c.c[1], c.c[2]] } else { into_space(method, c.to_rgb()) })).collect();
     let mut out: Vec<(f32, Color)> = (0..=N)
         .map(|k| {
             let t = k as f32 / N as f32;
-            let v = eval(&pts, midpoints, smoothness.clamp(0.0, 1.0), t, method);
+            let v = eval(&pts, midpoints, smooth, t, method);
             if lab {
                 return (t, Color { mode: ColorMode::Lab, c: [v[0].clamp(0.0, 1.0), v[1].clamp(0.0, 1.0), v[2].clamp(0.0, 1.0), 0.0], alpha: alpha(t) });
             }

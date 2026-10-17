@@ -24,6 +24,10 @@ pub struct ShapeTool {
     pub corner_radius: f64,
     /// Star inner radius as a fraction of the outer radius.
     pub star_ratio: f64,
+    /// How far a star's tips and notches are rounded (0..1).
+    pub rounding: f64,
+    /// How far a star's vertices are moved off their places (0..1).
+    pub randomized: f64,
     /// The star's inner radius held while Ctrl/Cmd is down in a drag.
     inner: Option<f64>,
     snap: DrawSnap,
@@ -57,6 +61,8 @@ impl ShapeTool {
             points: 5,
             corner_radius: 12.0,
             star_ratio: 0.5,
+            rounding: 0.0,
+            randomized: 0.0,
             inner: None,
             snap: DrawSnap::default(),
         }
@@ -114,7 +120,16 @@ impl ShapeTool {
                     let ratio = if m.alt { straight_ratio(self.points).unwrap_or(self.star_ratio) } else { self.star_ratio };
                     (
                         "shape.star".into(),
-                        json!({ "cx": start.x, "cy": start.y, "radius1": r, "radius2": r * ratio, "points": self.points, "rotation": rot }),
+                        json!({
+                            "cx": start.x,
+                            "cy": start.y,
+                            "radius1": r,
+                            "radius2": r * ratio,
+                            "points": self.points,
+                            "rotation": rot,
+                            "rounding": self.rounding,
+                            "randomized": self.randomized,
+                        }),
                     )
                 }
             }
@@ -267,7 +282,14 @@ impl Tool for ShapeTool {
         Cursor::Crosshair
     }
     fn options(&self) -> Value {
-        json!({ "sides": self.sides, "points": self.points, "cornerRadius": self.corner_radius, "starRatio": self.star_ratio })
+        json!({
+            "sides": self.sides,
+            "points": self.points,
+            "cornerRadius": self.corner_radius,
+            "starRatio": self.star_ratio,
+            "rounding": self.rounding,
+            "randomized": self.randomized,
+        })
     }
     fn set_option(&mut self, key: &str, v: &Value) {
         match key {
@@ -275,6 +297,8 @@ impl Tool for ShapeTool {
             "points" => self.points = v.as_u64().unwrap_or(5).clamp(3, 1000) as u32,
             "cornerRadius" => self.corner_radius = v.as_f64().unwrap_or(12.0).max(0.0),
             "starRatio" => self.star_ratio = v.as_f64().unwrap_or(0.5).clamp(0.01, 1.0),
+            "rounding" => self.rounding = v.as_f64().unwrap_or(0.0).clamp(0.0, 1.0),
+            "randomized" => self.randomized = v.as_f64().unwrap_or(0.0).clamp(0.0, 1.0),
             _ => {}
         }
     }

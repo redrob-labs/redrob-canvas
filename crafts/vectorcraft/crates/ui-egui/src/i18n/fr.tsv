@@ -201,7 +201,6 @@
 	Apply Last Effect	Appliquer le dernier effet
 	Apply Last Gradient	Appliquer le dernier dégradé
 	Apply Paragraph Style	Appliquer le style de paragraphe
-	Apply SVG Filter…	Appliquer un filtre SVG…
 	Apply to All	Appliquer à tous
 	Apply to All ({count} more missing)	Appliquer à tous ({count} autres manquants)
 	Arc	Arc
@@ -4806,3 +4805,164 @@ theme	Appearance	Apparence
 	Softness	Douceur
 	Ambient Light	Lumière ambiante
 	Light behind the object	Lumière derrière l'objet
+	Bend…	Courber…
+	Bend	Courber
+	B-Spline…	B-spline…
+	B-Spline	B-spline
+	Spiro Spline…	Spline Spiro…
+	Spiro Spline	Spline Spiro
+	Dashed Stroke…	Contour en tirets…
+	Dashed Stroke	Contour en tirets
+	Taper Stroke…	Contour effilé…
+	Taper Stroke	Contour effilé
+	Spine	Axe
+	Width Scale	Échelle de largeur
+	Cusps	Garder les angles
+	Dashes	Tirets
+	Hole Factor	Facteur d'espace
+	Unify	Unifier
+	Half Start	Demi-tiret au début
+	Half End	Demi-tiret à la fin
+	Start Offset	Décalage au début
+	End Offset	Décalage à la fin
+	Stroke To Path	Contour en chemin
+	Start Taper	Effilement au début
+	End Taper	Effilement à la fin
+	Smoothing	Lissage
+	Direction	Direction
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Paraxial
+	Triangle In	Triangle entrant
+	Triangle Out	Triangle sortant
+	From Clipboard	Depuis le presse-papiers
+	Segment:	Segment :
+	Curve	Courbe
+	Make Selected Segments Lines	Convertir les segments sélectionnés en lignes
+	Make Selected Segments Curves	Convertir les segments sélectionnés en courbes
+	Show Handles	Afficher les poignées
+	Shape Along Stroke	Forme le long du contour
+	Segment Type	Type de segment
+	Next Anchor	Point d’ancrage suivant
+	Grow Anchor Selection	Étendre la sélection de points d’ancrage
+	Touch Select Anchors	Sélectionner les points d’ancrage touchés
+	Make Segment Line	Convertir le segment en ligne
+	Make Segment Curve	Convertir le segment en courbe
+	Convert Selected Anchor Points to Symmetric	Convertir les points d’ancrage sélectionnés en points symétriques
+	Convert Selected Anchor Points to Auto-Smooth	Convertir les points d’ancrage sélectionnés en points auto-lissés
+	Add Anchor Points At	Ajouter des points d’ancrage à
+	Add Anchor Points at Extremes	Ajouter des points d’ancrage aux extrêmes
+	Minimum X	X minimal
+	Maximum X	X maximal
+	Minimum Y	Y minimal
+	Maximum Y	Y maximal
+	Pie	Secteur
+	Chord	Corde
+	Close As:	Fermer en :
+	Whole Ellipse	Ellipse entière
+	Corners:	Sommets :
+	Spoke Ratio:	Rapport des rayons :
+	Rounded:	Arrondi :
+	Randomized:	Aléatoire :
+	Decay:	Décroissance :
+	Segments:	Segments :
+	Star Properties:	Propriétés de l’étoile :
+	Spiral Properties:	Propriétés de la spirale :
+	Hairline	Filet
+	Mid markers:	Marqueurs intermédiaires :
+	Auto, start reversed	Auto, début inversé
+	Fixed angle	Angle fixe
+	Scale with stroke	Mettre à l’échelle avec le contour
+	ID:	ID :
+	Label:	Étiquette :
+	Title:	Titre :
+	Hyperlink:	Hyperlien :
+	Clone	Clone
+	Create Clone	Créer un clone
+	Unlink Clone	Délier le clone
+	Relink to Copied	Relier à l’objet copié
+	Select Original	Sélectionner l’original
+	Object Properties…	Propriétés de l’objet…
+	Text content	Contenu du texte
+	ID	ID
+	Label	Étiquette
+	Title	Titre
+	Object type	Type d’objet
+	Current layer	Calque actuel
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Ajouter un attribut
+	Add Filter	Ajouter un filtre
+	Add Input	Ajouter une entrée
+	Add Primitive	Ajouter une primitive
+	Axonometric	Axonométrique
+	Axonometric Angle X	Angle axonométrique X
+	Axonometric Angle Z	Angle axonométrique Z
+	Canvas Orientation	Orientation du canevas
+	Collapse All	Tout réduire
+	Color Matrix	Matrice de couleurs
+	Color Matrix…	Matrice de couleurs…
+	Component Transfer	Transfert de composantes
+	Convolve Matrix	Matrice de convolution
+	Delete Node	Supprimer le nœud
+	Diffuse Lighting	Éclairage diffus
+	Displacement Map	Carte de déplacement
+	Drop Shadow Preset	Préréglage d’ombre portée
+	Duplicate Node	Dupliquer le nœud
+	Duplicate Primitive	Dupliquer la primitive
+	Edge Detection	Détection des contours
+	Edge Threshold	Seuil des contours
+	Expand All	Tout développer
+	Fill Rendered Pixels	Remplir les pixels rendus
+	Filter Editor	Éditeur de filtres
+	Filter Graph	Graphe de filtre
+	Filter Region	Région du filtre
+	Flood	Remplissage
+	Grid Kind	Type de grille
+	Hide Palette Strip	Masquer la barre de palette
+	Input	Entrée
+	Large Chips	Grandes pastilles
+	Lower Node	Abaisser le nœud
+	Mass:	Masse :
+	Medium Chips	Pastilles moyennes
+	Modular	Modulaire
+	Modular Gap X	Écart modulaire X
+	Modular Gap Y	Écart modulaire Y
+	Morphology	Morphologie
+	No colours in this palette	Aucune couleur dans cette palette
+	No primitives. Add one below.	Aucune primitive. Ajoutez-en une ci-dessous.
+	Node Data	Données du nœud
+	Palette Strip	Barre de palette
+	Palette Strip Menu	Menu de la barre de palette
+	Previous Result	Résultat précédent
+	Primitive	Primitive
+	Quantization	Quantification
+	Raise Node	Élever le nœud
+	Rectangular	Rectangulaire
+	Remove Attribute	Supprimer l’attribut
+	Remove Filter	Supprimer le filtre
+	Remove Input	Supprimer l’entrée
+	Remove Primitive	Supprimer la primitive
+	Reset Canvas Orientation	Réinitialiser l’orientation du canevas
+	Result:	Résultat :
+	Select a node to edit its attributes.	Sélectionnez un nœud pour modifier ses attributs.
+	Small Chips	Petites pastilles
+	Specular Lighting	Éclairage spéculaire
+	The document has no layers.	Le document n’a aucun calque.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Les primitives d’un graphe de filtre se modifient dans le panneau Éditeur de filtres.
+	Thinning:	Amincissement :
+	Tremor:	Tremblement :
+	Turbulence	Turbulence
+	Wiggle:	Oscillation :
+	XML Editor	Éditeur XML
+	attribute	attribut
+	No Filter	Aucun filtre
+	The object has no SVG filter graph yet.	L’objet n’a pas encore de graphe de filtre SVG.
+	Select an object to edit its SVG filter.	Sélectionnez un objet pour modifier son filtre SVG.
+	Open a document to see its element tree.	Ouvrez un document pour voir son arbre d’éléments.
+@msg	a clone can't be linked to itself	un clone ne peut pas être lié à lui-même
+@msg	copy an object first (Edit › Copy)	copiez d’abord un objet (Édition › Copier)
+@msg	no such object	aucun objet de ce nom
+@msg	nothing to clone	rien à cloner
+@msg	select a clone	sélectionnez un clone
+@msg	select an object	sélectionnez un objet
+@msg	the copied object is no longer in this document	l’objet copié n’est plus dans ce document

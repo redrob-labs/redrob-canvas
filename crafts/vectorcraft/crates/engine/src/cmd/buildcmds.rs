@@ -718,9 +718,13 @@ fn traced_shape(shape: tr::TracedShape, xf: redrob_vector_geom::Affine) -> LiveS
             kinds: Default::default(),
             xf: about(center, rotation) * Affine::translate((-width / 2.0, -height / 2.0)),
         },
-        tr::TracedShape::Ellipse { center, rx, ry, rotation } => {
-            LiveShape::Ellipse { w: 2.0 * rx, h: 2.0 * ry, pie: (0.0, 360.0), xf: about(center, rotation) * Affine::translate((-rx, -ry)) }
-        }
+        tr::TracedShape::Ellipse { center, rx, ry, rotation } => LiveShape::Ellipse {
+            w: 2.0 * rx,
+            h: 2.0 * ry,
+            pie: (0.0, 360.0),
+            arc: Default::default(),
+            xf: about(center, rotation) * Affine::translate((-rx, -ry)),
+        },
         tr::TracedShape::Polygon { center, radius, sides, rotation } => {
             LiveShape::Polygon { radius, sides, xf: about(center, rotation), radii: vec![], kinds: vec![] }
         }

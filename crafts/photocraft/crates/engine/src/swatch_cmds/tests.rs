@@ -361,3 +361,32 @@ fn values_beyond_f32_range_are_rejected_so_presets_survive_a_restart() {
     assert_eq!(t.presets.swatches, s.presets.swatches, "user swatches survive a save and reload");
     assert!(names(&t).contains(&"Keep me".to_string()));
 }
+
+#[test]
+fn document_palettes_round_trip_through_the_library_and_undo() {
+    let mut s = Session::new();
+    assert!(s.execute("swatches.saveToDocument", json!({"group": "Grays"})).is_err(), "needs a document");
+    s.execute("file.new", json!({"width": 8, "height": 8})).unwrap();
+    let r = s.execute("swatches.saveToDocument", json!({"group": "Grays", "palette": "Doc Grays"})).unwrap();
+    assert_eq!(r["palette"], "Doc Grays");
+    assert_eq!(r["palettes"], 1);
+    let doc = s.active().unwrap().doc.clone();
+    assert_eq!(doc.palettes[0].swatches.len(), s.presets.swatches[0].items.len());
+    assert_eq!(doc.palettes[0].swatches[0].name, "Black");
+    // Saving again under the same palette name replaces it.
+    s.execute("swatches.saveToDocument", json!({"group": "Grays", "palette": "Doc Grays"})).unwrap();
+    assert_eq!(s.active().unwrap().doc.palettes.len(), 1);
+    let list = s.execute("swatches.documentPalettes", json!({})).unwrap();
+    assert_eq!(list["count"], 1);
+    assert_eq!(list["palettes"][0]["swatches"][0]["hex"], "#000000");
+    let before = s.presets.swatches.len();
+    let r = s.execute("swatches.loadFromDocument", json!({})).unwrap();
+    assert_eq!(r["groups"], json!(["Doc Grays"]));
+    assert_eq!(s.presets.swatches.len(), before + 1);
+    assert!(names(&s).iter().any(|n| n == "Black 2"), "loaded swatches keep unique names");
+    s.execute("swatches.deleteDocumentPalette", json!({"palette": "Doc Grays"})).unwrap();
+    assert!(s.active().unwrap().doc.palettes.is_empty());
+    s.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(s.active().unwrap().doc.palettes.len(), 1, "palettes are document history");
+    assert!(s.execute("swatches.loadFromDocument", json!({"palette": "Nope"})).is_err());
+}

@@ -89,13 +89,24 @@ fn import_abr(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn add_abr_presets(s: &mut Session, p: &Value, group: String, imp: redrob_photo_io::abr_map::AbrImport) -> Result<Value> {
+    let names = add_imported_presets(s, p, &group, imp.presets, "brush.presets.importAbr")?;
+    // Distinct folder paths the file brought (its Photoshop folders, nested inside `group`).
+    let folders: std::collections::BTreeSet<&[String]> =
+        s.tools.presets.iter().filter(|x| !x.builtin && x.group == group).flat_map(|x| (1..=x.folder.len()).filter_map(|d| x.folder.get(..d))).collect();
+    let folders = folders.len();
+    Ok(json!({ "group": group, "imported": names, "count": names.len(), "folders": folders, "version": imp.version, "warnings": imp.warnings }))
+}
+
+/// Add imported presets to the library as group `group` (replacing a group of that name unless
+/// `replace` is false) and make the first current when `select`. Returns the final names.
+fn add_imported_presets(s: &mut Session, p: &Value, group: &str, presets: Vec<redrob_photo_paint::BrushPreset>, cmd: &str) -> Result<Vec<String>> {
     // Re-importing a file replaces its group instead of duplicating it.
     if p.get("replace").and_then(Value::as_bool).unwrap_or(true) {
         s.tools.presets.retain(|x| x.builtin || x.group != group);
     }
     let mut taken: Vec<String> = s.tools.presets.iter().map(|x| x.name.clone()).collect();
-    let mut names = Vec::with_capacity(imp.presets.len());
-    for mut preset in imp.presets {
+    let mut names = Vec::with_capacity(presets.len());
+    for mut preset in presets {
         preset.name = unique(&preset.name, &taken);
         taken.push(preset.name.clone());
         names.push(preset.name.clone());
@@ -107,15 +118,37 @@ fn add_abr_presets(s: &mut Session, p: &Value, group: String, imp: redrob_photo_
         && let Some(pr) = redrob_photo_paint::presets::find(&s.tools.presets, first)
     {
         let mut b = pr.brush.clone().picked_over(&s.tools.brush);
-        s.load_brush_tips(&mut b).map_err(|e| bad("brush.presets.importAbr", e))?;
+        s.load_brush_tips(&mut b).map_err(|e| bad(cmd, e))?;
         s.tools.brush = b;
         s.tools.brush_changed();
     }
-    // Distinct folder paths the file brought (its Photoshop folders, nested inside `group`).
-    let folders: std::collections::BTreeSet<&[String]> =
-        s.tools.presets.iter().filter(|x| !x.builtin && x.group == group).flat_map(|x| (1..=x.folder.len()).filter_map(|d| x.folder.get(..d))).collect();
-    let folders = folders.len();
-    Ok(json!({ "group": group, "imported": names, "count": names.len(), "folders": folders, "version": imp.version, "warnings": imp.warnings }))
+    Ok(names)
+}
+
+/// `brush.presets.importBrushFile`: a bitmap brush (`.gbr`) or an animated image hose (`.gih`)
+/// joins the library as one preset in a group named after the file; a hose paints with the cell
+/// its selection modes pick per dab (see `redrob_photo_paint::ImageHose`).
+fn import_brush_file(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "brush.presets.importBrushFile";
+    let (bytes, stem) = file_bytes(p, cmd, ".gbr or .gih file")?;
+    let file_name = match p.get("fileName") {
+        None => None,
+        Some(v) => Some(v.as_str().map(str::trim).filter(|n| !n.is_empty()).ok_or_else(|| bad(cmd, "`fileName` must be a non-empty string"))?),
+    };
+    let stem = if stem.is_empty() {
+        file_name.and_then(|n| std::path::Path::new(n).file_stem()).map(|s| s.to_string_lossy().trim().to_string()).unwrap_or_default()
+    } else {
+        stem
+    };
+    let group = match p.get("group") {
+        Some(v) => v.as_str().map(str::trim).filter(|g| !g.is_empty()).ok_or_else(|| bad(cmd, "`group` must be a non-empty string"))?.to_string(),
+        None if !stem.is_empty() => stem.clone(),
+        None => "Imported Brushes".to_string(),
+    };
+    let imp = redrob_photo_io::gbr::read_brush_file(&bytes, &group, &stem).map_err(|e| bad(cmd, e))?;
+    let animated = imp.presets.iter().any(|x| x.brush.hose.is_some());
+    let names = add_imported_presets(s, p, &group, imp.presets, cmd)?;
+    Ok(json!({ "group": group, "imported": names, "count": names.len(), "animated": animated, "warnings": imp.warnings }))
 }
 
 /// The image's paint amount (darkness × alpha of its composite, as Define Brush Preset reads a
@@ -220,6 +253,26 @@ pub fn specs() -> Vec<CommandSpec> {
             params: r##"{"path":"image file (PNG, JPEG, TIFF, PSD…)"?,"data":base64 bytes?,"fileName":string? (with data: the file's name, for its format and the default preset name),"name":string?=file name,"select":bool=true (make it the current brush)} → {name, width, height}"##,
             enabled: always,
             run: import_image,
+            journal: true,
+        },
+        CommandSpec {
+            id: "brush.presets.importBrushFile",
+            label: "Import Brush File…",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"path":".gbr or .gih file"?,"data":base64 bytes?,"fileName":string? (with data: the file's name, for the default group),"group":string?=file name,"replace":bool=true (replace a group of the same name),"select":bool=false (make the imported preset current)} → {group, imported, count, animated (a .gih image hose), warnings}"##,
+            enabled: always,
+            run: import_brush_file,
+            journal: true,
+        },
+        CommandSpec {
+            id: "gradient.presets.importGgr",
+            label: "Import Segmented Gradient…",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"path":".ggr file"?,"data":base64 bytes?,"group":string?="Imported Gradients","replace":bool=false (replace the group), "subdivisions":2..64=8 (stops sampled inside each curved or HSV segment)} → {group, imported, count, segments, warnings}"##,
+            enabled: always,
+            run: import_ggr,
             journal: true,
         },
         CommandSpec {
@@ -334,10 +387,98 @@ fn import_grd(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"group": group, "imported": names, "count": names.len(), "warnings": warnings}))
 }
 
+// ------------------------------------------------------------------ segmented gradients (.ggr)
+
+/// A segmented gradient as a stop gradient preset: the segment ends and, inside every segment
+/// whose blend or colouring is not a straight RGB line, `subdivisions` sampled stops. Ends that
+/// follow the foreground or background colour stay live.
+pub fn ggr_to_preset(
+    g: &redrob_photo_io::ggr::SegmentedGradient,
+    name: &str,
+    subdivisions: usize,
+    live: redrob_photo_io::ggr::LiveColors,
+) -> crate::presets::gradients::GradientPreset {
+    use crate::presets::gradients::{GradientPreset, StopColor};
+    use redrob_photo_io::ggr::EndColor;
+    let (samples, live_ends) = g.sample(subdivisions, live);
+    let stops: Vec<(f32, StopColor)> = samples
+        .iter()
+        .enumerate()
+        .map(|(i, (t, c))| {
+            let color = match live_ends.iter().find(|(j, _)| *j == i).map(|(_, e)| *e) {
+                Some(EndColor::Foreground | EndColor::ForegroundTransparent) => StopColor::Foreground,
+                Some(EndColor::Background | EndColor::BackgroundTransparent) => StopColor::Background,
+                _ => StopColor::Rgb([c[0], c[1], c[2]].map(|v| v.clamp(0.0, 1.0))),
+            };
+            (t.clamp(0.0, 1.0), color)
+        })
+        .collect();
+    let mut opacity: Vec<(f32, f32)> = samples.iter().map(|(t, c)| (t.clamp(0.0, 1.0), c[3].clamp(0.0, 1.0))).collect();
+    if opacity.iter().all(|o| o.1 >= 1.0 - 1e-4) {
+        opacity.clear();
+    }
+    GradientPreset { name: name.to_string(), stops, opacity }
+}
+
+fn import_ggr(s: &mut Session, p: &Value) -> Result<Value> {
+    use crate::presets::Group;
+    let cmd = "gradient.presets.importGgr";
+    let (bytes, stem) = file_bytes(p, cmd, ".ggr file")?;
+    let group = match p.get("group") {
+        Some(v) => v.as_str().map(str::trim).filter(|g| !g.is_empty()).ok_or_else(|| bad(cmd, "`group` must be a non-empty string"))?.to_string(),
+        None => "Imported Gradients".to_string(),
+    };
+    let subdivisions = match p.get("subdivisions") {
+        None => 8,
+        Some(v) => v.as_u64().filter(|n| (2..=64).contains(n)).ok_or_else(|| bad(cmd, "`subdivisions` must be 2..=64"))? as usize,
+    };
+    let g = redrob_photo_io::ggr::parse(&bytes).map_err(|e| bad(cmd, format!("not a readable segmented gradient file (.ggr): {e}")))?;
+    let name = if g.name.trim().is_empty() { if stem.is_empty() { "Segmented Gradient".to_string() } else { stem } } else { g.name.trim().to_string() };
+    let live = redrob_photo_io::ggr::LiveColors { foreground: s.tools.foreground, background: s.tools.background };
+    let preset = ggr_to_preset(&g, &name, subdivisions, live);
+    let mut warnings = Vec::new();
+    if g.segments.iter().any(|seg| seg.blend != redrob_photo_io::ggr::Blend::Linear || seg.coloring != redrob_photo_io::ggr::Coloring::Rgb) {
+        warnings.push(format!("curved, sinusoidal, spherical, stepped and HSV segments were sampled into {subdivisions} stops each"));
+    }
+    if g.segments.iter().any(|seg| seg.is_live() && seg.blend != redrob_photo_io::ggr::Blend::Linear) {
+        warnings.push("a curved segment ending in the foreground or background colour was sampled with the current colours".to_string());
+    }
+    let segments = g.segments.len();
+    let st = &mut s.presets;
+    if p.get("replace").and_then(Value::as_bool).unwrap_or(false) {
+        st.gradients.retain(|g| g.name != group);
+    }
+    match st.gradients.iter_mut().find(|g| g.name == group) {
+        Some(grp) => {
+            grp.items.retain(|x| x.name != preset.name);
+            grp.items.push(preset.clone());
+        }
+        None => st.gradients.push(Group::new(&group, vec![preset.clone()])),
+    }
+    s.presets_changed();
+    Ok(json!({"group": group, "imported": [preset.name], "count": 1, "segments": segments, "stops": preset.stops.len(), "warnings": warnings}))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use redrob_photo_psd::abr::{AbrSample, LegacyBrush, LegacyTip, write_v6, write_v12};
+
+    #[test]
+    fn ggr_import_samples_segments_into_a_stop_gradient() {
+        let mut s = Session::new();
+        let text = "GIMP Gradient\nName: Sky\n2\n0 0.25 0.5 1 0 0 1 0 1 0 1 0 0 0 0\n0.5 0.75 1 0 1 0 1 0 0 1 0.5 2 1 0 0\n";
+        let r = s.execute("gradient.presets.importGgr", json!({"data": redrob_photo_paint::tile::b64_encode(text.as_bytes())})).unwrap();
+        assert_eq!(r["count"], 1);
+        assert_eq!(r["segments"], 2);
+        let g = s.presets.gradients.iter().find(|g| g.name == "Imported Gradients").unwrap();
+        let p = &g.items[0];
+        assert_eq!(p.name, "Sky");
+        assert!(p.stops.len() > 4, "the sinusoidal HSV segment is sampled: {:?}", p.stops);
+        assert!(p.stops.windows(2).all(|w| w[0].0 <= w[1].0));
+        assert!(!p.opacity.is_empty(), "the half-transparent end makes opacity stops");
+        assert!(s.execute("gradient.presets.importGgr", json!({"data": redrob_photo_paint::tile::b64_encode(b"nope")})).is_err());
+    }
     use redrob_photo_psd::descriptor::{Descriptor, UnicodeString, Value as DV};
 
     fn abr_v2() -> Vec<u8> {

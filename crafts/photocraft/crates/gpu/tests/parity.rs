@@ -191,6 +191,12 @@ fn diff_rect(g: &mut Gpu, doc: &Document, rect: Rect, what: &str) -> Result<redr
     first.ok_or_else(|| format!("{what}: no render"))
 }
 
+/// The layer modes the GPU composites itself: everything but the modulo family, which the plan
+/// hands to the CPU (a sawtooth cannot be matched pixel for pixel across float units).
+fn gpu_modes() -> impl Iterator<Item = BlendMode> {
+    BlendMode::layer_modes().filter(|m| !BlendMode::MODULO_MODES.contains(m))
+}
+
 fn check(g: &mut Gpu, doc: &Document, what: &str) {
     diff_rect(g, doc, doc.bounds(), what).unwrap_or_else(|e| panic!("{e}"));
 }
@@ -515,7 +521,7 @@ fn discarded_encode_neither_consumes_nor_populates_prefixes() {
 #[test]
 fn blend_modes() {
     let Some(mut g) = gpu() else { return };
-    for mode in BlendMode::layer_modes() {
+    for mode in gpu_modes() {
         let mut d = base_doc(64, 48);
         let mut l = noise_layer("top", PixelFormat::RGBA8, Rect::new(4, 3, 60, 45), 2, 0.0);
         l.blend = mode;
@@ -1175,7 +1181,7 @@ fn small_layers_composite_over_their_bounds() {
         l
     };
     let mut d = base_doc(200, 150);
-    for (i, mode) in BlendMode::layer_modes().enumerate() {
+    for (i, mode) in gpu_modes().enumerate() {
         let i = i as i32;
         d.layers.push(small(100 + i as u32, (i * 29) % 190 - 8, (i * 37) % 140 - 5, mode));
     }
@@ -1209,7 +1215,7 @@ fn small_layers_composite_over_their_bounds() {
     check(&mut g, &d, "small layers");
     // The same over several compositor chunks.
     let mut big = base_doc(1500, 1200);
-    for (i, mode) in BlendMode::layer_modes().enumerate() {
+    for (i, mode) in gpu_modes().enumerate() {
         let i = i as i32;
         big.layers.push(small(400 + i as u32, 1010 + (i % 4) * 5, 1010 + (i / 4) * 5, mode));
     }
@@ -1223,7 +1229,7 @@ fn many_layers_submit_inside_one_chunk() {
     // invalid"). 700 layers need well over 1000 passes in the document's only chunk.
     let Some(mut g) = gpu() else { return };
     let mut d = base_doc(64, 48);
-    let modes: Vec<BlendMode> = BlendMode::layer_modes().collect();
+    let modes: Vec<BlendMode> = gpu_modes().collect();
     for (i, mode) in modes.iter().copied().cycle().take(700).enumerate() {
         let mut l = noise_layer("l", PixelFormat::RGBA8, Rect::from_xywh(0, 0, 64, 48), 500 + i as u32, 0.0);
         l.blend = mode;
@@ -2016,7 +2022,7 @@ fn blend_mode_extremes() {
     let Some(mut g) = gpu() else { return };
     let vals = [0.0f32, 1.0, 0.5];
     for depth in [SampleType::U8, SampleType::U16] {
-        for mode in BlendMode::layer_modes() {
+        for mode in gpu_modes() {
             let mut d = Document::new("x", Size::new(9, 9), ColorMode::Rgb, depth);
             let fmt = d.pixel_format();
             let mut bg = Layer::raster("bg", fmt);

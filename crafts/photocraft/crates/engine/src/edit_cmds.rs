@@ -925,6 +925,45 @@ fn guide_cmd(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
 /// Farthest the ruler zero point may sit from the image, in document pixels.
 const MAX_RULER_ORIGIN: f64 = 1.0e7;
 
+/// Image › Configure Grid: this image's own grid (`image.configureGrid`), overriding the
+/// Preferences grid while set; `reset` removes it. Undoable like the guides.
+fn configure_grid(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "image.configureGrid";
+    let bad = |msg: String| EngineError::BadParams { cmd: CMD.into(), msg };
+    if p.get("reset").and_then(Value::as_bool).unwrap_or(false) {
+        s.edit("Reset Grid", |doc, _| {
+            doc.grid = None;
+            Ok(())
+        })?;
+        return Ok(json!({"grid": null}));
+    }
+    let current = s.active().and_then(|d| d.doc.grid.clone()).unwrap_or_default();
+    let num = |k: &str, d: f64, lo: f64, hi: f64| -> Result<f64> {
+        match p.get(k) {
+            None | Some(Value::Null) => Ok(d),
+            Some(v) => v.as_f64().filter(|x| x.is_finite() && (lo..=hi).contains(x)).ok_or_else(|| bad(format!("`{k}` must be a number from {lo} to {hi}"))),
+        }
+    };
+    let spacing_x = num("spacingX", current.spacing[0], 0.1, 1.0e6)?;
+    let spacing_y = num("spacingY", current.spacing[1], 0.1, 1.0e6)?;
+    let grid = redrob_photo_doc::DocGrid {
+        spacing: [spacing_x, spacing_y],
+        offset: [num("offsetX", current.offset[0], -1.0e6, 1.0e6)?, num("offsetY", current.offset[1], -1.0e6, 1.0e6)?],
+        subdivisions: num("subdivisions", f64::from(current.subdivisions), 1.0, 100.0)?.round() as u32,
+        color: match p.get("color") {
+            None | Some(Value::Null) => current.color,
+            Some(Value::String(c)) => c.clone(),
+            Some(v) => return Err(bad(format!("`color` must be \"#rrggbb\" or \"\", not {v}"))),
+        },
+    };
+    let out = json!({"grid": {"spacingX": grid.spacing[0], "spacingY": grid.spacing[1], "offsetX": grid.offset[0], "offsetY": grid.offset[1], "subdivisions": grid.subdivisions, "color": grid.color}});
+    s.edit("Configure Grid", |doc, _| {
+        doc.grid = Some(grid);
+        Ok(())
+    })?;
+    Ok(out)
+}
+
 /// Move the rulers' zero point (`view.setRulerOrigin`), or put it back at the image's top-left
 /// (`view.resetRulerOrigin`, `p` = None). Undoable like the guides.
 fn ruler_origin_cmd(s: &mut Session, p: Option<&Value>) -> Result<Value> {
@@ -1075,6 +1114,15 @@ pub fn specs() -> Vec<CommandSpec> {
         spec!("view.resetRulerOrigin", "Reset Ruler Origin", &[], None, "{} (zero point back at the image's top-left)", has_doc, |s, _| ruler_origin_cmd(
             s, None
         )),
+        spec!(
+            "image.configureGrid",
+            "Configure Grid…",
+            &["Image"],
+            None,
+            r##"{"spacingX":0.1..1000000=72,"spacingY":0.1..1000000=72,"offsetX":-1000000..1000000=0,"offsetY":-1000000..1000000=0,"subdivisions":1..100=4,"color":"#rrggbb"?,"reset":bool=false} (this image's own grid; reset returns to the Preferences grid)"##,
+            has_doc,
+            configure_grid
+        ),
     ]
 }
 

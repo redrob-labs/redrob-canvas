@@ -686,6 +686,15 @@ pub struct Prefs {
     pub grid_style: String,
     pub gridline_every: f64,
     pub grid_subdivisions: u32,
+    /// Grid Kind: `rectangular`, `axonometric` (angled gridlines for isometric drawing) or
+    /// `modular` (blocks with gaps).
+    pub grid_kind: String,
+    /// Axonometric: the angles (degrees from horizontal) of the lines rising right and left.
+    pub grid_angle_x: f64,
+    pub grid_angle_z: f64,
+    /// Modular: the gaps between blocks along x and y (points).
+    pub grid_gap_x: f64,
+    pub grid_gap_y: f64,
     pub grids_in_back: bool,
     pub show_pixel_grid: bool,
     // Smart Guides
@@ -925,6 +934,11 @@ impl Default for Prefs {
             grid_style: s("lines"),
             gridline_every: 72.0,
             grid_subdivisions: 8,
+            grid_kind: s("rectangular"),
+            grid_angle_x: 30.0,
+            grid_angle_z: 30.0,
+            grid_gap_x: 0.0,
+            grid_gap_y: 0.0,
             grids_in_back: true,
             show_pixel_grid: true,
             smart_guide_color: s("#ff3dfc"),
@@ -1468,6 +1482,8 @@ impl Session {
                 Ok(()) => {
                     // Inline graphics in text follow their symbols.
                     cmd::inline::refresh(&before, Arc::make_mut(&mut st.doc));
+                    // Clones follow their originals.
+                    cmd::clones::refresh(&before, Arc::make_mut(&mut st.doc));
                     // Text Wrap: area type follows its wrap objects; then threads re-flow.
                     cmd::textwrap::refresh(Arc::make_mut(&mut st.doc));
                     // Opacity-mask editing: the mask follows its art on the editing layer.

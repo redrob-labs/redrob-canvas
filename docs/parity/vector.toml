@@ -77,9 +77,8 @@ name = "Ellipse / arc tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/circles-ellipses-and-arcs.html"
 behaviour = "Drag draws a live ellipse (Ctrl for a circle); two on-shape handles set start and end angles, turning it into a pie slice, a chord or an open arc, selectable in the toolbar; a button restores the whole ellipse."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs, crafts/vectorcraft/crates/tools/src/extra.rs (arc tool)"
-gap = "no start/end-angle handles on a live ellipse (pie/chord/arc); the separate Arc tool draws a quarter-arc segment only"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/shapes.rs (ellipse_arc, ArcKind), crafts/vectorcraft/crates/doc/src/node.rs (LiveShape::Ellipse arc), crafts/vectorcraft/crates/tools/src/shapehandles.rs, crafts/vectorcraft/crates/engine/src/cmd/object.rs (object.setLiveShape arcKind/wholeEllipse), crafts/vectorcraft/crates/ui-egui/src/panels/transform.rs (control bar)"
 priority = 1
 
 [[feature]]
@@ -89,9 +88,8 @@ name = "Star / polygon tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/stars-and-polygons.html"
 behaviour = "Toolbar toggle between polygon and star; fields for corner count, spoke ratio, rounding and randomisation; two live handles move the outer tip and inner notch, Ctrl snaps angles, Shift-drag rounds the tips, Alt-drag randomises; the shape stays editable afterwards."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs, crafts/vectorcraft/crates/geom/src/shapes.rs"
-gap = "corner count and inner radius are set in the draw dialog or by arrow keys while dragging; no rounding or randomise parameter; the result is a plain path, not a live star"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/shapes.rs (star_live), crafts/vectorcraft/crates/doc/src/node.rs (LiveShape::Star), crafts/vectorcraft/crates/tools/src/shape.rs (rounding/randomized options), crafts/vectorcraft/crates/tools/src/shapehandles.rs, crafts/vectorcraft/crates/ui-egui/src/panels/transform.rs (control bar fields)"
 priority = 1
 
 [[feature]]
@@ -126,8 +124,8 @@ reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/pencil-tool.html"
 behaviour = "Drag draws a path, smoothed by a 1-100 slider; click-click draws straight segments; modes: regular Bezier, Spiro, BSpline; a shape can be applied along the stroke (triangle in/out, ellipse, from clipboard, bend from clipboard); 'LPE based interactive simplify'; pressure-sensitive width when a tablet is used ('PowerPencil')."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/draw2.rs, crafts/vectorcraft/crates/pathops/src/fit.rs, crafts/vectorcraft/crates/engine/src/cmd/draw2.rs"
-gap = "no Spiro or BSpline mode, no shape-along-stroke option on the freehand tool (brushes do that), no pressure width while drawing"
+ours_where = "crafts/vectorcraft/crates/tools/src/draw2/gesture.rs, crafts/vectorcraft/crates/geom/src/spline.rs, crafts/vectorcraft/crates/pathops/src/fit.rs, crafts/vectorcraft/crates/engine/src/cmd/draw2.rs (path.freehand mode/shape, path.strokeShape), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (Mode and Shape dropdowns)"
+gap = "Spiro is a documented approximation (chord-bisector tangents, arc handles, curvature relaxation), not a clothoid solver; no 'LPE based interactive simplify'; no pressure width while drawing (the Paintbrush keeps pressure, the Pencil does not)"
 priority = 1
 
 [[feature]]
@@ -137,9 +135,9 @@ name = "Pen (Bezier) tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/pen-tool.html"
 behaviour = "Click places corner nodes, click-drag places smooth nodes with handles; Ctrl snaps angles to 15 degree steps, Shift locks handle length, Enter or double-click ends the path, clicking the start closes it; modes: regular Bezier, Spiro spline, BSpline, straight segments, paraxial (axis-aligned) segments; same shape-along-stroke options as the pencil."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/pen.rs, crafts/vectorcraft/crates/tools/src/draw2/family.rs"
-gap = "no Spiro, BSpline or paraxial modes; rubber-band preview of the next segment exists but no shape-along-path option"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/pen.rs (mode: regular, spiro, bspline, paraxial; shape), crafts/vectorcraft/crates/geom/src/spline.rs, crafts/vectorcraft/crates/engine/src/cmd/draw2.rs (path.strokeShape), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -150,8 +148,8 @@ reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/calligraphy-tool.html"
 behaviour = "Draws a filled stroke whose width follows velocity (thinning), pen angle, fixation, caps, tremor, wiggle and mass settings; presets Dip pen, Marker, Brush, Wiggly, Splotchy, Tracing; pressure and tilt from a tablet can drive width and angle; Alt-drag on an existing stroke engraves hatching guided by it."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs, crafts/vectorcraft/crates/engine/src/cmd/brushsym.rs"
-gap = "calligraphic brush has angle, roundness, diameter and pressure variation; no thinning-by-speed, tremor, wiggle, mass or guided hatching"
+ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs, crafts/vectorcraft/crates/brush/src/lib.rs (Calligraphic::thinning/mass/tremor/wiggle), crafts/vectorcraft/crates/ui-egui/src/dialogs/brush_options.rs"
+gap = "thinning (speed read from anchor spacing), mass, tremor, wiggle, angle, roundness, size and pressure variation are brush options; no tilt input (the shell receives no tilt), no fixation setting, no Dip pen/Marker/Brush/Wiggly/Splotchy/Tracing presets, no guided hatching"
 priority = 2
 
 [[feature]]
@@ -210,8 +208,8 @@ reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Click fills a region bounded by visible rendered edges (any object, including bitmaps) with a new path; threshold for colour similarity, grow/shrink the result, fill by visible colours or a single channel, Shift-click unions with the previous fill, Alt-click fills every region of the same colour."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/builder.rs (Live Paint Bucket), crafts/vectorcraft/crates/tools/src/xform/wand.rs"
-gap = "Live Paint fills faces of a planar group of vector paths; no rendered-pixel flood fill across bitmaps, no threshold or grow/shrink"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/floodfill.rs (paint.floodFill), crafts/vectorcraft/crates/tools/src/builder.rs (Live Paint Bucket: Alt-click), crafts/vectorcraft/crates/tools/src/xform/wand.rs"
+gap = "Alt-click (or a click on nothing Live Paint can fill) floods the rendered pixels across every object including bitmaps, with a colour threshold and grow/shrink as command parameters; no fill-by-channel, Shift-union with the previous fill or fill-every-same-colour-region, and the threshold has no tool options bar"
 priority = 2
 
 [[feature]]
@@ -330,8 +328,8 @@ reference = "Inkscape"
 manual = "https://inkscape.org/doc/tutorials/calligraphy/tutorial-calligraphy.html"
 behaviour = "Calligraphy, pencil (PowerPencil), tweak, spray and eraser read stylus pressure when their 'use pressure' toggle is on; calligraphy also reads tilt for pen angle."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs, crafts/vectorcraft/crates/ui-egui/src/touch.rs"
-gap = "pressure drives calligraphic brush width and liquify tools; no tilt input"
+ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs, crafts/vectorcraft/crates/ui-egui/src/touch.rs, crafts/vectorcraft/crates/ui-egui/src/canvas.rs (pen_pressure)"
+gap = "pressure drives the calligraphic brush width and the liquify tools; no tilt input (the shell receives pointer force but no tilt angles)"
 priority = 2
 
 [[feature]]
@@ -342,8 +340,8 @@ reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "With the selector: < and > scale by a preference step, [ and ] rotate by 15 degrees (Ctrl: 90), Alt variants work in screen pixels; Ctrl+> and Ctrl+< scale by a factor of two; H and V flip; Home/End/PgUp/PgDn change z-order."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs, crafts/vectorcraft/crates/engine/src/cmd/xform.rs"
-gap = "arrow nudges and z-order keys exist; no bracket-key rotation or angle-bracket scaling"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs (bracket rotation, angle-bracket scaling, arrow nudges), crafts/vectorcraft/crates/engine/src/cmd/xform.rs"
+gap = "[ and ] rotate by 15 degrees, < and > scale by the keyboard increment (Alt: one screen pixel), arrows nudge and the z-order keys exist; Ctrl variants (90 degrees, scale by two) are taken by Arrange and other shortcuts, and H/V flips are tool shortcuts"
 priority = 2
 
 [[feature]]
@@ -513,9 +511,9 @@ name = "Node types: cusp, smooth, symmetric, auto-smooth"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-types.html"
 behaviour = "Each node is one of four kinds shown by its marker shape: cusp (independent handles), smooth (collinear handles of free length), symmetric (collinear, equal length), auto-smooth (handles recomputed from neighbours when the node moves); toolbar buttons and Shift+C/S/Y/A convert, Ctrl-click cycles."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs, crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.convertAnchor)"
-gap = "corner and smooth only; no symmetric or auto-smooth node kinds"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/path.rs (AnchorKind, symmetric_anchor, auto_smooth_anchor, refresh_auto_smooth), crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.convertAnchors), crafts/vectorcraft/crates/ui-egui/src/chrome.rs (Convert buttons), crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs (Shift+C/S/Y/A), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (markers by kind)"
+gap = "Ctrl-click does not cycle the kind (Ctrl is taken by the Selection tool switch); Shift+C/S/Y/A convert only while anchors are direct-selected, else they stay tool shortcuts"
 priority = 1
 
 [[feature]]
@@ -525,9 +523,8 @@ name = "Insert node (midpoint, by double-click, at min/max X/Y)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
 behaviour = "Insert adds a node in the middle of every selected segment; a dropdown also inserts at the segment's extreme X or Y; double-clicking a segment adds a node there."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.insertAnchor, path.appendAnchor)"
-gap = "Add Anchor Points inserts midpoints and the Add Anchor tool inserts at a click; no insert-at-extremum"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.insertAnchorsAtExtremes), crafts/vectorcraft/crates/geom/src/path.rs (segment_extremum), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object > Path > Add Anchor Points At)"
 priority = 1
 
 [[feature]]
@@ -573,9 +570,9 @@ name = "Segment type: make line / make curve"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
 behaviour = "Selected segments are converted to straight lines (handles removed) or to curves (handles created so the shape is unchanged, then editable)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.setHandle, path.convertAnchors)"
-gap = "straightening happens by converting the end anchors to corners; no explicit per-segment line/curve toggle"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/nodeops.rs (path.segmentType), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (Segment: Line / Curve)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -586,8 +583,8 @@ reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Rubber band selects nodes (Shift adds), Alt-drag touch-selects along a stroke, Tab/Shift+Tab walk nodes, Ctrl+A selects all nodes of the path, Ctrl+Alt+A all across subpaths, PgUp/PgDn grow or shrink the selection spatially or along the path, ! inverts."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs"
-gap = "rubber band and Shift-add only; no Tab walk, spatial grow or lasso touch select for nodes (Lasso tool selects anchors by a freehand region)"
+ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs (Alt-drag lasso, Tab, Page Up/Down), crafts/vectorcraft/crates/engine/src/cmd/nodeops.rs (select.anchorStep, select.anchorGrow, select.anchorsTouching)"
+gap = "Page Up/Down grow spatially only (not along the path); no Ctrl+Alt+A across subpaths and no ! invert for anchors"
 priority = 2
 
 [[feature]]
@@ -622,8 +619,8 @@ reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/editing-paths.html"
 behaviour = "The node toolbar shows the X/Y of the selected node(s) in a chosen unit for numeric editing, plus toggles: show clipping path, show mask, show transform handles, show Bezier handles, show path outline, edit the live path effect parameters on canvas."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/control.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Show/Hide Edges, Direction Handles)"
-gap = "no numeric X/Y for a single anchor in the control bar; handle visibility is a view preference"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (node_options: X/Y fields, Show Handles toggle), crafts/vectorcraft/crates/ui-egui/src/state.rs (ViewFlags.show_handles), crafts/vectorcraft/crates/ui-egui/src/canvas.rs"
+gap = "X/Y edit one selected anchor only; no clipping-path, mask, transform-handle, path-outline or LPE-parameter toggles in the node toolbar"
 priority = 2
 
 [[feature]]
@@ -681,9 +678,8 @@ name = "Live shape handles in the node tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/shape-tools.html"
 behaviour = "Rectangles, ellipses, stars and spirals keep their defining parameters and show their own handles (corner radius, arc angles, star tips) in the node tool until converted to a path."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (LiveShape: Rectangle, Ellipse, Polygon), crafts/vectorcraft/crates/tools/src/corners.rs"
-gap = "rectangles, ellipses and polygons are live (size, corners, sides); stars and spirals become plain paths"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (LiveShape: Rectangle, Ellipse, Polygon, Star, Spiral), crafts/vectorcraft/crates/tools/src/corners.rs, crafts/vectorcraft/crates/tools/src/shapehandles.rs, crafts/vectorcraft/crates/ui-egui/src/canvas.rs"
 priority = 1
 
 # ---------------------------------------------------------------------------------------------
@@ -966,9 +962,9 @@ name = "Bend"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "Deforms the object along a bend path that is drawn or pasted; the bend path is edited on canvas with the node tool; width scaling and original-width options."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/live.rs (Envelope with WarpStyle), crafts/vectorcraft/crates/effects/src/warp.rs"
-gap = "fifteen fixed warp styles with bend/distortion sliders and a freehand envelope mesh; no 'bend along an arbitrary drawn path'"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe.rs (path.bend), crafts/vectorcraft/crates/effects/src/lib.rs (catalog), crafts/vectorcraft/crates/doc/src/live.rs (Envelope with WarpStyle)"
+gap = "the spine is typed as four box-coordinate points in the effect dialog (live preview), not dragged as node-tool knots on canvas"
 priority = 2
 
 [[feature]]
@@ -990,9 +986,9 @@ name = "BSpline"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Interprets the path's nodes as B-spline control points producing a smooth curve that never passes through them; a weight per node and 'apply without weight' option; also a pen/pencil drawing mode."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/spline.rs (bspline_to_bezier), crafts/vectorcraft/crates/effects/src/lpe.rs (path.bspline)"
+gap = "one weight for the whole path (0..100 %), not a weight per node"
 priority = 2
 
 [[feature]]
@@ -1050,9 +1046,9 @@ name = "Dashed stroke"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Turns the path into a chosen number of dashes per segment (or by length) with hole factor, half-start/half-end, split at segment ends; the result is real geometry so the dashes can be styled further."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/stroke/dash.rs, crafts/vectorcraft/crates/doc/src/appearance.rs (dash arrays, Align Dashes to Corners)"
-gap = "dashing is a stroke attribute (with corner alignment) and can be outlined; no 'N dashes per segment' geometry effect"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe.rs (path.dashedStroke: dashes per segment, hole factor, unify, half start/end, start/end offsets, stroke-to-path), crafts/vectorcraft/crates/effects/src/stroke/dash.rs (stroke dash attribute)"
+gap = "dash count is per segment only (no 'by length' mode)"
 priority = 2
 
 [[feature]]
@@ -1398,9 +1394,9 @@ name = "Spiro spline"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Interprets the nodes as a Spiro curve: smooth nodes become G2-continuous clothoid segments, corner nodes stay sharp; also a pen/pencil drawing mode."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/spline.rs (spiro_approx_to_bezier), crafts/vectorcraft/crates/effects/src/lpe.rs (path.spiro)"
+gap = "clean-room approximation (circle tangents, arc-fitted handles, curvature relaxed across nodes), not a clothoid solver"
 priority = 2
 
 [[feature]]
@@ -1422,9 +1418,9 @@ name = "Taper stroke"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Taper_Stroke"
 behaviour = "Outlines the stroke with tapering ends: width, start/end taper lengths (knots on canvas), taper smoothing, join type, and in 1.4 the taper direction and per-subpath handling."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (WidthProfile presets), crafts/vectorcraft/crates/effects/src/stroke/width.rs"
-gap = "width profile presets taper the ends; no separate taper-length knots or smoothing parameter"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe.rs (path.taperStroke: width, start/end taper lengths, smoothing, join, direction), crafts/vectorcraft/crates/effects/src/stroke/width.rs"
+gap = "taper lengths are typed in the dialog (live preview), not dragged as knots on canvas"
 priority = 2
 
 [[feature]]
@@ -1692,9 +1688,8 @@ name = "Palette bar and palette files"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/palette.html"
 behaviour = "A colour strip along the bottom of the window; click sets fill, Shift-click sets stroke, drag onto an object applies; the strip menu picks among installed palettes (GPL, including user-added) and sets swatch size, border and rows."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/swatches.rs, crafts/vectorcraft/crates/engine/src/cmd/swatchlib.rs (Swatch Libraries, .gpl/.ase/.acb)"
-gap = "swatch libraries open as panels; no bottom palette strip with drag-to-object"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/palette_strip.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (window.paletteStrip), crafts/vectorcraft/crates/engine/src/cmd/swatchlib.rs (.gpl/.ase/.acb libraries)"
 priority = 2
 
 [[feature]]
@@ -1852,9 +1847,8 @@ name = "Stroke width with unit"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/strokes.html"
 behaviour = "Width field with a unit menu (px, pt, mm, in, percent of current...); a hairline option (1.0) renders one screen pixel regardless of zoom and exports as vector-effect non-scaling-stroke."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs, crafts/vectorcraft/crates/svg/src/import/vector_effect.rs"
-gap = "non-scaling stroke is honoured on SVG import and rendered, but there is no hairline/non-scaling toggle in the Stroke panel"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (StrokeLayer::hairline), crafts/vectorcraft/crates/render/src/lib.rs (draw_stroke), crafts/vectorcraft/crates/svg/src/export.rs (stroke_props: vector-effect), crafts/vectorcraft/crates/pdf/src/export.rs (width 0), crafts/vectorcraft/crates/engine/src/cmd/stroke.rs (stroke.set hairline), crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs (Hairline, unit dropdown px/pt/mm/in/%)"
 priority = 1
 
 [[feature]]
@@ -1876,9 +1870,9 @@ name = "Markers (start, mid, end)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/markers.html"
 behaviour = "Three marker menus pick an arrowhead or other shape for the start node, every middle node and the end node; 1.2 adds a marker editor with size, orientation (auto, auto-start-reverse, fixed angle), offset, scale with stroke, and colouring by stroke colour."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (Arrowhead x12, start/end scale, align), crafts/vectorcraft/crates/effects/src/stroke/arrow.rs"
-gap = "no mid markers, no fixed-angle orientation"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (mid_arrow, MarkerOrient, markers_scale), crafts/vectorcraft/crates/effects/src/stroke/arrow.rs (mid markers, orientation), crafts/vectorcraft/crates/svg/src/export.rs (marker_def: <marker> defs, marker-start/mid/end), crafts/vectorcraft/crates/engine/src/cmd/stroke.rs, crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs (Mid markers, Orientation, Scale with stroke)"
+gap = "mid markers share the start head's scale; a fixed-angle head's tip is written on the end point in SVG"
 priority = 1
 
 [[feature]]
@@ -2098,9 +2092,9 @@ name = "Clone (linked copy), unlink, relink, select original"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/cloning-objects.html"
 behaviour = "Alt+D makes a clone (an SVG use element) that follows every edit of the original but has its own transform and, when the original's paint is unset, its own colour; unlink makes it independent (recursively for nested clones in 1.3), relink to copied object, Shift+D selects the original, 'unlink clones for path operations' (1.0)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/symbols.rs, crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Symbol Instance: Edit Symbol, Break Link)"
-gap = "linked copies exist only as symbol instances; no clone of an arbitrary in-place object, no inherited (unset) paint"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (CloneRef in NodeExtras, transform follows), crafts/vectorcraft/crates/engine/src/cmd/clones.rs (object.clone Alt+D, unlinkClone, relinkClone, selectOriginal, refresh after every edit), crafts/vectorcraft/crates/svg/src/export.rs (<use>), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Clone)"
+gap = "SVG import still expands <use> of plain objects into copies (symbols stay instances); a clone's own paint is kept once painted (no unset-paint inheritance)"
 priority = 1
 evidence = "docs/parity/evidence/VEC-clones.png"
 
@@ -2161,8 +2155,8 @@ reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Object_Properties"
 behaviour = "A dialog sets the SVG id, label, title and description, hide/lock flags, preserve aspect ratio for images, DPI, a hyperlink (wraps in an anchor; 1.4 adds Create Anchor), highlight colour, and JavaScript event handlers (onclick, onmouseover...)."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/layers.rs (names, lock, hide), crafts/vectorcraft/crates/doc/src/xml_id.rs, crafts/vectorcraft/crates/ui-egui/src/panels/attributes.rs (Attributes: image map URL)"
-gap = "no title/description, no JavaScript event attributes (SVG Interactivity is a placeholder)"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/dialogs/object_properties.rs (id, label, title, description, hyperlink, hide, lock), crafts/vectorcraft/crates/doc/src/node.rs (ObjectAttributes title/description), crafts/vectorcraft/crates/engine/src/cmd/attributes.rs, crafts/vectorcraft/crates/svg/src/export.rs (<title>, <desc>, <a>), crafts/vectorcraft/crates/svg/src/import.rs (title/desc read back)"
+gap = "no JavaScript event attributes, highlight colour, DPI or preserve-aspect-ratio"
 priority = 2
 
 [[feature]]
@@ -2208,9 +2202,9 @@ name = "Find / Replace dialog"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1#Find.2FReplace_dialog"
 behaviour = "Searches objects by text content, id, style, attribute name/value, font, description or title with replace, scope (all/selection/current layer), include hidden/locked, exact/case-sensitive matching, and object-type filters."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (Find and Replace in text), crafts/vectorcraft/crates/engine/src/cmd/select.rs"
-gap = "find/replace works on text content only; object search by attribute/style is via Select Same"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (edit.findReplace: in text|id|label|title|description|style|type, scope all|selection|layer, exact, includeHidden, includeLocked; matches selected, replace in fields and colours), crafts/vectorcraft/crates/ui-egui/src/dialogs/command.rs (dropdowns), crafts/vectorcraft/crates/ui-egui/src/menus.rs"
+gap = "no font or attribute-name search; style search covers fill, stroke and stroke width"
 priority = 2
 evidence = "docs/parity/evidence/VEC-find.png"
 
@@ -2591,9 +2585,9 @@ name = "Filter Editor dialog"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Filter_Editor"
 behaviour = "Lists the document's filters, lets one be built from a chain of primitives drawn as a connection graph (inputs: source graphic, source alpha, background, fill/stroke paint, previous result), with per-primitive parameter panels, a filter region (x, y, w, h), rename, duplicate and apply to the selection; 1.3 reworked the layout and primitive settings."
-ours = "none"
-ours_where = ""
-gap = "no SVG filter graph editing; live effects are a fixed catalogue"
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/ui-egui/src/panels/filter_editor.rs, crafts/vectorcraft/crates/effects/src/lib.rs (filter.graph)"
+gap = "the Filter Editor panel lists the object's primitives drawn as a connection graph with input pickers and attribute fields, region, add/duplicate/move/remove and a drop-shadow preset; inputs are source graphic, source alpha, the previous result or a named result (no background or fill/stroke paint inputs), one filter per object (no document-wide filter list, rename or duplicate of whole filters), no graphical dragging of connections"
 priority = 2
 evidence = "docs/parity/evidence/VEC-filter-editor.png"
 
@@ -2652,9 +2646,8 @@ name = "Primitive: colour matrix (matrix, saturate, hue rotate, luminance to alp
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Applies a 5x4 matrix or one of the shorthand modes to the input's colours."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/adjust.rs (Saturate, Adjust Color Balance, Invert, Convert to Grayscale as document edits)"
-gap = "colour adjustments are applied to the objects' paint, not as a live raster primitive on the composite"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/mod.rs (PixelFx::ColorMatrix, filter.colorMatrix), crafts/vectorcraft/crates/effects/src/svgfilter.rs (color_matrix, apply_matrix)"
 priority = 2
 
 [[feature]]
@@ -2809,8 +2802,8 @@ reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Brilliance, Channel transparency, Colour blindness simulation, Colour shift, Colorize, Duochrome, Extract channel, Fade to black or white, Greyscale, Invert, Lightness-contrast, Nudge RGB/CMY, Quadritone, Simple blend, Solarize, Tritone."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/adjust.rs, crafts/vectorcraft/crates/engine/src/cmd/colorcmds.rs (Edit Colors: Adjust Color Balance, Saturate, Invert Colors, Convert to Grayscale/CMYK/RGB, Blend Front to Back, Recolor Artwork)"
-gap = "adjustments edit vector paint (and recolour), none run as live filters on rasters; no colour-blindness simulation or duotone presets"
+ours_where = "crafts/vectorcraft/crates/effects/src/adjust.rs, crafts/vectorcraft/crates/effects/src/pixel/mod.rs (Color Matrix as a live raster primitive), crafts/vectorcraft/crates/engine/src/cmd/colorcmds.rs"
+gap = "greyscale, invert, saturate, hue shift and luminance-to-alpha run live as colour matrices on the composite and any 5x4 matrix can be typed; no named presets for colour blindness, duotone, tritone, quadritone, solarize or channel extraction"
 priority = 2
 
 [[feature]]
@@ -2941,8 +2934,8 @@ reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Every filter is stored as SVG and comes back unchanged when the file is reopened; filters from other SVG tools render as the SVG specification says."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/svg/src/import/fx.rs, crafts/vectorcraft/crates/svg/src/export.rs"
-gap = "blur, drop shadow, glows and feather chains are recognised and written back; other filter graphs are dropped on import"
+ours_where = "crafts/vectorcraft/crates/svg/src/filter_graph.rs, crafts/vectorcraft/crates/svg/src/import/fx.rs (graphs), crafts/vectorcraft/crates/svg/src/export.rs (open_filters), crafts/vectorcraft/crates/effects/src/svgfilter.rs"
+gap = "every <filter> chain is kept as a filter graph (blur, offset, flood, merge, composite, colour matrix, component transfer, convolve, morphology, turbulence, displacement, lighting, blend, drop shadow, tile) and written back; feImage is dropped, primitive subregions and linearRGB interpolation are not kept (everything filters in sRGB over the filter region), and the renderer's raster is clipped to the region without SVG's exact pixel grid"
 priority = 2
 
 # ---------------------------------------------------------------------------------------------
@@ -2956,9 +2949,9 @@ name = "XML editor"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#XML_Editor"
 behaviour = "A tree of the document's SVG nodes with attribute list editing (add, delete, edit values with syntax highlighting), node create/delete/duplicate/indent/raise/lower, drag reorder, and selection sync with the canvas; path data can be rounded; changes apply live."
-ours = "none"
-ours_where = ""
-gap = "no document tree/attribute editor (CSS Properties panel and Attributes panel cover a few attributes)"
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/xml_editor.rs"
+gap = "an element tree with selection sync, click-to-select, duplicate/delete/raise/lower, and live edits of name, visibility, lock, opacity, blend, href, description and data-* attributes (add, edit, remove); geometry and appearance show as read-only JSON (no path-data editing or rounding), no node creation, indent/outdent or drag reorder, no syntax highlighting"
 priority = 2
 evidence = "docs/parity/evidence/VEC-xml-editor.png"
 
@@ -3006,8 +2999,8 @@ reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Grids"
 behaviour = "Document Properties defines any number of grids: rectangular (origin, spacing, major line every N, colours, dots or lines, visible/enabled), axonometric (angles for isometric drawing), and in 1.4 modular (block grids with gaps and margins); # toggles the grid, snapping to grid lines and intersections."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/background.rs (document grid), crafts/vectorcraft/crates/engine/src/cmd/prefscmds.rs (gridline every, subdivisions, colour, style), crafts/vectorcraft/crates/tools/src/distort/perspective.rs"
-gap = "one rectangular grid per document; no axonometric or modular grids (perspective grid is a drawing aid, not a snap grid)"
+ours_where = "crafts/vectorcraft/crates/doc/src/lib.rs (GridPrefs, GridKind), crafts/vectorcraft/crates/engine/src/cmd/prefscmds.rs (gridKind, gridAngleX/Z, gridGapX/Y), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (grid), crafts/vectorcraft/crates/tools/src/guides.rs (snap_point)"
+gap = "one grid per document chosen in Preferences (rectangular, axonometric with two angles, modular with gaps), drawn and snapped to; no several grids per document, no per-grid origin or colours, and selection moves still snap to the rectangular step"
 priority = 2
 
 [[feature]]
@@ -3104,8 +3097,8 @@ reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Canvas_Rotation"
 behaviour = "Ctrl+Shift+scroll (or the status-bar angle field) rotates the whole view; View > Canvas Orientation flips it horizontally or vertically; a lock prevents accidental rotation."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/catalog.rs (Rotate View tool), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Reset Rotate View)"
-gap = "no flip of the view"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/state.rs (View::flip_h/flip_v), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (Xf), crafts/vectorcraft/crates/ui-egui/src/menus.rs (view.flipHorizontal, view.flipVertical, view.flipReset), crafts/vectorcraft/crates/tools/src/catalog.rs (Rotate View tool)"
+gap = "View > Canvas Orientation flips the view horizontally or vertically and the Rotate View tool rotates it; no status-bar angle field or rotation lock"
 priority = 2
 
 [[feature]]
@@ -3732,9 +3725,8 @@ name = "Trace bitmap: edge detection and colour quantisation scans"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/tracing-an-image.html"
 behaviour = "Single-scan alternatives: an edge-detection pass that outlines where brightness changes sharply, and a quantisation pass that reduces the image to N colours and traces the boundary of the result as one path."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/trace/src/quantize.rs, lib.rs Mode::Grayscale"
-gap = "no edge-detection scan; quantisation is only available through the multicolour modes, not as a single-path scan"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/trace/src/scans.rs, crafts/vectorcraft/crates/trace/src/lib.rs (Mode::EdgeDetection, Mode::Quantized), crafts/vectorcraft/crates/ui-egui/src/panels/image_trace.rs"
 priority = 2
 
 [[feature]]

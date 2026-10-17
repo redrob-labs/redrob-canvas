@@ -35,10 +35,159 @@ pub enum Control {
     StylusWheel,
     /// Barrel rotation of the stylus.
     Rotation,
+    /// Pointer speed: 0 at rest, 1 from [`crate::dynamics::VELOCITY_FULL_PX_PER_MS`] on. Input
+    /// without timestamps reads 0 (the dynamic's minimum).
+    Velocity,
     /// Angle only: the direction of the first stroke segment.
     InitialDirection,
     /// Angle only: the current stroke direction.
     Direction,
+    /// The stroke direction as a 0..1 scalar (a full turn, after [`DrawingAngle::offset`]), usable
+    /// on every option; with [`DrawingAngle::lock`] the direction of the first segment.
+    DrawingAngle,
+    /// A fresh random value per dab.
+    Random,
+}
+
+/// How the sensors of one dynamic combine into its value.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SensorCombine {
+    #[default]
+    Multiply,
+    Add,
+    Max,
+    Min,
+    Difference,
+}
+
+/// An additional sensor on a dynamic, combined with the primary control by [`Dynamic::combine`].
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Sensor {
+    pub control: Control,
+    pub fade_steps: u32,
+    pub curve: ResponseCurve,
+}
+
+impl Sensor {
+    pub const OFF: Self = Self { control: Control::Off, fade_steps: 25, curve: ResponseCurve::LINEAR };
+    pub const fn new(control: Control) -> Self {
+        Self { control, fade_steps: 25, curve: ResponseCurve::LINEAR }
+    }
+}
+
+impl Default for Sensor {
+    fn default() -> Self {
+        Self::OFF
+    }
+}
+
+/// Settings of the drawing-angle sensor ([`Control::DrawingAngle`]).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct DrawingAngle {
+    /// Degrees added to the stroke direction before it is read.
+    pub offset: f32,
+    /// Read the direction of the first stroke segment for the whole stroke.
+    pub lock: bool,
+    /// At a corner sharper than `fan_angle`, put extra dabs in place so the tip turns through the
+    /// corner instead of jumping.
+    pub fan_corners: bool,
+    /// Degrees of turn between two steps from which a corner is fanned.
+    pub fan_angle: f32,
+}
+
+impl Default for DrawingAngle {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+impl DrawingAngle {
+    pub const DEFAULT: Self = Self { offset: 0.0, lock: false, fan_corners: false, fan_angle: 30.0 };
+    pub fn is_default(&self) -> bool {
+        *self == Self::DEFAULT
+    }
+}
+
+/// Extra sensors one dynamic may carry besides its primary control.
+pub const MAX_EXTRA_SENSORS: usize = 3;
+
+fn no_extra_sensors(s: &[Sensor; MAX_EXTRA_SENSORS]) -> bool {
+    s.iter().all(|x| x.control == Control::Off)
+}
+
+fn is_default_combine(c: &SensorCombine) -> bool {
+    *c == SensorCombine::Multiply
+}
+
+fn is_true(v: &bool) -> bool {
+    *v
+}
+
+fn is_default_dynamic(d: &Dynamic) -> bool {
+    *d == Dynamic::controlled(Control::Off)
+}
+
+/// How an image hose (animated brush) picks the cell each dab paints with, per dimension.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HoseSelection {
+    /// Cells in order, one per dab, wrapping around.
+    #[default]
+    Incremental,
+    /// By the stroke direction: the full circle is split evenly over the cells.
+    Angular,
+    /// A random cell per dab (deterministic from the stroke seed).
+    Random,
+    /// By pointer speed (see [`Control::Velocity`]).
+    Velocity,
+    /// By pen pressure.
+    Pressure,
+    /// By the pen's x tilt (-90..90 over the cells).
+    TiltX,
+    /// By the pen's y tilt.
+    TiltY,
+}
+
+/// One dimension of an image hose: how many cells it spans and how they are picked.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct HoseDimension {
+    /// Cells along this dimension (at least 1).
+    pub rank: u32,
+    pub selection: HoseSelection,
+}
+
+impl Default for HoseDimension {
+    fn default() -> Self {
+        Self { rank: 1, selection: HoseSelection::Incremental }
+    }
+}
+
+/// An animated brush ("image hose"): a set of sampled cells, one of which paints each dab. The
+/// cells are indexed row-major over `dims` (the first dimension varies slowest); a hose whose
+/// `dims` multiply to more than `cells.len()` wraps. `tip` holds the first cell so previews,
+/// outlines and the tip grid show the brush like any sampled tip.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ImageHose {
+    pub cells: Vec<GrayTile>,
+    pub dims: Vec<HoseDimension>,
+}
+
+impl Default for ImageHose {
+    fn default() -> Self {
+        Self { cells: Vec::new(), dims: vec![HoseDimension::default()] }
+    }
+}
+
+impl ImageHose {
+    /// Is there anything to animate (at least one valid cell)?
+    pub fn is_active(&self) -> bool {
+        !self.cells.is_empty() && self.cells.iter().all(GrayTile::is_valid)
+    }
 }
 
 /// One dynamic parameter: random jitter plus a controller with a floor.
@@ -56,23 +205,58 @@ pub struct Dynamic {
     /// Rotation), applied after the global pen curve. Linear by default. Always written to JSON, so
     /// a `tools.setBrush` patch can set it back to linear. Angle Jitter's controls ignore it.
     pub curve: ResponseCurve,
+    /// Further sensors combined with `control` by `combine` (an Off sensor is skipped).
+    #[serde(skip_serializing_if = "no_extra_sensors")]
+    pub sensors: [Sensor; MAX_EXTRA_SENSORS],
+    /// How `control` and `sensors` combine into one 0..1 value.
+    #[serde(skip_serializing_if = "is_default_combine")]
+    pub combine: SensorCombine,
+    /// Settings of this dynamic's drawing-angle sensor(s).
+    #[serde(skip_serializing_if = "DrawingAngle::is_default")]
+    pub drawing_angle: DrawingAngle,
 }
 
 impl Default for Dynamic {
     fn default() -> Self {
-        Self { jitter: 0.0, control: Control::Off, fade_steps: 25, minimum: 0.0, curve: ResponseCurve::LINEAR }
+        Self::controlled(Control::Off)
     }
 }
 
 impl Dynamic {
     pub const fn controlled(control: Control) -> Self {
-        Self { jitter: 0.0, control, fade_steps: 25, minimum: 0.0, curve: ResponseCurve::LINEAR }
+        Self {
+            jitter: 0.0,
+            control,
+            fade_steps: 25,
+            minimum: 0.0,
+            curve: ResponseCurve::LINEAR,
+            sensors: [Sensor::OFF; MAX_EXTRA_SENSORS],
+            combine: SensorCombine::Multiply,
+            drawing_angle: DrawingAngle::DEFAULT,
+        }
     }
     pub const fn jitter(jitter: f32) -> Self {
-        Self { jitter, control: Control::Off, fade_steps: 25, minimum: 0.0, curve: ResponseCurve::LINEAR }
+        Self {
+            jitter,
+            control: Control::Off,
+            fade_steps: 25,
+            minimum: 0.0,
+            curve: ResponseCurve::LINEAR,
+            sensors: [Sensor::OFF; MAX_EXTRA_SENSORS],
+            combine: SensorCombine::Multiply,
+            drawing_angle: DrawingAngle::DEFAULT,
+        }
     }
     pub fn is_active(&self) -> bool {
-        self.jitter > 0.0 || self.control != Control::Off
+        self.jitter > 0.0 || self.control != Control::Off || self.has_sensors()
+    }
+    /// Does any extra sensor read an input?
+    pub fn has_sensors(&self) -> bool {
+        !no_extra_sensors(&self.sensors)
+    }
+    /// Does this dynamic read the drawing angle (primary control or an extra sensor)?
+    pub fn reads_drawing_angle(&self) -> bool {
+        self.control == Control::DrawingAngle || self.sensors.iter().any(|s| s.control == Control::DrawingAngle)
     }
 }
 
@@ -134,6 +318,135 @@ impl TipShape {
     }
 }
 
+/// Outline of a computed tip.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TipGeometry {
+    #[default]
+    Circle,
+    Square,
+}
+
+/// How a computed tip fades from its core to its edge.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MaskType {
+    /// The measured round tip ([`crate::tip_falloff`]): hardness sets the core and shoulder.
+    #[default]
+    Default,
+    /// A linear fade from the fade radius to the rim, shaped by [`GeneratedTip::soft_curve`].
+    Soft,
+    /// A Gaussian fall-off from the fade radius.
+    Gaussian,
+}
+
+/// Extra parameters of a computed ([`TipShape::Round`]) tip beyond size, hardness, angle and
+/// roundness: its outline, mask type, per-axis fade, spikes, density, randomness, anti-aliasing,
+/// precision and auto spacing. All defaults leave the classic round tip exactly as it was, so
+/// presets without this section render unchanged.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct GeneratedTip {
+    pub shape: TipGeometry,
+    pub mask: MaskType,
+    /// Soft mask: output at a 0..1 distance from the rim inward (1 at the fade radius, 0 at the rim).
+    pub soft_curve: ResponseCurve,
+    /// Where the fade begins along the tip's horizontal axis, as a fraction of the radius
+    /// (1 = hard). Used by the Soft and Gaussian masks; the Default mask reads `hardness`.
+    pub fade_x: f32,
+    /// Where the fade begins along the vertical axis. With `lock_fade` it follows `fade_x`.
+    pub fade_y: f32,
+    pub lock_fade: bool,
+    /// Star points (0 or 1 = a plain outline, 2..20 = a star with that many spikes).
+    pub spikes: u32,
+    /// 0..1 fraction of the tip's pixels that paint (1 = all).
+    pub density: f32,
+    /// 0..1 per-pixel randomness of the coverage.
+    pub randomness: f32,
+    /// Anti-alias the tip's edge (off: coverage is 0 or 1, like a pencil).
+    pub antialias: bool,
+    /// 1 (fast, dab sizes snapped to coarse steps) .. 5 (exact).
+    pub precision: u8,
+    /// Pick the precision from the dab size: small dabs exact, large ones coarse.
+    pub auto_precision: bool,
+    /// Spacing grows with the square root of the diameter (`auto_spacing_coeff × √diameter`
+    /// pixels) instead of being a fixed fraction of it.
+    pub auto_spacing: bool,
+    pub auto_spacing_coeff: f32,
+}
+
+impl Default for GeneratedTip {
+    fn default() -> Self {
+        Self {
+            shape: TipGeometry::Circle,
+            mask: MaskType::Default,
+            soft_curve: ResponseCurve::LINEAR,
+            fade_x: 1.0,
+            fade_y: 1.0,
+            lock_fade: true,
+            spikes: 0,
+            density: 1.0,
+            randomness: 0.0,
+            antialias: true,
+            precision: 5,
+            auto_precision: false,
+            auto_spacing: false,
+            auto_spacing_coeff: 0.8,
+        }
+    }
+}
+
+impl GeneratedTip {
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+
+    /// Does rasterising need the generated-tip path (anything but the classic round tip)?
+    pub fn is_custom(&self) -> bool {
+        self.shape != TipGeometry::Circle
+            || self.mask != MaskType::Default
+            || self.spikes >= 2
+            || self.density < 1.0
+            || self.randomness > 0.0
+            || !self.antialias
+    }
+
+    /// The vertical fade (locked to the horizontal one when `lock_fade`).
+    pub fn fade_v(&self) -> f32 {
+        if self.lock_fade { self.fade_x } else { self.fade_y }
+    }
+
+    /// The precision level for a dab of `diameter` pixels (auto: exact below 20 px, coarser
+    /// with every doubling of the size).
+    pub fn precision_for(&self, diameter: f32) -> u8 {
+        if self.auto_precision {
+            let d = if diameter.is_finite() { diameter.max(1.0) } else { 1.0 };
+            (5 - ((d / 20.0).log2().floor().clamp(0.0, 4.0) as u8)).clamp(1, 5)
+        } else {
+            self.precision.clamp(1, 5)
+        }
+    }
+
+    /// A dab diameter snapped to the precision level's step: 1 = 20 %, 2 = 10 %, 3 = 5 %,
+    /// 4 = 2 %, 5 = exact.
+    pub fn snap_diameter(&self, diameter: f32) -> f32 {
+        let step: f32 = match self.precision_for(diameter) {
+            1 => 0.2,
+            2 => 0.1,
+            3 => 0.05,
+            4 => 0.02,
+            _ => return diameter,
+        };
+        if !diameter.is_finite() || diameter <= 0.0 {
+            return diameter;
+        }
+        // Geometric steps: the size moves in `step`-sized relative jumps, never to 0.
+        let k = 1.0 + step;
+        let n = (diameter.ln() / k.ln()).round();
+        k.powf(n).max(0.5)
+    }
+}
+
 /// Shape Dynamics.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -165,15 +478,38 @@ pub struct Scattering {
     pub scatter: Dynamic,
     /// Scatter radially instead of only perpendicular to the stroke.
     pub both_axes: bool,
+    /// Separate amounts along and across the stroke (`along`, `across`) instead of `scatter` +
+    /// `both_axes`. The control still scales both.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub separate_axes: bool,
+    /// Scatter amount along the direction of travel (1.0 = one radius), with `separate_axes`.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub along: f32,
+    /// Scatter amount across the direction of travel, with `separate_axes`.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub across: f32,
     /// Dabs per spacing step (1..16).
     pub count: u32,
     /// Count jitter / control (reduces the count towards 1).
     pub count_jitter: Dynamic,
 }
 
+fn is_zero(v: &f32) -> bool {
+    *v == 0.0
+}
+
 impl Default for Scattering {
     fn default() -> Self {
-        Self { enabled: false, scatter: Dynamic::default(), both_axes: false, count: 1, count_jitter: Dynamic::default() }
+        Self {
+            enabled: false,
+            scatter: Dynamic::default(),
+            both_axes: false,
+            separate_axes: false,
+            along: 0.0,
+            across: 0.0,
+            count: 1,
+            count_jitter: Dynamic::default(),
+        }
     }
 }
 
@@ -458,11 +794,44 @@ pub struct Smoothing {
     pub catch_up_on_end: bool,
     /// Divide the string length by the view zoom (the command's `zoom` param).
     pub adjust_for_zoom: bool,
+    /// Smooth the pen pressure along with the position (the same amount), so a shaky pressure
+    /// curve does not bead the stroke.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub smooth_pressure: bool,
+    /// Stabilizer: average the last N input points (N between `samples_slow` at rest and
+    /// `samples_fast` at full speed) instead of the exponential or pulled-string smoothing.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub stabilizer: bool,
+    /// Samples averaged while the pointer moves slowly.
+    pub samples_slow: u32,
+    /// Samples averaged while the pointer moves fast ([`crate::dynamics::VELOCITY_FULL_PX_PER_MS`]).
+    pub samples_fast: u32,
+    /// Stabilizer dead zone: the brush does not move while the pointer stays within this many
+    /// screen pixels of it.
+    pub delay: f32,
+    /// Stabilizer: finish the stroke at the last pointer position (draw the remaining line).
+    pub finish_line: bool,
+    /// Stabilizer: average pressure, tilt and wheel over the same window as the position.
+    pub stabilize_sensors: bool,
 }
 
 impl Default for Smoothing {
     fn default() -> Self {
-        Self { enabled: true, amount: 0.0, pulled_string: false, catch_up: true, catch_up_on_end: true, adjust_for_zoom: true }
+        Self {
+            enabled: true,
+            amount: 0.0,
+            pulled_string: false,
+            catch_up: true,
+            catch_up_on_end: true,
+            adjust_for_zoom: true,
+            smooth_pressure: false,
+            stabilizer: false,
+            samples_slow: 20,
+            samples_fast: 5,
+            delay: 0.0,
+            finish_line: true,
+            stabilize_sensors: false,
+        }
     }
 }
 
@@ -479,6 +848,19 @@ pub struct BrushSettings {
     /// Photoshop's Spacing checkbox. Off: the pointer's speed sets the spacing (one dab every
     /// [`crate::dynamics::SPEED_SPACING_MS`] of stroke time; without timestamps, by distance).
     pub spacing_enabled: bool,
+    /// Sensor-driven spacing: the control (and its curve) scales `spacing` between
+    /// `spacing_dynamic.minimum` and 1; jitter varies it per step.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub spacing_dynamic: Dynamic,
+    /// Spacing from the diameter alone (true, the classic behaviour). Off: an elliptical tip's
+    /// spacing shrinks with its roundness, so a flat tip keeps its dabs as close across its short
+    /// axis as a round one does.
+    #[serde(skip_serializing_if = "is_true")]
+    pub isotropic_spacing: bool,
+    /// Extra parameters of the computed tip (outline, mask type, fade per axis, spikes, density,
+    /// randomness, precision, auto spacing). The default is the classic round tip.
+    #[serde(skip_serializing_if = "GeneratedTip::is_default")]
+    pub generated: GeneratedTip,
     /// Maximum coverage for the whole stroke.
     pub opacity: f32,
     /// Per-dab coverage.
@@ -500,6 +882,11 @@ pub struct BrushSettings {
     pub background: [f32; 4],
     /// Erase instead of paint.
     pub erase: bool,
+    /// With `erase`: restore instead of remove. Erasing only lowers alpha and leaves the colour
+    /// in place, so an anti-erase stroke brings those pixels back by raising alpha again.
+    /// Nothing happens where nothing was ever painted.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub anti_erase: bool,
     /// Brush blend mode (Normal, Multiply, Dissolve…).
     pub mode: BlendMode,
     // --- Brush Tip Shape ---
@@ -516,6 +903,10 @@ pub struct BrushSettings {
     /// ([`crate::grid_square`]), whatever its angle or roundness. The Eraser's Block mode.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub square: bool,
+    /// Animated brush (an imported `.gih` image hose): the cell each dab paints with is picked
+    /// per dab from these instead of `tip`, which keeps the first cell for previews.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hose: Option<ImageHose>,
     // --- dynamics sections ---
     pub shape_dynamics: ShapeDynamics,
     pub scattering: Scattering,
@@ -532,6 +923,9 @@ pub struct BrushSettings {
     pub build_up: bool,
     /// Build-up rate in dabs per second.
     pub build_up_rate: f32,
+    /// Airbrush "motion only": the timed dabs are deposited only while the pointer moves, so a
+    /// held pointer does not build up.
+    pub build_up_motion_only: bool,
     pub smoothing: Smoothing,
     /// Keep the current texture (pattern + scale) when switching to another textured preset.
     pub protect_texture: bool,
@@ -550,6 +944,9 @@ impl Default for BrushSettings {
             hardness: 1.0,
             spacing: 0.1,
             spacing_enabled: true,
+            spacing_dynamic: Dynamic::controlled(Control::Off),
+            isotropic_spacing: true,
+            generated: GeneratedTip::default(),
             opacity: 1.0,
             flow: 1.0,
             pressure_size: true,
@@ -558,6 +955,7 @@ impl Default for BrushSettings {
             color_cmyk: None,
             background: [1.0, 1.0, 1.0, 1.0],
             erase: false,
+            anti_erase: false,
             mode: BlendMode::Normal,
             tip: TipShape::Round,
             angle: 0.0,
@@ -566,6 +964,7 @@ impl Default for BrushSettings {
             flip_y: false,
             aliased: false,
             square: false,
+            hose: None,
             shape_dynamics: ShapeDynamics::default(),
             scattering: Scattering::default(),
             texture: Texture::default(),
@@ -577,6 +976,7 @@ impl Default for BrushSettings {
             wet_edges: false,
             build_up: false,
             build_up_rate: 20.0,
+            build_up_motion_only: false,
             smoothing: Smoothing::default(),
             protect_texture: false,
             locks: SectionLocks::default(),
@@ -607,11 +1007,15 @@ impl BrushSettings {
             if size.is_finite() { size.clamp(0.5, MAX_BRUSH_SIZE) } else { 0.5 }
         };
         // NaN scatters nothing (as before: it never passed the `> 0` check); infinity is the maximum.
-        let safe_scatter = |amount: f32| if amount.is_nan() { 0.0 } else { amount.clamp(0.0, MAX_SCATTER) };
+        let safe_scatter = |amount: f32| {
+            if amount.is_nan() { 0.0 } else { amount.clamp(0.0, MAX_SCATTER) }
+        };
         let mut brush = self.clone();
         brush.size = safe_size(brush.size);
         brush.dual_brush.size = safe_size(brush.dual_brush.size);
         brush.scattering.scatter.jitter = safe_scatter(brush.scattering.scatter.jitter);
+        brush.scattering.along = safe_scatter(brush.scattering.along);
+        brush.scattering.across = safe_scatter(brush.scattering.across);
         brush.dual_brush.scatter = safe_scatter(brush.dual_brush.scatter);
         brush
     }
@@ -653,6 +1057,7 @@ impl BrushSettings {
         if l.build_up {
             b.build_up = current.build_up;
             b.build_up_rate = current.build_up_rate;
+            b.build_up_motion_only = current.build_up_motion_only;
         }
         if l.protect_texture {
             b.protect_texture = current.protect_texture;

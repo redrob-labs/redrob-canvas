@@ -4,9 +4,9 @@ use redrob_photo_color::PixelFormat;
 use redrob_photo_geom::Rect;
 use redrob_photo_raster::{from_rgba, to_rgba};
 
-use crate::Ctx;
 use crate::fxutil::subtractive;
 use crate::image::Image;
+use crate::{Ctx, DesaturateMode};
 
 fn fmt(ctx: &Ctx) -> PixelFormat {
     PixelFormat::new(ctx.mode, redrob_photo_color::SampleType::F32, ctx.alpha)
@@ -47,14 +47,37 @@ pub(crate) fn per_pixel(src: &Image, out: Rect, ctx: &Ctx, f: impl Fn(f32) -> f3
     res
 }
 
-pub(crate) fn desaturate(src: &Image, out: Rect, ctx: &Ctx) -> Vec<f32> {
+/// Desaturate: every pixel becomes the grey of its lightness, measured by `mode`. The measures
+/// differ most on saturated colours: pure blue is 7 % by luminance, 11 % by luma, 50 % by
+/// lightness, 33 % by average and 100 % by value.
+pub(crate) fn desaturate(src: &Image, out: Rect, ctx: &Ctx, mode: DesaturateMode) -> Vec<f32> {
     let n = src.ch;
+    let f = fmt(ctx);
     let mut res = src.crop(out);
     for px in res.chunks_exact_mut(n) {
-        let g = luma(ctx, px);
-        set_gray(ctx, px, g);
+        let c = to_rgba(&f, px);
+        let (r, g, b) = (c[0], c[1], c[2]);
+        let grey = match mode {
+            DesaturateMode::Luma => 0.299 * r + 0.587 * g + 0.114 * b,
+            DesaturateMode::Luminance => {
+                let y = 0.2126 * srgb_to_linear(r) + 0.7152 * srgb_to_linear(g) + 0.0722 * srgb_to_linear(b);
+                linear_to_srgb(y)
+            }
+            DesaturateMode::Lightness => (r.max(g).max(b) + r.min(g).min(b)) * 0.5,
+            DesaturateMode::Average => (r + g + b) / 3.0,
+            DesaturateMode::Value => r.max(g).max(b),
+        };
+        set_gray(ctx, px, grey);
     }
     res
+}
+
+fn srgb_to_linear(v: f32) -> f32 {
+    if v <= 0.04045 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }
+}
+
+fn linear_to_srgb(v: f32) -> f32 {
+    if v <= 0.003_130_8 { v * 12.92 } else { 1.055 * v.powf(1.0 / 2.4) - 0.055 }
 }
 
 /// Mosaic cells anchored at the bounds' origin; each cell becomes its

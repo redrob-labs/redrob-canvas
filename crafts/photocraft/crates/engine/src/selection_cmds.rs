@@ -119,13 +119,36 @@ pub(crate) fn sample_rgba8(s: &Session, all_layers: bool) -> Result<(Rect, Vec<[
     }
 }
 
+/// The region-growing options the Magic Wand, Paint Bucket and Magic Eraser share:
+/// `diagonal` (grow through corners) and `criterion` (which channel is compared).
+pub(crate) fn wand_options(p: &Value, cmd: &str) -> Result<sel::WandOptions> {
+    let criterion = match p.get("criterion").and_then(Value::as_str).unwrap_or("composite") {
+        "composite" => sel::WandCriterion::Composite,
+        "red" => sel::WandCriterion::Red,
+        "green" => sel::WandCriterion::Green,
+        "blue" => sel::WandCriterion::Blue,
+        "hue" => sel::WandCriterion::Hue,
+        "saturation" => sel::WandCriterion::Saturation,
+        "value" => sel::WandCriterion::Value,
+        "alpha" => sel::WandCriterion::Alpha,
+        other => {
+            return Err(EngineError::BadParams {
+                cmd: cmd.into(),
+                msg: format!("unknown criterion `{other}` (want composite|red|green|blue|hue|saturation|value|alpha)"),
+            });
+        }
+    };
+    Ok(sel::WandOptions { diagonal: b(p, "diagonal", false), criterion })
+}
+
 fn magic_wand(s: &mut Session, p: &Value) -> Result<Value> {
     let (x, y) = (f(p, "x", 0.0).floor() as i32, f(p, "y", 0.0).floor() as i32);
     let (area, img) = match shown_gray(s) {
         Some(plane) => plane,
         None => sample_rgba8(s, b(p, "sampleAllLayers", false))?,
     };
-    let region = sel::wand_region(&img, area, (x, y), f(p, "tolerance", 32.0), b(p, "contiguous", true), b(p, "antiAlias", true));
+    let opts = wand_options(p, "select.magicWand")?;
+    let region = sel::wand_region_with(&img, area, (x, y), f(p, "tolerance", 32.0), b(p, "contiguous", true), b(p, "antiAlias", true), opts);
     drop(img);
     let m = mode(p);
     let selected = s.edit("Magic Wand", |doc, _| {
@@ -659,7 +682,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "select.magicWand",
             "Magic Wand",
             [],
-            r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"mode":"replace|add|subtract|intersect"="replace"} (samples the visible alpha, Quick Mask, or layer mask when that is the picture)"##,
+            r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","mode":"replace|add|subtract|intersect"="replace"} (samples the visible alpha, Quick Mask, or layer mask when that is the picture)"##,
             has_doc,
             magic_wand
         ),

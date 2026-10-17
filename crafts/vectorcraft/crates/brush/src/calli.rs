@@ -144,25 +144,129 @@ fn pressured(c: &Calligraphic, base: [f64; 3], p: f64) -> [f64; 3] {
     [angle, round.clamp(1.0, 100.0), size.max(0.05)]
 }
 
+/// How fast each part of `bp` was drawn, as a function of the fraction of its length: each
+/// segment's length against the mean segment length (1 = average speed), read from how far apart
+/// the anchors were put down. `None` for a path of one segment (nothing to compare).
+fn speed_profile(bp: &BezPath) -> Option<impl Fn(f64) -> f64> {
+    use redrob_vector_geom::kurbo::ParamCurveArclen;
+    let lens: Vec<f64> = bp.segments().map(|s| s.arclen(0.1)).collect();
+    if lens.len() < 2 {
+        return None;
+    }
+    let total: f64 = lens.iter().sum();
+    let mean = total / lens.len() as f64;
+    if !(total > 0.0 && mean > 0.0) {
+        return None;
+    }
+    let mut cum = vec![0.0];
+    for l in &lens {
+        cum.push(cum.last().copied().unwrap_or(0.0) + l);
+    }
+    Some(move |f: f64| {
+        let at = f.clamp(0.0, 1.0) * total;
+        let i = cum.iter().rposition(|c| *c <= at).unwrap_or(0).min(lens.len() - 1);
+        (lens[i] / mean).clamp(0.1, 10.0)
+    })
+}
+
+/// Smooth hash noise in −1..1 along a stroke: the value at `f` (0..1) of a wave `cycles` long.
+fn smooth_noise(seed: u64, salt: u64, f: f64, cycles: f64) -> f64 {
+    let x = f * cycles;
+    let (i, u) = (x.floor(), x - x.floor());
+    let v = |k: f64| {
+        let mut r = Rng::new(seed ^ salt.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ (k as i64 as u64).wrapping_mul(0xBF58_476D_1CE4_E5B9));
+        r.range(-1.0, 1.0)
+    };
+    let s = u * u * (3.0 - 2.0 * u);
+    v(i) * (1.0 - s) + v(i + 1.0) * s
+}
+
+/// Smooth a polyline's points by averaging neighbours `passes` times (Mass: the pen's inertia).
+fn smooth_points(pts: &mut [Point], passes: usize, closed: bool) {
+    for _ in 0..passes {
+        let src = pts.to_vec();
+        let n = src.len();
+        if n < 3 {
+            return;
+        }
+        for (i, p) in pts.iter_mut().enumerate() {
+            let (prev, next) = if closed {
+                (src[(i + n - 1) % n], src[(i + 1) % n])
+            } else if i == 0 || i + 1 == n {
+                continue;
+            } else {
+                (src[i - 1], src[i + 1])
+            };
+            *p = Point::new((prev.x + 2.0 * p.x + next.x) / 4.0, (prev.y + 2.0 * p.y + next.y) / 4.0);
+        }
+    }
+}
+
+/// Wiggle: the track's vertices wander off the path by up to `amp`, slowly along its length.
+fn wiggle_track(t: &mut Track, seed: u64, amp: f64) {
+    let len = t.len().max(1e-9);
+    let n = t.verts.len();
+    for (v, c) in t.verts.iter_mut().zip(&t.cum) {
+        let f = c / len;
+        *v += Vec2::new(smooth_noise(seed, 0x51, f, 6.0), smooth_noise(seed, 0x52, f, 6.0)) * amp;
+    }
+    if t.closed && n > 1 {
+        t.verts[n - 1] = t.verts[0];
+    }
+}
+
 pub(crate) fn calligraphic(c: &Calligraphic, bp: &BezPath, weight: f64, stroke: &StrokeLayer, name: &str) -> Vec<Node> {
     let mut rng = Rng::new(seed_of(bp, name));
     let base = randomized(c, &mut rng);
-    let subs: Vec<SubPath> = if c.uses_pressure() {
+    let seed = seed_of(bp, name);
+    let speed = if c.thinning != 0.0 { speed_profile(bp) } else { None };
+    let thinning = (c.thinning / 100.0).clamp(-1.0, 1.0);
+    let tremor = (c.tremor / 100.0).clamp(0.0, 1.0);
+    let wiggle = (c.wiggle / 100.0).clamp(0.0, 1.0);
+    let wiggled = |mut ts: Vec<Track>| {
+        if wiggle > 0.0 {
+            for t in &mut ts {
+                wiggle_track(t, seed, wiggle * base[2] * weight);
+            }
+        }
+        ts
+    };
+    let mut subs: Vec<SubPath> = if c.varies_along() {
         let pressure = stroke.pressure.as_ref();
         let nib = |f: f64| {
-            let [angle, round, size] = pressured(c, base, pressure.map_or(PressureProfile::MID, |p| p.at(f)));
+            let [angle, round, mut size] = pressured(c, base, pressure.map_or(PressureProfile::MID, |p| p.at(f)));
+            if let Some(speed) = &speed {
+                // Faster thins (positive thinning): twice the mean speed halves the width at 100 %.
+                let k = 1.0 - thinning * (speed(f) - 1.0).clamp(-1.0, 1.0) * 0.5;
+                size *= k.clamp(0.1, 2.0);
+            }
+            if tremor > 0.0 {
+                size *= (1.0 + tremor * 0.6 * smooth_noise(seed, 0x7e3, f, 40.0)).max(0.05);
+            }
             Nib::new(angle, round / 100.0, size * weight)
         };
         // Flattened for the largest nib the pressure gives.
         let size = pressured(c, base, 0.0)[2].max(pressured(c, base, 1.0)[2]) * weight;
-        tracks(bp, tolerance(size)).iter().flat_map(|t| sweep(t, &nib, Some((t.len() / MAX_STEPS).max(0.25)))).collect()
+        wiggled(tracks(bp, tolerance(size))).iter().flat_map(|t| sweep(t, &nib, Some((t.len() / MAX_STEPS).max(0.25)))).collect()
     } else {
         let [angle, round, size] = base;
         let nib = Nib::new(angle, round / 100.0, size * weight);
-        tracks(bp, tolerance(size * weight)).iter().flat_map(|t| sweep(t, &|_| nib, None)).collect()
+        wiggled(tracks(bp, tolerance(size * weight))).iter().flat_map(|t| sweep(t, &|_| nib, None)).collect()
     };
     if subs.is_empty() {
         return vec![];
+    }
+    if c.mass > 0.0 {
+        // Inertia: the edges of the sweep are smoothed, more with more mass.
+        let passes = (c.mass.clamp(0.0, 100.0) / 100.0 * 12.0).round() as usize;
+        for sp in &mut subs {
+            let closed = sp.closed;
+            let mut pts: Vec<Point> = sp.anchors.iter().map(|a| a.p).collect();
+            smooth_points(&mut pts, passes, closed);
+            for (a, p) in sp.anchors.iter_mut().zip(pts) {
+                (a.p, a.h_in, a.h_out) = (p, p, p);
+            }
+        }
     }
     vec![filled(PathData::new(subs), &stroke.paint)]
 }

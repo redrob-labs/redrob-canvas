@@ -859,6 +859,9 @@ fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
     if id == "select.isolateLayers" {
         return Some(app.session.active().is_some_and(|d| !d.isolated_layers.is_empty()));
     }
+    if id == "paint.wrapAround" {
+        return Some(app.session.active().is_some_and(|d| d.wrap_around));
+    }
     if id == "view.proofColors" || id == "view.gamutWarning" {
         let Some(d) = app.session.active() else { return Some(false) };
         let pv = app.session.color.proof(d.doc.id);

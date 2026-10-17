@@ -475,7 +475,13 @@ pub fn transform_section(app: &mut VectorcraftApp, ui: &mut Ui) {
         match &**live {
             redrob_vector_doc::LiveShape::Rectangle { .. } => corner_radius_row(app, ui, &n, "radius"),
             redrob_vector_doc::LiveShape::Polygon { .. } => super::transform::polygon_rows(app, ui, &n, live, "props-polygon"),
-            redrob_vector_doc::LiveShape::Ellipse { pie, .. } => super::transform::pie_rows(app, ui, *pie, "props-pie"),
+            redrob_vector_doc::LiveShape::Ellipse { pie, arc, .. } => super::transform::pie_rows(app, ui, (*pie, *arc), "props-pie"),
+            redrob_vector_doc::LiveShape::Star { .. } => {
+                ui.horizontal_wrapped(|ui| super::transform::star_fields(app, ui, live, "props-star"));
+            }
+            redrob_vector_doc::LiveShape::Spiral { .. } => {
+                ui.horizontal_wrapped(|ui| super::transform::spiral_fields(app, ui, live, "props-spiral"));
+            }
             _ => {}
         }
     }

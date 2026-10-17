@@ -2803,3 +2803,256 @@ curves	Smooth	平滑
 	set name	组名称
 	{set} (modified)	{set}（已修改）
 	Random	随机
+	Desaturate…	去色…
+	Anti-erase	反擦除
+	Restore erased pixels instead of erasing	恢复已擦除的像素而不是擦除
+	Luma	亮度 (Luma)
+	Value	明度
+	Grow through corners as well as edges	同时经由边和角扩展
+	By:	依据:
+	Composite	复合
+	Alpha	Alpha
+	Square Gradient	方形渐变
+	Conical Gradient (symmetric)	圆锥渐变 (对称)
+	Spiral Gradient (clockwise)	螺旋渐变 (顺时针)
+	Spiral Gradient (counter-clockwise)	螺旋渐变 (逆时针)
+	Line Art	线稿
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	填充线条围成的区域，闭合小缝隙并略微伸到线条下方
+	Ink below	墨线阈值
+	Close gaps	闭合缝隙
+	Under ink	伸入墨线
+	Angle Offset:	角度偏移:
+	Read the direction of the first stroke segment for the whole stroke	整个笔画都使用第一段的方向
+	Fan Corners	扇形拐角
+	Turn sharper than this is fanned	比此更急的转向将被展开
+	Sensor:	传感器:
+	Combine:	组合:
+	Auto Spacing	自动间距
+	Spacing grows with the square root of the size	间距随尺寸的平方根增大
+	Auto spacing coefficient	自动间距系数
+	Minimum Spacing	最小间距
+	Isotropic Spacing	各向同性间距
+	Space dabs by the diameter alone, not by the roundness	仅按直径而非圆度决定间距
+	Mask:	蒙版:
+	Fade X	渐隐 X
+	Fade Y	渐隐 Y
+	Lock Fade	锁定渐隐
+	The vertical fade follows the horizontal one	垂直渐隐跟随水平渐隐
+	Soft curve:	柔化曲线:
+	Spikes	尖刺
+	Randomness	随机性
+	Anti-aliasing	抗锯齿
+	Auto Precision	自动精度
+	Precision	精度
+	Separate Axes	分离轴
+	Scatter along and across the stroke by different amounts	沿笔画方向与横向使用不同的散布量
+	Along	沿向
+	Across	横向
+	Stabilizer	稳定器
+	Average the last input points; the sample count follows the speed	平均最近的输入点，采样数随速度变化
+	Samples (slow)	采样数 (慢)
+	Samples (fast)	采样数 (快)
+	Delay	延迟
+	Finish Line	补完线条
+	Stabilize Sensors	稳定传感器
+	Smooth Pressure	平滑压力
+	Smooth the pen pressure along with the position	随位置一起平滑笔压
+	Drawing Angle	绘制角度
+	Speed	速度
+	Circle	圆形
+	Erase with the current brush (Clear mode)	用当前画笔擦除 (清除模式)
+	Blend:	混合:
+	How much of the sample goes into the current colour	采样颜色混入当前颜色的比例
+	Close gap	闭合间隙
+	Boundary colour	边界颜色
+	Grow the filled area outward	向外扩展填充区域
+	Gaps in the boundary up to this are closed	闭合边界中不超过此宽度的间隙
+	Fill until this colour instead of over similar colours	填充直到此颜色，而不是填充相似颜色
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	拖动绘制画笔直线；Shift 以 15° 为步长吸附角度
+	Free select: clicks and drags build one editable outline	自由选择：单击和拖动构成一个可编辑的轮廓
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	单击添加点，拖动自由绘制 · 拖动点可移动 · {del} 删除最后一段 · {key} 闭合 · Esc 取消
+	Click to place points, drag to draw freehand; the outline stays editable until closed	单击放置点，拖动自由绘制；闭合前轮廓始终可编辑
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	方向:
+	Corrective	校正
+	Clipping:	剪裁:
+	Adjust	调整
+	Clip	剪裁
+	Crop with Aspect	按比例裁剪
+	Guides:	参考线:
+	Center Lines	中心线
+	Golden Sections	黄金分割
+	Diagonals	对角线
+	Lines:	线数:
+	Split View	分割视图
+	No Dynamics Preset	无动态预设
+	Dynamics:	动态:
+	Applied dynamics preset {name} ({note})	已应用动态预设 {name} ({note})
+	Applied dynamics preset {name}	已应用动态预设 {name}
+	Save the brush's dynamics as a new preset	将画笔动态保存为新预设
+	Delete this dynamics preset	删除此动态预设
+	Velocity	速度
+	HSV Hue	HSV 色相
+	HSV Saturation	HSV 饱和度
+	HSV Value	HSV 明度
+	Edge…	边缘…
+	Algorithm	算法
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	差分
+	Laplace	拉普拉斯
+	Color Temperature…	色温…
+	Color Temperature	色温
+	Original Temperature	原始色温
+	Intended Temperature	目标色温
+	Hue-Chroma…	色相-色度…
+	Hue-Chroma	色相-色度
+	Chroma	色度
+	Corner Threshold	拐角阈值
+	Corner Surround	拐角范围
+	Min Area	最小面积
+	Airbrush paints only while moving (motion only)	喷枪仅在移动时绘制（仅运动）
+	Airbrush motion only	喷枪仅运动
+	Configure Grid…	配置网格…
+	Configure Grid	配置网格
+	Spacing X	间距 X
+	Spacing Y	间距 Y
+	Offset X	偏移 X
+	Offset Y	偏移 Y
+	Active Path	活动路径
+	Equidistance	等距
+	Wavelet Decompose…	小波分解…
+	Wavelet Decompose	小波分解
+	Scales	尺度
+	Import Swatches from Image	从图像导入色板
+	Export Swatches as CSS…	将色板导出为 CSS…
+	Cage Transform	笼形变换
+	Antialias	抗锯齿
+	Artistic	艺术效果
+	Blinds…	百叶窗…
+	CIE lch Noise…	CIE LCh 噪点…
+	Cubism…	立体派…
+	Decor	装饰
+	Difference of Gaussians…	高斯差分…
+	Distance Map…	距离图…
+	Engrave…	雕刻…
+	Filmstrip…	胶片条…
+	Fuzzy Border…	模糊边框…
+	Gradient Flare…	渐变光晕…
+	HSV Noise…	HSV 噪点…
+	Hurl…	随机投掷…
+	Image Gradient…	图像梯度…
+	Impressionist…	印象派…
+	Kaleidoscope…	万花筒…
+	Light and Shadow	光与影
+	Long Shadow…	长阴影…
+	Mean Curvature Blur…	平均曲率模糊…
+	NL Filter…	NL 滤镜…
+	Normal Map…	法线贴图…
+	Operation Graph…	运算图…
+	Page Curl…	卷页…
+	Perspective Shadow…	透视阴影…
+	Pick…	随机拾取…
+	SLIC…	SLIC…
+	Shift…	错位…
+	Slur…	随机融化…
+	Sparkle…	闪光…
+	Supernova…	超新星…
+	Symmetric Nearest Neighbor…	对称最近邻…
+	Tileable Blur…	可平铺模糊…
+	Value Propagate…	值传播…
+	Van Gogh (LIC)…	梵高 (LIC)…
+	Video Degradation…	视频劣化…
+	Waterpixels…	水像素…
+	Weave…	编织…
+	Xach-Effect…	Xach 效果…
+	Animation	动画
+	Bayer Matrix…	拜耳矩阵…
+	Blend…	混合…
+	Burn-In…	烧入…
+	CML Explorer…	CML 探索器…
+	Cell Noise…	单元噪声…
+	Checkerboard…	棋盘格…
+	Circuit…	电路…
+	Coffee Stain…	咖啡渍…
+	Diffraction Patterns…	衍射图案…
+	Fractal Explorer…	分形探索器…
+	Fractal Trace…	分形跟踪…
+	Fractals	分形
+	Grid…	网格…
+	IFS Fractal…	IFS 分形…
+	Illusion…	幻觉…
+	Jigsaw…	拼图…
+	Lava…	熔岩…
+	Line Nova…	线性新星…
+	Linear Sinusoid…	线性正弦…
+	Little Planet…	小行星…
+	Map	映射
+	Map Object…	映射到对象…
+	Maze…	迷宫…
+	Optimize (for GIF)	优化 (用于 GIF)
+	Qbist…	Qbist…
+	Recursive Transform…	递归变换…
+	Rippling…	涟漪…
+	Semi-Flatten	半平整化
+	Simplex Noise…	单形噪声…
+	Sinus…	正弦…
+	Slide…	幻灯片…
+	Small Tiles…	小图块…
+	Sphere Designer…	球体设计器…
+	Spinning Globe…	旋转地球…
+	Spiral…	螺旋…
+	Spirograph…	万花尺…
+	Stencil Carve…	模板雕刻…
+	Tile Seamless	无缝拼贴
+	Unoptimize	取消优化
+	Waves…	波浪…
+	Binary AND	二元 AND
+	Binary OR	二元 OR
+	Binary NAND	二元 NAND
+	Binary NOR	二元 NOR
+	Binary XNOR	二元 XNOR
+	Binary Implication	二元蕴含
+	Binary Not Implication	二元非蕴含
+	Binary Converse	二元逆蕴含
+	Binary Not Converse	二元非逆蕴含
+	Modulo	取模
+	Modulo Continuous	取模（连续）
+	Divisive Modulo	除法取模
+	Divisive Modulo Continuous	除法取模（连续）
+	Modulo Shift	取模偏移
+	Modulo Shift Continuous	取模偏移（连续）
+	Freeze	冻结
+	Heat	加热
+	Glow-Heat	发光-加热
+	Heat-Glow	加热-发光
+	Reflect-Freeze	反射-冻结
+	Freeze-Reflect	冻结-反射
+	Heat-Glow and Freeze-Reflect Hybrid	加热-发光与冻结-反射混合
+	Wrap Around Mode	环绕模式
+	Rotational Multibrush	旋转多重画笔
+	Mirror copies	镜像副本
+	All Tags	所有标签
+	Tags	标签
+	Assistant Tool	辅助线工具
+	Assistant	辅助线
+	Ruler	直尺
+	Parallel Ruler	平行直尺
+	Vanishing Point	消失点
+	Perspective Grid	透视网格
+	Snap to Assistants	吸附到辅助线
+	Show Assistants	显示辅助线
+	Delete All	全部删除
+	Mirror painting across the vertical axis	沿垂直轴镜像绘画
+	Choose a gradient file (.grd or .ggr).	请选择渐变文件（.grd 或 .ggr）。
+	Save Group to Document	将组保存到文档
+	Load Document Palettes	载入文档调色板
+	Cumulative undo	累积撤销
+	Cumulative undo interval	累积撤销间隔
+	Cumulative undo duration	累积撤销时长
+	Popup palette	弹出调色板
+	Smear	涂抹
+	Smudge Radius	涂抹半径

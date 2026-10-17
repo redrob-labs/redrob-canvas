@@ -63,6 +63,34 @@ pub fn points_json(pts: &[Point]) -> Value {
     Value::Array(pts.iter().map(|p| json!([p.x, p.y])).collect())
 }
 
+/// The shapes the Pen and the Pencil give a stroke along its path (`path.freehand` and
+/// `path.strokeShape` `shape`): none, a triangle wide at the start or at the end, an ellipse, the
+/// copied path's outline.
+pub const STROKE_SHAPES: [&str; 5] = ["none", "triangleIn", "triangleOut", "ellipse", "fromClipboard"];
+
+/// A subpath as `path.setAnchors` / `path.create` take it: `{anchors: [{x, y, in?, out?,
+/// smooth?}], closed}`.
+pub fn subpath_json(sp: &SubPath) -> Value {
+    let anchors: Vec<Value> = sp
+        .anchors
+        .iter()
+        .map(|a| {
+            let mut v = json!({"x": a.p.x, "y": a.p.y});
+            if a.has_in() {
+                v["in"] = json!([a.h_in.x, a.h_in.y]);
+            }
+            if a.has_out() {
+                v["out"] = json!([a.h_out.x, a.h_out.y]);
+            }
+            if a.kind == AnchorKind::Smooth {
+                v["smooth"] = json!(true);
+            }
+            v
+        })
+        .collect();
+    json!({"anchors": anchors, "closed": sp.closed})
+}
+
 /// A polyline preview path.
 pub fn polyline(pts: &[Point]) -> BezPath {
     let mut bp = BezPath::new();

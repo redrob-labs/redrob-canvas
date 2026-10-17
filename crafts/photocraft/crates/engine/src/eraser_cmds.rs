@@ -96,8 +96,9 @@ fn magic_eraser(s: &mut Session, p: &Value) -> Result<Value> {
             return Ok(damage(s, Rect::EMPTY, false));
         }
     }
+    let opts = crate::selection_cmds::wand_options(p, "paint.magicEraser")?;
     let (area, img) = crate::selection_cmds::sample_rgba8(s, sample_all)?;
-    let region = sel::wand_region(&img, area, (x, y), tolerance, contiguous, anti_alias);
+    let region = sel::wand_region_with(&img, area, (x, y), tolerance, contiguous, anti_alias, opts);
     drop(img);
     let Some(region) = region else { return Ok(damage(s, Rect::EMPTY, false)) };
     let bg = s.tools.background;
@@ -163,7 +164,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Magic Eraser",
             menu: &[],
             shortcut: None,
-            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"antiAlias":bool=true,"contiguous":bool=true,"sampleAllLayers":bool=false,"opacity":1..100=100}"##,
+            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"antiAlias":bool=true,"contiguous":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","opacity":1..100=100}"##,
             enabled: has_pixel_layer,
             run: magic_eraser,
             journal: true,

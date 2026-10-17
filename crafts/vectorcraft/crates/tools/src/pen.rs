@@ -21,17 +21,24 @@
 //! the other art and of the path being drawn, into line with them, onto the construction guides
 //! through the last anchor; with Shift held it slides along its 45° step into line. Hovering shows
 //! where the next one would go.
+//!
+//! Modes (the control bar's Mode, option `mode`): regular Bézier as above; Spiro and BSpline, where
+//! every click adds a point and the whole path is rebuilt as a spline through (Spiro: an
+//! approximation of a clothoid spline) or along (BSpline: the points are the control polygon) the
+//! points placed, a drag moving the point just placed and a click on the first point closing the
+//! curve; and paraxial, where every segment is horizontal or vertical, perpendicular to the one
+//! before (Shift swaps the axis). Shape (option `shape`) gives the finished path a width profile
+//! along the stroke (`path.strokeShape`), like the Pencil's.
 
 use redrob_vector_doc::{NodeId, NodeKind};
-use redrob_vector_geom::{BezPath, Point};
-use serde_json::json;
+use redrob_vector_geom::{BezPath, Point, SplineMode, SubPath};
+use serde_json::{Value, json};
 
 use crate::direct::hit_handle;
-use crate::draw2::{AnchorTool, editable_paths};
+use crate::draw2::{AnchorTool, STROKE_SHAPES, editable_paths, polyline, subpath_json};
 use crate::guides::{DrawSnap, Leave};
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
 
-#[derive(Default)]
 pub struct PenTool {
     /// A path is being drawn...
     drawing: bool,
@@ -56,6 +63,34 @@ pub struct PenTool {
     convert: Option<AnchorTool>,
     /// Smart Guides for the anchors placed (and the pointer hovering).
     snap: DrawSnap,
+    /// How clicks become a path: Bézier segments, a spiro-like or B-spline through the points, or
+    /// axis-aligned segments.
+    mode: SplineMode,
+    /// The points placed so far in a spline mode: the spline is rebuilt from them on every click.
+    ctrl: Vec<Point>,
+    /// The width profile the finished path gets (one of [`STROKE_SHAPES`]; "none" leaves it).
+    shape: &'static str,
+}
+
+impl Default for PenTool {
+    fn default() -> Self {
+        Self {
+            drawing: false,
+            path: None,
+            drag: None,
+            hover: None,
+            in_h: Point::ZERO,
+            last: Point::ZERO,
+            pressed: Point::ZERO,
+            dragged: false,
+            handle: None,
+            convert: None,
+            snap: DrawSnap::default(),
+            mode: SplineMode::Bezier,
+            ctrl: vec![],
+            shape: "none",
+        }
+    }
 }
 
 /// Screen pixels the pointer must move after a press before it shapes handles instead of clicking.
@@ -164,6 +199,28 @@ impl Tool for PenTool {
     fn busy(&self) -> bool {
         self.drag.is_some() || self.handle.is_some() || self.convert.is_some()
     }
+    fn options(&self) -> Value {
+        json!({"mode": self.mode.id(), "shape": self.shape})
+    }
+    fn set_option(&mut self, key: &str, v: &Value) {
+        match key {
+            "mode" => {
+                if let Some(m) = v.as_str().and_then(SplineMode::parse) {
+                    if m != self.mode {
+                        // The points of the path drawn so far go on in the new mode.
+                        self.ctrl.clear();
+                    }
+                    self.mode = m;
+                }
+            }
+            "shape" => {
+                if let Some(sh) = v.as_str().and_then(|v| STROKE_SHAPES.iter().copied().find(|s| *s == v)) {
+                    self.shape = sh;
+                }
+            }
+            _ => {}
+        }
+    }
     fn pointer(&mut self, cx: &ToolContext, ev: &PointerEvent) -> Vec<Action> {
         let tol = cx.tol(5.0).max(cx.point_tol());
         // The path a press began is the selected one by the next event.
@@ -173,6 +230,11 @@ impl Tool for PenTool {
         let active = self.active(cx);
         if self.drawing && active.is_none() && ev.kind == PointerKind::Down {
             self.stop();
+        }
+        if self.mode.is_spline()
+            && let Some(acts) = self.spline_pointer(cx, ev, tol)
+        {
+            return acts;
         }
         // The path being drawn moves its bounds as it grows: only its anchors and segments pull.
         let drawn = active.map(|a| a.0);
@@ -231,6 +293,7 @@ impl Tool for PenTool {
                         let end = if at_first { "first" } else { "last" };
                         return vec![Action::Exec("path.join".into(), json!({"ids": [id.0, other.0], "ends": ["last", end]}))];
                     }
+                    let p = if self.mode == SplineMode::Paraxial { self.paraxial_point(cx, id, p, ev.mods.shift) } else { p };
                     self.drag = Some(Place { at: p, path: Some(id), closing: false });
                     self.in_h = p;
                     return vec![Action::Begin("Pen".into()), Action::Preview("path.appendAnchor".into(), json!({"id": id.0, "x": p.x, "y": p.y}))];
@@ -293,6 +356,16 @@ impl Tool for PenTool {
                     return vec![set_out_handle(id, si, ai, h)];
                 }
                 let Some(Place { at: mut a, path, closing }) = self.drag else { return vec![] };
+                // Paraxial segments are straight: a drag places the anchor, it pulls no handles.
+                if self.mode == SplineMode::Paraxial {
+                    let Some(id) = path else { return vec![] };
+                    if closing {
+                        return vec![];
+                    }
+                    let a = self.paraxial_point(cx, id, ev.pos, ev.mods.shift);
+                    self.drag = Some(Place { at: a, path, closing });
+                    return vec![Action::Preview("path.appendAnchor".into(), json!({"id": id.0, "x": a.x, "y": a.y}))];
+                }
                 // Space held moves the anchor being placed, handles and all.
                 if ev.mods.space && !closing {
                     let d = ev.pos - self.last;
@@ -338,10 +411,12 @@ impl Tool for PenTool {
                     return vec![Action::Commit];
                 }
                 let Some(place) = self.drag.take() else { return vec![] };
+                let mut acts = vec![Action::Commit];
                 if place.closing {
+                    acts.extend(self.shape_action(cx));
                     self.stop();
                 }
-                vec![Action::Commit]
+                acts
             }
             PointerKind::DoubleClick => vec![],
         }
@@ -353,6 +428,7 @@ impl Tool for PenTool {
         }
     }
     fn deactivate(&mut self, cx: &ToolContext) -> Vec<Action> {
+        let shape = if self.drawing { self.shape_action(cx) } else { None };
         self.stop();
         self.snap.clear();
         let placing = self.drag.take().is_some();
@@ -362,6 +438,7 @@ impl Tool for PenTool {
         if placing || handling {
             acts.push(Action::Commit);
         }
+        acts.extend(shape);
         acts
     }
     fn overlays(&self, cx: &ToolContext) -> Vec<Overlay> {
@@ -369,14 +446,17 @@ impl Tool for PenTool {
             return t.overlays(cx);
         }
         let mut o = vec![];
-        if cx.pen_rubber_band
+        if self.mode.is_spline() {
+            o.extend(self.spline_overlays(cx));
+        } else if cx.pen_rubber_band
             && self.drag.is_none()
             && self.handle.is_none()
             && let (Some((id, _, last, out)), Some(h)) = (self.active(cx), self.hover)
         {
+            let h = if self.mode == SplineMode::Paraxial { self.paraxial_point(cx, id, h, false) } else { h };
             let mut bp = BezPath::new();
             bp.move_to(last);
-            if out.distance(last) > 1e-9 {
+            if out.distance(last) > 1e-9 && self.mode != SplineMode::Paraxial {
                 bp.quad_to(out, h);
             } else {
                 bp.line_to(h);
@@ -433,6 +513,163 @@ impl PenTool {
     /// The path is finished.
     fn stop(&mut self) {
         (self.drawing, self.path) = (false, None);
+        self.ctrl.clear();
+    }
+
+    /// The path being drawn (or just finished), for the actions that end it.
+    fn drawn_path(&self, cx: &ToolContext) -> Option<NodeId> {
+        self.path.or_else(|| active_path(cx).map(|a| a.0))
+    }
+
+    /// Give the finished path its Shape along the stroke, when one is chosen.
+    fn shape_action(&self, cx: &ToolContext) -> Option<Action> {
+        if self.shape == "none" {
+            return None;
+        }
+        let id = self.drawn_path(cx)?;
+        Some(Action::Exec("path.strokeShape".into(), json!({"id": id.0, "shape": self.shape})))
+    }
+
+    /// Where a paraxial segment from the end of `id` towards `p` ends ([`redrob_vector_geom::paraxial`]):
+    /// perpendicular to the segment before, or along the axis `p` favours; `flip` (Shift) swaps.
+    fn paraxial_point(&self, cx: &ToolContext, id: NodeId, p: Point, flip: bool) -> Point {
+        let Some(sp) = cx.doc.node(id).and_then(|n| n.path_data()).and_then(|pd| pd.subpaths.last()) else { return p };
+        let n = sp.anchors.len();
+        let Some(last) = sp.anchors.last().map(|a| a.p) else { return p };
+        // The anchor being placed is already on the path while a drag moves it: the segment
+        // before it is the one before that.
+        let (prev, before) = if self.drag.is_some_and(|d| d.path == Some(id) && !d.closing) && n >= 2 {
+            (sp.anchors[n - 2].p, (n >= 3).then(|| sp.anchors[n - 3].p))
+        } else {
+            (last, (n >= 2).then(|| sp.anchors[n - 2].p))
+        };
+        redrob_vector_geom::paraxial(prev, before, p, flip)
+    }
+
+    /// The spline through (Spiro) or along (BSpline) `ctrl` with `extra` appended, as the
+    /// `path.setAnchors`/`path.create` subpath.
+    fn spline(&self, extra: Option<Point>, closed: bool) -> SubPath {
+        let mut pts = self.ctrl.clone();
+        pts.extend(extra);
+        self.mode.through(&pts, closed).unwrap_or_else(|| SubPath::polyline(&pts, closed))
+    }
+
+    /// Replace the drawn path's geometry with the spline through the points placed.
+    fn spline_preview(&self, id: NodeId, closed: bool) -> Action {
+        let sp = self.spline(None, closed);
+        Action::Preview("path.setAnchors".into(), json!({"id": id.0, "subpaths": [subpath_json(&sp)]}))
+    }
+
+    /// Spiro and BSpline modes: every press adds a point (a press on the first one closes the
+    /// curve), a drag moves the point just placed, and the path is rebuilt as the spline through
+    /// the points each time. `None` hands the event to the regular flow (the Alt gestures,
+    /// continuing another path, Auto Add/Delete, a blend's spine).
+    fn spline_pointer(&mut self, cx: &ToolContext, ev: &PointerEvent, tol: f64) -> Option<Vec<Action>> {
+        let active = self.active(cx);
+        match ev.kind {
+            PointerKind::Down => {
+                if alt_converts(cx, ev.pos, ev.mods) {
+                    return None;
+                }
+                self.last = ev.pos;
+                self.pressed = ev.pos;
+                self.dragged = false;
+                let Some((id, ..)) = active else {
+                    if spine_click(cx, ev.pos, tol).is_some() || open_end_at(cx, ev.pos, tol, None).is_some() || active_path(cx).is_some() {
+                        // Continuing a path (or editing a spine) starts in the regular flow; the
+                        // points of the path continued seed the spline on the next press.
+                        return None;
+                    }
+                    if auto_add_delete(cx, ev.pos, ev.mods, tol).is_some() {
+                        return None;
+                    }
+                    let p = self.snap.press(cx, ev.pos, &[], None);
+                    (self.drawing, self.path) = (true, None);
+                    self.ctrl = vec![p];
+                    self.drag = Some(Place { at: p, path: None, closing: false });
+                    return Some(vec![
+                        Action::Begin("Pen".into()),
+                        Action::Preview("path.create".into(), json!({"anchors": [{"x": p.x, "y": p.y}]})),
+                    ]);
+                };
+                if self.ctrl.is_empty()
+                    && let Some(pd) = cx.doc.node(id).and_then(|n| n.path_data())
+                    && let Some(sp) = pd.subpaths.last()
+                {
+                    self.ctrl = sp.anchors.iter().map(|a| a.p).collect();
+                }
+                if self.ctrl.len() >= 3
+                    && let Some(&first) = self.ctrl.first()
+                    && ev.pos.distance(first) <= tol
+                {
+                    self.drag = Some(Place { at: first, path: Some(id), closing: true });
+                    return Some(vec![Action::Begin("Close Path".into()), self.spline_preview(id, true)]);
+                }
+                let from = active.map(|(_, _, last, _)| Leave::segment(cx, last, ev.mods.shift));
+                let p = self.snap.press(cx, ev.pos, &[id], from.as_ref());
+                self.ctrl.push(p);
+                self.drag = Some(Place { at: p, path: Some(id), closing: false });
+                Some(vec![Action::Begin("Pen".into()), self.spline_preview(id, false)])
+            }
+            PointerKind::Drag => {
+                if self.convert.is_some() || self.handle.is_some() {
+                    return None;
+                }
+                let Place { path, closing, .. } = self.drag?;
+                if closing {
+                    return Some(vec![]);
+                }
+                if !self.dragged {
+                    if ev.pos.distance(self.pressed) < cx.tol(DRAG_THRESHOLD) {
+                        return Some(vec![]);
+                    }
+                    self.dragged = true;
+                }
+                // The point just placed follows the pointer (Shift: at 45° from the one before).
+                let n = self.ctrl.len();
+                let mut p = ev.pos;
+                if ev.mods.shift && n >= 2 {
+                    let prev = self.ctrl[n - 2];
+                    p = prev + redrob_vector_geom::constrain_angle(ev.pos - prev, 45.0);
+                }
+                if let Some(last) = self.ctrl.last_mut() {
+                    *last = p;
+                }
+                self.drag = Some(Place { at: p, path, closing });
+                let Some(id) = path else {
+                    return Some(vec![Action::Preview("path.create".into(), json!({"anchors": [{"x": p.x, "y": p.y}]}))]);
+                };
+                Some(vec![self.spline_preview(id, false)])
+            }
+            PointerKind::Move => {
+                self.hover = Some(if active.is_some() { self.snap.hover(cx, ev.pos, &[], None) } else { ev.pos });
+                Some(vec![])
+            }
+            // Release, double-click: the regular flow commits the drag.
+            _ => None,
+        }
+    }
+
+    /// Spline modes: the control polygon of the points placed (dashed) and, hovering, the spline
+    /// as the next click would leave it.
+    fn spline_overlays(&self, cx: &ToolContext) -> Vec<Overlay> {
+        let mut o = vec![];
+        let Some((id, ..)) = self.active(cx) else { return o };
+        if self.ctrl.len() < 2 {
+            return o;
+        }
+        let color = cx.doc.layer_color(id);
+        o.push(Overlay::Path { path: polyline(&self.ctrl), color, width: 1.0, dashed: true });
+        if cx.pen_rubber_band
+            && self.drag.is_none()
+            && let Some(h) = self.hover
+        {
+            let sp = self.spline(Some(h), false);
+            let mut bp = BezPath::new();
+            sp.to_bezpath_into(&mut bp);
+            o.push(Overlay::Path { path: bp, color, width: 1.0, dashed: false });
+        }
+        o
     }
 
     /// Hand an Alt press on a selected path's handle, anchor or segment to the Anchor Point tool.

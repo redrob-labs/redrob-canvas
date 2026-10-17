@@ -96,8 +96,9 @@ choice!(
 );
 choice!(
     /// Right mouse button on the canvas with a painting tool: open the Brush Preset picker at the
-    /// pointer (Photoshop), or erase with the current brush while dragging (Krita, Paint).
-    RightClickPaint { BrushPicker = "brushPicker", Erase = "erase" } default BrushPicker
+    /// pointer (Photoshop), erase with the current brush while dragging (Paint), or open the
+    /// radial pop-up palette (presets, colour selector and history, view controls).
+    RightClickPaint { BrushPicker = "brushPicker", Erase = "erase", PopupPalette = "popupPalette" } default BrushPicker
 );
 choice!(OtherCursor { Standard = "standard", Precise = "precise" } default Standard);
 choice!(CheckerSize { None = "none", Small = "small", Medium = "medium", Large = "large" } default Medium);
@@ -534,6 +535,12 @@ pub struct Performance {
     /// Memory budget of the layer-effect cache, in MB.
     pub effect_cache_mb: u32,
     pub legacy_compositing: bool,
+    /// Cumulative undo: consecutive strokes of the same tool share one history step when they
+    /// follow each other within [`Self::cumulative_undo_interval`] seconds, up to
+    /// [`Self::cumulative_undo_duration`] seconds per merged step.
+    pub cumulative_undo: bool,
+    pub cumulative_undo_interval: f32,
+    pub cumulative_undo_duration: f32,
 }
 
 impl Performance {
@@ -563,6 +570,9 @@ impl Default for Performance {
             linux_display_server: LinuxDisplayServer::Auto,
             effect_cache_mb: 768,
             legacy_compositing: false,
+            cumulative_undo: false,
+            cumulative_undo_interval: 2.0,
+            cumulative_undo_duration: 60.0,
         }
     }
 }
@@ -1103,6 +1113,8 @@ pub fn range(path: &str) -> Option<(f64, f64)> {
         "performance.cacheLevels" => (1.0, 8.0),
         "performance.cacheTileSize" => (256.0, 16384.0),
         "performance.effectCacheMb" => (16.0, 65536.0),
+        "performance.cumulativeUndoInterval" => (0.1, 60.0),
+        "performance.cumulativeUndoDuration" => (1.0, 3600.0),
         "transparencyAndGamut.gamutWarningOpacity" => (1.0, 100.0),
         "unitsAndRulers.columnWidth" | "unitsAndRulers.gutter" => (0.0, 10_000.0),
         "unitsAndRulers.printResolution" | "unitsAndRulers.screenResolution" | "rawDefaults.resolution" => (1.0, 10_000.0),

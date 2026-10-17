@@ -1,5 +1,6 @@
 //! Paint helpers: bucket fill and the gradient tool.
 
+use crate::selection::WandOptions;
 use redrob_photo_color::blend::{self, BlendMode};
 use redrob_photo_geom::Rect;
 use redrob_photo_raster::{Surface, from_rgba_into};
@@ -15,6 +16,14 @@ pub enum GradientShape {
     Angle,
     Reflected,
     Diamond,
+    /// Chebyshev distance: concentric squares around the start point.
+    Square,
+    /// Angle folded about the drag line: 0 along it, 1 straight behind, the same on both sides.
+    ConicalSymmetric,
+    /// Angle plus distance: one turn per drag length, clockwise.
+    SpiralClockwise,
+    /// Angle plus distance: one turn per drag length, counter-clockwise.
+    SpiralCounterClockwise,
 }
 
 /// Gradient tool parameter `t` for a drag from `from` to `to`.
@@ -31,6 +40,14 @@ pub fn tool_gradient_t(shape: GradientShape, from: (f32, f32), to: (f32, f32), x
         GradientShape::Reflected => along.abs() / len,
         GradientShape::Diamond => (along.abs() + across.abs()) / len,
         GradientShape::Angle => (across.atan2(along) / std::f32::consts::TAU).rem_euclid(1.0),
+        GradientShape::Square => along.abs().max(across.abs()) / len,
+        GradientShape::ConicalSymmetric => across.atan2(along).abs() / std::f32::consts::PI,
+        GradientShape::SpiralClockwise | GradientShape::SpiralCounterClockwise => {
+            let turn = across.atan2(along) / std::f32::consts::TAU;
+            let turn = if shape == GradientShape::SpiralClockwise { turn } else { -turn };
+            // The spiral repeats: it is the fractional part that paints, not a clamp.
+            return (turn + (px * px + py * py).sqrt() / len).rem_euclid(1.0);
+        }
     };
     t.clamp(0.0, 1.0)
 }
@@ -172,7 +189,7 @@ pub fn bucket_fill(
     selection: Option<&Surface>,
     lock_transparency: bool,
 ) -> bool {
-    bucket_fill_src(s, area, seed, tolerance, contiguous, anti_alias, opacity, selection, lock_transparency, |_, _| color)
+    bucket_fill_src(s, area, seed, tolerance, contiguous, anti_alias, opacity, selection, lock_transparency, |_, _| color, WandOptions::default())
 }
 
 /// Like [`bucket_fill`] but the fill colour comes from `src(x, y)` — e.g. a pattern sampled at the
@@ -189,8 +206,9 @@ pub fn bucket_fill_src(
     selection: Option<&Surface>,
     lock_transparency: bool,
     src: impl Fn(i32, i32) -> [f32; 4] + Sync,
+    opts: WandOptions,
 ) -> bool {
-    bucket_fill_inks(s, area, seed, tolerance, contiguous, anti_alias, opacity, selection, lock_transparency, src, None)
+    bucket_fill_inks(s, area, seed, tolerance, contiguous, anti_alias, opacity, selection, lock_transparency, src, None, opts)
 }
 
 /// [`bucket_fill_src`] where `inks` (CMYK, 0..1) are what a fully covered pixel of a CMYK target
@@ -208,12 +226,13 @@ pub fn bucket_fill_inks(
     lock_transparency: bool,
     src: impl Fn(i32, i32) -> [f32; 4] + Sync,
     inks: Option<[f32; 4]>,
+    opts: WandOptions,
 ) -> bool {
     if !area.contains(seed.0, seed.1) {
         return false;
     }
     let img = crate::selection::rgba8_image(s, area);
-    let Some(region) = crate::selection::wand_region(&img, area, seed, tolerance, contiguous, anti_alias) else { return false };
+    let Some(region) = crate::selection::wand_region_with(&img, area, seed, tolerance, contiguous, anti_alias, opts) else { return false };
     drop(img);
     bucket_fill_region_inks(s, &region, opacity, selection, lock_transparency, src, inks);
     true

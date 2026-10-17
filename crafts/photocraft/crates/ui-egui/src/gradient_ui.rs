@@ -127,6 +127,12 @@ fn edited_fill(app: &PhotocraftApp, layer: &Layer, canvas: Rect32, cmd: &str, p:
     })
 }
 
+/// Styles only the classic (pixel) gradient has: a Gradient Fill layer knows the five Photoshop
+/// styles, so these cannot become a live gradient.
+pub fn classic_only_style(style: &str) -> bool {
+    matches!(style, "square" | "conicalSymmetric" | "spiralClockwise" | "spiralCounterClockwise")
+}
+
 /// Options-bar params of a new live gradient.
 fn create_params(app: &PhotocraftApp, from: [f32; 2], to: [f32; 2]) -> Value {
     let o = &app.ui.tool_options;

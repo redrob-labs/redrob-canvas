@@ -24,6 +24,7 @@ pub mod analysis_ui;
 pub mod anchor_tools;
 pub mod artboard_tool;
 pub mod artboard_ui;
+pub mod assistant_ui;
 pub(crate) mod background_redraw;
 mod blend_keys;
 pub(crate) mod blend_preview;
@@ -54,6 +55,7 @@ pub mod channels_panel;
 pub mod chrome_ui;
 pub mod cjk_fonts;
 pub mod clip_line_ui;
+pub mod color_history;
 pub mod color_picker_ui;
 pub mod color_range_ui;
 pub mod comps_ui;
@@ -93,6 +95,7 @@ pub mod filter_dialog;
 mod filter_preview_ui;
 #[cfg(not(target_arch = "wasm32"))]
 mod filter_preview_worker;
+mod filter_split;
 pub mod flick_pan;
 mod font_preview;
 pub mod frame_tool;
@@ -161,6 +164,7 @@ pub mod perspective_ui;
 pub mod pixel_grid;
 pub mod plugin_ui;
 pub mod point_curve;
+pub mod popup_palette;
 pub mod prefs_ui;
 pub mod preset_files_ui;
 pub mod preset_panels;
@@ -554,6 +558,9 @@ pub struct PhotocraftApp {
     monitors: monitor_status::State,
     checker: Option<egui::TextureHandle>,
     drag: Option<canvas::Drag>,
+    /// The running painting stroke's foreground colour is already in the colour history
+    /// (`color_history::track`).
+    color_history_recorded: bool,
     /// A Move-tool press landed on a locked layer: the first pointer move shows Photoshop's
     /// message (`move_lock`), a plain click shows nothing.
     pub(crate) move_blocked: bool,
@@ -610,6 +617,9 @@ pub struct PhotocraftApp {
     /// This press began with ⌥ (Alt) held on a painting tool, so it samples colours instead of
     /// painting until it is released (`canvas::alt_eyedropper`, #417).
     pub(crate) alt_sampling: bool,
+    /// The foreground and background colours when an Eyedropper press began: with a Blend
+    /// percentage below 100, every sample of the drag mixes into these, not into the last sample.
+    pub(crate) eyedropper_base: Option<([f32; 4], [f32; 4])>,
     /// Caps Lock toggled on, read from the OS each frame (`services.caps_lock`): painting tools
     /// show the precise crosshair whatever the cursor preference (#1758).
     pub caps_lock: bool,
@@ -821,6 +831,7 @@ impl PhotocraftApp {
             monitors: Default::default(),
             checker: None,
             drag: None,
+            color_history_recorded: false,
             move_blocked: false,
             tool_override: None,
             live_stroke: None,
@@ -846,6 +857,7 @@ impl PhotocraftApp {
             quick_pick: false,
             brush_resize_armed: false,
             alt_sampling: false,
+            eyedropper_base: None,
             caps_lock: false,
             opacity_keys: None,
             control_rx: None,
@@ -1985,6 +1997,8 @@ impl eframe::App for PhotocraftApp {
         // remembered once the pointer is up. Here, after every panel, rather than in the
         // picker's own code: the control channel can set it while the picker is closed.
         brush_picker::persist(self, &ctx);
+        // The colour a painting stroke starts with joins the colour history.
+        color_history::track(self);
         // The tool's brush (settings and tip references) is remembered the same way. Like the
         // picker's view, in the frame loop, so the control channel can set it with the panels
         // closed; the engine's revision counter keeps an unchanged brush free.

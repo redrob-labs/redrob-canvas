@@ -206,7 +206,6 @@
 	Apply Last Effect	Aplicar Último Efeito
 	Apply Last Gradient	Aplicar Último Gradiente
 	Apply Paragraph Style	Aplicar Estilo de Parágrafo
-	Apply SVG Filter…	Aplicar Filtro SVG…
 	Apply to All	Aplicar a Todos
 	Apply to All ({count} more missing)	Aplicar a Todos ({count} mais faltando)
 	Arc	Arco
@@ -3762,3 +3761,57 @@ axis	Both	Ambos
 	Softness	Suavidade
 	Ambient Light	Luz ambiente
 	Light behind the object	Luz atrás do objeto
+	Bend…	Curvar…
+	B-Spline…	B-spline…
+	Spiro Spline…	Spline Spiro…
+	Dashed Stroke…	Traçado Tracejado…
+	Taper Stroke…	Traçado Afunilado…
+	Segment:	Segmento:
+	Shape Along Stroke	Forma ao longo do traçado
+	Segment Type	Tipo de segmento
+	Next Anchor	Próximo ponto de ancoragem
+	Grow Anchor Selection	Ampliar seleção de pontos de ancoragem
+	Touch Select Anchors	Selecionar pontos de ancoragem tocados
+	Convert Selected Anchor Points to Symmetric	Converter pontos de ancoragem selecionados em simétricos
+	Convert Selected Anchor Points to Auto-Smooth	Converter pontos de ancoragem selecionados em suavização automática
+	Add Anchor Points At	Adicionar pontos de ancoragem em
+	Add Anchor Points at Extremes	Adicionar pontos de ancoragem nos extremos
+	Minimum X	X mínimo
+	Maximum X	X máximo
+	Minimum Y	Y mínimo
+	Maximum Y	Y máximo
+	Pie	Setor
+	Chord	Segmento
+	Close As:	Fechar como:
+	Whole Ellipse	Elipse inteira
+	Corners:	Vértices:
+	Spoke Ratio:	Proporção dos raios:
+	Rounded:	Arredondado:
+	Randomized:	Aleatório:
+	Decay:	Decaimento:
+	Segments:	Segmentos:
+	Star Properties:	Propriedades da estrela:
+	Spiral Properties:	Propriedades da espiral:
+	Hairline	Linha fina
+	Mid markers:	Marcadores intermediários:
+	Auto, start reversed	Automático, início invertido
+	Fixed angle	Ângulo fixo
+	Scale with stroke	Escalar com o traçado
+	ID:	ID:
+	Label:	Rótulo:
+	Title:	Título:
+	Hyperlink:	Hiperlink:
+	Clone	Clone
+	Create Clone	Criar clone
+	Unlink Clone	Desvincular clone
+	Relink to Copied	Revincular ao copiado
+	Select Original	Selecionar original
+	Object Properties…	Propriedades do objeto…
+	Canvas Orientation	Orientação da tela
+	Color Matrix…	Matriz de cores…
+	Filter Editor	Editor de filtros
+	Filter Graph	Grafo de filtros
+	Palette Strip	Faixa de paleta
+	Reset Canvas Orientation	Redefinir orientação da tela
+	XML Editor	Editor XML
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	Simular imprime as sobreimpressões como a Visualização de sobreimpressão as mostra; as separações sempre as mantêm. Uma predefinição achata a transparência antes de imprimir (arquivos PostScript sempre a achatam).

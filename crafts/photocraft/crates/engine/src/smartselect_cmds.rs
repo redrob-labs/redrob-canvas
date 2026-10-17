@@ -254,6 +254,74 @@ fn object_at_point(s: &mut Session, p: &Value, (x, y): (f32, f32)) -> Result<Val
     Ok(out)
 }
 
+/// The Foreground Select tool's marks: `[{"points":[[x,y],…],"size":px}]`.
+fn mark_strokes(p: &Value, key: &str) -> Result<Vec<grabcut::MarkStroke>> {
+    const CMD: &str = "select.foreground";
+    let Some(v) = p.get(key).filter(|v| !v.is_null()) else { return Ok(Vec::new()) };
+    let list = v.as_array().ok_or_else(|| bad(CMD, &format!("{key} must be an array of strokes")))?;
+    if list.len() > MAX_STROKES {
+        return Err(bad(CMD, &format!("{key} holds more than {MAX_STROKES} strokes")));
+    }
+    let mut total = 0usize;
+    let mut out = Vec::with_capacity(list.len());
+    for stroke in list {
+        let o = stroke.as_object().ok_or_else(|| bad(CMD, &format!("each {key} entry must be {{\"points\":[[x,y],…],\"size\":px}}")))?;
+        let pts = o.get("points").and_then(Value::as_array).filter(|a| !a.is_empty()).ok_or_else(|| bad(CMD, "each stroke needs a non-empty points array"))?;
+        total = total.saturating_add(pts.len());
+        if total > MAX_STROKE_POINTS {
+            return Err(bad(CMD, &format!("{key} hold more than {MAX_STROKE_POINTS} points")));
+        }
+        let mut points = Vec::with_capacity(pts.len());
+        for pt in pts {
+            let a = pt.as_array().ok_or_else(|| bad(CMD, "each point must be [x, y]"))?;
+            let (x, y) = (a.first().and_then(Value::as_f64), a.get(1).and_then(Value::as_f64));
+            match (x, y) {
+                (Some(x), Some(y)) if x.is_finite() && y.is_finite() => points.push((x as f32, y as f32)),
+                _ => return Err(bad(CMD, "each point must be [x, y] with finite numbers")),
+            }
+        }
+        let size = o.get("size").and_then(Value::as_f64).unwrap_or(20.0);
+        if !(size.is_finite() && (1.0..=1000.0).contains(&size)) {
+            return Err(bad(CMD, "size must be a number of pixels from 1 to 1000"));
+        }
+        out.push(grabcut::MarkStroke { points, size: size as f32 });
+    }
+    Ok(out)
+}
+
+/// Foreground Select: a rough outline, then foreground (and background) marks, cut by GrabCut.
+fn foreground_selection(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "select.foreground";
+    let outline_v =
+        p.get("outline").and_then(Value::as_array).ok_or_else(|| bad(CMD, "needs \"outline\": [[x, y], …] (a closed rough outline around the subject)"))?;
+    if outline_v.len() < 3 || outline_v.len() > MAX_STROKE_POINTS {
+        return Err(bad(CMD, &format!("outline needs 3 to {MAX_STROKE_POINTS} points")));
+    }
+    let mut outline = Vec::with_capacity(outline_v.len());
+    for pt in outline_v {
+        let a = pt.as_array().ok_or_else(|| bad(CMD, "each outline point must be [x, y]"))?;
+        match (a.first().and_then(Value::as_f64), a.get(1).and_then(Value::as_f64)) {
+            (Some(x), Some(y)) if x.is_finite() && y.is_finite() => outline.push((x as f32, y as f32)),
+            _ => return Err(bad(CMD, "each outline point must be [x, y] with finite numbers")),
+        }
+    }
+    let foreground = mark_strokes(p, "foreground")?;
+    let background = mark_strokes(p, "background")?;
+    let all_layers = b(p, "sampleAllLayers", false);
+    let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+    for (x, y) in &outline {
+        x0 = x0.min(*x);
+        y0 = y0.min(*y);
+        x1 = x1.max(*x);
+        y1 = y1.max(*y);
+    }
+    let rect = Rect::new(x0.floor() as i32, y0.floor() as i32, x1.ceil() as i32, y1.ceil() as i32);
+    let d = s.active().ok_or(EngineError::NoDocument)?;
+    check_sampled_pixels(&d.doc, d.active_layer, all_layers, rect)?;
+    let region = with_sampler(s, all_layers, |smp, doc| grabcut::foreground_select(smp, doc.bounds(), &outline, &foreground, &background, 160_000))?;
+    apply(s, "Foreground Select", region.as_ref(), mode(p, "replace"))
+}
+
 fn object_selection(s: &mut Session, p: &Value) -> Result<Value> {
     if p.get("rect").is_none()
         && let Some(pt) = point_param(p)
@@ -511,6 +579,14 @@ pub fn specs() -> Vec<CommandSpec> {
             r##"{"rect":[x,y,w,h] | "point":[x,y],"mode":"replace|add|subtract|intersect"="replace","sampleAllLayers":bool=false} (point: the Object Finder's object under the point, as hovering previews it)"##,
             has_doc,
             object_selection
+        ),
+        spec!(
+            "select.foreground",
+            "Foreground Select",
+            [],
+            r##"{"outline":[[x,y],…] (closed rough outline; outside it is background),"foreground":[{"points":[[x,y],…],"size":px=20}] (marks over the subject),"background":[{"points":[[x,y],…],"size":px}]?,"mode":"replace|add|subtract|intersect"="replace","sampleAllLayers":bool=false}"##,
+            has_doc,
+            foreground_selection
         ),
         spec!(
             "select.subject",
