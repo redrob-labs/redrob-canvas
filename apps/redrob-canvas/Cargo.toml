@@ -22,6 +22,8 @@ tokio = { workspace = true }
 # The system language on first run (Windows has no LANG): the Photo editor pins the same version.
 sys-locale = "=0.3.2"
 redrob-ai = { path = "../../crates/redrob-ai" }
+# The Redrob Code app bridge (src/shell/app_bridge.rs): the shell's tools, served to the shared daemon.
+redrob-app-bridge = { git = "https://github.com/redrob-labs/redrob-code", tag = "v0.7.0" }
 redrob-photo-ui-egui = { workspace = true }
 redrob-photo-engine = { workspace = true }
 redrob-photo-io = { workspace = true }

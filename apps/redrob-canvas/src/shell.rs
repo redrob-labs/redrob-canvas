@@ -25,6 +25,8 @@ use crate::i18n::{self, t, tf};
 use crate::routing::{self, Route};
 use crate::{handoff, services, trace};
 
+mod app_bridge;
+
 /// Height of the shell's own top bar, in points.
 pub const TOP_BAR_HEIGHT: f32 = 28.0;
 
@@ -256,6 +258,9 @@ pub struct ShellApp {
     /// (a measurement that needs no input device), then quit.
     trace_switches: Vec<Mode>,
     frame_count: u32,
+    /// The Redrob Code app bridge ([`app_bridge`]): the tools the shared daemon's agent drives
+    /// this window with. `None` until `main` starts it and in tests.
+    bridge: Option<app_bridge::Bridge>,
 }
 
 impl Default for ShellApp {
@@ -299,6 +304,7 @@ impl ShellApp {
                 .map(|v| v.split(',').filter_map(crate::parse_mode).rev().collect())
                 .unwrap_or_default(),
             frame_count: 0,
+            bridge: None,
         }
     }
 
@@ -1479,6 +1485,8 @@ impl eframe::App for ShellApp {
         self.flush_pending_opens();
         self.sync_fonts(ctx);
         self.apply_pending(ctx);
+        // The agent's tool calls, against the mode the window shows now.
+        self.serve_bridge();
         if self.pending.is_some() {
             // The switch waits for the merged fonts: keep the frames coming.
             ctx.request_repaint();
@@ -1578,6 +1586,7 @@ impl eframe::App for ShellApp {
             self.pending_mode(),
             self.created()
         );
+        self.stop_bridge();
         if let Some(app) = self.photo.as_mut() {
             eframe::App::on_exit(app);
         }
