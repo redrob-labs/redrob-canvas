@@ -3371,3 +3371,7 @@ curves	Smooth	매끄럽게
 	Grow through corners as well as edges	변뿐 아니라 모서리로도 확장합니다
 	By:	기준:
 	Composite	합성
+	Square Gradient	사각 그라디언트
+	Conical Gradient (symmetric)	원뿔형 그라디언트 (대칭)
+	Spiral Gradient (clockwise)	나선형 그라디언트 (시계 방향)
+	Spiral Gradient (counter-clockwise)	나선형 그라디언트 (반시계 방향)

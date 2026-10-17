@@ -3187,3 +3187,7 @@ curves	Smooth	Haluskan
 	Grow through corners as well as edges	Meluas lewat sudut dan juga tepi
 	By:	Menurut:
 	Composite	Komposit
+	Square Gradient	Gradien Persegi
+	Conical Gradient (symmetric)	Gradien Kerucut (simetris)
+	Spiral Gradient (clockwise)	Gradien Spiral (searah jarum jam)
+	Spiral Gradient (counter-clockwise)	Gradien Spiral (berlawanan jarum jam)

@@ -3893,3 +3893,7 @@ curves	Smooth	Εξομάλυνση
 	Grow through corners as well as edges	Επέκταση και από τις γωνίες, όχι μόνο από τις ακμές
 	By:	Κατά:
 	Composite	Σύνθετο
+	Square Gradient	Τετράγωνη διαβάθμιση
+	Conical Gradient (symmetric)	Κωνική διαβάθμιση (συμμετρική)
+	Spiral Gradient (clockwise)	Σπειροειδής διαβάθμιση (δεξιόστροφα)
+	Spiral Gradient (counter-clockwise)	Σπειροειδής διαβάθμιση (αριστερόστροφα)

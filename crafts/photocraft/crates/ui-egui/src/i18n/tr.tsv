@@ -3923,3 +3923,7 @@ cameraData	Lens	Lens
 	Grow through corners as well as edges	Kenarların yanı sıra köşelerden de büyür
 	By:	Ölçüt:
 	Composite	Bileşik
+	Square Gradient	Kare Gradyan
+	Conical Gradient (symmetric)	Konik Gradyan (simetrik)
+	Spiral Gradient (clockwise)	Spiral Gradyan (saat yönünde)
+	Spiral Gradient (counter-clockwise)	Spiral Gradyan (saat yönünün tersine)

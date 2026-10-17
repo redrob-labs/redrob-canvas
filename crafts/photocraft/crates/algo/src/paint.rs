@@ -16,6 +16,14 @@ pub enum GradientShape {
     Angle,
     Reflected,
     Diamond,
+    /// Chebyshev distance: concentric squares around the start point.
+    Square,
+    /// Angle folded about the drag line: 0 along it, 1 straight behind, the same on both sides.
+    ConicalSymmetric,
+    /// Angle plus distance: one turn per drag length, clockwise.
+    SpiralClockwise,
+    /// Angle plus distance: one turn per drag length, counter-clockwise.
+    SpiralCounterClockwise,
 }
 
 /// Gradient tool parameter `t` for a drag from `from` to `to`.
@@ -32,6 +40,14 @@ pub fn tool_gradient_t(shape: GradientShape, from: (f32, f32), to: (f32, f32), x
         GradientShape::Reflected => along.abs() / len,
         GradientShape::Diamond => (along.abs() + across.abs()) / len,
         GradientShape::Angle => (across.atan2(along) / std::f32::consts::TAU).rem_euclid(1.0),
+        GradientShape::Square => along.abs().max(across.abs()) / len,
+        GradientShape::ConicalSymmetric => across.atan2(along).abs() / std::f32::consts::PI,
+        GradientShape::SpiralClockwise | GradientShape::SpiralCounterClockwise => {
+            let turn = across.atan2(along) / std::f32::consts::TAU;
+            let turn = if shape == GradientShape::SpiralClockwise { turn } else { -turn };
+            // The spiral repeats: it is the fractional part that paints, not a clamp.
+            return (turn + (px * px + py * py).sqrt() / len).rem_euclid(1.0);
+        }
     };
     t.clamp(0.0, 1.0)
 }

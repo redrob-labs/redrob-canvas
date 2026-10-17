@@ -2812,3 +2812,7 @@ curves	Smooth	平滑
 	By:	依据:
 	Composite	复合
 	Alpha	Alpha
+	Square Gradient	方形渐变
+	Conical Gradient (symmetric)	圆锥渐变 (对称)
+	Spiral Gradient (clockwise)	螺旋渐变 (顺时针)
+	Spiral Gradient (counter-clockwise)	螺旋渐变 (逆时针)

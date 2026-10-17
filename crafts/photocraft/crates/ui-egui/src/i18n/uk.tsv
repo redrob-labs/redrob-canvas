@@ -3892,3 +3892,7 @@ curves	Smooth	Згладити
 	Grow through corners as well as edges	Рости через кути, а не лише через ребра
 	By:	За:
 	Composite	Складений
+	Square Gradient	Квадратний градієнт
+	Conical Gradient (symmetric)	Конічний градієнт (симетричний)
+	Spiral Gradient (clockwise)	Спіральний градієнт (за годинниковою)
+	Spiral Gradient (counter-clockwise)	Спіральний градієнт (проти годинникової)

@@ -3953,3 +3953,7 @@ curves	Smooth	Vloeiend maken
 	Grow through corners as well as edges	Groeit ook via hoeken, niet alleen via randen
 	By:	Op:
 	Composite	Samengesteld
+	Square Gradient	Vierkant verloop
+	Conical Gradient (symmetric)	Kegelvormig verloop (symmetrisch)
+	Spiral Gradient (clockwise)	Spiraalverloop (met de klok mee)
+	Spiral Gradient (counter-clockwise)	Spiraalverloop (tegen de klok in)

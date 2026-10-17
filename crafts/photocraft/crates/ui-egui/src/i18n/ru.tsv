@@ -3165,3 +3165,7 @@ curves	Smooth	Сгладить
 	Grow through corners as well as edges	Расти через углы, а не только через рёбра
 	By:	По:
 	Composite	Составной
+	Square Gradient	Квадратный градиент
+	Conical Gradient (symmetric)	Конический градиент (симметричный)
+	Spiral Gradient (clockwise)	Спиральный градиент (по часовой)
+	Spiral Gradient (counter-clockwise)	Спиральный градиент (против часовой)

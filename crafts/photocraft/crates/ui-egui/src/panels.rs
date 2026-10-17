@@ -1230,6 +1230,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         let mut classic = app.ui.tool_options.gradient_classic;
                         if widgets::dropdown(ui, "gradient-mode", &mut classic, &[(false, "Gradient"), (true, "Classic gradient")], 118.0) {
                             app.ui.tool_options.gradient_classic = classic;
+                            if !classic && crate::gradient_ui::classic_only_style(&app.ui.tool_options.gradient_style) {
+                                app.ui.tool_options.gradient_style = "linear".into();
+                            }
                         }
                         // Live "Gradient" (a Gradient Fill layer) or "Classic gradient" (pixels):
                         // both paint with the same engine-owned preset (#1651), and either swatch
@@ -1246,9 +1249,18 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             ("angle", "rotate-cw", tl!("Angle Gradient")),
                             ("reflected", "arrow-left-right", tl!("Reflected Gradient")),
                             ("diamond", "diamond", tl!("Diamond Gradient")),
+                            ("square", "square", tl!("Square Gradient")),
+                            ("conicalSymmetric", "cone", tl!("Conical Gradient (symmetric)")),
+                            ("spiralClockwise", "shell", tl!("Spiral Gradient (clockwise)")),
+                            ("spiralCounterClockwise", "rotate-ccw", tl!("Spiral Gradient (counter-clockwise)")),
                         ] {
                             if icons::button(ui, icon, 24.0, app.ui.tool_options.gradient_style == style, tip).clicked() {
                                 app.ui.tool_options.gradient_style = style.into();
+                                // The square, conical and spiral shapes paint pixels only: a
+                                // Gradient Fill layer has the five Photoshop styles.
+                                if crate::gradient_ui::classic_only_style(style) {
+                                    app.ui.tool_options.gradient_classic = true;
+                                }
                             }
                         }
                         ui.spacing_mut().item_spacing.x = 8.0;

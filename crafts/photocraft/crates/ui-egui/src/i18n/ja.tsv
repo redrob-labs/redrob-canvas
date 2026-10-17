@@ -3869,3 +3869,7 @@ curves	Smooth	スムーズ
 	Grow through corners as well as edges	辺だけでなく角からも広げます
 	By:	基準:
 	Composite	合成
+	Square Gradient	四角形グラデーション
+	Conical Gradient (symmetric)	円錐形グラデーション (対称)
+	Spiral Gradient (clockwise)	螺旋グラデーション (時計回り)
+	Spiral Gradient (counter-clockwise)	螺旋グラデーション (反時計回り)

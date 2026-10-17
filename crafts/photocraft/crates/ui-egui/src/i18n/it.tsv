@@ -4313,3 +4313,7 @@ shape	Appearance	Aspetto
 	Grow through corners as well as edges	Si estende anche dagli angoli, non solo dai bordi
 	By:	Per:
 	Composite	Composito
+	Square Gradient	Sfumatura quadrata
+	Conical Gradient (symmetric)	Sfumatura conica (simmetrica)
+	Spiral Gradient (clockwise)	Sfumatura a spirale (oraria)
+	Spiral Gradient (counter-clockwise)	Sfumatura a spirale (antioraria)

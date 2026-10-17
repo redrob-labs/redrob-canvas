@@ -4154,3 +4154,7 @@ navigator	Zoom	Zoom
 	Grow through corners as well as edges	Crece también por las esquinas, no solo por los bordes
 	By:	Por:
 	Composite	Compuesto
+	Square Gradient	Degradado cuadrado
+	Conical Gradient (symmetric)	Degradado cónico (simétrico)
+	Spiral Gradient (clockwise)	Degradado en espiral (horario)
+	Spiral Gradient (counter-clockwise)	Degradado en espiral (antihorario)

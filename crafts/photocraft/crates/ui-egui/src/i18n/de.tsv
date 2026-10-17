@@ -3196,3 +3196,7 @@ curves	Smooth	Glätten
 	Grow through corners as well as edges	Auch über Ecken wachsen, nicht nur über Kanten
 	By:	Nach:
 	Composite	Zusammengesetzt
+	Square Gradient	Quadratischer Verlauf
+	Conical Gradient (symmetric)	Kegelförmiger Verlauf (symmetrisch)
+	Spiral Gradient (clockwise)	Spiralverlauf (im Uhrzeigersinn)
+	Spiral Gradient (counter-clockwise)	Spiralverlauf (gegen den Uhrzeigersinn)

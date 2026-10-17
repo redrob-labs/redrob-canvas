@@ -3200,3 +3200,7 @@ curves	Smooth	Lisser
 	Grow through corners as well as edges	S’étend par les coins comme par les côtés
 	By:	Selon :
 	Composite	Composite
+	Square Gradient	Dégradé carré
+	Conical Gradient (symmetric)	Dégradé conique (symétrique)
+	Spiral Gradient (clockwise)	Dégradé en spirale (horaire)
+	Spiral Gradient (counter-clockwise)	Dégradé en spirale (antihoraire)

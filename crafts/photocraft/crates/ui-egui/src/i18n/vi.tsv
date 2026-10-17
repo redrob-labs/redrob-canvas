@@ -3681,3 +3681,7 @@ curves	Smooth	Làm mượt
 	Grow through corners as well as edges	Mở rộng qua các góc cũng như các cạnh
 	By:	Theo:
 	Composite	Tổng hợp
+	Square Gradient	Chuyển sắc vuông
+	Conical Gradient (symmetric)	Chuyển sắc hình nón (đối xứng)
+	Spiral Gradient (clockwise)	Chuyển sắc xoắn ốc (thuận chiều kim đồng hồ)
+	Spiral Gradient (counter-clockwise)	Chuyển sắc xoắn ốc (ngược chiều kim đồng hồ)

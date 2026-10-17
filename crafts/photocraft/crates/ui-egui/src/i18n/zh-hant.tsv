@@ -2797,3 +2797,7 @@ curves	Smooth	平滑
 	By:	依據:
 	Composite	複合
 	Alpha	Alpha
+	Square Gradient	方形漸層
+	Conical Gradient (symmetric)	圓錐漸層 (對稱)
+	Spiral Gradient (clockwise)	螺旋漸層 (順時針)
+	Spiral Gradient (counter-clockwise)	螺旋漸層 (逆時針)

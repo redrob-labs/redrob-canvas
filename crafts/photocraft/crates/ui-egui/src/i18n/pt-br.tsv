@@ -3983,3 +3983,7 @@ layerLabel	No Color	Sem cor
 	Grow through corners as well as edges	Cresce também pelos cantos, não só pelas bordas
 	By:	Por:
 	Composite	Composto
+	Square Gradient	Degradê quadrado
+	Conical Gradient (symmetric)	Degradê cônico (simétrico)
+	Spiral Gradient (clockwise)	Degradê em espiral (horário)
+	Spiral Gradient (counter-clockwise)	Degradê em espiral (anti-horário)

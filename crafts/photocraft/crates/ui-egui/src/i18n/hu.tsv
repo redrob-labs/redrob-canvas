@@ -4111,3 +4111,7 @@ cameraRaw	Yellow	Sárga
 	Grow through corners as well as edges	A sarkokon át is terjed, nem csak az éleken
 	By:	Szerint:
 	Composite	Összetett
+	Square Gradient	Négyzetes színátmenet
+	Conical Gradient (symmetric)	Kúpos színátmenet (szimmetrikus)
+	Spiral Gradient (clockwise)	Spirális színátmenet (óramutató irányába)
+	Spiral Gradient (counter-clockwise)	Spirális színátmenet (óramutatóval ellentétes)

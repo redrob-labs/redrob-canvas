@@ -3802,3 +3802,7 @@ navigator	Zoom	Zvětšení
 	Grow through corners as well as edges	Šířit se i přes rohy, nejen přes hrany
 	By:	Podle:
 	Composite	Složené
+	Square Gradient	Čtvercový přechod
+	Conical Gradient (symmetric)	Kónický přechod (symetrický)
+	Spiral Gradient (clockwise)	Spirálový přechod (po směru)
+	Spiral Gradient (counter-clockwise)	Spirálový přechod (proti směru)

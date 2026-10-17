@@ -4265,3 +4265,7 @@ shape	Appearance	Izgled
 	Grow through corners as well as edges	Расте и преко углова, не само преко ивица
 	By:	По:
 	Composite	Сложено
+	Square Gradient	Квадратни прелив
+	Conical Gradient (symmetric)	Конусни прелив (симетричан)
+	Spiral Gradient (clockwise)	Спирални прелив (у смеру казаљке)
+	Spiral Gradient (counter-clockwise)	Спирални прелив (супротно казаљци)

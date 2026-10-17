@@ -3791,3 +3791,7 @@ curves	Smooth	Wygładź
 	Grow through corners as well as edges	Rozszerzaj także przez narożniki, nie tylko krawędzie
 	By:	Według:
 	Composite	Złożony
+	Square Gradient	Gradient kwadratowy
+	Conical Gradient (symmetric)	Gradient stożkowy (symetryczny)
+	Spiral Gradient (clockwise)	Gradient spiralny (w prawo)
+	Spiral Gradient (counter-clockwise)	Gradient spiralny (w lewo)
