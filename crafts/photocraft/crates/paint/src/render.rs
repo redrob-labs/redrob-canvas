@@ -46,7 +46,7 @@ const SUBPIXEL: [f32; 4] = [-0.375, -0.125, 0.125, 0.375];
 const NOISE_SALT: u64 = 0x006E_6F69_7365;
 /// Salts of a generated tip's per-pixel Density and Randomness draws.
 const DENSITY_SALT: u64 = 0x0064_656E_7369_7479;
-const RANDOMNESS_SALT: u64 = 0x0072_616E_646F_6D;
+const RANDOMNESS_SALT: u64 = 0x0000_7261_6E64_6F6D;
 
 /// Coverage of a generated tip (see [`GeneratedTip`]) at tip-space offset (`u`, `v`) from the
 /// dab centre, for a dab whose short radius is `rm` and whose roundness is `ro` (so the long

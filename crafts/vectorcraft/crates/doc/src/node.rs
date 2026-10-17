@@ -318,7 +318,7 @@ impl LiveShape {
     /// Turn a star or spiral about its centre to `angle` (degrees, as [`LiveShape::turned_angle`]).
     pub fn set_turned_angle(&mut self, angle: f64) {
         let (Some(now), Some(centre)) = (self.turned_angle(), self.turned_centre()) else { return };
-        if let (LiveShape::Star { xf, .. } | LiveShape::Spiral { xf, .. }) = self
+        if let LiveShape::Star { xf, .. } | LiveShape::Spiral { xf, .. } = self
             && angle.is_finite()
         {
             *xf = Affine::rotate_about((angle - now).to_radians(), centre) * *xf;

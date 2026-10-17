@@ -74,16 +74,9 @@ pub(crate) fn mean_curvature(src: &Image, out: Rect, ctx: &Ctx, iterations: u32)
     crop_window(&cur, win, out, n, ctx.alpha)
 }
 
-/// Reach of a Tileable Blur of `radius` (also the halo it would need were it not global).
-pub(crate) fn tileable_reach(radius: f32, kind: TileableBlurType) -> i32 {
-    match kind {
-        TileableBlurType::Gaussian => (radius.max(0.0) * 3.0).ceil() as i32 + 1,
-        TileableBlurType::Box => radius.max(0.0).ceil() as i32 + 1,
-    }
-}
-
 /// Tileable Blur: a Gaussian (or box) blur that wraps around the reference bounds, so the result
 /// tiles seamlessly. Either axis can be switched off.
+#[allow(clippy::needless_range_loop)]
 pub(crate) fn tileable(src: &Image, out: Rect, ctx: &Ctx, radius: f32, horizontal: bool, vertical: bool, kind: TileableBlurType) -> Vec<f32> {
     let n = src.ch;
     let b = ctx.bounds;

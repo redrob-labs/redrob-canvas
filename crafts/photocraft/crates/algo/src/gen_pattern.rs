@@ -89,6 +89,7 @@ pub(crate) struct DiffractionSpec {
 
 /// Diffraction Patterns: two-slit interference fringes per channel, modulated by angular
 /// contours, with sharpness shaping the fringe profile.
+#[allow(clippy::needless_range_loop)]
 pub(crate) fn diffraction(src: &Image, out: Rect, ctx: &Ctx, spec: &DiffractionSpec) -> Vec<f32> {
     let (cx, cy, w, h) = frame(ctx);
     let scale = 2.0 / w.min(h).max(1.0);

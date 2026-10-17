@@ -277,13 +277,6 @@ pub(crate) fn segment_distance(x: f32, y: f32, a: [f32; 2], b: [f32; 2]) -> f32 
     ((x - px) * (x - px) + (y - py) * (y - py)).sqrt()
 }
 
-/// Anti-aliased disc coverage of the pixel centred at `(x, y)`.
-#[inline]
-pub(crate) fn disc(x: f32, y: f32, cx: f32, cy: f32, r: f32) -> f32 {
-    let d = ((x - cx) * (x - cx) + (y - cy) * (y - cy)).sqrt();
-    (r + 0.5 - d).clamp(0.0, 1.0)
-}
-
 /// Document-space centre and half extents of the reference bounds.
 pub(crate) fn frame(ctx: &Ctx) -> (f32, f32, f32, f32) {
     let b = ctx.bounds;

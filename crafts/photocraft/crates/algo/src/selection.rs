@@ -448,6 +448,7 @@ impl Region {
 }
 
 /// Binary dilation by a square of radius `r` (separable: rows then columns).
+#[allow(clippy::needless_range_loop)]
 fn dilate(m: &[bool], w: usize, h: usize, r: usize) -> Vec<bool> {
     if r == 0 {
         return m.to_vec();

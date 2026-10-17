@@ -91,6 +91,7 @@ fn escape(kind: ExplorerFractal, x: f64, y: f64, cx: f64, cy: f64, limit: u32) -
     1.0
 }
 
+#[allow(clippy::needless_range_loop)]
 pub(crate) fn fractal_explorer(src: &Image, out: Rect, ctx: &Ctx, spec: &ExplorerSpec) -> Vec<f32> {
     let b = ctx.bounds;
     let (w, h) = (b.width() as f64, b.height() as f64);

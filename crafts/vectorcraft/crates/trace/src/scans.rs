@@ -26,10 +26,10 @@ pub(crate) fn edges(img: &Raster, threshold: u8) -> Raster {
                 (px(xi + 1, yi - 1) + 2.0 * px(xi + 1, yi) + px(xi + 1, yi + 1)) - (px(xi - 1, yi - 1) + 2.0 * px(xi - 1, yi) + px(xi - 1, yi + 1));
             let gy =
                 (px(xi - 1, yi + 1) + 2.0 * px(xi, yi + 1) + px(xi + 1, yi + 1)) - (px(xi - 1, yi - 1) + 2.0 * px(xi, yi - 1) + px(xi + 1, yi - 1));
-            if gx.hypot(gy) >= limit {
-                if let Some(p) = out.get_mut((y * w + x) * 4..(y * w + x) * 4 + 3) {
-                    p.fill(0);
-                }
+            if gx.hypot(gy) >= limit
+                && let Some(p) = out.get_mut((y * w + x) * 4..(y * w + x) * 4 + 3)
+            {
+                p.fill(0);
             }
         }
     }
@@ -52,10 +52,10 @@ pub(crate) fn quantized(img: &Raster, params: &TraceParams) -> Raster {
         if l == TRANSPARENT {
             continue;
         }
-        if q.palette.get(l as usize).is_some_and(|c| light(c) < cut) {
-            if let Some(p) = out.get_mut(i * 4..i * 4 + 3) {
-                p.fill(0);
-            }
+        if q.palette.get(l as usize).is_some_and(|c| light(c) < cut)
+            && let Some(p) = out.get_mut(i * 4..i * 4 + 3)
+        {
+            p.fill(0);
         }
     }
     Raster::new(img.width, img.height, out)

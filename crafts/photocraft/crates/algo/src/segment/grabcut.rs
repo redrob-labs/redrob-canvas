@@ -239,7 +239,7 @@ pub fn foreground_select(
             trimap[y * lw + x] = t;
         }
     }
-    if !any_fg && !trimap.iter().any(|t| *t == PR_FG) {
+    if !any_fg && !trimap.contains(&PR_FG) {
         return None;
     }
     let (fg, bg) = grabcut(&img, &mut trimap, 8)?;

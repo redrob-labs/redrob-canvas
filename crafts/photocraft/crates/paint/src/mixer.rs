@@ -116,7 +116,7 @@ pub fn apply_mixer_stroke(
                 None => work.px(x, y).to_vec(),
             }
         };
-        let center = [f64::from(fp.dab.center.x), f64::from(fp.dab.center.y)];
+        let center = [fp.dab.center.x, fp.dab.center.y];
         let r = fp.rect.intersect(&work.rect);
         if m.smear && wet > 0.0 {
             if let Some(prev) = prev_center {

@@ -461,6 +461,7 @@ fn hit(shape: MapShape, radius: f32, o: V3, d: V3) -> Option<(f32, V3, (f32, f32
 
 /// Map Object: the bounds are a texture wrapped onto a plane, sphere, box or cylinder, lit by
 /// one point light with ambient, diffuse and specular terms, seen from z = 2.
+#[allow(clippy::needless_range_loop)]
 pub(crate) fn map_object(src: &Image, out: Rect, ctx: &Ctx, spec: &MapObjectSpec) -> Vec<f32> {
     let n = src.ch;
     let b = ctx.bounds;
