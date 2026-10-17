@@ -134,6 +134,120 @@ pub fn object_select(sampler: &dyn Sampler, canvas: Rect, rect: Rect, work_px: u
 /// hovers.
 pub const OBJECT_AT_WORK_PX: usize = 60_000;
 
+/// A painted mark of the Foreground Select tool: a polyline of document points with a width.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MarkStroke {
+    pub points: Vec<(f32, f32)>,
+    pub size: f32,
+}
+
+impl MarkStroke {
+    /// Whether the document point is within the stroke's half width of its polyline.
+    fn covers(&self, x: f32, y: f32) -> bool {
+        let r = (self.size * 0.5).max(0.5);
+        let r2 = r * r;
+        if self.points.len() == 1 {
+            let (px, py) = self.points[0];
+            return (px - x) * (px - x) + (py - y) * (py - y) <= r2;
+        }
+        self.points.windows(2).any(|w| {
+            let ((ax, ay), (bx, by)) = (w[0], w[1]);
+            let (dx, dy) = (bx - ax, by - ay);
+            let len2 = dx * dx + dy * dy;
+            let t = if len2 > 0.0 { ((x - ax) * dx + (y - ay) * dy) / len2 } else { 0.0 }.clamp(0.0, 1.0);
+            let (qx, qy) = (ax + dx * t, ay + dy * t);
+            (qx - x) * (qx - x) + (qy - y) * (qy - y) <= r2
+        })
+    }
+
+    fn bounds(&self) -> Option<Rect> {
+        let r = (self.size * 0.5).max(0.5).ceil() as i32 + 1;
+        let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+        for (x, y) in &self.points {
+            x0 = x0.min(*x);
+            y0 = y0.min(*y);
+            x1 = x1.max(*x);
+            y1 = y1.max(*y);
+        }
+        (x0 <= x1).then(|| Rect::new(x0.floor() as i32 - r, y0.floor() as i32 - r, x1.ceil() as i32 + r, y1.ceil() as i32 + r))
+    }
+}
+
+/// Even-odd test of the document point against a closed polygon.
+fn inside_polygon(poly: &[(f32, f32)], x: f32, y: f32) -> bool {
+    let n = poly.len();
+    let mut inside = false;
+    let mut j = n - 1;
+    for i in 0..n {
+        let ((xi, yi), (xj, yj)) = (poly[i], poly[j]);
+        if (yi > y) != (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi {
+            inside = !inside;
+        }
+        j = i;
+    }
+    inside
+}
+
+/// Foreground Select: a rough closed `outline` around the subject (everything outside it is
+/// background), then `foreground` marks painted over the subject (definite foreground) and
+/// optional `background` marks (definite background); the rest of the outline's inside is
+/// decided by GrabCut, as the rectangle mode decides its interior.
+pub fn foreground_select(
+    sampler: &dyn Sampler,
+    canvas: Rect,
+    outline: &[(f32, f32)],
+    foreground: &[MarkStroke],
+    background: &[MarkStroke],
+    work_px: usize,
+) -> Option<Region> {
+    if outline.len() < 3 || outline.iter().any(|(x, y)| !x.is_finite() || !y.is_finite()) {
+        return None;
+    }
+    let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+    for (x, y) in outline {
+        x0 = x0.min(*x);
+        y0 = y0.min(*y);
+        x1 = x1.max(*x);
+        y1 = y1.max(*y);
+    }
+    let rect = Rect::new(x0.floor() as i32, y0.floor() as i32, x1.ceil() as i32, y1.ceil() as i32).intersect(&canvas);
+    if rect.width() < 2 || rect.height() < 2 {
+        return None;
+    }
+    let margin = ((rect.width().max(rect.height()) as f32 * 0.15).ceil() as i32).max(8);
+    let window = rect.inflate(margin).intersect(&canvas);
+    let step = super::scale_for(window, work_px);
+    let img = sampler.rgb_scaled(window, step);
+    let (lw, lh) = (img.w, img.h);
+    let mut trimap = vec![BG; lw * lh];
+    let covered = |strokes: &[MarkStroke], x: f32, y: f32| strokes.iter().any(|s| s.bounds().is_some_and(|b| b.contains(x as i32, y as i32)) && s.covers(x, y));
+    let mut any_fg = false;
+    for y in 0..lh {
+        for x in 0..lw {
+            // Working pixel (x, y) covers doc pixels [x0 + x·step, …); its centre decides.
+            let (cx, cy) = (window.x0 as f32 + (x * step) as f32 + step as f32 * 0.5, window.y0 as f32 + (y * step) as f32 + step as f32 * 0.5);
+            let t = if covered(background, cx, cy) {
+                BG
+            } else if covered(foreground, cx, cy) {
+                any_fg = true;
+                FG
+            } else if inside_polygon(outline, cx, cy) {
+                PR_FG
+            } else {
+                BG
+            };
+            trimap[y * lw + x] = t;
+        }
+    }
+    if !any_fg && !trimap.iter().any(|t| *t == PR_FG) {
+        return None;
+    }
+    let (fg, bg) = grabcut(&img, &mut trimap, 8)?;
+    let low: Vec<bool> = trimap.iter().map(|t| is_fg(*t)).collect();
+    let low = super::clean_mask(&low, lw, lh, 0.1, 0.002);
+    super::finish_region(sampler, window, step, &low, lw, lh, Some((&fg, &bg)))
+}
+
 /// Object Selection's Object Finder (hover / click): the object under document point `(x, y)`.
 ///
 /// A heuristic, not a semantic segmenter (that is #2788): on a working-resolution copy of the
