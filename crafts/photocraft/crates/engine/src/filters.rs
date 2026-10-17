@@ -8,6 +8,7 @@ use redrob_photo_algo::{
     self as algo, DesaturateMode, Distribution, FilterParams, PolarMode, Preserve, RadialMethod, RadialQuality, RippleSize, SpherizeMode, UndefinedAreas,
     WaveType,
 };
+use redrob_photo_color::BlendMode;
 use redrob_photo_doc::{LayerContent, SmartFilter};
 use serde_json::{Value, json};
 
@@ -235,8 +236,40 @@ pub(crate) fn has_filterable_layer(s: &Session) -> std::result::Result<(), Strin
     }
 }
 
+/// The filter dialog's Blending Options: `blend` (a layer blend mode name) and `opacity`
+/// (0..100) composite the filter's result over the unfiltered pixels before it lands, the way
+/// Edit › Fade does afterwards. `None` when the result simply replaces the pixels (Normal, 100).
+fn blending(id: &str, p: &Value) -> Result<Option<(BlendMode, f32)>> {
+    let bad = |msg: String| EngineError::BadParams { cmd: id.into(), msg };
+    let mode = match p.get("blend").and_then(Value::as_str) {
+        Some(name) => crate::commands::blend_from_str(name).ok_or_else(|| bad(format!("`blend` must be a blend mode, not `{name}`")))?,
+        None => BlendMode::Normal,
+    };
+    // Pass Through is a group's mode: for a filter result it means plain replacement.
+    let mode = if mode == BlendMode::PassThrough { BlendMode::Normal } else { mode };
+    let opacity = match p.get("opacity") {
+        Some(v) => {
+            v.as_f64().filter(|o| o.is_finite() && (0.0..=100.0).contains(o)).ok_or_else(|| bad("`opacity` must be a number in 0..100".into()))? as f32 / 100.0
+        }
+        None => 1.0,
+    };
+    Ok((mode != BlendMode::Normal || opacity < 1.0).then_some((mode, opacity)))
+}
+
+/// Composite the filtered `after` over the unfiltered `before` with the dialog's blending options
+/// (`fade_surface`'s arithmetic, so Fade and Blending Options agree). A filter that changed the
+/// pixel format (Color to Alpha adding alpha) first brings the unfiltered pixels to it.
+fn blend_result(before: &redrob_photo_raster::Surface, after: &mut redrob_photo_raster::Surface, mode: BlendMode, opacity: f32) -> Result<()> {
+    let before = if before.format() == after.format() { before.clone() } else { before.try_convert(after.format())? };
+    let area = before.content_bounds().union(&after.content_bounds());
+    crate::edit_menu_cmds::fade_surface(&before, after, area, mode, opacity)?;
+    after.prune();
+    Ok(())
+}
+
 pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> {
     validate_params(id, p)?;
+    let blend = blending(id, p)?;
     // Session state some filters read (colours) becomes explicit params; external inputs resolve here.
     let prepared = crate::filters_ext::prepare(s, id, p);
     let p = &prepared;
@@ -251,6 +284,9 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
     let mut params = p.clone();
     if let Value::Object(m) = &mut params {
         m.remove("__kind");
+        // A smart filter keeps its blending options in its own fields, not in the stored params.
+        m.remove("blend");
+        m.remove("opacity");
     }
     let id = id.to_string();
     let p = p.clone();
@@ -274,7 +310,11 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
             if let Some(surf) = crate::channel_cmds::channel_surface_for_filter(doc, Some(layer), &p)? {
                 let content = doc_bounds.union(&surf.content_bounds());
                 let area = algo::output_area(&fp, content, bounds, sel_bounds);
+                let before = blend.map(|_| surf.clone());
                 *surf = filter(surf, &fp, area, bounds, selection.as_ref(), doc_bounds.union(&content))?;
+                if let (Some((mode, opacity)), Some(before)) = (blend, &before) {
+                    blend_result(before, surf, mode, opacity)?;
+                }
                 return Ok(fp.clone());
             }
             // Filters that make pixels transparent (Color to Alpha) turn the Background into a
@@ -297,18 +337,23 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
                 LayerContent::Raster(surf) => surf,
                 LayerContent::Smart(_) => {
                     // Non-destructive: record the filter and re-render the smart object from its source.
-                    let sf =
-                        SmartFilter { command: id.clone(), params: params.clone(), blend: redrob_photo_color::BlendMode::Normal, opacity: 1.0, visible: true };
+                    // The dialog's blending options become the smart filter's own (editable later
+                    // under Blending Options in the Layers panel).
+                    let (blend_mode, opacity) = blend.unwrap_or((redrob_photo_color::BlendMode::Normal, 1.0));
+                    let sf = SmartFilter { command: id.clone(), params: params.clone(), blend: blend_mode, opacity, visible: true };
                     return crate::smart_cmds::add_smart_filter(doc, layer, sf, selection.as_ref()).map(|()| fp);
                 }
                 _ => return Err(EngineError::Other("not a pixel layer".into())),
             };
-            let before = locks.transparency.then(|| surf.clone());
+            let before = (locks.transparency || blend.is_some()).then(|| surf.clone());
             let content = surf.content_bounds();
             let area = algo::output_area(&fp, content, bounds, sel_bounds);
             *surf = filter(surf, &fp, area, bounds, selection.as_ref(), doc_bounds.union(&content))?;
-            if let Some(before) = &before {
-                keep_alpha(before, surf);
+            if let (Some((mode, opacity)), Some(before)) = (blend, &before) {
+                blend_result(before, surf, mode, opacity)?;
+            }
+            if let Some(before) = before.filter(|_| locks.transparency) {
+                keep_alpha(&before, surf);
             }
             Ok(fp)
         },

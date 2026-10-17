@@ -1354,8 +1354,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filters-common.html"
 behaviour = "GEGL filter dialogs share a presets menu (save/manage/import/export), on-canvas preview with split view, merge-filter switch for non-destructive application, blending mode and opacity, clipping to adjust/clip, and colour-space choice for the operation."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/filter_dialog.rs, crafts/photocraft/crates/engine/src/smart_cmds.rs"
-gap = "presets, preview and non-destructive smart filters yes; no split view, blend/opacity set after via Edit > Fade or smart-filter blending options"
+ours_where = "crafts/photocraft/crates/ui-egui/src/filter_dialog.rs, crafts/photocraft/crates/ui-egui/src/filter_split.rs, crafts/photocraft/crates/engine/src/filters.rs, crafts/photocraft/crates/engine/src/smart_cmds.rs"
+gap = "presets, preview with split view (draggable divider, Shift+click turns it), blending mode + opacity before commit (blend/opacity params, also stored on smart filters) and non-destructive smart filters yes; clipping is always clip (filters never grow the layer, so no Adjust choice and no checkbox) and no per-filter input/output colour space"
 priority = 1
 
 [[feature]]

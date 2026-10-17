@@ -735,6 +735,18 @@ pub struct ToolOptions {
     /// Eyedropper › Show Sampling Ring.
     #[serde(default = "yes")]
     pub eyedropper_ring: bool,
+    /// Filter dialogs › Split View (PH-FLT-002): on, and the divider's position (a fraction of the
+    /// image) and orientation, as the last filter dialog left them.
+    #[serde(default)]
+    pub filter_split: bool,
+    #[serde(default = "half")]
+    pub filter_split_pos: f32,
+    #[serde(default)]
+    pub filter_split_horizontal: bool,
+}
+
+fn half() -> f32 {
+    0.5
 }
 
 fn yes() -> bool {
@@ -910,6 +922,9 @@ impl Default for ToolOptions {
             eyedropper_size: 1,
             eyedropper_sample: default_eyedropper_sample(),
             eyedropper_ring: true,
+            filter_split: false,
+            filter_split_pos: 0.5,
+            filter_split_horizontal: false,
         }
     }
 }
