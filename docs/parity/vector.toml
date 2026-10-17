@@ -966,9 +966,9 @@ name = "Bend"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "Deforms the object along a bend path that is drawn or pasted; the bend path is edited on canvas with the node tool; width scaling and original-width options."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/live.rs (Envelope with WarpStyle), crafts/vectorcraft/crates/effects/src/warp.rs"
-gap = "fifteen fixed warp styles with bend/distortion sliders and a freehand envelope mesh; no 'bend along an arbitrary drawn path'"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe.rs (path.bend), crafts/vectorcraft/crates/effects/src/lib.rs (catalog), crafts/vectorcraft/crates/doc/src/live.rs (Envelope with WarpStyle)"
+gap = "the spine is typed as four box-coordinate points in the effect dialog (live preview), not dragged as node-tool knots on canvas"
 priority = 2
 
 [[feature]]
@@ -990,9 +990,9 @@ name = "BSpline"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Interprets the path's nodes as B-spline control points producing a smooth curve that never passes through them; a weight per node and 'apply without weight' option; also a pen/pencil drawing mode."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/spline.rs (bspline_to_bezier), crafts/vectorcraft/crates/effects/src/lpe.rs (path.bspline)"
+gap = "one weight for the whole path (0..100 %), not a weight per node"
 priority = 2
 
 [[feature]]
@@ -1050,9 +1050,9 @@ name = "Dashed stroke"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Turns the path into a chosen number of dashes per segment (or by length) with hole factor, half-start/half-end, split at segment ends; the result is real geometry so the dashes can be styled further."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/stroke/dash.rs, crafts/vectorcraft/crates/doc/src/appearance.rs (dash arrays, Align Dashes to Corners)"
-gap = "dashing is a stroke attribute (with corner alignment) and can be outlined; no 'N dashes per segment' geometry effect"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe.rs (path.dashedStroke: dashes per segment, hole factor, unify, half start/end, start/end offsets, stroke-to-path), crafts/vectorcraft/crates/effects/src/stroke/dash.rs (stroke dash attribute)"
+gap = "dash count is per segment only (no 'by length' mode)"
 priority = 2
 
 [[feature]]
@@ -1398,9 +1398,9 @@ name = "Spiro spline"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Interprets the nodes as a Spiro curve: smooth nodes become G2-continuous clothoid segments, corner nodes stay sharp; also a pen/pencil drawing mode."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/spline.rs (spiro_approx_to_bezier), crafts/vectorcraft/crates/effects/src/lpe.rs (path.spiro)"
+gap = "clean-room approximation (circle tangents, arc-fitted handles, curvature relaxed across nodes), not a clothoid solver"
 priority = 2
 
 [[feature]]
@@ -1422,9 +1422,9 @@ name = "Taper stroke"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Taper_Stroke"
 behaviour = "Outlines the stroke with tapering ends: width, start/end taper lengths (knots on canvas), taper smoothing, join type, and in 1.4 the taper direction and per-subpath handling."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (WidthProfile presets), crafts/vectorcraft/crates/effects/src/stroke/width.rs"
-gap = "width profile presets taper the ends; no separate taper-length knots or smoothing parameter"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe.rs (path.taperStroke: width, start/end taper lengths, smoothing, join, direction), crafts/vectorcraft/crates/effects/src/stroke/width.rs"
+gap = "taper lengths are typed in the dialog (live preview), not dragged as knots on canvas"
 priority = 2
 
 [[feature]]

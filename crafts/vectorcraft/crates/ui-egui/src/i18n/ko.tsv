@@ -4342,3 +4342,28 @@ lighting	Light	광원
 	Softness	부드러움
 	Ambient Light	주변광
 	Light behind the object	개체 뒤의 조명
+	Bend…	구부리기…
+	Bend	구부리기
+	B-Spline…	B-스플라인…
+	B-Spline	B-스플라인
+	Spiro Spline…	스피로 스플라인…
+	Spiro Spline	스피로 스플라인
+	Dashed Stroke…	점선 선…
+	Dashed Stroke	점선 선
+	Taper Stroke…	가늘어지는 선…
+	Taper Stroke	가늘어지는 선
+	Spine	척추 패스
+	Width Scale	폭 비율
+	Cusps	모서리 유지
+	Dashes	점선 수
+	Hole Factor	구멍 비율
+	Unify	길이 통일
+	Half Start	시작 절반
+	Half End	끝 절반
+	Start Offset	시작 오프셋
+	End Offset	끝 오프셋
+	Stroke To Path	선을 패스로
+	Start Taper	시작 가늘기
+	End Taper	끝 가늘기
+	Smoothing	부드럽게
+	Direction	방향

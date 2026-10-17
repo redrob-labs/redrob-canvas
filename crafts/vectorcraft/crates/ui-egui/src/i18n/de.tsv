@@ -4333,3 +4333,28 @@ theme	Appearance	Erscheinungsbild
 	Softness	Weichheit
 	Ambient Light	Umgebungslicht
 	Light behind the object	Licht hinter dem Objekt
+	Bend…	Biegen…
+	Bend	Biegen
+	B-Spline…	B-Spline…
+	B-Spline	B-Spline
+	Spiro Spline…	Spiro-Spline…
+	Spiro Spline	Spiro-Spline
+	Dashed Stroke…	Gestrichelte Kontur…
+	Dashed Stroke	Gestrichelte Kontur
+	Taper Stroke…	Verjüngte Kontur…
+	Taper Stroke	Verjüngte Kontur
+	Spine	Leitpfad
+	Width Scale	Breitenskalierung
+	Cusps	Ecken behalten
+	Dashes	Striche
+	Hole Factor	Lückenfaktor
+	Unify	Vereinheitlichen
+	Half Start	Halber Anfang
+	Half End	Halbes Ende
+	Start Offset	Anfangsversatz
+	End Offset	Endversatz
+	Stroke To Path	Kontur in Pfad
+	Start Taper	Verjüngung am Anfang
+	End Taper	Verjüngung am Ende
+	Smoothing	Glättung
+	Direction	Richtung

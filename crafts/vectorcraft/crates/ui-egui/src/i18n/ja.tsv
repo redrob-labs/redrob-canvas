@@ -4372,3 +4372,28 @@ lighting	Light	ライト
 	Softness	柔らかさ
 	Ambient Light	環境光
 	Light behind the object	オブジェクトの背後のライト
+	Bend…	ベンド…
+	Bend	ベンド
+	B-Spline…	Bスプライン…
+	B-Spline	Bスプライン
+	Spiro Spline…	スピロスプライン…
+	Spiro Spline	スピロスプライン
+	Dashed Stroke…	破線の線…
+	Dashed Stroke	破線の線
+	Taper Stroke…	先細りの線…
+	Taper Stroke	先細りの線
+	Spine	スパイン
+	Width Scale	幅の倍率
+	Cusps	コーナーを保持
+	Dashes	破線の数
+	Hole Factor	間隔の比率
+	Unify	長さを統一
+	Half Start	始点を半分に
+	Half End	終点を半分に
+	Start Offset	開始オフセット
+	End Offset	終了オフセット
+	Stroke To Path	線をパスに
+	Start Taper	始点の先細り
+	End Taper	終点の先細り
+	Smoothing	スムージング
+	Direction	方向

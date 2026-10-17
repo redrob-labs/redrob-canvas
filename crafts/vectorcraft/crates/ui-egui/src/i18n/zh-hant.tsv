@@ -3739,3 +3739,28 @@ lighting	Light	光源
 	Softness	柔和度
 	Ambient Light	環境光
 	Light behind the object	光源位於物件後方
+	Bend…	彎曲…
+	Bend	彎曲
+	B-Spline…	B 雲形線…
+	B-Spline	B 雲形線
+	Spiro Spline…	Spiro 雲形線…
+	Spiro Spline	Spiro 雲形線
+	Dashed Stroke…	虛線筆畫…
+	Dashed Stroke	虛線筆畫
+	Taper Stroke…	漸細筆畫…
+	Taper Stroke	漸細筆畫
+	Spine	骨架路徑
+	Width Scale	寬度比例
+	Cusps	保留尖角
+	Dashes	虛線數
+	Hole Factor	空隙比例
+	Unify	統一長度
+	Half Start	起點半段
+	Half End	終點半段
+	Start Offset	起點偏移
+	End Offset	終點偏移
+	Stroke To Path	筆畫轉路徑
+	Start Taper	起點漸細
+	End Taper	終點漸細
+	Smoothing	平滑
+	Direction	方向

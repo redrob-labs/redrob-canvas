@@ -4747,3 +4747,28 @@ mark-style	Japanese	Japonesas
 	Softness	Suavidad
 	Ambient Light	Luz ambiental
 	Light behind the object	Luz detrás del objeto
+	Bend…	Curvar…
+	Bend	Curvar
+	B-Spline…	B-spline…
+	B-Spline	B-spline
+	Spiro Spline…	Spline Spiro…
+	Spiro Spline	Spline Spiro
+	Dashed Stroke…	Trazo discontinuo…
+	Dashed Stroke	Trazo discontinuo
+	Taper Stroke…	Trazo afilado…
+	Taper Stroke	Trazo afilado
+	Spine	Eje
+	Width Scale	Escala de anchura
+	Cusps	Vértices
+	Dashes	Guiones
+	Hole Factor	Factor de hueco
+	Unify	Unificar
+	Half Start	Medio al inicio
+	Half End	Medio al final
+	Start Offset	Desplazamiento inicial
+	End Offset	Desplazamiento final
+	Stroke To Path	Trazo a trazado
+	Start Taper	Afilado inicial
+	End Taper	Afilado final
+	Smoothing	Suavizado
+	Direction	Dirección

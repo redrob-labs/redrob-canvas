@@ -198,6 +198,8 @@ fn choices(effect: &str, key: &str) -> Option<form::Choices> {
         ("video.deinterlace", "create") => Some(&[("Duplication", "duplication"), ("Interpolation", "interpolation")]),
         ("stylize.innerGlow", "source") => Some(&[("Center", "center"), ("Edge", "edge")]),
         ("path.offsetPath", "joins") => Some(&[("Miter", "miter"), ("Round", "round"), ("Bevel", "bevel")]),
+        ("path.taperStroke", "join") => Some(&redrob_vector_effects::TAPER_JOINS),
+        ("path.taperStroke", "direction") => Some(&redrob_vector_effects::TAPER_DIRECTIONS),
         ("distort.roughen" | "distort.zigZag", "points") => Some(&[("Smooth", "smooth"), ("Corner", "corner")]),
         _ => None,
     }
