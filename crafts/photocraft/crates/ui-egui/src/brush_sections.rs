@@ -11,16 +11,20 @@ use crate::brush_preview;
 use crate::theme::{self, Tokens};
 use crate::widgets;
 
-pub const CONTROLS: [(Control, &str); 8] = [
+pub const CONTROLS: [(Control, &str); 9] = [
     (Control::Off, "Off"),
     (Control::Fade, "Fade"),
     (Control::PenPressure, "Pen Pressure"),
     (Control::PenTilt, "Pen Tilt"),
     (Control::StylusWheel, "Stylus Wheel"),
     (Control::Rotation, "Rotation"),
+    (Control::Velocity, "Velocity"),
     (Control::InitialDirection, "Initial Direction"),
     (Control::Direction, "Direction"),
 ];
+
+/// How many of [`CONTROLS`] have a 0..1 value (the rest are the angle-only direction controls).
+pub const SCALAR_CONTROLS: usize = 7;
 
 pub const MASK_MODES: [(MaskMode, &str); 10] = [
     (MaskMode::Multiply, "Multiply"),
@@ -70,7 +74,7 @@ fn dim(ui: &mut egui::Ui, s: &str) {
 /// Whether a dynamic's control has a 0..1 input its own response curve shapes (not Off, not the
 /// direction controls, not Angle Jitter, whose controls set an angle).
 pub(crate) fn takes_curve(control: Control, angle: bool) -> bool {
-    !angle && matches!(control, Control::Fade | Control::PenPressure | Control::PenTilt | Control::StylusWheel | Control::Rotation)
+    !angle && matches!(control, Control::Fade | Control::PenPressure | Control::PenTilt | Control::StylusWheel | Control::Rotation | Control::Velocity)
 }
 
 /// egui memory key of the open/closed state of a dynamic's curve editor.
@@ -86,7 +90,7 @@ fn control_row(ui: &mut egui::Ui, id: &str, d: &mut Dynamic, angle: bool) {
     let mut open: bool = ui.data(|m| m.get_temp(open_id)).unwrap_or(false);
     ui.horizontal(|ui| {
         dim(ui, tl!("Control:"));
-        let n = if angle || matches!(d.control, Control::InitialDirection | Control::Direction) { 8 } else { 6 };
+        let n = if angle || matches!(d.control, Control::InitialDirection | Control::Direction) { CONTROLS.len() } else { SCALAR_CONTROLS };
         widgets::dropdown(ui, id, &mut d.control, &CONTROLS[..n], 130.0);
         if d.control == Control::Fade {
             let mut steps = d.fade_steps as f32;

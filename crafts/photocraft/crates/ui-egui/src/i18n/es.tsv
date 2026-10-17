@@ -4163,3 +4163,10 @@ navigator	Zoom	Zoom
 	Ink below	Tinta bajo
 	Close gaps	Cerrar huecos
 	Under ink	Bajo la tinta
+	No Dynamics Preset	Sin ajuste de dinámica
+	Dynamics:	Dinámica:
+	Applied dynamics preset {name} ({note})	Dinámica {name} aplicada ({note})
+	Applied dynamics preset {name}	Dinámica {name} aplicada
+	Save the brush's dynamics as a new preset	Guardar la dinámica del pincel como ajuste nuevo
+	Delete this dynamics preset	Eliminar este ajuste de dinámica
+	Velocity	Velocidad

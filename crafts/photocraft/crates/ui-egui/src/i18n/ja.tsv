@@ -3878,3 +3878,10 @@ curves	Smooth	スムーズ
 	Ink below	インク基準
 	Close gaps	隙間を閉じる
 	Under ink	線の下へ
+	No Dynamics Preset	ダイナミクスプリセットなし
+	Dynamics:	ダイナミクス:
+	Applied dynamics preset {name} ({note})	ダイナミクスプリセット {name} を適用しました ({note})
+	Applied dynamics preset {name}	ダイナミクスプリセット {name} を適用しました
+	Save the brush's dynamics as a new preset	ブラシのダイナミクスを新しいプリセットとして保存
+	Delete this dynamics preset	このダイナミクスプリセットを削除
+	Velocity	速度

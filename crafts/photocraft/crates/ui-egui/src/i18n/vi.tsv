@@ -3690,3 +3690,10 @@ curves	Smooth	Làm mượt
 	Ink below	Ngưỡng mực
 	Close gaps	Bịt khe
 	Under ink	Dưới nét mực
+	No Dynamics Preset	Không có cài sẵn động lực
+	Dynamics:	Động lực:
+	Applied dynamics preset {name} ({note})	Đã áp dụng cài sẵn động lực {name} ({note})
+	Applied dynamics preset {name}	Đã áp dụng cài sẵn động lực {name}
+	Save the brush's dynamics as a new preset	Lưu động lực cọ thành cài sẵn mới
+	Delete this dynamics preset	Xóa cài sẵn động lực này
+	Velocity	Tốc độ

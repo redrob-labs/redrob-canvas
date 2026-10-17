@@ -3205,3 +3205,10 @@ curves	Smooth	Glätten
 	Ink below	Tusche unter
 	Close gaps	Lücken schließen
 	Under ink	Unter die Tusche
+	No Dynamics Preset	Keine Dynamikvorgabe
+	Dynamics:	Dynamik:
+	Applied dynamics preset {name} ({note})	Dynamikvorgabe {name} angewendet ({note})
+	Applied dynamics preset {name}	Dynamikvorgabe {name} angewendet
+	Save the brush's dynamics as a new preset	Pinseldynamik als neue Vorgabe speichern
+	Delete this dynamics preset	Diese Dynamikvorgabe löschen
+	Velocity	Geschwindigkeit

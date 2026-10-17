@@ -3992,3 +3992,10 @@ layerLabel	No Color	Sem cor
 	Ink below	Tinta abaixo de
 	Close gaps	Fechar vãos
 	Under ink	Sob a tinta
+	No Dynamics Preset	Sem predefinição de dinâmica
+	Dynamics:	Dinâmica:
+	Applied dynamics preset {name} ({note})	Predefinição de dinâmica {name} aplicada ({note})
+	Applied dynamics preset {name}	Predefinição de dinâmica {name} aplicada
+	Save the brush's dynamics as a new preset	Salvar a dinâmica do pincel como nova predefinição
+	Delete this dynamics preset	Excluir esta predefinição de dinâmica
+	Velocity	Velocidade

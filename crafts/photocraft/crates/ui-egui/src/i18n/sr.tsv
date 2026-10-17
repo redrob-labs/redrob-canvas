@@ -4274,3 +4274,10 @@ shape	Appearance	Izgled
 	Ink below	Праг мастила
 	Close gaps	Затвори процепе
 	Under ink	Под мастило
+	No Dynamics Preset	Без поставке динамике
+	Dynamics:	Динамика:
+	Applied dynamics preset {name} ({note})	Примењена поставка динамике {name} ({note})
+	Applied dynamics preset {name}	Примењена поставка динамике {name}
+	Save the brush's dynamics as a new preset	Сачувај динамику четкице као нову поставку
+	Delete this dynamics preset	Обриши ову поставку динамике
+	Velocity	Брзина

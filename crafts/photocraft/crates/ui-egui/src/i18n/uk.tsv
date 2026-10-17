@@ -3901,3 +3901,10 @@ curves	Smooth	Згладити
 	Ink below	Поріг туші
 	Close gaps	Закрити розриви
 	Under ink	Під туш
+	No Dynamics Preset	Без набору динаміки
+	Dynamics:	Динаміка:
+	Applied dynamics preset {name} ({note})	Застосовано набір динаміки {name} ({note})
+	Applied dynamics preset {name}	Застосовано набір динаміки {name}
+	Save the brush's dynamics as a new preset	Зберегти динаміку пензля як новий набір
+	Delete this dynamics preset	Видалити цей набір динаміки
+	Velocity	Швидкість

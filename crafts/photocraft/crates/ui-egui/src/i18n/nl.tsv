@@ -3962,3 +3962,10 @@ curves	Smooth	Vloeiend maken
 	Ink below	Inkt onder
 	Close gaps	Gaten sluiten
 	Under ink	Onder de inkt
+	No Dynamics Preset	Geen dynamiekvoorinstelling
+	Dynamics:	Dynamiek:
+	Applied dynamics preset {name} ({note})	Dynamiekvoorinstelling {name} toegepast ({note})
+	Applied dynamics preset {name}	Dynamiekvoorinstelling {name} toegepast
+	Save the brush's dynamics as a new preset	Penseeldynamiek opslaan als nieuwe voorinstelling
+	Delete this dynamics preset	Deze dynamiekvoorinstelling verwijderen
+	Velocity	Snelheid

@@ -2821,3 +2821,10 @@ curves	Smooth	平滑
 	Ink below	墨线阈值
 	Close gaps	闭合缝隙
 	Under ink	伸入墨线
+	No Dynamics Preset	无动态预设
+	Dynamics:	动态:
+	Applied dynamics preset {name} ({note})	已应用动态预设 {name} ({note})
+	Applied dynamics preset {name}	已应用动态预设 {name}
+	Save the brush's dynamics as a new preset	将画笔动态保存为新预设
+	Delete this dynamics preset	删除此动态预设
+	Velocity	速度
