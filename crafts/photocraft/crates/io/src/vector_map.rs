@@ -54,7 +54,10 @@ pub fn path_from_records(p: &PathData, w: u32, h: u32) -> Path {
             knots: s.knots.iter().map(|k| Knot { anchor: pt(k.anchor), in_ctrl: pt(k.pre), out_ctrl: pt(k.post), smooth: k.linked }).collect(),
         })
         .collect();
-    Path { subpaths, fill_rule: FillRule::NonZero, inverted: p.initial_fill() }
+    // Photoshop fills a path component by the even-odd rule: where one subpath crosses itself,
+    // or two joined subpaths overlap, the doubly-covered area is a hole whatever the winding
+    // direction (psd-tools pen-text `Shape 2`, a self-crossing open curve).
+    Path { subpaths, fill_rule: FillRule::EvenOdd, inverted: p.initial_fill() }
 }
 
 /// Model path → path records.
@@ -557,6 +560,9 @@ mod tests {
             Subpath::polyline(&[(1.0, 2.0), (3.0, 4.0)]).with_op(PathOp::Subtract),
         ]);
         p.inverted = false;
+        // Path records carry no fill rule; a path read back from them is even-odd, as in
+        // Photoshop, so the sample is built that way to round-trip.
+        p.fill_rule = FillRule::EvenOdd;
         p
     }
 

@@ -152,6 +152,9 @@ pub enum PixelFx {
     DeInterlace { even: bool, interpolate: bool },
     /// Video › NTSC Colors: colours a television signal can't carry made less saturated.
     NtscColors,
+    /// SVG Filters › Color Matrix: SVG's `feColorMatrix` (a 5 × 4 matrix over R, G, B, A, 1 on
+    /// the straight colours; saturate, hueRotate and luminanceToAlpha are matrices too).
+    ColorMatrix { matrix: [f32; 20] },
 }
 
 /// What a raster's colour channels hold, for the filters that treat them apart (Color Halftone
@@ -318,6 +321,23 @@ pub(crate) fn parse(id: &str, p: &Value) -> Option<PixelFx> {
             interpolate: text(p, "create", "duplication").eq_ignore_ascii_case("interpolation"),
         },
         "video.ntscColors" => PixelFx::NtscColors,
+        crate::COLOR_MATRIX => {
+            use crate::svgfilter::MatrixMode;
+            let mode = match text(p, "type", "saturate").to_ascii_lowercase().as_str() {
+                "matrix" => MatrixMode::Matrix,
+                "huerotate" => MatrixMode::HueRotate,
+                "luminancetoalpha" => MatrixMode::LuminanceToAlpha,
+                _ => MatrixMode::Saturate,
+            };
+            let values: Vec<f64> = match mode {
+                MatrixMode::Matrix => match p.get("values") {
+                    Some(Value::Array(a)) => a.iter().filter_map(Value::as_f64).collect(),
+                    _ => text(p, "values", "").split([' ', ',']).filter_map(|t| t.trim().parse().ok()).collect(),
+                },
+                _ => vec![num(p, "amount", 0.5)],
+            };
+            PixelFx::ColorMatrix { matrix: crate::svgfilter::color_matrix(mode, &values) }
+        }
         _ => return None,
     })
 }
@@ -356,7 +376,8 @@ impl PixelFx {
             | PixelFx::MosaicTiles { .. }
             | PixelFx::Texturizer { .. }
             | PixelFx::DeInterlace { .. }
-            | PixelFx::NtscColors => 0.0,
+            | PixelFx::NtscColors
+            | PixelFx::ColorMatrix { .. } => 0.0,
             // A crystal's, dot's or pane's point inside the object reaches out by up to its cell.
             PixelFx::Crystallize { cell } | PixelFx::Pointillize { cell } | PixelFx::StainedGlass { cell, .. } => 1.5 * cell,
             // A square whose centre is on the object is drawn whole.
@@ -400,7 +421,7 @@ impl PixelFx {
             PixelFx::StainedGlass { cell, .. } => Some(2.5 * cell),
             // The lines above and below.
             PixelFx::DeInterlace { .. } => Some(video::MAX_LINE),
-            PixelFx::NtscColors => Some(0.0),
+            PixelFx::NtscColors | PixelFx::ColorMatrix { .. } => Some(0.0),
         }
     }
 
@@ -442,6 +463,13 @@ impl PixelFx {
             }
             PixelFx::DeInterlace { even, interpolate } => video::deinterlace(px, w, h, space, even, interpolate),
             PixelFx::NtscColors => video::ntsc(px),
+            PixelFx::ColorMatrix { matrix } => {
+                let mut f: Vec<[f32; 4]> = px.iter().map(|p| p.map(|v| f32::from(v) / 255.0)).collect();
+                crate::svgfilter::apply_matrix(&mut f, &matrix);
+                for (o, v) in px.iter_mut().zip(&f) {
+                    *o = v.map(|c| (c.clamp(0.0, 1.0) * 255.0).round() as u8);
+                }
+            }
         }
     }
 }

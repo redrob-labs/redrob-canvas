@@ -214,7 +214,10 @@ impl Placement {
         // Undo a counter-clockwise rotation (y points down on screen).
         let (c, s) = self.cs;
         let (rx, ry) = (dx * c - dy * s, dx * s + dy * c);
-        (rx * self.inv_scale, ry * self.inv_scale)
+        // Scale about pixel centres: at 200 % a 1 px tile line comes out as one full pixel with a
+        // half-weight pixel either side (psd-tools patterns.psd, 169/105/169), not as two
+        // three-quarter pixels. At 100 % this is the identity.
+        ((rx - 0.5) * self.inv_scale + 0.5, (ry - 0.5) * self.inv_scale + 0.5)
     }
 }
 

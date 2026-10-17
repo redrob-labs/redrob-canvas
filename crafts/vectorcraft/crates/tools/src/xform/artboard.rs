@@ -150,7 +150,7 @@ impl ArtboardTool {
             return Point::new(p.x.round(), p.y.round());
         }
         if cx.snap_to_grid {
-            return redrob_vector_geom::snap::snap_point_to_grid(p, cx.grid_step());
+            return cx.doc.grid.snap_point(p);
         }
         let Some(t) = &self.targets else { return p };
         let offsets: &[Vec2] = if bleed == Vec2::ZERO { &[] } else { &[bleed] };
@@ -168,7 +168,7 @@ impl ArtboardTool {
             return Vec2::new((tl.x + d.x).round() - tl.x, (tl.y + d.y).round() - tl.y);
         }
         if cx.snap_to_grid {
-            return redrob_vector_geom::snap::snap_point_to_grid(tl + d, cx.grid_step()) - tl;
+            return cx.doc.grid.snap_point(tl + d) - tl;
         }
         let Some(t) = (if copy { &self.copy_targets } else { &self.targets }) else { return d };
         let moved = rect + d;

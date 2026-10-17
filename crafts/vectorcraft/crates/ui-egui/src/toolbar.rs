@@ -389,6 +389,12 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
         ui.separator();
         return;
     }
+    if matches!(app.session.tool_id(), "pen" | "pencil" | "paintbrush") {
+        return drawing_mode_options(app, ui);
+    }
+    if app.session.tool_id() == "directSelection" {
+        return node_options(app, ui);
+    }
     if app.session.tool_id() != "mirrorCut" {
         return;
     }
@@ -402,6 +408,78 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
         if let Some((value, _)) = widgets::dropdown(ui, ("cb-tool", key), shown, &labels, 96.0).and_then(|i| choices.get(i)) {
             app.run("tool.setOption", json!({ "key": key, "value": value })).ok();
         }
+    }
+    ui.separator();
+}
+
+/// The Pen's and the Pencil's Mode (regular Bézier, Spiro, BSpline; the Pen: paraxial too) and
+/// Shape along the stroke (none, triangle in, triangle out, ellipse, from clipboard), set through
+/// the tools' `mode` and `shape` options.
+fn drawing_mode_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    /// (value, label) of each choice.
+    type Choices = [(&'static str, &'static str)];
+    const MODES: [(&str, &str); 4] = [("regular", "Regular"), ("spiro", "Spiro"), ("bspline", "BSpline"), ("paraxial", "Paraxial")];
+    const SHAPES: [(&str, &str); 5] = [
+        ("none", "None"),
+        ("triangleIn", "Triangle In"),
+        ("triangleOut", "Triangle Out"),
+        ("ellipse", "Ellipse"),
+        ("fromClipboard", "From Clipboard"),
+    ];
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    // A freehand stroke has no segments to snap: paraxial is the Pen's alone.
+    let modes: &Choices = if app.session.tool_id() == "pen" { &MODES } else { &MODES[..3] };
+    let rows: [(&str, &str, &Choices); 2] = [("mode", "Mode:", modes), ("shape", "Shape:", &SHAPES)];
+    for (key, label, choices) in rows {
+        ui.label(egui::RichText::new(tl!(label)).size(12.0).color(t.text));
+        let cur = opts[key].as_str().unwrap_or_default();
+        let shown = choices.iter().find(|(v, _)| *v == cur).map_or(cur, |(_, l)| *l);
+        let labels: Vec<&str> = choices.iter().map(|(_, l)| *l).collect();
+        if let Some((value, _)) = widgets::dropdown(ui, ("cb-draw", key), shown, &labels, 112.0).and_then(|i| choices.get(i)) {
+            app.run("tool.setOption", json!({ "key": key, "value": value })).ok();
+        }
+    }
+    ui.separator();
+}
+
+/// The node tool's (Direct Selection) controls: Segment: Line / Curve for the selected segments
+/// (`path.segmentType`), X and Y of a single selected anchor in the general unit (moved with
+/// `path.moveAnchors`), and the handle visibility toggle (View › Show Handles).
+fn node_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let Some(st) = app.session.active() else { return };
+    let anchors: Vec<(redrob_vector_doc::NodeId, usize, usize)> =
+        st.selection.anchors.iter().flat_map(|(id, set)| set.iter().map(move |&(si, ai)| (*id, si, ai))).collect();
+    let has_segments = st.selection.segments.values().any(|s| !s.is_empty());
+    let can_retype = has_segments || anchors.len() >= 2;
+    let single = match anchors.as_slice() {
+        [(id, si, ai)] => {
+            st.doc.node(*id).and_then(|n| n.path_data()).and_then(|pd| pd.subpaths.get(*si)).and_then(|sp| sp.anchors.get(*ai)).map(|a| a.p)
+        }
+        _ => None,
+    };
+    let t = Tokens::get(ui.ctx());
+    let units = app.session.general_unit();
+    if can_retype {
+        ui.label(egui::RichText::new(tl!("Segment:")).size(12.0).color(t.text));
+        for (label, tip, to) in [("Line", "Make Selected Segments Lines", "line"), ("Curve", "Make Selected Segments Curves", "curve")] {
+            if widgets::flat_button(ui, label, 52.0).on_hover_text(tl!(tip)).clicked() {
+                app.run("path.segmentType", json!({ "to": to })).ok();
+            }
+        }
+    }
+    if let Some(p) = single {
+        for (k, lbl, v) in [("x", "X:", p.x), ("y", "Y:", p.y)] {
+            widgets::field_label(ui, egui::RichText::new(tl!(lbl)).size(12.0).color(t.text_dim));
+            if let Some(nv) = widgets::num_field(ui, ("cb-node", k), Some(v), units, 72.0) {
+                let (dx, dy) = if k == "x" { (nv - p.x, 0.0) } else { (0.0, nv - p.y) };
+                app.run("path.moveAnchors", json!({ "dx": dx, "dy": dy })).ok();
+            }
+        }
+    }
+    let show = app.ui.view.show_handles;
+    if widgets::icon_button(ui, "tool-anchor", "Show Handles", show, 24.0).clicked() {
+        app.ui.view.show_handles = !show;
     }
     ui.separator();
 }

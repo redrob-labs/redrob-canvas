@@ -2,7 +2,9 @@
 //! With type selected it edits the characters' stroke (weight, cap, join, miter limit, dashes).
 
 use redrob_vector_color::{Color, Paint};
-use redrob_vector_doc::{ArrowAlign, Arrowhead, CharStyle, Dash, LineCap, LineJoin, Node, NodeKind, SavedProfile, StrokeLayer, Unit, WidthProfile};
+use redrob_vector_doc::{
+    ArrowAlign, Arrowhead, CharStyle, Dash, LineCap, LineJoin, MarkerOrient, Node, NodeKind, SavedProfile, StrokeLayer, Unit, WidthProfile,
+};
 use serde_json::{Value, json};
 
 use super::appearance::{ItemTarget, edit_items, item_target};
@@ -18,7 +20,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Stroke Options",
             ["Window", "Stroke"],
             None,
-            "{weight?: pt, cap?: butt|round|square, join?: miter|round|bevel, miterLimit?, align?: center|inside|outside, dash?: [d,g,…]|null (a 0 dash with a round or projecting cap draws dots or squares; a new pattern keeps the current offset and alignment), dashOffset? (exact dashes only), alignDashes?: bool (true: dashes fitted to corners and path ends, every run between them holding whole periods with a dash centred on each corner and end; false, the default for a new pattern: exact lengths), startArrow?, endArrow?: Arrow|ArrowOpen|Barbed|Concave|DoubleArrow|HalfArrowLeft|HalfArrowRight|Chevron|Feather|Swallowtail|Triangle|TriangleOpen|TriangleReverse|TriangleBar|Kite|Leaf|Drop|Circle|CircleOpen|HalfCircle|Oval|Target|Square|SquareOpen|Tag|TagOpen|Diamond|DiamondOpen|Hexagon|HexagonOpen|Star|Cross|Plus|Bar|DoubleBar|DotOnBar|Slash|DoubleSlash|Bracket|Fork|null (HalfArrowLeft/Right: one barb, left or right of the direction the head points), arrowAlign?: \"extend\" (tip past the end point, default)|\"tip\" (tip on the end point; the stroke is shortened), profile?: \"uniform\"|\"lens\"|\"taperStart\"|\"taperEnd\"|\"pinch\"|\"teardrop\"|\"wave\"|a saved profile's name (stroke.widthProfile.list), item?: stroke item index|null (omitted: the Appearance panel's active item if it is a stroke, else the top stroke, created when missing), ids?|id?, target?: \"object\"|\"contents\"} Without a stroke item, type takes weight, cap, join, miterLimit and the dash options as its characters' stroke (every run; text.setRangeStyle `strokeOptions` styles a range), and images and symbol instances (also in groups) are left alone. With nothing selected (and no ids) they set up the next object drawn (appearance.newArt; weight always does)",
+            "{weight?: pt, cap?: butt|round|square, join?: miter|round|bevel, miterLimit?, align?: center|inside|outside, dash?: [d,g,…]|null (a 0 dash with a round or projecting cap draws dots or squares; a new pattern keeps the current offset and alignment), dashOffset? (exact dashes only), alignDashes?: bool (true: dashes fitted to corners and path ends, every run between them holding whole periods with a dash centred on each corner and end; false, the default for a new pattern: exact lengths), startArrow?, endArrow?: Arrow|ArrowOpen|Barbed|Concave|DoubleArrow|HalfArrowLeft|HalfArrowRight|Chevron|Feather|Swallowtail|Triangle|TriangleOpen|TriangleReverse|TriangleBar|Kite|Leaf|Drop|Circle|CircleOpen|HalfCircle|Oval|Target|Square|SquareOpen|Tag|TagOpen|Diamond|DiamondOpen|Hexagon|HexagonOpen|Star|Cross|Plus|Bar|DoubleBar|DotOnBar|Slash|DoubleSlash|Bracket|Fork|null (HalfArrowLeft/Right: one barb, left or right of the direction the head points), midArrow?: the same heads|null (a marker centred on every node between the ends of each subpath, at the start scale), markerOrient?: \"auto\"|\"autoStartReverse\" (the start head turned to point along the path)|angle in degrees (every head at that angle), markersScale?: bool (true, default: heads scale with the stroke weight; false: with 1 pt), hairline?: bool (the stroke is one device pixel wide at any zoom; SVG vector-effect non-scaling-stroke), arrowAlign?: \"extend\" (tip past the end point, default)|\"tip\" (tip on the end point; the stroke is shortened), profile?: \"uniform\"|\"lens\"|\"taperStart\"|\"taperEnd\"|\"pinch\"|\"teardrop\"|\"wave\"|a saved profile's name (stroke.widthProfile.list), item?: stroke item index|null (omitted: the Appearance panel's active item if it is a stroke, else the top stroke, created when missing), ids?|id?, target?: \"object\"|\"contents\"} Without a stroke item, type takes weight, cap, join, miterLimit and the dash options as its characters' stroke (every run; text.setRangeStyle `strokeOptions` styles a range), and images and symbol instances (also in groups) are left alone. With nothing selected (and no ids) they set up the next object drawn (appearance.newArt; weight always does)",
             has_doc,
             stroke_set
         ),
@@ -188,7 +190,20 @@ fn stroke_set(s: &mut Session, p: &Value) -> Result<Value> {
             Some(v) => serde_json::from_value::<Arrowhead>(v.clone()).map(|a| Some(Some(a))).map_err(|_| bad(C, format!("unknown arrowhead {v}"))),
         }
     };
-    let (sa, ea) = (arrow("startArrow")?, arrow("endArrow")?);
+    let (sa, ea, ma) = (arrow("startArrow")?, arrow("endArrow")?, arrow("midArrow")?);
+    let flag =
+        |k: &str| -> Result<Option<bool>> { p.get(k).map(|v| v.as_bool().ok_or_else(|| bad(C, format!("`{k}` must be true or false")))).transpose() };
+    let (hairline, markers_scale) = (flag("hairline")?, flag("markersScale")?);
+    let orient = match p.get("markerOrient") {
+        None | Some(Value::Null) => None,
+        Some(Value::Number(n)) => Some(MarkerOrient::Fixed { angle: n.as_f64().unwrap_or(0.0) }),
+        Some(Value::String(o)) => {
+            Some(MarkerOrient::parse(o).ok_or_else(|| bad(C, format!("markerOrient must be auto|autoStartReverse|an angle in degrees, got {o}")))?)
+        }
+        Some(v) => {
+            return Err(bad(C, format!("markerOrient must be auto|autoStartReverse|an angle in degrees, got {v}")));
+        }
+    };
     let align = named(&ALIGNS, p, "align", C)?;
     let arrow_align = match str_param(p, "arrowAlign") {
         None => None,
@@ -211,8 +226,20 @@ fn stroke_set(s: &mut Session, p: &Value) -> Result<Value> {
         if let Some(a) = ea {
             st.end_arrow = a;
         }
+        if let Some(a) = ma {
+            st.mid_arrow = a;
+        }
         if let Some(a) = arrow_align {
             st.arrow_align = a;
+        }
+        if let Some(h) = hairline {
+            st.hairline = h;
+        }
+        if let Some(m) = markers_scale {
+            st.markers_scale = m;
+        }
+        if let Some(o) = orient {
+            st.marker_orient = o;
         }
         if let Some(pr) = &profile {
             st.profile = pr.clone();

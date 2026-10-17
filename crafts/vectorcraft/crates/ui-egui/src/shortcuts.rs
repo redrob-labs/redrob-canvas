@@ -362,6 +362,11 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         (Key::ArrowRight, ToolKey::Right),
         (Key::ArrowUp, ToolKey::Up),
         (Key::ArrowDown, ToolKey::Down),
+        // The node tool: Tab / Shift+Tab walk the anchors, Page Up / Page Down grow and shrink
+        // the anchor selection (ahead of Tab's Panels shortcut).
+        (Key::Tab, ToolKey::Tab),
+        (Key::PageUp, ToolKey::PageUp),
+        (Key::PageDown, ToolKey::PageDown),
     ] {
         if ctx.input(|i| i.key_pressed(k)) && app.session.tool_claims_key(tk, view) && ctx.input_mut(|i| i.consume_key(m, k)) {
             let r = app.session.tool_key(tk, crate::canvas::mods(m, false), view);
@@ -433,6 +438,46 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
             return;
         }
     }
+    // Keyboard transforms of the selection: `[` and `]` rotate by 15°, `<` and `>` scale by the
+    // keyboard increment (with Alt, by one screen pixel), as typed. (Cmd/Ctrl with the brackets
+    // is Arrange's; a 90° step is a dialog away: Object › Transform › Rotate.)
+    if !typing && !m.command && app.session.active().is_some_and(|d| !d.selection.is_empty()) {
+        let typed: Vec<String> = ctx.input(|i| {
+            i.events
+                .iter()
+                .filter_map(|e| match e {
+                    egui::Event::Text(t) if matches!(t.as_str(), "[" | "]" | "<" | ">") => Some(t.clone()),
+                    _ => None,
+                })
+                .collect()
+        });
+        let mut taken = false;
+        for text in typed {
+            let p = match text.as_str() {
+                "[" => Some(("object.rotate", json!({ "angle": 15.0 }))),
+                "]" => Some(("object.rotate", json!({ "angle": -15.0 }))),
+                "<" | ">" => {
+                    let grow = text == ">";
+                    let step = if m.alt { 1.0 / view.zoom.max(1e-6) } else { app.session.prefs.keyboard_increment };
+                    let w = app.selection_bounds().map_or(0.0, |b| b.width().max(b.height()));
+                    if w <= 0.0 {
+                        continue;
+                    }
+                    let factor = ((w + if grow { step } else { -step }) / w).max(0.01);
+                    Some(("object.scale", json!({ "sx": factor * 100.0, "sy": factor * 100.0 })))
+                }
+                _ => None,
+            };
+            if let Some((cmd, params)) = p {
+                ctx.input_mut(|i| i.events.retain(|e| !matches!(e, egui::Event::Text(t) if *t == text)));
+                let _ = app.run(cmd, params);
+                taken = true;
+            }
+        }
+        if taken {
+            return;
+        }
+    }
     // Command shortcuts.
     let mut fire = None;
     for (sc, id, p) in all_shortcuts() {
@@ -490,6 +535,16 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         // Shift+~ arrives as `~`).
         let shifted = m.shift.then(|| format!("Shift+{text}"));
         let lookup = |find: fn(&str) -> Option<&'static str>| find(&key).or_else(|| find(&text)).or_else(|| shifted.as_deref().and_then(find));
+        // Node kinds: with Direct Selection and anchor points selected, Shift+C/S/Y/A make them
+        // corner, smooth, symmetric or auto-smooth (the tool shortcuts on those keys yield).
+        if m.shift
+            && app.session.tool_id() == "directSelection"
+            && app.session.active().is_some_and(|d| !d.selection.anchors.is_empty())
+            && let Some(kind) = node_kind_for_key(&key)
+        {
+            let _ = app.run("path.convertAnchors", json!({"to": kind}));
+            continue;
+        }
         // Single-key command shortcuts (X, Shift+X, D, /, Shift+D, F, Shift+F by default).
         if let Some(id) = lookup(crate::shortcut_editor::command_for_key) {
             let _ = app.run(id, json!({}));
@@ -498,6 +553,18 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         if let Some(t) = lookup(crate::shortcut_editor::tool_for_key) {
             app.select_tool(t);
         }
+    }
+}
+
+/// The node kind the single-key chord `key` (`Shift+C`, `Shift+S`, `Shift+Y`, `Shift+A`) converts
+/// selected anchor points to, as `path.convertAnchors` names it.
+fn node_kind_for_key(key: &str) -> Option<&'static str> {
+    match key {
+        "Shift+C" => Some("corner"),
+        "Shift+S" => Some("smooth"),
+        "Shift+Y" => Some("symmetric"),
+        "Shift+A" => Some("autoSmooth"),
+        _ => None,
     }
 }
 

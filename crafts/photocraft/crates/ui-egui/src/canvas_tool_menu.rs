@@ -703,7 +703,13 @@ pub fn choose(app: &mut PhotocraftApp, ctx: &Context, command: &str) {
         choose_pen(app, ctx, &menu, command)
     } else if command == "select.toWorkPath" {
         // Photoshop's Make Work Path… asks for the tolerance first.
-        spec_dialog(app, command, "Make Work Path", r##"{"tolerance":0.5..10=2}"##, serde_json::Map::new());
+        spec_dialog(
+            app,
+            command,
+            "Make Work Path",
+            r##"{"tolerance":0.5..10=2,"threshold":1..99=50,"cornerThreshold":1..179=60,"cornerSurround":0.5..50=1.5,"minArea":0..10000=0,"smooth":0..64=0}"##,
+            serde_json::Map::new(),
+        );
         Ok(())
     } else {
         crate::menus::invoke(app, ctx, command, json!({})).map(|_| ())

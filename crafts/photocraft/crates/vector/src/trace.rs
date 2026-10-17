@@ -20,28 +20,88 @@ use redrob_photo_geom::{Point, Rect};
 
 type P = (f64, f64);
 
+/// Advanced tracing options of [`trace_mask_with`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TraceOptions {
+    /// Largest deviation of the fitted curves from the contour, px.
+    pub tolerance: f64,
+    /// Coverage level the contour follows (0.5: half-selected pixels are on the outline).
+    pub level: f32,
+    /// A turn sharper than this (degrees) over ±`corner_surround` px becomes a corner anchor.
+    pub corner_threshold: f64,
+    /// Half the arc length over which the direction change of a corner is measured, px.
+    pub corner_surround: f64,
+    /// Contours enclosing fewer than this many square pixels are dropped (speckle filter).
+    pub min_area: f64,
+    /// Passes of neighbour averaging over the contour points before fitting (0 = none).
+    pub smooth: u32,
+}
+
+impl Default for TraceOptions {
+    fn default() -> Self {
+        Self { tolerance: 2.0, level: 0.5, corner_threshold: 60.0, corner_surround: 1.5, min_area: 0.0, smooth: 0 }
+    }
+}
+
 /// Traces the 0.5 iso-contours of `values` (row-major over `rect`, values outside read as
 /// `outside`) and fits curves within `tolerance` px.
 pub fn trace_mask(values: &[f32], rect: Rect, outside: f32, tolerance: f64) -> Path {
-    let loops = contours(values, rect, outside);
+    trace_mask_with(values, rect, outside, &TraceOptions { tolerance, ..TraceOptions::default() })
+}
+
+/// [`trace_mask`] with every tracing option of [`TraceOptions`].
+pub fn trace_mask_with(values: &[f32], rect: Rect, outside: f32, o: &TraceOptions) -> Path {
+    let level = if o.level.is_finite() { o.level.clamp(0.01, 0.99) } else { 0.5 };
+    let loops = contours_at(values, rect, outside, level);
+    let corner_deg = if o.corner_threshold.is_finite() { o.corner_threshold.clamp(1.0, 179.0) } else { 60.0 };
+    let window = if o.corner_surround.is_finite() { o.corner_surround.clamp(0.5, 50.0) } else { 1.5 };
     let mut subpaths = Vec::new();
     // `contours` only returns loops of three or more points.
-    for (i, lp) in loops.iter().enumerate() {
+    for lp in loops.iter().filter(|lp| o.min_area <= 0.0 || loop_area(lp) >= o.min_area) {
+        let smoothed = smooth_loop(lp, o.smooth);
         // Fit to half the tolerance: the worst point may deviate by the full amount only rarely.
-        let mut s = fit_closed(lp, (tolerance * 0.5).max(0.05), 1.5);
-        s.op = if i == 0 { PathOp::Combine } else { PathOp::Exclude };
+        let mut s = fit_closed(&smoothed, (o.tolerance * 0.5).max(0.05), window, corner_deg);
+        s.op = if subpaths.is_empty() { PathOp::Combine } else { PathOp::Exclude };
         subpaths.push(s);
     }
     Path::new(subpaths)
 }
 
+/// Absolute area enclosed by a closed loop (shoelace), px².
+fn loop_area(lp: &[P]) -> f64 {
+    let n = lp.len();
+    let twice: f64 = (0..n).map(|i| lp[i].0 * lp[(i + 1) % n].1 - lp[(i + 1) % n].0 * lp[i].1).sum();
+    twice.abs() * 0.5
+}
+
+/// `passes` rounds of replacing each point by the mean of itself and its two neighbours.
+fn smooth_loop(lp: &[P], passes: u32) -> Vec<P> {
+    let mut cur = lp.to_vec();
+    let n = cur.len();
+    if n < 3 {
+        return cur;
+    }
+    for _ in 0..passes.min(64) {
+        let prev = cur.clone();
+        for i in 0..n {
+            let (a, b, c) = (prev[(i + n - 1) % n], prev[i], prev[(i + 1) % n]);
+            cur[i] = ((a.0 + b.0 + c.0) / 3.0, (a.1 + b.1 + c.1) / 3.0);
+        }
+    }
+    cur
+}
+
 /// Closed iso-contours at 0.5 through pixel centres.
 pub fn contours(values: &[f32], rect: Rect, outside: f32) -> Vec<Vec<P>> {
+    contours_at(values, rect, outside, 0.5)
+}
+
+/// Closed iso-contours at `lvl` through pixel centres.
+pub fn contours_at(values: &[f32], rect: Rect, outside: f32, lvl: f32) -> Vec<Vec<P>> {
     let w = rect.width() as i64;
     let h = rect.height() as i64;
     let get = |x: i64, y: i64| -> f32 { if x < 0 || y < 0 || x >= w || y >= h { outside } else { values[(y * w + x) as usize] } };
     // Edge ids: horizontal edge between (x,y)-(x+1,y) = (x, y, 0); vertical (x,y)-(x,y+1) = (x, y, 1).
-    let lvl = 0.5f32;
     let point = |a: (i64, i64), b: (i64, i64)| -> P {
         let (va, vb) = (get(a.0, a.1), get(b.0, b.1));
         let t = if (vb - va).abs() > 1e-9 { f64::from((lvl - va) / (vb - va)).clamp(0.0, 1.0) } else { 0.5 };
@@ -174,11 +234,11 @@ fn walk(lp: &[P], i: usize, window: f64, fwd: bool, closed: bool) -> P {
     lp[cur]
 }
 
-/// Indices of corner points: where the direction over ±`window` px turns by more than 60°. The
-/// ends of an open polyline are never corners.
-fn corners(lp: &[P], window: f64, closed: bool) -> Vec<usize> {
+/// Indices of corner points: where the direction over ±`window` px turns by more than
+/// `corner_deg` degrees. The ends of an open polyline are never corners.
+fn corners(lp: &[P], window: f64, closed: bool, corner_deg: f64) -> Vec<usize> {
     let n = lp.len();
-    let cos_thresh = (60f64).to_radians().cos();
+    let cos_thresh = corner_deg.to_radians().cos();
     let turn: Vec<f64> = (0..n)
         .map(|i| {
             if !closed && (i == 0 || i + 1 == n) {
@@ -236,10 +296,11 @@ fn corners(lp: &[P], window: f64, closed: bool) -> Vec<usize> {
     out
 }
 
-/// Fits a closed loop with cubic Béziers; `window` is the corner detection window.
-fn fit_closed(lp: &[P], tol: f64, window: f64) -> Subpath {
+/// Fits a closed loop with cubic Béziers; `window` is the corner detection window and
+/// `corner_deg` the turn that makes a corner.
+fn fit_closed(lp: &[P], tol: f64, window: f64, corner_deg: f64) -> Subpath {
     let n = lp.len();
-    let cs = corners(lp, window, true);
+    let cs = corners(lp, window, true, corner_deg);
     let mut segs: Vec<[P; 4]> = Vec::new();
     let mut corner_at_start: Vec<bool> = Vec::new();
     if cs.is_empty() {
@@ -318,7 +379,7 @@ pub fn fit_trace(points: &[[f64; 2]], tolerance: f64, closed: bool) -> Option<Su
         while lp.len() > 3 && lp.last().zip(lp.first()).is_some_and(|(a, b)| len(sub(*a, *b)) < min_step) {
             lp.pop();
         }
-        return (lp.len() >= 3).then(|| fit_closed(&lp, tol, window));
+        return (lp.len() >= 3).then(|| fit_closed(&lp, tol, window, 60.0));
     }
     (lp.len() >= 2).then(|| fit_open(&lp, tol, window))
 }
@@ -327,7 +388,7 @@ pub fn fit_trace(points: &[[f64; 2]], tolerance: f64, closed: bool) -> Option<Su
 fn fit_open(lp: &[P], tol: f64, window: f64) -> Subpath {
     let n = lp.len();
     let mut cuts = vec![0];
-    cuts.extend(corners(lp, window, false));
+    cuts.extend(corners(lp, window, false, 60.0));
     cuts.push(n - 1);
     cuts.dedup();
     let mut segs: Vec<[P; 4]> = Vec::new();

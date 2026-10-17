@@ -18,10 +18,12 @@ use redrob_photo_geom::{Point, Rect};
 use redrob_photo_raster::Surface;
 use serde::{Deserialize, Serialize};
 
+pub mod assistants;
 pub mod bg_erase;
 pub mod brush;
 pub mod curve;
 pub mod dynamics;
+pub mod dynamics_preset;
 pub mod mixer;
 pub mod outline;
 pub mod presets;
@@ -34,10 +36,12 @@ pub mod symmetry;
 pub mod tile;
 
 pub use brush::{
-    BrushPreset, BrushSettings, ColorDynamics, Control, DualBrush, Dynamic, MAX_BRUSH_SIZE, MAX_SCATTER, MaskMode, Pattern, PatternStyle, Pose, PresetCaptures,
-    Scattering, SectionLocks, ShapeDynamics, Smoothing, Texture, TipShape, Transfer,
+    BrushPreset, BrushSettings, ColorDynamics, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, HoseDimension, HoseSelection, ImageHose,
+    MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering, SectionLocks, Sensor,
+    SensorCombine, ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
 };
 pub use curve::ResponseCurve;
+pub use dynamics_preset::{DynInput, DynOutput, DynamicsPreset, DynamicsRow};
 pub use mixer::MixerSettings;
 pub use render::{BrushContext, StrokeRenderer, UnionLive, grid_center, grid_square, render_stroke};
 pub use tile::{GrayTile, StoredTile};
@@ -106,6 +110,8 @@ pub struct Dab {
     /// Mixer Brush multipliers of Wet and Mix (Transfer › Wetness/Mix Jitter), 1 = as set.
     pub wet: f32,
     pub mix: f32,
+    /// Image hose cell this dab paints with ([`BrushSettings::hose`]); 0 for a plain tip.
+    pub cell: u32,
 }
 
 impl Dab {
@@ -127,6 +133,7 @@ impl Dab {
             proj_scale: 1.0,
             wet: 1.0,
             mix: 1.0,
+            cell: 0,
         }
     }
 }
@@ -169,7 +176,7 @@ pub fn tip_shape(radius: f32, hardness: f32) -> (f32, f32) {
 /// `exp(-u)` as `(1 − u/64)⁶⁴` by six squarings: within 1/255 of `exp` where it matters, exact
 /// arithmetic (the same on every platform) and exactly 0 from `u = 64`.
 #[inline]
-fn soft_exp(u: f32) -> f32 {
+pub(crate) fn soft_exp(u: f32) -> f32 {
     let mut g = (1.0 - u / 64.0).clamp(0.0, 1.0);
     for _ in 0..6 {
         g *= g;

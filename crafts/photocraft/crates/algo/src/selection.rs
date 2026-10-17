@@ -210,6 +210,272 @@ pub fn magic_wand(px: &[[f32; 4]], area: Rect, seed: (i32, i32), tolerance: f32,
     m
 }
 
+/// Line-art fill: the region around `seed` bounded by line art rather than by colour. A pixel is
+/// line where its luma is under `threshold` (0..1; a transparent pixel is never line, so line art
+/// on its own layer works too). Gaps in the lines up to `gap` px are closed before the fill so
+/// colour does not leak through an unclosed stroke, and the fill then grows `grow` px under the
+/// lines so no light seam is left between colour and ink; where a line is only partly dark
+/// (its anti-aliased edge) the colour goes under it in proportion. `None` when the seed is off
+/// the area or itself on a line.
+#[allow(clippy::needless_range_loop)]
+pub fn line_art_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), threshold: f32, gap: u32, grow: u32) -> Option<Region> {
+    if !area.contains(seed.0, seed.1) {
+        return None;
+    }
+    let (w, h) = (area.width() as usize, area.height() as usize);
+    if w.checked_mul(h).is_none_or(|n| n > img.len()) || w == 0 || h == 0 {
+        return None;
+    }
+    // Darkness of each pixel, 0 = not line, 255 = fully dark line.
+    let thr = (threshold.clamp(0.01, 1.0) * 255.0) as i32;
+    let darkness: Vec<u8> = img
+        .iter()
+        .take(w * h)
+        .map(|p| {
+            if p[3] == 0 {
+                return 0;
+            }
+            let luma = (i32::from(p[0]) * 299 + i32::from(p[1]) * 587 + i32::from(p[2]) * 114) / 1000;
+            let luma = luma * i32::from(p[3]) / 255 + 255 * (255 - i32::from(p[3])) / 255;
+            if luma >= thr { 0 } else { ((thr - luma) * 255 / thr).clamp(0, 255) as u8 }
+        })
+        .collect();
+    let si = (seed.1 - area.y0) as usize * w + (seed.0 - area.x0) as usize;
+    if darkness[si] > 0 {
+        return None;
+    }
+    // Close gaps: a line mask thickened by half the gap on each side joins strokes that end up to
+    // `gap` px apart.
+    let line: Vec<bool> = darkness.iter().map(|d| *d > 0).collect();
+    let half_gap = (gap as usize).div_ceil(2).min(64);
+    let closed = dilate(&line, w, h, half_gap);
+    // Flood from the seed over everything that is not (closed) line, 4-connected.
+    let mut region = vec![false; w * h];
+    let mut stack = vec![si];
+    region[si] = true;
+    while let Some(i) = stack.pop() {
+        let (x, y) = (i % w, i / w);
+        let mut visit = |j: usize| {
+            if !region[j] && !closed[j] {
+                region[j] = true;
+                stack.push(j);
+            }
+        };
+        if x > 0 {
+            visit(i - 1);
+        }
+        if x + 1 < w {
+            visit(i + 1);
+        }
+        if y > 0 {
+            visit(i - w);
+        }
+        if y + 1 < h {
+            visit(i + w);
+        }
+    }
+    // Grow back over the closing band and `grow` px under the real lines, but never into another
+    // open region: the growth only enters pixels the closing had claimed.
+    let grown = dilate(&region, w, h, half_gap + (grow as usize).min(64));
+    let (mut bx0, mut by0, mut bx1, mut by1) = (usize::MAX, usize::MAX, 0usize, 0usize);
+    let mut cover = vec![0u8; w * h];
+    for i in 0..w * h {
+        let inside = region[i] || (grown[i] && (closed[i] || line[i]));
+        if !inside {
+            continue;
+        }
+        // Under a line the fill shows in proportion to what the ink leaves uncovered.
+        let v = if line[i] && !region[i] { 255 - darkness[i] } else { 255 };
+        if v == 0 {
+            continue;
+        }
+        cover[i] = v;
+        let (x, y) = (i % w, i / w);
+        (bx0, bx1, by0, by1) = (bx0.min(x), bx1.max(x), by0.min(y), by1.max(y));
+    }
+    if bx0 == usize::MAX {
+        return None;
+    }
+    let bw = bx1 + 1 - bx0;
+    let mut mask = Vec::with_capacity(bw * (by1 + 1 - by0));
+    for y in by0..=by1 {
+        mask.extend_from_slice(&cover[y * w + bx0..y * w + bx1 + 1]);
+    }
+    Some(Region { bbox: Rect::new(area.x0 + bx0 as i32, area.y0 + by0 as i32, area.x0 + bx1 as i32 + 1, area.y0 + by1 as i32 + 1), mask })
+}
+
+/// A flood fill from `seed` bounded by a *boundary* instead of by similarity to the seed: with
+/// `boundary` the barrier is every pixel within `tolerance` of that colour (fill until a
+/// boundary colour); without it, every pixel not within `tolerance` of the seed pixel (the
+/// plain bucket's boundary). Gaps in the barrier up to `gap` px are closed before the flood so
+/// the fill cannot leak through them (Close Gap), and the fill grows back over the closing band
+/// afterwards, as [`line_art_region`] does. Hard-edged (no anti-aliasing); `None` when the seed
+/// is off the area or on the barrier.
+pub fn boundary_region(
+    img: &[[u8; 4]],
+    area: Rect,
+    seed: (i32, i32),
+    boundary: Option<[u8; 4]>,
+    tolerance: f32,
+    gap: u32,
+    opts: WandOptions,
+) -> Option<Region> {
+    if !area.contains(seed.0, seed.1) {
+        return None;
+    }
+    let (w, h) = (area.width() as usize, area.height() as usize);
+    if w.checked_mul(h).is_none_or(|n| n > img.len()) || w == 0 || h == 0 {
+        return None;
+    }
+    let si = (seed.1 - area.y0) as usize * w + (seed.0 - area.x0) as usize;
+    let tol = (tolerance + 1e-3).floor().max(0.0) as i32;
+    let target = img[si];
+    let barrier: Vec<bool> = match boundary {
+        Some(b) => img.iter().take(w * h).map(|p| channel_close(*p, b, tol, opts.criterion)).collect(),
+        None => img.iter().take(w * h).map(|p| !((target[3] == 0 && p[3] == 0) || channel_close(*p, target, tol, opts.criterion))).collect(),
+    };
+    if barrier[si] {
+        return None;
+    }
+    let half_gap = (gap as usize).div_ceil(2).min(64);
+    let closed = dilate(&barrier, w, h, half_gap);
+    let mut region = vec![false; w * h];
+    let mut stack = vec![si];
+    region[si] = true;
+    while let Some(i) = stack.pop() {
+        let (x, y) = (i % w, i / w);
+        let mut visit = |j: usize| {
+            if !region[j] && !closed[j] {
+                region[j] = true;
+                stack.push(j);
+            }
+        };
+        if x > 0 {
+            visit(i - 1);
+        }
+        if x + 1 < w {
+            visit(i + 1);
+        }
+        if y > 0 {
+            visit(i - w);
+        }
+        if y + 1 < h {
+            visit(i + w);
+        }
+        if opts.diagonal {
+            if x > 0 && y > 0 {
+                visit(i - w - 1);
+            }
+            if x + 1 < w && y > 0 {
+                visit(i - w + 1);
+            }
+            if x > 0 && y + 1 < h {
+                visit(i + w - 1);
+            }
+            if x + 1 < w && y + 1 < h {
+                visit(i + w + 1);
+            }
+        }
+    }
+    // Back over the closing band, but not onto the barrier itself.
+    let grown = if half_gap > 0 { dilate(&region, w, h, half_gap) } else { Vec::new() };
+    let inside = |i: usize| region[i] || (half_gap > 0 && grown[i] && !barrier[i]);
+    region_from_mask(w, h, area, |i| if inside(i) { 255 } else { 0 })
+}
+
+/// A [`Region`] from a per-pixel coverage over `area`, cropped to its touched bounding box.
+fn region_from_mask(w: usize, h: usize, area: Rect, cover: impl Fn(usize) -> u8) -> Option<Region> {
+    let (mut bx0, mut by0, mut bx1, mut by1) = (usize::MAX, usize::MAX, 0usize, 0usize);
+    let mut full = vec![0u8; w * h];
+    for (i, slot) in full.iter_mut().enumerate() {
+        let v = cover(i);
+        if v == 0 {
+            continue;
+        }
+        *slot = v;
+        let (x, y) = (i % w, i / w);
+        (bx0, bx1, by0, by1) = (bx0.min(x), bx1.max(x), by0.min(y), by1.max(y));
+    }
+    if bx0 == usize::MAX {
+        return None;
+    }
+    let bw = bx1 + 1 - bx0;
+    let mut mask = Vec::with_capacity(bw * (by1 + 1 - by0));
+    for y in by0..=by1 {
+        mask.extend_from_slice(&full[y * w + bx0..y * w + bx1 + 1]);
+    }
+    Some(Region { bbox: Rect::new(area.x0 + bx0 as i32, area.y0 + by0 as i32, area.x0 + bx1 as i32 + 1, area.y0 + by1 as i32 + 1), mask })
+}
+
+impl Region {
+    /// This region grown by `px` pixels in every direction (a square dilation), clipped to
+    /// `area` (Spread: the fill reaches under anti-aliased edges). Grown pixels take full
+    /// coverage; the original coverage stays where it was.
+    #[allow(clippy::needless_range_loop)]
+    pub fn grow(&self, px: u32, area: Rect) -> Region {
+        let r = (px as usize).min(256);
+        if r == 0 {
+            return self.clone();
+        }
+        let big = Rect::new(self.bbox.x0 - r as i32, self.bbox.y0 - r as i32, self.bbox.x1 + r as i32, self.bbox.y1 + r as i32).intersect(&area);
+        if big.is_empty() {
+            return self.clone();
+        }
+        let (w, h) = (big.width() as usize, big.height() as usize);
+        let mut cov = vec![0u8; w * h];
+        for y in big.y0..big.y1 {
+            for x in big.x0..big.x1 {
+                cov[(y - big.y0) as usize * w + (x - big.x0) as usize] = (self.at(x, y) * 255.0).round() as u8;
+            }
+        }
+        // A grey-level (maximum) dilation keeps the anti-aliased fringe, moved outward.
+        let mut rows = vec![0u8; w * h];
+        for y in 0..h {
+            let row = &cov[y * w..(y + 1) * w];
+            let out = &mut rows[y * w..(y + 1) * w];
+            for x in 0..w {
+                let (lo, hi) = (x.saturating_sub(r), (x + r).min(w - 1));
+                out[x] = row[lo..=hi].iter().copied().max().unwrap_or(0);
+            }
+        }
+        let mut d = vec![0u8; w * h];
+        for x in 0..w {
+            for y in 0..h {
+                let (lo, hi) = (y.saturating_sub(r), (y + r).min(h - 1));
+                d[y * w + x] = (lo..=hi).map(|yy| rows[yy * w + x]).max().unwrap_or(0);
+            }
+        }
+        region_from_mask(w, h, big, |i| d[i]).unwrap_or_else(|| self.clone())
+    }
+}
+
+/// Binary dilation by a square of radius `r` (separable: rows then columns).
+#[allow(clippy::needless_range_loop)]
+fn dilate(m: &[bool], w: usize, h: usize, r: usize) -> Vec<bool> {
+    if r == 0 {
+        return m.to_vec();
+    }
+    let mut rows = vec![false; w * h];
+    for y in 0..h {
+        let row = &m[y * w..(y + 1) * w];
+        let out = &mut rows[y * w..(y + 1) * w];
+        for x in 0..w {
+            let lo = x.saturating_sub(r);
+            let hi = (x + r).min(w - 1);
+            out[x] = row[lo..=hi].iter().any(|v| *v);
+        }
+    }
+    let mut out = vec![false; w * h];
+    for x in 0..w {
+        for y in 0..h {
+            let lo = y.saturating_sub(r);
+            let hi = (y + r).min(h - 1);
+            out[y * w + x] = (lo..=hi).any(|yy| rows[yy * w + x]);
+        }
+    }
+    out
+}
+
 /// Straight RGBA8 copy of `area` of a surface, read in parallel bands on native.
 pub fn rgba8_image(s: &Surface, area: Rect) -> Vec<[u8; 4]> {
     let (w, h) = (area.width() as usize, area.height() as usize);
@@ -252,10 +518,87 @@ impl Region {
     }
 }
 
+/// What the wand / bucket compares against the seed pixel.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WandCriterion {
+    /// Every channel within the tolerance (the default).
+    #[default]
+    Composite,
+    Red,
+    Green,
+    Blue,
+    /// Hue on the 0..255 circle (the two ends are one step apart).
+    Hue,
+    Saturation,
+    Value,
+    Alpha,
+}
+
+/// Region-growing options shared by the Magic Wand, the Bucket and the Magic Eraser.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct WandOptions {
+    /// Grow through corners as well as edges (8-connected instead of 4-connected).
+    pub diagonal: bool,
+    pub criterion: WandCriterion,
+}
+
+/// Hue, saturation and value of an 8-bit colour, each on 0..255.
+fn hsv8(p: [u8; 4]) -> [i32; 3] {
+    let (r, g, b) = (i32::from(p[0]), i32::from(p[1]), i32::from(p[2]));
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let d = max - min;
+    if d == 0 {
+        return [0, 0, max];
+    }
+    // Six sectors of 255/6 each.
+    let h6 = if max == r {
+        (g - b) * 255 / d
+    } else if max == g {
+        2 * 255 + (b - r) * 255 / d
+    } else {
+        4 * 255 + (r - g) * 255 / d
+    };
+    let h = (h6.rem_euclid(6 * 255)) / 6;
+    [h, d * 255 / max, max]
+}
+
+fn channel_close(p: [u8; 4], target: [u8; 4], tol: i32, criterion: WandCriterion) -> bool {
+    let diff = |a: i32, b: i32| (a - b).abs() <= tol;
+    match criterion {
+        WandCriterion::Composite => (0..4).all(|c| diff(i32::from(p[c]), i32::from(target[c]))),
+        WandCriterion::Red => diff(i32::from(p[0]), i32::from(target[0])),
+        WandCriterion::Green => diff(i32::from(p[1]), i32::from(target[1])),
+        WandCriterion::Blue => diff(i32::from(p[2]), i32::from(target[2])),
+        WandCriterion::Alpha => diff(i32::from(p[3]), i32::from(target[3])),
+        WandCriterion::Hue => {
+            let (a, b) = (hsv8(p)[0], hsv8(target)[0]);
+            let d = (a - b).abs();
+            d.min(255 - d) <= tol
+        }
+        WandCriterion::Saturation => diff(hsv8(p)[1], hsv8(target)[1]),
+        WandCriterion::Value => diff(hsv8(p)[2], hsv8(target)[2]),
+    }
+}
+
 /// Magic wand on 8-bit pixels: a scanline flood fill (or a global match) that only allocates a
 /// byte mark per pixel, then anti-aliases just the edges inside the touched bounding box.
 /// Matches [`magic_wand`] for 8-bit sources. `None` if the seed is outside `area`.
 pub fn wand_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), tolerance: f32, contiguous: bool, anti_alias: bool) -> Option<Region> {
+    wand_region_with(img, area, seed, tolerance, contiguous, anti_alias, WandOptions::default())
+}
+
+/// [`wand_region`] with the region-growing options: diagonal neighbours and the compared channel.
+pub fn wand_region_with(
+    img: &[[u8; 4]],
+    area: Rect,
+    seed: (i32, i32),
+    tolerance: f32,
+    contiguous: bool,
+    anti_alias: bool,
+    opts: WandOptions,
+) -> Option<Region> {
     if !area.contains(seed.0, seed.1) {
         return None;
     }
@@ -267,7 +610,7 @@ pub fn wand_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), tolerance: f32
     let tol = (tolerance + 1e-3).floor().max(0.0) as i32;
     // Copying a selection can leave RGB under zero alpha. Those invisible colours must not
     // split a transparent region into pieces, as if the copied source were still visible.
-    let similar = |p: [u8; 4]| (target[3] == 0 && p[3] == 0) || (0..4).all(|c| (p[c] as i32 - target[c] as i32).abs() <= tol);
+    let similar = |p: [u8; 4]| (target[3] == 0 && p[3] == 0) || channel_close(p, target, tol, opts.criterion);
     let mut marks = vec![0u8; w * h];
     let (mut bx0, mut by0, mut bx1, mut by1) = (usize::MAX, usize::MAX, 0usize, 0usize);
     if contiguous {
@@ -287,13 +630,16 @@ pub fn wand_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), tolerance: f32
             }
             marks[row + l..=row + r].fill(255);
             (bx0, bx1, by0, by1) = (bx0.min(l), bx1.max(r), by0.min(y), by1.max(y));
+            // With diagonal neighbours the rows above and below are also reached from the
+            // run's two corner pixels, one column past each end.
+            let (sl, sr) = if opts.diagonal { (l.saturating_sub(1), (r + 1).min(w - 1)) } else { (l, r) };
             for ny in [y.wrapping_sub(1), y + 1] {
                 if ny >= h {
                     continue;
                 }
                 let nrow = ny * w;
                 let mut in_run = false;
-                for nx in l..=r {
+                for nx in sl..=sr {
                     let ok = marks[nrow + nx] == 0 && similar(img[nrow + nx]);
                     if ok && !in_run {
                         stack.push((nx, ny));

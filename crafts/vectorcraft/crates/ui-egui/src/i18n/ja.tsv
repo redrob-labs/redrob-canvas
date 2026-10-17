@@ -439,7 +439,6 @@
 	Outer Glow…	光彩 (外側)…
 	Feather…	ぼかし…
 	SVG Filters	SVG フィルター
-	Apply SVG Filter…	SVG フィルターを適用…
 	Warp	ワープ
 	Arc…	円弧…
 	Arc Lower…	円弧 (下弦)…
@@ -4372,3 +4371,168 @@ lighting	Light	ライト
 	Softness	柔らかさ
 	Ambient Light	環境光
 	Light behind the object	オブジェクトの背後のライト
+	Bend…	ベンド…
+	Bend	ベンド
+	B-Spline…	Bスプライン…
+	B-Spline	Bスプライン
+	Spiro Spline…	スピロスプライン…
+	Spiro Spline	スピロスプライン
+	Dashed Stroke…	破線の線…
+	Dashed Stroke	破線の線
+	Taper Stroke…	先細りの線…
+	Taper Stroke	先細りの線
+	Spine	スパイン
+	Width Scale	幅の倍率
+	Cusps	コーナーを保持
+	Dashes	破線の数
+	Hole Factor	間隔の比率
+	Unify	長さを統一
+	Half Start	始点を半分に
+	Half End	終点を半分に
+	Start Offset	開始オフセット
+	End Offset	終了オフセット
+	Stroke To Path	線をパスに
+	Start Taper	始点の先細り
+	End Taper	終点の先細り
+	Smoothing	スムージング
+	Direction	方向
+	Spiro	スピロ
+	BSpline	Bスプライン
+	Paraxial	軸平行
+	Triangle In	三角形（内）
+	Triangle Out	三角形（外）
+	From Clipboard	クリップボードから
+	Segment:	セグメント:
+	Curve	曲線
+	Make Selected Segments Lines	選択したセグメントを直線にする
+	Make Selected Segments Curves	選択したセグメントを曲線にする
+	Show Handles	ハンドルを表示
+	Shape Along Stroke	線に沿った形状
+	Segment Type	セグメントの種類
+	Next Anchor	次のアンカー
+	Grow Anchor Selection	アンカーの選択を拡張
+	Touch Select Anchors	触れたアンカーを選択
+	Make Segment Line	セグメントを直線にする
+	Make Segment Curve	セグメントを曲線にする
+	X:	X:
+	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	選択したアンカーポイントを対称ポイントに変換
+	Convert Selected Anchor Points to Auto-Smooth	選択したアンカーポイントを自動スムーズポイントに変換
+	Add Anchor Points At	位置を指定してアンカーポイントを追加
+	Add Anchor Points at Extremes	極値にアンカーポイントを追加
+	Minimum X	X の最小値
+	Maximum X	X の最大値
+	Minimum Y	Y の最小値
+	Maximum Y	Y の最大値
+	Pie	扇形
+	Chord	弓形
+	Close As:	閉じ方:
+	Whole Ellipse	楕円全体
+	Corners:	頂点数:
+	Spoke Ratio:	スポーク比:
+	Rounded:	丸み:
+	Randomized:	ランダム化:
+	Decay:	減衰:
+	Segments:	セグメント:
+	Star Properties:	スターのプロパティ:
+	Spiral Properties:	スパイラルのプロパティ:
+	Hairline	ヘアライン
+	Mid markers:	中間マーカー:
+	Auto, start reversed	自動、開始を反転
+	Fixed angle	固定角度
+	Scale with stroke	線幅に合わせて拡大縮小
+	ID:	ID:
+	Label:	ラベル:
+	Title:	タイトル:
+	Hyperlink:	ハイパーリンク:
+	Clone	クローン
+	Create Clone	クローンを作成
+	Unlink Clone	クローンのリンクを解除
+	Relink to Copied	コピーした対象に再リンク
+	Select Original	オリジナルを選択
+	Object Properties…	オブジェクトのプロパティ…
+	Text content	テキストの内容
+	ID	ID
+	Label	ラベル
+	Title	タイトル
+	Object type	オブジェクトの種類
+	Current layer	現在のレイヤー
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	属性を追加
+	Add Filter	フィルターを追加
+	Add Input	入力を追加
+	Add Primitive	プリミティブを追加
+	Axonometric	軸測
+	Axonometric Angle X	軸測角度 X
+	Axonometric Angle Z	軸測角度 Z
+	Canvas Orientation	カンバスの向き
+	Collapse All	すべて折りたたむ
+	Color Matrix	カラーマトリックス
+	Color Matrix…	カラーマトリックス…
+	Component Transfer	コンポーネント転送
+	Composite	合成
+	Convolve Matrix	畳み込み行列
+	Delete Node	ノードを削除
+	Diffuse Lighting	拡散光
+	Displacement Map	置き換えマップ
+	Drop Shadow Preset	ドロップシャドウのプリセット
+	Duplicate Node	ノードを複製
+	Duplicate Primitive	プリミティブを複製
+	Edge Detection	エッジ検出
+	Edge Threshold	エッジのしきい値
+	Expand All	すべて展開
+	Fill Rendered Pixels	描画ピクセルを塗る
+	Filter Editor	フィルターエディター
+	Filter Graph	フィルターグラフ
+	Filter Region	フィルター領域
+	Flood	塗りつぶし
+	Grid Kind	グリッドの種類
+	Hide Palette Strip	パレットバーを隠す
+	Input	入力
+	Large Chips	大きいチップ
+	Lower Node	ノードを下げる
+	Mass:	質量:
+	Medium Chips	中くらいのチップ
+	Modular	モジュール
+	Modular Gap X	モジュール間隔 X
+	Modular Gap Y	モジュール間隔 Y
+	Morphology	モルフォロジー
+	No colours in this palette	このパレットに色はありません
+	No primitives. Add one below.	プリミティブがありません。下から追加してください。
+	Node Data	ノードのデータ
+	Palette Strip	パレットバー
+	Palette Strip Menu	パレットバーメニュー
+	Previous Result	前の結果
+	Primitive	プリミティブ
+	Quantization	量子化
+	Raise Node	ノードを上げる
+	Rectangular	矩形
+	Remove Attribute	属性を削除
+	Remove Filter	フィルターを削除
+	Remove Input	入力を削除
+	Remove Primitive	プリミティブを削除
+	Reset Canvas Orientation	カンバスの向きをリセット
+	Result:	結果:
+	Select a node to edit its attributes.	属性を編集するノードを選択してください。
+	Small Chips	小さいチップ
+	Specular Lighting	鏡面光
+	The document has no layers.	ドキュメントにレイヤーがありません。
+	The primitives of a filter graph are edited in the Filter Editor panel.	フィルターグラフのプリミティブはフィルターエディターパネルで編集します。
+	Thinning:	細り:
+	Tremor:	震え:
+	Turbulence	乱流
+	Wiggle:	揺れ:
+	XML Editor	XML エディター
+	attribute	属性
+	No Filter	フィルターなし
+	The object has no SVG filter graph yet.	このオブジェクトにはまだ SVG フィルターグラフがありません。
+	Select an object to edit its SVG filter.	SVG フィルターを編集するオブジェクトを選択してください。
+	Open a document to see its element tree.	要素ツリーを表示するにはドキュメントを開いてください。
+@msg	a clone can't be linked to itself	クローンを自身にリンクすることはできません
+@msg	copy an object first (Edit › Copy)	先にオブジェクトをコピーしてください（編集 › コピー）
+@msg	no such object	そのオブジェクトはありません
+@msg	nothing to clone	クローンするものがありません
+@msg	select a clone	クローンを選択してください
+@msg	select an object	オブジェクトを選択してください
+@msg	the copied object is no longer in this document	コピーしたオブジェクトはこのドキュメントにもうありません
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	「シミュレート」はオーバープリントプレビューの表示どおりにオーバープリントをプリントします。分版では常に保持されます。プリセットはプリント前に透明部分を分割・統合します（PostScript ファイルでは常に分割・統合されます）。

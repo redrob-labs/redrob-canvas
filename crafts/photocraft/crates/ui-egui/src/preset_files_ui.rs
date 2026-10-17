@@ -5,7 +5,8 @@
 //! `swatches.import`, patterns (`.pat`) to the Patterns panel through `pattern.import`, keyboard
 //! shortcut sets (`.kys`) to Edit › Keyboard Shortcuts through
 //! [`crate::kys_import`], instead of opening as documents. Import Brushes… also takes an image
-//! file, which becomes a brush tip through `brush.presets.importImage` (TOOL-213-12).
+//! file, which becomes a brush tip through `brush.presets.importImage` (TOOL-213-12), and bitmap
+//! brushes (`.gbr`) and animated image hoses (`.gih`) through `brush.presets.importBrushFile`.
 
 use serde_json::{Value, json};
 
@@ -15,7 +16,7 @@ use crate::PhotocraftApp;
 /// the Swatches panel through [`crate::swatches_ui::import_bytes`]).
 /// `.psp` is Photoshop's live `Keyboard Shortcuts.psp` (the same XML as a `.kys`); other `.psp`
 /// settings files are refused with a clear message.
-pub const PRESET_EXTS: &[&str] = &["abr", "grd", "pat", "aco", "ase", "kys", "psp"];
+pub const PRESET_EXTS: &[&str] = &["abr", "gbr", "gih", "grd", "ggr", "pat", "aco", "ase", "kys", "psp"];
 
 fn ext(name: &str) -> String {
     std::path::Path::new(name).extension().map(|e| e.to_string_lossy().to_ascii_lowercase()).unwrap_or_default()
@@ -32,7 +33,7 @@ pub const BRUSH_IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "tif", "tiff", "ps
 /// Brushes panel / brush preset picker › Import Brushes…: an `.abr` joins the brush library as a
 /// group (as File › Open does), an image file becomes a new brush preset with that image as its tip.
 pub fn import_brushes(app: &mut PhotocraftApp) -> Result<Value, String> {
-    let exts: Vec<&str> = std::iter::once("abr").chain(BRUSH_IMAGE_EXTS.iter().copied()).collect();
+    let exts: Vec<&str> = ["abr", "gbr", "gih"].into_iter().chain(BRUSH_IMAGE_EXTS.iter().copied()).collect();
     app.pick_file_bytes_filtered(&exts, |app, name, bytes| match open(app, &name, &bytes) {
         Some(r) => r.map(|()| Value::Null),
         None => import_brush_image(app, &name, &bytes),
@@ -58,11 +59,11 @@ pub fn import_brush_image(app: &mut PhotocraftApp, name: &str, bytes: &[u8]) -> 
 
 /// Import from a gradient picker through the same preset command as File › Open.
 pub(crate) fn import_gradients_dialog(app: &mut PhotocraftApp) {
-    let result = app.pick_file_bytes_filtered(&["grd"], |app, name, bytes| {
-        if ext(&name) != "grd" {
-            return Err(tl!("Choose a gradient file (.grd).").into());
+    let result = app.pick_file_bytes_filtered(&["grd", "ggr"], |app, name, bytes| {
+        if !matches!(ext(&name).as_str(), "grd" | "ggr") {
+            return Err(tl!("Choose a gradient file (.grd or .ggr).").into());
         }
-        open(app, &name, &bytes).ok_or_else(|| tl!("Choose a gradient file (.grd).").to_string())??;
+        open(app, &name, &bytes).ok_or_else(|| tl!("Choose a gradient file (.grd or .ggr).").to_string())??;
         Ok(Value::Null)
     });
     if let Err(error) = result
@@ -87,7 +88,9 @@ fn source(name: &str, bytes: &[u8]) -> Value {
 pub fn open(app: &mut PhotocraftApp, name: &str, bytes: &[u8]) -> Option<Result<(), String>> {
     let (cmd, what) = match ext(name).as_str() {
         "abr" => ("brush.presets.importAbr", "brushes"),
+        "gbr" | "gih" => ("brush.presets.importBrushFile", "brushes"),
         "grd" => ("gradient.presets.importGrd", "gradients"),
+        "ggr" => ("gradient.presets.importGgr", "gradients"),
         "pat" => ("pattern.import", "patterns"),
         "aco" | "ase" => return Some(crate::swatches_ui::import_bytes(app, name, bytes, false).map(|_| ())),
         "kys" | "psp" => return Some(crate::kys_import::open_bytes(app, name, bytes).map(|_| ())),
@@ -98,6 +101,9 @@ pub fn open(app: &mut PhotocraftApp, name: &str, bytes: &[u8]) -> Option<Result<
     p["group"] = json!(stem);
     if what == "brushes" {
         p["select"] = json!(true);
+    }
+    if cmd == "brush.presets.importBrushFile" && p.get("data").is_some() {
+        p["fileName"] = json!(std::path::Path::new(name).file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_else(|| name.to_string()));
     }
     Some(app.run(cmd, p).map(|r| {
         // A background import (#210): `jobs_ui` reports the count when it lands.

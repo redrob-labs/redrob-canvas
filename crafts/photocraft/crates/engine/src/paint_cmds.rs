@@ -42,23 +42,48 @@ fn opacity(p: &Value, cmd: &str) -> Result<f32> {
 }
 
 fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
-    let fg = s.tools.foreground;
+    // Fill source: foreground colour (default), the background colour, or a pattern (the Paint
+    // Bucket "Fill" dropdown).
+    let source = p.get("contents").or_else(|| p.get("source")).and_then(Value::as_str).unwrap_or("foreground");
+    let fg = if source == "background" { s.tools.background } else { s.tools.foreground };
     let c = color(p.get("color"), fg);
     let (x, y) = (f(p, "x", 0.0).floor() as i32, f(p, "y", 0.0).floor() as i32);
     let (tol, contiguous, aa) = (f(p, "tolerance", 32.0), b(p, "contiguous", true), b(p, "antiAlias", true));
+    let opts = crate::selection_cmds::wand_options(p, "paint.bucket")?;
     let opacity = opacity(p, "paint.bucket")?;
     let all = b(p, "sampleAllLayers", false) && crate::channel_cmds::target_of(p) == crate::channel_cmds::Target::Pixels;
+    let line_art = b(p, "lineArt", false);
+    // Fill until a boundary colour instead of over similar colours; close gaps in the boundary;
+    // spread the filled area outward.
+    let boundary = p.get("boundaryColor").filter(|v| !v.is_null()).map(|v| color(Some(v), [0.0, 0.0, 0.0, 1.0]));
+    let close_gap = crate::eraser_cmds::number(p, "paint.bucket", "closeGap", 0.0, 0.0..=128.0)? as u32;
+    let spread = crate::eraser_cmds::number(p, "paint.bucket", "spread", 0.0, 0.0..=64.0)? as u32;
+    let bounded = boundary.is_some() || close_gap > 0;
+    let needs_region = all || line_art || bounded || spread > 0;
     // Other visible layers can define the region, but the fill still writes only to the target.
-    let region = if all {
-        let (area, img) = crate::selection_cmds::sample_rgba8(s, true)?;
-        let region = redrob_photo_algo::selection::wand_region(&img, area, (x, y), tol, contiguous, aa);
+    // A line-art fill always samples up front: its boundary is the ink, not the target's colours.
+    let region = if line_art {
+        let threshold = crate::eraser_cmds::number(p, "paint.bucket", "lineArtThreshold", 0.92, 0.01..=1.0)? as f32;
+        let gap = crate::eraser_cmds::number(p, "paint.bucket", "lineArtGap", 16.0, 0.0..=128.0)? as u32;
+        let grow = crate::eraser_cmds::number(p, "paint.bucket", "lineArtGrow", 2.0, 0.0..=64.0)? as u32;
+        let (area, img) = crate::selection_cmds::sample_rgba8(s, all)?;
+        let region = redrob_photo_algo::selection::line_art_region(&img, area, (x, y), threshold, gap, grow);
         drop(img);
         region
+    } else if needs_region {
+        let (area, img) = crate::selection_cmds::sample_rgba8(s, all)?;
+        let region = if bounded {
+            let q = |v: f32| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8;
+            let boundary8 = boundary.map(|b| b.map(q));
+            redrob_photo_algo::selection::boundary_region(&img, area, (x, y), boundary8, tol, close_gap, opts)
+        } else {
+            redrob_photo_algo::selection::wand_region_with(&img, area, (x, y), tol, contiguous, aa, opts)
+        };
+        drop(img);
+        region.map(|r| if spread > 0 { r.grow(spread, area) } else { r })
     } else {
         None
     };
-    // Fill source: foreground colour (default) or a pattern (the Paint Bucket "Fill" dropdown).
-    let source = p.get("contents").or_else(|| p.get("source")).and_then(Value::as_str).unwrap_or("foreground");
     let pattern = if source == "pattern" {
         let pat = crate::pattern_cmds::resolve_param(s, "paint.bucket", p)?;
         let tile = redrob_photo_compose::pattern::Tile::new(&pat)
@@ -74,7 +99,7 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
         let area = doc.bounds();
         let sel = doc.selection.clone();
         let (surf, lock) = crate::channel_cmds::target_surface(doc, *active, p)?;
-        let ok = if all && region.is_none() {
+        let ok = if needs_region && region.is_none() {
             false
         } else if let Some((tile, scale, angle, phase)) = &pattern {
             // Render the pattern over the canvas once, then sample it at each filled pixel.
@@ -86,13 +111,13 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
                 bucket_fill_region_src(surf, region, opacity, sel.as_ref(), lock, src);
                 true
             } else {
-                bucket_fill_src(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, src)
+                bucket_fill_src(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, src, opts)
             }
         } else if let Some(region) = &region {
             bucket_fill_region_inks(surf, region, opacity, sel.as_ref(), lock, |_, _| c, inks);
             true
         } else {
-            bucket_fill_inks(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, |_, _| c, inks)
+            bucket_fill_inks(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, |_, _| c, inks, opts)
         };
         surf.prune();
         Ok(ok)
@@ -108,6 +133,10 @@ fn gradient(s: &mut Session, p: &Value) -> Result<Value> {
         "angle" => GradientShape::Angle,
         "reflected" => GradientShape::Reflected,
         "diamond" => GradientShape::Diamond,
+        "square" => GradientShape::Square,
+        "conicalSymmetric" => GradientShape::ConicalSymmetric,
+        "spiralClockwise" => GradientShape::SpiralClockwise,
+        "spiralCounterClockwise" => GradientShape::SpiralCounterClockwise,
         _ => GradientShape::Linear,
     };
     let (fg, bg) = (s.tools.foreground, s.tools.background);
@@ -162,7 +191,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Paint Bucket",
             menu: &[],
             shortcut: None,
-            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"contents":"foreground|pattern"="foreground","color":"#rrggbb"=foreground,"pattern":id|name (contents=pattern),"scale":%=100,"angle":deg,"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
+            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","lineArt":bool=false (fill the area the ink encloses instead of similar colours),"lineArtThreshold":0.01..1=0.92 (luma under which a pixel is ink),"lineArtGap":px=16 (gaps in the ink up to this are closed),"lineArtGrow":px=2 (the fill goes this far under the ink),"contents":"foreground|background|pattern"="foreground","color":"#rrggbb"=foreground,"pattern":id|name (contents=pattern),"scale":%=100,"angle":deg,"spread":px=0 (grow the filled area outward),"closeGap":px=0 (gaps in the boundary up to this are closed),"boundaryColor":"#rrggbb"? (fill until this colour instead of over similar colours),"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
             enabled: crate::commands::has_paintable,
             run: bucket,
             journal: true,
@@ -172,7 +201,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Gradient",
             menu: &[],
             shortcut: None,
-            params: r##"{"from":[x,y],"to":[x,y],"style":"linear|radial|angle|reflected|diamond"="linear","colors":["#rrggbb",…]? (evenly spaced),"gradient":preset name?,"stops":[[t,"#rrggbb"|"foreground"|"background"],…]?,"transparency":[[t,0..100],…]? (default: the current gradient, see gradient.presets.select),"method":"classic|perceptual|linear|smooth"? (Photoshop's interpolation; omitted: straight stops),"smoothness":0..100=100,"reverse":bool=false,"dither":bool=true,"opacity":1..100=100,"mode":"normal|multiply|…"="normal","target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
+            params: r##"{"from":[x,y],"to":[x,y],"style":"linear|radial|angle|reflected|diamond|square|conicalSymmetric|spiralClockwise|spiralCounterClockwise"="linear","colors":["#rrggbb",…]? (evenly spaced),"gradient":preset name?,"stops":[[t,"#rrggbb"|"foreground"|"background"],…]?,"transparency":[[t,0..100],…]? (default: the current gradient, see gradient.presets.select),"method":"classic|perceptual|linear|smooth"? (Photoshop's interpolation; omitted: straight stops),"smoothness":0..100=100,"reverse":bool=false,"dither":bool=true,"opacity":1..100=100,"mode":"normal|multiply|…"="normal","target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
             enabled: crate::commands::has_paintable,
             run: gradient,
             journal: true,

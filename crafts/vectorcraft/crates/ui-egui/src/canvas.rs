@@ -21,15 +21,17 @@ pub struct Xf {
     pub center: Point,
     /// View rotation in radians (Rotate View), clockwise on screen.
     pub rot: f64,
+    /// The signs of the view's x and y axes (Canvas Orientation flips): ±1 each.
+    pub flip: (f64, f64),
 }
 
 impl Xf {
     pub fn new(rect: egui::Rect, v: &View) -> Self {
-        Self { rect, zoom: v.zoom, center: v.center, rot: v.rotation.to_radians() }
+        Self { rect, zoom: v.zoom, center: v.center, rot: v.rotation.to_radians(), flip: v.flip_signs() }
     }
     pub fn to_screen(&self, p: Point) -> Pos2 {
         let c = self.rect.center();
-        let (dx, dy) = ((p.x - self.center.x) * self.zoom, (p.y - self.center.y) * self.zoom);
+        let (dx, dy) = ((p.x - self.center.x) * self.zoom * self.flip.0, (p.y - self.center.y) * self.zoom * self.flip.1);
         let (sn, cs) = self.rot.sin_cos();
         pos2(c.x + (dx * cs - dy * sn) as f32, c.y + (dx * sn + dy * cs) as f32)
     }
@@ -37,7 +39,7 @@ impl Xf {
         let c = self.rect.center();
         let (dx, dy) = ((p.x - c.x) as f64, (p.y - c.y) as f64);
         let (sn, cs) = self.rot.sin_cos();
-        let (ux, uy) = (dx * cs + dy * sn, -dx * sn + dy * cs);
+        let (ux, uy) = ((dx * cs + dy * sn) * self.flip.0, (-dx * sn + dy * cs) * self.flip.1);
         Point::new(self.center.x + ux / self.zoom, self.center.y + uy / self.zoom)
     }
     /// Screen-space corners of a document rect (a rotated quad when the view is rotated).
@@ -48,7 +50,7 @@ impl Xf {
     pub fn delta_to_doc(&self, d: egui::Vec2) -> redrob_vector_geom::Vec2 {
         let (sn, cs) = self.rot.sin_cos();
         let (dx, dy) = (d.x as f64, d.y as f64);
-        redrob_vector_geom::Vec2::new((dx * cs + dy * sn) / self.zoom, (-dx * sn + dy * cs) / self.zoom)
+        redrob_vector_geom::Vec2::new((dx * cs + dy * sn) * self.flip.0 / self.zoom, (-dx * sn + dy * cs) * self.flip.1 / self.zoom)
     }
     pub fn rect_to_screen(&self, r: Rect) -> egui::Rect {
         egui::Rect::from_two_pos(self.to_screen(Point::new(r.x0, r.y0)), self.to_screen(Point::new(r.x1, r.y1)))
@@ -56,7 +58,10 @@ impl Xf {
     /// Affine mapping document points to screen points.
     pub fn affine(&self) -> Affine {
         let c = self.rect.center();
-        Affine::translate((c.x as f64, c.y as f64)) * Affine::rotate(self.rot) * Affine::scale(self.zoom) * Affine::translate(-self.center.to_vec2())
+        Affine::translate((c.x as f64, c.y as f64))
+            * Affine::rotate(self.rot)
+            * Affine::scale_non_uniform(self.zoom * self.flip.0, self.zoom * self.flip.1)
+            * Affine::translate(-self.center.to_vec2())
     }
 }
 
@@ -227,7 +232,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let grid_look = app.ui.view.grid.then(|| LineLook::grid(&app.session.prefs));
     let grids_in_back = app.session.prefs.grids_in_back;
     if let Some(look) = grid_look.filter(|_| grids_in_back) {
-        grid(&painter, &xf, doc.grid.spacing, doc.grid.subdivisions, look);
+        grid(&painter, &xf, &doc.grid, look);
     }
 
     // Artwork raster.
@@ -256,6 +261,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         ppp,
         hidden: vec![],
         rot: v.rotation,
+        flip: (v.flip_h, v.flip_v),
         anti_alias: app.session.prefs.anti_aliased_artwork,
         placed: redrob_vector_render::placed_document::generation(),
         pixel,
@@ -293,7 +299,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 h,
                 Affine::translate((w as f64 / 2.0, h as f64 / 2.0))
                     * Affine::rotate(v.rotation.to_radians())
-                    * Affine::scale(v.zoom * ppp as f64)
+                    * Affine::scale_non_uniform(v.zoom * ppp as f64 * v.flip_signs().0, v.zoom * ppp as f64 * v.flip_signs().1)
                     * Affine::translate(-v.center.to_vec2()),
             ),
         };
@@ -357,9 +363,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             Some([x0, y0, x1, y1]) => {
                 textured_quad(&painter, tex.id(), &xf.quad(Rect::new(x0 as f64, y0 as f64, x1 as f64, y1 as f64)), (1.0, 1.0));
             }
-            None if (k.rot - v.rotation).abs() < 1e-9 => {
+            None if (k.rot - v.rotation).abs() < 1e-9 && k.flip == (v.flip_h, v.flip_v) => {
                 // Reproject the last frame if it was rendered for a different view.
-                let old = Xf { rect, zoom: k.zoom, center: Point::new(k.cx, k.cy), rot: xf.rot };
+                let old = Xf { rect, zoom: k.zoom, center: Point::new(k.cx, k.cy), rot: xf.rot, flip: xf.flip };
                 let a = xf.to_screen(old.to_doc(rect.min));
                 let b = xf.to_screen(old.to_doc(rect.max));
                 painter.image(tex.id(), egui::Rect::from_min_max(a, b), egui::Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
@@ -368,19 +374,25 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             // the new angle. Until it arrives, the last frame is drawn turned into this view: each
             // corner goes where this view puts the document point that the corner showed.
             None => {
-                let old = Xf { rect, zoom: k.zoom, center: Point::new(k.cx, k.cy), rot: k.rot.to_radians() };
+                let sign = |f: bool| if f { -1.0 } else { 1.0 };
+                let old = Xf { rect, zoom: k.zoom, center: Point::new(k.cx, k.cy), rot: k.rot.to_radians(), flip: (sign(k.flip.0), sign(k.flip.1)) };
                 let q = [rect.left_top(), rect.right_top(), rect.right_bottom(), rect.left_bottom()].map(|c| xf.to_screen(old.to_doc(c)));
                 textured_quad(&painter, tex.id(), &q, (1.0, 1.0));
             }
         }
     }
     if let Some(look) = grid_look.filter(|_| !grids_in_back) {
-        grid(&painter, &xf, doc.grid.spacing, doc.grid.subdivisions, look);
+        grid(&painter, &xf, &doc.grid, look);
     }
     // The pixel grid (Guides & Grid › Show Pixel Grid (Above 600% Zoom)): in Pixel Preview from
     // 600% zoom, a line at every document pixel over the art, so the pixels it rasterizes to show.
     if app.ui.view.pixel_preview && v.zoom >= PIXEL_GRID_ZOOM && app.session.prefs.show_pixel_grid {
-        grid(&painter, &xf, 1.0, 1, LineLook { color: PIXEL_GRID, dots: false });
+        grid(
+            &painter,
+            &xf,
+            &redrob_vector_doc::GridPrefs { spacing: 1.0, subdivisions: 1, ..Default::default() },
+            LineLook { color: PIXEL_GRID, dots: false },
+        );
     }
     // Artboard edges and names. The Artboard tool labels its active artboard itself (following
     // a move or resize): that one isn't named twice.
@@ -595,7 +607,7 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
         if scroll != egui::Vec2::ZERO
             && let Some(vm) = app.view_mut()
         {
-            let d = Xf { rect, zoom: vm.zoom, center: vm.center, rot: vm.rotation.to_radians() }.delta_to_doc(scroll);
+            let d = Xf { rect, zoom: vm.zoom, center: vm.center, rot: vm.rotation.to_radians(), flip: vm.flip_signs() }.delta_to_doc(scroll);
             vm.center -= d;
         }
     }
@@ -1051,8 +1063,10 @@ fn pref_color(hex: &str, fallback: Color32) -> Color32 {
 
 /// The grid (View → Show Grid): a gridline every `spacing` and `subdiv` lighter lines between
 /// (left out when they would crowd). In the Dots style, a dot where gridlines cross the
-/// subdivisions instead.
-fn grid(p: &egui::Painter, xf: &Xf, spacing: f64, subdiv: u32, look: LineLook) {
+/// subdivisions instead. An axonometric grid draws the vertical lines and two angled families;
+/// a modular grid draws blocks with gaps between them (Preferences › Guides & Grid › Grid Kind).
+fn grid(p: &egui::Painter, xf: &Xf, g: &redrob_vector_doc::GridPrefs, look: LineLook) {
+    let (spacing, subdiv) = (g.spacing, g.subdivisions);
     let r = xf.rect;
     // The view in document space: the box round the canvas's corners (the view may be rotated;
     // the painter clips to the canvas).
@@ -1070,23 +1084,74 @@ fn grid(p: &egui::Painter, xf: &Xf, spacing: f64, subdiv: u32, look: LineLook) {
         let first = (from / step).floor();
         (0..10_000u32).map(move |i| (first + f64::from(i)) * step).take_while(move |v| *v <= to)
     };
-    if look.dots {
-        let mut mesh = egui::Mesh::default();
-        for x in lines(view.x0, view.x1) {
-            for y in lines(view.y0, view.y1).filter(|y| major(x) || major(*y)) {
-                mesh.add_colored_rect(egui::Rect::from_center_size(xf.to_screen(Point::new(x, y)), vec2(1.5, 1.5)), look.color);
-            }
-        }
-        p.add(Shape::mesh(mesh));
-        return;
-    }
     let minor = look.color.gamma_multiply(0.4);
     let stroke = |major: bool| Stroke::new(1.0, if major { look.color } else { minor });
-    for x in lines(view.x0, view.x1) {
-        p.line_segment([xf.to_screen(Point::new(x, view.y0)), xf.to_screen(Point::new(x, view.y1))], stroke(major(x)));
-    }
-    for y in lines(view.y0, view.y1) {
-        p.line_segment([xf.to_screen(Point::new(view.x0, y)), xf.to_screen(Point::new(view.x1, y))], stroke(major(y)));
+    match g.kind {
+        redrob_vector_doc::GridKind::Axonometric => {
+            // The vertical lines, then each angled family: y = slope·x + j·dy over the view.
+            for x in lines(view.x0, view.x1) {
+                p.line_segment([xf.to_screen(Point::new(x, view.y0)), xf.to_screen(Point::new(x, view.y1))], stroke(major(x)));
+            }
+            for (slope, dy) in g.axon_families() {
+                if dy * xf.zoom < 4.0 || !dy.is_finite() {
+                    continue;
+                }
+                // The intercepts (at x = 0) of the lines crossing the view.
+                let (c0, c1) = {
+                    let ends = [view.y0 - slope * view.x0, view.y0 - slope * view.x1, view.y1 - slope * view.x0, view.y1 - slope * view.x1];
+                    (ends.iter().copied().fold(f64::INFINITY, f64::min), ends.iter().copied().fold(f64::NEG_INFINITY, f64::max))
+                };
+                let first = (c0 / dy).floor();
+                for j in (0..10_000u32).map(|i| first + f64::from(i)).take_while(|j| j * dy <= c1) {
+                    let c = j * dy;
+                    let a = Point::new(view.x0, slope * view.x0 + c);
+                    let b = Point::new(view.x1, slope * view.x1 + c);
+                    // Every `subdivisions`th line is a major one.
+                    let is_major = (j / f64::from(subdiv.max(1))).fract().abs() < 1e-6;
+                    p.line_segment([xf.to_screen(a), xf.to_screen(b)], stroke(is_major));
+                }
+            }
+        }
+        redrob_vector_doc::GridKind::Modular => {
+            // Blocks `spacing` square, `gap` apart; the subdivisions inside each block.
+            let blocks = |from: f64, to: f64, gap: f64| {
+                let period = spacing + gap.max(0.0);
+                let first = (from / period).floor();
+                (0..10_000u32).map(move |i| (first + f64::from(i)) * period).take_while(move |v| *v <= to)
+            };
+            for x0 in blocks(view.x0, view.x1, g.gap_x) {
+                for y0 in blocks(view.y0, view.y1, g.gap_y) {
+                    let block = Rect::new(x0, y0, x0 + spacing, y0 + spacing);
+                    let quad = xf.quad(block);
+                    p.add(Shape::closed_line(quad, stroke(true)));
+                    if step < spacing {
+                        for k in 1..subdiv.max(1) {
+                            let d = f64::from(k) * step;
+                            p.line_segment([xf.to_screen(Point::new(x0 + d, y0)), xf.to_screen(Point::new(x0 + d, y0 + spacing))], stroke(false));
+                            p.line_segment([xf.to_screen(Point::new(x0, y0 + d)), xf.to_screen(Point::new(x0 + spacing, y0 + d))], stroke(false));
+                        }
+                    }
+                }
+            }
+        }
+        redrob_vector_doc::GridKind::Rectangular => {
+            if look.dots {
+                let mut mesh = egui::Mesh::default();
+                for x in lines(view.x0, view.x1) {
+                    for y in lines(view.y0, view.y1).filter(|y| major(x) || major(*y)) {
+                        mesh.add_colored_rect(egui::Rect::from_center_size(xf.to_screen(Point::new(x, y)), vec2(1.5, 1.5)), look.color);
+                    }
+                }
+                p.add(Shape::mesh(mesh));
+                return;
+            }
+            for x in lines(view.x0, view.x1) {
+                p.line_segment([xf.to_screen(Point::new(x, view.y0)), xf.to_screen(Point::new(x, view.y1))], stroke(major(x)));
+            }
+            for y in lines(view.y0, view.y1) {
+                p.line_segment([xf.to_screen(Point::new(view.x0, y)), xf.to_screen(Point::new(view.x1, y))], stroke(major(y)));
+            }
+        }
     }
 }
 
@@ -1529,6 +1594,20 @@ fn anchor_square(p: &egui::Painter, c: Pos2, color: Color32, filled: bool, size:
     }
 }
 
+/// An anchor drawn for its node kind (with Direct Selection): corner and smooth anchors are the
+/// square, a symmetric anchor the square with a dot at its centre, an auto-smooth anchor a circle.
+fn anchor_marker(p: &egui::Painter, c: Pos2, color: Color32, filled: bool, size: f32, kind: redrob_vector_geom::AnchorKind) {
+    use redrob_vector_geom::AnchorKind;
+    match kind {
+        AnchorKind::AutoSmooth => curve_point(p, c, color, filled, size + 1.0),
+        AnchorKind::Symmetric => {
+            anchor_square(p, c, color, filled, size);
+            p.circle_filled(c, 1.0, if filled { Color32::WHITE } else { color });
+        }
+        AnchorKind::Corner | AnchorKind::Smooth => anchor_square(p, c, color, filled, size),
+    }
+}
+
 fn curve_point(p: &egui::Painter, c: Pos2, color: Color32, filled: bool, size: f32) {
     p.circle(c, size / 2.0, if filled { color } else { Color32::WHITE }, Stroke::new(1.0, color));
 }
@@ -1835,8 +1914,10 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
                 let ink = if anchor_selected && partial.is_some() { selected_anchor(color) } else { color };
                 if curvature {
                     curve_point(p, sp, ink, anchor_selected && partial.is_some(), grow + 6.0);
+                } else if direct || partial.is_some() {
+                    anchor_marker(p, sp, ink, anchor_selected, anchor(true), a.kind);
                 } else {
-                    anchor_square(p, sp, ink, anchor_selected, anchor(partial.is_some() || direct));
+                    anchor_square(p, sp, ink, anchor_selected, anchor(false));
                 }
             }
         });
@@ -1858,7 +1939,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             p.circle_filled(o, 2.5, color);
         }
     }
-    if app.session.prefs.show_handles_multiple_anchors || with_handles <= 1 {
+    if app.ui.view.show_handles && (app.session.prefs.show_handles_multiple_anchors || with_handles <= 1) {
         for (sp, hp, color) in handles {
             p.line_segment([sp, hp], Stroke::new(1.0, color));
             look.draw(p, hp, color);
@@ -1894,6 +1975,17 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             p.circle_filled(sp, 3.0, Color32::WHITE);
             p.circle_stroke(sp, 3.0, Stroke::new(1.0, color));
             p.circle_filled(sp, 1.0, color);
+        }
+    }
+    // Live shape handles (Direct Selection on a live ellipse, star or spiral): diamonds on the shape.
+    if tool == "directSelection"
+        && let Some(h) = redrob_vector_tools::shapehandles::ShapeHandles::of(&st.doc, &st.selection)
+    {
+        for handle in h.visible_on() {
+            let (c, color) = (xf.to_screen(handle.at), c32(st.doc.layer_color(handle.id)));
+            let d = 4.0 + grow / 2.0;
+            let pts = vec![c + vec2(0.0, -d), c + vec2(d, 0.0), c + vec2(0.0, d), c + vec2(-d, 0.0)];
+            p.add(Shape::convex_polygon(pts, Color32::WHITE, Stroke::new(1.0, color)));
         }
     }
     // Bounding box with handles (Selection tool).
@@ -2324,7 +2416,7 @@ mod tests {
         let full = egui::Rect::from_min_size(pos2(0.0, 0.0), vec2(800.0, 600.0));
         let [top, left, _] = ruler_rects(full);
         for deg in [0.0_f64, 30.0, 90.0, 135.0, 200.0] {
-            let xf = Xf { rect: full, zoom: 1.0, center: Point::new(300.0, 200.0), rot: deg.to_radians() };
+            let xf = Xf { rect: full, zoom: 1.0, center: Point::new(300.0, 200.0), rot: deg.to_radians(), flip: (1.0, 1.0) };
             let mut out = ctx.run_ui(Default::default(), |ui| rulers(ui, full, &xf, None, Unit::Points, Point::ZERO, &Tokens::get(ui.ctx())));
             out.textures_delta.clear();
             // The ticks' positions along each ruler.
@@ -2365,7 +2457,7 @@ mod tests {
         let origin = Point::new(350.25, 250.5);
         for deg in [0.0_f64, 30.0, 90.0, 200.0] {
             for unit in [Unit::Points, Unit::Millimeters] {
-                let xf = Xf { rect: full, zoom: 1.7, center: Point::new(300.0, 200.0), rot: deg.to_radians() };
+                let xf = Xf { rect: full, zoom: 1.7, center: Point::new(300.0, 200.0), rot: deg.to_radians(), flip: (1.0, 1.0) };
                 let mut out = ctx.run_ui(Default::default(), |ui| rulers(ui, full, &xf, None, unit, origin, &Tokens::get(ui.ctx())));
                 out.textures_delta.clear();
                 let at = xf.to_screen(origin);
@@ -3711,7 +3803,13 @@ mod tests {
             .map(redrob_vector_doc::NodeId)
             .collect();
         let ctx = egui::Context::default();
-        let xf = Xf { rect: egui::Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0)), zoom: 1.0, center: Point::new(200.0, 150.0), rot: 0.0 };
+        let xf = Xf {
+            rect: egui::Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0)),
+            zoom: 1.0,
+            center: Point::new(200.0, 150.0),
+            rot: 0.0,
+            flip: (1.0, 1.0),
+        };
         // `frame` draws one frame and returns each object's marks and whether that frame found the
         // fonts and hyphenation exceptions of the frame before.
         let frame = |app: &mut VectorcraftApp| {
@@ -3755,7 +3853,13 @@ mod tests {
         let text = json!({"x": 20, "y": 60, "text": "one two\nthree four", "font": ".Hidden Marks", "style": "Bold"});
         let id = app.session.execute("text.create", &text).unwrap()["id"].clone();
         let ctx = egui::Context::default();
-        let mut xf = Xf { rect: egui::Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0)), zoom: 1.0, center: Point::new(200.0, 150.0), rot: 0.0 };
+        let mut xf = Xf {
+            rect: egui::Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0)),
+            zoom: 1.0,
+            center: Point::new(200.0, 150.0),
+            rot: 0.0,
+            flip: (1.0, 1.0),
+        };
         // `drawn` draws a frame with what the overlay kept and checks it against a new overlay.
         let drawn = |app: &mut VectorcraftApp, xf: &Xf| {
             let kept = hidden_chars(app, &ctx, xf);

@@ -1257,9 +1257,11 @@ impl Exporter<'_> {
                     StrokeDash { array: pat, offset: if offset.is_finite() { offset as f32 } else { 0.0 } }
                 });
                 s.set_fill(None);
+                // A hairline is PDF's thinnest line (width 0), one device pixel wherever shown.
+                let width = if st.hairline { 0.0 } else { *width as f32 };
                 s.set_stroke(Some(Stroke {
                     paint,
-                    width: *width as f32,
+                    width,
                     miter_limit: st.miter_limit.max(1.0) as f32,
                     line_cap: match st.cap {
                         LineCap::Butt => krilla::paint::LineCap::Butt,

@@ -213,6 +213,7 @@ const FULL_RESOLUTION_PREVIEW: &[&str] = &[
     "filter.other.custom",
     "filter.video.deInterlace",
     "filter.stylize.traceContour",
+    "filter.stylize.edge",
     "filter.stylize.wind",
     "filter.stylize.extrude",
     "filter.render.tree",
@@ -222,6 +223,58 @@ const FULL_RESOLUTION_PREVIEW: &[&str] = &[
     "filter.stylize.findEdges",
     "filter.stylize.emboss",
     "filter.noise.despeckle",
+    // The GIMP-family filters build their features in document pixels too: per-pixel noise seeded
+    // by pixel position (CIE lch / HSV Noise, Hurl, Pick, Slur, Shift's per-row offsets, Value
+    // Propagate's one-pixel kernel, Mean Curvature Blur's per-step kernel, Difference of
+    // Gaussians' fixed radii), tiles, strokes and superpixels placed by a seed on the pixel grid
+    // (Cubism, SLIC, Waterpixels, Impressionist, Van Gogh, Weave, Fuzzy Border, Slide, Engrave's
+    // line rows, Supernova's spokes, Rippling and Waves' phases), and the pattern renderers whose
+    // cells, lines, orbits and iterations are in pixels (Checkerboard, Grid, Maze, Bayer Matrix,
+    // Sinus, Linear Sinusoid, Spiral, Spirograph, Jigsaw, Line Nova, Circuit, Diffraction
+    // Patterns, CML Explorer, Fractal Explorer, IFS Fractal, Fractal Trace, Sphere Designer,
+    // Cell Noise, Simplex Noise, Lava). On a reduced proxy they draw k times too large or a
+    // different pattern, so they preview at full resolution as well.
+    "filter.noise.cieLchNoise",
+    "filter.noise.hsvNoise",
+    "filter.noise.hurl",
+    "filter.noise.pick",
+    "filter.noise.slur",
+    "filter.distort.shift",
+    "filter.distort.valuePropagate",
+    "filter.distort.engrave",
+    "filter.blur.meanCurvatureBlur",
+    "filter.stylize.differenceOfGaussians",
+    "filter.lightShadow.supernova",
+    "filter.artistic.cubism",
+    "filter.artistic.slic",
+    "filter.artistic.waterpixels",
+    "filter.artistic.impressionist",
+    "filter.artistic.vanGogh",
+    "filter.artistic.weave",
+    "filter.decor.fuzzyBorder",
+    "filter.decor.slide",
+    "filter.animation.rippling",
+    "filter.animation.waves",
+    "filter.map.fractalTrace",
+    "filter.render.fractalExplorer",
+    "filter.render.ifsFractal",
+    "filter.render.sphereDesigner",
+    "filter.render.cellNoise",
+    "filter.render.simplexNoise",
+    "filter.render.lava",
+    "filter.render.circuit",
+    "filter.render.cmlExplorer",
+    "filter.render.bayerMatrix",
+    "filter.render.checkerboard",
+    "filter.render.diffractionPatterns",
+    "filter.render.grid",
+    "filter.render.linearSinusoid",
+    "filter.render.maze",
+    "filter.render.sinus",
+    "filter.render.spiral",
+    "filter.render.jigsaw",
+    "filter.render.lineNova",
+    "filter.render.spirograph",
 ];
 
 /// Whether `command` with `params` previews at full resolution: [`FULL_RESOLUTION_PREVIEW`], every
@@ -300,6 +353,7 @@ pub fn has_dialog(command: &str) -> bool {
                 | "image.mode.colorTable"
                 | "edit.definePattern"
                 | "select.convertToShape"
+                | "image.configureGrid"
         ))
         && redrob_photo_engine::commands::find(command).is_some_and(|c| !parse_spec(c.params).is_empty())
 }
@@ -327,6 +381,7 @@ fn restore_remembered(app: &PhotocraftApp, command: &str, spec: &str, fields: &m
 
 /// Remember successful built-in schema dialogs; failed or cancelled dialogs do not persist.
 pub(crate) fn remember(app: &mut PhotocraftApp, command: &str, fields: &Map<String, Value>) {
+    crate::filter_split::remember(app, fields);
     if !fields.contains_key("__filter") || fields.contains_key("__spec") {
         return;
     }
@@ -449,6 +504,11 @@ pub fn reset_fields(app: &PhotocraftApp, fields: &mut Map<String, Value>) {
     // Drop user params; keep private `__` chrome (and fixed keys outside the schema for `__spec`).
     let schema_keys: std::collections::HashSet<String> = parse_spec(&spec).into_iter().map(|p| p.key).collect();
     fields.retain(|k, _| k.starts_with("__") || !schema_keys.contains(k));
+    // The Blending Options are not in the schema: back to Normal at 100%.
+    if supports_blending(fields) {
+        fields.remove(BLEND);
+        fields.remove(OPACITY);
+    }
     for p in parse_spec(&spec) {
         if let Some(v) = default_value(app, &command, &p) {
             fields.insert(p.key, v);
@@ -471,6 +531,8 @@ pub fn open(app: &mut PhotocraftApp, command: &str) -> Option<u64> {
     if command.starts_with("filter.") || PREVIEWED.contains(&command) || command == crate::select_mask_view::COMMAND {
         fields.insert("__preview".into(), json!(true));
     }
+    // Split View starts as the last filter dialog left it (PH-FLT-002).
+    crate::filter_split::init(app, &mut fields);
     for p in parse_spec(spec.params) {
         if let Some(v) = default_value(app, command, &p) {
             fields.insert(p.key, v);
@@ -857,10 +919,77 @@ pub fn body(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
         ui.add_space(4.0);
         ui.add(egui::Label::new(egui::RichText::new(note).color(t.text_dim)).wrap());
     }
+    if supports_blending(f) {
+        blending_options(ui, &cmd, f);
+    }
     if let Some(mut preview) = f.get("__preview").and_then(Value::as_bool) {
         ui.add_space(4.0);
         crate::widgets::checkbox(ui, &mut preview, tl!("Preview"));
         f.insert("__preview".into(), json!(preview));
+    }
+    crate::filter_split::controls(ui, f);
+}
+
+/// The dialog's Blending Options (PH-FLT-002): the `blend` mode and `opacity` the engine
+/// composites the filter's result with before it lands, as Edit › Fade would afterwards. Unset
+/// (Normal at 100%) the result replaces the pixels, so the params only carry the keys once the
+/// section has drawn.
+const BLEND: &str = "blend";
+const OPACITY: &str = "opacity";
+
+/// Filter commands run by something other than the shared filter runner, which is where
+/// `blend` / `opacity` are applied: these get no Blending Options (Edit › Fade still works).
+const OWN_RUNNER: &[&str] = &[
+    "filter.lensCorrection",
+    "filter.adaptiveWideAngle",
+    "filter.cameraRaw",
+    "filter.liquify",
+    "filter.vanishingPoint",
+    "filter.render.flame",
+    "filter.render.pictureFrame",
+    "filter.render.tree",
+    "filter.render.clouds",
+    "filter.render.differenceClouds",
+    "filter.filterGallery",
+];
+
+/// Whether the dialog with fields `f` gets Blending Options: a Filter menu dialog on the shared
+/// runner, with the command's own parameters (a plug-in's spec or a smart filter being re-edited,
+/// which has its own blending options in the Layers panel, does not).
+pub(crate) fn supports_blending(f: &Map<String, Value>) -> bool {
+    if !f.contains_key("__filter") || f.contains_key("__spec") || f.contains_key("__smartFilter") {
+        return false;
+    }
+    let Some(cmd) = f.get("__command").and_then(Value::as_str) else { return false };
+    cmd.starts_with("filter.") && !OWN_RUNNER.contains(&cmd) && redrob_photo_engine::commands::find(cmd).is_some()
+}
+
+fn blending_options(ui: &mut egui::Ui, cmd: &str, f: &mut Map<String, Value>) {
+    let t = Tokens::get(ui.ctx());
+    ui.add_space(6.0);
+    crate::widgets::section_label(ui, "Blending Options");
+    let modes = redrob_photo_color::BlendMode::LAYER_MODES;
+    let mut cur = f.get(BLEND).and_then(Value::as_str).unwrap_or("Normal").to_string();
+    let opts: Vec<(String, &str)> = modes.iter().map(|m| (format!("{m:?}"), tl!(m.label()))).collect();
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Mode")).color(t.text_dim));
+        crate::widgets::dropdown(ui, &format!("flt-{cmd}-blend"), &mut cur, &opts, 170.0);
+    });
+    // Normal at 100 % is no blending at all: the params (and so the journal and the remembered
+    // values) carry the keys only when the section is set to something.
+    if cur == "Normal" {
+        f.remove(BLEND);
+    } else {
+        f.insert(BLEND.into(), json!(cur));
+    }
+    let mut opacity = f.get(OPACITY).and_then(Value::as_f64).unwrap_or(100.0) as f32;
+    let gestures = crate::widgets::RowGestures { reset: Some(100.0), wheel_step: None };
+    crate::widgets::slider_row_with(ui, tl!("Opacity"), &mut opacity, 0.0..=100.0, "%", None, gestures);
+    let opacity = opacity.round().clamp(0.0, 100.0);
+    if opacity >= 100.0 {
+        f.remove(OPACITY);
+    } else {
+        f.insert(OPACITY.into(), json!(opacity));
     }
 }
 
@@ -1001,6 +1130,11 @@ pub struct FilterPreview {
     /// OK was pressed and the filter runs as a background job: the preview stays on screen until
     /// the job lands, so the canvas doesn't flash the unfiltered image in between.
     pub committing: bool,
+    /// Split View (PH-FLT-002): the divider `result` was spliced with, and the whole filtered proxy
+    /// it was spliced from, so moving the divider reuses it instead of rerunning the filter
+    /// (`canvas::apply_filter_split`). `split` is `None` when `result` is the whole filtered proxy.
+    pub split: Option<crate::filter_split::Split>,
+    pub unsplit: Option<Arc<Document>>,
 }
 
 /// Identity of one filter dialog's live preview.
@@ -1988,8 +2122,13 @@ mod tests {
         assert_eq!(sm.smart_filters.len(), 1, "the preview adds the Curves smart filter");
         assert_eq!(shown.size, crate::proxy::proxy_document(&doc, k).size);
         // The 16 px square at (16, 16) is a 4 px square at (4, 4) on the proxy, not 16 px at (16, 16).
-        for (x, y) in [(4, 4), (5, 6), (7, 7)] {
+        // Its corner pixels are softened by the bicubic reduction of the placed source (the source
+        // is cropped to the square, so the kernel reads past its edge): inside, but not opaque.
+        for (x, y) in [(5, 5), (5, 6), (6, 6)] {
             assert!(alpha(&shown, x, y) > 0.99, "({x}, {y}) is inside the reduced square");
+        }
+        for (x, y) in [(4, 4), (7, 7)] {
+            assert!(alpha(&shown, x, y) > 0.5, "({x}, {y}) is a corner of the reduced square");
         }
         for (x, y) in [(2, 2), (9, 9), (12, 12), (15, 15)] {
             assert!(alpha(&shown, x, y) < 0.01, "({x}, {y}) is outside the reduced square");

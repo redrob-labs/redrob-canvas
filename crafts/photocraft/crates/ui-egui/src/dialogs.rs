@@ -213,10 +213,13 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
             // A dialog of a few short fields (`__compact`, Fit Image) is narrower (#4673): the title
             // rule and the button row fill the width they are given, so it needs its own maximum too.
             let compact = d.fields.contains_key("__compact");
-            // The curve editor caps its graph allocation at 300 points (#5113).
+            // The curve editor caps its graph allocation at 300 points (#5113). Its body scrolls
+            // (the OK / Cancel row stays on screen), and the scroll area keeps a strip for its
+            // bar: the window is that much wider, so the graph still gets its 300 points.
             let curves = fields.get("__adjust").and_then(Value::as_str) == Some("curves");
+            let curves_width = 300.0 + ui.spacing().scroll.allocated_width();
             if !compact {
-                ui.set_min_width(if curves { 300.0 } else { 380.0 });
+                ui.set_min_width(if curves { curves_width } else { 380.0 });
             }
             let wide = crate::prefs_ui::width(&d.fields, (ctx.content_rect().width() - 48.0).max(380.0));
             if let Some(w) = wide {
@@ -239,7 +242,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
             } else if compact {
                 260.0
             } else if curves {
-                300.0
+                curves_width
             } else {
                 440.0
             }));
@@ -343,8 +346,9 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
                 DialogKind::Command if crate::adjust_dialog::owns(&fields) => {
                     // Shadows/Highlights (ten sliders) and the like outgrow a 1080 px screen: the
                     // editor scrolls so the OK / Cancel row below it stays on the screen.
-                    let room = (ctx.content_rect().height() - DIALOG_CHROME).max(160.0);
+                    let room = (ctx.content_rect().height() - DIALOG_CHROME - crate::adjust_dialog::PREVIEW_ROW_HEIGHT).max(160.0);
                     egui::ScrollArea::vertical().id_salt(id.with("body")).max_height(room).show(ui, |ui| crate::adjust_dialog::body(app, ui, &mut fields));
+                    crate::adjust_dialog::preview_toggle(ui, &mut fields);
                 }
                 DialogKind::Command if crate::blur_pins::owns(&fields) => crate::blur_pins::body(ui, &mut fields),
                 DialogKind::Command if fields.contains_key("__filter") => {
@@ -645,6 +649,10 @@ pub fn confirm(app: &mut PhotocraftApp, id: u64) -> Result<Value, String> {
                 return Err("dialog has no command".into());
             };
             let (cmd, params) = crate::smart_ui::confirm_command(&d.fields, cmd, crate::filter_dialog::params_of(&d.fields));
+            // A Split View preview standing in for the job must show the whole filtered result.
+            if let Some(idx) = app.session.active_index() {
+                crate::canvas::apply_filter_split(app, idx, None);
+            }
             let result = app.run(&cmd, params.clone());
             // A filter that runs as a background job keeps its preview on screen until the job
             // lands (`canvas::committed_filter_preview`) instead of flashing the unfiltered image.
@@ -738,7 +746,8 @@ mod tests {
             params: serde_json::json!({"radius": 4.0}),
             k: 1,
         };
-        app.filter_preview = Some(crate::filter_dialog::FilterPreview { key, result: result.map(std::sync::Arc::new), committing: false });
+        let result = result.map(std::sync::Arc::new);
+        app.filter_preview = Some(crate::filter_dialog::FilterPreview { key, unsplit: result.clone(), result, committing: false, split: None });
         (app, id)
     }
 
@@ -1081,7 +1090,10 @@ mod tests {
         let mut h = dialog_harness(egui::vec2(1280.0, 800.0), BLUR);
         let radius = |h: &egui_kittest::Harness<'static, PhotocraftApp>| h.state().ui.dialogs.last().and_then(|d| d.fields["radius"].as_f64());
         assert_eq!(radius(&h), Some(1.0), "the default the first time");
-        assert!(h.get_by_role(egui::accesskit::Role::SpinButton).is_focused(), "the Radius field has focus");
+        // The Radius field comes before the Blending Options' Opacity field.
+        let first_number =
+            |h: &egui_kittest::Harness<'static, PhotocraftApp>| h.get_all_by_role(egui::accesskit::Role::SpinButton).next().unwrap().is_focused();
+        assert!(first_number(&h), "the Radius field has focus");
         h.event(egui::Event::Text("5".into()));
         h.run_steps(1);
         assert_eq!(radius(&h), Some(5.0), "typing replaced the selected 1");
@@ -1093,7 +1105,7 @@ mod tests {
         crate::filter_dialog::open(h.state_mut(), BLUR).unwrap();
         h.run_steps(4);
         assert_eq!(radius(&h), Some(5.0), "reopens with the last value");
-        assert!(h.get_by_role(egui::accesskit::Role::SpinButton).is_focused(), "focused again");
+        assert!(first_number(&h), "focused again");
         h.event(egui::Event::Text("9".into()));
         h.run_steps(1);
         h.key_press(egui::Key::Escape);

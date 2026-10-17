@@ -20,7 +20,7 @@ use serde_json::json;
 
 use crate::PhotocraftApp;
 use crate::canvas::{ToolEvent, ViewXform};
-use crate::state::{MadeLayer, Tool, TransformMode, TransformSession};
+use crate::state::{MadeLayer, Tool, TransformClipping, TransformDirection, TransformGuides, TransformMode, TransformSession};
 
 /// Which Split button is armed. The guide follows the pointer and the split is added on release.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -1057,7 +1057,14 @@ pub fn commit(app: &mut PhotocraftApp) {
         if t.quad == corners(t.rect) {
             return; // untouched: nothing to do and no history step; a ⌥⌘T copy or a place stays
         }
+        let o = app.ui.transform_options;
         let mut p = json!({"layer": t.layer, "rect": t.rect, "quad": t.quad, "interpolation": t.interpolation});
+        if o.direction != TransformDirection::Normal {
+            p["direction"] = json!(o.direction.param());
+        }
+        if o.clipping != TransformClipping::Adjust {
+            p["clipping"] = json!(o.clipping.param());
+        }
         if let Some(target) = &t.target {
             p["target"] = target.clone();
         }
@@ -2135,7 +2142,7 @@ pub fn draw_content(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform
         mesh.add_triangle(0, 1, 2);
         mesh.add_triangle(0, 2, 3);
         painter.add(clip_to_canvas(mesh, canvas_size(pv), |p| xf.to_screen(p.x, p.y)));
-    } else if let Some(h) = Homography::rect_to_quad([0.0, 0.0, 1.0, 1.0], t.quad) {
+    } else if let Some(h) = Homography::rect_to_quad([0.0, 0.0, 1.0, 1.0], shown_quad(app, t)) {
         // A 24×24 grid keeps perspective previews straight.
         let n = 24;
         let zoom = xf.zoom * painter.ctx().pixels_per_point();
@@ -2209,6 +2216,7 @@ pub fn draw_overlay(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform
         );
     }
     let pts: Vec<Pos2> = t.quad.iter().map(|q| scr(*q)).collect();
+    draw_guides(painter, xf, t.quad, app.ui.transform_options, accent);
     painter.add(egui::Shape::closed_line(pts.clone(), Stroke::new(1.0, accent)));
     let mids: Vec<Pos2> = (0..4).map(|i| pts[i].lerp(pts[(i + 1) % 4], 0.5)).collect();
     for p in pts.iter().chain(mids.iter()) {
@@ -2748,6 +2756,74 @@ fn size_pct(u: &crate::layer_props_ui::LenUnit, v: f32, side: f64) -> f64 {
     u.px(v, side) / side * 100.0
 }
 
+/// Where the preview draws the frame's corners: the handles, or under the Corrective direction the
+/// corners the inverse map takes them to, so the canvas shows what Commit will do while the box
+/// still frames the distortion being undone. A box the inverse cannot take (collapsed) shows as is.
+fn shown_quad(app: &PhotocraftApp, t: &TransformSession) -> [[f64; 2]; 4] {
+    if app.ui.transform_options.direction != TransformDirection::Corrective || t.selection || t.path.is_some() || t.content_aware.is_some() {
+        return t.quad;
+    }
+    let Some(inv) = Homography::rect_to_quad(t.rect, t.quad).and_then(|h| h.inverse()) else {
+        return t.quad;
+    };
+    let q = corners(t.rect).map(|[x, y]| {
+        let (x, y) = inv.apply(x, y);
+        [x, y]
+    });
+    if q.iter().flatten().all(|v| v.is_finite()) { q } else { t.quad }
+}
+
+/// The guide overlay through the box (the options bar's Guides): lines in the frame's own
+/// coordinates mapped through the box, so they lean and converge with it.
+fn draw_guides(painter: &egui::Painter, xf: &ViewXform, quad: [[f64; 2]; 4], o: crate::state::TransformOptions, color: Color32) {
+    let Some(h) = Homography::rect_to_quad([0.0, 0.0, 1.0, 1.0], quad) else {
+        return;
+    };
+    let stroke = Stroke::new(1.0, color.gamma_multiply(0.6));
+    let to = |u: f64, v: f64| {
+        let (x, y) = h.apply(u, v);
+        xf.to_screen(x as f32, y as f32)
+    };
+    // A line across the unit square at `k` on one axis; the other axis is the full extent.
+    let across = |k: f64, vertical: bool| {
+        let (a, b) = if vertical { (to(k, 0.0), to(k, 1.0)) } else { (to(0.0, k), to(1.0, k)) };
+        painter.line_segment([a, b], stroke);
+    };
+    match o.guides {
+        TransformGuides::None => {}
+        TransformGuides::CenterLines => {
+            across(0.5, true);
+            across(0.5, false);
+        }
+        TransformGuides::RuleOfThirds => {
+            for k in [1.0 / 3.0, 2.0 / 3.0] {
+                across(k, true);
+                across(k, false);
+            }
+        }
+        TransformGuides::GoldenSections => {
+            // 1 / φ and 1 − 1 / φ.
+            let g = (5f64.sqrt() - 1.0) / 2.0;
+            for k in [1.0 - g, g] {
+                across(k, true);
+                across(k, false);
+            }
+        }
+        TransformGuides::Diagonals => {
+            painter.line_segment([to(0.0, 0.0), to(1.0, 1.0)], stroke);
+            painter.line_segment([to(1.0, 0.0), to(0.0, 1.0)], stroke);
+        }
+        TransformGuides::Grid => {
+            let n = o.grid_lines.clamp(2, 64);
+            for i in 1..n {
+                let k = f64::from(i) / f64::from(n);
+                across(k, true);
+                across(k, false);
+            }
+        }
+    }
+}
+
 /// Options bar while transforming: the fields (reference point X/Y, W/H %, angle, interpolation,
 /// or the warp controls), then the mode switch, cancel and commit right after them. A bar too
 /// narrow for both pins the buttons to the right edge and clips the fields, so Commit and Cancel
@@ -2803,11 +2879,60 @@ fn transform_fields(app: &mut PhotocraftApp, ui: &mut egui::Ui, t: &TransformSes
     crate::widgets::vline(ui, 22.0);
     lbl(ui, tl!("Interpolation:"));
     let mut interp = t.interpolation.clone();
-    let opts = [("bicubic".to_string(), tl!("Bicubic")), ("bilinear".to_string(), tl!("Bilinear")), ("nearest".to_string(), tl!("Nearest Neighbor"))];
+    let opts = [
+        ("bicubic".to_string(), tl!("Bicubic")),
+        ("bilinear".to_string(), tl!("Bilinear")),
+        ("nearest".to_string(), tl!("Nearest Neighbor")),
+        ("lanczos3".to_string(), tl!("Lanczos")),
+    ];
     if crate::widgets::dropdown(ui, "transform-interp", &mut interp, &opts, 130.0)
         && let Some(s) = app.ui.transform.as_mut()
     {
         s.interpolation = interp;
+    }
+    shared_option_fields(app, ui);
+}
+
+/// The options every transform tool shares beyond interpolation: Direction (Normal / Corrective),
+/// Clipping (what happens past the canvas) and the guide overlay. They persist across sessions
+/// ([`crate::state::TransformOptions`]).
+fn shared_option_fields(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+    let tk = crate::theme::Tokens::get(ui.ctx());
+    let lbl = |ui: &mut egui::Ui, s: &str| {
+        ui.label(egui::RichText::new(s).color(tk.text_dim).size(12.0));
+    };
+    let mut o = app.ui.transform_options;
+    crate::widgets::vline(ui, 22.0);
+    lbl(ui, tl!("Direction:"));
+    let dirs = [(TransformDirection::Normal, tl!("Normal")), (TransformDirection::Corrective, tl!("Corrective"))];
+    crate::widgets::dropdown(ui, "transform-direction", &mut o.direction, &dirs, 104.0);
+    lbl(ui, tl!("Clipping:"));
+    let clips = [
+        (TransformClipping::Adjust, tl!("Adjust")),
+        (TransformClipping::Clip, tl!("Clip")),
+        (TransformClipping::Crop, tl!("Crop")),
+        (TransformClipping::CropAspect, tl!("Crop with Aspect")),
+    ];
+    crate::widgets::dropdown(ui, "transform-clipping", &mut o.clipping, &clips, 128.0);
+    lbl(ui, tl!("Guides:"));
+    let guides = [
+        (TransformGuides::None, tl!("None")),
+        (TransformGuides::CenterLines, tl!("Center Lines")),
+        (TransformGuides::RuleOfThirds, tl!("Rule of Thirds")),
+        (TransformGuides::GoldenSections, tl!("Golden Sections")),
+        (TransformGuides::Diagonals, tl!("Diagonals")),
+        (TransformGuides::Grid, tl!("Grid")),
+    ];
+    crate::widgets::dropdown(ui, "transform-guides", &mut o.guides, &guides, 128.0);
+    if o.guides == TransformGuides::Grid {
+        lbl(ui, tl!("Lines:"));
+        let mut n = o.grid_lines as f32;
+        if crate::widgets::value_field(ui, &mut n, 2.0..=64.0, "", 44.0).changed() {
+            o.grid_lines = n.round().clamp(2.0, 64.0) as u32;
+        }
+    }
+    if o != app.ui.transform_options {
+        app.ui.transform_options = o;
     }
 }
 

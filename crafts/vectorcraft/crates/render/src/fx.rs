@@ -320,7 +320,7 @@ const PIXEL_BUDGET: f64 = 8.4e6;
 /// The effects [`Renderer::pixel_content`] runs on the content's pixels (those changing the
 /// content itself), in stack order.
 fn content_changing(fx: &&RasterFx) -> bool {
-    matches!(fx, RasterFx::Feather { .. } | RasterFx::GaussianBlur { .. } | RasterFx::Pixel(_))
+    matches!(fx, RasterFx::Feather { .. } | RasterFx::GaussianBlur { .. } | RasterFx::Pixel(_) | RasterFx::Graph(_))
 }
 
 /// How far (document units) from a pixel the content deciding it after `fx` lies; `None` when
@@ -329,6 +329,7 @@ fn looks_around(fx: &RasterFx) -> Option<f64> {
     match fx {
         RasterFx::Feather { radius } | RasterFx::GaussianBlur { radius } => Some(1.5 * radius),
         RasterFx::Pixel(p) => p.reach(),
+        RasterFx::Graph(g) => g.reach(),
         _ => Some(0.0),
     }
 }
@@ -1048,7 +1049,7 @@ impl Renderer {
         // works on a coarser grid tied to the canvas, so the blurred art shifted by up to a pixel
         // and looked blocky as the view moved by parts of a pixel (#755).
         let blurs = rfx.iter().any(|fx| matches!(fx, RasterFx::Feather { radius } | RasterFx::GaussianBlur { radius } if *radius > 0.0));
-        if blurs || rfx.iter().any(|fx| matches!(fx, RasterFx::Pixel(_))) {
+        if blurs || rfx.iter().any(|fx| matches!(fx, RasterFx::Pixel(_) | RasterFx::Graph(_))) {
             self.pixel_content(ctx, f, content, rfx, paint);
         } else {
             paint(self, ctx, f);
@@ -1198,6 +1199,7 @@ impl Renderer {
                     }
                 }
                 RasterFx::Pixel(p) => p.apply(pm.data_as_u8_slice_mut(), wz, hz, &space),
+                RasterFx::Graph(g) => g.apply(pm.data_as_u8_slice_mut(), wz, hz, &space, content.reach),
                 _ => {}
             }
         }

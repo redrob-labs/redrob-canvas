@@ -92,12 +92,12 @@ fn copy_and_export_go_through_the_ui_commands() {
     app.run("shape.star", json!({"cx": 100, "cy": 50, "radius1": 30, "radius2": 15})).unwrap();
     let r = app.run("css.exportFile", json!({"path": "/tmp/site/site.css", "scope": "all", "rasterize": true})).unwrap();
     assert_eq!(r["rules"], json!(2));
-    let png = std::path::Path::new("/tmp/site").join("path.png").to_string_lossy().into_owned();
+    let png = std::path::Path::new("/tmp/site").join("star.png").to_string_lossy().into_owned();
     assert_eq!(r["images"], json!([png]));
     let log = log.borrow();
     let names: Vec<&str> = log.iter().map(|(p, _)| p.as_str()).collect();
     assert_eq!(names, ["/tmp/site/site.css", png.as_str()]);
     let css = String::from_utf8(log[0].1.clone()).unwrap();
-    assert!(css.contains(".rectangle {") && css.contains("background-image: url(path.png);"), "{css}");
+    assert!(css.contains(".rectangle {") && css.contains(".star {") && css.contains("background-image: url(star.png);"), "{css}");
     assert!(log[1].1.starts_with(b"\x89PNG"));
 }

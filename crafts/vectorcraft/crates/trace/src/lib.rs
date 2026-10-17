@@ -50,6 +50,7 @@ mod group;
 mod logo;
 mod mosaic;
 mod quantize;
+mod scans;
 mod shapes;
 mod smooth;
 mod subpixel;
@@ -211,6 +212,14 @@ pub enum Mode {
     /// Flat-colour logos: sub-pixel edges, sharp corners restored, true lines and circles.
     #[serde(alias = "Logo", alias = "flat", alias = "flatLogo")]
     Logo,
+    /// Edge detection: one path of the outlines where brightness changes sharply (a Sobel edge
+    /// above `threshold`), traced as Black and White traces ink.
+    #[serde(alias = "edges", alias = "Edge Detection")]
+    EdgeDetection,
+    /// Quantisation: the image reduced to `colors` colours, and the darker half of them traced as
+    /// one path (a single-path scan: the boundaries of the quantised result).
+    #[serde(alias = "quantization", alias = "quantisation", alias = "Quantization")]
+    Quantized,
 }
 
 /// How colour layers relate (Advanced → Method).
@@ -517,6 +526,15 @@ fn trace_paths(img: &Raster, params: &TraceParams, max_anchors: usize) -> Result
     let (w, h) = (img.width as usize, img.height as usize);
     if params.mode == Mode::Logo {
         return logo::trace_logo(img, params, max_anchors);
+    }
+    // The single-path scans make a black-and-white image of what they find and trace its ink.
+    if matches!(params.mode, Mode::EdgeDetection | Mode::Quantized) {
+        let bin = match params.mode {
+            Mode::EdgeDetection => scans::edges(img, params.threshold),
+            _ => scans::quantized(img, params),
+        };
+        let p = TraceParams { mode: Mode::BlackAndWhite, threshold: 128, ignore_white: true, ignore_color: None, gradients: false, ..params.clone() };
+        return trace_paths(&bin, &p, max_anchors);
     }
     // The colour Ignore Color leaves out, if not white.
     let ignore = match &params.ignore_color {

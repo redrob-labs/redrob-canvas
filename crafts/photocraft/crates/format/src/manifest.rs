@@ -9,7 +9,7 @@
 
 use redrob_photo_color::{BlendMode, Color, ColorMode, PixelFormat, SampleType};
 use redrob_photo_doc::{
-    Adjustment, ClippingPath, Effect, Fill, GlobalLight, Guides, LabelColor, LiveShape, Locks, Path, ShapeStroke, SmartFilter, VectorMask, text,
+    Adjustment, ClippingPath, DocGrid, Effect, Fill, GlobalLight, Guides, LabelColor, LiveShape, Locks, Path, ShapeStroke, SmartFilter, VectorMask, text,
 };
 use redrob_photo_geom::{Affine, Size};
 use serde::{Deserialize, Serialize};
@@ -46,6 +46,9 @@ pub struct DocM {
     pub layers: Vec<LayerM>,
     pub channels: Vec<ChannelM>,
     pub guides: Guides,
+    /// The image's own grid (Image › Configure Grid); absent = the Preferences grid.
+    #[serde(default)]
+    pub grid: Option<DocGrid>,
     /// The rulers' zero point in document pixels (absent in older files: the top-left).
     #[serde(default)]
     pub ruler_origin: [f64; 2],
@@ -102,6 +105,9 @@ pub struct DocM {
     /// Web slices (user and layer-based; layer ids are remapped on load).
     #[serde(default, skip_serializing_if = "redrob_photo_doc::Slices::is_empty")]
     pub slices: redrob_photo_doc::Slices,
+    /// Palettes stored in the document (Swatches panel).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub palettes: Vec<redrob_photo_doc::DocPalette>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

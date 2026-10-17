@@ -115,8 +115,14 @@ fn rename(s: &mut Session, p: &Value) -> Result<Value> {
     let pr = s.tools.presets.get_mut(i).ok_or_else(|| bad(cmd, "no such preset"))?;
     if pr.name != new {
         let was_current = s.tools.current_preset.as_ref().is_some_and(|c| c.eq_ignore_ascii_case(&pr.name));
-        pr.name = new.clone();
+        let old = std::mem::replace(&mut pr.name, new.clone());
         pr.builtin = false;
+        // Its tags follow the preset to its new name.
+        if let Some(key) = s.tools.preset_tags.keys().find(|n| n.eq_ignore_ascii_case(&old)).cloned()
+            && let Some(t) = s.tools.preset_tags.remove(&key)
+        {
+            s.tools.preset_tags.insert(new.clone(), t);
+        }
         if was_current {
             s.tools.current_preset = Some(new.clone());
             s.tools.brush_changed();
@@ -440,6 +446,125 @@ fn delete_group(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({ "deleted": before - s.tools.presets.len(), "count": s.tools.presets.len() }))
 }
 
+/// The tags every library starts with (the chooser offers them before any preset carries them).
+pub const DEFAULT_TAGS: [&str; 9] = ["Digital", "Erasers", "FX", "Favorites", "Ink", "Paint", "Pixel Art", "Sketch", "Textures"];
+
+/// A tag name param: trimmed, non-empty, at most [`MAX_NAME`] characters.
+fn tag_param(p: &Value, k: &str, cmd: &str) -> Result<String> {
+    text(p, k, cmd)
+}
+
+/// Every tag in use or offered by default, sorted case-insensitively.
+pub fn all_tags(s: &Session) -> Vec<String> {
+    let mut out: Vec<String> = DEFAULT_TAGS.iter().map(|t| t.to_string()).collect();
+    for t in s.tools.preset_tags.values().flatten() {
+        if !out.iter().any(|x| x.eq_ignore_ascii_case(t)) {
+            out.push(t.clone());
+        }
+    }
+    out.sort_by_key(|t| t.to_lowercase());
+    out
+}
+
+/// The tags of preset `name` (empty when it has none).
+pub fn tags_of<'a>(s: &'a Session, name: &str) -> &'a [String] {
+    s.tools.preset_tags.iter().find(|(n, _)| n.eq_ignore_ascii_case(name)).map(|(_, t)| t.as_slice()).unwrap_or(&[])
+}
+
+/// Does preset `name` carry `tag`?
+pub fn has_tag(s: &Session, name: &str, tag: &str) -> bool {
+    tags_of(s, name).iter().any(|t| t.eq_ignore_ascii_case(tag))
+}
+
+fn tag(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "brush.presets.tag";
+    let i = find(s, p, "name", cmd)?;
+    let tag = tag_param(p, "tag", cmd)?;
+    let name = s.tools.presets[i].name.clone();
+    let key = s.tools.preset_tags.keys().find(|n| n.eq_ignore_ascii_case(&name)).cloned().unwrap_or_else(|| name.clone());
+    let changed = {
+        let list = s.tools.preset_tags.entry(key).or_default();
+        if list.iter().any(|t| t.eq_ignore_ascii_case(&tag)) {
+            false
+        } else {
+            list.push(tag);
+            list.sort_by_key(|t| t.to_lowercase());
+            true
+        }
+    };
+    if changed {
+        s.brush_presets_changed();
+    }
+    Ok(json!({ "name": name, "tags": tags_of(s, &name) }))
+}
+
+fn untag(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "brush.presets.untag";
+    let i = find(s, p, "name", cmd)?;
+    let tag = tag_param(p, "tag", cmd)?;
+    let name = s.tools.presets[i].name.clone();
+    let mut changed = false;
+    if let Some(list) = s.tools.preset_tags.iter_mut().find(|(n, _)| n.eq_ignore_ascii_case(&name)).map(|(_, t)| t) {
+        let before = list.len();
+        list.retain(|t| !t.eq_ignore_ascii_case(&tag));
+        changed = list.len() != before;
+    }
+    s.tools.preset_tags.retain(|_, t| !t.is_empty());
+    if changed {
+        s.brush_presets_changed();
+    }
+    Ok(json!({ "name": name, "tags": tags_of(s, &name) }))
+}
+
+fn rename_tag(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "brush.presets.renameTag";
+    let from = tag_param(p, "tag", cmd)?;
+    let to = tag_param(p, "newName", cmd)?;
+    let mut n = 0;
+    for list in s.tools.preset_tags.values_mut() {
+        if let Some(t) = list.iter_mut().find(|t| t.eq_ignore_ascii_case(&from)) {
+            *t = to.clone();
+            n += 1;
+        }
+        list.sort_by_key(|t| t.to_lowercase());
+        list.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    }
+    if n > 0 {
+        s.brush_presets_changed();
+    }
+    Ok(json!({ "tag": to, "presets": n }))
+}
+
+fn delete_tag(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "brush.presets.deleteTag";
+    let tag = tag_param(p, "tag", cmd)?;
+    let mut n = 0;
+    for list in s.tools.preset_tags.values_mut() {
+        let before = list.len();
+        list.retain(|t| !t.eq_ignore_ascii_case(&tag));
+        n += before - list.len();
+    }
+    s.tools.preset_tags.retain(|_, t| !t.is_empty());
+    if n > 0 {
+        s.brush_presets_changed();
+    }
+    Ok(json!({ "tag": tag, "presets": n }))
+}
+
+fn list_tags(s: &mut Session, p: &Value) -> Result<Value> {
+    match p.get("name").and_then(Value::as_str) {
+        Some(name) => Ok(json!({ "name": name, "tags": tags_of(s, name) })),
+        None => {
+            let tags = all_tags(s);
+            let presets: Vec<Value> = tags
+                .iter()
+                .map(|t| json!({ "tag": t, "presets": s.tools.presets.iter().filter(|p| has_tag(s, &p.name, t)).map(|p| p.name.clone()).collect::<Vec<_>>() }))
+                .collect();
+            Ok(json!({ "tags": tags, "byTag": presets }))
+        }
+    }
+}
+
 macro_rules! spec {
     ($id:literal, $label:literal, $params:literal, $run:expr) => {
         CommandSpec { id: $id, label: $label, menu: &[], shortcut: None, params: $params, enabled: always, run: $run, journal: true }
@@ -474,6 +599,20 @@ pub fn specs() -> Vec<CommandSpec> {
             r##"{"group":string,"folder":[name]? (delete this nested folder instead)} → {deleted, count}"##,
             delete_group
         ),
+        spec!("brush.presets.tag", "Tag Brush", r##"{"name":string,"tag":string} → {name, tags} — a preset can carry any number of tags"##, tag),
+        spec!("brush.presets.untag", "Untag Brush", r##"{"name":string,"tag":string} → {name, tags}"##, untag),
+        spec!("brush.presets.renameTag", "Rename Brush Tag", r##"{"tag":string,"newName":string} → {tag, presets}"##, rename_tag),
+        spec!("brush.presets.deleteTag", "Delete Brush Tag", r##"{"tag":string} → {tag, presets} — removes it from every preset"##, delete_tag),
+        CommandSpec {
+            id: "brush.presets.tags",
+            label: "List Brush Tags",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"name":string?} → {name, tags} for one preset, else {tags, byTag:[{tag, presets}]} (the default tags included)"##,
+            enabled: always,
+            run: list_tags,
+            journal: false,
+        },
     ]
 }
 
@@ -498,6 +637,32 @@ mod tests {
             });
         }
         s
+    }
+
+    #[test]
+    fn tags_add_remove_rename_and_list() {
+        let mut s = with_groups();
+        let r = s.execute("brush.presets.tag", json!({"name": "A1", "tag": "Ink"})).unwrap();
+        assert_eq!(r["tags"], json!(["Ink"]));
+        s.execute("brush.presets.tag", json!({"name": "a1", "tag": "Favorites"})).unwrap();
+        s.execute("brush.presets.tag", json!({"name": "A1", "tag": "ink"})).unwrap();
+        assert_eq!(tags_of(&s, "A1"), ["Favorites", "Ink"]);
+        assert!(has_tag(&s, "A1", "INK"));
+        s.execute("brush.presets.tag", json!({"name": "B1", "tag": "Ink"})).unwrap();
+        let all = s.execute("brush.presets.tags", json!({})).unwrap();
+        assert!(all["tags"].as_array().unwrap().iter().any(|t| t == "Ink"));
+        assert!(all["tags"].as_array().unwrap().iter().any(|t| t == "Pixel Art"), "default tags are offered");
+        let ink = all["byTag"].as_array().unwrap().iter().find(|e| e["tag"] == "Ink").unwrap();
+        assert_eq!(ink["presets"], json!(["A1", "B1"]));
+        s.execute("brush.presets.renameTag", json!({"tag": "Ink", "newName": "Inking"})).unwrap();
+        assert!(has_tag(&s, "B1", "Inking") && !has_tag(&s, "B1", "Ink"));
+        let r = s.execute("brush.presets.untag", json!({"name": "A1", "tag": "Favorites"})).unwrap();
+        assert_eq!(r["tags"], json!(["Inking"]));
+        let r = s.execute("brush.presets.deleteTag", json!({"tag": "Inking"})).unwrap();
+        assert_eq!(r["presets"], 2);
+        assert!(tags_of(&s, "A1").is_empty() && s.tools.preset_tags.is_empty());
+        assert!(s.execute("brush.presets.tag", json!({"name": "Nope", "tag": "Ink"})).is_err());
+        assert!(s.execute("brush.presets.tag", json!({"name": "A1", "tag": "  "})).is_err());
     }
 
     #[test]

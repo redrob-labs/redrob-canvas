@@ -45,9 +45,25 @@ fn choices(command: &str, key: &str) -> Option<form::Choices> {
         ("graph.setType", "pieLegend") => Some(PIE_LEGEND),
         ("graph.setType", "piePosition") => Some(PIE_POSITION),
         ("graph.setType", "pieSort") => Some(PIE_SORT),
+        ("edit.findReplace", "in") => Some(FIND_IN),
+        ("edit.findReplace", "scope") => Some(FIND_SCOPE),
         _ => None,
     }
 }
+
+/// Find and Replace › In: the object field searched.
+const FIND_IN: form::Choices = &[
+    ("Text content", "text"),
+    ("ID", "id"),
+    ("Label", "label"),
+    ("Title", "title"),
+    ("Description", "description"),
+    ("Style", "style"),
+    ("Object type", "type"),
+];
+
+/// Find and Replace › Scope.
+const FIND_SCOPE: form::Choices = &[("All", "all"), ("Selection", "selection"), ("Current layer", "layer")];
 
 /// Type on a Path Options › Align to Path.
 const PATH_ALIGN: form::Choices = &[("Ascender", "ascender"), ("Descender", "descender"), ("Center", "center"), ("Baseline", "baseline")];

@@ -13,7 +13,7 @@ impl BrushContext {
             dp.resize(w * h, 0.0);
         }
         let b = &self.brush;
-        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { (b.hardness, self.tip.as_deref()) };
+        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { (b.hardness, self.primary_mips(d)) };
         let aliased = b.aliased && !dual;
         let wet = b.wet_edges && !dual && depth.is_none();
         let noise = b.noise && !dual;

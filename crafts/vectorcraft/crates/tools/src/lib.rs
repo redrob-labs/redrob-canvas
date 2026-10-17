@@ -29,6 +29,7 @@ pub mod rulerguide;
 pub mod select;
 pub mod settings;
 pub mod shape;
+pub mod shapehandles;
 pub mod slice;
 pub mod symbolism;
 pub mod text;
@@ -125,6 +126,9 @@ pub enum ToolKey {
     Tab,
     Home,
     End,
+    /// Page Up / Page Down: the node tool grows and shrinks the anchor selection.
+    PageUp,
+    PageDown,
     /// A digit key 0–9 (5 while dragging with the Perspective Selection tool moves perpendicular
     /// to the plane).
     Digit(u8),

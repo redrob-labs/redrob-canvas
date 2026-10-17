@@ -68,6 +68,8 @@ enum V {
     Feathered(f64),
     /// Layers, bottom first.
     Stack(Vec<V>),
+    /// The source through a colour matrix on its own (a Color Matrix effect).
+    Matrix(ColorMatrixKind),
 }
 
 impl V {
@@ -175,8 +177,9 @@ fn eval(f: &Filter) -> Option<V> {
                 }
             }
             Kind::Merge(m) => V::Stack(m.inputs().iter().map(input).collect::<Option<Vec<_>>>()?.into_iter().flat_map(V::layers).collect()),
-            Kind::ColorMatrix(c) => match c.kind() {
-                ColorMatrixKind::Matrix(m) => input(c.input())?.color_matrix(m)?,
+            Kind::ColorMatrix(c) => match (c.kind(), input(c.input())?) {
+                (_, V::Graphic) if f.primitives().len() == 1 => V::Matrix(c.kind().clone()),
+                (ColorMatrixKind::Matrix(m), v) => v.color_matrix(m)?,
                 _ => return None,
             },
             Kind::ComponentTransfer(c) => {
@@ -204,6 +207,21 @@ fn eval(f: &Filter) -> Option<V> {
     Some(last)
 }
 
+/// Every filter of `filters` kept whole as a Filter Graph effect (`filter.graph`) on the element
+/// `g`, lengths scaled by `ts`; `None` when one holds a primitive the graphs have no counterpart
+/// for (`feImage`).
+pub(super) fn graphs(filters: &[Arc<Filter>], ts: Affine, g: &usvg::Group) -> Option<Vec<Effect>> {
+    let k = ts.determinant().abs().sqrt();
+    let bounds = g.children().first().map(|c| c.bounding_box()).or_else(|| Some(g.bounding_box()));
+    filters
+        .iter()
+        .map(|f| {
+            let graph = crate::filter_graph::graph_of(f, k, bounds)?;
+            Some(Effect { id: redrob_vector_effects::FILTER_GRAPH.into(), params: graph.to_params(), visible: true })
+        })
+        .collect()
+}
+
 /// The live effects `filters` (in the order they apply) stand for, in user space mapped to the
 /// document by `ts`; `blends`: the modes our export recorded ([`blends`]). `None` when one of
 /// them isn't an effect the canvas draws.
@@ -221,6 +239,16 @@ pub(super) fn effects(filters: &[Arc<Filter>], ts: Affine, blends: &HashMap<Stri
             V::Graphic => continue,
             V::Blurred(sd) => ("blur.gaussian", json!({ "radius": blur(sd) })),
             V::Feathered(sd) => ("stylize.feather", json!({ "radius": blur(sd) })),
+            V::Matrix(kind) => {
+                let list = |m: &[f32]| m.iter().map(|v| format!("{}", (f64::from(*v) * 10000.0).round() / 10000.0)).collect::<Vec<_>>().join(" ");
+                let p = match kind {
+                    ColorMatrixKind::Matrix(m) => json!({ "type": "matrix", "values": list(&m) }),
+                    ColorMatrixKind::Saturate(s) => json!({ "type": "saturate", "amount": num(f64::from(s.get())) }),
+                    ColorMatrixKind::HueRotate(a) => json!({ "type": "hueRotate", "amount": num(f64::from(a)) }),
+                    ColorMatrixKind::LuminanceToAlpha => json!({ "type": "luminanceToAlpha" }),
+                };
+                (redrob_vector_effects::COLOR_MATRIX, p)
+            }
             V::Stack(layers) => match layers.as_slice() {
                 [V::Paint { shape, color, opacity, clipped: false }, V::Graphic] if !shape.inverted => {
                     let (color, opacity) = paint(*color, *opacity);

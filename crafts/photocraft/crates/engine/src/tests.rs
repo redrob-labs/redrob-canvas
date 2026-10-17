@@ -1580,3 +1580,34 @@ fn merge_down_on_a_group_merges_the_group() {
     s.execute("edit.undo", json!({})).unwrap();
     assert!(s.active().unwrap().doc.layer(redrob_photo_doc::LayerId(group)).is_some());
 }
+
+#[test]
+fn cumulative_undo_merges_quick_strokes_into_one_step() {
+    let mut s = session_with_doc();
+    let stroke = |s: &mut Session, x: i32| s.execute("paint.stroke", json!({"points": [[x, 10]], "size": 4, "color": "#ff0000"})).unwrap();
+    stroke(&mut s, 10);
+    stroke(&mut s, 20);
+    let separate = s.active().unwrap().history.past_len();
+    s.execute("prefs.set", json!({"path": "performance.cumulativeUndo", "value": true})).unwrap();
+    stroke(&mut s, 30);
+    let first = s.active().unwrap().history.past_len();
+    assert_eq!(first, separate + 1, "the first stroke after the previous ones is its own step");
+    stroke(&mut s, 40);
+    stroke(&mut s, 50);
+    assert_eq!(s.active().unwrap().history.past_len(), first, "strokes within the interval merge");
+    // A different edit, or an undo, ends the run.
+    s.execute("layer.new.layer", json!({})).unwrap();
+    let after_layer = s.active().unwrap().history.past_len();
+    stroke(&mut s, 12);
+    assert_eq!(s.active().unwrap().history.past_len(), after_layer + 1);
+    stroke(&mut s, 14);
+    assert_eq!(s.active().unwrap().history.past_len(), after_layer + 1);
+    assert!(s.undo());
+    stroke(&mut s, 16);
+    assert_eq!(s.active().unwrap().history.past_len(), after_layer + 1, "after an undo the next stroke starts a new step");
+    assert_eq!(redrob_photo_engine_prefs_range("performance.cumulativeUndoInterval"), Some((0.1, 60.0)));
+}
+
+fn redrob_photo_engine_prefs_range(path: &str) -> Option<(f64, f64)> {
+    crate::prefs::range(path)
+}

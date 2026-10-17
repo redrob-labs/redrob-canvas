@@ -10,6 +10,8 @@
 //!   Unsharp Mask and Glowing Edges) are described by
 //!   [`raster_effects`] and painted by the renderer; [`outset`] says how far they reach beyond
 //!   the geometry.
+//! - **Live path effects** ([`lpe`]: Bend along a spine, B-Spline, Spiro, Dashed Stroke, Taper
+//!   Stroke) rewrite a path from its own anchors and are geometry effects like the others.
 //! - **Stroke geometry** ([`stroke`]): arrowheads, dash patterns and width profiles, shared by the
 //!   renderer, the exporters and Outline Stroke.
 //! - [`effect_catalog`] lists every effect with its menu path, parameter documentation and
@@ -38,6 +40,7 @@ mod clip;
 mod distort;
 mod group;
 mod live;
+pub mod lpe;
 mod marks;
 pub mod pixel;
 mod raster;
@@ -46,6 +49,7 @@ mod revolve;
 mod solids;
 pub mod stroke;
 mod stylize;
+pub mod svgfilter;
 mod util;
 mod warp;
 
@@ -66,6 +70,7 @@ pub use group::{
     pathfinder_children,
 };
 pub use live::{expand_live, expand_live_deep, expanded_live_group, text_outliner};
+pub use lpe::{BEND, BEND_SPINE, BSPLINE, DASHED_STROKE, SPIRO, TAPER_DIRECTIONS, TAPER_JOINS, TAPER_STROKE};
 pub use marks::{CROP_MARKS, crop_marks_art, has_crop_marks};
 pub use pixel::{PIXEL_EFFECTS, PixelFx, PixelSpace};
 pub use raster::{RasterFx, outset, raster_effects};
@@ -75,6 +80,7 @@ pub use solids::{
     EXTRUDE, INFLATE, ROTATE, ROTATION_PRESETS, SOLIDS, extrude_options, has_solid, inflate_options, is_three_d, solid_art, validate_solid,
     view_options,
 };
+pub use svgfilter::{FILTER_GRAPH, FilterGraph};
 pub use warp::{WarpStyle, warp_point};
 
 /// Catalogue entry for one effect.
@@ -133,6 +139,7 @@ fn lengths_of(id: &str) -> Lengths {
         "threeD.extrude" => always(&["depth", "bevelWidth", "bevelHeight"]),
         "threeD.inflate" => always(&["depth"]),
         "path.outlineStroke" => always(&["width"]),
+        lpe::TAPER_STROKE => always(&["width", "startTaper", "endTaper"]),
         "stylize.roundCorners" | "stylize.feather" | "blur.gaussian" | "blur.smart" | "sharpen.unsharpMask" => always(&["radius"]),
         "stylize.scribble" => always(&["overlap", "strokeWidth", "spacing", "variation"]),
         "stylize.dropShadow" => always(&["x", "y", "blur"]),
@@ -171,6 +178,10 @@ const VIDEO: &[&str] = &["Effect", "Video"];
 const PATHFINDER: &[&str] = &["Effect", "Pathfinder"];
 const PLUGINS: &[&str] = &["Effect", "Plug-ins"];
 const ADJUST: &[&str] = &["Effect", "Color Adjustments"];
+const SVG_FILTERS: &[&str] = &["Effect", "SVG Filters"];
+
+/// The colour matrix primitive as an effect of its own (Effect › SVG Filters › Color Matrix…).
+pub const COLOR_MATRIX: &str = "filter.colorMatrix";
 
 /// The warp styles in Illustrator's Style menu order: (id suffix, label).
 pub const WARP_STYLES: [(&str, &str); 15] = [
@@ -297,6 +308,41 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
             json!({}),
         ),
         g("stylize.roundCorners", "Round Corners…", STYLIZE, "{radius: pt (10)}", json!({"radius": 10.0})),
+        g(
+            lpe::BEND,
+            "Bend…",
+            DT,
+            "{spine: \"x,y x,y x,y x,y\" (the four points of one cubic spine in box coordinates, 0,0 the top left and 1,1 the bottom right of the object's bounds; \"0,0.5 0.3,0 0.7,0 1,0.5\", a gentle arch), widthScale: % (0..1000, 100; how far across the spine the object reaches), vertical: bool (false; true lays the object's vertical axis along the spine)} lays the object along the spine: its length follows the spine's arc length, its other axis the spine's normal; the original path stays editable",
+            json!({"spine": BEND_SPINE, "widthScale": 100.0, "vertical": false}),
+        ),
+        g(
+            lpe::BSPLINE,
+            "B-Spline…",
+            PATH,
+            "{weight: % (0..100, 100; 100 is the cubic uniform B-spline whose control points the anchors are, lower pulls the curve toward them, 0 is the control polygon)} a smooth curve near the anchors that never passes through them (an open run is clamped to its end anchors)",
+            json!({"weight": 100.0}),
+        ),
+        g(
+            lpe::SPIRO,
+            "Spiro Spline…",
+            PATH,
+            "{cusps: bool (false; true keeps corner anchors without handles sharp)} a smooth G2-like spline through the anchors (an approximation of a Spiro clothoid spline: circle tangents at the anchors, arc-fitted handles, curvature relaxed to agree across each anchor)",
+            json!({"cusps": false}),
+        ),
+        g(
+            lpe::DASHED_STROKE,
+            "Dashed Stroke…",
+            PATH,
+            "{dashes: integer (1..1000, 3; dashes per segment), holeFactor: 0..0.95 (0.5; the hole between dashes as a share of dash plus hole), unify: bool (true; one dash length along the whole subpath, each segment taking as many as fit), halfStart: bool (false; the first dash of each segment is half a dash), halfEnd: bool (false; so is the last), startOffset: % (0..45, 0; of each segment left bare at its start), endOffset: % (0..45, 0; at its end), strokeToPath: bool (false; true outlines the stroke along the dashes instead of leaving them open paths)} turns the path into real dashes that can be styled further",
+            json!({"dashes": 3, "holeFactor": 0.5, "unify": true, "halfStart": false, "halfEnd": false, "startOffset": 0.0, "endOffset": 0.0, "strokeToPath": false}),
+        ),
+        g(
+            lpe::TAPER_STROKE,
+            "Taper Stroke…",
+            PATH,
+            "{width: pt (0..10000, 4), startTaper: pt (0..1000000, 20; the length over which each open subpath grows from a point to the width), endTaper: pt (0..1000000, 20; the length over which it shrinks back), smoothing: 0..1 (0.5; 0 a straight taper, 1 an eased one), join: \"round\"|\"miter\"|\"bevel\" (\"round\"; at the path's corners), direction: \"center\"|\"left\"|\"right\" (\"center\"; the side of the path the stroke lies on, one edge staying on the path when left or right)} the outline of a stroke with tapering ends (closed subpaths become plain rings)",
+            json!({"width": 4.0, "startTaper": 20.0, "endTaper": 20.0, "smoothing": 0.5, "join": "round", "direction": "center"}),
+        ),
         g(
             "stylize.scribble",
             "Scribble…",
@@ -525,6 +571,20 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
         ),
     ];
     v.extend([
+        r(
+            COLOR_MATRIX,
+            "Color Matrix…",
+            SVG_FILTERS,
+            "{type: \"matrix\"|\"saturate\"|\"hueRotate\"|\"luminanceToAlpha\" (\"saturate\"), values: \"n n …\" (matrix: the 20 numbers of a 5 × 4 matrix over R, G, B, A, 1, row by row, \"1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0\"), amount: number (saturate: 0..1+, 1 keeps the colours (0.5); hueRotate: degrees)} recolours the object's composite as SVG's feColorMatrix does",
+            json!({"type": "saturate", "values": "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0", "amount": 0.5}),
+        ),
+        r(
+            FILTER_GRAPH,
+            "Filter Graph",
+            SVG_FILTERS,
+            "{region: [x, y, w, h] (fractions of the object's bounds; [-0.1, -0.1, 1.2, 1.2]), primitives: [{type: gaussianBlur|offset|flood|merge|composite|colorMatrix|componentTransfer|convolveMatrix|morphology|turbulence|displacementMap|diffuseLighting|specularLighting|blend|dropShadow|tile, result?: name, in?: \"\" (the previous result)|SourceGraphic|SourceAlpha|a result name, in2?, inputs? (merge), …the SVG attributes, camel-cased, lengths in pt}]} an SVG filter graph on the object's composite, edited in the Filter Editor panel and written to SVG as a <filter>",
+            json!({"region": [-0.1, -0.1, 1.2, 1.2], "primitives": []}),
+        ),
         g(
             "adjust.brightnessContrast",
             "Brightness/Contrast…",
@@ -712,6 +772,12 @@ pub fn new_effect(id: &str, params: &Value) -> Option<Effect> {
 /// [`EffectInfo::lengths`]). A distance left at its default is written out scaled; one the
 /// effect doesn't have (Outline Stroke's weight following its stroke) stays absent.
 pub fn scale_effect(e: &mut Effect, s: f64) {
+    if e.id == FILTER_GRAPH {
+        let mut g = FilterGraph::from_params(&e.params);
+        g.scale(s);
+        e.params = g.to_params();
+        return;
+    }
     let Some(info) = catalog_index().get(e.id.as_str()) else { return };
     let merged = merged_params(&e.id, &e.params);
     let relative = util::flag(&merged, "relative", false);
@@ -728,7 +794,7 @@ pub fn scale_effect(e: &mut Effect, s: f64) {
 
 /// Is `id` a raster (painted) effect?
 pub fn is_raster(id: &str) -> bool {
-    matches!(id, "stylize.dropShadow" | "stylize.innerGlow" | "stylize.outerGlow" | "stylize.feather" | "blur.gaussian")
+    matches!(id, "stylize.dropShadow" | "stylize.innerGlow" | "stylize.outerGlow" | "stylize.feather" | "blur.gaussian" | COLOR_MATRIX | FILTER_GRAPH)
         || PIXEL_EFFECTS.contains(&id)
 }
 
@@ -854,6 +920,11 @@ pub(crate) fn apply_one(id: &str, p: &Value, path: &PathData, b: Rect, ctx: &Geo
         }
         "convertToShape.rectangle" | "convertToShape.roundedRectangle" | "convertToShape.ellipse" => stylize::convert_to_shape(id, b, p),
         "stylize.roundCorners" => stylize::round_corners(path, num(p, "radius", 10.0)),
+        lpe::BEND => lpe::bend(path, b, p),
+        lpe::BSPLINE => lpe::bspline(path, p),
+        lpe::SPIRO => lpe::spiro(path, p),
+        lpe::DASHED_STROKE => lpe::dashed_stroke(path, p, ctx.stroke),
+        lpe::TAPER_STROKE => lpe::taper_stroke(path, p),
         "stylize.scribble" => stylize::scribble(path, b, p),
         _ => match id.strip_prefix("warp.").and_then(WarpStyle::from_id) {
             Some(style) => warp::warp(path, b, style, p),

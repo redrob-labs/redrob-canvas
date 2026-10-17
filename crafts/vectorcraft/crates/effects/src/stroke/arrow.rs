@@ -11,7 +11,7 @@ use std::borrow::Cow;
 use std::f64::consts::{FRAC_PI_2, PI};
 
 use kurbo::{Affine, BezPath, ParamCurve, ParamCurveArclen, PathSeg, Point, Shape, Vec2};
-use redrob_vector_doc::{ArrowAlign, Arrowhead, StrokeLayer};
+use redrob_vector_doc::{ArrowAlign, Arrowhead, MarkerOrient, StrokeLayer};
 
 use super::{ARCLEN_ACCURACY, StrokePieces, cap_extent, push_seg, segments, subpaths, tangent, unit};
 
@@ -39,11 +39,31 @@ pub(super) fn pieces<'a>(bp: &'a BezPath, st: &StrokeLayer) -> StrokePieces<'a> 
     let (hw0, hw1) = (st.arrow_weight(false), st.arrow_weight(true));
     let start = st.start_arrow.zip(first).map(|(k, r)| (k, r, inset(k, hw0, cap)));
     let end = st.end_arrow.zip(last).map(|(k, r)| (k, r, inset(k, hw1, cap)));
-    if start.is_none() && end.is_none() {
+    if start.is_none() && end.is_none() && st.mid_arrow.is_none() {
         return StrokePieces { line: Cow::Borrowed(bp), heads: vec![] };
     }
     let tip_mode = st.arrow_align == ArrowAlign::Tip;
+    let orient = st.marker_orient;
     let mut heads = vec![];
+    // Mid markers: one on every node between the ends of each subpath (and on a closed subpath's
+    // start), centred on the node along the bisector of the tangents there.
+    if let Some(kind) = st.mid_arrow {
+        let hw = st.mid_weight();
+        for (range, closed) in &subs {
+            let segs = segments(&els[range.clone()]);
+            let n = segs.len();
+            let joints = if *closed { 0..n } else { 1..n };
+            for i in joints {
+                let (prev, next) = (&segs[(i + n - 1) % n], &segs[i]);
+                let at = next.start();
+                let (a, b) = (tangent(prev, 1.0), tangent(next, 0.0));
+                let natural = if (a + b).hypot() > 1e-9 { unit(a + b) } else { b };
+                let dir = oriented(orient, natural, false);
+                let tip = at + dir * (len(hw) / 2.0);
+                heads.push(Arrow { kind, outline: shape(kind, tip, dir, hw), tip, dir, inset: 0.0 });
+            }
+        }
+    }
     // Trims per subpath index (start, end), applied in tip mode only.
     let mut trims: Vec<(f64, f64)> = vec![(0.0, 0.0); subs.len()];
     let mut place = |kind: Arrowhead, range: std::ops::Range<usize>, at_start: bool, inset: f64, hw: f64| {
@@ -56,6 +76,7 @@ pub(super) fn pieces<'a>(bp: &'a BezPath, st: &StrokeLayer) -> StrokePieces<'a> 
         } else {
             (end_pt + outward * inset, outward)
         };
+        let dir = oriented(orient, dir, at_start);
         heads.push(Arrow { kind, outline: shape(kind, tip, dir, hw), tip, dir, inset });
     };
     if let Some((k, r, i)) = start {
@@ -89,6 +110,44 @@ pub(super) fn pieces<'a>(bp: &'a BezPath, st: &StrokeLayer) -> StrokePieces<'a> 
         }
     }
     StrokePieces { line: Cow::Owned(line), heads }
+}
+
+/// The direction a head points given its `natural` one (outward at an end, the bisector at a
+/// node) under orientation `orient`: the start head turns round with
+/// [`MarkerOrient::AutoStartReverse`]; a fixed angle turns every head to it.
+fn oriented(orient: MarkerOrient, natural: Vec2, at_start: bool) -> Vec2 {
+    match orient {
+        MarkerOrient::Auto => natural,
+        MarkerOrient::AutoStartReverse if at_start => -natural,
+        MarkerOrient::AutoStartReverse => natural,
+        MarkerOrient::Fixed { angle } => Vec2::from_angle(angle.to_radians()),
+    }
+}
+
+/// Outline of a `kind` head of weight `hw` with its tip at `tip`, pointing along `dir` (for
+/// writers that place heads themselves, such as SVG `<marker>` definitions).
+pub fn head_outline(kind: Arrowhead, tip: Point, dir: Vec2, hw: f64) -> BezPath {
+    shape(kind, tip, dir, hw)
+}
+
+/// Distance from the tip of a `kind` head of weight `hw` to where the stroke ends under it, for
+/// a stroke whose cap reaches `cap` past its end ([`head_outline`]'s companion).
+pub fn head_inset(kind: Arrowhead, hw: f64, cap: f64) -> f64 {
+    inset(kind, hw, cap)
+}
+
+/// Head length (and width) for weight `hw`: the box a head fits.
+pub fn head_len(hw: f64) -> f64 {
+    len(hw)
+}
+
+/// Is `kind` a hollow head (a ring or chevron the stroke would show through)?
+pub fn is_hollow(kind: Arrowhead) -> bool {
+    match kind {
+        Arrowhead::TriangleOpen | Arrowhead::CircleOpen | Arrowhead::SquareOpen | Arrowhead::ArrowOpen => true,
+        Arrowhead::Triangle | Arrowhead::Circle | Arrowhead::Square | Arrowhead::Diamond | Arrowhead::Arrow | Arrowhead::Bar => false,
+        _ => matches!(local_stop(kind), Stop::Wall(_)),
+    }
 }
 
 /// The end point of a subpath and the unit direction pointing out of it there.

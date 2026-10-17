@@ -681,6 +681,7 @@ fn doc_pixels_equal(a: &Document, b: &Document) -> bool {
         layers: _,
         channels,
         guides: _,
+        grid: _,
         ruler_origin: _,
         selection: _,
         metadata: _,
@@ -703,6 +704,7 @@ fn doc_pixels_equal(a: &Document, b: &Document) -> bool {
         variables: _,
         timeline: _,
         file_encoding: _,
+        palettes: _,
     } = a;
     *size == b.size
         && resolution_dpi.to_bits() == b.resolution_dpi.to_bits()

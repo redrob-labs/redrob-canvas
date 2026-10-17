@@ -12,6 +12,6 @@ redrob-photo-geom = { workspace = true }
 redrob-photo-color = { workspace = true }
 redrob-photo-raster = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
-serde_json = { workspace = true }

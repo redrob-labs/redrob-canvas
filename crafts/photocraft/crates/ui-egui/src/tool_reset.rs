@@ -188,7 +188,8 @@ pub fn reset_options(o: &mut ToolOptions, tool: Tool) {
         | Tool::DeleteAnchorPoint
         | Tool::ConvertPoint
         | Tool::Artboard
-        | Tool::Frame => {}
+        | Tool::Frame
+        | Tool::Assistant => {}
     }
 }
 

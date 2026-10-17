@@ -63,7 +63,7 @@ pub fn quantize(img: &Raster, params: &TraceParams) -> Quantized {
             settled(merge_mixed(compact(labels, palette.collect()), img.width as usize, img.height as usize), img, &own)
         }
         // Logo mode traces without quantising; asked directly, it quantises like Color.
-        Mode::Color | Mode::Logo => {
+        Mode::Color | Mode::Logo | Mode::EdgeDetection | Mode::Quantized => {
             // 15-bit colour histogram with per-bin sums (exact bin means), fitted to the image's
             // range per channel so that close tones (a dark, low-contrast photo) stay apart.
             let hk = HistKey::new(img);

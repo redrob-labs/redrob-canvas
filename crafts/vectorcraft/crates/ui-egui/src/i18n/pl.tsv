@@ -399,7 +399,6 @@
 	Outer Glow…	Blask zewnętrzny…
 	Feather…	Wtapianie…
 	SVG Filters	Filtry SVG
-	Apply SVG Filter…	Zastosuj filtr SVG…
 	Warp	Wypaczenie
 	Arc…	Łuk…
 	Arc Lower…	Łuk dolny…
@@ -4649,3 +4648,151 @@ mark-style	Japanese	Japońskie
 	Softness	Miękkość
 	Ambient Light	Światło otoczenia
 	Light behind the object	Światło za obiektem
+	Bend…	Zagięcie…
+	Bend	Zagięcie
+	B-Spline…	B-spline…
+	B-Spline	B-spline
+	Spiro Spline…	Krzywa Spiro…
+	Spiro Spline	Krzywa Spiro
+	Dashed Stroke…	Kreskowany obrys…
+	Dashed Stroke	Kreskowany obrys
+	Taper Stroke…	Zwężający się obrys…
+	Taper Stroke	Zwężający się obrys
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Równolegle do osi
+	Triangle In	Trójkąt do wewnątrz
+	Triangle Out	Trójkąt na zewnątrz
+	From Clipboard	Ze schowka
+	Segment:	Segment:
+	Curve	Krzywa
+	Make Selected Segments Lines	Zamień zaznaczone segmenty na linie
+	Make Selected Segments Curves	Zamień zaznaczone segmenty na krzywe
+	Show Handles	Pokaż uchwyty
+	Shape Along Stroke	Kształt wzdłuż obrysu
+	Segment Type	Typ segmentu
+	Next Anchor	Następny punkt kontrolny
+	Grow Anchor Selection	Rozszerz zaznaczenie punktów kontrolnych
+	Touch Select Anchors	Zaznacz dotknięte punkty kontrolne
+	Make Segment Line	Zamień segment na linię
+	Make Segment Curve	Zamień segment na krzywą
+	X:	X:
+	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	Konwertuj zaznaczone punkty kontrolne na symetryczne
+	Convert Selected Anchor Points to Auto-Smooth	Konwertuj zaznaczone punkty kontrolne na automatycznie gładkie
+	Add Anchor Points At	Dodaj punkty kontrolne w
+	Add Anchor Points at Extremes	Dodaj punkty kontrolne w ekstremach
+	Minimum X	Minimum X
+	Maximum X	Maksimum X
+	Minimum Y	Minimum Y
+	Maximum Y	Maksimum Y
+	Pie	Wycinek
+	Chord	Odcinek
+	Close As:	Zamknij jako:
+	Whole Ellipse	Cała elipsa
+	Corners:	Narożniki:
+	Spoke Ratio:	Proporcja ramion:
+	Rounded:	Zaokrąglenie:
+	Randomized:	Losowość:
+	Decay:	Zanik:
+	Segments:	Segmenty:
+	Star Properties:	Właściwości gwiazdy:
+	Spiral Properties:	Właściwości spirali:
+	Hairline	Linia włosowa
+	Mid markers:	Znaczniki pośrednie:
+	Auto, start reversed	Automatycznie, początek odwrócony
+	Fixed angle	Stały kąt
+	Scale with stroke	Skaluj z obrysem
+	ID:	ID:
+	Label:	Etykieta:
+	Title:	Tytuł:
+	Hyperlink:	Hiperłącze:
+	Clone	Klon
+	Create Clone	Utwórz klon
+	Unlink Clone	Odłącz klon
+	Relink to Copied	Połącz ponownie ze skopiowanym
+	Select Original	Zaznacz oryginał
+	Object Properties…	Właściwości obiektu…
+	Text content	Treść tekstu
+	ID	ID
+	Label	Etykieta
+	Title	Tytuł
+	Object type	Typ obiektu
+	Current layer	Bieżąca warstwa
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Dodaj atrybut
+	Add Filter	Dodaj filtr
+	Add Input	Dodaj wejście
+	Add Primitive	Dodaj prymityw
+	Axonometric	Aksonometryczna
+	Axonometric Angle X	Kąt aksonometryczny X
+	Axonometric Angle Z	Kąt aksonometryczny Z
+	Canvas Orientation	Orientacja kanwy
+	Collapse All	Zwiń wszystko
+	Color Matrix	Macierz kolorów
+	Color Matrix…	Macierz kolorów…
+	Component Transfer	Transfer składowych
+	Convolve Matrix	Macierz splotu
+	Delete Node	Usuń węzeł
+	Diffuse Lighting	Oświetlenie rozproszone
+	Displacement Map	Mapa przemieszczeń
+	Drop Shadow Preset	Ustawienie wstępne cienia
+	Duplicate Node	Duplikuj węzeł
+	Duplicate Primitive	Duplikuj prymityw
+	Edge Detection	Wykrywanie krawędzi
+	Edge Threshold	Próg krawędzi
+	Expand All	Rozwiń wszystko
+	Fill Rendered Pixels	Wypełnij wyrenderowane piksele
+	Filter Editor	Edytor filtrów
+	Filter Graph	Graf filtru
+	Filter Region	Obszar filtru
+	Flood	Zalanie
+	Grid Kind	Rodzaj siatki
+	Hide Palette Strip	Ukryj pasek palety
+	Input	Wejście
+	Large Chips	Duże próbki
+	Lower Node	Obniż węzeł
+	Mass:	Masa:
+	Medium Chips	Średnie próbki
+	Modular	Modułowa
+	Modular Gap X	Odstęp modułowy X
+	Modular Gap Y	Odstęp modułowy Y
+	Morphology	Morfologia
+	No colours in this palette	Brak kolorów w tej palecie
+	No primitives. Add one below.	Brak prymitywów. Dodaj poniżej.
+	Node Data	Dane węzła
+	Palette Strip	Pasek palety
+	Palette Strip Menu	Menu paska palety
+	Previous Result	Poprzedni wynik
+	Primitive	Prymityw
+	Quantization	Kwantyzacja
+	Raise Node	Podnieś węzeł
+	Rectangular	Prostokątna
+	Remove Attribute	Usuń atrybut
+	Remove Filter	Usuń filtr
+	Remove Input	Usuń wejście
+	Remove Primitive	Usuń prymityw
+	Reset Canvas Orientation	Resetuj orientację kanwy
+	Result:	Wynik:
+	Select a node to edit its attributes.	Wybierz węzeł, aby edytować jego atrybuty.
+	Small Chips	Małe próbki
+	Specular Lighting	Oświetlenie odbłyskowe
+	The document has no layers.	Dokument nie ma warstw.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Prymitywy grafu filtru edytuje się w panelu Edytor filtrów.
+	Thinning:	Pocienianie:
+	Tremor:	Drżenie:
+	Turbulence	Turbulencja
+	Wiggle:	Chwianie:
+	XML Editor	Edytor XML
+	attribute	atrybut
+	No Filter	Brak filtru
+	The object has no SVG filter graph yet.	Obiekt nie ma jeszcze grafu filtru SVG.
+	Select an object to edit its SVG filter.	Wybierz obiekt, aby edytować jego filtr SVG.
+	Open a document to see its element tree.	Otwórz dokument, aby zobaczyć jego drzewo elementów.
+@msg	a clone can't be linked to itself	klonu nie można połączyć z nim samym
+@msg	copy an object first (Edit › Copy)	najpierw skopiuj obiekt (Edycja › Kopiuj)
+@msg	no such object	nie ma takiego obiektu
+@msg	nothing to clone	nie ma czego klonować
+@msg	select a clone	zaznacz klon
+@msg	select an object	zaznacz obiekt
+@msg	the copied object is no longer in this document	skopiowanego obiektu nie ma już w tym dokumencie

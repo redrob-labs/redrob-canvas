@@ -45,6 +45,8 @@ pub enum RasterFx {
     },
     /// A Photoshop-style filter over the object's pixels (Radial Blur, Unsharp Mask…).
     Pixel(PixelFx),
+    /// An SVG filter graph over the object's pixels ([`crate::svgfilter`]).
+    Graph(crate::svgfilter::FilterGraph),
 }
 
 impl RasterFx {
@@ -68,6 +70,7 @@ impl RasterFx {
             RasterFx::InnerGlow { .. } | RasterFx::Feather { .. } => 0.0,
             RasterFx::GaussianBlur { radius } => 1.5 * radius,
             RasterFx::Pixel(p) => p.outset(bounds),
+            RasterFx::Graph(g) => g.outset(bounds),
         }
     }
 }
@@ -127,6 +130,7 @@ pub fn raster_effects(effects: &[Effect]) -> Vec<RasterFx> {
                 },
                 "stylize.feather" => RasterFx::Feather { radius: num(&p, "radius", 5.0).clamp(0.0, 1000.0) },
                 "blur.gaussian" => RasterFx::GaussianBlur { radius: num(&p, "radius", 5.0).clamp(0.0, 1000.0) },
+                crate::FILTER_GRAPH => RasterFx::Graph(crate::svgfilter::FilterGraph::from_params(&p)),
                 id => RasterFx::Pixel(pixel::parse(id, &p)?),
             })
         })

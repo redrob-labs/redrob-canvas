@@ -90,12 +90,13 @@ fn the_wheel_stops_at_the_first_and_last_blend_mode() {
     let mut h = harness(|app| {
         pixel_layer(app);
         let id = app.session.active().unwrap().active_layer.unwrap().0;
-        app.run("layer.setProps", json!({"layer": id, "blend": "Luminosity"})).unwrap();
+        app.run("layer.setProps", json!({"layer": id, "blend": "HeatGlowFreezeReflectHybrid"})).unwrap();
     });
     let at = dropdown(&h).center();
     let undo = steps(&h);
     wheel(&mut h, at, -1.0);
-    assert_eq!((blend(&h), steps(&h)), (BlendMode::Luminosity, undo), "down on the last mode");
+    // The list ends with the quadratic family (panels::blend_options).
+    assert_eq!((blend(&h), steps(&h)), (BlendMode::HeatGlowFreezeReflectHybrid, undo), "down on the last mode");
     let id = h.state().session.active().unwrap().active_layer.unwrap().0;
     h.state_mut().run("layer.setProps", json!({"layer": id, "blend": "Normal"})).unwrap();
     h.run_steps(2);

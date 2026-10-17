@@ -47,6 +47,13 @@ pub fn options(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     widgets::dropdown(ui, "eyedropper-sample", &mut o.eyedropper_sample, &layer_options(), 190.0);
     widgets::checkbox(ui, &mut o.eyedropper_ring, tl!("Show Sampling Ring"));
     widgets::vline(ui, 22.0);
+    opt(ui, tl!("Blend:"));
+    let mut blend = (o.eyedropper_blend * 100.0).round();
+    if widgets::value_field(ui, &mut blend, 0.0..=100.0, "%", 62.0).on_hover_text(tl!("How much of the sample goes into the current colour")).changed() {
+        o.eyedropper_blend = (blend / 100.0).clamp(0.0, 1.0);
+    }
+    widgets::checkbox(ui, &mut o.eyedropper_add_swatch, tl!("Add to Swatches"));
+    widgets::vline(ui, 22.0);
     let t = Tokens::get(ui.ctx());
     ui.label(
         egui::RichText::new(crate::i18n::fmt(
