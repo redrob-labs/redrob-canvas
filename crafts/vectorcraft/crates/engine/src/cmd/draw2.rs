@@ -5,9 +5,9 @@ use std::sync::Arc;
 
 use kurbo::{CubicBez, ParamCurve, ParamCurveNearest};
 use redrob_vector_color::{Color, Paint};
-use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind, PressureProfile, Selection};
+use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind, PressureProfile, Selection, WidthProfile};
 use redrob_vector_geom::hit::fill_contains;
-use redrob_vector_geom::{Anchor, AnchorKind, BezPath, FillRule, PathData, Point, Rect, SubPath, Vec2};
+use redrob_vector_geom::{Anchor, AnchorKind, BezPath, FillRule, PathData, Point, Rect, SplineMode, SubPath, Vec2};
 use redrob_vector_pathops as po;
 use redrob_vector_pathops::{BoolOp, Cap, Join, SimplifyOptions};
 use serde_json::{Value, json};
@@ -24,9 +24,18 @@ pub fn specs() -> Vec<CommandSpec> {
             "Pencil",
             [],
             None,
-            "{points: [[x,y]…] or [[x,y,pressure]…] (pen pressure 0..1: the stroke keeps it, for Calligraphic brushes with Pressure variation; a point without one presses fully), fidelity?: pt (1.5), closed?, style?: \"pencil\"|\"brush\", fill?: bool, extend?: {id, end: \"start\"|\"end\"}} fit a freehand stroke → {id}",
+            "{points: [[x,y]…] or [[x,y,pressure]…] (pen pressure 0..1: the stroke keeps it, for Calligraphic brushes with Pressure variation; a point without one presses fully), fidelity?: pt (1.5), closed?, style?: \"pencil\"|\"brush\", fill?: bool, extend?: {id, end: \"start\"|\"end\"}, mode?: \"regular\"|\"spiro\"|\"bspline\" (the fitted anchors become the points of a spiro-like spline or the control polygon of a B-spline), shape?: \"none\"|\"triangleIn\"|\"triangleOut\"|\"ellipse\"|\"fromClipboard\" (a width profile along the stroke; fromClipboard reads the shape of the copied path)} fit a freehand stroke → {id}",
             has_doc,
             freehand
+        ),
+        cmd!(
+            "path.strokeShape",
+            "Shape Along Stroke",
+            [],
+            None,
+            "{shape: \"none\"|\"triangleIn\"|\"triangleOut\"|\"ellipse\"|\"fromClipboard\", ids?|id? (default: the selected paths)} give the paths' strokes a width profile shaped along the path: a triangle wide at the start (triangleIn) or the end (triangleOut), an ellipse (lens), or the outline of the copied path read as a width profile along its x axis; none restores a uniform stroke → {changed}",
+            has_doc,
+            stroke_shape
         ),
         cmd!(
             "path.curvature",
@@ -544,6 +553,8 @@ fn freehand(s: &mut Session, p: &Value) -> Result<Value> {
     let tol = f64_or(p, "fidelity", 1.5).clamp(0.05, 100.0);
     let closed = bool_or(p, "closed", false);
     let brush = str_param(p, "style") == Some("brush");
+    let mode = mode_param(p, C)?;
+    let shape = shape_param(p, C)?;
     if let Some(ext) = p.get("extend").filter(|v| !v.is_null()) {
         let id = id_param(ext, "id").ok_or_else(|| bad(C, "extend needs id"))?;
         let at_start = str_param(ext, "end") == Some("start");
@@ -587,6 +598,8 @@ fn freehand(s: &mut Session, p: &Value) -> Result<Value> {
         for a in &mut sp.anchors {
             *a = Anchor::with_handles(a.p, a.h_in, a.h_out);
         }
+        let mut sp = respline(sp, mode);
+        let shaped = shape.map(|shape| shape_profile(s, shape));
         // The path's pressure (in the direction it is continued in) followed by the stroke's.
         let old_pressure = s.doc()?.doc.node(id).and_then(|n| n.appearance.stroke()).and_then(|st| st.pressure.clone());
         let joined = (old_pressure.is_some() || pressure.is_some()).then(|| {
@@ -605,6 +618,11 @@ fn freehand(s: &mut Session, p: &Value) -> Result<Value> {
             {
                 st.pressure = if reverse { joined.map(|p| p.reversed()) } else { joined };
             }
+            if let Some(profile) = shaped
+                && let Some(st) = d.node_mut(id).and_then(|n| n.appearance.stroke_mut())
+            {
+                st.profile = profile;
+            }
             sel.set([id]);
             Ok(())
         })?;
@@ -613,7 +631,7 @@ fn freehand(s: &mut Session, p: &Value) -> Result<Value> {
     if pts.len() < 2 {
         return Err(bad(C, "need at least two points"));
     }
-    let sp = fit_freehand(&pts, tol, closed);
+    let sp = respline(fit_freehand(&pts, tol, closed), mode);
     let fill = if bool_or(p, "fill", false) { s.paint.fill.clone() } else { Paint::None };
     // A pencil path with a fill keeps a stroke of None (#1679); only one that would show nothing
     // gets black. A brush is its stroke.
@@ -621,8 +639,161 @@ fn freehand(s: &mut Session, p: &Value) -> Result<Value> {
     let mut look = s.new_art_look(fill, stroke, s.paint.stroke_width.max(0.1));
     if let Some(st) = look.appearance.stroke_mut() {
         st.pressure = pressure;
+        if let Some(shape) = shape {
+            st.profile = shape_profile(s, shape);
+        }
     }
     add_look(s, if brush { "Paintbrush" } else { "Pencil" }, path_kind(PathData::single(sp)), look, None)
+}
+
+/// The Pencil's and the Pen's drawing modes that rebuild the path from its points: `sp`'s anchor
+/// points become the points of a spiro-like spline or the control polygon of a B-spline
+/// ([`redrob_vector_geom::SplineMode::through`]); the other modes leave the path as fitted.
+fn respline(sp: SubPath, mode: SplineMode) -> SubPath {
+    let pts: Vec<Point> = sp.anchors.iter().map(|a| a.p).collect();
+    mode.through(&pts, sp.closed).unwrap_or(sp)
+}
+
+/// The `mode` param of `path.freehand`: a [`SplineMode`], regular when absent.
+fn mode_param(p: &Value, cmd: &str) -> Result<SplineMode> {
+    match p.get("mode").filter(|v| !v.is_null()) {
+        None => Ok(SplineMode::Bezier),
+        Some(v) => v
+            .as_str()
+            .and_then(SplineMode::parse)
+            .filter(|m| *m != SplineMode::Paraxial)
+            .ok_or_else(|| bad(cmd, format!("mode must be regular|spiro|bspline, got {v}"))),
+    }
+}
+
+/// The shapes a stroke can take along its path (the Pencil's and the Pen's Shape option).
+pub(crate) const STROKE_SHAPES: [&str; 5] = ["none", "triangleIn", "triangleOut", "ellipse", "fromClipboard"];
+
+/// The `shape` param: one of [`STROKE_SHAPES`], `None` when absent (the stroke is left as it is).
+fn shape_param(p: &Value, cmd: &str) -> Result<Option<&str>> {
+    match p.get("shape").filter(|v| !v.is_null()) {
+        None => Ok(None),
+        Some(v) => v
+            .as_str()
+            .filter(|s| STROKE_SHAPES.contains(s))
+            .map(Some)
+            .ok_or_else(|| bad(cmd, format!("shape must be one of {}, got {v}", STROKE_SHAPES.join("|")))),
+    }
+}
+
+/// Width profile of a stroke shape ([`STROKE_SHAPES`]): a triangle wide at the start
+/// (`triangleIn`) or at the end (`triangleOut`), a lens (`ellipse`), or the copied path's outline
+/// read as a width profile along its x axis (`fromClipboard`: the vertical extent of the shape at
+/// each of 24 stations across its width, relative to the widest). `None` for a uniform stroke.
+pub(crate) fn shape_profile(s: &Session, shape: &str) -> Option<WidthProfile> {
+    match shape {
+        "triangleIn" => Some(WidthProfile { points: vec![(0.0, 1.0, 1.0), (1.0, 0.0, 0.0)] }),
+        "triangleOut" => Some(WidthProfile { points: vec![(0.0, 0.0, 0.0), (1.0, 1.0, 1.0)] }),
+        "ellipse" => Some(WidthProfile {
+            points: (0..=16)
+                .map(|i| {
+                    let t = f64::from(i) / 16.0;
+                    // A half-ellipse either side: width ∝ sqrt(1 - (2t - 1)²).
+                    let w = (1.0 - (2.0 * t - 1.0).powi(2)).max(0.0).sqrt();
+                    (t, w, w)
+                })
+                .collect(),
+        }),
+        "fromClipboard" => clipboard_profile(&s.clipboard.nodes),
+        _ => None,
+    }
+}
+
+/// The outline of the first path among the copied `nodes`, read as a width profile along its x
+/// axis. `None` when nothing copied is a path or the path has no width.
+fn clipboard_profile(nodes: &[Node]) -> Option<WidthProfile> {
+    const STATIONS: usize = 24;
+    let mut found: Option<BezPath> = None;
+    for n in nodes {
+        n.walk(&mut |c| {
+            if found.is_none()
+                && let Some(pd) = c.path_data()
+                && !pd.is_empty()
+            {
+                found = Some(pd.to_bezpath());
+            }
+        });
+        if found.is_some() {
+            break;
+        }
+    }
+    let bp = found?;
+    let b = redrob_vector_geom::Shape::bounding_box(&bp);
+    if !(b.width() > 1e-9 && b.height() > 1e-9) {
+        return None;
+    }
+    // Flatten and bin the outline's points by x; each station's width is its y extent.
+    let mut bins: Vec<Option<(f64, f64)>> = vec![None; STATIONS];
+    let mut note = |q: Point| {
+        let i = (((q.x - b.x0) / b.width()) * (STATIONS as f64 - 1.0)).round().clamp(0.0, STATIONS as f64 - 1.0) as usize;
+        bins[i] = Some(match bins[i] {
+            Some((lo, hi)) => (lo.min(q.y), hi.max(q.y)),
+            None => (q.y, q.y),
+        });
+    };
+    kurbo::flatten(bp.elements().iter().copied(), 0.25, |el| match el {
+        kurbo::PathEl::MoveTo(q) | kurbo::PathEl::LineTo(q) => note(q),
+        _ => {}
+    });
+    let widths: Vec<f64> = bins.iter().map(|bin| bin.map_or(0.0, |(lo, hi)| hi - lo)).collect();
+    let max = widths.iter().copied().fold(0.0, f64::max);
+    if max <= 1e-9 {
+        return None;
+    }
+    // Empty stations between filled ones take the width next to them, so a sparse outline (a
+    // rectangle's four corners) still reads as its shape.
+    let mut filled = widths.clone();
+    for i in 0..STATIONS {
+        if bins[i].is_none() {
+            let prev = (0..i).rev().find(|&j| bins[j].is_some()).map(|j| widths[j]);
+            let next = (i + 1..STATIONS).find(|&j| bins[j].is_some()).map(|j| widths[j]);
+            filled[i] = match (prev, next) {
+                (Some(a), Some(c)) => a.max(c),
+                (Some(a), None) | (None, Some(a)) => a,
+                (None, None) => 0.0,
+            };
+        }
+    }
+    Some(WidthProfile { points: filled.iter().enumerate().map(|(i, w)| (i as f64 / (STATIONS as f64 - 1.0), w / max, w / max)).collect() })
+}
+
+/// `path.strokeShape`: a width profile shaped along the path, on the paths given or selected.
+fn stroke_shape(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "path.strokeShape";
+    let shape = shape_param(p, C)?.ok_or_else(|| bad(C, "missing shape"))?;
+    let ids: Vec<NodeId> = if p.get("ids").is_some() {
+        checked_ids_param(s, p, "ids", C)?
+    } else if let Some(id) = p.get("id") {
+        vec![checked_id(s, id, C)?]
+    } else {
+        s.doc()?.selection.objects.clone()
+    };
+    let profile = shape_profile(s, shape);
+    let ids: Vec<NodeId> =
+        ids.into_iter().filter(|id| s.doc().ok().and_then(|st| st.doc.node(*id)).is_some_and(|n| n.path_data().is_some())).collect();
+    if ids.is_empty() {
+        return Ok(json!({ "changed": 0 }));
+    }
+    let changed = s.edit("Shape Along Stroke", |d, _| {
+        let mut changed = 0;
+        for id in &ids {
+            let Some(n) = d.node_mut(*id) else { continue };
+            if n.appearance.stroke().is_none() {
+                n.appearance.set_stroke(Paint::solid(Color::BLACK));
+            }
+            if let Some(st) = n.appearance.stroke_mut() {
+                st.profile = profile.clone();
+                changed += 1;
+            }
+        }
+        Ok(changed)
+    })?;
+    Ok(json!({ "changed": changed }))
 }
 
 // ---------- Curvature ----------
