@@ -5145,9 +5145,9 @@ name = "Palettes dialog and palette editor"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-palette-dialog.html"
 behaviour = "List of palettes; editor with colour grid, add/delete/zoom/columns; import palette dialog from gradient/image/file; export to text, CSS, PHP, Python, Java."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs"
-gap = "no palette import from image/gradient or code export"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs (swatches.fromImage, swatches.fromGradient, swatches.export css|txt)"
+gap = ""
 priority = 2
 
 [[feature]]

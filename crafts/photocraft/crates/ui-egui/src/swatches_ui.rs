@@ -213,11 +213,18 @@ pub fn panel_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     if ui.button(tl!("Replace Swatches…")).clicked() {
         act = Some("replace");
     }
+    let has_pixels = app.session.active().and_then(|d| d.active_layer.and_then(|id| d.doc.layer(id))).is_some_and(|l| l.surface().is_some());
+    if ui.add_enabled(has_pixels, egui::Button::new(tl!("Import Swatches from Image"))).clicked() {
+        act = Some("fromImage");
+    }
     if ui.add_enabled(!empty, egui::Button::new(tl!("Export Swatches…"))).clicked() {
         act = Some("aco");
     }
     if ui.add_enabled(!empty, egui::Button::new(tl!("Export Swatches for Exchange…"))).clicked() {
         act = Some("ase");
+    }
+    if ui.add_enabled(!empty, egui::Button::new(tl!("Export Swatches as CSS…"))).clicked() {
+        act = Some("css");
     }
     ui.separator();
     if ui.button(tl!("Reset Swatches")).clicked() {
@@ -236,7 +243,8 @@ pub fn panel_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         }
         "import" => import_dialog(app, false),
         "replace" => import_dialog(app, true),
-        "aco" | "ase" => export_dialog(app, a),
+        "aco" | "ase" | "css" => export_dialog(app, a),
+        "fromImage" => app.run("swatches.fromImage", json!({})),
         _ => app.run("swatches.reset", json!({})),
     };
     if let Err(e) = r
