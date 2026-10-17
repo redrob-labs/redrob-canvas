@@ -2122,19 +2122,6 @@ mod tests {
         assert_eq!(sm.smart_filters.len(), 1, "the preview adds the Curves smart filter");
         assert_eq!(shown.size, crate::proxy::proxy_document(&doc, k).size);
         // The 16 px square at (16, 16) is a 4 px square at (4, 4) on the proxy, not 16 px at (16, 16).
-        {
-            let c = sm.cache.as_ref().unwrap();
-            eprintln!("DBG cache bounds {:?} transform {:?}", c.content_bounds(), sm.transform);
-            eprintln!("DBG shown alpha {} px {:?}", alpha(&shown, 5, 5), c.pixel(5, 5));
-            let prox = crate::proxy::proxy_document(&doc, k);
-            eprintln!("DBG proxy alpha {} orig {}", alpha(&prox, 5, 5), alpha(&doc, 20, 20));
-            let full = preview_document(&doc, Some(layer), "image.adjustments.curves", &json!({"points": [[0, 20], [90, 150], [255, 230]]}), 1).unwrap();
-            eprintln!("DBG full alpha {}", alpha(&full, 20, 20));
-            let fp = crate::proxy::proxy_document(&full, k);
-            for (x, y) in [(4, 4), (5, 6), (7, 7), (3, 3), (8, 8)] {
-                eprintln!("DBG ({x},{y}) shown {} fullproxy {} plainproxy {}", alpha(&shown, x, y), alpha(&fp, x, y), alpha(&prox, x, y));
-            }
-        }
         for (x, y) in [(4, 4), (5, 6), (7, 7)] {
             assert!(alpha(&shown, x, y) > 0.99, "({x}, {y}) is inside the reduced square");
         }
