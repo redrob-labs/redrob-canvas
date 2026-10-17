@@ -10,8 +10,8 @@
 //!   Unsharp Mask and Glowing Edges) are described by
 //!   [`raster_effects`] and painted by the renderer; [`outset`] says how far they reach beyond
 //!   the geometry.
-//! - **Live path effects** ([`lpe`]: Bend along a spine, B-Spline, Spiro) rewrite a path from its
-//!   own anchors and are geometry effects like the others.
+//! - **Live path effects** ([`lpe`]: Bend along a spine, B-Spline, Spiro, Dashed Stroke) rewrite a
+//!   path from its own anchors and are geometry effects like the others.
 //! - **Stroke geometry** ([`stroke`]): arrowheads, dash patterns and width profiles, shared by the
 //!   renderer, the exporters and Outline Stroke.
 //! - [`effect_catalog`] lists every effect with its menu path, parameter documentation and
@@ -69,7 +69,7 @@ pub use group::{
     pathfinder_children,
 };
 pub use live::{expand_live, expand_live_deep, expanded_live_group, text_outliner};
-pub use lpe::{BEND, BEND_SPINE, BSPLINE, SPIRO};
+pub use lpe::{BEND, BEND_SPINE, BSPLINE, DASHED_STROKE, SPIRO};
 pub use marks::{CROP_MARKS, crop_marks_art, has_crop_marks};
 pub use pixel::{PIXEL_EFFECTS, PixelFx, PixelSpace};
 pub use raster::{RasterFx, outset, raster_effects};
@@ -321,6 +321,13 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
             PATH,
             "{cusps: bool (false; true keeps corner anchors without handles sharp)} a smooth G2-like spline through the anchors (an approximation of a Spiro clothoid spline: circle tangents at the anchors, arc-fitted handles, curvature relaxed to agree across each anchor)",
             json!({"cusps": false}),
+        ),
+        g(
+            lpe::DASHED_STROKE,
+            "Dashed Stroke…",
+            PATH,
+            "{dashes: integer (1..1000, 3; dashes per segment), holeFactor: 0..0.95 (0.5; the hole between dashes as a share of dash plus hole), unify: bool (true; one dash length along the whole subpath, each segment taking as many as fit), halfStart: bool (false; the first dash of each segment is half a dash), halfEnd: bool (false; so is the last), startOffset: % (0..45, 0; of each segment left bare at its start), endOffset: % (0..45, 0; at its end), strokeToPath: bool (false; true outlines the stroke along the dashes instead of leaving them open paths)} turns the path into real dashes that can be styled further",
+            json!({"dashes": 3, "holeFactor": 0.5, "unify": true, "halfStart": false, "halfEnd": false, "startOffset": 0.0, "endOffset": 0.0, "strokeToPath": false}),
         ),
         r(
             "stylize.dropShadow",
@@ -875,6 +882,7 @@ pub(crate) fn apply_one(id: &str, p: &Value, path: &PathData, b: Rect, ctx: &Geo
         lpe::BEND => lpe::bend(path, b, p),
         lpe::BSPLINE => lpe::bspline(path, p),
         lpe::SPIRO => lpe::spiro(path, p),
+        lpe::DASHED_STROKE => lpe::dashed_stroke(path, p, ctx.stroke),
         "stylize.scribble" => stylize::scribble(path, b, p),
         _ => match id.strip_prefix("warp.").and_then(WarpStyle::from_id) {
             Some(style) => warp::warp(path, b, style, p),
