@@ -30,6 +30,14 @@ pub(super) const SPEC: DialogSpec = DialogSpec { heading, body, confirm, min_wid
 /// Calligraphic values: (field, label, suffix, decimals), in [`Calligraphic::RANGES`] order.
 const CALLI: [(&str, &str, &str, usize); 3] = [("angle", "Angle:", "°", 0), ("roundness", "Roundness:", "%", 0), ("size", "Size:", " pt", 1)];
 
+/// Calligraphic stroke dynamics: (field, label, range), in percent.
+const DYNAMICS: [(&str, &str, (f64, f64)); 4] = [
+    ("thinning", "Thinning:", (-100.0, 100.0)),
+    ("mass", "Mass:", (0.0, 100.0)),
+    ("tremor", "Tremor:", (0.0, 100.0)),
+    ("wiggle", "Wiggle:", (0.0, 100.0)),
+];
+
 /// Bristle sliders: (field, label, range), in percent.
 const BRISTLE: [(&str, &str, (f64, f64)); 5] = [
     ("length", "Bristle Length:", Bristle::LENGTH_RANGE),
@@ -97,6 +105,9 @@ pub fn open(app: &mut VectorcraftApp, name: Option<&str>) -> Result<Value, Strin
                 f.insert(variation_key(key), json!(var));
                 f.insert(mode_key(key), json!(mode.id()));
             }
+            for ((key, ..), v) in DYNAMICS.iter().zip([c.thinning, c.mass, c.tremor, c.wiggle]) {
+                f.insert((*key).into(), json!(v));
+            }
         }
         BrushKind::Bristle(b) => {
             let v = serde_json::to_value(b).map_err(|e| e.to_string())?;
@@ -135,7 +146,18 @@ fn calligraphic(d: &Dialog) -> Calligraphic {
     let variation =
         |i: usize| CALLI.get(i).zip(Calligraphic::MAX_VARIATION.get(i)).map_or(0.0, |((key, ..), max)| clamped(d, &variation_key(key), (0.0, *max)));
     let mode = |i: usize| CALLI.get(i).and_then(|(key, ..)| Variation::parse(&d.str(&mode_key(key)))).unwrap_or_default();
-    Calligraphic { angle: value(0), roundness: value(1), size: value(2), variation: [0, 1, 2].map(variation), modes: Some([0, 1, 2].map(mode)) }
+    let dyn_value = |i: usize| DYNAMICS.get(i).map_or(0.0, |(key, _, range)| clamped(d, key, *range));
+    Calligraphic {
+        angle: value(0),
+        roundness: value(1),
+        size: value(2),
+        variation: [0, 1, 2].map(variation),
+        modes: Some([0, 1, 2].map(mode)),
+        thinning: dyn_value(0),
+        mass: dyn_value(1),
+        tremor: dyn_value(2),
+        wiggle: dyn_value(3),
+    }
 }
 
 /// `brush.options` params from the fields.
@@ -198,6 +220,12 @@ fn calligraphic_body(ui: &mut egui::Ui, d: &mut Dialog) {
             ui.end_row();
         }
     });
+    // Stroke dynamics: how the nib thins with speed, smooths with mass, shakes and wanders.
+    ui.add_space(8.0);
+    let rail = Tokens::get(ui.ctx()).input_border;
+    for (key, text, (lo, hi)) in DYNAMICS {
+        widgets::label_row(ui, tl!(text), LABEL_W, |ui| form::slider_field(ui, d, key, lo..=hi, "%", &|_| rail));
+    }
 }
 
 fn bristle_body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) {
