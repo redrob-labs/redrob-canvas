@@ -4265,3 +4265,7 @@ cameraRaw	Yellow	Sárga
 	Choose a gradient file (.grd or .ggr).	Válasszon színátmenetfájlt (.grd vagy .ggr).
 	Save Group to Document	Csoport mentése a dokumentumba
 	Load Document Palettes	Dokumentum palettáinak betöltése
+	Cumulative undo	Összevont visszavonás
+	Cumulative undo interval	Összevont visszavonás időköze
+	Cumulative undo duration	Összevont visszavonás időtartama
+	Popup palette	Felugró paletta

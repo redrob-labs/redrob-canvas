@@ -3351,3 +3351,7 @@ curves	Smooth	Glätten
 	Choose a gradient file (.grd or .ggr).	Wählen Sie eine Verlaufsdatei (.grd oder .ggr).
 	Save Group to Document	Gruppe im Dokument speichern
 	Load Document Palettes	Dokumentpaletten laden
+	Cumulative undo	Kumulatives Rückgängig
+	Cumulative undo interval	Intervall des kumulativen Rückgängig
+	Cumulative undo duration	Dauer des kumulativen Rückgängig
+	Popup palette	Pop-up-Palette

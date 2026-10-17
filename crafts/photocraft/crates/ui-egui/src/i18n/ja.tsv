@@ -4023,3 +4023,7 @@ curves	Smooth	スムーズ
 	Choose a gradient file (.grd or .ggr).	グラデーションファイル (.grd または .ggr) を選択してください。
 	Save Group to Document	グループをドキュメントに保存
 	Load Document Palettes	ドキュメントのパレットを読み込む
+	Cumulative undo	累積取り消し
+	Cumulative undo interval	累積取り消しの間隔
+	Cumulative undo duration	累積取り消しの最長時間
+	Popup palette	ポップアップパレット

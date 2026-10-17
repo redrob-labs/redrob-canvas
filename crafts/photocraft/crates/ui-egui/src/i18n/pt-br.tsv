@@ -4137,3 +4137,7 @@ layerLabel	No Color	Sem cor
 	Choose a gradient file (.grd or .ggr).	Escolha um arquivo de gradiente (.grd ou .ggr).
 	Save Group to Document	Salvar grupo no documento
 	Load Document Palettes	Carregar paletas do documento
+	Cumulative undo	Desfazer cumulativo
+	Cumulative undo interval	Intervalo do desfazer cumulativo
+	Cumulative undo duration	Duração do desfazer cumulativo
+	Popup palette	Paleta flutuante

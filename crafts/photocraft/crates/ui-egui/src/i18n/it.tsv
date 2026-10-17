@@ -4467,3 +4467,7 @@ shape	Appearance	Aspetto
 	Choose a gradient file (.grd or .ggr).	Scegli un file sfumatura (.grd o .ggr).
 	Save Group to Document	Salva il gruppo nel documento
 	Load Document Palettes	Carica le tavolozze del documento
+	Cumulative undo	Annulla cumulativo
+	Cumulative undo interval	Intervallo dell'annulla cumulativo
+	Cumulative undo duration	Durata dell'annulla cumulativo
+	Popup palette	Tavolozza a comparsa

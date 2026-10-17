@@ -4046,3 +4046,7 @@ curves	Smooth	Згладити
 	Choose a gradient file (.grd or .ggr).	Виберіть файл градієнта (.grd або .ggr).
 	Save Group to Document	Зберегти групу в документі
 	Load Document Palettes	Завантажити палітри документа
+	Cumulative undo	Накопичувальне скасування
+	Cumulative undo interval	Інтервал накопичувального скасування
+	Cumulative undo duration	Тривалість накопичувального скасування
+	Popup palette	Спливна палітра

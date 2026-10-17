@@ -4077,3 +4077,7 @@ cameraData	Lens	Lens
 	Choose a gradient file (.grd or .ggr).	Bir gradyan dosyası seçin (.grd veya .ggr).
 	Save Group to Document	Grubu belgeye kaydet
 	Load Document Palettes	Belge paletlerini yükle
+	Cumulative undo	Birikimli geri alma
+	Cumulative undo interval	Birikimli geri alma aralığı
+	Cumulative undo duration	Birikimli geri alma süresi
+	Popup palette	Açılır palet

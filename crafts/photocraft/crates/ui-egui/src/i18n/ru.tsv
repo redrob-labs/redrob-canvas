@@ -3323,3 +3323,7 @@ curves	Smooth	Сгладить
 	Choose a gradient file (.grd or .ggr).	Выберите файл градиента (.grd или .ggr).
 	Save Group to Document	Сохранить группу в документе
 	Load Document Palettes	Загрузить палитры документа
+	Cumulative undo	Накопительная отмена
+	Cumulative undo interval	Интервал накопительной отмены
+	Cumulative undo duration	Длительность накопительной отмены
+	Popup palette	Всплывающая палитра

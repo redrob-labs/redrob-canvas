@@ -3344,3 +3344,7 @@ curves	Smooth	Haluskan
 	Choose a gradient file (.grd or .ggr).	Pilih berkas gradien (.grd atau .ggr).
 	Save Group to Document	Simpan grup ke dokumen
 	Load Document Palettes	Muat palet dokumen
+	Cumulative undo	Urungkan kumulatif
+	Cumulative undo interval	Interval urungkan kumulatif
+	Cumulative undo duration	Durasi urungkan kumulatif
+	Popup palette	Palet sembul

@@ -4047,3 +4047,7 @@ curves	Smooth	Εξομάλυνση
 	Choose a gradient file (.grd or .ggr).	Επιλέξτε αρχείο διαβάθμισης (.grd ή .ggr).
 	Save Group to Document	Αποθήκευση ομάδας στο έγγραφο
 	Load Document Palettes	Φόρτωση παλετών εγγράφου
+	Cumulative undo	Σωρευτική αναίρεση
+	Cumulative undo interval	Διάστημα σωρευτικής αναίρεσης
+	Cumulative undo duration	Διάρκεια σωρευτικής αναίρεσης
+	Popup palette	Αναδυόμενη παλέτα

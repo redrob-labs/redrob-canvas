@@ -2955,3 +2955,7 @@ curves	Smooth	平滑
 	Choose a gradient file (.grd or .ggr).	請選擇漸層檔案（.grd 或 .ggr）。
 	Save Group to Document	將群組儲存至文件
 	Load Document Palettes	載入文件調色盤
+	Cumulative undo	累積復原
+	Cumulative undo interval	累積復原間隔
+	Cumulative undo duration	累積復原時長
+	Popup palette	彈出調色盤

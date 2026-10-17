@@ -3945,3 +3945,7 @@ curves	Smooth	Wygładź
 	Choose a gradient file (.grd or .ggr).	Wybierz plik gradientu (.grd lub .ggr).
 	Save Group to Document	Zapisz grupę w dokumencie
 	Load Document Palettes	Wczytaj palety dokumentu
+	Cumulative undo	Skumulowane cofanie
+	Cumulative undo interval	Odstęp skumulowanego cofania
+	Cumulative undo duration	Czas trwania skumulowanego cofania
+	Popup palette	Paleta podręczna

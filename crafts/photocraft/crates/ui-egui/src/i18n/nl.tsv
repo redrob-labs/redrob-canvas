@@ -4107,3 +4107,7 @@ curves	Smooth	Vloeiend maken
 	Choose a gradient file (.grd or .ggr).	Kies een verloopbestand (.grd of .ggr).
 	Save Group to Document	Groep in document opslaan
 	Load Document Palettes	Documentpaletten laden
+	Cumulative undo	Cumulatief ongedaan maken
+	Cumulative undo interval	Interval cumulatief ongedaan maken
+	Cumulative undo duration	Duur cumulatief ongedaan maken
+	Popup palette	Pop-uppalet

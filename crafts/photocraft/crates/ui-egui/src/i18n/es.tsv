@@ -4308,3 +4308,7 @@ navigator	Zoom	Zoom
 	Choose a gradient file (.grd or .ggr).	Elige un archivo de degradado (.grd o .ggr).
 	Save Group to Document	Guardar grupo en el documento
 	Load Document Palettes	Cargar paletas del documento
+	Cumulative undo	Deshacer acumulativo
+	Cumulative undo interval	Intervalo de deshacer acumulativo
+	Cumulative undo duration	Duración de deshacer acumulativo
+	Popup palette	Paleta emergente

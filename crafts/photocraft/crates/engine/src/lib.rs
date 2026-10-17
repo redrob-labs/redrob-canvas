@@ -210,6 +210,11 @@ pub struct DocState {
     pub last_damage: Option<redrob_photo_geom::Rect>,
     /// Coalescing key of the latest history step (see [`Session::execute`]'s `coalesce` param).
     pub coalesce: Option<String>,
+    /// Cumulative undo (Preferences › Performance): the label and time of the latest step and
+    /// when the step it may merge into began; an undo or redo breaks the run.
+    pub last_step_label: Option<String>,
+    pub last_step_at: Option<std::time::Instant>,
+    pub cumulative_since: Option<std::time::Instant>,
     /// Channels panel: targeted channel and eye toggles (view state, not history).
     pub channel_view: channel_cmds::ChannelView,
     /// Select › Isolate Layers: the Layers panel lists only these layers (empty = off; view state).
@@ -244,6 +249,12 @@ pub struct DocState {
     next_snapshot: u64,
 }
 
+/// The history labels cumulative undo may merge: painting-tool strokes.
+fn is_stroke_label(label: &str) -> bool {
+    matches!(label, "Brush Tool" | "Pencil" | "Eraser" | "Mixer Brush" | "Clone Stamp" | "Pattern Stamp" | "History Brush" | "Smudge" | "Blur" | "Sharpen" | "Dodge" | "Burn" | "Sponge")
+        || label.ends_with(" Stroke")
+}
+
 impl DocState {
     /// Trim the history to its budget, counting the tiles only History panel snapshots hold
     /// against it too (#4530). Returns how many states were dropped.
@@ -276,6 +287,9 @@ impl DocState {
             view_revision: 0,
             last_damage: None,
             coalesce: None,
+            last_step_label: None,
+            last_step_at: None,
+            cumulative_since: None,
             channel_view: Default::default(),
             isolated_layers: Vec::new(),
             symmetry: None,
@@ -776,15 +790,30 @@ impl Session {
         // report its own, tighter damage after this.
         let damage = layer_multi_cmds::step_damage(&before, &st.doc);
         let key = self.coalesce_request.clone();
+        // Cumulative undo (Preferences › Performance): another stroke of the same tool soon after
+        // the last one joins its history step, within the interval and the merged duration.
+        let performance = &self.prefs.get().performance;
+        let (cumulative, interval, duration) = (performance.cumulative_undo, performance.cumulative_undo_interval, performance.cumulative_undo_duration);
+        let now = std::time::Instant::now();
         let st = self.active_mut().ok_or(EngineError::NoDocument)?;
+        let merges_strokes = key.is_none()
+            && cumulative
+            && is_stroke_label(label)
+            && st.last_step_label.as_deref() == Some(label)
+            && st.last_step_at.is_some_and(|t| now.duration_since(t).as_secs_f32() <= interval.max(0.0))
+            && st.cumulative_since.is_some_and(|t| now.duration_since(t).as_secs_f32() <= duration.max(0.0));
         let layers = st.layer_target();
-        if key.is_none() || st.coalesce != key || !st.history.can_undo() {
+        let merge = st.history.can_undo() && ((key.is_some() && st.coalesce == key) || merges_strokes);
+        if merge {
+            st.history.set_current_layers(layers);
+        } else {
             st.history.set_current_layers(prior);
             st.history.record(label, before, layers);
             st.trim_history();
-        } else {
-            st.history.set_current_layers(layers);
+            st.cumulative_since = Some(now);
         }
+        st.last_step_label = Some(label.to_string());
+        st.last_step_at = Some(now);
         st.coalesce = key;
         st.revision += 1;
         st.last_damage = damage;
@@ -866,6 +895,7 @@ impl Session {
         }
         let Some(st) = self.active_mut() else { return false };
         st.coalesce = None;
+        st.last_step_label = None;
         match st.history.undo(st.doc.clone()) {
             Some((mut d, layers)) => {
                 // Save As changes file identity outside history, just like the saved path.
@@ -891,6 +921,7 @@ impl Session {
         }
         let Some(st) = self.active_mut() else { return false };
         st.coalesce = None;
+        st.last_step_label = None;
         match st.history.redo(st.doc.clone()) {
             Some((mut d, layers)) => {
                 if d.name != st.doc.name {

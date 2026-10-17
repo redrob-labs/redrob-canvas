@@ -3357,3 +3357,7 @@ curves	Smooth	Lisser
 	Choose a gradient file (.grd or .ggr).	Choisissez un fichier de dégradé (.grd ou .ggr).
 	Save Group to Document	Enregistrer le groupe dans le document
 	Load Document Palettes	Charger les palettes du document
+	Cumulative undo	Annulation cumulative
+	Cumulative undo interval	Intervalle d'annulation cumulative
+	Cumulative undo duration	Durée d'annulation cumulative
+	Popup palette	Palette contextuelle

@@ -3956,3 +3956,7 @@ navigator	Zoom	Zvětšení
 	Choose a gradient file (.grd or .ggr).	Vyberte soubor přechodu (.grd nebo .ggr).
 	Save Group to Document	Uložit skupinu do dokumentu
 	Load Document Palettes	Načíst palety dokumentu
+	Cumulative undo	Kumulativní zpět
+	Cumulative undo interval	Interval kumulativního zpět
+	Cumulative undo duration	Trvání kumulativního zpět
+	Popup palette	Vyskakovací paleta
