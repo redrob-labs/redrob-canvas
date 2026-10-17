@@ -350,7 +350,10 @@ impl Client {
                 let files = exchange.request();
                 transport::write_rgb(&files.image, image)?;
                 transport::write_mask(&files.mask, mask)?;
-                body.insert("image_path".into(), RequestFiles::string(&files.image).into());
+                body.insert(
+                    "image_path".into(),
+                    RequestFiles::string(&files.image).into(),
+                );
                 body.insert("mask_path".into(), RequestFiles::string(&files.mask).into());
                 body.insert(
                     "output_path".into(),
@@ -398,9 +401,7 @@ impl Client {
             Some(roi) if options.keeps_unmasked_area() => roi,
             Some(_) => image.rect(),
             None => {
-                return Err(AiError::Geometry(
-                    "AI fill: the selection is empty".into(),
-                ));
+                return Err(AiError::Geometry("AI fill: the selection is empty".into()));
             }
         };
         let (sub_image, sub_mask) = if roi == image.rect() {
@@ -562,7 +563,10 @@ impl Client {
                 transport::write_rgba(&files.image, image)?;
                 let mut body = Map::new();
                 body.insert("name".into(), Value::String(plugin.into()));
-                body.insert("image_path".into(), RequestFiles::string(&files.image).into());
+                body.insert(
+                    "image_path".into(),
+                    RequestFiles::string(&files.image).into(),
+                );
                 body.insert(
                     "output_path".into(),
                     RequestFiles::string(&files.output).into(),

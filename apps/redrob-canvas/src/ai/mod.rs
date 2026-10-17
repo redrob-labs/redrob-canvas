@@ -747,7 +747,11 @@ mod tests {
         let mask = redrob_ai::Mask::filled(2, 2, 255).unwrap();
         let model = ModelChoice::erase("lama", Device::Cpu, &[]);
         let err = panel
-            .start_job(ToolKind::Erase, JobInput::Erase { image, mask, model }, None)
+            .start_job(
+                ToolKind::Erase,
+                JobInput::Erase { image, mask, model },
+                None,
+            )
             .unwrap_err();
         assert_eq!(err, "start the AI engine first");
         assert!(

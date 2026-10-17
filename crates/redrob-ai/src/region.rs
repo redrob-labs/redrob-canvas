@@ -165,7 +165,13 @@ pub fn outpaint_tiles(picture: Rect, width: u32, height: u32) -> Vec<Tile> {
 /// Steps tiles along `along` (the strip's long axis), `TILE` long with `TILE_OVERLAP` shared
 /// between neighbours; the last tile is pulled back so it ends on the strip's end. `rect` and
 /// `paint` carry the across-axis extent, the along-axis extent is filled in here.
-fn push_strip(tiles: &mut Vec<Tile>, axis: Axis, rect: Rect, paint: Rect, along: std::ops::Range<u32>) {
+fn push_strip(
+    tiles: &mut Vec<Tile>,
+    axis: Axis,
+    rect: Rect,
+    paint: Rect,
+    along: std::ops::Range<u32>,
+) {
     let start = along.start;
     let length = along.end.saturating_sub(along.start);
     if length == 0 {
@@ -238,7 +244,10 @@ mod tests {
         assert_eq!(region.right(), (10 + ROI_MARGIN_PROMPTED).div_ceil(64) * 64);
         // A small picture is sent whole; an empty mask has no region.
         let small = mask_with_box(4, 4, Rect::new(1, 1, 2, 1));
-        assert_eq!(inpaint_region(&small, ROI_MARGIN), Some(Rect::new(0, 0, 4, 4)));
+        assert_eq!(
+            inpaint_region(&small, ROI_MARGIN),
+            Some(Rect::new(0, 0, 4, 4))
+        );
         assert_eq!(inpaint_region(&Mask::filled(8, 8, 0).unwrap(), 128), None);
     }
 
@@ -247,9 +256,15 @@ mod tests {
         let mut painted = Mask::filled(w, h, 0).unwrap();
         for t in &tiles {
             assert!(t.rect.width <= TILE && t.rect.height <= TILE, "{t:?}");
-            assert!(Rect::new(0, 0, w, h).covers(&t.rect), "{t:?} leaves the canvas");
+            assert!(
+                Rect::new(0, 0, w, h).covers(&t.rect),
+                "{t:?} leaves the canvas"
+            );
             assert!(t.rect.covers(&t.paint), "{t:?} paints outside itself");
-            assert!(picture.intersect(&t.paint).is_empty(), "{t:?} paints the picture");
+            assert!(
+                picture.intersect(&t.paint).is_empty(),
+                "{t:?} paints the picture"
+            );
             // Known context on at least one side of what is painted.
             let known_w = t.rect.width - t.paint.width;
             let known_h = t.rect.height - t.paint.height;
@@ -261,7 +276,11 @@ mod tests {
             painted.fill_rect(t.paint, 255);
         }
         let border = w as usize * h as usize - picture.area() as usize;
-        assert_eq!(painted.coverage(), border, "the border is not fully painted");
+        assert_eq!(
+            painted.coverage(),
+            border,
+            "the border is not fully painted"
+        );
         tiles
     }
 
@@ -272,7 +291,11 @@ mod tests {
         assert!(tiles.len() > 8);
         // landscape-8k 8900 × 6675 grown 25 %.
         let tiles = check_cover(Rect::new(2225, 1669, 8900, 6675), 13350, 10013);
-        assert!(tiles.iter().all(|t| t.rect.area() <= u64::from(TILE) * u64::from(TILE)));
+        assert!(
+            tiles
+                .iter()
+                .all(|t| t.rect.area() <= u64::from(TILE) * u64::from(TILE))
+        );
         // An asymmetric expansion (right only) paints only the right strip.
         let tiles = check_cover(Rect::new(0, 0, 3000, 2000), 3300, 2000);
         assert!(tiles.iter().all(|t| t.paint.x >= 3000));

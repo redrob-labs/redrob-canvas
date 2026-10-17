@@ -8,10 +8,7 @@
 
 use redrob_ai::{
     AiError, Expand, Mask, Rect, Rgba8Image,
-    iopaint::{
-        Client, InpaintOptions, Transport,
-        transport::{FileExchange, TransportMode},
-    },
+    iopaint::{Client, InpaintOptions, Transport, transport::TransportMode},
     pixels::png_from_data_url,
     region,
 };
@@ -63,8 +60,8 @@ impl Respond for FileRoutes {
             "/api/v1/redrob/plugin_gen_image" => {
                 assert_eq!(image_bytes.len(), pixels * 4, "RGBA in");
                 let scale = body["scale"].as_f64().unwrap() as u32;
-                let out = Rgba8Image::filled(width * scale, height * scale, [9, 8, 7, 255])
-                    .unwrap();
+                let out =
+                    Rgba8Image::filled(width * scale, height * scale, [9, 8, 7, 255]).unwrap();
                 std::fs::write(out_path, &out.data).unwrap();
                 return ResponseTemplate::new(200).set_body_json(json!({
                     "width": width * scale, "height": height * scale, "channels": 4
@@ -503,8 +500,11 @@ async fn inpaint_sends_only_the_region_around_the_mask_and_places_it_back() {
         .unwrap();
     let region = region::inpaint_region(&mask, region::ROI_MARGIN).unwrap();
     assert_eq!((x, y), (region.x, region.y));
-    assert_eq!((painted.width, painted.height), (region.width, region.height));
-    assert!(painted.width <= 100 + 2 * region::ROI_MARGIN + 64);
+    assert_eq!(
+        (painted.width, painted.height),
+        (region.width, region.height)
+    );
+    assert!(painted.width <= 100 + 2 * region::ROI_MARGIN + 2 * region::ROI_ALIGN);
     // Green only inside the mask; the margin came back transparent.
     assert_eq!(painted.pixel(1000 - x, 500 - y), [0, 255, 0, 255]);
     assert_eq!(painted.pixel(0, 0)[3], 0);
@@ -531,7 +531,10 @@ async fn inpaint_sends_only_the_region_around_the_mask_and_places_it_back() {
         prompt: Some("a bench".into()),
         ..InpaintOptions::default()
     };
-    let (wide, _) = client.inpaint_region(&image, &mask, &prompted).await.unwrap();
+    let (wide, _) = client
+        .inpaint_region(&image, &mask, &prompted)
+        .await
+        .unwrap();
     assert!(wide.width > painted.width);
     let before = server.received_requests().await.unwrap().len();
     assert!(matches!(
@@ -592,18 +595,29 @@ async fn file_transport_writes_raw_files_sends_paths_and_cleans_up() {
     let requests = server.received_requests().await.unwrap();
     let body = body_of(&requests[1]);
     assert!(body.get("image").is_none(), "no base64 in the body");
-    assert!(body["image_path"].as_str().unwrap().starts_with(exchange_dir.to_str().unwrap()));
+    assert!(
+        body["image_path"]
+            .as_str()
+            .unwrap()
+            .starts_with(exchange_dir.to_str().unwrap())
+    );
     assert_eq!(body["width"], 4);
     assert_eq!(body["sd_keep_unmasked_area"], Value::Null);
     // The per-request files are gone once the result is read.
     assert_eq!(std::fs::read_dir(&exchange_dir).unwrap().count(), 0);
 
     // Plugin image: RGBA in, RGBA out at the plugin's size.
-    let up = client.plugin_gen_image("RealESRGAN", &image, 2.0).await.unwrap();
+    let up = client
+        .plugin_gen_image("RealESRGAN", &image, 2.0)
+        .await
+        .unwrap();
     assert_eq!((up.width, up.height), (8, 8));
     assert_eq!(up.pixel(7, 7), [9, 8, 7, 255]);
     // Plugin mask: L8 out.
-    let subject = client.plugin_gen_mask("RemoveBG", &image, &[]).await.unwrap();
+    let subject = client
+        .plugin_gen_mask("RemoveBG", &image, &[])
+        .await
+        .unwrap();
     assert_eq!(subject.coverage(), 1);
     assert_eq!(subject.get(0, 0), 255);
     assert_eq!(std::fs::read_dir(&exchange_dir).unwrap().count(), 0);
@@ -615,7 +629,10 @@ async fn file_transport_writes_raw_files_sends_paths_and_cleans_up() {
         .respond_with(ResponseTemplate::new(500).set_body_json(json!({ "detail": "oom" })))
         .mount(&server)
         .await;
-    match client.inpaint(&image, &mask, &InpaintOptions::default()).await {
+    match client
+        .inpaint(&image, &mask, &InpaintOptions::default())
+        .await
+    {
         Err(AiError::Server { status, detail }) => {
             assert_eq!(status, 500);
             assert_eq!(detail, "oom");
@@ -674,7 +691,10 @@ async fn outpaint_past_the_tile_size_walks_the_border_in_tiles() {
             Rgba8Image::from_png(&png_from_data_url(body["image"].as_str().unwrap()).unwrap())
                 .unwrap();
         assert!(sent.width <= region::TILE && sent.height <= region::TILE);
-        assert_eq!((sent.width, sent.height), (tile.rect.width, tile.rect.height));
+        assert_eq!(
+            (sent.width, sent.height),
+            (tile.rect.width, tile.rect.height)
+        );
         let sent_mask =
             Mask::from_png(&png_from_data_url(body["mask"].as_str().unwrap()).unwrap()).unwrap();
         assert_eq!(sent_mask.coverage(), tile.paint.area() as usize);

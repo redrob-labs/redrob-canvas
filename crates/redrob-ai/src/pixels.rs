@@ -245,8 +245,8 @@ impl Rgba8Image {
         }
         for sy in 0..src.height {
             for sx in 0..src.width {
-                let s = ((sy * src.width + sx) * 4) as usize;
-                let d = (((y + sy) as usize) * self.width as usize + (x + sx) as usize) * 4;
+                let s = (sy as usize * src.width as usize + sx as usize) * 4;
+                let d = ((y + sy) as usize * self.width as usize + (x + sx) as usize) * 4;
                 let src_px = &src.data[s..s + 4];
                 if src_px[3] == 0 {
                     continue;
@@ -257,9 +257,9 @@ impl Rgba8Image {
                 } else {
                     weight(sx, sy).clamp(0.0, 1.0)
                 };
-                for c in 0..4 {
-                    let v = f32::from(dst_px[c]) * (1.0 - w) + f32::from(src_px[c]) * w;
-                    dst_px[c] = v.round().clamp(0.0, 255.0) as u8;
+                for (dst, &new) in dst_px.iter_mut().zip(src_px) {
+                    let v = f32::from(*dst) * (1.0 - w) + f32::from(new) * w;
+                    *dst = v.round().clamp(0.0, 255.0) as u8;
                 }
             }
         }

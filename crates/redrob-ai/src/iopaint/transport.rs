@@ -255,7 +255,11 @@ mod tests {
         ] {
             assert!(is_loopback_url(url), "{url}");
         }
-        for url in ["http://10.0.0.5:8080", "https://ai.example.com", "http://[::2]:1"] {
+        for url in [
+            "http://10.0.0.5:8080",
+            "https://ai.example.com",
+            "http://[::2]:1",
+        ] {
             assert!(!is_loopback_url(url), "{url}");
         }
     }
@@ -278,7 +282,9 @@ mod tests {
         assert!(!Transport::choose(TransportMode::Base64, local, Some(dir), true).is_file());
         assert!(!Transport::choose(TransportMode::File, local, None, true).is_file());
         assert!(!Transport::choose(TransportMode::File, local, Some(dir), false).is_file());
-        assert!(!Transport::choose(TransportMode::File, "http://10.1.1.1:1", Some(dir), true).is_file());
+        assert!(
+            !Transport::choose(TransportMode::File, "http://10.1.1.1:1", Some(dir), true).is_file()
+        );
     }
 
     #[test]
@@ -291,7 +297,10 @@ mod tests {
         let files = exchange.request();
         write_rgb(&files.image, &image).unwrap();
         write_mask(&files.mask, &mask).unwrap();
-        assert_eq!(fs::read(&files.image).unwrap(), vec![255, 255, 255, 10, 20, 30]);
+        assert_eq!(
+            fs::read(&files.image).unwrap(),
+            vec![255, 255, 255, 10, 20, 30]
+        );
         // The shim writes RGB back; the reader attaches alpha.
         fs::write(&files.output, [1, 2, 3, 4, 5, 6]).unwrap();
         let back = read_image(&files.output, 2, 1, 3).unwrap();

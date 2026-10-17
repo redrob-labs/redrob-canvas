@@ -1242,7 +1242,14 @@ mod tests {
             ),
         ];
         for (plugins, device, extra) in cases {
-            let args = server_arguments(8123, "lama", device, &model_dir, plugins, "isnet-general-use");
+            let args = server_arguments(
+                8123,
+                "lama",
+                device,
+                &model_dir,
+                plugins,
+                "isnet-general-use",
+            );
             let mut expected = base(device.as_str(), "8123");
             expected.extend(extra.iter().map(|s| (*s).to_owned()));
             assert_eq!(args, expected, "{plugins:?}");
