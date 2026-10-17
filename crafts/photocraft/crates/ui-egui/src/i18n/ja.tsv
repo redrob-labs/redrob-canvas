@@ -3861,3 +3861,8 @@ curves	Smooth	スムーズ
 	There are too many sets: delete one first.	セットが多すぎます。先に 1 つ削除してください。
 	set name	セット名
 	{set} (modified)	{set}（変更あり）
+	Desaturate…	彩度を下げる…
+	Anti-erase	消去の復元
+	Restore erased pixels instead of erasing	消去する代わりに消去したピクセルを復元します
+	Luma	ルマ
+	Value	明度

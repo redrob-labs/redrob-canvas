@@ -1022,7 +1022,11 @@ impl StrokeRenderer {
                     let px = &mut region[i * n..(i + 1) * n];
                     if b.erase {
                         if let (Some(a), false) = (a_idx, lock_transparency) {
-                            px[a] *= 1.0 - k;
+                            if b.anti_erase {
+                                px[a] += (1.0 - px[a]) * k;
+                            } else {
+                                px[a] *= 1.0 - k;
+                            }
                         }
                         if dither {
                             dither8(px, x, y);

@@ -78,6 +78,12 @@ pub fn mode_dropdown(ui: &mut egui::Ui, mode: &mut String) -> bool {
     widgets::dropdown(ui, "eraser-mode", mode, &modes, 96.0)
 }
 
+/// The Eraser's Anti-erase checkbox: the stroke restores what an earlier erase removed (alpha
+/// is raised back over the colour that stayed in the pixels) instead of erasing further.
+pub fn anti_erase_checkbox(ui: &mut egui::Ui, anti_erase: &mut bool) {
+    widgets::checkbox(ui, anti_erase, tl!("Anti-erase")).on_hover_text(tl!("Restore erased pixels instead of erasing"));
+}
+
 fn opt(ui: &mut egui::Ui, text: &str) {
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(tl!(&text)).color(t.text_dim).size(12.0));

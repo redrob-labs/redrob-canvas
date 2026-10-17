@@ -3673,3 +3673,8 @@ curves	Smooth	Làm mượt
 	There are too many sets: delete one first.	Có quá nhiều bộ: hãy xóa một bộ trước.
 	set name	tên bộ
 	{set} (modified)	{set} (đã sửa đổi)
+	Desaturate…	Khử bão hòa…
+	Anti-erase	Phục hồi xóa
+	Restore erased pixels instead of erasing	Khôi phục các điểm ảnh đã xóa thay vì xóa
+	Luma	Luma
+	Value	Giá trị

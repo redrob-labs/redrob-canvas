@@ -500,6 +500,11 @@ pub struct BrushSettings {
     pub background: [f32; 4],
     /// Erase instead of paint.
     pub erase: bool,
+    /// With `erase`: restore instead of remove. Erasing only lowers alpha and leaves the colour
+    /// in place, so an anti-erase stroke brings those pixels back by raising alpha again.
+    /// Nothing happens where nothing was ever painted.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub anti_erase: bool,
     /// Brush blend mode (Normal, Multiply, Dissolve…).
     pub mode: BlendMode,
     // --- Brush Tip Shape ---
@@ -558,6 +563,7 @@ impl Default for BrushSettings {
             color_cmyk: None,
             background: [1.0, 1.0, 1.0, 1.0],
             erase: false,
+            anti_erase: false,
             mode: BlendMode::Normal,
             tip: TipShape::Round,
             angle: 0.0,

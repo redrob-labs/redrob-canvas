@@ -535,6 +535,9 @@ fn live_stroke(app: &PhotocraftApp, idx: usize) -> Option<&LiveStroke> {
 fn stroke_params(app: &PhotocraftApp, d: &Drag, points: &[Vec<f64>]) -> serde_json::Value {
     let tool = d.tool;
     let mut p = json!({ "points": points, "erase": d.erase, "zoom": app.point_zoom(), "target": paint_target(app) });
+    if tool == Tool::Eraser && app.ui.tool_options.anti_erase {
+        p["antiErase"] = json!(true);
+    }
     if d.clear {
         p["mode"] = json!("clear");
     }

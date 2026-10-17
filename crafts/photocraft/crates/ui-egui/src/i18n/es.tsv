@@ -4146,3 +4146,8 @@ navigator	Zoom	Zoom
 	There are too many sets: delete one first.	Hay demasiados conjuntos: elimine uno primero.
 	set name	nombre del conjunto
 	{set} (modified)	{set} (modificado)
+	Desaturate…	Desaturar…
+	Anti-erase	Antiborrado
+	Restore erased pixels instead of erasing	Restaura los píxeles borrados en lugar de borrar
+	Luma	Luma
+	Value	Valor

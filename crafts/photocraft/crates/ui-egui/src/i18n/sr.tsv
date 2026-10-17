@@ -4257,3 +4257,8 @@ shape	Appearance	Izgled
 	There are too many sets: delete one first.	Previše skupova: prvo obrišite jedan.
 	set name	ime skupa
 	{set} (modified)	{set} (izmenjen)
+	Desaturate…	Смањи засићеност…
+	Anti-erase	Поништи брисање
+	Restore erased pixels instead of erasing	Враћа избрисане пикселе уместо да брише
+	Luma	Лума
+	Value	Вредност

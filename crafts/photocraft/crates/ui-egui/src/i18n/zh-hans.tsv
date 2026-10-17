@@ -2803,3 +2803,8 @@ curves	Smooth	平滑
 	set name	组名称
 	{set} (modified)	{set}（已修改）
 	Random	随机
+	Desaturate…	去色…
+	Anti-erase	反擦除
+	Restore erased pixels instead of erasing	恢复已擦除的像素而不是擦除
+	Luma	亮度 (Luma)
+	Value	明度

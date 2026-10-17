@@ -1000,6 +1000,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         // The Eraser has no blend mode: its Mode is Brush, Pencil or Block (#2662).
                         if app.ui.tool == Tool::Eraser {
                             crate::eraser_ui::mode_dropdown(ui, &mut app.ui.tool_options.eraser_mode);
+                            crate::eraser_ui::anti_erase_checkbox(ui, &mut app.ui.tool_options.anti_erase);
                         } else {
                             opt_label(ui, tl!("Mode"));
                             let held = app.held_erase;
@@ -1059,6 +1060,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::vline(ui, 22.0);
                         if app.ui.tool == Tool::Eraser {
                             crate::eraser_ui::mode_dropdown(ui, &mut app.ui.tool_options.eraser_mode);
+                            crate::eraser_ui::anti_erase_checkbox(ui, &mut app.ui.tool_options.anti_erase);
                         } else {
                             opt_label(ui, tl!("Mode"));
                             let held = app.held_erase;

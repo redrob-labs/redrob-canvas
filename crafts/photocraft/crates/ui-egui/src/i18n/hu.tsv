@@ -4103,3 +4103,8 @@ cameraRaw	Yellow	Sárga
 	There are too many sets: delete one first.	Túl sok készlet van: előbb töröljön egyet.
 	set name	készlet neve
 	{set} (modified)	{set} (módosítva)
+	Desaturate…	Telítettség csökkentése…
+	Anti-erase	Visszaradírozás
+	Restore erased pixels instead of erasing	Törlés helyett visszaállítja a kitörölt képpontokat
+	Luma	Luma
+	Value	Érték

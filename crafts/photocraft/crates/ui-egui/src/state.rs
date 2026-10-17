@@ -687,6 +687,10 @@ pub struct ToolOptions {
     /// `paint.pencil`), as in Photoshop's options bar (#2662).
     #[serde(default = "default_eraser_mode")]
     pub eraser_mode: String,
+    /// Eraser › Anti-erase: the stroke restores erased pixels (raises alpha back) instead of
+    /// removing them.
+    #[serde(default)]
+    pub anti_erase: bool,
     /// Magnetic Lasso: detection width (px, 1..256), edge contrast (%, 1..100), how often it
     /// fastens points by itself (0..100), and whether pen pressure narrows the width.
     pub magnetic_width: f32,
@@ -852,6 +856,7 @@ impl Default for ToolOptions {
             brush_clear: false,
             pencil_clear: false,
             eraser_mode: default_eraser_mode(),
+            anti_erase: false,
             magnetic_width: 10.0,
             magnetic_contrast: 10.0,
             magnetic_frequency: 57.0,

@@ -3975,3 +3975,8 @@ layerLabel	No Color	Sem cor
 	There are too many sets: delete one first.	Há conjuntos demais: exclua um primeiro.
 	set name	nome do conjunto
 	{set} (modified)	{set} (modificado)
+	Desaturate…	Remover saturação…
+	Anti-erase	Antiapagar
+	Restore erased pixels instead of erasing	Restaura os pixels apagados em vez de apagar
+	Luma	Luma
+	Value	Valor

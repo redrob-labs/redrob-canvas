@@ -3157,3 +3157,8 @@ curves	Smooth	Сгладить
 	set name	имя набора
 	{set} (modified)	{set} (изменён)
 	Random	Случайно
+	Desaturate…	Обесцветить…
+	Anti-erase	Антистирание
+	Restore erased pixels instead of erasing	Восстанавливать стёртые пиксели вместо стирания
+	Luma	Яркость (luma)
+	Value	Значение

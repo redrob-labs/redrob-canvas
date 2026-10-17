@@ -3179,3 +3179,8 @@ curves	Smooth	Haluskan
 	set name	nama set
 	{set} (modified)	{set} (diubah)
 	Random	Acak
+	Desaturate…	Hilangkan Saturasi…
+	Anti-erase	Anti-hapus
+	Restore erased pixels instead of erasing	Memulihkan piksel yang terhapus, bukan menghapus
+	Luma	Luma
+	Value	Nilai

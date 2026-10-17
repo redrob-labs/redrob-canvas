@@ -3945,3 +3945,8 @@ curves	Smooth	Vloeiend maken
 	There are too many sets: delete one first.	Er zijn te veel sets: verwijder er eerst een.
 	set name	naam van de set
 	{set} (modified)	{set} (gewijzigd)
+	Desaturate…	Verzadiging verminderen…
+	Anti-erase	Anti-wissen
+	Restore erased pixels instead of erasing	Herstelt gewiste pixels in plaats van te wissen
+	Luma	Luma
+	Value	Waarde

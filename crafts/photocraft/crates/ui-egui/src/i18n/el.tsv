@@ -3885,3 +3885,8 @@ curves	Smooth	Εξομάλυνση
 	There are too many sets: delete one first.	Υπάρχουν πάρα πολλά σύνολα: διαγράψτε πρώτα ένα.
 	set name	όνομα συνόλου
 	{set} (modified)	{set} (τροποποιημένο)
+	Desaturate…	Αποκορεσμός…
+	Anti-erase	Αναίρεση σβησίματος
+	Restore erased pixels instead of erasing	Επαναφέρει τα σβησμένα pixel αντί να σβήνει
+	Luma	Luma
+	Value	Τιμή

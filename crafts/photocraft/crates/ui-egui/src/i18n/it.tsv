@@ -4305,3 +4305,8 @@ shape	Appearance	Aspetto
 	There are too many sets: delete one first.	Ci sono troppi set: eliminane prima uno.
 	set name	nome del set
 	{set} (modified)	{set} (modificato)
+	Desaturate…	Desatura…
+	Anti-erase	Anti-cancellazione
+	Restore erased pixels instead of erasing	Ripristina i pixel cancellati invece di cancellare
+	Luma	Luma
+	Value	Valore

@@ -3884,3 +3884,8 @@ curves	Smooth	Згладити
 	There are too many sets: delete one first.	Забагато наборів: спершу видаліть один.
 	set name	назва набору
 	{set} (modified)	{set} (змінено)
+	Desaturate…	Знебарвити…
+	Anti-erase	Антистирання
+	Restore erased pixels instead of erasing	Відновлювати стерті пікселі замість стирання
+	Luma	Яркість (luma)
+	Value	Значення

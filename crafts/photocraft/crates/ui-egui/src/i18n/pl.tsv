@@ -3783,3 +3783,8 @@ curves	Smooth	Wygładź
 	There are too many sets: delete one first.	Zestawów jest za dużo: najpierw usuń jeden.
 	set name	nazwa zestawu
 	{set} (modified)	{set} (zmieniony)
+	Desaturate…	Zmniejsz nasycenie…
+	Anti-erase	Przywracanie gumką
+	Restore erased pixels instead of erasing	Przywraca wymazane piksele zamiast wymazywać
+	Luma	Luma
+	Value	Wartość

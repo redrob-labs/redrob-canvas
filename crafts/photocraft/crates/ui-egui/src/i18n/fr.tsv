@@ -3192,3 +3192,8 @@ curves	Smooth	Lisser
 	set name	nom du jeu
 	{set} (modified)	{set} (modifié)
 	Random	Aléatoire
+	Desaturate…	Désaturer…
+	Anti-erase	Anti-effacement
+	Restore erased pixels instead of erasing	Restaure les pixels effacés au lieu d’effacer
+	Luma	Luma
+	Value	Valeur
