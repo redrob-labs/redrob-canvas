@@ -120,7 +120,9 @@ fn tool(
     schema: Value,
 ) -> Tool {
     let (tx, ctx) = (tx.clone(), ctx.clone());
-    Tool::new(name, description, schema, move |args| call_ui(&tx, &ctx, name, args))
+    Tool::new(name, description, schema, move |args| {
+        call_ui(&tx, &ctx, name, args)
+    })
 }
 
 /// The tools the daemon sees; each one is answered by [`ShellApp::serve_request`].
@@ -297,7 +299,11 @@ fn default_export_path(doc_path: Option<&str>, name: &str, ext: &str) -> PathBuf
 
 /// A requested output path, or the default one; always with the format's extension.
 fn export_target(args: &Value, doc_path: Option<&str>, name: &str, ext: &str) -> String {
-    let path = match args.get("path").and_then(Value::as_str).filter(|p| !p.trim().is_empty()) {
+    let path = match args
+        .get("path")
+        .and_then(Value::as_str)
+        .filter(|p| !p.trim().is_empty())
+    {
         Some(p) => PathBuf::from(p),
         None => default_export_path(doc_path, name, ext),
     };
@@ -353,7 +359,9 @@ fn find_layer(rows: &[LayerRow], args: &Value) -> Result<u64, String> {
     let name = str_arg(args, "id")
         .or_else(|_| str_arg(args, "name"))
         .map_err(|_| "id or name is required".to_string())?;
-    let mut hits = rows.iter().filter(|r| r.name.eq_ignore_ascii_case(name.trim()));
+    let mut hits = rows
+        .iter()
+        .filter(|r| r.name.eq_ignore_ascii_case(name.trim()));
     match (hits.next(), hits.next()) {
         (Some(hit), None) => Ok(hit.id),
         (Some(_), Some(_)) => Err(format!("several layers are named \"{name}\"; use the id")),
@@ -439,7 +447,10 @@ impl ShellApp {
             "mode: {}\nname: {name}\npath: {}\nsize: {}\nlayers: {layers}\ndirty: {dirty}",
             mode_name(mode),
             path.as_deref().unwrap_or("untitled (never saved)"),
-            size.map_or_else(|| "unknown".to_string(), |(w, h)| format!("{w} x {h} {unit}")),
+            size.map_or_else(
+                || "unknown".to_string(),
+                |(w, h)| format!("{w} x {h} {unit}")
+            ),
         ))
     }
 
@@ -461,7 +472,11 @@ impl ShellApp {
             ),
             false,
         );
-        Ok(format!("opened {} in {}", path.display(), mode_name(route.mode)))
+        Ok(format!(
+            "opened {} in {}",
+            path.display(),
+            mode_name(route.mode)
+        ))
     }
 
     fn bridge_switch_mode(&mut self, args: &Value) -> Reply {
@@ -563,7 +578,8 @@ impl ShellApp {
         match self.mode {
             Mode::Photo => {
                 // `layer.select` is the Layers panel's click (crafts/photocraft/crates/engine).
-                self.ensure_photo().run("layer.select", json!({ "layer": id }))?;
+                self.ensure_photo()
+                    .run("layer.select", json!({ "layer": id }))?;
             }
             Mode::Vector => {
                 // `layer.setCurrent` makes it the layer new art goes into; `layer.highlight`
@@ -574,7 +590,8 @@ impl ShellApp {
             }
             Mode::Layout => {
                 // `layer.activate` (crafts/designcraft/crates/engine/src/cmd/layout.rs).
-                self.ensure_layout().run("layer.activate", json!({ "id": id }))?;
+                self.ensure_layout()
+                    .run("layer.activate", json!({ "id": id }))?;
             }
         }
         Ok(format!("selected layer {id} \"{name}\""))
@@ -589,7 +606,11 @@ impl ShellApp {
         let visible = bool_arg(args, "visible")?;
         match self.mode {
             Mode::Photo => {
-                let cmd = if visible { "layer.showLayers" } else { "layer.hideLayers" };
+                let cmd = if visible {
+                    "layer.showLayers"
+                } else {
+                    "layer.hideLayers"
+                };
                 self.ensure_photo().run(cmd, json!({ "layer": id }))?;
             }
             Mode::Vector => {
@@ -824,8 +845,12 @@ mod tests {
             export_target(&json!({ "path": "/tmp/out.PNG" }), None, "a.psd", "png"),
             "/tmp/out.PNG"
         );
-        let next_to =
-            export_target(&json!({}), Some("/docs/poster.rphoto"), "poster.rphoto", "pdf");
+        let next_to = export_target(
+            &json!({}),
+            Some("/docs/poster.rphoto"),
+            "poster.rphoto",
+            "pdf",
+        );
         assert_eq!(next_to, "/docs/poster.pdf");
         assert!(scale_arg(&json!({ "scale": 9 })).is_err());
         assert_eq!(scale_arg(&json!({})).unwrap(), 1.0);
