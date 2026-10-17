@@ -44,6 +44,7 @@ pub mod text_styles;
 pub mod transform;
 pub mod transparency;
 pub mod variables;
+pub mod xml_editor;
 
 use egui::{Rect, Sense, Ui, vec2};
 use redrob_vector_color::{BlendMode, Color, Paint};
@@ -176,6 +177,7 @@ pub fn show_icon_panel(app: &mut VectorcraftApp, ui: &mut Ui, id: &str) {
         asset_export::ID => asset_export::show(app, ui),
         css_properties::ID => css_properties::show(app, ui),
         filter_editor::ID => filter_editor::show(app, ui),
+        xml_editor::ID => xml_editor::show(app, ui),
         _ => {
             dim_label(ui, tl!("This panel is on the roadmap (see the parity plan)."));
         }
@@ -225,6 +227,7 @@ pub fn panel_menu_items(app: &mut VectorcraftApp, ui: &mut Ui, id: &str) -> bool
         css_properties::ID => css_properties::menu(app, ui),
         variables::ID => variables::menu(app, ui),
         filter_editor::ID => filter_editor::menu(app, ui),
+        xml_editor::ID => xml_editor::menu(app, ui),
         _ => return false,
     }
     true

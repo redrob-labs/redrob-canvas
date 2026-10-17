@@ -2725,6 +2725,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     ],
                 ),
                 panel("Variables", crate::panels::variables::ID),
+                panel("XML Editor", crate::panels::xml_editor::ID),
                 Sep,
                 sub("Brush Libraries", library_placeholders()),
                 sub("Graphic Style Libraries", crate::panels::graphic_styles::window_menu()),

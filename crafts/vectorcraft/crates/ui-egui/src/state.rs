@@ -155,6 +155,7 @@ pub const ICON_PANELS: &[(&str, &str, &str)] = &[
     (crate::panels::css_properties::ID, "CSS Properties", "globe"),
     (crate::panels::variables::ID, "Variables", "chart-column"),
     (crate::panels::filter_editor::ID, "Filter Editor", "dc-fx"),
+    (crate::panels::xml_editor::ID, "XML Editor", "dc-list-view"),
 ];
 
 /// Groups of icon panels separated by dividers in the collapsed column.
