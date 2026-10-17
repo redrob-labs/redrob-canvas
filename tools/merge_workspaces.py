@@ -33,7 +33,7 @@ CRAFT_LIBS = {
 VENDORED = ["krilla", "hayro", "hayro-interpret", "hayro-syntax", "hayro-jbig2"]
 
 OUR_PACKAGE = {
-    "version": "0.9.0",
+    "version": "0.10.0",
     "edition": "2024",
     "license": "MIT OR Apache-2.0",
     "rust-version": "1.95",
@@ -51,7 +51,7 @@ OUR_DEPS = {
     "reqwest": {
         "version": "0.12",
         "default-features": False,
-        "features": ["json", "rustls-tls", "stream"],
+        "features": ["json", "rustls-tls", "rustls-tls-native-roots", "system-proxy", "stream"],
     },
     "tokio": {"version": "1", "features": ["rt-multi-thread", "macros", "sync", "time", "process"]},
     # The in-app update check verifies the downloaded asset against the release's SHA256SUMS.txt.
