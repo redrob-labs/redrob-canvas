@@ -38,7 +38,7 @@ const DIGITS: [[u8; 5]; 10] = [
 fn digit_hit(number: i32, origin: (f32, f32), cell: f32, x: f32, y: f32) -> bool {
     let text = number.unsigned_abs().to_string();
     let (dx, dy) = (x - origin.0, y - origin.1);
-    if dx < 0.0 || dy < 0.0 || dy >= 5.0 * cell {
+    if dx < 0.0 || !(0.0..5.0 * cell).contains(&dy) {
         return false;
     }
     let col = (dx / cell).floor() as usize;
@@ -78,7 +78,7 @@ pub(crate) fn filmstrip(src: &Image, out: Rect, ctx: &Ctx, spec: &FilmstripSpec)
     map_px(src, out, ctx, |x, y, _| {
         let (fx, fy) = (x as f32 + 0.5 - b.x0 as f32, y as f32 + 0.5 - b.y0 as f32);
         // Sprocket holes.
-        let in_hole_row = (fy >= hole_off && fy < hole_off + hole_h) || (fy >= bh - hole_off - hole_h && fy < bh - hole_off);
+        let in_hole_row = (hole_off..hole_off + hole_h).contains(&fy) || (bh - hole_off - hole_h..bh - hole_off).contains(&fy);
         if in_hole_row {
             let u = (fx + hole_w * 0.5).rem_euclid(hole_sp);
             if u < hole_w {
@@ -97,7 +97,7 @@ pub(crate) fn filmstrip(src: &Image, out: Rect, ctx: &Ctx, spec: &FilmstripSpec)
         }
         // Frames.
         let u = fx.rem_euclid(pitch);
-        if u >= gap && fy >= margin && fy < margin + frame_h {
+        if u >= gap && (margin..margin + frame_h).contains(&fy) {
             let sx = b.x0 as f32 + (u - gap) / scale;
             let sy = b.y0 as f32 + (fy - margin) / scale;
             src.sample(sx, sy, Edge::Repeat, b, ctx.alpha, &mut tmp);

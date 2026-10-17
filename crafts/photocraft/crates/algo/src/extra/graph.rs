@@ -29,9 +29,6 @@ pub(crate) enum Op {
     Noise(f32, u32),
 }
 
-/// The operations named in a usual listing, for the dialog's help text.
-pub const OPERATIONS: &str = "blur radius | sharpen amount | invert | brightness value | contrast value | saturation value | hue degrees | gamma value | threshold value | grayscale | sepia | posterize levels | levels low high | opacity value | noise amount seed";
-
 fn num(args: &[(&str, &str)], key: &str, pos: usize, default: f32) -> f32 {
     args.iter()
         .find(|(k, _)| *k == key)

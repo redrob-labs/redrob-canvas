@@ -37,15 +37,6 @@ pub(crate) fn rgba_at(src: &Image, ctx: &Ctx, x: i32, y: i32) -> [f32; 4] {
     rgba(ctx, &buf[..n])
 }
 
-/// Straight sRGB RGBA of the source pixel at `(x, y)`; transparent black outside the window.
-#[inline]
-pub(crate) fn rgba_or_clear(src: &Image, ctx: &Ctx, x: i32, y: i32) -> [f32; 4] {
-    if !src.rect.contains(x, y) {
-        return [0.0; 4];
-    }
-    rgba(ctx, src.px(x, y))
-}
-
 /// Alpha of the source pixel (1 without an alpha channel); 0 outside the window.
 #[inline]
 pub(crate) fn alpha_at(src: &Image, ctx: &Ctx, x: i32, y: i32) -> f32 {

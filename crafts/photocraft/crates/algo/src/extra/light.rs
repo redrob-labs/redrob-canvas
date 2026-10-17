@@ -37,7 +37,7 @@ pub(crate) fn supernova(src: &Image, out: Rect, ctx: &Ctx, spec: &SupernovaSpec)
         // Each spoke has its own length and hue; blend with the neighbour across the wedge edge.
         let spoke = |k: i32| -> (f32, f32) {
             let k = k.rem_euclid(spokes);
-            (0.2 + 0.8 * hash01(k, 0, 21, spec.seed), (hash01(k, 1, 22, spec.seed) - 0.5) * spec.random_hue / 180.0)
+            (0.2 + 0.8 * hash01(k, 0, 21, spec.seed), (hash01(k, 1, 22, spec.seed) - 0.5) * spec.random_hue / 360.0)
         };
         let (l0, h0) = spoke(k);
         let (l1, h1) = spoke(k + 1);
@@ -200,7 +200,7 @@ pub(crate) fn sparkle(src: &Image, out: Rect, ctx: &Ctx, spec: &SparkleSpec) -> 
         hsv[1] = (hsv[1] + (hash01(sx, sy, 33, spec.seed) - 0.5) * spec.random_saturation).clamp(0.0, 1.0);
         hsv[2] = if spec.inverse { 0.0 } else { hsv[2].max(0.7) };
         let col = hsv_to_rgb(hsv);
-        let a0 = if spec.spike_angle < 0.0 { hash01(sx, sy, 34, spec.seed) * 360.0 } else { spec.spike_angle }.to_radians();
+        let a0 = (if spec.spike_angle < 0.0 { hash01(sx, sy, 34, spec.seed) * 360.0 } else { spec.spike_angle }).to_radians();
         let r = len.ceil() as i32 + 1;
         let region = Rect::new(sx - r, sy - r, sx + r + 1, sy + r + 1).intersect(&out);
         for y in region.y0..region.y1 {

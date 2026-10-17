@@ -4270,3 +4270,199 @@ navigator	Zoom	Zoom
 	Import Swatches from Image	Importar muestras desde la imagen
 	Export Swatches as CSS…	Exportar muestras como CSS…
 	Cage Transform	Transformación de jaula
+	Antialias	Antialias
+	Blinds…	Persianas…
+	CIE lch Noise…	Ruido CIE LCh…
+	Cubism…	Cubismo…
+	Decor	Decoración
+	Difference of Gaussians…	Diferencia de gaussianas…
+	Distance Map…	Mapa de distancia…
+	Engrave…	Grabado…
+	Filmstrip…	Tira de película…
+	Fuzzy Border…	Borde difuso…
+	Gradient Flare…	Destello de degradado…
+	HSV Noise…	Ruido HSV…
+	Hurl…	Lanzar…
+	Image Gradient…	Gradiente de imagen…
+	Impressionist…	Impresionista…
+	Kaleidoscope…	Caleidoscopio…
+	Light and Shadow	Luz y sombra
+	Long Shadow…	Sombra larga…
+	Mean Curvature Blur…	Desenfoque de curvatura media…
+	NL Filter…	Filtro NL…
+	Normal Map…	Mapa de normales…
+	Operation Graph…	Grafo de operaciones…
+	Page Curl…	Esquina doblada…
+	Perspective Shadow…	Sombra en perspectiva…
+	Pick…	Escoger…
+	SLIC…	SLIC…
+	Shift…	Desplazar…
+	Slur…	Derretir…
+	Sparkle…	Destellos…
+	Supernova…	Supernova…
+	Symmetric Nearest Neighbor…	Vecino más cercano simétrico…
+	Tileable Blur…	Desenfoque enlosable…
+	Value Propagate…	Propagar valor…
+	Van Gogh (LIC)…	Van Gogh (LIC)…
+	Video Degradation…	Degradación de vídeo…
+	Waterpixels…	Waterpixels…
+	Weave…	Tejido…
+	Xach-Effect…	Efecto Xach…
+	Add Border	Añadir borde
+	Add Shadow	Añadir sombra
+	Additive	Aditivo
+	Allow Resizing	Permitir redimensionar
+	Alpha Trimmed Mean	Media recortada alfa
+	At Bottom	Abajo
+	At Top	Arriba
+	Blur Border	Desenfocar borde
+	Blur Horizontally	Desenfocar horizontalmente
+	Blur Radius	Radio de desenfoque
+	Blur Type	Tipo de desenfoque
+	Blur Vertically	Desenfocar verticalmente
+	Border Size	Tamaño del borde
+	Box	Caja
+	Brush Shape	Forma del pincel
+	Chebyshev	Chebyshev
+	Clip Result	Recortar resultado
+	Color Type	Tipo de color
+	Compactness	Compacidad
+	Composition	Composición
+	Convolve	Convolución
+	Cubic	Cúbica
+	Current Gradient	Degradado actual
+	Current Gradient Reversed	Degradado actual invertido
+	Derivative	Derivada
+	Displacement	Desplazamiento
+	Drop Shadow Blur Radius	Radio de desenfoque de la sombra
+	Drop Shadow Color	Color de la sombra
+	Drop Shadow Opacity	Opacidad de la sombra
+	Drop Shadow X Offset	Desplazamiento X de la sombra
+	Drop Shadow Y Offset	Desplazamiento Y de la sombra
+	Dulling	Atenuación
+	Edge Enhancement	Realce de bordes
+	Effect Channel	Canal del efecto
+	Effect Operator	Operador del efecto
+	Ellipse	Elipse
+	Euclidean	Euclídea
+	Evenly	Uniformemente
+	Fading	Desvanecimiento
+	Fading Fixed Length	Desvanecimiento de longitud fija
+	Film Color	Color de la película
+	Filter Length	Longitud del filtro
+	Finite	Finita
+	Flare Intensity	Intensidad del destello
+	Flowing	Fluido
+	Foreground Background	Frente/fondo
+	Foreground To Peaks	Frente a los picos
+	Full Z	Z completo
+	Gradient Smoothness	Suavidad del gradiente
+	Granularity	Granularidad
+	Graph	Grafo
+	Grayscale Averaging	Promedio en escala de grises
+	Hex	Hexagonal
+	Highlight Color	Color del resalte
+	Highlight Opacity	Opacidad del resalte
+	Highlight X Offset	Desplazamiento X del resalte
+	Highlight Y Offset	Desplazamiento Y del resalte
+	Hole Height	Altura del agujero
+	Hole Offset	Desplazamiento del agujero
+	Hole Spacing	Espaciado de agujeros
+	Hole Width	Anchura del agujero
+	Hue Rotation	Rotación de tono
+	Integration Steps	Pasos de integración
+	Iterations	Iteraciones
+	Keep Original	Mantener original
+	Large Staggered	Escalonado grande
+	Large Three By Three	3×3 grande
+	Limit Line Width	Limitar anchura de línea
+	Long Staggered	Escalonado largo
+	Lower Left	Inferior izquierda
+	Lower Right	Inferior derecha
+	Lower Threshold	Umbral inferior
+	Luminosity Threshold	Umbral de luminosidad
+	Magnitude	Magnitud
+	Manhattan	Manhattan
+	Maximum Value	Valor máximo
+	Metric	Métrica
+	Middle Value	Valor medio
+	Minimum Value	Valor mínimo
+	Mirror Rotation	Rotación de espejos
+	Mirrors	Espejos
+	More Black	Más negro
+	More Opaque	Más opaco
+	More Transparent	Más transparente
+	More White	Más blanco
+	Natural Color	Color natural
+	Noise Magnitude	Magnitud del ruido
+	Normalize	Normalizar
+	Number Color	Color de los números
+	Only Background	Solo fondo
+	Only Foreground	Solo frente
+	Optimal Estimation	Estimación óptima
+	Orientation Type	Tipo de orientación
+	Pairs	Pares
+	Paper Relief	Relieve del papel
+	Placement	Colocación
+	Propagating Rate	Tasa de propagación
+	Radius1	Radio 1
+	Radius2	Radio 2
+	Random Hue	Tono aleatorio
+	Random Saturation	Saturación aleatoria
+	Randomization	Aleatoriedad
+	Randomly	Aleatoriamente
+	Rays	Rayos
+	Regions Size	Tamaño de regiones
+	Relative Distance	Distancia relativa
+	Result Rotation	Rotación del resultado
+	Ribbon Spacing	Espaciado de cintas
+	Ribbon Width	Anchura de cintas
+	Rotated	Rotado
+	Second Flares	Destellos secundarios
+	Segments	Segmentos
+	Shade	Sombreado
+	Shadow Darkness	Oscuridad de la sombra
+	Shadow Depth	Profundidad de la sombra
+	Shadow Length	Longitud de la sombra
+	Shadow Minus Image	Sombra menos imagen
+	Shadow Only	Solo sombra
+	Shadow Plus Image	Sombra más imagen
+	Shadow Weight	Peso de la sombra
+	Size Variation	Variación de tamaño
+	Spatial Regularization	Regularización espacial
+	Spike Angle	Ángulo de las puntas
+	Spike Density	Densidad de puntas
+	Spike Length	Longitud de las puntas
+	Spike Points	Número de puntas
+	Splotch	Mancha
+	Spokes	Radios
+	Staggered	Escalonado
+	Start Index	Índice inicial
+	Striped	A rayas
+	Stroke Density	Densidad de trazos
+	Superpixels Color	Color de superpíxeles
+	Superpixels Size	Tamaño de superpíxeles
+	Thread Density	Densidad de hilos
+	Thread Intensity	Intensidad de hilos
+	Thread Length	Longitud de hilos
+	Three By Three	3×3
+	Threshold High	Umbral alto
+	Threshold Low	Umbral bajo
+	Tile Saturation	Saturación de teselas
+	Tileable	Enlosable
+	To Bottom	Hacia abajo
+	To Left	Hacia la izquierda
+	To Right	Hacia la derecha
+	To Top	Hacia arriba
+	Trim X	Recorte X
+	Trim Y	Recorte Y
+	Upper Left	Superior izquierda
+	Upper Right	Superior derecha
+	Upper Threshold	Umbral superior
+	Vector Angle	Ángulo del vector
+	Vector Length	Longitud del vector
+	Wide Striped	A rayas anchas
+	With Source Image	Con la imagen de origen
+	With White Noise	Con ruido blanco
+	X Component	Componente X
+	Y Component	Componente Y

@@ -3487,3 +3487,200 @@ curves	Smooth	매끄럽게
 	Import Swatches from Image	이미지에서 색상 견본 가져오기
 	Export Swatches as CSS…	색상 견본을 CSS로 내보내기…
 	Cage Transform	케이지 변형
+	Antialias	안티에일리어스
+	Blinds…	블라인드…
+	CIE lch Noise…	CIE LCh 노이즈…
+	Cubism…	큐비즘…
+	Decor	장식
+	Difference of Gaussians…	가우시안 차…
+	Distance Map…	거리 맵…
+	Engrave…	조각…
+	Filmstrip…	필름 스트립…
+	Fuzzy Border…	퍼지 테두리…
+	Gradient Flare…	그레이디언트 플레어…
+	HSV Noise…	HSV 노이즈…
+	Hurl…	흩뿌리기…
+	Image Gradient…	이미지 기울기…
+	Impressionist…	인상파…
+	Kaleidoscope…	만화경…
+	Light and Shadow	빛과 그림자
+	Long Shadow…	긴 그림자…
+	Mean Curvature Blur…	평균 곡률 흐림…
+	NL Filter…	NL 필터…
+	Normal Map…	노멀 맵…
+	Operation Graph…	연산 그래프…
+	Page Curl…	페이지 말림…
+	Perspective Shadow…	원근 그림자…
+	Pick…	뽑기…
+	SLIC…	SLIC…
+	Shift…	밀기…
+	Slur…	흘리기…
+	Sparkle…	반짝임…
+	Supernova…	초신성…
+	Symmetric Nearest Neighbor…	대칭 최근접 이웃…
+	Tileable Blur…	타일 가능 흐림…
+	Value Propagate…	값 전파…
+	Van Gogh (LIC)…	반 고흐(LIC)…
+	Video Degradation…	비디오 열화…
+	Waterpixels…	워터픽셀…
+	Weave…	직조…
+	Xach-Effect…	Xach 효과…
+	Add Border	테두리 추가
+	Add Shadow	그림자 추가
+	Additive	가산
+	Allow Resizing	크기 조정 허용
+	Alpha Trimmed Mean	알파 절사 평균
+	At Bottom	아래쪽에
+	At Top	위쪽에
+	Blur Border	테두리 흐림
+	Blur Horizontally	가로 흐림
+	Blur Radius	흐림 반경
+	Blur Type	흐림 유형
+	Blur Vertically	세로 흐림
+	Border Size	테두리 크기
+	Box	박스
+	Brush Shape	브러시 모양
+	Chebyshev	체비쇼프
+	Clip Result	결과 자르기
+	Color Type	색상 유형
+	Compactness	조밀도
+	Composition	합성
+	Convolve	컨볼루션
+	Cubic	3차
+	Current Gradient	현재 그레이디언트
+	Current Gradient Reversed	현재 그레이디언트(반전)
+	Derivative	미분
+	Displacement	변위
+	Drop Shadow Blur Radius	그림자 흐림 반경
+	Drop Shadow Color	그림자 색상
+	Drop Shadow Opacity	그림자 불투명도
+	Drop Shadow X Offset	그림자 X 오프셋
+	Drop Shadow Y Offset	그림자 Y 오프셋
+	Dulling	둔화
+	Edge Enhancement	가장자리 강조
+	Effect Channel	효과 채널
+	Effect Operator	효과 연산자
+	Ellipse	타원
+	Euclidean	유클리드
+	Evenly	균등하게
+	Fading	페이딩
+	Fading Fixed Length	고정 길이 페이딩
+	Film Color	필름 색상
+	Filter Length	필터 길이
+	Finite	유한
+	Flare Intensity	플레어 강도
+	Flowing	흐름
+	Foreground Background	전경/배경
+	Foreground To Peaks	전경을 정점으로
+	Full Z	전체 Z
+	Gradient Smoothness	기울기 매끄러움
+	Granularity	입자 크기
+	Graph	그래프
+	Grayscale Averaging	회색조 평균
+	Hex	육각
+	Highlight Color	하이라이트 색상
+	Highlight Opacity	하이라이트 불투명도
+	Highlight X Offset	하이라이트 X 오프셋
+	Highlight Y Offset	하이라이트 Y 오프셋
+	Hole Height	구멍 높이
+	Hole Offset	구멍 오프셋
+	Hole Spacing	구멍 간격
+	Hole Width	구멍 너비
+	Hue Rotation	색조 회전
+	Integration Steps	적분 단계
+	Iterations	반복 횟수
+	Keep Original	원본 유지
+	Large Staggered	큰 엇갈림
+	Large Three By Three	큰 3×3
+	Limit Line Width	선 두께 제한
+	Long Staggered	긴 엇갈림
+	Lower Left	왼쪽 아래
+	Lower Right	오른쪽 아래
+	Lower Threshold	하한 임계값
+	Luminosity Threshold	광도 임계값
+	Magnitude	크기
+	Manhattan	맨해튼
+	Maximum Value	최대값
+	Metric	거리 측정
+	Middle Value	중간값
+	Minimum Value	최소값
+	Mirror Rotation	거울 회전
+	Mirrors	거울 수
+	More Black	더 검게
+	More Opaque	더 불투명하게
+	More Transparent	더 투명하게
+	More White	더 희게
+	Natural Color	자연 색상
+	Noise Magnitude	노이즈 크기
+	Normalize	정규화
+	Number Color	번호 색상
+	Only Background	배경만
+	Only Foreground	전경만
+	Optimal Estimation	최적 추정
+	Orientation Type	방향 유형
+	Pairs	쌍
+	Paper Relief	종이 질감
+	Placement	배치
+	Propagating Rate	전파 비율
+	Radius1	반경 1
+	Radius2	반경 2
+	Random Hue	무작위 색조
+	Random Saturation	무작위 채도
+	Randomization	무작위화
+	Randomly	무작위로
+	Rays	광선
+	Regions Size	영역 크기
+	Relative Distance	상대 거리
+	Result Rotation	결과 회전
+	Ribbon Spacing	리본 간격
+	Ribbon Width	리본 너비
+	Rotated	회전
+	Second Flares	2차 플레어
+	Segments	조각 수
+	Shade	음영
+	Shadow Darkness	그림자 어둡기
+	Shadow Depth	그림자 깊이
+	Shadow Length	그림자 길이
+	Shadow Minus Image	그림자에서 이미지 제외
+	Shadow Only	그림자만
+	Shadow Plus Image	그림자와 이미지
+	Shadow Weight	그림자 세기
+	Size Variation	크기 변화
+	Spatial Regularization	공간 정규화
+	Spike Angle	스파이크 각도
+	Spike Density	스파이크 밀도
+	Spike Length	스파이크 길이
+	Spike Points	스파이크 개수
+	Splotch	얼룩
+	Spokes	스포크
+	Staggered	엇갈림
+	Start Index	시작 번호
+	Striped	줄무늬
+	Stroke Color	스트로크 색상
+	Stroke Density	스트로크 밀도
+	Superpixels Color	슈퍼픽셀 색상
+	Superpixels Size	슈퍼픽셀 크기
+	Thread Density	실 밀도
+	Thread Intensity	실 강도
+	Thread Length	실 길이
+	Three By Three	3×3
+	Threshold High	상한 임계값
+	Threshold Low	하한 임계값
+	Tile Saturation	타일 포화도
+	Tileable	타일 가능
+	To Bottom	아래로
+	To Left	왼쪽으로
+	To Right	오른쪽으로
+	To Top	위로
+	Trim X	X 자르기
+	Trim Y	Y 자르기
+	Upper Left	왼쪽 위
+	Upper Right	오른쪽 위
+	Upper Threshold	상한 임계값
+	Vector Angle	벡터 각도
+	Vector Length	벡터 길이
+	Wide Striped	넓은 줄무늬
+	With Source Image	원본 이미지로
+	With White Noise	백색 노이즈로
+	X Component	X 성분
+	Y Component	Y 성분
