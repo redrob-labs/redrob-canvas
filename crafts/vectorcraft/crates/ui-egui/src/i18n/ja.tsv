@@ -4372,3 +4372,23 @@ lighting	Light	ライト
 	Softness	柔らかさ
 	Ambient Light	環境光
 	Light behind the object	オブジェクトの背後のライト
+	Spiro	スピロ
+	BSpline	Bスプライン
+	Paraxial	軸平行
+	Triangle In	三角形（内）
+	Triangle Out	三角形（外）
+	From Clipboard	クリップボードから
+	Segment:	セグメント:
+	Curve	曲線
+	Make Selected Segments Lines	選択したセグメントを直線にする
+	Make Selected Segments Curves	選択したセグメントを曲線にする
+	Show Handles	ハンドルを表示
+	Shape Along Stroke	線に沿った形状
+	Segment Type	セグメントの種類
+	Next Anchor	次のアンカー
+	Grow Anchor Selection	アンカーの選択を拡張
+	Touch Select Anchors	触れたアンカーを選択
+	Make Segment Line	セグメントを直線にする
+	Make Segment Curve	セグメントを曲線にする
+	X:	X:
+	Y:	Y:

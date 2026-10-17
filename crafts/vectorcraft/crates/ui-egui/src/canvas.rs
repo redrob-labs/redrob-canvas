@@ -1858,7 +1858,7 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             p.circle_filled(o, 2.5, color);
         }
     }
-    if app.session.prefs.show_handles_multiple_anchors || with_handles <= 1 {
+    if app.ui.view.show_handles && (app.session.prefs.show_handles_multiple_anchors || with_handles <= 1) {
         for (sp, hp, color) in handles {
             p.line_segment([sp, hp], Stroke::new(1.0, color));
             look.draw(p, hp, color);

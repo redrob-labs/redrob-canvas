@@ -362,6 +362,11 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         (Key::ArrowRight, ToolKey::Right),
         (Key::ArrowUp, ToolKey::Up),
         (Key::ArrowDown, ToolKey::Down),
+        // The node tool: Tab / Shift+Tab walk the anchors, Page Up / Page Down grow and shrink
+        // the anchor selection (ahead of Tab's Panels shortcut).
+        (Key::Tab, ToolKey::Tab),
+        (Key::PageUp, ToolKey::PageUp),
+        (Key::PageDown, ToolKey::PageDown),
     ] {
         if ctx.input(|i| i.key_pressed(k)) && app.session.tool_claims_key(tk, view) && ctx.input_mut(|i| i.consume_key(m, k)) {
             let r = app.session.tool_key(tk, crate::canvas::mods(m, false), view);

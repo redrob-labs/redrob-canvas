@@ -81,6 +81,12 @@ enum State {
         /// Shift: the anchors inside leave the selection if selected, else join it.
         toggle: bool,
     },
+    /// Alt-drag over empty space: a freehand stroke touch-selecting the anchors it passes over
+    /// (`select.anchorsTouching`); Shift toggles them.
+    Lasso {
+        points: Vec<Point>,
+        toggle: bool,
+    },
     Corner(CornerDrag),
     /// Dragging a bracket of type on a path.
     Bracket(BracketDrag),
@@ -361,9 +367,32 @@ impl Tool for DirectSelectionTool {
     fn options(&self) -> Value {
         self.mesh.options()
     }
+    /// Tab / Shift+Tab walk the anchors of the selected path, Page Up / Page Down grow and shrink
+    /// the anchor selection: the node tool's keys, taken ahead of their shortcuts while a path or
+    /// anchors are selected (Tab is otherwise the Panels shortcut).
+    fn claims_key(&self, cx: &ToolContext, key: ToolKey) -> bool {
+        if self.group || !matches!(self.state, State::Idle) {
+            return false;
+        }
+        match key {
+            ToolKey::Tab => cx.selection.objects.iter().any(|id| cx.doc.node(*id).is_some_and(|n| n.path_data().is_some())),
+            ToolKey::PageUp | ToolKey::PageDown => cx.selection.anchors.values().any(|a| !a.is_empty()),
+            _ => false,
+        }
+    }
     /// Escape during a drag (anchors, handles, segments, objects, type areas, blend spines, a
     /// marquee) cancels it: what it moved goes back and the tool waits for the next press (#1743).
-    fn key(&mut self, _cx: &ToolContext, key: ToolKey, _mods: Mods) -> Vec<Action> {
+    fn key(&mut self, cx: &ToolContext, key: ToolKey, mods: Mods) -> Vec<Action> {
+        if matches!(key, ToolKey::Tab | ToolKey::PageUp | ToolKey::PageDown) {
+            if !self.claims_key(cx, key) {
+                return vec![];
+            }
+            return match key {
+                ToolKey::Tab => vec![Action::Exec("select.anchorStep".into(), json!({"dir": if mods.shift { -1 } else { 1 }}))],
+                ToolKey::PageUp => vec![Action::Exec("select.anchorGrow".into(), json!({"grow": true}))],
+                _ => vec![Action::Exec("select.anchorGrow".into(), json!({"grow": false}))],
+            };
+        }
         if key != ToolKey::Escape || matches!(self.state, State::Idle | State::Mesh | State::Corner(_) | State::Bracket(_)) {
             return vec![];
         }
@@ -524,8 +553,28 @@ impl Tool for DirectSelectionTool {
                     }
                     return vec![];
                 }
-                self.state = State::Marquee { start: p, cur: p, toggle: ev.mods.shift };
+                self.state = if ev.mods.alt {
+                    State::Lasso { points: vec![p], toggle: ev.mods.shift }
+                } else {
+                    State::Marquee { start: p, cur: p, toggle: ev.mods.shift }
+                };
                 vec![]
+            }
+            (PointerKind::Drag, State::Lasso { mut points, toggle }) => {
+                if points.last().is_none_or(|l| l.distance(p) >= cx.tol(1.0)) {
+                    points.push(p);
+                }
+                self.state = State::Lasso { points, toggle };
+                vec![]
+            }
+            (PointerKind::Up, State::Lasso { mut points, toggle }) => {
+                self.state = State::Idle;
+                points.push(p);
+                let pts: Vec<Value> = points.iter().map(|q| json!([q.x, q.y])).collect();
+                vec![Action::Exec(
+                    "select.anchorsTouching".into(),
+                    json!({"points": pts, "tolerance": cx.pick_tol(), "mode": if toggle { "toggle" } else { "set" }}),
+                )]
             }
             (PointerKind::Drag, State::MoveAnchors { start, grab, began }) => {
                 let mut out = vec![];
@@ -739,6 +788,9 @@ impl Tool for DirectSelectionTool {
     fn overlays(&self, cx: &ToolContext) -> Vec<Overlay> {
         match &self.state {
             State::Marquee { start, cur, .. } => vec![Overlay::Marquee(Rect::from_points(*start, *cur))],
+            State::Lasso { points, .. } => {
+                vec![Overlay::Path { path: crate::draw2::polyline(points), color: crate::draw2::FEEDBACK, width: 1.0, dashed: true }]
+            }
             State::Corner(c) => c.overlays(cx),
             _ => {
                 let mut out = self.spine_overlays(cx);

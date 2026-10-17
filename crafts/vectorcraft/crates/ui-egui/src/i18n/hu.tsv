@@ -4773,3 +4773,21 @@ imageTrace	Outline	Körvonal
 	Softness	Lágyság
 	Ambient Light	Környezeti fény
 	Light behind the object	Fény az objektum mögött
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Tengelypárhuzamos
+	Triangle In	Háromszög befelé
+	Triangle Out	Háromszög kifelé
+	From Clipboard	Vágólapról
+	Segment:	Szakasz:
+	Curve	Görbe
+	Make Selected Segments Lines	Kijelölt szakaszok egyenessé alakítása
+	Make Selected Segments Curves	Kijelölt szakaszok görbévé alakítása
+	Show Handles	Fogantyúk megjelenítése
+	Shape Along Stroke	Alak a körvonal mentén
+	Segment Type	Szakasz típusa
+	Next Anchor	Következő horgonypont
+	Grow Anchor Selection	Horgonypont-kijelölés bővítése
+	Touch Select Anchors	Érintett horgonypontok kijelölése
+	Make Segment Line	Szakasz egyenessé alakítása
+	Make Segment Curve	Szakasz görbévé alakítása

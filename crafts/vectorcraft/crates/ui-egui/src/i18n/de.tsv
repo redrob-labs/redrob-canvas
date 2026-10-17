@@ -4333,3 +4333,23 @@ theme	Appearance	Erscheinungsbild
 	Softness	Weichheit
 	Ambient Light	Umgebungslicht
 	Light behind the object	Licht hinter dem Objekt
+	Spiro	Spiro
+	BSpline	B-Spline
+	Paraxial	Achsenparallel
+	Triangle In	Dreieck hinein
+	Triangle Out	Dreieck hinaus
+	From Clipboard	Aus der Zwischenablage
+	Segment:	Segment:
+	Curve	Kurve
+	Make Selected Segments Lines	Ausgewählte Segmente in Linien umwandeln
+	Make Selected Segments Curves	Ausgewählte Segmente in Kurven umwandeln
+	Show Handles	Griffe einblenden
+	Shape Along Stroke	Form entlang der Kontur
+	Segment Type	Segmenttyp
+	Next Anchor	Nächster Ankerpunkt
+	Grow Anchor Selection	Ankerpunktauswahl erweitern
+	Touch Select Anchors	Berührte Ankerpunkte auswählen
+	Make Segment Line	Segment in Linie umwandeln
+	Make Segment Curve	Segment in Kurve umwandeln
+	X:	X:
+	Y:	Y:

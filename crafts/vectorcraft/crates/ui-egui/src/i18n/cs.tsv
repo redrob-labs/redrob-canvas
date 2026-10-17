@@ -4806,3 +4806,21 @@ mark-style	Japanese	Japonské
 	Softness	Měkkost
 	Ambient Light	Okolní světlo
 	Light behind the object	Světlo za objektem
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Rovnoběžně s osami
+	Triangle In	Trojúhelník dovnitř
+	Triangle Out	Trojúhelník ven
+	From Clipboard	Ze schránky
+	Segment:	Segment:
+	Curve	Křivka
+	Make Selected Segments Lines	Převést vybrané segmenty na úsečky
+	Make Selected Segments Curves	Převést vybrané segmenty na křivky
+	Show Handles	Zobrazit úchyty
+	Shape Along Stroke	Tvar podél tahu
+	Segment Type	Typ segmentu
+	Next Anchor	Další kotevní bod
+	Grow Anchor Selection	Rozšířit výběr kotevních bodů
+	Touch Select Anchors	Vybrat dotknuté kotevní body
+	Make Segment Line	Převést segment na úsečku
+	Make Segment Curve	Převést segment na křivku

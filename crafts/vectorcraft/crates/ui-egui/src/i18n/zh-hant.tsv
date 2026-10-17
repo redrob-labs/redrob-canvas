@@ -3739,3 +3739,23 @@ lighting	Light	光源
 	Softness	柔和度
 	Ambient Light	環境光
 	Light behind the object	光源位於物件後方
+	Spiro	螺旋曲線
+	BSpline	B 樣條
+	Paraxial	軸對齊
+	Triangle In	三角形（向內）
+	Triangle Out	三角形（向外）
+	From Clipboard	從剪貼簿
+	Segment:	線段：
+	Curve	曲線
+	Make Selected Segments Lines	將選取的線段變為直線
+	Make Selected Segments Curves	將選取的線段變為曲線
+	Show Handles	顯示控制桿
+	Shape Along Stroke	沿筆畫的形狀
+	Segment Type	線段類型
+	Next Anchor	下一個錨點
+	Grow Anchor Selection	擴大錨點選取
+	Touch Select Anchors	選取觸碰到的錨點
+	Make Segment Line	線段變為直線
+	Make Segment Curve	線段變為曲線
+	X:	X:
+	Y:	Y:

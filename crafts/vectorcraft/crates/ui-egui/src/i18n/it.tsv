@@ -4378,3 +4378,23 @@ lighting	Light	Luce
 	Softness	Morbidezza
 	Ambient Light	Luce ambientale
 	Light behind the object	Luce dietro l'oggetto
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Parassiale
+	Triangle In	Triangolo in entrata
+	Triangle Out	Triangolo in uscita
+	From Clipboard	Dagli appunti
+	Segment:	Segmento:
+	Curve	Curva
+	Make Selected Segments Lines	Converti i segmenti selezionati in linee
+	Make Selected Segments Curves	Converti i segmenti selezionati in curve
+	Show Handles	Mostra maniglie
+	Shape Along Stroke	Forma lungo la traccia
+	Segment Type	Tipo di segmento
+	Next Anchor	Punto di ancoraggio successivo
+	Grow Anchor Selection	Estendi la selezione dei punti di ancoraggio
+	Touch Select Anchors	Seleziona i punti di ancoraggio toccati
+	Make Segment Line	Converti segmento in linea
+	Make Segment Curve	Converti segmento in curva
+	X:	X:
+	Y:	Y:

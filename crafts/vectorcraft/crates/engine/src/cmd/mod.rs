@@ -43,6 +43,7 @@ pub(crate) mod maskedit;
 pub(crate) mod menucmds;
 pub(crate) mod newart;
 pub mod newdoc;
+mod nodeops;
 mod object;
 mod opacitymask;
 mod overprint;
@@ -204,6 +205,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(create::specs());
         v.extend(object::specs());
         v.extend(path::specs());
+        v.extend(nodeops::specs());
         v.extend(select::specs());
         v.extend(wand::specs());
         v.extend(paint::specs());

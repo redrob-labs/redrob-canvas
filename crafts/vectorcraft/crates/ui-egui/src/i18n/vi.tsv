@@ -4360,3 +4360,23 @@ theme	Appearance	Giao diện
 	Softness	Độ mềm
 	Ambient Light	Ánh sáng môi trường
 	Light behind the object	Ánh sáng phía sau đối tượng
+	Spiro	Spiro
+	BSpline	B-Spline
+	Paraxial	Song song trục
+	Triangle In	Tam giác vào
+	Triangle Out	Tam giác ra
+	From Clipboard	Từ bảng tạm
+	Segment:	Đoạn:
+	Curve	Đường cong
+	Make Selected Segments Lines	Chuyển các đoạn đã chọn thành đường thẳng
+	Make Selected Segments Curves	Chuyển các đoạn đã chọn thành đường cong
+	Show Handles	Hiện tay cầm
+	Shape Along Stroke	Hình dạng theo nét
+	Segment Type	Loại đoạn
+	Next Anchor	Điểm neo tiếp theo
+	Grow Anchor Selection	Mở rộng vùng chọn điểm neo
+	Touch Select Anchors	Chọn điểm neo chạm qua
+	Make Segment Line	Chuyển đoạn thành đường thẳng
+	Make Segment Curve	Chuyển đoạn thành đường cong
+	X:	X:
+	Y:	Y:

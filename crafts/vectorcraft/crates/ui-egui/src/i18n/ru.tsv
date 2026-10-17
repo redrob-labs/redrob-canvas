@@ -4374,3 +4374,23 @@ lighting	Light	Свет
 	Softness	Мягкость
 	Ambient Light	Окружающий свет
 	Light behind the object	Свет позади объекта
+	Spiro	Спиро
+	BSpline	B-сплайн
+	Paraxial	Параллельно осям
+	Triangle In	Треугольник внутрь
+	Triangle Out	Треугольник наружу
+	From Clipboard	Из буфера обмена
+	Segment:	Сегмент:
+	Curve	Кривая
+	Make Selected Segments Lines	Сделать выбранные сегменты прямыми
+	Make Selected Segments Curves	Сделать выбранные сегменты кривыми
+	Show Handles	Показать манипуляторы
+	Shape Along Stroke	Форма вдоль обводки
+	Segment Type	Тип сегмента
+	Next Anchor	Следующая опорная точка
+	Grow Anchor Selection	Расширить выделение опорных точек
+	Touch Select Anchors	Выделить затронутые опорные точки
+	Make Segment Line	Сделать сегмент прямым
+	Make Segment Curve	Сделать сегмент кривым
+	X:	X:
+	Y:	Y:

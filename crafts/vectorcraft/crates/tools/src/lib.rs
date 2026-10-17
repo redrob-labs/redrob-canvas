@@ -125,6 +125,9 @@ pub enum ToolKey {
     Tab,
     Home,
     End,
+    /// Page Up / Page Down: the node tool grows and shrinks the anchor selection.
+    PageUp,
+    PageDown,
     /// A digit key 0–9 (5 while dragging with the Perspective Selection tool moves perpendicular
     /// to the plane).
     Digit(u8),
