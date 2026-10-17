@@ -34,6 +34,7 @@ mod distort;
 mod distort2;
 pub mod erase;
 pub mod exif;
+mod extra;
 pub mod features;
 mod fxutil;
 mod gallery;
@@ -89,8 +90,10 @@ pub mod wideangle;
 pub use artistic::{GALLERY_CATEGORIES, GalleryEffect, GalleryFilter, GalleryParam, GalleryParamKind};
 pub use image::{Edge, Image};
 pub use params_ext::*;
+pub use params_extra::*;
 
 mod params_ext;
+mod params_extra;
 
 use redrob_photo_color::ColorMode;
 use redrob_photo_geom::Rect;
@@ -580,6 +583,322 @@ pub enum FilterParams {
         interpolate: bool,
     },
     NtscColors,
+
+    // ---- Third batch: blur ----
+    /// Edge-preserving smoothing by `iterations` (1–500) steps of mean curvature flow.
+    MeanCurvatureBlur {
+        iterations: u32,
+    },
+    /// Blur that wraps around the bounds so the result tiles; radius 0–128 px.
+    TileableBlur {
+        radius: f32,
+        horizontal: bool,
+        vertical: bool,
+        blur_type: TileableBlurType,
+    },
+    /// Scale3X-derived smoothing of jagged edges.
+    Antialias,
+    /// Radius 1–100 px; `pairs` 1 or 2.
+    SymmetricNearestNeighbor {
+        radius: f32,
+        pairs: u32,
+    },
+    /// Alpha and radius 0–1.
+    NlFilter {
+        alpha: f32,
+        radius: f32,
+        mode: NlMode,
+    },
+
+    // ---- Third batch: distort ----
+    /// Line height 2–16 px.
+    Engrave {
+        height: f32,
+        limit_line_width: bool,
+    },
+    /// Mirrors 1–24; rotations in degrees; offset and trim as fractions of the bounds; zoom %.
+    Kaleidoscope {
+        mirrors: u32,
+        mirror_rotation: f32,
+        result_rotation: f32,
+        offset_x: f32,
+        offset_y: f32,
+        zoom: f32,
+        trim_x: f32,
+        trim_y: f32,
+        clip: bool,
+    },
+    /// Amount 0–200 px.
+    Shift {
+        amount: f32,
+        axis: Axis,
+        seed: u32,
+    },
+    /// Thresholds and rate 0–1; `color` straight sRGB RGBA; the directions values come from.
+    ValuePropagate {
+        mode: PropagateMode,
+        lower_threshold: f32,
+        upper_threshold: f32,
+        rate: f32,
+        color: [f32; 4],
+        top: bool,
+        left: bool,
+        right: bool,
+        bottom: bool,
+    },
+    VideoDegradation {
+        pattern: VideoPattern,
+        additive: bool,
+        rotated: bool,
+    },
+    /// Displacement 1–90 degrees, 1–10 segments.
+    Blinds {
+        displacement: f32,
+        segments: u32,
+        axis: Axis,
+        transparent: bool,
+        background: [f32; 4],
+    },
+    /// Opacity 0–100 %; colours straight sRGB RGBA.
+    PageCurl {
+        corner: CurlCorner,
+        axis: Axis,
+        shade: bool,
+        colors: CurlColors,
+        opacity: f32,
+        foreground: [f32; 4],
+        background: [f32; 4],
+    },
+
+    // ---- Third batch: light and shadow ----
+    /// Centre as fractions of the bounds, radius 1–3000 px, spokes 1–1024, random hue 0–360.
+    Supernova {
+        center_x: f32,
+        center_y: f32,
+        radius: f32,
+        spokes: u32,
+        random_hue: f32,
+        color: [f32; 4],
+        seed: u32,
+    },
+    /// Radius 1–3000 px, angles in degrees, vector length px.
+    GradientFlare {
+        center_x: f32,
+        center_y: f32,
+        radius: f32,
+        rotation: f32,
+        hue_rotation: f32,
+        vector_angle: f32,
+        vector_length: f32,
+        glow: bool,
+        rays: bool,
+        second_flares: bool,
+    },
+    /// Threshold 0–0.1, intensities 0–1, spike length 1–100 px, points 0–16, angle −1 (random)
+    /// to 360.
+    Sparkle {
+        threshold: f32,
+        flare_intensity: f32,
+        spike_length: f32,
+        spike_points: u32,
+        spike_angle: f32,
+        density: f32,
+        transparency: f32,
+        random_hue: f32,
+        random_saturation: f32,
+        preserve_luminosity: bool,
+        inverse: bool,
+        border: bool,
+        color: SparkleColor,
+        foreground: [f32; 4],
+        background: [f32; 4],
+        seed: u32,
+    },
+    /// Angle −180–180 degrees, length and midpoint px.
+    LongShadow {
+        style: ShadowStyle,
+        angle: f32,
+        length: f32,
+        midpoint: f32,
+        color: [f32; 4],
+        composition: ShadowComposition,
+    },
+    /// Angle 0–180, distance and length relative to the object height, blur px, opacity %.
+    PerspectiveShadow {
+        angle: f32,
+        distance: f32,
+        length: f32,
+        blur: f32,
+        color: [f32; 4],
+        opacity: f32,
+        interpolation: ShadowInterpolation,
+        allow_resizing: bool,
+    },
+    /// Offsets px, opacities 0–255, blur px.
+    XachEffect {
+        highlight_x: f32,
+        highlight_y: f32,
+        highlight_color: [f32; 4],
+        highlight_opacity: f32,
+        shadow_color: [f32; 4],
+        shadow_opacity: f32,
+        blur: f32,
+        shadow_x: f32,
+        shadow_y: f32,
+    },
+
+    // ---- Third batch: noise ----
+    /// Dulling 1–8, lightness and chroma 0–100, hue 0–180 degrees.
+    LchNoise {
+        dulling: u32,
+        lightness: f32,
+        chroma: f32,
+        hue: f32,
+        seed: u32,
+    },
+    /// Dulling 1–8, hue 0–180 degrees, saturation and value 0–1.
+    HsvNoise {
+        dulling: u32,
+        hue: f32,
+        saturation: f32,
+        value: f32,
+        seed: u32,
+    },
+    /// Randomization 0–100 %, repeat 1–100.
+    Hurl {
+        randomization: f32,
+        repeat: u32,
+        seed: u32,
+    },
+    Pick {
+        randomization: f32,
+        repeat: u32,
+        seed: u32,
+    },
+    Slur {
+        randomization: f32,
+        repeat: u32,
+        seed: u32,
+    },
+
+    // ---- Third batch: edges and maps ----
+    /// Radii 0–10 px.
+    DifferenceOfGaussians {
+        radius1: f32,
+        radius2: f32,
+        normalize: bool,
+        invert: bool,
+    },
+    Laplace,
+    ImageGradient {
+        output: GradientOutput,
+    },
+    /// Thresholds 0–1, averaging 0–1000.
+    DistanceMap {
+        metric: DistanceMetric,
+        threshold_low: f32,
+        threshold_high: f32,
+        averaging: f32,
+        normalize: bool,
+    },
+    /// Scale 0–255.
+    NormalMap {
+        scale: f32,
+        x_component: NormalComponent,
+        y_component: NormalComponent,
+        flip_x: bool,
+        flip_y: bool,
+        full_z: bool,
+        tileable: bool,
+    },
+    /// One operation per line (`blur radius=4`, `invert`, `saturation value=1.5`, …).
+    OperationGraph {
+        source: String,
+    },
+
+    // ---- Third batch: artistic ----
+    /// Tile size 0–256 px, saturation 0–10; background straight sRGB RGBA.
+    Cubism {
+        tile_size: f32,
+        saturation: f32,
+        background: [f32; 4],
+        seed: u32,
+    },
+    /// Cluster size 2–1024 px, compactness 1–40, iterations 1–30.
+    Slic {
+        cluster_size: f32,
+        compactness: f32,
+        iterations: u32,
+    },
+    /// Superpixel size 8–256 px, smoothness 0–1000, regularization 0–50.
+    Waterpixels {
+        size: f32,
+        smoothness: f32,
+        regularization: f32,
+        color: SuperpixelColor,
+        seed: u32,
+    },
+    /// Brush size 1–200 px, variation 0–1, orientation degrees, density 1–50, relief 0–100 %.
+    Impressionist {
+        brush_size: f32,
+        size_variation: f32,
+        orientation: f32,
+        orientation_type: StrokeOrientation,
+        density: f32,
+        shape: StrokeShape,
+        paper_relief: f32,
+        placement: StrokePlacement,
+        color: StrokeColor,
+        background: StrokeBackground,
+        background_color: [f32; 4],
+        seed: u32,
+    },
+    /// Filter length 0.1–64, noise magnitude 1–5, steps 1–40, values −100–0 / 0–100.
+    VanGogh {
+        channel: LicChannel,
+        operator: LicOperator,
+        convolve: LicConvolve,
+        filter_length: f32,
+        noise_magnitude: f32,
+        integration_steps: u32,
+        minimum_value: f32,
+        maximum_value: f32,
+        seed: u32,
+    },
+    /// Widths, spacing and lengths px (0–256); darkness, depth and intensity %.
+    Weave {
+        ribbon_width: f32,
+        ribbon_spacing: f32,
+        shadow_darkness: f32,
+        shadow_depth: f32,
+        thread_length: f32,
+        thread_density: f32,
+        thread_intensity: f32,
+    },
+
+    // ---- Third batch: decor ----
+    /// Hole geometry as fractions of the film height; colours straight sRGB RGBA.
+    Filmstrip {
+        color: [f32; 4],
+        number_color: [f32; 4],
+        number_start: i32,
+        numbers_top: bool,
+        numbers_bottom: bool,
+        hole_offset: f32,
+        hole_width: f32,
+        hole_height: f32,
+        hole_spacing: f32,
+    },
+    /// Border size 1–300 px, granularity 1–16, shadow weight 0–100 %.
+    FuzzyBorder {
+        color: [f32; 4],
+        size: f32,
+        blur: bool,
+        granularity: f32,
+        shadow: bool,
+        shadow_weight: f32,
+        seed: u32,
+    },
     /// Filter Gallery: a stack of gallery effects applied in order.
     FilterGallery {
         effects: Vec<GalleryEffect>,
@@ -630,7 +949,7 @@ impl FilterParams {
     /// that can hold transparency, so callers turn the Background into a normal layer first and
     /// refuse a layer whose transparency is locked instead of putting the old alpha back.
     pub fn makes_transparency(&self) -> bool {
-        matches!(self, FilterParams::ColorToAlpha { .. })
+        matches!(self, FilterParams::ColorToAlpha { .. } | FilterParams::PageCurl { .. })
     }
 
     /// Whether the filter moves pixels around the reference bounds (its
@@ -711,6 +1030,43 @@ impl FilterParams {
             FilterParams::ColorToAlpha { .. } => "Color to Alpha",
             FilterParams::DeInterlace { .. } => "De-Interlace",
             FilterParams::NtscColors => "NTSC Colors",
+            FilterParams::MeanCurvatureBlur { .. } => "Mean Curvature Blur",
+            FilterParams::TileableBlur { .. } => "Tileable Blur",
+            FilterParams::Antialias => "Antialias",
+            FilterParams::SymmetricNearestNeighbor { .. } => "Symmetric Nearest Neighbor",
+            FilterParams::NlFilter { .. } => "NL Filter",
+            FilterParams::Engrave { .. } => "Engrave",
+            FilterParams::Kaleidoscope { .. } => "Kaleidoscope",
+            FilterParams::Shift { .. } => "Shift",
+            FilterParams::ValuePropagate { .. } => "Value Propagate",
+            FilterParams::VideoDegradation { .. } => "Video Degradation",
+            FilterParams::Blinds { .. } => "Blinds",
+            FilterParams::PageCurl { .. } => "Page Curl",
+            FilterParams::Supernova { .. } => "Supernova",
+            FilterParams::GradientFlare { .. } => "Gradient Flare",
+            FilterParams::Sparkle { .. } => "Sparkle",
+            FilterParams::LongShadow { .. } => "Long Shadow",
+            FilterParams::PerspectiveShadow { .. } => "Perspective Shadow",
+            FilterParams::XachEffect { .. } => "Xach-Effect",
+            FilterParams::LchNoise { .. } => "CIE lch Noise",
+            FilterParams::HsvNoise { .. } => "HSV Noise",
+            FilterParams::Hurl { .. } => "Hurl",
+            FilterParams::Pick { .. } => "Pick",
+            FilterParams::Slur { .. } => "Slur",
+            FilterParams::DifferenceOfGaussians { .. } => "Difference of Gaussians",
+            FilterParams::Laplace => "Laplace",
+            FilterParams::ImageGradient { .. } => "Image Gradient",
+            FilterParams::DistanceMap { .. } => "Distance Map",
+            FilterParams::NormalMap { .. } => "Normal Map",
+            FilterParams::OperationGraph { .. } => "Operation Graph",
+            FilterParams::Cubism { .. } => "Cubism",
+            FilterParams::Slic { .. } => "SLIC",
+            FilterParams::Waterpixels { .. } => "Waterpixels",
+            FilterParams::Impressionist { .. } => "Impressionist",
+            FilterParams::VanGogh { .. } => "Van Gogh (LIC)",
+            FilterParams::Weave { .. } => "Weave",
+            FilterParams::Filmstrip { .. } => "Filmstrip",
+            FilterParams::FuzzyBorder { .. } => "Fuzzy Border",
             FilterParams::FilterGallery { effects } => match effects.as_slice() {
                 [one] => one.filter.name(),
                 _ => "Filter Gallery",
@@ -753,6 +1109,48 @@ fn halo_ext(p: &FilterParams) -> Halo {
         FilterParams::Custom { .. } => r(2.0),
         FilterParams::DeInterlace { .. } => r(1.0),
         FilterParams::FilterGallery { effects } => Halo::Radius(artistic_fx::reach(effects)),
+        other => halo_extra(other),
+    }
+}
+
+/// Halos of the third filter batch.
+fn halo_extra(p: &FilterParams) -> Halo {
+    let r = |v: f32| Halo::Radius(v.max(0.0).ceil() as i32 + 1);
+    match p {
+        FilterParams::MeanCurvatureBlur { iterations } => Halo::Radius((*iterations).clamp(1, 500) as i32 + 2),
+        FilterParams::TileableBlur { .. } | FilterParams::Kaleidoscope { .. } | FilterParams::Blinds { .. } | FilterParams::PageCurl { .. } => Halo::Bounds,
+        FilterParams::Antialias | FilterParams::NlFilter { .. } | FilterParams::ValuePropagate { .. } => r(1.0),
+        FilterParams::SymmetricNearestNeighbor { radius, .. } => r(radius.clamp(1.0, 100.0)),
+        FilterParams::Engrave { height, .. } => r(height.clamp(2.0, 16.0)),
+        FilterParams::Shift { amount, .. } => r(amount.clamp(0.0, 200.0)),
+        FilterParams::VideoDegradation { .. } | FilterParams::Supernova { .. } | FilterParams::GradientFlare { .. } => Halo::Radius(0),
+        FilterParams::Sparkle { spike_length, .. } => r(extra::light::sparkle_reach(*spike_length)),
+        FilterParams::LongShadow { style, length, midpoint, .. } => match extra::light::long_shadow_reach(*style, *length, *midpoint) {
+            Some(reach) => r(reach),
+            None => Halo::Bounds,
+        },
+        FilterParams::PerspectiveShadow { .. } | FilterParams::DistanceMap { .. } | FilterParams::Filmstrip { .. } => Halo::Bounds,
+        FilterParams::XachEffect { blur, highlight_x, highlight_y, shadow_x, shadow_y, .. } => {
+            r(extra::light::xach_reach(*blur, (*highlight_x, *highlight_y), (*shadow_x, *shadow_y)))
+        }
+        FilterParams::LchNoise { .. } | FilterParams::HsvNoise { .. } | FilterParams::Hurl { .. } => Halo::Radius(0),
+        FilterParams::Pick { repeat, .. } | FilterParams::Slur { repeat, .. } => Halo::Radius((*repeat).clamp(1, 100) as i32 + 1),
+        FilterParams::DifferenceOfGaussians { radius1, radius2, .. } => r(extra::edge::dog_reach(*radius1, *radius2)),
+        FilterParams::Laplace | FilterParams::ImageGradient { .. } => r(1.0),
+        FilterParams::NormalMap { tileable, .. } => {
+            if *tileable {
+                Halo::Bounds
+            } else {
+                r(1.0)
+            }
+        }
+        FilterParams::OperationGraph { source } => r(extra::graph::reach(source)),
+        FilterParams::Cubism { tile_size, saturation, .. } => r(extra::artistic::cubism_reach(*tile_size, *saturation)),
+        FilterParams::Slic { cluster_size, .. } => r(extra::artistic::slic_reach(*cluster_size)),
+        FilterParams::Waterpixels { size, .. } => r(extra::artistic::waterpixels_reach(*size)),
+        FilterParams::Impressionist { brush_size, size_variation, .. } => r(extra::artistic::impressionist_reach(*brush_size, *size_variation)),
+        FilterParams::VanGogh { integration_steps, .. } => r(extra::artistic::lic_reach(*integration_steps) + 2.0),
+        FilterParams::Weave { .. } | FilterParams::FuzzyBorder { .. } => Halo::Radius(0),
         _ => Halo::Radius(0),
     }
 }
@@ -950,6 +1348,302 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
         }
         FilterParams::DeInterlace { eliminate_even, interpolate } => video::deinterlace(src, out, ctx, *eliminate_even, *interpolate),
         FilterParams::NtscColors => video::ntsc(src, out, ctx),
+        FilterParams::MeanCurvatureBlur { iterations } => extra::blur::mean_curvature(src, out, ctx, *iterations),
+        FilterParams::TileableBlur { radius, horizontal, vertical, blur_type } => {
+            extra::blur::tileable(src, out, ctx, *radius, *horizontal, *vertical, *blur_type)
+        }
+        FilterParams::Antialias => extra::blur::antialias(src, out, ctx),
+        FilterParams::SymmetricNearestNeighbor { radius, pairs } => extra::blur::snn(src, out, ctx, *radius, *pairs),
+        FilterParams::NlFilter { alpha, radius, mode } => extra::blur::nl_filter(src, out, ctx, *alpha, *radius, *mode),
+        FilterParams::Engrave { height, limit_line_width } => extra::distort::engrave(src, out, ctx, *height, *limit_line_width),
+        FilterParams::Kaleidoscope { mirrors, mirror_rotation, result_rotation, offset_x, offset_y, zoom, trim_x, trim_y, clip } => {
+            extra::distort::kaleidoscope(
+                src,
+                out,
+                ctx,
+                &extra::distort::KaleidoscopeSpec {
+                    mirrors: *mirrors,
+                    mirror_rotation: *mirror_rotation,
+                    result_rotation: *result_rotation,
+                    offset: (*offset_x, *offset_y),
+                    zoom: *zoom,
+                    trim: (*trim_x, *trim_y),
+                    clip: *clip,
+                },
+            )
+        }
+        FilterParams::Shift { amount, axis, seed } => extra::distort::shift(src, out, ctx, *amount, *axis, *seed),
+        FilterParams::ValuePropagate { mode, lower_threshold, upper_threshold, rate, color, top, left, right, bottom } => extra::distort::value_propagate(
+            src,
+            out,
+            ctx,
+            &extra::distort::PropagateSpec {
+                mode: *mode,
+                lower: *lower_threshold,
+                upper: *upper_threshold,
+                rate: *rate,
+                color: *color,
+                directions: [*top, *left, *right, *bottom],
+            },
+        ),
+        FilterParams::VideoDegradation { pattern, additive, rotated } => extra::distort::video_degradation(src, out, ctx, *pattern, *additive, *rotated),
+        FilterParams::Blinds { displacement, segments, axis, transparent, background } => {
+            extra::distort::blinds(src, out, ctx, *displacement, *segments, *axis, *transparent, *background)
+        }
+        FilterParams::PageCurl { corner, axis, shade, colors, opacity, foreground, background } => extra::distort::page_curl(
+            src,
+            out,
+            ctx,
+            &extra::distort::CurlSpec {
+                corner: *corner,
+                axis: *axis,
+                shade: *shade,
+                colors: *colors,
+                opacity: *opacity,
+                foreground: *foreground,
+                background: *background,
+            },
+        ),
+        FilterParams::Supernova { center_x, center_y, radius, spokes, random_hue, color, seed } => extra::light::supernova(
+            src,
+            out,
+            ctx,
+            &extra::light::SupernovaSpec {
+                center: (*center_x, *center_y),
+                radius: *radius,
+                spokes: *spokes,
+                random_hue: *random_hue,
+                color: *color,
+                seed: *seed,
+            },
+        ),
+        FilterParams::GradientFlare { center_x, center_y, radius, rotation, hue_rotation, vector_angle, vector_length, glow, rays, second_flares } => {
+            extra::light::gradient_flare(
+                src,
+                out,
+                ctx,
+                &extra::light::FlareSpec {
+                    center: (*center_x, *center_y),
+                    radius: *radius,
+                    rotation: *rotation,
+                    hue_rotation: *hue_rotation,
+                    vector_angle: *vector_angle,
+                    vector_length: *vector_length,
+                    glow: *glow,
+                    rays: *rays,
+                    second_flares: *second_flares,
+                },
+            )
+        }
+        FilterParams::Sparkle {
+            threshold,
+            flare_intensity,
+            spike_length,
+            spike_points,
+            spike_angle,
+            density,
+            transparency,
+            random_hue,
+            random_saturation,
+            preserve_luminosity,
+            inverse,
+            border,
+            color,
+            foreground,
+            background,
+            seed,
+        } => extra::light::sparkle(
+            src,
+            out,
+            ctx,
+            &extra::light::SparkleSpec {
+                threshold: *threshold,
+                flare_intensity: *flare_intensity,
+                spike_length: *spike_length,
+                spike_points: *spike_points,
+                spike_angle: *spike_angle,
+                density: *density,
+                transparency: *transparency,
+                random_hue: *random_hue,
+                random_saturation: *random_saturation,
+                preserve_luminosity: *preserve_luminosity,
+                inverse: *inverse,
+                border: *border,
+                color: *color,
+                foreground: *foreground,
+                background: *background,
+                seed: *seed,
+            },
+        ),
+        FilterParams::LongShadow { style, angle, length, midpoint, color, composition } => extra::light::long_shadow(
+            src,
+            out,
+            ctx,
+            &extra::light::LongShadowSpec { style: *style, angle: *angle, length: *length, midpoint: *midpoint, color: *color, composition: *composition },
+        ),
+        FilterParams::PerspectiveShadow { angle, distance, length, blur, color, opacity, interpolation, allow_resizing: _ } => {
+            extra::light::perspective_shadow(
+                src,
+                out,
+                ctx,
+                &extra::light::PerspectiveShadowSpec {
+                    angle: *angle,
+                    distance: *distance,
+                    length: *length,
+                    blur: *blur,
+                    color: *color,
+                    opacity: *opacity,
+                    interpolation: *interpolation,
+                },
+            )
+        }
+        FilterParams::XachEffect { highlight_x, highlight_y, highlight_color, highlight_opacity, shadow_color, shadow_opacity, blur, shadow_x, shadow_y } => {
+            extra::light::xach(
+                src,
+                out,
+                ctx,
+                &extra::light::XachSpec {
+                    highlight_offset: (*highlight_x, *highlight_y),
+                    highlight_color: *highlight_color,
+                    highlight_opacity: *highlight_opacity,
+                    shadow_color: *shadow_color,
+                    shadow_opacity: *shadow_opacity,
+                    blur: *blur,
+                    shadow_offset: (*shadow_x, *shadow_y),
+                },
+            )
+        }
+        FilterParams::LchNoise { dulling, lightness, chroma, hue, seed } => extra::noise::lch_noise(src, out, ctx, *dulling, *lightness, *chroma, *hue, *seed),
+        FilterParams::HsvNoise { dulling, hue, saturation, value, seed } => extra::noise::hsv_noise(src, out, ctx, *dulling, *hue, *saturation, *value, *seed),
+        FilterParams::Hurl { randomization, repeat, seed } => extra::noise::hurl(src, out, ctx, *randomization, *repeat, *seed),
+        FilterParams::Pick { randomization, repeat, seed } => extra::noise::pick(src, out, ctx, *randomization, *repeat, *seed),
+        FilterParams::Slur { randomization, repeat, seed } => extra::noise::slur(src, out, ctx, *randomization, *repeat, *seed),
+        FilterParams::DifferenceOfGaussians { radius1, radius2, normalize, invert } => {
+            extra::edge::difference_of_gaussians(src, out, ctx, *radius1, *radius2, *normalize, *invert)
+        }
+        FilterParams::Laplace => extra::edge::laplace(src, out, ctx),
+        FilterParams::ImageGradient { output } => extra::edge::image_gradient(src, out, ctx, *output),
+        FilterParams::DistanceMap { metric, threshold_low, threshold_high, averaging, normalize } => {
+            extra::edge::distance_map(src, out, ctx, *metric, *threshold_low, *threshold_high, *averaging, *normalize)
+        }
+        FilterParams::NormalMap { scale, x_component, y_component, flip_x, flip_y, full_z, tileable } => extra::edge::normal_map(
+            src,
+            out,
+            ctx,
+            &extra::edge::NormalSpec {
+                scale: *scale,
+                x_component: *x_component,
+                y_component: *y_component,
+                flip_x: *flip_x,
+                flip_y: *flip_y,
+                full_z: *full_z,
+                tileable: *tileable,
+            },
+        ),
+        FilterParams::OperationGraph { source } => extra::graph::run(src, out, ctx, source),
+        FilterParams::Cubism { tile_size, saturation, background, seed } => extra::artistic::cubism(src, out, ctx, *tile_size, *saturation, *background, *seed),
+        FilterParams::Slic { cluster_size, compactness, iterations } => extra::artistic::slic(src, out, ctx, *cluster_size, *compactness, *iterations),
+        FilterParams::Waterpixels { size, smoothness, regularization, color, seed } => {
+            extra::artistic::waterpixels(src, out, ctx, *size, *smoothness, *regularization, *color, *seed)
+        }
+        FilterParams::Impressionist {
+            brush_size,
+            size_variation,
+            orientation,
+            orientation_type,
+            density,
+            shape,
+            paper_relief,
+            placement,
+            color,
+            background,
+            background_color,
+            seed,
+        } => extra::artistic::impressionist(
+            src,
+            out,
+            ctx,
+            &extra::artistic::ImpressionistSpec {
+                brush_size: *brush_size,
+                size_variation: *size_variation,
+                orientation: *orientation,
+                orientation_type: *orientation_type,
+                density: *density,
+                shape: *shape,
+                paper_relief: *paper_relief,
+                placement: *placement,
+                color: *color,
+                background: *background,
+                background_color: *background_color,
+                seed: *seed,
+            },
+        ),
+        FilterParams::VanGogh { channel, operator, convolve, filter_length, noise_magnitude, integration_steps, minimum_value, maximum_value, seed } => {
+            extra::artistic::van_gogh(
+                src,
+                out,
+                ctx,
+                &extra::artistic::LicSpec {
+                    channel: *channel,
+                    operator: *operator,
+                    convolve: *convolve,
+                    filter_length: *filter_length,
+                    noise_magnitude: *noise_magnitude,
+                    steps: *integration_steps,
+                    min_value: *minimum_value,
+                    max_value: *maximum_value,
+                    seed: *seed,
+                },
+            )
+        }
+        FilterParams::Weave { ribbon_width, ribbon_spacing, shadow_darkness, shadow_depth, thread_length, thread_density, thread_intensity } => {
+            extra::artistic::weave(
+                src,
+                out,
+                ctx,
+                &extra::artistic::WeaveSpec {
+                    ribbon_width: *ribbon_width,
+                    ribbon_spacing: *ribbon_spacing,
+                    shadow_darkness: *shadow_darkness,
+                    shadow_depth: *shadow_depth,
+                    thread_length: *thread_length,
+                    thread_density: *thread_density,
+                    thread_intensity: *thread_intensity,
+                },
+            )
+        }
+        FilterParams::Filmstrip { color, number_color, number_start, numbers_top, numbers_bottom, hole_offset, hole_width, hole_height, hole_spacing } => {
+            extra::decor::filmstrip(
+                src,
+                out,
+                ctx,
+                &extra::decor::FilmstripSpec {
+                    color: *color,
+                    number_color: *number_color,
+                    number_start: *number_start,
+                    numbers_top: *numbers_top,
+                    numbers_bottom: *numbers_bottom,
+                    hole_offset: *hole_offset,
+                    hole_width: *hole_width,
+                    hole_height: *hole_height,
+                    hole_spacing: *hole_spacing,
+                },
+            )
+        }
+        FilterParams::FuzzyBorder { color, size, blur, granularity, shadow, shadow_weight, seed } => extra::decor::fuzzy_border(
+            src,
+            out,
+            ctx,
+            &extra::decor::FuzzyBorderSpec {
+                color: *color,
+                size: *size,
+                blur: *blur,
+                granularity: *granularity,
+                shadow: *shadow,
+                shadow_weight: *shadow_weight,
+                seed: *seed,
+            },
+        ),
         FilterParams::FilterGallery { effects } => artistic_fx::run(effects, src, out, ctx),
     }
 }
