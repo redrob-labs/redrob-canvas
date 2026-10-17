@@ -16,7 +16,7 @@ use crate::PhotocraftApp;
 /// the Swatches panel through [`crate::swatches_ui::import_bytes`]).
 /// `.psp` is Photoshop's live `Keyboard Shortcuts.psp` (the same XML as a `.kys`); other `.psp`
 /// settings files are refused with a clear message.
-pub const PRESET_EXTS: &[&str] = &["abr", "gbr", "gih", "grd", "pat", "aco", "ase", "kys", "psp"];
+pub const PRESET_EXTS: &[&str] = &["abr", "gbr", "gih", "grd", "ggr", "pat", "aco", "ase", "kys", "psp"];
 
 fn ext(name: &str) -> String {
     std::path::Path::new(name).extension().map(|e| e.to_string_lossy().to_ascii_lowercase()).unwrap_or_default()
@@ -59,11 +59,11 @@ pub fn import_brush_image(app: &mut PhotocraftApp, name: &str, bytes: &[u8]) -> 
 
 /// Import from a gradient picker through the same preset command as File › Open.
 pub(crate) fn import_gradients_dialog(app: &mut PhotocraftApp) {
-    let result = app.pick_file_bytes_filtered(&["grd"], |app, name, bytes| {
-        if ext(&name) != "grd" {
-            return Err(tl!("Choose a gradient file (.grd).").into());
+    let result = app.pick_file_bytes_filtered(&["grd", "ggr"], |app, name, bytes| {
+        if !matches!(ext(&name).as_str(), "grd" | "ggr") {
+            return Err(tl!("Choose a gradient file (.grd or .ggr).").into());
         }
-        open(app, &name, &bytes).ok_or_else(|| tl!("Choose a gradient file (.grd).").to_string())??;
+        open(app, &name, &bytes).ok_or_else(|| tl!("Choose a gradient file (.grd or .ggr).").to_string())??;
         Ok(Value::Null)
     });
     if let Err(error) = result
@@ -90,6 +90,7 @@ pub fn open(app: &mut PhotocraftApp, name: &str, bytes: &[u8]) -> Option<Result<
         "abr" => ("brush.presets.importAbr", "brushes"),
         "gbr" | "gih" => ("brush.presets.importBrushFile", "brushes"),
         "grd" => ("gradient.presets.importGrd", "gradients"),
+        "ggr" => ("gradient.presets.importGgr", "gradients"),
         "pat" => ("pattern.import", "patterns"),
         "aco" | "ase" => return Some(crate::swatches_ui::import_bytes(app, name, bytes, false).map(|_| ())),
         "kys" | "psp" => return Some(crate::kys_import::open_bytes(app, name, bytes).map(|_| ())),

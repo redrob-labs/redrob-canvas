@@ -1283,8 +1283,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_gradients.html"
 behaviour = "Stop and segmented gradients; editor with colour model per segment (RGB, HSV cw/ccw), foreground/background variables and transparency; .ggr and .svg files."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
-gap = "stop gradients with .grd import; no segmented gradients or .ggr/.svg"
+ours_where = "crafts/photocraft/crates/io/src/ggr.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs, crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
+gap = "segmented gradients (.ggr: six blend functions, RGB/HSV cw/ccw, foreground/background ends, alpha) are read, evaluated and imported as sampled stop gradients with live FG/BG ends; no segment editor, no .svg gradients"
 priority = 1
 
 [[feature]]
