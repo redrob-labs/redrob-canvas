@@ -208,7 +208,7 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
         "help.about",
         "About Redrob Canvas",
         None,
-        "{open?: true, tab?: \"about\"|\"contributors\"|\"models\"} — the About window: splash with community links, contributor and model credits (open: false closes it)",
+        "{open?: true, tab?: \"about\"|\"contributors\"} — the About window: splash with community links, contributor and model credits (open: false closes it)",
     ),
     ("window.toolsDoubleColumn", "Tools: Double Column", None, "{}"),
     (
@@ -1521,7 +1521,7 @@ fn run_ui_inner(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
         "help.about" => {
             if let Some(tab) = p.get("tab").and_then(Value::as_str) {
                 let Some(i) = crate::about::ABOUT_TABS.iter().position(|t| t.eq_ignore_ascii_case(tab)) else {
-                    return Some(Err(format!("help.about: unknown tab `{tab}` (about, contributors, models)")));
+                    return Some(Err(format!("help.about: unknown tab `{tab}` (about, contributors)")));
                 };
                 app.ui.about_tab = u8::try_from(i).unwrap_or(0);
             }

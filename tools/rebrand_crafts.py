@@ -61,7 +61,7 @@ SKIP_DIRS = {"docs", "assets", "packaging", "examples", "scorecard", "perf", "bo
 TEXT_ASSET_SUFFIXES = {".json", ".ftl", ".tsv", ".toml", ".txt", ".yaml", ".yml", ".html"}
 
 # --check: what may still mention the upstream brand (licence-required attribution).
-LEFTOVER_RE = re.compile(r"artcraft|getartcraft|discord", re.IGNORECASE)
+LEFTOVER_RE = re.compile(r"artcraft|getartcraft|discord|MARK_PATH", re.IGNORECASE)
 ATTRIBUTION_FILES = re.compile(r"(^|/)(NOTICE|UPSTREAM[^/]*|COPYRIGHT|THIRD_PARTY[^/]*|LICENSE[^/]*|ATTRIBUTION\.md)$")
 CHECK_SUFFIXES = {".rs", ".tsv", ".ftl", ".json", ".toml", ".txt", ".md", ".yaml", ".yml", ".html"}
 

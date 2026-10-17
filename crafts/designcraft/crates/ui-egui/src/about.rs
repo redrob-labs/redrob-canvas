@@ -1,6 +1,6 @@
-//! Help › About Redrob Canvas: tabs About · Contributors · Models. About is the splash with the
-//! Redrob mark, version, the Report an Issue button and project links, plus the other Redrob
-//! apps; Contributors and Models are the compiled-in credits (`crate::credits`).
+//! Help › About Redrob Canvas: tabs About · Contributors. About is the splash with the Redrob
+//! mark, version, the Report an Issue button and project links; Contributors is the compiled-in
+//! credits (`crate::credits`).
 
 use egui::{Color32, Rect, Sense, Stroke, pos2, vec2};
 use redrob_layout_engine::links;
@@ -12,45 +12,25 @@ use crate::theme::{Tokens, semibold};
 /// Redrob brand blue.
 pub const BRAND: Color32 = Color32::from_rgb(0x4e, 0x7b, 0xfb);
 
-/// The Redrob mark outline (viewBox -10 -19.42 136.34 136.34).
-const MARK_PATH: &str = "M104.28,49.49L81.55,0h-31.23l-3.17,4.76L14.75,53.63,0,75.85l21.55,21.55,63.79-36.94,16.99,37.04,14.01-21.74-12.06-26.27ZM32.89,65.66l32.42-48.87,10.91,23.77-43.32,25.09Z";
-
-/// The other Redrob apps (app-page slug, name, what it is) — same list as the README.
-pub const SIBLINGS: &[(&str, &str, &str)] = &[
-    ("photocraft", "Redrob Canvas", "image editing"),
-    ("vectorcraft", "Redrob Canvas", "vector illustration"),
-    ("filmcraft", "FilmCraft", "video editing, color and sound"),
-    ("lightcraft", "LightCraft", "photo library and raw development"),
-    ("pdfcraft", "PdfCraft", "reading, organizing and protecting PDFs"),
-    ("effectcraft", "EffectCraft", "motion graphics and visual effects"),
-];
+/// The Redrob Canvas app icon (the same 128 px PNG the Photo and Vector title bars show). The
+/// mark is a canonical asset and is never recoloured: it is drawn as is.
+const ICON_PNG: &[u8] = include_bytes!("../../../../../resources/icons/hicolor/128x128/apps/redrob-canvas.png");
 
 /// The About window's tabs, in `UiState::about_tab` order (`help.about {tab}` names them in lowercase).
-pub const ABOUT_TABS: [&str; 3] = ["About", "Contributors", "Models"];
+pub const ABOUT_TABS: [&str; 2] = ["About", "Contributors"];
 
-/// Paint the Redrob mark into `rect` (square), rasterised once per size and cached.
-pub fn paint_mark(ui: &egui::Ui, rect: Rect, color: Color32) {
-    use redrob_layout_render::vello_cpu::{self, kurbo, peniko};
+/// Paint the Redrob mark into `rect` (square): the app icon, decoded once and cached. `_color`
+/// is accepted for the callers' sake but the mark is never recoloured.
+pub fn paint_mark(ui: &egui::Ui, rect: Rect, _color: Color32) {
     let ctx = ui.ctx();
-    let ppp = ctx.pixels_per_point();
-    let px = ((rect.width().min(rect.height()) * ppp).round() as u32).clamp(8, 1024);
-    let key = egui::Id::new(("redrob_mark", px, color.to_array()));
+    let key = egui::Id::new("redrob_mark");
     let tex: Option<egui::TextureHandle> = ctx.data(|d| d.get_temp(key));
     let tex = tex.unwrap_or_else(|| {
-        let mut rc = vello_cpu::RenderContext::new_with(px as u16, px as u16, vello_cpu::RenderSettings { num_threads: 0, ..Default::default() });
-        let k = px as f64 / 136.34;
-        rc.set_transform(kurbo::Affine::scale(k) * kurbo::Affine::translate((10.0, 19.42)));
-        let [r, g, b, a] = color.to_srgba_unmultiplied();
-        rc.set_paint(peniko::Color::from_rgba8(r, g, b, a));
-        if let Ok(p) = kurbo::BezPath::from_svg(MARK_PATH) {
-            rc.fill_path(&p);
-        }
-        rc.flush();
-        let mut pm = vello_cpu::Pixmap::new(px as u16, px as u16);
-        let mut res = vello_cpu::Resources::new();
-        rc.render(&mut pm, &mut res);
-        let ci = egui::ColorImage::from_rgba_premultiplied([px as usize, px as usize], pm.data_as_u8_slice());
-        let t = crate::widgets::load_texture(ctx, "redrob_mark", ci, egui::TextureOptions::LINEAR);
+        let ci = redrob_layout_render::decode_pixmap(ICON_PNG)
+            .map(|pm| egui::ColorImage::from_rgba_premultiplied([pm.width() as usize, pm.height() as usize], pm.data_as_u8_slice()))
+            .unwrap_or_else(|| egui::ColorImage::filled([1, 1], Color32::TRANSPARENT));
+        let options = egui::TextureOptions { mipmap_mode: Some(egui::TextureFilter::Linear), ..egui::TextureOptions::LINEAR };
+        let t = ctx.load_texture("redrob_mark", ci, options);
         ctx.data_mut(|d| d.insert_temp(key, t.clone()));
         t
     });
@@ -129,11 +109,7 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
             let h = 400.0_f32.min(ctx.content_rect().height() * 0.7).max(160.0);
             ui.allocate_ui_with_layout(vec2(ui.available_width(), h), egui::Layout::top_down(egui::Align::Min), |ui| {
                 ui.set_min_height(h);
-                if app.ui.about_tab == 1 {
-                    crate::credits::contributors_ui(ui);
-                } else {
-                    crate::credits::models_ui(ui);
-                }
+                crate::credits::contributors_ui(ui);
             });
             ui.separator();
             ui.vertical_centered(|ui| {
@@ -192,29 +168,6 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
             });
             ui.add_space(16.0);
             ui.separator();
-            ui.add_space(6.0);
-            ui.label(crate::rtl::widget(
-                ui,
-                egui::RichText::new(crate::i18n::tr(&app.ui.language, "More Redrob apps")).font(semibold(12.0)).color(t.text_strong),
-            ));
-            ui.add_space(4.0);
-            ui.horizontal(|ui| {
-                let pad = ui.spacing().button_padding.x * 2.0 + ui.spacing().item_spacing.x;
-                let w: f32 = SIBLINGS
-                    .iter()
-                    .map(|(_, n, _)| ui.painter().layout_no_wrap(n.to_string(), egui::FontId::proportional(12.0), Color32::WHITE).size().x + pad)
-                    .sum::<f32>()
-                    - ui.spacing().item_spacing.x;
-                ui.add_space(((ui.available_width() - w) / 2.0).max(0.0));
-                for (slug, name, what) in SIBLINGS {
-                    let url = format!("{}/apps/{slug}", links::WEBSITE);
-                    let b =
-                        ui.add(egui::Button::new(egui::RichText::new(*name).size(12.0)).corner_radius(10.0)).on_hover_text(format!("{what} — {url}"));
-                    if b.clicked() {
-                        app.ui.pending_urls.push(url);
-                    }
-                }
-            });
             ui.add_space(12.0);
             ui.label(crate::rtl::widget(
                 ui,

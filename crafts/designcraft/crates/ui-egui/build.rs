@@ -87,7 +87,7 @@ fn generate(json: &Value, people: &toml::Table) -> String {
         );
     }
     let _ = writeln!(o, "];");
-    let _ = writeln!(o, "pub static MODELS: &[Model] = &[");
+    let _ = writeln!(o, "#[allow(dead_code)]\npub static MODELS: &[Model] = &[");
     for m in rows(json, "models") {
         let _ = writeln!(
             o,
