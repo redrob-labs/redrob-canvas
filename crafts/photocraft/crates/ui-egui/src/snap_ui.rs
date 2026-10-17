@@ -63,6 +63,8 @@ pub fn options(app: &PhotocraftApp) -> SnapOptions {
         layers: st.layers,
         document: st.document_bounds,
         selection: true,
+        path: st.active_path,
+        equidistance: st.equidistance,
         grid_step,
         grid_offset,
     }
@@ -85,7 +87,17 @@ fn snap_on(app: &PhotocraftApp) -> bool {
 fn build(app: &PhotocraftApp, exclude: &[LayerId], smart: bool) -> SnapTargets {
     let Some(st) = app.session.active() else { return SnapTargets::default() };
     let opts = if smart {
-        SnapOptions { guides: false, grid: false, layers: true, document: true, selection: false, grid_step: [0.0; 2], grid_offset: [0.0; 2] }
+        SnapOptions {
+            guides: false,
+            grid: false,
+            layers: true,
+            document: true,
+            selection: false,
+            path: false,
+            equidistance: app.ui.view.snap_to.equidistance,
+            grid_step: [0.0; 2],
+            grid_offset: [0.0; 2],
+        }
     } else {
         options(app)
     };

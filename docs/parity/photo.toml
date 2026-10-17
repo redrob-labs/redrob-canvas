@@ -5013,9 +5013,9 @@ name = "Snap to guides / grid / canvas / active path / bounding boxes / equidist
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-view-snap-to-guides.html"
 behaviour = "Six snapping targets, 3.0 adding bounding boxes of layers and equidistance between items."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/snap.rs (view.snapTo.guides/grid/layers/documentBounds/slices)"
-gap = "no snap to path or equidistance"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/snap.rs (SnapKind::Path, SnapKind::Equidistance, add_path, add_equidistance), crafts/photocraft/crates/ui-egui/src/view_cmds.rs (view.snapTo.activePath, view.snapTo.equidistance), crafts/photocraft/crates/ui-egui/src/snap_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
