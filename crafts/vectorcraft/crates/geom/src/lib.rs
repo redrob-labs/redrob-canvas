@@ -16,12 +16,14 @@ pub mod projective;
 pub mod recognize;
 pub mod shapes;
 pub mod snap;
+pub mod spline;
 
 pub use arc::ArcPath;
 pub use kurbo;
 pub use kurbo::{Affine, BezPath, CubicBez, Line, ParamCurve, PathEl, PathSeg, Point, Rect, Shape, Size, Vec2};
 pub use path::{Anchor, AnchorKind, FillRule, PathData, SubPath};
 pub use projective::Homography;
+pub use spline::{SplineMode, bspline_to_bezier, paraxial, spiro_approx_to_bezier};
 
 /// Tolerance used when comparing handle positions to anchor positions.
 pub const EPS: f64 = 1e-9;
