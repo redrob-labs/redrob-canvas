@@ -234,9 +234,12 @@ impl ModeBridge for PhotoBridge<'_> {
             offset.0.saturating_add(img.width as i32),
             offset.1.saturating_add(img.height as i32),
         );
+        // The history entry names the tool ("Generative fill", "AI erase"...), so an undo step
+        // reads as what was done.
+        let label = format!("AI layer: {name}");
         let name = name.to_owned();
         self.session
-            .edit("AI layer", move |doc, active| {
+            .edit(&label, move |doc, active| {
                 let rgba8 = redrob_photo_color::PixelFormat::RGBA8;
                 let mut surface =
                     redrob_photo_raster::Surface::from_interleaved(rgba8, rect, &img.data);

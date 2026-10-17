@@ -7,7 +7,9 @@
 //! - [`iopaint`]: the local IOPaint engine (Sanster/IOPaint 1.6.0, Apache-2.0). Its models are
 //!   PyTorch, so they run in IOPaint's own Python process: [`iopaint::Engine`] installs it into an
 //!   app-owned virtual environment and starts `iopaint start` on a free loopback port, and
-//!   [`iopaint::Client`] speaks its HTTP API (inpaint, outpaint, the plugins).
+//!   [`iopaint::Client`] speaks its HTTP API (inpaint, outpaint, the plugins), moving pixels as
+//!   raw files through the engine's exchange directory when both sit on one machine
+//!   ([`iopaint::transport`]) and sending only the region a request touches ([`region`]).
 //! - [`vectorize`]: Image Trace, a thin wrapper over `redrob_vector_trace`.
 //! - [`agent`]: the mode agent, an [`redrob_agent::AgentSession`] on its own runtime thread that
 //!   calls whatever tools the current mode exposes through [`agent::ModeTools`].
@@ -26,7 +28,8 @@ mod error;
 #[cfg(feature = "engine")]
 pub mod iopaint;
 pub mod pixels;
+pub mod region;
 pub mod vectorize;
 
 pub use error::{AiError, Result};
-pub use pixels::{Expand, Mask, Rgba8Image};
+pub use pixels::{Expand, Mask, Rect, Rgba8Image};

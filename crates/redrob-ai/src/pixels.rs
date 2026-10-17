@@ -41,6 +41,68 @@ pub struct Expand {
 /// The most pixels an outpaint may add on one side.
 pub const MAX_EXPAND: u32 = 4096;
 
+/// A pixel rectangle (`x`, `y` top-left, `width × height`), inclusive-exclusive.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Rect {
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
+impl Rect {
+    pub const fn new(x: u32, y: u32, width: u32, height: u32) -> Self {
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
+    /// `x + width` (one past the right edge).
+    pub fn right(&self) -> u32 {
+        self.x + self.width
+    }
+
+    /// `y + height` (one past the bottom edge).
+    pub fn bottom(&self) -> u32 {
+        self.y + self.height
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.width == 0 || self.height == 0
+    }
+
+    pub fn area(&self) -> u64 {
+        u64::from(self.width) * u64::from(self.height)
+    }
+
+    pub fn contains(&self, x: u32, y: u32) -> bool {
+        x >= self.x && y >= self.y && x < self.right() && y < self.bottom()
+    }
+
+    /// The overlap of two rectangles (empty when they do not meet).
+    pub fn intersect(&self, other: &Rect) -> Rect {
+        let x0 = self.x.max(other.x);
+        let y0 = self.y.max(other.y);
+        let x1 = self.right().min(other.right());
+        let y1 = self.bottom().min(other.bottom());
+        if x1 <= x0 || y1 <= y0 {
+            return Rect::default();
+        }
+        Rect::new(x0, y0, x1 - x0, y1 - y0)
+    }
+
+    /// Whether `other` lies entirely inside this rectangle.
+    pub fn covers(&self, other: &Rect) -> bool {
+        other.x >= self.x
+            && other.y >= self.y
+            && other.right() <= self.right()
+            && other.bottom() <= self.bottom()
+    }
+}
+
 impl Expand {
     pub fn total(&self) -> u32 {
         self.left + self.top + self.right + self.bottom
@@ -94,6 +156,114 @@ impl Rgba8Image {
 
     pub fn is_empty(&self) -> bool {
         self.width == 0 || self.height == 0
+    }
+
+    /// A fully transparent `width × height` image.
+    pub fn transparent(width: u32, height: u32) -> Result<Self> {
+        Self::filled(width, height, [0, 0, 0, 0])
+    }
+
+    /// An opaque image from `width * height * 3` RGB bytes (alpha 255 everywhere).
+    pub fn from_rgb(width: u32, height: u32, rgb: &[u8]) -> Result<Self> {
+        if rgb.len() != checked_len(width, height, 3)? {
+            return Err(AiError::Geometry(format!(
+                "RGB buffer of {} bytes is not {width} × {height} × 3",
+                rgb.len()
+            )));
+        }
+        let mut data = Vec::with_capacity(rgb.len() / 3 * 4);
+        for px in rgb.chunks_exact(3) {
+            data.extend_from_slice(&[px[0], px[1], px[2], 255]);
+        }
+        Ok(Self {
+            width,
+            height,
+            data,
+        })
+    }
+
+    pub fn rect(&self) -> Rect {
+        Rect::new(0, 0, self.width, self.height)
+    }
+
+    /// The pixels inside `rect`, which must lie inside the image.
+    pub fn crop(&self, rect: Rect) -> Result<Self> {
+        if !self.rect().covers(&rect) {
+            return Err(AiError::Geometry(format!(
+                "crop {rect:?} leaves the {} × {} image",
+                self.width, self.height
+            )));
+        }
+        let row = rect.width as usize * 4;
+        let mut data = Vec::with_capacity(row * rect.height as usize);
+        for y in rect.y..rect.bottom() {
+            let i = (y as usize * self.width as usize + rect.x as usize) * 4;
+            data.extend_from_slice(&self.data[i..i + row]);
+        }
+        Ok(Self {
+            width: rect.width,
+            height: rect.height,
+            data,
+        })
+    }
+
+    /// Copies `src` into this image with its top-left at (`x`, `y`); the source must fit.
+    pub fn blit(&mut self, src: &Rgba8Image, x: u32, y: u32) -> Result<()> {
+        let dst = Rect::new(x, y, src.width, src.height);
+        if !self.rect().covers(&dst) {
+            return Err(AiError::Geometry(format!(
+                "blit of {} × {} at ({x}, {y}) leaves the {} × {} image",
+                src.width, src.height, self.width, self.height
+            )));
+        }
+        let row = src.width as usize * 4;
+        for sy in 0..src.height as usize {
+            let s = sy * row;
+            let d = ((y as usize + sy) * self.width as usize + x as usize) * 4;
+            self.data[d..d + row].copy_from_slice(&src.data[s..s + row]);
+        }
+        Ok(())
+    }
+
+    /// Blends `src` over this image at (`x`, `y`) with `weight(sx, sy)` in 0..=1 per source
+    /// pixel: `weight` 1 takes the source, 0 keeps what is there. Transparent source pixels are
+    /// skipped; where this image is still transparent the source is taken whole, so a feathered
+    /// tile never fades into nothing.
+    pub fn blend_weighted(
+        &mut self,
+        src: &Rgba8Image,
+        x: u32,
+        y: u32,
+        weight: impl Fn(u32, u32) -> f32,
+    ) -> Result<()> {
+        let dst = Rect::new(x, y, src.width, src.height);
+        if !self.rect().covers(&dst) {
+            return Err(AiError::Geometry(format!(
+                "blend of {} × {} at ({x}, {y}) leaves the {} × {} image",
+                src.width, src.height, self.width, self.height
+            )));
+        }
+        for sy in 0..src.height {
+            for sx in 0..src.width {
+                let s = (sy as usize * src.width as usize + sx as usize) * 4;
+                let d = ((y + sy) as usize * self.width as usize + (x + sx) as usize) * 4;
+                let src_px = &src.data[s..s + 4];
+                if src_px[3] == 0 {
+                    continue;
+                }
+                let dst_px = &mut self.data[d..d + 4];
+                let w = if dst_px[3] == 0 {
+                    1.0
+                } else {
+                    weight(sx, sy).clamp(0.0, 1.0)
+                };
+                for (dst, &new) in dst_px.iter_mut().zip(src_px) {
+                    let v = f32::from(*dst) * (1.0 - w) + f32::from(new) * w;
+                    *dst = v.round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn pixel(&self, x: u32, y: u32) -> [u8; 4] {
@@ -223,6 +393,65 @@ impl Mask {
     /// Number of pixels inside (non-zero).
     pub fn coverage(&self) -> usize {
         self.data.iter().filter(|&&v| v != 0).count()
+    }
+
+    pub fn rect(&self) -> Rect {
+        Rect::new(0, 0, self.width, self.height)
+    }
+
+    /// The tightest rectangle around the non-zero pixels, or `None` when nothing is inside.
+    pub fn bounding_box(&self) -> Option<Rect> {
+        let w = self.width as usize;
+        let (mut x0, mut y0, mut x1, mut y1) = (usize::MAX, usize::MAX, 0usize, 0usize);
+        for (y, row) in self.data.chunks_exact(w.max(1)).enumerate() {
+            let Some(first) = row.iter().position(|&v| v != 0) else {
+                continue;
+            };
+            let last = row.iter().rposition(|&v| v != 0).unwrap_or(first);
+            x0 = x0.min(first);
+            x1 = x1.max(last + 1);
+            y0 = y0.min(y);
+            y1 = y1.max(y + 1);
+        }
+        if x1 <= x0 || y1 <= y0 {
+            return None;
+        }
+        Some(Rect::new(
+            x0 as u32,
+            y0 as u32,
+            (x1 - x0) as u32,
+            (y1 - y0) as u32,
+        ))
+    }
+
+    /// The mask inside `rect`, which must lie inside the mask.
+    pub fn crop(&self, rect: Rect) -> Result<Self> {
+        if !self.rect().covers(&rect) {
+            return Err(AiError::Geometry(format!(
+                "crop {rect:?} leaves the {} × {} mask",
+                self.width, self.height
+            )));
+        }
+        let row = rect.width as usize;
+        let mut data = Vec::with_capacity(row * rect.height as usize);
+        for y in rect.y..rect.bottom() {
+            let i = y as usize * self.width as usize + rect.x as usize;
+            data.extend_from_slice(&self.data[i..i + row]);
+        }
+        Ok(Self {
+            width: rect.width,
+            height: rect.height,
+            data,
+        })
+    }
+
+    /// Sets every pixel inside `rect` to `value`.
+    pub fn fill_rect(&mut self, rect: Rect, value: u8) {
+        let rect = self.rect().intersect(&rect);
+        for y in rect.y..rect.bottom() {
+            let i = y as usize * self.width as usize + rect.x as usize;
+            self.data[i..i + rect.width as usize].fill(value);
+        }
     }
 
     /// Decodes a PNG to L8 (colour PNGs are converted to luma).

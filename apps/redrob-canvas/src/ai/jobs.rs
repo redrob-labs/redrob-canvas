@@ -11,7 +11,7 @@ use std::{
 
 use redrob_ai::{
     Expand, Mask, Rgba8Image,
-    iopaint::{Engine, InpaintOptions},
+    iopaint::{Device, Engine, InpaintOptions, Plugin, models},
     vectorize::TraceResult,
 };
 
@@ -22,6 +22,9 @@ use super::tools::ToolReply;
 pub enum ToolKind {
     Erase,
     Inpaint,
+    /// Selection + prompt into a diffusion inpaint model, on a new layer masked by the
+    /// selection (AI-02).
+    GenerativeFill,
     Outpaint,
     RemoveBackground,
     Upscale,
@@ -31,9 +34,10 @@ pub enum ToolKind {
 }
 
 impl ToolKind {
-    pub const ALL: [ToolKind; 8] = [
+    pub const ALL: [ToolKind; 9] = [
         ToolKind::Erase,
         ToolKind::Inpaint,
+        ToolKind::GenerativeFill,
         ToolKind::Outpaint,
         ToolKind::RemoveBackground,
         ToolKind::Upscale,
@@ -46,6 +50,7 @@ impl ToolKind {
         match self {
             ToolKind::Erase => "Erase",
             ToolKind::Inpaint => "Inpaint",
+            ToolKind::GenerativeFill => "Generative Fill",
             ToolKind::Outpaint => "Outpaint / Expand canvas",
             ToolKind::RemoveBackground => "Remove background",
             ToolKind::Upscale => "Upscale",
@@ -60,6 +65,7 @@ impl ToolKind {
         match self {
             ToolKind::Erase => "erase_selection",
             ToolKind::Inpaint => "inpaint",
+            ToolKind::GenerativeFill => "generative_fill",
             ToolKind::Outpaint => "outpaint",
             ToolKind::RemoveBackground => "remove_background",
             ToolKind::Upscale => "upscale",
@@ -80,7 +86,10 @@ impl ToolKind {
 
     /// Whether the tool reads the selection mask.
     pub fn needs_selection(self) -> bool {
-        matches!(self, ToolKind::Erase | ToolKind::Inpaint)
+        matches!(
+            self,
+            ToolKind::Erase | ToolKind::Inpaint | ToolKind::GenerativeFill
+        )
     }
 
     /// Whether the tool writes a selection.
@@ -94,6 +103,7 @@ impl ToolKind {
             self,
             ToolKind::Erase
                 | ToolKind::Inpaint
+                | ToolKind::GenerativeFill
                 | ToolKind::Outpaint
                 | ToolKind::RemoveBackground
                 | ToolKind::Upscale
@@ -148,17 +158,36 @@ impl ToolKind {
     }
 }
 
+/// The model a job needs loaded, and what a restart needs to load it with. The engine holds one
+/// model at a time: an erase wants an erase model, a generative fill a diffusion one, so a job
+/// switches before it runs when the server holds the other kind.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ModelChoice {
+    pub model: String,
+    pub device: Device,
+    pub plugins: Vec<Plugin>,
+}
+
 /// Everything a job needs, gathered on the UI thread before it starts.
 #[derive(Clone, Debug, PartialEq)]
 pub enum JobInput {
     Erase {
         image: Rgba8Image,
         mask: Mask,
+        /// The erase model to hold (lama unless the card picked another erase model).
+        model: ModelChoice,
     },
     Inpaint {
         image: Rgba8Image,
         mask: Mask,
         options: InpaintOptions,
+    },
+    GenerativeFill {
+        image: Rgba8Image,
+        mask: Mask,
+        options: InpaintOptions,
+        /// The diffusion model to hold (the Generative Fill card's choice).
+        model: ModelChoice,
     },
     Outpaint {
         image: Rgba8Image,
@@ -331,6 +360,23 @@ impl JobQueue {
     }
 }
 
+impl ModelChoice {
+    /// The erase model a prompt-less erase holds: `card_model` when it is an erase model, else
+    /// lama (the card may be set to a diffusion model for Generative Fill).
+    pub fn erase(card_model: &str, device: Device, plugins: &[Plugin]) -> Self {
+        let model = if models::ERASE_MODELS.contains(&card_model) {
+            card_model.to_owned()
+        } else {
+            models::DEFAULT_MODEL.to_owned()
+        };
+        Self {
+            model,
+            device,
+            plugins: plugins.to_vec(),
+        }
+    }
+}
+
 /// Runs `input` against `engine`, returning what to apply. Async: call on the runtime.
 pub async fn run_job(engine: Option<Engine>, input: JobInput) -> Result<JobOutput, String> {
     match input {
@@ -353,38 +399,87 @@ pub async fn run_job(engine: Option<Engine>, input: JobInput) -> Result<JobOutpu
     }
 }
 
+/// Loads `choice.model` when the server holds another one (a switch in place when it is
+/// downloaded, else a restart that downloads it).
+async fn ensure_model(engine: &Engine, choice: &ModelChoice) -> redrob_ai::Result<()> {
+    if engine.current_model().as_deref() == Some(choice.model.as_str()) {
+        return Ok(());
+    }
+    engine
+        .set_model(&choice.model, choice.device, &choice.plugins)
+        .await
+}
+
+/// One inpaint over the region of interest, landing as a layer at the region's offset.
+async fn inpaint_layer(
+    engine: &Engine,
+    action: &str,
+    busy: &str,
+    name: &str,
+    image: Rgba8Image,
+    mask: Mask,
+    options: InpaintOptions,
+) -> redrob_ai::Result<JobOutput> {
+    let (result, (x, y)) = engine
+        .request(action, busy, |client| async move {
+            client.inpaint_region(&image, &mask, &options).await
+        })
+        .await?;
+    Ok(JobOutput::Layer {
+        name: name.to_owned(),
+        image: result,
+        offset: (x as i32, y as i32),
+    })
+}
+
 async fn run_engine_job(engine: &Engine, input: JobInput) -> redrob_ai::Result<JobOutput> {
     match input {
-        JobInput::Erase { image, mask } => {
-            let options = InpaintOptions::default();
-            let result = engine
-                .request("Erase", "Erasing the selection…", |client| async move {
-                    client.inpaint(&image, &mask, &options).await
-                })
-                .await?;
-            Ok(JobOutput::Layer {
-                name: "AI erase".into(),
-                image: result,
-                offset: (0, 0),
-            })
+        JobInput::Erase { image, mask, model } => {
+            ensure_model(engine, &model).await?;
+            inpaint_layer(
+                engine,
+                "Erase",
+                "Erasing the selection…",
+                "AI erase",
+                image,
+                mask,
+                InpaintOptions::default(),
+            )
+            .await
         }
         JobInput::Inpaint {
             image,
             mask,
             options,
         } => {
-            let result = engine
-                .request(
-                    "Inpaint",
-                    "Painting the selection from the prompt…",
-                    |client| async move { client.inpaint(&image, &mask, &options).await },
-                )
-                .await?;
-            Ok(JobOutput::Layer {
-                name: "AI inpaint".into(),
-                image: result,
-                offset: (0, 0),
-            })
+            inpaint_layer(
+                engine,
+                "Inpaint",
+                "Painting the selection from the prompt…",
+                "AI inpaint",
+                image,
+                mask,
+                options,
+            )
+            .await
+        }
+        JobInput::GenerativeFill {
+            image,
+            mask,
+            options,
+            model,
+        } => {
+            ensure_model(engine, &model).await?;
+            inpaint_layer(
+                engine,
+                "Generative Fill",
+                "Generating the fill from the prompt…",
+                "Generative fill",
+                image,
+                mask,
+                options,
+            )
+            .await
         }
         JobInput::Outpaint {
             image,
@@ -505,9 +600,16 @@ mod tests {
             ToolKind::Erase.unavailable_reason(&photo_no_sel),
             Some("select the area first")
         );
+        assert!(ToolKind::GenerativeFill.needs_selection());
+        assert!(ToolKind::GenerativeFill.writes_layer());
+        assert_eq!(
+            ToolKind::GenerativeFill.unavailable_reason(&photo_no_sel),
+            Some("select the area first")
+        );
         for caps in [&vector, &layout] {
             assert!(!ToolKind::Erase.available(caps));
             assert!(!ToolKind::Inpaint.available(caps));
+            assert!(!ToolKind::GenerativeFill.available(caps));
             assert!(!ToolKind::Outpaint.available(caps));
             assert!(!ToolKind::SelectSubject.available(caps));
             assert!(ToolKind::RemoveBackground.available(caps));
@@ -520,6 +622,22 @@ mod tests {
             Some(ToolKind::RemoveBackground)
         );
         assert_eq!(ToolKind::from_tool_name("nope"), None);
+        assert_eq!(
+            ToolKind::from_tool_name("generative_fill"),
+            Some(ToolKind::GenerativeFill)
+        );
         assert!(!ToolKind::Vectorize.needs_engine());
+    }
+
+    #[test]
+    fn an_erase_holds_an_erase_model_even_when_the_card_shows_a_diffusion_one() {
+        let lama = ModelChoice::erase("lama", Device::Cpu, &[]);
+        assert_eq!(lama.model, "lama");
+        let migan = ModelChoice::erase("migan", Device::Cpu, &[Plugin::RemoveBG]);
+        assert_eq!(migan.model, "migan");
+        assert_eq!(migan.plugins, vec![Plugin::RemoveBG]);
+        let fallback = ModelChoice::erase(models::DEFAULT_FILL_MODEL, Device::Cuda, &[]);
+        assert_eq!(fallback.model, models::DEFAULT_MODEL);
+        assert_eq!(fallback.device, Device::Cuda);
     }
 }

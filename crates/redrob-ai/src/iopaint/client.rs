@@ -2,18 +2,25 @@
 
 //! The IOPaint 1.6.0 HTTP API (`/api/v1/...`) over reqwest.
 //!
-//! Images travel as PNG data URLs (`data:image/png;base64,...`); a 200 answer is raw PNG bytes,
-//! anything else is JSON with a `detail` (or `errors`) field, surfaced as [`AiError::Server`].
-//! Diffusion on a CPU can take minutes, so requests have no transfer timeout.
+//! Over the base64 [`Transport`] images travel as PNG data URLs (`data:image/png;base64,...`)
+//! and a 200 answer is raw PNG bytes; over the file transport they are raw pixel files in a
+//! shared directory and the answer is the result file's geometry (`super::transport`). Anything
+//! else is JSON with a `detail` (or `errors`) field, surfaced as [`AiError::Server`]. Diffusion
+//! on a CPU can take minutes, so requests have no transfer timeout.
+//!
+//! An inpaint sends only the region around the mask (`crate::region`); an outpaint of a canvas
+//! larger than 1024 px walks the border in tiles. Both are what made 4K and 8K usable.
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
+use super::transport::{self, RequestFiles, Transport};
 use crate::{
     AiError, Result,
-    pixels::{Expand, Mask, Rgba8Image, pad_for_outpaint},
+    pixels::{Expand, Mask, Rect, Rgba8Image, pad_for_outpaint},
+    region,
 };
 
 /// The fields of IOPaint's `InpaintRequest` an application sets. Every field is optional and
@@ -206,26 +213,51 @@ pub const MAX_UPSCALE_PIXELS: u64 = 64 * 1024 * 1024;
 pub struct Client {
     http: reqwest::Client,
     base_url: String,
+    transport: Transport,
+}
+
+/// What `POST /api/v1/redrob/*` answers: the result file's geometry.
+#[derive(Debug, Deserialize)]
+struct FileResult {
+    width: u32,
+    height: u32,
+    #[serde(default = "three")]
+    channels: u32,
+}
+
+fn three() -> u32 {
+    3
 }
 
 impl Client {
-    /// `base_url` like `http://127.0.0.1:8080` (no trailing slash needed).
+    /// `base_url` like `http://127.0.0.1:8080` (no trailing slash needed). Base64 transport:
+    /// IOPaint's own API, which any server speaks.
     pub fn new(base_url: impl Into<String>) -> Result<Self> {
+        Self::with_transport(base_url, Transport::Base64)
+    }
+
+    /// A client that moves pixels over `transport` (see [`Transport::choose`]).
+    pub fn with_transport(base_url: impl Into<String>, transport: Transport) -> Result<Self> {
         // No timeout: diffusion on a CPU can take minutes.
         let http = reqwest::Client::builder().build()?;
         Ok(Self {
             http,
             base_url: base_url.into().trim_end_matches('/').to_owned(),
+            transport,
         })
     }
 
-    /// A client for the server on loopback port `port`.
+    /// A client for the server on loopback port `port` (base64 transport).
     pub fn for_port(port: u16) -> Result<Self> {
         Self::new(format!("http://127.0.0.1:{port}"))
     }
 
     pub fn base_url(&self) -> &str {
         &self.base_url
+    }
+
+    pub fn transport(&self) -> &Transport {
+        &self.transport
     }
 
     fn api(&self, path: &str) -> String {
@@ -242,6 +274,22 @@ impl Client {
         }
         let value: Value = serde_json::from_slice(&bytes)?;
         Ok(ServerConfig::from_json(&value))
+    }
+
+    /// `GET /api/v1/redrob/transport`: whether the server was started through the Redrob shim
+    /// and takes raw pixel files. A plain IOPaint answers 404, which is `false`, not an error.
+    pub async fn has_file_transport(&self) -> bool {
+        let Ok(response) = self.http.get(self.api("redrob/transport")).send().await else {
+            return false;
+        };
+        if !response.status().is_success() {
+            return false;
+        }
+        response
+            .json::<Value>()
+            .await
+            .map(|v| v["file"].as_bool().unwrap_or(false))
+            .unwrap_or(false)
     }
 
     async fn post(&self, path: &str, body: &Value) -> Result<Vec<u8>> {
@@ -262,6 +310,11 @@ impl Client {
         Rgba8Image::from_png(&bytes)
     }
 
+    async fn post_file_result(&self, path: &str, body: &Value) -> Result<FileResult> {
+        let bytes = self.post(path, body).await?;
+        Ok(serde_json::from_slice(&bytes)?)
+    }
+
     /// `POST /api/v1/model {name}`: switch to a downloaded model in place.
     pub async fn set_model(&self, name: &str) -> Result<()> {
         self.post("model", &json!({ "name": name })).await.map(drop)
@@ -277,54 +330,154 @@ impl Client {
         .map(drop)
     }
 
-    /// `POST /api/v1/inpaint`: erase (no prompt) or replace (prompt) inside `mask` with the
-    /// current model. `image` is sent opaque (alpha over white); when `options` keep the unmasked
-    /// area the result's alpha is `mask`, so it lands as a layer that only changes the selection.
-    pub async fn inpaint(
+    /// One inpaint request over the current transport: `image` goes opaque (over white), the
+    /// answer is an opaque image of the same size. The caller clips and places it.
+    async fn request_inpaint(
         &self,
         image: &Rgba8Image,
         mask: &Mask,
         options: &InpaintOptions,
     ) -> Result<Rgba8Image> {
-        if mask.width != image.width || mask.height != image.height {
-            return Err(AiError::Geometry(
-                "AI fill: the mask does not match the image".into(),
-            ));
-        }
         let mut body = options.to_body()?;
-        body.insert("image".into(), Value::String(image.to_opaque_data_url()?));
-        body.insert("mask".into(), Value::String(mask.to_data_url()?));
-        let mut result = self.post_png("inpaint", &Value::Object(body)).await?;
+        let result = match &self.transport {
+            Transport::Base64 => {
+                body.insert("image".into(), Value::String(image.to_opaque_data_url()?));
+                body.insert("mask".into(), Value::String(mask.to_data_url()?));
+                self.post_png("inpaint", &Value::Object(body)).await?
+            }
+            Transport::File(exchange) => {
+                exchange.prepare()?;
+                let files = exchange.request();
+                transport::write_rgb(&files.image, image)?;
+                transport::write_mask(&files.mask, mask)?;
+                body.insert(
+                    "image_path".into(),
+                    RequestFiles::string(&files.image).into(),
+                );
+                body.insert("mask_path".into(), RequestFiles::string(&files.mask).into());
+                body.insert(
+                    "output_path".into(),
+                    RequestFiles::string(&files.output).into(),
+                );
+                body.insert("width".into(), image.width.into());
+                body.insert("height".into(), image.height.into());
+                let out = self
+                    .post_file_result("redrob/inpaint", &Value::Object(body))
+                    .await?;
+                transport::read_image(&files.output, out.width, out.height, out.channels)?
+            }
+        };
         if result.width != image.width || result.height != image.height {
             return Err(AiError::Geometry(format!(
                 "AI fill: the result is {} × {}, the image {} × {}",
                 result.width, result.height, image.width, image.height
             )));
         }
-        if options.keeps_unmasked_area() {
-            result.clip_alpha(mask)?;
-        }
         Ok(result)
     }
 
-    /// Outpaint: pad the canvas by `expand`, mask the new border and inpaint it. The result is
-    /// the padded size with alpha only on the border (the shell pads its own canvas by `expand`
-    /// and lands the result as a layer).
+    /// `POST /api/v1/inpaint` on the region of interest only: erase (no prompt) or replace
+    /// (prompt) inside `mask` with the current model. Returns the painted region and where its
+    /// top-left sits in the image; outside the region nothing changed, so the caller places it
+    /// as a layer at that offset. When `options` keep the unmasked area (the default) the
+    /// result's alpha is the mask; when they do not, the whole image is sent and comes back.
+    pub async fn inpaint_region(
+        &self,
+        image: &Rgba8Image,
+        mask: &Mask,
+        options: &InpaintOptions,
+    ) -> Result<(Rgba8Image, (u32, u32))> {
+        if mask.width != image.width || mask.height != image.height {
+            return Err(AiError::Geometry(
+                "AI fill: the mask does not match the image".into(),
+            ));
+        }
+        let margin = if options.is_prompted() {
+            region::ROI_MARGIN_PROMPTED
+        } else {
+            region::ROI_MARGIN
+        };
+        let roi = match region::inpaint_region(mask, margin) {
+            Some(roi) if options.keeps_unmasked_area() => roi,
+            Some(_) => image.rect(),
+            None => {
+                return Err(AiError::Geometry("AI fill: the selection is empty".into()));
+            }
+        };
+        let (sub_image, sub_mask) = if roi == image.rect() {
+            (image.clone(), mask.clone())
+        } else {
+            (image.crop(roi)?, mask.crop(roi)?)
+        };
+        let mut result = self.request_inpaint(&sub_image, &sub_mask, options).await?;
+        if options.keeps_unmasked_area() {
+            result.clip_alpha(&sub_mask)?;
+        }
+        Ok((result, (roi.x, roi.y)))
+    }
+
+    /// [`Self::inpaint_region`] pasted back into an image of the canvas's size (transparent
+    /// outside the region).
+    pub async fn inpaint(
+        &self,
+        image: &Rgba8Image,
+        mask: &Mask,
+        options: &InpaintOptions,
+    ) -> Result<Rgba8Image> {
+        let (painted, (x, y)) = self.inpaint_region(image, mask, options).await?;
+        if (painted.width, painted.height) == (image.width, image.height) {
+            return Ok(painted);
+        }
+        let mut full = Rgba8Image::transparent(image.width, image.height)?;
+        full.blit(&painted, x, y)?;
+        Ok(full)
+    }
+
+    /// Outpaint: pad the canvas by `expand`, mask the new border and inpaint it, in tiles of at
+    /// most [`region::TILE`] on a side when the padded canvas is larger than that (an 8K canvas
+    /// never goes to the model in one piece). The result is the padded size with alpha only on
+    /// the border (the shell pads its own canvas by `expand` and lands the result as a layer).
     pub async fn outpaint(
         &self,
         image: &Rgba8Image,
         expand: Expand,
         options: &InpaintOptions,
     ) -> Result<Rgba8Image> {
-        let (padded, border) = pad_for_outpaint(image, expand)?;
-        let mut body = options.to_body()?;
-        body.insert("image".into(), Value::String(padded.to_opaque_data_url()?));
-        body.insert("mask".into(), Value::String(border.to_data_url()?));
-        let mut result = self.post_png("inpaint", &Value::Object(body)).await?;
-        if result.width != padded.width || result.height != padded.height {
-            return Err(AiError::Geometry(
-                "AI expand: the result has the wrong size".into(),
-            ));
+        let (mut canvas, border) = pad_for_outpaint(image, expand)?;
+        if canvas.width <= region::TILE && canvas.height <= region::TILE {
+            let mut result = self.request_inpaint(&canvas, &border, options).await?;
+            result.clip_alpha(&border)?;
+            return Ok(result);
+        }
+        let picture = Rect::new(expand.left, expand.top, image.width, image.height);
+        let mut result = Rgba8Image::transparent(canvas.width, canvas.height)?;
+        for tile in region::outpaint_tiles(picture, canvas.width, canvas.height) {
+            let sub_image = canvas.crop(tile.rect)?;
+            let mut sub_mask = Mask::filled(tile.rect.width, tile.rect.height, 0)?;
+            sub_mask.fill_rect(
+                Rect::new(
+                    tile.paint.x - tile.rect.x,
+                    tile.paint.y - tile.rect.y,
+                    tile.paint.width,
+                    tile.paint.height,
+                ),
+                255,
+            );
+            let painted = self.request_inpaint(&sub_image, &sub_mask, options).await?;
+            // Only the painted part of the tile lands; the seam band is feathered over what the
+            // previous tile painted there.
+            let painted = painted.crop(Rect::new(
+                tile.paint.x - tile.rect.x,
+                tile.paint.y - tile.rect.y,
+                tile.paint.width,
+                tile.paint.height,
+            ))?;
+            result.blend_weighted(&painted, tile.paint.x, tile.paint.y, |x, y| {
+                tile.weight(x, y)
+            })?;
+            // The next tiles see this one as known context.
+            let settled = result.crop(tile.paint)?;
+            canvas.blit(&settled, tile.paint.x, tile.paint.y)?;
         }
         result.clip_alpha(&border)?;
         Ok(result)
@@ -349,11 +502,32 @@ impl Client {
                 ));
             }
         }
-        self.post_png(
-            "run_plugin_gen_image",
-            &json!({ "name": plugin, "image": image.to_data_url()?, "scale": factor }),
-        )
-        .await
+        match &self.transport {
+            Transport::Base64 => {
+                self.post_png(
+                    "run_plugin_gen_image",
+                    &json!({ "name": plugin, "image": image.to_data_url()?, "scale": factor }),
+                )
+                .await
+            }
+            Transport::File(exchange) => {
+                exchange.prepare()?;
+                let files = exchange.request();
+                transport::write_rgba(&files.image, image)?;
+                let body = json!({
+                    "name": plugin,
+                    "image_path": RequestFiles::string(&files.image),
+                    "output_path": RequestFiles::string(&files.output),
+                    "width": image.width,
+                    "height": image.height,
+                    "scale": factor,
+                });
+                let out = self
+                    .post_file_result("redrob/plugin_gen_image", &body)
+                    .await?;
+                transport::read_image(&files.output, out.width, out.height, out.channels)
+            }
+        }
     }
 
     /// `POST /api/v1/run_plugin_gen_mask {name, image[, clicks]}`: RemoveBG / AnimeSeg find the
@@ -365,21 +539,49 @@ impl Client {
         image: &Rgba8Image,
         clicks: &[Click],
     ) -> Result<Mask> {
-        let mut body = Map::new();
-        body.insert("name".into(), Value::String(plugin.into()));
-        body.insert("image".into(), Value::String(image.to_data_url()?));
-        if plugin == "InteractiveSeg" {
-            if clicks.is_empty() {
-                return Err(AiError::Geometry(
-                    "Click to select: click on the subject first".into(),
-                ));
-            }
-            body.insert("clicks".into(), encode_clicks(clicks));
+        if plugin == "InteractiveSeg" && clicks.is_empty() {
+            return Err(AiError::Geometry(
+                "Click to select: click on the subject first".into(),
+            ));
         }
-        let bytes = self
-            .post("run_plugin_gen_mask", &Value::Object(body))
-            .await?;
-        let mask = Mask::from_alpha_png(&bytes)?;
+        let mask = match &self.transport {
+            Transport::Base64 => {
+                let mut body = Map::new();
+                body.insert("name".into(), Value::String(plugin.into()));
+                body.insert("image".into(), Value::String(image.to_data_url()?));
+                if plugin == "InteractiveSeg" {
+                    body.insert("clicks".into(), encode_clicks(clicks));
+                }
+                let bytes = self
+                    .post("run_plugin_gen_mask", &Value::Object(body))
+                    .await?;
+                Mask::from_alpha_png(&bytes)?
+            }
+            Transport::File(exchange) => {
+                exchange.prepare()?;
+                let files = exchange.request();
+                transport::write_rgba(&files.image, image)?;
+                let mut body = Map::new();
+                body.insert("name".into(), Value::String(plugin.into()));
+                body.insert(
+                    "image_path".into(),
+                    RequestFiles::string(&files.image).into(),
+                );
+                body.insert(
+                    "output_path".into(),
+                    RequestFiles::string(&files.output).into(),
+                );
+                body.insert("width".into(), image.width.into());
+                body.insert("height".into(), image.height.into());
+                if plugin == "InteractiveSeg" {
+                    body.insert("clicks".into(), encode_clicks(clicks));
+                }
+                let out = self
+                    .post_file_result("redrob/plugin_gen_mask", &Value::Object(body))
+                    .await?;
+                transport::read_mask(&files.output, out.width, out.height)?
+            }
+        };
         if mask.width != image.width || mask.height != image.height {
             return Err(AiError::Geometry(
                 "AI selection: the mask does not match the canvas".into(),
