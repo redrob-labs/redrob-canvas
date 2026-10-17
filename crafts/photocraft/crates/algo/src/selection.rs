@@ -217,6 +217,7 @@ pub fn magic_wand(px: &[[f32; 4]], area: Rect, seed: (i32, i32), tolerance: f32,
 /// lines so no light seam is left between colour and ink; where a line is only partly dark
 /// (its anti-aliased edge) the colour goes under it in proportion. `None` when the seed is off
 /// the area or itself on a line.
+#[allow(clippy::needless_range_loop)]
 pub fn line_art_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), threshold: f32, gap: u32, grow: u32) -> Option<Region> {
     if !area.contains(seed.0, seed.1) {
         return None;

@@ -865,10 +865,13 @@ fn offset(src: &Buf, w: usize, h: usize, dx: f64, dy: f64) -> Buf {
     for y in 0..h as i64 {
         for x in 0..w as i64 {
             let (sx, sy) = (x - dx, y - dy);
-            if sx >= 0 && sy >= 0 && sx < w as i64 && sy < h as i64 {
-                if let (Some(o), Some(s)) = (out.get_mut(y as usize * w + x as usize), src.get(sy as usize * w + sx as usize)) {
-                    *o = *s;
-                }
+            if sx >= 0
+                && sy >= 0
+                && sx < w as i64
+                && sy < h as i64
+                && let (Some(o), Some(s)) = (out.get_mut(y as usize * w + x as usize), src.get(sy as usize * w + sx as usize))
+            {
+                *o = *s;
             }
         }
     }
@@ -1235,10 +1238,13 @@ fn displace(src: &Buf, map: &Buf, w: usize, h: usize, scale: f64, xc: Channel, y
             let sx = x as f64 + scale * (f64::from(channel(*m, xc)) - 0.5);
             let sy = y as f64 + scale * (f64::from(channel(*m, yc)) - 0.5);
             let (ix, iy) = (sx.round(), sy.round());
-            if ix >= 0.0 && iy >= 0.0 && ix < w as f64 && iy < h as f64 {
-                if let (Some(o), Some(p)) = (out.get_mut(y * w + x), src.get(iy as usize * w + ix as usize)) {
-                    *o = *p;
-                }
+            if ix >= 0.0
+                && iy >= 0.0
+                && ix < w as f64
+                && iy < h as f64
+                && let (Some(o), Some(p)) = (out.get_mut(y * w + x), src.get(iy as usize * w + ix as usize))
+            {
+                *o = *p;
             }
         }
     }
