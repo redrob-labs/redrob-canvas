@@ -1468,8 +1468,10 @@ impl Renderer {
         }
         ctx.set_transform(f.view * xf);
         let closed = effects::stroke::is_closed(bp);
-        // Keep hairlines visible when zoomed far out (at least ~1 device pixel).
-        let width = effects::stroke::aligned_width(st, closed).max(f.px * 0.5 / xf.determinant().abs().sqrt().max(1e-9));
+        // Keep thin strokes visible when zoomed far out (at least ~1 device pixel); a hairline
+        // is one device pixel at any zoom.
+        let scale = xf.determinant().abs().sqrt().max(1e-9);
+        let width = if st.hairline { f.px / scale } else { effects::stroke::aligned_width(st, closed).max(f.px * 0.5 / scale) };
         let inside = st.align == StrokeAlign::Inside && closed;
         if inside {
             ctx.set_fill_rule(fill_rule(rule));

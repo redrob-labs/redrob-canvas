@@ -3,7 +3,9 @@
 
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use redrob_vector_color::{Color, Paint};
-use redrob_vector_doc::{Appearance, ArrowAlign, Arrowhead, Dash, Document, LineCap, LineJoin, Node, StrokeAlign, StrokeLayer, Unit, WidthProfile};
+use redrob_vector_doc::{
+    Appearance, ArrowAlign, Arrowhead, Dash, Document, LineCap, LineJoin, MarkerOrient, Node, StrokeAlign, StrokeLayer, Unit, WidthProfile,
+};
 use redrob_vector_engine::inspect::StrokeMixed;
 use serde_json::{Value, json};
 
@@ -119,6 +121,38 @@ pub(crate) fn weight_field(app: &mut VectorcraftApp, ui: &mut Ui, id: &str, weig
     }
 }
 
+/// The units the Stroke panel's weight can be shown in (Units › Stroke), and percent of the
+/// current weight.
+const WEIGHT_UNITS: [Unit; 4] = [Unit::Pixels, Unit::Points, Unit::Millimeters, Unit::Inches];
+
+/// The unit dropdown beside the weight: a unit sets Preferences › Units › Stroke (the weight and
+/// dash fields follow it); `%` makes the weight field a percentage of the current weight.
+fn unit_dropdown(app: &mut VectorcraftApp, ui: &mut Ui, unit: Unit, percent: bool) {
+    let shown = if percent { "%" } else { unit.suffix() };
+    let choice = widgets::combo(ui, "stroke-unit", shown, 56.0, false, |ui| {
+        let mut chosen = None;
+        for u in WEIGHT_UNITS.iter().copied().chain((!WEIGHT_UNITS.contains(&unit)).then_some(unit)) {
+            if ui.selectable_label(!percent && u == unit, u.suffix()).clicked() {
+                chosen = Some(Some(u));
+            }
+        }
+        if ui.selectable_label(percent, "%").clicked() {
+            chosen = Some(None);
+        }
+        chosen
+    });
+    match choice {
+        Some(Some(u)) => {
+            set_pstate(ui.ctx(), "stroke-unit-percent", false);
+            if u != unit {
+                app.run("prefs.set", json!({"key": "unitsStroke", "value": u.key()})).ok();
+            }
+        }
+        Some(None) => set_pstate(ui.ctx(), "stroke-unit-percent", true),
+        None => {}
+    }
+}
+
 /// The underlined Stroke link (`label`: the Control bar's "Stroke:", the Properties panel's
 /// "Stroke"): a click toggles the Stroke panel in a popover under it.
 pub(crate) fn link(app: &mut VectorcraftApp, ui: &mut Ui, label: &str) {
@@ -142,9 +176,29 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         let l = ui.add_sized(vec2(label_w, 24.0), egui::Label::new(egui::RichText::new(s).size(12.5).color(t.text)).halign(egui::Align::RIGHT));
         crate::scrub::note_label(ui, l.rect);
     };
+    let hairline = st.as_ref().is_some_and(|s| s.hairline);
+    let percent: bool = pstate(ui.ctx(), "stroke-unit-percent");
     ui.horizontal(|ui| {
         row_label(ui, tl!("Weight:"));
-        weight_field(app, ui, "stroke-weight", weight, 120.0);
+        ui.add_enabled_ui(!hairline, |ui| {
+            if percent {
+                // Percent of the current weight: 100 % is the weight as it is.
+                if let Some(v) = widgets::plain_field(ui, "stroke-weight-pct", 100.0, "%", 0, 72.0)
+                    && let Some(w) = weight
+                {
+                    set(app, json!({"weight": (w * v / 100.0).max(0.0)}));
+                }
+            } else {
+                weight_field(app, ui, "stroke-weight", weight, 72.0);
+            }
+        });
+        unit_dropdown(app, ui, unit, percent);
+    });
+    ui.horizontal(|ui| {
+        row_label(ui, "");
+        if widgets::check(ui, tl!("Hairline"), hairline, st.is_some()) {
+            set(app, json!({"hairline": !hairline}));
+        }
     });
     if hidden {
         return;
@@ -250,6 +304,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     widgets::divider(ui);
     // Arrowheads.
     let (sa, ea) = (st.as_ref().and_then(|s| s.start_arrow), st.as_ref().and_then(|s| s.end_arrow));
+    let ma = st.as_ref().and_then(|s| s.mid_arrow);
     ui.horizontal(|ui| {
         row_label(ui, tl!("Arrowheads:"));
         if let Some(a) = arrow_dropdown(ui, "arrow-start", sa, true) {
@@ -260,6 +315,50 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         }
         if widgets::icon_button_enabled(ui, "arrow-left-right", tl!("Swap start and end arrowheads"), false, st.is_some(), 22.0).clicked() {
             app.run("stroke.setAdvanced", json!({"swapArrows": true})).ok();
+        }
+    });
+    ui.horizontal(|ui| {
+        row_label(ui, tl!("Mid markers:"));
+        if let Some(a) = arrow_dropdown(ui, "arrow-mid", ma, false) {
+            set(app, json!({"midArrow": a.map(|a| format!("{a:?}"))}));
+        }
+    });
+    let orient = st.as_ref().map_or(MarkerOrient::Auto, |s| s.marker_orient);
+    let any_head = st.as_ref().is_some_and(StrokeLayer::has_heads);
+    ui.horizontal(|ui| {
+        row_label(ui, tl!("Orientation:"));
+        ui.add_enabled_ui(any_head, |ui| {
+            let shown = match orient {
+                MarkerOrient::Auto => tl!("Auto"),
+                MarkerOrient::AutoStartReverse => tl!("Auto, start reversed"),
+                MarkerOrient::Fixed { .. } => tl!("Fixed angle"),
+            };
+            let choice = widgets::combo(ui, "marker-orient", shown, 128.0, false, |ui| {
+                let mut chosen = None;
+                for (label, value) in [(tl!("Auto"), "auto"), (tl!("Auto, start reversed"), "autoStartReverse"), (tl!("Fixed angle"), "fixed")] {
+                    if ui.selectable_label(label == shown, label).clicked() {
+                        chosen = Some(value);
+                    }
+                }
+                chosen
+            });
+            match choice {
+                Some("fixed") => set(app, json!({"markerOrient": 0.0})),
+                Some(mode) => set(app, json!({"markerOrient": mode})),
+                None => {}
+            }
+            if let MarkerOrient::Fixed { angle } = orient
+                && let Some(v) = widgets::plain_field(ui, "marker-angle", angle, "°", 0, 56.0)
+            {
+                set(app, json!({"markerOrient": v}));
+            }
+        });
+    });
+    ui.horizontal(|ui| {
+        row_label(ui, "");
+        let scales = st.as_ref().is_none_or(|s| s.markers_scale);
+        if widgets::check(ui, tl!("Scale with stroke"), scales, any_head) {
+            set(app, json!({"markersScale": !scales}));
         }
     });
     let scale = st.as_ref().map(|s| s.arrow_scale).unwrap_or((100.0, 100.0));

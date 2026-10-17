@@ -122,11 +122,7 @@ impl StrokeLayer {
     /// Does bounding this stroke need its path's shape: miter spikes, projecting caps, arrowheads,
     /// or an alignment that depends on whether the path is closed? Else it reaches evenly round it.
     fn needs_shape(&self) -> bool {
-        self.join == LineJoin::Miter
-            || self.cap == LineCap::Square
-            || self.start_arrow.is_some()
-            || self.end_arrow.is_some()
-            || self.align != StrokeAlign::Center
+        self.join == LineJoin::Miter || self.cap == LineCap::Square || self.has_heads() || self.align != StrokeAlign::Center
     }
 
     /// The box this stroke paints along `bp`, whose geometric bounds are `bounds`: the bounds grown
@@ -141,6 +137,13 @@ impl StrokeLayer {
         for (r, closed) in subpaths(bp) {
             let side = self.side_reach(closed);
             side_max = side_max.max(if capped_dashes { side * std::f64::consts::SQRT_2 } else { side });
+            if self.mid_arrow.is_some() {
+                // Mid markers sit on the nodes between the ends (every node of a closed subpath).
+                let reach = HEAD_REACH * self.mid_weight() + self.width / 2.0;
+                for (at, _, _) in joints(&drawn(&els[r.clone()]), closed) {
+                    out = out.union(Rect::from_center_size(at, (2.0 * reach, 2.0 * reach)));
+                }
+            }
             if side <= 0.0 {
                 continue;
             }

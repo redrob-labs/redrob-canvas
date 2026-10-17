@@ -23,7 +23,7 @@ use kurbo::{BezPath, ParamCurve, ParamCurveNearest, PathEl, PathSeg, Shape};
 use redrob_vector_doc::{LineCap, LineJoin, StrokeAlign, StrokeLayer};
 pub(crate) use redrob_vector_geom::bez::{kink, segments, subpaths, tangent, unit};
 
-pub use arrow::Arrow;
+pub use arrow::{Arrow, head_inset, head_len, head_outline, is_hollow};
 pub use dash::{Dashed, Dot, dash, dot_outline};
 pub use gradient::{Slice, WrittenSlices, gradient_meshes, gradient_slices, written_slices};
 pub use outline::{OUTLINE_TOL, Written, WrittenShape, for_writer, is_plain, outline_region};
@@ -44,7 +44,7 @@ pub struct StrokePieces<'a> {
 
 /// The centre line and arrowheads of stroke `st` along `bp`.
 pub fn stroke_pieces<'a>(bp: &'a BezPath, st: &StrokeLayer) -> StrokePieces<'a> {
-    if st.start_arrow.is_none() && st.end_arrow.is_none() {
+    if !st.has_heads() {
         return StrokePieces { line: Cow::Borrowed(bp), heads: vec![] };
     }
     arrow::pieces(bp, st)
