@@ -105,8 +105,8 @@ pub fn spiro_approx_to_bezier_corners(pts: &[Point], closed: bool, corner: Optio
                 continue;
             }
             let (Some(si), Some(so)) = (seg_before(i, n, closed), seg_after(i, n, closed)) else { continue };
-            let cin = cubic_of(pts, &tangents, &lens, si, n, &is_corner);
-            let cout = cubic_of(pts, &tangents, &lens, so, n, &is_corner);
+            let cin = cubic_of(pts, &tangents, &lens, si, n, is_corner);
+            let cout = cubic_of(pts, &tangents, &lens, so, n, is_corner);
             let (ka, kb) = (cin.curvature(1.0).abs(), cout.curvature(0.0).abs());
             if !(ka.is_finite() && kb.is_finite()) || ka + kb < 1e-12 {
                 continue;
