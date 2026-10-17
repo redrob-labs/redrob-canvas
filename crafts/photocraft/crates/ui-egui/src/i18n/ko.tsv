@@ -3418,3 +3418,5 @@ curves	Smooth	매끄럽게
 	Smooth the pen pressure along with the position	위치와 함께 펜 필압도 다듬음
 	Drawing Angle	드로잉 각도
 	Erase with the current brush (Clear mode)	현재 브러시로 지우기 (지우기 모드)
+	Blend:	혼합:
+	How much of the sample goes into the current colour	샘플을 현재 색상에 얼마나 섞을지

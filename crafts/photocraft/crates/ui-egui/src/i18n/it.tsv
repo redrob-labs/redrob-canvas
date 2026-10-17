@@ -4360,3 +4360,5 @@ shape	Appearance	Aspetto
 	Smooth the pen pressure along with the position	Smussa la pressione della penna insieme alla posizione
 	Drawing Angle	Angolo di disegno
 	Erase with the current brush (Clear mode)	Cancella con il pennello corrente (modalità Cancella)
+	Blend:	Fusione:
+	How much of the sample goes into the current colour	Quanto del campione entra nel colore corrente

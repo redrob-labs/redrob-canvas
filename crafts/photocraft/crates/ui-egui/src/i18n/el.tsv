@@ -3940,3 +3940,5 @@ curves	Smooth	Εξομάλυνση
 	Smooth the pen pressure along with the position	Εξομάλυνση της πίεσης της γραφίδας μαζί με τη θέση
 	Drawing Angle	Γωνία σχεδίασης
 	Erase with the current brush (Clear mode)	Σβήσιμο με το τρέχον πινέλο (λειτουργία Καθαρισμός)
+	Blend:	Ανάμειξη:
+	How much of the sample goes into the current colour	Πόσο από το δείγμα μπαίνει στο τρέχον χρώμα

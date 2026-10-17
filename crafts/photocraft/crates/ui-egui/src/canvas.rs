@@ -4990,7 +4990,10 @@ fn alt_eyedropper(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
     match ev {
         // Without ⌥: the sample sets the foreground colour, whatever the Eyedropper would do.
         ToolEvent::Down { x, y, .. } | ToolEvent::Move { x, y, .. } => sample_eyedropper(app, x, y, egui::Modifiers::NONE),
-        ToolEvent::Up { .. } => app.alt_sampling = false,
+        ToolEvent::Up { .. } => {
+            app.alt_sampling = false;
+            finish_eyedropper(app, egui::Modifiers::NONE);
+        }
     }
     true
 }
@@ -4998,7 +5001,28 @@ fn alt_eyedropper(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
 fn sample_eyedropper(app: &mut PhotocraftApp, x: f64, y: f64, mods: egui::Modifiers) {
     if let Some([r, g, b]) = eyedropper_color(app, x, y) {
         let key = if mods.alt { "background" } else { "foreground" };
-        let _ = app.run("tools.setColors", json!({ key: [r, g, b, 1.0] }));
+        // Blend: mix the sample into the colour the press started from (Color Sampler's blend %).
+        let blend = app.ui.tool_options.eyedropper_blend;
+        let blend = if blend.is_finite() { blend.clamp(0.0, 1.0) } else { 1.0 };
+        let base = app.eyedropper_base.get_or_insert((app.session.tools.foreground, app.session.tools.background));
+        let cur = if mods.alt { base.1 } else { base.0 };
+        let mix = |c: f32, s: f32| c + (s - c) * blend;
+        let color = [mix(cur[0], r), mix(cur[1], g), mix(cur[2], b), 1.0];
+        let _ = app.run("tools.setColors", json!({ key: color }));
+    }
+}
+
+/// End of an Eyedropper press: forget the blend base and, with Add to Swatches, keep the colour.
+fn finish_eyedropper(app: &mut PhotocraftApp, mods: egui::Modifiers) {
+    if app.eyedropper_base.take().is_some() && app.ui.tool_options.eyedropper_add_swatch {
+        // Without `color` the command adds the foreground; the background goes as RGB values.
+        let params = if mods.alt {
+            let c = app.session.tools.background;
+            json!({"color": {"model": "rgb", "values": [c[0] * 255.0, c[1] * 255.0, c[2] * 255.0]}})
+        } else {
+            json!({})
+        };
+        let _ = app.run("swatches.add", params);
     }
 }
 
@@ -5195,7 +5219,10 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
                 sample_eyedropper(app, x, y, mods);
                 return;
             }
-            ToolEvent::Up { .. } => return,
+            ToolEvent::Up { .. } => {
+                finish_eyedropper(app, mods);
+                return;
+            }
         }
     }
     // A locked layer (the Background without a selection, say): no drag, and Photoshop's message

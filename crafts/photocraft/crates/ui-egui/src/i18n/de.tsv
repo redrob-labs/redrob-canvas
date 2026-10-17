@@ -3243,3 +3243,5 @@ curves	Smooth	Glätten
 	Smooth the pen pressure along with the position	Den Stiftdruck zusammen mit der Position glätten
 	Drawing Angle	Zeichenwinkel
 	Erase with the current brush (Clear mode)	Mit dem aktuellen Pinsel radieren (Modus Löschen)
+	Blend:	Mischen:
+	How much of the sample goes into the current colour	Wie viel der Probe in die aktuelle Farbe einfließt

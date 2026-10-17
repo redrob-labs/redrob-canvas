@@ -3214,3 +3214,5 @@ curves	Smooth	Сгладить
 	Speed	Скорость
 	Circle	Круг
 	Erase with the current brush (Clear mode)	Стирать текущей кистью (режим Очистка)
+	Blend:	Смешивание:
+	How much of the sample goes into the current colour	Какая доля образца смешивается с текущим цветом

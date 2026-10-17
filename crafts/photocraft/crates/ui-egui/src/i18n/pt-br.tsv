@@ -4030,3 +4030,5 @@ layerLabel	No Color	Sem cor
 	Smooth the pen pressure along with the position	Suavizar a pressão da caneta junto com a posição
 	Drawing Angle	Ângulo do desenho
 	Erase with the current brush (Clear mode)	Apagar com o pincel atual (modo Limpar)
+	Blend:	Mesclar:
+	How much of the sample goes into the current colour	Quanto da amostra entra na cor atual

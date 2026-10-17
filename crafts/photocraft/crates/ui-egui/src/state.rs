@@ -731,6 +731,17 @@ pub struct ToolOptions {
     /// Eyedropper › Show Sampling Ring.
     #[serde(default = "yes")]
     pub eyedropper_ring: bool,
+    /// Eyedropper › Blend: 0..1 share of the sampled colour mixed into the current colour
+    /// (1 = replace it, the classic behaviour).
+    #[serde(default = "one_f32")]
+    pub eyedropper_blend: f32,
+    /// Eyedropper › Add to Swatches: every click also adds the sampled colour to the Swatches panel.
+    #[serde(default)]
+    pub eyedropper_add_swatch: bool,
+}
+
+fn one_f32() -> f32 {
+    1.0
 }
 
 fn yes() -> bool {
@@ -905,6 +916,8 @@ impl Default for ToolOptions {
             eyedropper_size: 1,
             eyedropper_sample: default_eyedropper_sample(),
             eyedropper_ring: true,
+            eyedropper_blend: 1.0,
+            eyedropper_add_swatch: false,
         }
     }
 }

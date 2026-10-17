@@ -3970,3 +3970,5 @@ cameraData	Lens	Lens
 	Smooth the pen pressure along with the position	Kalem basıncını konumla birlikte yumuşat
 	Drawing Angle	Çizim açısı
 	Erase with the current brush (Clear mode)	Geçerli fırçayla sil (Temizle kipi)
+	Blend:	Karışım:
+	How much of the sample goes into the current colour	Örneğin ne kadarı geçerli renge karışır

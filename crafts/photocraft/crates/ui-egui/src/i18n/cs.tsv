@@ -3849,3 +3849,5 @@ navigator	Zoom	Zvětšení
 	Smooth the pen pressure along with the position	Vyhladit tlak pera spolu s polohou
 	Drawing Angle	Úhel kresby
 	Erase with the current brush (Clear mode)	Mazat aktuálním štětcem (režim Vymazat)
+	Blend:	Prolnutí:
+	How much of the sample goes into the current colour	Jak velká část vzorku se promítne do aktuální barvy

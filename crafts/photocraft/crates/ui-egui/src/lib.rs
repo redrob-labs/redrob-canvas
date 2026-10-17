@@ -610,6 +610,9 @@ pub struct PhotocraftApp {
     /// This press began with ⌥ (Alt) held on a painting tool, so it samples colours instead of
     /// painting until it is released (`canvas::alt_eyedropper`, #417).
     pub(crate) alt_sampling: bool,
+    /// The foreground and background colours when an Eyedropper press began: with a Blend
+    /// percentage below 100, every sample of the drag mixes into these, not into the last sample.
+    pub(crate) eyedropper_base: Option<([f32; 4], [f32; 4])>,
     /// Caps Lock toggled on, read from the OS each frame (`services.caps_lock`): painting tools
     /// show the precise crosshair whatever the cursor preference (#1758).
     pub caps_lock: bool,
@@ -846,6 +849,7 @@ impl PhotocraftApp {
             quick_pick: false,
             brush_resize_armed: false,
             alt_sampling: false,
+            eyedropper_base: None,
             caps_lock: false,
             opacity_keys: None,
             control_rx: None,

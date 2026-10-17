@@ -3249,3 +3249,5 @@ curves	Smooth	Lisser
 	Speed	Vitesse
 	Circle	Cercle
 	Erase with the current brush (Clear mode)	Effacer avec le pinceau actuel (mode Effacer)
+	Blend:	Mélange :
+	How much of the sample goes into the current colour	Part de l'échantillon mélangée à la couleur actuelle

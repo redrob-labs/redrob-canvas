@@ -4158,3 +4158,5 @@ cameraRaw	Yellow	Sárga
 	Smooth the pen pressure along with the position	A toll nyomásának simítása a pozícióval együtt
 	Drawing Angle	Rajzolási szög
 	Erase with the current brush (Clear mode)	Törlés az aktuális ecsettel (Törlés mód)
+	Blend:	Keverés:
+	How much of the sample goes into the current colour	A minta mekkora része kerül az aktuális színbe

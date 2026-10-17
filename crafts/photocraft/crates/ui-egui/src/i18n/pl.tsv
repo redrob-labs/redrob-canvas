@@ -3838,3 +3838,5 @@ curves	Smooth	Wygładź
 	Smooth the pen pressure along with the position	Wygładzaj nacisk pióra razem z położeniem
 	Drawing Angle	Kąt rysowania
 	Erase with the current brush (Clear mode)	Wymazuj bieżącym pędzlem (tryb Wyczyść)
+	Blend:	Mieszanie:
+	How much of the sample goes into the current colour	Jaka część próbki trafia do bieżącego koloru

@@ -2846,3 +2846,5 @@ curves	Smooth	平滑
 	Speed	速度
 	Circle	圓形
 	Erase with the current brush (Clear mode)	用目前筆刷擦除 (清除模式)
+	Blend:	混合:
+	How much of the sample goes into the current colour	取樣顏色混入目前顏色的比例

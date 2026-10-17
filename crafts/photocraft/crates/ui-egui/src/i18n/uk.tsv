@@ -3939,3 +3939,5 @@ curves	Smooth	Згладити
 	Smooth the pen pressure along with the position	Згладжувати натиск пера разом із положенням
 	Drawing Angle	Кут малювання
 	Erase with the current brush (Clear mode)	Стирати поточним пензлем (режим Очищення)
+	Blend:	Змішування:
+	How much of the sample goes into the current colour	Яка частка зразка змішується з поточним кольором

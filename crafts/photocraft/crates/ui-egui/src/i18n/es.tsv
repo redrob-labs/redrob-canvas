@@ -4201,3 +4201,5 @@ navigator	Zoom	Zoom
 	Smooth the pen pressure along with the position	Suavizar la presión del lápiz junto con la posición
 	Drawing Angle	Ángulo de dibujo
 	Erase with the current brush (Clear mode)	Borrar con el pincel actual (modo Borrar)
+	Blend:	Mezcla:
+	How much of the sample goes into the current colour	Cuánto de la muestra entra en el color actual

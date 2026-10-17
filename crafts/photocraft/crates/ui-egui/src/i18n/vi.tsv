@@ -3728,3 +3728,5 @@ curves	Smooth	Làm mượt
 	Smooth the pen pressure along with the position	Làm mượt lực nhấn bút cùng với vị trí
 	Drawing Angle	Góc vẽ
 	Erase with the current brush (Clear mode)	Xóa bằng cọ hiện tại (chế độ Xóa)
+	Blend:	Hòa trộn:
+	How much of the sample goes into the current colour	Mẫu hòa vào màu hiện tại bao nhiêu

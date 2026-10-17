@@ -1678,9 +1678,9 @@ name = "Colour sampler tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/color_sampler.html"
 behaviour = "Sample from all layers or current; radius, blend with current colour; add to palette; info box with channel values."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
-gap = "eyedropper with sample size and all-layers; no blend percentage or add-to-palette"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/eyedropper_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+gap = ""
 priority = 1
 
 [[feature]]
