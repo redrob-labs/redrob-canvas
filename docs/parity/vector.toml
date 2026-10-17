@@ -77,9 +77,8 @@ name = "Ellipse / arc tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/circles-ellipses-and-arcs.html"
 behaviour = "Drag draws a live ellipse (Ctrl for a circle); two on-shape handles set start and end angles, turning it into a pie slice, a chord or an open arc, selectable in the toolbar; a button restores the whole ellipse."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs, crafts/vectorcraft/crates/tools/src/extra.rs (arc tool)"
-gap = "no start/end-angle handles on a live ellipse (pie/chord/arc); the separate Arc tool draws a quarter-arc segment only"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/shapes.rs (ellipse_arc, ArcKind), crafts/vectorcraft/crates/doc/src/node.rs (LiveShape::Ellipse arc), crafts/vectorcraft/crates/tools/src/shapehandles.rs, crafts/vectorcraft/crates/engine/src/cmd/object.rs (object.setLiveShape arcKind/wholeEllipse), crafts/vectorcraft/crates/ui-egui/src/panels/transform.rs (control bar)"
 priority = 1
 
 [[feature]]
@@ -89,9 +88,8 @@ name = "Star / polygon tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/stars-and-polygons.html"
 behaviour = "Toolbar toggle between polygon and star; fields for corner count, spoke ratio, rounding and randomisation; two live handles move the outer tip and inner notch, Ctrl snaps angles, Shift-drag rounds the tips, Alt-drag randomises; the shape stays editable afterwards."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/shape.rs, crafts/vectorcraft/crates/geom/src/shapes.rs"
-gap = "corner count and inner radius are set in the draw dialog or by arrow keys while dragging; no rounding or randomise parameter; the result is a plain path, not a live star"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/shapes.rs (star_live), crafts/vectorcraft/crates/doc/src/node.rs (LiveShape::Star), crafts/vectorcraft/crates/tools/src/shape.rs (rounding/randomized options), crafts/vectorcraft/crates/tools/src/shapehandles.rs, crafts/vectorcraft/crates/ui-egui/src/panels/transform.rs (control bar fields)"
 priority = 1
 
 [[feature]]
@@ -513,9 +511,9 @@ name = "Node types: cusp, smooth, symmetric, auto-smooth"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-types.html"
 behaviour = "Each node is one of four kinds shown by its marker shape: cusp (independent handles), smooth (collinear handles of free length), symmetric (collinear, equal length), auto-smooth (handles recomputed from neighbours when the node moves); toolbar buttons and Shift+C/S/Y/A convert, Ctrl-click cycles."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs, crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.convertAnchor)"
-gap = "corner and smooth only; no symmetric or auto-smooth node kinds"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/path.rs (AnchorKind, symmetric_anchor, auto_smooth_anchor, refresh_auto_smooth), crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.convertAnchors), crafts/vectorcraft/crates/ui-egui/src/chrome.rs (Convert buttons), crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs (Shift+C/S/Y/A), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (markers by kind)"
+gap = "Ctrl-click does not cycle the kind (Ctrl is taken by the Selection tool switch); Shift+C/S/Y/A convert only while anchors are direct-selected, else they stay tool shortcuts"
 priority = 1
 
 [[feature]]
@@ -525,9 +523,8 @@ name = "Insert node (midpoint, by double-click, at min/max X/Y)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/node-operations.html"
 behaviour = "Insert adds a node in the middle of every selected segment; a dropdown also inserts at the segment's extreme X or Y; double-clicking a segment adds a node there."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.insertAnchor, path.appendAnchor)"
-gap = "Add Anchor Points inserts midpoints and the Add Anchor tool inserts at a click; no insert-at-extremum"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.insertAnchorsAtExtremes), crafts/vectorcraft/crates/geom/src/path.rs (segment_extremum), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object > Path > Add Anchor Points At)"
 priority = 1
 
 [[feature]]
@@ -681,9 +678,8 @@ name = "Live shape handles in the node tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/shape-tools.html"
 behaviour = "Rectangles, ellipses, stars and spirals keep their defining parameters and show their own handles (corner radius, arc angles, star tips) in the node tool until converted to a path."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (LiveShape: Rectangle, Ellipse, Polygon), crafts/vectorcraft/crates/tools/src/corners.rs"
-gap = "rectangles, ellipses and polygons are live (size, corners, sides); stars and spirals become plain paths"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (LiveShape: Rectangle, Ellipse, Polygon, Star, Spiral), crafts/vectorcraft/crates/tools/src/corners.rs, crafts/vectorcraft/crates/tools/src/shapehandles.rs, crafts/vectorcraft/crates/ui-egui/src/canvas.rs"
 priority = 1
 
 # ---------------------------------------------------------------------------------------------
