@@ -1622,7 +1622,9 @@ pub(crate) fn formatting_params(app: &PhotocraftApp) -> Option<serde_json::Value
     let mut layers: Vec<u64> = st.selected_layers().into_iter().filter(|id| text_layer(&st.doc, *id).is_some()).map(|id| id.0).collect();
     // The controls show the target layer's style ([`target`]): what they show is what they edit,
     // so an active type layer outside the selection is formatted too, rather than nothing.
-    if layers.is_empty() && let Some((id, _)) = target(app) {
+    if layers.is_empty()
+        && let Some((id, _)) = target(app)
+    {
         layers.push(id);
     }
     (!layers.is_empty()).then(|| json!({"layers": layers}))

@@ -28,8 +28,10 @@ const SHEET_ID: &str = "sheet-";
 /// each `<use>`'s id with the id of the symbol it shows, else nothing.
 pub(super) fn lay_out(svg: &str, xml: &roxmltree::Document, edits: &mut Edits) -> Vec<(String, String)> {
     let root = xml.root_element();
-    let symbols: Vec<XNode> =
-        xml.descendants().filter(|n| n.is_element() && n.tag_name().name() == "symbol" && n.attribute("id").is_some_and(|id| !id.is_empty())).collect();
+    let symbols: Vec<XNode> = xml
+        .descendants()
+        .filter(|n| n.is_element() && n.tag_name().name() == "symbol" && n.attribute("id").is_some_and(|id| !id.is_empty()))
+        .collect();
     if symbols.is_empty() || !is_sheet(root, &symbols) {
         return Vec::new();
     }
@@ -73,7 +75,10 @@ pub(super) fn lay_out(svg: &str, xml: &roxmltree::Document, edits: &mut Edits) -
 /// Is `root` a sheet: no `<use>` of any of `symbols`, and no art outside definitions?
 fn is_sheet(root: XNode, symbols: &[XNode]) -> bool {
     let ids: HashSet<&str> = symbols.iter().filter_map(|s| s.attribute("id")).collect();
-    let used = root.descendants().filter(|n| n.is_element() && n.tag_name().name() == "use").any(|u| href(u).and_then(|h| h.strip_prefix('#')).is_some_and(|s| ids.contains(s)));
+    let used = root
+        .descendants()
+        .filter(|n| n.is_element() && n.tag_name().name() == "use")
+        .any(|u| href(u).and_then(|h| h.strip_prefix('#')).is_some_and(|s| ids.contains(s)));
     if used {
         return false;
     }
@@ -135,8 +140,8 @@ mod tests {
         let out = edits.apply(SPRITE);
         // 3 symbols: 2 columns, 2 rows, 16 pt cells, 4 pt gaps.
         assert!(out.contains(r#"width="44" height="44" viewBox="0 0 44 44""#), "{out}");
-        assert!(out.contains(r##"<use id="vectorcraft-id-sheet-0" href="#a" x="4" y="4" width="16" height="16"/>"##), "{out}");
-        assert!(out.contains(r##"<use id="vectorcraft-id-sheet-2" href="#c" x="4" y="24" width="16" height="16"/>"##), "{out}");
+        assert!(out.contains(&format!(r##"<use id="{MADE_UP_ID}{SHEET_ID}0" href="#a" x="4" y="4" width="16" height="16"/>"##)), "{out}");
+        assert!(out.contains(&format!(r##"<use id="{MADE_UP_ID}{SHEET_ID}2" href="#c" x="4" y="24" width="16" height="16"/>"##)), "{out}");
         assert!(out.ends_with("/></svg>"), "{out}");
         // What usvg then reads is well formed.
         roxmltree::Document::parse(&out).unwrap();
