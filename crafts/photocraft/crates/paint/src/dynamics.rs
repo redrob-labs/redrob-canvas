@@ -6,7 +6,7 @@
 
 use redrob_photo_geom::Point;
 
-use crate::brush::{BrushSettings, Control, Dynamic, Smoothing};
+use crate::brush::{BrushSettings, Control, Dynamic, HoseSelection, ImageHose, Smoothing};
 use crate::rng::{rand_signed, rand01, stream};
 use crate::{Dab, StrokePoint};
 
@@ -21,6 +21,10 @@ pub const SPEED_SPACING_MS: f64 = 8.0;
 
 /// Longest pixel-grid segment (in pixels) before falling back to distance spacing.
 const MAX_GRID_STEPS: f64 = 1e7;
+
+/// Pointer speed, in pixels per millisecond of stroke time, at which [`Control::Velocity`] (and an
+/// image hose's velocity selection) reads 1: 2000 px/s is a fast flick on any tablet.
+pub const VELOCITY_FULL_PX_PER_MS: f32 = 2.0;
 
 /// Densest speed spacing, in pixels between dabs (a slow, long stroke never floods the buffer).
 const MIN_SPEED_STEP: f64 = 0.5;
@@ -174,6 +178,9 @@ pub struct StepInput {
     pub initial_direction: f32,
     /// Sequential step number (0 = first).
     pub step: u64,
+    /// Pointer speed over the segment this step lies on, in pixels per millisecond of stroke
+    /// time; 0 when the input carries no timestamps.
+    pub speed: f32,
 }
 
 /// Walks a polyline and emits steps every `step_len(point)` pixels, plus airbrush steps in time.
@@ -187,6 +194,8 @@ pub struct PathWalker {
     initial_dir: Option<f32>,
     dir: f32,
     step: u64,
+    /// Speed over the current segment (px/ms), 0 without timestamps.
+    speed: f32,
     /// Airbrush interval in ms (None = off).
     interval: Option<f64>,
     time_acc: f64,
@@ -207,6 +216,7 @@ impl PathWalker {
             initial_dir: None,
             dir: 0.0,
             step: 0,
+            speed: 0.0,
             interval: build_up_interval_ms,
             time_acc: 0.0,
             speed: None,
@@ -254,7 +264,7 @@ impl PathWalker {
     }
 
     fn emit(&mut self, point: StrokePoint, out: &mut impl FnMut(StepInput)) {
-        let s = StepInput { point, direction: self.dir, initial_direction: self.initial_dir.unwrap_or(self.dir), step: self.step };
+        let s = StepInput { point, direction: self.dir, initial_direction: self.initial_dir.unwrap_or(self.dir), step: self.step, speed: self.speed };
         self.step += 1;
         out(s);
     }
@@ -273,6 +283,8 @@ impl PathWalker {
             if self.initial_dir.is_none() {
                 self.initial_dir = Some(self.dir);
             }
+            let dt = p.time - a.time;
+            self.speed = if dt > 0.0 && dt.is_finite() { (len / dt) as f32 } else { 0.0 };
         }
         if let Some(f) = self.pending_first.take() {
             self.emit(f, out);
@@ -353,7 +365,14 @@ pub fn control_value(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
         Control::PenTilt => 1.0 - (p.tilt_x.hypot(p.tilt_y) / 90.0).clamp(0.0, 1.0),
         Control::StylusWheel => p.wheel.clamp(0.0, 1.0),
         Control::Rotation => (p.rotation.rem_euclid(360.0)) / 360.0,
+        Control::Velocity => velocity_value(s.speed),
     }
+}
+
+/// Pointer speed as a 0..1 control value (see [`VELOCITY_FULL_PX_PER_MS`]).
+#[inline]
+pub fn velocity_value(speed: f32) -> f32 {
+    if speed.is_finite() { (speed / VELOCITY_FULL_PX_PER_MS).clamp(0.0, 1.0) } else { 0.0 }
 }
 
 /// A dynamic's control value passed through its own response curve ([`Dynamic::curve`]). Controls
@@ -362,7 +381,7 @@ pub fn dynamic_value(d: &Dynamic, s: &StepInput) -> f32 {
     let v = control_value(d.control, d.fade_steps, s);
     match d.control {
         Control::Off | Control::InitialDirection | Control::Direction => v,
-        Control::Fade | Control::PenPressure | Control::PenTilt | Control::StylusWheel | Control::Rotation => d.curve.eval(v),
+        Control::Fade | Control::PenPressure | Control::PenTilt | Control::StylusWheel | Control::Rotation | Control::Velocity => d.curve.eval(v),
     }
 }
 
@@ -382,6 +401,7 @@ pub fn control_angle(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
         }
         Control::StylusWheel => 360.0 * p.wheel.clamp(0.0, 1.0),
         Control::Rotation => p.rotation,
+        Control::Velocity => 360.0 * velocity_value(s.speed),
         Control::InitialDirection => s.initial_direction.to_degrees(),
         Control::Direction => s.direction.to_degrees(),
     }
@@ -461,6 +481,41 @@ pub fn base_diameter(b: &BrushSettings, s: &StepInput) -> f32 {
     b.size * f
 }
 
+/// The image hose cell a dab paints with: each dimension picks an index below its rank by its
+/// selection mode, and the indices combine row-major (the first dimension slowest). `index` is
+/// the dab's position in the stroke (Incremental steps it; Random keys on it).
+pub fn hose_cell(h: &ImageHose, s: &StepInput, seed: u64, index: u64) -> u32 {
+    let n = h.cells.len() as u64;
+    if n == 0 {
+        return 0;
+    }
+    let p = &s.point;
+    // A 0..1 value spread over `rank` cells (1 lands in the last one).
+    let spread = |v: f32, rank: u64| -> u64 { ((v.clamp(0.0, 1.0) * rank as f32) as u64).min(rank - 1) };
+    let single = [crate::brush::HoseDimension { rank: n as u32, selection: HoseSelection::Incremental }];
+    let dims: &[crate::brush::HoseDimension] = if h.dims.is_empty() { &single } else { &h.dims };
+    let mut cell: u64 = 0;
+    for (di, d) in dims.iter().enumerate() {
+        let rank = u64::from(d.rank.max(1));
+        let i = match d.selection {
+            HoseSelection::Incremental => index % rank,
+            // Direction is counter-clockwise, y up; the cells go clockwise from a stroke
+            // heading right, so a hose drawn for the reference's angular mode turns the same way.
+            HoseSelection::Angular => {
+                let turn = (-f64::from(s.direction)).rem_euclid(std::f64::consts::TAU) / std::f64::consts::TAU;
+                spread(turn as f32, rank)
+            }
+            HoseSelection::Random => spread(rand01(seed, index, stream::HOSE + di as u64), rank),
+            HoseSelection::Velocity => spread(velocity_value(s.speed), rank),
+            HoseSelection::Pressure => spread(p.pressure, rank),
+            HoseSelection::TiltX => spread(p.tilt_x / 180.0 + 0.5, rank),
+            HoseSelection::TiltY => spread(p.tilt_y / 180.0 + 0.5, rank),
+        };
+        cell = cell * rank + i;
+    }
+    (cell % n) as u32
+}
+
 /// Builds the primary dabs of a step (Shape Dynamics, Scattering, Transfer, Color, Texture depth).
 #[derive(Clone, Debug)]
 pub struct DabBuilder {
@@ -477,7 +532,7 @@ impl DabBuilder {
     }
 
     pub fn step_len(&self, p: &StrokePoint) -> f64 {
-        let s = StepInput { point: *p, direction: 0.0, initial_direction: 0.0, step: 0 };
+        let s = StepInput { point: *p, direction: 0.0, initial_direction: 0.0, step: 0, speed: 0.0 };
         let d = base_diameter(&self.brush, &s).max(1.0);
         f64::from(d * self.brush.spacing.max(0.01)).max(0.5)
     }
@@ -574,6 +629,8 @@ impl DabBuilder {
             let tx = &b.texture;
             let depth =
                 if tx.enabled && tx.each_tip { tx.depth.clamp(0.0, 1.0) * scalar(&tx.depth_jitter, s, r(stream::DEPTH)) } else { tx.depth.clamp(0.0, 1.0) };
+            // Image hose: which cell this dab paints with.
+            let cell = b.hose.as_ref().filter(|h| h.is_active()).map_or(0, |h| hose_cell(h, s, seed, i));
             out.push(Dab {
                 center: c,
                 radius,
@@ -590,6 +647,7 @@ impl DabBuilder {
                 proj_scale,
                 wet,
                 mix,
+                cell,
             });
         }
     }
@@ -645,6 +703,7 @@ impl DualBuilder {
                 proj_scale: 1.0,
                 wet: 1.0,
                 mix: 1.0,
+                cell: 0,
             });
         }
     }
