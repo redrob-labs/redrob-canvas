@@ -1105,6 +1105,13 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         }
                         widgets::vline(ui, 22.0);
                         widgets::checkbox(ui, &mut b.mixer.sample_all_layers, tl!("Sample All Layers"));
+                        // Smear drags the pixels along; off, the dab takes the average colour (dulling).
+                        widgets::checkbox(ui, &mut b.mixer.smear, tl!("Smear"));
+                        ui.label(RichText::new(tl!("Smudge Radius")).color(t.text_dim));
+                        let mut radius = b.mixer.smudge_radius * 100.0;
+                        if widgets::value_field(ui, &mut radius, 50.0..=300.0, "%", 62.0).changed() {
+                            b.mixer.smudge_radius = (radius / 100.0).clamp(0.5, 3.0);
+                        }
                     }
                     Tool::RectMarquee | Tool::EllipseMarquee | Tool::SingleRowMarquee | Tool::SingleColumnMarquee if t.pro => {
                         ui.spacing_mut().item_spacing.x = 2.0;

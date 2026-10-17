@@ -26,12 +26,24 @@ pub struct MixerSettings {
     pub flow: f32,
     /// Pick up colour from all visible layers instead of the target layer only.
     pub sample_all_layers: bool,
+    /// Smear mode: each dab drags the pixels under the previous dab along with it (the paint
+    /// keeps its texture). Off: dulling, where the dab is filled with the average colour under
+    /// it.
+    pub smear: bool,
+    /// Smudge radius: how far around the dab colour is sampled, as a multiple of the dab radius
+    /// (0.5..=3; 1 samples the dab itself).
+    pub smudge_radius: f32,
 }
 
 impl Default for MixerSettings {
     fn default() -> Self {
-        Self { wet: 0.5, load: 0.5, mix: 0.5, flow: 1.0, sample_all_layers: false }
+        Self { wet: 0.5, load: 0.5, mix: 0.5, flow: 1.0, sample_all_layers: false, smear: false, smudge_radius: 1.0 }
     }
+}
+
+/// Extra pixels around a stroke's dabs the working region needs for a smudge radius above 1.
+pub fn sample_halo(brush_size: f32, smudge_radius: f32) -> i32 {
+    ((smudge_radius.clamp(0.5, 3.0) - 1.0).max(0.0) * brush_size.max(1.0) / 2.0).ceil() as i32 + 1
 }
 
 /// Paint carried between strokes (session tool state).
@@ -88,26 +100,68 @@ pub fn apply_mixer_stroke(
     st.brush.opacity = 1.0;
     let mut acc = vec![0.0f32; n];
     let mut paint = vec![0.0f32; n];
-    let dmg = apply_dab_stroke(target, &st, selection, lock_transparency, 0, |work, fp| {
+    let smudge_radius = m.smudge_radius.clamp(0.5, 3.0);
+    let halo = sample_halo(stroke.brush.size, smudge_radius);
+    // Smear mode: where the previous dab was, so this dab drags its pixels along.
+    let mut prev_center: Option<[f64; 2]> = None;
+    let dmg = apply_dab_stroke(target, &st, selection, lock_transparency, halo, |work, fp| {
         // Transfer › Wetness / Mix Jitter scale the settings per dab.
         let (wet, mix) = (wet * fp.dab.wet.clamp(0.0, 1.0), mix * fp.dab.mix.clamp(0.0, 1.0));
-        // Sample the canvas under the dab.
+        let pixel_at = |work: &crate::retouch::Region, x: i32, y: i32| -> Vec<f32> {
+            match sample {
+                Some(s) => {
+                    let v = s.pixel(x, y);
+                    if s.format() == fmt { v } else { from_rgba(&fmt, s.rgba(x, y)) }
+                }
+                None => work.px(x, y).to_vec(),
+            }
+        };
+        let center = [f64::from(fp.dab.center.x), f64::from(fp.dab.center.y)];
+        let r = fp.rect.intersect(&work.rect);
+        if m.smear && wet > 0.0 {
+            if let Some(prev) = prev_center {
+                // Copy the pixels under the previous dab onto this one, shifted by the move, at
+                // the dab's coverage times Wet × Mix: the paint keeps its texture as it smears.
+                let (dx, dy) = ((center[0] - prev[0]).round() as i32, (center[1] - prev[1]).round() as i32);
+                if dx != 0 || dy != 0 {
+                    let k_smear = (wet * mix.max(0.05)).clamp(0.0, 1.0);
+                    let mut moved: Vec<(i32, i32, Vec<f32>, f32)> = Vec::with_capacity((r.width() * r.height()) as usize);
+                    for y in r.y0..r.y1 {
+                        for x in r.x0..r.x1 {
+                            let w = fp.at(x, y) * k_smear;
+                            let (sx, sy) = (x - dx, y - dy);
+                            if w <= 0.0 || !work.rect.contains(sx, sy) {
+                                continue;
+                            }
+                            moved.push((x, y, pixel_at(work, sx, sy), w));
+                        }
+                    }
+                    for (x, y, src, w) in moved {
+                        over_native(&fmt, work.px_mut(x, y), &src, w, lock_transparency);
+                    }
+                }
+            }
+            prev_center = Some(center);
+        }
+        // Sample the canvas under the dab (or the wider smudge radius around it).
         acc.iter_mut().for_each(|v| *v = 0.0);
         let (mut wsum, mut asum) = (0.0f32, 0.0f32);
-        let r = fp.rect.intersect(&work.rect);
-        for y in r.y0..r.y1 {
-            for x in r.x0..r.x1 {
-                let w = fp.at(x, y);
+        let radius = f64::from(fp.dab.radius.max(0.5)) * f64::from(smudge_radius);
+        let grow = (radius - f64::from(fp.dab.radius)).max(0.0).ceil() as i32;
+        let sr = Rect::new(fp.rect.x0 - grow, fp.rect.y0 - grow, fp.rect.x1 + grow, fp.rect.y1 + grow).intersect(&work.rect);
+        for y in sr.y0..sr.y1 {
+            for x in sr.x0..sr.x1 {
+                let w = if grow == 0 {
+                    if fp.rect.contains(x, y) { fp.at(x, y) } else { 0.0 }
+                } else {
+                    // A radial falloff over the smudge radius (the dab's own shape scaled up).
+                    let d = (f64::from(x) + 0.5 - center[0]).hypot(f64::from(y) + 0.5 - center[1]);
+                    (1.0 - d / radius).clamp(0.0, 1.0) as f32 * fp.dab.alpha.clamp(0.0, 1.0)
+                };
                 if w <= 0.0 {
                     continue;
                 }
-                let px: Vec<f32> = match sample {
-                    Some(s) => {
-                        let v = s.pixel(x, y);
-                        if s.format() == fmt { v } else { from_rgba(&fmt, s.rgba(x, y)) }
-                    }
-                    None => work.px(x, y).to_vec(),
-                };
+                let px = pixel_at(work, x, y);
                 let al = a.map_or(1.0, |ai| px[ai]);
                 for c in 0..nc {
                     acc[c] += px[c] * w * al;
@@ -207,6 +261,40 @@ mod tests {
         assert!(p[2] > 0.2, "{p:?}");
         st.clean();
         assert!(st.pickup.is_none());
+    }
+
+    #[test]
+    fn smear_mode_drags_canvas_pixels_and_wide_radius_samples_outside_the_dab() {
+        // A red block on the left of a white canvas; a smearing stroke dragged rightwards across
+        // its edge pulls red into the white, where dulling only tints with the average.
+        let red_left = || {
+            let mut s = Surface::new(PixelFormat::RGBA32F);
+            s.fill_rect(Rect::new(0, 0, 60, 20), &[1.0, 1.0, 1.0, 1.0]);
+            s.fill_rect(Rect::new(0, 0, 20, 20), &[1.0, 0.0, 0.0, 1.0]);
+            s
+        };
+        let (mut smear, mut dull) = (red_left(), red_left());
+        let mut k = stroke(10.0);
+        k.points = (0..=30).map(|i| StrokePoint::new(10.0 + f64::from(i), 10.0, 1.0)).collect();
+        let base = MixerSettings { wet: 1.0, load: 0.0, mix: 1.0, flow: 1.0, ..Default::default() };
+        let mut st = MixerState::default();
+        apply_mixer_stroke(&mut smear, None, &k, &MixerSettings { smear: true, ..base.clone() }, &mut st, None, false);
+        let mut st = MixerState::default();
+        apply_mixer_stroke(&mut dull, None, &k, &base, &mut st, None, false);
+        let (far_smear, far_dull) = (smear.rgba(34, 10), dull.rgba(34, 10));
+        assert!(far_smear[1] < 1.0, "smear carries red past the edge: {far_smear:?}");
+        assert!(far_smear[1] <= far_dull[1] + 1e-3, "smear keeps at least as much red as dulling: {far_smear:?} vs {far_dull:?}");
+        // Smudge radius above 1 samples beyond the dab: a dab just outside the red block picks up red.
+        let (mut wide, mut narrow) = (red_left(), red_left());
+        let mut k = stroke(10.0);
+        k.points = vec![StrokePoint::new(27.0, 10.0, 1.0), StrokePoint::new(28.0, 10.0, 1.0)];
+        let mut st = MixerState::default();
+        apply_mixer_stroke(&mut wide, None, &k, &MixerSettings { smudge_radius: 3.0, ..base.clone() }, &mut st, None, false);
+        let mut st = MixerState::default();
+        apply_mixer_stroke(&mut narrow, None, &k, &base, &mut st, None, false);
+        assert!(wide.rgba(28, 10)[1] < narrow.rgba(28, 10)[1], "the wide radius reaches the red: {:?} vs {:?}", wide.rgba(28, 10), narrow.rgba(28, 10));
+        assert_eq!(sample_halo(10.0, 1.0), 1);
+        assert_eq!(sample_halo(10.0, 3.0), 11);
     }
 
     #[test]
