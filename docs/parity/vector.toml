@@ -1582,3 +1582,755 @@ ours = "partial"
 ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/symbols.rs (Edit Symbol), crafts/vectorcraft/crates/engine/src/cmd/live.rs (Replace Spine)"
 gap = "only blends (spine) and symbols have a jump to the linked object"
 priority = 3
+
+# ---------------------------------------------------------------------------------------------
+# fill & stroke
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-PAINT-001"
+group = "paint"
+name = "Fill and Stroke dialog: paint type row"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/fill-and-stroke-dialog.html"
+behaviour = "Tabs for Fill, Stroke paint and Stroke style; the paint row chooses none, flat colour, linear gradient, radial gradient, mesh gradient, pattern, swatch, or unset (inherit); a question-mark state shows mixed selections."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/color.rs, crafts/vectorcraft/crates/color/src/lib.rs (Paint)"
+gap = "no 'unset' (inherit from parent) paint state"
+priority = 1
+evidence = "docs/parity/evidence/VEC-fill-stroke.png"
+
+[[feature]]
+id = "VE-PAINT-002"
+group = "paint"
+name = "Colour pickers: RGB, HSL, HSV, CMYK, wheel, OKHSL, hex"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/color.html"
+behaviour = "Flat colour is edited through selectable pickers (RGB, HSL, HSV, CMYK, HSLuv, OKHSL, a colour wheel), an alpha slider and an RRGGBBAA hex field; 1.3 redesigned the pickers with a compact and a full layout."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/color.rs (RGB, HSB, CMYK, Lab, Grayscale, Web Safe), crafts/vectorcraft/crates/ui-egui/src/dialogs/color_picker.rs"
+gap = "no HSLuv or OKHSL picker; no on-panel colour wheel (Color Guide offers harmonies)"
+priority = 1
+
+[[feature]]
+id = "VE-PAINT-003"
+group = "paint"
+name = "Gradient editor in the dialog"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Gradient_Editor"
+behaviour = "Stop list with add/delete/reverse, per-stop colour and offset, gradient library of the document's gradients, repeat mode, angle for linear, and in 1.4 a redesigned stop bar and shared gradient management."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/gradient.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/gradient_stop.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PAINT-004"
+group = "paint"
+name = "Freeform (free-form) gradients"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/creating-a-mesh-gradient.html"
+behaviour = "Inkscape offers mesh gradients for multi-point colour fills; there is no point/line freeform gradient."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/color/src/freeform.rs, crafts/vectorcraft/crates/tools/src/xform/freeform.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-PAINT-005"
+group = "paint"
+name = "Pattern fill and pattern editor"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/using-patterns.html"
+behaviour = "Stock patterns (stripes, checkers, polka dots, hatches) and document patterns are picked from a thumbnail list; the editor sets scale, orientation, offset, gap, a colour for single-colour patterns and a name; patterns can be made from objects (Object to Pattern) and back."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/pattern.rs, crafts/vectorcraft/crates/ui-egui/src/panels/pattern_options.rs"
+gap = "pattern tile edited through Pattern Options (tile type, spacing, overlap, copies); no recolour-a-stock-pattern field"
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-006"
+group = "paint"
+name = "Custom patterns from objects"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/creating-custom-patterns.html"
+behaviour = "Objects to Pattern turns the selection into a pattern definition applied to a rectangle of the same size; Pattern to Objects reverses it."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/patterncmds.rs (Make Pattern, Edit Pattern)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-007"
+group = "paint"
+name = "Modifying a pattern's transform on the object"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/modifying-patterns.html"
+behaviour = "Pattern handles (move, scale, rotate) appear with the node tool; a preference decides whether patterns transform with the object."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/dialogs/transform.rs (Transform Patterns), crafts/vectorcraft/crates/engine/src/cmd/prefscmds.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-PAINT-008"
+group = "paint"
+name = "Swatches (named shared colours) and auto-collection"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Swatches"
+behaviour = "A swatch is a named colour (or gradient) stored in the document; objects referencing it update together; the Swatches dialog lists document swatches and palettes with list/grid views, search and in 1.4 import/export of GPL palettes and a redesigned panel."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/swatches.rs, crafts/vectorcraft/crates/doc/src/swatches.rs, crafts/vectorcraft/crates/color/src/palette_io.rs"
+gap = ""
+priority = 1
+evidence = "docs/parity/evidence/VEC-swatches.png"
+
+[[feature]]
+id = "VE-PAINT-009"
+group = "paint"
+name = "Palette bar and palette files"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/palette.html"
+behaviour = "A colour strip along the bottom of the window; click sets fill, Shift-click sets stroke, drag onto an object applies; the strip menu picks among installed palettes (GPL, including user-added) and sets swatch size, border and rows."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/swatches.rs, crafts/vectorcraft/crates/engine/src/cmd/swatchlib.rs (Swatch Libraries, .gpl/.ase/.acb)"
+gap = "swatch libraries open as panels; no bottom palette strip with drag-to-object"
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-010"
+group = "paint"
+name = "Custom colour (custom.gpl) from the palette"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/custom-colors.html"
+behaviour = "Colours can be added to a user palette file that is then listed with the stock palettes."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/swatchlib.rs (Save Swatch Library), crafts/vectorcraft/crates/ui-egui/src/dialogs/save_swatch_library.rs"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-PAINT-011"
+group = "paint"
+name = "Fill rule (nonzero / evenodd)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/fill-and-stroke-dialog.html"
+behaviour = "Two buttons on the Fill tab choose how self-intersecting and nested subpaths are filled."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.setFillRule), crafts/vectorcraft/crates/ui-egui/src/panels/attributes.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-012"
+group = "paint"
+name = "Object blur slider"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/fill-and-stroke-dialog.html"
+behaviour = "A 0-100 percent slider at the bottom of the dialog adds a Gaussian blur filter to the whole object, scaled to its size."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/pixel/blur.rs (blur.gaussian), crafts/vectorcraft/crates/ui-egui/src/panels/appearance.rs"
+gap = "radius in points via the Gaussian Blur effect, not a size-relative percentage"
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-013"
+group = "paint"
+name = "Object opacity"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/fill-and-stroke-dialog.html"
+behaviour = "An opacity slider/field for the object as a whole (distinct from the alpha of each paint); also in the status bar."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/transparency.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PAINT-014"
+group = "paint"
+name = "Blend modes (16 CSS modes)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92#New_Blend_Modes"
+behaviour = "A blend-mode menu in the dialog applies normal, multiply, screen, overlay, darken, lighten, colour dodge/burn, hard/soft light, difference, exclusion, hue, saturation, colour and luminosity to the object or layer via mix-blend-mode."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/color/src/blend.rs (16 modes), crafts/vectorcraft/crates/ui-egui/src/panels/transparency.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PAINT-015"
+group = "paint"
+name = "Per-paint alpha and separate fill/stroke opacity"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/fill-and-stroke-dialog.html"
+behaviour = "Fill and stroke colours each carry their own alpha, independent of the object opacity."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (FillLayer/StrokeLayer opacity and blend)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-016"
+group = "paint"
+name = "Multiple fills and strokes per object / paint order"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/ordering-markers-stroke-and-fill.html"
+behaviour = "The Stroke style tab chooses the paint order of fill, stroke and markers (6 permutations) so a stroke can sit under the fill; one fill and one stroke per object."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (Appearance stack), crafts/vectorcraft/crates/ui-egui/src/panels/appearance.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-017"
+group = "paint"
+name = "Swap fill and stroke"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "The status-bar style indicator's menu swaps the fill and stroke paints of the selection; also Shift+X."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/paint.rs, crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (Shift+X)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-018"
+group = "paint"
+name = "Style indicator in the status bar"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/interface.html"
+behaviour = "Bottom-left swatches show the selection's fill, stroke, stroke width (with unit menu) and opacity; right-click menus edit, remove, swap, make opaque or unset each; drag a colour there."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (fill/stroke proxies), crafts/vectorcraft/crates/ui-egui/src/control.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-PAINT-019"
+group = "paint"
+name = "Copy / paste style and paste size"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/copy-and-duplicate.html"
+behaviour = "Ctrl+Shift+V pastes the copied object's style (fill, stroke, opacity, filters) onto the selection; Paste size / width / height (separately) copies dimensions; Paste path effect copies effects; 1.3 lets copy-pasting styles include or exclude text properties."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/clipboard.rs, crafts/vectorcraft/crates/tools/src/xform/eyedropper.rs (Copy Selected Style)"
+gap = "no paste size / width / height"
+priority = 2
+
+[[feature]]
+id = "VE-PAINT-020"
+group = "paint"
+name = "Colour management: display profile, soft proof, CMYK via ICC"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Document_properties"
+behaviour = "Preferences assign a display ICC profile and proofing profile with rendering intent and gamut warning; Document Properties attaches colour profiles so colours can be specified in CMYK via icc-color(); 1.4 reworked the colour-space handling."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/color/src/cms/, crafts/vectorcraft/crates/engine/src/cmd/colormgmt.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Proof Setup, Proof Colors)"
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-PAINT-021"
+group = "paint"
+name = "Spot colours and overprint"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/color.html"
+behaviour = "Inkscape has no spot-colour or overprint model; CMYK is approximated through ICC-tagged colours."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/overprint.rs, crafts/vectorcraft/crates/ui-egui/src/panels/separations.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/spot_colors.rs"
+gap = ""
+priority = 3
+
+# ---------------------------------------------------------------------------------------------
+# stroke style
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-STROKE-001"
+group = "stroke"
+name = "Stroke width with unit"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/strokes.html"
+behaviour = "Width field with a unit menu (px, pt, mm, in, percent of current...); a hairline option (1.0) renders one screen pixel regardless of zoom and exports as vector-effect non-scaling-stroke."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs, crafts/vectorcraft/crates/svg/src/import/vector_effect.rs"
+gap = "non-scaling stroke is honoured on SVG import and rendered, but there is no hairline/non-scaling toggle in the Stroke panel"
+priority = 1
+
+[[feature]]
+id = "VE-STROKE-002"
+group = "stroke"
+name = "Dash patterns incl. custom pattern and offset"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Custom_Dash_patterns"
+behaviour = "A dash menu offers preset dash patterns and a custom entry where a space-separated list of dash and gap lengths is typed, plus a dash offset field; dashes scale with stroke width."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs (Dashed Line: 6 dash/gap fields, align dashes to corners)"
+gap = "no dash offset (phase) field"
+priority = 1
+
+[[feature]]
+id = "VE-STROKE-003"
+group = "stroke"
+name = "Markers (start, mid, end)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/markers.html"
+behaviour = "Three marker menus pick an arrowhead or other shape for the start node, every middle node and the end node; 1.2 adds a marker editor with size, orientation (auto, auto-start-reverse, fixed angle), offset, scale with stroke, and colouring by stroke colour."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (Arrowhead x12, start/end scale, align), crafts/vectorcraft/crates/effects/src/stroke/arrow.rs"
+gap = "no mid markers, no fixed-angle orientation"
+priority = 1
+
+[[feature]]
+id = "VE-STROKE-004"
+group = "stroke"
+name = "Custom markers from objects"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/custom-markers.html"
+behaviour = "Objects to Marker turns the selection into a marker definition available in the marker menus of this document."
+ours = "none"
+ours_where = ""
+gap = "arrowheads are a fixed set"
+priority = 3
+
+[[feature]]
+id = "VE-STROKE-005"
+group = "stroke"
+name = "Join and cap styles, miter limit"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/strokes.html"
+behaviour = "Buttons for bevel/round/miter joins with a miter limit field and butt/round/square caps."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (LineJoin, LineCap, miter_limit)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-STROKE-006"
+group = "stroke"
+name = "Stroke alignment (inside / centre / outside)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/strokes.html"
+behaviour = "SVG strokes are always centred on the path; Inkscape has no alignment option (Power Stroke or Offset emulate it)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (StrokeAlign)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-STROKE-007"
+group = "stroke"
+name = "Gradient and pattern on strokes"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/strokes.html"
+behaviour = "The Stroke paint tab accepts the same paint types as fill, so a stroke can be a gradient, mesh or pattern; gradients are relative to the bounding box, not along the path."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/stroke/gradient.rs (StrokeGradientMode: within, along, across)"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-STROKE-008"
+group = "stroke"
+name = "Scale stroke width with object (toggle)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/selector-tool.html"
+behaviour = "A selector-toolbar toggle decides whether scaling an object scales its stroke width, and similar toggles for rounded corners, gradients and patterns."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/prefscmds.rs (Scale Strokes & Effects), crafts/vectorcraft/crates/ui-egui/src/dialogs/transform.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-STROKE-009"
+group = "stroke"
+name = "Visible hairlines display mode"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Visible_Hairlines_Display_Mode"
+behaviour = "A view mode draws every stroke at least one pixel wide so very thin lines stay visible when zoomed out."
+ours = "none"
+ours_where = ""
+gap = ""
+priority = 3
+
+[[feature]]
+id = "VE-STROKE-010"
+group = "stroke"
+name = "Brushes along a path (art, scatter, pattern, bristle, calligraphic)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
+behaviour = "Inkscape achieves brush-like strokes with Pattern Along Path, Power Stroke, Taper Stroke and the Spray tool; there is no brush library."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/brushsym.rs, crafts/vectorcraft/crates/ui-egui/src/panels/brushes.rs, crafts/vectorcraft/crates/render/src/brush_fx.rs"
+gap = ""
+priority = 2
+
+# ---------------------------------------------------------------------------------------------
+# object menu, arrangement, clones, layers
+# ---------------------------------------------------------------------------------------------
+
+[[feature]]
+id = "VE-OBJ-001"
+group = "object"
+name = "Align and Distribute dialog"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/align-and-distribute.html"
+behaviour = "Align edges/centres relative to a chosen anchor (first/last selected, biggest/smallest, page, drawing, selection area), 'treat selection as group', distribute edges/centres evenly or by equal gaps, text-baseline alignment, remove overlaps, randomise, unclump, exchange positions (by selection, stacking or clockwise), and a Rearrange tab with grid and polar arrangements."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/align.rs, crafts/vectorcraft/crates/engine/src/cmd/select.rs"
+gap = "no randomise, unclump or exchange-positions; no polar arrangement (grid via Split Into Grid / Repeat)"
+priority = 1
+evidence = "docs/parity/evidence/VEC-align.png"
+
+[[feature]]
+id = "VE-OBJ-002"
+group = "object"
+name = "Align to key object / anchor"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/align-and-distribute.html"
+behaviour = "The 'relative to' menu picks the reference: last or first selected, biggest or smallest object, page, drawing, selection area."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/align.rs (Align to Selection, Key Object, Artboard)"
+gap = "no biggest/smallest object anchor"
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-003"
+group = "object"
+name = "Arrange: grid"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Arrange"
+behaviour = "Lays the selected objects out in rows x columns with equal or fitted cell sizes, spacing, alignment inside cells and row/column fill order."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Split Into Grid), crafts/vectorcraft/crates/doc/src/node.rs (Repeat grid)"
+gap = "Split Into Grid cuts one object into cells; no 'arrange selected objects into a grid'"
+priority = 3
+
+[[feature]]
+id = "VE-OBJ-004"
+group = "object"
+name = "Arrange: polar / circular"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Arrange"
+behaviour = "Places the objects evenly around a circle or ellipse (from a parameter set or from a selected ellipse), with rotation and anchor options."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (Repeat radial)"
+gap = "radial Repeat copies one object; no placement of distinct objects around a circle"
+priority = 3
+
+[[feature]]
+id = "VE-OBJ-005"
+group = "object"
+name = "Transform dialog (move, scale, rotate, skew, matrix)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Transform_dialog"
+behaviour = "Tabs for move (absolute or relative), scale (units or percent, proportional), rotate (angle, direction), skew (units, percent or degrees) and a raw 2x3 matrix (edit current matrix or apply); 'apply to each object separately'; Shift+Ctrl+M."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/transform.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/transform.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/transform_each.rs"
+gap = "no raw matrix tab"
+priority = 1
+evidence = "docs/parity/evidence/VEC-transform.png"
+
+[[feature]]
+id = "VE-OBJ-006"
+group = "object"
+name = "Flip horizontal / vertical, rotate 90"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "H and V flip around the bounding-box centre (or the rotation centre); toolbar buttons rotate 90 degrees either way."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/xform.rs (reflect, rotate)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-007"
+group = "object"
+name = "Movable rotation centre"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/selector-tool.html"
+behaviour = "In rotate mode the selector shows a cross-hair rotation centre that can be dragged anywhere (snapping) and is remembered per object; Shift-click resets it."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/xform/transform.rs (reference point for Rotate/Scale/Reflect/Shear tools)"
+gap = "centre is set per operation by clicking, not stored on the object"
+priority = 2
+
+[[feature]]
+id = "VE-OBJ-008"
+group = "object"
+name = "Group / ungroup / enter group / pop out"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/grouping.html"
+behaviour = "Ctrl+G groups, Ctrl+Shift+G ungroups; double-click or Ctrl+Enter enters a group so its members act as the current layer; 1.3 adds 'pop selection out of group'; groups can be nested and carry style, opacity, filters and effects."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/object.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Isolate Selected Group, Exit Isolation Mode)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-009"
+group = "object"
+name = "Z-order: raise/lower, to top/bottom, stack up/down"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/stacking-order.html"
+behaviour = "PgUp/PgDn move one step past the next overlapping object, Home/End to top/bottom of the layer; Object menu also offers raise/lower by one position regardless of overlap (1.1)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/object.rs (Bring Forward/Backward, Front/Back), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Arrange)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-010"
+group = "object"
+name = "Duplicate, copy/paste in place, paste on page"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/copy-and-duplicate.html"
+behaviour = "Ctrl+D duplicates in place (1.3: with transform of the previous duplicate reapplied on request), Ctrl+Alt+V pastes at the original position, Paste on Page centres on the current page, paste at the pointer by default; Ctrl+Shift+V pastes style."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/clipboard.rs (Paste in Front/Back/in Place/on All Artboards), crafts/vectorcraft/crates/engine/src/cmd/edit.rs"
+gap = "no 'repeat last duplicate transform'"
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-011"
+group = "object"
+name = "Clone (linked copy), unlink, relink, select original"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/cloning-objects.html"
+behaviour = "Alt+D makes a clone (an SVG use element) that follows every edit of the original but has its own transform and, when the original's paint is unset, its own colour; unlink makes it independent (recursively for nested clones in 1.3), relink to copied object, Shift+D selects the original, 'unlink clones for path operations' (1.0)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/symbols.rs, crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Symbol Instance: Edit Symbol, Break Link)"
+gap = "linked copies exist only as symbol instances; no clone of an arbitrary in-place object, no inherited (unset) paint"
+priority = 1
+evidence = "docs/parity/evidence/VEC-clones.png"
+
+[[feature]]
+id = "VE-OBJ-012"
+group = "object"
+name = "Create tiled clones dialog"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/cloning-objects.html"
+behaviour = "Generates rows x columns of clones using one of 17 symmetry groups (P1, P2, PM, PG, CM, PMM, PMG, PGG, CMM, P4, P4M, P4G, P3, P31M, P3M1, P6, P6M) with per-row/column shift, scale, rotation, blur/opacity and colour increments, randomisation, and tracing of the drawing under the tiles."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (Repeat grid/radial/mirror)"
+gap = "only translation grid, radial and mirror repeats; no wallpaper symmetry groups, increments or trace-under"
+priority = 3
+
+[[feature]]
+id = "VE-OBJ-013"
+group = "object"
+name = "Symbols dialog and library symbols"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Symbols_Dialog"
+behaviour = "Lists the document's symbols and installed symbol sets (flow chart, logic, map, word balloons, UI); drag onto the canvas to place an instance; convert selected group to symbol and back; search across sets; 1.3 redesigned the dialog with zoom and overlay."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/symbols.rs, crafts/vectorcraft/crates/engine/src/cmd/library.rs (Symbol Libraries)"
+gap = ""
+priority = 2
+evidence = "docs/parity/evidence/VEC-symbols.png"
+
+[[feature]]
+id = "VE-OBJ-014"
+group = "object"
+name = "Clipping (set, release, inverse, clip group)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/clipping-and-masking.html"
+behaviour = "The top object becomes a clip path for the objects below (Object > Clip > Set); Release restores it; Set Inverse (LPE) clips to the outside; Set Clip Group wraps members in a group first; a preference keeps clipped objects in a group."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/object.rs (Make/Release Clipping Mask), crafts/vectorcraft/crates/doc/src/clipnest.rs"
+gap = "no inverse clip"
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-015"
+group = "object"
+name = "Masking (set, release, inverse)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/clipping-and-masking.html"
+behaviour = "The top object's luminance (brightness and alpha) masks the objects below; Release restores; Set Inverse via power mask."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/opacitymask.rs, crafts/vectorcraft/crates/ui-egui/src/panels/transparency.rs (Make Opacity Mask, Clip, Invert Mask)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-016"
+group = "object"
+name = "Object properties (id, label, title, description, hyperlink, interactivity)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Object_Properties"
+behaviour = "A dialog sets the SVG id, label, title and description, hide/lock flags, preserve aspect ratio for images, DPI, a hyperlink (wraps in an anchor; 1.4 adds Create Anchor), highlight colour, and JavaScript event handlers (onclick, onmouseover...)."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/layers.rs (names, lock, hide), crafts/vectorcraft/crates/doc/src/xml_id.rs, crafts/vectorcraft/crates/ui-egui/src/panels/attributes.rs (Attributes: image map URL)"
+gap = "no title/description, no JavaScript event attributes (SVG Interactivity is a placeholder)"
+priority = 2
+
+[[feature]]
+id = "VE-OBJ-017"
+group = "object"
+name = "Object attributes dialog (shape-specific XML attributes)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Object_Attributes"
+behaviour = "Shows the live attributes of the selected element (x, y, width, height, rx, ry for rects; cx, cy, r for circles; href for images and links) for numeric editing; 1.4 merges it with object properties."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/properties.rs, crafts/vectorcraft/crates/ui-egui/src/panels/transform.rs"
+gap = "geometry fields exist per live shape; no raw attribute view"
+priority = 3
+
+[[feature]]
+id = "VE-OBJ-018"
+group = "object"
+name = "Lock / hide objects and unlock/unhide all"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Objects can be hidden or locked from the context menu, Objects dialog or properties; Object > Unhide All / Unlock All, and 'below' variants in 1.1."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/object.rs (Hide, Show All, Lock, Unlock All)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-019"
+group = "object"
+name = "Select Same (fill & stroke, fill colour, stroke colour, stroke style, object type)"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Edit > Select Same picks every object sharing the chosen property with the selection; Alt+click selects under; Ctrl+Alt+A selects all in all layers; select by id, class, element or CSS selector from the command line."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/select.rs (Same: Appearance, Fill Color, Stroke Color, Stroke Weight, Blending Mode, Opacity, Symbol Instance, Graphic Style...)"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-020"
+group = "object"
+name = "Find / Replace dialog"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1#Find.2FReplace_dialog"
+behaviour = "Searches objects by text content, id, style, attribute name/value, font, description or title with replace, scope (all/selection/current layer), include hidden/locked, exact/case-sensitive matching, and object-type filters."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/typemenu.rs (Find and Replace in text), crafts/vectorcraft/crates/engine/src/cmd/select.rs"
+gap = "find/replace works on text content only; object search by attribute/style is via Select Same"
+priority = 2
+evidence = "docs/parity/evidence/VEC-find.png"
+
+[[feature]]
+id = "VE-OBJ-021"
+group = "object"
+name = "Layers and Objects dialog"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Layers_and_Objects_Dialog"
+behaviour = "One tree of layers, groups and objects with drag-reorder, rename, lock/hide per row, highlight colour, layer-only filter, blend mode and opacity per layer, hover highlighting on canvas, and keyboard navigation; 1.4 adds an Add Layer dialog with position options."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/layers.rs, crafts/vectorcraft/crates/engine/src/cmd/layerpanel.rs"
+gap = ""
+priority = 1
+evidence = "docs/parity/evidence/VEC-layers.png"
+
+[[feature]]
+id = "VE-OBJ-022"
+group = "object"
+name = "Layer operations: add, rename, delete, move selection to layer, sublayers"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Shift+Ctrl+N adds a layer above/below/as sublayer; Shift+PgUp/PgDn move the selection to the next layer; layers can be duplicated, raised/lowered, locked and hidden; the current layer is shown in the status bar."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/layer.rs, crafts/vectorcraft/crates/ui-egui/src/dialogs/layer_options.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-023"
+group = "object"
+name = "Blend mode and opacity on a layer"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Layers_and_Objects_Dialog"
+behaviour = "Each layer row exposes blend mode, opacity and blur in the dialog."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (Appearance on Layer), crafts/vectorcraft/crates/ui-egui/src/panels/transparency.rs"
+gap = ""
+priority = 2
+
+[[feature]]
+id = "VE-OBJ-024"
+group = "object"
+name = "Guides from objects / objects to guides"
+reference = "Inkscape"
+manual = "https://inkscape.org/doc/keys.html"
+behaviour = "Shift+G turns the selected objects' edges into guides (optionally deleting the objects); guides are dragged from rulers, double-clicked to edit position/angle/label/colour, locked, and can be rotated with Shift-drag."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Make Guides, Release Guides, Lock Guides, Clear Guides), crafts/vectorcraft/crates/tools/src/guides.rs"
+gap = "no angled guides"
+priority = 2
+
+[[feature]]
+id = "VE-OBJ-025"
+group = "object"
+name = "Images: embed/extract/crop/edit externally, link"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/import-pictures.html"
+behaviour = "Imported bitmaps are linked or embedded (import dialog asks, with DPI from file or default and smooth/blocky rendering); context menu offers embed, extract, edit externally, crop image to a clip rectangle (1.3), and image attributes (rendering, aspect)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/links.rs, crafts/vectorcraft/crates/engine/src/cmd/links.rs (Embed, Relink, Edit Original), crafts/vectorcraft/crates/tools/src/cropimage.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-026"
+group = "object"
+name = "Context menu on canvas"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Context_menu"
+behaviour = "Right-click gives cut/copy/paste/duplicate/delete, group, clip/mask, lock/hide, enter group, object properties, fill & stroke, select same, and type-specific items (edit text, image crop/embed, link open)."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/canvas.rs (context menu), crafts/vectorcraft/crates/ui-egui/src/tests_contextmenu.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-027"
+group = "object"
+name = "Document resources dialog"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Document_Resources_Dialog"
+behaviour = "Lists everything defined in the document: colours, swatches, gradients, patterns, meshes, markers, symbols, fonts, images, filters, external references, metadata; items can be selected, renamed, deleted or extracted."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/doc_info.rs (Document Info: objects, fonts, linked images, spot colors, pattern/gradient/brush/style objects)"
+gap = "read-only listing; no rename/delete/extract from the dialog"
+priority = 3
+
+[[feature]]
+id = "VE-OBJ-028"
+group = "object"
+name = "Hyperlinks (anchor elements)"
+reference = "Inkscape"
+manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Create_Anchor_.28Hyperlink.29_.2F_Object_Properties"
+behaviour = "Object > Create Anchor wraps the selection in an a element whose href, target and title are edited in Object Properties; Follow Link opens it."
+ours = "partial"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/attributes.rs (Image Map URL/target), crafts/vectorcraft/crates/svg/src/export.rs"
+gap = "links are an image-map attribute exported to SVG anchors and HTML maps; no anchor element in the layer tree"
+priority = 3
+
+[[feature]]
+id = "VE-OBJ-029"
+group = "object"
+name = "Rotation and scale of selection via handles with Ctrl snapping"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/selector-tool.html"
+behaviour = "Ctrl while rotating snaps to 15 degree steps (preference), Shift rotates around the opposite corner; Ctrl while scaling keeps the ratio, Shift scales around the centre, Alt scales by integer factors."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/bbox.rs, crafts/vectorcraft/crates/tools/src/xform/transform.rs"
+gap = ""
+priority = 1
+
+[[feature]]
+id = "VE-OBJ-030"
+group = "object"
+name = "Graphic styles (saved appearance presets)"
+reference = "Inkscape"
+manual = "https://inkscape-manuals.readthedocs.io/en/latest/copy-and-duplicate.html"
+behaviour = "Inkscape reuses appearance by Paste Style and swatches; it has no named style presets."
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/graphic_styles.rs, crafts/vectorcraft/crates/engine/src/cmd/stylelib.rs"
+gap = ""
+priority = 2
