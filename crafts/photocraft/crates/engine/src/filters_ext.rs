@@ -138,6 +138,15 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             seed: seed(p),
         },
         "filter.stylize.traceContour" => FilterParams::TraceContour { level: f(p, "level", 128.0).clamp(0.0, 255.0), upper: s(p, "edge", "lower") == "upper" },
+        "filter.adjust.colorTemperature" => FilterParams::ColorTemperature {
+            original: f(p, "originalTemperature", 6500.0).clamp(1000.0, 12000.0),
+            intended: f(p, "intendedTemperature", 6500.0).clamp(1000.0, 12000.0),
+        },
+        "filter.adjust.hueChroma" => FilterParams::HueChroma {
+            hue: f(p, "hue", 0.0).clamp(-180.0, 180.0),
+            chroma: f(p, "chroma", 0.0).clamp(-100.0, 100.0),
+            lightness: f(p, "lightness", 0.0).clamp(-100.0, 100.0),
+        },
         "filter.stylize.edge" => FilterParams::Edge {
             algorithm: match s(p, "algorithm", "sobel") {
                 "prewitt" => EdgeAlgorithm::Prewitt,
@@ -609,6 +618,13 @@ pub fn specs() -> Vec<CommandSpec> {
             r##"{"count":1..99=10,"maxOffset":1..99=10,"fill":"background|foreground|inverse|unaltered","seed":u32=0,"foreground":json,"background":json}"##
         ),
         cmd!("filter.stylize.traceContour", "Trace Contour…", ["Filter", "Stylize"], r##"{"level":0..255=128,"edge":"lower|upper"}"##),
+        cmd!(
+            "filter.adjust.colorTemperature",
+            "Color Temperature…",
+            ["Image", "Adjustments"],
+            r##"{"originalTemperature":1000..12000=6500,"intendedTemperature":1000..12000=6500}"##
+        ),
+        cmd!("filter.adjust.hueChroma", "Hue-Chroma…", ["Image", "Adjustments"], r##"{"hue":-180..180=0,"chroma":-100..100=0,"lightness":-100..100=0}"##),
         cmd!(
             "filter.stylize.edge",
             "Edge…",

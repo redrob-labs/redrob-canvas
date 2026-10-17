@@ -777,9 +777,9 @@ name = "Colour Temperature"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-color-temperature.html"
 behaviour = "Re-balance from an original to an intended black-body temperature in kelvin with presets for common illuminants."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.photoFilter)"
-gap = "warming/cooling filters by colour and density, not kelvin pairs"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/adjust_ext.rs (color_temperature), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.adjust.colorTemperature: originalTemperature/intendedTemperature in kelvin)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -789,9 +789,9 @@ name = "Hue Chroma"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-hue-chroma.html"
 behaviour = "Shift hue, chroma and lightness in the CIE LCh space."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.hueSaturation)"
-gap = "HSL based, no LCh variant"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/adjust_ext.rs (hue_chroma, CIE LCh(ab)), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.adjust.hueChroma)"
+gap = ""
 priority = 2
 
 [[feature]]

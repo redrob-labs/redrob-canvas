@@ -60,6 +60,8 @@ fn new_filters() -> Vec<FilterParams> {
         FilterParams::Edge { algorithm: EdgeAlgorithm::Sobel, amount: 2.0 },
         FilterParams::Edge { algorithm: EdgeAlgorithm::Roberts, amount: 4.0 },
         FilterParams::Edge { algorithm: EdgeAlgorithm::Laplace, amount: 2.0 },
+        FilterParams::ColorTemperature { original: 6500.0, intended: 3200.0 },
+        FilterParams::HueChroma { hue: 40.0, chroma: 15.0, lightness: -10.0 },
         FilterParams::Wind { method: WindMethod::Blast, from_right: false, seed: 7 },
         FilterParams::Wind { method: WindMethod::Stagger, from_right: true, seed: 7 },
         FilterParams::Displace { horizontal: 10.0, vertical: 10.0, stretch: true, undefined: UndefinedAreas::Wrap, map: Some(map_image([0.8, 0.3, 0.5, 1.0])) },
