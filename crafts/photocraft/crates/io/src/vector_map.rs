@@ -560,6 +560,9 @@ mod tests {
             Subpath::polyline(&[(1.0, 2.0), (3.0, 4.0)]).with_op(PathOp::Subtract),
         ]);
         p.inverted = false;
+        // Path records carry no fill rule; a path read back from them is even-odd, as in
+        // Photoshop, so the sample is built that way to round-trip.
+        p.fill_rule = FillRule::EvenOdd;
         p
     }
 
