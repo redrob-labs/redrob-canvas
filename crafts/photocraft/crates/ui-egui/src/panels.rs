@@ -1019,6 +1019,13 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             if crate::brush_picker::named(airbrush, "Enable airbrush-style build-up effects").clicked() {
                                 b.build_up = !b.build_up;
                             }
+                            if b.build_up {
+                                // Motion only: the airbrush deposits only while the pointer moves.
+                                let motion = icons::button(ui, "move", 24.0, b.build_up_motion_only, tl!("Airbrush paints only while moving (motion only)"));
+                                if crate::brush_picker::named(motion, "Airbrush motion only").clicked() {
+                                    b.build_up_motion_only = !b.build_up_motion_only;
+                                }
+                            }
                         });
                         opt_label(ui, tl!("Smoothing"));
                         smoothing_field(ui, b, 58.0);

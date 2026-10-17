@@ -3400,3 +3400,5 @@ curves	Smooth	매끄럽게
 	Corner Threshold	모서리 한계값
 	Corner Surround	모서리 범위
 	Min Area	최소 면적
+	Airbrush paints only while moving (motion only)	에어브러시가 움직일 때만 칠함(움직일 때만)
+	Airbrush motion only	에어브러시 움직일 때만

@@ -2841,3 +2841,5 @@ curves	Smooth	平滑
 	Corner Threshold	拐角阈值
 	Corner Surround	拐角范围
 	Min Area	最小面积
+	Airbrush paints only while moving (motion only)	喷枪仅在移动时绘制（仅运动）
+	Airbrush motion only	喷枪仅运动

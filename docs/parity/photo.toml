@@ -381,9 +381,9 @@ name = "Airbrush"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-airbrush.html"
 behaviour = "Low-flow paint that accumulates while the pointer rests; rate and flow sliders; motion-only option so paint is laid down only when moving."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs (airbrush build-up), crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
-gap = "airbrush mode of the brush tool; no motion-only switch"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs (build_up, build_up_rate, build_up_motion_only), crafts/photocraft/crates/paint/src/dynamics.rs (PathWalker::motion_only), crafts/photocraft/crates/ui-egui/src/panels.rs (airbrush and motion-only toggles)"
+gap = ""
 priority = 2
 
 [[feature]]

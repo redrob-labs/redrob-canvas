@@ -3229,3 +3229,5 @@ curves	Smooth	Lisser
 	Corner Threshold	Seuil d'angle
 	Corner Surround	Voisinage d'angle
 	Min Area	Aire minimale
+	Airbrush paints only while moving (motion only)	L'aérographe peint seulement en mouvement (mouvement seul)
+	Airbrush motion only	Aérographe mouvement seul

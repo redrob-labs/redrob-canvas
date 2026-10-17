@@ -3194,3 +3194,5 @@ curves	Smooth	Сгладить
 	Corner Threshold	Порог угла
 	Corner Surround	Окружение угла
 	Min Area	Мин. площадь
+	Airbrush paints only while moving (motion only)	Аэрограф рисует только при движении (только движение)
+	Airbrush motion only	Аэрограф: только движение

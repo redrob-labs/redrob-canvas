@@ -189,6 +189,8 @@ pub struct PathWalker {
     step: u64,
     /// Airbrush interval in ms (None = off).
     interval: Option<f64>,
+    /// Airbrush dabs only while the pointer moves (no build-up on a held pointer).
+    motion_only: bool,
     time_acc: f64,
     /// Speed spacing (Spacing unchecked): one step per this many ms of stroke time.
     speed: Option<f64>,
@@ -208,6 +210,7 @@ impl PathWalker {
             dir: 0.0,
             step: 0,
             interval: build_up_interval_ms,
+            motion_only: false,
             time_acc: 0.0,
             speed: None,
             speed_acc: 0.0,
@@ -244,6 +247,12 @@ impl PathWalker {
             self.emit(q, out);
         }
         true
+    }
+
+    /// Airbrush "motion only": timed dabs are emitted only on segments the pointer moved along.
+    pub fn motion_only(mut self, on: bool) -> Self {
+        self.motion_only = on;
+        self
     }
 
     /// Space steps by stroke time instead of distance ([`SPEED_SPACING_MS`]): faster movement
@@ -308,7 +317,9 @@ impl PathWalker {
                 }
             }
         }
-        if let Some(iv) = self.interval {
+        if let Some(iv) = self.interval
+            && (!self.motion_only || len > 1e-9)
+        {
             let dt = p.time - a.time;
             if dt > 0.0 && dt.is_finite() {
                 if dt > iv * MAX_AIRBRUSH_DABS_PER_SEGMENT as f64 {
@@ -683,7 +694,7 @@ impl DabGenerator {
     /// Does the stroke change with time while the pointer is held still (airbrush Build-up, or
     /// smoothing still catching up)? The canvas then keeps feeding it the held point.
     pub fn wants_time(&self) -> bool {
-        self.walker.interval.is_some() || self.smoother.lagging()
+        (self.walker.interval.is_some() && !self.walker.motion_only) || self.smoother.lagging()
     }
 
     /// See [`Smoother::string`].
@@ -696,6 +707,7 @@ impl DabGenerator {
         let interval = brush.build_up.then(|| 1000.0 / f64::from(brush.build_up_rate.clamp(0.1, 1000.0)));
         let dual_on = brush.dual_brush.enabled;
         let mut walker = if brush.spacing_enabled { PathWalker::new(interval) } else { PathWalker::new(interval).speed_spacing(SPEED_SPACING_MS) };
+        walker = walker.motion_only(brush.build_up_motion_only);
         // A small aliased tip whose dabs are at most a pixel apart steps pixel by pixel (#2139).
         if brush.aliased && brush.size * brush.spacing.max(0.01) <= 1.0 {
             walker = walker.pixel_grid(f64::from(crate::render::grid_center(0.0, 0.0, brush.size).0));

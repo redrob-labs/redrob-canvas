@@ -3898,3 +3898,5 @@ curves	Smooth	スムーズ
 	Corner Threshold	コーナーのしきい値
 	Corner Surround	コーナーの範囲
 	Min Area	最小面積
+	Airbrush paints only while moving (motion only)	エアブラシは動いている間だけ描く（モーションのみ）
+	Airbrush motion only	エアブラシ モーションのみ
