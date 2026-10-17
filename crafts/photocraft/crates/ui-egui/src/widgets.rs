@@ -1315,7 +1315,7 @@ pub fn rgb_histogram(ui: &mut Ui, histogram: &redrob_photo_algo::histogram::RgbH
 /// Small caps section label.
 pub fn section_label(ui: &mut Ui, text: &str) {
     let t = Tokens::get(ui.ctx());
-    ui.label(egui::RichText::new(tl!(text)).font(theme::medium(11.5)).color(t.text_faint));
+    ui.label(egui::RichText::new(tl!(text)).font(theme::medium_or_default(ui.ctx(), 11.5)).color(t.text_faint));
 }
 
 /// Hairline separator.

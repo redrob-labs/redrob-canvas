@@ -46,6 +46,7 @@ pub fn is_plain(st: &StrokeLayer) -> bool {
     st.align == StrokeAlign::Center
         && st.start_arrow.is_none()
         && st.end_arrow.is_none()
+        && st.mid_arrow.is_none()
         && st.profile.is_none()
         && st.brush.is_none()
         && !needs_outline_dashes(st)

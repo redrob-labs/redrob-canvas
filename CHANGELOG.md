@@ -4,6 +4,36 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.10.0 — 2026-10-17
+
+### Added
+
+- **Photo mode: tools and filters from the reference raster editor** (clean room, from its manual
+  and black-box use). Desaturate with five modes, anti-erase, diagonal-neighbour and criterion
+  options for the wand, bucket and magic eraser, square, conical and spiral gradients, line-art
+  bucket fill, transform options (Lanczos, corrective mode, four clipping modes, guides), a filter
+  dialog with split view and in-dialog blending, a free-select outline that stays editable, and 74
+  new filters (noise, distort, artistic, blur, edge, light-and-shadow, render pattern generators).
+- **Photo mode: brush depth from the reference painting app.** Dynamics presets (`.rdyn`) with GBR
+  and GIH brush readers, a pop-up palette, drawing assistants, multibrush, wrap-around mode, `.ggr`
+  gradients, resource tags, and the HSV/HSL, binary, modulo and quadratic blend families.
+- **Vector mode: features from the reference vector editor.** Live stars, spirals and arcs with
+  handles, node kinds and node operations, pen Spiro / B-spline / paraxial modes, hairline strokes
+  with weight units and mid markers, clones, object properties, find and replace, live path effects
+  (bend, B-spline, Spiro, dash, taper), SVG filter graphs with a colour matrix and a filter editor,
+  an XML editor, axonometric and modular grids, canvas orientation, multi-scan trace, a palette
+  strip and calligraphy.
+- `docs/parity/`: feature inventories (`photo.toml`, `paint.toml`, `vector.toml`) that score every
+  reference feature as none / partial / full with where ours lives.
+
+### Fixed
+
+- **PSD rendering** against the Photoshop merged image: shape layers follow Photoshop's path fill
+  rules, CMYK gradients blend ink by ink, noise gradients render in colour, and scaled patterns
+  resample about pixel centres. 78 of the 85 corpus files are now pixel-identical (6 minor, 1 open).
+- The modulo blend family composites on the CPU: a sawtooth cannot be held to the same pixels on
+  the GPU and the CPU.
+
 ## 0.9.0 — 2026-10-17
 
 ### Added

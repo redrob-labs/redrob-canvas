@@ -22,9 +22,17 @@ fn roundtrip(d: &Document) -> Document {
     import("x.psd", &r.bytes).unwrap().document
 }
 
+/// A path as it comes back from PSD path records: Photoshop fills path components even-odd, and
+/// the records carry no rule, so a round-tripped path is even-odd whatever it was built with.
+fn psd_path(subpaths: Vec<Subpath>) -> Path {
+    let mut p = Path::new(subpaths);
+    p.fill_rule = redrob_photo_doc::FillRule::EvenOdd;
+    p
+}
+
 /// Coordinates on a 64-px grid are exact in PSD's 8.24 fixed point for a 256-px canvas.
 fn path() -> Path {
-    Path::new(vec![
+    psd_path(vec![
         Subpath {
             closed: true,
             op: PathOp::Combine,
@@ -56,7 +64,7 @@ fn saved_paths_work_path_and_clipping_roundtrip() {
     let mut inv = path();
     inv.inverted = true;
     d.paths.push(NamedPath { name: "Inverted".into(), path: inv, psd_raw: None });
-    d.work_path = Some(Path::new(vec![Subpath::polygon(&[(0.0, 0.0), (128.0, 0.0), (128.0, 128.0)])]));
+    d.work_path = Some(psd_path(vec![Subpath::polygon(&[(0.0, 0.0), (128.0, 0.0), (128.0, 128.0)])]));
     d.clipping_path = Some(redrob_photo_doc::ClippingPath { name: "Outline".into(), flatness: 0.0 });
     let b = roundtrip(&d);
     assert_eq!(b.paths.len(), 2);
@@ -154,7 +162,7 @@ fn custom_stroke_styles_roundtrip_through_psd_vstk() {
                     dash_offset: -0.5,
                 };
                 let sh = ShapeLayer {
-                    path: Path::new(vec![Subpath::polygon(&[(32.0, 32.0), (160.0, 32.0), (96.0, 160.0)])]),
+                    path: psd_path(vec![Subpath::polygon(&[(32.0, 32.0), (160.0, 32.0), (96.0, 160.0)])]),
                     stroke: Some(want.clone()),
                     ..Default::default()
                 };
@@ -176,7 +184,7 @@ fn vector_mask_roundtrip_and_removal() {
     let mut d = doc();
     let mut l = Layer::raster("pix", d.pixel_format());
     l.surface_mut().unwrap().fill_rect(Rect::new(0, 0, 256, 256), &[0.0, 0.0, 0.0, 1.0]);
-    let mut vm = VectorMask::new(Path::new(vec![Subpath::polygon(&[(0.0, 0.0), (128.0, 0.0), (128.0, 256.0), (0.0, 256.0)])]));
+    let mut vm = VectorMask::new(psd_path(vec![Subpath::polygon(&[(0.0, 0.0), (128.0, 0.0), (128.0, 256.0), (0.0, 256.0)])]));
     vm.linked = false;
     l.vector_mask = Some(vm.clone());
     d.layers.push(l);

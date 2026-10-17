@@ -14,7 +14,7 @@ use redrob_photo_color::{BlendMode, ColorMode, PixelFormat, SampleType};
 use redrob_photo_geom::Rect;
 use redrob_photo_raster::{Surface, from_rgba_into, to_rgba};
 
-use crate::brush::{BrushSettings, MaskMode, Pattern, TipShape};
+use crate::brush::{BrushSettings, GeneratedTip, MaskMode, MaskType, Pattern, TipGeometry, TipShape};
 use crate::dynamics::DabGenerator;
 use crate::retouch::{Footprint, alpha_index, over_native};
 use crate::rng::hash2;
@@ -44,6 +44,67 @@ const SMALL_TIP_RADIUS: f32 = 3.0;
 /// Sub-pixel sample offsets (a 4×4 grid) for the area coverage of small tips.
 const SUBPIXEL: [f32; 4] = [-0.375, -0.125, 0.125, 0.375];
 const NOISE_SALT: u64 = 0x006E_6F69_7365;
+/// Salts of a generated tip's per-pixel Density and Randomness draws.
+const DENSITY_SALT: u64 = 0x0064_656E_7369_7479;
+const RANDOMNESS_SALT: u64 = 0x0000_7261_6E64_6F6D;
+
+/// Coverage of a generated tip (see [`GeneratedTip`]) at tip-space offset (`u`, `v`) from the
+/// dab centre, for a dab whose short radius is `rm` and whose roundness is `ro` (so the long
+/// radius is `rm / ro`); `hardness` feeds the Default mask. Returns the coverage and the
+/// normalised distance from the centre (0 = centre, 1 = rim), or `None` outside the tip.
+fn generated_coverage(g: &GeneratedTip, u: f32, v: f32, ro: f32, rm: f32, hardness: f32, x: i32, y: i32) -> Option<(f32, f32)> {
+    let (nx, ny) = (u * ro / rm, v / rm);
+    let mut d = match g.shape {
+        TipGeometry::Circle => nx.hypot(ny),
+        TipGeometry::Square => nx.abs().max(ny.abs()),
+    };
+    if !d.is_finite() {
+        return None;
+    }
+    let (cs, sn) = if d > 1e-6 { (nx / d, ny / d) } else { (1.0, 0.0) };
+    if g.spikes >= 2 {
+        // A star: the rim pulls in to half the radius between the spikes.
+        let th = ny.atan2(nx);
+        let k = (th / std::f32::consts::TAU * g.spikes.min(64) as f32).rem_euclid(1.0);
+        let valley = 1.0 - 2.0 * (k - 0.5).abs();
+        d /= 1.0 - 0.5 * valley;
+    }
+    // The fade starts at a different radius along each axis; in between it follows the ellipse.
+    let fade = (g.fade_x.clamp(0.0, 1.0) * cs).hypot(g.fade_v().clamp(0.0, 1.0) * sn).clamp(0.0, 0.999);
+    let rn = d.clamp(0.0, 1.0);
+    let mut val = match g.mask {
+        MaskType::Default => {
+            let dd = d * rm;
+            if dd >= tip_reach(rm, hardness) + 0.5 {
+                return None;
+            }
+            tip_falloff(dd, rm, hardness)
+        }
+        MaskType::Soft | MaskType::Gaussian => {
+            if d >= 1.0 {
+                return None;
+            }
+            // 1 at the fade radius and inside it, 0 at the rim.
+            let s = if d <= fade { 1.0 } else { ((1.0 - d) / (1.0 - fade)).clamp(0.0, 1.0) };
+            if g.mask == MaskType::Soft {
+                g.soft_curve.eval(s)
+            } else {
+                // Gaussian down to 1 % at the rim.
+                crate::soft_exp(((1.0 - s) * 2.146).powi(2))
+            }
+        }
+    };
+    if !g.antialias {
+        val = if val >= 0.5 { 1.0 } else { 0.0 };
+    }
+    if g.density < 1.0 && hash2(x, y, DENSITY_SALT) >= g.density.max(0.0) {
+        return None;
+    }
+    if g.randomness > 0.0 {
+        val *= 1.0 - g.randomness.clamp(0.0, 1.0) * hash2(x, y, RANDOMNESS_SALT);
+    }
+    (val > 0.0).then_some((val, rn))
+}
 
 #[inline]
 /// Where an aliased (Pencil) dab of `diameter` pixels centred near (`x`, `y`) lands on the pixel
@@ -52,7 +113,9 @@ const NOISE_SALT: u64 = 0x006E_6F69_7365;
 /// the Pencil cursor shows ([`grid_square`]).
 pub fn grid_center(x: f64, y: f64, diameter: f32) -> (f32, f32) {
     let n = if diameter.is_finite() { diameter.round().max(1.0) as i64 } else { 1 };
-    let snap = |v: f64| if n % 2 == 1 { v.floor() + 0.5 } else { v.round() };
+    let snap = |v: f64| {
+        if n % 2 == 1 { v.floor() + 0.5 } else { v.round() }
+    };
     (snap(x) as f32, snap(y) as f32)
 }
 
@@ -148,6 +211,8 @@ pub struct BrushContext {
     pub brush: BrushSettings,
     tip: Option<Arc<Mips>>,
     dual_tip: Option<Arc<Mips>>,
+    /// Image hose cells ([`BrushSettings::hose`]), indexed by [`Dab::cell`]; empty without a hose.
+    cells: Vec<Arc<Mips>>,
     texture: Option<Arc<PatternImage>>,
 }
 
@@ -185,11 +250,25 @@ impl BrushContext {
             Some(g) if g.is_valid() => Some(Arc::new(Mips::new(g))),
             _ => None,
         };
+        let cells: Vec<Arc<Mips>> = match &brush.hose {
+            Some(h) if h.is_active() => h.cells.iter().map(|g| Arc::new(Mips::new(g))).collect(),
+            _ => Vec::new(),
+        };
         Self {
             tip: mips(&brush.tip),
             dual_tip: if brush.dual_brush.enabled { mips(&brush.dual_brush.tip) } else { None },
+            cells,
             texture: prepare_pattern(&brush),
             brush,
+        }
+    }
+
+    /// The sampled tip a primary dab paints with: its image hose cell, else the brush tip.
+    #[inline]
+    fn primary_mips(&self, d: &Dab) -> Option<&Mips> {
+        match self.cells.len() {
+            0 => self.tip.as_deref(),
+            n => self.cells.get(d.cell as usize % n).map(Arc::as_ref),
         }
     }
 
@@ -212,7 +291,7 @@ impl BrushContext {
 
     /// Bounding rectangle of a dab (rotated sampled tips need the corner reach).
     pub fn dab_rect(&self, d: &Dab, dual: bool) -> Rect {
-        let sampled = if dual { self.dual_tip.is_some() } else { self.tip.is_some() };
+        let sampled = if dual { self.dual_tip.is_some() } else { self.tip.is_some() || !self.cells.is_empty() };
         let hardness = if dual { self.brush.dual_brush.hardness } else { self.brush.hardness };
         // A computed soft tip paints past its nominal radius (see `tip_shape`).
         let aliased = self.brush.aliased && !dual;
@@ -220,6 +299,9 @@ impl BrushContext {
             d.radius * std::f32::consts::SQRT_2
         } else if aliased {
             d.radius
+        } else if !dual && self.brush.generated.is_custom() {
+            // A square (or star) tip's corners reach past the radius.
+            crate::tip_reach(d.radius, hardness).max(d.radius) * std::f32::consts::SQRT_2
         } else {
             crate::tip_reach(d.radius, hardness).max(d.radius)
         };
@@ -243,8 +325,10 @@ impl BrushContext {
             dp.resize(w * h, 0.0);
         }
         let b = &self.brush;
-        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { (b.hardness, self.tip.as_deref()) };
+        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { (b.hardness, self.primary_mips(d)) };
         let aliased = b.aliased && !dual;
+        // The generated-tip path: outline, mask type, fade per axis, spikes, density, randomness.
+        let generated = (!dual && !aliased && mips.is_none() && b.generated.is_custom()).then_some(&b.generated);
         let wet = b.wet_edges && !dual && depth.is_none();
         let noise = b.noise && !dual;
         let tex_tip = !dual && b.texture.enabled && b.texture.each_tip && self.texture.is_some();
@@ -284,11 +368,11 @@ impl BrushContext {
         // A tip a few pixels across takes each pixel's covered area (a 4×4 grid inside it):
         // sampling only the pixel centre made a tiny dab's total coverage swing with its sub-pixel
         // position, and thin lines beaded.
-        let small = mips.is_none() && !aliased && rm < SMALL_TIP_RADIUS;
+        let small = mips.is_none() && !aliased && generated.is_none() && rm < SMALL_TIP_RADIUS;
         let small_reach2 = (reach + 0.75) * (reach + 0.75);
         // Keep ordinary computed tips separate from the feature loop, so their dense rows
         // can be vectorised without the per-pixel sampled-mask and stroke-depth branches.
-        if !(mips.is_some() || small || (aliased && b.square) || noise || tex_tip || wet)
+        if !(mips.is_some() || small || generated.is_some() || (aliased && b.square) || noise || tex_tip || wet)
             && depth.is_none()
             && proj.is_none()
             && d.angle == 0.0
@@ -338,12 +422,23 @@ impl BrushContext {
                     }
                     None => {
                         let d2 = (u * ro).powi(2) + v * v;
-                        if d2 >= reach2 {
-                            continue;
+                        if let Some(g) = generated {
+                            // Corners of a square or star reach √2 past a round tip's rim.
+                            if d2 >= reach2 * 2.0 {
+                                continue;
+                            }
+                            match generated_coverage(g, u, v, ro, rm, hardness, x, y) {
+                                Some(c) => c,
+                                None => continue,
+                            }
+                        } else {
+                            if d2 >= reach2 {
+                                continue;
+                            }
+                            let dd = d2.sqrt();
+                            let val = if aliased { if dd <= rm { 1.0 } else { 0.0 } } else { dab_coverage(dd, rm, hardness) };
+                            (val, dd / rm)
                         }
-                        let dd = d2.sqrt();
-                        let val = if aliased { if dd <= rm { 1.0 } else { 0.0 } } else { dab_coverage(dd, rm, hardness) };
-                        (val, dd / rm)
                     }
                     Some(m) => {
                         let (px, py) = (u * inv_scale + tw / 2.0, -(v / ro) * inv_scale + th / 2.0);
@@ -705,7 +800,9 @@ impl StrokeRenderer {
                 }
             }
         }
-        let Some(mut merged) = merged else { return Rect::EMPTY };
+        let Some(mut merged) = merged else {
+            return Rect::EMPTY;
+        };
         let (before, after) = (live.bounds, merged.bounds());
         // Back to the pre-stroke pixels where the previous call drew and nothing covers now.
         let mut keys: Vec<_> = keys.into_iter().collect();
@@ -991,7 +1088,9 @@ impl StrokeRenderer {
         let mut dmg = Rect::EMPTY;
         let mut region = Vec::new();
         for (tx, ty) in keys {
-            let Some(tile) = self.cov.tiles.get(&(tx, ty)) else { continue };
+            let Some(tile) = self.cov.tiles.get(&(tx, ty)) else {
+                continue;
+            };
             let tr = Rect::new(tx * COV_TILE, ty * COV_TILE, (tx + 1) * COV_TILE, (ty + 1) * COV_TILE).intersect(&bounds);
             if tr.is_empty() {
                 continue;
@@ -1022,7 +1121,11 @@ impl StrokeRenderer {
                     let px = &mut region[i * n..(i + 1) * n];
                     if b.erase {
                         if let (Some(a), false) = (a_idx, lock_transparency) {
-                            px[a] *= 1.0 - k;
+                            if b.anti_erase {
+                                px[a] += (1.0 - px[a]) * k;
+                            } else {
+                                px[a] *= 1.0 - k;
+                            }
                         }
                         if dither {
                             dither8(px, x, y);

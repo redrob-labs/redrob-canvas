@@ -34,7 +34,7 @@ fn every_new_preset_button_opens_the_dialog_and_cancel_saves_nothing() {
     let brush = h.state().session.tools.brush.clone();
     let mut opened = 0;
     let mut cancel = |h: &mut Harness<'_, PhotocraftApp>| {
-        dialog(h).expect("the dialog opened");
+        dialog(h).unwrap_or_else(|| panic!("the dialog opened (button {})", opened + 1));
         h.run_steps(2);
         h.get_by_label("Cancel").click();
         h.run_steps(3);

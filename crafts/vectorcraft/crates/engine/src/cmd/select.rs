@@ -559,6 +559,8 @@ fn same_graphic_style(s: &mut Session, _: &Value) -> Result<Value> {
 }
 
 /// An appearance attribute Select > Same > Appearance Attribute matches.
+// A short-lived search token, never stored in bulk; boxing would only add a hop.
+#[allow(clippy::large_enum_variant)]
 enum Attribute {
     Item(redrob_vector_doc::AppearanceItem),
     Effect(redrob_vector_doc::Effect),

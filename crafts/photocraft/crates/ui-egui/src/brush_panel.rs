@@ -14,7 +14,7 @@
 //! The lock beside a section name keeps that section's settings when another preset is picked
 //! (`locks` in the brush, applied by the engine). The Brushes tab lives in [`crate::brushes_tab`].
 
-use egui::{Color32, CornerRadius, Sense, Stroke, vec2};
+use egui::{Color32, CornerRadius, RichText, Sense, Stroke, vec2};
 use redrob_photo_engine::BrushSettings;
 use redrob_photo_engine::paint;
 use serde::{Deserialize, Serialize};
@@ -104,6 +104,12 @@ pub struct BrushesPanelState {
     /// width all the way — the text holds its 1.0 size, and at or below the compact threshold
     /// the tips drop the size number under them and take their cell whole.
     pub scale: f32,
+    /// Tag filter: only presets carrying this tag are listed (empty = every preset).
+    pub tag_filter: String,
+    /// The session's preset tags as the list last saw them (`crate::brushes_tab::tag_snapshot`,
+    /// refreshed by the panel and the picker before they draw the list); never saved.
+    #[serde(skip)]
+    pub tags: std::sync::Arc<crate::brushes_tab::TagSnapshot>,
 }
 
 impl Default for BrushesPanelState {
@@ -117,6 +123,8 @@ impl Default for BrushesPanelState {
             show_stroke: true,
             show_tip: true,
             scale: 1.0,
+            tag_filter: String::new(),
+            tags: Default::default(),
         }
     }
 }
@@ -377,6 +385,10 @@ fn settings_tab(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     ui.add_space(6.0);
     widgets::hairline(ui);
     ui.add_space(6.0);
+    dynamics_row(app, ui);
+    ui.add_space(6.0);
+    widgets::hairline(ui);
+    ui.add_space(6.0);
     ui.horizontal(|ui| {
         let (r, _) = ui.allocate_exact_size(vec2(STRIP.0 as f32, STRIP.1 as f32), Sense::hover());
         ui.painter().rect_filled(r, t.radius_sm, t.field);
@@ -402,6 +414,46 @@ fn settings_tab(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         });
     });
     commit_gesture(app, ui.ctx(), &before, &b);
+}
+
+/// `Dynamics: [preset ▾] [save] [delete]`: applies a paint dynamics preset (a table of input
+/// sensors onto brush properties, `brush.dynamics.*`) to the current brush, saves the brush's
+/// dynamics sections as a new preset, or deletes the chosen user preset.
+fn dynamics_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+    let t = Tokens::get(ui.ctx());
+    let presets = app.session.tools.dynamics_presets.clone();
+    let none = tl!("No Dynamics Preset").to_string();
+    let mut options: Vec<(String, &str)> = vec![(String::new(), none.as_str())];
+    options.extend(presets.iter().map(|d| (d.name.clone(), d.name.as_str())));
+    let mut current = app.session.tools.current_dynamics.clone().unwrap_or_default();
+    ui.horizontal(|ui| {
+        ui.label(RichText::new(tl!("Dynamics:")).color(t.text_dim));
+        if widgets::dropdown_literal(ui, "brush-dynamics-preset", &mut current, &options, 180.0) && !current.is_empty() {
+            match app.run("brush.dynamics.apply", json!({ "name": current })) {
+                Ok(r) => {
+                    let warnings: Vec<String> = r.get("warnings").and_then(|w| serde_json::from_value(w.clone()).ok()).unwrap_or_default();
+                    app.ui.status_error = false;
+                    app.ui.status = match warnings.first() {
+                        Some(w) => crate::i18n::fmt(tl!("Applied dynamics preset {name} ({note})"), &[("name", &current), ("note", w)]),
+                        None => crate::i18n::fmt(tl!("Applied dynamics preset {name}"), &[("name", &current)]),
+                    };
+                }
+                Err(e) => {
+                    app.ui.status = e;
+                    app.ui.status_error = true;
+                }
+            }
+        }
+        if icons::button(ui, "square-plus", 22.0, false, tl!("Save the brush's dynamics as a new preset")).clicked() {
+            let name =
+                (1..).map(|n| format!("Dynamics {n}")).find(|n| !presets.iter().any(|d| d.name.eq_ignore_ascii_case(n))).unwrap_or_else(|| "Dynamics".into());
+            run_or_status(app, "brush.dynamics.save", json!({ "name": name }));
+        }
+        let deletable = presets.iter().any(|d| !d.builtin && d.name.eq_ignore_ascii_case(&current));
+        if ui.add_enabled_ui(deletable, |ui| icons::button(ui, "trash", 22.0, false, tl!("Delete this dynamics preset"))).inner.clicked() {
+            run_or_status(app, "brush.dynamics.delete", json!({ "name": current }));
+        }
+    });
 }
 
 /// Clear brush controls: turns off every section except Smoothing and resets their options

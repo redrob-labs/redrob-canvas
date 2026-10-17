@@ -812,7 +812,7 @@ pub(crate) fn detect_shape(path: &PathData) -> Option<LiveShape> {
             }
         }
     }
-    Some(LiveShape::Ellipse { w: b.width(), h: b.height(), pie: (0.0, 360.0), xf: Affine::translate(b.origin().to_vec2()) })
+    Some(LiveShape::Ellipse { w: b.width(), h: b.height(), pie: (0.0, 360.0), arc: Default::default(), xf: Affine::translate(b.origin().to_vec2()) })
 }
 
 fn convert_to_shape(s: &mut Session, _: &Value) -> Result<Value> {

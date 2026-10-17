@@ -1040,7 +1040,7 @@ fn build() -> Vec<CommandSpec> {
             "Brush Stroke",
             [],
             None,
-            r##"{"points":[[x,y,pressure?,tiltX?,tiltY?,rotation?,timeMs?,wheel?],…],"brush":{…BrushSettings}?,"preset":name?,"size":0.5..5000 px?,"hardness":0..1?,"opacity":0..1?,"flow":0..1?,"spacing":0..10?,"color":"#rrggbb"?=foreground,"mode":"normal|multiply|screen|…|clear (erases with this brush)"="normal","erase":bool?,"smoothing":0..1?,"zoom":number=1,"seed":u64?,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
+            r##"{"points":[[x,y,pressure?,tiltX?,tiltY?,rotation?,timeMs?,wheel?],…],"brush":{…BrushSettings}?,"preset":name?,"size":0.5..5000 px?,"hardness":0..1?,"opacity":0..1?,"flow":0..1?,"spacing":0..10?,"color":"#rrggbb"?=foreground,"mode":"normal|multiply|screen|…|clear (erases with this brush)"="normal","erase":bool?,"antiErase":bool=false (with erase: restore erased pixels by raising alpha),"smoothing":0..1?,"zoom":number=1,"seed":u64?,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
             has_paintable,
             crate::brush_cmds::paint_stroke
         ),
@@ -1320,6 +1320,8 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::layer_list_cmds::specs());
     v.extend(crate::filters::specs());
     v.extend(crate::filters_ext::specs());
+    v.extend(crate::filters_extra::specs());
+    v.extend(crate::filters_gen::specs());
     v.extend(crate::color_to_alpha_cmds::specs());
     v.extend(crate::gallery_cmds::specs());
     v.extend(crate::gradient_fill_cmds::specs());
@@ -1334,12 +1336,14 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::smartselect_cmds::specs());
     v.extend(crate::cutout_cmds::specs());
     v.extend(crate::symmetry_cmds::specs());
+    v.extend(crate::assistant_cmds::specs());
     v.extend(crate::edit_cmds::specs());
     v.extend(crate::color_cmds::specs());
     v.extend(crate::brush_cmds::specs());
     v.extend(crate::brush_preset_cmds::specs());
     v.extend(crate::eraser_cmds::specs());
     v.extend(crate::preset_import_cmds::specs());
+    v.extend(crate::dynamics_cmds::specs());
     v.extend(crate::atn_cmds::specs());
     v.extend(crate::actions_edit_cmds::specs());
     v.extend(crate::swatch_cmds::specs());

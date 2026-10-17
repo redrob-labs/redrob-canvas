@@ -3179,3 +3179,254 @@ curves	Smooth	Haluskan
 	set name	nama set
 	{set} (modified)	{set} (diubah)
 	Random	Acak
+	Desaturate…	Hilangkan Saturasi…
+	Anti-erase	Anti-hapus
+	Restore erased pixels instead of erasing	Memulihkan piksel yang terhapus, bukan menghapus
+	Luma	Luma
+	Value	Nilai
+	Grow through corners as well as edges	Meluas lewat sudut dan juga tepi
+	By:	Menurut:
+	Composite	Komposit
+	Square Gradient	Gradien Persegi
+	Conical Gradient (symmetric)	Gradien Kerucut (simetris)
+	Spiral Gradient (clockwise)	Gradien Spiral (searah jarum jam)
+	Spiral Gradient (counter-clockwise)	Gradien Spiral (berlawanan jarum jam)
+	Line Art	Garis Seni
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Mengisi area yang dikelilingi tinta, menutup celah kecil dan sedikit masuk di bawah garis
+	Ink below	Ambang tinta
+	Close gaps	Tutup celah
+	Under ink	Di bawah tinta
+	Angle Offset:	Offset sudut:
+	Read the direction of the first stroke segment for the whole stroke	Gunakan arah segmen pertama untuk seluruh sapuan
+	Fan Corners	Sudut kipas
+	Turn sharper than this is fanned	Belokan lebih tajam dari ini dikipaskan
+	Sensor:	Sensor:
+	Combine:	Gabungkan:
+	Auto Spacing	Jarak otomatis
+	Spacing grows with the square root of the size	Jarak bertambah seiring akar kuadrat ukuran
+	Auto spacing coefficient	Koefisien jarak otomatis
+	Minimum Spacing	Jarak minimum
+	Isotropic Spacing	Jarak isotropik
+	Space dabs by the diameter alone, not by the roundness	Jarak hanya menurut diameter, bukan kebulatan
+	Mask:	Mask:
+	Fade X	Pudar X
+	Fade Y	Pudar Y
+	Lock Fade	Kunci pudar
+	The vertical fade follows the horizontal one	Pudar vertikal mengikuti yang horizontal
+	Soft curve:	Kurva lembut:
+	Spikes	Duri
+	Randomness	Keacakan
+	Anti-aliasing	Anti-alias
+	Auto Precision	Presisi otomatis
+	Precision	Presisi
+	Separate Axes	Sumbu terpisah
+	Scatter along and across the stroke by different amounts	Sebar sepanjang dan melintang sapuan dengan jumlah berbeda
+	Along	Sepanjang
+	Across	Melintang
+	Stabilizer	Penstabil
+	Average the last input points; the sample count follows the speed	Rata-rata titik masukan terakhir; jumlah sampel mengikuti kecepatan
+	Samples (slow)	Sampel (lambat)
+	Samples (fast)	Sampel (cepat)
+	Delay	Tunda
+	Finish Line	Selesaikan garis
+	Stabilize Sensors	Stabilkan sensor
+	Smooth Pressure	Haluskan tekanan
+	Smooth the pen pressure along with the position	Haluskan tekanan pena bersama posisinya
+	Drawing Angle	Sudut gambar
+	Speed	Kecepatan
+	Circle	Lingkaran
+	Erase with the current brush (Clear mode)	Hapus dengan kuas saat ini (mode Bersihkan)
+	Blend:	Campur:
+	How much of the sample goes into the current colour	Seberapa banyak sampel masuk ke warna saat ini
+	Close gap	Tutup celah
+	Boundary colour	Warna batas
+	Grow the filled area outward	Perluas area terisi ke luar
+	Gaps in the boundary up to this are closed	Celah pada batas hingga ukuran ini ditutup
+	Fill until this colour instead of over similar colours	Isi hingga warna ini, bukan di atas warna serupa
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Seret garis lurus dengan kuas; Shift mengunci sudut ke kelipatan 15°
+	Free select: clicks and drags build one editable outline	Seleksi bebas: klik dan seret membentuk satu garis luar yang dapat disunting
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Klik menambah titik, seret menggambar bebas · seret titik untuk memindahkannya · {del} menghapus yang terakhir · {key} menutup · Esc membatalkan
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Klik untuk menempatkan titik, seret untuk menggambar bebas; garis luar tetap dapat disunting sampai ditutup
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Arah:
+	Corrective	Korektif
+	Clipping:	Pemotongan:
+	Adjust	Sesuaikan
+	Clip	Potong ke kanvas
+	Crop with Aspect	Pangkas dengan rasio
+	Guides:	Panduan:
+	Center Lines	Garis tengah
+	Golden Sections	Bagian emas
+	Diagonals	Diagonal
+	Lines:	Garis:
+	Split View	Tampilan terpisah
+	No Dynamics Preset	Tanpa prasetel dinamika
+	Dynamics:	Dinamika:
+	Applied dynamics preset {name} ({note})	Prasetel dinamika {name} diterapkan ({note})
+	Applied dynamics preset {name}	Prasetel dinamika {name} diterapkan
+	Save the brush's dynamics as a new preset	Simpan dinamika kuas sebagai prasetel baru
+	Delete this dynamics preset	Hapus prasetel dinamika ini
+	Velocity	Kecepatan
+	HSV Hue	Hue HSV
+	HSV Saturation	Saturasi HSV
+	HSV Value	Nilai HSV
+	Edge…	Tepi…
+	Algorithm	Algoritma
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Diferensial
+	Laplace	Laplace
+	Color Temperature…	Suhu Warna…
+	Color Temperature	Suhu Warna
+	Original Temperature	Suhu Asli
+	Intended Temperature	Suhu Tujuan
+	Hue-Chroma…	Hue-Kroma…
+	Hue-Chroma	Hue-Kroma
+	Chroma	Kroma
+	Corner Threshold	Ambang Sudut
+	Corner Surround	Sekitar Sudut
+	Min Area	Luas Minimum
+	Airbrush paints only while moving (motion only)	Airbrush hanya melukis saat bergerak (hanya gerakan)
+	Airbrush motion only	Airbrush hanya gerakan
+	Configure Grid…	Atur Kisi…
+	Configure Grid	Atur Kisi
+	Spacing X	Jarak X
+	Spacing Y	Jarak Y
+	Offset X	Offset X
+	Offset Y	Offset Y
+	Active Path	Jalur Aktif
+	Equidistance	Jarak Sama
+	Wavelet Decompose…	Dekomposisi Wavelet…
+	Wavelet Decompose	Dekomposisi Wavelet
+	Scales	Skala
+	Import Swatches from Image	Impor Swatch dari Gambar
+	Export Swatches as CSS…	Ekspor Swatch sebagai CSS…
+	Cage Transform	Transformasi Sangkar
+	Antialias	Antialias
+	Artistic	Artistik
+	Blinds…	Tirai…
+	CIE lch Noise…	Derau CIE LCh…
+	Cubism…	Kubisme…
+	Decor	Dekorasi
+	Difference of Gaussians…	Selisih Gaussian…
+	Distance Map…	Peta Jarak…
+	Engrave…	Ukiran…
+	Filmstrip…	Strip Film…
+	Fuzzy Border…	Tepi Kabur…
+	Gradient Flare…	Flare Gradien…
+	HSV Noise…	Derau HSV…
+	Hurl…	Lempar…
+	Image Gradient…	Gradien Gambar…
+	Impressionist…	Impresionis…
+	Kaleidoscope…	Kaleidoskop…
+	Light and Shadow	Cahaya dan Bayangan
+	Long Shadow…	Bayangan Panjang…
+	Mean Curvature Blur…	Blur Kelengkungan Rata-rata…
+	NL Filter…	Filter NL…
+	Normal Map…	Peta Normal…
+	Operation Graph…	Graf Operasi…
+	Page Curl…	Lipatan Halaman…
+	Perspective Shadow…	Bayangan Perspektif…
+	Pick…	Pilih Acak…
+	SLIC…	SLIC…
+	Shift…	Geser…
+	Slur…	Leleh…
+	Sparkle…	Kilau…
+	Supernova…	Supernova…
+	Symmetric Nearest Neighbor…	Tetangga Terdekat Simetris…
+	Tileable Blur…	Blur Dapat Diubin…
+	Value Propagate…	Propagasi Nilai…
+	Van Gogh (LIC)…	Van Gogh (LIC)…
+	Video Degradation…	Degradasi Video…
+	Waterpixels…	Waterpixels…
+	Weave…	Tenun…
+	Xach-Effect…	Efek Xach…
+	Animation	Animasi
+	Bayer Matrix…	Matriks Bayer…
+	Blend…	Paduan…
+	Burn-In…	Bakar…
+	CML Explorer…	Penjelajah CML…
+	Cell Noise…	Derau sel…
+	Checkerboard…	Papan catur…
+	Circuit…	Sirkuit…
+	Coffee Stain…	Noda kopi…
+	Diffraction Patterns…	Pola difraksi…
+	Fractal Explorer…	Penjelajah fraktal…
+	Fractal Trace…	Jejak fraktal…
+	Fractals	Fraktal
+	Grid…	Kisi…
+	IFS Fractal…	Fraktal IFS…
+	Illusion…	Ilusi…
+	Jigsaw…	Teka-teki…
+	Lava…	Lava…
+	Line Nova…	Garis nova…
+	Linear Sinusoid…	Sinusoid linear…
+	Little Planet…	Planet kecil…
+	Map	Peta
+	Map Object…	Petakan ke objek…
+	Maze…	Labirin…
+	Optimize (for GIF)	Optimalkan (untuk GIF)
+	Qbist…	Qbist…
+	Recursive Transform…	Transformasi rekursif…
+	Rippling…	Riak…
+	Semi-Flatten	Semi-ratakan
+	Simplex Noise…	Derau simpleks…
+	Sinus…	Sinus…
+	Slide…	Slide…
+	Small Tiles…	Ubin kecil…
+	Sphere Designer…	Perancang bola…
+	Spinning Globe…	Globe berputar…
+	Spiral…	Spiral…
+	Spirograph…	Spirograf…
+	Stencil Carve…	Ukiran stensil…
+	Tile Seamless	Ubin mulus
+	Unoptimize	Batalkan optimalisasi
+	Waves…	Gelombang…
+	Binary AND	Biner AND
+	Binary OR	Biner OR
+	Binary NAND	Biner NAND
+	Binary NOR	Biner NOR
+	Binary XNOR	Biner XNOR
+	Binary Implication	Biner implikasi
+	Binary Not Implication	Biner bukan implikasi
+	Binary Converse	Biner konvers
+	Binary Not Converse	Biner bukan konvers
+	Modulo	Modulo
+	Modulo Continuous	Modulo kontinu
+	Divisive Modulo	Modulo pembagi
+	Divisive Modulo Continuous	Modulo pembagi kontinu
+	Modulo Shift	Modulo geser
+	Modulo Shift Continuous	Modulo geser kontinu
+	Freeze	Beku
+	Heat	Panas
+	Glow-Heat	Cahaya-Panas
+	Heat-Glow	Panas-Cahaya
+	Reflect-Freeze	Pantul-Beku
+	Freeze-Reflect	Beku-Pantul
+	Heat-Glow and Freeze-Reflect Hybrid	Hibrida Panas-Cahaya dan Beku-Pantul
+	Wrap Around Mode	Mode membungkus
+	Rotational Multibrush	Kuas ganda rotasi
+	Mirror copies	Cerminkan salinan
+	All Tags	Semua tag
+	Tags	Tag
+	Assistant Tool	Alat Asisten
+	Assistant	Asisten
+	Parallel Ruler	Penggaris paralel
+	Vanishing Point	Titik hilang
+	Perspective Grid	Kisi perspektif
+	Snap to Assistants	Jepret ke asisten
+	Show Assistants	Tampilkan asisten
+	Delete All	Hapus semua
+	Mirror painting across the vertical axis	Cerminkan lukisan pada sumbu vertikal
+	Choose a gradient file (.grd or .ggr).	Pilih berkas gradien (.grd atau .ggr).
+	Save Group to Document	Simpan grup ke dokumen
+	Load Document Palettes	Muat palet dokumen
+	Cumulative undo	Urungkan kumulatif
+	Cumulative undo interval	Interval urungkan kumulatif
+	Cumulative undo duration	Durasi urungkan kumulatif
+	Popup palette	Palet sembul
+	Smear	Oles
+	Smudge Radius	Radius smudge

@@ -5,22 +5,42 @@
 
 use egui::{Color32, RichText, Sense, Stroke, pos2, vec2};
 use redrob_photo_engine::BrushSettings;
-use redrob_photo_engine::paint::{self, BrushPreset, Control, Dynamic, MAX_BRUSH_SIZE, MaskMode, Pattern, PatternStyle, TipShape};
+use redrob_photo_engine::paint::{
+    self, BrushPreset, Control, Dynamic, MAX_BRUSH_SIZE, MaskMode, MaskType, Pattern, PatternStyle, SensorCombine, TipGeometry, TipShape,
+};
 
 use crate::brush_preview;
 use crate::theme::{self, Tokens};
 use crate::widgets;
 
-pub const CONTROLS: [(Control, &str); 8] = [
+pub const CONTROLS: [(Control, &str); 11] = [
     (Control::Off, "Off"),
     (Control::Fade, "Fade"),
     (Control::PenPressure, "Pen Pressure"),
     (Control::PenTilt, "Pen Tilt"),
     (Control::StylusWheel, "Stylus Wheel"),
     (Control::Rotation, "Rotation"),
+    (Control::Velocity, "Velocity"),
+    (Control::DrawingAngle, "Drawing Angle"),
+    (Control::Random, "Random"),
     (Control::InitialDirection, "Initial Direction"),
     (Control::Direction, "Direction"),
 ];
+
+/// How many of [`CONTROLS`] have a 0..1 value (the rest are the angle-only direction controls).
+pub const SCALAR_CONTROLS: usize = 9;
+
+const COMBINES: [(SensorCombine, &str); 5] = [
+    (SensorCombine::Multiply, "Multiply"),
+    (SensorCombine::Add, "Add"),
+    (SensorCombine::Max, "Maximum"),
+    (SensorCombine::Min, "Minimum"),
+    (SensorCombine::Difference, "Difference"),
+];
+
+const TIP_GEOMETRIES: [(TipGeometry, &str); 2] = [(TipGeometry::Circle, "Circle"), (TipGeometry::Square, "Square")];
+
+const MASK_TYPES: [(MaskType, &str); 3] = [(MaskType::Default, "Default"), (MaskType::Soft, "Soft"), (MaskType::Gaussian, "Gaussian")];
 
 pub const MASK_MODES: [(MaskMode, &str); 10] = [
     (MaskMode::Multiply, "Multiply"),
@@ -70,7 +90,91 @@ fn dim(ui: &mut egui::Ui, s: &str) {
 /// Whether a dynamic's control has a 0..1 input its own response curve shapes (not Off, not the
 /// direction controls, not Angle Jitter, whose controls set an angle).
 pub(crate) fn takes_curve(control: Control, angle: bool) -> bool {
-    !angle && matches!(control, Control::Fade | Control::PenPressure | Control::PenTilt | Control::StylusWheel | Control::Rotation)
+    !angle
+        && matches!(
+            control,
+            Control::Fade
+                | Control::PenPressure
+                | Control::PenTilt
+                | Control::StylusWheel
+                | Control::Rotation
+                | Control::Velocity
+                | Control::DrawingAngle
+                | Control::Random
+        )
+}
+
+/// The drawing-angle sensor's own settings (offset, lock, fan corners), shown while a dynamic
+/// reads the drawing angle.
+fn drawing_angle_rows(ui: &mut egui::Ui, d: &mut Dynamic) {
+    let da = &mut d.drawing_angle;
+    ui.horizontal(|ui| {
+        dim(ui, tl!("Angle Offset:"));
+        let mut o = da.offset;
+        if widgets::value_field(ui, &mut o, -180.0..=180.0, "°", 70.0).changed() {
+            da.offset = o.round().clamp(-180.0, 180.0);
+        }
+        ui.add_space(6.0);
+        widgets::checkbox(ui, &mut da.lock, tl!("Lock")).on_hover_text(tl!("Read the direction of the first stroke segment for the whole stroke"));
+    });
+    ui.horizontal(|ui| {
+        widgets::checkbox(ui, &mut da.fan_corners, tl!("Fan Corners"));
+        ui.add_enabled_ui(da.fan_corners, |ui| {
+            let mut a = da.fan_angle;
+            if widgets::value_field(ui, &mut a, 1.0..=180.0, "°", 70.0).on_hover_text(tl!("Turn sharper than this is fanned")).changed() {
+                da.fan_angle = a.round().clamp(1.0, 180.0);
+            }
+        });
+    });
+}
+
+/// The extra sensors of a dynamic (`Sensor:` rows, one free slot to add another) and the mode
+/// that combines them with the control.
+fn sensor_rows(ui: &mut egui::Ui, id: &str, d: &mut Dynamic) {
+    let mut shown_free = false;
+    for (k, sen) in d.sensors.iter_mut().enumerate() {
+        if sen.control == Control::Off {
+            if shown_free {
+                continue;
+            }
+            shown_free = true;
+        }
+        ui.horizontal(|ui| {
+            dim(ui, tl!("Sensor:"));
+            let sid = format!("{id}-sensor-{k}");
+            widgets::dropdown(ui, &sid, &mut sen.control, &CONTROLS[..SCALAR_CONTROLS], 130.0);
+            if sen.control == Control::Fade {
+                let mut steps = sen.fade_steps as f32;
+                if widgets::value_field(ui, &mut steps, 1.0..=9999.0, "", 56.0).on_hover_text(tl!("Fade steps")).changed() {
+                    sen.fade_steps = steps.round().clamp(1.0, 9999.0) as u32;
+                }
+            }
+            if sen.control != Control::Off {
+                let open_id = curve_open_id(&sid);
+                let mut open: bool = ui.data(|m| m.get_temp(open_id)).unwrap_or(false);
+                if crate::icons::button(ui, "spline", 22.0, open || !sen.curve.is_linear(), tl!("Response curve")).clicked() {
+                    open = !open;
+                }
+                ui.data_mut(|m| m.insert_temp(open_id, open));
+            }
+        });
+        if sen.control != Control::Off {
+            let sid = format!("{id}-sensor-{k}");
+            let open: bool = ui.data(|m| m.get_temp(curve_open_id(&sid))).unwrap_or(false);
+            if open {
+                let mut points = sen.curve.points();
+                if crate::pressure_curve_ui::edit_points(ui, egui::Id::new(("brush-curve-rect", sid.as_str())), &mut points) {
+                    sen.curve = paint::ResponseCurve::new(&points);
+                }
+            }
+        }
+    }
+    if d.has_sensors() {
+        ui.horizontal(|ui| {
+            dim(ui, tl!("Combine:"));
+            widgets::dropdown(ui, &format!("{id}-combine"), &mut d.combine, &COMBINES, 130.0);
+        });
+    }
 }
 
 /// egui memory key of the open/closed state of a dynamic's curve editor.
@@ -86,7 +190,7 @@ fn control_row(ui: &mut egui::Ui, id: &str, d: &mut Dynamic, angle: bool) {
     let mut open: bool = ui.data(|m| m.get_temp(open_id)).unwrap_or(false);
     ui.horizontal(|ui| {
         dim(ui, tl!("Control:"));
-        let n = if angle || matches!(d.control, Control::InitialDirection | Control::Direction) { 8 } else { 6 };
+        let n = if angle || matches!(d.control, Control::InitialDirection | Control::Direction) { CONTROLS.len() } else { SCALAR_CONTROLS };
         widgets::dropdown(ui, id, &mut d.control, &CONTROLS[..n], 130.0);
         if d.control == Control::Fade {
             let mut steps = d.fade_steps as f32;
@@ -105,6 +209,10 @@ fn control_row(ui: &mut egui::Ui, id: &str, d: &mut Dynamic, angle: bool) {
         }
     }
     ui.data_mut(|m| m.insert_temp(open_id, open));
+    sensor_rows(ui, id, d);
+    if d.reads_drawing_angle() || (angle && d.control == Control::Direction) {
+        drawing_angle_rows(ui, d);
+    }
     ui.add_space(2.0);
 }
 
@@ -120,7 +228,7 @@ fn dynamic(ui: &mut egui::Ui, id: &str, label: &str, d: &mut Dynamic, max: f32, 
 
 /// Minimum belongs to the control. Off disables editing without discarding its saved value.
 fn minimum_row(ui: &mut egui::Ui, label: &str, d: &mut Dynamic) {
-    ui.add_enabled_ui(d.control != Control::Off, |ui| pct(ui, label, &mut d.minimum, 1.0));
+    ui.add_enabled_ui(d.control != Control::Off || d.has_sensors(), |ui| pct(ui, label, &mut d.minimum, 1.0));
 }
 
 /// Size: a value field over a logarithmic slider (small sizes get most of the travel).
@@ -348,13 +456,87 @@ fn tip_shape(ui: &mut egui::Ui, b: &mut BrushSettings, presets: &[BrushPreset], 
     ui.add_space(6.0);
     ui.add_enabled_ui(matches!(b.tip, TipShape::Round), |ui| {
         pct(ui, tl!("Hardness"), &mut b.hardness, 1.0);
+        generated_tip(ui, b);
     });
     // Unchecked, the pointer's speed sets the spacing (Photoshop).
     widgets::checkbox(ui, &mut b.spacing_enabled, tl!("Spacing")).on_hover_text(tl!("Off: the speed of the pointer sets the spacing"));
     ui.add_space(2.0);
     let on = b.spacing_enabled;
-    ui.add_enabled_ui(on, |ui| signed_pct(ui, tl!("Spacing"), &mut b.spacing, 0.01, 10.0));
+    ui.add_enabled_ui(on, |ui| {
+        let auto = b.generated.auto_spacing;
+        ui.add_enabled_ui(!auto, |ui| signed_pct(ui, tl!("Spacing"), &mut b.spacing, 0.01, 10.0));
+        ui.horizontal(|ui| {
+            widgets::checkbox(ui, &mut b.generated.auto_spacing, tl!("Auto Spacing")).on_hover_text(tl!("Spacing grows with the square root of the size"));
+            ui.add_enabled_ui(auto, |ui| {
+                let mut c = b.generated.auto_spacing_coeff;
+                if widgets::value_field(ui, &mut c, 0.01..=10.0, "", 56.0).on_hover_text(tl!("Auto spacing coefficient")).changed() {
+                    b.generated.auto_spacing_coeff = c.clamp(0.01, 10.0);
+                }
+            });
+        });
+        control_row(ui, "brush-spacing-ctl", &mut b.spacing_dynamic, false);
+        minimum_row(ui, tl!("Minimum Spacing"), &mut b.spacing_dynamic);
+        widgets::checkbox(ui, &mut b.isotropic_spacing, tl!("Isotropic Spacing")).on_hover_text(tl!("Space dabs by the diameter alone, not by the roundness"));
+    });
     None
+}
+
+/// The computed tip's generated-shape controls: outline, mask type, fade per axis, spikes,
+/// density, randomness, anti-aliasing and precision.
+fn generated_tip(ui: &mut egui::Ui, b: &mut BrushSettings) {
+    let g = &mut b.generated;
+    ui.horizontal(|ui| {
+        dim(ui, tl!("Shape:"));
+        widgets::dropdown(ui, "brush-tip-geometry", &mut g.shape, &TIP_GEOMETRIES, 100.0);
+        ui.add_space(6.0);
+        dim(ui, tl!("Mask:"));
+        widgets::dropdown(ui, "brush-tip-mask", &mut g.mask, &MASK_TYPES, 100.0);
+    });
+    ui.add_space(2.0);
+    let soft = g.mask != MaskType::Default;
+    ui.add_enabled_ui(soft, |ui| {
+        pct(ui, tl!("Fade X"), &mut g.fade_x, 1.0);
+        ui.horizontal(|ui| {
+            widgets::checkbox(ui, &mut g.lock_fade, tl!("Lock Fade")).on_hover_text(tl!("The vertical fade follows the horizontal one"));
+        });
+        let locked = g.lock_fade;
+        ui.add_enabled_ui(!locked, |ui| pct(ui, tl!("Fade Y"), &mut g.fade_y, 1.0));
+    });
+    if g.mask == MaskType::Soft {
+        let open_id = curve_open_id("brush-soft-mask");
+        let mut open: bool = ui.data(|m| m.get_temp(open_id)).unwrap_or(false);
+        ui.horizontal(|ui| {
+            dim(ui, tl!("Soft curve:"));
+            if crate::icons::button(ui, "spline", 22.0, open || !g.soft_curve.is_linear(), tl!("Response curve")).clicked() {
+                open = !open;
+            }
+        });
+        if open {
+            let mut points = g.soft_curve.points();
+            if crate::pressure_curve_ui::edit_points(ui, egui::Id::new(("brush-curve-rect", "brush-soft-mask")), &mut points) {
+                g.soft_curve = paint::ResponseCurve::new(&points);
+            }
+        }
+        ui.data_mut(|m| m.insert_temp(open_id, open));
+    }
+    let mut spikes = g.spikes as f32;
+    if num(ui, tl!("Spikes"), &mut spikes, 0.0..=20.0, "") {
+        g.spikes = spikes as u32;
+    }
+    pct(ui, tl!("Density"), &mut g.density, 1.0);
+    pct(ui, tl!("Randomness"), &mut g.randomness, 1.0);
+    ui.horizontal(|ui| {
+        widgets::checkbox(ui, &mut g.antialias, tl!("Anti-aliasing"));
+        ui.add_space(8.0);
+        widgets::checkbox(ui, &mut g.auto_precision, tl!("Auto Precision"));
+    });
+    let auto = g.auto_precision;
+    ui.add_enabled_ui(!auto, |ui| {
+        let mut p = g.precision as f32;
+        if num(ui, tl!("Precision"), &mut p, 1.0..=5.0, "") {
+            g.precision = p as u8;
+        }
+    });
 }
 
 fn shape_dynamics(ui: &mut egui::Ui, b: &mut BrushSettings) {
@@ -379,8 +561,14 @@ fn shape_dynamics(ui: &mut egui::Ui, b: &mut BrushSettings) {
 
 fn scattering(ui: &mut egui::Ui, b: &mut BrushSettings) {
     let sc = &mut b.scattering;
-    pct(ui, tl!("Scatter"), &mut sc.scatter.jitter, 10.0);
-    widgets::checkbox(ui, &mut sc.both_axes, tl!("Both Axes"));
+    widgets::checkbox(ui, &mut sc.separate_axes, tl!("Separate Axes")).on_hover_text(tl!("Scatter along and across the stroke by different amounts"));
+    if sc.separate_axes {
+        pct(ui, tl!("Along"), &mut sc.along, 10.0);
+        pct(ui, tl!("Across"), &mut sc.across, 10.0);
+    } else {
+        pct(ui, tl!("Scatter"), &mut sc.scatter.jitter, 10.0);
+        widgets::checkbox(ui, &mut sc.both_axes, tl!("Both Axes"));
+    }
     ui.add_space(2.0);
     control_row(ui, "brush-scatter-ctl", &mut sc.scatter, false);
     ui.add_space(6.0);
@@ -590,11 +778,28 @@ fn pose(ui: &mut egui::Ui, b: &mut BrushSettings) {
 
 fn smoothing(ui: &mut egui::Ui, b: &mut BrushSettings) {
     let s = &mut b.smoothing;
+    widgets::checkbox(ui, &mut s.stabilizer, tl!("Stabilizer")).on_hover_text(tl!("Average the last input points; the sample count follows the speed"));
+    if s.stabilizer {
+        let mut slow = s.samples_slow as f32;
+        if num(ui, tl!("Samples (slow)"), &mut slow, 1.0..=200.0, "") {
+            s.samples_slow = slow as u32;
+        }
+        let mut fast = s.samples_fast as f32;
+        if num(ui, tl!("Samples (fast)"), &mut fast, 1.0..=200.0, "") {
+            s.samples_fast = fast as u32;
+        }
+        num(ui, tl!("Delay"), &mut s.delay, 0.0..=500.0, "px");
+        widgets::checkbox(ui, &mut s.finish_line, tl!("Finish Line"));
+        widgets::checkbox(ui, &mut s.stabilize_sensors, tl!("Stabilize Sensors"));
+        widgets::checkbox(ui, &mut s.adjust_for_zoom, tl!("Adjust for Zoom"));
+        return;
+    }
     pct(ui, tl!("Smoothing"), &mut s.amount, 1.0);
     widgets::checkbox(ui, &mut s.pulled_string, tl!("Pulled String Mode"));
     widgets::checkbox(ui, &mut s.catch_up, tl!("Stroke Catch-up"));
     widgets::checkbox(ui, &mut s.catch_up_on_end, tl!("Catch-up on Stroke End"));
     widgets::checkbox(ui, &mut s.adjust_for_zoom, tl!("Adjust for Zoom"));
+    widgets::checkbox(ui, &mut s.smooth_pressure, tl!("Smooth Pressure")).on_hover_text(tl!("Smooth the pen pressure along with the position"));
 }
 
 /// Controls for section `i` (see [`crate::brush_panel::SECTIONS`]). `presets` feed the tip grids.

@@ -6,11 +6,12 @@ use std::sync::Arc;
 
 use redrob_vector_color::{BlendMode, GradientKind, GradientPaint, Paint};
 use redrob_vector_doc::{
-    AppearanceItem, Document, FillLayer, LineCap, LineJoin, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer, TextKind, TextObject,
+    AppearanceItem, ArrowAlign, Arrowhead, Document, FillLayer, LineCap, LineJoin, MarkerOrient, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer,
+    TextKind, TextObject,
 };
 use redrob_vector_doc::{CharStyle, ImageBlob, Justify};
 use redrob_vector_effects::stroke::{self, Written, WrittenShape};
-use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, Point, Rect};
+use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, Point, Rect, Shape, Vec2};
 
 use redrob_vector_text::{FontDb, FontFace};
 
@@ -71,6 +72,7 @@ fn write(doc: &Document, opts: &ExportOptions, native: Option<&[u8]>, id_prefix:
         shared_images: HashMap::new(),
         layer_nest: 0,
         non_latin1_names: false,
+        markers: HashMap::new(),
     };
     w.assign_name_ids();
     // Page Isolated Blending / Page Knockout Group: the page content is one isolated group.
@@ -303,6 +305,9 @@ struct Writer<'a> {
     layer_nest: usize,
     /// An emitted attribute name requires an encoding wider than Latin-1.
     non_latin1_names: bool,
+    /// `<marker>` def ids by content (everything but the id), so strokes with the same heads
+    /// share them.
+    markers: HashMap<String, String>,
 }
 
 /// The characters type uses from one face, under one `@font-face` description: the family the
@@ -333,6 +338,24 @@ pub(crate) struct Reuse {
     turns: bool,
     /// Any other transform (nor strokes or live objects).
     scales: bool,
+}
+
+/// Which end a `<marker>` sits at.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MarkerAt {
+    Start,
+    Mid,
+    End,
+}
+
+impl MarkerAt {
+    fn property(self) -> &'static str {
+        match self {
+            MarkerAt::Start => "marker-start",
+            MarkerAt::Mid => "marker-mid",
+            MarkerAt::End => "marker-end",
+        }
+    }
 }
 
 /// How one stroke is written.
@@ -570,14 +593,25 @@ impl Writer<'_> {
             return;
         }
         let mut named: Vec<(NodeId, String)> = Vec::new();
+        let mut sources = HashSet::new();
         self.doc.walk(|n| {
             if let Some(name) = &n.name {
                 named.push((n.id, sanitize_id(name)));
+            }
+            if let Some(c) = n.extras().clone_of.as_deref() {
+                sources.insert(c.original);
             }
         });
         for (id, base) in named {
             let cand = self.unique_id(&base);
             self.names.insert(id, cand);
+        }
+        // The originals of clones are `<use>`d by id: unnamed ones get one.
+        for id in sources {
+            if self.doc.node(id).is_some() && !self.names.contains_key(&id) {
+                let cand = self.unique_id(&format!("object-{}", id.0));
+                self.names.insert(id, cand);
+            }
         }
     }
     /// ` id="…"` for a named object, plus ` data-name="…"` with the name itself when the id had to
@@ -880,8 +914,14 @@ impl Writer<'_> {
         if s.opacity < 1.0 {
             p.push(("stroke-opacity", fmt_num(s.opacity as f64, 3)));
         }
-        if (width - 1.0).abs() > 1e-9 {
+        if s.hairline {
+            // One device pixel at any zoom: the SVG non-scaling stroke at 1 px.
+            p.push(("vector-effect", "non-scaling-stroke".into()));
+        } else if (width - 1.0).abs() > 1e-9 {
             p.push(("stroke-width", self.num(width)));
+        }
+        if self.marker_plain(s) {
+            self.marker_props(s, p);
         }
         match s.cap {
             LineCap::Butt => {}
@@ -913,6 +953,11 @@ impl Writer<'_> {
         if stroke::is_plain(st) {
             return StrokePlan::Written(stroke::for_writer(&BezPath::new(), st));
         }
+        // Heads on an otherwise plain stroke: a plain path with `<marker>` definitions
+        // (`stroke_props` adds the marker properties).
+        if self.marker_plain(st) {
+            return StrokePlan::Written(Written { shape: WrittenShape::Stroke { width: st.width }, side: None });
+        }
         let bp = bp.get_or_insert_with(|| doc_path(paths));
         let doc = self.doc;
         let brushes = self.brushes.get_or_insert_with(|| redrob_vector_brush::library(doc));
@@ -920,6 +965,97 @@ impl Writer<'_> {
             Some(b) => StrokePlan::Brush(redrob_vector_brush::stroke_pieces(doc, b, bp, st)),
             None => StrokePlan::Written(stroke::for_writer(bp, st)),
         }
+    }
+
+    /// Does `st` write as a plain stroke whose heads are SVG markers: centred, with no profile,
+    /// brush, fitted dashes or gradient along it, and heads a marker can stand for (a hollow head
+    /// whose tip sits on the end point needs the stroke trimmed under it, which markers can't do)?
+    /// SVG Tiny has no markers.
+    fn marker_plain(&self, st: &StrokeLayer) -> bool {
+        if !st.has_heads() || self.tiny() {
+            return false;
+        }
+        let bare = StrokeLayer { start_arrow: None, end_arrow: None, mid_arrow: None, ..st.clone() };
+        let hollow_tip = st.arrow_align == ArrowAlign::Tip && [st.start_arrow, st.end_arrow].into_iter().flatten().any(stroke::is_hollow);
+        stroke::is_plain(&bare) && !hollow_tip
+    }
+
+    /// `marker-start`, `marker-mid` and `marker-end` for the heads of `s`, each a `<marker>` def
+    /// ([`Writer::marker_def`]).
+    fn marker_props(&mut self, s: &StrokeLayer, p: &mut Props) {
+        for (which, kind) in [(MarkerAt::Start, s.start_arrow), (MarkerAt::Mid, s.mid_arrow), (MarkerAt::End, s.end_arrow)] {
+            if let Some(kind) = kind {
+                let id = self.marker_def(s, kind, which);
+                p.push((which.property(), format!("url(#{id})")));
+            }
+        }
+    }
+
+    /// The `<marker>` def for head `kind` at `which` end of stroke `s`, written once per distinct
+    /// head: its outline as the canvas draws it, in stroke-width units when markers scale with the
+    /// stroke (`markerUnits="strokeWidth"`), else in user units, filled with the stroke's paint.
+    /// `orient="auto"` turns it along the path (`auto-start-reverse` is drawn into the start
+    /// head's direction instead); a fixed angle turns every head to it, its tip on the node.
+    fn marker_def(&mut self, s: &StrokeLayer, kind: Arrowhead, which: MarkerAt) -> String {
+        let k = self.xf.determinant().abs().sqrt().max(1e-9);
+        // Head weight and cap in marker units.
+        let (units, hw, cap) = if s.markers_scale {
+            let pct = match which {
+                MarkerAt::End => s.arrow_scale.1,
+                _ => s.arrow_scale.0,
+            };
+            ("strokeWidth", (pct / 100.0).max(0.25 / s.width.max(1e-9)), stroke::cap_extent(s.cap, 1.0))
+        } else {
+            let w = match which {
+                MarkerAt::End => s.arrow_weight(true),
+                MarkerAt::Mid => s.mid_weight(),
+                MarkerAt::Start => s.arrow_weight(false),
+            };
+            ("userSpaceOnUse", w * k, stroke::cap_extent(s.cap, s.width * k))
+        };
+        let x = Vec2::new(1.0, 0.0);
+        let fixed = matches!(s.marker_orient, MarkerOrient::Fixed { .. });
+        // In the marker's frame +x runs along the path (`orient="auto"`), or at the fixed angle.
+        let (dir, tip) = match which {
+            MarkerAt::Mid => (x, Point::ORIGIN + x * (stroke::head_len(hw) / 2.0)),
+            MarkerAt::Start | MarkerAt::End => {
+                let outward = if which == MarkerAt::End { x } else { -x };
+                let dir = match s.marker_orient {
+                    MarkerOrient::Auto => outward,
+                    MarkerOrient::AutoStartReverse if which == MarkerAt::Start => x,
+                    MarkerOrient::AutoStartReverse => outward,
+                    MarkerOrient::Fixed { .. } => x,
+                };
+                let inset = stroke::head_inset(kind, hw, cap);
+                let tip = if s.arrow_align == ArrowAlign::Tip || fixed { Point::ORIGIN } else { Point::ORIGIN + outward * inset };
+                (dir, tip)
+            }
+        };
+        if fixed && s.arrow_align == ArrowAlign::Extend {
+            self.warn("arrowheads at a fixed angle are written with their tips on the path's end points");
+        }
+        let outline = stroke::head_outline(kind, tip, dir, hw);
+        let orient = if fixed { s.marker_orient.svg() } else { "auto".to_string() };
+        let fill = self.paint(&s.paint, None);
+        let opacity = if s.opacity < 1.0 { format!(" fill-opacity=\"{}\"", fmt_num(s.opacity as f64, 3)) } else { String::new() };
+        let d = self.path_d(&PathData::from_bezpath(&outline), Affine::IDENTITY);
+        let b = outline.bounding_box().inflate(0.5, 0.5);
+        let key = format!("{units}|{orient}|{d}|{fill}|{opacity}");
+        if let Some(id) = self.markers.get(&key) {
+            return id.clone();
+        }
+        let id = self.fresh_id("marker");
+        let (vx, vy, vw, vh) = (self.num(b.x0), self.num(b.y0), self.num(b.width()), self.num(b.height()));
+        self.def(
+            1,
+            &format!(
+                "<marker id=\"{id}\" markerUnits=\"{units}\" orient=\"{orient}\" overflow=\"visible\" refX=\"0\" refY=\"0\" markerWidth=\"{vw}\" markerHeight=\"{vh}\" viewBox=\"{vx} {vy} {vw} {vh}\">"
+            ),
+        );
+        self.def(2, &format!("<path d=\"{d}\" fill=\"{fill}\"{opacity}/>"));
+        self.def(1, "</marker>");
+        self.markers.insert(key, id.clone());
+        id
     }
 
     /// The `clip-path` (inside) or `mask` (outside) attribute that keeps an aligned stroke on its
@@ -1294,10 +1430,32 @@ impl Writer<'_> {
         mid
     }
 
-    /// An object, inside `<a>` when it links to a URL (Attributes panel).
+    /// An object, inside `<a>` when it links to a URL (Attributes panel), and in a group holding
+    /// its `<title>` and `<desc>` when Object Properties gave it a title or description.
     fn node(&mut self, n: &Node) {
         let layer = usize::from(n.is_layer());
         self.layer_nest += layer;
+        let (title, desc) = n.extras().attrs.as_deref().map_or((String::new(), String::new()), |a| (a.title.clone(), a.description.clone()));
+        let described = n.visible && !self.anonymous && !(title.is_empty() && desc.is_empty());
+        if described {
+            self.line("<g>");
+            self.depth += 1;
+            if !title.is_empty() {
+                self.line(&format!("<title>{}</title>", xml_escape(&title)));
+            }
+            if !desc.is_empty() {
+                self.line(&format!("<desc>{}</desc>", xml_escape(&desc)));
+            }
+        }
+        self.linked_node(n);
+        if described {
+            self.depth -= 1;
+            self.line("</g>");
+        }
+        self.layer_nest -= layer;
+    }
+
+    fn linked_node(&mut self, n: &Node) {
         match n.url().filter(|_| n.visible && !self.anonymous) {
             Some(url) => {
                 self.line(&format!("<a xlink:href=\"{}\">", xml_escape(url)));
@@ -1308,13 +1466,32 @@ impl Writer<'_> {
             }
             None => self.node_body(n),
         }
-        self.layer_nest -= layer;
+    }
+
+    /// A clone (Object › Clone) as `<use>` of its original, when the original is written with an
+    /// id and the clone shows its paint. `None`: the clone is written as its own art.
+    fn clone_use(&mut self, n: &Node) -> Option<String> {
+        let c = n.extras().clone_of.as_deref()?;
+        if c.own_paint || self.anonymous || self.opts.object_ids == ObjectIds::Minimal {
+            return None;
+        }
+        let original = self.doc.node(c.original).filter(|o| o.visible || self.opts.hidden_layers)?;
+        let href = self.names.get(&original.id)?.clone();
+        let m = self.xf * c.xf * self.xf.inverse();
+        let transform = if m == Affine::IDENTITY { String::new() } else { format!(" transform=\"{}\"", self.matrix(m)) };
+        let id = self.id_attr(n);
+        let a = self.attrs(&css::transparency(n));
+        Some(format!("<use{id} xlink:href=\"#{}\"{transform}{a}/>", xml_escape(&href)))
     }
 
     fn node_body(&mut self, n: &Node) {
         // Hidden layers and objects are left out, unless the options keep them (hidden). Template
         // layers never print.
         if !(n.visible || self.opts.hidden_layers) {
+            return;
+        }
+        if let Some(use_el) = self.clone_use(n) {
+            self.line(&use_el);
             return;
         }
         if has_raster(&n.appearance.effects) {
@@ -1594,12 +1771,12 @@ impl Writer<'_> {
         let region = bounds.map(|b| self.xf.transform_rect_bbox(b).inflate(reach, reach));
         let mut opened = 0;
         for f in fx.iter().rev() {
-            if matches!(f, RasterFx::Pixel(_)) {
+            if matches!(f, RasterFx::Pixel(p) if !matches!(p, redrob_vector_effects::PixelFx::ColorMatrix { .. })) {
                 self.warn("SVG has no pixel effects such as Radial Blur, Smart Blur or Unsharp Mask: they are left out");
                 continue;
             }
             let fid = self.fresh_id("filter");
-            let region_attr = match region {
+            let mut region_attr = match region {
                 Some(r) => format!(
                     " filterUnits=\"userSpaceOnUse\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
                     self.num(r.x0),
@@ -1646,7 +1823,25 @@ impl Writer<'_> {
                     sd(*radius)
                 ),
                 RasterFx::GaussianBlur { radius } => format!("<feGaussianBlur in=\"SourceGraphic\" stdDeviation=\"{}\"/>", sd(*radius)),
+                RasterFx::Pixel(redrob_vector_effects::PixelFx::ColorMatrix { matrix }) => format!(
+                    "<feColorMatrix in=\"SourceGraphic\" type=\"matrix\" values=\"{}\"/>",
+                    matrix.iter().map(|v| fmt_num(f64::from(*v), 4)).collect::<Vec<_>>().join(" ")
+                ),
                 RasterFx::Pixel(_) => continue,
+                RasterFx::Graph(g) => {
+                    // The graph's own region replaces the one around every raster effect; lights
+                    // sit against the object's top-left corner.
+                    let b = bounds.map(|b| self.xf.transform_rect_bbox(b)).unwrap_or_default();
+                    let r = g.region_rect(b);
+                    region_attr = format!(
+                        " filterUnits=\"userSpaceOnUse\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
+                        self.num(r.x0),
+                        self.num(r.y0),
+                        self.num(r.width()),
+                        self.num(r.height())
+                    );
+                    crate::filter_graph::graph_markup(g, (b.x0, b.y0))
+                }
             };
             // Filters composite normally: a shadow's or glow's other blend mode is recorded for import.
             let mode = match f {

@@ -10,8 +10,8 @@
 use std::sync::Arc;
 
 use redrob_photo_algo::{
-    self as algo, BlurPath, BlurQuality, BlurShape, DepthSource, DiffuseMode, Distribution, ExtrudeType, FieldPin, FilterParams, HsbModel, IrisPin, LensType,
-    Light, LightKind, MezzotintType, SmartBlurMode, SpinPin, TextureChannel, TileFill, UndefinedAreas, WindMethod, ZigZagStyle,
+    self as algo, BlurPath, BlurQuality, BlurShape, DepthSource, DiffuseMode, Distribution, EdgeAlgorithm, ExtrudeType, FieldPin, FilterParams, HsbModel,
+    IrisPin, LensType, Light, LightKind, MezzotintType, SmartBlurMode, SpinPin, TextureChannel, TileFill, UndefinedAreas, WindMethod, ZigZagStyle,
 };
 use redrob_photo_doc::{Document, Layer};
 use redrob_photo_geom::Rect;
@@ -138,6 +138,26 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             seed: seed(p),
         },
         "filter.stylize.traceContour" => FilterParams::TraceContour { level: f(p, "level", 128.0).clamp(0.0, 255.0), upper: s(p, "edge", "lower") == "upper" },
+        "filter.adjust.colorTemperature" => FilterParams::ColorTemperature {
+            original: f(p, "originalTemperature", 6500.0).clamp(1000.0, 12000.0),
+            intended: f(p, "intendedTemperature", 6500.0).clamp(1000.0, 12000.0),
+        },
+        "filter.adjust.hueChroma" => FilterParams::HueChroma {
+            hue: f(p, "hue", 0.0).clamp(-180.0, 180.0),
+            chroma: f(p, "chroma", 0.0).clamp(-100.0, 100.0),
+            lightness: f(p, "lightness", 0.0).clamp(-100.0, 100.0),
+        },
+        "filter.stylize.edge" => FilterParams::Edge {
+            algorithm: match s(p, "algorithm", "sobel") {
+                "prewitt" => EdgeAlgorithm::Prewitt,
+                "gradient" => EdgeAlgorithm::Gradient,
+                "roberts" => EdgeAlgorithm::Roberts,
+                "differential" => EdgeAlgorithm::Differential,
+                "laplace" => EdgeAlgorithm::Laplace,
+                _ => EdgeAlgorithm::Sobel,
+            },
+            amount: f(p, "amount", 2.0).clamp(1.0, 10.0),
+        },
         "filter.stylize.wind" => FilterParams::Wind {
             method: match s(p, "method", "wind") {
                 "blast" => WindMethod::Blast,
@@ -394,13 +414,20 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             interpolate: s(p, "createBy", "interpolation") != "duplication",
         },
         "filter.video.ntscColors" => FilterParams::NtscColors,
-        _ => return crate::gallery_cmds::params_for(id, p),
+        _ => {
+            return crate::filters_extra::params_for(id, p)
+                .or_else(|| crate::filters_gen::params_for(id, p))
+                .or_else(|| crate::gallery_cmds::params_for(id, p));
+        }
     })
 }
 
 /// Ids whose rendering uses the foreground/background colours.
 fn uses_colours(id: &str) -> bool {
-    matches!(id, "filter.render.fibers" | "filter.stylize.tiles" | "filter.pixelate.pointillize") || crate::gallery_cmds::uses_colours(id)
+    matches!(id, "filter.render.fibers" | "filter.stylize.tiles" | "filter.pixelate.pointillize")
+        || crate::filters_extra::uses_colours(id)
+        || crate::gallery_cmds::uses_colours(id)
+        || crate::filters_gen::uses_colours(id)
 }
 
 /// Fills in session state a filter reads (the current colours) as explicit params, so the
@@ -431,7 +458,7 @@ fn map_from_document(doc: &Document, layer: Option<u64>) -> Option<algo::Image> 
 /// Resolves inputs that live outside the target layer: Displace's map (`mapPath`, or
 /// `mapDocument` index with optional `mapLayer` id).
 pub(crate) fn resolve(s: &Session, fp: &mut FilterParams, p: &Value) -> Result<()> {
-    let FilterParams::Displace { map, .. } = fp else { return Ok(()) };
+    let Some(map) = map_slot(fp) else { return Ok(()) };
     if map.is_some() {
         return Ok(());
     }
@@ -447,10 +474,19 @@ pub(crate) fn resolve(s: &Session, fp: &mut FilterParams, p: &Value) -> Result<(
         let ds = found.ok_or_else(|| EngineError::Other("displacement map document not found".into()))?;
         map_from_document(&ds.doc, layer)
     } else {
-        return Err(EngineError::Other("Displace needs a displacement map: pass `mapPath` or `mapDocument`".into()));
+        return Err(EngineError::Other("this filter needs a map image: pass `mapPath` or `mapDocument`".into()));
     };
     *map = Some(Arc::new(img.ok_or_else(|| EngineError::Other("the displacement map is empty".into()))?));
     Ok(())
+}
+
+/// The external-image slot of the filters that take one: Displace's map and Stencil Carve's
+/// stencil (both `mapPath` / `mapDocument`).
+fn map_slot(fp: &mut FilterParams) -> Option<&mut Option<Arc<algo::Image>>> {
+    match fp {
+        FilterParams::Displace { map, .. } | FilterParams::StencilCarve { map, .. } => Some(map),
+        _ => None,
+    }
 }
 
 fn map_path(p: &Value) -> Option<&str> {
@@ -468,7 +504,7 @@ fn map_from_path(path: &str, layer: Option<u64>) -> Result<Option<algo::Image>> 
 /// the map, so their re-render reads the map again here; without it the filter passed the pixels
 /// through. `mapDocument` needs the session and is left unresolved.
 pub(crate) fn resolve_map_path(fp: &mut FilterParams, p: &Value) -> Result<()> {
-    if let FilterParams::Displace { map, .. } = fp
+    if let Some(map) = map_slot(fp)
         && map.is_none()
         && let Some(path) = map_path(p)
     {
@@ -598,6 +634,19 @@ pub fn specs() -> Vec<CommandSpec> {
             r##"{"count":1..99=10,"maxOffset":1..99=10,"fill":"background|foreground|inverse|unaltered","seed":u32=0,"foreground":json,"background":json}"##
         ),
         cmd!("filter.stylize.traceContour", "Trace Contour…", ["Filter", "Stylize"], r##"{"level":0..255=128,"edge":"lower|upper"}"##),
+        cmd!(
+            "filter.adjust.colorTemperature",
+            "Color Temperature…",
+            ["Image", "Adjustments"],
+            r##"{"originalTemperature":1000..12000=6500,"intendedTemperature":1000..12000=6500}"##
+        ),
+        cmd!("filter.adjust.hueChroma", "Hue-Chroma…", ["Image", "Adjustments"], r##"{"hue":-180..180=0,"chroma":-100..100=0,"lightness":-100..100=0}"##),
+        cmd!(
+            "filter.stylize.edge",
+            "Edge…",
+            ["Filter", "Stylize"],
+            r##"{"algorithm":"sobel|prewitt|gradient|roberts|differential|laplace","amount":1..10=2}"##
+        ),
         cmd!("filter.stylize.wind", "Wind…", ["Filter", "Stylize"], r##"{"method":"wind|blast|stagger","direction":"fromRight|fromLeft","seed":u32=0}"##),
         // Distort
         cmd!(

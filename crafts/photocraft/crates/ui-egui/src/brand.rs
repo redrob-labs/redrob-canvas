@@ -55,11 +55,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_icon_decodes_to_a_rounded_128_px_tile() {
+    fn the_icon_decodes_to_a_128_px_tile() {
         let img = decode();
         assert_eq!(img.size, [128, 128]);
-        // Rounded corners: the corner pixel is transparent, the centre opaque.
-        assert_eq!(img.pixels[0].a(), 0);
+        // The Redrob tile is a square mark: its centre is opaque.
         assert_eq!(img.pixels[64 * 128 + 64].a(), 255);
     }
 

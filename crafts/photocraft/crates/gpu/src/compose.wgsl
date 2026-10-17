@@ -211,8 +211,87 @@ fn blend_channel(mode: i32, cb: f32, cs: f32) -> f32 {
             if (cs >= 1.0) { return 1.0; }
             return min(cb / (1.0 - cs), 1.0);
         }
+        case 38: { return binary_op(cb, cs, 0); }               // Binary AND
+        case 39: { return binary_op(cb, cs, 1); }               // Binary OR
+        case 40: { return binary_op(cb, cs, 2); }               // Binary NAND
+        case 41: { return binary_op(cb, cs, 3); }               // Binary NOR
+        case 42: { return binary_op(cb, cs, 4); }               // Binary XNOR
+        case 43: { return binary_op(cb, cs, 5); }               // Binary Implication
+        case 44: { return binary_op(cb, cs, 6); }               // Binary Not Implication
+        case 45: { return binary_op(cb, cs, 7); }               // Binary Converse
+        case 46: { return binary_op(cb, cs, 8); }               // Binary Not Converse
+        case 47: { return modulo_saw(cb, cs); }                 // Modulo
+        case 48: { return modulo_tri(cb, cs); }                 // Modulo Continuous
+        case 49: {                                             // Divisive Modulo
+            if (cs <= 0.0) { return 0.0; }
+            return modulo_saw(cb / cs, 1.0);
+        }
+        case 50: {                                             // Divisive Modulo Continuous
+            if (cs <= 0.0) { return 0.0; }
+            return modulo_tri(cb / cs, 1.0);
+        }
+        case 51: { return modulo_saw(cb + cs, 1.0); }           // Modulo Shift
+        case 52: { return modulo_tri(cb + cs, 1.0); }           // Modulo Shift Continuous
+        case 53: { return freeze(cb, cs); }                     // Freeze
+        case 54: { return freeze(cs, cb); }                     // Heat
+        case 55: { return reflect_q(freeze(cs, cb), cb); }      // Glow-Heat
+        case 56: { return freeze(reflect_q(cs, cb), cb); }      // Heat-Glow
+        case 57: { return reflect_q(cb, freeze(cb, cs)); }      // Reflect-Freeze
+        case 58: { return freeze(cb, reflect_q(cb, cs)); }      // Freeze-Reflect
+        case 59: {                                             // Heat-Glow and Freeze-Reflect Hybrid
+            return 0.5 * (freeze(reflect_q(cs, cb), cb) + freeze(cb, reflect_q(cb, cs)));
+        }
         default: { return cs; }                                 // Normal, Dissolve, PassThrough
     }
+}
+
+// redrob_photo_color::blend::reflect: cb² / (1 - cs), 1 where the source is white.
+fn reflect_q(cb: f32, cs: f32) -> f32 {
+    if (cs >= 1.0) { return 1.0; }
+    return min(cb * cb / (1.0 - cs), 1.0);
+}
+
+// redrob_photo_color::blend::freeze: 1 - (1 - cb)² / cs, 0 where the source is black.
+fn freeze(cb: f32, cs: f32) -> f32 {
+    if (cs <= 0.0) { return 0.0; }
+    let d = 1.0 - clamp(cb, 0.0, 1.0);
+    return max(1.0 - d * d / cs, 0.0);
+}
+
+// The binary family on 8-bit channel values (redrob_photo_color::blend::binary).
+fn binary_op(cb: f32, cs: f32, op: i32) -> f32 {
+    let b = u32(floor(clamp(cb, 0.0, 1.0) * 255.0 + 0.5));
+    let s = u32(floor(clamp(cs, 0.0, 1.0) * 255.0 + 0.5));
+    var r: u32 = 0u;
+    switch op {
+        case 0: { r = b & s; }
+        case 1: { r = b | s; }
+        case 2: { r = ~(b & s); }
+        case 3: { r = ~(b | s); }
+        case 4: { r = ~(b ^ s); }
+        case 5: { r = ~b | s; }
+        case 6: { r = b & ~s; }
+        case 7: { r = b | ~s; }
+        default: { r = ~b & s; }
+    }
+    return f32(r & 255u) / 255.0;
+}
+
+// redrob_photo_color::blend::modulo: a mod m as a sawtooth, 0 where the modulus vanishes.
+fn modulo_saw(a: f32, m: f32) -> f32 {
+    if (m <= 1e-6) { return 0.0; }
+    let r = a - m * floor(a / m);
+    return clamp(r, 0.0, 1.0);
+}
+
+// redrob_photo_color::blend::modulo_continuous: the sawtooth folded into a triangle wave.
+fn modulo_tri(a: f32, m: f32) -> f32 {
+    if (m <= 1e-6) { return 0.0; }
+    let t = a / m;
+    let k = floor(t);
+    var r = t - k;
+    if ((i32(k) & 1) == 1) { r = 1.0 - r; }
+    return clamp(r * m, 0.0, 1.0);
 }
 
 fn lum(c: vec3<f32>) -> f32 { return 0.3 * c.r + 0.59 * c.g + 0.11 * c.b; }
@@ -243,10 +322,78 @@ fn set_sat(c: vec3<f32>, s: f32) -> vec3<f32> {
     return vec3(0.0);
 }
 
+// redrob_photo_color::blend::rgb_to_hsv / hsv_to_rgb: hue in 0..6, 0 for greys.
+fn rgb_to_hsv(c: vec3<f32>) -> vec3<f32> {
+    let mx = max(max(c.r, c.g), c.b);
+    let mn = min(min(c.r, c.g), c.b);
+    let d = mx - mn;
+    var h = 0.0;
+    if (d > 0.0) {
+        if (mx == c.r) {
+            h = (c.g - c.b) / d;
+            h = h - 6.0 * floor(h / 6.0);
+        } else if (mx == c.g) {
+            h = (c.b - c.r) / d + 2.0;
+        } else {
+            h = (c.r - c.g) / d + 4.0;
+        }
+    }
+    let s = select(0.0, d / mx, mx > 0.0);
+    return vec3(h, s, mx);
+}
+fn hsv_to_rgb(h_in: f32, s: f32, v: f32) -> vec3<f32> {
+    let h = h_in - 6.0 * floor(h_in / 6.0);
+    let c = v * s;
+    let x = c * (1.0 - abs((h - 2.0 * floor(h / 2.0)) - 1.0));
+    let m = v - c;
+    let i = i32(floor(h));
+    var rgb = vec3(c, 0.0, x);
+    switch i {
+        case 0: { rgb = vec3(c, x, 0.0); }
+        case 1: { rgb = vec3(x, c, 0.0); }
+        case 2: { rgb = vec3(0.0, c, x); }
+        case 3: { rgb = vec3(0.0, x, c); }
+        case 4: { rgb = vec3(x, 0.0, c); }
+        default: { rgb = vec3(c, 0.0, x); }
+    }
+    return rgb + m;
+}
+// redrob_photo_color::blend::luminance_y / luminance_blend: linear-light Y, chromaticity kept.
+fn luminance_y(c: vec3<f32>) -> f32 {
+    let l = vec3(srgb_to_linear(max(c.r, 0.0)), srgb_to_linear(max(c.g, 0.0)), srgb_to_linear(max(c.b, 0.0)));
+    return 0.2126 * l.r + 0.7152 * l.g + 0.0722 * l.b;
+}
+fn luminance_blend(cb: vec3<f32>, cs: vec3<f32>, top: f32) -> vec3<f32> {
+    let yb = luminance_y(cb);
+    let ys = luminance_y(cs);
+    var lin = vec3(ys);
+    if (yb > 1e-7) {
+        let k = ys / yb;
+        lin = vec3(srgb_to_linear(max(cb.r, 0.0)), srgb_to_linear(max(cb.g, 0.0)), srgb_to_linear(max(cb.b, 0.0))) * k;
+    }
+    return min(vec3(linear_to_srgb(lin.r), linear_to_srgb(lin.g), linear_to_srgb(lin.b)), vec3(top));
+}
+
 fn blend_rgb(mode: i32, cb: vec3<f32>, cs: vec3<f32>) -> vec3<f32> {
     // blend_rgb_within: 32-bit documents keep values above 1 (f32::MAX).
     let top = select(1.0, F32_MAX, (op.flags & F_HDR) != 0u);
     switch mode {
+        case 34: {                                                       // HSV Hue
+            let b = rgb_to_hsv(cb);
+            let s = rgb_to_hsv(cs);
+            return hsv_to_rgb(s.x, b.y, b.z);
+        }
+        case 35: {                                                       // HSV Saturation
+            let b = rgb_to_hsv(cb);
+            let s = rgb_to_hsv(cs);
+            return hsv_to_rgb(b.x, s.y, b.z);
+        }
+        case 36: {                                                       // HSV Value
+            let b = rgb_to_hsv(cb);
+            let s = rgb_to_hsv(cs);
+            return hsv_to_rgb(b.x, b.y, min(s.z, top));
+        }
+        case 37: { return luminance_blend(cb, cs, top); }                // Luminance
         case 24: { return set_lum(set_sat(cs, sat(cb)), lum(cb), top); } // Hue
         case 25: { return set_lum(set_sat(cb, sat(cs)), lum(cb), top); } // Saturation
         case 26: { return set_lum(cs, lum(cb), top); }                  // Color
@@ -978,8 +1125,10 @@ fn pattern_sample(d: vec2<i32>) -> vec4<f32> {
     let dy = f32(d.y) + 0.5 - op.p3.y;
     let c = op.p3.z;
     let s = op.p3.w;
-    let u = (dx * c - dy * s) * op.p4.x - 0.5;
-    let v = (dx * s + dy * c) * op.p4.x - 0.5;
+    // Scale about pixel centres (see compose::pattern::Placement::map), then the -0.5 of the
+    // bilinear sample.
+    let u = ((dx * c - dy * s) - 0.5) * op.p4.x;
+    let v = ((dx * s + dy * c) - 0.5) * op.p4.x;
     let x0 = floor(u);
     let y0 = floor(v);
     let fx = u - x0;

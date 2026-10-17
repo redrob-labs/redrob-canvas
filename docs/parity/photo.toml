@@ -33,9 +33,9 @@ name = "Free select (lasso and polygon in one tool)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-free-select.html"
 behaviour = "Dragging draws a freehand outline, single clicks place straight polygon segments, both can be mixed in one outline; the outline stays editable (move points, add segments) until confirmed with Enter or a double click. Backspace removes the last segment."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/lasso_ui.rs, crafts/photocraft/crates/ui-egui/src/polygon_lasso_tests.rs"
-gap = "lasso and polygon lasso are two separate tools; no post-hoc editing of the outline before committing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/lasso_ui.rs (free select: ToolOptions::lasso_free_select, vertex handles, grab/insert, Backspace drops the last segment), crafts/photocraft/crates/ui-egui/src/canvas.rs (anchor handles on the open outline), crafts/photocraft/crates/ui-egui/src/panels.rs (options-bar toggle and hints), crafts/photocraft/crates/ui-egui/src/polygon_lasso_tests.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -46,8 +46,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-foreground-select.html"
 behaviour = "Rough outline round the subject, then paint over foreground (and optionally background) strokes; a matting engine (two algorithms selectable) grows a mask with a preview overlay in a chosen colour; adjustable stroke width, preview mode (colour or grayscale), and commit to a selection or a layer mask."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/matting/, crafts/photocraft/crates/engine/src/smartselect_cmds.rs, crafts/photocraft/crates/ui-egui/src/select_mask_view.rs"
-gap = "no two-stage outline-then-paint workflow with explicit foreground/background strokes; closest is Quick Selection plus Select and Mask refinement"
+ours_where = "crafts/photocraft/crates/algo/src/segment/grabcut.rs (foreground_select: outline + foreground/background marks), crafts/photocraft/crates/engine/src/smartselect_cmds.rs (select.foreground), crafts/photocraft/crates/ui-egui/src/select_mask_view.rs"
+gap = "the two-stage outline-then-mark workflow is an engine command (select.foreground) driven by scripts and actions; no dedicated canvas tool yet (Quick Selection plus Select and Mask stand in)"
 priority = 2
 
 [[feature]]
@@ -81,9 +81,9 @@ name = "Scissors select (edge-following)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-iscissors.html"
 behaviour = "Click control points around an object; the segment between points snaps to the strongest nearby edge; points can be dragged after placement, segments re-snapped, then the closed curve is converted to a selection by clicking inside; option to interactively show boundary."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/magnetic_lasso_ui.rs, crafts/photocraft/crates/engine/src/magnetic_cmds.rs"
-gap = "magnetic lasso follows edges continuously but has no editable control points after placement"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/magnetic_lasso_ui.rs (anchor_at, move_anchor: drag a fastening point to re-trace both sides), crafts/photocraft/crates/engine/src/magnetic_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -273,9 +273,9 @@ name = "Selection to path"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-to-path.html"
 behaviour = "Traces the selection outline into a Bezier path; an advanced dialog exposes tracing tolerances (corner threshold, error threshold, filter iterations, etc.)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/select_extra_cmds.rs (select.toWorkPath)"
-gap = "single tolerance value, no advanced tracing options"
+ours = "full"
+ours_where = "crafts/photocraft/crates/vector/src/trace.rs (TraceOptions, trace_mask_with), crafts/photocraft/crates/engine/src/vector_cmds.rs (select.toWorkPath: tolerance, threshold, cornerThreshold, cornerSurround, minArea, smooth), crafts/photocraft/crates/ui-egui/src/canvas_tool_menu.rs (Make Work Path dialog)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -285,9 +285,9 @@ name = "Fill and stroke selection outline"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-stroke.html"
 behaviour = "Fill the selected area with FG, BG or a pattern (Edit > Fill with ...), or draws along the selection outline either as a solid or dashed line (width, cap, join, miter, dash preset, antialias) or by emulating a chosen paint tool with its current brush and dynamics."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (edit.stroke)"
-gap = "solid colour stroke with width and position only; no dash pattern, no paint-tool emulation"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs (edit.stroke: tool and dash/dashOffset trace the outline and stroke it as a path), crafts/photocraft/crates/engine/src/vector_cmds.rs (dash_lines, stroke_path_geometry)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -298,8 +298,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-dynamics.html"
 behaviour = "A dynamics preset maps input sensors (pressure, velocity, direction, tilt, wheel, random, fade) onto brush properties (opacity, size, angle, colour, hardness, force, aspect ratio, spacing, rate, flow, jitter) through a matrix of checkboxes plus per-property curves; presets such as Pressure Opacity, Velocity Tapering, Track Direction ship by default and users create their own in a dynamics editor; fade length and repeat mode and colour-from-gradient live in the tool options."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/pressure_curve_ui.rs, crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
-gap = "pressure, tilt, velocity and fade drive size/opacity/flow/angle/scatter via the brush panel; no saveable dynamics presets with editable per-sensor curves, no colour-from-gradient along the stroke"
+ours_where = "crafts/photocraft/crates/paint/src/dynamics_preset.rs, crafts/photocraft/crates/paint/src/dynamics.rs (Control::Velocity), crafts/photocraft/crates/engine/src/dynamics_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs (.rdyn), crafts/photocraft/crates/ui-egui/src/brush_panel.rs (Dynamics row)"
+gap = "named dynamics presets (inputs pressure/velocity/direction/tilt/wheel/random/fade onto opacity/size/angle/colour/aspect/flow/jitter, per-row curve and minimum) with 9 built-ins, saved as .rdyn in the preset store and applied from the brush panel; hardness, force, spacing and rate outputs have no per-dab brush dynamic and are reported as unmapped; no matrix editor dialog yet (presets are edited through brush.dynamics.save / the brush sections), no colour-from-gradient along the stroke"
 priority = 1
 
 [[feature]]
@@ -381,9 +381,9 @@ name = "Airbrush"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-airbrush.html"
 behaviour = "Low-flow paint that accumulates while the pointer rests; rate and flow sliders; motion-only option so paint is laid down only when moving."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs (airbrush build-up), crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
-gap = "airbrush mode of the brush tool; no motion-only switch"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs (build_up, build_up_rate, build_up_motion_only), crafts/photocraft/crates/paint/src/dynamics.rs (PathWalker::motion_only), crafts/photocraft/crates/ui-egui/src/panels.rs (airbrush and motion-only toggles)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -490,8 +490,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-brushes.html"
 behaviour = "Brushes are parametric (editor: shape, radius, spikes, hardness, aspect, angle, spacing), bitmap (.gbr grayscale or colour), animated image hoses (.gih cycling cells by pressure/direction/random), or the clipboard image; .abr import; bracket keys and a configurable wheel resize the active brush."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/presets.rs, crafts/photocraft/crates/engine/src/brush_preset_cmds.rs (importAbr, importImage), crafts/photocraft/crates/ui-egui/src/brush_preset_dialog.rs"
-gap = "ABR and image brushes yes; no animated image-hose brushes, no .gbr/.gih files"
+ours_where = "crafts/photocraft/crates/paint/src/presets.rs, crafts/photocraft/crates/io/src/gbr.rs (.gbr/.gih readers), crafts/photocraft/crates/paint/src/brush.rs (ImageHose), crafts/photocraft/crates/paint/src/dynamics.rs (hose_cell), crafts/photocraft/crates/engine/src/preset_import_cmds.rs (importAbr, importImage, importBrushFile), crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
+gap = "ABR, image, .gbr and .gih (animated hose: incremental/angular/random/velocity/pressure/tilt cell selection per dimension) brushes import from the Brushes panel and File > Open; colour .gbr/.gih cells paint with the brush colour (their colours become the mask); no parametric brush editor (spikes), clipboard brush is Define Brush Preset only"
 priority = 1
 
 [[feature]]
@@ -658,8 +658,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-cage.html"
 behaviour = "Draw a polygon cage round a region then drag its vertices to deform the enclosed pixels; option to fill the vacated plain colour."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (edit.puppetWarp), crafts/photocraft/crates/ui-egui/src/puppet_ui.rs"
-gap = "puppet warp pins and mesh instead of a polygon cage"
+ours_where = "crafts/photocraft/crates/algo/src/cage.rs (mean value coordinates), crafts/photocraft/crates/engine/src/distort_cmds.rs (edit.cageTransform), crafts/photocraft/crates/ui-egui/src/puppet_ui.rs"
+gap = "the polygon cage deformation is a command (edit.cageTransform: cage and deformed vertex rings) with no on-canvas cage editing yet; Puppet Warp is the interactive tool"
 priority = 2
 
 [[feature]]
@@ -682,8 +682,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tools-transform.html"
 behaviour = "Every transform tool shares: transform layer/selection/path target, direction normal/corrective, interpolation none/linear/cubic/NoHalo/LoHalo, clipping adjust/clip/crop/crop-with-aspect, composited preview with opacity, guide overlays, and a readjust button."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/transform_tool.rs, crafts/photocraft/crates/ui-egui/src/transform_fx.rs"
-gap = "interpolation nearest/bilinear/bicubic; no NoHalo/LoHalo, no corrective direction, no clipping modes other than adjust"
+ours_where = "crafts/photocraft/crates/ui-egui/src/transform_tool.rs, crafts/photocraft/crates/ui-egui/src/state.rs, crafts/photocraft/crates/engine/src/transform_cmds.rs, crafts/photocraft/crates/algo/src/transform.rs, crafts/photocraft/crates/algo/src/warp.rs"
+gap = "interpolation none/bilinear/bicubic/Lanczos3 (no NoHalo/LoHalo); direction normal/corrective, clipping adjust/clip/crop/cropAspect and guide overlays done; direction and clipping apply to layer transforms only (not Transform Selection or paths); no readjust button"
 priority = 1
 
 [[feature]]
@@ -777,9 +777,9 @@ name = "Colour Temperature"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-color-temperature.html"
 behaviour = "Re-balance from an original to an intended black-body temperature in kelvin with presets for common illuminants."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.photoFilter)"
-gap = "warming/cooling filters by colour and density, not kelvin pairs"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/adjust_ext.rs (color_temperature), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.adjust.colorTemperature: originalTemperature/intendedTemperature in kelvin)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -789,9 +789,9 @@ name = "Hue Chroma"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-hue-chroma.html"
 behaviour = "Shift hue, chroma and lightness in the CIE LCh space."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.hueSaturation)"
-gap = "HSL based, no LCh variant"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/adjust_ext.rs (hue_chroma, CIE LCh(ab)), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.adjust.hueChroma)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1354,8 +1354,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filters-common.html"
 behaviour = "GEGL filter dialogs share a presets menu (save/manage/import/export), on-canvas preview with split view, merge-filter switch for non-destructive application, blending mode and opacity, clipping to adjust/clip, and colour-space choice for the operation."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/filter_dialog.rs, crafts/photocraft/crates/engine/src/smart_cmds.rs"
-gap = "presets, preview and non-destructive smart filters yes; no split view, blend/opacity set after via Edit > Fade or smart-filter blending options"
+ours_where = "crafts/photocraft/crates/ui-egui/src/filter_dialog.rs, crafts/photocraft/crates/ui-egui/src/filter_split.rs, crafts/photocraft/crates/engine/src/filters.rs, crafts/photocraft/crates/engine/src/smart_cmds.rs"
+gap = "presets, preview with split view (draggable divider, Shift+click turns it), blending mode + opacity before commit (blend/opacity params, also stored on smart filters) and non-destructive smart filters yes; clipping is always clip (filters never grow the layer, so no Adjust choice and no checkbox) and no per-filter input/output colour space"
 priority = 1
 
 [[feature]]
@@ -1401,8 +1401,8 @@ name = "Mean Curvature Blur"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-mean-curvature-blur.html"
 behaviour = "Edge-preserving smoothing by iterating mean curvature flow a given number of times."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/blur.rs (mean_curvature), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.blur.meanCurvatureBlur: iterations 1..500)"
 gap = ""
 priority = 3
 
@@ -1497,9 +1497,9 @@ name = "Tileable Blur"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-tile-blur.html"
 behaviour = "Blurs so that the result tiles seamlessly, with radius, vertical/horizontal switches and blur type."
-ours = "none"
-ours_where = ""
-gap = "offset filter plus blur is the manual route"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/blur.rs (tileable), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.blur.tileableBlur: radius, blurHorizontally, blurVertically, blurType gaussian|box)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1509,8 +1509,8 @@ name = "Antialias"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-antialias.html"
 behaviour = "Smooths jagged edges using a Scale3X-derived edge detection."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/blur.rs (antialias), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.other.antialias)"
 gap = ""
 priority = 3
 
@@ -1569,8 +1569,8 @@ name = "Symmetric Nearest Neighbor"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-snn-mean.html"
 behaviour = "Edge-preserving smoothing comparing symmetric pixel pairs; radius and pairs options."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/blur.rs (snn), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.blur.symmetricNearestNeighbor: radius 1..100, pairs 1..2)"
 gap = ""
 priority = 3
 
@@ -1605,8 +1605,8 @@ name = "NL Filter"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-nl-filter.html"
 behaviour = "Non-linear filter with alpha trimmed mean, optimal estimation and edge enhancement modes."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/blur.rs (nl_filter), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.noise.nlFilter: alpha, radius, mode alphaTrimmedMean|optimalEstimation|edgeEnhancement)"
 gap = ""
 priority = 3
 
@@ -1617,9 +1617,9 @@ name = "Wavelet Decompose"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-wavelet-decompose.html"
 behaviour = "Splits the layer into N detail scales plus residual as a layer group for frequency editing."
-ours = "none"
-ours_where = ""
-gap = "high pass gives a single scale"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs (filter.other.waveletDecompose: Residual plus Scale 1..n Linear Light layers in a group), crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1653,8 +1653,8 @@ name = "Engrave"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-engrave.html"
 behaviour = "Converts to black and white lines of varying thickness, line height and limit-line-width option."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/distort.rs (engrave), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.distort.engrave: height 2..16, limitLineWidth)"
 gap = ""
 priority = 3
 
@@ -1677,9 +1677,9 @@ name = "Kaleidoscope (Mirrors)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-kaleidoscope.html"
 behaviour = "Multiple mirror reflections with mirror count, rotation, offsets, trim and zoom."
-ours = "none"
-ours_where = ""
-gap = "symmetry painting covers brushwork only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/distort.rs (kaleidoscope), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.distort.kaleidoscope: mirrors, mirrorRotation, resultRotation, offsetX/Y, zoom, trimX/Y, clipResult)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1737,8 +1737,8 @@ name = "Shift"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-shift.html"
 behaviour = "Shifts each row (or column) randomly up to a given amount."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/distort.rs (shift), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.distort.shift: amount 0..200, direction, seed)"
 gap = ""
 priority = 3
 
@@ -1761,8 +1761,8 @@ name = "Value Propagate"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-value-propagate.html"
 behaviour = "Propagates more white, more black, a chosen colour, or transparency into neighbouring pixels."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/distort.rs (value_propagate), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.distort.valuePropagate: mode x8, thresholds, propagatingRate, color, toTop/Left/Right/Bottom)"
 gap = ""
 priority = 3
 
@@ -1773,8 +1773,8 @@ name = "Video Degradation"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-video-degradation.html"
 behaviour = "RGB sub-pixel pattern simulation with several patterns, additive and rotated options."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/distort.rs (video_degradation), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.distort.videoDegradation: pattern x9, additive, rotated)"
 gap = ""
 priority = 3
 
@@ -1821,8 +1821,8 @@ name = "Blinds"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-blinds.html"
 behaviour = "Image strips rotated like window blinds; displacement, segments, orientation, background."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/distort.rs (blinds), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.distort.blinds: displacement, segments, orientation, transparent, background)"
 gap = ""
 priority = 3
 
@@ -1845,9 +1845,9 @@ name = "Page Curl"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-pagecurl.html"
 behaviour = "Curls one corner of the layer with shade, colours and opacity."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/distort.rs (page_curl), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.distort.pageCurl: location, orientation, shade, colors, opacity; curled area becomes transparent)"
+gap = "Gradient colour options blend the foreground to the background colour (no gradient picker)."
 priority = 3
 
 [[feature]]
@@ -1869,8 +1869,8 @@ name = "Supernova"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-supernova.html"
 behaviour = "Star burst with centre, radius, spokes, colour and random hue."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/light.rs (supernova), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.lightShadow.supernova: centerX/Y, radius, spokes, randomHue, color, seed)"
 gap = ""
 priority = 3
 
@@ -1893,9 +1893,9 @@ name = "Gradient Flare"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-gflare.html"
 behaviour = "Editable flares with glow, rays and second flares, saved as presets."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/algo/src/extra/light.rs (gradient_flare), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.lightShadow.gradientFlare: centerX/Y, radius, rotation, hueRotation, vectorAngle, vectorLength, glow, rays, secondFlares)"
+gap = "No editable flare presets (selector/editor tabs); the glow, rays and second flares are fixed designs toggled by parameters."
 priority = 3
 
 [[feature]]
@@ -1917,8 +1917,8 @@ name = "Sparkle"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-sparkle.html"
 behaviour = "Adds star sparkles at bright points with luminosity threshold, flare intensity, spike count and length, border handling."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/light.rs (sparkle), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.lightShadow.sparkle: luminosityThreshold, flareIntensity, spikeLength, spikePoints, spikeAngle, spikeDensity, transparency, randomHue, randomSaturation, preserveLuminosity, inverse, addBorder, colorType)"
 gap = ""
 priority = 3
 
@@ -1941,8 +1941,8 @@ name = "Long Shadow"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-long-shadow.html"
 behaviour = "Shadow extruded in a direction with style (finite, infinite, fading), angle, length, colour, composition."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/light.rs (long_shadow), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.lightShadow.longShadow: style finite|infinite|fading|fadingFixedLength, angle, length, midpoint, color, composition)"
 gap = ""
 priority = 3
 
@@ -1965,9 +1965,9 @@ name = "Perspective shadow"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-perspective-shadow.html"
 behaviour = "Shadow cast on the ground plane with angle, relative distance, length, blur, colour, opacity, interpolation."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/algo/src/extra/light.rs (perspective_shadow), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.lightShadow.perspectiveShadow: angle, relativeDistance, shadowLength, blurRadius, color, opacity, interpolation)"
+gap = "allowResizing is accepted but the layer is not grown; the shadow is clipped to the canvas."
 priority = 3
 
 [[feature]]
@@ -1977,8 +1977,8 @@ name = "Xach-Effect"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-xach-effect.html"
 behaviour = "Translucent 3D cut-out effect using highlight offsets and drop shadow."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/light.rs (xach), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.lightShadow.xachEffect: highlight offsets/color/opacity, drop shadow color/opacity/blur/offsets)"
 gap = ""
 priority = 3
 
@@ -2013,8 +2013,8 @@ name = "CIE lch Noise"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-noise-cie-lch.html"
 behaviour = "Random noise in lightness, chroma and hue with dulling and seed."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/noise.rs (lch_noise), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.noise.cieLchNoise: dulling, lightness, chroma, hue, seed)"
 gap = ""
 priority = 3
 
@@ -2025,8 +2025,8 @@ name = "HSV Noise"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-noise-hsv.html"
 behaviour = "Random noise in hue, saturation and value with dulling."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/noise.rs (hsv_noise), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.noise.hsvNoise: dulling, hue, saturation, value, seed)"
 gap = ""
 priority = 3
 
@@ -2037,9 +2037,9 @@ name = "Hurl"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-noise-hurl.html"
 behaviour = "Randomises a percentage of pixels to random colours, repeatable N times."
-ours = "none"
-ours_where = ""
-gap = "add noise is gaussian/uniform only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/noise.rs (hurl), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.noise.hurl: randomization, repeat, seed)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2049,8 +2049,8 @@ name = "Pick"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-noise-pick.html"
 behaviour = "Replaces a percentage of pixels with a random neighbour."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/noise.rs (pick), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.noise.pick: randomization, repeat, seed)"
 gap = ""
 priority = 3
 
@@ -2073,8 +2073,8 @@ name = "Slur"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-noise-slur.html"
 behaviour = "Melts pixels downwards randomly by a percentage, repeatable."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/noise.rs (slur), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.noise.slur: randomization, repeat, seed)"
 gap = ""
 priority = 3
 
@@ -2097,8 +2097,8 @@ name = "Difference of Gaussians"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-difference-of-gaussians.html"
 behaviour = "Subtracts two gaussian blurs of different radii to isolate edges."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/edge.rs (difference_of_gaussians), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.stylize.differenceOfGaussians: radius1, radius2, normalize, invert)"
 gap = ""
 priority = 3
 
@@ -2109,9 +2109,9 @@ name = "Edge"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-edge.html"
 behaviour = "Edge detection with algorithm (Sobel, Prewitt, gradient, Roberts, differential, Laplace), amount and border behaviour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs (filter.stylize.findEdges)"
-gap = "one algorithm, no amount"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/stylize2.rs (edge), crafts/photocraft/crates/engine/src/filters_ext.rs (filter.stylize.edge: algorithm sobel|prewitt|gradient|roberts|differential|laplace, amount 1..10)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2121,8 +2121,8 @@ name = "Laplace"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-edge-laplace.html"
 behaviour = "Laplacian second-derivative edges."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/edge.rs (laplace), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.stylize.laplace)"
 gap = ""
 priority = 3
 
@@ -2157,8 +2157,8 @@ name = "Image Gradient"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-image-gradient.html"
 behaviour = "Outputs gradient magnitude, direction or both."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/edge.rs (image_gradient), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.stylize.imageGradient: output magnitude|direction|both)"
 gap = ""
 priority = 3
 
@@ -2181,9 +2181,9 @@ name = "Distance Map"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-distance-map.html"
 behaviour = "Distance of each pixel to the nearest edge with metric (euclidean, manhattan, chebyshev), threshold, grayscale averaging, normalise."
-ours = "none"
-ours_where = ""
-gap = "distance fields exist internally for layer effects only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/edge.rs (distance_map), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.other.distanceMap: metric euclidean|manhattan|chebyshev, thresholdLow/High, grayscaleAveraging, normalize)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2193,8 +2193,8 @@ name = "Normal Map"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-normal-map.html"
 behaviour = "Generates a normal map from a height map with scale, component flips, full-Z and tileable options."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/edge.rs (normal_map), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.other.normalMap: scale, xComponent, yComponent, flipX, flipY, fullZ, tileable)"
 gap = ""
 priority = 3
 
@@ -2229,9 +2229,9 @@ name = "GEGL Graph"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-gegl-graph.html"
 behaviour = "Text box to type a chain of operations and properties that is applied as one filter."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/graph.rs (Operation Graph: blur, sharpen, invert, brightness, contrast, saturation, hue, gamma, threshold, grayscale, sepia, posterize, levels, opacity, noise), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.other.operationGraph: graph text)"
+gap = "Operation names are this app's own (one per line, key=value), not another program's operation ids."
 priority = 3
 
 [[feature]]
@@ -2265,9 +2265,9 @@ name = "Filmstrip"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-film.html"
 behaviour = "Lays several images out on a film strip with perforations and numbering."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/algo/src/extra/decor.rs (filmstrip), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.decor.filmstrip: filmColor, numberColor, startIndex, atTop, atBottom, hole offset/width/height/spacing)"
+gap = "Frames the current layer repeated across the strip with a built-in digit font; no multi-image picker, font choice or fit-height toggle."
 priority = 3
 
 [[feature]]
@@ -2301,8 +2301,8 @@ name = "Cubism"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-cubism.html"
 behaviour = "Rebuilds the image from randomly rotated translucent squares; tile size, saturation, background colour."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/artistic.rs (cubism), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.artistic.cubism: tileSize, tileSaturation, background, seed)"
 gap = ""
 priority = 3
 
@@ -2349,8 +2349,8 @@ name = "Simple Linear Iterative Clustering (SLIC)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-slic.html"
 behaviour = "Superpixel segmentation with region size, compactness and iterations, output coloured by cluster mean."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/artistic.rs (slic), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.artistic.slic: regionsSize, compactness, iterations)"
 gap = ""
 priority = 3
 
@@ -2373,8 +2373,8 @@ name = "Waterpixels"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-waterpixels.html"
 behaviour = "Watershed-based superpixels with superpixel size, gradient smoothness, spatial regularisation, fill mode."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/artistic.rs (waterpixels), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.artistic.waterpixels: superpixelsSize, gradientSmoothness, spatialRegularization, superpixelsColor average|random)"
 gap = ""
 priority = 3
 
@@ -2397,9 +2397,9 @@ name = "Impressionist stroke engine"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-gimpressionist.html"
 behaviour = "Painterly rendering engine with paper, brush shape, orientation and size maps, placement, colour and presets tabs."
-ours = "none"
-ours_where = ""
-gap = "individual brush-stroke gallery filters exist but no configurable stroke engine"
+ours = "partial"
+ours_where = "crafts/photocraft/crates/algo/src/extra/artistic.rs (impressionist), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.artistic.impressionist: brushSize, sizeVariation, orientation, orientationType x7, strokeDensity, brushShape x4, paperRelief, placement, strokeColor, background, backgroundColor, seed)"
+gap = "Parameter dialog only: no preset save/load, paper texture files or custom brush images; four built-in stroke shapes."
 priority = 3
 
 [[feature]]
@@ -2409,9 +2409,9 @@ name = "Van Gogh (LIC)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-lic.html"
 behaviour = "Line integral convolution along a derived flow field with effect channel, operator, convolution steps, noise and filter length."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/artistic.rs (van_gogh), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.artistic.vanGogh: effectChannel, effectOperator, convolve withWhiteNoise|withSourceImage, filterLength, noiseMagnitude, integrationSteps, minimumValue, maximumValue)"
+gap = "The flow field is derived from the layer itself (no separate effect image picker)."
 priority = 3
 
 [[feature]]
@@ -2421,8 +2421,8 @@ name = "Weave"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-weave.html"
 behaviour = "Woven ribbon texture with ribbon width, spacing, shadow darkness and depth, thread settings."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/artistic.rs (weave), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.artistic.weave: ribbonWidth, ribbonSpacing, shadowDarkness, shadowDepth, threadLength, threadDensity, threadIntensity)"
 gap = ""
 priority = 3
 
@@ -2469,8 +2469,8 @@ name = "Fuzzy Border"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-fuzzy-border.html"
 behaviour = "Ragged border of a colour with border size, blur, granularity, shadow, work on copy, flatten."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/extra/decor.rs (fuzzy_border), crafts/photocraft/crates/engine/src/filters_extra.rs (filter.decor.fuzzyBorder: color, borderSize, blurBorder, granularity, addShadow, shadowWeight, seed)"
 gap = ""
 priority = 3
 
@@ -2505,8 +2505,8 @@ name = "Slide"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-slide.html"
 behaviour = "Frames the image as a film slide with text, number, font and colour."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/decor.rs (Slide: film-slide bands, sprocket holes, caption and number in a built-in 5x7 font), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2517,8 +2517,8 @@ name = "Stain (Coffee stain)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-coffee-stain.html"
 behaviour = "Adds random coffee-stain layers with count and darken-only option."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/decor.rs (Coffee Stain: N noise-rimmed brown rings, darken-only option), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2529,8 +2529,8 @@ name = "Stencil Carve"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-carve-it.html"
 behaviour = "Carves a grayscale stencil image into another image with highlights and shadows."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/decor.rs (Stencil Carve: grey map via mapPath/mapDocument, carve white, shadow and highlight rims), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2577,8 +2577,8 @@ name = "Fractal Trace"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-fractal-trace.html"
 behaviour = "Maps the image onto a Mandelbrot or Julia fractal with bounds, depth and abyss policy."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/distort3.rs (Fractal Trace: Mandelbrot/Julia window, depth, bailout, five abyss policies), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2589,8 +2589,8 @@ name = "Illusion"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-illusion.html"
 behaviour = "Kaleidoscopic division into N copies with two illusion types."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/distort3.rs (Illusion: division count, two types), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2601,8 +2601,8 @@ name = "Little Planet"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-little-planet.html"
 behaviour = "Stereographic projection of an equirectangular panorama with pan, tilt, spin, zoom, inverse transform."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/distort3.rs (Little Planet: stereographic projection with pan, tilt, spin, zoom, inverse), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2625,8 +2625,8 @@ name = "Recursive Transform"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-recursive-transform.html"
 behaviour = "Applies a transform matrix repeatedly to produce droste-like recursion with first/last iteration, fade colour and paste-below."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/distort3.rs (Recursive Transform: scale/angle/offset step, first/last iteration, fade colour, paste below), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2649,9 +2649,9 @@ name = "Tile Seamless"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-tile-seamless.html"
 behaviour = "Makes the image tileable by blending it with an offset copy."
-ours = "none"
-ours_where = ""
-gap = "pattern preview (view.patternPreview) shows tiling but does not make the image seamless"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/distort3.rs (Tile Seamless: half-offset blend), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2661,8 +2661,8 @@ name = "Map Object"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-map-object.html"
 behaviour = "Maps the image onto a plane, sphere, box or cylinder with light, material and orientation tabs."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/distort3.rs (Map Object: plane, sphere, box, cylinder ray cast with light and material parameters), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2673,8 +2673,8 @@ name = "Small Tiles"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-small-tiles.html"
 behaviour = "Shrinks the image into N copies tiled with flip and opacity options per segment."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/distort3.rs (Small Tiles: segments, flip axis, all/alternate/explicit, opacity), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2721,8 +2721,8 @@ name = "Fractal Explorer"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-fractalexplorer.html"
 behaviour = "Mandelbrot, Julia and other fractals with zoom, iterations, colour mapping and presets."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_fractal.rs (Fractal Explorer: nine fractal types, window, iterations, colour bands, RGB intensity and inversion), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2733,8 +2733,8 @@ name = "IFS Fractal"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-ifscompose.html"
 behaviour = "Iterated function system composer with draggable transforms, colour and spatial tabs."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_fractal.rs (IFS Fractal: six built-in map sets, iterations, spot radius, placement, colour), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2745,8 +2745,8 @@ name = "Cell Noise"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-noise-cell.html"
 behaviour = "Worley-style cell noise with scale, shape, rank, iterations, palettize, seed."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_noise.rs (Cell Noise: scale, shape, rank, iterations, palettize, seed), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2781,8 +2781,8 @@ name = "Simplex Noise"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-noise-simplex.html"
 behaviour = "Simplex noise with scale, iterations, seed."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_noise.rs (Simplex Noise: scale, iterations, seed), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2817,8 +2817,8 @@ name = "Bayer Matrix"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-bayer-matrix.html"
 behaviour = "Renders an ordered-dither pattern with subdivisions, X/Y scale, rotation, reflect, amplitude, offset, exponent."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Bayer Matrix: subdivisions, scales, rotation, reflect, amplitude, offset, exponent, offsets), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2829,8 +2829,8 @@ name = "Checkerboard"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-checkerboard.html"
 behaviour = "Two-colour checkerboard with width, height, offsets."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Checkerboard: width, height, offsets, two colours), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2841,8 +2841,8 @@ name = "Diffraction Patterns"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-diffraction-patterns.html"
 behaviour = "Frequencies, contours, sharp edges tabs producing diffraction-like textures."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Diffraction Patterns: per-channel frequencies, contours, sharp edges; brightness, scattering, polarization), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2853,9 +2853,9 @@ name = "Grid"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-grid.html"
 behaviour = "Draws a grid of lines with X/Y spacing, offsets, line width/height and colour."
-ours = "none"
-ours_where = ""
-gap = "the view grid is an overlay only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Grid: spacings, offsets, line width/height, colour), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2865,8 +2865,8 @@ name = "Linear Sinusoid"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-linear-sinusoid.html"
 behaviour = "Sinusoid pattern with X/Y period, amplitude, phase, angle, offset, exponent, supersampling."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Linear Sinusoid: periods, amplitudes, phases, angle, offset, exponent, offsets, rotation, supersampling), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2877,8 +2877,8 @@ name = "Maze"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-maze.html"
 behaviour = "Random maze with cell size, algorithm (depth first, Prim), tileable, seed, colours."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Maze: cell size, depth-first or Prim, tileable, seed, colours), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2889,8 +2889,8 @@ name = "Sinus"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-sinus.html"
 behaviour = "Two-colour sinusoidal waves with scales, complexity, seed, blend mode and exponent."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Sinus: scales, complexity, seed, tileable, perturbation, blend mode, exponent, colours), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2901,8 +2901,8 @@ name = "Spiral"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-spiral.html"
 behaviour = "Spiral with type (linear, logarithmic), origin, radius, base, balance, rotation, direction, colours."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Spiral: linear/logarithmic, origin, radius, base, balance, rotation, direction, colours), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2913,8 +2913,8 @@ name = "CML Explorer"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-cml-explorer.html"
 behaviour = "Coupled-map-lattice pattern generator with hue, saturation, value tabs and preset loading."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_noise.rs (CML Explorer: per-channel map functions, parameter k, coupling, zoom, start offset, seed), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2925,8 +2925,8 @@ name = "Jigsaw"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-jigsaw.html"
 behaviour = "Jigsaw puzzle outline with tile counts, bevel width, highlight, style."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Jigsaw: tile counts, bevel width, highlight, square/curved tabs), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2937,8 +2937,8 @@ name = "Qbist"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-qbist.html"
 behaviour = "Random evolutionary texture generator with a 3x3 choice grid."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_noise.rs (Qbist: seed-driven random texture program, antialiasing, oversample), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2949,8 +2949,8 @@ name = "Circuit"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-circuit.html"
 behaviour = "Circuit-board-like maze texture with oilify mask size, circuit seed, no background, keep selection, separate layer."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_noise.rs (Circuit: trace maze at the mask pitch, seed, no background) and separateLayer in crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2973,8 +2973,8 @@ name = "Lava"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-lava.html"
 behaviour = "Lava texture from a gradient with seed, size, roughness, gradient, keep selection, separate layer."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_noise.rs (Lava: seed, size, roughness, five built-in gradients) and separateLayer in crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2985,8 +2985,8 @@ name = "Line Nova"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-line-nova.html"
 behaviour = "Radiating lines from the centre with number of lines, sharpness, offset radius, randomness."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Line Nova: lines, sharpness, offset radius, randomness, foreground colour), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -2997,8 +2997,8 @@ name = "Sphere Designer"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-spheredesigner.html"
 behaviour = "Ray-traced sphere with textures, bump maps, lights and material settings."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_fractal.rs (Sphere Designer: nine textures, two colours, scale, turbulence, amount, light, ambient, bump, radius), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3009,8 +3009,8 @@ name = "Spyrogimp"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-spyrogimp.html"
 behaviour = "Spirograph curves drawn with a chosen tool and brush, with curve type, gears, shape and visual tabs."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gen_pattern.rs (Spirograph: four curve types, seven fixed-gear shapes, teeth, hole, sides, morph, rotation, line width), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3033,8 +3033,8 @@ name = "Semi-Flatten"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-semi-flatten.html"
 behaviour = "Blends partial alpha against the background colour leaving a 1-bit alpha for GIF/indexed export."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/decor.rs (Semi-Flatten against the background colour, 1-bit alpha), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3045,8 +3045,8 @@ name = "Blend (animation)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-blend-anim.html"
 behaviour = "Creates intermediate layers that blend between existing layers for an animation."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters_gen.rs (filter.animation.blend: intermediate frames between consecutive layers, max blur radius, looped), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3057,8 +3057,8 @@ name = "Burn-In"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-burn-in-anim.html"
 behaviour = "Animates a glow passing over text or shapes, producing frames."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters_gen.rs (filter.animation.burnIn: glow colour, fadeout and width, corner radius, after glow, add glowing, speed; frames as layers), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3069,8 +3069,8 @@ name = "Optimize (for GIF) / Unoptimize"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-optimize.html"
 behaviour = "Reduces each frame to the pixels that change, and the inverse."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters_gen.rs (filter.animation.optimize / unoptimize: changed-pixel frames and full-frame rebuild as layers), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3093,8 +3093,8 @@ name = "Rippling"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-ripply-anim.html"
 behaviour = "Generates frames of a rippling distortion."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters_gen.rs + crafts/photocraft/crates/algo/src/anim.rs (filter.animation.rippling: frames, strength, edge behaviour), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3105,8 +3105,8 @@ name = "Spinning Globe"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-spinning-globe.html"
 behaviour = "Maps the image onto a rotating globe over N frames."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters_gen.rs + crafts/photocraft/crates/algo/src/anim.rs (filter.animation.spinningGlobe: frames, turn left, transparent background), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3117,8 +3117,8 @@ name = "Waves (animation)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-waves-anim.html"
 behaviour = "Generates frames of concentric waves."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters_gen.rs + crafts/photocraft/crates/algo/src/anim.rs (filter.animation.waves: amplitude, wavelength, frames, invert direction), crafts/photocraft/crates/engine/src/filters_gen.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -3429,9 +3429,9 @@ name = "Layer mode: HSV Hue"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Hue of the upper layer with saturation and value of the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Hue)"
-gap = "hue mode computed in the Photoshop HSY-style model, not HSV"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvHue), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3441,9 +3441,9 @@ name = "Layer mode: HSV Saturation"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Saturation from the upper layer, hue and value from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Saturation)"
-gap = "same model difference"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvSaturation), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3465,9 +3465,9 @@ name = "Layer mode: HSV Value"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-hsv.html"
 behaviour = "Value from the upper, hue and saturation from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminosity)"
-gap = "luminosity instead of HSV value"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (HsvValue), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3525,8 +3525,8 @@ name = "Layer mode: Luminance"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Luminance from the upper layer, chromaticity from the lower."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminosity)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (Luminance), crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 2
 
@@ -3993,9 +3993,9 @@ name = "Path properties and stroking a path"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-using-paths-stroking.html"
 behaviour = "Stroke dialog with solid line (width, cap, join, miter, dash) or paint-tool emulation; fill path with colour or pattern."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/path_edit_cmds.rs (path.stroke, path.fill)"
-gap = "no dash pattern or paint-tool emulation"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/path_edit_cmds.rs, crafts/photocraft/crates/engine/src/vector_cmds.rs (path.stroke: tool emulation plus dash/dashOffset pattern, path.fill)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -4269,9 +4269,9 @@ name = "Configure Grid"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-image-configure-grid.html"
 behaviour = "Line style (intersections, solid, dashed, double dashed), fg/bg colours, spacing and offset per axis with units."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/prefs (edit.preferences.guidesGridAndSlices)"
-gap = "grid configured globally in preferences, not per image"
+ours = "full"
+ours_where = "crafts/photocraft/crates/doc/src/lib.rs (DocGrid, Document.grid), crafts/photocraft/crates/engine/src/edit_cmds.rs (image.configureGrid), crafts/photocraft/crates/ui-egui/src/rulers.rs (effective_grid, draw_grid), crafts/photocraft/crates/engine/src/snap.rs (grid_offset), crafts/photocraft/crates/format/src/manifest.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -5013,9 +5013,9 @@ name = "Snap to guides / grid / canvas / active path / bounding boxes / equidist
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-view-snap-to-guides.html"
 behaviour = "Six snapping targets, 3.0 adding bounding boxes of layers and equidistance between items."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/snap.rs (view.snapTo.guides/grid/layers/documentBounds/slices)"
-gap = "no snap to path or equidistance"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/snap.rs (SnapKind::Path, SnapKind::Equidistance, add_path, add_equidistance), crafts/photocraft/crates/ui-egui/src/view_cmds.rs (view.snapTo.activePath, view.snapTo.equidistance), crafts/photocraft/crates/ui-egui/src/snap_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -5145,9 +5145,9 @@ name = "Palettes dialog and palette editor"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-palette-dialog.html"
 behaviour = "List of palettes; editor with colour grid, add/delete/zoom/columns; import palette dialog from gradient/image/file; export to text, CSS, PHP, Python, Java."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs"
-gap = "no palette import from image/gradient or code export"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs (swatches.fromImage, swatches.fromGradient, swatches.export css|txt)"
+gap = ""
 priority = 2
 
 [[feature]]

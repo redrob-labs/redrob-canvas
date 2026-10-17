@@ -82,7 +82,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Convert Anchor Points",
             [],
             None,
-            "{to: \"corner\"|\"smooth\"} convert the direct-selected anchors (all anchors of fully selected paths) as one undo step: corner retracts both handles, smooth pulls handles in line with the neighbours (smooth anchors keep theirs)",
+            "{to: \"corner\"|\"smooth\"|\"symmetric\"|\"autoSmooth\"} convert the direct-selected anchors (all anchors of fully selected paths) as one undo step: corner retracts both handles, smooth pulls handles in line with the neighbours (smooth anchors keep theirs), symmetric also makes them as long as each other, autoSmooth computes them from the neighbours and keeps doing so as the neighbours move (Shift+C/S/Y/A with Direct Selection)",
             has_selection,
             convert_anchors
         ),
@@ -105,6 +105,15 @@ pub fn specs() -> Vec<CommandSpec> {
             reshape
         ),
         cmd!("path.insertAnchor", "Add Anchor Point", [], None, "{id, subpath, segment, t: 0..1}", has_doc, insert_anchor),
+        cmd!(
+            "path.insertAnchorsAtExtremes",
+            "Add Anchor Points at Extremes",
+            [],
+            None,
+            "{axis: \"x\"|\"y\", end: \"min\"|\"max\"} add an anchor where each segment reaches its least or greatest x or y, to the selected segments, else the segments between direct-selected anchors, else every segment of the selected paths (one undo step; a segment whose extreme is at an end, as a line's is, gets none) → {added}",
+            has_selection,
+            insert_anchors_at_extremes
+        ),
         cmd!(
             "path.cutAtAnchors",
             "Cut Path at Selected Anchor Points",
@@ -191,6 +200,8 @@ pub(crate) fn transform_anchors(s: &mut Session, label: &str, xf: redrob_vector_
                             *a = a.transform(xf);
                         }
                     }
+                    // Auto-smooth anchors follow their neighbours.
+                    path.refresh_auto_smooth();
                 }
                 None => {
                     if let Some(n) = doc.node_mut(*id) {
@@ -214,6 +225,7 @@ fn set_handle(s: &mut Session, p: &Value) -> Result<Value> {
         let path = path_mut(d, id)?;
         let a = path.anchor_mut(si, ai).ok_or_else(|| EngineError::Other("no such anchor".into()))?;
         a.set_handle(out, pos, independent);
+        path.refresh_auto_smooth();
         Ok(())
     })?;
     ok()
@@ -491,11 +503,9 @@ fn average(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn convert_anchors(s: &mut Session, p: &Value) -> Result<Value> {
     const C: &str = "path.convertAnchors";
-    let smooth = match str_param(p, "to") {
-        Some("smooth") => true,
-        Some("corner") => false,
-        _ => return Err(bad(C, "`to` must be \"corner\" or \"smooth\"")),
-    };
+    let kind = str_param(p, "to")
+        .and_then(AnchorKind::parse)
+        .ok_or_else(|| bad(C, "`to` must be \"corner\", \"smooth\", \"symmetric\" or \"autoSmooth\""))?;
     let t = anchor_targets(s)?;
     if t.is_empty() {
         return Err(bad(C, "select paths or anchor points"));
@@ -505,12 +515,25 @@ fn convert_anchors(s: &mut Session, p: &Value) -> Result<Value> {
             let path = path_mut(d, *id)?;
             for &(si, ai) in v {
                 let Some(sp) = path.subpaths.get_mut(si) else { continue };
-                if smooth {
-                    sp.smooth_anchor(ai);
-                } else if let Some(a) = sp.anchors.get_mut(ai) {
-                    a.retract();
+                match kind {
+                    AnchorKind::Corner => {
+                        if let Some(a) = sp.anchors.get_mut(ai) {
+                            a.retract();
+                        }
+                    }
+                    AnchorKind::Smooth => {
+                        sp.smooth_anchor(ai);
+                    }
+                    AnchorKind::Symmetric => {
+                        sp.symmetric_anchor(ai);
+                    }
+                    AnchorKind::AutoSmooth => {
+                        sp.auto_smooth_anchor(ai);
+                    }
                 }
             }
+            // Auto-smooth neighbours follow the handles that changed around them.
+            path.refresh_auto_smooth();
         }
         Ok(())
     })?;
@@ -567,6 +590,7 @@ pub(crate) fn delete_anchors(s: &mut Session, _: &Value) -> Result<Value> {
                         .collect();
                 }
                 path.subpaths.retain(|s| s.anchors.len() >= 2);
+                path.refresh_auto_smooth();
                 path.subpaths.is_empty()
             };
             if remove_node {
@@ -705,9 +729,85 @@ fn insert_anchor(s: &mut Session, p: &Value) -> Result<Value> {
         if seg >= sp.segment_count() {
             return Err(EngineError::Other("no such segment".into()));
         }
-        Ok(sp.insert_anchor(seg, t))
+        let idx = sp.insert_anchor(seg, t);
+        sp.refresh_auto_smooth();
+        Ok(idx)
     })?;
     Ok(json!({ "anchor": idx }))
+}
+
+/// The segments `(subpath, segment)` of each selected path that Add Anchor Points at Extremes works
+/// on: the selected segments, else those with both ends direct-selected, else all of them.
+fn segment_targets(s: &Session) -> Result<Vec<(NodeId, Vec<(usize, usize)>)>> {
+    let st = s.doc()?;
+    let mut out = vec![];
+    for id in &st.selection.objects {
+        let Some(pd) = st.doc.node(*id).and_then(|n| n.path_data()) else { continue };
+        let segs: Vec<(usize, usize)> = if let Some(set) = st.selection.segments.get(id) {
+            set.iter().copied().collect()
+        } else if let Some(set) = st.selection.anchors.get(id) {
+            pd.subpaths
+                .iter()
+                .enumerate()
+                .flat_map(|(si, sp)| {
+                    let n = sp.anchors.len();
+                    (0..sp.segment_count())
+                        .filter(move |seg| set.contains(&(si, *seg)) && set.contains(&(si, (seg + 1) % n.max(1))))
+                        .map(move |seg| (si, seg))
+                })
+                .collect()
+        } else {
+            pd.subpaths.iter().enumerate().flat_map(|(si, sp)| (0..sp.segment_count()).map(move |seg| (si, seg))).collect()
+        };
+        if !segs.is_empty() {
+            out.push((*id, segs));
+        }
+    }
+    Ok(out)
+}
+
+fn insert_anchors_at_extremes(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "path.insertAnchorsAtExtremes";
+    let horizontal = match str_param(p, "axis") {
+        Some("x") | None => true,
+        Some("y") => false,
+        _ => return Err(bad(C, "`axis` must be \"x\" or \"y\"")),
+    };
+    let max = match str_param(p, "end") {
+        Some("max") => true,
+        Some("min") | None => false,
+        _ => return Err(bad(C, "`end` must be \"min\" or \"max\"")),
+    };
+    let targets = segment_targets(s)?;
+    if targets.is_empty() {
+        return Err(bad(C, "select paths, segments or anchor points"));
+    }
+    let added = s.edit("Add Anchor Points", |d, sel| {
+        let mut added = 0usize;
+        for (id, segs) in &targets {
+            let path = path_mut(d, *id)?;
+            // Later segments first, so the indices of the earlier ones hold as anchors go in.
+            let mut segs = segs.clone();
+            segs.sort_unstable_by(|a, b| b.cmp(a));
+            let mut here = 0usize;
+            for (si, seg) in segs {
+                let Some(sp) = path.subpaths.get_mut(si) else { continue };
+                if let Some(t) = sp.segment_extremum(seg, horizontal, max) {
+                    sp.insert_anchor(seg, t);
+                    here += 1;
+                }
+            }
+            added += here;
+            if here > 0 {
+                path.refresh_auto_smooth();
+                // The anchor and segment indices moved: the path stays selected whole.
+                sel.anchors.remove(id);
+                sel.segments.remove(id);
+            }
+        }
+        Ok(added)
+    })?;
+    Ok(json!({ "added": added }))
 }
 
 fn cut_at_anchors(s: &mut Session, _: &Value) -> Result<Value> {

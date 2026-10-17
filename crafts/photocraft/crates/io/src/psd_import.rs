@@ -107,6 +107,37 @@ fn soft_shape_fill(rec: &LayerRecord, has_vector: bool, fill_key: Option<&[u8; 4
     (soft || pattern).then_some((fill, soft))
 }
 
+/// Photoshop's stored pixels of a pattern fill layer seen through a vector mask are already cut
+/// to the mask (their alpha is the pattern's times the path coverage, the record's rectangle the
+/// path's bounds), while the compositor applies the layer's vector mask to the cache it renders
+/// from: the coverage would count twice (psd-tools vector-mask2 `Shape 2`). Divide it out, so
+/// cache × mask gives Photoshop's pixels back. Pixels written by this crate are the unclipped
+/// fill over the whole canvas (#1907) and are left alone.
+fn unclip_pattern_cache(l: &mut Layer, rec: &LayerRecord, width: u32, height: u32) {
+    let LayerContent::Fill(redrob_photo_doc::Fill::Pattern { .. }) = &l.content else { return };
+    let Some(vm) = l.vector_mask.as_ref().filter(|m| m.enabled && !m.path.subpaths.is_empty()) else { return };
+    let Some(cache) = l.fill_cache.as_mut() else { return };
+    let canvas = Rect::new(0, 0, width as i32, height as i32);
+    let stored = Rect::new(rec.rect.left, rec.rect.top, rec.rect.right, rec.rect.bottom);
+    if stored.is_empty() || stored.intersect(&canvas) == canvas {
+        return;
+    }
+    let area = cache.surface.content_bounds().intersect(&canvas);
+    if area.is_empty() {
+        return;
+    }
+    let cov = redrob_photo_vector::vector_mask_values(vm, area);
+    let ch = cache.surface.channels();
+    let mut px = cache.surface.read_region(area);
+    for (p, k) in px.chunks_exact_mut(ch).zip(&cov) {
+        let a = &mut p[ch - 1];
+        if *k > 1e-4 && *a > 0.0 {
+            *a = (*a / *k).min(1.0);
+        }
+    }
+    cache.surface.write_region(area, &px);
+}
+
 /// Where a placed layer's source goes: read from `SoLd`/`SoLE`, or from a CS2 `PlLd` record.
 /// An empty `id` leaves the contents unavailable (the stored pixels stay the rendering).
 #[derive(Default)]
@@ -482,6 +513,7 @@ impl Ctx<'_> {
         if !matches!(l.content, LayerContent::Shape(_)) {
             self.apply_vector_mask(&mut l, rec);
         }
+        unclip_pattern_cache(&mut l, rec, self.file.header.width, self.file.header.height);
         l
     }
 

@@ -15,6 +15,7 @@ pub mod align_cmds;
 mod allocation;
 pub mod analysis_cmds;
 pub mod artboard_cmds;
+pub mod assistant_cmds;
 pub mod atn_cmds;
 pub mod automate_cmds;
 pub mod background_cmds;
@@ -35,6 +36,7 @@ pub mod cutout_cmds;
 pub mod display_color;
 pub mod distort_cmds;
 pub mod document_preset_cmds;
+pub mod dynamics_cmds;
 pub mod edit_cmds;
 pub mod edit_menu_cmds;
 pub mod eraser_cmds;
@@ -46,6 +48,8 @@ pub mod fill_cmds;
 pub mod fill_key_cmds;
 pub mod filters;
 pub mod filters_ext;
+pub mod filters_extra;
+pub mod filters_gen;
 pub mod float_cmds;
 mod frame_cmds;
 pub mod fx_view_cmds;
@@ -208,12 +212,25 @@ pub struct DocState {
     pub last_damage: Option<redrob_photo_geom::Rect>,
     /// Coalescing key of the latest history step (see [`Session::execute`]'s `coalesce` param).
     pub coalesce: Option<String>,
+    /// Cumulative undo (Preferences › Performance): the label and time of the latest step and
+    /// when the step it may merge into began; an undo or redo breaks the run.
+    pub last_step_label: Option<String>,
+    pub last_step_at: Option<std::time::Instant>,
+    pub cumulative_since: Option<std::time::Instant>,
     /// Channels panel: targeted channel and eye toggles (view state, not history).
     pub channel_view: channel_cmds::ChannelView,
     /// Select › Isolate Layers: the Layers panel lists only these layers (empty = off; view state).
     pub isolated_layers: Vec<LayerId>,
-    /// Painting symmetry preset or sampled path (tool state, not document pixels).
+    /// Painting symmetry preset, sampled path or rotational multibrush (tool state, not document
+    /// pixels).
     pub symmetry: Option<symmetry_cmds::PaintingSymmetry>,
+    /// Wrap-around mode (`paint.wrapAround`): strokes repeat shifted by the canvas size so the
+    /// image tiles seamlessly; the view shows the tiles (view state, not history).
+    pub wrap_around: bool,
+    /// Painting assistants (`paint.assistants.*`) brush strokes snap to, and whether they do
+    /// (tool state, not history).
+    pub assistants: Vec<redrob_photo_paint::assistants::Assistant>,
+    pub assistants_snap: bool,
     /// Layers panel: layers whose effects list is collapsed under their row (the fx triangle;
     /// view state, not history). Effects lists start open.
     pub fx_collapsed: Vec<LayerId>,
@@ -232,6 +249,26 @@ pub struct DocState {
     pub snapshots: Vec<history_cmds::Snapshot>,
     /// The id the next snapshot gets; ids are never reused, so deleting one keeps the others.
     next_snapshot: u64,
+}
+
+/// The history labels cumulative undo may merge: painting-tool strokes.
+fn is_stroke_label(label: &str) -> bool {
+    matches!(
+        label,
+        "Brush Tool"
+            | "Pencil"
+            | "Eraser"
+            | "Mixer Brush"
+            | "Clone Stamp"
+            | "Pattern Stamp"
+            | "History Brush"
+            | "Smudge"
+            | "Blur"
+            | "Sharpen"
+            | "Dodge"
+            | "Burn"
+            | "Sponge"
+    ) || label.ends_with(" Stroke")
 }
 
 impl DocState {
@@ -266,9 +303,15 @@ impl DocState {
             view_revision: 0,
             last_damage: None,
             coalesce: None,
+            last_step_label: None,
+            last_step_at: None,
+            cumulative_since: None,
             channel_view: Default::default(),
             isolated_layers: Vec::new(),
             symmetry: None,
+            wrap_around: false,
+            assistants: Vec::new(),
+            assistants_snap: true,
             fx_collapsed: Vec::new(),
             show_only: None,
             floating: None,
@@ -335,6 +378,14 @@ pub struct ToolState {
     /// the inks the person picked (#4196). Matched by colour, so it follows a swap, a reset or a
     /// mask pair without bookkeeping.
     pub cmyk_picks: Vec<([f32; 3], [f32; 4])>,
+    /// Paint dynamics presets (built-ins plus the user's `.rdyn` files; see `brush.dynamics.*`).
+    pub dynamics_presets: Vec<redrob_photo_paint::DynamicsPreset>,
+    /// Name of the dynamics preset last applied to the brush (`brush.dynamics.apply`).
+    pub current_dynamics: Option<String>,
+    /// Brush preset tags (`brush.presets.tag`): preset name → its tags, sorted, de-duplicated.
+    /// A preset may carry any number of tags; the preset store keeps them in its index. Bumping
+    /// `presets_rev` syncs them.
+    pub preset_tags: std::collections::BTreeMap<String, Vec<String>>,
 }
 
 impl ToolState {
@@ -402,6 +453,9 @@ impl Default for ToolState {
             mask_targeted: false,
             other_colors: Self::MASK_COLORS,
             cmyk_picks: Vec::new(),
+            dynamics_presets: redrob_photo_paint::dynamics_preset::builtin(),
+            current_dynamics: None,
+            preset_tags: Default::default(),
         }
     }
 }
@@ -752,15 +806,32 @@ impl Session {
         // report its own, tighter damage after this.
         let damage = layer_multi_cmds::step_damage(&before, &st.doc);
         let key = self.coalesce_request.clone();
+        // Cumulative undo (Preferences › Performance): another stroke of the same tool soon after
+        // the last one joins its history step, within the interval and the merged duration.
+        let performance = &self.prefs.get().performance;
+        let (cumulative, interval, duration) = (performance.cumulative_undo, performance.cumulative_undo_interval, performance.cumulative_undo_duration);
+        let now = std::time::Instant::now();
         let st = self.active_mut().ok_or(EngineError::NoDocument)?;
+        let merges_strokes = key.is_none()
+            && cumulative
+            && is_stroke_label(label)
+            && st.last_step_label.as_deref() == Some(label)
+            && st.last_step_at.is_some_and(|t| now.duration_since(t).as_secs_f32() <= interval.max(0.0))
+            && st.cumulative_since.is_some_and(|t| now.duration_since(t).as_secs_f32() <= duration.max(0.0));
         let layers = st.layer_target();
-        if key.is_none() || st.coalesce != key || !st.history.can_undo() {
+        let merge = st.history.can_undo() && ((key.is_some() && st.coalesce == key) || merges_strokes);
+        if merge {
+            st.history.set_current_layers(layers);
+        } else {
             st.history.set_current_layers(prior);
             st.history.record(label, before, layers);
             st.trim_history();
-        } else {
-            st.history.set_current_layers(layers);
+            // A step opens a merge run only while cumulative undo is on: strokes recorded
+            // before the preference was switched on stay their own steps.
+            st.cumulative_since = cumulative.then_some(now);
         }
+        st.last_step_label = Some(label.to_string());
+        st.last_step_at = Some(now);
         st.coalesce = key;
         st.revision += 1;
         st.last_damage = damage;
@@ -842,6 +913,7 @@ impl Session {
         }
         let Some(st) = self.active_mut() else { return false };
         st.coalesce = None;
+        st.last_step_label = None;
         match st.history.undo(st.doc.clone()) {
             Some((mut d, layers)) => {
                 // Save As changes file identity outside history, just like the saved path.
@@ -867,6 +939,7 @@ impl Session {
         }
         let Some(st) = self.active_mut() else { return false };
         st.coalesce = None;
+        st.last_step_label = None;
         match st.history.redo(st.doc.clone()) {
             Some((mut d, layers)) => {
                 if d.name != st.doc.name {

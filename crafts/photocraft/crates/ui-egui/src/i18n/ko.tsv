@@ -3363,3 +3363,603 @@ curves	Smooth	매끄럽게
 	There are too many sets: delete one first.	세트가 너무 많습니다. 먼저 하나를 삭제하세요.
 	set name	세트 이름
 	{set} (modified)	{set}(수정됨)
+	Desaturate…	채도 감소…
+	Anti-erase	지우기 복원
+	Restore erased pixels instead of erasing	지운 픽셀을 지우지 않고 복원합니다
+	Luma	루마
+	Value	명도값
+	Grow through corners as well as edges	변뿐 아니라 모서리로도 확장합니다
+	By:	기준:
+	Composite	합성
+	Square Gradient	사각 그라디언트
+	Conical Gradient (symmetric)	원뿔형 그라디언트 (대칭)
+	Spiral Gradient (clockwise)	나선형 그라디언트 (시계 방향)
+	Spiral Gradient (counter-clockwise)	나선형 그라디언트 (반시계 방향)
+	Line Art	라인 아트
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	선이 둘러싼 영역을 채웁니다. 작은 틈을 메우고 선 밑으로 조금 들어갑니다
+	Ink below	잉크 기준
+	Close gaps	틈 메우기
+	Under ink	선 밑으로
+	Angle Offset:	각도 오프셋:
+	Read the direction of the first stroke segment for the whole stroke	첫 세그먼트의 방향을 스트로크 전체에 사용
+	Fan Corners	모서리 부채꼴
+	Turn sharper than this is fanned	이보다 급한 회전을 부채꼴로 펼침
+	Sensor:	센서:
+	Combine:	결합:
+	Auto Spacing	자동 간격
+	Spacing grows with the square root of the size	간격이 크기의 제곱근에 따라 커짐
+	Auto spacing coefficient	자동 간격 계수
+	Minimum Spacing	최소 간격
+	Isotropic Spacing	등방성 간격
+	Space dabs by the diameter alone, not by the roundness	원형율이 아니라 직경만으로 간격을 정함
+	Mask:	마스크:
+	Fade X	페이드 X
+	Fade Y	페이드 Y
+	Lock Fade	페이드 잠금
+	The vertical fade follows the horizontal one	세로 페이드가 가로 페이드를 따름
+	Soft curve:	소프트 곡선:
+	Spikes	스파이크
+	Randomness	무작위성
+	Anti-aliasing	앤티앨리어싱
+	Auto Precision	자동 정밀도
+	Precision	정밀도
+	Separate Axes	축 분리
+	Scatter along and across the stroke by different amounts	스트로크 진행 방향과 가로 방향에 다른 분산량을 적용
+	Along	진행 방향
+	Across	가로 방향
+	Stabilizer	안정기
+	Average the last input points; the sample count follows the speed	최근 입력점을 평균함. 샘플 수는 속도에 따라 변함
+	Samples (slow)	샘플 수 (느림)
+	Samples (fast)	샘플 수 (빠름)
+	Delay	지연
+	Finish Line	선 마무리
+	Stabilize Sensors	센서 안정화
+	Smooth Pressure	필압 다듬기
+	Smooth the pen pressure along with the position	위치와 함께 펜 필압도 다듬음
+	Drawing Angle	드로잉 각도
+	Erase with the current brush (Clear mode)	현재 브러시로 지우기 (지우기 모드)
+	Blend:	혼합:
+	How much of the sample goes into the current colour	샘플을 현재 색상에 얼마나 섞을지
+	Close gap	틈 메우기
+	Boundary colour	경계 색상
+	Grow the filled area outward	채운 영역을 바깥으로 넓힘
+	Gaps in the boundary up to this are closed	경계의 이 크기까지의 틈을 메움
+	Fill until this colour instead of over similar colours	비슷한 색 위가 아니라 이 색까지 채움
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	드래그로 브러시 직선을 그립니다. Shift로 각도를 15° 단위로 고정
+	Free select: clicks and drags build one editable outline	자유 선택: 클릭과 드래그로 편집 가능한 하나의 외곽선을 만듭니다
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	클릭하면 점 추가, 드래그하면 자유 곡선 · 점을 드래그해 이동 · {del}로 마지막 구간 제거 · {key}로 닫기 · Esc로 취소
+	Click to place points, drag to draw freehand; the outline stays editable until closed	클릭해 점을 놓고 드래그해 자유 곡선을 그립니다. 닫기 전까지 외곽선을 편집할 수 있습니다
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	방향:
+	Corrective	보정
+	Clipping:	클리핑:
+	Adjust	맞춤
+	Clip	캔버스로 자르기
+	Crop with Aspect	비율 유지 자르기
+	Guides:	가이드:
+	Center Lines	중심선
+	Golden Sections	황금 분할
+	Diagonals	대각선
+	Lines:	선 수:
+	Split View	분할 보기
+	No Dynamics Preset	다이내믹 사전 설정 없음
+	Dynamics:	다이내믹:
+	Applied dynamics preset {name} ({note})	다이내믹 사전 설정 {name} 적용됨 ({note})
+	Applied dynamics preset {name}	다이내믹 사전 설정 {name} 적용됨
+	Save the brush's dynamics as a new preset	브러시 다이내믹을 새 사전 설정으로 저장
+	Delete this dynamics preset	이 다이내믹 사전 설정 삭제
+	Velocity	속도
+	HSV Hue	HSV 색조
+	HSV Saturation	HSV 채도
+	HSV Value	HSV 명도
+	Edge…	가장자리…
+	Algorithm	알고리즘
+	Sobel	소벨
+	Prewitt	프리윗
+	Roberts	로버츠
+	Differential	미분
+	Laplace	라플라스
+	Color Temperature…	색온도…
+	Color Temperature	색온도
+	Original Temperature	원본 색온도
+	Intended Temperature	목표 색온도
+	Hue-Chroma…	색조-채도(크로마)…
+	Hue-Chroma	색조-채도(크로마)
+	Chroma	크로마
+	Corner Threshold	모서리 한계값
+	Corner Surround	모서리 범위
+	Min Area	최소 면적
+	Airbrush paints only while moving (motion only)	에어브러시가 움직일 때만 칠함(움직일 때만)
+	Airbrush motion only	에어브러시 움직일 때만
+	Configure Grid…	격자 구성…
+	Configure Grid	격자 구성
+	Spacing X	간격 X
+	Spacing Y	간격 Y
+	Offset X	오프셋 X
+	Offset Y	오프셋 Y
+	Active Path	활성 패스
+	Equidistance	등간격
+	Wavelet Decompose…	웨이블릿 분해…
+	Wavelet Decompose	웨이블릿 분해
+	Scales	스케일 수
+	Import Swatches from Image	이미지에서 색상 견본 가져오기
+	Export Swatches as CSS…	색상 견본을 CSS로 내보내기…
+	Cage Transform	케이지 변형
+	Antialias	안티에일리어스
+	Blinds…	블라인드…
+	CIE lch Noise…	CIE LCh 노이즈…
+	Cubism…	큐비즘…
+	Decor	장식
+	Difference of Gaussians…	가우시안 차…
+	Distance Map…	거리 맵…
+	Engrave…	조각…
+	Filmstrip…	필름 스트립…
+	Fuzzy Border…	퍼지 테두리…
+	Gradient Flare…	그레이디언트 플레어…
+	HSV Noise…	HSV 노이즈…
+	Hurl…	흩뿌리기…
+	Image Gradient…	이미지 기울기…
+	Impressionist…	인상파…
+	Kaleidoscope…	만화경…
+	Light and Shadow	빛과 그림자
+	Long Shadow…	긴 그림자…
+	Mean Curvature Blur…	평균 곡률 흐림…
+	NL Filter…	NL 필터…
+	Normal Map…	노멀 맵…
+	Operation Graph…	연산 그래프…
+	Page Curl…	페이지 말림…
+	Perspective Shadow…	원근 그림자…
+	Pick…	뽑기…
+	SLIC…	SLIC…
+	Shift…	밀기…
+	Slur…	흘리기…
+	Sparkle…	반짝임…
+	Supernova…	초신성…
+	Symmetric Nearest Neighbor…	대칭 최근접 이웃…
+	Tileable Blur…	타일 가능 흐림…
+	Value Propagate…	값 전파…
+	Van Gogh (LIC)…	반 고흐(LIC)…
+	Video Degradation…	비디오 열화…
+	Waterpixels…	워터픽셀…
+	Weave…	직조…
+	Xach-Effect…	Xach 효과…
+	Add Border	테두리 추가
+	Add Shadow	그림자 추가
+	Additive	가산
+	Allow Resizing	크기 조정 허용
+	Alpha Trimmed Mean	알파 절사 평균
+	At Bottom	아래쪽에
+	At Top	위쪽에
+	Blur Border	테두리 흐림
+	Blur Horizontally	가로 흐림
+	Blur Radius	흐림 반경
+	Blur Type	흐림 유형
+	Blur Vertically	세로 흐림
+	Border Size	테두리 크기
+	Box	박스
+	Brush Shape	브러시 모양
+	Chebyshev	체비쇼프
+	Clip Result	결과 자르기
+	Color Type	색상 유형
+	Compactness	조밀도
+	Composition	합성
+	Convolve	컨볼루션
+	Cubic	3차
+	Current Gradient	현재 그레이디언트
+	Current Gradient Reversed	현재 그레이디언트(반전)
+	Derivative	미분
+	Displacement	변위
+	Drop Shadow Blur Radius	그림자 흐림 반경
+	Drop Shadow Color	그림자 색상
+	Drop Shadow Opacity	그림자 불투명도
+	Drop Shadow X Offset	그림자 X 오프셋
+	Drop Shadow Y Offset	그림자 Y 오프셋
+	Dulling	둔화
+	Edge Enhancement	가장자리 강조
+	Effect Channel	효과 채널
+	Effect Operator	효과 연산자
+	Ellipse	타원
+	Euclidean	유클리드
+	Evenly	균등하게
+	Fading	페이딩
+	Fading Fixed Length	고정 길이 페이딩
+	Film Color	필름 색상
+	Filter Length	필터 길이
+	Finite	유한
+	Flare Intensity	플레어 강도
+	Flowing	흐름
+	Foreground Background	전경/배경
+	Foreground To Peaks	전경을 정점으로
+	Full Z	전체 Z
+	Gradient Smoothness	기울기 매끄러움
+	Granularity	입자 크기
+	Graph	그래프
+	Grayscale Averaging	회색조 평균
+	Hex	육각
+	Highlight Color	하이라이트 색상
+	Highlight Opacity	하이라이트 불투명도
+	Highlight X Offset	하이라이트 X 오프셋
+	Highlight Y Offset	하이라이트 Y 오프셋
+	Hole Height	구멍 높이
+	Hole Offset	구멍 오프셋
+	Hole Spacing	구멍 간격
+	Hole Width	구멍 너비
+	Hue Rotation	색조 회전
+	Integration Steps	적분 단계
+	Iterations	반복 횟수
+	Keep Original	원본 유지
+	Large Staggered	큰 엇갈림
+	Large Three By Three	큰 3×3
+	Limit Line Width	선 두께 제한
+	Long Staggered	긴 엇갈림
+	Lower Left	왼쪽 아래
+	Lower Right	오른쪽 아래
+	Lower Threshold	하한 임계값
+	Luminosity Threshold	광도 임계값
+	Magnitude	크기
+	Manhattan	맨해튼
+	Maximum Value	최대값
+	Metric	거리 측정
+	Middle Value	중간값
+	Minimum Value	최소값
+	Mirror Rotation	거울 회전
+	Mirrors	거울 수
+	More Black	더 검게
+	More Opaque	더 불투명하게
+	More Transparent	더 투명하게
+	More White	더 희게
+	Natural Color	자연 색상
+	Noise Magnitude	노이즈 크기
+	Normalize	정규화
+	Number Color	번호 색상
+	Only Background	배경만
+	Only Foreground	전경만
+	Optimal Estimation	최적 추정
+	Orientation Type	방향 유형
+	Pairs	쌍
+	Paper Relief	종이 질감
+	Placement	배치
+	Propagating Rate	전파 비율
+	Radius1	반경 1
+	Radius2	반경 2
+	Random Hue	무작위 색조
+	Random Saturation	무작위 채도
+	Randomization	무작위화
+	Randomly	무작위로
+	Rays	광선
+	Regions Size	영역 크기
+	Relative Distance	상대 거리
+	Result Rotation	결과 회전
+	Ribbon Spacing	리본 간격
+	Ribbon Width	리본 너비
+	Rotated	회전
+	Second Flares	2차 플레어
+	Segments	조각 수
+	Shade	음영
+	Shadow Darkness	그림자 어둡기
+	Shadow Depth	그림자 깊이
+	Shadow Length	그림자 길이
+	Shadow Minus Image	그림자에서 이미지 제외
+	Shadow Only	그림자만
+	Shadow Plus Image	그림자와 이미지
+	Shadow Weight	그림자 세기
+	Size Variation	크기 변화
+	Spatial Regularization	공간 정규화
+	Spike Angle	스파이크 각도
+	Spike Density	스파이크 밀도
+	Spike Length	스파이크 길이
+	Spike Points	스파이크 개수
+	Splotch	얼룩
+	Spokes	스포크
+	Staggered	엇갈림
+	Start Index	시작 번호
+	Striped	줄무늬
+	Stroke Color	스트로크 색상
+	Stroke Density	스트로크 밀도
+	Superpixels Color	슈퍼픽셀 색상
+	Superpixels Size	슈퍼픽셀 크기
+	Thread Density	실 밀도
+	Thread Intensity	실 강도
+	Thread Length	실 길이
+	Three By Three	3×3
+	Threshold High	상한 임계값
+	Threshold Low	하한 임계값
+	Tile Saturation	타일 포화도
+	Tileable	타일 가능
+	To Bottom	아래로
+	To Left	왼쪽으로
+	To Right	오른쪽으로
+	To Top	위로
+	Trim X	X 자르기
+	Trim Y	Y 자르기
+	Upper Left	왼쪽 위
+	Upper Right	오른쪽 위
+	Upper Threshold	상한 임계값
+	Vector Angle	벡터 각도
+	Vector Length	벡터 길이
+	Wide Striped	넓은 줄무늬
+	With Source Image	원본 이미지로
+	With White Noise	백색 노이즈로
+	X Component	X 성분
+	Y Component	Y 성분
+	Animation	애니메이션
+	Bayer Matrix…	바이어 행렬…
+	Bayer Matrix	바이어 행렬
+	Blend…	혼합…
+	Blend	혼합
+	Burn-In…	번인…
+	Burn-In	번인
+	CML Explorer…	CML 탐색기…
+	CML Explorer	CML 탐색기
+	Cell Noise…	셀 노이즈…
+	Cell Noise	셀 노이즈
+	Checkerboard…	체커보드…
+	Checkerboard	체커보드
+	Circuit…	회로…
+	Circuit	회로
+	Coffee Stain…	커피 얼룩…
+	Coffee Stain	커피 얼룩
+	Diffraction Patterns…	회절 패턴…
+	Diffraction Patterns	회절 패턴
+	Fractal Explorer…	프랙탈 탐색기…
+	Fractal Explorer	프랙탈 탐색기
+	Fractal Trace…	프랙탈 추적…
+	Fractal Trace	프랙탈 추적
+	Fractals	프랙탈
+	Grid…	격자…
+	IFS Fractal…	IFS 프랙탈…
+	IFS Fractal	IFS 프랙탈
+	Illusion…	일루전…
+	Illusion	일루전
+	Jigsaw…	직소 퍼즐…
+	Jigsaw	직소 퍼즐
+	Lava…	용암…
+	Lava	용암
+	Line Nova…	라인 노바…
+	Line Nova	라인 노바
+	Linear Sinusoid…	선형 사인파…
+	Linear Sinusoid	선형 사인파
+	Little Planet…	작은 행성…
+	Little Planet	작은 행성
+	Map	매핑
+	Map Object…	오브젝트에 매핑…
+	Map Object	오브젝트에 매핑
+	Maze…	미로…
+	Maze	미로
+	Optimize (for GIF)	최적화(GIF용)
+	Qbist…	Qbist…
+	Qbist	Qbist
+	Recursive Transform…	재귀 변형…
+	Recursive Transform	재귀 변형
+	Rippling…	잔물결…
+	Rippling	잔물결
+	Semi-Flatten	반투명 평면화
+	Simplex Noise…	심플렉스 노이즈…
+	Simplex Noise	심플렉스 노이즈
+	Sinus…	사인 곡선…
+	Sinus	사인 곡선
+	Slide…	슬라이드…
+	Slide	슬라이드
+	Small Tiles…	작은 타일…
+	Small Tiles	작은 타일
+	Sphere Designer…	구체 디자이너…
+	Sphere Designer	구체 디자이너
+	Spinning Globe…	회전하는 지구…
+	Spinning Globe	회전하는 지구
+	Spiral…	나선…
+	Spiral	나선
+	Spirograph…	스피로그래프…
+	Spirograph	스피로그래프
+	Stencil Carve…	스텐실 조각…
+	Stencil Carve	스텐실 조각
+	Tile Seamless	이음새 없는 타일
+	Unoptimize	최적화 해제
+	Waves…	파도…
+	Abyss	경계 밖
+	Add Glowing	빛 추가
+	After Glow	잔광
+	Alternate	교대로
+	Amplitude	진폭
+	Antialiasing	앤티에일리어싱
+	Bailout	발산 한계
+	Barnsley1	반즐리 1
+	Barnsley2	반즐리 2
+	Barnsley3	반즐리 3
+	Base	밑
+	Bevel Width	경사 폭
+	Blue Contours	파랑 등고선
+	Blue Frequency	파랑 주파수
+	Blue Inversion	파랑 반전
+	Blue Sharp Edges	파랑 선명한 가장자리
+	Bump	범프
+	Bumps	돌기
+	Caribbean Blues	카리브 블루
+	Carve White	흰색 조각
+	Cell Height	셀 높이
+	Cell Width	셀 너비
+	Checker	체커
+	Circuit Seed	회로 시드
+	Clamp	고정
+	Clockwise	시계 방향
+	Color1	색상 1
+	Color2	색상 2
+	Complexity	복잡도
+	Corner Radius	모서리 반경
+	Counter Clockwise	시계 반대 방향
+	Coupling	결합
+	Curve Type	곡선 유형
+	Curved	곡선
+	Cx	Cx
+	Cy	Cy
+	Cylinder	원기둥
+	Delta Sin Curve	델타 사인 곡선
+	Depth First	깊이 우선
+	Division	분할
+	Dragon	드래곤
+	Edge Behavior	가장자리 처리
+	Epitrochoid	에피트로코이드
+	Explicit	지정
+	Exponent	지수
+	Fade Color	페이드 색상
+	Fade Opacity	페이드 불투명도
+	Fadeout	페이드아웃
+	Fadeout Width	페이드아웃 폭
+	Fern	고사리
+	Fill With K	K로 채우기
+	First Iteration	첫 반복
+	Fixed Gear Teeth	고정 기어 톱니
+	Flip Which	뒤집을 타일
+	Font Color	글꼴 색상
+	Font Size	글꼴 크기
+	Fractal	프랙탈
+	Fractal Type	프랙탈 유형
+	Frames	프레임
+	Full Spectrum	전체 스펙트럼
+	German Flag	독일 국기
+	Golden	황금
+	Green Contours	녹색 등고선
+	Green Frequency	녹색 주파수
+	Green Inversion	녹색 반전
+	Green Sharp Edges	녹색 선명한 가장자리
+	Half	절반
+	Hole Percent	구멍 위치 (%)
+	Hue Function	색조 함수
+	Incandescent	백열
+	Intermediate Frames	중간 프레임
+	Invert Direction	방향 반전
+	Julia	줄리아
+	Jx	Jx
+	Jy	Jy
+	Keep First Value	첫 값 유지
+	Keep Image	이미지 유지
+	Lambda	람다
+	Last Iteration	마지막 반복
+	Line Height	선 높이
+	Line Width	선 너비
+	Lissajous	리사주
+	Lizard	도마뱀
+	Logarithmic	로그
+	Logistic	로지스틱
+	Loop	반복
+	Looped	반복 재생
+	Man O War	맨오워
+	Mandelbrot	만델브로
+	Map To	매핑 대상
+	Marble	대리석
+	Max Blur Radius	최대 흐림 반경
+	Morph	변형
+	Moving Gear Teeth	이동 기어 톱니
+	No Background	배경 없음
+	Offset Radius	오프셋 반경
+	Oilify Mask Size	유화 마스크 크기
+	Oversample	오버샘플
+	Palettize	팔레트화
+	Pan	패닝
+	Parameter K	매개변수 K
+	Paste Below	아래에 붙이기
+	Perturbation	섭동
+	Phong	퐁
+	Polarization	편광
+	Polygon	다각형
+	Prim	프림
+	Quarter	4분의 1
+	Rack	랙
+	Rank	순위
+	Red Contours	빨강 등고선
+	Red Frequency	빨강 주파수
+	Red Inversion	빨강 반전
+	Red Sharp Edges	빨강 선명한 가장자리
+	Rotation X	X 회전
+	Rotation Y	Y 회전
+	Rotation Z	Z 회전
+	Saturation Function	채도 함수
+	Separate Layer	별도 레이어
+	Sierpinski	시에르핀스키
+	Sin Curve	사인 곡선
+	Sin Curve Step	사인 곡선 단계
+	Sinusoidal	사인파형
+	Smear	늘리기
+	Snowflake	눈송이
+	Specular	반사광
+	Sphere	구
+	Spider	스파이더
+	Spot Radius	점 반경
+	Spots	점
+	Stains	얼룩 수
+	Start Offset	시작 오프셋
+	Supersampling	슈퍼샘플링
+	Text	텍스트
+	Three Quarters	4분의 3
+	Tilt	기울기
+	Transparent Background	투명 배경
+	Turbulence	난류
+	Turn Left	왼쪽으로 회전
+	Type1	유형 1
+	Type2	유형 2
+	Value Function	명도 함수
+	Wavelength	파장
+	Wood	나무
+	X Amplitude	X 진폭
+	X Offset	X 오프셋
+	X Period	X 주기
+	X Phase	X 위상
+	X Scale	X 비율
+	X Spacing	X 간격
+	X Tiles	X 타일 수
+	X1	X1
+	X2	X2
+	Y Amplitude	Y 진폭
+	Y Offset	Y 오프셋
+	Y Period	Y 주기
+	Y Phase	Y 위상
+	Y Scale	Y 비율
+	Y Spacing	Y 간격
+	Y Tiles	Y 타일 수
+	Y1	Y1
+	Y2	Y2
+	Binary AND	이진 AND
+	Binary OR	이진 OR
+	Binary NAND	이진 NAND
+	Binary NOR	이진 NOR
+	Binary XNOR	이진 XNOR
+	Binary Implication	이진 함의
+	Binary Not Implication	이진 비함의
+	Binary Converse	이진 역함의
+	Binary Not Converse	이진 비역함의
+	Modulo	모듈로
+	Modulo Continuous	모듈로 연속
+	Divisive Modulo	나눗셈 모듈로
+	Divisive Modulo Continuous	나눗셈 모듈로 연속
+	Modulo Shift	모듈로 이동
+	Modulo Shift Continuous	모듈로 이동 연속
+	Freeze	동결
+	Heat	가열
+	Glow-Heat	광선-가열
+	Heat-Glow	가열-광선
+	Reflect-Freeze	반사-동결
+	Freeze-Reflect	동결-반사
+	Heat-Glow and Freeze-Reflect Hybrid	가열-광선과 동결-반사 혼합
+	Wrap Around Mode	순환 모드
+	Rotational Multibrush	회전 멀티브러시
+	Mirror copies	복사 대칭
+	All Tags	모든 태그
+	Tags	태그
+	Assistant Tool	어시스턴트 도구
+	Assistant	어시스턴트
+	Ruler	눈금자
+	Parallel Ruler	평행 눈금자
+	Perspective Grid	원근 격자
+	Snap to Assistants	어시스턴트에 스냅
+	Show Assistants	어시스턴트 표시
+	Delete All	모두 삭제
+	Mirror painting across the vertical axis	세로축 기준으로 대칭 페인팅
+	Choose a gradient file (.grd or .ggr).	그레이디언트 파일 (.grd 또는 .ggr)을 선택하세요.
+	Save Group to Document	그룹을 문서에 저장
+	Load Document Palettes	문서 팔레트 불러오기
+	Cumulative undo	누적 실행 취소
+	Cumulative undo interval	누적 실행 취소 간격
+	Cumulative undo duration	누적 실행 취소 지속 시간
+	Popup palette	팝업 팔레트
+	Smudge Radius	스머지 반경

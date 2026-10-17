@@ -263,6 +263,13 @@ pub fn stroke_options(st: &StrokeLayer) -> Value {
         "alignDashes": st.dash.as_ref().is_some_and(|d| d.align_corners),
         "startArrow": st.start_arrow,
         "endArrow": st.end_arrow,
+        "midArrow": st.mid_arrow,
+        "markerOrient": match st.marker_orient {
+            redrob_vector_doc::MarkerOrient::Fixed { angle } => json!(angle),
+            o => json!(o.name()),
+        },
+        "markersScale": st.markers_scale,
+        "hairline": st.hairline,
         "arrowAlign": if st.arrow_align == ArrowAlign::Tip { "tip" } else { "extend" },
         "profile": WidthProfile::id_of(st.profile.as_ref()),
         "widthPoints": st.profile.as_ref().map(|p| &p.points),

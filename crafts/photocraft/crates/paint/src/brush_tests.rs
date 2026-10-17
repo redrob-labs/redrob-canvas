@@ -355,7 +355,14 @@ fn jitter_is_deterministic_per_seed() {
             flip_y_jitter: true,
             ..Default::default()
         },
-        scattering: Scattering { enabled: true, scatter: Dynamic::jitter(2.0), both_axes: true, count: 3, count_jitter: Dynamic::jitter(1.0) },
+        scattering: Scattering {
+            enabled: true,
+            scatter: Dynamic::jitter(2.0),
+            both_axes: true,
+            count: 3,
+            count_jitter: Dynamic::jitter(1.0),
+            ..Default::default()
+        },
         ..brush()
     };
     let pts = line(0.0, 300.0, 50.0);

@@ -23,7 +23,7 @@ const TOOL_SECTIONS: &[&[&[Tool]]] = &[
         &[Tool::ObjectSelection, Tool::QuickSelection, Tool::MagicWand],
         &[Tool::Crop, Tool::PerspectiveCrop, Tool::Slice, Tool::SliceSelect],
         &[Tool::Frame],
-        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count],
+        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count, Tool::Assistant],
     ],
     &[
         &[Tool::Remove, Tool::SpotHealing, Tool::Healing, Tool::Patch, Tool::ContentAwareMove, Tool::RedEye],
@@ -979,6 +979,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     || crate::retouch_ui::options_bar(app, ui, tool)
                     || crate::vector_ui::options_bar(app, ui, tool)
                     || crate::analysis_ui::options_bar(app, ui, tool)
+                    || crate::assistant_ui::options_bar(app, ui, tool)
                     || crate::slice_ui::options_bar(app, ui, tool)
                     || crate::frame_tool::options_bar(app, ui, tool)
                     || crate::artboard_tool::options_bar(app, ui, tool)
@@ -1000,11 +1001,14 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         // The Eraser has no blend mode: its Mode is Brush, Pencil or Block (#2662).
                         if app.ui.tool == Tool::Eraser {
                             crate::eraser_ui::mode_dropdown(ui, &mut app.ui.tool_options.eraser_mode);
+                            crate::eraser_ui::anti_erase_checkbox(ui, &mut app.ui.tool_options.anti_erase);
                         } else {
                             opt_label(ui, tl!("Mode"));
                             let held = app.held_erase;
                             paint_mode_dropdown(ui, "brush-mode", b, &mut app.ui.tool_options.brush_clear, held);
+                            erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
+                        line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
                         ui.add_enabled_ui(!block, |ui| {
                             percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, 62.0);
                             if icons::button(ui, "circle-dot", 24.0, b.pressure_opacity, tl!("Always use pressure for opacity")).clicked() {
@@ -1017,6 +1021,13 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             let airbrush = icons::button(ui, "sparkles", 24.0, b.build_up, tl!("Enable airbrush-style build-up effects"));
                             if crate::brush_picker::named(airbrush, "Enable airbrush-style build-up effects").clicked() {
                                 b.build_up = !b.build_up;
+                            }
+                            if b.build_up {
+                                // Motion only: the airbrush deposits only while the pointer moves.
+                                let motion = icons::button(ui, "move", 24.0, b.build_up_motion_only, tl!("Airbrush paints only while moving (motion only)"));
+                                if crate::brush_picker::named(motion, "Airbrush motion only").clicked() {
+                                    b.build_up_motion_only = !b.build_up_motion_only;
+                                }
                             }
                         });
                         opt_label(ui, tl!("Smoothing"));
@@ -1040,6 +1051,8 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         opt_label(ui, tl!("Mode"));
                         let held = app.held_erase;
                         paint_mode_dropdown(ui, "pencil-mode", b, &mut app.ui.tool_options.pencil_clear, held);
+                        erase_toggle(ui, &mut app.ui.tool_options.pencil_clear, held);
+                        line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
                         percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, if t.pro { 62.0 } else { 66.0 });
                         opt_label(ui, tl!("Smoothing"));
                         smoothing_field(ui, b, if t.pro { 58.0 } else { 66.0 });
@@ -1059,11 +1072,14 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::vline(ui, 22.0);
                         if app.ui.tool == Tool::Eraser {
                             crate::eraser_ui::mode_dropdown(ui, &mut app.ui.tool_options.eraser_mode);
+                            crate::eraser_ui::anti_erase_checkbox(ui, &mut app.ui.tool_options.anti_erase);
                         } else {
                             opt_label(ui, tl!("Mode"));
                             let held = app.held_erase;
                             paint_mode_dropdown(ui, "brush-mode", b, &mut app.ui.tool_options.brush_clear, held);
+                            erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
+                        line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
                         // A Pencil-mode Eraser is always hard and at full flow (Photoshop).
                         let fixed = block || crate::eraser_ui::pencil_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!fixed, |ui| percent_field(ui, tl!("Hardness"), &mut b.hardness, 0.0..=100.0, 66.0));
@@ -1089,6 +1105,13 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         }
                         widgets::vline(ui, 22.0);
                         widgets::checkbox(ui, &mut b.mixer.sample_all_layers, tl!("Sample All Layers"));
+                        // Smear drags the pixels along; off, the dab takes the average colour (dulling).
+                        widgets::checkbox(ui, &mut b.mixer.smear, tl!("Smear"));
+                        ui.label(RichText::new(tl!("Smudge Radius")).color(t.text_dim));
+                        let mut radius = b.mixer.smudge_radius * 100.0;
+                        if widgets::value_field(ui, &mut radius, 50.0..=300.0, "%", 62.0).changed() {
+                            b.mixer.smudge_radius = (radius / 100.0).clamp(0.5, 3.0);
+                        }
                     }
                     Tool::RectMarquee | Tool::EllipseMarquee | Tool::SingleRowMarquee | Tool::SingleColumnMarquee if t.pro => {
                         ui.spacing_mut().item_spacing.x = 2.0;
@@ -1166,10 +1189,25 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             }
                             widgets::vline(ui, 22.0);
                         }
+                        if app.ui.tool == Tool::Lasso {
+                            let o = &mut app.ui.tool_options;
+                            if icons::button(ui, "pentagon", 24.0, o.lasso_free_select, tl!("Free select: clicks and drags build one editable outline")).clicked() {
+                                o.lasso_free_select = !o.lasso_free_select;
+                            }
+                            widgets::vline(ui, 22.0);
+                        }
                         if widgets::secondary_button(ui, tl!("Select and Mask…"), 0.0).clicked() {
                             let _ = crate::menus::invoke(app, ui.ctx(), "select.selectAndMask", json!({}));
                         }
-                        if crate::lasso_ui::active(app) || (app.ui.tool == Tool::PolygonLasso && !app.ui.polygon.is_empty()) {
+                        if crate::lasso_ui::free_select_active(app) {
+                            hint(
+                                ui,
+                                &crate::i18n::fmt(
+                                    tl!("Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels"),
+                                    &[("key", &crate::shortcuts::pretty("Enter")), ("del", &crate::shortcuts::pretty("Backspace"))],
+                                ),
+                            );
+                        } else if crate::lasso_ui::active(app) || (app.ui.tool == Tool::PolygonLasso && !app.ui.polygon.is_empty()) {
                             hint(
                                 ui,
                                 &crate::i18n::fmt(
@@ -1177,6 +1215,8 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                                     &[("key", &crate::shortcuts::pretty("Enter"))],
                                 ),
                             );
+                        } else if app.ui.tool == Tool::Lasso && app.ui.tool_options.lasso_free_select {
+                            hint(ui, tl!("Click to place points, drag to draw freehand; the outline stays editable until closed"));
                         } else if app.ui.tool == Tool::Lasso {
                             hint(ui, tl!("Hold Alt while drawing for straight segments"));
                         }
@@ -1198,6 +1238,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::checkbox(ui, &mut app.ui.tool_options.anti_alias, tl!("Anti-alias"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("Sample All Layers"));
+                        crate::eraser_ui::wand_options(ui, &mut app.ui.tool_options);
                         widgets::vline(ui, 22.0);
                         if widgets::secondary_button(ui, tl!("Select Subject"), 0.0).clicked() {
                             let r = app.run("select.subject", json!({}));
@@ -1209,9 +1250,17 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     }
                     Tool::PaintBucket if t.pro => {
                         opt_label(ui, tl!("Fill"));
-                        let mut src = u8::from(app.ui.tool_options.bucket_fill_pattern);
-                        if widgets::dropdown(ui, "bucket-src", &mut src, &[(0u8, tl!("Foreground")), (1, tl!("Pattern"))], 100.0) {
-                            app.ui.tool_options.bucket_fill_pattern = src == 1;
+                        let o = &mut app.ui.tool_options;
+                        let mut src = if o.bucket_fill_pattern { 2u8 } else { u8::from(o.bucket_fill_background) };
+                        if widgets::dropdown(ui, "bucket-src", &mut src, &[(0u8, tl!("Foreground")), (1, tl!("Background")), (2, tl!("Pattern"))], 100.0) {
+                            o.bucket_fill_pattern = src == 2;
+                            o.bucket_fill_background = src == 1;
+                        }
+                        if o.bucket_fill_pattern {
+                            opt_label(ui, tl!("Scale"));
+                            widgets::value_field(ui, &mut o.bucket_pattern_scale, 1.0..=1000.0, "%", 62.0);
+                            opt_label(ui, tl!("Angle"));
+                            widgets::value_field(ui, &mut o.bucket_pattern_angle, -180.0..=180.0, "°", 58.0);
                         }
                         opt_label(ui, tl!("Opacity"));
                         widgets::value_field(ui, &mut app.ui.tool_options.fill_opacity, 1.0..=100.0, "%", 62.0);
@@ -1220,12 +1269,46 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::checkbox(ui, &mut app.ui.tool_options.anti_alias, tl!("Anti-alias"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("All Layers"));
+                        crate::eraser_ui::wand_options(ui, &mut app.ui.tool_options);
+                        widgets::vline(ui, 22.0);
+                        let o = &mut app.ui.tool_options;
+                        widgets::checkbox(ui, &mut o.bucket_line_art, tl!("Line Art")).on_hover_text(tl!("Fill the area the ink encloses, closing small gaps and going slightly under the lines"));
+                        if o.bucket_line_art {
+                            opt_label(ui, tl!("Ink below"));
+                            let mut pct = o.line_art_threshold * 100.0;
+                            if widgets::value_field(ui, &mut pct, 1.0..=100.0, "%", 58.0).changed() {
+                                o.line_art_threshold = pct / 100.0;
+                            }
+                            opt_label(ui, tl!("Close gaps"));
+                            widgets::value_field(ui, &mut o.line_art_gap, 0.0..=128.0, "px", 58.0);
+                            opt_label(ui, tl!("Under ink"));
+                            widgets::value_field(ui, &mut o.line_art_grow, 0.0..=64.0, "px", 52.0);
+                        } else {
+                            opt_label(ui, tl!("Spread"));
+                            widgets::value_field(ui, &mut o.bucket_spread, 0.0..=64.0, "px", 52.0).on_hover_text(tl!("Grow the filled area outward"));
+                            opt_label(ui, tl!("Close gap"));
+                            widgets::value_field(ui, &mut o.bucket_close_gap, 0.0..=128.0, "px", 58.0).on_hover_text(tl!("Gaps in the boundary up to this are closed"));
+                            widgets::checkbox(ui, &mut o.bucket_use_boundary, tl!("Boundary colour")).on_hover_text(tl!("Fill until this colour instead of over similar colours"));
+                            if o.bucket_use_boundary {
+                                let mut c = egui::Color32::from_rgb(
+                                    (o.bucket_boundary_color[0].clamp(0.0, 1.0) * 255.0).round() as u8,
+                                    (o.bucket_boundary_color[1].clamp(0.0, 1.0) * 255.0).round() as u8,
+                                    (o.bucket_boundary_color[2].clamp(0.0, 1.0) * 255.0).round() as u8,
+                                );
+                                if widgets::color_edit_button_srgba(ui, &mut c).changed() {
+                                    o.bucket_boundary_color = [f32::from(c.r()) / 255.0, f32::from(c.g()) / 255.0, f32::from(c.b()) / 255.0];
+                                }
+                            }
+                        }
                     }
                     Tool::Gradient => {
                         // Live "Gradient" (a Gradient Fill layer) or "Classic gradient" (pixels).
                         let mut classic = app.ui.tool_options.gradient_classic;
                         if widgets::dropdown(ui, "gradient-mode", &mut classic, &[(false, "Gradient"), (true, "Classic gradient")], 118.0) {
                             app.ui.tool_options.gradient_classic = classic;
+                            if !classic && crate::gradient_ui::classic_only_style(&app.ui.tool_options.gradient_style) {
+                                app.ui.tool_options.gradient_style = "linear".into();
+                            }
                         }
                         // Live "Gradient" (a Gradient Fill layer) or "Classic gradient" (pixels):
                         // both paint with the same engine-owned preset (#1651), and either swatch
@@ -1242,9 +1325,18 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             ("angle", "rotate-cw", tl!("Angle Gradient")),
                             ("reflected", "arrow-left-right", tl!("Reflected Gradient")),
                             ("diamond", "diamond", tl!("Diamond Gradient")),
+                            ("square", "square", tl!("Square Gradient")),
+                            ("conicalSymmetric", "cone", tl!("Conical Gradient (symmetric)")),
+                            ("spiralClockwise", "shell", tl!("Spiral Gradient (clockwise)")),
+                            ("spiralCounterClockwise", "rotate-ccw", tl!("Spiral Gradient (counter-clockwise)")),
                         ] {
                             if icons::button(ui, icon, 24.0, app.ui.tool_options.gradient_style == style, tip).clicked() {
                                 app.ui.tool_options.gradient_style = style.into();
+                                // The square, conical and spiral shapes paint pixels only: a
+                                // Gradient Fill layer has the five Photoshop styles.
+                                if crate::gradient_ui::classic_only_style(style) {
+                                    app.ui.tool_options.gradient_classic = true;
+                                }
                             }
                         }
                         ui.spacing_mut().item_spacing.x = 8.0;
@@ -2172,11 +2264,21 @@ fn simple_lock_toggle(background: bool, l: &Layer) -> (String, Value) {
     ("layer.setProps".into(), json!({"layer": l.id.0, "locks": locks}))
 }
 
-/// The Layers panel's blend modes: Photoshop's, plus the layer's own Paint.NET mode when it has one
-/// (an imported `.pdn`), so the menu matches Photoshop's for every other layer.
+/// The Layers panel's blend modes: Photoshop's, then the HSV / Luminance component modes, the
+/// binary, modulo and quadratic families, plus the layer's own Paint.NET mode when it has one (an
+/// imported `.pdn`).
 fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static str)> {
-    let own = Some(current).filter(|m| !m.has_psd_equivalent());
-    std::iter::once(BlendMode::PassThrough).filter(|_| groups).chain(BlendMode::LAYER_MODES).chain(own).map(|m| (m, m.label())).collect()
+    let own = Some(current).filter(|m| BlendMode::PAINT_NET_MODES.contains(m));
+    std::iter::once(BlendMode::PassThrough)
+        .filter(|_| groups)
+        .chain(BlendMode::LAYER_MODES)
+        .chain(BlendMode::EXTENDED_MODES)
+        .chain(BlendMode::BINARY_MODES)
+        .chain(BlendMode::MODULO_MODES)
+        .chain(BlendMode::QUADRATIC_MODES)
+        .chain(own)
+        .map(|m| (m, m.label()))
+        .collect()
 }
 
 /// Scroll the Layers panel while holding a layer drag over its top/bottom edge or past them.
@@ -3739,6 +3841,8 @@ fn color_field(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             }
         }
     });
+    // Recent colours (the colour history): a click picks one, Alt-click as the background.
+    color_history_row(app, ui);
 }
 
 /// Tool colours are sRGB-encoded floats; egui's Hsva works on sRGB bytes via these helpers
@@ -3765,6 +3869,15 @@ fn hsva_srgb(h: egui::ecolor::Hsva) -> [f32; 4] {
 fn hsva_color32(h: egui::ecolor::Hsva) -> Color32 {
     let [r, g, b] = srgb_bytes(hsva_srgb(h));
     Color32::from_rgb(r, g, b)
+}
+
+/// The Color panel's row of recent colours (`color_history`), under the readout.
+fn color_history_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+    if app.ui.color_history.is_empty() {
+        return;
+    }
+    ui.add_space(4.0);
+    crate::color_history::patches(app, ui, 14.0, 16);
 }
 
 /// The Color panel's editable colour readout: a hex field and R, G, B fields, all drawn like the
@@ -3853,6 +3966,22 @@ fn paint_mode_dropdown(ui: &mut egui::Ui, id: &str, b: &mut redrob_photo_engine:
             b.mode = m;
         }
     }
+}
+
+/// Options-bar erase toggle beside the Mode dropdown: the current preset erases (Clear mode) while
+/// it is on, so any brush doubles as an eraser without switching tools. Lit too while the erase
+/// key is held.
+fn erase_toggle(ui: &mut egui::Ui, clear: &mut bool, held: bool) {
+    if icons::button(ui, "eraser", 24.0, *clear || held, tl!("Erase with the current brush (Clear mode)")).clicked() {
+        *clear = !*clear;
+    }
+}
+
+/// Options-bar Line mode toggle (Brush, Pencil, Eraser): a drag paints one straight stroke from
+/// the press to the release, the pen pressure recorded along the drag replayed along the line;
+/// ⇧ snaps the angle to 15° steps.
+fn line_mode_toggle(ui: &mut egui::Ui, on: &mut bool) {
+    widgets::checkbox(ui, on, tl!("Line")).on_hover_text(tl!("Drag a straight line painted with the brush; Shift snaps the angle to 15° steps"));
 }
 
 /// Options-bar Smoothing % (the brush's stroke smoothing; the live stroke and the commit use it).

@@ -117,6 +117,124 @@ fn swatch_json(conv: &SwatchConv, sw: &Swatch) -> Value {
     v
 }
 
+// ------------------------------------------------------------------ document palettes
+
+/// Most palettes a document holds.
+pub const MAX_DOC_PALETTES: usize = 256;
+
+fn doc_swatch(sw: &Swatch) -> redrob_photo_doc::DocSwatch {
+    redrob_photo_doc::DocSwatch { name: sw.name.clone(), color: serde_json::to_value(sw.color).unwrap_or(Value::Null), spot: sw.kind == SwatchKind::Spot }
+}
+
+fn library_swatch(sw: &redrob_photo_doc::DocSwatch) -> Option<Swatch> {
+    let color: SwatchColor = serde_json::from_value(sw.color.clone()).ok()?;
+    Some(Swatch { name: sw.name.clone(), color, kind: if sw.spot { SwatchKind::Spot } else { SwatchKind::Process } })
+}
+
+/// `swatches.saveToDocument`: copy a library group into the active document as a palette (one
+/// of the same name is replaced). A history step: the palette is part of the document.
+fn save_to_document(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.saveToDocument";
+    let group = name_param(p, "group", CMD)?.ok_or_else(|| bad(CMD, "missing `group`"))?;
+    let gi = group_of(s, &group, CMD)?;
+    let palette_name = name_param(p, "palette", CMD)?.unwrap_or_else(|| group.clone());
+    let palette = redrob_photo_doc::DocPalette { name: palette_name.clone(), swatches: s.presets.swatches[gi].items.iter().map(doc_swatch).collect() };
+    let count = palette.swatches.len();
+    let n = s.edit("Save Palette to Document", |d, _| {
+        match d.palettes.iter_mut().find(|x| x.name == palette.name) {
+            Some(x) => *x = palette,
+            None => {
+                if d.palettes.len() >= MAX_DOC_PALETTES {
+                    return Err(bad(CMD, format!("a document holds at most {MAX_DOC_PALETTES} palettes")));
+                }
+                d.palettes.push(palette);
+            }
+        }
+        Ok(d.palettes.len())
+    })?;
+    Ok(json!({"palette": palette_name, "count": count, "palettes": n}))
+}
+
+/// `swatches.loadFromDocument`: copy the active document's palettes (or the one named) into the
+/// library as groups.
+fn load_from_document(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.loadFromDocument";
+    let only = name_param(p, "palette", CMD)?;
+    let doc = s.active().ok_or(crate::EngineError::NoDocument)?.doc.clone();
+    let palettes: Vec<&redrob_photo_doc::DocPalette> = doc.palettes.iter().filter(|x| only.as_deref().is_none_or(|n| n == x.name)).collect();
+    if palettes.is_empty() {
+        return Err(bad(
+            CMD,
+            match only {
+                Some(n) => format!("the document has no palette \"{n}\""),
+                None => "the document has no palettes".to_string(),
+            },
+        ));
+    }
+    let incoming: usize = palettes.iter().map(|x| x.swatches.len()).sum();
+    if s.presets.swatches.len() + palettes.len() > MAX_GROUPS || total(&s.presets.swatches) + incoming > MAX_SWATCHES {
+        return Err(bad(CMD, "the Swatches panel is full"));
+    }
+    let mut groups = Vec::new();
+    let mut skipped = 0;
+    for pal in palettes {
+        let name = unique_group(&s.presets.swatches, &pal.name);
+        let mut items = Vec::with_capacity(pal.swatches.len());
+        for sw in &pal.swatches {
+            match library_swatch(sw) {
+                Some(mut sw) => {
+                    sw.name = unique_name(&s.presets.swatches, &clip(&sw.name));
+                    items.push(sw);
+                }
+                None => skipped += 1,
+            }
+        }
+        s.presets.swatches.push(Group::new(&name, items));
+        groups.push(name);
+    }
+    s.presets_changed();
+    Ok(json!({"groups": groups, "count": incoming - skipped, "skipped": skipped}))
+}
+
+/// `swatches.deleteDocumentPalette`: remove a palette from the active document.
+fn delete_document_palette(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.deleteDocumentPalette";
+    let name = name_param(p, "palette", CMD)?.ok_or_else(|| bad(CMD, "missing `palette`"))?;
+    let n = s.edit("Delete Document Palette", |d, _| {
+        let before = d.palettes.len();
+        d.palettes.retain(|x| x.name != name);
+        if d.palettes.len() == before {
+            return Err(bad(CMD, format!("the document has no palette \"{name}\"")));
+        }
+        Ok(d.palettes.len())
+    })?;
+    Ok(json!({"palettes": n}))
+}
+
+/// `swatches.documentPalettes`: the active document's palettes.
+fn document_palettes(s: &mut Session, _: &Value) -> Result<Value> {
+    let conv = SwatchConv::new(s);
+    let doc = &s.active().ok_or(crate::EngineError::NoDocument)?.doc;
+    let palettes: Vec<Value> = doc
+        .palettes
+        .iter()
+        .map(|pal| {
+            json!({"name": pal.name, "swatches": pal.swatches.iter().map(|sw| match library_swatch(sw) {
+                Some(l) => swatch_json(&conv, &l),
+                None => json!({"name": sw.name}),
+            }).collect::<Vec<_>>()})
+        })
+        .collect();
+    Ok(json!({"palettes": palettes, "count": doc.palettes.len()}))
+}
+
+fn has_doc(s: &Session) -> std::result::Result<(), String> {
+    s.active().map(|_| ()).ok_or_else(|| "no document open".into())
+}
+fn has_doc_palettes(s: &Session) -> std::result::Result<(), String> {
+    s.active().filter(|st| !st.doc.palettes.is_empty()).map(|_| ()).ok_or_else(|| "the document has no palettes".into())
+}
+
 // ------------------------------------------------------------------ commands
 
 fn list(s: &mut Session, _: &Value) -> Result<Value> {
@@ -358,11 +476,14 @@ fn reset(s: &mut Session, p: &Value) -> Result<Value> {
 
 // ------------------------------------------------------------------ files
 
-/// File format of a swatch file.
+/// File format of a swatch file. `Css` and `Txt` are export-only code listings (CSS custom
+/// properties, or one hex colour per line) for use in code.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Format {
     Aco,
     Ase,
+    Css,
+    Txt,
 }
 
 impl Format {
@@ -370,6 +491,8 @@ impl Format {
         match s.trim_start_matches('.').to_ascii_lowercase().as_str() {
             "aco" => Some(Format::Aco),
             "ase" => Some(Format::Ase),
+            "css" => Some(Format::Css),
+            "txt" | "text" | "hex" => Some(Format::Txt),
             _ => None,
         }
     }
@@ -377,8 +500,60 @@ impl Format {
         match self {
             Format::Aco => "aco",
             Format::Ase => "ase",
+            Format::Css => "css",
+            Format::Txt => "txt",
         }
     }
+    fn is_swatch_file(self) -> bool {
+        matches!(self, Format::Aco | Format::Ase)
+    }
+}
+
+/// A CSS- or variable-safe identifier from a swatch name: lower case, runs of other characters
+/// as one hyphen, never empty.
+fn code_ident(name: &str) -> String {
+    let mut out = String::new();
+    let mut dash = false;
+    for ch in name.chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.extend(ch.to_lowercase());
+            dash = false;
+        } else if !dash && !out.is_empty() {
+            out.push('-');
+            dash = true;
+        }
+    }
+    let out = out.trim_end_matches('-').to_string();
+    if out.is_empty() { "color".into() } else { out }
+}
+
+/// The swatches as code: CSS custom properties on `:root` (one comment per group), or one hex
+/// colour per line with the name after a tab.
+fn write_code(groups: &[Group<Swatch>], format: Format, conv: &SwatchConv) -> (Vec<u8>, usize) {
+    let mut text = String::new();
+    let mut n = 0;
+    match format {
+        Format::Css => {
+            text.push_str(":root {\n");
+            for g in groups {
+                text.push_str(&format!("  /* {} */\n", g.name.replace("*/", "* /")));
+                for sw in &g.items {
+                    text.push_str(&format!("  --{}: {};\n", code_ident(&sw.name), hex(conv.rgb(&sw.color))));
+                    n += 1;
+                }
+            }
+            text.push_str("}\n");
+        }
+        _ => {
+            for g in groups {
+                for sw in &g.items {
+                    text.push_str(&format!("{}\t{}\n", hex(conv.rgb(&sw.color)), sw.name.replace(['\t', '\n'], " ")));
+                    n += 1;
+                }
+            }
+        }
+    }
+    (text.into_bytes(), n)
 }
 
 fn ext_format(path: Option<&str>) -> Option<Format> {
@@ -468,6 +643,7 @@ pub fn read_file(bytes: &[u8], format: Format, group: &str) -> std::result::Resu
     let mut out: Vec<Group<Swatch>> = Vec::new();
     let fallback = |i: usize, name: &str| if name.trim().is_empty() { format!("Swatch {}", i + 1) } else { clip(name.trim()) };
     match format {
+        Format::Css | Format::Txt => return Err("code listings (css, txt) are export only".into()),
         Format::Aco => {
             let f = redrob_photo_psd::aco::parse(bytes).map_err(|e| format!("not a readable .aco swatch file: {e}"))?;
             let books = f.swatches.iter().filter(|s| matches!(s.color, AcoColor::Other { .. })).count();
@@ -528,6 +704,10 @@ pub fn read_file(bytes: &[u8], format: Format, group: &str) -> std::result::Resu
 pub fn write_file(groups: &[Group<Swatch>], format: Format) -> std::result::Result<(Vec<u8>, usize, Vec<String>), String> {
     let mut warnings = Vec::new();
     match format {
+        Format::Css | Format::Txt => {
+            let (bytes, n) = write_code(groups, format, &SwatchConv::builtin());
+            Ok((bytes, n, warnings))
+        }
         Format::Aco => {
             let swatches: Vec<AcoSwatch> =
                 groups.iter().flat_map(|g| g.items.iter()).map(|s| AcoSwatch { name: s.name.clone(), color: to_aco(&s.color) }).collect();
@@ -569,14 +749,100 @@ pub fn write_file(groups: &[Group<Swatch>], format: Format) -> std::result::Resu
     }
 }
 
+/// Adds `colors` (named by their hex value) as a new swatch group `group` (made unique).
+fn add_group(s: &mut Session, group: &str, colors: &[[f32; 3]], cmd: &str) -> Result<Value> {
+    if s.presets.swatches.len() >= MAX_GROUPS {
+        return Err(bad(cmd, "too many swatch groups"));
+    }
+    if total(&s.presets.swatches) + colors.len() > MAX_SWATCHES {
+        return Err(bad(cmd, format!("the Swatches panel is full ({MAX_SWATCHES} swatches)")));
+    }
+    let name = unique_group(&s.presets.swatches, group);
+    let items: Vec<Swatch> = colors.iter().map(|c| Swatch::new(&hex(*c), SwatchColor::Rgb(*c))).collect();
+    let count = items.len();
+    s.presets.swatches.push(Group::new(&name, items));
+    s.presets_changed();
+    Ok(json!({"group": name, "count": count}))
+}
+
+fn colors_param(p: &Value, default: usize, cmd: &str) -> Result<usize> {
+    match p.get("colors") {
+        None | Some(Value::Null) => Ok(default),
+        Some(v) => {
+            Ok(v.as_f64().filter(|n| n.is_finite() && (2.0..=256.0).contains(n)).ok_or_else(|| bad(cmd, "`colors` must be a number from 2 to 256"))? as usize)
+        }
+    }
+}
+
+/// Swatches › Import from Image: the active (or named) pixel layer's dominant colours, found
+/// by the Indexed Color palette builders, as a new group.
+fn from_image(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.fromImage";
+    use redrob_photo_algo::quantize::{Forced, PaletteKind, build_palette};
+    let colors = colors_param(p, 16, CMD)?;
+    let kind = match str_param(p, "method").unwrap_or("perceptual") {
+        "adaptive" => PaletteKind::Adaptive,
+        "selective" => PaletteKind::Selective,
+        "perceptual" => PaletteKind::Perceptual,
+        m => return Err(bad(CMD, format!("unknown method `{m}` (perceptual|selective|adaptive)"))),
+    };
+    let id = crate::commands::layer_param(s, p)?;
+    let d = s.active().ok_or(crate::EngineError::NoDocument)?;
+    let l = d.doc.layer(id).ok_or(crate::EngineError::NoLayer(id))?;
+    let surf = l.surface().ok_or_else(|| bad(CMD, "the layer has no pixels"))?;
+    let area = surf.content_bounds().intersect(&d.doc.bounds());
+    if area.is_empty() {
+        return Err(bad(CMD, "the layer has no pixels"));
+    }
+    let mut px = vec![[0.0f32; 4]; (area.width() as usize) * (area.height() as usize)];
+    surf.read_rgba_into(area, &mut px);
+    // Fully transparent pixels say nothing about the colours.
+    px.retain(|p| p[3] > 0.0);
+    if px.is_empty() {
+        return Err(bad(CMD, "the layer is fully transparent"));
+    }
+    let pal = build_palette(&px, kind, colors, Forced::None).map_err(|e| bad(CMD, e))?;
+    let rgb: Vec<[f32; 3]> = pal.iter().map(|c| c.map(|v| f32::from(v) / 255.0)).collect();
+    let group = name_param(p, "group", CMD)?.unwrap_or_else(|| format!("{} Colors", l.name));
+    add_group(s, &group, &rgb, CMD)
+}
+
+/// Swatches › Import from Gradient: `colors` evenly spaced samples of a gradient preset as a
+/// new group.
+fn from_gradient(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.fromGradient";
+    let colors = colors_param(p, 8, CMD)?;
+    let name = str_param(p, "gradient").ok_or_else(|| bad(CMD, "`gradient` names a gradient preset"))?;
+    let (gi, ii) = find(&s.presets.gradients, name, str_param(p, "gradientGroup")).ok_or_else(|| bad(CMD, format!("no gradient preset \"{name}\"")))?;
+    let stops = s.presets.gradients[gi].items[ii].resolve(s.tools.foreground, s.tools.background);
+    let sample = |t: f32| -> [f32; 3] {
+        let Some(first) = stops.first() else { return [0.0; 3] };
+        if t <= first.0 {
+            return [first.1[0], first.1[1], first.1[2]];
+        }
+        for w in stops.windows(2) {
+            let ((t0, a), (t1, b)) = (w[0], w[1]);
+            if t <= t1 {
+                let u = if t1 > t0 { (t - t0) / (t1 - t0) } else { 1.0 };
+                return std::array::from_fn(|i| a[i] + (b[i] - a[i]) * u);
+            }
+        }
+        let last = stops[stops.len() - 1].1;
+        [last[0], last[1], last[2]]
+    };
+    let rgb: Vec<[f32; 3]> = (0..colors).map(|i| sample(i as f32 / (colors - 1) as f32).map(unit)).collect();
+    let group = name_param(p, "group", CMD)?.unwrap_or_else(|| format!("{name} Colors"));
+    add_group(s, &group, &rgb, CMD)
+}
+
 fn import(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "swatches.import";
     let (bytes, stem) = crate::preset_import_cmds::file_bytes(p, CMD, ".aco or .ase file")?;
     let format = match str_param(p, "format") {
-        Some(f) => Format::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase)")))?,
+        Some(f) => Format::parse(f).filter(|f| f.is_swatch_file()).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase)")))?,
         None if bytes.starts_with(redrob_photo_psd::ase::SIGNATURE) => Format::Ase,
         None if matches!(bytes.get(..2), Some([0, 1] | [0, 2])) => Format::Aco,
-        None => ext_format(str_param(p, "path")).ok_or_else(|| bad(CMD, "not an .aco or .ase swatch file"))?,
+        None => ext_format(str_param(p, "path")).filter(|f| f.is_swatch_file()).ok_or_else(|| bad(CMD, "not an .aco or .ase swatch file"))?,
     };
     let mode = str_param(p, "mode").unwrap_or("append");
     let replace = match mode {
@@ -634,7 +900,7 @@ fn export(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "swatches.export";
     let path = str_param(p, "path");
     let format = match str_param(p, "format") {
-        Some(f) => Format::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase)")))?,
+        Some(f) => Format::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|css|txt)")))?,
         None => ext_format(path).unwrap_or(Format::Aco),
     };
     let mut groups: Vec<Group<Swatch>> = match name_param(p, "group", CMD)? {
@@ -663,7 +929,13 @@ fn export(s: &mut Session, p: &Value) -> Result<Value> {
     if total(&groups) == 0 {
         return Err(bad(CMD, "no swatches to export"));
     }
-    let (bytes, count, warnings) = write_file(&groups, format).map_err(|e| bad(CMD, e))?;
+    let (bytes, count, warnings) = match format {
+        Format::Css | Format::Txt => {
+            let (bytes, count) = write_code(&groups, format, &SwatchConv::new(s));
+            (bytes, count, Vec::new())
+        }
+        _ => write_file(&groups, format).map_err(|e| bad(CMD, e))?,
+    };
     let mut out = json!({"format": format.id(), "count": count, "bytes": bytes.len(), "warnings": warnings});
     match path {
         Some(path) => {
@@ -796,11 +1068,71 @@ pub fn specs() -> Vec<CommandSpec> {
             journal: true,
         },
         CommandSpec {
+            id: "swatches.fromImage",
+            label: "Import Swatches from Image…",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"colors":2..256=16,"method":"perceptual|selective|adaptive"="perceptual","layer":id? (pixel layer, default active),"group":name?="<layer> Colors"} → {group,count}"##,
+            enabled: always,
+            run: from_image,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.fromGradient",
+            label: "Import Swatches from Gradient…",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"gradient":preset name,"gradientGroup":name?,"colors":2..256=8,"group":name?="<gradient> Colors"} → {group,count}"##,
+            enabled: always,
+            run: from_gradient,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.saveToDocument",
+            label: "Save Swatch Group to Document",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"group":name,"palette":name?=group} → {palette,count,palettes} — the group becomes a palette stored in the document (a history step)"##,
+            enabled: has_doc,
+            run: save_to_document,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.loadFromDocument",
+            label: "Load Document Palettes",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"palette":name?=all} → {groups,count,skipped} — the document's palettes join the library as groups"##,
+            enabled: has_doc_palettes,
+            run: load_from_document,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.deleteDocumentPalette",
+            label: "Delete Document Palette",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"palette":name} → {palettes}"##,
+            enabled: has_doc_palettes,
+            run: delete_document_palette,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.documentPalettes",
+            label: "List Document Palettes",
+            menu: &[],
+            shortcut: None,
+            params: "{} → {palettes:[{name,swatches}],count}",
+            enabled: has_doc,
+            run: document_palettes,
+            journal: false,
+        },
+        CommandSpec {
             id: "swatches.export",
             label: "Export Swatches…",
             menu: &[],
             shortcut: None,
-            params: r##"{"format":"aco|ase"?=from path, else aco,"path":file? (else the bytes come back as base64 `data`),"group":name? (only that group),"swatches":[names]? (only these)} → {format,count,bytes,warnings,path|data}"##,
+            params: r##"{"format":"aco|ase|css|txt"?=from path, else aco,"path":file? (else the bytes come back as base64 `data`),"group":name? (only that group),"swatches":[names]? (only these)} → {format,count,bytes,warnings,path|data} (css: custom properties on :root; txt: one hex colour per line)"##,
             enabled: has_swatches,
             run: export,
             journal: true,

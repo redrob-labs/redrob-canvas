@@ -215,6 +215,7 @@ pub fn resolve_brush(s: &Session, p: &Value, cmd: &str) -> Result<BrushSettings>
     b.color_cmyk = s.tools.picked_cmyk([b.color[0], b.color[1], b.color[2]]).map(|k| ([b.color[0], b.color[1], b.color[2]], k));
     b.background = s.tools.background;
     b.erase = flag(p, "erase", false);
+    b.anti_erase = b.erase && flag(p, "antiErase", false);
     b.seed = match p.get("seed").and_then(Value::as_u64) {
         Some(v) => v,
         None => redrob_photo_paint::rng::seed_from_bytes(p.get("points").map(|v| v.to_string()).unwrap_or_default().as_bytes()),
@@ -266,7 +267,7 @@ pub(crate) fn doc_cmyk_space(s: &Session) -> Option<std::sync::Arc<redrob_photo_
 fn stroke_with(s: &mut Session, cmd: &str, p: &Value, label: &str, brush: BrushSettings, pts: Vec<StrokePoint>, auto_erase: bool) -> Result<Value> {
     let bg = s.tools.background;
     let fg = brush.color;
-    let symmetry = s.active().and_then(|st| st.symmetry.clone());
+    let symmetry = s.active().and_then(crate::symmetry_cmds::stroke_passes);
     let (id, brush, zoom) = stroke_target(s, p, brush)?;
     let cmyk = doc_cmyk_space(s);
     // The live stroke the canvas already rendered for exactly these params: take its pixels
@@ -510,7 +511,7 @@ impl LiveStroke {
             apply_auto_erase(&mut brush, surf, pts.first(), fg, s.tools.background);
         }
         let renderer = StrokeRenderer::new(&brush, Some(surf.format()), zoom);
-        let symmetry = s.active().and_then(|st| st.symmetry.clone());
+        let symmetry = s.active().and_then(crate::symmetry_cmds::stroke_passes);
         let mirrors: Vec<_> = (0..symmetry.as_ref().map_or(0, |s| s.mirror_count())).map(|_| StrokeRenderer::new(&brush, Some(surf.format()), zoom)).collect();
         let mirror_distinct = vec![false; mirrors.len()];
         let pre = surf.clone();
@@ -644,6 +645,8 @@ fn mixer_brush(s: &mut Session, p: &Value) -> Result<Value> {
         mix: pct(p, "mix", bm.mix * 100.0),
         flow: pct(p, "flow", bm.flow * 100.0),
         sample_all_layers: flag(p, "sampleAllLayers", bm.sample_all_layers),
+        smear: flag(p, "smear", bm.smear),
+        smudge_radius: p.get("smudgeRadius").and_then(Value::as_f64).map_or(bm.smudge_radius, |v| v.clamp(0.5, 3.0) as f32),
     };
     let sample_all = m.sample_all_layers;
     let (clean, load_after) = (flag(p, "cleanAfterStroke", true), flag(p, "loadAfterStroke", true));
@@ -1114,7 +1117,7 @@ pub fn specs() -> Vec<CommandSpec> {
         spec!(
             "paint.pencil",
             "Pencil",
-            r##"{"points":[[x,y,pressure?,tiltX?,tiltY?,rotation?,timeMs?,wheel?],…],"brush":{…}?,"preset":name?,"size":0.5..5000 px?,"opacity":0..1?,"color":"#rrggbb"?=foreground,"mode":"normal|multiply|screen|…|clear (erases with this brush)"="normal","erase":bool?,"block":bool=false (a hard 16×16 screen-px square, 16/zoom doc px; size, opacity, flow, hardness and dynamics ignored: the Eraser's Block mode),"zoom":view zoom=1,"autoErase":bool=false,"seed":u64?,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
+            r##"{"points":[[x,y,pressure?,tiltX?,tiltY?,rotation?,timeMs?,wheel?],…],"brush":{…}?,"preset":name?,"size":0.5..5000 px?,"opacity":0..1?,"color":"#rrggbb"?=foreground,"mode":"normal|multiply|screen|…|clear (erases with this brush)"="normal","erase":bool?,"antiErase":bool=false (with erase: restore erased pixels by raising alpha),"block":bool=false (a hard 16×16 screen-px square, 16/zoom doc px; size, opacity, flow, hardness and dynamics ignored: the Eraser's Block mode),"zoom":view zoom=1,"autoErase":bool=false,"seed":u64?,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
             has_paintable,
             pencil,
             true
@@ -1122,7 +1125,7 @@ pub fn specs() -> Vec<CommandSpec> {
         spec!(
             "paint.mixerBrush",
             "Mixer Brush",
-            r##"{"points":[…],"brush":{…}?,"preset":name?,"size":0.5..5000 px?,"wet":0..100=brush.mixer.wet,"load":0..100=brush.mixer.load,"mix":0..100=brush.mixer.mix,"flow":0..100=brush.mixer.flow,"color":"#rrggbb"?=foreground,"sampleAllLayers":bool=brush.mixer.sampleAllLayers,"cleanAfterStroke":bool=true,"loadAfterStroke":bool=true,"seed":u64?}"##,
+            r##"{"points":[…],"brush":{…}?,"preset":name?,"size":0.5..5000 px?,"wet":0..100=brush.mixer.wet,"load":0..100=brush.mixer.load,"mix":0..100=brush.mixer.mix,"flow":0..100=brush.mixer.flow,"color":"#rrggbb"?=foreground,"sampleAllLayers":bool=brush.mixer.sampleAllLayers,"smear":bool=brush.mixer.smear (drag pixels along; off = dulling with the average colour),"smudgeRadius":0.5..3=brush.mixer.smudgeRadius (sampled area as a multiple of the dab),"cleanAfterStroke":bool=true,"loadAfterStroke":bool=true,"seed":u64?}"##,
             has_paintable,
             mixer_brush,
             true

@@ -200,7 +200,6 @@
 	Apply Last Effect	Applica ultimo effetto
 	Apply Last Gradient	Applica ultima sfumatura
 	Apply Paragraph Style	Applica stile paragrafo
-	Apply SVG Filter…	Applica filtro SVG…
 	Apply to All	Applica a tutti
 	Apply to All ({count} more missing)	Applica a tutti (ne mancano altri {count})
 	Arc	Arco
@@ -4378,3 +4377,168 @@ lighting	Light	Luce
 	Softness	Morbidezza
 	Ambient Light	Luce ambientale
 	Light behind the object	Luce dietro l'oggetto
+	Bend…	Piega…
+	Bend	Piega
+	B-Spline…	B-spline…
+	B-Spline	B-spline
+	Spiro Spline…	Spline Spiro…
+	Spiro Spline	Spline Spiro
+	Dashed Stroke…	Traccia tratteggiata…
+	Dashed Stroke	Traccia tratteggiata
+	Taper Stroke…	Traccia rastremata…
+	Taper Stroke	Traccia rastremata
+	Spine	Dorsale
+	Width Scale	Scala larghezza
+	Cusps	Mantieni cuspidi
+	Dashes	Tratti
+	Hole Factor	Fattore vuoto
+	Unify	Unifica
+	Half Start	Metà all'inizio
+	Half End	Metà alla fine
+	Start Offset	Scostamento iniziale
+	End Offset	Scostamento finale
+	Stroke To Path	Traccia in tracciato
+	Start Taper	Rastremazione iniziale
+	End Taper	Rastremazione finale
+	Smoothing	Smussatura
+	Direction	Direzione
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Parassiale
+	Triangle In	Triangolo in entrata
+	Triangle Out	Triangolo in uscita
+	From Clipboard	Dagli appunti
+	Segment:	Segmento:
+	Curve	Curva
+	Make Selected Segments Lines	Converti i segmenti selezionati in linee
+	Make Selected Segments Curves	Converti i segmenti selezionati in curve
+	Show Handles	Mostra maniglie
+	Shape Along Stroke	Forma lungo la traccia
+	Segment Type	Tipo di segmento
+	Next Anchor	Punto di ancoraggio successivo
+	Grow Anchor Selection	Estendi la selezione dei punti di ancoraggio
+	Touch Select Anchors	Seleziona i punti di ancoraggio toccati
+	Make Segment Line	Converti segmento in linea
+	Make Segment Curve	Converti segmento in curva
+	X:	X:
+	Y:	Y:
+	Convert Selected Anchor Points to Symmetric	Converti i punti di ancoraggio selezionati in punti simmetrici
+	Convert Selected Anchor Points to Auto-Smooth	Converti i punti di ancoraggio selezionati in punti curvi automatici
+	Add Anchor Points At	Aggiungi punti di ancoraggio in
+	Add Anchor Points at Extremes	Aggiungi punti di ancoraggio agli estremi
+	Minimum X	X minima
+	Maximum X	X massima
+	Minimum Y	Y minima
+	Maximum Y	Y massima
+	Pie	Settore
+	Chord	Segmento
+	Close As:	Chiudi come:
+	Whole Ellipse	Ellisse intera
+	Corners:	Vertici:
+	Spoke Ratio:	Rapporto raggi:
+	Rounded:	Arrotondamento:
+	Randomized:	Casualità:
+	Decay:	Decadimento:
+	Segments:	Segmenti:
+	Star Properties:	Proprietà della stella:
+	Spiral Properties:	Proprietà della spirale:
+	Hairline	Linea sottile
+	Mid markers:	Marcatori intermedi:
+	Auto, start reversed	Automatico, inizio invertito
+	Fixed angle	Angolo fisso
+	Scale with stroke	Scala con la traccia
+	ID:	ID:
+	Label:	Etichetta:
+	Title:	Titolo:
+	Hyperlink:	Collegamento:
+	Clone	Clone
+	Create Clone	Crea clone
+	Unlink Clone	Scollega clone
+	Relink to Copied	Ricollega all’oggetto copiato
+	Select Original	Seleziona originale
+	Object Properties…	Proprietà oggetto…
+	Text content	Contenuto del testo
+	ID	ID
+	Label	Etichetta
+	Title	Titolo
+	Object type	Tipo di oggetto
+	Current layer	Livello attuale
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Aggiungi attributo
+	Add Filter	Aggiungi filtro
+	Add Input	Aggiungi ingresso
+	Add Primitive	Aggiungi primitiva
+	Axonometric	Assonometrica
+	Axonometric Angle X	Angolo assonometrico X
+	Axonometric Angle Z	Angolo assonometrico Z
+	Canvas Orientation	Orientamento della tela
+	Collapse All	Comprimi tutto
+	Color Matrix	Matrice colore
+	Color Matrix…	Matrice colore…
+	Component Transfer	Trasferimento componenti
+	Composite	Composizione
+	Convolve Matrix	Matrice di convoluzione
+	Delete Node	Elimina nodo
+	Diffuse Lighting	Illuminazione diffusa
+	Displacement Map	Mappa di spostamento
+	Drop Shadow Preset	Predefinito ombra esterna
+	Duplicate Node	Duplica nodo
+	Duplicate Primitive	Duplica primitiva
+	Edge Detection	Rilevamento bordi
+	Edge Threshold	Soglia bordi
+	Expand All	Espandi tutto
+	Fill Rendered Pixels	Riempi pixel renderizzati
+	Filter Editor	Editor filtri
+	Filter Graph	Grafo filtro
+	Filter Region	Area filtro
+	Flood	Riempimento
+	Grid Kind	Tipo di griglia
+	Hide Palette Strip	Nascondi barra palette
+	Input	Ingresso
+	Large Chips	Campioni grandi
+	Lower Node	Abbassa nodo
+	Mass:	Massa:
+	Medium Chips	Campioni medi
+	Modular	Modulare
+	Modular Gap X	Spazio modulare X
+	Modular Gap Y	Spazio modulare Y
+	Morphology	Morfologia
+	No colours in this palette	Nessun colore in questa palette
+	No primitives. Add one below.	Nessuna primitiva. Aggiungine una sotto.
+	Node Data	Dati nodo
+	Palette Strip	Barra palette
+	Palette Strip Menu	Menu barra palette
+	Previous Result	Risultato precedente
+	Primitive	Primitiva
+	Quantization	Quantizzazione
+	Raise Node	Alza nodo
+	Rectangular	Rettangolare
+	Remove Attribute	Rimuovi attributo
+	Remove Filter	Rimuovi filtro
+	Remove Input	Rimuovi ingresso
+	Remove Primitive	Rimuovi primitiva
+	Reset Canvas Orientation	Ripristina orientamento tela
+	Result:	Risultato:
+	Select a node to edit its attributes.	Seleziona un nodo per modificarne gli attributi.
+	Small Chips	Campioni piccoli
+	Specular Lighting	Illuminazione speculare
+	The document has no layers.	Il documento non ha livelli.
+	The primitives of a filter graph are edited in the Filter Editor panel.	Le primitive di un grafo filtro si modificano nel pannello Editor filtri.
+	Thinning:	Assottigliamento:
+	Tremor:	Tremolio:
+	Turbulence	Turbolenza
+	Wiggle:	Oscillazione:
+	XML Editor	Editor XML
+	attribute	attributo
+	No Filter	Nessun filtro
+	The object has no SVG filter graph yet.	L’oggetto non ha ancora un grafo filtro SVG.
+	Select an object to edit its SVG filter.	Seleziona un oggetto per modificarne il filtro SVG.
+	Open a document to see its element tree.	Apri un documento per vederne l’albero degli elementi.
+@msg	a clone can't be linked to itself	un clone non può essere collegato a sé stesso
+@msg	copy an object first (Edit › Copy)	copia prima un oggetto (Modifica › Copia)
+@msg	no such object	nessun oggetto con questo nome
+@msg	nothing to clone	niente da clonare
+@msg	select a clone	seleziona un clone
+@msg	select an object	seleziona un oggetto
+@msg	the copied object is no longer in this document	l’oggetto copiato non è più in questo documento
+	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Simula» stampa le sovrastampe come le mostra l’Anteprima sovrastampa; le separazioni le mantengono sempre. Una preimpostazione converte la trasparenza prima della stampa (i file PostScript la convertono sempre).

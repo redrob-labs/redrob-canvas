@@ -276,7 +276,7 @@ fn select_point((id, si, ai): (NodeId, usize, usize)) -> Action {
 /// Toggle anchor `(id, si, ai)` of a selected path between smooth and corner.
 fn toggle(cx: &ToolContext, (id, si, ai): (NodeId, usize, usize)) -> Option<Action> {
     let a = subpath(cx, id, si)?.anchors.get(ai)?;
-    let to = if a.kind == AnchorKind::Smooth { "corner" } else { "smooth" };
+    let to = if a.kind.collinear() { "corner" } else { "smooth" };
     Some(Action::Exec("path.convertAnchor".into(), json!({"id": id.0, "subpath": si, "anchor": ai, "to": to})))
 }
 

@@ -762,6 +762,27 @@ pub struct Guides {
     pub colors: Vec<GuideColor>,
 }
 
+/// A grid configured for this image (Image › Configure Grid), overriding the Preferences grid
+/// while it is set: spacing and offset in document pixels, subdivisions per major cell.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct DocGrid {
+    /// Major gridline spacing in document pixels (`[x, y]`).
+    pub spacing: [f64; 2],
+    /// Position of the first gridline from the image's top-left, document pixels (`[x, y]`).
+    pub offset: [f64; 2],
+    /// Minor lines per major cell (1 = none).
+    pub subdivisions: u32,
+    /// Grid colour as `#rrggbb`; empty = the Preferences colour.
+    pub color: String,
+}
+
+impl Default for DocGrid {
+    fn default() -> Self {
+        Self { spacing: [72.0, 72.0], offset: [0.0, 0.0], subdivisions: 4, color: String::new() }
+    }
+}
+
 /// One guide's own colour. It is keyed by orientation and position, not by index, so code that
 /// drops or reorders guide positions (crop, artboards, guide layouts) can never move a colour onto
 /// another guide: a guide whose entry no longer matches simply uses the preference colour.
@@ -865,6 +886,8 @@ pub struct Document {
     pub layers: Vec<Layer>,
     pub channels: Vec<AlphaChannel>,
     pub guides: Guides,
+    /// Image › Configure Grid: this image's own grid, overriding the Preferences grid when set.
+    pub grid: Option<DocGrid>,
     /// The rulers' zero point in document pixels (`[x, y]`), dragged from the ruler corner. The
     /// rulers, the Info panel and other position readouts measure from it; `[0, 0]` (the
     /// image's top-left) is the default.
@@ -915,6 +938,28 @@ pub struct Document {
     /// How the document's lossy file was encoded (its JPEG quality, WebP lossy or lossless), so
     /// a save writes it back the same way rather than at fixed defaults.
     pub file_encoding: FileEncoding,
+    /// Palettes stored with the document (Window › Swatches › Save Group to Document): swatch
+    /// groups that travel with the file instead of the preset library.
+    pub palettes: Vec<DocPalette>,
+}
+
+/// A palette kept in the document: a named list of swatches.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DocPalette {
+    pub name: String,
+    pub swatches: Vec<DocSwatch>,
+}
+
+/// One swatch of a document palette. `color` is the swatch colour as the Swatches library
+/// serialises it (`{"model": …, "values": …}`), so every colour model the library knows survives
+/// the round trip; `spot` marks a spot colour.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DocSwatch {
+    pub name: String,
+    pub color: serde_json::Value,
+    pub spot: bool,
 }
 
 /// The encoder settings a document's file was opened or saved with: what File › Save and the
@@ -956,6 +1001,7 @@ impl Document {
             layers: Vec::new(),
             channels: Vec::new(),
             guides: Guides::default(),
+            grid: None,
             ruler_origin: [0.0, 0.0],
             selection: None,
             metadata: Metadata::default(),
@@ -978,6 +1024,7 @@ impl Document {
             variables: Variables::default(),
             timeline: None,
             file_encoding: FileEncoding::default(),
+            palettes: Vec::new(),
         }
     }
 

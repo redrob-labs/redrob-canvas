@@ -40,6 +40,9 @@ pub struct MagneticLasso {
     pub doc: u64,
     /// An ⌥-drag is drawing a freehand segment.
     pub freehand: bool,
+    /// A fastening point (index into `anchors`) being dragged to a new place: the border on both
+    /// sides of it follows the edges again when it lands.
+    pub dragging: Option<usize>,
 }
 
 impl MagneticLasso {
@@ -128,6 +131,11 @@ fn down(app: &mut PhotocraftApp, p: [f64; 2], pressure: f32, mods: Modifiers) {
         app.ui.magnetic = MagneticLasso { path: vec![start], anchors: vec![0], trail: vec![p], mode, doc, ..Default::default() };
         return;
     }
+    if let Some(k) = anchor_at(app, p) {
+        // On a fastening point (not the first or the last): drag it to move it.
+        app.ui.magnetic.dragging = Some(k);
+        return;
+    }
     if near_start(app, p) {
         // On the first point: the border closes there.
         let m = &app.ui.magnetic;
@@ -163,6 +171,10 @@ fn down(app: &mut PhotocraftApp, p: [f64; 2], pressure: f32, mods: Modifiers) {
 
 fn moved(app: &mut PhotocraftApp, p: [f64; 2], pressure: f32) {
     if !app.ui.magnetic.active() {
+        return;
+    }
+    if let Some(k) = app.ui.magnetic.dragging {
+        move_anchor(app, k, p, settings(app, pressure));
         return;
     }
     if app.ui.magnetic.freehand {
@@ -283,9 +295,53 @@ fn fasten_live(app: &mut PhotocraftApp) {
     }
 }
 
+/// The interior fastening point under `p` (index into `anchors`), if any: the first point closes
+/// the border and the last one is where the live segment starts, so neither is draggable.
+fn anchor_at(app: &PhotocraftApp, p: [f64; 2]) -> Option<usize> {
+    let m = &app.ui.magnetic;
+    let r = close_radius(app);
+    let n = m.anchors.len();
+    if n < 3 {
+        return None;
+    }
+    (1..n - 1)
+        .filter(|&k| m.path.get(m.anchors[k]).is_some_and(|&a| dist(a, p) <= r))
+        .min_by(|&a, &b| dist(m.path[m.anchors[a]], p).total_cmp(&dist(m.path[m.anchors[b]], p)))
+}
+
+/// Moves fastening point `k` to the edge near `p` and traces the border from its neighbours to
+/// it again, so the segments on both sides follow the edges from the new place.
+fn move_anchor(app: &mut PhotocraftApp, k: usize, p: [f64; 2], s: Settings) {
+    let (prev_i, next_i) = {
+        let m = &app.ui.magnetic;
+        if k == 0 || k + 1 >= m.anchors.len() {
+            return;
+        }
+        (m.anchors[k - 1], m.anchors[k + 1])
+    };
+    let (Some(&prev), Some(&next)) = (app.ui.magnetic.path.get(prev_i), app.ui.magnetic.path.get(next_i)) else { return };
+    let q = snap(app, p, s);
+    let seg1 = trace(app, prev, q, &[prev, q], s);
+    let seg2 = trace(app, q, next, &[q, next], s);
+    let m = &mut app.ui.magnetic;
+    let mut path: Vec<[f64; 2]> = m.path[..=prev_i].to_vec();
+    path.extend(seg1.into_iter().skip(1));
+    let new_this = path.len() - 1;
+    path.extend(seg2.into_iter().skip(1));
+    let new_next = path.len() - 1;
+    path.extend(m.path.iter().skip(next_i + 1).copied());
+    let shift = new_next as i64 - next_i as i64;
+    m.anchors[k] = new_this;
+    for a in m.anchors.iter_mut().skip(k + 1) {
+        *a = (*a as i64 + shift).max(0) as usize;
+    }
+    m.path = path;
+}
+
 /// An ⌥-drag ends: where it stopped is a fastening point.
 fn end_freehand(app: &mut PhotocraftApp) {
     let m = &mut app.ui.magnetic;
+    m.dragging = None;
     if std::mem::take(&mut m.freehand) && m.anchors.last().is_some_and(|&a| a + 1 < m.path.len()) {
         m.anchors.push(m.path.len() - 1);
     }

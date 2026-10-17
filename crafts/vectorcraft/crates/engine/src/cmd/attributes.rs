@@ -22,7 +22,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Attributes",
             [],
             None,
-            "{overprintFill?: bool, overprintStroke?: bool (aimed as object.setOverprint's fill and stroke, item? too), showCenter?: bool (the canvas shows the selected object's centre point), imageMap?: \"none\"|\"rectangle\"|\"polygon\", url?: string (\"\" removes it; SVG export links the object), note?: string, ids?|id?, item?: appearance item index|null, target?: \"object\"|\"contents\"} set the Attributes panel's values on ids or the selection, as one undo step; a URL given joins the recent URLs (attributes.info) → {changed: objects}",
+            "{overprintFill?: bool, overprintStroke?: bool (aimed as object.setOverprint's fill and stroke, item? too), showCenter?: bool (the canvas shows the selected object's centre point), imageMap?: \"none\"|\"rectangle\"|\"polygon\", url?: string (\"\" removes it; SVG export links the object), note?: string, title?: string, description?: string (Object Properties; SVG export writes <title> and <desc>; \"\" removes them), ids?|id?, item?: appearance item index|null, target?: \"object\"|\"contents\"} set the Attributes panel's values on ids or the selection, as one undo step; a URL given joins the recent URLs (attributes.info) → {changed: objects}",
             has_doc,
             set
         ),
@@ -87,6 +87,8 @@ pub(super) fn fill_info(d: &Document, info: &mut AttributesInfo) {
     info.image_map = same(attrs().map(|a| a.image_map));
     info.url = same(attrs().map(|a| a.url));
     info.note = same(attrs().map(|a| a.note));
+    info.title = same(attrs().map(|a| a.title));
+    info.description = same(attrs().map(|a| a.description));
     let mut all = vec![];
     nodes.iter().filter_map(|n| fill_rule_owner(d, n.id)).for_each(|n| ruled(n, &mut all));
     info.fill_rule = same(all.into_iter().map(|(_, r)| r));
@@ -102,6 +104,8 @@ struct Edits {
     image_map: Option<ImageMap>,
     url: Option<String>,
     note: Option<String>,
+    title: Option<String>,
+    description: Option<String>,
 }
 
 impl Edits {
@@ -117,11 +121,18 @@ impl Edits {
                 .transpose()?,
             url: text("url")?,
             note: text("note")?,
+            title: text("title")?,
+            description: text("description")?,
         })
     }
 
     fn is_empty(&self) -> bool {
-        self.show_center.is_none() && self.image_map.is_none() && self.url.is_none() && self.note.is_none()
+        self.show_center.is_none()
+            && self.image_map.is_none()
+            && self.url.is_none()
+            && self.note.is_none()
+            && self.title.is_none()
+            && self.description.is_none()
     }
 
     /// `n`'s attributes with the edits applied (Show Center kept only where it isn't the default).
@@ -139,6 +150,12 @@ impl Edits {
         if let Some(v) = &self.note {
             a.note.clone_from(v);
         }
+        if let Some(v) = &self.title {
+            a.title.clone_from(v);
+        }
+        if let Some(v) = &self.description {
+            a.description.clone_from(v);
+        }
         a
     }
 }
@@ -148,7 +165,7 @@ fn set(s: &mut Session, p: &Value) -> Result<Value> {
     let jobs = overprint_jobs(s, p, C, ["overprintFill", "overprintStroke"])?;
     let edits = Edits::parse(p)?;
     if jobs.is_empty() && edits.is_empty() {
-        return Err(bad(C, "give overprintFill, overprintStroke, showCenter, imageMap, url or note"));
+        return Err(bad(C, "give overprintFill, overprintStroke, showCenter, imageMap, url, note, title or description"));
     }
     let ids = targets(s, p)?;
     let changed = edit_counted(s, "Attributes", |d| {

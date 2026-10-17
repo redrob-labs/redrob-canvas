@@ -3157,3 +3157,255 @@ curves	Smooth	Сгладить
 	set name	имя набора
 	{set} (modified)	{set} (изменён)
 	Random	Случайно
+	Desaturate…	Обесцветить…
+	Anti-erase	Антистирание
+	Restore erased pixels instead of erasing	Восстанавливать стёртые пиксели вместо стирания
+	Luma	Яркость (luma)
+	Value	Значение
+	Grow through corners as well as edges	Расти через углы, а не только через рёбра
+	By:	По:
+	Composite	Составной
+	Square Gradient	Квадратный градиент
+	Conical Gradient (symmetric)	Конический градиент (симметричный)
+	Spiral Gradient (clockwise)	Спиральный градиент (по часовой)
+	Spiral Gradient (counter-clockwise)	Спиральный градиент (против часовой)
+	Line Art	Контур
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Заливает область внутри контура, закрывая мелкие разрывы и слегка заходя под линии
+	Ink below	Порог туши
+	Close gaps	Закрыть разрывы
+	Under ink	Под тушь
+	Angle Offset:	Смещение угла:
+	Read the direction of the first stroke segment for the whole stroke	Использовать направление первого сегмента для всего штриха
+	Fan Corners	Веерные углы
+	Turn sharper than this is fanned	Поворот круче этого раскладывается веером
+	Sensor:	Датчик:
+	Combine:	Объединение:
+	Auto Spacing	Автоинтервал
+	Spacing grows with the square root of the size	Интервал растёт с квадратным корнем размера
+	Auto spacing coefficient	Коэффициент автоинтервала
+	Minimum Spacing	Минимальный интервал
+	Isotropic Spacing	Изотропный интервал
+	Space dabs by the diameter alone, not by the roundness	Интервал только по диаметру, без учёта округлости
+	Mask:	Маска:
+	Fade X	Затухание X
+	Fade Y	Затухание Y
+	Lock Fade	Связать затухание
+	The vertical fade follows the horizontal one	Вертикальное затухание повторяет горизонтальное
+	Soft curve:	Мягкая кривая:
+	Spikes	Лучи
+	Randomness	Случайность
+	Anti-aliasing	Сглаживание
+	Auto Precision	Автоточность
+	Precision	Точность
+	Separate Axes	Раздельные оси
+	Scatter along and across the stroke by different amounts	Разброс вдоль и поперёк штриха разной величины
+	Along	Вдоль
+	Across	Поперёк
+	Stabilizer	Стабилизатор
+	Average the last input points; the sample count follows the speed	Усреднение последних точек ввода; число выборок зависит от скорости
+	Samples (slow)	Выборки (медленно)
+	Samples (fast)	Выборки (быстро)
+	Delay	Задержка
+	Finish Line	Дорисовать линию
+	Stabilize Sensors	Стабилизировать датчики
+	Smooth Pressure	Сглаживать нажим
+	Smooth the pen pressure along with the position	Сглаживать нажим пера вместе с положением
+	Drawing Angle	Угол рисования
+	Speed	Скорость
+	Circle	Круг
+	Erase with the current brush (Clear mode)	Стирать текущей кистью (режим Очистка)
+	Blend:	Смешивание:
+	How much of the sample goes into the current colour	Какая доля образца смешивается с текущим цветом
+	Spread	Расширение
+	Close gap	Закрыть разрыв
+	Boundary colour	Цвет границы
+	Grow the filled area outward	Расширить залитую область наружу
+	Gaps in the boundary up to this are closed	Разрывы в границе до этого размера закрываются
+	Fill until this colour instead of over similar colours	Заливать до этого цвета, а не по похожим цветам
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Проведите прямую линию кистью; Shift привязывает угол к шагам 15°
+	Free select: clicks and drags build one editable outline	Свободное выделение: щелчки и перетаскивания образуют один редактируемый контур
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Щелчок добавляет точку, перетаскивание рисует от руки · перетащите точку, чтобы переместить · {del} удаляет последнюю · {key} замыкает · Esc отменяет
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Щёлкайте, чтобы ставить точки, перетаскивайте для рисования от руки; контур можно править до замыкания
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Ланцош
+	Direction:	Направление:
+	Corrective	Корректирующее
+	Clipping:	Обрезка:
+	Adjust	Подогнать
+	Clip	Обрезать по холсту
+	Crop with Aspect	Кадрировать с пропорциями
+	Guides:	Направляющие:
+	Center Lines	Центральные линии
+	Golden Sections	Золотые сечения
+	Diagonals	Диагонали
+	Lines:	Линий:
+	Split View	Разделённый просмотр
+	No Dynamics Preset	Без набора динамики
+	Dynamics:	Динамика:
+	Applied dynamics preset {name} ({note})	Применён набор динамики {name} ({note})
+	Applied dynamics preset {name}	Применён набор динамики {name}
+	Save the brush's dynamics as a new preset	Сохранить динамику кисти как новый набор
+	Delete this dynamics preset	Удалить этот набор динамики
+	Velocity	Скорость
+	HSV Hue	Тон HSV
+	HSV Saturation	Насыщенность HSV
+	HSV Value	Значение HSV
+	Edge…	Край…
+	Algorithm	Алгоритм
+	Sobel	Собель
+	Prewitt	Превитт
+	Roberts	Робертс
+	Differential	Дифференциальный
+	Laplace	Лаплас
+	Color Temperature…	Цветовая температура…
+	Color Temperature	Цветовая температура
+	Original Temperature	Исходная температура
+	Intended Temperature	Целевая температура
+	Hue-Chroma…	Тон-цветность…
+	Hue-Chroma	Тон-цветность
+	Chroma	Цветность
+	Corner Threshold	Порог угла
+	Corner Surround	Окружение угла
+	Min Area	Мин. площадь
+	Airbrush paints only while moving (motion only)	Аэрограф рисует только при движении (только движение)
+	Airbrush motion only	Аэрограф: только движение
+	Configure Grid…	Настроить сетку…
+	Configure Grid	Настроить сетку
+	Spacing X	Интервал X
+	Spacing Y	Интервал Y
+	Offset X	Смещение X
+	Offset Y	Смещение Y
+	Active Path	Активный контур
+	Equidistance	Равные расстояния
+	Wavelet Decompose…	Вейвлет-разложение…
+	Wavelet Decompose	Вейвлет-разложение
+	Scales	Масштабы
+	Import Swatches from Image	Импорт образцов из изображения
+	Export Swatches as CSS…	Экспорт образцов как CSS…
+	Cage Transform	Трансформация по клетке
+	Antialias	Сглаживание
+	Artistic	Художественные
+	Blinds…	Жалюзи…
+	CIE lch Noise…	Шум CIE LCh…
+	Cubism…	Кубизм…
+	Decor	Декор
+	Difference of Gaussians…	Разность гауссиан…
+	Distance Map…	Карта расстояний…
+	Engrave…	Гравировка…
+	Filmstrip…	Киноплёнка…
+	Fuzzy Border…	Размытая рамка…
+	Gradient Flare…	Градиентная вспышка…
+	HSV Noise…	Шум HSV…
+	Hurl…	Разброс…
+	Image Gradient…	Градиент изображения…
+	Impressionist…	Импрессионист…
+	Kaleidoscope…	Калейдоскоп…
+	Light and Shadow	Свет и тень
+	Long Shadow…	Длинная тень…
+	Mean Curvature Blur…	Размывание средней кривизны…
+	NL Filter…	Фильтр NL…
+	Normal Map…	Карта нормалей…
+	Operation Graph…	Граф операций…
+	Page Curl…	Загнутая страница…
+	Perspective Shadow…	Перспективная тень…
+	Pick…	Выбор…
+	SLIC…	SLIC…
+	Shift…	Сдвиг…
+	Slur…	Таяние…
+	Sparkle…	Искры…
+	Supernova…	Сверхновая…
+	Symmetric Nearest Neighbor…	Симметричный ближайший сосед…
+	Tileable Blur…	Бесшовное размывание…
+	Value Propagate…	Распространение значений…
+	Van Gogh (LIC)…	Ван Гог (LIC)…
+	Video Degradation…	Видеодеградация…
+	Waterpixels…	Водяные пиксели…
+	Weave…	Плетение…
+	Xach-Effect…	Эффект Xach…
+	Animation	Анимация
+	Bayer Matrix…	Матрица Байера…
+	Blend…	Переход…
+	Burn-In…	Выжигание…
+	CML Explorer…	Исследователь CML…
+	Cell Noise…	Клеточный шум…
+	Checkerboard…	Шахматная доска…
+	Circuit…	Печатная плата…
+	Coffee Stain…	Кофейное пятно…
+	Diffraction Patterns…	Дифракционные узоры…
+	Fractal Explorer…	Исследователь фракталов…
+	Fractal Trace…	Фрактальная трассировка…
+	Fractals	Фракталы
+	Grid…	Сетка…
+	IFS Fractal…	IFS-фрактал…
+	Illusion…	Иллюзия…
+	Jigsaw…	Пазл…
+	Lava…	Лава…
+	Line Nova…	Линейная нова…
+	Linear Sinusoid…	Линейная синусоида…
+	Little Planet…	Маленькая планета…
+	Map	Карта
+	Map Object…	Спроецировать на объект…
+	Maze…	Лабиринт…
+	Optimize (for GIF)	Оптимизировать (для GIF)
+	Qbist…	Qbist…
+	Recursive Transform…	Рекурсивное преобразование…
+	Rippling…	Рябь…
+	Semi-Flatten	Полусведение
+	Simplex Noise…	Симплексный шум…
+	Sinus…	Синус…
+	Slide…	Слайд…
+	Small Tiles…	Маленькие плитки…
+	Sphere Designer…	Дизайнер сфер…
+	Spinning Globe…	Вращающийся глобус…
+	Spiral…	Спираль…
+	Spirograph…	Спирограф…
+	Stencil Carve…	Резьба по трафарету…
+	Tile Seamless	Бесшовная плитка
+	Unoptimize	Деоптимизировать
+	Waves…	Волны…
+	Binary AND	Бинарное AND
+	Binary OR	Бинарное OR
+	Binary NAND	Бинарное NAND
+	Binary NOR	Бинарное NOR
+	Binary XNOR	Бинарное XNOR
+	Binary Implication	Бинарная импликация
+	Binary Not Implication	Бинарная неимпликация
+	Binary Converse	Бинарная конверсия
+	Binary Not Converse	Бинарная неконверсия
+	Modulo	Модуло
+	Modulo Continuous	Модуло непрерывное
+	Divisive Modulo	Делительное модуло
+	Divisive Modulo Continuous	Делительное модуло непрерывное
+	Modulo Shift	Модуло со сдвигом
+	Modulo Shift Continuous	Модуло со сдвигом непрерывное
+	Freeze	Заморозка
+	Heat	Нагрев
+	Glow-Heat	Свечение-Нагрев
+	Heat-Glow	Нагрев-Свечение
+	Reflect-Freeze	Отражение-Заморозка
+	Freeze-Reflect	Заморозка-Отражение
+	Heat-Glow and Freeze-Reflect Hybrid	Гибрид Нагрев-Свечение и Заморозка-Отражение
+	Wrap Around Mode	Режим обтекания
+	Rotational Multibrush	Вращательная мультикисть
+	Mirror copies	Зеркальные копии
+	All Tags	Все метки
+	Tags	Метки
+	Assistant Tool	Инструмент «Ассистент»
+	Assistant	Ассистент
+	Parallel Ruler	Параллельная линейка
+	Vanishing Point	Точка схода
+	Perspective Grid	Перспективная сетка
+	Snap to Assistants	Привязка к ассистентам
+	Show Assistants	Показывать ассистентов
+	Delete All	Удалить все
+	Mirror painting across the vertical axis	Зеркальное рисование по вертикальной оси
+	Choose a gradient file (.grd or .ggr).	Выберите файл градиента (.grd или .ggr).
+	Save Group to Document	Сохранить группу в документе
+	Load Document Palettes	Загрузить палитры документа
+	Cumulative undo	Накопительная отмена
+	Cumulative undo interval	Интервал накопительной отмены
+	Cumulative undo duration	Длительность накопительной отмены
+	Popup palette	Всплывающая палитра
+	Smear	Размазывание
+	Smudge Radius	Радиус смазывания

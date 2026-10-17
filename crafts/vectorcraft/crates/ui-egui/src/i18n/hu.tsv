@@ -293,7 +293,6 @@
 	Apply Last Effect	Legutóbbi effektus alkalmazása
 	Apply Last Gradient	Legutóbbi színátmenet alkalmazása
 	Apply Paragraph Style	Bekezdésstílus alkalmazása
-	Apply SVG Filter…	SVG-szűrő alkalmazása…
 	Apply to All	Alkalmazás az összesre
 	Apply to All ({count} more missing)	Alkalmazás mindegyikre (további hiányzók: {count})
 	Approximate path	Útvonal közelítése
@@ -4773,3 +4772,149 @@ imageTrace	Outline	Körvonal
 	Softness	Lágyság
 	Ambient Light	Környezeti fény
 	Light behind the object	Fény az objektum mögött
+	Bend…	Hajlítás…
+	Bend	Hajlítás
+	B-Spline…	B-spline…
+	B-Spline	B-spline
+	Spiro Spline…	Spiro spline…
+	Spiro Spline	Spiro spline
+	Dashed Stroke…	Szaggatott körvonal…
+	Dashed Stroke	Szaggatott körvonal
+	Taper Stroke…	Elvékonyodó körvonal…
+	Taper Stroke	Elvékonyodó körvonal
+	Spiro	Spiro
+	BSpline	B-spline
+	Paraxial	Tengelypárhuzamos
+	Triangle In	Háromszög befelé
+	Triangle Out	Háromszög kifelé
+	From Clipboard	Vágólapról
+	Segment:	Szakasz:
+	Curve	Görbe
+	Make Selected Segments Lines	Kijelölt szakaszok egyenessé alakítása
+	Make Selected Segments Curves	Kijelölt szakaszok görbévé alakítása
+	Show Handles	Fogantyúk megjelenítése
+	Shape Along Stroke	Alak a körvonal mentén
+	Segment Type	Szakasz típusa
+	Next Anchor	Következő horgonypont
+	Grow Anchor Selection	Horgonypont-kijelölés bővítése
+	Touch Select Anchors	Érintett horgonypontok kijelölése
+	Make Segment Line	Szakasz egyenessé alakítása
+	Make Segment Curve	Szakasz görbévé alakítása
+	Convert Selected Anchor Points to Symmetric	Kijelölt horgonypontok átalakítása szimmetrikus ponttá
+	Convert Selected Anchor Points to Auto-Smooth	Kijelölt horgonypontok átalakítása automatikusan simított ponttá
+	Add Anchor Points At	Horgonypontok hozzáadása itt
+	Add Anchor Points at Extremes	Horgonypontok hozzáadása a szélső pontokon
+	Minimum X	Minimális X
+	Maximum X	Maximális X
+	Minimum Y	Minimális Y
+	Maximum Y	Maximális Y
+	Pie	Körcikk
+	Chord	Körszelet
+	Close As:	Zárás módja:
+	Whole Ellipse	Teljes ellipszis
+	Corners:	Csúcsok:
+	Spoke Ratio:	Ágarány:
+	Rounded:	Lekerekítés:
+	Randomized:	Véletlenszerűség:
+	Decay:	Csökkenés:
+	Segments:	Szakaszok:
+	Star Properties:	Csillag tulajdonságai:
+	Spiral Properties:	Spirál tulajdonságai:
+	Hairline	Hajszálvonal
+	Mid markers:	Középső jelölők:
+	Auto, start reversed	Automatikus, kezdet megfordítva
+	Fixed angle	Rögzített szög
+	Scale with stroke	Méretezés a körvonallal
+	ID:	Azonosító:
+	Label:	Címke:
+	Title:	Cím:
+	Hyperlink:	Hiperhivatkozás:
+	Clone	Klón
+	Create Clone	Klón létrehozása
+	Unlink Clone	Klón leválasztása
+	Relink to Copied	Újracsatolás a másolthoz
+	Select Original	Eredeti kijelölése
+	Object Properties…	Objektum tulajdonságai…
+	Text content	Szöveg tartalma
+	ID	Azonosító
+	Label	Címke
+	Title	Cím
+	Object type	Objektum típusa
+	Current layer	Aktuális réteg
+# Vector mode parity: SVG filters, XML editor, palette strip, grids, trace scans, calligraphy
+	Add Attribute	Attribútum hozzáadása
+	Add Filter	Szűrő hozzáadása
+	Add Input	Bemenet hozzáadása
+	Add Primitive	Primitív hozzáadása
+	Axonometric	Axonometrikus
+	Axonometric Angle X	Axonometrikus szög X
+	Axonometric Angle Z	Axonometrikus szög Z
+	Canvas Orientation	Rajzvászon tájolása
+	Collapse All	Összes összecsukása
+	Color Matrix	Színmátrix
+	Color Matrix…	Színmátrix…
+	Component Transfer	Komponensátvitel
+	Convolve Matrix	Konvolúciós mátrix
+	Delete Node	Csomópont törlése
+	Diffuse Lighting	Szórt megvilágítás
+	Displacement Map	Elmozdulástérkép
+	Drop Shadow Preset	Vetett árnyék előbeállítás
+	Duplicate Node	Csomópont duplikálása
+	Duplicate Primitive	Primitív duplikálása
+	Edge Detection	Élfelismerés
+	Edge Threshold	Élküszöb
+	Expand All	Összes kibontása
+	Fill Rendered Pixels	Renderelt képpontok kitöltése
+	Filter Editor	Szűrőszerkesztő
+	Filter Graph	Szűrőgráf
+	Filter Region	Szűrőterület
+	Flood	Kitöltés
+	Grid Kind	Rács típusa
+	Hide Palette Strip	Palettasáv elrejtése
+	Input	Bemenet
+	Large Chips	Nagy minták
+	Lower Node	Csomópont hátrébb
+	Mass:	Tömeg:
+	Medium Chips	Közepes minták
+	Modular	Moduláris
+	Modular Gap X	Modulhézag X
+	Modular Gap Y	Modulhézag Y
+	Morphology	Morfológia
+	No colours in this palette	Nincsenek színek ebben a palettában
+	No primitives. Add one below.	Nincs primitív. Adjon hozzá lentebb.
+	Node Data	Csomópont adatai
+	Palette Strip	Palettasáv
+	Palette Strip Menu	Palettasáv menü
+	Previous Result	Előző eredmény
+	Primitive	Primitív
+	Quantization	Kvantálás
+	Raise Node	Csomópont előrébb
+	Rectangular	Négyzetes
+	Remove Attribute	Attribútum eltávolítása
+	Remove Filter	Szűrő eltávolítása
+	Remove Input	Bemenet eltávolítása
+	Remove Primitive	Primitív eltávolítása
+	Reset Canvas Orientation	Rajzvászon tájolásának visszaállítása
+	Result:	Eredmény:
+	Select a node to edit its attributes.	Válasszon csomópontot az attribútumai szerkesztéséhez.
+	Small Chips	Kis minták
+	Specular Lighting	Tükröző megvilágítás
+	The document has no layers.	A dokumentumnak nincsenek rétegei.
+	The primitives of a filter graph are edited in the Filter Editor panel.	A szűrőgráf primitívjei a Szűrőszerkesztő panelen szerkeszthetők.
+	Thinning:	Vékonyodás:
+	Tremor:	Remegés:
+	Turbulence	Turbulencia
+	Wiggle:	Imbolygás:
+	XML Editor	XML-szerkesztő
+	attribute	attribútum
+	No Filter	Nincs szűrő
+	The object has no SVG filter graph yet.	Az objektumnak még nincs SVG-szűrőgráfja.
+	Select an object to edit its SVG filter.	Válasszon objektumot az SVG-szűrője szerkesztéséhez.
+	Open a document to see its element tree.	Nyisson meg egy dokumentumot az elemfájának megtekintéséhez.
+@msg	a clone can't be linked to itself	egy klón nem kapcsolható önmagához
+@msg	copy an object first (Edit › Copy)	először másolj egy objektumot (Szerkesztés › Másolás)
+@msg	no such object	nincs ilyen objektum
+@msg	nothing to clone	nincs mit klónozni
+@msg	select a clone	jelölj ki egy klónt
+@msg	select an object	jelölj ki egy objektumot
+@msg	the copied object is no longer in this document	a másolt objektum már nincs ebben a dokumentumban

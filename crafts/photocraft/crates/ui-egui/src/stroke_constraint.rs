@@ -50,6 +50,35 @@ pub fn project(origin: [f64; 2], dir: [f64; 2], p: [f64; 2]) -> [f64; 2] {
     [origin[0] + dir[0] * t, origin[1] + dir[1] * t]
 }
 
+/// Tools with a Line mode (`ToolOptions::brush_line_mode`): the painting tools that stroke live.
+pub fn has_line_mode(tool: Tool) -> bool {
+    matches!(tool, Tool::Brush | Tool::Pencil | Tool::Eraser)
+}
+
+/// Line mode: the drag's points laid out on the straight line from its first to its last point,
+/// keeping each point's pressure where it was in the drag (so the pen's pressure is replayed along
+/// the line). With `shift` the line snaps to 15° steps. Fewer than two points come back as they are.
+pub fn straighten(points: &[[f64; 3]], shift: bool) -> Vec<[f64; 3]> {
+    let (Some(a), Some(b)) = (points.first(), points.last()) else { return points.to_vec() };
+    if points.len() < 2 {
+        return points.to_vec();
+    }
+    let start = [a[0], a[1]];
+    let mut end = [b[0], b[1]];
+    if shift && let Some(d) = snapped_dir(start, end, std::f64::consts::PI / 12.0) {
+        end = project(start, d, end);
+    }
+    let n = (points.len() - 1) as f64;
+    points
+        .iter()
+        .enumerate()
+        .map(|(i, p)| {
+            let t = i as f64 / n;
+            [start[0] + (end[0] - start[0]) * t, start[1] + (end[1] - start[1]) * t, p[2]]
+        })
+        .collect()
+}
+
 /// `p` moved onto the nearest 45° ray from `origin` (the Gradient tool's ⇧).
 pub fn snap45(origin: [f64; 2], p: [f64; 2]) -> [f64; 2] {
     match snapped_dir(origin, p, std::f64::consts::FRAC_PI_4) {

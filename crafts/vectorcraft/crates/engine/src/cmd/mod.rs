@@ -6,6 +6,7 @@ mod attributes;
 mod brushsym;
 mod buildcmds;
 pub mod clipboard;
+pub(crate) mod clones;
 mod colorcmds;
 pub mod colormgmt;
 pub mod colortheme;
@@ -24,6 +25,7 @@ pub(crate) mod fileinfo;
 pub mod fileio;
 pub mod findfiles;
 pub mod flatten;
+mod floodfill;
 pub mod fontfiles;
 mod fonts;
 pub(crate) mod freeform;
@@ -43,6 +45,7 @@ pub(crate) mod maskedit;
 pub(crate) mod menucmds;
 pub(crate) mod newart;
 pub mod newdoc;
+mod nodeops;
 mod object;
 mod opacitymask;
 mod overprint;
@@ -204,8 +207,10 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(create::specs());
         v.extend(object::specs());
         v.extend(path::specs());
+        v.extend(nodeops::specs());
         v.extend(select::specs());
         v.extend(wand::specs());
+        v.extend(floodfill::specs());
         v.extend(paint::specs());
         // Split out of `paint` (M3.8); kept next to it so lists in registry order (the command
         // palette, `engine.commands`) show them where they always were.
@@ -223,6 +228,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(pathops::specs());
         v.extend(typecmd::specs());
         v.extend(menucmds::specs());
+        v.extend(clones::specs());
         v.extend(live::specs());
         v.extend(colorcmds::specs());
         v.extend(colormgmt::specs());

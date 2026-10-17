@@ -213,11 +213,35 @@ pub fn panel_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     if ui.button(tl!("Replace Swatches…")).clicked() {
         act = Some("replace");
     }
+    let has_pixels = app.session.active().and_then(|d| d.active_layer.and_then(|id| d.doc.layer(id))).is_some_and(|l| l.surface().is_some());
+    if ui.add_enabled(has_pixels, egui::Button::new(tl!("Import Swatches from Image"))).clicked() {
+        act = Some("fromImage");
+    }
     if ui.add_enabled(!empty, egui::Button::new(tl!("Export Swatches…"))).clicked() {
         act = Some("aco");
     }
     if ui.add_enabled(!empty, egui::Button::new(tl!("Export Swatches for Exchange…"))).clicked() {
         act = Some("ase");
+    }
+    if ui.add_enabled(!empty, egui::Button::new(tl!("Export Swatches as CSS…"))).clicked() {
+        act = Some("css");
+    }
+    ui.separator();
+    // Document palettes: the selected swatch's group travels with the file; the file's palettes
+    // come back into the library.
+    let has_doc = app.session.active().is_some();
+    let doc_palettes = app.session.active().map_or(0, |d| d.doc.palettes.len());
+    let selected_group = app
+        .ui
+        .presets_ui
+        .selected
+        .get(PANEL)
+        .and_then(|name| app.session.presets.swatches.iter().find(|g| g.items.iter().any(|sw| sw.name == *name)).map(|g| g.name.clone()));
+    if ui.add_enabled(has_doc && selected_group.is_some(), egui::Button::new(tl!("Save Group to Document"))).clicked() {
+        act = Some("saveToDocument");
+    }
+    if ui.add_enabled(doc_palettes > 0, egui::Button::new(tl!("Load Document Palettes"))).clicked() {
+        act = Some("loadFromDocument");
     }
     ui.separator();
     if ui.button(tl!("Reset Swatches")).clicked() {
@@ -226,6 +250,8 @@ pub fn panel_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let Some(a) = act else { return };
     ui.close();
     let r = match a {
+        "saveToDocument" => app.run("swatches.saveToDocument", json!({"group": selected_group.unwrap_or_default()})),
+        "loadFromDocument" => app.run("swatches.loadFromDocument", json!({})),
         "new" => {
             new_swatch(app);
             Ok(Value::Null)
@@ -236,7 +262,8 @@ pub fn panel_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         }
         "import" => import_dialog(app, false),
         "replace" => import_dialog(app, true),
-        "aco" | "ase" => export_dialog(app, a),
+        "aco" | "ase" | "css" => export_dialog(app, a),
+        "fromImage" => app.run("swatches.fromImage", json!({})),
         _ => app.run("swatches.reset", json!({})),
     };
     if let Err(e) = r

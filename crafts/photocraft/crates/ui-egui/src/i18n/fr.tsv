@@ -3192,3 +3192,254 @@ curves	Smooth	Lisser
 	set name	nom du jeu
 	{set} (modified)	{set} (modifié)
 	Random	Aléatoire
+	Desaturate…	Désaturer…
+	Anti-erase	Anti-effacement
+	Restore erased pixels instead of erasing	Restaure les pixels effacés au lieu d’effacer
+	Luma	Luma
+	Value	Valeur
+	Grow through corners as well as edges	S’étend par les coins comme par les côtés
+	By:	Selon :
+	Composite	Composite
+	Square Gradient	Dégradé carré
+	Conical Gradient (symmetric)	Dégradé conique (symétrique)
+	Spiral Gradient (clockwise)	Dégradé en spirale (horaire)
+	Spiral Gradient (counter-clockwise)	Dégradé en spirale (antihoraire)
+	Line Art	Dessin au trait
+	Fill the area the ink encloses, closing small gaps and going slightly under the lines	Remplit la zone close par l’encre, ferme les petits trous et passe un peu sous les traits
+	Ink below	Encre sous
+	Close gaps	Fermer les trous
+	Under ink	Sous l’encre
+	Angle Offset:	Décalage d'angle :
+	Read the direction of the first stroke segment for the whole stroke	Utiliser la direction du premier segment pour tout le tracé
+	Fan Corners	Coins en éventail
+	Turn sharper than this is fanned	Un virage plus serré que ceci est ouvert en éventail
+	Sensor:	Capteur :
+	Combine:	Combinaison :
+	Auto Spacing	Espacement automatique
+	Spacing grows with the square root of the size	L'espacement croît avec la racine carrée de la taille
+	Auto spacing coefficient	Coefficient d'espacement automatique
+	Minimum Spacing	Espacement minimal
+	Isotropic Spacing	Espacement isotrope
+	Space dabs by the diameter alone, not by the roundness	Espacer les touches selon le diamètre seul, pas la rondeur
+	Mask:	Masque :
+	Fade X	Fondu X
+	Fade Y	Fondu Y
+	Lock Fade	Verrouiller le fondu
+	The vertical fade follows the horizontal one	Le fondu vertical suit le fondu horizontal
+	Soft curve:	Courbe douce :
+	Spikes	Pointes
+	Randomness	Aléa
+	Anti-aliasing	Anticrénelage
+	Auto Precision	Précision automatique
+	Precision	Précision
+	Separate Axes	Axes séparés
+	Scatter along and across the stroke by different amounts	Disperser le long et en travers du tracé par des quantités différentes
+	Along	Le long
+	Across	En travers
+	Stabilizer	Stabilisateur
+	Average the last input points; the sample count follows the speed	Moyenne des derniers points d'entrée ; le nombre d'échantillons suit la vitesse
+	Samples (slow)	Échantillons (lent)
+	Samples (fast)	Échantillons (rapide)
+	Delay	Délai
+	Finish Line	Terminer la ligne
+	Stabilize Sensors	Stabiliser les capteurs
+	Smooth Pressure	Lisser la pression
+	Smooth the pen pressure along with the position	Lisser la pression du stylet avec la position
+	Drawing Angle	Angle de dessin
+	Speed	Vitesse
+	Circle	Cercle
+	Erase with the current brush (Clear mode)	Effacer avec le pinceau actuel (mode Effacer)
+	Blend:	Mélange :
+	How much of the sample goes into the current colour	Part de l'échantillon mélangée à la couleur actuelle
+	Close gap	Fermer l'écart
+	Boundary colour	Couleur de limite
+	Grow the filled area outward	Étendre la zone remplie vers l'extérieur
+	Gaps in the boundary up to this are closed	Les écarts de la limite jusqu'à cette taille sont fermés
+	Fill until this colour instead of over similar colours	Remplir jusqu'à cette couleur plutôt que sur les couleurs similaires
+	Drag a straight line painted with the brush; Shift snaps the angle to 15° steps	Tracez une ligne droite au pinceau ; Maj aligne l'angle par pas de 15°
+	Free select: clicks and drags build one editable outline	Sélection libre : les clics et les glissements forment un seul contour modifiable
+	Click adds a point, drag draws freehand · drag a point to move it · {del} removes the last · {key} closes · Esc cancels	Un clic ajoute un point, un glissement dessine à main levée · glissez un point pour le déplacer · {del} retire le dernier · {key} ferme · Échap annule
+	Click to place points, drag to draw freehand; the outline stays editable until closed	Cliquez pour placer des points, glissez pour dessiner à main levée ; le contour reste modifiable jusqu'à sa fermeture
+
+# Transform tool options: direction, clipping, guides (PH-TRF-014)
+	Lanczos	Lanczos
+	Direction:	Direction :
+	Corrective	Correctif
+	Clipping:	Rognage :
+	Adjust	Ajuster
+	Clip	Rogner au canevas
+	Crop with Aspect	Recadrer avec proportions
+	Guides:	Guides :
+	Center Lines	Lignes centrales
+	Golden Sections	Sections dorées
+	Diagonals	Diagonales
+	Lines:	Lignes :
+	Split View	Vue partagée
+	No Dynamics Preset	Aucun préréglage de dynamique
+	Dynamics:	Dynamique :
+	Applied dynamics preset {name} ({note})	Préréglage de dynamique {name} appliqué ({note})
+	Applied dynamics preset {name}	Préréglage de dynamique {name} appliqué
+	Save the brush's dynamics as a new preset	Enregistrer la dynamique du pinceau comme nouveau préréglage
+	Delete this dynamics preset	Supprimer ce préréglage de dynamique
+	Velocity	Vitesse
+	HSV Hue	Teinte TSV
+	HSV Saturation	Saturation TSV
+	HSV Value	Valeur TSV
+	Edge…	Contour…
+	Algorithm	Algorithme
+	Sobel	Sobel
+	Prewitt	Prewitt
+	Roberts	Roberts
+	Differential	Différentiel
+	Laplace	Laplace
+	Color Temperature…	Température de couleur…
+	Color Temperature	Température de couleur
+	Original Temperature	Température d'origine
+	Intended Temperature	Température souhaitée
+	Hue-Chroma…	Teinte-chroma…
+	Hue-Chroma	Teinte-chroma
+	Chroma	Chroma
+	Corner Threshold	Seuil d'angle
+	Corner Surround	Voisinage d'angle
+	Min Area	Aire minimale
+	Airbrush paints only while moving (motion only)	L'aérographe peint seulement en mouvement (mouvement seul)
+	Airbrush motion only	Aérographe mouvement seul
+	Configure Grid…	Configurer la grille…
+	Configure Grid	Configurer la grille
+	Spacing X	Espacement X
+	Spacing Y	Espacement Y
+	Offset X	Décalage X
+	Offset Y	Décalage Y
+	Active Path	Tracé actif
+	Equidistance	Équidistance
+	Wavelet Decompose…	Décomposition en ondelettes…
+	Wavelet Decompose	Décomposition en ondelettes
+	Scales	Échelles
+	Import Swatches from Image	Importer les nuances depuis l'image
+	Export Swatches as CSS…	Exporter les nuances en CSS…
+	Cage Transform	Transformation par cage
+	Antialias	Anticrénelage
+	Artistic	Artistique
+	Blinds…	Stores…
+	CIE lch Noise…	Bruit CIE LCh…
+	Cubism…	Cubisme…
+	Decor	Décor
+	Difference of Gaussians…	Différence de gaussiennes…
+	Distance Map…	Carte de distance…
+	Engrave…	Gravure…
+	Filmstrip…	Pellicule…
+	Fuzzy Border…	Bordure floue…
+	Gradient Flare…	Éblouissement graduel…
+	HSV Noise…	Bruit TSV…
+	Hurl…	Jeter…
+	Image Gradient…	Gradient d'image…
+	Impressionist…	Impressionniste…
+	Kaleidoscope…	Kaléidoscope…
+	Light and Shadow	Ombres et lumières
+	Long Shadow…	Ombre longue…
+	Mean Curvature Blur…	Flou de courbure moyenne…
+	NL Filter…	Filtre NL…
+	Normal Map…	Carte de normales…
+	Operation Graph…	Graphe d'opérations…
+	Page Curl…	Coin de page…
+	Perspective Shadow…	Ombre en perspective…
+	Pick…	Piquer…
+	SLIC…	SLIC…
+	Shift…	Décalage…
+	Slur…	Mélanger…
+	Sparkle…	Étinceler…
+	Supernova…	Supernova…
+	Symmetric Nearest Neighbor…	Plus proche voisin symétrique…
+	Tileable Blur…	Flou mosaïque…
+	Value Propagate…	Propagation de valeur…
+	Van Gogh (LIC)…	Van Gogh (LIC)…
+	Video Degradation…	Dégradation vidéo…
+	Waterpixels…	Waterpixels…
+	Weave…	Tissage…
+	Xach-Effect…	Effet Xach…
+	Animation	Animation
+	Bayer Matrix…	Matrice de Bayer…
+	Blend…	Fondu…
+	Burn-In…	Brûlure…
+	CML Explorer…	Explorateur CML…
+	Cell Noise…	Bruit cellulaire…
+	Checkerboard…	Damier…
+	Circuit…	Circuit…
+	Coffee Stain…	Tache de café…
+	Diffraction Patterns…	Motifs de diffraction…
+	Fractal Explorer…	Explorateur de fractales…
+	Fractal Trace…	Tracé fractal…
+	Fractals	Fractales
+	Grid…	Grille…
+	IFS Fractal…	Fractale IFS…
+	Illusion…	Illusion…
+	Jigsaw…	Puzzle…
+	Lava…	Lave…
+	Line Nova…	Ligne nova…
+	Linear Sinusoid…	Sinusoïde linéaire…
+	Little Planet…	Petite planète…
+	Map	Mappage
+	Map Object…	Plaquer sur un objet…
+	Maze…	Labyrinthe…
+	Optimize (for GIF)	Optimiser (pour GIF)
+	Qbist…	Qbist…
+	Recursive Transform…	Transformation récursive…
+	Rippling…	Ondulation…
+	Semi-Flatten	Semi-aplatir
+	Simplex Noise…	Bruit simplex…
+	Sinus…	Sinus…
+	Slide…	Diapositive…
+	Small Tiles…	Petits carreaux…
+	Sphere Designer…	Créateur de sphère…
+	Spinning Globe…	Globe tournant…
+	Spiral…	Spirale…
+	Spirograph…	Spirographe…
+	Stencil Carve…	Gravure au pochoir…
+	Tile Seamless	Rendre raccordable
+	Unoptimize	Désoptimiser
+	Waves…	Vagues…
+	Binary AND	Binaire AND
+	Binary OR	Binaire OR
+	Binary NAND	Binaire NAND
+	Binary NOR	Binaire NOR
+	Binary XNOR	Binaire XNOR
+	Binary Implication	Binaire implication
+	Binary Not Implication	Binaire non-implication
+	Binary Converse	Binaire réciproque
+	Binary Not Converse	Binaire non-réciproque
+	Modulo	Modulo
+	Modulo Continuous	Modulo continu
+	Divisive Modulo	Modulo divisif
+	Divisive Modulo Continuous	Modulo divisif continu
+	Modulo Shift	Modulo décalé
+	Modulo Shift Continuous	Modulo décalé continu
+	Freeze	Gel
+	Heat	Chaleur
+	Glow-Heat	Lueur-Chaleur
+	Heat-Glow	Chaleur-Lueur
+	Reflect-Freeze	Reflet-Gel
+	Freeze-Reflect	Gel-Reflet
+	Heat-Glow and Freeze-Reflect Hybrid	Hybride Chaleur-Lueur et Gel-Reflet
+	Wrap Around Mode	Mode enveloppant
+	Rotational Multibrush	Multi-brosse rotative
+	Mirror copies	Copies en miroir
+	All Tags	Toutes les étiquettes
+	Tags	Étiquettes
+	Assistant Tool	Outil Assistant
+	Assistant	Assistant
+	Parallel Ruler	Règle parallèle
+	Vanishing Point	Point de fuite
+	Perspective Grid	Grille de perspective
+	Snap to Assistants	Magnétisme des assistants
+	Show Assistants	Afficher les assistants
+	Delete All	Tout supprimer
+	Mirror painting across the vertical axis	Peinture en miroir sur l'axe vertical
+	Choose a gradient file (.grd or .ggr).	Choisissez un fichier de dégradé (.grd ou .ggr).
+	Save Group to Document	Enregistrer le groupe dans le document
+	Load Document Palettes	Charger les palettes du document
+	Cumulative undo	Annulation cumulative
+	Cumulative undo interval	Intervalle d'annulation cumulative
+	Cumulative undo duration	Durée d'annulation cumulative
+	Popup palette	Palette contextuelle
+	Smear	Étalement
+	Smudge Radius	Rayon de maculage

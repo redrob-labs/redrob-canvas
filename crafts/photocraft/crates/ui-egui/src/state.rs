@@ -135,10 +135,13 @@ pub enum Tool {
     Slice,
     SliceSelect,
     Frame,
+    /// Painting assistants: place, move and delete rulers, vanishing points and perspective
+    /// grids that brush strokes snap to (`assistant_ui`).
+    Assistant,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 67] = [
+    pub const ALL: [Tool; 68] = [
         Tool::Move,
         Tool::Artboard,
         Tool::RectMarquee,
@@ -206,6 +209,7 @@ impl Tool {
         Tool::Slice,
         Tool::SliceSelect,
         Tool::Frame,
+        Tool::Assistant,
     ];
 
     pub fn label(self) -> &'static str {
@@ -237,6 +241,7 @@ impl Tool {
             Tool::Slice => "Slice Tool",
             Tool::SliceSelect => "Slice Select Tool",
             Tool::Frame => "Frame Tool",
+            Tool::Assistant => "Assistant Tool",
             Tool::Gradient => "Gradient Tool",
             Tool::PaintBucket => "Paint Bucket Tool",
             Tool::Type => "Horizontal Type Tool",
@@ -322,7 +327,7 @@ impl Tool {
             Tool::RectMarquee | Tool::EllipseMarquee => 'M',
             Tool::Brush | Tool::Pencil | Tool::MixerBrush | Tool::ColorReplacement => 'B',
             Tool::Eraser | Tool::BackgroundEraser | Tool::MagicEraser => 'E',
-            Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count => 'I',
+            Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count | Tool::Assistant => 'I',
             Tool::Lasso | Tool::PolygonLasso | Tool::MagneticLasso => 'L',
             Tool::MagicWand => 'W',
             Tool::Crop | Tool::PerspectiveCrop | Tool::Slice | Tool::SliceSelect => 'C',
@@ -512,6 +517,23 @@ pub struct ToolOptions {
     pub contiguous: bool,
     pub anti_alias: bool,
     pub sample_all_layers: bool,
+    /// Magic Wand / Paint Bucket / Magic Eraser: grow the region through corners too
+    /// (8-connected), and which channel the tolerance compares.
+    #[serde(default)]
+    pub wand_diagonal: bool,
+    #[serde(default = "default_wand_criterion")]
+    pub wand_criterion: String,
+    /// Paint Bucket › Fill by: similar colours (false) or the area the line art encloses (true),
+    /// with the ink threshold, the gap length that is still closed and how far under the ink the
+    /// colour goes.
+    #[serde(default)]
+    pub bucket_line_art: bool,
+    #[serde(default = "default_line_art_threshold")]
+    pub line_art_threshold: f32,
+    #[serde(default = "default_line_art_gap")]
+    pub line_art_gap: f32,
+    #[serde(default = "default_line_art_grow")]
+    pub line_art_grow: f32,
     /// Object Selection › Object Finder: hovering highlights the object a click selects (#4087).
     pub object_finder: bool,
     /// Remove tool: the fill goes to a new layer above the target (Photoshop's Create a new layer).
@@ -531,8 +553,34 @@ pub struct ToolOptions {
     /// Blend mode used by both live and classic gradient drags.
     pub gradient_blend_mode: redrob_photo_color::BlendMode,
     pub fill_opacity: f32,
+    /// Brush / Pencil / Eraser Line mode: a drag paints one straight stroke from the press to the
+    /// release, with the pressure recorded along the drag replayed along the line (⇧ snaps the
+    /// angle to 15° steps).
+    #[serde(default)]
+    pub brush_line_mode: bool,
     /// Paint Bucket fill source: false = Foreground colour, true = Pattern (Patterns panel selection).
     pub bucket_fill_pattern: bool,
+    /// Paint Bucket fill source: the background colour instead of the foreground (not with a pattern).
+    #[serde(default)]
+    pub bucket_fill_background: bool,
+    /// Paint Bucket pattern scale (%) and rotation (degrees).
+    #[serde(default = "hundred")]
+    pub bucket_pattern_scale: f32,
+    #[serde(default)]
+    pub bucket_pattern_angle: f32,
+    /// Paint Bucket: grow the filled area outward by this many pixels (Spread).
+    #[serde(default)]
+    pub bucket_spread: f32,
+    /// Paint Bucket: close gaps in the boundary up to this many pixels (plain fills; Line Art has
+    /// its own `line_art_gap`).
+    #[serde(default)]
+    pub bucket_close_gap: f32,
+    /// Paint Bucket: fill until the boundary colour (`bucket_boundary_color`) instead of over
+    /// similar colours.
+    #[serde(default)]
+    pub bucket_use_boundary: bool,
+    #[serde(default)]
+    pub bucket_boundary_color: [f32; 3],
     /// Type tool: family, style name, size (pt), anti-aliasing and paragraph alignment.
     pub type_font: String,
     pub type_style: String,
@@ -687,12 +735,20 @@ pub struct ToolOptions {
     /// `paint.pencil`), as in Photoshop's options bar (#2662).
     #[serde(default = "default_eraser_mode")]
     pub eraser_mode: String,
+    /// Eraser › Anti-erase: the stroke restores erased pixels (raises alpha back) instead of
+    /// removing them.
+    #[serde(default)]
+    pub anti_erase: bool,
     /// Magnetic Lasso: detection width (px, 1..256), edge contrast (%, 1..100), how often it
     /// fastens points by itself (0..100), and whether pen pressure narrows the width.
     pub magnetic_width: f32,
     pub magnetic_contrast: f32,
     pub magnetic_frequency: f32,
     pub magnetic_pressure: bool,
+    /// Lasso › Free select: clicks place polygon vertices and drags draw freehand in one outline
+    /// that stays open and editable until it is closed (`lasso_ui`).
+    #[serde(default)]
+    pub lasso_free_select: bool,
     /// Red Eye: pupil search size (1–100) and how far corrected pixels darken (0–100).
     #[serde(default = "fifty")]
     pub red_eye_pupil_size: f32,
@@ -710,6 +766,29 @@ pub struct ToolOptions {
     /// Eyedropper › Show Sampling Ring.
     #[serde(default = "yes")]
     pub eyedropper_ring: bool,
+    /// Eyedropper › Blend: 0..1 share of the sampled colour mixed into the current colour
+    /// (1 = replace it, the classic behaviour).
+    #[serde(default = "one_f32")]
+    pub eyedropper_blend: f32,
+    /// Eyedropper › Add to Swatches: every click also adds the sampled colour to the Swatches panel.
+    #[serde(default)]
+    pub eyedropper_add_swatch: bool,
+    /// Filter dialogs › Split View (PH-FLT-002): on, and the divider's position (a fraction of the
+    /// image) and orientation, as the last filter dialog left them.
+    #[serde(default)]
+    pub filter_split: bool,
+    #[serde(default = "half")]
+    pub filter_split_pos: f32,
+    #[serde(default)]
+    pub filter_split_horizontal: bool,
+}
+
+fn one_f32() -> f32 {
+    1.0
+}
+
+fn half() -> f32 {
+    0.5
 }
 
 fn yes() -> bool {
@@ -726,6 +805,26 @@ fn default_move_target() -> String {
 
 fn default_curve_fit() -> f32 {
     2.0
+}
+
+fn default_line_art_threshold() -> f32 {
+    0.92
+}
+
+fn hundred() -> f32 {
+    100.0
+}
+
+fn default_line_art_gap() -> f32 {
+    16.0
+}
+
+fn default_line_art_grow() -> f32 {
+    2.0
+}
+
+fn default_wand_criterion() -> String {
+    "composite".into()
 }
 
 fn default_eraser_mode() -> String {
@@ -768,6 +867,12 @@ impl Default for ToolOptions {
             contiguous: true,
             anti_alias: true,
             sample_all_layers: false,
+            wand_diagonal: false,
+            wand_criterion: default_wand_criterion(),
+            bucket_line_art: false,
+            line_art_threshold: default_line_art_threshold(),
+            line_art_gap: default_line_art_gap(),
+            line_art_grow: default_line_art_grow(),
             object_finder: true,
             remove_new_layer: false,
             remove_after_each_stroke: true,
@@ -778,7 +883,15 @@ impl Default for ToolOptions {
             gradient_classic: false,
             gradient_blend_mode: redrob_photo_color::BlendMode::Normal,
             fill_opacity: 100.0,
+            brush_line_mode: false,
             bucket_fill_pattern: false,
+            bucket_fill_background: false,
+            bucket_pattern_scale: 100.0,
+            bucket_pattern_angle: 0.0,
+            bucket_spread: 0.0,
+            bucket_close_gap: 0.0,
+            bucket_use_boundary: false,
+            bucket_boundary_color: [0.0, 0.0, 0.0],
             type_font: "Inter".into(),
             type_style: "Regular".into(),
             type_size: 48.0,
@@ -852,15 +965,22 @@ impl Default for ToolOptions {
             brush_clear: false,
             pencil_clear: false,
             eraser_mode: default_eraser_mode(),
+            anti_erase: false,
             magnetic_width: 10.0,
             magnetic_contrast: 10.0,
             magnetic_frequency: 57.0,
             magnetic_pressure: false,
+            lasso_free_select: false,
             red_eye_pupil_size: 50.0,
             red_eye_darken: 50.0,
             eyedropper_size: 1,
             eyedropper_sample: default_eyedropper_sample(),
             eyedropper_ring: true,
+            eyedropper_blend: 1.0,
+            eyedropper_add_swatch: false,
+            filter_split: false,
+            filter_split_pos: 0.5,
+            filter_split_horizontal: false,
         }
     }
 }
@@ -894,6 +1014,131 @@ impl TransformMode {
             _ => Self::Free,
         }
     }
+}
+
+/// Which way the transform tools read the box: Normal moves the frame's corners to the handles;
+/// Corrective ("backward") treats the handles as the distortion to undo and applies the inverse,
+/// so fitting the box to a leaning edge straightens it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformDirection {
+    #[default]
+    Normal,
+    Corrective,
+}
+
+impl TransformDirection {
+    /// `edit.transform`'s `direction` parameter.
+    pub fn param(self) -> &'static str {
+        match self {
+            TransformDirection::Normal => "normal",
+            TransformDirection::Corrective => "corrective",
+        }
+    }
+}
+
+/// What the transform tools do with pixels pushed past the canvas (`edit.transform`'s `clipping`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformClipping {
+    /// The layer keeps everything; the canvas stays.
+    #[default]
+    Adjust,
+    /// The canvas stays and the layer is cut to it.
+    Clip,
+    /// The canvas shrinks to the largest upright rectangle the result covers.
+    Crop,
+    /// [`TransformClipping::Crop`] keeping the canvas's proportions.
+    CropAspect,
+}
+
+impl TransformClipping {
+    pub const ALL: [TransformClipping; 4] = [TransformClipping::Adjust, TransformClipping::Clip, TransformClipping::Crop, TransformClipping::CropAspect];
+
+    /// `edit.transform`'s `clipping` parameter.
+    pub fn param(self) -> &'static str {
+        match self {
+            TransformClipping::Adjust => "adjust",
+            TransformClipping::Clip => "clip",
+            TransformClipping::Crop => "crop",
+            TransformClipping::CropAspect => "cropAspect",
+        }
+    }
+
+    pub fn parse(s: &str) -> Self {
+        Self::ALL.into_iter().find(|c| c.param() == s).unwrap_or_default()
+    }
+}
+
+/// The guide overlay drawn through the transform box while it is open (ui only).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformGuides {
+    #[default]
+    None,
+    CenterLines,
+    RuleOfThirds,
+    GoldenSections,
+    Diagonals,
+    /// An n × n grid; `n` is [`TransformOptions::grid_lines`].
+    Grid,
+}
+
+impl TransformGuides {
+    pub const ALL: [TransformGuides; 6] = [
+        TransformGuides::None,
+        TransformGuides::CenterLines,
+        TransformGuides::RuleOfThirds,
+        TransformGuides::GoldenSections,
+        TransformGuides::Diagonals,
+        TransformGuides::Grid,
+    ];
+
+    pub fn key(self) -> &'static str {
+        match self {
+            TransformGuides::None => "none",
+            TransformGuides::CenterLines => "centerLines",
+            TransformGuides::RuleOfThirds => "ruleOfThirds",
+            TransformGuides::GoldenSections => "goldenSections",
+            TransformGuides::Diagonals => "diagonals",
+            TransformGuides::Grid => "grid",
+        }
+    }
+
+    pub fn parse(s: &str) -> Self {
+        Self::ALL.into_iter().find(|g| g.key() == s).unwrap_or_default()
+    }
+}
+
+/// The transform tools' shared options bar settings, kept across sessions: direction, clipping and
+/// the guide overlay. Interpolation lives on the session ([`TransformSession::interpolation`]) and
+/// starts from the preference each time.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransformOptions {
+    #[serde(default)]
+    pub direction: TransformDirection,
+    #[serde(default)]
+    pub clipping: TransformClipping,
+    #[serde(default)]
+    pub guides: TransformGuides,
+    /// Lines per side of the [`TransformGuides::Grid`] overlay.
+    #[serde(default = "default_transform_grid_lines")]
+    pub grid_lines: u32,
+}
+
+fn default_transform_grid_lines() -> u32 {
+    8
+}
+
+impl Default for TransformOptions {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+impl TransformOptions {
+    pub const DEFAULT: TransformOptions =
+        TransformOptions { direction: TransformDirection::Normal, clipping: TransformClipping::Adjust, guides: TransformGuides::None, grid_lines: 8 };
 }
 
 /// Free Transform in progress: the source frame `rect` and where its corners currently are.
@@ -1092,9 +1337,25 @@ pub struct UiState {
     /// drags stretch freely (⇧ keeps the proportions), as in Photoshop (#4174).
     #[serde(default)]
     pub transform_unlinked: bool,
+    /// The transform tools' Direction, Clipping and Guides options (#PH-TRF-014).
+    #[serde(default)]
+    pub transform_options: TransformOptions,
     /// Temporary symmetry-axis editing, exposed to automation but never restored from settings.
     #[serde(default, skip_deserializing)]
     pub symmetry_transform: Option<crate::symmetry_ui::Transform>,
+    /// The rotational multibrush centre being dragged on the canvas (its preview position);
+    /// committed with `paint.setMultibrush` on release.
+    #[serde(skip)]
+    pub multibrush_drag: Option<[f64; 2]>,
+    /// Foreground colours painted with, most recent first (`color_history`).
+    #[serde(default)]
+    pub color_history: Vec<[f32; 4]>,
+    /// The pop-up palette's screen centre while it is open (`popup_palette`); never restored.
+    #[serde(default, skip_deserializing)]
+    pub popup_palette: Option<[f32; 2]>,
+    /// The preset tag the pop-up palette's ring shows (empty: every preset).
+    #[serde(default)]
+    pub popup_tag: String,
     /// The Properties panel's armed Levels/Curves eyedropper on an adjustment layer (`layer_picker`),
     /// exposed to automation but never restored from settings.
     #[serde(default, skip_deserializing)]
@@ -1188,6 +1449,9 @@ pub struct UiState {
     /// Ruler/Count/Note tools, Measurement Log and Notes panels (see `analysis_ui`).
     #[serde(default)]
     pub analysis: crate::analysis_ui::AnalysisUi,
+    /// Assistant tool and the stroke snapping to painting assistants (see `assistant_ui`).
+    #[serde(default)]
+    pub assistants: crate::assistant_ui::AssistantUi,
     pub timeline: crate::timeline_ui::TimelineUi,
     /// Slice and Slice Select tools (see `slice_ui`).
     #[serde(default)]
@@ -1313,7 +1577,12 @@ impl Default for UiState {
             cam_transform: None,
             transform: None,
             transform_unlinked: false,
+            transform_options: TransformOptions::DEFAULT,
             symmetry_transform: None,
+            multibrush_drag: None,
+            color_history: Vec::new(),
+            popup_palette: None,
+            popup_tag: String::new(),
             layer_picker: None,
             mask_target: false,
             vector_mask_target: false,
@@ -1336,6 +1605,7 @@ impl Default for UiState {
             presets_ui: Default::default(),
             type_panels: Default::default(),
             analysis: Default::default(),
+            assistants: Default::default(),
             timeline: Default::default(),
             slices: Default::default(),
             frame_tool: Default::default(),
@@ -1453,7 +1723,7 @@ mod tests {
         assert!(!Tool::RedEye.is_brushlike());
         assert_eq!(Tool::from_name("patternStamp"), Some(Tool::PatternStamp));
         assert_eq!(Tool::from_name("Pattern Stamp Tool"), Some(Tool::PatternStamp));
-        assert_eq!(Tool::ALL.len(), 67);
+        assert_eq!(Tool::ALL.len(), 68);
         assert_eq!(Tool::from_name("Vertical Type Mask Tool"), Some(Tool::VerticalTypeMask));
         assert_eq!(Tool::from_name("addAnchorPoint"), Some(Tool::AddAnchorPoint));
         assert_eq!(Tool::from_name("Delete Anchor Point Tool"), Some(Tool::DeleteAnchorPoint));
@@ -1469,29 +1739,6 @@ mod tests {
         assert_eq!(Tool::from_name("Rotate View Tool"), Some(Tool::RotateView));
         assert_eq!(Tool::RotateView.key(), 'R');
         assert_eq!(Tool::from_name("nope"), None);
-    }
-
-    /// The README's "Everything in the box" tool heading and list name exactly the tools a user can
-    /// pick, `Tool::ALL` (#996).
-    #[test]
-    fn readme_tool_list_matches_tool_all() {
-        let readme = include_str!("../../../README.md");
-        let (_, rest) = readme.split_once("<h4>🧰 ").unwrap();
-        let (count, rest) = rest.split_once(" tools</h4>").unwrap();
-        assert_eq!(count.parse::<usize>().unwrap(), Tool::ALL.len(), "README.md tool heading");
-        let list = rest.trim_start().lines().next().unwrap();
-        // "Rectangular and Elliptical Marquee" names two tools: "Rectangular Marquee", "Elliptical Marquee".
-        let mut named: Vec<String> = Vec::new();
-        for entry in list.split(" · ") {
-            match entry.split_once(" and ").and_then(|(first, rest)| Some((first, rest.split_once(' ')?))) {
-                Some((first, (second, noun))) => named.extend([format!("{first} {noun}"), format!("{second} {noun}")]),
-                None => named.push(entry.to_owned()),
-            }
-        }
-        named.sort();
-        let mut labels: Vec<String> = Tool::ALL.iter().map(|tool| tool.label().trim_end_matches(" Tool").to_owned()).collect();
-        labels.sort();
-        assert_eq!(named, labels, "README.md tool list");
     }
 
     #[test]

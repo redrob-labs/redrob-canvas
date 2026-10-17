@@ -57,7 +57,7 @@ fn all_filters() -> Vec<FilterParams> {
         FilterParams::FindEdges,
         FilterParams::Solarize,
         FilterParams::Invert,
-        FilterParams::Desaturate,
+        FilterParams::Desaturate { mode: DesaturateMode::Luma },
         FilterParams::Twirl { angle: 90.0 },
         FilterParams::Pinch { amount: 50.0 },
         FilterParams::Spherize { amount: -60.0, mode: SpherizeMode::HorizontalOnly },
@@ -363,7 +363,7 @@ fn stylize_basics() {
     assert!((f[0] - 1.0).abs() < 1e-6);
     let so = run(&s, &FilterParams::Solarize).pixel(3, 3);
     assert!((so[0] - 0.2).abs() < 1e-6 && (so[1] - 0.3).abs() < 1e-6);
-    let d = run(&s, &FilterParams::Desaturate).pixel(3, 3);
+    let d = run(&s, &FilterParams::Desaturate { mode: DesaturateMode::Luma }).pixel(3, 3);
     assert!((d[0] - d[1]).abs() < 1e-6 && (d[1] - d[2]).abs() < 1e-6);
 }
 
@@ -461,7 +461,7 @@ fn other_colour_modes_work() {
         s.fill_rect(R, &px);
         for p in [
             FilterParams::GaussianBlur { radius: 1.0 },
-            FilterParams::Desaturate,
+            FilterParams::Desaturate { mode: DesaturateMode::Luma },
             FilterParams::Emboss { angle: 0.0, height: 1.0, amount: 100.0 },
             FilterParams::Twirl { angle: 50.0 },
         ] {

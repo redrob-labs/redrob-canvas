@@ -78,6 +78,30 @@ pub fn mode_dropdown(ui: &mut egui::Ui, mode: &mut String) -> bool {
     widgets::dropdown(ui, "eraser-mode", mode, &modes, 96.0)
 }
 
+/// The region-growing options the Magic Wand, Paint Bucket and Magic Eraser share: Diagonal
+/// (grow through corners too) and the channel the tolerance compares (Composite by default).
+pub fn wand_options(ui: &mut egui::Ui, o: &mut crate::state::ToolOptions) {
+    widgets::checkbox(ui, &mut o.wand_diagonal, tl!("Diagonal")).on_hover_text(tl!("Grow through corners as well as edges"));
+    opt(ui, tl!("By:"));
+    let choices = [
+        ("composite".to_string(), tl!("Composite")),
+        ("red".to_string(), tl!("Red")),
+        ("green".to_string(), tl!("Green")),
+        ("blue".to_string(), tl!("Blue")),
+        ("hue".to_string(), tl!("Hue")),
+        ("saturation".to_string(), tl!("Saturation")),
+        ("value".to_string(), tl!("Value")),
+        ("alpha".to_string(), tl!("Alpha")),
+    ];
+    widgets::dropdown(ui, "wand-criterion", &mut o.wand_criterion, &choices, 104.0);
+}
+
+/// The Eraser's Anti-erase checkbox: the stroke restores what an earlier erase removed (alpha
+/// is raised back over the colour that stayed in the pixels) instead of erasing further.
+pub fn anti_erase_checkbox(ui: &mut egui::Ui, anti_erase: &mut bool) {
+    widgets::checkbox(ui, anti_erase, tl!("Anti-erase")).on_hover_text(tl!("Restore erased pixels instead of erasing"));
+}
+
 fn opt(ui: &mut egui::Ui, text: &str) {
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(tl!(&text)).color(t.text_dim).size(12.0));
@@ -93,6 +117,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
             widgets::checkbox(ui, &mut o.anti_alias, tl!("Anti-alias"));
             widgets::checkbox(ui, &mut o.contiguous, tl!("Contiguous"));
             widgets::checkbox(ui, &mut o.sample_all_layers, tl!("Sample All Layers"));
+            wand_options(ui, o);
             widgets::vline(ui, 22.0);
             opt(ui, tl!("Opacity:"));
             widgets::value_field(ui, &mut o.magic_eraser_opacity, 1.0..=100.0, "%", 62.0);

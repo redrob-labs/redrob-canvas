@@ -38,6 +38,7 @@ pub mod menus;
 pub mod native_menu;
 pub mod opening;
 pub mod palette;
+pub mod palette_strip;
 mod panel_docking;
 pub mod panels;
 pub mod picks;
@@ -317,6 +318,8 @@ pub struct CacheKey {
     pub ppp: f32,
     pub hidden: Vec<u64>,
     pub rot: f64,
+    /// Canvas Orientation: the view flipped horizontally, vertically.
+    pub flip: (bool, bool),
     /// General › Anti-aliased Artwork.
     pub anti_alias: bool,
     /// [`redrob_vector_render::placed_document::generation`]: placed documents' bitmaps made since.
@@ -1318,6 +1321,9 @@ impl VectorcraftApp {
         if self.ui.status_bar && self.ui.screen_mode < 3 {
             chrome::status_bar(self, ui);
             chrome::hint_bar(self, ui);
+        }
+        if self.ui.palette_strip && self.ui.screen_mode < 3 {
+            palette_strip::show(self, ui);
         }
         if self.ui.toolbar && self.ui.screen_mode < 3 {
             toolbar::show(self, ui);
