@@ -2808,3 +2808,7 @@ curves	Smooth	平滑
 	Restore erased pixels instead of erasing	恢复已擦除的像素而不是擦除
 	Luma	亮度 (Luma)
 	Value	明度
+	Grow through corners as well as edges	同时经由边和角扩展
+	By:	依据:
+	Composite	复合
+	Alpha	Alpha

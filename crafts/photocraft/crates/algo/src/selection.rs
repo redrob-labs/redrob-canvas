@@ -252,10 +252,87 @@ impl Region {
     }
 }
 
+/// What the wand / bucket compares against the seed pixel.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WandCriterion {
+    /// Every channel within the tolerance (the default).
+    #[default]
+    Composite,
+    Red,
+    Green,
+    Blue,
+    /// Hue on the 0..255 circle (the two ends are one step apart).
+    Hue,
+    Saturation,
+    Value,
+    Alpha,
+}
+
+/// Region-growing options shared by the Magic Wand, the Bucket and the Magic Eraser.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct WandOptions {
+    /// Grow through corners as well as edges (8-connected instead of 4-connected).
+    pub diagonal: bool,
+    pub criterion: WandCriterion,
+}
+
+/// Hue, saturation and value of an 8-bit colour, each on 0..255.
+fn hsv8(p: [u8; 4]) -> [i32; 3] {
+    let (r, g, b) = (i32::from(p[0]), i32::from(p[1]), i32::from(p[2]));
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let d = max - min;
+    if d == 0 {
+        return [0, 0, max];
+    }
+    // Six sectors of 255/6 each.
+    let h6 = if max == r {
+        (g - b) * 255 / d
+    } else if max == g {
+        2 * 255 + (b - r) * 255 / d
+    } else {
+        4 * 255 + (r - g) * 255 / d
+    };
+    let h = (h6.rem_euclid(6 * 255)) / 6;
+    [h, d * 255 / max, max]
+}
+
+fn channel_close(p: [u8; 4], target: [u8; 4], tol: i32, criterion: WandCriterion) -> bool {
+    let diff = |a: i32, b: i32| (a - b).abs() <= tol;
+    match criterion {
+        WandCriterion::Composite => (0..4).all(|c| diff(i32::from(p[c]), i32::from(target[c]))),
+        WandCriterion::Red => diff(i32::from(p[0]), i32::from(target[0])),
+        WandCriterion::Green => diff(i32::from(p[1]), i32::from(target[1])),
+        WandCriterion::Blue => diff(i32::from(p[2]), i32::from(target[2])),
+        WandCriterion::Alpha => diff(i32::from(p[3]), i32::from(target[3])),
+        WandCriterion::Hue => {
+            let (a, b) = (hsv8(p)[0], hsv8(target)[0]);
+            let d = (a - b).abs();
+            d.min(255 - d) <= tol
+        }
+        WandCriterion::Saturation => diff(hsv8(p)[1], hsv8(target)[1]),
+        WandCriterion::Value => diff(hsv8(p)[2], hsv8(target)[2]),
+    }
+}
+
 /// Magic wand on 8-bit pixels: a scanline flood fill (or a global match) that only allocates a
 /// byte mark per pixel, then anti-aliases just the edges inside the touched bounding box.
 /// Matches [`magic_wand`] for 8-bit sources. `None` if the seed is outside `area`.
 pub fn wand_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), tolerance: f32, contiguous: bool, anti_alias: bool) -> Option<Region> {
+    wand_region_with(img, area, seed, tolerance, contiguous, anti_alias, WandOptions::default())
+}
+
+/// [`wand_region`] with the region-growing options: diagonal neighbours and the compared channel.
+pub fn wand_region_with(
+    img: &[[u8; 4]],
+    area: Rect,
+    seed: (i32, i32),
+    tolerance: f32,
+    contiguous: bool,
+    anti_alias: bool,
+    opts: WandOptions,
+) -> Option<Region> {
     if !area.contains(seed.0, seed.1) {
         return None;
     }
@@ -267,7 +344,7 @@ pub fn wand_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), tolerance: f32
     let tol = (tolerance + 1e-3).floor().max(0.0) as i32;
     // Copying a selection can leave RGB under zero alpha. Those invisible colours must not
     // split a transparent region into pieces, as if the copied source were still visible.
-    let similar = |p: [u8; 4]| (target[3] == 0 && p[3] == 0) || (0..4).all(|c| (p[c] as i32 - target[c] as i32).abs() <= tol);
+    let similar = |p: [u8; 4]| (target[3] == 0 && p[3] == 0) || channel_close(p, target, tol, opts.criterion);
     let mut marks = vec![0u8; w * h];
     let (mut bx0, mut by0, mut bx1, mut by1) = (usize::MAX, usize::MAX, 0usize, 0usize);
     if contiguous {
@@ -287,13 +364,16 @@ pub fn wand_region(img: &[[u8; 4]], area: Rect, seed: (i32, i32), tolerance: f32
             }
             marks[row + l..=row + r].fill(255);
             (bx0, bx1, by0, by1) = (bx0.min(l), bx1.max(r), by0.min(y), by1.max(y));
+            // With diagonal neighbours the rows above and below are also reached from the
+            // run's two corner pixels, one column past each end.
+            let (sl, sr) = if opts.diagonal { (l.saturating_sub(1), (r + 1).min(w - 1)) } else { (l, r) };
             for ny in [y.wrapping_sub(1), y + 1] {
                 if ny >= h {
                     continue;
                 }
                 let nrow = ny * w;
                 let mut in_run = false;
-                for nx in l..=r {
+                for nx in sl..=sr {
                     let ok = marks[nrow + nx] == 0 && similar(img[nrow + nx]);
                     if ok && !in_run {
                         stack.push((nx, ny));

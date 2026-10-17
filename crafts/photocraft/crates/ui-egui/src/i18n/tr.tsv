@@ -3920,3 +3920,6 @@ cameraData	Lens	Lens
 	Restore erased pixels instead of erasing	Silmek yerine silinen pikselleri geri getirir
 	Luma	Luma
 	Value	Değer
+	Grow through corners as well as edges	Kenarların yanı sıra köşelerden de büyür
+	By:	Ölçüt:
+	Composite	Bileşik

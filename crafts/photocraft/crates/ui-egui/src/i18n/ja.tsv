@@ -3866,3 +3866,6 @@ curves	Smooth	スムーズ
 	Restore erased pixels instead of erasing	消去する代わりに消去したピクセルを復元します
 	Luma	ルマ
 	Value	明度
+	Grow through corners as well as edges	辺だけでなく角からも広げます
+	By:	基準:
+	Composite	合成

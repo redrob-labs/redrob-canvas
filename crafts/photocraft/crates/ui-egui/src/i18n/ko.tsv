@@ -3368,3 +3368,6 @@ curves	Smooth	매끄럽게
 	Restore erased pixels instead of erasing	지운 픽셀을 지우지 않고 복원합니다
 	Luma	루마
 	Value	명도값
+	Grow through corners as well as edges	변뿐 아니라 모서리로도 확장합니다
+	By:	기준:
+	Composite	합성

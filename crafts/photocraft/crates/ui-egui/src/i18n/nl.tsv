@@ -3950,3 +3950,6 @@ curves	Smooth	Vloeiend maken
 	Restore erased pixels instead of erasing	Herstelt gewiste pixels in plaats van te wissen
 	Luma	Luma
 	Value	Waarde
+	Grow through corners as well as edges	Groeit ook via hoeken, niet alleen via randen
+	By:	Op:
+	Composite	Samengesteld

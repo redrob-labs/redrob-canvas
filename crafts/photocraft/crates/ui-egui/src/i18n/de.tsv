@@ -3193,3 +3193,6 @@ curves	Smooth	Glätten
 	Restore erased pixels instead of erasing	Stellt radierte Pixel wieder her, statt zu radieren
 	Luma	Luma
 	Value	Wert
+	Grow through corners as well as edges	Auch über Ecken wachsen, nicht nur über Kanten
+	By:	Nach:
+	Composite	Zusammengesetzt

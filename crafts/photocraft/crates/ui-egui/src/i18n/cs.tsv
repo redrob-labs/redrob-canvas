@@ -3799,3 +3799,6 @@ navigator	Zoom	Zvětšení
 	Restore erased pixels instead of erasing	Obnoví vymazané pixely místo mazání
 	Luma	Luma
 	Value	Hodnota
+	Grow through corners as well as edges	Šířit se i přes rohy, nejen přes hrany
+	By:	Podle:
+	Composite	Složené

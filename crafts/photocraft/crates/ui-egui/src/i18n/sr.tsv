@@ -4262,3 +4262,6 @@ shape	Appearance	Izgled
 	Restore erased pixels instead of erasing	Враћа избрисане пикселе уместо да брише
 	Luma	Лума
 	Value	Вредност
+	Grow through corners as well as edges	Расте и преко углова, не само преко ивица
+	By:	По:
+	Composite	Сложено

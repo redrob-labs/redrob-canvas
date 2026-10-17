@@ -3980,3 +3980,6 @@ layerLabel	No Color	Sem cor
 	Restore erased pixels instead of erasing	Restaura os pixels apagados em vez de apagar
 	Luma	Luma
 	Value	Valor
+	Grow through corners as well as edges	Cresce também pelos cantos, não só pelas bordas
+	By:	Por:
+	Composite	Composto

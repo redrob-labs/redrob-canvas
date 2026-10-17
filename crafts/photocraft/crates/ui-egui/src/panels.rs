@@ -1200,6 +1200,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::checkbox(ui, &mut app.ui.tool_options.anti_alias, tl!("Anti-alias"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("Sample All Layers"));
+                        crate::eraser_ui::wand_options(ui, &mut app.ui.tool_options);
                         widgets::vline(ui, 22.0);
                         if widgets::secondary_button(ui, tl!("Select Subject"), 0.0).clicked() {
                             let r = app.run("select.subject", json!({}));
@@ -1222,6 +1223,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::checkbox(ui, &mut app.ui.tool_options.anti_alias, tl!("Anti-alias"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("All Layers"));
+                        crate::eraser_ui::wand_options(ui, &mut app.ui.tool_options);
                     }
                     Tool::Gradient => {
                         // Live "Gradient" (a Gradient Fill layer) or "Classic gradient" (pixels).

@@ -4151,3 +4151,6 @@ navigator	Zoom	Zoom
 	Restore erased pixels instead of erasing	Restaura los píxeles borrados en lugar de borrar
 	Luma	Luma
 	Value	Valor
+	Grow through corners as well as edges	Crece también por las esquinas, no solo por los bordes
+	By:	Por:
+	Composite	Compuesto

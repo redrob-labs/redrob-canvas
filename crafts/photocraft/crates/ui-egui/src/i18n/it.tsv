@@ -4310,3 +4310,6 @@ shape	Appearance	Aspetto
 	Restore erased pixels instead of erasing	Ripristina i pixel cancellati invece di cancellare
 	Luma	Luma
 	Value	Valore
+	Grow through corners as well as edges	Si estende anche dagli angoli, non solo dai bordi
+	By:	Per:
+	Composite	Composito

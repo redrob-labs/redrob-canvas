@@ -3197,3 +3197,6 @@ curves	Smooth	Lisser
 	Restore erased pixels instead of erasing	Restaure les pixels effacés au lieu d’effacer
 	Luma	Luma
 	Value	Valeur
+	Grow through corners as well as edges	S’étend par les coins comme par les côtés
+	By:	Selon :
+	Composite	Composite

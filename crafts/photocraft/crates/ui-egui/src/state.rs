@@ -512,6 +512,12 @@ pub struct ToolOptions {
     pub contiguous: bool,
     pub anti_alias: bool,
     pub sample_all_layers: bool,
+    /// Magic Wand / Paint Bucket / Magic Eraser: grow the region through corners too
+    /// (8-connected), and which channel the tolerance compares.
+    #[serde(default)]
+    pub wand_diagonal: bool,
+    #[serde(default = "default_wand_criterion")]
+    pub wand_criterion: String,
     /// Object Selection › Object Finder: hovering highlights the object a click selects (#4087).
     pub object_finder: bool,
     /// Remove tool: the fill goes to a new layer above the target (Photoshop's Create a new layer).
@@ -732,6 +738,10 @@ fn default_curve_fit() -> f32 {
     2.0
 }
 
+fn default_wand_criterion() -> String {
+    "composite".into()
+}
+
 fn default_eraser_mode() -> String {
     "brush".into()
 }
@@ -772,6 +782,8 @@ impl Default for ToolOptions {
             contiguous: true,
             anti_alias: true,
             sample_all_layers: false,
+            wand_diagonal: false,
+            wand_criterion: default_wand_criterion(),
             object_finder: true,
             remove_new_layer: false,
             remove_after_each_stroke: true,

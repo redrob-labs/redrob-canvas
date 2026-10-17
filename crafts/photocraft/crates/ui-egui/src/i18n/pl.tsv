@@ -3788,3 +3788,6 @@ curves	Smooth	Wygładź
 	Restore erased pixels instead of erasing	Przywraca wymazane piksele zamiast wymazywać
 	Luma	Luma
 	Value	Wartość
+	Grow through corners as well as edges	Rozszerzaj także przez narożniki, nie tylko krawędzie
+	By:	Według:
+	Composite	Złożony

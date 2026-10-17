@@ -4108,3 +4108,6 @@ cameraRaw	Yellow	Sárga
 	Restore erased pixels instead of erasing	Törlés helyett visszaállítja a kitörölt képpontokat
 	Luma	Luma
 	Value	Érték
+	Grow through corners as well as edges	A sarkokon át is terjed, nem csak az éleken
+	By:	Szerint:
+	Composite	Összetett

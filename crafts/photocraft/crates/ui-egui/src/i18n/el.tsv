@@ -3890,3 +3890,6 @@ curves	Smooth	Εξομάλυνση
 	Restore erased pixels instead of erasing	Επαναφέρει τα σβησμένα pixel αντί να σβήνει
 	Luma	Luma
 	Value	Τιμή
+	Grow through corners as well as edges	Επέκταση και από τις γωνίες, όχι μόνο από τις ακμές
+	By:	Κατά:
+	Composite	Σύνθετο

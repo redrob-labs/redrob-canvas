@@ -3678,3 +3678,6 @@ curves	Smooth	Làm mượt
 	Restore erased pixels instead of erasing	Khôi phục các điểm ảnh đã xóa thay vì xóa
 	Luma	Luma
 	Value	Giá trị
+	Grow through corners as well as edges	Mở rộng qua các góc cũng như các cạnh
+	By:	Theo:
+	Composite	Tổng hợp

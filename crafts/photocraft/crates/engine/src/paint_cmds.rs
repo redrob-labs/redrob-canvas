@@ -46,12 +46,13 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
     let c = color(p.get("color"), fg);
     let (x, y) = (f(p, "x", 0.0).floor() as i32, f(p, "y", 0.0).floor() as i32);
     let (tol, contiguous, aa) = (f(p, "tolerance", 32.0), b(p, "contiguous", true), b(p, "antiAlias", true));
+    let opts = crate::selection_cmds::wand_options(p, "paint.bucket")?;
     let opacity = opacity(p, "paint.bucket")?;
     let all = b(p, "sampleAllLayers", false) && crate::channel_cmds::target_of(p) == crate::channel_cmds::Target::Pixels;
     // Other visible layers can define the region, but the fill still writes only to the target.
     let region = if all {
         let (area, img) = crate::selection_cmds::sample_rgba8(s, true)?;
-        let region = redrob_photo_algo::selection::wand_region(&img, area, (x, y), tol, contiguous, aa);
+        let region = redrob_photo_algo::selection::wand_region_with(&img, area, (x, y), tol, contiguous, aa, opts);
         drop(img);
         region
     } else {
@@ -86,13 +87,13 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
                 bucket_fill_region_src(surf, region, opacity, sel.as_ref(), lock, src);
                 true
             } else {
-                bucket_fill_src(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, src)
+                bucket_fill_src(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, src, opts)
             }
         } else if let Some(region) = &region {
             bucket_fill_region_inks(surf, region, opacity, sel.as_ref(), lock, |_, _| c, inks);
             true
         } else {
-            bucket_fill_inks(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, |_, _| c, inks)
+            bucket_fill_inks(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, |_, _| c, inks, opts)
         };
         surf.prune();
         Ok(ok)
@@ -162,7 +163,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Paint Bucket",
             menu: &[],
             shortcut: None,
-            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"contents":"foreground|pattern"="foreground","color":"#rrggbb"=foreground,"pattern":id|name (contents=pattern),"scale":%=100,"angle":deg,"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
+            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","contents":"foreground|pattern"="foreground","color":"#rrggbb"=foreground,"pattern":id|name (contents=pattern),"scale":%=100,"angle":deg,"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
             enabled: crate::commands::has_paintable,
             run: bucket,
             journal: true,

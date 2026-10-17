@@ -3162,3 +3162,6 @@ curves	Smooth	Сгладить
 	Restore erased pixels instead of erasing	Восстанавливать стёртые пиксели вместо стирания
 	Luma	Яркость (luma)
 	Value	Значение
+	Grow through corners as well as edges	Расти через углы, а не только через рёбра
+	By:	По:
+	Composite	Составной
