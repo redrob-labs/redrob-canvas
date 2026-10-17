@@ -11,10 +11,10 @@
 //! one command on release.
 
 use redrob_vector_doc::NodeId;
-use redrob_vector_geom::Point;
+use redrob_vector_geom::{Point, SplineMode};
 use serde_json::{Value, json};
 
-use super::{FEEDBACK, points_json, polyline};
+use super::{FEEDBACK, STROKE_SHAPES, points_json, polyline};
 use crate::guides::DrawSnap;
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};
 
@@ -37,6 +37,11 @@ pub struct GestureTool {
     pub edit_within: f64,
     /// "Close paths when ends are within N pixels".
     pub close_within: f64,
+    /// Pencil/Paintbrush: regular Bézier fitting, or the fitted points re-splined as a spiro-like
+    /// or B-spline curve (`path.freehand` `mode`).
+    pub mode: SplineMode,
+    /// Pencil/Paintbrush: the width profile along the stroke (one of [`STROKE_SHAPES`]).
+    pub shape: &'static str,
     /// Smart Guides for the Pencil's ends.
     snap: DrawSnap,
 }
@@ -66,6 +71,8 @@ impl GestureTool {
             fill: false,
             edit_within: 12.0,
             close_within: 15.0,
+            mode: SplineMode::Bezier,
+            shape: "none",
             snap: DrawSnap::default(),
         }
     }
@@ -145,6 +152,12 @@ impl GestureTool {
             "style": if self.id == "paintbrush" { "brush" } else { "pencil" },
             "fill": self.fill,
         });
+        if self.mode.is_spline() {
+            v["mode"] = json!(self.mode.id());
+        }
+        if self.shape != "none" {
+            v["shape"] = json!(self.shape);
+        }
         if let Some((id, start)) = self.extend {
             v["extend"] = json!({"id": id.0, "end": if start { "start" } else { "end" }});
         }
@@ -301,7 +314,14 @@ impl Tool for GestureTool {
     fn options(&self) -> Value {
         match self.id {
             "pencil" | "paintbrush" => {
-                json!({"fidelity": self.fidelity, "fill": self.fill, "editWithin": self.edit_within, "closeWithin": self.close_within})
+                json!({
+                    "fidelity": self.fidelity,
+                    "fill": self.fill,
+                    "editWithin": self.edit_within,
+                    "closeWithin": self.close_within,
+                    "mode": self.mode.id(),
+                    "shape": self.shape,
+                })
             }
             "smooth" => json!({"fidelity": self.fidelity}),
             "blobBrush" | "eraser" => json!({"size": self.size}),
@@ -315,6 +335,17 @@ impl Tool for GestureTool {
             "fill" => self.fill = v.as_bool().unwrap_or(self.fill),
             "editWithin" => self.edit_within = v.as_f64().unwrap_or(self.edit_within).clamp(0.0, 100.0),
             "closeWithin" => self.close_within = v.as_f64().unwrap_or(self.close_within).clamp(0.0, 100.0),
+            // Paraxial is the Pen's alone: a freehand stroke has no segments to snap.
+            "mode" => {
+                if let Some(m) = v.as_str().and_then(SplineMode::parse).filter(|m| *m != SplineMode::Paraxial) {
+                    self.mode = m;
+                }
+            }
+            "shape" => {
+                if let Some(sh) = v.as_str().and_then(|v| STROKE_SHAPES.iter().copied().find(|s| *s == v)) {
+                    self.shape = sh;
+                }
+            }
             _ => {}
         }
     }
