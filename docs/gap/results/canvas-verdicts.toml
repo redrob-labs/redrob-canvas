@@ -1,0 +1,352 @@
+# Redrob Canvas 0.8.1 verdicts (Stage 2-A). One [[result]] per task id.
+# verdict: works|slow|broken|missing|untested-gui ; ms: wall ms for timed tasks (0 = not timed)
+
+[[result]]
+id = "BR-01"
+verdict = "works"
+ms = 300
+evidence = "New layer via Ctrl+Shift+N dialog; Brush (B) S-stroke drew ~43k doc px on Layer 1 (22140 changed screen px at 0.714 zoom); stroke visible in screenshot taken <300ms after mouseup (mouse only, no tablet pressure)"
+screenshot = "BR-01.png"
+
+[[result]]
+id = "BR-02"
+verdict = "works"
+ms = 0
+evidence = "Options-bar Smoothing field accepted 60 then 0; same zigzag-circle input: edge/area roughness 0.200 at 60% vs 0.640 at 0% (69% lower, proxy for curvature variance); stroke at 60% also shorter (lag/catch-up), area 2558 vs 11777 screen px"
+screenshot = "BR-02.png"
+
+[[result]]
+id = "BR-03"
+verdict = "works"
+ms = 0
+evidence = "Brush picker gear > Import Brushes… opened portal dialog; special/src.abr (6 presets) -> status 'Imported 6 brushes from src', 6 new entries listed (Round Point Stiff…Pencil); 'Square Charcoal' stroke mask differs from Hard Round stroke by 15% of pixels (XOR 1505/10112)"
+screenshot = "BR-03.png"
+
+[[result]]
+id = "BR-05"
+verdict = "works"
+ms = 0
+evidence = "Smudge Tool (palette; no key) Strength 70->shown 78%; black rect edge smudged into white: 1 pass changed 44x72 region with 24.5% intermediate grays (60-190) + dark tail; 3 passes saturate to near-black (0.8% mid). Rect colour setup used Edit>Fill Black/White (Alt/Ctrl+Delete fg/bg fill did not visibly apply)"
+screenshot = "BR-05.png"
+
+[[result]]
+id = "BR-06"
+verdict = "works"
+ms = 0
+evidence = "Brush options-bar symmetry icon > Vertical enabled; 2 strokes on left half only; change-mask bbox left half 271x451+60+131 vs flipped right half 271x451+60+131 (identical, 1px) — right half painted by mirror. Pixel-count XOR inflated by black rect under left strokes"
+screenshot = "BR-06.png"
+
+[[result]]
+id = "SEL-02"
+verdict = "works"
+ms = 0
+evidence = "Magic Wand (W) Tolerance 32 Contiguous; one click on white bg, Select>Inverse Selection, Fill Black: selected mask IoU 0.955 vs flood-fill ground truth (sel 42838 / gt 43393 / xor 1983 screen px @0.714 zoom)"
+screenshot = "SEL-02.png"
+
+[[result]]
+id = "SEL-05"
+verdict = "works"
+ms = 0
+evidence = "Magnetic Lasso Tool (palette), Width 10/Contrast 10/Freq 57 defaults; 90-point mouse trace 6px outside GT contour with one BackSpace mid-trace, closed at start: fill IoU 0.908 vs GT (xor 4213 px over ~1334 px perimeter ≈ 4.4 doc px mean offset); sel area 44170 << 6px-offset path area (~49k) so edge snapping occurred"
+screenshot = "SEL-05.png"
+[[result]]
+id = "TR-01"
+verdict = "works"
+ms = 0
+evidence = "Ctrl+T on Background refused (status: 'not available in the current state'); after Layer From Background, Free Transform (palette; Ctrl+T key did nothing) options bar W 50 (H linked) angle 15, Enter x2 to commit: content bbox height 438 screen px vs expected 437 (500 doc px @15 deg, 0.714 zoom; unrotated would be 357) ; Ctrl+Z restores pre-transform doc pixels exactly (AE=0), Ctrl+Shift+Z restores committed result (AE=0)"
+screenshot = "TR-01.png"
+
+[[result]]
+id = "TR-02"
+verdict = "works"
+ms = 0
+evidence = "Warp (palette) options bar Grid/Warp/Bend; Warp=Arc Bend 30: bottom edge of the full-canvas layer arcs (corner y 712 vs centre y 628 screen px => centre 84 screen = 118 doc px higher, 11.8% of layer height; top edge clipped by canvas); Warp=Custom keeps the arc, 80-doc-px drag at centre changed 97k screen px (64% of a 300x300 centre crop), Enter committed (arc edge retained; committed vs preview differs only by the mesh overlay)"
+screenshot = "TR-02.png"
+
+[[result]]
+id = "TR-03"
+verdict = "works"
+ms = 0
+evidence = "Perspective Crop (palette) options bar Width/Height/Resolution/Front Image/Show Grid; 4 corner clicks on a trapezoid (doc 20%,20% / 80%,30% / 70%,80% / 30%,75%) then Enter: document became 506 px x 535 px (status bar), i.e. the quad was resampled to an axis-aligned rectangle (view 361x390 screen px @71.4%); W/H fields were left blank (auto size) so typed-size equality was not exercised; product box corners not auto-located (manual corners)"
+screenshot = "TR-03.png"
+
+[[result]]
+id = "TR-04"
+verdict = "works"
+ms = 1
+evidence = "Liquify (palette) opens in-window panel (Brush Tool Options Size/Density/Pressure/Rate, Reconstruct, Mask, View options); Size 300 Pressure 50, 3 inward drags on 4k portrait: panel reports '3 stroke(s) - dab 0.91 ms - preview 0.00 ms' (<200ms), blue OK button committed; vs original a 93x48 screen px (552x285 doc px) region changed, best horizontal match of the warped patch still improving at 15 screen px (89 doc px) shift => displacement well over 10 px. Enter key does not commit (needed OK click)"
+screenshot = "TR-04.png"
+
+[[result]]
+id = "BR-04"
+verdict = "works"
+ms = 0
+evidence = "Clone Stamp (S) bar Opacity/Flow/Aligned/Sample; brush Size 300 via preset popup. Plain Alt+click is eaten by xfwm4 (app status explains it and offers Window > Modifier Keys); latching Alt there then clicking set 'Clone source set at 2223, 1110'; 3 short dabs on a textured edge: 32x32 screen px (185 doc px) target crop gray std 0.0778 -> 0.0069 (-91%, pass bar -40%), 21268 screen px changed. Alt-click only works with the latch on this desktop"
+screenshot = "BR-04.png"
+
+[[result]]
+id = "SEL-01"
+verdict = "works"
+ms = 0
+evidence = "Marquee (M) drag 1000x600 doc rect on 8k; Select>Modify>Feather dialog (palette) Radius field typed 30 (slider handle moved), OK; Ctrl+Shift+N new layer; Edit>Fill dialog Contents (my dropdown click left Black, so filled black - colour irrelevant for the alpha test), Opacity 100, OK: fill edge at 10.7% zoom ramps monotonically 66>53>13>5>1>0 over ~13 screen px (~120 doc px = 4 sigma of a 30 px feather; a hard edge would be 1 px), centre fully opaque"
+screenshot = "SEL-01.png"
+
+[[result]]
+id = "SEL-04"
+verdict = "works"
+ms = 834
+evidence = "Select>Color Range dialog (Sampled Colors, Localized Color Clusters, Fuzziness, Clear Samples, Invert, Selection/Image preview) opened from the menu; the palette entry only logged 'panel must name a registered panel' and the same message shows in the status bar even when the dialog opens. Fuzziness 60, sky click + 2 shift-clicks, preview thumbnail updated within 834 ms incl. screenshot; OK applied the selection but did not dismiss the dialog (Esc did). Fill Black of the selection: 116.7k screen px, IoU 0.73 vs strict blue-sky threshold mask (96k) and 0.68 vs loose bluish mask (153k) - the selection sits between the two (hazy near-white sky is in it); below the 0.85 bar only relative to threshold masks, no true GT"
+screenshot = "SEL-04.png"
+
+[[result]]
+id = "AD-04"
+verdict = "broken"
+ms = 700
+evidence = "Image>Adjustments>Shadows/Highlights dialog (palette 'Shadows') with Shadow/Highlight Amount-Tone-Radius, Color, Midtone, Black/White Clip, Preview; Shadow Amount 50, Highlight Amount 30, OK: 8k apply finished well under 1 s (dialog closed between 0.15 and ~1 s; 44% of doc view changed). Screen-luminance check on the 10.7% view: darkest 10% mean L 17.2->25.3 (+8.1, bar is +15) ; brightest 10% 239.0->166.7 (-72, bar is -10). Direction right, shadow lift under the bar and highlight cut far stronger than expected"
+screenshot = "AD-04.png"
+
+[[result]]
+id = "FL-01"
+verdict = "works"
+ms = 1779
+evidence = "Filter>Blur>Gaussian Blur dialog (Radius field+slider, Preview, zoom -/+, OK/Cancel); Radius 20 on the 8900x6675 doc: OK -> 'Working... 100%' progress dialog from 650 ms, gone at 1779 ms (<3 s). Result on the 10.7% view matches the original view blurred with sigma 2.1 screen px = 19.7 doc px at RMSE 0.0039 (1.0/255) - i.e. Radius is used as sigma (GIMP semantics), not PS sigma=radius/3 (that would be RMSE 0.029). Preview checkbox on by default"
+screenshot = "FL-01.png"
+
+[[result]]
+id = "EX-03"
+verdict = "works"
+ms = 2822
+evidence = "Layer 1 filled 50% Gray (Edit>Fill), Layers panel blend dropdown -> Multiply (view centre 20,40,38 -> 10,20,19); File>Export>Quick Export as PNG (palette 'Quick', 4th match) opened the portal save dialog; typed path + Enter: 8900x6675 8-bit sRGB PNG (60 MB) fully written 2822 ms after Enter (<8 s); pixels equal original*0.502 at RMSE 0.0027 (0.7/255) over the whole image"
+screenshot = "EX-03.png"
+
+[[result]]
+id = "LY-01"
+verdict = "works"
+ms = 0
+evidence = "Run on the open landscape-8k doc (same math as product-1k): new layer filled 50% Gray, Layers panel Blend Multiply + Opacity field 60; Quick Export as PNG: exported pixels = base*0.7 (=base*(1-0.6)+base*0.5*0.6) e.g. 236,242,254 -> 165,170,178; whole-image RMSE vs base*0.7 = 0.0030 (0.8/255), within +-2/255"
+screenshot = "LY-01.png"
+
+[[result]]
+id = "MK-03"
+verdict = "works"
+ms = 0
+evidence = "Channels panel (RGB/Red/Green/Blue, Ctrl+2..5): plain xdotool Ctrl+click on the Blue thumbnail did nothing, with Ctrl latched in Window>Modifier Keys the click loaded the selection (marching ants, 7.7% of view changed); Select>Inverse Selection; Layer From Background + Layer Mask>Reveal Selection (palette) added a mask; Quick Export PNG alpha == 255-Blue of the source: RMSE 0.0004 (0.1/255) at 10% scale, e.g. B=32->a=223, B=254->a=1, B=140->a=115"
+screenshot = "MK-03.png"
+
+[[result]]
+id = "FL-03"
+verdict = "works"
+ms = 162
+evidence = "Edit>Content-Aware Fill dialog (Sampling Auto/Margin/Channel, Color Adaptation, Rotation, Scale, Mirror, Sample Layers, Output Current/New/Duplicate, Seed, Preview); 400x300 doc px marquee on textured ground of the 8k, Output=New Layer, OK: dialog closed in ~160 ms and a 'Content-Aware Fill 1' layer appeared; inside the region 61% of view px changed, gray mean 66->60 vs surrounding 20px ring mean 61 (within 2%), std 31->36 vs ring 19, Sobel edge mean 28.4->13.2 (-53%, bar -50%). Selection made with Marquee rather than Lasso"
+screenshot = "FL-03.png"
+
+[[result]]
+id = "AI-02"
+verdict = "missing"
+ms = 0
+evidence = "No Generative Fill: command palette has no match for 'Generative' (empty list), 'Generate' only yields Image Assets/Fragment/Desaturate, 'Inpaint' only Paint Bucket/Oil Paint/Paste Into; Edit menu lists Fill/Content-Aware Fill/Content-Aware Scale/Puppet Warp/Perspective Warp but no prompt-based fill or contextual task bar. Nearest feature is Content-Aware Fill (FL-03)"
+screenshot = "AI-02.png"
+
+[[result]]
+id = "SEL-03"
+verdict = "works"
+ms = 502
+evidence = "Quick Selection Tool (palette; bar: Sample All Layers, Enhance Edge, 'Alt to subtract', Select Subject), brush 80 via preset popup; 4 drags over the subject grew the marching-ants mask 427->1652->1996->3839 changed view px, selection visible in a screenshot finished 502 ms after mouseup (incl. ~400 ms capture), Alt-latched drag subtracted (1553 px changed); Fill Black shows a 173x198 screen px (1027x1176 doc px) contiguous region on the subject. IoU vs person GT NOT measured: no ground truth for this image (dark-threshold proxy invalid), so the 0.90 bar is unverified"
+screenshot = "SEL-03.png"
+
+[[result]]
+id = "AI-01"
+verdict = "works"
+ms = 2449
+evidence = "Select>Subject (Quick Selection bar button) on the 4k portrait: marching ants appeared within 2449 ms of the click (poll granularity ~0.8 s; <5 s CPU bar); Fill Black shows one contiguous subject region = 47% of the view, bbox 761x498 screen px (4520x2957 doc px), 7 small internal holes; Layer Mask>Reveal Selection from it added a mask to Layer 0. IoU/hair-alpha vs GT not measured (no ground truth for this image)"
+screenshot = "AI-01.png"
+
+[[result]]
+id = "SEL-06"
+verdict = "works"
+ms = 3025
+evidence = "Select>Select and Mask (palette 'Select and Mask') on the Select Subject selection opens an in-window Refine Edge dialog (View Onion Skin/Opacity, Show Edge/Original, Refine Edge Brush (R) with Mode/Size/Clear Brush Strokes, Radius/Smart Radius/Smooth/Feather/Contrast/Shift Edge, Decontaminate + Amount, Output dropdown Selection/Layer Mask/New Layer/New Layer With Mask/New Document(+With Mask), Sample All Layers, Preview, OK/Cancel); dialog draggable. One Refine Edge Brush stroke along the hair line changed 20663 view px; Decontaminate on, Output=Layer Mask, OK: result 3025 ms later (incl. capture) = new 'Background copy' layer with a mask over the untouched Background; hiding Background leaves an opaque subject bbox 684x497 screen px (4050x2940 doc px) on the checkerboard. Hair alpha MAE vs GT NOT measured (no ground truth for this image)"
+screenshot = "SEL-06.png"
+
+[[result]]
+id = "LY-02"
+verdict = "works"
+ms = 0
+evidence = "layers-styles.psd (11 type layers with fx): Shift+click selected Satin, Stroke, Pattern Overlay rows in the (small, scrolling) Layers panel; Ctrl+G made 'Group 1' (blend Pass Through); Opacity field 50 changed 43605 view px at 100% zoom; Layer>Merge Visible (palette) left exactly one layer 'Background' (panel rows below empty, title 'layers-styles.psd @ 100% (Background, RGB/8)'); 801x648 doc view before vs after merge RMSE = 0 (pixel-identical, bar <1/255). Composite measured from the 100% view, not an exported PNG: Quick Export / Export As exported only the selected layer (180x48, 'Export As: Satin')"
+screenshot = "LY-02.png"
+
+[[result]]
+id = "LY-03"
+verdict = "works"
+ms = 0
+evidence = "Product cut to Layer 1 (Quick Selection > Select Subject, Layer Via Cut; hidden Background shows a 358x306 screen px product on checker). Layer Style dialog (palette 'Drop Shadow'): Styles list + Drop Shadow panel (Blend Multiply, Opacity, Angle 120/Global Light, Distance, Spread, Size, Contour, Noise, Knockout); Opacity 75, Distance 10, Size 15 typed (Tab to commit - Enter closes the dialog as OK); Stroke panel Size 3 Position Outside, Color via Color Picker hex FFFFFF; OK. Layers panel lists Effects: Drop Shadow, Stroke. At 71.4% zoom, column profile below the product edge: 255,246 (white band = 3 doc px stroke) then shadow 123->102 min (-147 vs original 249) recovering to 247 by +19 screen px = 27 doc px (distance 10 + size 15); 66-100% of edge rows/cols show >=20 darkening within +5..+18 px; right side dips only -10 (shadow offset is mostly downward at angle 120). Numeric field values could not be OCR-read, verified by the rendered geometry"
+screenshot = "LY-03.png"
+
+[[result]]
+id = "LY-04"
+verdict = "works"
+ms = 0
+evidence = "landscape-8k: Layer From Background, Horizontal Type Tool (palette 'Type Tool' - 'Horizontal Type Tool' query lands on the Type MASK tool first) typed 'CANVAS' (options-bar size later set to 600 pt), Layer 0 selected > Bring Forward puts the photo above the text, Layer>Create Clipping Mask indents Layer 0 under CANVAS. View at 10.7%: 657.8k of 677.6k view px are exact checkerboard (255 / 204) i.e. alpha 0 outside the glyphs; photo pixels (19125 px) only inside the 154x403 screen-px text region. Move tool (V; palette 'Move Tool' hits Content-Aware Move first, undone AE=0) with Auto-Select off, drag Layer 0 +50 screen px (=467 doc px): photo content inside the letters shifted (17781 px changed), still 0 non-checker px outside the same 154x403 region (visible photo px 11721 because the photo's left edge entered the leftmost letters). Initial options-bar size entry '900' + Tab registered as 96 pt; '600' + Enter took effect"
+screenshot = "LY-04.png"
+
+[[result]]
+id = "LY-05"
+verdict = "works"
+ms = 0
+evidence = "Palette 'Curves (Layer > New Adjustment Layer)' opens a modal Curves dialog whose OK applied the curve DESTRUCTIVELY to Background (no new layer; view mean 151.7->175.2, Ctrl+Z restored) - the adjustment LAYER path is the Adjustments panel (Properties/Adjustments tab, Curves icon, tooltip 'Curves'): it created 'Curves 1' (Layer Mask) and the Properties panel shows the curve editor (panel is short, grid needs wheel-scroll). Midpoint dragged +30 (point at 128,158 equivalent): view gray mean 151.7 -> 177.5; hiding Curves 1 gives mean 151.687 = original exactly (Background pixels untouched). Double-click on the Curves 1 thumbnail re-opens the editor with the point where it was; dragged down to about +10: mean 160.3 (< 177.5, > 151.7, monotone). Modal dialog buttons are OK (left, dark) / Cancel (right, light) at y=866"
+screenshot = "LY-05.png"
+
+[[result]]
+id = "MK-01"
+verdict = "works"
+ms = 0
+evidence = "Select Subject on the 4k portrait, Layer From Background, Layer>Layer Mask>Reveal Selection (palette): title 'Layer 0, Layer Mask', row shows image thumb + link + black/white mask thumb; after Ctrl+D the view is exact checkerboard outside the subject silhouette (head/shoulders/arms shape, 333k of 652k view px transparent), i.e. mask = selection (pixel MAE vs the selection mask not exported/measured). Mask thumb clicked, Brush (B): D gave a WHITE foreground on the mask (first stroke revealed, undone), X then 8x '[' and a 50x30 screen px stroke on the shoulder turned a 154x109 px region to checkerboard (mask 0 there; 23929 px changed). Alt+click on the mask thumbnail with Alt latched in Window>Modifier Keys did NOT switch to the mask-only view (view unchanged, no status message); plain Alt is eaten by the WM"
+screenshot = "MK-01.png"
+
+[[result]]
+id = "MK-02"
+verdict = "works"
+ms = 0
+evidence = "With the MK-01 mask thumb selected the Properties panel shows 'Layer Mask' with Density (%), Feather (px) and Refine. Density 70 (typed slowly; a fast '70' registered as 7): four hidden-area probes read composite alpha 0.304 / 0.306 / 0.297 / 0.301 vs the checkerboard (e.g. 125 photo + 204 checker -> 180), i.e. 0.30 +-0.02. Feather 20 px changed 4318 view px and softened the head-top edge profile (194->188..190 ramp at 17.3% zoom = 3.5 screen px). Reverting to 100 / 0: the 970x672 view equals the MK-01 composite exactly except the bottom 2 rows (view border), AE=0 over the image area"
+screenshot = "MK-02.png"
+
+[[result]]
+id = "AD-01"
+verdict = "works"
+ms = 0
+evidence = "Levels dialog (palette 'Levels'; Channel RGB, histogram with 3 input handles, Input fields black/gamma/white, Output Levels, Preview, OK): Input 20 / 1.10 / 235 (fields typed slowly + Tab; the first attempt left white at 255 - the 235 only registered on a second entry, sliders confirm 20 and 235 positions), OK applies destructively. On the 960x660 view (17.3% zoom) the result matches out=255*((in-20)/215)^(1/1.1) with RMSE 0.84/255 per channel (bar <1/255); empirical transfer 20->2.6, 64->60.2, 128->136.4, 192->208, 235->254.9; of view px with R<=20, 1019/1452 became 0 and of R>=235, 8281/8872 became 255 (remainder = downscaled-view mixing). Ctrl+L shortcut not tested"
+screenshot = "AD-01.png"
+
+[[result]]
+id = "AD-02"
+verdict = "works"
+ms = 0
+evidence = "Curves dialog (palette 'Curves'; Eyedroppers, Channel dropdown RGB/Red/Green/Blue, 4x4 grid 276 px, Input/Output readout, Preview, OK/Cancel): clicking the diagonal adds a point and dragging moves it - points placed at (64,48) and (192,208) (readout 192/208), Channel=Red, point (128,136) (readout 128/136), OK applies destructively. On the 960x660 view the G and B channels match the monotone (Fritsch-Carlson) cubic spline through the RGB points at RMSE 0.63/255 (bar 2/255; e.g. 64->48.2, 128->128.0, 192->208.0, 224->235.0); Red matches red-curve-then-RGB-curve composition at RMSE 0.78/255 (128->139.0 vs G 128.0, 160->180.1 vs 171.1) - only Red changed additionally"
+screenshot = "AD-02.png"
+
+[[result]]
+id = "AD-03"
+verdict = "works"
+ms = 0
+evidence = "product-1k.png has NO red or blue pixels at all (0 px with S>0.12 in hue 345-15 or 200-260), so the task was run on landscape-8k.jpg instead. Hue/Saturation dialog (palette; Edit dropdown Master/Reds/Yellows/Greens/Cyans/Blues/Magentas, Hue/Saturation/Lightness fields+sliders, Colorize, Preview, OK/Cancel; choosing Reds adds range sliders and the dialog grows). Edit=Reds, Hue 40, Saturation -20 (typed), OK. Committed result on the 940x705 view: red pixels (H 345-15, S>0.25, n=4330) mean hue shift +39.5 deg (median +39.8; bar +40+-5), their saturation 0.28->0.23; blue pixels (n=102679) hue shift 0.0 and saturation unchanged; hues 60-300 deg untouched (dHue 0.0). BUG NOTE: while the dialog was open the live Preview showed a different, wrong effect (yellows/greens rotated -28..-52 deg and desaturated, magentas +46, reds only -4); the committed pixels are correct"
+screenshot = "AD-03.png"
+
+[[result]]
+id = "AD-05"
+verdict = "broken"
+ms = 1943
+evidence = "File>Open on raw-sample.dng (Pentax K-x 12-bit) opens a separate 'Camera Raw (raw-sample.dng)' window 1570 ms after Enter with a demosaiced colour preview (4288x2848, no error), Basic sliders Exposure/Contrast/Highlights/Shadows/Whites/Blacks, collapsible Color (White Balance As Shot, Temperature, Tint, Vibrance, Saturation), Effects (Texture, Clarity, Dehaze, Vignetting), Curve, Color Mixer, Color Grading, Detail, Before, Open, Cancel. Temperature is a -100..100 slider (no Kelvin; '500' clamped to 100), Exposure 0.7, Dehaze 20; Open produced the document 'raw-sample.dng @ 23.2% (RGB/16)' 373 ms later (total decode+render well under 10 s). FAIL on brightness: Exposure +0.7 alone raises the preview by only +0.30 EV measured in display-linear light (per-pixel median, p25 0.29 / p75 0.31, uniform) = 1.62^(1/2.2), i.e. the exposure gain appears to be applied to gamma-encoded values; the full recipe gave +0.27 EV vs the +0.6..0.8 bar"
+screenshot = "AD-05.png"
+
+[[result]]
+id = "FL-02"
+verdict = "broken"
+ms = 0
+evidence = "Filter>Sharpen>Unsharp Mask dialog (palette 'Unsharp Mask'): Amount %, Radius px, Threshold fields + sliders, Preview; no OK/Cancel buttons visible - Return in a field commits and closes, Esc cancels. Amount 80, Radius 1.5, Threshold 3 at 100% zoom (View>100%; Ctrl+1 did not zoom): on a 600x400 view crop the Sobel gradient of edge pixels (Sobel>40, n=1401) rose by a median +22% (mean +12%), under the +30% bar; flat pixels (3x3 std<3, n=39422) changed by mean 0.88/255 with 13% of them >1/255 (bar <=1/255). Sharpening is applied and edge-selective, but weaker than the Photoshop reference for these parameters"
+screenshot = "FL-02.png"
+
+[[result]]
+id = "FL-04"
+verdict = "broken"
+ms = 0
+evidence = "Filter>Lens Correction dialog (palette) on the opened DNG (EXIF: PENTAX K-x, smc PENTAX-DA L 18-55mm @55mm): Focal Length field shows 0, checkboxes Correct Distortion / Correct Vignette / Correct CA all on, Auto Scale, Distortion slider, Red/Cyan, Blue/Yellow, Vignette Amount/Midpoint, Vertical..., zoom, OK. OK with the auto settings changed NOTHING: 970x668 view AE=0 vs before, corner/centre brightness ratio stays 0.795 (bar >=0.9), no lens profile or EXIF focal length is picked up (no status message). Manual values do work: Distortion -30 + Vignette Amount +50 changed 13.4% of view px and brightened corners (TL 75->189, centre 90). Line-curvature reduction not measurable (no straight-line reference in the image)"
+screenshot = "FL-04.png"
+
+[[result]]
+id = "FL-05"
+verdict = "works"
+ms = 0
+evidence = "Layer>Smart Objects>Convert to Smart Object (palette) on the portrait (title 'Layer 0'), Filter>Other>High Pass dialog (Radius field, Preview, zoom) Radius 3 + Return: Layers panel shows a 'Smart Filters' header and a 'High Pass' row under Layer 0; the 100% view becomes a gray high-pass image (mean 127.5). Toggling the High Pass row eye (x=1399) returns the view to the original (AE 5603 px = 0.8%, UI outline only) - source pixels untouched. Re-edit: a plain double-click on the row only toggled visibility; click-to-select then double-click on the row name reopened the High Pass dialog with Radius 3 preserved; Radius 6 + Return: same single smart-filter row, 300x200 crop gray std 5.02 -> 9.31 and Laplacian std 0.881 -> 0.968 (higher high-frequency energy, 2.9% of view px changed)"
+screenshot = "FL-05.png"
+
+[[result]]
+id = "TX-01"
+verdict = "broken"
+ms = 0
+evidence = "Horizontal Type Tool on product-1k at 100%: options bar has font (Inter) / style (Regular) / size / anti-alias / align / colour swatch (default colour is WHITE); size 72 pt, click, typed 'Redrob Canvas', Esc: a type layer named 'Redrob Canvas' appears (title), but the glyphs are rendered STACKED VERTICALLY one character per line (hiding Background shows a 49 px wide x 469 px tall column of 13 white glyphs at ~36 px line pitch; glyph heights 29-45 px, 'R' 38 px vs ~51 px expected cap height for 72 pt) - same stacking seen in LY-04 (CANVAS at 600 pt = 154x403 px). Colour: options-bar swatch -> Color Picker (Text Color), hex ff3b30, OK: the swatch stayed white and the glyphs stayed white (no #FF3B30 pixels in the view); Pretendard not installed on this host (fc-list empty). Editability of the layer not re-tested"
+screenshot = "TX-01.png"
+
+[[result]]
+id = "TX-02"
+verdict = "broken"
+ms = 0
+evidence = "Type tool drag on landscape-8k at 100% made an 800x400 paragraph text box (Properties: type layer W 735 H 448, layer named after the text); 3 lorem-ipsum sentences typed at 24 pt render inside the box but as 8 VERTICAL COLUMNS of stacked single glyphs (change-mask of the box shows glyph columns ~100 px apart read top-to-bottom, no horizontal lines), so line-end alignment vs the box edges cannot be met; text does stay inside the box (no overflow). Type > Panels > Paragraph Panel (palette) only adds a collapsed 'Paragraph' header to the right dock; Justify All / leading / hyphenation not reachable to test. Same vertical-stacking defect as TX-01"
+screenshot = "TX-02.png"
+
+[[result]]
+id = "TX-03"
+verdict = "works"
+ms = 0
+evidence = "Type>Warp Text dialog (palette) on the TX-01-style 72 pt 'Redrob Canvas' layer: Style dropdown None/Arc/Arc Lower/Arc Upper/Arch/Bulge/Shell Lower/Shell Upper/Flag/Wave/Fish/Rise/Fisheye..., Orientation Horizontal/Vertical, Bend, Horizontal/Vertical Distortion, Preview, OK/Cancel. Style Arc, Bend 40, OK: the glyph footprint (Background hidden) changed from a 49x469 px column to 380x480 px (warp applied), Properties still reports 'Type Layer'. Type tool click on the text, Ctrl+A, typed 'Redrob', Esc: layer renamed 'Redrob', still 'Type Layer' (not rasterized), footprint 260x237 px i.e. warp retained on the new text. The baseline-arc height criterion could not be evaluated because glyphs are laid out stacked vertically (TX-01 defect), so the arc bends a column rather than a horizontal baseline"
+screenshot = "TX-03.png"
+
+[[result]]
+id = "PS-01"
+verdict = "works"
+ms = 0
+evidence = "layers-styles.psd (psd-tools layer_effects fixture, 800x640) opens at 100% with a warning that a font is not installed (text may render with a substitute). Layers panel (scrolled, OCR) lists exactly the PSD's 12 layers in the PSD order: Satin, Stroke, Pattern Overlay, Gradient Overlay, Drop Shadow, Color Fill, Inner Shadow, Inner Glow, Outer Glow, Emboss, Bevel, Background - names, order and count match, each type layer carries an fx badge with an expandable Effects list. Composite check against the PSD's embedded merged image (magick psd[0]): the 800x640 100% view differs by RMSE 3.73/255 (bar <3/255), 2.3% of px beyond 3% fuzz, all on the glyph/effect pixels (substituted font). Quick Export / Export As could not be used for the comparison because they export only the selected layer (see LY-02)"
+screenshot = ""
+
+[[result]]
+id = "PS-02"
+verdict = "works"
+ms = 0
+evidence = "smart-object.psd (ag-psd fixture, 300x300, placed layers 'picture' 214x238@44,37 and 'kitty' 100x111@178,171) opens with both layers (Properties: 'Smart Object Layer'). Layer>Smart Objects>Edit Contents (palette) on kitty opened the embedded 'kitty.jpg @ 100% (RGB/8)' in a second tab (100x111, Background). Edit>Fill was not offered there (palette row disabled, Shift+F5 no-op), so the red mark was painted: foreground swatch -> Color Picker hex ff0000, Brush stroke covering ~70% of the embedded doc; Ctrl+S saved kitty.jpg (title lost its *), the parent tab immediately showed * and, after switching to it, the kitty placement region (100x111 at doc 178,171) contains 8862/11100 red-ish px (2401 exact 255,0,0) while the rest of the parent is unchanged (change map confined to the kitty rectangle at its original position/size, i.e. the placement transform is preserved)"
+screenshot = "PS-02.png"
+
+[[result]]
+id = "PS-03"
+verdict = "works"
+ms = 0
+evidence = "adjustment-layers.psd (psd-tools fill_adjustments, 256x256, 16 adjustment layers) opens with 1 warning ('Color Lookup settings could not ...'); Layers panel lists Gradient Map, Selective Color, Posterize, Color Lookup, Channel Mixer, Photo Filter, Color Balance, Hue/Saturation, Vibrance, Exposure, Curves 1, Levels 1, Brightness/Contrast + 3 Rectangle fill layers + Background. Double-click on the Curves 1 thumbnail opens its Properties curve, loaded non-identity (curve passes 24 px below the diagonal at mid-grey = darkening). Composite vs the PSD's embedded merged image: left half RMSE 2.11/255 and right half 1.09/255 (bar 3/255) once a 1-px horizontal sampling offset between the halves of the 100% view is allowed for (full-frame RMSE 11/255 is that offset). Dragged the mid point up 40 px: view mean 123.4 -> 132.1 (70% px changed). Ctrl+Shift+S (Save As; the palette row looked disabled) wrote adj-mod.psd (370 KB); closing and reopening it gives a view pixel-identical (AE 0) to the modified one and different from the original (45985 px), so the edited curve value persisted"
+screenshot = ""
+
+[[result]]
+id = "PS-04"
+verdict = "works"
+ms = 0
+evidence = "text-layers.psd (ag-psd text-test, 200x200, type layers 'a' with fx and 'b') opens at 100% with the warning 'opened with 1 warning: font ... not installed; text may render using a substitute' (the Missing-Fonts notice). Properties reports 'Type Layer' for both. Type tool click on the 'b' glyph, End, BackSpace, typed 'Z', Esc: the glyph at the b position (doc 120..140,105..130) re-rendered with a different shape (634 px changed, layer still a Type Layer) - the text is editable, not rasterized. Composite vs the PSD embedded preview: RMSE 36.9/255, expected since the original font is absent on this host (criterion applies only with the original font)"
+screenshot = "PS-04.png"
+
+[[result]]
+id = "PS-05"
+verdict = "works"
+ms = 2617
+evidence = "large-8k.psd (7680x4320, 5 layers, 303 MB): File>Open -> document title 2617 ms after Enter (bar <15 s); Ctrl+Shift+S Save As to a new .psd -> title switched to the new name 2600 ms after Enter, file 299 MB complete (bar <20 s). Re-read with ImageMagick (GIMP/Photoshop not on this host): same 5 layers in the same order with identical names (photo, gradient overlay, shapes, plasma texture, title text), all visible, opacity 100%, blend Normal as in the source (which has no masks); 'shapes' and 'title text' are stored trimmed to their content bounds (5701x2101@1300,600 / 4753x318@1482,3608) instead of full-canvas - lossless. Merged composites (psd[0]) compared at 25% scale: RMSE 0.43/255 (bar <1/255)"
+screenshot = ""
+
+[[result]]
+id = "EX-01"
+verdict = "works"
+ms = 0
+evidence = "On the flat Background-only portrait, File>Export>Export As skipped the settings dialog and went straight to the portal save dialog, and the output was a PNG regardless of the '.jpg' name or the JPEG entry in the dialog's type dropdown (5760x3840 PNG, 20.9 MB) - BUG for single-Background docs. After Layer From Background the 'Export As: Layer 0' settings dialog appears (Format PNG/JPG/WebP/TIFF/TGA/Ico, Quality, Metadata, Color Profile, Embed Color Profile (on), Image Size Scale/W/H, Constrain, Export): Format JPG, Quality 80, Embed on, Export -> save dialog -> ex01b.jpg: real JPEG, 5760x3840 (same as source), quality tag 80, embedded ICC 'sRGB IEC61966-2.1' (3144 B), PSNR vs the source JPEG 42.7 dB (bar >=38), 1.4 MB"
+screenshot = ""
+
+[[result]]
+id = "EX-02"
+verdict = "broken"
+ms = 0
+evidence = "product-1k: Layer From Background, Select Subject + Inverse Selection + Edit>Clear left the shoe on a transparent canvas (Magic Wand click made no selection this time and the Delete key did nothing). Export As (the only enabled entry is the per-layer 'Export As: Layer 0'; the document-level 'Export As (File > Export)' palette row is disabled/greyed): Format WebP, Transparency on (default), Scale 50 -> the dialog immediately reports 254 x 216 px and the exported ex02.webp is 254x216 WebP with an 8-bit alpha channel (alpha min 0 / max 255, corners alpha 0, 35 KB). Transparency is preserved but the size is the trimmed LAYER bounds at 50% (508x432 content), not the 1000x1000 canvas at 50% = 500x500 +-1 required by the bar"
+screenshot = ""
+
+[[result]]
+id = "VC-01"
+verdict = "broken"
+ms = 799
+evidence = "Ctrl+2 switches to Vector mode (menu File/Edit/Object/Type/Select/Effect/View/Window/Help, Illustrator-style Window panel list). File>Open on svg/icons.svg (Bootstrap Icons sprite: 2078 <symbol> definitions holding 3053 <path>, 1.1 MB) opened a document titled icons.svg in 799 ms, but the canvas is a blank white 100 px 'Artboard 1' with 0 visible paths: Select All changes nothing (860 px) and Document Info shows Artboards 1, Swatches 51, no objects. Because the sprite's paths live only inside unreferenced <symbol>s nothing is instantiated, so the anchor move with Direct Selection and the SVG re-save could not be exercised; opened-path count 0 vs 3053 <path> fails the bar (an importer that lists symbol contents would be needed). The command palette (Ctrl+F) does not open in Vector mode"
+screenshot = ""
+
+[[result]]
+id = "VC-02"
+verdict = "works"
+ms = 0
+evidence = "Vector mode: svg/illustration-complex.svg (1486x1646, 4092 <path> + 1381 <circle> + 214 <ellipse>, 3.9 MB) opened and rendered in 794 ms at 41.9%. Selection tool click picked a group of overlapping leaf shapes (Properties: Isolate Group / Offset Path / Arrange; a click-drag MOVES the object rather than marquee-selecting). Window>Pathfinder (Ctrl+Shift+F9) panel: Shape Modes Unite / Minus Front / Intersect / Exclude + Pathfinders row; tooltip 'Unite' confirmed; click: the selection became a single path (Properties lost 'Isolate Group'), 15346 view px changed where the merged fills flattened. Ctrl+Shift+S -> SVG Options dialog (Profile, Styling Internal CSS, Font, Embed Images, Object IDs, Decimal, Encoding, Minify, Responsive, Preserve Editing Capabilities, OK) wrote vc02.svg: 5659 <path> vs 5687 shapes in the source, i.e. the ~29 selected shapes collapsed into 1 path. Area equality (union-area within 1%) and anchor count not computed"
+screenshot = "VC-02.png"
+
+[[result]]
+id = "LO-01"
+verdict = "works"
+ms = 1565
+evidence = "Ctrl+3 switches to Layout mode (File/Edit/Layout/Type/Object/Table/View/Window/Help). No IDML sample exists in the corpus; layout/poster-a3.pdf (A3, 1 page) opened as 'poster-a3.pdf @ 57.96%' 1565 ms after Enter and rendered. The PDF's content is imported as graphics (the source has no extractable text: gs txtwrite 0 words, no fonts), so a Type-tool click created a new text frame (Properties: 230x127 pt, Source Sans 3 Regular 12 pt) into which 'ZZ' was typed. File>Save as PDF... dialog (Preset, Standard None/PDF-A-2b/PDF-X-1a/PDF-X-3/PDF-X-4:2010, Compatibility 1.7, General/Compression/Marks and Bleeds/Output/Advanced/Security/Summary) with Standard PDF/X-4:2010 wrote lo01.pdf (8.6 MB): MediaBox 841.8898x1190.5511 pt = 297.00x420.00 mm, GTS_PDFXVersion 'PDF/X-4' + pdfxid XMP present, the one font used (CAMMAW+SourceSans3-Regular, Type0) is embedded as FontFile2, 8 image XObjects carry the page art, and gs text extraction returns 'ZZ'. File>Export submenu offers only For Screens/As/SVG/PNG/Save for Web (PDF is under Save as PDF)"
+screenshot = ""
+

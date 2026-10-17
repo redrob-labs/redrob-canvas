@@ -1,0 +1,192 @@
+# Stage 3 Part 1 -- Redrob Canvas 0.8.1 GPU performance on gui-box-gpu (NVIDIA L40S).
+# Generated 2026-10-16 from ~/canvas-gap/logs/{run.log,trace-*.log,smi-*.log} on the GPU host
+# (copied to results/gpu/run.log). All numbers are wall-clock ms measured outside the app except
+# where the source says "app trace" (the app's own REDROB_CANVAS_TRACE / REDROB_PHOTO_STROKE_TRACE
+# stderr hooks, found by grepping the binary for env names and confirmed in apps/redrob-canvas/src/
+# trace.rs and crafts/photocraft/crates/ui-egui/src/stroke_trace.rs).
+
+[host]
+name = "gui-box-gpu"
+gpu = "NVIDIA L40S 46068 MiB, driver 595.91.07"
+cpu_cores = 8
+ram_gb = 61
+display = "real X session: Xdcv (NICE DCV) :0 + xfwm4, resized with xrandr from 800x600 to 1600x1000; no Xvfb used"
+app = "redrob-canvas-0.8.1-linux-x86_64.tar.gz (sha256 in tools/SHA256SUMS.txt), extracted to ~/canvas-gap/app"
+env = "WGPU_BACKEND=vulkan REDROB_CANVAS_TRACE=1 REDROB_PHOTO_STROKE_TRACE=1 REDROB_CANVAS_NO_UPDATE_CHECK=1 REDROB_CANVAS_CONFIG_DIR=~/canvas-gap/cfg LD_LIBRARY_PATH=~/canvas-gap/sysroot/usr/lib/x86_64-linux-gnu"
+gpu_confirmed = "nvidia-smi lists app/bin/redrob-canvas as a C+G process (216 MiB idle, up to 3649 MiB with the 8K 10-layer document); the app's stroke trace reports 'vulkan NVIDIA L40S'"
+missing_lib = "libxkbcommon-x11.so.0 is not installed on the host and the binary dlopens it (xkbcommon-dl panic at start); fixed for the test by extracting libxkbcommon-x11-0_1.6.0-1build1_amd64.deb into a private sysroot. A Linux user without libxkbcommon-x11 gets an abort on launch -- gap item"
+photo_prefs = "performance.useGpu=true (default), gpuBackend=auto, lowResolutionPreviews=true, memoryUsageMb=8192; dialogs.filter.blur.gaussianBlur.radius=20 pre-set so the remembered dialog default is a real blur"
+
+[method]
+start = "time from exec to the window appearing (xdotool search) and to the first UI frame (app trace 'shell set up the context')"
+open = "Ctrl+O -> xdg-desktop-portal GTK file chooser -> Ctrl+L path Return; ms from Return until the window title becomes '<file> - Redrob Canvas' (the shell sets it the frame the document becomes active; the Photo editor's own '<file> — Redrob Canvas' title appears the same frame). Polled every 20 ms"
+ops = "Ctrl+F command palette -> type the command -> Return opens its dialog (1.5 s settle, live preview on a reduced copy per lowResolutionPreviews) -> Return commits; ms from the commit Return until the title gains '*' (document dirty = command committed, full-resolution). Auto Tone / Auto Contrast have no dialog: ms from the palette Return. Each op runs in a fresh app instance on a clean document"
+fps = "app stroke trace: a 150-point xdotool brush stroke (B tool) across the canvas; per-frame interval p50/p95 while the stroke is live -> fps = 1000/interval_p50. The first stroke after selecting the tool is never traced, so two strokes were drawn per state and the traced one(s) reported"
+composite = "10 layers = the opened photo + 9x Layer via Copy (Ctrl+J); confirmed by GPU memory: +768 MiB at 4K (= 9 x 5760x3840x4 B) and +2304 MiB at 8K (= 9 x 8900x6675x4 B)"
+vram = "nvidia-smi --query-compute-apps used_memory sampled every 0.5 s during the run; peak per op"
+screenshots = "import -window <app window> before/after each op; compared with ImageMagick compare -metric AE + trim bbox, never viewed"
+
+[start]
+window_ms = [48, 51, 52, 50, 50, 50, 53, 48, 53, 50, 52, 48, 52, 48, 49]
+first_frame_ms_app_trace = [257, 268, 265, 274]
+first_frame_ms_standalone_trace_runs = [434, 434, 430]
+first_frame_ms_cold_first_launch = 1391
+note = "warm start = ~0.26-0.43 s to the first frame on the L40S; the very first launch after extraction (cold page cache) took 1.39 s"
+
+[[open]]
+file = "photo/portrait-4k.jpg"
+size = "5760x3840 JPEG 9.7 MB"
+ms = [1157, 1121, 1087, 1113, 1119, 1120, 1143]
+median_ms = 1120
+vram_peak_mib = 1060
+
+[[open]]
+file = "photo/landscape-8k.jpg"
+size = "8900x6675 JPEG 37 MB"
+ms = [2144, 2161, 2095, 2108, 2128, 2167, 2141]
+median_ms = 2141
+vram_peak_mib = 1345
+
+[[open]]
+file = "psd/large-8k.psd"
+size = "7680x4320 PSD 303 MB (CC0 photo + generated layers)"
+ms = [3024]
+median_ms = 3024
+vram_peak_mib = 1636
+
+[mode_switch]
+source = "app trace, REDROB_CANVAS_TRACE_SWITCH=vector,layout,photo (no input device), 4 runs; plus Ctrl+2/Ctrl+1/Ctrl+3/Ctrl+1 with the 10-layer 4K and 8K documents open"
+photo_to_vector_first_frame_ms = [21.5, 21.3, 20.8, 20.7, 21.3, 21.8]
+vector_to_layout_first_frame_ms = [12.8, 11.8, 11.2, 11.5]
+layout_to_photo_first_frame_ms = [1.9, 2.0, 2.1, 2.0, 3.2, 3.4]
+vector_to_photo_first_frame_ms_10layers = [2.9, 3.2]
+photo_to_layout_first_frame_ms_10layers = [13.4, 12.6]
+build_vector_ms = 0.9
+build_layout_ms = [4.2, 4.3, 3.1]
+settled_frame_ui_ms = 0.5
+note = "switch applied 0.0 ms after the ask in every run (fonts already merged); the first Vector frame costs ~20 ms, Layout ~9 ms, Photo ~2-3 ms; frames 1-11 after a switch are 0.4-1.0 ms. No 10-second freeze or black frame on this host"
+
+[[op]]
+name = "gaussian_blur"
+params = "radius 20 (remembered dialog value), whole image, Background layer"
+size = "4K 5760x3840"
+commit_ms = [668, 645]
+vram_peak_mib = 1060
+visible_change_px = 714509
+screenshot = "blur_4k_open.png -> blur_4k_done.png (bbox 1294x936 = whole canvas changed)"
+
+[[op]]
+name = "gaussian_blur"
+params = "radius 20"
+size = "8K 8900x6675"
+commit_ms = [1826]
+vram_peak_mib = 1345
+visible_change_px = 710932
+
+[[op]]
+name = "levels"
+params = "dialog defaults (identity: in 0/1.0/255) -- the adjustment dialogs do not take remembered values and the fields could not be set blind; the commit still evaluates the whole image"
+size = "4K"
+commit_ms = [294]
+vram_peak_mib = 1060
+visible_change_px = 2053
+note = "only the title/status area changed (identity mapping), confirming the commit ran without a visual change"
+
+[[op]]
+name = "levels"
+params = "dialog defaults (identity)"
+size = "8K"
+commit_ms = [722]
+vram_peak_mib = 1473
+
+[[op]]
+name = "curves"
+params = "dialog defaults (identity)"
+size = "4K"
+commit_ms = [253]
+vram_peak_mib = 1060
+
+[[op]]
+name = "curves"
+params = "dialog defaults (identity)"
+size = "8K"
+commit_ms = [702]
+vram_peak_mib = 1345
+
+[[op]]
+name = "auto_tone"
+params = "Image > Auto Tone (per-channel levels, non-identity, no dialog)"
+size = "4K"
+commit_ms = [297]
+vram_peak_mib = 1060
+
+[[op]]
+name = "auto_tone"
+size = "8K"
+commit_ms = [750]
+vram_peak_mib = 1345
+
+[[op]]
+name = "auto_contrast"
+params = "Image > Auto Contrast (non-identity, no dialog)"
+size = "4K"
+commit_ms = [288]
+vram_peak_mib = 1060
+
+[[op]]
+name = "auto_contrast"
+size = "8K"
+commit_ms = [732]
+vram_peak_mib = 1345
+
+[[fps]]
+state = "1 layer, brush stroke"
+size = "4K"
+frame_interval_p50_ms = 4.49
+frame_interval_p95_ms = 5.53
+fps_p50 = 223
+canvas_refresh_p50_ms = 0.45
+ui_p50_ms = 1.05
+frames = 236
+source = "stroke trace: 236 frames on vulkan NVIDIA L40S (p50/p95 ms): interval 4.49/5.53 moves/frame 1.00/1.00 stroke 0.37/0.89 canvas 0.45/0.69 ui 1.05/1.67 cpu 1.98/2.57 wait 2.40/3.40"
+
+[[fps]]
+state = "10 layers, brush stroke on the top layer"
+size = "4K"
+frame_interval_p50_ms = [4.87, 4.93]
+frame_interval_p95_ms = [6.29, 6.08]
+fps_p50 = 204
+canvas_refresh_p50_ms = [0.68, 0.69]
+ui_p50_ms = [1.35, 1.39]
+vram_peak_mib = 1828
+source = "stroke trace: 226 frames ... interval 4.87/6.29 ... canvas 0.68/0.93 ui 1.35/2.06 cpu 2.37/3.18 wait 2.38/3.49 | 223 frames ... interval 4.93/6.08 ... canvas 0.69/0.94 ui 1.39/1.97"
+
+[[fps]]
+state = "1 layer, brush stroke"
+size = "8K"
+frame_interval_p50_ms = 4.96
+frame_interval_p95_ms = 6.29
+fps_p50 = 202
+canvas_refresh_p50_ms = 0.58
+ui_p50_ms = 1.33
+frames = 221
+source = "stroke trace: 221 frames on vulkan NVIDIA L40S (p50/p95 ms): interval 4.96/6.29 moves/frame 1.00/1.00 stroke 0.57/1.43 canvas 0.58/0.92 ui 1.33/2.46 cpu 2.37/3.44 wait 2.42/3.50"
+
+[[fps]]
+state = "10 layers, brush stroke on the top layer"
+size = "8K"
+frame_interval_p50_ms = [6.22, 6.43]
+frame_interval_p95_ms = [7.84, 7.94]
+fps_p50 = 158
+canvas_refresh_p50_ms = [1.39, 1.58]
+ui_p50_ms = [2.64, 2.81]
+vram_peak_mib = 3649
+source = "stroke trace: 173 frames ... interval 6.22/7.84 ... canvas 1.39/2.19 ui 2.64/3.96 cpu 3.68/5.05 | 169 frames ... interval 6.43/7.94 ... canvas 1.58/2.12 ui 2.81/3.74"
+
+[fps_note]
+text = "The 'wait' stage (interval minus CPU time, ~2.4 ms p50 in every run) is the swap-chain wait on the Xdcv display, which has no real vsync; the app is not GPU-bound at either size: canvas composite+upload is 0.45-1.6 ms p50 and the 10-layer composite adds only ~0.3 ms at 4K and ~0.9 ms at 8K. Blur/levels/curves are one-shot commands; the app has no frame-time hook that covers them, so they are reported as commit wall ms above."
+
+[cpu_host_comparison]
+status = "not measured"
+reason = "the CPU-only host's main display :0 was occupied for the whole run by another session's Canvas instance (pid 932284, 'portrait-4k.jpg* - Redrob Canvas', Stage 2 verification). Launching a second instance on :0 would have stolen its focus and broken that session's xdotool-driven checks, and the steering forbids a local Xvfb. Re-run tools/gpu/run_part1.sh locally (DISPLAY=:0, no WGPU_BACKEND) once :0 is free to fill this section."
+host = "Intel Xeon Platinum 8488C, 32 vCPU, 123 GB RAM, no GPU (Vulkan ICDs: lvp/lavapipe software only), display :0 1920x1080"

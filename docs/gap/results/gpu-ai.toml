@@ -1,0 +1,208 @@
+# Stage 3 Part 2 -- Canvas AI-dock engine (IOPaint 1.6.0 + rembg, as pinned by crates/redrob-ai)
+# on gui-box-gpu (NVIDIA L40S). Generated 2026-10-16 from ~/canvas-gap/logs/{ai.log,iopaint-server.log}
+# on the GPU host; outputs stay in ~/canvas-gap/out/ai/ there (copied crops in results/gpu/).
+
+[setup]
+venv = "~/canvas-gap/venv (python3 -m venv, user home only, --no-cache-dir): torch 2.5.1+cu121, torchvision 0.20.1+cu121 (download.pytorch.org/whl/cu121, the index redrob-ai uses for Device::Cuda), iopaint 1.6.0, rembg 2.0.57 [gpu], pillow 9.5.0, numpy 1.26.4, onnxruntime-gpu 1.31.0 -- 6.4 GB"
+server = "venv/bin/iopaint start --host 127.0.0.1 --port 8188 --model lama --device cuda --model-dir ~/canvas-gap/models --enable-remove-bg --remove-bg-device cuda --remove-bg-model u2net --enable-realesrgan --realesrgan-device cuda --realesrgan-model realesr-general-x4v3 --enable-interactive-seg --interactive-seg-model mobile_sam --interactive-seg-device cuda (the argument set redrob-ai/src/iopaint/engine.rs builds for Device::Cuda)"
+client = "tools/gpu/ai_bench.py: the same HTTP calls crates/redrob-ai/src/iopaint/client.rs makes -- data-URL PNG in a JSON body to /api/v1/inpaint, /run_plugin_gen_image, /run_plugin_gen_mask, /switch_plugin_model; outpaint = pad the canvas with black, mask the border, /inpaint (pixels::pad_for_outpaint)"
+models_downloaded = "big-lama.pt 196 MB, u2net.onnx 168 MB, isnet-general-use.onnx 170 MB, realesr-general-x4v3.pth 4.7 MB, mobile_sam 39 MB -> ~canvas-gap/models"
+gpu_idle_mib = 1038
+pitfalls = "iopaint pulls the CPU 'onnxruntime' wheel, which shadows 'onnxruntime-gpu' from rembg[gpu]: rembg ran on CPU until onnxruntime was uninstalled and onnxruntime-gpu reinstalled (providers then CUDA). redrob-ai pins rembg[cpu], so the shipped AI dock always runs RemoveBG on the CPU even with a CUDA torch -- gap item. onnxruntime-gpu also tries TensorrtExecutionProvider first and logs an 'EP Error ... Please install TensorRT' before falling back to CUDA (cosmetic)"
+timing = "time_ms = client round trip incl. PNG encode of the full image, base64 JSON, server decode, inference, server PNG encode, client decode; server_ms = IOPaint's own 'process time' log line (inference + its pre/post-processing). Warm = after one warm-up call on product-1k; VRAM = nvidia-smi memory.used sampled every 0.2 s, peak and delta vs the start of the call"
+corpus_note = "the corpus has ONE product photo (photo/product-1k.png); portrait-4k.jpg and landscape-8k.jpg were used as the other two subjects. It has no hand-drawn subject mask (only PSD clipping/adjustment-mask fixtures), so mask IoU is against the other model's mask, not a ground truth"
+
+# ---------------------------------------------------------------- inpaint (AI fill / erase)
+[[op]]
+name = "inpaint"
+model = "lama (big-lama.pt), hd_strategy Crop (default: crop around the mask + 128 px margin)"
+input = "product-1k.png 1000x1000"
+mask = "223x223 rectangle = 5.0% of the area, centred"
+time_ms = 651
+server_ms = 317
+warmup_time_ms = 2124
+vram_peak_mib = 1226
+vram_delta_mib = 194
+output = "~/canvas-gap/out/ai/inpaint_lama_product-1k.png"
+quality = "fill-vs-original MAE 44.5/255 inside the mask (the shoe's edge was under the mask); seam mean |diff| across the mask border 8.5 vs 13.4 for neighbouring pixels just outside (no visible seam); unmasked area identical"
+
+[[op]]
+name = "inpaint"
+model = "lama, Crop"
+input = "portrait-4k.jpg 5760x3840"
+mask = "1287x858 = 5.0%"
+time_ms = 7708
+server_ms = 666
+client_png_encode_ms = 1317
+vram_peak_mib = 2642
+vram_delta_mib = 1610
+output = "~/canvas-gap/out/ai/inpaint_lama_portrait-4k.png"
+quality = "MAE 37.7/255 inside the mask; seam 2.6 vs reference 2.7 (seamless)"
+
+[[op]]
+name = "inpaint"
+model = "lama, Crop"
+input = "landscape-8k.jpg 8900x6675"
+mask = "1990x1492 = 5.0%"
+time_ms = 22139
+server_ms = 1060
+client_png_encode_ms = 3944
+vram_peak_mib = 5650
+vram_delta_mib = 4614
+output = "~/canvas-gap/out/ai/inpaint_lama_landscape-8k.png"
+quality = "MAE 31.4/255 inside the mask; seam 4.0 vs reference 6.1 (seamless)"
+
+[inpaint_note]
+text = "Inference is 0.3-1.1 s even at 8K because Crop only runs LaMa on the mask's neighbourhood; the round trip is 7.7 s at 4K and 22 s at 8K because the whole image goes over HTTP as a base64 PNG both ways (client encode alone 1.3 s / 3.9 s; the server re-encodes the full result). Canvas sends the full canvas the same way (client.rs to_data_url), so at 8K the user waits ~20 s for a 1 s model -- gap item: send only the crop (use_croper) or a faster codec."
+
+# ---------------------------------------------------------------- outpaint (AI expand)
+[[op]]
+name = "outpaint"
+model = "lama, Crop (Canvas default)"
+input = "product-1k.png 1000x1000 -> 1500x1500 (25% each side = 250 px)"
+time_ms = 1294
+server_ms = 494
+vram_peak_mib = 3136
+vram_delta_mib = 2098
+output = "~/canvas-gap/out/ai/outpaint_lama_product-1k.png"
+quality = "seam mean |diff| at the original border 1.8 vs 0.4 reference (faint but measurable step); border mean RGB 188/191/190 vs original 235/235/235 -- the white studio background is extended ~20% darker (grey wash); border std 41.6 ~ original 43.8"
+
+[[op]]
+name = "outpaint"
+model = "lama, Crop (Canvas default)"
+input = "portrait-4k.jpg 5760x3840 -> 8640x5760"
+status = "FAILED: HTTP 500 -- CUDA out of memory, LaMa tried to allocate 36.3 GiB (the border mask makes the crop the whole 8640x5760 canvas and LaMa runs it in one pass)"
+vram_peak_mib = 14900
+
+[[op]]
+name = "outpaint"
+model = "lama, hd_strategy Resize (limit 1280) -- fallback, not what Canvas sends"
+input = "portrait-4k.jpg 5760x3840 -> 8640x5760"
+time_ms = 14491
+server_ms = 1804
+vram_peak_mib = 14900
+output = "~/canvas-gap/out/ai/outpaint_lama_portrait-4k_Resize.png"
+quality = "seam 7.5 vs 1.0 reference (visible soft seam: the fill is computed at 1280 px and upsampled 6.75x); border 129/131/132 std 32.7 vs original 154/153/151 std 46.6 (flatter, darker)"
+
+[[op]]
+name = "outpaint"
+model = "lama, Crop (Canvas default)"
+input = "landscape-8k.jpg 8900x6675 -> 13350x10011"
+status = "FAILED: HTTP 500 -- CUDA out of memory, tried to allocate 97.7 GiB"
+vram_peak_mib = 38286
+
+[[op]]
+name = "outpaint"
+model = "lama, Resize (fallback)"
+input = "landscape-8k.jpg 8900x6675 -> 13350x10011"
+time_ms = 39561
+server_ms = 4019
+vram_peak_mib = 38286
+output = "~/canvas-gap/out/ai/outpaint_lama_landscape-8k_Resize.png"
+quality = "seam 6.1 vs 0.6 reference (visible); border 80/103/115 std 75.4 vs original 91/102/107 std 78.9"
+
+[outpaint_note]
+text = "Canvas's outpaint (pad + border mask + /inpaint with default hd_strategy=Crop) runs LaMa over the whole expanded canvas: 1500x1500 is fine, but 4K already needs 36 GiB and fails on a 46 GB L40S, 8K needs 98 GiB. Any user with a consumer GPU gets an error on 4K expand. The 'process time' for Resize is 1.8-4 s but the result is blurry at the seam. Gap item: tile the border, or request hd_strategy=Resize/Crop with a sane crop for outpaint."
+
+# ---------------------------------------------------------------- remove background / subject selection
+[[op]]
+name = "remove_background"
+model = "u2net (rembg via IOPaint RemoveBG plugin, CUDA)"
+input = "product-1k.png 1000x1000"
+time_ms = 252
+mask_time_ms = 229
+warmup_time_ms = 597
+vram_peak_mib = 1830
+vram_delta_mib = 792
+output = "~/canvas-gap/out/ai/rembg_u2net_product-1k.png"
+quality = "subject 7.8% of frame opaque, mask 9.4%; edge halo: 10497 partially transparent px = 6.1 px of fringe per edge pixel, fringe luminance +97 vs the opaque edge -> a wide bright (white-background) halo around the shoe"
+
+[[op]]
+name = "remove_background"
+model = "u2net"
+input = "portrait-4k.jpg 5760x3840"
+time_ms = 3692
+mask_time_ms = 2584
+vram_peak_mib = 1830
+output = "~/canvas-gap/out/ai/rembg_u2net_portrait-4k.png"
+quality = "subject 18.3% opaque, mask 19.0%; fringe 23.6 px per edge px, luminance +100 -> very soft, bright matte edge (u2net infers at 320x320, so the alpha ramp is ~18 px wide at 4K)"
+
+[[op]]
+name = "remove_background"
+model = "u2net"
+input = "landscape-8k.jpg 8900x6675 (no subject -- landscape)"
+time_ms = 6903
+mask_time_ms = 6960
+vram_peak_mib = 1830
+output = "~/canvas-gap/out/ai/rembg_u2net_landscape-8k.png"
+quality = "subject 0.2% opaque, mask 0.6%: the model finds no subject and keeps almost nothing (expected for a landscape; round trip is pure 8K transfer time)"
+
+[[op]]
+name = "remove_background"
+model = "isnet-general-use (switched with /switch_plugin_model)"
+input = "product-1k.png 1000x1000"
+time_ms = 303
+mask_time_ms = 278
+warmup_time_ms = 508
+vram_peak_mib = 1828
+vram_delta_mib = 776
+output = "~/canvas-gap/out/ai/rembg_isnet-general-use_product-1k.png"
+quality = "subject 8.1% opaque, mask 9.4%; fringe 1.9 px per edge px (3x tighter than u2net), luminance +83 -> thin halo"
+
+[[op]]
+name = "remove_background"
+model = "isnet-general-use"
+input = "portrait-4k.jpg 5760x3840"
+time_ms = 3609
+mask_time_ms = 2547
+vram_peak_mib = 1828
+output = "~/canvas-gap/out/ai/rembg_isnet-general-use_portrait-4k.png"
+quality = "subject 18.5% opaque, mask 18.8%; fringe 7.4 px per edge px (vs 23.6 u2net), luminance +81"
+
+[[op]]
+name = "remove_background"
+model = "isnet-general-use"
+input = "landscape-8k.jpg 8900x6675"
+time_ms = 7629
+mask_time_ms = 6797
+vram_peak_mib = 1828
+output = "~/canvas-gap/out/ai/rembg_isnet-general-use_landscape-8k.png"
+quality = "subject 0.0% opaque (everything semi-transparent, 673947 fringe px): no subject found, output unusable -- expected for a landscape"
+
+[[op]]
+name = "subject_mask_iou"
+input = "product-1k.png"
+hand_mask = "not measured: no hand mask in corpus"
+iou_u2net_vs_isnet = 0.989
+u2net_mask_pct = 9.4
+isnet_mask_pct = 9.4
+note = "the two models agree on the product's binary mask to 1%; the difference is only in the alpha ramp width (halo) above"
+
+[[op]]
+name = "subject_mask_iou"
+input = "portrait-4k.jpg"
+hand_mask = "not measured: no hand mask in corpus"
+iou_u2net_vs_isnet = 0.990
+u2net_mask_pct = 19.0
+isnet_mask_pct = 18.8
+
+[[op]]
+name = "subject_mask_iou"
+input = "landscape-8k.jpg"
+iou_u2net_vs_isnet = 0.0
+note = "no subject in a landscape; both masks ~empty"
+
+[rembg_note]
+text = "Both rembg models infer in ~0.2-0.3 s on the L40S regardless of size (they resize to 320/1024 px); the 3.6 s / 7 s at 4K / 8K is PNG+base64 transport of the full-resolution image and the RGBA result. The mask call costs the same as the image call because the image is sent again. The product shot's edge gets a bright fringe with u2net (6 px/edge px) that isnet cuts to 2 px -- Canvas defaults RemoveBG to u2net."
+
+# ---------------------------------------------------------------- upscale
+[[op]]
+name = "upscale"
+model = "realesr-general-x4v3 (RealESRGAN plugin, CUDA)"
+input = "product-1k.png 1000x1000 -> 4000x4000 (scale 4)"
+time_ms = 1827
+warmup_time_ms = 1914
+vram_peak_mib = 2358
+vram_delta_mib = 424
+output = "~/canvas-gap/out/ai/upscale_x4_product-1k.png"
+quality = "Laplacian variance 94 vs 5 for bicubic x4 (much sharper edges); downscaled back to 1000x1000 it matches the input at 30.5 dB PSNR (content preserved, no drift); 16 MP result is within the Canvas 64 Mi-pixel upscale cap"
