@@ -273,9 +273,9 @@ name = "Selection to path"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-to-path.html"
 behaviour = "Traces the selection outline into a Bezier path; an advanced dialog exposes tracing tolerances (corner threshold, error threshold, filter iterations, etc.)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/select_extra_cmds.rs (select.toWorkPath)"
-gap = "single tolerance value, no advanced tracing options"
+ours = "full"
+ours_where = "crafts/photocraft/crates/vector/src/trace.rs (TraceOptions, trace_mask_with), crafts/photocraft/crates/engine/src/vector_cmds.rs (select.toWorkPath: tolerance, threshold, cornerThreshold, cornerSurround, minArea, smooth), crafts/photocraft/crates/ui-egui/src/canvas_tool_menu.rs (Make Work Path dialog)"
+gap = ""
 priority = 2
 
 [[feature]]

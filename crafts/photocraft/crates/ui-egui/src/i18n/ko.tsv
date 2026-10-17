@@ -3397,3 +3397,6 @@ curves	Smooth	매끄럽게
 	Hue-Chroma…	색조-채도(크로마)…
 	Hue-Chroma	색조-채도(크로마)
 	Chroma	크로마
+	Corner Threshold	모서리 한계값
+	Corner Surround	모서리 범위
+	Min Area	최소 면적

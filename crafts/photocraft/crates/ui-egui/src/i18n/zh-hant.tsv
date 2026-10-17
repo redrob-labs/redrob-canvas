@@ -2823,3 +2823,6 @@ curves	Smooth	平滑
 	Hue-Chroma…	色相-色度…
 	Hue-Chroma	色相-色度
 	Chroma	色度
+	Corner Threshold	轉角閾值
+	Corner Surround	轉角範圍
+	Min Area	最小面積

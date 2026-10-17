@@ -3949,3 +3949,6 @@ cameraData	Lens	Lens
 	Hue-Chroma…	Renk Tonu-Kroma…
 	Hue-Chroma	Renk Tonu-Kroma
 	Chroma	Kroma
+	Corner Threshold	Köşe Eşiği
+	Corner Surround	Köşe Çevresi
+	Min Area	En Küçük Alan

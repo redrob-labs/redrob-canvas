@@ -3226,3 +3226,6 @@ curves	Smooth	Lisser
 	Hue-Chroma…	Teinte-chroma…
 	Hue-Chroma	Teinte-chroma
 	Chroma	Chroma
+	Corner Threshold	Seuil d'angle
+	Corner Surround	Voisinage d'angle
+	Min Area	Aire minimale

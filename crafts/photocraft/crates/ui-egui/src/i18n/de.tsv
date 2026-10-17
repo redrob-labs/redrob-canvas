@@ -3222,3 +3222,6 @@ curves	Smooth	Glätten
 	Hue-Chroma…	Farbton-Chroma…
 	Hue-Chroma	Farbton-Chroma
 	Chroma	Chroma
+	Corner Threshold	Eckenschwelle
+	Corner Surround	Eckenumgebung
+	Min Area	Mindestfläche

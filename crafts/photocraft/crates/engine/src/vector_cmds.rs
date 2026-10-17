@@ -1113,11 +1113,20 @@ fn path_to_selection(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn select_to_work_path(s: &mut Session, p: &Value) -> Result<Value> {
     let tol = f64p(p, "tolerance").unwrap_or(2.0).clamp(0.5, 10.0);
+    // Advanced tracing options (Selection to Path's dialog): all optional.
+    let options = vector::trace::TraceOptions {
+        tolerance: tol,
+        level: f64p(p, "threshold").map_or(0.5, |v| (v / 100.0).clamp(0.01, 0.99) as f32),
+        corner_threshold: f64p(p, "cornerThreshold").unwrap_or(60.0).clamp(1.0, 179.0),
+        corner_surround: f64p(p, "cornerSurround").unwrap_or(1.5).clamp(0.5, 50.0),
+        min_area: f64p(p, "minArea").unwrap_or(0.0).max(0.0),
+        smooth: f64p(p, "smooth").unwrap_or(0.0).clamp(0.0, 64.0) as u32,
+    };
     let d = s.active().ok_or(EngineError::NoDocument)?;
     let area = d.doc.bounds();
     let sel_surface = d.doc.selection.as_ref().ok_or_else(|| EngineError::Other("no selection".into()))?;
     let mask = sel::mask_from_surface(Some(sel_surface), area);
-    let path = vector::trace::trace_mask(&mask, area, 0.0, tol);
+    let path = vector::trace::trace_mask_with(&mask, area, 0.0, &options);
     let knots: usize = path.subpaths.iter().map(|s| s.knots.len()).sum();
     let subpaths = path.subpaths.len();
     s.edit("Make Work Path", |doc, _| {
@@ -1885,7 +1894,14 @@ pub fn specs() -> Vec<CommandSpec> {
             run: path_to_selection,
             journal: true,
         },
-        spec!("select.toWorkPath", "Make Work Path", [], r##"{"tolerance":0.5..10 px=2} → {subpaths,knots}"##, has_selection, select_to_work_path),
+        spec!(
+            "select.toWorkPath",
+            "Make Work Path",
+            [],
+            r##"{"tolerance":0.5..10 px=2,"threshold":1..99=50 (% coverage the outline follows),"cornerThreshold":1..179=60 (degrees),"cornerSurround":0.5..50 px=1.5,"minArea":px=0 (drop contours of a smaller area),"smooth":0..64=0 (contour smoothing passes)} → {subpaths,knots}"##,
+            has_selection,
+            select_to_work_path
+        ),
         spec!(
             "path.fill",
             "Fill Path",

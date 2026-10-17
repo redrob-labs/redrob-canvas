@@ -4339,3 +4339,6 @@ shape	Appearance	Aspetto
 	Hue-Chroma…	Tonalità-croma…
 	Hue-Chroma	Tonalità-croma
 	Chroma	Croma
+	Corner Threshold	Soglia angolo
+	Corner Surround	Intorno angolo
+	Min Area	Area minima

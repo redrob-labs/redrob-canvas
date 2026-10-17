@@ -3895,3 +3895,6 @@ curves	Smooth	スムーズ
 	Hue-Chroma…	色相・クロマ…
 	Hue-Chroma	色相・クロマ
 	Chroma	クロマ
+	Corner Threshold	コーナーのしきい値
+	Corner Surround	コーナーの範囲
+	Min Area	最小面積
