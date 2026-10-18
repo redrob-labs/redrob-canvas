@@ -488,6 +488,21 @@ fn default_grid_angle() -> f64 {
     30.0
 }
 
+/// One SVG `<script>` of the document (Document Properties › Scripting): an external reference
+/// (`href`) or embedded code (`content`), with its MIME type.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocScript {
+    /// `href`: the external script's URL; `None` for an embedded script.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub href: Option<String>,
+    /// The embedded code (empty for an external script).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub content: String,
+    /// `type`; empty: the SVG default (ECMAScript).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub mime: String,
+}
+
 impl Default for GridPrefs {
     fn default() -> Self {
         Self {
@@ -720,6 +735,10 @@ pub struct Document {
     /// Further grids of the document (the Grids panel): drawn and snapped to with `grid`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub extra_grids: Vec<GridPrefs>,
+    /// The document's scripts (SVG `<script>` elements, for interactive SVG): kept through the SVG
+    /// reader and writer and edited in the Scripts panel; nothing here runs them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub scripts: Vec<DocScript>,
     #[serde(default = "ppi72")]
     pub raster_effects_ppi: f64,
     #[serde(default)]
@@ -862,6 +881,7 @@ impl Document {
             variables: Default::default(),
             grid: GridPrefs::default(),
             extra_grids: vec![],
+            scripts: vec![],
             raster_effects_ppi: 72.0,
             images: BTreeMap::new(),
             patterns: vec![],

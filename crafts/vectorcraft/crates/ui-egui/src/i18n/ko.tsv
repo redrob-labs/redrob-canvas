@@ -4636,3 +4636,15 @@ lighting	Light	광원
 	Origin:	원점:
 	Own color	고유 색상
 	Open a document to edit its grids.	그리드를 편집할 문서를 여세요.
+	Add Script	스크립트 추가
+	Edit Script	스크립트 편집
+	Remove Script	스크립트 제거
+	The document has no scripts.	문서에 스크립트가 없습니다.
+	External:	외부:
+	Embedded script	포함된 스크립트
+	Add Embedded Script	포함된 스크립트 추가
+	Add External Script	외부 스크립트 추가
+	Source:	소스:
+	External file	외부 파일
+	Code:	코드:
+	Open a document to edit its scripts.	스크립트를 편집할 문서를 여세요.

@@ -5036,3 +5036,15 @@ mark-style	Japanese	Japonesas
 	Origin:	Origen:
 	Own color	Color propio
 	Open a document to edit its grids.	Abra un documento para editar sus cuadrículas.
+	Add Script	Añadir script
+	Edit Script	Editar script
+	Remove Script	Quitar script
+	The document has no scripts.	El documento no tiene scripts.
+	External:	Externo:
+	Embedded script	Script incrustado
+	Add Embedded Script	Añadir script incrustado
+	Add External Script	Añadir script externo
+	Source:	Origen:
+	External file	Archivo externo
+	Code:	Código:
+	Open a document to edit its scripts.	Abra un documento para editar sus scripts.

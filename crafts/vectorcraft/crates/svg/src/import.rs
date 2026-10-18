@@ -99,6 +99,8 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
     if im.files.nested_text() {
         im.warn("text inside an SVG image isn't imported".into());
     }
+    // `<script>` elements (interactive SVG): kept as the document's scripts, never run.
+    im.doc.scripts = scripts(&xml);
 
     // usvg wraps everything in an id-less group carrying the viewBox transform when needed.
     let mut top = tree.root();
@@ -759,6 +761,25 @@ fn link(n: &mut Node, url: &str) {
     if n.url().is_none() {
         n.edit_attrs(|a| a.url = url.to_string());
     }
+}
+
+/// Every `<script>` of the file: external ones by their `href` (or `xlink:href`), embedded ones
+/// with their code (at most 64 scripts of 256 KiB each).
+fn scripts(xml: &roxmltree::Document) -> Vec<redrob_vector_doc::DocScript> {
+    const XLINK: &str = "http://www.w3.org/1999/xlink";
+    xml.descendants()
+        .filter(|n| n.is_element() && n.tag_name().name() == "script")
+        .take(64)
+        .map(|n| {
+            let href = n.attribute("href").or_else(|| n.attribute((XLINK, "href"))).filter(|h| !h.trim().is_empty()).map(str::to_string);
+            let content = if href.is_some() {
+                String::new()
+            } else {
+                n.descendants().filter_map(|t| t.text()).collect::<String>().chars().take(262_144).collect()
+            };
+            redrob_vector_doc::DocScript { href, content, mime: n.attribute("type").unwrap_or_default().to_string() }
+        })
+        .collect()
 }
 
 /// The names apps keep beside element ids, by id: `data-name`, `inkscape:label`, `serif:id` or

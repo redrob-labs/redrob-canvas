@@ -70,6 +70,7 @@ pub mod printtiling;
 pub mod rasterfx;
 mod recolor;
 pub mod recovery;
+mod scriptcmds;
 pub mod scripts;
 mod select;
 pub(crate) mod shaper;
@@ -297,6 +298,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(importmatches::specs());
         v.extend(filtercmds::specs());
         v.extend(gridcmds::specs());
+        v.extend(scriptcmds::specs());
         v
     })
 }

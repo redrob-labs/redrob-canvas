@@ -5080,3 +5080,15 @@ mark-style	Japanese	Japonské
 	Origin:	Počátek:
 	Own color	Vlastní barva
 	Open a document to edit its grids.	Otevřete dokument a upravte jeho mřížky.
+	Add Script	Přidat skript
+	Edit Script	Upravit skript
+	Remove Script	Odebrat skript
+	The document has no scripts.	Dokument nemá žádné skripty.
+	External:	Externí:
+	Embedded script	Vložený skript
+	Add Embedded Script	Přidat vložený skript
+	Add External Script	Přidat externí skript
+	Source:	Zdroj:
+	External file	Externí soubor
+	Code:	Kód:
+	Open a document to edit its scripts.	Otevřete dokument a upravte jeho skripty.

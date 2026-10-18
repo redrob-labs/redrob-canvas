@@ -4666,3 +4666,15 @@ lighting	Light	ライト
 	Origin:	原点:
 	Own color	独自の色
 	Open a document to edit its grids.	グリッドを編集するドキュメントを開いてください。
+	Add Script	スクリプトを追加
+	Edit Script	スクリプトを編集
+	Remove Script	スクリプトを削除
+	The document has no scripts.	ドキュメントにスクリプトはありません。
+	External:	外部:
+	Embedded script	埋め込みスクリプト
+	Add Embedded Script	埋め込みスクリプトを追加
+	Add External Script	外部スクリプトを追加
+	Source:	ソース:
+	External file	外部ファイル
+	Code:	コード:
+	Open a document to edit its scripts.	スクリプトを編集するドキュメントを開いてください。

@@ -5095,3 +5095,15 @@ theme	Appearance	Apparence
 	Origin:	Origine :
 	Own color	Couleur propre
 	Open a document to edit its grids.	Ouvrez un document pour modifier ses grilles.
+	Add Script	Ajouter un script
+	Edit Script	Modifier le script
+	Remove Script	Supprimer le script
+	The document has no scripts.	Le document n’a pas de scripts.
+	External:	Externe :
+	Embedded script	Script embarqué
+	Add Embedded Script	Ajouter un script embarqué
+	Add External Script	Ajouter un script externe
+	Source:	Source :
+	External file	Fichier externe
+	Code:	Code :
+	Open a document to edit its scripts.	Ouvrez un document pour modifier ses scripts.

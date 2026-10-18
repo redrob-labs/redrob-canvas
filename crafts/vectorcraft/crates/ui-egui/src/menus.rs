@@ -2769,6 +2769,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 panel("Filter Editor", crate::panels::filter_editor::ID),
                 panel("Filter Gallery", crate::panels::filter_gallery::ID),
                 panel("Grids", crate::panels::grids::ID),
+                panel("Scripts", crate::panels::scripts::ID),
                 panel("Flattener Preview", crate::panels::flattener_preview::ID),
                 panel("Gradient", "gradient"),
                 panel("Graphic Styles", "graphicStyles"),

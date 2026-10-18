@@ -4025,3 +4025,15 @@ lighting	Light	光源
 	Origin:	原點：
 	Own color	自訂顏色
 	Open a document to edit its grids.	開啟文件以編輯其格線。
+	Add Script	新增指令碼
+	Edit Script	編輯指令碼
+	Remove Script	移除指令碼
+	The document has no scripts.	文件沒有指令碼。
+	External:	外部：
+	Embedded script	內嵌指令碼
+	Add Embedded Script	新增內嵌指令碼
+	Add External Script	新增外部指令碼
+	Source:	來源：
+	External file	外部檔案
+	Code:	程式碼：
+	Open a document to edit its scripts.	開啟文件以編輯其指令碼。

@@ -144,6 +144,16 @@ fn write(doc: &Document, opts: &ExportOptions, native: Option<&[u8]>, id_prefix:
         out.push_str(&w.indent(1));
         out.push_str(&format!("<desc>{}</desc>{nl}", xml_escape(&doc.metadata.description)));
     }
+    // The document's scripts (Scripts panel): external ones by reference, embedded ones in a
+    // CDATA section so their code needs no escaping.
+    for sc in &doc.scripts {
+        out.push_str(&w.indent(1));
+        let ty = if sc.mime.is_empty() { String::new() } else { format!(" type=\"{}\"", xml_escape(&sc.mime)) };
+        match &sc.href {
+            Some(href) => out.push_str(&format!("<script{ty} href=\"{}\"/>{nl}", xml_escape(href))),
+            None => out.push_str(&format!("<script{ty}><![CDATA[{}]]></script>{nl}", sc.content.replace("]]>", "]]]]><![CDATA[>"))),
+        }
+    }
     let latin1 = encoding == Encoding::Latin1;
     if latin1 {
         latin1_refs(&mut out);

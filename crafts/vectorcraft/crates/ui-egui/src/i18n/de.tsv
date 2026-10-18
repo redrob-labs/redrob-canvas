@@ -4627,3 +4627,15 @@ theme	Appearance	Erscheinungsbild
 	Origin:	Ursprung:
 	Own color	Eigene Farbe
 	Open a document to edit its grids.	Öffnen Sie ein Dokument, um seine Raster zu bearbeiten.
+	Add Script	Skript hinzufügen
+	Edit Script	Skript bearbeiten
+	Remove Script	Skript entfernen
+	The document has no scripts.	Das Dokument hat keine Skripte.
+	External:	Extern:
+	Embedded script	Eingebettetes Skript
+	Add Embedded Script	Eingebettetes Skript hinzufügen
+	Add External Script	Externes Skript hinzufügen
+	Source:	Quelle:
+	External file	Externe Datei
+	Code:	Code:
+	Open a document to edit its scripts.	Öffnen Sie ein Dokument, um seine Skripte zu bearbeiten.

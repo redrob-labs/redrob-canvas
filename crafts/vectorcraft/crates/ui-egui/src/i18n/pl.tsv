@@ -4926,3 +4926,15 @@ mark-style	Japanese	Japońskie
 	Origin:	Początek:
 	Own color	Własny kolor
 	Open a document to edit its grids.	Otwórz dokument, aby edytować jego siatki.
+	Add Script	Dodaj skrypt
+	Edit Script	Edytuj skrypt
+	Remove Script	Usuń skrypt
+	The document has no scripts.	Dokument nie ma skryptów.
+	External:	Zewnętrzny:
+	Embedded script	Skrypt osadzony
+	Add Embedded Script	Dodaj skrypt osadzony
+	Add External Script	Dodaj skrypt zewnętrzny
+	Source:	Źródło:
+	External file	Plik zewnętrzny
+	Code:	Kod:
+	Open a document to edit its scripts.	Otwórz dokument, aby edytować jego skrypty.

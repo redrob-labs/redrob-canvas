@@ -5047,3 +5047,15 @@ imageTrace	Outline	Körvonal
 	Origin:	Origó:
 	Own color	Saját szín
 	Open a document to edit its grids.	Nyisson meg egy dokumentumot a rácsai szerkesztéséhez.
+	Add Script	Szkript hozzáadása
+	Edit Script	Szkript szerkesztése
+	Remove Script	Szkript eltávolítása
+	The document has no scripts.	A dokumentumnak nincsenek szkriptjei.
+	External:	Külső:
+	Embedded script	Beágyazott szkript
+	Add Embedded Script	Beágyazott szkript hozzáadása
+	Add External Script	Külső szkript hozzáadása
+	Source:	Forrás:
+	External file	Külső fájl
+	Code:	Kód:
+	Open a document to edit its scripts.	Nyisson meg egy dokumentumot a szkriptjei szerkesztéséhez.

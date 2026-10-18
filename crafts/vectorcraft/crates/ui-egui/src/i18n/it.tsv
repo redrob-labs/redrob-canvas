@@ -4672,3 +4672,15 @@ lighting	Light	Luce
 	Origin:	Origine:
 	Own color	Colore proprio
 	Open a document to edit its grids.	Apri un documento per modificarne le griglie.
+	Add Script	Aggiungi script
+	Edit Script	Modifica script
+	Remove Script	Rimuovi script
+	The document has no scripts.	Il documento non ha script.
+	External:	Esterno:
+	Embedded script	Script incorporato
+	Add Embedded Script	Aggiungi script incorporato
+	Add External Script	Aggiungi script esterno
+	Source:	Sorgente:
+	External file	File esterno
+	Code:	Codice:
+	Open a document to edit its scripts.	Apri un documento per modificarne gli script.

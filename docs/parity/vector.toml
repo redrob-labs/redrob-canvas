@@ -3035,8 +3035,8 @@ name = "Document scripting tab (embedded/external scripts)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Document_Properties"
 behaviour = "Lists script elements in the SVG, adds external script references or embedded JavaScript, for interactive SVG."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/lib.rs (DocScript, Document::scripts), crafts/vectorcraft/crates/svg/src/import.rs (<script> kept), crafts/vectorcraft/crates/svg/src/export.rs (<script> written, external href or embedded CDATA), crafts/vectorcraft/crates/engine/src/cmd/scriptcmds.rs (doc.scripts/addScript/setScript/removeScript), crafts/vectorcraft/crates/ui-egui/src/panels/scripts.rs (Scripts panel)"
 gap = ""
 priority = 3
 

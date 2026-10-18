@@ -4653,3 +4653,15 @@ lighting	Light	Свет
 	Origin:	Начало:
 	Own color	Свой цвет
 	Open a document to edit its grids.	Откройте документ, чтобы изменить его сетки.
+	Add Script	Добавить скрипт
+	Edit Script	Изменить скрипт
+	Remove Script	Удалить скрипт
+	The document has no scripts.	В документе нет скриптов.
+	External:	Внешний:
+	Embedded script	Встроенный скрипт
+	Add Embedded Script	Добавить встроенный скрипт
+	Add External Script	Добавить внешний скрипт
+	Source:	Источник:
+	External file	Внешний файл
+	Code:	Код:
+	Open a document to edit its scripts.	Откройте документ, чтобы изменить его скрипты.

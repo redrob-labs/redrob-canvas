@@ -4639,3 +4639,15 @@ theme	Appearance	Giao diện
 	Origin:	Gốc:
 	Own color	Màu riêng
 	Open a document to edit its grids.	Mở một tài liệu để sửa lưới của nó.
+	Add Script	Thêm tập lệnh
+	Edit Script	Sửa tập lệnh
+	Remove Script	Xoá tập lệnh
+	The document has no scripts.	Tài liệu không có tập lệnh.
+	External:	Bên ngoài:
+	Embedded script	Tập lệnh nhúng
+	Add Embedded Script	Thêm tập lệnh nhúng
+	Add External Script	Thêm tập lệnh ngoài
+	Source:	Nguồn:
+	External file	Tệp bên ngoài
+	Code:	Mã:
+	Open a document to edit its scripts.	Mở một tài liệu để sửa tập lệnh của nó.
