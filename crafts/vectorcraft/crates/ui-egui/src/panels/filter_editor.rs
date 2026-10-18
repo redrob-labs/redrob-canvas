@@ -114,7 +114,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         for (slot, input) in p.kind.inputs().iter().enumerate() {
             let from_row = match input.as_str() {
                 "" => i.checked_sub(1),
-                "SourceGraphic" | "SourceAlpha" => None,
+                name if redrob_vector_effects::svgfilter::STANDARD_INPUTS.contains(&name) => None,
                 name => names.iter().take(i).rposition(|n| n == name),
             };
             let x = to.left() + 4.0 + slot as f32 * 4.0;
@@ -180,7 +180,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     match action {
         Some(Action::Add(kind)) => {
             let at = selected.map_or(g.primitives.len(), |i| (i + 1).min(g.primitives.len()));
-            g.primitives.insert(at, Primitive { result: String::new(), kind });
+            g.primitives.insert(at, Primitive::new("", kind));
             set_pstate(ui.ctx(), SELECTED, Some(at));
             changed = true;
         }
@@ -232,7 +232,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 }
             });
             // Inputs: the previous result, the sources, or an earlier primitive's result.
-            let mut options: Vec<String> = vec![String::new(), "SourceGraphic".into(), "SourceAlpha".into()];
+            let mut options: Vec<String> = vec![String::new()];
+            options.extend(redrob_vector_effects::svgfilter::STANDARD_INPUTS.iter().map(|s| s.to_string()));
             options.extend(earlier);
             let labels: Vec<String> = options.iter().map(|o| if o.is_empty() { tl!("Previous Result").to_string() } else { o.clone() }).collect();
             let label_refs: Vec<&str> = labels.iter().map(String::as_str).collect();
@@ -312,6 +313,10 @@ fn choices(element: &str, key: &str) -> Option<&'static [&'static str]> {
             "soft-light",
             "difference",
             "exclusion",
+            "hue",
+            "saturation",
+            "color",
+            "luminosity",
         ],
         ("feConvolveMatrix", "edgeMode") => &["duplicate", "wrap", "none"],
         ("feDisplacementMap", "xChannel" | "yChannel") => &["R", "G", "B", "A"],
@@ -477,12 +482,12 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
         && let Some((index, mut g)) = current(app)
     {
         g.primitives = vec![
-            Primitive { result: "blur".into(), kind: Kind::GaussianBlur { input: "SourceAlpha".into(), sd_x: 3.0, sd_y: 3.0 } },
-            Primitive { result: "shadow".into(), kind: Kind::Offset { input: "blur".into(), dx: 4.0, dy: 4.0 } },
-            Primitive { result: "flood".into(), kind: Kind::Flood { color: "#000000".into(), opacity: 0.6 } },
-            Primitive {
-                result: "paint".into(),
-                kind: Kind::Composite {
+            Primitive::new("blur", Kind::GaussianBlur { input: "SourceAlpha".into(), sd_x: 3.0, sd_y: 3.0 }),
+            Primitive::new("shadow", Kind::Offset { input: "blur".into(), dx: 4.0, dy: 4.0 }),
+            Primitive::new("flood", Kind::Flood { color: "#000000".into(), opacity: 0.6 }),
+            Primitive::new(
+                "paint",
+                Kind::Composite {
                     input: "flood".into(),
                     in2: "shadow".into(),
                     operator: redrob_vector_effects::svgfilter::CompositeOp::In,
@@ -491,8 +496,8 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
                     k3: 0.0,
                     k4: 0.0,
                 },
-            },
-            Primitive { result: String::new(), kind: Kind::Merge { inputs: vec!["paint".into(), "SourceGraphic".into()] } },
+            ),
+            Primitive::new("", Kind::Merge { inputs: vec!["paint".into(), "SourceGraphic".into()] }),
         ];
         commit(app, index, &g);
     }

@@ -55,8 +55,23 @@ fn light_el(l: &Light) -> String {
 }
 
 /// One primitive as its SVG element. `offset`: (x, y) added to point and spot light positions
-/// (document → user space).
-pub(crate) fn primitive_markup(p: &Primitive, offset: (f64, f64)) -> String {
+/// (document → user space). `bounds`: the object's bounds in user space, which a primitive
+/// subregion is written against (`None`: subregions are left out).
+pub(crate) fn primitive_markup(p: &Primitive, offset: (f64, f64), bounds: Option<(f64, f64, f64, f64)>) -> String {
+    let sub = match (p.subregion, bounds) {
+        (Some([x, y, w, h]), Some((bx, by, bw, bh))) if bw > 0.0 && bh > 0.0 => {
+            format!(" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"", n(bx + x * bw), n(by + y * bh), n(w * bw), n(h * bh))
+        }
+        _ => String::new(),
+    };
+    let el = p.kind.element();
+    let body = primitive_body(p, offset);
+    // The subregion goes right after the element name.
+    if sub.is_empty() { body } else { body.replacen(&format!("<{el}"), &format!("<{el}{sub}"), 1) }
+}
+
+/// The element with its attributes, lights and result (see [`primitive_markup`]).
+fn primitive_body(p: &Primitive, offset: (f64, f64)) -> String {
     let result = input_attr("result", &p.result);
     let el = p.kind.element();
     match &p.kind {
@@ -166,21 +181,7 @@ pub(crate) fn primitive_markup(p: &Primitive, offset: (f64, f64)) -> String {
             light_el(&shifted(light, offset))
         ),
         Kind::Blend { input, in2, mode } => {
-            let m = match mode {
-                BlendOp::Normal => "normal",
-                BlendOp::Multiply => "multiply",
-                BlendOp::Screen => "screen",
-                BlendOp::Overlay => "overlay",
-                BlendOp::Darken => "darken",
-                BlendOp::Lighten => "lighten",
-                BlendOp::ColorDodge => "color-dodge",
-                BlendOp::ColorBurn => "color-burn",
-                BlendOp::HardLight => "hard-light",
-                BlendOp::SoftLight => "soft-light",
-                BlendOp::Difference => "difference",
-                BlendOp::Exclusion => "exclusion",
-            };
-            format!("<{el}{}{} mode=\"{m}\"{result}/>", input_attr("in", input), input_attr("in2", in2))
+            format!("<{el}{}{} mode=\"{}\"{result}/>", input_attr("in", input), input_attr("in2", in2), mode.css())
         }
         Kind::DropShadow { input, dx, dy, sd, color, opacity } => format!(
             "<{el}{} dx=\"{}\" dy=\"{}\" stdDeviation=\"{}\" flood-color=\"{}\" flood-opacity=\"{}\"{result}/>",
@@ -192,6 +193,10 @@ pub(crate) fn primitive_markup(p: &Primitive, offset: (f64, f64)) -> String {
             n(*opacity)
         ),
         Kind::Tile { input } => format!("<{el}{}{result}/>", input_attr("in", input)),
+        Kind::Image { href, preserve_aspect_ratio } => {
+            let par = if *preserve_aspect_ratio { "" } else { " preserveAspectRatio=\"none\"" };
+            format!("<{el} href=\"{}\"{par}{result}/>", escape(href))
+        }
     }
 }
 
@@ -205,9 +210,24 @@ fn shifted(l: &Light, (ox, oy): (f64, f64)) -> Light {
     }
 }
 
-/// The primitives of `g` as SVG markup, lights offset by `offset`.
-pub(crate) fn graph_markup(g: &FilterGraph, offset: (f64, f64)) -> String {
-    g.primitives.iter().map(|p| primitive_markup(p, offset)).collect()
+/// The primitives of `g` as SVG markup, lights offset by `offset`, subregions written against the
+/// object's user-space `bounds` (x, y, w, h), and `feImage` hrefs mapped by `href` (a document
+/// image key becomes a `data:` URL).
+pub(crate) fn graph_markup(g: &FilterGraph, offset: (f64, f64), bounds: (f64, f64, f64, f64), href: &dyn Fn(&str) -> String) -> String {
+    g.primitives
+        .iter()
+        .map(|p| match &p.kind {
+            Kind::Image { href: h, preserve_aspect_ratio } => {
+                let mapped = Primitive {
+                    result: p.result.clone(),
+                    subregion: p.subregion,
+                    kind: Kind::Image { href: href(h), preserve_aspect_ratio: *preserve_aspect_ratio },
+                };
+                primitive_markup(&mapped, offset, Some(bounds))
+            }
+            _ => primitive_markup(p, offset, Some(bounds)),
+        })
+        .collect()
 }
 
 fn input(i: &uf::Input) -> String {
@@ -261,9 +281,9 @@ fn light(l: uf::LightSource, k: f64, origin: (f64, f64)) -> Light {
 
 /// A parsed filter as a graph: `k` scales user lengths to document units; `bounds` is the
 /// filtered element's bounding box in user space (the region and lights are kept relative to it).
-/// `None` when a primitive has no counterpart (`feImage`).
 pub(crate) fn graph_of(f: &uf::Filter, k: f64, bounds: Option<usvg::tiny_skia_path::Rect>) -> Option<FilterGraph> {
-    let mut g = FilterGraph::default();
+    let mut g = FilterGraph { name: f.id().to_string(), ..FilterGraph::default() };
+    let mut linear = 0usize;
     if let Some(b) = bounds.filter(|b| b.width() > 0.0 && b.height() > 0.0) {
         let r = f.rect();
         let (bw, bh) = (f64::from(b.width()), f64::from(b.height()));
@@ -393,6 +413,10 @@ pub(crate) fn graph_of(f: &uf::Filter, k: f64, bounds: Option<usvg::tiny_skia_pa
                     usvg::BlendMode::SoftLight => BlendOp::SoftLight,
                     usvg::BlendMode::Difference => BlendOp::Difference,
                     usvg::BlendMode::Exclusion => BlendOp::Exclusion,
+                    usvg::BlendMode::Hue => BlendOp::Hue,
+                    usvg::BlendMode::Saturation => BlendOp::Saturation,
+                    usvg::BlendMode::Color => BlendOp::Color,
+                    usvg::BlendMode::Luminosity => BlendOp::Luminosity,
                     _ => BlendOp::Normal,
                 },
             },
@@ -405,10 +429,60 @@ pub(crate) fn graph_of(f: &uf::Filter, k: f64, bounds: Option<usvg::tiny_skia_pa
                 opacity: f64::from(d.opacity().get()),
             },
             uf::Kind::Tile(t) => Kind::Tile { input: input(t.input()) },
-            uf::Kind::Image(_) => return None,
+            uf::Kind::Image(im) => {
+                // usvg resolves the image into a group: its raster is kept as a data URL (an SVG
+                // image or nothing drawable stays an empty reference).
+                let mut href = String::new();
+                fn find_image(g: &usvg::Group, out: &mut String) {
+                    for c in g.children() {
+                        match c {
+                            usvg::Node::Image(i) => {
+                                let (mime, bytes) = match i.kind() {
+                                    usvg::ImageKind::JPEG(b) => ("image/jpeg", Some(b)),
+                                    usvg::ImageKind::PNG(b) => ("image/png", Some(b)),
+                                    usvg::ImageKind::GIF(b) => ("image/gif", Some(b)),
+                                    usvg::ImageKind::WEBP(b) => ("image/webp", Some(b)),
+                                    usvg::ImageKind::SVG(_) => ("", None),
+                                };
+                                if let Some(b) = bytes
+                                    && out.is_empty()
+                                {
+                                    *out = format!("data:{mime};base64,{}", crate::base64_encode(b));
+                                }
+                            }
+                            usvg::Node::Group(g) => find_image(g, out),
+                            _ => {}
+                        }
+                    }
+                }
+                find_image(im.root(), &mut href);
+                Kind::Image { href, preserve_aspect_ratio: true }
+            }
         };
-        g.primitives.push(Primitive { result: p.result().to_string(), kind });
+        // The primitive subregion, kept when it isn't the filter region itself.
+        let subregion = bounds.filter(|b| b.width() > 0.0 && b.height() > 0.0).and_then(|b| {
+            let (r, fr) = (p.rect(), f.rect());
+            let same = (r.x() - fr.x()).abs() < 1e-3
+                && (r.y() - fr.y()).abs() < 1e-3
+                && (r.width() - fr.width()).abs() < 1e-3
+                && (r.height() - fr.height()).abs() < 1e-3;
+            (!same).then(|| {
+                let (bw, bh) = (f64::from(b.width()), f64::from(b.height()));
+                [
+                    (f64::from(r.x()) - f64::from(b.x())) / bw,
+                    (f64::from(r.y()) - f64::from(b.y())) / bh,
+                    f64::from(r.width()) / bw,
+                    f64::from(r.height()) / bh,
+                ]
+            })
+        });
+        if p.color_interpolation() == uf::ColorInterpolation::LinearRGB {
+            linear += 1;
+        }
+        g.primitives.push(Primitive { result: p.result().to_string(), subregion, kind });
     }
+    // Filtered in linear light when most primitives ask for it (the SVG default).
+    g.linear_rgb = linear * 2 > g.primitives.len();
     // usvg names every result; a name no later primitive reads is noise in the editor.
     let read: Vec<String> = g.primitives.iter().flat_map(|p| p.kind.inputs().into_iter().cloned()).collect();
     for p in &mut g.primitives {

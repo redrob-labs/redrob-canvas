@@ -1776,6 +1776,7 @@ impl Writer<'_> {
                 continue;
             }
             let fid = self.fresh_id("filter");
+            let mut interpolation = "sRGB";
             let mut region_attr = match region {
                 Some(r) => format!(
                     " filterUnits=\"userSpaceOnUse\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
@@ -1840,7 +1841,20 @@ impl Writer<'_> {
                         self.num(r.width()),
                         self.num(r.height())
                     );
-                    crate::filter_graph::graph_markup(g, (b.x0, b.y0))
+                    if g.linear_rgb {
+                        interpolation = "linearRGB";
+                    }
+                    let images = &self.doc.images;
+                    let href = |h: &str| -> String {
+                        if h.starts_with("data:") || h.is_empty() {
+                            return h.to_string();
+                        }
+                        match images.get(h.trim_start_matches('#')) {
+                            Some(blob) => format!("data:{};base64,{}", blob.mime, base64_encode(&blob.bytes)),
+                            None => h.to_string(),
+                        }
+                    };
+                    crate::filter_graph::graph_markup(g, (b.x0, b.y0), (b.x0, b.y0, b.width(), b.height()), &href)
                 }
             };
             // Filters composite normally: a shadow's or glow's other blend mode is recorded for import.
@@ -1852,7 +1866,7 @@ impl Writer<'_> {
                 }
                 _ => String::new(),
             };
-            self.def(1, &format!("<filter id=\"{fid}\"{region_attr}{mode} color-interpolation-filters=\"sRGB\">{body}</filter>"));
+            self.def(1, &format!("<filter id=\"{fid}\"{region_attr}{mode} color-interpolation-filters=\"{interpolation}\">{body}</filter>"));
             self.line(&format!("<g filter=\"url(#{fid})\">"));
             self.depth += 1;
             opened += 1;

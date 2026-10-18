@@ -582,7 +582,7 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
             FILTER_GRAPH,
             "Filter Graph",
             SVG_FILTERS,
-            "{region: [x, y, w, h] (fractions of the object's bounds; [-0.1, -0.1, 1.2, 1.2]), primitives: [{type: gaussianBlur|offset|flood|merge|composite|colorMatrix|componentTransfer|convolveMatrix|morphology|turbulence|displacementMap|diffuseLighting|specularLighting|blend|dropShadow|tile, result?: name, in?: \"\" (the previous result)|SourceGraphic|SourceAlpha|a result name, in2?, inputs? (merge), …the SVG attributes, camel-cased, lengths in pt}]} an SVG filter graph on the object's composite, edited in the Filter Editor panel and written to SVG as a <filter>",
+            "{region: [x, y, w, h] (fractions of the object's bounds; [-0.1, -0.1, 1.2, 1.2]), name?: string, linearRgb?: bool (false; color-interpolation-filters), primitives: [{type: gaussianBlur|offset|flood|merge|composite|colorMatrix|componentTransfer|convolveMatrix|morphology|turbulence|displacementMap|diffuseLighting|specularLighting|blend (16 CSS modes)|dropShadow|tile|image (href: an image key or data: URL), result?: name, subregion?: [x, y, w, h] (fractions of the bounds; the primitive subregion), in?: \"\" (the previous result)|SourceGraphic|SourceAlpha|BackgroundImage|BackgroundAlpha|FillPaint|StrokePaint|a result name, in2?, inputs? (merge), …the SVG attributes, camel-cased, lengths in pt}]} an SVG filter graph on the object's composite, edited in the Filter Editor panel and written to SVG as a <filter>",
             json!({"region": [-0.1, -0.1, 1.2, 1.2], "primitives": []}),
         ),
         g(
