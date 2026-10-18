@@ -3448,3 +3448,16 @@ curves	Smooth	Сгладить
 	The clipboard holds no SVG	В буфере обмена нет SVG
 	Clipboard Image Brush	Кисть из изображения буфера обмена
 	Paint with the image on the clipboard as the brush tip	Рисовать изображением из буфера обмена как кончиком кисти
+	Export Layers as Animation…	Экспортировать слои как анимацию…
+	Export as Brush (.gbr)…	Экспортировать как кисть (.gbr)…
+	Export Layers as Image Hose (.gih)…	Экспортировать слои как анимированную кисть (.gih)…
+	Export as Pattern (.pat)…	Экспортировать как текстуру (.pat)…
+	Animation Frame Tags…	Теги кадра анимации…
+	Disposal	Удаление кадра
+	Combine	Совместить
+	Replace	Заменить
+	Incremental	Последовательно
+	Angular	По углу
+	Xtilt	Наклон X
+	Ytilt	Наклон Y
+	Mng	MNG

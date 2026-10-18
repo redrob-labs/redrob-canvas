@@ -35,6 +35,8 @@
 pub mod abr_map;
 mod adjust_map;
 pub mod affinity;
+pub mod anim_export;
+pub mod anim_layers;
 pub mod annotations_map;
 pub mod blocks;
 pub mod camera_raw_xmp;
@@ -44,10 +46,12 @@ pub mod effects_map;
 pub mod exr_parts;
 mod flat;
 pub mod gbr;
+pub mod gbr_export;
 pub mod ggr;
 mod gradient_bake;
 pub use gradient_bake::{Method as GradientMethod, bake as bake_gradient};
 mod kra;
+pub mod legacy;
 pub mod linked;
 mod multichannel_map;
 mod ora;
@@ -312,6 +316,13 @@ fn import_stages(name: &str, bytes: &[u8], ctl: &redrob_photo_raster::Interrupt,
     if is_svg_input(name, bytes) {
         return svg::import_svg_with_group_depth(name, bytes, max_group_depth);
     }
+    // The legacy and scientific formats (XBM, CUR/ANI, SGI, PIX, CEL, FLI, XWD, DICOM, WMF): a
+    // codec signature still wins over their extensions.
+    if redrob_photo_codecs::detect(bytes).is_none()
+        && let Some(r) = legacy::import(name, bytes)
+    {
+        return r;
+    }
     flat::import_flat(name, bytes)
 }
 
@@ -435,6 +446,20 @@ fn export_stages(doc: &Document, name_or_ext: &str, opts: &ExportOptions, ctl: &
         file.header.validate()?;
         let bytes = file.to_bytes()?;
         return Ok(ExportResult { bytes, warnings });
+    }
+    if let Some(r) = legacy::export(doc, &ext, opts) {
+        return r;
+    }
+    // Resource files: the image as a brush or pattern, the layers as an image hose.
+    match ext.as_str() {
+        "gbr" => return gbr_export::export_gbr(doc, gbr_export::BrushDepth::Mask, 25),
+        "gih" => return gbr_export::export_gih(doc, gbr_export::BrushDepth::Mask, 25, "incremental"),
+        "gpat" => return gbr_export::export_gpat(doc),
+        _ => {}
+    }
+    // MNG is always an animation of the layers (one layer = one frame, see `anim_layers`).
+    if ext == "mng" {
+        return anim_export::export_animation(doc, "mng", true);
     }
     let format = redrob_photo_codecs::from_extension(&ext).ok_or_else(|| IoError::UnknownFormat(name_or_ext.to_string()))?;
     if format == redrob_photo_codecs::Format::Tiff && opts.tiff_layers && tiff_layers::would_write_layers(doc) {

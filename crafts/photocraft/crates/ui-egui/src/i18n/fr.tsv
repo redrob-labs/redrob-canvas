@@ -3480,3 +3480,16 @@ curves	Smooth	Lisser
 	The clipboard holds no SVG	Le presse-papiers ne contient pas de SVG
 	Clipboard Image Brush	Brosse image du presse-papiers
 	Paint with the image on the clipboard as the brush tip	Peindre avec l'image du presse-papiers comme pointe de brosse
+	Export Layers as Animation…	Exporter les calques en animation…
+	Export as Brush (.gbr)…	Exporter comme brosse (.gbr)…
+	Export Layers as Image Hose (.gih)…	Exporter les calques en brosse animée (.gih)…
+	Export as Pattern (.pat)…	Exporter comme motif (.pat)…
+	Animation Frame Tags…	Balises d'image d'animation…
+	Disposal	Disposition
+	Combine	Combiner
+	Replace	Remplacer
+	Incremental	Incrémental
+	Angular	Angulaire
+	Xtilt	Inclinaison X
+	Ytilt	Inclinaison Y
+	Mng	MNG

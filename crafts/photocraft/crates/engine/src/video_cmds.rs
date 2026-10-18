@@ -280,6 +280,28 @@ fn load_frames(path: &str, fmt: redrob_photo_color::PixelFormat) -> Result<Foota
             .map_err(|e| EngineError::Other(format!("`{}`: {e}", f.display())))?;
             continue;
         }
+        // Animated cursors and Autodesk FLI/FLC animations: every frame, with its delay.
+        let anim = if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"ACON" {
+            Some(redrob_photo_io::legacy::ani_frames(&bytes))
+        } else if bytes.len() >= 6 && (bytes[4..6] == [0x11, 0xAF] || bytes[4..6] == [0x12, 0xAF]) {
+            Some(redrob_photo_io::legacy::fli_frames(&bytes))
+        } else {
+            None
+        };
+        if let Some(r) = anim {
+            let list = r.map_err(|e| EngineError::Other(format!("`{}`: {e}", f.display())))?;
+            for (img, delay_ms) in list {
+                let (w, h) = img.dimensions();
+                let rect = redrob_photo_geom::Rect::new(0, 0, w as i32, h as i32);
+                let mut surf = redrob_photo_raster::Surface::from_interleaved(redrob_photo_color::PixelFormat::RGBA8, rect, &img.to_rgba8());
+                if surf.format() != fmt {
+                    surf = surf.convert(fmt);
+                }
+                frames.push(surf);
+                delays.push(delay_ms);
+            }
+            continue;
+        }
         let mut doc = crate::file_cmds::import(&name, &bytes)?;
         // A Targa's alpha opens as a channel (as in Photoshop); a frame's alpha is transparency.
         if f.extension().is_some_and(|e| e.eq_ignore_ascii_case("tga")) {

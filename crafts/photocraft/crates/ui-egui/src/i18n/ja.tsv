@@ -4145,3 +4145,16 @@ curves	Smooth	スムーズ
 	The clipboard holds no SVG	クリップボードにSVGがありません
 	Clipboard Image Brush	クリップボード画像ブラシ
 	Paint with the image on the clipboard as the brush tip	クリップボードの画像をブラシ先端として描画します
+	Export Layers as Animation…	レイヤーをアニメーションとして書き出し…
+	Export as Brush (.gbr)…	ブラシとして書き出し (.gbr)…
+	Export Layers as Image Hose (.gih)…	レイヤーをイメージホースとして書き出し (.gih)…
+	Export as Pattern (.pat)…	パターンとして書き出し (.pat)…
+	Animation Frame Tags…	アニメーションフレームタグ…
+	Disposal	処理方法
+	Combine	結合
+	Replace	置換
+	Incremental	順次
+	Angular	角度
+	Xtilt	X傾き
+	Ytilt	Y傾き
+	Mng	MNG

@@ -3081,3 +3081,16 @@ curves	Smooth	平滑
 	The clipboard holds no SVG	剪貼簿中沒有 SVG
 	Clipboard Image Brush	剪貼簿影像筆刷
 	Paint with the image on the clipboard as the brush tip	使用剪貼簿中的影像作為筆刷筆尖繪畫
+	Export Layers as Animation…	將圖層匯出為動畫…
+	Export as Brush (.gbr)…	匯出為筆刷 (.gbr)…
+	Export Layers as Image Hose (.gih)…	將圖層匯出為影像管 (.gih)…
+	Export as Pattern (.pat)…	匯出為圖樣 (.pat)…
+	Animation Frame Tags…	動畫影格標記…
+	Disposal	處置方式
+	Combine	合併
+	Replace	取代
+	Incremental	遞增
+	Angular	角度
+	Xtilt	X 傾斜
+	Ytilt	Y 傾斜
+	Mng	MNG

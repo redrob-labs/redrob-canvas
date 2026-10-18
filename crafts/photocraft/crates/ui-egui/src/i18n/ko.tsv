@@ -4001,3 +4001,16 @@ curves	Smooth	매끄럽게
 	The clipboard holds no SVG	클립보드에 SVG가 없습니다
 	Clipboard Image Brush	클립보드 이미지 브러시
 	Paint with the image on the clipboard as the brush tip	클립보드의 이미지를 브러시 팁으로 사용해 칠합니다
+	Export Layers as Animation…	레이어를 애니메이션으로 내보내기…
+	Export as Brush (.gbr)…	브러시로 내보내기 (.gbr)…
+	Export Layers as Image Hose (.gih)…	레이어를 이미지 호스로 내보내기 (.gih)…
+	Export as Pattern (.pat)…	패턴으로 내보내기 (.pat)…
+	Animation Frame Tags…	애니메이션 프레임 태그…
+	Disposal	처리 방식
+	Combine	결합
+	Replace	바꾸기
+	Incremental	순차
+	Angular	각도
+	Xtilt	X 기울기
+	Ytilt	Y 기울기
+	Mng	MNG

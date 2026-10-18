@@ -137,6 +137,7 @@ pub mod web_cmds;
 pub mod dynamics_extra_cmds;
 pub mod perspective_clone_cmds;
 pub mod path_svg_cmds;
+pub mod resource_export_cmds;
 mod wia_cmds;
 
 use std::sync::Arc;

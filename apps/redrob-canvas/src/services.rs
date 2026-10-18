@@ -194,6 +194,9 @@ pub mod photo {
         "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2", "raf", "abr", "grd",
         "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto", "afpub",
         "pcraft", // legacy: upstream Photo documents still open
+        // Legacy and scientific formats (redrob_photo_io::legacy) and resource files.
+        "xbm", "cur", "ani", "sgi", "rgb", "rgba", "bw", "pix", "als", "cel", "fli", "flc", "xwd",
+        "dcm", "dicom", "wmf", "gih", "pat", "gpat",
     ];
 
     const SAVE_FILTERS: &[(&str, &[&str])] = &[
@@ -212,6 +215,19 @@ pub mod photo {
         ("OpenEXR", &["exr"]),
         ("FITS", &["fits", "fit"]),
         ("DPX", &["dpx"]),
+        ("X BitMap", &["xbm"]),
+        ("Windows cursor", &["cur", "ani"]),
+        ("SGI", &["sgi", "rgb", "bw"]),
+        ("Alias PIX", &["pix"]),
+        ("KiSS cel", &["cel"]),
+        ("Autodesk animation", &["flc", "fli"]),
+        ("X window dump", &["xwd"]),
+        ("DICOM", &["dcm"]),
+        ("MNG animation", &["mng"]),
+        ("C source", &["c", "h"]),
+        ("HTML table", &["html"]),
+        ("Brush", &["gbr", "gih"]),
+        ("Pattern", &["pat"]),
     ];
 
     /// Open dialog extensions that also match uppercase names on Linux's case-sensitive globs.

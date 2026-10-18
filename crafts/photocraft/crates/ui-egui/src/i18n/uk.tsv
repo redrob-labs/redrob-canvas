@@ -4168,3 +4168,16 @@ curves	Smooth	Згладити
 	The clipboard holds no SVG	У буфері обміну немає SVG
 	Clipboard Image Brush	Пензель із зображення буфера обміну
 	Paint with the image on the clipboard as the brush tip	Малювати зображенням із буфера обміну як кінчиком пензля
+	Export Layers as Animation…	Експортувати шари як анімацію…
+	Export as Brush (.gbr)…	Експортувати як пензель (.gbr)…
+	Export Layers as Image Hose (.gih)…	Експортувати шари як анімований пензель (.gih)…
+	Export as Pattern (.pat)…	Експортувати як текстуру (.pat)…
+	Animation Frame Tags…	Теги кадру анімації…
+	Disposal	Видалення кадру
+	Combine	Поєднати
+	Replace	Замінити
+	Incremental	Послідовно
+	Angular	За кутом
+	Xtilt	Нахил X
+	Ytilt	Нахил Y
+	Mng	MNG
