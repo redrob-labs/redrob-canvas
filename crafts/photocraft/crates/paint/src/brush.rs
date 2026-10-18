@@ -518,6 +518,10 @@ fn is_zero(v: &f32) -> bool {
     *v == 0.0
 }
 
+fn is_one(v: &f32) -> bool {
+    *v == 1.0
+}
+
 impl Default for Scattering {
     fn default() -> Self {
         Self {
@@ -893,6 +897,7 @@ pub struct ColorDynamics {
     #[serde(skip)]
     pub pattern: Option<std::sync::Arc<ColorTile>>,
     /// Pattern scale (1 = 100 %).
+    #[serde(skip_serializing_if = "is_one")]
     pub pattern_scale: f32,
 }
 
@@ -1160,6 +1165,7 @@ pub struct BrushSettings {
     #[serde(skip_serializing_if = "is_default_dynamic")]
     pub lightness_strength: Dynamic,
     /// Amount of the lightness map at full strength, 0..1 (1 = the pattern's full range).
+    #[serde(skip_serializing_if = "is_one")]
     pub lightness_amount: f32,
     /// A sampled tip reads as a lightness map: its grey level is painted into the colour as
     /// lightness (impasto) besides setting the coverage.
@@ -1175,6 +1181,7 @@ pub struct BrushSettings {
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub share_curve: bool,
     /// The curve shared with `share_curve`.
+    #[serde(skip_serializing_if = "ResponseCurve::is_linear")]
     pub shared_curve: ResponseCurve,
 }
 

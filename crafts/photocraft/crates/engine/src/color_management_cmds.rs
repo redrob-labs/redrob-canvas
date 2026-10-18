@@ -352,7 +352,8 @@ fn color_management(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// `colors.common`: the colours the image is made of (the colour selectors' "common colours"
 /// patches): a palette of `count` colours built from the composite (or the active layer),
-/// sampled down to at most 64k pixels first. Fully transparent pixels say nothing.
+/// sampled down to at most 16k pixels first (it runs per document revision while the Color
+/// panel shows). Fully transparent pixels say nothing.
 fn common_colors(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "colors.common";
     use redrob_photo_algo::quantize::{Forced, PaletteKind, build_palette};
@@ -369,8 +370,8 @@ fn common_colors(s: &mut Session, p: &Value) -> Result<Value> {
     if w == 0 || h == 0 || img.is_empty() {
         return Ok(json!({ "colors": [] }));
     }
-    // Stride so that at most ~65k pixels are considered.
-    let step = (((w * h) as f32 / 65_536.0).sqrt().ceil() as usize).max(1);
+    // Stride so that at most ~16k pixels are considered.
+    let step = (((w * h) as f32 / 16_384.0).sqrt().ceil() as usize).max(1);
     let mut px: Vec<[f32; 4]> = Vec::with_capacity(w * h / (step * step) + 1);
     for y in (0..h).step_by(step) {
         for x in (0..w).step_by(step) {

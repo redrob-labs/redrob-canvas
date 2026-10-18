@@ -304,8 +304,7 @@ impl Luma {
     /// Equal weights (the I of HSI).
     pub const MEAN: Self = Self { r: 1.0 / 3.0, g: 1.0 / 3.0, b: 1.0 / 3.0, gamma: 1.0 };
 
-    pub const PRESETS: [(&'static str, Self); 4] =
-        [("Rec. 709", Self::REC709), ("Rec. 601", Self::REC601), ("Rec. 2020", Self::REC2020), ("Equal", Self::MEAN)];
+    pub const PRESETS: [(&str, Self); 4] = [("Rec. 709", Self::REC709), ("Rec. 601", Self::REC601), ("Rec. 2020", Self::REC2020), ("Equal", Self::MEAN)];
 
     /// Coefficients normalised to sum to 1 (a hand-edited set stays a weighted mean).
     pub fn normalized(self) -> Self {
