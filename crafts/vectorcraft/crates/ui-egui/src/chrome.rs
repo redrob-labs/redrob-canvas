@@ -545,7 +545,7 @@ pub fn status_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                         }
                     }
                 });
-                if widgets::icon_button(ui, if locked { "lock" } else { "lock-open" }, tl!("Lock Rotate View"), locked, 18.0).clicked() {
+                if widgets::icon_button(ui, if locked { "lock" } else { "lock-open" }, tl!("Lock Rotate View"), locked, 16.0).clicked() {
                     app.ui.view.rotation_lock = !locked;
                 }
                 ui.separator();

@@ -239,12 +239,50 @@ fn cubic_curvature_start(p0: Point, p1: Point, p2: Point) -> f64 {
     (2.0 / 3.0) * a.cross(p2 - p1) / (l * l * l)
 }
 
+/// The handle lengths `(la, lb)` whose cubic has exactly the end curvatures `ka`, `kb`, when
+/// they exist within the chord. With `c = ta × (pb − pa)`, `e = tb × (pb − pa)` and `x = ta × tb`
+/// the end curvatures are `κa = ⅔ (c − lb·x) / la²` and `κb = −⅔ (e + la·x) / lb²`: two
+/// equations in two unknowns, solved by Newton from the thirds of the chord. `None` when it
+/// does not converge or the lengths leave `[0.05 d, 0.9 d]` (the caller's heuristic then takes over).
+fn handles_newton(pa: Point, pb: Point, ta: Vec2, tb: Vec2, ka: f64, kb: f64, d: f64) -> Option<(f64, f64)> {
+    let chord = pb - pa;
+    let (c, e, x) = (ta.cross(chord), tb.cross(chord), ta.cross(tb));
+    let (lo, hi) = (d * 0.05, d * 0.9);
+    let (mut la, mut lb) = (d / 3.0, d / 3.0);
+    let res = |la: f64, lb: f64| (ka * la * la - (2.0 / 3.0) * (c - lb * x), kb * lb * lb + (2.0 / 3.0) * (e + la * x));
+    for _ in 0..40 {
+        let (f1, f2) = res(la, lb);
+        let (j11, j12, j21, j22) = (2.0 * ka * la, (2.0 / 3.0) * x, (2.0 / 3.0) * x, 2.0 * kb * lb);
+        let det = j11 * j22 - j12 * j21;
+        if det.abs() < 1e-18 || !det.is_finite() {
+            return None;
+        }
+        let (dla, dlb) = ((f1 * j22 - f2 * j12) / det, (j11 * f2 - j21 * f1) / det);
+        // Damped: a handle never jumps more than half the chord in one step.
+        let scale = (0.5 * d / dla.abs().max(dlb.abs())).min(1.0);
+        la -= dla * scale;
+        lb -= dlb * scale;
+        if !(lo..=hi).contains(&la) || !(lo..=hi).contains(&lb) {
+            return None;
+        }
+        if dla.abs() + dlb.abs() < 1e-9 * d {
+            break;
+        }
+    }
+    let (f1, f2) = res(la, lb);
+    let tol = 1e-7 * (ka.abs() + kb.abs()).max(1e-6) * d * d;
+    (f1.abs() < tol && f2.abs() < tol).then_some((la, lb))
+}
+
 /// One cubic for the span from `pa` to `pb` with unit tangents `ta`, `tb` and target curvatures
 /// `ka`, `kb` at its ends: the handle lengths are found by fixed-point iteration on the cubic's
 /// own end curvatures (a handle's curvature falls with its length squared), starting from the
 /// circular-arc lengths.
 fn cubic_for(pa: Point, pb: Point, ta: Vec2, tb: Vec2, ka: f64, kb: f64) -> (Point, Point) {
     let d = (pb - pa).hypot().max(1e-9);
+    if let Some((la, lb)) = handles_newton(pa, pb, ta, tb, ka, kb, d) {
+        return (pa + ta * la, pb - tb * lb);
+    }
     let (mut la, mut lb) = (d / 3.0, d / 3.0);
     for _ in 0..HANDLE_ROUNDS {
         let p1 = pa + ta * la;

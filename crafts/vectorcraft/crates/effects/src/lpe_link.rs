@@ -44,10 +44,12 @@ pub fn link_ids(id: &str, params: &Value) -> Vec<u64> {
         return vec![];
     }
     let one = |key: &str| params.get(key).and_then(|v| v.as_u64().or_else(|| v.as_str().and_then(|s| s.trim().parse().ok())));
+    // `0` is the catalog default: no object is linked yet.
     let mut out: Vec<u64> = one("source").into_iter().chain(one("source2")).collect();
     if let Some(a) = params.get("sources").and_then(Value::as_array) {
         out.extend(a.iter().filter_map(|v| v.as_u64().or_else(|| v.as_str().and_then(|s| s.trim().parse().ok()))));
     }
+    out.retain(|&i| i != 0);
     out
 }
 
