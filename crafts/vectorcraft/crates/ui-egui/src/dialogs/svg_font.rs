@@ -228,10 +228,10 @@ fn run(app: &mut VectorcraftApp, d: &mut Dialog, actions: Vec<(&str, Value)>) {
     for (cmd, p) in actions {
         match app.run(cmd, p) {
             Ok(r) => {
-                if cmd == "svgFont.create" || cmd == "svgFont.fromLayers" {
-                    if let Some(id) = r.get("id").and_then(Value::as_str) {
-                        d.fields.insert("font".into(), json!(id));
-                    }
+                if (cmd == "svgFont.create" || cmd == "svgFont.fromLayers")
+                    && let Some(id) = r.get("id").and_then(Value::as_str)
+                {
+                    d.fields.insert("font".into(), json!(id));
                 }
                 if cmd == "svgFont.removeGlyph" {
                     d.fields.insert("glyph".into(), json!(""));

@@ -443,7 +443,7 @@ impl<'a, 'i> Page<'a, 'i> {
             2 => " stroke-dasharray=\"0.08 0.04\"",
             3 => " stroke-dasharray=\"0.02 0.02\"",
             4 => " stroke-dasharray=\"0.08 0.04 0.02 0.04\"",
-            9 | 10 | 11 => " stroke-dasharray=\"0.04 0.02\"",
+            9..=11 => " stroke-dasharray=\"0.04 0.02\"",
             _ => "",
         };
         for (d, no_fill, no_line) in self.path(&sh) {

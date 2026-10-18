@@ -1302,8 +1302,7 @@ fn bline_points(sub: &Sub) -> Vec<BlinePoint> {
     let closes_on_start = sub.closed && pts.len() > 1 && (pts[pts.len() - 1] - pts[0]).hypot() < 1e-6;
     let n = if closes_on_start { pts.len() - 1 } else { pts.len() };
     let mut out = vec![];
-    for i in 0..n {
-        let p = pts[i];
+    for (i, &p) in pts.iter().enumerate().take(n) {
         // Outgoing tangent: the first control point of the segment leaving this vertex.
         let t_out = if i < sub.segs.len() {
             (sub.segs[i].0 - p) * 3.0

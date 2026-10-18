@@ -1179,7 +1179,7 @@ impl Config {
         }
     }
 
-    fn from_reference(&self, c: [f32; 3], cs: &ColorSpaceDef, depth: u32) -> [f32; 3] {
+    fn convert_from_reference(&self, c: [f32; 3], cs: &ColorSpaceDef, depth: u32) -> [f32; 3] {
         if cs.is_data {
             return c;
         }
@@ -1206,7 +1206,7 @@ impl Config {
             return mid;
         }
         match self.colorspace(dst) {
-            Some(cs) => self.from_reference(mid, cs, depth),
+            Some(cs) => self.convert_from_reference(mid, cs, depth),
             None => mid,
         }
     }
@@ -1341,7 +1341,7 @@ impl Processor {
         if !self.looks.is_empty() {
             lin = cfg.apply_looks(lin, &self.looks, false, 0);
         }
-        let mut out = cfg.from_reference(lin, &self.view_cs, 0);
+        let mut out = cfg.convert_from_reference(lin, &self.view_cs, 0);
         if (self.gamma - 1.0).abs() > 1e-4 {
             out = out.map(|v| v.max(0.0).powf(1.0 / self.gamma));
         }

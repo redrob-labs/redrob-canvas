@@ -342,8 +342,8 @@ fn draw(px: &mut [[f32; 4]], area: Rect, dabs: &[Dab], lock_alpha: bool) {
                 }
                 // Straight colour: source over.
                 let wa = if lock_alpha { a * da } else { a };
-                for k in 0..3 {
-                    p[k] = (d.color[k] * wa + p[k] * da * (1.0 - a)) / na.max(1e-6);
+                for (k, pk) in p.iter_mut().enumerate().take(3) {
+                    *pk = (d.color[k] * wa + *pk * da * (1.0 - a)) / na.max(1e-6);
                 }
                 p[3] = na;
             }

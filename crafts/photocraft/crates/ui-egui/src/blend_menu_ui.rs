@@ -96,13 +96,14 @@ pub fn menu(
     // The wheel over the closed button steps through the flat order, one notch per step.
     let button_rect = ui.available_rect_before_wrap();
     let wheel = ui.input(|i| i.smooth_scroll_delta.y);
-    if wheel != 0.0 && ui.rect_contains_pointer(egui::Rect::from_min_size(button_rect.min, egui::vec2(width, ui.spacing().interact_size.y))) {
-        if let Some(pos) = order.iter().position(|m| m == current) {
-            let next = if wheel < 0.0 { (pos + 1).min(order.len().saturating_sub(1)) } else { pos.saturating_sub(1) };
-            if next != pos {
-                *current = order[next];
-                chosen.push(order[next]);
-            }
+    if wheel != 0.0
+        && ui.rect_contains_pointer(egui::Rect::from_min_size(button_rect.min, egui::vec2(width, ui.spacing().interact_size.y)))
+        && let Some(pos) = order.iter().position(|m| m == current)
+    {
+        let next = if wheel < 0.0 { (pos + 1).min(order.len().saturating_sub(1)) } else { pos.saturating_sub(1) };
+        if next != pos {
+            *current = order[next];
+            chosen.push(order[next]);
         }
     }
     let label_of = |m: BlendMode| options.iter().find(|(o, _)| *o == m).map(|(_, l)| *l).unwrap_or_else(|| m.label());

@@ -110,7 +110,7 @@ impl State {
 
     fn fill(&self) -> Option<[u8; 3]> {
         match self.interior {
-            1 | 2 | 3 => Some(self.fill_color),
+            1..=3 => Some(self.fill_color),
             _ => None,
         }
     }
@@ -566,8 +566,7 @@ fn binary(st: &mut State, bytes: &[u8]) -> Result<(), String> {
         let mut data: Vec<u8> = vec![];
         if len == 31 {
             // Long form: partitions, each with a continue flag.
-            loop {
-                let Some(l) = r.u16be() else { break };
+            while let Some(l) = r.u16be() {
                 let n = usize::from(l & 0x7fff);
                 let Some(part) = r.take(n) else { break };
                 data.extend_from_slice(part);
@@ -667,8 +666,8 @@ fn clear_text(st: &mut State, text: &str) {
             }
             "COLRTABLE" => {
                 if let Some((first, rest)) = nums.split_first() {
-                    let mut i = *first as usize;
-                    for c in rest.chunks(3) {
+                    let start = *first as usize;
+                    for (i, c) in rest.chunks(3).enumerate().map(|(k, c)| (start + k, c)) {
                         if c.len() == 3 && i < 4096 {
                             if i >= st.table.len() {
                                 st.table.resize(i + 1, [0, 0, 0]);

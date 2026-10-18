@@ -596,7 +596,8 @@ fn emblem_coverage(name: &str, x: u32, y: u32) -> f32 {
         "eraser" => {
             // A tilted block.
             let (cx, cy) = (u - 0.5, v - 0.5);
-            let (rx, ry) = (cx * 0.7071 + cy * 0.7071, -cx * 0.7071 + cy * 0.7071);
+            let k = std::f32::consts::FRAC_1_SQRT_2;
+            let (rx, ry) = (cx * k + cy * k, -cx * k + cy * k);
             edge((rx.abs() - 0.32).max(ry.abs() - 0.18))
         }
         "airbrush" => {

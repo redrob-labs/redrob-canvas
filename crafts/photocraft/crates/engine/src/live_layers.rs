@@ -52,6 +52,7 @@ pub struct TransformKey {
 /// What a live layer derives its pixels from.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
+#[allow(clippy::large_enum_variant)]
 pub enum Live {
     /// A live copy of `source`, moved by `offset`, through `filters`.
     Clone {
@@ -200,8 +201,8 @@ pub fn transform_at(transform: Option<[f64; 6]>, keys: &[TransformKey], frame: u
                 t = smooth(t);
             }
             let mut m = [0.0; 6];
-            for i in 0..6 {
-                m[i] = a.m[i] + (b.m[i] - a.m[i]) * t;
+            for (i, mi) in m.iter_mut().enumerate() {
+                *mi = a.m[i] + (b.m[i] - a.m[i]) * t;
             }
             Affine { m }
         }
@@ -668,8 +669,8 @@ fn clones_array(s: &mut Session, p: &Value) -> Result<Value> {
             Some(v) => v.as_i64().or_else(|| v.as_f64().map(|f| f.round() as i64)).ok_or_else(|| bad(cmd, format!("`{k}` must be a number"))),
         }
     };
-    let columns = num("columns", 2)?.clamp(1, 64) as i64;
-    let rows = num("rows", 2)?.clamp(1, 64) as i64;
+    let columns = num("columns", 2)?.clamp(1, 64);
+    let rows = num("rows", 2)?.clamp(1, 64);
     let (dx, dy) = (num("dx", 0)?, num("dy", 0)?);
     let distance = p.get("distance").and_then(Value::as_f64).unwrap_or(1.0);
     let angle = p.get("angle").and_then(Value::as_f64).unwrap_or(0.0).to_radians();

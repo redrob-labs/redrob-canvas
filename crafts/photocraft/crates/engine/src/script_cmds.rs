@@ -204,7 +204,7 @@ pub fn specs() -> Vec<CommandSpec> {
             shortcut: None,
             params: r##"{"name":"registered script","args":[...]? ,"params":{label: value}?} → {name, result, output}"##,
             enabled: always,
-            run: run,
+            run,
             journal: true,
         },
     ]

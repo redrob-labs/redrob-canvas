@@ -46,10 +46,11 @@ fn find_disp(data: &[u8], depth: u32) -> Option<&[u8]> {
                 return Some(&body[4..]);
             }
         }
-        if id == b"LIST" && body.len() >= 4 {
-            if let Some(found) = find_disp(&body[4..], depth + 1) {
-                return Some(found);
-            }
+        if id == b"LIST"
+            && body.len() >= 4
+            && let Some(found) = find_disp(&body[4..], depth + 1)
+        {
+            return Some(found);
         }
     }
     None

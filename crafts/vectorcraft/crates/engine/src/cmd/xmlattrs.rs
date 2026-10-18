@@ -188,7 +188,7 @@ fn describe(d: &Document, n: &Node) -> (String, Map<String, Value>, Vec<&'static
             "text"
         }
         NodeKind::SymbolInstance { symbol, .. } => {
-            put(&mut a, "href", format!("#{}", xml_id::from_object_name(&symbol)));
+            put(&mut a, "href", format!("#{}", xml_id::from_object_name(symbol)));
             editable.extend(["x", "y", "width", "height"]);
             "use"
         }

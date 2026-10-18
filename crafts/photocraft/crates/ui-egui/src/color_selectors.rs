@@ -270,28 +270,18 @@ impl Default for CommonSettings {
 /// saturation 0..1).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
+#[derive(Default)]
 pub struct MaskShape {
     pub points: Vec<[f32; 2]>,
 }
 
-impl Default for MaskShape {
-    fn default() -> Self {
-        Self { points: Vec::new() }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
+#[derive(Default)]
 pub struct GamutMask {
     pub name: String,
     pub shapes: Vec<MaskShape>,
     pub builtin: bool,
-}
-
-impl Default for GamutMask {
-    fn default() -> Self {
-        Self { name: String::new(), shapes: Vec::new(), builtin: false }
-    }
 }
 
 impl GamutMask {

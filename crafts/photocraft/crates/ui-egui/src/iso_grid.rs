@@ -8,7 +8,7 @@
 /// perpendicular to them, offset by `offset` along y.
 pub fn family(w: f64, h: f64, angle_deg: f64, step: f64, offset: f64) -> Vec<[[f64; 2]; 2]> {
     let mut out = Vec::new();
-    if !(step > 0.0) || !w.is_finite() || !h.is_finite() || w <= 0.0 || h <= 0.0 {
+    if step <= 0.0 || step.is_nan() || !w.is_finite() || !h.is_finite() || w <= 0.0 || h <= 0.0 {
         return out;
     }
     let a = angle_deg.to_radians();
@@ -39,7 +39,7 @@ pub fn family(w: f64, h: f64, angle_deg: f64, step: f64, offset: f64) -> Vec<[[f
 /// The vertical family: x = offset + k × step.
 pub fn verticals(w: f64, h: f64, step: f64, offset: f64) -> Vec<[[f64; 2]; 2]> {
     let mut out = Vec::new();
-    if !(step > 0.0) || w <= 0.0 {
+    if step <= 0.0 || step.is_nan() || w <= 0.0 {
         return out;
     }
     let mut x = offset.rem_euclid(step);

@@ -192,8 +192,8 @@ fn fill(ink: &[bool], keys: &[[f32; 4]], w: usize, h: usize, clean_up: u32, fill
     if fill_all && !palette.is_empty() {
         // Anything still unreached (regions with no key, pixels beyond the clean-up depth) takes
         // the colour of the nearest labelled pixel.
-        for i in 0..n {
-            if label[i] != u16::MAX {
+        for (i, l) in label.iter().enumerate().take(n) {
+            if *l != u16::MAX {
                 queue.push_back(i);
             }
         }

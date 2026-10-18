@@ -95,7 +95,7 @@ pub fn bucket_down(app: &mut PhotocraftApp, x: f64, y: f64, mods: egui::Modifier
     m.insert("lineArtGap".into(), json!(o.line_art_gap));
     m.insert("lineArtGrow".into(), json!(o.line_art_grow));
     m.insert("closeGap".into(), json!(o.bucket_close_gap));
-    m.insert("boundaryColor".into(), o.bucket_use_boundary.then(|| json!(o.bucket_boundary_color.to_vec())).unwrap_or(Value::Null));
+    m.insert("boundaryColor".into(), if o.bucket_use_boundary { json!(o.bucket_boundary_color.to_vec()) } else { Value::Null });
     let _ = crate::mirror_tools_ui::run_mirrored(app, "paint.bucket", Value::Object(m));
     false
 }

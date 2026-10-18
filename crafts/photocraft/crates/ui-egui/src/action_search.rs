@@ -68,9 +68,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
             .show(ui, |ui| {
                 ui.set_width(width);
                 let field = widgets::text_field(ui, id.with("query"), &mut st.query, tl!("Search actions and commands"), width - 20.0, false);
-                if st.results.is_empty() && !st.query.trim().is_empty() && st.searched == st.query {
-                    field.request_focus();
-                } else if ui.memory(|m| m.focused().is_none()) {
+                if (st.results.is_empty() && !st.query.trim().is_empty() && st.searched == st.query) || ui.memory(|m| m.focused().is_none()) {
                     field.request_focus();
                 }
                 if !st.results.is_empty() {

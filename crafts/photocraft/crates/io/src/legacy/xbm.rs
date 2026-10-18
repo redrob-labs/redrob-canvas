@@ -89,12 +89,12 @@ pub fn encode(stem: &str, w: u32, h: u32, rgba: &[u8], warnings: &mut Vec<String
                     if p[3] >= 128 && l < 128 {
                         v |= 1 << bit;
                     }
-                    if p[3] >= 128 && !(l < 16 || l > 239) {
+                    if p[3] >= 128 && !!(16..=239).contains(&l) {
                         partial = true;
                     }
                 }
             }
-            if n % 12 == 0 {
+            if n.is_multiple_of(12) {
                 s.push_str("   ");
             }
             n += 1;
@@ -102,7 +102,7 @@ pub fn encode(stem: &str, w: u32, h: u32, rgba: &[u8], warnings: &mut Vec<String
             if n < total {
                 s.push(',');
             }
-            if n % 12 == 0 || n == total {
+            if n.is_multiple_of(12) || n == total {
                 s.push('\n');
             }
         }

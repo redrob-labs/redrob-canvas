@@ -347,7 +347,7 @@ fn list(s: &mut Session, _p: &Value) -> Result<Value> {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let items: Vec<Value> = s.python_plugins.iter().map(plugin_json).collect();
-        return Ok(json!({ "plugins": items, "python": python_program() }));
+        Ok(json!({ "plugins": items, "python": python_program() }))
     }
     #[cfg(target_arch = "wasm32")]
     {
@@ -467,7 +467,7 @@ pub fn specs() -> Vec<CommandSpec> {
             shortcut: None,
             params: r##"{"name":"registered procedure","params":{name: value}?} → {name, result, output}"##,
             enabled: always,
-            run: run,
+            run,
             journal: true,
         },
         CommandSpec {

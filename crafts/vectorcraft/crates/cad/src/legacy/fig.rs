@@ -220,7 +220,7 @@ pub fn import(bytes: &[u8], title: &str) -> Result<Imported, String> {
     if !header.starts_with("#FIG") {
         return Err("not an XFig file".into());
     }
-    let version: f64 = header.trim_start_matches("#FIG").trim().split_whitespace().next().and_then(|v| v.parse().ok()).unwrap_or(3.2);
+    let version: f64 = header.trim_start_matches("#FIG").split_whitespace().next().and_then(|v| v.parse().ok()).unwrap_or(3.2);
     let mut fig = Fig { b: Builder::new(), user_colors: vec![], res: 1200.0, skipped: 0 };
     // Header lines: orientation, justification, units, papersize, magnification, multiple-page,
     // transparent colour (3.2), then resolution and coordinate system.
@@ -289,7 +289,7 @@ pub fn import(bytes: &[u8], title: &str) -> Result<Imported, String> {
                     items.push((depth, Item::Path(polyline(&pts, true), None, Some(Stroke::new([128, 128, 128], fig.res / 80.0)), false)));
                     continue;
                 }
-                let closed = matches!(sub, 2 | 3 | 4);
+                let closed = matches!(sub, 2..=4);
                 let mut pts = pts;
                 if closed && pts.len() > 1 && pts.first() == pts.last() {
                     pts.pop();

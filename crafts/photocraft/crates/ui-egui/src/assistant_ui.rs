@@ -388,7 +388,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
     if let Some(i) = selected {
         widgets::vline(ui, 22.0);
         let (a, style) = {
-            let st = app.session.active().expect("checked above");
+            let Some(st) = app.session.active() else { return true };
             (st.assistants[i].clone(), redrob_photo_engine::assistant_cmds::style_of(st, i))
         };
         ui.label(egui::RichText::new(kind_label(a.kind())).color(t.text_dim));

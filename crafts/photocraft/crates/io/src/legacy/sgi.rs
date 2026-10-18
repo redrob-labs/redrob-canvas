@@ -99,6 +99,7 @@ pub fn decode(bytes: &[u8]) -> Result<Rgba, IoError> {
         }
         s => return Err(bad("SGI", format!("unknown storage {s}"))),
     }
+    #[allow(clippy::needless_range_loop)]
     for i in 0..plane {
         let px = match channels {
             1 => [planes[0][i], planes[0][i], planes[0][i], 255],

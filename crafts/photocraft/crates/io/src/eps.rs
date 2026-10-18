@@ -423,7 +423,7 @@ impl Default for EpsOptions {
 
 fn ascii85_encode(data: &[u8], out: &mut String) {
     let mut col = 0;
-    let mut put = |s: &str, out: &mut String, col: &mut usize| {
+    let put = |s: &str, out: &mut String, col: &mut usize| {
         out.push_str(s);
         *col += s.len();
         if *col >= 76 {

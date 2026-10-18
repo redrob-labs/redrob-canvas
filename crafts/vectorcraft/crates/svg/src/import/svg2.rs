@@ -97,7 +97,7 @@ fn n(v: f64) -> String {
 
 /// `version` is `0.x` with `x` below 92 (`0.91 r13725`, `0.48.5 r10040`…).
 fn is_legacy_version(version: &str) -> bool {
-    let v = version.trim().split_whitespace().next().unwrap_or("");
+    let v = version.split_whitespace().next().unwrap_or("");
     let mut parts = v.split('.');
     let major: u32 = parts.next().and_then(|p| p.parse().ok()).unwrap_or(99);
     let minor: u32 = parts.next().and_then(|p| p.chars().take_while(|c| c.is_ascii_digit()).collect::<String>().parse().ok()).unwrap_or(99);

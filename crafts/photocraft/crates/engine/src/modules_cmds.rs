@@ -40,7 +40,7 @@ fn module_list(s: &mut Session, _p: &Value) -> Result<Value> {
                 "name": m.name,
                 "version": m.version,
                 "kind": "wasm-filter",
-                "enabled": !disabled.iter().any(|d| *d == m.id),
+                "enabled": !disabled.contains(&m.id),
                 "loaded": true,
             })
         })

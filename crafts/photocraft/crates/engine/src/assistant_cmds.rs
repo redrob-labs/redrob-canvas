@@ -274,7 +274,7 @@ fn two_point(s: &mut Session, p: &Value) -> Result<Value> {
         v = x.as_bool().ok_or_else(|| bad(cmd, "`vertical` must be a boolean"))?;
     }
     st.assistants[i].set_two_point(d, v);
-    let Assistant::TwoPointPerspective { density, vertical, .. } = &st.assistants[i] else { unreachable!() };
+    let Assistant::TwoPointPerspective { density, vertical, .. } = &st.assistants[i] else { return Ok(json!({"index": i})) };
     Ok(json!({"index": i, "density": density, "vertical": vertical}))
 }
 

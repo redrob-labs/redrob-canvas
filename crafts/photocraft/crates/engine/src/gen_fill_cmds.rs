@@ -231,7 +231,7 @@ fn screentone(
             let d = match (pattern, shape) {
                 ("lines", _) => v.abs() * 2.0,
                 (_, "square") => u.abs().max(v.abs()) * 2.0,
-                (_, "diamond") => (u.abs() + v.abs()),
+                (_, "diamond") => u.abs() + v.abs(),
                 (_, "ellipse") => ((u * 2.0).powi(2) + (v * 1.2).powi(2)).sqrt(),
                 (_, "line") => u.abs() * 2.0,
                 _ => (u * u + v * v).sqrt() * 2.0,

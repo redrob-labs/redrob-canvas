@@ -446,7 +446,7 @@ fn anchors_all(s: &mut Session, p: &Value) -> Result<Value> {
     let mut out = vec![];
     for (id, all, picked) in sets {
         let Some(pd) = st.doc.node(id).and_then(|n| n.path_data()) else { continue };
-        let set: BTreeSet<AnchorRef> = if across || st.selection.anchors.get(&id).is_none() {
+        let set: BTreeSet<AnchorRef> = if across || !st.selection.anchors.contains_key(&id) {
             all.into_iter().collect()
         } else {
             // The subpaths that hold a selected anchor; the first subpath when none does.

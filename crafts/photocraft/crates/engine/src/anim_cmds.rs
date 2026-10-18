@@ -168,9 +168,7 @@ pub fn set_animation(doc: &mut Document, a: &Animation) {
 
 /// The keyframe record of a layer, if it is an animated layer.
 pub fn keys_of(l: &Layer) -> Option<Keys> {
-    if l.video.is_none() {
-        return None;
-    }
+    l.video.as_ref()?;
     layer_meta::get(l, KEYS)
 }
 
@@ -191,7 +189,7 @@ fn ensure_timeline(doc: &mut Document, frames: usize) -> f32 {
     if doc.timeline.is_none() {
         doc.timeline = Some(Timeline::new(frames.max(1), 24.0));
     }
-    let t = doc.timeline.as_mut().expect("timeline just created");
+    let Some(t) = doc.timeline.as_mut() else { return 24.0 };
     if t.duration < frames {
         let at_end = t.work_end >= t.duration;
         t.duration = frames;

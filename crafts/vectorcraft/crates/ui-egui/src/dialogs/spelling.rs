@@ -112,11 +112,11 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
             .unwrap_or_default();
         let cur = d.str("language");
         let names: Vec<&str> = langs.iter().map(String::as_str).collect();
-        if let Some(i) = widgets::dropdown_names(ui, "spell-language", &cur, &names, 160.0) {
-            if let Some(code) = langs.get(i) {
-                d.fields.insert("language".into(), json!(code));
-                d.fields.insert("__recheck".into(), json!(true));
-            }
+        if let Some(i) = widgets::dropdown_names(ui, "spell-language", &cur, &names, 160.0)
+            && let Some(code) = langs.get(i)
+        {
+            d.fields.insert("language".into(), json!(code));
+            d.fields.insert("__recheck".into(), json!(true));
         }
     });
     ui.add_space(6.0);

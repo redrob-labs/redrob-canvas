@@ -970,6 +970,7 @@ impl Wr {
     fn u32(&mut self, v: u32) {
         self.b.extend(v.to_be_bytes());
     }
+    #[allow(dead_code)]
     fn i32(&mut self, v: i32) {
         self.b.extend(v.to_be_bytes());
     }

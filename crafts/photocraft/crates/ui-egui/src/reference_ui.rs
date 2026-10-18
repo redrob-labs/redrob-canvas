@@ -153,7 +153,7 @@ impl RefImage {
     pub fn new(name: &str, bytes: Vec<u8>, link: Option<String>, at: [f64; 2], canvas: [f64; 2]) -> Result<Self, String> {
         let pixels = decode(&bytes)?;
         let (w, h) = (pixels.size[0] as f64, pixels.size[1] as f64);
-        let fit = (canvas[0] / w).min(canvas[1] / h).min(1.0).max(1e-3);
+        let fit = (canvas[0] / w).min(canvas[1] / h).clamp(1e-3, 1.0);
         Ok(Self {
             name: name.into(),
             bytes: if link.is_some() { Vec::new() } else { bytes },

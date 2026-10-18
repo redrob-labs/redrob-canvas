@@ -366,7 +366,7 @@ fn common_colors(s: &mut Session, p: &Value) -> Result<Value> {
         m => return Err(bad(CMD, format!("unknown method `{m}` (perceptual|selective|adaptive)"))),
     };
     let (area, img) = crate::selection_cmds::sample_rgba8(s, all)?;
-    let (w, h) = (area.width().max(0) as usize, area.height().max(0) as usize);
+    let (w, h) = (area.width() as usize, area.height() as usize);
     if w == 0 || h == 0 || img.is_empty() {
         return Ok(json!({ "colors": [] }));
     }
