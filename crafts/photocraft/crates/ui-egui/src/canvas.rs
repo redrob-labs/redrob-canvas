@@ -3272,7 +3272,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     );
     // Preferences › Canvas Input: Shift + wheel turns the view instead of scrolling it.
     let wheel = if nav_hovered && app.session.prefs().canvas_input.shift_wheel_rotates && ui.input(|i| i.modifiers.shift && !i.modifiers.command) {
-        let dy = ui.input(|i| i.raw_scroll_delta.y);
+        let dy = ui.input(|i| i.smooth_scroll_delta.y);
         if dy != 0.0 {
             view.rotation = crate::rotate_view::wrap_deg(view.rotation + dy * 0.1);
         }

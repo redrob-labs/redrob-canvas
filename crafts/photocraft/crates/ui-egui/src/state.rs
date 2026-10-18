@@ -935,18 +935,6 @@ pub struct ToolOptions {
     pub multibrush_columns: f32,
     #[serde(default = "three")]
     pub multibrush_rows: f32,
-}
-
-fn dyna_drag_default() -> f32 {
-    0.15
-}
-
-fn six() -> f32 {
-    6.0
-}
-
-fn three() -> f32 {
-    3.0
     /// Lasso › Foreground Select: the outline is a rough outline round the subject, later drags
     /// mark foreground (or background) and the matting engine grows the mask
     /// (`foreground_select_ui`).
@@ -967,6 +955,18 @@ fn three() -> f32 {
     /// Foreground Select › matting engine: graphCut (full) | fast (reduced budget).
     #[serde(default = "default_fg_engine")]
     pub fg_engine: String,
+}
+
+fn dyna_drag_default() -> f32 {
+    0.15
+}
+
+fn six() -> f32 {
+    6.0
+}
+
+fn three() -> f32 {
+    3.0
 }
 
 fn thousand() -> f32 {
@@ -1923,6 +1923,7 @@ impl Default for UiState {
             brush_tool: Tool::Brush,
             tool_brushes: Vec::new(),
             clone_source: None,
+            perspective_corners: Vec::new(),
             clone_offset: None,
             pattern_stamp_phase: None,
             extras: Extras::default(),

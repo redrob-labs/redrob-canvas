@@ -224,7 +224,8 @@ fn procedure_browser(app: &mut PhotocraftApp, ctx: &egui::Context, plugins: bool
     panel_window(app, ctx, id, title, vec2(-320.0, 60.0), 640.0, |ui| {
         close = title_row(ui, title);
         ui.horizontal(|ui| {
-            crate::icons::paint(ui, ui.allocate_exact_size(vec2(16.0, 18.0), Sense::hover()).0, "search", 12.0, t.text_dim);
+            let icon_rect = ui.allocate_exact_size(vec2(16.0, 18.0), Sense::hover()).0;
+            crate::icons::paint(ui, icon_rect, "search", 12.0, t.text_dim);
             crate::widgets::text_field(ui, egui::Id::new((id, "query")), &mut query, tl!("Search procedures"), 300.0, false);
             ui.label(RichText::new(crate::i18n::fmt(tl!("{n} procedures"), &[("n", &rows.len().to_string())])).color(t.text_faint).size(10.5));
         });
@@ -664,7 +665,8 @@ fn device_status(app: &mut PhotocraftApp, ctx: &egui::Context) {
                     ui.horizontal(|ui| {
                         let icon = if d.name == "Pen" { "pen-tool" } else { "mouse-pointer" };
                         if crate::icons::exists(icon) {
-                            crate::icons::paint(ui, ui.allocate_exact_size(vec2(16.0, 16.0), Sense::hover()).0, icon, 13.0, t.icon);
+                            let icon_rect = ui.allocate_exact_size(vec2(16.0, 16.0), Sense::hover()).0;
+                            crate::icons::paint(ui, icon_rect, icon, 13.0, t.icon);
                         }
                         let shown = match d.name.as_str() {
                             "Pen" => tl!("Pen / Tablet"),
@@ -678,7 +680,8 @@ fn device_status(app: &mut PhotocraftApp, ctx: &egui::Context) {
                     ui.horizontal(|ui| {
                         let tool = Tool::from_name(&d.tool).map_or(d.tool.clone(), |t| tl!(t.label()).to_string());
                         if let Some(icon) = Tool::from_name(&d.tool).map(crate::icons::tool_icon) {
-                            crate::icons::paint(ui, ui.allocate_exact_size(vec2(16.0, 16.0), Sense::hover()).0, icon, 13.0, t.icon);
+                            let icon_rect = ui.allocate_exact_size(vec2(16.0, 16.0), Sense::hover()).0;
+                            crate::icons::paint(ui, icon_rect, icon, 13.0, t.icon);
                         }
                         ui.label(RichText::new(tool).size(11.0).color(t.text));
                         swatch(ui, d.foreground);
@@ -874,7 +877,8 @@ fn mypaint_brushes(app: &mut PhotocraftApp, ctx: &egui::Context) {
     panel_window(app, ctx, "mypaint-brushes", tl!("MyPaint Brushes"), vec2(-20.0, 80.0), 300.0, |ui| {
         close = title_row(ui, tl!("MyPaint Brushes"));
         ui.horizontal(|ui| {
-            crate::icons::paint(ui, ui.allocate_exact_size(vec2(14.0, 18.0), Sense::hover()).0, "search", 12.0, t.text_dim);
+            let icon_rect = ui.allocate_exact_size(vec2(14.0, 18.0), Sense::hover()).0;
+            crate::icons::paint(ui, icon_rect, "search", 12.0, t.text_dim);
             crate::widgets::text_field(ui, egui::Id::new("mypaint-filter"), &mut query, tl!("Filter by tag"), 200.0, false);
             if crate::widgets::secondary_button(ui, tl!("Import…"), 0.0).clicked() {
                 import = true;

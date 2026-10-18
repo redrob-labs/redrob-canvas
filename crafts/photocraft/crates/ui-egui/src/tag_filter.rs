@@ -61,7 +61,8 @@ pub fn filter_row(app: &PhotocraftApp, ui: &mut egui::Ui, kind: &str) -> bool {
     let mut changed = false;
     let id = filter_id(kind);
     ui.horizontal(|ui| {
-        crate::icons::paint(ui, ui.allocate_exact_size(egui::vec2(14.0, 18.0), egui::Sense::hover()).0, "search", 12.0, t.text_dim);
+        let icon_rect = ui.allocate_exact_size(egui::vec2(14.0, 18.0), egui::Sense::hover()).0;
+        crate::icons::paint(ui, icon_rect, "search", 12.0, t.text_dim);
         let r = crate::widgets::text_field(ui, id.with("field"), &mut q, tl!("Filter by tag"), (ui.available_width() - 24.0).max(60.0), false);
         if r.changed() {
             changed = true;

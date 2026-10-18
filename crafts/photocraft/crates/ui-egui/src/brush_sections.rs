@@ -135,7 +135,6 @@ pub(crate) fn takes_curve(control: Control, angle: bool) -> bool {
                 | Control::DrawingAngle
                 | Control::Random
                 | Control::FuzzyStroke
-                | Control::Perspective
         )
 }
 
