@@ -4656,3 +4656,162 @@ curves	Smooth	Vloeiend maken
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} momentopnamen in {dir}
+	2-Point Perspective	2-puntsperspectief
+	Assistant colour	Assistentkleur
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Assistentmagnetisme: hoe ver een streek van een assistent mag afwijken en toch wordt aangetrokken (1000 = altijd)
+	Assistant opacity	Assistentdekking
+	Concentric Ellipse	Concentrische ellips
+	Curvilinear Perspective	Kromlijnig perspectief
+	Eraser snaps	Gum magnetisch
+	Fish-Eye Point	Fisheye-punt
+	Handles	Grepen
+	Infinite Ruler	Oneindige liniaal
+	Limit to area	Beperken tot gebied
+	Minor subdivisions	Kleine onderverdelingen
+	Own colour	Eigen kleur
+	Perspective Ellipse	Perspectiefellips
+	Previews	Voorvertoningen
+	Show the snapped stroke's line while painting	Lijn van de magnetische streek tonen tijdens het schilderen
+	Show this assistant's control handles	Besturingsgrepen van deze assistent tonen
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Streken volgen de tekenassistenten (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Twee extra grepen begrenzen waar de assistent tekent en magnetisch is
+	Vertical ruler	Verticale liniaal
+	Painting Assistants	Tekenassistenten
+	Assistant Previews	Assistentvoorvertoningen
+	Drag fill	Sleepvulling
+	Dragging fills every region passed over	Slepen vult elk gepasseerd gebied
+	Exclude colour	Kleur uitsluiten
+	Exclude transparent	Transparant uitsluiten
+	Fill mode	Vulmodus
+	No region is fully enclosed by the shape	Geen gebied is volledig door de vorm omsloten
+	Only regions coloured like the first one	Alleen gebieden met de kleur van het eerste
+	Reference	Referentie
+	Similar only	Alleen gelijkende
+	Soften the filled edge	Vulrand verzachten
+	Spread stops at the darkest pixels (lines)	Uitbreiding stopt bij de donkerste pixels (lijnen)
+	Spread stops at the most opaque pixels	Uitbreiding stopt bij de meest dekkende pixels
+	Stop at darkest	Stop bij donkerste
+	Stop at opaque	Stop bij dekkend
+	Similar Colours	Gelijkende kleuren
+	Colour Labels	Kleurlabels
+	All Regions	Alle gebieden
+	Specific Colour	Specifieke kleur
+	Transparent Regions	Transparante gebieden
+	Surrounded By	Omgeven door
+	Fill with Foreground Color (Opacity)	Vullen met voorgrondkleur (dekking)
+	Fill with Background Color (Opacity)	Vullen met achtergrondkleur (dekking)
+	Fill with Pattern (Opacity)	Vullen met patroon (dekking)
+	Straight Line Tool	Rechte lijn
+	Multibrush Tool	Multipenseel
+	Dynamic Brush Tool	Dynamisch penseel
+	Enclose and Fill Tool	Omsluiten en vullen
+	Colorize Mask Tool	Kleurmasker
+	Reference Images Tool	Referentieafbeeldingen
+	Alternating	Afwisselend
+	Forward	Vooruit
+	Shaped Gradient (follows the selection)	Vormverloop (volgt de selectie)
+	Clear copies	Kopieën wissen
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik plaatst een kopie, Ctrl+Alt+klik verwijdert er een
+	How heavily the stroke lags behind the pointer	Hoe sterk de streek achter de aanwijzer aanloopt
+	How quickly the stroke's motion dies away	Hoe snel de beweging van de streek uitdooft
+	Keep one-pixel lines single width without L corners	Eén-pixellijnen enkel breed houden zonder L-hoeken
+	Mirror all tools	Alle gereedschappen spiegelen
+	Multibrush	Multipenseel
+	Pixel smoothing	Pixelvloeiing
+	The painting symmetry mirrors fills, gradients and retouching too	De tekensymmetrie spiegelt ook vullingen, verlopen en retouches
+	The painting symmetry mirrors this tool's output too	De tekensymmetrie spiegelt ook de uitvoer van dit gereedschap
+	X interval	X-interval
+	Y interval	Y-interval
+	Mirror / Rotation	Spiegel / Rotatie
+	Translate	Verschuiven
+	Copy Translate	Kopie verschuiven
+	Cursor shape	Cursorvorm
+	Outline shape	Omtrekvorm
+	Show outline while painting	Omtrek tonen tijdens het schilderen
+	Effective outline size	Werkelijke omtrekgrootte
+	Tool icon	Gereedschapspictogram
+	Arrow	Pijl
+	Crosshair	Draadkruis
+	Small dot	Kleine stip
+	No cursor	Geen cursor
+	Triangle right	Driehoek rechts
+	Triangle left	Driehoek links
+	No outline	Geen omtrek
+	Instant preview	Directe voorvertoning
+	Instant preview megapixels	Megapixels directe voorvertoning
+	Add…	Toevoegen…
+	Auto update	Automatisch bijwerken
+	Canvas input profile	Canvasinvoerprofiel
+	Clean up	Opschonen
+	Clear key strokes	Sleutelstreken wissen
+	Colorize Mask	Kleurmasker
+	Draw in the area below to test pressure, tilt and rotation	Teken in het gebied hieronder om druk, kanteling en rotatie te testen
+	Edge detection	Randdetectie
+	Edit key strokes	Sleutelstreken bewerken
+	Embed	Insluiten
+	Fill only inside the line art's pixels	Alleen binnen de pixels van de lijntekening vullen
+	Gap close	Gaten sluiten
+	Input API	Invoer-API
+	Keep aspect	Verhouding behouden
+	Limit to layer	Beperken tot laag
+	Next Preset	Volgende voorinstelling
+	No samples yet	Nog geen metingen
+	Nothing to paste: the clipboard holds no image	Niets te plakken: het klembord bevat geen afbeelding
+	Opacity +	Dekking +
+	Opacity -	Dekking -
+	Pasted image	Geplakte afbeelding
+	Peak pressure	Piekdruk
+	Previous Preset	Vorige voorinstelling
+	Reference Images	Referentieafbeeldingen
+	Rotate Left	Linksom draaien
+	Rotate Right	Rechtsom draaien
+	Sample rate	Meetfrequentie
+	Screen mapping	Schermtoewijzing
+	Show output	Uitvoer tonen
+	Show the key strokes over the canvas	Sleutelstreken over het canvas tonen
+	Show with all tools	Tonen bij alle gereedschappen
+	Size +	Grootte +
+	Size -	Grootte -
+	Speed source	Snelheidsbron
+	Store the pixels in the set; off, link to the file	Pixels in de set opslaan; uit: koppelen aan het bestand
+	Tablet Settings…	Tabletinstellingen…
+	Tablet Tester	Tablettester
+	The clipboard is not available	Het klembord is niet beschikbaar
+	The next key strokes keep their regions clear	De volgende sleutelstreken houden hun gebieden leeg
+	Tilt offset	Kantelverschuiving
+	Touch Docker	Aanraakpaneel
+	Transparent key	Transparante sleutel
+	Canvas Input	Canvasinvoer
+	Canvas Input…	Canvasinvoer…
+	Pan key	Pantoets
+	Zoom in key	Inzoomtoets
+	Zoom out key	Uitzoomtoets
+	Rotate key	Draaitoets
+	Middle button	Middelste knop
+	Stylus button	Penknop
+	Pick modifier	Pipet-modificatietoets
+	Shift wheel rotates	Shift+wiel draait
+	Trackpad	Trackpad
+	Pick	Pipet
+	No action	Geen actie
+	No pick	Geen pipet
+	Scroll	Scrollen
+	Rotate View (hold)	Weergave draaien (vasthouden)
+	Tilt offset x	Kantelverschuiving X
+	Tilt offset y	Kantelverschuiving Y
+	Tablet speed source	Snelheidsbron tablet
+	Tablet api	Tablet-API
+	Tablet screen mapping	Schermtoewijzing tablet
+	Pointer	Aanwijzer
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rastertype
+	Isometric left angle	Isometrische linkerhoek
+	Isometric right angle	Isometrische rechterhoek
+	Isometric vertical lines	Isometrische verticale lijnen
+	Rectangular	Rechthoekig
+	Isometric	Isometrisch
+	Node	Knooppunt
+	Extension	Verlenging
+	Intersection	Snijpunt

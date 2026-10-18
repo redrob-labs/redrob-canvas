@@ -138,10 +138,26 @@ pub enum Tool {
     /// Painting assistants: place, move and delete rulers, vanishing points and perspective
     /// grids that brush strokes snap to (`assistant_ui`).
     Assistant,
+    /// Straight Line: drags a line painted with the brush (Shift constrains the angle, Alt moves
+    /// the line while drawing); the Brush's Line mode as a tool of its own.
+    StraightLine,
+    /// Multibrush: paints several copies of each stroke (mirror, rotation, snowflake, translate,
+    /// copy translate, interval grid) around a draggable centre (`multibrush_ui`).
+    Multibrush,
+    /// Dynamic brush: mass and drag physics smooth the stroke like a weight on a string.
+    DynamicBrush,
+    /// Enclose and Fill: draw an enclosing shape and fill the regions inside it by rule
+    /// (`fill_tool_ui`).
+    EncloseFill,
+    /// Colorize Mask: key strokes of colour propagated into a line-art layer's regions
+    /// (`colorize_ui`).
+    ColorizeMask,
+    /// Reference Images: place floating reference pictures over the canvas (`reference_ui`).
+    ReferenceImages,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 68] = [
+    pub const ALL: [Tool; 74] = [
         Tool::Move,
         Tool::Artboard,
         Tool::RectMarquee,
@@ -210,6 +226,12 @@ impl Tool {
         Tool::SliceSelect,
         Tool::Frame,
         Tool::Assistant,
+        Tool::StraightLine,
+        Tool::Multibrush,
+        Tool::DynamicBrush,
+        Tool::EncloseFill,
+        Tool::ColorizeMask,
+        Tool::ReferenceImages,
     ];
 
     pub fn label(self) -> &'static str {
@@ -242,6 +264,12 @@ impl Tool {
             Tool::SliceSelect => "Slice Select Tool",
             Tool::Frame => "Frame Tool",
             Tool::Assistant => "Assistant Tool",
+            Tool::StraightLine => "Straight Line Tool",
+            Tool::Multibrush => "Multibrush Tool",
+            Tool::DynamicBrush => "Dynamic Brush Tool",
+            Tool::EncloseFill => "Enclose and Fill Tool",
+            Tool::ColorizeMask => "Colorize Mask Tool",
+            Tool::ReferenceImages => "Reference Images Tool",
             Tool::Gradient => "Gradient Tool",
             Tool::PaintBucket => "Paint Bucket Tool",
             Tool::Type => "Horizontal Type Tool",
@@ -318,6 +346,9 @@ impl Tool {
                 | Tool::Dodge
                 | Tool::Burn
                 | Tool::Sponge
+                | Tool::StraightLine
+                | Tool::Multibrush
+                | Tool::DynamicBrush
         )
     }
     /// Photoshop default single-key shortcut (`'\0'` = none, e.g. the Blur group).
@@ -328,6 +359,8 @@ impl Tool {
             Tool::Brush | Tool::Pencil | Tool::MixerBrush | Tool::ColorReplacement => 'B',
             Tool::Eraser | Tool::BackgroundEraser | Tool::MagicEraser => 'E',
             Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count | Tool::Assistant => 'I',
+            // The reference tools' own keys: no single-key default.
+            Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush | Tool::EncloseFill | Tool::ColorizeMask | Tool::ReferenceImages => '\0',
             Tool::Lasso | Tool::PolygonLasso | Tool::MagneticLasso => 'L',
             Tool::MagicWand => 'W',
             Tool::Crop | Tool::PerspectiveCrop | Tool::Slice | Tool::SliceSelect => 'C',
@@ -421,6 +454,12 @@ pub struct Panels {
     /// floating window rather than a modal so the canvas stays usable while a gradient is edited.
     #[serde(default)]
     pub gradient_editor: bool,
+    /// Window › Touch Docker: the big-button panel for tablets (`touch_docker_ui`).
+    #[serde(default)]
+    pub touch_docker: bool,
+    /// Window › Tablet Tester (`tablet_settings`).
+    #[serde(default)]
+    pub tablet_tester: bool,
 }
 
 impl Default for Panels {
@@ -443,6 +482,8 @@ impl Default for Panels {
             rail: true,
             menu_bar: true,
             gradient_editor: false,
+            touch_docker: false,
+            tablet_tester: false,
         }
     }
 }
@@ -823,6 +864,93 @@ pub struct ToolOptions {
     /// the tip-stamping default; see `brush_engines_ui`).
     #[serde(default = "crate::brush_engines_ui::default_engine")]
     pub brush_engine: serde_json::Value,
+    /// Painting tools › Snap to Assistants magnetism: how far (document px) a stroke may stray
+    /// from an assistant and still be pulled onto it; 1000 = always (`assistant_ui`).
+    #[serde(default = "thousand")]
+    pub assistant_magnetism: f32,
+    /// Eraser › snap to the painting assistants too (off by default, as in the reference).
+    #[serde(default)]
+    pub eraser_snaps_assistants: bool,
+    /// Paint Bucket › Fill mode: contiguous | similar | selection (empty: from `contiguous`).
+    #[serde(default)]
+    pub bucket_fill_mode: String,
+    /// Paint Bucket › Reference: current | all | labels (empty: from `sample_all_layers`), and
+    /// the colour label ids with `labels`.
+    #[serde(default)]
+    pub bucket_reference: String,
+    #[serde(default)]
+    pub bucket_labels: Vec<String>,
+    /// Paint Bucket › Feather (px) and the Spread stops.
+    #[serde(default)]
+    pub bucket_feather: f32,
+    #[serde(default)]
+    pub bucket_grow_stop_darkest: bool,
+    #[serde(default)]
+    pub bucket_grow_stop_opaque: bool,
+    /// Paint Bucket › Drag fill: dragging fills every region passed over (only similar colours
+    /// with `bucket_drag_similar`).
+    #[serde(default)]
+    pub bucket_drag_fill: bool,
+    #[serde(default)]
+    pub bucket_drag_similar: bool,
+    /// Enclose and Fill › shape (rectangle | ellipse | lasso), rule (all | color | transparent |
+    /// surroundedBy) with its colour, and the exclusions.
+    #[serde(default)]
+    pub enclose_shape: String,
+    #[serde(default)]
+    pub enclose_rule: String,
+    #[serde(default)]
+    pub enclose_rule_color: [f32; 3],
+    #[serde(default)]
+    pub enclose_exclude_transparent: bool,
+    #[serde(default)]
+    pub enclose_exclude_color_on: bool,
+    #[serde(default)]
+    pub enclose_exclude_color: [f32; 3],
+    /// The painting symmetry mirrors every tool's output (fills, gradients, retouching), not only
+    /// the brush strokes (`mirror_tools_ui`).
+    #[serde(default = "yes")]
+    pub mirror_all_tools: bool,
+    /// Dynamic Brush › mass and drag (0..1) (`dyna_ui`).
+    #[serde(default = "half")]
+    pub dyna_mass: f32,
+    #[serde(default = "dyna_drag_default")]
+    pub dyna_drag: f32,
+    /// Pencil › Pixel smoothing: one-pixel lines without L corners (`pixel_smoothing`).
+    #[serde(default)]
+    pub pixel_smoothing: bool,
+    /// Multibrush › mode (rotational | snowflake | translate | copyTranslate | interval) and its
+    /// settings (`multibrush_ui`).
+    #[serde(default)]
+    pub multibrush_mode: String,
+    #[serde(default = "six")]
+    pub multibrush_count: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_radius: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_x: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_y: f32,
+    #[serde(default = "three")]
+    pub multibrush_columns: f32,
+    #[serde(default = "three")]
+    pub multibrush_rows: f32,
+}
+
+fn dyna_drag_default() -> f32 {
+    0.15
+}
+
+fn six() -> f32 {
+    6.0
+}
+
+fn three() -> f32 {
+    3.0
+}
+
+fn thousand() -> f32 {
+    1000.0
     /// Lasso › Foreground Select: the outline is a rough outline round the subject, later drags
     /// mark foreground (or background) and the matting engine grows the mask
     /// (`foreground_select_ui`).
@@ -1113,6 +1241,33 @@ impl Default for ToolOptions {
             fg_preview_color: default_fg_preview_color(),
             fg_preview_gray: false,
             fg_engine: default_fg_engine(),
+            assistant_magnetism: 1000.0,
+            eraser_snaps_assistants: false,
+            bucket_fill_mode: String::new(),
+            bucket_reference: String::new(),
+            bucket_labels: Vec::new(),
+            bucket_feather: 0.0,
+            bucket_grow_stop_darkest: false,
+            bucket_grow_stop_opaque: false,
+            bucket_drag_fill: false,
+            bucket_drag_similar: false,
+            enclose_shape: String::new(),
+            enclose_rule: String::new(),
+            enclose_rule_color: [0.0, 0.0, 0.0],
+            enclose_exclude_transparent: false,
+            enclose_exclude_color_on: false,
+            enclose_exclude_color: [1.0, 1.0, 1.0],
+            mirror_all_tools: true,
+            dyna_mass: 0.5,
+            dyna_drag: 0.15,
+            pixel_smoothing: false,
+            multibrush_mode: String::new(),
+            multibrush_count: 6.0,
+            multibrush_radius: 100.0,
+            multibrush_x: 100.0,
+            multibrush_y: 100.0,
+            multibrush_columns: 3.0,
+            multibrush_rows: 3.0,
         }
     }
 }
@@ -1608,6 +1763,12 @@ pub struct UiState {
     /// Assistant tool and the stroke snapping to painting assistants (see `assistant_ui`).
     #[serde(default)]
     pub assistants: crate::assistant_ui::AssistantUi,
+    /// Multibrush tool: the copies' centre (Ctrl-click; the canvas centre when `None`) and the
+    /// copy-translate offsets (`multibrush_ui`).
+    #[serde(default)]
+    pub multibrush_center: Option<[f64; 2]>,
+    #[serde(default)]
+    pub multibrush_offsets: Vec<[f64; 2]>,
     pub timeline: crate::timeline_ui::TimelineUi,
     /// Window › Buffers panel (named buffers, see `buffers_ui`).
     #[serde(default)]
@@ -1766,6 +1927,8 @@ impl Default for UiState {
             analysis: Default::default(),
             extra: Default::default(),
             assistants: Default::default(),
+            multibrush_center: None,
+            multibrush_offsets: Vec::new(),
             timeline: Default::default(),
             buffers: Default::default(),
             slices: Default::default(),
@@ -1890,7 +2053,7 @@ mod tests {
         assert!(!Tool::RedEye.is_brushlike());
         assert_eq!(Tool::from_name("patternStamp"), Some(Tool::PatternStamp));
         assert_eq!(Tool::from_name("Pattern Stamp Tool"), Some(Tool::PatternStamp));
-        assert_eq!(Tool::ALL.len(), 68);
+        assert_eq!(Tool::ALL.len(), 74);
         assert_eq!(Tool::from_name("Vertical Type Mask Tool"), Some(Tool::VerticalTypeMask));
         assert_eq!(Tool::from_name("addAnchorPoint"), Some(Tool::AddAnchorPoint));
         assert_eq!(Tool::from_name("Delete Anchor Point Tool"), Some(Tool::DeleteAnchorPoint));

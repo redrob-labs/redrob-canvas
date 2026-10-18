@@ -3978,3 +3978,164 @@ curves	Smooth	Glätten
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} Schnappschüsse in {dir}
+	2-Point Perspective	2-Punkt-Perspektive
+	Assistant colour	Assistentenfarbe
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Assistentenmagnetismus: wie weit ein Strich vom Assistenten abweichen darf und trotzdem angezogen wird (1000 = immer)
+	Assistant opacity	Assistentendeckkraft
+	Concentric Ellipse	Konzentrische Ellipse
+	Curvilinear Perspective	Kurvilineare Perspektive
+	Eraser snaps	Radierer rastet ein
+	Fish-Eye Point	Fischaugenpunkt
+	Handles	Griffe
+	Infinite Ruler	Unendliches Lineal
+	Limit to area	Auf Bereich begrenzen
+	Minor subdivisions	Nebenunterteilungen
+	Own colour	Eigene Farbe
+	Perspective Ellipse	Perspektivische Ellipse
+	Previews	Vorschauen
+	Show the snapped stroke's line while painting	Linie des eingerasteten Strichs beim Malen anzeigen
+	Show this assistant's control handles	Steuergriffe dieses Assistenten anzeigen
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Striche folgen den Malassistenten (Strg+Umschalt+L)
+	Two extra handles clip where the assistant draws and snaps	Zwei zusätzliche Griffe begrenzen, wo der Assistent zeichnet und einrastet
+	Vertical ruler	Vertikales Lineal
+	Painting Assistants	Malassistenten
+	Assistant Previews	Assistentenvorschauen
+	Drag fill	Ziehfüllung
+	Dragging fills every region passed over	Ziehen füllt jeden überfahrenen Bereich
+	Exclude colour	Farbe ausschließen
+	Exclude transparent	Transparentes ausschließen
+	Fill mode	Füllmodus
+	No region is fully enclosed by the shape	Keine Region ist vollständig von der Form umschlossen
+	Only regions coloured like the first one	Nur Bereiche in der Farbe des ersten
+	Reference	Referenz
+	Similar only	Nur ähnliche
+	Soften the filled edge	Füllkante weichzeichnen
+	Spread stops at the darkest pixels (lines)	Die Ausdehnung stoppt an den dunkelsten Pixeln (Linien)
+	Spread stops at the most opaque pixels	Die Ausdehnung stoppt an den deckendsten Pixeln
+	Stop at darkest	Am Dunkelsten stoppen
+	Stop at opaque	Am Deckenden stoppen
+	Similar Colours	Ähnliche Farben
+	Colour Labels	Farbetiketten
+	All Regions	Alle Bereiche
+	Specific Colour	Bestimmte Farbe
+	Transparent Regions	Transparente Bereiche
+	Surrounded By	Umgeben von
+	Fill with Foreground Color (Opacity)	Mit Vordergrundfarbe füllen (Deckkraft)
+	Fill with Background Color (Opacity)	Mit Hintergrundfarbe füllen (Deckkraft)
+	Fill with Pattern (Opacity)	Mit Muster füllen (Deckkraft)
+	Straight Line Tool	Gerade-Linie-Werkzeug
+	Multibrush Tool	Multipinsel-Werkzeug
+	Dynamic Brush Tool	Dynamischer-Pinsel-Werkzeug
+	Enclose and Fill Tool	Umschließen-und-füllen-Werkzeug
+	Colorize Mask Tool	Kolorierungsmasken-Werkzeug
+	Reference Images Tool	Referenzbilder-Werkzeug
+	Alternating	Abwechselnd
+	Shaped Gradient (follows the selection)	Formverlauf (folgt der Auswahl)
+	Clear copies	Kopien löschen
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Strg+Klick setzt eine Kopie, Strg+Alt+Klick entfernt eine
+	How heavily the stroke lags behind the pointer	Wie stark der Strich dem Zeiger hinterherhinkt
+	How quickly the stroke's motion dies away	Wie schnell die Bewegung des Strichs abklingt
+	Keep one-pixel lines single width without L corners	Einpixel-Linien bleiben einfach breit, ohne L-Ecken
+	Mirror all tools	Alle Werkzeuge spiegeln
+	Multibrush	Multipinsel
+	Pixel smoothing	Pixelglättung
+	The painting symmetry mirrors fills, gradients and retouching too	Die Malsymmetrie spiegelt auch Füllungen, Verläufe und Retuschen
+	The painting symmetry mirrors this tool's output too	Die Malsymmetrie spiegelt auch die Ausgabe dieses Werkzeugs
+	X interval	X-Abstand
+	Y interval	Y-Abstand
+	Mirror / Rotation	Spiegel / Rotation
+	Translate	Verschieben
+	Copy Translate	Kopie verschieben
+	Cursor shape	Cursorform
+	Outline shape	Umrissform
+	Show outline while painting	Umriss beim Malen anzeigen
+	Effective outline size	Effektive Umrissgröße
+	Tool icon	Werkzeugsymbol
+	Arrow	Pfeil
+	Crosshair	Fadenkreuz
+	Small dot	Kleiner Punkt
+	No cursor	Kein Cursor
+	Triangle right	Dreieck rechts
+	Triangle left	Dreieck links
+	No outline	Kein Umriss
+	Instant preview	Sofortvorschau
+	Instant preview megapixels	Megapixel für die Sofortvorschau
+	Add…	Hinzufügen…
+	Auto update	Automatisch aktualisieren
+	Canvas input profile	Leinwand-Eingabeprofil
+	Clean up	Aufräumen
+	Clear key strokes	Schlüsselstriche löschen
+	Colorize Mask	Kolorierungsmaske
+	Draw in the area below to test pressure, tilt and rotation	Im Bereich unten zeichnen, um Druck, Neigung und Rotation zu testen
+	Edge detection	Kantenerkennung
+	Edit key strokes	Schlüsselstriche bearbeiten
+	Embed	Einbetten
+	Fill only inside the line art's pixels	Nur innerhalb der Pixel der Strichzeichnung füllen
+	Gap close	Lücken schließen
+	Input API	Eingabe-API
+	Keep aspect	Seitenverhältnis halten
+	Limit to layer	Auf Ebene begrenzen
+	Mouse	Maus
+	Next Preset	Nächste Vorgabe
+	No samples yet	Noch keine Messwerte
+	Opacity +	Deckkraft +
+	Opacity -	Deckkraft -
+	Pasted image	Eingefügtes Bild
+	Peak pressure	Spitzendruck
+	Pen	Stift
+	Previous Preset	Vorherige Vorgabe
+	Reference Images	Referenzbilder
+	Rotate Left	Nach links drehen
+	Rotate Right	Nach rechts drehen
+	Sample rate	Abtastrate
+	Screen mapping	Bildschirmzuordnung
+	Show output	Ausgabe anzeigen
+	Show the key strokes over the canvas	Schlüsselstriche über der Leinwand anzeigen
+	Show with all tools	Mit allen Werkzeugen anzeigen
+	Size +	Größe +
+	Size -	Größe -
+	Speed source	Geschwindigkeitsquelle
+	Store the pixels in the set; off, link to the file	Pixel im Set speichern; aus: mit der Datei verknüpfen
+	Tablet Settings…	Tablett-Einstellungen…
+	Tablet Tester	Tablett-Tester
+	The clipboard is not available	Die Zwischenablage ist nicht verfügbar
+	The next key strokes keep their regions clear	Die nächsten Schlüsselstriche lassen ihre Bereiche frei
+	Tilt offset	Neigungsversatz
+	Touch Docker	Touch-Leiste
+	Transparent key	Transparenter Schlüssel
+	Update	Aktualisieren
+	Canvas Input	Leinwand-Eingabe
+	Canvas Input…	Leinwand-Eingabe…
+	Pan key	Verschiebetaste
+	Zoom in key	Vergrößerungstaste
+	Zoom out key	Verkleinerungstaste
+	Rotate key	Drehtaste
+	Middle button	Mittlere Taste
+	Stylus button	Stifttaste
+	Pick modifier	Pipetten-Modifikator
+	Shift wheel rotates	Umschalt+Rad dreht
+	Tablet	Tablett
+	Trackpad	Trackpad
+	Pick	Pipette
+	No action	Keine Aktion
+	No pick	Keine Pipette
+	Scroll	Scrollen
+	Rotate View (hold)	Ansicht drehen (halten)
+	Tilt offset x	Neigungsversatz X
+	Tilt offset y	Neigungsversatz Y
+	Tablet speed source	Geschwindigkeitsquelle des Tabletts
+	Tablet api	Tablett-API
+	Tablet screen mapping	Bildschirmzuordnung des Tabletts
+	Pointer	Zeiger
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rastertyp
+	Isometric left angle	Isometrischer Winkel links
+	Isometric right angle	Isometrischer Winkel rechts
+	Isometric vertical lines	Isometrische vertikale Linien
+	Rectangular	Rechteckig
+	Isometric	Isometrisch
+	Node	Knoten
+	Extension	Verlängerung
+	Intersection	Schnittpunkt

@@ -4501,3 +4501,165 @@ curves	Smooth	Wygładź
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} zrzutów w {dir}
+	2-Point Perspective	Perspektywa dwupunktowa
+	Assistant colour	Kolor asystenta
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetyzm asystenta: jak daleko pociągnięcie może odbiec od asystenta i nadal zostać przyciągnięte (1000 = zawsze)
+	Assistant opacity	Krycie asystenta
+	Concentric Ellipse	Elipsa współśrodkowa
+	Curvilinear Perspective	Perspektywa krzywoliniowa
+	Eraser snaps	Gumka przyciąga
+	Fish-Eye Point	Punkt rybiego oka
+	Handles	Uchwyty
+	Infinite Ruler	Linijka nieskończona
+	Limit to area	Ogranicz do obszaru
+	Minor subdivisions	Podziały pomocnicze
+	Own colour	Własny kolor
+	Perspective Ellipse	Elipsa perspektywiczna
+	Previews	Podglądy
+	Show the snapped stroke's line while painting	Pokaż linię przyciągniętego pociągnięcia podczas malowania
+	Show this assistant's control handles	Pokaż uchwyty sterujące tego asystenta
+	Spline	Krzywa sklejana
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Pociągnięcia podążają za asystentami malowania (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dwa dodatkowe uchwyty ograniczają, gdzie asystent rysuje i przyciąga
+	Vertical ruler	Linijka pionowa
+	Painting Assistants	Asystenci malowania
+	Assistant Previews	Podglądy asystentów
+	Drag fill	Wypełnianie przeciąganiem
+	Dragging fills every region passed over	Przeciąganie wypełnia każdy mijany obszar
+	Exclude colour	Wyklucz kolor
+	Exclude transparent	Wyklucz przezroczyste
+	Fill mode	Tryb wypełniania
+	No region is fully enclosed by the shape	Żaden obszar nie jest w pełni otoczony kształtem
+	Only regions coloured like the first one	Tylko obszary w kolorze pierwszego
+	Reference	Odniesienie
+	Similar only	Tylko podobne
+	Soften the filled edge	Zmiękcz krawędź wypełnienia
+	Spread stops at the darkest pixels (lines)	Rozszerzanie zatrzymuje się na najciemniejszych pikselach (liniach)
+	Spread stops at the most opaque pixels	Rozszerzanie zatrzymuje się na najbardziej kryjących pikselach
+	Stop at darkest	Zatrzymaj na najciemniejszym
+	Stop at opaque	Zatrzymaj na kryjącym
+	Similar Colours	Podobne kolory
+	Colour Labels	Etykiety kolorów
+	All Regions	Wszystkie obszary
+	Specific Colour	Określony kolor
+	Transparent Regions	Obszary przezroczyste
+	Surrounded By	Otoczone przez
+	Fill with Foreground Color (Opacity)	Wypełnij kolorem narzędzia (krycie)
+	Fill with Background Color (Opacity)	Wypełnij kolorem tła (krycie)
+	Fill with Pattern (Opacity)	Wypełnij wzorkiem (krycie)
+	Straight Line Tool	Narzędzie Linia prosta
+	Multibrush Tool	Narzędzie Multipędzel
+	Dynamic Brush Tool	Narzędzie Pędzel dynamiczny
+	Enclose and Fill Tool	Narzędzie Otocz i wypełnij
+	Colorize Mask Tool	Narzędzie Maska kolorowania
+	Reference Images Tool	Narzędzie Obrazy referencyjne
+	Alternating	Naprzemiennie
+	Forward	Do przodu
+	Shaped Gradient (follows the selection)	Gradient kształtowy (podąża za zaznaczeniem)
+	Clear copies	Wyczyść kopie
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+kliknięcie dodaje kopię, Ctrl+Alt+kliknięcie ją usuwa
+	How heavily the stroke lags behind the pointer	Jak mocno pociągnięcie pozostaje za wskaźnikiem
+	How quickly the stroke's motion dies away	Jak szybko ruch pociągnięcia wygasa
+	Keep one-pixel lines single width without L corners	Linie jednopikselowe zachowują pojedynczą szerokość bez narożników w kształcie L
+	Mirror all tools	Odbijaj wszystkie narzędzia
+	Multibrush	Multipędzel
+	Pixel smoothing	Wygładzanie pikseli
+	The painting symmetry mirrors fills, gradients and retouching too	Symetria malowania odbija też wypełnienia, gradienty i retusz
+	The painting symmetry mirrors this tool's output too	Symetria malowania odbija też wynik tego narzędzia
+	X interval	Odstęp X
+	Y interval	Odstęp Y
+	Mirror / Rotation	Odbicie / Obrót
+	Translate	Przesunięcie
+	Copy Translate	Kopia z przesunięciem
+	Cursor shape	Kształt kursora
+	Outline shape	Kształt obrysu
+	Show outline while painting	Pokaż obrys podczas malowania
+	Effective outline size	Rzeczywisty rozmiar obrysu
+	Tool icon	Ikona narzędzia
+	Arrow	Strzałka
+	Crosshair	Krzyżyk
+	Small dot	Mała kropka
+	No cursor	Bez kursora
+	Triangle right	Trójkąt w prawo
+	Triangle left	Trójkąt w lewo
+	No outline	Bez obrysu
+	Instant preview	Natychmiastowy podgląd
+	Instant preview megapixels	Megapiksele natychmiastowego podglądu
+	Add…	Dodaj…
+	Auto update	Automatyczna aktualizacja
+	Canvas input profile	Profil wejścia kanwy
+	Clean up	Oczyszczanie
+	Clear key strokes	Wyczyść pociągnięcia kluczowe
+	Colorize Mask	Maska kolorowania
+	Draw in the area below to test pressure, tilt and rotation	Rysuj w obszarze poniżej, aby sprawdzić nacisk, nachylenie i obrót
+	Edge detection	Wykrywanie krawędzi
+	Edit key strokes	Edytuj pociągnięcia kluczowe
+	Embed	Osadź
+	Fill only inside the line art's pixels	Wypełniaj tylko w obrębie pikseli rysunku
+	Gap close	Zamknij przerwy
+	Input API	API wejścia
+	Keep aspect	Zachowaj proporcje
+	Limit to layer	Ogranicz do warstwy
+	Mouse	Mysz
+	Next Preset	Następne ustawienie
+	No samples yet	Brak próbek
+	Nothing to paste: the clipboard holds no image	Nie ma czego wkleić: schowek nie zawiera obrazu
+	Opacity +	Krycie +
+	Opacity -	Krycie -
+	Pasted image	Wklejony obraz
+	Peak pressure	Szczytowy nacisk
+	Previous Preset	Poprzednie ustawienie
+	Reference Images	Obrazy referencyjne
+	Rotate Left	Obróć w lewo
+	Rotate Right	Obróć w prawo
+	Sample rate	Częstotliwość próbkowania
+	Screen mapping	Mapowanie ekranu
+	Show output	Pokaż wynik
+	Show the key strokes over the canvas	Pokaż pociągnięcia kluczowe na kanwie
+	Show with all tools	Pokaż przy wszystkich narzędziach
+	Size +	Rozmiar +
+	Size -	Rozmiar -
+	Speed source	Źródło prędkości
+	Store the pixels in the set; off, link to the file	Zapisz piksele w zestawie; wyłączone: dowiązanie do pliku
+	Tablet Settings…	Ustawienia tabletu…
+	Tablet Tester	Tester tabletu
+	The clipboard is not available	Schowek jest niedostępny
+	The next key strokes keep their regions clear	Następne pociągnięcia kluczowe pozostawiają obszary przezroczyste
+	Tilt offset	Przesunięcie nachylenia
+	Touch Docker	Panel dotykowy
+	Transparent key	Klucz przezroczysty
+	Update	Aktualizuj
+	Canvas Input	Wejście kanwy
+	Canvas Input…	Wejście kanwy…
+	Pan key	Klawisz przesuwania
+	Zoom in key	Klawisz powiększania
+	Zoom out key	Klawisz pomniejszania
+	Rotate key	Klawisz obrotu
+	Middle button	Środkowy przycisk
+	Stylus button	Przycisk rysika
+	Pick modifier	Modyfikator pobierania
+	Shift wheel rotates	Shift+kółko obraca
+	Tablet	Tablet
+	Trackpad	Gładzik
+	Pick	Pobierz kolor
+	No action	Brak akcji
+	No pick	Bez pobierania
+	Scroll	Przewijanie
+	Rotate View (hold)	Obróć widok (trzymaj)
+	Tilt offset x	Przesunięcie nachylenia X
+	Tilt offset y	Przesunięcie nachylenia Y
+	Tablet speed source	Źródło prędkości tabletu
+	Tablet api	API tabletu
+	Tablet screen mapping	Mapowanie ekranu tabletu
+	Pointer	Wskaźnik
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Typ siatki
+	Isometric left angle	Lewy kąt izometryczny
+	Isometric right angle	Prawy kąt izometryczny
+	Isometric vertical lines	Pionowe linie izometryczne
+	Rectangular	Prostokątna
+	Isometric	Izometryczna
+	Node	Węzeł
+	Extension	Przedłużenie
+	Intersection	Przecięcie

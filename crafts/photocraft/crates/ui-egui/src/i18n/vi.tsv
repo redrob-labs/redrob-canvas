@@ -4394,3 +4394,165 @@ curves	Smooth	Làm mượt
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} ảnh chụp trong {dir}
+	2-Point Perspective	Phối cảnh 2 điểm
+	Assistant colour	Màu trợ lý
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Lực hút trợ lý: nét vẽ có thể lệch khỏi trợ lý bao xa mà vẫn bị hút vào (1000 = luôn luôn)
+	Assistant opacity	Độ mờ trợ lý
+	Concentric Ellipse	Elip đồng tâm
+	Curvilinear Perspective	Phối cảnh cong
+	Eraser snaps	Tẩy cũng bám
+	Fish-Eye Point	Điểm mắt cá
+	Handles	Tay cầm
+	Infinite Ruler	Thước vô hạn
+	Limit to area	Giới hạn trong vùng
+	Minor subdivisions	Vạch chia phụ
+	Own colour	Màu riêng
+	Perspective Ellipse	Elip phối cảnh
+	Previews	Xem trước
+	Show the snapped stroke's line while painting	Hiện đường của nét vẽ đã bám khi tô
+	Show this assistant's control handles	Hiện tay cầm điều khiển của trợ lý này
+	Spline	Đường spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Nét vẽ đi theo trợ lý vẽ (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Hai tay cầm thêm giới hạn nơi trợ lý vẽ và bám
+	Vertical ruler	Thước dọc
+	Painting Assistants	Trợ lý vẽ
+	Assistant Previews	Xem trước trợ lý
+	Drag fill	Tô bằng kéo
+	Dragging fills every region passed over	Kéo sẽ tô mọi vùng đi qua
+	Exclude colour	Loại trừ màu
+	Exclude transparent	Loại trừ trong suốt
+	Fill mode	Chế độ tô
+	No region is fully enclosed by the shape	Không có vùng nào được hình bao kín hoàn toàn
+	Only regions coloured like the first one	Chỉ các vùng cùng màu với vùng đầu
+	Reference	Tham chiếu
+	Similar only	Chỉ màu tương tự
+	Soften the filled edge	Làm mềm mép tô
+	Spread stops at the darkest pixels (lines)	Mở rộng dừng tại các điểm ảnh tối nhất (đường nét)
+	Spread stops at the most opaque pixels	Mở rộng dừng tại các điểm ảnh đục nhất
+	Stop at darkest	Dừng ở tối nhất
+	Stop at opaque	Dừng ở đục
+	Similar Colours	Màu tương tự
+	Colour Labels	Nhãn màu
+	All Regions	Mọi vùng
+	Specific Colour	Màu cụ thể
+	Transparent Regions	Vùng trong suốt
+	Surrounded By	Bao quanh bởi
+	Fill with Foreground Color (Opacity)	Tô bằng màu tiền cảnh (độ mờ)
+	Fill with Background Color (Opacity)	Tô bằng màu nền (độ mờ)
+	Fill with Pattern (Opacity)	Tô bằng mẫu (độ mờ)
+	Straight Line Tool	Công cụ Đường thẳng
+	Multibrush Tool	Công cụ Đa cọ
+	Dynamic Brush Tool	Công cụ Cọ động
+	Enclose and Fill Tool	Công cụ Bao và tô
+	Colorize Mask Tool	Công cụ Mặt nạ tô màu
+	Reference Images Tool	Công cụ Ảnh tham chiếu
+	Alternating	Xen kẽ
+	Forward	Tiến
+	Shaped Gradient (follows the selection)	Chuyển sắc theo hình (theo vùng chọn)
+	Clear copies	Xóa bản sao
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+nhấp đặt bản sao, Ctrl+Alt+nhấp xóa
+	How heavily the stroke lags behind the pointer	Nét vẽ trễ sau con trỏ bao nhiêu
+	How quickly the stroke's motion dies away	Chuyển động của nét vẽ tắt nhanh đến mức nào
+	Keep one-pixel lines single width without L corners	Giữ đường một điểm ảnh đơn độ rộng, không góc chữ L
+	Mirror all tools	Phản chiếu mọi công cụ
+	Multibrush	Đa cọ
+	Pixel smoothing	Làm mượt điểm ảnh
+	The painting symmetry mirrors fills, gradients and retouching too	Đối xứng vẽ cũng phản chiếu tô, chuyển sắc và chỉnh sửa
+	The painting symmetry mirrors this tool's output too	Đối xứng vẽ cũng phản chiếu kết quả của công cụ này
+	X interval	Khoảng X
+	Y interval	Khoảng Y
+	Mirror / Rotation	Phản chiếu / Xoay
+	Translate	Dịch chuyển
+	Copy Translate	Sao chép dịch chuyển
+	Cursor shape	Hình con trỏ
+	Outline shape	Hình đường viền
+	Show outline while painting	Hiện đường viền khi tô
+	Effective outline size	Kích cỡ viền thực tế
+	Tool icon	Biểu tượng công cụ
+	Arrow	Mũi tên
+	Crosshair	Dấu chữ thập
+	Small dot	Chấm nhỏ
+	No cursor	Không con trỏ
+	Triangle right	Tam giác phải
+	Triangle left	Tam giác trái
+	No outline	Không viền
+	Instant preview	Xem trước tức thì
+	Instant preview megapixels	Megapixel xem trước tức thì
+	Add…	Thêm…
+	Auto update	Tự cập nhật
+	Canvas input profile	Hồ sơ nhập liệu canvas
+	Clean up	Dọn dẹp
+	Clear key strokes	Xóa nét khóa
+	Colorize Mask	Mặt nạ tô màu
+	Draw in the area below to test pressure, tilt and rotation	Vẽ vào vùng dưới để kiểm tra lực nhấn, độ nghiêng và xoay
+	Edge detection	Phát hiện cạnh
+	Edit key strokes	Sửa nét khóa
+	Embed	Nhúng
+	Fill only inside the line art's pixels	Chỉ tô trong các điểm ảnh của nét vẽ
+	Gap close	Đóng khe hở
+	Input API	API nhập liệu
+	Keep aspect	Giữ tỉ lệ
+	Limit to layer	Giới hạn trong lớp
+	Mouse	Chuột
+	Next Preset	Cài sẵn tiếp
+	No samples yet	Chưa có mẫu
+	Nothing to paste: the clipboard holds no image	Không có gì để dán: bộ nhớ tạm không có ảnh
+	Opacity +	Độ mờ +
+	Opacity -	Độ mờ -
+	Pasted image	Ảnh đã dán
+	Peak pressure	Lực nhấn tối đa
+	Previous Preset	Cài sẵn trước
+	Reference Images	Ảnh tham chiếu
+	Rotate Left	Xoay trái
+	Rotate Right	Xoay phải
+	Sample rate	Tốc độ lấy mẫu
+	Screen mapping	Ánh xạ màn hình
+	Show output	Hiện kết quả
+	Show the key strokes over the canvas	Hiện nét khóa trên canvas
+	Show with all tools	Hiện với mọi công cụ
+	Size +	Kích cỡ +
+	Size -	Kích cỡ -
+	Speed source	Nguồn tốc độ
+	Store the pixels in the set; off, link to the file	Lưu điểm ảnh trong bộ; tắt thì liên kết tới tệp
+	Tablet Settings…	Cài đặt bảng vẽ…
+	Tablet Tester	Kiểm tra bảng vẽ
+	The clipboard is not available	Không dùng được bộ nhớ tạm
+	The next key strokes keep their regions clear	Các nét khóa tiếp theo giữ vùng của chúng trong suốt
+	Tilt offset	Bù độ nghiêng
+	Touch Docker	Bảng cảm ứng
+	Transparent key	Khóa trong suốt
+	Update	Cập nhật
+	Canvas Input	Nhập liệu canvas
+	Canvas Input…	Nhập liệu canvas…
+	Pan key	Phím kéo
+	Zoom in key	Phím phóng to
+	Zoom out key	Phím thu nhỏ
+	Rotate key	Phím xoay
+	Middle button	Nút giữa
+	Stylus button	Nút bút
+	Pick modifier	Phím bổ trợ lấy màu
+	Shift wheel rotates	Shift+con lăn xoay
+	Tablet	Bảng vẽ
+	Trackpad	Bàn di chuột
+	Pick	Lấy màu
+	No action	Không hành động
+	No pick	Không lấy màu
+	Scroll	Cuộn
+	Rotate View (hold)	Xoay khung nhìn (giữ)
+	Tilt offset x	Bù độ nghiêng X
+	Tilt offset y	Bù độ nghiêng Y
+	Tablet speed source	Nguồn tốc độ bảng vẽ
+	Tablet api	API bảng vẽ
+	Tablet screen mapping	Ánh xạ màn hình bảng vẽ
+	Pointer	Con trỏ
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Loại lưới
+	Isometric left angle	Góc trái đẳng cự
+	Isometric right angle	Góc phải đẳng cự
+	Isometric vertical lines	Đường dọc đẳng cự
+	Rectangular	Hình chữ nhật
+	Isometric	Đẳng cự
+	Node	Nút
+	Extension	Đường kéo dài
+	Intersection	Giao điểm

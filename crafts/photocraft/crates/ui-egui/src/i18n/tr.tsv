@@ -4626,3 +4626,162 @@ cameraData	Lens	Lens
 	x	x
 	y	y
 	{count} snapshots in {dir}	{dir} içinde {count} anlık görüntü
+	2-Point Perspective	2 Noktalı Perspektif
+	Assistant colour	Yardımcı rengi
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Yardımcı manyetizması: bir vuruşun yardımcıdan ne kadar uzaklaşıp yine de çekilebileceği (1000 = her zaman)
+	Assistant opacity	Yardımcı opaklığı
+	Concentric Ellipse	Eşmerkezli Elips
+	Curvilinear Perspective	Eğrisel Perspektif
+	Eraser snaps	Silgi yaslanır
+	Fish-Eye Point	Balık Gözü Noktası
+	Handles	Tutamaçlar
+	Infinite Ruler	Sonsuz Cetvel
+	Limit to area	Alanla sınırla
+	Minor subdivisions	Küçük alt bölümler
+	Own colour	Kendi rengi
+	Perspective Ellipse	Perspektif Elips
+	Previews	Önizlemeler
+	Show the snapped stroke's line while painting	Boyarken yaslanan vuruşun çizgisini göster
+	Show this assistant's control handles	Bu yardımcının denetim tutamaçlarını göster
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Vuruşlar boyama yardımcılarını izler (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	İki ek tutamaç yardımcının çizdiği ve yaslandığı yeri kırpar
+	Vertical ruler	Dikey Cetvel
+	Painting Assistants	Boyama Yardımcıları
+	Assistant Previews	Yardımcı Önizlemeleri
+	Drag fill	Sürükleyerek doldur
+	Dragging fills every region passed over	Sürükleme geçilen her bölgeyi doldurur
+	Exclude colour	Rengi dışla
+	Exclude transparent	Saydamı dışla
+	Fill mode	Doldurma modu
+	No region is fully enclosed by the shape	Hiçbir bölge şeklin içinde tamamen kapalı değil
+	Only regions coloured like the first one	Yalnızca ilkiyle aynı renkteki bölgeler
+	Reference	Referans
+	Similar only	Yalnızca benzer
+	Soften the filled edge	Doldurma kenarını yumuşat
+	Spread stops at the darkest pixels (lines)	Yayılma en koyu piksellerde (çizgilerde) durur
+	Spread stops at the most opaque pixels	Yayılma en opak piksellerde durur
+	Stop at darkest	En koyuda dur
+	Stop at opaque	Opakta dur
+	Similar Colours	Benzer Renkler
+	Colour Labels	Renk Etiketleri
+	All Regions	Tüm Bölgeler
+	Specific Colour	Belirli Renk
+	Transparent Regions	Saydam Bölgeler
+	Surrounded By	Çevreleyen
+	Fill with Foreground Color (Opacity)	Ön Plan Rengiyle Doldur (Opaklık)
+	Fill with Background Color (Opacity)	Arka Plan Rengiyle Doldur (Opaklık)
+	Fill with Pattern (Opacity)	Desenle Doldur (Opaklık)
+	Straight Line Tool	Düz Çizgi Aracı
+	Multibrush Tool	Çoklu Fırça Aracı
+	Dynamic Brush Tool	Dinamik Fırça Aracı
+	Enclose and Fill Tool	Çevrele ve Doldur Aracı
+	Colorize Mask Tool	Renklendirme Maskesi Aracı
+	Reference Images Tool	Referans Görüntüleri Aracı
+	Alternating	Değişken
+	Forward	İleri
+	Shaped Gradient (follows the selection)	Şekilli Gradyan (seçimi izler)
+	Clear copies	Kopyaları temizle
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+tık kopya yerleştirir, Ctrl+Alt+tık kaldırır
+	How heavily the stroke lags behind the pointer	Vuruşun işaretçinin ne kadar gerisinde kaldığı
+	How quickly the stroke's motion dies away	Vuruş hareketinin ne kadar hızlı söndüğü
+	Keep one-pixel lines single width without L corners	Tek piksel çizgileri L köşeler olmadan tek genişlikte tut
+	Mirror all tools	Tüm araçları yansıt
+	Multibrush	Çoklu Fırça
+	Pixel smoothing	Piksel yumuşatma
+	The painting symmetry mirrors fills, gradients and retouching too	Boyama simetrisi doldurmaları, gradyanları ve rötuşları da yansıtır
+	The painting symmetry mirrors this tool's output too	Boyama simetrisi bu aracın çıktısını da yansıtır
+	X interval	X aralığı
+	Y interval	Y aralığı
+	Mirror / Rotation	Ayna / Döndürme
+	Translate	Öteleme
+	Copy Translate	Kopyala Ötele
+	Cursor shape	İmleç şekli
+	Outline shape	Dış çizgi şekli
+	Show outline while painting	Boyarken dış çizgiyi göster
+	Effective outline size	Etkin dış çizgi boyutu
+	Tool icon	Araç simgesi
+	Arrow	Ok
+	Crosshair	Artı
+	Small dot	Küçük nokta
+	No cursor	İmleç yok
+	Triangle right	Sağ üçgen
+	Triangle left	Sol üçgen
+	No outline	Dış çizgi yok
+	Instant preview	Anlık önizleme
+	Instant preview megapixels	Anlık önizleme megapiksel
+	Add…	Ekle…
+	Auto update	Otomatik güncelle
+	Canvas input profile	Tuval giriş profili
+	Clean up	Temizle
+	Clear key strokes	Anahtar vuruşları temizle
+	Colorize Mask	Renklendirme Maskesi
+	Draw in the area below to test pressure, tilt and rotation	Basınç, eğim ve döndürmeyi test etmek için aşağıdaki alana çizin
+	Edge detection	Kenar algılama
+	Edit key strokes	Anahtar vuruşları düzenle
+	Embed	Göm
+	Fill only inside the line art's pixels	Yalnızca çizginin piksellerinin içini doldur
+	Gap close	Boşlukları kapat
+	Input API	Giriş API'si
+	Keep aspect	Oranı koru
+	Limit to layer	Katmanla sınırla
+	Next Preset	Sonraki Ön Ayar
+	No samples yet	Henüz örnek yok
+	Nothing to paste: the clipboard holds no image	Yapıştırılacak bir şey yok: panoda görüntü yok
+	Opacity +	Opaklık +
+	Opacity -	Opaklık -
+	Pasted image	Yapıştırılan görüntü
+	Peak pressure	Tepe basıncı
+	Previous Preset	Önceki Ön Ayar
+	Reference Images	Referans Görüntüleri
+	Rotate Left	Sola Döndür
+	Rotate Right	Sağa Döndür
+	Sample rate	Örnekleme hızı
+	Screen mapping	Ekran eşlemesi
+	Show output	Çıktıyı göster
+	Show the key strokes over the canvas	Anahtar vuruşları tuvalin üzerinde göster
+	Show with all tools	Tüm araçlarla göster
+	Size +	Boyut +
+	Size -	Boyut -
+	Speed source	Hız kaynağı
+	Store the pixels in the set; off, link to the file	Pikselleri kümede sakla; kapalıysa dosyaya bağla
+	Tablet Settings…	Tablet Ayarları…
+	Tablet Tester	Tablet Test Aracı
+	The clipboard is not available	Pano kullanılamıyor
+	The next key strokes keep their regions clear	Sonraki anahtar vuruşlar bölgelerini boş bırakır
+	Tilt offset	Eğim kayması
+	Touch Docker	Dokunmatik Panel
+	Transparent key	Saydam anahtar
+	Canvas Input	Tuval Girişi
+	Canvas Input…	Tuval Girişi…
+	Pan key	Kaydırma tuşu
+	Zoom in key	Yaklaştırma tuşu
+	Zoom out key	Uzaklaştırma tuşu
+	Rotate key	Döndürme tuşu
+	Middle button	Orta düğme
+	Stylus button	Kalem düğmesi
+	Pick modifier	Renk seçme değiştiricisi
+	Shift wheel rotates	Shift+tekerlek döndürür
+	Trackpad	İzleme dörtgeni
+	Pick	Renk seç
+	No action	İşlem yok
+	No pick	Renk seçme yok
+	Scroll	Kaydır
+	Rotate View (hold)	Görünümü Döndür (basılı)
+	Tilt offset x	Eğim kayması X
+	Tilt offset y	Eğim kayması Y
+	Tablet speed source	Tablet hız kaynağı
+	Tablet api	Tablet API'si
+	Tablet screen mapping	Tablet ekran eşlemesi
+	Pointer	İşaretçi
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Izgara türü
+	Isometric left angle	İzometrik sol açı
+	Isometric right angle	İzometrik sağ açı
+	Isometric vertical lines	İzometrik dikey çizgiler
+	Rectangular	Dikdörtgen
+	Isometric	İzometrik
+	Node	Düğüm
+	Extension	Uzantı
+	Intersection	Kesişim

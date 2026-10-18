@@ -4505,3 +4505,161 @@ navigator	Zoom	Zvětšení
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} snímků v {dir}
+	2-Point Perspective	Dvoubodová perspektiva
+	Assistant colour	Barva pomocníka
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetismus pomocníka: jak daleko se tah může od pomocníka vzdálit a přesto být přitažen (1000 = vždy)
+	Assistant opacity	Krytí pomocníka
+	Concentric Ellipse	Soustředná elipsa
+	Curvilinear Perspective	Křivočará perspektiva
+	Eraser snaps	Guma přichytává
+	Fish-Eye Point	Bod rybího oka
+	Handles	Úchyty
+	Infinite Ruler	Nekonečné pravítko
+	Limit to area	Omezit na oblast
+	Minor subdivisions	Vedlejší dílky
+	Own colour	Vlastní barva
+	Perspective Ellipse	Perspektivní elipsa
+	Previews	Náhledy
+	Show the snapped stroke's line while painting	Zobrazit čáru přichyceného tahu při malování
+	Show this assistant's control handles	Zobrazit ovládací úchyty tohoto pomocníka
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Tahy sledují malířské pomocníky (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dva další úchyty ořezávají, kde pomocník kreslí a přichytává
+	Vertical ruler	Svislé pravítko
+	Painting Assistants	Malířští pomocníci
+	Assistant Previews	Náhledy pomocníků
+	Drag fill	Výplň tažením
+	Dragging fills every region passed over	Tažení vyplní každou oblast, přes kterou přejedete
+	Exclude colour	Vyloučit barvu
+	Exclude transparent	Vyloučit průhledné
+	Fill mode	Režim výplně
+	No region is fully enclosed by the shape	Tvar zcela neobklopuje žádnou oblast
+	Only regions coloured like the first one	Jen oblasti barvy první oblasti
+	Reference	Reference
+	Similar only	Jen podobné
+	Soften the filled edge	Zjemnit okraj výplně
+	Spread stops at the darkest pixels (lines)	Rozšíření se zastaví na nejtmavších pixelech (linkách)
+	Spread stops at the most opaque pixels	Rozšíření se zastaví na nejméně průhledných pixelech
+	Stop at darkest	Zastavit na nejtmavším
+	Stop at opaque	Zastavit na neprůhledném
+	Similar Colours	Podobné barvy
+	Colour Labels	Barevné štítky
+	All Regions	Všechny oblasti
+	Specific Colour	Určitá barva
+	Transparent Regions	Průhledné oblasti
+	Surrounded By	Obklopené barvou
+	Fill with Foreground Color (Opacity)	Vyplnit barvou popředí (krytí)
+	Fill with Background Color (Opacity)	Vyplnit barvou pozadí (krytí)
+	Fill with Pattern (Opacity)	Vyplnit vzorkem (krytí)
+	Straight Line Tool	Nástroj Přímka
+	Multibrush Tool	Nástroj Multištětec
+	Dynamic Brush Tool	Nástroj Dynamický štětec
+	Enclose and Fill Tool	Nástroj Obklopit a vyplnit
+	Colorize Mask Tool	Nástroj Kolorovací maska
+	Reference Images Tool	Nástroj Referenční obrázky
+	Alternating	Střídavě
+	Forward	Vpřed
+	Shaped Gradient (follows the selection)	Tvarovaný přechod (sleduje výběr)
+	Clear copies	Smazat kopie
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klepnutí umístí kopii, Ctrl+Alt+klepnutí ji odebere
+	How heavily the stroke lags behind the pointer	Jak moc se tah opožďuje za ukazatelem
+	How quickly the stroke's motion dies away	Jak rychle pohyb tahu odezní
+	Keep one-pixel lines single width without L corners	Jednopixelové linky zůstávají jednoduché bez rohů ve tvaru L
+	Mirror all tools	Zrcadlit všechny nástroje
+	Multibrush	Multištětec
+	Pixel smoothing	Pixelové vyhlazení
+	The painting symmetry mirrors fills, gradients and retouching too	Symetrie malování zrcadlí i výplně, přechody a retuše
+	The painting symmetry mirrors this tool's output too	Symetrie malování zrcadlí i výstup tohoto nástroje
+	X interval	Interval X
+	Y interval	Interval Y
+	Mirror / Rotation	Zrcadlo / Rotace
+	Translate	Posun
+	Copy Translate	Kopírovat s posunem
+	Cursor shape	Tvar kurzoru
+	Outline shape	Tvar obrysu
+	Show outline while painting	Zobrazit obrys při malování
+	Effective outline size	Skutečná velikost obrysu
+	Tool icon	Ikona nástroje
+	Arrow	Šipka
+	Crosshair	Zaměřovač
+	Small dot	Malá tečka
+	No cursor	Bez kurzoru
+	Triangle right	Trojúhelník vpravo
+	Triangle left	Trojúhelník vlevo
+	No outline	Bez obrysu
+	Instant preview	Okamžitý náhled
+	Instant preview megapixels	Megapixely okamžitého náhledu
+	Add…	Přidat…
+	Auto update	Automatická aktualizace
+	Canvas input profile	Profil vstupu plátna
+	Clean up	Vyčištění
+	Clear key strokes	Smazat klíčové tahy
+	Colorize Mask	Kolorovací maska
+	Draw in the area below to test pressure, tilt and rotation	Kreslete do oblasti níže a otestujte tlak, náklon a rotaci
+	Edge detection	Detekce hran
+	Edit key strokes	Upravit klíčové tahy
+	Embed	Vložit
+	Fill only inside the line art's pixels	Vyplnit jen uvnitř pixelů kresby
+	Gap close	Uzavřít mezery
+	Input API	Vstupní API
+	Keep aspect	Zachovat poměr
+	Limit to layer	Omezit na vrstvu
+	Next Preset	Další předvolba
+	No samples yet	Zatím žádné vzorky
+	Opacity +	Krytí +
+	Opacity -	Krytí -
+	Pasted image	Vložený obrázek
+	Peak pressure	Maximální tlak
+	Previous Preset	Předchozí předvolba
+	Reference Images	Referenční obrázky
+	Rotate Left	Otočit vlevo
+	Rotate Right	Otočit vpravo
+	Sample rate	Vzorkovací frekvence
+	Screen mapping	Mapování obrazovky
+	Show output	Zobrazit výstup
+	Show the key strokes over the canvas	Zobrazit klíčové tahy nad plátnem
+	Show with all tools	Zobrazit se všemi nástroji
+	Size +	Velikost +
+	Size -	Velikost -
+	Speed source	Zdroj rychlosti
+	Store the pixels in the set; off, link to the file	Uložit pixely do sady; vypnuto: odkaz na soubor
+	Tablet Settings…	Nastavení tabletu…
+	Tablet Tester	Tester tabletu
+	The clipboard is not available	Schránka není k dispozici
+	The next key strokes keep their regions clear	Další klíčové tahy nechají své oblasti průhledné
+	Tilt offset	Posun náklonu
+	Touch Docker	Dotykový panel
+	Transparent key	Průhledný klíč
+	Canvas Input	Vstup plátna
+	Canvas Input…	Vstup plátna…
+	Pan key	Klávesa posunu
+	Zoom in key	Klávesa přiblížení
+	Zoom out key	Klávesa oddálení
+	Rotate key	Klávesa otáčení
+	Middle button	Prostřední tlačítko
+	Stylus button	Tlačítko pera
+	Pick modifier	Modifikátor výběru barvy
+	Shift wheel rotates	Shift+kolečko otáčí
+	Trackpad	Trackpad
+	Pick	Výběr barvy
+	No action	Žádná akce
+	No pick	Bez výběru barvy
+	Scroll	Posouvání
+	Rotate View (hold)	Otočit pohled (držet)
+	Tilt offset x	Posun náklonu X
+	Tilt offset y	Posun náklonu Y
+	Tablet speed source	Zdroj rychlosti tabletu
+	Tablet api	API tabletu
+	Tablet screen mapping	Mapování obrazovky tabletu
+	Pointer	Ukazatel
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Typ mřížky
+	Isometric left angle	Izometrický levý úhel
+	Isometric right angle	Izometrický pravý úhel
+	Isometric vertical lines	Izometrické svislé čáry
+	Rectangular	Obdélníková
+	Isometric	Izometrická
+	Node	Uzel
+	Extension	Prodloužení
+	Intersection	Průsečík

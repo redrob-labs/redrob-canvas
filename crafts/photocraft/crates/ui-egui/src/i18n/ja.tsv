@@ -4638,3 +4638,165 @@ curves	Smooth	スムーズ
 	x	x
 	y	y
 	{count} snapshots in {dir}	{dir} に {count} 枚のスナップショット
+	2-Point Perspective	2点透視
+	Assistant colour	アシスタントの色
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	アシスタントの磁力: ストロークがアシスタントから離れていても引き寄せられる距離 (1000 = 常に)
+	Assistant opacity	アシスタントの不透明度
+	Concentric Ellipse	同心楕円
+	Curvilinear Perspective	曲線透視
+	Eraser snaps	消しゴムもスナップ
+	Fish-Eye Point	魚眼ポイント
+	Handles	ハンドル
+	Infinite Ruler	無限定規
+	Limit to area	領域に限定
+	Minor subdivisions	補助目盛り
+	Own colour	固有の色
+	Perspective Ellipse	透視楕円
+	Previews	プレビュー
+	Show the snapped stroke's line while painting	ペイント中にスナップしたストロークの線を表示
+	Show this assistant's control handles	このアシスタントのコントロールハンドルを表示
+	Spline	スプライン
+	Strokes follow the painting assistants (Ctrl+Shift+L)	ストロークがペイントアシスタントに沿う (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	2つの追加ハンドルで、アシスタントが描画・スナップする範囲を切り取る
+	Vertical ruler	垂直定規
+	Painting Assistants	ペイントアシスタント
+	Assistant Previews	アシスタントのプレビュー
+	Drag fill	ドラッグ塗り
+	Dragging fills every region passed over	ドラッグで通過したすべての領域を塗る
+	Exclude colour	除外する色
+	Exclude transparent	透明を除外
+	Fill mode	塗りモード
+	No region is fully enclosed by the shape	シェイプに完全に囲まれた領域がありません
+	Only regions coloured like the first one	最初の領域と同じ色の領域のみ
+	Reference	参照
+	Similar only	類似色のみ
+	Soften the filled edge	塗りの縁をぼかす
+	Spread stops at the darkest pixels (lines)	拡張は最も暗いピクセル (線) で止まる
+	Spread stops at the most opaque pixels	拡張は最も不透明なピクセルで止まる
+	Stop at darkest	最暗で停止
+	Stop at opaque	不透明で停止
+	Similar Colours	類似色
+	Colour Labels	カラーラベル
+	All Regions	すべての領域
+	Specific Colour	特定の色
+	Transparent Regions	透明な領域
+	Surrounded By	囲まれている色
+	Fill with Foreground Color (Opacity)	描画色で塗りつぶし (不透明度)
+	Fill with Background Color (Opacity)	背景色で塗りつぶし (不透明度)
+	Fill with Pattern (Opacity)	パターンで塗りつぶし (不透明度)
+	Straight Line Tool	直線ツール
+	Multibrush Tool	マルチブラシツール
+	Dynamic Brush Tool	ダイナミックブラシツール
+	Enclose and Fill Tool	囲んで塗りつぶしツール
+	Colorize Mask Tool	カラライズマスクツール
+	Reference Images Tool	参照画像ツール
+	Alternating	交互
+	Forward	順方向
+	Shaped Gradient (follows the selection)	シェイプグラデーション (選択範囲に沿う)
+	Clear copies	コピーをクリア
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+クリックでコピーを配置、Ctrl+Alt+クリックで削除
+	How heavily the stroke lags behind the pointer	ストロークがポインタからどれだけ遅れるか
+	How quickly the stroke's motion dies away	ストロークの動きがどれだけ速く収まるか
+	Keep one-pixel lines single width without L corners	1ピクセルの線をL字の角なしで1ピクセル幅に保つ
+	Mirror all tools	すべてのツールをミラー
+	Multibrush	マルチブラシ
+	Pixel smoothing	ピクセルスムージング
+	The painting symmetry mirrors fills, gradients and retouching too	ペイントの対称が塗り、グラデーション、レタッチもミラーする
+	The painting symmetry mirrors this tool's output too	ペイントの対称がこのツールの出力もミラーする
+	X interval	X間隔
+	Y interval	Y間隔
+	Mirror / Rotation	ミラー / 回転
+	Translate	平行移動
+	Copy Translate	コピー平行移動
+	Cursor shape	カーソルの形状
+	Outline shape	アウトラインの形状
+	Show outline while painting	ペイント中にアウトラインを表示
+	Effective outline size	実効アウトラインサイズ
+	Tool icon	ツールアイコン
+	Arrow	矢印
+	Crosshair	十字
+	Small dot	小さな点
+	No cursor	カーソルなし
+	Triangle right	右向き三角
+	Triangle left	左向き三角
+	No outline	アウトラインなし
+	Instant preview	インスタントプレビュー
+	Instant preview megapixels	インスタントプレビューのメガピクセル
+	Add…	追加…
+	Auto update	自動更新
+	Canvas input profile	キャンバス入力プロファイル
+	Clean up	クリーンアップ
+	Clear key strokes	キーストロークをクリア
+	Colorize Mask	カラライズマスク
+	Draw in the area below to test pressure, tilt and rotation	下の領域に描いて筆圧・傾き・回転をテスト
+	Edge detection	エッジ検出
+	Edit key strokes	キーストロークを編集
+	Embed	埋め込む
+	Fill only inside the line art's pixels	線画のピクセル内だけを塗る
+	Gap close	隙間を閉じる
+	Input API	入力API
+	Keep aspect	縦横比を保持
+	Limit to layer	レイヤーに限定
+	Mouse	マウス
+	Next Preset	次のプリセット
+	No samples yet	サンプルなし
+	Nothing to paste: the clipboard holds no image	ペーストするものがありません: クリップボードに画像がありません
+	Opacity +	不透明度 +
+	Opacity -	不透明度 -
+	Pasted image	ペーストした画像
+	Peak pressure	最大筆圧
+	Previous Preset	前のプリセット
+	Reference Images	参照画像
+	Rotate Left	左に回転
+	Rotate Right	右に回転
+	Sample rate	サンプルレート
+	Screen mapping	画面マッピング
+	Show output	出力を表示
+	Show the key strokes over the canvas	キャンバス上にキーストロークを表示
+	Show with all tools	すべてのツールで表示
+	Size +	サイズ +
+	Size -	サイズ -
+	Speed source	速度ソース
+	Store the pixels in the set; off, link to the file	ピクセルをセットに保存。オフならファイルにリンク
+	Tablet Settings…	タブレット設定…
+	Tablet Tester	タブレットテスター
+	The clipboard is not available	クリップボードを利用できません
+	The next key strokes keep their regions clear	次のキーストロークは領域を透明に保つ
+	Tilt offset	傾きオフセット
+	Touch Docker	タッチドッカー
+	Transparent key	透明キー
+	Update	更新
+	Canvas Input	キャンバス入力
+	Canvas Input…	キャンバス入力…
+	Pan key	パンキー
+	Zoom in key	ズームインキー
+	Zoom out key	ズームアウトキー
+	Rotate key	回転キー
+	Middle button	中ボタン
+	Stylus button	スタイラスボタン
+	Pick modifier	ピックの修飾キー
+	Shift wheel rotates	Shift+ホイールで回転
+	Tablet	タブレット
+	Trackpad	トラックパッド
+	Pick	ピック
+	No action	動作なし
+	No pick	ピックなし
+	Scroll	スクロール
+	Rotate View (hold)	ビューを回転 (長押し)
+	Tilt offset x	傾きオフセット X
+	Tilt offset y	傾きオフセット Y
+	Tablet speed source	タブレットの速度ソース
+	Tablet api	タブレットAPI
+	Tablet screen mapping	タブレットの画面マッピング
+	Pointer	ポインタ
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	グリッドの種類
+	Isometric left angle	アイソメ左角度
+	Isometric right angle	アイソメ右角度
+	Isometric vertical lines	アイソメ垂直線
+	Rectangular	長方形
+	Isometric	アイソメトリック
+	Node	ノード
+	Extension	延長線
+	Intersection	交点

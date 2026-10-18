@@ -68,6 +68,7 @@ pub fn parse_points(p: &Value, cmd: &str) -> Result<Vec<StrokePoint>> {
                 sp.rotation = g(5).unwrap_or(0.0) as f32;
                 sp.time = g(6).unwrap_or(0.0);
                 sp.wheel = g(7).unwrap_or(1.0) as f32;
+                sp.perspective = g(8).unwrap_or(1.0) as f32;
                 Some(sp)
             }
             Value::Object(_) => serde_json::from_value(v.clone()).ok(),
@@ -79,6 +80,33 @@ pub fn parse_points(p: &Value, cmd: &str) -> Result<Vec<StrokePoint>> {
     }
     check_coords(&pts, cmd)?;
     Ok(pts)
+}
+
+/// The perspective sensor's reading written onto each point: the scale of the document's
+/// perspective grid assistant at that point (the first grid with one; the nearest, when the point
+/// is inside several). Points keep 1 without a grid or with assistant snapping off.
+pub(crate) fn with_perspective(s: &Session, mut pts: Vec<StrokePoint>) -> Vec<StrokePoint> {
+    let Some(st) = s.active() else { return pts };
+    if !st.assistants_snap {
+        return pts;
+    }
+    let grids: Vec<_> = st
+        .assistants
+        .iter()
+        .enumerate()
+        .filter(|(_, a)| matches!(a, redrob_photo_paint::assistants::Assistant::PerspectiveGrid { .. }))
+        .map(|(i, a)| (a, crate::assistant_cmds::style_of(st, i)))
+        .collect();
+    if grids.is_empty() {
+        return pts;
+    }
+    for q in &mut pts {
+        let here = [q.x, q.y];
+        if let Some(v) = grids.iter().filter(|(_, style)| style.admits(here)).find_map(|(a, _)| a.perspective_scale(here)) {
+            q.perspective = v as f32;
+        }
+    }
+    pts
 }
 
 /// A stroke runs dab by dab along its length: an absurd coordinate would mean billions of dabs.
@@ -408,7 +436,7 @@ fn with_blend_mode(mut b: BrushSettings, p: &Value) -> BrushSettings {
 
 /// `paint.stroke`: the Brush (and Eraser) tool.
 pub fn paint_stroke(s: &mut Session, p: &Value) -> Result<Value> {
-    let pts = parse_points(p, "paint.stroke")?;
+    let pts = with_perspective(s, parse_points(p, "paint.stroke")?);
     let brush = with_blend_mode(resolve_brush(s, p, "paint.stroke")?, p);
     let label = if brush.erase && !clear_mode(p) { "Eraser" } else { "Brush Tool" };
     stroke_with(s, "paint.stroke", p, label, brush, pts, false)
@@ -492,7 +520,7 @@ impl LiveStroke {
     /// Committing `cmd` with the same params and `"seed": live.seed` gives the same pixels.
     pub fn begin_with(s: &Session, cmd: &str, p: &Value) -> Result<Self> {
         has_paintable(s).map_err(EngineError::Other)?;
-        let pts = parse_points(p, cmd)?;
+        let pts = with_perspective(s, parse_points(p, cmd)?);
         let pencil = match cmd {
             "paint.stroke" => false,
             "paint.pencil" => true,
@@ -623,7 +651,7 @@ impl LiveStroke {
 }
 
 fn pencil(s: &mut Session, p: &Value) -> Result<Value> {
-    let pts = parse_points(p, "paint.pencil")?;
+    let pts = with_perspective(s, parse_points(p, "paint.pencil")?);
     let brush = pencil_brush(s, p)?;
     let label = if brush.erase && !clear_mode(p) { "Eraser" } else { "Pencil" };
     stroke_with(s, "paint.pencil", p, label, brush, pts, flag(p, "autoErase", false))

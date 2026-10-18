@@ -31,6 +31,7 @@ mod clip_group;
 pub mod color_cmds;
 pub mod color_to_alpha_cmds;
 pub mod color_tools_cmds;
+pub mod colorize_cmds;
 pub mod commands;
 pub mod comps_cmds;
 mod crop_fill;
@@ -49,6 +50,7 @@ pub mod extra_cmds;
 pub mod file_cmds;
 pub mod fill_cmds;
 pub mod fill_key_cmds;
+pub mod fill_opacity_cmds;
 pub mod filters;
 pub mod filters_ext;
 pub mod filters_extra;
@@ -78,7 +80,7 @@ pub mod layer_label_cmds;
 pub mod layer_list_cmds;
 pub mod layer_mask_props_cmds;
 pub mod layer_menu_cmds;
-pub mod colorize_cmds;
+pub mod colorize_tool_cmds;
 pub mod gen_fill_cmds;
 pub mod layer_kind_cmds;
 pub mod layer_meta;
@@ -262,6 +264,9 @@ pub struct DocState {
     /// (tool state, not history).
     pub assistants: Vec<redrob_photo_paint::assistants::Assistant>,
     pub assistants_snap: bool,
+    /// Each assistant's look and area (aligned with `assistants`), and the global look.
+    pub assistant_styles: Vec<redrob_photo_paint::assistants::AssistantStyle>,
+    pub assistant_display: redrob_photo_paint::assistants::AssistantDisplay,
     /// Layers panel: layers whose effects list is collapsed under their row (the fx triangle;
     /// view state, not history). Effects lists start open.
     pub fx_collapsed: Vec<LayerId>,
@@ -343,6 +348,8 @@ impl DocState {
             wrap_around: false,
             assistants: Vec::new(),
             assistants_snap: true,
+            assistant_styles: Vec::new(),
+            assistant_display: Default::default(),
             fx_collapsed: Vec::new(),
             show_only: None,
             floating: None,

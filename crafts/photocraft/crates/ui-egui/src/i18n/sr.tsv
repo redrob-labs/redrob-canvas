@@ -4965,3 +4965,161 @@ shape	Appearance	Izgled
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} снимака у {dir}
+	2-Point Perspective	Perspektiva sa 2 tačke
+	Assistant colour	Boja pomoćnika
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetizam pomoćnika: koliko potez sme da odstupi od pomoćnika a da ipak bude privučen (1000 = uvek)
+	Assistant opacity	Neprozirnost pomoćnika
+	Concentric Ellipse	Koncentrična elipsa
+	Curvilinear Perspective	Krivolinijska perspektiva
+	Eraser snaps	Gumica se lepi
+	Fish-Eye Point	Tačka ribljeg oka
+	Handles	Ručke
+	Infinite Ruler	Beskonačni lenjir
+	Limit to area	Ograniči na oblast
+	Minor subdivisions	Manje podele
+	Own colour	Sopstvena boja
+	Perspective Ellipse	Elipsa u perspektivi
+	Previews	Pregledi
+	Show the snapped stroke's line while painting	Prikaži liniju prilepljenog poteza dok se slika
+	Show this assistant's control handles	Prikaži kontrolne ručke ovog pomoćnika
+	Spline	Splajn
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Potezi prate pomoćnike za slikanje (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dve dodatne ručke ograničavaju gde pomoćnik crta i lepi
+	Vertical ruler	Vertikalni lenjir
+	Painting Assistants	Pomoćnici za slikanje
+	Assistant Previews	Pregledi pomoćnika
+	Drag fill	Popuna prevlačenjem
+	Dragging fills every region passed over	Prevlačenje popunjava svaku pređenu oblast
+	Exclude colour	Izuzmi boju
+	Exclude transparent	Izuzmi providno
+	Fill mode	Režim popune
+	No region is fully enclosed by the shape	Nijedna oblast nije potpuno obuhvaćena oblikom
+	Only regions coloured like the first one	Samo oblasti obojene kao prva
+	Reference	Referenca
+	Similar only	Samo slične
+	Soften the filled edge	Umekšaj ivicu popune
+	Spread stops at the darkest pixels (lines)	Širenje se zaustavlja na najtamnijim pikselima (linijama)
+	Spread stops at the most opaque pixels	Širenje se zaustavlja na najneprozirnijim pikselima
+	Stop at darkest	Stani na najtamnijem
+	Stop at opaque	Stani na neprozirnom
+	Similar Colours	Slične boje
+	Colour Labels	Oznake boja
+	All Regions	Sve oblasti
+	Specific Colour	Određena boja
+	Transparent Regions	Providne oblasti
+	Surrounded By	Okruženo bojom
+	Fill with Foreground Color (Opacity)	Popuni bojom prednjeg plana (neprozirnost)
+	Fill with Background Color (Opacity)	Popuni bojom pozadine (neprozirnost)
+	Fill with Pattern (Opacity)	Popuni šablonom (neprozirnost)
+	Straight Line Tool	Alatka Prava linija
+	Multibrush Tool	Alatka Višestruka četkica
+	Dynamic Brush Tool	Alatka Dinamička četkica
+	Enclose and Fill Tool	Alatka Obuhvati i popuni
+	Colorize Mask Tool	Alatka Maska za bojenje
+	Reference Images Tool	Alatka Referentne slike
+	Alternating	Naizmenično
+	Forward	Napred
+	Shaped Gradient (follows the selection)	Oblikovani preliv (prati izbor)
+	Clear copies	Obriši kopije
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik postavlja kopiju, Ctrl+Alt+klik je uklanja
+	How heavily the stroke lags behind the pointer	Koliko potez zaostaje za pokazivačem
+	How quickly the stroke's motion dies away	Koliko brzo se kretanje poteza gasi
+	Keep one-pixel lines single width without L corners	Linije od jednog piksela ostaju jednostruke bez L uglova
+	Mirror all tools	Preslikaj sve alatke
+	Multibrush	Višestruka četkica
+	Pixel smoothing	Pikselsko glačanje
+	The painting symmetry mirrors fills, gradients and retouching too	Simetrija slikanja preslikava i popune, prelive i retuširanje
+	The painting symmetry mirrors this tool's output too	Simetrija slikanja preslikava i rezultat ove alatke
+	X interval	X razmak
+	Y interval	Y razmak
+	Mirror / Rotation	Ogledalo / Rotacija
+	Translate	Pomeranje
+	Copy Translate	Kopiraj i pomeri
+	Cursor shape	Oblik kursora
+	Outline shape	Oblik konture
+	Show outline while painting	Prikaži konturu dok se slika
+	Effective outline size	Stvarna veličina konture
+	Tool icon	Ikona alatke
+	Arrow	Strelica
+	Crosshair	Nišan
+	Small dot	Mala tačka
+	No cursor	Bez kursora
+	Triangle right	Trougao desno
+	Triangle left	Trougao levo
+	No outline	Bez konture
+	Instant preview	Trenutni pregled
+	Instant preview megapixels	Megapikseli trenutnog pregleda
+	Add…	Dodaj…
+	Auto update	Automatsko ažuriranje
+	Canvas input profile	Profil unosa platna
+	Clean up	Čišćenje
+	Clear key strokes	Obriši ključne poteze
+	Colorize Mask	Maska za bojenje
+	Draw in the area below to test pressure, tilt and rotation	Crtajte u oblasti ispod da proverite pritisak, nagib i rotaciju
+	Edge detection	Otkrivanje ivica
+	Edit key strokes	Uredi ključne poteze
+	Embed	Ugradi
+	Fill only inside the line art's pixels	Popuni samo unutar piksela crteža
+	Gap close	Zatvori praznine
+	Input API	API unosa
+	Keep aspect	Zadrži proporcije
+	Limit to layer	Ograniči na sloj
+	Next Preset	Sledeći preset
+	No samples yet	Još nema uzoraka
+	Opacity +	Neprozirnost +
+	Opacity -	Neprozirnost -
+	Pasted image	Nalepljena slika
+	Peak pressure	Vršni pritisak
+	Previous Preset	Prethodni preset
+	Reference Images	Referentne slike
+	Rotate Left	Rotiraj ulevo
+	Rotate Right	Rotiraj udesno
+	Sample rate	Učestalost uzoraka
+	Screen mapping	Mapiranje ekrana
+	Show output	Prikaži rezultat
+	Show the key strokes over the canvas	Prikaži ključne poteze preko platna
+	Show with all tools	Prikaži sa svim alatkama
+	Size +	Veličina +
+	Size -	Veličina -
+	Speed source	Izvor brzine
+	Store the pixels in the set; off, link to the file	Sačuvaj piksele u skupu; isključeno, poveži sa datotekom
+	Tablet Settings…	Podešavanja tableta…
+	Tablet Tester	Tester tableta
+	The clipboard is not available	Ostava nije dostupna
+	The next key strokes keep their regions clear	Sledeći ključni potezi ostavljaju svoje oblasti providnim
+	Tilt offset	Pomak nagiba
+	Touch Docker	Panel na dodir
+	Transparent key	Providan ključ
+	Canvas Input	Unos platna
+	Canvas Input…	Unos platna…
+	Pan key	Taster pomeranja
+	Zoom in key	Taster uvećanja
+	Zoom out key	Taster umanjenja
+	Rotate key	Taster rotacije
+	Middle button	Srednje dugme
+	Stylus button	Dugme olovke
+	Pick modifier	Modifikator biranja boje
+	Shift wheel rotates	Shift+točkić rotira
+	Trackpad	Dodirna tabla
+	Pick	Biranje boje
+	No action	Bez radnje
+	No pick	Bez biranja
+	Scroll	Klizanje
+	Rotate View (hold)	Rotiraj prikaz (drži)
+	Tilt offset x	Pomak nagiba X
+	Tilt offset y	Pomak nagiba Y
+	Tablet speed source	Izvor brzine tableta
+	Tablet api	API tableta
+	Tablet screen mapping	Mapiranje ekrana tableta
+	Pointer	Pokazivač
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Vrsta mreže
+	Isometric left angle	Izometrijski levi ugao
+	Isometric right angle	Izometrijski desni ugao
+	Isometric vertical lines	Izometrijske vertikalne linije
+	Rectangular	Pravougaona
+	Isometric	Izometrijska
+	Node	Čvor
+	Extension	Produžetak
+	Intersection	Presek

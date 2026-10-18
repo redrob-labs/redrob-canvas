@@ -30,6 +30,12 @@ fn color(v: Option<&Value>, d: [f32; 4]) -> [f32; 4] {
         _ => d,
     }
 }
+/// A colour param (`#rrggbb[aa]` or `[r, g, b, a?]`), or `None` when it is neither.
+pub(crate) fn color_value(v: &Value) -> Option<[f32; 4]> {
+    let c = color(Some(v), [f32::NAN; 4]);
+    (!c[0].is_nan()).then_some(c)
+}
+
 fn point(p: &Value, k: &str) -> Option<(f32, f32)> {
     let a = p.get(k)?.as_array()?;
     Some((a.first()?.as_f64()? as f32, a.get(1)?.as_f64()? as f32))
@@ -41,53 +47,98 @@ fn opacity(p: &Value, cmd: &str) -> Result<f32> {
     Ok(crate::eraser_cmds::number(p, cmd, "opacity", 100.0, 1.0..=100.0)? as f32 / 100.0)
 }
 
-fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
-    // Fill source: foreground colour (default), the background colour, or a pattern (the Paint
-    // Bucket "Fill" dropdown).
-    let source = p.get("contents").or_else(|| p.get("source")).and_then(Value::as_str).unwrap_or("foreground");
-    let fg = if source == "background" { s.tools.background } else { s.tools.foreground };
-    let c = color(p.get("color"), fg);
-    let (x, y) = (f(p, "x", 0.0).floor() as i32, f(p, "y", 0.0).floor() as i32);
-    let (tol, contiguous, aa) = (f(p, "tolerance", 32.0), b(p, "contiguous", true), b(p, "antiAlias", true));
-    let opts = crate::selection_cmds::wand_options(p, "paint.bucket")?;
-    let opacity = opacity(p, "paint.bucket")?;
-    let all = b(p, "sampleAllLayers", false) && crate::channel_cmds::target_of(p) == crate::channel_cmds::Target::Pixels;
-    let line_art = b(p, "lineArt", false);
-    // Fill until a boundary colour instead of over similar colours; close gaps in the boundary;
-    // spread the filled area outward.
-    let boundary = p.get("boundaryColor").filter(|v| !v.is_null()).map(|v| color(Some(v), [0.0, 0.0, 0.0, 1.0]));
-    let close_gap = crate::eraser_cmds::number(p, "paint.bucket", "closeGap", 0.0, 0.0..=128.0)? as u32;
-    let spread = crate::eraser_cmds::number(p, "paint.bucket", "spread", 0.0, 0.0..=64.0)? as u32;
-    let bounded = boundary.is_some() || close_gap > 0;
-    let needs_region = all || line_art || bounded || spread > 0;
-    // Other visible layers can define the region, but the fill still writes only to the target.
-    // A line-art fill always samples up front: its boundary is the ink, not the target's colours.
-    let region = if line_art {
-        let threshold = crate::eraser_cmds::number(p, "paint.bucket", "lineArtThreshold", 0.92, 0.01..=1.0)? as f32;
-        let gap = crate::eraser_cmds::number(p, "paint.bucket", "lineArtGap", 16.0, 0.0..=128.0)? as u32;
-        let grow = crate::eraser_cmds::number(p, "paint.bucket", "lineArtGrow", 2.0, 0.0..=64.0)? as u32;
-        let (area, img) = crate::selection_cmds::sample_rgba8(s, all)?;
-        let region = redrob_photo_algo::selection::line_art_region(&img, area, (x, y), threshold, gap, grow);
-        drop(img);
-        region
-    } else if needs_region {
-        let (area, img) = crate::selection_cmds::sample_rgba8(s, all)?;
-        let region = if bounded {
-            let q = |v: f32| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8;
-            let boundary8 = boundary.map(|b| b.map(q));
-            redrob_photo_algo::selection::boundary_region(&img, area, (x, y), boundary8, tol, close_gap, opts)
-        } else {
-            redrob_photo_algo::selection::wand_region_with(&img, area, (x, y), tol, contiguous, aa, opts)
-        };
-        drop(img);
-        region.map(|r| if spread > 0 { r.grow(spread, area) } else { r })
-    } else {
-        None
+/// The layers the fill reads its boundaries from: `reference` = `current` (the target layer),
+/// `all` (every visible layer) or `labels` (the visible layers carrying one of `labels`' colour
+/// labels, see `redrob_photo_doc::LabelColor`). `sampleAllLayers` is the old spelling of `all`.
+pub(crate) fn sample_reference(s: &Session, p: &Value, cmd: &str) -> Result<(redrob_photo_geom::Rect, Vec<[u8; 4]>)> {
+    let reference = match p.get("reference").and_then(Value::as_str) {
+        Some(r) => r,
+        None if b(p, "sampleAllLayers", false) => "all",
+        None => "current",
     };
+    match reference {
+        "current" => crate::selection_cmds::sample_rgba8(s, false),
+        "all" => crate::selection_cmds::sample_rgba8(s, true),
+        "labels" => {
+            let labels: Vec<redrob_photo_doc::LabelColor> = match p.get("labels") {
+                Some(Value::Array(a)) => a
+                    .iter()
+                    .map(|v| {
+                        v.as_str()
+                            .and_then(|n| redrob_photo_doc::LabelColor::from_id(n).or_else(|| serde_json::from_value(v.clone()).ok()))
+                            .ok_or_else(|| EngineError::BadParams { cmd: cmd.into(), msg: format!("unknown colour label {v}") })
+                    })
+                    .collect::<Result<_>>()?,
+                _ => return Err(EngineError::BadParams { cmd: cmd.into(), msg: "`reference: labels` needs `labels`: a list of colour label names".into() }),
+            };
+            let d = s.active().ok_or(EngineError::NoDocument)?;
+            let area = d.doc.bounds();
+            let mut doc = d.doc.clone();
+            let hide: Vec<redrob_photo_doc::LayerId> = doc.walk().iter().filter(|(_, _, l)| !labels.contains(&l.label)).map(|(_, _, l)| l.id).collect();
+            for id in hide {
+                if let Some(l) = doc.layer_mut(id) {
+                    l.visible = false;
+                }
+            }
+            let q = |v: f32| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8;
+            Ok((area, redrob_photo_compose::render(&doc, area).px.iter().map(|p| p.map(q)).collect()))
+        }
+        other => Err(EngineError::BadParams { cmd: cmd.into(), msg: format!("unknown reference `{other}` (want current|all|labels)") }),
+    }
+}
+
+/// The fill's `contents` and colour: the foreground (default), the background, or a pattern.
+fn bucket_source(s: &Session, p: &Value) -> (&'static str, [f32; 4]) {
+    let source = match p.get("contents").or_else(|| p.get("source")).and_then(Value::as_str) {
+        Some("background") => "background",
+        Some("pattern") => "pattern",
+        _ => "foreground",
+    };
+    let fg = if source == "background" { s.tools.background } else { s.tools.foreground };
+    (source, color(p.get("color"), fg))
+}
+
+/// Grow, anti-alias and feather a fill region as the params ask (`spread` with its stops,
+/// `antiAlias` for a hard-edged bounded region, `feather`).
+#[allow(clippy::too_many_arguments)]
+fn refine_region(
+    region: redrob_photo_algo::selection::Region,
+    area: redrob_photo_geom::Rect,
+    img: &[[u8; 4]],
+    spread: u32,
+    stops: (bool, u8, bool, u8),
+    antialias: bool,
+    feather: f32,
+) -> redrob_photo_algo::selection::Region {
+    let mut r = region;
+    if spread > 0 {
+        r = r.grow_until(spread, area, img, stops.0, stops.1, stops.2, stops.3);
+    }
+    if antialias {
+        r = r.antialiased(area);
+    }
+    if feather > 0.0 {
+        r = r.feathered(feather, area);
+    }
+    r
+}
+
+/// Fill a region (or the plain bucket flood) with the params' contents, in one history step.
+#[allow(clippy::too_many_arguments)]
+fn fill_with(
+    s: &mut Session,
+    p: &Value,
+    label: &str,
+    region: Option<redrob_photo_algo::selection::Region>,
+    needs_region: bool,
+    flood: Option<((i32, i32), f32, bool, bool, redrob_photo_algo::selection::WandOptions)>,
+) -> Result<Value> {
+    let (source, c) = bucket_source(s, p);
+    let opacity = opacity(p, label)?;
     let pattern = if source == "pattern" {
-        let pat = crate::pattern_cmds::resolve_param(s, "paint.bucket", p)?;
+        let pat = crate::pattern_cmds::resolve_param(s, label, p)?;
         let tile = redrob_photo_compose::pattern::Tile::new(&pat)
-            .ok_or_else(|| EngineError::BadParams { cmd: "paint.bucket".into(), msg: "the pattern is empty or too large to paint".into() })?;
+            .ok_or_else(|| EngineError::BadParams { cmd: label.into(), msg: "the pattern is empty or too large to paint".into() })?;
         let (scale, angle, _, phase) = crate::pattern_cmds::placement(p);
         Some((tile, scale, angle, phase))
     } else {
@@ -95,7 +146,12 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
     };
     // A foreground picked as CMYK fills a CMYK document with the picked inks (#4196).
     let inks = s.tools.picked_cmyk([c[0], c[1], c[2]]).filter(|_| c[3] >= 1.0 && pattern.is_none());
-    let filled = s.edit("Paint Bucket", |doc, active| {
+    let history = match label {
+        "paint.bucketDrag" => "Drag Fill",
+        "paint.encloseFill" => "Enclose and Fill",
+        _ => "Paint Bucket",
+    };
+    let filled = s.edit(history, |doc, active| {
         let area = doc.bounds();
         let sel = doc.selection.clone();
         let (surf, lock) = crate::channel_cmds::target_surface(doc, *active, p)?;
@@ -110,14 +166,18 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
             if let Some(region) = &region {
                 bucket_fill_region_src(surf, region, opacity, sel.as_ref(), lock, src);
                 true
-            } else {
+            } else if let Some(((x, y), tol, contiguous, aa, opts)) = flood {
                 bucket_fill_src(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, src, opts)
+            } else {
+                false
             }
         } else if let Some(region) = &region {
             bucket_fill_region_inks(surf, region, opacity, sel.as_ref(), lock, |_, _| c, inks);
             true
-        } else {
+        } else if let Some(((x, y), tol, contiguous, aa, opts)) = flood {
             bucket_fill_inks(surf, area, (x, y), tol, contiguous, aa, opacity, sel.as_ref(), lock, |_, _| c, inks, opts)
+        } else {
+            false
         };
         surf.prune();
         Ok(ok)
@@ -125,19 +185,179 @@ fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({ "filled": filled }))
 }
 
+/// The grow stops: `(stop at darkest, darkness 0..255, stop at most opaque, alpha 0..255)`.
+fn grow_stops(p: &Value, cmd: &str) -> Result<(bool, u8, bool, u8)> {
+    let darkness = crate::eraser_cmds::number(p, cmd, "growStopDarkness", 50.0, 0.0..=100.0)? as f32;
+    let alpha = crate::eraser_cmds::number(p, cmd, "growStopAlpha", 50.0, 0.0..=100.0)? as f32;
+    Ok((b(p, "growStopDarkest", false), (darkness / 100.0 * 255.0).round() as u8, b(p, "growStopOpaque", false), (alpha / 100.0 * 255.0).round() as u8))
+}
+
+fn bucket(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "paint.bucket";
+    let (x, y) = (f(p, "x", 0.0).floor() as i32, f(p, "y", 0.0).floor() as i32);
+    // Fill mode: a contiguous region (the default), every similar colour, or the selection's
+    // shape; the old `contiguous` flag still reads.
+    let fill_mode = match p.get("fillMode").and_then(Value::as_str) {
+        Some(m @ ("contiguous" | "similar" | "selection")) => m,
+        Some(other) => return Err(EngineError::BadParams { cmd: CMD.into(), msg: format!("unknown fillMode `{other}` (want contiguous|similar|selection)") }),
+        None if !b(p, "contiguous", true) => "similar",
+        None => "contiguous",
+    };
+    let (tol, contiguous, aa) = (f(p, "tolerance", 32.0), fill_mode != "similar", b(p, "antiAlias", true));
+    let opts = crate::selection_cmds::wand_options(p, CMD)?;
+    let pixels = crate::channel_cmds::target_of(p) == crate::channel_cmds::Target::Pixels;
+    let reference = p.get("reference").and_then(Value::as_str).unwrap_or(if b(p, "sampleAllLayers", false) { "all" } else { "current" });
+    let all = reference != "current" && pixels;
+    let line_art = b(p, "lineArt", false);
+    // Fill until a boundary colour instead of over similar colours; close gaps in the boundary;
+    // spread the filled area outward (stopping at lines when asked); feather the edge.
+    let boundary = p.get("boundaryColor").filter(|v| !v.is_null()).map(|v| color(Some(v), [0.0, 0.0, 0.0, 1.0]));
+    let close_gap = crate::eraser_cmds::number(p, CMD, "closeGap", 0.0, 0.0..=128.0)? as u32;
+    let spread = crate::eraser_cmds::number(p, CMD, "spread", 0.0, 0.0..=64.0)? as u32;
+    let feather = crate::eraser_cmds::number(p, CMD, "feather", 0.0, 0.0..=64.0)? as f32;
+    let stops = grow_stops(p, CMD)?;
+    let bounded = boundary.is_some() || close_gap > 0;
+    let selection_shape = fill_mode == "selection";
+    let needs_region = all || line_art || bounded || spread > 0 || feather > 0.0 || selection_shape;
+    // Other visible layers can define the region, but the fill still writes only to the target.
+    // A line-art fill always samples up front: its boundary is the ink, not the target's colours.
+    let region = if selection_shape {
+        let d = s.active().ok_or(EngineError::NoDocument)?;
+        let area = d.doc.bounds();
+        let bounds = d.doc.selection.as_ref().map_or(area, |m| m.content_bounds().intersect(&area));
+        let region = redrob_photo_algo::selection::Region::full(bounds);
+        if feather > 0.0 { region.map(|r| r.feathered(feather, area)) } else { region }
+    } else if line_art {
+        let threshold = crate::eraser_cmds::number(p, CMD, "lineArtThreshold", 0.92, 0.01..=1.0)? as f32;
+        let gap = crate::eraser_cmds::number(p, CMD, "lineArtGap", 16.0, 0.0..=128.0)? as u32;
+        let grow = crate::eraser_cmds::number(p, CMD, "lineArtGrow", 2.0, 0.0..=64.0)? as u32;
+        let (area, img) = if all { sample_reference(s, p, CMD)? } else { crate::selection_cmds::sample_rgba8(s, false)? };
+        let region = redrob_photo_algo::selection::line_art_region(&img, area, (x, y), threshold, gap, grow);
+        let region = region.map(|r| refine_region(r, area, &img, 0, stops, false, feather));
+        drop(img);
+        region
+    } else if needs_region {
+        let (area, img) = if all { sample_reference(s, p, CMD)? } else { crate::selection_cmds::sample_rgba8(s, false)? };
+        let region = if bounded {
+            let q = |v: f32| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8;
+            let boundary8 = boundary.map(|b| b.map(q));
+            redrob_photo_algo::selection::boundary_region(&img, area, (x, y), boundary8, tol, close_gap, opts)
+        } else {
+            redrob_photo_algo::selection::wand_region_with(&img, area, (x, y), tol, contiguous, aa, opts)
+        };
+        // A bounded region is hard-edged until asked to anti-alias.
+        let region = region.map(|r| refine_region(r, area, &img, spread, stops, bounded && aa, feather));
+        drop(img);
+        region
+    } else {
+        None
+    };
+    fill_with(s, p, CMD, region, needs_region, Some(((x, y), tol, contiguous, aa, opts)))
+}
+
+/// `paint.bucketDrag`: the Paint Bucket dragged across the canvas fills every region it passes
+/// over, each once (any colour, or only colours similar to the first), as one history step.
+fn bucket_drag(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "paint.bucketDrag";
+    let pts: Vec<(i32, i32)> = match p.get("points") {
+        Some(Value::Array(a)) => a
+            .iter()
+            .filter_map(|v| {
+                let q = v.as_array()?;
+                Some((q.first()?.as_f64()?.floor() as i32, q.get(1)?.as_f64()?.floor() as i32))
+            })
+            .collect(),
+        _ => return Err(EngineError::BadParams { cmd: CMD.into(), msg: "missing `points`: a list of [x, y]".into() }),
+    };
+    if pts.is_empty() {
+        return Err(EngineError::BadParams { cmd: CMD.into(), msg: "`points` is empty".into() });
+    }
+    let (tol, aa) = (f(p, "tolerance", 32.0), b(p, "antiAlias", true));
+    let opts = crate::selection_cmds::wand_options(p, CMD)?;
+    let similar = b(p, "similarOnly", false);
+    let spread = crate::eraser_cmds::number(p, CMD, "spread", 0.0, 0.0..=64.0)? as u32;
+    let feather = crate::eraser_cmds::number(p, CMD, "feather", 0.0, 0.0..=64.0)? as f32;
+    let stops = grow_stops(p, CMD)?;
+    let (area, img) = sample_reference(s, p, CMD)?;
+    let region = redrob_photo_algo::fill_regions::drag_regions(&img, area, &pts, tol, aa, similar, opts)
+        .map(|r| refine_region(r, area, &img, spread, stops, false, feather));
+    drop(img);
+    fill_with(s, p, CMD, region, true, None)
+}
+
+/// `paint.encloseFill`: the regions an enclosing shape (a rectangle, an ellipse or a polygon)
+/// fully surrounds, chosen by `rule`, filled as one history step.
+fn enclose_fill(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "paint.encloseFill";
+    use redrob_photo_algo::fill_regions::{EncloseRule, ellipse_mask, enclosed_regions, polygon_mask};
+    let (area, img) = sample_reference(s, p, CMD)?;
+    let q = |v: f32| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8;
+    let rgba8 = |v: &Value| color(Some(v), [0.0, 0.0, 0.0, 1.0]).map(q);
+    let points: Vec<(f32, f32)> = match p.get("points") {
+        Some(Value::Array(a)) => a
+            .iter()
+            .filter_map(|v| {
+                let q = v.as_array()?;
+                Some((q.first()?.as_f64()? as f32, q.get(1)?.as_f64()? as f32))
+            })
+            .collect(),
+        _ => Vec::new(),
+    };
+    let shape = p.get("shape").and_then(Value::as_str).unwrap_or("rectangle");
+    let enclosure = match shape {
+        "polygon" | "lasso" | "bezier" => {
+            polygon_mask(&points, area).ok_or_else(|| EngineError::BadParams { cmd: CMD.into(), msg: "a polygon needs at least 3 `points`".into() })?
+        }
+        "rectangle" | "ellipse" => {
+            let (x0, y0, x1, y1) = match (point(p, "from"), point(p, "to")) {
+                (Some(a), Some(c)) => (a.0.min(c.0), a.1.min(c.1), a.0.max(c.0), a.1.max(c.1)),
+                _ => return Err(EngineError::BadParams { cmd: CMD.into(), msg: "a rectangle or ellipse needs `from` and `to`".into() }),
+            };
+            if shape == "ellipse" {
+                ellipse_mask(x0, y0, x1, y1, area)
+            } else {
+                polygon_mask(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1)], area)
+                    .ok_or_else(|| EngineError::BadParams { cmd: CMD.into(), msg: "an empty rectangle".into() })?
+            }
+        }
+        other => return Err(EngineError::BadParams { cmd: CMD.into(), msg: format!("unknown shape `{other}` (want rectangle|ellipse|polygon)") }),
+    };
+    let rule = match p.get("rule").and_then(Value::as_str).unwrap_or("all") {
+        "all" => EncloseRule::All,
+        "transparent" => EncloseRule::Transparent,
+        "color" => EncloseRule::Color(p.get("ruleColor").map(rgba8).unwrap_or_else(|| s.tools.background.map(q))),
+        "surroundedBy" => EncloseRule::SurroundedBy(p.get("ruleColor").map(rgba8).unwrap_or_else(|| s.tools.foreground.map(q))),
+        other => return Err(EngineError::BadParams { cmd: CMD.into(), msg: format!("unknown rule `{other}` (want all|color|transparent|surroundedBy)") }),
+    };
+    let tol = f(p, "tolerance", 32.0);
+    let aa = b(p, "antiAlias", true);
+    let exclude_transparent = b(p, "excludeTransparent", false);
+    let exclude_color = p.get("excludeColor").filter(|v| !v.is_null()).map(rgba8);
+    let spread = crate::eraser_cmds::number(p, CMD, "spread", 0.0, 0.0..=64.0)? as u32;
+    let feather = crate::eraser_cmds::number(p, CMD, "feather", 0.0, 0.0..=64.0)? as f32;
+    let stops = grow_stops(p, CMD)?;
+    let region = enclosed_regions(&img, area, &enclosure, tol, rule, exclude_transparent, exclude_color, aa)
+        .map(|r| refine_region(r, area, &img, spread, stops, false, feather));
+    drop(img);
+    fill_with(s, p, CMD, region, true, None)
+}
+
 fn gradient(s: &mut Session, p: &Value) -> Result<Value> {
     let from = point(p, "from").ok_or_else(|| EngineError::BadParams { cmd: "paint.gradient".into(), msg: "missing from".into() })?;
     let to = point(p, "to").ok_or_else(|| EngineError::BadParams { cmd: "paint.gradient".into(), msg: "missing to".into() })?;
-    let shape = match p.get("style").and_then(Value::as_str).unwrap_or("linear") {
-        "radial" => GradientShape::Radial,
-        "angle" => GradientShape::Angle,
-        "reflected" => GradientShape::Reflected,
-        "diamond" => GradientShape::Diamond,
-        "square" => GradientShape::Square,
-        "conicalSymmetric" => GradientShape::ConicalSymmetric,
-        "spiralClockwise" => GradientShape::SpiralClockwise,
-        "spiralCounterClockwise" => GradientShape::SpiralCounterClockwise,
-        _ => GradientShape::Linear,
+    // `shaped` follows the selection's outline instead of the drag (`None` shape below).
+    let style = p.get("style").and_then(Value::as_str).unwrap_or("linear");
+    let shape = match style {
+        "radial" => Some(GradientShape::Radial),
+        "angle" => Some(GradientShape::Angle),
+        "reflected" => Some(GradientShape::Reflected),
+        "diamond" => Some(GradientShape::Diamond),
+        "square" => Some(GradientShape::Square),
+        "conicalSymmetric" => Some(GradientShape::ConicalSymmetric),
+        "spiralClockwise" => Some(GradientShape::SpiralClockwise),
+        "spiralCounterClockwise" => Some(GradientShape::SpiralCounterClockwise),
+        "shaped" => None,
+        _ => Some(GradientShape::Linear),
     };
     let (fg, bg) = (s.tools.foreground, s.tools.background);
     // A preset (`gradient`), explicit `stops`, or the current gradient (Gradients panel); the
@@ -189,6 +409,7 @@ fn gradient(s: &mut Session, p: &Value) -> Result<Value> {
         let sel = doc.selection.clone();
         let area = sel.as_ref().map(|m| m.content_bounds()).filter(|r| !r.is_empty()).unwrap_or_else(|| doc.bounds()).intersect(&doc.bounds());
         let (surf, lock) = crate::channel_cmds::target_surface(doc, *active, p)?;
+        let shape = shape.unwrap_or(GradientShape::Linear);
         if extended {
             redrob_photo_algo::paint_shaped::paint_gradient_ext(
                 surf,
@@ -223,9 +444,29 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Paint Bucket",
             menu: &[],
             shortcut: None,
-            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","lineArt":bool=false (fill the area the ink encloses instead of similar colours),"lineArtThreshold":0.01..1=0.92 (luma under which a pixel is ink),"lineArtGap":px=16 (gaps in the ink up to this are closed),"lineArtGrow":px=2 (the fill goes this far under the ink),"contents":"foreground|background|pattern"="foreground","color":"#rrggbb"=foreground,"pattern":id|name (contents=pattern),"scale":%=100,"angle":deg,"spread":px=0 (grow the filled area outward),"closeGap":px=0 (gaps in the boundary up to this are closed),"boundaryColor":"#rrggbb"? (fill until this colour instead of over similar colours),"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
+            params: r##"{"x":px,"y":px,"tolerance":0..255=32,"fillMode":"contiguous|similar|selection"="contiguous" (selection = fill the selection's shape),"contiguous":bool=true (old spelling of fillMode),"reference":"current|all|labels"="current" (which layers define the region),"labels":["Red","Blue",…]? (with reference=labels),"feather":px=0 (soften the filled edge),"growStopDarkest":bool=false (spread stops at pixels darker than growStopDarkness %=50),"growStopDarkness":%=50,"growStopOpaque":bool=false (spread stops at pixels more opaque than growStopAlpha %=50),"growStopAlpha":%=50,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","lineArt":bool=false (fill the area the ink encloses instead of similar colours),"lineArtThreshold":0.01..1=0.92 (luma under which a pixel is ink),"lineArtGap":px=16 (gaps in the ink up to this are closed),"lineArtGrow":px=2 (the fill goes this far under the ink),"contents":"foreground|background|pattern"="foreground","color":"#rrggbb"=foreground,"pattern":id|name (contents=pattern),"scale":%=100,"angle":deg,"spread":px=0 (grow the filled area outward),"closeGap":px=0 (gaps in the boundary up to this are closed),"boundaryColor":"#rrggbb"? (fill until this colour instead of over similar colours),"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
             enabled: crate::commands::has_paintable,
             run: bucket,
+            journal: true,
+        },
+        CommandSpec {
+            id: "paint.bucketDrag",
+            label: "Drag Fill",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"points":[[x,y],…] (the drag's path),"similarOnly":bool=false (only regions coloured like the first),"tolerance":0..255=32,"antiAlias":bool=true,"reference":"current|all|labels"="current","labels":[…]?,"diagonal":bool=false,"criterion":"composite|…"="composite","spread":px=0,"growStopDarkest":bool=false,"growStopOpaque":bool=false,"feather":px=0,"contents":"foreground|background|pattern"="foreground","color":"#rrggbb"?,"pattern":id|name?,"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}}"##,
+            enabled: crate::commands::has_paintable,
+            run: bucket_drag,
+            journal: true,
+        },
+        CommandSpec {
+            id: "paint.encloseFill",
+            label: "Enclose and Fill",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"shape":"rectangle|ellipse|polygon"="rectangle","from":[x,y],"to":[x,y] (rectangle/ellipse),"points":[[x,y],…] (polygon),"rule":"all|color|transparent|surroundedBy"="all","ruleColor":"#rrggbb"? (color: the regions' colour, default background; surroundedBy: the surrounding colour, default foreground),"excludeTransparent":bool=false,"excludeColor":"#rrggbb"?,"tolerance":0..255=32,"antiAlias":bool=true,"reference":"current|all|labels"="current","labels":[…]?,"spread":px=0,"growStopDarkest":bool=false,"growStopOpaque":bool=false,"feather":px=0,"contents":"foreground|background|pattern"="foreground","color":"#rrggbb"?,"pattern":id|name?,"opacity":1..100=100,"target":"pixels"|"mask"|"quickMask"|{"channel":i}}"##,
+            enabled: crate::commands::has_paintable,
+            run: enclose_fill,
             journal: true,
         },
         CommandSpec {
@@ -548,5 +789,117 @@ mod tests {
             s.execute(cmd, grey_fill(cmd, Value::Null)).unwrap();
             assert!((px(&s, 5, 5)[0] - 128.0 / 255.0).abs() < 0.01, "{cmd}: null opacity is 100%");
         }
+    }
+
+    #[test]
+    fn gradient_repeat_modes_and_shaped_gradient() {
+        let mut s = session();
+        // Forward repeat over a 5 px drag: the colour at x = 7.5 equals the one at x = 2.5.
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "colors": ["#000000", "#ffffff"], "repeat": "forward", "dither": false})).unwrap();
+        let (a, b) = (px(&s, 2, 0), px(&s, 7, 0));
+        assert!((a[0] - b[0]).abs() < 0.02, "{a:?} {b:?}");
+        assert!(px(&s, 4, 0)[0] > 0.8 && px(&s, 5, 0)[0] < 0.2, "the sawtooth restarts");
+        s.execute("edit.undo", json!({})).unwrap();
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "colors": ["#000000", "#ffffff"], "repeat": "alternating", "dither": false})).unwrap();
+        assert!(px(&s, 9, 0)[0] < 0.2 && px(&s, 5, 0)[0] > 0.8, "the triangle wave turns back");
+        s.execute("edit.undo", json!({})).unwrap();
+        assert!(s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "repeat": "bounce"})).is_err());
+        // Shaped: inside a rectangular selection the edge is the first colour, the middle the last.
+        s.execute("select.rect", json!({"x": 2, "y": 1, "width": 11, "height": 7})).unwrap();
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "style": "shaped", "colors": ["#ff0000", "#0000ff"], "dither": false})).unwrap();
+        let (edge, middle, outside) = (px(&s, 2, 4), px(&s, 7, 4), px(&s, 0, 4));
+        assert!(edge[0] > 0.9 && edge[2] < 0.1, "{edge:?}");
+        assert!(middle[2] > 0.9 && middle[0] < 0.1, "{middle:?}");
+        assert_eq!(outside[3], 0.0);
+    }
+
+    #[test]
+    fn selection_fill_mode_feather_and_grow_stops() {
+        let (mut s, _) = bucket_layers(8);
+        // The selection's shape: fills only inside the marquee, ignoring the wall's regions.
+        s.execute("select.rect", json!({"x": 2, "y": 2, "width": 12, "height": 5})).unwrap();
+        s.execute("paint.bucket", json!({"x": 0, "y": 0, "fillMode": "selection", "color": "#ff0000", "antiAlias": false})).unwrap();
+        assert_eq!(px(&s, 3, 3), vec![1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(px(&s, 12, 3), vec![1.0, 0.0, 0.0, 1.0], "the selection crosses the wall");
+        assert_eq!(px(&s, 0, 0)[3], 0.0);
+        s.execute("edit.undo", json!({})).unwrap();
+        s.execute("select.deselect", json!({})).unwrap();
+        // A feathered contiguous fill softens its edge at the wall.
+        s.execute("paint.bucket", json!({"x": 2, "y": 2, "color": "#ff0000", "antiAlias": false, "tolerance": 0, "sampleAllLayers": true, "feather": 1.5}))
+            .unwrap();
+        let (inside, edge) = (px(&s, 5, 5), px(&s, 9, 5));
+        assert!(inside[3] > 0.9, "{inside:?}");
+        assert!(edge[3] > 0.0 && edge[3] < inside[3], "{edge:?}");
+        s.execute("edit.undo", json!({})).unwrap();
+        // Spread stopping at the darkest pixels does not cross the black wall; a plain spread does.
+        s.execute(
+            "paint.bucket",
+            json!({"x": 2, "y": 2, "color": "#ff0000", "antiAlias": false, "tolerance": 0, "sampleAllLayers": true, "spread": 3, "growStopDarkest": true}),
+        )
+        .unwrap();
+        assert_eq!(px(&s, 10, 5)[3], 0.0, "the wall is darker than the stop");
+        assert_eq!(px(&s, 12, 5)[3], 0.0);
+        s.execute("edit.undo", json!({})).unwrap();
+        s.execute("paint.bucket", json!({"x": 2, "y": 2, "color": "#ff0000", "antiAlias": false, "tolerance": 0, "sampleAllLayers": true, "spread": 3}))
+            .unwrap();
+        assert_eq!(px(&s, 12, 5)[3], 1.0);
+        assert!(s.execute("paint.bucket", json!({"x": 2, "y": 2, "fillMode": "everything"})).is_err());
+    }
+
+    #[test]
+    fn colour_label_reference_drag_fill_and_enclose_fill() {
+        let (mut s, bottom) = bucket_layers(8);
+        // Labelled red, the wall layer is a reference; without the label it is not.
+        s.execute("layer.setLabelColor", json!({"layer": bottom.0, "color": "red"})).unwrap();
+        s.execute("paint.bucket", json!({"x": 2, "y": 2, "color": "#0000ff", "antiAlias": false, "tolerance": 0, "reference": "labels", "labels": ["red"]}))
+            .unwrap();
+        assert_eq!(px(&s, 15, 5)[3], 0.0, "the labelled wall bounds the fill");
+        s.execute("edit.undo", json!({})).unwrap();
+        s.execute("paint.bucket", json!({"x": 2, "y": 2, "color": "#0000ff", "antiAlias": false, "tolerance": 0, "reference": "labels", "labels": ["blue"]}))
+            .unwrap();
+        assert_eq!(px(&s, 15, 5)[3], 1.0, "no referenced layer: the empty layer is one region");
+        s.execute("edit.undo", json!({})).unwrap();
+        assert!(s.execute("paint.bucket", json!({"x": 2, "y": 2, "reference": "labels"})).is_err(), "labels required");
+        // Drag fill over both cells fills both in one history step.
+        let steps = s.active().unwrap().history.past_len();
+        s.execute("paint.bucketDrag", json!({"points": [[2, 5], [5, 5], [15, 5]], "color": "#00ff00", "antiAlias": false, "tolerance": 0, "reference": "all"}))
+            .unwrap();
+        assert_eq!(px(&s, 2, 5), vec![0.0, 1.0, 0.0, 1.0]);
+        assert_eq!(px(&s, 15, 5), vec![0.0, 1.0, 0.0, 1.0]);
+        assert_eq!(px(&s, 10, 5)[3], 0.0, "the wall column stays");
+        assert_eq!(s.active().unwrap().history.past_len(), steps + 1);
+        s.execute("edit.undo", json!({})).unwrap();
+        // Enclose and fill: a rectangle around the left cell only encloses nothing (the cell
+        // reaches the shape's edge); one around a closed box does.
+        s.execute("select.deselect", json!({})).unwrap();
+        let r = s
+            .execute(
+                "paint.encloseFill",
+                json!({"shape": "rectangle", "from": [1, 1], "to": [8, 8], "color": "#ff00ff", "antiAlias": false, "tolerance": 0, "reference": "all"}),
+            )
+            .unwrap();
+        assert_eq!(r["filled"], false);
+        // Draw a closed ring on the wall layer and enclose it.
+        s.edit("ring", |doc, _| {
+            let surf = doc.layer_mut(bottom).unwrap().surface_mut().unwrap();
+            surf.fill_rect(Rect::new(2, 2, 8, 3), &[0.0, 0.0, 0.0, 1.0]);
+            surf.fill_rect(Rect::new(2, 7, 8, 8), &[0.0, 0.0, 0.0, 1.0]);
+            surf.fill_rect(Rect::new(2, 2, 3, 8), &[0.0, 0.0, 0.0, 1.0]);
+            surf.fill_rect(Rect::new(7, 2, 8, 8), &[0.0, 0.0, 0.0, 1.0]);
+            Ok(())
+        })
+        .unwrap();
+        let r = s
+            .execute(
+                "paint.encloseFill",
+                json!({"shape": "rectangle", "from": [1, 1], "to": [9, 9], "rule": "surroundedBy", "ruleColor": "#000000", "color": "#ff00ff", "antiAlias": false, "tolerance": 0, "reference": "all"}),
+            )
+            .unwrap();
+        assert_eq!(r["filled"], true);
+        assert_eq!(px(&s, 5, 5), vec![1.0, 0.0, 1.0, 1.0], "the box's inside is surrounded by black");
+        assert_eq!(px(&s, 2, 2)[3], 0.0, "the ring itself is not");
+        assert_eq!(px(&s, 15, 5)[3], 0.0);
+        assert!(s.execute("paint.encloseFill", json!({"shape": "polygon", "points": [[0, 0], [1, 1]]})).is_err());
+        assert!(s.execute("paint.encloseFill", json!({"shape": "rectangle", "from": [0, 0], "to": [5, 5], "rule": "nothing"})).is_err());
     }
 }

@@ -4659,3 +4659,166 @@ curves	Smooth	매끄럽게
 	x	x
 	y	y
 	{count} snapshots in {dir}	{dir}에 스냅샷 {count}개
+	2-Point Perspective	2점 투시
+	Assistant colour	어시스턴트 색상
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	어시스턴트 자력: 스트로크가 어시스턴트에서 얼마나 떨어져도 끌려가는지 (1000 = 항상)
+	Assistant opacity	어시스턴트 불투명도
+	Concentric Ellipse	동심 타원
+	Curvilinear Perspective	곡선 투시
+	Eraser snaps	지우개도 스냅
+	Fish-Eye Point	어안 점
+	Handles	핸들
+	Infinite Ruler	무한 눈금자
+	Limit to area	영역으로 제한
+	Minor subdivisions	보조 분할
+	Own colour	개별 색상
+	Perspective Ellipse	투시 타원
+	Previews	미리 보기
+	Show the snapped stroke's line while painting	페인팅 중 스냅된 스트로크의 선 표시
+	Show this assistant's control handles	이 어시스턴트의 컨트롤 핸들 표시
+	Spline	스플라인
+	Strokes follow the painting assistants (Ctrl+Shift+L)	스트로크가 페인팅 어시스턴트를 따릅니다 (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	추가 핸들 두 개로 어시스턴트가 그리고 스냅하는 범위를 자릅니다
+	Vertical ruler	세로 눈금자
+	Painting Assistants	페인팅 어시스턴트
+	Assistant Previews	어시스턴트 미리 보기
+	Drag fill	드래그 채우기
+	Dragging fills every region passed over	드래그하면 지나간 모든 영역을 채웁니다
+	Exclude colour	색상 제외
+	Exclude transparent	투명 제외
+	Fill mode	채우기 모드
+	No region is fully enclosed by the shape	모양이 완전히 둘러싼 영역이 없습니다
+	Only regions coloured like the first one	첫 영역과 같은 색의 영역만
+	Reference	참조
+	Similar only	유사한 색만
+	Soften the filled edge	채운 가장자리를 부드럽게
+	Spread stops at the darkest pixels (lines)	확장이 가장 어두운 픽셀(선)에서 멈춥니다
+	Spread stops at the most opaque pixels	확장이 가장 불투명한 픽셀에서 멈춥니다
+	Stop at darkest	가장 어두운 곳에서 정지
+	Stop at opaque	불투명한 곳에서 정지
+	Similar Colours	유사한 색상
+	Colour Labels	색상 레이블
+	All Regions	모든 영역
+	Specific Colour	특정 색상
+	Transparent Regions	투명 영역
+	Surrounded By	둘러싸인 색상
+	Fill with Foreground Color (Opacity)	전경색으로 채우기 (불투명도)
+	Fill with Background Color (Opacity)	배경색으로 채우기 (불투명도)
+	Fill with Pattern (Opacity)	패턴으로 채우기 (불투명도)
+	Straight Line Tool	직선 도구
+	Multibrush Tool	멀티브러시 도구
+	Dynamic Brush Tool	다이내믹 브러시 도구
+	Enclose and Fill Tool	둘러싸고 채우기 도구
+	Colorize Mask Tool	컬러라이즈 마스크 도구
+	Reference Images Tool	참조 이미지 도구
+	Alternating	교대
+	Forward	정방향
+	Shaped Gradient (follows the selection)	모양 그레이디언트 (선택 영역을 따름)
+	Clear copies	복사 지우기
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+클릭으로 복사를 배치하고, Ctrl+Alt+클릭으로 제거합니다
+	How heavily the stroke lags behind the pointer	스트로크가 포인터보다 얼마나 뒤처지는지
+	How quickly the stroke's motion dies away	스트로크의 움직임이 얼마나 빨리 잦아드는지
+	Keep one-pixel lines single width without L corners	1픽셀 선을 L자 모서리 없이 한 픽셀 두께로 유지
+	Mirror all tools	모든 도구 미러
+	Multibrush	멀티브러시
+	Pixel smoothing	픽셀 매끄럽게
+	The painting symmetry mirrors fills, gradients and retouching too	페인팅 대칭이 채우기, 그레이디언트, 리터치도 미러합니다
+	The painting symmetry mirrors this tool's output too	페인팅 대칭이 이 도구의 결과도 미러합니다
+	X interval	X 간격
+	Y interval	Y 간격
+	Mirror / Rotation	미러 / 회전
+	Translate	이동
+	Copy Translate	복사 이동
+	Cursor shape	커서 모양
+	Outline shape	외곽선 모양
+	Show outline while painting	페인팅 중 외곽선 표시
+	Effective outline size	실제 외곽선 크기
+	Tool icon	도구 아이콘
+	Arrow	화살표
+	Crosshair	십자선
+	Small dot	작은 점
+	No cursor	커서 없음
+	Triangle right	오른쪽 삼각형
+	Triangle left	왼쪽 삼각형
+	No outline	외곽선 없음
+	Instant preview	즉시 미리 보기
+	Instant preview megapixels	즉시 미리 보기 메가픽셀
+	Add…	추가…
+	Auto update	자동 업데이트
+	Canvas input profile	캔버스 입력 프로필
+	Clean up	정리
+	Clear key strokes	키 스트로크 지우기
+	Colorize Mask	컬러라이즈 마스크
+	Draw in the area below to test pressure, tilt and rotation	아래 영역에 그려 필압, 기울기, 회전을 테스트하세요
+	Edge detection	가장자리 감지
+	Edit key strokes	키 스트로크 편집
+	Embed	포함
+	Fill only inside the line art's pixels	선화 픽셀 안쪽만 채우기
+	Gap close	틈 닫기
+	Input API	입력 API
+	Keep aspect	비율 유지
+	Limit to layer	레이어로 제한
+	Mouse	마우스
+	Next Preset	다음 사전 설정
+	No samples yet	샘플이 아직 없습니다
+	Nothing to paste: the clipboard holds no image	붙일 것이 없습니다: 클립보드에 이미지가 없습니다
+	Opacity +	불투명도 +
+	Opacity -	불투명도 -
+	Pasted image	붙인 이미지
+	Peak pressure	최대 필압
+	Pen	펜
+	Previous Preset	이전 사전 설정
+	Reference Images	참조 이미지
+	Rotate Left	왼쪽으로 회전
+	Rotate Right	오른쪽으로 회전
+	Sample rate	샘플 속도
+	Screen mapping	화면 매핑
+	Show output	출력 표시
+	Show the key strokes over the canvas	캔버스 위에 키 스트로크 표시
+	Show with all tools	모든 도구에서 표시
+	Size +	크기 +
+	Size -	크기 -
+	Speed source	속도 소스
+	Store the pixels in the set; off, link to the file	픽셀을 세트에 저장; 끄면 파일에 링크
+	Tablet Settings…	태블릿 설정…
+	Tablet Tester	태블릿 테스터
+	The clipboard is not available	클립보드를 사용할 수 없습니다
+	The next key strokes keep their regions clear	다음 키 스트로크는 영역을 투명하게 둡니다
+	Tilt offset	기울기 오프셋
+	Touch Docker	터치 도커
+	Transparent key	투명 키
+	Update	업데이트
+	Canvas Input	캔버스 입력
+	Canvas Input…	캔버스 입력…
+	Pan key	이동 키
+	Zoom in key	확대 키
+	Zoom out key	축소 키
+	Rotate key	회전 키
+	Middle button	가운데 버튼
+	Stylus button	스타일러스 버튼
+	Pick modifier	색상 선택 보조키
+	Shift wheel rotates	Shift+휠로 회전
+	Tablet	태블릿
+	Trackpad	트랙패드
+	Pick	색상 선택
+	No action	동작 없음
+	No pick	색상 선택 없음
+	Scroll	스크롤
+	Rotate View (hold)	보기 회전 (누른 채)
+	Tilt offset x	기울기 오프셋 X
+	Tilt offset y	기울기 오프셋 Y
+	Tablet speed source	태블릿 속도 소스
+	Tablet api	태블릿 API
+	Tablet screen mapping	태블릿 화면 매핑
+	Pointer	포인터
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	그리드 유형
+	Isometric left angle	등각 왼쪽 각도
+	Isometric right angle	등각 오른쪽 각도
+	Isometric vertical lines	등각 세로선
+	Rectangular	직사각형
+	Isometric	등각
+	Node	노드
+	Extension	연장선
+	Intersection	교차점

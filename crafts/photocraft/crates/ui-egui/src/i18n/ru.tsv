@@ -3887,3 +3887,165 @@ curves	Smooth	Сгладить
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} снимков в {dir}
+	2-Point Perspective	Двухточечная перспектива
+	Assistant colour	Цвет ассистента
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Магнетизм ассистента: насколько штрих может отклониться от ассистента и всё же притянуться к нему (1000 = всегда)
+	Assistant opacity	Непрозрачность ассистента
+	Concentric Ellipse	Концентрический эллипс
+	Curvilinear Perspective	Криволинейная перспектива
+	Eraser snaps	Ластик притягивается
+	Fish-Eye Point	Точка «рыбий глаз»
+	Handles	Маркеры
+	Infinite Ruler	Бесконечная линейка
+	Limit to area	Ограничить областью
+	Minor subdivisions	Мелкие деления
+	Own colour	Свой цвет
+	Perspective Ellipse	Эллипс в перспективе
+	Previews	Предпросмотр
+	Show the snapped stroke's line while painting	Показывать линию притянутого штриха при рисовании
+	Show this assistant's control handles	Показывать маркеры этого ассистента
+	Spline	Сплайн
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Штрихи следуют ассистентам рисования (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Два дополнительных маркера ограничивают, где ассистент рисует и притягивает
+	Vertical ruler	Вертикальная линейка
+	Painting Assistants	Ассистенты рисования
+	Assistant Previews	Предпросмотр ассистентов
+	Drag fill	Заливка перетаскиванием
+	Dragging fills every region passed over	Перетаскивание заливает каждую пройденную область
+	Exclude colour	Исключить цвет
+	Exclude transparent	Исключить прозрачное
+	Fill mode	Режим заливки
+	No region is fully enclosed by the shape	Фигура не окружает полностью ни одну область
+	Only regions coloured like the first one	Только области того же цвета, что и первая
+	Reference	Опора
+	Similar only	Только похожие
+	Soften the filled edge	Смягчить край заливки
+	Spread stops at the darkest pixels (lines)	Расширение останавливается на самых тёмных пикселях (линиях)
+	Spread stops at the most opaque pixels	Расширение останавливается на самых непрозрачных пикселях
+	Stop at darkest	Стоп на тёмном
+	Stop at opaque	Стоп на непрозрачном
+	Similar Colours	Похожие цвета
+	Colour Labels	Цветовые метки
+	All Regions	Все области
+	Specific Colour	Заданный цвет
+	Transparent Regions	Прозрачные области
+	Surrounded By	Окружённые цветом
+	Fill with Foreground Color (Opacity)	Залить основным цветом (непрозрачность)
+	Fill with Background Color (Opacity)	Залить фоновым цветом (непрозрачность)
+	Fill with Pattern (Opacity)	Залить узором (непрозрачность)
+	Straight Line Tool	Инструмент «Прямая»
+	Multibrush Tool	Инструмент «Мультикисть»
+	Dynamic Brush Tool	Инструмент «Динамическая кисть»
+	Enclose and Fill Tool	Инструмент «Обвести и залить»
+	Colorize Mask Tool	Инструмент «Маска раскрашивания»
+	Reference Images Tool	Инструмент «Образцы»
+	Alternating	Попеременно
+	Forward	Вперёд
+	Shaped Gradient (follows the selection)	Градиент по форме (следует выделению)
+	Clear copies	Убрать копии
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+щелчок ставит копию, Ctrl+Alt+щелчок убирает
+	How heavily the stroke lags behind the pointer	Насколько штрих отстаёт от указателя
+	How quickly the stroke's motion dies away	Как быстро затухает движение штриха
+	Keep one-pixel lines single width without L corners	Линии в один пиксель остаются одинарными без Г-образных углов
+	Mirror all tools	Зеркалить все инструменты
+	Multibrush	Мультикисть
+	Pixel smoothing	Пиксельное сглаживание
+	The painting symmetry mirrors fills, gradients and retouching too	Симметрия рисования зеркалит и заливки, градиенты и ретушь
+	The painting symmetry mirrors this tool's output too	Симметрия рисования зеркалит и результат этого инструмента
+	X interval	Интервал X
+	Y interval	Интервал Y
+	Mirror / Rotation	Зеркало / Вращение
+	Translate	Смещение
+	Copy Translate	Копии со смещением
+	Cursor shape	Форма курсора
+	Outline shape	Форма контура
+	Show outline while painting	Показывать контур при рисовании
+	Effective outline size	Фактический размер контура
+	Tool icon	Значок инструмента
+	Arrow	Стрелка
+	Crosshair	Перекрестие
+	Small dot	Точка
+	No cursor	Без курсора
+	Triangle right	Треугольник вправо
+	Triangle left	Треугольник влево
+	No outline	Без контура
+	Instant preview	Мгновенный предпросмотр
+	Instant preview megapixels	Мегапиксели мгновенного предпросмотра
+	Add…	Добавить…
+	Auto update	Автообновление
+	Canvas input profile	Профиль ввода холста
+	Clean up	Очистка
+	Clear key strokes	Убрать ключевые штрихи
+	Colorize Mask	Маска раскрашивания
+	Draw in the area below to test pressure, tilt and rotation	Рисуйте в области ниже, чтобы проверить нажим, наклон и вращение
+	Edge detection	Поиск краёв
+	Edit key strokes	Правка ключевых штрихов
+	Embed	Встроить
+	Fill only inside the line art's pixels	Заливать только внутри пикселей контура
+	Gap close	Закрыть зазоры
+	Input API	API ввода
+	Keep aspect	Сохранять пропорции
+	Limit to layer	Ограничить слоем
+	Mouse	Мышь
+	Next Preset	Следующий набор
+	No samples yet	Пока нет отсчётов
+	Nothing to paste: the clipboard holds no image	Нечего вставить: в буфере нет изображения
+	Opacity +	Непрозрачность +
+	Opacity -	Непрозрачность -
+	Pasted image	Вставленное изображение
+	Peak pressure	Пиковый нажим
+	Previous Preset	Предыдущий набор
+	Reference Images	Образцы
+	Rotate Left	Повернуть влево
+	Rotate Right	Повернуть вправо
+	Sample rate	Частота отсчётов
+	Screen mapping	Привязка к экрану
+	Show output	Показать результат
+	Show the key strokes over the canvas	Показывать ключевые штрихи над холстом
+	Show with all tools	Показывать при всех инструментах
+	Size +	Размер +
+	Size -	Размер -
+	Speed source	Источник скорости
+	Store the pixels in the set; off, link to the file	Хранить пиксели в наборе; выключено: ссылка на файл
+	Tablet Settings…	Настройки планшета…
+	Tablet Tester	Тестер планшета
+	The clipboard is not available	Буфер обмена недоступен
+	The next key strokes keep their regions clear	Следующие ключевые штрихи оставляют свои области прозрачными
+	Tilt offset	Поправка наклона
+	Touch Docker	Сенсорная панель
+	Transparent key	Прозрачный ключ
+	Update	Обновить
+	Canvas Input	Ввод холста
+	Canvas Input…	Ввод холста…
+	Pan key	Клавиша панорамы
+	Zoom in key	Клавиша увеличения
+	Zoom out key	Клавиша уменьшения
+	Rotate key	Клавиша вращения
+	Middle button	Средняя кнопка
+	Stylus button	Кнопка стилуса
+	Pick modifier	Модификатор пипетки
+	Shift wheel rotates	Shift+колесо вращает
+	Tablet	Планшет
+	Trackpad	Трекпад
+	Pick	Пипетка
+	No action	Без действия
+	No pick	Без пипетки
+	Scroll	Прокрутка
+	Rotate View (hold)	Поворот вида (удерживать)
+	Tilt offset x	Поправка наклона X
+	Tilt offset y	Поправка наклона Y
+	Tablet speed source	Источник скорости планшета
+	Tablet api	API планшета
+	Tablet screen mapping	Привязка планшета к экрану
+	Pointer	Указатель
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Тип сетки
+	Isometric left angle	Левый угол изометрии
+	Isometric right angle	Правый угол изометрии
+	Isometric vertical lines	Вертикальные линии изометрии
+	Rectangular	Прямоугольная
+	Isometric	Изометрическая
+	Node	Узел
+	Extension	Продолжение
+	Intersection	Пересечение

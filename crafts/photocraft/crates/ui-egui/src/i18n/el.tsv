@@ -4598,3 +4598,163 @@ curves	Smooth	Εξομάλυνση
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} στιγμιότυπα στο {dir}
+	2-Point Perspective	Προοπτική 2 σημείων
+	Assistant colour	Χρώμα βοηθού
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Μαγνητισμός βοηθού: πόσο μπορεί να απομακρυνθεί μια πινελιά από τον βοηθό και να έλκεται ακόμη (1000 = πάντα)
+	Assistant opacity	Αδιαφάνεια βοηθού
+	Concentric Ellipse	Ομόκεντρη έλλειψη
+	Curvilinear Perspective	Καμπυλόγραμμη προοπτική
+	Eraser snaps	Η γόμα κουμπώνει
+	Fish-Eye Point	Σημείο fisheye
+	Handles	Λαβές
+	Infinite Ruler	Άπειρος χάρακας
+	Limit to area	Περιορισμός σε περιοχή
+	Minor subdivisions	Δευτερεύουσες υποδιαιρέσεις
+	Own colour	Δικό του χρώμα
+	Perspective Ellipse	Έλλειψη σε προοπτική
+	Previews	Προεπισκοπήσεις
+	Show the snapped stroke's line while painting	Εμφάνιση της γραμμής της κουμπωμένης πινελιάς κατά τη ζωγραφική
+	Show this assistant's control handles	Εμφάνιση λαβών ελέγχου αυτού του βοηθού
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Οι πινελιές ακολουθούν τους βοηθούς ζωγραφικής (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Δύο επιπλέον λαβές περικόπτουν όπου ο βοηθός σχεδιάζει και κουμπώνει
+	Vertical ruler	Κάθετος χάρακας
+	Painting Assistants	Βοηθοί ζωγραφικής
+	Assistant Previews	Προεπισκοπήσεις βοηθών
+	Drag fill	Γέμισμα με σύρσιμο
+	Dragging fills every region passed over	Το σύρσιμο γεμίζει κάθε περιοχή που διασχίζει
+	Exclude colour	Εξαίρεση χρώματος
+	Exclude transparent	Εξαίρεση διαφανών
+	Fill mode	Λειτουργία γεμίσματος
+	No region is fully enclosed by the shape	Καμία περιοχή δεν περικλείεται πλήρως από το σχήμα
+	Only regions coloured like the first one	Μόνο περιοχές με το χρώμα της πρώτης
+	Reference	Αναφορά
+	Similar only	Μόνο παρόμοια
+	Soften the filled edge	Απάλυνση του άκρου γεμίσματος
+	Spread stops at the darkest pixels (lines)	Η επέκταση σταματά στα πιο σκούρα pixel (γραμμές)
+	Spread stops at the most opaque pixels	Η επέκταση σταματά στα πιο αδιαφανή pixel
+	Stop at darkest	Στάση στο πιο σκούρο
+	Stop at opaque	Στάση στο αδιαφανές
+	Similar Colours	Παρόμοια χρώματα
+	Colour Labels	Ετικέτες χρώματος
+	All Regions	Όλες οι περιοχές
+	Specific Colour	Συγκεκριμένο χρώμα
+	Transparent Regions	Διαφανείς περιοχές
+	Surrounded By	Περιβάλλεται από
+	Fill with Foreground Color (Opacity)	Γέμισμα με χρώμα προσκηνίου (αδιαφάνεια)
+	Fill with Background Color (Opacity)	Γέμισμα με χρώμα φόντου (αδιαφάνεια)
+	Fill with Pattern (Opacity)	Γέμισμα με μοτίβο (αδιαφάνεια)
+	Straight Line Tool	Εργαλείο Ευθεία γραμμή
+	Multibrush Tool	Εργαλείο Πολυπινέλο
+	Dynamic Brush Tool	Εργαλείο Δυναμικό πινέλο
+	Enclose and Fill Tool	Εργαλείο Περίκλειση και γέμισμα
+	Colorize Mask Tool	Εργαλείο Μάσκα χρωματισμού
+	Reference Images Tool	Εργαλείο Εικόνες αναφοράς
+	Alternating	Εναλλασσόμενο
+	Forward	Προς τα εμπρός
+	Shaped Gradient (follows the selection)	Διαβάθμιση σχήματος (ακολουθεί την επιλογή)
+	Clear copies	Καθαρισμός αντιγράφων
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+κλικ τοποθετεί αντίγραφο, Ctrl+Alt+κλικ το αφαιρεί
+	How heavily the stroke lags behind the pointer	Πόσο υστερεί η πινελιά από τον δείκτη
+	How quickly the stroke's motion dies away	Πόσο γρήγορα σβήνει η κίνηση της πινελιάς
+	Keep one-pixel lines single width without L corners	Οι γραμμές ενός pixel μένουν μονές χωρίς γωνίες σχήματος L
+	Mirror all tools	Κατοπτρισμός όλων των εργαλείων
+	Multibrush	Πολυπινέλο
+	Pixel smoothing	Εξομάλυνση pixel
+	The painting symmetry mirrors fills, gradients and retouching too	Η συμμετρία ζωγραφικής κατοπτρίζει και γεμίσματα, διαβαθμίσεις και ρετούς
+	The painting symmetry mirrors this tool's output too	Η συμμετρία ζωγραφικής κατοπτρίζει και το αποτέλεσμα αυτού του εργαλείου
+	X interval	Διάστημα X
+	Y interval	Διάστημα Y
+	Mirror / Rotation	Κάτοπτρο / Περιστροφή
+	Translate	Μετατόπιση
+	Copy Translate	Αντιγραφή με μετατόπιση
+	Cursor shape	Σχήμα δρομέα
+	Outline shape	Σχήμα περιγράμματος
+	Show outline while painting	Εμφάνιση περιγράμματος κατά τη ζωγραφική
+	Effective outline size	Πραγματικό μέγεθος περιγράμματος
+	Tool icon	Εικονίδιο εργαλείου
+	Arrow	Βέλος
+	Crosshair	Σταυρόνημα
+	Small dot	Μικρή κουκκίδα
+	No cursor	Χωρίς δρομέα
+	Triangle right	Τρίγωνο δεξιά
+	Triangle left	Τρίγωνο αριστερά
+	No outline	Χωρίς περίγραμμα
+	Instant preview	Άμεση προεπισκόπηση
+	Instant preview megapixels	Megapixel άμεσης προεπισκόπησης
+	Add…	Προσθήκη…
+	Auto update	Αυτόματη ενημέρωση
+	Canvas input profile	Προφίλ εισόδου καμβά
+	Clean up	Καθαρισμός
+	Clear key strokes	Καθαρισμός πινελιών-κλειδιών
+	Colorize Mask	Μάσκα χρωματισμού
+	Draw in the area below to test pressure, tilt and rotation	Σχεδιάστε στην περιοχή παρακάτω για να ελέγξετε πίεση, κλίση και περιστροφή
+	Edge detection	Ανίχνευση ακμών
+	Edit key strokes	Επεξεργασία πινελιών-κλειδιών
+	Embed	Ενσωμάτωση
+	Fill only inside the line art's pixels	Γέμισμα μόνο μέσα στα pixel του σκίτσου
+	Gap close	Κλείσιμο κενών
+	Input API	API εισόδου
+	Keep aspect	Διατήρηση αναλογίας
+	Limit to layer	Περιορισμός στο επίπεδο
+	Next Preset	Επόμενη προεπιλογή
+	No samples yet	Δεν υπάρχουν δείγματα ακόμη
+	Nothing to paste: the clipboard holds no image	Τίποτα για επικόλληση: το πρόχειρο δεν έχει εικόνα
+	Opacity +	Αδιαφάνεια +
+	Opacity -	Αδιαφάνεια -
+	Pasted image	Επικολλημένη εικόνα
+	Peak pressure	Μέγιστη πίεση
+	Pen	Γραφίδα
+	Previous Preset	Προηγούμενη προεπιλογή
+	Reference Images	Εικόνες αναφοράς
+	Rotate Left	Περιστροφή αριστερά
+	Rotate Right	Περιστροφή δεξιά
+	Sample rate	Ρυθμός δειγματοληψίας
+	Screen mapping	Αντιστοίχιση οθόνης
+	Show output	Εμφάνιση αποτελέσματος
+	Show the key strokes over the canvas	Εμφάνιση των πινελιών-κλειδιών πάνω στον καμβά
+	Show with all tools	Εμφάνιση με όλα τα εργαλεία
+	Size +	Μέγεθος +
+	Size -	Μέγεθος -
+	Speed source	Πηγή ταχύτητας
+	Store the pixels in the set; off, link to the file	Αποθήκευση των pixel στο σύνολο· απενεργοποιημένο, σύνδεση με το αρχείο
+	Tablet Settings…	Ρυθμίσεις ταμπλέτας…
+	Tablet Tester	Δοκιμαστής ταμπλέτας
+	The clipboard is not available	Το πρόχειρο δεν είναι διαθέσιμο
+	The next key strokes keep their regions clear	Οι επόμενες πινελιές-κλειδιά κρατούν τις περιοχές τους διαφανείς
+	Tilt offset	Μετατόπιση κλίσης
+	Touch Docker	Πίνακας αφής
+	Transparent key	Διαφανές κλειδί
+	Canvas Input	Είσοδος καμβά
+	Canvas Input…	Είσοδος καμβά…
+	Pan key	Πλήκτρο μετακίνησης
+	Zoom in key	Πλήκτρο μεγέθυνσης
+	Zoom out key	Πλήκτρο σμίκρυνσης
+	Rotate key	Πλήκτρο περιστροφής
+	Middle button	Μεσαίο κουμπί
+	Stylus button	Κουμπί γραφίδας
+	Pick modifier	Τροποποιητής επιλογής χρώματος
+	Shift wheel rotates	Shift+ροδέλα περιστρέφει
+	Trackpad	Επιφάνεια αφής
+	Pick	Επιλογή χρώματος
+	No action	Καμία ενέργεια
+	No pick	Χωρίς επιλογή χρώματος
+	Scroll	Κύλιση
+	Rotate View (hold)	Περιστροφή προβολής (κράτημα)
+	Tilt offset x	Μετατόπιση κλίσης X
+	Tilt offset y	Μετατόπιση κλίσης Y
+	Tablet speed source	Πηγή ταχύτητας ταμπλέτας
+	Tablet api	API ταμπλέτας
+	Tablet screen mapping	Αντιστοίχιση οθόνης ταμπλέτας
+	Pointer	Δείκτης
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Τύπος πλέγματος
+	Isometric left angle	Ισομετρική αριστερή γωνία
+	Isometric right angle	Ισομετρική δεξιά γωνία
+	Isometric vertical lines	Ισομετρικές κάθετες γραμμές
+	Rectangular	Ορθογώνιο
+	Isometric	Ισομετρικό
+	Node	Κόμβος
+	Extension	Επέκταση
+	Intersection	Τομή

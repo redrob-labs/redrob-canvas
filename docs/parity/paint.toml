@@ -1426,8 +1426,8 @@ name = "Pixel smoothing"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Keeps one-pixel lines single width without L corners for pixel art (5.3)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/pixel_smoothing.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/brush_extras_ui.rs"
 gap = ""
 priority = 3
 
@@ -1438,8 +1438,8 @@ name = "Snap to assistants"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Toggle and magnetism slider; eraser snapping toggle; Ctrl+Shift+L."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs, crafts/photocraft/crates/ui-egui/src/brush_extras_ui.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 2
 
@@ -1474,8 +1474,8 @@ name = "Multibrush: translate / copy translate / interval"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "Copies at a radius, at user-placed offsets, or on an orthogonal interval grid (5.3, up to 50)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/multibrush_ui.rs"
 gap = ""
 priority = 3
 
@@ -1486,8 +1486,8 @@ name = "Multibrush: snowflake"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "Mirrored rotational symmetry."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/multibrush_ui.rs"
 gap = ""
 priority = 2
 
@@ -1510,9 +1510,9 @@ name = "Horizontal / vertical mirror tools"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/mirror_tools.html"
 behaviour = "Toolbar toggles mirror every tool's output across a draggable axis line; lock line, hide handle, rotate axis with Alt."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/symmetry_ui.rs"
-gap = "applies to paint tools only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/mirror_tools_ui.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs, crafts/photocraft/crates/ui-egui/src/retouch_ui.rs, crafts/photocraft/crates/ui-egui/src/eraser_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1522,9 +1522,9 @@ name = "Straight line tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/line.html"
 behaviour = "Drag a line painted with the brush; Shift constrains 15 degrees, Alt moves; use sensors along the path; preview line."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/stroke_constraint.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
-gap = "Line mode is an options-bar toggle on the Brush, Pencil and Eraser rather than a separate tool; Alt-drag to move the line while drawing is not implemented"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs, crafts/photocraft/crates/ui-egui/src/stroke_constraint.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1534,8 +1534,8 @@ name = "Dynamic brush tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/dyna.html"
 behaviour = "Mass and drag physics smooth the stroke like a weight on a string."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/dyna_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 3
 
@@ -1558,9 +1558,9 @@ name = "Fill tool: fill modes"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Fill current selection, a contiguous region, or all regions of similar colour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
-gap = "contiguous and non-contiguous; no selection-shape fill mode"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1582,9 +1582,9 @@ name = "Fill tool: threshold, spread, close gap, boundary"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Threshold, opaque spread, close-gap size (5.3), fill until a boundary colour, selection as boundary."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/algo/src/selection.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
-gap = "boundary-colour and close-gap fills are hard-edged (no anti-aliasing); the selection already bounds every fill"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1594,9 +1594,9 @@ name = "Fill tool: antialias, grow, feather"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Antialiasing, grow with stop at darkest/most opaque pixels, feather radius."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
-gap = "antialias only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1606,9 +1606,9 @@ name = "Fill tool: reference layers"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Fill from current layer, all layers, or layers with chosen colour labels."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
-gap = "sample all layers; no colour-label reference"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1618,8 +1618,8 @@ name = "Fill tool: drag-fill"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Dragging fills every region passed over (any colour or similar colours)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
 gap = ""
 priority = 2
 
@@ -1630,8 +1630,8 @@ name = "Enclose and fill tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/enclose_and_fill.html"
 behaviour = "Draw an enclosing rectangle, ellipse, bezier, lasso or brush and fill the regions inside by rule (all, specific colour, transparent, surrounded by, exclusions)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 2
 
@@ -1642,9 +1642,9 @@ name = "Gradient tool shapes"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
 behaviour = "Linear, bilinear, radial, square, conical, conical-symmetric, spiral, reverse spiral, shaped (follows selection)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/paint.rs, crafts/photocraft/crates/engine/src/fill_cmds.rs"
-gap = "linear, radial, angle (conical), reflected (bilinear), diamond, square, conical-symmetric, spiral, reverse spiral; no shaped (follows selection) gradient"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gradient_ext.rs, crafts/photocraft/crates/algo/src/paint.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1654,9 +1654,9 @@ name = "Gradient repeat, reverse, antialias, dither"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
 behaviour = "None, forward, alternating repeat; antialias threshold; reverse; dither (5.0)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
-gap = "reverse and dither; no repeat modes"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/gradient_ext.rs, crafts/photocraft/crates/algo/src/paint.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1702,8 +1702,8 @@ name = "Colorize mask tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/colorize_mask.html"
 behaviour = "Key strokes of colour inside a line-art layer are propagated into regions; edit key strokes, show output, limit to layer bounds, edge detection, gap close hint, clean up, transparent key."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/colorize.rs, crafts/photocraft/crates/engine/src/colorize_tool_cmds.rs, crafts/photocraft/crates/ui-egui/src/colorize_ui.rs"
 gap = ""
 priority = 2
 
@@ -1714,8 +1714,8 @@ name = "Reference images tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/reference_images_tool.html"
 behaviour = "Place images on the canvas as floating references: add, paste, load/save set, keep aspect, opacity, saturation, embed or link."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/reference_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
 gap = ""
 priority = 2
 
@@ -1750,9 +1750,9 @@ name = "Brush outline and cursor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/general_settings.html"
 behaviour = "Cursor shapes (tool icon, arrow, crosshair, dot, none, triangles, pixel) and outline (none, circle, preview, tilt); show outline while painting, effective outline size."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/brush_cursor.rs"
-gap = "precise/outline cursor; no tilt outline or triangle cursors"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/cursor_shapes.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1810,8 +1810,8 @@ name = "Instant preview"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/instant_preview.html"
 behaviour = "Low-resolution preview during heavy brush, geometry, move and filter operations, refined afterwards."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/instant_preview.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/engine/src/prefs.rs"
 gap = ""
 priority = 2
 
@@ -1834,9 +1834,9 @@ name = "Fill with foreground/background/pattern (opacity variants)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/edit_menu.html"
 behaviour = "Edit menu fills the selection, with variants honouring the brush opacity."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/fill_cmds.rs"
-gap = "fills exist; no opacity-honouring variants"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/fill_opacity_cmds.rs, crafts/photocraft/crates/engine/src/fill_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1882,9 +1882,9 @@ name = "Canvas input profiles"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/canvas_input_settings.html"
 behaviour = "Every canvas gesture (pan, zoom, rotate, pick, resize) is remappable to mouse/key/stylus combos in profiles."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/shortcut_sets.rs"
-gap = "keyboard shortcut sets; mouse gesture mapping fixed"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/hold_keys.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1894,9 +1894,9 @@ name = "Tablet settings and tester"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
 behaviour = "Pressure curve, tilt offset, speed source, input API (WinTab / Pointer), screen mapping, tablet tester."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/tablet/src/lib.rs"
-gap = "pressure curve and raw tablet events; no tester or mapping"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/tablet_settings.rs, crafts/photocraft/crates/ui-egui/src/stylus.rs, crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/menus.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1906,8 +1906,8 @@ name = "Touch docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/touch_docker.html"
 behaviour = "Big-button panel for tablets: file, undo, opacity, size, rotation, zoom, preset switching."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/touch_docker_ui.rs, crafts/photocraft/crates/ui-egui/src/menus.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 3
 
@@ -1918,9 +1918,9 @@ name = "Snapping"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/snapping.html"
 behaviour = "Snap tools to grid, guides, orthogonal, node, extension, intersection, bounding box, image bounds, image centre, pixel."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/snap.rs"
-gap = "guides, grid, layers, bounds, slices; no node/extension/intersection"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/snap.rs, crafts/photocraft/crates/ui-egui/src/snap_ui.rs, crafts/photocraft/crates/ui-egui/src/view_cmds.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1930,9 +1930,9 @@ name = "Grids and guides docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/grids_and_guides.html"
 behaviour = "Rectangle or isometric grid with spacing, subdivision, styles, offset; guides with lock and snap."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/guide_layout_ui.rs"
-gap = "rectangular grid and guides; no isometric grid"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/iso_grid.rs, crafts/photocraft/crates/ui-egui/src/rulers.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1954,8 +1954,8 @@ name = "Infinite ruler"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Line through two handles extended both ways."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -1978,8 +1978,8 @@ name = "Ruler subdivisions"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Notches with major and minor subdivisions on rulers."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -1990,8 +1990,8 @@ name = "Ellipse assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Three handles define an ellipse; third handle snaps to a circle; strokes follow the rim."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -2002,8 +2002,8 @@ name = "Concentric ellipse"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Ellipse whose rim snapping works at any scale around the same centre."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -2014,8 +2014,8 @@ name = "Perspective ellipse"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Ellipse fitted inside a four-handle quad as a circle in perspective."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2026,8 +2026,8 @@ name = "Spline assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Four-handle bezier the stroke follows."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -2038,9 +2038,9 @@ name = "Perspective grid assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Four-corner plane with a grid; perspective sensor reads it; strokes snap to its lines."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
-gap = "strokes snap to the grid's two receding directions; no perspective brush-size sensor"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/paint/src/dynamics.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2050,9 +2050,9 @@ name = "Vanishing point assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "A point all strokes converge to; multiple points for 1/2/3-point setups; Alt keeps it on the horizon."
-ours = "partial"
+ours = "full"
 ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
-gap = "several points for 1/2/3-point setups; no Alt-to-horizon constraint while dragging"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2062,8 +2062,8 @@ name = "2-point perspective assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Two vanishing points plus a horizon with density and optional vertical ruler (5.0)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -2074,8 +2074,8 @@ name = "Fish-eye point assistant"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Curved perspective lines for wide-angle views."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2086,8 +2086,8 @@ name = "Curvilinear perspective (5.3)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Five-point curvilinear grid."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2110,8 +2110,8 @@ name = "Assistant colour and opacity"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
 behaviour = "Global or per-assistant colour and opacity; control widget visibility."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2122,8 +2122,8 @@ name = "Limit assistant to an area"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
 behaviour = "Two extra handles clip where the assistant draws and snaps (5.3), for comic panels."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2134,8 +2134,8 @@ name = "Show painting assistants / previews"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
 behaviour = "View menu toggles for assistants and their previews."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs, crafts/photocraft/crates/ui-egui/src/menus.rs"
 gap = ""
 priority = 2
 

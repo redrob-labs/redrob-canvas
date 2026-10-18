@@ -3528,3 +3528,166 @@ curves	Smooth	平滑
 	x	x
 	y	y
 	{count} snapshots in {dir}	{dir} 中有 {count} 張快照
+	2-Point Perspective	兩點透視
+	Assistant colour	輔助線顏色
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	輔助線磁性：筆畫偏離輔助線多遠仍會被吸附（1000 = 一律）
+	Assistant opacity	輔助線不透明度
+	Concentric Ellipse	同心橢圓
+	Curvilinear Perspective	曲線透視
+	Eraser snaps	橡皮擦吸附
+	Fish-Eye Point	魚眼點
+	Handles	控制點
+	Infinite Ruler	無限尺規
+	Limit to area	限制到區域
+	Minor subdivisions	次級細分
+	Own colour	單獨顏色
+	Perspective Ellipse	透視橢圓
+	Previews	預覽
+	Show the snapped stroke's line while painting	繪畫時顯示吸附筆畫的線
+	Show this assistant's control handles	顯示此輔助線的控制點
+	Spline	樣條
+	Strokes follow the painting assistants (Ctrl+Shift+L)	筆畫跟隨繪畫輔助線 (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	兩個額外控制點裁剪輔助線繪製和吸附的範圍
+	Vertical ruler	垂直尺規
+	Painting Assistants	繪畫輔助線
+	Assistant Previews	輔助線預覽
+	Drag fill	拖曳填滿
+	Dragging fills every region passed over	拖曳時填滿經過的每個區域
+	Exclude colour	排除顏色
+	Exclude transparent	排除透明
+	Fill mode	填滿模式
+	No region is fully enclosed by the shape	沒有區域被形狀完全包圍
+	Only regions coloured like the first one	僅與第一個區域顏色相同的區域
+	Reference	參考
+	Similar only	僅相似
+	Soften the filled edge	柔化填滿邊緣
+	Spread stops at the darkest pixels (lines)	擴展在最暗的像素（線條）處停止
+	Spread stops at the most opaque pixels	擴展在最不透明的像素處停止
+	Stop at darkest	在最暗處停止
+	Stop at opaque	在不透明處停止
+	Similar Colours	相似顏色
+	Colour Labels	顏色標籤
+	All Regions	所有區域
+	Specific Colour	特定顏色
+	Transparent Regions	透明區域
+	Surrounded By	被包圍
+	Fill with Foreground Color (Opacity)	用前景色填滿（不透明度）
+	Fill with Background Color (Opacity)	用背景色填滿（不透明度）
+	Fill with Pattern (Opacity)	用圖樣填滿（不透明度）
+	Straight Line Tool	直線工具
+	Multibrush Tool	多重筆刷工具
+	Dynamic Brush Tool	動態筆刷工具
+	Enclose and Fill Tool	包圍填滿工具
+	Colorize Mask Tool	著色遮色片工具
+	Reference Images Tool	參考圖像工具
+	Alternating	交替
+	Forward	正向
+	Shaped Gradient (follows the selection)	形狀漸層（跟隨選取範圍）
+	Clear copies	清除副本
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+點按放置副本，Ctrl+Alt+點按移除
+	How heavily the stroke lags behind the pointer	筆畫落後於指標的程度
+	How quickly the stroke's motion dies away	筆畫的運動衰減得多快
+	Keep one-pixel lines single width without L corners	保持單像素線條為單一寬度且無L形轉角
+	Mirror all tools	鏡像所有工具
+	Multibrush	多重筆刷
+	Pixel smoothing	像素平滑
+	The painting symmetry mirrors fills, gradients and retouching too	繪畫對稱也鏡像填滿、漸層和修飾
+	The painting symmetry mirrors this tool's output too	繪畫對稱也鏡像此工具的輸出
+	X interval	X間隔
+	Y interval	Y間隔
+	Mirror / Rotation	鏡像 / 旋轉
+	Translate	平移
+	Copy Translate	複製平移
+	Cursor shape	游標形狀
+	Outline shape	外框形狀
+	Show outline while painting	繪畫時顯示外框
+	Effective outline size	有效外框大小
+	Tool icon	工具圖示
+	Arrow	箭頭
+	Crosshair	十字線
+	Small dot	小點
+	No cursor	無游標
+	Triangle right	右三角
+	Triangle left	左三角
+	No outline	無外框
+	Instant preview	即時預覽
+	Instant preview megapixels	即時預覽百萬像素
+	Add…	加入…
+	Auto update	自動更新
+	Canvas input profile	畫布輸入設定檔
+	Clean up	清理
+	Clear key strokes	清除關鍵筆畫
+	Colorize Mask	著色遮色片
+	Draw in the area below to test pressure, tilt and rotation	在下方區域繪畫以測試壓力、傾斜和旋轉
+	Edge detection	邊緣偵測
+	Edit key strokes	編輯關鍵筆畫
+	Embed	嵌入
+	Fill only inside the line art's pixels	僅在線稿像素內填滿
+	Gap close	閉合間隙
+	Input API	輸入 API
+	Keep aspect	保持比例
+	Limit to layer	限制到圖層
+	Mouse	滑鼠
+	Next Preset	下一個預設集
+	No samples yet	尚無取樣
+	Nothing to paste: the clipboard holds no image	沒有可貼上的內容：剪貼簿中沒有圖像
+	Opacity +	不透明度 +
+	Opacity -	不透明度 -
+	Pasted image	貼上的圖像
+	Peak pressure	峰值壓力
+	Pen	筆
+	Previous Preset	上一個預設集
+	Reference Images	參考圖像
+	Rotate Left	向左旋轉
+	Rotate Right	向右旋轉
+	Sample rate	取樣率
+	Screen mapping	螢幕對應
+	Show output	顯示輸出
+	Show the key strokes over the canvas	在畫布上顯示關鍵筆畫
+	Show with all tools	在所有工具下顯示
+	Size +	大小 +
+	Size -	大小 -
+	Speed source	速度來源
+	Store the pixels in the set; off, link to the file	將像素存入集合；關閉則連結到檔案
+	Tablet Settings…	數位板設定…
+	Tablet Tester	數位板測試器
+	The clipboard is not available	剪貼簿無法使用
+	The next key strokes keep their regions clear	接下來的關鍵筆畫保持其區域透明
+	Tilt offset	傾斜偏移
+	Touch Docker	觸控面板
+	Transparent key	透明鍵
+	Update	更新
+	Canvas Input	畫布輸入
+	Canvas Input…	畫布輸入…
+	Pan key	平移鍵
+	Zoom in key	放大鍵
+	Zoom out key	縮小鍵
+	Rotate key	旋轉鍵
+	Middle button	中鍵
+	Stylus button	筆側鍵
+	Pick modifier	取色修飾鍵
+	Shift wheel rotates	Shift+滾輪旋轉
+	Tablet	數位板
+	Trackpad	觸控板
+	Pick	取色
+	No action	無動作
+	No pick	不取色
+	Scroll	捲動
+	Rotate View (hold)	旋轉檢視（按住）
+	Tilt offset x	傾斜偏移 X
+	Tilt offset y	傾斜偏移 Y
+	Tablet speed source	數位板速度來源
+	Tablet api	數位板 API
+	Tablet screen mapping	數位板螢幕對應
+	Pointer	指標
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	格線類型
+	Isometric left angle	等距左角
+	Isometric right angle	等距右角
+	Isometric vertical lines	等距垂直線
+	Rectangular	矩形
+	Isometric	等距
+	Node	節點
+	Extension	延長線
+	Intersection	交點

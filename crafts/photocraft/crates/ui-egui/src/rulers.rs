@@ -143,6 +143,26 @@ pub fn draw_grid(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform, d
     let minor = major.map(|step| step / subdivisions as f64);
     let own_color = doc.grid.as_ref().map(|g| g.color.as_str()).filter(|c| !c.is_empty());
     let base = pref_color(own_color.unwrap_or(&g.grid_color), Color32::from_gray(140));
+    // Preferences › Guides, Grid & Slices › Grid type: the isometric grid's three line families
+    // (`iso_grid`), the image's own Configure Grid staying rectangular.
+    if g.grid_type == redrob_photo_engine::prefs::GridType::Isometric && doc.grid.is_none() {
+        for (steps, alpha) in [(minor, 0.45f32), (major, 1.0)] {
+            if alpha < 1.0 && subdivisions <= 1 {
+                continue;
+            }
+            let step = steps[0].min(steps[1]);
+            if step * (xf.zoom as f64) < 6.0 {
+                continue;
+            }
+            let st = Stroke::new(1.0, base.gamma_multiply(alpha));
+            for [a, b] in
+                crate::iso_grid::lines(w, h, step, f64::from(g.isometric_left_angle), f64::from(g.isometric_right_angle), g.isometric_vertical_lines, offset)
+            {
+                styled_line(painter, xf.to_screen(a[0] as f32, a[1] as f32), xf.to_screen(b[0] as f32, b[1] as f32), st, g.grid_style);
+            }
+        }
+        return;
+    }
     for (steps, alpha) in [(minor, 0.45f32), (major, 1.0)] {
         if alpha < 1.0 && subdivisions <= 1 {
             continue;

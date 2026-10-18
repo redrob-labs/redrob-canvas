@@ -174,6 +174,145 @@ pub fn wrapped_passes(points: &[StrokePoint], size: [f64; 2]) -> Vec<Vec<StrokeP
     out
 }
 
+/// Most copies a translating multibrush paints.
+pub const MAX_TRANSLATE_COPIES: usize = 50;
+
+/// Translate multibrush: `count` copies of the stroke shifted (not rotated) to even positions on
+/// a circle of `radius` around `center`, the stroke itself at the centre of the pattern.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TranslateSymmetry {
+    pub center: [f64; 2],
+    pub count: u32,
+    pub radius: f64,
+}
+
+impl TranslateSymmetry {
+    pub fn new(center: [f64; 2], count: u32, radius: f64) -> Option<Self> {
+        if !(1..=MAX_TRANSLATE_COPIES as u32).contains(&count) || !radius.is_finite() || radius <= 0.0 || radius > MAX_COORDINATE {
+            return None;
+        }
+        if !center.iter().all(|x| x.is_finite() && x.abs() <= MAX_COORDINATE) {
+            return None;
+        }
+        Some(Self { center, count, radius })
+    }
+    pub fn mirror_count(self) -> usize {
+        self.count as usize
+    }
+    /// The offsets of the copies: evenly around the circle, starting at the top.
+    pub fn offsets(self) -> Vec<[f64; 2]> {
+        (0..self.count)
+            .map(|k| {
+                let a = -std::f64::consts::FRAC_PI_2 + std::f64::consts::TAU * f64::from(k) / f64::from(self.count);
+                [self.radius * a.cos(), self.radius * a.sin()]
+            })
+            .collect()
+    }
+    pub fn copies(self, points: &[StrokePoint]) -> Vec<Vec<StrokePoint>> {
+        self.offsets().into_iter().map(|[dx, dy]| points.iter().map(|p| StrokePoint { x: p.x + dx, y: p.y + dy, ..*p }).collect()).collect()
+    }
+}
+
+/// Copy-translate multibrush: the stroke repeated at every user-placed offset.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CopyTranslateSymmetry {
+    /// Offsets of the copies from the stroke, in document pixels (1..=50).
+    pub offsets: Vec<[f64; 2]>,
+}
+
+impl CopyTranslateSymmetry {
+    pub fn new(offsets: Vec<[f64; 2]>) -> Option<Self> {
+        if offsets.is_empty() || offsets.len() > MAX_TRANSLATE_COPIES || !offsets.iter().all(|o| o.iter().all(|x| x.is_finite() && x.abs() <= MAX_COORDINATE)) {
+            return None;
+        }
+        Some(Self { offsets })
+    }
+    pub fn mirror_count(&self) -> usize {
+        self.offsets.len()
+    }
+    pub fn copies(&self, points: &[StrokePoint]) -> Vec<Vec<StrokePoint>> {
+        self.offsets.iter().map(|[dx, dy]| points.iter().map(|p| StrokePoint { x: p.x + dx, y: p.y + dy, ..*p }).collect()).collect()
+    }
+}
+
+/// Interval multibrush: the stroke repeated on an orthogonal grid, `columns × rows` copies
+/// (the original included, up to 50 in all) spaced `x` and `y` pixels apart.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct IntervalSymmetry {
+    pub x: f64,
+    pub y: f64,
+    pub columns: u32,
+    pub rows: u32,
+}
+
+impl IntervalSymmetry {
+    pub fn new(x: f64, y: f64, columns: u32, rows: u32) -> Option<Self> {
+        let total = (columns as usize).checked_mul(rows as usize)?;
+        if columns == 0 || rows == 0 || total < 2 || total > MAX_TRANSLATE_COPIES {
+            return None;
+        }
+        if !(x.is_finite() && y.is_finite())
+            || x.abs() > MAX_COORDINATE
+            || y.abs() > MAX_COORDINATE
+            || (columns > 1 && x.abs() < 1e-9)
+            || (rows > 1 && y.abs() < 1e-9)
+        {
+            return None;
+        }
+        Some(Self { x, y, columns, rows })
+    }
+    pub fn mirror_count(self) -> usize {
+        (self.columns as usize) * (self.rows as usize) - 1
+    }
+    /// Offsets of the copies besides the original (column-major), the original at cell (0, 0).
+    pub fn offsets(self) -> Vec<[f64; 2]> {
+        let mut out = Vec::with_capacity(self.mirror_count());
+        for j in 0..self.rows {
+            for i in 0..self.columns {
+                if (i, j) == (0, 0) {
+                    continue;
+                }
+                out.push([self.x * f64::from(i), self.y * f64::from(j)]);
+            }
+        }
+        out
+    }
+    pub fn copies(self, points: &[StrokePoint]) -> Vec<Vec<StrokePoint>> {
+        self.offsets().into_iter().map(|[dx, dy]| points.iter().map(|p| StrokePoint { x: p.x + dx, y: p.y + dy, ..*p }).collect()).collect()
+    }
+}
+
+#[cfg(test)]
+mod translate_tests {
+    use super::*;
+
+    #[test]
+    fn translating_multibrushes_shift_without_rotating() {
+        let pts = [StrokePoint::new(10.0, 10.0, 1.0), StrokePoint::new(20.0, 10.0, 1.0)];
+        let t = TranslateSymmetry::new([50.0, 50.0], 4, 10.0).unwrap();
+        assert_eq!(t.mirror_count(), 4);
+        let c = t.copies(&pts);
+        assert_eq!(c.len(), 4);
+        assert!((c[0][0].y - 0.0).abs() < 1e-9 && (c[0][0].x - 10.0).abs() < 1e-9, "the first copy sits above: {:?}", c[0][0]);
+        assert!((c[1][0].x - 20.0).abs() < 1e-9, "{:?}", c[1][0]);
+        assert!(TranslateSymmetry::new([0.0, 0.0], 0, 10.0).is_none());
+        assert!(TranslateSymmetry::new([0.0, 0.0], 51, 10.0).is_none());
+        assert!(TranslateSymmetry::new([0.0, 0.0], 2, 0.0).is_none());
+        let ct = CopyTranslateSymmetry::new(vec![[5.0, 0.0], [0.0, 5.0]]).unwrap();
+        assert_eq!(ct.mirror_count(), 2);
+        assert_eq!(ct.copies(&pts)[1][1].y, 15.0);
+        assert!(CopyTranslateSymmetry::new(Vec::new()).is_none());
+        let iv = IntervalSymmetry::new(30.0, 40.0, 3, 2).unwrap();
+        assert_eq!(iv.mirror_count(), 5);
+        let o = iv.offsets();
+        assert_eq!(o[0], [30.0, 0.0]);
+        assert_eq!(o[2], [0.0, 40.0]);
+        assert!(IntervalSymmetry::new(30.0, 40.0, 1, 1).is_none(), "one cell is no multibrush");
+        assert!(IntervalSymmetry::new(0.0, 40.0, 2, 2).is_none(), "a zero interval stacks copies");
+        assert!(IntervalSymmetry::new(30.0, 40.0, 10, 10).is_none(), "over 50 copies");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

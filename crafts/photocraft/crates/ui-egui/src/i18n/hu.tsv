@@ -4811,3 +4811,161 @@ cameraRaw	Yellow	Sárga
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} pillanatkép itt: {dir}
+	2-Point Perspective	Kétpontos perspektíva
+	Assistant colour	Segédvonal színe
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Segédvonal mágnesesség: mennyire térhet el egy vonás a segédvonaltól, hogy még odahúzza (1000 = mindig)
+	Assistant opacity	Segédvonal átlátszatlansága
+	Concentric Ellipse	Koncentrikus ellipszis
+	Curvilinear Perspective	Görbevonalú perspektíva
+	Eraser snaps	Radír is illeszkedik
+	Fish-Eye Point	Halszem pont
+	Handles	Fogantyúk
+	Infinite Ruler	Végtelen vonalzó
+	Limit to area	Területre korlátozás
+	Minor subdivisions	Kisebb osztások
+	Own colour	Saját szín
+	Perspective Ellipse	Perspektivikus ellipszis
+	Previews	Előnézetek
+	Show the snapped stroke's line while painting	Az illesztett vonás vonalának mutatása festés közben
+	Show this assistant's control handles	Ennek a segédvonalnak a vezérlőfogantyúi
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	A vonások követik a festési segédvonalakat (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Két további fogantyú vágja, hol rajzol és illeszt a segédvonal
+	Vertical ruler	Függőleges vonalzó
+	Painting Assistants	Festési segédvonalak
+	Assistant Previews	Segédvonal-előnézetek
+	Drag fill	Húzással kitöltés
+	Dragging fills every region passed over	Húzáskor minden érintett terület kitöltődik
+	Exclude colour	Szín kizárása
+	Exclude transparent	Átlátszó kizárása
+	Fill mode	Kitöltési mód
+	No region is fully enclosed by the shape	Egy területet sem zár körbe teljesen az alakzat
+	Only regions coloured like the first one	Csak az elsővel azonos színű területek
+	Reference	Hivatkozás
+	Similar only	Csak hasonlók
+	Soften the filled edge	Kitöltés szélének lágyítása
+	Spread stops at the darkest pixels (lines)	A terjedés a legsötétebb pixeleknél (vonalaknál) megáll
+	Spread stops at the most opaque pixels	A terjedés a legátlátszatlanabb pixeleknél megáll
+	Stop at darkest	Megállás a legsötétebbnél
+	Stop at opaque	Megállás az átlátszatlannál
+	Similar Colours	Hasonló színek
+	Colour Labels	Színcímkék
+	All Regions	Minden terület
+	Specific Colour	Adott szín
+	Transparent Regions	Átlátszó területek
+	Surrounded By	Körülvevő szín
+	Fill with Foreground Color (Opacity)	Kitöltés előtérszínnel (átlátszatlanság)
+	Fill with Background Color (Opacity)	Kitöltés háttérszínnel (átlátszatlanság)
+	Fill with Pattern (Opacity)	Kitöltés mintával (átlátszatlanság)
+	Straight Line Tool	Egyenes vonal eszköz
+	Multibrush Tool	Többszörös ecset eszköz
+	Dynamic Brush Tool	Dinamikus ecset eszköz
+	Enclose and Fill Tool	Körbezárás és kitöltés eszköz
+	Colorize Mask Tool	Színezőmaszk eszköz
+	Reference Images Tool	Referenciaképek eszköz
+	Alternating	Váltakozó
+	Forward	Előre
+	Shaped Gradient (follows the selection)	Alakzatos színátmenet (a kijelölést követi)
+	Clear copies	Másolatok törlése
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+kattintás másolatot helyez el, Ctrl+Alt+kattintás eltávolít
+	How heavily the stroke lags behind the pointer	Mennyire marad el a vonás a mutatótól
+	How quickly the stroke's motion dies away	Mennyire gyorsan csendesül a vonás mozgása
+	Keep one-pixel lines single width without L corners	Az egypixeles vonalak egyszeresek maradnak L-sarkok nélkül
+	Mirror all tools	Minden eszköz tükrözése
+	Multibrush	Többszörös ecset
+	Pixel smoothing	Pixelsimítás
+	The painting symmetry mirrors fills, gradients and retouching too	A festési szimmetria a kitöltéseket, színátmeneteket és retusálást is tükrözi
+	The painting symmetry mirrors this tool's output too	A festési szimmetria ennek az eszköznek az eredményét is tükrözi
+	X interval	X-köz
+	Y interval	Y-köz
+	Mirror / Rotation	Tükör / Forgatás
+	Translate	Eltolás
+	Copy Translate	Másolat eltolással
+	Cursor shape	Kurzor alakja
+	Outline shape	Körvonal alakja
+	Show outline while painting	Körvonal mutatása festés közben
+	Effective outline size	Tényleges körvonalméret
+	Tool icon	Eszközikon
+	Arrow	Nyíl
+	Crosshair	Szálkereszt
+	Small dot	Kis pont
+	No cursor	Nincs kurzor
+	Triangle right	Háromszög jobbra
+	Triangle left	Háromszög balra
+	No outline	Nincs körvonal
+	Instant preview	Azonnali előnézet
+	Instant preview megapixels	Azonnali előnézet megapixel
+	Add…	Hozzáadás…
+	Auto update	Automatikus frissítés
+	Canvas input profile	Vászonbeviteli profil
+	Clean up	Tisztítás
+	Clear key strokes	Kulcsvonások törlése
+	Colorize Mask	Színezőmaszk
+	Draw in the area below to test pressure, tilt and rotation	Rajzoljon az alábbi területre a nyomás, dőlés és forgatás teszteléséhez
+	Edge detection	Élérzékelés
+	Edit key strokes	Kulcsvonások szerkesztése
+	Embed	Beágyazás
+	Fill only inside the line art's pixels	Csak a vonalrajz pixelein belül tölt
+	Gap close	Hézagok zárása
+	Input API	Beviteli API
+	Keep aspect	Arány megtartása
+	Limit to layer	Rétegre korlátozás
+	Next Preset	Következő készlet
+	No samples yet	Még nincs minta
+	Opacity +	Átlátszatlanság +
+	Opacity -	Átlátszatlanság -
+	Pasted image	Beillesztett kép
+	Peak pressure	Csúcsnyomás
+	Previous Preset	Előző készlet
+	Reference Images	Referenciaképek
+	Rotate Left	Forgatás balra
+	Rotate Right	Forgatás jobbra
+	Sample rate	Mintavételi ráta
+	Screen mapping	Képernyőleképezés
+	Show output	Eredmény mutatása
+	Show the key strokes over the canvas	Kulcsvonások mutatása a vászon fölött
+	Show with all tools	Mutatás minden eszközzel
+	Size +	Méret +
+	Size -	Méret -
+	Speed source	Sebességforrás
+	Store the pixels in the set; off, link to the file	Pixelek tárolása a készletben; kikapcsolva a fájlra hivatkozik
+	Tablet Settings…	Tábla beállításai…
+	Tablet Tester	Táblateszter
+	The clipboard is not available	A vágólap nem érhető el
+	The next key strokes keep their regions clear	A következő kulcsvonások átlátszón hagyják területüket
+	Tilt offset	Dőléseltolás
+	Touch Docker	Érintőpanel
+	Transparent key	Átlátszó kulcs
+	Canvas Input	Vászonbevitel
+	Canvas Input…	Vászonbevitel…
+	Pan key	Mozgatás billentyű
+	Zoom in key	Nagyítás billentyű
+	Zoom out key	Kicsinyítés billentyű
+	Rotate key	Forgatás billentyű
+	Middle button	Középső gomb
+	Stylus button	Tollgomb
+	Pick modifier	Színválasztó módosító
+	Shift wheel rotates	Shift+görgő forgat
+	Trackpad	Érintőpad
+	Pick	Színválasztás
+	No action	Nincs művelet
+	No pick	Nincs színválasztás
+	Scroll	Görgetés
+	Rotate View (hold)	Nézet forgatása (nyomva)
+	Tilt offset x	Dőléseltolás X
+	Tilt offset y	Dőléseltolás Y
+	Tablet speed source	Tábla sebességforrása
+	Tablet api	Tábla API
+	Tablet screen mapping	Tábla képernyőleképezése
+	Pointer	Mutató
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rács típusa
+	Isometric left angle	Izometrikus bal szög
+	Isometric right angle	Izometrikus jobb szög
+	Isometric vertical lines	Izometrikus függőleges vonalak
+	Rectangular	Négyszögletes
+	Isometric	Izometrikus
+	Node	Csomópont
+	Extension	Meghosszabbítás
+	Intersection	Metszéspont

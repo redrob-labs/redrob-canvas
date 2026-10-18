@@ -28,6 +28,12 @@ pub enum SnapKind {
     /// A position that puts the moving object the same distance from a neighbour as that
     /// neighbour is from the next object (equal spacing).
     Equidistance,
+    /// A path anchor as a point: both axes snap at once.
+    Node,
+    /// The extension of a path segment past its end, a line at any angle.
+    Extension,
+    /// Where two guides (or a guide and the document's edge) cross.
+    Intersection,
 }
 
 impl SnapKind {
@@ -75,6 +81,12 @@ pub struct SnapOptions {
     /// Position of a gridline from the document's top-left, document pixels (an image's own grid
     /// may be offset; the Preferences grid starts at 0).
     pub grid_offset: [f64; 2],
+    /// Path anchors as points (both axes at once).
+    pub node: bool,
+    /// The extensions of path segments past their ends.
+    pub extension: bool,
+    /// Guide crossings as points.
+    pub intersection: bool,
 }
 
 impl Default for SnapOptions {
@@ -89,7 +101,39 @@ impl Default for SnapOptions {
             equidistance: false,
             grid_step: [18.0; 2],
             grid_offset: [0.0; 2],
+            node: false,
+            extension: false,
+            intersection: false,
         }
+    }
+}
+
+/// A point to snap to on both axes at once.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PointTarget {
+    pub pos: [f64; 2],
+    pub kind: SnapKind,
+}
+
+/// A line at any angle to snap onto: `origin` and a unit `dir`; a ray when `ray` (only ahead of
+/// the origin), else the whole line.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Ray {
+    pub origin: [f64; 2],
+    pub dir: [f64; 2],
+    pub ray: bool,
+    pub kind: SnapKind,
+}
+
+impl Ray {
+    /// `p` projected onto the ray, and how far it moved.
+    pub fn project(&self, p: [f64; 2]) -> ([f64; 2], f64) {
+        let mut t = (p[0] - self.origin[0]) * self.dir[0] + (p[1] - self.origin[1]) * self.dir[1];
+        if self.ray {
+            t = t.max(0.0);
+        }
+        let q = [self.origin[0] + t * self.dir[0], self.origin[1] + t * self.dir[1]];
+        (q, (q[0] - p[0]).hypot(q[1] - p[1]))
     }
 }
 
@@ -107,6 +151,10 @@ pub struct SnapTargets {
     pub grid_offset: [f64; 2],
     /// Extent used for grid lines and guides ([x0, y0, x1, y1]).
     pub extent: [f64; 4],
+    /// Point targets (nodes, intersections): both axes at once.
+    pub points: Vec<PointTarget>,
+    /// Lines at any angle (segment extensions).
+    pub rays: Vec<Ray>,
 }
 
 /// Bounds of a layer for snapping: what Free Transform would show (`None` for empty layers,
@@ -180,6 +228,14 @@ impl SnapTargets {
             && let Some(path) = active_path(doc, exclude)
         {
             t.add_path(path);
+        }
+        if (opts.node || opts.extension)
+            && let Some(path) = active_path(doc, exclude)
+        {
+            t.add_nodes_and_extensions(path, opts.node, opts.extension);
+        }
+        if opts.intersection {
+            t.add_guide_intersections(doc, opts.document);
         }
         if opts.selection
             && let Some(sel) = &doc.selection
@@ -266,6 +322,80 @@ impl SnapTargets {
         self.y.push(Target { pos: (r[1] + r[3]) / 2.0, kind: center, span: ys });
     }
 
+    /// Path anchors as point targets (`node`) and segment extensions as rays (`extension`): a
+    /// straight segment extends past both ends; a curve extends along its end tangents.
+    pub fn add_nodes_and_extensions(&mut self, path: &redrob_photo_doc::Path, node: bool, extension: bool) {
+        let unit = |a: [f64; 2], b: [f64; 2]| {
+            let d = [b[0] - a[0], b[1] - a[1]];
+            let l = d[0].hypot(d[1]);
+            (l > 1e-9).then(|| [d[0] / l, d[1] / l])
+        };
+        for sp in &path.subpaths {
+            let n = sp.knots.len();
+            for (i, k) in sp.knots.iter().enumerate() {
+                let a = [k.anchor.x, k.anchor.y];
+                if node && a.iter().all(|v| v.is_finite()) {
+                    self.points.push(PointTarget { pos: a, kind: SnapKind::Node });
+                }
+                if !extension || n < 2 {
+                    continue;
+                }
+                // The segment leaving this anchor: its direction at the anchor is the out
+                // control (or the next anchor for a straight segment); extend backwards past
+                // the anchor. Likewise the segment arriving here extends forwards.
+                if i + 1 < n {
+                    let next = sp.knots[i + 1];
+                    let toward = if (k.out_ctrl.x - k.anchor.x).abs() + (k.out_ctrl.y - k.anchor.y).abs() > 1e-9 {
+                        [k.out_ctrl.x, k.out_ctrl.y]
+                    } else {
+                        [next.anchor.x, next.anchor.y]
+                    };
+                    if let Some(d) = unit(toward, a) {
+                        self.rays.push(Ray { origin: a, dir: d, ray: true, kind: SnapKind::Extension });
+                    }
+                }
+                if i > 0 {
+                    let prev = sp.knots[i - 1];
+                    let from = if (k.in_ctrl.x - k.anchor.x).abs() + (k.in_ctrl.y - k.anchor.y).abs() > 1e-9 {
+                        [k.in_ctrl.x, k.in_ctrl.y]
+                    } else {
+                        [prev.anchor.x, prev.anchor.y]
+                    };
+                    if let Some(d) = unit(from, a) {
+                        self.rays.push(Ray { origin: a, dir: d, ray: true, kind: SnapKind::Extension });
+                    }
+                }
+            }
+        }
+    }
+
+    /// Where guides cross each other (and, with `edges`, the document's edges) as points.
+    pub fn add_guide_intersections(&mut self, doc: &Document, edges: bool) {
+        let (w, h) = (doc.size.width as f64, doc.size.height as f64);
+        let mut xs: Vec<f64> = doc.guides.vertical.clone();
+        let mut ys: Vec<f64> = doc.guides.horizontal.clone();
+        if edges {
+            xs.extend([0.0, w]);
+            ys.extend([0.0, h]);
+        }
+        for x in &xs {
+            for y in &ys {
+                if x.is_finite() && y.is_finite() {
+                    self.points.push(PointTarget { pos: [*x, *y], kind: SnapKind::Intersection });
+                }
+            }
+        }
+    }
+
+    /// The point target nearest to `p` within `tol`, else the ray `p` is nearest to.
+    pub fn snap_free(&self, p: [f64; 2], tol: f64) -> Option<([f64; 2], SnapKind)> {
+        let point = self.points.iter().map(|t| (t, (t.pos[0] - p[0]).hypot(t.pos[1] - p[1]))).filter(|(_, d)| *d <= tol).min_by(|a, b| a.1.total_cmp(&b.1));
+        if let Some((t, _)) = point {
+            return Some((t.pos, t.kind));
+        }
+        self.rays.iter().map(|r| (r, r.project(p))).filter(|(_, (_, d))| *d <= tol).min_by(|a, b| a.1.1.total_cmp(&b.1.1)).map(|(r, (q, _))| (q, r.kind))
+    }
+
     /// Only the targets for which `keep` holds (e.g. smart guides: layer alignments).
     pub fn filtered(&self, keep: impl Fn(SnapKind) -> bool) -> SnapTargets {
         SnapTargets {
@@ -274,11 +404,13 @@ impl SnapTargets {
             grid: self.grid.filter(|_| keep(SnapKind::Grid)),
             grid_offset: self.grid_offset,
             extent: self.extent,
+            points: self.points.iter().copied().filter(|t| keep(t.kind)).collect(),
+            rays: self.rays.iter().copied().filter(|r| keep(r.kind)).collect(),
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.x.is_empty() && self.y.is_empty() && self.grid.is_none()
+        self.x.is_empty() && self.y.is_empty() && self.grid.is_none() && self.points.is_empty() && self.rays.is_empty()
     }
 
     /// The closest target to `v` within `tol` on one axis (`vertical` = x positions). Guides win
@@ -310,8 +442,20 @@ impl SnapTargets {
         best.map(|(_, t)| t)
     }
 
-    /// Snap a point: each axis independently to its nearest target within `tol`.
+    /// Snap a point: a node or intersection within `tol` takes both axes at once, a segment
+    /// extension pulls the point onto its line; else each axis independently to its nearest
+    /// target within `tol`.
     pub fn snap_point(&self, p: [f64; 2], tol: f64) -> ([f64; 2], Vec<SnapLine>) {
+        if let Some((q, kind)) = self.snap_free(p, tol) {
+            let lines = match kind {
+                SnapKind::Extension => Vec::new(),
+                _ => vec![
+                    SnapLine { vertical: true, pos: q[0], from: q[1] - tol * 2.0, to: q[1] + tol * 2.0, kind },
+                    SnapLine { vertical: false, pos: q[1], from: q[0] - tol * 2.0, to: q[0] + tol * 2.0, kind },
+                ],
+            };
+            return (q, lines);
+        }
         let mut out = p;
         let mut lines = Vec::new();
         if let Some(t) = self.nearest(true, p[0], tol) {
@@ -482,5 +626,33 @@ mod tests {
         assert!(!t.x.iter().any(|t| t.kind == SnapKind::Guide || (t.kind == SnapKind::LayerEdge && t.pos == 30.0)));
         assert_eq!(layer_rect(&doc, id), Some([10.0, 20.0, 30.0, 60.0]));
         assert_eq!(union([[0.0, 0.0, 1.0, 1.0], [2.0, -1.0, 3.0, 0.5]]), Some([0.0, -1.0, 3.0, 1.0]));
+    }
+
+    #[test]
+    fn nodes_extensions_and_intersections_snap_points() {
+        let mut doc = Document::with_background("s", Size::new(200, 100), ColorMode::Rgb, SampleType::U8, Color::WHITE);
+        doc.guides.vertical.push(40.0);
+        doc.guides.horizontal.push(30.0);
+        let mut t = SnapTargets::default();
+        t.add_guide_intersections(&doc, true);
+        assert!(t.points.iter().any(|p| p.pos == [40.0, 30.0] && p.kind == SnapKind::Intersection));
+        assert!(t.points.iter().any(|p| p.pos == [200.0, 30.0]), "a guide meets the document's edge");
+        let (q, lines) = t.snap_point([42.0, 28.0], 5.0);
+        assert_eq!(q, [40.0, 30.0]);
+        assert_eq!(lines.len(), 2);
+        // A straight segment from (0,0) to (10,0) extends along y = 0 past both ends.
+        let path = redrob_photo_doc::Path::new(vec![redrob_photo_doc::Subpath::polyline(&[(0.0, 0.0), (10.0, 0.0)])]);
+        let mut t = SnapTargets::default();
+        t.add_nodes_and_extensions(&path, true, true);
+        assert_eq!(t.points.len(), 2);
+        assert!(t.rays.iter().any(|r| r.origin == [10.0, 0.0] && (r.dir[0] - 1.0).abs() < 1e-9));
+        let (q, _) = t.snap_point([50.0, 2.0], 5.0);
+        assert_eq!(q, [50.0, 0.0], "pulled onto the extension");
+        let (q, _) = t.snap_point([9.0, 1.0], 5.0);
+        assert_eq!(q, [10.0, 0.0], "the node wins over the extension");
+        let (q, _) = t.snap_point([50.0, 20.0], 5.0);
+        assert_eq!(q, [50.0, 20.0], "too far from anything");
+        let kept = t.filtered(|k| k == SnapKind::Node);
+        assert!(kept.rays.is_empty() && kept.points.len() == 2);
     }
 }

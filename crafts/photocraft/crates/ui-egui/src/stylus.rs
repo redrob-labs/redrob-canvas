@@ -157,6 +157,8 @@ pub struct Stylus {
     /// Preferences › Tools › Pressure Curve (`None`: linear), with the points it was built from.
     pressure_curve: Option<redrob_photo_engine::prefs::PressureCurve>,
     curve_points: Vec<[f32; 2]>,
+    /// Preferences › Tools › Tilt offset: degrees added to the pen's tilt (`tablet_settings`).
+    tilt_offset: [f32; 2],
     /// The pen end last seen (`Some(true)` = eraser), for the eraser tool switch.
     end: Option<bool>,
     /// The tool to restore when the pen tip comes back after the eraser end switched tools.
@@ -200,6 +202,7 @@ impl Default for Stylus {
             device: DeviceAdjust::default(),
             pressure_curve: None,
             curve_points: Vec::new(),
+            tilt_offset: [0.0, 0.0],
             end: None,
             tool_before_eraser: None,
             touch: None,
@@ -310,10 +313,18 @@ impl Stylus {
         // Edit › Input Devices adjustments (tilt, rotation, pressure scale), then the pen's
         // pressure through Preferences › Tools › Pressure Curve, before any brush sees it.
         let s = if self.device == DeviceAdjust::default() { s } else { self.device.apply(s) };
-        Some(match &self.pressure_curve {
+        let s = match &self.pressure_curve {
             Some(c) => PenSample { pressure: c.eval(s.pressure), ..s },
             None => s,
-        })
+        };
+        // And the tilt offsets (a pen held askew reads level).
+        let [ox, oy] = self.tilt_offset;
+        Some(if ox == 0.0 && oy == 0.0 { s } else { PenSample { tilt_x: (s.tilt_x + ox).clamp(-90.0, 90.0), tilt_y: (s.tilt_y + oy).clamp(-90.0, 90.0), ..s } })
+    }
+
+    /// Preferences › Tools › Tilt offset.
+    pub fn set_tilt_offset(&mut self, offset: [f32; 2]) {
+        self.tilt_offset = [if offset[0].is_finite() { offset[0] } else { 0.0 }, if offset[1].is_finite() { offset[1] } else { 0.0 }];
     }
 
     /// Preferences › Tools › Pressure Curve (rebuilt only when the points change).

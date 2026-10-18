@@ -73,7 +73,7 @@ pub fn sample_stops(stops: &[(f32, [f32; 4])], t: f32) -> [f32; 4] {
 }
 
 /// Composites `color(i)` over `area` of the surface with per-pixel coverage.
-fn composite_area(
+pub(crate) fn composite_area(
     s: &mut Surface,
     area: Rect,
     blend_mode: BlendMode,

@@ -3904,3 +3904,165 @@ curves	Smooth	Haluskan
 	x	x
 	y	y
 	{count} snapshots in {dir}	{count} cuplikan di {dir}
+	2-Point Perspective	Perspektif 2 titik
+	Assistant colour	Warna asisten
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetisme asisten: sejauh mana sapuan boleh menyimpang dari asisten namun tetap ditarik (1000 = selalu)
+	Assistant opacity	Opasitas asisten
+	Concentric Ellipse	Elips konsentris
+	Curvilinear Perspective	Perspektif kurvilinear
+	Eraser snaps	Penghapus menempel
+	Fish-Eye Point	Titik mata ikan
+	Handles	Pegangan
+	Infinite Ruler	Penggaris tak hingga
+	Limit to area	Batasi ke area
+	Minor subdivisions	Subdivisi minor
+	Own colour	Warna sendiri
+	Perspective Ellipse	Elips perspektif
+	Previews	Pratinjau
+	Show the snapped stroke's line while painting	Tampilkan garis sapuan yang ditempelkan saat melukis
+	Show this assistant's control handles	Tampilkan pegangan kontrol asisten ini
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Sapuan mengikuti asisten melukis (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dua pegangan tambahan memotong tempat asisten menggambar dan menempel
+	Vertical ruler	Penggaris vertikal
+	Painting Assistants	Asisten melukis
+	Assistant Previews	Pratinjau asisten
+	Drag fill	Isi seret
+	Dragging fills every region passed over	Menyeret mengisi setiap area yang dilewati
+	Exclude colour	Kecualikan warna
+	Exclude transparent	Kecualikan transparan
+	Fill mode	Mode isi
+	No region is fully enclosed by the shape	Tidak ada area yang sepenuhnya dikelilingi bentuk
+	Only regions coloured like the first one	Hanya area berwarna seperti yang pertama
+	Reference	Referensi
+	Similar only	Hanya serupa
+	Soften the filled edge	Haluskan tepi isian
+	Spread stops at the darkest pixels (lines)	Pelebaran berhenti di piksel tergelap (garis)
+	Spread stops at the most opaque pixels	Pelebaran berhenti di piksel paling pekat
+	Stop at darkest	Berhenti di tergelap
+	Stop at opaque	Berhenti di pekat
+	Similar Colours	Warna serupa
+	Colour Labels	Label warna
+	All Regions	Semua area
+	Specific Colour	Warna tertentu
+	Transparent Regions	Area transparan
+	Surrounded By	Dikelilingi oleh
+	Fill with Foreground Color (Opacity)	Isi dengan warna depan (opasitas)
+	Fill with Background Color (Opacity)	Isi dengan warna latar (opasitas)
+	Fill with Pattern (Opacity)	Isi dengan pola (opasitas)
+	Straight Line Tool	Alat Garis Lurus
+	Multibrush Tool	Alat Multikuas
+	Dynamic Brush Tool	Alat Kuas Dinamis
+	Enclose and Fill Tool	Alat Lingkupi dan Isi
+	Colorize Mask Tool	Alat Masker Pewarnaan
+	Reference Images Tool	Alat Gambar Referensi
+	Alternating	Bergantian
+	Forward	Maju
+	Shaped Gradient (follows the selection)	Gradien berbentuk (mengikuti seleksi)
+	Clear copies	Hapus salinan
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik menempatkan salinan, Ctrl+Alt+klik menghapusnya
+	How heavily the stroke lags behind the pointer	Seberapa jauh sapuan tertinggal dari penunjuk
+	How quickly the stroke's motion dies away	Seberapa cepat gerakan sapuan mereda
+	Keep one-pixel lines single width without L corners	Jaga garis satu piksel tetap satu lebar tanpa sudut L
+	Mirror all tools	Cerminkan semua alat
+	Multibrush	Multikuas
+	Pixel smoothing	Penghalusan piksel
+	The painting symmetry mirrors fills, gradients and retouching too	Simetri melukis juga mencerminkan isian, gradien, dan retus
+	The painting symmetry mirrors this tool's output too	Simetri melukis juga mencerminkan hasil alat ini
+	X interval	Interval X
+	Y interval	Interval Y
+	Mirror / Rotation	Cermin / Rotasi
+	Translate	Geser
+	Copy Translate	Salin geser
+	Cursor shape	Bentuk kursor
+	Outline shape	Bentuk garis luar
+	Show outline while painting	Tampilkan garis luar saat melukis
+	Effective outline size	Ukuran garis luar efektif
+	Tool icon	Ikon alat
+	Arrow	Panah
+	Crosshair	Garis silang
+	Small dot	Titik kecil
+	No cursor	Tanpa kursor
+	Triangle right	Segitiga kanan
+	Triangle left	Segitiga kiri
+	No outline	Tanpa garis luar
+	Instant preview	Pratinjau instan
+	Instant preview megapixels	Megapiksel pratinjau instan
+	Add…	Tambah…
+	Auto update	Perbarui otomatis
+	Canvas input profile	Profil input kanvas
+	Clean up	Bersihkan
+	Clear key strokes	Hapus sapuan kunci
+	Colorize Mask	Masker Pewarnaan
+	Draw in the area below to test pressure, tilt and rotation	Gambar di area di bawah untuk menguji tekanan, kemiringan, dan rotasi
+	Edge detection	Deteksi tepi
+	Edit key strokes	Edit sapuan kunci
+	Embed	Sematkan
+	Fill only inside the line art's pixels	Isi hanya di dalam piksel garis
+	Gap close	Tutup celah
+	Input API	API input
+	Keep aspect	Jaga rasio
+	Limit to layer	Batasi ke lapisan
+	Mouse	Tetikus
+	Next Preset	Preset berikutnya
+	No samples yet	Belum ada sampel
+	Nothing to paste: the clipboard holds no image	Tidak ada yang ditempel: papan klip tidak berisi gambar
+	Opacity +	Opasitas +
+	Opacity -	Opasitas -
+	Pasted image	Gambar yang ditempel
+	Peak pressure	Tekanan puncak
+	Previous Preset	Preset sebelumnya
+	Reference Images	Gambar referensi
+	Rotate Left	Putar kiri
+	Rotate Right	Putar kanan
+	Sample rate	Laju sampel
+	Screen mapping	Pemetaan layar
+	Show output	Tampilkan hasil
+	Show the key strokes over the canvas	Tampilkan sapuan kunci di atas kanvas
+	Show with all tools	Tampilkan dengan semua alat
+	Size +	Ukuran +
+	Size -	Ukuran -
+	Speed source	Sumber kecepatan
+	Store the pixels in the set; off, link to the file	Simpan piksel dalam set; nonaktif, tautkan ke berkas
+	Tablet Settings…	Pengaturan tablet…
+	Tablet Tester	Penguji tablet
+	The clipboard is not available	Papan klip tidak tersedia
+	The next key strokes keep their regions clear	Sapuan kunci berikutnya menjaga areanya tetap bersih
+	Tilt offset	Offset kemiringan
+	Touch Docker	Panel sentuh
+	Transparent key	Kunci transparan
+	Update	Perbarui
+	Canvas Input	Input kanvas
+	Canvas Input…	Input kanvas…
+	Pan key	Tombol geser
+	Zoom in key	Tombol perbesar
+	Zoom out key	Tombol perkecil
+	Rotate key	Tombol putar
+	Middle button	Tombol tengah
+	Stylus button	Tombol stilus
+	Pick modifier	Pengubah pilih warna
+	Shift wheel rotates	Shift+roda memutar
+	Tablet	Tablet
+	Trackpad	Trackpad
+	Pick	Pilih warna
+	No action	Tanpa aksi
+	No pick	Tanpa pilih warna
+	Scroll	Gulir
+	Rotate View (hold)	Putar tampilan (tahan)
+	Tilt offset x	Offset kemiringan X
+	Tilt offset y	Offset kemiringan Y
+	Tablet speed source	Sumber kecepatan tablet
+	Tablet api	API tablet
+	Tablet screen mapping	Pemetaan layar tablet
+	Pointer	Penunjuk
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Jenis kisi
+	Isometric left angle	Sudut kiri isometrik
+	Isometric right angle	Sudut kanan isometrik
+	Isometric vertical lines	Garis vertikal isometrik
+	Rectangular	Persegi
+	Isometric	Isometrik
+	Node	Simpul
+	Extension	Perpanjangan
+	Intersection	Perpotongan

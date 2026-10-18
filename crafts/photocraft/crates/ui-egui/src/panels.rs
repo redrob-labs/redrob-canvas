@@ -23,15 +23,15 @@ const TOOL_SECTIONS: &[&[&[Tool]]] = &[
         &[Tool::ObjectSelection, Tool::QuickSelection, Tool::MagicWand],
         &[Tool::Crop, Tool::PerspectiveCrop, Tool::Slice, Tool::SliceSelect],
         &[Tool::Frame],
-        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count, Tool::Assistant],
+        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count, Tool::Assistant, Tool::ColorizeMask, Tool::ReferenceImages],
     ],
     &[
         &[Tool::Remove, Tool::SpotHealing, Tool::Healing, Tool::Patch, Tool::ContentAwareMove, Tool::RedEye],
-        &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement],
+        &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement, Tool::StraightLine, Tool::Multibrush, Tool::DynamicBrush],
         &[Tool::CloneStamp, Tool::PatternStamp],
         &[Tool::HistoryBrush],
         &[Tool::Eraser, Tool::BackgroundEraser, Tool::MagicEraser],
-        &[Tool::Gradient, Tool::PaintBucket],
+        &[Tool::Gradient, Tool::PaintBucket, Tool::EncloseFill],
         &[Tool::Blur, Tool::Sharpen, Tool::Smudge],
         &[Tool::Dodge, Tool::Burn, Tool::Sponge],
     ],
@@ -980,6 +980,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     || crate::vector_ui::options_bar(app, ui, tool)
                     || crate::analysis_ui::options_bar(app, ui, tool)
                     || crate::assistant_ui::options_bar(app, ui, tool)
+                    || crate::fill_tool_ui::enclose_options_bar(app, ui, tool)
+                    || crate::reference_ui::options_bar(app, ui, tool)
+                    || crate::colorize_ui::options_bar(app, ui, tool)
                     || crate::slice_ui::options_bar(app, ui, tool)
                     || crate::frame_tool::options_bar(app, ui, tool)
                     || crate::artboard_tool::options_bar(app, ui, tool)
@@ -990,7 +993,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let mut brush = brush_before.clone();
                 let b = &mut brush;
                 match app.ui.tool {
-                    Tool::Brush | Tool::Eraser if t.pro => {
+                    Tool::Brush | Tool::Eraser | Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush if t.pro => {
                         // A Block-mode Eraser has a fixed size, opacity and flow (Photoshop, #2770).
                         let block = crate::eraser_ui::block_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!block, |ui| {
@@ -1012,6 +1015,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
                         line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
+                        crate::brush_extras_ui::options(app, ui);
                         ui.add_enabled_ui(!block, |ui| {
                             percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, 62.0);
                             if icons::button(ui, "circle-dot", 24.0, b.pressure_opacity, tl!("Always use pressure for opacity")).clicked() {
@@ -1056,13 +1060,14 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         paint_mode_dropdown(ui, "pencil-mode", b, &mut app.ui.tool_options.pencil_clear, held);
                         erase_toggle(ui, &mut app.ui.tool_options.pencil_clear, held);
                         line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
+                        crate::brush_extras_ui::options(app, ui);
                         percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, if t.pro { 62.0 } else { 66.0 });
                         opt_label(ui, tl!("Smoothing"));
                         smoothing_field(ui, b, if t.pro { 58.0 } else { 66.0 });
                         widgets::vline(ui, 22.0);
                         widgets::checkbox(ui, &mut app.ui.tool_options.pencil_auto_erase, tl!("Auto Erase"));
                     }
-                    Tool::Brush | Tool::Eraser => {
+                    Tool::Brush | Tool::Eraser | Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush => {
                         brush_preset_chip(ui, b, &mut app.ui);
                         crate::brush_picker::settings_toggle(app, ui);
                         widgets::vline(ui, 22.0);
@@ -1086,6 +1091,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
                         line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
+                        crate::brush_extras_ui::options(app, ui);
                         // A Pencil-mode Eraser is always hard and at full flow (Photoshop).
                         let fixed = block || crate::eraser_ui::pencil_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!fixed, |ui| percent_field(ui, tl!("Hardness"), &mut b.hardness, 0.0..=100.0, 66.0));
@@ -1353,6 +1359,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                                 }
                             }
                         }
+                        crate::fill_tool_ui::bucket_options(ui, o);
                     }
                     Tool::Gradient => {
                         // Live "Gradient" (a Gradient Fill layer) or "Classic gradient" (pixels).
