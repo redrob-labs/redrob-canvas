@@ -666,9 +666,9 @@ name = "Edit blur on canvas"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Edit_Blur_on_Canvas"
 behaviour = "A simple blur filter on the selected object shows a draggable knot in the node tool that changes the blur radius."
-ours = "none"
-ours_where = ""
-gap = "blur radius edited only in the Appearance panel / effect dialog"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/effectknots.rs (blur radius knot on blur.gaussian), crafts/vectorcraft/crates/tools/src/direct.rs, crafts/vectorcraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -849,9 +849,9 @@ name = "Dynamic offset"
 reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Turns the path into an offset object with a draggable handle in the node tool that sets the inset/outset distance live; the original can later be restored."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/effectcmd.rs (path.offsetPath live effect)"
-gap = "live Offset Path effect is edited numerically in the Appearance panel; no on-canvas drag handle"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/linked.rs (path.dynamicOffset), crafts/vectorcraft/crates/tools/src/effectknots.rs (offset knot), crafts/vectorcraft/crates/tools/src/direct.rs (knot drag), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (knots drawn), crafts/vectorcraft/crates/ui-egui/src/menus.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -861,9 +861,9 @@ name = "Linked offset"
 reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Creates an offset object that stays linked to the source path and follows its edits, with the same draggable distance handle."
-ours = "none"
-ours_where = ""
-gap = "no offset object linked to another path (the live effect lives on the object itself)"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/linked.rs (path.linkedOffset, path.linkedOffset.set, path.unlinkLive, refresh after every edit), crafts/vectorcraft/crates/tools/src/effectknots.rs (linked offset knot), crafts/vectorcraft/crates/engine/src/lib.rs (Session::edit refresh)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -897,9 +897,9 @@ name = "Fill between paths (path menu)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1"
 behaviour = "Creates a new path filling the region bounded by the selected paths, kept live by the Fill between many effect."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/pathops/src/planar.rs (Live Paint / Shape Builder faces)"
-gap = "Shape Builder extracts a bounded region as a static path; no linked live fill"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/linked.rs (path.fillBetween: linked fill re-made after every edit of its sources, path.unlinkLive), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Path › Fill Between Paths)"
+gap = ""
 priority = 3
 
 [[feature]]

@@ -39,6 +39,7 @@ pub(crate) mod inline;
 mod layer;
 mod layerpanel;
 pub mod library;
+pub(crate) mod linked;
 pub mod linkfiles;
 pub mod links;
 mod live;
@@ -295,6 +296,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(shortcutset::specs());
         v.extend(importmatches::specs());
         v.extend(arrangecmds::specs());
+        v.extend(linked::specs());
         v
     })
 }

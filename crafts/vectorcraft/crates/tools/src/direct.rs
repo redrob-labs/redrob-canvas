@@ -36,6 +36,7 @@ use serde_json::{Value, json};
 
 use crate::bbox::move_delta;
 use crate::corners::{self, CornerDrag, over_widget};
+use crate::effectknots::{self, KnotDrag};
 use crate::guides::{HandleSnap, Leave, PointSnap, Targets};
 use crate::meshedit::MeshEdit;
 use crate::pathtype::{self, BracketDrag, over_bracket};
@@ -91,6 +92,8 @@ enum State {
     Corner(CornerDrag),
     /// Dragging a live shape handle (an ellipse's arc angles, a star's tip or notch).
     ShapeHandle(ShapeHandleDrag),
+    /// Dragging an effect knot (an Offset Path's distance, a blur's radius, a linked offset).
+    EffectKnot(KnotDrag),
     /// Dragging a bracket of type on a path.
     Bracket(BracketDrag),
     /// Dragging a point of a blend's spine from `from`.
@@ -403,7 +406,9 @@ impl Tool for DirectSelectionTool {
                 _ => vec![Action::Exec("select.anchorGrow".into(), json!({"grow": false, "along": along}))],
             };
         }
-        if key != ToolKey::Escape || matches!(self.state, State::Idle | State::Mesh | State::Corner(_) | State::ShapeHandle(_) | State::Bracket(_)) {
+        if key != ToolKey::Escape
+            || matches!(self.state, State::Idle | State::Mesh | State::Corner(_) | State::ShapeHandle(_) | State::EffectKnot(_) | State::Bracket(_))
+        {
             return vec![];
         }
         self.state = State::Idle;
@@ -456,6 +461,10 @@ impl Tool for DirectSelectionTool {
                 self.click_segment = None;
                 if let Some(h) = ShapeHandleDrag::hit(cx, ev) {
                     self.state = State::ShapeHandle(h);
+                    return vec![];
+                }
+                if let Some(k) = KnotDrag::hit(cx, ev) {
+                    self.state = State::EffectKnot(k);
                     return vec![];
                 }
                 if let Some(c) = CornerDrag::hit(cx, ev, true) {
@@ -741,6 +750,15 @@ impl Tool for DirectSelectionTool {
                 self.state = State::Idle;
                 h.finish()
             }
+            (PointerKind::Drag, State::EffectKnot(mut k)) => {
+                let out = k.drag(cx, p, ev.mods);
+                self.state = State::EffectKnot(k);
+                out
+            }
+            (PointerKind::Up, State::EffectKnot(k)) => {
+                self.state = State::Idle;
+                k.finish()
+            }
             (PointerKind::Drag, State::Bracket(mut b)) => {
                 let out = b.drag(cx, p, ev.mods.cmd);
                 self.state = State::Bracket(b);
@@ -816,6 +834,7 @@ impl Tool for DirectSelectionTool {
             }
             State::Corner(c) => c.overlays(cx),
             State::ShapeHandle(h) => h.overlays(),
+            State::EffectKnot(k) => k.overlays(),
             _ => {
                 let mut out = self.spine_overlays(cx);
                 out.extend(self.mesh.overlays(cx));
@@ -840,6 +859,9 @@ impl Tool for DirectSelectionTool {
         }
         if !self.group && (matches!(self.state, State::ShapeHandle(_)) || shapehandles::over_handle(cx, p)) {
             return Cursor::Move;
+        }
+        if !self.group && (matches!(self.state, State::EffectKnot(_)) || effectknots::over_knot(cx, p)) {
+            return Cursor::ResizeH;
         }
         if !self.group && (matches!(self.state, State::Bracket(_)) || over_bracket(cx, p)) {
             return Cursor::PathBracket;

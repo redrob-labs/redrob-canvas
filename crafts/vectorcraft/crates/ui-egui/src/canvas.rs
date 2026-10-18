@@ -2010,6 +2010,20 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             p.add(Shape::convex_polygon(pts, Color32::WHITE, Stroke::new(1.0, color)));
         }
     }
+    // Effect knots (node toolbar's Effect knots): an Offset Path's distance, a blur's radius and a
+    // linked offset's distance, as circles tied to the object's edge by a line.
+    if tool == "directSelection"
+        && app.ui.view.node_effect_knots
+        && let Some(k) = redrob_vector_tools::effectknots::EffectKnots::of(&st.doc, &st.selection)
+    {
+        for knot in k.visible_on() {
+            let (c, color) = (xf.to_screen(knot.at), c32(st.doc.layer_color(knot.id)));
+            let from = xf.to_screen(Point::new(knot.bounds.x1, knot.at.y));
+            p.line_segment([from, c], Stroke::new(1.0, color));
+            p.circle_filled(c, 4.0 + grow / 2.0, Color32::WHITE);
+            p.circle_stroke(c, 4.0 + grow / 2.0, Stroke::new(1.5, color));
+        }
+    }
     // Bounding box with handles (Selection tool).
     if let Some(b) = bbox {
         let color = c32(st.doc.layer_color(st.selection.objects[0]));

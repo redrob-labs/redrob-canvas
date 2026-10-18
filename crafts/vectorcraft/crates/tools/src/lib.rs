@@ -16,6 +16,7 @@ pub mod cut;
 pub mod direct;
 pub mod distort;
 pub mod draw2;
+pub mod effectknots;
 pub mod extra;
 pub mod guides;
 pub mod meshblend;
