@@ -19,6 +19,7 @@
 
 mod aci;
 pub mod import;
+pub mod legacy;
 mod scene;
 mod writer;
 

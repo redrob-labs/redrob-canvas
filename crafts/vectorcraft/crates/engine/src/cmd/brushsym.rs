@@ -72,7 +72,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Brush Options…",
             [],
             None,
-            "{name, params?: {…fields to change (brush.get shows them; values outside their ranges are clamped). calligraphic: angle −180..180°, roundness 0..100%, size 0..1296 pt, variation: [angle°, roundness%, size pt], modes: [fixed|random|pressure for angle, roundness, size] (pressure goes from value − variation at the lightest pen pressure to value + variation at the heaviest). scatter: size [a, b] 1..10000%, spacing [a, b] 1..10000%, scatter [a, b] −1000..1000%, rotation [a, b] −180..180°, modes: [fixed|random|pressure for size, spacing, scatter, rotation] (fixed: a; random: between a and b; pressure: a at the lightest pen pressure to b at the heaviest), rotation_relative_to_path. art: width 1..1000%, scale: {mode: proportional|stretch|betweenGuides, start, end: 0..1 of the art length}, direction: leftToRight|rightToLeft|topToBottom|bottomToTop, flip_along, flip_across. pattern: scale 1..10000%, spacing 0..10000%, fit: stretch|addSpace|approximate, flip_along, flip_across. scatter, art and pattern: colorization: {method: none|tints|tintsAndShades|hueShift, key: colour (hueShift: the art colour that becomes the stroke colour)}}, newName?} edit a brush definition (strokes using it update) → {name}",
+            "{name, params?: {…fields to change (brush.get shows them; values outside their ranges are clamped). calligraphic: angle −180..180°, roundness 0..100%, size 0..1296 pt, variation: [angle°, roundness%, size pt], modes: [fixed|random|pressure for angle, roundness, size] (pressure goes from value − variation at the lightest pen pressure to value + variation at the heaviest). scatter: size [a, b] 1..10000%, spacing [a, b] 1..10000%, scatter [a, b] −1000..1000%, rotation [a, b] −180..180°, modes: [fixed|random|pressure for size, spacing, scatter, rotation] (fixed: a; random: between a and b; pressure: a at the lightest pen pressure to b at the heaviest), rotation_relative_to_path. art: width 1..1000%, scale: {mode: proportional|stretch|betweenGuides, start, end: 0..1 of the art length}, direction: leftToRight|rightToLeft|topToBottom|bottomToTop, flip_along, flip_across. pattern: scale 1..10000%, spacing 0..10000%, fit: stretch|addSpace|approximate, flip_along, flip_across. scatter, art and pattern: colorization: {method: none|tints|tintsAndShades|hueShift, key: colour (hueShift: the art colour that becomes the stroke colour)}. calligraphic also: thinning −100..100%, mass, tremor, wiggle, fixation 0..100% (100: the nib keeps its angle; 0: it stays perpendicular to the stroke)}, preset?: dipPen|marker|brush|wiggly|splotchy|tracing (a calligraphic pen type's values, applied before params), newName?} edit a brush definition (strokes using it update) → {name}",
             has_doc,
             brush_options
         ),
@@ -151,6 +151,15 @@ pub fn specs() -> Vec<CommandSpec> {
             symbol_delete
         ),
         cmd!("symbol.duplicate", "Duplicate Symbol", [], None, "{name, newName?} → {name}", has_doc, symbol_duplicate),
+        cmd!(
+            "symbol.rename",
+            "Rename Symbol",
+            [],
+            None,
+            "{name, newName} rename a symbol (Document Resources › Rename); its instances follow → {name}",
+            has_doc,
+            symbol_rename
+        ),
         cmd!(
             "symbol.replace",
             "Replace Symbol",
@@ -433,6 +442,14 @@ fn brush_options(s: &mut Session, p: &Value) -> Result<Value> {
     let mut lib = brush::library(&s.doc()?.doc);
     let i = lib.iter().position(|b| b.name == name).ok_or_else(|| bad(C, format!("no brush named `{name}`")))?;
     let mut v = serde_json::to_value(&lib[i]).unwrap_or_default();
+    // A calligraphic preset's values first, then the params on top.
+    if let Some(preset) = str_param(p, "preset") {
+        let pr = brush::calligraphic_preset(preset).ok_or_else(|| bad(C, format!("unknown calligraphic preset `{preset}`")))?;
+        if !matches!(lib[i].kind, brush::BrushKind::Calligraphic(_)) {
+            return Err(bad(C, "presets are for calligraphic brushes"));
+        }
+        merge(&mut v, &serde_json::to_value(pr.brush()).unwrap_or_default());
+    }
     if let Some(params) = p.get("params") {
         merge(&mut v, params);
     }
@@ -1023,4 +1040,48 @@ fn symbol_adjust(s: &mut Session, p: &Value) -> Result<Value> {
         Ok(touched.len())
     })?;
     Ok(json!({ "count": count }))
+}
+
+fn symbol_rename(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "symbol.rename";
+    let name = name_param(p, C)?.to_string();
+    let new = str_param(p, "newName").map(str::trim).filter(|n| !n.is_empty()).ok_or_else(|| bad(C, "missing `newName`"))?.to_string();
+    {
+        let d = &s.doc()?.doc;
+        if !d.symbols.iter().any(|x| x.name == name) {
+            return Err(bad(C, format!("no symbol named `{name}`")));
+        }
+        if new != name && d.symbols.iter().any(|x| x.name == new) {
+            return Err(bad(C, format!("a symbol named `{new}` exists already")));
+        }
+    }
+    if new == name {
+        return Ok(json!({ "name": name }));
+    }
+    s.edit("Rename Symbol", |d, _| {
+        if let Some(sym) = d.symbols.iter_mut().find(|x| x.name == name) {
+            sym.name = new.clone();
+        }
+        let inst = instances_of(d, Some(&name));
+        for id in inst {
+            if let Some(n) = d.node_mut(id)
+                && let NodeKind::SymbolInstance { symbol, .. } = &mut n.kind
+            {
+                *symbol = new.clone();
+            }
+        }
+        // The natural size and the current symbol follow the name.
+        let sizes = d.unknown.get(SIZES_KEY).and_then(|m| m.get(&name)).cloned();
+        if let Some(sz) = sizes
+            && let Some(m) = d.unknown.get_mut(SIZES_KEY).and_then(Value::as_object_mut)
+        {
+            m.remove(&name);
+            m.insert(new.clone(), sz);
+        }
+        if d.unknown.get(CURRENT_SYMBOL).and_then(Value::as_str) == Some(name.as_str()) {
+            d.unknown.insert(CURRENT_SYMBOL.to_string(), json!(new));
+        }
+        Ok(())
+    })?;
+    Ok(json!({ "name": new }))
 }

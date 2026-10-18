@@ -130,6 +130,63 @@ pub fn invoke(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &V
             }
             form(app, id, "Export Paths to File", json!({"path": format!("{dir}/{stem}.ai"), "paths": "all"}), json!({"paths": names}))
         }
+        // File › Open Location, Create › From Screenshot / From Web Page, Send by Email.
+        "file.openLocation" => form(app, id, "Open Location", json!({"url": "https://"}), json!({})),
+        "file.create.screenshot" => {
+            form(app, id, "From Screenshot", json!({"mode": "screen", "delay": 0.0, "cursor": false}), json!({"mode": ["screen", "window", "region"]}))
+        }
+        "file.create.webPage" => form(app, id, "From Web Page", json!({"url": "https://", "width": 1280, "height": 1024}), json!({})),
+        "file.sendByEmail" => {
+            app.session.active()?;
+            form(
+                app,
+                id,
+                "Send by Email",
+                json!({"format": "png", "subject": format!("{stem}.png")}),
+                json!({"format": ["png", "jpg", "webp", "tif", "psd", "pdf"]}),
+            )
+        }
+        // Resource and animation exports (one layer = one frame or cell; see the layer-name tags).
+        "file.export.layersAsAnimation" => form(
+            app,
+            id,
+            "Export Layers as Animation",
+            json!({"path": format!("{dir}/{stem}.gif"), "format": "gif", "loop": true}),
+            json!({"format": ["gif", "webp", "mng"]}),
+        ),
+        "file.export.brush" => {
+            form(app, id, "Export as Brush (.gbr)", json!({"path": format!("{dir}/{stem}.gbr"), "spacing": 25.0, "color": false}), json!({}))
+        }
+        "file.export.imageHose" => form(
+            app,
+            id,
+            "Export Layers as Image Hose (.gih)",
+            json!({"path": format!("{dir}/{stem}.gih"), "selection": "incremental", "spacing": 25.0, "color": false}),
+            json!({"selection": redrob_photo_io::gbr_export::GIH_SELECTIONS}),
+        ),
+        "file.export.pattern" => form(app, id, "Export as Pattern (.pat)", json!({"path": format!("{dir}/{stem}.pat")}), json!({})),
+        "file.export.postScript" => form(
+            app,
+            id,
+            "Export as PostScript (.eps)",
+            json!({"path": format!("{dir}/{stem}.eps"), "encapsulated": true, "encoding": "ascii85", "preview": false, "level": 2}),
+            json!({"encoding": ["hex", "ascii85", "binary"]}),
+        ),
+        "layer.animationTags" => {
+            let (delay, disposal) = app
+                .session
+                .active()
+                .and_then(|d| d.active_layer.and_then(|id| d.doc.layer(id)))
+                .map(|l| redrob_photo_io::anim_layers::tags(&l.name))
+                .map(|t| {
+                    (
+                        t.delay_ms.unwrap_or(100),
+                        t.disposal.map_or("combine", |d| if d == redrob_photo_io::anim_layers::Disposal::Replace { "replace" } else { "combine" }),
+                    )
+                })
+                .unwrap_or((100, "combine"));
+            form(app, id, "Animation Frame Tags", json!({"delay": delay, "disposal": disposal, "clear": false}), json!({"disposal": ["combine", "replace"]}))
+        }
         _ => return None,
     }))
 }

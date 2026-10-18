@@ -56,27 +56,20 @@ pub(crate) fn set_paint(ctx: &mut RenderContext, p: &Paint, bounds: Rect, f: &Fr
 /// 6614 x 59055 px, is 1.56 GB as RGBA), past the decoder's 512 MB default. The web keeps it.
 const MAX_DECODE_ALLOC: u64 = if cfg!(target_arch = "wasm32") { 512 << 20 } else { 2 << 30 };
 
-/// Images that couldn't be decoded (and so drew nothing), counted for exports to report.
-static DECODE_FAILURES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-/// How many images have failed to decode so far (process-wide): an export compares the count
-/// before and after to say it left images out.
-pub fn decode_failures() -> u64 {
-    DECODE_FAILURES.load(std::sync::atomic::Ordering::Relaxed)
+/// Whether `bytes` are an image the renderer can draw (an export warns about one that is not,
+/// since it draws nothing). A full decode, under the renderer's own limits.
+pub fn image_decodes(bytes: &[u8]) -> bool {
+    decode(bytes).is_some()
 }
 
-/// `bytes` decoded within [`MAX_DECODE_ALLOC`]; a failure is counted in [`decode_failures`].
+/// `bytes` decoded within [`MAX_DECODE_ALLOC`].
 fn decode(bytes: &[u8]) -> Option<image::DynamicImage> {
-    let img = image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format().ok().and_then(|mut r| {
+    image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format().ok().and_then(|mut r| {
         let mut limits = image::Limits::default();
         limits.max_alloc = Some(MAX_DECODE_ALLOC);
         r.limits(limits);
         r.decode().ok()
-    });
-    if img.is_none() {
-        DECODE_FAILURES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    }
-    img
+    })
 }
 
 /// `img` shrunk, keeping its proportions, to fit a pixmap's sides (at most `u16::MAX` pixels).

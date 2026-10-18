@@ -4918,3 +4918,367 @@ imageTrace	Outline	Körvonal
 @msg	select a clone	jelölj ki egy klónt
 @msg	select an object	jelölj ki egy objektumot
 @msg	the copied object is no longer in this document	a másolt objektum már nincs ebben a dokumentumban
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	Útvonaleffektek
+	Clone Original	Eredeti klónozása
+	Clone Original…	Eredeti klónozása…
+	Attach Path	Útvonal csatolása
+	Attach Path…	Útvonal csatolása…
+	Bounding Box…	Határolókeret…
+	Fill Between Many	Kitöltés több között
+	Fill Between Many…	Kitöltés több között…
+	Fill Between Strokes	Kitöltés körvonalak között
+	Fill Between Strokes…	Kitöltés körvonalak között…
+	Power Clip	Erős vágás
+	Power Clip…	Erős vágás…
+	Power Clip (Inverse)	Erős vágás (inverz)
+	Release Power Clip	Erős vágás feloldása
+	Construct Grid	Rács szerkesztése
+	Construct Grid…	Rács szerkesztése…
+	Ellipse by 5 Points	Ellipszis 5 pontból
+	Ellipse by 5 Points…	Ellipszis 5 pontból…
+	Ellipse from Points	Ellipszis pontokból
+	Ellipse from Points…	Ellipszis pontokból…
+	Circle by 3 Points	Kör 3 pontból
+	Circle by 3 Points…	Kör 3 pontból…
+	Circle by Center and Radius	Kör középpont és sugár alapján
+	Line Segment…	Szakasz…
+	Parallel	Párhuzamos
+	Parallel…	Párhuzamos…
+	Perpendicular Bisector	Felezőmerőleges
+	Perpendicular Bisector…	Felezőmerőleges…
+	Angle Bisector	Szögfelező
+	Angle Bisector…	Szögfelező…
+	Tangent to Curve	Érintő a görbéhez
+	Tangent to Curve…	Érintő a görbéhez…
+	Transform by 2 Points	Átalakítás 2 ponttal
+	Transform by 2 Points…	Átalakítás 2 ponttal…
+	Show Handles…	Fogantyúk megjelenítése…
+	Measure Segments	Szakaszok mérése
+	Measure Segments…	Szakaszok mérése…
+	Ruler	Vonalzó
+	Ruler…	Vonalzó…
+	Interpolate Points	Pontok interpolálása
+	Interpolate Points…	Pontok interpolálása…
+	Knot	Csomó
+	Knot…	Csomó…
+	VonKoch	VonKoch
+	VonKoch…	VonKoch…
+	Gears	Fogaskerekek
+	Gears…	Fogaskerekek…
+	Embroidery Stitch	Hímzőöltés
+	Embroidery Stitch…	Hímzőöltés…
+	Stitch Sub-Paths	Alútvonalak összevarrása
+	Stitch Sub-Paths…	Alútvonalak összevarrása…
+	Hatches (Rough)	Sraffozás (durva)
+	Hatches (Rough)…	Sraffozás (durva)…
+	Sketch	Vázlat
+	Sketch…	Vázlat…
+	Join Type	Illesztés típusa
+	Join Type…	Illesztés típusa…
+	Slice…	Szelet…
+	Select Linked Object	Hivatkozott objektum kijelölése
+	Mask Background	Maszk háttere
+	Background	Háttér
+	Live Slice	Élő szelet
+	Fuse Slice	Szelet egyesítése
+	3D Marble	3D márvány
+	3D Wood	3D fa
+	Air Spray	Festékszóró
+	Aluminium	Alumínium
+	Apply Effects to Image Pixels	Effektek alkalmazása a kép pixeleire
+	Apply Filter Preset	Szűrő-előbeállítás alkalmazása
+	Apply to Selection	Alkalmazás a kijelölésre
+	Bevels	Lekerekítések
+	Black Hole	Fekete lyuk
+	Blobs	Pacák
+	Bloom	Ragyogás
+	Brilliance	Ragyogás
+	Bump	Dombor
+	Bumps	Domborítások
+	Button	Gomb
+	Canvas Bumps	Vászondombor
+	Chalk and Sponge	Kréta és szivacs
+	Channel to Alpha	Csatorna alfába
+	Chrome	Króm
+	Color Blindness	Színtévesztés
+	Colour Space:	Színtér:
+	Comics Cream	Képregény krém
+	Cracked Glass	Repedt üveg
+	Cubes	Kockák
+	Dark and Glow	Sötét és fény
+	Document Filters	Dokumentum szűrői
+	Dragee	Drazsé
+	Duochrome	Kétszínű
+	Duplicate Filter	Szűrő duplikálása
+	Embossed Leather	Dombornyomott bőr
+	Extract Channel	Csatorna kivonása
+	Fade to Black	Feketébe halványítás
+	Felt Feather	Filctoll
+	Fill and Overlays	Kitöltések és rátétek
+	Filter	Szűrő
+	Filter Gallery	Szűrőgaléria
+	Filter Presets	Szűrő-előbeállítások
+	Filter copy	Szűrő másolata
+	Filters	Szűrők
+	Glow	Fénylés
+	Glowing Metal	Izzó fém
+	Gold	Arany
+	Greyscale	Szürkeárnyalatos
+	HSL Noise	HSL-zaj
+	Ink Blot	Tintapaca
+	Ink Splash	Tintafröccs
+	Inner Shadow	Belső árnyék
+	Leopard Fur	Leopárdbunda
+	Light Eraser	Fényradír
+	Luminance to Alpha	Fénysűrűség alfába
+	Materials	Anyagok
+	Matte Jelly	Matt zselé
+	Metallized Paint	Metálfény
+	Neon	Neon
+	No filter matches the search.	Nincs a keresésnek megfelelő szűrő.
+	Noise Fill	Zajkitöltés
+	Non-realistic 3D Shaders	Nem valósághű 3D árnyalók
+	Open Filter Editor	Szűrőszerkesztő megnyitása
+	Paper Bump	Papírdombor
+	Pointillism	Pointillizmus
+	Protrusions	Kitüremkedések
+	Quadritone	Négytónusú
+	Ridges	Gerincek
+	Rough Paper	Durva papír
+	Rough Transparency	Durva átlátszóság
+	Roughen	Durvítás
+	Saturation Map	Telítettségtérkép
+	Select an object to apply a filter.	Jelöljön ki egy objektumot a szűrő alkalmazásához.
+	Silhouette	Sziluett
+	Smooth Edges	Lágy élek
+	Solarize	Szolarizáció
+	Specular Light	Tükröződő fény
+	Spikes	Tüskék
+	Spots Overlay	Pöttyös rátét
+	Stone Wall	Kőfal
+	Subregion:	Altartomány:
+	Swirl	Örvény
+	Textures	Textúrák
+	The document has no filters yet.	A dokumentumnak még nincsenek szűrői.
+	Thin Membrane	Vékony hártya
+	Torn Edges	Tépett élek
+	Translucent	Áttetsző
+	Transparency Utilities	Átlátszósági segédeszközök
+	Tritone	Háromtónusú
+	Watercolor	Akvarell
+	Waves	Hullámok
+	Turns:	Fordulatok:
+	Divergence:	Divergencia:
+	Clockwise	Óramutató járása szerint
+	Threshold:	Küszöb:
+	Grow/Shrink:	Növelés/zsugorítás:
+	Fill by:	Kitöltés alapja:
+	Visible Colors	Látható színek
+	Alpha	Alfa
+	Add to Fill	Hozzáadás a kitöltéshez
+	View rotation (Cmd+Shift+scroll turns the view)	Nézet forgatása (Cmd+Shift+görgetés forgat)
+	Lock Rotate View	Nézetforgatás zárolása
+	Fixation:	Rögzítés:
+	Dip Pen	Mártogatós toll
+	Marker	Filctoll
+	Brush	Ecset
+	Wiggly	Remegő
+	Splotchy	Pacás
+	Use Pressure	Nyomás használata
+	Live Simplify	Élő egyszerűsítés
+	Simplify (Live)…	Egyszerűsítés (élő)…
+	Split View	Osztott nézet
+	X-ray	Röntgen
+	Input Devices…	Beviteli eszközök…
+	Input Devices	Beviteli eszközök
+	Pressure Curves	Nyomásgörbék
+	Mouse	Egér
+	Pen / Stylus	Toll / ceruza
+	Touch	Érintés
+	Liquify Tools	Folyósító eszközök
+	Disabled	Letiltva
+	Grids	Rácsok
+	Main Grid	Fő rács
+	Add Grid	Rács hozzáadása
+	Remove Grid	Rács eltávolítása
+	Grid Options	Rácsbeállítások
+	Kind:	Fajta:
+	Subdivisions:	Felosztások:
+	Angles:	Szögek:
+	Gaps:	Hézagok:
+	Origin:	Origó:
+	Own color	Saját szín
+	Open a document to edit its grids.	Nyisson meg egy dokumentumot a rácsai szerkesztéséhez.
+	Add Script	Szkript hozzáadása
+	Edit Script	Szkript szerkesztése
+	Remove Script	Szkript eltávolítása
+	The document has no scripts.	A dokumentumnak nincsenek szkriptjei.
+	External:	Külső:
+	Embedded script	Beágyazott szkript
+	Add Embedded Script	Beágyazott szkript hozzáadása
+	Add External Script	Külső szkript hozzáadása
+	Source:	Forrás:
+	External file	Külső fájl
+	Code:	Kód:
+	Open a document to edit its scripts.	Nyisson meg egy dokumentumot a szkriptjei szerkesztéséhez.
+	Alignment Handles	Igazítási fogantyúk
+	Align (Shift: move the key object)	Igazítás (Shift: a kulcsobjektum mozog)
+	Stylesheet	Stíluslap
+	No rules yet. Add one and assign its class to objects.	Még nincs szabály. Adjon hozzá egyet, és rendelje osztályát objektumokhoz.
+	Add Rule	Szabály hozzáadása
+	Remove Rule	Szabály eltávolítása
+	Selector:	Szelektor:
+	Declarations:	Deklarációk:
+	Assign to Selection	Hozzárendelés a kijelöléshez
+	Remove from Selection	Eltávolítás a kijelölésről
+	Add CSS Rule	CSS-szabály hozzáadása
+	Edit CSS Rule	CSS-szabály szerkesztése
+	Remove CSS Rule	CSS-szabály eltávolítása
+	Assign CSS Class	CSS-osztály hozzárendelése
+	Remove CSS Class	CSS-osztály eltávolítása
+	Apply Stylesheet	Stíluslap alkalmazása
+	New Node	Új csomópont
+	Indent Node	Csomópont behúzása
+	Outdent Node	Csomópont kihúzása
+	Move Node	Csomópont áthelyezése
+	Set Path Data	Útvonaladatok beállítása
+	Round to:	Kerekítés:
+	Round Path Data	Útvonaladatok kerekítése
+	Connector Tool	Összekötő eszköz
+	Connect Objects	Objektumok összekötése
+	Reroute Connectors	Összekötők újravezetése
+	Connector Obstacle	Összekötő-akadály
+	Arrange Connected Objects	Összekötött objektumok elrendezése
+	Arrange Connected	Összekötöttek elrendezése
+	Routing:	Vezetés:
+	Orthogonal	Derékszögű
+	Polyline	Töröttvonal
+	Curvature:	Görbület:
+	3D Box Tool	3D doboz eszköz
+	3D Box	3D doboz
+	3D Box Options	3D doboz beállításai
+	Move Vanishing Point	Enyészpont mozgatása
+	Z:	Z:
+	Vanishing Point	Enyészpont
+	Infinite	Végtelen
+	Arrange in Grid	Rácsba rendezés
+	Arrange in Circle	Körbe rendezés
+	Dynamic Offset	Dinamikus eltolás
+	Fill Between Paths	Kitöltés útvonalak között
+	Linked Offset	Csatolt eltolás
+	Linked Offset Distance	Csatolt eltolás távolsága
+	Remove Overlaps	Átfedések eltávolítása
+	Unlink Live Object	Élő objektum leválasztása
+	Create Anchor	Hivatkozás létrehozása
+	Follow Link	Hivatkozás követése
+	Select All Anchors	Minden horgonypont kijelölése
+	Invert Anchor Selection	Horgonypont-kijelölés megfordítása
+	Aspect ratio:	Oldalarány:
+	Clip path	Vágóútvonal
+	DPI:	DPI:
+	Effect knots	Effektcsomók
+	Highlight color:	Kiemelés színe:
+	Interactivity	Interaktivitás
+	Link target:	Hivatkozás célja:
+	Link title:	Hivatkozás címe:
+	Path outline	Útvonal körvonala
+	Transform handles	Átalakítási fogantyúk
+	Plot…	Plotterre küldés…
+	Import Web Image…	Webkép importálása…
+	Check Spelling	Helyesírás-ellenőrzés
+	Edit Custom Dictionary	Egyéni szótár szerkesztése
+	The spell check is complete.	A helyesírás-ellenőrzés befejeződött.
+	Words checked	Ellenőrzött szavak
+	Check Again	Újraellenőrzés
+	Word Not Found:	Ismeretlen szó:
+	Change To:	Módosítás erre:
+	Suggestions:	Javaslatok:
+	No suggestions	Nincs javaslat
+	Ignore All	Mindet mellőzi
+	No words yet	Még nincsenek szavak
+	Word:	Szó:
+	Change Spelling	Helyesírás módosítása
+	Ignore Spelling	Helyesírás mellőzése
+	Add to Dictionary	Hozzáadás a szótárhoz
+	Remove from Dictionary	Eltávolítás a szótárból
+	Spelling Dictionaries	Helyesírási szótárak
+	Visible Hairlines	Látható hajszálvonalak
+	Rename…	Átnevezés…
+	Extract…	Kibontás…
+	Object Attributes	Objektum attribútumai
+	Object Attributes…	Objektum attribútumai…
+	Create Tiled Clones…	Csempézett klónok létrehozása…
+	Rename Symbol	Szimbólum átnevezése
+	Set Object Attribute	Objektumattribútum beállítása
+	Trace Pixel Art…	Pixelgrafika vektorizálása…
+	Objects to Marker	Objektumok jelölővé
+	Markers	Jelölők
+	Markers:	Jelölők:
+	Delete Marker	Jelölő törlése
+	SVG Font Editor	SVG-betűkészlet-szerkesztő
+	SVG Font Editor…	SVG-betűkészlet-szerkesztő…
+	New Font	Új betűkészlet
+	Delete Font	Betűkészlet törlése
+	No SVG font yet: make one, or turn glyph layers into one.	Még nincs SVG-betűkészlet: hozzon létre egyet, vagy alakítsa át a glifarétegeket.
+	Glyph Layers to Font	Glifarétegek betűkészletté
+	Glyph	Glifa
+	Advance	Előtolás
+	Curves	Görbék
+	Unicode:	Unicode:
+	Glyph name:	Glifa neve:
+	Advance:	Előtolás:
+	Add Glyph	Glifa hozzáadása
+	Remove Glyph	Glifa eltávolítása
+	Get Curves from Selection	Görbék a kijelölésből
+	Glyph to Objects	Glifa objektumokká
+	Kerning:	Alávágás:
+	Set Pair	Pár beállítása
+	Preview:	Előnézet:
+	Font to Glyph Layers	Betűkészlet glifarétegekké
+	New SVG Font	Új SVG-betűkészlet
+	SVG Fonts	SVG-betűkészletek
+	Delete SVG Font	SVG-betűkészlet törlése
+	SVG Font Options	SVG-betűkészlet beállításai
+	Set Glyph	Glifa beállítása
+	Set Kerning Pair	Alávágási pár beállítása
+	Preview SVG Font	SVG-betűkészlet előnézete
+	Glyph Layers to SVG Font	Glifarétegek SVG-betűkészletté
+	SVG Font to Glyph Layers	SVG-betűkészlet glifarétegekké
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	a WPG 2-es verziójú fájlok (WordPerfect 6 és újabb) még nem olvashatók: mentse a grafikát WPG 1 vagy más vektoros formátumban
+@msg	bad central record	hibás központi rekord
+@msg	downloading needs the desktop app	a letöltéshez az asztali alkalmazás szükséges
+@msg	give `url`: an http:// or https:// address of an image	adja meg az `url` értékét: egy kép http:// vagy https:// címét
+@msg	no zip end record	nincs zip-zárórekord
+@msg	not a CGM file	nem CGM-fájl
+@msg	not a CorelDRAW file	nem CorelDRAW-fájl
+@msg	not a WordPerfect Graphics file	nem WordPerfect Graphics-fájl
+@msg	not a zip	nem zip
+@msg	not an XFig file	nem XFig-fájl
+@msg	select an embedded image	jelöljön ki egy beágyazott képet
+@msg	the drawing has nothing Redrob Canvas reads	a rajz nem tartalmaz semmit, amit a Redrob Canvas olvasna
+@msg	the effect links to no object in this document	az effektus nem hivatkozik egyetlen objektumra sem ebben a dokumentumban
+@msg	the file draws nothing Redrob Canvas reads	a fájl nem rajzol semmit, amit a Redrob Canvas olvasna
+@msg	the file is empty	a fájl üres
+@msg	the font has a glyph for `{nu}` already	a betűkészletnek már van glifája a következőhöz: `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	a grafika nem rajzol semmit, amit a Redrob Canvas olvasna
+@msg	the metafile draws nothing Redrob Canvas reads	a metafájl nem rajzol semmit, amit a Redrob Canvas olvasna
+@msg	the object is gone	az objektum már nem létezik
+@msg	the preview bitmap can't be read	az előnézeti bitkép nem olvasható
+@msg	the preview bitmap is empty	az előnézeti bitkép üres
+@msg	the selected object has no link	a kijelölt objektumnak nincs hivatkozása
+@msg	the view's rotation is locked (View › Lock Rotate View)	a nézet forgatása zárolva van (Nézet › Nézetforgatás zárolása)
+@msg	truncated zip	csonka zip
+@msg	view.setRotation: missing `angle`	view.setRotation: hiányzik az `angle`
+@msg	{_1}: the dictionary is empty	{_1}: a szótár üres
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: a webalkalmazásnak nincsenek soros eszközei vagy fájljai: exportálja a HPGL-t és töltse le
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} nem olyan formátum, amelyet ez az olvasó ismer
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	a {kind}{ver} fájlok tömörített konténerek, amelyek rajzrekordjai nem dokumentáltak: exportálja a rajzot a CorelDRAW-ból SVG, PDF, EPS vagy EMF formátumban a megnyitáshoz
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: a rajzrekordok nem dokumentáltak, és a fájlnak nincs előnézeti bitképe: exportálja a rajzot SVG, PDF, EPS vagy EMF formátumban a megnyitáshoz
+@msg	{name}: compression method {m} isn't supported	{name}: a {m} tömörítési módszer nem támogatott
+@msg	{name}: not found among the document's images	{name}: nem található a dokumentum képei között
+@msg	{name}: too large	{name}: túl nagy
+@msg	{url}: {e}	{url}: {e}

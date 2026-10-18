@@ -3437,3 +3437,912 @@ curves	Smooth	Glätten
 	Popup palette	Pop-up-Palette
 	Smear	Verschmieren
 	Smudge Radius	Verwischradius
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Linear invertieren
+	Value Invert	Wert invertieren
+	Stretch Contrast HSV	Kontrast HSV spreizen
+	Color Enhance	Farbverstärkung
+	Extract Component…	Komponente extrahieren…
+	Alien Map…	Alien-Map…
+	Rotate Colors…	Farben rotieren…
+	Palette Map…	Palettenzuordnung…
+	Sample Colorize…	Nach Beispiel einfärben…
+	RGB Clip…	RGB beschneiden…
+	Dither…	Rastern…
+	Local Threshold…	Lokaler Schwellenwert…
+	Destripe…	Streifen entfernen…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Farbe zu Grau…
+	Fattal et al. 2002…	Fattal et al. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Weiche Palette…
+	Decompose…	Zerlegen…
+	Compose…	Zusammenfügen…
+	Recompose	Neu zusammenfügen
+	Rearrange Colormap…	Farbtabelle umordnen…
+	Set Colormap…	Farbtabelle setzen…
+	Border Average…	Randmittelwert…
+	Export Histogram…	Histogramm exportieren…
+	Variable Blur…	Variable Unschärfe…
+	Apply Lens…	Linse anwenden…
+	Mosaic Tiles…	Mosaikkacheln…
+	Newsprint…	Zeitungsdruck…
+	Curve Bend…	Kurvenbiegung…
+	Warp (Map)…	Verkrümmen (Karte)…
+	Bloom…	Überstrahlen…
+	Sobel…	Sobel…
+	Cartoon…	Cartoon…
+	Clothify…	Stoff…
+	Stencil Chrome…	Chrom-Schablone…
+	Bump Map…	Bumpmap…
+	Panorama Projection…	Panoramaprojektion…
+	Perlin Noise…	Perlin-Rauschen…
+	Plasma…	Plasma…
+	Solid Noise…	Gleichmäßiges Rauschen…
+	Add Border…	Rand hinzufügen…
+	Fog…	Nebel…
+	Old Photo…	Altes Foto…
+	Round Corners…	Ecken abrunden…
+	Tile…	Kacheln…
+	Depth Merge…	Tiefenverschmelzung…
+	Geometric Shapes…	Geometrische Formen…
+	Image Map Area…	Imagemap-Bereich…
+	Image Map From Slices	Imagemap aus Slices
+	Export Image Map…	Imagemap exportieren…
+	Clear Image Map	Imagemap löschen
+	Combine	Kombinieren
+	Clipping	Beschneidung
+	Color Space	Farbraum
+	Linear light	Lineares Licht
+	Copy upper to lower	Obere nach unten kopieren
+	Swap curves	Kurven tauschen
+	Mirror	Spiegeln
+	Gradient Source	Verlaufsquelle
+	Value Jitter	Wert-Jitter
+	Pipe	Sequenz
+	Brush file (.myb)	Pinseldatei (.myb)
+	Text as brush tip	Text als Pinselspitze
+	One character per dab along the stroke	Ein Zeichen pro Tupfer entlang des Strichs
+	Engine	Engine
+	Text Tip	Textspitze
+	Hatching	Schraffur
+	Particle	Partikel
+	Dyna	Dyna
+	Tangent Normal	Tangentiale Normale
+	MyPaint	MyPaint
+	Spray	Sprühen
+	Bristle	Borsten
+	Deform	Verformen
+	Separation	Abstand
+	Jitter	Jitter
+	Mass	Masse
+	Drag	Widerstand
+	Gravity	Schwerkraft
+	Particles	Partikel
+	Grid Width	Rasterbreite
+	Grid Height	Rasterhöhe
+	Diameter	Durchmesser
+	Aspect	Seitenverhältnis
+	Cluster	Cluster
+	Tip	Spitze
+	Perpendicular	Senkrecht
+	Shrink	Schrumpfen
+	Wire	Draht
+	Two	Zwei
+	Lens Zoom In	Linse vergrößern
+	Lens Zoom Out	Linse verkleinern
+	Swirl CW	Wirbel im Uhrzeigersinn
+	Swirl CCW	Wirbel gegen Uhrzeigersinn
+	Colour Deform	Farbverformung
+	Follow Cursor	Zeiger folgen
+	Weighted	Gewichtet
+	Angular	Winkelverteilung
+	Moiré	Moiré
+	Anti-aliased Pixel	Geglättetes Pixel
+	Magnetify	Magnetisieren
+	Simple Mode	Einfacher Modus
+	Hard Edge	Harte Kante
+	Connect Hairs	Haare verbinden
+	Ink Depletion	Tintenverbrauch
+	Soak Ink	Tinte aufsaugen
+	Mouse Pressure	Mausdruck
+	Composite Bristles	Borsten überlagern
+	Use Density	Dichte verwenden
+	Proportional	Proportional
+	Random Size	Zufällige Größe
+	Sample Input Layer	Eingabeebene abtasten
+	Colour per Particle	Farbe pro Partikel
+	Fill Background	Hintergrund füllen
+	Fixed Angle	Fester Winkel
+	Paint Connection	Verbindung zeichnen
+	Use Foreground Colour	Vordergrundfarbe verwenden
+	Width by Pressure	Breite nach Druck
+	Opacity by Pressure	Deckkraft nach Druck
+	Connection Line	Verbindungslinie
+	Even-odd Fill	Gerade-ungerade-Füllung
+	Division by Pressure	Teilung nach Druck
+	Separation by Pressure	Abstand nach Druck
+	Thickness by Pressure	Dicke nach Druck
+	Coloured Background	Farbiger Hintergrund
+	Distance Density	Dichte nach Abstand
+	Distance Opacity	Deckkraft nach Abstand
+	Use Undeformed Image	Unverformtes Bild verwenden
+	Random RGB	Zufälliges RGB
+	Random Opacity	Zufällige Deckkraft
+	Curve Opacity	Kurvendeckkraft
+	Width Range	Breitenbereich
+	Line Spacing	Linienabstand
+	Angle Offset	Winkelversatz
+	Particle Width	Partikelbreite
+	Particle Height	Partikelhöhe
+	Random Offset	Zufallsversatz
+	Ink Amount	Tintenmenge
+	Counter	Zähler
+	Grain Extract	Körnung extrahieren
+	Grain Merge	Körnung verschmelzen
+	LCh Hue	LCh-Farbton
+	LCh Chroma	LCh-Buntheit
+	LCh Color	LCh-Farbe
+	LCh Lightness	LCh-Helligkeit
+	Merge	Verschmelzen
+	Split	Aufteilen
+	Remove Holes	Löcher entfernen
+	Distort…	Verzerren…
+	Rounded Rectangle…	Abgerundetes Rechteck…
+	Anchor Layer	Ebene verankern
+	To New Layer	In neue Ebene
+	Layer Boundary Size…	Ebenengröße…
+	Layer to Image Size	Ebene auf Bildgröße
+	Resize Layer to Selection	Ebene auf Auswahlgröße
+	Crop Layer to Content	Ebene auf Inhalt zuschneiden
+	Threshold Alpha…	Alpha-Schwellwert…
+	Composite Options…	Kompositionsoptionen…
+	Zealous Crop	Gründlich zuschneiden
+	Foreground Select	Vordergrundauswahl
+	Stroke width	Strichbreite
+	Graph cut	Graph-Cut
+	Fast	Schnell
+	To Layer Mask	In Ebenenmaske
+	Draw a rough outline round the subject	Zeichnen Sie einen groben Umriss um das Motiv
+	Draw a rough outline round the subject first	Zeichnen Sie zuerst einen groben Umriss um das Motiv
+	Outline placed: paint over the foreground, then Preview or Select	Umriss gesetzt: Vordergrund übermalen, dann Vorschau oder Auswählen
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Motiv grob umreißen, Vordergrund übermalen, dann lässt die Matting-Engine die Maske wachsen
+	Paint over the foreground (hold Alt for background), then Preview or Select	Vordergrund übermalen (Alt für Hintergrund), dann Vorschau oder Auswählen
+	Display Filters…	Anzeigefilter…
+	Display Filters	Anzeigefilter
+	No Color Deficiency Simulation	Keine Farbsehschwäche simulieren
+	Simulate Protanopia	Protanopie simulieren
+	Simulate Deuteranopia	Deuteranopie simulieren
+	Simulate Tritanopia	Tritanopie simulieren
+	Clip Warning	Beschneidungswarnung
+	Clip warning	Beschneidungswarnung
+	Color deficiency:	Farbsehschwäche:
+	Protanopia	Protanopie
+	Deuteranopia	Deuteranopie
+	Tritanopia	Tritanopie
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Nur Anzeige: Die Filter ändern, was diese Ansicht zeigt, nie die Pixel.
+	Show All	Alles anzeigen
+	Padding Color	Rahmenfarbe
+	From Theme	Aus dem Thema
+	Dark Gray	Dunkelgrau
+	Medium Gray	Mittelgrau
+	Light Check Color	Helle Schachbrettfarbe
+	Dark Check Color	Dunkle Schachbrettfarbe
+	Light Check	Helles Schachbrett
+	Dark Check	Dunkles Schachbrett
+	Light check	Helles Schachbrett
+	Dark check	Dunkles Schachbrett
+	Custom Color	Eigene Farbe
+	Select Custom Color…	Eigene Farbe wählen…
+	Keep Padding in Show All	Rahmen in Alles anzeigen beibehalten
+	Keep padding in show all	Rahmen in Alles anzeigen beibehalten
+	Filter by tag	Nach Tag filtern
+	Clear filter	Filter löschen
+	Tags:	Tags:
+	Add tag	Tag hinzufügen
+	Remove tag	Tag entfernen
+	View Metadata…	Metadaten anzeigen…
+	Edit Metadata…	Metadaten bearbeiten…
+	Edit Metadata	Metadaten bearbeiten
+	Metadata Viewer	Metadaten-Betrachter
+	Write Metadata	Metadaten schreiben
+	Separate several values with semicolons	Mehrere Werte mit Semikolons trennen
+	No tags	Keine Tags
+	XMP	XMP
+	IPTC	IPTC
+	Text	Text
+	Rights	Rechte
+	IPTC Extension	IPTC-Erweiterung
+	Categories	Kategorien
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Prozedurbrowser
+	Plug-In Browser	Plug-in-Browser
+	Search procedures	Prozeduren suchen
+	{n} procedures	{n} Prozeduren
+	(no menu)	(kein Menü)
+	Menu: {path}	Menü: {path}
+	Parameters	Parameter
+	Available now	Jetzt verfügbar
+	Not available in the current state	Im aktuellen Zustand nicht verfügbar
+	Run	Ausführen
+	Select a procedure to read its parameters.	Prozedur auswählen, um ihre Parameter zu lesen.
+	Dashboard	Dashboard
+	Low memory: swap is nearly full. Save your work.	Wenig Speicher: Die Auslagerung ist fast voll. Speichern Sie Ihre Arbeit.
+	Memory	Speicher
+	Cache	Cache
+	Swap	Auslagerung
+	Swap: not reported on this platform	Auslagerung: auf dieser Plattform nicht gemeldet
+	CPU	CPU
+	CPU renderer	CPU-Renderer
+	uploads	Uploads
+	Misc: {jobs} jobs running · {n} samples	Sonstiges: {jobs} laufende Aufträge · {n} Messwerte
+	Log to File…	In Datei protokollieren…
+	Stop Logging	Protokollierung beenden
+	Device Status	Gerätestatus
+	Core Pointer	Hauptzeiger
+	Pen / Tablet	Stift / Tablett
+	Brush:	Pinsel:
+	Pattern:	Muster:
+	Gradient:	Verlauf:
+	Save Device Status	Gerätestatus speichern
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Jedes Gerät merkt sich Werkzeug, Farben, Pinsel, Muster und Verlauf; ein Gerätewechsel wechselt sie mit.
+	Selection Editor	Auswahleditor
+	No document open.	Kein Dokument geöffnet.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klicken, um die zusammenhängende Farbe dort mit dem Zauberstab auszuwählen (Umschalt fügt hinzu, Alt zieht ab)
+	Save to Channel	In Kanal speichern
+	To Path	In Pfad
+	Advanced options	Erweiterte Optionen
+	MyPaint Brushes	MyPaint-Pinsel
+	Import…	Importieren…
+	No MyPaint brushes yet. Import .myb files to list them here.	Noch keine MyPaint-Pinsel. .myb-Dateien importieren, um sie hier aufzulisten.
+	No brush matches the filter.	Kein Pinsel entspricht dem Filter.
+	Handle Transform	Griffpunkt-Transformation
+	3D Transform	3D-Transformation
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Neu ausrichten
+	Apply the transform so far and put a fresh box on the result	Die bisherige Transformation anwenden und einen neuen Rahmen auf das Ergebnis setzen
+	Camera	Kamera
+	Vanishing X:	Fluchtpunkt X:
+	Y:	Y:
+	Focal length:	Brennweite:
+	Local pivot	Lokaler Drehpunkt
+	Unified pivot	Gemeinsamer Drehpunkt
+	Close Cage	Käfig schließen
+	Reset Cage	Käfig zurücksetzen
+	Fill Plain Colour	Mit einfarbiger Fläche füllen
+	Fill the original position of the cage with the plain colour of its outline	Füllt die ursprüngliche Lage des Käfigs mit der einheitlichen Farbe seines Umrisses
+	{n} points	{n} Punkte
+	Click to place a handle	Klicken, um einen Griffpunkt zu setzen
+	Rotate and Scale	Drehen und Skalieren
+	{n} handles: {what}	{n} Griffpunkte: {what}
+	Reset Handles	Griffpunkte zurücksetzen
+	Remove Handles	Griffpunkte entfernen
+	Commit Cage Transform (Enter)	Käfig-Transformation anwenden (Eingabe)
+	Commit Handle Transform (Enter)	Griffpunkt-Transformation anwenden (Eingabe)
+	Commit 3D Transform (Enter)	3D-Transformation anwenden (Eingabe)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Käfig-Transformation: um den zu verformenden Teil klicken, den ersten Punkt klicken, um den Käfig zu schließen, dann die Punkte ziehen
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Griffpunkt-Transformation: ein bis vier Griffpunkte setzen und ziehen (einer verschiebt, zwei drehen und skalieren, drei scheren, vier geben Perspektive)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-Transformation: ziehen dreht um X und Y, Alt-Ziehen um Z; die Reiter Bewegen und Kamera bewegen Ebene und Kamera
+	Segment {n}	Segment {n}
+	Blending:	Übergang:
+	Coloring:	Färbung:
+	Midpoint:	Mittelpunkt:
+	Sinusoidal	Sinusförmig
+	Spherical (increasing)	Sphärisch (zunehmend)
+	Spherical (decreasing)	Sphärisch (abnehmend)
+	Step	Stufe
+	RGB	RGB
+	HSV (counter-clockwise)	HSV (gegen den Uhrzeigersinn)
+	HSV (clockwise)	HSV (im Uhrzeigersinn)
+	Replicate	Replizieren
+	Split the segment at its midpoint	Teilt das Segment an seinem Mittelpunkt
+	Replace the segment with two copies of itself	Ersetzt das Segment durch zwei Kopien von sich
+	Flip the whole gradient end to end	Kehrt den ganzen Verlauf um
+	Save as POV-Ray…	Als POV-Ray speichern…
+	Shaped Gradient (angular)	Formverlauf (winklig)
+	Shaped Gradient (spherical)	Formverlauf (sphärisch)
+	Shaped Gradient (dimpled)	Formverlauf (eingedellt)
+	Truncate	Abschneiden
+	Sawtooth wave	Sägezahnwelle
+	Triangular wave	Dreieckwelle
+	Tilt	Neigung
+	Wheel	Rad
+	Force	Kraft
+	Aspect Ratio	Seitenverhältnis
+	Fade length	Verblassungslänge
+	Random amount	Zufallsanteil
+	Save Preset	Vorgabe speichern
+	Paint Dynamics Editor	Malwerkzeug-Dynamik-Editor
+	Color from Gradient	Farbe aus Verlauf
+	Put this table on the current brush	Diese Tabelle auf den aktuellen Pinsel anwenden
+	Save the table as a named dynamics preset	Tabelle als benannte Dynamik-Vorgabe speichern
+	Give the dynamics preset a name first	Geben Sie der Dynamik-Vorgabe zuerst einen Namen
+	Edit the dynamics table (inputs × outputs)	Dynamik-Tabelle bearbeiten (Eingaben × Ausgaben)
+	Reset Plane	Ebene zurücksetzen
+	Click four corners to define a perspective plane, then clone along it	Vier Ecken anklicken, um eine Perspektivebene festzulegen, dann entlang ihr klonen
+	Click corner {n} of 4	Ecke {n} von 4 anklicken
+	Perspective plane: corner {n} of 4 set	Perspektivebene: Ecke {n} von 4 gesetzt
+	Perspective plane set; {key}-click a source, then paint	Perspektivebene gesetzt; mit {key} auf eine Quelle klicken, dann malen
+	Copy Path as SVG	Pfad als SVG kopieren
+	Export Path to SVG…	Pfad als SVG exportieren…
+	Import Path from SVG…	Pfad aus SVG importieren…
+	Paste Path from SVG	Pfad aus SVG einfügen
+	Copy All Paths as SVG	Alle Pfade als SVG kopieren
+	Export All Paths to SVG…	Alle Pfade als SVG exportieren…
+	Copied 1 path as SVG	1 Pfad als SVG kopiert
+	Copied {n} paths as SVG	{n} Pfade als SVG kopiert
+	Exported paths to {path}	Pfade nach {path} exportiert
+	Imported 1 path	1 Pfad importiert
+	Imported {n} paths	{n} Pfade importiert
+	The clipboard holds no SVG	Die Zwischenablage enthält kein SVG
+	Clipboard Image Brush	Zwischenablage-Bildpinsel
+	Paint with the image on the clipboard as the brush tip	Mit dem Bild aus der Zwischenablage als Pinselspitze malen
+	Export Layers as Animation…	Ebenen als Animation exportieren…
+	Export as Brush (.gbr)…	Als Pinsel exportieren (.gbr)…
+	Export Layers as Image Hose (.gih)…	Ebenen als animierten Pinsel exportieren (.gih)…
+	Export as Pattern (.pat)…	Als Muster exportieren (.pat)…
+	Animation Frame Tags…	Animationsbild-Tags…
+	Disposal	Übergang
+	Incremental	Fortlaufend
+	Xtilt	Neigung X
+	Ytilt	Neigung Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Als PostScript exportieren (.eps)…
+	Encapsulated	Gekapselt
+	Encoding	Kodierung
+	Hex	Hexadezimal
+	Ascii85	ASCII85
+	Binary	Binär
+	Open Location…	Adresse öffnen…
+	From Screenshot…	Aus Bildschirmfoto…
+	From Web Page…	Aus Webseite…
+	Send by Email…	Per E-Mail senden…
+	Url	URL
+	Cursor	Cursor
+	Region	Bereich
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Loop	Schleife
+	Buffer	Puffer
+	Buffers	Puffer
+	Cut Named…	Benannt ausschneiden…
+	Copy Named…	Benannt kopieren…
+	Copy Visible Named…	Sichtbares benannt kopieren…
+	Paste Named…	Benannt einfügen…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Keine benannten Puffer. Mit Bearbeiten > Puffer > Benannt kopieren… eine Kopie hier ablegen.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Keine benannten Puffer; zuerst Bearbeiten > Puffer > Benannt kopieren verwenden
+	Paste Buffer	Puffer einfügen
+	Paste Buffer in Place	Puffer an Ort und Stelle einfügen
+	Paste Buffer as New Image	Puffer als neues Bild einfügen
+	Rename Buffer…	Puffer umbenennen…
+	Delete Buffer	Puffer löschen
+	Paste as New	Als neu einfügen
+	Paste the buffer as a new layer	Den Puffer als neue Ebene einfügen
+	Paste the buffer as a new document	Den Puffer als neues Dokument einfügen
+	As	Als
+	In place	An Ort und Stelle
+	Into	Hinein
+	Modules…	Module…
+	Units…	Einheiten…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Keine ladbaren Module installiert. Filter > Plug-ins > Plug-in installieren… fügt eines hinzu.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Ein ausgeschaltetes Modul bleibt installiert, verschwindet aber aus den Menüs, bis es wieder eingeschaltet wird.
+	Module	Modul
+	Not installed	Nicht installiert
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Der Faktor gibt an, wie viele Einheiten ein Zoll ergeben (2,54 für Zentimeter, 72 für Punkt).
+	Identifier	Kennung
+	Factor	Faktor
+	Digits	Stellen
+	Symbol	Symbol
+	Abbreviation	Abkürzung
+	Singular	Einzahl
+	Plural	Mehrzahl
+	Delete Unit	Einheit löschen
+	New unit	Neue Einheit
+	Add Unit	Einheit hinzufügen
+	That identifier is already a unit	Diese Kennung ist bereits eine Einheit
+	Custom units	Eigene Einheiten
+	Disabled modules	Deaktivierte Module
+	Input Devices…	Eingabegeräte…
+	Input Controllers…	Eingabesteuerungen…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Der Stift ist der Tablettstift, den die Plattform meldet. Deaktiviert verhält er sich wie eine Maus.
+	Device	Gerät
+	Invert tilt X	Neigung X umkehren
+	Invert tilt Y	Neigung Y umkehren
+	Swap tilt	Neigung tauschen
+	Pressure scale	Druckskalierung
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Radereignisse sind up, down, left oder right mit optionalem Shift+, Ctrl+ und Alt+; Tastaturereignisse sind Kürzel wie Ctrl+Alt+Up. Die Aktion ist eine Befehls-ID, optional gefolgt von JSON-Parametern.
+	Keyboard	Tastatur
+	Controller	Steuerung
+	Event	Ereignis
+	Remove mapping	Zuordnung entfernen
+	New mapping	Neue Zuordnung
+	Add Mapping	Zuordnung hinzufügen
+	Disabled	Deaktiviert
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} Einträge; Klick setzt die Vordergrundfarbe, Doppelklick bearbeitet
+	Entry	Eintrag
+	Add an entry with the foreground colour	Einen Eintrag mit der Vordergrundfarbe hinzufügen
+	Delete the last entry	Den letzten Eintrag löschen
+	Use selected	Ausgewählten verwenden
+	Ink	Tinte
+	MyPaint Brush	MyPaint-Pinsel
+	Nib	Feder
+	Opaque	Deckkraft
+	Erase with brush	Mit dem Pinsel radieren
+	Import .myb…	.myb importieren…
+	Add a MyPaint brush file to the presets	Eine MyPaint-Pinseldatei zu den Vorgaben hinzufügen
+	Imported MyPaint brush {name}	MyPaint-Pinsel {name} importiert
+	How much pressure changes the nib size	Wie stark der Druck die Federgröße ändert
+	How much the pen's tilt turns and stretches the nib	Wie stark die Stiftneigung die Feder dreht und streckt
+	How much a fast stroke thins the nib	Wie stark ein schneller Strich die Feder verdünnt
+	Added to the preset's logarithmic radius	Wird zum logarithmischen Radius der Vorgabe addiert
+	Operation…	Operation…
+	Operation name or id	Name oder ID der Operation
+	{n} operations	{n} Operationen
+	Choose an operation	Eine Operation wählen
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu-Konsole…
+	Load Scripts Folder…	Skriptordner laden…
+	Python Console…	Python-Konsole…
+	Load Plug-ins Folder…	Plug-in-Ordner laden…
+	Loaded {n} scripts	{n} Skripte geladen
+	Loaded {n} Python plug-ins	{n} Python-Plug-ins geladen
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 mit call(command, **params), message(text) und print(); jeder Engine-Befehl ist über call erreichbar.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: jeder Engine-Befehl ist eine Prozedur, (file.new "width" 640 "height" 480); Prozeduren definieren und mit script-fu-register registrieren.
+	Code	Code
+	Cmd+Enter runs the code	Cmd+Eingabe führt den Code aus
+	Clear Log	Protokoll löschen
+	Dodge…	Abwedeln…
+	Burn…	Nachbelichten…
+	Cross-Channel Adjustment…	Kanalübergreifende Korrektur…
+	Slope, Offset, Power…	Steigung, Versatz, Potenz…
+	Index Colors…	Indizierte Farben…
+	Raindrops…	Regentropfen…
+	Polygon Blur…	Polygon-Weichzeichner…
+	Edge Detection…	Kantenerkennung…
+	Emboss (Directional)…	Relief (gerichtet)…
+	Phong Bump Map…	Phong-Bumpmap…
+	Palettize…	Palettieren…
+	Height to Normal Map…	Höhe zu Normal Map…
+	Normalize Normal Map	Normal Map normalisieren
+	Maximize Channel	Kanal maximieren
+	Minimize Channel	Kanal minimieren
+	Propagate Colors…	Farben ausbreiten…
+	Reset Transparent	Transparente zurücksetzen
+	Mean Removal	Mittelwertentfernung
+	Wavelet Noise Reducer…	Wavelet-Rauschminderung…
+	Random Pick…	Zufällige Auswahl…
+	G'MIC Filter…	G'MIC-Filter…
+	G'MIC executable	G'MIC-Programmdatei
+	G'MIC update folder	G'MIC-Update-Ordner
+	Add scene at playhead	Szene am Abspielkopf hinzufügen
+	Add to favourites	Zu Favoriten hinzufügen
+	After	Danach
+	Arithmetic	Arithmetisch
+	Attach audio…	Audio anhängen…
+	Before	Davor
+	Blend details	Mischdetails
+	Blend mode	Mischmodus
+	Blend mode and opacity	Mischmodus und Deckkraft
+	Capture now	Jetzt aufnehmen
+	Clone previous keyframe here	Vorheriges Schlüsselbild hierher klonen
+	Comment	Kommentar
+	Display settings	Anzeigeeinstellungen
+	Duplicate keyframe	Schlüsselbild duplizieren
+	Duplicate keyframe here	Schlüsselbild hierher duplizieren
+	Duration	Dauer
+	End	Ende
+	Export timelapse…	Zeitraffer exportieren…
+	Favourites	Favoriten
+	Frame rate	Bildrate
+	HSX	HSX
+	Hidden	Ausgeblendet
+	Key the active layer:	Aktive Ebene keyen:
+	Misc	Sonstige
+	Mute audio	Audio stummschalten
+	Negative	Negativ
+	New keyframe	Neues Schlüsselbild
+	New keyframe here	Neues Schlüsselbild hier
+	Next tint	Farbton danach
+	No animated layers: add a keyframe to the active layer to animate it.	Keine animierten Ebenen: fügen Sie der aktiven Ebene ein Schlüsselbild hinzu, um sie zu animieren.
+	No animation curves yet.	Noch keine Animationskurven.
+	No scenes yet.	Noch keine Szenen.
+	Opacity per frame	Deckkraft pro Bild
+	Previous tint	Farbton davor
+	Quadratic	Quadratisch
+	Recorder	Rekorder
+	Remove from favourites	Aus Favoriten entfernen
+	Remove keyframe	Schlüsselbild entfernen
+	Remove scene	Szene entfernen
+	Scale X	Skalierung X
+	Scale Y	Skalierung Y
+	Scene name	Szenenname
+	Show onion skins	Zwiebelhaut anzeigen
+	Start	Anfang
+	Start recording	Aufnahme starten
+	Stop recording	Aufnahme stoppen
+	Storyboard	Storyboard
+	Thumbnail size	Miniaturgröße
+	frames	Bilder
+	opacity	Deckkraft
+	rotation	Drehung
+	scaleX	Skalierung X
+	scaleY	Skalierung Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} Schnappschüsse in {dir}
+	2-Point Perspective	2-Punkt-Perspektive
+	Assistant colour	Assistentenfarbe
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Assistentenmagnetismus: wie weit ein Strich vom Assistenten abweichen darf und trotzdem angezogen wird (1000 = immer)
+	Assistant opacity	Assistentendeckkraft
+	Concentric Ellipse	Konzentrische Ellipse
+	Curvilinear Perspective	Kurvilineare Perspektive
+	Eraser snaps	Radierer rastet ein
+	Fish-Eye Point	Fischaugenpunkt
+	Handles	Griffe
+	Infinite Ruler	Unendliches Lineal
+	Limit to area	Auf Bereich begrenzen
+	Minor subdivisions	Nebenunterteilungen
+	Own colour	Eigene Farbe
+	Perspective Ellipse	Perspektivische Ellipse
+	Previews	Vorschauen
+	Show the snapped stroke's line while painting	Linie des eingerasteten Strichs beim Malen anzeigen
+	Show this assistant's control handles	Steuergriffe dieses Assistenten anzeigen
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Striche folgen den Malassistenten (Strg+Umschalt+L)
+	Two extra handles clip where the assistant draws and snaps	Zwei zusätzliche Griffe begrenzen, wo der Assistent zeichnet und einrastet
+	Vertical ruler	Vertikales Lineal
+	Painting Assistants	Malassistenten
+	Assistant Previews	Assistentenvorschauen
+	Drag fill	Ziehfüllung
+	Dragging fills every region passed over	Ziehen füllt jeden überfahrenen Bereich
+	Exclude colour	Farbe ausschließen
+	Exclude transparent	Transparentes ausschließen
+	Fill mode	Füllmodus
+	No region is fully enclosed by the shape	Keine Region ist vollständig von der Form umschlossen
+	Only regions coloured like the first one	Nur Bereiche in der Farbe des ersten
+	Reference	Referenz
+	Similar only	Nur ähnliche
+	Soften the filled edge	Füllkante weichzeichnen
+	Spread stops at the darkest pixels (lines)	Die Ausdehnung stoppt an den dunkelsten Pixeln (Linien)
+	Spread stops at the most opaque pixels	Die Ausdehnung stoppt an den deckendsten Pixeln
+	Stop at darkest	Am Dunkelsten stoppen
+	Stop at opaque	Am Deckenden stoppen
+	Similar Colours	Ähnliche Farben
+	Colour Labels	Farbetiketten
+	All Regions	Alle Bereiche
+	Specific Colour	Bestimmte Farbe
+	Transparent Regions	Transparente Bereiche
+	Surrounded By	Umgeben von
+	Fill with Foreground Color (Opacity)	Mit Vordergrundfarbe füllen (Deckkraft)
+	Fill with Background Color (Opacity)	Mit Hintergrundfarbe füllen (Deckkraft)
+	Fill with Pattern (Opacity)	Mit Muster füllen (Deckkraft)
+	Straight Line Tool	Gerade-Linie-Werkzeug
+	Multibrush Tool	Multipinsel-Werkzeug
+	Dynamic Brush Tool	Dynamischer-Pinsel-Werkzeug
+	Enclose and Fill Tool	Umschließen-und-füllen-Werkzeug
+	Colorize Mask Tool	Kolorierungsmasken-Werkzeug
+	Reference Images Tool	Referenzbilder-Werkzeug
+	Alternating	Abwechselnd
+	Shaped Gradient (follows the selection)	Formverlauf (folgt der Auswahl)
+	Clear copies	Kopien löschen
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Strg+Klick setzt eine Kopie, Strg+Alt+Klick entfernt eine
+	How heavily the stroke lags behind the pointer	Wie stark der Strich dem Zeiger hinterherhinkt
+	How quickly the stroke's motion dies away	Wie schnell die Bewegung des Strichs abklingt
+	Keep one-pixel lines single width without L corners	Einpixel-Linien bleiben einfach breit, ohne L-Ecken
+	Mirror all tools	Alle Werkzeuge spiegeln
+	Multibrush	Multipinsel
+	Pixel smoothing	Pixelglättung
+	The painting symmetry mirrors fills, gradients and retouching too	Die Malsymmetrie spiegelt auch Füllungen, Verläufe und Retuschen
+	The painting symmetry mirrors this tool's output too	Die Malsymmetrie spiegelt auch die Ausgabe dieses Werkzeugs
+	X interval	X-Abstand
+	Y interval	Y-Abstand
+	Mirror / Rotation	Spiegel / Rotation
+	Translate	Verschieben
+	Copy Translate	Kopie verschieben
+	Cursor shape	Cursorform
+	Outline shape	Umrissform
+	Show outline while painting	Umriss beim Malen anzeigen
+	Effective outline size	Effektive Umrissgröße
+	Tool icon	Werkzeugsymbol
+	Arrow	Pfeil
+	Crosshair	Fadenkreuz
+	Small dot	Kleiner Punkt
+	No cursor	Kein Cursor
+	Triangle right	Dreieck rechts
+	Triangle left	Dreieck links
+	No outline	Kein Umriss
+	Instant preview	Sofortvorschau
+	Instant preview megapixels	Megapixel für die Sofortvorschau
+	Add…	Hinzufügen…
+	Auto update	Automatisch aktualisieren
+	Canvas input profile	Leinwand-Eingabeprofil
+	Clean up	Aufräumen
+	Clear key strokes	Schlüsselstriche löschen
+	Colorize Mask	Kolorierungsmaske
+	Draw in the area below to test pressure, tilt and rotation	Im Bereich unten zeichnen, um Druck, Neigung und Rotation zu testen
+	Edge detection	Kantenerkennung
+	Edit key strokes	Schlüsselstriche bearbeiten
+	Embed	Einbetten
+	Fill only inside the line art's pixels	Nur innerhalb der Pixel der Strichzeichnung füllen
+	Gap close	Lücken schließen
+	Input API	Eingabe-API
+	Keep aspect	Seitenverhältnis halten
+	Limit to layer	Auf Ebene begrenzen
+	Mouse	Maus
+	Next Preset	Nächste Vorgabe
+	No samples yet	Noch keine Messwerte
+	Opacity +	Deckkraft +
+	Opacity -	Deckkraft -
+	Pasted image	Eingefügtes Bild
+	Peak pressure	Spitzendruck
+	Pen	Stift
+	Previous Preset	Vorherige Vorgabe
+	Reference Images	Referenzbilder
+	Rotate Left	Nach links drehen
+	Rotate Right	Nach rechts drehen
+	Sample rate	Abtastrate
+	Screen mapping	Bildschirmzuordnung
+	Show output	Ausgabe anzeigen
+	Show the key strokes over the canvas	Schlüsselstriche über der Leinwand anzeigen
+	Show with all tools	Mit allen Werkzeugen anzeigen
+	Size +	Größe +
+	Size -	Größe -
+	Speed source	Geschwindigkeitsquelle
+	Store the pixels in the set; off, link to the file	Pixel im Set speichern; aus: mit der Datei verknüpfen
+	Tablet Settings…	Tablett-Einstellungen…
+	Tablet Tester	Tablett-Tester
+	The clipboard is not available	Die Zwischenablage ist nicht verfügbar
+	The next key strokes keep their regions clear	Die nächsten Schlüsselstriche lassen ihre Bereiche frei
+	Tilt offset	Neigungsversatz
+	Touch Docker	Touch-Leiste
+	Transparent key	Transparenter Schlüssel
+	Update	Aktualisieren
+	Canvas Input	Leinwand-Eingabe
+	Canvas Input…	Leinwand-Eingabe…
+	Pan key	Verschiebetaste
+	Zoom in key	Vergrößerungstaste
+	Zoom out key	Verkleinerungstaste
+	Rotate key	Drehtaste
+	Middle button	Mittlere Taste
+	Stylus button	Stifttaste
+	Pick modifier	Pipetten-Modifikator
+	Shift wheel rotates	Umschalt+Rad dreht
+	Tablet	Tablett
+	Trackpad	Trackpad
+	Pick	Pipette
+	No action	Keine Aktion
+	No pick	Keine Pipette
+	Scroll	Scrollen
+	Rotate View (hold)	Ansicht drehen (halten)
+	Tilt offset x	Neigungsversatz X
+	Tilt offset y	Neigungsversatz Y
+	Tablet speed source	Geschwindigkeitsquelle des Tabletts
+	Tablet api	Tablett-API
+	Tablet screen mapping	Bildschirmzuordnung des Tabletts
+	Pointer	Zeiger
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rastertyp
+	Isometric left angle	Isometrischer Winkel links
+	Isometric right angle	Isometrischer Winkel rechts
+	Isometric vertical lines	Isometrische vertikale Linien
+	Rectangular	Rechteckig
+	Isometric	Isometrisch
+	Node	Knoten
+	Extension	Verlängerung
+	Intersection	Schnittpunkt
+	Alt-click a bottom patch to set it to the foreground colour	Alt+Klick auf ein unteres Feld setzt es auf die Vordergrundfarbe
+	Apply:	Anwenden:
+	Brushes this large preview coarsely while painting	Pinsel dieser Größe werden beim Malen grob vorgeschaut
+	Click the disc to add shape points	Auf die Scheibe klicken, um Formpunkte hinzuzufügen
+	Close Shape	Form schließen
+	Color Space:	Farbraum:
+	Common Colors	Häufige Farben
+	Components:	Komponenten:
+	Continuous Mode	Stufenloser Modus
+	Current pattern	Aktuelles Muster
+	Depth:	Tiefe:
+	Display:	Anzeige:
+	Dynamic Hue Ring	Dynamischer Farbtonring
+	Enable Pen Settings	Stifteinstellungen aktivieren
+	Erase mode keeps its own opacity on this preset	Der Radiermodus behält in dieser Vorgabe seine eigene Deckkraft
+	Erase mode keeps its own size on this preset	Der Radiermodus behält in dieser Vorgabe seine eigene Größe
+	Eraser Opacity	Radierer-Deckkraft
+	Eraser Size	Radierergröße
+	Fit Panel Width	An Bedienfeldbreite anpassen
+	Gamut Mask	Gamut-Maske
+	Gradient Steps	Verlaufsschritte
+	Gradient ends: Alt-click to set from the foreground	Verlaufsenden: Alt+Klick übernimmt die Vordergrundfarbe
+	Hue Steps	Farbtonschritte
+	Instant Preview	Sofortvorschau
+	LUT Management (OCIO)	LUT-Verwaltung (OCIO)
+	Lightness Strength	Helligkeitsstärke
+	Lock Color	Farbe sperren
+	Luma:	Luma:
+	Minimum Hardness	Minimale Härte
+	Minimum Strength	Minimale Stärke
+	Model:	Modell:
+	Off: every sensor is ignored; the curves are kept	Aus: alle Sensoren werden ignoriert, die Kurven bleiben
+	Out of gamut	Außerhalb des Gamuts
+	Panel colours are not shown through the display transform	Bedienfeldfarben werden nicht durch die Anzeigetransformation gezeigt
+	Patch Count	Anzahl Felder
+	Patch Size	Feldgröße
+	Patches:	Felder:
+	Pattern Scale	Musterskalierung
+	Pop-up Size	Pop-up-Größe
+	Proof to Painting Space	Proof im Malfarbraum
+	Recent Colors	Zuletzt verwendete Farben
+	Remove Last Shape	Letzte Form entfernen
+	Rotate Mask	Maske drehen
+	Saturation Steps	Sättigungsschritte
+	Selector settings	Auswahleinstellungen
+	Selector:	Auswahl:
+	Shade Count	Anzahl Schattierungen
+	Shade Ring by Value	Ring nach Helligkeit schattieren
+	Shade Selector	Schattierungsauswahl
+	Shade Size	Schattierungsgröße
+	Shade Spread	Schattierungsspanne
+	Shade Strip	Schattierungsleiste
+	Shades	Schattierungen
+	Share Curve Across Settings	Kurve für alle Einstellungen teilen
+	Show as Fractions	Als Bruchteile anzeigen
+	Soften Edge	Kante weichzeichnen
+	Source:	Quelle:
+	Style:	Stil:
+	The tip's grey levels are painted into the colour as lightness	Die Graustufen der Spitze werden als Helligkeit in die Farbe gemalt
+	Threshold the tip mask for crisp pixel strokes	Spitzenmaske schwellen für scharfe Pixelstriche
+	Tip as Lightness Map	Spitze als Helligkeitskarte
+	Update:	Aktualisierung:
+	Value Steps	Helligkeitsschritte
+	Value on the Ring	Helligkeit auf dem Ring
+	Zoom Pop-up	Zoom-Pop-up
+	Duplicate	Duplizieren
+	Gamma	Gamma
+	Sharpness	Schärfe
+	Length over which the value goes from 0 to 1	Länge, über die der Wert von 0 auf 1 steigt
+	Start over past the length instead of holding the end value	Nach der Länge von vorn beginnen statt den Endwert zu halten
+	Pressure In	Druck (nur ansteigend)
+	X-Tilt	X-Neigung
+	Y-Tilt	Y-Neigung
+	Tilt Direction	Neigungsrichtung
+	Tilt Elevation	Neigungshöhe
+	Time	Zeit
+	Fuzzy Stroke	Zufall pro Strich
+	Tip Scale:	Spitzenmaßstab:
+	Initial size as a share of the bitmap's size	Anfangsgröße als Anteil der Bitmapgröße
+	Tip Rotation:	Spitzendrehung:
+	Initial rotation of the tip	Anfangsdrehung der Spitze
+	No anti-aliasing: the dab's pixels are fully on or off	Keine Kantenglättung: die Pixel des Tupfers sind ganz an oder aus
+	Align Outline to Pixel Grid	Umriss am Pixelraster ausrichten
+	The brush outline snaps to the pixels the dab fills	Der Pinselumriss rastet auf die Pixel ein, die der Tupfer füllt
+	Tip Mode:	Spitzenmodus:
+	(no colour bitmap: paints the brush colour)	(keine Farb-Bitmap: malt mit der Pinselfarbe)
+	Neutral Point	Neutralpunkt
+	Canvas Only: hide the panels around the canvas	Nur Leinwand: die Bedienfelder um die Leinwand ausblenden
+	Presets kept in the history	In der Chronik behaltene Vorgaben
+	Clear the history	Chronik leeren
+	No presets used yet	Noch keine Vorgaben verwendet
+	Forget this preset	Diese Vorgabe vergessen
+	Ten Brushes	Zehn Pinsel
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Vorgaben zehn Plätzen zuweisen; ein Platz erneut aktiviert kehrt zur vorigen Vorgabe zurück
+	Clear this slot	Diesen Platz leeren
+	Assign current	Aktuelle zuweisen
+	Browse a folder of reference images	Einen Ordner mit Referenzbildern öffnen
+	No folder	Kein Ordner
+	Next image	Nächstes Bild
+	Previous image	Vorheriges Bild
+	Pick an image to show it here	Ein Bild auswählen, um es hier zu zeigen
+	Search actions and commands	Aktionen und Befehle suchen
+	No matching action	Keine passende Aktion
+	Search Actions…	Aktionen suchen…
+	Brush History	Pinselchronik
+	Color Image	Farbbild
+	Lightness Map	Helligkeitskarte
+	Static	Fest
+	Move to Top	Nach oben
+	Bubble Up	Eins nach oben
+	Clear the scratch pad to white	Den Schmierblock weiß leeren
+	Fill the scratch pad with the background colour	Den Schmierblock mit der Hintergrundfarbe füllen
+	Fill the scratch pad with the current gradient	Den Schmierblock mit dem aktuellen Verlauf füllen
+	Fill the scratch pad with the current image	Den Schmierblock mit dem aktuellen Bild füllen
+	Fill the scratch pad with the preset's icon	Den Schmierblock mit dem Symbol der Vorgabe füllen
+	Reload the stored preset, discarding the tweaks	Die gespeicherte Vorgabe neu laden und die Änderungen verwerfen
+	BG	HG
+	Icon	Symbol
+	Thumbnail:	Miniatur:
+	Stroke preview	Strichvorschau
+	Scratch pad	Schmierblock
+	Icon library	Symbolbibliothek
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Lokale Auswahl aktivieren
+	Add Curve Key	Kurvenschlüssel hinzufügen
+	Add Filter…	Filter hinzufügen…
+	Add Local Selection	Lokale Auswahl hinzufügen
+	Add Scene	Szene hinzufügen
+	Add Transform Key	Transformationsschlüssel hinzufügen
+	Alpha into Mask	Alpha in Maske
+	Attach Audio…	Audio anhängen…
+	Backup count	Anzahl der Sicherungen
+	Capture Snapshot	Schnappschuss aufnehmen
+	Change Clone Source…	Kopierquelle ändern…
+	Clone Keyframe	Schlüsselbild klonen
+	Clone Layer	Ebene klonen
+	Clones Array…	Klon-Anordnung…
+	Colorize Mask Properties…	Eigenschaften der Kolorierungsmaske…
+	Convert	Umwandeln
+	Convert Group to Animated Layer	Gruppe in animierte Ebene umwandeln
+	Convert to Paint Layer	In Malebene umwandeln
+	Copy Keyframe	Schlüsselbild kopieren
+	Curved	Gekrümmt
+	Duplicate Keyframe	Schlüsselbild duplizieren
+	Edit Generated Fill…	Generierte Füllung bearbeiten…
+	Edit Transform Mask…	Transformationsmaske bearbeiten…
+	Ellipse	Ellipse
+	Export Storyboard…	Storyboard exportieren…
+	Export Timelapse…	Zeitraffer exportieren…
+	File Layer Properties…	Eigenschaften der Dateiebene…
+	File Layer…	Dateiebene…
+	Filter Layer…	Filterebene…
+	Filter Mask…	Filtermaske…
+	Frame rate limit	Bildratenbegrenzung
+	Frames	Bilder
+	Freeze Live Layer	Live-Ebene einfrieren
+	High quality	Hohe Qualität
+	Import Animation Frames…	Animationsbilder importieren…
+	Import Image as…	Bild importieren als…
+	Import Video Animation…	Videoanimation importieren…
+	Input controllers	Eingabe-Controller
+	Input devices	Eingabegeräte
+	Invisible	Unsichtbar
+	Layer Color Space…	Farbraum der Ebene…
+	Layers by State	Ebenen nach Zustand
+	Local Selection	Lokale Auswahl
+	Locked	Gesperrt
+	Move Clone…	Klon verschieben…
+	Move Keyframe	Schlüsselbild verschieben
+	Multigrid…	Mehrfachraster…
+	Mute Audio	Audio stummschalten
+	New Keyframe	Neues Schlüsselbild
+	Onion Skin…	Zwiebelschicht…
+	Pan	Verschieben
+	Pixel grid threshold	Pixelraster-Schwelle
+	Reload File Layer	Dateiebene neu laden
+	Remove Audio	Audio entfernen
+	Remove Curve Key	Kurvenschlüssel entfernen
+	Remove Filter	Filter entfernen
+	Remove Keyframe	Schlüsselbild entfernen
+	Remove Local Selection	Lokale Auswahl entfernen
+	Remove Transform Key	Transformationsschlüssel entfernen
+	Remove Transform Mask	Transformationsmaske entfernen
+	Render Animation…	Animation rendern…
+	Save Merged…	Zusammengefügt speichern…
+	Scaling filter	Skalierungsfilter
+	Screentone…	Rasterton…
+	Script…	Skript…
+	Set Filter…	Filter festlegen…
+	Shear	Scherung
+	Show Output	Ausgabe anzeigen
+	Split Alpha	Alpha abtrennen
+	Start Recording	Aufnahme starten
+	Stop Recording	Aufnahme beenden
+	Swap directory	Auslagerungsverzeichnis
+	Ten scripts	Zehn Skripte
+	Threads	Threads
+	Transform Mask…	Transformationsmaske…
+	Unlocked	Entsperrt
+	Update Local Selection	Lokale Auswahl aktualisieren
+	Write as Alpha	Als Alpha schreiben
+	to File Layer…	in Dateiebene…
+	to Filter Mask…	in Filtermaske…
+	to Paint Layer	in Malebene
+	to Selection Mask	in Auswahlmaske
+	to Transparency Mask	in Transparenzmaske

@@ -3430,3 +3430,849 @@ curves	Smooth	Haluskan
 	Popup palette	Palet sembul
 	Smear	Oles
 	Smudge Radius	Radius smudge
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Inversi linier
+	Value Invert	Inversi nilai
+	Stretch Contrast HSV	Regangkan kontras HSV
+	Color Enhance	Tingkatkan warna
+	Extract Component…	Ekstrak komponen…
+	Alien Map…	Peta alien…
+	Rotate Colors…	Putar warna…
+	Palette Map…	Peta palet…
+	Sample Colorize…	Warnai dari sampel…
+	RGB Clip…	Potong RGB…
+	Dither…	Dither…
+	Local Threshold…	Ambang lokal…
+	Destripe…	Hapus garis…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Warna ke abu-abu…
+	Fattal et al. 2002…	Fattal dkk. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Palet halus…
+	Decompose…	Dekomposisi…
+	Compose…	Komposisi…
+	Recompose	Komposisi ulang
+	Rearrange Colormap…	Susun ulang peta warna…
+	Set Colormap…	Atur peta warna…
+	Border Average…	Rata-rata tepi…
+	Export Histogram…	Ekspor histogram…
+	Variable Blur…	Blur Variabel…
+	Apply Lens…	Terapkan Lensa…
+	Mosaic Tiles…	Ubin Mosaik…
+	Newsprint…	Cetak Koran…
+	Curve Bend…	Lengkung Kurva…
+	Warp (Map)…	Lengkung (Peta)…
+	Bloom…	Bloom…
+	Sobel…	Sobel…
+	Cartoon…	Kartun…
+	Clothify…	Tekstur Kain…
+	Stencil Chrome…	Krom Stensil…
+	Bump Map…	Peta Tonjolan…
+	Panorama Projection…	Proyeksi Panorama…
+	Perlin Noise…	Derau Perlin…
+	Plasma…	Plasma…
+	Solid Noise…	Derau Padat…
+	Add Border…	Tambah Bingkai…
+	Fog…	Kabut…
+	Old Photo…	Foto Lama…
+	Round Corners…	Sudut Bulat…
+	Tile…	Ubin…
+	Depth Merge…	Gabung Kedalaman…
+	Geometric Shapes…	Bentuk Geometris…
+	Image Map Area…	Area Peta Gambar…
+	Image Map From Slices	Peta Gambar dari Irisan
+	Export Image Map…	Ekspor Peta Gambar…
+	Clear Image Map	Hapus Peta Gambar
+	Combine	Gabungkan
+	Clipping	Pemotongan
+	Color Space	Ruang Warna
+	Linear light	Cahaya linier
+	Copy upper to lower	Salin atas ke bawah
+	Swap curves	Tukar kurva
+	Mirror	Cermin
+	Upper	Atas
+	Lower	Bawah
+	Gradient Source	Sumber gradien
+	Value Jitter	Jitter nilai
+	Pipe	Berurutan
+	Brush file (.myb)	Berkas kuas (.myb)
+	Text as brush tip	Teks sebagai ujung kuas
+	One character per dab along the stroke	Satu karakter per sapuan di sepanjang goresan
+	Engine	Mesin
+	Text Tip	Ujung teks
+	Hatching	Arsir
+	Particle	Partikel
+	Dyna	Dyna
+	Tangent Normal	Normal tangen
+	MyPaint	MyPaint
+	Spray	Semprot
+	Bristle	Bulu kuas
+	Deform	Deformasi
+	Thickness	Ketebalan
+	Grain Extract	Ekstrak Butiran
+	Grain Merge	Gabung Butiran
+	LCh Hue	Hue LCh
+	LCh Chroma	Kroma LCh
+	LCh Color	Warna LCh
+	LCh Lightness	Kecerahan LCh
+	Merge	Gabung
+	Split	Pisah
+	Remove Holes	Hapus Lubang
+	Distort…	Distorsi…
+	Rounded Rectangle…	Persegi Panjang Membulat…
+	Anchor Layer	Jangkar Lapisan
+	To New Layer	Ke Lapisan Baru
+	Layer Boundary Size…	Ukuran Batas Lapisan…
+	Layer to Image Size	Lapisan ke Ukuran Gambar
+	Resize Layer to Selection	Ubah Ukuran Lapisan ke Seleksi
+	Crop Layer to Content	Pangkas Lapisan ke Konten
+	Threshold Alpha…	Ambang Alfa…
+	Composite Options…	Opsi Komposit…
+	Zealous Crop	Pangkas Menyeluruh
+	Foreground Select	Pilih Latar Depan
+	Stroke width	Lebar sapuan
+	Graph cut	Potong graf
+	To Layer Mask	Ke Masker Lapisan
+	Draw a rough outline round the subject	Gambar garis besar kasar di sekitar subjek
+	Draw a rough outline round the subject first	Gambar garis besar kasar di sekitar subjek terlebih dahulu
+	Outline placed: paint over the foreground, then Preview or Select	Garis besar ditempatkan: cat latar depan, lalu Pratinjau atau Pilih
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Garis bentuk subjek secara kasar, cat latar depan, dan biarkan mesin matting mengembangkan masker
+	Paint over the foreground (hold Alt for background), then Preview or Select	Cat latar depan (tahan Alt untuk latar belakang), lalu Pratinjau atau Pilih
+	Display Filters…	Filter Tampilan…
+	Display Filters	Filter Tampilan
+	No Color Deficiency Simulation	Tanpa Simulasi Defisiensi Warna
+	Simulate Protanopia	Simulasikan Protanopia
+	Simulate Deuteranopia	Simulasikan Deuteranopia
+	Simulate Tritanopia	Simulasikan Tritanopia
+	Clip Warning	Peringatan Klip
+	Clip warning	Peringatan klip
+	Color deficiency:	Defisiensi warna:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Kontras:
+	View-only: the filters change what this view shows, never the pixels.	Hanya tampilan: filter mengubah apa yang ditampilkan tampilan ini, bukan pikselnya.
+	Show All	Tampilkan Semua
+	Padding Color	Warna Bantalan
+	From Theme	Dari Tema
+	Dark Gray	Abu-abu Gelap
+	Medium Gray	Abu-abu Sedang
+	Light Check Color	Warna Kotak Terang
+	Dark Check Color	Warna Kotak Gelap
+	Light Check	Kotak Terang
+	Dark Check	Kotak Gelap
+	Light check	Kotak terang
+	Dark check	Kotak gelap
+	Custom Color	Warna Kustom
+	Select Custom Color…	Pilih Warna Kustom…
+	Keep Padding in Show All	Pertahankan Bantalan di Tampilkan Semua
+	Keep padding in show all	Pertahankan bantalan di Tampilkan Semua
+	Filter by tag	Filter menurut tag
+	Clear filter	Hapus filter
+	Tags:	Tag:
+	Add tag	Tambah tag
+	Remove tag	Hapus tag
+	View Metadata…	Lihat Metadata…
+	Edit Metadata…	Edit Metadata…
+	Edit Metadata	Edit Metadata
+	Metadata Viewer	Penampil Metadata
+	Write Metadata	Tulis Metadata
+	Separate several values with semicolons	Pisahkan beberapa nilai dengan titik koma
+	No tags	Tidak ada tag
+	XMP	XMP
+	IPTC	IPTC
+	Text	Teks
+	Rights	Hak
+	IPTC Extension	Ekstensi IPTC
+	Categories	Kategori
+	DICOM	DICOM
+	Procedure Browser	Penjelajah Prosedur
+	Plug-In Browser	Penjelajah Plug-in
+	Search procedures	Cari prosedur
+	{n} procedures	{n} prosedur
+	(no menu)	(tanpa menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parameter
+	Available now	Tersedia sekarang
+	Not available in the current state	Tidak tersedia dalam keadaan saat ini
+	Run	Jalankan
+	Select a procedure to read its parameters.	Pilih prosedur untuk membaca parameternya.
+	Dashboard	Dasbor
+	Low memory: swap is nearly full. Save your work.	Memori rendah: swap hampir penuh. Simpan pekerjaan Anda.
+	Memory	Memori
+	Cache	Cache
+	Swap	Swap
+	Swap: not reported on this platform	Swap: tidak dilaporkan di platform ini
+	CPU	CPU
+	CPU renderer	Perender CPU
+	uploads	unggahan
+	Misc: {jobs} jobs running · {n} samples	Lainnya: {jobs} pekerjaan berjalan · {n} sampel
+	Log to File…	Catat ke Berkas…
+	Stop Logging	Berhenti Mencatat
+	Device Status	Status Perangkat
+	Core Pointer	Penunjuk Utama
+	Pen / Tablet	Pena / Tablet
+	Brush:	Kuas:
+	Pattern:	Pola:
+	Gradient:	Gradien:
+	Save Device Status	Simpan Status Perangkat
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Setiap perangkat mengingat alat, warna, kuas, pola dan gradiennya; berganti perangkat menggantinya.
+	Selection Editor	Editor Seleksi
+	No document open.	Tidak ada dokumen terbuka.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klik untuk memilih warna bersebelahan dengan Tongkat Ajaib (Shift menambah, Alt mengurangi)
+	Save to Channel	Simpan ke Kanal
+	To Path	Ke Jalur
+	Advanced options	Opsi lanjutan
+	MyPaint Brushes	Kuas MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Belum ada kuas MyPaint. Impor berkas .myb untuk menampilkannya di sini.
+	No brush matches the filter.	Tidak ada kuas yang cocok dengan filter.
+	Handle Transform	Transformasi Pegangan
+	3D Transform	Transformasi 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Sesuaikan Ulang
+	Apply the transform so far and put a fresh box on the result	Terapkan transformasi sejauh ini dan letakkan kotak baru pada hasilnya
+	Camera	Kamera
+	Vanishing X:	Titik hilang X:
+	Y:	Y:
+	Focal length:	Panjang fokus:
+	Local pivot	Poros lokal
+	Unified pivot	Poros terpadu
+	Close Cage	Tutup Kurungan
+	Reset Cage	Setel Ulang Kurungan
+	Fill Plain Colour	Isi Warna Polos
+	Fill the original position of the cage with the plain colour of its outline	Isi posisi asli kurungan dengan warna polos garis luarnya
+	{n} points	{n} titik
+	Click to place a handle	Klik untuk menempatkan pegangan
+	Rotate and Scale	Putar dan Skalakan
+	{n} handles: {what}	{n} pegangan: {what}
+	Reset Handles	Setel Ulang Pegangan
+	Remove Handles	Hapus Pegangan
+	Commit Cage Transform (Enter)	Terapkan Transformasi Kurungan (Enter)
+	Commit Handle Transform (Enter)	Terapkan Transformasi Pegangan (Enter)
+	Commit 3D Transform (Enter)	Terapkan Transformasi 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformasi kurungan: klik di sekeliling bagian yang akan dideformasi, klik titik pertama untuk menutup kurungan, lalu seret titiknya
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformasi pegangan: tempatkan satu sampai empat pegangan dan seret (satu memindahkan, dua memutar dan menskalakan, tiga mencondongkan, empat memberi perspektif)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformasi 3D: seret untuk memutar pada X dan Y, Alt-seret pada Z; tab Pindah dan Kamera memindahkan lapisan dan kamera
+	Segment {n}	Segmen {n}
+	Blending:	Pencampuran:
+	Coloring:	Pewarnaan:
+	Midpoint:	Titik tengah:
+	Sinusoidal	Sinusoidal
+	Spherical (increasing)	Sferis (meningkat)
+	Spherical (decreasing)	Sferis (menurun)
+	Step	Tangga
+	HSV (counter-clockwise)	HSV (berlawanan jarum jam)
+	HSV (clockwise)	HSV (searah jarum jam)
+	Replicate	Replikasi
+	Split the segment at its midpoint	Bagi segmen di titik tengahnya
+	Replace the segment with two copies of itself	Ganti segmen dengan dua salinan dirinya
+	Flip the whole gradient end to end	Balik seluruh gradien
+	Save as POV-Ray…	Simpan sebagai POV-Ray…
+	Shaped Gradient (angular)	Gradien berbentuk (sudut)
+	Shaped Gradient (spherical)	Gradien berbentuk (bola)
+	Shaped Gradient (dimpled)	Gradien berbentuk (cekung)
+	Truncate	Potong
+	Sawtooth wave	Gelombang gigi gergaji
+	Triangular wave	Gelombang segitiga
+	Wheel	Roda
+	Force	Gaya
+	Jitter	Getar
+	Fade length	Panjang pudar
+	Random amount	Jumlah acak
+	Save Preset	Simpan preset
+	Paint Dynamics Editor	Editor dinamika lukis
+	Color from Gradient	Warna dari gradien
+	Put this table on the current brush	Terapkan tabel ini ke kuas saat ini
+	Save the table as a named dynamics preset	Simpan tabel sebagai preset dinamika bernama
+	Give the dynamics preset a name first	Beri nama preset dinamika dulu
+	Edit the dynamics table (inputs × outputs)	Edit tabel dinamika (masukan × keluaran)
+	Reset Plane	Atur ulang bidang
+	Click four corners to define a perspective plane, then clone along it	Klik empat sudut untuk menentukan bidang perspektif, lalu klon di sepanjangnya
+	Click corner {n} of 4	Klik sudut {n} dari 4
+	Perspective plane: corner {n} of 4 set	Bidang perspektif: sudut {n} dari 4 diatur
+	Perspective plane set; {key}-click a source, then paint	Bidang perspektif diatur; {key}-klik sumber, lalu lukis
+	Copy Path as SVG	Salin Path sebagai SVG
+	Export Path to SVG…	Ekspor Path ke SVG…
+	Import Path from SVG…	Impor Path dari SVG…
+	Paste Path from SVG	Tempel Path dari SVG
+	Copy All Paths as SVG	Salin Semua Path sebagai SVG
+	Export All Paths to SVG…	Ekspor Semua Path ke SVG…
+	Copied 1 path as SVG	1 path disalin sebagai SVG
+	Copied {n} paths as SVG	{n} path disalin sebagai SVG
+	Exported paths to {path}	Path diekspor ke {path}
+	Imported 1 path	1 path diimpor
+	Imported {n} paths	{n} path diimpor
+	The clipboard holds no SVG	Papan klip tidak berisi SVG
+	Clipboard Image Brush	Kuas Gambar Papan Klip
+	Paint with the image on the clipboard as the brush tip	Melukis dengan gambar di papan klip sebagai ujung kuas
+	Export Layers as Animation…	Ekspor Lapisan sebagai Animasi…
+	Export as Brush (.gbr)…	Ekspor sebagai Kuas (.gbr)…
+	Export Layers as Image Hose (.gih)…	Ekspor Lapisan sebagai Kuas Animasi (.gih)…
+	Export as Pattern (.pat)…	Ekspor sebagai Pola (.pat)…
+	Animation Frame Tags…	Tag Bingkai Animasi…
+	Disposal	Pembuangan
+	Replace	Ganti
+	Incremental	Bertahap
+	Angular	Sudut
+	Xtilt	Kemiringan X
+	Ytilt	Kemiringan Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Ekspor sebagai PostScript (.eps)…
+	Encapsulated	Terenkapsulasi
+	Encoding	Pengodean
+	Hex	Heksadesimal
+	Ascii85	ASCII85
+	Binary	Biner
+	Open Location…	Buka Lokasi…
+	From Screenshot…	Dari Tangkapan Layar…
+	From Web Page…	Dari Halaman Web…
+	Send by Email…	Kirim lewat Email…
+	Url	URL
+	Cursor	Kursor
+	Region	Wilayah
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffer
+	Cut Named…	Potong Bernama…
+	Copy Named…	Salin Bernama…
+	Copy Visible Named…	Salin Terlihat Bernama…
+	Paste Named…	Tempel Bernama…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Tidak ada buffer bernama. Gunakan Edit > Buffer > Salin Bernama… untuk menyimpan salinan di sini.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Tidak ada buffer bernama; gunakan Edit > Buffer > Salin Bernama dahulu
+	Paste Buffer	Tempel Buffer
+	Paste Buffer in Place	Tempel Buffer di Tempat
+	Paste Buffer as New Image	Tempel Buffer sebagai Gambar Baru
+	Rename Buffer…	Ubah Nama Buffer…
+	Delete Buffer	Hapus Buffer
+	Paste as New	Tempel sebagai Baru
+	Paste the buffer as a new layer	Tempel buffer sebagai lapisan baru
+	Paste the buffer as a new document	Tempel buffer sebagai dokumen baru
+	As	Sebagai
+	In place	Di tempat
+	Into	Ke dalam
+	Modules…	Modul…
+	Units…	Satuan…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Tidak ada modul yang terpasang. Filter > Plug-in > Pasang Plug-in… menambahkannya.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Modul yang dimatikan tetap terpasang tetapi hilang dari menu sampai dihidupkan lagi.
+	Module	Modul
+	Not installed	Belum terpasang
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor adalah berapa satuan dalam satu inci (2,54 untuk sentimeter, 72 untuk poin).
+	Identifier	Pengenal
+	Factor	Faktor
+	Symbol	Simbol
+	Abbreviation	Singkatan
+	Singular	Tunggal
+	Plural	Jamak
+	Delete Unit	Hapus Satuan
+	New unit	Satuan baru
+	Add Unit	Tambah Satuan
+	That identifier is already a unit	Pengenal itu sudah menjadi satuan
+	Custom units	Satuan khusus
+	Disabled modules	Modul dimatikan
+	Input Devices…	Perangkat Masukan…
+	Input Controllers…	Pengontrol Masukan…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Pena adalah stilus tablet yang dilaporkan platform. Dinonaktifkan membuatnya bertindak seperti mouse.
+	Device	Perangkat
+	Invert tilt X	Balik kemiringan X
+	Invert tilt Y	Balik kemiringan Y
+	Swap tilt	Tukar kemiringan
+	Pressure scale	Skala tekanan
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Peristiwa roda adalah up, down, left, atau right dengan Shift+, Ctrl+, dan Alt+ opsional; peristiwa papan ketik adalah pintasan seperti Ctrl+Alt+Up. Aksi adalah id perintah, bisa diikuti parameter JSON.
+	Keyboard	Papan ketik
+	Controller	Pengontrol
+	Event	Peristiwa
+	Remove mapping	Hapus pemetaan
+	New mapping	Pemetaan baru
+	Add Mapping	Tambah Pemetaan
+	Disabled	Dinonaktifkan
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} entri; klik untuk menetapkan warna depan, klik dua kali untuk mengedit
+	Entry	Entri
+	Add an entry with the foreground colour	Tambahkan entri dengan warna depan
+	Delete the last entry	Hapus entri terakhir
+	Use selected	Gunakan yang dipilih
+	Ink	Tinta
+	MyPaint Brush	Kuas MyPaint
+	Nib	Mata pena
+	Aspect	Rasio
+	Opaque	Opak
+	Erase with brush	Hapus dengan kuas
+	Import .myb…	Impor .myb…
+	Add a MyPaint brush file to the presets	Tambahkan berkas kuas MyPaint ke praset
+	Imported MyPaint brush {name}	Kuas MyPaint {name} diimpor
+	How much pressure changes the nib size	Seberapa besar tekanan mengubah ukuran mata pena
+	How much the pen's tilt turns and stretches the nib	Seberapa besar kemiringan pena memutar dan merentangkan mata pena
+	How much a fast stroke thins the nib	Seberapa besar goresan cepat menipiskan mata pena
+	Added to the preset's logarithmic radius	Ditambahkan ke radius logaritmik praset
+	Operation…	Operasi…
+	Operation name or id	Nama atau id operasi
+	{n} operations	{n} operasi
+	Choose an operation	Pilih operasi
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Konsol Script-Fu…
+	Load Scripts Folder…	Muat Folder Skrip…
+	Python Console…	Konsol Python…
+	Load Plug-ins Folder…	Muat Folder Plug-in…
+	Loaded {n} scripts	{n} skrip dimuat
+	Loaded {n} Python plug-ins	{n} plug-in Python dimuat
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 dengan call(command, **params), message(text), dan print(); setiap perintah mesin dapat dijangkau lewat call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: setiap perintah mesin adalah prosedur, (file.new "width" 640 "height" 480); definisikan prosedur dan daftarkan dengan script-fu-register.
+	Code	Kode
+	Cmd+Enter runs the code	Cmd+Enter menjalankan kode
+	Clear Log	Bersihkan Log
+	Dodge…	Dodge…
+	Burn…	Burn…
+	Cross-Channel Adjustment…	Penyesuaian Antar Channel…
+	Slope, Offset, Power…	Kemiringan, Offset, Pangkat…
+	Index Colors…	Warna Indeks…
+	Raindrops…	Tetesan Hujan…
+	Polygon Blur…	Blur Poligon…
+	Edge Detection…	Deteksi Tepi…
+	Emboss (Directional)…	Emboss (Arah)…
+	Phong Bump Map…	Peta Tonjolan Phong…
+	Palettize…	Paletisasi…
+	Height to Normal Map…	Tinggi ke Peta Normal…
+	Normalize Normal Map	Normalkan Peta Normal
+	Maximize Channel	Maksimalkan Channel
+	Minimize Channel	Minimalkan Channel
+	Propagate Colors…	Sebarkan Warna…
+	Reset Transparent	Atur Ulang Transparan
+	Mean Removal	Penghapusan Rata-rata
+	Wavelet Noise Reducer…	Pengurang Noise Wavelet…
+	Random Pick…	Pilih Acak…
+	G'MIC Filter…	Filter G'MIC…
+	G'MIC executable	Berkas eksekusi G'MIC
+	G'MIC update folder	Folder pembaruan G'MIC
+	Add scene at playhead	Tambah adegan di kepala putar
+	Add to favourites	Tambahkan ke favorit
+	After	Sesudah
+	Arithmetic	Aritmetika
+	Attach audio…	Lampirkan audio…
+	Before	Sebelum
+	Blend details	Detail pencampuran
+	Blend mode	Mode pencampuran
+	Blend mode and opacity	Mode pencampuran dan opasitas
+	Capture now	Tangkap sekarang
+	Clone previous keyframe here	Klon bingkai kunci sebelumnya di sini
+	Comment	Komentar
+	Display settings	Pengaturan tampilan
+	Duplicate keyframe	Duplikat bingkai kunci
+	Duplicate keyframe here	Duplikat bingkai kunci di sini
+	End	Akhir
+	Export timelapse…	Ekspor timelapse…
+	Favourites	Favorit
+	Frame rate	Laju bingkai
+	HSX	HSX
+	Hidden	Tersembunyi
+	Key the active layer:	Beri kunci pada lapisan aktif:
+	Misc	Lainnya
+	Mute audio	Bisukan audio
+	Negative	Negatif
+	New keyframe	Bingkai kunci baru
+	New keyframe here	Bingkai kunci baru di sini
+	Next tint	Warna berikutnya
+	No animated layers: add a keyframe to the active layer to animate it.	Tidak ada lapisan animasi: tambahkan bingkai kunci ke lapisan aktif untuk menganimasikannya.
+	No animation curves yet.	Belum ada kurva animasi.
+	No scenes yet.	Belum ada adegan.
+	Opacity per frame	Opasitas per bingkai
+	Previous tint	Warna sebelumnya
+	Quadratic	Kuadratik
+	Recorder	Perekam
+	Remove from favourites	Hapus dari favorit
+	Remove keyframe	Hapus bingkai kunci
+	Remove scene	Hapus adegan
+	Scale X	Skala X
+	Scale Y	Skala Y
+	Scene name	Nama adegan
+	Show onion skins	Tampilkan onion skin
+	Start	Awal
+	Start recording	Mulai merekam
+	Stop recording	Berhenti merekam
+	Storyboard	Papan cerita
+	Thumbnail size	Ukuran gambar mini
+	frames	bingkai
+	opacity	opasitas
+	rotation	rotasi
+	scaleX	skala X
+	scaleY	skala Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} cuplikan di {dir}
+	2-Point Perspective	Perspektif 2 titik
+	Assistant colour	Warna asisten
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetisme asisten: sejauh mana sapuan boleh menyimpang dari asisten namun tetap ditarik (1000 = selalu)
+	Assistant opacity	Opasitas asisten
+	Concentric Ellipse	Elips konsentris
+	Curvilinear Perspective	Perspektif kurvilinear
+	Eraser snaps	Penghapus menempel
+	Fish-Eye Point	Titik mata ikan
+	Handles	Pegangan
+	Infinite Ruler	Penggaris tak hingga
+	Limit to area	Batasi ke area
+	Minor subdivisions	Subdivisi minor
+	Own colour	Warna sendiri
+	Perspective Ellipse	Elips perspektif
+	Previews	Pratinjau
+	Show the snapped stroke's line while painting	Tampilkan garis sapuan yang ditempelkan saat melukis
+	Show this assistant's control handles	Tampilkan pegangan kontrol asisten ini
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Sapuan mengikuti asisten melukis (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dua pegangan tambahan memotong tempat asisten menggambar dan menempel
+	Vertical ruler	Penggaris vertikal
+	Painting Assistants	Asisten melukis
+	Assistant Previews	Pratinjau asisten
+	Drag fill	Isi seret
+	Dragging fills every region passed over	Menyeret mengisi setiap area yang dilewati
+	Exclude colour	Kecualikan warna
+	Exclude transparent	Kecualikan transparan
+	Fill mode	Mode isi
+	No region is fully enclosed by the shape	Tidak ada area yang sepenuhnya dikelilingi bentuk
+	Only regions coloured like the first one	Hanya area berwarna seperti yang pertama
+	Reference	Referensi
+	Similar only	Hanya serupa
+	Soften the filled edge	Haluskan tepi isian
+	Spread stops at the darkest pixels (lines)	Pelebaran berhenti di piksel tergelap (garis)
+	Spread stops at the most opaque pixels	Pelebaran berhenti di piksel paling pekat
+	Stop at darkest	Berhenti di tergelap
+	Stop at opaque	Berhenti di pekat
+	Similar Colours	Warna serupa
+	Colour Labels	Label warna
+	All Regions	Semua area
+	Specific Colour	Warna tertentu
+	Transparent Regions	Area transparan
+	Surrounded By	Dikelilingi oleh
+	Fill with Foreground Color (Opacity)	Isi dengan warna depan (opasitas)
+	Fill with Background Color (Opacity)	Isi dengan warna latar (opasitas)
+	Fill with Pattern (Opacity)	Isi dengan pola (opasitas)
+	Straight Line Tool	Alat Garis Lurus
+	Multibrush Tool	Alat Multikuas
+	Dynamic Brush Tool	Alat Kuas Dinamis
+	Enclose and Fill Tool	Alat Lingkupi dan Isi
+	Colorize Mask Tool	Alat Masker Pewarnaan
+	Reference Images Tool	Alat Gambar Referensi
+	Alternating	Bergantian
+	Forward	Maju
+	Shaped Gradient (follows the selection)	Gradien berbentuk (mengikuti seleksi)
+	Clear copies	Hapus salinan
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik menempatkan salinan, Ctrl+Alt+klik menghapusnya
+	How heavily the stroke lags behind the pointer	Seberapa jauh sapuan tertinggal dari penunjuk
+	How quickly the stroke's motion dies away	Seberapa cepat gerakan sapuan mereda
+	Keep one-pixel lines single width without L corners	Jaga garis satu piksel tetap satu lebar tanpa sudut L
+	Mirror all tools	Cerminkan semua alat
+	Multibrush	Multikuas
+	Pixel smoothing	Penghalusan piksel
+	The painting symmetry mirrors fills, gradients and retouching too	Simetri melukis juga mencerminkan isian, gradien, dan retus
+	The painting symmetry mirrors this tool's output too	Simetri melukis juga mencerminkan hasil alat ini
+	X interval	Interval X
+	Y interval	Interval Y
+	Mirror / Rotation	Cermin / Rotasi
+	Translate	Geser
+	Copy Translate	Salin geser
+	Cursor shape	Bentuk kursor
+	Outline shape	Bentuk garis luar
+	Show outline while painting	Tampilkan garis luar saat melukis
+	Effective outline size	Ukuran garis luar efektif
+	Tool icon	Ikon alat
+	Arrow	Panah
+	Crosshair	Garis silang
+	Small dot	Titik kecil
+	No cursor	Tanpa kursor
+	Triangle right	Segitiga kanan
+	Triangle left	Segitiga kiri
+	No outline	Tanpa garis luar
+	Instant preview	Pratinjau instan
+	Instant preview megapixels	Megapiksel pratinjau instan
+	Add…	Tambah…
+	Auto update	Perbarui otomatis
+	Canvas input profile	Profil input kanvas
+	Clean up	Bersihkan
+	Clear key strokes	Hapus sapuan kunci
+	Colorize Mask	Masker Pewarnaan
+	Draw in the area below to test pressure, tilt and rotation	Gambar di area di bawah untuk menguji tekanan, kemiringan, dan rotasi
+	Edge detection	Deteksi tepi
+	Edit key strokes	Edit sapuan kunci
+	Embed	Sematkan
+	Fill only inside the line art's pixels	Isi hanya di dalam piksel garis
+	Gap close	Tutup celah
+	Input API	API input
+	Keep aspect	Jaga rasio
+	Limit to layer	Batasi ke lapisan
+	Mouse	Tetikus
+	Next Preset	Preset berikutnya
+	No samples yet	Belum ada sampel
+	Nothing to paste: the clipboard holds no image	Tidak ada yang ditempel: papan klip tidak berisi gambar
+	Opacity +	Opasitas +
+	Opacity -	Opasitas -
+	Pasted image	Gambar yang ditempel
+	Peak pressure	Tekanan puncak
+	Previous Preset	Preset sebelumnya
+	Reference Images	Gambar referensi
+	Rotate Left	Putar kiri
+	Rotate Right	Putar kanan
+	Sample rate	Laju sampel
+	Screen mapping	Pemetaan layar
+	Show output	Tampilkan hasil
+	Show the key strokes over the canvas	Tampilkan sapuan kunci di atas kanvas
+	Show with all tools	Tampilkan dengan semua alat
+	Size +	Ukuran +
+	Size -	Ukuran -
+	Speed source	Sumber kecepatan
+	Store the pixels in the set; off, link to the file	Simpan piksel dalam set; nonaktif, tautkan ke berkas
+	Tablet Settings…	Pengaturan tablet…
+	Tablet Tester	Penguji tablet
+	The clipboard is not available	Papan klip tidak tersedia
+	The next key strokes keep their regions clear	Sapuan kunci berikutnya menjaga areanya tetap bersih
+	Tilt offset	Offset kemiringan
+	Touch Docker	Panel sentuh
+	Transparent key	Kunci transparan
+	Update	Perbarui
+	Canvas Input	Input kanvas
+	Canvas Input…	Input kanvas…
+	Pan key	Tombol geser
+	Zoom in key	Tombol perbesar
+	Zoom out key	Tombol perkecil
+	Rotate key	Tombol putar
+	Middle button	Tombol tengah
+	Stylus button	Tombol stilus
+	Pick modifier	Pengubah pilih warna
+	Shift wheel rotates	Shift+roda memutar
+	Tablet	Tablet
+	Trackpad	Trackpad
+	Pick	Pilih warna
+	No action	Tanpa aksi
+	No pick	Tanpa pilih warna
+	Scroll	Gulir
+	Rotate View (hold)	Putar tampilan (tahan)
+	Tilt offset x	Offset kemiringan X
+	Tilt offset y	Offset kemiringan Y
+	Tablet speed source	Sumber kecepatan tablet
+	Tablet api	API tablet
+	Tablet screen mapping	Pemetaan layar tablet
+	Pointer	Penunjuk
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Jenis kisi
+	Isometric left angle	Sudut kiri isometrik
+	Isometric right angle	Sudut kanan isometrik
+	Isometric vertical lines	Garis vertikal isometrik
+	Rectangular	Persegi
+	Isometric	Isometrik
+	Node	Simpul
+	Extension	Perpanjangan
+	Intersection	Perpotongan
+	Alt-click a bottom patch to set it to the foreground colour	Alt+klik petak bawah untuk mengaturnya ke warna depan
+	Apply:	Terapkan:
+	Brushes this large preview coarsely while painting	Kuas sebesar ini dipratinjau kasar saat melukis
+	Click the disc to add shape points	Klik cakram untuk menambah titik bentuk
+	Close Shape	Tutup bentuk
+	Color Space:	Ruang warna:
+	Common Colors	Warna umum
+	Components:	Komponen:
+	Continuous Mode	Mode kontinu
+	Current pattern	Pola saat ini
+	Depth:	Kedalaman:
+	Display:	Tampilan:
+	Dynamic Hue Ring	Cincin hue dinamis
+	Enable Pen Settings	Aktifkan pengaturan pena
+	Erase mode keeps its own opacity on this preset	Mode hapus menyimpan opasitasnya sendiri pada preset ini
+	Erase mode keeps its own size on this preset	Mode hapus menyimpan ukurannya sendiri pada preset ini
+	Eraser Opacity	Opasitas penghapus
+	Eraser Size	Ukuran penghapus
+	Fit Panel Width	Sesuaikan lebar panel
+	Gamut Mask	Masker gamut
+	Gradient Steps	Langkah gradasi
+	Gradient ends: Alt-click to set from the foreground	Ujung gradasi: Alt+klik untuk mengambil warna depan
+	Hue Steps	Langkah hue
+	Instant Preview	Pratinjau instan
+	LUT Management (OCIO)	Pengelolaan LUT (OCIO)
+	Lightness Strength	Kekuatan kecerahan
+	Lock Color	Kunci warna
+	Luma:	Luma:
+	Minimum Hardness	Kekerasan minimum
+	Minimum Strength	Kekuatan minimum
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Mati: semua sensor diabaikan; kurva tetap disimpan
+	Out of gamut	Di luar gamut
+	Panel colours are not shown through the display transform	Warna panel tidak ditampilkan melalui transformasi tampilan
+	Patch Count	Jumlah petak
+	Patch Size	Ukuran petak
+	Patches:	Petak:
+	Pattern Scale	Skala pola
+	Pop-up Size	Ukuran pop-up
+	Proof to Painting Space	Pratinjau ke ruang lukis
+	Recent Colors	Warna terbaru
+	Remove Last Shape	Hapus bentuk terakhir
+	Rotate Mask	Putar masker
+	Saturation Steps	Langkah saturasi
+	Selector settings	Pengaturan pemilih
+	Selector:	Pemilih:
+	Shade Count	Jumlah bayangan
+	Shade Ring by Value	Bayangi cincin menurut nilai
+	Shade Selector	Pemilih bayangan
+	Shade Size	Ukuran bayangan
+	Shade Spread	Sebaran bayangan
+	Shade Strip	Strip bayangan
+	Shades	Bayangan
+	Share Curve Across Settings	Bagikan kurva ke semua pengaturan
+	Show as Fractions	Tampilkan sebagai pecahan
+	Soften Edge	Lembutkan tepi
+	Source:	Sumber:
+	Style:	Gaya:
+	The tip's grey levels are painted into the colour as lightness	Tingkat abu-abu ujung dilukis ke warna sebagai kecerahan
+	Threshold the tip mask for crisp pixel strokes	Ambangkan masker ujung untuk sapuan piksel tajam
+	Tip as Lightness Map	Ujung sebagai peta kecerahan
+	Update:	Pembaruan:
+	Value Steps	Langkah nilai
+	Value on the Ring	Nilai pada cincin
+	Zoom Pop-up	Pop-up zum
+	Gamma	Gamma
+	Strength	Kekuatan
+	Length over which the value goes from 0 to 1	Panjang sampai nilai berubah dari 0 ke 1
+	Start over past the length instead of holding the end value	Mulai lagi setelah panjang tercapai, bukan menahan nilai akhir
+	Pressure In	Tekanan naik
+	X-Tilt	Kemiringan X
+	Y-Tilt	Kemiringan Y
+	Tilt Direction	Arah kemiringan
+	Tilt Elevation	Elevasi kemiringan
+	Fuzzy Stroke	Acak per sapuan
+	Tip Scale:	Skala ujung:
+	Initial size as a share of the bitmap's size	Ukuran awal sebagai bagian dari ukuran bitmap
+	Tip Rotation:	Rotasi ujung:
+	Initial rotation of the tip	Rotasi awal ujung
+	No anti-aliasing: the dab's pixels are fully on or off	Tanpa anti-alias: piksel sapuan sepenuhnya hidup atau mati
+	Align Outline to Pixel Grid	Sejajarkan garis luar ke kisi piksel
+	The brush outline snaps to the pixels the dab fills	Garis luar kuas menempel ke piksel yang diisi sapuan
+	Tip Mode:	Mode ujung:
+	(no colour bitmap: paints the brush colour)	(tanpa bitmap warna: melukis dengan warna kuas)
+	Neutral Point	Titik netral
+	Canvas Only: hide the panels around the canvas	Hanya kanvas: sembunyikan panel di sekitar kanvas
+	Presets kept in the history	Preset yang disimpan di riwayat
+	Clear the history	Bersihkan riwayat
+	No presets used yet	Belum ada preset yang digunakan
+	Forget this preset	Lupakan preset ini
+	Ten Brushes	Sepuluh kuas
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Tetapkan preset ke sepuluh slot; mengaktifkan slot lagi kembali ke preset sebelumnya
+	Clear this slot	Kosongkan slot ini
+	Assign current	Tetapkan yang sekarang
+	Browse a folder of reference images	Jelajahi folder gambar referensi
+	No folder	Tidak ada folder
+	Next image	Gambar berikutnya
+	Previous image	Gambar sebelumnya
+	Pick an image to show it here	Pilih gambar untuk ditampilkan di sini
+	Search actions and commands	Cari aksi dan perintah
+	No matching action	Tidak ada aksi yang cocok
+	Search Actions…	Cari aksi…
+	Brush History	Riwayat kuas
+	Color Image	Gambar warna
+	Lightness Map	Peta kecerahan
+	Static	Statis
+	Move to Top	Pindah ke atas
+	Bubble Up	Naik satu
+	Clear the scratch pad to white	Bersihkan papan coret menjadi putih
+	Fill the scratch pad with the background colour	Isi papan coret dengan warna latar
+	Fill the scratch pad with the current gradient	Isi papan coret dengan gradien saat ini
+	Fill the scratch pad with the current image	Isi papan coret dengan gambar saat ini
+	Fill the scratch pad with the preset's icon	Isi papan coret dengan ikon preset
+	Reload the stored preset, discarding the tweaks	Muat ulang preset tersimpan, buang perubahan
+	BG	Latar
+	Icon	Ikon
+	Thumbnail:	Gambar mini:
+	Stroke preview	Pratinjau sapuan
+	Scratch pad	Papan coret
+	Icon library	Pustaka ikon
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Aktifkan Seleksi Lokal
+	Add Curve Key	Tambah Kunci Kurva
+	Add Filter…	Tambah Filter…
+	Add Local Selection	Tambah Seleksi Lokal
+	Add Scene	Tambah Adegan
+	Add Transform Key	Tambah Kunci Transformasi
+	Alpha into Mask	Alfa ke Mask
+	Attach Audio…	Lampirkan Audio…
+	Backup count	Jumlah cadangan
+	Capture Snapshot	Ambil Snapshot
+	Change Clone Source…	Ubah Sumber Klon…
+	Clone Keyframe	Klon Keyframe
+	Clone Layer	Klon Layer
+	Clones Array…	Larik Klon…
+	Colorize Mask Properties…	Properti Mask Pewarnaan…
+	Convert	Konversi
+	Convert Group to Animated Layer	Konversi Grup ke Layer Animasi
+	Convert to Paint Layer	Konversi ke Layer Lukis
+	Copy Keyframe	Salin Keyframe
+	Curved	Melengkung
+	Drag	Seret
+	Duplicate Keyframe	Duplikat Keyframe
+	Edit Generated Fill…	Edit Isian Terbangkitkan…
+	Edit Transform Mask…	Edit Mask Transformasi…
+	Ellipse	Elips
+	Export Storyboard…	Ekspor Storyboard…
+	Export Timelapse…	Ekspor Timelapse…
+	File Layer Properties…	Properti Layer Berkas…
+	File Layer…	Layer Berkas…
+	Filter Layer…	Layer Filter…
+	Filter Mask…	Mask Filter…
+	Frame rate limit	Batas laju frame
+	Frames	Frame
+	Freeze Live Layer	Bekukan Layer Langsung
+	High quality	Kualitas tinggi
+	Import Animation Frames…	Impor Frame Animasi…
+	Import Image as…	Impor Gambar sebagai…
+	Import Video Animation…	Impor Animasi Video…
+	Input controllers	Pengontrol masukan
+	Input devices	Perangkat masukan
+	Invisible	Tak Terlihat
+	Label	Label
+	Layer Color Space…	Ruang Warna Layer…
+	Layers by State	Layer menurut Status
+	Local Selection	Seleksi Lokal
+	Locked	Terkunci
+	Mass	Massa
+	Move Clone…	Pindahkan Klon…
+	Move Keyframe	Pindahkan Keyframe
+	Multigrid…	Multigrid…
+	Mute Audio	Bisukan Audio
+	Nearest	Terdekat
+	New Keyframe	Keyframe Baru
+	Onion Skin…	Onion Skin…
+	Pan	Geser
+	Pixel grid threshold	Ambang kisi piksel
+	Profile	Profil
+	Reload File Layer	Muat Ulang Layer Berkas
+	Remove Audio	Hapus Audio
+	Remove Curve Key	Hapus Kunci Kurva
+	Remove Filter	Hapus Filter
+	Remove Keyframe	Hapus Keyframe
+	Remove Local Selection	Hapus Seleksi Lokal
+	Remove Transform Key	Hapus Kunci Transformasi
+	Remove Transform Mask	Hapus Mask Transformasi
+	Render Animation…	Render Animasi…
+	Save Merged…	Simpan Hasil Gabungan…
+	Scaling filter	Filter penskalaan
+	Screentone…	Screentone…
+	Script…	Skrip…
+	Set Filter…	Atur Filter…
+	Shear	Geser Miring
+	Show Output	Tampilkan Keluaran
+	Split Alpha	Pisahkan Alfa
+	Start Recording	Mulai Merekam
+	Stop Recording	Berhenti Merekam
+	Swap directory	Direktori swap
+	Ten scripts	Sepuluh skrip
+	Threads	Thread
+	Transform Mask…	Mask Transformasi…
+	Unlocked	Tidak Terkunci
+	Update Local Selection	Perbarui Seleksi Lokal
+	Write as Alpha	Tulis sebagai Alfa
+	to File Layer…	ke Layer Berkas…
+	to Filter Mask…	ke Mask Filter…
+	to Paint Layer	ke Layer Lukis
+	to Selection Mask	ke Mask Seleksi
+	to Transparency Mask	ke Mask Transparansi

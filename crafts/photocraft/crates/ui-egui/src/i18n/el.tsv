@@ -4132,3 +4132,832 @@ curves	Smooth	Εξομάλυνση
 	Popup palette	Αναδυόμενη παλέτα
 	Smear	Επάλειψη
 	Smudge Radius	Ακτίνα μουτζούρας
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Γραμμική αντιστροφή
+	Value Invert	Αντιστροφή τιμής
+	Stretch Contrast HSV	Επέκταση αντίθεσης HSV
+	Color Enhance	Ενίσχυση χρώματος
+	Extract Component…	Εξαγωγή συνιστώσας…
+	Alien Map…	Εξωγήινος χάρτης…
+	Rotate Colors…	Περιστροφή χρωμάτων…
+	Palette Map…	Χάρτης παλέτας…
+	Sample Colorize…	Χρωματισμός από δείγμα…
+	RGB Clip…	Περικοπή RGB…
+	Dither…	Διάχυση…
+	Local Threshold…	Τοπικό κατώφλι…
+	Destripe…	Αφαίρεση ραβδώσεων…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Χρώμα σε γκρι…
+	Fattal et al. 2002…	Fattal κ.ά. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Ομαλή παλέτα…
+	Decompose…	Αποσύνθεση…
+	Compose…	Σύνθεση…
+	Recompose	Επανασύνθεση
+	Rearrange Colormap…	Αναδιάταξη χάρτη χρωμάτων…
+	Set Colormap…	Ορισμός χάρτη χρωμάτων…
+	Border Average…	Μέσος όρος περιγράμματος…
+	Export Histogram…	Εξαγωγή ιστογράμματος…
+	Variable Blur…	Μεταβλητό θόλωμα…
+	Apply Lens…	Εφαρμογή φακού…
+	Mosaic Tiles…	Πλακίδια μωσαϊκού…
+	Newsprint…	Εφημερίδα…
+	Curve Bend…	Κάμψη καμπύλης…
+	Warp (Map)…	Στρέβλωση (χάρτης)…
+	Bloom…	Λάμψη…
+	Sobel…	Sobel…
+	Cartoon…	Καρτούν…
+	Clothify…	Ύφασμα…
+	Stencil Chrome…	Χρώμιο στένσιλ…
+	Bump Map…	Χάρτης ανάγλυφου…
+	Panorama Projection…	Πανοραμική προβολή…
+	Perlin Noise…	Θόρυβος Perlin…
+	Plasma…	Πλάσμα…
+	Solid Noise…	Συμπαγής θόρυβος…
+	Add Border…	Προσθήκη περιγράμματος…
+	Fog…	Ομίχλη…
+	Old Photo…	Παλιά φωτογραφία…
+	Round Corners…	Στρογγυλεμένες γωνίες…
+	Tile…	Πλακίδιο…
+	Depth Merge…	Συγχώνευση βάθους…
+	Geometric Shapes…	Γεωμετρικά σχήματα…
+	Image Map Area…	Περιοχή χάρτη εικόνας…
+	Image Map From Slices	Χάρτης εικόνας από τμήματα
+	Export Image Map…	Εξαγωγή χάρτη εικόνας…
+	Clear Image Map	Εκκαθάριση χάρτη εικόνας
+	Combine	Συνδυασμός
+	Clipping	Αποκοπή
+	Color Space	Χρωματικός χώρος
+	Linear light	Γραμμικό φως
+	Copy upper to lower	Αντιγραφή άνω στην κάτω
+	Swap curves	Εναλλαγή καμπυλών
+	Mirror	Κατοπτρισμός
+	Gradient Source	Πηγή διαβάθμισης
+	Value Jitter	Διακύμανση φωτεινότητας
+	Pipe	Σειρά
+	Brush file (.myb)	Αρχείο πινέλου (.myb)
+	Text as brush tip	Κείμενο ως μύτη πινέλου
+	One character per dab along the stroke	Ένας χαρακτήρας ανά στίγμα κατά μήκος της πινελιάς
+	Engine	Μηχανή
+	Text Tip	Μύτη κειμένου
+	Hatching	Γραμμοσκίαση
+	Particle	Σωματίδιο
+	Dyna	Dyna
+	Tangent Normal	Εφαπτομενική κάθετη
+	MyPaint	MyPaint
+	Spray	Σπρέι
+	Bristle	Τρίχες
+	Deform	Παραμόρφωση
+	Grain Extract	Εξαγωγή κόκκου
+	Grain Merge	Συγχώνευση κόκκου
+	LCh Hue	Απόχρωση LCh
+	LCh Chroma	Χρωματικότητα LCh
+	LCh Color	Χρώμα LCh
+	LCh Lightness	Φωτεινότητα LCh
+	Merge	Συγχώνευση
+	Split	Διαχωρισμός
+	Remove Holes	Αφαίρεση οπών
+	Distort…	Παραμόρφωση…
+	Rounded Rectangle…	Στρογγυλεμένο ορθογώνιο…
+	Anchor Layer	Αγκύρωση στρώσης
+	To New Layer	Σε νέα στρώση
+	Layer Boundary Size…	Μέγεθος ορίων στρώσης…
+	Layer to Image Size	Στρώση σε μέγεθος εικόνας
+	Resize Layer to Selection	Στρώση σε μέγεθος επιλογής
+	Crop Layer to Content	Περικοπή στρώσης στο περιεχόμενο
+	Threshold Alpha…	Κατώφλι άλφα…
+	Composite Options…	Επιλογές σύνθεσης…
+	Zealous Crop	Εξονυχιστική περικοπή
+	Foreground Select	Επιλογή προσκηνίου
+	Stroke width	Πλάτος πινελιάς
+	Graph cut	Τομή γράφου
+	To Layer Mask	Σε μάσκα στρώσης
+	Draw a rough outline round the subject	Σχεδιάστε ένα πρόχειρο περίγραμμα γύρω από το θέμα
+	Draw a rough outline round the subject first	Σχεδιάστε πρώτα ένα πρόχειρο περίγραμμα γύρω από το θέμα
+	Outline placed: paint over the foreground, then Preview or Select	Το περίγραμμα τοποθετήθηκε: βάψτε το προσκήνιο, μετά Προεπισκόπηση ή Επιλογή
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Περιγράψτε πρόχειρα το θέμα, βάψτε το προσκήνιο και η μηχανή matting θα μεγαλώσει τη μάσκα
+	Paint over the foreground (hold Alt for background), then Preview or Select	Βάψτε το προσκήνιο (Alt για φόντο), μετά Προεπισκόπηση ή Επιλογή
+	Display Filters…	Φίλτρα προβολής…
+	Display Filters	Φίλτρα προβολής
+	No Color Deficiency Simulation	Χωρίς προσομοίωση αχρωματοψίας
+	Simulate Protanopia	Προσομοίωση πρωτανοπίας
+	Simulate Deuteranopia	Προσομοίωση δευτερανοπίας
+	Simulate Tritanopia	Προσομοίωση τριτανοπίας
+	Clip Warning	Προειδοποίηση αποκοπής
+	Clip warning	Προειδοποίηση αποκοπής
+	Color deficiency:	Αχρωματοψία:
+	Protanopia	Πρωτανοπία
+	Deuteranopia	Δευτερανοπία
+	Tritanopia	Τριτανοπία
+	Contrast:	Αντίθεση:
+	View-only: the filters change what this view shows, never the pixels.	Μόνο προβολή: τα φίλτρα αλλάζουν τι δείχνει αυτή η προβολή, ποτέ τα pixel.
+	Padding Color	Χρώμα περιθωρίου
+	From Theme	Από το θέμα
+	Dark Gray	Σκούρο γκρι
+	Medium Gray	Μεσαίο γκρι
+	Light Check Color	Ανοιχτό χρώμα σκακιέρας
+	Dark Check Color	Σκούρο χρώμα σκακιέρας
+	Light Check	Ανοιχτή σκακιέρα
+	Dark Check	Σκούρα σκακιέρα
+	Light check	Ανοιχτή σκακιέρα
+	Dark check	Σκούρα σκακιέρα
+	Custom Color	Προσαρμοσμένο χρώμα
+	Select Custom Color…	Επιλογή προσαρμοσμένου χρώματος…
+	Keep Padding in Show All	Διατήρηση περιθωρίου στην Εμφάνιση όλων
+	Keep padding in show all	Διατήρηση περιθωρίου στην Εμφάνιση όλων
+	Filter by tag	Φίλτρο ανά ετικέτα
+	Clear filter	Καθαρισμός φίλτρου
+	Tags:	Ετικέτες:
+	Add tag	Προσθήκη ετικέτας
+	Remove tag	Αφαίρεση ετικέτας
+	View Metadata…	Προβολή μεταδεδομένων…
+	Edit Metadata…	Επεξεργασία μεταδεδομένων…
+	Edit Metadata	Επεξεργασία μεταδεδομένων
+	Metadata Viewer	Προβολή μεταδεδομένων
+	Write Metadata	Εγγραφή μεταδεδομένων
+	Separate several values with semicolons	Χωρίστε πολλές τιμές με άνω τελείες
+	No tags	Χωρίς ετικέτες
+	XMP	XMP
+	IPTC	IPTC
+	Text	Κείμενο
+	Rights	Δικαιώματα
+	IPTC Extension	Επέκταση IPTC
+	Categories	Κατηγορίες
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Περιηγητής διαδικασιών
+	Plug-In Browser	Περιηγητής πρόσθετων
+	Search procedures	Αναζήτηση διαδικασιών
+	{n} procedures	{n} διαδικασίες
+	(no menu)	(χωρίς μενού)
+	Menu: {path}	Μενού: {path}
+	Parameters	Παράμετροι
+	Available now	Διαθέσιμο τώρα
+	Not available in the current state	Μη διαθέσιμο στην τρέχουσα κατάσταση
+	Run	Εκτέλεση
+	Select a procedure to read its parameters.	Επιλέξτε διαδικασία για να δείτε τις παραμέτρους της.
+	Dashboard	Πίνακας ελέγχου
+	Low memory: swap is nearly full. Save your work.	Λίγη μνήμη: το swap είναι σχεδόν γεμάτο. Αποθηκεύστε την εργασία σας.
+	Memory	Μνήμη
+	Cache	Προσωρινή μνήμη
+	Swap	Swap
+	Swap: not reported on this platform	Swap: δεν αναφέρεται σε αυτήν την πλατφόρμα
+	CPU	CPU
+	CPU renderer	Απόδοση CPU
+	uploads	μεταφορτώσεις
+	Misc: {jobs} jobs running · {n} samples	Διάφορα: {jobs} εργασίες σε εξέλιξη · {n} δείγματα
+	Log to File…	Καταγραφή σε αρχείο…
+	Stop Logging	Διακοπή καταγραφής
+	Device Status	Κατάσταση συσκευών
+	Core Pointer	Κύριος δείκτης
+	Pen / Tablet	Γραφίδα / Ταμπλέτα
+	Brush:	Πινέλο:
+	Pattern:	Μοτίβο:
+	Gradient:	Διαβάθμιση:
+	Save Device Status	Αποθήκευση κατάστασης συσκευών
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Κάθε συσκευή θυμάται το εργαλείο, τα χρώματα, το πινέλο, το μοτίβο και τη διαβάθμισή της· η αλλαγή συσκευής τα αλλάζει.
+	Selection Editor	Επεξεργαστής επιλογής
+	No document open.	Δεν υπάρχει ανοιχτό έγγραφο.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Κλικ για επιλογή του συνεχόμενου χρώματος με το μαγικό ραβδί (Shift προσθέτει, Alt αφαιρεί)
+	Save to Channel	Αποθήκευση σε κανάλι
+	To Path	Σε διαδρομή
+	Advanced options	Προχωρημένες επιλογές
+	MyPaint Brushes	Πινέλα MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Δεν υπάρχουν πινέλα MyPaint ακόμη. Εισαγάγετε αρχεία .myb για να εμφανιστούν εδώ.
+	No brush matches the filter.	Κανένα πινέλο δεν ταιριάζει στο φίλτρο.
+	Handle Transform	Μετασχηματισμός με λαβές
+	3D Transform	Μετασχηματισμός 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Επαναρύθμιση
+	Apply the transform so far and put a fresh box on the result	Εφαρμογή του μετασχηματισμού ως τώρα και νέο πλαίσιο στο αποτέλεσμα
+	Camera	Κάμερα
+	Vanishing X:	Σημείο φυγής X:
+	Y:	Y:
+	Focal length:	Εστιακή απόσταση:
+	Local pivot	Τοπικός άξονας
+	Unified pivot	Ενοποιημένος άξονας
+	Close Cage	Κλείσιμο κλωβού
+	Reset Cage	Επαναφορά κλωβού
+	Fill Plain Colour	Γέμισμα με ενιαίο χρώμα
+	Fill the original position of the cage with the plain colour of its outline	Γεμίζει την αρχική θέση του κλωβού με το ενιαίο χρώμα του περιγράμματός του
+	{n} points	{n} σημεία
+	Click to place a handle	Κλικ για τοποθέτηση λαβής
+	Rotate and Scale	Περιστροφή και κλιμάκωση
+	{n} handles: {what}	{n} λαβές: {what}
+	Reset Handles	Επαναφορά λαβών
+	Remove Handles	Αφαίρεση λαβών
+	Commit Cage Transform (Enter)	Εφαρμογή μετασχηματισμού κλωβού (Enter)
+	Commit Handle Transform (Enter)	Εφαρμογή μετασχηματισμού με λαβές (Enter)
+	Commit 3D Transform (Enter)	Εφαρμογή μετασχηματισμού 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Μετασχηματισμός κλωβού: κλικ γύρω από το τμήμα, κλικ στο πρώτο σημείο για κλείσιμο, μετά σύρετε τα σημεία
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Μετασχηματισμός με λαβές: βάλτε μία έως τέσσερις λαβές και σύρετε (μία μετακινεί, δύο περιστρέφουν και κλιμακώνουν, τρεις στρεβλώνουν, τέσσερις δίνουν προοπτική)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Μετασχηματισμός 3D: σύρετε για περιστροφή στους X και Y, Alt για Z· οι καρτέλες Μετακίνηση και Κάμερα μετακινούν στρώση και κάμερα
+	Segment {n}	Τμήμα {n}
+	Blending:	Ανάμειξη:
+	Coloring:	Χρωματισμός:
+	Midpoint:	Μέσο:
+	Sinusoidal	Ημιτονοειδές
+	Spherical (increasing)	Σφαιρικό (αύξον)
+	Spherical (decreasing)	Σφαιρικό (φθίνον)
+	Step	Βαθμίδα
+	RGB	RGB
+	HSV (counter-clockwise)	HSV (αριστερόστροφα)
+	HSV (clockwise)	HSV (δεξιόστροφα)
+	Replicate	Αναπαραγωγή
+	Split the segment at its midpoint	Διαιρεί το τμήμα στο μέσο του
+	Replace the segment with two copies of itself	Αντικαθιστά το τμήμα με δύο αντίγραφά του
+	Flip the whole gradient end to end	Αναστρέφει ολόκληρη τη διαβάθμιση
+	Save as POV-Ray…	Αποθήκευση ως POV-Ray…
+	Shaped Gradient (angular)	Διαβάθμιση σχήματος (γωνιακή)
+	Shaped Gradient (spherical)	Διαβάθμιση σχήματος (σφαιρική)
+	Shaped Gradient (dimpled)	Διαβάθμιση σχήματος (κοίλη)
+	Truncate	Περικοπή
+	Sawtooth wave	Πριονωτό κύμα
+	Triangular wave	Τριγωνικό κύμα
+	Wheel	Ροδέλα
+	Force	Δύναμη
+	Jitter	Τρέμουλο
+	Fade length	Μήκος ξεθωριάσματος
+	Random amount	Τυχαία ποσότητα
+	Save Preset	Αποθήκευση προεπιλογής
+	Paint Dynamics Editor	Επεξεργαστής δυναμικής ζωγραφικής
+	Color from Gradient	Χρώμα από διαβάθμιση
+	Put this table on the current brush	Εφαρμογή πίνακα στο τρέχον πινέλο
+	Save the table as a named dynamics preset	Αποθήκευση πίνακα ως επώνυμη προεπιλογή δυναμικής
+	Give the dynamics preset a name first	Δώστε πρώτα όνομα στην προεπιλογή δυναμικής
+	Edit the dynamics table (inputs × outputs)	Επεξεργασία πίνακα δυναμικής (είσοδοι × έξοδοι)
+	Reset Plane	Επαναφορά επιπέδου
+	Click four corners to define a perspective plane, then clone along it	Κάντε κλικ σε τέσσερις γωνίες για να ορίσετε επίπεδο προοπτικής και κλωνοποιήστε κατά μήκος του
+	Click corner {n} of 4	Κλικ στη γωνία {n} από 4
+	Perspective plane: corner {n} of 4 set	Επίπεδο προοπτικής: ορίστηκε η γωνία {n} από 4
+	Perspective plane set; {key}-click a source, then paint	Το επίπεδο προοπτικής ορίστηκε· κάντε {key}-κλικ σε πηγή και μετά ζωγραφίστε
+	Copy Path as SVG	Αντιγραφή διαδρομής ως SVG
+	Export Path to SVG…	Εξαγωγή διαδρομής σε SVG…
+	Import Path from SVG…	Εισαγωγή διαδρομής από SVG…
+	Paste Path from SVG	Επικόλληση διαδρομής από SVG
+	Copy All Paths as SVG	Αντιγραφή όλων των διαδρομών ως SVG
+	Export All Paths to SVG…	Εξαγωγή όλων των διαδρομών σε SVG…
+	Copied 1 path as SVG	Αντιγράφηκε 1 διαδρομή ως SVG
+	Copied {n} paths as SVG	Αντιγράφηκαν {n} διαδρομές ως SVG
+	Exported paths to {path}	Οι διαδρομές εξάχθηκαν σε {path}
+	Imported 1 path	Εισάχθηκε 1 διαδρομή
+	Imported {n} paths	Εισάχθηκαν {n} διαδρομές
+	The clipboard holds no SVG	Το πρόχειρο δεν περιέχει SVG
+	Clipboard Image Brush	Πινέλο εικόνας προχείρου
+	Paint with the image on the clipboard as the brush tip	Ζωγραφίστε με την εικόνα του προχείρου ως άκρη πινέλου
+	Export Layers as Animation…	Εξαγωγή επιπέδων ως κίνηση…
+	Export as Brush (.gbr)…	Εξαγωγή ως πινέλο (.gbr)…
+	Export Layers as Image Hose (.gih)…	Εξαγωγή επιπέδων ως κινούμενο πινέλο (.gih)…
+	Export as Pattern (.pat)…	Εξαγωγή ως μοτίβο (.pat)…
+	Animation Frame Tags…	Ετικέτες καρέ κίνησης…
+	Disposal	Διάθεση
+	Incremental	Διαδοχικά
+	Angular	Γωνιακά
+	Xtilt	Κλίση X
+	Ytilt	Κλίση Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Εξαγωγή ως PostScript (.eps)…
+	Encapsulated	Ενθυλακωμένο
+	Encoding	Κωδικοποίηση
+	Hex	Δεκαεξαδικό
+	Ascii85	ASCII85
+	Binary	Δυαδικό
+	Open Location…	Άνοιγμα τοποθεσίας…
+	From Screenshot…	Από στιγμιότυπο οθόνης…
+	From Web Page…	Από ιστοσελίδα…
+	Send by Email…	Αποστολή με email…
+	Url	URL
+	Cursor	Δρομέας
+	Region	Περιοχή
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Ενδιάμεση μνήμη
+	Buffers	Ενδιάμεσες μνήμες
+	Cut Named…	Αποκοπή με όνομα…
+	Copy Named…	Αντιγραφή με όνομα…
+	Copy Visible Named…	Αντιγραφή ορατών με όνομα…
+	Paste Named…	Επικόλληση με όνομα…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Δεν υπάρχουν ενδιάμεσες μνήμες με όνομα. Χρησιμοποιήστε Επεξεργασία > Ενδιάμεση μνήμη > Αντιγραφή με όνομα… για να κρατήσετε ένα αντίγραφο εδώ.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Δεν υπάρχουν ενδιάμεσες μνήμες με όνομα· χρησιμοποιήστε πρώτα Επεξεργασία > Ενδιάμεση μνήμη > Αντιγραφή με όνομα
+	Paste Buffer	Επικόλληση ενδιάμεσης μνήμης
+	Paste Buffer in Place	Επικόλληση ενδιάμεσης μνήμης στη θέση
+	Paste Buffer as New Image	Επικόλληση ενδιάμεσης μνήμης ως νέα εικόνα
+	Rename Buffer…	Μετονομασία ενδιάμεσης μνήμης…
+	Delete Buffer	Διαγραφή ενδιάμεσης μνήμης
+	Paste as New	Επικόλληση ως νέο
+	Paste the buffer as a new layer	Επικόλληση της ενδιάμεσης μνήμης ως νέο επίπεδο
+	Paste the buffer as a new document	Επικόλληση της ενδιάμεσης μνήμης ως νέο έγγραφο
+	As	Ως
+	In place	Στη θέση
+	Into	Εντός
+	Modules…	Μονάδες…
+	Units…	Μονάδες μέτρησης…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Δεν υπάρχουν εγκατεστημένες μονάδες. Φίλτρο > Πρόσθετα > Εγκατάσταση προσθέτου… προσθέτει μία.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Μια απενεργοποιημένη μονάδα παραμένει εγκατεστημένη αλλά λείπει από τα μενού έως ότου ενεργοποιηθεί ξανά.
+	Module	Μονάδα
+	Not installed	Μη εγκατεστημένο
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Ο συντελεστής είναι πόσες μονάδες κάνουν μία ίντσα (2,54 για εκατοστά, 72 για στιγμές).
+	Identifier	Αναγνωριστικό
+	Factor	Συντελεστής
+	Symbol	Σύμβολο
+	Abbreviation	Συντομογραφία
+	Singular	Ενικός
+	Plural	Πληθυντικός
+	Delete Unit	Διαγραφή μονάδας
+	New unit	Νέα μονάδα
+	Add Unit	Προσθήκη μονάδας
+	That identifier is already a unit	Αυτό το αναγνωριστικό είναι ήδη μονάδα
+	Custom units	Προσαρμοσμένες μονάδες
+	Disabled modules	Απενεργοποιημένες μονάδες
+	Input Devices…	Συσκευές εισόδου…
+	Input Controllers…	Ελεγκτές εισόδου…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Η γραφίδα είναι αυτή της ταμπλέτας που αναφέρει η πλατφόρμα. Απενεργοποιημένη λειτουργεί ως ποντίκι.
+	Device	Συσκευή
+	Invert tilt X	Αντιστροφή κλίσης X
+	Invert tilt Y	Αντιστροφή κλίσης Y
+	Swap tilt	Εναλλαγή κλίσης
+	Pressure scale	Κλίμακα πίεσης
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Τα συμβάντα ροδέλας είναι up, down, left ή right με προαιρετικά Shift+, Ctrl+ και Alt+· τα συμβάντα πληκτρολογίου είναι συντομεύσεις όπως Ctrl+Alt+Up. Η ενέργεια είναι αναγνωριστικό εντολής, προαιρετικά με παραμέτρους JSON.
+	Controller	Ελεγκτής
+	Event	Συμβάν
+	Remove mapping	Αφαίρεση αντιστοίχισης
+	New mapping	Νέα αντιστοίχιση
+	Add Mapping	Προσθήκη αντιστοίχισης
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} καταχωρίσεις· κλικ ορίζει το χρώμα προσκηνίου, διπλό κλικ επεξεργάζεται
+	Entry	Καταχώριση
+	Add an entry with the foreground colour	Προσθήκη καταχώρισης με το χρώμα προσκηνίου
+	Delete the last entry	Διαγραφή της τελευταίας καταχώρισης
+	Use selected	Χρήση επιλεγμένης
+	Ink	Μελάνι
+	MyPaint Brush	Πινέλο MyPaint
+	Nib	Μύτη
+	Aspect	Αναλογία
+	Opaque	Αδιαφάνεια
+	Erase with brush	Σβήσιμο με το πινέλο
+	Import .myb…	Εισαγωγή .myb…
+	Add a MyPaint brush file to the presets	Προσθήκη αρχείου πινέλου MyPaint στις προεπιλογές
+	Imported MyPaint brush {name}	Εισάχθηκε το πινέλο MyPaint {name}
+	How much pressure changes the nib size	Πόσο η πίεση αλλάζει το μέγεθος της μύτης
+	How much the pen's tilt turns and stretches the nib	Πόσο η κλίση της γραφίδας στρέφει και τεντώνει τη μύτη
+	How much a fast stroke thins the nib	Πόσο μια γρήγορη πινελιά λεπταίνει τη μύτη
+	Added to the preset's logarithmic radius	Προστίθεται στη λογαριθμική ακτίνα της προεπιλογής
+	Operation…	Λειτουργία…
+	Operation name or id	Όνομα ή αναγνωριστικό λειτουργίας
+	{n} operations	{n} λειτουργίες
+	Choose an operation	Επιλέξτε μια λειτουργία
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Κονσόλα Script-Fu…
+	Load Scripts Folder…	Φόρτωση φακέλου δεσμών ενεργειών…
+	Python Console…	Κονσόλα Python…
+	Load Plug-ins Folder…	Φόρτωση φακέλου προσθέτων…
+	Loaded {n} scripts	Φορτώθηκαν {n} δέσμες ενεργειών
+	Loaded {n} Python plug-ins	Φορτώθηκαν {n} πρόσθετα Python
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 με call(command, **params), message(text) και print()· κάθε εντολή της μηχανής είναι προσβάσιμη μέσω call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: κάθε εντολή της μηχανής είναι διαδικασία, (file.new "width" 640 "height" 480)· ορίστε διαδικασίες και καταχωρίστε τις με script-fu-register.
+	Code	Κώδικας
+	Cmd+Enter runs the code	Το Cmd+Enter εκτελεί τον κώδικα
+	Clear Log	Καθαρισμός καταγραφής
+	Dodge…	Υπερέκθεση…
+	Burn…	Υποέκθεση…
+	Cross-Channel Adjustment…	Ρύθμιση μεταξύ καναλιών…
+	Slope, Offset, Power…	Κλίση, μετατόπιση, δύναμη…
+	Index Colors…	Χρώματα ευρετηρίου…
+	Raindrops…	Σταγόνες βροχής…
+	Polygon Blur…	Πολυγωνικό θόλωμα…
+	Edge Detection…	Ανίχνευση ακμών…
+	Emboss (Directional)…	Ανάγλυφο (κατευθυντικό)…
+	Phong Bump Map…	Χάρτης ανάγλυφου Phong…
+	Palettize…	Εφαρμογή παλέτας…
+	Height to Normal Map…	Ύψος σε χάρτη καθέτων…
+	Normalize Normal Map	Κανονικοποίηση χάρτη καθέτων
+	Maximize Channel	Μεγιστοποίηση καναλιού
+	Minimize Channel	Ελαχιστοποίηση καναλιού
+	Propagate Colors…	Διάδοση χρωμάτων…
+	Reset Transparent	Επαναφορά διαφανών
+	Mean Removal	Αφαίρεση μέσου
+	Wavelet Noise Reducer…	Μείωση θορύβου κυματιδίων…
+	Random Pick…	Τυχαία επιλογή…
+	G'MIC Filter…	Φίλτρο G'MIC…
+	G'MIC executable	Εκτελέσιμο G'MIC
+	G'MIC update folder	Φάκελος ενημερώσεων G'MIC
+	Add scene at playhead	Προσθήκη σκηνής στην κεφαλή
+	Add to favourites	Προσθήκη στα αγαπημένα
+	Arithmetic	Αριθμητικές
+	Attach audio…	Προσάρτηση ήχου…
+	Blend details	Λεπτομέρειες ανάμειξης
+	Blend mode	Λειτουργία ανάμειξης
+	Blend mode and opacity	Λειτουργία ανάμειξης και αδιαφάνεια
+	Capture now	Λήψη τώρα
+	Clone previous keyframe here	Κλωνοποίηση εδώ του προηγούμενου καρέ-κλειδιού
+	Comment	Σχόλιο
+	Display settings	Ρυθμίσεις εμφάνισης
+	Duplicate keyframe	Διπλασιασμός καρέ-κλειδιού
+	Duplicate keyframe here	Διπλασιασμός καρέ-κλειδιού εδώ
+	End	Τέλος
+	Export timelapse…	Εξαγωγή timelapse…
+	Favourites	Αγαπημένα
+	Frame rate	Ρυθμός καρέ
+	HSX	HSX
+	Key the active layer:	Κλειδί στην ενεργή στρώση:
+	Misc	Διάφορα
+	Mute audio	Σίγαση ήχου
+	Negative	Αρνητικές
+	New keyframe	Νέο καρέ-κλειδί
+	New keyframe here	Νέο καρέ-κλειδί εδώ
+	Next tint	Χροιά επόμενων
+	No animated layers: add a keyframe to the active layer to animate it.	Δεν υπάρχουν κινούμενες στρώσεις: προσθέστε καρέ-κλειδί στην ενεργή στρώση για να την κινήσετε.
+	No animation curves yet.	Δεν υπάρχουν ακόμη καμπύλες κίνησης.
+	No scenes yet.	Δεν υπάρχουν ακόμη σκηνές.
+	Opacity per frame	Αδιαφάνεια ανά καρέ
+	Previous tint	Χροιά προηγούμενων
+	Quadratic	Τετραγωνικές
+	Recorder	Καταγραφέας
+	Remove from favourites	Αφαίρεση από τα αγαπημένα
+	Remove keyframe	Αφαίρεση καρέ-κλειδιού
+	Remove scene	Αφαίρεση σκηνής
+	Scale X	Κλίμακα X
+	Scale Y	Κλίμακα Y
+	Scene name	Όνομα σκηνής
+	Show onion skins	Εμφάνιση onion skin
+	Start	Αρχή
+	Start recording	Έναρξη καταγραφής
+	Stop recording	Διακοπή καταγραφής
+	Storyboard	Storyboard
+	Thumbnail size	Μέγεθος μικρογραφιών
+	frames	καρέ
+	opacity	αδιαφάνεια
+	rotation	περιστροφή
+	scaleX	κλίμακα X
+	scaleY	κλίμακα Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} στιγμιότυπα στο {dir}
+	2-Point Perspective	Προοπτική 2 σημείων
+	Assistant colour	Χρώμα βοηθού
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Μαγνητισμός βοηθού: πόσο μπορεί να απομακρυνθεί μια πινελιά από τον βοηθό και να έλκεται ακόμη (1000 = πάντα)
+	Assistant opacity	Αδιαφάνεια βοηθού
+	Concentric Ellipse	Ομόκεντρη έλλειψη
+	Curvilinear Perspective	Καμπυλόγραμμη προοπτική
+	Eraser snaps	Η γόμα κουμπώνει
+	Fish-Eye Point	Σημείο fisheye
+	Handles	Λαβές
+	Infinite Ruler	Άπειρος χάρακας
+	Limit to area	Περιορισμός σε περιοχή
+	Minor subdivisions	Δευτερεύουσες υποδιαιρέσεις
+	Own colour	Δικό του χρώμα
+	Perspective Ellipse	Έλλειψη σε προοπτική
+	Previews	Προεπισκοπήσεις
+	Show the snapped stroke's line while painting	Εμφάνιση της γραμμής της κουμπωμένης πινελιάς κατά τη ζωγραφική
+	Show this assistant's control handles	Εμφάνιση λαβών ελέγχου αυτού του βοηθού
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Οι πινελιές ακολουθούν τους βοηθούς ζωγραφικής (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Δύο επιπλέον λαβές περικόπτουν όπου ο βοηθός σχεδιάζει και κουμπώνει
+	Vertical ruler	Κάθετος χάρακας
+	Painting Assistants	Βοηθοί ζωγραφικής
+	Assistant Previews	Προεπισκοπήσεις βοηθών
+	Drag fill	Γέμισμα με σύρσιμο
+	Dragging fills every region passed over	Το σύρσιμο γεμίζει κάθε περιοχή που διασχίζει
+	Exclude colour	Εξαίρεση χρώματος
+	Exclude transparent	Εξαίρεση διαφανών
+	Fill mode	Λειτουργία γεμίσματος
+	No region is fully enclosed by the shape	Καμία περιοχή δεν περικλείεται πλήρως από το σχήμα
+	Only regions coloured like the first one	Μόνο περιοχές με το χρώμα της πρώτης
+	Reference	Αναφορά
+	Similar only	Μόνο παρόμοια
+	Soften the filled edge	Απάλυνση του άκρου γεμίσματος
+	Spread stops at the darkest pixels (lines)	Η επέκταση σταματά στα πιο σκούρα pixel (γραμμές)
+	Spread stops at the most opaque pixels	Η επέκταση σταματά στα πιο αδιαφανή pixel
+	Stop at darkest	Στάση στο πιο σκούρο
+	Stop at opaque	Στάση στο αδιαφανές
+	Similar Colours	Παρόμοια χρώματα
+	Colour Labels	Ετικέτες χρώματος
+	All Regions	Όλες οι περιοχές
+	Specific Colour	Συγκεκριμένο χρώμα
+	Transparent Regions	Διαφανείς περιοχές
+	Surrounded By	Περιβάλλεται από
+	Fill with Foreground Color (Opacity)	Γέμισμα με χρώμα προσκηνίου (αδιαφάνεια)
+	Fill with Background Color (Opacity)	Γέμισμα με χρώμα φόντου (αδιαφάνεια)
+	Fill with Pattern (Opacity)	Γέμισμα με μοτίβο (αδιαφάνεια)
+	Straight Line Tool	Εργαλείο Ευθεία γραμμή
+	Multibrush Tool	Εργαλείο Πολυπινέλο
+	Dynamic Brush Tool	Εργαλείο Δυναμικό πινέλο
+	Enclose and Fill Tool	Εργαλείο Περίκλειση και γέμισμα
+	Colorize Mask Tool	Εργαλείο Μάσκα χρωματισμού
+	Reference Images Tool	Εργαλείο Εικόνες αναφοράς
+	Alternating	Εναλλασσόμενο
+	Forward	Προς τα εμπρός
+	Shaped Gradient (follows the selection)	Διαβάθμιση σχήματος (ακολουθεί την επιλογή)
+	Clear copies	Καθαρισμός αντιγράφων
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+κλικ τοποθετεί αντίγραφο, Ctrl+Alt+κλικ το αφαιρεί
+	How heavily the stroke lags behind the pointer	Πόσο υστερεί η πινελιά από τον δείκτη
+	How quickly the stroke's motion dies away	Πόσο γρήγορα σβήνει η κίνηση της πινελιάς
+	Keep one-pixel lines single width without L corners	Οι γραμμές ενός pixel μένουν μονές χωρίς γωνίες σχήματος L
+	Mirror all tools	Κατοπτρισμός όλων των εργαλείων
+	Multibrush	Πολυπινέλο
+	Pixel smoothing	Εξομάλυνση pixel
+	The painting symmetry mirrors fills, gradients and retouching too	Η συμμετρία ζωγραφικής κατοπτρίζει και γεμίσματα, διαβαθμίσεις και ρετούς
+	The painting symmetry mirrors this tool's output too	Η συμμετρία ζωγραφικής κατοπτρίζει και το αποτέλεσμα αυτού του εργαλείου
+	X interval	Διάστημα X
+	Y interval	Διάστημα Y
+	Mirror / Rotation	Κάτοπτρο / Περιστροφή
+	Translate	Μετατόπιση
+	Copy Translate	Αντιγραφή με μετατόπιση
+	Cursor shape	Σχήμα δρομέα
+	Outline shape	Σχήμα περιγράμματος
+	Show outline while painting	Εμφάνιση περιγράμματος κατά τη ζωγραφική
+	Effective outline size	Πραγματικό μέγεθος περιγράμματος
+	Tool icon	Εικονίδιο εργαλείου
+	Arrow	Βέλος
+	Crosshair	Σταυρόνημα
+	Small dot	Μικρή κουκκίδα
+	No cursor	Χωρίς δρομέα
+	Triangle right	Τρίγωνο δεξιά
+	Triangle left	Τρίγωνο αριστερά
+	No outline	Χωρίς περίγραμμα
+	Instant preview	Άμεση προεπισκόπηση
+	Instant preview megapixels	Megapixel άμεσης προεπισκόπησης
+	Add…	Προσθήκη…
+	Auto update	Αυτόματη ενημέρωση
+	Canvas input profile	Προφίλ εισόδου καμβά
+	Clean up	Καθαρισμός
+	Clear key strokes	Καθαρισμός πινελιών-κλειδιών
+	Colorize Mask	Μάσκα χρωματισμού
+	Draw in the area below to test pressure, tilt and rotation	Σχεδιάστε στην περιοχή παρακάτω για να ελέγξετε πίεση, κλίση και περιστροφή
+	Edge detection	Ανίχνευση ακμών
+	Edit key strokes	Επεξεργασία πινελιών-κλειδιών
+	Embed	Ενσωμάτωση
+	Fill only inside the line art's pixels	Γέμισμα μόνο μέσα στα pixel του σκίτσου
+	Gap close	Κλείσιμο κενών
+	Input API	API εισόδου
+	Keep aspect	Διατήρηση αναλογίας
+	Limit to layer	Περιορισμός στο επίπεδο
+	Next Preset	Επόμενη προεπιλογή
+	No samples yet	Δεν υπάρχουν δείγματα ακόμη
+	Nothing to paste: the clipboard holds no image	Τίποτα για επικόλληση: το πρόχειρο δεν έχει εικόνα
+	Opacity +	Αδιαφάνεια +
+	Opacity -	Αδιαφάνεια -
+	Pasted image	Επικολλημένη εικόνα
+	Peak pressure	Μέγιστη πίεση
+	Pen	Γραφίδα
+	Previous Preset	Προηγούμενη προεπιλογή
+	Reference Images	Εικόνες αναφοράς
+	Rotate Left	Περιστροφή αριστερά
+	Rotate Right	Περιστροφή δεξιά
+	Sample rate	Ρυθμός δειγματοληψίας
+	Screen mapping	Αντιστοίχιση οθόνης
+	Show output	Εμφάνιση αποτελέσματος
+	Show the key strokes over the canvas	Εμφάνιση των πινελιών-κλειδιών πάνω στον καμβά
+	Show with all tools	Εμφάνιση με όλα τα εργαλεία
+	Size +	Μέγεθος +
+	Size -	Μέγεθος -
+	Speed source	Πηγή ταχύτητας
+	Store the pixels in the set; off, link to the file	Αποθήκευση των pixel στο σύνολο· απενεργοποιημένο, σύνδεση με το αρχείο
+	Tablet Settings…	Ρυθμίσεις ταμπλέτας…
+	Tablet Tester	Δοκιμαστής ταμπλέτας
+	The clipboard is not available	Το πρόχειρο δεν είναι διαθέσιμο
+	The next key strokes keep their regions clear	Οι επόμενες πινελιές-κλειδιά κρατούν τις περιοχές τους διαφανείς
+	Tilt offset	Μετατόπιση κλίσης
+	Touch Docker	Πίνακας αφής
+	Transparent key	Διαφανές κλειδί
+	Canvas Input	Είσοδος καμβά
+	Canvas Input…	Είσοδος καμβά…
+	Pan key	Πλήκτρο μετακίνησης
+	Zoom in key	Πλήκτρο μεγέθυνσης
+	Zoom out key	Πλήκτρο σμίκρυνσης
+	Rotate key	Πλήκτρο περιστροφής
+	Middle button	Μεσαίο κουμπί
+	Stylus button	Κουμπί γραφίδας
+	Pick modifier	Τροποποιητής επιλογής χρώματος
+	Shift wheel rotates	Shift+ροδέλα περιστρέφει
+	Trackpad	Επιφάνεια αφής
+	Pick	Επιλογή χρώματος
+	No action	Καμία ενέργεια
+	No pick	Χωρίς επιλογή χρώματος
+	Scroll	Κύλιση
+	Rotate View (hold)	Περιστροφή προβολής (κράτημα)
+	Tilt offset x	Μετατόπιση κλίσης X
+	Tilt offset y	Μετατόπιση κλίσης Y
+	Tablet speed source	Πηγή ταχύτητας ταμπλέτας
+	Tablet api	API ταμπλέτας
+	Tablet screen mapping	Αντιστοίχιση οθόνης ταμπλέτας
+	Pointer	Δείκτης
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Τύπος πλέγματος
+	Isometric left angle	Ισομετρική αριστερή γωνία
+	Isometric right angle	Ισομετρική δεξιά γωνία
+	Isometric vertical lines	Ισομετρικές κάθετες γραμμές
+	Rectangular	Ορθογώνιο
+	Isometric	Ισομετρικό
+	Node	Κόμβος
+	Extension	Επέκταση
+	Intersection	Τομή
+	Alt-click a bottom patch to set it to the foreground colour	Alt+κλικ σε κάτω δείγμα για να πάρει το χρώμα προσκηνίου
+	Apply:	Εφαρμογή:
+	Brushes this large preview coarsely while painting	Πινέλα αυτού του μεγέθους προεπισκοπούνται πρόχειρα κατά τη ζωγραφική
+	Click the disc to add shape points	Κάντε κλικ στον δίσκο για να προσθέσετε σημεία σχήματος
+	Close Shape	Κλείσιμο σχήματος
+	Color Space:	Χρωματικός χώρος:
+	Common Colors	Κοινά χρώματα
+	Components:	Συνιστώσες:
+	Continuous Mode	Συνεχής λειτουργία
+	Current pattern	Τρέχον μοτίβο
+	Depth:	Βάθος:
+	Display:	Προβολή:
+	Dynamic Hue Ring	Δυναμικός δακτύλιος απόχρωσης
+	Enable Pen Settings	Ενεργοποίηση ρυθμίσεων γραφίδας
+	Erase mode keeps its own opacity on this preset	Η λειτουργία σβήσματος κρατά δική της αδιαφάνεια σε αυτή την προεπιλογή
+	Erase mode keeps its own size on this preset	Η λειτουργία σβήσματος κρατά δικό της μέγεθος σε αυτή την προεπιλογή
+	Eraser Opacity	Αδιαφάνεια γόμας
+	Eraser Size	Μέγεθος γόμας
+	Fit Panel Width	Προσαρμογή στο πλάτος του πίνακα
+	Gamut Mask	Μάσκα γκάμας
+	Gradient Steps	Βήματα διαβάθμισης
+	Gradient ends: Alt-click to set from the foreground	Άκρα διαβάθμισης: Alt+κλικ για το χρώμα προσκηνίου
+	Hue Steps	Βήματα απόχρωσης
+	Instant Preview	Άμεση προεπισκόπηση
+	LUT Management (OCIO)	Διαχείριση LUT (OCIO)
+	Lightness Strength	Ένταση φωτεινότητας
+	Lock Color	Κλείδωμα χρώματος
+	Luma:	Luma:
+	Minimum Hardness	Ελάχιστη σκληρότητα
+	Minimum Strength	Ελάχιστη ένταση
+	Model:	Μοντέλο:
+	Off: every sensor is ignored; the curves are kept	Ανενεργό: όλοι οι αισθητήρες αγνοούνται, οι καμπύλες διατηρούνται
+	Out of gamut	Εκτός γκάμας
+	Panel colours are not shown through the display transform	Τα χρώματα του πίνακα δεν περνούν από τον μετασχηματισμό προβολής
+	Patch Count	Αριθμός δειγμάτων
+	Patch Size	Μέγεθος δείγματος
+	Patches:	Δείγματα:
+	Pattern Scale	Κλίμακα μοτίβου
+	Pop-up Size	Μέγεθος αναδυόμενου
+	Proof to Painting Space	Δοκίμιο στον χώρο ζωγραφικής
+	Recent Colors	Πρόσφατα χρώματα
+	Remove Last Shape	Αφαίρεση τελευταίου σχήματος
+	Rotate Mask	Περιστροφή μάσκας
+	Saturation Steps	Βήματα κορεσμού
+	Selector settings	Ρυθμίσεις επιλογέα
+	Selector:	Επιλογέας:
+	Shade Count	Αριθμός τόνων
+	Shade Ring by Value	Σκίαση δακτυλίου κατά τιμή
+	Shade Selector	Επιλογέας τόνων
+	Shade Size	Μέγεθος τόνου
+	Shade Spread	Εξάπλωση τόνων
+	Shade Strip	Λωρίδα τόνων
+	Shades	Τόνοι
+	Share Curve Across Settings	Κοινή καμπύλη σε όλες τις ρυθμίσεις
+	Show as Fractions	Εμφάνιση ως κλάσματα
+	Soften Edge	Απάλυνση άκρης
+	Source:	Πηγή:
+	Style:	Στιλ:
+	The tip's grey levels are painted into the colour as lightness	Οι τόνοι του γκρι της μύτης ζωγραφίζονται στο χρώμα ως φωτεινότητα
+	Threshold the tip mask for crisp pixel strokes	Κατωφλίωση μάσκας μύτης για κοφτές πινελιές pixel
+	Tip as Lightness Map	Μύτη ως χάρτης φωτεινότητας
+	Update:	Ενημέρωση:
+	Value Steps	Βήματα τιμής
+	Value on the Ring	Τιμή στον δακτύλιο
+	Zoom Pop-up	Αναδυόμενο ζουμ
+	Length over which the value goes from 0 to 1	Μήκος στο οποίο η τιμή πηγαίνει από 0 σε 1
+	Start over past the length instead of holding the end value	Επανεκκίνηση μετά το μήκος αντί να διατηρείται η τελική τιμή
+	Pressure In	Πίεση (μόνο αύξηση)
+	X-Tilt	Κλίση X
+	Y-Tilt	Κλίση Y
+	Tilt Direction	Κατεύθυνση κλίσης
+	Tilt Elevation	Ανύψωση κλίσης
+	Fuzzy Stroke	Τυχαίο ανά πινελιά
+	Tip Scale:	Κλίμακα άκρης:
+	Initial size as a share of the bitmap's size	Αρχικό μέγεθος ως ποσοστό του μεγέθους του bitmap
+	Tip Rotation:	Περιστροφή άκρης:
+	Initial rotation of the tip	Αρχική περιστροφή της άκρης
+	No anti-aliasing: the dab's pixels are fully on or off	Χωρίς εξομάλυνση: τα pixel της πινελιάς είναι πλήρως ενεργά ή ανενεργά
+	Align Outline to Pixel Grid	Στοίχιση περιγράμματος στο πλέγμα pixel
+	The brush outline snaps to the pixels the dab fills	Το περίγραμμα του πινέλου κουμπώνει στα pixel που γεμίζει η πινελιά
+	Tip Mode:	Λειτουργία άκρης:
+	(no colour bitmap: paints the brush colour)	(χωρίς έγχρωμο bitmap: βάφει με το χρώμα του πινέλου)
+	Neutral Point	Ουδέτερο σημείο
+	Canvas Only: hide the panels around the canvas	Μόνο καμβάς: απόκρυψη των πινάκων γύρω από τον καμβά
+	Presets kept in the history	Προεπιλογές στο ιστορικό
+	Clear the history	Καθαρισμός ιστορικού
+	No presets used yet	Δεν έχουν χρησιμοποιηθεί προεπιλογές ακόμη
+	Forget this preset	Αφαίρεση αυτής της προεπιλογής
+	Ten Brushes	Δέκα πινέλα
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Ορίστε προεπιλογές σε δέκα θέσεις· η επανενεργοποίηση μιας θέσης επιστρέφει στην προηγούμενη
+	Clear this slot	Καθαρισμός αυτής της θέσης
+	Assign current	Ορισμός τρέχουσας
+	Browse a folder of reference images	Περιήγηση σε φάκελο εικόνων αναφοράς
+	No folder	Κανένας φάκελος
+	Next image	Επόμενη εικόνα
+	Previous image	Προηγούμενη εικόνα
+	Pick an image to show it here	Επιλέξτε εικόνα για να εμφανιστεί εδώ
+	Search actions and commands	Αναζήτηση ενεργειών και εντολών
+	No matching action	Καμία ενέργεια δεν ταιριάζει
+	Search Actions…	Αναζήτηση ενεργειών…
+	Brush History	Ιστορικό πινέλων
+	Color Image	Έγχρωμη εικόνα
+	Lightness Map	Χάρτης φωτεινότητας
+	Static	Σταθερό
+	Move to Top	Μετακίνηση στην κορυφή
+	Bubble Up	Μία θέση πάνω
+	Clear the scratch pad to white	Καθαρισμός του πρόχειρου σε λευκό
+	Fill the scratch pad with the background colour	Γέμισμα του πρόχειρου με το χρώμα φόντου
+	Fill the scratch pad with the current gradient	Γέμισμα του πρόχειρου με την τρέχουσα διαβάθμιση
+	Fill the scratch pad with the current image	Γέμισμα του πρόχειρου με την τρέχουσα εικόνα
+	Fill the scratch pad with the preset's icon	Γέμισμα του πρόχειρου με το εικονίδιο της προεπιλογής
+	Reload the stored preset, discarding the tweaks	Επαναφόρτωση της αποθηκευμένης προεπιλογής, απόρριψη των αλλαγών
+	BG	Φόντο
+	Icon	Εικονίδιο
+	Thumbnail:	Μικρογραφία:
+	Stroke preview	Προεπισκόπηση πινελιάς
+	Scratch pad	Πρόχειρο
+	Icon library	Βιβλιοθήκη εικονιδίων
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Ενεργοποίηση τοπικής επιλογής
+	Add Curve Key	Προσθήκη κλειδιού καμπύλης
+	Add Filter…	Προσθήκη φίλτρου…
+	Add Local Selection	Προσθήκη τοπικής επιλογής
+	Add Scene	Προσθήκη σκηνής
+	Add Transform Key	Προσθήκη κλειδιού μετασχηματισμού
+	Alpha into Mask	Άλφα σε μάσκα
+	Attach Audio…	Προσάρτηση ήχου…
+	Backup count	Αριθμός αντιγράφων ασφαλείας
+	Capture Snapshot	Λήψη στιγμιότυπου
+	Change Clone Source…	Αλλαγή πηγής κλωνοποίησης…
+	Clone Keyframe	Κλωνοποίηση καρέ-κλειδιού
+	Clone Layer	Κλωνοποίηση στρώσης
+	Clones Array…	Πίνακας κλώνων…
+	Colorize Mask Properties…	Ιδιότητες μάσκας χρωματισμού…
+	Convert	Μετατροπή
+	Convert Group to Animated Layer	Μετατροπή ομάδας σε κινούμενη στρώση
+	Convert to Paint Layer	Μετατροπή σε στρώση ζωγραφικής
+	Copy Keyframe	Αντιγραφή καρέ-κλειδιού
+	Curved	Καμπύλο
+	Drag	Μεταφορά
+	Duplicate Keyframe	Διπλασιασμός καρέ-κλειδιού
+	Edit Generated Fill…	Επεξεργασία παραγόμενου γεμίσματος…
+	Edit Transform Mask…	Επεξεργασία μάσκας μετασχηματισμού…
+	Ellipse	Έλλειψη
+	Export Storyboard…	Εξαγωγή storyboard…
+	Export Timelapse…	Εξαγωγή timelapse…
+	File Layer Properties…	Ιδιότητες στρώσης αρχείου…
+	File Layer…	Στρώση αρχείου…
+	Filter Layer…	Στρώση φίλτρου…
+	Filter Mask…	Μάσκα φίλτρου…
+	Frame rate limit	Όριο ρυθμού καρέ
+	Frames	Καρέ
+	Freeze Live Layer	Πάγωμα ζωντανής στρώσης
+	High quality	Υψηλή ποιότητα
+	Import Animation Frames…	Εισαγωγή καρέ κίνησης…
+	Import Image as…	Εισαγωγή εικόνας ως…
+	Import Video Animation…	Εισαγωγή κίνησης βίντεο…
+	Input controllers	Ελεγκτές εισόδου
+	Input devices	Συσκευές εισόδου
+	Invisible	Αόρατη
+	Layer Color Space…	Χρωματικός χώρος στρώσης…
+	Layers by State	Στρώσεις κατά κατάσταση
+	Local Selection	Τοπική επιλογή
+	Mass	Μάζα
+	Move Clone…	Μετακίνηση κλώνου…
+	Move Keyframe	Μετακίνηση καρέ-κλειδιού
+	Multigrid…	Πολλαπλό πλέγμα…
+	Mute Audio	Σίγαση ήχου
+	Nearest	Εγγύτερο
+	New Keyframe	Νέο καρέ-κλειδί
+	Onion Skin…	Διαφανές φύλλο…
+	Pan	Μετατόπιση
+	Pixel grid threshold	Κατώφλι πλέγματος εικονοστοιχείων
+	Reload File Layer	Επαναφόρτωση στρώσης αρχείου
+	Remove Audio	Αφαίρεση ήχου
+	Remove Curve Key	Αφαίρεση κλειδιού καμπύλης
+	Remove Filter	Αφαίρεση φίλτρου
+	Remove Keyframe	Αφαίρεση καρέ-κλειδιού
+	Remove Local Selection	Αφαίρεση τοπικής επιλογής
+	Remove Transform Key	Αφαίρεση κλειδιού μετασχηματισμού
+	Remove Transform Mask	Αφαίρεση μάσκας μετασχηματισμού
+	Render Animation…	Απόδοση κίνησης…
+	Save Merged…	Αποθήκευση συγχωνευμένου…
+	Scaling filter	Φίλτρο κλιμάκωσης
+	Screentone…	Ράστερ…
+	Script…	Σενάριο…
+	Set Filter…	Ορισμός φίλτρου…
+	Show Output	Εμφάνιση εξόδου
+	Split Alpha	Διαχωρισμός άλφα
+	Start Recording	Έναρξη εγγραφής
+	Stop Recording	Διακοπή εγγραφής
+	Swap directory	Κατάλογος εναλλαγής
+	Ten scripts	Δέκα σενάρια
+	Threads	Νήματα
+	Transform Mask…	Μάσκα μετασχηματισμού…
+	Update Local Selection	Ενημέρωση τοπικής επιλογής
+	Write as Alpha	Εγγραφή ως άλφα
+	to File Layer…	σε στρώση αρχείου…
+	to Filter Mask…	σε μάσκα φίλτρου…
+	to Paint Layer	σε στρώση ζωγραφικής
+	to Selection Mask	σε μάσκα επιλογής
+	to Transparency Mask	σε μάσκα διαφάνειας

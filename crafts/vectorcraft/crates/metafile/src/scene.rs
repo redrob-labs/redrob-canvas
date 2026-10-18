@@ -32,7 +32,7 @@ const FLAT_PATTERNS: &str = "pattern fills are written as one colour";
 
 /// A stroke as a pen draws it.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct Pen {
+pub struct Pen {
     pub rgb: [u8; 3],
     /// Points.
     pub width: f64,
@@ -45,7 +45,7 @@ pub(crate) struct Pen {
 
 /// One drawing operation, in document space.
 #[derive(Clone, Debug)]
-pub(crate) enum Op {
+pub enum Op {
     Fill {
         path: BezPath,
         rule: FillRule,

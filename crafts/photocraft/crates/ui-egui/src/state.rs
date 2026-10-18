@@ -138,10 +138,26 @@ pub enum Tool {
     /// Painting assistants: place, move and delete rulers, vanishing points and perspective
     /// grids that brush strokes snap to (`assistant_ui`).
     Assistant,
+    /// Straight Line: drags a line painted with the brush (Shift constrains the angle, Alt moves
+    /// the line while drawing); the Brush's Line mode as a tool of its own.
+    StraightLine,
+    /// Multibrush: paints several copies of each stroke (mirror, rotation, snowflake, translate,
+    /// copy translate, interval grid) around a draggable centre (`multibrush_ui`).
+    Multibrush,
+    /// Dynamic brush: mass and drag physics smooth the stroke like a weight on a string.
+    DynamicBrush,
+    /// Enclose and Fill: draw an enclosing shape and fill the regions inside it by rule
+    /// (`fill_tool_ui`).
+    EncloseFill,
+    /// Colorize Mask: key strokes of colour propagated into a line-art layer's regions
+    /// (`colorize_ui`).
+    ColorizeMask,
+    /// Reference Images: place floating reference pictures over the canvas (`reference_ui`).
+    ReferenceImages,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 68] = [
+    pub const ALL: [Tool; 74] = [
         Tool::Move,
         Tool::Artboard,
         Tool::RectMarquee,
@@ -210,6 +226,12 @@ impl Tool {
         Tool::SliceSelect,
         Tool::Frame,
         Tool::Assistant,
+        Tool::StraightLine,
+        Tool::Multibrush,
+        Tool::DynamicBrush,
+        Tool::EncloseFill,
+        Tool::ColorizeMask,
+        Tool::ReferenceImages,
     ];
 
     pub fn label(self) -> &'static str {
@@ -242,6 +264,12 @@ impl Tool {
             Tool::SliceSelect => "Slice Select Tool",
             Tool::Frame => "Frame Tool",
             Tool::Assistant => "Assistant Tool",
+            Tool::StraightLine => "Straight Line Tool",
+            Tool::Multibrush => "Multibrush Tool",
+            Tool::DynamicBrush => "Dynamic Brush Tool",
+            Tool::EncloseFill => "Enclose and Fill Tool",
+            Tool::ColorizeMask => "Colorize Mask Tool",
+            Tool::ReferenceImages => "Reference Images Tool",
             Tool::Gradient => "Gradient Tool",
             Tool::PaintBucket => "Paint Bucket Tool",
             Tool::Type => "Horizontal Type Tool",
@@ -318,6 +346,9 @@ impl Tool {
                 | Tool::Dodge
                 | Tool::Burn
                 | Tool::Sponge
+                | Tool::StraightLine
+                | Tool::Multibrush
+                | Tool::DynamicBrush
         )
     }
     /// Photoshop default single-key shortcut (`'\0'` = none, e.g. the Blur group).
@@ -328,6 +359,8 @@ impl Tool {
             Tool::Brush | Tool::Pencil | Tool::MixerBrush | Tool::ColorReplacement => 'B',
             Tool::Eraser | Tool::BackgroundEraser | Tool::MagicEraser => 'E',
             Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count | Tool::Assistant => 'I',
+            // The reference tools' own keys: no single-key default.
+            Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush | Tool::EncloseFill | Tool::ColorizeMask | Tool::ReferenceImages => '\0',
             Tool::Lasso | Tool::PolygonLasso | Tool::MagneticLasso => 'L',
             Tool::MagicWand => 'W',
             Tool::Crop | Tool::PerspectiveCrop | Tool::Slice | Tool::SliceSelect => 'C',
@@ -421,6 +454,12 @@ pub struct Panels {
     /// floating window rather than a modal so the canvas stays usable while a gradient is edited.
     #[serde(default)]
     pub gradient_editor: bool,
+    /// Window › Touch Docker: the big-button panel for tablets (`touch_docker_ui`).
+    #[serde(default)]
+    pub touch_docker: bool,
+    /// Window › Tablet Tester (`tablet_settings`).
+    #[serde(default)]
+    pub tablet_tester: bool,
 }
 
 impl Default for Panels {
@@ -443,6 +482,8 @@ impl Default for Panels {
             rail: true,
             menu_bar: true,
             gradient_editor: false,
+            touch_docker: false,
+            tablet_tester: false,
         }
     }
 }
@@ -547,6 +588,14 @@ pub struct ToolOptions {
     pub gradient_reverse: bool,
     /// Gradient tool: dither to reduce 8-bit banding (Photoshop default on).
     pub gradient_dither: bool,
+    /// Classic gradient: how the ramp continues past the drag (none | sawtooth | triangular | truncate).
+    #[serde(default = "default_gradient_repeat")]
+    pub gradient_repeat: String,
+    /// Classic gradient: % of the drag held at the start colour before the ramp begins.
+    pub gradient_offset: f32,
+    /// Brush › Color from Gradient: stroke length in pixels of one run through the gradient.
+    #[serde(default = "default_gradient_fade_length")]
+    pub gradient_fade_length: f32,
     /// Gradient tool mode: false = "Gradient" (live: a Gradient Fill layer, editable on canvas),
     /// true = "Classic gradient" (paints the pixels).
     pub gradient_classic: bool,
@@ -589,6 +638,8 @@ pub struct ToolOptions {
     pub type_align: String,
     /// Clone Stamp / Healing Brush.
     pub clone_aligned: bool,
+    /// Clone Stamp › Perspective: clone along a four-corner perspective plane (`paint.perspectiveClone`).
+    pub clone_perspective: bool,
     /// Pattern Stamp: lock the tile origin in document space across strokes.
     pub pattern_stamp_aligned: bool,
     /// Pattern Stamp: jitter each dab's phase (seeded, replayable).
@@ -739,6 +790,34 @@ pub struct ToolOptions {
     /// removing them.
     #[serde(default)]
     pub anti_erase: bool,
+    /// Brush tool engine: `brush` (the brush tip), `ink` (the calligraphic nib, `paint.ink`) or
+    /// `mypaint` (MyPaint-style presets, `paint.mypaint`). See `paint_engines_ui`.
+    #[serde(default = "default_brush_engine")]
+    pub brush_engine: String,
+    /// Ink nib: shape (circle | square | diamond), angle in degrees, aspect 1..10, and the
+    /// sensitivities (0..1) of size to pressure, angle to tilt, and size to speed.
+    #[serde(default = "default_ink_shape")]
+    pub ink_shape: String,
+    #[serde(default)]
+    pub ink_angle: f32,
+    #[serde(default = "default_one")]
+    pub ink_aspect: f32,
+    #[serde(default = "default_one")]
+    pub ink_sens_size: f32,
+    #[serde(default = "default_ink_sens_tilt")]
+    pub ink_sens_tilt: f32,
+    #[serde(default = "default_ink_sens_speed")]
+    pub ink_sens_speed: f32,
+    /// MyPaint engine: preset name, radius (log offset -3..3), opaque multiplier 0..2 and
+    /// erase-with-brush.
+    #[serde(default = "default_mypaint_preset")]
+    pub mypaint_preset: String,
+    #[serde(default)]
+    pub mypaint_radius: f32,
+    #[serde(default = "default_one")]
+    pub mypaint_opaque: f32,
+    #[serde(default)]
+    pub mypaint_erase: bool,
     /// Magnetic Lasso: detection width (px, 1..256), edge contrast (%, 1..100), how often it
     /// fastens points by itself (0..100), and whether pen pressure narrows the width.
     pub magnetic_width: f32,
@@ -781,6 +860,129 @@ pub struct ToolOptions {
     pub filter_split_pos: f32,
     #[serde(default)]
     pub filter_split_horizontal: bool,
+    /// The Brush's engine: the `engine` object `paint.engineStroke` takes (`{"kind": "pixel"}` is
+    /// the tip-stamping default; see `brush_engines_ui`).
+    #[serde(default = "crate::brush_engines_ui::default_engine")]
+    pub engine_settings: serde_json::Value,
+    /// Painting tools › Snap to Assistants magnetism: how far (document px) a stroke may stray
+    /// from an assistant and still be pulled onto it; 1000 = always (`assistant_ui`).
+    #[serde(default = "thousand")]
+    pub assistant_magnetism: f32,
+    /// Eraser › snap to the painting assistants too (off by default, as in the reference).
+    #[serde(default)]
+    pub eraser_snaps_assistants: bool,
+    /// Paint Bucket › Fill mode: contiguous | similar | selection (empty: from `contiguous`).
+    #[serde(default)]
+    pub bucket_fill_mode: String,
+    /// Paint Bucket › Reference: current | all | labels (empty: from `sample_all_layers`), and
+    /// the colour label ids with `labels`.
+    #[serde(default)]
+    pub bucket_reference: String,
+    #[serde(default)]
+    pub bucket_labels: Vec<String>,
+    /// Paint Bucket › Feather (px) and the Spread stops.
+    #[serde(default)]
+    pub bucket_feather: f32,
+    #[serde(default)]
+    pub bucket_grow_stop_darkest: bool,
+    #[serde(default)]
+    pub bucket_grow_stop_opaque: bool,
+    /// Paint Bucket › Drag fill: dragging fills every region passed over (only similar colours
+    /// with `bucket_drag_similar`).
+    #[serde(default)]
+    pub bucket_drag_fill: bool,
+    #[serde(default)]
+    pub bucket_drag_similar: bool,
+    /// Enclose and Fill › shape (rectangle | ellipse | lasso), rule (all | color | transparent |
+    /// surroundedBy) with its colour, and the exclusions.
+    #[serde(default)]
+    pub enclose_shape: String,
+    #[serde(default)]
+    pub enclose_rule: String,
+    #[serde(default)]
+    pub enclose_rule_color: [f32; 3],
+    #[serde(default)]
+    pub enclose_exclude_transparent: bool,
+    #[serde(default)]
+    pub enclose_exclude_color_on: bool,
+    #[serde(default)]
+    pub enclose_exclude_color: [f32; 3],
+    /// The painting symmetry mirrors every tool's output (fills, gradients, retouching), not only
+    /// the brush strokes (`mirror_tools_ui`).
+    #[serde(default = "yes")]
+    pub mirror_all_tools: bool,
+    /// Dynamic Brush › mass and drag (0..1) (`dyna_ui`).
+    #[serde(default = "half")]
+    pub dyna_mass: f32,
+    #[serde(default = "dyna_drag_default")]
+    pub dyna_drag: f32,
+    /// Pencil › Pixel smoothing: one-pixel lines without L corners (`pixel_smoothing`).
+    #[serde(default)]
+    pub pixel_smoothing: bool,
+    /// Multibrush › mode (rotational | snowflake | translate | copyTranslate | interval) and its
+    /// settings (`multibrush_ui`).
+    #[serde(default)]
+    pub multibrush_mode: String,
+    #[serde(default = "six")]
+    pub multibrush_count: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_radius: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_x: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_y: f32,
+    #[serde(default = "three")]
+    pub multibrush_columns: f32,
+    #[serde(default = "three")]
+    pub multibrush_rows: f32,
+    /// Lasso › Foreground Select: the outline is a rough outline round the subject, later drags
+    /// mark foreground (or background) and the matting engine grows the mask
+    /// (`foreground_select_ui`).
+    #[serde(default)]
+    pub foreground_select: bool,
+    /// Foreground Select › stroke width of the marks, px.
+    #[serde(default = "twenty")]
+    pub fg_stroke_width: f32,
+    /// Foreground Select › the next marks are background strokes (else foreground).
+    #[serde(default)]
+    pub fg_mark_background: bool,
+    /// Foreground Select › preview overlay colour: red | green | blue.
+    #[serde(default = "default_fg_preview_color")]
+    pub fg_preview_color: String,
+    /// Foreground Select › preview in grayscale instead of the colour overlay.
+    #[serde(default)]
+    pub fg_preview_gray: bool,
+    /// Foreground Select › matting engine: graphCut (full) | fast (reduced budget).
+    #[serde(default = "default_fg_engine")]
+    pub fg_engine: String,
+}
+
+fn dyna_drag_default() -> f32 {
+    0.15
+}
+
+fn six() -> f32 {
+    6.0
+}
+
+fn three() -> f32 {
+    3.0
+}
+
+fn thousand() -> f32 {
+    1000.0
+}
+
+fn twenty() -> f32 {
+    20.0
+}
+
+fn default_fg_preview_color() -> String {
+    "red".into()
+}
+
+fn default_fg_engine() -> String {
+    "graphCut".into()
 }
 
 fn one_f32() -> f32 {
@@ -827,6 +1029,38 @@ fn default_wand_criterion() -> String {
     "composite".into()
 }
 
+fn default_gradient_repeat() -> String {
+    "none".into()
+}
+
+fn default_gradient_fade_length() -> f32 {
+    100.0
+}
+
+fn default_brush_engine() -> String {
+    "brush".into()
+}
+
+fn default_ink_shape() -> String {
+    "circle".into()
+}
+
+fn default_one() -> f32 {
+    1.0
+}
+
+fn default_ink_sens_tilt() -> f32 {
+    0.4
+}
+
+fn default_ink_sens_speed() -> f32 {
+    0.8
+}
+
+fn default_mypaint_preset() -> String {
+    "Soft Round".into()
+}
+
 fn default_eraser_mode() -> String {
     "brush".into()
 }
@@ -850,6 +1084,10 @@ fn default_brush_tool() -> Tool {
 
 fn default_layer_filter_mode() -> redrob_photo_color::BlendMode {
     redrob_photo_color::BlendMode::Normal
+}
+
+fn default_blend_favourites() -> Vec<redrob_photo_color::BlendMode> {
+    crate::blend_menu_ui::DEFAULT_FAVOURITES.to_vec()
 }
 
 fn one_u32() -> u32 {
@@ -880,6 +1118,9 @@ impl Default for ToolOptions {
             gradient_style: "linear".into(),
             gradient_reverse: false,
             gradient_dither: true,
+            gradient_repeat: default_gradient_repeat(),
+            gradient_offset: 0.0,
+            gradient_fade_length: default_gradient_fade_length(),
             gradient_classic: false,
             gradient_blend_mode: redrob_photo_color::BlendMode::Normal,
             fill_opacity: 100.0,
@@ -898,6 +1139,7 @@ impl Default for ToolOptions {
             type_aa: "sharp".into(),
             type_align: "left".into(),
             clone_aligned: true,
+            clone_perspective: false,
             pattern_stamp_aligned: true,
             pattern_stamp_impressionist: false,
             pattern_stamp_scale: 100.0,
@@ -966,6 +1208,17 @@ impl Default for ToolOptions {
             pencil_clear: false,
             eraser_mode: default_eraser_mode(),
             anti_erase: false,
+            brush_engine: default_brush_engine(),
+            ink_shape: default_ink_shape(),
+            ink_angle: 0.0,
+            ink_aspect: 1.0,
+            ink_sens_size: 1.0,
+            ink_sens_tilt: default_ink_sens_tilt(),
+            ink_sens_speed: default_ink_sens_speed(),
+            mypaint_preset: default_mypaint_preset(),
+            mypaint_radius: 0.0,
+            mypaint_opaque: 1.0,
+            mypaint_erase: false,
             magnetic_width: 10.0,
             magnetic_contrast: 10.0,
             magnetic_frequency: 57.0,
@@ -981,6 +1234,40 @@ impl Default for ToolOptions {
             filter_split: false,
             filter_split_pos: 0.5,
             filter_split_horizontal: false,
+            engine_settings: crate::brush_engines_ui::default_engine(),
+            foreground_select: false,
+            fg_stroke_width: 20.0,
+            fg_mark_background: false,
+            fg_preview_color: default_fg_preview_color(),
+            fg_preview_gray: false,
+            fg_engine: default_fg_engine(),
+            assistant_magnetism: 1000.0,
+            eraser_snaps_assistants: false,
+            bucket_fill_mode: String::new(),
+            bucket_reference: String::new(),
+            bucket_labels: Vec::new(),
+            bucket_feather: 0.0,
+            bucket_grow_stop_darkest: false,
+            bucket_grow_stop_opaque: false,
+            bucket_drag_fill: false,
+            bucket_drag_similar: false,
+            enclose_shape: String::new(),
+            enclose_rule: String::new(),
+            enclose_rule_color: [0.0, 0.0, 0.0],
+            enclose_exclude_transparent: false,
+            enclose_exclude_color_on: false,
+            enclose_exclude_color: [1.0, 1.0, 1.0],
+            mirror_all_tools: true,
+            dyna_mass: 0.5,
+            dyna_drag: 0.15,
+            pixel_smoothing: false,
+            multibrush_mode: String::new(),
+            multibrush_count: 6.0,
+            multibrush_radius: 100.0,
+            multibrush_x: 100.0,
+            multibrush_y: 100.0,
+            multibrush_columns: 3.0,
+            multibrush_rows: 3.0,
         }
     }
 }
@@ -1363,6 +1650,9 @@ pub struct UiState {
     /// Clone Stamp / Healing source point (⌥-click) and the aligned offset once a stroke started.
     #[serde(default)]
     pub clone_source: Option<[f64; 2]>,
+    /// Clone Stamp › Perspective: the plane's corners clicked so far (four define it).
+    #[serde(default, skip)]
+    pub perspective_corners: Vec<[f64; 2]>,
     #[serde(default)]
     pub clone_offset: Option<[f64; 2]>,
     /// Pattern Stamp aligned origin in document pixels, kept across strokes.
@@ -1422,6 +1712,12 @@ pub struct UiState {
     /// Selected row in the Paths panel ("work" or a saved path name).
     #[serde(default)]
     pub selected_path: Option<String>,
+    /// Paths panel › Paste Path from SVG asked the OS for its text; the next paste event is taken.
+    #[serde(default, skip)]
+    pub svg_paste_pending: bool,
+    /// Filter › Operation…: the operation chosen last time (preselected).
+    #[serde(default)]
+    pub last_operation: Option<String>,
     /// Layers panel kind filter ("pixel", "adjustment", "type", "shape", "smart"); empty = all.
     #[serde(default)]
     pub layer_filter: Vec<String>,
@@ -1434,6 +1730,17 @@ pub struct UiState {
     /// Layers panel blend-mode filter.
     #[serde(default = "default_layer_filter_mode")]
     pub layer_filter_mode: redrob_photo_color::BlendMode,
+    /// Layers panel: the blend modes starred as favourites (grouped blend menu).
+    #[serde(default = "default_blend_favourites")]
+    pub blend_favourites: Vec<redrob_photo_color::BlendMode>,
+    /// Layers panel: colour-label filter (empty = all) and the display settings of the rows.
+    #[serde(default)]
+    pub layer_filter_labels: Vec<String>,
+    #[serde(default)]
+    pub layer_display: crate::layer_filter_ui::LayerDisplay,
+    /// Animation docker state (keyframe table, onion skin, curves, storyboard, recorder).
+    #[serde(default)]
+    pub animation: crate::animation_ui::AnimationUi,
     /// Actions panel: which row is selected and which are expanded. The list lives on the session.
     #[serde(default)]
     pub actions: crate::actions::ActionsUi,
@@ -1449,10 +1756,23 @@ pub struct UiState {
     /// Ruler/Count/Note tools, Measurement Log and Notes panels (see `analysis_ui`).
     #[serde(default)]
     pub analysis: crate::analysis_ui::AnalysisUi,
+    /// Procedure Browser, Dashboard, Device Status, Selection Editor, MyPaint Brushes and the
+    /// metadata dialogs (see `extra_panels`).
+    #[serde(default)]
+    pub extra: crate::extra_panels::ExtraPanels,
     /// Assistant tool and the stroke snapping to painting assistants (see `assistant_ui`).
     #[serde(default)]
     pub assistants: crate::assistant_ui::AssistantUi,
+    /// Multibrush tool: the copies' centre (Ctrl-click; the canvas centre when `None`) and the
+    /// copy-translate offsets (`multibrush_ui`).
+    #[serde(default)]
+    pub multibrush_center: Option<[f64; 2]>,
+    #[serde(default)]
+    pub multibrush_offsets: Vec<[f64; 2]>,
     pub timeline: crate::timeline_ui::TimelineUi,
+    /// Window › Buffers panel (named buffers, see `buffers_ui`).
+    #[serde(default)]
+    pub buffers: crate::buffers_ui::BuffersUi,
     /// Slice and Slice Select tools (see `slice_ui`).
     #[serde(default)]
     pub slices: crate::slice_ui::SliceUi,
@@ -1561,6 +1881,13 @@ pub struct UiState {
     pub camera_raw_scope: CameraRawScopeState,
     #[serde(default)]
     pub camera_raw_preview: CameraRawPreviewState,
+    /// The Color panel's selectors (advanced, artistic, wide gamut, specific, mixer), shade strip,
+    /// common colours and gamut masks (`color_selectors`).
+    #[serde(default)]
+    pub color_selectors: crate::color_selectors::ColorSelectorSettings,
+    /// Window › Search Actions: the open search field (see `action_search`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub action_search: Option<crate::action_search::ActionSearch>,
 }
 
 impl Default for UiState {
@@ -1596,6 +1923,7 @@ impl Default for UiState {
             brush_tool: Tool::Brush,
             tool_brushes: Vec::new(),
             clone_source: None,
+            perspective_corners: Vec::new(),
             clone_offset: None,
             pattern_stamp_phase: None,
             extras: Extras::default(),
@@ -1605,8 +1933,12 @@ impl Default for UiState {
             presets_ui: Default::default(),
             type_panels: Default::default(),
             analysis: Default::default(),
+            extra: Default::default(),
             assistants: Default::default(),
+            multibrush_center: None,
+            multibrush_offsets: Vec::new(),
             timeline: Default::default(),
+            buffers: Default::default(),
             slices: Default::default(),
             frame_tool: Default::default(),
             artboard_tool: Default::default(),
@@ -1615,11 +1947,17 @@ impl Default for UiState {
             layer_filter_by: Default::default(),
             layer_filter_name: String::new(),
             layer_filter_mode: default_layer_filter_mode(),
+            blend_favourites: default_blend_favourites(),
+            layer_filter_labels: Vec::new(),
+            layer_display: Default::default(),
+            animation: Default::default(),
             pen: None,
             stroke_editor: None,
             direct_selection: Default::default(),
             corner_radius: None,
             selected_path: None,
+            svg_paste_pending: false,
+            last_operation: None,
             panels: Panels::default(),
             views: Vec::new(),
             dialogs: Vec::new(),
@@ -1657,6 +1995,8 @@ impl Default for UiState {
             chrome: Default::default(),
             camera_raw_scope: Default::default(),
             camera_raw_preview: Default::default(),
+            color_selectors: Default::default(),
+            action_search: None,
         }
     }
 }
@@ -1723,7 +2063,7 @@ mod tests {
         assert!(!Tool::RedEye.is_brushlike());
         assert_eq!(Tool::from_name("patternStamp"), Some(Tool::PatternStamp));
         assert_eq!(Tool::from_name("Pattern Stamp Tool"), Some(Tool::PatternStamp));
-        assert_eq!(Tool::ALL.len(), 68);
+        assert_eq!(Tool::ALL.len(), 74);
         assert_eq!(Tool::from_name("Vertical Type Mask Tool"), Some(Tool::VerticalTypeMask));
         assert_eq!(Tool::from_name("addAnchorPoint"), Some(Tool::AddAnchorPoint));
         assert_eq!(Tool::from_name("Delete Anchor Point Tool"), Some(Tool::DeleteAnchorPoint));

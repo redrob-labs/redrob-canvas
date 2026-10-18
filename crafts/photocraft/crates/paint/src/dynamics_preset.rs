@@ -5,9 +5,11 @@
 //! Applying a preset rewrites the brush's dynamics sections ([`crate::brush::ShapeDynamics`],
 //! [`crate::brush::Transfer`], [`crate::brush::ColorDynamics`], [`crate::brush::Scattering`]):
 //! each output row becomes the `Dynamic` that drives it, its first non-random input the control,
-//! `Random` the jitter, its curve the dynamic's response curve. Outputs the brush model has no
-//! per-dab parameter for (hardness, force, spacing, rate) are reported by [`DynamicsPreset::apply`]
-//! so a caller can tell the user instead of dropping them silently.
+//! `Random` the jitter, its curve the dynamic's response curve. Hardness, Force, Spacing and
+//! Rate drive the brush's own per-dab dynamics ([`BrushSettings::hardness_dynamic`],
+//! [`BrushSettings::force_dynamic`], [`BrushSettings::spacing_dynamic`],
+//! [`BrushSettings::rate_dynamic`]). Inputs a row cannot take (a second control) are reported by
+//! [`DynamicsPreset::apply`] so a caller can tell the user instead of dropping them silently.
 
 use serde::{Deserialize, Serialize};
 
@@ -110,9 +112,9 @@ impl DynOutput {
         }
     }
 
-    /// Does the brush model have a per-dab dynamic for this output?
+    /// Does the brush model have a per-dab dynamic for this output? Every output has one.
     pub fn is_mappable(self) -> bool {
-        !matches!(self, DynOutput::Hardness | DynOutput::Force | DynOutput::Spacing | DynOutput::Rate)
+        true
     }
 }
 
@@ -272,6 +274,10 @@ impl DynamicsPreset {
         b.color_dynamics.fg_bg = Dynamic::default();
         b.scattering.enabled = false;
         b.scattering.scatter = Dynamic::default();
+        b.hardness_dynamic = Dynamic::default();
+        b.force_dynamic = Dynamic::default();
+        b.spacing_dynamic = Dynamic::default();
+        b.rate_dynamic = Dynamic::default();
         for row in &self.rows {
             if row.inputs.is_empty() {
                 continue;
@@ -315,7 +321,10 @@ impl DynamicsPreset {
                     b.scattering.enabled = true;
                     b.scattering.scatter = Dynamic { jitter: if d.jitter > 0.0 { d.jitter } else { 1.0 }, ..d };
                 }
-                DynOutput::Hardness | DynOutput::Force | DynOutput::Spacing | DynOutput::Rate => {}
+                DynOutput::Hardness => b.hardness_dynamic = d,
+                DynOutput::Force => b.force_dynamic = d,
+                DynOutput::Spacing => b.spacing_dynamic = d,
+                DynOutput::Rate => b.rate_dynamic = d,
             }
         }
         if self.rows.iter().any(|r| r.drives(DynInput::Random) && r.output == DynOutput::Color) {
@@ -336,8 +345,11 @@ impl DynamicsPreset {
                 Control::StylusWheel => DynInput::Wheel,
                 Control::Rotation => DynInput::Wheel,
                 Control::Velocity => DynInput::Velocity,
-                Control::InitialDirection | Control::Direction | Control::DrawingAngle => DynInput::Direction,
-                Control::Random => DynInput::Random,
+                Control::InitialDirection | Control::Direction | Control::DrawingAngle | Control::TiltDirection => DynInput::Direction,
+                Control::Random | Control::FuzzyStroke => DynInput::Random,
+                Control::TiltX | Control::TiltY | Control::TiltElevation | Control::Perspective => DynInput::Tilt,
+                Control::PressureIn => DynInput::Pressure,
+                Control::Distance | Control::Time => DynInput::Fade,
             })
         }
         let mut p = Self::new(name, Vec::new());
@@ -368,6 +380,10 @@ impl DynamicsPreset {
         row(DynOutput::Flow, &b.transfer.flow, b.transfer.enabled);
         row(DynOutput::Color, &b.color_dynamics.fg_bg, b.color_dynamics.enabled);
         row(DynOutput::Jitter, &b.scattering.scatter, b.scattering.enabled);
+        row(DynOutput::Hardness, &b.hardness_dynamic, true);
+        row(DynOutput::Force, &b.force_dynamic, true);
+        row(DynOutput::Spacing, &b.spacing_dynamic, true);
+        row(DynOutput::Rate, &b.rate_dynamic, true);
         if let Some(f) = fade {
             p.fade_steps = f.max(1);
         }

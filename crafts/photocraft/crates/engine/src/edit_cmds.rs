@@ -390,6 +390,9 @@ fn paste(s: &mut Session, p: &Value, in_place: bool) -> Result<Value> {
     let moved = shifted(&clip.surface, dx, dy);
     let target = PixelFormat::new(fmt.mode, fmt.sample, true);
     let surf = if moved.format() == target { moved } else { moved.convert(target) };
+    // Pixels from another application are assumed to be in the Color Settings' paste profile
+    // and converted into the document's (`edit.colorManagement` › pasteAssume).
+    let surf = crate::color_management_cmds::prepare_pasted(s, &clip, surf, &d.doc);
     let before = d.doc.clone();
     let id = s.edit("Paste", |doc, active| {
         let mut l = Layer::raster(doc.next_layer_name("Layer"), target);

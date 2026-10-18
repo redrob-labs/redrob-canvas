@@ -274,7 +274,15 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
         (None, Some(b64)) => redrob_photo_paint::tile::b64_decode(b64).ok_or_else(|| bad(cmd, "`data` is not base64"))?,
         (None, None) => return Err(bad(cmd, "missing `path` (.pat file) or `data`")),
     };
-    let pats = redrob_photo_io::pattern_map::read_pat(&bytes).map_err(EngineError::Other)?;
+    // An open `GPAT` pattern file (one pattern) is accepted beside the Photoshop set.
+    let pats = if redrob_photo_io::gbr_export::is_gpat(&bytes) {
+        let (name, w, h, rgba) = redrob_photo_io::gbr_export::read_gpat(&bytes).map_err(|e| EngineError::Other(e.to_string()))?;
+        let rect = Rect::new(0, 0, w as i32, h as i32);
+        let surface = Surface::from_interleaved(PixelFormat::RGBA8, rect, &rgba);
+        vec![Pattern::new(if name.is_empty() { "Pattern".to_string() } else { name }, surface, w, h)]
+    } else {
+        redrob_photo_io::pattern_map::read_pat(&bytes).map_err(EngineError::Other)?
+    };
     let mut ids = Vec::new();
     for pat in pats {
         ids.push(pat.id.clone());

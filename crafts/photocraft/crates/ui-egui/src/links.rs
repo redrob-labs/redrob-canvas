@@ -99,7 +99,11 @@ mod tests {
     fn help_menu_lists_links_then_separator_then_system_info_and_about() {
         let app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
         let help: Vec<String> = crate::menus::menu_items(&app).into_iter().filter(|i| i.path == ["Help"]).map(|i| i.id).collect();
-        assert_eq!(help, ["help.website", "help.github", "help.reportIssue", "---", "help.systemInfo", "help.about"]);
+        // The Procedure and Plug-in Browsers (GIMP's) sit between System Info and About.
+        assert_eq!(
+            help,
+            ["help.website", "help.github", "help.reportIssue", "---", "help.systemInfo", "help.procedureBrowser", "help.pluginBrowser", "help.about"]
+        );
         for (id, _) in COMMANDS {
             assert!(crate::menus::is_live(id) && crate::menus::is_enabled(&app, id), "{id}");
         }

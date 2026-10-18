@@ -47,7 +47,7 @@ fn press_drag_release_picks_a_blend_mode() {
     h.run_steps(1);
     h.drag_at(at);
     h.run_steps(3);
-    let multiply = h.query_by_label("Multiply").expect("the list opened on the press").rect().center();
+    let multiply = crate::blend_menu_ui::test_row(&h, "Multiply").expect("the list opened on the press").center();
     for k in 1..=6 {
         h.hover_at(at + (multiply - at) * (k as f32 / 6.0));
         h.run_steps(1);
@@ -69,8 +69,12 @@ fn a_click_still_opens_the_list_for_a_second_click() {
     h.drop_at(at);
     h.run_steps(3);
     assert_eq!(blend(&h), BlendMode::Normal, "the click chose nothing");
-    let screen = h.query_by_label("Screen").expect("the list stays open after a click");
-    screen.click();
+    let screen = crate::blend_menu_ui::test_row(&h, "Screen").expect("the list stays open after a click").center();
+    h.hover_at(screen);
+    h.run_steps(1);
+    h.drag_at(screen);
+    h.run_steps(1);
+    h.drop_at(screen);
     h.run_steps(3);
     assert_eq!(blend(&h), BlendMode::Screen, "a second click picks");
 }

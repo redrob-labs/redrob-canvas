@@ -253,7 +253,6 @@
 	Author:	Autor:
 	Auto	Automático
 	Auto Size New Area Type	Dimensionar Automaticamente Novo Texto de Área
-	Auto Spell Check	Verificação Ortográfica Automática
 	Auto-Collapse Iconic Panels	Recolher Automaticamente Painéis Icônicos
 	Show Tool Group Labels	Mostrar Rótulos dos Grupos de Ferramentas
 	Auto-Rotate (turn the paper to each artboard)	Girar Automaticamente (gire o papel para cada mesa de trabalho)
@@ -3815,3 +3814,176 @@ axis	Both	Ambos
 	Reset Canvas Orientation	Redefinir orientação da tela
 	XML Editor	Editor XML
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	Simular imprime as sobreimpressões como a Visualização de sobreimpressão as mostra; as separações sempre as mantêm. Uma predefinição achata a transparência antes de imprimir (arquivos PostScript sempre a achatam).
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	arquivos WPG versão 2 (WordPerfect 6 e posteriores) ainda não são lidos: salve o gráfico como WPG 1 ou em outro formato vetorial
+@msg	bad central record	registro central inválido
+@msg	downloading needs the desktop app	o download requer o aplicativo para desktop
+@msg	give `url`: an http:// or https:// address of an image	informe `url`: um endereço http:// ou https:// de uma imagem
+@msg	no zip end record	sem registro final do zip
+@msg	not a CGM file	não é um arquivo CGM
+@msg	not a CorelDRAW file	não é um arquivo do CorelDRAW
+@msg	not a WordPerfect Graphics file	não é um arquivo do WordPerfect Graphics
+@msg	not a zip	não é um zip
+@msg	not an XFig file	não é um arquivo XFig
+@msg	select an embedded image	selecione uma imagem incorporada
+@msg	the drawing has nothing Redrob Canvas reads	o desenho não tem nada que o Redrob Canvas leia
+@msg	the effect links to no object in this document	o efeito não está vinculado a nenhum objeto deste documento
+@msg	the file draws nothing Redrob Canvas reads	o arquivo não desenha nada que o Redrob Canvas leia
+@msg	the file is empty	o arquivo está vazio
+@msg	the font has a glyph for `{nu}` already	a fonte já tem um glifo para `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	o gráfico não desenha nada que o Redrob Canvas leia
+@msg	the metafile draws nothing Redrob Canvas reads	o metarquivo não desenha nada que o Redrob Canvas leia
+@msg	the object is gone	o objeto não existe mais
+@msg	the preview bitmap can't be read	o bitmap de visualização não pode ser lido
+@msg	the preview bitmap is empty	o bitmap de visualização está vazio
+@msg	the selected object has no link	o objeto selecionado não tem link
+@msg	the view's rotation is locked (View › Lock Rotate View)	a rotação da visualização está bloqueada (Exibir › Bloquear Girar Visualização)
+@msg	truncated zip	zip truncado
+@msg	view.setRotation: missing `angle`	view.setRotation: falta `angle`
+@msg	{_1}: the dictionary is empty	{_1}: o dicionário está vazio
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: o aplicativo web não tem dispositivos seriais nem arquivos: exporte o HPGL e baixe-o
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} não é um formato que este leitor conhece
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	arquivos {kind}{ver} são contêineres compactados cujos registros de desenho não são documentados: exporte o desenho do CorelDRAW como SVG, PDF, EPS ou EMF para abri-lo
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: os registros de desenho não são documentados e o arquivo não tem bitmap de visualização: exporte o desenho como SVG, PDF, EPS ou EMF para abri-lo
+@msg	{name}: compression method {m} isn't supported	{name}: o método de compactação {m} não é suportado
+@msg	{name}: not found among the document's images	{name}: não encontrado entre as imagens do documento
+@msg	{name}: too large	{name}: muito grande
+@msg	{url}: {e}	{url}: {e}
+
+# v0.11 menu labels
+	3D Marble	Mármore 3D
+	3D Wood	Madeira 3D
+	Air Spray	Aerossol
+	Alignment Handles	Alças de Alinhamento
+	Aluminium	Alumínio
+	Angle Bisector…	Bissetriz de Ângulo…
+	Arrange in Circle	Organizar em Círculo
+	Arrange in Grid	Organizar em Grade
+	Attach Path…	Anexar Caminho…
+	Bevels	Chanfros
+	Black Hole	Buraco Negro
+	Blobs	Bolhas
+	Bloom	Brilho Difuso
+	Bounding Box…	Caixa Delimitadora…
+	Brilliance	Brilhantismo
+	Bump	Relevo
+	Bumps	Relevos
+	Button	Botão
+	Canvas Bumps	Relevos de Tela
+	Chalk and Sponge	Giz e Esponja
+	Channel to Alpha	Canal para Alfa
+	Chrome	Cromo
+	Circle by 3 Points…	Círculo por 3 Pontos…
+	Circle by Center and Radius	Círculo por Centro e Raio
+	Clone Original…	Clonar Original…
+	Color Blindness	Daltonismo
+	Comics Cream	Creme de Quadrinhos
+	Construct Grid…	Construir Grade…
+	Cracked Glass	Vidro Rachado
+	Create Anchor	Criar Âncora
+	Create Tiled Clones…	Criar Clones Ladrilhados…
+	Cubes	Cubos
+	Dark and Glow	Escuro e Brilho
+	Dragee	Drágea
+	Drop Shadow	Sombra Projetada
+	Duochrome	Duocromo
+	Dynamic Offset	Deslocamento Dinâmico
+	Ellipse by 5 Points…	Elipse por 5 Pontos…
+	Ellipse from Points…	Elipse a partir de Pontos…
+	Embossed Leather	Couro em Relevo
+	Embroidery Stitch…	Ponto de Bordado…
+	Extract Channel	Extrair Canal
+	Fade to Black	Esmaecer para Preto
+	Felt Feather	Pena de Feltro
+	Fill Between Many…	Preencher Entre Vários…
+	Fill Between Paths	Preencher Entre Caminhos
+	Fill Between Strokes…	Preencher Entre Traços…
+	Fill and Overlays	Preenchimento e Sobreposições
+	Filter Gallery	Galeria de Filtros
+	Filters	Filtros
+	Follow Link	Seguir Link
+	Fuse Slice	Fundir Fatia
+	Gears…	Engrenagens…
+	Glow	Brilho
+	Glowing Metal	Metal Incandescente
+	Gold	Ouro
+	Greyscale	Escala de Cinza
+	Grids	Grades
+	HSL Noise	Ruído HSL
+	Hatches (Rough)…	Hachuras (Rústicas)…
+	Import Web Image…	Importar Imagem da Web…
+	Ink Blot	Borrão de Tinta
+	Ink Splash	Respingo de Tinta
+	Inner Shadow	Sombra Interna
+	Input Devices…	Dispositivos de Entrada…
+	Interpolate Points…	Interpolar Pontos…
+	Join Type…	Tipo de Junção…
+	Knot…	Nó…
+	Leopard Fur	Pelo de Leopardo
+	Light Eraser	Apagador de Luz
+	Line Segment…	Segmento de Linha…
+	Linked Offset	Deslocamento Vinculado
+	Live Slice	Fatia ao Vivo
+	Lock Rotate View	Travar Rotação da Visualização
+	Luminance to Alpha	Luminância para Alfa
+	Materials	Materiais
+	Matte Jelly	Gelatina Fosca
+	Measure Segments…	Medir Segmentos…
+	Metallized Paint	Pintura Metalizada
+	Morphology	Morfologia
+	Neon	Neon
+	Noise Fill	Preenchimento de Ruído
+	Non-realistic 3D Shaders	Sombreadores 3D Não Realistas
+	Object Attributes…	Atributos do Objeto…
+	Objects to Marker	Objetos para Marcador
+	Paper Bump	Relevo de Papel
+	Parallel…	Paralela…
+	Path Effects	Efeitos de Caminho
+	Perpendicular Bisector…	Mediatriz…
+	Pointillism	Pontilhismo
+	Power Clip	Recorte Avançado
+	Power Clip (Inverse)	Recorte Avançado (Inverso)
+	Power Clip…	Recorte Avançado…
+	Protrusions	Protuberâncias
+	Quadritone	Quadritom
+	Release Power Clip	Liberar Recorte Avançado
+	Remove Overlaps	Remover Sobreposições
+	Ridges	Cristas
+	Rough Paper	Papel Rústico
+	Rough Transparency	Transparência Rústica
+	Roughen	Tornar Rústico
+	Ruler…	Régua…
+	SVG Font Editor…	Editor de Fontes SVG…
+	Saturation Map	Mapa de Saturação
+	Scatter	Dispersar
+	Show Handles…	Mostrar Alças…
+	Silhouette	Silhueta
+	Simplify (Live)…	Simplificar (ao Vivo)…
+	Sketch…	Esboço…
+	Slice…	Fatia…
+	Smooth Edges	Suavizar Bordas
+	Solarize	Solarizar
+	Specular Light	Luz Especular
+	Spikes	Espinhos
+	Split View	Visualização Dividida
+	Spots Overlay	Sobreposição de Manchas
+	Stitch Sub-Paths…	Costurar Subcaminhos…
+	Stone Wall	Muro de Pedra
+	Swirl	Redemoinho
+	Tangent to Curve…	Tangente à Curva…
+	Textures	Texturas
+	Thin Membrane	Membrana Fina
+	Torn Edges	Bordas Rasgadas
+	Trace Pixel Art…	Vetorizar Pixel Art…
+	Transform by 2 Points…	Transformar por 2 Pontos…
+	Translucent	Translúcido
+	Transparency Utilities	Utilitários de Transparência
+	Tritone	Tritom
+	Unlink Live Object	Desvincular Objeto ao Vivo
+	Visible Hairlines	Linhas Finas Visíveis
+	VonKoch…	VonKoch…
+	Watercolor	Aquarela
+	Waves	Ondas
+	X-ray	Raio-X

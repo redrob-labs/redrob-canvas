@@ -189,7 +189,13 @@ pub fn reset_options(o: &mut ToolOptions, tool: Tool) {
         | Tool::ConvertPoint
         | Tool::Artboard
         | Tool::Frame
-        | Tool::Assistant => {}
+        | Tool::Assistant
+        | Tool::StraightLine
+        | Tool::Multibrush
+        | Tool::DynamicBrush
+        | Tool::EncloseFill
+        | Tool::ColorizeMask
+        | Tool::ReferenceImages => {}
     }
 }
 

@@ -3031,7 +3031,6 @@
 	Touch Type Tool	觸控文字工具
 	Trace	描圖
 	Trace the image with the Default preset	使用「預設」預設集描圖影像
-	Tracing	描圖中
 	Tracking	字距
 	Trademark Symbol	商標符號
 	Transform	變形
@@ -3896,3 +3895,370 @@ lighting	Light	光源
 	Select an object to edit its SVG filter.	選取物件以編輯其 SVG 濾鏡。
 	Open a document to see its element tree.	開啟文件以檢視其元素樹。
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	「模擬」依疊印預視所示列印疊印；分色一律保留疊印。預設集在列印前平面化透明度（PostScript 檔案一律平面化）。
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	路徑效果
+	Clone Original	複製原始物件
+	Clone Original…	複製原始物件…
+	Attach Path	附加路徑
+	Attach Path…	附加路徑…
+	Bounding Box	邊界框
+	Bounding Box…	邊界框…
+	Fill Between Many	多路徑間填色
+	Fill Between Many…	多路徑間填色…
+	Fill Between Strokes	筆畫間填色
+	Fill Between Strokes…	筆畫間填色…
+	Power Clip	進階剪裁
+	Power Clip…	進階剪裁…
+	Power Clip (Inverse)	進階剪裁 (反向)
+	Release Power Clip	解除進階剪裁
+	Construct Grid	建構網格
+	Construct Grid…	建構網格…
+	Ellipse by 5 Points	五點橢圓
+	Ellipse by 5 Points…	五點橢圓…
+	Ellipse from Points	由點建立橢圓
+	Ellipse from Points…	由點建立橢圓…
+	Circle by 3 Points	三點圓
+	Circle by 3 Points…	三點圓…
+	Circle by Center and Radius	由圓心與半徑建立圓
+	Line Segment…	線段…
+	Parallel	平行線
+	Parallel…	平行線…
+	Perpendicular Bisector	垂直平分線
+	Perpendicular Bisector…	垂直平分線…
+	Angle Bisector	角平分線
+	Angle Bisector…	角平分線…
+	Tangent to Curve	曲線切線
+	Tangent to Curve…	曲線切線…
+	Transform by 2 Points	兩點變形
+	Transform by 2 Points…	兩點變形…
+	Show Handles…	顯示控制點…
+	Measure Segments	測量線段
+	Measure Segments…	測量線段…
+	Ruler	尺規
+	Ruler…	尺規…
+	Interpolate Points	插補點
+	Interpolate Points…	插補點…
+	Knot	繩結
+	Knot…	繩結…
+	VonKoch	科赫曲線
+	VonKoch…	科赫曲線…
+	Gears	齒輪
+	Gears…	齒輪…
+	Embroidery Stitch	刺繡針跡
+	Embroidery Stitch…	刺繡針跡…
+	Stitch Sub-Paths	縫合子路徑
+	Stitch Sub-Paths…	縫合子路徑…
+	Hatches (Rough)	影線 (粗略)
+	Hatches (Rough)…	影線 (粗略)…
+	Sketch	素描
+	Sketch…	素描…
+	Join Type	接合類型
+	Join Type…	接合類型…
+	Slice…	切片…
+	Select Linked Object	選取連結的物件
+	Mask Background	遮色片背景
+	Background	背景
+	Live Slice	即時切片
+	Fuse Slice	融合切片
+	3D Marble	3D 大理石
+	3D Wood	3D 木紋
+	Air Spray	噴霧
+	Aluminium	鋁
+	Apply Effects to Image Pixels	將效果套用到影像像素
+	Apply Filter Preset	套用濾鏡預設集
+	Apply to Selection	套用到選取範圍
+	Bevels	斜角
+	Black Hole	黑洞
+	Blobs	斑點
+	Bloom	光暈
+	Brilliance	亮彩
+	Bump	凸起
+	Bumps	凸起
+	Button	按鈕
+	Canvas Bumps	畫布凸起
+	Chalk and Sponge	粉筆與海綿
+	Channel to Alpha	通道轉為 Alpha
+	Chrome	鍍鉻
+	Color Blindness	色盲
+	Colour Space:	色彩空間：
+	Comics Cream	漫畫奶油
+	Cracked Glass	碎裂玻璃
+	Cubes	方塊
+	Dark and Glow	暗與光
+	Document Filters	文件濾鏡
+	Dragee	糖衣
+	Duochrome	雙色調
+	Duplicate Filter	複製濾鏡
+	Embossed Leather	壓紋皮革
+	Extract Channel	擷取通道
+	Fade to Black	淡出至黑
+	Felt Feather	毛氈羽
+	Fill and Overlays	填色與覆疊
+	Filter	濾鏡
+	Filter Gallery	濾鏡收藏館
+	Filter Presets	濾鏡預設集
+	Filter copy	濾鏡複本
+	Filters	濾鏡
+	Glow	發光
+	Glowing Metal	熾熱金屬
+	Gold	黃金
+	Greyscale	灰階
+	HSL Noise	HSL 雜訊
+	Ink Blot	墨漬
+	Ink Splash	墨水飛濺
+	Inner Shadow	內陰影
+	Leopard Fur	豹皮
+	Light Eraser	亮部橡皮擦
+	Luminance to Alpha	亮度轉為 Alpha
+	Materials	材質
+	Matte Jelly	霧面果凍
+	Metallized Paint	金屬漆
+	Neon	霓虹
+	No filter matches the search.	沒有符合搜尋的濾鏡。
+	Noise Fill	雜訊填色
+	Non-realistic 3D Shaders	非寫實 3D 著色器
+	Open Filter Editor	開啟濾鏡編輯器
+	Paper Bump	紙張凸起
+	Pointillism	點彩
+	Protrusions	突起
+	Quadritone	四色調
+	Ridges	脊紋
+	Rough Paper	粗糙紙
+	Rough Transparency	粗糙透明
+	Roughen	粗糙化
+	Saturation Map	飽和度對應
+	Select an object to apply a filter.	選取物件以套用濾鏡。
+	Silhouette	剪影
+	Smooth Edges	平滑邊緣
+	Solarize	曝光過度
+	Specular Light	鏡面光
+	Spikes	尖刺
+	Spots Overlay	斑點覆疊
+	Stone Wall	石牆
+	Subregion:	子區域：
+	Swirl	漩渦
+	Textures	紋理
+	The document has no filters yet.	文件尚無濾鏡。
+	Thin Membrane	薄膜
+	Torn Edges	撕裂邊緣
+	Translucent	半透明
+	Transparency Utilities	透明工具
+	Tritone	三色調
+	Watercolor	水彩
+	Waves	波浪
+	Turns:	圈數：
+	Divergence:	發散：
+	Clockwise	順時針
+	Threshold:	臨界值：
+	Grow/Shrink:	擴張/收縮：
+	Fill by:	填色依據：
+	Visible Colors	可見顏色
+	Alpha	Alpha
+	Add to Fill	加入填色
+	View rotation (Cmd+Shift+scroll turns the view)	檢視旋轉（Cmd+Shift+捲動可旋轉）
+	Lock Rotate View	鎖定檢視旋轉
+	Rotate View	旋轉檢視
+	Fixation:	固定：
+	Dip Pen	蘸水筆
+	Marker	麥克筆
+	Brush	毛筆
+	Wiggly	搖擺
+	Splotchy	斑駁
+	Use Pressure	使用壓力
+	Live Simplify	即時簡化
+	Simplify (Live)…	簡化（即時）…
+	Split View	分割檢視
+	X-ray	X 光
+	Input Devices…	輸入裝置…
+	Input Devices	輸入裝置
+	Pressure Curves	壓力曲線
+	Mouse	滑鼠
+	Pen / Stylus	畫筆 / 觸控筆
+	Touch	觸控
+	Liquify Tools	液化工具
+	Disabled	停用
+	Grids	格線
+	Main Grid	主格線
+	Add Grid	新增格線
+	Remove Grid	移除格線
+	Grid Options	格線選項
+	Kind:	種類：
+	Subdivisions:	細分：
+	Angles:	角度：
+	Gaps:	間距：
+	Origin:	原點：
+	Own color	自訂顏色
+	Open a document to edit its grids.	開啟文件以編輯其格線。
+	Add Script	新增指令碼
+	Edit Script	編輯指令碼
+	Remove Script	移除指令碼
+	The document has no scripts.	文件沒有指令碼。
+	External:	外部：
+	Embedded script	內嵌指令碼
+	Add Embedded Script	新增內嵌指令碼
+	Add External Script	新增外部指令碼
+	Source:	來源：
+	External file	外部檔案
+	Code:	程式碼：
+	Open a document to edit its scripts.	開啟文件以編輯其指令碼。
+	Alignment Handles	對齊控制點
+	Align (Shift: move the key object)	對齊（Shift：移動關鍵物件）
+	Stylesheet	樣式表
+	No rules yet. Add one and assign its class to objects.	尚無規則。新增一個並將其類別指派給物件。
+	Add Rule	新增規則
+	Remove Rule	移除規則
+	Selector:	選擇器：
+	Declarations:	宣告：
+	Assign to Selection	指派給選取範圍
+	Remove from Selection	從選取範圍移除
+	Add CSS Rule	新增 CSS 規則
+	Edit CSS Rule	編輯 CSS 規則
+	Remove CSS Rule	移除 CSS 規則
+	Assign CSS Class	指派 CSS 類別
+	Remove CSS Class	移除 CSS 類別
+	Apply Stylesheet	套用樣式表
+	New Node	新節點
+	Indent Node	縮排節點
+	Outdent Node	凸排節點
+	Move Node	移動節點
+	Set Path Data	設定路徑資料
+	Round to:	四捨五入至：
+	Round Path Data	四捨五入路徑資料
+	Connector Tool	連接線工具
+	Connect Objects	連接物件
+	Reroute Connectors	重新佈線連接線
+	Connector Obstacle	連接線障礙物
+	Arrange Connected Objects	排列已連接物件
+	Arrange Connected	排列已連接
+	Routing:	佈線：
+	Orthogonal	正交
+	Polyline	折線
+	Curvature:	曲率：
+	3D Box Tool	3D 方塊工具
+	3D Box	3D 方塊
+	3D Box Options	3D 方塊選項
+	Move Vanishing Point	移動消失點
+	Z:	Z：
+	Vanishing Point	消失點
+	Infinite	無限
+	Arrange in Grid	排列成網格
+	Arrange in Circle	排列成圓形
+	Dynamic Offset	動態偏移
+	Fill Between Paths	填滿路徑之間
+	Linked Offset	連結偏移
+	Linked Offset Distance	連結偏移距離
+	Remove Overlaps	移除重疊
+	Unlink Live Object	取消連結即時物件
+	Create Anchor	建立錨點
+	Follow Link	開啟連結
+	Select All Anchors	選取所有錨點
+	Invert Anchor Selection	反轉錨點選取
+	Aspect ratio:	外觀比例:
+	Clip path	剪裁路徑
+	DPI:	DPI:
+	Effect knots	效果控制點
+	Highlight color:	醒目提示色彩:
+	Interactivity	互動性
+	Link target:	連結目標:
+	Link title:	連結標題:
+	Path outline	路徑外框
+	Transform handles	變形控點
+	Plot…	繪圖機輸出…
+	Import Web Image…	匯入網路影像…
+	Check Spelling	拼字檢查
+	Edit Custom Dictionary	編輯自訂字典
+	The spell check is complete.	拼字檢查已完成。
+	Words checked	已檢查的字詞
+	Check Again	再次檢查
+	Word Not Found:	找不到的字詞:
+	Change To:	變更為:
+	Suggestions:	建議:
+	No suggestions	沒有建議
+	Ignore All	全部忽略
+	No words yet	尚無字詞
+	Word:	字詞:
+	Change Spelling	變更拼字
+	Ignore Spelling	忽略拼字
+	Add to Dictionary	加入字典
+	Remove from Dictionary	從字典移除
+	Spelling Dictionaries	拼字字典
+	Visible Hairlines	顯示細線
+	Rename…	重新命名…
+	Extract…	擷取…
+	Object Attributes	物件屬性
+	Object Attributes…	物件屬性…
+	Create Tiled Clones…	建立拼貼複本…
+	Rename Symbol	重新命名符號
+	Set Object Attribute	設定物件屬性
+	Trace Pixel Art…	描摹像素圖…
+	Objects to Marker	物件轉為標記
+	Markers	標記
+	Markers:	標記:
+	Delete Marker	刪除標記
+	SVG Font Editor	SVG 字型編輯器
+	SVG Font Editor…	SVG 字型編輯器…
+	New Font	新字型
+	Delete Font	刪除字型
+	No SVG font yet: make one, or turn glyph layers into one.	尚無 SVG 字型：請建立一個，或將字符圖層轉為字型。
+	Glyph Layers to Font	字符圖層轉為字型
+	Glyph	字符
+	Advance	字寬
+	Curves	曲線
+	Unicode:	Unicode:
+	Glyph name:	字符名稱:
+	Advance:	字寬:
+	Add Glyph	加入字符
+	Remove Glyph	移除字符
+	Get Curves from Selection	從選取範圍取得曲線
+	Glyph to Objects	字符轉為物件
+	Kerning:	字距微調:
+	Set Pair	設定字偶
+	Preview:	預覽:
+	Font to Glyph Layers	字型轉為字符圖層
+	New SVG Font	新 SVG 字型
+	SVG Fonts	SVG 字型
+	Delete SVG Font	刪除 SVG 字型
+	SVG Font Options	SVG 字型選項
+	Set Glyph	設定字符
+	Set Kerning Pair	設定字距微調字偶
+	Preview SVG Font	預覽 SVG 字型
+	Glyph Layers to SVG Font	字符圖層轉為 SVG 字型
+	SVG Font to Glyph Layers	SVG 字型轉為字符圖層
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	WPG 第 2 版檔案（WordPerfect 6 及更新版本）尚無法讀取：請將圖形另存為 WPG 1 或其他向量格式
+@msg	bad central record	中央記錄損壞
+@msg	downloading needs the desktop app	下載需要桌面應用程式
+@msg	give `url`: an http:// or https:// address of an image	請提供 `url`：圖像的 http:// 或 https:// 位址
+@msg	no zip end record	沒有 zip 結束記錄
+@msg	not a CGM file	不是 CGM 檔案
+@msg	not a CorelDRAW file	不是 CorelDRAW 檔案
+@msg	not a WordPerfect Graphics file	不是 WordPerfect Graphics 檔案
+@msg	not a zip	不是 zip
+@msg	not an XFig file	不是 XFig 檔案
+@msg	select an embedded image	請選取一個嵌入圖像
+@msg	the drawing has nothing Redrob Canvas reads	該繪圖中沒有 Redrob Canvas 能讀取的內容
+@msg	the effect links to no object in this document	該效果未連結到此文件中的任何物件
+@msg	the file draws nothing Redrob Canvas reads	該檔案中沒有 Redrob Canvas 能讀取的繪圖內容
+@msg	the file is empty	檔案為空
+@msg	the font has a glyph for `{nu}` already	該字型已有 `{nu}` 的字符
+@msg	the graphic draws nothing Redrob Canvas reads	該圖形中沒有 Redrob Canvas 能讀取的繪圖內容
+@msg	the metafile draws nothing Redrob Canvas reads	該中繼檔中沒有 Redrob Canvas 能讀取的繪圖內容
+@msg	the object is gone	該物件已不存在
+@msg	the preview bitmap can't be read	無法讀取預覽點陣圖
+@msg	the preview bitmap is empty	預覽點陣圖為空
+@msg	the selected object has no link	所選物件沒有連結
+@msg	the view's rotation is locked (View › Lock Rotate View)	檢視旋轉已鎖定（檢視 › 鎖定檢視旋轉）
+@msg	truncated zip	zip 被截斷
+@msg	view.setRotation: missing `angle`	view.setRotation：遺失 `angle`
+@msg	{_1}: the dictionary is empty	{_1}：字典為空
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}：網頁應用程式沒有序列裝置或檔案：請匯出 HPGL 並下載
+@msg	{device}: {e}	{device}：{e}
+@msg	{id} isn't a format this reader knows	{id} 不是此讀取器認識的格式
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	{kind}{ver} 檔案是壓縮容器，其繪圖記錄沒有文件說明：請從 CorelDRAW 將繪圖匯出為 SVG、PDF、EPS 或 EMF 再開啟
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}：繪圖記錄沒有文件說明，且檔案沒有預覽點陣圖：請將繪圖匯出為 SVG、PDF、EPS 或 EMF 再開啟
+@msg	{name}: compression method {m} isn't supported	{name}：不支援壓縮方法 {m}
+@msg	{name}: not found among the document's images	{name}：在文件的圖像中未找到
+@msg	{name}: too large	{name}：過大
+@msg	{url}: {e}	{url}：{e}
+	Tracing	描圖中

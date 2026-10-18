@@ -367,7 +367,13 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         (Key::Tab, ToolKey::Tab),
         (Key::PageUp, ToolKey::PageUp),
         (Key::PageDown, ToolKey::PageDown),
+        // Cmd+A while anchors are direct-selected: every anchor of their subpaths (Alt: of every
+        // subpath), ahead of Select › All.
+        (Key::A, ToolKey::SelectAll),
     ] {
+        if tk == ToolKey::SelectAll && !(m.command || m.ctrl) {
+            continue;
+        }
         if ctx.input(|i| i.key_pressed(k)) && app.session.tool_claims_key(tk, view) && ctx.input_mut(|i| i.consume_key(m, k)) {
             let r = app.session.tool_key(tk, crate::canvas::mods(m, false), view);
             // Keyboard actions can change the Artboard tool's active board too. Keep the
@@ -419,6 +425,8 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
                         "]" => Some((t.clone(), ToolKey::BracketRight, false)),
                         "{" => Some((t.clone(), ToolKey::BracketLeft, true)),
                         "}" => Some((t.clone(), ToolKey::BracketRight, true)),
+                        // The node tool: `!` inverts the anchor selection.
+                        "!" => Some((t.clone(), ToolKey::Invert, true)),
                         _ => None,
                     },
                     _ => None,
@@ -438,15 +446,16 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
             return;
         }
     }
-    // Keyboard transforms of the selection: `[` and `]` rotate by 15°, `<` and `>` scale by the
-    // keyboard increment (with Alt, by one screen pixel), as typed. (Cmd/Ctrl with the brackets
-    // is Arrange's; a 90° step is a dialog away: Object › Transform › Rotate.)
+    // Keyboard transforms of the selection: `[` and `]` rotate by 15°, `{` and `}` by 90°, `<` and
+    // `>` scale by the keyboard increment (with Alt, by one screen pixel), as typed. (Cmd/Ctrl with
+    // the brackets is Arrange's, so Shift carries the 90° step; Alt+H / Alt+V flip and
+    // Cmd+Shift+`<` / `>` halve and double below, as keys.)
     if !typing && !m.command && app.session.active().is_some_and(|d| !d.selection.is_empty()) {
         let typed: Vec<String> = ctx.input(|i| {
             i.events
                 .iter()
                 .filter_map(|e| match e {
-                    egui::Event::Text(t) if matches!(t.as_str(), "[" | "]" | "<" | ">") => Some(t.clone()),
+                    egui::Event::Text(t) if matches!(t.as_str(), "[" | "]" | "{" | "}" | "<" | ">") => Some(t.clone()),
                     _ => None,
                 })
                 .collect()
@@ -456,6 +465,8 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
             let p = match text.as_str() {
                 "[" => Some(("object.rotate", json!({ "angle": 15.0 }))),
                 "]" => Some(("object.rotate", json!({ "angle": -15.0 }))),
+                "{" => Some(("object.rotate", json!({ "angle": 90.0 }))),
+                "}" => Some(("object.rotate", json!({ "angle": -90.0 }))),
                 "<" | ">" => {
                     let grow = text == ">";
                     let step = if m.alt { 1.0 / view.zoom.max(1e-6) } else { app.session.prefs.keyboard_increment };
@@ -476,6 +487,40 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         }
         if taken {
             return;
+        }
+    }
+    // Flips and doubling of the selection as keys: Alt+H / Alt+V reflect it (H and V alone pick
+    // tools), Cmd+Shift+`>` doubles and Cmd+Shift+`<` halves it (the keys of Increase/Decrease
+    // Font Size, which the selection takes when it holds no type).
+    if !typing && app.session.active().is_some_and(|d| !d.selection.is_empty()) {
+        let alt = Modifiers::ALT;
+        let flip = if ctx.input_mut(|i| i.consume_key(alt, Key::H)) {
+            Some("vertical")
+        } else if ctx.input_mut(|i| i.consume_key(alt, Key::V)) {
+            Some("horizontal")
+        } else {
+            None
+        };
+        if let Some(axis) = flip {
+            let _ = app.run("object.reflect", json!({ "axis": axis }));
+            return;
+        }
+        let has_type = app.session.active().is_some_and(|d| {
+            d.selection.objects.iter().any(|id| matches!(d.doc.node(*id).map(|n| &n.kind), Some(redrob_vector_doc::NodeKind::Text(_))))
+        });
+        if !has_type {
+            let cmd_shift = Modifiers::COMMAND | Modifiers::SHIFT;
+            let factor = if ctx.input_mut(|i| i.consume_key(cmd_shift, Key::Period)) {
+                Some(200.0)
+            } else if ctx.input_mut(|i| i.consume_key(cmd_shift, Key::Comma)) {
+                Some(50.0)
+            } else {
+                None
+            };
+            if let Some(f) = factor {
+                let _ = app.run("object.scale", json!({ "sx": f, "sy": f }));
+                return;
+            }
         }
     }
     // Command shortcuts.

@@ -272,6 +272,131 @@ fn seg_dist2(p: [f32; 2], a: [f32; 2], b: [f32; 2]) -> f32 {
     (p[0] - a[0] - abx * t).powi(2) + (p[1] - a[1] - aby * t).powi(2)
 }
 
+/// Most pixels across an aligned outline (a bigger aliased tip falls back to the plain outline).
+const MAX_ALIGNED_SIDE: i64 = 512;
+
+/// Align Outline to Pixel Grid ([`BrushSettings::align_outline`], with Sharpness on): the
+/// boundary of exactly the whole pixels an aliased dab centred at `(x, y)` fills, as one closed
+/// rectilinear ring in document pixels (x right, y down). The dab's pixels are those whose
+/// centres fall inside the (rotated, flattened) tip, taken from the tip's 50 % contour for a
+/// sampled tip, so the cursor shows the staircase the stroke will leave. `None` for a brush that
+/// isn't aliased, has no shape, or is too big to trace cheaply.
+pub fn pixel_aligned_outline(b: &BrushSettings, x: f64, y: f64) -> Option<Vec<[f32; 2]>> {
+    if !b.aliased || !b.size.is_finite() || b.size <= 0.0 {
+        return None;
+    }
+    let (cx, cy) = crate::render::grid_center(x, y, b.size);
+    let r = (f64::from(b.size) / 2.0).max(0.5);
+    let reach = (r * std::f64::consts::SQRT_2).ceil() as i64 + 1;
+    if reach * 2 > MAX_ALIGNED_SIDE {
+        return None;
+    }
+    let (x0, y0) = (f64::from(cx).floor() as i64 - reach, f64::from(cy).floor() as i64 - reach);
+    let n = (reach * 2 + 1) as usize;
+    let rings = if matches!(b.tip, TipShape::Round) && b.angle == 0.0 && b.roundness >= 1.0 { None } else { tip_outline(b, false) };
+    let mut inside = vec![false; n * n];
+    let mut any = false;
+    for j in 0..n {
+        for i in 0..n {
+            let px = (x0 + i as i64) as f64 + 0.5;
+            let py = (y0 + j as i64) as f64 + 0.5;
+            let (dx, dy) = (px - f64::from(cx), py - f64::from(cy));
+            let hit = match &rings {
+                None => dx * dx + dy * dy <= r * r,
+                Some(rs) => rs.iter().fold(false, |acc, ring| acc ^ point_in_ring(ring, (dx / r) as f32, (dy / r) as f32)),
+            };
+            if hit {
+                inside[j * n + i] = true;
+                any = true;
+            }
+        }
+    }
+    if !any {
+        return None;
+    }
+    // Boundary edges of the filled region, then chained into one ring (the outer contour).
+    let at = |i: i64, j: i64| i >= 0 && j >= 0 && (i as usize) < n && (j as usize) < n && inside[j as usize * n + i as usize];
+    let mut edges: Vec<([i64; 2], [i64; 2])> = Vec::new();
+    for j in 0..n as i64 {
+        for i in 0..n as i64 {
+            if !at(i, j) {
+                continue;
+            }
+            // Directed clockwise (y down): top edge left to right, right edge top to bottom...
+            if !at(i, j - 1) {
+                edges.push(([i, j], [i + 1, j]));
+            }
+            if !at(i + 1, j) {
+                edges.push(([i + 1, j], [i + 1, j + 1]));
+            }
+            if !at(i, j + 1) {
+                edges.push(([i + 1, j + 1], [i, j + 1]));
+            }
+            if !at(i - 1, j) {
+                edges.push(([i, j + 1], [i, j]));
+            }
+        }
+    }
+    let mut by_start: HashMap<[i64; 2], Vec<usize>> = HashMap::new();
+    for (k, e) in edges.iter().enumerate() {
+        by_start.entry(e.0).or_default().push(k);
+    }
+    // Start from the topmost-leftmost edge, which lies on the outer contour.
+    let start = (0..edges.len()).min_by_key(|&k| (edges[k].0[1], edges[k].0[0]))?;
+    let mut used = vec![false; edges.len()];
+    let mut ring: Vec<[i64; 2]> = vec![edges[start].0];
+    let mut cur = start;
+    for _ in 0..edges.len() {
+        used[cur] = true;
+        let end = edges[cur].1;
+        if end == edges[start].0 {
+            break;
+        }
+        ring.push(end);
+        // Prefer the sharpest right turn so the trace stays on the outer boundary at pinch points.
+        let dir = [edges[cur].1[0] - edges[cur].0[0], edges[cur].1[1] - edges[cur].0[1]];
+        let next = by_start.get(&end)?.iter().copied().filter(|&k| !used[k]).min_by_key(|&k| {
+            let d = [edges[k].1[0] - edges[k].0[0], edges[k].1[1] - edges[k].0[1]];
+            // Cross product (y down): right turn first, straight next, left last.
+            let cross = dir[0] * d[1] - dir[1] * d[0];
+            if cross > 0 {
+                0
+            } else if cross == 0 {
+                1
+            } else {
+                2
+            }
+        })?;
+        cur = next;
+    }
+    // Drop collinear vertices so the ring is the staircase's corners only.
+    let mut out: Vec<[f32; 2]> = Vec::with_capacity(ring.len());
+    let m = ring.len();
+    for k in 0..m {
+        let (p, q, s) = (ring[(k + m - 1) % m], ring[k], ring[(k + 1) % m]);
+        let straight = (q[0] - p[0]) * (s[1] - q[1]) == (q[1] - p[1]) * (s[0] - q[0]);
+        if !straight || m <= 4 {
+            out.push([(x0 + q[0]) as f32, (y0 + q[1]) as f32]);
+        }
+    }
+    (out.len() >= 4).then_some(out)
+}
+
+/// Even-odd test of a point (radius units, y down) against one outline ring.
+fn point_in_ring(ring: &[[f32; 2]], x: f32, y: f32) -> bool {
+    let mut inside = false;
+    for (i, a) in ring.iter().enumerate() {
+        let b = ring[(i + 1) % ring.len()];
+        if (a[1] > y) != (b[1] > y) {
+            let t = (y - a[1]) / (b[1] - a[1]);
+            if x < a[0] + t * (b[0] - a[0]) {
+                inside = !inside;
+            }
+        }
+    }
+    inside
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

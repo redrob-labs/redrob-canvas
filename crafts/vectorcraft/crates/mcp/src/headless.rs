@@ -81,6 +81,8 @@ fn tool_key(name: &str) -> Option<ToolKey> {
         "tab" => ToolKey::Tab,
         "pageup" => ToolKey::PageUp,
         "pagedown" => ToolKey::PageDown,
+        "selectall" => ToolKey::SelectAll,
+        "!" | "invert" => ToolKey::Invert,
         k if k.len() == 1 => ToolKey::Digit(k.parse().ok()?),
         _ => return None,
     })

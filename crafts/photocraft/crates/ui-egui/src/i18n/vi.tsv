@@ -3920,3 +3920,843 @@ curves	Smooth	Làm mượt
 	Popup palette	Bảng màu bật lên
 	Smear	Miết
 	Smudge Radius	Bán kính nhòe
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Đảo tuyến tính
+	Value Invert	Đảo giá trị
+	Stretch Contrast HSV	Kéo giãn độ tương phản HSV
+	Color Enhance	Tăng cường màu
+	Extract Component…	Trích xuất thành phần…
+	Alien Map…	Bản đồ ngoài hành tinh…
+	Rotate Colors…	Xoay màu…
+	Palette Map…	Bản đồ bảng màu…
+	Sample Colorize…	Tô màu theo mẫu…
+	RGB Clip…	Cắt RGB…
+	Dither…	Hòa sắc…
+	Local Threshold…	Ngưỡng cục bộ…
+	Destripe…	Khử sọc…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Màu sang xám…
+	Fattal et al. 2002…	Fattal và cộng sự 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Bảng màu mượt…
+	Decompose…	Phân rã…
+	Compose…	Hợp thành…
+	Recompose	Hợp thành lại
+	Rearrange Colormap…	Sắp xếp lại bảng màu…
+	Set Colormap…	Đặt bảng màu…
+	Border Average…	Trung bình viền…
+	Export Histogram…	Xuất biểu đồ tần suất…
+	Variable Blur…	Làm mờ biến thiên…
+	Apply Lens…	Áp dụng thấu kính…
+	Mosaic Tiles…	Gạch khảm…
+	Newsprint…	In báo…
+	Curve Bend…	Uốn theo đường cong…
+	Warp (Map)…	Biến dạng (bản đồ)…
+	Bloom…	Tỏa sáng…
+	Sobel…	Sobel…
+	Cartoon…	Hoạt hình…
+	Clothify…	Vải…
+	Stencil Chrome…	Mạ crôm theo khuôn…
+	Bump Map…	Bản đồ gồ ghề…
+	Panorama Projection…	Chiếu toàn cảnh…
+	Perlin Noise…	Nhiễu Perlin…
+	Plasma…	Plasma…
+	Solid Noise…	Nhiễu đặc…
+	Add Border…	Thêm viền…
+	Fog…	Sương mù…
+	Old Photo…	Ảnh cũ…
+	Round Corners…	Bo tròn góc…
+	Tile…	Lát gạch…
+	Depth Merge…	Hợp nhất theo độ sâu…
+	Geometric Shapes…	Hình học…
+	Image Map Area…	Vùng bản đồ ảnh…
+	Image Map From Slices	Bản đồ ảnh từ các lát
+	Export Image Map…	Xuất bản đồ ảnh…
+	Clear Image Map	Xóa bản đồ ảnh
+	Combine	Kết hợp
+	Clipping	Cắt xén
+	Color Space	Không gian màu
+	Linear light	Ánh sáng tuyến tính
+	Copy upper to lower	Chép trên xuống dưới
+	Swap curves	Hoán đổi đường cong
+	Mirror	Phản chiếu
+	Gradient Source	Nguồn chuyển sắc
+	Value Jitter	Nhiễu giá trị
+	Pipe	Tuần tự
+	Brush file (.myb)	Tệp cọ (.myb)
+	Text as brush tip	Văn bản làm đầu cọ
+	One character per dab along the stroke	Một ký tự mỗi chấm dọc theo nét
+	Engine	Bộ máy
+	Text Tip	Đầu văn bản
+	Hatching	Gạch chéo
+	Particle	Hạt
+	Dyna	Dyna
+	Tangent Normal	Pháp tuyến tiếp tuyến
+	MyPaint	MyPaint
+	Spray	Phun
+	Bristle	Lông cọ
+	Deform	Biến dạng
+	Grain Extract	Tách hạt
+	Grain Merge	Gộp hạt
+	LCh Hue	Sắc màu LCh
+	LCh Chroma	Độ màu LCh
+	LCh Color	Màu LCh
+	LCh Lightness	Độ sáng LCh
+	Merge	Gộp
+	Split	Tách
+	Remove Holes	Xóa lỗ hổng
+	Distort…	Biến dạng…
+	Rounded Rectangle…	Hình chữ nhật bo góc…
+	Anchor Layer	Neo lớp
+	To New Layer	Thành lớp mới
+	Layer Boundary Size…	Kích thước biên lớp…
+	Layer to Image Size	Lớp theo kích thước ảnh
+	Resize Layer to Selection	Lớp theo vùng chọn
+	Crop Layer to Content	Cắt lớp theo nội dung
+	Threshold Alpha…	Ngưỡng alpha…
+	Composite Options…	Tùy chọn kết hợp…
+	Zealous Crop	Cắt triệt để
+	Foreground Select	Chọn tiền cảnh
+	Stroke width	Độ rộng nét
+	Graph cut	Cắt đồ thị
+	To Layer Mask	Thành mặt nạ lớp
+	Draw a rough outline round the subject	Vẽ đường bao thô quanh chủ thể
+	Draw a rough outline round the subject first	Hãy vẽ đường bao thô quanh chủ thể trước
+	Outline placed: paint over the foreground, then Preview or Select	Đã đặt đường bao: tô lên tiền cảnh, rồi Xem trước hoặc Chọn
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Bao thô chủ thể, tô lên tiền cảnh và để bộ máy matting mở rộng mặt nạ
+	Paint over the foreground (hold Alt for background), then Preview or Select	Tô lên tiền cảnh (giữ Alt cho hậu cảnh), rồi Xem trước hoặc Chọn
+	Display Filters…	Bộ lọc hiển thị…
+	Display Filters	Bộ lọc hiển thị
+	No Color Deficiency Simulation	Không mô phỏng khiếm khuyết màu
+	Simulate Protanopia	Mô phỏng mù đỏ
+	Simulate Deuteranopia	Mô phỏng mù xanh lục
+	Simulate Tritanopia	Mô phỏng mù xanh lam
+	Clip Warning	Cảnh báo cắt xén
+	Clip warning	Cảnh báo cắt xén
+	Color deficiency:	Khiếm khuyết màu:
+	Protanopia	Mù đỏ
+	Deuteranopia	Mù xanh lục
+	Tritanopia	Mù xanh lam
+	Contrast:	Độ tương phản:
+	View-only: the filters change what this view shows, never the pixels.	Chỉ hiển thị: bộ lọc thay đổi những gì chế độ xem này hiển thị, không bao giờ thay đổi pixel.
+	Show All	Hiển thị tất cả
+	Padding Color	Màu đệm
+	From Theme	Từ chủ đề
+	Dark Gray	Xám đậm
+	Medium Gray	Xám trung bình
+	Light Check Color	Màu ô sáng
+	Dark Check Color	Màu ô tối
+	Light Check	Ô sáng
+	Dark Check	Ô tối
+	Light check	Ô sáng
+	Dark check	Ô tối
+	Custom Color	Màu tùy chỉnh
+	Select Custom Color…	Chọn màu tùy chỉnh…
+	Keep Padding in Show All	Giữ đệm trong Hiển thị tất cả
+	Keep padding in show all	Giữ đệm trong Hiển thị tất cả
+	Filter by tag	Lọc theo thẻ
+	Clear filter	Xóa bộ lọc
+	Tags:	Thẻ:
+	Add tag	Thêm thẻ
+	Remove tag	Xóa thẻ
+	View Metadata…	Xem siêu dữ liệu…
+	Edit Metadata…	Sửa siêu dữ liệu…
+	Edit Metadata	Sửa siêu dữ liệu
+	Metadata Viewer	Trình xem siêu dữ liệu
+	Write Metadata	Ghi siêu dữ liệu
+	Separate several values with semicolons	Phân tách nhiều giá trị bằng dấu chấm phẩy
+	No tags	Không có thẻ
+	XMP	XMP
+	IPTC	IPTC
+	Text	Văn bản
+	Rights	Quyền
+	IPTC Extension	Phần mở rộng IPTC
+	Categories	Danh mục
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Trình duyệt thủ tục
+	Plug-In Browser	Trình duyệt plug-in
+	Search procedures	Tìm thủ tục
+	{n} procedures	{n} thủ tục
+	(no menu)	(không có menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Tham số
+	Available now	Hiện khả dụng
+	Not available in the current state	Không khả dụng ở trạng thái hiện tại
+	Run	Chạy
+	Select a procedure to read its parameters.	Chọn một thủ tục để đọc tham số của nó.
+	Dashboard	Bảng điều khiển
+	Low memory: swap is nearly full. Save your work.	Bộ nhớ thấp: swap gần đầy. Hãy lưu công việc.
+	Memory	Bộ nhớ
+	Cache	Bộ nhớ đệm
+	Swap	Swap
+	Swap: not reported on this platform	Swap: không được báo cáo trên nền tảng này
+	CPU	CPU
+	CPU renderer	Bộ kết xuất CPU
+	uploads	lần tải lên
+	Misc: {jobs} jobs running · {n} samples	Khác: {jobs} công việc đang chạy · {n} mẫu
+	Log to File…	Ghi vào tệp…
+	Stop Logging	Dừng ghi
+	Device Status	Trạng thái thiết bị
+	Core Pointer	Con trỏ chính
+	Pen / Tablet	Bút / Bảng vẽ
+	Brush:	Cọ:
+	Pattern:	Mẫu:
+	Gradient:	Chuyển sắc:
+	Save Device Status	Lưu trạng thái thiết bị
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Mỗi thiết bị nhớ công cụ, màu, cọ, mẫu và chuyển sắc của nó; đổi thiết bị sẽ đổi chúng.
+	Selection Editor	Trình sửa vùng chọn
+	No document open.	Không có tài liệu nào mở.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Nhấp để chọn màu liền kề tại đó bằng Đũa thần (Shift thêm, Alt bớt)
+	Save to Channel	Lưu vào kênh
+	To Path	Thành đường dẫn
+	Advanced options	Tùy chọn nâng cao
+	MyPaint Brushes	Cọ MyPaint
+	Import…	Nhập…
+	No MyPaint brushes yet. Import .myb files to list them here.	Chưa có cọ MyPaint. Nhập tệp .myb để liệt kê ở đây.
+	No brush matches the filter.	Không có cọ nào khớp bộ lọc.
+	Handle Transform	Biến đổi bằng tay cầm
+	3D Transform	Biến đổi 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Điều chỉnh lại
+	Apply the transform so far and put a fresh box on the result	Áp dụng biến đổi cho đến giờ và đặt khung mới lên kết quả
+	Camera	Máy ảnh
+	Vanishing X:	Điểm tụ X:
+	Y:	Y:
+	Focal length:	Tiêu cự:
+	Local pivot	Trục cục bộ
+	Unified pivot	Trục hợp nhất
+	Close Cage	Đóng lồng
+	Reset Cage	Đặt lại lồng
+	Fill Plain Colour	Tô màu phẳng
+	Fill the original position of the cage with the plain colour of its outline	Tô vị trí gốc của lồng bằng màu phẳng của đường viền
+	{n} points	{n} điểm
+	Click to place a handle	Nhấp để đặt tay cầm
+	Rotate and Scale	Xoay và co giãn
+	{n} handles: {what}	{n} tay cầm: {what}
+	Reset Handles	Đặt lại tay cầm
+	Remove Handles	Xóa tay cầm
+	Commit Cage Transform (Enter)	Xác nhận biến đổi lồng (Enter)
+	Commit Handle Transform (Enter)	Xác nhận biến đổi tay cầm (Enter)
+	Commit 3D Transform (Enter)	Xác nhận biến đổi 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Biến đổi lồng: nhấp quanh phần cần biến dạng, nhấp điểm đầu để đóng lồng, rồi kéo các điểm
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Biến đổi tay cầm: đặt một đến bốn tay cầm và kéo (một di chuyển, hai xoay và co giãn, ba xô nghiêng, bốn tạo phối cảnh)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Biến đổi 3D: kéo để xoay quanh X và Y, Alt-kéo quanh Z; thẻ Di chuyển và Máy ảnh di chuyển lớp và máy ảnh
+	Segment {n}	Đoạn {n}
+	Blending:	Pha trộn:
+	Coloring:	Tô màu:
+	Midpoint:	Điểm giữa:
+	Sinusoidal	Hình sin
+	Spherical (increasing)	Hình cầu (tăng)
+	Spherical (decreasing)	Hình cầu (giảm)
+	Step	Bậc
+	HSV (counter-clockwise)	HSV (ngược chiều kim đồng hồ)
+	HSV (clockwise)	HSV (theo chiều kim đồng hồ)
+	Replicate	Nhân bản
+	Split the segment at its midpoint	Tách đoạn tại điểm giữa
+	Replace the segment with two copies of itself	Thay đoạn bằng hai bản sao của nó
+	Flip the whole gradient end to end	Đảo ngược toàn bộ chuyển sắc
+	Save as POV-Ray…	Lưu dạng POV-Ray…
+	Shaped Gradient (angular)	Chuyển sắc theo hình (góc)
+	Shaped Gradient (spherical)	Chuyển sắc theo hình (cầu)
+	Shaped Gradient (dimpled)	Chuyển sắc theo hình (lõm)
+	Truncate	Cắt bỏ
+	Sawtooth wave	Sóng răng cưa
+	Triangular wave	Sóng tam giác
+	Wheel	Con lăn
+	Force	Lực
+	Aspect Ratio	Tỷ lệ khung
+	Jitter	Rung
+	Fade length	Độ dài mờ dần
+	Random amount	Mức ngẫu nhiên
+	Save Preset	Lưu cài đặt sẵn
+	Paint Dynamics Editor	Trình chỉnh sửa động lực vẽ
+	Color from Gradient	Màu từ chuyển sắc
+	Put this table on the current brush	Áp dụng bảng này cho cọ hiện tại
+	Save the table as a named dynamics preset	Lưu bảng thành cài đặt động lực có tên
+	Give the dynamics preset a name first	Hãy đặt tên cho cài đặt động lực trước
+	Edit the dynamics table (inputs × outputs)	Sửa bảng động lực (đầu vào × đầu ra)
+	Reset Plane	Đặt lại mặt phẳng
+	Click four corners to define a perspective plane, then clone along it	Nhấp bốn góc để xác định mặt phẳng phối cảnh, rồi nhân bản theo mặt phẳng đó
+	Click corner {n} of 4	Nhấp góc {n}/4
+	Perspective plane: corner {n} of 4 set	Mặt phẳng phối cảnh: đã đặt góc {n}/4
+	Perspective plane set; {key}-click a source, then paint	Đã đặt mặt phẳng phối cảnh; {key}-nhấp một nguồn rồi vẽ
+	Copy Path as SVG	Sao chép đường dẫn dạng SVG
+	Export Path to SVG…	Xuất đường dẫn ra SVG…
+	Import Path from SVG…	Nhập đường dẫn từ SVG…
+	Paste Path from SVG	Dán đường dẫn từ SVG
+	Copy All Paths as SVG	Sao chép mọi đường dẫn dạng SVG
+	Export All Paths to SVG…	Xuất mọi đường dẫn ra SVG…
+	Copied 1 path as SVG	Đã sao chép 1 đường dẫn dạng SVG
+	Copied {n} paths as SVG	Đã sao chép {n} đường dẫn dạng SVG
+	Exported paths to {path}	Đã xuất đường dẫn ra {path}
+	Imported 1 path	Đã nhập 1 đường dẫn
+	Imported {n} paths	Đã nhập {n} đường dẫn
+	The clipboard holds no SVG	Bảng tạm không có SVG
+	Clipboard Image Brush	Cọ ảnh bảng tạm
+	Paint with the image on the clipboard as the brush tip	Vẽ bằng ảnh trên bảng tạm làm đầu cọ
+	Export Layers as Animation…	Xuất lớp thành hoạt ảnh…
+	Export as Brush (.gbr)…	Xuất thành cọ (.gbr)…
+	Export Layers as Image Hose (.gih)…	Xuất lớp thành cọ động (.gih)…
+	Export as Pattern (.pat)…	Xuất thành mẫu (.pat)…
+	Animation Frame Tags…	Thẻ khung hoạt ảnh…
+	Disposal	Xử lý khung
+	Replace	Thay thế
+	Incremental	Tăng dần
+	Angular	Theo góc
+	Xtilt	Nghiêng X
+	Ytilt	Nghiêng Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Xuất thành PostScript (.eps)…
+	Encapsulated	Đóng gói (EPS)
+	Encoding	Mã hóa
+	Hex	Thập lục phân
+	Ascii85	ASCII85
+	Binary	Nhị phân
+	Open Location…	Mở vị trí…
+	From Screenshot…	Từ ảnh chụp màn hình…
+	From Web Page…	Từ trang web…
+	Send by Email…	Gửi qua email…
+	Url	URL
+	Cursor	Con trỏ
+	Region	Vùng
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Bộ đệm
+	Buffers	Bộ đệm
+	Cut Named…	Cắt có tên…
+	Copy Named…	Sao chép có tên…
+	Copy Visible Named…	Sao chép phần hiển thị có tên…
+	Paste Named…	Dán có tên…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Không có bộ đệm có tên. Dùng Chỉnh sửa > Bộ đệm > Sao chép có tên… để giữ một bản sao ở đây.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Không có bộ đệm có tên; hãy dùng Chỉnh sửa > Bộ đệm > Sao chép có tên trước
+	Paste Buffer	Dán bộ đệm
+	Paste Buffer in Place	Dán bộ đệm tại chỗ
+	Paste Buffer as New Image	Dán bộ đệm thành ảnh mới
+	Rename Buffer…	Đổi tên bộ đệm…
+	Delete Buffer	Xóa bộ đệm
+	Paste as New	Dán thành mới
+	Paste the buffer as a new layer	Dán bộ đệm thành lớp mới
+	Paste the buffer as a new document	Dán bộ đệm thành tài liệu mới
+	As	Dạng
+	In place	Tại chỗ
+	Into	Vào trong
+	Modules…	Mô-đun…
+	Units…	Đơn vị…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Chưa cài mô-đun nào. Bộ lọc > Plug-in > Cài plug-in… để thêm.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Mô-đun bị tắt vẫn được cài nhưng rời khỏi menu cho đến khi bật lại.
+	Module	Mô-đun
+	Not installed	Chưa cài
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Hệ số là số đơn vị trong một inch (2,54 với xentimét, 72 với điểm).
+	Identifier	Định danh
+	Factor	Hệ số
+	Symbol	Ký hiệu
+	Abbreviation	Viết tắt
+	Singular	Số ít
+	Plural	Số nhiều
+	Delete Unit	Xóa đơn vị
+	New unit	Đơn vị mới
+	Add Unit	Thêm đơn vị
+	That identifier is already a unit	Định danh đó đã là một đơn vị
+	Custom units	Đơn vị tùy chỉnh
+	Disabled modules	Mô-đun đã tắt
+	Input Devices…	Thiết bị nhập…
+	Input Controllers…	Bộ điều khiển nhập…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Bút là bút cảm ứng của bảng vẽ mà nền tảng báo. Khi tắt, nó hoạt động như chuột.
+	Device	Thiết bị
+	Invert tilt X	Đảo nghiêng X
+	Invert tilt Y	Đảo nghiêng Y
+	Swap tilt	Hoán đổi nghiêng
+	Pressure scale	Tỷ lệ áp lực
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Sự kiện con lăn là up, down, left hoặc right với Shift+, Ctrl+ và Alt+ tùy chọn; sự kiện bàn phím là phím tắt như Ctrl+Alt+Up. Hành động là ID lệnh, có thể kèm tham số JSON.
+	Keyboard	Bàn phím
+	Controller	Bộ điều khiển
+	Event	Sự kiện
+	Remove mapping	Xóa ánh xạ
+	New mapping	Ánh xạ mới
+	Add Mapping	Thêm ánh xạ
+	Disabled	Đã tắt
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} mục; nhấp để đặt màu nền trước, nhấp đôi để sửa
+	Entry	Mục
+	Add an entry with the foreground colour	Thêm một mục với màu nền trước
+	Delete the last entry	Xóa mục cuối
+	Use selected	Dùng mục đã chọn
+	Ink	Mực
+	MyPaint Brush	Cọ MyPaint
+	Nib	Ngòi
+	Aspect	Tỷ lệ
+	Opaque	Độ đục
+	Erase with brush	Xóa bằng cọ
+	Import .myb…	Nhập .myb…
+	Add a MyPaint brush file to the presets	Thêm tệp cọ MyPaint vào bộ cài sẵn
+	Imported MyPaint brush {name}	Đã nhập cọ MyPaint {name}
+	How much pressure changes the nib size	Áp lực thay đổi kích cỡ ngòi bao nhiêu
+	How much the pen's tilt turns and stretches the nib	Độ nghiêng bút xoay và kéo giãn ngòi bao nhiêu
+	How much a fast stroke thins the nib	Nét nhanh làm mảnh ngòi bao nhiêu
+	Added to the preset's logarithmic radius	Cộng vào bán kính lôgarit của bộ cài sẵn
+	Operation…	Phép toán…
+	Operation name or id	Tên hoặc ID phép toán
+	{n} operations	{n} phép toán
+	Choose an operation	Chọn một phép toán
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Bảng điều khiển Script-Fu…
+	Load Scripts Folder…	Tải thư mục tập lệnh…
+	Python Console…	Bảng điều khiển Python…
+	Load Plug-ins Folder…	Tải thư mục plug-in…
+	Loaded {n} scripts	Đã tải {n} tập lệnh
+	Loaded {n} Python plug-ins	Đã tải {n} plug-in Python
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 với call(command, **params), message(text) và print(); mọi lệnh của bộ máy đều gọi được qua call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: mọi lệnh của bộ máy là một thủ tục, (file.new "width" 640 "height" 480); define thủ tục và đăng ký bằng script-fu-register.
+	Code	Mã
+	Cmd+Enter runs the code	Cmd+Enter chạy mã
+	Clear Log	Xóa nhật ký
+	Dodge…	Làm sáng…
+	Burn…	Làm tối…
+	Cross-Channel Adjustment…	Điều chỉnh liên kênh…
+	Slope, Offset, Power…	Độ dốc, bù trừ, lũy thừa…
+	Index Colors…	Màu chỉ mục…
+	Raindrops…	Hạt mưa…
+	Polygon Blur…	Làm mờ đa giác…
+	Edge Detection…	Phát hiện cạnh…
+	Emboss (Directional)…	Dập nổi (theo hướng)…
+	Phong Bump Map…	Bản đồ gồ ghề Phong…
+	Palettize…	Áp bảng màu…
+	Height to Normal Map…	Độ cao sang bản đồ pháp tuyến…
+	Normalize Normal Map	Chuẩn hóa bản đồ pháp tuyến
+	Maximize Channel	Tối đa hóa kênh
+	Minimize Channel	Tối thiểu hóa kênh
+	Propagate Colors…	Lan truyền màu…
+	Reset Transparent	Đặt lại điểm trong suốt
+	Mean Removal	Loại bỏ trung bình
+	Wavelet Noise Reducer…	Giảm nhiễu wavelet…
+	Random Pick…	Chọn ngẫu nhiên…
+	G'MIC Filter…	Bộ lọc G'MIC…
+	G'MIC executable	Tệp thực thi G'MIC
+	G'MIC update folder	Thư mục cập nhật G'MIC
+	Add scene at playhead	Thêm cảnh tại đầu phát
+	Add to favourites	Thêm vào mục ưa thích
+	After	Sau
+	Arithmetic	Số học
+	Attach audio…	Đính kèm âm thanh…
+	Before	Trước
+	Blend details	Chi tiết hòa trộn
+	Blend mode	Chế độ hòa trộn
+	Blend mode and opacity	Chế độ hòa trộn và độ mờ
+	Capture now	Chụp ngay
+	Clone previous keyframe here	Nhân bản khung hình khóa trước vào đây
+	Comment	Ghi chú
+	Display settings	Thiết lập hiển thị
+	Duplicate keyframe	Nhân đôi khung hình khóa
+	Duplicate keyframe here	Nhân đôi khung hình khóa vào đây
+	End	Kết thúc
+	Export timelapse…	Xuất timelapse…
+	Favourites	Ưa thích
+	Frame rate	Tốc độ khung hình
+	HSX	HSX
+	Hidden	Ẩn
+	Key the active layer:	Đặt khóa cho lớp đang chọn:
+	Misc	Khác
+	Mute audio	Tắt tiếng
+	Negative	Âm bản
+	New keyframe	Khung hình khóa mới
+	New keyframe here	Khung hình khóa mới tại đây
+	Next tint	Màu phủ khung sau
+	No animated layers: add a keyframe to the active layer to animate it.	Không có lớp hoạt ảnh: thêm khung hình khóa cho lớp đang chọn để tạo hoạt ảnh.
+	No animation curves yet.	Chưa có đường cong hoạt ảnh.
+	No scenes yet.	Chưa có cảnh nào.
+	Opacity per frame	Độ mờ theo khung hình
+	Previous tint	Màu phủ khung trước
+	Quadratic	Bậc hai
+	Recorder	Trình ghi
+	Remove from favourites	Bỏ khỏi mục ưa thích
+	Remove keyframe	Xóa khung hình khóa
+	Remove scene	Xóa cảnh
+	Scale X	Tỉ lệ X
+	Scale Y	Tỉ lệ Y
+	Scene name	Tên cảnh
+	Show onion skins	Hiện giấy bóng kính
+	Start	Bắt đầu
+	Start recording	Bắt đầu ghi
+	Stop recording	Dừng ghi
+	Storyboard	Bảng phân cảnh
+	Thumbnail size	Kích cỡ hình thu nhỏ
+	frames	khung hình
+	opacity	độ mờ
+	rotation	xoay
+	scaleX	tỉ lệ X
+	scaleY	tỉ lệ Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} ảnh chụp trong {dir}
+	2-Point Perspective	Phối cảnh 2 điểm
+	Assistant colour	Màu trợ lý
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Lực hút trợ lý: nét vẽ có thể lệch khỏi trợ lý bao xa mà vẫn bị hút vào (1000 = luôn luôn)
+	Assistant opacity	Độ mờ trợ lý
+	Concentric Ellipse	Elip đồng tâm
+	Curvilinear Perspective	Phối cảnh cong
+	Eraser snaps	Tẩy cũng bám
+	Fish-Eye Point	Điểm mắt cá
+	Handles	Tay cầm
+	Infinite Ruler	Thước vô hạn
+	Limit to area	Giới hạn trong vùng
+	Minor subdivisions	Vạch chia phụ
+	Own colour	Màu riêng
+	Perspective Ellipse	Elip phối cảnh
+	Previews	Xem trước
+	Show the snapped stroke's line while painting	Hiện đường của nét vẽ đã bám khi tô
+	Show this assistant's control handles	Hiện tay cầm điều khiển của trợ lý này
+	Spline	Đường spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Nét vẽ đi theo trợ lý vẽ (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Hai tay cầm thêm giới hạn nơi trợ lý vẽ và bám
+	Vertical ruler	Thước dọc
+	Painting Assistants	Trợ lý vẽ
+	Assistant Previews	Xem trước trợ lý
+	Drag fill	Tô bằng kéo
+	Dragging fills every region passed over	Kéo sẽ tô mọi vùng đi qua
+	Exclude colour	Loại trừ màu
+	Exclude transparent	Loại trừ trong suốt
+	Fill mode	Chế độ tô
+	No region is fully enclosed by the shape	Không có vùng nào được hình bao kín hoàn toàn
+	Only regions coloured like the first one	Chỉ các vùng cùng màu với vùng đầu
+	Reference	Tham chiếu
+	Similar only	Chỉ màu tương tự
+	Soften the filled edge	Làm mềm mép tô
+	Spread stops at the darkest pixels (lines)	Mở rộng dừng tại các điểm ảnh tối nhất (đường nét)
+	Spread stops at the most opaque pixels	Mở rộng dừng tại các điểm ảnh đục nhất
+	Stop at darkest	Dừng ở tối nhất
+	Stop at opaque	Dừng ở đục
+	Similar Colours	Màu tương tự
+	Colour Labels	Nhãn màu
+	All Regions	Mọi vùng
+	Specific Colour	Màu cụ thể
+	Transparent Regions	Vùng trong suốt
+	Surrounded By	Bao quanh bởi
+	Fill with Foreground Color (Opacity)	Tô bằng màu tiền cảnh (độ mờ)
+	Fill with Background Color (Opacity)	Tô bằng màu nền (độ mờ)
+	Fill with Pattern (Opacity)	Tô bằng mẫu (độ mờ)
+	Straight Line Tool	Công cụ Đường thẳng
+	Multibrush Tool	Công cụ Đa cọ
+	Dynamic Brush Tool	Công cụ Cọ động
+	Enclose and Fill Tool	Công cụ Bao và tô
+	Colorize Mask Tool	Công cụ Mặt nạ tô màu
+	Reference Images Tool	Công cụ Ảnh tham chiếu
+	Alternating	Xen kẽ
+	Forward	Tiến
+	Shaped Gradient (follows the selection)	Chuyển sắc theo hình (theo vùng chọn)
+	Clear copies	Xóa bản sao
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+nhấp đặt bản sao, Ctrl+Alt+nhấp xóa
+	How heavily the stroke lags behind the pointer	Nét vẽ trễ sau con trỏ bao nhiêu
+	How quickly the stroke's motion dies away	Chuyển động của nét vẽ tắt nhanh đến mức nào
+	Keep one-pixel lines single width without L corners	Giữ đường một điểm ảnh đơn độ rộng, không góc chữ L
+	Mirror all tools	Phản chiếu mọi công cụ
+	Multibrush	Đa cọ
+	Pixel smoothing	Làm mượt điểm ảnh
+	The painting symmetry mirrors fills, gradients and retouching too	Đối xứng vẽ cũng phản chiếu tô, chuyển sắc và chỉnh sửa
+	The painting symmetry mirrors this tool's output too	Đối xứng vẽ cũng phản chiếu kết quả của công cụ này
+	X interval	Khoảng X
+	Y interval	Khoảng Y
+	Mirror / Rotation	Phản chiếu / Xoay
+	Translate	Dịch chuyển
+	Copy Translate	Sao chép dịch chuyển
+	Cursor shape	Hình con trỏ
+	Outline shape	Hình đường viền
+	Show outline while painting	Hiện đường viền khi tô
+	Effective outline size	Kích cỡ viền thực tế
+	Tool icon	Biểu tượng công cụ
+	Arrow	Mũi tên
+	Crosshair	Dấu chữ thập
+	Small dot	Chấm nhỏ
+	No cursor	Không con trỏ
+	Triangle right	Tam giác phải
+	Triangle left	Tam giác trái
+	No outline	Không viền
+	Instant preview	Xem trước tức thì
+	Instant preview megapixels	Megapixel xem trước tức thì
+	Add…	Thêm…
+	Auto update	Tự cập nhật
+	Canvas input profile	Hồ sơ nhập liệu canvas
+	Clean up	Dọn dẹp
+	Clear key strokes	Xóa nét khóa
+	Colorize Mask	Mặt nạ tô màu
+	Draw in the area below to test pressure, tilt and rotation	Vẽ vào vùng dưới để kiểm tra lực nhấn, độ nghiêng và xoay
+	Edge detection	Phát hiện cạnh
+	Edit key strokes	Sửa nét khóa
+	Embed	Nhúng
+	Fill only inside the line art's pixels	Chỉ tô trong các điểm ảnh của nét vẽ
+	Gap close	Đóng khe hở
+	Input API	API nhập liệu
+	Keep aspect	Giữ tỉ lệ
+	Limit to layer	Giới hạn trong lớp
+	Mouse	Chuột
+	Next Preset	Cài sẵn tiếp
+	No samples yet	Chưa có mẫu
+	Nothing to paste: the clipboard holds no image	Không có gì để dán: bộ nhớ tạm không có ảnh
+	Opacity +	Độ mờ +
+	Opacity -	Độ mờ -
+	Pasted image	Ảnh đã dán
+	Peak pressure	Lực nhấn tối đa
+	Previous Preset	Cài sẵn trước
+	Reference Images	Ảnh tham chiếu
+	Rotate Left	Xoay trái
+	Rotate Right	Xoay phải
+	Sample rate	Tốc độ lấy mẫu
+	Screen mapping	Ánh xạ màn hình
+	Show output	Hiện kết quả
+	Show the key strokes over the canvas	Hiện nét khóa trên canvas
+	Show with all tools	Hiện với mọi công cụ
+	Size +	Kích cỡ +
+	Size -	Kích cỡ -
+	Speed source	Nguồn tốc độ
+	Store the pixels in the set; off, link to the file	Lưu điểm ảnh trong bộ; tắt thì liên kết tới tệp
+	Tablet Settings…	Cài đặt bảng vẽ…
+	Tablet Tester	Kiểm tra bảng vẽ
+	The clipboard is not available	Không dùng được bộ nhớ tạm
+	The next key strokes keep their regions clear	Các nét khóa tiếp theo giữ vùng của chúng trong suốt
+	Tilt offset	Bù độ nghiêng
+	Touch Docker	Bảng cảm ứng
+	Transparent key	Khóa trong suốt
+	Update	Cập nhật
+	Canvas Input	Nhập liệu canvas
+	Canvas Input…	Nhập liệu canvas…
+	Pan key	Phím kéo
+	Zoom in key	Phím phóng to
+	Zoom out key	Phím thu nhỏ
+	Rotate key	Phím xoay
+	Middle button	Nút giữa
+	Stylus button	Nút bút
+	Pick modifier	Phím bổ trợ lấy màu
+	Shift wheel rotates	Shift+con lăn xoay
+	Tablet	Bảng vẽ
+	Trackpad	Bàn di chuột
+	Pick	Lấy màu
+	No action	Không hành động
+	No pick	Không lấy màu
+	Scroll	Cuộn
+	Rotate View (hold)	Xoay khung nhìn (giữ)
+	Tilt offset x	Bù độ nghiêng X
+	Tilt offset y	Bù độ nghiêng Y
+	Tablet speed source	Nguồn tốc độ bảng vẽ
+	Tablet api	API bảng vẽ
+	Tablet screen mapping	Ánh xạ màn hình bảng vẽ
+	Pointer	Con trỏ
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Loại lưới
+	Isometric left angle	Góc trái đẳng cự
+	Isometric right angle	Góc phải đẳng cự
+	Isometric vertical lines	Đường dọc đẳng cự
+	Rectangular	Hình chữ nhật
+	Isometric	Đẳng cự
+	Node	Nút
+	Extension	Đường kéo dài
+	Intersection	Giao điểm
+	Alt-click a bottom patch to set it to the foreground colour	Alt+nhấp ô dưới để đặt thành màu tiền cảnh
+	Apply:	Áp dụng:
+	Brushes this large preview coarsely while painting	Cọ lớn thế này được xem trước thô khi vẽ
+	Click the disc to add shape points	Nhấp vào đĩa để thêm điểm hình
+	Close Shape	Đóng hình
+	Color Space:	Không gian màu:
+	Common Colors	Màu phổ biến
+	Components:	Thành phần:
+	Continuous Mode	Chế độ liên tục
+	Current pattern	Mẫu hiện tại
+	Depth:	Độ sâu:
+	Display:	Hiển thị:
+	Dynamic Hue Ring	Vòng sắc độ động
+	Enable Pen Settings	Bật thiết lập bút
+	Erase mode keeps its own opacity on this preset	Chế độ xóa giữ độ mờ riêng trong thiết lập này
+	Erase mode keeps its own size on this preset	Chế độ xóa giữ kích cỡ riêng trong thiết lập này
+	Eraser Opacity	Độ mờ tẩy
+	Eraser Size	Kích cỡ tẩy
+	Fit Panel Width	Khớp bề rộng bảng
+	Gamut Mask	Mặt nạ gam màu
+	Gradient Steps	Bước chuyển sắc
+	Gradient ends: Alt-click to set from the foreground	Hai đầu chuyển sắc: Alt+nhấp để lấy từ tiền cảnh
+	Hue Steps	Bước sắc độ
+	Instant Preview	Xem trước tức thì
+	LUT Management (OCIO)	Quản lý LUT (OCIO)
+	Lightness Strength	Cường độ độ sáng
+	Lock Color	Khóa màu
+	Luma:	Luma:
+	Minimum Hardness	Độ cứng tối thiểu
+	Minimum Strength	Cường độ tối thiểu
+	Model:	Mô hình:
+	Off: every sensor is ignored; the curves are kept	Tắt: bỏ qua mọi cảm biến; giữ các đường cong
+	Out of gamut	Ngoài gam màu
+	Panel colours are not shown through the display transform	Màu bảng không hiển thị qua phép biến đổi hiển thị
+	Patch Count	Số ô
+	Patch Size	Kích cỡ ô
+	Patches:	Ô màu:
+	Pattern Scale	Tỉ lệ mẫu
+	Pop-up Size	Kích cỡ cửa sổ bật lên
+	Proof to Painting Space	Soát màu sang không gian vẽ
+	Recent Colors	Màu gần đây
+	Remove Last Shape	Xóa hình cuối
+	Rotate Mask	Xoay mặt nạ
+	Saturation Steps	Bước độ bão hòa
+	Selector settings	Thiết lập bộ chọn
+	Selector:	Bộ chọn:
+	Shade Count	Số sắc thái
+	Shade Ring by Value	Tô vòng theo giá trị
+	Shade Selector	Bộ chọn sắc thái
+	Shade Size	Kích cỡ sắc thái
+	Shade Spread	Độ trải sắc thái
+	Shade Strip	Dải sắc thái
+	Shades	Sắc thái
+	Share Curve Across Settings	Dùng chung đường cong cho mọi thiết lập
+	Show as Fractions	Hiển thị dạng phân số
+	Soften Edge	Làm mềm cạnh
+	Source:	Nguồn:
+	Style:	Kiểu:
+	The tip's grey levels are painted into the colour as lightness	Mức xám của đầu cọ được vẽ vào màu như độ sáng
+	Threshold the tip mask for crisp pixel strokes	Ngưỡng hóa mặt nạ đầu cọ cho nét pixel sắc
+	Tip as Lightness Map	Đầu cọ làm bản đồ độ sáng
+	Update:	Cập nhật:
+	Value Steps	Bước giá trị
+	Value on the Ring	Giá trị trên vòng
+	Zoom Pop-up	Cửa sổ thu phóng
+	Length over which the value goes from 0 to 1	Độ dài để giá trị đi từ 0 đến 1
+	Start over past the length instead of holding the end value	Bắt đầu lại sau độ dài thay vì giữ giá trị cuối
+	Pressure In	Áp lực tăng
+	X-Tilt	Nghiêng X
+	Y-Tilt	Nghiêng Y
+	Tilt Direction	Hướng nghiêng
+	Tilt Elevation	Độ cao nghiêng
+	Fuzzy Stroke	Ngẫu nhiên mỗi nét
+	Tip Scale:	Tỉ lệ đầu cọ:
+	Initial size as a share of the bitmap's size	Kích cỡ ban đầu theo tỉ lệ kích cỡ bitmap
+	Tip Rotation:	Xoay đầu cọ:
+	Initial rotation of the tip	Góc xoay ban đầu của đầu cọ
+	No anti-aliasing: the dab's pixels are fully on or off	Không khử răng cưa: các điểm ảnh của chấm hoàn toàn bật hoặc tắt
+	Align Outline to Pixel Grid	Căn đường viền theo lưới điểm ảnh
+	The brush outline snaps to the pixels the dab fills	Đường viền cọ bám theo các điểm ảnh mà chấm tô
+	Tip Mode:	Chế độ đầu cọ:
+	(no colour bitmap: paints the brush colour)	(không có bitmap màu: tô bằng màu cọ)
+	Neutral Point	Điểm trung tính
+	Canvas Only: hide the panels around the canvas	Chỉ canvas: ẩn các bảng quanh canvas
+	Presets kept in the history	Số preset lưu trong lịch sử
+	Clear the history	Xóa lịch sử
+	No presets used yet	Chưa dùng preset nào
+	Forget this preset	Quên preset này
+	Ten Brushes	Mười cọ
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Gán preset vào mười ô; kích hoạt lại một ô sẽ quay về preset trước
+	Clear this slot	Xóa ô này
+	Assign current	Gán hiện tại
+	Browse a folder of reference images	Duyệt thư mục ảnh tham chiếu
+	No folder	Không có thư mục
+	Next image	Ảnh tiếp theo
+	Previous image	Ảnh trước
+	Pick an image to show it here	Chọn một ảnh để hiển thị ở đây
+	Search actions and commands	Tìm hành động và lệnh
+	No matching action	Không có hành động phù hợp
+	Search Actions…	Tìm hành động…
+	Brush History	Lịch sử cọ
+	Color Image	Ảnh màu
+	Lightness Map	Bản đồ độ sáng
+	Static	Cố định
+	Move to Top	Chuyển lên đầu
+	Bubble Up	Lên một bậc
+	Clear the scratch pad to white	Xóa bảng thử về màu trắng
+	Fill the scratch pad with the background colour	Tô bảng thử bằng màu nền
+	Fill the scratch pad with the current gradient	Tô bảng thử bằng chuyển sắc hiện tại
+	Fill the scratch pad with the current image	Tô bảng thử bằng ảnh hiện tại
+	Fill the scratch pad with the preset's icon	Tô bảng thử bằng biểu tượng preset
+	Reload the stored preset, discarding the tweaks	Tải lại preset đã lưu, bỏ các chỉnh sửa
+	BG	Nền
+	Icon	Biểu tượng
+	Thumbnail:	Hình thu nhỏ:
+	Stroke preview	Xem trước nét
+	Scratch pad	Bảng thử
+	Icon library	Thư viện biểu tượng
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Kích hoạt vùng chọn cục bộ
+	Add Curve Key	Thêm khóa đường cong
+	Add Filter…	Thêm bộ lọc…
+	Add Local Selection	Thêm vùng chọn cục bộ
+	Add Scene	Thêm cảnh
+	Add Transform Key	Thêm khóa biến đổi
+	Alpha into Mask	Alpha vào mặt nạ
+	Attach Audio…	Đính kèm âm thanh…
+	Backup count	Số bản sao lưu
+	Capture Snapshot	Chụp ảnh nhanh
+	Change Clone Source…	Đổi nguồn nhân bản…
+	Clone Keyframe	Nhân bản khung hình chính
+	Clone Layer	Nhân bản lớp
+	Clones Array…	Mảng bản sao…
+	Colorize Mask Properties…	Thuộc tính mặt nạ tô màu…
+	Convert Group to Animated Layer	Chuyển nhóm thành lớp hoạt ảnh
+	Convert to Paint Layer	Chuyển thành lớp vẽ
+	Copy Keyframe	Chép khung hình chính
+	Curved	Cong
+	Drag	Kéo
+	Duplicate Keyframe	Tạo bản sao khung hình chính
+	Edit Generated Fill…	Sửa phần tô đã tạo…
+	Edit Transform Mask…	Sửa mặt nạ biến đổi…
+	Ellipse	Hình elip
+	Export Storyboard…	Xuất storyboard…
+	Export Timelapse…	Xuất timelapse…
+	File Layer Properties…	Thuộc tính lớp tệp…
+	File Layer…	Lớp tệp…
+	Filter Layer…	Lớp bộ lọc…
+	Filter Mask…	Mặt nạ bộ lọc…
+	Frame rate limit	Giới hạn tốc độ khung hình
+	Frames	Khung hình
+	Freeze Live Layer	Đóng băng lớp trực tiếp
+	High quality	Chất lượng cao
+	Import Animation Frames…	Nhập khung hình hoạt ảnh…
+	Import Image as…	Nhập ảnh dưới dạng…
+	Import Video Animation…	Nhập hoạt ảnh video…
+	Input controllers	Bộ điều khiển đầu vào
+	Input devices	Thiết bị đầu vào
+	Invisible	Ẩn
+	Layer Color Space…	Không gian màu của lớp…
+	Layers by State	Lớp theo trạng thái
+	Local Selection	Vùng chọn cục bộ
+	Locked	Đã khóa
+	Mass	Khối lượng
+	Move Clone…	Di chuyển bản sao…
+	Move Keyframe	Di chuyển khung hình chính
+	Multigrid…	Lưới nhiều lớp…
+	Mute Audio	Tắt tiếng
+	Nearest	Gần nhất
+	New Keyframe	Khung hình chính mới
+	Onion Skin…	Giấy bóng mờ…
+	Pan	Kéo xem
+	Pixel grid threshold	Ngưỡng lưới điểm ảnh
+	Reload File Layer	Tải lại lớp tệp
+	Remove Audio	Gỡ âm thanh
+	Remove Curve Key	Gỡ khóa đường cong
+	Remove Filter	Gỡ bộ lọc
+	Remove Keyframe	Gỡ khung hình chính
+	Remove Local Selection	Gỡ vùng chọn cục bộ
+	Remove Transform Key	Gỡ khóa biến đổi
+	Remove Transform Mask	Gỡ mặt nạ biến đổi
+	Render Animation…	Kết xuất hoạt ảnh…
+	Save Merged…	Lưu bản gộp…
+	Scaling filter	Bộ lọc co giãn
+	Screentone…	Tram…
+	Script…	Tập lệnh…
+	Set Filter…	Đặt bộ lọc…
+	Show Output	Hiện đầu ra
+	Split Alpha	Tách alpha
+	Start Recording	Bắt đầu ghi
+	Stop Recording	Dừng ghi
+	Swap directory	Thư mục hoán đổi
+	Ten scripts	Mười tập lệnh
+	Threads	Luồng
+	Transform Mask…	Mặt nạ biến đổi…
+	Unlocked	Đã mở khóa
+	Update Local Selection	Cập nhật vùng chọn cục bộ
+	Write as Alpha	Ghi dưới dạng alpha
+	to File Layer…	thành lớp tệp…
+	to Filter Mask…	thành mặt nạ bộ lọc…
+	to Paint Layer	thành lớp vẽ
+	to Selection Mask	thành mặt nạ vùng chọn
+	to Transparency Mask	thành mặt nạ độ trong suốt

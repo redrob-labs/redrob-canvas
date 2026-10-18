@@ -14,13 +14,17 @@ pub mod adjust_params;
 pub mod align_cmds;
 mod allocation;
 pub mod analysis_cmds;
+pub mod anim_cmds;
 pub mod artboard_cmds;
 pub mod assistant_cmds;
 pub mod atn_cmds;
 pub mod automate_cmds;
 pub mod background_cmds;
 pub mod brush_cmds;
+pub mod brush_engine_cmds;
+pub mod brush_extras_cmds;
 pub mod brush_key_cmds;
+pub mod brush_mode_cmds;
 pub mod brush_preset_cmds;
 pub mod build_info;
 mod canvas_geom;
@@ -28,12 +32,17 @@ mod channel_clip;
 pub mod channel_cmds;
 mod clip_group;
 pub mod color_cmds;
+pub mod color_management_cmds;
 pub mod color_to_alpha_cmds;
+pub mod color_tools_cmds;
+pub mod colorize_cmds;
+pub mod colorize_tool_cmds;
 pub mod commands;
 pub mod comps_cmds;
 mod crop_fill;
 pub mod cutout_cmds;
 pub mod display_color;
+pub mod display_filters;
 pub mod distort_cmds;
 pub mod document_preset_cmds;
 pub mod dynamics_cmds;
@@ -46,15 +55,19 @@ pub mod extra_cmds;
 pub mod file_cmds;
 pub mod fill_cmds;
 pub mod fill_key_cmds;
+pub mod fill_opacity_cmds;
 pub mod filters;
 pub mod filters_ext;
 pub mod filters_extra;
 pub mod filters_gen;
+pub mod filters_more;
+pub mod filters_paint;
 pub mod float_cmds;
 mod frame_cmds;
 pub mod fx_view_cmds;
 pub mod fx_visibility_cmds;
 pub mod gallery_cmds;
+pub mod gen_fill_cmds;
 pub mod gradient_fill_cmds;
 pub mod group_view_cmds;
 pub mod guide_layout;
@@ -62,27 +75,35 @@ pub mod hidden_target;
 pub mod history_cmds;
 pub mod history_select_cmds;
 pub mod image_cmds;
+pub mod imagemap_cmds;
 pub mod inspect;
 pub mod installed_profiles;
 pub mod jobs;
 pub mod kys;
+pub mod layer_boundary_cmds;
 pub mod layer_copy_cmds;
+pub mod layer_kind_cmds;
 pub mod layer_label_cmds;
 pub mod layer_list_cmds;
 pub mod layer_mask_props_cmds;
 pub mod layer_menu_cmds;
+pub mod layer_meta;
 pub mod layer_multi_cmds;
 pub mod layer_nav_cmds;
 pub mod layer_style;
 pub mod lens_cmds;
 pub mod link_watch;
+pub mod live_layers;
 pub mod magnetic_cmds;
 pub mod mask_view_cmds;
+pub mod metadata_cmds;
 mod migrate_cmds;
 pub mod mode_cmds;
 pub mod multichannel_cmds;
+pub mod mypaint_cmds;
 pub mod new_layer;
 pub mod notes_cmds;
+pub mod ocio;
 pub mod paint_cmds;
 mod param_check;
 mod path_edit_cmds;
@@ -102,10 +123,12 @@ pub mod proof_sim;
 pub mod rasterize_style_cmds;
 pub mod redeye_cmds;
 pub mod render_cmds;
+pub mod resource_tags_cmds;
 pub mod retouch_cmds;
 pub mod sample_cmds;
 pub mod sampler_cmds;
 pub mod select_extra_cmds;
+pub mod select_refine_cmds;
 pub mod selection_cmds;
 pub mod shortcut_sets;
 pub mod slice_cmds;
@@ -133,7 +156,24 @@ pub use video_cmds::render_video_with;
 pub mod vp_cmds;
 pub mod warp_cmds;
 pub mod web_cmds;
+// v0.11 parity round (A4): formats, file/edit, scripting, Ink and MyPaint-style brushes.
+pub mod buffers_cmds;
+pub mod create_cmds;
+pub mod dynamics_extra_cmds;
+pub mod ink_cmds;
+pub mod input_cmds;
+pub mod modules_cmds;
+pub mod mypaint_engine_cmds;
+pub mod path_svg_cmds;
+pub mod perspective_clone_cmds;
+pub mod python_cmds;
+pub mod resource_cmds;
+pub mod resource_export_cmds;
+pub mod scheme;
+pub mod script_cmds;
+pub mod seexpr;
 mod wia_cmds;
+pub mod workflow_cmds;
 
 use std::sync::Arc;
 
@@ -231,6 +271,9 @@ pub struct DocState {
     /// (tool state, not history).
     pub assistants: Vec<redrob_photo_paint::assistants::Assistant>,
     pub assistants_snap: bool,
+    /// Each assistant's look and area (aligned with `assistants`), and the global look.
+    pub assistant_styles: Vec<redrob_photo_paint::assistants::AssistantStyle>,
+    pub assistant_display: redrob_photo_paint::assistants::AssistantDisplay,
     /// Layers panel: layers whose effects list is collapsed under their row (the fx triangle;
     /// view state, not history). Effects lists start open.
     pub fx_collapsed: Vec<LayerId>,
@@ -312,6 +355,8 @@ impl DocState {
             wrap_around: false,
             assistants: Vec::new(),
             assistants_snap: true,
+            assistant_styles: Vec::new(),
+            assistant_display: Default::default(),
             fx_collapsed: Vec::new(),
             show_only: None,
             floating: None,
@@ -386,6 +431,19 @@ pub struct ToolState {
     /// A preset may carry any number of tags; the preset store keeps them in its index. Bumping
     /// `presets_rev` syncs them.
     pub preset_tags: std::collections::BTreeMap<String, Vec<String>>,
+    /// Brush presets tweaked in this session (`brush_mode_cmds`): lower-case preset name → the
+    /// tweaked brush, brought back when the preset is picked again; never written to the file.
+    pub preset_tweaks: std::collections::BTreeMap<String, redrob_photo_paint::BrushSettings>,
+    /// Recently used brush presets (`brush.history.*`): the Brush Preset History docker.
+    pub preset_history: brush_extras_cmds::PresetHistory,
+    /// Ten Brushes: the preset names on the ten shortcut slots (`brush.tenBrushes.*`).
+    pub ten_brushes: [Option<String>; 10],
+    /// Brush Preset History: the preset active before the last Ten Brushes activation, so the
+    /// shortcut toggles back to it (`brush.tenBrushes.activate` twice).
+    pub ten_brushes_previous: Option<String>,
+    /// Custom preset thumbnails (`brush.presets.setThumbnail`, the icon library), by preset
+    /// name; a preset without one shows its generated stroke preview.
+    pub preset_thumbnails: std::collections::BTreeMap<String, redrob_photo_paint::ColorTile>,
 }
 
 impl ToolState {
@@ -456,6 +514,11 @@ impl Default for ToolState {
             dynamics_presets: redrob_photo_paint::dynamics_preset::builtin(),
             current_dynamics: None,
             preset_tags: Default::default(),
+            preset_tweaks: Default::default(),
+            preset_history: Default::default(),
+            ten_brushes: Default::default(),
+            ten_brushes_previous: None,
+            preset_thumbnails: Default::default(),
         }
     }
 }
@@ -510,6 +573,17 @@ pub struct Session {
     /// the same check a top-level request sees. `None` runs everything, which is what a local
     /// UI and `photocraft-cli run` do.
     pub authorize: Option<fn(&str, &serde_json::Value) -> Result<()>>,
+    /// The shell's HTTP client for File › Open Location ([`create_cmds`]); without one the
+    /// system's `curl` is used.
+    pub fetch_url: Option<create_cmds::FetchUrlFn>,
+    /// Edit › Buffer: the named buffers ([`buffers_cmds`]).
+    pub buffers: Vec<buffers_cmds::NamedBuffer>,
+    /// MyPaint brushes imported from `.myb` files ([`mypaint_cmds`]); the built-ins are not stored.
+    pub mypaint_imported: Vec<redrob_photo_io::myb::MybBrush>,
+    /// Script-Fu: the Scheme interpreter with the console's definitions and the registered scripts.
+    pub script_fu: Option<scheme::Interp>,
+    /// Python plug-ins registered from the plug-in folders ([`python_cmds`]).
+    pub python_plugins: Vec<python_cmds::PyPlugin>,
     /// Background jobs (see [`jobs`]).
     jobs: jobs::Jobs,
     /// Color Sampler points dropped by the last canvas-size change (crop, Canvas Size, Image Size,
@@ -536,6 +610,15 @@ pub struct Session {
     /// document, source read-only)`. The shell takes them with [`Session::take_held_open`].
     held_opens: Vec<(u64, Document, bool)>,
     next_held_open: u64,
+    /// The brush editor's scratch pad (`brush.scratchPad.*`): a small paintable surface.
+    pub scratch_pad: Option<brush_extras_cmds::ScratchPad>,
+    /// Resource storages (`resources.storages.*`): the user folder, bundles, Adobe libraries,
+    /// the document and memory, each active or not.
+    pub resource_storages: resource_cmds::StorageState,
+    /// Reference images docker (`reference.*`): the browsed folder and the shown image.
+    pub reference_images: workflow_cmds::ReferenceState,
+    /// Generator scripts (`scripts.seexpr.*`); empty until first used, then the built-ins.
+    pub seexpr_scripts: Vec<seexpr::SeExprScript>,
 }
 
 /// Move item `i` of `v` to position `to`, clamped to the end. Returns where it went; `None` when
@@ -772,6 +855,10 @@ impl Session {
         let mut doc = (*before).clone();
         let mut active = st.active_layer;
         let r = f(&mut doc, &mut active)?;
+        // Derived content follows the edit: animation curves, live layers, the timelapse recorder.
+        anim_cmds::apply_curves(&mut doc);
+        live_layers::refresh(&mut doc);
+        anim_cmds::on_edit(&mut doc);
         if let (Some(k), Some(id)) = (restrict, active) {
             channel_cmds::restrict_to_color(&before, &mut doc, id, k);
         }

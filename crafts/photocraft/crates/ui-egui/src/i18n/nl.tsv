@@ -4192,3 +4192,829 @@ curves	Smooth	Vloeiend maken
 	Popup palette	Pop-uppalet
 	Smear	Uitsmeren
 	Smudge Radius	Smeerradius
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Lineair inverteren
+	Value Invert	Waarde inverteren
+	Stretch Contrast HSV	Contrast HSV uitrekken
+	Color Enhance	Kleurversterking
+	Extract Component…	Component uitpakken…
+	Alien Map…	Alien-kaart…
+	Rotate Colors…	Kleuren roteren…
+	Palette Map…	Paletkaart…
+	Sample Colorize…	Inkleuren via voorbeeld…
+	RGB Clip…	RGB begrenzen…
+	Dither…	Ditheren…
+	Local Threshold…	Lokale drempel…
+	Destripe…	Strepen verwijderen…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Kleur naar grijs…
+	Fattal et al. 2002…	Fattal et al. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Vloeiend palet…
+	Decompose…	Ontleden…
+	Compose…	Samenstellen…
+	Recompose	Opnieuw samenstellen
+	Rearrange Colormap…	Kleurenkaart herschikken…
+	Set Colormap…	Kleurenkaart instellen…
+	Border Average…	Randgemiddelde…
+	Export Histogram…	Histogram exporteren…
+	Variable Blur…	Variabel vervagen…
+	Apply Lens…	Lens toepassen…
+	Mosaic Tiles…	Mozaïektegels…
+	Newsprint…	Krantendruk…
+	Curve Bend…	Buigen langs curve…
+	Warp (Map)…	Verdraaien (kaart)…
+	Bloom…	Gloed…
+	Sobel…	Sobel…
+	Cartoon…	Cartoon…
+	Clothify…	Stof…
+	Stencil Chrome…	Chroom-sjabloon…
+	Bump Map…	Bumpmap…
+	Panorama Projection…	Panoramaprojectie…
+	Perlin Noise…	Perlin-ruis…
+	Plasma…	Plasma…
+	Solid Noise…	Egale ruis…
+	Add Border…	Rand toevoegen…
+	Fog…	Mist…
+	Old Photo…	Oude foto…
+	Round Corners…	Hoeken afronden…
+	Tile…	Tegelen…
+	Depth Merge…	Dieptesamenvoeging…
+	Geometric Shapes…	Geometrische vormen…
+	Image Map Area…	Imagemap-gebied…
+	Image Map From Slices	Imagemap uit segmenten
+	Export Image Map…	Imagemap exporteren…
+	Clear Image Map	Imagemap wissen
+	Combine	Combineren
+	Clipping	Bijsnijden
+	Color Space	Kleurruimte
+	Linear light	Lineair licht
+	Copy upper to lower	Boven naar onder kopiëren
+	Swap curves	Curven omwisselen
+	Mirror	Spiegelen
+	Gradient Source	Verloopbron
+	Value Jitter	Waarde-jitter
+	Pipe	Reeks
+	Brush file (.myb)	Penseelbestand (.myb)
+	Text as brush tip	Tekst als penseelpunt
+	One character per dab along the stroke	Eén teken per stip langs de streek
+	Engine	Engine
+	Text Tip	Tekstpunt
+	Hatching	Arcering
+	Particle	Deeltje
+	Dyna	Dyna
+	Tangent Normal	Tangentnormaal
+	MyPaint	MyPaint
+	Spray	Spuitbus
+	Bristle	Haren
+	Deform	Vervormen
+	Grain Extract	Korrel extraheren
+	Grain Merge	Korrel samenvoegen
+	LCh Hue	LCh-kleurtoon
+	LCh Chroma	LCh-chroma
+	LCh Color	LCh-kleur
+	LCh Lightness	LCh-helderheid
+	Merge	Samenvoegen
+	Split	Splitsen
+	Remove Holes	Gaten verwijderen
+	Distort…	Vervormen…
+	Rounded Rectangle…	Afgeronde rechthoek…
+	Anchor Layer	Laag verankeren
+	To New Layer	Naar nieuwe laag
+	Layer Boundary Size…	Laaggrensgrootte…
+	Layer to Image Size	Laag naar afbeeldingsgrootte
+	Resize Layer to Selection	Laag naar selectiegrootte
+	Crop Layer to Content	Laag bijsnijden tot inhoud
+	Threshold Alpha…	Alfadrempel…
+	Composite Options…	Compositieopties…
+	Zealous Crop	Grondig bijsnijden
+	Foreground Select	Voorgrondselectie
+	Stroke width	Streekbreedte
+	Graph cut	Graph cut
+	To Layer Mask	Naar laagmasker
+	Draw a rough outline round the subject	Teken een ruwe omtrek rond het onderwerp
+	Draw a rough outline round the subject first	Teken eerst een ruwe omtrek rond het onderwerp
+	Outline placed: paint over the foreground, then Preview or Select	Omtrek geplaatst: verf over de voorgrond, dan Voorbeeld of Selecteren
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Omlijn het onderwerp ruw, verf over de voorgrond en laat de matting-engine het masker laten groeien
+	Paint over the foreground (hold Alt for background), then Preview or Select	Verf over de voorgrond (Alt voor achtergrond), dan Voorbeeld of Selecteren
+	Display Filters…	Weergavefilters…
+	Display Filters	Weergavefilters
+	No Color Deficiency Simulation	Geen kleurzwaktesimulatie
+	Simulate Protanopia	Protanopie simuleren
+	Simulate Deuteranopia	Deuteranopie simuleren
+	Simulate Tritanopia	Tritanopie simuleren
+	Clip Warning	Afkapwaarschuwing
+	Clip warning	Afkapwaarschuwing
+	Color deficiency:	Kleurzwakte:
+	Protanopia	Protanopie
+	Deuteranopia	Deuteranopie
+	Tritanopia	Tritanopie
+	Contrast:	Contrast:
+	View-only: the filters change what this view shows, never the pixels.	Alleen weergave: de filters veranderen wat deze weergave toont, nooit de pixels.
+	Padding Color	Opvulkleur
+	From Theme	Van thema
+	Dark Gray	Donkergrijs
+	Medium Gray	Middengrijs
+	Light Check Color	Lichte blokkleur
+	Dark Check Color	Donkere blokkleur
+	Light Check	Licht blok
+	Dark Check	Donker blok
+	Light check	Licht blok
+	Dark check	Donker blok
+	Custom Color	Aangepaste kleur
+	Select Custom Color…	Aangepaste kleur kiezen…
+	Keep Padding in Show All	Opvulling behouden in Alles tonen
+	Keep padding in show all	Opvulling behouden in Alles tonen
+	Filter by tag	Filteren op tag
+	Clear filter	Filter wissen
+	Tags:	Tags:
+	Add tag	Tag toevoegen
+	Remove tag	Tag verwijderen
+	View Metadata…	Metadata weergeven…
+	Edit Metadata…	Metadata bewerken…
+	Edit Metadata	Metadata bewerken
+	Metadata Viewer	Metadataweergave
+	Write Metadata	Metadata schrijven
+	Separate several values with semicolons	Scheid meerdere waarden met puntkomma's
+	No tags	Geen tags
+	XMP	XMP
+	IPTC	IPTC
+	Text	Tekst
+	Rights	Rechten
+	IPTC Extension	IPTC-uitbreiding
+	Categories	Categorieën
+	DICOM	DICOM
+	Procedure Browser	Procedurebrowser
+	Plug-In Browser	Plug-inbrowser
+	Search procedures	Procedures zoeken
+	{n} procedures	{n} procedures
+	(no menu)	(geen menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parameters
+	Available now	Nu beschikbaar
+	Not available in the current state	Niet beschikbaar in de huidige toestand
+	Run	Uitvoeren
+	Select a procedure to read its parameters.	Selecteer een procedure om de parameters te lezen.
+	Dashboard	Dashboard
+	Low memory: swap is nearly full. Save your work.	Weinig geheugen: swap is bijna vol. Sla uw werk op.
+	Memory	Geheugen
+	Cache	Cache
+	Swap	Swap
+	Swap: not reported on this platform	Swap: niet gerapporteerd op dit platform
+	CPU	CPU
+	CPU renderer	CPU-renderer
+	uploads	uploads
+	Misc: {jobs} jobs running · {n} samples	Overig: {jobs} taken actief · {n} metingen
+	Log to File…	Loggen naar bestand…
+	Stop Logging	Loggen stoppen
+	Device Status	Apparaatstatus
+	Core Pointer	Hoofdaanwijzer
+	Pen / Tablet	Pen / Tablet
+	Brush:	Penseel:
+	Pattern:	Patroon:
+	Gradient:	Verloop:
+	Save Device Status	Apparaatstatus opslaan
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Elk apparaat onthoudt zijn gereedschap, kleuren, penseel, patroon en verloop; wisselen van apparaat wisselt ze mee.
+	Selection Editor	Selectie-editor
+	No document open.	Geen document geopend.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klik om de aaneengesloten kleur daar met de toverstaf te selecteren (Shift voegt toe, Alt trekt af)
+	Save to Channel	Opslaan in kanaal
+	To Path	Naar pad
+	Advanced options	Geavanceerde opties
+	MyPaint Brushes	MyPaint-penselen
+	No MyPaint brushes yet. Import .myb files to list them here.	Nog geen MyPaint-penselen. Importeer .myb-bestanden om ze hier te tonen.
+	No brush matches the filter.	Geen penseel komt overeen met het filter.
+	Handle Transform	Handgreeptransformatie
+	3D Transform	3D-transformatie
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Opnieuw aanpassen
+	Apply the transform so far and put a fresh box on the result	Pas de transformatie tot nu toe toe en zet een nieuw kader op het resultaat
+	Camera	Camera
+	Vanishing X:	Verdwijnpunt X:
+	Y:	Y:
+	Focal length:	Brandpuntsafstand:
+	Local pivot	Lokaal draaipunt
+	Unified pivot	Gezamenlijk draaipunt
+	Close Cage	Kooi sluiten
+	Reset Cage	Kooi herstellen
+	Fill Plain Colour	Vullen met effen kleur
+	Fill the original position of the cage with the plain colour of its outline	Vult de oorspronkelijke plek van de kooi met de effen kleur van de omtrek
+	{n} points	{n} punten
+	Click to place a handle	Klik om een handgreep te plaatsen
+	Rotate and Scale	Roteren en schalen
+	{n} handles: {what}	{n} handgrepen: {what}
+	Reset Handles	Handgrepen herstellen
+	Remove Handles	Handgrepen verwijderen
+	Commit Cage Transform (Enter)	Kooitransformatie toepassen (Enter)
+	Commit Handle Transform (Enter)	Handgreeptransformatie toepassen (Enter)
+	Commit 3D Transform (Enter)	3D-transformatie toepassen (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Kooitransformatie: klik rond het te vervormen deel, klik op het eerste punt om de kooi te sluiten en sleep dan de punten
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Handgreeptransformatie: plaats een tot vier handgrepen en sleep ze (één verplaatst, twee roteren en schalen, drie scheren, vier geven perspectief)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-transformatie: sleep om rond X en Y te roteren, Alt-slepen rond Z; de tabs Verplaatsen en Camera verplaatsen laag en camera
+	Segment {n}	Segment {n}
+	Blending:	Overgang:
+	Coloring:	Kleuring:
+	Midpoint:	Middelpunt:
+	Sinusoidal	Sinusvormig
+	Spherical (increasing)	Sferisch (toenemend)
+	Spherical (decreasing)	Sferisch (afnemend)
+	Step	Stap
+	HSV (counter-clockwise)	HSV (linksom)
+	HSV (clockwise)	HSV (rechtsom)
+	Replicate	Repliceren
+	Split the segment at its midpoint	Splitst het segment op het middelpunt
+	Replace the segment with two copies of itself	Vervangt het segment door twee kopieën van zichzelf
+	Flip the whole gradient end to end	Keert het hele verloop om
+	Save as POV-Ray…	Opslaan als POV-Ray…
+	Shaped Gradient (angular)	Vormverloop (hoekig)
+	Shaped Gradient (spherical)	Vormverloop (sferisch)
+	Shaped Gradient (dimpled)	Vormverloop (gedeukt)
+	Truncate	Afkappen
+	Sawtooth wave	Zaagtandgolf
+	Triangular wave	Driehoeksgolf
+	Wheel	Wiel
+	Force	Kracht
+	Jitter	Jitter
+	Fade length	Vervaaglengte
+	Random amount	Willekeurige hoeveelheid
+	Save Preset	Voorinstelling opslaan
+	Paint Dynamics Editor	Dynamiek-editor
+	Color from Gradient	Kleur uit verloop
+	Put this table on the current brush	Deze tabel op het huidige penseel toepassen
+	Save the table as a named dynamics preset	Tabel opslaan als benoemde dynamiekvoorinstelling
+	Give the dynamics preset a name first	Geef de dynamiekvoorinstelling eerst een naam
+	Edit the dynamics table (inputs × outputs)	Dynamiektabel bewerken (invoer × uitvoer)
+	Reset Plane	Vlak herstellen
+	Click four corners to define a perspective plane, then clone along it	Klik vier hoeken om een perspectiefvlak te bepalen en kloon er dan langs
+	Click corner {n} of 4	Klik hoek {n} van 4
+	Perspective plane: corner {n} of 4 set	Perspectiefvlak: hoek {n} van 4 gezet
+	Perspective plane set; {key}-click a source, then paint	Perspectiefvlak gezet; {key}-klik een bron en schilder dan
+	Copy Path as SVG	Pad kopiëren als SVG
+	Export Path to SVG…	Pad exporteren naar SVG…
+	Import Path from SVG…	Pad importeren uit SVG…
+	Paste Path from SVG	Pad plakken uit SVG
+	Copy All Paths as SVG	Alle paden kopiëren als SVG
+	Export All Paths to SVG…	Alle paden exporteren naar SVG…
+	Copied 1 path as SVG	1 pad gekopieerd als SVG
+	Copied {n} paths as SVG	{n} paden gekopieerd als SVG
+	Exported paths to {path}	Paden geëxporteerd naar {path}
+	Imported 1 path	1 pad geïmporteerd
+	Imported {n} paths	{n} paden geïmporteerd
+	The clipboard holds no SVG	Het klembord bevat geen SVG
+	Clipboard Image Brush	Klembordafbeelding-penseel
+	Paint with the image on the clipboard as the brush tip	Schilderen met de klembordafbeelding als penseelpunt
+	Export Layers as Animation…	Lagen exporteren als animatie…
+	Export as Brush (.gbr)…	Exporteren als penseel (.gbr)…
+	Export Layers as Image Hose (.gih)…	Lagen exporteren als geanimeerd penseel (.gih)…
+	Export as Pattern (.pat)…	Exporteren als patroon (.pat)…
+	Animation Frame Tags…	Animatieframe-tags…
+	Disposal	Overgang
+	Incremental	Oplopend
+	Angular	Hoek
+	Xtilt	Kanteling X
+	Ytilt	Kanteling Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Exporteren als PostScript (.eps)…
+	Encapsulated	Ingekapseld
+	Encoding	Codering
+	Hex	Hexadecimaal
+	Ascii85	ASCII85
+	Binary	Binair
+	Open Location…	Locatie openen…
+	From Screenshot…	Van schermafbeelding…
+	From Web Page…	Van webpagina…
+	Send by Email…	Verzenden per e-mail…
+	Url	URL
+	Cursor	Cursor
+	Region	Gebied
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffers
+	Cut Named…	Benoemd knippen…
+	Copy Named…	Benoemd kopiëren…
+	Copy Visible Named…	Zichtbaar benoemd kopiëren…
+	Paste Named…	Benoemd plakken…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Geen benoemde buffers. Gebruik Bewerken > Buffer > Benoemd kopiëren… om hier een kopie te bewaren.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Geen benoemde buffers; gebruik eerst Bewerken > Buffer > Benoemd kopiëren
+	Paste Buffer	Buffer plakken
+	Paste Buffer in Place	Buffer op plaats plakken
+	Paste Buffer as New Image	Buffer plakken als nieuwe afbeelding
+	Rename Buffer…	Buffer hernoemen…
+	Delete Buffer	Buffer verwijderen
+	Paste as New	Plakken als nieuw
+	Paste the buffer as a new layer	De buffer plakken als nieuwe laag
+	Paste the buffer as a new document	De buffer plakken als nieuw document
+	As	Als
+	In place	Op plaats
+	Into	Erin
+	Modules…	Modules…
+	Units…	Eenheden…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Geen laadbare modules geïnstalleerd. Filter > Plug-ins > Plug-in installeren… voegt er een toe.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Een uitgeschakelde module blijft geïnstalleerd maar verdwijnt uit de menu's tot ze weer wordt ingeschakeld.
+	Module	Module
+	Not installed	Niet geïnstalleerd
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	De factor is hoeveel eenheden in één inch gaan (2,54 voor centimeters, 72 voor punten).
+	Identifier	Identificatie
+	Factor	Factor
+	Symbol	Symbool
+	Abbreviation	Afkorting
+	Singular	Enkelvoud
+	Plural	Meervoud
+	Delete Unit	Eenheid verwijderen
+	New unit	Nieuwe eenheid
+	Add Unit	Eenheid toevoegen
+	That identifier is already a unit	Die identificatie is al een eenheid
+	Custom units	Aangepaste eenheden
+	Disabled modules	Uitgeschakelde modules
+	Input Devices…	Invoerapparaten…
+	Input Controllers…	Invoercontrollers…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	De pen is de tabletstylus die het platform meldt. Uitgeschakeld werkt hij als een muis.
+	Device	Apparaat
+	Invert tilt X	Kanteling X omkeren
+	Invert tilt Y	Kanteling Y omkeren
+	Swap tilt	Kanteling wisselen
+	Pressure scale	Drukschaal
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Wielgebeurtenissen zijn up, down, left of right met optioneel Shift+, Ctrl+ en Alt+; toetsenbordgebeurtenissen zijn sneltoetsen zoals Ctrl+Alt+Up. De actie is een opdracht-id, optioneel gevolgd door JSON-parameters.
+	Controller	Controller
+	Event	Gebeurtenis
+	Remove mapping	Toewijzing verwijderen
+	New mapping	Nieuwe toewijzing
+	Add Mapping	Toewijzing toevoegen
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} items; klik om de voorgrondkleur in te stellen, dubbelklik om te bewerken
+	Entry	Item
+	Add an entry with the foreground colour	Een item met de voorgrondkleur toevoegen
+	Delete the last entry	Het laatste item verwijderen
+	Use selected	Geselecteerde gebruiken
+	Ink	Inkt
+	MyPaint Brush	MyPaint-penseel
+	Nib	Pen
+	Aspect	Verhouding
+	Opaque	Dekking
+	Erase with brush	Wissen met penseel
+	Import .myb…	.myb importeren…
+	Add a MyPaint brush file to the presets	Een MyPaint-penseelbestand aan de voorinstellingen toevoegen
+	Imported MyPaint brush {name}	MyPaint-penseel {name} geïmporteerd
+	How much pressure changes the nib size	Hoeveel de druk de pengrootte verandert
+	How much the pen's tilt turns and stretches the nib	Hoeveel de penkanteling de pen draait en uitrekt
+	How much a fast stroke thins the nib	Hoeveel een snelle streek de pen verdunt
+	Added to the preset's logarithmic radius	Opgeteld bij de logaritmische straal van de voorinstelling
+	Operation…	Bewerking…
+	Operation name or id	Naam of id van de bewerking
+	{n} operations	{n} bewerkingen
+	Choose an operation	Kies een bewerking
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu-console…
+	Load Scripts Folder…	Scriptmap laden…
+	Python Console…	Python-console…
+	Load Plug-ins Folder…	Plug-inmap laden…
+	Loaded {n} scripts	{n} scripts geladen
+	Loaded {n} Python plug-ins	{n} Python-plug-ins geladen
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 met call(command, **params), message(text) en print(); elke engine-opdracht is bereikbaar via call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: elke engine-opdracht is een procedure, (file.new "width" 640 "height" 480); definieer procedures en registreer ze met script-fu-register.
+	Code	Code
+	Cmd+Enter runs the code	Cmd+Enter voert de code uit
+	Clear Log	Logboek wissen
+	Dodge…	Tegenhouden…
+	Burn…	Doordrukken…
+	Cross-Channel Adjustment…	Kanaaloverschrijdende aanpassing…
+	Slope, Offset, Power…	Helling, verschuiving, macht…
+	Index Colors…	Geïndexeerde kleuren…
+	Raindrops…	Regendruppels…
+	Polygon Blur…	Veelhoekvervaging…
+	Edge Detection…	Randdetectie…
+	Emboss (Directional)…	Reliëf (gericht)…
+	Phong Bump Map…	Phong-bumpmap…
+	Palettize…	Palettiseren…
+	Height to Normal Map…	Hoogte naar normal map…
+	Normalize Normal Map	Normal map normaliseren
+	Maximize Channel	Kanaal maximaliseren
+	Minimize Channel	Kanaal minimaliseren
+	Propagate Colors…	Kleuren verspreiden…
+	Reset Transparent	Transparante resetten
+	Mean Removal	Gemiddelde verwijderen
+	Wavelet Noise Reducer…	Wavelet-ruisonderdrukking…
+	Random Pick…	Willekeurige keuze…
+	G'MIC Filter…	G'MIC-filter…
+	G'MIC executable	G'MIC-programma
+	G'MIC update folder	G'MIC-updatemap
+	Add scene at playhead	Scène toevoegen bij afspeelkop
+	Add to favourites	Aan favorieten toevoegen
+	Arithmetic	Rekenkundig
+	Attach audio…	Audio koppelen…
+	Blend details	Mengdetails
+	Blend mode	Mengmodus
+	Blend mode and opacity	Mengmodus en dekking
+	Capture now	Nu vastleggen
+	Clone previous keyframe here	Vorig sleutelbeeld hier klonen
+	Comment	Opmerking
+	Display settings	Weergave-instellingen
+	Duplicate keyframe	Sleutelbeeld dupliceren
+	Duplicate keyframe here	Sleutelbeeld hier dupliceren
+	End	Einde
+	Export timelapse…	Timelapse exporteren…
+	Favourites	Favorieten
+	Frame rate	Beeldsnelheid
+	HSX	HSX
+	Key the active layer:	Actieve laag keyen:
+	Misc	Overig
+	Mute audio	Audio dempen
+	Negative	Negatief
+	New keyframe	Nieuw sleutelbeeld
+	New keyframe here	Nieuw sleutelbeeld hier
+	Next tint	Tint erna
+	No animated layers: add a keyframe to the active layer to animate it.	Geen geanimeerde lagen: voeg een sleutelbeeld toe aan de actieve laag om die te animeren.
+	No animation curves yet.	Nog geen animatiecurven.
+	No scenes yet.	Nog geen scènes.
+	Opacity per frame	Dekking per beeld
+	Previous tint	Tint ervoor
+	Quadratic	Kwadratisch
+	Recorder	Recorder
+	Remove from favourites	Uit favorieten verwijderen
+	Remove keyframe	Sleutelbeeld verwijderen
+	Remove scene	Scène verwijderen
+	Scale X	Schaal X
+	Scale Y	Schaal Y
+	Scene name	Scènenaam
+	Show onion skins	Onion skin tonen
+	Start	Begin
+	Start recording	Opname starten
+	Stop recording	Opname stoppen
+	Storyboard	Storyboard
+	Thumbnail size	Miniatuurgrootte
+	frames	beelden
+	opacity	dekking
+	rotation	rotatie
+	scaleX	schaal X
+	scaleY	schaal Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} momentopnamen in {dir}
+	2-Point Perspective	2-puntsperspectief
+	Assistant colour	Assistentkleur
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Assistentmagnetisme: hoe ver een streek van een assistent mag afwijken en toch wordt aangetrokken (1000 = altijd)
+	Assistant opacity	Assistentdekking
+	Concentric Ellipse	Concentrische ellips
+	Curvilinear Perspective	Kromlijnig perspectief
+	Eraser snaps	Gum magnetisch
+	Fish-Eye Point	Fisheye-punt
+	Handles	Grepen
+	Infinite Ruler	Oneindige liniaal
+	Limit to area	Beperken tot gebied
+	Minor subdivisions	Kleine onderverdelingen
+	Own colour	Eigen kleur
+	Perspective Ellipse	Perspectiefellips
+	Previews	Voorvertoningen
+	Show the snapped stroke's line while painting	Lijn van de magnetische streek tonen tijdens het schilderen
+	Show this assistant's control handles	Besturingsgrepen van deze assistent tonen
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Streken volgen de tekenassistenten (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Twee extra grepen begrenzen waar de assistent tekent en magnetisch is
+	Vertical ruler	Verticale liniaal
+	Painting Assistants	Tekenassistenten
+	Assistant Previews	Assistentvoorvertoningen
+	Drag fill	Sleepvulling
+	Dragging fills every region passed over	Slepen vult elk gepasseerd gebied
+	Exclude colour	Kleur uitsluiten
+	Exclude transparent	Transparant uitsluiten
+	Fill mode	Vulmodus
+	No region is fully enclosed by the shape	Geen gebied is volledig door de vorm omsloten
+	Only regions coloured like the first one	Alleen gebieden met de kleur van het eerste
+	Reference	Referentie
+	Similar only	Alleen gelijkende
+	Soften the filled edge	Vulrand verzachten
+	Spread stops at the darkest pixels (lines)	Uitbreiding stopt bij de donkerste pixels (lijnen)
+	Spread stops at the most opaque pixels	Uitbreiding stopt bij de meest dekkende pixels
+	Stop at darkest	Stop bij donkerste
+	Stop at opaque	Stop bij dekkend
+	Similar Colours	Gelijkende kleuren
+	Colour Labels	Kleurlabels
+	All Regions	Alle gebieden
+	Specific Colour	Specifieke kleur
+	Transparent Regions	Transparante gebieden
+	Surrounded By	Omgeven door
+	Fill with Foreground Color (Opacity)	Vullen met voorgrondkleur (dekking)
+	Fill with Background Color (Opacity)	Vullen met achtergrondkleur (dekking)
+	Fill with Pattern (Opacity)	Vullen met patroon (dekking)
+	Straight Line Tool	Rechte lijn
+	Multibrush Tool	Multipenseel
+	Dynamic Brush Tool	Dynamisch penseel
+	Enclose and Fill Tool	Omsluiten en vullen
+	Colorize Mask Tool	Kleurmasker
+	Reference Images Tool	Referentieafbeeldingen
+	Alternating	Afwisselend
+	Forward	Vooruit
+	Shaped Gradient (follows the selection)	Vormverloop (volgt de selectie)
+	Clear copies	Kopieën wissen
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik plaatst een kopie, Ctrl+Alt+klik verwijdert er een
+	How heavily the stroke lags behind the pointer	Hoe sterk de streek achter de aanwijzer aanloopt
+	How quickly the stroke's motion dies away	Hoe snel de beweging van de streek uitdooft
+	Keep one-pixel lines single width without L corners	Eén-pixellijnen enkel breed houden zonder L-hoeken
+	Mirror all tools	Alle gereedschappen spiegelen
+	Multibrush	Multipenseel
+	Pixel smoothing	Pixelvloeiing
+	The painting symmetry mirrors fills, gradients and retouching too	De tekensymmetrie spiegelt ook vullingen, verlopen en retouches
+	The painting symmetry mirrors this tool's output too	De tekensymmetrie spiegelt ook de uitvoer van dit gereedschap
+	X interval	X-interval
+	Y interval	Y-interval
+	Mirror / Rotation	Spiegel / Rotatie
+	Translate	Verschuiven
+	Copy Translate	Kopie verschuiven
+	Cursor shape	Cursorvorm
+	Outline shape	Omtrekvorm
+	Show outline while painting	Omtrek tonen tijdens het schilderen
+	Effective outline size	Werkelijke omtrekgrootte
+	Tool icon	Gereedschapspictogram
+	Arrow	Pijl
+	Crosshair	Draadkruis
+	Small dot	Kleine stip
+	No cursor	Geen cursor
+	Triangle right	Driehoek rechts
+	Triangle left	Driehoek links
+	No outline	Geen omtrek
+	Instant preview	Directe voorvertoning
+	Instant preview megapixels	Megapixels directe voorvertoning
+	Add…	Toevoegen…
+	Auto update	Automatisch bijwerken
+	Canvas input profile	Canvasinvoerprofiel
+	Clean up	Opschonen
+	Clear key strokes	Sleutelstreken wissen
+	Colorize Mask	Kleurmasker
+	Draw in the area below to test pressure, tilt and rotation	Teken in het gebied hieronder om druk, kanteling en rotatie te testen
+	Edge detection	Randdetectie
+	Edit key strokes	Sleutelstreken bewerken
+	Embed	Insluiten
+	Fill only inside the line art's pixels	Alleen binnen de pixels van de lijntekening vullen
+	Gap close	Gaten sluiten
+	Input API	Invoer-API
+	Keep aspect	Verhouding behouden
+	Limit to layer	Beperken tot laag
+	Next Preset	Volgende voorinstelling
+	No samples yet	Nog geen metingen
+	Nothing to paste: the clipboard holds no image	Niets te plakken: het klembord bevat geen afbeelding
+	Opacity +	Dekking +
+	Opacity -	Dekking -
+	Pasted image	Geplakte afbeelding
+	Peak pressure	Piekdruk
+	Previous Preset	Vorige voorinstelling
+	Reference Images	Referentieafbeeldingen
+	Rotate Left	Linksom draaien
+	Rotate Right	Rechtsom draaien
+	Sample rate	Meetfrequentie
+	Screen mapping	Schermtoewijzing
+	Show output	Uitvoer tonen
+	Show the key strokes over the canvas	Sleutelstreken over het canvas tonen
+	Show with all tools	Tonen bij alle gereedschappen
+	Size +	Grootte +
+	Size -	Grootte -
+	Speed source	Snelheidsbron
+	Store the pixels in the set; off, link to the file	Pixels in de set opslaan; uit: koppelen aan het bestand
+	Tablet Settings…	Tabletinstellingen…
+	Tablet Tester	Tablettester
+	The clipboard is not available	Het klembord is niet beschikbaar
+	The next key strokes keep their regions clear	De volgende sleutelstreken houden hun gebieden leeg
+	Tilt offset	Kantelverschuiving
+	Touch Docker	Aanraakpaneel
+	Transparent key	Transparante sleutel
+	Canvas Input	Canvasinvoer
+	Canvas Input…	Canvasinvoer…
+	Pan key	Pantoets
+	Zoom in key	Inzoomtoets
+	Zoom out key	Uitzoomtoets
+	Rotate key	Draaitoets
+	Middle button	Middelste knop
+	Stylus button	Penknop
+	Pick modifier	Pipet-modificatietoets
+	Shift wheel rotates	Shift+wiel draait
+	Trackpad	Trackpad
+	Pick	Pipet
+	No action	Geen actie
+	No pick	Geen pipet
+	Scroll	Scrollen
+	Rotate View (hold)	Weergave draaien (vasthouden)
+	Tilt offset x	Kantelverschuiving X
+	Tilt offset y	Kantelverschuiving Y
+	Tablet speed source	Snelheidsbron tablet
+	Tablet api	Tablet-API
+	Tablet screen mapping	Schermtoewijzing tablet
+	Pointer	Aanwijzer
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rastertype
+	Isometric left angle	Isometrische linkerhoek
+	Isometric right angle	Isometrische rechterhoek
+	Isometric vertical lines	Isometrische verticale lijnen
+	Rectangular	Rechthoekig
+	Isometric	Isometrisch
+	Node	Knooppunt
+	Extension	Verlenging
+	Intersection	Snijpunt
+	Alt-click a bottom patch to set it to the foreground colour	Alt+klik op een onderste vakje zet het op de voorgrondkleur
+	Apply:	Toepassen:
+	Brushes this large preview coarsely while painting	Penselen van deze grootte worden grof voorvertoond tijdens het schilderen
+	Click the disc to add shape points	Klik op de schijf om vormpunten toe te voegen
+	Close Shape	Vorm sluiten
+	Color Space:	Kleurruimte:
+	Common Colors	Veelvoorkomende kleuren
+	Components:	Componenten:
+	Continuous Mode	Doorlopende modus
+	Current pattern	Huidig patroon
+	Depth:	Diepte:
+	Display:	Weergave:
+	Dynamic Hue Ring	Dynamische tintring
+	Enable Pen Settings	Peninstellingen inschakelen
+	Erase mode keeps its own opacity on this preset	De gummodus houdt zijn eigen dekking in deze voorinstelling
+	Erase mode keeps its own size on this preset	De gummodus houdt zijn eigen grootte in deze voorinstelling
+	Eraser Opacity	Gumdekking
+	Eraser Size	Gumgrootte
+	Fit Panel Width	Aanpassen aan paneelbreedte
+	Gamut Mask	Gamutmasker
+	Gradient Steps	Verloopstappen
+	Gradient ends: Alt-click to set from the foreground	Verloopuiteinden: Alt+klik om de voorgrondkleur te nemen
+	Hue Steps	Tintstappen
+	Instant Preview	Directe voorvertoning
+	LUT Management (OCIO)	LUT-beheer (OCIO)
+	Lightness Strength	Lichtheidssterkte
+	Lock Color	Kleur vergrendelen
+	Luma:	Luma:
+	Minimum Hardness	Minimale hardheid
+	Minimum Strength	Minimale sterkte
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Uit: alle sensoren worden genegeerd, de curven blijven
+	Out of gamut	Buiten gamut
+	Panel colours are not shown through the display transform	Paneelkleuren gaan niet door de weergavetransformatie
+	Patch Count	Aantal vakjes
+	Patch Size	Vakjesgrootte
+	Patches:	Vakjes:
+	Pattern Scale	Patroonschaal
+	Pop-up Size	Pop-upgrootte
+	Proof to Painting Space	Proef naar schilderruimte
+	Recent Colors	Recente kleuren
+	Remove Last Shape	Laatste vorm verwijderen
+	Rotate Mask	Masker draaien
+	Saturation Steps	Verzadigingsstappen
+	Selector settings	Kiezerinstellingen
+	Selector:	Kiezer:
+	Shade Count	Aantal tinten
+	Shade Ring by Value	Ring schaduwen op waarde
+	Shade Selector	Tintkiezer
+	Shade Size	Tintgrootte
+	Shade Spread	Tintspreiding
+	Shade Strip	Tintstrook
+	Shades	Tinten
+	Share Curve Across Settings	Curve delen tussen instellingen
+	Show as Fractions	Als fracties tonen
+	Soften Edge	Rand verzachten
+	Source:	Bron:
+	Style:	Stijl:
+	The tip's grey levels are painted into the colour as lightness	De grijswaarden van de punt worden als lichtheid in de kleur geschilderd
+	Threshold the tip mask for crisp pixel strokes	Drempel op het puntmasker voor scherpe pixelstreken
+	Tip as Lightness Map	Punt als lichtheidskaart
+	Update:	Bijwerken:
+	Value Steps	Waardestappen
+	Value on the Ring	Waarde op de ring
+	Zoom Pop-up	Zoom-pop-up
+	Length over which the value goes from 0 to 1	Lengte waarover de waarde van 0 naar 1 gaat
+	Start over past the length instead of holding the end value	Na de lengte opnieuw beginnen in plaats van de eindwaarde vast te houden
+	Pressure In	Druk (alleen stijgend)
+	X-Tilt	X-kanteling
+	Y-Tilt	Y-kanteling
+	Tilt Direction	Kantelrichting
+	Tilt Elevation	Kantelhoogte
+	Fuzzy Stroke	Willekeurig per streek
+	Tip Scale:	Puntschaal:
+	Initial size as a share of the bitmap's size	Beginformaat als aandeel van de bitmapgrootte
+	Tip Rotation:	Puntrotatie:
+	Initial rotation of the tip	Beginrotatie van de punt
+	No anti-aliasing: the dab's pixels are fully on or off	Geen anti-aliasing: de pixels van de stip zijn volledig aan of uit
+	Align Outline to Pixel Grid	Omtrek op pixelraster uitlijnen
+	The brush outline snaps to the pixels the dab fills	De penseelomtrek klikt vast op de pixels die de stip vult
+	Tip Mode:	Puntmodus:
+	(no colour bitmap: paints the brush colour)	(geen kleurbitmap: schildert met de penseelkleur)
+	Neutral Point	Neutraal punt
+	Canvas Only: hide the panels around the canvas	Alleen canvas: de panelen rond het canvas verbergen
+	Presets kept in the history	Voorinstellingen in de geschiedenis
+	Clear the history	Geschiedenis wissen
+	No presets used yet	Nog geen voorinstellingen gebruikt
+	Forget this preset	Deze voorinstelling vergeten
+	Ten Brushes	Tien penselen
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Wijs voorinstellingen toe aan tien plaatsen; een plaats opnieuw activeren keert terug naar de vorige
+	Clear this slot	Deze plaats leegmaken
+	Assign current	Huidige toewijzen
+	Browse a folder of reference images	Een map met referentiebeelden kiezen
+	No folder	Geen map
+	Next image	Volgende afbeelding
+	Previous image	Vorige afbeelding
+	Pick an image to show it here	Kies een afbeelding om die hier te tonen
+	Search actions and commands	Acties en opdrachten zoeken
+	No matching action	Geen overeenkomende actie
+	Search Actions…	Acties zoeken…
+	Brush History	Penseelgeschiedenis
+	Color Image	Kleurenafbeelding
+	Lightness Map	Lichtheidskaart
+	Static	Vast
+	Move to Top	Naar boven
+	Bubble Up	Eén omhoog
+	Clear the scratch pad to white	Het kladblok wit maken
+	Fill the scratch pad with the background colour	Het kladblok met de achtergrondkleur vullen
+	Fill the scratch pad with the current gradient	Het kladblok met het huidige verloop vullen
+	Fill the scratch pad with the current image	Het kladblok met de huidige afbeelding vullen
+	Fill the scratch pad with the preset's icon	Het kladblok met het pictogram van de voorinstelling vullen
+	Reload the stored preset, discarding the tweaks	De opgeslagen voorinstelling opnieuw laden en de wijzigingen verwerpen
+	BG	AG
+	Icon	Pictogram
+	Thumbnail:	Miniatuur:
+	Stroke preview	Streekvoorbeeld
+	Scratch pad	Kladblok
+	Icon library	Pictogrambibliotheek
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Lokale selectie activeren
+	Add Curve Key	Curvesleutel toevoegen
+	Add Filter…	Filter toevoegen…
+	Add Local Selection	Lokale selectie toevoegen
+	Add Scene	Scène toevoegen
+	Add Transform Key	Transformatiesleutel toevoegen
+	Alpha into Mask	Alfa naar masker
+	Attach Audio…	Audio bijvoegen…
+	Backup count	Aantal back-ups
+	Capture Snapshot	Momentopname maken
+	Change Clone Source…	Kloonbron wijzigen…
+	Clone Keyframe	Keyframe klonen
+	Clone Layer	Laag klonen
+	Clones Array…	Kloonraster…
+	Colorize Mask Properties…	Eigenschappen van inkleurmasker…
+	Convert	Omzetten
+	Convert Group to Animated Layer	Groep omzetten naar geanimeerde laag
+	Convert to Paint Layer	Omzetten naar tekenlaag
+	Copy Keyframe	Keyframe kopiëren
+	Curved	Gebogen
+	Drag	Slepen
+	Duplicate Keyframe	Keyframe dupliceren
+	Edit Generated Fill…	Gegenereerde vulling bewerken…
+	Edit Transform Mask…	Transformatiemasker bewerken…
+	Ellipse	Ellips
+	Export Storyboard…	Storyboard exporteren…
+	Export Timelapse…	Timelapse exporteren…
+	File Layer Properties…	Eigenschappen van bestandslaag…
+	File Layer…	Bestandslaag…
+	Filter Layer…	Filterlaag…
+	Filter Mask…	Filtermasker…
+	Frame rate limit	Framesnelheidslimiet
+	Frames	Frames
+	Freeze Live Layer	Livelaag bevriezen
+	High quality	Hoge kwaliteit
+	Import Animation Frames…	Animatieframes importeren…
+	Import Image as…	Afbeelding importeren als…
+	Import Video Animation…	Videoanimatie importeren…
+	Input controllers	Invoercontrollers
+	Input devices	Invoerapparaten
+	Invisible	Onzichtbaar
+	Layer Color Space…	Kleurruimte van laag…
+	Layers by State	Lagen op status
+	Local Selection	Lokale selectie
+	Mass	Massa
+	Move Clone…	Kloon verplaatsen…
+	Move Keyframe	Keyframe verplaatsen
+	Multigrid…	Multiraster…
+	Mute Audio	Audio dempen
+	Nearest	Dichtstbijzijnde
+	New Keyframe	Nieuw keyframe
+	Onion Skin…	Onion skin…
+	Pan	Pannen
+	Pixel grid threshold	Pixelrasterdrempel
+	Reload File Layer	Bestandslaag opnieuw laden
+	Remove Audio	Audio verwijderen
+	Remove Curve Key	Curvesleutel verwijderen
+	Remove Filter	Filter verwijderen
+	Remove Keyframe	Keyframe verwijderen
+	Remove Local Selection	Lokale selectie verwijderen
+	Remove Transform Key	Transformatiesleutel verwijderen
+	Remove Transform Mask	Transformatiemasker verwijderen
+	Render Animation…	Animatie renderen…
+	Save Merged…	Samengevoegd opslaan…
+	Scaling filter	Schaalfilter
+	Screentone…	Rasterpunten…
+	Script…	Script…
+	Set Filter…	Filter instellen…
+	Show Output	Uitvoer tonen
+	Split Alpha	Alfa splitsen
+	Start Recording	Opname starten
+	Stop Recording	Opname stoppen
+	Swap directory	Wisselmap
+	Ten scripts	Tien scripts
+	Threads	Threads
+	Transform Mask…	Transformatiemasker…
+	Update Local Selection	Lokale selectie bijwerken
+	Write as Alpha	Schrijven als alfa
+	to File Layer…	naar bestandslaag…
+	to Filter Mask…	naar filtermasker…
+	to Paint Layer	naar tekenlaag
+	to Selection Mask	naar selectiemasker
+	to Transparency Mask	naar transparantiemasker

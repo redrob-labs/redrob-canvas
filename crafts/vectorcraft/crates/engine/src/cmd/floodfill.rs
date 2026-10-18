@@ -3,7 +3,9 @@
 //! The artboard under the click (else the art's bounds) is rendered as the screen shows it, the
 //! pixels within `threshold` of the clicked one and 4-connected to it are flooded, the region is
 //! grown or shrunk by `grow`, and its boundary (holes included) becomes a path filled with the
-//! current fill, as Live Paint fills a face.
+//! current fill, as Live Paint fills a face. `channel` compares one channel instead of the visible
+//! colour, `everywhere` floods every region of the clicked colour (not only the connected one), and
+//! `union` adds the region to the selected path (Shift-click: the previous fill).
 
 use redrob_vector_doc::NodeKind;
 use redrob_vector_geom::{Anchor, FillRule, PathData, Point, Rect, SubPath};
@@ -20,7 +22,7 @@ pub fn specs() -> Vec<CommandSpec> {
         "Fill Rendered Pixels",
         [],
         None,
-        "{x, y: document point, threshold?: 0..255 (32; how far a pixel's colour may be from the clicked one, per channel), grow?: pt (0; grows the region, negative shrinks it), scale?: pixels per point (2, up to 8; the picture is rendered at this resolution, at most 4 million pixels)} fill the region of the rendered picture around the point with a new path in the current fill → {id, pixels}",
+        "{x, y: document point, threshold?: 0..255 (32; how far a pixel's colour may be from the clicked one, per channel), grow?: pt (0; grows the region, negative shrinks it), channel?: \"visible\"|\"red\"|\"green\"|\"blue\"|\"alpha\" (visible; compare one channel only: alpha floods the rendered coverage over a transparent pasteboard), everywhere?: bool (false; every region of the clicked colour, connected or not: Alt-click), union?: bool (false; the region is united with the selected path instead of making a new one, when exactly one path is selected: Shift-click adds to the previous fill), scale?: pixels per point (2, up to 8; the picture is rendered at this resolution, at most 4 million pixels)} fill the region of the rendered picture around the point with a new path in the current fill → {id, pixels}",
         has_doc,
         flood_fill
     )]
@@ -41,6 +43,25 @@ fn flood_fill(s: &mut Session, p: &Value) -> Result<Value> {
     let at = Point::new(f64_req(p, "x", C)?, f64_req(p, "y", C)?);
     let threshold = f64_or(p, "threshold", 32.0).clamp(0.0, 255.0) as i32;
     let grow = f64_or(p, "grow", 0.0).clamp(-1000.0, 1000.0);
+    let channel = str_param(p, "channel").unwrap_or("visible");
+    if !["visible", "red", "green", "blue", "alpha"].contains(&channel) {
+        return Err(bad(C, format!("channel must be visible, red, green, blue or alpha, not `{channel}`")));
+    }
+    let everywhere = bool_or(p, "everywhere", false);
+    let union = bool_or(p, "union", false);
+    // Shift-click adds to the previous fill: the one selected path, when there is one.
+    let union_with = if union {
+        let st = s.doc()?;
+        match st.selection.objects.as_slice() {
+            [id] => match st.doc.node(*id).map(|n| &n.kind) {
+                Some(NodeKind::Path { path, rule, .. }) => Some((*id, path.clone(), *rule)),
+                _ => None,
+            },
+            _ => None,
+        }
+    } else {
+        None
+    };
     let doc = &s.doc()?.doc;
     let region = region_of(doc, at).ok_or_else(|| bad(C, "the point lies on no artboard and outside the art"))?;
     // At most four million pixels, however large the artboard.
@@ -51,15 +72,25 @@ fn flood_fill(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let mut r = redrob_vector_render::Renderer::new();
     r.threads = 0;
-    let opts = RenderOptions { background: Some([255, 255, 255, 255]), skip_templates: true, ..Default::default() };
+    // The alpha channel is the rendered coverage: nothing behind the art then.
+    let background = if channel == "alpha" { None } else { Some([255, 255, 255, 255]) };
+    let opts = RenderOptions { background, skip_templates: true, ..Default::default() };
     let img = r.render_region_with(doc, region, scale, &opts);
     let (w, h) = (img.width as usize, img.height as usize);
     if w == 0 || h == 0 || img.pixels.len() < w * h * 4 {
         return Err(bad(C, "nothing rendered"));
     }
-    let px = |x: usize, y: usize| -> [i32; 3] {
+    let px = |x: usize, y: usize| -> [i32; 4] {
         let i = (y * w + x) * 4;
-        [i32::from(img.pixels[i]), i32::from(img.pixels[i + 1]), i32::from(img.pixels[i + 2])]
+        [i32::from(img.pixels[i]), i32::from(img.pixels[i + 1]), i32::from(img.pixels[i + 2]), i32::from(img.pixels[i + 3])]
+    };
+    // The channels compared: the three colours, or one of the four.
+    let channels: &[usize] = match channel {
+        "red" => &[0],
+        "green" => &[1],
+        "blue" => &[2],
+        "alpha" => &[3],
+        _ => &[0, 1, 2],
     };
     let sx = ((at.x - region.x0) * scale).floor();
     let sy = ((at.y - region.y0) * scale).floor();
@@ -68,10 +99,17 @@ fn flood_fill(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let (sx, sy) = (sx as usize, sy as usize);
     let seed = px(sx, sy);
-    let near = |c: [i32; 3]| (0..3).all(|k| (c[k] - seed[k]).abs() <= threshold);
-    // 4-connected flood from the click.
+    let near = |c: [i32; 4]| channels.iter().all(|&k| (c[k] - seed[k]).abs() <= threshold);
+    // 4-connected flood from the click, or every pixel of the colour with `everywhere`.
     let mut mask = vec![false; w * h];
-    let mut stack = vec![(sx, sy)];
+    let mut stack = if everywhere { vec![] } else { vec![(sx, sy)] };
+    if everywhere {
+        for y in 0..h {
+            for x in 0..w {
+                mask[y * w + x] = near(px(x, y));
+            }
+        }
+    }
     mask[sy * w + sx] = true;
     while let Some((x, y)) = stack.pop() {
         let mut visit = |nx: usize, ny: usize| {
@@ -126,6 +164,20 @@ fn flood_fill(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad(C, "the region has no outline"));
     }
     let path = PathData::new(subs);
+    if let Some((id, previous, rule)) = union_with {
+        // Shift-click: the region joins the previous fill, which keeps its look.
+        let united = redrob_vector_pathops::boolean(&previous, rule, &path, FillRule::NonZero, redrob_vector_pathops::BoolOp::Union);
+        s.edit("Paint Bucket", |d, sel| {
+            if let Some(n) = d.node_mut(id)
+                && let NodeKind::Path { path: pd, .. } = &mut n.kind
+            {
+                *pd = united;
+            }
+            sel.set(std::iter::once(id));
+            Ok(())
+        })?;
+        return Ok(json!({ "id": id.0, "pixels": pixels, "union": true }));
+    }
     let fill = s.paint.fill.clone();
     let look = s.new_art_look(fill, redrob_vector_color::Paint::None, 0.0);
     let kind = NodeKind::Path { path, rule: FillRule::NonZero, live: None, clipping: false, guide: false };

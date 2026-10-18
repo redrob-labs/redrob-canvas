@@ -28,6 +28,7 @@ mod depth;
 mod files;
 mod fx;
 mod spread;
+mod svg2;
 mod symbol_sheet;
 mod symbol_units;
 mod text;
@@ -92,6 +93,10 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
         non_scaling: found.non_scaling,
         data: found.data,
         descriptions: found.descriptions,
+        link_extras: found.link_extras,
+        properties: found.properties,
+        meshes: found.meshes,
+        svg_fonts: found.svg_fonts,
         sublayers: found.sublayers,
         sublayer_groups: HashSet::new(),
         screen: k,
@@ -99,6 +104,11 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
     if im.files.nested_text() {
         im.warn("text inside an SVG image isn't imported".into());
     }
+    // `<script>` elements (interactive SVG): kept as the document's scripts, never run.
+    im.doc.scripts = scripts(&xml);
+    // The file's `<style>` rules, for the Selectors and CSS editor (our own export's class rules
+    // and font faces aside).
+    im.doc.stylesheet = stylesheet(&xml);
 
     // usvg wraps everything in an id-less group carrying the viewBox transform when needed.
     let mut top = tree.root();
@@ -190,6 +200,7 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
         }
     }
     im.doc.limit_depth_noting(&mut im.warnings);
+    im.doc.svg_fonts = im.svg_fonts;
     Ok((im.doc, im.warnings))
 }
 
@@ -376,6 +387,14 @@ struct Importer {
     data: HashMap<String, Vec<(String, String)>>,
     /// The `<title>` and `<desc>` of elements, by id ([`descriptions`]).
     descriptions: HashMap<String, (String, String)>,
+    /// Each `<a>`'s target and title, by id ([`prepass`]).
+    link_extras: HashMap<String, (String, String)>,
+    /// Object Properties read from elements, by id ([`prepass`]).
+    properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>, Option<f64>)>,
+    /// Mesh gradients by the id of the shape they filled ([`svg2`]).
+    meshes: HashMap<String, redrob_vector_doc::GradientMesh>,
+    /// The `<font>` elements ([`svg2`]), kept as the document's SVG fonts.
+    svg_fonts: Vec<redrob_vector_doc::SvgFont>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
     /// The groups made of them, made sublayers where they sit in a layer ([`promote_sublayers`]).
@@ -496,6 +515,16 @@ struct Found {
     descriptions: HashMap<String, (String, String)>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
+    /// Each `<a>`'s target and title, by id.
+    link_extras: HashMap<String, (String, String)>,
+    /// Object Properties read from elements, by id: event attributes, highlight colour, an
+    /// image's preserveAspectRatio and DPI.
+    properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>, Option<f64>)>,
+    /// The mesh gradient each shape was filled with, by the shape's id ([`svg2`]): the shape
+    /// comes in as a gradient mesh object.
+    meshes: HashMap<String, redrob_vector_doc::GradientMesh>,
+    /// The `<font>` elements, as SVG fonts.
+    svg_fonts: Vec<redrob_vector_doc::SvgFont>,
     warnings: Vec<String>,
 }
 
@@ -590,8 +619,10 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
     // (`:` for prefixed elements such as `<svg:image>`.)
     let css_transform = has_css_transform(svg);
     let not = svg.contains(":not(");
+    let svg2 = svg2::wanted(svg);
     if !css_transform
         && !not
+        && !svg2
         && ![
             "<a",
             "display",
@@ -606,6 +637,10 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
             "groupmode",
             "<title",
             "<desc",
+            "onclick",
+            "onmouse",
+            "onload",
+            "onfocus",
         ]
         .iter()
         .any(|t| svg.contains(t))
@@ -614,14 +649,49 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
     }
     let mut edits = Edits::default();
     let elements = || xml.descendants().filter(|n| n.is_element());
+    if svg2 {
+        svg2::find(svg, xml, &mut edits, &mut found, opts.legacy_dpi);
+    }
     for a in elements().filter(|n| n.tag_name().name() == "a") {
         if let Some(url) = href(a) {
-            found.links.insert(edits.id(svg, a), url.to_string());
+            let id = edits.id(svg, a);
+            // The link's target and its own `<title>` (Object Properties).
+            let target = a.attribute("target").unwrap_or("").to_string();
+            let title = a
+                .children()
+                .find(|c| c.is_element() && c.tag_name().name() == "title")
+                .map(|c| c.descendants().filter_map(|t| t.text()).collect::<String>().trim().to_string())
+                .unwrap_or_default();
+            if !target.is_empty() || !title.is_empty() {
+                found.link_extras.insert(id.clone(), (target, title));
+            }
+            found.links.insert(id, url.to_string());
         }
     }
-    if svg.contains("data-") {
+    if ["onclick", "onmouse", "onload", "onfocus", "data-vc-highlight", "data-vc-dpi", "preserveAspectRatio"].iter().any(|t| svg.contains(t)) {
         for e in elements().filter(|e| OBJECT_ELEMENTS.contains(&e.tag_name().name())) {
-            let data = user_data(e);
+            let events: Vec<(String, String)> = e
+                .attributes()
+                .filter(|a| a.namespace().is_none())
+                .filter(|a| a.name().starts_with("on") && a.name().len() > 2 && a.name().chars().all(|c| c.is_ascii_alphanumeric()))
+                .take(MAX_DATA)
+                .map(|a| (a.name().to_string(), a.value().to_string()))
+                .collect();
+            let highlight = e.attribute("data-vc-highlight").map(str::to_string);
+            let par = e.attribute("preserveAspectRatio").filter(|_| e.tag_name().name() == "image").filter(|p| *p != "none").map(str::to_string);
+            let dpi = e.attribute("data-vc-dpi").and_then(|v| v.trim().parse::<f64>().ok()).filter(|d| d.is_finite() && *d > 0.0);
+            if !events.is_empty() || highlight.is_some() || par.is_some() || dpi.is_some() {
+                found.properties.insert(edits.id(svg, e), (events, highlight, par, dpi));
+            }
+        }
+    }
+    if svg.contains("data-") || svg.contains("class=") {
+        for e in elements().filter(|e| OBJECT_ELEMENTS.contains(&e.tag_name().name())) {
+            let mut data = user_data(e);
+            // The element's classes (Selectors and CSS) travel as the `vc-class` data key.
+            if let Some(c) = e.attribute("class").map(str::trim).filter(|c| !c.is_empty()) {
+                data.push((redrob_vector_doc::CssRule::CLASS_KEY.to_string(), c.to_string()));
+            }
             if !data.is_empty() {
                 found.data.insert(edits.id(svg, e), data);
             }
@@ -761,6 +831,44 @@ fn link(n: &mut Node, url: &str) {
     }
 }
 
+/// The rules of the file's `<style>` elements (at most 256), without the ones our own export
+/// writes for its styling classes (`cls-`) and `@font-face`.
+fn stylesheet(xml: &roxmltree::Document) -> Vec<redrob_vector_doc::CssRule> {
+    let mut out = vec![];
+    for st in xml.descendants().filter(|n| n.is_element() && n.tag_name().name() == "style") {
+        let css: String = st.descendants().filter_map(|t| t.text()).collect();
+        for rule in redrob_vector_doc::CssRule::parse_sheet(&css) {
+            if rule.selector.contains("cls-") {
+                continue;
+            }
+            out.push(rule);
+            if out.len() >= 256 {
+                return out;
+            }
+        }
+    }
+    out
+}
+
+/// Every `<script>` of the file: external ones by their `href` (or `xlink:href`), embedded ones
+/// with their code (at most 64 scripts of 256 KiB each).
+fn scripts(xml: &roxmltree::Document) -> Vec<redrob_vector_doc::DocScript> {
+    const XLINK: &str = "http://www.w3.org/1999/xlink";
+    xml.descendants()
+        .filter(|n| n.is_element() && n.tag_name().name() == "script")
+        .take(64)
+        .map(|n| {
+            let href = n.attribute("href").or_else(|| n.attribute((XLINK, "href"))).filter(|h| !h.trim().is_empty()).map(str::to_string);
+            let content = if href.is_some() {
+                String::new()
+            } else {
+                n.descendants().filter_map(|t| t.text()).collect::<String>().chars().take(262_144).collect()
+            };
+            redrob_vector_doc::DocScript { href, content, mime: n.attribute("type").unwrap_or_default().to_string() }
+        })
+        .collect()
+}
+
 /// The names apps keep beside element ids, by id: `data-name`, `inkscape:label`, `serif:id` or
 /// `aria-label` (the first one present).
 fn labels(xml: &roxmltree::Document) -> HashMap<String, String> {
@@ -895,6 +1003,26 @@ impl Importer {
             // Only present when usvg had fonts; text is read from the XML instead.
             usvg::Node::Text(_) => None,
         }?;
+        // A shape filled with a mesh gradient: the mesh object in its place (its stroke kept on
+        // the shape beside it).
+        if let Some(mesh) = self.meshes.get(n.id()).cloned()
+            && matches!(out.kind, NodeKind::Path { .. } | NodeKind::Compound { .. })
+        {
+            let placed = svg2::mesh_node(&mesh, acc);
+            let mut m = Node::new(self.doc.alloc_id(), NodeKind::Mesh(placed));
+            m.name = out.name.clone();
+            let stroked = out.appearance.items.iter().any(|i| matches!(i, redrob_vector_doc::AppearanceItem::Stroke(_)));
+            if stroked {
+                let mut shape = out;
+                shape.appearance.items.retain(|i| !matches!(i, redrob_vector_doc::AppearanceItem::Fill(_)));
+                let gid = self.doc.alloc_id();
+                let mut g = Node::group(gid, vec![Arc::new(m), Arc::new(shape)]);
+                g.name = Some("Mesh".into());
+                out = g;
+            } else {
+                out = m;
+            }
+        }
         if self.hidden.contains(n.id()) {
             out.visible = false;
         }
@@ -907,6 +1035,23 @@ impl Importer {
     fn keep_data(&self, id: &str, n: &mut Node) {
         if let Some(data) = self.data.get(id).filter(|_| n.extras().attrs.as_ref().is_none_or(|a| a.data.is_empty())) {
             n.edit_attrs(|a| a.data = data.clone());
+        }
+        // Object Properties: event attributes, the highlight colour, an image's aspect handling.
+        if let Some((events, highlight, par, dpi)) = self.properties.get(id) {
+            n.edit_attrs(|a| {
+                if a.events.is_empty() {
+                    a.events.clone_from(events);
+                }
+                if a.highlight.is_none() {
+                    a.highlight.clone_from(highlight);
+                }
+                if a.preserve_aspect_ratio.is_none() {
+                    a.preserve_aspect_ratio.clone_from(par);
+                }
+                if a.dpi.is_none() {
+                    a.dpi = *dpi;
+                }
+            });
         }
         // Its title and description too, unless an inner element gave it some.
         if let Some((title, desc)) = self.descriptions.get(id) {
@@ -949,6 +1094,14 @@ impl Importer {
         };
         if let Some(url) = url {
             link(&mut n, &url);
+            if let Some((target, title)) = self.link_extras.get(g.id())
+                && n.url() == Some(url.as_str())
+            {
+                n.edit_attrs(|a| {
+                    a.url_target.clone_from(target);
+                    a.url_title.clone_from(title);
+                });
+            }
         }
         Some(n)
     }

@@ -4907,3 +4907,367 @@ mark-style	Japanese	Japonesas
 @msg	select a clone	selecciona un clon
 @msg	select an object	selecciona un objeto
 @msg	the copied object is no longer in this document	el objeto copiado ya no está en este documento
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	Efectos de trazado
+	Clone Original	Clonar original
+	Clone Original…	Clonar original…
+	Attach Path	Adjuntar trazado
+	Attach Path…	Adjuntar trazado…
+	Bounding Box…	Cuadro delimitador…
+	Fill Between Many	Rellenar entre varios
+	Fill Between Many…	Rellenar entre varios…
+	Fill Between Strokes	Rellenar entre trazos
+	Fill Between Strokes…	Rellenar entre trazos…
+	Power Clip	Recorte avanzado
+	Power Clip…	Recorte avanzado…
+	Power Clip (Inverse)	Recorte avanzado (inverso)
+	Release Power Clip	Soltar recorte avanzado
+	Construct Grid	Construir cuadrícula
+	Construct Grid…	Construir cuadrícula…
+	Ellipse by 5 Points	Elipse por 5 puntos
+	Ellipse by 5 Points…	Elipse por 5 puntos…
+	Ellipse from Points	Elipse desde puntos
+	Ellipse from Points…	Elipse desde puntos…
+	Circle by 3 Points	Círculo por 3 puntos
+	Circle by 3 Points…	Círculo por 3 puntos…
+	Circle by Center and Radius	Círculo por centro y radio
+	Line Segment…	Segmento de línea…
+	Parallel	Paralela
+	Parallel…	Paralela…
+	Perpendicular Bisector	Mediatriz
+	Perpendicular Bisector…	Mediatriz…
+	Angle Bisector	Bisectriz
+	Angle Bisector…	Bisectriz…
+	Tangent to Curve	Tangente a la curva
+	Tangent to Curve…	Tangente a la curva…
+	Transform by 2 Points	Transformar por 2 puntos
+	Transform by 2 Points…	Transformar por 2 puntos…
+	Show Handles…	Mostrar manejadores…
+	Measure Segments	Medir segmentos
+	Measure Segments…	Medir segmentos…
+	Ruler	Regla
+	Ruler…	Regla…
+	Interpolate Points	Interpolar puntos
+	Interpolate Points…	Interpolar puntos…
+	Knot	Nudo
+	Knot…	Nudo…
+	VonKoch	VonKoch
+	VonKoch…	VonKoch…
+	Gears	Engranajes
+	Gears…	Engranajes…
+	Embroidery Stitch	Puntada de bordado
+	Embroidery Stitch…	Puntada de bordado…
+	Stitch Sub-Paths	Coser subtrazados
+	Stitch Sub-Paths…	Coser subtrazados…
+	Hatches (Rough)	Tramas (toscas)
+	Hatches (Rough)…	Tramas (toscas)…
+	Sketch	Boceto
+	Sketch…	Boceto…
+	Join Type	Tipo de unión
+	Join Type…	Tipo de unión…
+	Slice…	Corte…
+	Select Linked Object	Seleccionar objeto vinculado
+	Mask Background	Fondo de la máscara
+	Background	Fondo
+	Live Slice	Corte dinámico
+	Fuse Slice	Fusionar corte
+	3D Marble	Mármol 3D
+	3D Wood	Madera 3D
+	Air Spray	Aerosol
+	Aluminium	Aluminio
+	Apply Effects to Image Pixels	Aplicar efectos a los píxeles de la imagen
+	Apply Filter Preset	Aplicar filtro predefinido
+	Apply to Selection	Aplicar a la selección
+	Bevels	Biseles
+	Black Hole	Agujero negro
+	Blobs	Gotas
+	Bloom	Resplandor
+	Brilliance	Brillo
+	Bump	Relieve
+	Bumps	Relieves
+	Button	Botón
+	Canvas Bumps	Relieve de lienzo
+	Chalk and Sponge	Tiza y esponja
+	Channel to Alpha	Canal a alfa
+	Chrome	Cromo
+	Color Blindness	Daltonismo
+	Colour Space:	Espacio de color:
+	Comics Cream	Crema de cómic
+	Cracked Glass	Vidrio agrietado
+	Cubes	Cubos
+	Dark and Glow	Oscuro y brillo
+	Document Filters	Filtros del documento
+	Dragee	Gragea
+	Duochrome	Duocromo
+	Duplicate Filter	Duplicar filtro
+	Embossed Leather	Cuero repujado
+	Extract Channel	Extraer canal
+	Fade to Black	Fundido a negro
+	Felt Feather	Pluma de fieltro
+	Fill and Overlays	Rellenos y superposiciones
+	Filter	Filtro
+	Filter Gallery	Galería de filtros
+	Filter Presets	Filtros predefinidos
+	Filter copy	Copia de filtro
+	Filters	Filtros
+	Glow	Resplandor
+	Glowing Metal	Metal incandescente
+	Gold	Oro
+	Greyscale	Escala de grises
+	HSL Noise	Ruido HSL
+	Ink Blot	Mancha de tinta
+	Ink Splash	Salpicadura de tinta
+	Inner Shadow	Sombra interior
+	Leopard Fur	Piel de leopardo
+	Light Eraser	Borrador de luces
+	Luminance to Alpha	Luminancia a alfa
+	Materials	Materiales
+	Matte Jelly	Gelatina mate
+	Metallized Paint	Pintura metalizada
+	Neon	Neón
+	No filter matches the search.	Ningún filtro coincide con la búsqueda.
+	Noise Fill	Relleno de ruido
+	Non-realistic 3D Shaders	Sombreadores 3D no realistas
+	Open Filter Editor	Abrir el editor de filtros
+	Paper Bump	Relieve de papel
+	Pointillism	Puntillismo
+	Protrusions	Protuberancias
+	Quadritone	Cuatritono
+	Ridges	Crestas
+	Rough Paper	Papel rugoso
+	Rough Transparency	Transparencia rugosa
+	Roughen	Rugosidad
+	Saturation Map	Mapa de saturación
+	Select an object to apply a filter.	Seleccione un objeto para aplicar un filtro.
+	Silhouette	Silueta
+	Smooth Edges	Suavizar bordes
+	Solarize	Solarizar
+	Specular Light	Luz especular
+	Spikes	Púas
+	Spots Overlay	Superposición de manchas
+	Stone Wall	Muro de piedra
+	Subregion:	Subregión:
+	Swirl	Remolino
+	Textures	Texturas
+	The document has no filters yet.	El documento aún no tiene filtros.
+	Thin Membrane	Membrana fina
+	Torn Edges	Bordes rasgados
+	Translucent	Translúcido
+	Transparency Utilities	Utilidades de transparencia
+	Tritone	Tritono
+	Watercolor	Acuarela
+	Waves	Ondas
+	Turns:	Vueltas:
+	Divergence:	Divergencia:
+	Clockwise	En sentido horario
+	Threshold:	Umbral:
+	Grow/Shrink:	Expandir/contraer:
+	Fill by:	Rellenar por:
+	Visible Colors	Colores visibles
+	Alpha	Alfa
+	Add to Fill	Añadir al relleno
+	View rotation (Cmd+Shift+scroll turns the view)	Rotación de la vista (Cmd+Mayús+desplazamiento gira la vista)
+	Lock Rotate View	Bloquear rotación de la vista
+	Fixation:	Fijación:
+	Dip Pen	Plumilla
+	Marker	Rotulador
+	Brush	Pincel
+	Wiggly	Ondulado
+	Splotchy	Manchado
+	Use Pressure	Usar presión
+	Live Simplify	Simplificar en vivo
+	Simplify (Live)…	Simplificar (en vivo)…
+	Split View	Vista dividida
+	X-ray	Rayos X
+	Input Devices…	Dispositivos de entrada…
+	Input Devices	Dispositivos de entrada
+	Pressure Curves	Curvas de presión
+	Mouse	Ratón
+	Pen / Stylus	Lápiz / Stylus
+	Touch	Táctil
+	Liquify Tools	Herramientas de licuar
+	Disabled	Desactivado
+	Grids	Cuadrículas
+	Main Grid	Cuadrícula principal
+	Add Grid	Añadir cuadrícula
+	Remove Grid	Quitar cuadrícula
+	Grid Options	Opciones de cuadrícula
+	Kind:	Tipo:
+	Subdivisions:	Subdivisiones:
+	Angles:	Ángulos:
+	Gaps:	Separaciones:
+	Origin:	Origen:
+	Own color	Color propio
+	Open a document to edit its grids.	Abra un documento para editar sus cuadrículas.
+	Add Script	Añadir script
+	Edit Script	Editar script
+	Remove Script	Quitar script
+	The document has no scripts.	El documento no tiene scripts.
+	External:	Externo:
+	Embedded script	Script incrustado
+	Add Embedded Script	Añadir script incrustado
+	Add External Script	Añadir script externo
+	Source:	Origen:
+	External file	Archivo externo
+	Code:	Código:
+	Open a document to edit its scripts.	Abra un documento para editar sus scripts.
+	Alignment Handles	Manejadores de alineación
+	Align (Shift: move the key object)	Alinear (Mayús: mover el objeto clave)
+	Stylesheet	Hoja de estilos
+	No rules yet. Add one and assign its class to objects.	Aún no hay reglas. Añada una y asigne su clase a los objetos.
+	Add Rule	Añadir regla
+	Remove Rule	Quitar regla
+	Selector:	Selector:
+	Declarations:	Declaraciones:
+	Assign to Selection	Asignar a la selección
+	Remove from Selection	Quitar de la selección
+	Add CSS Rule	Añadir regla CSS
+	Edit CSS Rule	Editar regla CSS
+	Remove CSS Rule	Quitar regla CSS
+	Assign CSS Class	Asignar clase CSS
+	Remove CSS Class	Quitar clase CSS
+	Apply Stylesheet	Aplicar hoja de estilos
+	New Node	Nuevo nodo
+	Indent Node	Sangrar nodo
+	Outdent Node	Quitar sangría del nodo
+	Move Node	Mover nodo
+	Set Path Data	Establecer datos del trazado
+	Round to:	Redondear a:
+	Round Path Data	Redondear datos del trazado
+	Connector Tool	Herramienta Conector
+	Connect Objects	Conectar objetos
+	Reroute Connectors	Redirigir conectores
+	Connector Obstacle	Obstáculo de conector
+	Arrange Connected Objects	Organizar objetos conectados
+	Arrange Connected	Organizar conectados
+	Routing:	Trazado:
+	Orthogonal	Ortogonal
+	Polyline	Polilínea
+	Curvature:	Curvatura:
+	3D Box Tool	Herramienta Caja 3D
+	3D Box	Caja 3D
+	3D Box Options	Opciones de caja 3D
+	Move Vanishing Point	Mover punto de fuga
+	Z:	Z:
+	Vanishing Point	Punto de fuga
+	Infinite	Infinito
+	Arrange in Grid	Organizar en cuadrícula
+	Arrange in Circle	Organizar en círculo
+	Dynamic Offset	Desplazamiento dinámico
+	Fill Between Paths	Rellenar entre trazados
+	Linked Offset	Desplazamiento enlazado
+	Linked Offset Distance	Distancia del desplazamiento enlazado
+	Remove Overlaps	Eliminar superposiciones
+	Unlink Live Object	Desenlazar objeto dinámico
+	Create Anchor	Crear ancla
+	Follow Link	Seguir enlace
+	Select All Anchors	Seleccionar todos los puntos de ancla
+	Invert Anchor Selection	Invertir selección de puntos de ancla
+	Aspect ratio:	Relación de aspecto:
+	Clip path	Trazado de recorte
+	DPI:	PPP:
+	Effect knots	Nudos de efecto
+	Highlight color:	Color de resaltado:
+	Interactivity	Interactividad
+	Link target:	Destino del enlace:
+	Link title:	Título del enlace:
+	Path outline	Contorno del trazado
+	Transform handles	Manejadores de transformación
+	Plot…	Trazar en plóter…
+	Import Web Image…	Importar imagen web…
+	Check Spelling	Revisar ortografía
+	Edit Custom Dictionary	Editar diccionario personalizado
+	The spell check is complete.	La revisión ortográfica ha terminado.
+	Words checked	Palabras revisadas
+	Check Again	Revisar de nuevo
+	Word Not Found:	Palabra no encontrada:
+	Change To:	Cambiar a:
+	Suggestions:	Sugerencias:
+	No suggestions	Sin sugerencias
+	Ignore All	Ignorar todo
+	No words yet	Aún no hay palabras
+	Word:	Palabra:
+	Change Spelling	Cambiar ortografía
+	Ignore Spelling	Ignorar ortografía
+	Add to Dictionary	Añadir al diccionario
+	Remove from Dictionary	Quitar del diccionario
+	Spelling Dictionaries	Diccionarios ortográficos
+	Visible Hairlines	Líneas finas visibles
+	Rename…	Cambiar nombre…
+	Extract…	Extraer…
+	Object Attributes	Atributos del objeto
+	Object Attributes…	Atributos del objeto…
+	Create Tiled Clones…	Crear clones en mosaico…
+	Rename Symbol	Cambiar nombre del símbolo
+	Set Object Attribute	Establecer atributo del objeto
+	Trace Pixel Art…	Vectorizar pixel art…
+	Objects to Marker	Objetos a marcador
+	Markers	Marcadores
+	Markers:	Marcadores:
+	Delete Marker	Eliminar marcador
+	SVG Font Editor	Editor de fuentes SVG
+	SVG Font Editor…	Editor de fuentes SVG…
+	New Font	Nueva fuente
+	Delete Font	Eliminar fuente
+	No SVG font yet: make one, or turn glyph layers into one.	Aún no hay fuente SVG: cree una o convierta capas de glifos en una.
+	Glyph Layers to Font	Capas de glifos a fuente
+	Glyph	Glifo
+	Advance	Avance
+	Curves	Curvas
+	Unicode:	Unicode:
+	Glyph name:	Nombre del glifo:
+	Advance:	Avance:
+	Add Glyph	Añadir glifo
+	Remove Glyph	Quitar glifo
+	Get Curves from Selection	Obtener curvas de la selección
+	Glyph to Objects	Glifo a objetos
+	Kerning:	Interletraje:
+	Set Pair	Establecer par
+	Preview:	Previsualización:
+	Font to Glyph Layers	Fuente a capas de glifos
+	New SVG Font	Nueva fuente SVG
+	SVG Fonts	Fuentes SVG
+	Delete SVG Font	Eliminar fuente SVG
+	SVG Font Options	Opciones de fuente SVG
+	Set Glyph	Establecer glifo
+	Set Kerning Pair	Establecer par de interletraje
+	Preview SVG Font	Previsualizar fuente SVG
+	Glyph Layers to SVG Font	Capas de glifos a fuente SVG
+	SVG Font to Glyph Layers	Fuente SVG a capas de glifos
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	los archivos WPG versión 2 (WordPerfect 6 y posteriores) aún no se leen: guarde el gráfico como WPG 1 u otro formato vectorial
+@msg	bad central record	registro central dañado
+@msg	downloading needs the desktop app	la descarga requiere la aplicación de escritorio
+@msg	give `url`: an http:// or https:// address of an image	indique `url`: una dirección http:// o https:// de una imagen
+@msg	no zip end record	falta el registro final del zip
+@msg	not a CGM file	no es un archivo CGM
+@msg	not a CorelDRAW file	no es un archivo de CorelDRAW
+@msg	not a WordPerfect Graphics file	no es un archivo de WordPerfect Graphics
+@msg	not a zip	no es un zip
+@msg	not an XFig file	no es un archivo XFig
+@msg	select an embedded image	seleccione una imagen incrustada
+@msg	the drawing has nothing Redrob Canvas reads	el dibujo no contiene nada que Redrob Canvas lea
+@msg	the effect links to no object in this document	el efecto no enlaza con ningún objeto de este documento
+@msg	the file draws nothing Redrob Canvas reads	el archivo no dibuja nada que Redrob Canvas lea
+@msg	the file is empty	el archivo está vacío
+@msg	the font has a glyph for `{nu}` already	la fuente ya tiene un glifo para `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	el gráfico no dibuja nada que Redrob Canvas lea
+@msg	the metafile draws nothing Redrob Canvas reads	el metarchivo no dibuja nada que Redrob Canvas lea
+@msg	the object is gone	el objeto ya no existe
+@msg	the preview bitmap can't be read	no se puede leer el mapa de bits de la vista previa
+@msg	the preview bitmap is empty	el mapa de bits de la vista previa está vacío
+@msg	the selected object has no link	el objeto seleccionado no tiene enlace
+@msg	the view's rotation is locked (View › Lock Rotate View)	la rotación de la vista está bloqueada (Ver › Bloquear rotación de la vista)
+@msg	truncated zip	zip truncado
+@msg	view.setRotation: missing `angle`	view.setRotation: falta `angle`
+@msg	{_1}: the dictionary is empty	{_1}: el diccionario está vacío
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: la aplicación web no tiene dispositivos serie ni archivos: exporte el HPGL y descárguelo
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} no es un formato que este lector conozca
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	los archivos {kind}{ver} son contenedores comprimidos cuyos registros de dibujo no están documentados: exporte el dibujo desde CorelDRAW como SVG, PDF, EPS o EMF para abrirlo
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: los registros de dibujo no están documentados y el archivo no tiene mapa de bits de vista previa: exporte el dibujo como SVG, PDF, EPS o EMF para abrirlo
+@msg	{name}: compression method {m} isn't supported	{name}: el método de compresión {m} no es compatible
+@msg	{name}: not found among the document's images	{name}: no se encuentra entre las imágenes del documento
+@msg	{name}: too large	{name}: demasiado grande
+@msg	{url}: {e}	{url}: {e}

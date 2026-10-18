@@ -215,6 +215,7 @@ pub fn apply_filter_to_surface(
     // A map that can no longer be read (moved or deleted since) leaves the pixels alone, like an
     // unknown filter; the command itself already refused an unreadable map when it was added.
     crate::filters_ext::resolve_map_path(&mut fp, params).ok()?;
+    crate::filters_more::resolve_paths(&mut fp, params).ok()?;
     let sel_bounds = selection.map(redrob_photo_raster::Surface::content_bounds);
     let content = surf.content_bounds();
     let area = algo::output_area(&fp, content, bounds, sel_bounds);
@@ -275,6 +276,11 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
     let p = &prepared;
     let mut fp = params_for(id, p).ok_or_else(|| EngineError::Other(format!("unknown filter {id}")))?;
     crate::filters_ext::resolve(s, &mut fp, p)?;
+    crate::filters_more::resolve(s, &mut fp, p)?;
+    // The dialog's Clipping (Adjust lets the result grow past the canvas) and colour space
+    // (linear light: the filter runs on linearised pixels) choices, PH-FLT-002.
+    let adjust = p.get("clipping").and_then(Value::as_str) == Some("adjust");
+    let linear = p.get("colorSpace").and_then(Value::as_str) == Some("linear");
     let layer = match p.get("layer").and_then(Value::as_u64) {
         Some(l) => redrob_photo_doc::LayerId(l),
         None => s.active().and_then(|d| d.active_layer).ok_or(EngineError::Other("no active layer".into()))?,
@@ -287,6 +293,8 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
         // A smart filter keeps its blending options in its own fields, not in the stored params.
         m.remove("blend");
         m.remove("opacity");
+        m.remove("clipping");
+        m.remove("colorSpace");
     }
     let id = id.to_string();
     let p = p.clone();
@@ -333,6 +341,7 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
             }
             let mut fp = fp.clone();
             crate::filters_ext::resolve_in_layer(&mut fp, l, bounds);
+            crate::filters_more::resolve_in_layer(&mut fp, l, bounds);
             let surf = match &mut l.content {
                 LayerContent::Raster(surf) => surf,
                 LayerContent::Smart(_) => {
@@ -348,7 +357,21 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
             let before = (locks.transparency || blend.is_some()).then(|| surf.clone());
             let content = surf.content_bounds();
             let area = algo::output_area(&fp, content, bounds, sel_bounds);
-            *surf = filter(surf, &fp, area, bounds, selection.as_ref(), doc_bounds.union(&content))?;
+            // Adjust: the output is not clipped to the canvas, so a blur or shadow can grow the
+            // layer past it (Clip, the default, keeps it inside).
+            let extent = if adjust { doc_bounds.union(&content).union(&area) } else { doc_bounds.union(&content) };
+            // Linear light: filter the linearised pixels (RGB and greyscale documents), then
+            // return to the display tone curve.
+            let linear = linear && matches!(surf.format().mode, redrob_photo_color::ColorMode::Rgb | redrob_photo_color::ColorMode::Grayscale);
+            if linear {
+                surf.map_color(redrob_photo_color::convert::srgb_to_linear);
+            }
+            let mut result = filter(surf, &fp, area, bounds, selection.as_ref(), extent)?;
+            if linear {
+                result.map_color(redrob_photo_color::convert::linear_to_srgb);
+                surf.map_color(redrob_photo_color::convert::linear_to_srgb);
+            }
+            *surf = result;
             if let (Some((mode, opacity)), Some(before)) = (blend, &before) {
                 blend_result(before, surf, mode, opacity)?;
             }

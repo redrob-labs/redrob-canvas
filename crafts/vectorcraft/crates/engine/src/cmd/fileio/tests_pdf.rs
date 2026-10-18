@@ -128,7 +128,8 @@ fn options_not_applied_yet_and_document_features_warn() {
     assert!(knockout(warnings(&export(&mut s, json!({})))));
     assert!(knockout(warnings(&s.execute("document.export", &as_export(&json!({}))).unwrap())));
     // Other formats have none.
-    assert!(warnings(&s.execute("document.export", &json!({"format": "png"})).unwrap()).is_empty());
+    let png = warnings(&s.execute("document.export", &json!({"format": "png"})).unwrap());
+    assert!(png.is_empty(), "{png:?}");
 }
 
 #[test]

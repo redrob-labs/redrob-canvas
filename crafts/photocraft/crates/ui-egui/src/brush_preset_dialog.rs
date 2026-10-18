@@ -119,6 +119,30 @@ pub fn body(app: &PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Value>, 
                 ui.add_space(20.0);
                 ui.add_enabled_ui(on(f, "toolSettings"), |ui| check(ui, f, "color", tl!("Include Color")));
             });
+            // The preset's thumbnail: the stroke preview, the scratch pad's picture, or one
+            // composed from the icon library (a background and a tool emblem).
+            ui.add_space(6.0);
+            ui.horizontal(|ui| {
+                ui.label(tl!("Thumbnail:"));
+                let mut mode = f.get("thumbnail").and_then(Value::as_str).unwrap_or("preview").to_string();
+                let modes: Vec<(String, &str)> =
+                    vec![("preview".into(), tl!("Stroke preview")), ("scratchPad".into(), tl!("Scratch pad")), ("composed".into(), tl!("Icon library"))];
+                if widgets::dropdown(ui, "new-brush-preset-thumbnail", &mut mode, &modes, 130.0) {
+                    f.insert("thumbnail".into(), json!(mode));
+                }
+                if f.get("thumbnail").and_then(Value::as_str) == Some("composed") {
+                    let mut bg = f.get("thumbnailBackground").and_then(Value::as_str).unwrap_or("white").to_string();
+                    let bgs: Vec<(String, &str)> = redrob_photo_engine::brush_extras_cmds::ICON_BACKGROUNDS.iter().map(|b| (b.to_string(), *b)).collect();
+                    if widgets::dropdown(ui, "new-brush-preset-thumb-bg", &mut bg, &bgs, 100.0) {
+                        f.insert("thumbnailBackground".into(), json!(bg));
+                    }
+                    let mut em = f.get("thumbnailEmblem").and_then(Value::as_str).unwrap_or("none").to_string();
+                    let ems: Vec<(String, &str)> = redrob_photo_engine::brush_extras_cmds::ICON_EMBLEMS.iter().map(|b| (b.to_string(), *b)).collect();
+                    if widgets::dropdown(ui, "new-brush-preset-thumb-emblem", &mut em, &ems, 100.0) {
+                        f.insert("thumbnailEmblem".into(), json!(em));
+                    }
+                }
+            });
             if let Some(why) = problem(app, f).filter(|_| !name(f).is_empty()) {
                 ui.add_space(4.0);
                 ui.colored_label(t.text_dim, why);
@@ -157,7 +181,20 @@ pub fn confirm(app: &mut PhotocraftApp, f: &Map<String, Value>) -> Result<Value,
     if let Some(b) = f.get("brush") {
         p["brush"] = b.clone();
     }
-    app.run("brush.presets.save", p)
+    let r = app.run("brush.presets.save", p)?;
+    // The chosen thumbnail (the stroke preview is the default and needs nothing stored).
+    match f.get("thumbnail").and_then(Value::as_str) {
+        Some("scratchPad") => {
+            app.run("brush.presets.setThumbnail", json!({ "name": name(f), "fromScratchPad": true }))?;
+        }
+        Some("composed") => {
+            let bg = f.get("thumbnailBackground").and_then(Value::as_str).unwrap_or("white");
+            let em = f.get("thumbnailEmblem").and_then(Value::as_str).unwrap_or("none");
+            app.run("brush.presets.composeThumbnail", json!({ "name": name(f), "background": bg, "emblem": em }))?;
+        }
+        _ => {}
+    }
+    Ok(r)
 }
 
 #[cfg(test)]

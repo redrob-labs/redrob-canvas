@@ -4041,3 +4041,828 @@ navigator	Zoom	Zvětšení
 	Popup palette	Vyskakovací paleta
 	Smear	Rozmazání
 	Smudge Radius	Poloměr rozmazání
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Lineární inverze
+	Value Invert	Inverze hodnoty
+	Stretch Contrast HSV	Roztáhnout kontrast HSV
+	Color Enhance	Zvýraznění barev
+	Extract Component…	Extrahovat složku…
+	Alien Map…	Mimozemská mapa…
+	Rotate Colors…	Otočit barvy…
+	Palette Map…	Mapa palety…
+	Sample Colorize…	Obarvit podle vzorku…
+	RGB Clip…	Oříznutí RGB…
+	Dither…	Rozptyl…
+	Local Threshold…	Místní prahování…
+	Destripe…	Odstranit pruhy…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Barva na šedou…
+	Fattal et al. 2002…	Fattal a kol. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Plynulá paleta…
+	Decompose…	Rozložit…
+	Compose…	Složit…
+	Recompose	Znovu složit
+	Rearrange Colormap…	Přeuspořádat mapu barev…
+	Set Colormap…	Nastavit mapu barev…
+	Border Average…	Průměr okraje…
+	Export Histogram…	Exportovat histogram…
+	Variable Blur…	Proměnlivé rozostření…
+	Apply Lens…	Použít čočku…
+	Mosaic Tiles…	Mozaikové dlaždice…
+	Newsprint…	Novinový tisk…
+	Curve Bend…	Ohnutí křivkou…
+	Warp (Map)…	Zkroucení (mapa)…
+	Bloom…	Záře…
+	Sobel…	Sobel…
+	Cartoon…	Kreslený film…
+	Clothify…	Textilie…
+	Stencil Chrome…	Chromová šablona…
+	Bump Map…	Mapa hrbolů…
+	Panorama Projection…	Panoramatická projekce…
+	Perlin Noise…	Perlinův šum…
+	Plasma…	Plazma…
+	Solid Noise…	Pevný šum…
+	Add Border…	Přidat okraj…
+	Fog…	Mlha…
+	Old Photo…	Stará fotografie…
+	Round Corners…	Zaoblit rohy…
+	Tile…	Dlaždice…
+	Depth Merge…	Sloučení podle hloubky…
+	Geometric Shapes…	Geometrické tvary…
+	Image Map Area…	Oblast obrázkové mapy…
+	Image Map From Slices	Obrázková mapa z řezů
+	Export Image Map…	Exportovat obrázkovou mapu…
+	Clear Image Map	Vymazat obrázkovou mapu
+	Combine	Kombinovat
+	Clipping	Oříznutí
+	Color Space	Barevný prostor
+	Linear light	Lineární světlo
+	Copy upper to lower	Kopírovat horní do dolní
+	Swap curves	Prohodit křivky
+	Mirror	Zrcadlit
+	Gradient Source	Zdroj: přechod
+	Value Jitter	Kolísání jasu
+	Pipe	Postupně
+	Brush file (.myb)	Soubor štětce (.myb)
+	Text as brush tip	Text jako stopa štětce
+	One character per dab along the stroke	Jeden znak na otisk podél tahu
+	Engine	Engine
+	Text Tip	Textová stopa
+	Hatching	Šrafování
+	Particle	Částice
+	Dyna	Dyna
+	Tangent Normal	Tangentní normála
+	MyPaint	MyPaint
+	Spray	Sprej
+	Bristle	Štětiny
+	Deform	Deformace
+	Grain Extract	Extrakce zrna
+	Grain Merge	Sloučení zrna
+	LCh Hue	Odstín LCh
+	LCh Chroma	Chroma LCh
+	LCh Color	Barva LCh
+	LCh Lightness	Světlost LCh
+	Merge	Sloučit
+	Split	Rozdělit
+	Remove Holes	Odstranit díry
+	Distort…	Zkreslit…
+	Rounded Rectangle…	Zaoblený obdélník…
+	Anchor Layer	Ukotvit vrstvu
+	To New Layer	Do nové vrstvy
+	Layer Boundary Size…	Velikost hranice vrstvy…
+	Layer to Image Size	Vrstva na velikost obrázku
+	Resize Layer to Selection	Vrstva na velikost výběru
+	Crop Layer to Content	Oříznout vrstvu na obsah
+	Threshold Alpha…	Prahová hodnota alfa…
+	Composite Options…	Možnosti skládání…
+	Zealous Crop	Důkladné oříznutí
+	Foreground Select	Výběr popředí
+	Stroke width	Šířka tahu
+	Graph cut	Řez grafu
+	To Layer Mask	Do masky vrstvy
+	Draw a rough outline round the subject	Nakreslete hrubý obrys kolem objektu
+	Draw a rough outline round the subject first	Nejprve nakreslete hrubý obrys kolem objektu
+	Outline placed: paint over the foreground, then Preview or Select	Obrys umístěn: přemalujte popředí, pak Náhled nebo Vybrat
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Hrubě obkreslete objekt, přemalujte popředí a maticovací jádro rozšíří masku
+	Paint over the foreground (hold Alt for background), then Preview or Select	Přemalujte popředí (Alt pro pozadí), pak Náhled nebo Vybrat
+	Display Filters…	Zobrazovací filtry…
+	Display Filters	Zobrazovací filtry
+	No Color Deficiency Simulation	Bez simulace poruchy barvocitu
+	Simulate Protanopia	Simulovat protanopii
+	Simulate Deuteranopia	Simulovat deuteranopii
+	Simulate Tritanopia	Simulovat tritanopii
+	Clip Warning	Varování před oříznutím
+	Clip warning	Varování před oříznutím
+	Color deficiency:	Porucha barvocitu:
+	Protanopia	Protanopie
+	Deuteranopia	Deuteranopie
+	Tritanopia	Tritanopie
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Pouze zobrazení: filtry mění, co tento pohled ukazuje, nikdy pixely.
+	Padding Color	Barva výplně okolo
+	From Theme	Z motivu
+	Light Check Color	Světlá barva šachovnice
+	Dark Check Color	Tmavá barva šachovnice
+	Light Check	Světlá šachovnice
+	Dark Check	Tmavá šachovnice
+	Light check	Světlá šachovnice
+	Dark check	Tmavá šachovnice
+	Custom Color	Vlastní barva
+	Keep Padding in Show All	Zachovat výplň při Zobrazit vše
+	Keep padding in show all	Zachovat výplň při Zobrazit vše
+	Filter by tag	Filtrovat podle štítku
+	Clear filter	Zrušit filtr
+	Tags:	Štítky:
+	Add tag	Přidat štítek
+	Remove tag	Odebrat štítek
+	View Metadata…	Zobrazit metadata…
+	Edit Metadata…	Upravit metadata…
+	Edit Metadata	Upravit metadata
+	Metadata Viewer	Prohlížeč metadat
+	Write Metadata	Zapsat metadata
+	Separate several values with semicolons	Více hodnot oddělte středníky
+	No tags	Žádné značky
+	XMP	XMP
+	IPTC	IPTC
+	Text	Text
+	Rights	Práva
+	IPTC Extension	Rozšíření IPTC
+	Categories	Kategorie
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Prohlížeč procedur
+	Plug-In Browser	Prohlížeč zásuvných modulů
+	Search procedures	Hledat procedury
+	{n} procedures	{n} procedur
+	(no menu)	(bez nabídky)
+	Menu: {path}	Nabídka: {path}
+	Parameters	Parametry
+	Available now	Nyní dostupné
+	Not available in the current state	V aktuálním stavu nedostupné
+	Run	Spustit
+	Select a procedure to read its parameters.	Vyberte proceduru pro zobrazení jejích parametrů.
+	Dashboard	Nástěnka
+	Low memory: swap is nearly full. Save your work.	Málo paměti: odkládací prostor je téměř plný. Uložte svou práci.
+	Memory	Paměť
+	Cache	Mezipaměť
+	Swap	Odkládací prostor
+	Swap: not reported on this platform	Odkládací prostor: na této platformě není hlášen
+	CPU	CPU
+	CPU renderer	Vykreslování CPU
+	uploads	nahrání
+	Misc: {jobs} jobs running · {n} samples	Ostatní: {jobs} běžících úloh · {n} vzorků
+	Log to File…	Zapisovat do souboru…
+	Stop Logging	Zastavit zápis
+	Device Status	Stav zařízení
+	Core Pointer	Hlavní ukazatel
+	Pen / Tablet	Pero / tablet
+	Brush:	Štětec:
+	Pattern:	Vzorek:
+	Gradient:	Přechod:
+	Save Device Status	Uložit stav zařízení
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Každé zařízení si pamatuje svůj nástroj, barvy, štětec, vzorek a přechod; přepnutí zařízení je přepne.
+	Selection Editor	Editor výběru
+	No document open.	Není otevřen žádný dokument.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klepnutím vyberte souvislou barvu kouzelnou hůlkou (Shift přidá, Alt odebere)
+	Save to Channel	Uložit do kanálu
+	To Path	Na cestu
+	Advanced options	Pokročilé volby
+	MyPaint Brushes	Štětce MyPaint
+	Import…	Importovat…
+	No MyPaint brushes yet. Import .myb files to list them here.	Žádné štětce MyPaint. Importujte soubory .myb a objeví se zde.
+	No brush matches the filter.	Filtru neodpovídá žádný štětec.
+	Handle Transform	Transformace úchyty
+	3D Transform	3D transformace
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Přenastavit
+	Apply the transform so far and put a fresh box on the result	Použije dosavadní transformaci a položí nový rámeček na výsledek
+	Camera	Kamera
+	Vanishing X:	Úběžník X:
+	Y:	Y:
+	Focal length:	Ohnisková vzdálenost:
+	Local pivot	Místní střed
+	Unified pivot	Společný střed
+	Close Cage	Uzavřít klec
+	Reset Cage	Obnovit klec
+	Fill Plain Colour	Vyplnit jednolitou barvou
+	Fill the original position of the cage with the plain colour of its outline	Vyplní původní místo klece jednolitou barvou jejího obrysu
+	{n} points	{n} bodů
+	Click to place a handle	Klepnutím umístíte úchyt
+	Rotate and Scale	Otočit a změnit velikost
+	{n} handles: {what}	{n} úchytů: {what}
+	Reset Handles	Obnovit úchyty
+	Remove Handles	Odebrat úchyty
+	Commit Cage Transform (Enter)	Potvrdit transformaci klecí (Enter)
+	Commit Handle Transform (Enter)	Potvrdit transformaci úchyty (Enter)
+	Commit 3D Transform (Enter)	Potvrdit 3D transformaci (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformace klecí: klepejte kolem části k deformaci, klepnutím na první bod klec uzavřete a pak body přetahujte
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformace úchyty: umístěte jeden až čtyři úchyty a přetahujte je (jeden posouvá, dva otáčejí a škálují, tři zkosí, čtyři dávají perspektivu)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D transformace: tažením otáčíte kolem X a Y, s Alt kolem Z; karty Přesunout a Kamera posouvají vrstvu a kameru
+	Segment {n}	Segment {n}
+	Blending:	Prolnutí:
+	Coloring:	Barvení:
+	Midpoint:	Střed:
+	Sinusoidal	Sinusový
+	Spherical (increasing)	Sférický (rostoucí)
+	Spherical (decreasing)	Sférický (klesající)
+	Step	Skok
+	HSV (counter-clockwise)	HSV (proti směru hodin)
+	HSV (clockwise)	HSV (po směru hodin)
+	Replicate	Replikovat
+	Split the segment at its midpoint	Rozdělí segment v jeho středu
+	Replace the segment with two copies of itself	Nahradí segment dvěma jeho kopiemi
+	Flip the whole gradient end to end	Převrátí celý přechod
+	Save as POV-Ray…	Uložit jako POV-Ray…
+	Shaped Gradient (angular)	Tvarovaný přechod (úhlový)
+	Shaped Gradient (spherical)	Tvarovaný přechod (kulový)
+	Shaped Gradient (dimpled)	Tvarovaný přechod (prohloubený)
+	Truncate	Oříznout
+	Sawtooth wave	Pilová vlna
+	Triangular wave	Trojúhelníková vlna
+	Wheel	Kolečko
+	Force	Síla
+	Aspect Ratio	Poměr stran
+	Jitter	Chvění
+	Fade length	Délka vyblednutí
+	Random amount	Míra náhodnosti
+	Save Preset	Uložit přednastavení
+	Paint Dynamics Editor	Editor dynamiky malování
+	Color from Gradient	Barva z přechodu
+	Put this table on the current brush	Použít tabulku na aktuální štětec
+	Save the table as a named dynamics preset	Uložit tabulku jako pojmenovanou dynamiku
+	Give the dynamics preset a name first	Nejprve dynamiku pojmenujte
+	Edit the dynamics table (inputs × outputs)	Upravit tabulku dynamiky (vstupy × výstupy)
+	Reset Plane	Obnovit rovinu
+	Click four corners to define a perspective plane, then clone along it	Klepnutím na čtyři rohy určete perspektivní rovinu a pak podél ní klonujte
+	Click corner {n} of 4	Klepněte na roh {n} ze 4
+	Perspective plane: corner {n} of 4 set	Perspektivní rovina: roh {n} ze 4 nastaven
+	Perspective plane set; {key}-click a source, then paint	Perspektivní rovina nastavena; klepněte se {key} na zdroj a pak malujte
+	Copy Path as SVG	Kopírovat cestu jako SVG
+	Export Path to SVG…	Exportovat cestu do SVG…
+	Import Path from SVG…	Importovat cestu ze SVG…
+	Paste Path from SVG	Vložit cestu ze SVG
+	Copy All Paths as SVG	Kopírovat všechny cesty jako SVG
+	Export All Paths to SVG…	Exportovat všechny cesty do SVG…
+	Copied 1 path as SVG	1 cesta zkopírována jako SVG
+	Copied {n} paths as SVG	Zkopírováno cest jako SVG: {n}
+	Exported paths to {path}	Cesty exportovány do {path}
+	Imported 1 path	Importována 1 cesta
+	Imported {n} paths	Importováno cest: {n}
+	The clipboard holds no SVG	Schránka neobsahuje SVG
+	Clipboard Image Brush	Štětec z obrázku ve schránce
+	Paint with the image on the clipboard as the brush tip	Malovat obrázkem ze schránky jako hrotem štětce
+	Export Layers as Animation…	Exportovat vrstvy jako animaci…
+	Export as Brush (.gbr)…	Exportovat jako štětec (.gbr)…
+	Export Layers as Image Hose (.gih)…	Exportovat vrstvy jako animovaný štětec (.gih)…
+	Export as Pattern (.pat)…	Exportovat jako vzorek (.pat)…
+	Animation Frame Tags…	Značky snímku animace…
+	Disposal	Odstranění
+	Incremental	Postupně
+	Angular	Úhlově
+	Xtilt	Náklon X
+	Ytilt	Náklon Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Exportovat jako PostScript (.eps)…
+	Encapsulated	Zapouzdřený
+	Encoding	Kódování
+	Hex	Hexadecimální
+	Ascii85	ASCII85
+	Binary	Binární
+	Open Location…	Otevřít umístění…
+	From Screenshot…	Ze snímku obrazovky…
+	From Web Page…	Z webové stránky…
+	Send by Email…	Odeslat e-mailem…
+	Url	URL
+	Cursor	Kurzor
+	Region	Oblast
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffery
+	Cut Named…	Vyjmout pojmenované…
+	Copy Named…	Kopírovat pojmenované…
+	Copy Visible Named…	Kopírovat viditelné pojmenované…
+	Paste Named…	Vložit pojmenované…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Žádné pojmenované buffery. Použijte Úpravy > Buffer > Kopírovat pojmenované… pro uložení kopie sem.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Žádné pojmenované buffery; nejprve použijte Úpravy > Buffer > Kopírovat pojmenované
+	Paste Buffer	Vložit buffer
+	Paste Buffer in Place	Vložit buffer na místo
+	Paste Buffer as New Image	Vložit buffer jako nový obrázek
+	Rename Buffer…	Přejmenovat buffer…
+	Delete Buffer	Odstranit buffer
+	Paste as New	Vložit jako nový
+	Paste the buffer as a new layer	Vložit buffer jako novou vrstvu
+	Paste the buffer as a new document	Vložit buffer jako nový dokument
+	As	Jako
+	In place	Na místo
+	Into	Dovnitř
+	Modules…	Moduly…
+	Units…	Jednotky…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nejsou nainstalovány žádné moduly. Filtr > Zásuvné moduly > Instalovat modul… přidá jeden.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Vypnutý modul zůstává nainstalován, ale zmizí z nabídek, dokud není znovu zapnut.
+	Module	Modul
+	Not installed	Nenainstalováno
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor udává, kolik jednotek tvoří jeden palec (2,54 u centimetrů, 72 u bodů).
+	Identifier	Identifikátor
+	Factor	Faktor
+	Symbol	Symbol
+	Abbreviation	Zkratka
+	Singular	Jednotné číslo
+	Plural	Množné číslo
+	Delete Unit	Odstranit jednotku
+	New unit	Nová jednotka
+	Add Unit	Přidat jednotku
+	That identifier is already a unit	Tento identifikátor již jednotka používá
+	Custom units	Vlastní jednotky
+	Disabled modules	Vypnuté moduly
+	Input Devices…	Vstupní zařízení…
+	Input Controllers…	Vstupní ovladače…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Pero je stylus tabletu, který hlásí platforma. Vypnuté se chová jako myš.
+	Device	Zařízení
+	Invert tilt X	Obrátit náklon X
+	Invert tilt Y	Obrátit náklon Y
+	Swap tilt	Prohodit náklon
+	Pressure scale	Měřítko tlaku
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Události kolečka jsou up, down, left nebo right s volitelnými Shift+, Ctrl+ a Alt+; události klávesnice jsou zkratky jako Ctrl+Alt+Up. Akce je id příkazu, volitelně následované parametry JSON.
+	Controller	Ovladač
+	Event	Událost
+	Remove mapping	Odebrat mapování
+	New mapping	Nové mapování
+	Add Mapping	Přidat mapování
+	{n} entries; click one to set the foreground colour, double-click to edit it	Položek: {n}; kliknutí nastaví barvu popředí, dvojklik ji upraví
+	Entry	Položka
+	Add an entry with the foreground colour	Přidat položku s barvou popředí
+	Delete the last entry	Odstranit poslední položku
+	Use selected	Použít vybranou
+	Ink	Inkoust
+	MyPaint Brush	Štětec MyPaint
+	Nib	Hrot
+	Aspect	Poměr
+	Opaque	Krytí
+	Erase with brush	Mazat štětcem
+	Import .myb…	Importovat .myb…
+	Add a MyPaint brush file to the presets	Přidat soubor štětce MyPaint do předvoleb
+	Imported MyPaint brush {name}	Importován štětec MyPaint {name}
+	How much pressure changes the nib size	Jak moc tlak mění velikost hrotu
+	How much the pen's tilt turns and stretches the nib	Jak moc náklon pera otáčí a protahuje hrot
+	How much a fast stroke thins the nib	Jak moc rychlý tah zužuje hrot
+	Added to the preset's logarithmic radius	Přičte se k logaritmickému poloměru předvolby
+	Operation…	Operace…
+	Operation name or id	Název nebo id operace
+	{n} operations	Operací: {n}
+	Choose an operation	Zvolte operaci
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Konzola Script-Fu…
+	Load Scripts Folder…	Načíst složku skriptů…
+	Python Console…	Konzola Pythonu…
+	Load Plug-ins Folder…	Načíst složku modulů…
+	Loaded {n} scripts	Načteno skriptů: {n}
+	Loaded {n} Python plug-ins	Načteno modulů Pythonu: {n}
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 s call(command, **params), message(text) a print(); každý příkaz jádra je dostupný přes call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: každý příkaz jádra je procedura, (file.new "width" 640 "height" 480); definujte procedury a registrujte je pomocí script-fu-register.
+	Code	Kód
+	Cmd+Enter runs the code	Cmd+Enter spustí kód
+	Clear Log	Vymazat protokol
+	Dodge…	Zesvětlení…
+	Burn…	Ztmavení…
+	Cross-Channel Adjustment…	Úprava napříč kanály…
+	Slope, Offset, Power…	Sklon, posun, mocnina…
+	Index Colors…	Indexované barvy…
+	Raindrops…	Dešťové kapky…
+	Polygon Blur…	Mnohoúhelníkové rozostření…
+	Edge Detection…	Detekce okrajů…
+	Emboss (Directional)…	Reliéf (směrový)…
+	Phong Bump Map…	Phongova mapa hrbolů…
+	Palettize…	Převod na paletu…
+	Height to Normal Map…	Výška na mapu normál…
+	Normalize Normal Map	Normalizovat mapu normál
+	Maximize Channel	Maximalizovat kanál
+	Minimize Channel	Minimalizovat kanál
+	Propagate Colors…	Rozšířit barvy…
+	Reset Transparent	Vynulovat průhledné
+	Mean Removal	Odečtení průměru
+	Wavelet Noise Reducer…	Vlnková redukce šumu…
+	Random Pick…	Náhodný výběr…
+	G'MIC Filter…	Filtr G'MIC…
+	G'MIC executable	Spustitelný soubor G'MIC
+	G'MIC update folder	Složka aktualizací G'MIC
+	Add scene at playhead	Přidat scénu na pozici přehrávání
+	Add to favourites	Přidat do oblíbených
+	Arithmetic	Aritmetické
+	Attach audio…	Připojit zvuk…
+	Blend details	Podrobnosti prolnutí
+	Blend mode	Režim prolnutí
+	Blend mode and opacity	Režim prolnutí a krytí
+	Capture now	Zachytit nyní
+	Clone previous keyframe here	Klonovat sem předchozí klíčový snímek
+	Comment	Komentář
+	Display settings	Nastavení zobrazení
+	Duplicate keyframe	Duplikovat klíčový snímek
+	Duplicate keyframe here	Duplikovat klíčový snímek sem
+	End	Konec
+	Export timelapse…	Exportovat časosběr…
+	Favourites	Oblíbené
+	Frame rate	Snímková frekvence
+	HSX	HSX
+	Key the active layer:	Klíč pro aktivní vrstvu:
+	Misc	Různé
+	Mute audio	Ztlumit zvuk
+	Negative	Negativní
+	New keyframe	Nový klíčový snímek
+	New keyframe here	Nový klíčový snímek zde
+	Next tint	Odstín následujících
+	No animated layers: add a keyframe to the active layer to animate it.	Žádné animované vrstvy: přidejte aktivní vrstvě klíčový snímek a animujte ji.
+	No animation curves yet.	Zatím žádné animační křivky.
+	No scenes yet.	Zatím žádné scény.
+	Opacity per frame	Krytí po snímcích
+	Previous tint	Odstín předchozích
+	Quadratic	Kvadratické
+	Recorder	Záznam
+	Remove from favourites	Odebrat z oblíbených
+	Remove keyframe	Odebrat klíčový snímek
+	Remove scene	Odebrat scénu
+	Scale X	Měřítko X
+	Scale Y	Měřítko Y
+	Scene name	Název scény
+	Show onion skins	Zobrazit průsvitky
+	Start	Začátek
+	Start recording	Spustit záznam
+	Stop recording	Zastavit záznam
+	Storyboard	Storyboard
+	Thumbnail size	Velikost miniatur
+	frames	snímků
+	opacity	krytí
+	rotation	otočení
+	scaleX	měřítko X
+	scaleY	měřítko Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} snímků v {dir}
+	2-Point Perspective	Dvoubodová perspektiva
+	Assistant colour	Barva pomocníka
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetismus pomocníka: jak daleko se tah může od pomocníka vzdálit a přesto být přitažen (1000 = vždy)
+	Assistant opacity	Krytí pomocníka
+	Concentric Ellipse	Soustředná elipsa
+	Curvilinear Perspective	Křivočará perspektiva
+	Eraser snaps	Guma přichytává
+	Fish-Eye Point	Bod rybího oka
+	Handles	Úchyty
+	Infinite Ruler	Nekonečné pravítko
+	Limit to area	Omezit na oblast
+	Minor subdivisions	Vedlejší dílky
+	Own colour	Vlastní barva
+	Perspective Ellipse	Perspektivní elipsa
+	Previews	Náhledy
+	Show the snapped stroke's line while painting	Zobrazit čáru přichyceného tahu při malování
+	Show this assistant's control handles	Zobrazit ovládací úchyty tohoto pomocníka
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Tahy sledují malířské pomocníky (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dva další úchyty ořezávají, kde pomocník kreslí a přichytává
+	Vertical ruler	Svislé pravítko
+	Painting Assistants	Malířští pomocníci
+	Assistant Previews	Náhledy pomocníků
+	Drag fill	Výplň tažením
+	Dragging fills every region passed over	Tažení vyplní každou oblast, přes kterou přejedete
+	Exclude colour	Vyloučit barvu
+	Exclude transparent	Vyloučit průhledné
+	Fill mode	Režim výplně
+	No region is fully enclosed by the shape	Tvar zcela neobklopuje žádnou oblast
+	Only regions coloured like the first one	Jen oblasti barvy první oblasti
+	Reference	Reference
+	Similar only	Jen podobné
+	Soften the filled edge	Zjemnit okraj výplně
+	Spread stops at the darkest pixels (lines)	Rozšíření se zastaví na nejtmavších pixelech (linkách)
+	Spread stops at the most opaque pixels	Rozšíření se zastaví na nejméně průhledných pixelech
+	Stop at darkest	Zastavit na nejtmavším
+	Stop at opaque	Zastavit na neprůhledném
+	Similar Colours	Podobné barvy
+	Colour Labels	Barevné štítky
+	All Regions	Všechny oblasti
+	Specific Colour	Určitá barva
+	Transparent Regions	Průhledné oblasti
+	Surrounded By	Obklopené barvou
+	Fill with Foreground Color (Opacity)	Vyplnit barvou popředí (krytí)
+	Fill with Background Color (Opacity)	Vyplnit barvou pozadí (krytí)
+	Fill with Pattern (Opacity)	Vyplnit vzorkem (krytí)
+	Straight Line Tool	Nástroj Přímka
+	Multibrush Tool	Nástroj Multištětec
+	Dynamic Brush Tool	Nástroj Dynamický štětec
+	Enclose and Fill Tool	Nástroj Obklopit a vyplnit
+	Colorize Mask Tool	Nástroj Kolorovací maska
+	Reference Images Tool	Nástroj Referenční obrázky
+	Alternating	Střídavě
+	Forward	Vpřed
+	Shaped Gradient (follows the selection)	Tvarovaný přechod (sleduje výběr)
+	Clear copies	Smazat kopie
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klepnutí umístí kopii, Ctrl+Alt+klepnutí ji odebere
+	How heavily the stroke lags behind the pointer	Jak moc se tah opožďuje za ukazatelem
+	How quickly the stroke's motion dies away	Jak rychle pohyb tahu odezní
+	Keep one-pixel lines single width without L corners	Jednopixelové linky zůstávají jednoduché bez rohů ve tvaru L
+	Mirror all tools	Zrcadlit všechny nástroje
+	Multibrush	Multištětec
+	Pixel smoothing	Pixelové vyhlazení
+	The painting symmetry mirrors fills, gradients and retouching too	Symetrie malování zrcadlí i výplně, přechody a retuše
+	The painting symmetry mirrors this tool's output too	Symetrie malování zrcadlí i výstup tohoto nástroje
+	X interval	Interval X
+	Y interval	Interval Y
+	Mirror / Rotation	Zrcadlo / Rotace
+	Translate	Posun
+	Copy Translate	Kopírovat s posunem
+	Cursor shape	Tvar kurzoru
+	Outline shape	Tvar obrysu
+	Show outline while painting	Zobrazit obrys při malování
+	Effective outline size	Skutečná velikost obrysu
+	Tool icon	Ikona nástroje
+	Arrow	Šipka
+	Crosshair	Zaměřovač
+	Small dot	Malá tečka
+	No cursor	Bez kurzoru
+	Triangle right	Trojúhelník vpravo
+	Triangle left	Trojúhelník vlevo
+	No outline	Bez obrysu
+	Instant preview	Okamžitý náhled
+	Instant preview megapixels	Megapixely okamžitého náhledu
+	Add…	Přidat…
+	Auto update	Automatická aktualizace
+	Canvas input profile	Profil vstupu plátna
+	Clean up	Vyčištění
+	Clear key strokes	Smazat klíčové tahy
+	Colorize Mask	Kolorovací maska
+	Draw in the area below to test pressure, tilt and rotation	Kreslete do oblasti níže a otestujte tlak, náklon a rotaci
+	Edge detection	Detekce hran
+	Edit key strokes	Upravit klíčové tahy
+	Embed	Vložit
+	Fill only inside the line art's pixels	Vyplnit jen uvnitř pixelů kresby
+	Gap close	Uzavřít mezery
+	Input API	Vstupní API
+	Keep aspect	Zachovat poměr
+	Limit to layer	Omezit na vrstvu
+	Next Preset	Další předvolba
+	No samples yet	Zatím žádné vzorky
+	Opacity +	Krytí +
+	Opacity -	Krytí -
+	Pasted image	Vložený obrázek
+	Peak pressure	Maximální tlak
+	Previous Preset	Předchozí předvolba
+	Reference Images	Referenční obrázky
+	Rotate Left	Otočit vlevo
+	Rotate Right	Otočit vpravo
+	Sample rate	Vzorkovací frekvence
+	Screen mapping	Mapování obrazovky
+	Show output	Zobrazit výstup
+	Show the key strokes over the canvas	Zobrazit klíčové tahy nad plátnem
+	Show with all tools	Zobrazit se všemi nástroji
+	Size +	Velikost +
+	Size -	Velikost -
+	Speed source	Zdroj rychlosti
+	Store the pixels in the set; off, link to the file	Uložit pixely do sady; vypnuto: odkaz na soubor
+	Tablet Settings…	Nastavení tabletu…
+	Tablet Tester	Tester tabletu
+	The clipboard is not available	Schránka není k dispozici
+	The next key strokes keep their regions clear	Další klíčové tahy nechají své oblasti průhledné
+	Tilt offset	Posun náklonu
+	Touch Docker	Dotykový panel
+	Transparent key	Průhledný klíč
+	Canvas Input	Vstup plátna
+	Canvas Input…	Vstup plátna…
+	Pan key	Klávesa posunu
+	Zoom in key	Klávesa přiblížení
+	Zoom out key	Klávesa oddálení
+	Rotate key	Klávesa otáčení
+	Middle button	Prostřední tlačítko
+	Stylus button	Tlačítko pera
+	Pick modifier	Modifikátor výběru barvy
+	Shift wheel rotates	Shift+kolečko otáčí
+	Trackpad	Trackpad
+	Pick	Výběr barvy
+	No action	Žádná akce
+	No pick	Bez výběru barvy
+	Scroll	Posouvání
+	Rotate View (hold)	Otočit pohled (držet)
+	Tilt offset x	Posun náklonu X
+	Tilt offset y	Posun náklonu Y
+	Tablet speed source	Zdroj rychlosti tabletu
+	Tablet api	API tabletu
+	Tablet screen mapping	Mapování obrazovky tabletu
+	Pointer	Ukazatel
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Typ mřížky
+	Isometric left angle	Izometrický levý úhel
+	Isometric right angle	Izometrický pravý úhel
+	Isometric vertical lines	Izometrické svislé čáry
+	Rectangular	Obdélníková
+	Isometric	Izometrická
+	Node	Uzel
+	Extension	Prodloužení
+	Intersection	Průsečík
+	Alt-click a bottom patch to set it to the foreground colour	Alt+kliknutím na spodní vzorek mu nastavíte barvu popředí
+	Apply:	Použít:
+	Brushes this large preview coarsely while painting	Štětce této velikosti se při malování zobrazují hrubě
+	Click the disc to add shape points	Klepnutím na disk přidáte body tvaru
+	Close Shape	Uzavřít tvar
+	Color Space:	Barevný prostor:
+	Common Colors	Běžné barvy
+	Components:	Složky:
+	Continuous Mode	Spojitý režim
+	Current pattern	Aktuální vzorek
+	Depth:	Hloubka:
+	Display:	Zobrazení:
+	Dynamic Hue Ring	Dynamický kruh odstínů
+	Enable Pen Settings	Povolit nastavení pera
+	Erase mode keeps its own opacity on this preset	Režim mazání má v této předvolbě vlastní krytí
+	Erase mode keeps its own size on this preset	Režim mazání má v této předvolbě vlastní velikost
+	Eraser Opacity	Krytí gumy
+	Eraser Size	Velikost gumy
+	Fit Panel Width	Přizpůsobit šířce panelu
+	Gamut Mask	Maska gamutu
+	Gradient Steps	Kroky přechodu
+	Gradient ends: Alt-click to set from the foreground	Konce přechodu: Alt+kliknutím nastavíte barvu popředí
+	Hue Steps	Kroky odstínu
+	Instant Preview	Okamžitý náhled
+	LUT Management (OCIO)	Správa LUT (OCIO)
+	Lightness Strength	Síla světlosti
+	Lock Color	Uzamknout barvu
+	Luma:	Luma:
+	Minimum Hardness	Minimální tvrdost
+	Minimum Strength	Minimální síla
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Vypnuto: všechny senzory se ignorují, křivky zůstanou
+	Out of gamut	Mimo gamut
+	Panel colours are not shown through the display transform	Barvy panelu neprocházejí transformací zobrazení
+	Patch Count	Počet vzorků
+	Patch Size	Velikost vzorku
+	Patches:	Vzorky:
+	Pattern Scale	Měřítko vzorku
+	Pop-up Size	Velikost vyskakovacího okna
+	Proof to Painting Space	Nátisk do prostoru malby
+	Recent Colors	Nedávné barvy
+	Remove Last Shape	Odebrat poslední tvar
+	Rotate Mask	Otočit masku
+	Saturation Steps	Kroky sytosti
+	Selector settings	Nastavení voliče
+	Selector:	Volič:
+	Shade Count	Počet odstínů
+	Shade Ring by Value	Stínovat kruh podle jasu
+	Shade Selector	Volič odstínů
+	Shade Size	Velikost odstínu
+	Shade Spread	Rozptyl odstínů
+	Shade Strip	Pruh odstínů
+	Shades	Odstíny
+	Share Curve Across Settings	Sdílet křivku mezi nastaveními
+	Show as Fractions	Zobrazit jako zlomky
+	Soften Edge	Zjemnit okraj
+	Source:	Zdroj:
+	Style:	Styl:
+	The tip's grey levels are painted into the colour as lightness	Úrovně šedi hrotu se malují do barvy jako světlost
+	Threshold the tip mask for crisp pixel strokes	Prahovat masku hrotu pro ostré pixelové tahy
+	Tip as Lightness Map	Hrot jako mapa světlosti
+	Update:	Aktualizace:
+	Value Steps	Kroky jasu
+	Value on the Ring	Jas na kruhu
+	Zoom Pop-up	Vyskakovací zvětšení
+	Length over which the value goes from 0 to 1	Délka, na které hodnota roste z 0 na 1
+	Start over past the length instead of holding the end value	Po dosažení délky začít znovu místo držení koncové hodnoty
+	Pressure In	Tlak (jen nárůst)
+	X-Tilt	Náklon X
+	Y-Tilt	Náklon Y
+	Tilt Direction	Směr náklonu
+	Tilt Elevation	Výška náklonu
+	Fuzzy Stroke	Náhodně na tah
+	Tip Scale:	Měřítko hrotu:
+	Initial size as a share of the bitmap's size	Počáteční velikost jako podíl velikosti bitmapy
+	Tip Rotation:	Otočení hrotu:
+	Initial rotation of the tip	Počáteční otočení hrotu
+	No anti-aliasing: the dab's pixels are fully on or off	Bez vyhlazování: pixely otisku jsou buď zcela zapnuté, nebo vypnuté
+	Align Outline to Pixel Grid	Zarovnat obrys na pixelovou mřížku
+	The brush outline snaps to the pixels the dab fills	Obrys štětce se přichytí k pixelům, které otisk vyplní
+	Tip Mode:	Režim hrotu:
+	(no colour bitmap: paints the brush colour)	(bez barevné bitmapy: maluje barvou štětce)
+	Neutral Point	Neutrální bod
+	Canvas Only: hide the panels around the canvas	Jen plátno: skrýt panely okolo plátna
+	Presets kept in the history	Předvoleb v historii
+	Clear the history	Vymazat historii
+	No presets used yet	Zatím žádné použité předvolby
+	Forget this preset	Zapomenout tuto předvolbu
+	Ten Brushes	Deset štětců
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Přiřaďte předvolby deseti slotům; opětovná aktivace slotu vrátí předchozí předvolbu
+	Clear this slot	Vyprázdnit tento slot
+	Assign current	Přiřadit aktuální
+	Browse a folder of reference images	Procházet složku referenčních obrázků
+	No folder	Žádná složka
+	Next image	Další obrázek
+	Previous image	Předchozí obrázek
+	Pick an image to show it here	Vyberte obrázek, který se zde zobrazí
+	Search actions and commands	Hledat akce a příkazy
+	No matching action	Žádná odpovídající akce
+	Search Actions…	Hledat akce…
+	Brush History	Historie štětců
+	Color Image	Barevný obraz
+	Lightness Map	Mapa světlosti
+	Static	Pevné
+	Move to Top	Přesunout nahoru
+	Bubble Up	Posunout o jedno výš
+	Clear the scratch pad to white	Vyčistit zkušební plochu na bílou
+	Fill the scratch pad with the background colour	Vyplnit zkušební plochu barvou pozadí
+	Fill the scratch pad with the current gradient	Vyplnit zkušební plochu aktuálním přechodem
+	Fill the scratch pad with the current image	Vyplnit zkušební plochu aktuálním obrázkem
+	Fill the scratch pad with the preset's icon	Vyplnit zkušební plochu ikonou předvolby
+	Reload the stored preset, discarding the tweaks	Znovu načíst uloženou předvolbu a zahodit úpravy
+	BG	Pozadí
+	Icon	Ikona
+	Thumbnail:	Miniatura:
+	Stroke preview	Náhled tahu
+	Scratch pad	Zkušební plocha
+	Icon library	Knihovna ikon
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Aktivovat místní výběr
+	Add Curve Key	Přidat klíč křivky
+	Add Filter…	Přidat filtr…
+	Add Local Selection	Přidat místní výběr
+	Add Scene	Přidat scénu
+	Add Transform Key	Přidat klíč transformace
+	Alpha into Mask	Alfa do masky
+	Attach Audio…	Připojit zvuk…
+	Backup count	Počet záloh
+	Capture Snapshot	Zachytit snímek
+	Change Clone Source…	Změnit zdroj klonování…
+	Clone Keyframe	Klonovat klíčový snímek
+	Clone Layer	Klonovat vrstvu
+	Clones Array…	Pole klonů…
+	Colorize Mask Properties…	Vlastnosti masky kolorování…
+	Convert	Převést
+	Convert Group to Animated Layer	Převést skupinu na animovanou vrstvu
+	Convert to Paint Layer	Převést na malovací vrstvu
+	Copy Keyframe	Kopírovat klíčový snímek
+	Curved	Zakřivené
+	Drag	Tažení
+	Duplicate Keyframe	Duplikovat klíčový snímek
+	Edit Generated Fill…	Upravit generovanou výplň…
+	Edit Transform Mask…	Upravit masku transformace…
+	Ellipse	Elipsa
+	Export Storyboard…	Exportovat storyboard…
+	Export Timelapse…	Exportovat časosběr…
+	File Layer Properties…	Vlastnosti souborové vrstvy…
+	File Layer…	Souborová vrstva…
+	Filter Layer…	Vrstva filtru…
+	Filter Mask…	Maska filtru…
+	Frame rate limit	Omezení snímkové frekvence
+	Frames	Snímky
+	Freeze Live Layer	Zmrazit živou vrstvu
+	High quality	Vysoká kvalita
+	Import Animation Frames…	Importovat snímky animace…
+	Import Image as…	Importovat obrázek jako…
+	Import Video Animation…	Importovat videoanimaci…
+	Input controllers	Vstupní ovladače
+	Input devices	Vstupní zařízení
+	Invisible	Neviditelná
+	Layer Color Space…	Barevný prostor vrstvy…
+	Layers by State	Vrstvy podle stavu
+	Local Selection	Místní výběr
+	Mass	Hmotnost
+	Move Clone…	Přesunout klon…
+	Move Keyframe	Přesunout klíčový snímek
+	Multigrid…	Vícenásobná mřížka…
+	Mute Audio	Ztlumit zvuk
+	Nearest	Nejbližší
+	New Keyframe	Nový klíčový snímek
+	Onion Skin…	Průsvitka…
+	Pan	Posouvání
+	Pixel grid threshold	Prah pixelové mřížky
+	Reload File Layer	Znovu načíst souborovou vrstvu
+	Remove Audio	Odebrat zvuk
+	Remove Curve Key	Odebrat klíč křivky
+	Remove Filter	Odebrat filtr
+	Remove Keyframe	Odebrat klíčový snímek
+	Remove Local Selection	Odebrat místní výběr
+	Remove Transform Key	Odebrat klíč transformace
+	Remove Transform Mask	Odebrat masku transformace
+	Render Animation…	Vykreslit animaci…
+	Save Merged…	Uložit sloučené…
+	Scaling filter	Filtr škálování
+	Screentone…	Rastr…
+	Script…	Skript…
+	Set Filter…	Nastavit filtr…
+	Show Output	Zobrazit výstup
+	Split Alpha	Oddělit alfu
+	Start Recording	Spustit nahrávání
+	Stop Recording	Zastavit nahrávání
+	Swap directory	Odkládací adresář
+	Ten scripts	Deset skriptů
+	Threads	Vlákna
+	Transform Mask…	Maska transformace…
+	Update Local Selection	Aktualizovat místní výběr
+	Write as Alpha	Zapsat jako alfu
+	to File Layer…	na souborovou vrstvu…
+	to Filter Mask…	na masku filtru…
+	to Paint Layer	na malovací vrstvu
+	to Selection Mask	na masku výběru
+	to Transparency Mask	na masku průhlednosti

@@ -4131,3 +4131,840 @@ curves	Smooth	Згладити
 	Popup palette	Спливна палітра
 	Smear	Розмазування
 	Smudge Radius	Радіус розмазування
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Лінійна інверсія
+	Value Invert	Інверсія яскравості
+	Stretch Contrast HSV	Розтягнути контраст HSV
+	Color Enhance	Підсилення кольору
+	Extract Component…	Витягнути компонент…
+	Alien Map…	Чужа мапа…
+	Rotate Colors…	Обернути кольори…
+	Palette Map…	Мапа палітри…
+	Sample Colorize…	Розфарбувати за зразком…
+	RGB Clip…	Обрізання RGB…
+	Dither…	Дизеринг…
+	Local Threshold…	Локальний поріг…
+	Destripe…	Прибрати смуги…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Колір у сірий…
+	Fattal et al. 2002…	Fattal та ін. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Плавна палітра…
+	Decompose…	Розкласти…
+	Compose…	Скласти…
+	Recompose	Перескласти
+	Rearrange Colormap…	Переставити мапу кольорів…
+	Set Colormap…	Задати мапу кольорів…
+	Border Average…	Середнє по краю…
+	Export Histogram…	Експортувати гістограму…
+	Variable Blur…	Змінне розмиття…
+	Apply Lens…	Застосувати лінзу…
+	Mosaic Tiles…	Мозаїчні плитки…
+	Newsprint…	Газетний друк…
+	Curve Bend…	Згин за кривою…
+	Warp (Map)…	Деформація (мапа)…
+	Bloom…	Світіння…
+	Sobel…	Собель…
+	Cartoon…	Комікс…
+	Clothify…	Тканина…
+	Stencil Chrome…	Хромований трафарет…
+	Bump Map…	Рельєфна мапа…
+	Panorama Projection…	Панорамна проєкція…
+	Perlin Noise…	Шум Перліна…
+	Plasma…	Плазма…
+	Solid Noise…	Суцільний шум…
+	Add Border…	Додати рамку…
+	Fog…	Туман…
+	Old Photo…	Старе фото…
+	Round Corners…	Заокруглити кути…
+	Tile…	Замостити…
+	Depth Merge…	Злиття за глибиною…
+	Geometric Shapes…	Геометричні фігури…
+	Image Map Area…	Область мапи зображення…
+	Image Map From Slices	Мапа зображення з фрагментів
+	Export Image Map…	Експортувати мапу зображення…
+	Clear Image Map	Очистити мапу зображення
+	Combine	Об'єднання
+	Clipping	Обрізання
+	Color Space	Колірний простір
+	Linear light	Лінійне світло
+	Copy upper to lower	Копіювати верхню в нижню
+	Swap curves	Поміняти криві
+	Mirror	Дзеркально
+	Gradient Source	Джерело: градієнт
+	Value Jitter	Тремтіння яскравості
+	Pipe	Послідовно
+	Brush file (.myb)	Файл пензля (.myb)
+	Text as brush tip	Текст як відбиток пензля
+	One character per dab along the stroke	Один символ на мазок уздовж штриха
+	Engine	Рушій
+	Text Tip	Текстовий відбиток
+	Hatching	Штрихування
+	Particle	Частинки
+	Dyna	Dyna
+	Tangent Normal	Тангенціальна нормаль
+	MyPaint	MyPaint
+	Spray	Розпилювач
+	Bristle	Щетина
+	Deform	Деформація
+	Grain Extract	Витягнення зерна
+	Grain Merge	Об'єднання зерна
+	LCh Hue	Тон LCh
+	LCh Chroma	Хроматичність LCh
+	LCh Color	Колір LCh
+	LCh Lightness	Світлота LCh
+	Merge	Об'єднати
+	Split	Розділити
+	Remove Holes	Видалити дірки
+	Distort…	Спотворення…
+	Rounded Rectangle…	Заокруглений прямокутник…
+	Anchor Layer	Прикріпити шар
+	To New Layer	У новий шар
+	Layer Boundary Size…	Розмір меж шару…
+	Layer to Image Size	Шар до розміру зображення
+	Resize Layer to Selection	Шар до розміру виділення
+	Crop Layer to Content	Кадрувати шар за вмістом
+	Threshold Alpha…	Поріг альфа-каналу…
+	Composite Options…	Параметри композиції…
+	Zealous Crop	Ретельне кадрування
+	Foreground Select	Виділення переднього плану
+	Stroke width	Ширина штриха
+	Graph cut	Розріз графа
+	To Layer Mask	У маску шару
+	Draw a rough outline round the subject	Намалюйте грубий контур навколо об'єкта
+	Draw a rough outline round the subject first	Спочатку намалюйте грубий контур навколо об'єкта
+	Outline placed: paint over the foreground, then Preview or Select	Контур задано: зафарбуйте передній план, потім Перегляд або Виділити
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Грубо обведіть об'єкт, зафарбуйте передній план, і рушій матування виростить маску
+	Paint over the foreground (hold Alt for background), then Preview or Select	Зафарбуйте передній план (Alt для тла), потім Перегляд або Виділити
+	Display Filters…	Екранні фільтри…
+	Display Filters	Екранні фільтри
+	No Color Deficiency Simulation	Без імітації порушення колірного зору
+	Simulate Protanopia	Імітувати протанопію
+	Simulate Deuteranopia	Імітувати дейтеранопію
+	Simulate Tritanopia	Імітувати тританопію
+	Clip Warning	Попередження про відсікання
+	Clip warning	Попередження про відсікання
+	Color deficiency:	Порушення колірного зору:
+	Protanopia	Протанопія
+	Deuteranopia	Дейтеранопія
+	Tritanopia	Тританопія
+	Contrast:	Контраст:
+	View-only: the filters change what this view shows, never the pixels.	Лише відображення: фільтри змінюють вигляд цього вікна, а не пікселі.
+	Padding Color	Колір обрамлення
+	From Theme	З теми
+	Dark Gray	Темно-сірий
+	Medium Gray	Середньо-сірий
+	Light Check Color	Світла клітинка
+	Dark Check Color	Темна клітинка
+	Light Check	Світла клітинка
+	Dark Check	Темна клітинка
+	Light check	Світла клітинка
+	Dark check	Темна клітинка
+	Custom Color	Власний колір
+	Select Custom Color…	Вибрати власний колір…
+	Keep Padding in Show All	Зберігати обрамлення в режимі Показати все
+	Keep padding in show all	Зберігати обрамлення в режимі Показати все
+	Filter by tag	Фільтр за тегом
+	Clear filter	Скинути фільтр
+	Tags:	Теги:
+	Add tag	Додати тег
+	Remove tag	Видалити тег
+	View Metadata…	Перегляд метаданих…
+	Edit Metadata…	Редагувати метадані…
+	Edit Metadata	Редагувати метадані
+	Metadata Viewer	Переглядач метаданих
+	Write Metadata	Записати метадані
+	Separate several values with semicolons	Кілька значень розділяйте крапкою з комою
+	No tags	Немає тегів
+	XMP	XMP
+	IPTC	IPTC
+	Text	Текст
+	Rights	Права
+	IPTC Extension	Розширення IPTC
+	Categories	Категорії
+	DICOM	DICOM
+	Procedure Browser	Оглядач процедур
+	Plug-In Browser	Оглядач модулів
+	Search procedures	Пошук процедур
+	{n} procedures	{n} процедур
+	(no menu)	(без меню)
+	Menu: {path}	Меню: {path}
+	Parameters	Параметри
+	Available now	Доступно зараз
+	Not available in the current state	Недоступно в поточному стані
+	Run	Виконати
+	Select a procedure to read its parameters.	Виберіть процедуру, щоб побачити її параметри.
+	Dashboard	Панель моніторингу
+	Low memory: swap is nearly full. Save your work.	Мало пам'яті: підкачка майже заповнена. Збережіть роботу.
+	Memory	Пам'ять
+	Cache	Кеш
+	Swap	Підкачка
+	Swap: not reported on this platform	Підкачка: не повідомляється на цій платформі
+	CPU	CPU
+	CPU renderer	Рендеринг на CPU
+	uploads	завантажень
+	Misc: {jobs} jobs running · {n} samples	Інше: виконується завдань: {jobs} · вибірок: {n}
+	Log to File…	Записувати у файл…
+	Stop Logging	Зупинити запис
+	Device Status	Стан пристроїв
+	Core Pointer	Основний вказівник
+	Pen / Tablet	Перо / планшет
+	Brush:	Пензель:
+	Pattern:	Візерунок:
+	Gradient:	Градієнт:
+	Save Device Status	Зберегти стан пристроїв
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Кожен пристрій пам'ятає свій інструмент, кольори, пензель, візерунок і градієнт; зміна пристрою змінює і їх.
+	Selection Editor	Редактор виділення
+	No document open.	Немає відкритого документа.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Клацніть, щоб виділити суміжний колір чарівною паличкою (Shift додає, Alt віднімає)
+	Save to Channel	Зберегти в канал
+	To Path	У контур
+	Advanced options	Додаткові параметри
+	MyPaint Brushes	Пензлі MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Пензлів MyPaint ще немає. Імпортуйте файли .myb, щоб побачити їх тут.
+	No brush matches the filter.	Немає пензлів, що відповідають фільтру.
+	Handle Transform	Трансформація за ручками
+	3D Transform	3D-трансформація
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Переставити
+	Apply the transform so far and put a fresh box on the result	Застосувати трансформацію і поставити нову рамку на результат
+	Camera	Камера
+	Vanishing X:	Точка сходу X:
+	Y:	Y:
+	Focal length:	Фокусна відстань:
+	Local pivot	Локальна вісь
+	Unified pivot	Спільна вісь
+	Close Cage	Замкнути клітку
+	Reset Cage	Скинути клітку
+	Fill Plain Colour	Залити суцільним кольором
+	Fill the original position of the cage with the plain colour of its outline	Залити початкове положення клітки суцільним кольором її контуру
+	{n} points	{n} точок
+	Click to place a handle	Клацніть, щоб поставити ручку
+	Rotate and Scale	Поворот і масштаб
+	{n} handles: {what}	Ручок: {n}: {what}
+	Reset Handles	Скинути ручки
+	Remove Handles	Прибрати ручки
+	Commit Cage Transform (Enter)	Застосувати трансформацію кліткою (Enter)
+	Commit Handle Transform (Enter)	Застосувати трансформацію за ручками (Enter)
+	Commit 3D Transform (Enter)	Застосувати 3D-трансформацію (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Трансформація кліткою: клацайте навколо частини, клацніть першу точку, щоб замкнути клітку, потім перетягуйте точки
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Трансформація за ручками: поставте від однієї до чотирьох ручок і тягніть (одна рухає, дві обертають і масштабують, три нахиляють, чотири дають перспективу)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-трансформація: тягніть для повороту навколо X і Y, Alt — навколо Z; вкладки Перемістити і Камера рухають шар і камеру
+	Segment {n}	Сегмент {n}
+	Blending:	Перехід:
+	Coloring:	Забарвлення:
+	Midpoint:	Середня точка:
+	Sinusoidal	Синусоїдний
+	Spherical (increasing)	Сферичний (зростаючий)
+	Spherical (decreasing)	Сферичний (спадний)
+	Step	Сходинка
+	HSV (counter-clockwise)	HSV (проти годинникової)
+	HSV (clockwise)	HSV (за годинниковою)
+	Replicate	Розмножити
+	Split the segment at its midpoint	Розділити сегмент у середній точці
+	Replace the segment with two copies of itself	Замінити сегмент двома його копіями
+	Flip the whole gradient end to end	Перевернути весь градієнт
+	Save as POV-Ray…	Зберегти як POV-Ray…
+	Shaped Gradient (angular)	Градієнт за формою (кутовий)
+	Shaped Gradient (spherical)	Градієнт за формою (сферичний)
+	Shaped Gradient (dimpled)	Градієнт за формою (увігнутий)
+	Truncate	Обрізати
+	Sawtooth wave	Пилкоподібна хвиля
+	Triangular wave	Трикутна хвиля
+	Wheel	Колесо
+	Force	Сила
+	Jitter	Тремтіння
+	Fade length	Довжина згасання
+	Random amount	Ступінь випадковості
+	Save Preset	Зберегти набір
+	Paint Dynamics Editor	Редактор динаміки малювання
+	Color from Gradient	Колір із градієнта
+	Put this table on the current brush	Застосувати таблицю до поточного пензля
+	Save the table as a named dynamics preset	Зберегти таблицю як іменований набір динаміки
+	Give the dynamics preset a name first	Спочатку дайте набору динаміки ім’я
+	Edit the dynamics table (inputs × outputs)	Редагувати таблицю динаміки (входи × виходи)
+	Reset Plane	Скинути площину
+	Click four corners to define a perspective plane, then clone along it	Клацніть чотири кути, щоб задати площину перспективи, потім клонуйте вздовж неї
+	Click corner {n} of 4	Клацніть кут {n} з 4
+	Perspective plane: corner {n} of 4 set	Площина перспективи: задано кут {n} з 4
+	Perspective plane set; {key}-click a source, then paint	Площину перспективи задано; клацніть джерело з {key}, потім малюйте
+	Copy Path as SVG	Копіювати контур як SVG
+	Export Path to SVG…	Експортувати контур у SVG…
+	Import Path from SVG…	Імпортувати контур зі SVG…
+	Paste Path from SVG	Вставити контур зі SVG
+	Copy All Paths as SVG	Копіювати всі контури як SVG
+	Export All Paths to SVG…	Експортувати всі контури у SVG…
+	Copied 1 path as SVG	1 контур скопійовано як SVG
+	Copied {n} paths as SVG	Скопійовано контурів як SVG: {n}
+	Exported paths to {path}	Контури експортовано до {path}
+	Imported 1 path	Імпортовано 1 контур
+	Imported {n} paths	Імпортовано контурів: {n}
+	The clipboard holds no SVG	У буфері обміну немає SVG
+	Clipboard Image Brush	Пензель із зображення буфера обміну
+	Paint with the image on the clipboard as the brush tip	Малювати зображенням із буфера обміну як кінчиком пензля
+	Export Layers as Animation…	Експортувати шари як анімацію…
+	Export as Brush (.gbr)…	Експортувати як пензель (.gbr)…
+	Export Layers as Image Hose (.gih)…	Експортувати шари як анімований пензель (.gih)…
+	Export as Pattern (.pat)…	Експортувати як текстуру (.pat)…
+	Animation Frame Tags…	Теги кадру анімації…
+	Disposal	Видалення кадру
+	Replace	Замінити
+	Incremental	Послідовно
+	Angular	За кутом
+	Xtilt	Нахил X
+	Ytilt	Нахил Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Експортувати як PostScript (.eps)…
+	Encapsulated	Інкапсульований
+	Encoding	Кодування
+	Hex	Шістнадцятковий
+	Ascii85	ASCII85
+	Binary	Двійковий
+	Open Location…	Відкрити адресу…
+	From Screenshot…	Зі знімка екрана…
+	From Web Page…	З вебсторінки…
+	Send by Email…	Надіслати поштою…
+	Url	URL
+	Cursor	Курсор
+	Region	Область
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Буфер
+	Buffers	Буфери
+	Cut Named…	Вирізати в іменований буфер…
+	Copy Named…	Копіювати в іменований буфер…
+	Copy Visible Named…	Копіювати видиме в іменований буфер…
+	Paste Named…	Вставити з іменованого буфера…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Немає іменованих буферів. Використайте Зміни > Буфер > Копіювати в іменований буфер…, щоб зберегти копію тут.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Немає іменованих буферів; спочатку використайте Зміни > Буфер > Копіювати в іменований буфер
+	Paste Buffer	Вставити буфер
+	Paste Buffer in Place	Вставити буфер на місце
+	Paste Buffer as New Image	Вставити буфер як нове зображення
+	Rename Buffer…	Перейменувати буфер…
+	Delete Buffer	Видалити буфер
+	Paste as New	Вставити як нове
+	Paste the buffer as a new layer	Вставити буфер як новий шар
+	Paste the buffer as a new document	Вставити буфер як новий документ
+	As	Як
+	In place	На місце
+	Into	Усередину
+	Modules…	Модулі…
+	Units…	Одиниці…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Завантажувані модулі не встановлено. Фільтр > Плагіни > Встановити плагін… додасть один.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Вимкнений модуль залишається встановленим, але зникає з меню, доки його не увімкнуть знову.
+	Module	Модуль
+	Not installed	Не встановлено
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Множник: скільки одиниць в одному дюймі (2,54 для сантиметрів, 72 для пунктів).
+	Identifier	Ідентифікатор
+	Factor	Множник
+	Symbol	Символ
+	Abbreviation	Скорочення
+	Singular	Однина
+	Plural	Множина
+	Delete Unit	Видалити одиницю
+	New unit	Нова одиниця
+	Add Unit	Додати одиницю
+	That identifier is already a unit	Цей ідентифікатор уже зайнятий одиницею
+	Custom units	Власні одиниці
+	Disabled modules	Вимкнені модулі
+	Input Devices…	Пристрої введення…
+	Input Controllers…	Контролери введення…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Перо - це стилус планшета, про який повідомляє платформа. Вимкнене перо працює як миша.
+	Device	Пристрій
+	Invert tilt X	Інвертувати нахил X
+	Invert tilt Y	Інвертувати нахил Y
+	Swap tilt	Поміняти осі нахилу
+	Pressure scale	Масштаб натиску
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Події коліщатка: up, down, left або right з необов'язковими Shift+, Ctrl+ і Alt+; події клавіатури - сполучення на зразок Ctrl+Alt+Up. Дія - ідентифікатор команди, за яким можуть іти параметри JSON.
+	Keyboard	Клавіатура
+	Controller	Контролер
+	Event	Подія
+	Remove mapping	Видалити прив'язку
+	New mapping	Нова прив'язка
+	Add Mapping	Додати прив'язку
+	Disabled	Вимкнено
+	{n} entries; click one to set the foreground colour, double-click to edit it	Записів: {n}; клацання задає колір переднього плану, подвійне клацання редагує
+	Entry	Запис
+	Add an entry with the foreground colour	Додати запис із кольором переднього плану
+	Delete the last entry	Видалити останній запис
+	Use selected	Вибрана
+	Ink	Перо
+	MyPaint Brush	Пензель MyPaint
+	Nib	Перо
+	Aspect	Пропорції
+	Opaque	Непрозорість
+	Erase with brush	Стирати пензлем
+	Import .myb…	Імпортувати .myb…
+	Add a MyPaint brush file to the presets	Додати файл пензля MyPaint до наборів
+	Imported MyPaint brush {name}	Імпортовано пензель MyPaint {name}
+	How much pressure changes the nib size	Наскільки натиск змінює розмір пера
+	How much the pen's tilt turns and stretches the nib	Наскільки нахил пера повертає й розтягує перо
+	How much a fast stroke thins the nib	Наскільки швидкий штрих стоншує перо
+	Added to the preset's logarithmic radius	Додається до логарифмічного радіуса набору
+	Operation…	Операція…
+	Operation name or id	Назва або ідентифікатор операції
+	{n} operations	Операцій: {n}
+	Choose an operation	Виберіть операцію
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Консоль Script-Fu…
+	Load Scripts Folder…	Завантажити папку скриптів…
+	Python Console…	Консоль Python…
+	Load Plug-ins Folder…	Завантажити папку плагінів…
+	Loaded {n} scripts	Завантажено скриптів: {n}
+	Loaded {n} Python plug-ins	Завантажено плагінів Python: {n}
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 з call(command, **params), message(text) і print(); будь-яка команда рушія доступна через call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: кожна команда рушія - процедура, (file.new "width" 640 "height" 480); визначайте процедури та реєструйте їх через script-fu-register.
+	Code	Код
+	Cmd+Enter runs the code	Cmd+Enter виконує код
+	Clear Log	Очистити журнал
+	Dodge…	Освітлювач…
+	Burn…	Затемнювач…
+	Cross-Channel Adjustment…	Міжканальне коригування…
+	Slope, Offset, Power…	Нахил, зсув, степінь…
+	Index Colors…	Індексовані кольори…
+	Raindrops…	Краплі дощу…
+	Polygon Blur…	Багатокутне розмиття…
+	Edge Detection…	Виявлення країв…
+	Emboss (Directional)…	Рельєф (спрямований)…
+	Phong Bump Map…	Рельєфна мапа Фонга…
+	Palettize…	Палітризація…
+	Height to Normal Map…	Висота в карту нормалей…
+	Normalize Normal Map	Нормалізувати карту нормалей
+	Maximize Channel	Максимізувати канал
+	Minimize Channel	Мінімізувати канал
+	Propagate Colors…	Поширити кольори…
+	Reset Transparent	Скинути прозорі
+	Mean Removal	Вилучення середнього
+	Wavelet Noise Reducer…	Вейвлет-шумозаглушення…
+	Random Pick…	Випадковий вибір…
+	G'MIC Filter…	Фільтр G'MIC…
+	G'MIC executable	Виконуваний файл G'MIC
+	G'MIC update folder	Папка оновлень G'MIC
+	Add scene at playhead	Додати сцену на позиції відтворення
+	Add to favourites	Додати до улюблених
+	After	Після
+	Arithmetic	Арифметичні
+	Attach audio…	Долучити звук…
+	Before	До
+	Blend details	Подробиці змішування
+	Blend mode	Режим змішування
+	Blend mode and opacity	Режим змішування і непрозорість
+	Capture now	Зняти зараз
+	Clone previous keyframe here	Клонувати сюди попередній ключовий кадр
+	Comment	Коментар
+	Display settings	Параметри показу
+	Duplicate keyframe	Дублювати ключовий кадр
+	Duplicate keyframe here	Дублювати ключовий кадр сюди
+	End	Кінець
+	Export timelapse…	Експортувати таймлапс…
+	Favourites	Улюблені
+	Frame rate	Частота кадрів
+	HSX	HSX
+	Hidden	Приховано
+	Key the active layer:	Ключ для активного шару:
+	Misc	Інші
+	Mute audio	Вимкнути звук
+	Negative	Негативні
+	New keyframe	Новий ключовий кадр
+	New keyframe here	Новий ключовий кадр тут
+	Next tint	Відтінок наступних
+	No animated layers: add a keyframe to the active layer to animate it.	Немає анімованих шарів: додайте ключовий кадр активному шару, щоб анімувати його.
+	No animation curves yet.	Кривих анімації ще немає.
+	No scenes yet.	Сцен ще немає.
+	Opacity per frame	Непрозорість за кадрами
+	Previous tint	Відтінок попередніх
+	Quadratic	Квадратичні
+	Recorder	Запис
+	Remove from favourites	Вилучити з улюблених
+	Remove keyframe	Вилучити ключовий кадр
+	Remove scene	Вилучити сцену
+	Scale X	Масштаб X
+	Scale Y	Масштаб Y
+	Scene name	Назва сцени
+	Show onion skins	Показувати кальку
+	Start	Початок
+	Start recording	Почати запис
+	Stop recording	Зупинити запис
+	Storyboard	Розкадровка
+	Thumbnail size	Розмір мініатюр
+	frames	кадрів
+	opacity	непрозорість
+	rotation	поворот
+	scaleX	масштаб X
+	scaleY	масштаб Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} знімків у {dir}
+	2-Point Perspective	Двоточкова перспектива
+	Assistant colour	Колір помічника
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Магнетизм помічника: наскільки штрих може відхилитися від помічника і все ж притягнутися до нього (1000 = завжди)
+	Assistant opacity	Непрозорість помічника
+	Concentric Ellipse	Концентричний еліпс
+	Curvilinear Perspective	Криволінійна перспектива
+	Eraser snaps	Гумка притягується
+	Fish-Eye Point	Точка «риб'яче око»
+	Handles	Маркери
+	Infinite Ruler	Нескінченна лінійка
+	Limit to area	Обмежити областю
+	Minor subdivisions	Дрібні поділки
+	Own colour	Власний колір
+	Perspective Ellipse	Еліпс у перспективі
+	Previews	Попередній перегляд
+	Show the snapped stroke's line while painting	Показувати лінію притягнутого штриха під час малювання
+	Show this assistant's control handles	Показувати маркери цього помічника
+	Spline	Сплайн
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Штрихи слідують помічникам малювання (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Два додаткові маркери обмежують, де помічник малює й притягує
+	Vertical ruler	Вертикальна лінійка
+	Painting Assistants	Помічники малювання
+	Assistant Previews	Попередній перегляд помічників
+	Drag fill	Заливка перетягуванням
+	Dragging fills every region passed over	Перетягування заливає кожну пройдену область
+	Exclude colour	Виключити колір
+	Exclude transparent	Виключити прозоре
+	Fill mode	Режим заливки
+	No region is fully enclosed by the shape	Фігура не оточує повністю жодну область
+	Only regions coloured like the first one	Лише області того ж кольору, що й перша
+	Reference	Опора
+	Similar only	Лише схожі
+	Soften the filled edge	Пом'якшити край заливки
+	Spread stops at the darkest pixels (lines)	Розширення зупиняється на найтемніших пікселях (лініях)
+	Spread stops at the most opaque pixels	Розширення зупиняється на найнепрозоріших пікселях
+	Stop at darkest	Стоп на темному
+	Stop at opaque	Стоп на непрозорому
+	Similar Colours	Схожі кольори
+	Colour Labels	Кольорові мітки
+	All Regions	Усі області
+	Specific Colour	Заданий колір
+	Transparent Regions	Прозорі області
+	Surrounded By	Оточені кольором
+	Fill with Foreground Color (Opacity)	Залити основним кольором (непрозорість)
+	Fill with Background Color (Opacity)	Залити кольором тла (непрозорість)
+	Fill with Pattern (Opacity)	Залити візерунком (непрозорість)
+	Straight Line Tool	Інструмент «Пряма»
+	Multibrush Tool	Інструмент «Мультипензель»
+	Dynamic Brush Tool	Інструмент «Динамічний пензель»
+	Enclose and Fill Tool	Інструмент «Обвести й залити»
+	Colorize Mask Tool	Інструмент «Маска розфарбовування»
+	Reference Images Tool	Інструмент «Зразки»
+	Alternating	Почергово
+	Forward	Вперед
+	Shaped Gradient (follows the selection)	Градієнт за формою (слідує виділенню)
+	Clear copies	Прибрати копії
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+клацання ставить копію, Ctrl+Alt+клацання прибирає
+	How heavily the stroke lags behind the pointer	Наскільки штрих відстає від вказівника
+	How quickly the stroke's motion dies away	Як швидко затухає рух штриха
+	Keep one-pixel lines single width without L corners	Лінії в один піксель залишаються одинарними без Г-подібних кутів
+	Mirror all tools	Віддзеркалювати всі інструменти
+	Multibrush	Мультипензель
+	Pixel smoothing	Піксельне згладжування
+	The painting symmetry mirrors fills, gradients and retouching too	Симетрія малювання віддзеркалює й заливки, градієнти та ретуш
+	The painting symmetry mirrors this tool's output too	Симетрія малювання віддзеркалює й результат цього інструмента
+	X interval	Інтервал X
+	Y interval	Інтервал Y
+	Mirror / Rotation	Дзеркало / Обертання
+	Translate	Зсув
+	Copy Translate	Копії зі зсувом
+	Cursor shape	Форма курсора
+	Outline shape	Форма контуру
+	Show outline while painting	Показувати контур під час малювання
+	Effective outline size	Фактичний розмір контуру
+	Tool icon	Значок інструмента
+	Arrow	Стрілка
+	Crosshair	Перехрестя
+	Small dot	Крапка
+	No cursor	Без курсора
+	Triangle right	Трикутник праворуч
+	Triangle left	Трикутник ліворуч
+	No outline	Без контуру
+	Instant preview	Миттєвий попередній перегляд
+	Instant preview megapixels	Мегапікселі миттєвого перегляду
+	Add…	Додати…
+	Auto update	Автооновлення
+	Canvas input profile	Профіль введення полотна
+	Clean up	Очищення
+	Clear key strokes	Прибрати ключові штрихи
+	Colorize Mask	Маска розфарбовування
+	Draw in the area below to test pressure, tilt and rotation	Малюйте в області нижче, щоб перевірити натиск, нахил і обертання
+	Edge detection	Пошук країв
+	Edit key strokes	Редагувати ключові штрихи
+	Embed	Вбудувати
+	Fill only inside the line art's pixels	Заливати лише всередині пікселів контуру
+	Gap close	Закрити проміжки
+	Input API	API введення
+	Keep aspect	Зберігати пропорції
+	Limit to layer	Обмежити шаром
+	Mouse	Миша
+	Next Preset	Наступний набір
+	No samples yet	Ще немає відліків
+	Nothing to paste: the clipboard holds no image	Нічого вставляти: в буфері немає зображення
+	Opacity +	Непрозорість +
+	Opacity -	Непрозорість -
+	Pasted image	Вставлене зображення
+	Peak pressure	Піковий натиск
+	Previous Preset	Попередній набір
+	Reference Images	Зразки
+	Rotate Left	Повернути вліво
+	Rotate Right	Повернути вправо
+	Sample rate	Частота відліків
+	Screen mapping	Прив'язка до екрана
+	Show output	Показати результат
+	Show the key strokes over the canvas	Показувати ключові штрихи над полотном
+	Show with all tools	Показувати з усіма інструментами
+	Size +	Розмір +
+	Size -	Розмір -
+	Speed source	Джерело швидкості
+	Store the pixels in the set; off, link to the file	Зберігати пікселі в наборі; вимкнено: посилання на файл
+	Tablet Settings…	Параметри планшета…
+	Tablet Tester	Тестер планшета
+	The clipboard is not available	Буфер обміну недоступний
+	The next key strokes keep their regions clear	Наступні ключові штрихи залишають свої області прозорими
+	Tilt offset	Поправка нахилу
+	Touch Docker	Сенсорна панель
+	Transparent key	Прозорий ключ
+	Update	Оновити
+	Canvas Input	Введення полотна
+	Canvas Input…	Введення полотна…
+	Pan key	Клавіша панорами
+	Zoom in key	Клавіша збільшення
+	Zoom out key	Клавіша зменшення
+	Rotate key	Клавіша обертання
+	Middle button	Середня кнопка
+	Stylus button	Кнопка стилуса
+	Pick modifier	Модифікатор піпетки
+	Shift wheel rotates	Shift+коліщатко обертає
+	Tablet	Планшет
+	Trackpad	Трекпад
+	Pick	Піпетка
+	No action	Без дії
+	No pick	Без піпетки
+	Scroll	Прокручування
+	Rotate View (hold)	Поворот вигляду (утримувати)
+	Tilt offset x	Поправка нахилу X
+	Tilt offset y	Поправка нахилу Y
+	Tablet speed source	Джерело швидкости планшета
+	Tablet api	API планшета
+	Tablet screen mapping	Прив'язка планшета до екрана
+	Pointer	Вказівник
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Тип сітки
+	Isometric left angle	Лівий кут ізометрії
+	Isometric right angle	Правий кут ізометрії
+	Isometric vertical lines	Вертикальні лінії ізометрії
+	Rectangular	Прямокутна
+	Isometric	Ізометрична
+	Node	Вузол
+	Extension	Продовження
+	Intersection	Перетин
+	Alt-click a bottom patch to set it to the foreground colour	Alt+клацання по нижньому зразку задає йому основний колір
+	Apply:	Застосувати:
+	Brushes this large preview coarsely while painting	Пензлі такого розміру грубо попередньо показуються під час малювання
+	Click the disc to add shape points	Клацніть по диску, щоб додати точки фігури
+	Close Shape	Замкнути фігуру
+	Color Space:	Колірний простір:
+	Common Colors	Основні кольори
+	Components:	Компоненти:
+	Continuous Mode	Безперервний режим
+	Current pattern	Поточний візерунок
+	Depth:	Глибина:
+	Display:	Відображення:
+	Dynamic Hue Ring	Динамічне кільце відтінків
+	Enable Pen Settings	Увімкнути налаштування пера
+	Erase mode keeps its own opacity on this preset	Режим стирання зберігає свою непрозорість для цього набору
+	Erase mode keeps its own size on this preset	Режим стирання зберігає свій розмір для цього набору
+	Eraser Opacity	Непрозорість гумки
+	Eraser Size	Розмір гумки
+	Fit Panel Width	За шириною панелі
+	Gamut Mask	Маска колірного охоплення
+	Gradient Steps	Кроки градієнта
+	Gradient ends: Alt-click to set from the foreground	Кінці градієнта: Alt+клацання задає основний колір
+	Hue Steps	Кроки відтінку
+	Instant Preview	Миттєвий перегляд
+	LUT Management (OCIO)	Керування LUT (OCIO)
+	Lightness Strength	Сила світлоти
+	Lock Color	Зафіксувати колір
+	Luma:	Яскравість (luma):
+	Minimum Hardness	Мінімальна жорсткість
+	Minimum Strength	Мінімальна сила
+	Model:	Модель:
+	Off: every sensor is ignored; the curves are kept	Вимк.: усі сенсори ігноруються, криві зберігаються
+	Out of gamut	Поза охопленням
+	Panel colours are not shown through the display transform	Кольори панелі не проходять через перетворення дисплея
+	Patch Count	Кількість зразків
+	Patch Size	Розмір зразка
+	Patches:	Зразки:
+	Pattern Scale	Масштаб візерунка
+	Pop-up Size	Розмір спливного вікна
+	Proof to Painting Space	Кольоропроба в просторі малювання
+	Recent Colors	Недавні кольори
+	Remove Last Shape	Вилучити останню фігуру
+	Rotate Mask	Повернути маску
+	Saturation Steps	Кроки насиченості
+	Selector settings	Налаштування селектора
+	Selector:	Селектор:
+	Shade Count	Кількість відтінків
+	Shade Ring by Value	Затіняти кільце за яскравістю
+	Shade Selector	Селектор відтінків
+	Shade Size	Розмір відтінку
+	Shade Spread	Розкид відтінків
+	Shade Strip	Смуга відтінків
+	Shades	Відтінки
+	Share Curve Across Settings	Спільна крива для всіх налаштувань
+	Show as Fractions	Показувати як частки
+	Soften Edge	Пом'якшити край
+	Source:	Джерело:
+	Style:	Стиль:
+	The tip's grey levels are painted into the colour as lightness	Рівні сірого кінчика малюються в колір як світлота
+	Threshold the tip mask for crisp pixel strokes	Поріг по масці кінчика для чітких піксельних штрихів
+	Tip as Lightness Map	Кінчик як карта світлоти
+	Update:	Оновлення:
+	Value Steps	Кроки яскравості
+	Value on the Ring	Яскравість на кільці
+	Zoom Pop-up	Спливне збільшення
+	Length over which the value goes from 0 to 1	Довжина, на якій значення зростає від 0 до 1
+	Start over past the length instead of holding the end value	Після довжини починати знову, а не тримати кінцеве значення
+	Pressure In	Натиск (лише зростання)
+	X-Tilt	Нахил X
+	Y-Tilt	Нахил Y
+	Tilt Direction	Напрям нахилу
+	Tilt Elevation	Висота нахилу
+	Fuzzy Stroke	Випадково на штрих
+	Tip Scale:	Масштаб кінчика:
+	Initial size as a share of the bitmap's size	Початковий розмір як частка розміру растру
+	Tip Rotation:	Поворот кінчика:
+	Initial rotation of the tip	Початковий поворот кінчика
+	No anti-aliasing: the dab's pixels are fully on or off	Без згладжування: пікселі мазка або повністю зафарбовані, або ні
+	Align Outline to Pixel Grid	Вирівнювати контур за піксельною сіткою
+	The brush outline snaps to the pixels the dab fills	Контур пензля прив'язується до пікселів, які зафарбовує мазок
+	Tip Mode:	Режим кінчика:
+	(no colour bitmap: paints the brush colour)	(немає кольорового растру: малює кольором пензля)
+	Neutral Point	Нейтральна точка
+	Canvas Only: hide the panels around the canvas	Лише полотно: сховати панелі навколо полотна
+	Presets kept in the history	Пресетів в історії
+	Clear the history	Очистити історію
+	No presets used yet	Пресети ще не використовувались
+	Forget this preset	Прибрати цей пресет з історії
+	Ten Brushes	Десять пензлів
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Призначте пресети десяти коміркам; повторна активація комірки повертає попередній пресет
+	Clear this slot	Очистити цю комірку
+	Assign current	Призначити поточний
+	Browse a folder of reference images	Відкрити папку з референсами
+	No folder	Немає папки
+	Next image	Наступне зображення
+	Previous image	Попереднє зображення
+	Pick an image to show it here	Виберіть зображення, щоб показати його тут
+	Search actions and commands	Пошук дій і команд
+	No matching action	Немає відповідної дії
+	Search Actions…	Пошук дій…
+	Brush History	Історія пензлів
+	Color Image	Кольорове зображення
+	Lightness Map	Карта світлоти
+	Static	Статично
+	Move to Top	Перемістити вгору
+	Bubble Up	Підняти на одну позицію
+	Clear the scratch pad to white	Очистити блокнот до білого
+	Fill the scratch pad with the background colour	Залити блокнот кольором тла
+	Fill the scratch pad with the current gradient	Залити блокнот поточним градієнтом
+	Fill the scratch pad with the current image	Залити блокнот поточним зображенням
+	Fill the scratch pad with the preset's icon	Залити блокнот значком пресета
+	Reload the stored preset, discarding the tweaks	Перезавантажити збережений пресет, відкинувши зміни
+	BG	Тло
+	Icon	Значок
+	Thumbnail:	Мініатюра:
+	Stroke preview	Перегляд штриха
+	Scratch pad	Блокнот
+	Icon library	Бібліотека значків
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Активувати локальне виділення
+	Add Curve Key	Додати ключ кривої
+	Add Filter…	Додати фільтр…
+	Add Local Selection	Додати локальне виділення
+	Add Scene	Додати сцену
+	Add Transform Key	Додати ключ трансформації
+	Alpha into Mask	Альфа в маску
+	Attach Audio…	Прикріпити звук…
+	Backup count	Кількість резервних копій
+	Capture Snapshot	Зробити знімок
+	Change Clone Source…	Змінити джерело клонування…
+	Clone Keyframe	Клонувати ключовий кадр
+	Clone Layer	Клонувати шар
+	Clones Array…	Масив клонів…
+	Colorize Mask Properties…	Властивості маски розфарбовування…
+	Convert	Перетворити
+	Convert Group to Animated Layer	Перетворити групу на анімований шар
+	Convert to Paint Layer	Перетворити на шар малювання
+	Copy Keyframe	Копіювати ключовий кадр
+	Curved	Вигнутий
+	Drag	Перетягування
+	Duplicate Keyframe	Дублювати ключовий кадр
+	Edit Generated Fill…	Змінити згенероване заповнення…
+	Edit Transform Mask…	Змінити маску трансформації…
+	Ellipse	Еліпс
+	Export Storyboard…	Експортувати розкадрування…
+	Export Timelapse…	Експортувати таймлапс…
+	File Layer Properties…	Властивості файлового шару…
+	File Layer…	Файловий шар…
+	Filter Layer…	Шар фільтра…
+	Filter Mask…	Маска фільтра…
+	Frame rate limit	Обмеження частоти кадрів
+	Frames	Кадри
+	Freeze Live Layer	Заморозити живий шар
+	High quality	Висока якість
+	Import Animation Frames…	Імпортувати кадри анімації…
+	Import Image as…	Імпортувати зображення як…
+	Import Video Animation…	Імпортувати відеоанімацію…
+	Input controllers	Контролери введення
+	Input devices	Пристрої введення
+	Invisible	Невидимий
+	Layer Color Space…	Колірний простір шару…
+	Layers by State	Шари за станом
+	Local Selection	Локальне виділення
+	Locked	Заблоковано
+	Mass	Маса
+	Move Clone…	Перемістити клон…
+	Move Keyframe	Перемістити ключовий кадр
+	Multigrid…	Мультисітка…
+	Mute Audio	Вимкнути звук
+	Nearest	Найближчий
+	New Keyframe	Новий ключовий кадр
+	Onion Skin…	Калька…
+	Pan	Панорамування
+	Pixel grid threshold	Поріг піксельної сітки
+	Reload File Layer	Перезавантажити файловий шар
+	Remove Audio	Вилучити звук
+	Remove Curve Key	Вилучити ключ кривої
+	Remove Filter	Вилучити фільтр
+	Remove Keyframe	Вилучити ключовий кадр
+	Remove Local Selection	Вилучити локальне виділення
+	Remove Transform Key	Вилучити ключ трансформації
+	Remove Transform Mask	Вилучити маску трансформації
+	Render Animation…	Відтворити анімацію…
+	Save Merged…	Зберегти зведене…
+	Scaling filter	Фільтр масштабування
+	Screentone…	Растр…
+	Script…	Скрипт…
+	Set Filter…	Задати фільтр…
+	Show Output	Показати вивід
+	Split Alpha	Розділити альфу
+	Start Recording	Почати запис
+	Stop Recording	Зупинити запис
+	Swap directory	Каталог підкачки
+	Ten scripts	Десять скриптів
+	Threads	Потоки
+	Transform Mask…	Маска трансформації…
+	Unlocked	Розблоковано
+	Update Local Selection	Оновити локальне виділення
+	Write as Alpha	Записати як альфу
+	to File Layer…	у файловий шар…
+	to Filter Mask…	у маску фільтра…
+	to Paint Layer	у шар малювання
+	to Selection Mask	у маску виділення
+	to Transparency Mask	у маску прозорості

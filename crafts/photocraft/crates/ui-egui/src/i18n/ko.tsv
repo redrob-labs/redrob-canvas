@@ -3963,3 +3963,1168 @@ curves	Smooth	매끄럽게
 	Cumulative undo duration	누적 실행 취소 지속 시간
 	Popup palette	팝업 팔레트
 	Smudge Radius	스머지 반경
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	선형 반전
+	Value Invert	명도 반전
+	Stretch Contrast HSV	HSV 대비 늘리기
+	Color Enhance	색상 강화
+	Extract Component…	구성 요소 추출…
+	Alien Map…	에일리언 맵…
+	Rotate Colors…	색상 회전…
+	Palette Map…	팔레트 맵…
+	Sample Colorize…	샘플 색상화…
+	RGB Clip…	RGB 클립…
+	Dither…	디더…
+	Local Threshold…	지역 한계값…
+	Destripe…	줄무늬 제거…
+	Retinex…	레티넥스…
+	Stress…	스트레스…
+	Color to Gray…	색상을 회색으로…
+	Fattal et al. 2002…	Fattal 외 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	부드러운 팔레트…
+	Decompose…	분해…
+	Compose…	합성…
+	Recompose	재합성
+	Rearrange Colormap…	색상표 재배열…
+	Set Colormap…	색상표 설정…
+	Border Average…	테두리 평균…
+	Export Histogram…	히스토그램 내보내기…
+	Floyd Steinberg	플로이드-스타인버그
+	Random Covariant	무작위(공변)
+	Arithmetic Add	산술 더하기
+	Arithmetic Add Covariant	산술 더하기(공변)
+	Arithmetic Xor	산술 XOR
+	Arithmetic Xor Covariant	산술 XOR(공변)
+	Blue Noise	블루 노이즈
+	Bayer	바이어
+	Treat As	다음으로 취급
+	Change To	다음으로 변경
+	Pixel Count	픽셀 수
+	Normalized	정규화
+	Index	인덱스
+	Nearest	가장 가까운 색
+	Rgb Red	RGB 빨강
+	Rgb Green	RGB 녹색
+	Rgb Blue	RGB 파랑
+	Hsv Hue	HSV 색조
+	Hsv Saturation	HSV 채도
+	Hsv Value	HSV 명도
+	Hsl Saturation	HSL 채도
+	Hsl Lightness	HSL 밝기
+	Cmyk Cyan	CMYK 청록
+	Cmyk Magenta	CMYK 자홍
+	Cmyk Yellow	CMYK 노랑
+	Cmyk Key	CMYK 검정
+	Lab L	Lab L
+	Lab A	Lab A
+	Lab B	Lab B
+	Lch C	LCh C
+	Lch H	LCh H
+	Ycbcr470 Y	YCbCr 470 Y
+	Ycbcr470 Cb	YCbCr 470 Cb
+	Ycbcr470 Cr	YCbCr 470 Cr
+	Ycbcr709 Y	YCbCr 709 Y
+	Ycbcr709 Cb	YCbCr 709 Cb
+	Ycbcr709 Cr	YCbCr 709 Cr
+	Ycbcr470f Y	YCbCr 470 전체 범위 Y
+	Ycbcr470f Cb	YCbCr 470 전체 범위 Cb
+	Ycbcr470f Cr	YCbCr 470 전체 범위 Cr
+	Ycbcr709f Y	YCbCr 709 전체 범위 Y
+	Ycbcr709f Cb	YCbCr 709 전체 범위 Cb
+	Ycbcr709f Cr	YCbCr 709 전체 범위 Cr
+	Rgba	RGBA
+	Hsv	HSV
+	Cmy	CMY
+	Cmyk	CMYK
+	Lch	LCh
+	Ycbcr470	YCbCr 470
+	Ycbcr709	YCbCr 709
+	Ycbcr470f	YCbCr 470 전체 범위
+	Ycbcr709f	YCbCr 709 전체 범위
+	Variable Blur…	가변 흐림…
+	Apply Lens…	렌즈 적용…
+	Mosaic Tiles…	모자이크 타일…
+	Newsprint…	신문 인쇄…
+	Curve Bend…	곡선 굽힘…
+	Warp (Map)…	뒤틀기 (맵)…
+	Bloom…	블룸…
+	Sobel…	소벨…
+	Cartoon…	카툰…
+	Clothify…	천 질감…
+	Stencil Chrome…	스텐실 크롬…
+	Bump Map…	범프 맵…
+	Panorama Projection…	파노라마 투영…
+	Perlin Noise…	펄린 노이즈…
+	Plasma…	플라즈마…
+	Solid Noise…	솔리드 노이즈…
+	Add Border…	테두리 추가…
+	Fog…	안개…
+	Old Photo…	오래된 사진…
+	Round Corners…	모서리 둥글게…
+	Tile…	타일…
+	Depth Merge…	깊이 병합…
+	Geometric Shapes…	기하 도형…
+	Image Map Area…	이미지 맵 영역…
+	Image Map From Slices	분할 영역에서 이미지 맵 만들기
+	Export Image Map…	이미지 맵 내보내기…
+	Clear Image Map	이미지 맵 지우기
+	Combine	결합
+	Clipping	클리핑
+	Color Space	색상 공간
+	Linear light	선형 광
+	Copy upper to lower	위쪽을 아래쪽에 복사
+	Swap curves	곡선 바꾸기
+	Mirror	대칭
+	Add Background	배경 추가
+	Allow Splitting	분할 허용
+	Angle2	각도 2
+	Angle3	각도 3
+	Angle4	각도 4
+	Arc	호
+	Aux Input	보조 입력
+	Azimuth	방위각
+	Bezier	베지어
+	Black On White	흰 바탕에 검정
+	Black Pullout	검정 빼기
+	Blur X	흐림 X
+	Blur Y	흐림 Y
+	Border X	테두리 X
+	Border Y	테두리 Y
+	Bright Star	밝은 별
+	Brush Path	브러시 경로
+	Chrome Balance	크롬 균형
+	Chrome Factor	크롬 계수
+	Chrome Lightness	크롬 명도
+	Chrome Saturation	크롬 채도
+	Cold Rings	차가운 고리
+	Color Averaging	색상 평균화
+	Color Model	색상 모델
+	Color Variation	색상 변화
+	Compact	콤팩트
+	Compensate	보정
+	Defocus	초점 흐리기
+	Delta	델타
+	Design	디자인
+	Distant Sun	먼 태양
+	Edge Radius	가장자리 반경
+	Fill Color	칠 색상
+	Fit Height	높이에 맞춤
+	Hexagons	육각형
+	Hidden Planet	숨은 행성
+	High Quality	고품질
+	Highlight Balance	하이라이트 균형
+	Inner Ratio	내부 비율
+	Invert Mask	마스크 반전
+	Joints Color	접합부 색상
+	Keep Sign	부호 유지
+	Keep Surroundings	주변 유지
+	Layer Name	레이어 이름
+	Light Color	광원 색상
+	Limit Exposure	노출 제한
+	Linear Mask	선형 마스크
+	Magnitude Document	크기 맵 문서
+	Magnitude Path	크기 맵 경로
+	Mask	마스크
+	Mask Radius	마스크 반경
+	Mottle	얼룩
+	New Image	새 이미지
+	Number Height	숫자 높이
+	Octagons	팔각형
+	On Edges	가장자리 처리
+	Overlap	겹침
+	Paper Path	종이 경로
+	Paper Scale	종이 배율
+	Pattern2	패턴 2
+	Pattern3	패턴 3
+	Pattern4	패턴 4
+	Percent Black	검정 비율
+	Period	주기
+	Period2	주기 2
+	Period3	주기 3
+	Period4	주기 4
+	Pie	파이
+	Plain	무지
+	Ps Square	PS 사각형
+	Ray Count	광선 수
+	Rectangle	직사각형
+	Refraction Index	굴절률
+	Rotation Angle	회전 각도
+	Rough	거친
+	Sampler	샘플러
+	Scale1	배율 1
+	Scale2	배율 2
+	Second Flare Count	보조 플레어 수
+	Self	자체
+	Shadow X	그림자 X
+	Shadow Y	그림자 Y
+	Soft Glow	부드러운 빛
+	Spherical	구형
+	Squares	사각형
+	Star Ratio	별 비율
+	Start Angle	시작 각도
+	Step Size	단계 크기
+	Substeps	하위 단계
+	Sweep Angle	호 각도
+	Tile Height	타일 높이
+	Tile Neatness	타일 정돈도
+	Tile Spacing	타일 간격
+	Tile Type	타일 유형
+	Tiled	타일식
+	Triangles	삼각형
+	Turns	회전 수
+	Waterlevel	수위
+	White On Black	검은 바탕에 흰색
+	Work On Copy	복사본에서 작업
+	X Size	X 크기
+	Y Size	Y 크기
+	Z Offset	Z 오프셋
+	Gradient Source	그레이디언트 소스
+	Value Jitter	명도 지터
+	Pipe	파이프
+	Brush file (.myb)	브러시 파일 (.myb)
+	Text as brush tip	텍스트를 브러시 팁으로
+	One character per dab along the stroke	스트로크를 따라 대브마다 글자 하나
+	Engine	엔진
+	Text Tip	텍스트 팁
+	Hatching	해칭
+	Particle	파티클
+	Dyna	다이나
+	Tangent Normal	탄젠트 노멀
+	MyPaint	MyPaint
+	Spray	스프레이
+	Bristle	브리슬
+	Deform	변형
+	Separation	간격
+	Jitter	지터
+	Mass	질량
+	Drag	저항
+	Gravity	중력
+	Particles	파티클 수
+	Grid Width	격자 너비
+	Grid Height	격자 높이
+	Diameter	직경
+	Aspect	비율
+	Cluster	군집
+	Pixel	픽셀
+	Tip	팁
+	Perpendicular	수직
+	Shrink	축소
+	Wire	와이어
+	Two	둘
+	Lens Zoom In	렌즈 확대
+	Lens Zoom Out	렌즈 축소
+	Swirl CW	시계 방향 회오리
+	Swirl CCW	반시계 방향 회오리
+	Colour Deform	색상 변형
+	Follow Cursor	커서 따르기
+	Weighted	가중
+	Angular	각도 분포
+	Moiré	모아레
+	Anti-aliased Pixel	앤티앨리어스 픽셀
+	Magnetify	자석 효과
+	Simple Mode	단순 모드
+	Hard Edge	단단한 가장자리
+	Connect Hairs	털 연결
+	Ink Depletion	잉크 고갈
+	Soak Ink	잉크 흡수
+	Mouse Pressure	마우스 필압
+	Composite Bristles	털 합성
+	Use Density	밀도 사용
+	Proportional	비례
+	Random Size	임의 크기
+	Sample Input Layer	입력 레이어 샘플링
+	Colour per Particle	파티클별 색상
+	Fill Background	배경 채우기
+	Fixed Angle	고정 각도
+	Paint Connection	연결선 그리기
+	Use Foreground Colour	전경색 사용
+	Width by Pressure	필압에 따른 너비
+	Opacity by Pressure	필압에 따른 불투명도
+	Connection Line	연결선
+	Even-odd Fill	짝수-홀수 채우기
+	Division by Pressure	필압에 따른 분할
+	Separation by Pressure	필압에 따른 간격
+	Thickness by Pressure	필압에 따른 두께
+	Coloured Background	색 배경
+	Distance Density	거리 밀도
+	Distance Opacity	거리 불투명도
+	Use Undeformed Image	변형 전 이미지 사용
+	Random RGB	임의 RGB
+	Random Opacity	임의 불투명도
+	Curve Opacity	곡선 불투명도
+	Width Range	너비 범위
+	Line Spacing	선 간격
+	Angle Offset	각도 오프셋
+	Particle Width	파티클 너비
+	Particle Height	파티클 높이
+	Random Offset	임의 오프셋
+	Ink Amount	잉크 양
+	Counter	카운터
+	Grain Extract	그레인 추출
+	Grain Merge	그레인 병합
+	LCh Hue	LCh 색조
+	LCh Chroma	LCh 채도
+	LCh Color	LCh 색상
+	LCh Lightness	LCh 명도
+	Merge	병합
+	Split	분할
+	Remove Holes	구멍 제거
+	Distort…	왜곡…
+	Rounded Rectangle…	둥근 사각형…
+	Anchor Layer	레이어 고정
+	To New Layer	새 레이어로
+	Layer Boundary Size…	레이어 경계 크기…
+	Layer to Image Size	레이어를 이미지 크기로
+	Resize Layer to Selection	레이어를 선택 영역 크기로
+	Crop Layer to Content	레이어를 콘텐츠에 맞게 자르기
+	Threshold Alpha…	알파 임계값…
+	Composite Options…	합성 옵션…
+	Zealous Crop	철저한 자르기
+	Foreground Select	전경 선택
+	Stroke width	획 두께
+	Graph cut	그래프 컷
+	Fast	빠름
+	To Layer Mask	레이어 마스크로
+	Draw a rough outline round the subject	피사체 주위에 대략적인 윤곽을 그리세요
+	Draw a rough outline round the subject first	먼저 피사체 주위에 대략적인 윤곽을 그리세요
+	Outline placed: paint over the foreground, then Preview or Select	윤곽 배치됨: 전경을 칠한 뒤 미리 보기 또는 선택
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	피사체를 대략 둘러 그리고 전경을 칠하면 매팅 엔진이 마스크를 키웁니다
+	Paint over the foreground (hold Alt for background), then Preview or Select	전경을 칠하세요 (Alt를 누르면 배경), 그런 다음 미리 보기 또는 선택
+	Display Filters…	표시 필터…
+	Display Filters	표시 필터
+	No Color Deficiency Simulation	색각 이상 시뮬레이션 없음
+	Simulate Protanopia	적색맹 시뮬레이션
+	Simulate Deuteranopia	녹색맹 시뮬레이션
+	Simulate Tritanopia	청색맹 시뮬레이션
+	Clip Warning	클리핑 경고
+	Clip warning	클리핑 경고
+	Color deficiency:	색각 이상:
+	Protanopia	적색맹
+	Deuteranopia	녹색맹
+	Tritanopia	청색맹
+	Contrast:	대비:
+	View-only: the filters change what this view shows, never the pixels.	표시 전용: 필터는 이 보기의 표시만 바꾸며 픽셀은 바꾸지 않습니다.
+	Show All	모두 표시
+	Padding Color	여백 색상
+	From Theme	테마에서
+	Dark Gray	어두운 회색
+	Medium Gray	중간 회색
+	Light Check Color	밝은 체크 색상
+	Dark Check Color	어두운 체크 색상
+	Light Check	밝은 체크
+	Dark Check	어두운 체크
+	Light check	밝은 체크
+	Dark check	어두운 체크
+	Custom Color	사용자 정의 색상
+	Select Custom Color…	사용자 정의 색상 선택…
+	Keep Padding in Show All	모두 표시에서 여백 유지
+	Keep padding in show all	모두 표시에서 여백 유지
+	Filter by tag	태그로 필터
+	Clear filter	필터 지우기
+	Tags:	태그:
+	Add tag	태그 추가
+	Remove tag	태그 제거
+	View Metadata…	메타데이터 보기…
+	Edit Metadata…	메타데이터 편집…
+	Edit Metadata	메타데이터 편집
+	Metadata Viewer	메타데이터 뷰어
+	Write Metadata	메타데이터 쓰기
+	Separate several values with semicolons	값이 여러 개면 세미콜론으로 구분합니다
+	Copyrighted	저작권 있음
+	Public Domain	퍼블릭 도메인
+	Unknown	알 수 없음
+	No tags	태그 없음
+	XMP	XMP
+	IPTC	IPTC
+	Rights	권리
+	IPTC Extension	IPTC 확장
+	Categories	카테고리
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	프로시저 브라우저
+	Plug-In Browser	플러그인 브라우저
+	Search procedures	프로시저 검색
+	{n} procedures	프로시저 {n}개
+	(no menu)	(메뉴 없음)
+	Menu: {path}	메뉴: {path}
+	Parameters	매개 변수
+	Available now	지금 사용 가능
+	Not available in the current state	현재 상태에서는 사용할 수 없음
+	Run	실행
+	Select a procedure to read its parameters.	프로시저를 선택하면 매개 변수를 볼 수 있습니다.
+	Dashboard	대시보드
+	Low memory: swap is nearly full. Save your work.	메모리 부족: 스왑이 거의 가득 찼습니다. 작업을 저장하세요.
+	Memory	메모리
+	Cache	캐시
+	Swap	스왑
+	Swap: not reported on this platform	스왑: 이 플랫폼에서는 보고되지 않음
+	CPU	CPU
+	CPU renderer	CPU 렌더러
+	uploads	업로드
+	Misc: {jobs} jobs running · {n} samples	기타: 실행 중인 작업 {jobs}개 · 샘플 {n}개
+	Log to File…	파일에 기록…
+	Stop Logging	기록 중지
+	Device Status	장치 상태
+	Core Pointer	기본 포인터
+	Pen / Tablet	펜 / 태블릿
+	Brush:	브러시:
+	Pattern:	패턴:
+	Gradient:	그레이디언트:
+	Save Device Status	장치 상태 저장
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	장치마다 도구, 색상, 브러시, 패턴, 그레이디언트를 기억하며 장치를 바꾸면 함께 바뀝니다.
+	Selection Editor	선택 영역 편집기
+	No document open.	열린 문서가 없습니다.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	클릭하면 자동 선택 도구로 그 위치의 연속된 색을 선택합니다 (Shift 추가, Alt 빼기)
+	Save to Channel	채널에 저장
+	To Path	패스로
+	Advanced options	고급 옵션
+	MyPaint Brushes	MyPaint 브러시
+	Import…	가져오기…
+	No MyPaint brushes yet. Import .myb files to list them here.	MyPaint 브러시가 아직 없습니다. .myb 파일을 가져오면 여기에 표시됩니다.
+	No brush matches the filter.	필터와 일치하는 브러시가 없습니다.
+	Handle Transform	핸들 변형
+	3D Transform	3D 변형
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	다시 맞추기
+	Apply the transform so far and put a fresh box on the result	지금까지의 변형을 적용하고 결과에 새 상자를 놓습니다
+	Camera	카메라
+	Vanishing X:	소실점 X:
+	Y:	Y:
+	Focal length:	초점 거리:
+	Local pivot	로컬 피벗
+	Unified pivot	통합 피벗
+	Close Cage	케이지 닫기
+	Reset Cage	케이지 재설정
+	Fill Plain Colour	단색으로 채우기
+	Fill the original position of the cage with the plain colour of its outline	케이지의 원래 위치를 윤곽의 단색으로 채웁니다
+	{n} points	점 {n}개
+	Click to place a handle	클릭하여 핸들 놓기
+	Rotate and Scale	회전 및 크기 조절
+	{n} handles: {what}	핸들 {n}개: {what}
+	Reset Handles	핸들 재설정
+	Remove Handles	핸들 제거
+	Commit Cage Transform (Enter)	케이지 변형 확정 (Enter)
+	Commit Handle Transform (Enter)	핸들 변형 확정 (Enter)
+	Commit 3D Transform (Enter)	3D 변형 확정 (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	케이지 변형: 변형할 부분 주위를 클릭하고 첫 점을 클릭해 케이지를 닫은 뒤 점을 드래그하세요
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	핸들 변형: 핸들을 1~4개 놓고 드래그하세요 (1개 이동, 2개 회전·크기, 3개 기울이기, 4개 원근)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 변형: 드래그로 X·Y 축 회전, Alt+드래그로 Z 축 회전; 이동과 카메라 탭으로 레이어와 카메라를 움직입니다
+	Segment {n}	세그먼트 {n}
+	Blending:	혼합:
+	Coloring:	색상 방식:
+	Midpoint:	중간점:
+	Spherical (increasing)	구형 (증가)
+	Spherical (decreasing)	구형 (감소)
+	Step	계단
+	RGB	RGB
+	HSV (counter-clockwise)	HSV (시계 반대 방향)
+	HSV (clockwise)	HSV (시계 방향)
+	Replicate	복제
+	Split the segment at its midpoint	세그먼트를 중간점에서 분할합니다
+	Replace the segment with two copies of itself	세그먼트를 자신의 복사본 2개로 바꿉니다
+	Flip the whole gradient end to end	그레이디언트 전체를 뒤집습니다
+	Save as POV-Ray…	POV-Ray로 저장…
+	Shaped Gradient (angular)	모양 그레이디언트(각도)
+	Shaped Gradient (spherical)	모양 그레이디언트(구형)
+	Shaped Gradient (dimpled)	모양 그레이디언트(오목)
+	Truncate	잘라내기
+	Sawtooth wave	톱니파
+	Triangular wave	삼각파
+	Wheel	휠
+	Force	힘
+	Aspect Ratio	종횡비
+	Fade length	페이드 길이
+	Random amount	무작위 정도
+	Save Preset	사전 설정 저장
+	Paint Dynamics Editor	페인트 다이내믹 편집기
+	Color from Gradient	그레이디언트에서 색상
+	Put this table on the current brush	이 표를 현재 브러시에 적용
+	Save the table as a named dynamics preset	이 표를 이름 있는 다이내믹 사전 설정으로 저장
+	Give the dynamics preset a name first	먼저 다이내믹 사전 설정의 이름을 입력하세요
+	Edit the dynamics table (inputs × outputs)	다이내믹 표 편집(입력 × 출력)
+	Reset Plane	평면 재설정
+	Click four corners to define a perspective plane, then clone along it	네 모서리를 클릭해 원근 평면을 정의한 뒤 그 평면을 따라 복제합니다
+	Click corner {n} of 4	모서리 {n}/4 클릭
+	Perspective plane: corner {n} of 4 set	원근 평면: 모서리 {n}/4 설정됨
+	Perspective plane set; {key}-click a source, then paint	원근 평면 설정됨. {key}-클릭으로 소스를 지정한 뒤 칠하세요
+	Copy Path as SVG	패스를 SVG로 복사
+	Export Path to SVG…	패스를 SVG로 내보내기…
+	Import Path from SVG…	SVG에서 패스 가져오기…
+	Paste Path from SVG	SVG에서 패스 붙이기
+	Copy All Paths as SVG	모든 패스를 SVG로 복사
+	Export All Paths to SVG…	모든 패스를 SVG로 내보내기…
+	Copied 1 path as SVG	패스 1개를 SVG로 복사했습니다
+	Copied {n} paths as SVG	패스 {n}개를 SVG로 복사했습니다
+	Exported paths to {path}	패스를 {path}에 내보냈습니다
+	Imported 1 path	패스 1개를 가져왔습니다
+	Imported {n} paths	패스 {n}개를 가져왔습니다
+	The clipboard holds no SVG	클립보드에 SVG가 없습니다
+	Clipboard Image Brush	클립보드 이미지 브러시
+	Paint with the image on the clipboard as the brush tip	클립보드의 이미지를 브러시 팁으로 사용해 칠합니다
+	Export Layers as Animation…	레이어를 애니메이션으로 내보내기…
+	Export as Brush (.gbr)…	브러시로 내보내기 (.gbr)…
+	Export Layers as Image Hose (.gih)…	레이어를 이미지 호스로 내보내기 (.gih)…
+	Export as Pattern (.pat)…	패턴으로 내보내기 (.pat)…
+	Animation Frame Tags…	애니메이션 프레임 태그…
+	Disposal	처리 방식
+	Replace	바꾸기
+	Incremental	순차
+	Xtilt	X 기울기
+	Ytilt	Y 기울기
+	Mng	MNG
+	Export as PostScript (.eps)…	PostScript로 내보내기 (.eps)…
+	Encapsulated	캡슐화 (EPS)
+	Encoding	인코딩
+	Ascii85	ASCII85
+	Binary	바이너리
+	Open Location…	위치 열기…
+	From Screenshot…	스크린샷에서…
+	From Web Page…	웹 페이지에서…
+	Send by Email…	이메일로 보내기…
+	Url	URL
+	Cursor	커서 포함
+	Region	영역
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	버퍼
+	Buffers	버퍼
+	Cut Named…	이름 지정 잘라내기…
+	Copy Named…	이름 지정 복사…
+	Copy Visible Named…	보이는 영역 이름 지정 복사…
+	Paste Named…	이름 지정 붙이기…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	이름 지정 버퍼가 없습니다. 편집 > 버퍼 > 이름 지정 복사…로 복사본을 여기에 보관하세요.
+	There are no named buffers; use Edit > Buffer > Copy Named first	이름 지정 버퍼가 없습니다. 먼저 편집 > 버퍼 > 이름 지정 복사를 사용하세요
+	Paste Buffer	버퍼 붙이기
+	Paste Buffer in Place	버퍼 제자리에 붙이기
+	Paste Buffer as New Image	버퍼를 새 이미지로 붙이기
+	Rename Buffer…	버퍼 이름 바꾸기…
+	Delete Buffer	버퍼 삭제
+	Paste as New	새 이미지로 붙이기
+	Paste the buffer as a new layer	버퍼를 새 레이어로 붙입니다
+	Paste the buffer as a new document	버퍼를 새 문서로 붙입니다
+	As	형식
+	In place	제자리
+	Into	선택 영역 안에
+	Modules…	모듈…
+	Units…	단위…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	로드할 수 있는 모듈이 설치되어 있지 않습니다. 필터 > 플러그인 > 플러그인 설치…로 추가합니다.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	꺼진 모듈은 설치된 채로 남지만 다시 켤 때까지 메뉴에서 사라집니다.
+	Module	모듈
+	Not installed	설치되지 않음
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	계수는 1인치가 그 단위로 몇 개인지입니다(센티미터는 2.54, 포인트는 72).
+	Identifier	식별자
+	Factor	계수
+	Digits	소수 자릿수
+	Symbol	기호
+	Abbreviation	약어
+	Singular	단수
+	Plural	복수
+	Delete Unit	단위 삭제
+	New unit	새 단위
+	Add Unit	단위 추가
+	That identifier is already a unit	그 식별자는 이미 단위입니다
+	Custom units	사용자 정의 단위
+	Disabled modules	꺼진 모듈
+	Input Devices…	입력 장치…
+	Input Controllers…	입력 컨트롤러…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	펜은 플랫폼이 보고하는 태블릿 스타일러스입니다. 사용 안 함으로 두면 마우스처럼 동작합니다.
+	Device	장치
+	Invert tilt X	기울기 X 반전
+	Invert tilt Y	기울기 Y 반전
+	Swap tilt	기울기 축 교환
+	Pressure scale	압력 배율
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	휠 이벤트는 up, down, left, right에 선택적 Shift+, Ctrl+, Alt+를 붙입니다. 키보드 이벤트는 Ctrl+Alt+Up 같은 단축키입니다. 동작은 명령 ID이며 뒤에 JSON 매개변수를 붙일 수 있습니다.
+	Keyboard	키보드
+	Controller	컨트롤러
+	Event	이벤트
+	Remove mapping	매핑 제거
+	New mapping	새 매핑
+	Add Mapping	매핑 추가
+	Disabled	사용 안 함
+	{n} entries; click one to set the foreground colour, double-click to edit it	항목 {n}개. 클릭하면 전경색으로 설정되고, 두 번 클릭하면 편집합니다
+	Entry	항목
+	Add an entry with the foreground colour	전경색으로 항목을 추가합니다
+	Delete the last entry	마지막 항목을 삭제합니다
+	Use selected	선택 항목 사용
+	Ink	잉크
+	MyPaint Brush	MyPaint 브러시
+	Nib	펜촉
+	Opaque	불투명
+	Erase with brush	브러시로 지우기
+	Import .myb…	.myb 가져오기…
+	Add a MyPaint brush file to the presets	MyPaint 브러시 파일을 사전 설정에 추가합니다
+	Imported MyPaint brush {name}	MyPaint 브러시 {name}을(를) 가져왔습니다
+	How much pressure changes the nib size	압력이 펜촉 크기를 얼마나 바꾸는지
+	How much the pen's tilt turns and stretches the nib	펜 기울기가 펜촉을 얼마나 돌리고 늘리는지
+	How much a fast stroke thins the nib	빠른 획이 펜촉을 얼마나 가늘게 하는지
+	Added to the preset's logarithmic radius	사전 설정의 로그 반경에 더해집니다
+	Operation…	연산…
+	Operation name or id	연산 이름 또는 ID
+	{n} operations	연산 {n}개
+	Choose an operation	연산을 선택하세요
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu 콘솔…
+	Load Scripts Folder…	스크립트 폴더 불러오기…
+	Python Console…	Python 콘솔…
+	Load Plug-ins Folder…	플러그인 폴더 불러오기…
+	Loaded {n} scripts	스크립트 {n}개를 불러왔습니다
+	Loaded {n} Python plug-ins	Python 플러그인 {n}개를 불러왔습니다
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3: call(command, **params), message(text), print(). 모든 엔진 명령은 call로 호출할 수 있습니다.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: 모든 엔진 명령이 프로시저입니다, (file.new "width" 640 "height" 480). 프로시저를 define하고 script-fu-register로 등록합니다.
+	Code	코드
+	Cmd+Enter runs the code	Cmd+Enter로 코드를 실행합니다
+	Clear Log	로그 지우기
+	Dodge…	닷지…
+	Burn…	번…
+	Cross-Channel Adjustment…	채널 교차 조정…
+	Slope, Offset, Power…	기울기, 오프셋, 거듭제곱…
+	Index Colors…	인덱스 색상…
+	Raindrops…	빗방울…
+	Polygon Blur…	다각형 흐림…
+	Edge Detection…	가장자리 검출…
+	Emboss (Directional)…	엠보스(방향)…
+	Phong Bump Map…	퐁 범프 맵…
+	Palettize…	팔레트 적용…
+	Height to Normal Map…	높이에서 노멀 맵…
+	Normalize Normal Map	노멀 맵 정규화
+	Maximize Channel	채널 최대화
+	Minimize Channel	채널 최소화
+	Propagate Colors…	색상 전파…
+	Reset Transparent	투명 픽셀 초기화
+	Mean Removal	평균 제거
+	Wavelet Noise Reducer…	웨이블릿 노이즈 감소…
+	Random Pick…	무작위 선택…
+	G'MIC Filter…	G'MIC 필터…
+	G'MIC executable	G'MIC 실행 파일
+	G'MIC update folder	G'MIC 업데이트 폴더
+	Add scene at playhead	재생 헤드에 장면 추가
+	Add to favourites	즐겨찾기에 추가
+	After	뒤
+	Arithmetic	산술
+	Attach audio…	오디오 첨부…
+	Before	앞
+	Blend details	혼합 상세
+	Blend mode	혼합 모드
+	Blend mode and opacity	혼합 모드와 불투명도
+	Capture now	지금 캡처
+	Clone previous keyframe here	여기에 이전 키프레임 복제
+	Comment	메모
+	Display settings	표시 설정
+	Duplicate keyframe	키프레임 복제
+	Duplicate keyframe here	여기에 키프레임 복제
+	Duration	길이
+	End	끝
+	Export timelapse…	타임랩스 내보내기…
+	Favourites	즐겨찾기
+	Frame rate	프레임 속도
+	HSX	HSX
+	Hidden	숨김
+	Key the active layer:	활성 레이어에 키 추가:
+	Misc	기타
+	Mute audio	오디오 음소거
+	Negative	네거티브
+	New keyframe	새 키프레임
+	New keyframe here	여기에 새 키프레임
+	Next tint	다음 색조
+	No animated layers: add a keyframe to the active layer to animate it.	애니메이션 레이어가 없습니다. 활성 레이어에 키프레임을 추가하면 애니메이션이 됩니다.
+	No animation curves yet.	애니메이션 곡선이 아직 없습니다.
+	No scenes yet.	장면이 아직 없습니다.
+	Opacity per frame	프레임별 불투명도
+	Previous tint	이전 색조
+	Quadratic	이차
+	Recorder	레코더
+	Remove from favourites	즐겨찾기에서 제거
+	Remove keyframe	키프레임 제거
+	Remove scene	장면 제거
+	Scale X	크기 X
+	Scale Y	크기 Y
+	Scene name	장면 이름
+	Show onion skins	어니언 스킨 표시
+	Start	시작
+	Start recording	녹화 시작
+	Stop recording	녹화 중지
+	Storyboard	스토리보드
+	Thumbnail size	썸네일 크기
+	frames	프레임
+	opacity	불투명도
+	rotation	회전
+	scaleX	크기 X
+	scaleY	크기 Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir}에 스냅샷 {count}개
+	2-Point Perspective	2점 투시
+	Assistant colour	어시스턴트 색상
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	어시스턴트 자력: 스트로크가 어시스턴트에서 얼마나 떨어져도 끌려가는지 (1000 = 항상)
+	Assistant opacity	어시스턴트 불투명도
+	Concentric Ellipse	동심 타원
+	Curvilinear Perspective	곡선 투시
+	Eraser snaps	지우개도 스냅
+	Fish-Eye Point	어안 점
+	Handles	핸들
+	Infinite Ruler	무한 눈금자
+	Limit to area	영역으로 제한
+	Minor subdivisions	보조 분할
+	Own colour	개별 색상
+	Perspective Ellipse	투시 타원
+	Previews	미리 보기
+	Show the snapped stroke's line while painting	페인팅 중 스냅된 스트로크의 선 표시
+	Show this assistant's control handles	이 어시스턴트의 컨트롤 핸들 표시
+	Spline	스플라인
+	Strokes follow the painting assistants (Ctrl+Shift+L)	스트로크가 페인팅 어시스턴트를 따릅니다 (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	추가 핸들 두 개로 어시스턴트가 그리고 스냅하는 범위를 자릅니다
+	Vertical ruler	세로 눈금자
+	Painting Assistants	페인팅 어시스턴트
+	Assistant Previews	어시스턴트 미리 보기
+	Drag fill	드래그 채우기
+	Dragging fills every region passed over	드래그하면 지나간 모든 영역을 채웁니다
+	Exclude colour	색상 제외
+	Exclude transparent	투명 제외
+	Fill mode	채우기 모드
+	No region is fully enclosed by the shape	모양이 완전히 둘러싼 영역이 없습니다
+	Only regions coloured like the first one	첫 영역과 같은 색의 영역만
+	Reference	참조
+	Similar only	유사한 색만
+	Soften the filled edge	채운 가장자리를 부드럽게
+	Spread stops at the darkest pixels (lines)	확장이 가장 어두운 픽셀(선)에서 멈춥니다
+	Spread stops at the most opaque pixels	확장이 가장 불투명한 픽셀에서 멈춥니다
+	Stop at darkest	가장 어두운 곳에서 정지
+	Stop at opaque	불투명한 곳에서 정지
+	Similar Colours	유사한 색상
+	Colour Labels	색상 레이블
+	All Regions	모든 영역
+	Specific Colour	특정 색상
+	Transparent Regions	투명 영역
+	Surrounded By	둘러싸인 색상
+	Fill with Foreground Color (Opacity)	전경색으로 채우기 (불투명도)
+	Fill with Background Color (Opacity)	배경색으로 채우기 (불투명도)
+	Fill with Pattern (Opacity)	패턴으로 채우기 (불투명도)
+	Straight Line Tool	직선 도구
+	Multibrush Tool	멀티브러시 도구
+	Dynamic Brush Tool	다이내믹 브러시 도구
+	Enclose and Fill Tool	둘러싸고 채우기 도구
+	Colorize Mask Tool	컬러라이즈 마스크 도구
+	Reference Images Tool	참조 이미지 도구
+	Alternating	교대
+	Forward	정방향
+	Shaped Gradient (follows the selection)	모양 그레이디언트 (선택 영역을 따름)
+	Clear copies	복사 지우기
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+클릭으로 복사를 배치하고, Ctrl+Alt+클릭으로 제거합니다
+	How heavily the stroke lags behind the pointer	스트로크가 포인터보다 얼마나 뒤처지는지
+	How quickly the stroke's motion dies away	스트로크의 움직임이 얼마나 빨리 잦아드는지
+	Keep one-pixel lines single width without L corners	1픽셀 선을 L자 모서리 없이 한 픽셀 두께로 유지
+	Mirror all tools	모든 도구 미러
+	Multibrush	멀티브러시
+	Pixel smoothing	픽셀 매끄럽게
+	The painting symmetry mirrors fills, gradients and retouching too	페인팅 대칭이 채우기, 그레이디언트, 리터치도 미러합니다
+	The painting symmetry mirrors this tool's output too	페인팅 대칭이 이 도구의 결과도 미러합니다
+	X interval	X 간격
+	Y interval	Y 간격
+	Mirror / Rotation	미러 / 회전
+	Translate	이동
+	Copy Translate	복사 이동
+	Cursor shape	커서 모양
+	Outline shape	외곽선 모양
+	Show outline while painting	페인팅 중 외곽선 표시
+	Effective outline size	실제 외곽선 크기
+	Tool icon	도구 아이콘
+	Arrow	화살표
+	Crosshair	십자선
+	Small dot	작은 점
+	No cursor	커서 없음
+	Triangle right	오른쪽 삼각형
+	Triangle left	왼쪽 삼각형
+	No outline	외곽선 없음
+	Instant preview	즉시 미리 보기
+	Instant preview megapixels	즉시 미리 보기 메가픽셀
+	Add…	추가…
+	Auto update	자동 업데이트
+	Canvas input profile	캔버스 입력 프로필
+	Clean up	정리
+	Clear key strokes	키 스트로크 지우기
+	Colorize Mask	컬러라이즈 마스크
+	Draw in the area below to test pressure, tilt and rotation	아래 영역에 그려 필압, 기울기, 회전을 테스트하세요
+	Edge detection	가장자리 감지
+	Edit key strokes	키 스트로크 편집
+	Embed	포함
+	Fill only inside the line art's pixels	선화 픽셀 안쪽만 채우기
+	Gap close	틈 닫기
+	Input API	입력 API
+	Keep aspect	비율 유지
+	Limit to layer	레이어로 제한
+	Mouse	마우스
+	Next Preset	다음 사전 설정
+	No samples yet	샘플이 아직 없습니다
+	Nothing to paste: the clipboard holds no image	붙일 것이 없습니다: 클립보드에 이미지가 없습니다
+	Opacity +	불투명도 +
+	Opacity -	불투명도 -
+	Pasted image	붙인 이미지
+	Peak pressure	최대 필압
+	Pen	펜
+	Previous Preset	이전 사전 설정
+	Reference Images	참조 이미지
+	Rotate Left	왼쪽으로 회전
+	Rotate Right	오른쪽으로 회전
+	Sample rate	샘플 속도
+	Screen mapping	화면 매핑
+	Show output	출력 표시
+	Show the key strokes over the canvas	캔버스 위에 키 스트로크 표시
+	Show with all tools	모든 도구에서 표시
+	Size +	크기 +
+	Size -	크기 -
+	Speed source	속도 소스
+	Store the pixels in the set; off, link to the file	픽셀을 세트에 저장; 끄면 파일에 링크
+	Tablet Settings…	태블릿 설정…
+	Tablet Tester	태블릿 테스터
+	The clipboard is not available	클립보드를 사용할 수 없습니다
+	The next key strokes keep their regions clear	다음 키 스트로크는 영역을 투명하게 둡니다
+	Tilt offset	기울기 오프셋
+	Touch Docker	터치 도커
+	Transparent key	투명 키
+	Update	업데이트
+	Canvas Input	캔버스 입력
+	Canvas Input…	캔버스 입력…
+	Pan key	이동 키
+	Zoom in key	확대 키
+	Zoom out key	축소 키
+	Rotate key	회전 키
+	Middle button	가운데 버튼
+	Stylus button	스타일러스 버튼
+	Pick modifier	색상 선택 보조키
+	Shift wheel rotates	Shift+휠로 회전
+	Tablet	태블릿
+	Trackpad	트랙패드
+	Pick	색상 선택
+	No action	동작 없음
+	No pick	색상 선택 없음
+	Scroll	스크롤
+	Rotate View (hold)	보기 회전 (누른 채)
+	Tilt offset x	기울기 오프셋 X
+	Tilt offset y	기울기 오프셋 Y
+	Tablet speed source	태블릿 속도 소스
+	Tablet api	태블릿 API
+	Tablet screen mapping	태블릿 화면 매핑
+	Pointer	포인터
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	그리드 유형
+	Isometric left angle	등각 왼쪽 각도
+	Isometric right angle	등각 오른쪽 각도
+	Isometric vertical lines	등각 세로선
+	Rectangular	직사각형
+	Isometric	등각
+	Node	노드
+	Extension	연장선
+	Intersection	교차점
+	Alt-click a bottom patch to set it to the foreground colour	아래 패치를 Alt+클릭하면 전경색으로 설정합니다
+	Apply:	적용:
+	Brushes this large preview coarsely while painting	이 크기 이상의 브러시는 칠하는 동안 거칠게 미리 봅니다
+	Click the disc to add shape points	원판을 클릭하여 도형 점을 추가합니다
+	Close Shape	도형 닫기
+	Color Space:	색 공간:
+	Common Colors	공통 색상
+	Components:	성분:
+	Continuous Mode	연속 모드
+	Current pattern	현재 패턴
+	Depth:	심도:
+	Display:	표시:
+	Dynamic Hue Ring	동적 색조 링
+	Enable Pen Settings	펜 설정 사용
+	Erase mode keeps its own opacity on this preset	지우기 모드는 이 사전 설정에서 자체 불투명도를 유지합니다
+	Erase mode keeps its own size on this preset	지우기 모드는 이 사전 설정에서 자체 크기를 유지합니다
+	Eraser Opacity	지우개 불투명도
+	Eraser Size	지우개 크기
+	Fit Panel Width	패널 너비에 맞춤
+	Gamut Mask	색역 마스크
+	Gradient Steps	그레이디언트 단계
+	Gradient ends: Alt-click to set from the foreground	그레이디언트 양끝: Alt+클릭하면 전경색으로 설정
+	Hue Steps	색조 단계
+	Instant Preview	즉시 미리 보기
+	LUT Management (OCIO)	LUT 관리 (OCIO)
+	Lightness Strength	명도 강도
+	Lock Color	색상 잠금
+	Luma:	루마:
+	Minimum Hardness	최소 경도
+	Minimum Strength	최소 강도
+	Model:	모델:
+	Off: every sensor is ignored; the curves are kept	끄면 모든 센서를 무시하고 커브는 유지합니다
+	Out of gamut	색역 밖
+	Panel colours are not shown through the display transform	패널 색상은 표시 변환을 거치지 않습니다
+	Patch Count	패치 수
+	Patch Size	패치 크기
+	Patches:	패치:
+	Pattern Scale	패턴 비율
+	Pop-up Size	팝업 크기
+	Proof to Painting Space	페인팅 공간으로 교정
+	Recent Colors	최근 색상
+	Remove Last Shape	마지막 도형 제거
+	Rotate Mask	마스크 회전
+	Saturation Steps	채도 단계
+	Selector settings	선택기 설정
+	Selector:	선택기:
+	Shade Count	음영 수
+	Shade Ring by Value	명도로 링 음영
+	Shade Selector	음영 선택기
+	Shade Size	음영 크기
+	Shade Spread	음영 범위
+	Shade Strip	음영 띠
+	Shades	음영
+	Share Curve Across Settings	모든 설정에서 커브 공유
+	Show as Fractions	소수로 표시
+	Soften Edge	가장자리 부드럽게
+	Source:	소스:
+	Style:	스타일:
+	The tip's grey levels are painted into the colour as lightness	팁의 회색 단계가 명도로 색상에 칠해집니다
+	Threshold the tip mask for crisp pixel strokes	선명한 픽셀 스트로크를 위해 팁 마스크에 임계값 적용
+	Tip as Lightness Map	팁을 명도 맵으로
+	Update:	업데이트:
+	Value Steps	명도 단계
+	Value on the Ring	링에 명도 표시
+	Zoom Pop-up	확대 팝업
+	Length over which the value goes from 0 to 1	값이 0에서 1로 변하는 길이
+	Start over past the length instead of holding the end value	길이를 넘으면 끝 값을 유지하지 않고 처음부터 반복
+	Pressure In	압력 (상승만)
+	X-Tilt	X 기울기
+	Y-Tilt	Y 기울기
+	Tilt Direction	기울기 방향
+	Tilt Elevation	기울기 고도
+	Time	시간
+	Fuzzy Stroke	스트로크 랜덤
+	Tip Scale:	팁 배율:
+	Initial size as a share of the bitmap's size	비트맵 크기에 대한 초기 크기 비율
+	Tip Rotation:	팁 회전:
+	Initial rotation of the tip	팁의 초기 회전
+	No anti-aliasing: the dab's pixels are fully on or off	앤티앨리어싱 없음: 점의 픽셀은 완전히 켜지거나 꺼짐
+	Align Outline to Pixel Grid	윤곽선을 픽셀 격자에 맞춤
+	The brush outline snaps to the pixels the dab fills	브러시 윤곽선이 점이 채우는 픽셀에 맞춰집니다
+	Tip Mode:	팁 모드:
+	(no colour bitmap: paints the brush colour)	(컬러 비트맵 없음: 브러시 색으로 칠함)
+	Neutral Point	중립점
+	Canvas Only: hide the panels around the canvas	캔버스만: 캔버스 주변 패널 숨기기
+	Presets kept in the history	기록에 남길 사전 설정 수
+	Clear the history	기록 지우기
+	No presets used yet	아직 사용한 사전 설정이 없습니다
+	Forget this preset	이 사전 설정 잊기
+	Ten Brushes	열 개 브러시
+	Assign presets to ten slots; activating a slot again returns to the previous preset	열 개 슬롯에 사전 설정을 지정합니다. 같은 슬롯을 다시 활성화하면 이전 사전 설정으로 돌아갑니다
+	Clear this slot	이 슬롯 비우기
+	Assign current	현재 항목 지정
+	Browse a folder of reference images	참고 이미지 폴더 찾기
+	No folder	폴더 없음
+	Next image	다음 이미지
+	Previous image	이전 이미지
+	Pick an image to show it here	여기에 표시할 이미지를 선택하세요
+	Search actions and commands	액션과 명령 검색
+	No matching action	일치하는 액션 없음
+	Search Actions…	액션 검색…
+	Brush History	브러시 기록
+	Color Image	컬러 이미지
+	Lightness Map	명도 맵
+	Static	고정
+	Move to Top	맨 위로 이동
+	Bubble Up	한 칸 위로
+	Clear the scratch pad to white	스크래치 패드를 흰색으로 지우기
+	Fill the scratch pad with the background colour	스크래치 패드를 배경색으로 채우기
+	Fill the scratch pad with the current gradient	스크래치 패드를 현재 그레이디언트로 채우기
+	Fill the scratch pad with the current image	스크래치 패드를 현재 이미지로 채우기
+	Fill the scratch pad with the preset's icon	스크래치 패드를 사전 설정 아이콘으로 채우기
+	Reload the stored preset, discarding the tweaks	저장된 사전 설정을 다시 불러오고 조정을 버리기
+	BG	배경
+	Icon	아이콘
+	Thumbnail:	썸네일:
+	Stroke preview	스트로크 미리보기
+	Scratch pad	스크래치 패드
+	Icon library	아이콘 라이브러리
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	로컬 선택 영역 활성화
+	Add Curve Key	곡선 키 추가
+	Add Filter…	필터 추가…
+	Add Local Selection	로컬 선택 영역 추가
+	Add Scene	장면 추가
+	Add Transform Key	변형 키 추가
+	Alpha into Mask	알파를 마스크로
+	Attach Audio…	오디오 첨부…
+	Backup count	백업 개수
+	Capture Snapshot	스냅숏 캡처
+	Change Clone Source…	복제 원본 변경…
+	Clone Keyframe	키프레임 클론
+	Clone Layer	레이어 클론
+	Clones Array…	클론 배열…
+	Colorize Mask Properties…	색상화 마스크 속성…
+	Convert	변환
+	Convert Group to Animated Layer	그룹을 애니메이션 레이어로 변환
+	Convert to Paint Layer	페인트 레이어로 변환
+	Copy Keyframe	키프레임 복사
+	Duplicate Keyframe	키프레임 복제
+	Edit Generated Fill…	생성된 채우기 편집…
+	Edit Transform Mask…	변형 마스크 편집…
+	Export Storyboard…	스토리보드 내보내기…
+	Export Timelapse…	타임랩스 내보내기…
+	File Layer Properties…	파일 레이어 속성…
+	File Layer…	파일 레이어…
+	Filter Layer…	필터 레이어…
+	Filter Mask…	필터 마스크…
+	Frame rate limit	프레임 속도 제한
+	Freeze Live Layer	라이브 레이어 고정
+	High quality	고품질
+	Import Animation Frames…	애니메이션 프레임 가져오기…
+	Import Image as…	이미지를 다음으로 가져오기…
+	Import Video Animation…	비디오 애니메이션 가져오기…
+	Input controllers	입력 컨트롤러
+	Input devices	입력 장치
+	Invisible	숨김
+	Layer Color Space…	레이어 색 공간…
+	Layers by State	상태별 레이어
+	Local Selection	로컬 선택 영역
+	Locked	잠김
+	Move Clone…	클론 이동…
+	Move Keyframe	키프레임 이동
+	Multigrid…	다중 격자…
+	Mute Audio	오디오 음소거
+	New Keyframe	새 키프레임
+	Onion Skin…	어니언 스킨…
+	Pixel grid threshold	픽셀 격자 임계값
+	Reload File Layer	파일 레이어 다시 불러오기
+	Remove Audio	오디오 제거
+	Remove Curve Key	곡선 키 제거
+	Remove Filter	필터 제거
+	Remove Keyframe	키프레임 제거
+	Remove Local Selection	로컬 선택 영역 제거
+	Remove Transform Key	변형 키 제거
+	Remove Transform Mask	변형 마스크 제거
+	Render Animation…	애니메이션 렌더링…
+	Save Merged…	병합하여 저장…
+	Scaling filter	크기 조절 필터
+	Screentone…	스크린톤…
+	Script…	스크립트…
+	Set Filter…	필터 설정…
+	Show Output	출력 표시
+	Split Alpha	알파 분리
+	Start Recording	녹화 시작
+	Stop Recording	녹화 중지
+	Swap directory	스왑 디렉터리
+	Ten scripts	열 개의 스크립트
+	Threads	스레드
+	Transform Mask…	변형 마스크…
+	Unlocked	잠김 해제
+	Update Local Selection	로컬 선택 영역 업데이트
+	Write as Alpha	알파로 쓰기
+	to File Layer…	파일 레이어로…
+	to Filter Mask…	필터 마스크로…
+	to Paint Layer	페인트 레이어로
+	to Selection Mask	선택 영역 마스크로
+	to Transparency Mask	투명도 마스크로
+
+# v0.11 parity: generated filter option labels (GIMP / Krita filter parameters and choices)
+	Active Layer	활성 레이어
+	All Directions	모든 방향
+	Alpha Index	알파 인덱스
+	Alpha Levels	알파 레벨
+	Alpha Mode	알파 모드
+	Alpha Steps	알파 단계
+	Alpha Threshold	알파 임계값
+	Beta	베타
+	Between Ramps	램프 사이
+	Blue Channel	파랑 채널
+	Blue Levels	파랑 레벨
+	Blue Phase	파랑 위상
+	Chromatic	색채
+	Clip High	상한 자르기
+	Clip Low	하한 자르기
+	Color Space Model	색 공간 모델
+	Component	구성 요소
+	Create Histogram	히스토그램 만들기
+	Destination Clockwise	대상 시계 방향
+	Destination From	대상 시작
+	Destination To	대상 끝
+	Dither Amount	디더 양
+	Driven	피동
+	Driver	구동
+	Drop Size	물방울 크기
+	Dynamic	동적
+	Enhance Shadows	어두운 영역 강화
+	Executable	실행 파일
+	Fish Eye	어안
+	Gray Hue	회색 색조
+	Gray Mode	회색 모드
+	Gray Saturation	회색 채도
+	Gray Threshold	회색 임계값
+	Green Channel	녹색 채널
+	Green Levels	녹색 레벨
+	Green Phase	녹색 위상
+	Height Channel	높이 채널
+	High Limit	상한
+	Hold Intensity	강도 유지
+	Horizontal Radius	가로 반경
+	In Between	중간
+	In High	입력 최대
+	In Low	입력 최소
+	Input	입력
+	Keep Blue	파랑 유지
+	Keep Green	녹색 유지
+	Keep Red	빨강 유지
+	Laplacian	라플라시안
+	Light1 Azimuth	조명 1 방위각
+	Light1 Color	조명 1 색상
+	Light1 Enabled	조명 1 사용
+	Light1 Inclination	조명 1 경사
+	Light2 Azimuth	조명 2 방위각
+	Light2 Color	조명 2 색상
+	Light2 Enabled	조명 2 사용
+	Light2 Inclination	조명 2 경사
+	Light3 Azimuth	조명 3 방위각
+	Light3 Color	조명 3 색상
+	Light3 Enabled	조명 3 사용
+	Light3 Inclination	조명 3 경사
+	Light4 Azimuth	조명 4 방위각
+	Light4 Color	조명 4 색상
+	Light4 Enabled	조명 4 사용
+	Light4 Inclination	조명 4 경사
+	Low Limit	하한
+	Luma Weight	루마 가중치
+	Nearest Colors	가장 가까운 색상
+	Offset Blue	파랑 오프셋
+	Offset Green	녹색 오프셋
+	Offset Red	빨강 오프셋
+	Ordered	정렬
+	Original Intensity	원본 강도
+	Out High	출력 최대
+	Out Low	출력 최소
+	Palette	팔레트
+	Per Channel Offset	채널별 오프셋
+	Power Blue	파랑 거듭제곱
+	Power Green	녹색 거듭제곱
+	Power Red	빨강 거듭제곱
+	Pythagorean	피타고라스
+	Quadrilateral	사각형
+	Radians	라디안
+	Red Channel	빨강 채널
+	Red Levels	빨강 레벨
+	Red Phase	빨강 위상
+	Samples	샘플
+	Scale Division	눈금 분할
+	Search Depth	검색 깊이
+	Shininess	광택
+	Slope Blue	파랑 기울기
+	Slope Green	녹색 기울기
+	Slope Red	빨강 기울기
+	Smooth Samples	부드러운 샘플
+	Source Clockwise	원본 시계 방향
+	Source From	원본 시작
+	Source To	원본 끝
+	Unchanged	변경 없음
+	Use Gradient	그레이디언트 사용
+	Use Normal Map	노멀 맵 사용
+	Variable Depth	가변 깊이
+	Vertical Radius	세로 반경
+	Window Size	창 크기
+	Write To Alpha	알파에 쓰기
+	X Only	X만
+	Y Only	Y만

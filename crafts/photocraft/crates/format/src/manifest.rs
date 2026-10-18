@@ -248,6 +248,12 @@ pub struct LayerM {
     pub advanced: redrob_photo_doc::AdvancedBlending,
     #[serde(default)]
     pub video: Option<VideoDataM>,
+    /// Composite mode / blend space / composite space / legacy; omitted at the defaults.
+    #[serde(default, skip_serializing_if = "redrob_photo_doc::LayerComposite::is_default")]
+    pub composite: redrob_photo_doc::LayerComposite,
+    /// The layer's own boundary (None = unbounded).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boundary: Option<redrob_photo_geom::Rect>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

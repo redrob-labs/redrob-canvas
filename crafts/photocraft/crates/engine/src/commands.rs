@@ -1074,6 +1074,8 @@ fn build() -> Vec<CommandSpec> {
                     let [r, g, b, _] = s.tools.background;
                     s.tools.remember_cmyk([r, g, b], k);
                 }
+                // Enforce Palette Colours: the colours snap to the nearest swatch.
+                crate::color_management_cmds::enforce_palette(s);
                 Ok(Value::Null)
             }
         ),
@@ -1321,8 +1323,12 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::filters::specs());
     v.extend(crate::filters_ext::specs());
     v.extend(crate::filters_extra::specs());
+    v.extend(crate::filters_more::specs());
+    v.extend(crate::filters_paint::specs());
+    v.extend(crate::imagemap_cmds::specs());
     v.extend(crate::filters_gen::specs());
     v.extend(crate::color_to_alpha_cmds::specs());
+    v.extend(crate::color_tools_cmds::specs());
     v.extend(crate::gallery_cmds::specs());
     v.extend(crate::gradient_fill_cmds::specs());
     v.extend(crate::solid_fill_cmds::specs());
@@ -1339,11 +1345,15 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::assistant_cmds::specs());
     v.extend(crate::edit_cmds::specs());
     v.extend(crate::color_cmds::specs());
+    v.extend(crate::color_management_cmds::specs());
+    v.extend(crate::ocio::specs());
     v.extend(crate::brush_cmds::specs());
+    v.extend(crate::brush_engine_cmds::specs());
     v.extend(crate::brush_preset_cmds::specs());
     v.extend(crate::eraser_cmds::specs());
     v.extend(crate::preset_import_cmds::specs());
     v.extend(crate::dynamics_cmds::specs());
+    v.extend(crate::brush_mode_cmds::specs());
     v.extend(crate::atn_cmds::specs());
     v.extend(crate::actions_edit_cmds::specs());
     v.extend(crate::swatch_cmds::specs());
@@ -1354,6 +1364,11 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::selection_cmds::specs());
     v.extend(crate::magnetic_cmds::specs());
     v.extend(crate::select_extra_cmds::specs());
+    v.extend(crate::select_refine_cmds::specs());
+    v.extend(crate::layer_boundary_cmds::specs());
+    v.extend(crate::resource_tags_cmds::specs());
+    v.extend(crate::mypaint_cmds::specs());
+    v.extend(crate::metadata_cmds::specs());
     v.extend(crate::paint_cmds::specs());
     v.extend(crate::extra_cmds::specs());
     v.extend(crate::background_cmds::specs());
@@ -1369,6 +1384,8 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::prefs::specs());
     v.extend(crate::edit_menu_cmds::specs());
     v.extend(crate::fill_key_cmds::specs());
+    v.extend(crate::fill_opacity_cmds::specs());
+    v.extend(crate::colorize_cmds::specs());
     v.extend(crate::sample_cmds::specs());
     v.extend(crate::sampler_cmds::specs());
     v.extend(crate::brush_key_cmds::specs());
@@ -1393,6 +1410,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::history_cmds::specs());
     v.extend(crate::history_select_cmds::specs());
     v.extend(crate::proof_sim::specs());
+    v.extend(crate::display_filters::specs());
     v.extend(crate::presets::specs());
     v.extend(crate::document_preset_cmds::specs());
     v.extend(crate::export_preset_cmds::specs());
@@ -1420,6 +1438,28 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::mask_view_cmds::specs());
     v.extend(crate::layer_mask_props_cmds::specs());
     v.extend(crate::actions_cmds::specs());
+    // v0.11 parity round (A4).
+    v.extend(crate::dynamics_extra_cmds::specs());
+    v.extend(crate::perspective_clone_cmds::specs());
+    v.extend(crate::path_svg_cmds::specs());
+    v.extend(crate::resource_export_cmds::specs());
+    v.extend(crate::create_cmds::specs());
+    v.extend(crate::buffers_cmds::specs());
+    v.extend(crate::modules_cmds::specs());
+    v.extend(crate::input_cmds::specs());
+    v.extend(crate::ink_cmds::specs());
+    v.extend(crate::mypaint_engine_cmds::specs());
+    v.extend(crate::script_cmds::specs());
+    v.extend(crate::python_cmds::specs());
+    v.extend(crate::live_layers::specs());
+    v.extend(crate::anim_cmds::specs());
+    v.extend(crate::layer_kind_cmds::specs());
+    v.extend(crate::gen_fill_cmds::specs());
+    v.extend(crate::colorize_tool_cmds::specs());
+    v.extend(crate::brush_extras_cmds::specs());
+    v.extend(crate::resource_cmds::specs());
+    v.extend(crate::workflow_cmds::specs());
+    v.extend(crate::seexpr::specs());
     // The dispatch guard's unit test needs a command that panics on purpose (REL-3).
     #[cfg(test)]
     v.push(test_panic_command());

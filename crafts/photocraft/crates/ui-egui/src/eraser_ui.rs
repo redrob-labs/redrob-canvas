@@ -30,7 +30,7 @@ pub fn click(app: &mut PhotocraftApp, tool: Tool, x: f64, y: f64) -> bool {
         "sampleAllLayers": o.sample_all_layers,
         "opacity": o.magic_eraser_opacity,
     });
-    let r = app.run("paint.magicEraser", p);
+    let r = crate::mirror_tools_ui::run_mirrored(app, "paint.magicEraser", p);
     report(app, r);
     true
 }
@@ -92,6 +92,9 @@ pub fn wand_options(ui: &mut egui::Ui, o: &mut crate::state::ToolOptions) {
         ("saturation".to_string(), tl!("Saturation")),
         ("value".to_string(), tl!("Value")),
         ("alpha".to_string(), tl!("Alpha")),
+        ("lchLightness".to_string(), tl!("LCh Lightness")),
+        ("lchChroma".to_string(), tl!("LCh Chroma")),
+        ("lchHue".to_string(), tl!("LCh Hue")),
     ];
     widgets::dropdown(ui, "wand-criterion", &mut o.wand_criterion, &choices, 104.0);
 }

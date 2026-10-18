@@ -120,6 +120,50 @@ fn pen_pressure(ui: &Ui, pressed: bool) -> f32 {
     p
 }
 
+/// The stylus pressure for the active tool after its Input Devices pressure curve (a gamma; the
+/// Pen / Stylus mode `disabled` reads as full pressure, a mouse's).
+fn shaped_pressure(app: &VectorcraftApp, p: f32) -> f32 {
+    let prefs = &app.session.prefs;
+    if prefs.pen_mode == "disabled" {
+        return 1.0;
+    }
+    let gamma = match app.session.tool_id() {
+        "paintbrush" => prefs.pressure_curve_brush,
+        "pencil" => prefs.pressure_curve_pencil,
+        t if redrob_vector_tools::settings::LIQUIFY.contains(&t) => prefs.pressure_curve_liquify,
+        _ => 1.0,
+    };
+    let g = if gamma.is_finite() && gamma > 0.0 { gamma } else { 1.0 };
+    p.clamp(0.0, 1.0).powf(g as f32)
+}
+
+/// Input Devices: is this frame's pointer input from a class whose mode is `disabled`? Touch and
+/// pen input arrive as touch events (a pen with its force); the mouse is what is left.
+fn device_disabled(app: &VectorcraftApp, ui: &Ui) -> bool {
+    let prefs = &app.session.prefs;
+    if prefs.mouse_mode != "disabled" && prefs.pen_mode != "disabled" && prefs.touch_mode != "disabled" {
+        return false;
+    }
+    let (touch, pen) = ui.input(|i| {
+        let mut touch = false;
+        let mut pen = false;
+        for e in &i.events {
+            if let egui::Event::Touch { force, .. } = e {
+                touch = true;
+                pen |= force.is_some();
+            }
+        }
+        (touch, pen)
+    });
+    if pen {
+        prefs.pen_mode == "disabled"
+    } else if touch {
+        prefs.touch_mode == "disabled"
+    } else {
+        prefs.mouse_mode == "disabled"
+    }
+}
+
 pub fn mods(m: egui::Modifiers, space: bool) -> Mods {
     Mods { shift: m.shift, alt: m.alt, cmd: m.command, ctrl: m.ctrl, space }
 }
@@ -232,7 +276,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let grid_look = app.ui.view.grid.then(|| LineLook::grid(&app.session.prefs));
     let grids_in_back = app.session.prefs.grids_in_back;
     if let Some(look) = grid_look.filter(|_| grids_in_back) {
-        grid(&painter, &xf, &doc.grid, look);
+        grids(&painter, &xf, &doc, look);
     }
 
     // Artwork raster.
@@ -258,6 +302,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         h,
         outline: app.ui.view.outline,
         trim: app.ui.view.trim_view,
+        hairlines: app.ui.view.visible_hairlines,
         ppp,
         hidden: vec![],
         rot: v.rotation,
@@ -308,6 +353,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             proof: redrob_vector_render::proof::active_proof(),
             overprint_preview: redrob_vector_render::proof::overprint_preview_on(),
             trim: app.ui.view.trim_view,
+            visible_hairlines: key.hairlines,
             tile_edge: redrob_vector_color::Color::from_hex(&app.session.prefs.pattern_tile_edge_color).map_or(opts.tile_edge, |c| {
                 let [r, g, b, _] = c.to_rgba8(1.0);
                 [r, g, b]
@@ -381,8 +427,13 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             }
         }
     }
+    // View › Split View and X-ray: the same frame in outline, to the right of a draggable divider
+    // and in a disc around the pointer.
+    if (app.ui.view.split_view || app.ui.view.xray) && pixel.is_none() {
+        split_and_xray(app, ui, &painter, rect, &doc, &key, w, h, &v, ppp);
+    }
     if let Some(look) = grid_look.filter(|_| !grids_in_back) {
-        grid(&painter, &xf, &doc.grid, look);
+        grids(&painter, &xf, &doc, look);
     }
     // The pixel grid (Guides & Grid › Show Pixel Grid (Above 600% Zoom)): in Pixel Preview from
     // 600% zoom, a line at every document pixel over the art, so the pixels it rasterizes to show.
@@ -456,6 +507,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.ui.view.edges && !revolve_edit {
         hover_highlight(app, &painter, &xf);
         selection_overlay(app, &painter, &xf, overlays.iter().any(|o| matches!(o, Overlay::CurvePoint { .. })));
+        if app.ui.view.align_handles {
+            align_handles(app, ui, &painter, &xf);
+        }
         if app.ui.view.text_threads {
             thread_overlay(app, &painter, &xf);
         }
@@ -576,6 +630,10 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
     if turn.glide != 0.0 {
         ui.ctx().request_repaint();
     }
+    // Input Devices: a disabled pointer class does nothing on the canvas.
+    if device_disabled(app, ui) {
+        return;
+    }
     let v = *app.view().unwrap_or(&View::default());
     let xf = Xf::new(rect, &v);
     let hover = pointer.hover_pos().filter(|p| rect.contains(*p));
@@ -596,9 +654,37 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
         prev.is_some_and(|prev| prev != m)
     });
 
+    // Cmd+Shift+wheel turns the view (a line of wheel: 1°; Lock Rotate View keeps it): those
+    // events neither zoom nor scroll.
+    let turn_deg: Option<f64> = ui.input(|i| {
+        let mut any = false;
+        let mut deg = 0.0f64;
+        for e in &i.events {
+            if let egui::Event::MouseWheel { unit, delta, modifiers, .. } = e
+                && modifiers.command
+                && modifiers.shift
+            {
+                any = true;
+                let d = f64::from(delta.x + delta.y);
+                deg += match unit {
+                    egui::MouseWheelUnit::Point => d / f64::from(line.max(1.0)),
+                    egui::MouseWheelUnit::Line => d,
+                    egui::MouseWheelUnit::Page => d * 10.0,
+                };
+            }
+        }
+        any.then_some(deg)
+    });
+    if let Some(deg) = turn_deg
+        && resp.hovered()
+        && !app.ui.view.rotation_lock
+        && let Some(vm) = app.view_mut()
+    {
+        vm.rotation = redrob_vector_geom::normalize_deg(vm.rotation - deg);
+    }
     // Zoom around the pointer, and scroll ([`wheel`]): fingers pinching on a touch screen may also
     // slide.
-    if resp.hovered() {
+    if resp.hovered() && turn_deg.is_none() {
         if (factor - 1.0).abs() > 1e-6
             && let (Some(p), Some(vm)) = (hover, app.view_mut())
         {
@@ -636,7 +722,12 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
             Drag::RotateView { start_angle: (p.y - c.y).atan2(p.x - c.x) as f64, start_rot: v.rotation }
         } else {
             // Cmd with another tool drags with the selection tool used last (the session lends it).
-            let ev = PointerEvent { kind: PointerKind::Down, pos: xf.to_doc(p), mods: mods(m, space), pressure: pen_pressure(ui, true) };
+            let ev = PointerEvent {
+                kind: PointerKind::Down,
+                pos: xf.to_doc(p),
+                mods: mods(m, space),
+                pressure: shaped_pressure(app, pen_pressure(ui, true)),
+            };
             dispatch(app, &ev, view);
             Drag::Tool
         };
@@ -671,7 +762,10 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
                     if m.shift {
                         deg = (deg / 15.0).round() * 15.0;
                     }
-                    if let Some(vm) = app.view_mut() {
+                    // Lock Rotate View: the drag leaves the view where it is.
+                    if !app.ui.view.rotation_lock
+                        && let Some(vm) = app.view_mut()
+                    {
                         vm.rotation = redrob_vector_geom::normalize_deg(deg);
                     }
                 }
@@ -700,7 +794,12 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
                 }
                 Drag::Tool => {
                     if pointer.delta() != egui::Vec2::ZERO {
-                        let ev = PointerEvent { kind: PointerKind::Drag, pos: xf.to_doc(p), mods: mods(m, space), pressure: pen_pressure(ui, false) };
+                        let ev = PointerEvent {
+                            kind: PointerKind::Drag,
+                            pos: xf.to_doc(p),
+                            mods: mods(m, space),
+                            pressure: shaped_pressure(app, pen_pressure(ui, false)),
+                        };
                         dispatch(app, &ev, view);
                     }
                     // Time held (Twirl, Pucker and Bloat keep applying); a stalled frame counts
@@ -739,7 +838,12 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
                 }
                 Drag::ZoomScrub { .. } => {}
                 Drag::Tool => {
-                    let ev = PointerEvent { kind: PointerKind::Up, pos: xf.to_doc(p), mods: mods(m, space), pressure: pen_pressure(ui, false) };
+                    let ev = PointerEvent {
+                        kind: PointerKind::Up,
+                        pos: xf.to_doc(p),
+                        mods: mods(m, space),
+                        pressure: shaped_pressure(app, pen_pressure(ui, false)),
+                    };
                     dispatch(app, &ev, view);
                 }
                 Drag::Art | Drag::Gesture => {}
@@ -886,7 +990,7 @@ fn wheel(i: &egui::InputState, wheel_zooms: bool, line: f32, page: f32, turn: &m
 /// finger drops the press the first one began (its tool interaction rolled back; the rest of the
 /// gesture presses nothing), and a tap of two fingers undoes, one of three redoes.
 fn touch_gestures(app: &mut VectorcraftApp, ui: &Ui, rect: egui::Rect, view: redrob_vector_engine::ViewInfo) {
-    if !app.session.prefs.touch_gestures {
+    if !app.session.prefs.touch_gestures || app.session.prefs.touch_mode == "disabled" {
         return;
     }
     let (touches, now): (Vec<_>, f64) = ui.input(|i| {
@@ -1025,6 +1129,32 @@ fn textured_quad(p: &egui::Painter, tex: egui::TextureId, quad: &[Pos2], (u, v):
     p.add(Shape::mesh(mesh));
 }
 
+/// A view whose document coordinates are taken relative to a grid's origin, so gridlines computed
+/// from (0, 0) land where the grid starts.
+struct OriginXf<'a> {
+    xf: &'a Xf,
+    origin: redrob_vector_geom::Vec2,
+}
+
+impl OriginXf<'_> {
+    fn to_doc(&self, p: Pos2) -> Point {
+        self.xf.to_doc(p) - self.origin
+    }
+    fn to_screen(&self, p: Point) -> Pos2 {
+        self.xf.to_screen(p + self.origin)
+    }
+    fn quad(&self, r: Rect) -> Vec<Pos2> {
+        self.xf.quad(r + self.origin)
+    }
+}
+
+impl std::ops::Deref for OriginXf<'_> {
+    type Target = Xf;
+    fn deref(&self) -> &Xf {
+        self.xf
+    }
+}
+
 /// The zoom the pixel grid shows from in Pixel Preview (600%), and its colour: a translucent grey,
 /// so the art's pixels read through it.
 const PIXEL_GRID_ZOOM: f64 = 6.0;
@@ -1065,11 +1195,21 @@ fn pref_color(hex: &str, fallback: Color32) -> Color32 {
 /// (left out when they would crowd). In the Dots style, a dot where gridlines cross the
 /// subdivisions instead. An axonometric grid draws the vertical lines and two angled families;
 /// a modular grid draws blocks with gaps between them (Preferences › Guides & Grid › Grid Kind).
+/// Every visible grid of the document, each in its own colour when it has one.
+fn grids(p: &egui::Painter, xf: &Xf, doc: &redrob_vector_doc::Document, look: LineLook) {
+    for g in doc.grids().filter(|g| g.visible) {
+        let color = g.color.as_deref().and_then(redrob_vector_color::Color::from_hex).map_or(look.color, |c| crate::panels::c32(&c));
+        grid(p, xf, g, LineLook { color, ..look });
+    }
+}
+
 fn grid(p: &egui::Painter, xf: &Xf, g: &redrob_vector_doc::GridPrefs, look: LineLook) {
     let (spacing, subdiv) = (g.spacing, g.subdivisions);
     let r = xf.rect;
-    // The view in document space: the box round the canvas's corners (the view may be rotated;
-    // the painter clips to the canvas).
+    // The grid's lines start at its origin: the view is taken relative to it and the lines put
+    // back (the view may be rotated; the painter clips to the canvas).
+    let origin = g.origin.to_vec2();
+    let xf = &OriginXf { xf, origin };
     let corners = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom()].map(|c| xf.to_doc(c));
     let view = corners.iter().fold(Rect::from_points(corners[0], corners[0]), |b, c| b.union_pt(*c));
     let sub = spacing / subdiv.max(1) as f64;
@@ -1813,13 +1953,126 @@ fn print_tiling_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf) {
 /// The print tiling's lines: a neutral grey that reads on the paper and on the pasteboard.
 const PRINT_TILING: Color32 = Color32::from_gray(96);
 
+/// On-canvas alignment handles (the Selection tool's toggle): six buttons just outside the
+/// selection's bounds, three above it (left, centre, right) and three beside it (top, middle,
+/// bottom). A click aligns the selected objects to that edge or centre of their bounds
+/// (`object.align`); Shift-click moves the key object (else the last selected) to the edge of the
+/// others instead.
+fn align_handles(app: &mut VectorcraftApp, ui: &mut Ui, p: &egui::Painter, xf: &Xf) {
+    const SIZE: f32 = 14.0;
+    const GAP: f32 = 10.0;
+    if app.session.tool_id() != "selection" || app.session.tool_transforming() {
+        return;
+    }
+    let Some(ids) =
+        app.session.active().filter(|st| st.selection.objects.len() >= 2 && st.selection.anchors.is_empty()).map(|st| st.selection.objects.clone())
+    else {
+        return;
+    };
+    let Some(b) = app.selection_bounds() else { return };
+    let t = Tokens::get(ui.ctx());
+    let corners = [Point::new(b.x0, b.y0), Point::new(b.x1, b.y0), Point::new(b.x1, b.y1), Point::new(b.x0, b.y1)].map(|q| xf.to_screen(q));
+    let sr = egui::Rect::from_points(&corners);
+    // (centre, horizontal, vertical) of each button.
+    let buttons: [(Pos2, Option<&str>, Option<&str>); 6] = [
+        (pos2(sr.left(), sr.top() - GAP), Some("left"), None),
+        (pos2(sr.center().x, sr.top() - GAP), Some("center"), None),
+        (pos2(sr.right(), sr.top() - GAP), Some("right"), None),
+        (pos2(sr.left() - GAP, sr.top()), None, Some("top")),
+        (pos2(sr.left() - GAP, sr.center().y), None, Some("center")),
+        (pos2(sr.left() - GAP, sr.bottom()), None, Some("bottom")),
+    ];
+    let mut clicked: Option<(Option<&str>, Option<&str>, bool)> = None;
+    for (i, (c, h, v)) in buttons.iter().enumerate() {
+        let r = egui::Rect::from_center_size(*c, vec2(SIZE, SIZE));
+        let resp = ui.interact(r, ui.id().with(("align-handle", i)), Sense::click());
+        let fill = if resp.hovered() { t.accent } else { t.panel };
+        p.rect_filled(r, 2.0, fill);
+        p.rect_stroke(r, 2.0, Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
+        // The glyph: a bar at the edge the button aligns to, two shorter bars beside it.
+        let ink = if resp.hovered() { t.panel } else { t.text };
+        let bar = |a: Pos2, b: Pos2| p.line_segment([a, b], Stroke::new(1.5, ink));
+        match (h, v) {
+            (Some(h), _) => {
+                let x = match *h {
+                    "left" => r.left() + 3.0,
+                    "right" => r.right() - 3.0,
+                    _ => r.center().x,
+                };
+                bar(pos2(x, r.top() + 2.0), pos2(x, r.bottom() - 2.0));
+                bar(pos2(r.center().x - 3.0, r.center().y - 2.0), pos2(r.center().x + 3.0, r.center().y - 2.0));
+                bar(pos2(r.center().x - 2.0, r.center().y + 2.0), pos2(r.center().x + 2.0, r.center().y + 2.0));
+            }
+            (_, Some(v)) => {
+                let y = match *v {
+                    "top" => r.top() + 3.0,
+                    "bottom" => r.bottom() - 3.0,
+                    _ => r.center().y,
+                };
+                bar(pos2(r.left() + 2.0, y), pos2(r.right() - 2.0, y));
+                bar(pos2(r.center().x - 2.0, r.center().y - 3.0), pos2(r.center().x - 2.0, r.center().y + 3.0));
+                bar(pos2(r.center().x + 2.0, r.center().y - 2.0), pos2(r.center().x + 2.0, r.center().y + 2.0));
+            }
+            _ => {}
+        }
+        if resp.clicked() {
+            clicked = Some((*h, *v, ui.input(|i| i.modifiers.shift)));
+        }
+        resp.on_hover_text(tl!("Align (Shift: move the key object)"));
+    }
+    let Some((h, v, shift)) = clicked else { return };
+    if !shift {
+        let mut params = json!({ "to": "selection" });
+        if let Some(h) = h {
+            params["horizontal"] = json!(h);
+        }
+        if let Some(v) = v {
+            params["vertical"] = json!(v);
+        }
+        if let Err(e) = app.run("object.align", params) {
+            app.ui.status = e;
+        }
+        return;
+    }
+    // Shift: the key object (else the last selected) moves to the others' edge or centre.
+    let Some(st) = app.session.active() else { return };
+    let key = st.selection.key.filter(|k| ids.contains(k)).or_else(|| ids.last().copied());
+    let Some(key) = key else { return };
+    let others: Vec<redrob_vector_doc::NodeId> = ids.iter().copied().filter(|id| *id != key).collect();
+    let (Some(kb), Some(ob)) = (st.doc.bounds_of(&[key], true), st.doc.bounds_of(&others, true)) else { return };
+    let dx = match h {
+        Some("left") => ob.x0 - kb.x0,
+        Some("right") => ob.x1 - kb.x1,
+        Some(_) => ob.center().x - kb.center().x,
+        None => 0.0,
+    };
+    let dy = match v {
+        Some("top") => ob.y0 - kb.y0,
+        Some("bottom") => ob.y1 - kb.y1,
+        Some(_) => ob.center().y - kb.center().y,
+        None => 0.0,
+    };
+    if dx.abs() < 1e-9 && dy.abs() < 1e-9 {
+        return;
+    }
+    let before: Vec<u64> = ids.iter().map(|i| i.0).collect();
+    let r = app
+        .run("select.set", json!({ "ids": [key.0] }))
+        .and_then(|_| app.run("object.move", json!({ "dx": dx, "dy": dy })))
+        .and_then(|_| app.run("select.set", json!({ "ids": before })));
+    if let Err(e) = r {
+        app.ui.status = e;
+    }
+}
+
 fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve_points_from_tool: bool) {
     // The Selection tool's bounding box (rotated with the objects after a rotation). It hides while
     // a drag moves or resizes the selection, so only the art is seen going with the pointer (#712).
-    let show_box = app.session.tool_id() == "selection"
+    let direct_tool = redrob_vector_tools::catalog::edits_anchors(app.session.tool_id());
+    let show_box = (app.session.tool_id() == "selection" || (direct_tool && app.ui.view.node_transform_handles))
         && !app.session.tool_transforming()
         && app.ui.view.bounding_box
-        && app.session.active().is_some_and(|st| !st.selection.is_empty() && st.selection.anchors.is_empty());
+        && app.session.active().is_some_and(|st| !st.selection.is_empty() && (st.selection.anchors.is_empty() || direct_tool));
     let bbox = if show_box { app.selection_box() } else { None };
     let st = app.session.active();
     let big = st.is_some_and(|st| too_many_anchors(st.selection.objects.iter().filter_map(|id| st.doc.node(*id))));
@@ -1858,8 +2111,29 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
         let Some(n) = st.doc.node(*id) else { continue };
         let color = c32(st.doc.layer_color(*id));
         let partial = st.selection.partial(*id);
-        // Path outlines.
-        stroke_path(p, &node_outline(n, &symbols), xf, Stroke::new(1.0, color));
+        // Path outlines (the node toolbar's Path outline toggle hides them in the node tool).
+        if !direct || app.ui.view.node_path_outline {
+            stroke_path(p, &node_outline(n, &symbols), xf, Stroke::new(1.0, color));
+        }
+        // Node toolbar: the clipping path of the clip group this object is (or is in), dashed; the
+        // art of its opacity mask, dashed and dimmed.
+        if direct && app.ui.view.node_clip_path {
+            let clip_group = if n.clips() { Some(n) } else { st.doc.parent_of(*id).and_then(|pid| st.doc.node(pid)).filter(|g| g.clips()) };
+            if let Some(cp) = clip_group.and_then(|g| g.children()).and_then(|ch| ch.first()) {
+                for line in to_screen_path(&node_outline(cp, &symbols), xf) {
+                    p.extend(Shape::dashed_line(&line, Stroke::new(1.0, color), 4.0, 3.0));
+                }
+            }
+        }
+        if direct
+            && app.ui.view.node_mask
+            && let Some(mask) = n.extras().mask.as_deref()
+        {
+            let dim = Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 160);
+            for line in to_screen_path(&node_outline(&mask.art, &symbols), xf) {
+                p.extend(Shape::dashed_line(&line, Stroke::new(1.0, dim), 2.0, 3.0));
+            }
+        }
         // Anchors (and handles for selected anchors in direct mode); a gradient mesh's or a mesh
         // envelope's points.
         walk_drawn(n, &mut |c| {
@@ -1986,6 +2260,20 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             let d = 4.0 + grow / 2.0;
             let pts = vec![c + vec2(0.0, -d), c + vec2(d, 0.0), c + vec2(0.0, d), c + vec2(-d, 0.0)];
             p.add(Shape::convex_polygon(pts, Color32::WHITE, Stroke::new(1.0, color)));
+        }
+    }
+    // Effect knots (node toolbar's Effect knots): an Offset Path's distance, a blur's radius and a
+    // linked offset's distance, as circles tied to the object's edge by a line.
+    if tool == "directSelection"
+        && app.ui.view.node_effect_knots
+        && let Some(k) = redrob_vector_tools::effectknots::EffectKnots::of(&st.doc, &st.selection)
+    {
+        for knot in k.visible_on() {
+            let (c, color) = (xf.to_screen(knot.at), c32(st.doc.layer_color(knot.id)));
+            let from = xf.to_screen(Point::new(knot.bounds.x1, knot.at.y));
+            p.line_segment([from, c], Stroke::new(1.0, color));
+            p.circle_filled(c, 4.0 + grow / 2.0, Color32::WHITE);
+            p.circle_stroke(c, 4.0 + grow / 2.0, Stroke::new(1.5, color));
         }
     }
     // Bounding box with handles (Selection tool).
@@ -2191,6 +2479,102 @@ fn kurbo_flatten(p: &BezPath, tol: f64, f: &mut impl FnMut(PathEl)) {
 }
 
 /// Upload the art's raster; Pixel Preview's document pixels keep hard edges when magnified.
+/// The radius (points) of the X-ray disc.
+const XRAY_RADIUS: f32 = 90.0;
+
+/// Split View and X-ray: the frame rendered in outline (kept with the main frame's key, rendered
+/// synchronously when the key moves), drawn over the right of the Split View divider and inside
+/// the X-ray disc around the pointer, each over white as Outline view is. The divider drags.
+#[allow(clippy::too_many_arguments)]
+fn split_and_xray(
+    app: &mut VectorcraftApp,
+    ui: &mut Ui,
+    painter: &egui::Painter,
+    rect: egui::Rect,
+    doc: &redrob_vector_doc::Document,
+    key: &crate::CacheKey,
+    w: u32,
+    h: u32,
+    v: &View,
+    ppp: f32,
+) {
+    let wanted = crate::CacheKey { outline: true, ..key.clone() };
+    if app.canvas.outline_key.as_ref() != Some(&wanted) || app.canvas.outline_texture.is_none() {
+        let view = Affine::translate((f64::from(w) / 2.0, f64::from(h) / 2.0))
+            * Affine::rotate(v.rotation.to_radians())
+            * Affine::scale_non_uniform(v.zoom * f64::from(ppp) * v.flip_signs().0, v.zoom * f64::from(ppp) * v.flip_signs().1)
+            * Affine::translate(-v.center.to_vec2());
+        let opts = redrob_vector_render::RenderOptions {
+            outline: true,
+            background: None,
+            artboards: false,
+            trim: app.ui.view.trim_view,
+            isolated: key.isolated.map(redrob_vector_doc::NodeId),
+            ..Default::default()
+        };
+        let img = app.canvas.renderer.render(doc, w, h, view, &opts);
+        let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
+        match &mut app.canvas.outline_texture {
+            Some(tex) => tex.set(color, egui::TextureOptions::LINEAR),
+            None => app.canvas.outline_texture = Some(ui.ctx().load_texture("canvas-outline", color, egui::TextureOptions::LINEAR)),
+        }
+        app.canvas.outline_key = Some(wanted);
+    }
+    let Some(tex) = app.canvas.outline_texture.as_ref().map(|t| t.id()) else { return };
+    let uv_of = |p: Pos2| pos2((p.x - rect.left()) / rect.width().max(1.0), (p.y - rect.top()) / rect.height().max(1.0));
+    let t = Tokens::get(ui.ctx());
+    if app.ui.view.split_view {
+        let at = app.ui.view.split_at.clamp(0.05, 0.95);
+        let x = rect.left() + rect.width() * at;
+        let right = egui::Rect::from_min_max(pos2(x, rect.top()), rect.max);
+        painter.rect_filled(right, 0.0, Color32::WHITE);
+        let quad = [right.left_top(), right.right_top(), right.right_bottom(), right.left_bottom()];
+        let mut mesh = egui::Mesh::with_texture(tex);
+        for p in quad {
+            mesh.vertices.push(egui::epaint::Vertex { pos: p, uv: uv_of(p), color: Color32::WHITE });
+        }
+        mesh.indices.extend([0, 1, 2, 0, 2, 3]);
+        painter.add(Shape::mesh(mesh));
+        // The divider: a line with a grab handle, dragged sideways.
+        let handle = egui::Rect::from_center_size(pos2(x, rect.center().y), vec2(10.0, 36.0));
+        let grab = egui::Rect::from_min_max(pos2(x - 4.0, rect.top()), pos2(x + 4.0, rect.bottom()));
+        let resp = ui.interact(grab, ui.id().with("split-view-divider"), Sense::drag());
+        if resp.dragged() {
+            let nx = ui.input(|i| i.pointer.interact_pos()).map_or(x, |p| p.x);
+            app.ui.view.split_at = ((nx - rect.left()) / rect.width().max(1.0)).clamp(0.05, 0.95);
+        }
+        if resp.hovered() || resp.dragged() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+        }
+        painter.line_segment([pos2(x, rect.top()), pos2(x, rect.bottom())], Stroke::new(2.0, t.accent));
+        painter.rect_filled(handle, 3.0, t.accent);
+        painter.text(pos2(x + 8.0, rect.top() + 6.0), egui::Align2::LEFT_TOP, tl!("Outline"), egui::FontId::proportional(11.0), t.text_dim);
+    }
+    if app.ui.view.xray
+        && let Some(c) = ui.input(|i| i.pointer.hover_pos()).filter(|p| rect.contains(*p))
+    {
+        let r = XRAY_RADIUS;
+        const N: usize = 48;
+        painter.circle_filled(c, r, Color32::WHITE);
+        let mut mesh = egui::Mesh::with_texture(tex);
+        mesh.vertices.push(egui::epaint::Vertex { pos: c, uv: uv_of(c), color: Color32::WHITE });
+        for k in 0..N {
+            let a = std::f32::consts::TAU * k as f32 / N as f32;
+            let p = pos2(c.x + r * a.cos(), c.y + r * a.sin());
+            // Clamped to the canvas so the texture never reads outside the frame.
+            let p = pos2(p.x.clamp(rect.left(), rect.right()), p.y.clamp(rect.top(), rect.bottom()));
+            mesh.vertices.push(egui::epaint::Vertex { pos: p, uv: uv_of(p), color: Color32::WHITE });
+        }
+        for k in 0..N {
+            let (a, b) = (1 + k as u32, 1 + ((k + 1) % N) as u32);
+            mesh.indices.extend([0, a, b]);
+        }
+        painter.add(Shape::mesh(mesh));
+        painter.circle_stroke(c, r, Stroke::new(1.0, t.accent));
+        ui.ctx().request_repaint();
+    }
+}
+
 fn upload(app: &mut VectorcraftApp, ctx: &egui::Context, img: &redrob_vector_render::Rendered, pixel: bool) {
     let color = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
     let options = if pixel { egui::TextureOptions::NEAREST } else { egui::TextureOptions::LINEAR };

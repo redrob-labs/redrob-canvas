@@ -275,6 +275,41 @@ const FULL_RESOLUTION_PREVIEW: &[&str] = &[
     "filter.render.jigsaw",
     "filter.render.lineNova",
     "filter.render.spirograph",
+    // Dither's per-pixel patterns and Destripe's per-column correction are sized in pixels.
+    "image.adjustments.dither",
+    "image.adjustments.destripe",
+    // More GIMP-family filters with pixel-sized features: one-pixel kernels (Sobel, Edge
+    // Detection, Emboss (Directional), Height to Normal Map, Phong Bump Map's slopes), tiles,
+    // cells and dots on the pixel grid (Mosaic Tiles, Newsprint, Geometric Shapes, Raindrops),
+    // noise and dither (Clothify, Index Colors), borders and corners in pixels (Add Border, Old
+    // Photo, Round Corners), and the local-contrast tools whose windows are in pixels (Local
+    // Threshold, Retinex).
+    "filter.distort.mosaicTiles",
+    "filter.distort.newsprint",
+    "filter.stylize.sobel",
+    "filter.stylize.edgeDetection",
+    "filter.stylize.embossDirectional",
+    "filter.artistic.clothify",
+    "filter.artistic.indexColors",
+    "filter.artistic.raindrops",
+    "filter.decor.addBorder",
+    "filter.decor.oldPhoto",
+    "filter.decor.roundCorners",
+    "filter.render.geometricShapes",
+    "filter.map.phongBumpMap",
+    "filter.map.heightToNormalMap",
+    "image.adjustments.localThreshold",
+    "image.adjustments.retinex",
+    // Stress and Color to Gray sample pixel neighbourhoods by random rays, Smooth Palette lays
+    // its strip out in pixels, Cartoon's mask and Polygon Blur's kernel are pixel-sized, and
+    // Wavelet Noise Reducer and Random Pick work per pixel.
+    "image.adjustments.stress",
+    "image.adjustments.colorToGray",
+    "image.adjustments.smoothPalette",
+    "filter.artistic.cartoon",
+    "filter.blur.polygonBlur",
+    "filter.noise.waveletNoiseReducer",
+    "filter.noise.randomPick",
 ];
 
 /// Whether `command` with `params` previews at full resolution: [`FULL_RESOLUTION_PREVIEW`], every
@@ -332,6 +367,26 @@ pub const PREVIEWED: &[&str] = &[
     "layer.matting.colorDecontaminate",
     "layer.layerStyle.scaleEffects",
     "type.warpText",
+    // Colour tools (v0.11 parity): per-layer adjustments previewed on the proxy, and the tools
+    // that make a new document (the preview shows it).
+    "image.adjustments.extractComponent",
+    "image.adjustments.alienMap",
+    "image.adjustments.rotateColors",
+    "image.adjustments.paletteMap",
+    "image.adjustments.sampleColorize",
+    "image.adjustments.rgbClip",
+    "image.adjustments.dither",
+    "image.adjustments.localThreshold",
+    "image.adjustments.destripe",
+    "image.adjustments.retinex",
+    "image.adjustments.stress",
+    "image.adjustments.colorToGray",
+    "image.adjustments.toneMapFattal",
+    "image.adjustments.toneMapMantiuk",
+    "image.adjustments.toneMapReinhard",
+    "image.adjustments.smoothPalette",
+    "image.mode.decompose",
+    "image.mode.colorTable.rearrange",
 ];
 
 pub fn has_dialog(command: &str) -> bool {
@@ -340,6 +395,7 @@ pub fn has_dialog(command: &str) -> bool {
         return false;
     }
     (command.starts_with("filter.")
+        || command.starts_with("web.imageMap.")
         || command.starts_with("select.modify.")
         || PREVIEWED.contains(&command)
         || matches!(
@@ -354,6 +410,10 @@ pub fn has_dialog(command: &str) -> bool {
                 | "edit.definePattern"
                 | "select.convertToShape"
                 | "image.configureGrid"
+                | "image.mode.compose"
+                | "image.mode.colorTable.fromPalette"
+                | "image.analysis.borderAverage"
+                | "image.analysis.exportHistogram"
         ))
         && redrob_photo_engine::commands::find(command).is_some_and(|c| !parse_spec(c.params).is_empty())
 }
@@ -919,6 +979,10 @@ pub fn body(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
         ui.add_space(4.0);
         ui.add(egui::Label::new(egui::RichText::new(note).color(t.text_dim)).wrap());
     }
+    // Curve Bend: the upper and lower edge curves are drawn, not typed (PH-FLT-042).
+    if cmd == "filter.distort.curveBend" {
+        crate::curve_bend_ui::controls(ui, f);
+    }
     if supports_blending(f) {
         blending_options(ui, &cmd, f);
     }
@@ -936,6 +1000,9 @@ pub fn body(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
 /// section has drawn.
 const BLEND: &str = "blend";
 const OPACITY: &str = "opacity";
+/// Clipping (`adjust` / `clip`) and colour space (`perceptual` / `linear`), unset at the defaults.
+const CLIPPING: &str = "clipping";
+const COLOR_SPACE: &str = "colorSpace";
 
 /// Filter commands run by something other than the shared filter runner, which is where
 /// `blend` / `opacity` are applied: these get no Blending Options (Edit › Fade still works).
@@ -951,6 +1018,17 @@ const OWN_RUNNER: &[&str] = &[
     "filter.render.clouds",
     "filter.render.differenceClouds",
     "filter.filterGallery",
+    // Script-like commands of the fourth batch (filters_more): they drive other commands and
+    // edit the document directly.
+    "filter.decor.addBorder",
+    "filter.render.fog",
+    "filter.decor.oldPhoto",
+    "filter.decor.roundCorners",
+    "filter.map.tile",
+    "filter.combine.depthMerge",
+    "filter.render.geometricShapes",
+    // The external G'MIC runner (filters_paint) edits the document directly too.
+    "filter.gmic.run",
 ];
 
 /// Whether the dialog with fields `f` gets Blending Options: a Filter menu dialog on the shared
@@ -991,6 +1069,30 @@ fn blending_options(ui: &mut egui::Ui, cmd: &str, f: &mut Map<String, Value>) {
     } else {
         f.insert(OPACITY.into(), json!(opacity));
     }
+    // Clipping: Clip keeps the result inside the canvas; Adjust lets a blur or shadow grow the
+    // layer past it. Colour space: the filter runs on perceptual (display) or linear-light pixels.
+    let mut clipping = f.get(CLIPPING).and_then(Value::as_str).unwrap_or("clip").to_string();
+    let clip_opts: Vec<(String, &str)> = vec![("clip".into(), tl!("Clip")), ("adjust".into(), tl!("Adjust"))];
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Clipping")).color(t.text_dim));
+        crate::widgets::dropdown(ui, &format!("flt-{cmd}-clipping"), &mut clipping, &clip_opts, 170.0);
+    });
+    if clipping == "clip" {
+        f.remove(CLIPPING);
+    } else {
+        f.insert(CLIPPING.into(), json!(clipping));
+    }
+    let mut space = f.get(COLOR_SPACE).and_then(Value::as_str).unwrap_or("perceptual").to_string();
+    let space_opts: Vec<(String, &str)> = vec![("perceptual".into(), tl!("Perceptual")), ("linear".into(), tl!("Linear light"))];
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Color Space")).color(t.text_dim));
+        crate::widgets::dropdown(ui, &format!("flt-{cmd}-colorSpace"), &mut space, &space_opts, 170.0);
+    });
+    if space == "perceptual" {
+        f.remove(COLOR_SPACE);
+    } else {
+        f.insert(COLOR_SPACE.into(), json!(space));
+    }
 }
 
 /// A new seed for a dialog's Random button: 0..=30000 (what the field takes), never `current`.
@@ -1005,7 +1107,7 @@ fn random_seed(entropy: u64, current: i64) -> i64 {
 /// User-facing params (strip the dialog's private `__` keys).
 pub fn params_of(f: &Map<String, Value>) -> Value {
     // A document picker left at "None" (-1) means "not given".
-    let unset = |k: &str, v: &Value| k == "mapDocument" && v.as_i64() == Some(-1);
+    let unset = |k: &str, v: &Value| k.ends_with("Document") && v.as_i64() == Some(-1);
     Value::Object(f.iter().filter(|(k, v)| !k.starts_with("__") && !unset(k, v)).map(|(k, v)| (k.clone(), v.clone())).collect())
 }
 

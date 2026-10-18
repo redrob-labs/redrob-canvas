@@ -119,6 +119,23 @@ impl CutParts {
     }
 }
 
+impl CutParts {
+    /// The layer (or mask) with the selected pixels cut out.
+    pub fn rest(&self) -> &Surface {
+        &self.rest
+    }
+
+    /// The cut pixels, in their original place (cropped to the selection).
+    pub fn piece(&self) -> &Surface {
+        &self.piece
+    }
+
+    /// Whether the pieces are the layer's mask rather than its pixels.
+    pub fn is_mask(&self) -> bool {
+        self.mask
+    }
+}
+
 /// A piece floating `offset` whole pixels from where it was cut, over document `revision`.
 #[derive(Clone, Debug)]
 pub struct Floating {
@@ -206,7 +223,8 @@ pub fn drop_floating(s: &mut Session) -> Result<Value> {
 
 /// Commands that leave a floating piece floating: its own, and ones that don't touch documents.
 fn keeps_floating(id: &str) -> bool {
-    matches!(id, "select.float" | "select.drop") || ["view.", "window.", "help.", "prefs."].iter().any(|p| id.starts_with(p))
+    matches!(id, "select.float" | "select.drop" | "layer.anchor" | "layer.floatingToLayer")
+        || ["view.", "window.", "help.", "prefs."].iter().any(|p| id.starts_with(p))
 }
 
 /// Before any command (`Session::dispatch`): Undo puts a floating piece back (and is used up:

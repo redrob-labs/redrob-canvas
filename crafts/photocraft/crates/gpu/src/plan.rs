@@ -596,6 +596,14 @@ impl<'a> Planner<'a> {
         if BlendMode::MODULO_MODES.contains(&layer.blend) || clipped.iter().any(|c| BlendMode::MODULO_MODES.contains(&c.blend)) {
             return Err(Unsupported(format!("modulo blend on `{}` (composited on the CPU)", layer.name)));
         }
+        // The inversion, LCh and alpha families have no shader kernel yet.
+        if layer.blend.is_cpu_only() || clipped.iter().any(|c| c.blend.is_cpu_only()) {
+            return Err(Unsupported(format!("blend mode {:?} on `{}` (composited on the CPU)", layer.blend, layer.name)));
+        }
+        // Composite mode / blend space options and layer boundaries are CPU-only.
+        if !layer.composite.is_default() || layer.boundary.is_some() || clipped.iter().any(|c| !c.composite.is_default() || c.boundary.is_some()) {
+            return Err(Unsupported(format!("composite options or a layer boundary on `{}` (composited on the CPU)", layer.name)));
+        }
         self.restricted(layer, backdrop, |s, b| s.layer_any(layer, clipped, b))
     }
 
@@ -1835,6 +1843,15 @@ pub fn mode_index(m: BlendMode) -> i32 {
         BlendMode::ReflectFreeze => 57,
         BlendMode::FreezeReflect => 58,
         BlendMode::HeatGlowFreezeReflectHybrid => 59,
+        BlendMode::GrainExtract => 60,
+        BlendMode::GrainMerge => 61,
+        BlendMode::LchHue => 62,
+        BlendMode::LchChroma => 63,
+        BlendMode::LchColor => 64,
+        BlendMode::LchLightness => 65,
+        BlendMode::Erase => 66,
+        BlendMode::Merge => 67,
+        BlendMode::Split => 68,
     }
 }
 

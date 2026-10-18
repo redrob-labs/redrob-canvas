@@ -51,6 +51,8 @@ pub fn windows(app: &mut PhotocraftApp, ctx: &egui::Context) {
     let mut toggle_play = false;
     let playing = app.ui.timeline.playing;
     let t = Tokens::get(ctx);
+    let mut anim_ui = app.ui.animation.clone();
+    let mut anim_out = crate::animation_ui::Out::default();
 
     crate::analysis_ui::panel_window(app, ctx, "timeline", tl!("Timeline"), vec2(0.0, 520.0), 660.0, |ui| {
         ui.horizontal(|ui| {
@@ -116,9 +118,31 @@ pub fn windows(app: &mut PhotocraftApp, ctx: &egui::Context) {
                         act = Some(("timeline.setFrame", json!({ "frame": frame as u64 })));
                     }
                 }
+                // Frame animation: keyframes per layer, onion skin, curves, storyboard, recorder.
+                anim_out = crate::animation_ui::section(&app.session, &mut anim_ui, ui, tl);
             }
         }
     });
+    app.ui.animation = anim_ui;
+    if let Some(id) = anim_out.select {
+        let _ = app.session.select_layer(id);
+    }
+    if act.is_none() {
+        act = anim_out.act.take();
+    }
+    match anim_out.dialog {
+        Some(crate::animation_ui::Dialog::AttachAudio) => {
+            let _ = app
+                .pick_file_bytes_filtered(&["wav", "mp3", "ogg", "flac", "m4a", "aac"], |app, name, _bytes| app.run("anim.audio.set", json!({"path": name})));
+        }
+        Some(crate::animation_ui::Dialog::ExportStoryboard) => {
+            let _ = app.pick_save("storyboard.svg", |app, path| app.run("anim.storyboard.export", json!({"path": path})));
+        }
+        Some(crate::animation_ui::Dialog::ExportTimelapse) => {
+            let _ = app.pick_save("timelapse.mp4", |app, path| app.run("anim.recorder.export", json!({"path": path})));
+        }
+        None => {}
+    }
 
     if close {
         app.ui.timeline.open = false;

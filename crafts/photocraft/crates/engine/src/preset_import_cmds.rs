@@ -366,7 +366,7 @@ fn import_grd(s: &mut Session, p: &Value) -> Result<Value> {
             opacity.clear();
         }
         let name = if g.name.trim().is_empty() { format!("Gradient {}", i + 1) } else { g.name.trim().to_string() };
-        items.push(GradientPreset { name, stops, opacity });
+        items.push(GradientPreset { name, stops, opacity, segments: Vec::new() });
     }
     if noise > 0 {
         warnings.push(format!("{noise} noise gradients are not supported and were skipped"));
@@ -417,7 +417,7 @@ pub fn ggr_to_preset(
     if opacity.iter().all(|o| o.1 >= 1.0 - 1e-4) {
         opacity.clear();
     }
-    GradientPreset { name: name.to_string(), stops, opacity }
+    GradientPreset { name: name.to_string(), stops, opacity, segments: Vec::new() }
 }
 
 fn import_ggr(s: &mut Session, p: &Value) -> Result<Value> {

@@ -4542,3 +4542,369 @@ lighting	Light	Luce
 @msg	select an object	seleziona un oggetto
 @msg	the copied object is no longer in this document	l’oggetto copiato non è più in questo documento
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Simula» stampa le sovrastampe come le mostra l’Anteprima sovrastampa; le separazioni le mantengono sempre. Una preimpostazione converte la trasparenza prima della stampa (i file PostScript la convertono sempre).
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	Effetti tracciato
+	Clone Original	Clona originale
+	Clone Original…	Clona originale…
+	Attach Path	Collega tracciato
+	Attach Path…	Collega tracciato…
+	Bounding Box	Rettangolo di selezione
+	Bounding Box…	Rettangolo di selezione…
+	Fill Between Many	Riempi tra molti
+	Fill Between Many…	Riempi tra molti…
+	Fill Between Strokes	Riempi tra tracce
+	Fill Between Strokes…	Riempi tra tracce…
+	Power Clip	Ritaglio avanzato
+	Power Clip…	Ritaglio avanzato…
+	Power Clip (Inverse)	Ritaglio avanzato (inverso)
+	Release Power Clip	Rilascia ritaglio avanzato
+	Construct Grid	Costruisci griglia
+	Construct Grid…	Costruisci griglia…
+	Ellipse by 5 Points	Ellisse per 5 punti
+	Ellipse by 5 Points…	Ellisse per 5 punti…
+	Ellipse from Points	Ellisse da punti
+	Ellipse from Points…	Ellisse da punti…
+	Circle by 3 Points	Cerchio per 3 punti
+	Circle by 3 Points…	Cerchio per 3 punti…
+	Circle by Center and Radius	Cerchio per centro e raggio
+	Line Segment…	Segmento di linea…
+	Parallel	Parallela
+	Parallel…	Parallela…
+	Perpendicular Bisector	Bisettrice perpendicolare
+	Perpendicular Bisector…	Bisettrice perpendicolare…
+	Angle Bisector	Bisettrice
+	Angle Bisector…	Bisettrice…
+	Tangent to Curve	Tangente alla curva
+	Tangent to Curve…	Tangente alla curva…
+	Transform by 2 Points	Trasforma con 2 punti
+	Transform by 2 Points…	Trasforma con 2 punti…
+	Show Handles…	Mostra maniglie…
+	Measure Segments	Misura segmenti
+	Measure Segments…	Misura segmenti…
+	Ruler	Righello
+	Ruler…	Righello…
+	Interpolate Points	Interpola punti
+	Interpolate Points…	Interpola punti…
+	Knot	Nodo
+	Knot…	Nodo…
+	VonKoch	VonKoch
+	VonKoch…	VonKoch…
+	Gears	Ingranaggi
+	Gears…	Ingranaggi…
+	Embroidery Stitch	Punto da ricamo
+	Embroidery Stitch…	Punto da ricamo…
+	Stitch Sub-Paths	Cuci sottotracciati
+	Stitch Sub-Paths…	Cuci sottotracciati…
+	Hatches (Rough)	Tratteggio (grezzo)
+	Hatches (Rough)…	Tratteggio (grezzo)…
+	Sketch	Schizzo
+	Sketch…	Schizzo…
+	Join Type	Tipo di giunzione
+	Join Type…	Tipo di giunzione…
+	Slice…	Taglio…
+	Select Linked Object	Seleziona oggetto collegato
+	Mask Background	Sfondo maschera
+	Background	Sfondo
+	Live Slice	Taglio dinamico
+	Fuse Slice	Fondi taglio
+	3D Marble	Marmo 3D
+	3D Wood	Legno 3D
+	Air Spray	Spruzzo d'aria
+	Aluminium	Alluminio
+	Apply Effects to Image Pixels	Applica effetti ai pixel dell'immagine
+	Apply Filter Preset	Applica filtro predefinito
+	Apply to Selection	Applica alla selezione
+	Bevels	Smussi
+	Black Hole	Buco nero
+	Blobs	Macchie
+	Bloom	Bagliore
+	Brilliance	Brillantezza
+	Bump	Rilievo
+	Bumps	Rilievi
+	Button	Pulsante
+	Canvas Bumps	Rilievo tela
+	Chalk and Sponge	Gesso e spugna
+	Channel to Alpha	Canale in alfa
+	Chrome	Cromo
+	Color Blindness	Daltonismo
+	Colour Space:	Spazio colore:
+	Comics Cream	Crema fumetto
+	Cracked Glass	Vetro crepato
+	Cubes	Cubi
+	Dark and Glow	Scuro e bagliore
+	Document Filters	Filtri del documento
+	Dragee	Confetto
+	Duochrome	Duocromo
+	Duplicate Filter	Duplica filtro
+	Embossed Leather	Pelle goffrata
+	Extract Channel	Estrai canale
+	Fade to Black	Dissolvenza al nero
+	Felt Feather	Piuma di feltro
+	Fill and Overlays	Riempimenti e sovrapposizioni
+	Filter	Filtro
+	Filter Gallery	Galleria filtri
+	Filter Presets	Filtri predefiniti
+	Filter copy	Copia filtro
+	Filters	Filtri
+	Glow	Bagliore
+	Glowing Metal	Metallo incandescente
+	Gold	Oro
+	Greyscale	Scala di grigi
+	HSL Noise	Disturbo HSL
+	Ink Blot	Macchia d'inchiostro
+	Ink Splash	Schizzo d'inchiostro
+	Inner Shadow	Ombra interna
+	Leopard Fur	Pelliccia di leopardo
+	Light Eraser	Gomma per luci
+	Luminance to Alpha	Luminanza in alfa
+	Materials	Materiali
+	Matte Jelly	Gelatina opaca
+	Metallized Paint	Vernice metallizzata
+	Neon	Neon
+	No filter matches the search.	Nessun filtro corrisponde alla ricerca.
+	Noise Fill	Riempimento disturbo
+	Non-realistic 3D Shaders	Shader 3D non realistici
+	Open Filter Editor	Apri editor filtri
+	Paper Bump	Rilievo carta
+	Pointillism	Puntinismo
+	Protrusions	Protuberanze
+	Quadritone	Quadritono
+	Ridges	Creste
+	Rough Paper	Carta ruvida
+	Rough Transparency	Trasparenza ruvida
+	Roughen	Irruvidisci
+	Saturation Map	Mappa saturazione
+	Select an object to apply a filter.	Seleziona un oggetto per applicare un filtro.
+	Silhouette	Silhouette
+	Smooth Edges	Bordi lisci
+	Solarize	Solarizza
+	Specular Light	Luce speculare
+	Spikes	Punte
+	Spots Overlay	Sovrapposizione macchie
+	Stone Wall	Muro di pietra
+	Subregion:	Sottoregione:
+	Swirl	Vortice
+	Textures	Texture
+	The document has no filters yet.	Il documento non ha ancora filtri.
+	Thin Membrane	Membrana sottile
+	Torn Edges	Bordi strappati
+	Translucent	Traslucido
+	Transparency Utilities	Utilità trasparenza
+	Tritone	Tritono
+	Watercolor	Acquerello
+	Waves	Onde
+	Turns:	Giri:
+	Divergence:	Divergenza:
+	Clockwise	In senso orario
+	Threshold:	Soglia:
+	Grow/Shrink:	Espandi/contrai:
+	Fill by:	Riempi per:
+	Visible Colors	Colori visibili
+	Alpha	Alfa
+	Add to Fill	Aggiungi al riempimento
+	View rotation (Cmd+Shift+scroll turns the view)	Rotazione della vista (Cmd+Maiusc+scorrimento ruota la vista)
+	Lock Rotate View	Blocca rotazione vista
+	Rotate View	Ruota vista
+	Fixation:	Fissazione:
+	Dip Pen	Pennino
+	Marker	Pennarello
+	Brush	Pennello
+	Wiggly	Tremolante
+	Splotchy	Macchiato
+	Use Pressure	Usa pressione
+	Live Simplify	Semplifica dinamico
+	Simplify (Live)…	Semplifica (dinamico)…
+	Split View	Vista divisa
+	X-ray	Raggi X
+	Input Devices…	Dispositivi di input…
+	Input Devices	Dispositivi di input
+	Pressure Curves	Curve di pressione
+	Mouse	Mouse
+	Pen / Stylus	Penna / Stilo
+	Touch	Tocco
+	Liquify Tools	Strumenti fluidifica
+	Disabled	Disattivato
+	Grids	Griglie
+	Main Grid	Griglia principale
+	Add Grid	Aggiungi griglia
+	Remove Grid	Rimuovi griglia
+	Grid Options	Opzioni griglia
+	Kind:	Tipo:
+	Subdivisions:	Suddivisioni:
+	Angles:	Angoli:
+	Gaps:	Spazi:
+	Origin:	Origine:
+	Own color	Colore proprio
+	Open a document to edit its grids.	Apri un documento per modificarne le griglie.
+	Add Script	Aggiungi script
+	Edit Script	Modifica script
+	Remove Script	Rimuovi script
+	The document has no scripts.	Il documento non ha script.
+	External:	Esterno:
+	Embedded script	Script incorporato
+	Add Embedded Script	Aggiungi script incorporato
+	Add External Script	Aggiungi script esterno
+	Source:	Sorgente:
+	External file	File esterno
+	Code:	Codice:
+	Open a document to edit its scripts.	Apri un documento per modificarne gli script.
+	Alignment Handles	Maniglie di allineamento
+	Align (Shift: move the key object)	Allinea (Maiusc: sposta l'oggetto chiave)
+	Stylesheet	Foglio di stile
+	No rules yet. Add one and assign its class to objects.	Nessuna regola. Aggiungine una e assegna la sua classe agli oggetti.
+	Add Rule	Aggiungi regola
+	Remove Rule	Rimuovi regola
+	Selector:	Selettore:
+	Declarations:	Dichiarazioni:
+	Assign to Selection	Assegna alla selezione
+	Remove from Selection	Rimuovi dalla selezione
+	Add CSS Rule	Aggiungi regola CSS
+	Edit CSS Rule	Modifica regola CSS
+	Remove CSS Rule	Rimuovi regola CSS
+	Assign CSS Class	Assegna classe CSS
+	Remove CSS Class	Rimuovi classe CSS
+	Apply Stylesheet	Applica foglio di stile
+	New Node	Nuovo nodo
+	Indent Node	Indenta nodo
+	Outdent Node	Rimuovi rientro nodo
+	Move Node	Sposta nodo
+	Set Path Data	Imposta dati tracciato
+	Round to:	Arrotonda a:
+	Round Path Data	Arrotonda dati tracciato
+	Connector Tool	Strumento connettore
+	Connect Objects	Connetti oggetti
+	Reroute Connectors	Reinstrada connettori
+	Connector Obstacle	Ostacolo connettore
+	Arrange Connected Objects	Disponi oggetti connessi
+	Arrange Connected	Disponi connessi
+	Routing:	Instradamento:
+	Orthogonal	Ortogonale
+	Polyline	Polilinea
+	Curvature:	Curvatura:
+	3D Box Tool	Strumento scatola 3D
+	3D Box	Scatola 3D
+	3D Box Options	Opzioni scatola 3D
+	Move Vanishing Point	Sposta punto di fuga
+	Z:	Z:
+	Vanishing Point	Punto di fuga
+	Infinite	Infinito
+	Arrange in Grid	Disponi in griglia
+	Arrange in Circle	Disponi in cerchio
+	Dynamic Offset	Scostamento dinamico
+	Fill Between Paths	Riempi tra tracciati
+	Linked Offset	Scostamento collegato
+	Linked Offset Distance	Distanza dello scostamento collegato
+	Remove Overlaps	Rimuovi sovrapposizioni
+	Unlink Live Object	Scollega oggetto dinamico
+	Create Anchor	Crea ancora
+	Follow Link	Segui collegamento
+	Select All Anchors	Seleziona tutti i punti di ancoraggio
+	Invert Anchor Selection	Inverti selezione punti di ancoraggio
+	Aspect ratio:	Proporzioni:
+	Clip path	Tracciato di ritaglio
+	DPI:	DPI:
+	Effect knots	Nodi effetto
+	Highlight color:	Colore di evidenziazione:
+	Interactivity	Interattività
+	Link target:	Destinazione collegamento:
+	Link title:	Titolo collegamento:
+	Path outline	Contorno tracciato
+	Transform handles	Maniglie di trasformazione
+	Plot…	Plotta…
+	Import Web Image…	Importa immagine web…
+	Check Spelling	Controllo ortografia
+	Edit Custom Dictionary	Modifica dizionario personale
+	The spell check is complete.	Il controllo ortografico è completo.
+	Words checked	Parole controllate
+	Check Again	Controlla di nuovo
+	Word Not Found:	Parola non trovata:
+	Change To:	Cambia in:
+	Suggestions:	Suggerimenti:
+	No suggestions	Nessun suggerimento
+	Ignore All	Ignora tutto
+	No words yet	Nessuna parola
+	Word:	Parola:
+	Change Spelling	Cambia ortografia
+	Ignore Spelling	Ignora ortografia
+	Add to Dictionary	Aggiungi al dizionario
+	Remove from Dictionary	Rimuovi dal dizionario
+	Spelling Dictionaries	Dizionari ortografici
+	Visible Hairlines	Linee sottili visibili
+	Rename…	Rinomina…
+	Extract…	Estrai…
+	Object Attributes	Attributi oggetto
+	Object Attributes…	Attributi oggetto…
+	Create Tiled Clones…	Crea cloni in serie…
+	Rename Symbol	Rinomina simbolo
+	Set Object Attribute	Imposta attributo oggetto
+	Trace Pixel Art…	Ricalca pixel art…
+	Objects to Marker	Oggetti in marcatore
+	Markers	Marcatori
+	Markers:	Marcatori:
+	Delete Marker	Elimina marcatore
+	SVG Font Editor	Editor di font SVG
+	SVG Font Editor…	Editor di font SVG…
+	New Font	Nuovo font
+	Delete Font	Elimina font
+	No SVG font yet: make one, or turn glyph layers into one.	Nessun font SVG: creane uno o trasforma i livelli di glifi in un font.
+	Glyph Layers to Font	Livelli glifi in font
+	Glyph	Glifo
+	Advance	Avanzamento
+	Curves	Curve
+	Unicode:	Unicode:
+	Glyph name:	Nome glifo:
+	Advance:	Avanzamento:
+	Add Glyph	Aggiungi glifo
+	Remove Glyph	Rimuovi glifo
+	Get Curves from Selection	Prendi curve dalla selezione
+	Glyph to Objects	Glifo in oggetti
+	Kerning:	Crenatura:
+	Set Pair	Imposta coppia
+	Preview:	Anteprima:
+	Font to Glyph Layers	Font in livelli glifi
+	New SVG Font	Nuovo font SVG
+	SVG Fonts	Font SVG
+	Delete SVG Font	Elimina font SVG
+	SVG Font Options	Opzioni font SVG
+	Set Glyph	Imposta glifo
+	Set Kerning Pair	Imposta coppia di crenatura
+	Preview SVG Font	Anteprima font SVG
+	Glyph Layers to SVG Font	Livelli glifi in font SVG
+	SVG Font to Glyph Layers	Font SVG in livelli glifi
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	i file WPG versione 2 (WordPerfect 6 e successivi) non vengono ancora letti: salva la grafica come WPG 1 o in un altro formato vettoriale
+@msg	bad central record	record centrale danneggiato
+@msg	downloading needs the desktop app	il download richiede l'app desktop
+@msg	give `url`: an http:// or https:// address of an image	indica `url`: un indirizzo http:// o https:// di un'immagine
+@msg	no zip end record	manca il record finale dello zip
+@msg	not a CGM file	non è un file CGM
+@msg	not a CorelDRAW file	non è un file CorelDRAW
+@msg	not a WordPerfect Graphics file	non è un file WordPerfect Graphics
+@msg	not a zip	non è uno zip
+@msg	not an XFig file	non è un file XFig
+@msg	select an embedded image	seleziona un'immagine incorporata
+@msg	the drawing has nothing Redrob Canvas reads	il disegno non contiene nulla che Redrob Canvas legga
+@msg	the effect links to no object in this document	l'effetto non è collegato a nessun oggetto in questo documento
+@msg	the file draws nothing Redrob Canvas reads	il file non disegna nulla che Redrob Canvas legga
+@msg	the file is empty	il file è vuoto
+@msg	the font has a glyph for `{nu}` already	il font ha già un glifo per `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	la grafica non disegna nulla che Redrob Canvas legga
+@msg	the metafile draws nothing Redrob Canvas reads	il metafile non disegna nulla che Redrob Canvas legga
+@msg	the object is gone	l'oggetto non esiste più
+@msg	the preview bitmap can't be read	la bitmap di anteprima non può essere letta
+@msg	the preview bitmap is empty	la bitmap di anteprima è vuota
+@msg	the selected object has no link	l'oggetto selezionato non ha collegamenti
+@msg	the view's rotation is locked (View › Lock Rotate View)	la rotazione della vista è bloccata (Visualizza › Blocca rotazione vista)
+@msg	truncated zip	zip troncato
+@msg	view.setRotation: missing `angle`	view.setRotation: manca `angle`
+@msg	{_1}: the dictionary is empty	{_1}: il dizionario è vuoto
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: l'app web non ha dispositivi seriali né file: esporta l'HPGL e scaricalo
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} non è un formato noto a questo lettore
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	i file {kind}{ver} sono contenitori compressi i cui record di disegno non sono documentati: esporta il disegno da CorelDRAW come SVG, PDF, EPS o EMF per aprirlo
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: i record di disegno non sono documentati e il file non ha una bitmap di anteprima: esporta il disegno come SVG, PDF, EPS o EMF per aprirlo
+@msg	{name}: compression method {m} isn't supported	{name}: il metodo di compressione {m} non è supportato
+@msg	{name}: not found among the document's images	{name}: non trovato tra le immagini del documento
+@msg	{name}: too large	{name}: troppo grande
+@msg	{url}: {e}	{url}: {e}

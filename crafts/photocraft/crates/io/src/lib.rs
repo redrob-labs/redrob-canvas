@@ -35,23 +35,32 @@
 pub mod abr_map;
 mod adjust_map;
 pub mod affinity;
+pub mod anim_export;
+pub mod anim_layers;
 pub mod annotations_map;
 pub mod blocks;
 pub mod camera_raw_xmp;
 mod channel_map;
 pub mod comps_map;
 pub mod effects_map;
+pub mod eps;
 pub mod exr_parts;
 mod flat;
 pub mod gbr;
+pub mod gbr_export;
 pub mod ggr;
 mod gradient_bake;
 pub use gradient_bake::{Method as GradientMethod, bake as bake_gradient};
 mod kra;
+pub mod legacy;
 pub mod linked;
+pub mod modern;
 mod multichannel_map;
+pub mod myb;
 mod ora;
 pub use ora::losses as ora_losses;
+pub use xcf::losses as xcf_losses;
+pub mod palette_files;
 pub mod pattern_map;
 pub mod pdf;
 mod pdn;
@@ -63,10 +72,12 @@ pub mod raw;
 pub mod slices_map;
 pub mod smart_map;
 pub mod svg;
+pub mod svg_paths;
 mod text_import;
 pub mod text_styles_map;
 pub mod tiff_layers;
 pub mod vector_map;
+pub mod xcf;
 
 pub use redrob_photo_codecs::DpxBits;
 use redrob_photo_codecs::{CodecError, EncodeOptions};
@@ -278,6 +289,16 @@ fn import_stages(name: &str, bytes: &[u8], ctl: &redrob_photo_raster::Interrupt,
     {
         return Ok(ImportResult { document: redrob_photo_format::load_from_bytes(bytes)?, warnings: Vec::new(), source_read_only: false, preview_only: false });
     }
+    // XCF (plain, or gzip-compressed `.xcf.gz` / `.xcfgz`).
+    if xcf::is_xcf(bytes) || has_extension(name, "xcf") {
+        return xcf::import(name, bytes);
+    }
+    if bytes.starts_with(&[0x1f, 0x8b]) && (name.to_ascii_lowercase().ends_with(".xcf.gz") || has_extension(name, "xcfgz")) {
+        use std::io::Read;
+        let mut inflated = Vec::new();
+        flate2::read::GzDecoder::new(bytes).take(1 << 30).read_to_end(&mut inflated).map_err(|e| IoError::Unsupported(format!("XCF: gzip: {e}")))?;
+        return xcf::import(name, &inflated);
+    }
     if is_psd(bytes) {
         // A merged image the import reads is decoded with the parse: a ZIP one is inflated once.
         let (file, merged) = PsdFile::from_bytes_and_merged(bytes, |f| psd_import::check_group_depth(f).is_ok() && psd_import::merged_needed(f))?;
@@ -310,6 +331,21 @@ fn import_stages(name: &str, bytes: &[u8], ctl: &redrob_photo_raster::Interrupt,
     }
     if is_svg_input(name, bytes) {
         return svg::import_svg_with_group_depth(name, bytes, max_group_depth);
+    }
+    // PostScript / EPS (raster EPS and DOS EPS previews).
+    if eps::is_postscript(bytes) || ["eps", "epsf", "epsi", "ps"].iter().any(|e| has_extension(name, e)) {
+        return eps::import(name, bytes);
+    }
+    // JPEG XL and JPEG 2000 (signature, else extension).
+    if redrob_photo_codecs::detect(bytes).is_none() && modern::detect(name, bytes).is_some() {
+        return modern::import(name, bytes);
+    }
+    // The legacy and scientific formats (XBM, CUR/ANI, SGI, PIX, CEL, FLI, XWD, DICOM, WMF): a
+    // codec signature still wins over their extensions.
+    if redrob_photo_codecs::detect(bytes).is_none()
+        && let Some(r) = legacy::import(name, bytes)
+    {
+        return r;
     }
     flat::import_flat(name, bytes)
 }
@@ -397,6 +433,9 @@ fn export_stages(doc: &Document, name_or_ext: &str, opts: &ExportOptions, ctl: &
     if ext == "ora" {
         return ora::export(doc);
     }
+    if ext == "xcf" {
+        return xcf::export(doc);
+    }
     if ext == "pdf" {
         return pdf::export(doc);
     }
@@ -434,6 +473,26 @@ fn export_stages(doc: &Document, name_or_ext: &str, opts: &ExportOptions, ctl: &
         file.header.validate()?;
         let bytes = file.to_bytes()?;
         return Ok(ExportResult { bytes, warnings });
+    }
+    if let Some(r) = legacy::export(doc, &ext, opts) {
+        return r;
+    }
+    if modern::EXTS.contains(&ext.as_str()) {
+        return modern::export(doc, &ext, opts);
+    }
+    if matches!(ext.as_str(), "eps" | "epsf" | "epsi" | "ps") {
+        return eps::export(doc, eps::EpsOptions { encapsulated: ext != "ps", ..eps::EpsOptions::default() });
+    }
+    // Resource files: the image as a brush or pattern, the layers as an image hose.
+    match ext.as_str() {
+        "gbr" => return gbr_export::export_gbr(doc, gbr_export::BrushDepth::Mask, 25),
+        "gih" => return gbr_export::export_gih(doc, gbr_export::BrushDepth::Mask, 25, "incremental"),
+        "gpat" => return gbr_export::export_gpat(doc),
+        _ => {}
+    }
+    // MNG is always an animation of the layers (one layer = one frame, see `anim_layers`).
+    if ext == "mng" {
+        return anim_export::export_animation(doc, "mng", true);
     }
     let format = redrob_photo_codecs::from_extension(&ext).ok_or_else(|| IoError::UnknownFormat(name_or_ext.to_string()))?;
     if format == redrob_photo_codecs::Format::Tiff && opts.tiff_layers && tiff_layers::would_write_layers(doc) {

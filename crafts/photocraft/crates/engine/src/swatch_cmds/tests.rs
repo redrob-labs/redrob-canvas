@@ -36,7 +36,7 @@ fn add_from_foreground_and_explicit_models() {
         .unwrap();
     assert_eq!(r["group"], "Print");
     let g = s.presets.swatches.last().unwrap();
-    assert_eq!(g.items[0], Swatch { name: "Ink".into(), color: SwatchColor::Cmyk([1.0, 0.0, 0.0, 0.0]), kind: SwatchKind::Spot });
+    assert_eq!(g.items[0], Swatch { name: "Ink".into(), color: SwatchColor::Cmyk([1.0, 0.0, 0.0, 0.0]), kind: SwatchKind::Spot, id: String::new() });
     // Names stay unique.
     let r = s.execute("swatches.add", json!({"name": "Ink"})).unwrap();
     assert_eq!(r["name"], "Ink 2");

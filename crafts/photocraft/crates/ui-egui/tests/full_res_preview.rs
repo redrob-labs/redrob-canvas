@@ -80,7 +80,8 @@ fn low_res(h: &mut Harness, on: bool) {
     h.run_steps(4);
 }
 
-/// Luma along a 300 px row near the canvas's top-left corner (clear of centred dialogs).
+/// Luma along a 240 px row near the canvas's top-left corner (clear of centred dialogs: the
+/// Offset dialog's left edge is about 280 px in from the canvas's).
 fn row(h: &mut Harness) -> Vec<i32> {
     h.run_steps(4);
     let canvas = {
@@ -91,8 +92,8 @@ fn row(h: &mut Harness) -> Vec<i32> {
     // where the first full-resolution composite of this 6 MP document can take longer; the
     // submitted work still finishes, so wait for it again instead of failing.
     let img = (0..3).find_map(|_| h.render().ok()).expect("render");
-    let (x0, y) = (canvas.min.x as u32 + 20, canvas.min.y as u32 + 40);
-    (x0..x0 + 300)
+    let (x0, y) = (canvas.min.x as u32 + 10, canvas.min.y as u32 + 40);
+    (x0..x0 + 240)
         .map(|x| {
             let p = img.get_pixel(x, y).0;
             (i32::from(p[0]) * 3 + i32::from(p[1]) * 6 + i32::from(p[2])) / 10
@@ -109,8 +110,11 @@ fn mean(r: &[i32]) -> f32 {
     r.iter().sum::<i32>() as f32 / r.len() as f32
 }
 
+/// At 100 % a document the GPU draws previews a slider drag at full resolution whether Low
+/// Resolution Previews is on or off: a reduced copy coarser than the screen showed the drag in
+/// k-pixel blocks (#5764). Zoomed out, the preference decides (the test below).
 #[test]
-fn adjustment_layer_drag_previews_at_full_resolution_when_low_res_is_off() {
+fn adjustment_layer_drag_previews_at_full_resolution_at_100_percent() {
     let _gpu = redrob_photo_testkit::gpu_lock();
     let Some(mut h) = harness() else { return };
     setup(&mut h, 1.0);
@@ -126,8 +130,8 @@ fn adjustment_layer_drag_previews_at_full_resolution_when_low_res_is_off() {
         app.live_adjust = Some((id, json!({})));
         id
     };
-    let reduced = row(&mut h);
-    assert!(columns(&reduced) < 0.1, "default: the reduced copy loses the columns ({})", columns(&reduced));
+    let on = row(&mut h);
+    assert!(columns(&on) > 0.9, "low-res previews on, at 100 %: no copy coarser than the screen ({})", columns(&on));
     low_res(&mut h, false);
     h.state_mut().live_adjust = Some((layer, json!({})));
     let full = row(&mut h);

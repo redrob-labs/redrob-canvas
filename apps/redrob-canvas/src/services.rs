@@ -103,6 +103,35 @@ fn open_url(url: &str) -> Result<(), String> {
     webbrowser::open(url).map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// File › Open Location: the bytes at `url`, through the workspace's `reqwest` on a
+/// current-thread tokio runtime (as `update.rs` does). Redirects are followed, 120 s timeout.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn fetch_url(url: &str) -> Result<Vec<u8>, String> {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|e| format!("tokio runtime: {e}"))?;
+    rt.block_on(async {
+        let client = reqwest::Client::builder()
+            .user_agent(concat!("Redrob Canvas/", env!("CARGO_PKG_VERSION")))
+            .timeout(std::time::Duration::from_secs(120))
+            .redirect(reqwest::redirect::Policy::limited(10))
+            .build()
+            .map_err(|e| format!("HTTP client: {e}"))?;
+        let response = client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| format!("{url}: {e}"))?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(format!("{url}: HTTP {status}"));
+        }
+        let bytes = response.bytes().await.map_err(|e| format!("{url}: {e}"))?;
+        Ok(bytes.to_vec())
+    })
+}
+
 // ---------------------------------------------------------------------------------------------
 // Photo (photocraft)
 // ---------------------------------------------------------------------------------------------
@@ -188,12 +217,16 @@ pub mod photo {
 
     /// Everything File › Open reads (upstream `services::OPEN_EXTS`).
     const OPEN_EXTS: &[&str] = &[
-        "rphoto", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif",
-        "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr", "pbm", "pgm", "ppm",
-        "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin", "heic", "heif",
-        "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2", "raf", "abr", "grd",
-        "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto", "afpub",
-        "pcraft", // legacy: upstream Photo documents still open
+        "rphoto", "xcf", "xcfgz", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg",
+        "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr", "pbm",
+        "pgm", "ppm", "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin",
+        "heic", "heif", "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2",
+        "raf", "abr", "grd", "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto",
+        "afpub", "pcraft", // legacy: upstream Photo documents still open
+        // Legacy and scientific formats (redrob_photo_io::legacy) and resource files.
+        "xbm", "cur", "ani", "sgi", "rgb", "rgba", "bw", "pix", "als", "cel", "fli", "flc", "xwd",
+        "dcm", "dicom", "wmf", "gih", "pat", "gpat", "jxl", "jp2", "j2k", "j2c", "jpf", "jpx",
+        "jph", "eps", "ps", "epsf",
     ];
 
     const SAVE_FILTERS: &[(&str, &[&str])] = &[
@@ -201,6 +234,10 @@ pub mod photo {
         ("PDF", &["pdf"]),
         ("Redrob Canvas photo document", &["rphoto"]),
         ("OpenRaster", &["ora"]),
+        ("XCF", &["xcf"]),
+        ("JPEG XL", &["jxl"]),
+        ("JPEG 2000", &["jp2", "j2k", "jph"]),
+        ("Encapsulated PostScript", &["eps", "ps"]),
         ("PNG", &["png"]),
         ("JPEG", &["jpg"]),
         ("WebP", &["webp"]),
@@ -212,6 +249,19 @@ pub mod photo {
         ("OpenEXR", &["exr"]),
         ("FITS", &["fits", "fit"]),
         ("DPX", &["dpx"]),
+        ("X BitMap", &["xbm"]),
+        ("Windows cursor", &["cur", "ani"]),
+        ("SGI", &["sgi", "rgb", "bw"]),
+        ("Alias PIX", &["pix"]),
+        ("KiSS cel", &["cel"]),
+        ("Autodesk animation", &["flc", "fli"]),
+        ("X window dump", &["xwd"]),
+        ("DICOM", &["dcm"]),
+        ("MNG animation", &["mng"]),
+        ("C source", &["c", "h"]),
+        ("HTML table", &["html"]),
+        ("Brush", &["gbr", "gih"]),
+        ("Pattern", &["pat"]),
     ];
 
     /// Open dialog extensions that also match uppercase names on Linux's case-sensitive globs.
@@ -511,8 +561,42 @@ pub mod vector {
             open_url: Some(Box::new(|url: &str| {
                 let _ = open_url(url);
             })),
+            fetch_url: Some(Box::new(fetch_url)),
             ..Default::default()
         }
+    }
+
+    /// File › Import Web Image…: the bytes at `url` (at most 64 MB), fetched on a runtime of
+    /// its own so the UI thread needs no async context.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn fetch_url(url: &str) -> Result<Vec<u8>, String> {
+        const MAX: usize = 64 * 1024 * 1024;
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| e.to_string())?;
+        let url = url.to_string();
+        rt.block_on(async move {
+            let client = reqwest::Client::builder()
+                .user_agent(concat!("redrob-canvas/", env!("CARGO_PKG_VERSION")))
+                .timeout(std::time::Duration::from_secs(60))
+                .build()
+                .map_err(|e| e.to_string())?;
+            let resp = client
+                .get(&url)
+                .send()
+                .await
+                .and_then(|r| r.error_for_status())
+                .map_err(|e| e.to_string())?;
+            if resp.content_length().is_some_and(|n| n as usize > MAX) {
+                return Err("the file is larger than 64 MB".to_string());
+            }
+            let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+            if bytes.len() > MAX {
+                return Err("the file is larger than 64 MB".to_string());
+            }
+            Ok(bytes.to_vec())
+        })
     }
 
     /// Have the font scans read the editor's own Fonts folder, which `text.addFontFiles`
@@ -536,6 +620,11 @@ pub mod vector {
             app.session
                 .recovery
                 .set_default_folder(sibling("Data Recovery"));
+            if let Some(dir) = sibling("Spelling") {
+                app.session
+                    .spelling
+                    .set_user_dir(std::path::PathBuf::from(dir));
+            }
         }
     }
 

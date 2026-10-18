@@ -325,7 +325,7 @@ mod tests {
         let st = app.session.active().unwrap();
         assert_eq!((st.path.as_deref(), st.format, st.is_dirty()), (Some("art.svg"), "svg", false));
         assert_eq!((&st.save_options["outlineText"], &st.save_options["styling"]), (&json!(true), &json!("css")), "the SVG Options are remembered");
-        assert!(app.ui.status.contains("SVG keeps the artwork"), "{}", app.ui.status);
+        assert_eq!(app.ui.status, "Saved art.svg", "an SVG save keeps the editor data, so it has no fidelity note");
         // Save writes it back as SVG, with the same options and no questions.
         assert!(!crate::menus::enabled(&app, "file.save"), "nothing to save");
         app.run("shape.ellipse", json!({"x": 50, "y": 10, "width": 20, "height": 20})).unwrap();

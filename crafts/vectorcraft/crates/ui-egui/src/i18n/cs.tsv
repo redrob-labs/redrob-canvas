@@ -4951,3 +4951,367 @@ mark-style	Japanese	Japonské
 @msg	select a clone	vyberte klon
 @msg	select an object	vyberte objekt
 @msg	the copied object is no longer in this document	zkopírovaný objekt už v tomto dokumentu není
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	Efekty cesty
+	Clone Original	Klon originálu
+	Clone Original…	Klon originálu…
+	Attach Path	Připojit cestu
+	Attach Path…	Připojit cestu…
+	Bounding Box…	Ohraničující rámeček…
+	Fill Between Many	Výplň mezi více cestami
+	Fill Between Many…	Výplň mezi více cestami…
+	Fill Between Strokes	Výplň mezi tahy
+	Fill Between Strokes…	Výplň mezi tahy…
+	Power Clip	Silný ořez
+	Power Clip…	Silný ořez…
+	Power Clip (Inverse)	Silný ořez (inverzní)
+	Release Power Clip	Uvolnit silný ořez
+	Construct Grid	Sestavit mřížku
+	Construct Grid…	Sestavit mřížku…
+	Ellipse by 5 Points	Elipsa z 5 bodů
+	Ellipse by 5 Points…	Elipsa z 5 bodů…
+	Ellipse from Points	Elipsa z bodů
+	Ellipse from Points…	Elipsa z bodů…
+	Circle by 3 Points	Kružnice ze 3 bodů
+	Circle by 3 Points…	Kružnice ze 3 bodů…
+	Circle by Center and Radius	Kružnice ze středu a poloměru
+	Line Segment…	Úsečka…
+	Parallel	Rovnoběžka
+	Parallel…	Rovnoběžka…
+	Perpendicular Bisector	Osa úsečky
+	Perpendicular Bisector…	Osa úsečky…
+	Angle Bisector	Osa úhlu
+	Angle Bisector…	Osa úhlu…
+	Tangent to Curve	Tečna ke křivce
+	Tangent to Curve…	Tečna ke křivce…
+	Transform by 2 Points	Transformovat 2 body
+	Transform by 2 Points…	Transformovat 2 body…
+	Show Handles…	Zobrazit úchyty…
+	Measure Segments	Měřit segmenty
+	Measure Segments…	Měřit segmenty…
+	Ruler	Pravítko
+	Ruler…	Pravítko…
+	Interpolate Points	Interpolovat body
+	Interpolate Points…	Interpolovat body…
+	Knot	Uzel
+	Knot…	Uzel…
+	VonKoch	VonKoch
+	VonKoch…	VonKoch…
+	Gears	Ozubená kola
+	Gears…	Ozubená kola…
+	Embroidery Stitch	Vyšívací steh
+	Embroidery Stitch…	Vyšívací steh…
+	Stitch Sub-Paths	Sešít dílčí cesty
+	Stitch Sub-Paths…	Sešít dílčí cesty…
+	Hatches (Rough)	Šrafování (hrubé)
+	Hatches (Rough)…	Šrafování (hrubé)…
+	Sketch	Skica
+	Sketch…	Skica…
+	Join Type	Typ spojení
+	Join Type…	Typ spojení…
+	Slice…	Řez…
+	Select Linked Object	Vybrat propojený objekt
+	Mask Background	Pozadí masky
+	Background	Pozadí
+	Live Slice	Živý řez
+	Fuse Slice	Sloučit řez
+	3D Marble	3D mramor
+	3D Wood	3D dřevo
+	Air Spray	Rozprašovač
+	Aluminium	Hliník
+	Apply Effects to Image Pixels	Použít efekty na pixely obrázku
+	Apply Filter Preset	Použít předvolbu filtru
+	Apply to Selection	Použít na výběr
+	Bevels	Zkosení
+	Black Hole	Černá díra
+	Blobs	Kapky
+	Bloom	Záře
+	Brilliance	Lesk
+	Bump	Hrbol
+	Bumps	Hrboly
+	Button	Tlačítko
+	Canvas Bumps	Hrboly plátna
+	Chalk and Sponge	Křída a houba
+	Channel to Alpha	Kanál na alfu
+	Chrome	Chrom
+	Color Blindness	Barvoslepost
+	Colour Space:	Barevný prostor:
+	Comics Cream	Komiksový krém
+	Cracked Glass	Prasklé sklo
+	Cubes	Krychle
+	Dark and Glow	Tma a záře
+	Document Filters	Filtry dokumentu
+	Dragee	Dražé
+	Duochrome	Dvoubarevný
+	Duplicate Filter	Duplikovat filtr
+	Embossed Leather	Reliéfní kůže
+	Extract Channel	Extrahovat kanál
+	Fade to Black	Prolnutí do černé
+	Felt Feather	Plstěné pírko
+	Fill and Overlays	Výplně a překryvy
+	Filter	Filtr
+	Filter Gallery	Galerie filtrů
+	Filter Presets	Předvolby filtrů
+	Filter copy	Kopie filtru
+	Filters	Filtry
+	Glow	Záře
+	Glowing Metal	Žhnoucí kov
+	Gold	Zlato
+	Greyscale	Stupně šedi
+	HSL Noise	Šum HSL
+	Ink Blot	Inkoustová kaňka
+	Ink Splash	Cákanec inkoustu
+	Inner Shadow	Vnitřní stín
+	Leopard Fur	Leopardí kožešina
+	Light Eraser	Guma na světlo
+	Luminance to Alpha	Jas na alfu
+	Materials	Materiály
+	Matte Jelly	Matné želé
+	Metallized Paint	Metalický lak
+	Neon	Neon
+	No filter matches the search.	Hledání neodpovídá žádný filtr.
+	Noise Fill	Výplň šumem
+	Non-realistic 3D Shaders	Nerealistické 3D shadery
+	Open Filter Editor	Otevřít editor filtrů
+	Paper Bump	Hrbol papíru
+	Pointillism	Pointilismus
+	Protrusions	Výběžky
+	Quadritone	Čtyřtón
+	Ridges	Hřebeny
+	Rough Paper	Hrubý papír
+	Rough Transparency	Hrubá průhlednost
+	Roughen	Zhrubit
+	Saturation Map	Mapa sytosti
+	Select an object to apply a filter.	Vyberte objekt, na který se má použít filtr.
+	Silhouette	Silueta
+	Smooth Edges	Vyhladit okraje
+	Solarize	Solarizace
+	Specular Light	Odlesk
+	Spikes	Hroty
+	Spots Overlay	Překryv skvrnami
+	Stone Wall	Kamenná zeď
+	Subregion:	Podoblast:
+	Swirl	Vír
+	Textures	Textury
+	The document has no filters yet.	Dokument zatím nemá žádné filtry.
+	Thin Membrane	Tenká membrána
+	Torn Edges	Roztrhané okraje
+	Translucent	Průsvitný
+	Transparency Utilities	Nástroje průhlednosti
+	Tritone	Trojtón
+	Watercolor	Akvarel
+	Waves	Vlny
+	Turns:	Otáčky:
+	Divergence:	Divergence:
+	Clockwise	Po směru hodin
+	Threshold:	Prahová hodnota:
+	Grow/Shrink:	Zvětšit/zmenšit:
+	Fill by:	Vyplnit podle:
+	Visible Colors	Viditelné barvy
+	Alpha	Alfa
+	Add to Fill	Přidat k výplni
+	View rotation (Cmd+Shift+scroll turns the view)	Otočení zobrazení (Cmd+Shift+kolečko otáčí)
+	Lock Rotate View	Zamknout otočení zobrazení
+	Fixation:	Fixace:
+	Dip Pen	Pero namáčecí
+	Marker	Fix
+	Brush	Štětec
+	Wiggly	Kostrbatý
+	Splotchy	Flekatý
+	Use Pressure	Použít tlak
+	Live Simplify	Živé zjednodušení
+	Simplify (Live)…	Zjednodušit (živě)…
+	Split View	Rozdělené zobrazení
+	X-ray	Rentgen
+	Input Devices…	Vstupní zařízení…
+	Input Devices	Vstupní zařízení
+	Pressure Curves	Křivky tlaku
+	Mouse	Myš
+	Pen / Stylus	Pero / stylus
+	Touch	Dotyk
+	Liquify Tools	Nástroje zkapalnění
+	Disabled	Vypnuto
+	Grids	Mřížky
+	Main Grid	Hlavní mřížka
+	Add Grid	Přidat mřížku
+	Remove Grid	Odebrat mřížku
+	Grid Options	Volby mřížky
+	Kind:	Druh:
+	Subdivisions:	Dělení:
+	Angles:	Úhly:
+	Gaps:	Mezery:
+	Origin:	Počátek:
+	Own color	Vlastní barva
+	Open a document to edit its grids.	Otevřete dokument a upravte jeho mřížky.
+	Add Script	Přidat skript
+	Edit Script	Upravit skript
+	Remove Script	Odebrat skript
+	The document has no scripts.	Dokument nemá žádné skripty.
+	External:	Externí:
+	Embedded script	Vložený skript
+	Add Embedded Script	Přidat vložený skript
+	Add External Script	Přidat externí skript
+	Source:	Zdroj:
+	External file	Externí soubor
+	Code:	Kód:
+	Open a document to edit its scripts.	Otevřete dokument a upravte jeho skripty.
+	Alignment Handles	Úchyty zarovnání
+	Align (Shift: move the key object)	Zarovnat (Shift: přesunout klíčový objekt)
+	Stylesheet	Stylopis
+	No rules yet. Add one and assign its class to objects.	Zatím žádná pravidla. Přidejte jedno a přiřaďte jeho třídu objektům.
+	Add Rule	Přidat pravidlo
+	Remove Rule	Odebrat pravidlo
+	Selector:	Selektor:
+	Declarations:	Deklarace:
+	Assign to Selection	Přiřadit výběru
+	Remove from Selection	Odebrat z výběru
+	Add CSS Rule	Přidat pravidlo CSS
+	Edit CSS Rule	Upravit pravidlo CSS
+	Remove CSS Rule	Odebrat pravidlo CSS
+	Assign CSS Class	Přiřadit třídu CSS
+	Remove CSS Class	Odebrat třídu CSS
+	Apply Stylesheet	Použít stylopis
+	New Node	Nový uzel
+	Indent Node	Odsadit uzel
+	Outdent Node	Předsadit uzel
+	Move Node	Přesunout uzel
+	Set Path Data	Nastavit data cesty
+	Round to:	Zaokrouhlit na:
+	Round Path Data	Zaokrouhlit data cesty
+	Connector Tool	Nástroj spojnice
+	Connect Objects	Spojit objekty
+	Reroute Connectors	Přesměrovat spojnice
+	Connector Obstacle	Překážka spojnic
+	Arrange Connected Objects	Uspořádat spojené objekty
+	Arrange Connected	Uspořádat spojené
+	Routing:	Vedení:
+	Orthogonal	Pravoúhlé
+	Polyline	Lomená čára
+	Curvature:	Zakřivení:
+	3D Box Tool	Nástroj 3D kvádr
+	3D Box	3D kvádr
+	3D Box Options	Volby 3D kvádru
+	Move Vanishing Point	Přesunout úběžník
+	Z:	Z:
+	Vanishing Point	Úběžník
+	Infinite	Nekonečný
+	Arrange in Grid	Uspořádat do mřížky
+	Arrange in Circle	Uspořádat do kruhu
+	Dynamic Offset	Dynamický posun
+	Fill Between Paths	Vyplnit mezi cestami
+	Linked Offset	Propojený posun
+	Linked Offset Distance	Vzdálenost propojeného posunu
+	Remove Overlaps	Odstranit překrytí
+	Unlink Live Object	Odpojit živý objekt
+	Create Anchor	Vytvořit odkaz
+	Follow Link	Otevřít odkaz
+	Select All Anchors	Vybrat všechny kotevní body
+	Invert Anchor Selection	Invertovat výběr kotevních bodů
+	Aspect ratio:	Poměr stran:
+	Clip path	Ořezová cesta
+	DPI:	DPI:
+	Effect knots	Uzly efektů
+	Highlight color:	Barva zvýraznění:
+	Interactivity	Interaktivita
+	Link target:	Cíl odkazu:
+	Link title:	Název odkazu:
+	Path outline	Obrys cesty
+	Transform handles	Úchyty transformace
+	Plot…	Vykreslit na plotru…
+	Import Web Image…	Importovat webový obrázek…
+	Check Spelling	Kontrola pravopisu
+	Edit Custom Dictionary	Upravit vlastní slovník
+	The spell check is complete.	Kontrola pravopisu je dokončena.
+	Words checked	Zkontrolovaná slova
+	Check Again	Zkontrolovat znovu
+	Word Not Found:	Nenalezené slovo:
+	Change To:	Změnit na:
+	Suggestions:	Návrhy:
+	No suggestions	Žádné návrhy
+	Ignore All	Ignorovat vše
+	No words yet	Zatím žádná slova
+	Word:	Slovo:
+	Change Spelling	Změnit pravopis
+	Ignore Spelling	Ignorovat pravopis
+	Add to Dictionary	Přidat do slovníku
+	Remove from Dictionary	Odebrat ze slovníku
+	Spelling Dictionaries	Slovníky pravopisu
+	Visible Hairlines	Viditelné vlasové čáry
+	Rename…	Přejmenovat…
+	Extract…	Extrahovat…
+	Object Attributes	Atributy objektu
+	Object Attributes…	Atributy objektu…
+	Create Tiled Clones…	Vytvořit dlaždicové klony…
+	Rename Symbol	Přejmenovat symbol
+	Set Object Attribute	Nastavit atribut objektu
+	Trace Pixel Art…	Vektorizovat pixel art…
+	Objects to Marker	Objekty na značku
+	Markers	Značky
+	Markers:	Značky:
+	Delete Marker	Odstranit značku
+	SVG Font Editor	Editor písem SVG
+	SVG Font Editor…	Editor písem SVG…
+	New Font	Nové písmo
+	Delete Font	Odstranit písmo
+	No SVG font yet: make one, or turn glyph layers into one.	Zatím žádné písmo SVG: vytvořte nové nebo převeďte vrstvy glyfů.
+	Glyph Layers to Font	Vrstvy glyfů na písmo
+	Glyph	Glyf
+	Advance	Šířka
+	Curves	Křivky
+	Unicode:	Unicode:
+	Glyph name:	Název glyfu:
+	Advance:	Šířka:
+	Add Glyph	Přidat glyf
+	Remove Glyph	Odebrat glyf
+	Get Curves from Selection	Získat křivky z výběru
+	Glyph to Objects	Glyf na objekty
+	Kerning:	Kerning:
+	Set Pair	Nastavit pár
+	Preview:	Náhled:
+	Font to Glyph Layers	Písmo na vrstvy glyfů
+	New SVG Font	Nové písmo SVG
+	SVG Fonts	Písma SVG
+	Delete SVG Font	Odstranit písmo SVG
+	SVG Font Options	Volby písma SVG
+	Set Glyph	Nastavit glyf
+	Set Kerning Pair	Nastavit kerningový pár
+	Preview SVG Font	Náhled písma SVG
+	Glyph Layers to SVG Font	Vrstvy glyfů na písmo SVG
+	SVG Font to Glyph Layers	Písmo SVG na vrstvy glyfů
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	soubory WPG verze 2 (WordPerfect 6 a novější) se zatím nečtou: uložte grafiku jako WPG 1 nebo jiný vektorový formát
+@msg	bad central record	poškozený centrální záznam
+@msg	downloading needs the desktop app	stahování vyžaduje desktopovou aplikaci
+@msg	give `url`: an http:// or https:// address of an image	zadejte `url`: adresu obrázku začínající http:// nebo https://
+@msg	no zip end record	chybí koncový záznam zip
+@msg	not a CGM file	není to soubor CGM
+@msg	not a CorelDRAW file	není to soubor CorelDRAW
+@msg	not a WordPerfect Graphics file	není to soubor WordPerfect Graphics
+@msg	not a zip	není to zip
+@msg	not an XFig file	není to soubor XFig
+@msg	select an embedded image	vyberte vložený obrázek
+@msg	the drawing has nothing Redrob Canvas reads	kresba neobsahuje nic, co by Redrob Canvas četl
+@msg	the effect links to no object in this document	efekt neodkazuje na žádný objekt v tomto dokumentu
+@msg	the file draws nothing Redrob Canvas reads	soubor nekreslí nic, co by Redrob Canvas četl
+@msg	the file is empty	soubor je prázdný
+@msg	the font has a glyph for `{nu}` already	písmo již má glyf pro `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	grafika nekreslí nic, co by Redrob Canvas četl
+@msg	the metafile draws nothing Redrob Canvas reads	metasoubor nekreslí nic, co by Redrob Canvas četl
+@msg	the object is gone	objekt již neexistuje
+@msg	the preview bitmap can't be read	bitmapu náhledu nelze přečíst
+@msg	the preview bitmap is empty	bitmapa náhledu je prázdná
+@msg	the selected object has no link	vybraný objekt nemá žádný odkaz
+@msg	the view's rotation is locked (View › Lock Rotate View)	otočení zobrazení je zamknuto (Zobrazení › Zamknout otočení zobrazení)
+@msg	truncated zip	zkrácený zip
+@msg	view.setRotation: missing `angle`	view.setRotation: chybí `angle`
+@msg	{_1}: the dictionary is empty	{_1}: slovník je prázdný
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: webová aplikace nemá sériová zařízení ani soubory: exportujte HPGL a stáhněte ho
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} není formát, který tento čtecí modul zná
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	soubory {kind}{ver} jsou komprimované kontejnery, jejichž záznamy kresby nejsou dokumentovány: exportujte kresbu z CorelDRAW jako SVG, PDF, EPS nebo EMF a tu otevřete
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: záznamy kresby nejsou dokumentovány a soubor nemá bitmapu náhledu: exportujte kresbu jako SVG, PDF, EPS nebo EMF a tu otevřete
+@msg	{name}: compression method {m} isn't supported	{name}: metoda komprese {m} není podporována
+@msg	{name}: not found among the document's images	{name}: nenalezeno mezi obrázky dokumentu
+@msg	{name}: too large	{name}: příliš velké
+@msg	{url}: {e}	{url}: {e}

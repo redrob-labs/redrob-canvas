@@ -300,6 +300,165 @@ impl PatternImage {
     }
 }
 
+// ---------- colour tips ----------
+
+/// An RGB bitmap for colour brush tips (image stamps), row-major, 8 bits per channel, straight
+/// (not premultiplied) display RGB; the tip's alpha lives in the matching [`GrayTile`]. JSON
+/// carries it as base64 of the RGB bytes. Shared like [`GrayTile`], so cloning is cheap.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ColorTile {
+    pub width: u32,
+    pub height: u32,
+    /// `width × height × 3` bytes.
+    pub data: std::sync::Arc<[u8]>,
+}
+
+impl ColorTile {
+    /// Build from a function returning straight RGB 0..1.
+    pub fn from_fn(width: u32, height: u32, f: impl Fn(u32, u32) -> [f32; 3]) -> Self {
+        let mut data = Vec::with_capacity(width as usize * height as usize * 3);
+        for y in 0..height {
+            for x in 0..width {
+                for c in f(x, y) {
+                    data.push((c.clamp(0.0, 1.0) * 255.0 + 0.5) as u8);
+                }
+            }
+        }
+        Self { width, height, data: data.into() }
+    }
+    /// Build from packed RGB bytes (`width × height × 3`).
+    pub fn from_rgb8(width: u32, height: u32, rgb: &[u8]) -> Self {
+        assert_eq!(rgb.len(), width as usize * height as usize * 3, "ColorTile size mismatch");
+        Self { width, height, data: rgb.into() }
+    }
+    pub fn is_valid(&self) -> bool {
+        self.width > 0 && self.height > 0 && self.data.len() == self.width as usize * self.height as usize * 3
+    }
+    /// Straight RGB 0..1 at a pixel.
+    #[inline]
+    pub fn get(&self, x: u32, y: u32) -> [f32; 3] {
+        let i = ((y * self.width + x) as usize) * 3;
+        [f32::from(self.data[i]) / 255.0, f32::from(self.data[i + 1]) / 255.0, f32::from(self.data[i + 2]) / 255.0]
+    }
+    /// Relative luminance (Rec. 709 weights on the display values) of a pixel, 0..1.
+    #[inline]
+    pub fn lightness(&self, x: u32, y: u32) -> f32 {
+        let [r, g, b] = self.get(x, y);
+        0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    /// The RGB values as floats, interleaved.
+    pub fn to_f32(&self) -> Vec<f32> {
+        self.data.iter().map(|&v| f32::from(v) / 255.0).collect()
+    }
+}
+
+#[derive(Serialize)]
+struct ColorTileOut<'a> {
+    width: u32,
+    height: u32,
+    rgb: &'a str,
+}
+
+#[derive(Deserialize)]
+struct ColorTileIn {
+    width: u32,
+    height: u32,
+    rgb: String,
+}
+
+impl Serialize for ColorTile {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let enc = b64_encode(&self.data);
+        ColorTileOut { width: self.width, height: self.height, rgb: &enc }.serialize(s)
+    }
+}
+
+impl<'de> Deserialize<'de> for ColorTile {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        use serde::de::Error;
+        let t = ColorTileIn::deserialize(d)?;
+        let n = t.width as usize * t.height as usize * 3;
+        let data = b64_decode(&t.rgb).ok_or_else(|| D::Error::custom("invalid base64 in colour tile data"))?;
+        if n == 0 || data.len() != n {
+            return Err(D::Error::custom(format!("colour tile has {} bytes, expected {}×{}×3", data.len(), t.width, t.height)));
+        }
+        Ok(ColorTile { width: t.width, height: t.height, data: data.into() })
+    }
+}
+
+/// A float mip pyramid of a [`ColorTile`] (three interleaved channels), for sampling a colour
+/// tip at any dab size.
+#[derive(Clone, Debug)]
+pub struct ColorMips {
+    /// (width, height, rgb values interleaved), level 0 = full resolution.
+    pub levels: Vec<(usize, usize, Vec<f32>)>,
+}
+
+impl ColorMips {
+    pub fn new(t: &ColorTile) -> Self {
+        let mut levels = vec![(t.width as usize, t.height as usize, t.to_f32())];
+        while let Some((w, h, v)) = levels.last() {
+            if *w <= 1 && *h <= 1 {
+                break;
+            }
+            let (nw, nh) = ((*w).div_ceil(2), (*h).div_ceil(2));
+            let mut nv = vec![0.0f32; nw * nh * 3];
+            for y in 0..nh {
+                for x in 0..nw {
+                    let mut s = [0.0f32; 3];
+                    let mut c = 0.0;
+                    for dy in 0..2 {
+                        for dx in 0..2 {
+                            let (sx, sy) = (x * 2 + dx, y * 2 + dy);
+                            if sx < *w && sy < *h {
+                                for k in 0..3 {
+                                    s[k] += v[(sy * w + sx) * 3 + k];
+                                }
+                                c += 1.0;
+                            }
+                        }
+                    }
+                    for k in 0..3 {
+                        nv[(y * nw + x) * 3 + k] = s[k] / c;
+                    }
+                }
+            }
+            levels.push((nw, nh, nv));
+        }
+        Self { levels }
+    }
+
+    /// Mip level for drawing the tile at `px` pixels across its larger side.
+    pub fn level_for(&self, px: f32) -> usize {
+        let (w, h, _) = &self.levels[0];
+        let ratio = (*w.max(h) as f32 / px.max(1.0)).max(1.0);
+        (ratio.log2().floor() as usize).min(self.levels.len() - 1)
+    }
+
+    /// Bilinear RGB sample at normalised `u, v` in 0..1 (clamped to the edge pixels).
+    #[inline]
+    pub fn sample(&self, level: usize, u: f32, v: f32) -> [f32; 3] {
+        let (w, h, d) = &self.levels[level];
+        let fx = u * *w as f32 - 0.5;
+        let fy = v * *h as f32 - 0.5;
+        let (x0, y0) = (fx.floor(), fy.floor());
+        let (tx, ty) = (fx - x0, fy - y0);
+        let (x0, y0) = (x0 as i64, y0 as i64);
+        let get = |x: i64, y: i64, k: usize| {
+            let x = x.clamp(0, *w as i64 - 1) as usize;
+            let y = y.clamp(0, *h as i64 - 1) as usize;
+            d[(y * w + x) * 3 + k]
+        };
+        let mut out = [0.0f32; 3];
+        for (k, o) in out.iter_mut().enumerate() {
+            let a = get(x0, y0, k) + (get(x0 + 1, y0, k) - get(x0, y0, k)) * tx;
+            let b = get(x0, y0 + 1, k) + (get(x0 + 1, y0 + 1, k) - get(x0, y0 + 1, k)) * tx;
+            *o = a + (b - a) * ty;
+        }
+        out
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

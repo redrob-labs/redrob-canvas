@@ -179,6 +179,35 @@ impl ShapeHandleDrag {
             }
             HandleKind::SpiralOuter | HandleKind::SpiralInner => {
                 let (r, turn) = self.live.turned_polar(p)?;
+                let LiveShape::Spiral { decay: decay0, segments: segments0, clockwise, .. } = &self.live else { return None };
+                let (decay0, segments0, clockwise) = (*decay0, *segments0, *clockwise);
+                let outer = self.live.spiral_radius()?.max(1e-9);
+                let (r0, turn0) = self.live.turned_polar(self.start)?;
+                // Alt on either handle changes the divergence: how far the pointer has gone
+                // outward or inward from the press, as a share of the radius, slows the winding
+                // down or speeds it up.
+                if m.alt {
+                    let share = ((r - r0).abs() / outer).clamp(0.0, 1.0);
+                    let decay = if r > r0 { decay0 + (99.99 - decay0) * share } else { decay0 - (decay0 - 5.0) * share };
+                    self.label = format!("Divergence: {decay:.1} %");
+                    return Some(json!({ "id": id, "spiralDecay": decay.clamp(5.0, 99.99) }));
+                }
+                // Shift on either handle rolls the spiral in or out: the turn the handle is
+                // dragged through adds or removes quarter turns, the radius and decay kept.
+                if m.shift {
+                    let mut delta = turn - turn0;
+                    if delta > 180.0 {
+                        delta -= 360.0;
+                    } else if delta < -180.0 {
+                        delta += 360.0;
+                    }
+                    let dir = if clockwise { 1.0 } else { -1.0 };
+                    let sign = if self.handle.kind == HandleKind::SpiralInner { 1.0 } else { -1.0 };
+                    let quarters = (sign * dir * delta / 90.0).round() as i64;
+                    let segments = (i64::from(segments0) + quarters).clamp(2, 1000);
+                    self.label = format!("Turns: {:.2}", segments as f64 / 4.0);
+                    return Some(json!({ "id": id, "segments": segments }));
+                }
                 if self.handle.kind == HandleKind::SpiralOuter {
                     let turn = if m.cmd { snap_angle(turn, 15.0) } else { turn };
                     self.label = format!("Radius: {}\nAngle: {turn:.1}°", cx.len(r));
@@ -186,7 +215,6 @@ impl ShapeHandleDrag {
                 } else {
                     // The inner end's distance from the centre, as a share of the radius, sets how
                     // fast the spiral winds in.
-                    let outer = self.live.spiral_radius()?.max(1e-9);
                     let decay = self.live.spiral_decay_for_inner((r / outer).clamp(0.001, 0.999))?;
                     self.label = format!("Decay: {decay:.1} %");
                     Some(json!({ "id": id, "spiralDecay": decay }))

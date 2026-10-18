@@ -77,7 +77,17 @@ fn export_tool_lists_engine_formats_and_options() {
             "emf",
             "wmf",
             "tga",
-            "psd"
+            "psd",
+            "canvas",
+            "fxg",
+            "pov",
+            "sif",
+            "xaml",
+            "odg",
+            "tex",
+            "pdftex",
+            "hpgl",
+            "xcf"
         ])
     );
     for k in ["artboard", "range", "options"] {

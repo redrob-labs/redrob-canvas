@@ -3,11 +3,11 @@
 use redrob_photo_geom::Rect;
 
 use super::{fbm, map_px, over, sstep};
-use crate::Ctx;
 use crate::image::{Edge, Image};
+use crate::{Ctx, FilmFont};
 
 /// Filmstrip parameters (hole sizes as fractions of the film height).
-pub(crate) struct FilmstripSpec {
+pub(crate) struct FilmstripSpec<'a> {
     pub color: [f32; 4],
     pub number_color: [f32; 4],
     pub number_start: i32,
@@ -17,6 +17,13 @@ pub(crate) struct FilmstripSpec {
     pub hole_width: f32,
     pub hole_height: f32,
     pub hole_spacing: f32,
+    /// Scale every frame to the film's frame height (else keep its pixel size, clipped).
+    pub fit_height: bool,
+    /// Frame-number font and height (fraction of the film height; 0 = automatic).
+    pub font: FilmFont,
+    pub number_height: f32,
+    /// The pictures on the strip, in order (empty: the layer itself repeats).
+    pub frames: &'a [std::sync::Arc<Image>],
 }
 
 /// 3×5 digit glyphs, one bit per cell, row-major from the top.
@@ -52,9 +59,18 @@ fn digit_hit(number: i32, origin: (f32, f32), cell: f32, x: f32, y: f32) -> bool
     DIGITS[d.min(9)][row.min(4)] & (0b100 >> gc) != 0
 }
 
+/// Whether `number` in `font`, drawn with its top-left at `origin` and `height` pixels tall,
+/// covers `(x, y)`.
+fn number_hit(font: FilmFont, number: i32, origin: (f32, f32), height: f32, x: f32, y: f32) -> bool {
+    match font {
+        FilmFont::Compact => digit_hit(number, origin, (height / 5.0).max(1.0), x, y),
+        FilmFont::Classic => crate::decor::caption(&number.unsigned_abs().to_string(), origin.0, origin.1, height.max(3.5), x, y) > 0.0,
+    }
+}
+
 /// Filmstrip: the bounds become a strip of film of the film colour with two rows of sprocket
-/// holes; the layer, scaled to the frame height, repeats as consecutive numbered frames across
-/// the strip.
+/// holes; the pictures (the layer itself, or the supplied frames in turn), scaled to the frame
+/// height or kept at their size, follow one another as numbered frames across the strip.
 pub(crate) fn filmstrip(src: &Image, out: Rect, ctx: &Ctx, spec: &FilmstripSpec) -> Vec<f32> {
     let b = ctx.bounds;
     let (bw, bh) = (b.width() as f32, b.height() as f32);
@@ -67,14 +83,29 @@ pub(crate) fn filmstrip(src: &Image, out: Rect, ctx: &Ctx, spec: &FilmstripSpec)
     let hole_sp = spec.hole_spacing.clamp(0.01, 1.0) * bh;
     let margin = hole_off + hole_h + bh * 0.03;
     let frame_h = (bh - 2.0 * margin).max(1.0);
-    let scale = frame_h / bh;
-    let frame_w = bw * scale;
     let gap = bh * 0.04;
-    let pitch = frame_w + gap;
+    // The pictures: (image, its rect, scale onto the strip, width on the strip).
+    struct Pic<'p> {
+        img: &'p Image,
+        rect: Rect,
+        scale: f32,
+        width: f32,
+    }
+    fn pic<'p>(img: &'p Image, rect: Rect, fit: bool, frame_h: f32) -> Pic<'p> {
+        let (w, h) = (rect.width().max(1) as f32, rect.height().max(1) as f32);
+        let scale = if fit { frame_h / h } else { 1.0 };
+        Pic { img, rect, scale, width: w * scale }
+    }
+    let pics: Vec<Pic> = if spec.frames.is_empty() {
+        vec![pic(src, b, spec.fit_height, frame_h)]
+    } else {
+        spec.frames.iter().map(|f| pic(f, f.rect, spec.fit_height, frame_h)).collect()
+    };
+    let total: f32 = pics.iter().map(|p| p.width + gap).sum::<f32>().max(1.0);
     let film = [spec.color[0], spec.color[1], spec.color[2], 1.0];
-    let glyph_cell = (hole_h * 0.18).max(1.0);
+    let num_h = if spec.number_height > 0.0 { spec.number_height.clamp(0.01, 0.3) * bh } else { (hole_h * 0.9).max(5.0) };
     let n = src.ch;
-    let mut tmp = vec![0.0f32; n];
+    let mut tmp = [0.0f32; crate::fxutil::MAXC];
     map_px(src, out, ctx, |x, y, _| {
         let (fx, fy) = (x as f32 + 0.5 - b.x0 as f32, y as f32 + 0.5 - b.y0 as f32);
         // Sprocket holes.
@@ -85,23 +116,44 @@ pub(crate) fn filmstrip(src: &Image, out: Rect, ctx: &Ctx, spec: &FilmstripSpec)
                 return if ctx.alpha { [0.0, 0.0, 0.0, 0.0] } else { [1.0, 1.0, 1.0, 1.0] };
             }
         }
-        // Frame numbers.
-        let frame = (fx / pitch).floor() as i32;
-        let number = spec.number_start + frame;
-        let origin_x = frame as f32 * pitch + gap;
-        if spec.numbers_top && digit_hit(number, (origin_x, hole_off + hole_h + bh * 0.005), glyph_cell, fx, fy) {
+        // Which frame, and where in it: the pictures repeat across the strip.
+        let cycle = (fx / total).floor();
+        let mut u = fx - cycle * total;
+        let mut idx = 0usize;
+        while idx + 1 < pics.len() && u >= pics[idx].width + gap {
+            u -= pics[idx].width + gap;
+            idx += 1;
+        }
+        let p = &pics[idx];
+        let number = spec.number_start + cycle as i32 * pics.len() as i32 + idx as i32;
+        let origin_x = fx - u + gap;
+        if spec.numbers_top && number_hit(spec.font, number, (origin_x, hole_off + hole_h + bh * 0.005), num_h, fx, fy) {
             return [spec.number_color[0], spec.number_color[1], spec.number_color[2], 1.0];
         }
-        if spec.numbers_bottom && digit_hit(number, (origin_x, bh - margin + bh * 0.005), glyph_cell, fx, fy) {
+        if spec.numbers_bottom && number_hit(spec.font, number, (origin_x, bh - margin + bh * 0.005), num_h, fx, fy) {
             return [spec.number_color[0], spec.number_color[1], spec.number_color[2], 1.0];
         }
-        // Frames.
-        let u = fx.rem_euclid(pitch);
-        if u >= gap && (margin..margin + frame_h).contains(&fy) {
-            let sx = b.x0 as f32 + (u - gap) / scale;
-            let sy = b.y0 as f32 + (fy - margin) / scale;
-            src.sample(sx, sy, Edge::Repeat, b, ctx.alpha, &mut tmp);
-            let c = crate::fxutil::rgba(ctx, &tmp);
+        // Frame pixels.
+        let pic_h = p.rect.height() as f32 * p.scale;
+        let top = margin + (frame_h - pic_h).max(0.0) * 0.5;
+        if u >= gap && u < gap + p.width && (top..top + pic_h.min(frame_h)).contains(&fy) {
+            let sx = p.rect.x0 as f32 + (u - gap) / p.scale;
+            let sy = p.rect.y0 as f32 + (fy - top) / p.scale;
+            let pc = p.img.ch.min(crate::fxutil::MAXC);
+            let is_src = std::ptr::eq(p.img, src);
+            let has_alpha = if is_src { ctx.alpha } else { pc == 2 || pc == 4 };
+            p.img.sample(sx, sy, Edge::Repeat, p.rect, has_alpha, &mut tmp[..pc]);
+            let c = if is_src {
+                crate::fxutil::rgba(ctx, &tmp[..n])
+            } else {
+                // Supplied frames are RGBA (or grey) straight images.
+                match pc {
+                    4 => [tmp[0], tmp[1], tmp[2], tmp[3]],
+                    3 => [tmp[0], tmp[1], tmp[2], 1.0],
+                    2 => [tmp[0], tmp[0], tmp[0], tmp[1]],
+                    _ => [tmp[0], tmp[0], tmp[0], 1.0],
+                }
+            };
             return over(c, film);
         }
         film

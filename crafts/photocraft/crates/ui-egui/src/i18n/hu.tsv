@@ -4350,3 +4350,825 @@ cameraRaw	Yellow	Sárga
 	Popup palette	Felugró paletta
 	Smear	Elkenés
 	Smudge Radius	Maszatolási sugár
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Lineáris invertálás
+	Value Invert	Érték invertálása
+	Stretch Contrast HSV	HSV kontraszt nyújtása
+	Color Enhance	Színkiemelés
+	Extract Component…	Összetevő kivonása…
+	Alien Map…	Idegen leképezés…
+	Rotate Colors…	Színek forgatása…
+	Palette Map…	Paletta-leképezés…
+	Sample Colorize…	Színezés minta alapján…
+	RGB Clip…	RGB vágás…
+	Dither…	Színszórás…
+	Local Threshold…	Helyi küszöb…
+	Destripe…	Csíkok eltávolítása…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Színből szürke…
+	Fattal et al. 2002…	Fattal és mtsai. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Sima paletta…
+	Decompose…	Szétbontás…
+	Compose…	Összeállítás…
+	Recompose	Újraösszeállítás
+	Rearrange Colormap…	Színtérkép átrendezése…
+	Set Colormap…	Színtérkép beállítása…
+	Border Average…	Szegélyátlag…
+	Export Histogram…	Hisztogram exportálása…
+	Variable Blur…	Változó elmosás…
+	Apply Lens…	Lencse alkalmazása…
+	Mosaic Tiles…	Mozaikcsempék…
+	Newsprint…	Újságnyomat…
+	Curve Bend…	Görbe hajlítás…
+	Warp (Map)…	Torzítás (térkép)…
+	Bloom…	Fényudvar…
+	Sobel…	Sobel…
+	Cartoon…	Rajzfilm…
+	Clothify…	Textil…
+	Stencil Chrome…	Króm sablon…
+	Bump Map…	Dombortérkép…
+	Panorama Projection…	Panorámavetítés…
+	Perlin Noise…	Perlin-zaj…
+	Plasma…	Plazma…
+	Solid Noise…	Tömör zaj…
+	Add Border…	Keret hozzáadása…
+	Fog…	Köd…
+	Old Photo…	Régi fotó…
+	Round Corners…	Lekerekített sarkok…
+	Tile…	Csempézés…
+	Depth Merge…	Mélységi egyesítés…
+	Geometric Shapes…	Geometriai alakzatok…
+	Image Map Area…	Képtérkép-terület…
+	Image Map From Slices	Képtérkép szeletekből
+	Export Image Map…	Képtérkép exportálása…
+	Clear Image Map	Képtérkép törlése
+	Combine	Kombinálás
+	Clipping	Vágás
+	Color Space	Színtér
+	Linear light	Lineáris fény
+	Copy upper to lower	Felső másolása az alsóba
+	Swap curves	Görbék cseréje
+	Mirror	Tükrözés
+	Gradient Source	Színátmenet forrás
+	Value Jitter	Érték-remegés
+	Pipe	Sorozat
+	Brush file (.myb)	Ecsetfájl (.myb)
+	Text as brush tip	Szöveg ecsethegyként
+	One character per dab along the stroke	Egy karakter pöttyönként a vonás mentén
+	Engine	Motor
+	Text Tip	Szöveghegy
+	Hatching	Vonalkázás
+	Particle	Részecske
+	Dyna	Dyna
+	Tangent Normal	Érintő normál
+	MyPaint	MyPaint
+	Spray	Spray
+	Bristle	Sörte
+	Deform	Torzítás
+	Grain Extract	Szemcse kivonása
+	Grain Merge	Szemcse egyesítése
+	LCh Hue	LCh színárnyalat
+	LCh Chroma	LCh színesség
+	LCh Color	LCh szín
+	LCh Lightness	LCh világosság
+	Merge	Egyesítés
+	Split	Felosztás
+	Remove Holes	Lyukak eltávolítása
+	Distort…	Torzítás…
+	Rounded Rectangle…	Lekerekített téglalap…
+	Anchor Layer	Réteg rögzítése
+	To New Layer	Új rétegbe
+	Layer Boundary Size…	Réteghatár mérete…
+	Layer to Image Size	Réteg képméretre
+	Resize Layer to Selection	Réteg kijelölésméretre
+	Crop Layer to Content	Réteg vágása tartalomra
+	Threshold Alpha…	Alfa küszöb…
+	Composite Options…	Kompozíciós beállítások…
+	Zealous Crop	Alapos vágás
+	Foreground Select	Előtér kijelölése
+	Stroke width	Ecsetvonás szélessége
+	Graph cut	Gráfvágás
+	To Layer Mask	Rétegmaszkba
+	Draw a rough outline round the subject	Rajzoljon durva körvonalat a téma köré
+	Draw a rough outline round the subject first	Először rajzoljon durva körvonalat a téma köré
+	Outline placed: paint over the foreground, then Preview or Select	Körvonal elhelyezve: fesse át az előteret, majd Előnézet vagy Kijelölés
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Durván körvonalazza a témát, fesse át az előteret, és a maszkoló motor megnöveli a maszkot
+	Paint over the foreground (hold Alt for background), then Preview or Select	Fesse át az előteret (Alt a háttérhez), majd Előnézet vagy Kijelölés
+	Display Filters…	Megjelenítési szűrők…
+	Display Filters	Megjelenítési szűrők
+	No Color Deficiency Simulation	Nincs színlátászavar-szimuláció
+	Simulate Protanopia	Protanopia szimulálása
+	Simulate Deuteranopia	Deuteranopia szimulálása
+	Simulate Tritanopia	Tritanopia szimulálása
+	Clip Warning	Vágási figyelmeztetés
+	Clip warning	Vágási figyelmeztetés
+	Color deficiency:	Színlátászavar:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Kontraszt:
+	View-only: the filters change what this view shows, never the pixels.	Csak megjelenítés: a szűrők azt változtatják, amit ez a nézet mutat, a pixeleket soha.
+	Padding Color	Kitöltőszín
+	From Theme	Témából
+	Light Check Color	Világos kockaszín
+	Dark Check Color	Sötét kockaszín
+	Light Check	Világos kocka
+	Dark Check	Sötét kocka
+	Light check	Világos kocka
+	Dark check	Sötét kocka
+	Custom Color	Egyéni szín
+	Keep Padding in Show All	Kitöltés megtartása az Összes megjelenítésében
+	Keep padding in show all	Kitöltés megtartása az Összes megjelenítésében
+	Filter by tag	Szűrés címke szerint
+	Clear filter	Szűrő törlése
+	Tags:	Címkék:
+	Add tag	Címke hozzáadása
+	Remove tag	Címke eltávolítása
+	View Metadata…	Metaadatok megtekintése…
+	Edit Metadata…	Metaadatok szerkesztése…
+	Edit Metadata	Metaadatok szerkesztése
+	Metadata Viewer	Metaadat-megjelenítő
+	Write Metadata	Metaadatok írása
+	Separate several values with semicolons	Több értéket pontosvesszővel válasszon el
+	No tags	Nincs címke
+	XMP	XMP
+	IPTC	IPTC
+	Text	Szöveg
+	Rights	Jogok
+	IPTC Extension	IPTC-kiterjesztés
+	Categories	Kategóriák
+	DICOM	DICOM
+	Procedure Browser	Eljárásböngésző
+	Plug-In Browser	Bővítményböngésző
+	Search procedures	Eljárások keresése
+	{n} procedures	{n} eljárás
+	(no menu)	(nincs menü)
+	Menu: {path}	Menü: {path}
+	Parameters	Paraméterek
+	Available now	Most elérhető
+	Not available in the current state	A jelenlegi állapotban nem érhető el
+	Run	Futtatás
+	Select a procedure to read its parameters.	Válasszon eljárást a paraméterei megtekintéséhez.
+	Dashboard	Műszerfal
+	Low memory: swap is nearly full. Save your work.	Kevés a memória: a lapozófájl majdnem megtelt. Mentse a munkáját.
+	Memory	Memória
+	Cache	Gyorsítótár
+	Swap	Lapozófájl
+	Swap: not reported on this platform	Lapozófájl: ezen a platformon nem jelentett
+	CPU	CPU
+	CPU renderer	CPU-renderelő
+	uploads	feltöltés
+	Misc: {jobs} jobs running · {n} samples	Egyéb: {jobs} futó feladat · {n} minta
+	Log to File…	Naplózás fájlba…
+	Stop Logging	Naplózás leállítása
+	Device Status	Eszközállapot
+	Core Pointer	Fő mutató
+	Pen / Tablet	Toll / Tábla
+	Brush:	Ecset:
+	Pattern:	Minta:
+	Gradient:	Színátmenet:
+	Save Device Status	Eszközállapot mentése
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Minden eszköz megjegyzi az eszközét, színeit, ecsetét, mintáját és színátmenetét; eszközváltásnál ezek is váltanak.
+	Selection Editor	Kijelölésszerkesztő
+	No document open.	Nincs megnyitott dokumentum.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Kattintson a szomszédos szín kijelöléséhez a varázspálcával (Shift hozzáad, Alt kivon)
+	Save to Channel	Mentés csatornába
+	To Path	Útvonalba
+	Advanced options	Speciális beállítások
+	MyPaint Brushes	MyPaint-ecsetek
+	No MyPaint brushes yet. Import .myb files to list them here.	Még nincs MyPaint-ecset. Importáljon .myb fájlokat, hogy itt megjelenjenek.
+	No brush matches the filter.	Egyik ecset sem felel meg a szűrőnek.
+	Handle Transform	Fogantyús átalakítás
+	3D Transform	3D átalakítás
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Újraigazítás
+	Apply the transform so far and put a fresh box on the result	Alkalmazza az eddigi átalakítást, és új keretet tesz az eredményre
+	Camera	Kamera
+	Vanishing X:	Enyészpont X:
+	Y:	Y:
+	Focal length:	Gyújtótávolság:
+	Local pivot	Helyi forgáspont
+	Unified pivot	Egyesített forgáspont
+	Close Cage	Ketrec bezárása
+	Reset Cage	Ketrec visszaállítása
+	Fill Plain Colour	Egyszínű kitöltés
+	Fill the original position of the cage with the plain colour of its outline	A ketrec eredeti helyét a körvonal egyszínű színével tölti ki
+	{n} points	{n} pont
+	Click to place a handle	Kattintson egy fogantyú elhelyezéséhez
+	Rotate and Scale	Forgatás és méretezés
+	{n} handles: {what}	{n} fogantyú: {what}
+	Reset Handles	Fogantyúk visszaállítása
+	Remove Handles	Fogantyúk eltávolítása
+	Commit Cage Transform (Enter)	Ketreces átalakítás véglegesítése (Enter)
+	Commit Handle Transform (Enter)	Fogantyús átalakítás véglegesítése (Enter)
+	Commit 3D Transform (Enter)	3D átalakítás véglegesítése (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Ketreces átalakítás: kattintson a torzítandó rész köré, az első pontra kattintva zárja be, majd húzza a pontokat
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Fogantyús átalakítás: tegyen le egy-négy fogantyút és húzza őket (egy mozgat, kettő forgat és méretez, három nyír, négy perspektívát ad)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D átalakítás: húzással X és Y körül forgat, Alt-húzással Z körül; a Mozgatás és Kamera lapok a réteget és a kamerát mozgatják
+	Segment {n}	{n}. szakasz
+	Blending:	Átmenet:
+	Coloring:	Színezés:
+	Midpoint:	Középpont:
+	Sinusoidal	Szinuszos
+	Spherical (increasing)	Gömbi (növekvő)
+	Spherical (decreasing)	Gömbi (csökkenő)
+	Step	Lépcső
+	HSV (counter-clockwise)	HSV (óramutatóval ellentétes)
+	HSV (clockwise)	HSV (óramutató irányába)
+	Replicate	Megkettőzés
+	Split the segment at its midpoint	A szakaszt a középpontjánál osztja
+	Replace the segment with two copies of itself	A szakaszt két másolatával helyettesíti
+	Flip the whole gradient end to end	Az egész színátmenetet megfordítja
+	Save as POV-Ray…	Mentés POV-Ray-ként…
+	Shaped Gradient (angular)	Alakzat szerinti átmenet (szögletes)
+	Shaped Gradient (spherical)	Alakzat szerinti átmenet (gömbszerű)
+	Shaped Gradient (dimpled)	Alakzat szerinti átmenet (homorú)
+	Truncate	Levágás
+	Sawtooth wave	Fűrészfog hullám
+	Triangular wave	Háromszög hullám
+	Wheel	Kerék
+	Force	Erő
+	Jitter	Remegés
+	Fade length	Elhalványulás hossza
+	Random amount	Véletlenszerűség
+	Save Preset	Előbeállítás mentése
+	Paint Dynamics Editor	Festési dinamika szerkesztő
+	Color from Gradient	Szín az átmenetből
+	Put this table on the current brush	A táblázat alkalmazása az aktuális ecsetre
+	Save the table as a named dynamics preset	Táblázat mentése névvel ellátott dinamikaként
+	Give the dynamics preset a name first	Először adjon nevet a dinamikának
+	Edit the dynamics table (inputs × outputs)	Dinamika táblázat szerkesztése (bemenetek × kimenetek)
+	Reset Plane	Sík visszaállítása
+	Click four corners to define a perspective plane, then clone along it	Kattintson négy sarokra a perspektíva sík megadásához, majd klónozzon mentén
+	Click corner {n} of 4	Kattintson a {n}. sarokra (4-ből)
+	Perspective plane: corner {n} of 4 set	Perspektíva sík: {n}. sarok beállítva (4-ből)
+	Perspective plane set; {key}-click a source, then paint	Perspektíva sík beállítva; {key}-kattintás a forrásra, majd fessen
+	Copy Path as SVG	Útvonal másolása SVG-ként
+	Export Path to SVG…	Útvonal exportálása SVG-be…
+	Import Path from SVG…	Útvonal importálása SVG-ből…
+	Paste Path from SVG	Útvonal beillesztése SVG-ből
+	Copy All Paths as SVG	Minden útvonal másolása SVG-ként
+	Export All Paths to SVG…	Minden útvonal exportálása SVG-be…
+	Copied 1 path as SVG	1 útvonal másolva SVG-ként
+	Copied {n} paths as SVG	{n} útvonal másolva SVG-ként
+	Exported paths to {path}	Útvonalak exportálva ide: {path}
+	Imported 1 path	1 útvonal importálva
+	Imported {n} paths	{n} útvonal importálva
+	The clipboard holds no SVG	A vágólapon nincs SVG
+	Clipboard Image Brush	Vágólapkép-ecset
+	Paint with the image on the clipboard as the brush tip	Festés a vágólapon lévő képpel ecsethegyként
+	Export Layers as Animation…	Rétegek exportálása animációként…
+	Export as Brush (.gbr)…	Exportálás ecsetként (.gbr)…
+	Export Layers as Image Hose (.gih)…	Rétegek exportálása animált ecsetként (.gih)…
+	Export as Pattern (.pat)…	Exportálás mintaként (.pat)…
+	Animation Frame Tags…	Animációs képkocka-címkék…
+	Disposal	Eldobás
+	Incremental	Növekvő
+	Angular	Szög szerint
+	Xtilt	X dőlés
+	Ytilt	Y dőlés
+	Mng	MNG
+	Export as PostScript (.eps)…	Exportálás PostScriptként (.eps)…
+	Encapsulated	Beágyazott (EPS)
+	Encoding	Kódolás
+	Hex	Hexadecimális
+	Ascii85	ASCII85
+	Binary	Bináris
+	Open Location…	Hely megnyitása…
+	From Screenshot…	Képernyőképből…
+	From Web Page…	Weboldalból…
+	Send by Email…	Küldés e-mailben…
+	Url	URL
+	Cursor	Kurzor
+	Region	Terület
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Puffer
+	Buffers	Pufferek
+	Cut Named…	Kivágás névvel…
+	Copy Named…	Másolás névvel…
+	Copy Visible Named…	Látható másolása névvel…
+	Paste Named…	Beillesztés névvel…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Nincs nevesített puffer. A Szerkesztés > Puffer > Másolás névvel… paranccsal tarthat itt másolatot.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Nincs nevesített puffer; először használja a Szerkesztés > Puffer > Másolás névvel parancsot
+	Paste Buffer	Puffer beillesztése
+	Paste Buffer in Place	Puffer beillesztése helyben
+	Paste Buffer as New Image	Puffer beillesztése új képként
+	Rename Buffer…	Puffer átnevezése…
+	Delete Buffer	Puffer törlése
+	Paste as New	Beillesztés újként
+	Paste the buffer as a new layer	A puffer beillesztése új rétegként
+	Paste the buffer as a new document	A puffer beillesztése új dokumentumként
+	As	Mint
+	In place	Helyben
+	Into	Belülre
+	Modules…	Modulok…
+	Units…	Egységek…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nincs betölthető modul telepítve. Szűrő > Bővítmények > Bővítmény telepítése… hozzáad egyet.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	A kikapcsolt modul telepítve marad, de a menükből eltűnik, amíg újra be nem kapcsolják.
+	Module	Modul
+	Not installed	Nincs telepítve
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	A szorzó azt adja meg, hány egység tesz ki egy hüvelyket (centiméternél 2,54, pontnál 72).
+	Identifier	Azonosító
+	Factor	Szorzó
+	Symbol	Jel
+	Abbreviation	Rövidítés
+	Singular	Egyes szám
+	Plural	Többes szám
+	Delete Unit	Egység törlése
+	New unit	Új egység
+	Add Unit	Egység hozzáadása
+	That identifier is already a unit	Ez az azonosító már egy egység
+	Custom units	Egyéni egységek
+	Disabled modules	Letiltott modulok
+	Input Devices…	Beviteli eszközök…
+	Input Controllers…	Beviteli vezérlők…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	A toll a platform által jelentett tábla-ceruza. Letiltva egérként viselkedik.
+	Device	Eszköz
+	Invert tilt X	X dőlés megfordítása
+	Invert tilt Y	Y dőlés megfordítása
+	Swap tilt	Dőlés felcserélése
+	Pressure scale	Nyomásskála
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	A görgőesemények up, down, left vagy right, választható Shift+, Ctrl+ és Alt+ előtaggal; a billentyűesemények gyorsbillentyűk, például Ctrl+Alt+Up. A művelet egy parancsazonosító, választhatóan JSON-paraméterekkel.
+	Controller	Vezérlő
+	Event	Esemény
+	Remove mapping	Leképezés eltávolítása
+	New mapping	Új leképezés
+	Add Mapping	Leképezés hozzáadása
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} bejegyzés; kattintás beállítja az előtérszínt, dupla kattintás szerkeszti
+	Entry	Bejegyzés
+	Add an entry with the foreground colour	Bejegyzés hozzáadása az előtérszínnel
+	Delete the last entry	Az utolsó bejegyzés törlése
+	Use selected	Kijelölt használata
+	Ink	Tinta
+	MyPaint Brush	MyPaint ecset
+	Nib	Tollhegy
+	Aspect	Arány
+	Opaque	Fedettség
+	Erase with brush	Törlés ecsettel
+	Import .myb…	.myb importálása…
+	Add a MyPaint brush file to the presets	MyPaint ecsetfájl hozzáadása a készletekhez
+	Imported MyPaint brush {name}	A(z) {name} MyPaint ecset importálva
+	How much pressure changes the nib size	Mennyire változtatja a nyomás a tollhegy méretét
+	How much the pen's tilt turns and stretches the nib	Mennyire forgatja és nyújtja a toll dőlése a tollhegyet
+	How much a fast stroke thins the nib	Mennyire vékonyítja a gyors vonás a tollhegyet
+	Added to the preset's logarithmic radius	A készlet logaritmikus sugarához adódik
+	Operation…	Művelet…
+	Operation name or id	Művelet neve vagy azonosítója
+	{n} operations	{n} művelet
+	Choose an operation	Válasszon műveletet
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu konzol…
+	Load Scripts Folder…	Parancsfájlmappa betöltése…
+	Python Console…	Python konzol…
+	Load Plug-ins Folder…	Bővítménymappa betöltése…
+	Loaded {n} scripts	{n} parancsfájl betöltve
+	Loaded {n} Python plug-ins	{n} Python bővítmény betöltve
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 a call(command, **params), message(text) és print() függvényekkel; minden motorparancs elérhető a call-on át.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: minden motorparancs egy eljárás, (file.new "width" 640 "height" 480); definiáljon eljárásokat és regisztrálja őket a script-fu-register-rel.
+	Code	Kód
+	Cmd+Enter runs the code	A Cmd+Enter futtatja a kódot
+	Clear Log	Napló törlése
+	Dodge…	Fakítás…
+	Burn…	Sötétítés…
+	Cross-Channel Adjustment…	Csatornák közti igazítás…
+	Slope, Offset, Power…	Meredekség, eltolás, hatvány…
+	Index Colors…	Indexelt színek…
+	Raindrops…	Esőcseppek…
+	Polygon Blur…	Sokszögű elmosás…
+	Edge Detection…	Élérzékelés…
+	Emboss (Directional)…	Domborítás (irányított)…
+	Phong Bump Map…	Phong dombortérkép…
+	Palettize…	Palettázás…
+	Height to Normal Map…	Magasság normáltérképpé…
+	Normalize Normal Map	Normáltérkép normalizálása
+	Maximize Channel	Csatorna maximalizálása
+	Minimize Channel	Csatorna minimalizálása
+	Propagate Colors…	Színek terjesztése…
+	Reset Transparent	Átlátszók visszaállítása
+	Mean Removal	Átlag eltávolítása
+	Wavelet Noise Reducer…	Wavelet zajcsökkentő…
+	Random Pick…	Véletlen választás…
+	G'MIC Filter…	G'MIC szűrő…
+	G'MIC executable	G'MIC futtatható fájl
+	G'MIC update folder	G'MIC frissítési mappa
+	Add scene at playhead	Jelenet hozzáadása a lejátszófejnél
+	Add to favourites	Hozzáadás a kedvencekhez
+	Arithmetic	Aritmetikai
+	Attach audio…	Hang csatolása…
+	Blend details	Keverési részletek
+	Blend mode	Keverési mód
+	Blend mode and opacity	Keverési mód és átlátszatlanság
+	Capture now	Rögzítés most
+	Clone previous keyframe here	Előző kulcskép klónozása ide
+	Comment	Megjegyzés
+	Display settings	Megjelenítési beállítások
+	Duplicate keyframe	Kulcskép duplikálása
+	Duplicate keyframe here	Kulcskép duplikálása ide
+	End	Vége
+	Export timelapse…	Timelapse exportálása…
+	Favourites	Kedvencek
+	Frame rate	Képkockasebesség
+	HSX	HSX
+	Key the active layer:	Kulcs az aktív rétegen:
+	Misc	Egyéb
+	Mute audio	Hang némítása
+	Negative	Negatív
+	New keyframe	Új kulcskép
+	New keyframe here	Új kulcskép ide
+	Next tint	Következő árnyalat
+	No animated layers: add a keyframe to the active layer to animate it.	Nincs animált réteg: adjon kulcsképet az aktív réteghez az animáláshoz.
+	No animation curves yet.	Még nincsenek animációs görbék.
+	No scenes yet.	Még nincsenek jelenetek.
+	Opacity per frame	Átlátszatlanság képkockánként
+	Previous tint	Előző árnyalat
+	Quadratic	Kvadratikus
+	Recorder	Rögzítő
+	Remove from favourites	Eltávolítás a kedvencekből
+	Remove keyframe	Kulcskép eltávolítása
+	Remove scene	Jelenet eltávolítása
+	Scale X	Méretezés X
+	Scale Y	Méretezés Y
+	Scene name	Jelenet neve
+	Show onion skins	Hagymahéj megjelenítése
+	Start	Kezdet
+	Start recording	Felvétel indítása
+	Stop recording	Felvétel leállítása
+	Storyboard	Storyboard
+	Thumbnail size	Bélyegkép mérete
+	frames	képkocka
+	opacity	átlátszatlanság
+	rotation	forgatás
+	scaleX	méretezés X
+	scaleY	méretezés Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} pillanatkép itt: {dir}
+	2-Point Perspective	Kétpontos perspektíva
+	Assistant colour	Segédvonal színe
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Segédvonal mágnesesség: mennyire térhet el egy vonás a segédvonaltól, hogy még odahúzza (1000 = mindig)
+	Assistant opacity	Segédvonal átlátszatlansága
+	Concentric Ellipse	Koncentrikus ellipszis
+	Curvilinear Perspective	Görbevonalú perspektíva
+	Eraser snaps	Radír is illeszkedik
+	Fish-Eye Point	Halszem pont
+	Handles	Fogantyúk
+	Infinite Ruler	Végtelen vonalzó
+	Limit to area	Területre korlátozás
+	Minor subdivisions	Kisebb osztások
+	Own colour	Saját szín
+	Perspective Ellipse	Perspektivikus ellipszis
+	Previews	Előnézetek
+	Show the snapped stroke's line while painting	Az illesztett vonás vonalának mutatása festés közben
+	Show this assistant's control handles	Ennek a segédvonalnak a vezérlőfogantyúi
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	A vonások követik a festési segédvonalakat (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Két további fogantyú vágja, hol rajzol és illeszt a segédvonal
+	Vertical ruler	Függőleges vonalzó
+	Painting Assistants	Festési segédvonalak
+	Assistant Previews	Segédvonal-előnézetek
+	Drag fill	Húzással kitöltés
+	Dragging fills every region passed over	Húzáskor minden érintett terület kitöltődik
+	Exclude colour	Szín kizárása
+	Exclude transparent	Átlátszó kizárása
+	Fill mode	Kitöltési mód
+	No region is fully enclosed by the shape	Egy területet sem zár körbe teljesen az alakzat
+	Only regions coloured like the first one	Csak az elsővel azonos színű területek
+	Reference	Hivatkozás
+	Similar only	Csak hasonlók
+	Soften the filled edge	Kitöltés szélének lágyítása
+	Spread stops at the darkest pixels (lines)	A terjedés a legsötétebb pixeleknél (vonalaknál) megáll
+	Spread stops at the most opaque pixels	A terjedés a legátlátszatlanabb pixeleknél megáll
+	Stop at darkest	Megállás a legsötétebbnél
+	Stop at opaque	Megállás az átlátszatlannál
+	Similar Colours	Hasonló színek
+	Colour Labels	Színcímkék
+	All Regions	Minden terület
+	Specific Colour	Adott szín
+	Transparent Regions	Átlátszó területek
+	Surrounded By	Körülvevő szín
+	Fill with Foreground Color (Opacity)	Kitöltés előtérszínnel (átlátszatlanság)
+	Fill with Background Color (Opacity)	Kitöltés háttérszínnel (átlátszatlanság)
+	Fill with Pattern (Opacity)	Kitöltés mintával (átlátszatlanság)
+	Straight Line Tool	Egyenes vonal eszköz
+	Multibrush Tool	Többszörös ecset eszköz
+	Dynamic Brush Tool	Dinamikus ecset eszköz
+	Enclose and Fill Tool	Körbezárás és kitöltés eszköz
+	Colorize Mask Tool	Színezőmaszk eszköz
+	Reference Images Tool	Referenciaképek eszköz
+	Alternating	Váltakozó
+	Forward	Előre
+	Shaped Gradient (follows the selection)	Alakzatos színátmenet (a kijelölést követi)
+	Clear copies	Másolatok törlése
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+kattintás másolatot helyez el, Ctrl+Alt+kattintás eltávolít
+	How heavily the stroke lags behind the pointer	Mennyire marad el a vonás a mutatótól
+	How quickly the stroke's motion dies away	Mennyire gyorsan csendesül a vonás mozgása
+	Keep one-pixel lines single width without L corners	Az egypixeles vonalak egyszeresek maradnak L-sarkok nélkül
+	Mirror all tools	Minden eszköz tükrözése
+	Multibrush	Többszörös ecset
+	Pixel smoothing	Pixelsimítás
+	The painting symmetry mirrors fills, gradients and retouching too	A festési szimmetria a kitöltéseket, színátmeneteket és retusálást is tükrözi
+	The painting symmetry mirrors this tool's output too	A festési szimmetria ennek az eszköznek az eredményét is tükrözi
+	X interval	X-köz
+	Y interval	Y-köz
+	Mirror / Rotation	Tükör / Forgatás
+	Translate	Eltolás
+	Copy Translate	Másolat eltolással
+	Cursor shape	Kurzor alakja
+	Outline shape	Körvonal alakja
+	Show outline while painting	Körvonal mutatása festés közben
+	Effective outline size	Tényleges körvonalméret
+	Tool icon	Eszközikon
+	Arrow	Nyíl
+	Crosshair	Szálkereszt
+	Small dot	Kis pont
+	No cursor	Nincs kurzor
+	Triangle right	Háromszög jobbra
+	Triangle left	Háromszög balra
+	No outline	Nincs körvonal
+	Instant preview	Azonnali előnézet
+	Instant preview megapixels	Azonnali előnézet megapixel
+	Add…	Hozzáadás…
+	Auto update	Automatikus frissítés
+	Canvas input profile	Vászonbeviteli profil
+	Clean up	Tisztítás
+	Clear key strokes	Kulcsvonások törlése
+	Colorize Mask	Színezőmaszk
+	Draw in the area below to test pressure, tilt and rotation	Rajzoljon az alábbi területre a nyomás, dőlés és forgatás teszteléséhez
+	Edge detection	Élérzékelés
+	Edit key strokes	Kulcsvonások szerkesztése
+	Embed	Beágyazás
+	Fill only inside the line art's pixels	Csak a vonalrajz pixelein belül tölt
+	Gap close	Hézagok zárása
+	Input API	Beviteli API
+	Keep aspect	Arány megtartása
+	Limit to layer	Rétegre korlátozás
+	Next Preset	Következő készlet
+	No samples yet	Még nincs minta
+	Opacity +	Átlátszatlanság +
+	Opacity -	Átlátszatlanság -
+	Pasted image	Beillesztett kép
+	Peak pressure	Csúcsnyomás
+	Previous Preset	Előző készlet
+	Reference Images	Referenciaképek
+	Rotate Left	Forgatás balra
+	Rotate Right	Forgatás jobbra
+	Sample rate	Mintavételi ráta
+	Screen mapping	Képernyőleképezés
+	Show output	Eredmény mutatása
+	Show the key strokes over the canvas	Kulcsvonások mutatása a vászon fölött
+	Show with all tools	Mutatás minden eszközzel
+	Size +	Méret +
+	Size -	Méret -
+	Speed source	Sebességforrás
+	Store the pixels in the set; off, link to the file	Pixelek tárolása a készletben; kikapcsolva a fájlra hivatkozik
+	Tablet Settings…	Tábla beállításai…
+	Tablet Tester	Táblateszter
+	The clipboard is not available	A vágólap nem érhető el
+	The next key strokes keep their regions clear	A következő kulcsvonások átlátszón hagyják területüket
+	Tilt offset	Dőléseltolás
+	Touch Docker	Érintőpanel
+	Transparent key	Átlátszó kulcs
+	Canvas Input	Vászonbevitel
+	Canvas Input…	Vászonbevitel…
+	Pan key	Mozgatás billentyű
+	Zoom in key	Nagyítás billentyű
+	Zoom out key	Kicsinyítés billentyű
+	Rotate key	Forgatás billentyű
+	Middle button	Középső gomb
+	Stylus button	Tollgomb
+	Pick modifier	Színválasztó módosító
+	Shift wheel rotates	Shift+görgő forgat
+	Trackpad	Érintőpad
+	Pick	Színválasztás
+	No action	Nincs művelet
+	No pick	Nincs színválasztás
+	Scroll	Görgetés
+	Rotate View (hold)	Nézet forgatása (nyomva)
+	Tilt offset x	Dőléseltolás X
+	Tilt offset y	Dőléseltolás Y
+	Tablet speed source	Tábla sebességforrása
+	Tablet api	Tábla API
+	Tablet screen mapping	Tábla képernyőleképezése
+	Pointer	Mutató
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rács típusa
+	Isometric left angle	Izometrikus bal szög
+	Isometric right angle	Izometrikus jobb szög
+	Isometric vertical lines	Izometrikus függőleges vonalak
+	Rectangular	Négyszögletes
+	Isometric	Izometrikus
+	Node	Csomópont
+	Extension	Meghosszabbítás
+	Intersection	Metszéspont
+	Alt-click a bottom patch to set it to the foreground colour	Alt+kattintás egy alsó mintára az előtérszín beállításához
+	Apply:	Alkalmazás:
+	Brushes this large preview coarsely while painting	Az ekkora ecsetek festés közben durván jelennek meg
+	Click the disc to add shape points	Kattints a korongra alakzatpontok hozzáadásához
+	Close Shape	Alakzat zárása
+	Color Space:	Színtér:
+	Common Colors	Gyakori színek
+	Components:	Összetevők:
+	Continuous Mode	Folyamatos mód
+	Current pattern	Aktuális minta
+	Depth:	Mélység:
+	Display:	Megjelenítés:
+	Dynamic Hue Ring	Dinamikus árnyalatgyűrű
+	Enable Pen Settings	Tollbeállítások engedélyezése
+	Erase mode keeps its own opacity on this preset	A radír mód saját átlátszatlanságot tart ebben a beállításban
+	Erase mode keeps its own size on this preset	A radír mód saját méretet tart ebben a beállításban
+	Eraser Opacity	Radír átlátszatlansága
+	Eraser Size	Radír mérete
+	Fit Panel Width	Panelszélességhez igazítás
+	Gamut Mask	Színskálamaszk
+	Gradient Steps	Színátmenet lépései
+	Gradient ends: Alt-click to set from the foreground	Színátmenet végei: Alt+kattintás az előtérszín átvételéhez
+	Hue Steps	Árnyalatlépések
+	Instant Preview	Azonnali előnézet
+	LUT Management (OCIO)	LUT-kezelés (OCIO)
+	Lightness Strength	Világosság erőssége
+	Lock Color	Szín zárolása
+	Luma:	Luma:
+	Minimum Hardness	Minimális keménység
+	Minimum Strength	Minimális erősség
+	Model:	Modell:
+	Off: every sensor is ignored; the curves are kept	Ki: minden érzékelő figyelmen kívül marad, a görbék megmaradnak
+	Out of gamut	Színskálán kívül
+	Panel colours are not shown through the display transform	A panelszínek nem a megjelenítési átalakításon keresztül látszanak
+	Patch Count	Minták száma
+	Patch Size	Minta mérete
+	Patches:	Minták:
+	Pattern Scale	Minta léptéke
+	Pop-up Size	Felugró mérete
+	Proof to Painting Space	Próba a festési színtérben
+	Recent Colors	Legutóbbi színek
+	Remove Last Shape	Utolsó alakzat eltávolítása
+	Rotate Mask	Maszk forgatása
+	Saturation Steps	Telítettséglépések
+	Selector settings	Választó beállításai
+	Selector:	Választó:
+	Shade Count	Árnyalatok száma
+	Shade Ring by Value	Gyűrű árnyalása érték szerint
+	Shade Selector	Árnyalatválasztó
+	Shade Size	Árnyalat mérete
+	Shade Spread	Árnyalatok szórása
+	Shade Strip	Árnyalatsáv
+	Shades	Árnyalatok
+	Share Curve Across Settings	Görbe megosztása a beállítások között
+	Show as Fractions	Törtként mutatás
+	Soften Edge	Él lágyítása
+	Source:	Forrás:
+	Style:	Stílus:
+	The tip's grey levels are painted into the colour as lightness	A hegy szürkeárnyalatai világosságként kerülnek a színbe
+	Threshold the tip mask for crisp pixel strokes	Hegymaszk küszöbölése éles pixelvonásokhoz
+	Tip as Lightness Map	Hegy világosságtérképként
+	Update:	Frissítés:
+	Value Steps	Értéklépések
+	Value on the Ring	Érték a gyűrűn
+	Zoom Pop-up	Nagyító felugró
+	Length over which the value goes from 0 to 1	Hossz, amelyen az érték 0-ról 1-re nő
+	Start over past the length instead of holding the end value	A hossz után újrakezdés a végérték megtartása helyett
+	Pressure In	Nyomás (csak növekvő)
+	X-Tilt	X dőlés
+	Y-Tilt	Y dőlés
+	Tilt Direction	Dőlés iránya
+	Tilt Elevation	Dőlés magassága
+	Fuzzy Stroke	Véletlen vonásonként
+	Tip Scale:	Hegy mérete:
+	Initial size as a share of the bitmap's size	Kezdeti méret a bitkép méretének arányában
+	Tip Rotation:	Hegy forgatása:
+	Initial rotation of the tip	A hegy kezdeti forgatása
+	No anti-aliasing: the dab's pixels are fully on or off	Nincs élsimítás: a pötty pixelei teljesen be- vagy kikapcsoltak
+	Align Outline to Pixel Grid	Körvonal igazítása a pixelrácshoz
+	The brush outline snaps to the pixels the dab fills	Az ecset körvonala a pötty által kitöltött pixelekhez illeszkedik
+	Tip Mode:	Hegy módja:
+	(no colour bitmap: paints the brush colour)	(nincs színes bitkép: az ecset színével fest)
+	Neutral Point	Semleges pont
+	Canvas Only: hide the panels around the canvas	Csak vászon: a vászon körüli panelek elrejtése
+	Presets kept in the history	Az előzményekben tartott készletek
+	Clear the history	Előzmények törlése
+	No presets used yet	Még nem használt készletet
+	Forget this preset	Készlet elfelejtése
+	Ten Brushes	Tíz ecset
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Készletek hozzárendelése tíz helyhez; egy hely újraaktiválása visszatér az előzőhöz
+	Clear this slot	Hely törlése
+	Assign current	Jelenlegi hozzárendelése
+	Browse a folder of reference images	Referenciaképek mappájának tallózása
+	No folder	Nincs mappa
+	Next image	Következő kép
+	Previous image	Előző kép
+	Pick an image to show it here	Válasszon képet, hogy itt megjelenjen
+	Search actions and commands	Műveletek és parancsok keresése
+	No matching action	Nincs egyező művelet
+	Search Actions…	Műveletek keresése…
+	Brush History	Ecsetelőzmények
+	Color Image	Színes kép
+	Lightness Map	Világosságtérkép
+	Static	Rögzített
+	Move to Top	Felülre
+	Bubble Up	Egyet feljebb
+	Clear the scratch pad to white	Próbalap törlése fehérre
+	Fill the scratch pad with the background colour	Próbalap kitöltése a háttérszínnel
+	Fill the scratch pad with the current gradient	Próbalap kitöltése a jelenlegi színátmenettel
+	Fill the scratch pad with the current image	Próbalap kitöltése a jelenlegi képpel
+	Fill the scratch pad with the preset's icon	Próbalap kitöltése a készlet ikonjával
+	Reload the stored preset, discarding the tweaks	A tárolt készlet újratöltése, a módosítások elvetése
+	BG	Háttér
+	Icon	Ikon
+	Thumbnail:	Bélyegkép:
+	Stroke preview	Vonás előnézete
+	Scratch pad	Próbalap
+	Icon library	Ikonkönyvtár
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Helyi kijelölés aktiválása
+	Add Curve Key	Görbekulcs hozzáadása
+	Add Filter…	Szűrő hozzáadása…
+	Add Local Selection	Helyi kijelölés hozzáadása
+	Add Scene	Jelenet hozzáadása
+	Add Transform Key	Transzformációs kulcs hozzáadása
+	Alpha into Mask	Alfa maszkba
+	Attach Audio…	Hang csatolása…
+	Backup count	Biztonsági mentések száma
+	Capture Snapshot	Pillanatkép rögzítése
+	Change Clone Source…	Klónforrás módosítása…
+	Clone Keyframe	Kulcskép klónozása
+	Clone Layer	Réteg klónozása
+	Clones Array…	Klóntömb…
+	Colorize Mask Properties…	Színezőmaszk tulajdonságai…
+	Convert	Átalakítás
+	Convert Group to Animated Layer	Csoport átalakítása animált réteggé
+	Convert to Paint Layer	Átalakítás festőréteggé
+	Copy Keyframe	Kulcskép másolása
+	Curved	Ívelt
+	Drag	Húzás
+	Duplicate Keyframe	Kulcskép kettőzése
+	Edit Generated Fill…	Generált kitöltés szerkesztése…
+	Edit Transform Mask…	Transzformációs maszk szerkesztése…
+	Ellipse	Ellipszis
+	Export Storyboard…	Storyboard exportálása…
+	Export Timelapse…	Timelapse exportálása…
+	File Layer Properties…	Fájlréteg tulajdonságai…
+	File Layer…	Fájlréteg…
+	Filter Layer…	Szűrőréteg…
+	Filter Mask…	Szűrőmaszk…
+	Frame rate limit	Képkockasebesség-korlát
+	Frames	Képkockák
+	Freeze Live Layer	Élő réteg rögzítése
+	High quality	Magas minőség
+	Import Animation Frames…	Animációs képkockák importálása…
+	Import Image as…	Kép importálása mint…
+	Import Video Animation…	Videóanimáció importálása…
+	Input controllers	Beviteli vezérlők
+	Input devices	Beviteli eszközök
+	Invisible	Láthatatlan
+	Layer Color Space…	Réteg színtere…
+	Layers by State	Rétegek állapot szerint
+	Local Selection	Helyi kijelölés
+	Mass	Tömeg
+	Move Clone…	Klón mozgatása…
+	Move Keyframe	Kulcskép mozgatása
+	Multigrid…	Többszörös rács…
+	Mute Audio	Hang elnémítása
+	Nearest	Legközelebbi
+	New Keyframe	Új kulcskép
+	Onion Skin…	Átlátszó fólia…
+	Pan	Pásztázás
+	Pixel grid threshold	Képpontrács küszöbe
+	Reload File Layer	Fájlréteg újratöltése
+	Remove Audio	Hang eltávolítása
+	Remove Curve Key	Görbekulcs eltávolítása
+	Remove Filter	Szűrő eltávolítása
+	Remove Keyframe	Kulcskép eltávolítása
+	Remove Local Selection	Helyi kijelölés eltávolítása
+	Remove Transform Key	Transzformációs kulcs eltávolítása
+	Remove Transform Mask	Transzformációs maszk eltávolítása
+	Render Animation…	Animáció renderelése…
+	Save Merged…	Összeolvasztott mentése…
+	Scaling filter	Méretezési szűrő
+	Screentone…	Raszter…
+	Script…	Parancsfájl…
+	Set Filter…	Szűrő beállítása…
+	Show Output	Kimenet megjelenítése
+	Split Alpha	Alfa leválasztása
+	Start Recording	Felvétel indítása
+	Stop Recording	Felvétel leállítása
+	Swap directory	Cserekönyvtár
+	Ten scripts	Tíz parancsfájl
+	Threads	Szálak
+	Transform Mask…	Transzformációs maszk…
+	Update Local Selection	Helyi kijelölés frissítése
+	Write as Alpha	Írás alfaként
+	to File Layer…	fájlréteggé…
+	to Filter Mask…	szűrőmaszkká…
+	to Paint Layer	festőréteggé
+	to Selection Mask	kijelölésmaszkká
+	to Transparency Mask	átlátszósági maszkká

@@ -11,7 +11,10 @@
 //!   [`raster_effects`] and painted by the renderer; [`outset`] says how far they reach beyond
 //!   the geometry.
 //! - **Live path effects** ([`lpe`]: Bend along a spine, B-Spline, Spiro, Dashed Stroke, Taper
-//!   Stroke) rewrite a path from its own anchors and are geometry effects like the others.
+//!   Stroke) rewrite a path from its own anchors and are geometry effects like the others; the
+//!   Effect › Path Effects family ([`lpe_catalog`]: constructions in [`lpe_geo`], drawings in
+//!   [`lpe_draw`], effects linked to other objects in [`lpe_link`]) does the same, the linked
+//!   ones reading the geometry the engine keeps for them in their parameters.
 //! - **Stroke geometry** ([`stroke`]): arrowheads, dash patterns and width profiles, shared by the
 //!   renderer, the exporters and Outline Stroke.
 //! - [`effect_catalog`] lists every effect with its menu path, parameter documentation and
@@ -38,9 +41,16 @@ mod adjust;
 mod bake;
 mod clip;
 mod distort;
+pub mod filter_presets;
 mod group;
 mod live;
 pub mod lpe;
+pub mod lpe_catalog;
+pub mod lpe_draw;
+pub mod lpe_geo;
+pub mod lpe_link;
+pub mod lpe_simplify;
+mod lpe_util;
 mod marks;
 pub mod pixel;
 mod raster;
@@ -71,6 +81,11 @@ pub use group::{
 };
 pub use live::{expand_live, expand_live_deep, expanded_live_group, text_outliner};
 pub use lpe::{BEND, BEND_SPINE, BSPLINE, DASHED_STROKE, SPIRO, TAPER_DIRECTIONS, TAPER_JOINS, TAPER_STROKE};
+pub use lpe_catalog::{ALL as PATH_EFFECTS, MENU as PATH_EFFECTS_MENU, is_path_effect};
+pub use lpe_link::{
+    ATTACH_PATH, BOUNDING_BOX, CLONE_ORIGINAL, FILL_BETWEEN_MANY, FILL_BETWEEN_STROKES, Linked, POWER_CLIP, SOURCES as LINK_SOURCES, is_linked,
+    link_ids, power_clip_hidden, power_clip_inverse, sources as linked_sources,
+};
 pub use marks::{CROP_MARKS, crop_marks_art, has_crop_marks};
 pub use pixel::{PIXEL_EFFECTS, PixelFx, PixelSpace};
 pub use raster::{RasterFx, outset, raster_effects};
@@ -156,7 +171,7 @@ fn lengths_of(id: &str) -> Lengths {
         "texture.mosaicTiles" => always(&["tileSize"]),
         "texture.patchwork" => always(&["squareSize"]),
         "texture.stainedGlass" => always(&["cellSize"]),
-        _ => Lengths::default(),
+        _ => lpe_catalog::lengths_of(id).unwrap_or_default(),
     }
 }
 
@@ -326,7 +341,7 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
             lpe::SPIRO,
             "Spiro Spline…",
             PATH,
-            "{cusps: bool (false; true keeps corner anchors without handles sharp)} a smooth G2-like spline through the anchors (an approximation of a Spiro clothoid spline: circle tangents at the anchors, arc-fitted handles, curvature relaxed to agree across each anchor)",
+            "{cusps: bool (false; true keeps corner anchors without handles sharp)} a clothoid (Spiro) spline through the anchors: curvature-continuous across every anchor, straight at the open ends; with cusps the runs between sharp corners are splined apart",
             json!({"cusps": false}),
         ),
         g(
@@ -342,6 +357,13 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
             PATH,
             "{width: pt (0..10000, 4), startTaper: pt (0..1000000, 20; the length over which each open subpath grows from a point to the width), endTaper: pt (0..1000000, 20; the length over which it shrinks back), smoothing: 0..1 (0.5; 0 a straight taper, 1 an eased one), join: \"round\"|\"miter\"|\"bevel\" (\"round\"; at the path's corners), direction: \"center\"|\"left\"|\"right\" (\"center\"; the side of the path the stroke lies on, one edge staying on the path when left or right)} the outline of a stroke with tapering ends (closed subpaths become plain rings)",
             json!({"width": 4.0, "startTaper": 20.0, "endTaper": 20.0, "smoothing": 0.5, "join": "round", "direction": "center"}),
+        ),
+        g(
+            lpe_simplify::SIMPLIFY,
+            "Simplify (Live)…",
+            PATH,
+            "{threshold: pt (0.05..100, 1.5; how far the smoothed path may leave the drawn one), cornerAngle: deg (0..180, 60; anchors where the path turns more than this stay corners), straightLines: bool (false; straight segments only)} the Pencil's interactive simplify: the drawn points stay, the smoothing is re-fitted live and can be changed later",
+            json!({"threshold": 1.5, "cornerAngle": 60.0, "straightLines": false}),
         ),
         g(
             "stylize.scribble",
@@ -582,7 +604,7 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
             FILTER_GRAPH,
             "Filter Graph",
             SVG_FILTERS,
-            "{region: [x, y, w, h] (fractions of the object's bounds; [-0.1, -0.1, 1.2, 1.2]), primitives: [{type: gaussianBlur|offset|flood|merge|composite|colorMatrix|componentTransfer|convolveMatrix|morphology|turbulence|displacementMap|diffuseLighting|specularLighting|blend|dropShadow|tile, result?: name, in?: \"\" (the previous result)|SourceGraphic|SourceAlpha|a result name, in2?, inputs? (merge), …the SVG attributes, camel-cased, lengths in pt}]} an SVG filter graph on the object's composite, edited in the Filter Editor panel and written to SVG as a <filter>",
+            "{region: [x, y, w, h] (fractions of the object's bounds; [-0.1, -0.1, 1.2, 1.2]), name?: string, linearRgb?: bool (false; color-interpolation-filters), primitives: [{type: gaussianBlur|offset|flood|merge|composite|colorMatrix|componentTransfer|convolveMatrix|morphology|turbulence|displacementMap|diffuseLighting|specularLighting|blend (16 CSS modes)|dropShadow|tile|image (href: an image key or data: URL), result?: name, subregion?: [x, y, w, h] (fractions of the bounds; the primitive subregion), in?: \"\" (the previous result)|SourceGraphic|SourceAlpha|BackgroundImage|BackgroundAlpha|FillPaint|StrokePaint|a result name, in2?, inputs? (merge), …the SVG attributes, camel-cased, lengths in pt}]} an SVG filter graph on the object's composite, edited in the Filter Editor panel and written to SVG as a <filter>",
             json!({"region": [-0.1, -0.1, 1.2, 1.2], "primitives": []}),
         ),
         g(
@@ -651,6 +673,8 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
     for (id, label, _) in PATHFINDER_EFFECTS {
         v.push(g(id, label, PATHFINDER, "{} (groups and layers: live Pathfinder over the members)", json!({})));
     }
+    // Effect › Path Effects: constructions, drawings and linked effects on the path's own anchors.
+    v.extend(lpe_catalog::entries());
     v.push(g(
         CROP_MARKS,
         "Crop Marks",
@@ -925,10 +949,11 @@ pub(crate) fn apply_one(id: &str, p: &Value, path: &PathData, b: Rect, ctx: &Geo
         lpe::SPIRO => lpe::spiro(path, p),
         lpe::DASHED_STROKE => lpe::dashed_stroke(path, p, ctx.stroke),
         lpe::TAPER_STROKE => lpe::taper_stroke(path, p),
+        lpe_simplify::SIMPLIFY => lpe_simplify::simplify(path, p),
         "stylize.scribble" => stylize::scribble(path, b, p),
         _ => match id.strip_prefix("warp.").and_then(WarpStyle::from_id) {
             Some(style) => warp::warp(path, b, style, p),
-            None => path.clone(),
+            None => lpe_catalog::apply(id, p, path, b, ctx).unwrap_or_else(|| path.clone()),
         },
     }
 }

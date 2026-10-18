@@ -1609,6 +1609,14 @@ impl Node {
     /// Make Clipping Mask. Only paths, compound paths and type paint as clipping paths.
     pub fn clip_paint(&self) -> ClipPaint {
         use crate::appearance::AppearanceItem;
+        // Power Clip's hide clip (the `path.powerClip` effect on the clipping path): the clipping
+        // path's own paint stays out of the picture.
+        let hidden = |e: &crate::appearance::Effect| {
+            e.visible && e.id == "path.powerClip" && e.params.get("hideClip").and_then(serde_json::Value::as_bool).unwrap_or(false)
+        };
+        if self.appearance.effects.iter().any(hidden) {
+            return ClipPaint::default();
+        }
         let runs = match &self.kind {
             NodeKind::Path { guide: false, .. } | NodeKind::Compound { .. } => None,
             NodeKind::Text(t) => Some(&t.runs),
@@ -1825,6 +1833,26 @@ pub struct ObjectAttributes {
     /// `("pivot", "100,180")`), kept from import to export (`object.setProps {data}`).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub data: Vec<(String, String)>,
+    /// Hyperlink target (`<a target>`: `_blank`, `_self`…; empty: none).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub url_target: String,
+    /// Hyperlink title (`<a>`'s own `<title>`, the link's tooltip; empty: none).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub url_title: String,
+    /// Object Properties › Interactivity: SVG event attributes (`onclick`, `onmouseover`…) with
+    /// their script, in order; written as attributes on export.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub events: Vec<(String, String)>,
+    /// Object Properties › Highlight colour (`#rrggbb`): the colour the object's outline shows
+    /// in when selected; `None`: the layer colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub highlight: Option<String>,
+    /// Images: the pixels per inch the image shows at (Object Properties › DPI; `None`: as placed).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dpi: Option<f64>,
+    /// Images: SVG `preserveAspectRatio` (`xMidYMid meet`, `none`…; `None`: not written).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preserve_aspect_ratio: Option<String>,
 }
 
 /// The Attributes panel's Image Map shapes.

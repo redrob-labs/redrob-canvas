@@ -318,7 +318,9 @@ fn foreground_selection(s: &mut Session, p: &Value) -> Result<Value> {
     let rect = Rect::new(x0.floor() as i32, y0.floor() as i32, x1.ceil() as i32, y1.ceil() as i32);
     let d = s.active().ok_or(EngineError::NoDocument)?;
     check_sampled_pixels(&d.doc, d.active_layer, all_layers, rect)?;
-    let region = with_sampler(s, all_layers, |smp, doc| grabcut::foreground_select(smp, doc.bounds(), &outline, &foreground, &background, 160_000))?;
+    // The fast engine runs the same cut on a quarter of the pixel budget.
+    let budget = if b(p, "fast", false) { 40_000 } else { 160_000 };
+    let region = with_sampler(s, all_layers, |smp, doc| grabcut::foreground_select(smp, doc.bounds(), &outline, &foreground, &background, budget))?;
     apply(s, "Foreground Select", region.as_ref(), mode(p, "replace"))
 }
 
@@ -584,7 +586,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "select.foreground",
             "Foreground Select",
             [],
-            r##"{"outline":[[x,y],…] (closed rough outline; outside it is background),"foreground":[{"points":[[x,y],…],"size":px=20}] (marks over the subject),"background":[{"points":[[x,y],…],"size":px}]?,"mode":"replace|add|subtract|intersect"="replace","sampleAllLayers":bool=false}"##,
+            r##"{"outline":[[x,y],…] (closed rough outline; outside it is background),"foreground":[{"points":[[x,y],…],"size":px=20}] (marks over the subject),"background":[{"points":[[x,y],…],"size":px}]?,"mode":"replace|add|subtract|intersect"="replace","sampleAllLayers":bool=false,"fast":bool=false (the fast engine: the same cut on a quarter of the pixel budget)}"##,
             has_doc,
             foreground_selection
         ),

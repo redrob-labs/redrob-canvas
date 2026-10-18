@@ -336,7 +336,8 @@ impl ColorState {
     }
 
     fn resolved_monitor(&self, display: Option<u32>) -> (Arc<Profile>, MonitorStatus) {
-        let spec = self.settings.monitor_profile.as_str();
+        // A profile chosen for this screen wins over the main Monitor Profile setting.
+        let spec = self.settings.display.screen_profile(display).unwrap_or(self.settings.monitor_profile.as_str());
         let auto = spec.is_empty() || spec == "auto";
         let shown = self.display_or_primary(display);
         let icc = if auto { shown.and_then(|d| d.icc.clone()) } else { None };
@@ -459,7 +460,9 @@ impl ColorState {
         });
         let hdr =
             crate::proof_sim::hdr_active(self, doc).then(|| self.hdr.get(&doc.id).map(|h| (h.highlight_compression, h.exposure.to_bits(), h.gamma.to_bits())));
-        hash_of((cm, proof, hdr))
+        let filters = crate::display_filters::key(self, doc.id);
+        let stages = (crate::ocio::signature(self), self.settings.display.surface, self.settings.display.unmanaged);
+        hash_of((cm, proof, hdr, filters, stages))
     }
 }
 

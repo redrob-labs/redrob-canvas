@@ -22,6 +22,9 @@ pub const TOP_MENUS: [&str; 10] = ["File", "Edit", "Image", "Layer", "Type", "Se
 /// UI-level commands (handled by the shell rather than the engine): id, label, menu, shortcut.
 pub const UI_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("ui.symmetryTransform", "Transform Symmetry", &[], None),
+    // Tablet helpers (`touch_docker_ui`, `tablet_settings`).
+    ("window.touchDocker", "Touch Docker", &["Window"], None),
+    ("window.tabletTester", "Tablet Tester", &["Window"], None),
     // Right-click the options bar's tool icon (#2825); `tool.resetAll` asks first.
     ("tool.reset", "Reset Tool", &[], None),
     ("tool.resetAll", "Reset All Tools", &[], None),
@@ -71,6 +74,7 @@ pub const UI_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("window.toggle.color", "Color", &["Window"], Some("F6")),
     ("window.toggle.brushSettings", "Brush Settings", &["Window"], Some("F5")),
     ("window.toggle.brushes", "Brushes", &["Window"], None),
+    ("window.actionSearch", "Search Actions…", &["Window"], Some("Cmd+Shift+Enter")),
     ("window.toggle.navigator", "Navigator", &["Window"], None),
     ("window.toggle.toolbar", "Tools", &["Window"], None),
     // Photoshop's Tab and ⇧Tab: all panels (Tools, options bar and the dock), or only the dock.
@@ -101,6 +105,10 @@ pub const UI_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("help.github", "Redrob Canvas on GitHub", &["Help"], None),
     ("help.reportIssue", "Report an Issue…", &["Help"], None),
     ("help.systemInfo", "System Info…", &["Help"], None),
+    ("edit.handleTransform", "Handle Transform", &["Edit", "Transform"], None),
+    ("edit.transform3d", "3D Transform", &["Edit", "Transform"], None),
+    ("help.procedureBrowser", "Procedure Browser", &["Help"], None),
+    ("help.pluginBrowser", "Plug-In Browser", &["Help"], None),
     ("help.about", "About Redrob Canvas", &["Help"], None),
 ];
 
@@ -173,6 +181,9 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     if id == "ui.symmetryTransform" {
         return crate::symmetry_ui::begin(app).map(|_| Value::Null);
     }
+    if let Some(r) = crate::touch_docker_ui::menu(app, id).or_else(|| crate::tablet_settings::menu(app, id)) {
+        return r;
+    }
     if let Some(r) = crate::tool_reset::invoke(app, id, &params) {
         return r;
     }
@@ -207,6 +218,15 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     if let Some(r) = crate::workspace_ui::menu(app, id, &params) {
         return r;
     }
+    // View › Padding Color, Show All.
+    if let Some(r) = crate::padding_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Procedure/Plug-In Browser, Dashboard, Device Status, Selection Editor, MyPaint Brushes,
+    // Metadata viewer and editor.
+    if let Some(r) = crate::extra_panels::menu(app, id, &params) {
+        return r;
+    }
     // Window › Gradients, Patterns, Styles, Shapes, Tool Presets, Clone Source.
     if let Some(r) = crate::preset_panels::menu(app, id, &params) {
         return r;
@@ -221,6 +241,33 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     }
     // Window > Timeline panel.
     if let Some(r) = crate::timeline_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Window > Buffers panel and the Edit > Buffer name forms.
+    if let Some(r) = crate::buffers_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Edit > Modules… and Edit > Units… dialogs.
+    if let Some(r) = crate::modules_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Edit > Input Devices… and Edit > Input Controllers… dialogs.
+    if let Some(r) = crate::input_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Filter > Operation…: the generic operation chooser.
+    if let Some(r) = crate::operation_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Script-Fu and Python consoles, registered scripts and plug-ins, their folders.
+    if let Some(r) = crate::scripts_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Image > Mode > Color Table…: the swatch grid editor (the generic form stays for scripts).
+    if id == "image.mode.colorTable"
+        && params.as_object().is_none_or(|o| o.is_empty())
+        && let Some(r) = crate::colormap_ui::open(app)
+    {
         return r;
     }
     // Filter › Plug-ins (installed WebAssembly plug-ins, Install Plug-in…).
@@ -651,6 +698,10 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
         a if crate::adjust_dialog::has_dialog(a) && params.as_object().is_none_or(|o| o.is_empty()) => {
             Ok(json!({"dialog": crate::adjust_dialog::open(app, a).ok_or("no document")?}))
         }
+        crate::action_search::COMMAND => {
+            crate::action_search::open(app);
+            Ok(Value::Null)
+        }
         "window.togglePanels" => {
             // Tab hides the Tools panel, the options bar and the dock; Tab again shows what it hid.
             let p = &mut app.ui.panels;
@@ -749,10 +800,21 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
     if let Some(e) = crate::workspace_ui::is_enabled(app, id) {
         return e;
     }
+    if crate::padding_ui::handles(id) || crate::extra_panels::handles(id) {
+        return true;
+    }
     if crate::analysis_ui::handles(id) {
         return true;
     }
-    if crate::preset_panels::handles(id) || crate::type_panels_ui::handles(id) || crate::timeline_ui::handles(id) {
+    if crate::preset_panels::handles(id)
+        || crate::type_panels_ui::handles(id)
+        || crate::timeline_ui::handles(id)
+        || crate::buffers_ui::handles(id)
+        || crate::modules_ui::handles(id)
+        || crate::input_ui::handles(id)
+        || crate::operation_ui::handles(id)
+        || crate::scripts_ui::handles(id)
+    {
         return true;
     }
     if let Some(e) = crate::view_cmds::is_enabled(app, id) {
@@ -781,7 +843,7 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
             app.session.active().is_some() && app.services.export.is_some()
         }
         i if i.starts_with("window.toggle.") => true,
-        "window.togglePanels" => true,
+        "window.togglePanels" | crate::action_search::COMMAND => true,
         // With one document open the key stays quiet, as in Photoshop, rather than reporting why.
         "window.nextDocument" | "window.previousDocument" => app.session.active().is_some(),
         i if panel_alias(i).is_some() || workspace_name(i).is_some() => true,
@@ -789,6 +851,7 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
         // "Custom…" is the full Proof Setup dialog.
         "view.proofSetup.custom" => app.session.active().is_some(),
         "view.rulers" | "view.show.grid" | "view.show.guides" | "view.snap" | "view.lockGuides" => true,
+        "edit.handleTransform" | "edit.transform3d" => crate::distort_ui::active_pixels(app).is_ok(),
         "edit.cut" | "edit.copy" if app.ui.text_edit.is_some() => crate::type_tool::selected_range(app).is_some(),
         "edit.paste" | "select.all" if app.ui.text_edit.is_some() => true,
         // An image copied in another app can only be seen by reading the OS clipboard, which happens
@@ -842,10 +905,21 @@ fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
     if let Some(c) = crate::analysis_ui::checked(app, id).or_else(|| crate::workspace_ui::checked(app, id)).or_else(|| crate::file_ui::checked(app, id)) {
         return Some(c);
     }
+    if let Some(c) = crate::padding_ui::checked(app, id).or_else(|| crate::extra_panels::checked(app, id)) {
+        return Some(c);
+    }
     if let Some(c) = crate::preset_panels::checked(app, id) {
         return Some(c);
     }
     if let Some(c) = crate::timeline_ui::checked(app, id) {
+        return Some(c);
+    }
+    if let Some(c) = crate::buffers_ui::checked(app, id) {
+        return Some(c);
+    }
+    if let Some(c) =
+        crate::assistant_ui::checked(app, id).or_else(|| crate::touch_docker_ui::checked(app, id)).or_else(|| crate::tablet_settings::checked(app, id))
+    {
         return Some(c);
     }
     if let Some(c) = crate::type_panels_ui::checked(app, id) {
@@ -972,9 +1046,13 @@ pub fn is_live(id: &str) -> bool {
         || crate::view_cmds::handles(id)
         || crate::analysis_ui::handles(id)
         || crate::workspace_ui::handles(id)
+        || crate::padding_ui::handles(id)
+        || crate::extra_panels::handles(id)
         || crate::preset_panels::handles(id)
         || crate::type_panels_ui::handles(id)
         || crate::timeline_ui::handles(id)
+        || crate::buffers_ui::handles(id)
+        || crate::modules_ui::handles(id)
 }
 
 /// Commands outside the catalogue that belong right after a catalogue item: `(id, after)`.
@@ -1043,6 +1121,7 @@ pub fn menu_items(app: &PhotocraftApp) -> Vec<MenuItem> {
         }
     }
     crate::plugin_ui::insert_menu_items(app, &mut items);
+    crate::scripts_ui::insert_menu_items(app, &mut items);
     if let Some(mask) = app.session.active().and_then(|s| s.active_layer.and_then(|id| s.doc.layer(id))).and_then(|l| l.mask.as_ref())
         && let Some(item) = items.iter_mut().find(|i| i.id == "layer.layerMask.enabled")
     {

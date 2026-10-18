@@ -769,10 +769,15 @@ pub fn layer_bounds(layer: &Layer, canvas: Rect) -> Rect {
                 _ => b,
             };
             // Effects follow a filled shape's outline, also where its fill is transparent.
-            match effect_outline(layer).and_then(|_| paint_bounds(layer)).filter(|_| effects::has_effects(layer)) {
+            let b = match effect_outline(layer).and_then(|_| paint_bounds(layer)).filter(|_| effects::has_effects(layer)) {
                 Some(p) if !b.is_empty() => b.union(&p),
                 Some(p) => p,
                 None => b,
+            };
+            // A layer boundary cuts the content off.
+            match layer.boundary {
+                Some(bd) if !b.is_empty() => b.intersect(&bd),
+                _ => b,
             }
         }
     }
@@ -937,6 +942,9 @@ fn render_content(layer: &Layer, rect: Rect, cx: &Ctx) -> Option<Buffer> {
         for (p, k) in buf.px.iter_mut().zip(&m) {
             p[3] *= k;
         }
+    }
+    if let Some(bd) = layer.boundary {
+        clip_to_boundary(&mut buf, bd);
     }
     Some(buf)
 }
@@ -1470,6 +1478,10 @@ fn composite_layer_plain(layer: &Layer, clipped: &[Layer], backdrop: &mut Buffer
     }
     let Some(mut content) = render_content(layer, rect, cx) else { return };
     advanced::composite_clipped(clipped, &mut content, cx);
+    if !layer.composite.is_default() && !layer.blend.is_alpha_mode() {
+        composite_with_options(layer, &content, backdrop, cx);
+        return;
+    }
     blend_into_fill(backdrop, &content, layer.blend, layer.opacity, layer.fill_opacity, text_gamma(layer));
 }
 
@@ -1595,6 +1607,8 @@ fn layer_identity(layer: &Layer, h: &mut std::collections::hash_map::DefaultHash
     // Blend If and knockout change the composite a styled group's shape comes from.
     layer.advanced.hash(h);
     layer.blend_if.hash(h);
+    layer.composite.hash(h);
+    layer.boundary.hash(h);
     h.write_u8(0xfe);
 }
 
@@ -1905,3 +1919,119 @@ mod tests;
 
 #[cfg(test)]
 mod advanced_tests;
+
+// ---------------------------------------------------------------- Layer boundary and composite options
+
+/// Zeroes the alpha of every pixel of `buf` outside the layer boundary `bd`.
+fn clip_to_boundary(buf: &mut Buffer, bd: Rect) {
+    let rect = buf.rect;
+    if bd.contains_rect(&rect) {
+        return;
+    }
+    let w = rect.width() as usize;
+    for (i, p) in buf.px.iter_mut().enumerate() {
+        let x = rect.x0 + (i % w) as i32;
+        let y = rect.y0 + (i / w) as i32;
+        if !bd.contains(x, y) {
+            *p = [0.0; 4];
+        }
+    }
+}
+
+/// Document-space RGB into the blend / composite space `space` (the document's own space is the
+/// encoded one at integer depths and linear light at 32-bit).
+fn into_space(space: redrob_photo_doc::BlendSpace, doc_linear: bool, c: [f32; 3]) -> [f32; 3] {
+    use redrob_photo_color::convert::{linear_to_srgb, srgb_to_lab, srgb_to_linear};
+    use redrob_photo_doc::BlendSpace;
+    match space {
+        BlendSpace::Auto => c,
+        BlendSpace::RgbLinear if doc_linear => c,
+        BlendSpace::RgbLinear => c.map(|v| srgb_to_linear(v.clamp(0.0, 1.0))),
+        BlendSpace::RgbPerceptual if doc_linear => c.map(|v| linear_to_srgb(v.max(0.0))),
+        BlendSpace::RgbPerceptual => c,
+        BlendSpace::Lab => {
+            let enc = if doc_linear { c.map(|v| linear_to_srgb(v.max(0.0))) } else { c.map(|v| v.clamp(0.0, 1.0)) };
+            let lab = srgb_to_lab(enc);
+            [lab[0] / 100.0, (lab[1] + 128.0) / 255.0, (lab[2] + 128.0) / 255.0]
+        }
+    }
+}
+
+/// Inverse of [`into_space`].
+fn from_space(space: redrob_photo_doc::BlendSpace, doc_linear: bool, c: [f32; 3]) -> [f32; 3] {
+    use redrob_photo_color::convert::{lab_to_srgb, linear_to_srgb, srgb_to_linear};
+    use redrob_photo_doc::BlendSpace;
+    match space {
+        BlendSpace::Auto => c,
+        BlendSpace::RgbLinear if doc_linear => c,
+        BlendSpace::RgbLinear => c.map(|v| linear_to_srgb(v.max(0.0))),
+        BlendSpace::RgbPerceptual if doc_linear => c.map(|v| srgb_to_linear(v.clamp(0.0, 1.0))),
+        BlendSpace::RgbPerceptual => c,
+        BlendSpace::Lab => {
+            let enc = lab_to_srgb([c[0] * 100.0, c[1] * 255.0 - 128.0, c[2] * 255.0 - 128.0]);
+            if doc_linear { enc.map(srgb_to_linear) } else { enc }
+        }
+    }
+}
+
+/// Composites `content` onto `backdrop` honouring the layer's [`redrob_photo_doc::LayerComposite`]:
+/// the blend formula runs in the blend space, the coverage mix in the composite space, and the
+/// result's alpha follows the composite mode (union, clip to backdrop, clip to layer,
+/// intersection). The legacy switch pins both spaces to perceptual RGB and the alpha to union.
+fn composite_with_options(layer: &Layer, content: &Buffer, backdrop: &mut Buffer, cx: &Ctx) {
+    use redrob_photo_doc::CompositeMode;
+    let o = layer.composite.effective();
+    let doc_linear = cx.depth == redrob_photo_color::SampleType::F32;
+    let opacity = (layer.opacity * layer.fill_opacity).clamp(0.0, 1.0);
+    let mode = if layer.blend == BlendMode::PassThrough { BlendMode::Normal } else { layer.blend };
+    let rect = backdrop.rect;
+    let w = rect.width() as i32;
+    for (i, (p, s)) in backdrop.px.iter_mut().zip(&content.px).enumerate() {
+        let b = *p;
+        let mut s = *s;
+        let ab = b[3].clamp(0.0, 1.0);
+        if mode == BlendMode::Dissolve {
+            let x = rect.x0 + (i as i32 % w);
+            let y = rect.y0 + (i as i32 / w);
+            s[3] = if dissolve_noise(x, y) < s[3] * opacity { 1.0 } else { 0.0 };
+        }
+        let as_ = (s[3] * if mode == BlendMode::Dissolve { 1.0 } else { opacity }).clamp(0.0, 1.0);
+        let ao = match o.mode {
+            CompositeMode::Union => as_ + ab * (1.0 - as_),
+            CompositeMode::ClipToBackdrop => ab,
+            CompositeMode::ClipToLayer => as_,
+            CompositeMode::Intersection => as_ * ab,
+        };
+        if ao <= 0.0 {
+            *p = [0.0; 4];
+            continue;
+        }
+        if as_ <= 0.0 {
+            // Nothing of the layer here: the backdrop's colour, at the mode's alpha.
+            *p = [b[0], b[1], b[2], ao];
+            continue;
+        }
+        let cb = [b[0], b[1], b[2]];
+        let cs = [s[0], s[1], s[2]];
+        let blended = if mode == BlendMode::Normal || mode == BlendMode::Dissolve {
+            cs
+        } else {
+            let (bb, bs) = (into_space(o.blend_space, doc_linear, cb), into_space(o.blend_space, doc_linear, cs));
+            from_space(o.blend_space, doc_linear, psblend::blend_rgb(mode, bb, bs))
+        };
+        let (wb, ws, wbs) = ((1.0 - as_) * ab, (1.0 - ab) * as_, as_ * ab);
+        let sum = wb + ws + wbs;
+        let mixed = if sum <= 0.0 {
+            cs
+        } else {
+            let (cb_c, cs_c, bl_c) = (
+                into_space(o.composite_space, doc_linear, cb),
+                into_space(o.composite_space, doc_linear, cs),
+                into_space(o.composite_space, doc_linear, blended),
+            );
+            let m: [f32; 3] = std::array::from_fn(|k| (wb * cb_c[k] + ws * cs_c[k] + wbs * bl_c[k]) / sum);
+            from_space(o.composite_space, doc_linear, m)
+        };
+        *p = [mixed[0], mixed[1], mixed[2], ao];
+    }
+}
