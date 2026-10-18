@@ -275,6 +275,9 @@ const FULL_RESOLUTION_PREVIEW: &[&str] = &[
     "filter.render.jigsaw",
     "filter.render.lineNova",
     "filter.render.spirograph",
+    // Dither's per-pixel patterns and Destripe's per-column correction are sized in pixels.
+    "image.adjustments.dither",
+    "image.adjustments.destripe",
 ];
 
 /// Whether `command` with `params` previews at full resolution: [`FULL_RESOLUTION_PREVIEW`], every
@@ -332,6 +335,26 @@ pub const PREVIEWED: &[&str] = &[
     "layer.matting.colorDecontaminate",
     "layer.layerStyle.scaleEffects",
     "type.warpText",
+    // Colour tools (v0.11 parity): per-layer adjustments previewed on the proxy, and the tools
+    // that make a new document (the preview shows it).
+    "image.adjustments.extractComponent",
+    "image.adjustments.alienMap",
+    "image.adjustments.rotateColors",
+    "image.adjustments.paletteMap",
+    "image.adjustments.sampleColorize",
+    "image.adjustments.rgbClip",
+    "image.adjustments.dither",
+    "image.adjustments.localThreshold",
+    "image.adjustments.destripe",
+    "image.adjustments.retinex",
+    "image.adjustments.stress",
+    "image.adjustments.colorToGray",
+    "image.adjustments.toneMapFattal",
+    "image.adjustments.toneMapMantiuk",
+    "image.adjustments.toneMapReinhard",
+    "image.adjustments.smoothPalette",
+    "image.mode.decompose",
+    "image.mode.colorTable.rearrange",
 ];
 
 pub fn has_dialog(command: &str) -> bool {
@@ -354,6 +377,10 @@ pub fn has_dialog(command: &str) -> bool {
                 | "edit.definePattern"
                 | "select.convertToShape"
                 | "image.configureGrid"
+                | "image.mode.compose"
+                | "image.mode.colorTable.fromPalette"
+                | "image.analysis.borderAverage"
+                | "image.analysis.exportHistogram"
         ))
         && redrob_photo_engine::commands::find(command).is_some_and(|c| !parse_spec(c.params).is_empty())
 }

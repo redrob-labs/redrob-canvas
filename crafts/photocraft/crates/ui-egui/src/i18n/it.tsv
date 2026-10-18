@@ -4899,3 +4899,82 @@ shape	Appearance	Aspetto
 	Cumulative undo duration	Durata dell'annulla cumulativo
 	Popup palette	Tavolozza a comparsa
 	Smudge Radius	Raggio sfumino
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Inverti lineare
+	Value Invert	Inverti valore
+	Stretch Contrast HSV	Stira contrasto HSV
+	Color Enhance	Esalta colori
+	Extract Component…	Estrai componente…
+	Alien Map…	Mappa aliena…
+	Rotate Colors…	Ruota colori…
+	Palette Map…	Mappa tavolozza…
+	Sample Colorize…	Colora da campione…
+	RGB Clip…	Ritaglio RGB…
+	Dither…	Retinatura…
+	Local Threshold…	Soglia locale…
+	Destripe…	Elimina strisce…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Colore a grigio…
+	Fattal et al. 2002…	Fattal et al. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Tavolozza morbida…
+	Decompose…	Scomponi…
+	Compose…	Componi…
+	Recompose	Ricomponi
+	Rearrange Colormap…	Riordina mappa colori…
+	Set Colormap…	Imposta mappa colori…
+	Border Average…	Media del bordo…
+	Export Histogram…	Esporta istogramma…
+	Floyd Steinberg	Floyd-Steinberg
+	Random Covariant	Casuale covariante
+	Arithmetic Add	Somma aritmetica
+	Arithmetic Add Covariant	Somma aritmetica covariante
+	Arithmetic Xor	XOR aritmetico
+	Arithmetic Xor Covariant	XOR aritmetico covariante
+	Blue Noise	Rumore blu
+	Bayer	Bayer
+	Treat As	Tratta come
+	Change To	Cambia in
+	Pixel Count	Conteggio pixel
+	Normalized	Normalizzato
+	Index	Indice
+	Rgb Red	RGB rosso
+	Rgb Green	RGB verde
+	Rgb Blue	RGB blu
+	Hsv Hue	HSV tonalità
+	Hsv Saturation	HSV saturazione
+	Hsv Value	HSV valore
+	Hsl Saturation	HSL saturazione
+	Hsl Lightness	HSL luminosità
+	Cmyk Cyan	CMYK ciano
+	Cmyk Magenta	CMYK magenta
+	Cmyk Yellow	CMYK giallo
+	Cmyk Key	CMYK nero
+	Lab L	Lab L
+	Lab A	Lab A
+	Lab B	Lab B
+	Lch C	LCh C
+	Lch H	LCh H
+	Ycbcr470 Y	YCbCr 470 Y
+	Ycbcr470 Cb	YCbCr 470 Cb
+	Ycbcr470 Cr	YCbCr 470 Cr
+	Ycbcr709 Y	YCbCr 709 Y
+	Ycbcr709 Cb	YCbCr 709 Cb
+	Ycbcr709 Cr	YCbCr 709 Cr
+	Ycbcr470f Y	YCbCr 470 gamma piena Y
+	Ycbcr470f Cb	YCbCr 470 gamma piena Cb
+	Ycbcr470f Cr	YCbCr 470 gamma piena Cr
+	Ycbcr709f Y	YCbCr 709 gamma piena Y
+	Ycbcr709f Cb	YCbCr 709 gamma piena Cb
+	Ycbcr709f Cr	YCbCr 709 gamma piena Cr
+	Rgba	RGBA
+	Hsv	HSV
+	Cmy	CMY
+	Lch	LCh
+	Ycbcr470	YCbCr 470
+	Ycbcr709	YCbCr 709
+	Ycbcr470f	YCbCr 470 gamma piena
+	Ycbcr709f	YCbCr 709 gamma piena
