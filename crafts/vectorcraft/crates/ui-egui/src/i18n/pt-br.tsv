@@ -3851,3 +3851,139 @@ axis	Both	Ambos
 @msg	{name}: not found among the document's images	{name}: não encontrado entre as imagens do documento
 @msg	{name}: too large	{name}: muito grande
 @msg	{url}: {e}	{url}: {e}
+
+# v0.11 menu labels
+	3D Marble	Mármore 3D
+	3D Wood	Madeira 3D
+	Air Spray	Aerossol
+	Alignment Handles	Alças de Alinhamento
+	Aluminium	Alumínio
+	Angle Bisector…	Bissetriz de Ângulo…
+	Arrange in Circle	Organizar em Círculo
+	Arrange in Grid	Organizar em Grade
+	Attach Path…	Anexar Caminho…
+	Bevels	Chanfros
+	Black Hole	Buraco Negro
+	Blobs	Bolhas
+	Bloom	Brilho Difuso
+	Bounding Box…	Caixa Delimitadora…
+	Brilliance	Brilhantismo
+	Bump	Relevo
+	Bumps	Relevos
+	Button	Botão
+	Canvas Bumps	Relevos de Tela
+	Chalk and Sponge	Giz e Esponja
+	Channel to Alpha	Canal para Alfa
+	Chrome	Cromo
+	Circle by 3 Points…	Círculo por 3 Pontos…
+	Circle by Center and Radius	Círculo por Centro e Raio
+	Clone Original…	Clonar Original…
+	Color Blindness	Daltonismo
+	Comics Cream	Creme de Quadrinhos
+	Construct Grid…	Construir Grade…
+	Cracked Glass	Vidro Rachado
+	Create Anchor	Criar Âncora
+	Create Tiled Clones…	Criar Clones Ladrilhados…
+	Cubes	Cubos
+	Dark and Glow	Escuro e Brilho
+	Dragee	Drágea
+	Drop Shadow	Sombra Projetada
+	Duochrome	Duocromo
+	Dynamic Offset	Deslocamento Dinâmico
+	Ellipse by 5 Points…	Elipse por 5 Pontos…
+	Ellipse from Points…	Elipse a partir de Pontos…
+	Embossed Leather	Couro em Relevo
+	Embroidery Stitch…	Ponto de Bordado…
+	Extract Channel	Extrair Canal
+	Fade to Black	Esmaecer para Preto
+	Felt Feather	Pena de Feltro
+	Fill Between Many…	Preencher Entre Vários…
+	Fill Between Paths	Preencher Entre Caminhos
+	Fill Between Strokes…	Preencher Entre Traços…
+	Fill and Overlays	Preenchimento e Sobreposições
+	Filter Gallery	Galeria de Filtros
+	Filters	Filtros
+	Follow Link	Seguir Link
+	Fuse Slice	Fundir Fatia
+	Gears…	Engrenagens…
+	Glow	Brilho
+	Glowing Metal	Metal Incandescente
+	Gold	Ouro
+	Greyscale	Escala de Cinza
+	Grids	Grades
+	HSL Noise	Ruído HSL
+	Hatches (Rough)…	Hachuras (Rústicas)…
+	Import Web Image…	Importar Imagem da Web…
+	Ink Blot	Borrão de Tinta
+	Ink Splash	Respingo de Tinta
+	Inner Shadow	Sombra Interna
+	Input Devices…	Dispositivos de Entrada…
+	Interpolate Points…	Interpolar Pontos…
+	Join Type…	Tipo de Junção…
+	Knot…	Nó…
+	Leopard Fur	Pelo de Leopardo
+	Light Eraser	Apagador de Luz
+	Line Segment…	Segmento de Linha…
+	Linked Offset	Deslocamento Vinculado
+	Live Slice	Fatia ao Vivo
+	Lock Rotate View	Travar Rotação da Visualização
+	Luminance to Alpha	Luminância para Alfa
+	Materials	Materiais
+	Matte Jelly	Gelatina Fosca
+	Measure Segments…	Medir Segmentos…
+	Metallized Paint	Pintura Metalizada
+	Morphology	Morfologia
+	Neon	Neon
+	Noise Fill	Preenchimento de Ruído
+	Non-realistic 3D Shaders	Sombreadores 3D Não Realistas
+	Object Attributes…	Atributos do Objeto…
+	Objects to Marker	Objetos para Marcador
+	Paper Bump	Relevo de Papel
+	Parallel…	Paralela…
+	Path Effects	Efeitos de Caminho
+	Perpendicular Bisector…	Mediatriz…
+	Pointillism	Pontilhismo
+	Power Clip	Recorte Avançado
+	Power Clip (Inverse)	Recorte Avançado (Inverso)
+	Power Clip…	Recorte Avançado…
+	Protrusions	Protuberâncias
+	Quadritone	Quadritom
+	Release Power Clip	Liberar Recorte Avançado
+	Remove Overlaps	Remover Sobreposições
+	Ridges	Cristas
+	Rough Paper	Papel Rústico
+	Rough Transparency	Transparência Rústica
+	Roughen	Tornar Rústico
+	Ruler…	Régua…
+	SVG Font Editor…	Editor de Fontes SVG…
+	Saturation Map	Mapa de Saturação
+	Scatter	Dispersar
+	Show Handles…	Mostrar Alças…
+	Silhouette	Silhueta
+	Simplify (Live)…	Simplificar (ao Vivo)…
+	Sketch…	Esboço…
+	Slice…	Fatia…
+	Smooth Edges	Suavizar Bordas
+	Solarize	Solarizar
+	Specular Light	Luz Especular
+	Spikes	Espinhos
+	Split View	Visualização Dividida
+	Spots Overlay	Sobreposição de Manchas
+	Stitch Sub-Paths…	Costurar Subcaminhos…
+	Stone Wall	Muro de Pedra
+	Swirl	Redemoinho
+	Tangent to Curve…	Tangente à Curva…
+	Textures	Texturas
+	Thin Membrane	Membrana Fina
+	Torn Edges	Bordas Rasgadas
+	Trace Pixel Art…	Vetorizar Pixel Art…
+	Transform by 2 Points…	Transformar por 2 Pontos…
+	Translucent	Translúcido
+	Transparency Utilities	Utilitários de Transparência
+	Tritone	Tritom
+	Unlink Live Object	Desvincular Objeto ao Vivo
+	Visible Hairlines	Linhas Finas Visíveis
+	VonKoch…	VonKoch…
+	Watercolor	Aquarela
+	Waves	Ondas
+	X-ray	Raio-X
