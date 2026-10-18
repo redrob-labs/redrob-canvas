@@ -5243,3 +5243,32 @@ shape	Appearance	Aspetto
 	Reference Images Tool	Strumento Immagini di riferimento
 	Alternating	Alternato
 	Shaped Gradient (follows the selection)	Sfumatura sagomata (segue la selezione)
+	Clear copies	Cancella copie
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+clic posiziona una copia, Ctrl+Alt+clic la rimuove
+	How heavily the stroke lags behind the pointer	Quanto il tratto resta indietro rispetto al puntatore
+	How quickly the stroke's motion dies away	Quanto in fretta si smorza il movimento del tratto
+	Keep one-pixel lines single width without L corners	Mantieni le linee di un pixel a spessore singolo senza angoli a L
+	Mirror all tools	Specchia tutti gli strumenti
+	Multibrush	Multipennello
+	Pixel smoothing	Levigatura pixel
+	The painting symmetry mirrors fills, gradients and retouching too	La simmetria di pittura specchia anche riempimenti, sfumature e ritocchi
+	The painting symmetry mirrors this tool's output too	La simmetria di pittura specchia anche il risultato di questo strumento
+	X interval	Intervallo X
+	Y interval	Intervallo Y
+	Mirror / Rotation	Specchio / Rotazione
+	Translate	Traslazione
+	Copy Translate	Copia traslata
+	Cursor shape	Forma del cursore
+	Outline shape	Forma del contorno
+	Show outline while painting	Mostra il contorno mentre si dipinge
+	Effective outline size	Dimensione effettiva del contorno
+	Tool icon	Icona dello strumento
+	Arrow	Freccia
+	Crosshair	Mirino
+	Small dot	Puntino
+	No cursor	Nessun cursore
+	Triangle right	Triangolo destro
+	Triangle left	Triangolo sinistro
+	No outline	Nessun contorno
+	Instant preview	Anteprima istantanea
+	Instant preview megapixels	Megapixel anteprima istantanea

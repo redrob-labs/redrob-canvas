@@ -4,7 +4,7 @@
 use redrob_photo_doc::{LayerContent, vector::Path};
 use redrob_photo_paint::{
     StrokePoint,
-    symmetry::{PresetSymmetry, RotationalSymmetry, SymmetryMode, wrapped_passes},
+    symmetry::{CopyTranslateSymmetry, IntervalSymmetry, PresetSymmetry, RotationalSymmetry, SymmetryMode, TranslateSymmetry, wrapped_passes},
 };
 use serde_json::{Value, json};
 
@@ -25,8 +25,14 @@ pub struct SymmetryAxis {
 pub enum PaintingSymmetry {
     Path(SymmetryAxis),
     Preset(PresetSymmetry),
-    /// Rotational multibrush (`paint.setMultibrush`).
+    /// Rotational multibrush (`paint.setMultibrush`); with `mirror` the snowflake.
     Rotational(RotationalSymmetry),
+    /// Translate multibrush: copies on a circle around the centre, not rotated.
+    Translate(TranslateSymmetry),
+    /// Copy-translate multibrush: copies at user-placed offsets.
+    CopyTranslate(CopyTranslateSymmetry),
+    /// Interval multibrush: copies on an orthogonal grid.
+    Interval(IntervalSymmetry),
     /// Wrap-around mode: the stroke (and its `inner` symmetry copies, if any) repeated shifted by
     /// the canvas size in every direction. Built by [`stroke_passes`], never stored in
     /// `DocState::symmetry`.
@@ -58,11 +64,35 @@ impl PaintingSymmetry {
             _ => None,
         }
     }
+    pub fn translate(&self) -> Option<TranslateSymmetry> {
+        match self {
+            Self::Translate(t) => Some(*t),
+            Self::Tiled { inner: Some(inner), .. } => inner.translate(),
+            _ => None,
+        }
+    }
+    pub fn copy_translate(&self) -> Option<&CopyTranslateSymmetry> {
+        match self {
+            Self::CopyTranslate(t) => Some(t),
+            Self::Tiled { inner: Some(inner), .. } => inner.copy_translate(),
+            _ => None,
+        }
+    }
+    pub fn interval(&self) -> Option<IntervalSymmetry> {
+        match self {
+            Self::Interval(t) => Some(*t),
+            Self::Tiled { inner: Some(inner), .. } => inner.interval(),
+            _ => None,
+        }
+    }
     pub fn mirror_count(&self) -> usize {
         match self {
             Self::Path(_) => 1,
             Self::Preset(p) => p.mirror_count(),
             Self::Rotational(r) => r.mirror_count(),
+            Self::Translate(t) => t.mirror_count(),
+            Self::CopyTranslate(t) => t.mirror_count(),
+            Self::Interval(t) => t.mirror_count(),
             Self::Tiled { inner, .. } => (1 + inner.as_ref().map_or(0, |i| i.mirror_count())) * 9 - 1,
         }
     }
@@ -71,6 +101,9 @@ impl PaintingSymmetry {
             Self::Path(axis) => vec![axis.reflect_points(points)],
             Self::Preset(p) => p.reflected_passes(points),
             Self::Rotational(r) => r.copies(points),
+            Self::Translate(t) => t.copies(points),
+            Self::CopyTranslate(t) => t.copies(points),
+            Self::Interval(t) => t.copies(points),
             Self::Tiled { inner, size } => {
                 // The inner copies first, then the eight shifted tiles of the stroke and of each
                 // copy: a fixed order, so pass `k` stays the same renderer for the whole stroke.
@@ -88,7 +121,10 @@ impl PaintingSymmetry {
         match self {
             Self::Path(axis) => json!({"mode":"path", "source":axis.source, "segments":axis.segments.len()}),
             Self::Preset(p) => json!({"mode":p.mode.id(), "center":p.center, "rotation":p.rotation}),
-            Self::Rotational(r) => json!({"mode":"rotational", "center":r.center, "count":r.count, "mirror":r.mirror}),
+            Self::Rotational(r) => json!({"mode": if r.mirror { "snowflake" } else { "rotational" }, "center":r.center, "count":r.count, "mirror":r.mirror}),
+            Self::Translate(t) => json!({"mode":"translate", "center":t.center, "count":t.count, "radius":t.radius}),
+            Self::CopyTranslate(t) => json!({"mode":"copyTranslate", "offsets":t.offsets, "count":t.offsets.len()}),
+            Self::Interval(t) => json!({"mode":"interval", "x":t.x, "y":t.y, "columns":t.columns, "rows":t.rows}),
             Self::Tiled { inner, size } => json!({"mode":"wrap", "size":size, "inner":inner.as_ref().map(|i| i.inspect())}),
         }
     }
@@ -105,7 +141,16 @@ pub fn stroke_passes(st: &crate::DocState) -> Option<PaintingSymmetry> {
     }
 }
 
+/// `paint.setMultibrush`: the multibrush mode and its settings. `mode` is rotational (the
+/// default), snowflake (rotational, every copy mirrored too), translate, copyTranslate or
+/// interval; the other params belong to the chosen mode.
 fn set_multibrush(s: &mut Session, p: &Value) -> Result<Value> {
+    let mode = p.get("mode").and_then(Value::as_str).unwrap_or("rotational");
+    match mode {
+        "rotational" | "snowflake" => {}
+        "translate" | "copyTranslate" | "interval" => return set_translating_multibrush(s, p, mode),
+        other => return Err(EngineError::Other(format!("unknown multibrush mode `{other}` (want rotational|snowflake|translate|copyTranslate|interval)"))),
+    }
     let fail = || {
         EngineError::Other(format!(
             "multibrush requires a finite [x,y] centre and a count of {}..={}",
@@ -127,10 +172,72 @@ fn set_multibrush(s: &mut Session, p: &Value) -> Result<Value> {
         Some(v) => v.as_u64().and_then(|c| u32::try_from(c).ok()).ok_or_else(fail)?,
     };
     let mirror = match p.get("mirror") {
-        None => current.is_some_and(|r| r.mirror),
+        None => mode == "snowflake" || current.is_some_and(|r| r.mirror),
         Some(v) => v.as_bool().ok_or_else(fail)?,
-    };
+    } || mode == "snowflake";
     let symmetry = PaintingSymmetry::Rotational(RotationalSymmetry::new(center, count, mirror).ok_or_else(fail)?);
+    let result = symmetry.inspect();
+    s.active_mut().ok_or(EngineError::NoDocument)?.symmetry = Some(symmetry);
+    Ok(result)
+}
+
+fn point2(v: &Value) -> Option<[f64; 2]> {
+    let a = v.as_array().filter(|a| a.len() == 2)?;
+    let (x, y) = (a[0].as_f64()?, a[1].as_f64()?);
+    (x.is_finite() && y.is_finite()).then_some([x, y])
+}
+
+/// The translate, copy-translate and interval multibrushes.
+fn set_translating_multibrush(s: &mut Session, p: &Value, mode: &str) -> Result<Value> {
+    let st = s.active().ok_or(EngineError::NoDocument)?;
+    let size = [f64::from(st.doc.size.width), f64::from(st.doc.size.height)];
+    let current = st.symmetry.clone();
+    let num = |k: &str| -> Result<Option<f64>> {
+        match p.get(k) {
+            None | Some(Value::Null) => Ok(None),
+            Some(v) => v.as_f64().filter(|x| x.is_finite()).map(Some).ok_or_else(|| EngineError::Other(format!("`{k}` must be a finite number"))),
+        }
+    };
+    let symmetry = match mode {
+        "translate" => {
+            let cur = current.as_ref().and_then(PaintingSymmetry::translate);
+            let center = match p.get("center") {
+                None | Some(Value::Null) => cur.map_or([size[0] / 2.0, size[1] / 2.0], |t| t.center),
+                Some(v) => point2(v).ok_or_else(|| EngineError::Other("`center` must be a finite [x, y]".into()))?,
+            };
+            let count = num("count")?.map_or(cur.map_or(3, |t| t.count), |c| c.max(0.0) as u32);
+            let radius = num("radius")?.unwrap_or(cur.map_or(size[0].min(size[1]) / 4.0, |t| t.radius));
+            PaintingSymmetry::Translate(TranslateSymmetry::new(center, count, radius).ok_or_else(|| {
+                EngineError::Other(format!(
+                    "translate multibrush needs 1..={} copies and a positive radius",
+                    redrob_photo_paint::symmetry::MAX_TRANSLATE_COPIES
+                ))
+            })?)
+        }
+        "copyTranslate" => {
+            let offsets: Vec<[f64; 2]> = match p.get("offsets") {
+                Some(Value::Array(a)) => a
+                    .iter()
+                    .map(|v| point2(v).ok_or_else(|| EngineError::Other("`offsets` must be a list of finite [dx, dy]".into())))
+                    .collect::<Result<_>>()?,
+                None | Some(Value::Null) => current.as_ref().and_then(PaintingSymmetry::copy_translate).map(|c| c.offsets.clone()).unwrap_or_default(),
+                Some(_) => return Err(EngineError::Other("`offsets` must be a list of [dx, dy]".into())),
+            };
+            PaintingSymmetry::CopyTranslate(CopyTranslateSymmetry::new(offsets).ok_or_else(|| {
+                EngineError::Other(format!("copy-translate multibrush needs 1..={} offsets", redrob_photo_paint::symmetry::MAX_TRANSLATE_COPIES))
+            })?)
+        }
+        _ => {
+            let cur = current.as_ref().and_then(PaintingSymmetry::interval);
+            let x = num("x")?.unwrap_or(cur.map_or(size[0] / 4.0, |t| t.x));
+            let y = num("y")?.unwrap_or(cur.map_or(size[1] / 4.0, |t| t.y));
+            let columns = num("columns")?.map_or(cur.map_or(3, |t| t.columns), |c| c.max(0.0) as u32);
+            let rows = num("rows")?.map_or(cur.map_or(3, |t| t.rows), |c| c.max(0.0) as u32);
+            PaintingSymmetry::Interval(IntervalSymmetry::new(x, y, columns, rows).ok_or_else(|| {
+                EngineError::Other(format!("interval multibrush needs non-zero intervals and 2..={} cells", redrob_photo_paint::symmetry::MAX_TRANSLATE_COPIES))
+            })?)
+        }
+    };
     let result = symmetry.inspect();
     s.active_mut().ok_or(EngineError::NoDocument)?.symmetry = Some(symmetry);
     Ok(result)
@@ -293,10 +400,10 @@ pub fn specs() -> Vec<CommandSpec> {
         },
         CommandSpec {
             id: "paint.setMultibrush",
-            label: "Set Rotational Multibrush",
+            label: "Set Multibrush",
             menu: &[],
             shortcut: None,
-            params: r#"{"center":[x,y]?,"count":2..64=6,"mirror":bool=false} — repeat Brush, Pencil and Eraser strokes around the centre"#,
+            params: r#"{"mode":"rotational|snowflake|translate|copyTranslate|interval"="rotational","center":[x,y]?,"count":2..64=6 (rotational/snowflake; translate: 1..50=3),"mirror":bool=false (snowflake: always),"radius":px? (translate),"offsets":[[dx,dy],…] (copyTranslate, 1..50),"x":px?,"y":px?,"columns":n=3,"rows":n=3 (interval, 2..50 cells)} — repeat Brush, Pencil and Eraser strokes"#,
             enabled: |s| s.active().map(|_| ()).ok_or_else(|| "no document open".into()),
             run: set_multibrush,
             journal: true,
@@ -386,6 +493,22 @@ mod tests {
         assert_eq!(r["mode"], "rotational");
         assert_eq!(r["count"], 4);
         assert!(s.execute("paint.setMultibrush", json!({"count": 1})).is_err());
+        let r = s.execute("paint.setMultibrush", json!({"mode": "snowflake", "count": 6})).unwrap();
+        assert_eq!(r["mode"], "snowflake");
+        assert_eq!(r["mirror"], true);
+        let r = s.execute("paint.setMultibrush", json!({"mode": "translate", "count": 4, "radius": 20})).unwrap();
+        assert_eq!(r["mode"], "translate");
+        assert_eq!(s.active().unwrap().symmetry.as_ref().unwrap().mirror_count(), 4);
+        let r = s.execute("paint.setMultibrush", json!({"mode": "copyTranslate", "offsets": [[10, 0], [0, 10]]})).unwrap();
+        assert_eq!(r["count"], 2);
+        assert!(s.execute("paint.setMultibrush", json!({"mode": "copyTranslate", "offsets": []})).is_err());
+        let r = s.execute("paint.setMultibrush", json!({"mode": "interval", "x": 10, "y": 10, "columns": 2, "rows": 2})).unwrap();
+        assert_eq!(r["columns"], 2);
+        assert_eq!(s.active().unwrap().symmetry.as_ref().unwrap().mirror_count(), 3);
+        assert!(s.execute("paint.setMultibrush", json!({"mode": "interval", "columns": 10, "rows": 10})).is_err());
+        assert!(s.execute("paint.setMultibrush", json!({"mode": "spiral"})).is_err());
+        let r = s.execute("paint.setMultibrush", json!({"count": 4})).unwrap();
+        assert_eq!(r["mode"], "rotational");
         s.execute("paint.stroke", json!({"points": [[60, 40]], "size": 5, "hardness": 1.0, "color": "#ff0000", "smoothing": 0.0})).unwrap();
         let id = s.active().unwrap().active_layer.unwrap();
         let surface = s.active().unwrap().doc.layer(id).unwrap().surface().unwrap();

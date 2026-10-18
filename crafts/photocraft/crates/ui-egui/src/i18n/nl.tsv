@@ -4326,3 +4326,32 @@ curves	Smooth	Vloeiend maken
 	Alternating	Afwisselend
 	Forward	Vooruit
 	Shaped Gradient (follows the selection)	Vormverloop (volgt de selectie)
+	Clear copies	Kopieën wissen
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik plaatst een kopie, Ctrl+Alt+klik verwijdert er een
+	How heavily the stroke lags behind the pointer	Hoe sterk de streek achter de aanwijzer aanloopt
+	How quickly the stroke's motion dies away	Hoe snel de beweging van de streek uitdooft
+	Keep one-pixel lines single width without L corners	Eén-pixellijnen enkel breed houden zonder L-hoeken
+	Mirror all tools	Alle gereedschappen spiegelen
+	Multibrush	Multipenseel
+	Pixel smoothing	Pixelvloeiing
+	The painting symmetry mirrors fills, gradients and retouching too	De tekensymmetrie spiegelt ook vullingen, verlopen en retouches
+	The painting symmetry mirrors this tool's output too	De tekensymmetrie spiegelt ook de uitvoer van dit gereedschap
+	X interval	X-interval
+	Y interval	Y-interval
+	Mirror / Rotation	Spiegel / Rotatie
+	Translate	Verschuiven
+	Copy Translate	Kopie verschuiven
+	Cursor shape	Cursorvorm
+	Outline shape	Omtrekvorm
+	Show outline while painting	Omtrek tonen tijdens het schilderen
+	Effective outline size	Werkelijke omtrekgrootte
+	Tool icon	Gereedschapspictogram
+	Arrow	Pijl
+	Crosshair	Draadkruis
+	Small dot	Kleine stip
+	No cursor	Geen cursor
+	Triangle right	Driehoek rechts
+	Triangle left	Driehoek links
+	No outline	Geen omtrek
+	Instant preview	Directe voorvertoning
+	Instant preview megapixels	Megapixels directe voorvertoning

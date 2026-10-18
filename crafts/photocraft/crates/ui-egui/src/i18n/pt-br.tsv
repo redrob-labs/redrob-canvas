@@ -4356,3 +4356,32 @@ layerLabel	No Color	Sem cor
 	Alternating	Alternado
 	Forward	Para frente
 	Shaped Gradient (follows the selection)	Degradê com forma (segue a seleção)
+	Clear copies	Limpar cópias
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+clique coloca uma cópia, Ctrl+Alt+clique a remove
+	How heavily the stroke lags behind the pointer	Quanto o traço fica atrás do ponteiro
+	How quickly the stroke's motion dies away	Quão rápido o movimento do traço se dissipa
+	Keep one-pixel lines single width without L corners	Manter linhas de um pixel com largura única sem cantos em L
+	Mirror all tools	Espelhar todas as ferramentas
+	Multibrush	Multipincel
+	Pixel smoothing	Suavização de pixels
+	The painting symmetry mirrors fills, gradients and retouching too	A simetria de pintura espelha também preenchimentos, degradês e retoques
+	The painting symmetry mirrors this tool's output too	A simetria de pintura espelha também o resultado desta ferramenta
+	X interval	Intervalo X
+	Y interval	Intervalo Y
+	Mirror / Rotation	Espelho / Rotação
+	Translate	Translação
+	Copy Translate	Copiar e transladar
+	Cursor shape	Forma do cursor
+	Outline shape	Forma do contorno
+	Show outline while painting	Mostrar contorno ao pintar
+	Effective outline size	Tamanho efetivo do contorno
+	Tool icon	Ícone da ferramenta
+	Arrow	Seta
+	Crosshair	Mira
+	Small dot	Ponto pequeno
+	No cursor	Sem cursor
+	Triangle right	Triângulo direito
+	Triangle left	Triângulo esquerdo
+	No outline	Sem contorno
+	Instant preview	Visualização instantânea
+	Instant preview megapixels	Megapixels da visualização instantânea

@@ -4164,3 +4164,32 @@ curves	Smooth	Wygładź
 	Alternating	Naprzemiennie
 	Forward	Do przodu
 	Shaped Gradient (follows the selection)	Gradient kształtowy (podąża za zaznaczeniem)
+	Clear copies	Wyczyść kopie
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+kliknięcie dodaje kopię, Ctrl+Alt+kliknięcie ją usuwa
+	How heavily the stroke lags behind the pointer	Jak mocno pociągnięcie pozostaje za wskaźnikiem
+	How quickly the stroke's motion dies away	Jak szybko ruch pociągnięcia wygasa
+	Keep one-pixel lines single width without L corners	Linie jednopikselowe zachowują pojedynczą szerokość bez narożników w kształcie L
+	Mirror all tools	Odbijaj wszystkie narzędzia
+	Multibrush	Multipędzel
+	Pixel smoothing	Wygładzanie pikseli
+	The painting symmetry mirrors fills, gradients and retouching too	Symetria malowania odbija też wypełnienia, gradienty i retusz
+	The painting symmetry mirrors this tool's output too	Symetria malowania odbija też wynik tego narzędzia
+	X interval	Odstęp X
+	Y interval	Odstęp Y
+	Mirror / Rotation	Odbicie / Obrót
+	Translate	Przesunięcie
+	Copy Translate	Kopia z przesunięciem
+	Cursor shape	Kształt kursora
+	Outline shape	Kształt obrysu
+	Show outline while painting	Pokaż obrys podczas malowania
+	Effective outline size	Rzeczywisty rozmiar obrysu
+	Tool icon	Ikona narzędzia
+	Arrow	Strzałka
+	Crosshair	Krzyżyk
+	Small dot	Mała kropka
+	No cursor	Bez kursora
+	Triangle right	Trójkąt w prawo
+	Triangle left	Trójkąt w lewo
+	No outline	Bez obrysu
+	Instant preview	Natychmiastowy podgląd
+	Instant preview megapixels	Megapiksele natychmiastowego podglądu

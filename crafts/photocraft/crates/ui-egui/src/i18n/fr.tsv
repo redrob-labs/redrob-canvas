@@ -3645,3 +3645,32 @@ curves	Smooth	Lisser
 	Alternating	Alterné
 	Forward	Vers l'avant
 	Shaped Gradient (follows the selection)	Dégradé en forme (suit la sélection)
+	Clear copies	Effacer les copies
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+clic place une copie, Ctrl+Alt+clic en retire une
+	How heavily the stroke lags behind the pointer	À quel point le trait traîne derrière le pointeur
+	How quickly the stroke's motion dies away	À quelle vitesse le mouvement du trait s'amortit
+	Keep one-pixel lines single width without L corners	Garder les lignes d'un pixel à une seule épaisseur sans angles en L
+	Mirror all tools	Refléter tous les outils
+	Multibrush	Multibrosse
+	Pixel smoothing	Lissage des pixels
+	The painting symmetry mirrors fills, gradients and retouching too	La symétrie de peinture reflète aussi les remplissages, dégradés et retouches
+	The painting symmetry mirrors this tool's output too	La symétrie de peinture reflète aussi le résultat de cet outil
+	X interval	Intervalle X
+	Y interval	Intervalle Y
+	Mirror / Rotation	Miroir / Rotation
+	Translate	Translation
+	Copy Translate	Copie translatée
+	Cursor shape	Forme du curseur
+	Outline shape	Forme du contour
+	Show outline while painting	Afficher le contour pendant la peinture
+	Effective outline size	Taille effective du contour
+	Tool icon	Icône de l'outil
+	Arrow	Flèche
+	Crosshair	Réticule
+	Small dot	Petit point
+	No cursor	Aucun curseur
+	Triangle right	Triangle droit
+	Triangle left	Triangle gauche
+	No outline	Aucun contour
+	Instant preview	Aperçu instantané
+	Instant preview megapixels	Mégapixels de l'aperçu instantané

@@ -3567,3 +3567,32 @@ curves	Smooth	Haluskan
 	Alternating	Bergantian
 	Forward	Maju
 	Shaped Gradient (follows the selection)	Gradien berbentuk (mengikuti seleksi)
+	Clear copies	Hapus salinan
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik menempatkan salinan, Ctrl+Alt+klik menghapusnya
+	How heavily the stroke lags behind the pointer	Seberapa jauh sapuan tertinggal dari penunjuk
+	How quickly the stroke's motion dies away	Seberapa cepat gerakan sapuan mereda
+	Keep one-pixel lines single width without L corners	Jaga garis satu piksel tetap satu lebar tanpa sudut L
+	Mirror all tools	Cerminkan semua alat
+	Multibrush	Multikuas
+	Pixel smoothing	Penghalusan piksel
+	The painting symmetry mirrors fills, gradients and retouching too	Simetri melukis juga mencerminkan isian, gradien, dan retus
+	The painting symmetry mirrors this tool's output too	Simetri melukis juga mencerminkan hasil alat ini
+	X interval	Interval X
+	Y interval	Interval Y
+	Mirror / Rotation	Cermin / Rotasi
+	Translate	Geser
+	Copy Translate	Salin geser
+	Cursor shape	Bentuk kursor
+	Outline shape	Bentuk garis luar
+	Show outline while painting	Tampilkan garis luar saat melukis
+	Effective outline size	Ukuran garis luar efektif
+	Tool icon	Ikon alat
+	Arrow	Panah
+	Crosshair	Garis silang
+	Small dot	Titik kecil
+	No cursor	Tanpa kursor
+	Triangle right	Segitiga kanan
+	Triangle left	Segitiga kiri
+	No outline	Tanpa garis luar
+	Instant preview	Pratinjau instan
+	Instant preview megapixels	Megapiksel pratinjau instan

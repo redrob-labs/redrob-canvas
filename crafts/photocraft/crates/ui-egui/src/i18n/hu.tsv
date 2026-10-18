@@ -4484,3 +4484,32 @@ cameraRaw	Yellow	Sárga
 	Alternating	Váltakozó
 	Forward	Előre
 	Shaped Gradient (follows the selection)	Alakzatos színátmenet (a kijelölést követi)
+	Clear copies	Másolatok törlése
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+kattintás másolatot helyez el, Ctrl+Alt+kattintás eltávolít
+	How heavily the stroke lags behind the pointer	Mennyire marad el a vonás a mutatótól
+	How quickly the stroke's motion dies away	Mennyire gyorsan csendesül a vonás mozgása
+	Keep one-pixel lines single width without L corners	Az egypixeles vonalak egyszeresek maradnak L-sarkok nélkül
+	Mirror all tools	Minden eszköz tükrözése
+	Multibrush	Többszörös ecset
+	Pixel smoothing	Pixelsimítás
+	The painting symmetry mirrors fills, gradients and retouching too	A festési szimmetria a kitöltéseket, színátmeneteket és retusálást is tükrözi
+	The painting symmetry mirrors this tool's output too	A festési szimmetria ennek az eszköznek az eredményét is tükrözi
+	X interval	X-köz
+	Y interval	Y-köz
+	Mirror / Rotation	Tükör / Forgatás
+	Translate	Eltolás
+	Copy Translate	Másolat eltolással
+	Cursor shape	Kurzor alakja
+	Outline shape	Körvonal alakja
+	Show outline while painting	Körvonal mutatása festés közben
+	Effective outline size	Tényleges körvonalméret
+	Tool icon	Eszközikon
+	Arrow	Nyíl
+	Crosshair	Szálkereszt
+	Small dot	Kis pont
+	No cursor	Nincs kurzor
+	Triangle right	Háromszög jobbra
+	Triangle left	Háromszög balra
+	No outline	Nincs körvonal
+	Instant preview	Azonnali előnézet
+	Instant preview megapixels	Azonnali előnézet megapixel

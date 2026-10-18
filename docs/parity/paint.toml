@@ -1426,8 +1426,8 @@ name = "Pixel smoothing"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Keeps one-pixel lines single width without L corners for pixel art (5.3)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/pixel_smoothing.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/brush_extras_ui.rs"
 gap = ""
 priority = 3
 
@@ -1474,8 +1474,8 @@ name = "Multibrush: translate / copy translate / interval"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "Copies at a radius, at user-placed offsets, or on an orthogonal interval grid (5.3, up to 50)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/multibrush_ui.rs"
 gap = ""
 priority = 3
 
@@ -1486,8 +1486,8 @@ name = "Multibrush: snowflake"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "Mirrored rotational symmetry."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/multibrush_ui.rs"
 gap = ""
 priority = 2
 
@@ -1510,9 +1510,9 @@ name = "Horizontal / vertical mirror tools"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/mirror_tools.html"
 behaviour = "Toolbar toggles mirror every tool's output across a draggable axis line; lock line, hide handle, rotate axis with Alt."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/symmetry_ui.rs"
-gap = "applies to paint tools only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/mirror_tools_ui.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs, crafts/photocraft/crates/ui-egui/src/retouch_ui.rs, crafts/photocraft/crates/ui-egui/src/eraser_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1522,9 +1522,9 @@ name = "Straight line tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/line.html"
 behaviour = "Drag a line painted with the brush; Shift constrains 15 degrees, Alt moves; use sensors along the path; preview line."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/stroke_constraint.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
-gap = "Line mode is an options-bar toggle on the Brush, Pencil and Eraser rather than a separate tool; Alt-drag to move the line while drawing is not implemented"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs, crafts/photocraft/crates/ui-egui/src/stroke_constraint.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1534,8 +1534,8 @@ name = "Dynamic brush tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/dyna.html"
 behaviour = "Mass and drag physics smooth the stroke like a weight on a string."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/dyna_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 3
 
@@ -1750,9 +1750,9 @@ name = "Brush outline and cursor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/general_settings.html"
 behaviour = "Cursor shapes (tool icon, arrow, crosshair, dot, none, triangles, pixel) and outline (none, circle, preview, tilt); show outline while painting, effective outline size."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/brush_cursor.rs"
-gap = "precise/outline cursor; no tilt outline or triangle cursors"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/cursor_shapes.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1810,8 +1810,8 @@ name = "Instant preview"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/instant_preview.html"
 behaviour = "Low-resolution preview during heavy brush, geometry, move and filter operations, refined afterwards."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/instant_preview.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/engine/src/prefs.rs"
 gap = ""
 priority = 2
 

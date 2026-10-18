@@ -101,6 +101,17 @@ choice!(
     RightClickPaint { BrushPicker = "brushPicker", Erase = "erase", PopupPalette = "popupPalette" } default BrushPicker
 );
 choice!(OtherCursor { Standard = "standard", Precise = "precise" } default Standard);
+choice!(
+    /// The painting cursor's pointer shape, independent of the brush outline: the tool's own
+    /// icon (then `PaintingCursor` decides), an arrow, a crosshair, a small dot, no pointer at
+    /// all, a triangle pointing right or left, or the single pixel under the pointer.
+    CursorShape { ToolIcon = "toolIcon", Arrow = "arrow", Crosshair = "crosshair", SmallDot = "smallDot", NoCursor = "noCursor", TriangleRight = "triangleRight", TriangleLeft = "triangleLeft", Pixel = "pixel" } default ToolIcon
+);
+choice!(
+    /// The brush outline drawn with a custom cursor shape: none, the brush's circle, the tip's
+    /// traced preview, or the circle flattened by the stylus tilt.
+    OutlineShape { NoOutline = "noOutline", Circle = "circle", Preview = "preview", Tilt = "tilt" } default Circle
+);
 choice!(CheckerSize { None = "none", Small = "small", Medium = "medium", Large = "large" } default Medium);
 choice!(CheckerColors { Light = "light", Medium = "medium", Dark = "dark", Red = "red", Orange = "orange", Green = "green", Blue = "blue", Purple = "purple", Custom = "custom" } default Light);
 choice!(LineStyle { Lines = "lines", Dashed = "dashedLines", Dots = "dots" } default Lines);
@@ -541,6 +552,12 @@ pub struct Performance {
     pub cumulative_undo: bool,
     pub cumulative_undo_interval: f32,
     pub cumulative_undo_duration: f32,
+    /// Instant preview: while a heavy operation runs (a brush stroke, a transform or move, a
+    /// filter job) on a large document the canvas shows a low-resolution pass, refined to full
+    /// resolution once it ends.
+    pub instant_preview: bool,
+    /// Instant preview kicks in above this many megapixels.
+    pub instant_preview_megapixels: f32,
 }
 
 impl Performance {
@@ -573,6 +590,8 @@ impl Default for Performance {
             cumulative_undo: false,
             cumulative_undo_interval: 2.0,
             cumulative_undo_duration: 60.0,
+            instant_preview: true,
+            instant_preview_megapixels: 8.0,
         }
     }
 }
@@ -606,6 +625,13 @@ pub struct Cursors {
     pub other: OtherCursor,
     /// Brush preview (HUD) colour.
     pub brush_preview_color: String,
+    /// The pointer shape and the outline drawn with it (`toolIcon` leaves `painting` in charge).
+    pub cursor_shape: CursorShape,
+    pub outline_shape: OutlineShape,
+    /// Keep the outline while the button is down.
+    pub show_outline_while_painting: bool,
+    /// The outline follows the size the pressure gives the dab, not the brush's nominal size.
+    pub effective_outline_size: bool,
 }
 
 impl Default for Cursors {
@@ -616,6 +642,10 @@ impl Default for Cursors {
             show_only_crosshair_while_painting: false,
             other: OtherCursor::Standard,
             brush_preview_color: "#ff0000".into(),
+            cursor_shape: CursorShape::ToolIcon,
+            outline_shape: OutlineShape::Circle,
+            show_outline_while_painting: true,
+            effective_outline_size: false,
         }
     }
 }
@@ -1080,6 +1110,8 @@ pub fn choices(path: &str) -> Option<&'static [&'static str]> {
         "export.metadata" => ExportMetadata::NAMES,
         "cursors.painting" => PaintingCursor::NAMES,
         "cursors.other" => OtherCursor::NAMES,
+        "cursors.cursorShape" => CursorShape::NAMES,
+        "cursors.outlineShape" => OutlineShape::NAMES,
         "tools.rightClickWithPaintingTools" => RightClickPaint::NAMES,
         "transparencyAndGamut.gridSize" => CheckerSize::NAMES,
         "transparencyAndGamut.gridColors" => CheckerColors::NAMES,

@@ -96,7 +96,7 @@ pub fn bucket_down(app: &mut PhotocraftApp, x: f64, y: f64, mods: egui::Modifier
     m.insert("lineArtGrow".into(), json!(o.line_art_grow));
     m.insert("closeGap".into(), json!(o.bucket_close_gap));
     m.insert("boundaryColor".into(), o.bucket_use_boundary.then(|| json!(o.bucket_boundary_color.to_vec())).unwrap_or(Value::Null));
-    let _ = app.run("paint.bucket", Value::Object(m));
+    let _ = crate::mirror_tools_ui::run_mirrored(app, "paint.bucket", Value::Object(m));
     false
 }
 
@@ -106,7 +106,7 @@ pub fn finish_bucket_drag(app: &mut PhotocraftApp, d: &Drag) {
     let mut m = common_params(app);
     m.insert("points".into(), json!(pts));
     m.insert("similarOnly".into(), json!(app.ui.tool_options.bucket_drag_similar));
-    let _ = app.run("paint.bucketDrag", Value::Object(m));
+    let _ = crate::mirror_tools_ui::run_mirrored(app, "paint.bucketDrag", Value::Object(m));
 }
 
 /// The Enclose and Fill tool's release: the drawn shape (a rectangle or ellipse from the drag's
@@ -141,7 +141,7 @@ pub fn finish_enclose(app: &mut PhotocraftApp, d: &Drag) {
     if o.enclose_exclude_color_on {
         m.insert("excludeColor".into(), json!(hex(o.enclose_exclude_color)));
     }
-    let r = app.run("paint.encloseFill", Value::Object(m));
+    let r = crate::mirror_tools_ui::run_mirrored(app, "paint.encloseFill", Value::Object(m));
     if let Ok(v) = &r
         && v.get("filled") == Some(&Value::Bool(false))
     {
@@ -163,6 +163,7 @@ pub fn bucket_options(ui: &mut egui::Ui, o: &mut ToolOptions) {
     }
     reference_options(ui, o);
     grow_options(ui, o);
+    widgets::checkbox(ui, &mut o.mirror_all_tools, tl!("Mirror")).on_hover_text(tl!("The painting symmetry mirrors this tool's output too"));
     widgets::checkbox(ui, &mut o.bucket_drag_fill, tl!("Drag fill")).on_hover_text(tl!("Dragging fills every region passed over"));
     if o.bucket_drag_fill {
         widgets::checkbox(ui, &mut o.bucket_drag_similar, tl!("Similar only")).on_hover_text(tl!("Only regions coloured like the first one"));

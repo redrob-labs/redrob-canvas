@@ -991,7 +991,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let mut brush = brush_before.clone();
                 let b = &mut brush;
                 match app.ui.tool {
-                    Tool::Brush | Tool::Eraser if t.pro => {
+                    Tool::Brush | Tool::Eraser | Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush if t.pro => {
                         // A Block-mode Eraser has a fixed size, opacity and flow (Photoshop, #2770).
                         let block = crate::eraser_ui::block_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!block, |ui| {
@@ -1062,7 +1062,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::vline(ui, 22.0);
                         widgets::checkbox(ui, &mut app.ui.tool_options.pencil_auto_erase, tl!("Auto Erase"));
                     }
-                    Tool::Brush | Tool::Eraser => {
+                    Tool::Brush | Tool::Eraser | Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush => {
                         brush_preset_chip(ui, b, &mut app.ui);
                         crate::brush_picker::settings_toggle(app, ui);
                         widgets::vline(ui, 22.0);

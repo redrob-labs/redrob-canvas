@@ -30,7 +30,7 @@ pub fn click(app: &mut PhotocraftApp, tool: Tool, x: f64, y: f64) -> bool {
         "sampleAllLayers": o.sample_all_layers,
         "opacity": o.magic_eraser_opacity,
     });
-    let r = app.run("paint.magicEraser", p);
+    let r = crate::mirror_tools_ui::run_mirrored(app, "paint.magicEraser", p);
     report(app, r);
     true
 }

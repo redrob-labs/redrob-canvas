@@ -4638,3 +4638,32 @@ shape	Appearance	Izgled
 	Alternating	Naizmenično
 	Forward	Napred
 	Shaped Gradient (follows the selection)	Oblikovani preliv (prati izbor)
+	Clear copies	Obriši kopije
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik postavlja kopiju, Ctrl+Alt+klik je uklanja
+	How heavily the stroke lags behind the pointer	Koliko potez zaostaje za pokazivačem
+	How quickly the stroke's motion dies away	Koliko brzo se kretanje poteza gasi
+	Keep one-pixel lines single width without L corners	Linije od jednog piksela ostaju jednostruke bez L uglova
+	Mirror all tools	Preslikaj sve alatke
+	Multibrush	Višestruka četkica
+	Pixel smoothing	Pikselsko glačanje
+	The painting symmetry mirrors fills, gradients and retouching too	Simetrija slikanja preslikava i popune, prelive i retuširanje
+	The painting symmetry mirrors this tool's output too	Simetrija slikanja preslikava i rezultat ove alatke
+	X interval	X razmak
+	Y interval	Y razmak
+	Mirror / Rotation	Ogledalo / Rotacija
+	Translate	Pomeranje
+	Copy Translate	Kopiraj i pomeri
+	Cursor shape	Oblik kursora
+	Outline shape	Oblik konture
+	Show outline while painting	Prikaži konturu dok se slika
+	Effective outline size	Stvarna veličina konture
+	Tool icon	Ikona alatke
+	Arrow	Strelica
+	Crosshair	Nišan
+	Small dot	Mala tačka
+	No cursor	Bez kursora
+	Triangle right	Trougao desno
+	Triangle left	Trougao levo
+	No outline	Bez konture
+	Instant preview	Trenutni pregled
+	Instant preview megapixels	Megapikseli trenutnog pregleda

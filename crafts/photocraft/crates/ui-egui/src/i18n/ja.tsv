@@ -4307,3 +4307,32 @@ curves	Smooth	スムーズ
 	Alternating	交互
 	Forward	順方向
 	Shaped Gradient (follows the selection)	シェイプグラデーション (選択範囲に沿う)
+	Clear copies	コピーをクリア
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+クリックでコピーを配置、Ctrl+Alt+クリックで削除
+	How heavily the stroke lags behind the pointer	ストロークがポインタからどれだけ遅れるか
+	How quickly the stroke's motion dies away	ストロークの動きがどれだけ速く収まるか
+	Keep one-pixel lines single width without L corners	1ピクセルの線をL字の角なしで1ピクセル幅に保つ
+	Mirror all tools	すべてのツールをミラー
+	Multibrush	マルチブラシ
+	Pixel smoothing	ピクセルスムージング
+	The painting symmetry mirrors fills, gradients and retouching too	ペイントの対称が塗り、グラデーション、レタッチもミラーする
+	The painting symmetry mirrors this tool's output too	ペイントの対称がこのツールの出力もミラーする
+	X interval	X間隔
+	Y interval	Y間隔
+	Mirror / Rotation	ミラー / 回転
+	Translate	平行移動
+	Copy Translate	コピー平行移動
+	Cursor shape	カーソルの形状
+	Outline shape	アウトラインの形状
+	Show outline while painting	ペイント中にアウトラインを表示
+	Effective outline size	実効アウトラインサイズ
+	Tool icon	ツールアイコン
+	Arrow	矢印
+	Crosshair	十字
+	Small dot	小さな点
+	No cursor	カーソルなし
+	Triangle right	右向き三角
+	Triangle left	左向き三角
+	No outline	アウトラインなし
+	Instant preview	インスタントプレビュー
+	Instant preview megapixels	インスタントプレビューのメガピクセル

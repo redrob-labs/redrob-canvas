@@ -3635,3 +3635,32 @@ curves	Smooth	Glätten
 	Reference Images Tool	Referenzbilder-Werkzeug
 	Alternating	Abwechselnd
 	Shaped Gradient (follows the selection)	Formverlauf (folgt der Auswahl)
+	Clear copies	Kopien löschen
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Strg+Klick setzt eine Kopie, Strg+Alt+Klick entfernt eine
+	How heavily the stroke lags behind the pointer	Wie stark der Strich dem Zeiger hinterherhinkt
+	How quickly the stroke's motion dies away	Wie schnell die Bewegung des Strichs abklingt
+	Keep one-pixel lines single width without L corners	Einpixel-Linien bleiben einfach breit, ohne L-Ecken
+	Mirror all tools	Alle Werkzeuge spiegeln
+	Multibrush	Multipinsel
+	Pixel smoothing	Pixelglättung
+	The painting symmetry mirrors fills, gradients and retouching too	Die Malsymmetrie spiegelt auch Füllungen, Verläufe und Retuschen
+	The painting symmetry mirrors this tool's output too	Die Malsymmetrie spiegelt auch die Ausgabe dieses Werkzeugs
+	X interval	X-Abstand
+	Y interval	Y-Abstand
+	Mirror / Rotation	Spiegel / Rotation
+	Translate	Verschieben
+	Copy Translate	Kopie verschieben
+	Cursor shape	Cursorform
+	Outline shape	Umrissform
+	Show outline while painting	Umriss beim Malen anzeigen
+	Effective outline size	Effektive Umrissgröße
+	Tool icon	Werkzeugsymbol
+	Arrow	Pfeil
+	Crosshair	Fadenkreuz
+	Small dot	Kleiner Punkt
+	No cursor	Kein Cursor
+	Triangle right	Dreieck rechts
+	Triangle left	Dreieck links
+	No outline	Kein Umriss
+	Instant preview	Sofortvorschau
+	Instant preview megapixels	Megapixel für die Sofortvorschau

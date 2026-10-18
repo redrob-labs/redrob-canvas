@@ -346,6 +346,9 @@ impl Tool {
                 | Tool::Dodge
                 | Tool::Burn
                 | Tool::Sponge
+                | Tool::StraightLine
+                | Tool::Multibrush
+                | Tool::DynamicBrush
         )
     }
     /// Photoshop default single-key shortcut (`'\0'` = none, e.g. the Blur group).
@@ -861,6 +864,46 @@ pub struct ToolOptions {
     /// Gradient tool (classic) › Repeat: none | forward | alternating.
     #[serde(default)]
     pub gradient_repeat: String,
+    /// The painting symmetry mirrors every tool's output (fills, gradients, retouching), not only
+    /// the brush strokes (`mirror_tools_ui`).
+    #[serde(default = "yes")]
+    pub mirror_all_tools: bool,
+    /// Dynamic Brush › mass and drag (0..1) (`dyna_ui`).
+    #[serde(default = "half")]
+    pub dyna_mass: f32,
+    #[serde(default = "dyna_drag_default")]
+    pub dyna_drag: f32,
+    /// Pencil › Pixel smoothing: one-pixel lines without L corners (`pixel_smoothing`).
+    #[serde(default)]
+    pub pixel_smoothing: bool,
+    /// Multibrush › mode (rotational | snowflake | translate | copyTranslate | interval) and its
+    /// settings (`multibrush_ui`).
+    #[serde(default)]
+    pub multibrush_mode: String,
+    #[serde(default = "six")]
+    pub multibrush_count: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_radius: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_x: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_y: f32,
+    #[serde(default = "three")]
+    pub multibrush_columns: f32,
+    #[serde(default = "three")]
+    pub multibrush_rows: f32,
+}
+
+fn dyna_drag_default() -> f32 {
+    0.15
+}
+
+fn six() -> f32 {
+    6.0
+}
+
+fn three() -> f32 {
+    3.0
 }
 
 fn thousand() -> f32 {
@@ -1083,6 +1126,17 @@ impl Default for ToolOptions {
             enclose_exclude_color_on: false,
             enclose_exclude_color: [1.0, 1.0, 1.0],
             gradient_repeat: String::new(),
+            mirror_all_tools: true,
+            dyna_mass: 0.5,
+            dyna_drag: 0.15,
+            pixel_smoothing: false,
+            multibrush_mode: String::new(),
+            multibrush_count: 6.0,
+            multibrush_radius: 100.0,
+            multibrush_x: 100.0,
+            multibrush_y: 100.0,
+            multibrush_columns: 3.0,
+            multibrush_rows: 3.0,
         }
     }
 }
@@ -1554,6 +1608,12 @@ pub struct UiState {
     /// Assistant tool and the stroke snapping to painting assistants (see `assistant_ui`).
     #[serde(default)]
     pub assistants: crate::assistant_ui::AssistantUi,
+    /// Multibrush tool: the copies' centre (Ctrl-click; the canvas centre when `None`) and the
+    /// copy-translate offsets (`multibrush_ui`).
+    #[serde(default)]
+    pub multibrush_center: Option<[f64; 2]>,
+    #[serde(default)]
+    pub multibrush_offsets: Vec<[f64; 2]>,
     pub timeline: crate::timeline_ui::TimelineUi,
     /// Slice and Slice Select tools (see `slice_ui`).
     #[serde(default)]
@@ -1708,6 +1768,8 @@ impl Default for UiState {
             type_panels: Default::default(),
             analysis: Default::default(),
             assistants: Default::default(),
+            multibrush_center: None,
+            multibrush_offsets: Vec::new(),
             timeline: Default::default(),
             slices: Default::default(),
             frame_tool: Default::default(),

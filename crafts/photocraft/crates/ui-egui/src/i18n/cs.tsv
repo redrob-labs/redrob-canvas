@@ -4175,3 +4175,32 @@ navigator	Zoom	Zvětšení
 	Alternating	Střídavě
 	Forward	Vpřed
 	Shaped Gradient (follows the selection)	Tvarovaný přechod (sleduje výběr)
+	Clear copies	Smazat kopie
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klepnutí umístí kopii, Ctrl+Alt+klepnutí ji odebere
+	How heavily the stroke lags behind the pointer	Jak moc se tah opožďuje za ukazatelem
+	How quickly the stroke's motion dies away	Jak rychle pohyb tahu odezní
+	Keep one-pixel lines single width without L corners	Jednopixelové linky zůstávají jednoduché bez rohů ve tvaru L
+	Mirror all tools	Zrcadlit všechny nástroje
+	Multibrush	Multištětec
+	Pixel smoothing	Pixelové vyhlazení
+	The painting symmetry mirrors fills, gradients and retouching too	Symetrie malování zrcadlí i výplně, přechody a retuše
+	The painting symmetry mirrors this tool's output too	Symetrie malování zrcadlí i výstup tohoto nástroje
+	X interval	Interval X
+	Y interval	Interval Y
+	Mirror / Rotation	Zrcadlo / Rotace
+	Translate	Posun
+	Copy Translate	Kopírovat s posunem
+	Cursor shape	Tvar kurzoru
+	Outline shape	Tvar obrysu
+	Show outline while painting	Zobrazit obrys při malování
+	Effective outline size	Skutečná velikost obrysu
+	Tool icon	Ikona nástroje
+	Arrow	Šipka
+	Crosshair	Zaměřovač
+	Small dot	Malá tečka
+	No cursor	Bez kurzoru
+	Triangle right	Trojúhelník vpravo
+	Triangle left	Trojúhelník vlevo
+	No outline	Bez obrysu
+	Instant preview	Okamžitý náhled
+	Instant preview megapixels	Megapixely okamžitého náhledu

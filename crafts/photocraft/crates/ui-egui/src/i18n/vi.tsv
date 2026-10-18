@@ -4054,3 +4054,32 @@ curves	Smooth	Làm mượt
 	Alternating	Xen kẽ
 	Forward	Tiến
 	Shaped Gradient (follows the selection)	Chuyển sắc theo hình (theo vùng chọn)
+	Clear copies	Xóa bản sao
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+nhấp đặt bản sao, Ctrl+Alt+nhấp xóa
+	How heavily the stroke lags behind the pointer	Nét vẽ trễ sau con trỏ bao nhiêu
+	How quickly the stroke's motion dies away	Chuyển động của nét vẽ tắt nhanh đến mức nào
+	Keep one-pixel lines single width without L corners	Giữ đường một điểm ảnh đơn độ rộng, không góc chữ L
+	Mirror all tools	Phản chiếu mọi công cụ
+	Multibrush	Đa cọ
+	Pixel smoothing	Làm mượt điểm ảnh
+	The painting symmetry mirrors fills, gradients and retouching too	Đối xứng vẽ cũng phản chiếu tô, chuyển sắc và chỉnh sửa
+	The painting symmetry mirrors this tool's output too	Đối xứng vẽ cũng phản chiếu kết quả của công cụ này
+	X interval	Khoảng X
+	Y interval	Khoảng Y
+	Mirror / Rotation	Phản chiếu / Xoay
+	Translate	Dịch chuyển
+	Copy Translate	Sao chép dịch chuyển
+	Cursor shape	Hình con trỏ
+	Outline shape	Hình đường viền
+	Show outline while painting	Hiện đường viền khi tô
+	Effective outline size	Kích cỡ viền thực tế
+	Tool icon	Biểu tượng công cụ
+	Arrow	Mũi tên
+	Crosshair	Dấu chữ thập
+	Small dot	Chấm nhỏ
+	No cursor	Không con trỏ
+	Triangle right	Tam giác phải
+	Triangle left	Tam giác trái
+	No outline	Không viền
+	Instant preview	Xem trước tức thì
+	Instant preview megapixels	Megapixel xem trước tức thì

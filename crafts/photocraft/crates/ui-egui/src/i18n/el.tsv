@@ -4266,3 +4266,32 @@ curves	Smooth	Εξομάλυνση
 	Alternating	Εναλλασσόμενο
 	Forward	Προς τα εμπρός
 	Shaped Gradient (follows the selection)	Διαβάθμιση σχήματος (ακολουθεί την επιλογή)
+	Clear copies	Καθαρισμός αντιγράφων
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+κλικ τοποθετεί αντίγραφο, Ctrl+Alt+κλικ το αφαιρεί
+	How heavily the stroke lags behind the pointer	Πόσο υστερεί η πινελιά από τον δείκτη
+	How quickly the stroke's motion dies away	Πόσο γρήγορα σβήνει η κίνηση της πινελιάς
+	Keep one-pixel lines single width without L corners	Οι γραμμές ενός pixel μένουν μονές χωρίς γωνίες σχήματος L
+	Mirror all tools	Κατοπτρισμός όλων των εργαλείων
+	Multibrush	Πολυπινέλο
+	Pixel smoothing	Εξομάλυνση pixel
+	The painting symmetry mirrors fills, gradients and retouching too	Η συμμετρία ζωγραφικής κατοπτρίζει και γεμίσματα, διαβαθμίσεις και ρετούς
+	The painting symmetry mirrors this tool's output too	Η συμμετρία ζωγραφικής κατοπτρίζει και το αποτέλεσμα αυτού του εργαλείου
+	X interval	Διάστημα X
+	Y interval	Διάστημα Y
+	Mirror / Rotation	Κάτοπτρο / Περιστροφή
+	Translate	Μετατόπιση
+	Copy Translate	Αντιγραφή με μετατόπιση
+	Cursor shape	Σχήμα δρομέα
+	Outline shape	Σχήμα περιγράμματος
+	Show outline while painting	Εμφάνιση περιγράμματος κατά τη ζωγραφική
+	Effective outline size	Πραγματικό μέγεθος περιγράμματος
+	Tool icon	Εικονίδιο εργαλείου
+	Arrow	Βέλος
+	Crosshair	Σταυρόνημα
+	Small dot	Μικρή κουκκίδα
+	No cursor	Χωρίς δρομέα
+	Triangle right	Τρίγωνο δεξιά
+	Triangle left	Τρίγωνο αριστερά
+	No outline	Χωρίς περίγραμμα
+	Instant preview	Άμεση προεπισκόπηση
+	Instant preview megapixels	Megapixel άμεσης προεπισκόπησης

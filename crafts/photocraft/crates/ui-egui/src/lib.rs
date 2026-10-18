@@ -60,6 +60,7 @@ pub mod clip_line_ui;
 pub mod color_history;
 pub mod color_picker_ui;
 pub mod color_range_ui;
+pub mod colorize_ui;
 pub mod comps_ui;
 pub mod control;
 pub mod corner_radius;
@@ -71,6 +72,7 @@ pub mod crop_shield;
 pub mod crop_size;
 pub mod crop_straighten;
 pub mod crop_ui;
+pub mod cursor_shapes;
 pub mod curve_bend_ui;
 pub mod delete_layer_prompt;
 pub mod dialog_alt_reset;
@@ -83,6 +85,7 @@ pub mod distort_ui;
 pub mod doc_props_ui;
 pub mod dock;
 pub mod duplicate_layer_ui;
+pub mod dyna_ui;
 pub mod edit_history;
 pub mod egui_fonts;
 pub mod enable_rules;
@@ -113,6 +116,7 @@ pub mod hold_keys;
 pub mod i18n;
 mod icon_data;
 pub mod icons;
+pub mod instant_preview;
 pub mod jobs_ui;
 pub mod kys_import;
 pub mod lasso_ui;
@@ -138,12 +142,14 @@ pub mod menu_catalog;
 pub mod menu_keys;
 pub mod menu_nav;
 pub mod menus;
+pub mod mirror_tools_ui;
 pub mod monitor_status;
 pub mod move_box;
 pub mod move_hover;
 pub mod move_lock;
 pub mod move_mods;
 pub mod move_ui;
+pub mod multibrush_ui;
 pub mod native_menu;
 pub mod new_doc_ui;
 pub mod new_guide_ui;
@@ -166,6 +172,7 @@ pub mod pattern_preview;
 pub mod perspective_crop_ui;
 pub mod perspective_ui;
 pub mod pixel_grid;
+pub mod pixel_smoothing;
 pub mod plugin_ui;
 pub mod point_curve;
 pub mod popup_palette;
@@ -179,6 +186,7 @@ pub mod proxy;
 pub mod puppet_ui;
 pub mod quick_pick;
 pub mod rasterize_prompt;
+pub mod reference_ui;
 pub mod retouch_ui;
 mod rgb_histogram;
 pub mod rotate_view;
@@ -611,6 +619,14 @@ pub struct PhotocraftApp {
     press_stroke: bool,
     /// Position and pen pressure at the last stroke's endpoint: ⇧-click interpolates from them (#178, #2827).
     last_stroke_end: Option<(DocId, [f64; 3])>,
+    /// The Dynamic Brush's weight during a stroke (`dyna_ui`).
+    pub dyna: Option<dyna_ui::Dyna>,
+    /// Floating reference images over the canvas (`reference_ui`).
+    pub references: reference_ui::References,
+    /// The Colorize Mask tool's key strokes and settings (`colorize_ui`).
+    pub colorize: colorize_ui::ColorizeState,
+    /// Instant preview: the low-resolution pass of a heavy operation (`instant_preview`).
+    pub instant_preview: instant_preview::InstantPreview,
     /// Control+Alt-drag brush resize in progress (`brush_resize`, #231).
     pub(crate) brush_resize: Option<brush_resize::Resize>,
     /// A ⌘⌥⌃-click layer pick is in progress; its drag and release are swallowed (`quick_pick`).
@@ -857,6 +873,10 @@ impl PhotocraftApp {
             defer_live_stroke: false,
             press_stroke: false,
             last_stroke_end: None,
+            dyna: None,
+            references: Default::default(),
+            colorize: Default::default(),
+            instant_preview: Default::default(),
             brush_resize: None,
             quick_pick: false,
             brush_resize_armed: false,

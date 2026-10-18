@@ -1410,7 +1410,9 @@ pub fn ensure_texture(app: &mut PhotocraftApp, ctx: &egui::Context, idx: usize, 
     let (display, display_key) = canvas_display(app, &doc, output);
     let seen = app.canvases.get(&cache_key(id, output)).map(|c| (c.tex_revision, c.tex_preview_key));
     let damage = seen.and_then(|seen| damage_since(app, idx, seen, (revision, preview_key), display_key, last_damage));
-    let preview_key = preview_key ^ display_key;
+    // Instant preview: a heavy operation on a large document shows a reduced pass, refined after.
+    let instant = crate::instant_preview::factor(app, &doc);
+    let preview_key = preview_key ^ display_key ^ crate::instant_preview::key(instant);
     let cache = app.canvases.entry(cache_key(id, output)).or_insert(CanvasCache {
         revision: 0,
         texture: None,
@@ -1421,10 +1423,11 @@ pub fn ensure_texture(app: &mut PhotocraftApp, ctx: &egui::Context, idx: usize, 
         tex_preview_key: 0,
         grid: None,
     });
+    let mut full_ms: Option<f64> = None;
     if cache.tex_revision != revision || cache.texture.is_none() || cache.tex_preview_key != preview_key {
         let t0 = crate::gpu_canvas::now_ms();
         let longest = doc.size.width.max(doc.size.height);
-        let factor = longest.div_ceil(MAX_TEXTURE).max(1);
+        let factor = longest.div_ceil(MAX_TEXTURE).max(1).max(instant);
         let (w, h) = ((doc.size.width / factor).max(1), (doc.size.height / factor).max(1));
         let current = cache.texture.as_mut().filter(|t| t.size() == [w as usize, h as usize]);
         if let (Some(d), Some(t)) = (damage, current) {
@@ -1449,11 +1452,15 @@ pub fn ensure_texture(app: &mut PhotocraftApp, ctx: &egui::Context, idx: usize, 
             }
             cache.scale = scale;
             app.perf.record("full", doc.size.width as u64 * doc.size.height as u64, t1 - t0, crate::gpu_canvas::now_ms() - t1);
+            full_ms = (instant <= 1).then_some(t1 - t0);
         }
         cache.tex_revision = revision;
         cache.tex_preview_key = preview_key;
     }
-    Some((cache.texture.as_ref()?.id(), cache.scale))
+    let tex = cache.texture.as_ref()?.id();
+    let scale = cache.scale;
+    crate::instant_preview::note(app, ctx, instant, full_ms);
+    Some((tex, scale))
 }
 
 /// What changed since a canvas cache showed (`revision`, `preview key`) `seen`, when only a
@@ -3318,6 +3325,12 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         d.reposition = reposition;
         drawing = true;
     }
+    // Line mode: Alt held while the line is drawn moves the whole line instead of its end.
+    let alt_moves_line =
+        app.drag.as_ref().is_some_and(|d| line_mode(app, d.tool)) && !ctx.text_edit_focused() && ui.input(|i| i.modifiers.alt && !i.modifiers.ctrl);
+    if let Some(d) = app.drag.as_mut().filter(|d| line_mode_tool(d.tool)) {
+        d.reposition = alt_moves_line;
+    }
     let temporary = crate::hold_keys::for_frame(app, &ctx, drawing || crate::type_transform::active(app));
     let space_pan = temporary == Some(crate::hold_keys::Temporary::Hand);
     let middle = ui.input(|i| i.pointer.middle_down());
@@ -3976,42 +3989,48 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                         let painting = app.drag.is_some();
                         let brush = &app.session.tools.brush;
                         let full = (brush.size / 2.0 * xf.zoom).max(1.0);
-                        match cur.painting {
-                            PaintingCursor::Standard => egui::CursorIcon::Default,
-                            PaintingCursor::Precise => crate::tool_cursor::crosshair(&painter, p, 6.0, 0.0),
-                            _ if painting && cur.show_only_crosshair_while_painting => crate::tool_cursor::crosshair(&painter, p, 5.0, 0.0),
-                            // The Pencil (and the Eraser in Pencil mode): the outline of the
-                            // whole pixels its dab fills, on the pixel grid. A round tip is a
-                            // disc, a tiny one the whole square (#2662). The Block-mode Eraser:
-                            // its square, 16 screen pixels at any zoom (#2770).
-                            _ if tool == Tool::Pencil || crate::eraser_ui::pencil_mode(app, tool) || crate::eraser_ui::block_mode(app, tool) => {
-                                let block = crate::eraser_ui::block_mode(app, tool);
-                                let size = if block { crate::eraser_ui::block_size(app) } else { brush.size };
-                                let ppp = painter.ctx().pixels_per_point();
-                                let sq = pencil_cursor_rect(&xf, xf.to_doc(p), size, ppp);
-                                let px = 1.0 / ppp;
-                                let (dark, light) = (Stroke::new(px, Color32::from_black_alpha(160)), Stroke::new(px, Color32::from_white_alpha(230)));
-                                if !block && pencil_tip_is_round(size) {
-                                    let r = sq.width() / 2.0;
-                                    painter.circle_stroke(sq.center(), r + px / 2.0, dark);
-                                    painter.circle_stroke(sq.center(), (r - px / 2.0).max(0.0), light);
-                                } else {
-                                    painter.rect_stroke(sq, 0.0, dark, egui::StrokeKind::Outside);
-                                    painter.rect_stroke(sq, 0.0, light, egui::StrokeKind::Inside);
+                        // Preferences › Cursors › Cursor shape / Outline shape (`cursor_shapes`).
+                        let custom = crate::cursor_shapes::custom(app, &painter, &xf, p, brush, full, app.stylus.pressure(), painting);
+                        if let Some(icon) = custom {
+                            icon
+                        } else {
+                            match cur.painting {
+                                PaintingCursor::Standard => egui::CursorIcon::Default,
+                                PaintingCursor::Precise => crate::tool_cursor::crosshair(&painter, p, 6.0, 0.0),
+                                _ if painting && cur.show_only_crosshair_while_painting => crate::tool_cursor::crosshair(&painter, p, 5.0, 0.0),
+                                // The Pencil (and the Eraser in Pencil mode): the outline of the
+                                // whole pixels its dab fills, on the pixel grid. A round tip is a
+                                // disc, a tiny one the whole square (#2662). The Block-mode Eraser:
+                                // its square, 16 screen pixels at any zoom (#2770).
+                                _ if tool == Tool::Pencil || crate::eraser_ui::pencil_mode(app, tool) || crate::eraser_ui::block_mode(app, tool) => {
+                                    let block = crate::eraser_ui::block_mode(app, tool);
+                                    let size = if block { crate::eraser_ui::block_size(app) } else { brush.size };
+                                    let ppp = painter.ctx().pixels_per_point();
+                                    let sq = pencil_cursor_rect(&xf, xf.to_doc(p), size, ppp);
+                                    let px = 1.0 / ppp;
+                                    let (dark, light) = (Stroke::new(px, Color32::from_black_alpha(160)), Stroke::new(px, Color32::from_white_alpha(230)));
+                                    if !block && pencil_tip_is_round(size) {
+                                        let r = sq.width() / 2.0;
+                                        painter.circle_stroke(sq.center(), r + px / 2.0, dark);
+                                        painter.circle_stroke(sq.center(), (r - px / 2.0).max(0.0), light);
+                                    } else {
+                                        painter.rect_stroke(sq, 0.0, dark, egui::StrokeKind::Outside);
+                                        painter.rect_stroke(sq, 0.0, light, egui::StrokeKind::Inside);
+                                    }
+                                    // Too small to see where it is: the hotspot as well.
+                                    if cur.show_crosshair_in_brush_tip || sq.width() < 6.0 {
+                                        crate::tool_cursor::crosshair(&painter, p, 4.0, 0.0);
+                                    }
+                                    egui::CursorIcon::None
                                 }
-                                // Too small to see where it is: the hotspot as well.
-                                if cur.show_crosshair_in_brush_tip || sq.width() < 6.0 {
-                                    crate::tool_cursor::crosshair(&painter, p, 4.0, 0.0);
+                                // A shaped tip (sampled bitmap, or a rotated/flattened round tip)
+                                // traces its outline, turned and flipped with the view; a plain round
+                                // tip keeps the circle.
+                                _ => {
+                                    let centre = brush_tip_centre(tool, alt || app.ui.shell.sticky_alt, cur.show_crosshair_in_brush_tip);
+                                    let axes = crate::brush_cursor::tip_axes(&xf, brush.size);
+                                    crate::brush_cursor::cursor(&painter, p, brush, full, axes, cur.painting == PaintingCursor::NormalTip, centre)
                                 }
-                                egui::CursorIcon::None
-                            }
-                            // A shaped tip (sampled bitmap, or a rotated/flattened round tip)
-                            // traces its outline, turned and flipped with the view; a plain round
-                            // tip keeps the circle.
-                            _ => {
-                                let centre = brush_tip_centre(tool, alt || app.ui.shell.sticky_alt, cur.show_crosshair_in_brush_tip);
-                                let axes = crate::brush_cursor::tip_axes(&xf, brush.size);
-                                crate::brush_cursor::cursor(&painter, p, brush, full, axes, cur.painting == PaintingCursor::NormalTip, centre)
                             }
                         }
                     }
@@ -5254,6 +5273,11 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
     }
     // Painting tools: strokes follow the painting assistants.
     let ev = crate::assistant_ui::filter_event(app, ev);
+    // The Dynamic Brush's weight on a string; the Multibrush's Ctrl-click places copies.
+    let ev = crate::dyna_ui::filter_event(app, ev);
+    if crate::multibrush_ui::pointer(app, ev, mods) {
+        return;
+    }
     // Slice and Slice Select tools.
     if crate::slice_ui::pointer(app, ev, mods) {
         return;
@@ -5664,6 +5688,10 @@ pub(crate) fn event_tool(app: &PhotocraftApp, mods: egui::Modifiers) -> Tool {
         t if app.tool_override.is_none() && mods.command && crate::hold_keys::cmd_moves(t) && app.ui.transform.is_none() && app.ui.text_edit.is_none() => {
             Tool::Move
         }
+        // The Straight Line, Multibrush and Dynamic Brush tools paint with the Brush's stroke
+        // pipeline; their own behaviour sits in front of it (line mode, the multibrush symmetry,
+        // `dyna_ui::filter_event`).
+        Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush => Tool::Brush,
         t => t,
     }
 }
@@ -5772,8 +5800,14 @@ fn finish_selection_drag(app: &mut PhotocraftApp, floating: bool, start: [f64; 2
 /// offered to the commit (`Session::offer_live_stroke`), so release costs no second render, and
 /// the canvas then refreshes only what it hadn't shown yet (`CommittedStroke`).
 /// Is a stroke with `tool` in Line mode (one straight stroke per drag, pressure replayed)?
+/// Tools whose drag can be a line-mode line (`line_mode`).
+fn line_mode_tool(tool: Tool) -> bool {
+    crate::stroke_constraint::has_line_mode(tool)
+}
+
 pub(crate) fn line_mode(app: &PhotocraftApp, tool: Tool) -> bool {
-    crate::stroke_constraint::has_line_mode(tool) && app.ui.tool_options.brush_line_mode
+    // The Straight Line tool is the Brush's Line mode as a tool of its own.
+    crate::stroke_constraint::has_line_mode(tool) && (app.ui.tool_options.brush_line_mode || app.ui.tool == Tool::StraightLine)
 }
 
 fn commit_brush_stroke(app: &mut PhotocraftApp, d: &Drag) {
@@ -5783,6 +5817,14 @@ fn commit_brush_stroke(app: &mut PhotocraftApp, d: &Drag) {
     if line_mode(app, d.tool) {
         app.live_stroke = None;
         let pts = crate::stroke_constraint::straighten(&d.points, d.live.shift || d.modifiers.shift);
+        let p = stroke_params(app, d, &app.stylus.stroke_points(&pts));
+        let _ = app.run(stroke_command(app, d.tool), p);
+        return;
+    }
+    // Pixel smoothing: the committed one-pixel line replaces the live stroke's staircase.
+    if crate::pixel_smoothing::applies(app, d.tool) {
+        app.live_stroke = None;
+        let pts = crate::pixel_smoothing::smooth(&d.points);
         let p = stroke_params(app, d, &app.stylus.stroke_points(&pts));
         let _ = app.run(stroke_command(app, d.tool), p);
         return;
@@ -5939,7 +5981,8 @@ pub(crate) fn finish_gesture(app: &mut PhotocraftApp, d: Drag) {
         Tool::Gradient => {
             if (end[0] - d.start[0]).abs() + (end[1] - d.start[1]).abs() >= 2.0 {
                 let o = app.ui.tool_options.clone();
-                let _ = app.run(
+                let _ = crate::mirror_tools_ui::run_mirrored(
+                    app,
                     "paint.gradient",
                     json!({"from": [d.start[0], d.start[1]], "to": [end[0], end[1]], "style": o.gradient_style, "repeat": if o.gradient_repeat.is_empty() { "none" } else { o.gradient_repeat.as_str() }, "reverse": o.gradient_reverse, "dither": o.gradient_dither, "opacity": o.fill_opacity, "mode": o.gradient_blend_mode.label(), "target": paint_target(app)}),
                 );

@@ -4318,3 +4318,32 @@ curves	Smooth	매끄럽게
 	Alternating	교대
 	Forward	정방향
 	Shaped Gradient (follows the selection)	모양 그레이디언트 (선택 영역을 따름)
+	Clear copies	복사 지우기
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+클릭으로 복사를 배치하고, Ctrl+Alt+클릭으로 제거합니다
+	How heavily the stroke lags behind the pointer	스트로크가 포인터보다 얼마나 뒤처지는지
+	How quickly the stroke's motion dies away	스트로크의 움직임이 얼마나 빨리 잦아드는지
+	Keep one-pixel lines single width without L corners	1픽셀 선을 L자 모서리 없이 한 픽셀 두께로 유지
+	Mirror all tools	모든 도구 미러
+	Multibrush	멀티브러시
+	Pixel smoothing	픽셀 매끄럽게
+	The painting symmetry mirrors fills, gradients and retouching too	페인팅 대칭이 채우기, 그레이디언트, 리터치도 미러합니다
+	The painting symmetry mirrors this tool's output too	페인팅 대칭이 이 도구의 결과도 미러합니다
+	X interval	X 간격
+	Y interval	Y 간격
+	Mirror / Rotation	미러 / 회전
+	Translate	이동
+	Copy Translate	복사 이동
+	Cursor shape	커서 모양
+	Outline shape	외곽선 모양
+	Show outline while painting	페인팅 중 외곽선 표시
+	Effective outline size	실제 외곽선 크기
+	Tool icon	도구 아이콘
+	Arrow	화살표
+	Crosshair	십자선
+	Small dot	작은 점
+	No cursor	커서 없음
+	Triangle right	오른쪽 삼각형
+	Triangle left	왼쪽 삼각형
+	No outline	외곽선 없음
+	Instant preview	즉시 미리 보기
+	Instant preview megapixels	즉시 미리 보기 메가픽셀

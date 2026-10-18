@@ -4296,3 +4296,32 @@ cameraData	Lens	Lens
 	Alternating	Değişken
 	Forward	İleri
 	Shaped Gradient (follows the selection)	Şekilli Gradyan (seçimi izler)
+	Clear copies	Kopyaları temizle
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+tık kopya yerleştirir, Ctrl+Alt+tık kaldırır
+	How heavily the stroke lags behind the pointer	Vuruşun işaretçinin ne kadar gerisinde kaldığı
+	How quickly the stroke's motion dies away	Vuruş hareketinin ne kadar hızlı söndüğü
+	Keep one-pixel lines single width without L corners	Tek piksel çizgileri L köşeler olmadan tek genişlikte tut
+	Mirror all tools	Tüm araçları yansıt
+	Multibrush	Çoklu Fırça
+	Pixel smoothing	Piksel yumuşatma
+	The painting symmetry mirrors fills, gradients and retouching too	Boyama simetrisi doldurmaları, gradyanları ve rötuşları da yansıtır
+	The painting symmetry mirrors this tool's output too	Boyama simetrisi bu aracın çıktısını da yansıtır
+	X interval	X aralığı
+	Y interval	Y aralığı
+	Mirror / Rotation	Ayna / Döndürme
+	Translate	Öteleme
+	Copy Translate	Kopyala Ötele
+	Cursor shape	İmleç şekli
+	Outline shape	Dış çizgi şekli
+	Show outline while painting	Boyarken dış çizgiyi göster
+	Effective outline size	Etkin dış çizgi boyutu
+	Tool icon	Araç simgesi
+	Arrow	Ok
+	Crosshair	Artı
+	Small dot	Küçük nokta
+	No cursor	İmleç yok
+	Triangle right	Sağ üçgen
+	Triangle left	Sol üçgen
+	No outline	Dış çizgi yok
+	Instant preview	Anlık önizleme
+	Instant preview megapixels	Anlık önizleme megapiksel

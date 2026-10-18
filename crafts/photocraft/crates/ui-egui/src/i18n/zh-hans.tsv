@@ -3260,3 +3260,32 @@ curves	Smooth	平滑
 	Alternating	交替
 	Forward	正向
 	Shaped Gradient (follows the selection)	形状渐变（跟随选区）
+	Clear copies	清除副本
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+点击放置副本，Ctrl+Alt+点击移除
+	How heavily the stroke lags behind the pointer	笔画滞后于指针的程度
+	How quickly the stroke's motion dies away	笔画的运动衰减得多快
+	Keep one-pixel lines single width without L corners	保持单像素线条为单一宽度且无L形拐角
+	Mirror all tools	镜像所有工具
+	Multibrush	多重画笔
+	Pixel smoothing	像素平滑
+	The painting symmetry mirrors fills, gradients and retouching too	绘画对称也镜像填充、渐变和修饰
+	The painting symmetry mirrors this tool's output too	绘画对称也镜像此工具的输出
+	X interval	X间隔
+	Y interval	Y间隔
+	Mirror / Rotation	镜像 / 旋转
+	Translate	平移
+	Copy Translate	复制平移
+	Cursor shape	光标形状
+	Outline shape	轮廓形状
+	Show outline while painting	绘画时显示轮廓
+	Effective outline size	有效轮廓大小
+	Tool icon	工具图标
+	Arrow	箭头
+	Crosshair	十字线
+	Small dot	小点
+	No cursor	无光标
+	Triangle right	右三角
+	Triangle left	左三角
+	No outline	无轮廓
+	Instant preview	即时预览
+	Instant preview megapixels	即时预览百万像素

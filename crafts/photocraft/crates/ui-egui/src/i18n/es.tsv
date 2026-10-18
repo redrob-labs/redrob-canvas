@@ -5088,3 +5088,32 @@ navigator	Zoom	Zoom
 	Alternating	Alternado
 	Forward	Hacia delante
 	Shaped Gradient (follows the selection)	Degradado con forma (sigue la selección)
+	Clear copies	Borrar copias
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+clic coloca una copia, Ctrl+Alt+clic la quita
+	How heavily the stroke lags behind the pointer	Cuánto se retrasa el trazo respecto al puntero
+	How quickly the stroke's motion dies away	Qué tan rápido se amortigua el movimiento del trazo
+	Keep one-pixel lines single width without L corners	Mantener las líneas de un píxel con un solo ancho y sin esquinas en L
+	Mirror all tools	Reflejar todas las herramientas
+	Multibrush	Multipincel
+	Pixel smoothing	Suavizado de píxeles
+	The painting symmetry mirrors fills, gradients and retouching too	La simetría de pintura también refleja rellenos, degradados y retoques
+	The painting symmetry mirrors this tool's output too	La simetría de pintura también refleja el resultado de esta herramienta
+	X interval	Intervalo X
+	Y interval	Intervalo Y
+	Mirror / Rotation	Espejo / Rotación
+	Translate	Trasladar
+	Copy Translate	Copiar y trasladar
+	Cursor shape	Forma del cursor
+	Outline shape	Forma del contorno
+	Show outline while painting	Mostrar el contorno al pintar
+	Effective outline size	Tamaño efectivo del contorno
+	Tool icon	Icono de la herramienta
+	Arrow	Flecha
+	Crosshair	Cruz
+	Small dot	Punto pequeño
+	No cursor	Sin cursor
+	Triangle right	Triángulo derecho
+	Triangle left	Triángulo izquierdo
+	No outline	Sin contorno
+	Instant preview	Previsualización instantánea
+	Instant preview megapixels	Megapíxeles de previsualización instantánea

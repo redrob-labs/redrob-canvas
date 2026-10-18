@@ -4265,3 +4265,32 @@ curves	Smooth	Згладити
 	Alternating	Почергово
 	Forward	Вперед
 	Shaped Gradient (follows the selection)	Градієнт за формою (слідує виділенню)
+	Clear copies	Прибрати копії
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+клацання ставить копію, Ctrl+Alt+клацання прибирає
+	How heavily the stroke lags behind the pointer	Наскільки штрих відстає від вказівника
+	How quickly the stroke's motion dies away	Як швидко затухає рух штриха
+	Keep one-pixel lines single width without L corners	Лінії в один піксель залишаються одинарними без Г-подібних кутів
+	Mirror all tools	Віддзеркалювати всі інструменти
+	Multibrush	Мультипензель
+	Pixel smoothing	Піксельне згладжування
+	The painting symmetry mirrors fills, gradients and retouching too	Симетрія малювання віддзеркалює й заливки, градієнти та ретуш
+	The painting symmetry mirrors this tool's output too	Симетрія малювання віддзеркалює й результат цього інструмента
+	X interval	Інтервал X
+	Y interval	Інтервал Y
+	Mirror / Rotation	Дзеркало / Обертання
+	Translate	Зсув
+	Copy Translate	Копії зі зсувом
+	Cursor shape	Форма курсора
+	Outline shape	Форма контуру
+	Show outline while painting	Показувати контур під час малювання
+	Effective outline size	Фактичний розмір контуру
+	Tool icon	Значок інструмента
+	Arrow	Стрілка
+	Crosshair	Перехрестя
+	Small dot	Крапка
+	No cursor	Без курсора
+	Triangle right	Трикутник праворуч
+	Triangle left	Трикутник ліворуч
+	No outline	Без контуру
+	Instant preview	Миттєвий попередній перегляд
+	Instant preview megapixels	Мегапікселі миттєвого перегляду
