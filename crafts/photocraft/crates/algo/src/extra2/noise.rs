@@ -53,7 +53,7 @@ pub(crate) fn perlin_noise(src: &Image, out: Rect, ctx: &Ctx, alpha: f32, scale:
         let mut norm = 0.0;
         let mut f = 1.0;
         for o in 0..octaves {
-            sum += perlin3(px * f + 7.3, py * f + 3.1, z_offset * f, 0x51ed.wrapping_add(o)) * amp;
+            sum += perlin3(px * f + 7.3, py * f + 3.1, z_offset * f, 0x51ed_u32.wrapping_add(o)) * amp;
             norm += amp;
             amp *= 2f32.powf(-alpha);
             f *= 2.0;
@@ -129,7 +129,7 @@ pub(crate) fn solid_noise(src: &Image, out: Rect, ctx: &Ctx, x_size: f32, y_size
         let mut mul = 1.0;
         for o in 0..octaves {
             let n = solid_octave(u, v, xs * mul, ys * mul, tileable, seed.wrapping_add(o.wrapping_mul(7919)));
-            sum += if turbulent { (n - 0.5).abs() * 2.0 } else { n } * amp;
+            sum += (if turbulent { (n - 0.5).abs() * 2.0 } else { n }) * amp;
             norm += amp;
             amp *= 0.5;
             mul *= 2.0;

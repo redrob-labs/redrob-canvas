@@ -880,8 +880,12 @@ fn geometric_shape(sess: &mut Session, p: &Value) -> Result<Value> {
     let fill_c = colour(p, "fillColor", [0.2, 0.5, 0.9, 1.0]);
     let stroke_c = colour(p, "strokeColor", BLACK);
     let hex = |c: [f32; 4]| format!("#{:02x}{:02x}{:02x}", (c[0] * 255.0).round() as u8, (c[1] * 255.0).round() as u8, (c[2] * 255.0).round() as u8);
-    let mut params = json!({ "name": format!("{} Shape", { let mut c = kind.clone(); if let Some(f) = c.get_mut(0..1) { f.make_ascii_uppercase(); } c }) });
-    let obj = params.as_object_mut().expect("object");
+    let mut title = kind.clone();
+    if let Some(first) = title.get_mut(0..1) {
+        first.make_ascii_uppercase();
+    }
+    let mut obj = serde_json::Map::new();
+    obj.insert("name".into(), json!(format!("{title} Shape")));
     let polyline = |pts: Vec<[f64; 2]>, closed: bool| json!({ "subpaths": [{ "closed": closed, "knots": pts }] });
     match kind.as_str() {
         "line" => {
@@ -960,7 +964,7 @@ fn geometric_shape(sess: &mut Session, p: &Value) -> Result<Value> {
     let open = matches!(kind.as_str(), "line" | "arc" | "spiral" | "bezier") && !b(p, "pie", false);
     obj.insert("fill".into(), if fill_on && !open { json!(hex(fill_c)) } else { Value::Null });
     obj.insert("stroke".into(), if stroke_on || open { json!({ "width": stroke_w.max(0.5), "color": hex(stroke_c) }) } else { Value::Null });
-    let info = sess.execute("shape.create", params)?;
+    let info = sess.execute("shape.create", Value::Object(obj))?;
     if b(p, "rasterize", false) {
         sess.execute("layer.rasterize.shape", json!({}))?;
         if sess.is_enabled("layer.mergeDown") {
