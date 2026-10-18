@@ -4314,3 +4314,17 @@ curves	Smooth	Vloeiend maken
 	Add an entry with the foreground colour	Een item met de voorgrondkleur toevoegen
 	Delete the last entry	Het laatste item verwijderen
 	Use selected	Geselecteerde gebruiken
+	Engine	Engine
+	Ink	Inkt
+	MyPaint Brush	MyPaint-penseel
+	Nib	Pen
+	Aspect	Verhouding
+	Opaque	Dekking
+	Erase with brush	Wissen met penseel
+	Import .myb…	.myb importeren…
+	Add a MyPaint brush file to the presets	Een MyPaint-penseelbestand aan de voorinstellingen toevoegen
+	Imported MyPaint brush {name}	MyPaint-penseel {name} geïmporteerd
+	How much pressure changes the nib size	Hoeveel de druk de pengrootte verandert
+	How much the pen's tilt turns and stretches the nib	Hoeveel de penkanteling de pen draait en uitrekt
+	How much a fast stroke thins the nib	Hoeveel een snelle streek de pen verdunt
+	Added to the preset's logarithmic radius	Opgeteld bij de logaritmische straal van de voorinstelling

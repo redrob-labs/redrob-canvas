@@ -998,6 +998,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             crate::brush_picker::settings_toggle(app, ui);
                         });
                         widgets::vline(ui, 22.0);
+                        if app.ui.tool == Tool::Brush {
+                            crate::paint_engines_ui::controls(app, ui);
+                        }
                         // The Eraser has no blend mode: its Mode is Brush, Pencil or Block (#2662).
                         if app.ui.tool == Tool::Eraser {
                             crate::eraser_ui::mode_dropdown(ui, &mut app.ui.tool_options.eraser_mode);
@@ -1063,6 +1066,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         brush_preset_chip(ui, b, &mut app.ui);
                         crate::brush_picker::settings_toggle(app, ui);
                         widgets::vline(ui, 22.0);
+                        if app.ui.tool == Tool::Brush {
+                            crate::paint_engines_ui::controls(app, ui);
+                        }
                         // A Block-mode Eraser has a fixed size, opacity and flow (Photoshop, #2770).
                         let block = crate::eraser_ui::block_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!block, |ui| {

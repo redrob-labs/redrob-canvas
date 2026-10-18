@@ -3171,3 +3171,17 @@ curves	Smooth	平滑
 	Add an entry with the foreground colour	以前景色新增一個項目
 	Delete the last entry	刪除最後一個項目
 	Use selected	使用所選項目
+	Engine	引擎
+	Ink	墨水
+	MyPaint Brush	MyPaint 筆刷
+	Nib	筆尖
+	Aspect	長寬比
+	Opaque	不透明
+	Erase with brush	用筆刷擦除
+	Import .myb…	匯入 .myb…
+	Add a MyPaint brush file to the presets	將 MyPaint 筆刷檔案新增至預設集
+	Imported MyPaint brush {name}	已匯入 MyPaint 筆刷 {name}
+	How much pressure changes the nib size	壓力改變筆尖大小的程度
+	How much the pen's tilt turns and stretches the nib	筆傾斜轉動並拉伸筆尖的程度
+	How much a fast stroke thins the nib	快速筆畫使筆尖變細的程度
+	Added to the preset's logarithmic radius	加到預設集的對數半徑上

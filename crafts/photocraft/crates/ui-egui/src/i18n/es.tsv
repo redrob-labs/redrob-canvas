@@ -4862,3 +4862,17 @@ navigator	Zoom	Zoom
 	Add an entry with the foreground colour	Añadir una entrada con el color frontal
 	Delete the last entry	Eliminar la última entrada
 	Use selected	Usar seleccionada
+	Engine	Motor
+	Ink	Tinta
+	MyPaint Brush	Pincel MyPaint
+	Nib	Plumilla
+	Aspect	Proporción
+	Opaque	Opaco
+	Erase with brush	Borrar con el pincel
+	Import .myb…	Importar .myb…
+	Add a MyPaint brush file to the presets	Añadir un archivo de pincel MyPaint a los ajustes preestablecidos
+	Imported MyPaint brush {name}	Pincel MyPaint {name} importado
+	How much pressure changes the nib size	Cuánto cambia la presión el tamaño de la plumilla
+	How much the pen's tilt turns and stretches the nib	Cuánto gira y estira la plumilla la inclinación del lápiz
+	How much a fast stroke thins the nib	Cuánto adelgaza la plumilla un trazo rápido
+	Added to the preset's logarithmic radius	Se suma al radio logarítmico del ajuste

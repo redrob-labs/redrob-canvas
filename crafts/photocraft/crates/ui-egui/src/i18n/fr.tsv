@@ -3568,3 +3568,17 @@ curves	Smooth	Lisser
 	Add an entry with the foreground colour	Ajouter une entrée avec la couleur de premier plan
 	Delete the last entry	Supprimer la dernière entrée
 	Use selected	Utiliser la sélection
+	Engine	Moteur
+	Ink	Encre
+	MyPaint Brush	Brosse MyPaint
+	Nib	Plume
+	Aspect	Proportion
+	Opaque	Opaque
+	Erase with brush	Effacer avec la brosse
+	Import .myb…	Importer un .myb…
+	Add a MyPaint brush file to the presets	Ajouter un fichier de brosse MyPaint aux préréglages
+	Imported MyPaint brush {name}	Brosse MyPaint {name} importée
+	How much pressure changes the nib size	Dans quelle mesure la pression change la taille de la plume
+	How much the pen's tilt turns and stretches the nib	Dans quelle mesure l'inclinaison du stylet tourne et étire la plume
+	How much a fast stroke thins the nib	Dans quelle mesure un trait rapide affine la plume
+	Added to the preset's logarithmic radius	Ajouté au rayon logarithmique du préréglage

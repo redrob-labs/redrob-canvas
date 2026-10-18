@@ -4046,3 +4046,17 @@ curves	Smooth	Làm mượt
 	Add an entry with the foreground colour	Thêm một mục với màu nền trước
 	Delete the last entry	Xóa mục cuối
 	Use selected	Dùng mục đã chọn
+	Engine	Bộ máy
+	Ink	Mực
+	MyPaint Brush	Cọ MyPaint
+	Nib	Ngòi
+	Aspect	Tỷ lệ
+	Opaque	Độ đục
+	Erase with brush	Xóa bằng cọ
+	Import .myb…	Nhập .myb…
+	Add a MyPaint brush file to the presets	Thêm tệp cọ MyPaint vào bộ cài sẵn
+	Imported MyPaint brush {name}	Đã nhập cọ MyPaint {name}
+	How much pressure changes the nib size	Áp lực thay đổi kích cỡ ngòi bao nhiêu
+	How much the pen's tilt turns and stretches the nib	Độ nghiêng bút xoay và kéo giãn ngòi bao nhiêu
+	How much a fast stroke thins the nib	Nét nhanh làm mảnh ngòi bao nhiêu
+	Added to the preset's logarithmic radius	Cộng vào bán kính lôgarit của bộ cài sẵn

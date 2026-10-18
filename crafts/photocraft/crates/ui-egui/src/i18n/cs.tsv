@@ -4164,3 +4164,17 @@ navigator	Zoom	Zvětšení
 	Add an entry with the foreground colour	Přidat položku s barvou popředí
 	Delete the last entry	Odstranit poslední položku
 	Use selected	Použít vybranou
+	Engine	Jádro
+	Ink	Inkoust
+	MyPaint Brush	Štětec MyPaint
+	Nib	Hrot
+	Aspect	Poměr
+	Opaque	Krytí
+	Erase with brush	Mazat štětcem
+	Import .myb…	Importovat .myb…
+	Add a MyPaint brush file to the presets	Přidat soubor štětce MyPaint do předvoleb
+	Imported MyPaint brush {name}	Importován štětec MyPaint {name}
+	How much pressure changes the nib size	Jak moc tlak mění velikost hrotu
+	How much the pen's tilt turns and stretches the nib	Jak moc náklon pera otáčí a protahuje hrot
+	How much a fast stroke thins the nib	Jak moc rychlý tah zužuje hrot
+	Added to the preset's logarithmic radius	Přičte se k logaritmickému poloměru předvolby

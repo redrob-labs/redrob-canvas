@@ -4254,3 +4254,17 @@ curves	Smooth	Εξομάλυνση
 	Add an entry with the foreground colour	Προσθήκη καταχώρισης με το χρώμα προσκηνίου
 	Delete the last entry	Διαγραφή της τελευταίας καταχώρισης
 	Use selected	Χρήση επιλεγμένης
+	Engine	Μηχανή
+	Ink	Μελάνι
+	MyPaint Brush	Πινέλο MyPaint
+	Nib	Μύτη
+	Aspect	Αναλογία
+	Opaque	Αδιαφάνεια
+	Erase with brush	Σβήσιμο με το πινέλο
+	Import .myb…	Εισαγωγή .myb…
+	Add a MyPaint brush file to the presets	Προσθήκη αρχείου πινέλου MyPaint στις προεπιλογές
+	Imported MyPaint brush {name}	Εισάχθηκε το πινέλο MyPaint {name}
+	How much pressure changes the nib size	Πόσο η πίεση αλλάζει το μέγεθος της μύτης
+	How much the pen's tilt turns and stretches the nib	Πόσο η κλίση της γραφίδας στρέφει και τεντώνει τη μύτη
+	How much a fast stroke thins the nib	Πόσο μια γρήγορη πινελιά λεπταίνει τη μύτη
+	Added to the preset's logarithmic radius	Προστίθεται στη λογαριθμική ακτίνα της προεπιλογής

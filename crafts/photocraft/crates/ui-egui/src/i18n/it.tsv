@@ -5020,3 +5020,17 @@ shape	Appearance	Aspetto
 	Add an entry with the foreground colour	Aggiungi una voce con il colore di primo piano
 	Delete the last entry	Elimina l'ultima voce
 	Use selected	Usa selezionata
+	Engine	Motore
+	Ink	Inchiostro
+	MyPaint Brush	Pennello MyPaint
+	Nib	Pennino
+	Aspect	Proporzione
+	Opaque	Opaco
+	Erase with brush	Cancella con il pennello
+	Import .myb…	Importa .myb…
+	Add a MyPaint brush file to the presets	Aggiungi un file pennello MyPaint ai predefiniti
+	Imported MyPaint brush {name}	Pennello MyPaint {name} importato
+	How much pressure changes the nib size	Quanto la pressione cambia la dimensione del pennino
+	How much the pen's tilt turns and stretches the nib	Quanto l'inclinazione della penna ruota e allunga il pennino
+	How much a fast stroke thins the nib	Quanto un tratto veloce assottiglia il pennino
+	Added to the preset's logarithmic radius	Aggiunto al raggio logaritmico del predefinito

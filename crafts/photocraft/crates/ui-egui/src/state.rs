@@ -749,6 +749,34 @@ pub struct ToolOptions {
     /// removing them.
     #[serde(default)]
     pub anti_erase: bool,
+    /// Brush tool engine: `brush` (the brush tip), `ink` (the calligraphic nib, `paint.ink`) or
+    /// `mypaint` (MyPaint-style presets, `paint.mypaint`). See `paint_engines_ui`.
+    #[serde(default = "default_brush_engine")]
+    pub brush_engine: String,
+    /// Ink nib: shape (circle | square | diamond), angle in degrees, aspect 1..10, and the
+    /// sensitivities (0..1) of size to pressure, angle to tilt, and size to speed.
+    #[serde(default = "default_ink_shape")]
+    pub ink_shape: String,
+    #[serde(default)]
+    pub ink_angle: f32,
+    #[serde(default = "default_one")]
+    pub ink_aspect: f32,
+    #[serde(default = "default_one")]
+    pub ink_sens_size: f32,
+    #[serde(default = "default_ink_sens_tilt")]
+    pub ink_sens_tilt: f32,
+    #[serde(default = "default_ink_sens_speed")]
+    pub ink_sens_speed: f32,
+    /// MyPaint engine: preset name, radius (log offset -3..3), opaque multiplier 0..2 and
+    /// erase-with-brush.
+    #[serde(default = "default_mypaint_preset")]
+    pub mypaint_preset: String,
+    #[serde(default)]
+    pub mypaint_radius: f32,
+    #[serde(default = "default_one")]
+    pub mypaint_opaque: f32,
+    #[serde(default)]
+    pub mypaint_erase: bool,
     /// Magnetic Lasso: detection width (px, 1..256), edge contrast (%, 1..100), how often it
     /// fastens points by itself (0..100), and whether pen pressure narrows the width.
     pub magnetic_width: f32,
@@ -843,6 +871,30 @@ fn default_gradient_repeat() -> String {
 
 fn default_gradient_fade_length() -> f32 {
     100.0
+}
+
+fn default_brush_engine() -> String {
+    "brush".into()
+}
+
+fn default_ink_shape() -> String {
+    "circle".into()
+}
+
+fn default_one() -> f32 {
+    1.0
+}
+
+fn default_ink_sens_tilt() -> f32 {
+    0.4
+}
+
+fn default_ink_sens_speed() -> f32 {
+    0.8
+}
+
+fn default_mypaint_preset() -> String {
+    "Soft Round".into()
 }
 
 fn default_eraser_mode() -> String {
@@ -988,6 +1040,17 @@ impl Default for ToolOptions {
             pencil_clear: false,
             eraser_mode: default_eraser_mode(),
             anti_erase: false,
+            brush_engine: default_brush_engine(),
+            ink_shape: default_ink_shape(),
+            ink_angle: 0.0,
+            ink_aspect: 1.0,
+            ink_sens_size: 1.0,
+            ink_sens_tilt: default_ink_sens_tilt(),
+            ink_sens_speed: default_ink_sens_speed(),
+            mypaint_preset: default_mypaint_preset(),
+            mypaint_radius: 0.0,
+            mypaint_opaque: 1.0,
+            mypaint_erase: false,
             magnetic_width: 10.0,
             magnetic_contrast: 10.0,
             magnetic_frequency: 57.0,

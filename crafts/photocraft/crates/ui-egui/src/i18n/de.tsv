@@ -3565,3 +3565,17 @@ curves	Smooth	Glätten
 	Add an entry with the foreground colour	Einen Eintrag mit der Vordergrundfarbe hinzufügen
 	Delete the last entry	Den letzten Eintrag löschen
 	Use selected	Ausgewählten verwenden
+	Engine	Engine
+	Ink	Tinte
+	MyPaint Brush	MyPaint-Pinsel
+	Nib	Feder
+	Aspect	Seitenverhältnis
+	Opaque	Deckkraft
+	Erase with brush	Mit dem Pinsel radieren
+	Import .myb…	.myb importieren…
+	Add a MyPaint brush file to the presets	Eine MyPaint-Pinseldatei zu den Vorgaben hinzufügen
+	Imported MyPaint brush {name}	MyPaint-Pinsel {name} importiert
+	How much pressure changes the nib size	Wie stark der Druck die Federgröße ändert
+	How much the pen's tilt turns and stretches the nib	Wie stark die Stiftneigung die Feder dreht und streckt
+	How much a fast stroke thins the nib	Wie stark ein schneller Strich die Feder verdünnt
+	Added to the preset's logarithmic radius	Wird zum logarithmischen Radius der Vorgabe addiert

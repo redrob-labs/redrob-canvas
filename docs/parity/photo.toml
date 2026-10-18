@@ -393,9 +393,9 @@ name = "Ink"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-ink.html"
 behaviour = "Calligraphy-like strokes computed from a nib shape (circle, square, diamond) with size, angle, adjustable sensitivity to pressure, velocity and tilt, and nib aspect; not brush based."
-ours = "none"
-ours_where = ""
-gap = "no nib-based ink tool; pressure-driven brush is the closest"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/ink_cmds.rs (paint.ink: circle/square/diamond nib with size, angle, aspect and pressure/tilt/speed sensitivities, swept outline union), crafts/photocraft/crates/ui-egui/src/paint_engines_ui.rs (Brush tool Engine > Ink options), crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -405,9 +405,9 @@ name = "MyPaint brush"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-mypaint-brush.html"
 behaviour = "Paints with MyPaint brush engine presets (.myb) with radius, hardness, opaque, erase-with-brush options; the presets ship in a dedicated dialog."
-ours = "none"
-ours_where = ""
-gap = "no MyPaint engine or .myb import"
+ours = "partial"
+ours_where = "crafts/photocraft/crates/io/src/myb.rs (.myb v1-v3 parse and write, built-in presets), crafts/photocraft/crates/engine/src/mypaint_cmds.rs (paint.mypaint dab engine with pressure/speed/random/stroke/direction/tilt inputs, colour shifts, eraser, lock alpha; mypaint.list/import/export/remove), crafts/photocraft/crates/ui-egui/src/paint_engines_ui.rs (Engine > MyPaint Brush: preset list, radius, opaque, erase with brush, Import .myb)"
+gap = "smudge and the custom input are not simulated; presets are picked from the options bar list, not a dockable"
 priority = 2
 
 [[feature]]
@@ -489,9 +489,9 @@ name = "Brushes (parametric, bitmap, animated, clipboard)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-brushes.html"
 behaviour = "Brushes are parametric (editor: shape, radius, spikes, hardness, aspect, angle, spacing), bitmap (.gbr grayscale or colour), animated image hoses (.gih cycling cells by pressure/direction/random), or the clipboard image; .abr import; bracket keys and a configurable wheel resize the active brush."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/presets.rs, crafts/photocraft/crates/io/src/gbr.rs (.gbr/.gih readers), crafts/photocraft/crates/paint/src/brush.rs (ImageHose), crafts/photocraft/crates/paint/src/dynamics.rs (hose_cell), crafts/photocraft/crates/engine/src/preset_import_cmds.rs (importAbr, importImage, importBrushFile), crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
-gap = "ABR, image, .gbr and .gih (animated hose: incremental/angular/random/velocity/pressure/tilt cell selection per dimension) brushes import from the Brushes panel and File > Open; colour .gbr/.gih cells paint with the brush colour (their colours become the mask); no parametric brush editor (spikes), clipboard brush is Define Brush Preset only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/presets.rs, crafts/photocraft/crates/paint/src/brush.rs (GeneratedTip: circle/square/diamond, spikes, density, randomness, hardness, aspect, angle, spacing; ImageHose), crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/io/src/gbr.rs (.gbr/.gih), crafts/photocraft/crates/engine/src/preset_import_cmds.rs (importAbr, importImage, importBrushFile), crafts/photocraft/crates/engine/src/dynamics_extra_cmds.rs (brush.presets.clipboard), crafts/photocraft/crates/ui-egui/src/brush_sections.rs (parametric tip editor), crafts/photocraft/crates/ui-egui/src/brush_picker.rs (Clipboard Image Brush), crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]

@@ -4089,3 +4089,17 @@ curves	Smooth	매끄럽게
 	Add an entry with the foreground colour	전경색으로 항목을 추가합니다
 	Delete the last entry	마지막 항목을 삭제합니다
 	Use selected	선택 항목 사용
+	Engine	엔진
+	Ink	잉크
+	MyPaint Brush	MyPaint 브러시
+	Nib	펜촉
+	Aspect	비율
+	Opaque	불투명
+	Erase with brush	브러시로 지우기
+	Import .myb…	.myb 가져오기…
+	Add a MyPaint brush file to the presets	MyPaint 브러시 파일을 사전 설정에 추가합니다
+	Imported MyPaint brush {name}	MyPaint 브러시 {name}을(를) 가져왔습니다
+	How much pressure changes the nib size	압력이 펜촉 크기를 얼마나 바꾸는지
+	How much the pen's tilt turns and stretches the nib	펜 기울기가 펜촉을 얼마나 돌리고 늘리는지
+	How much a fast stroke thins the nib	빠른 획이 펜촉을 얼마나 가늘게 하는지
+	Added to the preset's logarithmic radius	사전 설정의 로그 반경에 더해집니다

@@ -4472,3 +4472,17 @@ cameraRaw	Yellow	Sárga
 	Add an entry with the foreground colour	Bejegyzés hozzáadása az előtérszínnel
 	Delete the last entry	Az utolsó bejegyzés törlése
 	Use selected	Kijelölt használata
+	Engine	Motor
+	Ink	Tinta
+	MyPaint Brush	MyPaint ecset
+	Nib	Tollhegy
+	Aspect	Arány
+	Opaque	Fedettség
+	Erase with brush	Törlés ecsettel
+	Import .myb…	.myb importálása…
+	Add a MyPaint brush file to the presets	MyPaint ecsetfájl hozzáadása a készletekhez
+	Imported MyPaint brush {name}	A(z) {name} MyPaint ecset importálva
+	How much pressure changes the nib size	Mennyire változtatja a nyomás a tollhegy méretét
+	How much the pen's tilt turns and stretches the nib	Mennyire forgatja és nyújtja a toll dőlése a tollhegyet
+	How much a fast stroke thins the nib	Mennyire vékonyítja a gyors vonás a tollhegyet
+	Added to the preset's logarithmic radius	A készlet logaritmikus sugarához adódik

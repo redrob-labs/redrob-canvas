@@ -42,6 +42,7 @@ pub mod buffers_ui;
 pub mod modules_ui;
 pub mod colormap_ui;
 pub mod input_ui;
+pub mod paint_engines_ui;
 pub(crate) mod cam_preview;
 mod cam_transform;
 mod camera_raw_detail_ui;

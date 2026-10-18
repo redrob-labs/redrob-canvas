@@ -3536,3 +3536,18 @@ curves	Smooth	Сгладить
 	Add an entry with the foreground colour	Добавить запись с цветом переднего плана
 	Delete the last entry	Удалить последнюю запись
 	Use selected	Выбранная
+	Engine	Движок
+	Ink	Перо
+	MyPaint Brush	Кисть MyPaint
+	Nib	Перо
+	Aspect	Пропорции
+	Opaque	Непрозрачность
+	Erase with brush	Стирать кистью
+	Import .myb…	Импортировать .myb…
+	Add a MyPaint brush file to the presets	Добавить файл кисти MyPaint в наборы
+	Imported MyPaint brush {name}	Импортирована кисть MyPaint {name}
+	How much pressure changes the nib size	Насколько нажим меняет размер пера
+	How much the pen's tilt turns and stretches the nib	Насколько наклон пера поворачивает и растягивает перо
+	How much a fast stroke thins the nib	Насколько быстрый штрих утончает перо
+	Added to the preset's logarithmic radius	Прибавляется к логарифмическому радиусу набора
+	Diamond	Ромб

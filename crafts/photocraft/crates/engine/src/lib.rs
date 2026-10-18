@@ -138,6 +138,8 @@ pub mod create_cmds;
 pub mod buffers_cmds;
 pub mod modules_cmds;
 pub mod input_cmds;
+pub mod ink_cmds;
+pub mod mypaint_cmds;
 pub mod dynamics_extra_cmds;
 pub mod path_svg_cmds;
 pub mod perspective_clone_cmds;
@@ -524,6 +526,8 @@ pub struct Session {
     pub fetch_url: Option<create_cmds::FetchUrlFn>,
     /// Edit › Buffer: the named buffers ([`buffers_cmds`]).
     pub buffers: Vec<buffers_cmds::NamedBuffer>,
+    /// MyPaint brushes imported from `.myb` files ([`mypaint_cmds`]); the built-ins are not stored.
+    pub mypaint_imported: Vec<redrob_photo_io::myb::MybBrush>,
     /// Background jobs (see [`jobs`]).
     jobs: jobs::Jobs,
     /// Color Sampler points dropped by the last canvas-size change (crop, Canvas Size, Image Size,

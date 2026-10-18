@@ -4284,3 +4284,17 @@ cameraData	Lens	Lens
 	Add an entry with the foreground colour	Ön plan rengiyle bir girdi ekle
 	Delete the last entry	Son girdiyi sil
 	Use selected	Seçileni kullan
+	Engine	Motor
+	Ink	Mürekkep
+	MyPaint Brush	MyPaint Fırçası
+	Nib	Uç
+	Aspect	Oran
+	Opaque	Opak
+	Erase with brush	Fırçayla sil
+	Import .myb…	.myb İçe Aktar…
+	Add a MyPaint brush file to the presets	Ön ayarlara bir MyPaint fırça dosyası ekle
+	Imported MyPaint brush {name}	MyPaint fırçası {name} içe aktarıldı
+	How much pressure changes the nib size	Basıncın uç boyutunu ne kadar değiştirdiği
+	How much the pen's tilt turns and stretches the nib	Kalem eğiminin ucu ne kadar döndürüp uzattığı
+	How much a fast stroke thins the nib	Hızlı bir vuruşun ucu ne kadar incelttiği
+	Added to the preset's logarithmic radius	Ön ayarın logaritmik yarıçapına eklenir

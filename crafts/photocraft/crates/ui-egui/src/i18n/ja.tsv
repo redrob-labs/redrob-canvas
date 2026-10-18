@@ -4233,3 +4233,17 @@ curves	Smooth	スムーズ
 	Add an entry with the foreground colour	描画色の項目を追加します
 	Delete the last entry	最後の項目を削除します
 	Use selected	選択項目を使用
+	Engine	エンジン
+	Ink	インク
+	MyPaint Brush	MyPaintブラシ
+	Nib	ペン先
+	Aspect	縦横比
+	Opaque	不透明
+	Erase with brush	ブラシで消去
+	Import .myb…	.mybを読み込み…
+	Add a MyPaint brush file to the presets	MyPaintブラシファイルをプリセットに追加します
+	Imported MyPaint brush {name}	MyPaintブラシ{name}を読み込みました
+	How much pressure changes the nib size	筆圧がペン先の大きさをどれだけ変えるか
+	How much the pen's tilt turns and stretches the nib	ペンの傾きがペン先をどれだけ回し伸ばすか
+	How much a fast stroke thins the nib	速いストロークがペン先をどれだけ細くするか
+	Added to the preset's logarithmic radius	プリセットの対数半径に加算されます

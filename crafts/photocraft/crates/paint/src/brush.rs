@@ -333,6 +333,8 @@ pub enum TipGeometry {
     #[default]
     Circle,
     Square,
+    /// A square turned 45 degrees (the parametric brush editor's diamond).
+    Diamond,
 }
 
 /// How a computed tip fades from its core to its edge.

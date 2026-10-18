@@ -548,6 +548,7 @@ fn stroke_params(app: &PhotocraftApp, d: &Drag, points: &[Vec<f64>]) -> serde_js
     if crate::eraser_ui::block_mode(app, tool) {
         p["block"] = json!(true);
     }
+    crate::paint_engines_ui::extend_params(app, tool, &mut p);
     p
 }
 
@@ -582,6 +583,10 @@ fn live_retouch_command(tool: Tool) -> Option<&'static str> {
 /// The command a live-stroking tool commits: the Pencil's (and the Pencil- or Block-mode
 /// Eraser's) `paint.pencil`, else `paint.stroke`.
 pub(crate) fn stroke_command(app: &PhotocraftApp, tool: Tool) -> &'static str {
+    // The Brush tool's Ink and MyPaint engines commit their own commands (`paint_engines_ui`).
+    if let Some(cmd) = crate::paint_engines_ui::stroke_command(app, tool) {
+        return cmd;
+    }
     if tool == Tool::Pencil || crate::eraser_ui::pencil_mode(app, tool) || crate::eraser_ui::block_mode(app, tool) { "paint.pencil" } else { "paint.stroke" }
 }
 

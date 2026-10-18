@@ -4256,3 +4256,17 @@ curves	Smooth	Згладити
 	Add an entry with the foreground colour	Додати запис із кольором переднього плану
 	Delete the last entry	Видалити останній запис
 	Use selected	Вибрана
+	Engine	Рушій
+	Ink	Перо
+	MyPaint Brush	Пензель MyPaint
+	Nib	Перо
+	Aspect	Пропорції
+	Opaque	Непрозорість
+	Erase with brush	Стирати пензлем
+	Import .myb…	Імпортувати .myb…
+	Add a MyPaint brush file to the presets	Додати файл пензля MyPaint до наборів
+	Imported MyPaint brush {name}	Імпортовано пензель MyPaint {name}
+	How much pressure changes the nib size	Наскільки натиск змінює розмір пера
+	How much the pen's tilt turns and stretches the nib	Наскільки нахил пера повертає й розтягує перо
+	How much a fast stroke thins the nib	Наскільки швидкий штрих стоншує перо
+	Added to the preset's logarithmic radius	Додається до логарифмічного радіуса набору

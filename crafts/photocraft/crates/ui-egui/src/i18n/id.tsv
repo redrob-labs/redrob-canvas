@@ -3555,3 +3555,17 @@ curves	Smooth	Haluskan
 	Add an entry with the foreground colour	Tambahkan entri dengan warna depan
 	Delete the last entry	Hapus entri terakhir
 	Use selected	Gunakan yang dipilih
+	Engine	Mesin
+	Ink	Tinta
+	MyPaint Brush	Kuas MyPaint
+	Nib	Mata pena
+	Aspect	Rasio
+	Opaque	Opak
+	Erase with brush	Hapus dengan kuas
+	Import .myb…	Impor .myb…
+	Add a MyPaint brush file to the presets	Tambahkan berkas kuas MyPaint ke praset
+	Imported MyPaint brush {name}	Kuas MyPaint {name} diimpor
+	How much pressure changes the nib size	Seberapa besar tekanan mengubah ukuran mata pena
+	How much the pen's tilt turns and stretches the nib	Seberapa besar kemiringan pena memutar dan merentangkan mata pena
+	How much a fast stroke thins the nib	Seberapa besar goresan cepat menipiskan mata pena
+	Added to the preset's logarithmic radius	Ditambahkan ke radius logaritmik praset

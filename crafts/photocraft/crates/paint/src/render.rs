@@ -57,6 +57,7 @@ fn generated_coverage(g: &GeneratedTip, u: f32, v: f32, ro: f32, rm: f32, hardne
     let mut d = match g.shape {
         TipGeometry::Circle => nx.hypot(ny),
         TipGeometry::Square => nx.abs().max(ny.abs()),
+        TipGeometry::Diamond => nx.abs() + ny.abs(),
     };
     if !d.is_finite() {
         return None;

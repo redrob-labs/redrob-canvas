@@ -4344,3 +4344,17 @@ layerLabel	No Color	Sem cor
 	Add an entry with the foreground colour	Adicionar uma entrada com a cor do primeiro plano
 	Delete the last entry	Excluir a última entrada
 	Use selected	Usar selecionada
+	Engine	Motor
+	Ink	Tinta
+	MyPaint Brush	Pincel MyPaint
+	Nib	Pena
+	Aspect	Proporção
+	Opaque	Opaco
+	Erase with brush	Apagar com o pincel
+	Import .myb…	Importar .myb…
+	Add a MyPaint brush file to the presets	Adicionar um arquivo de pincel MyPaint às predefinições
+	Imported MyPaint brush {name}	Pincel MyPaint {name} importado
+	How much pressure changes the nib size	Quanto a pressão altera o tamanho da pena
+	How much the pen's tilt turns and stretches the nib	Quanto a inclinação da caneta gira e alonga a pena
+	How much a fast stroke thins the nib	Quanto um traço rápido afina a pena
+	Added to the preset's logarithmic radius	Somado ao raio logarítmico da predefinição

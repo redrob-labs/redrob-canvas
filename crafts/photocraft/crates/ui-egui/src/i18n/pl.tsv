@@ -4155,3 +4155,17 @@ curves	Smooth	Wygładź
 	Add an entry with the foreground colour	Dodaj wpis z kolorem pierwszego planu
 	Delete the last entry	Usuń ostatni wpis
 	Use selected	Użyj zaznaczonego
+	Engine	Silnik
+	Ink	Tusz
+	MyPaint Brush	Pędzel MyPaint
+	Nib	Stalówka
+	Aspect	Proporcja
+	Opaque	Krycie
+	Erase with brush	Wymazuj pędzlem
+	Import .myb…	Importuj .myb…
+	Add a MyPaint brush file to the presets	Dodaj plik pędzla MyPaint do ustawień
+	Imported MyPaint brush {name}	Zaimportowano pędzel MyPaint {name}
+	How much pressure changes the nib size	Jak mocno nacisk zmienia rozmiar stalówki
+	How much the pen's tilt turns and stretches the nib	Jak mocno nachylenie pióra obraca i rozciąga stalówkę
+	How much a fast stroke thins the nib	Jak mocno szybki ruch zwęża stalówkę
+	Added to the preset's logarithmic radius	Dodawane do logarytmicznego promienia ustawienia

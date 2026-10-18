@@ -4626,3 +4626,17 @@ shape	Appearance	Izgled
 	Add an entry with the foreground colour	Dodaj stavku sa bojom četkice
 	Delete the last entry	Obriši poslednju stavku
 	Use selected	Koristi izabranu
+	Engine	Motor
+	Ink	Mastilo
+	MyPaint Brush	MyPaint četkica
+	Nib	Vrh pera
+	Aspect	Odnos
+	Opaque	Neprovidnost
+	Erase with brush	Briši četkicom
+	Import .myb…	Uvezi .myb…
+	Add a MyPaint brush file to the presets	Dodaj MyPaint datoteku četkice u podešavanja
+	Imported MyPaint brush {name}	Uvezena MyPaint četkica {name}
+	How much pressure changes the nib size	Koliko pritisak menja veličinu vrha
+	How much the pen's tilt turns and stretches the nib	Koliko nagib olovke okreće i izdužuje vrh
+	How much a fast stroke thins the nib	Koliko brz potez sužava vrh
+	Added to the preset's logarithmic radius	Dodaje se logaritamskom poluprečniku podešavanja
