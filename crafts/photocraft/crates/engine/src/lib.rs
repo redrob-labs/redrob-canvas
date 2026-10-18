@@ -77,7 +77,10 @@ pub mod layer_label_cmds;
 pub mod layer_list_cmds;
 pub mod layer_mask_props_cmds;
 pub mod layer_menu_cmds;
+pub mod layer_meta;
 pub mod layer_multi_cmds;
+pub mod live_layers;
+pub mod anim_cmds;
 pub mod layer_nav_cmds;
 pub mod layer_style;
 pub mod lens_cmds;
@@ -782,6 +785,10 @@ impl Session {
         let mut doc = (*before).clone();
         let mut active = st.active_layer;
         let r = f(&mut doc, &mut active)?;
+        // Derived content follows the edit: animation curves, live layers, the timelapse recorder.
+        anim_cmds::apply_curves(&mut doc);
+        live_layers::refresh(&mut doc);
+        anim_cmds::on_edit(&mut doc);
         if let (Some(k), Some(id)) = (restrict, active) {
             channel_cmds::restrict_to_color(&before, &mut doc, id, k);
         }

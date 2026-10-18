@@ -33,11 +33,14 @@ fn with_timeline(s: &mut Session, f: impl FnOnce(&mut Option<Timeline>)) -> Resu
     let st = s.active_mut().ok_or(EngineError::NoDocument)?;
     let mut doc = (*st.doc).clone();
     crate::video_cmds::store(&mut doc);
+    crate::anim_cmds::before_sync(&mut doc);
     f(&mut doc.timeline);
     if let Some(t) = &mut doc.timeline {
         t.clamp();
     }
     crate::video_cmds::sync(&mut doc);
+    crate::anim_cmds::apply_curves(&mut doc);
+    crate::live_layers::refresh(&mut doc);
     st.doc = Arc::new(doc);
     st.revision += 1;
     info(s)
