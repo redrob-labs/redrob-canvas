@@ -192,7 +192,16 @@ fn export_extensions_name_every_writable_format() {
             "emf",
             "wmf",
             "tga",
-            "psd"
+            "psd",
+            "html",
+            "fxg",
+            "pov",
+            "sif",
+            "xaml",
+            "odg",
+            "tex",
+            "hpgl",
+            "xcf"
         ]
     );
     for e in exts {

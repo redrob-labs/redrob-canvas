@@ -14,6 +14,7 @@ pub mod quantize;
 pub mod tga;
 pub mod tiff;
 pub mod web;
+pub mod xcf;
 
 use redrob_vector_doc::{Document, Node, NodeKind, SymbolBoxes};
 use redrob_vector_geom::Rect;

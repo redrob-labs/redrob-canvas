@@ -33,6 +33,23 @@ mod wmf;
 use redrob_vector_doc::Document;
 use redrob_vector_geom::Rect;
 
+pub use dib::Rgba;
+pub use scene::{Op, Pen};
+
+/// The drawing operations of the visible art of `doc` over `region` (document space), in paint
+/// order: what [`export`] writes, for other writers of flat vector formats (HTML canvas, FXG,
+/// XAML, POV-Ray…). `clips`: whether the format can clip (else clipped art comes whole, with a
+/// warning). Live geometry effects are applied first → (operations, warnings).
+pub fn operations(doc: &Document, region: Rect, clips: bool) -> Result<(Vec<Op>, Vec<String>), String> {
+    let r = region.abs();
+    if ![r.x0, r.y0, r.x1, r.y1].iter().all(|v| v.is_finite()) || r.width() <= 0.0 || r.height() <= 0.0 {
+        return Err("the export region is empty".into());
+    }
+    let baked = redrob_vector_effects::bake_document(doc);
+    let doc = baked.as_ref().unwrap_or(doc);
+    Ok(scene::Scene::new(doc, r, clips).run())
+}
+
 /// A Windows metafile format.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {

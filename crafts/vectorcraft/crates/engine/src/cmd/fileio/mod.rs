@@ -26,6 +26,7 @@ pub mod dxfimport;
 mod encode;
 pub mod eps;
 mod export;
+mod flatexport;
 pub(crate) mod imagemap;
 mod load;
 pub(crate) use load::{MAX_RASTER_ALLOC, too_large_note};
@@ -40,6 +41,7 @@ mod save;
 mod screens;
 mod svg;
 mod text;
+mod xcf;
 mod zip;
 
 use serde_json::{Value, json};
@@ -171,6 +173,15 @@ pub fn specs() -> Vec<CommandSpec> {
             "{path?, ppi?: 150 (72, 150, 300… pixels per inch), transparent?: false (else on white), artboard?: 0, acknowledgeLoss?: bool (write over the file the document was read from although reading it left things out)} the artboard as a PNG for office documents and slides → {path, bytes, width, height} (pixels); no path → {dataBase64, bytes, width, height}",
             has_doc,
             export::export_for_office
+        ),
+        cmd!(
+            query "document.plot",
+            "Plot…",
+            ["File", "Export"],
+            None,
+            "{device: the plotter's serial device (/dev/ttyUSB0, COM3; a file path writes the HPGL there), …the HPGL options of document.export (resolution, pen, overcut, toolOffset, precut, fills, mirrorX, mirrorY, flat), artboard?} send the artboard to a pen plotter or cutter as HPGL → {device, bytes, warnings}",
+            has_doc,
+            flatexport::plot
         ),
         cmd!(
             query "document.exportSettings",
@@ -590,6 +601,122 @@ pub const FORMATS: &[Format] = &[
     reader("affinity", "Affinity", &["af", "afdesign", "afpub"], "application/vnd.affinity", false),
     // Photoshop's large document format: read like a PSD (its merged image), never written.
     reader("psb", "PSB", &["psb"], "image/x-psb", true),
+    // Flat vector outputs drawn from the metafile scene (type as outlines).
+    Format {
+        id: "canvas",
+        label: "HTML5 Canvas",
+        extensions: &["html"],
+        mime: "text/html",
+        read: false,
+        write: true,
+        raster: false,
+        options: flatexport::OPTIONS,
+    },
+    Format {
+        id: "fxg",
+        label: "FXG",
+        extensions: &["fxg"],
+        mime: "application/xml",
+        read: false,
+        write: true,
+        raster: false,
+        options: flatexport::OPTIONS,
+    },
+    Format {
+        id: "pov",
+        label: "POV-Ray",
+        extensions: &["pov"],
+        mime: "text/plain",
+        read: false,
+        write: true,
+        raster: false,
+        options: flatexport::OPTIONS,
+    },
+    Format {
+        id: "sif",
+        label: "Synfig",
+        extensions: &["sif"],
+        mime: "application/xml",
+        read: false,
+        write: true,
+        raster: false,
+        options: flatexport::OPTIONS,
+    },
+    Format {
+        id: "xaml",
+        label: "XAML",
+        extensions: &["xaml"],
+        mime: "application/xaml+xml",
+        read: true,
+        write: true,
+        raster: false,
+        options: flatexport::XAML_OPTIONS,
+    },
+    Format {
+        id: "odg",
+        label: "OpenDocument Drawing",
+        extensions: &["odg"],
+        mime: "application/vnd.oasis.opendocument.graphics",
+        read: false,
+        write: true,
+        raster: false,
+        options: flatexport::OPTIONS,
+    },
+    Format {
+        id: "tex",
+        label: "LaTeX (TikZ)",
+        extensions: &["tex"],
+        mime: "application/x-tex",
+        read: false,
+        write: true,
+        raster: false,
+        options: flatexport::TEX_OPTIONS,
+    },
+    Format {
+        id: "pdftex",
+        label: "PDF + LaTeX",
+        extensions: &["tex"],
+        mime: "application/x-tex",
+        read: false,
+        write: true,
+        raster: false,
+        options: pdf::OPTIONS,
+    },
+    Format {
+        id: "hpgl",
+        label: "HPGL",
+        extensions: &["hpgl", "plt", "hpg", "hp2"],
+        mime: "application/vnd.hp-hpgl",
+        read: true,
+        write: true,
+        raster: false,
+        options: flatexport::HPGL_OPTIONS,
+    },
+    Format { id: "xcf", label: "GIMP XCF", extensions: &["xcf"], mime: "image/x-xcf", read: false, write: true, raster: true, options: XCF_OPTIONS },
+    // Legacy and interchange vector formats read only.
+    reader("cgm", "Computer Graphics Metafile", &["cgm"], "image/cgm", false),
+    reader("cdr", "CorelDRAW", &["cdr", "cmx", "ccx", "cdt"], "application/vnd.corel-draw", false),
+    reader("visio", "Visio", &["vsdx", "vsdm", "vdx", "vsd"], "application/vnd.visio", false),
+    reader("wpg", "WordPerfect Graphics", &["wpg"], "application/x-wpg", false),
+    reader("fig", "XFig", &["fig"], "application/x-xfig", false),
+];
+
+/// The options `document.formats` lists for layered XCF export.
+const XCF_OPTIONS: &[FormatOption] = &[
+    ARTBOARD,
+    ARTBOARDS,
+    RANGE,
+    USE_ARTBOARDS,
+    SCALE,
+    PPI,
+    BACKGROUND,
+    ANTI_ALIAS,
+    FormatOption {
+        name: "layers",
+        ty: "boolean",
+        default: "true",
+        description: "each top-level layer a pixel layer with its opacity, blend mode and visibility (false: one flat image)",
+    },
 ];
 
 /// Every extension `document.open` reads (the "All readable files" filter of open dialogs).
@@ -620,6 +747,22 @@ pub const OPEN_EXTS: &[&str] = &[
     "af",
     "afdesign",
     "afpub",
+    "xaml",
+    "hpgl",
+    "plt",
+    "hpg",
+    "hp2",
+    "cgm",
+    "cdr",
+    "cmx",
+    "ccx",
+    "cdt",
+    "vsdx",
+    "vsdm",
+    "vdx",
+    "vsd",
+    "wpg",
+    "fig",
 ];
 
 /// Extensions in [`OPEN_EXTS`] the desktop packaging doesn't associate with Redrob Canvas: Photoshop
@@ -670,6 +813,22 @@ pub const PLACE_EXTS: &[&str] = &[
     "af",
     "afdesign",
     "afpub",
+    "xaml",
+    "hpgl",
+    "plt",
+    "hpg",
+    "hp2",
+    "cgm",
+    "cdr",
+    "cmx",
+    "ccx",
+    "cdt",
+    "vsdx",
+    "vsdm",
+    "vdx",
+    "vsd",
+    "wpg",
+    "fig",
     "txt",
 ];
 

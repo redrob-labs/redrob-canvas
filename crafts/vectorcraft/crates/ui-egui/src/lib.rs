@@ -195,6 +195,8 @@ pub type DownloadFn = Box<dyn FnMut(&str, &[u8]) -> Result<(), String>>;
 
 /// Opens a URL in the system browser.
 pub type OpenUrlFn = Box<dyn FnMut(&str)>;
+/// Fetches the bytes at an http(s) URL (desktop: File › Import Web Image…).
+pub type FetchUrlFn = Box<dyn FnMut(&str) -> Result<Vec<u8>, String>>;
 
 /// Shows a file in the system file manager, or opens it in its app.
 pub type RevealFn = Box<dyn FnMut(&str) -> Result<(), String>>;
@@ -219,6 +221,9 @@ pub struct Services {
     pub clipboard_read: Option<Box<dyn FnMut() -> Option<String>>>,
     /// Open a URL in the system browser (desktop). Without it, egui opens it (a new tab on the web).
     pub open_url: Option<OpenUrlFn>,
+    /// Download the bytes at a URL (desktop): File › Import Web Image… places them as an
+    /// embedded image. Without it the command answers with an error.
+    pub fetch_url: Option<FetchUrlFn>,
     /// Show an open dialog for several files (File → Place…); returns their paths (none: cancelled).
     pub pick_open_multi: Option<Box<dyn FnMut() -> Vec<String>>>,
     /// Web: start an async pick of files to place (they arrive via `place_inbox`).

@@ -923,6 +923,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "",
         "{id?} open the link the selected object (or the anchor it is inside) points to in the browser (object.followLink)",
     ),
+    (
+        "ui.importWebImage",
+        "Import Web Image…",
+        "",
+        "{url: http(s) URL of an image or SVG file, at?: [x, y], rect?: [x, y, w, h] (as file.place)} download the file and place it embedded in the document (file.place {name, dataBase64}); File › Import Web Image… asks for the URL → file.place's result",
+    ),
 ];
 
 /// Canonical panel id for `window.panel`: a dock tab's or an icon panel's id or display label,
@@ -1317,6 +1323,39 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "ui.cropImage" => {
             app.select_tool(redrob_vector_tools::cropimage::ID);
             Ok(json!({"tool": app.session.tool_id()}))
+        }
+        "ui.importWebImage" => {
+            let url = s("url").unwrap_or_default().trim().to_string();
+            if !(url.starts_with("http://") || url.starts_with("https://")) {
+                Err("give `url`: an http:// or https:// address of an image".into())
+            } else {
+                match app.services.fetch_url.as_mut() {
+                    None => Err("downloading needs the desktop app".into()),
+                    Some(fetch) => match fetch(&url) {
+                        Err(e) => Err(format!("{url}: {e}")),
+                        Ok(bytes) => {
+                            let name = url
+                                .rsplit('/')
+                                .next()
+                                .filter(|n| !n.is_empty() && n.contains('.'))
+                                .unwrap_or("web-image.png")
+                                .split(['?', '#'])
+                                .next()
+                                .unwrap_or("web-image.png")
+                                .to_string();
+                            let mut q = json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(&bytes) });
+                            if let Some(o) = q.as_object_mut() {
+                                for k in ["at", "rect", "replace", "template"] {
+                                    if let Some(v) = p.get(k) {
+                                        o.insert(k.into(), v.clone());
+                                    }
+                                }
+                            }
+                            app.run("file.place", q)
+                        }
+                    },
+                }
+            }
         }
         "ui.followLink" => match app.run("object.followLink", p.clone()) {
             Ok(r) => {
@@ -2071,6 +2110,7 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
         "ui.expandDialog" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.spotColors" => app.session.active().is_some(),
         "ui.menuDialog" | "ui.objectProperties" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
+        "ui.importWebImage" => app.session.active().is_some() && app.services.fetch_url.is_some(),
         "ui.followLink" => app.session.active().is_some_and(|st| {
             st.selection.objects.iter().any(|id| {
                 let mut cur = Some(*id);
@@ -2162,6 +2202,11 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Revert", "file.revert"),
                 Sep,
                 c("Place…", "file.place"),
+                cp(
+                    "Import Web Image…",
+                    "ui.paramDialog",
+                    json!({"command": "ui.importWebImage", "label": "Import Web Image", "params": {"url": "https://"}}),
+                ),
                 Sep,
                 sub(
                     "Export",

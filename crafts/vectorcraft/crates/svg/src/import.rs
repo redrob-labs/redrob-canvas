@@ -28,6 +28,7 @@ mod depth;
 mod files;
 mod fx;
 mod spread;
+mod svg2;
 mod symbol_sheet;
 mod symbol_units;
 mod text;
@@ -94,6 +95,7 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
         descriptions: found.descriptions,
         link_extras: found.link_extras,
         properties: found.properties,
+        meshes: found.meshes,
         sublayers: found.sublayers,
         sublayer_groups: HashSet::new(),
         screen: k,
@@ -382,6 +384,8 @@ struct Importer {
     link_extras: HashMap<String, (String, String)>,
     /// Object Properties read from elements, by id ([`prepass`]).
     properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>, Option<f64>)>,
+    /// Mesh gradients by the id of the shape they filled ([`svg2`]).
+    meshes: HashMap<String, redrob_vector_doc::GradientMesh>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
     /// The groups made of them, made sublayers where they sit in a layer ([`promote_sublayers`]).
@@ -507,6 +511,9 @@ struct Found {
     /// Object Properties read from elements, by id: event attributes, highlight colour, an
     /// image's preserveAspectRatio and DPI.
     properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>, Option<f64>)>,
+    /// The mesh gradient each shape was filled with, by the shape's id ([`svg2`]): the shape
+    /// comes in as a gradient mesh object.
+    meshes: HashMap<String, redrob_vector_doc::GradientMesh>,
     warnings: Vec<String>,
 }
 
@@ -601,8 +608,10 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
     // (`:` for prefixed elements such as `<svg:image>`.)
     let css_transform = has_css_transform(svg);
     let not = svg.contains(":not(");
+    let svg2 = svg2::wanted(svg);
     if !css_transform
         && !not
+        && !svg2
         && ![
             "<a",
             "display",
@@ -629,6 +638,9 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
     }
     let mut edits = Edits::default();
     let elements = || xml.descendants().filter(|n| n.is_element());
+    if svg2 {
+        svg2::find(svg, xml, &mut edits, &mut found, opts.legacy_dpi);
+    }
     for a in elements().filter(|n| n.tag_name().name() == "a") {
         if let Some(url) = href(a) {
             let id = edits.id(svg, a);
@@ -938,6 +950,26 @@ impl Importer {
             // Only present when usvg had fonts; text is read from the XML instead.
             usvg::Node::Text(_) => None,
         }?;
+        // A shape filled with a mesh gradient: the mesh object in its place (its stroke kept on
+        // the shape beside it).
+        if let Some(mesh) = self.meshes.get(n.id()).cloned()
+            && matches!(out.kind, NodeKind::Path { .. } | NodeKind::Compound { .. })
+        {
+            let placed = svg2::mesh_node(&mesh, acc);
+            let mut m = Node::new(self.doc.alloc_id(), NodeKind::Mesh(placed));
+            m.name = out.name.clone();
+            let stroked = out.appearance.items.iter().any(|i| matches!(i, redrob_vector_doc::AppearanceItem::Stroke(_)));
+            if stroked {
+                let mut shape = out;
+                shape.appearance.items.retain(|i| !matches!(i, redrob_vector_doc::AppearanceItem::Fill(_)));
+                let gid = self.doc.alloc_id();
+                let mut g = Node::group(gid, vec![Arc::new(m), Arc::new(shape)]);
+                g.name = Some("Mesh".into());
+                out = g;
+            } else {
+                out = m;
+            }
+        }
         if self.hidden.contains(n.id()) {
             out.visible = false;
         }

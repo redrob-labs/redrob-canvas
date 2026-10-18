@@ -83,6 +83,7 @@ mod css;
 mod export;
 mod filter_graph;
 mod import;
+pub mod interchange;
 
 pub use css::{CssOptions, CssRule, CssSheet, CssUnits, css_rules};
 
@@ -523,12 +524,21 @@ pub type ReadFile<'a> = &'a (dyn Fn(&str) -> Option<(Vec<u8>, redrob_vector_doc:
 /// A raster file stays linked ([`redrob_vector_doc::ImageObject::link`]); an SVG file imports as
 /// vector art. A file that can't be read imports as a placeholder that keeps the link (and a
 /// warning), so it can be relinked.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct ImportOptions<'a> {
     /// The folder relative links are found in: the SVG file's own. Without it they can't be read.
     pub folder: Option<&'a str>,
     /// Reads a linked file. Without it no file is read.
     pub read: Option<ReadFile<'a>>,
+    /// A file saved by a 90-dpi editor (0.9x era, unitless sizes, no `viewBox`) is scaled by
+    /// 96/90 so it keeps its physical size (false: its user units are read as they are).
+    pub legacy_dpi: bool,
+}
+
+impl Default for ImportOptions<'_> {
+    fn default() -> Self {
+        Self { folder: None, read: None, legacy_dpi: true }
+    }
 }
 
 /// FNV-1a: a stable content hash (image keys, unique id prefixes).
