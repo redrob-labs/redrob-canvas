@@ -255,6 +255,7 @@ fn render(doc: &Document, id: LayerId, live: &Live, canvas: Rect, fmt: PixelForm
 /// Re-derive every visible live layer from the document as it is now. Called at the end of each
 /// edit and after the playhead moves; cheap when the document has no live layer.
 pub fn refresh(doc: &mut Document) {
+    crate::layer_kind_cmds::refresh_file_layers(doc);
     let records: Vec<(LayerId, Live)> = layer_meta::layers_with(doc, KEY);
     if records.is_empty() {
         return;
@@ -439,7 +440,7 @@ fn new_filter_layer(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// Layer › New › Filter Mask: `filter` over one layer, clipped to it, limited by the new layer's
 /// own (paintable) mask. Several stack.
-fn new_filter_mask(s: &mut Session, p: &Value) -> Result<Value> {
+pub(crate) fn new_filter_mask(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "layer.new.filterMask";
     let filter = filter_param(p, cmd)?.ok_or_else(|| bad(cmd, "needs `filter` (a filter command id)"))?;
     let src = source_param(s, p, cmd)?;

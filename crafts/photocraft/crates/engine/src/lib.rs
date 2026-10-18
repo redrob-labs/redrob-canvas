@@ -77,6 +77,8 @@ pub mod layer_label_cmds;
 pub mod layer_list_cmds;
 pub mod layer_mask_props_cmds;
 pub mod layer_menu_cmds;
+pub mod gen_fill_cmds;
+pub mod layer_kind_cmds;
 pub mod layer_meta;
 pub mod layer_multi_cmds;
 pub mod live_layers;
