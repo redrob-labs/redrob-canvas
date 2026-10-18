@@ -4634,3 +4634,55 @@ layerLabel	No Color	Sem cor
 	G'MIC Filter…	Filtro G'MIC…
 	G'MIC executable	Executável do G'MIC
 	G'MIC update folder	Pasta de atualizações do G'MIC
+	Add scene at playhead	Adicionar cena no cursor
+	Add to favourites	Adicionar aos favoritos
+	Arithmetic	Aritmético
+	Attach audio…	Anexar áudio…
+	Blend details	Detalhes de mesclagem
+	Blend mode	Modo de mesclagem
+	Blend mode and opacity	Modo de mesclagem e opacidade
+	Capture now	Capturar agora
+	Clone previous keyframe here	Clonar aqui o quadro-chave anterior
+	Comment	Comentário
+	Display settings	Configurações de exibição
+	Duplicate keyframe	Duplicar quadro-chave
+	Duplicate keyframe here	Duplicar quadro-chave aqui
+	End	Fim
+	Export timelapse…	Exportar timelapse…
+	Favourites	Favoritos
+	Frame rate	Taxa de quadros
+	HSX	HSX
+	Key the active layer:	Chave na camada ativa:
+	Misc	Diversos
+	Mute audio	Silenciar áudio
+	Negative	Negativo
+	New keyframe	Novo quadro-chave
+	New keyframe here	Novo quadro-chave aqui
+	Next tint	Tom seguinte
+	No animated layers: add a keyframe to the active layer to animate it.	Nenhuma camada animada: adicione um quadro-chave à camada ativa para animá-la.
+	No animation curves yet.	Ainda não há curvas de animação.
+	No scenes yet.	Ainda não há cenas.
+	Opacity per frame	Opacidade por quadro
+	Previous tint	Tom anterior
+	Quadratic	Quadrático
+	Recorder	Gravador
+	Remove from favourites	Remover dos favoritos
+	Remove keyframe	Remover quadro-chave
+	Remove scene	Remover cena
+	Scale X	Escala X
+	Scale Y	Escala Y
+	Scene name	Nome da cena
+	Show onion skins	Mostrar papel vegetal
+	Start	Início
+	Start recording	Iniciar gravação
+	Stop recording	Parar gravação
+	Storyboard	Storyboard
+	Thumbnail size	Tamanho da miniatura
+	frames	quadros
+	opacity	opacidade
+	rotation	rotação
+	scaleX	escala X
+	scaleY	escala Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} instantâneos em {dir}

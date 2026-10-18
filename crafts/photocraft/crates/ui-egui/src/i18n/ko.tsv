@@ -4603,3 +4603,59 @@ curves	Smooth	매끄럽게
 	G'MIC Filter…	G'MIC 필터…
 	G'MIC executable	G'MIC 실행 파일
 	G'MIC update folder	G'MIC 업데이트 폴더
+	Add scene at playhead	재생 헤드에 장면 추가
+	Add to favourites	즐겨찾기에 추가
+	After	뒤
+	Arithmetic	산술
+	Attach audio…	오디오 첨부…
+	Before	앞
+	Blend details	혼합 상세
+	Blend mode	혼합 모드
+	Blend mode and opacity	혼합 모드와 불투명도
+	Capture now	지금 캡처
+	Clone previous keyframe here	여기에 이전 키프레임 복제
+	Comment	메모
+	Display settings	표시 설정
+	Duplicate keyframe	키프레임 복제
+	Duplicate keyframe here	여기에 키프레임 복제
+	Duration	길이
+	End	끝
+	Export timelapse…	타임랩스 내보내기…
+	Favourites	즐겨찾기
+	Frame rate	프레임 속도
+	HSX	HSX
+	Hidden	숨김
+	Key the active layer:	활성 레이어에 키 추가:
+	Misc	기타
+	Mute audio	오디오 음소거
+	Negative	네거티브
+	New keyframe	새 키프레임
+	New keyframe here	여기에 새 키프레임
+	Next tint	다음 색조
+	No animated layers: add a keyframe to the active layer to animate it.	애니메이션 레이어가 없습니다. 활성 레이어에 키프레임을 추가하면 애니메이션이 됩니다.
+	No animation curves yet.	애니메이션 곡선이 아직 없습니다.
+	No scenes yet.	장면이 아직 없습니다.
+	Opacity per frame	프레임별 불투명도
+	Previous tint	이전 색조
+	Quadratic	이차
+	Recorder	레코더
+	Remove from favourites	즐겨찾기에서 제거
+	Remove keyframe	키프레임 제거
+	Remove scene	장면 제거
+	Scale X	크기 X
+	Scale Y	크기 Y
+	Scene name	장면 이름
+	Show onion skins	어니언 스킨 표시
+	Start	시작
+	Start recording	녹화 시작
+	Stop recording	녹화 중지
+	Storyboard	스토리보드
+	Thumbnail size	썸네일 크기
+	frames	프레임
+	opacity	불투명도
+	rotation	회전
+	scaleX	크기 X
+	scaleY	크기 Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir}에 스냅샷 {count}개

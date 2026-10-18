@@ -2428,7 +2428,8 @@ fn layers(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let opacity_label = if t.pro { tl!("Opacity:") } else { tl!("Opacity") };
                 let (blend_width, show_opacity_label) =
                     opacity_row_layout(ui.available_width(), body_text_width(ui, opacity_label), ui.spacing().item_spacing.x);
-                let (chosen, hovered) = widgets::dropdown_wheel_hovered(ui, "blend", &mut m, &blend_options(l.is_group(), l.blend), blend_width);
+                let (chosen, hovered) =
+                    crate::blend_menu_ui::menu(ui, "blend", &mut m, &blend_options(l.is_group(), l.blend), &mut app.ui.blend_favourites, blend_width);
                 // One step per choice: a click, an arrow key or each wheel notch (#1747).
                 for m in &chosen {
                     actions.push(("layer.setProps".into(), json!({"layer": l.id.0, "blend": m.label()})));
@@ -2556,6 +2557,13 @@ fn layers(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let row = RowSel { selected: selection.contains(&l.id), primary: active == Some(l.id), multi: selection.len() > 1 };
                 let top = ui.cursor().top();
                 drawn.push((l.id, layer_row(app, &ctx, ui, &doc, l, depth, row, &mut actions)));
+                // Display Settings › blend details: the mode (and opacity) under the name.
+                if let Some(line) = app.ui.layer_display.detail_line(l) {
+                    ui.horizontal(|ui| {
+                        ui.add_space(40.0 + depth as f32 * 12.0);
+                        ui.label(egui::RichText::new(line).small().color(t.text_dim));
+                    });
+                }
                 if reveal == Some(l.id) {
                     crate::layer_reveal::scroll_to_row(ui, top);
                 }
@@ -3023,7 +3031,7 @@ fn layer_row(
         + if l.is_group() { crate::layer_tree_ui::TRIANGLE_W } else { 0.0 }
         + if l.clipped { 12.0 } else { 0.0 }
         + crate::layer_row_ui::reserved_width(l);
-    let ts = crate::mask_thumbs_ui::thumb_size(l, if t.pro { 24.0 } else { 34.0 }, rect.width() - others);
+    let ts = crate::mask_thumbs_ui::thumb_size(l, (if t.pro { 24.0 } else { 34.0 }) * app.ui.layer_display.thumbnail.factor(), rect.width() - others);
     let fixed = others + ts + 6.0 + crate::mask_thumbs_ui::width(l, ts);
     x += 28.0 + crate::layer_row_ui::indent(depth, rect.width(), fixed);
     let toggled = crate::layer_tree_ui::disclosure(ui, rect, &mut x, l, actions);

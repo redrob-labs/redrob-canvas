@@ -4574,3 +4574,55 @@ cameraData	Lens	Lens
 	G'MIC Filter…	G'MIC Filtresi…
 	G'MIC executable	G'MIC çalıştırılabilir dosyası
 	G'MIC update folder	G'MIC güncelleme klasörü
+	Add scene at playhead	Oynatma kafasına sahne ekle
+	Add to favourites	Sık kullanılanlara ekle
+	Arithmetic	Aritmetik
+	Attach audio…	Ses ekle…
+	Blend details	Karışım ayrıntıları
+	Blend mode	Karışım modu
+	Blend mode and opacity	Karışım modu ve opaklık
+	Capture now	Şimdi yakala
+	Clone previous keyframe here	Önceki anahtar kareyi buraya klonla
+	Comment	Yorum
+	Display settings	Görüntü ayarları
+	Duplicate keyframe	Anahtar kareyi çoğalt
+	Duplicate keyframe here	Anahtar kareyi buraya çoğalt
+	End	Son
+	Export timelapse…	Hızlandırılmış videoyu dışa aktar…
+	Favourites	Sık kullanılanlar
+	Frame rate	Kare hızı
+	HSX	HSX
+	Key the active layer:	Etkin katmana anahtar:
+	Misc	Diğer
+	Mute audio	Sesi kapat
+	Negative	Negatif
+	New keyframe	Yeni anahtar kare
+	New keyframe here	Buraya yeni anahtar kare
+	Next tint	Sonraki renk tonu
+	No animated layers: add a keyframe to the active layer to animate it.	Animasyonlu katman yok: etkin katmana anahtar kare ekleyerek canlandırın.
+	No animation curves yet.	Henüz animasyon eğrisi yok.
+	No scenes yet.	Henüz sahne yok.
+	Opacity per frame	Kare başına opaklık
+	Previous tint	Önceki renk tonu
+	Quadratic	İkinci dereceden
+	Recorder	Kaydedici
+	Remove from favourites	Sık kullanılanlardan kaldır
+	Remove keyframe	Anahtar kareyi kaldır
+	Remove scene	Sahneyi kaldır
+	Scale X	Ölçek X
+	Scale Y	Ölçek Y
+	Scene name	Sahne adı
+	Show onion skins	Soğan kabuğunu göster
+	Start	Başlangıç
+	Start recording	Kaydı başlat
+	Stop recording	Kaydı durdur
+	Storyboard	Storyboard
+	Thumbnail size	Küçük resim boyutu
+	frames	kare
+	opacity	opaklık
+	rotation	döndürme
+	scaleX	ölçek X
+	scaleY	ölçek Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir} içinde {count} anlık görüntü

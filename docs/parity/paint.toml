@@ -2374,9 +2374,9 @@ name = "Clone layer"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/clone_layers.html"
 behaviour = "Live copy of another layer that updates when the source changes; own masks, filters and position; change source."
-ours = "none"
-ours_where = ""
-gap = "smart object duplicates share a source but not a live layer link"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2386,9 +2386,9 @@ name = "File layer"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/file_layers.html"
 behaviour = "Layer that shows an external image file and reloads when it changes; no scaling, scale to image, adapt to resolution; scaling filter (5.2)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/smart_cmds.rs"
-gap = "linked smart objects reload from disk; no auto-scaling modes"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs, crafts/photocraft/crates/engine/src/link_watch.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2434,8 +2434,8 @@ name = "Fill layer: multigrid"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated quasi-periodic tiling (de Bruijn multigrid) with colours and line widths."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/gen_fill_cmds.rs"
 gap = ""
 priority = 3
 
@@ -2446,9 +2446,9 @@ name = "Fill layer: screentone"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated halftone dots/lines with pattern, shape, size, rotation, interpolation, brightness/contrast."
-ours = "none"
-ours_where = ""
-gap = "Color Halftone filter is destructive"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/gen_fill_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2458,9 +2458,9 @@ name = "Fill layer: SeExpr script"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Procedural texture written in the SeExpr language with live preview and saved scripts."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/gen_fill_cmds.rs"
+gap = "own expression language with the common SeExpr functions (noise, fbm, voronoi, fit, mix, hsi…), preview and saved scripts; not the full SeExpr grammar (no string ops, no custom function definitions)"
 priority = 3
 
 [[feature]]
@@ -2470,9 +2470,9 @@ name = "Fill layer: simplex noise"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated seamless noise with frequency and ratio."
-ours = "none"
-ours_where = ""
-gap = "Add Noise filter is destructive"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/gen_fill_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2494,9 +2494,9 @@ name = "Filter layer"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/filter_layers.html"
 behaviour = "Any filter applied non-destructively to everything below; editable; own mask."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
-gap = "adjustment layers cover the colour adjustments only; blur, noise, etc. cannot be a layer"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2506,9 +2506,9 @@ name = "Filter mask"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/filter_masks.html"
 behaviour = "A filter attached to one layer, limited by a paintable mask; stackable."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/smart_cmds.rs"
-gap = "smart filters on a smart object with one shared mask; not on plain paint layers"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2542,9 +2542,9 @@ name = "Transform mask"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/transformation_masks.html"
 behaviour = "Non-destructive transform (free, perspective, warp, cage, liquify) kept as a mask; editable and animatable."
-ours = "none"
-ours_where = ""
-gap = "smart objects keep one affine transform only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2554,9 +2554,9 @@ name = "Local selection mask"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/selection_masks.html"
 behaviour = "Stored selections attached to a layer; one active; show as overlay; global selection mask shown in the stack."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/channel_cmds.rs"
-gap = "alpha channels store selections; no per-layer local selections"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2566,8 +2566,8 @@ name = "Colorize mask"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/colorize_mask.html"
 behaviour = "Mask that fills line-art regions from colour key strokes; lock, update, show output."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/colorize_cmds.rs"
 gap = ""
 priority = 2
 
@@ -2746,9 +2746,9 @@ name = "Filter the layer stack"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
 behaviour = "Filter by name or colour label; display settings for thumbnail size and blend info detail."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/layer_filter_ui.rs"
-gap = "by kind/name/label; no blend-detail display modes"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/layer_filter_ui.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2770,9 +2770,9 @@ name = "Blend mode categories and favourites"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
 behaviour = "About 100 modes grouped (arithmetic, binary, darken, HSX, lighten, misc, mix, modulo, negative, quadratic) with favourites and letter shortcuts."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/blend.rs, crafts/photocraft/crates/gpu/src/compose.wgsl, crafts/photocraft/crates/ui-egui/src/panels.rs"
-gap = "59 modes incl. binary (9 + XOR), modulo (6) and quadratic (Reflect/Glow + 7) families with BlendMode::family(); the Layers dropdown lists them flat, no favourites or letter shortcuts"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/blend_menu_ui.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/color/src/blend.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2794,8 +2794,8 @@ name = "Split alpha"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/split_alpha.html"
 behaviour = "Alpha into a mask, write mask back as alpha, save merged with colour under transparency."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs"
 gap = ""
 priority = 3
 
@@ -2807,8 +2807,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Convert between paint layer, masks, file layer, vector; convert group to animated layer; convert layer colour space."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/layer_menu_cmds.rs"
-gap = "rasterize and mask conversions; no per-layer colour space"
+ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs, crafts/photocraft/crates/engine/src/anim_cmds.rs"
+gap = "no conversion of a paint layer to a vector (shape) layer; paint, file, transparency / filter / selection mask, colour space and group-to-animated convert"
 priority = 2
 
 [[feature]]
@@ -2818,9 +2818,9 @@ name = "Import image as layer or mask"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Import a file as paint layer, transparency, filter or selection mask."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/file_cmds.rs"
-gap = "place as layer only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2842,9 +2842,9 @@ name = "Select layers by state"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Select all, visible, invisible, locked, unlocked layers."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/layer_multi_cmds.rs"
-gap = "select all; no by-state"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2854,8 +2854,8 @@ name = "Clones array"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/clones_array.html"
 behaviour = "Generate a grid of clone layers with offsets, distance, angle."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
 gap = ""
 priority = 3
 
@@ -3514,9 +3514,9 @@ name = "Animation timeline docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/animation_timeline.html"
 behaviour = "Frame table per layer with keyframes, hold frames, clone frames, playback range, frame rate, zoom, audio."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/timeline_cmds.rs"
-gap = "video timeline with frames; no per-layer raster keyframes"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/engine/src/timeline_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs, crafts/photocraft/crates/ui-egui/src/timeline_ui.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3526,8 +3526,8 @@ name = "Raster keyframes per layer"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/animation_timeline.html"
 behaviour = "Add blank or duplicated keyframes, move, copy, clone with drag; cached frames shown."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3538,8 +3538,8 @@ name = "Onion skin docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/onion_skin.html"
 behaviour = "Tinted previous/next frames with per-offset opacity and colours."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/engine/src/live_layers.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3550,8 +3550,8 @@ name = "Animation curves docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/animation_curves.html"
 behaviour = "Scalar channels (opacity, transform mask) keyed and interpolated with bezier handles."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3562,9 +3562,9 @@ name = "Render animation"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/render_animation.html"
 behaviour = "Export image sequence or video through ffmpeg with codec, size, fps, audio, HDR metadata."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/video_cmds.rs"
-gap = "renders frames/video of the timeline"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3574,8 +3574,8 @@ name = "Import animation frames / video"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/import_animation.html"
 behaviour = "Import image sequences with ordering and timing, or a video via ffmpeg with scale and range."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3586,8 +3586,8 @@ name = "Audio for animation"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/audio_for_animation.html"
 behaviour = "Attach an audio track, scrub and mute."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3598,8 +3598,8 @@ name = "Storyboard docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/storyboard_docker.html"
 behaviour = "Scenes with thumbnails, durations and comments, exported to PDF/SVG layouts."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3610,8 +3610,8 @@ name = "Animated transform masks"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/animation.html"
 behaviour = "Key the transform of a mask for tweened motion (5.0)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs, crafts/photocraft/crates/engine/src/anim_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3622,8 +3622,8 @@ name = "Convert group to animated layer"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Each child becomes one frame."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3634,8 +3634,8 @@ name = "Recorder docker (timelapse)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/recorder_docker.html"
 behaviour = "Capture snapshots while painting and export a timelapse video with ffmpeg."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 

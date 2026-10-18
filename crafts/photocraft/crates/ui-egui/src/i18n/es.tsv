@@ -5357,3 +5357,55 @@ navigator	Zoom	Zoom
 	G'MIC Filter…	Filtro G'MIC…
 	G'MIC executable	Ejecutable de G'MIC
 	G'MIC update folder	Carpeta de actualizaciones de G'MIC
+	Add scene at playhead	Añadir escena en el cabezal
+	Add to favourites	Añadir a favoritos
+	Arithmetic	Aritmética
+	Attach audio…	Adjuntar audio…
+	Blend details	Detalles de fusión
+	Blend mode	Modo de fusión
+	Blend mode and opacity	Modo de fusión y opacidad
+	Capture now	Capturar ahora
+	Clone previous keyframe here	Clonar aquí el fotograma clave anterior
+	Comment	Comentario
+	Display settings	Ajustes de visualización
+	Duplicate keyframe	Duplicar fotograma clave
+	Duplicate keyframe here	Duplicar fotograma clave aquí
+	End	Fin
+	Export timelapse…	Exportar timelapse…
+	Favourites	Favoritos
+	Frame rate	Velocidad de fotogramas
+	HSX	HSX
+	Key the active layer:	Añadir clave a la capa activa:
+	Misc	Varios
+	Mute audio	Silenciar audio
+	Negative	Negativo
+	New keyframe	Nuevo fotograma clave
+	New keyframe here	Nuevo fotograma clave aquí
+	Next tint	Tinte siguiente
+	No animated layers: add a keyframe to the active layer to animate it.	No hay capas animadas: añade un fotograma clave a la capa activa para animarla.
+	No animation curves yet.	Aún no hay curvas de animación.
+	No scenes yet.	Aún no hay escenas.
+	Opacity per frame	Opacidad por fotograma
+	Previous tint	Tinte anterior
+	Quadratic	Cuadrático
+	Recorder	Grabadora
+	Remove from favourites	Quitar de favoritos
+	Remove keyframe	Quitar fotograma clave
+	Remove scene	Quitar escena
+	Scale X	Escala X
+	Scale Y	Escala Y
+	Scene name	Nombre de la escena
+	Show onion skins	Mostrar papel cebolla
+	Start	Inicio
+	Start recording	Iniciar grabación
+	Stop recording	Detener grabación
+	Storyboard	Guion gráfico
+	Thumbnail size	Tamaño de miniatura
+	frames	fotogramas
+	opacity	opacidad
+	rotation	rotación
+	scaleX	escala X
+	scaleY	escala Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} instantáneas en {dir}

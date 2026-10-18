@@ -4446,3 +4446,58 @@ curves	Smooth	Wygładź
 	G'MIC Filter…	Filtr G'MIC…
 	G'MIC executable	Plik wykonywalny G'MIC
 	G'MIC update folder	Folder aktualizacji G'MIC
+	Add scene at playhead	Dodaj scenę w pozycji głowicy
+	Add to favourites	Dodaj do ulubionych
+	After	Po
+	Arithmetic	Arytmetyczne
+	Attach audio…	Dołącz dźwięk…
+	Before	Przed
+	Blend details	Szczegóły mieszania
+	Blend mode	Tryb mieszania
+	Blend mode and opacity	Tryb mieszania i krycie
+	Capture now	Zrób zrzut teraz
+	Clone previous keyframe here	Sklonuj tu poprzednią klatkę kluczową
+	Comment	Komentarz
+	Display settings	Ustawienia wyświetlania
+	Duplicate keyframe	Powiel klatkę kluczową
+	Duplicate keyframe here	Powiel klatkę kluczową tutaj
+	End	Koniec
+	Export timelapse…	Eksportuj timelapse…
+	Favourites	Ulubione
+	Frame rate	Klatki na sekundę
+	HSX	HSX
+	Hidden	Ukryte
+	Key the active layer:	Klucz dla aktywnej warstwy:
+	Misc	Różne
+	Mute audio	Wycisz dźwięk
+	Negative	Negatywne
+	New keyframe	Nowa klatka kluczowa
+	New keyframe here	Nowa klatka kluczowa tutaj
+	Next tint	Odcień następnych
+	No animated layers: add a keyframe to the active layer to animate it.	Brak animowanych warstw: dodaj klatkę kluczową do aktywnej warstwy, aby ją animować.
+	No animation curves yet.	Nie ma jeszcze krzywych animacji.
+	No scenes yet.	Nie ma jeszcze scen.
+	Opacity per frame	Krycie na klatkę
+	Previous tint	Odcień poprzednich
+	Quadratic	Kwadratowe
+	Recorder	Rejestrator
+	Remove from favourites	Usuń z ulubionych
+	Remove keyframe	Usuń klatkę kluczową
+	Remove scene	Usuń scenę
+	Scale X	Skala X
+	Scale Y	Skala Y
+	Scene name	Nazwa sceny
+	Show onion skins	Pokaż kalkę
+	Start	Początek
+	Start recording	Rozpocznij nagrywanie
+	Stop recording	Zatrzymaj nagrywanie
+	Storyboard	Scenorys
+	Thumbnail size	Rozmiar miniatur
+	frames	klatek
+	opacity	krycie
+	rotation	obrót
+	scaleX	skala X
+	scaleY	skala Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} zrzutów w {dir}

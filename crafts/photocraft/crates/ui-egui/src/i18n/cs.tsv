@@ -4453,3 +4453,55 @@ navigator	Zoom	Zvětšení
 	G'MIC Filter…	Filtr G'MIC…
 	G'MIC executable	Spustitelný soubor G'MIC
 	G'MIC update folder	Složka aktualizací G'MIC
+	Add scene at playhead	Přidat scénu na pozici přehrávání
+	Add to favourites	Přidat do oblíbených
+	Arithmetic	Aritmetické
+	Attach audio…	Připojit zvuk…
+	Blend details	Podrobnosti prolnutí
+	Blend mode	Režim prolnutí
+	Blend mode and opacity	Režim prolnutí a krytí
+	Capture now	Zachytit nyní
+	Clone previous keyframe here	Klonovat sem předchozí klíčový snímek
+	Comment	Komentář
+	Display settings	Nastavení zobrazení
+	Duplicate keyframe	Duplikovat klíčový snímek
+	Duplicate keyframe here	Duplikovat klíčový snímek sem
+	End	Konec
+	Export timelapse…	Exportovat časosběr…
+	Favourites	Oblíbené
+	Frame rate	Snímková frekvence
+	HSX	HSX
+	Key the active layer:	Klíč pro aktivní vrstvu:
+	Misc	Různé
+	Mute audio	Ztlumit zvuk
+	Negative	Negativní
+	New keyframe	Nový klíčový snímek
+	New keyframe here	Nový klíčový snímek zde
+	Next tint	Odstín následujících
+	No animated layers: add a keyframe to the active layer to animate it.	Žádné animované vrstvy: přidejte aktivní vrstvě klíčový snímek a animujte ji.
+	No animation curves yet.	Zatím žádné animační křivky.
+	No scenes yet.	Zatím žádné scény.
+	Opacity per frame	Krytí po snímcích
+	Previous tint	Odstín předchozích
+	Quadratic	Kvadratické
+	Recorder	Záznam
+	Remove from favourites	Odebrat z oblíbených
+	Remove keyframe	Odebrat klíčový snímek
+	Remove scene	Odebrat scénu
+	Scale X	Měřítko X
+	Scale Y	Měřítko Y
+	Scene name	Název scény
+	Show onion skins	Zobrazit průsvitky
+	Start	Začátek
+	Start recording	Spustit záznam
+	Stop recording	Zastavit záznam
+	Storyboard	Storyboard
+	Thumbnail size	Velikost miniatur
+	frames	snímků
+	opacity	krytí
+	rotation	otočení
+	scaleX	měřítko X
+	scaleY	měřítko Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} snímků v {dir}

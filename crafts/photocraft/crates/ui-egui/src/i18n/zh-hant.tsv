@@ -3472,3 +3472,59 @@ curves	Smooth	平滑
 	G'MIC Filter…	G'MIC 濾鏡…
 	G'MIC executable	G'MIC 可執行檔
 	G'MIC update folder	G'MIC 更新資料夾
+	Add scene at playhead	在播放頭處新增場景
+	Add to favourites	加入我的最愛
+	After	之後
+	Arithmetic	算術
+	Attach audio…	附加音訊…
+	Before	之前
+	Blend details	混合詳情
+	Blend mode	混合模式
+	Blend mode and opacity	混合模式與不透明度
+	Capture now	立即擷取
+	Clone previous keyframe here	在此複製上一個關鍵影格
+	Comment	備註
+	Display settings	顯示設定
+	Duplicate keyframe	複製關鍵影格
+	Duplicate keyframe here	在此複製關鍵影格
+	Duration	時長
+	End	結束
+	Export timelapse…	匯出縮時影片…
+	Favourites	我的最愛
+	Frame rate	影格率
+	HSX	HSX
+	Hidden	隱藏
+	Key the active layer:	為作用中圖層設定關鍵影格:
+	Misc	其他
+	Mute audio	靜音音訊
+	Negative	負片
+	New keyframe	新增關鍵影格
+	New keyframe here	在此新增關鍵影格
+	Next tint	下一影格色調
+	No animated layers: add a keyframe to the active layer to animate it.	沒有動畫圖層：為作用中圖層新增關鍵影格即可開始動畫。
+	No animation curves yet.	還沒有動畫曲線。
+	No scenes yet.	還沒有場景。
+	Opacity per frame	每影格不透明度
+	Previous tint	上一影格色調
+	Quadratic	二次
+	Recorder	錄製器
+	Remove from favourites	從我的最愛移除
+	Remove keyframe	刪除關鍵影格
+	Remove scene	刪除場景
+	Scale X	縮放 X
+	Scale Y	縮放 Y
+	Scene name	場景名稱
+	Show onion skins	顯示洋蔥皮
+	Start	開始
+	Start recording	開始錄製
+	Stop recording	停止錄製
+	Storyboard	分鏡表
+	Thumbnail size	縮圖大小
+	frames	影格
+	opacity	不透明度
+	rotation	旋轉
+	scaleX	縮放 X
+	scaleY	縮放 Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir} 中有 {count} 張快照

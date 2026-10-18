@@ -4546,3 +4546,55 @@ curves	Smooth	Εξομάλυνση
 	G'MIC Filter…	Φίλτρο G'MIC…
 	G'MIC executable	Εκτελέσιμο G'MIC
 	G'MIC update folder	Φάκελος ενημερώσεων G'MIC
+	Add scene at playhead	Προσθήκη σκηνής στην κεφαλή
+	Add to favourites	Προσθήκη στα αγαπημένα
+	Arithmetic	Αριθμητικές
+	Attach audio…	Προσάρτηση ήχου…
+	Blend details	Λεπτομέρειες ανάμειξης
+	Blend mode	Λειτουργία ανάμειξης
+	Blend mode and opacity	Λειτουργία ανάμειξης και αδιαφάνεια
+	Capture now	Λήψη τώρα
+	Clone previous keyframe here	Κλωνοποίηση εδώ του προηγούμενου καρέ-κλειδιού
+	Comment	Σχόλιο
+	Display settings	Ρυθμίσεις εμφάνισης
+	Duplicate keyframe	Διπλασιασμός καρέ-κλειδιού
+	Duplicate keyframe here	Διπλασιασμός καρέ-κλειδιού εδώ
+	End	Τέλος
+	Export timelapse…	Εξαγωγή timelapse…
+	Favourites	Αγαπημένα
+	Frame rate	Ρυθμός καρέ
+	HSX	HSX
+	Key the active layer:	Κλειδί στην ενεργή στρώση:
+	Misc	Διάφορα
+	Mute audio	Σίγαση ήχου
+	Negative	Αρνητικές
+	New keyframe	Νέο καρέ-κλειδί
+	New keyframe here	Νέο καρέ-κλειδί εδώ
+	Next tint	Χροιά επόμενων
+	No animated layers: add a keyframe to the active layer to animate it.	Δεν υπάρχουν κινούμενες στρώσεις: προσθέστε καρέ-κλειδί στην ενεργή στρώση για να την κινήσετε.
+	No animation curves yet.	Δεν υπάρχουν ακόμη καμπύλες κίνησης.
+	No scenes yet.	Δεν υπάρχουν ακόμη σκηνές.
+	Opacity per frame	Αδιαφάνεια ανά καρέ
+	Previous tint	Χροιά προηγούμενων
+	Quadratic	Τετραγωνικές
+	Recorder	Καταγραφέας
+	Remove from favourites	Αφαίρεση από τα αγαπημένα
+	Remove keyframe	Αφαίρεση καρέ-κλειδιού
+	Remove scene	Αφαίρεση σκηνής
+	Scale X	Κλίμακα X
+	Scale Y	Κλίμακα Y
+	Scene name	Όνομα σκηνής
+	Show onion skins	Εμφάνιση onion skin
+	Start	Αρχή
+	Start recording	Έναρξη καταγραφής
+	Stop recording	Διακοπή καταγραφής
+	Storyboard	Storyboard
+	Thumbnail size	Μέγεθος μικρογραφιών
+	frames	καρέ
+	opacity	αδιαφάνεια
+	rotation	περιστροφή
+	scaleX	κλίμακα X
+	scaleY	κλίμακα Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} στιγμιότυπα στο {dir}

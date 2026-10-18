@@ -3551,3 +3551,59 @@ curves	Smooth	平滑
 	G'MIC Filter…	G'MIC 滤镜…
 	G'MIC executable	G'MIC 可执行文件
 	G'MIC update folder	G'MIC 更新文件夹
+	Add scene at playhead	在播放头处添加场景
+	Add to favourites	添加到收藏
+	After	之后
+	Arithmetic	算术
+	Attach audio…	附加音频…
+	Before	之前
+	Blend details	混合详情
+	Blend mode	混合模式
+	Blend mode and opacity	混合模式和不透明度
+	Capture now	立即捕获
+	Clone previous keyframe here	在此克隆上一个关键帧
+	Comment	备注
+	Display settings	显示设置
+	Duplicate keyframe	复制关键帧
+	Duplicate keyframe here	在此复制关键帧
+	Duration	时长
+	End	结束
+	Export timelapse…	导出延时视频…
+	Favourites	收藏
+	Frame rate	帧率
+	HSX	HSX
+	Hidden	隐藏
+	Key the active layer:	为活动图层设置关键帧:
+	Misc	其他
+	Mute audio	静音音频
+	Negative	负片
+	New keyframe	新建关键帧
+	New keyframe here	在此新建关键帧
+	Next tint	下一帧色调
+	No animated layers: add a keyframe to the active layer to animate it.	没有动画图层：为活动图层添加关键帧即可开始动画。
+	No animation curves yet.	还没有动画曲线。
+	No scenes yet.	还没有场景。
+	Opacity per frame	每帧不透明度
+	Previous tint	上一帧色调
+	Quadratic	二次
+	Recorder	录制器
+	Remove from favourites	从收藏中移除
+	Remove keyframe	删除关键帧
+	Remove scene	删除场景
+	Scale X	缩放 X
+	Scale Y	缩放 Y
+	Scene name	场景名称
+	Show onion skins	显示洋葱皮
+	Start	开始
+	Start recording	开始录制
+	Stop recording	停止录制
+	Storyboard	故事板
+	Thumbnail size	缩略图大小
+	frames	帧
+	opacity	不透明度
+	rotation	旋转
+	scaleX	缩放 X
+	scaleY	缩放 Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir} 中有 {count} 张快照

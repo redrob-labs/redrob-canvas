@@ -4546,3 +4546,58 @@ curves	Smooth	Згладити
 	G'MIC Filter…	Фільтр G'MIC…
 	G'MIC executable	Виконуваний файл G'MIC
 	G'MIC update folder	Папка оновлень G'MIC
+	Add scene at playhead	Додати сцену на позиції відтворення
+	Add to favourites	Додати до улюблених
+	After	Після
+	Arithmetic	Арифметичні
+	Attach audio…	Долучити звук…
+	Before	До
+	Blend details	Подробиці змішування
+	Blend mode	Режим змішування
+	Blend mode and opacity	Режим змішування і непрозорість
+	Capture now	Зняти зараз
+	Clone previous keyframe here	Клонувати сюди попередній ключовий кадр
+	Comment	Коментар
+	Display settings	Параметри показу
+	Duplicate keyframe	Дублювати ключовий кадр
+	Duplicate keyframe here	Дублювати ключовий кадр сюди
+	End	Кінець
+	Export timelapse…	Експортувати таймлапс…
+	Favourites	Улюблені
+	Frame rate	Частота кадрів
+	HSX	HSX
+	Hidden	Приховано
+	Key the active layer:	Ключ для активного шару:
+	Misc	Інші
+	Mute audio	Вимкнути звук
+	Negative	Негативні
+	New keyframe	Новий ключовий кадр
+	New keyframe here	Новий ключовий кадр тут
+	Next tint	Відтінок наступних
+	No animated layers: add a keyframe to the active layer to animate it.	Немає анімованих шарів: додайте ключовий кадр активному шару, щоб анімувати його.
+	No animation curves yet.	Кривих анімації ще немає.
+	No scenes yet.	Сцен ще немає.
+	Opacity per frame	Непрозорість за кадрами
+	Previous tint	Відтінок попередніх
+	Quadratic	Квадратичні
+	Recorder	Запис
+	Remove from favourites	Вилучити з улюблених
+	Remove keyframe	Вилучити ключовий кадр
+	Remove scene	Вилучити сцену
+	Scale X	Масштаб X
+	Scale Y	Масштаб Y
+	Scene name	Назва сцени
+	Show onion skins	Показувати кальку
+	Start	Початок
+	Start recording	Почати запис
+	Stop recording	Зупинити запис
+	Storyboard	Розкадровка
+	Thumbnail size	Розмір мініатюр
+	frames	кадрів
+	opacity	непрозорість
+	rotation	поворот
+	scaleX	масштаб X
+	scaleY	масштаб Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} знімків у {dir}
