@@ -10,9 +10,9 @@
 //! the foreground/background colours get them injected by [`crate::filters_ext::prepare`].
 
 use redrob_photo_algo::{
-    Axis, CurlColors, CurlCorner, DistanceMetric, FilterParams, GradientOutput, LicChannel, LicConvolve, LicOperator, NlMode, NormalComponent, PropagateMode,
-    ShadowComposition, ShadowInterpolation, ShadowStyle, SparkleColor, StrokeBackground, StrokeColor, StrokeOrientation, StrokePlacement, StrokeShape,
-    SuperpixelColor, TileableBlurType, VideoPattern,
+    Axis, CurlColors, CurlCorner, DistanceMetric, FilmFont, FilterParams, FlareDesign, GradientOutput, LicChannel, LicConvolve, LicOperator, NlMode,
+    NormalComponent, PaperTexture, PropagateMode, ShadowComposition, ShadowInterpolation, ShadowStyle, SparkleColor, StrokeBackground, StrokeColor,
+    StrokeOrientation, StrokePlacement, StrokeShape, SuperpixelColor, TileableBlurType, VideoPattern,
 };
 use serde_json::Value;
 
@@ -178,6 +178,17 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             glow: b(p, "glow", true),
             rays: b(p, "rays", true),
             second_flares: b(p, "secondFlares", true),
+            design: match s(p, "design", "classic") {
+                "brightStar" => FlareDesign::BrightStar,
+                "distantSun" => FlareDesign::DistantSun,
+                "coldRings" => FlareDesign::ColdRings,
+                "hiddenPlanet" => FlareDesign::HiddenPlanet,
+                "softGlow" => FlareDesign::SoftGlow,
+                _ => FlareDesign::Classic,
+            },
+            ray_count: i(p, "rayCount", 0).clamp(0, 256) as u32,
+            glow_size: f(p, "glowSize", 100.0).clamp(5.0, 1000.0),
+            ghost_count: i(p, "secondFlareCount", 0).clamp(0, 32) as u32,
         },
         "filter.lightShadow.sparkle" => FilterParams::Sparkle {
             threshold: f(p, "luminosityThreshold", 0.001).clamp(0.0, 0.1),
@@ -348,6 +359,11 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
                 "square" => StrokeShape::Square,
                 "line" => StrokeShape::Line,
                 "splotch" => StrokeShape::Splotch,
+                "circle" => StrokeShape::Circle,
+                "triangle" => StrokeShape::Triangle,
+                "diamond" => StrokeShape::Diamond,
+                "star" => StrokeShape::Star,
+                "image" => StrokeShape::Image,
                 _ => StrokeShape::Ellipse,
             },
             paper_relief: f(p, "paperRelief", 0.0).clamp(0.0, 100.0),
@@ -360,6 +376,18 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             },
             background_color: colour(p, "backgroundColor", WHITE),
             seed: seed(p),
+            paper: match s(p, "paper", "plain") {
+                "canvas" => PaperTexture::Canvas,
+                "burlap" => PaperTexture::Burlap,
+                "marble" => PaperTexture::Marble,
+                "rough" => PaperTexture::Rough,
+                "image" => PaperTexture::Image,
+                _ => PaperTexture::Plain,
+            },
+            paper_scale: f(p, "paperScale", 6.0).clamp(1.0, 200.0),
+            // `paperPath` / `brushPath` images are read by `filters_more::resolve`.
+            paper_map: None,
+            brush_map: None,
         },
         "filter.artistic.vanGogh" => FilterParams::VanGogh {
             channel: match s(p, "effectChannel", "brightness") {
@@ -396,6 +424,11 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             hole_width: f(p, "holeWidth", 0.056).clamp(0.005, 0.5),
             hole_height: f(p, "holeHeight", 0.08).clamp(0.005, 0.3),
             hole_spacing: f(p, "holeSpacing", 0.08).clamp(0.01, 1.0),
+            fit_height: b(p, "fitHeight", true),
+            font: if s(p, "font", "compact") == "classic" { FilmFont::Classic } else { FilmFont::Compact },
+            number_height: f(p, "numberHeight", 0.0).clamp(0.0, 0.3),
+            // The `images` list (layers / documents) is read by `filters_more::resolve`.
+            frames: Vec::new(),
         },
         "filter.decor.fuzzyBorder" => FilterParams::FuzzyBorder {
             color: colour(p, "color", WHITE),
@@ -503,7 +536,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "filter.lightShadow.gradientFlare",
             "Gradient Flare…",
             ["Filter", "Light and Shadow"],
-            r##"{"centerX":0..1=0.5,"centerY":0..1=0.5,"radius":1..3000=100,"rotation":-180..180=0,"hueRotation":-180..180=0,"vectorAngle":0..360=60,"vectorLength":0..10000=400,"glow":bool=true,"rays":bool=true,"secondFlares":bool=true}"##
+            r##"{"design":"classic|brightStar|distantSun|coldRings|hiddenPlanet|softGlow","centerX":0..1=0.5,"centerY":0..1=0.5,"radius":1..3000=100,"rotation":-180..180=0,"hueRotation":-180..180=0,"vectorAngle":0..360=60,"vectorLength":0..10000=400,"glow":bool=true,"glowSize":5..1000=100,"rays":bool=true,"rayCount":0..256=0,"secondFlares":bool=true,"secondFlareCount":0..32=0}"##
         ),
         cmd!(
             "filter.lightShadow.sparkle",
@@ -517,12 +550,7 @@ pub fn specs() -> Vec<CommandSpec> {
             ["Filter", "Light and Shadow"],
             r##"{"style":"finite|infinite|fading|fadingFixedLength","angle":-180..180=45,"length":0..1000=100,"midpoint":0..1000=100,"color":color=#000000,"composition":"shadowPlusImage|shadowOnly|shadowMinusImage"}"##
         ),
-        cmd!(
-            "filter.lightShadow.perspectiveShadow",
-            "Perspective Shadow…",
-            ["Filter", "Light and Shadow"],
-            r##"{"angle":0..180=45,"relativeDistance":0.1..24=5,"shadowLength":0.1..24=1,"blurRadius":0..1024=3,"color":color=#000000,"opacity":0..100=80,"interpolation":"none|linear|cubic"="linear","allowResizing":bool}"##
-        ),
+        crate::filters_more::perspective_shadow_spec(),
         cmd!(
             "filter.lightShadow.xachEffect",
             "Xach-Effect…",
@@ -571,7 +599,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "filter.artistic.impressionist",
             "Impressionist…",
             ["Filter", "Artistic"],
-            r##"{"brushSize":1..200=20,"sizeVariation":0..1=0.3,"orientation":0..360=45,"orientationType":"value|radius|random|radial|flowing|hue|adaptive","strokeDensity":1..50=20,"brushShape":"ellipse|square|line|splotch","paperRelief":0..100=0,"placement":"randomly|evenly","strokeColor":"average|center","background":"keepOriginal|solidColor|transparent","backgroundColor":color=#ffffff,"seed":u32=0}"##
+            r##"{"brushSize":1..200=20,"sizeVariation":0..1=0.3,"orientation":0..360=45,"orientationType":"value|radius|random|radial|flowing|hue|adaptive","strokeDensity":1..50=20,"brushShape":"ellipse|square|line|splotch|circle|triangle|diamond|star|image","brushPath":text,"paperRelief":0..100=0,"paper":"plain|canvas|burlap|marble|rough|image","paperScale":1..200=6,"paperPath":text,"placement":"randomly|evenly","strokeColor":"average|center","background":"keepOriginal|solidColor|transparent","backgroundColor":color=#ffffff,"seed":u32=0}"##
         ),
         cmd!(
             "filter.artistic.vanGogh",
@@ -590,7 +618,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "filter.decor.filmstrip",
             "Filmstrip…",
             ["Filter", "Decor"],
-            r##"{"filmColor":color=#000000,"numberColor":color=#ed9b00,"startIndex":0..9999=1,"atTop":bool=true,"atBottom":bool=true,"holeOffset":0..0.3=0.04,"holeWidth":0.005..0.5=0.056,"holeHeight":0.005..0.3=0.08,"holeSpacing":0.01..1=0.08}"##
+            r##"{"filmColor":color=#000000,"numberColor":color=#ed9b00,"startIndex":0..9999=1,"atTop":bool=true,"atBottom":bool=true,"holeOffset":0..0.3=0.04,"holeWidth":0.005..0.5=0.056,"holeHeight":0.005..0.3=0.08,"holeSpacing":0.01..1=0.08,"fitHeight":bool=true,"font":"compact|classic","numberHeight":0..0.3=0,"images":json}"##
         ),
         cmd!(
             "filter.decor.fuzzyBorder",

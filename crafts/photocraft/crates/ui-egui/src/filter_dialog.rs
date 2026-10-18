@@ -363,6 +363,7 @@ pub fn has_dialog(command: &str) -> bool {
         return false;
     }
     (command.starts_with("filter.")
+        || command.starts_with("web.imageMap.")
         || command.starts_with("select.modify.")
         || PREVIEWED.contains(&command)
         || matches!(
@@ -946,6 +947,10 @@ pub fn body(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
         ui.add_space(4.0);
         ui.add(egui::Label::new(egui::RichText::new(note).color(t.text_dim)).wrap());
     }
+    // Curve Bend: the upper and lower edge curves are drawn, not typed (PH-FLT-042).
+    if cmd == "filter.distort.curveBend" {
+        crate::curve_bend_ui::controls(ui, f);
+    }
     if supports_blending(f) {
         blending_options(ui, &cmd, f);
     }
@@ -963,6 +968,9 @@ pub fn body(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
 /// section has drawn.
 const BLEND: &str = "blend";
 const OPACITY: &str = "opacity";
+/// Clipping (`adjust` / `clip`) and colour space (`perceptual` / `linear`), unset at the defaults.
+const CLIPPING: &str = "clipping";
+const COLOR_SPACE: &str = "colorSpace";
 
 /// Filter commands run by something other than the shared filter runner, which is where
 /// `blend` / `opacity` are applied: these get no Blending Options (Edit › Fade still works).
@@ -978,6 +986,15 @@ const OWN_RUNNER: &[&str] = &[
     "filter.render.clouds",
     "filter.render.differenceClouds",
     "filter.filterGallery",
+    // Script-like commands of the fourth batch (filters_more): they drive other commands and
+    // edit the document directly.
+    "filter.decor.addBorder",
+    "filter.render.fog",
+    "filter.decor.oldPhoto",
+    "filter.decor.roundCorners",
+    "filter.map.tile",
+    "filter.combine.depthMerge",
+    "filter.render.geometricShapes",
 ];
 
 /// Whether the dialog with fields `f` gets Blending Options: a Filter menu dialog on the shared
@@ -1018,6 +1035,30 @@ fn blending_options(ui: &mut egui::Ui, cmd: &str, f: &mut Map<String, Value>) {
     } else {
         f.insert(OPACITY.into(), json!(opacity));
     }
+    // Clipping: Clip keeps the result inside the canvas; Adjust lets a blur or shadow grow the
+    // layer past it. Colour space: the filter runs on perceptual (display) or linear-light pixels.
+    let mut clipping = f.get(CLIPPING).and_then(Value::as_str).unwrap_or("clip").to_string();
+    let clip_opts: Vec<(String, &str)> = vec![("clip".into(), tl!("Clip")), ("adjust".into(), tl!("Adjust"))];
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Clipping")).color(t.text_dim));
+        crate::widgets::dropdown(ui, &format!("flt-{cmd}-clipping"), &mut clipping, &clip_opts, 170.0);
+    });
+    if clipping == "clip" {
+        f.remove(CLIPPING);
+    } else {
+        f.insert(CLIPPING.into(), json!(clipping));
+    }
+    let mut space = f.get(COLOR_SPACE).and_then(Value::as_str).unwrap_or("perceptual").to_string();
+    let space_opts: Vec<(String, &str)> = vec![("perceptual".into(), tl!("Perceptual")), ("linear".into(), tl!("Linear light"))];
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Color Space")).color(t.text_dim));
+        crate::widgets::dropdown(ui, &format!("flt-{cmd}-colorSpace"), &mut space, &space_opts, 170.0);
+    });
+    if space == "perceptual" {
+        f.remove(COLOR_SPACE);
+    } else {
+        f.insert(COLOR_SPACE.into(), json!(space));
+    }
 }
 
 /// A new seed for a dialog's Random button: 0..=30000 (what the field takes), never `current`.
@@ -1032,7 +1073,7 @@ fn random_seed(entropy: u64, current: i64) -> i64 {
 /// User-facing params (strip the dialog's private `__` keys).
 pub fn params_of(f: &Map<String, Value>) -> Value {
     // A document picker left at "None" (-1) means "not given".
-    let unset = |k: &str, v: &Value| k == "mapDocument" && v.as_i64() == Some(-1);
+    let unset = |k: &str, v: &Value| k.ends_with("Document") && v.as_i64() == Some(-1);
     Value::Object(f.iter().filter(|(k, v)| !k.starts_with("__") && !unset(k, v)).map(|(k, v)| (k.clone(), v.clone())).collect())
 }
 

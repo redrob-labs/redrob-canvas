@@ -214,6 +214,12 @@ pub enum StrokeShape {
     Square,
     Line,
     Splotch,
+    Circle,
+    Triangle,
+    Diamond,
+    Star,
+    /// A supplied greyscale brush image (`brushPath`): bright pixels paint.
+    Image,
 }
 
 /// Impressionist stroke placement.

@@ -4822,3 +4822,134 @@ navigator	Zoom	Zoom
 	Ycbcr709	YCbCr 709
 	Ycbcr470f	YCbCr 470 rango completo
 	Ycbcr709f	YCbCr 709 rango completo
+	Variable Blur…	Desenfoque variable…
+	Apply Lens…	Aplicar lente…
+	Mosaic Tiles…	Mosaico de azulejos…
+	Newsprint…	Papel de periódico…
+	Curve Bend…	Curvar según curva…
+	Warp (Map)…	Deformar (mapa)…
+	Bloom…	Resplandor…
+	Sobel…	Sobel…
+	Cartoon…	Viñeta…
+	Clothify…	Textura de tela…
+	Stencil Chrome…	Cromado de plantilla…
+	Bump Map…	Mapa de relieve…
+	Panorama Projection…	Proyección panorámica…
+	Perlin Noise…	Ruido Perlin…
+	Plasma…	Plasma…
+	Solid Noise…	Ruido sólido…
+	Add Border…	Añadir borde…
+	Fog…	Niebla…
+	Old Photo…	Foto antigua…
+	Round Corners…	Redondear esquinas…
+	Tile…	Enlosar…
+	Depth Merge…	Fusión de profundidad…
+	Geometric Shapes…	Formas geométricas…
+	Image Map Area…	Área de mapa de imagen…
+	Image Map From Slices	Mapa de imagen desde sectores
+	Export Image Map…	Exportar mapa de imagen…
+	Clear Image Map	Borrar mapa de imagen
+	Combine	Combinar
+	Clipping	Recorte
+	Color Space	Espacio de color
+	Linear light	Luz lineal
+	Copy upper to lower	Copiar superior a inferior
+	Swap curves	Intercambiar curvas
+	Mirror	Reflejar
+	Add Background	Añadir fondo
+	Allow Splitting	Permitir división
+	Angle2	Ángulo 2
+	Angle3	Ángulo 3
+	Angle4	Ángulo 4
+	Aux Input	Entrada auxiliar
+	Azimuth	Acimut
+	Bezier	Bézier
+	Black On White	Negro sobre blanco
+	Black Pullout	Extracción de negro
+	Blur X	Desenfoque X
+	Blur Y	Desenfoque Y
+	Border X	Borde X
+	Border Y	Borde Y
+	Bright Star	Estrella brillante
+	Brush Path	Ruta del pincel
+	Chrome Balance	Equilibrio del cromo
+	Chrome Factor	Factor de cromo
+	Chrome Lightness	Luminosidad del cromo
+	Chrome Saturation	Saturación del cromo
+	Cold Rings	Anillos fríos
+	Color Averaging	Promedio de color
+	Color Model	Modelo de color
+	Color Variation	Variación de color
+	Compact	Compacto
+	Compensate	Compensar
+	Defocus	Desenfocar
+	Delta	Delta
+	Design	Diseño
+	Distant Sun	Sol lejano
+	Edge Radius	Radio del borde
+	Fit Height	Ajustar a la altura
+	Hexagons	Hexágonos
+	Hidden Planet	Planeta oculto
+	High Quality	Alta calidad
+	Highlight Balance	Equilibrio de luces
+	Inner Ratio	Proporción interior
+	Joints Color	Color de las juntas
+	Keep Sign	Conservar signo
+	Keep Surroundings	Conservar entorno
+	Layer Name	Nombre de capa
+	Light Color	Color de la luz
+	Limit Exposure	Limitar exposición
+	Linear Mask	Máscara lineal
+	Magnitude Document	Documento de magnitud
+	Magnitude Path	Ruta de magnitud
+	Mask Radius	Radio de máscara
+	Mottle	Moteado
+	New Image	Nueva imagen
+	Number Height	Altura de los números
+	Octagons	Octágonos
+	On Edges	En los bordes
+	Overlap	Superposición
+	Paper Path	Ruta del papel
+	Paper Scale	Escala del papel
+	Pattern2	Patrón 2
+	Pattern3	Patrón 3
+	Pattern4	Patrón 4
+	Percent Black	Porcentaje de negro
+	Period	Periodo
+	Period2	Periodo 2
+	Period3	Periodo 3
+	Period4	Periodo 4
+	Pie	Sector
+	Plain	Liso
+	Ps Square	Cuadrado PS
+	Ray Count	Número de rayos
+	Refraction Index	Índice de refracción
+	Rotation Angle	Ángulo de rotación
+	Rough	Rugoso
+	Scale1	Escala 1
+	Scale2	Escala 2
+	Second Flare Count	Número de destellos secundarios
+	Self	Propio
+	Shadow X	Sombra X
+	Shadow Y	Sombra Y
+	Soft Glow	Resplandor suave
+	Spherical	Esférico
+	Squares	Cuadrados
+	Star Ratio	Proporción de estrella
+	Start Angle	Ángulo inicial
+	Step Size	Tamaño de paso
+	Substeps	Subpasos
+	Sweep Angle	Ángulo de barrido
+	Tile Height	Altura de azulejo
+	Tile Neatness	Regularidad de azulejos
+	Tile Spacing	Espaciado de azulejos
+	Tile Type	Tipo de azulejo
+	Tiled	En mosaico
+	Triangles	Triángulos
+	Turns	Vueltas
+	Waterlevel	Nivel del agua
+	White On Black	Blanco sobre negro
+	Work On Copy	Trabajar en copia
+	X Size	Tamaño X
+	Y Size	Tamaño Y
+	Z Offset	Desplazamiento Z

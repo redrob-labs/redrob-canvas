@@ -39,6 +39,7 @@ mod distort3;
 pub mod erase;
 pub mod exif;
 mod extra;
+mod extra2;
 pub mod features;
 mod fxutil;
 mod gallery;
@@ -100,10 +101,12 @@ pub use image::{Edge, Image};
 pub use params_ext::*;
 pub use params_extra::*;
 pub use params_gen::*;
+pub use params_more::*;
 
 mod params_ext;
 mod params_extra;
 mod params_gen;
+mod params_more;
 
 use redrob_photo_color::ColorMode;
 use redrob_photo_geom::Rect;
@@ -703,6 +706,16 @@ pub enum FilterParams {
         glow: bool,
         rays: bool,
         second_flares: bool,
+        /// Built-in design; ray count, glow size (%) and ghost count override it when non-zero
+        /// (100 = the design's glow size).
+        #[serde(default)]
+        design: FlareDesign,
+        #[serde(default)]
+        ray_count: u32,
+        #[serde(default = "default_glow_size")]
+        glow_size: f32,
+        #[serde(default)]
+        ghost_count: u32,
     },
     /// Threshold 0–0.1, intensities 0–1, spike length 1–100 px, points 0–16, angle −1 (random)
     /// to 360.
@@ -862,6 +875,16 @@ pub enum FilterParams {
         background: StrokeBackground,
         background_color: [f32; 4],
         seed: u32,
+        /// Paper texture under the relief, its scale (px per weave), and the paper / brush
+        /// images supplied by the caller (`paperPath` / `brushPath`).
+        #[serde(default)]
+        paper: PaperTexture,
+        #[serde(default = "default_paper_scale")]
+        paper_scale: f32,
+        #[serde(skip)]
+        paper_map: Option<std::sync::Arc<Image>>,
+        #[serde(skip)]
+        brush_map: Option<std::sync::Arc<Image>>,
     },
     /// Filter length 0.1–64, noise magnitude 1–5, steps 1–40, values −100–0 / 0–100.
     VanGogh {
@@ -898,6 +921,16 @@ pub enum FilterParams {
         hole_width: f32,
         hole_height: f32,
         hole_spacing: f32,
+        /// Scale frames to the frame height; number font and height (fraction of the film
+        /// height, 0 = automatic); the pictures (supplied by the caller; empty = the layer).
+        #[serde(default = "default_true")]
+        fit_height: bool,
+        #[serde(default)]
+        font: FilmFont,
+        #[serde(default)]
+        number_height: f32,
+        #[serde(skip)]
+        frames: Vec<std::sync::Arc<Image>>,
     },
     /// Border size 1–300 px, granularity 1–16, shadow weight 0–100 %.
     FuzzyBorder {
@@ -1227,6 +1260,168 @@ pub enum FilterParams {
     FilterGallery {
         effects: Vec<GalleryEffect>,
     },
+
+    // ---- Fourth batch (v0.11 parity) ----
+    /// Radius px scaled per pixel by a mask (external map, layer mask or the layer's alpha).
+    VariableBlur {
+        radius: f32,
+        linear_mask: bool,
+        high_quality: bool,
+        invert: bool,
+        source: MaskSource,
+        #[serde(skip)]
+        map: Option<std::sync::Arc<Image>>,
+    },
+    /// Refraction index 1–100; the surroundings stay or take `background`.
+    ApplyLens {
+        refraction: f32,
+        keep_surroundings: bool,
+        background: [f32; 4],
+    },
+    /// Tile size / height / spacing px, neatness and variation 0–1, light direction degrees.
+    MosaicTiles {
+        tile: MosaicTile,
+        size: f32,
+        height: f32,
+        spacing: f32,
+        neatness: f32,
+        allow_splitting: bool,
+        color_variation: f32,
+        light_direction: f32,
+        antialiasing: bool,
+        color_averaging: bool,
+        joints_color: [f32; 4],
+        light_color: [f32; 4],
+        seed: u32,
+    },
+    /// One halftone screen per ink: pattern, period px and angle degrees.
+    Newsprint {
+        model: NewsprintModel,
+        pattern: [ScreenPattern; 4],
+        period: [f32; 4],
+        angle: [f32; 4],
+        black_pullout: f32,
+        antialiasing: u32,
+        turbulence: f32,
+        seed: u32,
+    },
+    /// Upper / lower edge curves as (x, y) in 0..1 (y 0.5 = straight), rotation degrees.
+    CurveBend {
+        upper: Vec<[f32; 2]>,
+        lower: Vec<[f32; 2]>,
+        rotation: f32,
+        smoothing: bool,
+        antialias: bool,
+    },
+    /// Threshold / softness / strength %, radius px.
+    Bloom {
+        threshold: f32,
+        softness: f32,
+        radius: f32,
+        strength: f32,
+        limit_exposure: bool,
+    },
+    Sobel {
+        horizontal: bool,
+        vertical: bool,
+        keep_sign: bool,
+    },
+    /// Mask radius px, percent black 0–1.
+    Cartoon {
+        mask_radius: f32,
+        pct_black: f32,
+    },
+    /// Blur px, azimuth / elevation degrees, depth.
+    Clothify {
+        blur_x: f32,
+        blur_y: f32,
+        azimuth: f32,
+        elevation: f32,
+        depth: f32,
+        seed: u32,
+    },
+    /// Saturation / lightness / balances −100–100, factor 0–1; optional environment map.
+    StencilChrome {
+        saturation: f32,
+        lightness: f32,
+        factor: f32,
+        highlight_balance: f32,
+        chrome_balance: f32,
+        #[serde(skip)]
+        map: Option<std::sync::Arc<Image>>,
+    },
+    /// Azimuth / elevation degrees, depth 1–65, offsets px, water level and ambient 0–1.
+    BumpMap {
+        kind: BumpType,
+        compensate: bool,
+        invert: bool,
+        tiled: bool,
+        azimuth: f32,
+        elevation: f32,
+        depth: f32,
+        offset_x: i32,
+        offset_y: i32,
+        waterlevel: f32,
+        ambient: f32,
+        source: MaskSource,
+        #[serde(skip)]
+        map: Option<std::sync::Arc<Image>>,
+    },
+    /// Pan / tilt / spin degrees, zoom % (100 = 90° field of view).
+    PanoramaProjection {
+        pan: f32,
+        tilt: f32,
+        spin: f32,
+        zoom: f32,
+        inverse: bool,
+        sampler: PanoSampler,
+    },
+    /// Step px, iterations, rotation degrees; displacement and magnitude maps from the caller.
+    WarpMap {
+        step_size: f32,
+        iterations: u32,
+        on_edges: WarpEdge,
+        dither: f32,
+        rotation_angle: f32,
+        substeps: u32,
+        edge_color: [f32; 4],
+        seed: u32,
+        #[serde(skip)]
+        map: Option<std::sync::Arc<Image>>,
+        #[serde(skip)]
+        magnitude: Option<std::sync::Arc<Image>>,
+    },
+    /// Alpha 0–4 (octave falloff), scale 0–20, z offset, iterations 1–8.
+    PerlinNoise {
+        alpha: f32,
+        scale: f32,
+        z_offset: f32,
+        iterations: u32,
+    },
+    /// Turbulence 0.1–7.
+    Plasma {
+        turbulence: f32,
+        seed: u32,
+    },
+    /// Sizes 0.1–16 cells, detail 0–15 octaves.
+    SolidNoise {
+        x_size: f32,
+        y_size: f32,
+        detail: u32,
+        tileable: bool,
+        turbulent: bool,
+        seed: u32,
+    },
+}
+
+fn default_glow_size() -> f32 {
+    100.0
+}
+fn default_paper_scale() -> f32 {
+    6.0
+}
+fn default_true() -> bool {
+    true
 }
 
 impl FilterParams {
@@ -1273,7 +1468,7 @@ impl FilterParams {
     /// that can hold transparency, so callers turn the Background into a normal layer first and
     /// refuse a layer whose transparency is locked instead of putting the old alpha back.
     pub fn makes_transparency(&self) -> bool {
-        matches!(self, FilterParams::ColorToAlpha { .. } | FilterParams::PageCurl { .. })
+        matches!(self, FilterParams::ColorToAlpha { .. } | FilterParams::PageCurl { .. } | FilterParams::CurveBend { .. })
     }
 
     /// Whether the filter moves pixels around the reference bounds (its
@@ -1428,6 +1623,9 @@ fn gen_renders_from_nothing(p: &FilterParams) -> bool {
             | FilterParams::Spirograph { .. }
             | FilterParams::Slide { .. }
             | FilterParams::CoffeeStain { .. }
+            | FilterParams::PerlinNoise { .. }
+            | FilterParams::Plasma { .. }
+            | FilterParams::SolidNoise { .. }
     )
 }
 
@@ -1465,6 +1663,29 @@ fn gen_label(p: &FilterParams) -> &'static str {
         FilterParams::CoffeeStain { .. } => "Coffee Stain",
         FilterParams::StencilCarve { .. } => "Stencil Carve",
         FilterParams::SemiFlatten { .. } => "Semi-Flatten",
+        other => extra2_label(other),
+    }
+}
+
+/// Labels of the fourth batch.
+fn extra2_label(p: &FilterParams) -> &'static str {
+    match p {
+        FilterParams::VariableBlur { .. } => "Variable Blur",
+        FilterParams::ApplyLens { .. } => "Apply Lens",
+        FilterParams::MosaicTiles { .. } => "Mosaic Tiles",
+        FilterParams::Newsprint { .. } => "Newsprint",
+        FilterParams::CurveBend { .. } => "Curve Bend",
+        FilterParams::Bloom { .. } => "Bloom",
+        FilterParams::Sobel { .. } => "Sobel",
+        FilterParams::Cartoon { .. } => "Cartoon",
+        FilterParams::Clothify { .. } => "Clothify",
+        FilterParams::StencilChrome { .. } => "Stencil Chrome",
+        FilterParams::BumpMap { .. } => "Bump Map",
+        FilterParams::PanoramaProjection { .. } => "Panorama Projection",
+        FilterParams::WarpMap { .. } => "Warp",
+        FilterParams::PerlinNoise { .. } => "Perlin Noise",
+        FilterParams::Plasma { .. } => "Plasma",
+        FilterParams::SolidNoise { .. } => "Solid Noise",
         _ => "Filter",
     }
 }
@@ -1554,6 +1775,18 @@ fn halo_extra(p: &FilterParams) -> Halo {
         | FilterParams::SmallTiles { .. }
         | FilterParams::SphereDesigner { .. }
         | FilterParams::CmlExplorer { .. } => Halo::Bounds,
+        // Fourth batch.
+        FilterParams::VariableBlur { radius, .. } => r(extra2::variable_blur_reach(*radius)),
+        FilterParams::Bloom { radius, .. } => r(extra2::bloom_reach(*radius)),
+        FilterParams::Sobel { .. } => r(1.0),
+        FilterParams::Cartoon { mask_radius, .. } => r(extra2::cartoon_reach(*mask_radius)),
+        FilterParams::Clothify { blur_x, blur_y, .. } => r(extra2::clothify_reach(*blur_x, *blur_y)),
+        FilterParams::StencilChrome { .. } => r(extra2::surface::chrome_reach()),
+        FilterParams::BumpMap { .. } => r(2.0),
+        FilterParams::MosaicTiles { size, .. } => r(extra2::distort::mosaic_reach(*size)),
+        FilterParams::ApplyLens { .. } | FilterParams::CurveBend { .. } | FilterParams::PanoramaProjection { .. } | FilterParams::WarpMap { .. } => {
+            Halo::Bounds
+        }
         // The other generators and the per-pixel decor filters only need the bounds geometry.
         _ => Halo::Radius(0),
     }
@@ -1821,24 +2054,41 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
                 seed: *seed,
             },
         ),
-        FilterParams::GradientFlare { center_x, center_y, radius, rotation, hue_rotation, vector_angle, vector_length, glow, rays, second_flares } => {
-            extra::light::gradient_flare(
-                src,
-                out,
-                ctx,
-                &extra::light::FlareSpec {
-                    center: (*center_x, *center_y),
-                    radius: *radius,
-                    rotation: *rotation,
-                    hue_rotation: *hue_rotation,
-                    vector_angle: *vector_angle,
-                    vector_length: *vector_length,
-                    glow: *glow,
-                    rays: *rays,
-                    second_flares: *second_flares,
-                },
-            )
-        }
+        FilterParams::GradientFlare {
+            center_x,
+            center_y,
+            radius,
+            rotation,
+            hue_rotation,
+            vector_angle,
+            vector_length,
+            glow,
+            rays,
+            second_flares,
+            design,
+            ray_count,
+            glow_size,
+            ghost_count,
+        } => extra::light::gradient_flare(
+            src,
+            out,
+            ctx,
+            &extra::light::FlareSpec {
+                center: (*center_x, *center_y),
+                radius: *radius,
+                rotation: *rotation,
+                hue_rotation: *hue_rotation,
+                vector_angle: *vector_angle,
+                vector_length: *vector_length,
+                glow: *glow,
+                rays: *rays,
+                second_flares: *second_flares,
+                design: *design,
+                ray_count: *ray_count,
+                glow_size: *glow_size,
+                ghost_count: *ghost_count,
+            },
+        ),
         FilterParams::Sparkle {
             threshold,
             flare_intensity,
@@ -1963,6 +2213,10 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
             background,
             background_color,
             seed,
+            paper,
+            paper_scale,
+            paper_map,
+            brush_map,
         } => extra::artistic::impressionist(
             src,
             out,
@@ -1980,6 +2234,10 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
                 background: *background,
                 background_color: *background_color,
                 seed: *seed,
+                paper: *paper,
+                paper_scale: *paper_scale,
+                paper_map: paper_map.as_deref(),
+                brush_map: brush_map.as_deref(),
             },
         ),
         FilterParams::VanGogh { channel, operator, convolve, filter_length, noise_magnitude, integration_steps, minimum_value, maximum_value, seed } => {
@@ -2016,24 +2274,40 @@ pub fn kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
                 },
             )
         }
-        FilterParams::Filmstrip { color, number_color, number_start, numbers_top, numbers_bottom, hole_offset, hole_width, hole_height, hole_spacing } => {
-            extra::decor::filmstrip(
-                src,
-                out,
-                ctx,
-                &extra::decor::FilmstripSpec {
-                    color: *color,
-                    number_color: *number_color,
-                    number_start: *number_start,
-                    numbers_top: *numbers_top,
-                    numbers_bottom: *numbers_bottom,
-                    hole_offset: *hole_offset,
-                    hole_width: *hole_width,
-                    hole_height: *hole_height,
-                    hole_spacing: *hole_spacing,
-                },
-            )
-        }
+        FilterParams::Filmstrip {
+            color,
+            number_color,
+            number_start,
+            numbers_top,
+            numbers_bottom,
+            hole_offset,
+            hole_width,
+            hole_height,
+            hole_spacing,
+            fit_height,
+            font,
+            number_height,
+            frames,
+        } => extra::decor::filmstrip(
+            src,
+            out,
+            ctx,
+            &extra::decor::FilmstripSpec {
+                color: *color,
+                number_color: *number_color,
+                number_start: *number_start,
+                numbers_top: *numbers_top,
+                numbers_bottom: *numbers_bottom,
+                hole_offset: *hole_offset,
+                hole_width: *hole_width,
+                hole_height: *hole_height,
+                hole_spacing: *hole_spacing,
+                fit_height: *fit_height,
+                font: *font,
+                number_height: *number_height,
+                frames,
+            },
+        ),
         FilterParams::FuzzyBorder { color, size, blur, granularity, shadow, shadow_weight, seed } => extra::decor::fuzzy_border(
             src,
             out,
@@ -2387,6 +2661,163 @@ fn kernel_gen(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f
         FilterParams::CoffeeStain { stains, darken_only, seed } => decor::coffee_stain(src, out, ctx, *stains, *darken_only, *seed),
         FilterParams::StencilCarve { carve_white, map } => decor::stencil_carve(src, out, ctx, *carve_white, map.as_deref()),
         FilterParams::SemiFlatten { background } => decor::semi_flatten(src, out, ctx, *background),
+        other => extra2_kernel(other, src, out, ctx),
+    }
+}
+
+/// Kernels of the fourth batch.
+fn extra2_kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f32> {
+    match params {
+        FilterParams::VariableBlur { radius, linear_mask, high_quality, invert, source, map } => extra2::variable_blur(
+            src,
+            out,
+            ctx,
+            &extra2::VariableBlurSpec {
+                radius: *radius,
+                linear_mask: *linear_mask,
+                high_quality: *high_quality,
+                invert: *invert,
+                source: *source,
+                map: map.as_deref(),
+            },
+        ),
+        FilterParams::ApplyLens { refraction, keep_surroundings, background } => {
+            extra2::distort::apply_lens(src, out, ctx, *refraction, *keep_surroundings, *background)
+        }
+        FilterParams::MosaicTiles {
+            tile,
+            size,
+            height,
+            spacing,
+            neatness,
+            allow_splitting,
+            color_variation,
+            light_direction,
+            antialiasing,
+            color_averaging,
+            joints_color,
+            light_color,
+            seed,
+        } => extra2::distort::mosaic(
+            src,
+            out,
+            ctx,
+            &extra2::distort::MosaicSpec {
+                tile: *tile,
+                size: *size,
+                height: *height,
+                spacing: *spacing,
+                neatness: *neatness,
+                allow_splitting: *allow_splitting,
+                color_variation: *color_variation,
+                light_direction: *light_direction,
+                antialiasing: *antialiasing,
+                color_averaging: *color_averaging,
+                joints_color: *joints_color,
+                light_color: *light_color,
+                seed: *seed,
+            },
+        ),
+        FilterParams::Newsprint { model, pattern, period, angle, black_pullout, antialiasing, turbulence, seed } => extra2::distort::newsprint(
+            src,
+            out,
+            ctx,
+            &extra2::distort::NewsprintSpec {
+                model: *model,
+                pattern: *pattern,
+                period: *period,
+                angle: *angle,
+                black_pullout: *black_pullout,
+                antialiasing: *antialiasing,
+                turbulence: *turbulence,
+                seed: *seed,
+            },
+        ),
+        FilterParams::CurveBend { upper, lower, rotation, smoothing, antialias } => extra2::distort::curve_bend(
+            src,
+            out,
+            ctx,
+            &extra2::distort::CurveBendSpec { upper: upper.clone(), lower: lower.clone(), rotation: *rotation, smoothing: *smoothing, antialias: *antialias },
+        ),
+        FilterParams::Bloom { threshold, softness, radius, strength, limit_exposure } => extra2::bloom(
+            src,
+            out,
+            ctx,
+            &extra2::BloomSpec { threshold: *threshold, softness: *softness, radius: *radius, strength: *strength, limit_exposure: *limit_exposure },
+        ),
+        FilterParams::Sobel { horizontal, vertical, keep_sign } => extra2::sobel(src, out, ctx, *horizontal, *vertical, *keep_sign),
+        FilterParams::Cartoon { mask_radius, pct_black } => extra2::cartoon(src, out, ctx, *mask_radius, *pct_black),
+        FilterParams::Clothify { blur_x, blur_y, azimuth, elevation, depth, seed } => extra2::clothify(
+            src,
+            out,
+            ctx,
+            &extra2::ClothifySpec { blur_x: *blur_x, blur_y: *blur_y, azimuth: *azimuth, elevation: *elevation, depth: *depth, seed: *seed },
+        ),
+        FilterParams::StencilChrome { saturation, lightness, factor, highlight_balance, chrome_balance, map } => extra2::surface::stencil_chrome(
+            src,
+            out,
+            ctx,
+            &extra2::surface::ChromeSpec {
+                saturation: *saturation,
+                lightness: *lightness,
+                factor: *factor,
+                highlight_balance: *highlight_balance,
+                chrome_balance: *chrome_balance,
+                environment: map.as_deref(),
+            },
+        ),
+        FilterParams::BumpMap { kind, compensate, invert, tiled, azimuth, elevation, depth, offset_x, offset_y, waterlevel, ambient, source, map } => {
+            extra2::surface::bump_map(
+                src,
+                out,
+                ctx,
+                &extra2::surface::BumpMapSpec {
+                    kind: *kind,
+                    compensate: *compensate,
+                    invert: *invert,
+                    tiled: *tiled,
+                    azimuth: *azimuth,
+                    elevation: *elevation,
+                    depth: *depth,
+                    offset_x: *offset_x,
+                    offset_y: *offset_y,
+                    waterlevel: *waterlevel,
+                    ambient: *ambient,
+                    source: *source,
+                    map: map.as_deref(),
+                },
+            )
+        }
+        FilterParams::PanoramaProjection { pan, tilt, spin, zoom, inverse, sampler } => extra2::distort::panorama(
+            src,
+            out,
+            ctx,
+            &extra2::distort::PanoramaSpec { pan: *pan, tilt: *tilt, spin: *spin, zoom: *zoom, inverse: *inverse, sampler: *sampler },
+        ),
+        FilterParams::WarpMap { step_size, iterations, on_edges, dither, rotation_angle, substeps, edge_color, seed, map, magnitude } => {
+            extra2::distort::warp_map(
+                src,
+                out,
+                ctx,
+                &extra2::distort::WarpMapSpec {
+                    step_size: *step_size,
+                    iterations: *iterations,
+                    on_edges: *on_edges,
+                    dither: *dither,
+                    rotation_angle: *rotation_angle,
+                    substeps: *substeps,
+                    edge_color: *edge_color,
+                    seed: *seed,
+                    map: map.as_deref(),
+                    magnitude: magnitude.as_deref(),
+                },
+            )
+        }
+        FilterParams::PerlinNoise { alpha, scale, z_offset, iterations } => extra2::noise::perlin_noise(src, out, ctx, *alpha, *scale, *z_offset, *iterations),
+        FilterParams::Plasma { turbulence, seed } => extra2::noise::plasma(src, out, ctx, *turbulence, *seed),
+        FilterParams::SolidNoise { x_size, y_size, detail, tileable, turbulent, seed } => {
+            extra2::noise::solid_noise(src, out, ctx, *x_size, *y_size, *detail, *tileable, *turbulent, *seed)
+        }
         _ => src.crop(out),
     }
 }

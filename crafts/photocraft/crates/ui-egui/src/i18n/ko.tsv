@@ -4044,3 +4044,140 @@ curves	Smooth	매끄럽게
 	Ycbcr709	YCbCr 709
 	Ycbcr470f	YCbCr 470 전체 범위
 	Ycbcr709f	YCbCr 709 전체 범위
+	Variable Blur…	가변 흐림…
+	Apply Lens…	렌즈 적용…
+	Mosaic Tiles…	모자이크 타일…
+	Newsprint…	신문 인쇄…
+	Curve Bend…	곡선 굽힘…
+	Warp (Map)…	뒤틀기 (맵)…
+	Bloom…	블룸…
+	Sobel…	소벨…
+	Cartoon…	카툰…
+	Clothify…	천 질감…
+	Stencil Chrome…	스텐실 크롬…
+	Bump Map…	범프 맵…
+	Panorama Projection…	파노라마 투영…
+	Perlin Noise…	펄린 노이즈…
+	Plasma…	플라즈마…
+	Solid Noise…	솔리드 노이즈…
+	Add Border…	테두리 추가…
+	Fog…	안개…
+	Old Photo…	오래된 사진…
+	Round Corners…	모서리 둥글게…
+	Tile…	타일…
+	Depth Merge…	깊이 병합…
+	Geometric Shapes…	기하 도형…
+	Image Map Area…	이미지 맵 영역…
+	Image Map From Slices	분할 영역에서 이미지 맵 만들기
+	Export Image Map…	이미지 맵 내보내기…
+	Clear Image Map	이미지 맵 지우기
+	Combine	결합
+	Clipping	클리핑
+	Color Space	색상 공간
+	Linear light	선형 광
+	Copy upper to lower	위쪽을 아래쪽에 복사
+	Swap curves	곡선 바꾸기
+	Mirror	대칭
+	Add Background	배경 추가
+	Allow Splitting	분할 허용
+	Angle2	각도 2
+	Angle3	각도 3
+	Angle4	각도 4
+	Arc	호
+	Aux Input	보조 입력
+	Azimuth	방위각
+	Bezier	베지어
+	Black On White	흰 바탕에 검정
+	Black Pullout	검정 빼기
+	Blur X	흐림 X
+	Blur Y	흐림 Y
+	Border X	테두리 X
+	Border Y	테두리 Y
+	Bright Star	밝은 별
+	Brush Path	브러시 경로
+	Chrome Balance	크롬 균형
+	Chrome Factor	크롬 계수
+	Chrome Lightness	크롬 명도
+	Chrome Saturation	크롬 채도
+	Cold Rings	차가운 고리
+	Color Averaging	색상 평균화
+	Color Model	색상 모델
+	Color Variation	색상 변화
+	Compact	콤팩트
+	Compensate	보정
+	Defocus	초점 흐리기
+	Delta	델타
+	Design	디자인
+	Distant Sun	먼 태양
+	Edge Radius	가장자리 반경
+	Fill Color	칠 색상
+	Fit Height	높이에 맞춤
+	Hexagons	육각형
+	Hidden Planet	숨은 행성
+	High Quality	고품질
+	Highlight Balance	하이라이트 균형
+	Inner Ratio	내부 비율
+	Invert Mask	마스크 반전
+	Joints Color	접합부 색상
+	Keep Sign	부호 유지
+	Keep Surroundings	주변 유지
+	Layer Name	레이어 이름
+	Light Color	광원 색상
+	Limit Exposure	노출 제한
+	Linear Mask	선형 마스크
+	Magnitude Document	크기 맵 문서
+	Magnitude Path	크기 맵 경로
+	Mask	마스크
+	Mask Radius	마스크 반경
+	Mottle	얼룩
+	New Image	새 이미지
+	Number Height	숫자 높이
+	Octagons	팔각형
+	On Edges	가장자리 처리
+	Overlap	겹침
+	Paper Path	종이 경로
+	Paper Scale	종이 배율
+	Pattern2	패턴 2
+	Pattern3	패턴 3
+	Pattern4	패턴 4
+	Percent Black	검정 비율
+	Period	주기
+	Period2	주기 2
+	Period3	주기 3
+	Period4	주기 4
+	Pie	파이
+	Plain	무지
+	Ps Square	PS 사각형
+	Ray Count	광선 수
+	Rectangle	직사각형
+	Refraction Index	굴절률
+	Rotation Angle	회전 각도
+	Rough	거친
+	Sampler	샘플러
+	Scale1	배율 1
+	Scale2	배율 2
+	Second Flare Count	보조 플레어 수
+	Self	자체
+	Shadow X	그림자 X
+	Shadow Y	그림자 Y
+	Soft Glow	부드러운 빛
+	Spherical	구형
+	Squares	사각형
+	Star Ratio	별 비율
+	Start Angle	시작 각도
+	Step Size	단계 크기
+	Substeps	하위 단계
+	Sweep Angle	호 각도
+	Tile Height	타일 높이
+	Tile Neatness	타일 정돈도
+	Tile Spacing	타일 간격
+	Tile Type	타일 유형
+	Tiled	타일식
+	Triangles	삼각형
+	Turns	회전 수
+	Waterlevel	수위
+	White On Black	검은 바탕에 흰색
+	Work On Copy	복사본에서 작업
+	X Size	X 크기
+	Y Size	Y 크기
+	Z Offset	Z 오프셋

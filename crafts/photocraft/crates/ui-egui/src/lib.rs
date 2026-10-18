@@ -69,6 +69,7 @@ pub mod crop_shield;
 pub mod crop_size;
 pub mod crop_straighten;
 pub mod crop_ui;
+pub mod curve_bend_ui;
 pub mod delete_layer_prompt;
 pub mod dialog_alt_reset;
 pub mod dialog_blend_ui;
