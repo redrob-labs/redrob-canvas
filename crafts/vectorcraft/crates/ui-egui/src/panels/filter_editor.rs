@@ -33,8 +33,81 @@ fn commit(app: &mut VectorcraftApp, index: usize, g: &FilterGraph) {
     }
 }
 
+/// Does the first selected object carry a filter graph?
+pub fn has_filter(app: &VectorcraftApp) -> bool {
+    current(app).is_some()
+}
+
+/// Remove the first selected object's filter graph.
+pub fn remove_filter(app: &mut VectorcraftApp) {
+    if let Some((index, _)) = current(app)
+        && let Err(e) = app.run("effect.remove", json!({ "index": index, "item": Value::Null }))
+    {
+        app.ui.status = e;
+    }
+}
+
+/// Every filter graph in the document: (object id, object label, the graph), in paint order.
+fn document_filters(app: &VectorcraftApp) -> Vec<(u64, String, FilterGraph)> {
+    let mut out = vec![];
+    if let Some(st) = app.session.active() {
+        st.doc.walk(|n| {
+            for e in n.appearance.effects.iter().filter(|e| e.id == FILTER_GRAPH) {
+                let g = FilterGraph::from_params(&e.params);
+                let label = n.name.clone().unwrap_or_else(|| format!("{} {}", n.kind_label(), n.id.0));
+                out.push((n.id.0, label, g));
+            }
+        });
+    }
+    out
+}
+
+/// Panel state: the document filter list is open.
+const DOC_LIST_OPEN: &str = "filter-editor-doc-list";
+/// Panel state: the primitive a connection is being dragged from.
+const DRAG_FROM: &str = "filter-editor-drag-from";
+
 pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
+    // The document's filters: apply one to the selection, or a copy of it.
+    let open: bool = pstate(ui.ctx(), DOC_LIST_OPEN);
+    if widgets::section_toggle(ui, tl!("Document Filters"), open) {
+        set_pstate(ui.ctx(), DOC_LIST_OPEN, !open);
+    }
+    if open {
+        let filters = document_filters(app);
+        let mut apply: Option<(FilterGraph, bool)> = None;
+        if filters.is_empty() {
+            widgets::dim_label(ui, tl!("The document has no filters yet."));
+        }
+        for (_, label, g) in &filters {
+            ui.horizontal(|ui| {
+                let name = if g.name.is_empty() { tl!("Filter").to_string() } else { g.name.clone() };
+                ui.label(egui::RichText::new(format!("{name}  ({label}, {})", g.primitives.len())).color(t.text).size(12.0));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if widgets::icon_button(ui, "copy", tl!("Duplicate Filter"), false, 18.0).clicked() {
+                        apply = Some((g.clone(), true));
+                    }
+                    if widgets::icon_button_enabled(ui, "check", tl!("Apply to Selection"), false, selection_len(app) > 0, 18.0).clicked() {
+                        apply = Some((g.clone(), false));
+                    }
+                });
+            });
+        }
+        if let Some((mut g, duplicate)) = apply {
+            if duplicate {
+                g.name = if g.name.is_empty() { tl!("Filter copy").to_string() } else { format!("{} copy", g.name) };
+            }
+            let r = match current(app) {
+                Some((index, _)) => app.run("effect.setParams", json!({ "index": index, "item": Value::Null, "params": g.to_params() })),
+                None => app.run("effect.apply", json!({ "effect": FILTER_GRAPH, "item": Value::Null, "params": g.to_params() })),
+            };
+            if let Err(e) = r {
+                app.ui.status = e;
+            }
+        }
+        widgets::divider(ui);
+    }
     let Some((index, mut g)) = current(app) else {
         if selection_len(app) == 0 {
             super::empty_state(ui, "dc-fx", "No Selection", "Select an object to edit its SVG filter.");
@@ -52,6 +125,20 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         return;
     };
     let mut changed = false;
+    // The filter's name and colour space.
+    widgets::label_row(ui, tl!("Name:"), LABEL_W, |ui| {
+        if let Some(s) = widgets::exact_text_field(ui, "filter-name", &g.name, 140.0) {
+            g.name = s.trim().to_string();
+            changed = true;
+        }
+    });
+    widgets::label_row(ui, tl!("Colour Space:"), LABEL_W, |ui| {
+        let cur = if g.linear_rgb { "linearRGB" } else { "sRGB" };
+        if let Some(k) = widgets::dropdown_names(ui, "filter-interp", cur, &["sRGB", "linearRGB"], 110.0) {
+            g.linear_rgb = k == 1;
+            changed = true;
+        }
+    });
     // The filter region, as percentages of the object's bounds.
     widgets::subheader(ui, tl!("Filter Region"));
     ui.horizontal(|ui| {
@@ -79,9 +166,23 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 widgets::dim_label(ui, tl!("No primitives. Add one below."));
             }
             for (i, p) in g.primitives.iter().enumerate() {
-                let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 22.0), Sense::click());
+                let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 22.0), Sense::click_and_drag());
                 if resp.clicked() {
                     set_pstate(ui.ctx(), SELECTED, Some(i));
+                }
+                // Dragging a row's result onto a later row connects them: that row reads this one.
+                if resp.drag_started() {
+                    set_pstate(ui.ctx(), DRAG_FROM, Some(i));
+                }
+                let dragging: Option<usize> = pstate(ui.ctx(), DRAG_FROM);
+                if let Some(from) = dragging {
+                    let over = ui.input(|inp| inp.pointer.hover_pos()).is_some_and(|p| rect.contains(p));
+                    if over && from != i {
+                        ui.painter().rect_stroke(rect, 2.0, Stroke::new(1.5, t.accent), egui::StrokeKind::Inside);
+                    }
+                    if over && from < i && ui.input(|inp| inp.pointer.any_released()) {
+                        action = Some(Action::Connect(from, i));
+                    }
                 }
                 let is_sel = selected == Some(i);
                 if is_sel {
@@ -106,6 +207,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             }
         });
     });
+    if ui.input(|inp| inp.pointer.any_released()) {
+        set_pstate(ui.ctx(), DRAG_FROM, Option::<usize>::None);
+    }
     // Connections: a result name to each later primitive reading it; the implicit previous-result
     // link as a short tick.
     let painter = ui.painter();
@@ -211,6 +315,24 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 changed = true;
             }
         }
+        Some(Action::Connect(from, to)) => {
+            // The source gets a name when it has none; the target's first input (a merge: a new
+            // input) reads it.
+            if g.primitives[from].result.is_empty() {
+                g.primitives[from].result = format!("result{}", from + 1);
+            }
+            let name = g.primitives[from].result.clone();
+            match &mut g.primitives[to].kind {
+                Kind::Merge { inputs } => inputs.push(name),
+                k => {
+                    if let Some(first) = k.inputs_mut().into_iter().next() {
+                        *first = name;
+                    }
+                }
+            }
+            set_pstate(ui.ctx(), SELECTED, Some(to));
+            changed = true;
+        }
         Some(Action::RemoveFilter) => {
             if let Err(e) = app.run("effect.remove", json!({ "index": index, "item": Value::Null })) {
                 app.ui.status = e;
@@ -229,6 +351,26 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                 if let Some(s) = widgets::exact_text_field(ui, ("filter-result", i), &p.result, 120.0) {
                     p.result = s.trim().replace(' ', "_");
                     changed = true;
+                }
+            });
+            // The primitive subregion: off (the filter region) or x, y, w, h as percentages.
+            widgets::label_row(ui, tl!("Subregion:"), LABEL_W, |ui| {
+                let on = p.subregion.is_some();
+                if widgets::check(ui, "", on, true) {
+                    p.subregion = if on { None } else { Some(g.region) };
+                    changed = true;
+                }
+                if let Some(sub) = &mut p.subregion {
+                    for (k, label) in [(0, "X:"), (1, "Y:"), (2, "W:"), (3, "H:")] {
+                        widgets::dim_label(ui, tl!(label));
+                        if let Some(v) = widgets::plain_field(ui, ("filter-sub-region", i, k), sub[k] * 100.0, "%", 0, 44.0) {
+                            let v = v / 100.0;
+                            if k < 2 || v > 0.0 {
+                                sub[k] = v;
+                                changed = true;
+                            }
+                        }
+                    }
                 }
             });
             // Inputs: the previous result, the sources, or an earlier primitive's result.
@@ -288,6 +430,8 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
 
 enum Action {
     Add(Kind),
+    /// Connect primitive `from`'s result to primitive `to`'s input (a dragged connection).
+    Connect(usize, usize),
     Duplicate,
     Move(i64),
     Remove,

@@ -25,6 +25,7 @@ pub(crate) mod fileinfo;
 pub mod fileio;
 pub mod findfiles;
 pub mod flatten;
+mod filtercmds;
 mod floodfill;
 pub mod fontfiles;
 mod fonts;
@@ -293,6 +294,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(perspgrid::specs());
         v.extend(shortcutset::specs());
         v.extend(importmatches::specs());
+        v.extend(filtercmds::specs());
         v
     })
 }

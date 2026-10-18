@@ -2722,6 +2722,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 panel("CSS Properties", crate::panels::css_properties::ID),
                 panel("Document Info", "docInfo"),
                 panel("Filter Editor", crate::panels::filter_editor::ID),
+                panel("Filter Gallery", crate::panels::filter_gallery::ID),
                 panel("Flattener Preview", crate::panels::flattener_preview::ID),
                 panel("Gradient", "gradient"),
                 panel("Graphic Styles", "graphicStyles"),
@@ -3616,6 +3617,16 @@ fn effect_menu() -> Vec<Item> {
     }
     // Live-effect plug-ins close the vector effects.
     out.extend(crate::dialogs::plugin::effect_menu());
+    // Effect › Filters: the stock filter presets by category, and the gallery that browses them.
+    let mut filters: Vec<Item> = vec![cp("Filter Gallery", "window.panel", json!({ "panel": crate::panels::filter_gallery::ID })), Sep];
+    for category in redrob_vector_effects::filter_presets::CATEGORIES {
+        let items: Vec<Item> = redrob_vector_effects::filter_presets::presets_in(category)
+            .map(|p| Item::Cmd(p.label, "filter.applyPreset", json!({ "id": p.id })))
+            .collect();
+        filters.push(sub(category, items));
+    }
+    out.push(Sep);
+    out.push(sub("Filters", filters));
     let raster: Vec<Item> = RASTER_MENUS
         .iter()
         .filter_map(|(name, path)| {

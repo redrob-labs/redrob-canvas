@@ -40,6 +40,7 @@ mod clip;
 mod distort;
 mod group;
 mod live;
+pub mod filter_presets;
 pub mod lpe;
 mod marks;
 pub mod pixel;
