@@ -5532,3 +5532,15 @@ shape	Appearance	Aspetto
 	Static	Fisso
 	Move to Top	Sposta in cima
 	Bubble Up	Sali di uno
+	Clear the scratch pad to white	Pulisci il blocco prove in bianco
+	Fill the scratch pad with the background colour	Riempi il blocco prove con il colore di sfondo
+	Fill the scratch pad with the current gradient	Riempi il blocco prove con la sfumatura corrente
+	Fill the scratch pad with the current image	Riempi il blocco prove con l'immagine corrente
+	Fill the scratch pad with the preset's icon	Riempi il blocco prove con l'icona della preimpostazione
+	Reload the stored preset, discarding the tweaks	Ricarica la preimpostazione salvata scartando le modifiche
+	BG	Sfondo
+	Icon	Icona
+	Thumbnail:	Miniatura:
+	Stroke preview	Anteprima tratto
+	Scratch pad	Blocco prove
+	Icon library	Libreria icone

@@ -4778,3 +4778,15 @@ cameraRaw	Yellow	Sárga
 	Static	Rögzített
 	Move to Top	Felülre
 	Bubble Up	Egyet feljebb
+	Clear the scratch pad to white	Próbalap törlése fehérre
+	Fill the scratch pad with the background colour	Próbalap kitöltése a háttérszínnel
+	Fill the scratch pad with the current gradient	Próbalap kitöltése a jelenlegi színátmenettel
+	Fill the scratch pad with the current image	Próbalap kitöltése a jelenlegi képpel
+	Fill the scratch pad with the preset's icon	Próbalap kitöltése a készlet ikonjával
+	Reload the stored preset, discarding the tweaks	A tárolt készlet újratöltése, a módosítások elvetése
+	BG	Háttér
+	Icon	Ikon
+	Thumbnail:	Bélyegkép:
+	Stroke preview	Vonás előnézete
+	Scratch pad	Próbalap
+	Icon library	Ikonkönyvtár

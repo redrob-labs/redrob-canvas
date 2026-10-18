@@ -4653,3 +4653,15 @@ layerLabel	No Color	Sem cor
 	Static	Fixo
 	Move to Top	Mover para o topo
 	Bubble Up	Subir uma posição
+	Clear the scratch pad to white	Limpar o bloco de rascunho para branco
+	Fill the scratch pad with the background colour	Preencher o bloco de rascunho com a cor de fundo
+	Fill the scratch pad with the current gradient	Preencher o bloco de rascunho com o degradê atual
+	Fill the scratch pad with the current image	Preencher o bloco de rascunho com a imagem atual
+	Fill the scratch pad with the preset's icon	Preencher o bloco de rascunho com o ícone da predefinição
+	Reload the stored preset, discarding the tweaks	Recarregar a predefinição salva, descartando os ajustes
+	BG	Fundo
+	Icon	Ícone
+	Thumbnail:	Miniatura:
+	Stroke preview	Prévia do traço
+	Scratch pad	Bloco de rascunho
+	Icon library	Biblioteca de ícones

@@ -4472,3 +4472,15 @@ navigator	Zoom	Zvětšení
 	Static	Pevné
 	Move to Top	Přesunout nahoru
 	Bubble Up	Posunout o jedno výš
+	Clear the scratch pad to white	Vyčistit zkušební plochu na bílou
+	Fill the scratch pad with the background colour	Vyplnit zkušební plochu barvou pozadí
+	Fill the scratch pad with the current gradient	Vyplnit zkušební plochu aktuálním přechodem
+	Fill the scratch pad with the current image	Vyplnit zkušební plochu aktuálním obrázkem
+	Fill the scratch pad with the preset's icon	Vyplnit zkušební plochu ikonou předvolby
+	Reload the stored preset, discarding the tweaks	Znovu načíst uloženou předvolbu a zahodit úpravy
+	BG	Pozadí
+	Icon	Ikona
+	Thumbnail:	Miniatura:
+	Stroke preview	Náhled tahu
+	Scratch pad	Zkušební plocha
+	Icon library	Knihovna ikon

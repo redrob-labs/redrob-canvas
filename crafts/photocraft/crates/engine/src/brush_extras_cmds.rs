@@ -364,6 +364,8 @@ pub struct ScratchPad {
     pub width: u32,
     pub height: u32,
     pub surface: Surface,
+    /// Bumped on every fill and stroke, so a view re-uploads only when the pad changed.
+    pub rev: u64,
 }
 
 /// Largest scratch pad side.
@@ -375,7 +377,7 @@ impl ScratchPad {
         let height = height.clamp(16, MAX_PAD_SIDE);
         let mut surface = Surface::new(PixelFormat::RGBA32F);
         surface.fill_rect(Rect::new(0, 0, width as i32, height as i32), &[1.0, 1.0, 1.0, 1.0]);
-        Self { width, height, surface }
+        Self { width, height, surface, rev: 1 }
     }
     pub fn rect(&self) -> Rect {
         Rect::new(0, 0, self.width as i32, self.height as i32)
@@ -462,6 +464,7 @@ fn pad_fill(s: &mut Session, p: &Value) -> Result<Value> {
                 b.erase = false;
                 b.resize_with_dual_brush((h as f32 / 3.0).clamp(1.0, redrob_photo_paint::MAX_BRUSH_SIZE));
                 redrob_photo_paint::render_stroke(&mut pad.surface, &b, &pts, None, false, 1.0);
+                pad.rev += 1;
                 return Ok(json!({ "with": with, "width": w, "height": h }));
             }
         },
@@ -469,6 +472,7 @@ fn pad_fill(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let flat: Vec<f32> = px.iter().flatten().copied().collect();
     pad.surface.write_region(rect, &flat);
+    pad.rev += 1;
     Ok(json!({ "with": with, "width": w, "height": h }))
 }
 
@@ -491,6 +495,7 @@ fn pad_stroke(s: &mut Session, p: &Value) -> Result<Value> {
     let brush = crate::brush_cmds::resolve_brush(s, p, cmd)?;
     let pad = pad(s);
     let dmg = redrob_photo_paint::render_stroke(&mut pad.surface, &brush, &pts, None, false, 1.0).intersect(&pad.rect());
+    pad.rev += 1;
     Ok(json!({ "damage": [dmg.x0, dmg.y0, dmg.width(), dmg.height()] }))
 }
 
@@ -890,6 +895,16 @@ pub fn specs() -> Vec<CommandSpec> {
         spec!("brush.tenBrushes.list", "Ten Brushes", "{} → {slots:[{slot, preset}]}", ten_list, false),
         spec!("brush.tenBrushes.assign", "Assign Ten Brushes Slot", r##"{"slot":1..10,"name":string?=current preset (null clears)}"##, ten_assign, true),
         spec!("brush.tenBrushes.activate", "Activate Ten Brushes Slot", r##"{"slot":1..10}"##, ten_activate, true),
+        spec!("brush.tenBrushes.slot1", "Ten Brushes Slot 1", "{}", |s, _| ten_activate(s, &json!({"slot": 1})), true),
+        spec!("brush.tenBrushes.slot2", "Ten Brushes Slot 2", "{}", |s, _| ten_activate(s, &json!({"slot": 2})), true),
+        spec!("brush.tenBrushes.slot3", "Ten Brushes Slot 3", "{}", |s, _| ten_activate(s, &json!({"slot": 3})), true),
+        spec!("brush.tenBrushes.slot4", "Ten Brushes Slot 4", "{}", |s, _| ten_activate(s, &json!({"slot": 4})), true),
+        spec!("brush.tenBrushes.slot5", "Ten Brushes Slot 5", "{}", |s, _| ten_activate(s, &json!({"slot": 5})), true),
+        spec!("brush.tenBrushes.slot6", "Ten Brushes Slot 6", "{}", |s, _| ten_activate(s, &json!({"slot": 6})), true),
+        spec!("brush.tenBrushes.slot7", "Ten Brushes Slot 7", "{}", |s, _| ten_activate(s, &json!({"slot": 7})), true),
+        spec!("brush.tenBrushes.slot8", "Ten Brushes Slot 8", "{}", |s, _| ten_activate(s, &json!({"slot": 8})), true),
+        spec!("brush.tenBrushes.slot9", "Ten Brushes Slot 9", "{}", |s, _| ten_activate(s, &json!({"slot": 9})), true),
+        spec!("brush.tenBrushes.slot10", "Ten Brushes Slot 10", "{}", |s, _| ten_activate(s, &json!({"slot": 10})), true),
         spec!(
             "brush.presets.next",
             "Next Brush Preset",

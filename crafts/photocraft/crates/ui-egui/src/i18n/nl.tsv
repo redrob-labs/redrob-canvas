@@ -4623,3 +4623,15 @@ curves	Smooth	Vloeiend maken
 	Static	Vast
 	Move to Top	Naar boven
 	Bubble Up	Eén omhoog
+	Clear the scratch pad to white	Het kladblok wit maken
+	Fill the scratch pad with the background colour	Het kladblok met de achtergrondkleur vullen
+	Fill the scratch pad with the current gradient	Het kladblok met het huidige verloop vullen
+	Fill the scratch pad with the current image	Het kladblok met de huidige afbeelding vullen
+	Fill the scratch pad with the preset's icon	Het kladblok met het pictogram van de voorinstelling vullen
+	Reload the stored preset, discarding the tweaks	De opgeslagen voorinstelling opnieuw laden en de wijzigingen verwerpen
+	BG	AG
+	Icon	Pictogram
+	Thumbnail:	Miniatuur:
+	Stroke preview	Streekvoorbeeld
+	Scratch pad	Kladblok
+	Icon library	Pictogrambibliotheek

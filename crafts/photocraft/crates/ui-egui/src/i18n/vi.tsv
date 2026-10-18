@@ -4358,3 +4358,15 @@ curves	Smooth	Làm mượt
 	Static	Cố định
 	Move to Top	Chuyển lên đầu
 	Bubble Up	Lên một bậc
+	Clear the scratch pad to white	Xóa bảng thử về màu trắng
+	Fill the scratch pad with the background colour	Tô bảng thử bằng màu nền
+	Fill the scratch pad with the current gradient	Tô bảng thử bằng chuyển sắc hiện tại
+	Fill the scratch pad with the current image	Tô bảng thử bằng ảnh hiện tại
+	Fill the scratch pad with the preset's icon	Tô bảng thử bằng biểu tượng preset
+	Reload the stored preset, discarding the tweaks	Tải lại preset đã lưu, bỏ các chỉnh sửa
+	BG	Nền
+	Icon	Biểu tượng
+	Thumbnail:	Hình thu nhỏ:
+	Stroke preview	Xem trước nét
+	Scratch pad	Bảng thử
+	Icon library	Thư viện biểu tượng

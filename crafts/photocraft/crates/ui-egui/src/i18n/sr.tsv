@@ -4932,3 +4932,15 @@ shape	Appearance	Izgled
 	Static	Непомично
 	Move to Top	Премести на врх
 	Bubble Up	Подигни за једно место
+	Clear the scratch pad to white	Очисти подлогу за пробу у бело
+	Fill the scratch pad with the background colour	Попуни подлогу за пробу бојом позадине
+	Fill the scratch pad with the current gradient	Попуни подлогу за пробу тренутним преливом
+	Fill the scratch pad with the current image	Попуни подлогу за пробу тренутном сликом
+	Fill the scratch pad with the preset's icon	Попуни подлогу за пробу иконом поставке
+	Reload the stored preset, discarding the tweaks	Поново учитај сачувану поставку и одбаци измене
+	BG	Позадина
+	Icon	Икона
+	Thumbnail:	Сличица:
+	Stroke preview	Преглед потеза
+	Scratch pad	Подлога за пробу
+	Icon library	Библиотека икона

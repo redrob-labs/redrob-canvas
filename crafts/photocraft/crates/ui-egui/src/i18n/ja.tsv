@@ -4602,3 +4602,15 @@ curves	Smooth	スムーズ
 	Static	固定
 	Move to Top	先頭へ移動
 	Bubble Up	一つ上へ
+	Clear the scratch pad to white	スクラッチパッドを白にする
+	Fill the scratch pad with the background colour	スクラッチパッドを背景色で塗る
+	Fill the scratch pad with the current gradient	スクラッチパッドを現在のグラデーションで塗る
+	Fill the scratch pad with the current image	スクラッチパッドを現在の画像で塗る
+	Fill the scratch pad with the preset's icon	スクラッチパッドをプリセットのアイコンで塗る
+	Reload the stored preset, discarding the tweaks	保存済みプリセットを再読み込みして変更を破棄
+	BG	背景
+	Icon	アイコン
+	Thumbnail:	サムネイル:
+	Stroke preview	ストロークプレビュー
+	Scratch pad	スクラッチパッド
+	Icon library	アイコンライブラリ

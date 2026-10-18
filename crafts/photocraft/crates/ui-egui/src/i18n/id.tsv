@@ -3868,3 +3868,15 @@ curves	Smooth	Haluskan
 	Static	Statis
 	Move to Top	Pindah ke atas
 	Bubble Up	Naik satu
+	Clear the scratch pad to white	Bersihkan papan coret menjadi putih
+	Fill the scratch pad with the background colour	Isi papan coret dengan warna latar
+	Fill the scratch pad with the current gradient	Isi papan coret dengan gradien saat ini
+	Fill the scratch pad with the current image	Isi papan coret dengan gambar saat ini
+	Fill the scratch pad with the preset's icon	Isi papan coret dengan ikon preset
+	Reload the stored preset, discarding the tweaks	Muat ulang preset tersimpan, buang perubahan
+	BG	Latar
+	Icon	Ikon
+	Thumbnail:	Gambar mini:
+	Stroke preview	Pratinjau sapuan
+	Scratch pad	Papan coret
+	Icon library	Pustaka ikon

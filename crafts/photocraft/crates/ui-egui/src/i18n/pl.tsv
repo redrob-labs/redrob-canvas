@@ -4465,3 +4465,15 @@ curves	Smooth	Wygładź
 	Static	Stałe
 	Move to Top	Przenieś na górę
 	Bubble Up	Przesuń o jedno w górę
+	Clear the scratch pad to white	Wyczyść brudnopis do białego
+	Fill the scratch pad with the background colour	Wypełnij brudnopis kolorem tła
+	Fill the scratch pad with the current gradient	Wypełnij brudnopis bieżącym gradientem
+	Fill the scratch pad with the current image	Wypełnij brudnopis bieżącym obrazem
+	Fill the scratch pad with the preset's icon	Wypełnij brudnopis ikoną ustawienia wstępnego
+	Reload the stored preset, discarding the tweaks	Wczytaj ponownie zapisane ustawienie, odrzucając zmiany
+	BG	Tło
+	Icon	Ikona
+	Thumbnail:	Miniatura:
+	Stroke preview	Podgląd pociągnięcia
+	Scratch pad	Brudnopis
+	Icon library	Biblioteka ikon

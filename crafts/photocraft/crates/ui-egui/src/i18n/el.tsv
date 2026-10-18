@@ -4565,3 +4565,15 @@ curves	Smooth	Εξομάλυνση
 	Static	Σταθερό
 	Move to Top	Μετακίνηση στην κορυφή
 	Bubble Up	Μία θέση πάνω
+	Clear the scratch pad to white	Καθαρισμός του πρόχειρου σε λευκό
+	Fill the scratch pad with the background colour	Γέμισμα του πρόχειρου με το χρώμα φόντου
+	Fill the scratch pad with the current gradient	Γέμισμα του πρόχειρου με την τρέχουσα διαβάθμιση
+	Fill the scratch pad with the current image	Γέμισμα του πρόχειρου με την τρέχουσα εικόνα
+	Fill the scratch pad with the preset's icon	Γέμισμα του πρόχειρου με το εικονίδιο της προεπιλογής
+	Reload the stored preset, discarding the tweaks	Επαναφόρτωση της αποθηκευμένης προεπιλογής, απόρριψη των αλλαγών
+	BG	Φόντο
+	Icon	Εικονίδιο
+	Thumbnail:	Μικρογραφία:
+	Stroke preview	Προεπισκόπηση πινελιάς
+	Scratch pad	Πρόχειρο
+	Icon library	Βιβλιοθήκη εικονιδίων

@@ -3943,3 +3943,15 @@ curves	Smooth	Lisser
 	Static	Fixe
 	Move to Top	Déplacer en haut
 	Bubble Up	Remonter d'un cran
+	Clear the scratch pad to white	Effacer le bloc d'essai en blanc
+	Fill the scratch pad with the background colour	Remplir le bloc d'essai avec la couleur d'arrière-plan
+	Fill the scratch pad with the current gradient	Remplir le bloc d'essai avec le dégradé actuel
+	Fill the scratch pad with the current image	Remplir le bloc d'essai avec l'image actuelle
+	Fill the scratch pad with the preset's icon	Remplir le bloc d'essai avec l'icône du préréglage
+	Reload the stored preset, discarding the tweaks	Recharger le préréglage enregistré en abandonnant les retouches
+	BG	AP
+	Icon	Icône
+	Thumbnail:	Vignette :
+	Stroke preview	Aperçu du trait
+	Scratch pad	Bloc d'essai
+	Icon library	Bibliothèque d'icônes

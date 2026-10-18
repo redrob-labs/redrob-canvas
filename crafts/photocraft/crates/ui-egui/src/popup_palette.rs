@@ -25,7 +25,7 @@ const HUE_INNER: f32 = 48.0;
 const HUE_OUTER: f32 = 62.0;
 const SV_HALF: f32 = 32.0;
 /// Room for the controls under the disk.
-const CONTROLS_H: f32 = 60.0;
+const CONTROLS_H: f32 = 86.0;
 
 pub(crate) fn palette_id() -> egui::Id {
     egui::Id::new("popup-palette")
@@ -277,6 +277,43 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
                     }
                     r
                 });
+            }
+        });
+        // The on-canvas brush editor: size, opacity, flow and hardness of the current brush,
+        // edited here without opening Brush Settings.
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = 6.0;
+            let b = app.session.tools.brush.clone();
+            let mut patch = serde_json::Map::new();
+            let mut ls = b.size.max(0.5).ln();
+            ui.label(egui::RichText::new(tl!("Size")).color(t.text_dim).size(11.0));
+            ui.add_sized(vec2(70.0, 18.0), |ui: &mut egui::Ui| {
+                let r = widgets::slider(ui, &mut ls, 0.5f32.ln()..=5000.0f32.ln(), None);
+                if r.changed() {
+                    patch.insert("size".into(), json!(ls.exp().round().clamp(0.5, 5000.0)));
+                }
+                r
+            });
+            let mut op = b.opacity * 100.0;
+            ui.label(egui::RichText::new(tl!("Opacity")).color(t.text_dim).size(11.0));
+            ui.add_sized(vec2(60.0, 18.0), |ui: &mut egui::Ui| {
+                let r = widgets::slider(ui, &mut op, 0.0..=100.0, None);
+                if r.changed() {
+                    patch.insert("opacity".into(), json!((op / 100.0).clamp(0.0, 1.0)));
+                }
+                r
+            });
+            let mut fl = b.flow * 100.0;
+            ui.label(egui::RichText::new(tl!("Flow")).color(t.text_dim).size(11.0));
+            ui.add_sized(vec2(60.0, 18.0), |ui: &mut egui::Ui| {
+                let r = widgets::slider(ui, &mut fl, 0.0..=100.0, None);
+                if r.changed() {
+                    patch.insert("flow".into(), json!((fl / 100.0).clamp(0.0, 1.0)));
+                }
+                r
+            });
+            if !patch.is_empty() {
+                let _ = app.run("tools.setBrush", json!({ "brush": serde_json::Value::Object(patch), "coalesce": "popup-palette" }));
             }
         });
     });

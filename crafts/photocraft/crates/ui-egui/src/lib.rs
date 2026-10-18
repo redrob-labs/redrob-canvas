@@ -49,6 +49,7 @@ pub mod scripts_ui;
 pub mod action_search;
 pub mod brush_history_tab;
 pub mod reference_tab;
+pub mod scratch_pad_ui;
 pub(crate) mod cam_preview;
 mod cam_transform;
 mod camera_raw_detail_ui;

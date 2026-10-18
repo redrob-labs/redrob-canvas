@@ -4593,3 +4593,15 @@ cameraData	Lens	Lens
 	Static	Sabit
 	Move to Top	En Üste Taşı
 	Bubble Up	Bir Yukarı
+	Clear the scratch pad to white	Karalama defterini beyaza temizle
+	Fill the scratch pad with the background colour	Karalama defterini arka plan rengiyle doldur
+	Fill the scratch pad with the current gradient	Karalama defterini geçerli gradyanla doldur
+	Fill the scratch pad with the current image	Karalama defterini geçerli görüntüyle doldur
+	Fill the scratch pad with the preset's icon	Karalama defterini ön ayarın simgesiyle doldur
+	Reload the stored preset, discarding the tweaks	Kayıtlı ön ayarı yeniden yükle, değişiklikleri at
+	BG	AP
+	Icon	Simge
+	Thumbnail:	Küçük Resim:
+	Stroke preview	Vuruş önizlemesi
+	Scratch pad	Karalama defteri
+	Icon library	Simge kitaplığı

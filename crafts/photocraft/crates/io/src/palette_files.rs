@@ -1,4 +1,4 @@
-//! Palette files beyond `.aco`/`.ase`: GIMP palettes (`.gpl`), Microsoft RIFF palettes (`.pal`),
+//! Palette files beyond `.aco`/`.ase`: `.gpl` text palettes, Microsoft RIFF palettes (`.pal`),
 //! Adobe Color Tables (`.act`), JASC/Paint Shop Pro palettes (`.pal`/`.psp`), Scribus colour sets
 //! (`.xml`), SwatchBooker books (`.sbz`), Adobe Color Books (`.acb`) and the native zip palette
 //! (`.kpl`: `colorset.xml` plus a `mimetype` entry). Every reader works from the public format
@@ -194,15 +194,16 @@ fn entry(name: impl Into<String>, color: PalColor) -> PalEntry {
 }
 
 // ---------------------------------------------------------------------------
-// GIMP palette (.gpl)
+// Text palette (.gpl)
 // ---------------------------------------------------------------------------
 
-/// `GIMP Palette`, optional `Name:` and `Columns:` lines, `#` comments, then `R G B [name]`.
+/// The `.gpl` header line (its fixed magic), optional `Name:` and `Columns:` lines, `#` comments,
+/// then `R G B [name]`.
 pub fn read_gpl(bytes: &[u8]) -> Result<Palette, String> {
     let text = String::from_utf8_lossy(bytes);
     let mut lines = text.lines();
     if !lines.next().is_some_and(|l| l.trim_start().starts_with("GIMP Palette")) {
-        return Err("not a GIMP palette (missing header)".into());
+        return Err("not a .gpl palette (missing header)".into());
     }
     let mut pal = Palette::default();
     for line in lines {
@@ -237,7 +238,7 @@ pub fn read_gpl(bytes: &[u8]) -> Result<Palette, String> {
     Ok(pal)
 }
 
-/// Write a GIMP palette.
+/// Write a `.gpl` palette.
 pub fn write_gpl(pal: &Palette) -> Vec<u8> {
     let mut out = String::from("GIMP Palette\n");
     out.push_str(&format!("Name: {}\n", pal.name));

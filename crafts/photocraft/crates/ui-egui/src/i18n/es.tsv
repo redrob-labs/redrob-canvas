@@ -5376,3 +5376,15 @@ navigator	Zoom	Zoom
 	Static	Fijo
 	Move to Top	Mover arriba
 	Bubble Up	Subir un puesto
+	Clear the scratch pad to white	Limpiar el bloc de pruebas a blanco
+	Fill the scratch pad with the background colour	Rellenar el bloc de pruebas con el color de fondo
+	Fill the scratch pad with the current gradient	Rellenar el bloc de pruebas con el degradado actual
+	Fill the scratch pad with the current image	Rellenar el bloc de pruebas con la imagen actual
+	Fill the scratch pad with the preset's icon	Rellenar el bloc de pruebas con el icono del preajuste
+	Reload the stored preset, discarding the tweaks	Recargar el preajuste guardado y descartar los ajustes
+	BG	Fondo
+	Icon	Icono
+	Thumbnail:	Miniatura:
+	Stroke preview	Vista previa del trazo
+	Scratch pad	Bloc de pruebas
+	Icon library	Biblioteca de iconos

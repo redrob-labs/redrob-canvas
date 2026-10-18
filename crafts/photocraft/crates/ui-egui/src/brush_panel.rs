@@ -390,10 +390,23 @@ fn settings_tab(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     widgets::hairline(ui);
     ui.add_space(6.0);
     ui.horizontal(|ui| {
-        let (r, _) = ui.allocate_exact_size(vec2(STRIP.0 as f32, STRIP.1 as f32), Sense::hover());
-        ui.painter().rect_filled(r, t.radius_sm, t.field);
-        let tex = brush_preview::stroke_texture(ui.ctx(), "settings-strip", &b, STRIP.0, STRIP.1, t.text);
-        ui.painter().image(tex.id(), r, full_uv(), Color32::WHITE);
+        // The strip is the scratch pad: drag on it to try the settings being edited; a stroke
+        // preview of them is drawn when the pad is untouched (the Reload and fill buttons below).
+        if app.session.scratch_pad.as_ref().is_some_and(|p| p.rev > 1) {
+            crate::scratch_pad_ui::strip(app, ui, &b, STRIP.0, STRIP.1);
+        } else {
+            let (r, resp) = ui.allocate_exact_size(vec2(STRIP.0 as f32, STRIP.1 as f32), Sense::click_and_drag());
+            ui.painter().rect_filled(r, t.radius_sm, t.field);
+            let tex = brush_preview::stroke_texture(ui.ctx(), "settings-strip", &b, STRIP.0, STRIP.1, t.text);
+            ui.painter().image(tex.id(), r, full_uv(), Color32::WHITE);
+            if resp.drag_started() || resp.clicked() {
+                // First touch: the pad takes over from the preview.
+                run_or_status(app, "brush.scratchPad.fill", json!({ "with": "white", "width": STRIP.0, "height": STRIP.1 }));
+                if let Some(p) = app.session.scratch_pad.as_mut() {
+                    p.rev += 1;
+                }
+            }
+        }
         ui.vertical(|ui| {
             let new = icons::button(ui, "square-plus", 24.0, false, tl!("Create new brush from these settings"));
             if crate::brush_picker::named(new, "Create new brush from these settings").clicked() {
@@ -412,6 +425,10 @@ fn settings_tab(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 run_or_status(app, "brush.presets.update", json!({ "brush": serde_json::to_value(&b).unwrap_or(Value::Null) }));
             }
         });
+    });
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 4.0;
+        crate::scratch_pad_ui::buttons(app, ui);
     });
     commit_gesture(app, ui.ctx(), &before, &b);
 }

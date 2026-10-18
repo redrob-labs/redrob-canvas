@@ -3943,3 +3943,15 @@ curves	Smooth	Glätten
 	Static	Fest
 	Move to Top	Nach oben
 	Bubble Up	Eins nach oben
+	Clear the scratch pad to white	Den Schmierblock weiß leeren
+	Fill the scratch pad with the background colour	Den Schmierblock mit der Hintergrundfarbe füllen
+	Fill the scratch pad with the current gradient	Den Schmierblock mit dem aktuellen Verlauf füllen
+	Fill the scratch pad with the current image	Den Schmierblock mit dem aktuellen Bild füllen
+	Fill the scratch pad with the preset's icon	Den Schmierblock mit dem Symbol der Vorgabe füllen
+	Reload the stored preset, discarding the tweaks	Die gespeicherte Vorgabe neu laden und die Änderungen verwerfen
+	BG	HG
+	Icon	Symbol
+	Thumbnail:	Miniatur:
+	Stroke preview	Strichvorschau
+	Scratch pad	Schmierblock
+	Icon library	Symbolbibliothek

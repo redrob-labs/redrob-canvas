@@ -3852,3 +3852,15 @@ curves	Smooth	Сгладить
 	Static	Статично
 	Move to Top	Переместить вверх
 	Bubble Up	Поднять на одну позицию
+	Clear the scratch pad to white	Очистить блокнот до белого
+	Fill the scratch pad with the background colour	Залить блокнот цветом фона
+	Fill the scratch pad with the current gradient	Залить блокнот текущим градиентом
+	Fill the scratch pad with the current image	Залить блокнот текущим изображением
+	Fill the scratch pad with the preset's icon	Залить блокнот значком пресета
+	Reload the stored preset, discarding the tweaks	Перезагрузить сохранённый пресет, отбросив правки
+	BG	Фон
+	Icon	Значок
+	Thumbnail:	Миниатюра:
+	Stroke preview	Предпросмотр штриха
+	Scratch pad	Блокнот
+	Icon library	Библиотека значков

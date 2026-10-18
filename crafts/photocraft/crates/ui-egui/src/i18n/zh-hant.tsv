@@ -3494,3 +3494,15 @@ curves	Smooth	平滑
 	Static	固定
 	Move to Top	移到頂部
 	Bubble Up	上浮一位
+	Clear the scratch pad to white	將試筆板清為白色
+	Fill the scratch pad with the background colour	用背景色填滿試筆板
+	Fill the scratch pad with the current gradient	用目前漸層填滿試筆板
+	Fill the scratch pad with the current image	用目前圖像填滿試筆板
+	Fill the scratch pad with the preset's icon	用預設圖示填滿試筆板
+	Reload the stored preset, discarding the tweaks	重新載入已存預設，放棄改動
+	BG	背景
+	Icon	圖示
+	Thumbnail:	縮圖:
+	Stroke preview	筆畫預覽
+	Scratch pad	試筆板
+	Icon library	圖示庫

@@ -4623,3 +4623,15 @@ curves	Smooth	매끄럽게
 	Static	고정
 	Move to Top	맨 위로 이동
 	Bubble Up	한 칸 위로
+	Clear the scratch pad to white	스크래치 패드를 흰색으로 지우기
+	Fill the scratch pad with the background colour	스크래치 패드를 배경색으로 채우기
+	Fill the scratch pad with the current gradient	스크래치 패드를 현재 그레이디언트로 채우기
+	Fill the scratch pad with the current image	스크래치 패드를 현재 이미지로 채우기
+	Fill the scratch pad with the preset's icon	스크래치 패드를 사전 설정 아이콘으로 채우기
+	Reload the stored preset, discarding the tweaks	저장된 사전 설정을 다시 불러오고 조정을 버리기
+	BG	배경
+	Icon	아이콘
+	Thumbnail:	썸네일:
+	Stroke preview	스트로크 미리보기
+	Scratch pad	스크래치 패드
+	Icon library	아이콘 라이브러리
