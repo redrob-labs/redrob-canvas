@@ -41,6 +41,7 @@ pub mod exif;
 mod extra;
 mod extra2;
 pub mod features;
+pub mod fill_regions;
 mod fxutil;
 mod gallery;
 mod gen_fractal;

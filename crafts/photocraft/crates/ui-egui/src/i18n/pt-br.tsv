@@ -4324,3 +4324,32 @@ layerLabel	No Color	Sem cor
 	Vertical ruler	Régua vertical
 	Painting Assistants	Assistentes de pintura
 	Assistant Previews	Visualizações do assistente
+	Drag fill	Preencher arrastando
+	Dragging fills every region passed over	Arrastar preenche cada região percorrida
+	Exclude colour	Excluir cor
+	Exclude transparent	Excluir transparente
+	Fill mode	Modo de preenchimento
+	No region is fully enclosed by the shape	Nenhuma região está totalmente envolvida pela forma
+	Only regions coloured like the first one	Somente regiões com a cor da primeira
+	Reference	Referência
+	Similar only	Somente semelhantes
+	Soften the filled edge	Suavizar a borda do preenchimento
+	Spread stops at the darkest pixels (lines)	A expansão para nos pixels mais escuros (linhas)
+	Spread stops at the most opaque pixels	A expansão para nos pixels mais opacos
+	Stop at darkest	Parar no mais escuro
+	Stop at opaque	Parar no opaco
+	Similar Colours	Cores semelhantes
+	Colour Labels	Rótulos de cor
+	All Regions	Todas as regiões
+	Specific Colour	Cor específica
+	Transparent Regions	Regiões transparentes
+	Surrounded By	Cercado por
+	Fill with Foreground Color (Opacity)	Preencher com cor do primeiro plano (opacidade)
+	Fill with Background Color (Opacity)	Preencher com cor do plano de fundo (opacidade)
+	Fill with Pattern (Opacity)	Preencher com padrão (opacidade)
+	Straight Line Tool	Ferramenta Linha reta
+	Multibrush Tool	Ferramenta Multipincel
+	Dynamic Brush Tool	Ferramenta Pincel dinâmico
+	Enclose and Fill Tool	Ferramenta Envolver e preencher
+	Colorize Mask Tool	Ferramenta Máscara de colorização
+	Reference Images Tool	Ferramenta Imagens de referência

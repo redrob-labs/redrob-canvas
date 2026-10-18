@@ -4286,3 +4286,32 @@ curves	Smooth	매끄럽게
 	Vertical ruler	세로 눈금자
 	Painting Assistants	페인팅 어시스턴트
 	Assistant Previews	어시스턴트 미리 보기
+	Drag fill	드래그 채우기
+	Dragging fills every region passed over	드래그하면 지나간 모든 영역을 채웁니다
+	Exclude colour	색상 제외
+	Exclude transparent	투명 제외
+	Fill mode	채우기 모드
+	No region is fully enclosed by the shape	모양이 완전히 둘러싼 영역이 없습니다
+	Only regions coloured like the first one	첫 영역과 같은 색의 영역만
+	Reference	참조
+	Similar only	유사한 색만
+	Soften the filled edge	채운 가장자리를 부드럽게
+	Spread stops at the darkest pixels (lines)	확장이 가장 어두운 픽셀(선)에서 멈춥니다
+	Spread stops at the most opaque pixels	확장이 가장 불투명한 픽셀에서 멈춥니다
+	Stop at darkest	가장 어두운 곳에서 정지
+	Stop at opaque	불투명한 곳에서 정지
+	Similar Colours	유사한 색상
+	Colour Labels	색상 레이블
+	All Regions	모든 영역
+	Specific Colour	특정 색상
+	Transparent Regions	투명 영역
+	Surrounded By	둘러싸인 색상
+	Fill with Foreground Color (Opacity)	전경색으로 채우기 (불투명도)
+	Fill with Background Color (Opacity)	배경색으로 채우기 (불투명도)
+	Fill with Pattern (Opacity)	패턴으로 채우기 (불투명도)
+	Straight Line Tool	직선 도구
+	Multibrush Tool	멀티브러시 도구
+	Dynamic Brush Tool	다이내믹 브러시 도구
+	Enclose and Fill Tool	둘러싸고 채우기 도구
+	Colorize Mask Tool	컬러라이즈 마스크 도구
+	Reference Images Tool	참조 이미지 도구

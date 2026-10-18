@@ -23,15 +23,15 @@ const TOOL_SECTIONS: &[&[&[Tool]]] = &[
         &[Tool::ObjectSelection, Tool::QuickSelection, Tool::MagicWand],
         &[Tool::Crop, Tool::PerspectiveCrop, Tool::Slice, Tool::SliceSelect],
         &[Tool::Frame],
-        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count, Tool::Assistant],
+        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count, Tool::Assistant, Tool::ColorizeMask, Tool::ReferenceImages],
     ],
     &[
         &[Tool::Remove, Tool::SpotHealing, Tool::Healing, Tool::Patch, Tool::ContentAwareMove, Tool::RedEye],
-        &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement],
+        &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement, Tool::StraightLine, Tool::Multibrush, Tool::DynamicBrush],
         &[Tool::CloneStamp, Tool::PatternStamp],
         &[Tool::HistoryBrush],
         &[Tool::Eraser, Tool::BackgroundEraser, Tool::MagicEraser],
-        &[Tool::Gradient, Tool::PaintBucket],
+        &[Tool::Gradient, Tool::PaintBucket, Tool::EncloseFill],
         &[Tool::Blur, Tool::Sharpen, Tool::Smudge],
         &[Tool::Dodge, Tool::Burn, Tool::Sponge],
     ],
@@ -980,6 +980,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     || crate::vector_ui::options_bar(app, ui, tool)
                     || crate::analysis_ui::options_bar(app, ui, tool)
                     || crate::assistant_ui::options_bar(app, ui, tool)
+                    || crate::fill_tool_ui::enclose_options_bar(app, ui, tool)
                     || crate::slice_ui::options_bar(app, ui, tool)
                     || crate::frame_tool::options_bar(app, ui, tool)
                     || crate::artboard_tool::options_bar(app, ui, tool)
@@ -1314,6 +1315,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                                 }
                             }
                         }
+                        crate::fill_tool_ui::bucket_options(ui, o);
                     }
                     Tool::Gradient => {
                         // Live "Gradient" (a Gradient Fill layer) or "Classic gradient" (pixels).

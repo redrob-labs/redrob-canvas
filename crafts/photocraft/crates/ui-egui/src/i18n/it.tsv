@@ -5212,3 +5212,32 @@ shape	Appearance	Aspetto
 	Vertical ruler	Righello verticale
 	Painting Assistants	Assistenti di pittura
 	Assistant Previews	Anteprime assistenti
+	Drag fill	Riempimento trascinando
+	Dragging fills every region passed over	Trascinando si riempie ogni regione attraversata
+	Exclude colour	Escludi colore
+	Exclude transparent	Escludi trasparente
+	Fill mode	Modalità riempimento
+	No region is fully enclosed by the shape	Nessuna regione è completamente racchiusa dalla forma
+	Only regions coloured like the first one	Solo regioni del colore della prima
+	Reference	Riferimento
+	Similar only	Solo simili
+	Soften the filled edge	Ammorbidisci il bordo del riempimento
+	Spread stops at the darkest pixels (lines)	L'espansione si ferma ai pixel più scuri (linee)
+	Spread stops at the most opaque pixels	L'espansione si ferma ai pixel più opachi
+	Stop at darkest	Fermati al più scuro
+	Stop at opaque	Fermati all'opaco
+	Similar Colours	Colori simili
+	Colour Labels	Etichette colore
+	All Regions	Tutte le regioni
+	Specific Colour	Colore specifico
+	Transparent Regions	Regioni trasparenti
+	Surrounded By	Circondato da
+	Fill with Foreground Color (Opacity)	Riempi con colore di primo piano (opacità)
+	Fill with Background Color (Opacity)	Riempi con colore di sfondo (opacità)
+	Fill with Pattern (Opacity)	Riempi con pattern (opacità)
+	Straight Line Tool	Strumento Linea retta
+	Multibrush Tool	Strumento Multipennello
+	Dynamic Brush Tool	Strumento Pennello dinamico
+	Enclose and Fill Tool	Strumento Racchiudi e riempi
+	Colorize Mask Tool	Strumento Maschera di colorazione
+	Reference Images Tool	Strumento Immagini di riferimento

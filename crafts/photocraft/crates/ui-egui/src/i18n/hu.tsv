@@ -4452,3 +4452,32 @@ cameraRaw	Yellow	Sárga
 	Vertical ruler	Függőleges vonalzó
 	Painting Assistants	Festési segédvonalak
 	Assistant Previews	Segédvonal-előnézetek
+	Drag fill	Húzással kitöltés
+	Dragging fills every region passed over	Húzáskor minden érintett terület kitöltődik
+	Exclude colour	Szín kizárása
+	Exclude transparent	Átlátszó kizárása
+	Fill mode	Kitöltési mód
+	No region is fully enclosed by the shape	Egy területet sem zár körbe teljesen az alakzat
+	Only regions coloured like the first one	Csak az elsővel azonos színű területek
+	Reference	Hivatkozás
+	Similar only	Csak hasonlók
+	Soften the filled edge	Kitöltés szélének lágyítása
+	Spread stops at the darkest pixels (lines)	A terjedés a legsötétebb pixeleknél (vonalaknál) megáll
+	Spread stops at the most opaque pixels	A terjedés a legátlátszatlanabb pixeleknél megáll
+	Stop at darkest	Megállás a legsötétebbnél
+	Stop at opaque	Megállás az átlátszatlannál
+	Similar Colours	Hasonló színek
+	Colour Labels	Színcímkék
+	All Regions	Minden terület
+	Specific Colour	Adott szín
+	Transparent Regions	Átlátszó területek
+	Surrounded By	Körülvevő szín
+	Fill with Foreground Color (Opacity)	Kitöltés előtérszínnel (átlátszatlanság)
+	Fill with Background Color (Opacity)	Kitöltés háttérszínnel (átlátszatlanság)
+	Fill with Pattern (Opacity)	Kitöltés mintával (átlátszatlanság)
+	Straight Line Tool	Egyenes vonal eszköz
+	Multibrush Tool	Többszörös ecset eszköz
+	Dynamic Brush Tool	Dinamikus ecset eszköz
+	Enclose and Fill Tool	Körbezárás és kitöltés eszköz
+	Colorize Mask Tool	Színezőmaszk eszköz
+	Reference Images Tool	Referenciaképek eszköz

@@ -4264,3 +4264,32 @@ cameraData	Lens	Lens
 	Vertical ruler	Dikey Cetvel
 	Painting Assistants	Boyama Yardımcıları
 	Assistant Previews	Yardımcı Önizlemeleri
+	Drag fill	Sürükleyerek doldur
+	Dragging fills every region passed over	Sürükleme geçilen her bölgeyi doldurur
+	Exclude colour	Rengi dışla
+	Exclude transparent	Saydamı dışla
+	Fill mode	Doldurma modu
+	No region is fully enclosed by the shape	Hiçbir bölge şeklin içinde tamamen kapalı değil
+	Only regions coloured like the first one	Yalnızca ilkiyle aynı renkteki bölgeler
+	Reference	Referans
+	Similar only	Yalnızca benzer
+	Soften the filled edge	Doldurma kenarını yumuşat
+	Spread stops at the darkest pixels (lines)	Yayılma en koyu piksellerde (çizgilerde) durur
+	Spread stops at the most opaque pixels	Yayılma en opak piksellerde durur
+	Stop at darkest	En koyuda dur
+	Stop at opaque	Opakta dur
+	Similar Colours	Benzer Renkler
+	Colour Labels	Renk Etiketleri
+	All Regions	Tüm Bölgeler
+	Specific Colour	Belirli Renk
+	Transparent Regions	Saydam Bölgeler
+	Surrounded By	Çevreleyen
+	Fill with Foreground Color (Opacity)	Ön Plan Rengiyle Doldur (Opaklık)
+	Fill with Background Color (Opacity)	Arka Plan Rengiyle Doldur (Opaklık)
+	Fill with Pattern (Opacity)	Desenle Doldur (Opaklık)
+	Straight Line Tool	Düz Çizgi Aracı
+	Multibrush Tool	Çoklu Fırça Aracı
+	Dynamic Brush Tool	Dinamik Fırça Aracı
+	Enclose and Fill Tool	Çevrele ve Doldur Aracı
+	Colorize Mask Tool	Renklendirme Maskesi Aracı
+	Reference Images Tool	Referans Görüntüleri Aracı

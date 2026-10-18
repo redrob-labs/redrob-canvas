@@ -3613,3 +3613,32 @@ curves	Smooth	Lisser
 	Vertical ruler	Règle verticale
 	Painting Assistants	Assistants de peinture
 	Assistant Previews	Aperçus des assistants
+	Drag fill	Remplissage par glissement
+	Dragging fills every region passed over	Le glissement remplit chaque région traversée
+	Exclude colour	Exclure la couleur
+	Exclude transparent	Exclure le transparent
+	Fill mode	Mode de remplissage
+	No region is fully enclosed by the shape	Aucune région n'est entièrement entourée par la forme
+	Only regions coloured like the first one	Seulement les régions de la couleur de la première
+	Reference	Référence
+	Similar only	Similaires seulement
+	Soften the filled edge	Adoucir le bord du remplissage
+	Spread stops at the darkest pixels (lines)	L'extension s'arrête aux pixels les plus sombres (traits)
+	Spread stops at the most opaque pixels	L'extension s'arrête aux pixels les plus opaques
+	Stop at darkest	Arrêt au plus sombre
+	Stop at opaque	Arrêt à l'opaque
+	Similar Colours	Couleurs similaires
+	Colour Labels	Étiquettes de couleur
+	All Regions	Toutes les régions
+	Specific Colour	Couleur spécifique
+	Transparent Regions	Régions transparentes
+	Surrounded By	Entouré par
+	Fill with Foreground Color (Opacity)	Remplir avec la couleur de premier plan (opacité)
+	Fill with Background Color (Opacity)	Remplir avec la couleur d'arrière-plan (opacité)
+	Fill with Pattern (Opacity)	Remplir avec un motif (opacité)
+	Straight Line Tool	Outil Ligne droite
+	Multibrush Tool	Outil Multibrosse
+	Dynamic Brush Tool	Outil Brosse dynamique
+	Enclose and Fill Tool	Outil Entourer et remplir
+	Colorize Mask Tool	Outil Masque de colorisation
+	Reference Images Tool	Outil Images de référence

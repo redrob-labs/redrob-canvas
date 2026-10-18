@@ -4275,3 +4275,32 @@ curves	Smooth	スムーズ
 	Vertical ruler	垂直定規
 	Painting Assistants	ペイントアシスタント
 	Assistant Previews	アシスタントのプレビュー
+	Drag fill	ドラッグ塗り
+	Dragging fills every region passed over	ドラッグで通過したすべての領域を塗る
+	Exclude colour	除外する色
+	Exclude transparent	透明を除外
+	Fill mode	塗りモード
+	No region is fully enclosed by the shape	シェイプに完全に囲まれた領域がありません
+	Only regions coloured like the first one	最初の領域と同じ色の領域のみ
+	Reference	参照
+	Similar only	類似色のみ
+	Soften the filled edge	塗りの縁をぼかす
+	Spread stops at the darkest pixels (lines)	拡張は最も暗いピクセル (線) で止まる
+	Spread stops at the most opaque pixels	拡張は最も不透明なピクセルで止まる
+	Stop at darkest	最暗で停止
+	Stop at opaque	不透明で停止
+	Similar Colours	類似色
+	Colour Labels	カラーラベル
+	All Regions	すべての領域
+	Specific Colour	特定の色
+	Transparent Regions	透明な領域
+	Surrounded By	囲まれている色
+	Fill with Foreground Color (Opacity)	描画色で塗りつぶし (不透明度)
+	Fill with Background Color (Opacity)	背景色で塗りつぶし (不透明度)
+	Fill with Pattern (Opacity)	パターンで塗りつぶし (不透明度)
+	Straight Line Tool	直線ツール
+	Multibrush Tool	マルチブラシツール
+	Dynamic Brush Tool	ダイナミックブラシツール
+	Enclose and Fill Tool	囲んで塗りつぶしツール
+	Colorize Mask Tool	カラライズマスクツール
+	Reference Images Tool	参照画像ツール

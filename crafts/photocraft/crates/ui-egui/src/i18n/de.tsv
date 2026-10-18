@@ -3604,3 +3604,32 @@ curves	Smooth	Glätten
 	Vertical ruler	Vertikales Lineal
 	Painting Assistants	Malassistenten
 	Assistant Previews	Assistentenvorschauen
+	Drag fill	Ziehfüllung
+	Dragging fills every region passed over	Ziehen füllt jeden überfahrenen Bereich
+	Exclude colour	Farbe ausschließen
+	Exclude transparent	Transparentes ausschließen
+	Fill mode	Füllmodus
+	No region is fully enclosed by the shape	Keine Region ist vollständig von der Form umschlossen
+	Only regions coloured like the first one	Nur Bereiche in der Farbe des ersten
+	Reference	Referenz
+	Similar only	Nur ähnliche
+	Soften the filled edge	Füllkante weichzeichnen
+	Spread stops at the darkest pixels (lines)	Die Ausdehnung stoppt an den dunkelsten Pixeln (Linien)
+	Spread stops at the most opaque pixels	Die Ausdehnung stoppt an den deckendsten Pixeln
+	Stop at darkest	Am Dunkelsten stoppen
+	Stop at opaque	Am Deckenden stoppen
+	Similar Colours	Ähnliche Farben
+	Colour Labels	Farbetiketten
+	All Regions	Alle Bereiche
+	Specific Colour	Bestimmte Farbe
+	Transparent Regions	Transparente Bereiche
+	Surrounded By	Umgeben von
+	Fill with Foreground Color (Opacity)	Mit Vordergrundfarbe füllen (Deckkraft)
+	Fill with Background Color (Opacity)	Mit Hintergrundfarbe füllen (Deckkraft)
+	Fill with Pattern (Opacity)	Mit Muster füllen (Deckkraft)
+	Straight Line Tool	Gerade-Linie-Werkzeug
+	Multibrush Tool	Multipinsel-Werkzeug
+	Dynamic Brush Tool	Dynamischer-Pinsel-Werkzeug
+	Enclose and Fill Tool	Umschließen-und-füllen-Werkzeug
+	Colorize Mask Tool	Kolorierungsmasken-Werkzeug
+	Reference Images Tool	Referenzbilder-Werkzeug

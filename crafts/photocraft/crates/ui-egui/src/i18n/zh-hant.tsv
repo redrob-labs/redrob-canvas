@@ -3146,3 +3146,32 @@ curves	Smooth	平滑
 	Vertical ruler	垂直尺規
 	Painting Assistants	繪畫輔助線
 	Assistant Previews	輔助線預覽
+	Drag fill	拖曳填滿
+	Dragging fills every region passed over	拖曳時填滿經過的每個區域
+	Exclude colour	排除顏色
+	Exclude transparent	排除透明
+	Fill mode	填滿模式
+	No region is fully enclosed by the shape	沒有區域被形狀完全包圍
+	Only regions coloured like the first one	僅與第一個區域顏色相同的區域
+	Reference	參考
+	Similar only	僅相似
+	Soften the filled edge	柔化填滿邊緣
+	Spread stops at the darkest pixels (lines)	擴展在最暗的像素（線條）處停止
+	Spread stops at the most opaque pixels	擴展在最不透明的像素處停止
+	Stop at darkest	在最暗處停止
+	Stop at opaque	在不透明處停止
+	Similar Colours	相似顏色
+	Colour Labels	顏色標籤
+	All Regions	所有區域
+	Specific Colour	特定顏色
+	Transparent Regions	透明區域
+	Surrounded By	被包圍
+	Fill with Foreground Color (Opacity)	用前景色填滿（不透明度）
+	Fill with Background Color (Opacity)	用背景色填滿（不透明度）
+	Fill with Pattern (Opacity)	用圖樣填滿（不透明度）
+	Straight Line Tool	直線工具
+	Multibrush Tool	多重筆刷工具
+	Dynamic Brush Tool	動態筆刷工具
+	Enclose and Fill Tool	包圍填滿工具
+	Colorize Mask Tool	著色遮色片工具
+	Reference Images Tool	參考圖像工具

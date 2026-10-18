@@ -3514,3 +3514,32 @@ curves	Smooth	Сгладить
 	Vertical ruler	Вертикальная линейка
 	Painting Assistants	Ассистенты рисования
 	Assistant Previews	Предпросмотр ассистентов
+	Drag fill	Заливка перетаскиванием
+	Dragging fills every region passed over	Перетаскивание заливает каждую пройденную область
+	Exclude colour	Исключить цвет
+	Exclude transparent	Исключить прозрачное
+	Fill mode	Режим заливки
+	No region is fully enclosed by the shape	Фигура не окружает полностью ни одну область
+	Only regions coloured like the first one	Только области того же цвета, что и первая
+	Reference	Опора
+	Similar only	Только похожие
+	Soften the filled edge	Смягчить край заливки
+	Spread stops at the darkest pixels (lines)	Расширение останавливается на самых тёмных пикселях (линиях)
+	Spread stops at the most opaque pixels	Расширение останавливается на самых непрозрачных пикселях
+	Stop at darkest	Стоп на тёмном
+	Stop at opaque	Стоп на непрозрачном
+	Similar Colours	Похожие цвета
+	Colour Labels	Цветовые метки
+	All Regions	Все области
+	Specific Colour	Заданный цвет
+	Transparent Regions	Прозрачные области
+	Surrounded By	Окружённые цветом
+	Fill with Foreground Color (Opacity)	Залить основным цветом (непрозрачность)
+	Fill with Background Color (Opacity)	Залить фоновым цветом (непрозрачность)
+	Fill with Pattern (Opacity)	Залить узором (непрозрачность)
+	Straight Line Tool	Инструмент «Прямая»
+	Multibrush Tool	Инструмент «Мультикисть»
+	Dynamic Brush Tool	Инструмент «Динамическая кисть»
+	Enclose and Fill Tool	Инструмент «Обвести и залить»
+	Colorize Mask Tool	Инструмент «Маска раскрашивания»
+	Reference Images Tool	Инструмент «Образцы»

@@ -93,6 +93,7 @@ pub mod field_tab;
 pub mod file_dialog;
 pub mod file_open;
 pub mod file_ui;
+pub mod fill_tool_ui;
 pub mod fill_ui;
 pub mod filter_dialog;
 mod filter_preview_ui;

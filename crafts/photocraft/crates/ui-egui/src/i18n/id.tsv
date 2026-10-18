@@ -3535,3 +3535,32 @@ curves	Smooth	Haluskan
 	Vertical ruler	Penggaris vertikal
 	Painting Assistants	Asisten melukis
 	Assistant Previews	Pratinjau asisten
+	Drag fill	Isi seret
+	Dragging fills every region passed over	Menyeret mengisi setiap area yang dilewati
+	Exclude colour	Kecualikan warna
+	Exclude transparent	Kecualikan transparan
+	Fill mode	Mode isi
+	No region is fully enclosed by the shape	Tidak ada area yang sepenuhnya dikelilingi bentuk
+	Only regions coloured like the first one	Hanya area berwarna seperti yang pertama
+	Reference	Referensi
+	Similar only	Hanya serupa
+	Soften the filled edge	Haluskan tepi isian
+	Spread stops at the darkest pixels (lines)	Pelebaran berhenti di piksel tergelap (garis)
+	Spread stops at the most opaque pixels	Pelebaran berhenti di piksel paling pekat
+	Stop at darkest	Berhenti di tergelap
+	Stop at opaque	Berhenti di pekat
+	Similar Colours	Warna serupa
+	Colour Labels	Label warna
+	All Regions	Semua area
+	Specific Colour	Warna tertentu
+	Transparent Regions	Area transparan
+	Surrounded By	Dikelilingi oleh
+	Fill with Foreground Color (Opacity)	Isi dengan warna depan (opasitas)
+	Fill with Background Color (Opacity)	Isi dengan warna latar (opasitas)
+	Fill with Pattern (Opacity)	Isi dengan pola (opasitas)
+	Straight Line Tool	Alat Garis Lurus
+	Multibrush Tool	Alat Multikuas
+	Dynamic Brush Tool	Alat Kuas Dinamis
+	Enclose and Fill Tool	Alat Lingkupi dan Isi
+	Colorize Mask Tool	Alat Masker Pewarnaan
+	Reference Images Tool	Alat Gambar Referensi

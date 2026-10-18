@@ -4132,3 +4132,32 @@ curves	Smooth	Wygładź
 	Vertical ruler	Linijka pionowa
 	Painting Assistants	Asystenci malowania
 	Assistant Previews	Podglądy asystentów
+	Drag fill	Wypełnianie przeciąganiem
+	Dragging fills every region passed over	Przeciąganie wypełnia każdy mijany obszar
+	Exclude colour	Wyklucz kolor
+	Exclude transparent	Wyklucz przezroczyste
+	Fill mode	Tryb wypełniania
+	No region is fully enclosed by the shape	Żaden obszar nie jest w pełni otoczony kształtem
+	Only regions coloured like the first one	Tylko obszary w kolorze pierwszego
+	Reference	Odniesienie
+	Similar only	Tylko podobne
+	Soften the filled edge	Zmiękcz krawędź wypełnienia
+	Spread stops at the darkest pixels (lines)	Rozszerzanie zatrzymuje się na najciemniejszych pikselach (liniach)
+	Spread stops at the most opaque pixels	Rozszerzanie zatrzymuje się na najbardziej kryjących pikselach
+	Stop at darkest	Zatrzymaj na najciemniejszym
+	Stop at opaque	Zatrzymaj na kryjącym
+	Similar Colours	Podobne kolory
+	Colour Labels	Etykiety kolorów
+	All Regions	Wszystkie obszary
+	Specific Colour	Określony kolor
+	Transparent Regions	Obszary przezroczyste
+	Surrounded By	Otoczone przez
+	Fill with Foreground Color (Opacity)	Wypełnij kolorem narzędzia (krycie)
+	Fill with Background Color (Opacity)	Wypełnij kolorem tła (krycie)
+	Fill with Pattern (Opacity)	Wypełnij wzorkiem (krycie)
+	Straight Line Tool	Narzędzie Linia prosta
+	Multibrush Tool	Narzędzie Multipędzel
+	Dynamic Brush Tool	Narzędzie Pędzel dynamiczny
+	Enclose and Fill Tool	Narzędzie Otocz i wypełnij
+	Colorize Mask Tool	Narzędzie Maska kolorowania
+	Reference Images Tool	Narzędzie Obrazy referencyjne

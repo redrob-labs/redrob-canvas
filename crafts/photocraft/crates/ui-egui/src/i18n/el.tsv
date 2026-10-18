@@ -4234,3 +4234,32 @@ curves	Smooth	Εξομάλυνση
 	Vertical ruler	Κάθετος χάρακας
 	Painting Assistants	Βοηθοί ζωγραφικής
 	Assistant Previews	Προεπισκοπήσεις βοηθών
+	Drag fill	Γέμισμα με σύρσιμο
+	Dragging fills every region passed over	Το σύρσιμο γεμίζει κάθε περιοχή που διασχίζει
+	Exclude colour	Εξαίρεση χρώματος
+	Exclude transparent	Εξαίρεση διαφανών
+	Fill mode	Λειτουργία γεμίσματος
+	No region is fully enclosed by the shape	Καμία περιοχή δεν περικλείεται πλήρως από το σχήμα
+	Only regions coloured like the first one	Μόνο περιοχές με το χρώμα της πρώτης
+	Reference	Αναφορά
+	Similar only	Μόνο παρόμοια
+	Soften the filled edge	Απάλυνση του άκρου γεμίσματος
+	Spread stops at the darkest pixels (lines)	Η επέκταση σταματά στα πιο σκούρα pixel (γραμμές)
+	Spread stops at the most opaque pixels	Η επέκταση σταματά στα πιο αδιαφανή pixel
+	Stop at darkest	Στάση στο πιο σκούρο
+	Stop at opaque	Στάση στο αδιαφανές
+	Similar Colours	Παρόμοια χρώματα
+	Colour Labels	Ετικέτες χρώματος
+	All Regions	Όλες οι περιοχές
+	Specific Colour	Συγκεκριμένο χρώμα
+	Transparent Regions	Διαφανείς περιοχές
+	Surrounded By	Περιβάλλεται από
+	Fill with Foreground Color (Opacity)	Γέμισμα με χρώμα προσκηνίου (αδιαφάνεια)
+	Fill with Background Color (Opacity)	Γέμισμα με χρώμα φόντου (αδιαφάνεια)
+	Fill with Pattern (Opacity)	Γέμισμα με μοτίβο (αδιαφάνεια)
+	Straight Line Tool	Εργαλείο Ευθεία γραμμή
+	Multibrush Tool	Εργαλείο Πολυπινέλο
+	Dynamic Brush Tool	Εργαλείο Δυναμικό πινέλο
+	Enclose and Fill Tool	Εργαλείο Περίκλειση και γέμισμα
+	Colorize Mask Tool	Εργαλείο Μάσκα χρωματισμού
+	Reference Images Tool	Εργαλείο Εικόνες αναφοράς

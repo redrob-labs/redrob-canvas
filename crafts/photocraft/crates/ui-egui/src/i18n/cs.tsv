@@ -4143,3 +4143,32 @@ navigator	Zoom	Zvětšení
 	Vertical ruler	Svislé pravítko
 	Painting Assistants	Malířští pomocníci
 	Assistant Previews	Náhledy pomocníků
+	Drag fill	Výplň tažením
+	Dragging fills every region passed over	Tažení vyplní každou oblast, přes kterou přejedete
+	Exclude colour	Vyloučit barvu
+	Exclude transparent	Vyloučit průhledné
+	Fill mode	Režim výplně
+	No region is fully enclosed by the shape	Tvar zcela neobklopuje žádnou oblast
+	Only regions coloured like the first one	Jen oblasti barvy první oblasti
+	Reference	Reference
+	Similar only	Jen podobné
+	Soften the filled edge	Zjemnit okraj výplně
+	Spread stops at the darkest pixels (lines)	Rozšíření se zastaví na nejtmavších pixelech (linkách)
+	Spread stops at the most opaque pixels	Rozšíření se zastaví na nejméně průhledných pixelech
+	Stop at darkest	Zastavit na nejtmavším
+	Stop at opaque	Zastavit na neprůhledném
+	Similar Colours	Podobné barvy
+	Colour Labels	Barevné štítky
+	All Regions	Všechny oblasti
+	Specific Colour	Určitá barva
+	Transparent Regions	Průhledné oblasti
+	Surrounded By	Obklopené barvou
+	Fill with Foreground Color (Opacity)	Vyplnit barvou popředí (krytí)
+	Fill with Background Color (Opacity)	Vyplnit barvou pozadí (krytí)
+	Fill with Pattern (Opacity)	Vyplnit vzorkem (krytí)
+	Straight Line Tool	Nástroj Přímka
+	Multibrush Tool	Nástroj Multištětec
+	Dynamic Brush Tool	Nástroj Dynamický štětec
+	Enclose and Fill Tool	Nástroj Obklopit a vyplnit
+	Colorize Mask Tool	Nástroj Kolorovací maska
+	Reference Images Tool	Nástroj Referenční obrázky

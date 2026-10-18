@@ -4022,3 +4022,32 @@ curves	Smooth	Làm mượt
 	Vertical ruler	Thước dọc
 	Painting Assistants	Trợ lý vẽ
 	Assistant Previews	Xem trước trợ lý
+	Drag fill	Tô bằng kéo
+	Dragging fills every region passed over	Kéo sẽ tô mọi vùng đi qua
+	Exclude colour	Loại trừ màu
+	Exclude transparent	Loại trừ trong suốt
+	Fill mode	Chế độ tô
+	No region is fully enclosed by the shape	Không có vùng nào được hình bao kín hoàn toàn
+	Only regions coloured like the first one	Chỉ các vùng cùng màu với vùng đầu
+	Reference	Tham chiếu
+	Similar only	Chỉ màu tương tự
+	Soften the filled edge	Làm mềm mép tô
+	Spread stops at the darkest pixels (lines)	Mở rộng dừng tại các điểm ảnh tối nhất (đường nét)
+	Spread stops at the most opaque pixels	Mở rộng dừng tại các điểm ảnh đục nhất
+	Stop at darkest	Dừng ở tối nhất
+	Stop at opaque	Dừng ở đục
+	Similar Colours	Màu tương tự
+	Colour Labels	Nhãn màu
+	All Regions	Mọi vùng
+	Specific Colour	Màu cụ thể
+	Transparent Regions	Vùng trong suốt
+	Surrounded By	Bao quanh bởi
+	Fill with Foreground Color (Opacity)	Tô bằng màu tiền cảnh (độ mờ)
+	Fill with Background Color (Opacity)	Tô bằng màu nền (độ mờ)
+	Fill with Pattern (Opacity)	Tô bằng mẫu (độ mờ)
+	Straight Line Tool	Công cụ Đường thẳng
+	Multibrush Tool	Công cụ Đa cọ
+	Dynamic Brush Tool	Công cụ Cọ động
+	Enclose and Fill Tool	Công cụ Bao và tô
+	Colorize Mask Tool	Công cụ Mặt nạ tô màu
+	Reference Images Tool	Công cụ Ảnh tham chiếu

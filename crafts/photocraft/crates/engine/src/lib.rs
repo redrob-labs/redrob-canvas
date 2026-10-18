@@ -48,6 +48,7 @@ pub mod extra_cmds;
 pub mod file_cmds;
 pub mod fill_cmds;
 pub mod fill_key_cmds;
+pub mod fill_opacity_cmds;
 pub mod filters;
 pub mod filters_ext;
 pub mod filters_extra;

@@ -5056,3 +5056,32 @@ navigator	Zoom	Zoom
 	Vertical ruler	Regla vertical
 	Painting Assistants	Asistentes de pintura
 	Assistant Previews	Previsualizaciones del asistente
+	Drag fill	Rellenar arrastrando
+	Dragging fills every region passed over	Al arrastrar se rellena cada región recorrida
+	Exclude colour	Excluir color
+	Exclude transparent	Excluir transparente
+	Fill mode	Modo de relleno
+	No region is fully enclosed by the shape	Ninguna región está completamente encerrada por la forma
+	Only regions coloured like the first one	Solo regiones del color de la primera
+	Reference	Referencia
+	Similar only	Solo similares
+	Soften the filled edge	Suavizar el borde del relleno
+	Spread stops at the darkest pixels (lines)	La extensión se detiene en los píxeles más oscuros (líneas)
+	Spread stops at the most opaque pixels	La extensión se detiene en los píxeles más opacos
+	Stop at darkest	Parar en lo más oscuro
+	Stop at opaque	Parar en lo opaco
+	Similar Colours	Colores similares
+	Colour Labels	Etiquetas de color
+	All Regions	Todas las regiones
+	Specific Colour	Color específico
+	Transparent Regions	Regiones transparentes
+	Surrounded By	Rodeado por
+	Fill with Foreground Color (Opacity)	Rellenar con color frontal (opacidad)
+	Fill with Background Color (Opacity)	Rellenar con color de fondo (opacidad)
+	Fill with Pattern (Opacity)	Rellenar con motivo (opacidad)
+	Straight Line Tool	Herramienta Línea recta
+	Multibrush Tool	Herramienta Multipincel
+	Dynamic Brush Tool	Herramienta Pincel dinámico
+	Enclose and Fill Tool	Herramienta Encerrar y rellenar
+	Colorize Mask Tool	Herramienta Máscara de coloreado
+	Reference Images Tool	Herramienta Imágenes de referencia

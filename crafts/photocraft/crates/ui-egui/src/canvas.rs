@@ -3858,6 +3858,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         crate::vector_ui::draw_overlay(app, &painter, &xf, &doc);
         crate::symmetry_ui::draw(app, &painter, &xf);
         crate::assistant_ui::draw(app, &painter, &xf);
+        crate::fill_tool_ui::draw_overlay(app, &painter, &xf);
         crate::analysis_ui::draw_overlay(app, &painter, &xf);
         crate::gradient_ui::draw_overlay(app, &painter, &xf);
         crate::slice_ui::draw_overlay(app, &painter, &xf);
@@ -5491,16 +5492,12 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
                     return;
                 }
                 Tool::PaintBucket => {
-                    let o = app.ui.tool_options.clone();
-                    let contents = if o.bucket_fill_pattern {
-                        "pattern"
-                    } else if o.bucket_fill_background {
-                        "background"
-                    } else {
-                        "foreground"
-                    };
-                    let boundary = o.bucket_use_boundary.then(|| o.bucket_boundary_color.to_vec());
-                    let _ = app.run("paint.bucket", json!({"x": x.floor(), "y": y.floor(), "tolerance": o.tolerance, "contiguous": o.contiguous, "antiAlias": o.anti_alias, "sampleAllLayers": o.sample_all_layers, "diagonal": o.wand_diagonal, "criterion": o.wand_criterion, "lineArt": o.bucket_line_art, "lineArtThreshold": o.line_art_threshold, "lineArtGap": o.line_art_gap, "lineArtGrow": o.line_art_grow, "opacity": o.fill_opacity, "contents": contents, "scale": o.bucket_pattern_scale, "angle": o.bucket_pattern_angle, "spread": o.bucket_spread, "closeGap": o.bucket_close_gap, "boundaryColor": boundary, "target": paint_target(app)}));
+                    // A plain fill, or the start of a drag fill (`fill_tool_ui`).
+                    crate::fill_tool_ui::bucket_down(app, x, y, mods);
+                    return;
+                }
+                Tool::EncloseFill => {
+                    app.drag = Some(Drag::new(tool, [x, y], vec![[x, y, pressure as f64]], mods, false));
                     return;
                 }
                 Tool::RedEye => {
@@ -5893,6 +5890,8 @@ pub(crate) fn finish_gesture(app: &mut PhotocraftApp, d: Drag) {
         Tool::PathSelection => crate::vector_ui::path_selection_finish(app, d.start, [end[0], end[1]]),
         Tool::Type | Tool::VerticalType | Tool::HorizontalTypeMask | Tool::VerticalTypeMask => crate::type_tool::pointer_up(app, d.start, [end[0], end[1]]),
         Tool::Brush | Tool::Pencil | Tool::Eraser => commit_brush_stroke(app, &d),
+        Tool::PaintBucket => crate::fill_tool_ui::finish_bucket_drag(app, &d),
+        Tool::EncloseFill => crate::fill_tool_ui::finish_enclose(app, &d),
         Tool::RectMarquee | Tool::EllipseMarquee => {
             // Exactly what the drag showed (`marquee_preview_px`); a click deselects.
             let Some([x0, y0, x1, y1]) = marquee_preview_px(&app.ui.tool_options, &d, app.point_zoom()) else {

@@ -4606,3 +4606,32 @@ shape	Appearance	Izgled
 	Vertical ruler	Vertikalni lenjir
 	Painting Assistants	Pomoćnici za slikanje
 	Assistant Previews	Pregledi pomoćnika
+	Drag fill	Popuna prevlačenjem
+	Dragging fills every region passed over	Prevlačenje popunjava svaku pređenu oblast
+	Exclude colour	Izuzmi boju
+	Exclude transparent	Izuzmi providno
+	Fill mode	Režim popune
+	No region is fully enclosed by the shape	Nijedna oblast nije potpuno obuhvaćena oblikom
+	Only regions coloured like the first one	Samo oblasti obojene kao prva
+	Reference	Referenca
+	Similar only	Samo slične
+	Soften the filled edge	Umekšaj ivicu popune
+	Spread stops at the darkest pixels (lines)	Širenje se zaustavlja na najtamnijim pikselima (linijama)
+	Spread stops at the most opaque pixels	Širenje se zaustavlja na najneprozirnijim pikselima
+	Stop at darkest	Stani na najtamnijem
+	Stop at opaque	Stani na neprozirnom
+	Similar Colours	Slične boje
+	Colour Labels	Oznake boja
+	All Regions	Sve oblasti
+	Specific Colour	Određena boja
+	Transparent Regions	Providne oblasti
+	Surrounded By	Okruženo bojom
+	Fill with Foreground Color (Opacity)	Popuni bojom prednjeg plana (neprozirnost)
+	Fill with Background Color (Opacity)	Popuni bojom pozadine (neprozirnost)
+	Fill with Pattern (Opacity)	Popuni šablonom (neprozirnost)
+	Straight Line Tool	Alatka Prava linija
+	Multibrush Tool	Alatka Višestruka četkica
+	Dynamic Brush Tool	Alatka Dinamička četkica
+	Enclose and Fill Tool	Alatka Obuhvati i popuni
+	Colorize Mask Tool	Alatka Maska za bojenje
+	Reference Images Tool	Alatka Referentne slike

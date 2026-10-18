@@ -4294,3 +4294,32 @@ curves	Smooth	Vloeiend maken
 	Vertical ruler	Verticale liniaal
 	Painting Assistants	Tekenassistenten
 	Assistant Previews	Assistentvoorvertoningen
+	Drag fill	Sleepvulling
+	Dragging fills every region passed over	Slepen vult elk gepasseerd gebied
+	Exclude colour	Kleur uitsluiten
+	Exclude transparent	Transparant uitsluiten
+	Fill mode	Vulmodus
+	No region is fully enclosed by the shape	Geen gebied is volledig door de vorm omsloten
+	Only regions coloured like the first one	Alleen gebieden met de kleur van het eerste
+	Reference	Referentie
+	Similar only	Alleen gelijkende
+	Soften the filled edge	Vulrand verzachten
+	Spread stops at the darkest pixels (lines)	Uitbreiding stopt bij de donkerste pixels (lijnen)
+	Spread stops at the most opaque pixels	Uitbreiding stopt bij de meest dekkende pixels
+	Stop at darkest	Stop bij donkerste
+	Stop at opaque	Stop bij dekkend
+	Similar Colours	Gelijkende kleuren
+	Colour Labels	Kleurlabels
+	All Regions	Alle gebieden
+	Specific Colour	Specifieke kleur
+	Transparent Regions	Transparante gebieden
+	Surrounded By	Omgeven door
+	Fill with Foreground Color (Opacity)	Vullen met voorgrondkleur (dekking)
+	Fill with Background Color (Opacity)	Vullen met achtergrondkleur (dekking)
+	Fill with Pattern (Opacity)	Vullen met patroon (dekking)
+	Straight Line Tool	Rechte lijn
+	Multibrush Tool	Multipenseel
+	Dynamic Brush Tool	Dynamisch penseel
+	Enclose and Fill Tool	Omsluiten en vullen
+	Colorize Mask Tool	Kleurmasker
+	Reference Images Tool	Referentieafbeeldingen
