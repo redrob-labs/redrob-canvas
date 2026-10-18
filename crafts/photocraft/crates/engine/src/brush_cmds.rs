@@ -766,7 +766,7 @@ fn name_param(p: &Value, cmd: &str) -> Result<String> {
 }
 
 /// Replace the preset of that name, or append it at the end of the list.
-fn upsert(s: &mut Session, preset: BrushPreset) {
+pub(crate) fn upsert(s: &mut Session, preset: BrushPreset) {
     match s.tools.presets.iter_mut().find(|x| x.name.eq_ignore_ascii_case(&preset.name)) {
         Some(x) => *x = preset,
         None => s.tools.presets.push(preset),

@@ -1333,6 +1333,10 @@ fn export_field_visible(obj: &Map<String, Value>, key: &str) -> bool {
 
 /// The pause that bundles arrow-key nudges means nothing with Bundle Arrow-Key Nudges off (#2259).
 fn tools_field_visible(obj: &Map<String, Value>, key: &str) -> bool {
+    // Input devices and controllers have their own dialogs (Edit › Input Devices / Controllers).
+    if matches!(key, "inputDevices" | "inputControllers") {
+        return false;
+    }
     key != "nudgeBundlePauseMs" || obj.get("bundleNudges").and_then(Value::as_bool) != Some(false)
 }
 

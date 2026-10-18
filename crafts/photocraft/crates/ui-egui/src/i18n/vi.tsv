@@ -4161,3 +4161,158 @@ curves	Smooth	Làm mượt
 	Replace the segment with two copies of itself	Thay đoạn bằng hai bản sao của nó
 	Flip the whole gradient end to end	Đảo ngược toàn bộ chuyển sắc
 	Save as POV-Ray…	Lưu dạng POV-Ray…
+	Shaped Gradient (angular)	Chuyển sắc theo hình (góc)
+	Shaped Gradient (spherical)	Chuyển sắc theo hình (cầu)
+	Shaped Gradient (dimpled)	Chuyển sắc theo hình (lõm)
+	Truncate	Cắt bỏ
+	Sawtooth wave	Sóng răng cưa
+	Triangular wave	Sóng tam giác
+	Wheel	Con lăn
+	Force	Lực
+	Aspect Ratio	Tỷ lệ khung
+	Jitter	Rung
+	Fade length	Độ dài mờ dần
+	Random amount	Mức ngẫu nhiên
+	Save Preset	Lưu cài đặt sẵn
+	Paint Dynamics Editor	Trình chỉnh sửa động lực vẽ
+	Color from Gradient	Màu từ chuyển sắc
+	Put this table on the current brush	Áp dụng bảng này cho cọ hiện tại
+	Save the table as a named dynamics preset	Lưu bảng thành cài đặt động lực có tên
+	Give the dynamics preset a name first	Hãy đặt tên cho cài đặt động lực trước
+	Edit the dynamics table (inputs × outputs)	Sửa bảng động lực (đầu vào × đầu ra)
+	Reset Plane	Đặt lại mặt phẳng
+	Click four corners to define a perspective plane, then clone along it	Nhấp bốn góc để xác định mặt phẳng phối cảnh, rồi nhân bản theo mặt phẳng đó
+	Click corner {n} of 4	Nhấp góc {n}/4
+	Perspective plane: corner {n} of 4 set	Mặt phẳng phối cảnh: đã đặt góc {n}/4
+	Perspective plane set; {key}-click a source, then paint	Đã đặt mặt phẳng phối cảnh; {key}-nhấp một nguồn rồi vẽ
+	Copy Path as SVG	Sao chép đường dẫn dạng SVG
+	Export Path to SVG…	Xuất đường dẫn ra SVG…
+	Import Path from SVG…	Nhập đường dẫn từ SVG…
+	Paste Path from SVG	Dán đường dẫn từ SVG
+	Copy All Paths as SVG	Sao chép mọi đường dẫn dạng SVG
+	Export All Paths to SVG…	Xuất mọi đường dẫn ra SVG…
+	Copied 1 path as SVG	Đã sao chép 1 đường dẫn dạng SVG
+	Copied {n} paths as SVG	Đã sao chép {n} đường dẫn dạng SVG
+	Exported paths to {path}	Đã xuất đường dẫn ra {path}
+	Imported 1 path	Đã nhập 1 đường dẫn
+	Imported {n} paths	Đã nhập {n} đường dẫn
+	The clipboard holds no SVG	Bảng tạm không có SVG
+	Clipboard Image Brush	Cọ ảnh bảng tạm
+	Paint with the image on the clipboard as the brush tip	Vẽ bằng ảnh trên bảng tạm làm đầu cọ
+	Export Layers as Animation…	Xuất lớp thành hoạt ảnh…
+	Export as Brush (.gbr)…	Xuất thành cọ (.gbr)…
+	Export Layers as Image Hose (.gih)…	Xuất lớp thành cọ động (.gih)…
+	Export as Pattern (.pat)…	Xuất thành mẫu (.pat)…
+	Animation Frame Tags…	Thẻ khung hoạt ảnh…
+	Disposal	Xử lý khung
+	Replace	Thay thế
+	Incremental	Tăng dần
+	Angular	Theo góc
+	Xtilt	Nghiêng X
+	Ytilt	Nghiêng Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Xuất thành PostScript (.eps)…
+	Encapsulated	Đóng gói (EPS)
+	Encoding	Mã hóa
+	Hex	Thập lục phân
+	Ascii85	ASCII85
+	Binary	Nhị phân
+	Open Location…	Mở vị trí…
+	From Screenshot…	Từ ảnh chụp màn hình…
+	From Web Page…	Từ trang web…
+	Send by Email…	Gửi qua email…
+	Url	URL
+	Cursor	Con trỏ
+	Region	Vùng
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Bộ đệm
+	Buffers	Bộ đệm
+	Cut Named…	Cắt có tên…
+	Copy Named…	Sao chép có tên…
+	Copy Visible Named…	Sao chép phần hiển thị có tên…
+	Paste Named…	Dán có tên…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Không có bộ đệm có tên. Dùng Chỉnh sửa > Bộ đệm > Sao chép có tên… để giữ một bản sao ở đây.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Không có bộ đệm có tên; hãy dùng Chỉnh sửa > Bộ đệm > Sao chép có tên trước
+	Paste Buffer	Dán bộ đệm
+	Paste Buffer in Place	Dán bộ đệm tại chỗ
+	Paste Buffer as New Image	Dán bộ đệm thành ảnh mới
+	Rename Buffer…	Đổi tên bộ đệm…
+	Delete Buffer	Xóa bộ đệm
+	Paste as New	Dán thành mới
+	Paste the buffer as a new layer	Dán bộ đệm thành lớp mới
+	Paste the buffer as a new document	Dán bộ đệm thành tài liệu mới
+	As	Dạng
+	In place	Tại chỗ
+	Into	Vào trong
+	Modules…	Mô-đun…
+	Units…	Đơn vị…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Chưa cài mô-đun nào. Bộ lọc > Plug-in > Cài plug-in… để thêm.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Mô-đun bị tắt vẫn được cài nhưng rời khỏi menu cho đến khi bật lại.
+	Module	Mô-đun
+	Not installed	Chưa cài
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Hệ số là số đơn vị trong một inch (2,54 với xentimét, 72 với điểm).
+	Identifier	Định danh
+	Factor	Hệ số
+	Symbol	Ký hiệu
+	Abbreviation	Viết tắt
+	Singular	Số ít
+	Plural	Số nhiều
+	Delete Unit	Xóa đơn vị
+	New unit	Đơn vị mới
+	Add Unit	Thêm đơn vị
+	That identifier is already a unit	Định danh đó đã là một đơn vị
+	Custom units	Đơn vị tùy chỉnh
+	Disabled modules	Mô-đun đã tắt
+	Input Devices…	Thiết bị nhập…
+	Input Controllers…	Bộ điều khiển nhập…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Bút là bút cảm ứng của bảng vẽ mà nền tảng báo. Khi tắt, nó hoạt động như chuột.
+	Device	Thiết bị
+	Invert tilt X	Đảo nghiêng X
+	Invert tilt Y	Đảo nghiêng Y
+	Swap tilt	Hoán đổi nghiêng
+	Pressure scale	Tỷ lệ áp lực
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Sự kiện con lăn là up, down, left hoặc right với Shift+, Ctrl+ và Alt+ tùy chọn; sự kiện bàn phím là phím tắt như Ctrl+Alt+Up. Hành động là ID lệnh, có thể kèm tham số JSON.
+	Keyboard	Bàn phím
+	Controller	Bộ điều khiển
+	Event	Sự kiện
+	Remove mapping	Xóa ánh xạ
+	New mapping	Ánh xạ mới
+	Add Mapping	Thêm ánh xạ
+	Disabled	Đã tắt
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} mục; nhấp để đặt màu nền trước, nhấp đôi để sửa
+	Entry	Mục
+	Add an entry with the foreground colour	Thêm một mục với màu nền trước
+	Delete the last entry	Xóa mục cuối
+	Use selected	Dùng mục đã chọn
+	Ink	Mực
+	MyPaint Brush	Cọ MyPaint
+	Nib	Ngòi
+	Aspect	Tỷ lệ
+	Opaque	Độ đục
+	Erase with brush	Xóa bằng cọ
+	Import .myb…	Nhập .myb…
+	Add a MyPaint brush file to the presets	Thêm tệp cọ MyPaint vào bộ cài sẵn
+	Imported MyPaint brush {name}	Đã nhập cọ MyPaint {name}
+	How much pressure changes the nib size	Áp lực thay đổi kích cỡ ngòi bao nhiêu
+	How much the pen's tilt turns and stretches the nib	Độ nghiêng bút xoay và kéo giãn ngòi bao nhiêu
+	How much a fast stroke thins the nib	Nét nhanh làm mảnh ngòi bao nhiêu
+	Added to the preset's logarithmic radius	Cộng vào bán kính lôgarit của bộ cài sẵn
+	Operation…	Phép toán…
+	Operation name or id	Tên hoặc ID phép toán
+	{n} operations	{n} phép toán
+	Choose an operation	Chọn một phép toán
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Bảng điều khiển Script-Fu…
+	Load Scripts Folder…	Tải thư mục tập lệnh…
+	Python Console…	Bảng điều khiển Python…
+	Load Plug-ins Folder…	Tải thư mục plug-in…
+	Loaded {n} scripts	Đã tải {n} tập lệnh
+	Loaded {n} Python plug-ins	Đã tải {n} plug-in Python
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 với call(command, **params), message(text) và print(); mọi lệnh của bộ máy đều gọi được qua call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: mọi lệnh của bộ máy là một thủ tục, (file.new "width" 640 "height" 480); define thủ tục và đăng ký bằng script-fu-register.
+	Code	Mã
+	Cmd+Enter runs the code	Cmd+Enter chạy mã
+	Clear Log	Xóa nhật ký

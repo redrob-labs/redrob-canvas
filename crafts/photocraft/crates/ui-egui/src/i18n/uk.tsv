@@ -4369,3 +4369,157 @@ curves	Smooth	Згладити
 	Replace the segment with two copies of itself	Замінити сегмент двома його копіями
 	Flip the whole gradient end to end	Перевернути весь градієнт
 	Save as POV-Ray…	Зберегти як POV-Ray…
+	Shaped Gradient (angular)	Градієнт за формою (кутовий)
+	Shaped Gradient (spherical)	Градієнт за формою (сферичний)
+	Shaped Gradient (dimpled)	Градієнт за формою (увігнутий)
+	Truncate	Обрізати
+	Sawtooth wave	Пилкоподібна хвиля
+	Triangular wave	Трикутна хвиля
+	Wheel	Колесо
+	Force	Сила
+	Jitter	Тремтіння
+	Fade length	Довжина згасання
+	Random amount	Ступінь випадковості
+	Save Preset	Зберегти набір
+	Paint Dynamics Editor	Редактор динаміки малювання
+	Color from Gradient	Колір із градієнта
+	Put this table on the current brush	Застосувати таблицю до поточного пензля
+	Save the table as a named dynamics preset	Зберегти таблицю як іменований набір динаміки
+	Give the dynamics preset a name first	Спочатку дайте набору динаміки ім’я
+	Edit the dynamics table (inputs × outputs)	Редагувати таблицю динаміки (входи × виходи)
+	Reset Plane	Скинути площину
+	Click four corners to define a perspective plane, then clone along it	Клацніть чотири кути, щоб задати площину перспективи, потім клонуйте вздовж неї
+	Click corner {n} of 4	Клацніть кут {n} з 4
+	Perspective plane: corner {n} of 4 set	Площина перспективи: задано кут {n} з 4
+	Perspective plane set; {key}-click a source, then paint	Площину перспективи задано; клацніть джерело з {key}, потім малюйте
+	Copy Path as SVG	Копіювати контур як SVG
+	Export Path to SVG…	Експортувати контур у SVG…
+	Import Path from SVG…	Імпортувати контур зі SVG…
+	Paste Path from SVG	Вставити контур зі SVG
+	Copy All Paths as SVG	Копіювати всі контури як SVG
+	Export All Paths to SVG…	Експортувати всі контури у SVG…
+	Copied 1 path as SVG	1 контур скопійовано як SVG
+	Copied {n} paths as SVG	Скопійовано контурів як SVG: {n}
+	Exported paths to {path}	Контури експортовано до {path}
+	Imported 1 path	Імпортовано 1 контур
+	Imported {n} paths	Імпортовано контурів: {n}
+	The clipboard holds no SVG	У буфері обміну немає SVG
+	Clipboard Image Brush	Пензель із зображення буфера обміну
+	Paint with the image on the clipboard as the brush tip	Малювати зображенням із буфера обміну як кінчиком пензля
+	Export Layers as Animation…	Експортувати шари як анімацію…
+	Export as Brush (.gbr)…	Експортувати як пензель (.gbr)…
+	Export Layers as Image Hose (.gih)…	Експортувати шари як анімований пензель (.gih)…
+	Export as Pattern (.pat)…	Експортувати як текстуру (.pat)…
+	Animation Frame Tags…	Теги кадру анімації…
+	Disposal	Видалення кадру
+	Replace	Замінити
+	Incremental	Послідовно
+	Angular	За кутом
+	Xtilt	Нахил X
+	Ytilt	Нахил Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Експортувати як PostScript (.eps)…
+	Encapsulated	Інкапсульований
+	Encoding	Кодування
+	Hex	Шістнадцятковий
+	Ascii85	ASCII85
+	Binary	Двійковий
+	Open Location…	Відкрити адресу…
+	From Screenshot…	Зі знімка екрана…
+	From Web Page…	З вебсторінки…
+	Send by Email…	Надіслати поштою…
+	Url	URL
+	Cursor	Курсор
+	Region	Область
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Буфер
+	Buffers	Буфери
+	Cut Named…	Вирізати в іменований буфер…
+	Copy Named…	Копіювати в іменований буфер…
+	Copy Visible Named…	Копіювати видиме в іменований буфер…
+	Paste Named…	Вставити з іменованого буфера…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Немає іменованих буферів. Використайте Зміни > Буфер > Копіювати в іменований буфер…, щоб зберегти копію тут.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Немає іменованих буферів; спочатку використайте Зміни > Буфер > Копіювати в іменований буфер
+	Paste Buffer	Вставити буфер
+	Paste Buffer in Place	Вставити буфер на місце
+	Paste Buffer as New Image	Вставити буфер як нове зображення
+	Rename Buffer…	Перейменувати буфер…
+	Delete Buffer	Видалити буфер
+	Paste as New	Вставити як нове
+	Paste the buffer as a new layer	Вставити буфер як новий шар
+	Paste the buffer as a new document	Вставити буфер як новий документ
+	As	Як
+	In place	На місце
+	Into	Усередину
+	Modules…	Модулі…
+	Units…	Одиниці…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Завантажувані модулі не встановлено. Фільтр > Плагіни > Встановити плагін… додасть один.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Вимкнений модуль залишається встановленим, але зникає з меню, доки його не увімкнуть знову.
+	Module	Модуль
+	Not installed	Не встановлено
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Множник: скільки одиниць в одному дюймі (2,54 для сантиметрів, 72 для пунктів).
+	Identifier	Ідентифікатор
+	Factor	Множник
+	Symbol	Символ
+	Abbreviation	Скорочення
+	Singular	Однина
+	Plural	Множина
+	Delete Unit	Видалити одиницю
+	New unit	Нова одиниця
+	Add Unit	Додати одиницю
+	That identifier is already a unit	Цей ідентифікатор уже зайнятий одиницею
+	Custom units	Власні одиниці
+	Disabled modules	Вимкнені модулі
+	Input Devices…	Пристрої введення…
+	Input Controllers…	Контролери введення…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Перо - це стилус планшета, про який повідомляє платформа. Вимкнене перо працює як миша.
+	Device	Пристрій
+	Invert tilt X	Інвертувати нахил X
+	Invert tilt Y	Інвертувати нахил Y
+	Swap tilt	Поміняти осі нахилу
+	Pressure scale	Масштаб натиску
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Події коліщатка: up, down, left або right з необов'язковими Shift+, Ctrl+ і Alt+; події клавіатури - сполучення на зразок Ctrl+Alt+Up. Дія - ідентифікатор команди, за яким можуть іти параметри JSON.
+	Keyboard	Клавіатура
+	Controller	Контролер
+	Event	Подія
+	Remove mapping	Видалити прив'язку
+	New mapping	Нова прив'язка
+	Add Mapping	Додати прив'язку
+	Disabled	Вимкнено
+	{n} entries; click one to set the foreground colour, double-click to edit it	Записів: {n}; клацання задає колір переднього плану, подвійне клацання редагує
+	Entry	Запис
+	Add an entry with the foreground colour	Додати запис із кольором переднього плану
+	Delete the last entry	Видалити останній запис
+	Use selected	Вибрана
+	Ink	Перо
+	MyPaint Brush	Пензель MyPaint
+	Nib	Перо
+	Aspect	Пропорції
+	Opaque	Непрозорість
+	Erase with brush	Стирати пензлем
+	Import .myb…	Імпортувати .myb…
+	Add a MyPaint brush file to the presets	Додати файл пензля MyPaint до наборів
+	Imported MyPaint brush {name}	Імпортовано пензель MyPaint {name}
+	How much pressure changes the nib size	Наскільки натиск змінює розмір пера
+	How much the pen's tilt turns and stretches the nib	Наскільки нахил пера повертає й розтягує перо
+	How much a fast stroke thins the nib	Наскільки швидкий штрих стоншує перо
+	Added to the preset's logarithmic radius	Додається до логарифмічного радіуса набору
+	Operation…	Операція…
+	Operation name or id	Назва або ідентифікатор операції
+	{n} operations	Операцій: {n}
+	Choose an operation	Виберіть операцію
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Консоль Script-Fu…
+	Load Scripts Folder…	Завантажити папку скриптів…
+	Python Console…	Консоль Python…
+	Load Plug-ins Folder…	Завантажити папку плагінів…
+	Loaded {n} scripts	Завантажено скриптів: {n}
+	Loaded {n} Python plug-ins	Завантажено плагінів Python: {n}
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 з call(command, **params), message(text) і print(); будь-яка команда рушія доступна через call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: кожна команда рушія - процедура, (file.new "width" 640 "height" 480); визначайте процедури та реєструйте їх через script-fu-register.
+	Code	Код
+	Cmd+Enter runs the code	Cmd+Enter виконує код
+	Clear Log	Очистити журнал

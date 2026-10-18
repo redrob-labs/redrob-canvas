@@ -4739,3 +4739,154 @@ shape	Appearance	Izgled
 	Replace the segment with two copies of itself	Замени сегмент са две његове копије
 	Flip the whole gradient end to end	Обрни цео прелив
 	Save as POV-Ray…	Сачувај као POV-Ray…
+	Shaped Gradient (angular)	Градијент по облику (угаони)
+	Shaped Gradient (spherical)	Градијент по облику (сферни)
+	Shaped Gradient (dimpled)	Градијент по облику (удубљени)
+	Truncate	Одсеци
+	Sawtooth wave	Тестерасти талас
+	Triangular wave	Троугаони талас
+	Wheel	Точкић
+	Force	Сила
+	Jitter	Подрхтавање
+	Fade length	Дужина бледења
+	Random amount	Количина случајности
+	Save Preset	Сачувај поставку
+	Paint Dynamics Editor	Уређивач динамике сликања
+	Color from Gradient	Боја из градијента
+	Put this table on the current brush	Примени табелу на тренутну четкицу
+	Save the table as a named dynamics preset	Сачувај табелу као именовану поставку динамике
+	Give the dynamics preset a name first	Прво дајте име поставци динамике
+	Edit the dynamics table (inputs × outputs)	Уреди табелу динамике (улази × излази)
+	Reset Plane	Поништи раван
+	Click four corners to define a perspective plane, then clone along it	Кликните четири угла да одредите раван перспективе, затим клонирајте дуж ње
+	Click corner {n} of 4	Кликните угао {n} од 4
+	Perspective plane: corner {n} of 4 set	Раван перспективе: постављен угао {n} од 4
+	Perspective plane set; {key}-click a source, then paint	Раван перспективе постављена; {key}-кликните извор, затим сликајте
+	Copy Path as SVG	Kopiraj putanju kao SVG
+	Export Path to SVG…	Izvezi putanju u SVG…
+	Import Path from SVG…	Uvezi putanju iz SVG…
+	Paste Path from SVG	Nalepi putanju iz SVG
+	Copy All Paths as SVG	Kopiraj sve putanje kao SVG
+	Export All Paths to SVG…	Izvezi sve putanje u SVG…
+	Copied 1 path as SVG	1 putanja kopirana kao SVG
+	Copied {n} paths as SVG	Kopirano putanja kao SVG: {n}
+	Exported paths to {path}	Putanje izvezene u {path}
+	Imported 1 path	Uvezena 1 putanja
+	Imported {n} paths	Uvezeno putanja: {n}
+	The clipboard holds no SVG	U ostavi nema SVG-a
+	Clipboard Image Brush	Četkica od slike iz ostave
+	Paint with the image on the clipboard as the brush tip	Slikaj slikom iz ostave kao vrhom četkice
+	Export Layers as Animation…	Izvezi slojeve kao animaciju…
+	Export as Brush (.gbr)…	Izvezi kao četkicu (.gbr)…
+	Export Layers as Image Hose (.gih)…	Izvezi slojeve kao animiranu četkicu (.gih)…
+	Export as Pattern (.pat)…	Izvezi kao mustru (.pat)…
+	Animation Frame Tags…	Oznake kadra animacije…
+	Disposal	Odlaganje
+	Incremental	Redom
+	Angular	Ugaono
+	Xtilt	Nagib X
+	Ytilt	Nagib Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Izvezi kao PostScript (.eps)…
+	Encapsulated	Enkapsulirano
+	Encoding	Kodiranje
+	Hex	Heksadecimalno
+	Ascii85	ASCII85
+	Binary	Binarno
+	Open Location…	Otvori lokaciju…
+	From Screenshot…	Iz snimka ekrana…
+	From Web Page…	Iz veb stranice…
+	Send by Email…	Pošalji e-poštom…
+	Url	URL
+	Cursor	Kursor
+	Region	Oblast
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Bafer
+	Buffers	Baferi
+	Cut Named…	Iseci u imenovani…
+	Copy Named…	Kopiraj u imenovani…
+	Copy Visible Named…	Kopiraj vidljivo u imenovani…
+	Paste Named…	Nalepi imenovani…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Nema imenovanih bafera. Koristite Uredi > Bafer > Kopiraj u imenovani… da sačuvate kopiju ovde.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Nema imenovanih bafera; prvo koristite Uredi > Bafer > Kopiraj u imenovani
+	Paste Buffer	Nalepi bafer
+	Paste Buffer in Place	Nalepi bafer na mesto
+	Paste Buffer as New Image	Nalepi bafer kao novu sliku
+	Rename Buffer…	Preimenuj bafer…
+	Delete Buffer	Obriši bafer
+	Paste as New	Nalepi kao novo
+	Paste the buffer as a new layer	Nalepi bafer kao novi sloj
+	Paste the buffer as a new document	Nalepi bafer kao novi dokument
+	As	Kao
+	In place	Na mesto
+	Into	Unutra
+	Modules…	Moduli…
+	Units…	Jedinice…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nema instaliranih modula. Filter > Dodaci > Instaliraj dodatak… dodaje jedan.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Isključen modul ostaje instaliran, ali nestaje iz menija dok se ponovo ne uključi.
+	Module	Modul
+	Not installed	Nije instalirano
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor je koliko jedinica čini jedan inč (2,54 za centimetre, 72 za tačke).
+	Identifier	Identifikator
+	Factor	Faktor
+	Symbol	Simbol
+	Abbreviation	Skraćenica
+	Singular	Jednina
+	Plural	Množina
+	Delete Unit	Obriši jedinicu
+	New unit	Nova jedinica
+	Add Unit	Dodaj jedinicu
+	That identifier is already a unit	Taj identifikator je već jedinica
+	Custom units	Prilagođene jedinice
+	Disabled modules	Isključeni moduli
+	Input Devices…	Ulazni uređaji…
+	Input Controllers…	Ulazni kontroleri…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Olovka je stilus tableta koji platforma prijavljuje. Isključena radi kao miš.
+	Device	Uređaj
+	Invert tilt X	Obrni nagib X
+	Invert tilt Y	Obrni nagib Y
+	Swap tilt	Zameni nagib
+	Pressure scale	Razmera pritiska
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Događaji točkića su up, down, left ili right sa opcionim Shift+, Ctrl+ i Alt+; događaji tastature su prečice kao Ctrl+Alt+Up. Radnja je id komande, opciono praćen JSON parametrima.
+	Controller	Kontroler
+	Event	Događaj
+	Remove mapping	Ukloni mapiranje
+	New mapping	Novo mapiranje
+	Add Mapping	Dodaj mapiranje
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} stavki; klik postavlja boju četkice, dvoklik uređuje
+	Entry	Stavka
+	Add an entry with the foreground colour	Dodaj stavku sa bojom četkice
+	Delete the last entry	Obriši poslednju stavku
+	Use selected	Koristi izabranu
+	Ink	Mastilo
+	MyPaint Brush	MyPaint četkica
+	Nib	Vrh pera
+	Aspect	Odnos
+	Opaque	Neprovidnost
+	Erase with brush	Briši četkicom
+	Import .myb…	Uvezi .myb…
+	Add a MyPaint brush file to the presets	Dodaj MyPaint datoteku četkice u podešavanja
+	Imported MyPaint brush {name}	Uvezena MyPaint četkica {name}
+	How much pressure changes the nib size	Koliko pritisak menja veličinu vrha
+	How much the pen's tilt turns and stretches the nib	Koliko nagib olovke okreće i izdužuje vrh
+	How much a fast stroke thins the nib	Koliko brz potez sužava vrh
+	Added to the preset's logarithmic radius	Dodaje se logaritamskom poluprečniku podešavanja
+	Operation…	Operacija…
+	Operation name or id	Naziv ili id operacije
+	{n} operations	Operacija: {n}
+	Choose an operation	Izaberite operaciju
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu konzola…
+	Load Scripts Folder…	Učitaj fasciklu skripti…
+	Python Console…	Python konzola…
+	Load Plug-ins Folder…	Učitaj fasciklu dodataka…
+	Loaded {n} scripts	Učitano skripti: {n}
+	Loaded {n} Python plug-ins	Učitano Python dodataka: {n}
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 sa call(command, **params), message(text) i print(); svaka komanda motora je dostupna kroz call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: svaka komanda motora je procedura, (file.new "width" 640 "height" 480); definišite procedure i registrujte ih sa script-fu-register.
+	Code	Kod
+	Cmd+Enter runs the code	Cmd+Enter pokreće kod
+	Clear Log	Obriši dnevnik

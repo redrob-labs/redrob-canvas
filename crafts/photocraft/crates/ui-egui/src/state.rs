@@ -547,6 +547,14 @@ pub struct ToolOptions {
     pub gradient_reverse: bool,
     /// Gradient tool: dither to reduce 8-bit banding (Photoshop default on).
     pub gradient_dither: bool,
+    /// Classic gradient: how the ramp continues past the drag (none | sawtooth | triangular | truncate).
+    #[serde(default = "default_gradient_repeat")]
+    pub gradient_repeat: String,
+    /// Classic gradient: % of the drag held at the start colour before the ramp begins.
+    pub gradient_offset: f32,
+    /// Brush › Color from Gradient: stroke length in pixels of one run through the gradient.
+    #[serde(default = "default_gradient_fade_length")]
+    pub gradient_fade_length: f32,
     /// Gradient tool mode: false = "Gradient" (live: a Gradient Fill layer, editable on canvas),
     /// true = "Classic gradient" (paints the pixels).
     pub gradient_classic: bool,
@@ -589,6 +597,8 @@ pub struct ToolOptions {
     pub type_align: String,
     /// Clone Stamp / Healing Brush.
     pub clone_aligned: bool,
+    /// Clone Stamp › Perspective: clone along a four-corner perspective plane (`paint.perspectiveClone`).
+    pub clone_perspective: bool,
     /// Pattern Stamp: lock the tile origin in document space across strokes.
     pub pattern_stamp_aligned: bool,
     /// Pattern Stamp: jitter each dab's phase (seeded, replayable).
@@ -739,6 +749,34 @@ pub struct ToolOptions {
     /// removing them.
     #[serde(default)]
     pub anti_erase: bool,
+    /// Brush tool engine: `brush` (the brush tip), `ink` (the calligraphic nib, `paint.ink`) or
+    /// `mypaint` (MyPaint-style presets, `paint.mypaint`). See `paint_engines_ui`.
+    #[serde(default = "default_brush_engine")]
+    pub brush_engine: String,
+    /// Ink nib: shape (circle | square | diamond), angle in degrees, aspect 1..10, and the
+    /// sensitivities (0..1) of size to pressure, angle to tilt, and size to speed.
+    #[serde(default = "default_ink_shape")]
+    pub ink_shape: String,
+    #[serde(default)]
+    pub ink_angle: f32,
+    #[serde(default = "default_one")]
+    pub ink_aspect: f32,
+    #[serde(default = "default_one")]
+    pub ink_sens_size: f32,
+    #[serde(default = "default_ink_sens_tilt")]
+    pub ink_sens_tilt: f32,
+    #[serde(default = "default_ink_sens_speed")]
+    pub ink_sens_speed: f32,
+    /// MyPaint engine: preset name, radius (log offset -3..3), opaque multiplier 0..2 and
+    /// erase-with-brush.
+    #[serde(default = "default_mypaint_preset")]
+    pub mypaint_preset: String,
+    #[serde(default)]
+    pub mypaint_radius: f32,
+    #[serde(default = "default_one")]
+    pub mypaint_opaque: f32,
+    #[serde(default)]
+    pub mypaint_erase: bool,
     /// Magnetic Lasso: detection width (px, 1..256), edge contrast (%, 1..100), how often it
     /// fastens points by itself (0..100), and whether pen pressure narrows the width.
     pub magnetic_width: f32,
@@ -863,6 +901,38 @@ fn default_wand_criterion() -> String {
     "composite".into()
 }
 
+fn default_gradient_repeat() -> String {
+    "none".into()
+}
+
+fn default_gradient_fade_length() -> f32 {
+    100.0
+}
+
+fn default_brush_engine() -> String {
+    "brush".into()
+}
+
+fn default_ink_shape() -> String {
+    "circle".into()
+}
+
+fn default_one() -> f32 {
+    1.0
+}
+
+fn default_ink_sens_tilt() -> f32 {
+    0.4
+}
+
+fn default_ink_sens_speed() -> f32 {
+    0.8
+}
+
+fn default_mypaint_preset() -> String {
+    "Soft Round".into()
+}
+
 fn default_eraser_mode() -> String {
     "brush".into()
 }
@@ -916,6 +986,9 @@ impl Default for ToolOptions {
             gradient_style: "linear".into(),
             gradient_reverse: false,
             gradient_dither: true,
+            gradient_repeat: default_gradient_repeat(),
+            gradient_offset: 0.0,
+            gradient_fade_length: default_gradient_fade_length(),
             gradient_classic: false,
             gradient_blend_mode: redrob_photo_color::BlendMode::Normal,
             fill_opacity: 100.0,
@@ -934,6 +1007,7 @@ impl Default for ToolOptions {
             type_aa: "sharp".into(),
             type_align: "left".into(),
             clone_aligned: true,
+            clone_perspective: false,
             pattern_stamp_aligned: true,
             pattern_stamp_impressionist: false,
             pattern_stamp_scale: 100.0,
@@ -1002,6 +1076,17 @@ impl Default for ToolOptions {
             pencil_clear: false,
             eraser_mode: default_eraser_mode(),
             anti_erase: false,
+            brush_engine: default_brush_engine(),
+            ink_shape: default_ink_shape(),
+            ink_angle: 0.0,
+            ink_aspect: 1.0,
+            ink_sens_size: 1.0,
+            ink_sens_tilt: default_ink_sens_tilt(),
+            ink_sens_speed: default_ink_sens_speed(),
+            mypaint_preset: default_mypaint_preset(),
+            mypaint_radius: 0.0,
+            mypaint_opaque: 1.0,
+            mypaint_erase: false,
             magnetic_width: 10.0,
             magnetic_contrast: 10.0,
             magnetic_frequency: 57.0,
@@ -1406,6 +1491,9 @@ pub struct UiState {
     /// Clone Stamp / Healing source point (⌥-click) and the aligned offset once a stroke started.
     #[serde(default)]
     pub clone_source: Option<[f64; 2]>,
+    /// Clone Stamp › Perspective: the plane's corners clicked so far (four define it).
+    #[serde(default, skip)]
+    pub perspective_corners: Vec<[f64; 2]>,
     #[serde(default)]
     pub clone_offset: Option<[f64; 2]>,
     /// Pattern Stamp aligned origin in document pixels, kept across strokes.
@@ -1465,6 +1553,12 @@ pub struct UiState {
     /// Selected row in the Paths panel ("work" or a saved path name).
     #[serde(default)]
     pub selected_path: Option<String>,
+    /// Paths panel › Paste Path from SVG asked the OS for its text; the next paste event is taken.
+    #[serde(default, skip)]
+    pub svg_paste_pending: bool,
+    /// Filter › Operation…: the operation chosen last time (preselected).
+    #[serde(default)]
+    pub last_operation: Option<String>,
     /// Layers panel kind filter ("pixel", "adjustment", "type", "shape", "smart"); empty = all.
     #[serde(default)]
     pub layer_filter: Vec<String>,
@@ -1500,6 +1594,9 @@ pub struct UiState {
     #[serde(default)]
     pub assistants: crate::assistant_ui::AssistantUi,
     pub timeline: crate::timeline_ui::TimelineUi,
+    /// Window › Buffers panel (named buffers, see `buffers_ui`).
+    #[serde(default)]
+    pub buffers: crate::buffers_ui::BuffersUi,
     /// Slice and Slice Select tools (see `slice_ui`).
     #[serde(default)]
     pub slices: crate::slice_ui::SliceUi,
@@ -1655,6 +1752,7 @@ impl Default for UiState {
             extra: Default::default(),
             assistants: Default::default(),
             timeline: Default::default(),
+            buffers: Default::default(),
             slices: Default::default(),
             frame_tool: Default::default(),
             artboard_tool: Default::default(),
@@ -1668,6 +1766,8 @@ impl Default for UiState {
             direct_selection: Default::default(),
             corner_radius: None,
             selected_path: None,
+            svg_paste_pending: false,
+            last_operation: None,
             panels: Panels::default(),
             views: Vec::new(),
             dialogs: Vec::new(),

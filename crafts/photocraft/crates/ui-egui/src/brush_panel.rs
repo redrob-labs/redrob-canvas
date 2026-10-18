@@ -456,6 +456,17 @@ fn dynamics_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         if ui.add_enabled_ui(deletable, |ui| icons::button(ui, "trash", 22.0, false, tl!("Delete this dynamics preset"))).inner.clicked() {
             run_or_status(app, "brush.dynamics.delete", json!({ "name": current }));
         }
+        // The matrix editor: opens on the chosen preset, or on the brush's own dynamics table.
+        if icons::button(ui, "sliders-horizontal", 22.0, crate::dynamics_editor_ui::is_open(ui.ctx()), tl!("Edit the dynamics table (inputs × outputs)"))
+            .clicked()
+        {
+            let preset = presets
+                .iter()
+                .find(|d| d.name.eq_ignore_ascii_case(&current))
+                .cloned()
+                .unwrap_or_else(|| paint::DynamicsPreset::from_brush("Dynamics", &app.session.tools.brush));
+            crate::dynamics_editor_ui::open(ui.ctx(), preset);
+        }
     });
 }
 

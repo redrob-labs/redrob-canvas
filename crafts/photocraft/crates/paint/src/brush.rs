@@ -130,6 +130,14 @@ fn is_default_dynamic(d: &Dynamic) -> bool {
     *d == Dynamic::controlled(Control::Off)
 }
 
+fn default_gradient_length() -> f32 {
+    100.0
+}
+
+fn is_default_gradient_length(v: &f32) -> bool {
+    *v == default_gradient_length()
+}
+
 /// How an image hose (animated brush) picks the cell each dab paints with, per dimension.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -325,6 +333,8 @@ pub enum TipGeometry {
     #[default]
     Circle,
     Square,
+    /// A square turned 45 degrees (the parametric brush editor's diamond).
+    Diamond,
 }
 
 /// How a computed tip fades from its core to its edge.
@@ -912,6 +922,17 @@ pub struct BrushSettings {
     /// axis as a round one does.
     #[serde(skip_serializing_if = "is_true")]
     pub isotropic_spacing: bool,
+    /// Sensor-driven hardness (a dynamics preset's Hardness output): the control scales
+    /// `hardness` between `hardness_dynamic.minimum` and 1 per dab.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub hardness_dynamic: Dynamic,
+    /// Sensor-driven force (a dynamics preset's Force output): how hard the tip presses, a
+    /// per-dab flow factor on top of Transfer.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub force_dynamic: Dynamic,
+    /// Sensor-driven airbrush rate (a dynamics preset's Rate output): scales `build_up_rate`.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub rate_dynamic: Dynamic,
     /// Extra parameters of the computed tip (outline, mask type, fade per axis, spikes, density,
     /// randomness, precision, auto spacing). The default is the classic round tip.
     #[serde(skip_serializing_if = "GeneratedTip::is_default")]
@@ -935,6 +956,18 @@ pub struct BrushSettings {
     pub color_cmyk: Option<([f32; 3], [f32; 4])>,
     /// Background colour for Color Dynamics' foreground/background jitter.
     pub background: [f32; 4],
+    /// Colour from gradient: when set, the dab colour follows these sorted stops (`(t, rgba)`)
+    /// along the stroke, one full gradient per `color_gradient_length` pixels, repeating as
+    /// `color_gradient_repeat` says. Empty: paint `color`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub color_gradient: Vec<(f32, [f32; 4])>,
+    /// Stroke length in pixels over which `color_gradient` runs once (the fade length).
+    #[serde(default = "default_gradient_length", skip_serializing_if = "is_default_gradient_length")]
+    pub color_gradient_length: f32,
+    /// How `color_gradient` continues past its length: `none` (holds the last colour),
+    /// `sawtooth` (starts over) or `triangular` (runs back).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub color_gradient_repeat: String,
     /// Erase instead of paint.
     pub erase: bool,
     /// With `erase`: restore instead of remove. Erasing only lowers alpha and leaves the colour
@@ -1001,6 +1034,9 @@ impl Default for BrushSettings {
             spacing_enabled: true,
             spacing_dynamic: Dynamic::controlled(Control::Off),
             isotropic_spacing: true,
+            hardness_dynamic: Dynamic::controlled(Control::Off),
+            force_dynamic: Dynamic::controlled(Control::Off),
+            rate_dynamic: Dynamic::controlled(Control::Off),
             generated: GeneratedTip::default(),
             opacity: 1.0,
             flow: 1.0,
@@ -1009,6 +1045,9 @@ impl Default for BrushSettings {
             color: [0.0, 0.0, 0.0, 1.0],
             color_cmyk: None,
             background: [1.0, 1.0, 1.0, 1.0],
+            color_gradient: Vec::new(),
+            color_gradient_length: default_gradient_length(),
+            color_gradient_repeat: String::new(),
             erase: false,
             anti_erase: false,
             mode: BlendMode::Normal,

@@ -297,9 +297,9 @@ name = "Paint dynamics"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-dynamics.html"
 behaviour = "A dynamics preset maps input sensors (pressure, velocity, direction, tilt, wheel, random, fade) onto brush properties (opacity, size, angle, colour, hardness, force, aspect ratio, spacing, rate, flow, jitter) through a matrix of checkboxes plus per-property curves; presets such as Pressure Opacity, Velocity Tapering, Track Direction ship by default and users create their own in a dynamics editor; fade length and repeat mode and colour-from-gradient live in the tool options."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/dynamics_preset.rs, crafts/photocraft/crates/paint/src/dynamics.rs (Control::Velocity), crafts/photocraft/crates/engine/src/dynamics_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs (.rdyn), crafts/photocraft/crates/ui-egui/src/brush_panel.rs (Dynamics row)"
-gap = "named dynamics presets (inputs pressure/velocity/direction/tilt/wheel/random/fade onto opacity/size/angle/colour/aspect/flow/jitter, per-row curve and minimum) with 9 built-ins, saved as .rdyn in the preset store and applied from the brush panel; hardness, force, spacing and rate outputs have no per-dab brush dynamic and are reported as unmapped; no matrix editor dialog yet (presets are edited through brush.dynamics.save / the brush sections), no colour-from-gradient along the stroke"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/dynamics_preset.rs (all 11 outputs mapped), crafts/photocraft/crates/paint/src/brush.rs (hardness_dynamic, force_dynamic, rate_dynamic, color_gradient), crafts/photocraft/crates/paint/src/dynamics.rs (per-dab hardness/force, rate, colour from gradient), crafts/photocraft/crates/engine/src/dynamics_cmds.rs, crafts/photocraft/crates/engine/src/dynamics_extra_cmds.rs (brush.colorFromGradient), crafts/photocraft/crates/ui-egui/src/dynamics_editor_ui.rs (matrix editor), crafts/photocraft/crates/ui-egui/src/brush_panel.rs, crafts/photocraft/crates/ui-egui/src/panels.rs (Color from Gradient, fade length)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -321,9 +321,9 @@ name = "Bucket fill"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-bucket-fill.html"
 behaviour = "Fills the whole selection, similar colours (contiguous region by threshold with fill-transparent-areas, sample merged, diagonal neighbours, select-by criterion) or by line art detection (closes gaps in drawn outlines with stroke-width, max gap, segment-length and max-grow options); fill with FG, BG or pattern; Shift+click toggles whole-selection mode."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs (paint.bucket), crafts/photocraft/crates/ui-egui/src/fill_ui.rs"
-gap = "no line-art fill mode, no diagonal neighbours or per-channel criterion"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs (paint.bucket: lineArt, diagonal, criterion), crafts/photocraft/crates/algo/src/selection.rs (line_art_region, wand criterion), crafts/photocraft/crates/ui-egui/src/panels.rs (Line Art, diagonal, criterion options)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -333,9 +333,9 @@ name = "Gradient tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-gradient.html"
 behaviour = "Drag a line to fill with the active gradient; shapes: linear, bilinear, radial, square, conical symmetric/asymmetric, shaped (angular, spherical, dimpled), spiral clockwise/anticlockwise; repeat none/sawtooth/triangular/truncate; offset; adaptive supersampling; dithering; the line stays editable on canvas with draggable end points and colour stops that can be added, moved and recoloured before committing."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs (paint.gradient), crafts/photocraft/crates/ui-egui/src/gradient_ui.rs, crafts/photocraft/crates/compose/src/gradient_fill.rs"
-gap = "five shapes (linear, radial, angle, reflected, diamond); no bilinear/square/conical/shaped/spiral shapes, no on-canvas stop editing after the drag, no sawtooth/triangular repeat"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint.rs (linear, radial, angle, reflected/bilinear, diamond, square, conical symmetric, spirals), crafts/photocraft/crates/algo/src/paint_shaped.rs (shaped angular/spherical/dimpled, repeat none/sawtooth/triangular/truncate, offset), crafts/photocraft/crates/engine/src/paint_cmds.rs (paint.gradient), crafts/photocraft/crates/ui-egui/src/gradient_ui.rs (on-canvas handles and stops), crafts/photocraft/crates/ui-egui/src/panels.rs (Repeat, Offset)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -369,9 +369,9 @@ name = "Eraser"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-eraser.html"
 behaviour = "Paints transparency on layers with alpha (background colour otherwise); hard-edge option, anti-erase (Alt) restores erased alpha from stored colour values."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/eraser_cmds.rs, crafts/photocraft/crates/ui-egui/src/eraser_ui.rs"
-gap = "no anti-erase mode"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/eraser_cmds.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs (antiErase), crafts/photocraft/crates/paint/src/brush.rs (anti_erase), crafts/photocraft/crates/ui-egui/src/eraser_ui.rs (Anti-erase)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -393,9 +393,9 @@ name = "Ink"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-ink.html"
 behaviour = "Calligraphy-like strokes computed from a nib shape (circle, square, diamond) with size, angle, adjustable sensitivity to pressure, velocity and tilt, and nib aspect; not brush based."
-ours = "none"
-ours_where = ""
-gap = "no nib-based ink tool; pressure-driven brush is the closest"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/ink_cmds.rs (paint.ink: circle/square/diamond nib with size, angle, aspect and pressure/tilt/speed sensitivities, swept outline union), crafts/photocraft/crates/ui-egui/src/paint_engines_ui.rs (Brush tool Engine > Ink options), crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -405,9 +405,9 @@ name = "MyPaint brush"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-mypaint-brush.html"
 behaviour = "Paints with MyPaint brush engine presets (.myb) with radius, hardness, opaque, erase-with-brush options; the presets ship in a dedicated dialog."
-ours = "none"
-ours_where = ""
-gap = "no MyPaint engine or .myb import"
+ours = "partial"
+ours_where = "crafts/photocraft/crates/io/src/myb.rs (.myb v1-v3 parse and write, built-in presets), crafts/photocraft/crates/engine/src/mypaint_engine_cmds.rs (paint.mypaint dab engine with pressure/speed/random/stroke/direction/tilt inputs, colour shifts, eraser, lock alpha; mypaint.list/import/export/remove), crafts/photocraft/crates/ui-egui/src/paint_engines_ui.rs (Engine > MyPaint Brush: preset list, radius, opaque, erase with brush, Import .myb)"
+gap = "smudge and the custom input are not simulated; presets are picked from the options bar list, not a dockable"
 priority = 2
 
 [[feature]]
@@ -441,9 +441,9 @@ name = "Perspective clone"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-perspective-clone.html"
 behaviour = "First define a perspective plane with four corners, then clone so the copied pixels are rescaled to the plane's perspective."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/vp_cmds.rs, crafts/photocraft/crates/ui-egui/src/vp_ui.rs"
-gap = "available inside the Vanishing Point workspace, not as a canvas paint tool"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/perspective_clone_cmds.rs (paint.perspectiveClone), crafts/photocraft/crates/algo/src/vanishing.rs (clone_stroke), crafts/photocraft/crates/ui-egui/src/retouch_ui.rs (Clone Stamp › Perspective: four-corner plane on canvas, plane overlay), crafts/photocraft/crates/engine/src/vp_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -489,9 +489,9 @@ name = "Brushes (parametric, bitmap, animated, clipboard)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-brushes.html"
 behaviour = "Brushes are parametric (editor: shape, radius, spikes, hardness, aspect, angle, spacing), bitmap (.gbr grayscale or colour), animated image hoses (.gih cycling cells by pressure/direction/random), or the clipboard image; .abr import; bracket keys and a configurable wheel resize the active brush."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/presets.rs, crafts/photocraft/crates/io/src/gbr.rs (.gbr/.gih readers), crafts/photocraft/crates/paint/src/brush.rs (ImageHose), crafts/photocraft/crates/paint/src/dynamics.rs (hose_cell), crafts/photocraft/crates/engine/src/preset_import_cmds.rs (importAbr, importImage, importBrushFile), crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
-gap = "ABR, image, .gbr and .gih (animated hose: incremental/angular/random/velocity/pressure/tilt cell selection per dimension) brushes import from the Brushes panel and File > Open; colour .gbr/.gih cells paint with the brush colour (their colours become the mask); no parametric brush editor (spikes), clipboard brush is Define Brush Preset only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/presets.rs, crafts/photocraft/crates/paint/src/brush.rs (GeneratedTip: circle/square/diamond, spikes, density, randomness, hardness, aspect, angle, spacing; ImageHose), crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/io/src/gbr.rs (.gbr/.gih), crafts/photocraft/crates/engine/src/preset_import_cmds.rs (importAbr, importImage, importBrushFile), crafts/photocraft/crates/engine/src/dynamics_extra_cmds.rs (brush.presets.clipboard), crafts/photocraft/crates/ui-egui/src/brush_sections.rs (parametric tip editor), crafts/photocraft/crates/ui-egui/src/brush_picker.rs (Clipboard Image Brush), crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -753,9 +753,9 @@ name = "GEGL operation tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-gegl.html"
 behaviour = "Pick any installed GEGL operation from a list and set its properties with a live preview; a generic front end for operations without a dedicated menu entry."
-ours = "none"
-ours_where = ""
-gap = "no generic operation picker; filters are individual commands (edit.search finds them)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/operation_ui.rs (Filter > Operation…: searchable list of every filter, adjustment and selection-modify operation grouped by menu path, parameter summary, OK opens the operation's own live-preview dialog)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4005,9 +4005,9 @@ name = "Import and export paths (SVG)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-path-dialog.html"
 behaviour = "Paths can be imported from and exported to SVG files, and copied/pasted as SVG text."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/io/src/svg.rs, crafts/photocraft/crates/io/src/vector_map.rs"
-gap = "SVG opens as a document; no path-only import/export entries"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/svg_paths.rs (paths to and from SVG), crafts/photocraft/crates/engine/src/path_svg_cmds.rs (path.importSvg, path.exportSvg, path.toSvg), crafts/photocraft/crates/ui-egui/src/path_svg_ui.rs, crafts/photocraft/crates/ui-egui/src/vector_ui.rs (Paths panel: Import/Export Path to SVG, Copy/Paste Path as SVG text)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4017,9 +4017,9 @@ name = "Colormap dialog (indexed images)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-indexed-palette-dialog.html"
 behaviour = "Shows the palette entries of an indexed image; click sets FG, edit an entry's colour or add new entries."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs (image.mode.colorTable), crafts/photocraft/crates/ui-egui/src/dialogs.rs"
-gap = "colour table viewer/loader; editing individual entries not supported"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs (image.mode.colorTable: entries, colors, transparent), crafts/photocraft/crates/ui-egui/src/colormap_ui.rs (Color Table dialog: swatch grid, click sets the foreground, double-click edits hex/RGB, add and delete entries, transparent entry)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4317,9 +4317,9 @@ name = "Create submenu (from clipboard, screenshot, web page)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-file-create.html"
 behaviour = "New image from the clipboard contents, a screenshot (whole screen, window, region with delay), or by rendering a URL."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (file.newFromClipboard)"
-gap = "no screenshot or web-page capture"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (file.newFromClipboard), crafts/photocraft/crates/engine/src/create_cmds.rs (file.create.screenshot: screen/window/region with delay and cursor through the platform screenshot tool; file.create.webPage: a headless Chromium/Chrome/Edge/Brave/Firefox renders the URL), crafts/photocraft/crates/ui-egui/src/file_ui.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs (File > Create)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -4341,8 +4341,8 @@ name = "Open Location (URL)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-file-open-location.html"
 behaviour = "Opens an image from a URI."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/create_cmds.rs (file.openLocation: http(s)/file URLs through Session::fetch_url or curl), apps/redrob-canvas/src/services.rs (fetch_url over reqwest), apps/redrob-canvas/src/shell.rs, crafts/photocraft/crates/ui-egui/src/file_ui.rs"
 gap = ""
 priority = 3
 
@@ -4401,8 +4401,8 @@ name = "Send by Email"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-send-by-email.html"
 behaviour = "Exports and attaches to a new mail in the system mailer."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/create_cmds.rs (file.sendByEmail: exports a copy in the chosen format and opens it in a new message through xdg-email, Mail.app or the mailto handler), crafts/photocraft/crates/ui-egui/src/file_ui.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
@@ -4425,9 +4425,9 @@ name = "XCF (native project) open and save"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-using-fileformats-creating.html"
 behaviour = "Layered native format with masks, channels, paths, effects, metadata; optional compression; version 3 also opens 2.x files."
-ours = "none"
-ours_where = ""
-gap = "no XCF import; layered interchange via PSD/ORA/KRA"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/xcf.rs (read versions 0-12: RLE/zlib/raw tiles, 8/16/32-bit and float precision, groups, masks, channels, selection, colour map, guides, parasites, paths; write version 11), crafts/photocraft/crates/io/src/lib.rs (.xcf and .xcf.gz open, .xcf save), crafts/photocraft/crates/engine/src/file_cmds.rs (xcf is a layered save format), apps/redrob-canvas/src/services.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -4509,8 +4509,8 @@ name = "MNG export"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/file-mng-export.html"
 behaviour = "Animated PNG-family container with compression and frame options."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/anim_export.rs (MNG: MHDR, TERM loop, FRAM delays and framing mode, one PNG stream per frame, MEND), crafts/photocraft/crates/io/src/lib.rs (.mng export), crafts/photocraft/crates/engine/src/resource_export_cmds.rs"
 gap = ""
 priority = 3
 
@@ -4545,9 +4545,9 @@ name = "ICO / CUR / ANI import/export"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/export-file-formats.html"
 behaviour = "Windows icons with per-size bit depth; cursors and animated cursors."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/codecs/src/codecs/via_image.rs (Ico)"
-gap = "ICO only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/codecs/src/codecs/via_image.rs (Ico), crafts/photocraft/crates/io/src/legacy/cursor.rs (CUR read/write with hotspot, ANI read every frame / write from layer frames), crafts/photocraft/crates/engine/src/video_cmds.rs (ANI frames to layers), apps/redrob-canvas/src/services.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4581,9 +4581,9 @@ name = "XPM / XBM import/export"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/export-file-formats.html"
 behaviour = "X pixmap and bitmap text formats."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/codecs/src/codecs/xpm.rs"
-gap = "XPM only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/codecs/src/codecs/xpm.rs (XPM read), crafts/photocraft/crates/io/src/legacy/xbm.rs (XBM read and 1-bit write)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4689,9 +4689,9 @@ name = "PostScript / EPS import and export"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/import-file-formats.html"
 behaviour = "Rasterise PS/EPS at a resolution with page selection, bounding box, antialias; export EPS with preview and encapsulation options."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/io/src/eps.rs (import: %%BoundingBox resolution, %ImageData and image/colorimage operands, hex/ASCII85/binary and RunLength data at 1-16 bits grey/RGB/CMYK, DOS EPS TIFF and WMF previews; export: EPSF-3.0 or PostScript page, Level 1-3, hex/ASCII85/binary, TIFF preview), crafts/photocraft/crates/engine/src/resource_export_cmds.rs (file.export.postScript), crafts/photocraft/crates/ui-egui/src/file_ui.rs, crafts/photocraft/crates/io/src/lib.rs"
+gap = "general PostScript programs (vector drawings, text) are not rasterised; only raster EPS and the DOS EPS preview open, and page selection and antialias options do not apply"
 priority = 3
 
 [[feature]]
@@ -4761,9 +4761,9 @@ name = "GBR / GIH / PAT resource export (brushes, image hoses, patterns)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-brushes.html"
 behaviour = "Export an image as a brush, animated brush or pattern file for the resource folders."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (edit.defineBrushPreset, edit.definePattern), crafts/photocraft/crates/engine/src/pattern_cmds.rs (pattern.export)"
-gap = "defines resources in the app library, no .gbr/.gih files"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/gbr_export.rs (.gbr, .gih one cell per layer, GPAT .pat write and read), crafts/photocraft/crates/engine/src/resource_export_cmds.rs (file.export.brush, file.export.imageHose, file.export.pattern, pattern.importGpat), crafts/photocraft/crates/engine/src/pattern_cmds.rs (GPAT import), crafts/photocraft/crates/ui-egui/src/file_ui.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs (File > Export)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4774,8 +4774,8 @@ reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-images-in.html"
 behaviour = "Long tail of legacy and scientific formats handled by plug-ins."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/codecs/src/format.rs (Qoi, Pnm, Pcx, Xpm, Fits, Dpx)"
-gap = "no WMF, SGI, PIX, CEL, FLI, XWD, DICOM, C source, HTML table"
+ours_where = "crafts/photocraft/crates/codecs/src/format.rs (Qoi, Pnm, Pcx, Xpm, Fits, Dpx), crafts/photocraft/crates/io/src/legacy/ (wmf.rs read: GDI pens, brushes, polygons, rectangles, ellipses, DIBs; sgi.rs, pix.rs, cel.rs, fli.rs, xwd.rs, dicom.rs read and write; csource.rs C source and HTML table write), crafts/photocraft/crates/io/src/lib.rs (import/export hooks)"
+gap = "WMF text and arc records are skipped (shapes, lines and bitmaps render); EMF is refused"
 priority = 3
 
 [[feature]]
@@ -4785,9 +4785,9 @@ name = "JPEG XL and JPEG 2000 import/export"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/export-file-formats.html"
 behaviour = "Modern JPEG successors, lossless and lossy, with bit depth and effort."
-ours = "none"
-ours_where = ""
-gap = "neither JPEG XL nor JPEG 2000"
+ours = "partial"
+ours_where = "crafts/photocraft/crates/io/src/modern.rs (JPEG XL decode via jxl-oxide 0.12.6, lossless encode via zune-jpegxl 0.5.2; JPEG 2000 / HTJ2K decode and lossless or quality-factor lossy encode via j2k 0.12.0; .jp2/.j2k/.jph containers), crafts/photocraft/crates/io/Cargo.toml, crafts/photocraft/crates/io/src/lib.rs, apps/redrob-canvas/src/services.rs"
+gap = "JPEG XL export is lossless only (no pure-Rust lossy JPEG XL encoder); JPEG 2000 opens at 8 bits per sample"
 priority = 3
 
 [[feature]]
@@ -4797,9 +4797,9 @@ name = "Export animation from layers (frame delay and disposal in layer names)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/export-file-formats.html"
 behaviour = "Layer names carry (delay)(combine|replace) tags which GIF/WebP/MNG export honour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/timeline_ui.rs, crafts/photocraft/crates/engine/src/timeline_cmds.rs"
-gap = "frames come from a timeline model, not layer-name tags"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/anim_layers.rs ((delay)(combine|replace) layer-name tags), crafts/photocraft/crates/io/src/anim_export.rs (animated GIF, animated WebP, MNG), crafts/photocraft/crates/engine/src/resource_export_cmds.rs (file.export.layersAsAnimation, layer.animationTags), crafts/photocraft/crates/ui-egui/src/file_ui.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4833,9 +4833,9 @@ name = "Named buffers"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-edit-buffer-dialog.html"
 behaviour = "Cut/copy to a named buffer and paste from a buffers dockable holding many clips."
-ours = "none"
-ours_where = ""
-gap = "single clipboard"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/buffers_cmds.rs (edit.buffer.cut/copy/copyVisible/paste/delete/rename/list, Session::buffers), crafts/photocraft/crates/ui-egui/src/buffers_ui.rs (Window > Buffers panel with thumbnails, paste, paste as new, rename, delete; Edit > Buffer name forms), crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4869,9 +4869,9 @@ name = "Input Devices and Input Controllers"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-edit-input-devices.html"
 behaviour = "Configure tablets and other devices (mode, axes, keys) and map wheel/keyboard controllers to actions."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/stylus.rs, crafts/photocraft/crates/engine/src/prefs (edit.preferences.tools), crafts/photocraft/crates/tablet"
-gap = "tablet pressure/tilt supported; no per-device configuration or controller mapping dialog"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/input_cmds.rs (input.list, input.devices.set, input.controllers.set), crafts/photocraft/crates/engine/src/prefs.rs (Tools::input_devices, Tools::input_controllers), crafts/photocraft/crates/ui-egui/src/input_ui.rs (Edit > Input Devices… and Input Controllers… dialogs; wheel and keyboard mappings run commands), crafts/photocraft/crates/ui-egui/src/stylus.rs (DeviceAdjust: tilt, rotation, invert, swap, pressure scale), crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4893,9 +4893,9 @@ name = "Modules and Units editors"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-module-dialog.html"
 behaviour = "Enable/disable loadable modules; define custom measurement units."
-ours = "none"
-ours_where = ""
-gap = "fixed unit list, no module system"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/modules_cmds.rs (module.list/setEnabled over the installed plug-ins, units.list/set/delete), crafts/photocraft/crates/engine/src/prefs.rs (PlugIns::disabled_modules, UnitsAndRulers::custom_units, CustomUnit, format_custom), crafts/photocraft/crates/engine/src/plugin_cmds.rs (disabled modules refuse to run), crafts/photocraft/crates/ui-egui/src/modules_ui.rs (Edit > Modules…, Edit > Units… dialogs), crafts/photocraft/crates/ui-egui/src/plugin_ui.rs (disabled modules leave the menu)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5325,9 +5325,9 @@ name = "Script-Fu (Scheme) scripts and console"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-script-fu.html"
 behaviour = "User scripts register menu entries with parameter dialogs; a console evaluates Scheme interactively; scripts call any PDB procedure."
-ours = "none"
-ours_where = ""
-gap = "no embedded Scheme; see MCP and plug-ins"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/scheme.rs (Scheme interpreter: define/lambda/let/cond/case/do/quasiquote, lists, strings, numbers, every engine command as a procedure, script-fu-register with SF-* parameters), crafts/photocraft/crates/engine/src/script_cmds.rs (script.eval/load/loadFolder/list/run), crafts/photocraft/crates/ui-egui/src/scripts_ui.rs (Filter > Script-Fu > Console, Load Scripts Folder, registered scripts as menu entries with parameter dialogs)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5337,9 +5337,9 @@ name = "Python plug-ins (GObject introspection API)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-using-python-plug-in-tutorial.html"
 behaviour = "Python 3 plug-ins register procedures, menu items and dialogs via the libgimp bindings; run in a separate process."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/plugins/src/lib.rs (WebAssembly filter plug-ins with manifest), crafts/photocraft/crates/engine/src/plugin_cmds.rs"
-gap = "sandboxed WASM filters only; no scripting language binding"
+ours = "full"
+ours_where = "crafts/photocraft/crates/plugins/src/lib.rs (WebAssembly filter plug-ins), crafts/photocraft/crates/engine/src/python_cmds.rs (Python 3 plug-ins in a separate process over a JSON-line bridge: register/call/message helper module, --describe discovery, python.loadFolder/list/run/eval/helper), crafts/photocraft/crates/ui-egui/src/scripts_ui.rs (Filter > Python-Fu > Console, Load Plug-ins Folder, registered procedures as menu entries with parameter dialogs)"
+gap = ""
 priority = 2
 
 [[feature]]

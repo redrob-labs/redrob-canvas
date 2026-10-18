@@ -58,6 +58,10 @@ pub mod stream {
     pub const SPACING: u64 = 21;
     pub const RANDOM: u64 = 22;
     pub const SCATTER_ALONG: u64 = 23;
+    /// Dynamics presets' Hardness, Force and Rate outputs.
+    pub const HARDNESS: u64 = 24;
+    pub const FORCE: u64 = 25;
+    pub const RATE: u64 = 26;
     /// Image hose: a random cell per dab (one stream per dimension, `HOSE + dim`).
     pub const HOSE: u64 = 32;
     /// Color Dynamics sources and sensors (gradient position, random colour, sensor-driven mix,

@@ -3672,3 +3672,157 @@ curves	Smooth	Haluskan
 	Replace the segment with two copies of itself	Ganti segmen dengan dua salinan dirinya
 	Flip the whole gradient end to end	Balik seluruh gradien
 	Save as POV-Ray…	Simpan sebagai POV-Ray…
+	Shaped Gradient (angular)	Gradien berbentuk (sudut)
+	Shaped Gradient (spherical)	Gradien berbentuk (bola)
+	Shaped Gradient (dimpled)	Gradien berbentuk (cekung)
+	Truncate	Potong
+	Sawtooth wave	Gelombang gigi gergaji
+	Triangular wave	Gelombang segitiga
+	Wheel	Roda
+	Force	Gaya
+	Jitter	Getar
+	Fade length	Panjang pudar
+	Random amount	Jumlah acak
+	Save Preset	Simpan preset
+	Paint Dynamics Editor	Editor dinamika lukis
+	Color from Gradient	Warna dari gradien
+	Put this table on the current brush	Terapkan tabel ini ke kuas saat ini
+	Save the table as a named dynamics preset	Simpan tabel sebagai preset dinamika bernama
+	Give the dynamics preset a name first	Beri nama preset dinamika dulu
+	Edit the dynamics table (inputs × outputs)	Edit tabel dinamika (masukan × keluaran)
+	Reset Plane	Atur ulang bidang
+	Click four corners to define a perspective plane, then clone along it	Klik empat sudut untuk menentukan bidang perspektif, lalu klon di sepanjangnya
+	Click corner {n} of 4	Klik sudut {n} dari 4
+	Perspective plane: corner {n} of 4 set	Bidang perspektif: sudut {n} dari 4 diatur
+	Perspective plane set; {key}-click a source, then paint	Bidang perspektif diatur; {key}-klik sumber, lalu lukis
+	Copy Path as SVG	Salin Path sebagai SVG
+	Export Path to SVG…	Ekspor Path ke SVG…
+	Import Path from SVG…	Impor Path dari SVG…
+	Paste Path from SVG	Tempel Path dari SVG
+	Copy All Paths as SVG	Salin Semua Path sebagai SVG
+	Export All Paths to SVG…	Ekspor Semua Path ke SVG…
+	Copied 1 path as SVG	1 path disalin sebagai SVG
+	Copied {n} paths as SVG	{n} path disalin sebagai SVG
+	Exported paths to {path}	Path diekspor ke {path}
+	Imported 1 path	1 path diimpor
+	Imported {n} paths	{n} path diimpor
+	The clipboard holds no SVG	Papan klip tidak berisi SVG
+	Clipboard Image Brush	Kuas Gambar Papan Klip
+	Paint with the image on the clipboard as the brush tip	Melukis dengan gambar di papan klip sebagai ujung kuas
+	Export Layers as Animation…	Ekspor Lapisan sebagai Animasi…
+	Export as Brush (.gbr)…	Ekspor sebagai Kuas (.gbr)…
+	Export Layers as Image Hose (.gih)…	Ekspor Lapisan sebagai Kuas Animasi (.gih)…
+	Export as Pattern (.pat)…	Ekspor sebagai Pola (.pat)…
+	Animation Frame Tags…	Tag Bingkai Animasi…
+	Disposal	Pembuangan
+	Replace	Ganti
+	Incremental	Bertahap
+	Angular	Sudut
+	Xtilt	Kemiringan X
+	Ytilt	Kemiringan Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Ekspor sebagai PostScript (.eps)…
+	Encapsulated	Terenkapsulasi
+	Encoding	Pengodean
+	Hex	Heksadesimal
+	Ascii85	ASCII85
+	Binary	Biner
+	Open Location…	Buka Lokasi…
+	From Screenshot…	Dari Tangkapan Layar…
+	From Web Page…	Dari Halaman Web…
+	Send by Email…	Kirim lewat Email…
+	Url	URL
+	Cursor	Kursor
+	Region	Wilayah
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffer
+	Cut Named…	Potong Bernama…
+	Copy Named…	Salin Bernama…
+	Copy Visible Named…	Salin Terlihat Bernama…
+	Paste Named…	Tempel Bernama…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Tidak ada buffer bernama. Gunakan Edit > Buffer > Salin Bernama… untuk menyimpan salinan di sini.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Tidak ada buffer bernama; gunakan Edit > Buffer > Salin Bernama dahulu
+	Paste Buffer	Tempel Buffer
+	Paste Buffer in Place	Tempel Buffer di Tempat
+	Paste Buffer as New Image	Tempel Buffer sebagai Gambar Baru
+	Rename Buffer…	Ubah Nama Buffer…
+	Delete Buffer	Hapus Buffer
+	Paste as New	Tempel sebagai Baru
+	Paste the buffer as a new layer	Tempel buffer sebagai lapisan baru
+	Paste the buffer as a new document	Tempel buffer sebagai dokumen baru
+	As	Sebagai
+	In place	Di tempat
+	Into	Ke dalam
+	Modules…	Modul…
+	Units…	Satuan…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Tidak ada modul yang terpasang. Filter > Plug-in > Pasang Plug-in… menambahkannya.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Modul yang dimatikan tetap terpasang tetapi hilang dari menu sampai dihidupkan lagi.
+	Module	Modul
+	Not installed	Belum terpasang
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor adalah berapa satuan dalam satu inci (2,54 untuk sentimeter, 72 untuk poin).
+	Identifier	Pengenal
+	Factor	Faktor
+	Symbol	Simbol
+	Abbreviation	Singkatan
+	Singular	Tunggal
+	Plural	Jamak
+	Delete Unit	Hapus Satuan
+	New unit	Satuan baru
+	Add Unit	Tambah Satuan
+	That identifier is already a unit	Pengenal itu sudah menjadi satuan
+	Custom units	Satuan khusus
+	Disabled modules	Modul dimatikan
+	Input Devices…	Perangkat Masukan…
+	Input Controllers…	Pengontrol Masukan…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Pena adalah stilus tablet yang dilaporkan platform. Dinonaktifkan membuatnya bertindak seperti mouse.
+	Device	Perangkat
+	Invert tilt X	Balik kemiringan X
+	Invert tilt Y	Balik kemiringan Y
+	Swap tilt	Tukar kemiringan
+	Pressure scale	Skala tekanan
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Peristiwa roda adalah up, down, left, atau right dengan Shift+, Ctrl+, dan Alt+ opsional; peristiwa papan ketik adalah pintasan seperti Ctrl+Alt+Up. Aksi adalah id perintah, bisa diikuti parameter JSON.
+	Keyboard	Papan ketik
+	Controller	Pengontrol
+	Event	Peristiwa
+	Remove mapping	Hapus pemetaan
+	New mapping	Pemetaan baru
+	Add Mapping	Tambah Pemetaan
+	Disabled	Dinonaktifkan
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} entri; klik untuk menetapkan warna depan, klik dua kali untuk mengedit
+	Entry	Entri
+	Add an entry with the foreground colour	Tambahkan entri dengan warna depan
+	Delete the last entry	Hapus entri terakhir
+	Use selected	Gunakan yang dipilih
+	Ink	Tinta
+	MyPaint Brush	Kuas MyPaint
+	Nib	Mata pena
+	Aspect	Rasio
+	Opaque	Opak
+	Erase with brush	Hapus dengan kuas
+	Import .myb…	Impor .myb…
+	Add a MyPaint brush file to the presets	Tambahkan berkas kuas MyPaint ke praset
+	Imported MyPaint brush {name}	Kuas MyPaint {name} diimpor
+	How much pressure changes the nib size	Seberapa besar tekanan mengubah ukuran mata pena
+	How much the pen's tilt turns and stretches the nib	Seberapa besar kemiringan pena memutar dan merentangkan mata pena
+	How much a fast stroke thins the nib	Seberapa besar goresan cepat menipiskan mata pena
+	Added to the preset's logarithmic radius	Ditambahkan ke radius logaritmik praset
+	Operation…	Operasi…
+	Operation name or id	Nama atau id operasi
+	{n} operations	{n} operasi
+	Choose an operation	Pilih operasi
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Konsol Script-Fu…
+	Load Scripts Folder…	Muat Folder Skrip…
+	Python Console…	Konsol Python…
+	Load Plug-ins Folder…	Muat Folder Plug-in…
+	Loaded {n} scripts	{n} skrip dimuat
+	Loaded {n} Python plug-ins	{n} plug-in Python dimuat
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 dengan call(command, **params), message(text), dan print(); setiap perintah mesin dapat dijangkau lewat call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: setiap perintah mesin adalah prosedur, (file.new "width" 640 "height" 480); definisikan prosedur dan daftarkan dengan script-fu-register.
+	Code	Kode
+	Cmd+Enter runs the code	Cmd+Enter menjalankan kode
+	Clear Log	Bersihkan Log

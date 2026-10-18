@@ -103,6 +103,35 @@ fn open_url(url: &str) -> Result<(), String> {
     webbrowser::open(url).map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// File › Open Location: the bytes at `url`, through the workspace's `reqwest` on a
+/// current-thread tokio runtime (as `update.rs` does). Redirects are followed, 120 s timeout.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn fetch_url(url: &str) -> Result<Vec<u8>, String> {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|e| format!("tokio runtime: {e}"))?;
+    rt.block_on(async {
+        let client = reqwest::Client::builder()
+            .user_agent(concat!("Redrob Canvas/", env!("CARGO_PKG_VERSION")))
+            .timeout(std::time::Duration::from_secs(120))
+            .redirect(reqwest::redirect::Policy::limited(10))
+            .build()
+            .map_err(|e| format!("HTTP client: {e}"))?;
+        let response = client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| format!("{url}: {e}"))?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(format!("{url}: HTTP {status}"));
+        }
+        let bytes = response.bytes().await.map_err(|e| format!("{url}: {e}"))?;
+        Ok(bytes.to_vec())
+    })
+}
+
 // ---------------------------------------------------------------------------------------------
 // Photo (photocraft)
 // ---------------------------------------------------------------------------------------------
@@ -188,12 +217,16 @@ pub mod photo {
 
     /// Everything File › Open reads (upstream `services::OPEN_EXTS`).
     const OPEN_EXTS: &[&str] = &[
-        "rphoto", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif",
-        "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr", "pbm", "pgm", "ppm",
-        "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin", "heic", "heif",
-        "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2", "raf", "abr", "grd",
-        "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto", "afpub",
-        "pcraft", // legacy: upstream Photo documents still open
+        "rphoto", "xcf", "xcfgz", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg",
+        "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr", "pbm",
+        "pgm", "ppm", "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin",
+        "heic", "heif", "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2",
+        "raf", "abr", "grd", "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto",
+        "afpub", "pcraft", // legacy: upstream Photo documents still open
+        // Legacy and scientific formats (redrob_photo_io::legacy) and resource files.
+        "xbm", "cur", "ani", "sgi", "rgb", "rgba", "bw", "pix", "als", "cel", "fli", "flc", "xwd",
+        "dcm", "dicom", "wmf", "gih", "pat", "gpat", "jxl", "jp2", "j2k", "j2c", "jpf", "jpx",
+        "jph", "eps", "ps", "epsf",
     ];
 
     const SAVE_FILTERS: &[(&str, &[&str])] = &[
@@ -201,6 +234,10 @@ pub mod photo {
         ("PDF", &["pdf"]),
         ("Redrob Canvas photo document", &["rphoto"]),
         ("OpenRaster", &["ora"]),
+        ("XCF", &["xcf"]),
+        ("JPEG XL", &["jxl"]),
+        ("JPEG 2000", &["jp2", "j2k", "jph"]),
+        ("Encapsulated PostScript", &["eps", "ps"]),
         ("PNG", &["png"]),
         ("JPEG", &["jpg"]),
         ("WebP", &["webp"]),
@@ -212,6 +249,19 @@ pub mod photo {
         ("OpenEXR", &["exr"]),
         ("FITS", &["fits", "fit"]),
         ("DPX", &["dpx"]),
+        ("X BitMap", &["xbm"]),
+        ("Windows cursor", &["cur", "ani"]),
+        ("SGI", &["sgi", "rgb", "bw"]),
+        ("Alias PIX", &["pix"]),
+        ("KiSS cel", &["cel"]),
+        ("Autodesk animation", &["flc", "fli"]),
+        ("X window dump", &["xwd"]),
+        ("DICOM", &["dcm"]),
+        ("MNG animation", &["mng"]),
+        ("C source", &["c", "h"]),
+        ("HTML table", &["html"]),
+        ("Brush", &["gbr", "gih"]),
+        ("Pattern", &["pat"]),
     ];
 
     /// Open dialog extensions that also match uppercase names on Linux's case-sensitive globs.

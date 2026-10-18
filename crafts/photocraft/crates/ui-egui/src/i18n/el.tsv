@@ -4372,3 +4372,154 @@ curves	Smooth	Εξομάλυνση
 	Replace the segment with two copies of itself	Αντικαθιστά το τμήμα με δύο αντίγραφά του
 	Flip the whole gradient end to end	Αναστρέφει ολόκληρη τη διαβάθμιση
 	Save as POV-Ray…	Αποθήκευση ως POV-Ray…
+	Shaped Gradient (angular)	Διαβάθμιση σχήματος (γωνιακή)
+	Shaped Gradient (spherical)	Διαβάθμιση σχήματος (σφαιρική)
+	Shaped Gradient (dimpled)	Διαβάθμιση σχήματος (κοίλη)
+	Truncate	Περικοπή
+	Sawtooth wave	Πριονωτό κύμα
+	Triangular wave	Τριγωνικό κύμα
+	Wheel	Ροδέλα
+	Force	Δύναμη
+	Jitter	Τρέμουλο
+	Fade length	Μήκος ξεθωριάσματος
+	Random amount	Τυχαία ποσότητα
+	Save Preset	Αποθήκευση προεπιλογής
+	Paint Dynamics Editor	Επεξεργαστής δυναμικής ζωγραφικής
+	Color from Gradient	Χρώμα από διαβάθμιση
+	Put this table on the current brush	Εφαρμογή πίνακα στο τρέχον πινέλο
+	Save the table as a named dynamics preset	Αποθήκευση πίνακα ως επώνυμη προεπιλογή δυναμικής
+	Give the dynamics preset a name first	Δώστε πρώτα όνομα στην προεπιλογή δυναμικής
+	Edit the dynamics table (inputs × outputs)	Επεξεργασία πίνακα δυναμικής (είσοδοι × έξοδοι)
+	Reset Plane	Επαναφορά επιπέδου
+	Click four corners to define a perspective plane, then clone along it	Κάντε κλικ σε τέσσερις γωνίες για να ορίσετε επίπεδο προοπτικής και κλωνοποιήστε κατά μήκος του
+	Click corner {n} of 4	Κλικ στη γωνία {n} από 4
+	Perspective plane: corner {n} of 4 set	Επίπεδο προοπτικής: ορίστηκε η γωνία {n} από 4
+	Perspective plane set; {key}-click a source, then paint	Το επίπεδο προοπτικής ορίστηκε· κάντε {key}-κλικ σε πηγή και μετά ζωγραφίστε
+	Copy Path as SVG	Αντιγραφή διαδρομής ως SVG
+	Export Path to SVG…	Εξαγωγή διαδρομής σε SVG…
+	Import Path from SVG…	Εισαγωγή διαδρομής από SVG…
+	Paste Path from SVG	Επικόλληση διαδρομής από SVG
+	Copy All Paths as SVG	Αντιγραφή όλων των διαδρομών ως SVG
+	Export All Paths to SVG…	Εξαγωγή όλων των διαδρομών σε SVG…
+	Copied 1 path as SVG	Αντιγράφηκε 1 διαδρομή ως SVG
+	Copied {n} paths as SVG	Αντιγράφηκαν {n} διαδρομές ως SVG
+	Exported paths to {path}	Οι διαδρομές εξάχθηκαν σε {path}
+	Imported 1 path	Εισάχθηκε 1 διαδρομή
+	Imported {n} paths	Εισάχθηκαν {n} διαδρομές
+	The clipboard holds no SVG	Το πρόχειρο δεν περιέχει SVG
+	Clipboard Image Brush	Πινέλο εικόνας προχείρου
+	Paint with the image on the clipboard as the brush tip	Ζωγραφίστε με την εικόνα του προχείρου ως άκρη πινέλου
+	Export Layers as Animation…	Εξαγωγή επιπέδων ως κίνηση…
+	Export as Brush (.gbr)…	Εξαγωγή ως πινέλο (.gbr)…
+	Export Layers as Image Hose (.gih)…	Εξαγωγή επιπέδων ως κινούμενο πινέλο (.gih)…
+	Export as Pattern (.pat)…	Εξαγωγή ως μοτίβο (.pat)…
+	Animation Frame Tags…	Ετικέτες καρέ κίνησης…
+	Disposal	Διάθεση
+	Incremental	Διαδοχικά
+	Angular	Γωνιακά
+	Xtilt	Κλίση X
+	Ytilt	Κλίση Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Εξαγωγή ως PostScript (.eps)…
+	Encapsulated	Ενθυλακωμένο
+	Encoding	Κωδικοποίηση
+	Hex	Δεκαεξαδικό
+	Ascii85	ASCII85
+	Binary	Δυαδικό
+	Open Location…	Άνοιγμα τοποθεσίας…
+	From Screenshot…	Από στιγμιότυπο οθόνης…
+	From Web Page…	Από ιστοσελίδα…
+	Send by Email…	Αποστολή με email…
+	Url	URL
+	Cursor	Δρομέας
+	Region	Περιοχή
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Ενδιάμεση μνήμη
+	Buffers	Ενδιάμεσες μνήμες
+	Cut Named…	Αποκοπή με όνομα…
+	Copy Named…	Αντιγραφή με όνομα…
+	Copy Visible Named…	Αντιγραφή ορατών με όνομα…
+	Paste Named…	Επικόλληση με όνομα…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Δεν υπάρχουν ενδιάμεσες μνήμες με όνομα. Χρησιμοποιήστε Επεξεργασία > Ενδιάμεση μνήμη > Αντιγραφή με όνομα… για να κρατήσετε ένα αντίγραφο εδώ.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Δεν υπάρχουν ενδιάμεσες μνήμες με όνομα· χρησιμοποιήστε πρώτα Επεξεργασία > Ενδιάμεση μνήμη > Αντιγραφή με όνομα
+	Paste Buffer	Επικόλληση ενδιάμεσης μνήμης
+	Paste Buffer in Place	Επικόλληση ενδιάμεσης μνήμης στη θέση
+	Paste Buffer as New Image	Επικόλληση ενδιάμεσης μνήμης ως νέα εικόνα
+	Rename Buffer…	Μετονομασία ενδιάμεσης μνήμης…
+	Delete Buffer	Διαγραφή ενδιάμεσης μνήμης
+	Paste as New	Επικόλληση ως νέο
+	Paste the buffer as a new layer	Επικόλληση της ενδιάμεσης μνήμης ως νέο επίπεδο
+	Paste the buffer as a new document	Επικόλληση της ενδιάμεσης μνήμης ως νέο έγγραφο
+	As	Ως
+	In place	Στη θέση
+	Into	Εντός
+	Modules…	Μονάδες…
+	Units…	Μονάδες μέτρησης…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Δεν υπάρχουν εγκατεστημένες μονάδες. Φίλτρο > Πρόσθετα > Εγκατάσταση προσθέτου… προσθέτει μία.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Μια απενεργοποιημένη μονάδα παραμένει εγκατεστημένη αλλά λείπει από τα μενού έως ότου ενεργοποιηθεί ξανά.
+	Module	Μονάδα
+	Not installed	Μη εγκατεστημένο
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Ο συντελεστής είναι πόσες μονάδες κάνουν μία ίντσα (2,54 για εκατοστά, 72 για στιγμές).
+	Identifier	Αναγνωριστικό
+	Factor	Συντελεστής
+	Symbol	Σύμβολο
+	Abbreviation	Συντομογραφία
+	Singular	Ενικός
+	Plural	Πληθυντικός
+	Delete Unit	Διαγραφή μονάδας
+	New unit	Νέα μονάδα
+	Add Unit	Προσθήκη μονάδας
+	That identifier is already a unit	Αυτό το αναγνωριστικό είναι ήδη μονάδα
+	Custom units	Προσαρμοσμένες μονάδες
+	Disabled modules	Απενεργοποιημένες μονάδες
+	Input Devices…	Συσκευές εισόδου…
+	Input Controllers…	Ελεγκτές εισόδου…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Η γραφίδα είναι αυτή της ταμπλέτας που αναφέρει η πλατφόρμα. Απενεργοποιημένη λειτουργεί ως ποντίκι.
+	Device	Συσκευή
+	Invert tilt X	Αντιστροφή κλίσης X
+	Invert tilt Y	Αντιστροφή κλίσης Y
+	Swap tilt	Εναλλαγή κλίσης
+	Pressure scale	Κλίμακα πίεσης
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Τα συμβάντα ροδέλας είναι up, down, left ή right με προαιρετικά Shift+, Ctrl+ και Alt+· τα συμβάντα πληκτρολογίου είναι συντομεύσεις όπως Ctrl+Alt+Up. Η ενέργεια είναι αναγνωριστικό εντολής, προαιρετικά με παραμέτρους JSON.
+	Controller	Ελεγκτής
+	Event	Συμβάν
+	Remove mapping	Αφαίρεση αντιστοίχισης
+	New mapping	Νέα αντιστοίχιση
+	Add Mapping	Προσθήκη αντιστοίχισης
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} καταχωρίσεις· κλικ ορίζει το χρώμα προσκηνίου, διπλό κλικ επεξεργάζεται
+	Entry	Καταχώριση
+	Add an entry with the foreground colour	Προσθήκη καταχώρισης με το χρώμα προσκηνίου
+	Delete the last entry	Διαγραφή της τελευταίας καταχώρισης
+	Use selected	Χρήση επιλεγμένης
+	Ink	Μελάνι
+	MyPaint Brush	Πινέλο MyPaint
+	Nib	Μύτη
+	Aspect	Αναλογία
+	Opaque	Αδιαφάνεια
+	Erase with brush	Σβήσιμο με το πινέλο
+	Import .myb…	Εισαγωγή .myb…
+	Add a MyPaint brush file to the presets	Προσθήκη αρχείου πινέλου MyPaint στις προεπιλογές
+	Imported MyPaint brush {name}	Εισάχθηκε το πινέλο MyPaint {name}
+	How much pressure changes the nib size	Πόσο η πίεση αλλάζει το μέγεθος της μύτης
+	How much the pen's tilt turns and stretches the nib	Πόσο η κλίση της γραφίδας στρέφει και τεντώνει τη μύτη
+	How much a fast stroke thins the nib	Πόσο μια γρήγορη πινελιά λεπταίνει τη μύτη
+	Added to the preset's logarithmic radius	Προστίθεται στη λογαριθμική ακτίνα της προεπιλογής
+	Operation…	Λειτουργία…
+	Operation name or id	Όνομα ή αναγνωριστικό λειτουργίας
+	{n} operations	{n} λειτουργίες
+	Choose an operation	Επιλέξτε μια λειτουργία
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Κονσόλα Script-Fu…
+	Load Scripts Folder…	Φόρτωση φακέλου δεσμών ενεργειών…
+	Python Console…	Κονσόλα Python…
+	Load Plug-ins Folder…	Φόρτωση φακέλου προσθέτων…
+	Loaded {n} scripts	Φορτώθηκαν {n} δέσμες ενεργειών
+	Loaded {n} Python plug-ins	Φορτώθηκαν {n} πρόσθετα Python
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 με call(command, **params), message(text) και print()· κάθε εντολή της μηχανής είναι προσβάσιμη μέσω call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: κάθε εντολή της μηχανής είναι διαδικασία, (file.new "width" 640 "height" 480)· ορίστε διαδικασίες και καταχωρίστε τις με script-fu-register.
+	Code	Κώδικας
+	Cmd+Enter runs the code	Το Cmd+Enter εκτελεί τον κώδικα
+	Clear Log	Καθαρισμός καταγραφής

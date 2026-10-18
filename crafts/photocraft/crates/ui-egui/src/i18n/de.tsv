@@ -3745,3 +3745,157 @@ curves	Smooth	Glätten
 	Replace the segment with two copies of itself	Ersetzt das Segment durch zwei Kopien von sich
 	Flip the whole gradient end to end	Kehrt den ganzen Verlauf um
 	Save as POV-Ray…	Als POV-Ray speichern…
+	Shaped Gradient (angular)	Formverlauf (winklig)
+	Shaped Gradient (spherical)	Formverlauf (sphärisch)
+	Shaped Gradient (dimpled)	Formverlauf (eingedellt)
+	Truncate	Abschneiden
+	Sawtooth wave	Sägezahnwelle
+	Triangular wave	Dreieckwelle
+	Tilt	Neigung
+	Wheel	Rad
+	Force	Kraft
+	Aspect Ratio	Seitenverhältnis
+	Fade length	Verblassungslänge
+	Random amount	Zufallsanteil
+	Save Preset	Vorgabe speichern
+	Paint Dynamics Editor	Malwerkzeug-Dynamik-Editor
+	Color from Gradient	Farbe aus Verlauf
+	Put this table on the current brush	Diese Tabelle auf den aktuellen Pinsel anwenden
+	Save the table as a named dynamics preset	Tabelle als benannte Dynamik-Vorgabe speichern
+	Give the dynamics preset a name first	Geben Sie der Dynamik-Vorgabe zuerst einen Namen
+	Edit the dynamics table (inputs × outputs)	Dynamik-Tabelle bearbeiten (Eingaben × Ausgaben)
+	Reset Plane	Ebene zurücksetzen
+	Click four corners to define a perspective plane, then clone along it	Vier Ecken anklicken, um eine Perspektivebene festzulegen, dann entlang ihr klonen
+	Click corner {n} of 4	Ecke {n} von 4 anklicken
+	Perspective plane: corner {n} of 4 set	Perspektivebene: Ecke {n} von 4 gesetzt
+	Perspective plane set; {key}-click a source, then paint	Perspektivebene gesetzt; mit {key} auf eine Quelle klicken, dann malen
+	Copy Path as SVG	Pfad als SVG kopieren
+	Export Path to SVG…	Pfad als SVG exportieren…
+	Import Path from SVG…	Pfad aus SVG importieren…
+	Paste Path from SVG	Pfad aus SVG einfügen
+	Copy All Paths as SVG	Alle Pfade als SVG kopieren
+	Export All Paths to SVG…	Alle Pfade als SVG exportieren…
+	Copied 1 path as SVG	1 Pfad als SVG kopiert
+	Copied {n} paths as SVG	{n} Pfade als SVG kopiert
+	Exported paths to {path}	Pfade nach {path} exportiert
+	Imported 1 path	1 Pfad importiert
+	Imported {n} paths	{n} Pfade importiert
+	The clipboard holds no SVG	Die Zwischenablage enthält kein SVG
+	Clipboard Image Brush	Zwischenablage-Bildpinsel
+	Paint with the image on the clipboard as the brush tip	Mit dem Bild aus der Zwischenablage als Pinselspitze malen
+	Export Layers as Animation…	Ebenen als Animation exportieren…
+	Export as Brush (.gbr)…	Als Pinsel exportieren (.gbr)…
+	Export Layers as Image Hose (.gih)…	Ebenen als animierten Pinsel exportieren (.gih)…
+	Export as Pattern (.pat)…	Als Muster exportieren (.pat)…
+	Animation Frame Tags…	Animationsbild-Tags…
+	Disposal	Übergang
+	Incremental	Fortlaufend
+	Xtilt	Neigung X
+	Ytilt	Neigung Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Als PostScript exportieren (.eps)…
+	Encapsulated	Gekapselt
+	Encoding	Kodierung
+	Hex	Hexadezimal
+	Ascii85	ASCII85
+	Binary	Binär
+	Open Location…	Adresse öffnen…
+	From Screenshot…	Aus Bildschirmfoto…
+	From Web Page…	Aus Webseite…
+	Send by Email…	Per E-Mail senden…
+	Url	URL
+	Cursor	Cursor
+	Region	Bereich
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Loop	Schleife
+	Buffer	Puffer
+	Buffers	Puffer
+	Cut Named…	Benannt ausschneiden…
+	Copy Named…	Benannt kopieren…
+	Copy Visible Named…	Sichtbares benannt kopieren…
+	Paste Named…	Benannt einfügen…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Keine benannten Puffer. Mit Bearbeiten > Puffer > Benannt kopieren… eine Kopie hier ablegen.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Keine benannten Puffer; zuerst Bearbeiten > Puffer > Benannt kopieren verwenden
+	Paste Buffer	Puffer einfügen
+	Paste Buffer in Place	Puffer an Ort und Stelle einfügen
+	Paste Buffer as New Image	Puffer als neues Bild einfügen
+	Rename Buffer…	Puffer umbenennen…
+	Delete Buffer	Puffer löschen
+	Paste as New	Als neu einfügen
+	Paste the buffer as a new layer	Den Puffer als neue Ebene einfügen
+	Paste the buffer as a new document	Den Puffer als neues Dokument einfügen
+	As	Als
+	In place	An Ort und Stelle
+	Into	Hinein
+	Modules…	Module…
+	Units…	Einheiten…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Keine ladbaren Module installiert. Filter > Plug-ins > Plug-in installieren… fügt eines hinzu.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Ein ausgeschaltetes Modul bleibt installiert, verschwindet aber aus den Menüs, bis es wieder eingeschaltet wird.
+	Module	Modul
+	Not installed	Nicht installiert
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Der Faktor gibt an, wie viele Einheiten ein Zoll ergeben (2,54 für Zentimeter, 72 für Punkt).
+	Identifier	Kennung
+	Factor	Faktor
+	Digits	Stellen
+	Symbol	Symbol
+	Abbreviation	Abkürzung
+	Singular	Einzahl
+	Plural	Mehrzahl
+	Delete Unit	Einheit löschen
+	New unit	Neue Einheit
+	Add Unit	Einheit hinzufügen
+	That identifier is already a unit	Diese Kennung ist bereits eine Einheit
+	Custom units	Eigene Einheiten
+	Disabled modules	Deaktivierte Module
+	Input Devices…	Eingabegeräte…
+	Input Controllers…	Eingabesteuerungen…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Der Stift ist der Tablettstift, den die Plattform meldet. Deaktiviert verhält er sich wie eine Maus.
+	Device	Gerät
+	Invert tilt X	Neigung X umkehren
+	Invert tilt Y	Neigung Y umkehren
+	Swap tilt	Neigung tauschen
+	Pressure scale	Druckskalierung
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Radereignisse sind up, down, left oder right mit optionalem Shift+, Ctrl+ und Alt+; Tastaturereignisse sind Kürzel wie Ctrl+Alt+Up. Die Aktion ist eine Befehls-ID, optional gefolgt von JSON-Parametern.
+	Keyboard	Tastatur
+	Controller	Steuerung
+	Event	Ereignis
+	Remove mapping	Zuordnung entfernen
+	New mapping	Neue Zuordnung
+	Add Mapping	Zuordnung hinzufügen
+	Disabled	Deaktiviert
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} Einträge; Klick setzt die Vordergrundfarbe, Doppelklick bearbeitet
+	Entry	Eintrag
+	Add an entry with the foreground colour	Einen Eintrag mit der Vordergrundfarbe hinzufügen
+	Delete the last entry	Den letzten Eintrag löschen
+	Use selected	Ausgewählten verwenden
+	Ink	Tinte
+	MyPaint Brush	MyPaint-Pinsel
+	Nib	Feder
+	Opaque	Deckkraft
+	Erase with brush	Mit dem Pinsel radieren
+	Import .myb…	.myb importieren…
+	Add a MyPaint brush file to the presets	Eine MyPaint-Pinseldatei zu den Vorgaben hinzufügen
+	Imported MyPaint brush {name}	MyPaint-Pinsel {name} importiert
+	How much pressure changes the nib size	Wie stark der Druck die Federgröße ändert
+	How much the pen's tilt turns and stretches the nib	Wie stark die Stiftneigung die Feder dreht und streckt
+	How much a fast stroke thins the nib	Wie stark ein schneller Strich die Feder verdünnt
+	Added to the preset's logarithmic radius	Wird zum logarithmischen Radius der Vorgabe addiert
+	Operation…	Operation…
+	Operation name or id	Name oder ID der Operation
+	{n} operations	{n} Operationen
+	Choose an operation	Eine Operation wählen
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu-Konsole…
+	Load Scripts Folder…	Skriptordner laden…
+	Python Console…	Python-Konsole…
+	Load Plug-ins Folder…	Plug-in-Ordner laden…
+	Loaded {n} scripts	{n} Skripte geladen
+	Loaded {n} Python plug-ins	{n} Python-Plug-ins geladen
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 mit call(command, **params), message(text) und print(); jeder Engine-Befehl ist über call erreichbar.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: jeder Engine-Befehl ist eine Prozedur, (file.new "width" 640 "height" 480); Prozeduren definieren und mit script-fu-register registrieren.
+	Code	Code
+	Cmd+Enter runs the code	Cmd+Eingabe führt den Code aus
+	Clear Log	Protokoll löschen

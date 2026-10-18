@@ -143,6 +143,20 @@ pub use video_cmds::render_video_with;
 pub mod vp_cmds;
 pub mod warp_cmds;
 pub mod web_cmds;
+// v0.11 parity round (A4): formats, file/edit, scripting, Ink and MyPaint-style brushes.
+pub mod buffers_cmds;
+pub mod create_cmds;
+pub mod dynamics_extra_cmds;
+pub mod ink_cmds;
+pub mod input_cmds;
+pub mod modules_cmds;
+pub mod mypaint_engine_cmds;
+pub mod path_svg_cmds;
+pub mod perspective_clone_cmds;
+pub mod python_cmds;
+pub mod resource_export_cmds;
+pub mod scheme;
+pub mod script_cmds;
 mod wia_cmds;
 
 use std::sync::Arc;
@@ -520,6 +534,17 @@ pub struct Session {
     /// the same check a top-level request sees. `None` runs everything, which is what a local
     /// UI and `photocraft-cli run` do.
     pub authorize: Option<fn(&str, &serde_json::Value) -> Result<()>>,
+    /// The shell's HTTP client for File › Open Location ([`create_cmds`]); without one the
+    /// system's `curl` is used.
+    pub fetch_url: Option<create_cmds::FetchUrlFn>,
+    /// Edit › Buffer: the named buffers ([`buffers_cmds`]).
+    pub buffers: Vec<buffers_cmds::NamedBuffer>,
+    /// MyPaint brushes imported from `.myb` files ([`mypaint_cmds`]); the built-ins are not stored.
+    pub mypaint_imported: Vec<redrob_photo_io::myb::MybBrush>,
+    /// Script-Fu: the Scheme interpreter with the console's definitions and the registered scripts.
+    pub script_fu: Option<scheme::Interp>,
+    /// Python plug-ins registered from the plug-in folders ([`python_cmds`]).
+    pub python_plugins: Vec<python_cmds::PyPlugin>,
     /// Background jobs (see [`jobs`]).
     jobs: jobs::Jobs,
     /// Color Sampler points dropped by the last canvas-size change (crop, Canvas Size, Image Size,

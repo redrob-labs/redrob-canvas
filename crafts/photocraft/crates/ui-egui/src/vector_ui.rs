@@ -1742,6 +1742,9 @@ pub fn paths_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let has_layer_path = rows.iter().any(|r| r.kind == PathRow::Layer);
     let mut action: Option<(&str, Value)> = None;
     let mut stroke_dialog: Option<String> = None;
+    let mut svg_action: Option<SvgAction> = None;
+    // A paste of SVG text while the panel is hovered (or after Paste Path from SVG) imports paths.
+    crate::path_svg_ui::take_pending_paste(app, ui);
     // The buttons sit in a footer at the panel's bottom, like Photoshop's.
     let footer = crate::widgets::footer_height(ui) + ui.spacing().item_spacing.y;
     let fill = ui.available_height() > footer + 60.0;
@@ -1813,6 +1816,18 @@ pub fn paths_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                                 ui.close();
                             }
                         }
+                        // SVG exchange (Paths panel › Import/Export Path, copy as SVG text).
+                        if *kind != PathRow::Layer {
+                            ui.separator();
+                            if ui.button(tl!("Copy Path as SVG")).clicked() {
+                                svg_action = Some(SvgAction::Copy(key.clone()));
+                                ui.close();
+                            }
+                            if ui.button(tl!("Export Path to SVG…")).clicked() {
+                                svg_action = Some(SvgAction::Export(key.clone()));
+                                ui.close();
+                            }
+                        }
                     });
                 });
                 ui.painter().line_segment([r.left_bottom(), r.right_bottom()], Stroke::new(1.0, t.separator));
@@ -1821,9 +1836,33 @@ pub fn paths_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             // adjustment layers then take the selection as their mask instead (#1419).
             let rest = ui.available_rect_before_wrap();
             let rest = rest.intersect(Rect::from_min_size(rest.min, vec2(rest.width(), rest.height().min(4000.0))));
-            if rest.is_positive() && ui.interact(rest, ui.id().with("paths-empty"), Sense::click()).clicked() {
+            let empty = ui.interact(rest, ui.id().with("paths-empty"), Sense::click());
+            if rest.is_positive() && empty.clicked() {
                 app.ui.selected_path = None;
             }
+            // Right-clicking the empty area offers the panel-wide SVG entries.
+            empty.context_menu(|ui| {
+                ui.set_min_width(190.0);
+                if ui.button(tl!("Import Path from SVG…")).clicked() {
+                    svg_action = Some(SvgAction::Import);
+                    ui.close();
+                }
+                if ui.button(tl!("Paste Path from SVG")).clicked() {
+                    svg_action = Some(SvgAction::Paste);
+                    ui.close();
+                }
+                if !rows.is_empty() {
+                    ui.separator();
+                    if ui.button(tl!("Copy All Paths as SVG")).clicked() {
+                        svg_action = Some(SvgAction::Copy("all".into()));
+                        ui.close();
+                    }
+                    if ui.button(tl!("Export All Paths to SVG…")).clicked() {
+                        svg_action = Some(SvgAction::Export("all".into()));
+                        ui.close();
+                    }
+                }
+            });
         },
     );
     let sel = app.ui.selected_path.clone().filter(|s| s != "layer" || has_layer_path).unwrap_or_else(|| "work".into());
@@ -1869,12 +1908,27 @@ pub fn paths_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     if let Some(name) = stroke_dialog {
         crate::canvas_tool_menu::stroke_path_dialog(app, &name);
     }
+    match svg_action {
+        Some(SvgAction::Copy(which)) => crate::path_svg_ui::copy_as_svg(app, ui.ctx(), &which),
+        Some(SvgAction::Export(which)) => crate::path_svg_ui::export_dialog(app, &which),
+        Some(SvgAction::Import) => crate::path_svg_ui::import_dialog(app),
+        Some(SvgAction::Paste) => crate::path_svg_ui::request_paste(app, ui.ctx()),
+        None => {}
+    }
     if let Some((cmd, p)) = action
         && let Err(e) = app.run(cmd, p)
     {
         app.ui.status = e;
         app.ui.status_error = true;
     }
+}
+
+/// Paths panel › SVG exchange entries (see [`crate::path_svg_ui`]).
+enum SvgAction {
+    Copy(String),
+    Export(String),
+    Import,
+    Paste,
 }
 
 #[cfg(test)]

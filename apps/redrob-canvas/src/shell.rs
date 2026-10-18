@@ -1351,6 +1351,8 @@ impl ShellApp {
             redrob_photo_engine::Session::new(),
             services::photo::services(),
         );
+        // File › Open Location fetches through the shell's HTTP client.
+        app.session.fetch_url = Some(Box::new(services::fetch_url));
         // Long commands and file opens run as background jobs with progress and Cancel.
         app.background_jobs = std::env::var_os("REDROB_PHOTO_INLINE_JOBS")
             .or_else(|| std::env::var_os("PHOTOCRAFT_INLINE_JOBS"))

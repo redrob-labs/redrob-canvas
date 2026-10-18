@@ -1430,6 +1430,19 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::mask_view_cmds::specs());
     v.extend(crate::layer_mask_props_cmds::specs());
     v.extend(crate::actions_cmds::specs());
+    // v0.11 parity round (A4).
+    v.extend(crate::dynamics_extra_cmds::specs());
+    v.extend(crate::perspective_clone_cmds::specs());
+    v.extend(crate::path_svg_cmds::specs());
+    v.extend(crate::resource_export_cmds::specs());
+    v.extend(crate::create_cmds::specs());
+    v.extend(crate::buffers_cmds::specs());
+    v.extend(crate::modules_cmds::specs());
+    v.extend(crate::input_cmds::specs());
+    v.extend(crate::ink_cmds::specs());
+    v.extend(crate::mypaint_engine_cmds::specs());
+    v.extend(crate::script_cmds::specs());
+    v.extend(crate::python_cmds::specs());
     // The dispatch guard's unit test needs a command that panics on purpose (REL-3).
     #[cfg(test)]
     v.push(test_panic_command());

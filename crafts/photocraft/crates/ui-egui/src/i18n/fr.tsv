@@ -3750,3 +3750,154 @@ curves	Smooth	Lisser
 	Replace the segment with two copies of itself	Remplace le segment par deux copies de lui-même
 	Flip the whole gradient end to end	Retourne tout le dégradé
 	Save as POV-Ray…	Enregistrer en POV-Ray…
+	Shaped Gradient (angular)	Dégradé selon la forme (angulaire)
+	Shaped Gradient (spherical)	Dégradé selon la forme (sphérique)
+	Shaped Gradient (dimpled)	Dégradé selon la forme (creusé)
+	Truncate	Tronquer
+	Sawtooth wave	Onde en dents de scie
+	Triangular wave	Onde triangulaire
+	Wheel	Molette
+	Force	Force
+	Fade length	Longueur du fondu
+	Random amount	Quantité aléatoire
+	Save Preset	Enregistrer le paramètre prédéfini
+	Paint Dynamics Editor	Éditeur de dynamique de la brosse
+	Color from Gradient	Couleur du dégradé
+	Put this table on the current brush	Appliquer ce tableau à la brosse actuelle
+	Save the table as a named dynamics preset	Enregistrer le tableau comme dynamique nommée
+	Give the dynamics preset a name first	Nommez d’abord la dynamique
+	Edit the dynamics table (inputs × outputs)	Modifier le tableau de dynamique (entrées × sorties)
+	Reset Plane	Réinitialiser le plan
+	Click four corners to define a perspective plane, then clone along it	Cliquez quatre coins pour définir un plan de perspective, puis clonez le long de celui-ci
+	Click corner {n} of 4	Cliquez le coin {n} sur 4
+	Perspective plane: corner {n} of 4 set	Plan de perspective : coin {n} sur 4 défini
+	Perspective plane set; {key}-click a source, then paint	Plan de perspective défini ; {key}-cliquez une source, puis peignez
+	Copy Path as SVG	Copier le tracé en SVG
+	Export Path to SVG…	Exporter le tracé en SVG…
+	Import Path from SVG…	Importer un tracé depuis un SVG…
+	Paste Path from SVG	Coller un tracé depuis un SVG
+	Copy All Paths as SVG	Copier tous les tracés en SVG
+	Export All Paths to SVG…	Exporter tous les tracés en SVG…
+	Copied 1 path as SVG	1 tracé copié en SVG
+	Copied {n} paths as SVG	{n} tracés copiés en SVG
+	Exported paths to {path}	Tracés exportés vers {path}
+	Imported 1 path	1 tracé importé
+	Imported {n} paths	{n} tracés importés
+	The clipboard holds no SVG	Le presse-papiers ne contient pas de SVG
+	Clipboard Image Brush	Brosse image du presse-papiers
+	Paint with the image on the clipboard as the brush tip	Peindre avec l'image du presse-papiers comme pointe de brosse
+	Export Layers as Animation…	Exporter les calques en animation…
+	Export as Brush (.gbr)…	Exporter comme brosse (.gbr)…
+	Export Layers as Image Hose (.gih)…	Exporter les calques en brosse animée (.gih)…
+	Export as Pattern (.pat)…	Exporter comme motif (.pat)…
+	Animation Frame Tags…	Balises d'image d'animation…
+	Disposal	Disposition
+	Replace	Remplacer
+	Incremental	Incrémental
+	Xtilt	Inclinaison X
+	Ytilt	Inclinaison Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Exporter en PostScript (.eps)…
+	Encapsulated	Encapsulé
+	Encoding	Encodage
+	Hex	Hexadécimal
+	Ascii85	ASCII85
+	Binary	Binaire
+	Open Location…	Ouvrir un emplacement…
+	From Screenshot…	Depuis une capture d'écran…
+	From Web Page…	Depuis une page web…
+	Send by Email…	Envoyer par e-mail…
+	Url	URL
+	Cursor	Curseur
+	Region	Région
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Tampon
+	Buffers	Tampons
+	Cut Named…	Couper (nommé)…
+	Copy Named…	Copier (nommé)…
+	Copy Visible Named…	Copier visible (nommé)…
+	Paste Named…	Coller (nommé)…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Aucun tampon nommé. Utilisez Édition > Tampon > Copier (nommé)… pour garder une copie ici.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Aucun tampon nommé ; utilisez d'abord Édition > Tampon > Copier (nommé)
+	Paste Buffer	Coller le tampon
+	Paste Buffer in Place	Coller le tampon en place
+	Paste Buffer as New Image	Coller le tampon comme nouvelle image
+	Rename Buffer…	Renommer le tampon…
+	Delete Buffer	Supprimer le tampon
+	Paste as New	Coller comme nouveau
+	Paste the buffer as a new layer	Coller le tampon comme nouveau calque
+	Paste the buffer as a new document	Coller le tampon comme nouveau document
+	As	Comme
+	In place	En place
+	Into	Dedans
+	Modules…	Modules…
+	Units…	Unités…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Aucun module chargeable n'est installé. Filtre > Modules externes > Installer un module… en ajoute un.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Un module désactivé reste installé mais disparaît des menus jusqu'à sa réactivation.
+	Module	Module
+	Not installed	Non installé
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Le facteur est le nombre d'unités dans un pouce (2,54 pour les centimètres, 72 pour les points).
+	Identifier	Identifiant
+	Factor	Facteur
+	Symbol	Symbole
+	Abbreviation	Abréviation
+	Singular	Singulier
+	Plural	Pluriel
+	Delete Unit	Supprimer l'unité
+	New unit	Nouvelle unité
+	Add Unit	Ajouter l'unité
+	That identifier is already a unit	Cet identifiant est déjà une unité
+	Custom units	Unités personnalisées
+	Disabled modules	Modules désactivés
+	Input Devices…	Périphériques d'entrée…
+	Input Controllers…	Contrôleurs d'entrée…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Le stylet est celui de la tablette signalé par la plateforme. Désactivé, il agit comme une souris.
+	Device	Périphérique
+	Invert tilt X	Inverser l'inclinaison X
+	Invert tilt Y	Inverser l'inclinaison Y
+	Swap tilt	Permuter l'inclinaison
+	Pressure scale	Échelle de pression
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Les événements de molette sont up, down, left ou right avec Shift+, Ctrl+ et Alt+ facultatifs ; les événements clavier sont des raccourcis comme Ctrl+Alt+Up. L'action est un identifiant de commande, éventuellement suivi de paramètres JSON.
+	Keyboard	Clavier
+	Controller	Contrôleur
+	Event	Événement
+	Remove mapping	Supprimer l'association
+	New mapping	Nouvelle association
+	Add Mapping	Ajouter l'association
+	Disabled	Désactivé
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} entrées ; cliquez pour définir la couleur de premier plan, double-cliquez pour modifier
+	Entry	Entrée
+	Add an entry with the foreground colour	Ajouter une entrée avec la couleur de premier plan
+	Delete the last entry	Supprimer la dernière entrée
+	Use selected	Utiliser la sélection
+	Ink	Encre
+	MyPaint Brush	Brosse MyPaint
+	Nib	Plume
+	Opaque	Opaque
+	Erase with brush	Effacer avec la brosse
+	Import .myb…	Importer un .myb…
+	Add a MyPaint brush file to the presets	Ajouter un fichier de brosse MyPaint aux préréglages
+	Imported MyPaint brush {name}	Brosse MyPaint {name} importée
+	How much pressure changes the nib size	Dans quelle mesure la pression change la taille de la plume
+	How much the pen's tilt turns and stretches the nib	Dans quelle mesure l'inclinaison du stylet tourne et étire la plume
+	How much a fast stroke thins the nib	Dans quelle mesure un trait rapide affine la plume
+	Added to the preset's logarithmic radius	Ajouté au rayon logarithmique du préréglage
+	Operation…	Opération…
+	Operation name or id	Nom ou identifiant de l'opération
+	{n} operations	{n} opérations
+	Choose an operation	Choisissez une opération
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Console Script-Fu…
+	Load Scripts Folder…	Charger un dossier de scripts…
+	Python Console…	Console Python…
+	Load Plug-ins Folder…	Charger un dossier de modules…
+	Loaded {n} scripts	{n} scripts chargés
+	Loaded {n} Python plug-ins	{n} modules Python chargés
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 avec call(command, **params), message(text) et print() ; chaque commande du moteur est accessible par call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme : chaque commande du moteur est une procédure, (file.new "width" 640 "height" 480) ; définissez des procédures et enregistrez-les avec script-fu-register.
+	Code	Code
+	Cmd+Enter runs the code	Cmd+Entrée exécute le code
+	Clear Log	Effacer le journal

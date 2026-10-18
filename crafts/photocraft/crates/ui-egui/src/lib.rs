@@ -39,6 +39,13 @@ pub mod brush_preview;
 pub mod brush_resize;
 pub mod brush_sections;
 pub mod brushes_tab;
+pub mod buffers_ui;
+pub mod modules_ui;
+pub mod colormap_ui;
+pub mod input_ui;
+pub mod paint_engines_ui;
+pub mod operation_ui;
+pub mod scripts_ui;
 pub(crate) mod cam_preview;
 mod cam_transform;
 mod camera_raw_detail_ui;
@@ -82,6 +89,7 @@ pub mod distort_ui;
 pub mod doc_props_ui;
 pub mod dock;
 pub mod duplicate_layer_ui;
+pub mod dynamics_editor_ui;
 pub mod edit_history;
 pub mod egui_fonts;
 pub mod enable_rules;
@@ -162,6 +170,7 @@ mod panel_docking;
 pub mod panels;
 pub mod parity;
 pub mod patch_preview;
+pub mod path_svg_ui;
 pub(crate) mod pattern_fill_ui;
 pub mod pattern_preview;
 pub mod perspective_crop_ui;
@@ -1423,7 +1432,7 @@ impl PhotocraftApp {
         let holds_ora = st.path.as_deref().is_some_and(|p| redrob_photo_engine::file_cmds::holds_at(&st.doc, p));
         let writable = ext.is_some_and(|e| {
             matches!(e.as_str(), redrob_photo_format::EXTENSION | "psd" | "psb" | "tif" | "tiff")
-                || (e == "ora" && holds_ora)
+                || (matches!(e.as_str(), "ora" | "xcf") && holds_ora)
                 || (flat && redrob_photo_codecs::from_extension(&e).is_some_and(|f| f.caps().write))
         });
         let suggested = match &st.path {
@@ -1982,10 +1991,15 @@ impl eframe::App for PhotocraftApp {
         brush_panel::window(self, &ctx);
         preset_panels::windows(self, &ctx);
         gradient_ui::editor_window(self, &ctx);
+        dynamics_editor_ui::window(self, &ctx);
         type_panels_ui::windows(self, &ctx);
         analysis_ui::windows(self, &ctx);
         extra_panels::windows(self, &ctx);
         timeline_ui::windows(self, &ctx);
+        buffers_ui::windows(self, &ctx);
+        colormap_ui::tick(self);
+        operation_ui::tick(self);
+        scripts_ui::tick(self);
         workspace_ui::windows(self, &ctx);
         palette::show(self, &ctx);
         dialogs::show(self, &ctx);

@@ -4430,3 +4430,154 @@ curves	Smooth	Vloeiend maken
 	Replace the segment with two copies of itself	Vervangt het segment door twee kopieën van zichzelf
 	Flip the whole gradient end to end	Keert het hele verloop om
 	Save as POV-Ray…	Opslaan als POV-Ray…
+	Shaped Gradient (angular)	Vormverloop (hoekig)
+	Shaped Gradient (spherical)	Vormverloop (sferisch)
+	Shaped Gradient (dimpled)	Vormverloop (gedeukt)
+	Truncate	Afkappen
+	Sawtooth wave	Zaagtandgolf
+	Triangular wave	Driehoeksgolf
+	Wheel	Wiel
+	Force	Kracht
+	Jitter	Jitter
+	Fade length	Vervaaglengte
+	Random amount	Willekeurige hoeveelheid
+	Save Preset	Voorinstelling opslaan
+	Paint Dynamics Editor	Dynamiek-editor
+	Color from Gradient	Kleur uit verloop
+	Put this table on the current brush	Deze tabel op het huidige penseel toepassen
+	Save the table as a named dynamics preset	Tabel opslaan als benoemde dynamiekvoorinstelling
+	Give the dynamics preset a name first	Geef de dynamiekvoorinstelling eerst een naam
+	Edit the dynamics table (inputs × outputs)	Dynamiektabel bewerken (invoer × uitvoer)
+	Reset Plane	Vlak herstellen
+	Click four corners to define a perspective plane, then clone along it	Klik vier hoeken om een perspectiefvlak te bepalen en kloon er dan langs
+	Click corner {n} of 4	Klik hoek {n} van 4
+	Perspective plane: corner {n} of 4 set	Perspectiefvlak: hoek {n} van 4 gezet
+	Perspective plane set; {key}-click a source, then paint	Perspectiefvlak gezet; {key}-klik een bron en schilder dan
+	Copy Path as SVG	Pad kopiëren als SVG
+	Export Path to SVG…	Pad exporteren naar SVG…
+	Import Path from SVG…	Pad importeren uit SVG…
+	Paste Path from SVG	Pad plakken uit SVG
+	Copy All Paths as SVG	Alle paden kopiëren als SVG
+	Export All Paths to SVG…	Alle paden exporteren naar SVG…
+	Copied 1 path as SVG	1 pad gekopieerd als SVG
+	Copied {n} paths as SVG	{n} paden gekopieerd als SVG
+	Exported paths to {path}	Paden geëxporteerd naar {path}
+	Imported 1 path	1 pad geïmporteerd
+	Imported {n} paths	{n} paden geïmporteerd
+	The clipboard holds no SVG	Het klembord bevat geen SVG
+	Clipboard Image Brush	Klembordafbeelding-penseel
+	Paint with the image on the clipboard as the brush tip	Schilderen met de klembordafbeelding als penseelpunt
+	Export Layers as Animation…	Lagen exporteren als animatie…
+	Export as Brush (.gbr)…	Exporteren als penseel (.gbr)…
+	Export Layers as Image Hose (.gih)…	Lagen exporteren als geanimeerd penseel (.gih)…
+	Export as Pattern (.pat)…	Exporteren als patroon (.pat)…
+	Animation Frame Tags…	Animatieframe-tags…
+	Disposal	Overgang
+	Incremental	Oplopend
+	Angular	Hoek
+	Xtilt	Kanteling X
+	Ytilt	Kanteling Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Exporteren als PostScript (.eps)…
+	Encapsulated	Ingekapseld
+	Encoding	Codering
+	Hex	Hexadecimaal
+	Ascii85	ASCII85
+	Binary	Binair
+	Open Location…	Locatie openen…
+	From Screenshot…	Van schermafbeelding…
+	From Web Page…	Van webpagina…
+	Send by Email…	Verzenden per e-mail…
+	Url	URL
+	Cursor	Cursor
+	Region	Gebied
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffers
+	Cut Named…	Benoemd knippen…
+	Copy Named…	Benoemd kopiëren…
+	Copy Visible Named…	Zichtbaar benoemd kopiëren…
+	Paste Named…	Benoemd plakken…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Geen benoemde buffers. Gebruik Bewerken > Buffer > Benoemd kopiëren… om hier een kopie te bewaren.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Geen benoemde buffers; gebruik eerst Bewerken > Buffer > Benoemd kopiëren
+	Paste Buffer	Buffer plakken
+	Paste Buffer in Place	Buffer op plaats plakken
+	Paste Buffer as New Image	Buffer plakken als nieuwe afbeelding
+	Rename Buffer…	Buffer hernoemen…
+	Delete Buffer	Buffer verwijderen
+	Paste as New	Plakken als nieuw
+	Paste the buffer as a new layer	De buffer plakken als nieuwe laag
+	Paste the buffer as a new document	De buffer plakken als nieuw document
+	As	Als
+	In place	Op plaats
+	Into	Erin
+	Modules…	Modules…
+	Units…	Eenheden…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Geen laadbare modules geïnstalleerd. Filter > Plug-ins > Plug-in installeren… voegt er een toe.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Een uitgeschakelde module blijft geïnstalleerd maar verdwijnt uit de menu's tot ze weer wordt ingeschakeld.
+	Module	Module
+	Not installed	Niet geïnstalleerd
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	De factor is hoeveel eenheden in één inch gaan (2,54 voor centimeters, 72 voor punten).
+	Identifier	Identificatie
+	Factor	Factor
+	Symbol	Symbool
+	Abbreviation	Afkorting
+	Singular	Enkelvoud
+	Plural	Meervoud
+	Delete Unit	Eenheid verwijderen
+	New unit	Nieuwe eenheid
+	Add Unit	Eenheid toevoegen
+	That identifier is already a unit	Die identificatie is al een eenheid
+	Custom units	Aangepaste eenheden
+	Disabled modules	Uitgeschakelde modules
+	Input Devices…	Invoerapparaten…
+	Input Controllers…	Invoercontrollers…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	De pen is de tabletstylus die het platform meldt. Uitgeschakeld werkt hij als een muis.
+	Device	Apparaat
+	Invert tilt X	Kanteling X omkeren
+	Invert tilt Y	Kanteling Y omkeren
+	Swap tilt	Kanteling wisselen
+	Pressure scale	Drukschaal
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Wielgebeurtenissen zijn up, down, left of right met optioneel Shift+, Ctrl+ en Alt+; toetsenbordgebeurtenissen zijn sneltoetsen zoals Ctrl+Alt+Up. De actie is een opdracht-id, optioneel gevolgd door JSON-parameters.
+	Controller	Controller
+	Event	Gebeurtenis
+	Remove mapping	Toewijzing verwijderen
+	New mapping	Nieuwe toewijzing
+	Add Mapping	Toewijzing toevoegen
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} items; klik om de voorgrondkleur in te stellen, dubbelklik om te bewerken
+	Entry	Item
+	Add an entry with the foreground colour	Een item met de voorgrondkleur toevoegen
+	Delete the last entry	Het laatste item verwijderen
+	Use selected	Geselecteerde gebruiken
+	Ink	Inkt
+	MyPaint Brush	MyPaint-penseel
+	Nib	Pen
+	Aspect	Verhouding
+	Opaque	Dekking
+	Erase with brush	Wissen met penseel
+	Import .myb…	.myb importeren…
+	Add a MyPaint brush file to the presets	Een MyPaint-penseelbestand aan de voorinstellingen toevoegen
+	Imported MyPaint brush {name}	MyPaint-penseel {name} geïmporteerd
+	How much pressure changes the nib size	Hoeveel de druk de pengrootte verandert
+	How much the pen's tilt turns and stretches the nib	Hoeveel de penkanteling de pen draait en uitrekt
+	How much a fast stroke thins the nib	Hoeveel een snelle streek de pen verdunt
+	Added to the preset's logarithmic radius	Opgeteld bij de logaritmische straal van de voorinstelling
+	Operation…	Bewerking…
+	Operation name or id	Naam of id van de bewerking
+	{n} operations	{n} bewerkingen
+	Choose an operation	Kies een bewerking
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu-console…
+	Load Scripts Folder…	Scriptmap laden…
+	Python Console…	Python-console…
+	Load Plug-ins Folder…	Plug-inmap laden…
+	Loaded {n} scripts	{n} scripts geladen
+	Loaded {n} Python plug-ins	{n} Python-plug-ins geladen
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 met call(command, **params), message(text) en print(); elke engine-opdracht is bereikbaar via call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: elke engine-opdracht is een procedure, (file.new "width" 640 "height" 480); definieer procedures en registreer ze met script-fu-register.
+	Code	Code
+	Cmd+Enter runs the code	Cmd+Enter voert de code uit
+	Clear Log	Logboek wissen

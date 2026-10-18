@@ -4409,3 +4409,154 @@ curves	Smooth	スムーズ
 	Replace the segment with two copies of itself	セグメントを自身の 2 つのコピーに置き換えます
 	Flip the whole gradient end to end	グラデーション全体を反転します
 	Save as POV-Ray…	POV-Ray 形式で保存…
+	Shaped Gradient (angular)	形状グラデーション (角度)
+	Shaped Gradient (spherical)	形状グラデーション (球状)
+	Shaped Gradient (dimpled)	形状グラデーション (くぼみ)
+	Truncate	切り捨て
+	Sawtooth wave	のこぎり波
+	Triangular wave	三角波
+	Wheel	ホイール
+	Force	筆圧の強さ
+	Fade length	フェードの長さ
+	Random amount	ランダム量
+	Save Preset	プリセットを保存
+	Paint Dynamics Editor	描画ダイナミクスエディター
+	Color from Gradient	グラデーションから色
+	Put this table on the current brush	この表を現在のブラシに適用
+	Save the table as a named dynamics preset	この表を名前付きダイナミクスプリセットとして保存
+	Give the dynamics preset a name first	先にダイナミクスプリセットに名前を付けてください
+	Edit the dynamics table (inputs × outputs)	ダイナミクス表を編集 (入力 × 出力)
+	Reset Plane	平面をリセット
+	Click four corners to define a perspective plane, then clone along it	4つの角をクリックして透視平面を定義し、その平面に沿ってクローンします
+	Click corner {n} of 4	角 {n}/4 をクリック
+	Perspective plane: corner {n} of 4 set	透視平面: 角 {n}/4 を設定しました
+	Perspective plane set; {key}-click a source, then paint	透視平面を設定しました。{key}クリックでソースを指定してから描画してください
+	Copy Path as SVG	パスをSVGとしてコピー
+	Export Path to SVG…	パスをSVGに書き出し…
+	Import Path from SVG…	SVGからパスを読み込み…
+	Paste Path from SVG	SVGからパスをペースト
+	Copy All Paths as SVG	すべてのパスをSVGとしてコピー
+	Export All Paths to SVG…	すべてのパスをSVGに書き出し…
+	Copied 1 path as SVG	1個のパスをSVGとしてコピーしました
+	Copied {n} paths as SVG	{n}個のパスをSVGとしてコピーしました
+	Exported paths to {path}	パスを{path}に書き出しました
+	Imported 1 path	1個のパスを読み込みました
+	Imported {n} paths	{n}個のパスを読み込みました
+	The clipboard holds no SVG	クリップボードにSVGがありません
+	Clipboard Image Brush	クリップボード画像ブラシ
+	Paint with the image on the clipboard as the brush tip	クリップボードの画像をブラシ先端として描画します
+	Export Layers as Animation…	レイヤーをアニメーションとして書き出し…
+	Export as Brush (.gbr)…	ブラシとして書き出し (.gbr)…
+	Export Layers as Image Hose (.gih)…	レイヤーをイメージホースとして書き出し (.gih)…
+	Export as Pattern (.pat)…	パターンとして書き出し (.pat)…
+	Animation Frame Tags…	アニメーションフレームタグ…
+	Disposal	処理方法
+	Replace	置換
+	Incremental	順次
+	Xtilt	X傾き
+	Ytilt	Y傾き
+	Mng	MNG
+	Export as PostScript (.eps)…	PostScriptとして書き出し (.eps)…
+	Encapsulated	カプセル化 (EPS)
+	Encoding	エンコーディング
+	Hex	16進
+	Ascii85	ASCII85
+	Binary	バイナリ
+	Open Location…	場所を開く…
+	From Screenshot…	スクリーンショットから…
+	From Web Page…	Webページから…
+	Send by Email…	メールで送信…
+	Url	URL
+	Cursor	カーソルを含める
+	Region	領域
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	バッファ
+	Buffers	バッファ
+	Cut Named…	名前を付けて切り取り…
+	Copy Named…	名前を付けてコピー…
+	Copy Visible Named…	可視部分を名前を付けてコピー…
+	Paste Named…	名前を付けてペースト…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	名前付きバッファがありません。編集 > バッファ > 名前を付けてコピー…でここにコピーを保持します。
+	There are no named buffers; use Edit > Buffer > Copy Named first	名前付きバッファがありません。先に編集 > バッファ > 名前を付けてコピーを使ってください
+	Paste Buffer	バッファをペースト
+	Paste Buffer in Place	バッファを同じ位置にペースト
+	Paste Buffer as New Image	バッファを新規画像としてペースト
+	Rename Buffer…	バッファ名を変更…
+	Delete Buffer	バッファを削除
+	Paste as New	新規としてペースト
+	Paste the buffer as a new layer	バッファを新規レイヤーとしてペーストします
+	Paste the buffer as a new document	バッファを新規ドキュメントとしてペーストします
+	As	形式
+	In place	同じ位置
+	Into	選択範囲内に
+	Modules…	モジュール…
+	Units…	単位…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	読み込み可能なモジュールがインストールされていません。フィルター > プラグイン > プラグインをインストール…で追加します。
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	オフにしたモジュールはインストールされたままですが、再びオンにするまでメニューから消えます。
+	Module	モジュール
+	Not installed	未インストール
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	係数は1インチあたりの単位数です(センチメートルは2.54、ポイントは72)。
+	Identifier	識別子
+	Factor	係数
+	Symbol	記号
+	Abbreviation	略語
+	Singular	単数形
+	Plural	複数形
+	Delete Unit	単位を削除
+	New unit	新しい単位
+	Add Unit	単位を追加
+	That identifier is already a unit	その識別子はすでに単位です
+	Custom units	カスタム単位
+	Disabled modules	無効なモジュール
+	Input Devices…	入力デバイス…
+	Input Controllers…	入力コントローラー…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	ペンはプラットフォームが報告するタブレットのスタイラスです。無効にするとマウスとして動作します。
+	Device	デバイス
+	Invert tilt X	傾きXを反転
+	Invert tilt Y	傾きYを反転
+	Swap tilt	傾き軸を入れ替え
+	Pressure scale	筆圧倍率
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	ホイールイベントはup、down、left、rightに任意でShift+、Ctrl+、Alt+を付けます。キーボードイベントはCtrl+Alt+Upのようなショートカットです。アクションはコマンドIDで、JSONパラメータを続けられます。
+	Keyboard	キーボード
+	Controller	コントローラー
+	Event	イベント
+	Remove mapping	マッピングを削除
+	New mapping	新しいマッピング
+	Add Mapping	マッピングを追加
+	Disabled	無効
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n}項目。クリックで描画色に設定、ダブルクリックで編集
+	Entry	項目
+	Add an entry with the foreground colour	描画色の項目を追加します
+	Delete the last entry	最後の項目を削除します
+	Use selected	選択項目を使用
+	Ink	インク
+	MyPaint Brush	MyPaintブラシ
+	Nib	ペン先
+	Opaque	不透明
+	Erase with brush	ブラシで消去
+	Import .myb…	.mybを読み込み…
+	Add a MyPaint brush file to the presets	MyPaintブラシファイルをプリセットに追加します
+	Imported MyPaint brush {name}	MyPaintブラシ{name}を読み込みました
+	How much pressure changes the nib size	筆圧がペン先の大きさをどれだけ変えるか
+	How much the pen's tilt turns and stretches the nib	ペンの傾きがペン先をどれだけ回し伸ばすか
+	How much a fast stroke thins the nib	速いストロークがペン先をどれだけ細くするか
+	Added to the preset's logarithmic radius	プリセットの対数半径に加算されます
+	Operation…	操作…
+	Operation name or id	操作名またはID
+	{n} operations	{n}個の操作
+	Choose an operation	操作を選択してください
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fuコンソール…
+	Load Scripts Folder…	スクリプトフォルダーを読み込み…
+	Python Console…	Pythonコンソール…
+	Load Plug-ins Folder…	プラグインフォルダーを読み込み…
+	Loaded {n} scripts	{n}個のスクリプトを読み込みました
+	Loaded {n} Python plug-ins	{n}個のPythonプラグインを読み込みました
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3: call(command, **params)、message(text)、print()。すべてのエンジンコマンドはcallから呼べます。
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: すべてのエンジンコマンドは手続きです。(file.new "width" 640 "height" 480)。手続きをdefineしscript-fu-registerで登録します。
+	Code	コード
+	Cmd+Enter runs the code	Cmd+Enterでコードを実行します
+	Clear Log	ログを消去

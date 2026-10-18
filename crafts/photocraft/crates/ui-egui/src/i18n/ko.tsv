@@ -4428,3 +4428,155 @@ curves	Smooth	매끄럽게
 	Replace the segment with two copies of itself	세그먼트를 자신의 복사본 2개로 바꿉니다
 	Flip the whole gradient end to end	그레이디언트 전체를 뒤집습니다
 	Save as POV-Ray…	POV-Ray로 저장…
+	Shaped Gradient (angular)	모양 그레이디언트(각도)
+	Shaped Gradient (spherical)	모양 그레이디언트(구형)
+	Shaped Gradient (dimpled)	모양 그레이디언트(오목)
+	Truncate	잘라내기
+	Sawtooth wave	톱니파
+	Triangular wave	삼각파
+	Wheel	휠
+	Force	힘
+	Aspect Ratio	종횡비
+	Fade length	페이드 길이
+	Random amount	무작위 정도
+	Save Preset	사전 설정 저장
+	Paint Dynamics Editor	페인트 다이내믹 편집기
+	Color from Gradient	그레이디언트에서 색상
+	Put this table on the current brush	이 표를 현재 브러시에 적용
+	Save the table as a named dynamics preset	이 표를 이름 있는 다이내믹 사전 설정으로 저장
+	Give the dynamics preset a name first	먼저 다이내믹 사전 설정의 이름을 입력하세요
+	Edit the dynamics table (inputs × outputs)	다이내믹 표 편집(입력 × 출력)
+	Reset Plane	평면 재설정
+	Click four corners to define a perspective plane, then clone along it	네 모서리를 클릭해 원근 평면을 정의한 뒤 그 평면을 따라 복제합니다
+	Click corner {n} of 4	모서리 {n}/4 클릭
+	Perspective plane: corner {n} of 4 set	원근 평면: 모서리 {n}/4 설정됨
+	Perspective plane set; {key}-click a source, then paint	원근 평면 설정됨. {key}-클릭으로 소스를 지정한 뒤 칠하세요
+	Copy Path as SVG	패스를 SVG로 복사
+	Export Path to SVG…	패스를 SVG로 내보내기…
+	Import Path from SVG…	SVG에서 패스 가져오기…
+	Paste Path from SVG	SVG에서 패스 붙이기
+	Copy All Paths as SVG	모든 패스를 SVG로 복사
+	Export All Paths to SVG…	모든 패스를 SVG로 내보내기…
+	Copied 1 path as SVG	패스 1개를 SVG로 복사했습니다
+	Copied {n} paths as SVG	패스 {n}개를 SVG로 복사했습니다
+	Exported paths to {path}	패스를 {path}에 내보냈습니다
+	Imported 1 path	패스 1개를 가져왔습니다
+	Imported {n} paths	패스 {n}개를 가져왔습니다
+	The clipboard holds no SVG	클립보드에 SVG가 없습니다
+	Clipboard Image Brush	클립보드 이미지 브러시
+	Paint with the image on the clipboard as the brush tip	클립보드의 이미지를 브러시 팁으로 사용해 칠합니다
+	Export Layers as Animation…	레이어를 애니메이션으로 내보내기…
+	Export as Brush (.gbr)…	브러시로 내보내기 (.gbr)…
+	Export Layers as Image Hose (.gih)…	레이어를 이미지 호스로 내보내기 (.gih)…
+	Export as Pattern (.pat)…	패턴으로 내보내기 (.pat)…
+	Animation Frame Tags…	애니메이션 프레임 태그…
+	Disposal	처리 방식
+	Replace	바꾸기
+	Incremental	순차
+	Xtilt	X 기울기
+	Ytilt	Y 기울기
+	Mng	MNG
+	Export as PostScript (.eps)…	PostScript로 내보내기 (.eps)…
+	Encapsulated	캡슐화 (EPS)
+	Encoding	인코딩
+	Ascii85	ASCII85
+	Binary	바이너리
+	Open Location…	위치 열기…
+	From Screenshot…	스크린샷에서…
+	From Web Page…	웹 페이지에서…
+	Send by Email…	이메일로 보내기…
+	Url	URL
+	Cursor	커서 포함
+	Region	영역
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	버퍼
+	Buffers	버퍼
+	Cut Named…	이름 지정 잘라내기…
+	Copy Named…	이름 지정 복사…
+	Copy Visible Named…	보이는 영역 이름 지정 복사…
+	Paste Named…	이름 지정 붙이기…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	이름 지정 버퍼가 없습니다. 편집 > 버퍼 > 이름 지정 복사…로 복사본을 여기에 보관하세요.
+	There are no named buffers; use Edit > Buffer > Copy Named first	이름 지정 버퍼가 없습니다. 먼저 편집 > 버퍼 > 이름 지정 복사를 사용하세요
+	Paste Buffer	버퍼 붙이기
+	Paste Buffer in Place	버퍼 제자리에 붙이기
+	Paste Buffer as New Image	버퍼를 새 이미지로 붙이기
+	Rename Buffer…	버퍼 이름 바꾸기…
+	Delete Buffer	버퍼 삭제
+	Paste as New	새 이미지로 붙이기
+	Paste the buffer as a new layer	버퍼를 새 레이어로 붙입니다
+	Paste the buffer as a new document	버퍼를 새 문서로 붙입니다
+	As	형식
+	In place	제자리
+	Into	선택 영역 안에
+	Modules…	모듈…
+	Units…	단위…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	로드할 수 있는 모듈이 설치되어 있지 않습니다. 필터 > 플러그인 > 플러그인 설치…로 추가합니다.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	꺼진 모듈은 설치된 채로 남지만 다시 켤 때까지 메뉴에서 사라집니다.
+	Module	모듈
+	Not installed	설치되지 않음
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	계수는 1인치가 그 단위로 몇 개인지입니다(센티미터는 2.54, 포인트는 72).
+	Identifier	식별자
+	Factor	계수
+	Digits	소수 자릿수
+	Symbol	기호
+	Abbreviation	약어
+	Singular	단수
+	Plural	복수
+	Delete Unit	단위 삭제
+	New unit	새 단위
+	Add Unit	단위 추가
+	That identifier is already a unit	그 식별자는 이미 단위입니다
+	Custom units	사용자 정의 단위
+	Disabled modules	꺼진 모듈
+	Input Devices…	입력 장치…
+	Input Controllers…	입력 컨트롤러…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	펜은 플랫폼이 보고하는 태블릿 스타일러스입니다. 사용 안 함으로 두면 마우스처럼 동작합니다.
+	Device	장치
+	Invert tilt X	기울기 X 반전
+	Invert tilt Y	기울기 Y 반전
+	Swap tilt	기울기 축 교환
+	Pressure scale	압력 배율
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	휠 이벤트는 up, down, left, right에 선택적 Shift+, Ctrl+, Alt+를 붙입니다. 키보드 이벤트는 Ctrl+Alt+Up 같은 단축키입니다. 동작은 명령 ID이며 뒤에 JSON 매개변수를 붙일 수 있습니다.
+	Keyboard	키보드
+	Controller	컨트롤러
+	Event	이벤트
+	Remove mapping	매핑 제거
+	New mapping	새 매핑
+	Add Mapping	매핑 추가
+	Disabled	사용 안 함
+	{n} entries; click one to set the foreground colour, double-click to edit it	항목 {n}개. 클릭하면 전경색으로 설정되고, 두 번 클릭하면 편집합니다
+	Entry	항목
+	Add an entry with the foreground colour	전경색으로 항목을 추가합니다
+	Delete the last entry	마지막 항목을 삭제합니다
+	Use selected	선택 항목 사용
+	Ink	잉크
+	MyPaint Brush	MyPaint 브러시
+	Nib	펜촉
+	Opaque	불투명
+	Erase with brush	브러시로 지우기
+	Import .myb…	.myb 가져오기…
+	Add a MyPaint brush file to the presets	MyPaint 브러시 파일을 사전 설정에 추가합니다
+	Imported MyPaint brush {name}	MyPaint 브러시 {name}을(를) 가져왔습니다
+	How much pressure changes the nib size	압력이 펜촉 크기를 얼마나 바꾸는지
+	How much the pen's tilt turns and stretches the nib	펜 기울기가 펜촉을 얼마나 돌리고 늘리는지
+	How much a fast stroke thins the nib	빠른 획이 펜촉을 얼마나 가늘게 하는지
+	Added to the preset's logarithmic radius	사전 설정의 로그 반경에 더해집니다
+	Operation…	연산…
+	Operation name or id	연산 이름 또는 ID
+	{n} operations	연산 {n}개
+	Choose an operation	연산을 선택하세요
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu 콘솔…
+	Load Scripts Folder…	스크립트 폴더 불러오기…
+	Python Console…	Python 콘솔…
+	Load Plug-ins Folder…	플러그인 폴더 불러오기…
+	Loaded {n} scripts	스크립트 {n}개를 불러왔습니다
+	Loaded {n} Python plug-ins	Python 플러그인 {n}개를 불러왔습니다
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3: call(command, **params), message(text), print(). 모든 엔진 명령은 call로 호출할 수 있습니다.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: 모든 엔진 명령이 프로시저입니다, (file.new "width" 640 "height" 480). 프로시저를 define하고 script-fu-register로 등록합니다.
+	Code	코드
+	Cmd+Enter runs the code	Cmd+Enter로 코드를 실행합니다
+	Clear Log	로그 지우기

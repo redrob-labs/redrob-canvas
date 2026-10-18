@@ -38,7 +38,7 @@ const COMBINES: [(SensorCombine, &str); 5] = [
     (SensorCombine::Difference, "Difference"),
 ];
 
-const TIP_GEOMETRIES: [(TipGeometry, &str); 2] = [(TipGeometry::Circle, "Circle"), (TipGeometry::Square, "Square")];
+const TIP_GEOMETRIES: [(TipGeometry, &str); 3] = [(TipGeometry::Circle, "Circle"), (TipGeometry::Square, "Square"), (TipGeometry::Diamond, "Diamond")];
 
 const MASK_TYPES: [(MaskType, &str); 3] = [(MaskType::Default, "Default"), (MaskType::Soft, "Soft"), (MaskType::Gaussian, "Gaussian")];
 

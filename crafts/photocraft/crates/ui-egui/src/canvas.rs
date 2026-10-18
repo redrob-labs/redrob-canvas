@@ -548,6 +548,7 @@ fn stroke_params(app: &PhotocraftApp, d: &Drag, points: &[Vec<f64>]) -> serde_js
     if crate::eraser_ui::block_mode(app, tool) {
         p["block"] = json!(true);
     }
+    crate::paint_engines_ui::extend_params(app, tool, &mut p);
     p
 }
 
@@ -582,6 +583,10 @@ fn live_retouch_command(tool: Tool) -> Option<&'static str> {
 /// The command a live-stroking tool commits: the Pencil's (and the Pencil- or Block-mode
 /// Eraser's) `paint.pencil`, else `paint.stroke`.
 pub(crate) fn stroke_command(app: &PhotocraftApp, tool: Tool) -> &'static str {
+    // The Brush tool's Ink and MyPaint engines commit their own commands (`paint_engines_ui`).
+    if let Some(cmd) = crate::paint_engines_ui::stroke_command(app, tool) {
+        return cmd;
+    }
     if tool == Tool::Pencil || crate::eraser_ui::pencil_mode(app, tool) || crate::eraser_ui::block_mode(app, tool) { "paint.pencil" } else { "paint.stroke" }
 }
 
@@ -3245,6 +3250,8 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     let bars_id = egui::Id::new(("pc-canvas-bars-hover", idx));
     let over_bars = ctx.data(|d| d.get_temp::<bool>(bars_id)).unwrap_or(false);
     let nav_hovered = response.hovered() || free_hover || over_bars;
+    // Edit > Input Controllers: bound wheel notches and shortcuts run their commands first.
+    crate::input_ui::take_events(app, &ctx, nav_hovered);
     // Interface › Enable Animations off: the wheel moves the canvas without a glide (#5721).
     let wheel = crate::wheel_nav::read_with(
         &ctx,
@@ -3296,6 +3303,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     // Pen pressure/tilt for this frame's tool events (mouse = 1.0), unless Preferences › Tools ›
     // Use Tablet Pressure is off; the pen's eraser end selects the Eraser.
     app.stylus.use_pressure = app.session.prefs().tools.use_tablet_pressure;
+    crate::input_ui::apply_device(app);
     let curve = app.session.prefs().tools.pressure_curve.clone();
     app.stylus.set_pressure_curve(&curve);
     app.stylus.update_for_frame(ui.ctx().cumulative_frame_nr(), &ui.input(|i| i.events.clone()));
@@ -5961,7 +5969,7 @@ pub(crate) fn finish_gesture(app: &mut PhotocraftApp, d: Drag) {
                 let o = app.ui.tool_options.clone();
                 let _ = app.run(
                     "paint.gradient",
-                    json!({"from": [d.start[0], d.start[1]], "to": [end[0], end[1]], "style": o.gradient_style, "reverse": o.gradient_reverse, "dither": o.gradient_dither, "opacity": o.fill_opacity, "mode": o.gradient_blend_mode.label(), "target": paint_target(app)}),
+                    json!({"from": [d.start[0], d.start[1]], "to": [end[0], end[1]], "style": o.gradient_style, "repeat": o.gradient_repeat, "offset": o.gradient_offset, "reverse": o.gradient_reverse, "dither": o.gradient_dither, "opacity": o.fill_opacity, "mode": o.gradient_blend_mode.label(), "target": paint_target(app)}),
                 );
             }
         }

@@ -57,6 +57,7 @@ fn generated_coverage(g: &GeneratedTip, u: f32, v: f32, ro: f32, rm: f32, hardne
     let mut d = match g.shape {
         TipGeometry::Circle => nx.hypot(ny),
         TipGeometry::Square => nx.abs().max(ny.abs()),
+        TipGeometry::Diamond => nx.abs() + ny.abs(),
     };
     if !d.is_finite() {
         return None;
@@ -292,7 +293,7 @@ impl BrushContext {
     /// Bounding rectangle of a dab (rotated sampled tips need the corner reach).
     pub fn dab_rect(&self, d: &Dab, dual: bool) -> Rect {
         let sampled = if dual { self.dual_tip.is_some() } else { self.tip.is_some() || !self.cells.is_empty() };
-        let hardness = if dual { self.brush.dual_brush.hardness } else { self.brush.hardness };
+        let hardness = if dual { self.brush.dual_brush.hardness } else { (self.brush.hardness * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0) };
         // A computed soft tip paints past its nominal radius (see `tip_shape`).
         let aliased = self.brush.aliased && !dual;
         let reach = if sampled {
@@ -325,7 +326,11 @@ impl BrushContext {
             dp.resize(w * h, 0.0);
         }
         let b = &self.brush;
-        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { (b.hardness, self.primary_mips(d)) };
+        let (hardness, mips) = if dual {
+            (b.dual_brush.hardness, self.dual_tip.as_deref())
+        } else {
+            ((b.hardness * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0), self.primary_mips(d))
+        };
         let aliased = b.aliased && !dual;
         // The generated-tip path: outline, mask type, fade per axis, spikes, density, randomness.
         let generated = (!dual && !aliased && mips.is_none() && b.generated.is_custom()).then_some(&b.generated);

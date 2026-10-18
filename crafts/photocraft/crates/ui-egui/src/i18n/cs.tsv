@@ -4278,3 +4278,155 @@ navigator	Zoom	Zvětšení
 	Replace the segment with two copies of itself	Nahradí segment dvěma jeho kopiemi
 	Flip the whole gradient end to end	Převrátí celý přechod
 	Save as POV-Ray…	Uložit jako POV-Ray…
+	Shaped Gradient (angular)	Tvarovaný přechod (úhlový)
+	Shaped Gradient (spherical)	Tvarovaný přechod (kulový)
+	Shaped Gradient (dimpled)	Tvarovaný přechod (prohloubený)
+	Truncate	Oříznout
+	Sawtooth wave	Pilová vlna
+	Triangular wave	Trojúhelníková vlna
+	Wheel	Kolečko
+	Force	Síla
+	Aspect Ratio	Poměr stran
+	Jitter	Chvění
+	Fade length	Délka vyblednutí
+	Random amount	Míra náhodnosti
+	Save Preset	Uložit přednastavení
+	Paint Dynamics Editor	Editor dynamiky malování
+	Color from Gradient	Barva z přechodu
+	Put this table on the current brush	Použít tabulku na aktuální štětec
+	Save the table as a named dynamics preset	Uložit tabulku jako pojmenovanou dynamiku
+	Give the dynamics preset a name first	Nejprve dynamiku pojmenujte
+	Edit the dynamics table (inputs × outputs)	Upravit tabulku dynamiky (vstupy × výstupy)
+	Reset Plane	Obnovit rovinu
+	Click four corners to define a perspective plane, then clone along it	Klepnutím na čtyři rohy určete perspektivní rovinu a pak podél ní klonujte
+	Click corner {n} of 4	Klepněte na roh {n} ze 4
+	Perspective plane: corner {n} of 4 set	Perspektivní rovina: roh {n} ze 4 nastaven
+	Perspective plane set; {key}-click a source, then paint	Perspektivní rovina nastavena; klepněte se {key} na zdroj a pak malujte
+	Copy Path as SVG	Kopírovat cestu jako SVG
+	Export Path to SVG…	Exportovat cestu do SVG…
+	Import Path from SVG…	Importovat cestu ze SVG…
+	Paste Path from SVG	Vložit cestu ze SVG
+	Copy All Paths as SVG	Kopírovat všechny cesty jako SVG
+	Export All Paths to SVG…	Exportovat všechny cesty do SVG…
+	Copied 1 path as SVG	1 cesta zkopírována jako SVG
+	Copied {n} paths as SVG	Zkopírováno cest jako SVG: {n}
+	Exported paths to {path}	Cesty exportovány do {path}
+	Imported 1 path	Importována 1 cesta
+	Imported {n} paths	Importováno cest: {n}
+	The clipboard holds no SVG	Schránka neobsahuje SVG
+	Clipboard Image Brush	Štětec z obrázku ve schránce
+	Paint with the image on the clipboard as the brush tip	Malovat obrázkem ze schránky jako hrotem štětce
+	Export Layers as Animation…	Exportovat vrstvy jako animaci…
+	Export as Brush (.gbr)…	Exportovat jako štětec (.gbr)…
+	Export Layers as Image Hose (.gih)…	Exportovat vrstvy jako animovaný štětec (.gih)…
+	Export as Pattern (.pat)…	Exportovat jako vzorek (.pat)…
+	Animation Frame Tags…	Značky snímku animace…
+	Disposal	Odstranění
+	Incremental	Postupně
+	Angular	Úhlově
+	Xtilt	Náklon X
+	Ytilt	Náklon Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Exportovat jako PostScript (.eps)…
+	Encapsulated	Zapouzdřený
+	Encoding	Kódování
+	Hex	Hexadecimální
+	Ascii85	ASCII85
+	Binary	Binární
+	Open Location…	Otevřít umístění…
+	From Screenshot…	Ze snímku obrazovky…
+	From Web Page…	Z webové stránky…
+	Send by Email…	Odeslat e-mailem…
+	Url	URL
+	Cursor	Kurzor
+	Region	Oblast
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffery
+	Cut Named…	Vyjmout pojmenované…
+	Copy Named…	Kopírovat pojmenované…
+	Copy Visible Named…	Kopírovat viditelné pojmenované…
+	Paste Named…	Vložit pojmenované…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Žádné pojmenované buffery. Použijte Úpravy > Buffer > Kopírovat pojmenované… pro uložení kopie sem.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Žádné pojmenované buffery; nejprve použijte Úpravy > Buffer > Kopírovat pojmenované
+	Paste Buffer	Vložit buffer
+	Paste Buffer in Place	Vložit buffer na místo
+	Paste Buffer as New Image	Vložit buffer jako nový obrázek
+	Rename Buffer…	Přejmenovat buffer…
+	Delete Buffer	Odstranit buffer
+	Paste as New	Vložit jako nový
+	Paste the buffer as a new layer	Vložit buffer jako novou vrstvu
+	Paste the buffer as a new document	Vložit buffer jako nový dokument
+	As	Jako
+	In place	Na místo
+	Into	Dovnitř
+	Modules…	Moduly…
+	Units…	Jednotky…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nejsou nainstalovány žádné moduly. Filtr > Zásuvné moduly > Instalovat modul… přidá jeden.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Vypnutý modul zůstává nainstalován, ale zmizí z nabídek, dokud není znovu zapnut.
+	Module	Modul
+	Not installed	Nenainstalováno
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor udává, kolik jednotek tvoří jeden palec (2,54 u centimetrů, 72 u bodů).
+	Identifier	Identifikátor
+	Factor	Faktor
+	Symbol	Symbol
+	Abbreviation	Zkratka
+	Singular	Jednotné číslo
+	Plural	Množné číslo
+	Delete Unit	Odstranit jednotku
+	New unit	Nová jednotka
+	Add Unit	Přidat jednotku
+	That identifier is already a unit	Tento identifikátor již jednotka používá
+	Custom units	Vlastní jednotky
+	Disabled modules	Vypnuté moduly
+	Input Devices…	Vstupní zařízení…
+	Input Controllers…	Vstupní ovladače…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Pero je stylus tabletu, který hlásí platforma. Vypnuté se chová jako myš.
+	Device	Zařízení
+	Invert tilt X	Obrátit náklon X
+	Invert tilt Y	Obrátit náklon Y
+	Swap tilt	Prohodit náklon
+	Pressure scale	Měřítko tlaku
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Události kolečka jsou up, down, left nebo right s volitelnými Shift+, Ctrl+ a Alt+; události klávesnice jsou zkratky jako Ctrl+Alt+Up. Akce je id příkazu, volitelně následované parametry JSON.
+	Controller	Ovladač
+	Event	Událost
+	Remove mapping	Odebrat mapování
+	New mapping	Nové mapování
+	Add Mapping	Přidat mapování
+	{n} entries; click one to set the foreground colour, double-click to edit it	Položek: {n}; kliknutí nastaví barvu popředí, dvojklik ji upraví
+	Entry	Položka
+	Add an entry with the foreground colour	Přidat položku s barvou popředí
+	Delete the last entry	Odstranit poslední položku
+	Use selected	Použít vybranou
+	Ink	Inkoust
+	MyPaint Brush	Štětec MyPaint
+	Nib	Hrot
+	Aspect	Poměr
+	Opaque	Krytí
+	Erase with brush	Mazat štětcem
+	Import .myb…	Importovat .myb…
+	Add a MyPaint brush file to the presets	Přidat soubor štětce MyPaint do předvoleb
+	Imported MyPaint brush {name}	Importován štětec MyPaint {name}
+	How much pressure changes the nib size	Jak moc tlak mění velikost hrotu
+	How much the pen's tilt turns and stretches the nib	Jak moc náklon pera otáčí a protahuje hrot
+	How much a fast stroke thins the nib	Jak moc rychlý tah zužuje hrot
+	Added to the preset's logarithmic radius	Přičte se k logaritmickému poloměru předvolby
+	Operation…	Operace…
+	Operation name or id	Název nebo id operace
+	{n} operations	Operací: {n}
+	Choose an operation	Zvolte operaci
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Konzola Script-Fu…
+	Load Scripts Folder…	Načíst složku skriptů…
+	Python Console…	Konzola Pythonu…
+	Load Plug-ins Folder…	Načíst složku modulů…
+	Loaded {n} scripts	Načteno skriptů: {n}
+	Loaded {n} Python plug-ins	Načteno modulů Pythonu: {n}
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 s call(command, **params), message(text) a print(); každý příkaz jádra je dostupný přes call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: každý příkaz jádra je procedura, (file.new "width" 640 "height" 480); definujte procedury a registrujte je pomocí script-fu-register.
+	Code	Kód
+	Cmd+Enter runs the code	Cmd+Enter spustí kód
+	Clear Log	Vymazat protokol

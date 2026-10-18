@@ -114,6 +114,9 @@ pub struct Dab {
     pub mix: f32,
     /// Image hose cell this dab paints with ([`BrushSettings::hose`]); 0 for a plain tip.
     pub cell: u32,
+    /// Hardness multiplier from a dynamics preset's Hardness output (1 = the brush's own
+    /// hardness); a computed tip gets softer as it falls.
+    pub hardness: f32,
 }
 
 impl Dab {
@@ -136,6 +139,7 @@ impl Dab {
             wet: 1.0,
             mix: 1.0,
             cell: 0,
+            hardness: 1.0,
         }
     }
 }

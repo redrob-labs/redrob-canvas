@@ -4585,3 +4585,154 @@ cameraRaw	Yellow	Sárga
 	Replace the segment with two copies of itself	A szakaszt két másolatával helyettesíti
 	Flip the whole gradient end to end	Az egész színátmenetet megfordítja
 	Save as POV-Ray…	Mentés POV-Ray-ként…
+	Shaped Gradient (angular)	Alakzat szerinti átmenet (szögletes)
+	Shaped Gradient (spherical)	Alakzat szerinti átmenet (gömbszerű)
+	Shaped Gradient (dimpled)	Alakzat szerinti átmenet (homorú)
+	Truncate	Levágás
+	Sawtooth wave	Fűrészfog hullám
+	Triangular wave	Háromszög hullám
+	Wheel	Kerék
+	Force	Erő
+	Jitter	Remegés
+	Fade length	Elhalványulás hossza
+	Random amount	Véletlenszerűség
+	Save Preset	Előbeállítás mentése
+	Paint Dynamics Editor	Festési dinamika szerkesztő
+	Color from Gradient	Szín az átmenetből
+	Put this table on the current brush	A táblázat alkalmazása az aktuális ecsetre
+	Save the table as a named dynamics preset	Táblázat mentése névvel ellátott dinamikaként
+	Give the dynamics preset a name first	Először adjon nevet a dinamikának
+	Edit the dynamics table (inputs × outputs)	Dinamika táblázat szerkesztése (bemenetek × kimenetek)
+	Reset Plane	Sík visszaállítása
+	Click four corners to define a perspective plane, then clone along it	Kattintson négy sarokra a perspektíva sík megadásához, majd klónozzon mentén
+	Click corner {n} of 4	Kattintson a {n}. sarokra (4-ből)
+	Perspective plane: corner {n} of 4 set	Perspektíva sík: {n}. sarok beállítva (4-ből)
+	Perspective plane set; {key}-click a source, then paint	Perspektíva sík beállítva; {key}-kattintás a forrásra, majd fessen
+	Copy Path as SVG	Útvonal másolása SVG-ként
+	Export Path to SVG…	Útvonal exportálása SVG-be…
+	Import Path from SVG…	Útvonal importálása SVG-ből…
+	Paste Path from SVG	Útvonal beillesztése SVG-ből
+	Copy All Paths as SVG	Minden útvonal másolása SVG-ként
+	Export All Paths to SVG…	Minden útvonal exportálása SVG-be…
+	Copied 1 path as SVG	1 útvonal másolva SVG-ként
+	Copied {n} paths as SVG	{n} útvonal másolva SVG-ként
+	Exported paths to {path}	Útvonalak exportálva ide: {path}
+	Imported 1 path	1 útvonal importálva
+	Imported {n} paths	{n} útvonal importálva
+	The clipboard holds no SVG	A vágólapon nincs SVG
+	Clipboard Image Brush	Vágólapkép-ecset
+	Paint with the image on the clipboard as the brush tip	Festés a vágólapon lévő képpel ecsethegyként
+	Export Layers as Animation…	Rétegek exportálása animációként…
+	Export as Brush (.gbr)…	Exportálás ecsetként (.gbr)…
+	Export Layers as Image Hose (.gih)…	Rétegek exportálása animált ecsetként (.gih)…
+	Export as Pattern (.pat)…	Exportálás mintaként (.pat)…
+	Animation Frame Tags…	Animációs képkocka-címkék…
+	Disposal	Eldobás
+	Incremental	Növekvő
+	Angular	Szög szerint
+	Xtilt	X dőlés
+	Ytilt	Y dőlés
+	Mng	MNG
+	Export as PostScript (.eps)…	Exportálás PostScriptként (.eps)…
+	Encapsulated	Beágyazott (EPS)
+	Encoding	Kódolás
+	Hex	Hexadecimális
+	Ascii85	ASCII85
+	Binary	Bináris
+	Open Location…	Hely megnyitása…
+	From Screenshot…	Képernyőképből…
+	From Web Page…	Weboldalból…
+	Send by Email…	Küldés e-mailben…
+	Url	URL
+	Cursor	Kurzor
+	Region	Terület
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Puffer
+	Buffers	Pufferek
+	Cut Named…	Kivágás névvel…
+	Copy Named…	Másolás névvel…
+	Copy Visible Named…	Látható másolása névvel…
+	Paste Named…	Beillesztés névvel…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Nincs nevesített puffer. A Szerkesztés > Puffer > Másolás névvel… paranccsal tarthat itt másolatot.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Nincs nevesített puffer; először használja a Szerkesztés > Puffer > Másolás névvel parancsot
+	Paste Buffer	Puffer beillesztése
+	Paste Buffer in Place	Puffer beillesztése helyben
+	Paste Buffer as New Image	Puffer beillesztése új képként
+	Rename Buffer…	Puffer átnevezése…
+	Delete Buffer	Puffer törlése
+	Paste as New	Beillesztés újként
+	Paste the buffer as a new layer	A puffer beillesztése új rétegként
+	Paste the buffer as a new document	A puffer beillesztése új dokumentumként
+	As	Mint
+	In place	Helyben
+	Into	Belülre
+	Modules…	Modulok…
+	Units…	Egységek…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nincs betölthető modul telepítve. Szűrő > Bővítmények > Bővítmény telepítése… hozzáad egyet.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	A kikapcsolt modul telepítve marad, de a menükből eltűnik, amíg újra be nem kapcsolják.
+	Module	Modul
+	Not installed	Nincs telepítve
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	A szorzó azt adja meg, hány egység tesz ki egy hüvelyket (centiméternél 2,54, pontnál 72).
+	Identifier	Azonosító
+	Factor	Szorzó
+	Symbol	Jel
+	Abbreviation	Rövidítés
+	Singular	Egyes szám
+	Plural	Többes szám
+	Delete Unit	Egység törlése
+	New unit	Új egység
+	Add Unit	Egység hozzáadása
+	That identifier is already a unit	Ez az azonosító már egy egység
+	Custom units	Egyéni egységek
+	Disabled modules	Letiltott modulok
+	Input Devices…	Beviteli eszközök…
+	Input Controllers…	Beviteli vezérlők…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	A toll a platform által jelentett tábla-ceruza. Letiltva egérként viselkedik.
+	Device	Eszköz
+	Invert tilt X	X dőlés megfordítása
+	Invert tilt Y	Y dőlés megfordítása
+	Swap tilt	Dőlés felcserélése
+	Pressure scale	Nyomásskála
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	A görgőesemények up, down, left vagy right, választható Shift+, Ctrl+ és Alt+ előtaggal; a billentyűesemények gyorsbillentyűk, például Ctrl+Alt+Up. A művelet egy parancsazonosító, választhatóan JSON-paraméterekkel.
+	Controller	Vezérlő
+	Event	Esemény
+	Remove mapping	Leképezés eltávolítása
+	New mapping	Új leképezés
+	Add Mapping	Leképezés hozzáadása
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} bejegyzés; kattintás beállítja az előtérszínt, dupla kattintás szerkeszti
+	Entry	Bejegyzés
+	Add an entry with the foreground colour	Bejegyzés hozzáadása az előtérszínnel
+	Delete the last entry	Az utolsó bejegyzés törlése
+	Use selected	Kijelölt használata
+	Ink	Tinta
+	MyPaint Brush	MyPaint ecset
+	Nib	Tollhegy
+	Aspect	Arány
+	Opaque	Fedettség
+	Erase with brush	Törlés ecsettel
+	Import .myb…	.myb importálása…
+	Add a MyPaint brush file to the presets	MyPaint ecsetfájl hozzáadása a készletekhez
+	Imported MyPaint brush {name}	A(z) {name} MyPaint ecset importálva
+	How much pressure changes the nib size	Mennyire változtatja a nyomás a tollhegy méretét
+	How much the pen's tilt turns and stretches the nib	Mennyire forgatja és nyújtja a toll dőlése a tollhegyet
+	How much a fast stroke thins the nib	Mennyire vékonyítja a gyors vonás a tollhegyet
+	Added to the preset's logarithmic radius	A készlet logaritmikus sugarához adódik
+	Operation…	Művelet…
+	Operation name or id	Művelet neve vagy azonosítója
+	{n} operations	{n} művelet
+	Choose an operation	Válasszon műveletet
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu konzol…
+	Load Scripts Folder…	Parancsfájlmappa betöltése…
+	Python Console…	Python konzol…
+	Load Plug-ins Folder…	Bővítménymappa betöltése…
+	Loaded {n} scripts	{n} parancsfájl betöltve
+	Loaded {n} Python plug-ins	{n} Python bővítmény betöltve
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 a call(command, **params), message(text) és print() függvényekkel; minden motorparancs elérhető a call-on át.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: minden motorparancs egy eljárás, (file.new "width" 640 "height" 480); definiáljon eljárásokat és regisztrálja őket a script-fu-register-rel.
+	Code	Kód
+	Cmd+Enter runs the code	A Cmd+Enter futtatja a kódot
+	Clear Log	Napló törlése

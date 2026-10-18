@@ -3290,3 +3290,162 @@ curves	Smooth	平滑
 	Replace the segment with two copies of itself	用該區段的兩個副本取代它
 	Flip the whole gradient end to end	將整個漸層首尾翻轉
 	Save as POV-Ray…	儲存為 POV-Ray…
+	Shaped Gradient (angular)	形狀漸層（角度）
+	Shaped Gradient (spherical)	形狀漸層（球面）
+	Shaped Gradient (dimpled)	形狀漸層（凹陷）
+	Truncate	截斷
+	Sawtooth wave	鋸齒波
+	Triangular wave	三角波
+	Repeat	重複
+	Tilt	傾斜
+	Wheel	滾輪
+	Force	力度
+	Aspect Ratio	長寬比
+	Jitter	抖動
+	Fade length	漸隱長度
+	Random amount	隨機量
+	Save Preset	儲存預設集
+	Paint Dynamics Editor	繪畫動態編輯器
+	Color from Gradient	顏色來自漸層
+	Put this table on the current brush	將此表格套用到目前筆刷
+	Save the table as a named dynamics preset	將此表格儲存為具名動態預設集
+	Give the dynamics preset a name first	請先為動態預設集命名
+	Edit the dynamics table (inputs × outputs)	編輯動態表格（輸入 × 輸出）
+	Reset Plane	重設平面
+	Click four corners to define a perspective plane, then clone along it	點按四個角定義透視平面，然後沿該平面仿製
+	Click corner {n} of 4	點按第 {n}/4 個角
+	Perspective plane: corner {n} of 4 set	透視平面：已設定第 {n}/4 個角
+	Perspective plane set; {key}-click a source, then paint	透視平面已設定；{key} 並點按設定來源，然後繪製
+	Copy Path as SVG	將路徑複製為 SVG
+	Export Path to SVG…	將路徑匯出為 SVG…
+	Import Path from SVG…	從 SVG 匯入路徑…
+	Paste Path from SVG	從 SVG 貼上路徑
+	Copy All Paths as SVG	將所有路徑複製為 SVG
+	Export All Paths to SVG…	將所有路徑匯出為 SVG…
+	Copied 1 path as SVG	已將 1 條路徑複製為 SVG
+	Copied {n} paths as SVG	已將 {n} 條路徑複製為 SVG
+	Exported paths to {path}	已將路徑匯出至 {path}
+	Imported 1 path	已匯入 1 條路徑
+	Imported {n} paths	已匯入 {n} 條路徑
+	The clipboard holds no SVG	剪貼簿中沒有 SVG
+	Clipboard Image Brush	剪貼簿影像筆刷
+	Paint with the image on the clipboard as the brush tip	使用剪貼簿中的影像作為筆刷筆尖繪畫
+	Export Layers as Animation…	將圖層匯出為動畫…
+	Export as Brush (.gbr)…	匯出為筆刷 (.gbr)…
+	Export Layers as Image Hose (.gih)…	將圖層匯出為影像管 (.gih)…
+	Export as Pattern (.pat)…	匯出為圖樣 (.pat)…
+	Animation Frame Tags…	動畫影格標記…
+	Disposal	處置方式
+	Replace	取代
+	Incremental	遞增
+	Angular	角度
+	Xtilt	X 傾斜
+	Ytilt	Y 傾斜
+	Mng	MNG
+	Export as PostScript (.eps)…	匯出為 PostScript (.eps)…
+	Encapsulated	封裝 (EPS)
+	Encoding	編碼
+	Hex	十六進位
+	Ascii85	ASCII85
+	Binary	二進位
+	Open Location…	開啟位置…
+	From Screenshot…	從螢幕擷圖…
+	From Web Page…	從網頁…
+	Send by Email…	以電子郵件傳送…
+	Url	URL
+	Cursor	包含游標
+	Region	區域
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Loop	循環
+	Buffer	緩衝區
+	Buffers	緩衝區
+	Cut Named…	命名剪下…
+	Copy Named…	命名複製…
+	Copy Visible Named…	命名複製可見部分…
+	Paste Named…	命名貼上…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	沒有命名緩衝區。使用「編輯 > 緩衝區 > 命名複製…」在此保留副本。
+	There are no named buffers; use Edit > Buffer > Copy Named first	沒有命名緩衝區；請先使用「編輯 > 緩衝區 > 命名複製」
+	Paste Buffer	貼上緩衝區
+	Paste Buffer in Place	原位貼上緩衝區
+	Paste Buffer as New Image	將緩衝區貼上為新影像
+	Rename Buffer…	重新命名緩衝區…
+	Delete Buffer	刪除緩衝區
+	Paste as New	貼上為新影像
+	Paste the buffer as a new layer	將緩衝區貼上為新圖層
+	Paste the buffer as a new document	將緩衝區貼上為新文件
+	As	方式
+	In place	原位
+	Into	貼入
+	Modules…	模組…
+	Units…	單位…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	未安裝可載入模組。使用「濾鏡 > 外掛 > 安裝外掛…」新增。
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	關閉的模組仍保持安裝，但在重新開啟前不會出現在選單中。
+	Module	模組
+	Not installed	未安裝
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	係數是一英寸包含多少該單位（公分為 2.54，點為 72）。
+	Identifier	識別碼
+	Factor	係數
+	Digits	位數
+	Symbol	符號
+	Abbreviation	縮寫
+	Singular	單數
+	Plural	複數
+	Delete Unit	刪除單位
+	New unit	新單位
+	Add Unit	新增單位
+	That identifier is already a unit	該識別碼已是一個單位
+	Custom units	自訂單位
+	Disabled modules	已停用的模組
+	Input Devices…	輸入裝置…
+	Input Controllers…	輸入控制器…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	筆是平台回報的繪圖板觸控筆。停用後它像滑鼠一樣運作。
+	Device	裝置
+	Invert tilt X	反轉傾斜 X
+	Invert tilt Y	反轉傾斜 Y
+	Swap tilt	交換傾斜軸
+	Pressure scale	壓力縮放
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	滾輪事件為 up、down、left 或 right，可加 Shift+、Ctrl+、Alt+ 前綴；鍵盤事件是如 Ctrl+Alt+Up 的快速鍵。動作是命令 ID，可後接 JSON 參數。
+	Keyboard	鍵盤
+	Controller	控制器
+	Event	事件
+	Remove mapping	移除對應
+	New mapping	新對應
+	Add Mapping	新增對應
+	Disabled	已停用
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} 個項目；按一下設為前景色，按兩下編輯
+	Entry	項目
+	Add an entry with the foreground colour	以前景色新增一個項目
+	Delete the last entry	刪除最後一個項目
+	Use selected	使用所選項目
+	Ink	墨水
+	MyPaint Brush	MyPaint 筆刷
+	Nib	筆尖
+	Aspect	長寬比
+	Opaque	不透明
+	Erase with brush	用筆刷擦除
+	Import .myb…	匯入 .myb…
+	Add a MyPaint brush file to the presets	將 MyPaint 筆刷檔案新增至預設集
+	Imported MyPaint brush {name}	已匯入 MyPaint 筆刷 {name}
+	How much pressure changes the nib size	壓力改變筆尖大小的程度
+	How much the pen's tilt turns and stretches the nib	筆傾斜轉動並拉伸筆尖的程度
+	How much a fast stroke thins the nib	快速筆畫使筆尖變細的程度
+	Added to the preset's logarithmic radius	加到預設集的對數半徑上
+	Operation…	操作…
+	Operation name or id	操作名稱或 ID
+	{n} operations	{n} 個操作
+	Choose an operation	請選擇一個操作
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu 主控台…
+	Load Scripts Folder…	載入指令碼資料夾…
+	Python Console…	Python 主控台…
+	Load Plug-ins Folder…	載入外掛資料夾…
+	Loaded {n} scripts	已載入 {n} 個指令碼
+	Loaded {n} Python plug-ins	已載入 {n} 個 Python 外掛
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3，提供 call(command, **params)、message(text) 和 print()；每個引擎命令都可透過 call 呼叫。
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme：每個引擎命令都是一個程序，(file.new "width" 640 "height" 480)；用 define 定義程序並用 script-fu-register 註冊。
+	Code	程式碼
+	Cmd+Enter runs the code	Cmd+Enter 執行程式碼
+	Clear Log	清除記錄

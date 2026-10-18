@@ -3372,3 +3372,159 @@ curves	Smooth	平滑
 	Replace the segment with two copies of itself	用该段的两个副本替换它
 	Flip the whole gradient end to end	将整个渐变首尾翻转
 	Save as POV-Ray…	存储为 POV-Ray…
+	Shaped Gradient (angular)	形状渐变（角度）
+	Shaped Gradient (spherical)	形状渐变（球面）
+	Shaped Gradient (dimpled)	形状渐变（凹陷）
+	Truncate	截断
+	Sawtooth wave	锯齿波
+	Triangular wave	三角波
+	Repeat	重复
+	Tilt	倾斜
+	Wheel	滚轮
+	Force	力度
+	Aspect Ratio	长宽比
+	Fade length	渐隐长度
+	Random amount	随机量
+	Save Preset	保存预设
+	Paint Dynamics Editor	绘画动态编辑器
+	Color from Gradient	颜色来自渐变
+	Put this table on the current brush	将此表应用到当前画笔
+	Save the table as a named dynamics preset	将此表保存为命名的动态预设
+	Give the dynamics preset a name first	请先为动态预设命名
+	Edit the dynamics table (inputs × outputs)	编辑动态表（输入 × 输出）
+	Reset Plane	重置平面
+	Click four corners to define a perspective plane, then clone along it	单击四个角定义透视平面，然后沿该平面仿制
+	Click corner {n} of 4	单击第 {n}/4 个角
+	Perspective plane: corner {n} of 4 set	透视平面：已设置第 {n}/4 个角
+	Perspective plane set; {key}-click a source, then paint	透视平面已设置；{key} 并单击设置源点，然后绘制
+	Copy Path as SVG	将路径复制为 SVG
+	Export Path to SVG…	将路径导出为 SVG…
+	Import Path from SVG…	从 SVG 导入路径…
+	Paste Path from SVG	从 SVG 粘贴路径
+	Copy All Paths as SVG	将所有路径复制为 SVG
+	Export All Paths to SVG…	将所有路径导出为 SVG…
+	Copied 1 path as SVG	已将 1 条路径复制为 SVG
+	Copied {n} paths as SVG	已将 {n} 条路径复制为 SVG
+	Exported paths to {path}	已将路径导出到 {path}
+	Imported 1 path	已导入 1 条路径
+	Imported {n} paths	已导入 {n} 条路径
+	The clipboard holds no SVG	剪贴板中没有 SVG
+	Clipboard Image Brush	剪贴板图像画笔
+	Paint with the image on the clipboard as the brush tip	使用剪贴板中的图像作为画笔笔尖绘画
+	Export Layers as Animation…	将图层导出为动画…
+	Export as Brush (.gbr)…	导出为画笔 (.gbr)…
+	Export Layers as Image Hose (.gih)…	将图层导出为图像管 (.gih)…
+	Export as Pattern (.pat)…	导出为图案 (.pat)…
+	Animation Frame Tags…	动画帧标记…
+	Disposal	处置方式
+	Replace	替换
+	Incremental	递增
+	Xtilt	X 倾斜
+	Ytilt	Y 倾斜
+	Mng	MNG
+	Export as PostScript (.eps)…	导出为 PostScript (.eps)…
+	Encapsulated	封装 (EPS)
+	Encoding	编码
+	Hex	十六进制
+	Ascii85	ASCII85
+	Binary	二进制
+	Open Location…	打开位置…
+	From Screenshot…	从屏幕截图…
+	From Web Page…	从网页…
+	Send by Email…	通过电子邮件发送…
+	Url	URL
+	Cursor	包含光标
+	Region	区域
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Loop	循环
+	Buffer	缓冲区
+	Buffers	缓冲区
+	Cut Named…	命名剪切…
+	Copy Named…	命名复制…
+	Copy Visible Named…	命名复制可见部分…
+	Paste Named…	命名粘贴…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	没有命名缓冲区。使用“编辑 > 缓冲区 > 命名复制…”在此保留副本。
+	There are no named buffers; use Edit > Buffer > Copy Named first	没有命名缓冲区；请先使用“编辑 > 缓冲区 > 命名复制”
+	Paste Buffer	粘贴缓冲区
+	Paste Buffer in Place	原位粘贴缓冲区
+	Paste Buffer as New Image	将缓冲区粘贴为新图像
+	Rename Buffer…	重命名缓冲区…
+	Delete Buffer	删除缓冲区
+	Paste as New	粘贴为新图像
+	Paste the buffer as a new layer	将缓冲区粘贴为新图层
+	Paste the buffer as a new document	将缓冲区粘贴为新文档
+	As	方式
+	In place	原位
+	Into	贴入
+	Modules…	模块…
+	Units…	单位…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	未安装可加载模块。使用“滤镜 > 插件 > 安装插件…”添加。
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	关闭的模块仍保持安装，但在重新开启前不会出现在菜单中。
+	Module	模块
+	Not installed	未安装
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	系数是一英寸包含多少该单位（厘米为 2.54，点为 72）。
+	Identifier	标识符
+	Factor	系数
+	Digits	位数
+	Symbol	符号
+	Abbreviation	缩写
+	Singular	单数
+	Plural	复数
+	Delete Unit	删除单位
+	New unit	新单位
+	Add Unit	添加单位
+	That identifier is already a unit	该标识符已是一个单位
+	Custom units	自定义单位
+	Disabled modules	已禁用的模块
+	Input Devices…	输入设备…
+	Input Controllers…	输入控制器…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	笔是平台报告的数位板触控笔。禁用后它像鼠标一样工作。
+	Device	设备
+	Invert tilt X	反转倾斜 X
+	Invert tilt Y	反转倾斜 Y
+	Swap tilt	交换倾斜轴
+	Pressure scale	压力缩放
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	滚轮事件为 up、down、left 或 right，可加 Shift+、Ctrl+、Alt+ 前缀；键盘事件是如 Ctrl+Alt+Up 的快捷键。动作是命令 ID，可后跟 JSON 参数。
+	Keyboard	键盘
+	Controller	控制器
+	Event	事件
+	Remove mapping	移除映射
+	New mapping	新映射
+	Add Mapping	添加映射
+	Disabled	已禁用
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} 个条目；单击设置为前景色，双击编辑
+	Entry	条目
+	Add an entry with the foreground colour	以前景色添加一个条目
+	Delete the last entry	删除最后一个条目
+	Use selected	使用所选项
+	Ink	墨水
+	MyPaint Brush	MyPaint 画笔
+	Nib	笔尖
+	Opaque	不透明
+	Erase with brush	用画笔擦除
+	Import .myb…	导入 .myb…
+	Add a MyPaint brush file to the presets	将 MyPaint 画笔文件添加到预设
+	Imported MyPaint brush {name}	已导入 MyPaint 画笔 {name}
+	How much pressure changes the nib size	压力改变笔尖大小的程度
+	How much the pen's tilt turns and stretches the nib	笔倾斜转动并拉伸笔尖的程度
+	How much a fast stroke thins the nib	快速笔画使笔尖变细的程度
+	Added to the preset's logarithmic radius	加到预设的对数半径上
+	Operation…	操作…
+	Operation name or id	操作名称或 ID
+	{n} operations	{n} 个操作
+	Choose an operation	请选择一个操作
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu 控制台…
+	Load Scripts Folder…	加载脚本文件夹…
+	Python Console…	Python 控制台…
+	Load Plug-ins Folder…	加载插件文件夹…
+	Loaded {n} scripts	已加载 {n} 个脚本
+	Loaded {n} Python plug-ins	已加载 {n} 个 Python 插件
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3，提供 call(command, **params)、message(text) 和 print()；每个引擎命令都可通过 call 调用。
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme：每个引擎命令都是一个过程，(file.new "width" 640 "height" 480)；用 define 定义过程并用 script-fu-register 注册。
+	Code	代码
+	Cmd+Enter runs the code	Cmd+Enter 运行代码
+	Clear Log	清除日志

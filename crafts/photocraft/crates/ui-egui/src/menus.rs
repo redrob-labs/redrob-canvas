@@ -236,6 +236,33 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     if let Some(r) = crate::timeline_ui::menu(app, id, &params) {
         return r;
     }
+    // Window > Buffers panel and the Edit > Buffer name forms.
+    if let Some(r) = crate::buffers_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Edit > Modules… and Edit > Units… dialogs.
+    if let Some(r) = crate::modules_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Edit > Input Devices… and Edit > Input Controllers… dialogs.
+    if let Some(r) = crate::input_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Filter > Operation…: the generic operation chooser.
+    if let Some(r) = crate::operation_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Script-Fu and Python consoles, registered scripts and plug-ins, their folders.
+    if let Some(r) = crate::scripts_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Image > Mode > Color Table…: the swatch grid editor (the generic form stays for scripts).
+    if id == "image.mode.colorTable"
+        && params.as_object().is_none_or(|o| o.is_empty())
+        && let Some(r) = crate::colormap_ui::open(app)
+    {
+        return r;
+    }
     // Filter › Plug-ins (installed WebAssembly plug-ins, Install Plug-in…).
     if let Some(r) = crate::plugin_ui::menu(app, id, &params) {
         return r;
@@ -768,7 +795,15 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
     if crate::analysis_ui::handles(id) {
         return true;
     }
-    if crate::preset_panels::handles(id) || crate::type_panels_ui::handles(id) || crate::timeline_ui::handles(id) {
+    if crate::preset_panels::handles(id)
+        || crate::type_panels_ui::handles(id)
+        || crate::timeline_ui::handles(id)
+        || crate::buffers_ui::handles(id)
+        || crate::modules_ui::handles(id)
+        || crate::input_ui::handles(id)
+        || crate::operation_ui::handles(id)
+        || crate::scripts_ui::handles(id)
+    {
         return true;
     }
     if let Some(e) = crate::view_cmds::is_enabled(app, id) {
@@ -866,6 +901,9 @@ fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
         return Some(c);
     }
     if let Some(c) = crate::timeline_ui::checked(app, id) {
+        return Some(c);
+    }
+    if let Some(c) = crate::buffers_ui::checked(app, id) {
         return Some(c);
     }
     if let Some(c) = crate::type_panels_ui::checked(app, id) {
@@ -997,6 +1035,8 @@ pub fn is_live(id: &str) -> bool {
         || crate::preset_panels::handles(id)
         || crate::type_panels_ui::handles(id)
         || crate::timeline_ui::handles(id)
+        || crate::buffers_ui::handles(id)
+        || crate::modules_ui::handles(id)
 }
 
 /// Commands outside the catalogue that belong right after a catalogue item: `(id, after)`.
@@ -1065,6 +1105,7 @@ pub fn menu_items(app: &PhotocraftApp) -> Vec<MenuItem> {
         }
     }
     crate::plugin_ui::insert_menu_items(app, &mut items);
+    crate::scripts_ui::insert_menu_items(app, &mut items);
     if let Some(mask) = app.session.active().and_then(|s| s.active_layer.and_then(|id| s.doc.layer(id))).and_then(|l| l.mask.as_ref())
         && let Some(item) = items.iter_mut().find(|i| i.id == "layer.layerMask.enabled")
     {

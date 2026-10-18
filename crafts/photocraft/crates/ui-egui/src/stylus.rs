@@ -106,6 +106,45 @@ impl StylusFeed {
     }
 }
 
+/// Edit › Input Devices: how the pen's readings are adjusted before any tool sees them.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DeviceAdjust {
+    pub tilt: bool,
+    pub rotation: bool,
+    pub invert_tilt_x: bool,
+    pub invert_tilt_y: bool,
+    pub swap_tilt: bool,
+    pub pressure_scale: f32,
+}
+
+impl Default for DeviceAdjust {
+    fn default() -> Self {
+        Self { tilt: true, rotation: true, invert_tilt_x: false, invert_tilt_y: false, swap_tilt: false, pressure_scale: 1.0 }
+    }
+}
+
+impl DeviceAdjust {
+    fn apply(&self, s: PenSample) -> PenSample {
+        let (mut tx, mut ty) = if self.tilt { (s.tilt_x, s.tilt_y) } else { (0.0, 0.0) };
+        if self.swap_tilt {
+            std::mem::swap(&mut tx, &mut ty);
+        }
+        if self.invert_tilt_x {
+            tx = -tx;
+        }
+        if self.invert_tilt_y {
+            ty = -ty;
+        }
+        PenSample {
+            pressure: (s.pressure * self.pressure_scale.clamp(0.1, 4.0)).clamp(0.0, 1.0),
+            tilt_x: tx,
+            tilt_y: ty,
+            rotation: if self.rotation { s.rotation } else { 0.0 },
+            eraser: s.eraser,
+        }
+    }
+}
+
 /// Per-app stylus state.
 #[derive(Clone, Debug)]
 pub struct Stylus {
@@ -113,6 +152,8 @@ pub struct Stylus {
     pub feed: StylusFeed,
     /// Preferences › Tools › Use Tablet Pressure: off, a pen paints like a mouse.
     pub use_pressure: bool,
+    /// Edit › Input Devices: the pen's configured adjustments.
+    pub device: DeviceAdjust,
     /// Preferences › Tools › Pressure Curve (`None`: linear), with the points it was built from.
     pressure_curve: Option<redrob_photo_engine::prefs::PressureCurve>,
     curve_points: Vec<[f32; 2]>,
@@ -156,6 +197,7 @@ impl Default for Stylus {
         Self {
             feed: StylusFeed::default(),
             use_pressure: true,
+            device: DeviceAdjust::default(),
             pressure_curve: None,
             curve_points: Vec::new(),
             end: None,
@@ -265,7 +307,9 @@ impl Stylus {
             return None;
         }
         let s = self.current.or_else(|| self.latest()).or(self.touch.map(|pressure| PenSample { pressure, ..Default::default() }))?;
-        // The pen's pressure through Preferences › Tools › Pressure Curve, before any brush sees it.
+        // Edit › Input Devices adjustments (tilt, rotation, pressure scale), then the pen's
+        // pressure through Preferences › Tools › Pressure Curve, before any brush sees it.
+        let s = if self.device == DeviceAdjust::default() { s } else { self.device.apply(s) };
         Some(match &self.pressure_curve {
             Some(c) => PenSample { pressure: c.eval(s.pressure), ..s },
             None => s,

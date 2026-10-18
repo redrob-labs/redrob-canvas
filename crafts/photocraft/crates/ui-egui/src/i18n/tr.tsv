@@ -4400,3 +4400,154 @@ cameraData	Lens	Lens
 	Replace the segment with two copies of itself	Parçayı kendisinin iki kopyasıyla değiştir
 	Flip the whole gradient end to end	Tüm gradyanı uçtan uca çevir
 	Save as POV-Ray…	POV-Ray olarak kaydet…
+	Shaped Gradient (angular)	Şekilli Gradyan (açısal)
+	Shaped Gradient (spherical)	Şekilli Gradyan (küresel)
+	Shaped Gradient (dimpled)	Şekilli Gradyan (çukur)
+	Truncate	Kes
+	Sawtooth wave	Testere dişi dalga
+	Triangular wave	Üçgen dalga
+	Wheel	Tekerlek
+	Force	Kuvvet
+	Jitter	Titreme
+	Fade length	Soldurma uzunluğu
+	Random amount	Rastgele miktar
+	Save Preset	Ön ayarı kaydet
+	Paint Dynamics Editor	Boyama Dinamikleri Düzenleyicisi
+	Color from Gradient	Gradyandan renk
+	Put this table on the current brush	Bu tabloyu geçerli fırçaya uygula
+	Save the table as a named dynamics preset	Tabloyu adlandırılmış dinamik ön ayarı olarak kaydet
+	Give the dynamics preset a name first	Önce dinamik ön ayarına bir ad verin
+	Edit the dynamics table (inputs × outputs)	Dinamik tablosunu düzenle (girişler × çıkışlar)
+	Reset Plane	Düzlemi sıfırla
+	Click four corners to define a perspective plane, then clone along it	Perspektif düzlemi tanımlamak için dört köşeye tıklayın, sonra onun boyunca klonlayın
+	Click corner {n} of 4	4 köşeden {n}. köşeye tıklayın
+	Perspective plane: corner {n} of 4 set	Perspektif düzlemi: 4 köşeden {n}. ayarlandı
+	Perspective plane set; {key}-click a source, then paint	Perspektif düzlemi ayarlandı; bir kaynağa {key} ile tıklayın, sonra boyayın
+	Copy Path as SVG	Yolu SVG Olarak Kopyala
+	Export Path to SVG…	Yolu SVG'ye Aktar…
+	Import Path from SVG…	SVG'den Yol İçe Aktar…
+	Paste Path from SVG	SVG'den Yol Yapıştır
+	Copy All Paths as SVG	Tüm Yolları SVG Olarak Kopyala
+	Export All Paths to SVG…	Tüm Yolları SVG'ye Aktar…
+	Copied 1 path as SVG	1 yol SVG olarak kopyalandı
+	Copied {n} paths as SVG	{n} yol SVG olarak kopyalandı
+	Exported paths to {path}	Yollar {path} konumuna aktarıldı
+	Imported 1 path	1 yol içe aktarıldı
+	Imported {n} paths	{n} yol içe aktarıldı
+	The clipboard holds no SVG	Pano SVG içermiyor
+	Clipboard Image Brush	Pano Görüntüsü Fırçası
+	Paint with the image on the clipboard as the brush tip	Panodaki görüntüyü fırça ucu olarak kullanarak boya
+	Export Layers as Animation…	Katmanları Animasyon Olarak Aktar…
+	Export as Brush (.gbr)…	Fırça Olarak Aktar (.gbr)…
+	Export Layers as Image Hose (.gih)…	Katmanları Animasyonlu Fırça Olarak Aktar (.gih)…
+	Export as Pattern (.pat)…	Desen Olarak Aktar (.pat)…
+	Animation Frame Tags…	Animasyon Kare Etiketleri…
+	Disposal	Elden Çıkarma
+	Incremental	Artımlı
+	Angular	Açısal
+	Xtilt	X Eğimi
+	Ytilt	Y Eğimi
+	Mng	MNG
+	Export as PostScript (.eps)…	PostScript Olarak Aktar (.eps)…
+	Encapsulated	Kapsüllenmiş
+	Encoding	Kodlama
+	Hex	Onaltılık
+	Ascii85	ASCII85
+	Binary	İkili
+	Open Location…	Konum Aç…
+	From Screenshot…	Ekran Görüntüsünden…
+	From Web Page…	Web Sayfasından…
+	Send by Email…	E-posta ile Gönder…
+	Url	URL
+	Cursor	İmleç
+	Region	Bölge
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Arabellek
+	Buffers	Arabellekler
+	Cut Named…	Adlandırılmış Kes…
+	Copy Named…	Adlandırılmış Kopyala…
+	Copy Visible Named…	Görüneni Adlandırılmış Kopyala…
+	Paste Named…	Adlandırılmış Yapıştır…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Adlandırılmış arabellek yok. Burada bir kopya tutmak için Düzen > Arabellek > Adlandırılmış Kopyala… kullanın.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Adlandırılmış arabellek yok; önce Düzen > Arabellek > Adlandırılmış Kopyala kullanın
+	Paste Buffer	Arabelleği Yapıştır
+	Paste Buffer in Place	Arabelleği Yerine Yapıştır
+	Paste Buffer as New Image	Arabelleği Yeni Görüntü Olarak Yapıştır
+	Rename Buffer…	Arabelleği Yeniden Adlandır…
+	Delete Buffer	Arabelleği Sil
+	Paste as New	Yeni Olarak Yapıştır
+	Paste the buffer as a new layer	Arabelleği yeni katman olarak yapıştır
+	Paste the buffer as a new document	Arabelleği yeni belge olarak yapıştır
+	As	Olarak
+	In place	Yerine
+	Into	İçine
+	Modules…	Modüller…
+	Units…	Birimler…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Yüklenebilir modül kurulu değil. Filtre > Eklentiler > Eklenti Kur… bir tane ekler.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Kapatılan bir modül kurulu kalır ancak yeniden açılana kadar menülerden kalkar.
+	Module	Modül
+	Not installed	Kurulu değil
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Çarpan, bir inçte kaç birim olduğudur (santimetre için 2,54, punto için 72).
+	Identifier	Tanımlayıcı
+	Factor	Çarpan
+	Symbol	Simge
+	Abbreviation	Kısaltma
+	Singular	Tekil
+	Plural	Çoğul
+	Delete Unit	Birimi Sil
+	New unit	Yeni birim
+	Add Unit	Birim Ekle
+	That identifier is already a unit	Bu tanımlayıcı zaten bir birim
+	Custom units	Özel birimler
+	Disabled modules	Devre dışı modüller
+	Input Devices…	Giriş Aygıtları…
+	Input Controllers…	Giriş Denetleyicileri…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Kalem, platformun bildirdiği tablet kalemidir. Devre dışı bırakılırsa fare gibi çalışır.
+	Device	Aygıt
+	Invert tilt X	X eğimini ters çevir
+	Invert tilt Y	Y eğimini ters çevir
+	Swap tilt	Eğimi değiştir
+	Pressure scale	Basınç ölçeği
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Tekerlek olayları isteğe bağlı Shift+, Ctrl+ ve Alt+ ile up, down, left veya right; klavye olayları Ctrl+Alt+Up gibi kısayollardır. Eylem bir komut kimliğidir, isteğe bağlı JSON parametreleri izleyebilir.
+	Controller	Denetleyici
+	Event	Olay
+	Remove mapping	Eşlemeyi kaldır
+	New mapping	Yeni eşleme
+	Add Mapping	Eşleme Ekle
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} girdi; tıklama ön plan rengini ayarlar, çift tıklama düzenler
+	Entry	Girdi
+	Add an entry with the foreground colour	Ön plan rengiyle bir girdi ekle
+	Delete the last entry	Son girdiyi sil
+	Use selected	Seçileni kullan
+	Ink	Mürekkep
+	MyPaint Brush	MyPaint Fırçası
+	Nib	Uç
+	Aspect	Oran
+	Opaque	Opak
+	Erase with brush	Fırçayla sil
+	Import .myb…	.myb İçe Aktar…
+	Add a MyPaint brush file to the presets	Ön ayarlara bir MyPaint fırça dosyası ekle
+	Imported MyPaint brush {name}	MyPaint fırçası {name} içe aktarıldı
+	How much pressure changes the nib size	Basıncın uç boyutunu ne kadar değiştirdiği
+	How much the pen's tilt turns and stretches the nib	Kalem eğiminin ucu ne kadar döndürüp uzattığı
+	How much a fast stroke thins the nib	Hızlı bir vuruşun ucu ne kadar incelttiği
+	Added to the preset's logarithmic radius	Ön ayarın logaritmik yarıçapına eklenir
+	Operation…	İşlem…
+	Operation name or id	İşlem adı veya kimliği
+	{n} operations	{n} işlem
+	Choose an operation	Bir işlem seçin
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu Konsolu…
+	Load Scripts Folder…	Betik Klasörünü Yükle…
+	Python Console…	Python Konsolu…
+	Load Plug-ins Folder…	Eklenti Klasörünü Yükle…
+	Loaded {n} scripts	{n} betik yüklendi
+	Loaded {n} Python plug-ins	{n} Python eklentisi yüklendi
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	call(command, **params), message(text) ve print() ile Python 3; her motor komutuna call ile ulaşılır.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: her motor komutu bir yordamdır, (file.new "width" 640 "height" 480); yordamları tanımlayın ve script-fu-register ile kaydedin.
+	Code	Kod
+	Cmd+Enter runs the code	Cmd+Enter kodu çalıştırır
+	Clear Log	Günlüğü Temizle
