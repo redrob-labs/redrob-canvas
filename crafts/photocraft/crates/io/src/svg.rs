@@ -80,8 +80,8 @@ fn options(fontdb: Arc<usvg::fontdb::Database>) -> usvg::Options<'static> {
 }
 
 /// A parsed drawing.
-struct Parsed {
-    tree: usvg::Tree,
+pub(crate) struct Parsed {
+    pub(crate) tree: usvg::Tree,
     /// The drawing has text but no font at all was available to shape it. `usvg` then drops the
     /// text while parsing, before any node reaches the conversion, so this is the only place
     /// that knows why the text is missing.
@@ -92,7 +92,7 @@ struct Parsed {
 /// sees it: deeper nesting than [`MAX_XML_DEPTH`] is an error, not a stack overflow. The font
 /// database (and its one-off scan of the system fonts) is only loaded when the drawing may
 /// contain text.
-fn parse(bytes: &[u8]) -> Result<Parsed, IoError> {
+pub(crate) fn parse(bytes: &[u8]) -> Result<Parsed, IoError> {
     parse_with(bytes, fonts)
 }
 
@@ -599,7 +599,7 @@ fn pt(p: tiny_skia::Point) -> Point {
 /// are raised to cubics, and a closing segment that returns to the start merges into it. Every
 /// subpath after the first joins its component, so the fill rule counts winding across the whole
 /// path as SVG does (a second subpath drawn inside the first is a hole under even-odd).
-fn knots(path: &tiny_skia::Path) -> Vec<Subpath> {
+pub(crate) fn knots(path: &tiny_skia::Path) -> Vec<Subpath> {
     use tiny_skia::PathSegment as S;
     let mut out: Vec<Subpath> = Vec::new();
     let mut cur: Option<Subpath> = None;

@@ -65,6 +65,8 @@ pub enum Pick {
     NewPreset,
     /// Import brushes (.abr) with the file dialog.
     Import,
+    /// The clipboard's image as the "Clipboard Image" brush (`brush.presets.clipboard`).
+    ClipboardBrush,
 }
 
 impl Pick {
@@ -167,6 +169,14 @@ pub fn apply(app: &mut PhotocraftApp, ctx: &egui::Context, picks: Vec<Pick>) {
             }
             Pick::Import => {
                 let _ = crate::preset_files_ui::import_brushes(app);
+            }
+            Pick::ClipboardBrush => {
+                // An image copied in another app counts too.
+                app.import_os_clipboard();
+                if let Err(e) = app.run("brush.presets.clipboard", json!({})) {
+                    app.ui.status = e;
+                    app.ui.status_error = true;
+                }
             }
         }
     }
@@ -398,6 +408,10 @@ fn gear_menu(ui: &mut egui::Ui, current: Option<&str>, presets: &[BrushPreset], 
         ui.separator();
         if ui.button(tl!("Import Brushes…")).clicked() {
             picks.push(Pick::Import);
+            ui.close();
+        }
+        if ui.button(tl!("Clipboard Image Brush")).on_hover_text(tl!("Paint with the image on the clipboard as the brush tip")).clicked() {
+            picks.push(Pick::ClipboardBrush);
             ui.close();
         }
     });
