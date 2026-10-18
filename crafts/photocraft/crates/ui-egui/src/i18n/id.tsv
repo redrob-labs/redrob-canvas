@@ -4066,3 +4066,70 @@ curves	Smooth	Haluskan
 	Node	Simpul
 	Extension	Perpanjangan
 	Intersection	Perpotongan
+	Alt-click a bottom patch to set it to the foreground colour	Alt+klik petak bawah untuk mengaturnya ke warna depan
+	Apply:	Terapkan:
+	Brushes this large preview coarsely while painting	Kuas sebesar ini dipratinjau kasar saat melukis
+	Click the disc to add shape points	Klik cakram untuk menambah titik bentuk
+	Close Shape	Tutup bentuk
+	Color Space:	Ruang warna:
+	Common Colors	Warna umum
+	Components:	Komponen:
+	Continuous Mode	Mode kontinu
+	Current pattern	Pola saat ini
+	Depth:	Kedalaman:
+	Display:	Tampilan:
+	Dynamic Hue Ring	Cincin hue dinamis
+	Enable Pen Settings	Aktifkan pengaturan pena
+	Erase mode keeps its own opacity on this preset	Mode hapus menyimpan opasitasnya sendiri pada preset ini
+	Erase mode keeps its own size on this preset	Mode hapus menyimpan ukurannya sendiri pada preset ini
+	Eraser Opacity	Opasitas penghapus
+	Eraser Size	Ukuran penghapus
+	Fit Panel Width	Sesuaikan lebar panel
+	Gamut Mask	Masker gamut
+	Gradient Steps	Langkah gradasi
+	Gradient ends: Alt-click to set from the foreground	Ujung gradasi: Alt+klik untuk mengambil warna depan
+	Hue Steps	Langkah hue
+	Instant Preview	Pratinjau instan
+	LUT Management (OCIO)	Pengelolaan LUT (OCIO)
+	Lightness Strength	Kekuatan kecerahan
+	Lock Color	Kunci warna
+	Luma:	Luma:
+	Minimum Hardness	Kekerasan minimum
+	Minimum Strength	Kekuatan minimum
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Mati: semua sensor diabaikan; kurva tetap disimpan
+	Out of gamut	Di luar gamut
+	Panel colours are not shown through the display transform	Warna panel tidak ditampilkan melalui transformasi tampilan
+	Patch Count	Jumlah petak
+	Patch Size	Ukuran petak
+	Patches:	Petak:
+	Pattern Scale	Skala pola
+	Pop-up Size	Ukuran pop-up
+	Proof to Painting Space	Pratinjau ke ruang lukis
+	Recent Colors	Warna terbaru
+	Remove Last Shape	Hapus bentuk terakhir
+	Rotate Mask	Putar masker
+	Saturation Steps	Langkah saturasi
+	Selector settings	Pengaturan pemilih
+	Selector:	Pemilih:
+	Shade Count	Jumlah bayangan
+	Shade Ring by Value	Bayangi cincin menurut nilai
+	Shade Selector	Pemilih bayangan
+	Shade Size	Ukuran bayangan
+	Shade Spread	Sebaran bayangan
+	Shade Strip	Strip bayangan
+	Shades	Bayangan
+	Share Curve Across Settings	Bagikan kurva ke semua pengaturan
+	Show as Fractions	Tampilkan sebagai pecahan
+	Soften Edge	Lembutkan tepi
+	Source:	Sumber:
+	Style:	Gaya:
+	The tip's grey levels are painted into the colour as lightness	Tingkat abu-abu ujung dilukis ke warna sebagai kecerahan
+	Threshold the tip mask for crisp pixel strokes	Ambangkan masker ujung untuk sapuan piksel tajam
+	Tip as Lightness Map	Ujung sebagai peta kecerahan
+	Update:	Pembaruan:
+	Value Steps	Langkah nilai
+	Value on the Ring	Nilai pada cincin
+	Zoom Pop-up	Pop-up zum
+	Gamma	Gamma
+	Strength	Kekuatan

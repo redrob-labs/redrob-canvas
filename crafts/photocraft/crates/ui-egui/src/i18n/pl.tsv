@@ -4663,3 +4663,68 @@ curves	Smooth	Wygładź
 	Node	Węzeł
 	Extension	Przedłużenie
 	Intersection	Przecięcie
+	Alt-click a bottom patch to set it to the foreground colour	Alt+kliknij dolną próbkę, aby ustawić ją na kolor pierwszego planu
+	Apply:	Zastosuj:
+	Brushes this large preview coarsely while painting	Pędzle tej wielkości są podczas malowania podglądane zgrubnie
+	Click the disc to add shape points	Kliknij dysk, aby dodać punkty kształtu
+	Close Shape	Zamknij kształt
+	Color Space:	Przestrzeń kolorów:
+	Common Colors	Typowe kolory
+	Components:	Składowe:
+	Continuous Mode	Tryb ciągły
+	Current pattern	Bieżący wzorek
+	Depth:	Głębia:
+	Display:	Wyświetlanie:
+	Dynamic Hue Ring	Dynamiczny pierścień barw
+	Enable Pen Settings	Włącz ustawienia pióra
+	Erase mode keeps its own opacity on this preset	Tryb gumki zachowuje własne krycie w tym ustawieniu
+	Erase mode keeps its own size on this preset	Tryb gumki zachowuje własny rozmiar w tym ustawieniu
+	Eraser Opacity	Krycie gumki
+	Eraser Size	Rozmiar gumki
+	Fit Panel Width	Dopasuj do szerokości panelu
+	Gamut Mask	Maska gamutu
+	Gradient Steps	Kroki gradientu
+	Gradient ends: Alt-click to set from the foreground	Końce gradientu: Alt+kliknij, aby ustawić z koloru pierwszego planu
+	Hue Steps	Kroki barwy
+	Instant Preview	Natychmiastowy podgląd
+	LUT Management (OCIO)	Zarządzanie LUT (OCIO)
+	Lightness Strength	Siła jasności
+	Lock Color	Zablokuj kolor
+	Luma:	Luma:
+	Minimum Hardness	Minimalna twardość
+	Minimum Strength	Minimalna siła
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Wył.: wszystkie czujniki są ignorowane, krzywe pozostają
+	Out of gamut	Poza gamutem
+	Panel colours are not shown through the display transform	Kolory panelu nie przechodzą przez transformację wyświetlania
+	Patch Count	Liczba próbek
+	Patch Size	Rozmiar próbki
+	Patches:	Próbki:
+	Pattern Scale	Skala wzorka
+	Pop-up Size	Rozmiar okienka
+	Proof to Painting Space	Próba w przestrzeni malowania
+	Recent Colors	Ostatnie kolory
+	Remove Last Shape	Usuń ostatni kształt
+	Rotate Mask	Obróć maskę
+	Saturation Steps	Kroki nasycenia
+	Selector settings	Ustawienia wybieraka
+	Selector:	Wybierak:
+	Shade Count	Liczba odcieni
+	Shade Ring by Value	Cieniuj pierścień wg jasności
+	Shade Selector	Wybierak odcieni
+	Shade Size	Rozmiar odcienia
+	Shade Spread	Rozrzut odcieni
+	Shade Strip	Pasek odcieni
+	Shades	Odcienie
+	Share Curve Across Settings	Wspólna krzywa dla ustawień
+	Show as Fractions	Pokaż jako ułamki
+	Soften Edge	Zmiękcz krawędź
+	Source:	Źródło:
+	Style:	Styl:
+	The tip's grey levels are painted into the colour as lightness	Poziomy szarości końcówki są malowane w kolorze jako jasność
+	Threshold the tip mask for crisp pixel strokes	Progowanie maski końcówki dla ostrych pikselowych pociągnięć
+	Tip as Lightness Map	Końcówka jako mapa jasności
+	Update:	Aktualizacja:
+	Value Steps	Kroki jasności
+	Value on the Ring	Jasność na pierścieniu
+	Zoom Pop-up	Okienko powiększenia

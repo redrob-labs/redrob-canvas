@@ -293,7 +293,7 @@ impl BrushContext {
     /// Bounding rectangle of a dab (rotated sampled tips need the corner reach).
     pub fn dab_rect(&self, d: &Dab, dual: bool) -> Rect {
         let sampled = if dual { self.dual_tip.is_some() } else { self.tip.is_some() || !self.cells.is_empty() };
-        let hardness = if dual { self.brush.dual_brush.hardness } else { (self.brush.hardness * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0) };
+        let hardness = if dual { self.brush.dual_brush.hardness } else { (scaled_hardness(self.brush.hardness, d) * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0) };
         // A computed soft tip paints past its nominal radius (see `tip_shape`).
         let aliased = self.brush.aliased && !dual;
         let reach = if sampled {
@@ -326,17 +326,15 @@ impl BrushContext {
             dp.resize(w * h, 0.0);
         }
         let b = &self.brush;
-        let (hardness, mips) = if dual {
-            (b.dual_brush.hardness, self.dual_tip.as_deref())
-        } else {
-            ((b.hardness * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0), self.primary_mips(d))
-        };
+        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { ((scaled_hardness(b.hardness, d) * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0), self.primary_mips(d)) };
         let aliased = b.aliased && !dual;
+        // Sharpness: threshold the mask of a primary dab.
+        let sharp = (!dual && b.sharpness.enabled && d.sharpness > 0.0).then_some(d.sharpness);
         // The generated-tip path: outline, mask type, fade per axis, spikes, density, randomness.
         let generated = (!dual && !aliased && mips.is_none() && b.generated.is_custom()).then_some(&b.generated);
         let wet = b.wet_edges && !dual && depth.is_none();
         let noise = b.noise && !dual;
-        let tex_tip = !dual && b.texture.enabled && b.texture.each_tip && self.texture.is_some();
+        let tex_tip = !dual && b.texture.enabled && b.texture.each_tip && !b.texture.apply.colors() && self.texture.is_some();
         let (cx, cy) = if aliased { grid_center(d.center.x, d.center.y, 2.0 * d.radius) } else { (d.center.x as f32, d.center.y as f32) };
         let (sn, cs) = d.angle.sin_cos();
         let (fx, fy) = (if d.flip_x { -1.0 } else { 1.0 }, if d.flip_y { -1.0 } else { 1.0 });
@@ -378,6 +376,7 @@ impl BrushContext {
         // Keep ordinary computed tips separate from the feature loop, so their dense rows
         // can be vectorised without the per-pixel sampled-mask and stroke-depth branches.
         if !(mips.is_some() || small || generated.is_some() || (aliased && b.square) || noise || tex_tip || wet)
+            && sharp.is_none()
             && depth.is_none()
             && proj.is_none()
             && d.angle == 0.0
@@ -455,6 +454,9 @@ impl BrushContext {
                         (val, 1.0 - s)
                     }
                 };
+                if let Some(sh) = sharp {
+                    val = b.sharpness.apply(val, sh);
+                }
                 if val <= 0.0 {
                     continue;
                 }
@@ -503,11 +505,90 @@ impl BrushContext {
         if let Some(dv) = dual {
             m = mask_combine(b.dual_brush.mode, m, dv, 1.0);
         }
-        if self.texture.is_some() && !b.texture.each_tip {
+        if self.texture.is_some() && !b.texture.each_tip && !b.texture.apply.colors() {
             m = texture_combine(b.texture.mode, m, self.texture_at(x, y), b.texture.depth.clamp(0.0, 1.0));
         }
         m
     }
+
+    /// The straight RGBA colour of one pixel of dab `d` when the brush paints a colour per pixel
+    /// ([`BrushSettings::per_pixel_color`]): total random noise, a lightness-map or gradient-map
+    /// texture, or a lightness-map tip (`tip_level` is the tip's grey level at the pixel).
+    pub fn pixel_color(&self, d: &Dab, x: i32, y: i32, tip_level: Option<f32>) -> [f32; 4] {
+        let b = &self.brush;
+        let mut c = d.color;
+        let cd = &b.color_dynamics;
+        if cd.enabled
+            && cd.source.uses_pattern()
+            && let Some(p) = cd.pattern.as_ref().filter(|p| p.is_valid())
+        {
+            let sc = if cd.pattern_scale.is_finite() && cd.pattern_scale > 0.01 { cd.pattern_scale } else { 1.0 };
+            let (px, py) = match cd.source {
+                crate::brush::ColorSource::LockedPattern => (
+                    ((x as f32 + 0.5 - d.center.x as f32) / sc + p.width as f32 / 2.0).floor() as i32,
+                    ((y as f32 + 0.5 - d.center.y as f32) / sc + p.height as f32 / 2.0).floor() as i32,
+                ),
+                _ => ((x as f32 / sc).floor() as i32, (y as f32 / sc).floor() as i32),
+            };
+            let s = p.at(px, py);
+            c = [s[0], s[1], s[2], c[3] * s[3]];
+        }
+        if cd.enabled && cd.source == crate::brush::ColorSource::TotalRandom {
+            let h = hash2(x, y, crate::rng::stream::PIXEL_NOISE ^ b.seed);
+            let rgb = hue_rgb(h);
+            c = [rgb[0], rgb[1], rgb[2], c[3]];
+        }
+        let tx = &b.texture;
+        if tx.enabled && self.texture.is_some() {
+            let level = tx.level(self.texture_at(x, y));
+            match tx.apply {
+                crate::brush::TextureApply::Alpha => {}
+                crate::brush::TextureApply::LightnessMap => c = apply_lightness(c, level, d.lightness * tx.depth.clamp(0.0, 1.0)),
+                crate::brush::TextureApply::GradientMap => {
+                    let g = crate::brush::gradient_at(&b.color_dynamics.gradient, b.color, b.background, level);
+                    let k = tx.depth.clamp(0.0, 1.0);
+                    c = [c[0] + (g[0] - c[0]) * k, c[1] + (g[1] - c[1]) * k, c[2] + (g[2] - c[2]) * k, c[3]];
+                }
+            }
+        }
+        if let (true, Some(l)) = (b.tip_lightness, tip_level) {
+            c = apply_lightness(c, l, d.lightness);
+        }
+        c
+    }
+}
+
+/// A computed tip's hardness for dab `d` (Softness scales it).
+#[inline]
+fn scaled_hardness(hardness: f32, d: &Dab) -> f32 {
+    let k = if d.hardness_scale.is_finite() { d.hardness_scale.clamp(0.0, 1.0) } else { 1.0 };
+    (hardness * k).clamp(0.0, 1.0)
+}
+
+/// A fully saturated colour at hue `h` (0..1).
+fn hue_rgb(h: f32) -> [f32; 3] {
+    let h6 = h.rem_euclid(1.0) * 6.0;
+    let i = h6.floor();
+    let f = h6 - i;
+    match i as i32 {
+        0 => [1.0, f, 0.0],
+        1 => [1.0 - f, 1.0, 0.0],
+        2 => [0.0, 1.0, f],
+        3 => [0.0, 1.0 - f, 1.0],
+        4 => [f, 0.0, 1.0],
+        _ => [1.0, 0.0, 1.0 - f],
+    }
+}
+
+/// Paint lightness `level` (0..1, ½ = unchanged) into colour `c` with `strength` (0 = none): a
+/// dark level scales the colour towards black, a light one lifts it towards white.
+pub fn apply_lightness(c: [f32; 4], level: f32, strength: f32) -> [f32; 4] {
+    let k = if strength.is_finite() { strength.clamp(0.0, 1.0) } else { 0.0 };
+    let l = if level.is_finite() { level.clamp(0.0, 1.0) } else { 0.5 };
+    // Contrast around mid-grey by the strength.
+    let t = 0.5 + (l - 0.5) * k;
+    let f = |v: f32| if t < 0.5 { v * (2.0 * t) } else { v + (1.0 - v) * (2.0 * t - 1.0) };
+    [f(c[0]).clamp(0.0, 1.0), f(c[1]).clamp(0.0, 1.0), f(c[2]).clamp(0.0, 1.0), c[3]]
 }
 
 // ---------------------------------------------------------------------------
@@ -627,6 +708,77 @@ impl CoverageMap {
         let mut v: Vec<_> = self.dirty.drain().collect();
         v.sort_unstable();
         v
+    }
+
+    /// [`accumulate`](Self::accumulate) with a colour per pixel: `color_at(x, y, out)` writes the
+    /// native colour (at least `nc` channels; `out` has room for 8) of each painted pixel.
+    pub fn accumulate_with(&mut self, rect: Rect, vals: &[f32], ceil: f32, depth: Option<&[f32]>, nc: usize, mut color_at: impl FnMut(i32, i32, &mut [f32])) {
+        if rect.is_empty() {
+            return;
+        }
+        self.bounds = self.bounds.union(&rect);
+        let w = rect.width() as usize;
+        let nc = nc.min(self.nc);
+        let want_col = nc > 0;
+        let mut buf = [0.0f32; 8];
+        let (t0x, t0y) = (rect.x0.div_euclid(COV_TILE), rect.y0.div_euclid(COV_TILE));
+        let (t1x, t1y) = ((rect.x1 - 1).div_euclid(COV_TILE), (rect.y1 - 1).div_euclid(COV_TILE));
+        for ty in t0y..=t1y {
+            for tx in t0x..=t1x {
+                let tr = Rect::new(tx * COV_TILE, ty * COV_TILE, (tx + 1) * COV_TILE, (ty + 1) * COV_TILE).intersect(&rect);
+                if tr.is_empty() {
+                    continue;
+                }
+                let any = (tr.y0..tr.y1).any(|y| {
+                    let row = (y - rect.y0) as usize * w;
+                    vals[row + (tr.x0 - rect.x0) as usize..row + (tr.x1 - rect.x0) as usize].iter().any(|&v| v > 0.0)
+                });
+                if !any {
+                    continue;
+                }
+                let snc = self.nc;
+                let tile = self.tiles.entry((tx, ty)).or_insert_with(|| CovTile {
+                    cov: vec![0.0; (COV_TILE * COV_TILE) as usize],
+                    depth: Vec::new(),
+                    col: if want_col { vec![0.0; (COV_TILE * COV_TILE) as usize * snc] } else { Vec::new() },
+                });
+                if want_col && tile.col.is_empty() {
+                    tile.col = vec![0.0; (COV_TILE * COV_TILE) as usize * snc];
+                }
+                if depth.is_some() && tile.depth.is_empty() {
+                    tile.depth = vec![0.0; (COV_TILE * COV_TILE) as usize];
+                }
+                self.dirty.insert((tx, ty));
+                for y in tr.y0..tr.y1 {
+                    let row = (y - rect.y0) as usize * w;
+                    let trow = ((y - ty * COV_TILE) * COV_TILE) as usize;
+                    for x in tr.x0..tr.x1 {
+                        let v = vals[row + (x - rect.x0) as usize];
+                        if v <= 0.0 {
+                            continue;
+                        }
+                        let ti = trow + (x - tx * COV_TILE) as usize;
+                        if let (Some(dv), Some(slot)) = (depth.and_then(|dp| dp.get(row + (x - rect.x0) as usize)), tile.depth.get_mut(ti)) {
+                            *slot = slot.max(*dv);
+                        }
+                        let c = tile.cov[ti];
+                        let nv = if ceil > c { c + v * (ceil - c) } else { c };
+                        if nv <= c {
+                            continue;
+                        }
+                        if want_col {
+                            color_at(x, y, &mut buf);
+                            let k = if c < 1.0 { (nv - c) / (1.0 - c) } else { 0.0 };
+                            let p = &mut tile.col[ti * snc..(ti + 1) * snc];
+                            for i in 0..nc {
+                                p[i] = buf[i] * k + p[i] * (1.0 - k);
+                            }
+                        }
+                        tile.cov[ti] = nv;
+                    }
+                }
+            }
+        }
     }
 
     /// The finished coverage over the tiles `keys`: `tail`'s copy of a tile where finishing the
@@ -833,7 +985,7 @@ impl StrokeRenderer {
     }
     /// `fmt` = target pixel format (needed for per-dab colour); `zoom` for smoothing.
     pub fn new(brush: &BrushSettings, fmt: Option<PixelFormat>, zoom: f32) -> Self {
-        let per_dab_color = brush.color_dynamics.enabled && !brush.erase && fmt.is_some();
+        let per_dab_color = (brush.color_dynamics.enabled || brush.per_pixel_color()) && !brush.erase && fmt.is_some();
         let nc = if per_dab_color { fmt.map_or(0, |f| f.mode.color_channels()) } else { 0 };
         Self {
             ctx: BrushContext::new(brush),
@@ -871,12 +1023,29 @@ impl StrokeRenderer {
         let mut dabs = std::mem::take(&mut self.dab_buf);
         let mut duals = std::mem::take(&mut self.dual_buf);
         let wet = self.ctx.brush.wet_edges;
+        let per_pixel = self.per_dab_color && self.ctx.brush.per_pixel_color();
+        // A lightness-map tip needs the tip's level per pixel: the depth buffer carries `1 − rn`,
+        // which for a sampled tip is its grey level.
+        let tip_levels = per_pixel && self.ctx.brush.tip_lightness && self.ctx.brush.tip.bitmap().is_some();
         let mut native = [0.0f32; 8];
         for d in &dabs {
             let rect = self.ctx.dab_rect(d, false);
             // Wet Edges acts on the whole stroke (#2088): the dab records how deep it reaches each
             // pixel and the stroke darkens its own rim when composited, not every dab's.
-            self.ctx.rasterize_into(d, false, rect, &mut self.scratch, wet.then_some(&mut self.depth_scratch));
+            self.ctx.rasterize_into(d, false, rect, &mut self.scratch, (wet || tip_levels).then_some(&mut self.depth_scratch));
+            if let (true, Some(f)) = (per_pixel, self.fmt) {
+                let nc = f.mode.color_channels();
+                let w = rect.width().max(0) as usize;
+                let ctx = &self.ctx;
+                let depth = &self.depth_scratch;
+                self.cov.accumulate_with(rect, &self.scratch, d.opacity, wet.then_some(&self.depth_scratch[..]), nc, |x, y, out| {
+                    let i = (y - rect.y0) as usize * w + (x - rect.x0) as usize;
+                    let level = tip_levels.then(|| depth.get(i).copied().unwrap_or(0.0));
+                    from_rgba_into(&f, ctx.pixel_color(d, x, y, level), out);
+                });
+                self.cov.bounds = self.cov.bounds.union(&rect);
+                continue;
+            }
             let col = match (self.per_dab_color, self.fmt) {
                 (true, Some(f)) => {
                     from_rgba_into(&f, d.color, &mut native);

@@ -126,6 +126,15 @@ pub struct ColorSettings {
     /// Monitor profile the canvas is displayed in: `auto` (the main display's profile when the
     /// platform supplies it, else sRGB), a built-in RGB profile id or an `.icc` path.
     pub monitor_profile: String,
+    /// Display profile settings beyond the main monitor profile: per-screen profiles, the
+    /// canvas surface encoding and bit depth, unmanaged mode (`color_management_cmds`).
+    pub display: crate::color_management_cmds::DisplaySettings,
+    /// What profile pasted pixels from another application are assumed to be in.
+    pub paste_assume: crate::color_management_cmds::PasteAssume,
+    /// Enforce palette colours: every picked colour snaps to the nearest swatch.
+    pub enforce_palette: bool,
+    /// LUT Management: the OpenColorIO display transform.
+    pub ocio: crate::ocio::OcioSettings,
 }
 
 impl Default for ColorSettings {
@@ -146,6 +155,10 @@ impl Default for ColorSettings {
             dither: true,
             blend_text_gamma: redrob_photo_compose::psblend::TEXT_GAMMA,
             monitor_profile: "auto".into(),
+            display: Default::default(),
+            paste_assume: Default::default(),
+            enforce_palette: false,
+            ocio: Default::default(),
         }
     }
 }
@@ -219,6 +232,8 @@ pub struct ColorState {
     pub hdr: HashMap<DocId, crate::proof_sim::HdrPreview>,
     /// View › Display Filters per document (view-only deficiency, gamma, contrast, clip warning).
     pub display_filters: HashMap<DocId, crate::display_filters::DisplayFilters>,
+    /// The loaded OpenColorIO configuration (`settings.ocio`).
+    pub ocio: crate::ocio::OcioState,
 }
 
 impl ColorState {
@@ -465,7 +480,12 @@ impl ColorState {
         let size = size.max(2);
         let pv = self.proof(doc.id);
         let display = self.canvas_display_for(doc, on)?;
-        if !(pv.enabled || pv.gamut_warning || hdr && crate::proof_sim::hdr_active(self, doc) || crate::display_filters::active(self, doc).is_some()) {
+        if !(pv.enabled
+            || pv.gamut_warning
+            || hdr && crate::proof_sim::hdr_active(self, doc)
+            || crate::display_filters::active(self, doc).is_some()
+            || crate::color_management_cmds::display_stage_active(self))
+        {
             return Ok(display.transform.as_ref().map(|t| Lut3d::from_transform(t, size).to_rgba8()));
         }
         let lut = self.display_lut_with(doc, size, hdr, on)?;

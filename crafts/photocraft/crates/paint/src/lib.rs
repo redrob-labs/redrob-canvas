@@ -41,6 +41,7 @@ pub use brush::{
     HoseSelection, ImageHose, MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering,
     SectionLocks, Sensor, SensorCombine, ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
 };
+pub use brush::{EraserSwitch, InstantPreview, Sharpness, TextureApply};
 pub use curve::ResponseCurve;
 pub use dynamics_preset::{DynInput, DynOutput, DynamicsPreset, DynamicsRow};
 pub use engines::EngineSettings;
@@ -120,6 +121,12 @@ pub struct Dab {
     /// Hardness multiplier from a dynamics preset's Hardness output (1 = the brush's own
     /// hardness); a computed tip gets softer as it falls.
     pub hardness: f32,
+    /// Softness: multiplier of the computed tip's hardness for this dab (1 = as set).
+    pub hardness_scale: f32,
+    /// Sharpness: 0..1 strength of the mask threshold for this dab (0 = off).
+    pub sharpness: f32,
+    /// Lightness Strength: 0..1 contrast of a lightness map painted into the colour.
+    pub lightness: f32,
 }
 
 impl Dab {
@@ -143,6 +150,9 @@ impl Dab {
             mix: 1.0,
             cell: 0,
             hardness: 1.0,
+            hardness_scale: 1.0,
+            sharpness: 0.0,
+            lightness: 1.0,
         }
     }
 }

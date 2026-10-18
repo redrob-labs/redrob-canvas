@@ -1074,6 +1074,8 @@ fn build() -> Vec<CommandSpec> {
                     let [r, g, b, _] = s.tools.background;
                     s.tools.remember_cmyk([r, g, b], k);
                 }
+                // Enforce Palette Colours: the colours snap to the nearest swatch.
+                crate::color_management_cmds::enforce_palette(s);
                 Ok(Value::Null)
             }
         ),
@@ -1343,12 +1345,15 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::assistant_cmds::specs());
     v.extend(crate::edit_cmds::specs());
     v.extend(crate::color_cmds::specs());
+    v.extend(crate::color_management_cmds::specs());
+    v.extend(crate::ocio::specs());
     v.extend(crate::brush_cmds::specs());
     v.extend(crate::brush_engine_cmds::specs());
     v.extend(crate::brush_preset_cmds::specs());
     v.extend(crate::eraser_cmds::specs());
     v.extend(crate::preset_import_cmds::specs());
     v.extend(crate::dynamics_cmds::specs());
+    v.extend(crate::brush_mode_cmds::specs());
     v.extend(crate::atn_cmds::specs());
     v.extend(crate::actions_edit_cmds::specs());
     v.extend(crate::swatch_cmds::specs());

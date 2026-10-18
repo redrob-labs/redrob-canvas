@@ -4049,3 +4049,70 @@ curves	Smooth	Сгладить
 	Node	Узел
 	Extension	Продолжение
 	Intersection	Пересечение
+	Alt-click a bottom patch to set it to the foreground colour	Alt+щелчок по нижнему образцу задаёт ему основной цвет
+	Apply:	Применить:
+	Brushes this large preview coarsely while painting	Кисти такого размера грубо предпросматриваются при рисовании
+	Click the disc to add shape points	Щёлкните по диску, чтобы добавить точки фигуры
+	Close Shape	Замкнуть фигуру
+	Color Space:	Цветовое пространство:
+	Common Colors	Основные цвета
+	Components:	Компоненты:
+	Continuous Mode	Непрерывный режим
+	Current pattern	Текущий узор
+	Depth:	Глубина:
+	Display:	Отображение:
+	Dynamic Hue Ring	Динамическое кольцо оттенков
+	Enable Pen Settings	Включить настройки пера
+	Erase mode keeps its own opacity on this preset	Режим стирания хранит свою непрозрачность для этого набора
+	Erase mode keeps its own size on this preset	Режим стирания хранит свой размер для этого набора
+	Eraser Opacity	Непрозрачность ластика
+	Eraser Size	Размер ластика
+	Fit Panel Width	По ширине панели
+	Gamut Mask	Маска цветового охвата
+	Gradient Steps	Шаги градиента
+	Gradient ends: Alt-click to set from the foreground	Концы градиента: Alt+щелчок задаёт основной цвет
+	Hue Steps	Шаги оттенка
+	Instant Preview	Мгновенный предпросмотр
+	LUT Management (OCIO)	Управление LUT (OCIO)
+	Lightness Strength	Сила светлоты
+	Lock Color	Зафиксировать цвет
+	Luma:	Яркость (luma):
+	Minimum Hardness	Минимальная жёсткость
+	Minimum Strength	Минимальная сила
+	Model:	Модель:
+	Off: every sensor is ignored; the curves are kept	Выкл.: все сенсоры игнорируются, кривые сохраняются
+	Out of gamut	Вне охвата
+	Panel colours are not shown through the display transform	Цвета панели не проходят через преобразование дисплея
+	Patch Count	Число образцов
+	Patch Size	Размер образца
+	Patches:	Образцы:
+	Pattern Scale	Масштаб узора
+	Pop-up Size	Размер всплывающего окна
+	Proof to Painting Space	Цветопроба в пространстве рисования
+	Recent Colors	Недавние цвета
+	Remove Last Shape	Удалить последнюю фигуру
+	Rotate Mask	Повернуть маску
+	Saturation Steps	Шаги насыщенности
+	Selector settings	Настройки селектора
+	Selector:	Селектор:
+	Shade Count	Число оттенков
+	Shade Ring by Value	Затенять кольцо по яркости
+	Shade Selector	Селектор оттенков
+	Shade Size	Размер оттенка
+	Shade Spread	Разброс оттенков
+	Shade Strip	Полоса оттенков
+	Shades	Оттенки
+	Share Curve Across Settings	Общая кривая для всех настроек
+	Show as Fractions	Показывать как доли
+	Soften Edge	Смягчить край
+	Source:	Источник:
+	Style:	Стиль:
+	The tip's grey levels are painted into the colour as lightness	Уровни серого кончика рисуются в цвет как светлота
+	Threshold the tip mask for crisp pixel strokes	Порог по маске кончика для чётких пиксельных штрихов
+	Tip as Lightness Map	Кончик как карта светлоты
+	Update:	Обновление:
+	Value Steps	Шаги яркости
+	Value on the Ring	Яркость на кольце
+	Zoom Pop-up	Всплывающее увеличение
+	Gamma	Гамма
+	Strength	Сила

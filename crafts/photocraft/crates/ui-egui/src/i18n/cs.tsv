@@ -4663,3 +4663,68 @@ navigator	Zoom	Zvětšení
 	Node	Uzel
 	Extension	Prodloužení
 	Intersection	Průsečík
+	Alt-click a bottom patch to set it to the foreground colour	Alt+kliknutím na spodní vzorek mu nastavíte barvu popředí
+	Apply:	Použít:
+	Brushes this large preview coarsely while painting	Štětce této velikosti se při malování zobrazují hrubě
+	Click the disc to add shape points	Klepnutím na disk přidáte body tvaru
+	Close Shape	Uzavřít tvar
+	Color Space:	Barevný prostor:
+	Common Colors	Běžné barvy
+	Components:	Složky:
+	Continuous Mode	Spojitý režim
+	Current pattern	Aktuální vzorek
+	Depth:	Hloubka:
+	Display:	Zobrazení:
+	Dynamic Hue Ring	Dynamický kruh odstínů
+	Enable Pen Settings	Povolit nastavení pera
+	Erase mode keeps its own opacity on this preset	Režim mazání má v této předvolbě vlastní krytí
+	Erase mode keeps its own size on this preset	Režim mazání má v této předvolbě vlastní velikost
+	Eraser Opacity	Krytí gumy
+	Eraser Size	Velikost gumy
+	Fit Panel Width	Přizpůsobit šířce panelu
+	Gamut Mask	Maska gamutu
+	Gradient Steps	Kroky přechodu
+	Gradient ends: Alt-click to set from the foreground	Konce přechodu: Alt+kliknutím nastavíte barvu popředí
+	Hue Steps	Kroky odstínu
+	Instant Preview	Okamžitý náhled
+	LUT Management (OCIO)	Správa LUT (OCIO)
+	Lightness Strength	Síla světlosti
+	Lock Color	Uzamknout barvu
+	Luma:	Luma:
+	Minimum Hardness	Minimální tvrdost
+	Minimum Strength	Minimální síla
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Vypnuto: všechny senzory se ignorují, křivky zůstanou
+	Out of gamut	Mimo gamut
+	Panel colours are not shown through the display transform	Barvy panelu neprocházejí transformací zobrazení
+	Patch Count	Počet vzorků
+	Patch Size	Velikost vzorku
+	Patches:	Vzorky:
+	Pattern Scale	Měřítko vzorku
+	Pop-up Size	Velikost vyskakovacího okna
+	Proof to Painting Space	Nátisk do prostoru malby
+	Recent Colors	Nedávné barvy
+	Remove Last Shape	Odebrat poslední tvar
+	Rotate Mask	Otočit masku
+	Saturation Steps	Kroky sytosti
+	Selector settings	Nastavení voliče
+	Selector:	Volič:
+	Shade Count	Počet odstínů
+	Shade Ring by Value	Stínovat kruh podle jasu
+	Shade Selector	Volič odstínů
+	Shade Size	Velikost odstínu
+	Shade Spread	Rozptyl odstínů
+	Shade Strip	Pruh odstínů
+	Shades	Odstíny
+	Share Curve Across Settings	Sdílet křivku mezi nastaveními
+	Show as Fractions	Zobrazit jako zlomky
+	Soften Edge	Zjemnit okraj
+	Source:	Zdroj:
+	Style:	Styl:
+	The tip's grey levels are painted into the colour as lightness	Úrovně šedi hrotu se malují do barvy jako světlost
+	Threshold the tip mask for crisp pixel strokes	Prahovat masku hrotu pro ostré pixelové tahy
+	Tip as Lightness Map	Hrot jako mapa světlosti
+	Update:	Aktualizace:
+	Value Steps	Kroky jasu
+	Value on the Ring	Jas na kruhu
+	Zoom Pop-up	Vyskakovací zvětšení

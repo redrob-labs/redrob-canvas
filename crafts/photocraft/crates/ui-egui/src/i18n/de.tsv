@@ -4139,3 +4139,71 @@ curves	Smooth	Glätten
 	Node	Knoten
 	Extension	Verlängerung
 	Intersection	Schnittpunkt
+	Alt-click a bottom patch to set it to the foreground colour	Alt+Klick auf ein unteres Feld setzt es auf die Vordergrundfarbe
+	Apply:	Anwenden:
+	Brushes this large preview coarsely while painting	Pinsel dieser Größe werden beim Malen grob vorgeschaut
+	Click the disc to add shape points	Auf die Scheibe klicken, um Formpunkte hinzuzufügen
+	Close Shape	Form schließen
+	Color Space:	Farbraum:
+	Common Colors	Häufige Farben
+	Components:	Komponenten:
+	Continuous Mode	Stufenloser Modus
+	Current pattern	Aktuelles Muster
+	Depth:	Tiefe:
+	Display:	Anzeige:
+	Dynamic Hue Ring	Dynamischer Farbtonring
+	Enable Pen Settings	Stifteinstellungen aktivieren
+	Erase mode keeps its own opacity on this preset	Der Radiermodus behält in dieser Vorgabe seine eigene Deckkraft
+	Erase mode keeps its own size on this preset	Der Radiermodus behält in dieser Vorgabe seine eigene Größe
+	Eraser Opacity	Radierer-Deckkraft
+	Eraser Size	Radierergröße
+	Fit Panel Width	An Bedienfeldbreite anpassen
+	Gamut Mask	Gamut-Maske
+	Gradient Steps	Verlaufsschritte
+	Gradient ends: Alt-click to set from the foreground	Verlaufsenden: Alt+Klick übernimmt die Vordergrundfarbe
+	Hue Steps	Farbtonschritte
+	Instant Preview	Sofortvorschau
+	LUT Management (OCIO)	LUT-Verwaltung (OCIO)
+	Lightness Strength	Helligkeitsstärke
+	Lock Color	Farbe sperren
+	Luma:	Luma:
+	Minimum Hardness	Minimale Härte
+	Minimum Strength	Minimale Stärke
+	Model:	Modell:
+	Off: every sensor is ignored; the curves are kept	Aus: alle Sensoren werden ignoriert, die Kurven bleiben
+	Out of gamut	Außerhalb des Gamuts
+	Panel colours are not shown through the display transform	Bedienfeldfarben werden nicht durch die Anzeigetransformation gezeigt
+	Patch Count	Anzahl Felder
+	Patch Size	Feldgröße
+	Patches:	Felder:
+	Pattern Scale	Musterskalierung
+	Pop-up Size	Pop-up-Größe
+	Proof to Painting Space	Proof im Malfarbraum
+	Recent Colors	Zuletzt verwendete Farben
+	Remove Last Shape	Letzte Form entfernen
+	Rotate Mask	Maske drehen
+	Saturation Steps	Sättigungsschritte
+	Selector settings	Auswahleinstellungen
+	Selector:	Auswahl:
+	Shade Count	Anzahl Schattierungen
+	Shade Ring by Value	Ring nach Helligkeit schattieren
+	Shade Selector	Schattierungsauswahl
+	Shade Size	Schattierungsgröße
+	Shade Spread	Schattierungsspanne
+	Shade Strip	Schattierungsleiste
+	Shades	Schattierungen
+	Share Curve Across Settings	Kurve für alle Einstellungen teilen
+	Show as Fractions	Als Bruchteile anzeigen
+	Soften Edge	Kante weichzeichnen
+	Source:	Quelle:
+	Style:	Stil:
+	The tip's grey levels are painted into the colour as lightness	Die Graustufen der Spitze werden als Helligkeit in die Farbe gemalt
+	Threshold the tip mask for crisp pixel strokes	Spitzenmaske schwellen für scharfe Pixelstriche
+	Tip as Lightness Map	Spitze als Helligkeitskarte
+	Update:	Aktualisierung:
+	Value Steps	Helligkeitsschritte
+	Value on the Ring	Helligkeit auf dem Ring
+	Zoom Pop-up	Zoom-Pop-up
+	Duplicate	Duplizieren
+	Gamma	Gamma
+	Sharpness	Schärfe

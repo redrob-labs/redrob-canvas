@@ -5123,3 +5123,68 @@ shape	Appearance	Izgled
 	Node	Čvor
 	Extension	Produžetak
 	Intersection	Presek
+	Alt-click a bottom patch to set it to the foreground colour	Alt+klik na donju pločicu postavlja boju prednjeg plana
+	Apply:	Primeni:
+	Brushes this large preview coarsely while painting	Četkice ove veličine se grubo prikazuju tokom slikanja
+	Click the disc to add shape points	Kliknite na disk da dodate tačke oblika
+	Close Shape	Zatvori oblik
+	Color Space:	Prostor boja:
+	Common Colors	Česte boje
+	Components:	Komponente:
+	Continuous Mode	Neprekidni režim
+	Current pattern	Trenutni uzorak
+	Depth:	Dubina:
+	Display:	Prikaz:
+	Dynamic Hue Ring	Dinamički prsten nijansi
+	Enable Pen Settings	Uključi podešavanja olovke
+	Erase mode keeps its own opacity on this preset	Režim brisanja čuva sopstvenu providnost u ovom podešavanju
+	Erase mode keeps its own size on this preset	Režim brisanja čuva sopstvenu veličinu u ovom podešavanju
+	Eraser Opacity	Providnost brisača
+	Eraser Size	Veličina brisača
+	Fit Panel Width	Uklopi u širinu panela
+	Gamut Mask	Maska gamuta
+	Gradient Steps	Koraci preliva
+	Gradient ends: Alt-click to set from the foreground	Krajevi preliva: Alt+klik postavlja boju prednjeg plana
+	Hue Steps	Koraci nijanse
+	Instant Preview	Trenutni pregled
+	LUT Management (OCIO)	Upravljanje LUT (OCIO)
+	Lightness Strength	Jačina svetline
+	Lock Color	Zaključaj boju
+	Luma:	Luma:
+	Minimum Hardness	Najmanja tvrdoća
+	Minimum Strength	Najmanja jačina
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Isključeno: svi senzori se zanemaruju; krive ostaju
+	Out of gamut	Van gamuta
+	Panel colours are not shown through the display transform	Boje panela se ne prikazuju kroz transformaciju prikaza
+	Patch Count	Broj pločica
+	Patch Size	Veličina pločice
+	Patches:	Pločice:
+	Pattern Scale	Razmera uzorka
+	Pop-up Size	Veličina iskačućeg prozora
+	Proof to Painting Space	Proba u prostoru slikanja
+	Recent Colors	Nedavne boje
+	Remove Last Shape	Ukloni poslednji oblik
+	Rotate Mask	Rotiraj masku
+	Saturation Steps	Koraci zasićenja
+	Selector settings	Podešavanja birača
+	Selector:	Birač:
+	Shade Count	Broj tonova
+	Shade Ring by Value	Senči prsten po vrednosti
+	Shade Selector	Birač tonova
+	Shade Size	Veličina tona
+	Shade Spread	Raspon tonova
+	Shade Strip	Traka tonova
+	Shades	Tonovi
+	Share Curve Across Settings	Deli krivu među podešavanjima
+	Show as Fractions	Prikaži kao razlomke
+	Soften Edge	Omekšaj ivicu
+	Source:	Izvor:
+	Style:	Stil:
+	The tip's grey levels are painted into the colour as lightness	Nivoi sive vrha se slikaju u boju kao svetlina
+	Threshold the tip mask for crisp pixel strokes	Prag maske vrha za oštre pikselne poteze
+	Tip as Lightness Map	Vrh kao mapa svetline
+	Update:	Osvežavanje:
+	Value Steps	Koraci vrednosti
+	Value on the Ring	Vrednost na prstenu
+	Zoom Pop-up	Iskačući zum

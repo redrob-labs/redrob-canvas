@@ -4763,3 +4763,68 @@ curves	Smooth	Згладити
 	Node	Вузол
 	Extension	Продовження
 	Intersection	Перетин
+	Alt-click a bottom patch to set it to the foreground colour	Alt+клацання по нижньому зразку задає йому основний колір
+	Apply:	Застосувати:
+	Brushes this large preview coarsely while painting	Пензлі такого розміру грубо попередньо показуються під час малювання
+	Click the disc to add shape points	Клацніть по диску, щоб додати точки фігури
+	Close Shape	Замкнути фігуру
+	Color Space:	Колірний простір:
+	Common Colors	Основні кольори
+	Components:	Компоненти:
+	Continuous Mode	Безперервний режим
+	Current pattern	Поточний візерунок
+	Depth:	Глибина:
+	Display:	Відображення:
+	Dynamic Hue Ring	Динамічне кільце відтінків
+	Enable Pen Settings	Увімкнути налаштування пера
+	Erase mode keeps its own opacity on this preset	Режим стирання зберігає свою непрозорість для цього набору
+	Erase mode keeps its own size on this preset	Режим стирання зберігає свій розмір для цього набору
+	Eraser Opacity	Непрозорість гумки
+	Eraser Size	Розмір гумки
+	Fit Panel Width	За шириною панелі
+	Gamut Mask	Маска колірного охоплення
+	Gradient Steps	Кроки градієнта
+	Gradient ends: Alt-click to set from the foreground	Кінці градієнта: Alt+клацання задає основний колір
+	Hue Steps	Кроки відтінку
+	Instant Preview	Миттєвий перегляд
+	LUT Management (OCIO)	Керування LUT (OCIO)
+	Lightness Strength	Сила світлоти
+	Lock Color	Зафіксувати колір
+	Luma:	Яскравість (luma):
+	Minimum Hardness	Мінімальна жорсткість
+	Minimum Strength	Мінімальна сила
+	Model:	Модель:
+	Off: every sensor is ignored; the curves are kept	Вимк.: усі сенсори ігноруються, криві зберігаються
+	Out of gamut	Поза охопленням
+	Panel colours are not shown through the display transform	Кольори панелі не проходять через перетворення дисплея
+	Patch Count	Кількість зразків
+	Patch Size	Розмір зразка
+	Patches:	Зразки:
+	Pattern Scale	Масштаб візерунка
+	Pop-up Size	Розмір спливного вікна
+	Proof to Painting Space	Кольоропроба в просторі малювання
+	Recent Colors	Недавні кольори
+	Remove Last Shape	Вилучити останню фігуру
+	Rotate Mask	Повернути маску
+	Saturation Steps	Кроки насиченості
+	Selector settings	Налаштування селектора
+	Selector:	Селектор:
+	Shade Count	Кількість відтінків
+	Shade Ring by Value	Затіняти кільце за яскравістю
+	Shade Selector	Селектор відтінків
+	Shade Size	Розмір відтінку
+	Shade Spread	Розкид відтінків
+	Shade Strip	Смуга відтінків
+	Shades	Відтінки
+	Share Curve Across Settings	Спільна крива для всіх налаштувань
+	Show as Fractions	Показувати як частки
+	Soften Edge	Пом'якшити край
+	Source:	Джерело:
+	Style:	Стиль:
+	The tip's grey levels are painted into the colour as lightness	Рівні сірого кінчика малюються в колір як світлота
+	Threshold the tip mask for crisp pixel strokes	Поріг по масці кінчика для чітких піксельних штрихів
+	Tip as Lightness Map	Кінчик як карта світлоти
+	Update:	Оновлення:
+	Value Steps	Кроки яскравості
+	Value on the Ring	Яскравість на кільці
+	Zoom Pop-up	Спливне збільшення

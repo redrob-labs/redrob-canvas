@@ -4141,3 +4141,70 @@ curves	Smooth	Lisser
 	Node	Nœud
 	Extension	Prolongement
 	Intersection	Intersection
+	Alt-click a bottom patch to set it to the foreground colour	Alt+clic sur une pastille du bas pour y mettre la couleur de premier plan
+	Apply:	Appliquer :
+	Brushes this large preview coarsely while painting	Les brosses de cette taille s'affichent grossièrement pendant la peinture
+	Click the disc to add shape points	Cliquez sur le disque pour ajouter des points à la forme
+	Close Shape	Fermer la forme
+	Color Space:	Espace colorimétrique :
+	Common Colors	Couleurs communes
+	Components:	Composantes :
+	Continuous Mode	Mode continu
+	Current pattern	Motif actuel
+	Depth:	Profondeur :
+	Display:	Affichage :
+	Dynamic Hue Ring	Anneau de teinte dynamique
+	Enable Pen Settings	Activer les réglages du stylet
+	Erase mode keeps its own opacity on this preset	Le mode gomme garde sa propre opacité pour ce préréglage
+	Erase mode keeps its own size on this preset	Le mode gomme garde sa propre taille pour ce préréglage
+	Eraser Opacity	Opacité de la gomme
+	Eraser Size	Taille de la gomme
+	Fit Panel Width	Ajuster à la largeur du panneau
+	Gamut Mask	Masque de gamut
+	Gradient Steps	Pas du dégradé
+	Gradient ends: Alt-click to set from the foreground	Extrémités du dégradé : Alt+clic pour prendre le premier plan
+	Hue Steps	Pas de teinte
+	Instant Preview	Aperçu instantané
+	LUT Management (OCIO)	Gestion des LUT (OCIO)
+	Lightness Strength	Intensité de la luminosité
+	Lock Color	Verrouiller la couleur
+	Luma:	Luma :
+	Minimum Hardness	Dureté minimale
+	Minimum Strength	Intensité minimale
+	Model:	Modèle :
+	Off: every sensor is ignored; the curves are kept	Désactivé : tous les capteurs sont ignorés, les courbes sont conservées
+	Out of gamut	Hors gamut
+	Panel colours are not shown through the display transform	Les couleurs du panneau ne passent pas par la transformation d'affichage
+	Patch Count	Nombre de pastilles
+	Patch Size	Taille des pastilles
+	Patches:	Pastilles :
+	Pattern Scale	Échelle du motif
+	Pop-up Size	Taille du pop-up
+	Proof to Painting Space	Épreuve dans l'espace de peinture
+	Recent Colors	Couleurs récentes
+	Remove Last Shape	Supprimer la dernière forme
+	Rotate Mask	Pivoter le masque
+	Saturation Steps	Pas de saturation
+	Selector settings	Réglages du sélecteur
+	Selector:	Sélecteur :
+	Shade Count	Nombre de nuances
+	Shade Ring by Value	Ombrer l'anneau selon la valeur
+	Shade Selector	Sélecteur de nuances
+	Shade Size	Taille des nuances
+	Shade Spread	Étendue des nuances
+	Shade Strip	Bande de nuances
+	Shades	Nuances
+	Share Curve Across Settings	Partager la courbe entre les réglages
+	Show as Fractions	Afficher en fractions
+	Soften Edge	Adoucir le bord
+	Source:	Source :
+	Style:	Style :
+	The tip's grey levels are painted into the colour as lightness	Les niveaux de gris de la pointe sont peints dans la couleur comme luminosité
+	Threshold the tip mask for crisp pixel strokes	Seuiller le masque de la pointe pour des traits pixel nets
+	Tip as Lightness Map	Pointe comme carte de luminosité
+	Update:	Mise à jour :
+	Value Steps	Pas de valeur
+	Value on the Ring	Valeur sur l'anneau
+	Zoom Pop-up	Pop-up de zoom
+	Gamma	Gamma
+	Strength	Intensité

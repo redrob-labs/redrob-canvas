@@ -421,6 +421,10 @@ pub struct Tools {
     /// The longest pause, in milliseconds, between two nudges that still bundle into one state.
     /// Longer than a key's auto-repeat delay (about half a second), so a held key is one state.
     pub nudge_bundle_pause_ms: u32,
+    /// Instant Preview (the global switch, Shift+L): a live stroke with a brush at or above its
+    /// preset's threshold paints a coarse preview first; the commit paints the exact stroke
+    /// (`tools.instantPreview`).
+    pub instant_preview: bool,
     /// Edit › Input Devices: per-device configuration (`input_cmds`). The entry named `pen`
     /// configures the tablet pen the platform reports.
     pub input_devices: Vec<InputDevice>,
@@ -508,6 +512,7 @@ impl Default for Tools {
             nudge_bundle_pause_ms: 1000,
             input_devices: Vec::new(),
             input_controllers: Vec::new(),
+            instant_preview: true,
         }
     }
 }

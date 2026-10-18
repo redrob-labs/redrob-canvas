@@ -466,9 +466,9 @@ name = "Softness"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven fade of the tip edge; noticeable on large soft tips."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "hardness is static; no sensor on it"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -478,8 +478,8 @@ name = "Sharpness"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Threshold over the tip mask for crisp pixel-art strokes; strength by sensor, soften edge slider."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -526,8 +526,8 @@ name = "Source: gradient"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Dabs take their colour from the active gradient, position chosen by the Mix sensor."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -538,9 +538,9 @@ name = "Source: uniform / total random"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Uniform random gives every dab one random colour; total random paints noise."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "ColorDynamics hue/sat/brightness jitter approximates uniform random; no noise source"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -550,9 +550,9 @@ name = "Source: pattern / locked pattern"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Dabs paint the active pattern, aligned per stroke or locked to the dab."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/stamp_cmds.rs"
-gap = "pattern stamp tool with aligned/impressionist; not a pixel-brush source"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -562,9 +562,9 @@ name = "Mix"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor blends between foreground and background colour (or picks a gradient position)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "ColorDynamics foreground/background jitter is random only, no sensor control"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -574,8 +574,8 @@ name = "Darken"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven darkening of the source colour towards black."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -586,9 +586,9 @@ name = "Hue / saturation / value"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Three sensor-driven HSV offsets on the source colour; all three on fuzzy gives rich colour texture."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "ColorDynamics jitter is random only; no per-sensor HSV curves"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -610,8 +610,8 @@ name = "Lightness strength"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven contrast of a lightness-map tip for variable impasto."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -694,8 +694,8 @@ name = "Texture modes: lightness map, gradient map"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "Texture lightness painted into the colour (or mapped to the active gradient) instead of the alpha."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -730,9 +730,9 @@ name = "Eraser switch size/opacity"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Toggling erase mode (E) can remember a separate size and opacity for the same preset."
-ours = "none"
-ours_where = ""
-gap = "erase is a separate tool, no per-preset eraser size"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -742,9 +742,9 @@ name = "Temporarily save tweaks to preset"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Changes made in the editor are kept while switching presets in the session without overwriting the file; a reload button reverts."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs"
-gap = "PresetCaptures keeps tool options per preset; no explicit dirty/reload"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -754,8 +754,8 @@ name = "Instant preview per brush"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/instant_preview.html"
 behaviour = "Large brushes paint a low-resolution preview first and refine; per-preset threshold and global toggle (Shift+L)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -766,9 +766,9 @@ name = "Sensor curve combination modes"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Several sensors on one option combine by multiply, addition, maximum, minimum or difference; share curve across all settings."
-ours = "partial"
+ours = "full"
 ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
-gap = "up to three extra sensors per option; no 'share curve across all settings'"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -790,9 +790,9 @@ name = "Enable pen settings toggle"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "A checkbox turns all sensors for an option off while keeping the curves."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "Control::Off per dynamic; locks per section"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2146,9 +2146,9 @@ name = "Advanced colour selector"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
 behaviour = "Configurable main selector: wheel/triangle/square shapes, HSV/HSL/HSI/HSY models, luma coefficients, gamma, colour space, resize behaviour, zoom popup."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
-gap = "HSB field and sliders in a dialog; no shape or model options, no HSY"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs, crafts/photocraft/crates/color/src/models.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2158,8 +2158,8 @@ name = "Shade selector"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
 behaviour = "Strip of shades around the current colour (MyPaint-style or simple), with update rules."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 2
 
@@ -2170,9 +2170,9 @@ name = "Colour history and common colours patches"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
 behaviour = "Recent colours and colours sampled from the image, size, count, direction, scrolling."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_history.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/popup_palette.rs"
-gap = "recent painted colours (24) in the Color panel and the pop-up palette; no common-colours-from-image patches, fixed size and count"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs, crafts/photocraft/crates/ui-egui/src/color_history.rs, crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/ui-egui/src/popup_palette.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2182,8 +2182,8 @@ name = "Artistic colour selector"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/artistic_color_selector.html"
 behaviour = "Stepped hue ring with value/saturation rings; continuous mode; gamut masks applied over it."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 2
 
@@ -2194,8 +2194,8 @@ name = "Wide gamut colour selector (5.2)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/wide_gamut_color_selector.html"
 behaviour = "Selector in a chosen wide colour space with static/dynamic hue ring, pop-up size, patches layout, shade selector, proofing to the painting space."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs, crafts/photocraft/crates/color/src/models.rs"
 gap = ""
 priority = 2
 
@@ -2206,9 +2206,9 @@ name = "Specific colour selector"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/specific_color_selector.html"
 behaviour = "Sliders per channel of a chosen colour space and depth; hex field; HSV sliders (5.1); colour space chooser (5.3)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
-gap = "RGB/HSB/Lab/CMYK fields; no arbitrary space or 16/32-bit values"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs, crafts/photocraft/crates/color/src/models.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2242,8 +2242,8 @@ name = "Digital colour mixer"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/digital_color_mixer.html"
 behaviour = "Six columns mixing the current colour with a chosen colour by a slider; gradient slider at the bottom."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 3
 
@@ -2254,9 +2254,9 @@ name = "Palette docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Swatch grid with groups, column count, rename, spot colours, names and IDs, stored in resources or in the document."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/swatches_ui.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs"
-gap = "groups, rename, import/export, spot flag kept, per-document palettes (Save Group to Document / Load Document Palettes); no column-count setting or swatch IDs"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/engine/src/presets/swatches.rs, crafts/photocraft/crates/engine/src/presets/mod.rs, crafts/photocraft/crates/ui-egui/src/swatches_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -2266,9 +2266,9 @@ name = "Edit swatch dialog"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Colour, name, ID, spot colour per swatch."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs"
-gap = "colour and name only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/engine/src/presets/swatches.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2278,8 +2278,8 @@ name = "Gamut masks"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/gamut_masks.html"
 behaviour = "Shape masks over the artistic/advanced wheel limit the pickable hues; create, edit, duplicate, delete; rotate the mask."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 2
 
@@ -2302,9 +2302,9 @@ name = "LUT management (OCIO) docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
 behaviour = "OpenColorIO display transform with configuration file, input space, display, view, look, components, exposure (Y key drag) and gamma, locked colour."
-ours = "none"
-ours_where = ""
-gap = "32-bit preview exposure only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/ocio.rs, crafts/photocraft/crates/engine/src/proof_sim.rs, crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2315,8 +2315,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/general_concepts/colors/color_models.html"
 behaviour = "RGB, Gray, CMYK, XYZ, Lab, YCbCr in 8/16-bit integer, 16/32-bit float; per-document space with ICC profile."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/lib.rs"
-gap = "RGB/Gray/CMYK/Lab/Indexed/Bitmap/Duotone/Multichannel at 8/16-bit and 32-bit float; no XYZ, YCbCr or 16-bit float"
+ours_where = "crafts/photocraft/crates/color/src/models.rs, crafts/photocraft/crates/color/src/lib.rs, crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+gap = "XYZ, YCbCr and 16-bit float are colour models and depths of the selectors and the conversion library (models.rs); documents still store the eight ColorMode models and float as 32-bit"
 priority = 2
 
 [[feature]]
@@ -2326,8 +2326,8 @@ name = "Enforce palette colours"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
 behaviour = "Snap every picked colour to the nearest palette entry."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/engine/src/commands.rs"
 gap = ""
 priority = 3
 
@@ -2338,8 +2338,8 @@ name = "Colour history in pop-up palette"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
 behaviour = "Last used colours around the ring."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/popup_palette.rs, crafts/photocraft/crates/ui-egui/src/color_history.rs"
 gap = ""
 priority = 2
 
@@ -3670,9 +3670,9 @@ name = "Display profile settings"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
 behaviour = "System monitor profile or chosen profile per screen, intent, canvas surface space and bit depth (Rec 709 / Rec 2020 PQ), unmanaged mode."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/display_color.rs"
-gap = "monitor profile and intent; no HDR surface options"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/engine/src/color_cmds.rs, crafts/photocraft/crates/engine/src/display_color.rs, crafts/photocraft/crates/engine/src/proof_sim.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3682,8 +3682,8 @@ name = "Assume profile when pasting"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
 behaviour = "Assume sRGB, monitor profile, or ask per paste."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/prefs.rs"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/engine/src/edit_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3718,8 +3718,8 @@ name = "OpenColorIO display"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
 behaviour = "Scene-linear display transforms from an OCIO config with exposure and gamma."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/ocio.rs, crafts/photocraft/crates/engine/src/proof_sim.rs"
 gap = ""
 priority = 2
 
@@ -3730,9 +3730,9 @@ name = "Exposure / gamma view"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
 behaviour = "Drag with Y to change view exposure; gamma slider; lock colour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/float_cmds.rs"
-gap = "32-bit preview options exposure/gamma"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/ocio.rs, crafts/photocraft/crates/engine/src/proof_sim.rs, crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3742,9 +3742,9 @@ name = "HDR display painting"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/hdr_display.html"
 behaviour = "Paint on HDR monitors in Rec 2020 PQ with float documents; HDR video export."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/engine/src/proof_sim.rs, crafts/photocraft/crates/color/src/models.rs"
+gap = "Rec. 2020 PQ / HLG / scRGB surface encodings end the display LUT (edit.colorManagement); the window surface is the 8-bit sRGB one the shell gets from the platform, and there is no HDR video export"
 priority = 3
 
 [[feature]]
@@ -3767,8 +3767,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/general_concepts/colors/bit_depth.html"
 behaviour = "8/16-bit integer, 16/32-bit float per document."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/lib.rs"
-gap = "no 16-bit float"
+ours_where = "crafts/photocraft/crates/color/src/models.rs, crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+gap = "16-bit float is a channel depth of the colour selectors (IEEE half encoding in models.rs); documents store float pixels as 32-bit (no SampleType::F16)"
 priority = 2
 
 [[feature]]

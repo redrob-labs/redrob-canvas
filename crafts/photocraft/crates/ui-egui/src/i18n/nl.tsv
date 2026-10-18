@@ -4815,3 +4815,68 @@ curves	Smooth	Vloeiend maken
 	Node	Knooppunt
 	Extension	Verlenging
 	Intersection	Snijpunt
+	Alt-click a bottom patch to set it to the foreground colour	Alt+klik op een onderste vakje zet het op de voorgrondkleur
+	Apply:	Toepassen:
+	Brushes this large preview coarsely while painting	Penselen van deze grootte worden grof voorvertoond tijdens het schilderen
+	Click the disc to add shape points	Klik op de schijf om vormpunten toe te voegen
+	Close Shape	Vorm sluiten
+	Color Space:	Kleurruimte:
+	Common Colors	Veelvoorkomende kleuren
+	Components:	Componenten:
+	Continuous Mode	Doorlopende modus
+	Current pattern	Huidig patroon
+	Depth:	Diepte:
+	Display:	Weergave:
+	Dynamic Hue Ring	Dynamische tintring
+	Enable Pen Settings	Peninstellingen inschakelen
+	Erase mode keeps its own opacity on this preset	De gummodus houdt zijn eigen dekking in deze voorinstelling
+	Erase mode keeps its own size on this preset	De gummodus houdt zijn eigen grootte in deze voorinstelling
+	Eraser Opacity	Gumdekking
+	Eraser Size	Gumgrootte
+	Fit Panel Width	Aanpassen aan paneelbreedte
+	Gamut Mask	Gamutmasker
+	Gradient Steps	Verloopstappen
+	Gradient ends: Alt-click to set from the foreground	Verloopuiteinden: Alt+klik om de voorgrondkleur te nemen
+	Hue Steps	Tintstappen
+	Instant Preview	Directe voorvertoning
+	LUT Management (OCIO)	LUT-beheer (OCIO)
+	Lightness Strength	Lichtheidssterkte
+	Lock Color	Kleur vergrendelen
+	Luma:	Luma:
+	Minimum Hardness	Minimale hardheid
+	Minimum Strength	Minimale sterkte
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Uit: alle sensoren worden genegeerd, de curven blijven
+	Out of gamut	Buiten gamut
+	Panel colours are not shown through the display transform	Paneelkleuren gaan niet door de weergavetransformatie
+	Patch Count	Aantal vakjes
+	Patch Size	Vakjesgrootte
+	Patches:	Vakjes:
+	Pattern Scale	Patroonschaal
+	Pop-up Size	Pop-upgrootte
+	Proof to Painting Space	Proef naar schilderruimte
+	Recent Colors	Recente kleuren
+	Remove Last Shape	Laatste vorm verwijderen
+	Rotate Mask	Masker draaien
+	Saturation Steps	Verzadigingsstappen
+	Selector settings	Kiezerinstellingen
+	Selector:	Kiezer:
+	Shade Count	Aantal tinten
+	Shade Ring by Value	Ring schaduwen op waarde
+	Shade Selector	Tintkiezer
+	Shade Size	Tintgrootte
+	Shade Spread	Tintspreiding
+	Shade Strip	Tintstrook
+	Shades	Tinten
+	Share Curve Across Settings	Curve delen tussen instellingen
+	Show as Fractions	Als fracties tonen
+	Soften Edge	Rand verzachten
+	Source:	Bron:
+	Style:	Stijl:
+	The tip's grey levels are painted into the colour as lightness	De grijswaarden van de punt worden als lichtheid in de kleur geschilderd
+	Threshold the tip mask for crisp pixel strokes	Drempel op het puntmasker voor scherpe pixelstreken
+	Tip as Lightness Map	Punt als lichtheidskaart
+	Update:	Bijwerken:
+	Value Steps	Waardestappen
+	Value on the Ring	Waarde op de ring
+	Zoom Pop-up	Zoom-pop-up

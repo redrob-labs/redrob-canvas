@@ -4556,3 +4556,68 @@ curves	Smooth	Làm mượt
 	Node	Nút
 	Extension	Đường kéo dài
 	Intersection	Giao điểm
+	Alt-click a bottom patch to set it to the foreground colour	Alt+nhấp ô dưới để đặt thành màu tiền cảnh
+	Apply:	Áp dụng:
+	Brushes this large preview coarsely while painting	Cọ lớn thế này được xem trước thô khi vẽ
+	Click the disc to add shape points	Nhấp vào đĩa để thêm điểm hình
+	Close Shape	Đóng hình
+	Color Space:	Không gian màu:
+	Common Colors	Màu phổ biến
+	Components:	Thành phần:
+	Continuous Mode	Chế độ liên tục
+	Current pattern	Mẫu hiện tại
+	Depth:	Độ sâu:
+	Display:	Hiển thị:
+	Dynamic Hue Ring	Vòng sắc độ động
+	Enable Pen Settings	Bật thiết lập bút
+	Erase mode keeps its own opacity on this preset	Chế độ xóa giữ độ mờ riêng trong thiết lập này
+	Erase mode keeps its own size on this preset	Chế độ xóa giữ kích cỡ riêng trong thiết lập này
+	Eraser Opacity	Độ mờ tẩy
+	Eraser Size	Kích cỡ tẩy
+	Fit Panel Width	Khớp bề rộng bảng
+	Gamut Mask	Mặt nạ gam màu
+	Gradient Steps	Bước chuyển sắc
+	Gradient ends: Alt-click to set from the foreground	Hai đầu chuyển sắc: Alt+nhấp để lấy từ tiền cảnh
+	Hue Steps	Bước sắc độ
+	Instant Preview	Xem trước tức thì
+	LUT Management (OCIO)	Quản lý LUT (OCIO)
+	Lightness Strength	Cường độ độ sáng
+	Lock Color	Khóa màu
+	Luma:	Luma:
+	Minimum Hardness	Độ cứng tối thiểu
+	Minimum Strength	Cường độ tối thiểu
+	Model:	Mô hình:
+	Off: every sensor is ignored; the curves are kept	Tắt: bỏ qua mọi cảm biến; giữ các đường cong
+	Out of gamut	Ngoài gam màu
+	Panel colours are not shown through the display transform	Màu bảng không hiển thị qua phép biến đổi hiển thị
+	Patch Count	Số ô
+	Patch Size	Kích cỡ ô
+	Patches:	Ô màu:
+	Pattern Scale	Tỉ lệ mẫu
+	Pop-up Size	Kích cỡ cửa sổ bật lên
+	Proof to Painting Space	Soát màu sang không gian vẽ
+	Recent Colors	Màu gần đây
+	Remove Last Shape	Xóa hình cuối
+	Rotate Mask	Xoay mặt nạ
+	Saturation Steps	Bước độ bão hòa
+	Selector settings	Thiết lập bộ chọn
+	Selector:	Bộ chọn:
+	Shade Count	Số sắc thái
+	Shade Ring by Value	Tô vòng theo giá trị
+	Shade Selector	Bộ chọn sắc thái
+	Shade Size	Kích cỡ sắc thái
+	Shade Spread	Độ trải sắc thái
+	Shade Strip	Dải sắc thái
+	Shades	Sắc thái
+	Share Curve Across Settings	Dùng chung đường cong cho mọi thiết lập
+	Show as Fractions	Hiển thị dạng phân số
+	Soften Edge	Làm mềm cạnh
+	Source:	Nguồn:
+	Style:	Kiểu:
+	The tip's grey levels are painted into the colour as lightness	Mức xám của đầu cọ được vẽ vào màu như độ sáng
+	Threshold the tip mask for crisp pixel strokes	Ngưỡng hóa mặt nạ đầu cọ cho nét pixel sắc
+	Tip as Lightness Map	Đầu cọ làm bản đồ độ sáng
+	Update:	Cập nhật:
+	Value Steps	Bước giá trị
+	Value on the Ring	Giá trị trên vòng
+	Zoom Pop-up	Cửa sổ thu phóng

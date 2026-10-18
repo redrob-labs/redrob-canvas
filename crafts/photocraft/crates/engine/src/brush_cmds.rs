@@ -220,6 +220,8 @@ pub fn resolve_brush(s: &Session, p: &Value, cmd: &str) -> Result<BrushSettings>
     }
     // A library preset's tips stay on disk until a stroke uses them (#1843).
     s.load_brush_tips(&mut b).map_err(|e| bad(cmd, e))?;
+    // A Pattern colour source reads the library pattern's pixels.
+    crate::brush_mode_cmds::load_color_pattern(s, &mut b, cmd)?;
     if let Some(v) = num(p, "size") {
         b.resize_with_dual_brush(v.max(0.5));
     }
@@ -472,6 +474,8 @@ pub struct LiveStroke {
     points: Vec<StrokePoint>,
     /// The document and revision the stroke started on.
     base: (redrob_photo_doc::DocId, u64),
+    /// Painted with the Instant Preview's coarse brush (see `BrushSettings::preview_brush`).
+    approximate: bool,
 }
 
 /// A finished live stroke offered to its own commit ([`Session::offer_live_stroke`],
@@ -538,6 +542,15 @@ impl LiveStroke {
         if pencil && flag(p, "autoErase", false) {
             apply_auto_erase(&mut brush, surf, pts.first(), fg, s.tools.background);
         }
+        // Instant Preview: a very large brush previews coarsely; the commit paints the exact
+        // brush, so an approximate preview is never offered to the commit.
+        let approximate = match brush.preview_brush(s.prefs().tools.instant_preview) {
+            Some(coarse) => {
+                brush = coarse;
+                true
+            }
+            None => false,
+        };
         let renderer = StrokeRenderer::new(&brush, Some(surf.format()), zoom);
         let symmetry = s.active().and_then(crate::symmetry_cmds::stroke_passes);
         let mirrors: Vec<_> = (0..symmetry.as_ref().map_or(0, |s| s.mirror_count())).map(|_| StrokeRenderer::new(&brush, Some(surf.format()), zoom)).collect();
@@ -561,13 +574,22 @@ impl LiveStroke {
             cmyk: doc_cmyk_space(s),
             points: Vec::new(),
             base,
+            approximate,
         };
         live.push(&pts)?;
         Ok(live)
     }
 
+    /// Is this an Instant Preview (coarse) rendering, which the commit must not take over?
+    pub fn is_approximate(&self) -> bool {
+        self.approximate
+    }
+
     /// The stroke as its commit would take it over (see [`LiveCommit`]).
     pub fn into_commit(mut self) -> Result<LiveCommit> {
+        if self.approximate {
+            return Err(EngineError::Other("the live stroke is an instant preview; the commit renders the exact stroke".into()));
+        }
         let bounds = self.bounds();
         let (surf, _) = crate::channel_cmds::target_surface(std::sync::Arc::make_mut(&mut self.doc), self.layer, &self.params)?;
         Ok(LiveCommit { cmd: self.cmd, base: self.base, params: self.params, seed: Some(self.seed), points: self.points, surface: surf.clone(), bounds })
@@ -956,8 +978,13 @@ pub(crate) fn set_brush(s: &mut Session, p: &Value) -> Result<Value> {
     let mut picked = None;
     let mut picked_color = None;
     if let Some(name) = p.get("preset").and_then(Value::as_str) {
+        // The preset being left keeps its session tweaks (`brush.presets.reload` reverts them).
+        crate::brush_mode_cmds::park_tweaks(s, name);
         let preset = find_preset(s, name, cmd)?;
-        b = preset.picked_over(&s.tools.brush);
+        b = match crate::brush_mode_cmds::tweak_of(s, name) {
+            Some(tw) => tw.clone().picked_over(&s.tools.brush),
+            None => preset.picked_over(&s.tools.brush),
+        };
         picked_color = preset.captures.color.then_some(preset.brush.color);
         picked = Some(name.to_string());
     }

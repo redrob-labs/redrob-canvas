@@ -3691,3 +3691,72 @@ curves	Smooth	平滑
 	Node	節點
 	Extension	延長線
 	Intersection	交點
+	Alt-click a bottom patch to set it to the foreground colour	Alt+點擊下方色塊以設為前景色
+	Apply:	套用:
+	Brushes this large preview coarsely while painting	此尺寸以上的筆刷在繪製時粗略預覽
+	Click the disc to add shape points	點擊色盤以新增形狀點
+	Close Shape	閉合形狀
+	Color Space:	色彩空間:
+	Common Colors	常用顏色
+	Components:	分量:
+	Continuous Mode	連續模式
+	Current pattern	目前圖樣
+	Depth:	深度:
+	Display:	顯示:
+	Dynamic Hue Ring	動態色相環
+	Enable Pen Settings	啟用筆設定
+	Erase mode keeps its own opacity on this preset	擦除模式在此預設中保留自己的不透明度
+	Erase mode keeps its own size on this preset	擦除模式在此預設中保留自己的大小
+	Eraser Opacity	橡皮擦不透明度
+	Eraser Size	橡皮擦大小
+	Fit Panel Width	符合面板寬度
+	Gamut Mask	色域遮罩
+	Gradient Steps	漸層步數
+	Gradient ends: Alt-click to set from the foreground	漸層端點: Alt+點擊以用前景色設定
+	Hue Steps	色相步數
+	Instant Preview	即時預覽
+	LUT Management (OCIO)	LUT 管理 (OCIO)
+	Lightness Strength	亮度強度
+	Lock Color	鎖定顏色
+	Luma:	亮度係數:
+	Minimum Hardness	最小硬度
+	Minimum Strength	最小強度
+	Model:	模型:
+	Off: every sensor is ignored; the curves are kept	關閉: 忽略所有感測器，保留曲線
+	Out of gamut	超出色域
+	Panel colours are not shown through the display transform	面板顏色不經過顯示轉換顯示
+	Patch Count	色塊數量
+	Patch Size	色塊大小
+	Patches:	色塊:
+	Pattern Scale	圖樣縮放
+	Pop-up Size	彈出視窗大小
+	Proof to Painting Space	校樣到繪畫空間
+	Recent Colors	最近使用的顏色
+	Remove Last Shape	刪除最後一個形狀
+	Rotate Mask	旋轉遮罩
+	Saturation Steps	飽和度步數
+	Selector settings	選擇器設定
+	Selector:	選擇器:
+	Shade Count	色調數量
+	Shade Ring by Value	按明度著色色環
+	Shade Selector	色調選擇器
+	Shade Size	色調大小
+	Shade Spread	色調跨度
+	Shade Strip	色調條
+	Shades	色調
+	Share Curve Across Settings	所有設定共用曲線
+	Show as Fractions	以小數顯示
+	Soften Edge	柔化邊緣
+	Source:	來源:
+	Style:	樣式:
+	The tip's grey levels are painted into the colour as lightness	筆尖的灰階作為亮度繪入顏色
+	Threshold the tip mask for crisp pixel strokes	對筆尖遮罩取閾值以獲得銳利的像素筆畫
+	Tip as Lightness Map	筆尖作為亮度對應
+	Update:	更新:
+	Value Steps	明度步數
+	Value on the Ring	色環顯示明度
+	Zoom Pop-up	縮放彈出視窗
+	Duplicate	複製
+	Gamma	伽瑪
+	Sharpness	銳利度
+	Strength	強度

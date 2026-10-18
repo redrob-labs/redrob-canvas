@@ -70,6 +70,7 @@ pub mod color_history;
 pub mod color_picker_ui;
 pub mod color_range_ui;
 pub mod colorize_ui;
+pub mod color_selectors;
 pub mod comps_ui;
 pub mod control;
 pub mod corner_radius;

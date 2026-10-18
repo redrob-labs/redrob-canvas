@@ -3972,11 +3972,11 @@ fn hsva_color32(h: egui::ecolor::Hsva) -> Color32 {
 
 /// The Color panel's row of recent colours (`color_history`), under the readout.
 fn color_history_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
-    if app.ui.color_history.is_empty() {
-        return;
-    }
-    ui.add_space(4.0);
-    crate::color_history::patches(app, ui, 14.0, 16);
+    // The recent colours with the selector settings' count, size and direction, then the
+    // chosen selector (advanced, artistic, wide gamut, specific, mixer), the shade strip and the
+    // common colours of the image (`color_selectors`).
+    crate::color_selectors::history_patches(app, ui);
+    crate::color_selectors::panel(app, ui);
 }
 
 /// The Color panel's editable colour readout: a hex field and R, G, B fields, all drawn like the
