@@ -930,6 +930,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{id?} open the link the selected object (or the anchor it is inside) points to in the browser (object.followLink)",
     ),
     (
+        "ui.objectAttributes",
+        "Object Attributes…",
+        "",
+        "{id?} open Object Attributes on the selected element (dialog `objectAttributes`: its raw SVG attributes as object.xmlAttributes lists them; OK sets the changed ones with object.setXmlAttribute)",
+    ),
+    (
         "ui.checkSpelling",
         "Check Spelling…",
         "Cmd+I",
@@ -1343,6 +1349,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             app.select_tool(redrob_vector_tools::cropimage::ID);
             Ok(json!({"tool": app.session.tool_id()}))
         }
+        "ui.objectAttributes" => crate::dialogs::object_attributes::open(app, p),
         "ui.checkSpelling" => crate::dialogs::spelling::open(app, p),
         "ui.customDictionary" => crate::dialogs::spelling::open_dictionary(app, p),
         "ui.importWebImage" => {
@@ -2134,6 +2141,7 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
         "ui.menuDialog" | "ui.objectProperties" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.importWebImage" => app.session.active().is_some() && app.services.fetch_url.is_some(),
         "ui.checkSpelling" => app.session.active().is_some(),
+        "ui.objectAttributes" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.customDictionary" => true,
         "ui.followLink" => app.session.active().is_some_and(|st| {
             st.selection.objects.iter().any(|id| {
@@ -2366,12 +2374,18 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     "Clone",
                     vec![
                         c("Create Clone", "object.clone"),
+                        cp(
+                            "Create Tiled Clones…",
+                            "ui.paramDialog",
+                            json!({"command": "object.tileClones", "label": "Create Tiled Clones", "params": {"rows": 3, "cols": 3, "symmetry": "P1", "shiftRowX": 0, "shiftRowY": 0, "shiftColX": 0, "shiftColY": 0, "shiftRandom": 0, "scaleRow": 0, "scaleCol": 0, "scaleRandom": 0, "rotateRow": 0, "rotateCol": 0, "rotateRandom": 0, "opacityRow": 0, "opacityCol": 0, "opacityRandom": 0, "hueRow": 0, "hueCol": 0, "saturationRow": 0, "saturationCol": 0, "lightnessRow": 0, "lightnessCol": 0, "colorRandom": 0, "trace": "none", "clones": true}}),
+                        ),
                         c("Unlink Clone", "object.unlinkClone"),
                         c("Relink to Copied", "object.relinkClone"),
                         c("Select Original", "object.selectOriginal"),
                     ],
                 ),
                 c("Object Properties…", "ui.objectProperties"),
+                c("Object Attributes…", "ui.objectAttributes"),
                 c("Create Anchor", "object.createAnchor"),
                 c("Follow Link", "ui.followLink"),
                 Sep,

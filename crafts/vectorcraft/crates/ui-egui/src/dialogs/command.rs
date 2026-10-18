@@ -47,6 +47,8 @@ fn choices(command: &str, key: &str) -> Option<form::Choices> {
         ("graph.setType", "pieSort") => Some(PIE_SORT),
         ("edit.findReplace", "in") => Some(FIND_IN),
         ("edit.findReplace", "scope") => Some(FIND_SCOPE),
+        ("object.tileClones", "symmetry") => Some(TILE_SYMMETRY),
+        ("object.tileClones", "trace") => Some(TILE_TRACE),
         _ => None,
     }
 }
@@ -61,6 +63,30 @@ const FIND_IN: form::Choices = &[
     ("Style", "style"),
     ("Object type", "type"),
 ];
+
+/// Create Tiled Clones › Symmetry: the 17 wallpaper groups (named as crystallography does).
+const TILE_SYMMETRY: form::Choices = &[
+    ("P1", "P1"),
+    ("P2", "P2"),
+    ("PM", "PM"),
+    ("PG", "PG"),
+    ("CM", "CM"),
+    ("PMM", "PMM"),
+    ("PMG", "PMG"),
+    ("PGG", "PGG"),
+    ("CMM", "CMM"),
+    ("P4", "P4"),
+    ("P4M", "P4M"),
+    ("P4G", "P4G"),
+    ("P3", "P3"),
+    ("P31M", "P31M"),
+    ("P3M1", "P3M1"),
+    ("P6", "P6"),
+    ("P6M", "P6M"),
+];
+
+/// Create Tiled Clones › Trace: what the drawing under each tile sets.
+const TILE_TRACE: form::Choices = &[("None", "none"), ("Color", "color"), ("Opacity", "opacity"), ("Size", "size")];
 
 /// Find and Replace › Scope.
 const FIND_SCOPE: form::Choices = &[("All", "all"), ("Selection", "selection"), ("Current layer", "layer")];

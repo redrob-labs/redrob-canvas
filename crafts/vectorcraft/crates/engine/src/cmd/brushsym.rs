@@ -152,6 +152,15 @@ pub fn specs() -> Vec<CommandSpec> {
         ),
         cmd!("symbol.duplicate", "Duplicate Symbol", [], None, "{name, newName?} → {name}", has_doc, symbol_duplicate),
         cmd!(
+            "symbol.rename",
+            "Rename Symbol",
+            [],
+            None,
+            "{name, newName} rename a symbol (Document Resources › Rename); its instances follow → {name}",
+            has_doc,
+            symbol_rename
+        ),
+        cmd!(
             "symbol.replace",
             "Replace Symbol",
             [],
@@ -1023,4 +1032,48 @@ fn symbol_adjust(s: &mut Session, p: &Value) -> Result<Value> {
         Ok(touched.len())
     })?;
     Ok(json!({ "count": count }))
+}
+
+fn symbol_rename(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "symbol.rename";
+    let name = name_param(p, C)?.to_string();
+    let new = str_param(p, "newName").map(str::trim).filter(|n| !n.is_empty()).ok_or_else(|| bad(C, "missing `newName`"))?.to_string();
+    {
+        let d = &s.doc()?.doc;
+        if !d.symbols.iter().any(|x| x.name == name) {
+            return Err(bad(C, format!("no symbol named `{name}`")));
+        }
+        if new != name && d.symbols.iter().any(|x| x.name == new) {
+            return Err(bad(C, format!("a symbol named `{new}` exists already")));
+        }
+    }
+    if new == name {
+        return Ok(json!({ "name": name }));
+    }
+    s.edit("Rename Symbol", |d, _| {
+        if let Some(sym) = d.symbols.iter_mut().find(|x| x.name == name) {
+            sym.name = new.clone();
+        }
+        let inst = instances_of(d, Some(&name));
+        for id in inst {
+            if let Some(n) = d.node_mut(id)
+                && let NodeKind::SymbolInstance { symbol, .. } = &mut n.kind
+            {
+                *symbol = new.clone();
+            }
+        }
+        // The natural size and the current symbol follow the name.
+        let sizes = d.unknown.get(SIZES_KEY).and_then(|m| m.get(&name)).cloned();
+        if let Some(sz) = sizes
+            && let Some(m) = d.unknown.get_mut(SIZES_KEY).and_then(Value::as_object_mut)
+        {
+            m.remove(&name);
+            m.insert(new.clone(), sz);
+        }
+        if d.unknown.get(CURRENT_SYMBOL).and_then(Value::as_str) == Some(name.as_str()) {
+            d.unknown.insert(CURRENT_SYMBOL.to_string(), json!(new));
+        }
+        Ok(())
+    })?;
+    Ok(json!({ "name": new }))
 }

@@ -50,6 +50,7 @@ pub(crate) mod modal;
 pub mod new_color_group;
 mod new_document;
 pub mod new_swatch;
+pub mod object_attributes;
 pub mod object_properties;
 pub mod office_export;
 pub mod package;
@@ -254,6 +255,7 @@ registry! {
     Expand: [expand::KIND] => expand::SPEC,
     SpotColors: [spot_colors::KIND] => spot_colors::SPEC,
     CheckSpelling: [spelling::KIND] => spelling::SPEC,
+    ObjectAttributes: [object_attributes::KIND] => object_attributes::SPEC,
     CustomDictionary: [spelling::DICTIONARY_KIND] => spelling::DICTIONARY_SPEC,
     TransformEach: [transform_each::KIND] => transform_each::SPEC,
     WidthPoint: [width_point::KIND] => width_point::SPEC,

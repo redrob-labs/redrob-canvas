@@ -86,6 +86,7 @@ mod textedit;
 pub mod textstyles;
 pub(crate) mod textwrap;
 pub(crate) mod threads;
+pub mod tileclones;
 pub(crate) mod typecmd;
 mod typemenu;
 mod variablecmds;
@@ -93,6 +94,7 @@ pub(crate) mod views;
 pub mod wand;
 pub mod webexport;
 mod xform;
+pub mod xmlattrs;
 
 use redrob_vector_color::Color;
 use redrob_vector_doc::NodeId;
@@ -238,6 +240,8 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(typemenu::specs());
         v.extend(textedit::specs());
         v.extend(spell::specs());
+        v.extend(tileclones::specs());
+        v.extend(xmlattrs::specs());
         v.extend(inline::specs());
         v.extend(textstyles::specs());
         v.extend(fonts::specs());
