@@ -4910,3 +4910,56 @@ layerLabel	No Color	Sem cor
 	Value Steps	Passos de valor
 	Value on the Ring	Valor no anel
 	Zoom Pop-up	Pop-up de zoom
+	Length over which the value goes from 0 to 1	Comprimento em que o valor vai de 0 a 1
+	Start over past the length instead of holding the end value	Recomeçar após o comprimento em vez de manter o valor final
+	Pressure In	Pressão crescente
+	X-Tilt	Inclinação X
+	Y-Tilt	Inclinação Y
+	Tilt Direction	Direção da inclinação
+	Tilt Elevation	Elevação da inclinação
+	Fuzzy Stroke	Aleatório por traço
+	Tip Scale:	Escala da ponta:
+	Initial size as a share of the bitmap's size	Tamanho inicial como fração do tamanho do bitmap
+	Tip Rotation:	Rotação da ponta:
+	Initial rotation of the tip	Rotação inicial da ponta
+	No anti-aliasing: the dab's pixels are fully on or off	Sem suavização: os pixels do toque ficam totalmente ligados ou desligados
+	Align Outline to Pixel Grid	Alinhar o contorno à grade de pixels
+	The brush outline snaps to the pixels the dab fills	O contorno do pincel se ajusta aos pixels que o toque preenche
+	Tip Mode:	Modo da ponta:
+	(no colour bitmap: paints the brush colour)	(sem bitmap colorido: pinta com a cor do pincel)
+	Neutral Point	Ponto neutro
+	Canvas Only: hide the panels around the canvas	Só a tela: ocultar os painéis ao redor da tela
+	Presets kept in the history	Predefinições mantidas no histórico
+	Clear the history	Limpar o histórico
+	No presets used yet	Nenhuma predefinição usada ainda
+	Forget this preset	Esquecer esta predefinição
+	Ten Brushes	Dez pincéis
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Atribua predefinições a dez posições; ativar a posição de novo volta à predefinição anterior
+	Clear this slot	Limpar esta posição
+	Assign current	Atribuir a atual
+	Browse a folder of reference images	Procurar uma pasta de imagens de referência
+	No folder	Sem pasta
+	Next image	Próxima imagem
+	Previous image	Imagem anterior
+	Pick an image to show it here	Escolha uma imagem para mostrá-la aqui
+	Search actions and commands	Buscar ações e comandos
+	No matching action	Nenhuma ação correspondente
+	Search Actions…	Buscar ações…
+	Brush History	Histórico de pincéis
+	Color Image	Imagem colorida
+	Lightness Map	Mapa de luminosidade
+	Static	Fixo
+	Move to Top	Mover para o topo
+	Bubble Up	Subir uma posição
+	Clear the scratch pad to white	Limpar o bloco de rascunho para branco
+	Fill the scratch pad with the background colour	Preencher o bloco de rascunho com a cor de fundo
+	Fill the scratch pad with the current gradient	Preencher o bloco de rascunho com o degradê atual
+	Fill the scratch pad with the current image	Preencher o bloco de rascunho com a imagem atual
+	Fill the scratch pad with the preset's icon	Preencher o bloco de rascunho com o ícone da predefinição
+	Reload the stored preset, discarding the tweaks	Recarregar a predefinição salva, descartando os ajustes
+	BG	Fundo
+	Icon	Ícone
+	Thumbnail:	Miniatura:
+	Stroke preview	Prévia do traço
+	Scratch pad	Bloco de rascunho
+	Icon library	Biblioteca de ícones

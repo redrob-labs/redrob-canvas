@@ -59,6 +59,7 @@ mod multichannel_map;
 mod ora;
 pub use ora::losses as ora_losses;
 pub use xcf::losses as xcf_losses;
+pub mod palette_files;
 pub mod pattern_map;
 pub mod pdf;
 mod pdn;

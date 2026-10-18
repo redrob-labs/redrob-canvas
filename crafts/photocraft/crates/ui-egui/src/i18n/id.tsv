@@ -4133,3 +4133,56 @@ curves	Smooth	Haluskan
 	Zoom Pop-up	Pop-up zum
 	Gamma	Gamma
 	Strength	Kekuatan
+	Length over which the value goes from 0 to 1	Panjang sampai nilai berubah dari 0 ke 1
+	Start over past the length instead of holding the end value	Mulai lagi setelah panjang tercapai, bukan menahan nilai akhir
+	Pressure In	Tekanan naik
+	X-Tilt	Kemiringan X
+	Y-Tilt	Kemiringan Y
+	Tilt Direction	Arah kemiringan
+	Tilt Elevation	Elevasi kemiringan
+	Fuzzy Stroke	Acak per sapuan
+	Tip Scale:	Skala ujung:
+	Initial size as a share of the bitmap's size	Ukuran awal sebagai bagian dari ukuran bitmap
+	Tip Rotation:	Rotasi ujung:
+	Initial rotation of the tip	Rotasi awal ujung
+	No anti-aliasing: the dab's pixels are fully on or off	Tanpa anti-alias: piksel sapuan sepenuhnya hidup atau mati
+	Align Outline to Pixel Grid	Sejajarkan garis luar ke kisi piksel
+	The brush outline snaps to the pixels the dab fills	Garis luar kuas menempel ke piksel yang diisi sapuan
+	Tip Mode:	Mode ujung:
+	(no colour bitmap: paints the brush colour)	(tanpa bitmap warna: melukis dengan warna kuas)
+	Neutral Point	Titik netral
+	Canvas Only: hide the panels around the canvas	Hanya kanvas: sembunyikan panel di sekitar kanvas
+	Presets kept in the history	Preset yang disimpan di riwayat
+	Clear the history	Bersihkan riwayat
+	No presets used yet	Belum ada preset yang digunakan
+	Forget this preset	Lupakan preset ini
+	Ten Brushes	Sepuluh kuas
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Tetapkan preset ke sepuluh slot; mengaktifkan slot lagi kembali ke preset sebelumnya
+	Clear this slot	Kosongkan slot ini
+	Assign current	Tetapkan yang sekarang
+	Browse a folder of reference images	Jelajahi folder gambar referensi
+	No folder	Tidak ada folder
+	Next image	Gambar berikutnya
+	Previous image	Gambar sebelumnya
+	Pick an image to show it here	Pilih gambar untuk ditampilkan di sini
+	Search actions and commands	Cari aksi dan perintah
+	No matching action	Tidak ada aksi yang cocok
+	Search Actions…	Cari aksi…
+	Brush History	Riwayat kuas
+	Color Image	Gambar warna
+	Lightness Map	Peta kecerahan
+	Static	Statis
+	Move to Top	Pindah ke atas
+	Bubble Up	Naik satu
+	Clear the scratch pad to white	Bersihkan papan coret menjadi putih
+	Fill the scratch pad with the background colour	Isi papan coret dengan warna latar
+	Fill the scratch pad with the current gradient	Isi papan coret dengan gradien saat ini
+	Fill the scratch pad with the current image	Isi papan coret dengan gambar saat ini
+	Fill the scratch pad with the preset's icon	Isi papan coret dengan ikon preset
+	Reload the stored preset, discarding the tweaks	Muat ulang preset tersimpan, buang perubahan
+	BG	Latar
+	Icon	Ikon
+	Thumbnail:	Gambar mini:
+	Stroke preview	Pratinjau sapuan
+	Scratch pad	Papan coret
+	Icon library	Pustaka ikon

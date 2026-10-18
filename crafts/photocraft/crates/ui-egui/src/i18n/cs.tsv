@@ -4728,3 +4728,56 @@ navigator	Zoom	Zvětšení
 	Value Steps	Kroky jasu
 	Value on the Ring	Jas na kruhu
 	Zoom Pop-up	Vyskakovací zvětšení
+	Length over which the value goes from 0 to 1	Délka, na které hodnota roste z 0 na 1
+	Start over past the length instead of holding the end value	Po dosažení délky začít znovu místo držení koncové hodnoty
+	Pressure In	Tlak (jen nárůst)
+	X-Tilt	Náklon X
+	Y-Tilt	Náklon Y
+	Tilt Direction	Směr náklonu
+	Tilt Elevation	Výška náklonu
+	Fuzzy Stroke	Náhodně na tah
+	Tip Scale:	Měřítko hrotu:
+	Initial size as a share of the bitmap's size	Počáteční velikost jako podíl velikosti bitmapy
+	Tip Rotation:	Otočení hrotu:
+	Initial rotation of the tip	Počáteční otočení hrotu
+	No anti-aliasing: the dab's pixels are fully on or off	Bez vyhlazování: pixely otisku jsou buď zcela zapnuté, nebo vypnuté
+	Align Outline to Pixel Grid	Zarovnat obrys na pixelovou mřížku
+	The brush outline snaps to the pixels the dab fills	Obrys štětce se přichytí k pixelům, které otisk vyplní
+	Tip Mode:	Režim hrotu:
+	(no colour bitmap: paints the brush colour)	(bez barevné bitmapy: maluje barvou štětce)
+	Neutral Point	Neutrální bod
+	Canvas Only: hide the panels around the canvas	Jen plátno: skrýt panely okolo plátna
+	Presets kept in the history	Předvoleb v historii
+	Clear the history	Vymazat historii
+	No presets used yet	Zatím žádné použité předvolby
+	Forget this preset	Zapomenout tuto předvolbu
+	Ten Brushes	Deset štětců
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Přiřaďte předvolby deseti slotům; opětovná aktivace slotu vrátí předchozí předvolbu
+	Clear this slot	Vyprázdnit tento slot
+	Assign current	Přiřadit aktuální
+	Browse a folder of reference images	Procházet složku referenčních obrázků
+	No folder	Žádná složka
+	Next image	Další obrázek
+	Previous image	Předchozí obrázek
+	Pick an image to show it here	Vyberte obrázek, který se zde zobrazí
+	Search actions and commands	Hledat akce a příkazy
+	No matching action	Žádná odpovídající akce
+	Search Actions…	Hledat akce…
+	Brush History	Historie štětců
+	Color Image	Barevný obraz
+	Lightness Map	Mapa světlosti
+	Static	Pevné
+	Move to Top	Přesunout nahoru
+	Bubble Up	Posunout o jedno výš
+	Clear the scratch pad to white	Vyčistit zkušební plochu na bílou
+	Fill the scratch pad with the background colour	Vyplnit zkušební plochu barvou pozadí
+	Fill the scratch pad with the current gradient	Vyplnit zkušební plochu aktuálním přechodem
+	Fill the scratch pad with the current image	Vyplnit zkušební plochu aktuálním obrázkem
+	Fill the scratch pad with the preset's icon	Vyplnit zkušební plochu ikonou předvolby
+	Reload the stored preset, discarding the tweaks	Znovu načíst uloženou předvolbu a zahodit úpravy
+	BG	Pozadí
+	Icon	Ikona
+	Thumbnail:	Miniatura:
+	Stroke preview	Náhled tahu
+	Scratch pad	Zkušební plocha
+	Icon library	Knihovna ikon

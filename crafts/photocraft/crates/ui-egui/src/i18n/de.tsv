@@ -4207,3 +4207,57 @@ curves	Smooth	Glätten
 	Duplicate	Duplizieren
 	Gamma	Gamma
 	Sharpness	Schärfe
+	Length over which the value goes from 0 to 1	Länge, über die der Wert von 0 auf 1 steigt
+	Start over past the length instead of holding the end value	Nach der Länge von vorn beginnen statt den Endwert zu halten
+	Pressure In	Druck (nur ansteigend)
+	X-Tilt	X-Neigung
+	Y-Tilt	Y-Neigung
+	Tilt Direction	Neigungsrichtung
+	Tilt Elevation	Neigungshöhe
+	Time	Zeit
+	Fuzzy Stroke	Zufall pro Strich
+	Tip Scale:	Spitzenmaßstab:
+	Initial size as a share of the bitmap's size	Anfangsgröße als Anteil der Bitmapgröße
+	Tip Rotation:	Spitzendrehung:
+	Initial rotation of the tip	Anfangsdrehung der Spitze
+	No anti-aliasing: the dab's pixels are fully on or off	Keine Kantenglättung: die Pixel des Tupfers sind ganz an oder aus
+	Align Outline to Pixel Grid	Umriss am Pixelraster ausrichten
+	The brush outline snaps to the pixels the dab fills	Der Pinselumriss rastet auf die Pixel ein, die der Tupfer füllt
+	Tip Mode:	Spitzenmodus:
+	(no colour bitmap: paints the brush colour)	(keine Farb-Bitmap: malt mit der Pinselfarbe)
+	Neutral Point	Neutralpunkt
+	Canvas Only: hide the panels around the canvas	Nur Leinwand: die Bedienfelder um die Leinwand ausblenden
+	Presets kept in the history	In der Chronik behaltene Vorgaben
+	Clear the history	Chronik leeren
+	No presets used yet	Noch keine Vorgaben verwendet
+	Forget this preset	Diese Vorgabe vergessen
+	Ten Brushes	Zehn Pinsel
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Vorgaben zehn Plätzen zuweisen; ein Platz erneut aktiviert kehrt zur vorigen Vorgabe zurück
+	Clear this slot	Diesen Platz leeren
+	Assign current	Aktuelle zuweisen
+	Browse a folder of reference images	Einen Ordner mit Referenzbildern öffnen
+	No folder	Kein Ordner
+	Next image	Nächstes Bild
+	Previous image	Vorheriges Bild
+	Pick an image to show it here	Ein Bild auswählen, um es hier zu zeigen
+	Search actions and commands	Aktionen und Befehle suchen
+	No matching action	Keine passende Aktion
+	Search Actions…	Aktionen suchen…
+	Brush History	Pinselchronik
+	Color Image	Farbbild
+	Lightness Map	Helligkeitskarte
+	Static	Fest
+	Move to Top	Nach oben
+	Bubble Up	Eins nach oben
+	Clear the scratch pad to white	Den Schmierblock weiß leeren
+	Fill the scratch pad with the background colour	Den Schmierblock mit der Hintergrundfarbe füllen
+	Fill the scratch pad with the current gradient	Den Schmierblock mit dem aktuellen Verlauf füllen
+	Fill the scratch pad with the current image	Den Schmierblock mit dem aktuellen Bild füllen
+	Fill the scratch pad with the preset's icon	Den Schmierblock mit dem Symbol der Vorgabe füllen
+	Reload the stored preset, discarding the tweaks	Die gespeicherte Vorgabe neu laden und die Änderungen verwerfen
+	BG	HG
+	Icon	Symbol
+	Thumbnail:	Miniatur:
+	Stroke preview	Strichvorschau
+	Scratch pad	Schmierblock
+	Icon library	Symbolbibliothek

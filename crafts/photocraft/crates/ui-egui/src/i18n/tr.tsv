@@ -4850,3 +4850,56 @@ cameraData	Lens	Lens
 	Value Steps	Değer adımları
 	Value on the Ring	Değer halkada
 	Zoom Pop-up	Yaklaştırma açılır penceresi
+	Length over which the value goes from 0 to 1	Değerin 0'dan 1'e çıktığı uzunluk
+	Start over past the length instead of holding the end value	Uzunluğu aşınca son değeri tutmak yerine yeniden başla
+	Pressure In	Basınç (yalnızca artan)
+	X-Tilt	X Eğimi
+	Y-Tilt	Y Eğimi
+	Tilt Direction	Eğim Yönü
+	Tilt Elevation	Eğim Yükseltisi
+	Fuzzy Stroke	Vuruş Başına Rastgele
+	Tip Scale:	Uç Ölçeği:
+	Initial size as a share of the bitmap's size	Bit eşlem boyutunun payı olarak başlangıç boyutu
+	Tip Rotation:	Uç Döndürme:
+	Initial rotation of the tip	Ucun başlangıç döndürmesi
+	No anti-aliasing: the dab's pixels are fully on or off	Kenar yumuşatma yok: damganın pikselleri tamamen açık veya kapalı
+	Align Outline to Pixel Grid	Ana Hattı Piksel Izgarasına Hizala
+	The brush outline snaps to the pixels the dab fills	Fırça ana hattı damganın doldurduğu piksellere yapışır
+	Tip Mode:	Uç Modu:
+	(no colour bitmap: paints the brush colour)	(renkli bit eşlem yok: fırça rengiyle boyar)
+	Neutral Point	Nötr Nokta
+	Canvas Only: hide the panels around the canvas	Yalnızca Tuval: tuvalin çevresindeki panelleri gizle
+	Presets kept in the history	Geçmişte tutulan ön ayarlar
+	Clear the history	Geçmişi temizle
+	No presets used yet	Henüz ön ayar kullanılmadı
+	Forget this preset	Bu ön ayarı unut
+	Ten Brushes	On Fırça
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Ön ayarları on yuvaya atayın; bir yuvayı yeniden etkinleştirmek önceki ön ayara döner
+	Clear this slot	Bu yuvayı temizle
+	Assign current	Geçerliyi ata
+	Browse a folder of reference images	Referans görüntü klasörüne göz at
+	No folder	Klasör yok
+	Next image	Sonraki görüntü
+	Previous image	Önceki görüntü
+	Pick an image to show it here	Burada göstermek için bir görüntü seçin
+	Search actions and commands	Eylem ve komut ara
+	No matching action	Eşleşen eylem yok
+	Search Actions…	Eylem Ara…
+	Brush History	Fırça Geçmişi
+	Color Image	Renkli Görüntü
+	Lightness Map	Açıklık Haritası
+	Static	Sabit
+	Move to Top	En Üste Taşı
+	Bubble Up	Bir Yukarı
+	Clear the scratch pad to white	Karalama defterini beyaza temizle
+	Fill the scratch pad with the background colour	Karalama defterini arka plan rengiyle doldur
+	Fill the scratch pad with the current gradient	Karalama defterini geçerli gradyanla doldur
+	Fill the scratch pad with the current image	Karalama defterini geçerli görüntüyle doldur
+	Fill the scratch pad with the preset's icon	Karalama defterini ön ayarın simgesiyle doldur
+	Reload the stored preset, discarding the tweaks	Kayıtlı ön ayarı yeniden yükle, değişiklikleri at
+	BG	AP
+	Icon	Simge
+	Thumbnail:	Küçük Resim:
+	Stroke preview	Vuruş önizlemesi
+	Scratch pad	Karalama defteri
+	Icon library	Simge kitaplığı

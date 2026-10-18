@@ -4828,3 +4828,56 @@ curves	Smooth	Згладити
 	Value Steps	Кроки яскравості
 	Value on the Ring	Яскравість на кільці
 	Zoom Pop-up	Спливне збільшення
+	Length over which the value goes from 0 to 1	Довжина, на якій значення зростає від 0 до 1
+	Start over past the length instead of holding the end value	Після довжини починати знову, а не тримати кінцеве значення
+	Pressure In	Натиск (лише зростання)
+	X-Tilt	Нахил X
+	Y-Tilt	Нахил Y
+	Tilt Direction	Напрям нахилу
+	Tilt Elevation	Висота нахилу
+	Fuzzy Stroke	Випадково на штрих
+	Tip Scale:	Масштаб кінчика:
+	Initial size as a share of the bitmap's size	Початковий розмір як частка розміру растру
+	Tip Rotation:	Поворот кінчика:
+	Initial rotation of the tip	Початковий поворот кінчика
+	No anti-aliasing: the dab's pixels are fully on or off	Без згладжування: пікселі мазка або повністю зафарбовані, або ні
+	Align Outline to Pixel Grid	Вирівнювати контур за піксельною сіткою
+	The brush outline snaps to the pixels the dab fills	Контур пензля прив'язується до пікселів, які зафарбовує мазок
+	Tip Mode:	Режим кінчика:
+	(no colour bitmap: paints the brush colour)	(немає кольорового растру: малює кольором пензля)
+	Neutral Point	Нейтральна точка
+	Canvas Only: hide the panels around the canvas	Лише полотно: сховати панелі навколо полотна
+	Presets kept in the history	Пресетів в історії
+	Clear the history	Очистити історію
+	No presets used yet	Пресети ще не використовувались
+	Forget this preset	Прибрати цей пресет з історії
+	Ten Brushes	Десять пензлів
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Призначте пресети десяти коміркам; повторна активація комірки повертає попередній пресет
+	Clear this slot	Очистити цю комірку
+	Assign current	Призначити поточний
+	Browse a folder of reference images	Відкрити папку з референсами
+	No folder	Немає папки
+	Next image	Наступне зображення
+	Previous image	Попереднє зображення
+	Pick an image to show it here	Виберіть зображення, щоб показати його тут
+	Search actions and commands	Пошук дій і команд
+	No matching action	Немає відповідної дії
+	Search Actions…	Пошук дій…
+	Brush History	Історія пензлів
+	Color Image	Кольорове зображення
+	Lightness Map	Карта світлоти
+	Static	Статично
+	Move to Top	Перемістити вгору
+	Bubble Up	Підняти на одну позицію
+	Clear the scratch pad to white	Очистити блокнот до білого
+	Fill the scratch pad with the background colour	Залити блокнот кольором тла
+	Fill the scratch pad with the current gradient	Залити блокнот поточним градієнтом
+	Fill the scratch pad with the current image	Залити блокнот поточним зображенням
+	Fill the scratch pad with the preset's icon	Залити блокнот значком пресета
+	Reload the stored preset, discarding the tweaks	Перезавантажити збережений пресет, відкинувши зміни
+	BG	Тло
+	Icon	Значок
+	Thumbnail:	Мініатюра:
+	Stroke preview	Перегляд штриха
+	Scratch pad	Блокнот
+	Icon library	Бібліотека значків

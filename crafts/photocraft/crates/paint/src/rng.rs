@@ -79,6 +79,8 @@ pub mod stream {
     pub const LIGHTNESS: u64 = 57;
     /// Total random colour: per-pixel noise salt.
     pub const PIXEL_NOISE: u64 = 58;
+    /// The Fuzzy Stroke sensor: one value per stroke (index 0).
+    pub const FUZZY_STROKE: u64 = 59;
 }
 
 /// Seed derived from arbitrary bytes (FNV-1a then mixed), for commands without an explicit seed.

@@ -1885,6 +1885,9 @@ pub struct UiState {
     /// common colours and gamut masks (`color_selectors`).
     #[serde(default)]
     pub color_selectors: crate::color_selectors::ColorSelectorSettings,
+    /// Window › Search Actions: the open search field (see `action_search`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub action_search: Option<crate::action_search::ActionSearch>,
 }
 
 impl Default for UiState {
@@ -1992,6 +1995,7 @@ impl Default for UiState {
             camera_raw_scope: Default::default(),
             camera_raw_preview: Default::default(),
             color_selectors: Default::default(),
+            action_search: None,
         }
     }
 }

@@ -4823,3 +4823,56 @@ curves	Smooth	Εξομάλυνση
 	Value Steps	Βήματα τιμής
 	Value on the Ring	Τιμή στον δακτύλιο
 	Zoom Pop-up	Αναδυόμενο ζουμ
+	Length over which the value goes from 0 to 1	Μήκος στο οποίο η τιμή πηγαίνει από 0 σε 1
+	Start over past the length instead of holding the end value	Επανεκκίνηση μετά το μήκος αντί να διατηρείται η τελική τιμή
+	Pressure In	Πίεση (μόνο αύξηση)
+	X-Tilt	Κλίση X
+	Y-Tilt	Κλίση Y
+	Tilt Direction	Κατεύθυνση κλίσης
+	Tilt Elevation	Ανύψωση κλίσης
+	Fuzzy Stroke	Τυχαίο ανά πινελιά
+	Tip Scale:	Κλίμακα άκρης:
+	Initial size as a share of the bitmap's size	Αρχικό μέγεθος ως ποσοστό του μεγέθους του bitmap
+	Tip Rotation:	Περιστροφή άκρης:
+	Initial rotation of the tip	Αρχική περιστροφή της άκρης
+	No anti-aliasing: the dab's pixels are fully on or off	Χωρίς εξομάλυνση: τα pixel της πινελιάς είναι πλήρως ενεργά ή ανενεργά
+	Align Outline to Pixel Grid	Στοίχιση περιγράμματος στο πλέγμα pixel
+	The brush outline snaps to the pixels the dab fills	Το περίγραμμα του πινέλου κουμπώνει στα pixel που γεμίζει η πινελιά
+	Tip Mode:	Λειτουργία άκρης:
+	(no colour bitmap: paints the brush colour)	(χωρίς έγχρωμο bitmap: βάφει με το χρώμα του πινέλου)
+	Neutral Point	Ουδέτερο σημείο
+	Canvas Only: hide the panels around the canvas	Μόνο καμβάς: απόκρυψη των πινάκων γύρω από τον καμβά
+	Presets kept in the history	Προεπιλογές στο ιστορικό
+	Clear the history	Καθαρισμός ιστορικού
+	No presets used yet	Δεν έχουν χρησιμοποιηθεί προεπιλογές ακόμη
+	Forget this preset	Αφαίρεση αυτής της προεπιλογής
+	Ten Brushes	Δέκα πινέλα
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Ορίστε προεπιλογές σε δέκα θέσεις· η επανενεργοποίηση μιας θέσης επιστρέφει στην προηγούμενη
+	Clear this slot	Καθαρισμός αυτής της θέσης
+	Assign current	Ορισμός τρέχουσας
+	Browse a folder of reference images	Περιήγηση σε φάκελο εικόνων αναφοράς
+	No folder	Κανένας φάκελος
+	Next image	Επόμενη εικόνα
+	Previous image	Προηγούμενη εικόνα
+	Pick an image to show it here	Επιλέξτε εικόνα για να εμφανιστεί εδώ
+	Search actions and commands	Αναζήτηση ενεργειών και εντολών
+	No matching action	Καμία ενέργεια δεν ταιριάζει
+	Search Actions…	Αναζήτηση ενεργειών…
+	Brush History	Ιστορικό πινέλων
+	Color Image	Έγχρωμη εικόνα
+	Lightness Map	Χάρτης φωτεινότητας
+	Static	Σταθερό
+	Move to Top	Μετακίνηση στην κορυφή
+	Bubble Up	Μία θέση πάνω
+	Clear the scratch pad to white	Καθαρισμός του πρόχειρου σε λευκό
+	Fill the scratch pad with the background colour	Γέμισμα του πρόχειρου με το χρώμα φόντου
+	Fill the scratch pad with the current gradient	Γέμισμα του πρόχειρου με την τρέχουσα διαβάθμιση
+	Fill the scratch pad with the current image	Γέμισμα του πρόχειρου με την τρέχουσα εικόνα
+	Fill the scratch pad with the preset's icon	Γέμισμα του πρόχειρου με το εικονίδιο της προεπιλογής
+	Reload the stored preset, discarding the tweaks	Επαναφόρτωση της αποθηκευμένης προεπιλογής, απόρριψη των αλλαγών
+	BG	Φόντο
+	Icon	Εικονίδιο
+	Thumbnail:	Μικρογραφία:
+	Stroke preview	Προεπισκόπηση πινελιάς
+	Scratch pad	Πρόχειρο
+	Icon library	Βιβλιοθήκη εικονιδίων

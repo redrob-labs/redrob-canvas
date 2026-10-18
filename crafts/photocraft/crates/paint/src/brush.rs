@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::curve::ResponseCurve;
 use crate::mixer::MixerSettings;
-use crate::tile::{GrayTile, StoredTile};
+use crate::tile::{ColorTile, GrayTile, StoredTile};
 
 /// Largest brush diameter accepted by the rasterizer and brush controls.
 pub const MAX_BRUSH_SIZE: f32 = 5000.0;
@@ -35,8 +35,10 @@ pub enum Control {
     StylusWheel,
     /// Barrel rotation of the stylus.
     Rotation,
-    /// Pointer speed: 0 at rest, 1 from [`crate::dynamics::VELOCITY_FULL_PX_PER_MS`] on. Input
-    /// without timestamps reads 0 (the dynamic's minimum).
+    /// Pointer speed: 0 at rest, 1 from [`crate::dynamics::VELOCITY_FULL_PX_PER_MS`] on (or from
+    /// [`BrushSettings::speed_max`], smoothed by [`BrushSettings::speed_smoothing`]). Input
+    /// without timestamps reads 0 (the dynamic's minimum). Also accepted as `speed`.
+    #[serde(alias = "speed")]
     Velocity,
     /// Angle only: the direction of the first stroke segment.
     InitialDirection,
@@ -47,6 +49,27 @@ pub enum Control {
     DrawingAngle,
     /// A fresh random value per dab.
     Random,
+    /// The stylus tilt about the X axis alone: -90° reads 0, upright 0.5, +90° reads 1.
+    TiltX,
+    /// The stylus tilt about the Y axis alone, the same way.
+    TiltY,
+    /// The compass direction the stylus leans in: -180..180° mapped to 0..1 (an upright or
+    /// mouse pointer reads 0.5). Tablet settings may add a left-handed offset (see
+    /// [`BrushSettings::tilt_direction_offset`]).
+    TiltDirection,
+    /// How upright the stylus is: 0 lying flat, 1 vertical (a mouse reads 1).
+    TiltElevation,
+    /// The distance drawn so far, in pixels, over [`Dynamic::length`] (0 at the start, 1 at the
+    /// length; with [`Dynamic::repeat`] it starts over).
+    Distance,
+    /// The stroke's elapsed time in seconds over [`Dynamic::length`], the same way.
+    Time,
+    /// Pen pressure that only rises: easing off does not lower the value within a stroke.
+    PressureIn,
+    /// One random value per stroke (the same for every dab).
+    FuzzyStroke,
+    /// Depth on the perspective assistant: 1 at the grid's near edge, 0 at its horizon, so dabs
+    /// farther away come out smaller. 1 without an active grid ([`BrushSettings::perspective_grid`]).
     /// The perspective sensor: a perspective grid assistant's scale at the point (1 near, smaller
     /// as the plane recedes; 1 without a grid).
     Perspective,
@@ -71,13 +94,26 @@ pub struct Sensor {
     pub control: Control,
     pub fade_steps: u32,
     pub curve: ResponseCurve,
+    /// Length of a [`Control::Distance`] (pixels) or [`Control::Time`] (seconds) sensor.
+    #[serde(skip_serializing_if = "is_default_length")]
+    pub length: f32,
+    /// Distance and Time start over past `length` instead of holding 1.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub repeat: bool,
 }
 
 impl Sensor {
-    pub const OFF: Self = Self { control: Control::Off, fade_steps: 25, curve: ResponseCurve::LINEAR };
+    pub const OFF: Self = Self { control: Control::Off, fade_steps: 25, curve: ResponseCurve::LINEAR, length: DEFAULT_SENSOR_LENGTH, repeat: false };
     pub const fn new(control: Control) -> Self {
-        Self { control, fade_steps: 25, curve: ResponseCurve::LINEAR }
+        Self { control, fade_steps: 25, curve: ResponseCurve::LINEAR, length: DEFAULT_SENSOR_LENGTH, repeat: false }
     }
+}
+
+/// Default length of the Distance (pixels) and Time (seconds) sensors.
+pub const DEFAULT_SENSOR_LENGTH: f32 = 30.0;
+
+fn is_default_length(v: &f32) -> bool {
+    *v == DEFAULT_SENSOR_LENGTH
 }
 
 impl Default for Sensor {
@@ -230,6 +266,12 @@ pub struct Dynamic {
     /// turned back on without re-entering them. Jitter is unaffected.
     #[serde(skip_serializing_if = "is_true")]
     pub sensors_enabled: bool,
+    /// Length of the primary [`Control::Distance`] (pixels) or [`Control::Time`] (seconds) control.
+    #[serde(skip_serializing_if = "is_default_length")]
+    pub length: f32,
+    /// Distance and Time start over past `length` instead of holding 1.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub repeat: bool,
 }
 
 impl Default for Dynamic {
@@ -250,6 +292,8 @@ impl Dynamic {
             combine: SensorCombine::Multiply,
             drawing_angle: DrawingAngle::DEFAULT,
             sensors_enabled: true,
+            length: DEFAULT_SENSOR_LENGTH,
+            repeat: false,
         }
     }
     pub const fn jitter(jitter: f32) -> Self {
@@ -263,6 +307,8 @@ impl Dynamic {
             combine: SensorCombine::Multiply,
             drawing_angle: DrawingAngle::DEFAULT,
             sensors_enabled: true,
+            length: DEFAULT_SENSOR_LENGTH,
+            repeat: false,
         }
     }
     pub fn is_active(&self) -> bool {
@@ -442,6 +488,25 @@ impl GeneratedTip {
             || self.density < 1.0
             || self.randomness > 0.0
             || !self.antialias
+            || self.fade_x < 1.0
+            || self.fade_v() < 1.0
+    }
+
+    /// Does a dab of `diameter` pixels use a cached, coarser tip mask (precision below 5)?
+    pub fn caches_tips(&self, diameter: f32) -> bool {
+        self.precision_for(diameter) < 5
+    }
+
+    /// The relative step the precision level quantises tip parameters to (1 = 20 %, 2 = 10 %,
+    /// 3 = 5 %, 4 = 2 %, 5 = exact: 0).
+    pub fn precision_step(&self, diameter: f32) -> f32 {
+        match self.precision_for(diameter) {
+            1 => 0.2,
+            2 => 0.1,
+            3 => 0.05,
+            4 => 0.02,
+            _ => 0.0,
+        }
     }
 
     /// The vertical fade (locked to the horizontal one when `lock_fade`).
@@ -533,6 +598,17 @@ fn is_zero(v: &f32) -> bool {
 
 fn is_one(v: &f32) -> bool {
     *v == 1.0
+}
+
+/// Default of [`BrushSettings::speed_max`]: the classic [`crate::dynamics::VELOCITY_FULL_PX_PER_MS`].
+pub const DEFAULT_SPEED_MAX: f32 = 2.0;
+
+fn is_default_speed_max(v: &f32) -> bool {
+    *v == DEFAULT_SPEED_MAX
+}
+
+fn is_pixel_engine(e: &crate::engines::EngineSettings) -> bool {
+    matches!(e, crate::engines::EngineSettings::Pixel)
 }
 
 impl Default for Scattering {
@@ -974,6 +1050,162 @@ pub struct SectionLocks {
     pub build_up: bool,
     pub smoothing: bool,
     pub protect_texture: bool,
+    /// The brush tip itself (bitmap or computed shape, its angle, roundness, flips, generated
+    /// parameters, image hose and tip mode) stays when another preset is picked.
+    pub tip: bool,
+    /// The diameter stays.
+    pub size: bool,
+    /// Spacing (and its checkbox, auto spacing) stays.
+    pub spacing: bool,
+    /// Opacity and flow stay.
+    pub opacity_flow: bool,
+    /// Hardness stays.
+    pub hardness: bool,
+    /// The blend mode stays.
+    pub mode: bool,
+}
+
+impl SectionLocks {
+    /// Every lock a brush can carry, by its JSON name, for `brush.locks.*` commands and the UI.
+    pub const NAMES: [&'static str; 18] = [
+        "shapeDynamics",
+        "scattering",
+        "texture",
+        "dualBrush",
+        "colorDynamics",
+        "transfer",
+        "pose",
+        "noise",
+        "wetEdges",
+        "buildUp",
+        "smoothing",
+        "protectTexture",
+        "tip",
+        "size",
+        "spacing",
+        "opacityFlow",
+        "hardness",
+        "mode",
+    ];
+
+    /// The lock named `name` (camelCase, as in JSON), if any.
+    pub fn get(&self, name: &str) -> Option<bool> {
+        Some(match name {
+            "shapeDynamics" => self.shape_dynamics,
+            "scattering" => self.scattering,
+            "texture" => self.texture,
+            "dualBrush" => self.dual_brush,
+            "colorDynamics" => self.color_dynamics,
+            "transfer" => self.transfer,
+            "pose" => self.pose,
+            "noise" => self.noise,
+            "wetEdges" => self.wet_edges,
+            "buildUp" => self.build_up,
+            "smoothing" => self.smoothing,
+            "protectTexture" => self.protect_texture,
+            "tip" => self.tip,
+            "size" => self.size,
+            "spacing" => self.spacing,
+            "opacityFlow" => self.opacity_flow,
+            "hardness" => self.hardness,
+            "mode" => self.mode,
+            _ => return None,
+        })
+    }
+
+    /// Set the lock named `name`; false for an unknown name.
+    pub fn set(&mut self, name: &str, on: bool) -> bool {
+        let slot = match name {
+            "shapeDynamics" => &mut self.shape_dynamics,
+            "scattering" => &mut self.scattering,
+            "texture" => &mut self.texture,
+            "dualBrush" => &mut self.dual_brush,
+            "colorDynamics" => &mut self.color_dynamics,
+            "transfer" => &mut self.transfer,
+            "pose" => &mut self.pose,
+            "noise" => &mut self.noise,
+            "wetEdges" => &mut self.wet_edges,
+            "buildUp" => &mut self.build_up,
+            "smoothing" => &mut self.smoothing,
+            "protectTexture" => &mut self.protect_texture,
+            "tip" => &mut self.tip,
+            "size" => &mut self.size,
+            "spacing" => &mut self.spacing,
+            "opacityFlow" => &mut self.opacity_flow,
+            "hardness" => &mut self.hardness,
+            "mode" => &mut self.mode,
+            _ => return false,
+        };
+        *slot = on;
+        true
+    }
+
+    /// Is any lock on?
+    pub fn any(&self) -> bool {
+        Self::NAMES.iter().any(|n| self.get(n) == Some(true))
+    }
+}
+
+/// How a sampled tip's bitmap paints ([`BrushSettings::tip_mode`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TipMode {
+    /// The tip is a coverage mask painted with the brush colour (grayscale tips, the classic way).
+    #[default]
+    Mask,
+    /// The tip bitmap is painted with its own colours (an image stamp); its alpha is the coverage.
+    ColorStamp,
+    /// The tip's alpha is kept, its colours replaced by the brush colour whose lightness follows
+    /// the tip's lightness around [`TipAdjust::neutral_point`]: impasto highlights and shadows.
+    Lightness,
+    /// The tip's lightness indexes the brush's gradient ([`BrushSettings::color_gradient`], else
+    /// the Color Dynamics gradient, else foreground to background), so one stamp paints many colours.
+    GradientMap,
+}
+
+impl TipMode {
+    pub fn is_default(&self) -> bool {
+        *self == TipMode::Mask
+    }
+    /// Does this mode paint per-pixel colours from the tip bitmap?
+    pub fn is_colored(&self) -> bool {
+        !self.is_default()
+    }
+}
+
+/// Adjustments of the Lightness and Gradient Map tip modes.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct TipAdjust {
+    /// The tip lightness (0..1) that paints the brush colour unchanged; lighter parts brighten
+    /// it, darker parts darken it.
+    pub neutral_point: f32,
+    /// -1..1 shift of the tip lightness before it is applied.
+    pub brightness: f32,
+    /// -1..1 contrast of the tip lightness around the neutral point.
+    pub contrast: f32,
+}
+
+impl Default for TipAdjust {
+    fn default() -> Self {
+        Self { neutral_point: 0.5, brightness: 0.0, contrast: 0.0 }
+    }
+}
+
+impl TipAdjust {
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+
+    /// A tip lightness after Brightness and Contrast, 0..1.
+    pub fn lightness(&self, l: f32) -> f32 {
+        let b = if self.brightness.is_finite() { self.brightness.clamp(-1.0, 1.0) } else { 0.0 };
+        let c = if self.contrast.is_finite() { self.contrast.clamp(-1.0, 1.0) } else { 0.0 };
+        let n = self.neutral_point.clamp(0.0, 1.0);
+        let gain = if c >= 0.0 { 1.0 / (1.0 - c).max(1e-3) } else { 1.0 + c };
+        let v = (l + b - n) * gain + n;
+        if v.is_finite() { v.clamp(0.0, 1.0) } else { n }
+    }
 }
 
 /// Brush Pose: stylus values used instead of (override) or for missing device data.
@@ -1160,6 +1392,49 @@ pub struct BrushSettings {
     /// per dab from these instead of `tip`, which keeps the first cell for previews.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hose: Option<ImageHose>,
+    /// How a sampled tip paints: as a mask (default), as a colour image stamp, as a lightness
+    /// map over the brush colour, or as a gradient map.
+    #[serde(skip_serializing_if = "TipMode::is_default")]
+    pub tip_mode: TipMode,
+    /// Neutral point, brightness and contrast of the Lightness and Gradient Map tip modes.
+    #[serde(skip_serializing_if = "TipAdjust::is_default")]
+    pub tip_adjust: TipAdjust,
+    /// The colours of a colour tip (a `.gbr`/`.abr` colour bitmap or a defined image stamp), the
+    /// same size as `tip`'s bitmap, whose alpha is `tip`. Painted by the Color Stamp mode and read
+    /// for lightness by the Lightness and Gradient Map modes; `None` makes those read `tip`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tip_color: Option<ColorTile>,
+    /// A predefined tip's own initial scale: the diameter the tip was imported at, as a
+    /// multiple of its bitmap size (1 = native). Picking the tip in the chooser sets `size` to
+    /// `bitmap × tip_scale` and `angle` to `tip_rotation`.
+    #[serde(skip_serializing_if = "is_one")]
+    pub tip_scale: f32,
+    /// A predefined tip's own initial rotation in degrees (see `tip_scale`).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub tip_rotation: f32,
+    /// With `aliased` (Sharpness), the brush outline snaps to the pixel grid, so the cursor
+    /// shows exactly the pixels a dab fills (pixel art).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub align_outline: bool,
+    /// The perspective grid (four corners, clockwise from the top left) the Perspective sensor
+    /// reads; the engine fills it from the document's active assistant for each stroke.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub perspective_grid: Option<[[f64; 2]; 4]>,
+    /// Tablet settings: the pointer speed, in pixels per millisecond, that reads as 1 on the
+    /// Velocity sensor.
+    #[serde(skip_serializing_if = "is_default_speed_max")]
+    pub speed_max: f32,
+    /// Tablet settings: 0..1 smoothing of the speed reading between input points (0 = raw).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub speed_smoothing: f32,
+    /// Tablet settings: degrees added to the Tilt Direction reading (left-handed offset).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub tilt_direction_offset: f32,
+    /// The engine this brush paints with and its settings (`{"kind": "pixel"}`, the tip-stamping
+    /// default, is left out of JSON). `brush.setEngine` switches it, resetting the engine's own
+    /// options; `paint.engineStroke` uses it when the call names no engine.
+    #[serde(skip_serializing_if = "is_pixel_engine")]
+    pub engine: crate::engines::EngineSettings,
     // --- dynamics sections ---
     pub shape_dynamics: ShapeDynamics,
     pub scattering: Scattering,
@@ -1255,6 +1530,17 @@ impl Default for BrushSettings {
             aliased: false,
             square: false,
             hose: None,
+            tip_mode: TipMode::Mask,
+            tip_adjust: TipAdjust::default(),
+            tip_color: None,
+            tip_scale: 1.0,
+            tip_rotation: 0.0,
+            align_outline: false,
+            perspective_grid: None,
+            speed_max: DEFAULT_SPEED_MAX,
+            speed_smoothing: 0.0,
+            tilt_direction_offset: 0.0,
+            engine: crate::engines::EngineSettings::Pixel,
             shape_dynamics: ShapeDynamics::default(),
             scattering: Scattering::default(),
             texture: Texture::default(),
@@ -1361,8 +1647,73 @@ impl BrushSettings {
         if l.protect_texture {
             b.protect_texture = current.protect_texture;
         }
+        if l.tip {
+            b.keep_tip_of(current);
+        }
+        if l.size {
+            b.resize_with_dual_brush(current.size);
+        }
+        if l.spacing {
+            b.spacing = current.spacing;
+            b.spacing_enabled = current.spacing_enabled;
+            b.spacing_dynamic = current.spacing_dynamic;
+            b.isotropic_spacing = current.isotropic_spacing;
+            b.generated.auto_spacing = current.generated.auto_spacing;
+            b.generated.auto_spacing_coeff = current.generated.auto_spacing_coeff;
+        }
+        if l.opacity_flow {
+            b.opacity = current.opacity;
+            b.flow = current.flow;
+        }
+        if l.hardness {
+            b.hardness = current.hardness;
+            b.hardness_dynamic = current.hardness_dynamic;
+        }
+        if l.mode {
+            b.mode = current.mode;
+        }
         b.locks = current.locks.clone();
         b
+    }
+
+    /// Take the tip of `other` (its bitmap or computed shape, angle, roundness, flips, generated
+    /// parameters, image hose and tip mode), leaving every other option alone: the locked tip
+    /// carried across presets.
+    pub fn keep_tip_of(&mut self, other: &BrushSettings) {
+        self.tip = other.tip.clone();
+        self.angle = other.angle;
+        self.roundness = other.roundness;
+        self.flip_x = other.flip_x;
+        self.flip_y = other.flip_y;
+        self.aliased = other.aliased;
+        self.square = other.square;
+        self.generated = other.generated.clone();
+        self.hose = other.hose.clone();
+        self.tip_mode = other.tip_mode;
+        self.tip_adjust = other.tip_adjust;
+        self.tip_color = other.tip_color.clone();
+        self.tip_scale = other.tip_scale;
+        self.tip_rotation = other.tip_rotation;
+        self.align_outline = other.align_outline;
+    }
+
+    /// Picking a predefined tip in the chooser: `size` becomes the bitmap's larger side times
+    /// `tip_scale` and `angle` becomes `tip_rotation` (a computed tip is left alone).
+    pub fn apply_tip_defaults(&mut self) {
+        if let Some((w, h)) = self.tip.bitmap_size() {
+            let side = w.max(h).max(1) as f32;
+            let scale = if self.tip_scale.is_finite() && self.tip_scale > 0.0 { self.tip_scale } else { 1.0 };
+            self.resize_with_dual_brush((side * scale).clamp(0.5, MAX_BRUSH_SIZE));
+            if self.tip_rotation.is_finite() {
+                self.angle = self.tip_rotation.rem_euclid(360.0);
+            }
+        }
+    }
+
+    /// Does this brush paint colours from its tip bitmap (a tip mode other than Mask on a
+    /// sampled tip)?
+    pub fn paints_tip_colors(&self) -> bool {
+        self.tip_mode.is_colored() && self.tip.bitmap().is_some() && !self.erase
     }
 
     /// Apply Protect Texture: if `current` protects its texture, a newly chosen brush with a texture

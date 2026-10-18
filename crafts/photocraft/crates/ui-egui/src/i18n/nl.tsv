@@ -4880,3 +4880,56 @@ curves	Smooth	Vloeiend maken
 	Value Steps	Waardestappen
 	Value on the Ring	Waarde op de ring
 	Zoom Pop-up	Zoom-pop-up
+	Length over which the value goes from 0 to 1	Lengte waarover de waarde van 0 naar 1 gaat
+	Start over past the length instead of holding the end value	Na de lengte opnieuw beginnen in plaats van de eindwaarde vast te houden
+	Pressure In	Druk (alleen stijgend)
+	X-Tilt	X-kanteling
+	Y-Tilt	Y-kanteling
+	Tilt Direction	Kantelrichting
+	Tilt Elevation	Kantelhoogte
+	Fuzzy Stroke	Willekeurig per streek
+	Tip Scale:	Puntschaal:
+	Initial size as a share of the bitmap's size	Beginformaat als aandeel van de bitmapgrootte
+	Tip Rotation:	Puntrotatie:
+	Initial rotation of the tip	Beginrotatie van de punt
+	No anti-aliasing: the dab's pixels are fully on or off	Geen anti-aliasing: de pixels van de stip zijn volledig aan of uit
+	Align Outline to Pixel Grid	Omtrek op pixelraster uitlijnen
+	The brush outline snaps to the pixels the dab fills	De penseelomtrek klikt vast op de pixels die de stip vult
+	Tip Mode:	Puntmodus:
+	(no colour bitmap: paints the brush colour)	(geen kleurbitmap: schildert met de penseelkleur)
+	Neutral Point	Neutraal punt
+	Canvas Only: hide the panels around the canvas	Alleen canvas: de panelen rond het canvas verbergen
+	Presets kept in the history	Voorinstellingen in de geschiedenis
+	Clear the history	Geschiedenis wissen
+	No presets used yet	Nog geen voorinstellingen gebruikt
+	Forget this preset	Deze voorinstelling vergeten
+	Ten Brushes	Tien penselen
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Wijs voorinstellingen toe aan tien plaatsen; een plaats opnieuw activeren keert terug naar de vorige
+	Clear this slot	Deze plaats leegmaken
+	Assign current	Huidige toewijzen
+	Browse a folder of reference images	Een map met referentiebeelden kiezen
+	No folder	Geen map
+	Next image	Volgende afbeelding
+	Previous image	Vorige afbeelding
+	Pick an image to show it here	Kies een afbeelding om die hier te tonen
+	Search actions and commands	Acties en opdrachten zoeken
+	No matching action	Geen overeenkomende actie
+	Search Actions…	Acties zoeken…
+	Brush History	Penseelgeschiedenis
+	Color Image	Kleurenafbeelding
+	Lightness Map	Lichtheidskaart
+	Static	Vast
+	Move to Top	Naar boven
+	Bubble Up	Eén omhoog
+	Clear the scratch pad to white	Het kladblok wit maken
+	Fill the scratch pad with the background colour	Het kladblok met de achtergrondkleur vullen
+	Fill the scratch pad with the current gradient	Het kladblok met het huidige verloop vullen
+	Fill the scratch pad with the current image	Het kladblok met de huidige afbeelding vullen
+	Fill the scratch pad with the preset's icon	Het kladblok met het pictogram van de voorinstelling vullen
+	Reload the stored preset, discarding the tweaks	De opgeslagen voorinstelling opnieuw laden en de wijzigingen verwerpen
+	BG	AG
+	Icon	Pictogram
+	Thumbnail:	Miniatuur:
+	Stroke preview	Streekvoorbeeld
+	Scratch pad	Kladblok
+	Icon library	Pictogrambibliotheek

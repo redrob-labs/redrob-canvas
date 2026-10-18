@@ -4208,3 +4208,56 @@ curves	Smooth	Lisser
 	Zoom Pop-up	Pop-up de zoom
 	Gamma	Gamma
 	Strength	Intensité
+	Length over which the value goes from 0 to 1	Longueur sur laquelle la valeur va de 0 à 1
+	Start over past the length instead of holding the end value	Recommencer au-delà de la longueur au lieu de garder la valeur finale
+	Pressure In	Pression montante
+	X-Tilt	Inclinaison X
+	Y-Tilt	Inclinaison Y
+	Tilt Direction	Direction d'inclinaison
+	Tilt Elevation	Élévation d'inclinaison
+	Fuzzy Stroke	Aléatoire par trait
+	Tip Scale:	Échelle de la pointe :
+	Initial size as a share of the bitmap's size	Taille initiale en proportion de la taille du bitmap
+	Tip Rotation:	Rotation de la pointe :
+	Initial rotation of the tip	Rotation initiale de la pointe
+	No anti-aliasing: the dab's pixels are fully on or off	Sans anticrénelage : les pixels de la touche sont entièrement allumés ou éteints
+	Align Outline to Pixel Grid	Aligner le contour sur la grille de pixels
+	The brush outline snaps to the pixels the dab fills	Le contour du pinceau s'aligne sur les pixels remplis par la touche
+	Tip Mode:	Mode de pointe :
+	(no colour bitmap: paints the brush colour)	(pas de bitmap couleur : peint avec la couleur du pinceau)
+	Neutral Point	Point neutre
+	Canvas Only: hide the panels around the canvas	Toile seule : masquer les panneaux autour de la toile
+	Presets kept in the history	Préréglages conservés dans l'historique
+	Clear the history	Effacer l'historique
+	No presets used yet	Aucun préréglage utilisé pour l'instant
+	Forget this preset	Oublier ce préréglage
+	Ten Brushes	Dix pinceaux
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Assignez des préréglages à dix emplacements ; réactiver un emplacement revient au préréglage précédent
+	Clear this slot	Vider cet emplacement
+	Assign current	Assigner l'actuel
+	Browse a folder of reference images	Parcourir un dossier d'images de référence
+	No folder	Aucun dossier
+	Next image	Image suivante
+	Previous image	Image précédente
+	Pick an image to show it here	Choisissez une image pour l'afficher ici
+	Search actions and commands	Rechercher des actions et des commandes
+	No matching action	Aucune action correspondante
+	Search Actions…	Rechercher des actions…
+	Brush History	Historique des pinceaux
+	Color Image	Image couleur
+	Lightness Map	Carte de luminosité
+	Static	Fixe
+	Move to Top	Déplacer en haut
+	Bubble Up	Remonter d'un cran
+	Clear the scratch pad to white	Effacer le bloc d'essai en blanc
+	Fill the scratch pad with the background colour	Remplir le bloc d'essai avec la couleur d'arrière-plan
+	Fill the scratch pad with the current gradient	Remplir le bloc d'essai avec le dégradé actuel
+	Fill the scratch pad with the current image	Remplir le bloc d'essai avec l'image actuelle
+	Fill the scratch pad with the preset's icon	Remplir le bloc d'essai avec l'icône du préréglage
+	Reload the stored preset, discarding the tweaks	Recharger le préréglage enregistré en abandonnant les retouches
+	BG	AP
+	Icon	Icône
+	Thumbnail:	Vignette :
+	Stroke preview	Aperçu du trait
+	Scratch pad	Bloc d'essai
+	Icon library	Bibliothèque d'icônes

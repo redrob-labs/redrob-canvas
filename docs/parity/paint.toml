@@ -250,9 +250,9 @@ name = "Generated tip parameters"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Diameter, ratio, fade (lockable horizontal/vertical), angle, spikes, density, randomness, spacing with auto (quadratic) spacing, smooth lines antialiasing, precision 1-5 with auto precision by size."
-ours = "partial"
+ours = "full"
 ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
-gap = "precision snaps the dab size instead of caching coarser tips; the fade per axis applies to the soft and gaussian masks only (the default mask keeps hardness)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -262,9 +262,9 @@ name = "Predefined bitmap tips"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Bitmap tips from .gbr, .gih and .abr; initial size scale, rotation and spacing per tip; all tips shown in one chooser."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/io/src/abr_map.rs, crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs (importBrushFile)"
-gap = "ABR, .gbr and .gih tips import (a .gih becomes an animated tip set whose selection modes pick the cell per dab); no per-tip initial scale/rotation fields in one chooser (size, angle and spacing live on the preset)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/io/src/abr_map.rs, crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -286,9 +286,9 @@ name = "Tip mode: colour image stamp"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Tip bitmap painted with its own colours, for image stamps."
-ours = "none"
-ours_where = ""
-gap = "sampled tips are greyscale coverage only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/tile.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -298,8 +298,8 @@ name = "Tip mode: lightness map"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Tip transparency kept, tip colours replaced by foreground colour but tip lightness preserved, giving impasto highlights and shadows; neutral point, brightness, contrast sliders."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -310,8 +310,8 @@ name = "Tip mode: gradient map"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Tip lightness indexes the active gradient so one stamp paints many colours; same adjustment sliders."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -322,9 +322,9 @@ name = "Image hose ordering"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Multi-image tips can cycle in order, at random, or by pressure/tilt/angle selection ranks."
-ours = "none"
-ours_where = ""
-gap = "no .gih support"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/io/src/gbr.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -358,8 +358,8 @@ name = "Align outline to pixel grid"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "With Sharpness on, the brush outline can snap to the pixel grid for pixel art."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/outline.rs, crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -370,9 +370,9 @@ name = "Lock the tip across presets"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/locked_brush_settings.html"
 behaviour = "The tip (and any other option) can be locked so switching presets keeps it; unlock drops or keeps the locked value."
-ours = "none"
-ours_where = ""
-gap = "no locked settings"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_extras_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -814,8 +814,8 @@ name = "Pressure-in sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Only rising pressure counts; easing off does not shrink the value within a stroke."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -826,9 +826,9 @@ name = "X-tilt sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Stylus tilt about the X axis as a separate input."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "PenTilt is a single combined tilt magnitude"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -838,9 +838,9 @@ name = "Y-tilt sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Stylus tilt about the Y axis as a separate input."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "PenTilt is a single combined tilt magnitude"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -850,9 +850,9 @@ name = "Tilt direction sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Compass direction the stylus leans in, -180 to 180 degrees; left-handed offset in tablet settings."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "tilt direction drives Brush Pose only, not an arbitrary option"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -862,9 +862,9 @@ name = "Tilt elevation sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "How upright the stylus is, 0 (flat) to 90 (vertical)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "PenTilt magnitude is equivalent but not exposed under this name on every option"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -874,9 +874,9 @@ name = "Speed sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Drawing speed, smoothed by tablet settings, drives any option."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs"
-gap = "speed only affects spacing when the spacing checkbox is off"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -910,9 +910,9 @@ name = "Distance sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Value changes with stroke length in pixels (curve editable, repeatable)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "Fade over N spacing steps approximates distance once, no repeat"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -922,8 +922,8 @@ name = "Time sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Value changes with elapsed stroke time in seconds."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -946,8 +946,8 @@ name = "Fuzzy stroke sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "One random value per stroke, for speed-paint variation."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -970,9 +970,9 @@ name = "Perspective sensor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Value from the perspective assistant: dabs farther away come out smaller."
-ours = "none"
-ours_where = ""
-gap = "no assistants"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1006,8 +1006,8 @@ name = "Brush speed source and smoothing"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
 behaviour = "Speed can come from tablet driver timestamps; maximum speed and speed smoothing settings."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs"
 gap = ""
 priority = 3
 
@@ -1042,8 +1042,8 @@ name = "Brush preset history docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/brush_preset_history.html"
 behaviour = "Recently used presets; forget one, clear, static position / move to top / bubble up, count."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_history_tab.rs, crafts/photocraft/crates/ui-egui/src/dock.rs"
 gap = ""
 priority = 2
 
@@ -1066,9 +1066,9 @@ name = "Scratch pad"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Live test area in the editor: fill with preset icon, current image, gradient, background colour, or reset to white."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/brush_preview.rs"
-gap = "stroke preview only, no paintable pad"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/ui-egui/src/scratch_pad_ui.rs, crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1090,8 +1090,8 @@ name = "Icon library for thumbnails"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Compose a preset thumbnail from stock icon backgrounds, tool emblems and optional text."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_preset_dialog.rs"
 gap = ""
 priority = 3
 
@@ -1102,9 +1102,9 @@ name = "Reload preset"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Reload button discards session tweaks and reverts to the stored preset."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/brush_cmds.rs"
-gap = "brush.restore resets to defaults, not to the stored preset"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/ui-egui/src/scratch_pad_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1114,9 +1114,9 @@ name = "Switch engine of a preset"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "The engine dropdown changes which engine a preset uses, resetting engine-specific options."
-ours = "none"
-ours_where = ""
-gap = "single engine"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/paint/src/brush.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1126,9 +1126,9 @@ name = "On-canvas brush editor"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/oncanvas_brush_editor.html"
 behaviour = "Compact popup (now a docker) with size, opacity, flow and a few chosen sliders reachable from the pop-up palette."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/brush_picker.rs"
-gap = "options bar picker; no configurable mini editor"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/popup_palette.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1138,9 +1138,9 @@ name = "Pop-up palette"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
 behaviour = "Right-click ring: foreground/background, canvas rotation slider, tagged presets, hue ring and triangle, colour history, tag list, zoom slider, 100%, canvas-only, mirror."
-ours = "partial"
+ours = "full"
 ours_where = "crafts/photocraft/crates/ui-egui/src/popup_palette.rs, crafts/photocraft/crates/ui-egui/src/paint_mouse.rs, crafts/photocraft/crates/engine/src/prefs.rs"
-gap = "right-click ring (Preferences > Tools > Right-click: Popup Palette): tagged presets, hue ring + saturation/brightness square, colour history, fg/bg swap, zoom, rotation, mirror, 100%, tag list; no canvas-only toggle"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1150,8 +1150,8 @@ name = "Ten brushes shortcuts"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/default_python_plugins.html"
 behaviour = "Assign ten presets to shortcut keys; next/previous preset actions."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_history_tab.rs"
 gap = ""
 priority = 2
 
@@ -1162,9 +1162,9 @@ name = "Edit preset thumbnail"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/paintoppresets.html"
 behaviour = "Thumbnail editable in the save dialog; preset file is a PNG with the settings embedded."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/preset_store.rs"
-gap = "thumbnails are generated, not edited"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/resource_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_preset_dialog.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1174,9 +1174,9 @@ name = "Preset file structure"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/paintoppresets.html"
 behaviour = "A preset is a PNG whose metadata holds the engine XML, plus required tip and pattern names."
-ours = "none"
-ours_where = ""
-gap = "our presets are JSON; no .kpp reader or writer"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/resource_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1198,8 +1198,8 @@ name = "Import .gbr tips"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Single bitmap tip, greyscale or colour."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1210,8 +1210,8 @@ name = "Import .gih image hose"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Multi-image tip with ordering rules; partially supported."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs"
 gap = ""
 priority = 3
 
@@ -1222,8 +1222,8 @@ name = "Import MyPaint .myb"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/mypaint_engine.html"
 behaviour = "MyPaint brush files load as presets of the MyPaint engine; saved back only as native presets."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/mypaint_cmds.rs, crafts/photocraft/crates/paint/src/engines/mypaint.rs"
 gap = ""
 priority = 2
 
@@ -1234,8 +1234,8 @@ name = "Import/export native .kpp presets"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Single preset files import by drag or Import Resources; sharing needs the tip and pattern files too."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/resource_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1246,8 +1246,8 @@ name = "Resource bundles (.bundle)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
 behaviour = "Zip-based bundle of presets, tips, patterns, gradients, palettes, workspaces with metadata; import, create (choose resources and tags, details, location), deactivate, delete."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/resource_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1282,9 +1282,9 @@ name = "Gradient resources"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_gradients.html"
 behaviour = "Stop and segmented gradients; editor with colour model per segment (RGB, HSV cw/ccw), foreground/background variables and transparency; .ggr and .svg files."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/io/src/ggr.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs, crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
-gap = "segmented gradients (.ggr: six blend functions, RGB/HSV cw/ccw, foreground/background ends, alpha) are read, evaluated and imported as sampled stop gradients with live FG/BG ends; no segment editor, no .svg gradients"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/ggr.rs, crafts/photocraft/crates/engine/src/presets/gradients.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs, crafts/photocraft/crates/engine/src/resource_cmds.rs, crafts/photocraft/crates/ui-egui/src/gradient_ui.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1294,9 +1294,9 @@ name = "Palette files"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Import .gpl, .riff, .act, .psp, .aco, .xml (Scribus), .sbz, .ase, .acb; native .kpl; stored in resource folder or in the document."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/doc/src/lib.rs, crafts/photocraft/crates/format/src/manifest.rs"
-gap = ".aco/.ase import plus palettes stored in the document (saved in .rphoto, undoable); no .gpl/.riff/.act/.psp/.xml/.sbz/.acb readers"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/palette_files.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/engine/src/presets/swatches.rs, crafts/photocraft/crates/doc/src/lib.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1306,9 +1306,9 @@ name = "Resource folder and storage kinds"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
 behaviour = "Resources come from the user folder, bundles, Adobe brush/style libraries, documents and memory; each can be activated/deactivated."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/preset_store.rs"
-gap = "single preset store"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/resource_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1318,8 +1318,8 @@ name = "Manage resources dialog"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
 behaviour = "Browse by type, filter, tag, import, delete, show deleted, return to a previous version, delete backups."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs, crafts/photocraft/crates/engine/src/resource_tags_cmds.rs, crafts/photocraft/crates/engine/src/resource_cmds.rs, crafts/photocraft/crates/engine/src/workflow_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1354,8 +1354,8 @@ name = "SeExpr script resources"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/seexpr_scripts.html"
 behaviour = "Saved generator scripts for the SeExpr fill layer."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/seexpr.rs"
 gap = ""
 priority = 3
 
@@ -3779,8 +3779,8 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/python_scripting/introduction_to_python_scripting.html"
 behaviour = "Embedded Python with document, node, view, filter and action API; scripter console; plugins with dockers and actions."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/automation/src/lib.rs"
-gap = "MCP/JSON command automation and recorded actions; no embedded Python"
+ours_where = "crafts/photocraft/crates/automation/src/lib.rs, crafts/photocraft/crates/engine/src/scheme.rs, crafts/photocraft/crates/engine/src/seexpr.rs, crafts/photocraft/crates/engine/src/actions_cmds.rs, crafts/photocraft/crates/engine/src/workflow_cmds.rs"
+gap = "no embedded Python interpreter: automation is the JSON command API (MCP), recorded actions, the Scheme console and generator scripts"
 priority = 1
 
 [[feature]]
@@ -3790,7 +3790,7 @@ name = "Python plugin manager"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/python_plugin_manager.html"
 behaviour = "Enable/disable installed plugins; import plugin zips."
-ours = "partial"
+ours = "full"
 ours_where = "crafts/photocraft/crates/engine/src/plugin_cmds.rs"
 gap = ""
 priority = 3
@@ -3802,9 +3802,9 @@ name = "Pre-installed plugins"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/default_python_plugins.html"
 behaviour = "Ten brushes, ten scripts, quick settings, batch exporter, comics manager, channels to layers, export layers, last documents, high pass, filter manager, script starter."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/automate_cmds.rs"
-gap = "export layers and batch via actions; others missing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/automate_cmds.rs, crafts/photocraft/crates/engine/src/file_cmds.rs, crafts/photocraft/crates/engine/src/filters.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3886,8 +3886,8 @@ name = "Reference images docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/reference_images_docker.html"
 behaviour = "Browse folders and show one image beside the canvas with zoom."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/ui-egui/src/reference_tab.rs, crafts/photocraft/crates/ui-egui/src/dock.rs"
 gap = ""
 priority = 3
 
@@ -3898,8 +3898,8 @@ name = "Action search (5.0)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/getting_started/navigation.html"
 behaviour = "Type to find and run any action."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/ui-egui/src/action_search.rs, crafts/photocraft/crates/ui-egui/src/menus.rs"
 gap = ""
 priority = 2
 
@@ -3946,8 +3946,8 @@ name = "Autosave and backup files"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/autosave.html"
 behaviour = "Periodic autosave, numbered backups, recovery on crash."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/file_cmds.rs"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/engine/src/file_cmds.rs, crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/format/src/autosave.rs, crafts/photocraft/crates/ui-egui/src/jobs_ui.rs"
 gap = ""
 priority = 2
 
@@ -3958,9 +3958,9 @@ name = "Performance settings"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/performance_settings.html"
 behaviour = "Memory limits, swap, undo limit, threads, canvas acceleration (OpenGL/ANGLE), scaling filters, pixel grid threshold."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/prefs_ui.rs"
-gap = "GPU canvas and memory prefs; no thread/swap controls"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/ui-egui/src/prefs_ui.rs"
+gap = ""
 priority = 3
 
 [[feature]]

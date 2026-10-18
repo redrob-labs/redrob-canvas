@@ -4116,3 +4116,57 @@ curves	Smooth	Сгладить
 	Zoom Pop-up	Всплывающее увеличение
 	Gamma	Гамма
 	Strength	Сила
+	Length over which the value goes from 0 to 1	Длина, на которой значение растёт от 0 до 1
+	Start over past the length instead of holding the end value	После длины начинать заново, а не держать конечное значение
+	Pressure In	Нажим (только рост)
+	X-Tilt	Наклон X
+	Y-Tilt	Наклон Y
+	Tilt Direction	Направление наклона
+	Tilt Elevation	Высота наклона
+	Distance	Расстояние
+	Fuzzy Stroke	Случайно на штрих
+	Tip Scale:	Масштаб кончика:
+	Initial size as a share of the bitmap's size	Начальный размер как доля размера растра
+	Tip Rotation:	Поворот кончика:
+	Initial rotation of the tip	Начальный поворот кончика
+	No anti-aliasing: the dab's pixels are fully on or off	Без сглаживания: пиксели мазка либо полностью закрашены, либо нет
+	Align Outline to Pixel Grid	Выравнивать контур по пиксельной сетке
+	The brush outline snaps to the pixels the dab fills	Контур кисти привязывается к пикселям, которые закрашивает мазок
+	Tip Mode:	Режим кончика:
+	(no colour bitmap: paints the brush colour)	(нет цветного растра: рисует цветом кисти)
+	Neutral Point	Нейтральная точка
+	Canvas Only: hide the panels around the canvas	Только холст: скрыть панели вокруг холста
+	Presets kept in the history	Пресетов в истории
+	Clear the history	Очистить историю
+	No presets used yet	Пресеты ещё не использовались
+	Forget this preset	Убрать этот пресет из истории
+	Ten Brushes	Десять кистей
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Назначьте пресеты десяти ячейкам; повторная активация ячейки возвращает предыдущий пресет
+	Clear this slot	Очистить эту ячейку
+	Assign current	Назначить текущий
+	Browse a folder of reference images	Открыть папку с референсами
+	No folder	Нет папки
+	Next image	Следующее изображение
+	Previous image	Предыдущее изображение
+	Pick an image to show it here	Выберите изображение, чтобы показать его здесь
+	Search actions and commands	Поиск действий и команд
+	No matching action	Нет подходящего действия
+	Search Actions…	Поиск действий…
+	Brush History	История кистей
+	Color Image	Цветное изображение
+	Lightness Map	Карта светлоты
+	Static	Статично
+	Move to Top	Переместить вверх
+	Bubble Up	Поднять на одну позицию
+	Clear the scratch pad to white	Очистить блокнот до белого
+	Fill the scratch pad with the background colour	Залить блокнот цветом фона
+	Fill the scratch pad with the current gradient	Залить блокнот текущим градиентом
+	Fill the scratch pad with the current image	Залить блокнот текущим изображением
+	Fill the scratch pad with the preset's icon	Залить блокнот значком пресета
+	Reload the stored preset, discarding the tweaks	Перезагрузить сохранённый пресет, отбросив правки
+	BG	Фон
+	Icon	Значок
+	Thumbnail:	Миниатюра:
+	Stroke preview	Предпросмотр штриха
+	Scratch pad	Блокнот
+	Icon library	Библиотека значков

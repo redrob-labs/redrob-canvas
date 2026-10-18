@@ -9,10 +9,11 @@
 //! many `.gbr` brushes back to back; the selection modes (incremental, angular, random, velocity,
 //! pressure, xtilt, ytilt) say which cell each dab paints with, per dimension.
 //!
-//! A colour brush paints with the brush colour here: its cells become paint masks (alpha times
-//! darkness, as Define Brush Preset reads a selection) and the import notes it.
+//! A colour `.gbr` keeps its colours: the tip is its alpha, the colours ride along as the brush's
+//! colour bitmap and the preset paints in the Color Stamp tip mode. Colour hose cells become paint
+//! masks (alpha times darkness, as Define Brush Preset reads a selection) and the import notes it.
 
-use redrob_photo_paint::{BrushPreset, BrushSettings, GrayTile, HoseDimension, HoseSelection, ImageHose, TipShape};
+use redrob_photo_paint::{BrushPreset, BrushSettings, ColorTile, GrayTile, HoseDimension, HoseSelection, ImageHose, TipMode, TipShape};
 
 use crate::abr_map::{MAX_TIP_EDGE, fit};
 
@@ -43,8 +44,10 @@ pub struct GbrBrush {
     pub spacing: Option<f32>,
     /// Four bytes per pixel in the file (a colour brush).
     pub color: bool,
-    /// The paint mask, 1 = full.
+    /// The paint mask, 1 = full (a colour brush: alpha times darkness, the mask a hose cell uses).
     pub tile: GrayTile,
+    /// A colour brush's own alpha (the tip the Color Stamp mode paints with) and colours.
+    pub stamp: Option<(GrayTile, ColorTile)>,
 }
 
 fn be_u32(b: &[u8], at: usize) -> Result<u32, String> {
@@ -109,7 +112,18 @@ pub fn parse_gbr(b: &[u8]) -> Result<(GbrBrush, usize), String> {
     };
     let (w, h, v) = fit(width, height, v, MAX_TIP_EDGE);
     let tile = GrayTile::from_f32(w, h, &v);
-    Ok((GbrBrush { name, version, width, height, spacing, color, tile }, end))
+    // A colour brush also keeps its colours: alpha as the tip, RGB as the colour bitmap.
+    let stamp = color.then(|| {
+        let chunks = px.as_chunks::<4>().0;
+        let plane = |i: usize| fit(width, height, chunks.iter().map(|c| f32::from(c[i]) / 255.0).collect(), MAX_TIP_EDGE);
+        let (aw, ah, a) = plane(3);
+        let (_, _, r) = plane(0);
+        let (_, _, g) = plane(1);
+        let (_, _, b2) = plane(2);
+        let rgb: Vec<u8> = (0..r.len()).flat_map(|i| [(r[i] * 255.0 + 0.5) as u8, (g[i] * 255.0 + 0.5) as u8, (b2[i] * 255.0 + 0.5) as u8]).collect();
+        (GrayTile::from_f32(aw, ah, &a), ColorTile::from_rgb8(aw, ah, &rgb))
+    });
+    Ok((GbrBrush { name, version, width, height, spacing, color, tile, stamp }, end))
 }
 
 fn preset(name: String, brush: BrushSettings, group: &str) -> BrushPreset {
@@ -133,16 +147,24 @@ pub fn read_gbr(bytes: &[u8], group: &str, fallback_name: &str) -> Result<BrushI
     if used < bytes.len() {
         out.warnings.push(format!("{} trailing bytes after the brush were ignored", bytes.len() - used));
     }
-    if b.color {
-        out.warnings.push("a colour brush paints with the brush colour; its colours became the paint mask".into());
-    }
     if (b.width, b.height) != (b.tile.width, b.tile.height) {
         out.warnings.push(format!("tips larger than {MAX_TIP_EDGE} px were downsampled"));
     }
     let name = if b.name.is_empty() { fallback_name.trim().to_string() } else { b.name.clone() };
     let name = if name.is_empty() { "Imported Brush".to_string() } else { name };
     let size = b.width.max(b.height) as f32;
-    out.presets.push(preset(name, settings(b.tile, size, b.spacing), group));
+    let mut brush = match b.stamp {
+        // A colour brush: its alpha is the tip, its colours paint as an image stamp.
+        Some((alpha, colors)) => {
+            let mut brush = settings(alpha, size, b.spacing);
+            brush.tip_color = Some(colors);
+            brush.tip_mode = TipMode::ColorStamp;
+            brush
+        }
+        None => settings(b.tile, size, b.spacing),
+    };
+    brush.tip_scale = 1.0;
+    out.presets.push(preset(name, brush, group));
     Ok(out)
 }
 

@@ -7,30 +7,38 @@ use egui::{Color32, RichText, Sense, Stroke, pos2, vec2};
 use redrob_photo_engine::BrushSettings;
 use redrob_photo_engine::paint::brush::{ColorSource, TextureApply};
 use redrob_photo_engine::paint::{
-    self, BrushPreset, Control, Dynamic, MAX_BRUSH_SIZE, MaskMode, MaskType, Pattern, PatternStyle, SensorCombine, TipGeometry, TipShape,
+    self, BrushPreset, Control, Dynamic, MAX_BRUSH_SIZE, MaskMode, MaskType, Pattern, PatternStyle, SensorCombine, TipGeometry, TipMode, TipShape,
 };
 
 use crate::brush_preview;
 use crate::theme::{self, Tokens};
 use crate::widgets;
 
-pub const CONTROLS: [(Control, &str); 12] = [
+pub const CONTROLS: [(Control, &str); 20] = [
     (Control::Off, "Off"),
     (Control::Fade, "Fade"),
     (Control::PenPressure, "Pen Pressure"),
+    (Control::PressureIn, "Pressure In"),
     (Control::PenTilt, "Pen Tilt"),
+    (Control::TiltX, "X-Tilt"),
+    (Control::TiltY, "Y-Tilt"),
+    (Control::TiltDirection, "Tilt Direction"),
+    (Control::TiltElevation, "Tilt Elevation"),
     (Control::StylusWheel, "Stylus Wheel"),
     (Control::Rotation, "Rotation"),
-    (Control::Perspective, "Perspective"),
-    (Control::Velocity, "Velocity"),
+    (Control::Velocity, "Speed"),
+    (Control::Distance, "Distance"),
+    (Control::Time, "Time"),
     (Control::DrawingAngle, "Drawing Angle"),
     (Control::Random, "Random"),
+    (Control::FuzzyStroke, "Fuzzy Stroke"),
+    (Control::Perspective, "Perspective"),
     (Control::InitialDirection, "Initial Direction"),
     (Control::Direction, "Direction"),
 ];
 
 /// How many of [`CONTROLS`] have a 0..1 value (the rest are the angle-only direction controls).
-pub const SCALAR_CONTROLS: usize = 10;
+pub const SCALAR_CONTROLS: usize = 18;
 
 const COMBINES: [(SensorCombine, &str); 5] = [
     (SensorCombine::Multiply, "Multiply"),
@@ -112,13 +120,22 @@ pub(crate) fn takes_curve(control: Control, angle: bool) -> bool {
             control,
             Control::Fade
                 | Control::PenPressure
+                | Control::PressureIn
                 | Control::PenTilt
+                | Control::TiltX
+                | Control::TiltY
+                | Control::TiltDirection
+                | Control::TiltElevation
                 | Control::StylusWheel
                 | Control::Rotation
                 | Control::Perspective
                 | Control::Velocity
+                | Control::Distance
+                | Control::Time
                 | Control::DrawingAngle
                 | Control::Random
+                | Control::FuzzyStroke
+                | Control::Perspective
         )
 }
 
@@ -167,6 +184,9 @@ fn sensor_rows(ui: &mut egui::Ui, id: &str, d: &mut Dynamic) {
                     sen.fade_steps = steps.round().clamp(1.0, 9999.0) as u32;
                 }
             }
+            if matches!(sen.control, Control::Distance | Control::Time) {
+                length_fields(ui, sen.control, &mut sen.length, &mut sen.repeat);
+            }
             if sen.control != Control::Off {
                 let open_id = curve_open_id(&sid);
                 let mut open: bool = ui.data(|m| m.get_temp(open_id)).unwrap_or(false);
@@ -195,6 +215,16 @@ fn sensor_rows(ui: &mut egui::Ui, id: &str, d: &mut Dynamic) {
     }
 }
 
+/// The Distance sensor's length in pixels (or the Time sensor's in seconds) and its Repeat box.
+fn length_fields(ui: &mut egui::Ui, control: Control, length: &mut f32, repeat: &mut bool) {
+    let (suffix, max) = if control == Control::Time { (" s", 600.0) } else { (" px", 100_000.0) };
+    let mut l = *length;
+    if widgets::value_field(ui, &mut l, 0.1..=max, suffix, 70.0).on_hover_text(tl!("Length over which the value goes from 0 to 1")).changed() {
+        *length = l.clamp(0.1, max);
+    }
+    widgets::checkbox(ui, repeat, tl!("Repeat")).on_hover_text(tl!("Start over past the length instead of holding the end value"));
+}
+
 /// egui memory key of the open/closed state of a dynamic's curve editor.
 pub(crate) fn curve_open_id(id: &str) -> egui::Id {
     egui::Id::new(("brush-curve-open", id))
@@ -215,6 +245,9 @@ fn control_row(ui: &mut egui::Ui, id: &str, d: &mut Dynamic, angle: bool) {
             if widgets::value_field(ui, &mut steps, 1.0..=9999.0, "", 56.0).on_hover_text(tl!("Fade steps")).changed() {
                 d.fade_steps = steps.round().clamp(1.0, 9999.0) as u32;
             }
+        }
+        if matches!(d.control, Control::Distance | Control::Time) {
+            length_fields(ui, d.control, &mut d.length, &mut d.repeat);
         }
         if takes_curve(d.control, angle) && crate::icons::button(ui, "spline", 22.0, open || !d.curve.is_linear(), tl!("Response curve")).clicked() {
             open = !open;
@@ -439,10 +472,40 @@ fn tip_shape(ui: &mut egui::Ui, b: &mut BrushSettings, presets: &[BrushPreset], 
         b.angle = pa;
         b.roundness = pr;
         b.spacing = psp;
+        // A predefined tip brings its colour bitmap, image hose, tip mode and its own initial
+        // scale and rotation (the chooser shows every tip, bitmap or generated, in one list).
+        b.hose = p.brush.hose.clone();
+        b.tip_color = p.brush.tip_color.clone();
+        b.tip_mode = p.brush.tip_mode;
+        b.tip_adjust = p.brush.tip_adjust;
+        b.tip_scale = p.brush.tip_scale;
+        b.tip_rotation = p.brush.tip_rotation;
+        if b.tip.bitmap_size().is_some() && (b.tip_scale != 1.0 || b.tip_rotation != 0.0) {
+            b.apply_tip_defaults();
+        }
         return Some(p.name.clone());
     }
     let orig = b.tip.bitmap_size().map(|(w, h)| w.max(h) as f32);
     size_row(ui, tl!("Size"), &mut b.size, MAX_BRUSH_SIZE, orig);
+    if let Some(side) = orig {
+        // The predefined tip's own initial scale and rotation, kept with the preset.
+        ui.horizontal(|ui| {
+            dim(ui, tl!("Tip Scale:"));
+            let mut sc = b.tip_scale * 100.0;
+            if widgets::value_field(ui, &mut sc, 1.0..=10_000.0, "%", 70.0).on_hover_text(tl!("Initial size as a share of the bitmap's size")).changed() {
+                b.tip_scale = (sc / 100.0).clamp(0.01, 100.0);
+                b.resize_with_dual_brush((side * b.tip_scale).clamp(0.5, MAX_BRUSH_SIZE));
+            }
+            ui.add_space(6.0);
+            dim(ui, tl!("Tip Rotation:"));
+            let mut rot = b.tip_rotation;
+            if widgets::value_field(ui, &mut rot, 0.0..=360.0, "°", 70.0).on_hover_text(tl!("Initial rotation of the tip")).changed() {
+                b.tip_rotation = rot.rem_euclid(360.0);
+                b.angle = b.tip_rotation;
+            }
+        });
+        tip_mode_rows(ui, b);
+    }
     ui.horizontal(|ui| {
         widgets::checkbox(ui, &mut b.flip_x, tl!("Flip X"));
         ui.add_space(8.0);
@@ -484,6 +547,13 @@ fn tip_shape(ui: &mut egui::Ui, b: &mut BrushSettings, presets: &[BrushPreset], 
             .on_hover_text(tl!("The tip's grey levels are painted into the colour as lightness"));
     }
     sharpness(ui, b);
+    ui.horizontal(|ui| {
+        widgets::checkbox(ui, &mut b.aliased, tl!("Sharpness")).on_hover_text(tl!("No anti-aliasing: the dab's pixels are fully on or off"));
+        ui.add_enabled_ui(b.aliased, |ui| {
+            widgets::checkbox(ui, &mut b.align_outline, tl!("Align Outline to Pixel Grid"))
+                .on_hover_text(tl!("The brush outline snaps to the pixels the dab fills"));
+        });
+    });
     // Unchecked, the pointer's speed sets the spacing (Photoshop).
     widgets::checkbox(ui, &mut b.spacing_enabled, tl!("Spacing")).on_hover_text(tl!("Off: the speed of the pointer sets the spacing"));
     ui.add_space(2.0);
@@ -571,6 +641,27 @@ fn brush_options(ui: &mut egui::Ui, b: &mut BrushSettings) {
     });
 }
 
+const TIP_MODES: [(TipMode, &str); 4] =
+    [(TipMode::Mask, "Mask"), (TipMode::ColorStamp, "Color Image"), (TipMode::Lightness, "Lightness Map"), (TipMode::GradientMap, "Gradient Map")];
+
+/// A sampled tip's mode (mask, colour image stamp, lightness map, gradient map) and the
+/// lightness adjustments of the last two.
+fn tip_mode_rows(ui: &mut egui::Ui, b: &mut BrushSettings) {
+    ui.horizontal(|ui| {
+        dim(ui, tl!("Tip Mode:"));
+        widgets::dropdown(ui, "brush-tip-mode", &mut b.tip_mode, &TIP_MODES, 130.0);
+        if b.tip_color.is_none() && b.tip_mode == TipMode::ColorStamp {
+            dim(ui, tl!("(no colour bitmap: paints the brush colour)"));
+        }
+    });
+    if matches!(b.tip_mode, TipMode::Lightness | TipMode::GradientMap) {
+        let a = &mut b.tip_adjust;
+        pct(ui, tl!("Neutral Point"), &mut a.neutral_point, 1.0);
+        signed_pct(ui, tl!("Brightness"), &mut a.brightness, -1.0, 1.0);
+        signed_pct(ui, tl!("Contrast"), &mut a.contrast, -1.0, 1.0);
+    }
+}
+
 /// The computed tip's generated-shape controls: outline, mask type, fade per axis, spikes,
 /// density, randomness, anti-aliasing and precision.
 fn generated_tip(ui: &mut egui::Ui, b: &mut BrushSettings) {
@@ -583,15 +674,14 @@ fn generated_tip(ui: &mut egui::Ui, b: &mut BrushSettings) {
         widgets::dropdown(ui, "brush-tip-mask", &mut g.mask, &MASK_TYPES, 100.0);
     });
     ui.add_space(2.0);
-    let soft = g.mask != MaskType::Default;
-    ui.add_enabled_ui(soft, |ui| {
-        pct(ui, tl!("Fade X"), &mut g.fade_x, 1.0);
-        ui.horizontal(|ui| {
-            widgets::checkbox(ui, &mut g.lock_fade, tl!("Lock Fade")).on_hover_text(tl!("The vertical fade follows the horizontal one"));
-        });
-        let locked = g.lock_fade;
-        ui.add_enabled_ui(!locked, |ui| pct(ui, tl!("Fade Y"), &mut g.fade_y, 1.0));
+    // The fade per axis applies to every mask: the Default mask softens its hardness along
+    // the axis, the Soft and Gaussian masks start their fall-off there.
+    pct(ui, tl!("Fade X"), &mut g.fade_x, 1.0);
+    ui.horizontal(|ui| {
+        widgets::checkbox(ui, &mut g.lock_fade, tl!("Lock Fade")).on_hover_text(tl!("The vertical fade follows the horizontal one"));
     });
+    let locked = g.lock_fade;
+    ui.add_enabled_ui(!locked, |ui| pct(ui, tl!("Fade Y"), &mut g.fade_y, 1.0));
     if g.mask == MaskType::Soft {
         let open_id = curve_open_id("brush-soft-mask");
         let mut open: bool = ui.data(|m| m.get_temp(open_id)).unwrap_or(false);

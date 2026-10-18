@@ -273,6 +273,9 @@ pub fn start_save(
     }
     let (snapshot, doc, revision) = (Arc::clone(&st.doc), st.doc.id, st.revision);
     let label = crate::i18n::fmt(tl!("Saving {name}"), &[("name", &name)]);
+    // Numbered backups (Preferences › File Handling): the previous file moves to `~1` first.
+    redrob_photo_engine::workflow_cmds::backups::set_count(app.session.prefs().file_handling.backup_count);
+    let backup_count = redrob_photo_engine::workflow_cmds::backups::count();
     let target = path.clone();
     let result_path = path.clone();
     let state = Arc::new(SaveState::default());
@@ -285,6 +288,7 @@ pub fn start_save(
         move |ctx| {
             let _done = WorkerDone(Arc::clone(&worker));
             let ctl = SaveCtl { job: ctx.clone(), state: worker };
+            redrob_photo_engine::workflow_cmds::backups::rotate(&target, backup_count);
             save(&snapshot, &target, &settings, &ctl)
                 .map_err(|e| if ctl.check().is_err() { redrob_photo_engine::EngineError::Cancelled } else { redrob_photo_engine::EngineError::Other(e) })
         },

@@ -4621,3 +4621,56 @@ curves	Smooth	Làm mượt
 	Value Steps	Bước giá trị
 	Value on the Ring	Giá trị trên vòng
 	Zoom Pop-up	Cửa sổ thu phóng
+	Length over which the value goes from 0 to 1	Độ dài để giá trị đi từ 0 đến 1
+	Start over past the length instead of holding the end value	Bắt đầu lại sau độ dài thay vì giữ giá trị cuối
+	Pressure In	Áp lực tăng
+	X-Tilt	Nghiêng X
+	Y-Tilt	Nghiêng Y
+	Tilt Direction	Hướng nghiêng
+	Tilt Elevation	Độ cao nghiêng
+	Fuzzy Stroke	Ngẫu nhiên mỗi nét
+	Tip Scale:	Tỉ lệ đầu cọ:
+	Initial size as a share of the bitmap's size	Kích cỡ ban đầu theo tỉ lệ kích cỡ bitmap
+	Tip Rotation:	Xoay đầu cọ:
+	Initial rotation of the tip	Góc xoay ban đầu của đầu cọ
+	No anti-aliasing: the dab's pixels are fully on or off	Không khử răng cưa: các điểm ảnh của chấm hoàn toàn bật hoặc tắt
+	Align Outline to Pixel Grid	Căn đường viền theo lưới điểm ảnh
+	The brush outline snaps to the pixels the dab fills	Đường viền cọ bám theo các điểm ảnh mà chấm tô
+	Tip Mode:	Chế độ đầu cọ:
+	(no colour bitmap: paints the brush colour)	(không có bitmap màu: tô bằng màu cọ)
+	Neutral Point	Điểm trung tính
+	Canvas Only: hide the panels around the canvas	Chỉ canvas: ẩn các bảng quanh canvas
+	Presets kept in the history	Số preset lưu trong lịch sử
+	Clear the history	Xóa lịch sử
+	No presets used yet	Chưa dùng preset nào
+	Forget this preset	Quên preset này
+	Ten Brushes	Mười cọ
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Gán preset vào mười ô; kích hoạt lại một ô sẽ quay về preset trước
+	Clear this slot	Xóa ô này
+	Assign current	Gán hiện tại
+	Browse a folder of reference images	Duyệt thư mục ảnh tham chiếu
+	No folder	Không có thư mục
+	Next image	Ảnh tiếp theo
+	Previous image	Ảnh trước
+	Pick an image to show it here	Chọn một ảnh để hiển thị ở đây
+	Search actions and commands	Tìm hành động và lệnh
+	No matching action	Không có hành động phù hợp
+	Search Actions…	Tìm hành động…
+	Brush History	Lịch sử cọ
+	Color Image	Ảnh màu
+	Lightness Map	Bản đồ độ sáng
+	Static	Cố định
+	Move to Top	Chuyển lên đầu
+	Bubble Up	Lên một bậc
+	Clear the scratch pad to white	Xóa bảng thử về màu trắng
+	Fill the scratch pad with the background colour	Tô bảng thử bằng màu nền
+	Fill the scratch pad with the current gradient	Tô bảng thử bằng chuyển sắc hiện tại
+	Fill the scratch pad with the current image	Tô bảng thử bằng ảnh hiện tại
+	Fill the scratch pad with the preset's icon	Tô bảng thử bằng biểu tượng preset
+	Reload the stored preset, discarding the tweaks	Tải lại preset đã lưu, bỏ các chỉnh sửa
+	BG	Nền
+	Icon	Biểu tượng
+	Thumbnail:	Hình thu nhỏ:
+	Stroke preview	Xem trước nét
+	Scratch pad	Bảng thử
+	Icon library	Thư viện biểu tượng

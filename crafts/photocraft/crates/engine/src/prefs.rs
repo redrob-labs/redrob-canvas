@@ -83,6 +83,11 @@ choice!(
     LinuxDisplayServer { Auto = "auto", X11 = "x11" } default Auto
 );
 choice!(UiFontSize { Tiny = "tiny", Small = "small", Medium = "medium", Large = "large" } default Small);
+choice!(
+    /// Canvas scaling filter: how the canvas is resampled at zooms other than 100 % (`auto`
+    /// picks by zoom: nearest when zoomed far in, trilinear otherwise).
+    ScalingFilter { Auto = "auto", Nearest = "nearest", Bilinear = "bilinear", Trilinear = "trilinear", HighQuality = "highQuality" } default Auto
+);
 choice!(LogDestination { Metadata = "metadata", TextFile = "textFile", Both = "both" } default Metadata);
 choice!(LogDetail { SessionsOnly = "sessionsOnly", Concise = "concise", Detailed = "detailed" } default Concise);
 choice!(Ask { Always = "always", Never = "never", Ask = "ask" } default Always);
@@ -430,6 +435,8 @@ pub struct Tools {
     pub input_devices: Vec<InputDevice>,
     /// Edit › Input Controllers: wheel and keyboard events mapped to commands (`input_cmds`).
     pub input_controllers: Vec<ControllerMapping>,
+    /// Ten Scripts: the action names on the ten script shortcut slots (`plugins.tenScripts`).
+    pub ten_scripts: Vec<Option<String>>,
 }
 
 /// One input device's configuration (Edit › Input Devices…).
@@ -513,6 +520,7 @@ impl Default for Tools {
             input_devices: Vec::new(),
             input_controllers: Vec::new(),
             instant_preview: true,
+            ten_scripts: Vec::new(),
         }
     }
 }
@@ -562,6 +570,8 @@ pub struct FileHandling {
     pub recent_file_count: u32,
     /// Most recently opened files, newest first (File › Open Recent).
     pub recent_files: Vec<String>,
+    /// Numbered backups kept beside a saved file (`name.ext~1`, `~2`, …; 0 = none).
+    pub backup_count: u32,
 }
 
 impl Default for FileHandling {
@@ -580,6 +590,7 @@ impl Default for FileHandling {
             rasterize_svg_groups_deeper_than: redrob_photo_doc::MAX_GROUP_DEPTH as u32,
             recent_file_count: 20,
             recent_files: Vec::new(),
+            backup_count: 1,
         }
     }
 }
@@ -650,6 +661,17 @@ pub struct Performance {
     pub instant_preview: bool,
     /// Instant preview kicks in above this many megapixels.
     pub instant_preview_megapixels: f32,
+    /// Worker threads for filters, compositing and strokes (0 = every core). Applies at the next
+    /// launch once a pool is running.
+    pub threads: u32,
+    /// Canvas scaling filter (see [`ScalingFilter`]).
+    pub scaling_filter: ScalingFilter,
+    /// Zoom, in percent, from which the pixel grid is drawn over the canvas.
+    pub pixel_grid_threshold: u32,
+    /// Folder for swapped-out tiles and the undo swap (empty = the system temp folder).
+    pub swap_directory: String,
+    /// Most canvas redraws per second while painting (1..240).
+    pub frame_rate_limit: u32,
 }
 
 impl Performance {
@@ -684,6 +706,11 @@ impl Default for Performance {
             cumulative_undo_duration: 60.0,
             instant_preview: true,
             instant_preview_megapixels: 8.0,
+            threads: 0,
+            scaling_filter: ScalingFilter::Auto,
+            pixel_grid_threshold: 2400,
+            swap_directory: String::new(),
+            frame_rate_limit: 60,
         }
     }
 }
@@ -1381,6 +1408,7 @@ pub fn choices(path: &str) -> Option<&'static [&'static str]> {
         "performance.gpuBackend" => GpuBackend::NAMES,
         "performance.linuxDisplayServer" => LinuxDisplayServer::NAMES,
         "performance.renderingMode" => RenderingMode::NAMES,
+        "performance.scalingFilter" => ScalingFilter::NAMES,
         _ => return None,
     })
 }
@@ -1401,6 +1429,10 @@ pub fn range(path: &str) -> Option<(f64, f64)> {
         "performance.effectCacheMb" => (16.0, 65536.0),
         "performance.cumulativeUndoInterval" => (0.1, 60.0),
         "performance.cumulativeUndoDuration" => (1.0, 3600.0),
+        "performance.threads" => (0.0, 256.0),
+        "performance.pixelGridThreshold" => (100.0, 10_000.0),
+        "performance.frameRateLimit" => (1.0, 240.0),
+        "fileHandling.backupCount" => (0.0, 99.0),
         "transparencyAndGamut.gamutWarningOpacity" => (1.0, 100.0),
         "unitsAndRulers.columnWidth" | "unitsAndRulers.gutter" => (0.0, 10_000.0),
         "unitsAndRulers.printResolution" | "unitsAndRulers.screenResolution" | "rawDefaults.resolution" => (1.0, 10_000.0),

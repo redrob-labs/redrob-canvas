@@ -74,6 +74,7 @@ pub const UI_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("window.toggle.color", "Color", &["Window"], Some("F6")),
     ("window.toggle.brushSettings", "Brush Settings", &["Window"], Some("F5")),
     ("window.toggle.brushes", "Brushes", &["Window"], None),
+    ("window.actionSearch", "Search Actions…", &["Window"], Some("Cmd+Shift+Enter")),
     ("window.toggle.navigator", "Navigator", &["Window"], None),
     ("window.toggle.toolbar", "Tools", &["Window"], None),
     // Photoshop's Tab and ⇧Tab: all panels (Tools, options bar and the dock), or only the dock.
@@ -697,6 +698,10 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
         a if crate::adjust_dialog::has_dialog(a) && params.as_object().is_none_or(|o| o.is_empty()) => {
             Ok(json!({"dialog": crate::adjust_dialog::open(app, a).ok_or("no document")?}))
         }
+        crate::action_search::COMMAND => {
+            crate::action_search::open(app);
+            Ok(Value::Null)
+        }
         "window.togglePanels" => {
             // Tab hides the Tools panel, the options bar and the dock; Tab again shows what it hid.
             let p = &mut app.ui.panels;
@@ -838,7 +843,7 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
             app.session.active().is_some() && app.services.export.is_some()
         }
         i if i.starts_with("window.toggle.") => true,
-        "window.togglePanels" => true,
+        "window.togglePanels" | crate::action_search::COMMAND => true,
         // With one document open the key stays quiet, as in Photoshop, rather than reporting why.
         "window.nextDocument" | "window.previousDocument" => app.session.active().is_some(),
         i if panel_alias(i).is_some() || workspace_name(i).is_some() => true,

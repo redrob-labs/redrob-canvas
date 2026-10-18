@@ -26,6 +26,8 @@ const PANELS: &[(&str, &str, Group)] = &[
     ("channels", "Channels", Group::Layers),
     ("paths", "Paths", Group::Layers),
     ("brushes", "Brushes", Group::Brushes),
+    ("brushHistory", "Brush History", Group::Brushes),
+    ("reference", "Reference", Group::Brushes),
 ];
 #[derive(Clone, Default)]
 struct LegacyDrag {

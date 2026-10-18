@@ -21,6 +21,7 @@ pub mod automate_cmds;
 pub mod background_cmds;
 pub mod brush_cmds;
 pub mod brush_engine_cmds;
+pub mod brush_extras_cmds;
 pub mod brush_key_cmds;
 pub mod brush_mode_cmds;
 pub mod brush_preset_cmds;
@@ -166,10 +167,13 @@ pub mod mypaint_engine_cmds;
 pub mod path_svg_cmds;
 pub mod perspective_clone_cmds;
 pub mod python_cmds;
+pub mod resource_cmds;
 pub mod resource_export_cmds;
 pub mod scheme;
 pub mod script_cmds;
+pub mod seexpr;
 mod wia_cmds;
+pub mod workflow_cmds;
 
 use std::sync::Arc;
 
@@ -430,6 +434,16 @@ pub struct ToolState {
     /// Brush presets tweaked in this session (`brush_mode_cmds`): lower-case preset name → the
     /// tweaked brush, brought back when the preset is picked again; never written to the file.
     pub preset_tweaks: std::collections::BTreeMap<String, redrob_photo_paint::BrushSettings>,
+    /// Recently used brush presets (`brush.history.*`): the Brush Preset History docker.
+    pub preset_history: brush_extras_cmds::PresetHistory,
+    /// Ten Brushes: the preset names on the ten shortcut slots (`brush.tenBrushes.*`).
+    pub ten_brushes: [Option<String>; 10],
+    /// Brush Preset History: the preset active before the last Ten Brushes activation, so the
+    /// shortcut toggles back to it (`brush.tenBrushes.activate` twice).
+    pub ten_brushes_previous: Option<String>,
+    /// Custom preset thumbnails (`brush.presets.setThumbnail`, the icon library), by preset
+    /// name; a preset without one shows its generated stroke preview.
+    pub preset_thumbnails: std::collections::BTreeMap<String, redrob_photo_paint::ColorTile>,
 }
 
 impl ToolState {
@@ -501,6 +515,10 @@ impl Default for ToolState {
             current_dynamics: None,
             preset_tags: Default::default(),
             preset_tweaks: Default::default(),
+            preset_history: Default::default(),
+            ten_brushes: Default::default(),
+            ten_brushes_previous: None,
+            preset_thumbnails: Default::default(),
         }
     }
 }
@@ -592,6 +610,15 @@ pub struct Session {
     /// document, source read-only)`. The shell takes them with [`Session::take_held_open`].
     held_opens: Vec<(u64, Document, bool)>,
     next_held_open: u64,
+    /// The brush editor's scratch pad (`brush.scratchPad.*`): a small paintable surface.
+    pub scratch_pad: Option<brush_extras_cmds::ScratchPad>,
+    /// Resource storages (`resources.storages.*`): the user folder, bundles, Adobe libraries,
+    /// the document and memory, each active or not.
+    pub resource_storages: resource_cmds::StorageState,
+    /// Reference images docker (`reference.*`): the browsed folder and the shown image.
+    pub reference_images: workflow_cmds::ReferenceState,
+    /// Generator scripts (`scripts.seexpr.*`); empty until first used, then the built-ins.
+    pub seexpr_scripts: Vec<seexpr::SeExprScript>,
 }
 
 /// Move item `i` of `v` to position `to`, clamped to the end. Returns where it went; `None` when

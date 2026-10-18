@@ -5787,3 +5787,56 @@ shape	Appearance	Aspetto
 	Value Steps	Passi valore
 	Value on the Ring	Valore sull'anello
 	Zoom Pop-up	Pop-up zoom
+	Length over which the value goes from 0 to 1	Lunghezza su cui il valore passa da 0 a 1
+	Start over past the length instead of holding the end value	Ricominciare oltre la lunghezza invece di mantenere il valore finale
+	Pressure In	Pressione in aumento
+	X-Tilt	Inclinazione X
+	Y-Tilt	Inclinazione Y
+	Tilt Direction	Direzione inclinazione
+	Tilt Elevation	Elevazione inclinazione
+	Fuzzy Stroke	Casuale per tratto
+	Tip Scale:	Scala punta:
+	Initial size as a share of the bitmap's size	Dimensione iniziale come quota della dimensione della bitmap
+	Tip Rotation:	Rotazione punta:
+	Initial rotation of the tip	Rotazione iniziale della punta
+	No anti-aliasing: the dab's pixels are fully on or off	Senza antialiasing: i pixel del tocco sono del tutto accesi o spenti
+	Align Outline to Pixel Grid	Allinea il contorno alla griglia dei pixel
+	The brush outline snaps to the pixels the dab fills	Il contorno del pennello si aggancia ai pixel riempiti dal tocco
+	Tip Mode:	Modalità punta:
+	(no colour bitmap: paints the brush colour)	(nessuna bitmap a colori: dipinge con il colore del pennello)
+	Neutral Point	Punto neutro
+	Canvas Only: hide the panels around the canvas	Solo tela: nascondi i pannelli attorno alla tela
+	Presets kept in the history	Preimpostazioni tenute nella cronologia
+	Clear the history	Cancella la cronologia
+	No presets used yet	Nessuna preimpostazione usata finora
+	Forget this preset	Dimentica questa preimpostazione
+	Ten Brushes	Dieci pennelli
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Assegna preimpostazioni a dieci posizioni; riattivare una posizione torna alla precedente
+	Clear this slot	Svuota questa posizione
+	Assign current	Assegna corrente
+	Browse a folder of reference images	Sfoglia una cartella di immagini di riferimento
+	No folder	Nessuna cartella
+	Next image	Immagine successiva
+	Previous image	Immagine precedente
+	Pick an image to show it here	Scegli un'immagine da mostrare qui
+	Search actions and commands	Cerca azioni e comandi
+	No matching action	Nessuna azione corrispondente
+	Search Actions…	Cerca azioni…
+	Brush History	Cronologia pennelli
+	Color Image	Immagine a colori
+	Lightness Map	Mappa di luminosità
+	Static	Fisso
+	Move to Top	Sposta in cima
+	Bubble Up	Sali di uno
+	Clear the scratch pad to white	Pulisci il blocco prove in bianco
+	Fill the scratch pad with the background colour	Riempi il blocco prove con il colore di sfondo
+	Fill the scratch pad with the current gradient	Riempi il blocco prove con la sfumatura corrente
+	Fill the scratch pad with the current image	Riempi il blocco prove con l'immagine corrente
+	Fill the scratch pad with the preset's icon	Riempi il blocco prove con l'icona della preimpostazione
+	Reload the stored preset, discarding the tweaks	Ricarica la preimpostazione salvata scartando le modifiche
+	BG	Sfondo
+	Icon	Icona
+	Thumbnail:	Miniatura:
+	Stroke preview	Anteprima tratto
+	Scratch pad	Blocco prove
+	Icon library	Libreria icone

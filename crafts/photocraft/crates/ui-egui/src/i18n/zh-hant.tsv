@@ -3760,3 +3760,58 @@ curves	Smooth	平滑
 	Gamma	伽瑪
 	Sharpness	銳利度
 	Strength	強度
+	Length over which the value goes from 0 to 1	數值從 0 到 1 所經過的長度
+	Start over past the length instead of holding the end value	超過長度後重新開始，而不是保持終值
+	Pressure In	壓力（僅上升）
+	X-Tilt	X 傾斜
+	Y-Tilt	Y 傾斜
+	Tilt Direction	傾斜方向
+	Tilt Elevation	傾斜仰角
+	Time	時間
+	Fuzzy Stroke	每筆隨機
+	Tip Scale:	筆尖比例:
+	Initial size as a share of the bitmap's size	初始大小佔點陣圖大小的比例
+	Tip Rotation:	筆尖旋轉:
+	Initial rotation of the tip	筆尖的初始旋轉
+	No anti-aliasing: the dab's pixels are fully on or off	無反鋸齒：筆點像素要麼全開要麼全關
+	Align Outline to Pixel Grid	輪廓對齊像素網格
+	The brush outline snaps to the pixels the dab fills	筆刷輪廓吸附到筆點填充的像素
+	Tip Mode:	筆尖模式:
+	(no colour bitmap: paints the brush colour)	（無彩色點陣圖：以筆刷顏色繪製）
+	Neutral Point	中性點
+	Canvas Only: hide the panels around the canvas	僅畫布：隱藏畫布周圍的面板
+	Presets kept in the history	歷史中保留的預設數
+	Clear the history	清除歷史
+	No presets used yet	尚未使用任何預設
+	Forget this preset	從歷史中移除此預設
+	Ten Brushes	十筆刷
+	Assign presets to ten slots; activating a slot again returns to the previous preset	將預設分配到十個槽位；再次啟用同一槽位會回到之前的預設
+	Clear this slot	清空此槽位
+	Assign current	分配目前預設
+	Browse a folder of reference images	瀏覽參考圖像資料夾
+	No folder	無資料夾
+	Next image	下一張圖像
+	Previous image	上一張圖像
+	Pick an image to show it here	選擇一張圖像在此顯示
+	Search actions and commands	搜尋動作和命令
+	No matching action	沒有符合的動作
+	Search Actions…	搜尋動作…
+	Brush History	筆刷歷史
+	Mask	遮色片
+	Color Image	彩色圖像
+	Lightness Map	明度映射
+	Static	固定
+	Move to Top	移到頂部
+	Bubble Up	上浮一位
+	Clear the scratch pad to white	將試筆板清為白色
+	Fill the scratch pad with the background colour	用背景色填滿試筆板
+	Fill the scratch pad with the current gradient	用目前漸層填滿試筆板
+	Fill the scratch pad with the current image	用目前圖像填滿試筆板
+	Fill the scratch pad with the preset's icon	用預設圖示填滿試筆板
+	Reload the stored preset, discarding the tweaks	重新載入已存預設，放棄改動
+	BG	背景
+	Icon	圖示
+	Thumbnail:	縮圖:
+	Stroke preview	筆畫預覽
+	Scratch pad	試筆板
+	Icon library	圖示庫

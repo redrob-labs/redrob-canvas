@@ -81,7 +81,8 @@ pub fn engine_stroke(s: &mut Session, p: &Value) -> Result<Value> {
     let pts = parse_points(p, cmd)?;
     crate::brush_cmds::check_coords(&pts, cmd)?;
     let brush = resolve_brush(s, p, cmd)?;
-    let engine = parse_engine(p, cmd)?;
+    // No engine named: the brush's own (`brush.setEngine`), the Pixel engine by default.
+    let engine = if p.get("engine").is_none_or(Value::is_null) { brush.engine.clone() } else { parse_engine(p, cmd)? };
     let sample_all = flag(p, "sampleAllLayers", false) && engine.samples_canvas();
     let id = if crate::channel_cmds::is_channel_target(p) { None } else { Some(layer_id(s, p)?) };
     let stroke = Stroke { brush, points: pts };
@@ -156,7 +157,7 @@ pub fn filter_brush(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// Rasterize one string as a grayscale tile (1 = ink), cropped to its ink; `None` for a string
 /// that leaves no ink (spaces).
-fn text_cell(text: &str, font: &str, size_px: f32) -> Option<GrayTile> {
+pub(crate) fn text_cell(text: &str, font: &str, size_px: f32) -> Option<GrayTile> {
     let mut layer = redrob_photo_doc::TextLayer { text: text.to_string(), font_family: font.to_string(), size_pt: size_px, ..Default::default() };
     layer.color = redrob_photo_color::Color::BLACK;
     let (_, r) = redrob_photo_text::shared().lock().unwrap_or_else(|e| e.into_inner()).render(&layer, 72.0, redrob_photo_color::PixelFormat::GRAYA8);

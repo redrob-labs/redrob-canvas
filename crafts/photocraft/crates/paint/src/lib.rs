@@ -39,7 +39,7 @@ pub mod tile;
 pub use brush::{
     BrushPreset, BrushSettings, ColorDynamics, ColorSource, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, GradientStop, HoseDimension,
     HoseSelection, ImageHose, MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering,
-    SectionLocks, Sensor, SensorCombine, ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
+    SectionLocks, Sensor, SensorCombine, ShapeDynamics, Smoothing, Texture, TipAdjust, TipGeometry, TipMode, TipShape, Transfer,
 };
 pub use brush::{EraserSwitch, InstantPreview, Sharpness, TextureApply};
 pub use curve::ResponseCurve;
@@ -47,7 +47,7 @@ pub use dynamics_preset::{DynInput, DynOutput, DynamicsPreset, DynamicsRow};
 pub use engines::EngineSettings;
 pub use mixer::MixerSettings;
 pub use render::{BrushContext, StrokeRenderer, UnionLive, grid_center, grid_square, render_stroke};
-pub use tile::{GrayTile, StoredTile};
+pub use tile::{ColorTile, GrayTile, StoredTile};
 
 /// One input sample. Missing stylus data defaults to "mouse": full pressure, no tilt/rotation.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
