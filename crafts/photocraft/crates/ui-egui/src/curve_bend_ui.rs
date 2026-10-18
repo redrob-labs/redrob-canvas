@@ -101,11 +101,12 @@ fn graph(ui: &mut egui::Ui, f: &mut Map<String, Value>, key: &str, title: &str) 
     let to_screen = |x: f32, y: f32| pos2(rect.left() + x / 255.0 * width, rect.bottom() - y / 255.0 * height);
     let smooth = f.get("smoothing").and_then(Value::as_bool).unwrap_or(true);
     let line: Vec<Pos2> = if smooth {
-        (0..=128).map(|k| {
-            let x = k as f32 * 2.0;
-            to_screen(x, curve_at(&pts, x.min(255.0)))
-        })
-        .collect()
+        (0..=128)
+            .map(|k| {
+                let x = k as f32 * 2.0;
+                to_screen(x, curve_at(&pts, x.min(255.0)))
+            })
+            .collect()
     } else {
         pts.iter().map(|p| to_screen(p[0], p[1])).collect()
     };

@@ -91,8 +91,14 @@ struct FlareDesignSpec {
     ghosts: &'static [Ghost],
 }
 
-const CLASSIC_GHOSTS: [Ghost; 6] =
-    [(0.25, 0.12, 0.6, 0.8, false), (0.45, 0.3, 0.33, 0.6, true), (0.6, 0.08, 0.1, 0.9, false), (0.8, 0.22, 0.75, 0.7, true), (1.0, 0.16, 0.5, 0.8, false), (1.2, 0.4, 0.15, 0.5, true)];
+const CLASSIC_GHOSTS: [Ghost; 6] = [
+    (0.25, 0.12, 0.6, 0.8, false),
+    (0.45, 0.3, 0.33, 0.6, true),
+    (0.6, 0.08, 0.1, 0.9, false),
+    (0.8, 0.22, 0.75, 0.7, true),
+    (1.0, 0.16, 0.5, 0.8, false),
+    (1.2, 0.4, 0.15, 0.5, true),
+];
 const STAR_GHOSTS: [Ghost; 2] = [(0.5, 0.1, 0.55, 0.5, false), (1.1, 0.14, 0.08, 0.6, true)];
 const SUN_GHOSTS: [Ghost; 4] = [(0.35, 0.45, 0.08, 0.5, false), (0.7, 0.6, 0.05, 0.4, false), (1.0, 0.3, 0.12, 0.6, true), (1.4, 0.8, 0.1, 0.3, false)];
 const RING_GHOSTS: [Ghost; 8] = [
@@ -105,7 +111,8 @@ const RING_GHOSTS: [Ghost; 8] = [
     (1.1, 0.1, 0.8, 0.8, true),
     (1.3, 0.26, 0.62, 0.5, true),
 ];
-const PLANET_GHOSTS: [Ghost; 5] = [(0.3, 0.2, 0.4, 0.9, false), (0.55, 0.35, 0.45, 0.7, true), (0.75, 0.5, 0.38, 0.8, false), (1.0, 0.25, 0.5, 0.9, true), (1.25, 0.6, 0.42, 0.6, false)];
+const PLANET_GHOSTS: [Ghost; 5] =
+    [(0.3, 0.2, 0.4, 0.9, false), (0.55, 0.35, 0.45, 0.7, true), (0.75, 0.5, 0.38, 0.8, false), (1.0, 0.25, 0.5, 0.9, true), (1.25, 0.6, 0.42, 0.6, false)];
 
 fn design_spec(d: FlareDesign) -> FlareDesignSpec {
     match d {

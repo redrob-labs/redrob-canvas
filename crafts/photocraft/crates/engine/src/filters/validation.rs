@@ -151,6 +151,8 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
             &[("style", "finite|infinite|fading|fadingFixedLength"), ("composition", "shadowPlusImage|shadowOnly|shadowMinusImage")]
         }
         "filter.lightShadow.perspectiveShadow" => &[("interpolation", "none|linear|cubic")],
+        "filter.lightShadow.gradientFlare" => &[("design", "classic|brightStar|distantSun|coldRings|hiddenPlanet|softGlow")],
+        "filter.decor.filmstrip" => &[("font", "compact|classic")],
         "filter.stylize.imageGradient" => &[("output", "magnitude|direction|both")],
         "filter.other.distanceMap" => &[("metric", "euclidean|manhattan|chebyshev")],
         "filter.other.normalMap" => &[("xComponent", "red|green|blue"), ("yComponent", "red|green|blue")],
@@ -178,14 +180,12 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         | "filter.distort.engrave"
         | "filter.distort.kaleidoscope"
         | "filter.lightShadow.supernova"
-        | "filter.lightShadow.gradientFlare"
         | "filter.lightShadow.xachEffect"
         | "filter.stylize.differenceOfGaussians"
         | "filter.stylize.laplace"
         | "filter.artistic.cubism"
         | "filter.artistic.slic"
         | "filter.artistic.weave"
-        | "filter.decor.filmstrip"
         | "filter.decor.fuzzyBorder" => &[],
         // Map / Render / Decor batch (filters_gen): choices checked, numbers clamp in params_for.
         "filter.map.fractalTrace" => &[("fractal", "mandelbrot|julia"), ("abyss", "loop|clamp|black|white|transparent")],
@@ -223,6 +223,38 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         | "filter.decor.coffeeStain"
         | "filter.decor.stencilCarve"
         | "filter.web.semiFlatten" => &[],
+        // Fourth batch (filters_more): choices checked, numbers clamp in params_for.
+        "filter.blur.variableBlur" => &[("mask", "map|layerMask|alpha")],
+        "filter.distort.mosaicTiles" => &[("tileType", "squares|hexagons|octagons|triangles")],
+        "filter.distort.newsprint" => &[
+            ("colorModel", "blackOnWhite|whiteOnBlack|rgb|cmyk"),
+            ("pattern", "circle|line|diamond|psSquare|cross"),
+            ("pattern2", "circle|line|diamond|psSquare|cross"),
+            ("pattern3", "circle|line|diamond|psSquare|cross"),
+            ("pattern4", "circle|line|diamond|psSquare|cross"),
+        ],
+        "filter.distort.warpMap" => &[("onEdges", "wrap|smear|black|foregroundColor")],
+        "filter.map.bumpMap" => &[("auxInput", "map|layerMask|self"), ("type", "linear|spherical|sinusoidal")],
+        "filter.map.panoramaProjection" => &[("sampler", "nearest|linear|cubic")],
+        "filter.render.geometricShapes" => {
+            &[("shape", "star|polygon|circle|ellipse|rectangle|line|arc|spiral|bezier"), ("direction", "clockwise|counterClockwise")]
+        }
+        "filter.distort.applyLens"
+        | "filter.distort.curveBend"
+        | "filter.lightShadow.bloom"
+        | "filter.stylize.sobel"
+        | "filter.artistic.cartoon"
+        | "filter.artistic.clothify"
+        | "filter.decor.stencilChrome"
+        | "filter.render.perlinNoise"
+        | "filter.render.plasma"
+        | "filter.render.solidNoise"
+        | "filter.decor.addBorder"
+        | "filter.render.fog"
+        | "filter.decor.oldPhoto"
+        | "filter.decor.roundCorners"
+        | "filter.map.tile"
+        | "filter.combine.depthMerge" => &[],
         _ => return None,
     })
 }

@@ -142,11 +142,7 @@ pub(crate) fn bloom(src: &Image, out: Rect, ctx: &Ctx, spec: &BloomSpec) -> Vec<
     map_px(src, out, ctx, |x, y, me| {
         let i = ((y - win.y0) as usize * ww + (x - win.x0) as usize) * 3;
         let g = [glow[i] * strength, glow[i + 1] * strength, glow[i + 2] * strength];
-        if spec.limit_exposure {
-            add_light(me, g, 1.0)
-        } else {
-            [me[0] + g[0], me[1] + g[1], me[2] + g[2], me[3].max((g[0].max(g[1]).max(g[2])).min(1.0))]
-        }
+        if spec.limit_exposure { add_light(me, g, 1.0) } else { [me[0] + g[0], me[1] + g[1], me[2] + g[2], me[3].max((g[0].max(g[1]).max(g[2])).min(1.0))] }
     })
 }
 

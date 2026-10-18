@@ -149,7 +149,9 @@ pub(crate) fn mosaic(src: &Image, out: Rect, ctx: &Ctx, spec: &MosaicSpec) -> Ve
             let mut acc = [0.0f32; 4];
             let mut k = 0.0;
             let r = s * 0.3;
-            for (dx, dy) in [(0.0, 0.0), (r, 0.0), (-r, 0.0), (0.0, r), (0.0, -r), (r * 0.7, r * 0.7), (-r * 0.7, -r * 0.7), (r * 0.7, -r * 0.7), (-r * 0.7, r * 0.7)] {
+            for (dx, dy) in
+                [(0.0, 0.0), (r, 0.0), (-r, 0.0), (0.0, r), (0.0, -r), (r * 0.7, r * 0.7), (-r * 0.7, -r * 0.7), (r * 0.7, -r * 0.7), (-r * 0.7, r * 0.7)]
+            {
                 let c = rgba_at(src, ctx, (st.x + dx).floor() as i32, (st.y + dy).floor() as i32);
                 for i in 0..4 {
                     acc[i] += c[i];
@@ -308,7 +310,12 @@ pub(crate) fn newsprint(src: &Image, out: Rect, ctx: &Ctx, spec: &NewsprintSpec)
                 let k = c.min(m).min(yy) * spec.black_pullout.clamp(0.0, 1.0);
                 let div = (1.0 - k).max(1e-4);
                 let inks = [(c - k) / div, (m - k) / div, (yy - k) / div, k];
-                let cov = [screened(spec, 0, inks[0], fx, fy), screened(spec, 1, inks[1], fx, fy), screened(spec, 2, inks[2], fx, fy), screened(spec, 3, inks[3], fx, fy)];
+                let cov = [
+                    screened(spec, 0, inks[0], fx, fy),
+                    screened(spec, 1, inks[1], fx, fy),
+                    screened(spec, 2, inks[2], fx, fy),
+                    screened(spec, 3, inks[3], fx, fy),
+                ];
                 // Inks absorb their complement; black absorbs everything.
                 let r = (1.0 - cov[0]) * (1.0 - cov[3]);
                 let g = (1.0 - cov[1]) * (1.0 - cov[3]);
@@ -508,11 +515,7 @@ fn rotate_view(v: [f32; 3], spec: &PanoramaSpec, inverse: bool) -> [f32; 3] {
             _ => [v[0] * c - v[1] * s, v[0] * s + v[1] * c, v[2]],
         }
     };
-    if inverse {
-        rot(rot(rot(v, 1, -spec.pan), 0, -spec.tilt), 2, -spec.spin)
-    } else {
-        rot(rot(rot(v, 2, spec.spin), 0, spec.tilt), 1, spec.pan)
-    }
+    if inverse { rot(rot(rot(v, 1, -spec.pan), 0, -spec.tilt), 2, -spec.spin) } else { rot(rot(rot(v, 2, spec.spin), 0, spec.tilt), 1, spec.pan) }
 }
 
 /// Panorama Projection: the bounds hold an equirectangular panorama; the output is the

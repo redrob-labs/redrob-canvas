@@ -4,9 +4,9 @@
 use redrob_photo_geom::Rect;
 
 use super::super::extra::map_px;
+use crate::Ctx;
 use crate::image::Image;
 use crate::noise::hash01;
-use crate::Ctx;
 
 /// A pseudo-random unit-ish gradient at lattice point `(x, y, z)`.
 fn gradient(x: i32, y: i32, z: i32, seed: u32) -> [f32; 3] {

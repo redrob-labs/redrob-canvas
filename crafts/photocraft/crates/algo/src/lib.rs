@@ -1783,10 +1783,9 @@ fn halo_extra(p: &FilterParams) -> Halo {
         FilterParams::StencilChrome { .. } => r(extra2::surface::chrome_reach()),
         FilterParams::BumpMap { .. } => r(2.0),
         FilterParams::MosaicTiles { size, .. } => r(extra2::distort::mosaic_reach(*size)),
-        FilterParams::ApplyLens { .. }
-        | FilterParams::CurveBend { .. }
-        | FilterParams::PanoramaProjection { .. }
-        | FilterParams::WarpMap { .. } => Halo::Bounds,
+        FilterParams::ApplyLens { .. } | FilterParams::CurveBend { .. } | FilterParams::PanoramaProjection { .. } | FilterParams::WarpMap { .. } => {
+            Halo::Bounds
+        }
         // The other generators and the per-pixel decor filters only need the bounds geometry.
         _ => Halo::Radius(0),
     }
@@ -2681,7 +2680,9 @@ fn extra2_kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Ve
                 map: map.as_deref(),
             },
         ),
-        FilterParams::ApplyLens { refraction, keep_surroundings, background } => extra2::distort::apply_lens(src, out, ctx, *refraction, *keep_surroundings, *background),
+        FilterParams::ApplyLens { refraction, keep_surroundings, background } => {
+            extra2::distort::apply_lens(src, out, ctx, *refraction, *keep_surroundings, *background)
+        }
         FilterParams::MosaicTiles {
             tile,
             size,

@@ -136,7 +136,12 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
                 "cmyk" => NewsprintModel::Cmyk,
                 _ => NewsprintModel::BlackOnWhite,
             },
-            pattern: [pattern(s(p, "pattern", "circle")), pattern(s(p, "pattern2", "circle")), pattern(s(p, "pattern3", "circle")), pattern(s(p, "pattern4", "circle"))],
+            pattern: [
+                pattern(s(p, "pattern", "circle")),
+                pattern(s(p, "pattern2", "circle")),
+                pattern(s(p, "pattern3", "circle")),
+                pattern(s(p, "pattern4", "circle")),
+            ],
             period: [
                 f(p, "period", 12.0).clamp(1.0, 1000.0),
                 f(p, "period2", 12.0).clamp(1.0, 1000.0),
@@ -163,8 +168,12 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             strength: f(p, "strength", 50.0).clamp(0.0, 1000.0),
             limit_exposure: b(p, "limitExposure", false),
         },
-        "filter.stylize.sobel" => FilterParams::Sobel { horizontal: b(p, "horizontal", true), vertical: b(p, "vertical", true), keep_sign: b(p, "keepSign", true) },
-        "filter.artistic.cartoon" => FilterParams::Cartoon { mask_radius: f(p, "maskRadius", 7.0).clamp(1.0, 50.0), pct_black: f(p, "pctBlack", 0.2).clamp(0.0, 1.0) },
+        "filter.stylize.sobel" => {
+            FilterParams::Sobel { horizontal: b(p, "horizontal", true), vertical: b(p, "vertical", true), keep_sign: b(p, "keepSign", true) }
+        }
+        "filter.artistic.cartoon" => {
+            FilterParams::Cartoon { mask_radius: f(p, "maskRadius", 7.0).clamp(1.0, 50.0), pct_black: f(p, "percentBlack", 0.2).clamp(0.0, 1.0) }
+        }
         "filter.artistic.clothify" => FilterParams::Clothify {
             blur_x: f(p, "blurX", 9.0).clamp(0.0, 100.0),
             blur_y: f(p, "blurY", 9.0).clamp(0.0, 100.0),
@@ -349,7 +358,10 @@ fn resolve_with(s: Option<&Session>, fp: &mut FilterParams, p: &Value) -> Result
                     Value::String(path) => crate::filters_ext::map_from_path(path, None)?,
                     Value::Number(n) => {
                         let Some(s) = s else { continue };
-                        let ds = n.as_u64().and_then(|k| s.documents().get(k as usize)).ok_or_else(|| EngineError::Other("filmstrip image document not found".into()))?;
+                        let ds = n
+                            .as_u64()
+                            .and_then(|k| s.documents().get(k as usize))
+                            .ok_or_else(|| EngineError::Other("filmstrip image document not found".into()))?;
                         crate::filters_ext::map_from_document(&ds.doc, None)
                     }
                     _ => None,
@@ -368,7 +380,9 @@ fn resolve_with(s: Option<&Session>, fp: &mut FilterParams, p: &Value) -> Result
 /// mask or Bump Map's height map.
 pub(crate) fn resolve_in_layer(fp: &mut FilterParams, layer: &Layer, bounds: Rect) {
     match fp {
-        FilterParams::VariableBlur { source: MaskSource::LayerMask, map, .. } | FilterParams::BumpMap { source: MaskSource::LayerMask, map, .. } if map.is_none() => {
+        FilterParams::VariableBlur { source: MaskSource::LayerMask, map, .. } | FilterParams::BumpMap { source: MaskSource::LayerMask, map, .. }
+            if map.is_none() =>
+        {
             if let Some(m) = &layer.mask {
                 *map = Some(Arc::new(algo::Image::read(&m.surface, bounds)));
             }
@@ -474,9 +488,7 @@ fn add_border(s: &mut Session, p: &Value) -> Result<Value> {
         let bounds = doc.bounds();
         let (w, h) = (bounds.width() as i32, bounds.height() as i32);
         let mut layer = Layer::raster(doc.next_layer_name("Border Layer"), fmt);
-        let shade = |k: f32| -> [f32; 4] {
-            [(color[0] + k).clamp(0.0, 1.0), (color[1] + k).clamp(0.0, 1.0), (color[2] + k).clamp(0.0, 1.0), 1.0]
-        };
+        let shade = |k: f32| -> [f32; 4] { [(color[0] + k).clamp(0.0, 1.0), (color[1] + k).clamp(0.0, 1.0), (color[2] + k).clamp(0.0, 1.0), 1.0] };
         let (top, left, right, bottom) = (shade(delta), shade(delta * 0.5), shade(-delta * 0.5), shade(-delta));
         if let Some(surf) = layer.surface_mut() {
             let n = fmt.channels();
@@ -569,7 +581,10 @@ fn old_photo(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let border = f(p, "borderSize", 20.0).clamp(0.0, 300.0);
     if border >= 1.0 {
-        s.execute("filter.decor.fuzzyBorder", json!({"layer": target, "color": "#ffffff", "borderSize": border, "blurBorder": true, "granularity": 4, "addShadow": false}))?;
+        s.execute(
+            "filter.decor.fuzzyBorder",
+            json!({"layer": target, "color": "#ffffff", "borderSize": border, "blurBorder": true, "granularity": 4, "addShadow": false}),
+        )?;
     }
     if b(p, "sepia", true) {
         s.execute("filter.adjust.desaturate", json!({"layer": target, "mode": "luminance"}))?;
@@ -770,7 +785,13 @@ fn stretched(img: &algo::Image, b: Rect, x: i32, y: i32) -> [f32; 4] {
     let (x0, y0) = (x0 as i32, y0 as i32);
     let mut out = [0.0f32; 4];
     for (c, o) in out.iter_mut().enumerate() {
-        let cc = if img.ch >= 3 { c } else if c == 3 { if img.ch == 2 { 1 } else { usize::MAX } } else { 0 };
+        let cc = if img.ch >= 3 {
+            c
+        } else if c == 3 {
+            if img.ch == 2 { 1 } else { usize::MAX }
+        } else {
+            0
+        };
         if cc == usize::MAX {
             *o = 1.0;
             continue;
@@ -1003,7 +1024,7 @@ pub fn specs() -> Vec<CommandSpec> {
         // Stylize
         cmd!("filter.stylize.sobel", "Sobel…", ["Filter", "Stylize"], r##"{"horizontal":bool=true,"vertical":bool=true,"keepSign":bool=true}"##),
         // Artistic
-        cmd!("filter.artistic.cartoon", "Cartoon…", ["Filter", "Artistic"], r##"{"maskRadius":1..50=7,"pctBlack":0..1=0.2}"##),
+        cmd!("filter.artistic.cartoon", "Cartoon…", ["Filter", "Artistic"], r##"{"maskRadius":1..50=7,"percentBlack":0..1=0.2}"##),
         cmd!(
             "filter.artistic.clothify",
             "Clothify…",

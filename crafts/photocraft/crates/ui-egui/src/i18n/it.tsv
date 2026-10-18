@@ -4899,3 +4899,134 @@ shape	Appearance	Aspetto
 	Cumulative undo duration	Durata dell'annulla cumulativo
 	Popup palette	Tavolozza a comparsa
 	Smudge Radius	Raggio sfumino
+	Variable Blur…	Sfocatura variabile…
+	Apply Lens…	Applica lente…
+	Mosaic Tiles…	Tessere a mosaico…
+	Newsprint…	Carta di giornale…
+	Curve Bend…	Piega a curva…
+	Warp (Map)…	Deforma (mappa)…
+	Bloom…	Bagliore…
+	Sobel…	Sobel…
+	Cartoon…	Fumetto…
+	Clothify…	Tessuto…
+	Stencil Chrome…	Cromo a stencil…
+	Bump Map…	Mappa a sbalzo…
+	Panorama Projection…	Proiezione panoramica…
+	Perlin Noise…	Rumore Perlin…
+	Plasma…	Plasma…
+	Solid Noise…	Rumore solido…
+	Add Border…	Aggiungi bordo…
+	Fog…	Nebbia…
+	Old Photo…	Vecchia foto…
+	Round Corners…	Angoli arrotondati…
+	Tile…	Affianca…
+	Depth Merge…	Fusione per profondità…
+	Geometric Shapes…	Forme geometriche…
+	Image Map Area…	Area mappa immagine…
+	Image Map From Slices	Mappa immagine da sezioni
+	Export Image Map…	Esporta mappa immagine…
+	Clear Image Map	Cancella mappa immagine
+	Combine	Combina
+	Clipping	Ritaglio
+	Color Space	Spazio colore
+	Linear light	Luce lineare
+	Copy upper to lower	Copia superiore in inferiore
+	Swap curves	Scambia curve
+	Mirror	Specchia
+	Add Background	Aggiungi sfondo
+	Allow Splitting	Consenti divisione
+	Angle2	Angolo 2
+	Angle3	Angolo 3
+	Angle4	Angolo 4
+	Aux Input	Ingresso ausiliario
+	Azimuth	Azimut
+	Bezier	Bézier
+	Black On White	Nero su bianco
+	Black Pullout	Estrazione del nero
+	Blur X	Sfocatura X
+	Blur Y	Sfocatura Y
+	Border X	Bordo X
+	Border Y	Bordo Y
+	Bright Star	Stella luminosa
+	Brush Path	Percorso pennello
+	Chrome Balance	Bilanciamento cromo
+	Chrome Factor	Fattore cromo
+	Chrome Lightness	Luminosità cromo
+	Chrome Saturation	Saturazione cromo
+	Cold Rings	Anelli freddi
+	Color Averaging	Media dei colori
+	Color Model	Modello di colore
+	Color Variation	Variazione colore
+	Compact	Compatto
+	Compensate	Compensa
+	Defocus	Sfuoca
+	Delta	Delta
+	Design	Design
+	Distant Sun	Sole lontano
+	Edge Radius	Raggio del bordo
+	Fit Height	Adatta all'altezza
+	Hexagons	Esagoni
+	Hidden Planet	Pianeta nascosto
+	High Quality	Alta qualità
+	Highlight Balance	Bilanciamento luci
+	Inner Ratio	Rapporto interno
+	Joints Color	Colore giunture
+	Keep Sign	Mantieni segno
+	Keep Surroundings	Mantieni contorno
+	Layer Name	Nome livello
+	Light Color	Colore luce
+	Limit Exposure	Limita esposizione
+	Linear Mask	Maschera lineare
+	Magnitude Document	Documento magnitudine
+	Magnitude Path	Percorso magnitudine
+	Mask Radius	Raggio maschera
+	Mottle	Macchie
+	New Image	Nuova immagine
+	Number Height	Altezza numeri
+	Octagons	Ottagoni
+	On Edges	Sui bordi
+	Overlap	Sovrapposizione
+	Paper Path	Percorso carta
+	Paper Scale	Scala carta
+	Pattern2	Motivo 2
+	Pattern3	Motivo 3
+	Pattern4	Motivo 4
+	Percent Black	Percentuale di nero
+	Period	Periodo
+	Period2	Periodo 2
+	Period3	Periodo 3
+	Period4	Periodo 4
+	Pie	Torta
+	Plain	Liscia
+	Ps Square	Quadrato PS
+	Ray Count	Numero raggi
+	Refraction Index	Indice di rifrazione
+	Rotation Angle	Angolo di rotazione
+	Rough	Ruvida
+	Scale1	Scala 1
+	Scale2	Scala 2
+	Second Flare Count	Numero riflessi secondari
+	Self	Se stesso
+	Shadow X	Ombra X
+	Shadow Y	Ombra Y
+	Soft Glow	Bagliore soffuso
+	Spherical	Sferico
+	Squares	Quadrati
+	Star Ratio	Rapporto stella
+	Start Angle	Angolo iniziale
+	Step Size	Dimensione passo
+	Substeps	Sottopassi
+	Sweep Angle	Angolo di apertura
+	Tile Height	Altezza tessere
+	Tile Neatness	Regolarità tessere
+	Tile Spacing	Spaziatura tessere
+	Tile Type	Tipo tessere
+	Tiled	Affiancato
+	Triangles	Triangoli
+	Turns	Giri
+	Waterlevel	Livello acqua
+	White On Black	Bianco su nero
+	Work On Copy	Lavora su copia
+	X Size	Dimensione X
+	Y Size	Dimensione Y
+	Z Offset	Scostamento Z

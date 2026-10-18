@@ -96,8 +96,11 @@ pub(crate) fn filmstrip(src: &Image, out: Rect, ctx: &Ctx, spec: &FilmstripSpec)
         let scale = if fit { frame_h / h } else { 1.0 };
         Pic { img, rect, scale, width: w * scale }
     }
-    let pics: Vec<Pic> =
-        if spec.frames.is_empty() { vec![pic(src, b, spec.fit_height, frame_h)] } else { spec.frames.iter().map(|f| pic(f, f.rect, spec.fit_height, frame_h)).collect() };
+    let pics: Vec<Pic> = if spec.frames.is_empty() {
+        vec![pic(src, b, spec.fit_height, frame_h)]
+    } else {
+        spec.frames.iter().map(|f| pic(f, f.rect, spec.fit_height, frame_h)).collect()
+    };
     let total: f32 = pics.iter().map(|p| p.width + gap).sum::<f32>().max(1.0);
     let film = [spec.color[0], spec.color[1], spec.color[2], 1.0];
     let num_h = if spec.number_height > 0.0 { spec.number_height.clamp(0.01, 0.3) * bh } else { (hole_h * 0.9).max(5.0) };

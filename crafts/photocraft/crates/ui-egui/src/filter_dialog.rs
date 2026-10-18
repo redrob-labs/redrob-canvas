@@ -959,6 +959,15 @@ const OWN_RUNNER: &[&str] = &[
     "filter.render.clouds",
     "filter.render.differenceClouds",
     "filter.filterGallery",
+    // Script-like commands of the fourth batch (filters_more): they drive other commands and
+    // edit the document directly.
+    "filter.decor.addBorder",
+    "filter.render.fog",
+    "filter.decor.oldPhoto",
+    "filter.decor.roundCorners",
+    "filter.map.tile",
+    "filter.combine.depthMerge",
+    "filter.render.geometricShapes",
 ];
 
 /// Whether the dialog with fields `f` gets Blending Options: a Filter menu dialog on the shared

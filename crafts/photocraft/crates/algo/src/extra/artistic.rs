@@ -10,7 +10,9 @@ use super::{fbm, luma_gradient, luma_rgb, map_px, over, rgb_to_hsv, rgba_at, rgb
 use crate::fxutil::gauss_blur_n;
 use crate::image::Image;
 use crate::noise::hash01;
-use crate::{Ctx, LicChannel, LicConvolve, LicOperator, PaperTexture, StrokeBackground, StrokeColor, StrokeOrientation, StrokePlacement, StrokeShape, SuperpixelColor};
+use crate::{
+    Ctx, LicChannel, LicConvolve, LicOperator, PaperTexture, StrokeBackground, StrokeColor, StrokeOrientation, StrokePlacement, StrokeShape, SuperpixelColor,
+};
 
 /// Pixels Cubism reads around an output pixel.
 pub(crate) fn cubism_reach(tile_size: f32, saturation: f32) -> f32 {
