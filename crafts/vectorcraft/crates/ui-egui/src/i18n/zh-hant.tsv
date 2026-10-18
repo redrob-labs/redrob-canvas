@@ -4250,7 +4250,7 @@ lighting	Light	光源
 @msg	the selected object has no link	所選物件沒有連結
 @msg	the view's rotation is locked (View › Lock Rotate View)	檢視旋轉已鎖定（檢視 › 鎖定檢視旋轉）
 @msg	truncated zip	zip 被截斷
-@msg	view.setRotation: missing `angle`	view.setRotation：缺少 `angle`
+@msg	view.setRotation: missing `angle`	view.setRotation：遺失 `angle`
 @msg	{_1}: the dictionary is empty	{_1}：字典為空
 @msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}：網頁應用程式沒有序列裝置或檔案：請匯出 HPGL 並下載
 @msg	{device}: {e}	{device}：{e}
