@@ -1705,6 +1705,9 @@ pub struct UiState {
     pub camera_raw_scope: CameraRawScopeState,
     #[serde(default)]
     pub camera_raw_preview: CameraRawPreviewState,
+    /// Window › Search Actions: the open search field (see `action_search`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub action_search: Option<crate::action_search::ActionSearch>,
 }
 
 impl Default for UiState {
@@ -1805,6 +1808,7 @@ impl Default for UiState {
             chrome: Default::default(),
             camera_raw_scope: Default::default(),
             camera_raw_preview: Default::default(),
+            action_search: None,
         }
     }
 }

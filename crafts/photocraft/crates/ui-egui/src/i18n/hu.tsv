@@ -4744,3 +4744,37 @@ cameraRaw	Yellow	Sárga
 	Tilt Direction	Dőlés iránya
 	Tilt Elevation	Dőlés magassága
 	Fuzzy Stroke	Véletlen vonásonként
+	Tip Scale:	Hegy mérete:
+	Initial size as a share of the bitmap's size	Kezdeti méret a bitkép méretének arányában
+	Tip Rotation:	Hegy forgatása:
+	Initial rotation of the tip	A hegy kezdeti forgatása
+	No anti-aliasing: the dab's pixels are fully on or off	Nincs élsimítás: a pötty pixelei teljesen be- vagy kikapcsoltak
+	Align Outline to Pixel Grid	Körvonal igazítása a pixelrácshoz
+	The brush outline snaps to the pixels the dab fills	Az ecset körvonala a pötty által kitöltött pixelekhez illeszkedik
+	Tip Mode:	Hegy módja:
+	(no colour bitmap: paints the brush colour)	(nincs színes bitkép: az ecset színével fest)
+	Neutral Point	Semleges pont
+	Canvas Only: hide the panels around the canvas	Csak vászon: a vászon körüli panelek elrejtése
+	Presets kept in the history	Az előzményekben tartott készletek
+	Clear the history	Előzmények törlése
+	No presets used yet	Még nem használt készletet
+	Forget this preset	Készlet elfelejtése
+	Ten Brushes	Tíz ecset
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Készletek hozzárendelése tíz helyhez; egy hely újraaktiválása visszatér az előzőhöz
+	Clear this slot	Hely törlése
+	Assign current	Jelenlegi hozzárendelése
+	Browse a folder of reference images	Referenciaképek mappájának tallózása
+	No folder	Nincs mappa
+	Next image	Következő kép
+	Previous image	Előző kép
+	Pick an image to show it here	Válasszon képet, hogy itt megjelenjen
+	Search actions and commands	Műveletek és parancsok keresése
+	No matching action	Nincs egyező művelet
+	Search Actions…	Műveletek keresése…
+	Brush History	Ecsetelőzmények
+	Reference	Referencia
+	Color Image	Színes kép
+	Lightness Map	Világosságtérkép
+	Static	Rögzített
+	Move to Top	Felülre
+	Bubble Up	Egyet feljebb

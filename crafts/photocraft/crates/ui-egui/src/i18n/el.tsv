@@ -4531,3 +4531,37 @@ curves	Smooth	Εξομάλυνση
 	Tilt Direction	Κατεύθυνση κλίσης
 	Tilt Elevation	Ανύψωση κλίσης
 	Fuzzy Stroke	Τυχαίο ανά πινελιά
+	Tip Scale:	Κλίμακα άκρης:
+	Initial size as a share of the bitmap's size	Αρχικό μέγεθος ως ποσοστό του μεγέθους του bitmap
+	Tip Rotation:	Περιστροφή άκρης:
+	Initial rotation of the tip	Αρχική περιστροφή της άκρης
+	No anti-aliasing: the dab's pixels are fully on or off	Χωρίς εξομάλυνση: τα pixel της πινελιάς είναι πλήρως ενεργά ή ανενεργά
+	Align Outline to Pixel Grid	Στοίχιση περιγράμματος στο πλέγμα pixel
+	The brush outline snaps to the pixels the dab fills	Το περίγραμμα του πινέλου κουμπώνει στα pixel που γεμίζει η πινελιά
+	Tip Mode:	Λειτουργία άκρης:
+	(no colour bitmap: paints the brush colour)	(χωρίς έγχρωμο bitmap: βάφει με το χρώμα του πινέλου)
+	Neutral Point	Ουδέτερο σημείο
+	Canvas Only: hide the panels around the canvas	Μόνο καμβάς: απόκρυψη των πινάκων γύρω από τον καμβά
+	Presets kept in the history	Προεπιλογές στο ιστορικό
+	Clear the history	Καθαρισμός ιστορικού
+	No presets used yet	Δεν έχουν χρησιμοποιηθεί προεπιλογές ακόμη
+	Forget this preset	Αφαίρεση αυτής της προεπιλογής
+	Ten Brushes	Δέκα πινέλα
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Ορίστε προεπιλογές σε δέκα θέσεις· η επανενεργοποίηση μιας θέσης επιστρέφει στην προηγούμενη
+	Clear this slot	Καθαρισμός αυτής της θέσης
+	Assign current	Ορισμός τρέχουσας
+	Browse a folder of reference images	Περιήγηση σε φάκελο εικόνων αναφοράς
+	No folder	Κανένας φάκελος
+	Next image	Επόμενη εικόνα
+	Previous image	Προηγούμενη εικόνα
+	Pick an image to show it here	Επιλέξτε εικόνα για να εμφανιστεί εδώ
+	Search actions and commands	Αναζήτηση ενεργειών και εντολών
+	No matching action	Καμία ενέργεια δεν ταιριάζει
+	Search Actions…	Αναζήτηση ενεργειών…
+	Brush History	Ιστορικό πινέλων
+	Reference	Αναφορά
+	Color Image	Έγχρωμη εικόνα
+	Lightness Map	Χάρτης φωτεινότητας
+	Static	Σταθερό
+	Move to Top	Μετακίνηση στην κορυφή
+	Bubble Up	Μία θέση πάνω

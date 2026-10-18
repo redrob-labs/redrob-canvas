@@ -4619,3 +4619,37 @@ layerLabel	No Color	Sem cor
 	Tilt Direction	Direção da inclinação
 	Tilt Elevation	Elevação da inclinação
 	Fuzzy Stroke	Aleatório por traço
+	Tip Scale:	Escala da ponta:
+	Initial size as a share of the bitmap's size	Tamanho inicial como fração do tamanho do bitmap
+	Tip Rotation:	Rotação da ponta:
+	Initial rotation of the tip	Rotação inicial da ponta
+	No anti-aliasing: the dab's pixels are fully on or off	Sem suavização: os pixels do toque ficam totalmente ligados ou desligados
+	Align Outline to Pixel Grid	Alinhar o contorno à grade de pixels
+	The brush outline snaps to the pixels the dab fills	O contorno do pincel se ajusta aos pixels que o toque preenche
+	Tip Mode:	Modo da ponta:
+	(no colour bitmap: paints the brush colour)	(sem bitmap colorido: pinta com a cor do pincel)
+	Neutral Point	Ponto neutro
+	Canvas Only: hide the panels around the canvas	Só a tela: ocultar os painéis ao redor da tela
+	Presets kept in the history	Predefinições mantidas no histórico
+	Clear the history	Limpar o histórico
+	No presets used yet	Nenhuma predefinição usada ainda
+	Forget this preset	Esquecer esta predefinição
+	Ten Brushes	Dez pincéis
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Atribua predefinições a dez posições; ativar a posição de novo volta à predefinição anterior
+	Clear this slot	Limpar esta posição
+	Assign current	Atribuir a atual
+	Browse a folder of reference images	Procurar uma pasta de imagens de referência
+	No folder	Sem pasta
+	Next image	Próxima imagem
+	Previous image	Imagem anterior
+	Pick an image to show it here	Escolha uma imagem para mostrá-la aqui
+	Search actions and commands	Buscar ações e comandos
+	No matching action	Nenhuma ação correspondente
+	Search Actions…	Buscar ações…
+	Brush History	Histórico de pincéis
+	Reference	Referência
+	Color Image	Imagem colorida
+	Lightness Map	Mapa de luminosidade
+	Static	Fixo
+	Move to Top	Mover para o topo
+	Bubble Up	Subir uma posição

@@ -46,6 +46,9 @@ pub mod input_ui;
 pub mod paint_engines_ui;
 pub mod operation_ui;
 pub mod scripts_ui;
+pub mod action_search;
+pub mod brush_history_tab;
+pub mod reference_tab;
 pub(crate) mod cam_preview;
 mod cam_transform;
 mod camera_raw_detail_ui;
@@ -1609,6 +1612,9 @@ impl PhotocraftApp {
         let (doc, revision) = (st.doc.id, st.revision);
         let export = self.services.export.as_ref().ok_or("no exporter configured")?;
         let (bytes, warnings) = export(&st.doc, &path, settings)?;
+        // Numbered backups (Preferences › File Handling): the previous file moves to `~1` first.
+        redrob_photo_engine::workflow_cmds::backups::set_count(self.session.prefs().file_handling.backup_count);
+        redrob_photo_engine::workflow_cmds::backups::rotate_default(&path);
         let write = self.services.write.as_mut().ok_or("no writer configured")?;
         write(&path, &bytes)?;
         self.saved(doc, revision, &path, &warnings, copy);

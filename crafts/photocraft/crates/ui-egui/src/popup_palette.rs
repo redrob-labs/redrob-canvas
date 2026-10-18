@@ -247,6 +247,11 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
                 view.fit_pending = false;
                 view.zoom = 1.0;
             }
+            // Canvas Only: hide the toolbar, the options bar and the dock (Tab), and back.
+            let canvas_only = !(app.ui.panels.toolbar || app.ui.panels.options_bar || app.ui.panels.dock);
+            if crate::icons::button(ui, "fullscreen", 24.0, canvas_only, tl!("Canvas Only: hide the panels around the canvas")).clicked() {
+                let _ = crate::menus::invoke(app, ui.ctx(), "window.togglePanels", json!({}));
+            }
         });
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 6.0;

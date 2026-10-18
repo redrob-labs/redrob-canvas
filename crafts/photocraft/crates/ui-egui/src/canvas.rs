@@ -2057,6 +2057,8 @@ pub fn document_area(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     crate::paint_mouse::show_picker(app, ui.ctx());
     // And the right-click pop-up palette, when the preference chooses it instead.
     crate::popup_palette::show(app, ui.ctx());
+    // Window › Search Actions.
+    crate::action_search::show(app, ui.ctx());
 }
 
 /// Window › Arrange tiles: each document shown with its tile in `rect`, or `None` when the

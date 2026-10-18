@@ -4568,3 +4568,37 @@ curves	Smooth	スムーズ
 	Tilt Direction	傾き方向
 	Tilt Elevation	傾き仰角
 	Fuzzy Stroke	ストロークごとのランダム
+	Tip Scale:	ブラシ先端の倍率:
+	Initial size as a share of the bitmap's size	ビットマップのサイズに対する初期サイズの割合
+	Tip Rotation:	ブラシ先端の回転:
+	Initial rotation of the tip	ブラシ先端の初期回転
+	No anti-aliasing: the dab's pixels are fully on or off	アンチエイリアスなし: ドットの画素は完全にオンかオフ
+	Align Outline to Pixel Grid	アウトラインをピクセルグリッドに揃える
+	The brush outline snaps to the pixels the dab fills	ブラシのアウトラインがドットが塗る画素にスナップします
+	Tip Mode:	先端モード:
+	(no colour bitmap: paints the brush colour)	(カラービットマップなし: ブラシの色で描画)
+	Neutral Point	中立点
+	Canvas Only: hide the panels around the canvas	キャンバスのみ: キャンバス周りのパネルを隠す
+	Presets kept in the history	履歴に残すプリセット数
+	Clear the history	履歴を消去
+	No presets used yet	まだ使ったプリセットはありません
+	Forget this preset	このプリセットを履歴から除く
+	Ten Brushes	テンブラシ
+	Assign presets to ten slots; activating a slot again returns to the previous preset	10個のスロットにプリセットを割り当て。同じスロットを再度有効化すると前のプリセットに戻ります
+	Clear this slot	このスロットを空にする
+	Assign current	現在のものを割り当て
+	Browse a folder of reference images	参考画像のフォルダーを開く
+	No folder	フォルダーなし
+	Next image	次の画像
+	Previous image	前の画像
+	Pick an image to show it here	ここに表示する画像を選択
+	Search actions and commands	アクションとコマンドを検索
+	No matching action	一致するアクションがありません
+	Search Actions…	アクションを検索…
+	Brush History	ブラシ履歴
+	Reference	参考画像
+	Color Image	カラー画像
+	Lightness Map	明度マップ
+	Static	固定
+	Move to Top	先頭へ移動
+	Bubble Up	一つ上へ

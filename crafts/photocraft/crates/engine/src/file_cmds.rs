@@ -359,7 +359,9 @@ pub(crate) fn encode(doc: &Document, path: &str, save: impl Into<SaveOpts>) -> R
 }
 
 pub(crate) fn save_doc(doc: &Document, path: &str, save: impl Into<SaveOpts>) -> Result<Vec<String>> {
-    let (bytes, warnings) = encode(doc, path, save)?;
+    let (bytes, mut warnings) = encode(doc, path, save)?;
+    // Numbered backups: the previous file moves to `~1` before it is overwritten.
+    warnings.extend(crate::workflow_cmds::backups::rotate_default(path));
     write_file(path, &bytes)?;
     Ok(warnings)
 }

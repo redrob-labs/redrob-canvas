@@ -4898,3 +4898,37 @@ shape	Appearance	Izgled
 	Tilt Direction	Смер нагиба
 	Tilt Elevation	Висина нагиба
 	Fuzzy Stroke	Насумично по потезу
+	Tip Scale:	Размера врха:
+	Initial size as a share of the bitmap's size	Почетна величина као удео величине битмапе
+	Tip Rotation:	Ротација врха:
+	Initial rotation of the tip	Почетна ротација врха
+	No anti-aliasing: the dab's pixels are fully on or off	Без умекшавања: пиксели отиска су потпуно укључени или искључени
+	Align Outline to Pixel Grid	Поравнај контуру са пикселском мрежом
+	The brush outline snaps to the pixels the dab fills	Контура четкице се лепи за пикселе које отисак попуњава
+	Tip Mode:	Режим врха:
+	(no colour bitmap: paints the brush colour)	(нема битмапе у боји: слика бојом четкице)
+	Neutral Point	Неутрална тачка
+	Canvas Only: hide the panels around the canvas	Само платно: сакриј панеле око платна
+	Presets kept in the history	Поставки у историји
+	Clear the history	Обриши историју
+	No presets used yet	Још нема коришћених поставки
+	Forget this preset	Заборави ову поставку
+	Ten Brushes	Десет четкица
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Додели поставке десет места; поновно активирање места враћа претходну поставку
+	Clear this slot	Испразни ово место
+	Assign current	Додели тренутну
+	Browse a folder of reference images	Прегледај фасциклу референтних слика
+	No folder	Нема фасцикле
+	Next image	Следећа слика
+	Previous image	Претходна слика
+	Pick an image to show it here	Изабери слику да се прикаже овде
+	Search actions and commands	Претражи радње и наредбе
+	No matching action	Нема одговарајуће радње
+	Search Actions…	Претражи радње…
+	Brush History	Историја четкица
+	Reference	Референца
+	Color Image	Слика у боји
+	Lightness Map	Мапа светлине
+	Static	Непомично
+	Move to Top	Премести на врх
+	Bubble Up	Подигни за једно место

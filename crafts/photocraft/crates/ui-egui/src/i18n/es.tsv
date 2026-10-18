@@ -5342,3 +5342,37 @@ navigator	Zoom	Zoom
 	Tilt Direction	Dirección de inclinación
 	Tilt Elevation	Elevación de inclinación
 	Fuzzy Stroke	Aleatorio por trazo
+	Tip Scale:	Escala de la punta:
+	Initial size as a share of the bitmap's size	Tamaño inicial como fracción del tamaño del mapa de bits
+	Tip Rotation:	Rotación de la punta:
+	Initial rotation of the tip	Rotación inicial de la punta
+	No anti-aliasing: the dab's pixels are fully on or off	Sin suavizado: los píxeles del toque están totalmente dentro o fuera
+	Align Outline to Pixel Grid	Alinear el contorno a la cuadrícula de píxeles
+	The brush outline snaps to the pixels the dab fills	El contorno del pincel se ajusta a los píxeles que llena el toque
+	Tip Mode:	Modo de punta:
+	(no colour bitmap: paints the brush colour)	(sin mapa de bits de color: pinta con el color del pincel)
+	Neutral Point	Punto neutro
+	Canvas Only: hide the panels around the canvas	Solo lienzo: ocultar los paneles alrededor del lienzo
+	Presets kept in the history	Preajustes guardados en el historial
+	Clear the history	Borrar el historial
+	No presets used yet	Aún no se ha usado ningún preajuste
+	Forget this preset	Olvidar este preajuste
+	Ten Brushes	Diez pinceles
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Asigna preajustes a diez casillas; activar una casilla de nuevo vuelve al preajuste anterior
+	Clear this slot	Vaciar esta casilla
+	Assign current	Asignar el actual
+	Browse a folder of reference images	Explorar una carpeta de imágenes de referencia
+	No folder	Sin carpeta
+	Next image	Imagen siguiente
+	Previous image	Imagen anterior
+	Pick an image to show it here	Elige una imagen para mostrarla aquí
+	Search actions and commands	Buscar acciones y comandos
+	No matching action	Ninguna acción coincide
+	Search Actions…	Buscar acciones…
+	Brush History	Historial de pinceles
+	Reference	Referencia
+	Color Image	Imagen a color
+	Lightness Map	Mapa de luminosidad
+	Static	Fijo
+	Move to Top	Mover arriba
+	Bubble Up	Subir un puesto

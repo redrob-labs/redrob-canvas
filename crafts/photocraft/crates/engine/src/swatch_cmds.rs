@@ -9,6 +9,7 @@
 //! panel order). Like the other preset commands they change the preferences document, not a
 //! document's history.
 
+use redrob_photo_io::palette_files::{PalColor, PalEntry, PalGroup, Palette, PaletteKind};
 use redrob_photo_psd::aco::{AcoColor, AcoSwatch};
 use redrob_photo_psd::ase::{AseColor, AseEntry, AseFile, AseKind, AseSwatch};
 use serde_json::{Value, json};
@@ -837,12 +838,28 @@ fn from_gradient(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn import(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "swatches.import";
-    let (bytes, stem) = crate::preset_import_cmds::file_bytes(p, CMD, ".aco or .ase file")?;
-    let format = match str_param(p, "format") {
-        Some(f) => Format::parse(f).filter(|f| f.is_swatch_file()).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase)")))?,
-        None if bytes.starts_with(redrob_photo_psd::ase::SIGNATURE) => Format::Ase,
-        None if matches!(bytes.get(..2), Some([0, 1] | [0, 2])) => Format::Aco,
-        None => ext_format(str_param(p, "path")).filter(|f| f.is_swatch_file()).ok_or_else(|| bad(CMD, "not an .aco or .ase swatch file"))?,
+    let (bytes, stem) = crate::preset_import_cmds::file_bytes(p, CMD, ".aco, .ase, .gpl, .pal, .act, .xml, .sbz, .acb or .kpl file")?;
+    let ext = str_param(p, "path").and_then(|p| std::path::Path::new(p).extension()).and_then(|e| e.to_str()).map(str::to_string);
+    // The other palette files (.gpl, RIFF and JASC .pal, .act, Scribus .xml, .sbz, .acb, native
+    // .kpl) are read by `redrob_photo_io::palette_files`; `.aco`/`.ase` by the PSD crate.
+    let other = match str_param(p, "format") {
+        Some(f) if Format::parse(f).is_none() => {
+            Some(PaletteKind::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|gpl|riff|act|psp|xml|sbz|acb|kpl)")))?)
+        }
+        Some(_) => None,
+        None if bytes.starts_with(redrob_photo_psd::ase::SIGNATURE) || matches!(bytes.get(..2), Some([0, 1] | [0, 2])) => None,
+        None => redrob_photo_io::palette_files::detect(&bytes, ext.as_deref()),
+    };
+    let format = match (other, str_param(p, "format")) {
+        (Some(_), _) => None,
+        (None, Some(f)) => Some(Format::parse(f).filter(|f| f.is_swatch_file()).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase)")))?),
+        (None, None) if bytes.starts_with(redrob_photo_psd::ase::SIGNATURE) => Some(Format::Ase),
+        (None, None) if matches!(bytes.get(..2), Some([0, 1] | [0, 2])) => Some(Format::Aco),
+        (None, None) => Some(
+            ext_format(str_param(p, "path"))
+                .filter(|f| f.is_swatch_file())
+                .ok_or_else(|| bad(CMD, "not a swatch or palette file (.aco, .ase, .gpl, .pal, .act, .xml, .sbz, .acb, .kpl)"))?,
+        ),
     };
     let mode = str_param(p, "mode").unwrap_or("append");
     let replace = match mode {
@@ -855,7 +872,17 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
         None if !stem.trim().is_empty() => clip(stem.trim()),
         None => "Imported Swatches".into(),
     };
-    let (groups, warnings) = read_file(&bytes, format, &group).map_err(|e| bad(CMD, e))?;
+    let (groups, warnings, format_id) = match (other, format) {
+        (Some(kind), _) => {
+            let pal = redrob_photo_io::palette_files::read(&bytes, kind, &group).map_err(|e| bad(CMD, e))?;
+            (palette_groups(&pal, &group), pal.warnings.clone(), kind.id())
+        }
+        (None, Some(format)) => {
+            let (g, w) = read_file(&bytes, format, &group).map_err(|e| bad(CMD, e))?;
+            (g, w, format.id())
+        }
+        (None, None) => return Err(bad(CMD, "not a swatch or palette file")),
+    };
     let base: Vec<Group<Swatch>> = if replace { Vec::new() } else { s.presets.swatches.clone() };
     if total(&base) + total(&groups) > MAX_SWATCHES || base.len() + groups.len() > MAX_GROUPS {
         return Err(bad(CMD, format!("too many swatches: the panel holds at most {MAX_SWATCHES} in {MAX_GROUPS} groups")));
@@ -893,15 +920,71 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
     }
     s.presets.swatches = lib;
     s.presets_changed();
-    Ok(json!({"format": format.id(), "mode": mode, "groups": names, "count": count, "warnings": warnings}))
+    Ok(json!({"format": format_id, "mode": mode, "groups": names, "count": count, "warnings": warnings}))
+}
+
+/// Swatch groups from a palette read by `palette_files` (loose colours go to `group`).
+fn palette_groups(pal: &Palette, group: &str) -> Vec<Group<Swatch>> {
+    let color = |c: PalColor| match c {
+        PalColor::Rgb(v) => SwatchColor::Rgb(v),
+        PalColor::Cmyk(v) => SwatchColor::Cmyk(v),
+        PalColor::Lab(v) => SwatchColor::Lab(v),
+        PalColor::Gray(k) => SwatchColor::Gray(k),
+    };
+    pal.groups
+        .iter()
+        .map(|g| {
+            let name = if g.name.trim().is_empty() { group.to_string() } else { clip(g.name.trim()) };
+            let items = g
+                .entries
+                .iter()
+                .map(|e| Swatch { name: clip(e.name.trim()), color: color(e.color), kind: if e.spot { SwatchKind::Spot } else { SwatchKind::Process } })
+                .collect();
+            Group::new(&name, items)
+        })
+        .collect()
+}
+
+/// A palette for `palette_files` writers from swatch groups.
+fn palette_of(groups: &[Group<Swatch>], name: &str) -> Palette {
+    let color = |c: &SwatchColor| match *c {
+        SwatchColor::Rgb(v) => PalColor::Rgb(v),
+        SwatchColor::Hsb(v) => PalColor::Rgb(hsb_to_rgb(v)),
+        SwatchColor::Cmyk(v) => PalColor::Cmyk(v),
+        SwatchColor::Lab(v) => PalColor::Lab(v),
+        SwatchColor::Gray(k) => PalColor::Gray(k),
+        SwatchColor::Book { .. } => PalColor::Gray(0.5),
+    };
+    Palette {
+        name: name.to_string(),
+        columns: 8,
+        groups: groups
+            .iter()
+            .map(|g| PalGroup {
+                name: if groups.len() == 1 { String::new() } else { g.name.clone() },
+                entries: g.items.iter().map(|sw| PalEntry { name: sw.name.clone(), color: color(&sw.color), spot: sw.kind == SwatchKind::Spot }).collect(),
+            })
+            .collect(),
+        warnings: Vec::new(),
+    }
 }
 
 fn export(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "swatches.export";
     let path = str_param(p, "path");
-    let format = match str_param(p, "format") {
-        Some(f) => Format::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|css|txt)")))?,
-        None => ext_format(path).unwrap_or(Format::Aco),
+    let ext = path.and_then(|p| std::path::Path::new(p).extension()).and_then(|e| e.to_str());
+    // Palette files other than .aco/.ase/css/txt go through `palette_files`.
+    let other = match str_param(p, "format") {
+        Some(f) if Format::parse(f).is_none() => {
+            Some(PaletteKind::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|css|txt|gpl|riff|act|psp|xml|kpl)")))?)
+        }
+        Some(_) => None,
+        None => ext.filter(|e| Format::parse(e).is_none()).and_then(PaletteKind::parse),
+    };
+    let format = match (other, str_param(p, "format")) {
+        (Some(_), _) => Format::Aco,
+        (None, Some(f)) => Format::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|css|txt)")))?,
+        (None, None) => ext_format(path).unwrap_or(Format::Aco),
     };
     let mut groups: Vec<Group<Swatch>> = match name_param(p, "group", CMD)? {
         Some(g) => vec![s.presets.swatches[group_of(s, &g, CMD)?].clone()],
@@ -929,14 +1012,21 @@ fn export(s: &mut Session, p: &Value) -> Result<Value> {
     if total(&groups) == 0 {
         return Err(bad(CMD, "no swatches to export"));
     }
-    let (bytes, count, warnings) = match format {
-        Format::Css | Format::Txt => {
+    let (bytes, count, warnings) = match (other, format) {
+        (Some(kind), _) => {
+            let name = path.and_then(|p| std::path::Path::new(p).file_stem()).and_then(|s| s.to_str()).unwrap_or("Swatches");
+            let pal = palette_of(&groups, name);
+            let bytes = redrob_photo_io::palette_files::write(&pal, kind).map_err(|e| bad(CMD, e))?;
+            (bytes, pal.count(), Vec::new())
+        }
+        (None, Format::Css | Format::Txt) => {
             let (bytes, count) = write_code(&groups, format, &SwatchConv::new(s));
             (bytes, count, Vec::new())
         }
-        _ => write_file(&groups, format).map_err(|e| bad(CMD, e))?,
+        (None, _) => write_file(&groups, format).map_err(|e| bad(CMD, e))?,
     };
-    let mut out = json!({"format": format.id(), "count": count, "bytes": bytes.len(), "warnings": warnings});
+    let format_id = other.map_or(format.id(), PaletteKind::id);
+    let mut out = json!({"format": format_id, "count": count, "bytes": bytes.len(), "warnings": warnings});
     match path {
         Some(path) => {
             crate::file_cmds::write_file(path, &bytes)?;
@@ -1062,7 +1152,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Import Swatches…",
             menu: &[],
             shortcut: None,
-            params: r##"{"path":".aco or .ase file"?,"data":base64 bytes?,"format":"aco|ase"? (detected),"mode":"append|replace"="append","group":str?=file name (the group for ungrouped colours)} → {format,mode,groups,count,warnings}"##,
+            params: r##"{"path":".aco, .ase, .gpl, .pal (RIFF or JASC), .act, Scribus .xml, .sbz, .acb or native .kpl file"?,"data":base64 bytes?,"format":"aco|ase|gpl|riff|act|psp|xml|sbz|acb|kpl"? (detected),"mode":"append|replace"="append","group":str?=file name (the group for ungrouped colours)} → {format,mode,groups,count,warnings}"##,
             enabled: always,
             run: import,
             journal: true,
@@ -1132,7 +1222,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Export Swatches…",
             menu: &[],
             shortcut: None,
-            params: r##"{"format":"aco|ase|css|txt"?=from path, else aco,"path":file? (else the bytes come back as base64 `data`),"group":name? (only that group),"swatches":[names]? (only these)} → {format,count,bytes,warnings,path|data} (css: custom properties on :root; txt: one hex colour per line)"##,
+            params: r##"{"format":"aco|ase|css|txt|gpl|riff|act|psp|xml|kpl"?=from path, else aco,"path":file? (else the bytes come back as base64 `data`),"group":name? (only that group),"swatches":[names]? (only these)} → {format,count,bytes,warnings,path|data} (css: custom properties on :root; txt: one hex colour per line)"##,
             enabled: has_swatches,
             run: export,
             journal: true,

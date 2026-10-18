@@ -4431,3 +4431,37 @@ curves	Smooth	Wygładź
 	Tilt Direction	Kierunek nachylenia
 	Tilt Elevation	Elewacja nachylenia
 	Fuzzy Stroke	Losowo na pociągnięcie
+	Tip Scale:	Skala końcówki:
+	Initial size as a share of the bitmap's size	Rozmiar początkowy jako udział rozmiaru bitmapy
+	Tip Rotation:	Obrót końcówki:
+	Initial rotation of the tip	Początkowy obrót końcówki
+	No anti-aliasing: the dab's pixels are fully on or off	Bez wygładzania: piksele stempla są w pełni włączone lub wyłączone
+	Align Outline to Pixel Grid	Wyrównaj obrys do siatki pikseli
+	The brush outline snaps to the pixels the dab fills	Obrys pędzla przyciąga się do pikseli wypełnianych przez stempel
+	Tip Mode:	Tryb końcówki:
+	(no colour bitmap: paints the brush colour)	(brak kolorowej bitmapy: maluje kolorem pędzla)
+	Neutral Point	Punkt neutralny
+	Canvas Only: hide the panels around the canvas	Tylko kanwa: ukryj panele wokół kanwy
+	Presets kept in the history	Ustawień wstępnych w historii
+	Clear the history	Wyczyść historię
+	No presets used yet	Nie użyto jeszcze żadnych ustawień wstępnych
+	Forget this preset	Zapomnij to ustawienie wstępne
+	Ten Brushes	Dziesięć pędzli
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Przypisz ustawienia wstępne do dziesięciu miejsc; ponowne uaktywnienie miejsca wraca do poprzedniego
+	Clear this slot	Wyczyść to miejsce
+	Assign current	Przypisz bieżące
+	Browse a folder of reference images	Przeglądaj folder obrazów referencyjnych
+	No folder	Brak folderu
+	Next image	Następny obraz
+	Previous image	Poprzedni obraz
+	Pick an image to show it here	Wybierz obraz, aby go tu pokazać
+	Search actions and commands	Szukaj akcji i poleceń
+	No matching action	Brak pasującej akcji
+	Search Actions…	Szukaj akcji…
+	Brush History	Historia pędzli
+	Reference	Odniesienie
+	Color Image	Obraz kolorowy
+	Lightness Map	Mapa jasności
+	Static	Stałe
+	Move to Top	Przenieś na górę
+	Bubble Up	Przesuń o jedno w górę

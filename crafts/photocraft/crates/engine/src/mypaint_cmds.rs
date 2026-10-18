@@ -170,7 +170,15 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
     let name = name.trim_end_matches(".myb").to_string();
     let text = p.get("text").and_then(Value::as_str).ok_or_else(|| bad(cmd, "missing `text` (the .myb file's contents)"))?;
     let f = parse_myb(text).map_err(|e| bad(cmd, e))?;
-    let brush = to_brush(&f);
+    let mut brush = to_brush(&f);
+    // The preset paints with the MyPaint engine (its full dynamics), the round-brush mapping
+    // above being what the tip preview and the Pixel-engine fallback show.
+    if let Ok(mut settings) = redrob_photo_paint::engines::MyPaintSettings::from_myb(text) {
+        if settings.name.is_empty() {
+            settings.name = name.clone();
+        }
+        brush.engine = redrob_photo_paint::engines::EngineSettings::MyPaint(Box::new(settings));
+    }
     let group = p.get("group").and_then(Value::as_str).map(str::trim).filter(|g| !g.is_empty()).unwrap_or(GROUP).to_string();
     let mut folder = Vec::new();
     if !f.group.is_empty() {

@@ -159,6 +159,7 @@ pub mod resource_cmds;
 pub mod resource_export_cmds;
 pub mod scheme;
 pub mod script_cmds;
+pub mod seexpr;
 mod wia_cmds;
 pub mod workflow_cmds;
 
@@ -595,6 +596,8 @@ pub struct Session {
     pub resource_storages: resource_cmds::StorageState,
     /// Reference images docker (`reference.*`): the browsed folder and the shown image.
     pub reference_images: workflow_cmds::ReferenceState,
+    /// Generator scripts (`scripts.seexpr.*`); empty until first used, then the built-ins.
+    pub seexpr_scripts: Vec<seexpr::SeExprScript>,
 }
 
 /// Move item `i` of `v` to position `to`, clamped to the end. Returns where it went; `None` when
