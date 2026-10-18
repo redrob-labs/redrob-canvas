@@ -5124,3 +5124,40 @@ mark-style	Japanese	Japońskie
 	Preview SVG Font	Podgląd czcionki SVG
 	Glyph Layers to SVG Font	Warstwy glifów na czcionkę SVG
 	SVG Font to Glyph Layers	Czcionka SVG na warstwy glifów
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	pliki WPG w wersji 2 (WordPerfect 6 i nowsze) nie są jeszcze odczytywane: zapisz grafikę jako WPG 1 lub w innym formacie wektorowym
+@msg	bad central record	uszkodzony rekord centralny
+@msg	downloading needs the desktop app	pobieranie wymaga aplikacji desktopowej
+@msg	give `url`: an http:// or https:// address of an image	podaj `url`: adres http:// lub https:// obrazu
+@msg	no zip end record	brak rekordu końcowego zip
+@msg	not a CGM file	to nie jest plik CGM
+@msg	not a CorelDRAW file	to nie jest plik CorelDRAW
+@msg	not a WordPerfect Graphics file	to nie jest plik WordPerfect Graphics
+@msg	not a zip	to nie jest zip
+@msg	not an XFig file	to nie jest plik XFig
+@msg	select an embedded image	zaznacz osadzony obraz
+@msg	the drawing has nothing Redrob Canvas reads	rysunek nie zawiera niczego, co Redrob Canvas odczytuje
+@msg	the effect links to no object in this document	efekt nie odnosi się do żadnego obiektu w tym dokumencie
+@msg	the file draws nothing Redrob Canvas reads	plik nie rysuje niczego, co Redrob Canvas odczytuje
+@msg	the file is empty	plik jest pusty
+@msg	the font has a glyph for `{nu}` already	czcionka ma już glif dla `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	grafika nie rysuje niczego, co Redrob Canvas odczytuje
+@msg	the metafile draws nothing Redrob Canvas reads	metaplik nie rysuje niczego, co Redrob Canvas odczytuje
+@msg	the object is gone	obiekt już nie istnieje
+@msg	the preview bitmap can't be read	nie można odczytać bitmapy podglądu
+@msg	the preview bitmap is empty	bitmapa podglądu jest pusta
+@msg	the selected object has no link	zaznaczony obiekt nie ma łącza
+@msg	the view's rotation is locked (View › Lock Rotate View)	obrót widoku jest zablokowany (Widok › Zablokuj obrót widoku)
+@msg	truncated zip	ucięty zip
+@msg	view.setRotation: missing `angle`	view.setRotation: brak `angle`
+@msg	{_1}: the dictionary is empty	{_1}: słownik jest pusty
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: aplikacja webowa nie ma urządzeń szeregowych ani plików: wyeksportuj HPGL i pobierz go
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} nie jest formatem znanym temu czytnikowi
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	pliki {kind}{ver} to skompresowane kontenery, których rekordy rysunku nie są udokumentowane: wyeksportuj rysunek z CorelDRAW jako SVG, PDF, EPS lub EMF, aby go otworzyć
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: rekordy rysunku nie są udokumentowane, a plik nie ma bitmapy podglądu: wyeksportuj rysunek jako SVG, PDF, EPS lub EMF, aby go otworzyć
+@msg	{name}: compression method {m} isn't supported	{name}: metoda kompresji {m} nie jest obsługiwana
+@msg	{name}: not found among the document's images	{name}: nie znaleziono wśród obrazów dokumentu
+@msg	{name}: too large	{name}: zbyt duży
+@msg	{url}: {e}	{url}: {e}

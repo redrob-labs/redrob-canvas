@@ -5278,3 +5278,40 @@ mark-style	Japanese	Japonské
 	Preview SVG Font	Náhled písma SVG
 	Glyph Layers to SVG Font	Vrstvy glyfů na písmo SVG
 	SVG Font to Glyph Layers	Písmo SVG na vrstvy glyfů
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	soubory WPG verze 2 (WordPerfect 6 a novější) se zatím nečtou: uložte grafiku jako WPG 1 nebo jiný vektorový formát
+@msg	bad central record	poškozený centrální záznam
+@msg	downloading needs the desktop app	stahování vyžaduje desktopovou aplikaci
+@msg	give `url`: an http:// or https:// address of an image	zadejte `url`: adresu obrázku začínající http:// nebo https://
+@msg	no zip end record	chybí koncový záznam zip
+@msg	not a CGM file	není to soubor CGM
+@msg	not a CorelDRAW file	není to soubor CorelDRAW
+@msg	not a WordPerfect Graphics file	není to soubor WordPerfect Graphics
+@msg	not a zip	není to zip
+@msg	not an XFig file	není to soubor XFig
+@msg	select an embedded image	vyberte vložený obrázek
+@msg	the drawing has nothing Redrob Canvas reads	kresba neobsahuje nic, co by Redrob Canvas četl
+@msg	the effect links to no object in this document	efekt neodkazuje na žádný objekt v tomto dokumentu
+@msg	the file draws nothing Redrob Canvas reads	soubor nekreslí nic, co by Redrob Canvas četl
+@msg	the file is empty	soubor je prázdný
+@msg	the font has a glyph for `{nu}` already	písmo již má glyf pro `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	grafika nekreslí nic, co by Redrob Canvas četl
+@msg	the metafile draws nothing Redrob Canvas reads	metasoubor nekreslí nic, co by Redrob Canvas četl
+@msg	the object is gone	objekt již neexistuje
+@msg	the preview bitmap can't be read	bitmapu náhledu nelze přečíst
+@msg	the preview bitmap is empty	bitmapa náhledu je prázdná
+@msg	the selected object has no link	vybraný objekt nemá žádný odkaz
+@msg	the view's rotation is locked (View › Lock Rotate View)	otočení zobrazení je zamknuto (Zobrazení › Zamknout otočení zobrazení)
+@msg	truncated zip	zkrácený zip
+@msg	view.setRotation: missing `angle`	view.setRotation: chybí `angle`
+@msg	{_1}: the dictionary is empty	{_1}: slovník je prázdný
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: webová aplikace nemá sériová zařízení ani soubory: exportujte HPGL a stáhněte ho
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} není formát, který tento čtecí modul zná
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	soubory {kind}{ver} jsou komprimované kontejnery, jejichž záznamy kresby nejsou dokumentovány: exportujte kresbu z CorelDRAW jako SVG, PDF, EPS nebo EMF a tu otevřete
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: záznamy kresby nejsou dokumentovány a soubor nemá bitmapu náhledu: exportujte kresbu jako SVG, PDF, EPS nebo EMF a tu otevřete
+@msg	{name}: compression method {m} isn't supported	{name}: metoda komprese {m} není podporována
+@msg	{name}: not found among the document's images	{name}: nenalezeno mezi obrázky dokumentu
+@msg	{name}: too large	{name}: příliš velké
+@msg	{url}: {e}	{url}: {e}

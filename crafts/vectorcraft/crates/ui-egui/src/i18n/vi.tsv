@@ -4838,3 +4838,40 @@ theme	Appearance	Giao diện
 	Preview SVG Font	Xem trước phông SVG
 	Glyph Layers to SVG Font	Lớp ký tự thành phông SVG
 	SVG Font to Glyph Layers	Phông SVG thành lớp ký tự
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	tệp WPG phiên bản 2 (WordPerfect 6 trở lên) chưa đọc được: hãy lưu hình dưới dạng WPG 1 hoặc định dạng vectơ khác
+@msg	bad central record	bản ghi trung tâm bị lỗi
+@msg	downloading needs the desktop app	tải xuống cần ứng dụng máy tính
+@msg	give `url`: an http:// or https:// address of an image	hãy cung cấp `url`: địa chỉ http:// hoặc https:// của một hình ảnh
+@msg	no zip end record	không có bản ghi kết thúc zip
+@msg	not a CGM file	không phải tệp CGM
+@msg	not a CorelDRAW file	không phải tệp CorelDRAW
+@msg	not a WordPerfect Graphics file	không phải tệp WordPerfect Graphics
+@msg	not a zip	không phải tệp zip
+@msg	not an XFig file	không phải tệp XFig
+@msg	select an embedded image	hãy chọn một hình ảnh nhúng
+@msg	the drawing has nothing Redrob Canvas reads	bản vẽ không có gì mà Redrob Canvas đọc được
+@msg	the effect links to no object in this document	hiệu ứng không liên kết với đối tượng nào trong tài liệu này
+@msg	the file draws nothing Redrob Canvas reads	tệp không vẽ gì mà Redrob Canvas đọc được
+@msg	the file is empty	tệp trống
+@msg	the font has a glyph for `{nu}` already	phông đã có ký tự cho `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	hình không vẽ gì mà Redrob Canvas đọc được
+@msg	the metafile draws nothing Redrob Canvas reads	siêu tệp không vẽ gì mà Redrob Canvas đọc được
+@msg	the object is gone	đối tượng không còn tồn tại
+@msg	the preview bitmap can't be read	không đọc được ảnh bitmap xem trước
+@msg	the preview bitmap is empty	ảnh bitmap xem trước trống
+@msg	the selected object has no link	đối tượng đã chọn không có liên kết
+@msg	the view's rotation is locked (View › Lock Rotate View)	xoay khung nhìn đang bị khoá (Hiển thị › Khoá xoay khung nhìn)
+@msg	truncated zip	tệp zip bị cắt cụt
+@msg	view.setRotation: missing `angle`	view.setRotation: thiếu `angle`
+@msg	{_1}: the dictionary is empty	{_1}: từ điển trống
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: ứng dụng web không có thiết bị nối tiếp hay tệp: hãy xuất HPGL rồi tải xuống
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} không phải định dạng mà trình đọc này biết
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	tệp {kind}{ver} là vùng chứa nén mà các bản ghi bản vẽ chưa được tài liệu hoá: hãy xuất bản vẽ từ CorelDRAW sang SVG, PDF, EPS hoặc EMF để mở
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: các bản ghi bản vẽ chưa được tài liệu hoá và tệp không có ảnh bitmap xem trước: hãy xuất bản vẽ sang SVG, PDF, EPS hoặc EMF để mở
+@msg	{name}: compression method {m} isn't supported	{name}: phương thức nén {m} không được hỗ trợ
+@msg	{name}: not found among the document's images	{name}: không tìm thấy trong các hình ảnh của tài liệu
+@msg	{name}: too large	{name}: quá lớn
+@msg	{url}: {e}	{url}: {e}

@@ -4865,3 +4865,40 @@ lighting	Light	ライト
 	Preview SVG Font	SVG フォントをプレビュー
 	Glyph Layers to SVG Font	グリフレイヤーを SVG フォントに
 	SVG Font to Glyph Layers	SVG フォントをグリフレイヤーに
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	WPG バージョン 2 のファイル（WordPerfect 6 以降）はまだ読み込めません。グラフィックを WPG 1 か別のベクター形式で保存してください
+@msg	bad central record	セントラルレコードが不正です
+@msg	downloading needs the desktop app	ダウンロードにはデスクトップアプリが必要です
+@msg	give `url`: an http:// or https:// address of an image	`url` を指定してください。画像の http:// または https:// アドレスです
+@msg	no zip end record	zip の終端レコードがありません
+@msg	not a CGM file	CGM ファイルではありません
+@msg	not a CorelDRAW file	CorelDRAW ファイルではありません
+@msg	not a WordPerfect Graphics file	WordPerfect Graphics ファイルではありません
+@msg	not a zip	zip ではありません
+@msg	not an XFig file	XFig ファイルではありません
+@msg	select an embedded image	埋め込み画像を選択してください
+@msg	the drawing has nothing Redrob Canvas reads	この図面には Redrob Canvas が読み込めるものがありません
+@msg	the effect links to no object in this document	この効果はこのドキュメント内のどのオブジェクトにもリンクしていません
+@msg	the file draws nothing Redrob Canvas reads	このファイルには Redrob Canvas が読み込める描画がありません
+@msg	the file is empty	ファイルが空です
+@msg	the font has a glyph for `{nu}` already	このフォントには `{nu}` のグリフがすでにあります
+@msg	the graphic draws nothing Redrob Canvas reads	このグラフィックには Redrob Canvas が読み込める描画がありません
+@msg	the metafile draws nothing Redrob Canvas reads	このメタファイルには Redrob Canvas が読み込める描画がありません
+@msg	the object is gone	オブジェクトはすでに存在しません
+@msg	the preview bitmap can't be read	プレビュービットマップを読み込めません
+@msg	the preview bitmap is empty	プレビュービットマップが空です
+@msg	the selected object has no link	選択したオブジェクトにリンクがありません
+@msg	the view's rotation is locked (View › Lock Rotate View)	表示の回転はロックされています（表示 › 表示の回転をロック）
+@msg	truncated zip	zip が途中で切れています
+@msg	view.setRotation: missing `angle`	view.setRotation: `angle` がありません
+@msg	{_1}: the dictionary is empty	{_1}: 辞書が空です
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: ウェブアプリにはシリアルデバイスもファイルもありません。HPGL を書き出してダウンロードしてください
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} はこのリーダーが認識できる形式ではありません
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	{kind}{ver} ファイルは圧縮コンテナで、その描画レコードは文書化されていません。開くには、CorelDRAW から図面を SVG、PDF、EPS、EMF のいずれかで書き出してください
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: 描画レコードは文書化されておらず、ファイルにプレビュービットマップもありません。開くには、図面を SVG、PDF、EPS、EMF のいずれかで書き出してください
+@msg	{name}: compression method {m} isn't supported	{name}: 圧縮方式 {m} はサポートされていません
+@msg	{name}: not found among the document's images	{name}: ドキュメントの画像の中に見つかりません
+@msg	{name}: too large	{name}: サイズが大きすぎます
+@msg	{url}: {e}	{url}: {e}

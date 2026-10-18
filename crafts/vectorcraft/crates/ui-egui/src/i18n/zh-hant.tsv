@@ -4224,3 +4224,40 @@ lighting	Light	光源
 	Preview SVG Font	預覽 SVG 字型
 	Glyph Layers to SVG Font	字符圖層轉為 SVG 字型
 	SVG Font to Glyph Layers	SVG 字型轉為字符圖層
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	WPG 第 2 版檔案（WordPerfect 6 及更新版本）尚無法讀取：請將圖形另存為 WPG 1 或其他向量格式
+@msg	bad central record	中央記錄損壞
+@msg	downloading needs the desktop app	下載需要桌面應用程式
+@msg	give `url`: an http:// or https:// address of an image	請提供 `url`：圖像的 http:// 或 https:// 位址
+@msg	no zip end record	沒有 zip 結束記錄
+@msg	not a CGM file	不是 CGM 檔案
+@msg	not a CorelDRAW file	不是 CorelDRAW 檔案
+@msg	not a WordPerfect Graphics file	不是 WordPerfect Graphics 檔案
+@msg	not a zip	不是 zip
+@msg	not an XFig file	不是 XFig 檔案
+@msg	select an embedded image	請選取一個嵌入圖像
+@msg	the drawing has nothing Redrob Canvas reads	該繪圖中沒有 Redrob Canvas 能讀取的內容
+@msg	the effect links to no object in this document	該效果未連結到此文件中的任何物件
+@msg	the file draws nothing Redrob Canvas reads	該檔案中沒有 Redrob Canvas 能讀取的繪圖內容
+@msg	the file is empty	檔案為空
+@msg	the font has a glyph for `{nu}` already	該字型已有 `{nu}` 的字符
+@msg	the graphic draws nothing Redrob Canvas reads	該圖形中沒有 Redrob Canvas 能讀取的繪圖內容
+@msg	the metafile draws nothing Redrob Canvas reads	該中繼檔中沒有 Redrob Canvas 能讀取的繪圖內容
+@msg	the object is gone	該物件已不存在
+@msg	the preview bitmap can't be read	無法讀取預覽點陣圖
+@msg	the preview bitmap is empty	預覽點陣圖為空
+@msg	the selected object has no link	所選物件沒有連結
+@msg	the view's rotation is locked (View › Lock Rotate View)	檢視旋轉已鎖定（檢視 › 鎖定檢視旋轉）
+@msg	truncated zip	zip 被截斷
+@msg	view.setRotation: missing `angle`	view.setRotation：缺少 `angle`
+@msg	{_1}: the dictionary is empty	{_1}：字典為空
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}：網頁應用程式沒有序列裝置或檔案：請匯出 HPGL 並下載
+@msg	{device}: {e}	{device}：{e}
+@msg	{id} isn't a format this reader knows	{id} 不是此讀取器認識的格式
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	{kind}{ver} 檔案是壓縮容器，其繪圖記錄沒有文件說明：請從 CorelDRAW 將繪圖匯出為 SVG、PDF、EPS 或 EMF 再開啟
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}：繪圖記錄沒有文件說明，且檔案沒有預覽點陣圖：請將繪圖匯出為 SVG、PDF、EPS 或 EMF 再開啟
+@msg	{name}: compression method {m} isn't supported	{name}：不支援壓縮方法 {m}
+@msg	{name}: not found among the document's images	{name}：在文件的圖像中未找到
+@msg	{name}: too large	{name}：過大
+@msg	{url}: {e}	{url}：{e}

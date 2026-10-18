@@ -4852,3 +4852,40 @@ lighting	Light	Свет
 	Preview SVG Font	Просмотр шрифта SVG
 	Glyph Layers to SVG Font	Слои глифов в шрифт SVG
 	SVG Font to Glyph Layers	Шрифт SVG в слои глифов
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	файлы WPG версии 2 (WordPerfect 6 и новее) пока не читаются: сохраните графику как WPG 1 или в другом векторном формате
+@msg	bad central record	повреждённая центральная запись
+@msg	downloading needs the desktop app	для загрузки нужно настольное приложение
+@msg	give `url`: an http:// or https:// address of an image	укажите `url`: адрес изображения, начинающийся с http:// или https://
+@msg	no zip end record	нет конечной записи zip
+@msg	not a CGM file	это не файл CGM
+@msg	not a CorelDRAW file	это не файл CorelDRAW
+@msg	not a WordPerfect Graphics file	это не файл WordPerfect Graphics
+@msg	not a zip	это не zip
+@msg	not an XFig file	это не файл XFig
+@msg	select an embedded image	выделите встроенное изображение
+@msg	the drawing has nothing Redrob Canvas reads	в рисунке нет ничего, что читает Redrob Canvas
+@msg	the effect links to no object in this document	эффект не связан ни с одним объектом в этом документе
+@msg	the file draws nothing Redrob Canvas reads	файл не рисует ничего, что читает Redrob Canvas
+@msg	the file is empty	файл пуст
+@msg	the font has a glyph for `{nu}` already	в шрифте уже есть глиф для `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	графика не рисует ничего, что читает Redrob Canvas
+@msg	the metafile draws nothing Redrob Canvas reads	метафайл не рисует ничего, что читает Redrob Canvas
+@msg	the object is gone	объект больше не существует
+@msg	the preview bitmap can't be read	не удаётся прочитать растровое изображение предпросмотра
+@msg	the preview bitmap is empty	растровое изображение предпросмотра пусто
+@msg	the selected object has no link	у выделенного объекта нет ссылки
+@msg	the view's rotation is locked (View › Lock Rotate View)	поворот вида заблокирован (Просмотр › Заблокировать поворот вида)
+@msg	truncated zip	обрезанный zip
+@msg	view.setRotation: missing `angle`	view.setRotation: отсутствует `angle`
+@msg	{_1}: the dictionary is empty	{_1}: словарь пуст
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: в веб-приложении нет последовательных устройств и файлов: экспортируйте HPGL и скачайте его
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} не является форматом, известным этому модулю чтения
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	файлы {kind}{ver} являются сжатыми контейнерами, записи рисунка в которых не документированы: экспортируйте рисунок из CorelDRAW в SVG, PDF, EPS или EMF, чтобы открыть его
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: записи рисунка не документированы, и в файле нет растрового изображения предпросмотра: экспортируйте рисунок в SVG, PDF, EPS или EMF, чтобы открыть его
+@msg	{name}: compression method {m} isn't supported	{name}: метод сжатия {m} не поддерживается
+@msg	{name}: not found among the document's images	{name}: не найдено среди изображений документа
+@msg	{name}: too large	{name}: слишком большой
+@msg	{url}: {e}	{url}: {e}

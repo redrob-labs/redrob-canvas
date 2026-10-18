@@ -4871,3 +4871,40 @@ lighting	Light	Luce
 	Preview SVG Font	Anteprima font SVG
 	Glyph Layers to SVG Font	Livelli glifi in font SVG
 	SVG Font to Glyph Layers	Font SVG in livelli glifi
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	i file WPG versione 2 (WordPerfect 6 e successivi) non vengono ancora letti: salva la grafica come WPG 1 o in un altro formato vettoriale
+@msg	bad central record	record centrale danneggiato
+@msg	downloading needs the desktop app	il download richiede l'app desktop
+@msg	give `url`: an http:// or https:// address of an image	indica `url`: un indirizzo http:// o https:// di un'immagine
+@msg	no zip end record	manca il record finale dello zip
+@msg	not a CGM file	non è un file CGM
+@msg	not a CorelDRAW file	non è un file CorelDRAW
+@msg	not a WordPerfect Graphics file	non è un file WordPerfect Graphics
+@msg	not a zip	non è uno zip
+@msg	not an XFig file	non è un file XFig
+@msg	select an embedded image	seleziona un'immagine incorporata
+@msg	the drawing has nothing Redrob Canvas reads	il disegno non contiene nulla che Redrob Canvas legga
+@msg	the effect links to no object in this document	l'effetto non è collegato a nessun oggetto in questo documento
+@msg	the file draws nothing Redrob Canvas reads	il file non disegna nulla che Redrob Canvas legga
+@msg	the file is empty	il file è vuoto
+@msg	the font has a glyph for `{nu}` already	il font ha già un glifo per `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	la grafica non disegna nulla che Redrob Canvas legga
+@msg	the metafile draws nothing Redrob Canvas reads	il metafile non disegna nulla che Redrob Canvas legga
+@msg	the object is gone	l'oggetto non esiste più
+@msg	the preview bitmap can't be read	la bitmap di anteprima non può essere letta
+@msg	the preview bitmap is empty	la bitmap di anteprima è vuota
+@msg	the selected object has no link	l'oggetto selezionato non ha collegamenti
+@msg	the view's rotation is locked (View › Lock Rotate View)	la rotazione della vista è bloccata (Visualizza › Blocca rotazione vista)
+@msg	truncated zip	zip troncato
+@msg	view.setRotation: missing `angle`	view.setRotation: manca `angle`
+@msg	{_1}: the dictionary is empty	{_1}: il dizionario è vuoto
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: l'app web non ha dispositivi seriali né file: esporta l'HPGL e scaricalo
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} non è un formato noto a questo lettore
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	i file {kind}{ver} sono contenitori compressi i cui record di disegno non sono documentati: esporta il disegno da CorelDRAW come SVG, PDF, EPS o EMF per aprirlo
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: i record di disegno non sono documentati e il file non ha una bitmap di anteprima: esporta il disegno come SVG, PDF, EPS o EMF per aprirlo
+@msg	{name}: compression method {m} isn't supported	{name}: il metodo di compressione {m} non è supportato
+@msg	{name}: not found among the document's images	{name}: non trovato tra le immagini del documento
+@msg	{name}: too large	{name}: troppo grande
+@msg	{url}: {e}	{url}: {e}

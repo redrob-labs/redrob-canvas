@@ -3814,3 +3814,40 @@ axis	Both	Ambos
 	Reset Canvas Orientation	Redefinir orientação da tela
 	XML Editor	Editor XML
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	Simular imprime as sobreimpressões como a Visualização de sobreimpressão as mostra; as separações sempre as mantêm. Uma predefinição achata a transparência antes de imprimir (arquivos PostScript sempre a achatam).
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	arquivos WPG versão 2 (WordPerfect 6 e posteriores) ainda não são lidos: salve o gráfico como WPG 1 ou em outro formato vetorial
+@msg	bad central record	registro central inválido
+@msg	downloading needs the desktop app	o download requer o aplicativo para desktop
+@msg	give `url`: an http:// or https:// address of an image	informe `url`: um endereço http:// ou https:// de uma imagem
+@msg	no zip end record	sem registro final do zip
+@msg	not a CGM file	não é um arquivo CGM
+@msg	not a CorelDRAW file	não é um arquivo do CorelDRAW
+@msg	not a WordPerfect Graphics file	não é um arquivo do WordPerfect Graphics
+@msg	not a zip	não é um zip
+@msg	not an XFig file	não é um arquivo XFig
+@msg	select an embedded image	selecione uma imagem incorporada
+@msg	the drawing has nothing Redrob Canvas reads	o desenho não tem nada que o Redrob Canvas leia
+@msg	the effect links to no object in this document	o efeito não está vinculado a nenhum objeto deste documento
+@msg	the file draws nothing Redrob Canvas reads	o arquivo não desenha nada que o Redrob Canvas leia
+@msg	the file is empty	o arquivo está vazio
+@msg	the font has a glyph for `{nu}` already	a fonte já tem um glifo para `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	o gráfico não desenha nada que o Redrob Canvas leia
+@msg	the metafile draws nothing Redrob Canvas reads	o metarquivo não desenha nada que o Redrob Canvas leia
+@msg	the object is gone	o objeto não existe mais
+@msg	the preview bitmap can't be read	o bitmap de visualização não pode ser lido
+@msg	the preview bitmap is empty	o bitmap de visualização está vazio
+@msg	the selected object has no link	o objeto selecionado não tem link
+@msg	the view's rotation is locked (View › Lock Rotate View)	a rotação da visualização está bloqueada (Exibir › Bloquear Girar Visualização)
+@msg	truncated zip	zip truncado
+@msg	view.setRotation: missing `angle`	view.setRotation: falta `angle`
+@msg	{_1}: the dictionary is empty	{_1}: o dicionário está vazio
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: o aplicativo web não tem dispositivos seriais nem arquivos: exporte o HPGL e baixe-o
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} não é um formato que este leitor conhece
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	arquivos {kind}{ver} são contêineres compactados cujos registros de desenho não são documentados: exporte o desenho do CorelDRAW como SVG, PDF, EPS ou EMF para abri-lo
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: os registros de desenho não são documentados e o arquivo não tem bitmap de visualização: exporte o desenho como SVG, PDF, EPS ou EMF para abri-lo
+@msg	{name}: compression method {m} isn't supported	{name}: o método de compactação {m} não é suportado
+@msg	{name}: not found among the document's images	{name}: não encontrado entre as imagens do documento
+@msg	{name}: too large	{name}: muito grande
+@msg	{url}: {e}	{url}: {e}

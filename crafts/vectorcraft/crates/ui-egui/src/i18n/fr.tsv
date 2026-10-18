@@ -5293,3 +5293,40 @@ theme	Appearance	Apparence
 	Preview SVG Font	Aperçu de la police SVG
 	Glyph Layers to SVG Font	Calques de glyphes en police SVG
 	SVG Font to Glyph Layers	Police SVG en calques de glyphes
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	les fichiers WPG version 2 (WordPerfect 6 et ultérieur) ne sont pas encore lus : enregistrez le graphique en WPG 1 ou dans un autre format vectoriel
+@msg	bad central record	enregistrement central invalide
+@msg	downloading needs the desktop app	le téléchargement nécessite l’application de bureau
+@msg	give `url`: an http:// or https:// address of an image	indiquez `url` : une adresse http:// ou https:// d’une image
+@msg	no zip end record	aucun enregistrement de fin zip
+@msg	not a CGM file	ce n’est pas un fichier CGM
+@msg	not a CorelDRAW file	ce n’est pas un fichier CorelDRAW
+@msg	not a WordPerfect Graphics file	ce n’est pas un fichier WordPerfect Graphics
+@msg	not a zip	ce n’est pas un zip
+@msg	not an XFig file	ce n’est pas un fichier XFig
+@msg	select an embedded image	sélectionnez une image incorporée
+@msg	the drawing has nothing Redrob Canvas reads	le dessin ne contient rien que Redrob Canvas lise
+@msg	the effect links to no object in this document	l’effet ne renvoie à aucun objet de ce document
+@msg	the file draws nothing Redrob Canvas reads	le fichier ne dessine rien que Redrob Canvas lise
+@msg	the file is empty	le fichier est vide
+@msg	the font has a glyph for `{nu}` already	la police a déjà un glyphe pour `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	le graphique ne dessine rien que Redrob Canvas lise
+@msg	the metafile draws nothing Redrob Canvas reads	le métafichier ne dessine rien que Redrob Canvas lise
+@msg	the object is gone	l’objet n’existe plus
+@msg	the preview bitmap can't be read	l’image bitmap d’aperçu ne peut pas être lue
+@msg	the preview bitmap is empty	l’image bitmap d’aperçu est vide
+@msg	the selected object has no link	l’objet sélectionné n’a pas de lien
+@msg	the view's rotation is locked (View › Lock Rotate View)	la rotation de la vue est verrouillée (Affichage › Verrouiller la rotation de la vue)
+@msg	truncated zip	zip tronqué
+@msg	view.setRotation: missing `angle`	view.setRotation : `angle` manquant
+@msg	{_1}: the dictionary is empty	{_1} : le dictionnaire est vide
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device} : l’application web n’a ni périphériques série ni fichiers : exportez le HPGL et téléchargez-le
+@msg	{device}: {e}	{device} : {e}
+@msg	{id} isn't a format this reader knows	{id} n’est pas un format connu de ce lecteur
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	les fichiers {kind}{ver} sont des conteneurs compressés dont les enregistrements de dessin ne sont pas documentés : exportez le dessin depuis CorelDRAW en SVG, PDF, EPS ou EMF pour l’ouvrir
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver} : les enregistrements de dessin ne sont pas documentés et le fichier n’a pas d’image bitmap d’aperçu : exportez le dessin en SVG, PDF, EPS ou EMF pour l’ouvrir
+@msg	{name}: compression method {m} isn't supported	{name} : la méthode de compression {m} n’est pas prise en charge
+@msg	{name}: not found among the document's images	{name} : introuvable parmi les images du document
+@msg	{name}: too large	{name} : trop volumineux
+@msg	{url}: {e}	{url} : {e}

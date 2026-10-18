@@ -4836,3 +4836,40 @@ lighting	Light	Світло
 	Preview SVG Font	Перегляд шрифту SVG
 	Glyph Layers to SVG Font	Шари гліфів у шрифт SVG
 	SVG Font to Glyph Layers	Шрифт SVG у шари гліфів
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	файли WPG версії 2 (WordPerfect 6 і новіші) поки не читаються: збережіть графіку як WPG 1 або в іншому векторному форматі
+@msg	bad central record	пошкоджений центральний запис
+@msg	downloading needs the desktop app	для завантаження потрібен настільний застосунок
+@msg	give `url`: an http:// or https:// address of an image	вкажіть `url`: адресу зображення, що починається з http:// або https://
+@msg	no zip end record	немає кінцевого запису zip
+@msg	not a CGM file	це не файл CGM
+@msg	not a CorelDRAW file	це не файл CorelDRAW
+@msg	not a WordPerfect Graphics file	це не файл WordPerfect Graphics
+@msg	not a zip	це не zip
+@msg	not an XFig file	це не файл XFig
+@msg	select an embedded image	виділіть вбудоване зображення
+@msg	the drawing has nothing Redrob Canvas reads	у малюнку немає нічого, що читає Redrob Canvas
+@msg	the effect links to no object in this document	ефект не пов’язаний із жодним об’єктом у цьому документі
+@msg	the file draws nothing Redrob Canvas reads	файл не малює нічого, що читає Redrob Canvas
+@msg	the file is empty	файл порожній
+@msg	the font has a glyph for `{nu}` already	у шрифті вже є гліф для `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	графіка не малює нічого, що читає Redrob Canvas
+@msg	the metafile draws nothing Redrob Canvas reads	метафайл не малює нічого, що читає Redrob Canvas
+@msg	the object is gone	об’єкт більше не існує
+@msg	the preview bitmap can't be read	не вдається прочитати растрове зображення попереднього перегляду
+@msg	the preview bitmap is empty	растрове зображення попереднього перегляду порожнє
+@msg	the selected object has no link	у виділеного об’єкта немає посилання
+@msg	the view's rotation is locked (View › Lock Rotate View)	обертання виду заблоковано (Перегляд › Заблокувати обертання виду)
+@msg	truncated zip	обрізаний zip
+@msg	view.setRotation: missing `angle`	view.setRotation: відсутній `angle`
+@msg	{_1}: the dictionary is empty	{_1}: словник порожній
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: у вебзастосунку немає послідовних пристроїв і файлів: експортуйте HPGL і завантажте його
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} не є форматом, відомим цьому модулю читання
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	файли {kind}{ver} є стиснутими контейнерами, записи малюнка в яких не задокументовані: експортуйте малюнок із CorelDRAW у SVG, PDF, EPS або EMF, щоб відкрити його
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: записи малюнка не задокументовані, і у файлі немає растрового зображення попереднього перегляду: експортуйте малюнок у SVG, PDF, EPS або EMF, щоб відкрити його
+@msg	{name}: compression method {m} isn't supported	{name}: метод стиснення {m} не підтримується
+@msg	{name}: not found among the document's images	{name}: не знайдено серед зображень документа
+@msg	{name}: too large	{name}: надто великий
+@msg	{url}: {e}	{url}: {e}

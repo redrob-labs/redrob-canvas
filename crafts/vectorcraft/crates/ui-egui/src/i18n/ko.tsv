@@ -4835,3 +4835,40 @@ lighting	Light	광원
 	Preview SVG Font	SVG 글꼴 미리보기
 	Glyph Layers to SVG Font	글리프 레이어를 SVG 글꼴로
 	SVG Font to Glyph Layers	SVG 글꼴을 글리프 레이어로
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	WPG 버전 2 파일(WordPerfect 6 이상)은 아직 읽을 수 없습니다. 그래픽을 WPG 1이나 다른 벡터 형식으로 저장하세요
+@msg	bad central record	중앙 레코드가 손상되었습니다
+@msg	downloading needs the desktop app	다운로드에는 데스크톱 앱이 필요합니다
+@msg	give `url`: an http:// or https:// address of an image	`url`을 지정하세요. 이미지의 http:// 또는 https:// 주소입니다
+@msg	no zip end record	zip 종료 레코드가 없습니다
+@msg	not a CGM file	CGM 파일이 아닙니다
+@msg	not a CorelDRAW file	CorelDRAW 파일이 아닙니다
+@msg	not a WordPerfect Graphics file	WordPerfect Graphics 파일이 아닙니다
+@msg	not a zip	zip이 아닙니다
+@msg	not an XFig file	XFig 파일이 아닙니다
+@msg	select an embedded image	포함된 이미지를 선택하세요
+@msg	the drawing has nothing Redrob Canvas reads	이 드로잉에는 Redrob Canvas가 읽을 수 있는 내용이 없습니다
+@msg	the effect links to no object in this document	이 효과는 이 문서의 어떤 오브젝트에도 연결되어 있지 않습니다
+@msg	the file draws nothing Redrob Canvas reads	이 파일에는 Redrob Canvas가 읽을 수 있는 드로잉이 없습니다
+@msg	the file is empty	파일이 비어 있습니다
+@msg	the font has a glyph for `{nu}` already	이 글꼴에는 `{nu}`의 글리프가 이미 있습니다
+@msg	the graphic draws nothing Redrob Canvas reads	이 그래픽에는 Redrob Canvas가 읽을 수 있는 드로잉이 없습니다
+@msg	the metafile draws nothing Redrob Canvas reads	이 메타파일에는 Redrob Canvas가 읽을 수 있는 드로잉이 없습니다
+@msg	the object is gone	오브젝트가 더 이상 존재하지 않습니다
+@msg	the preview bitmap can't be read	미리보기 비트맵을 읽을 수 없습니다
+@msg	the preview bitmap is empty	미리보기 비트맵이 비어 있습니다
+@msg	the selected object has no link	선택한 오브젝트에 링크가 없습니다
+@msg	the view's rotation is locked (View › Lock Rotate View)	보기 회전이 잠겨 있습니다 (보기 › 보기 회전 잠금)
+@msg	truncated zip	zip이 잘렸습니다
+@msg	view.setRotation: missing `angle`	view.setRotation: `angle`이 없습니다
+@msg	{_1}: the dictionary is empty	{_1}: 사전이 비어 있습니다
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: 웹 앱에는 시리얼 장치나 파일이 없습니다. HPGL을 내보낸 뒤 다운로드하세요
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id}은(는) 이 리더가 아는 형식이 아닙니다
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	{kind}{ver} 파일은 드로잉 레코드가 문서화되지 않은 압축 컨테이너입니다. 열려면 CorelDRAW에서 드로잉을 SVG, PDF, EPS 또는 EMF로 내보내세요
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: 드로잉 레코드가 문서화되지 않았고 파일에 미리보기 비트맵도 없습니다. 열려면 드로잉을 SVG, PDF, EPS 또는 EMF로 내보내세요
+@msg	{name}: compression method {m} isn't supported	{name}: 압축 방식 {m}은(는) 지원되지 않습니다
+@msg	{name}: not found among the document's images	{name}: 문서의 이미지 중에 없습니다
+@msg	{name}: too large	{name}: 너무 큽니다
+@msg	{url}: {e}	{url}: {e}

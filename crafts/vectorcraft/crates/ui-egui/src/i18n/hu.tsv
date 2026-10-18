@@ -5245,3 +5245,40 @@ imageTrace	Outline	Körvonal
 	Preview SVG Font	SVG-betűkészlet előnézete
 	Glyph Layers to SVG Font	Glifarétegek SVG-betűkészletté
 	SVG Font to Glyph Layers	SVG-betűkészlet glifarétegekké
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	a WPG 2-es verziójú fájlok (WordPerfect 6 és újabb) még nem olvashatók: mentse a grafikát WPG 1 vagy más vektoros formátumban
+@msg	bad central record	hibás központi rekord
+@msg	downloading needs the desktop app	a letöltéshez az asztali alkalmazás szükséges
+@msg	give `url`: an http:// or https:// address of an image	adja meg az `url` értékét: egy kép http:// vagy https:// címét
+@msg	no zip end record	nincs zip-zárórekord
+@msg	not a CGM file	nem CGM-fájl
+@msg	not a CorelDRAW file	nem CorelDRAW-fájl
+@msg	not a WordPerfect Graphics file	nem WordPerfect Graphics-fájl
+@msg	not a zip	nem zip
+@msg	not an XFig file	nem XFig-fájl
+@msg	select an embedded image	jelöljön ki egy beágyazott képet
+@msg	the drawing has nothing Redrob Canvas reads	a rajz nem tartalmaz semmit, amit a Redrob Canvas olvasna
+@msg	the effect links to no object in this document	az effektus nem hivatkozik egyetlen objektumra sem ebben a dokumentumban
+@msg	the file draws nothing Redrob Canvas reads	a fájl nem rajzol semmit, amit a Redrob Canvas olvasna
+@msg	the file is empty	a fájl üres
+@msg	the font has a glyph for `{nu}` already	a betűkészletnek már van glifája a következőhöz: `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	a grafika nem rajzol semmit, amit a Redrob Canvas olvasna
+@msg	the metafile draws nothing Redrob Canvas reads	a metafájl nem rajzol semmit, amit a Redrob Canvas olvasna
+@msg	the object is gone	az objektum már nem létezik
+@msg	the preview bitmap can't be read	az előnézeti bitkép nem olvasható
+@msg	the preview bitmap is empty	az előnézeti bitkép üres
+@msg	the selected object has no link	a kijelölt objektumnak nincs hivatkozása
+@msg	the view's rotation is locked (View › Lock Rotate View)	a nézet forgatása zárolva van (Nézet › Nézetforgatás zárolása)
+@msg	truncated zip	csonka zip
+@msg	view.setRotation: missing `angle`	view.setRotation: hiányzik az `angle`
+@msg	{_1}: the dictionary is empty	{_1}: a szótár üres
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: a webalkalmazásnak nincsenek soros eszközei vagy fájljai: exportálja a HPGL-t és töltse le
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} nem olyan formátum, amelyet ez az olvasó ismer
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	a {kind}{ver} fájlok tömörített konténerek, amelyek rajzrekordjai nem dokumentáltak: exportálja a rajzot a CorelDRAW-ból SVG, PDF, EPS vagy EMF formátumban a megnyitáshoz
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: a rajzrekordok nem dokumentáltak, és a fájlnak nincs előnézeti bitképe: exportálja a rajzot SVG, PDF, EPS vagy EMF formátumban a megnyitáshoz
+@msg	{name}: compression method {m} isn't supported	{name}: a {m} tömörítési módszer nem támogatott
+@msg	{name}: not found among the document's images	{name}: nem található a dokumentum képei között
+@msg	{name}: too large	{name}: túl nagy
+@msg	{url}: {e}	{url}: {e}
