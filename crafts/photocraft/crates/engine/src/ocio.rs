@@ -1214,7 +1214,7 @@ impl Config {
     fn apply_looks(&self, c: [f32; 3], looks: &str, inverse: bool, depth: u32) -> [f32; 3] {
         let mut o = c;
         let items: Vec<(bool, &str)> = looks
-            .split(|ch| ch == ',' || ch == ':')
+            .split([',', ':'])
             .map(str::trim)
             .filter(|s| !s.is_empty())
             .map(|s| match s.strip_prefix('-') {
