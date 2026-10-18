@@ -311,8 +311,8 @@ fn mask_background(s: &mut Session, p: &Value) -> Result<Value> {
         for id in &ids {
             let Some(n) = d.node(*id) else { continue };
             let bounds = n.visual_bounds();
-            let Some(m) = n.extras().mask.as_deref() else { continue };
-            let art = with_background(d, &m.art, bounds, color);
+            let Some(art) = n.extras().mask.as_deref().map(|m| m.art.clone()) else { continue };
+            let art = with_background(d, &art, bounds, color);
             if let Some(m) = d.node_mut(*id).and_then(|n| n.extras_if_any().and_then(|e| e.mask.as_mut())) {
                 m.art = art;
             }
@@ -343,7 +343,7 @@ fn live_slice(s: &mut Session, p: &Value) -> Result<Value> {
     let effect = |side: &str, pair: NodeId| -> Option<Effect> {
         let mut params = base.clone();
         params["side"] = json!(side);
-        params["pair"] = json!(pair.0);
+        params["__pair"] = json!(pair.0);
         effects::new_effect(effects::lpe_draw::SLICE, &params)
     };
     let ids = s.edit("Live Slice", |d, sel| {
@@ -389,7 +389,7 @@ fn fuse_slice(s: &mut Session, p: &Value) -> Result<Value> {
                         .effects
                         .iter()
                         .filter(|e| e.id == effects::lpe_draw::SLICE)
-                        .filter_map(|e| e.params.get("pair").and_then(Value::as_u64).map(NodeId))
+                        .filter_map(|e| e.params.get("__pair").and_then(Value::as_u64).map(NodeId))
                         .collect()
                 })
                 .unwrap_or_default();

@@ -108,7 +108,7 @@ fn conic_through(pts: &[Point]) -> Option<Affine> {
     }
     let [a, b, cc, d, e, f] = coef;
     let disc = b * b - 4.0 * a * cc;
-    if !(disc < -1e-12) {
+    if disc >= -1e-12 || !disc.is_finite() {
         return None;
     }
     let x0 = (2.0 * cc * d - b * e) / disc;

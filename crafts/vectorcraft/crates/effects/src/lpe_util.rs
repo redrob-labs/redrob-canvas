@@ -122,7 +122,7 @@ impl Measured {
     /// The piece of the subpath from distance `a` to distance `b` (`a < b`, both within the
     /// length; a closed subpath wraps), as an open subpath.
     pub fn slice(&self, a: f64, b: f64) -> Option<SubPath> {
-        if self.is_empty() || !(b > a + 1e-9) {
+        if self.is_empty() || b <= a + 1e-9 || !(a.is_finite() && b.is_finite()) {
             return None;
         }
         let (a, b) = if self.closed && self.total > 0.0 {
