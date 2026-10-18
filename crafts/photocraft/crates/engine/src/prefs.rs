@@ -781,6 +781,11 @@ pub struct PlugIns {
     pub show_extension_panels: bool,
     pub allow_scripts_to_connect: bool,
     pub generator_enabled: bool,
+    /// Path of the external G'MIC command-line executable `filter.gmic.run` hands layers to
+    /// (empty: `gmic` on the PATH).
+    pub gmic_executable: String,
+    /// Folder of G'MIC update (`.gmic`) files the executable should read (empty: its default).
+    pub gmic_update_folder: String,
 }
 
 impl Default for PlugIns {
@@ -791,6 +796,8 @@ impl Default for PlugIns {
             show_extension_panels: true,
             allow_scripts_to_connect: false,
             generator_enabled: false,
+            gmic_executable: String::new(),
+            gmic_update_folder: String::new(),
         }
     }
 }

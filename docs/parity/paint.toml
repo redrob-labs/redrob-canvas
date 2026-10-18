@@ -2902,9 +2902,9 @@ name = "Dodge filter"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Lighten shadows, midtones or highlights by an exposure amount, as a filter or filter layer."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/retouch_cmds.rs"
-gap = "dodge is a brush tool, not a whole-layer filter"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2914,9 +2914,9 @@ name = "Burn filter"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Darken shadows/midtones/highlights by exposure."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/retouch_cmds.rs"
-gap = "burn tool only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2950,9 +2950,9 @@ name = "Cross-channel colour adjustment"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Drive one channel (e.g. saturation) by a curve over another (e.g. hue)."
-ours = "none"
-ours_where = ""
-gap = "Hue/Saturation per-range is the closest"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3046,8 +3046,8 @@ name = "Slope, offset, power (ASC CDL)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Per-channel slope/offset/power and saturation like film grading."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3070,9 +3070,9 @@ name = "Index colour"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
 behaviour = "Reduce to a ramp-based palette with dithering, for pixel art."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs"
-gap = "Indexed Color mode without ramp editor"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3094,8 +3094,8 @@ name = "Raindrops"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
 behaviour = "Random lens droplets with drop size, number, fish-eye."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3154,9 +3154,9 @@ name = "Blur (box/shape)"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
 behaviour = "Width, height, strength, angle and shape (circle, triangle, quadrilateral, pentagon, hexagon, octagon)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
-gap = "box blur and shape blur with custom shape; no fixed polygon list"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3214,8 +3214,8 @@ name = "Maximize channel"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Push the strongest channel of each pixel to full."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3226,8 +3226,8 @@ name = "Minimize channel"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Push the weakest channel to zero."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3238,8 +3238,8 @@ name = "Propagate colours"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Spread colour from opaque pixels into transparent ones (for texture edges)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3250,9 +3250,9 @@ name = "Edge detection"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/edge_detection.html"
 behaviour = "Prewitt, Sobel, Simple methods; horizontal/vertical radius; output as alpha or colour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
-gap = "Find Edges only; no method or radius choice"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3274,8 +3274,8 @@ name = "Height to normal map"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/edge_detection.html"
 behaviour = "Convert greyscale height to a tangent normal map with channel swizzle and radius."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3286,9 +3286,9 @@ name = "Emboss family"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/emboss.html"
 behaviour = "Horizontal, vertical, both, all directions, Laplacian, variable depth emboss."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
-gap = "one Emboss filter with angle/height; no Laplacian or variable depth"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3310,8 +3310,8 @@ name = "Mean removal"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
 behaviour = "Sharpen by subtracting the mean."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3346,8 +3346,8 @@ name = "Wavelet noise reducer"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
 behaviour = "Noise removal by wavelet threshold."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3358,8 +3358,8 @@ name = "Small tiles"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Tile the layer N times."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/distort3.rs, crafts/photocraft/crates/engine/src/filters_gen.rs"
 gap = ""
 priority = 3
 
@@ -3370,9 +3370,9 @@ name = "Phong bumpmap"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Light a height or normal map with up to four lights, ambient/diffuse/specular, shininess."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
-gap = "Lighting Effects with texture channel"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3382,8 +3382,8 @@ name = "Round corners"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Round the layer's corners by a radius."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters_more.rs"
 gap = ""
 priority = 3
 
@@ -3394,8 +3394,8 @@ name = "Normalize"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Normalize normal-map vectors."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3418,9 +3418,9 @@ name = "Palettize"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Quantize to a palette with colour space, dithering threshold/colour/alpha modes."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs"
-gap = "Indexed mode with dither; no palette resource input"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3454,8 +3454,8 @@ name = "Reset transparent"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
 behaviour = "Zero colour under fully transparent pixels."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3466,8 +3466,8 @@ name = "Random pick"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
 behaviour = "Swap pixels with random neighbours."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3478,8 +3478,8 @@ name = "Wavelet decompose"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/wavelet_decompose.html"
 behaviour = "Split a layer into N frequency scales as layers for retouching."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs"
 gap = ""
 priority = 2
 
@@ -3490,9 +3490,9 @@ name = "G'MIC plugin"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/g_mic_settings.html"
 behaviour = "Hundreds of external filters via the G'MIC-Qt plugin with update files."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/engine/src/filters_paint.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+gap = "the G'MIC command line runs through an installed gmic executable; the G'MIC-Qt dialog with its filter browser is not embedded"
 priority = 2
 
 [[feature]]

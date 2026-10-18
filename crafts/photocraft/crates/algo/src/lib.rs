@@ -61,6 +61,7 @@ mod oil;
 mod other;
 mod other2;
 pub mod paint;
+pub mod paint_fx;
 pub mod panorama;
 mod par;
 pub mod perspective;
@@ -102,11 +103,13 @@ pub use params_ext::*;
 pub use params_extra::*;
 pub use params_gen::*;
 pub use params_more::*;
+pub use params_paint::*;
 
 mod params_ext;
 mod params_extra;
 mod params_gen;
 mod params_more;
+mod params_paint;
 
 use redrob_photo_color::ColorMode;
 use redrob_photo_geom::Rect;
@@ -1412,6 +1415,111 @@ pub enum FilterParams {
         turbulent: bool,
         seed: u32,
     },
+
+    // ---- Fifth batch (v0.11 Paint-mode parity) ----
+    /// Exposure 0..1 on one tone range of every channel; `burn` darkens, otherwise dodges.
+    DodgeBurn {
+        burn: bool,
+        range: ToneRange,
+        exposure: f32,
+    },
+    /// Ramp palette (base colours dark to light per ramp, straight sRGB), interpolation counts,
+    /// dither pattern and amount 0..1, alpha levels (256 = untouched), lightness weight 0..1.
+    IndexColors {
+        ramps: Vec<Vec<[f32; 3]>>,
+        in_between: u32,
+        between_ramps: u32,
+        dither: IndexDither,
+        amount: f32,
+        alpha_steps: u32,
+        luma_weight: f32,
+    },
+    /// Half-widths px, strength 0..1, angle degrees, kernel outline.
+    PolyBlur {
+        width: f32,
+        height: f32,
+        strength: f32,
+        angle: f32,
+        shape: PolyShape,
+    },
+    /// Radii px (1..100).
+    EdgeDetection {
+        method: EdgeMethod,
+        h_radius: u32,
+        v_radius: u32,
+        output: EdgeOutput,
+        to_alpha: bool,
+    },
+    /// Depth 1..10.
+    EmbossFamily {
+        direction: EmbossDirection,
+        depth: f32,
+    },
+    /// Reflectivities 0..1, shininess 1..200.
+    PhongBumpmap {
+        lights: [PhongLight; 4],
+        ambient: f32,
+        diffuse: f32,
+        specular: f32,
+        shininess: f32,
+        use_normal_map: bool,
+        height_channel: HeightChannel,
+    },
+    /// Palette (straight sRGB), dither threshold 0..1, alpha treatment.
+    Palettize {
+        colors: Vec<[f32; 3]>,
+        space: PaletteSpace,
+        dither: PaletteDither,
+        threshold: f32,
+        color_mode: PaletteColorMode,
+        alpha_mode: PaletteAlphaMode,
+        alpha_index: u32,
+        alpha_threshold: f32,
+    },
+    CrossChannelAdjust {
+        curves: Vec<CrossCurve>,
+    },
+    /// ASC CDL: per-channel slope, offset and power; saturation 0..4.
+    SlopeOffsetPower {
+        slope: [f32; 3],
+        offset: [f32; 3],
+        power: [f32; 3],
+        saturation: f32,
+    },
+    /// Drop radius px (1..200), count 1..500, fish-eye 1..100.
+    Raindrops {
+        drop_size: f32,
+        number: u32,
+        fish_eye: f32,
+        seed: u32,
+    },
+    MaximizeChannel,
+    MinimizeChannel,
+    /// Radius px (1..256).
+    PropagateColors {
+        radius: u32,
+    },
+    HeightToNormal {
+        method: EdgeMethod,
+        h_radius: u32,
+        v_radius: u32,
+        channel: HeightChannel,
+        swizzle: [NormalSwizzle; 3],
+    },
+    MeanRemoval,
+    /// Threshold 0..1.
+    WaveletNoiseReducer {
+        threshold: f32,
+    },
+    NormalizeNormals,
+    ResetTransparent,
+    /// Level and opacity 0..1, window px (1..100).
+    RandomPick {
+        level: f32,
+        window: u32,
+        opacity: f32,
+        seed: u32,
+    },
 }
 
 fn default_glow_size() -> f32 {
@@ -1686,6 +1794,33 @@ fn extra2_label(p: &FilterParams) -> &'static str {
         FilterParams::PerlinNoise { .. } => "Perlin Noise",
         FilterParams::Plasma { .. } => "Plasma",
         FilterParams::SolidNoise { .. } => "Solid Noise",
+        other => paint_label(other),
+    }
+}
+
+/// Labels of the fifth batch (Paint-mode parity).
+fn paint_label(p: &FilterParams) -> &'static str {
+    match p {
+        FilterParams::DodgeBurn { burn: false, .. } => "Dodge",
+        FilterParams::DodgeBurn { burn: true, .. } => "Burn",
+        FilterParams::IndexColors { .. } => "Index Colors",
+        FilterParams::PolyBlur { .. } => "Blur",
+        FilterParams::EdgeDetection { .. } => "Edge Detection",
+        FilterParams::EmbossFamily { .. } => "Emboss",
+        FilterParams::PhongBumpmap { .. } => "Phong Bump Map",
+        FilterParams::Palettize { .. } => "Palettize",
+        FilterParams::CrossChannelAdjust { .. } => "Cross-Channel Adjustment",
+        FilterParams::SlopeOffsetPower { .. } => "Slope, Offset, Power",
+        FilterParams::Raindrops { .. } => "Raindrops",
+        FilterParams::MaximizeChannel => "Maximize Channel",
+        FilterParams::MinimizeChannel => "Minimize Channel",
+        FilterParams::PropagateColors { .. } => "Propagate Colors",
+        FilterParams::HeightToNormal { .. } => "Height to Normal Map",
+        FilterParams::MeanRemoval => "Mean Removal",
+        FilterParams::WaveletNoiseReducer { .. } => "Wavelet Noise Reducer",
+        FilterParams::NormalizeNormals => "Normalize",
+        FilterParams::ResetTransparent => "Reset Transparent",
+        FilterParams::RandomPick { .. } => "Random Pick",
         _ => "Filter",
     }
 }
@@ -1787,6 +1922,26 @@ fn halo_extra(p: &FilterParams) -> Halo {
         FilterParams::ApplyLens { .. } | FilterParams::CurveBend { .. } | FilterParams::PanoramaProjection { .. } | FilterParams::WarpMap { .. } => {
             Halo::Bounds
         }
+        // Fifth batch (Paint-mode parity).
+        FilterParams::PolyBlur { width, height, .. } => r(paint_fx::poly_blur_reach(*width, *height)),
+        FilterParams::EdgeDetection { h_radius, v_radius, .. } | FilterParams::HeightToNormal { h_radius, v_radius, .. } => {
+            Halo::Radius((*h_radius).max(*v_radius).clamp(1, 100) as i32 + 1)
+        }
+        FilterParams::EmbossFamily { direction, depth } => r(paint_fx::emboss_reach(*direction, *depth)),
+        FilterParams::PhongBumpmap { .. } | FilterParams::MeanRemoval => r(1.0),
+        FilterParams::Raindrops { drop_size, .. } => r(paint_fx::raindrops_reach(*drop_size)),
+        FilterParams::PropagateColors { radius } => Halo::Radius((*radius).clamp(1, 256) as i32 + 1),
+        FilterParams::WaveletNoiseReducer { .. } => r(paint_fx::wavelet_reach()),
+        FilterParams::RandomPick { window, .. } => Halo::Radius((*window).clamp(1, 100) as i32 + 1),
+        FilterParams::DodgeBurn { .. }
+        | FilterParams::IndexColors { .. }
+        | FilterParams::Palettize { .. }
+        | FilterParams::CrossChannelAdjust { .. }
+        | FilterParams::SlopeOffsetPower { .. }
+        | FilterParams::MaximizeChannel
+        | FilterParams::MinimizeChannel
+        | FilterParams::NormalizeNormals
+        | FilterParams::ResetTransparent => Halo::Radius(0),
         // The other generators and the per-pixel decor filters only need the bounds geometry.
         _ => Halo::Radius(0),
     }
@@ -2818,6 +2973,81 @@ fn extra2_kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Ve
         FilterParams::SolidNoise { x_size, y_size, detail, tileable, turbulent, seed } => {
             extra2::noise::solid_noise(src, out, ctx, *x_size, *y_size, *detail, *tileable, *turbulent, *seed)
         }
+        other => paint_kernel(other, src, out, ctx),
+    }
+}
+
+/// Kernels of the fifth batch (Paint-mode parity).
+fn paint_kernel(params: &FilterParams, src: &Image, out: Rect, ctx: &Ctx) -> Vec<f32> {
+    match params {
+        FilterParams::DodgeBurn { burn, range, exposure } => paint_fx::dodge_burn(src, out, ctx, *burn, *range, *exposure),
+        FilterParams::IndexColors { ramps, in_between, between_ramps, dither, amount, alpha_steps, luma_weight } => paint_fx::index_colors(
+            src,
+            out,
+            ctx,
+            &paint_fx::IndexColorsSpec {
+                ramps,
+                in_between: *in_between,
+                between_ramps: *between_ramps,
+                dither: *dither,
+                amount: *amount,
+                alpha_steps: *alpha_steps,
+                luma_weight: *luma_weight,
+            },
+        ),
+        FilterParams::PolyBlur { width, height, strength, angle, shape } => paint_fx::poly_blur(src, out, ctx, *width, *height, *strength, *angle, *shape),
+        FilterParams::EdgeDetection { method, h_radius, v_radius, output, to_alpha } => {
+            paint_fx::edge_detection(src, out, ctx, *method, *h_radius as i32, *v_radius as i32, *output, *to_alpha)
+        }
+        FilterParams::EmbossFamily { direction, depth } => paint_fx::emboss_family(src, out, ctx, *direction, *depth),
+        FilterParams::PhongBumpmap { lights, ambient, diffuse, specular, shininess, use_normal_map, height_channel } => paint_fx::phong_bumpmap(
+            src,
+            out,
+            ctx,
+            &paint_fx::PhongSpec {
+                lights: *lights,
+                ambient: *ambient,
+                diffuse: *diffuse,
+                specular: *specular,
+                shininess: *shininess,
+                use_normal_map: *use_normal_map,
+                height_channel: *height_channel,
+            },
+        ),
+        FilterParams::Palettize { colors, space, dither, threshold, color_mode, alpha_mode, alpha_index, alpha_threshold } => paint_fx::palettize(
+            src,
+            out,
+            ctx,
+            &paint_fx::PalettizeSpec {
+                colors,
+                space: *space,
+                dither: *dither,
+                threshold: *threshold,
+                color_mode: *color_mode,
+                alpha_mode: *alpha_mode,
+                alpha_index: *alpha_index as usize,
+                alpha_threshold: *alpha_threshold,
+            },
+        ),
+        FilterParams::CrossChannelAdjust { curves } => paint_fx::cross_channel(src, out, ctx, curves),
+        FilterParams::SlopeOffsetPower { slope, offset, power, saturation } => {
+            paint_fx::slope_offset_power(src, out, ctx, *slope, *offset, *power, *saturation)
+        }
+        FilterParams::Raindrops { drop_size, number, fish_eye, seed } => paint_fx::raindrops(src, out, ctx, *drop_size, *number, *fish_eye, *seed),
+        FilterParams::MaximizeChannel => paint_fx::maximize_channel(src, out, ctx),
+        FilterParams::MinimizeChannel => paint_fx::minimize_channel(src, out, ctx),
+        FilterParams::PropagateColors { radius } => paint_fx::propagate_colors(src, out, ctx, *radius as i32),
+        FilterParams::HeightToNormal { method, h_radius, v_radius, channel, swizzle } => paint_fx::height_to_normal(
+            src,
+            out,
+            ctx,
+            &paint_fx::HeightToNormalSpec { method: *method, h_radius: *h_radius as i32, v_radius: *v_radius as i32, channel: *channel, swizzle: *swizzle },
+        ),
+        FilterParams::MeanRemoval => paint_fx::mean_removal(src, out, ctx),
+        FilterParams::WaveletNoiseReducer { threshold } => paint_fx::wavelet_noise_reducer(src, out, ctx, *threshold),
+        FilterParams::NormalizeNormals => paint_fx::normalize_normals(src, out, ctx),
+        FilterParams::ResetTransparent => paint_fx::reset_transparent(src, out, ctx),
+        FilterParams::RandomPick { level, window, opacity, seed } => paint_fx::random_pick(src, out, ctx, *level, *window as i32, *opacity, *seed),
         _ => src.crop(out),
     }
 }
