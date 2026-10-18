@@ -667,7 +667,10 @@ fn canvas_drop_rect(app: &PhotocraftApp) -> egui::Rect {
 
 pub fn gradients_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let (fg, bg) = (app.session.tools.foreground, app.session.tools.background);
-    let groups_src = app.session.presets.gradients.clone();
+    let mut groups_src = app.session.presets.gradients.clone();
+    // Tags (resource_tags_cmds): the filter field narrows the list by tag or name prefix.
+    crate::tag_filter::filter_row(app, ui, "gradient");
+    crate::tag_filter::filter_groups(app, &ui.ctx().clone(), "gradient", &mut groups_src, |g| g.name.clone());
     // Current gradient (what the Gradient tool paints), like the panel's top "recent" row.
     let cur = app.session.presets.gradient.clone();
     let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 18.0), Sense::hover());
@@ -687,6 +690,9 @@ pub fn gradients_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             paint_gradient(ui, r, &stops);
         });
     app.ui.presets_ui = st;
+    if let Some(sel) = app.ui.presets_ui.selected.get("gradients").cloned() {
+        crate::tag_filter::tag_editor(app, ui, "gradient", &sel);
+    }
     for e in events {
         match &e {
             Ev::Select(k) => {
@@ -709,6 +715,9 @@ pub fn gradients_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 pub fn patterns_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     redrob_photo_engine::presets::patterns::sync(&mut app.session);
     let lib = app.session.patterns.items.clone();
+    crate::tag_filter::filter_row(app, ui, "pattern");
+    let ctx_f = ui.ctx().clone();
+    let shown = |p: &redrob_photo_doc::Pattern| crate::tag_filter::visible(app, &ctx_f, "pattern", p.display_name());
     let groups: Vec<GroupView> = app
         .session
         .presets
@@ -720,12 +729,18 @@ pub fn patterns_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 .items
                 .iter()
                 .filter_map(|id| lib.iter().find(|p| &p.id == id))
+                .filter(|p| shown(p))
                 .map(|p| ItemView { key: p.id.clone(), name: p.display_name().to_string() })
                 .collect(),
         })
         .collect();
-    let pats: Vec<Vec<redrob_photo_doc::Pattern>> =
-        app.session.presets.pattern_groups.iter().map(|g| g.items.iter().filter_map(|id| lib.iter().find(|p| &p.id == id).cloned()).collect()).collect();
+    let pats: Vec<Vec<redrob_photo_doc::Pattern>> = app
+        .session
+        .presets
+        .pattern_groups
+        .iter()
+        .map(|g| g.items.iter().filter_map(|id| lib.iter().find(|p| &p.id == id)).filter(|p| shown(p)).cloned().collect())
+        .collect();
     let canvas = canvas_drop_rect(app);
     let mut st = std::mem::take(&mut app.ui.presets_ui);
     let max_h = (ui.available_height() - 40.0).clamp(90.0, 280.0);
@@ -823,7 +838,9 @@ pub fn windows(app: &mut PhotocraftApp, ctx: &egui::Context) {
 // ------------------------------------------------------------------ Styles
 
 pub fn styles_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
-    let src = app.session.presets.styles.clone();
+    let mut src = app.session.presets.styles.clone();
+    crate::tag_filter::filter_row(app, ui, "style");
+    crate::tag_filter::filter_groups(app, &ui.ctx().clone(), "style", &mut src, |s| s.name.clone());
     let groups: Vec<GroupView> = src
         .iter()
         .map(|g| GroupView { name: g.name.clone(), items: g.items.iter().map(|i| ItemView { key: i.name.clone(), name: i.name.clone() }).collect() })
@@ -871,7 +888,9 @@ pub fn styles_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
 // ------------------------------------------------------------------ Shapes
 
 pub fn shapes_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
-    let src = redrob_photo_engine::presets::shapes::all_groups(&app.session);
+    let mut src = redrob_photo_engine::presets::shapes::all_groups(&app.session);
+    crate::tag_filter::filter_row(app, ui, "shape");
+    crate::tag_filter::filter_groups(app, &ui.ctx().clone(), "shape", &mut src, |s| s.name.clone());
     let groups: Vec<GroupView> = src
         .iter()
         .map(|g| GroupView { name: g.name.clone(), items: g.items.iter().map(|i| ItemView { key: i.name.clone(), name: i.name.clone() }).collect() })
@@ -1029,9 +1048,20 @@ pub fn tool_presets_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let only = app.ui.presets_ui.current_tool_only;
     let cur = app.ui.tool;
-    let items: Vec<(String, String)> =
-        app.session.presets.tool_presets.iter().filter(|p| !only || Tool::from_name(&p.tool) == Some(cur)).map(|p| (p.name.clone(), p.tool.clone())).collect();
+    crate::tag_filter::filter_row(app, ui, "toolPreset");
+    let ctx_f = ui.ctx().clone();
+    let items: Vec<(String, String)> = app
+        .session
+        .presets
+        .tool_presets
+        .iter()
+        .filter(|p| (!only || Tool::from_name(&p.tool) == Some(cur)) && crate::tag_filter::visible(app, &ctx_f, "toolPreset", &p.name))
+        .map(|p| (p.name.clone(), p.tool.clone()))
+        .collect();
     let selected = app.ui.presets_ui.selected.get("toolPresets").cloned();
+    if let Some(sel) = selected.clone() {
+        crate::tag_filter::tag_editor(app, ui, "toolPreset", &sel);
+    }
     let mut action: Option<(String, Value)> = None;
     let mut pick: Option<String> = None;
     // Rename field.

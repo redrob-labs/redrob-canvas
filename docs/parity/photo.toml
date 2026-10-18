@@ -5157,9 +5157,9 @@ name = "Tagging of resources"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tagging.html"
 behaviour = "Type tags on brushes, patterns, gradients, palettes, dynamics, tool presets; filter field with autocomplete."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs (groups), crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
-gap = "folder-style groups rather than free tags; brushes only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/resource_tags_cmds.rs (resource.tag/untag/tags/filter/tagComplete for brushes, patterns, gradients, palettes, dynamics, tool presets, styles, shapes), crafts/photocraft/crates/ui-egui/src/tag_filter.rs (filter field with autocomplete, tag editor), crafts/photocraft/crates/ui-egui/src/preset_panels.rs, crafts/photocraft/crates/ui-egui/src/brush_panel.rs, crafts/photocraft/crates/engine/src/brush_preset_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]

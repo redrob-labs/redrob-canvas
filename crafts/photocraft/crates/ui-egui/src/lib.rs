@@ -175,6 +175,7 @@ pub mod proxy;
 pub mod puppet_ui;
 pub mod foreground_select_ui;
 pub mod padding_ui;
+pub mod tag_filter;
 pub mod quick_pick;
 pub mod wand_drag;
 pub mod rasterize_prompt;

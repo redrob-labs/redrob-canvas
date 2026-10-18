@@ -1356,6 +1356,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::select_extra_cmds::specs());
     v.extend(crate::select_refine_cmds::specs());
     v.extend(crate::layer_boundary_cmds::specs());
+    v.extend(crate::resource_tags_cmds::specs());
     v.extend(crate::paint_cmds::specs());
     v.extend(crate::extra_cmds::specs());
     v.extend(crate::background_cmds::specs());

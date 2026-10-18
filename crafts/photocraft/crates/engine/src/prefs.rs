@@ -993,6 +993,10 @@ pub struct Preferences {
     pub view_extras: Value,
     /// File › Scripts › Script Events Manager: event → script bindings.
     pub script_events: crate::automate_cmds::ScriptEvents,
+    /// Tags on patterns, gradients, palettes, dynamics, tool presets, styles and shapes
+    /// (`resource.tag`): `<kind>/<lower-case name>` → sorted tags. Brush tags live in the brush
+    /// preset store.
+    pub resource_tags: BTreeMap<String, Vec<String>>,
 }
 
 /// Preferences dialog sections in Photoshop's order: (id, title).
