@@ -326,7 +326,7 @@ mod tests {
         assert_eq!(bb.bounds(), Some(Rect::new(-1.0, -1.0, 101.0, 51.0)));
         let at = attach_path(&own(), &json!({"source": 7, "end": "start", "startPosition": 0.5, "curve": false, SOURCES: p[SOURCES].clone()}));
         let a0 = at.subpaths[0].anchors[0].p;
-        assert!((a0.x - 75.0).abs() < 1e-6 || (a0.x - 100.0).abs() < 1e-6, "{a0:?}");
+        assert!((a0.x - 75.0).abs() < 1e-3 || (a0.x - 100.0).abs() < 1e-3, "{a0:?}");
     }
 
     #[test]

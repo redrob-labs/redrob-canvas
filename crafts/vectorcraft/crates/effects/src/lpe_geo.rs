@@ -121,7 +121,8 @@ fn conic_through(pts: &[Point]) -> Option<Affine> {
         (r.is_finite() && r > 0.0).then_some(r)
     };
     let (ra, rb) = (axis(1.0)?, axis(-1.0)?);
-    let theta = if b.abs() <= 1e-12 && a <= cc { 0.0 } else { 0.5 * b.atan2(a - cc) };
+    // The angle of the `ra` axis (the `+` root), robust when `b` is a rounding residue.
+    let theta = (cc - a - root).atan2(b);
     let centre = c + Vec2::new(x0, y0) * scale;
     Some(Affine::translate(centre) * Affine::rotate(theta) * Affine::scale_non_uniform(ra * scale, rb * scale))
 }

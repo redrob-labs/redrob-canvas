@@ -213,7 +213,9 @@ pub(crate) fn segment_cross(a0: Point, a1: Point, b0: Point, b1: Point) -> Optio
     let qp = b0 - a0;
     let t = qp.cross(s) / den;
     let u = qp.cross(r) / den;
-    (t > 1e-9 && t < 1.0 - 1e-9 && u > 1e-9 && u < 1.0 - 1e-9).then_some((t, u))
+    // Half-open on both segments, so a crossing that lands exactly on a polyline vertex is
+    // counted once (by the segment that starts there) instead of being dropped twice.
+    (t >= -1e-9 && t < 1.0 - 1e-9 && u >= -1e-9 && u < 1.0 - 1e-9).then_some((t, u))
 }
 
 /// A number list parameter: `"a b c"`, `"a,b,c"` or `[a, b, c]`.
