@@ -376,6 +376,8 @@ fn command_uses_ambient_path(id: &str, params: &Value) -> bool {
         // With a `path` the file is written there; without one the bytes come back as `data`.
         "actions.save" | "swatches.export" => params.get("path").is_some(),
         "plugin.reload" => true,
+        // Run an external executable on temporary files (and read its path from the preferences).
+        "filter.gmic.run" | "filter.gmic.status" => true,
         _ => false,
     }
 }

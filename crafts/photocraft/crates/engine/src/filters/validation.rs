@@ -255,6 +255,41 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         | "filter.decor.roundCorners"
         | "filter.map.tile"
         | "filter.combine.depthMerge" => &[],
+        // Fifth batch (filters_paint, Paint-mode parity): choices checked, numbers clamp in params_for.
+        "filter.adjust.dodge" | "filter.adjust.burn" => &[("range", "shadows|midtones|highlights")],
+        "filter.adjust.crossChannel" => {
+            &[("driven", "red|green|blue|alpha|hue|saturation|lightness"), ("driver", "red|green|blue|alpha|hue|saturation|lightness")]
+        }
+        "filter.artistic.indexColors" => &[("dither", "none|ordered|noise")],
+        "filter.blur.polygonBlur" => &[("shape", "circle|triangle|quadrilateral|pentagon|hexagon|octagon")],
+        "filter.stylize.edgeDetection" => &[("method", "prewitt|sobel|simple"), ("output", "pythagorean|xOnly|yOnly|radians")],
+        "filter.stylize.embossDirectional" => &[("direction", "horizontal|vertical|both|allDirections|laplacian|variableDepth")],
+        "filter.map.phongBumpMap" => &[("heightChannel", "red|green|blue|alpha|luminance")],
+        "filter.map.palettize" => &[
+            ("colorSpaceModel", "rgb|lab"),
+            ("dither", "none|pattern|diffusion|noise"),
+            ("colorMode", "perChannelOffset|nearestColors"),
+            ("alphaMode", "clip|index|dither|unchanged"),
+        ],
+        "filter.map.heightToNormalMap" => &[
+            ("method", "prewitt|sobel|simple"),
+            ("heightChannel", "red|green|blue|alpha|luminance"),
+            ("redChannel", "x+|x-|y+|y-|z+|z-"),
+            ("greenChannel", "x+|x-|y+|y-|z+|z-"),
+            ("blueChannel", "x+|x-|y+|y-|z+|z-"),
+        ],
+        "filter.gmic.run" => &[("input", "activeLayer|allLayers"), ("output", "replace|newLayer")],
+        "filter.adjust.slopeOffsetPower"
+        | "filter.artistic.raindrops"
+        | "filter.other.maximizeChannel"
+        | "filter.other.minimizeChannel"
+        | "filter.other.propagateColors"
+        | "filter.map.normalizeNormals"
+        | "filter.other.resetTransparent"
+        | "filter.sharpen.meanRemoval"
+        | "filter.noise.waveletNoiseReducer"
+        | "filter.noise.randomPick"
+        | "filter.gmic.status" => &[],
         _ => return None,
     })
 }

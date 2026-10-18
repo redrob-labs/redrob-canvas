@@ -1061,6 +1061,8 @@ fn humanize(key: &str) -> String {
         "exrAcesCg" => return "Open color-less EXR as ACEScg".into(),
         "darkTheme" => return "Dark Theme".into(),
         "lightTheme" => return "Light Theme".into(),
+        "gmicExecutable" => return "G'MIC executable".into(),
+        "gmicUpdateFolder" => return "G'MIC update folder".into(),
         _ => {}
     }
     // These controls appear only for WebP, so reuse the existing translated labels.

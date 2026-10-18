@@ -418,6 +418,7 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
             return crate::filters_extra::params_for(id, p)
                 .or_else(|| crate::filters_gen::params_for(id, p))
                 .or_else(|| crate::filters_more::params_for(id, p))
+                .or_else(|| crate::filters_paint::params_for(id, p))
                 .or_else(|| crate::gallery_cmds::params_for(id, p));
         }
     })
@@ -430,6 +431,7 @@ fn uses_colours(id: &str) -> bool {
         || crate::gallery_cmds::uses_colours(id)
         || crate::filters_gen::uses_colours(id)
         || crate::filters_more::uses_colours(id)
+        || crate::filters_paint::uses_colours(id)
 }
 
 /// Fills in session state a filter reads (the current colours) as explicit params, so the
@@ -442,6 +444,7 @@ pub(crate) fn prepare(s: &Session, id: &str, p: &Value) -> Value {
         m.entry("foreground").or_insert_with(|| json!(s.tools.foreground));
         m.entry("background").or_insert_with(|| json!(s.tools.background));
     }
+    crate::filters_paint::prepare(s, id, &mut out);
     out
 }
 

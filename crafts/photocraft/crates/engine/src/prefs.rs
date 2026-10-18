@@ -898,6 +898,11 @@ pub struct PlugIns {
     pub generator_enabled: bool,
     /// Edit › Modules: installed plug-ins switched off without being removed (`modules_cmds`).
     pub disabled_modules: Vec<String>,
+    /// Path of the external G'MIC command-line executable `filter.gmic.run` hands layers to
+    /// (empty: `gmic` on the PATH).
+    pub gmic_executable: String,
+    /// Folder of G'MIC update (`.gmic`) files the executable should read (empty: its default).
+    pub gmic_update_folder: String,
 }
 
 impl Default for PlugIns {
@@ -909,6 +914,8 @@ impl Default for PlugIns {
             allow_scripts_to_connect: false,
             generator_enabled: false,
             disabled_modules: Vec::new(),
+            gmic_executable: String::new(),
+            gmic_update_folder: String::new(),
         }
     }
 }
