@@ -471,6 +471,24 @@ fn run_perspective_shadow(s: &mut Session, p: &Value) -> Result<Value> {
     crate::filters::run_filter(s, ID, &params)
 }
 
+/// Curve Bend with `workOnCopy`: the layer is copied to a new document first, which is then
+/// bent (the original stays as it was).
+fn run_curve_bend(s: &mut Session, p: &Value) -> Result<Value> {
+    let mut params = p.clone();
+    if b(p, "workOnCopy", false) {
+        let layer = crate::commands::layer_param(s, p)?;
+        s.execute("layer.duplicate", json!({"layer": layer.0, "document": "new", "documentName": "Curve Bend"}))?;
+        // The copy is the new document's active layer.
+        if let Value::Object(m) = &mut params {
+            m.remove("layer");
+        }
+    }
+    if let Value::Object(m) = &mut params {
+        m.remove("workOnCopy");
+    }
+    crate::filters::run_filter(s, "filter.distort.curveBend", &params)
+}
+
 /// Add Border: the canvas grows by `borderX` / `borderY` on each side and a new layer draws a
 /// bevelled frame there in `color`, each side shaded by `delta` levels (top lightest, bottom
 /// darkest) with mitred corners.
@@ -1002,11 +1020,13 @@ pub fn specs() -> Vec<CommandSpec> {
             ["Filter", "Distort"],
             r##"{"colorModel":"blackOnWhite|whiteOnBlack|rgb|cmyk","pattern":"circle|line|diamond|psSquare|cross","period":1..1000=12,"angle":-180..180=75,"pattern2":"circle|line|diamond|psSquare|cross","period2":1..1000=12,"angle2":-180..180=15,"pattern3":"circle|line|diamond|psSquare|cross","period3":1..1000=12,"angle3":-180..180=0,"pattern4":"circle|line|diamond|psSquare|cross","period4":1..1000=12,"angle4":-180..180=45,"blackPullout":0..1=1,"antialiasing":1..16=4,"turbulence":0..1=0,"seed":u32=0}"##
         ),
-        cmd!(
+        script!(
             "filter.distort.curveBend",
             "Curve Bend…",
             ["Filter", "Distort"],
-            r##"{"rotation":0..360=0,"smoothing":bool=true,"antialias":bool=true,"upperCurve":json,"lowerCurve":json}"##
+            r##"{"rotation":0..360=0,"smoothing":bool=true,"antialias":bool=true,"workOnCopy":bool,"upperCurve":json,"lowerCurve":json}"##,
+            crate::filters::has_filterable_layer,
+            run_curve_bend
         ),
         cmd!(
             "filter.distort.warpMap",
