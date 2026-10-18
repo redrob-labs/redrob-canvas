@@ -4,6 +4,35 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.11.0 — 2026-10-18
+
+### Added
+
+- **Every remaining parity row.** The feature inventories in `docs/parity/` now score photo
+  445 full / 5 partial, paint 327 / 7 and vector 305 / 4, with no row left at none; each partial
+  row names its exact gap (private file formats, a codec the pinned toolchain cannot build, GPL
+  plug-ins, stylus tilt, an HDR window surface, embedded scripting languages).
+- **Photo.** ~200 more filters including the generated-option families, an animation docker with
+  GIF / APNG / MNG / WebP export, a MyPaint-style brush engine, the Krita-family brush tools
+  (multibrush, dynamic brush, enclose-and-fill, colourise mask, reference images, drawing
+  assistants, pop-up palette), foreground select, an action search, tablet settings, and 30+
+  import/export formats (XCF, PSD extras, EPS, SGI, XBM, palette and colour-book files, …).
+- **Vector.** Live path effects (clothoid, knot, bend, B-spline / Spiro, measure, linked effects
+  such as clone original, attach path and bounding box), 3D box, connectors, tile clones, an XML
+  attribute editor, a stylesheet editor, spell checking, SVG fonts, text on path, and ten more
+  export formats (FXG, POV, Synfig, XAML, ODG, TeX / PDF+TeX, HPGL, XCF, …).
+- **Languages.** Fifteen complete UI languages for both crafts, menus and status messages included.
+
+### Fixed
+
+- The blend-mode list keeps wheel stepping, arrow keys, type-ahead, press-drag-release and hover
+  preview with its families and favourites.
+- Magic Wand no longer swallows Cmd-drags; Foreground Select's Alt-drag commits the background
+  mark; the Paint Bucket's All Layers / Contiguous options reach the fill.
+- Exports warn about an image the renderer cannot decode by checking the document itself.
+- Formats written without a compiler in the loop (SGI, XBM, XCF, animated PNG/MNG CRC, level-1
+  EPS, colour books, SVG paths) read and write correctly.
+
 ## 0.10.0 — 2026-10-17
 
 ### Added
