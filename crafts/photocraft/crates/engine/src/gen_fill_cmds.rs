@@ -943,14 +943,17 @@ fn script_fill(px: &mut [[f32; 4]], w: u32, h: u32, script: &str, time: f64) -> 
     env.vars.insert("t".into(), Val::S(time));
     env.vars.insert("time".into(), Val::S(time));
     env.vars.insert("PI".into(), Val::S(std::f64::consts::PI));
+    for name in ["u", "v", "x", "y", "P"] {
+        env.vars.insert(name.into(), Val::S(0.0));
+    }
     for y in 0..h {
         for x in 0..w {
             let (u, v) = ((f64::from(x) + 0.5) / f64::from(w), (f64::from(y) + 0.5) / f64::from(h));
-            env.vars.insert("u".into(), Val::S(u));
-            env.vars.insert("v".into(), Val::S(v));
-            env.vars.insert("x".into(), Val::S(f64::from(x)));
-            env.vars.insert("y".into(), Val::S(f64::from(y)));
-            env.vars.insert("P".into(), Val::V([u, v, 0.0]));
+            for (name, val) in [("u", Val::S(u)), ("v", Val::S(v)), ("x", Val::S(f64::from(x))), ("y", Val::S(f64::from(y))), ("P", Val::V([u, v, 0.0]))] {
+                if let Some(slot) = env.vars.get_mut(name) {
+                    *slot = val;
+                }
+            }
             for (name, e) in &assigns {
                 let val = eval(e, &env).map_err(|e| EngineError::Other(format!("script: {e}")))?;
                 env.vars.insert(name.clone(), val);
