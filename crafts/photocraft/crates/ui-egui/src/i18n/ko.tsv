@@ -4263,3 +4263,168 @@ curves	Smooth	매끄럽게
 	Random Offset	임의 오프셋
 	Ink Amount	잉크 양
 	Counter	카운터
+	Grain Extract	그레인 추출
+	Grain Merge	그레인 병합
+	LCh Hue	LCh 색조
+	LCh Chroma	LCh 채도
+	LCh Color	LCh 색상
+	LCh Lightness	LCh 명도
+	Merge	병합
+	Split	분할
+	Remove Holes	구멍 제거
+	Distort…	왜곡…
+	Rounded Rectangle…	둥근 사각형…
+	Anchor Layer	레이어 고정
+	To New Layer	새 레이어로
+	Layer Boundary Size…	레이어 경계 크기…
+	Layer to Image Size	레이어를 이미지 크기로
+	Resize Layer to Selection	레이어를 선택 영역 크기로
+	Crop Layer to Content	레이어를 콘텐츠에 맞게 자르기
+	Threshold Alpha…	알파 임계값…
+	Composite Options…	합성 옵션…
+	Zealous Crop	철저한 자르기
+	Foreground Select	전경 선택
+	Stroke width	획 두께
+	Graph cut	그래프 컷
+	Fast	빠름
+	To Layer Mask	레이어 마스크로
+	Draw a rough outline round the subject	피사체 주위에 대략적인 윤곽을 그리세요
+	Draw a rough outline round the subject first	먼저 피사체 주위에 대략적인 윤곽을 그리세요
+	Outline placed: paint over the foreground, then Preview or Select	윤곽 배치됨: 전경을 칠한 뒤 미리 보기 또는 선택
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	피사체를 대략 둘러 그리고 전경을 칠하면 매팅 엔진이 마스크를 키웁니다
+	Paint over the foreground (hold Alt for background), then Preview or Select	전경을 칠하세요 (Alt를 누르면 배경), 그런 다음 미리 보기 또는 선택
+	Display Filters…	표시 필터…
+	Display Filters	표시 필터
+	No Color Deficiency Simulation	색각 이상 시뮬레이션 없음
+	Simulate Protanopia	적색맹 시뮬레이션
+	Simulate Deuteranopia	녹색맹 시뮬레이션
+	Simulate Tritanopia	청색맹 시뮬레이션
+	Clip Warning	클리핑 경고
+	Clip warning	클리핑 경고
+	Color deficiency:	색각 이상:
+	Protanopia	적색맹
+	Deuteranopia	녹색맹
+	Tritanopia	청색맹
+	Contrast:	대비:
+	View-only: the filters change what this view shows, never the pixels.	표시 전용: 필터는 이 보기의 표시만 바꾸며 픽셀은 바꾸지 않습니다.
+	Show All	모두 표시
+	Padding Color	여백 색상
+	From Theme	테마에서
+	Dark Gray	어두운 회색
+	Medium Gray	중간 회색
+	Light Check Color	밝은 체크 색상
+	Dark Check Color	어두운 체크 색상
+	Light Check	밝은 체크
+	Dark Check	어두운 체크
+	Light check	밝은 체크
+	Dark check	어두운 체크
+	Custom Color	사용자 정의 색상
+	Select Custom Color…	사용자 정의 색상 선택…
+	Keep Padding in Show All	모두 표시에서 여백 유지
+	Keep padding in show all	모두 표시에서 여백 유지
+	Filter by tag	태그로 필터
+	Clear filter	필터 지우기
+	Tags:	태그:
+	Add tag	태그 추가
+	Remove tag	태그 제거
+	View Metadata…	메타데이터 보기…
+	Edit Metadata…	메타데이터 편집…
+	Edit Metadata	메타데이터 편집
+	Metadata Viewer	메타데이터 뷰어
+	Write Metadata	메타데이터 쓰기
+	Separate several values with semicolons	값이 여러 개면 세미콜론으로 구분합니다
+	Copyrighted	저작권 있음
+	Public Domain	퍼블릭 도메인
+	Unknown	알 수 없음
+	No tags	태그 없음
+	XMP	XMP
+	IPTC	IPTC
+	Rights	권리
+	IPTC Extension	IPTC 확장
+	Categories	카테고리
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	프로시저 브라우저
+	Plug-In Browser	플러그인 브라우저
+	Search procedures	프로시저 검색
+	{n} procedures	프로시저 {n}개
+	(no menu)	(메뉴 없음)
+	Menu: {path}	메뉴: {path}
+	Parameters	매개 변수
+	Available now	지금 사용 가능
+	Not available in the current state	현재 상태에서는 사용할 수 없음
+	Run	실행
+	Select a procedure to read its parameters.	프로시저를 선택하면 매개 변수를 볼 수 있습니다.
+	Dashboard	대시보드
+	Low memory: swap is nearly full. Save your work.	메모리 부족: 스왑이 거의 가득 찼습니다. 작업을 저장하세요.
+	Memory	메모리
+	Cache	캐시
+	Swap	스왑
+	Swap: not reported on this platform	스왑: 이 플랫폼에서는 보고되지 않음
+	CPU	CPU
+	CPU renderer	CPU 렌더러
+	uploads	업로드
+	Misc: {jobs} jobs running · {n} samples	기타: 실행 중인 작업 {jobs}개 · 샘플 {n}개
+	Log to File…	파일에 기록…
+	Stop Logging	기록 중지
+	Device Status	장치 상태
+	Core Pointer	기본 포인터
+	Pen / Tablet	펜 / 태블릿
+	Brush:	브러시:
+	Pattern:	패턴:
+	Gradient:	그레이디언트:
+	Save Device Status	장치 상태 저장
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	장치마다 도구, 색상, 브러시, 패턴, 그레이디언트를 기억하며 장치를 바꾸면 함께 바뀝니다.
+	Selection Editor	선택 영역 편집기
+	No document open.	열린 문서가 없습니다.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	클릭하면 자동 선택 도구로 그 위치의 연속된 색을 선택합니다 (Shift 추가, Alt 빼기)
+	Save to Channel	채널에 저장
+	To Path	패스로
+	Advanced options	고급 옵션
+	MyPaint Brushes	MyPaint 브러시
+	Import…	가져오기…
+	No MyPaint brushes yet. Import .myb files to list them here.	MyPaint 브러시가 아직 없습니다. .myb 파일을 가져오면 여기에 표시됩니다.
+	No brush matches the filter.	필터와 일치하는 브러시가 없습니다.
+	Handle Transform	핸들 변형
+	3D Transform	3D 변형
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	다시 맞추기
+	Apply the transform so far and put a fresh box on the result	지금까지의 변형을 적용하고 결과에 새 상자를 놓습니다
+	Camera	카메라
+	Vanishing X:	소실점 X:
+	Y:	Y:
+	Focal length:	초점 거리:
+	Local pivot	로컬 피벗
+	Unified pivot	통합 피벗
+	Close Cage	케이지 닫기
+	Reset Cage	케이지 재설정
+	Fill Plain Colour	단색으로 채우기
+	Fill the original position of the cage with the plain colour of its outline	케이지의 원래 위치를 윤곽의 단색으로 채웁니다
+	{n} points	점 {n}개
+	Click to place a handle	클릭하여 핸들 놓기
+	Rotate and Scale	회전 및 크기 조절
+	{n} handles: {what}	핸들 {n}개: {what}
+	Reset Handles	핸들 재설정
+	Remove Handles	핸들 제거
+	Commit Cage Transform (Enter)	케이지 변형 확정 (Enter)
+	Commit Handle Transform (Enter)	핸들 변형 확정 (Enter)
+	Commit 3D Transform (Enter)	3D 변형 확정 (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	케이지 변형: 변형할 부분 주위를 클릭하고 첫 점을 클릭해 케이지를 닫은 뒤 점을 드래그하세요
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	핸들 변형: 핸들을 1~4개 놓고 드래그하세요 (1개 이동, 2개 회전·크기, 3개 기울이기, 4개 원근)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 변형: 드래그로 X·Y 축 회전, Alt+드래그로 Z 축 회전; 이동과 카메라 탭으로 레이어와 카메라를 움직입니다
+	Segment {n}	세그먼트 {n}
+	Blending:	혼합:
+	Coloring:	색상 방식:
+	Midpoint:	중간점:
+	Spherical (increasing)	구형 (증가)
+	Spherical (decreasing)	구형 (감소)
+	Step	계단
+	RGB	RGB
+	HSV (counter-clockwise)	HSV (시계 반대 방향)
+	HSV (clockwise)	HSV (시계 방향)
+	Replicate	복제
+	Split the segment at its midpoint	세그먼트를 중간점에서 분할합니다
+	Replace the segment with two copies of itself	세그먼트를 자신의 복사본 2개로 바꿉니다
+	Flip the whole gradient end to end	그레이디언트 전체를 뒤집습니다
+	Save as POV-Ray…	POV-Ray로 저장…

@@ -4583,3 +4583,159 @@ shape	Appearance	Izgled
 	Spray	Sprej
 	Bristle	Čekinje
 	Deform	Deformacija
+	Grain Extract	Izdvajanje zrna
+	Grain Merge	Spajanje zrna
+	LCh Hue	LCh nijansa
+	LCh Chroma	LCh hroma
+	LCh Color	LCh boja
+	LCh Lightness	LCh svetlina
+	Merge	Spoji
+	Split	Razdvoji
+	Remove Holes	Ukloni rupe
+	Distort…	Izobliči…
+	Rounded Rectangle…	Zaobljeni pravougaonik…
+	Anchor Layer	Usidri sloj
+	To New Layer	U novi sloj
+	Layer Boundary Size…	Veličina granice sloja…
+	Layer to Image Size	Sloj na veličinu slike
+	Resize Layer to Selection	Sloj na veličinu izbora
+	Crop Layer to Content	Iseci sloj na sadržaj
+	Threshold Alpha…	Prag providnosti…
+	Composite Options…	Opcije kompozicije…
+	Zealous Crop	Temeljno isecanje
+	Foreground Select	Избор предњег плана
+	Stroke width	Ширина потеза
+	Graph cut	Рез графа
+	To Layer Mask	У маску слоја
+	Draw a rough outline round the subject	Нацртајте грубу контуру око објекта
+	Draw a rough outline round the subject first	Прво нацртајте грубу контуру око објекта
+	Outline placed: paint over the foreground, then Preview or Select	Контура постављена: обојите предњи план, затим Преглед или Изабери
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Грубо оцртајте објекат, обојите предњи план и мотор за матирање ће проширити маску
+	Paint over the foreground (hold Alt for background), then Preview or Select	Обојите предњи план (Alt за позадину), затим Преглед или Изабери
+	Display Filters…	Филтери приказа…
+	Display Filters	Филтери приказа
+	No Color Deficiency Simulation	Без симулације слабовидости за боје
+	Simulate Protanopia	Симулирај протанопију
+	Simulate Deuteranopia	Симулирај деутеранопију
+	Simulate Tritanopia	Симулирај тританопију
+	Clip Warning	Упозорење о одсецању
+	Clip warning	Упозорење о одсецању
+	Color deficiency:	Слабовидост за боје:
+	Protanopia	Протанопија
+	Deuteranopia	Деутеранопија
+	Tritanopia	Тританопија
+	Contrast:	Контраст:
+	View-only: the filters change what this view shows, never the pixels.	Само приказ: филтери мењају шта овај приказ показује, никад пикселе.
+	Padding Color	Боја испуне око платна
+	From Theme	Из теме
+	Light Check Color	Светло поље шаховнице
+	Dark Check Color	Тамно поље шаховнице
+	Light Check	Светло поље
+	Dark Check	Тамно поље
+	Light check	Светло поље
+	Dark check	Тамно поље
+	Custom Color	Прилагођена боја
+	Keep Padding in Show All	Задржи испуну у Прикажи све
+	Keep padding in show all	Задржи испуну у Прикажи све
+	Filter by tag	Филтрирај по ознаци
+	Clear filter	Обриши филтер
+	Tags:	Ознаке:
+	Add tag	Додај ознаку
+	Remove tag	Уклони ознаку
+	View Metadata…	Прикажи метаподатке…
+	Edit Metadata…	Уреди метаподатке…
+	Edit Metadata	Уреди метаподатке
+	Metadata Viewer	Преглед метаподатака
+	Write Metadata	Упиши метаподатке
+	Separate several values with semicolons	Више вредности раздвојите тачка-зарезом
+	No tags	Нема ознака
+	XMP	XMP
+	IPTC	IPTC
+	Text	Текст
+	Rights	Права
+	IPTC Extension	IPTC проширење
+	Categories	Категорије
+	DICOM	DICOM
+	Procedure Browser	Прегледач процедура
+	Plug-In Browser	Прегледач додатака
+	Search procedures	Претражи процедуре
+	{n} procedures	{n} процедура
+	(no menu)	(без менија)
+	Menu: {path}	Мени: {path}
+	Parameters	Параметри
+	Available now	Доступно сада
+	Not available in the current state	Није доступно у тренутном стању
+	Run	Покрени
+	Select a procedure to read its parameters.	Изаберите процедуру да прочитате њене параметре.
+	Dashboard	Контролна табла
+	Low memory: swap is nearly full. Save your work.	Мало меморије: swap је скоро пун. Сачувајте рад.
+	Memory	Меморија
+	Cache	Кеш
+	Swap	Swap
+	Swap: not reported on this platform	Swap: није доступно на овој платформи
+	CPU	CPU
+	CPU renderer	CPU рендерер
+	uploads	отпремања
+	Misc: {jobs} jobs running · {n} samples	Разно: {jobs} послова у току · {n} узорака
+	Log to File…	Бележи у датотеку…
+	Stop Logging	Заустави бележење
+	Device Status	Стање уређаја
+	Core Pointer	Основни показивач
+	Pen / Tablet	Оловка / таблет
+	Brush:	Четкица:
+	Pattern:	Шаблон:
+	Gradient:	Прелив:
+	Save Device Status	Сачувај стање уређаја
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Сваки уређај памти свој алат, боје, четкицу, шаблон и прелив; промена уређаја мења и њих.
+	Selection Editor	Уређивач избора
+	No document open.	Нема отвореног документа.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Кликните да изаберете суседну боју чаробним штапићем (Shift додаје, Alt одузима)
+	Save to Channel	Сачувај у канал
+	To Path	У путању
+	Advanced options	Напредне опције
+	MyPaint Brushes	MyPaint четкице
+	No MyPaint brushes yet. Import .myb files to list them here.	Још нема MyPaint четкица. Увезите .myb датотеке да се овде прикажу.
+	No brush matches the filter.	Ниједна четкица не одговара филтеру.
+	Handle Transform	Трансформација ручкама
+	3D Transform	3D трансформација
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Поново подеси
+	Apply the transform so far and put a fresh box on the result	Примени досадашњу трансформацију и постави нови оквир на резултат
+	Camera	Камера
+	Vanishing X:	Тачка нестајања X:
+	Y:	Y:
+	Focal length:	Жижна даљина:
+	Local pivot	Локална оса
+	Unified pivot	Јединствена оса
+	Close Cage	Затвори кавез
+	Reset Cage	Поништи кавез
+	Fill Plain Colour	Испуни једнобојно
+	Fill the original position of the cage with the plain colour of its outline	Испуни првобитни положај кавеза једнобојном бојом његове ивице
+	{n} points	{n} тачака
+	Click to place a handle	Кликните да поставите ручку
+	Rotate and Scale	Ротирај и скалирај
+	{n} handles: {what}	{n} ручки: {what}
+	Reset Handles	Поништи ручке
+	Remove Handles	Уклони ручке
+	Commit Cage Transform (Enter)	Потврди трансформацију кавезом (Enter)
+	Commit Handle Transform (Enter)	Потврди трансформацију ручкама (Enter)
+	Commit 3D Transform (Enter)	Потврди 3D трансформацију (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Трансформација кавезом: кликните око дела за деформацију, кликните на прву тачку да затворите кавез, затим превлачите тачке
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Трансформација ручкама: поставите једну до четири ручке и превлачите их (једна помера, две ротирају и скалирају, три искошавају, четири дају перспективу)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D трансформација: превлачите за ротацију око X и Y, Alt за Z; картице Помери и Камера померају слој и камеру
+	Segment {n}	Сегмент {n}
+	Blending:	Прелаз:
+	Coloring:	Бојење:
+	Midpoint:	Средишња тачка:
+	Sinusoidal	Синусоидално
+	Spherical (increasing)	Сферно (растуће)
+	Spherical (decreasing)	Сферно (опадајуће)
+	Step	Степенасто
+	HSV (counter-clockwise)	HSV (супротно од казаљке)
+	HSV (clockwise)	HSV (у смеру казаљке)
+	Replicate	Умножи
+	Split the segment at its midpoint	Подели сегмент на средишњој тачки
+	Replace the segment with two copies of itself	Замени сегмент са две његове копије
+	Flip the whole gradient end to end	Обрни цео прелив
+	Save as POV-Ray…	Сачувај као POV-Ray…

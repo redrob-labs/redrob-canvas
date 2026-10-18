@@ -59,7 +59,7 @@ choice!(Theme { Pro = "pro", ProMedium = "proMedium", ProLightGray = "proLightGr
 choice!(AppearanceMode { Auto = "auto", Dark = "dark", Light = "light" } default Dark);
 choice!(DarkTheme { Pro = "pro", ProMedium = "proMedium", Studio = "studio", SolarizedDark = "solarizedDark", AdwaitaDark = "adwaitaDark", BreezeDark = "breezeDark", SoftDark = "softDark" } default ProMedium);
 choice!(LightTheme { ProLight = "proLight", ProLightGray = "proLightGray", StudioLight = "studioLight", Classic = "classic", Adwaita = "adwaita", BreezeLight = "breezeLight", SoftLight = "softLight" } default ProLight);
-choice!(CanvasColor { Default = "default", Black = "black", DarkGray = "darkGray", MediumGray = "mediumGray", LightGray = "lightGray", Custom = "custom" } default Default);
+choice!(CanvasColor { Default = "default", Black = "black", DarkGray = "darkGray", MediumGray = "mediumGray", LightGray = "lightGray", LightCheck = "lightCheck", DarkCheck = "darkCheck", Custom = "custom" } default Default);
 choice!(CanvasBorder { DropShadow = "dropShadow", Line = "line", None = "none" } default DropShadow);
 choice!(UiScale { Auto = "auto", P75 = "75", P80 = "80", P85 = "85", P90 = "90", P95 = "95", P100 = "100", P125 = "125", P150 = "150", P175 = "175", P200 = "200", P250 = "250", P300 = "300" } default Auto);
 choice!(
@@ -252,9 +252,13 @@ pub struct Interface {
     pub light_theme: LightTheme,
     /// Theme shortcuts shown in the appearance button's context menu.
     pub favorite_themes: Vec<Theme>,
-    /// Pasteboard colour in standard screen mode (`canvasCustomColor` when "custom").
+    /// Pasteboard colour in standard screen mode (`canvasCustomColor` when "custom";
+    /// `lightCheck`/`darkCheck` take the transparency checkerboard's light or dark colour).
     pub canvas_color: CanvasColor,
     pub canvas_custom_color: String,
+    /// View › Show All: keep the pasteboard colour round the canvas (off: the area beyond the
+    /// canvas shows the transparency checkerboard under the layers' pixels there).
+    pub keep_padding_in_show_all: bool,
     /// Show the repeating dot pattern on the canvas surround (including the empty workspace).
     /// Disable for a uniform background, for example on OLED displays (#2264).
     pub show_canvas_dots: bool,
@@ -304,6 +308,7 @@ impl Default for Interface {
             favorite_themes: Vec::new(),
             canvas_color: CanvasColor::Default,
             canvas_custom_color: "#282828".into(),
+            keep_padding_in_show_all: false,
             show_canvas_dots: true,
             show_home_recent_files: true,
             canvas_border: CanvasBorder::DropShadow,
@@ -988,6 +993,10 @@ pub struct Preferences {
     pub view_extras: Value,
     /// File › Scripts › Script Events Manager: event → script bindings.
     pub script_events: crate::automate_cmds::ScriptEvents,
+    /// Tags on patterns, gradients, palettes, dynamics, tool presets, styles and shapes
+    /// (`resource.tag`): `<kind>/<lower-case name>` → sorted tags. Brush tags live in the brush
+    /// preset store.
+    pub resource_tags: BTreeMap<String, Vec<String>>,
 }
 
 /// Preferences dialog sections in Photoshop's order: (id, title).

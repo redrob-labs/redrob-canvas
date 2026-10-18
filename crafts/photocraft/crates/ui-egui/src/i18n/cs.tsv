@@ -4120,3 +4120,161 @@ navigator	Zoom	Zvětšení
 	Spray	Sprej
 	Bristle	Štětiny
 	Deform	Deformace
+	Grain Extract	Extrakce zrna
+	Grain Merge	Sloučení zrna
+	LCh Hue	Odstín LCh
+	LCh Chroma	Chroma LCh
+	LCh Color	Barva LCh
+	LCh Lightness	Světlost LCh
+	Merge	Sloučit
+	Split	Rozdělit
+	Remove Holes	Odstranit díry
+	Distort…	Zkreslit…
+	Rounded Rectangle…	Zaoblený obdélník…
+	Anchor Layer	Ukotvit vrstvu
+	To New Layer	Do nové vrstvy
+	Layer Boundary Size…	Velikost hranice vrstvy…
+	Layer to Image Size	Vrstva na velikost obrázku
+	Resize Layer to Selection	Vrstva na velikost výběru
+	Crop Layer to Content	Oříznout vrstvu na obsah
+	Threshold Alpha…	Prahová hodnota alfa…
+	Composite Options…	Možnosti skládání…
+	Zealous Crop	Důkladné oříznutí
+	Foreground Select	Výběr popředí
+	Stroke width	Šířka tahu
+	Graph cut	Řez grafu
+	To Layer Mask	Do masky vrstvy
+	Draw a rough outline round the subject	Nakreslete hrubý obrys kolem objektu
+	Draw a rough outline round the subject first	Nejprve nakreslete hrubý obrys kolem objektu
+	Outline placed: paint over the foreground, then Preview or Select	Obrys umístěn: přemalujte popředí, pak Náhled nebo Vybrat
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Hrubě obkreslete objekt, přemalujte popředí a maticovací jádro rozšíří masku
+	Paint over the foreground (hold Alt for background), then Preview or Select	Přemalujte popředí (Alt pro pozadí), pak Náhled nebo Vybrat
+	Display Filters…	Zobrazovací filtry…
+	Display Filters	Zobrazovací filtry
+	No Color Deficiency Simulation	Bez simulace poruchy barvocitu
+	Simulate Protanopia	Simulovat protanopii
+	Simulate Deuteranopia	Simulovat deuteranopii
+	Simulate Tritanopia	Simulovat tritanopii
+	Clip Warning	Varování před oříznutím
+	Clip warning	Varování před oříznutím
+	Color deficiency:	Porucha barvocitu:
+	Protanopia	Protanopie
+	Deuteranopia	Deuteranopie
+	Tritanopia	Tritanopie
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Pouze zobrazení: filtry mění, co tento pohled ukazuje, nikdy pixely.
+	Padding Color	Barva výplně okolo
+	From Theme	Z motivu
+	Light Check Color	Světlá barva šachovnice
+	Dark Check Color	Tmavá barva šachovnice
+	Light Check	Světlá šachovnice
+	Dark Check	Tmavá šachovnice
+	Light check	Světlá šachovnice
+	Dark check	Tmavá šachovnice
+	Custom Color	Vlastní barva
+	Keep Padding in Show All	Zachovat výplň při Zobrazit vše
+	Keep padding in show all	Zachovat výplň při Zobrazit vše
+	Filter by tag	Filtrovat podle štítku
+	Clear filter	Zrušit filtr
+	Tags:	Štítky:
+	Add tag	Přidat štítek
+	Remove tag	Odebrat štítek
+	View Metadata…	Zobrazit metadata…
+	Edit Metadata…	Upravit metadata…
+	Edit Metadata	Upravit metadata
+	Metadata Viewer	Prohlížeč metadat
+	Write Metadata	Zapsat metadata
+	Separate several values with semicolons	Více hodnot oddělte středníky
+	No tags	Žádné značky
+	XMP	XMP
+	IPTC	IPTC
+	Text	Text
+	Rights	Práva
+	IPTC Extension	Rozšíření IPTC
+	Categories	Kategorie
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Prohlížeč procedur
+	Plug-In Browser	Prohlížeč zásuvných modulů
+	Search procedures	Hledat procedury
+	{n} procedures	{n} procedur
+	(no menu)	(bez nabídky)
+	Menu: {path}	Nabídka: {path}
+	Parameters	Parametry
+	Available now	Nyní dostupné
+	Not available in the current state	V aktuálním stavu nedostupné
+	Run	Spustit
+	Select a procedure to read its parameters.	Vyberte proceduru pro zobrazení jejích parametrů.
+	Dashboard	Nástěnka
+	Low memory: swap is nearly full. Save your work.	Málo paměti: odkládací prostor je téměř plný. Uložte svou práci.
+	Memory	Paměť
+	Cache	Mezipaměť
+	Swap	Odkládací prostor
+	Swap: not reported on this platform	Odkládací prostor: na této platformě není hlášen
+	CPU	CPU
+	CPU renderer	Vykreslování CPU
+	uploads	nahrání
+	Misc: {jobs} jobs running · {n} samples	Ostatní: {jobs} běžících úloh · {n} vzorků
+	Log to File…	Zapisovat do souboru…
+	Stop Logging	Zastavit zápis
+	Device Status	Stav zařízení
+	Core Pointer	Hlavní ukazatel
+	Pen / Tablet	Pero / tablet
+	Brush:	Štětec:
+	Pattern:	Vzorek:
+	Gradient:	Přechod:
+	Save Device Status	Uložit stav zařízení
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Každé zařízení si pamatuje svůj nástroj, barvy, štětec, vzorek a přechod; přepnutí zařízení je přepne.
+	Selection Editor	Editor výběru
+	No document open.	Není otevřen žádný dokument.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klepnutím vyberte souvislou barvu kouzelnou hůlkou (Shift přidá, Alt odebere)
+	Save to Channel	Uložit do kanálu
+	To Path	Na cestu
+	Advanced options	Pokročilé volby
+	MyPaint Brushes	Štětce MyPaint
+	Import…	Importovat…
+	No MyPaint brushes yet. Import .myb files to list them here.	Žádné štětce MyPaint. Importujte soubory .myb a objeví se zde.
+	No brush matches the filter.	Filtru neodpovídá žádný štětec.
+	Handle Transform	Transformace úchyty
+	3D Transform	3D transformace
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Přenastavit
+	Apply the transform so far and put a fresh box on the result	Použije dosavadní transformaci a položí nový rámeček na výsledek
+	Camera	Kamera
+	Vanishing X:	Úběžník X:
+	Y:	Y:
+	Focal length:	Ohnisková vzdálenost:
+	Local pivot	Místní střed
+	Unified pivot	Společný střed
+	Close Cage	Uzavřít klec
+	Reset Cage	Obnovit klec
+	Fill Plain Colour	Vyplnit jednolitou barvou
+	Fill the original position of the cage with the plain colour of its outline	Vyplní původní místo klece jednolitou barvou jejího obrysu
+	{n} points	{n} bodů
+	Click to place a handle	Klepnutím umístíte úchyt
+	Rotate and Scale	Otočit a změnit velikost
+	{n} handles: {what}	{n} úchytů: {what}
+	Reset Handles	Obnovit úchyty
+	Remove Handles	Odebrat úchyty
+	Commit Cage Transform (Enter)	Potvrdit transformaci klecí (Enter)
+	Commit Handle Transform (Enter)	Potvrdit transformaci úchyty (Enter)
+	Commit 3D Transform (Enter)	Potvrdit 3D transformaci (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformace klecí: klepejte kolem části k deformaci, klepnutím na první bod klec uzavřete a pak body přetahujte
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformace úchyty: umístěte jeden až čtyři úchyty a přetahujte je (jeden posouvá, dva otáčejí a škálují, tři zkosí, čtyři dávají perspektivu)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D transformace: tažením otáčíte kolem X a Y, s Alt kolem Z; karty Přesunout a Kamera posouvají vrstvu a kameru
+	Segment {n}	Segment {n}
+	Blending:	Prolnutí:
+	Coloring:	Barvení:
+	Midpoint:	Střed:
+	Sinusoidal	Sinusový
+	Spherical (increasing)	Sférický (rostoucí)
+	Spherical (decreasing)	Sférický (klesající)
+	Step	Skok
+	HSV (counter-clockwise)	HSV (proti směru hodin)
+	HSV (clockwise)	HSV (po směru hodin)
+	Replicate	Replikovat
+	Split the segment at its midpoint	Rozdělí segment v jeho středu
+	Replace the segment with two copies of itself	Nahradí segment dvěma jeho kopiemi
+	Flip the whole gradient end to end	Převrátí celý přechod
+	Save as POV-Ray…	Uložit jako POV-Ray…

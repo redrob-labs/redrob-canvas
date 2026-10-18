@@ -4210,3 +4210,162 @@ curves	Smooth	Згладити
 	Spray	Розпилювач
 	Bristle	Щетина
 	Deform	Деформація
+	Grain Extract	Витягнення зерна
+	Grain Merge	Об'єднання зерна
+	LCh Hue	Тон LCh
+	LCh Chroma	Хроматичність LCh
+	LCh Color	Колір LCh
+	LCh Lightness	Світлота LCh
+	Merge	Об'єднати
+	Split	Розділити
+	Remove Holes	Видалити дірки
+	Distort…	Спотворення…
+	Rounded Rectangle…	Заокруглений прямокутник…
+	Anchor Layer	Прикріпити шар
+	To New Layer	У новий шар
+	Layer Boundary Size…	Розмір меж шару…
+	Layer to Image Size	Шар до розміру зображення
+	Resize Layer to Selection	Шар до розміру виділення
+	Crop Layer to Content	Кадрувати шар за вмістом
+	Threshold Alpha…	Поріг альфа-каналу…
+	Composite Options…	Параметри композиції…
+	Zealous Crop	Ретельне кадрування
+	Foreground Select	Виділення переднього плану
+	Stroke width	Ширина штриха
+	Graph cut	Розріз графа
+	To Layer Mask	У маску шару
+	Draw a rough outline round the subject	Намалюйте грубий контур навколо об'єкта
+	Draw a rough outline round the subject first	Спочатку намалюйте грубий контур навколо об'єкта
+	Outline placed: paint over the foreground, then Preview or Select	Контур задано: зафарбуйте передній план, потім Перегляд або Виділити
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Грубо обведіть об'єкт, зафарбуйте передній план, і рушій матування виростить маску
+	Paint over the foreground (hold Alt for background), then Preview or Select	Зафарбуйте передній план (Alt для тла), потім Перегляд або Виділити
+	Display Filters…	Екранні фільтри…
+	Display Filters	Екранні фільтри
+	No Color Deficiency Simulation	Без імітації порушення колірного зору
+	Simulate Protanopia	Імітувати протанопію
+	Simulate Deuteranopia	Імітувати дейтеранопію
+	Simulate Tritanopia	Імітувати тританопію
+	Clip Warning	Попередження про відсікання
+	Clip warning	Попередження про відсікання
+	Color deficiency:	Порушення колірного зору:
+	Protanopia	Протанопія
+	Deuteranopia	Дейтеранопія
+	Tritanopia	Тританопія
+	Contrast:	Контраст:
+	View-only: the filters change what this view shows, never the pixels.	Лише відображення: фільтри змінюють вигляд цього вікна, а не пікселі.
+	Padding Color	Колір обрамлення
+	From Theme	З теми
+	Dark Gray	Темно-сірий
+	Medium Gray	Середньо-сірий
+	Light Check Color	Світла клітинка
+	Dark Check Color	Темна клітинка
+	Light Check	Світла клітинка
+	Dark Check	Темна клітинка
+	Light check	Світла клітинка
+	Dark check	Темна клітинка
+	Custom Color	Власний колір
+	Select Custom Color…	Вибрати власний колір…
+	Keep Padding in Show All	Зберігати обрамлення в режимі Показати все
+	Keep padding in show all	Зберігати обрамлення в режимі Показати все
+	Filter by tag	Фільтр за тегом
+	Clear filter	Скинути фільтр
+	Tags:	Теги:
+	Add tag	Додати тег
+	Remove tag	Видалити тег
+	View Metadata…	Перегляд метаданих…
+	Edit Metadata…	Редагувати метадані…
+	Edit Metadata	Редагувати метадані
+	Metadata Viewer	Переглядач метаданих
+	Write Metadata	Записати метадані
+	Separate several values with semicolons	Кілька значень розділяйте крапкою з комою
+	No tags	Немає тегів
+	XMP	XMP
+	IPTC	IPTC
+	Text	Текст
+	Rights	Права
+	IPTC Extension	Розширення IPTC
+	Categories	Категорії
+	DICOM	DICOM
+	Procedure Browser	Оглядач процедур
+	Plug-In Browser	Оглядач модулів
+	Search procedures	Пошук процедур
+	{n} procedures	{n} процедур
+	(no menu)	(без меню)
+	Menu: {path}	Меню: {path}
+	Parameters	Параметри
+	Available now	Доступно зараз
+	Not available in the current state	Недоступно в поточному стані
+	Run	Виконати
+	Select a procedure to read its parameters.	Виберіть процедуру, щоб побачити її параметри.
+	Dashboard	Панель моніторингу
+	Low memory: swap is nearly full. Save your work.	Мало пам'яті: підкачка майже заповнена. Збережіть роботу.
+	Memory	Пам'ять
+	Cache	Кеш
+	Swap	Підкачка
+	Swap: not reported on this platform	Підкачка: не повідомляється на цій платформі
+	CPU	CPU
+	CPU renderer	Рендеринг на CPU
+	uploads	завантажень
+	Misc: {jobs} jobs running · {n} samples	Інше: виконується завдань: {jobs} · вибірок: {n}
+	Log to File…	Записувати у файл…
+	Stop Logging	Зупинити запис
+	Device Status	Стан пристроїв
+	Core Pointer	Основний вказівник
+	Pen / Tablet	Перо / планшет
+	Brush:	Пензель:
+	Pattern:	Візерунок:
+	Gradient:	Градієнт:
+	Save Device Status	Зберегти стан пристроїв
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Кожен пристрій пам'ятає свій інструмент, кольори, пензель, візерунок і градієнт; зміна пристрою змінює і їх.
+	Selection Editor	Редактор виділення
+	No document open.	Немає відкритого документа.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Клацніть, щоб виділити суміжний колір чарівною паличкою (Shift додає, Alt віднімає)
+	Save to Channel	Зберегти в канал
+	To Path	У контур
+	Advanced options	Додаткові параметри
+	MyPaint Brushes	Пензлі MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Пензлів MyPaint ще немає. Імпортуйте файли .myb, щоб побачити їх тут.
+	No brush matches the filter.	Немає пензлів, що відповідають фільтру.
+	Handle Transform	Трансформація за ручками
+	3D Transform	3D-трансформація
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Переставити
+	Apply the transform so far and put a fresh box on the result	Застосувати трансформацію і поставити нову рамку на результат
+	Camera	Камера
+	Vanishing X:	Точка сходу X:
+	Y:	Y:
+	Focal length:	Фокусна відстань:
+	Local pivot	Локальна вісь
+	Unified pivot	Спільна вісь
+	Close Cage	Замкнути клітку
+	Reset Cage	Скинути клітку
+	Fill Plain Colour	Залити суцільним кольором
+	Fill the original position of the cage with the plain colour of its outline	Залити початкове положення клітки суцільним кольором її контуру
+	{n} points	{n} точок
+	Click to place a handle	Клацніть, щоб поставити ручку
+	Rotate and Scale	Поворот і масштаб
+	{n} handles: {what}	Ручок: {n}: {what}
+	Reset Handles	Скинути ручки
+	Remove Handles	Прибрати ручки
+	Commit Cage Transform (Enter)	Застосувати трансформацію кліткою (Enter)
+	Commit Handle Transform (Enter)	Застосувати трансформацію за ручками (Enter)
+	Commit 3D Transform (Enter)	Застосувати 3D-трансформацію (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Трансформація кліткою: клацайте навколо частини, клацніть першу точку, щоб замкнути клітку, потім перетягуйте точки
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Трансформація за ручками: поставте від однієї до чотирьох ручок і тягніть (одна рухає, дві обертають і масштабують, три нахиляють, чотири дають перспективу)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-трансформація: тягніть для повороту навколо X і Y, Alt — навколо Z; вкладки Перемістити і Камера рухають шар і камеру
+	Segment {n}	Сегмент {n}
+	Blending:	Перехід:
+	Coloring:	Забарвлення:
+	Midpoint:	Середня точка:
+	Sinusoidal	Синусоїдний
+	Spherical (increasing)	Сферичний (зростаючий)
+	Spherical (decreasing)	Сферичний (спадний)
+	Step	Сходинка
+	HSV (counter-clockwise)	HSV (проти годинникової)
+	HSV (clockwise)	HSV (за годинниковою)
+	Replicate	Розмножити
+	Split the segment at its midpoint	Розділити сегмент у середній точці
+	Replace the segment with two copies of itself	Замінити сегмент двома його копіями
+	Flip the whole gradient end to end	Перевернути весь градієнт
+	Save as POV-Ray…	Зберегти як POV-Ray…

@@ -775,6 +775,99 @@ impl Sink {
 fn preset_stops_editor(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     if let Some(f) = preset_fill(app) {
         stops_editor_for(app, ui, Sink::Preset, f);
+        segment_fields(app, ui);
+    }
+}
+
+/// The segment editor under the preset strip: the segment to the right of the selected colour
+/// stop gets a blending function, a colouring type and a midpoint; Split, Replicate and Flip
+/// reshape the stops; Save as POV-Ray exports a `color_map`.
+fn segment_fields(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+    use redrob_photo_engine::presets::gradients::{Blend, Coloring};
+    let t = Tokens::get(ui.ctx());
+    let key = strip_key(app, Sink::Preset).with("selection");
+    let selected = ui.data(|d| d.get_temp::<Marker>(key));
+    let n = app.session.presets.gradient.stops.len().saturating_sub(1);
+    let index = match selected {
+        Some(Marker::Color(i)) => i.min(n.saturating_sub(1)),
+        Some(Marker::Mid(i)) => i.min(n.saturating_sub(1)),
+        _ => 0,
+    };
+    if n == 0 {
+        return;
+    }
+    let seg = app.session.presets.gradient.segment(index);
+    let mut act: Option<(&str, Value)> = None;
+    ui.add_space(4.0);
+    ui.label(egui::RichText::new(crate::i18n::fmt(tl!("Segment {n}"), &[("n", &(index + 1).to_string())])).color(t.text_dim).size(11.5).strong());
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Blending:")).color(t.text_dim).size(11.0));
+        let mut blend = seg.blend;
+        let blends: Vec<(Blend, &str)> = vec![
+            (Blend::Linear, tl!("Linear")),
+            (Blend::Curved, tl!("Curved")),
+            (Blend::Sinusoidal, tl!("Sinusoidal")),
+            (Blend::SphericalIncreasing, tl!("Spherical (increasing)")),
+            (Blend::SphericalDecreasing, tl!("Spherical (decreasing)")),
+            (Blend::Step, tl!("Step")),
+        ];
+        if widgets::dropdown(ui, "gradient-seg-blend", &mut blend, &blends, 150.0) {
+            act = Some(("gradient.presets.segment", json!({"index": index, "blend": blend.name()})));
+        }
+        ui.label(egui::RichText::new(tl!("Coloring:")).color(t.text_dim).size(11.0));
+        let mut coloring = seg.coloring;
+        let colorings: Vec<(Coloring, &str)> =
+            vec![(Coloring::Rgb, tl!("RGB")), (Coloring::HsvCcw, tl!("HSV (counter-clockwise)")), (Coloring::HsvCw, tl!("HSV (clockwise)"))];
+        if widgets::dropdown(ui, "gradient-seg-coloring", &mut coloring, &colorings, 150.0) {
+            act = Some(("gradient.presets.segment", json!({"index": index, "coloring": coloring.name()})));
+        }
+    });
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new(tl!("Midpoint:")).color(t.text_dim).size(11.0));
+        let mut mid = seg.midpoint * 100.0;
+        if widgets::slider(ui, &mut mid, 1.0..=99.0, None).drag_stopped() | widgets::value_field(ui, &mut mid, 1.0..=99.0, "%", 56.0).changed() {
+            act = Some(("gradient.presets.segment", json!({"index": index, "midpoint": mid / 100.0})));
+        }
+    });
+    ui.horizontal(|ui| {
+        if widgets::secondary_button(ui, tl!("Split"), 0.0).on_hover_text(tl!("Split the segment at its midpoint")).clicked() {
+            act = Some(("gradient.presets.splitSegment", json!({"index": index})));
+        }
+        if widgets::secondary_button(ui, tl!("Replicate"), 0.0).on_hover_text(tl!("Replace the segment with two copies of itself")).clicked() {
+            act = Some(("gradient.presets.replicate", json!({"index": index, "count": 2})));
+        }
+        if widgets::secondary_button(ui, tl!("Flip"), 0.0).on_hover_text(tl!("Flip the whole gradient end to end")).clicked() {
+            act = Some(("gradient.presets.flip", json!({})));
+        }
+        if widgets::secondary_button(ui, tl!("Save as POV-Ray…"), 0.0).clicked() {
+            act = Some(("pov", json!({})));
+        }
+    });
+    match act {
+        Some(("pov", _)) => {
+            if let Ok(r) = app.run("gradient.presets.exportPov", json!({})) {
+                let text = r["pov"].as_str().unwrap_or_default().to_string();
+                let name = format!("{}.inc", r["name"].as_str().unwrap_or("gradient"));
+                let res = app.pick_save(&name, move |app, path| {
+                    let write = app.services.write.as_mut().ok_or("no writer configured")?;
+                    write(&path, text.as_bytes())?;
+                    Ok(json!({"path": path}))
+                });
+                if let Err(e) = res
+                    && e != "cancelled"
+                {
+                    app.ui.status = e;
+                    app.ui.status_error = true;
+                }
+            }
+        }
+        Some((id, p)) => {
+            if let Err(e) = app.run(id, p) {
+                app.ui.status = e;
+                app.ui.status_error = true;
+            }
+        }
+        None => {}
     }
 }
 

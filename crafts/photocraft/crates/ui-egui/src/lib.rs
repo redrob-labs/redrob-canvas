@@ -87,6 +87,7 @@ pub mod egui_fonts;
 pub mod enable_rules;
 pub mod eraser_ui;
 pub mod export_dialog;
+pub mod extra_panels;
 pub mod eyedropper_ui;
 pub mod field_tab;
 pub mod file_dialog;
@@ -100,6 +101,7 @@ mod filter_preview_worker;
 mod filter_split;
 pub mod flick_pan;
 mod font_preview;
+pub mod foreground_select_ui;
 pub mod frame_tool;
 pub mod gallery_ui;
 pub mod gpu_canvas;
@@ -153,6 +155,7 @@ pub mod object_finder;
 mod opacity_keys;
 pub mod open_prompt;
 pub mod outline;
+pub mod padding_ui;
 pub mod paint_mouse;
 pub mod palette;
 mod panel_docking;
@@ -189,6 +192,7 @@ pub mod served_fonts;
 pub mod shape_dialog;
 pub(crate) mod shape_fill_ui;
 pub mod shape_stroke_ui;
+pub mod shape_transform_ui;
 pub mod shortcut_dispatch;
 pub mod shortcuts;
 mod single_line_drag;
@@ -209,6 +213,7 @@ pub mod swap_arrow;
 pub mod swatches_ui;
 pub mod symmetry_ui;
 mod tab_strip;
+pub mod tag_filter;
 pub mod targa_options_ui;
 pub mod text_field_menu;
 pub mod theme;
@@ -216,6 +221,7 @@ pub mod tiff_options_ui;
 mod tile_overlay;
 mod timeline_ui;
 mod titlebar;
+pub mod wand_drag;
 pub use titlebar::{Caption, CaptionFamily, CaptionIcon, CaptionIcons, CaptionStyle, RenderIconFn};
 pub mod tone;
 mod tool_cursor;
@@ -613,6 +619,11 @@ pub struct PhotocraftApp {
     pub(crate) brush_resize: Option<brush_resize::Resize>,
     /// A ⌘⌥⌃-click layer pick is in progress; its drag and release are swallowed (`quick_pick`).
     pub(crate) quick_pick: bool,
+    /// A held Magic Wand press whose drag adjusts the tolerance (`wand_drag`).
+    pub(crate) wand_drag: Option<wand_drag::WandDrag>,
+    /// Foreground Select: the rough outline, the marks and the preview state
+    /// (`foreground_select_ui`).
+    pub(crate) fg_select: foreground_select_ui::ForegroundSelect,
     /// The next tool `Down` is an Alt+right-drag that resizes the brush (#297). `tool_event`
     /// takes it on every event, so a press another handler consumes can't leave it set.
     pub(crate) brush_resize_armed: bool,
@@ -857,6 +868,8 @@ impl PhotocraftApp {
             last_stroke_end: None,
             brush_resize: None,
             quick_pick: false,
+            wand_drag: None,
+            fg_select: Default::default(),
             brush_resize_armed: false,
             alt_sampling: false,
             eyedropper_base: None,
@@ -1971,6 +1984,7 @@ impl eframe::App for PhotocraftApp {
         gradient_ui::editor_window(self, &ctx);
         type_panels_ui::windows(self, &ctx);
         analysis_ui::windows(self, &ctx);
+        extra_panels::windows(self, &ctx);
         timeline_ui::windows(self, &ctx);
         workspace_ui::windows(self, &ctx);
         palette::show(self, &ctx);

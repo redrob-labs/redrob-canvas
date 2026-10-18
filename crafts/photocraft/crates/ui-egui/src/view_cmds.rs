@@ -103,6 +103,8 @@ pub struct ViewOptions {
     /// Developer overlay of the active layer's storage tiles (tile_overlay.rs), set with the
     /// control channel's `ui.set {"tileGrid": true}`.
     pub tile_grid: bool,
+    /// View › Show All: the layers' pixels beyond the canvas are shown round it (`padding_ui`).
+    pub show_all: bool,
 }
 
 /// Factory New Guide Layout values (Alt+Reset and a fresh ViewOptions).
@@ -129,6 +131,7 @@ impl Default for ViewOptions {
             middle_eastern_composer: false,
             guide_layout: default_guide_layout(),
             tile_grid: false,
+            show_all: false,
         }
     }
 }

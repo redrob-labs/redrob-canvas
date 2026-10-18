@@ -3123,3 +3123,170 @@ curves	Smooth	平滑
 	Bristle	鬃毛
 	Deform	變形
 	Thickness	粗細
+	Grain Extract	顆粒擷取
+	Grain Merge	顆粒合併
+	LCh Hue	LCh 色相
+	LCh Chroma	LCh 彩度
+	LCh Color	LCh 顏色
+	LCh Lightness	LCh 明度
+	Merge	合併
+	Split	分割
+	Remove Holes	移除孔洞
+	Distort…	扭曲…
+	Rounded Rectangle…	圓角矩形…
+	Anchor Layer	錨定圖層
+	To New Layer	轉為新圖層
+	Layer Boundary Size…	圖層邊界大小…
+	Layer to Image Size	圖層至影像大小
+	Resize Layer to Selection	圖層調整為選取範圍大小
+	Crop Layer to Content	圖層裁切至內容
+	Threshold Alpha…	Alpha 閾值…
+	Composite Options…	合成選項…
+	Zealous Crop	徹底裁切
+	Foreground Select	前景選取
+	Stroke width	筆畫寬度
+	Graph cut	圖割
+	Fast	快速
+	To Layer Mask	轉為圖層遮色片
+	Draw a rough outline round the subject	圍繞主體繪製粗略輪廓
+	Draw a rough outline round the subject first	請先圍繞主體繪製粗略輪廓
+	Outline placed: paint over the foreground, then Preview or Select	輪廓已放置：塗抹前景，然後預覽或選取
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	粗略勾出主體，塗抹前景，讓去背引擎擴展遮色片
+	Paint over the foreground (hold Alt for background), then Preview or Select	塗抹前景（按住 Alt 塗背景），然後預覽或選取
+	Display Filters…	顯示濾鏡…
+	Display Filters	顯示濾鏡
+	No Color Deficiency Simulation	不模擬色覺缺陷
+	Simulate Protanopia	模擬紅色盲
+	Simulate Deuteranopia	模擬綠色盲
+	Simulate Tritanopia	模擬藍色盲
+	Clip Warning	剪裁警告
+	Clip warning	剪裁警告
+	Color deficiency:	色覺缺陷：
+	Protanopia	紅色盲
+	Deuteranopia	綠色盲
+	Tritanopia	藍色盲
+	Contrast:	對比：
+	View-only: the filters change what this view shows, never the pixels.	僅影響顯示：濾鏡只改變此檢視的顯示，不改變像素。
+	Show All	顯示全部
+	Padding Color	填充色
+	From Theme	來自主題
+	Dark Gray	深灰色
+	Medium Gray	中灰色
+	Light Check Color	淺色格子顏色
+	Dark Check Color	深色格子顏色
+	Light Check	淺色格子
+	Dark Check	深色格子
+	Light check	淺色格子
+	Dark check	深色格子
+	Custom Color	自訂顏色
+	Select Custom Color…	選擇自訂顏色…
+	Keep Padding in Show All	顯示全部時保留填充
+	Keep padding in show all	顯示全部時保留填充
+	Filter by tag	依標籤篩選
+	Clear filter	清除篩選
+	Tags:	標籤：
+	Add tag	新增標籤
+	Remove tag	移除標籤
+	View Metadata…	檢視中繼資料…
+	Edit Metadata…	編輯中繼資料…
+	Edit Metadata	編輯中繼資料
+	Metadata Viewer	中繼資料檢視器
+	Write Metadata	寫入中繼資料
+	Separate several values with semicolons	多個值以分號分隔
+	Copyrighted	受版權保護
+	Public Domain	公共領域
+	Unknown	未知
+	No tags	無標籤
+	XMP	XMP
+	IPTC	IPTC
+	Text	文字
+	Rights	權利
+	IPTC Extension	IPTC 延伸
+	Categories	類別
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	程序瀏覽器
+	Plug-In Browser	外掛程式瀏覽器
+	Search procedures	搜尋程序
+	{n} procedures	{n} 個程序
+	(no menu)	（無選單）
+	Menu: {path}	選單：{path}
+	Parameters	參數
+	Available now	目前可用
+	Not available in the current state	目前狀態下無法使用
+	Run	執行
+	Select a procedure to read its parameters.	選擇程序以閱讀其參數。
+	Dashboard	儀表板
+	Low memory: swap is nearly full. Save your work.	記憶體不足：置換空間幾乎已滿。請儲存您的工作。
+	Memory	記憶體
+	Cache	快取
+	Swap	置換空間
+	Swap: not reported on this platform	置換空間：此平台不提供
+	CPU	CPU
+	CPU renderer	CPU 渲染器
+	uploads	次上傳
+	Misc: {jobs} jobs running · {n} samples	其他：{jobs} 個工作執行中 · {n} 個樣本
+	Log to File…	記錄到檔案…
+	Stop Logging	停止記錄
+	Device Status	裝置狀態
+	Core Pointer	核心指標
+	Pen / Tablet	數位筆 / 繪圖板
+	Brush:	筆刷：
+	Pattern:	圖樣：
+	Gradient:	漸層：
+	Save Device Status	儲存裝置狀態
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	每個裝置記住自己的工具、顏色、筆刷、圖樣和漸層；切換裝置時隨之切換。
+	Selection Editor	選取範圍編輯器
+	No document open.	沒有開啟的文件。
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	按一下以用魔術棒選取該處的連續顏色（Shift 加入，Alt 減去）
+	Save to Channel	儲存到色版
+	To Path	轉為路徑
+	Advanced options	進階選項
+	MyPaint Brushes	MyPaint 筆刷
+	Import…	匯入…
+	No MyPaint brushes yet. Import .myb files to list them here.	還沒有 MyPaint 筆刷。匯入 .myb 檔案即可在此列出。
+	No brush matches the filter.	沒有筆刷符合篩選條件。
+	Handle Transform	控制點變形
+	3D Transform	3D 變形
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	重新調整
+	Apply the transform so far and put a fresh box on the result	套用到目前為止的變形，並在結果上放置新的框
+	Camera	相機
+	Vanishing X:	消失點 X：
+	Y:	Y:
+	Focal length:	焦距：
+	Local pivot	局部軸心
+	Unified pivot	統一軸心
+	Close Cage	閉合籠子
+	Reset Cage	重設籠子
+	Fill Plain Colour	填滿純色
+	Fill the original position of the cage with the plain colour of its outline	用籠子輪廓的純色填滿其原始位置
+	{n} points	{n} 個點
+	Click to place a handle	按一下以放置控制點
+	Rotate and Scale	旋轉和縮放
+	{n} handles: {what}	{n} 個控制點：{what}
+	Reset Handles	重設控制點
+	Remove Handles	移除控制點
+	Commit Cage Transform (Enter)	確定籠子變形 (Enter)
+	Commit Handle Transform (Enter)	確定控制點變形 (Enter)
+	Commit 3D Transform (Enter)	確定 3D 變形 (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	籠子變形：圍繞要變形的部分按一下，按一下第一個點閉合籠子，然後拖曳其點
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	控制點變形：放置一到四個控制點並拖曳（一個移動，兩個旋轉縮放，三個傾斜，四個透視）
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 變形：拖曳繞 X 和 Y 旋轉，Alt 拖曳繞 Z 旋轉；移動和相機分頁移動圖層和相機
+	Segment {n}	區段 {n}
+	Blending:	混合：
+	Coloring:	著色：
+	Midpoint:	中點：
+	Sinusoidal	正弦
+	Spherical (increasing)	球面（遞增）
+	Spherical (decreasing)	球面（遞減）
+	Step	階躍
+	RGB	RGB
+	HSV (counter-clockwise)	HSV（逆時針）
+	HSV (clockwise)	HSV（順時針）
+	Replicate	複製
+	Split the segment at its midpoint	在中點處分割該區段
+	Replace the segment with two copies of itself	用該區段的兩個副本取代它
+	Flip the whole gradient end to end	將整個漸層首尾翻轉
+	Save as POV-Ray…	儲存為 POV-Ray…

@@ -533,6 +533,12 @@ pub enum WandCriterion {
     Saturation,
     Value,
     Alpha,
+    /// CIE L* on 0..255 (0..100 scaled).
+    LchLightness,
+    /// CIE LCh chroma on 0..255 (0..128 scaled).
+    LchChroma,
+    /// CIE LCh hue on the 0..255 circle.
+    LchHue,
 }
 
 /// Region-growing options shared by the Magic Wand, the Bucket and the Magic Eraser.
@@ -564,6 +570,14 @@ fn hsv8(p: [u8; 4]) -> [i32; 3] {
     [h, d * 255 / max, max]
 }
 
+/// CIE L*, chroma and hue of an 8-bit colour, each on 0..255 (hue on the circle).
+fn lch8(p: [u8; 4]) -> [i32; 3] {
+    let lab = redrob_photo_color::convert::srgb_to_lab([f32::from(p[0]) / 255.0, f32::from(p[1]) / 255.0, f32::from(p[2]) / 255.0]);
+    let c = (lab[1] * lab[1] + lab[2] * lab[2]).sqrt();
+    let h = lab[2].atan2(lab[1]).to_degrees().rem_euclid(360.0);
+    [(lab[0] * 2.55).round().clamp(0.0, 255.0) as i32, (c * 255.0 / 128.0).round().clamp(0.0, 255.0) as i32, (h * 255.0 / 360.0).round() as i32 % 256]
+}
+
 fn channel_close(p: [u8; 4], target: [u8; 4], tol: i32, criterion: WandCriterion) -> bool {
     let diff = |a: i32, b: i32| (a - b).abs() <= tol;
     match criterion {
@@ -579,6 +593,13 @@ fn channel_close(p: [u8; 4], target: [u8; 4], tol: i32, criterion: WandCriterion
         }
         WandCriterion::Saturation => diff(hsv8(p)[1], hsv8(target)[1]),
         WandCriterion::Value => diff(hsv8(p)[2], hsv8(target)[2]),
+        WandCriterion::LchLightness => diff(lch8(p)[0], lch8(target)[0]),
+        WandCriterion::LchChroma => diff(lch8(p)[1], lch8(target)[1]),
+        WandCriterion::LchHue => {
+            let (a, b) = (lch8(p)[2], lch8(target)[2]);
+            let d = (a - b).abs();
+            d.min(256 - d) <= tol
+        }
     }
 }
 

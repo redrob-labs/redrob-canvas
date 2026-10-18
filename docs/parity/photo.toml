@@ -45,9 +45,9 @@ name = "Foreground select tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-foreground-select.html"
 behaviour = "Rough outline round the subject, then paint over foreground (and optionally background) strokes; a matting engine (two algorithms selectable) grows a mask with a preview overlay in a chosen colour; adjustable stroke width, preview mode (colour or grayscale), and commit to a selection or a layer mask."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/segment/grabcut.rs (foreground_select: outline + foreground/background marks), crafts/photocraft/crates/engine/src/smartselect_cmds.rs (select.foreground), crafts/photocraft/crates/ui-egui/src/select_mask_view.rs"
-gap = "the two-stage outline-then-mark workflow is an engine command (select.foreground) driven by scripts and actions; no dedicated canvas tool yet (Quick Selection plus Select and Mask stand in)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/foreground_select_ui.rs (Lasso > Foreground Select: outline, foreground/background marks, stroke width, two engines, colour or grayscale preview, Select / To Layer Mask), crafts/photocraft/crates/algo/src/segment/grabcut.rs, crafts/photocraft/crates/engine/src/smartselect_cmds.rs (select.foreground, fast)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -57,9 +57,9 @@ name = "Fuzzy select (magic wand)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-fuzzy-select.html"
 behaviour = "Click seeds a contiguous region grown by colour distance; threshold 0-255 adjustable by dragging during the click; options: antialias, feather, select transparent areas, sample merged, diagonal neighbours, draw mask preview, select-by criterion (composite, R, G, B, H, S, V, LCh L/C/H, alpha)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/selection_cmds.rs (select.magicWand), crafts/photocraft/crates/algo/src/selection.rs"
-gap = "no drag-to-adjust threshold, no diagonal-neighbours switch, no per-channel criterion"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/wand_drag.rs (press-and-drag threshold), crafts/photocraft/crates/ui-egui/src/eraser_ui.rs (diagonal switch, criterion incl. LCh L/C/H), crafts/photocraft/crates/engine/src/selection_cmds.rs (select.magicWand), crafts/photocraft/crates/algo/src/selection.rs (WandCriterion)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -129,9 +129,9 @@ name = "Float selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-float.html"
 behaviour = "Cuts the selected pixels into a temporary floating layer above the active one which must be anchored or turned into a new layer before other layers can be edited."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/selection_cmds.rs (select.float), crafts/photocraft/crates/engine/src/new_layer.rs"
-gap = "no floating-layer concept; the command creates a new ordinary layer via cut"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/float_cmds.rs (select.float: floating piece, every other command anchors it), crafts/photocraft/crates/engine/src/select_refine_cmds.rs (layer.anchor, layer.floatingToLayer)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -153,9 +153,9 @@ name = "Selection editor dialog"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-dialog.html"
 behaviour = "Dockable showing the selection as a black and white mask with buttons for all/none/invert, save to channel, to path (with an advanced options dialog), stroke; clicking in the preview with a tool draws selections."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/select_mask_view.rs, crafts/photocraft/crates/ui-egui/src/channels_panel.rs"
-gap = "no dedicated editor dockable; mask view and channel panel cover saving and viewing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Window > Selection Editor: mask preview, All/None/Invert, Save to Channel, To Path with advanced options, Stroke, click-to-select), crafts/photocraft/crates/ui-egui/src/select_mask_view.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -177,9 +177,9 @@ name = "Sharpen selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-sharpen.html"
 behaviour = "Removes partial (antialiased or feathered) coverage so every pixel is fully in or out."
-ours = "none"
-ours_where = ""
-gap = "no threshold-to-binary command for the selection mask"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (select.sharpen)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -225,9 +225,9 @@ name = "Remove holes"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-flood.html"
 behaviour = "Fills enclosed unselected islands inside the selection."
-ours = "none"
-ours_where = ""
-gap = "not available as a command; magic wand with inverse is the workaround"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (select.removeHoles)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -237,9 +237,9 @@ name = "Distort selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-distress-selection.html"
 behaviour = "Randomises the selection outline with threshold, spread, granularity, smoothness and smooth-horizontally/vertically parameters for a ragged edge."
-ours = "none"
-ours_where = ""
-gap = "no selection distress command"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (select.distort: threshold, spread, granularity, smooth, smooth horizontally/vertically)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -249,9 +249,9 @@ name = "Rounded rectangle selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-selection-rounded-rectangle.html"
 behaviour = "Rounds (or concaves) the corners of the current rectangular selection by a radius percentage."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/selection_cmds.rs (select.modify.smooth)"
-gap = "smooth rounds corners by radius in pixels, no concave option"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (select.roundedRectangle: radius %, concave)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -609,9 +609,9 @@ name = "3D transform tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-transform-3d.html"
 behaviour = "Camera/move/rotate tabs: vanishing point, focal length, translation in x/y/z, rotation about three axes with on-canvas handles, unified or local pivot, and preview."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/transform_cmds.rs (edit.perspectiveWarp), crafts/photocraft/crates/ui-egui/src/perspective_ui.rs"
-gap = "perspective warp with planes; no explicit camera focal length or z-translation model"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/shape_transform_ui.rs (edit.transform3d: Camera/Move/Rotate tabs, vanishing point, focal length, X/Y/Z translation, rotation about three axes with on-canvas drags, local or unified pivot, textured preview), crafts/photocraft/crates/engine/src/transform_cmds.rs (edit.transform quad commit)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -633,9 +633,9 @@ name = "Handle transform tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-handle-transform.html"
 behaviour = "Place one to four handles on the layer; dragging them performs move, rotate+scale, shear or perspective depending on the handle count."
-ours = "none"
-ours_where = ""
-gap = "no handle-count-driven transform; free transform covers the operations"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/shape_transform_ui.rs (edit.handleTransform: one to four handles; move, rotate+scale, shear, perspective; handle_homography), crafts/photocraft/crates/engine/src/transform_cmds.rs (edit.transform quad commit)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -657,9 +657,9 @@ name = "Cage transform"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-cage.html"
 behaviour = "Draw a polygon cage round a region then drag its vertices to deform the enclosed pixels; option to fill the vacated plain colour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/cage.rs (mean value coordinates), crafts/photocraft/crates/engine/src/distort_cmds.rs (edit.cageTransform), crafts/photocraft/crates/ui-egui/src/puppet_ui.rs"
-gap = "the polygon cage deformation is a command (edit.cageTransform: cage and deformed vertex rings) with no on-canvas cage editing yet; Puppet Warp is the interactive tool"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/shape_transform_ui.rs (edit.cageTransform on canvas: lay the cage, close it, drag vertices, live preview, Fill Plain Colour), crafts/photocraft/crates/engine/src/distort_cmds.rs (edit.cageTransform fillPlain), crafts/photocraft/crates/algo/src/cage.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -681,9 +681,9 @@ name = "Shared transform options (direction, interpolation, clipping, preview, g
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tools-transform.html"
 behaviour = "Every transform tool shares: transform layer/selection/path target, direction normal/corrective, interpolation none/linear/cubic/NoHalo/LoHalo, clipping adjust/clip/crop/crop-with-aspect, composited preview with opacity, guide overlays, and a readjust button."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/transform_tool.rs, crafts/photocraft/crates/ui-egui/src/state.rs, crafts/photocraft/crates/engine/src/transform_cmds.rs, crafts/photocraft/crates/algo/src/transform.rs, crafts/photocraft/crates/algo/src/warp.rs"
-gap = "interpolation none/bilinear/bicubic/Lanczos3 (no NoHalo/LoHalo); direction normal/corrective, clipping adjust/clip/crop/cropAspect and guide overlays done; direction and clipping apply to layer transforms only (not Transform Selection or paths); no readjust button"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/transform_tool.rs (interpolation none/bilinear/bicubic/Lanczos/NoHalo/LoHalo; direction and clipping on layers, Transform Selection and paths; guide overlays; Readjust), crafts/photocraft/crates/algo/src/transform.rs (Interp::NoHalo/LoHalo, halo_bounded), crafts/photocraft/crates/algo/src/warp.rs, crafts/photocraft/crates/engine/src/transform_cmds.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -3393,9 +3393,9 @@ name = "Layer mode: Grain extract"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-inversion.html"
 behaviour = "Lower minus upper plus mid gray; isolates texture."
-ours = "none"
-ours_where = ""
-gap = "no grain extract mode"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3405,9 +3405,9 @@ name = "Layer mode: Grain merge"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-inversion.html"
 behaviour = "Lower plus upper minus mid gray; re-applies extracted texture."
-ours = "none"
-ours_where = ""
-gap = "no grain merge mode"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3477,9 +3477,9 @@ name = "Layer mode: LCh Hue"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Hue from the upper layer in CIE LCh."
-ours = "none"
-ours_where = ""
-gap = "no LCh component modes"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3489,8 +3489,8 @@ name = "Layer mode: LCh Chroma"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Chroma from the upper layer in CIE LCh."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3501,8 +3501,8 @@ name = "Layer mode: LCh Color"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Hue and chroma from the upper layer in CIE LCh."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3513,8 +3513,8 @@ name = "Layer mode: LCh Lightness"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Lightness from the upper layer in CIE LCh."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3537,9 +3537,9 @@ name = "Layer mode: Erase"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-layer-modes.html"
 behaviour = "The upper layer's alpha erases the lower layers."
-ours = "none"
-ours_where = ""
-gap = "use a layer mask or clipping group"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3549,8 +3549,8 @@ name = "Layer mode: Merge"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-layer-modes.html"
 behaviour = "Composites the upper onto the lower as if merged, affecting how group alpha is formed."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3561,8 +3561,8 @@ name = "Layer mode: Split"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-layer-modes.html"
 behaviour = "Keeps only where the lower layer is transparent (alpha split)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3585,9 +3585,9 @@ name = "Composite mode, composite space, blend space per layer; legacy mode vari
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-layer-modes.html"
 behaviour = "Beyond the mode a layer sets how alpha combines (union, clip to backdrop, clip to layer, intersection) and whether blending and compositing happen in linear or perceptual RGB, LAB, etc.; each mode also has a legacy (pre-2.10 gamma) variant for old files."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/compose/src/adjust.rs (Transfer), crafts/photocraft/crates/doc/src/ (layer props)"
-gap = "linear vs perceptual document transfer only; no per-layer composite mode or space"
+ours = "full"
+ours_where = "crafts/photocraft/crates/doc/src/composite.rs (CompositeMode, BlendSpace, LayerComposite), crafts/photocraft/crates/doc/src/lib.rs (Layer::composite), crafts/photocraft/crates/compose/src/lib.rs (composite_with_options), crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (layer.compositeOptions), crafts/photocraft/crates/format/src/manifest.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3645,9 +3645,9 @@ name = "Anchor floating layer"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-layer-anchor.html"
 behaviour = "Merges a floating selection back into the layer it came from."
-ours = "none"
-ours_where = ""
-gap = "no floating selections, paste creates a new layer"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (layer.anchor, layer.floatingToLayer), crafts/photocraft/crates/engine/src/float_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3801,8 +3801,8 @@ name = "Threshold Alpha"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-threshold-alpha.html"
 behaviour = "Makes alpha binary at a chosen threshold."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (layer.thresholdAlpha)"
 gap = ""
 priority = 3
 
@@ -3837,9 +3837,9 @@ name = "Layer Boundary Size / Layers to Image Size / Resize Layers to Selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-layer-resize.html"
 behaviour = "Changes a layer's own boundary with offsets and fill, or sets it to the canvas or the selection bounds, without scaling."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/image_cmds.rs (image.canvasSize)"
-gap = "layers are unbounded by the canvas; no per-layer boundary"
+ours = "full"
+ours_where = "crafts/photocraft/crates/doc/src/lib.rs (Layer::boundary), crafts/photocraft/crates/compose/src/lib.rs (clip_to_boundary, layer_bounds), crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (layer.boundarySize, layer.toImageSize, layer.resizeToSelection)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3861,9 +3861,9 @@ name = "Crop Layers to Content"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-layer-crop-to-content.html"
 behaviour = "Shrinks the layer boundary to its opaque content."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/image_cmds.rs (image.trim)"
-gap = "trims the whole canvas rather than one layer"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (layer.cropToContent, opaque_bounds), crafts/photocraft/crates/doc/src/lib.rs (Layer::boundary)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4209,9 +4209,9 @@ name = "Zealous Crop"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-zealouscrop.html"
 behaviour = "Removes any whole rows and columns of uniform colour, even in the middle."
-ours = "none"
-ours_where = ""
-gap = "trim removes only the border"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (image.zealousCrop, zealous_keep)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4293,9 +4293,9 @@ name = "Metadata editor and viewer"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-metadata-editor.html"
 behaviour = "View EXIF, XMP and IPTC tags and edit IPTC/XMP descriptive, rights, GPS and DICOM fields."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/exif.rs, crafts/photocraft/crates/engine/src/file_cmds.rs (metadata handling on export), crafts/photocraft/crates/codecs/src/codecs/tiff_exif.rs"
-gap = "metadata is preserved and viewable in file info; no IPTC/XMP editor"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/metadata_cmds.rs (image.metadata.view/edit/fields: EXIF, XMP and IPTC viewer; descriptive, rights, IPTC, IPTC Extension, categories, GPS and DICOM fields written to XMP), crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Image > Metadata > View/Edit Metadata dialogs)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4977,9 +4977,9 @@ name = "Display Filters"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-display-filter-dialog.html"
 behaviour = "Stack of view-only filters: colour deficiency simulation (protanopia, deuteranopia, tritanopia), gamma, contrast, clip warning (over/under exposure colours); configurable per view."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/view_cmds.rs (view.proofSetup.colorBlindnessProtanopia/Deuteranopia), crafts/photocraft/crates/engine/src/display_color.rs, crafts/photocraft/crates/ui-egui/src/clipping_indicator_tests.rs"
-gap = "no tritanopia, gamma or contrast display filters"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/display_filters.rs (view.displayFilters: protanopia/deuteranopia/tritanopia, gamma, contrast, clip warning with colours, per document), crafts/photocraft/crates/engine/src/proof_sim.rs (display LUT), crafts/photocraft/crates/ui-egui/src/workspace_ui.rs (dialog), crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5025,9 +5025,9 @@ name = "Padding colour"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-view-padding-color.html"
 behaviour = "Colour around the canvas: from theme, light/dark check, custom, keep padding in Show All."
-ours = "none"
-ours_where = ""
-gap = "fixed theme padding"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/padding_ui.rs (View > Padding Color: from theme, greys, light/dark check, custom, Keep Padding in Show All; View > Show All), crafts/photocraft/crates/engine/src/prefs.rs (CanvasColor lightCheck/darkCheck, interface.keepPaddingInShowAll), crafts/photocraft/crates/ui-egui/src/canvas.rs (Show All beyond-canvas rendering)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5109,8 +5109,8 @@ name = "MyPaint Brushes dialog"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-mypaint-brush-dialog.html"
 behaviour = "List of MyPaint brush presets with tags."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/mypaint_cmds.rs (brush.mypaint.import/list: .myb v1-v3 to brush presets, tagged), crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Window > MyPaint Brushes: list with tags, filter, import, tagging)"
 gap = ""
 priority = 3
 
@@ -5133,9 +5133,9 @@ name = "Gradients dialog and gradient editor"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-gradient-dialog.html"
 behaviour = "List with preview, new/duplicate/edit/delete/refresh/save as POV-Ray; editor with segment handles, colour pickers, blend/colouring types, split/flip/replicate."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/gradient_ui.rs, crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
-gap = "stop-based editor without segment blending functions"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/presets/gradients.rs (Segment: blending functions linear/curved/sinusoidal/spherical/step, colouring RGB/HSV ccw/cw, midpoint; gradient.presets.segment/splitSegment/replicate/flip/exportPov), crafts/photocraft/crates/ui-egui/src/gradient_ui.rs (segment editor, Save as POV-Ray), crafts/photocraft/crates/ui-egui/src/preset_panels.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -5157,9 +5157,9 @@ name = "Tagging of resources"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tagging.html"
 behaviour = "Type tags on brushes, patterns, gradients, palettes, dynamics, tool presets; filter field with autocomplete."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs (groups), crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs"
-gap = "folder-style groups rather than free tags; brushes only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/resource_tags_cmds.rs (resource.tag/untag/tags/filter/tagComplete for brushes, patterns, gradients, palettes, dynamics, tool presets, styles, shapes), crafts/photocraft/crates/ui-egui/src/tag_filter.rs (filter field with autocomplete, tag editor), crafts/photocraft/crates/ui-egui/src/preset_panels.rs, crafts/photocraft/crates/ui-egui/src/brush_panel.rs, crafts/photocraft/crates/engine/src/brush_preset_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5217,8 +5217,8 @@ name = "Device Status dialog"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-device-status-dialog.html"
 behaviour = "Per input device: current tool, FG/BG colours, brush, pattern, gradient; save device status."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Window > Device Status: per device tool, FG/BG, brush, pattern, gradient; switching restores; Save Device Status to preferences), crafts/photocraft/crates/ui-egui/src/canvas.rs (device_seen)"
 gap = ""
 priority = 3
 
@@ -5241,9 +5241,9 @@ name = "Dashboard (memory, swap, CPU, GPU, cache, misc)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-dashboard-dialog.html"
 behaviour = "Live performance graphs with history, low-swap warning, log to file for profiling."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/gpu_status.rs, crafts/photocraft/crates/ui-egui/src/monitor_status.rs, crafts/photocraft/crates/ui-egui/src/jobs_ui.rs"
-gap = "GPU and job status; no swap/cache graphs or performance log"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Window > Dashboard: memory, cache, swap, CPU, GPU, misc graphs with history, low-memory warning, log to CSV file), crafts/photocraft/crates/ui-egui/src/gpu_status.rs, crafts/photocraft/crates/ui-egui/src/jobs_ui.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5289,9 +5289,9 @@ name = "Plug-In Browser and Procedure Browser"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-plug-in-details.html"
 behaviour = "Lists installed plug-ins by menu path and every PDB procedure with parameters and description; search field."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/plugin_cmds.rs (plugin.list), crafts/photocraft/crates/engine/src/commands.rs (engine.commands with filter)"
-gap = "command list with search; no procedure documentation browser"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Help > Procedure Browser and Plug-In Browser: search, grouping by menu path, parameters and availability, Run), crafts/photocraft/crates/engine/src/commands.rs (command_specs), crafts/photocraft/crates/engine/src/plugin_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]

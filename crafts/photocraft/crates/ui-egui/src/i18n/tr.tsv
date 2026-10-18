@@ -4241,3 +4241,162 @@ cameraData	Lens	Lens
 	Spray	Sprey
 	Bristle	Kıl
 	Deform	Deforme
+	Grain Extract	Gren Çıkar
+	Grain Merge	Gren Birleştir
+	LCh Hue	LCh Renk Tonu
+	LCh Chroma	LCh Kroma
+	LCh Color	LCh Renk
+	LCh Lightness	LCh Açıklık
+	Merge	Birleştir
+	Split	Böl
+	Remove Holes	Delikleri Kaldır
+	Distort…	Bozma…
+	Rounded Rectangle…	Yuvarlatılmış Dikdörtgen…
+	Anchor Layer	Katmanı Sabitle
+	To New Layer	Yeni Katmana
+	Layer Boundary Size…	Katman Sınır Boyutu…
+	Layer to Image Size	Katmanı Görüntü Boyutuna
+	Resize Layer to Selection	Katmanı Seçim Boyutuna
+	Crop Layer to Content	Katmanı İçeriğe Kırp
+	Threshold Alpha…	Alfa Eşiği…
+	Composite Options…	Birleştirme Seçenekleri…
+	Zealous Crop	Titiz Kırpma
+	Foreground Select	Ön Plan Seçimi
+	Stroke width	Vuruş genişliği
+	Graph cut	Graf kesimi
+	To Layer Mask	Katman Maskesine
+	Draw a rough outline round the subject	Konunun etrafına kaba bir ana hat çizin
+	Draw a rough outline round the subject first	Önce konunun etrafına kaba bir ana hat çizin
+	Outline placed: paint over the foreground, then Preview or Select	Ana hat yerleştirildi: ön planı boyayın, sonra Önizleme veya Seç
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Konuyu kabaca çevreleyin, ön planı boyayın ve matlaştırma motoru maskeyi büyütsün
+	Paint over the foreground (hold Alt for background), then Preview or Select	Ön planı boyayın (arka plan için Alt), sonra Önizleme veya Seç
+	Display Filters…	Görüntü Filtreleri…
+	Display Filters	Görüntü Filtreleri
+	No Color Deficiency Simulation	Renk Görme Bozukluğu Simülasyonu Yok
+	Simulate Protanopia	Protanopi Simülasyonu
+	Simulate Deuteranopia	Döteranopi Simülasyonu
+	Simulate Tritanopia	Tritanopi Simülasyonu
+	Clip Warning	Kırpma Uyarısı
+	Clip warning	Kırpma uyarısı
+	Color deficiency:	Renk görme bozukluğu:
+	Protanopia	Protanopi
+	Deuteranopia	Döteranopi
+	Tritanopia	Tritanopi
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Yalnızca görünüm: filtreler bu görünümün gösterdiğini değiştirir, pikselleri asla.
+	Padding Color	Dolgu Rengi
+	From Theme	Temadan
+	Dark Gray	Koyu Gri
+	Medium Gray	Orta Gri
+	Light Check Color	Açık Kare Rengi
+	Dark Check Color	Koyu Kare Rengi
+	Light Check	Açık Kare
+	Dark Check	Koyu Kare
+	Light check	Açık kare
+	Dark check	Koyu kare
+	Custom Color	Özel Renk
+	Select Custom Color…	Özel Renk Seç…
+	Keep Padding in Show All	Tümünü Göster'de Dolguyu Koru
+	Keep padding in show all	Tümünü Göster'de dolguyu koru
+	Filter by tag	Etikete göre filtrele
+	Clear filter	Filtreyi temizle
+	Tags:	Etiketler:
+	Add tag	Etiket ekle
+	Remove tag	Etiketi kaldır
+	View Metadata…	Meta Verileri Görüntüle…
+	Edit Metadata…	Meta Verileri Düzenle…
+	Edit Metadata	Meta Verileri Düzenle
+	Metadata Viewer	Meta Veri Görüntüleyici
+	Write Metadata	Meta Verileri Yaz
+	Separate several values with semicolons	Birden çok değeri noktalı virgülle ayırın
+	No tags	Etiket yok
+	XMP	XMP
+	IPTC	IPTC
+	Text	Metin
+	Rights	Haklar
+	IPTC Extension	IPTC Uzantısı
+	Categories	Kategoriler
+	DICOM	DICOM
+	Procedure Browser	Yordam Tarayıcısı
+	Plug-In Browser	Eklenti Tarayıcısı
+	Search procedures	Yordam ara
+	{n} procedures	{n} yordam
+	(no menu)	(menü yok)
+	Menu: {path}	Menü: {path}
+	Parameters	Parametreler
+	Available now	Şimdi kullanılabilir
+	Not available in the current state	Geçerli durumda kullanılamaz
+	Run	Çalıştır
+	Select a procedure to read its parameters.	Parametrelerini okumak için bir yordam seçin.
+	Dashboard	Gösterge Paneli
+	Low memory: swap is nearly full. Save your work.	Bellek az: takas alanı neredeyse dolu. Çalışmanızı kaydedin.
+	Memory	Bellek
+	Cache	Önbellek
+	Swap	Takas
+	Swap: not reported on this platform	Takas: bu platformda bildirilmiyor
+	CPU	CPU
+	CPU renderer	CPU işleyici
+	uploads	yükleme
+	Misc: {jobs} jobs running · {n} samples	Diğer: {jobs} iş çalışıyor · {n} örnek
+	Log to File…	Dosyaya Günlükle…
+	Stop Logging	Günlüklemeyi Durdur
+	Device Status	Aygıt Durumu
+	Core Pointer	Ana İşaretçi
+	Pen / Tablet	Kalem / Tablet
+	Brush:	Fırça:
+	Pattern:	Desen:
+	Gradient:	Gradyan:
+	Save Device Status	Aygıt Durumunu Kaydet
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Her aygıt aracını, renklerini, fırçasını, desenini ve gradyanını hatırlar; aygıt değiştirmek bunları da değiştirir.
+	Selection Editor	Seçim Düzenleyici
+	No document open.	Açık belge yok.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Oradaki bitişik rengi Sihirli Değnek ile seçmek için tıklayın (Shift ekler, Alt çıkarır)
+	Save to Channel	Kanala Kaydet
+	To Path	Yola
+	Advanced options	Gelişmiş seçenekler
+	MyPaint Brushes	MyPaint Fırçaları
+	No MyPaint brushes yet. Import .myb files to list them here.	Henüz MyPaint fırçası yok. Burada listelemek için .myb dosyalarını içe aktarın.
+	No brush matches the filter.	Filtreyle eşleşen fırça yok.
+	Handle Transform	Tutamaç Dönüşümü
+	3D Transform	3B Dönüşüm
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Yeniden Ayarla
+	Apply the transform so far and put a fresh box on the result	Şimdiye kadarki dönüşümü uygula ve sonuca yeni bir kutu yerleştir
+	Camera	Kamera
+	Vanishing X:	Kaybolma noktası X:
+	Y:	Y:
+	Focal length:	Odak uzaklığı:
+	Local pivot	Yerel eksen
+	Unified pivot	Birleşik eksen
+	Close Cage	Kafesi Kapat
+	Reset Cage	Kafesi Sıfırla
+	Fill Plain Colour	Düz Renkle Doldur
+	Fill the original position of the cage with the plain colour of its outline	Kafesin özgün konumunu dış hattının düz rengiyle doldurur
+	{n} points	{n} nokta
+	Click to place a handle	Tutamaç yerleştirmek için tıklayın
+	Rotate and Scale	Döndür ve Ölçekle
+	{n} handles: {what}	{n} tutamaç: {what}
+	Reset Handles	Tutamaçları Sıfırla
+	Remove Handles	Tutamaçları Kaldır
+	Commit Cage Transform (Enter)	Kafes Dönüşümünü Uygula (Enter)
+	Commit Handle Transform (Enter)	Tutamaç Dönüşümünü Uygula (Enter)
+	Commit 3D Transform (Enter)	3B Dönüşümü Uygula (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Kafes Dönüşümü: biçimi değiştirilecek bölümün etrafına tıklayın, kafesi kapatmak için ilk noktaya tıklayın, sonra noktaları sürükleyin
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Tutamaç Dönüşümü: bir ila dört tutamaç yerleştirip sürükleyin (biri taşır, ikisi döndürür ve ölçekler, üçü kaydırır, dördü perspektif verir)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3B Dönüşüm: X ve Y etrafında döndürmek için sürükleyin, Z için Alt ile sürükleyin; Taşı ve Kamera sekmeleri katmanı ve kamerayı taşır
+	Segment {n}	Parça {n}
+	Blending:	Karışım:
+	Coloring:	Renklendirme:
+	Midpoint:	Orta nokta:
+	Sinusoidal	Sinüzoidal
+	Spherical (increasing)	Küresel (artan)
+	Spherical (decreasing)	Küresel (azalan)
+	Step	Basamak
+	HSV (counter-clockwise)	HSV (saat yönünün tersi)
+	HSV (clockwise)	HSV (saat yönünde)
+	Replicate	Çoğalt
+	Split the segment at its midpoint	Parçayı orta noktasından böl
+	Replace the segment with two copies of itself	Parçayı kendisinin iki kopyasıyla değiştir
+	Flip the whole gradient end to end	Tüm gradyanı uçtan uca çevir
+	Save as POV-Ray…	POV-Ray olarak kaydet…

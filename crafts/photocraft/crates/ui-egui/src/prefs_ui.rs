@@ -80,6 +80,11 @@ pub fn pasteboard_color(app: &PhotocraftApp) -> Option<Color32> {
         CanvasColor::DarkGray => Color32::from_gray(40),
         CanvasColor::MediumGray => Color32::from_gray(83),
         CanvasColor::LightGray => Color32::from_gray(184),
+        CanvasColor::LightCheck | CanvasColor::DarkCheck => {
+            let [l, d] = app.session.prefs().transparency_and_gamut.colors();
+            let c = if i.canvas_color == CanvasColor::LightCheck { l } else { d };
+            Color32::from_rgb(c[0], c[1], c[2])
+        }
         CanvasColor::Custom => color_of(&i.canvas_custom_color),
     })
 }

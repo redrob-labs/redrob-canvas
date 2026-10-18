@@ -459,7 +459,8 @@ impl ColorState {
         });
         let hdr =
             crate::proof_sim::hdr_active(self, doc).then(|| self.hdr.get(&doc.id).map(|h| (h.highlight_compression, h.exposure.to_bits(), h.gamma.to_bits())));
-        hash_of((cm, proof, hdr))
+        let filters = crate::display_filters::key(self, doc.id);
+        hash_of((cm, proof, hdr, filters))
     }
 }
 

@@ -1358,6 +1358,11 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::selection_cmds::specs());
     v.extend(crate::magnetic_cmds::specs());
     v.extend(crate::select_extra_cmds::specs());
+    v.extend(crate::select_refine_cmds::specs());
+    v.extend(crate::layer_boundary_cmds::specs());
+    v.extend(crate::resource_tags_cmds::specs());
+    v.extend(crate::mypaint_cmds::specs());
+    v.extend(crate::metadata_cmds::specs());
     v.extend(crate::paint_cmds::specs());
     v.extend(crate::extra_cmds::specs());
     v.extend(crate::background_cmds::specs());
@@ -1397,6 +1402,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::history_cmds::specs());
     v.extend(crate::history_select_cmds::specs());
     v.extend(crate::proof_sim::specs());
+    v.extend(crate::display_filters::specs());
     v.extend(crate::presets::specs());
     v.extend(crate::document_preset_cmds::specs());
     v.extend(crate::export_preset_cmds::specs());

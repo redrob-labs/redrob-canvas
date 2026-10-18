@@ -5189,3 +5189,157 @@ shape	Appearance	Aspetto
 	Random Offset	Scostamento casuale
 	Ink Amount	Quantità inchiostro
 	Counter	Contatore
+	Grain Extract	Estrazione grana
+	Grain Merge	Fusione grana
+	LCh Hue	Tonalità LCh
+	LCh Chroma	Croma LCh
+	LCh Color	Colore LCh
+	LCh Lightness	Luminosità LCh
+	Merge	Fondi
+	Split	Dividi
+	Remove Holes	Rimuovi buchi
+	Distort…	Distorci…
+	Rounded Rectangle…	Rettangolo arrotondato…
+	Anchor Layer	Àncora livello
+	To New Layer	In un nuovo livello
+	Layer Boundary Size…	Dimensione margini livello…
+	Layer to Image Size	Livello a dimensione immagine
+	Resize Layer to Selection	Livello a dimensione selezione
+	Crop Layer to Content	Ritaglia livello al contenuto
+	Threshold Alpha…	Soglia alfa…
+	Composite Options…	Opzioni di composizione…
+	Zealous Crop	Ritaglio zelante
+	Foreground Select	Selezione primo piano
+	Stroke width	Larghezza tratto
+	Graph cut	Taglio del grafo
+	To Layer Mask	A maschera di livello
+	Draw a rough outline round the subject	Traccia un contorno approssimativo intorno al soggetto
+	Draw a rough outline round the subject first	Traccia prima un contorno approssimativo intorno al soggetto
+	Outline placed: paint over the foreground, then Preview or Select	Contorno posizionato: dipingi sul primo piano, poi Anteprima o Seleziona
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Contorna grossolanamente il soggetto, dipingi sul primo piano e lascia che il motore di matting espanda la maschera
+	Paint over the foreground (hold Alt for background), then Preview or Select	Dipingi sul primo piano (Alt per lo sfondo), poi Anteprima o Seleziona
+	Display Filters…	Filtri di visualizzazione…
+	Display Filters	Filtri di visualizzazione
+	No Color Deficiency Simulation	Nessuna simulazione di deficit cromatico
+	Simulate Protanopia	Simula protanopia
+	Simulate Deuteranopia	Simula deuteranopia
+	Simulate Tritanopia	Simula tritanopia
+	Clip Warning	Avviso di clipping
+	Clip warning	Avviso di clipping
+	Color deficiency:	Deficit cromatico:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Contrasto:
+	View-only: the filters change what this view shows, never the pixels.	Solo visualizzazione: i filtri cambiano ciò che mostra questa vista, mai i pixel.
+	Padding Color	Colore di riempimento
+	From Theme	Dal tema
+	Light Check Color	Colore scacchi chiaro
+	Dark Check Color	Colore scacchi scuro
+	Light Check	Scacchi chiaro
+	Dark Check	Scacchi scuro
+	Light check	Scacchi chiaro
+	Dark check	Scacchi scuro
+	Custom Color	Colore personalizzato
+	Keep Padding in Show All	Mantieni riempimento in Mostra tutto
+	Keep padding in show all	Mantieni riempimento in Mostra tutto
+	Filter by tag	Filtra per tag
+	Clear filter	Cancella filtro
+	Tags:	Tag:
+	Add tag	Aggiungi tag
+	Remove tag	Rimuovi tag
+	View Metadata…	Visualizza metadati…
+	Edit Metadata…	Modifica metadati…
+	Edit Metadata	Modifica metadati
+	Metadata Viewer	Visualizzatore metadati
+	Write Metadata	Scrivi metadati
+	Separate several values with semicolons	Separa più valori con punto e virgola
+	No tags	Nessun tag
+	XMP	XMP
+	IPTC	IPTC
+	Rights	Diritti
+	IPTC Extension	Estensione IPTC
+	Categories	Categorie
+	DICOM	DICOM
+	Procedure Browser	Browser delle procedure
+	Plug-In Browser	Browser dei plug-in
+	Search procedures	Cerca procedure
+	{n} procedures	{n} procedure
+	(no menu)	(nessun menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parametri
+	Available now	Disponibile ora
+	Not available in the current state	Non disponibile nello stato attuale
+	Run	Esegui
+	Select a procedure to read its parameters.	Seleziona una procedura per leggerne i parametri.
+	Dashboard	Pannello di controllo
+	Low memory: swap is nearly full. Save your work.	Memoria scarsa: lo swap è quasi pieno. Salva il tuo lavoro.
+	Memory	Memoria
+	Cache	Cache
+	Swap	Swap
+	Swap: not reported on this platform	Swap: non riportato su questa piattaforma
+	CPU	CPU
+	CPU renderer	Renderer CPU
+	uploads	caricamenti
+	Misc: {jobs} jobs running · {n} samples	Varie: {jobs} lavori in corso · {n} campioni
+	Log to File…	Registra su file…
+	Stop Logging	Interrompi registrazione
+	Device Status	Stato dispositivi
+	Core Pointer	Puntatore principale
+	Pen / Tablet	Penna / Tavoletta
+	Brush:	Pennello:
+	Pattern:	Motivo:
+	Gradient:	Gradiente:
+	Save Device Status	Salva stato dispositivi
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Ogni dispositivo ricorda strumento, colori, pennello, motivo e gradiente; cambiando dispositivo cambiano anch'essi.
+	Selection Editor	Editor di selezione
+	No document open.	Nessun documento aperto.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Clic per selezionare il colore contiguo con la bacchetta magica (Maiusc aggiunge, Alt sottrae)
+	Save to Channel	Salva nel canale
+	To Path	In tracciato
+	Advanced options	Opzioni avanzate
+	MyPaint Brushes	Pennelli MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Nessun pennello MyPaint. Importa file .myb per elencarli qui.
+	No brush matches the filter.	Nessun pennello corrisponde al filtro.
+	Handle Transform	Trasformazione con maniglie
+	3D Transform	Trasformazione 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Riadatta
+	Apply the transform so far and put a fresh box on the result	Applica la trasformazione fatta finora e mette un nuovo riquadro sul risultato
+	Camera	Fotocamera
+	Vanishing X:	Punto di fuga X:
+	Y:	Y:
+	Focal length:	Lunghezza focale:
+	Local pivot	Perno locale
+	Unified pivot	Perno unificato
+	Close Cage	Chiudi gabbia
+	Reset Cage	Ripristina gabbia
+	Fill Plain Colour	Riempi con tinta unita
+	Fill the original position of the cage with the plain colour of its outline	Riempie la posizione originale della gabbia con la tinta unita del suo contorno
+	{n} points	{n} punti
+	Click to place a handle	Clic per posizionare una maniglia
+	Rotate and Scale	Ruota e scala
+	{n} handles: {what}	{n} maniglie: {what}
+	Reset Handles	Ripristina maniglie
+	Remove Handles	Rimuovi maniglie
+	Commit Cage Transform (Enter)	Conferma trasformazione a gabbia (Invio)
+	Commit Handle Transform (Enter)	Conferma trasformazione con maniglie (Invio)
+	Commit 3D Transform (Enter)	Conferma trasformazione 3D (Invio)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Trasformazione a gabbia: clicca intorno alla parte da deformare, clicca il primo punto per chiudere la gabbia, poi trascina i punti
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Trasformazione con maniglie: posiziona da una a quattro maniglie e trascinale (una sposta, due ruotano e scalano, tre inclinano, quattro danno prospettiva)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Trasformazione 3D: trascina per ruotare su X e Y, Alt-trascina su Z; le schede Sposta e Fotocamera muovono livello e fotocamera
+	Segment {n}	Segmento {n}
+	Blending:	Fusione:
+	Coloring:	Colorazione:
+	Midpoint:	Punto medio:
+	Spherical (increasing)	Sferico (crescente)
+	Spherical (decreasing)	Sferico (decrescente)
+	Step	Gradino
+	HSV (counter-clockwise)	HSV (antiorario)
+	HSV (clockwise)	HSV (orario)
+	Replicate	Replica
+	Split the segment at its midpoint	Divide il segmento nel suo punto medio
+	Replace the segment with two copies of itself	Sostituisce il segmento con due copie di se stesso
+	Flip the whole gradient end to end	Capovolge l'intero gradiente
+	Save as POV-Ray…	Salva come POV-Ray…

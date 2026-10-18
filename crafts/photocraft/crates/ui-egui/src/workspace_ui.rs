@@ -55,6 +55,20 @@ pub fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
         "window.panel.modifierKeys" => Some(app.ui.shell.modifier_keys),
         "window.workspace.lockWorkspace" => Some(app.session.prefs().workspace_locked),
         "view.pixelAspectRatio.custom" => Some(app.ui.view.pixel_aspect.starts_with("custom:")),
+        // View › Display Filters: the deficiency in effect and the clip warning.
+        "view.displayFilters.none"
+        | "view.displayFilters.protanopia"
+        | "view.displayFilters.deuteranopia"
+        | "view.displayFilters.tritanopia"
+        | "view.displayFilters.clipWarning" => {
+            let d = app.session.active()?;
+            let f = app.session.color.display_filters.get(&d.doc.id).copied().unwrap_or_default();
+            Some(match id {
+                "view.displayFilters.clipWarning" => f.clip_warning,
+                "view.displayFilters.none" => f.deficiency.is_none(),
+                other => f.deficiency.map(|d| d.id()) == other.strip_prefix("view.displayFilters."),
+            })
+        }
         _ => None,
     }
 }
@@ -62,7 +76,7 @@ pub fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
 pub fn is_enabled(app: &PhotocraftApp, id: &str) -> Option<bool> {
     Some(match id {
         "window.workspace.deleteWorkspace" => !app.session.prefs().workspaces.is_empty(),
-        "view.thirtyTwoBitPreviewOptions" => app.session.is_enabled(id),
+        "view.thirtyTwoBitPreviewOptions" | "view.displayFilters" => app.session.is_enabled(id),
         i if handles(i) => true,
         _ => return None,
     })
@@ -110,6 +124,18 @@ pub fn menu(app: &mut PhotocraftApp, id: &str, params: &Value) -> Option<Result<
             "preview32",
             json!({"method": if h.highlight_compression { "highlightCompression" } else { "exposureGamma" }, "exposure": h.exposure, "gamma": h.gamma}),
         ));
+    }
+    if id == "view.displayFilters" && no_params(params) {
+        let d = app.session.active()?;
+        let f = app.session.color.display_filters.get(&d.doc.id).copied().unwrap_or_default();
+        let mut fields = f.to_json();
+        if let Some(o) = fields.as_object_mut() {
+            o.remove("active");
+            if o.get("deficiency").is_some_and(Value::is_null) {
+                o.insert("deficiency".into(), json!("none"));
+            }
+        }
+        return Some(open(app, "displayFilters", fields));
     }
     if !handles(id) {
         return None;
@@ -308,6 +334,7 @@ pub fn dialog_command(kind: &str, f: &Map<String, Value>) -> Option<(&'static st
         "deleteWorkspace" => ("window.workspace.deleteWorkspace", json!({"name": f.get("name")})),
         "customPar" => ("view.pixelAspectRatio.custom", json!({"name": f.get("name"), "ratio": f.get("ratio")})),
         "preview32" => ("view.thirtyTwoBitPreviewOptions", Value::Object(f.clone())),
+        "displayFilters" => ("view.displayFilters", Value::Object(f.clone())),
         "extrasOptions" => ("view.show.showExtrasOptions", Value::Object(f.clone())),
         _ => return None,
     })
@@ -320,6 +347,7 @@ pub fn title(kind: &str) -> &'static str {
         "deleteWorkspace" => "Delete Workspace",
         "customPar" => "Save Pixel Aspect Ratio",
         "preview32" => "32-bit Preview Options",
+        "displayFilters" => "Display Filters",
         _ => "Show Extras Options",
     }
 }
@@ -444,6 +472,46 @@ fn dialog(app: &mut PhotocraftApp, ctx: &egui::Context) {
                             }
                         }
                     });
+                }
+                "displayFilters" => {
+                    ui.set_width((ctx.content_rect().width() - 32.0).clamp(0.0, 320.0));
+                    let mut d = f.get("deficiency").and_then(Value::as_str).unwrap_or("none").to_string();
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(tl!("Color deficiency:")).color(t.text_dim).size(11.0));
+                        if crate::widgets::dropdown(
+                            ui,
+                            "df-deficiency",
+                            &mut d,
+                            &[
+                                ("none".to_string(), tl!("None")),
+                                ("protanopia".to_string(), tl!("Protanopia")),
+                                ("deuteranopia".to_string(), tl!("Deuteranopia")),
+                                ("tritanopia".to_string(), tl!("Tritanopia")),
+                            ],
+                            160.0,
+                        ) {
+                            f.insert("deficiency".into(), json!(d));
+                        }
+                    });
+                    for (key, label) in [("gamma", tl!("Gamma:")), ("contrast", tl!("Contrast:"))] {
+                        let mut v = f.get(key).and_then(Value::as_f64).unwrap_or(1.0) as f32;
+                        if crate::widgets::slider_row(ui, label, &mut v, 0.1..=10.0, "", None).changed() {
+                            f.insert(key.into(), json!(v));
+                        }
+                    }
+                    check(ui, &mut f, "clipWarning", tl!("Clip warning"));
+                    let warn = f.get("clipWarning").and_then(Value::as_bool).unwrap_or(false);
+                    ui.add_enabled_ui(warn, |ui| {
+                        ui.horizontal(|ui| {
+                            check(ui, &mut f, "clipShadows", tl!("Shadows"));
+                            text(ui, &mut f, "shadowsColor", tl!("Color:"));
+                        });
+                        ui.horizontal(|ui| {
+                            check(ui, &mut f, "clipHighlights", tl!("Highlights"));
+                            text(ui, &mut f, "highlightsColor", tl!("Color:"));
+                        });
+                    });
+                    ui.label(RichText::new(tl!("View-only: the filters change what this view shows, never the pixels.")).color(t.text_faint).size(10.5));
                 }
                 _ => {
                     for (k, label) in extras_options() {

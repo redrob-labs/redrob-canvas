@@ -3512,3 +3512,163 @@ curves	Smooth	Haluskan
 	Bristle	Bulu kuas
 	Deform	Deformasi
 	Thickness	Ketebalan
+	Grain Extract	Ekstrak Butiran
+	Grain Merge	Gabung Butiran
+	LCh Hue	Hue LCh
+	LCh Chroma	Kroma LCh
+	LCh Color	Warna LCh
+	LCh Lightness	Kecerahan LCh
+	Merge	Gabung
+	Split	Pisah
+	Remove Holes	Hapus Lubang
+	Distort…	Distorsi…
+	Rounded Rectangle…	Persegi Panjang Membulat…
+	Anchor Layer	Jangkar Lapisan
+	To New Layer	Ke Lapisan Baru
+	Layer Boundary Size…	Ukuran Batas Lapisan…
+	Layer to Image Size	Lapisan ke Ukuran Gambar
+	Resize Layer to Selection	Ubah Ukuran Lapisan ke Seleksi
+	Crop Layer to Content	Pangkas Lapisan ke Konten
+	Threshold Alpha…	Ambang Alfa…
+	Composite Options…	Opsi Komposit…
+	Zealous Crop	Pangkas Menyeluruh
+	Foreground Select	Pilih Latar Depan
+	Stroke width	Lebar sapuan
+	Graph cut	Potong graf
+	To Layer Mask	Ke Masker Lapisan
+	Draw a rough outline round the subject	Gambar garis besar kasar di sekitar subjek
+	Draw a rough outline round the subject first	Gambar garis besar kasar di sekitar subjek terlebih dahulu
+	Outline placed: paint over the foreground, then Preview or Select	Garis besar ditempatkan: cat latar depan, lalu Pratinjau atau Pilih
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Garis bentuk subjek secara kasar, cat latar depan, dan biarkan mesin matting mengembangkan masker
+	Paint over the foreground (hold Alt for background), then Preview or Select	Cat latar depan (tahan Alt untuk latar belakang), lalu Pratinjau atau Pilih
+	Display Filters…	Filter Tampilan…
+	Display Filters	Filter Tampilan
+	No Color Deficiency Simulation	Tanpa Simulasi Defisiensi Warna
+	Simulate Protanopia	Simulasikan Protanopia
+	Simulate Deuteranopia	Simulasikan Deuteranopia
+	Simulate Tritanopia	Simulasikan Tritanopia
+	Clip Warning	Peringatan Klip
+	Clip warning	Peringatan klip
+	Color deficiency:	Defisiensi warna:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Kontras:
+	View-only: the filters change what this view shows, never the pixels.	Hanya tampilan: filter mengubah apa yang ditampilkan tampilan ini, bukan pikselnya.
+	Show All	Tampilkan Semua
+	Padding Color	Warna Bantalan
+	From Theme	Dari Tema
+	Dark Gray	Abu-abu Gelap
+	Medium Gray	Abu-abu Sedang
+	Light Check Color	Warna Kotak Terang
+	Dark Check Color	Warna Kotak Gelap
+	Light Check	Kotak Terang
+	Dark Check	Kotak Gelap
+	Light check	Kotak terang
+	Dark check	Kotak gelap
+	Custom Color	Warna Kustom
+	Select Custom Color…	Pilih Warna Kustom…
+	Keep Padding in Show All	Pertahankan Bantalan di Tampilkan Semua
+	Keep padding in show all	Pertahankan bantalan di Tampilkan Semua
+	Filter by tag	Filter menurut tag
+	Clear filter	Hapus filter
+	Tags:	Tag:
+	Add tag	Tambah tag
+	Remove tag	Hapus tag
+	View Metadata…	Lihat Metadata…
+	Edit Metadata…	Edit Metadata…
+	Edit Metadata	Edit Metadata
+	Metadata Viewer	Penampil Metadata
+	Write Metadata	Tulis Metadata
+	Separate several values with semicolons	Pisahkan beberapa nilai dengan titik koma
+	No tags	Tidak ada tag
+	XMP	XMP
+	IPTC	IPTC
+	Text	Teks
+	Rights	Hak
+	IPTC Extension	Ekstensi IPTC
+	Categories	Kategori
+	DICOM	DICOM
+	Procedure Browser	Penjelajah Prosedur
+	Plug-In Browser	Penjelajah Plug-in
+	Search procedures	Cari prosedur
+	{n} procedures	{n} prosedur
+	(no menu)	(tanpa menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parameter
+	Available now	Tersedia sekarang
+	Not available in the current state	Tidak tersedia dalam keadaan saat ini
+	Run	Jalankan
+	Select a procedure to read its parameters.	Pilih prosedur untuk membaca parameternya.
+	Dashboard	Dasbor
+	Low memory: swap is nearly full. Save your work.	Memori rendah: swap hampir penuh. Simpan pekerjaan Anda.
+	Memory	Memori
+	Cache	Cache
+	Swap	Swap
+	Swap: not reported on this platform	Swap: tidak dilaporkan di platform ini
+	CPU	CPU
+	CPU renderer	Perender CPU
+	uploads	unggahan
+	Misc: {jobs} jobs running · {n} samples	Lainnya: {jobs} pekerjaan berjalan · {n} sampel
+	Log to File…	Catat ke Berkas…
+	Stop Logging	Berhenti Mencatat
+	Device Status	Status Perangkat
+	Core Pointer	Penunjuk Utama
+	Pen / Tablet	Pena / Tablet
+	Brush:	Kuas:
+	Pattern:	Pola:
+	Gradient:	Gradien:
+	Save Device Status	Simpan Status Perangkat
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Setiap perangkat mengingat alat, warna, kuas, pola dan gradiennya; berganti perangkat menggantinya.
+	Selection Editor	Editor Seleksi
+	No document open.	Tidak ada dokumen terbuka.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klik untuk memilih warna bersebelahan dengan Tongkat Ajaib (Shift menambah, Alt mengurangi)
+	Save to Channel	Simpan ke Kanal
+	To Path	Ke Jalur
+	Advanced options	Opsi lanjutan
+	MyPaint Brushes	Kuas MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Belum ada kuas MyPaint. Impor berkas .myb untuk menampilkannya di sini.
+	No brush matches the filter.	Tidak ada kuas yang cocok dengan filter.
+	Handle Transform	Transformasi Pegangan
+	3D Transform	Transformasi 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Sesuaikan Ulang
+	Apply the transform so far and put a fresh box on the result	Terapkan transformasi sejauh ini dan letakkan kotak baru pada hasilnya
+	Camera	Kamera
+	Vanishing X:	Titik hilang X:
+	Y:	Y:
+	Focal length:	Panjang fokus:
+	Local pivot	Poros lokal
+	Unified pivot	Poros terpadu
+	Close Cage	Tutup Kurungan
+	Reset Cage	Setel Ulang Kurungan
+	Fill Plain Colour	Isi Warna Polos
+	Fill the original position of the cage with the plain colour of its outline	Isi posisi asli kurungan dengan warna polos garis luarnya
+	{n} points	{n} titik
+	Click to place a handle	Klik untuk menempatkan pegangan
+	Rotate and Scale	Putar dan Skalakan
+	{n} handles: {what}	{n} pegangan: {what}
+	Reset Handles	Setel Ulang Pegangan
+	Remove Handles	Hapus Pegangan
+	Commit Cage Transform (Enter)	Terapkan Transformasi Kurungan (Enter)
+	Commit Handle Transform (Enter)	Terapkan Transformasi Pegangan (Enter)
+	Commit 3D Transform (Enter)	Terapkan Transformasi 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformasi kurungan: klik di sekeliling bagian yang akan dideformasi, klik titik pertama untuk menutup kurungan, lalu seret titiknya
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformasi pegangan: tempatkan satu sampai empat pegangan dan seret (satu memindahkan, dua memutar dan menskalakan, tiga mencondongkan, empat memberi perspektif)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformasi 3D: seret untuk memutar pada X dan Y, Alt-seret pada Z; tab Pindah dan Kamera memindahkan lapisan dan kamera
+	Segment {n}	Segmen {n}
+	Blending:	Pencampuran:
+	Coloring:	Pewarnaan:
+	Midpoint:	Titik tengah:
+	Sinusoidal	Sinusoidal
+	Spherical (increasing)	Sferis (meningkat)
+	Spherical (decreasing)	Sferis (menurun)
+	Step	Tangga
+	HSV (counter-clockwise)	HSV (berlawanan jarum jam)
+	HSV (clockwise)	HSV (searah jarum jam)
+	Replicate	Replikasi
+	Split the segment at its midpoint	Bagi segmen di titik tengahnya
+	Replace the segment with two copies of itself	Ganti segmen dengan dua salinan dirinya
+	Flip the whole gradient end to end	Balik seluruh gradien
+	Save as POV-Ray…	Simpan sebagai POV-Ray…

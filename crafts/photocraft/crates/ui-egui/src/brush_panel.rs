@@ -424,8 +424,11 @@ fn dynamics_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let presets = app.session.tools.dynamics_presets.clone();
     let none = tl!("No Dynamics Preset").to_string();
     let mut options: Vec<(String, &str)> = vec![(String::new(), none.as_str())];
-    options.extend(presets.iter().map(|d| (d.name.clone(), d.name.as_str())));
+    // Tagged dynamics presets: the panel's tag filter narrows the list (resource_tags_cmds).
+    let ctx_f = ui.ctx().clone();
+    options.extend(presets.iter().filter(|d| crate::tag_filter::visible(app, &ctx_f, "dynamics", &d.name)).map(|d| (d.name.clone(), d.name.as_str())));
     let mut current = app.session.tools.current_dynamics.clone().unwrap_or_default();
+    crate::tag_filter::filter_row(app, ui, "dynamics");
     ui.horizontal(|ui| {
         ui.label(RichText::new(tl!("Dynamics:")).color(t.text_dim));
         if widgets::dropdown_literal(ui, "brush-dynamics-preset", &mut current, &options, 180.0) && !current.is_empty() {

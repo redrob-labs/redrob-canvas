@@ -3999,3 +3999,165 @@ curves	Smooth	Làm mượt
 	Spray	Phun
 	Bristle	Lông cọ
 	Deform	Biến dạng
+	Grain Extract	Tách hạt
+	Grain Merge	Gộp hạt
+	LCh Hue	Sắc màu LCh
+	LCh Chroma	Độ màu LCh
+	LCh Color	Màu LCh
+	LCh Lightness	Độ sáng LCh
+	Merge	Gộp
+	Split	Tách
+	Remove Holes	Xóa lỗ hổng
+	Distort…	Biến dạng…
+	Rounded Rectangle…	Hình chữ nhật bo góc…
+	Anchor Layer	Neo lớp
+	To New Layer	Thành lớp mới
+	Layer Boundary Size…	Kích thước biên lớp…
+	Layer to Image Size	Lớp theo kích thước ảnh
+	Resize Layer to Selection	Lớp theo vùng chọn
+	Crop Layer to Content	Cắt lớp theo nội dung
+	Threshold Alpha…	Ngưỡng alpha…
+	Composite Options…	Tùy chọn kết hợp…
+	Zealous Crop	Cắt triệt để
+	Foreground Select	Chọn tiền cảnh
+	Stroke width	Độ rộng nét
+	Graph cut	Cắt đồ thị
+	To Layer Mask	Thành mặt nạ lớp
+	Draw a rough outline round the subject	Vẽ đường bao thô quanh chủ thể
+	Draw a rough outline round the subject first	Hãy vẽ đường bao thô quanh chủ thể trước
+	Outline placed: paint over the foreground, then Preview or Select	Đã đặt đường bao: tô lên tiền cảnh, rồi Xem trước hoặc Chọn
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Bao thô chủ thể, tô lên tiền cảnh và để bộ máy matting mở rộng mặt nạ
+	Paint over the foreground (hold Alt for background), then Preview or Select	Tô lên tiền cảnh (giữ Alt cho hậu cảnh), rồi Xem trước hoặc Chọn
+	Display Filters…	Bộ lọc hiển thị…
+	Display Filters	Bộ lọc hiển thị
+	No Color Deficiency Simulation	Không mô phỏng khiếm khuyết màu
+	Simulate Protanopia	Mô phỏng mù đỏ
+	Simulate Deuteranopia	Mô phỏng mù xanh lục
+	Simulate Tritanopia	Mô phỏng mù xanh lam
+	Clip Warning	Cảnh báo cắt xén
+	Clip warning	Cảnh báo cắt xén
+	Color deficiency:	Khiếm khuyết màu:
+	Protanopia	Mù đỏ
+	Deuteranopia	Mù xanh lục
+	Tritanopia	Mù xanh lam
+	Contrast:	Độ tương phản:
+	View-only: the filters change what this view shows, never the pixels.	Chỉ hiển thị: bộ lọc thay đổi những gì chế độ xem này hiển thị, không bao giờ thay đổi pixel.
+	Show All	Hiển thị tất cả
+	Padding Color	Màu đệm
+	From Theme	Từ chủ đề
+	Dark Gray	Xám đậm
+	Medium Gray	Xám trung bình
+	Light Check Color	Màu ô sáng
+	Dark Check Color	Màu ô tối
+	Light Check	Ô sáng
+	Dark Check	Ô tối
+	Light check	Ô sáng
+	Dark check	Ô tối
+	Custom Color	Màu tùy chỉnh
+	Select Custom Color…	Chọn màu tùy chỉnh…
+	Keep Padding in Show All	Giữ đệm trong Hiển thị tất cả
+	Keep padding in show all	Giữ đệm trong Hiển thị tất cả
+	Filter by tag	Lọc theo thẻ
+	Clear filter	Xóa bộ lọc
+	Tags:	Thẻ:
+	Add tag	Thêm thẻ
+	Remove tag	Xóa thẻ
+	View Metadata…	Xem siêu dữ liệu…
+	Edit Metadata…	Sửa siêu dữ liệu…
+	Edit Metadata	Sửa siêu dữ liệu
+	Metadata Viewer	Trình xem siêu dữ liệu
+	Write Metadata	Ghi siêu dữ liệu
+	Separate several values with semicolons	Phân tách nhiều giá trị bằng dấu chấm phẩy
+	No tags	Không có thẻ
+	XMP	XMP
+	IPTC	IPTC
+	Text	Văn bản
+	Rights	Quyền
+	IPTC Extension	Phần mở rộng IPTC
+	Categories	Danh mục
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Trình duyệt thủ tục
+	Plug-In Browser	Trình duyệt plug-in
+	Search procedures	Tìm thủ tục
+	{n} procedures	{n} thủ tục
+	(no menu)	(không có menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Tham số
+	Available now	Hiện khả dụng
+	Not available in the current state	Không khả dụng ở trạng thái hiện tại
+	Run	Chạy
+	Select a procedure to read its parameters.	Chọn một thủ tục để đọc tham số của nó.
+	Dashboard	Bảng điều khiển
+	Low memory: swap is nearly full. Save your work.	Bộ nhớ thấp: swap gần đầy. Hãy lưu công việc.
+	Memory	Bộ nhớ
+	Cache	Bộ nhớ đệm
+	Swap	Swap
+	Swap: not reported on this platform	Swap: không được báo cáo trên nền tảng này
+	CPU	CPU
+	CPU renderer	Bộ kết xuất CPU
+	uploads	lần tải lên
+	Misc: {jobs} jobs running · {n} samples	Khác: {jobs} công việc đang chạy · {n} mẫu
+	Log to File…	Ghi vào tệp…
+	Stop Logging	Dừng ghi
+	Device Status	Trạng thái thiết bị
+	Core Pointer	Con trỏ chính
+	Pen / Tablet	Bút / Bảng vẽ
+	Brush:	Cọ:
+	Pattern:	Mẫu:
+	Gradient:	Chuyển sắc:
+	Save Device Status	Lưu trạng thái thiết bị
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Mỗi thiết bị nhớ công cụ, màu, cọ, mẫu và chuyển sắc của nó; đổi thiết bị sẽ đổi chúng.
+	Selection Editor	Trình sửa vùng chọn
+	No document open.	Không có tài liệu nào mở.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Nhấp để chọn màu liền kề tại đó bằng Đũa thần (Shift thêm, Alt bớt)
+	Save to Channel	Lưu vào kênh
+	To Path	Thành đường dẫn
+	Advanced options	Tùy chọn nâng cao
+	MyPaint Brushes	Cọ MyPaint
+	Import…	Nhập…
+	No MyPaint brushes yet. Import .myb files to list them here.	Chưa có cọ MyPaint. Nhập tệp .myb để liệt kê ở đây.
+	No brush matches the filter.	Không có cọ nào khớp bộ lọc.
+	Handle Transform	Biến đổi bằng tay cầm
+	3D Transform	Biến đổi 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Điều chỉnh lại
+	Apply the transform so far and put a fresh box on the result	Áp dụng biến đổi cho đến giờ và đặt khung mới lên kết quả
+	Camera	Máy ảnh
+	Vanishing X:	Điểm tụ X:
+	Y:	Y:
+	Focal length:	Tiêu cự:
+	Local pivot	Trục cục bộ
+	Unified pivot	Trục hợp nhất
+	Close Cage	Đóng lồng
+	Reset Cage	Đặt lại lồng
+	Fill Plain Colour	Tô màu phẳng
+	Fill the original position of the cage with the plain colour of its outline	Tô vị trí gốc của lồng bằng màu phẳng của đường viền
+	{n} points	{n} điểm
+	Click to place a handle	Nhấp để đặt tay cầm
+	Rotate and Scale	Xoay và co giãn
+	{n} handles: {what}	{n} tay cầm: {what}
+	Reset Handles	Đặt lại tay cầm
+	Remove Handles	Xóa tay cầm
+	Commit Cage Transform (Enter)	Xác nhận biến đổi lồng (Enter)
+	Commit Handle Transform (Enter)	Xác nhận biến đổi tay cầm (Enter)
+	Commit 3D Transform (Enter)	Xác nhận biến đổi 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Biến đổi lồng: nhấp quanh phần cần biến dạng, nhấp điểm đầu để đóng lồng, rồi kéo các điểm
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Biến đổi tay cầm: đặt một đến bốn tay cầm và kéo (một di chuyển, hai xoay và co giãn, ba xô nghiêng, bốn tạo phối cảnh)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Biến đổi 3D: kéo để xoay quanh X và Y, Alt-kéo quanh Z; thẻ Di chuyển và Máy ảnh di chuyển lớp và máy ảnh
+	Segment {n}	Đoạn {n}
+	Blending:	Pha trộn:
+	Coloring:	Tô màu:
+	Midpoint:	Điểm giữa:
+	Sinusoidal	Hình sin
+	Spherical (increasing)	Hình cầu (tăng)
+	Spherical (decreasing)	Hình cầu (giảm)
+	Step	Bậc
+	HSV (counter-clockwise)	HSV (ngược chiều kim đồng hồ)
+	HSV (clockwise)	HSV (theo chiều kim đồng hồ)
+	Replicate	Nhân bản
+	Split the segment at its midpoint	Tách đoạn tại điểm giữa
+	Replace the segment with two copies of itself	Thay đoạn bằng hai bản sao của nó
+	Flip the whole gradient end to end	Đảo ngược toàn bộ chuyển sắc
+	Save as POV-Ray…	Lưu dạng POV-Ray…

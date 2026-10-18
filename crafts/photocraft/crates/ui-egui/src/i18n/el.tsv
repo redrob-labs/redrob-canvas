@@ -4211,3 +4211,164 @@ curves	Smooth	Εξομάλυνση
 	Spray	Σπρέι
 	Bristle	Τρίχες
 	Deform	Παραμόρφωση
+	Grain Extract	Εξαγωγή κόκκου
+	Grain Merge	Συγχώνευση κόκκου
+	LCh Hue	Απόχρωση LCh
+	LCh Chroma	Χρωματικότητα LCh
+	LCh Color	Χρώμα LCh
+	LCh Lightness	Φωτεινότητα LCh
+	Merge	Συγχώνευση
+	Split	Διαχωρισμός
+	Remove Holes	Αφαίρεση οπών
+	Distort…	Παραμόρφωση…
+	Rounded Rectangle…	Στρογγυλεμένο ορθογώνιο…
+	Anchor Layer	Αγκύρωση στρώσης
+	To New Layer	Σε νέα στρώση
+	Layer Boundary Size…	Μέγεθος ορίων στρώσης…
+	Layer to Image Size	Στρώση σε μέγεθος εικόνας
+	Resize Layer to Selection	Στρώση σε μέγεθος επιλογής
+	Crop Layer to Content	Περικοπή στρώσης στο περιεχόμενο
+	Threshold Alpha…	Κατώφλι άλφα…
+	Composite Options…	Επιλογές σύνθεσης…
+	Zealous Crop	Εξονυχιστική περικοπή
+	Foreground Select	Επιλογή προσκηνίου
+	Stroke width	Πλάτος πινελιάς
+	Graph cut	Τομή γράφου
+	To Layer Mask	Σε μάσκα στρώσης
+	Draw a rough outline round the subject	Σχεδιάστε ένα πρόχειρο περίγραμμα γύρω από το θέμα
+	Draw a rough outline round the subject first	Σχεδιάστε πρώτα ένα πρόχειρο περίγραμμα γύρω από το θέμα
+	Outline placed: paint over the foreground, then Preview or Select	Το περίγραμμα τοποθετήθηκε: βάψτε το προσκήνιο, μετά Προεπισκόπηση ή Επιλογή
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Περιγράψτε πρόχειρα το θέμα, βάψτε το προσκήνιο και η μηχανή matting θα μεγαλώσει τη μάσκα
+	Paint over the foreground (hold Alt for background), then Preview or Select	Βάψτε το προσκήνιο (Alt για φόντο), μετά Προεπισκόπηση ή Επιλογή
+	Display Filters…	Φίλτρα προβολής…
+	Display Filters	Φίλτρα προβολής
+	No Color Deficiency Simulation	Χωρίς προσομοίωση αχρωματοψίας
+	Simulate Protanopia	Προσομοίωση πρωτανοπίας
+	Simulate Deuteranopia	Προσομοίωση δευτερανοπίας
+	Simulate Tritanopia	Προσομοίωση τριτανοπίας
+	Clip Warning	Προειδοποίηση αποκοπής
+	Clip warning	Προειδοποίηση αποκοπής
+	Color deficiency:	Αχρωματοψία:
+	Protanopia	Πρωτανοπία
+	Deuteranopia	Δευτερανοπία
+	Tritanopia	Τριτανοπία
+	Contrast:	Αντίθεση:
+	View-only: the filters change what this view shows, never the pixels.	Μόνο προβολή: τα φίλτρα αλλάζουν τι δείχνει αυτή η προβολή, ποτέ τα pixel.
+	Padding Color	Χρώμα περιθωρίου
+	From Theme	Από το θέμα
+	Dark Gray	Σκούρο γκρι
+	Medium Gray	Μεσαίο γκρι
+	Light Check Color	Ανοιχτό χρώμα σκακιέρας
+	Dark Check Color	Σκούρο χρώμα σκακιέρας
+	Light Check	Ανοιχτή σκακιέρα
+	Dark Check	Σκούρα σκακιέρα
+	Light check	Ανοιχτή σκακιέρα
+	Dark check	Σκούρα σκακιέρα
+	Custom Color	Προσαρμοσμένο χρώμα
+	Select Custom Color…	Επιλογή προσαρμοσμένου χρώματος…
+	Keep Padding in Show All	Διατήρηση περιθωρίου στην Εμφάνιση όλων
+	Keep padding in show all	Διατήρηση περιθωρίου στην Εμφάνιση όλων
+	Filter by tag	Φίλτρο ανά ετικέτα
+	Clear filter	Καθαρισμός φίλτρου
+	Tags:	Ετικέτες:
+	Add tag	Προσθήκη ετικέτας
+	Remove tag	Αφαίρεση ετικέτας
+	View Metadata…	Προβολή μεταδεδομένων…
+	Edit Metadata…	Επεξεργασία μεταδεδομένων…
+	Edit Metadata	Επεξεργασία μεταδεδομένων
+	Metadata Viewer	Προβολή μεταδεδομένων
+	Write Metadata	Εγγραφή μεταδεδομένων
+	Separate several values with semicolons	Χωρίστε πολλές τιμές με άνω τελείες
+	No tags	Χωρίς ετικέτες
+	XMP	XMP
+	IPTC	IPTC
+	Text	Κείμενο
+	Rights	Δικαιώματα
+	IPTC Extension	Επέκταση IPTC
+	Categories	Κατηγορίες
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Περιηγητής διαδικασιών
+	Plug-In Browser	Περιηγητής πρόσθετων
+	Search procedures	Αναζήτηση διαδικασιών
+	{n} procedures	{n} διαδικασίες
+	(no menu)	(χωρίς μενού)
+	Menu: {path}	Μενού: {path}
+	Parameters	Παράμετροι
+	Available now	Διαθέσιμο τώρα
+	Not available in the current state	Μη διαθέσιμο στην τρέχουσα κατάσταση
+	Run	Εκτέλεση
+	Select a procedure to read its parameters.	Επιλέξτε διαδικασία για να δείτε τις παραμέτρους της.
+	Dashboard	Πίνακας ελέγχου
+	Low memory: swap is nearly full. Save your work.	Λίγη μνήμη: το swap είναι σχεδόν γεμάτο. Αποθηκεύστε την εργασία σας.
+	Memory	Μνήμη
+	Cache	Προσωρινή μνήμη
+	Swap	Swap
+	Swap: not reported on this platform	Swap: δεν αναφέρεται σε αυτήν την πλατφόρμα
+	CPU	CPU
+	CPU renderer	Απόδοση CPU
+	uploads	μεταφορτώσεις
+	Misc: {jobs} jobs running · {n} samples	Διάφορα: {jobs} εργασίες σε εξέλιξη · {n} δείγματα
+	Log to File…	Καταγραφή σε αρχείο…
+	Stop Logging	Διακοπή καταγραφής
+	Device Status	Κατάσταση συσκευών
+	Core Pointer	Κύριος δείκτης
+	Pen / Tablet	Γραφίδα / Ταμπλέτα
+	Brush:	Πινέλο:
+	Pattern:	Μοτίβο:
+	Gradient:	Διαβάθμιση:
+	Save Device Status	Αποθήκευση κατάστασης συσκευών
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Κάθε συσκευή θυμάται το εργαλείο, τα χρώματα, το πινέλο, το μοτίβο και τη διαβάθμισή της· η αλλαγή συσκευής τα αλλάζει.
+	Selection Editor	Επεξεργαστής επιλογής
+	No document open.	Δεν υπάρχει ανοιχτό έγγραφο.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Κλικ για επιλογή του συνεχόμενου χρώματος με το μαγικό ραβδί (Shift προσθέτει, Alt αφαιρεί)
+	Save to Channel	Αποθήκευση σε κανάλι
+	To Path	Σε διαδρομή
+	Advanced options	Προχωρημένες επιλογές
+	MyPaint Brushes	Πινέλα MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Δεν υπάρχουν πινέλα MyPaint ακόμη. Εισαγάγετε αρχεία .myb για να εμφανιστούν εδώ.
+	No brush matches the filter.	Κανένα πινέλο δεν ταιριάζει στο φίλτρο.
+	Handle Transform	Μετασχηματισμός με λαβές
+	3D Transform	Μετασχηματισμός 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Επαναρύθμιση
+	Apply the transform so far and put a fresh box on the result	Εφαρμογή του μετασχηματισμού ως τώρα και νέο πλαίσιο στο αποτέλεσμα
+	Camera	Κάμερα
+	Vanishing X:	Σημείο φυγής X:
+	Y:	Y:
+	Focal length:	Εστιακή απόσταση:
+	Local pivot	Τοπικός άξονας
+	Unified pivot	Ενοποιημένος άξονας
+	Close Cage	Κλείσιμο κλωβού
+	Reset Cage	Επαναφορά κλωβού
+	Fill Plain Colour	Γέμισμα με ενιαίο χρώμα
+	Fill the original position of the cage with the plain colour of its outline	Γεμίζει την αρχική θέση του κλωβού με το ενιαίο χρώμα του περιγράμματός του
+	{n} points	{n} σημεία
+	Click to place a handle	Κλικ για τοποθέτηση λαβής
+	Rotate and Scale	Περιστροφή και κλιμάκωση
+	{n} handles: {what}	{n} λαβές: {what}
+	Reset Handles	Επαναφορά λαβών
+	Remove Handles	Αφαίρεση λαβών
+	Commit Cage Transform (Enter)	Εφαρμογή μετασχηματισμού κλωβού (Enter)
+	Commit Handle Transform (Enter)	Εφαρμογή μετασχηματισμού με λαβές (Enter)
+	Commit 3D Transform (Enter)	Εφαρμογή μετασχηματισμού 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Μετασχηματισμός κλωβού: κλικ γύρω από το τμήμα, κλικ στο πρώτο σημείο για κλείσιμο, μετά σύρετε τα σημεία
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Μετασχηματισμός με λαβές: βάλτε μία έως τέσσερις λαβές και σύρετε (μία μετακινεί, δύο περιστρέφουν και κλιμακώνουν, τρεις στρεβλώνουν, τέσσερις δίνουν προοπτική)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Μετασχηματισμός 3D: σύρετε για περιστροφή στους X και Y, Alt για Z· οι καρτέλες Μετακίνηση και Κάμερα μετακινούν στρώση και κάμερα
+	Segment {n}	Τμήμα {n}
+	Blending:	Ανάμειξη:
+	Coloring:	Χρωματισμός:
+	Midpoint:	Μέσο:
+	Sinusoidal	Ημιτονοειδές
+	Spherical (increasing)	Σφαιρικό (αύξον)
+	Spherical (decreasing)	Σφαιρικό (φθίνον)
+	Step	Βαθμίδα
+	RGB	RGB
+	HSV (counter-clockwise)	HSV (αριστερόστροφα)
+	HSV (clockwise)	HSV (δεξιόστροφα)
+	Replicate	Αναπαραγωγή
+	Split the segment at its midpoint	Διαιρεί το τμήμα στο μέσο του
+	Replace the segment with two copies of itself	Αντικαθιστά το τμήμα με δύο αντίγραφά του
+	Flip the whole gradient end to end	Αναστρέφει ολόκληρη τη διαβάθμιση
+	Save as POV-Ray…	Αποθήκευση ως POV-Ray…

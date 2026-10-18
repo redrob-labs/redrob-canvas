@@ -4429,3 +4429,159 @@ cameraRaw	Yellow	Sárga
 	Spray	Spray
 	Bristle	Sörte
 	Deform	Torzítás
+	Grain Extract	Szemcse kivonása
+	Grain Merge	Szemcse egyesítése
+	LCh Hue	LCh színárnyalat
+	LCh Chroma	LCh színesség
+	LCh Color	LCh szín
+	LCh Lightness	LCh világosság
+	Merge	Egyesítés
+	Split	Felosztás
+	Remove Holes	Lyukak eltávolítása
+	Distort…	Torzítás…
+	Rounded Rectangle…	Lekerekített téglalap…
+	Anchor Layer	Réteg rögzítése
+	To New Layer	Új rétegbe
+	Layer Boundary Size…	Réteghatár mérete…
+	Layer to Image Size	Réteg képméretre
+	Resize Layer to Selection	Réteg kijelölésméretre
+	Crop Layer to Content	Réteg vágása tartalomra
+	Threshold Alpha…	Alfa küszöb…
+	Composite Options…	Kompozíciós beállítások…
+	Zealous Crop	Alapos vágás
+	Foreground Select	Előtér kijelölése
+	Stroke width	Ecsetvonás szélessége
+	Graph cut	Gráfvágás
+	To Layer Mask	Rétegmaszkba
+	Draw a rough outline round the subject	Rajzoljon durva körvonalat a téma köré
+	Draw a rough outline round the subject first	Először rajzoljon durva körvonalat a téma köré
+	Outline placed: paint over the foreground, then Preview or Select	Körvonal elhelyezve: fesse át az előteret, majd Előnézet vagy Kijelölés
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Durván körvonalazza a témát, fesse át az előteret, és a maszkoló motor megnöveli a maszkot
+	Paint over the foreground (hold Alt for background), then Preview or Select	Fesse át az előteret (Alt a háttérhez), majd Előnézet vagy Kijelölés
+	Display Filters…	Megjelenítési szűrők…
+	Display Filters	Megjelenítési szűrők
+	No Color Deficiency Simulation	Nincs színlátászavar-szimuláció
+	Simulate Protanopia	Protanopia szimulálása
+	Simulate Deuteranopia	Deuteranopia szimulálása
+	Simulate Tritanopia	Tritanopia szimulálása
+	Clip Warning	Vágási figyelmeztetés
+	Clip warning	Vágási figyelmeztetés
+	Color deficiency:	Színlátászavar:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Kontraszt:
+	View-only: the filters change what this view shows, never the pixels.	Csak megjelenítés: a szűrők azt változtatják, amit ez a nézet mutat, a pixeleket soha.
+	Padding Color	Kitöltőszín
+	From Theme	Témából
+	Light Check Color	Világos kockaszín
+	Dark Check Color	Sötét kockaszín
+	Light Check	Világos kocka
+	Dark Check	Sötét kocka
+	Light check	Világos kocka
+	Dark check	Sötét kocka
+	Custom Color	Egyéni szín
+	Keep Padding in Show All	Kitöltés megtartása az Összes megjelenítésében
+	Keep padding in show all	Kitöltés megtartása az Összes megjelenítésében
+	Filter by tag	Szűrés címke szerint
+	Clear filter	Szűrő törlése
+	Tags:	Címkék:
+	Add tag	Címke hozzáadása
+	Remove tag	Címke eltávolítása
+	View Metadata…	Metaadatok megtekintése…
+	Edit Metadata…	Metaadatok szerkesztése…
+	Edit Metadata	Metaadatok szerkesztése
+	Metadata Viewer	Metaadat-megjelenítő
+	Write Metadata	Metaadatok írása
+	Separate several values with semicolons	Több értéket pontosvesszővel válasszon el
+	No tags	Nincs címke
+	XMP	XMP
+	IPTC	IPTC
+	Text	Szöveg
+	Rights	Jogok
+	IPTC Extension	IPTC-kiterjesztés
+	Categories	Kategóriák
+	DICOM	DICOM
+	Procedure Browser	Eljárásböngésző
+	Plug-In Browser	Bővítményböngésző
+	Search procedures	Eljárások keresése
+	{n} procedures	{n} eljárás
+	(no menu)	(nincs menü)
+	Menu: {path}	Menü: {path}
+	Parameters	Paraméterek
+	Available now	Most elérhető
+	Not available in the current state	A jelenlegi állapotban nem érhető el
+	Run	Futtatás
+	Select a procedure to read its parameters.	Válasszon eljárást a paraméterei megtekintéséhez.
+	Dashboard	Műszerfal
+	Low memory: swap is nearly full. Save your work.	Kevés a memória: a lapozófájl majdnem megtelt. Mentse a munkáját.
+	Memory	Memória
+	Cache	Gyorsítótár
+	Swap	Lapozófájl
+	Swap: not reported on this platform	Lapozófájl: ezen a platformon nem jelentett
+	CPU	CPU
+	CPU renderer	CPU-renderelő
+	uploads	feltöltés
+	Misc: {jobs} jobs running · {n} samples	Egyéb: {jobs} futó feladat · {n} minta
+	Log to File…	Naplózás fájlba…
+	Stop Logging	Naplózás leállítása
+	Device Status	Eszközállapot
+	Core Pointer	Fő mutató
+	Pen / Tablet	Toll / Tábla
+	Brush:	Ecset:
+	Pattern:	Minta:
+	Gradient:	Színátmenet:
+	Save Device Status	Eszközállapot mentése
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Minden eszköz megjegyzi az eszközét, színeit, ecsetét, mintáját és színátmenetét; eszközváltásnál ezek is váltanak.
+	Selection Editor	Kijelölésszerkesztő
+	No document open.	Nincs megnyitott dokumentum.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Kattintson a szomszédos szín kijelöléséhez a varázspálcával (Shift hozzáad, Alt kivon)
+	Save to Channel	Mentés csatornába
+	To Path	Útvonalba
+	Advanced options	Speciális beállítások
+	MyPaint Brushes	MyPaint-ecsetek
+	No MyPaint brushes yet. Import .myb files to list them here.	Még nincs MyPaint-ecset. Importáljon .myb fájlokat, hogy itt megjelenjenek.
+	No brush matches the filter.	Egyik ecset sem felel meg a szűrőnek.
+	Handle Transform	Fogantyús átalakítás
+	3D Transform	3D átalakítás
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Újraigazítás
+	Apply the transform so far and put a fresh box on the result	Alkalmazza az eddigi átalakítást, és új keretet tesz az eredményre
+	Camera	Kamera
+	Vanishing X:	Enyészpont X:
+	Y:	Y:
+	Focal length:	Gyújtótávolság:
+	Local pivot	Helyi forgáspont
+	Unified pivot	Egyesített forgáspont
+	Close Cage	Ketrec bezárása
+	Reset Cage	Ketrec visszaállítása
+	Fill Plain Colour	Egyszínű kitöltés
+	Fill the original position of the cage with the plain colour of its outline	A ketrec eredeti helyét a körvonal egyszínű színével tölti ki
+	{n} points	{n} pont
+	Click to place a handle	Kattintson egy fogantyú elhelyezéséhez
+	Rotate and Scale	Forgatás és méretezés
+	{n} handles: {what}	{n} fogantyú: {what}
+	Reset Handles	Fogantyúk visszaállítása
+	Remove Handles	Fogantyúk eltávolítása
+	Commit Cage Transform (Enter)	Ketreces átalakítás véglegesítése (Enter)
+	Commit Handle Transform (Enter)	Fogantyús átalakítás véglegesítése (Enter)
+	Commit 3D Transform (Enter)	3D átalakítás véglegesítése (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Ketreces átalakítás: kattintson a torzítandó rész köré, az első pontra kattintva zárja be, majd húzza a pontokat
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Fogantyús átalakítás: tegyen le egy-négy fogantyút és húzza őket (egy mozgat, kettő forgat és méretez, három nyír, négy perspektívát ad)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D átalakítás: húzással X és Y körül forgat, Alt-húzással Z körül; a Mozgatás és Kamera lapok a réteget és a kamerát mozgatják
+	Segment {n}	{n}. szakasz
+	Blending:	Átmenet:
+	Coloring:	Színezés:
+	Midpoint:	Középpont:
+	Sinusoidal	Szinuszos
+	Spherical (increasing)	Gömbi (növekvő)
+	Spherical (decreasing)	Gömbi (csökkenő)
+	Step	Lépcső
+	HSV (counter-clockwise)	HSV (óramutatóval ellentétes)
+	HSV (clockwise)	HSV (óramutató irányába)
+	Replicate	Megkettőzés
+	Split the segment at its midpoint	A szakaszt a középpontjánál osztja
+	Replace the segment with two copies of itself	A szakaszt két másolatával helyettesíti
+	Flip the whole gradient end to end	Az egész színátmenetet megfordítja
+	Save as POV-Ray…	Mentés POV-Ray-ként…

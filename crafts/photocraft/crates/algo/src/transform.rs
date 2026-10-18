@@ -146,6 +146,12 @@ pub enum Interp {
     /// Lanczos-3: the sinc windowed by sinc(x / 3), a 6 × 6 support. Sharper than Bicubic on
     /// enlargements with less ringing than a wider window.
     Lanczos3,
+    /// NoHalo: a cubic (4 × 4) whose result is bounded by the four nearest source pixels, so an
+    /// edge never overshoots into a light or dark halo.
+    NoHalo,
+    /// LoHalo: Lanczos-3 (6 × 6) bounded by the 4 × 4 neighbourhood's range widened by a tenth,
+    /// keeping most of its sharpness with only a faint halo.
+    LoHalo,
 }
 
 impl Interp {
@@ -154,6 +160,8 @@ impl Interp {
             "nearest" | "nearestNeighbor" | "none" => Interp::Nearest,
             "bilinear" | "linear" => Interp::Bilinear,
             "lanczos3" | "lanczos" => Interp::Lanczos3,
+            "nohalo" | "noHalo" => Interp::NoHalo,
+            "lohalo" | "loHalo" => Interp::LoHalo,
             _ => Interp::Bicubic,
         }
     }
@@ -165,7 +173,66 @@ impl Interp {
             Interp::Bilinear => "bilinear",
             Interp::Bicubic => "bicubic",
             Interp::Lanczos3 => "lanczos3",
+            Interp::NoHalo => "nohalo",
+            Interp::LoHalo => "lohalo",
         }
+    }
+}
+
+/// One NoHalo or LoHalo sample at source position (`u`, `v`) (pixel centres at integers) of the
+/// `n` channels read by `at`, into `acc`: the cubic (NoHalo) or Lanczos-3 (LoHalo) weighted sum,
+/// then clamped per channel to the range of the 2 × 2 (NoHalo) or 4 × 4 (LoHalo, widened by a
+/// tenth) nearest source pixels, which is what keeps the halos out.
+pub(crate) fn halo_bounded(interp: Interp, u: f64, v: f64, n: usize, at: &dyn Fn(i32, i32, usize) -> f64, acc: &mut [f64]) {
+    let snap = |t: f64| if (t - t.round()).abs() < 1e-7 { t.round() } else { t };
+    let (u, v) = (snap(u), snap(v));
+    let (ix, iy) = (u.floor() as i32, v.floor() as i32);
+    for s in acc.iter_mut().take(n) {
+        *s = 0.0;
+    }
+    if interp == Interp::LoHalo {
+        let (wx, wy) = (lanczos3(u - f64::from(ix)), lanczos3(v - f64::from(iy)));
+        for (j, wyj) in wy.iter().enumerate() {
+            for (i, wxi) in wx.iter().enumerate() {
+                let k = wxi * wyj;
+                if k == 0.0 {
+                    continue;
+                }
+                for (c, s) in acc.iter_mut().enumerate().take(n) {
+                    *s += at(ix - 2 + i as i32, iy - 2 + j as i32, c) * k;
+                }
+            }
+        }
+    } else {
+        let (wx, wy) = (bicubic(u - f64::from(ix)), bicubic(v - f64::from(iy)));
+        for (j, wyj) in wy.iter().enumerate() {
+            for (i, wxi) in wx.iter().enumerate() {
+                let k = wxi * wyj;
+                if k == 0.0 {
+                    continue;
+                }
+                for (c, s) in acc.iter_mut().enumerate().take(n) {
+                    *s += at(ix - 1 + i as i32, iy - 1 + j as i32, c) * k;
+                }
+            }
+        }
+    }
+    let (r0, r1) = if interp == Interp::LoHalo { (-1, 3) } else { (0, 2) };
+    for (c, s) in acc.iter_mut().enumerate().take(n) {
+        let (mut lo, mut hi) = (f64::INFINITY, f64::NEG_INFINITY);
+        for dy in r0..r1 {
+            for dx in r0..r1 {
+                let p = at(ix + dx, iy + dy, c);
+                lo = lo.min(p);
+                hi = hi.max(p);
+            }
+        }
+        if interp == Interp::LoHalo {
+            let pad = (hi - lo) * 0.1;
+            lo -= pad;
+            hi += pad;
+        }
+        *s = s.clamp(lo, hi);
     }
 }
 
@@ -334,9 +401,9 @@ fn warp(
     // 4×4 kernel at 50 % aliased (Photoshop 27.11 Free Transform, 50 % of an impulse image).
     // Bilinear samples the source directly, as Photoshop's does (exact at 50 % without a prefilter).
     // Lanczos-3 reduces the same way, through its own kernel.
-    if matches!(interp, Interp::Bicubic | Interp::Lanczos3) && scale < 0.999 && scale > 0.0 {
+    if matches!(interp, Interp::Bicubic | Interp::Lanczos3 | Interp::NoHalo | Interp::LoHalo) && scale < 0.999 && scale > 0.0 {
         let f = scale.max(1.0 / 64.0);
-        reduced = resize_surface(src, f, f, if interp == Interp::Lanczos3 { Resample::Lanczos } else { Resample::Bicubic });
+        reduced = resize_surface(src, f, f, if matches!(interp, Interp::Lanczos3 | Interp::LoHalo) { Resample::Lanczos } else { Resample::Bicubic });
         src = &reduced;
         h = h.mul(&Homography([1.0 / f, 0.0, 0.0, 0.0, 1.0 / f, 0.0, 0.0, 0.0, 1.0]));
         src_rect = crate::resample::scaled_rect(src_rect, f, f);
@@ -510,6 +577,7 @@ fn warp(
                             }
                         }
                     }
+                    Interp::NoHalo | Interp::LoHalo => halo_bounded(interp, u, v, n, &clamped, &mut acc),
                 }
                 if interp != Interp::Nearest {
                     // How much of this pixel the warped source rect covers, per axis.

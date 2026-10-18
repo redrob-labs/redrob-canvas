@@ -4252,3 +4252,160 @@ curves	Smooth	スムーズ
 	Random Offset	ランダムオフセット
 	Ink Amount	インク量
 	Counter	カウンター
+	Grain Extract	グレイン抽出
+	Grain Merge	グレイン結合
+	LCh Hue	LCh 色相
+	LCh Chroma	LCh クロマ
+	LCh Color	LCh カラー
+	LCh Lightness	LCh 明度
+	Merge	統合
+	Split	分割
+	Remove Holes	穴を除去
+	Distort…	ゆがみ…
+	Rounded Rectangle…	角丸長方形…
+	Anchor Layer	レイヤーを固定
+	To New Layer	新規レイヤーへ
+	Layer Boundary Size…	レイヤー境界サイズ…
+	Layer to Image Size	レイヤーを画像サイズに
+	Resize Layer to Selection	レイヤーを選択範囲に合わせる
+	Crop Layer to Content	レイヤーを内容に合わせて切り抜き
+	Threshold Alpha…	アルファしきい値…
+	Composite Options…	合成オプション…
+	Zealous Crop	徹底的に切り抜き
+	Foreground Select	前景選択
+	Stroke width	ストローク幅
+	Graph cut	グラフカット
+	To Layer Mask	レイヤーマスクへ
+	Draw a rough outline round the subject	被写体の周りに大まかな輪郭を描きます
+	Draw a rough outline round the subject first	まず被写体の周りに大まかな輪郭を描いてください
+	Outline placed: paint over the foreground, then Preview or Select	輪郭を配置しました: 前景を塗ってから、プレビューまたは選択
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	被写体を大まかに囲み、前景を塗ると、マッティングエンジンがマスクを広げます
+	Paint over the foreground (hold Alt for background), then Preview or Select	前景を塗ります (Alt で背景)。その後プレビューまたは選択
+	Display Filters…	表示フィルター…
+	Display Filters	表示フィルター
+	No Color Deficiency Simulation	色覚シミュレーションなし
+	Simulate Protanopia	1型色覚をシミュレート
+	Simulate Deuteranopia	2型色覚をシミュレート
+	Simulate Tritanopia	3型色覚をシミュレート
+	Clip Warning	クリップ警告
+	Clip warning	クリップ警告
+	Color deficiency:	色覚特性:
+	Protanopia	1型色覚
+	Deuteranopia	2型色覚
+	Tritanopia	3型色覚
+	Contrast:	コントラスト:
+	View-only: the filters change what this view shows, never the pixels.	表示のみ: フィルターはこのビューの見え方を変えるだけで、ピクセルは変えません。
+	Show All	すべて表示
+	Padding Color	パディングの色
+	From Theme	テーマから
+	Light Check Color	明るいチェックの色
+	Dark Check Color	暗いチェックの色
+	Light Check	明るいチェック
+	Dark Check	暗いチェック
+	Light check	明るいチェック
+	Dark check	暗いチェック
+	Custom Color	カスタムカラー
+	Keep Padding in Show All	すべて表示でパディングを保持
+	Keep padding in show all	すべて表示でパディングを保持
+	Filter by tag	タグで絞り込む
+	Clear filter	絞り込みを解除
+	Tags:	タグ:
+	Add tag	タグを追加
+	Remove tag	タグを削除
+	View Metadata…	メタデータを表示…
+	Edit Metadata…	メタデータを編集…
+	Edit Metadata	メタデータを編集
+	Metadata Viewer	メタデータビューア
+	Write Metadata	メタデータを書き込む
+	Separate several values with semicolons	複数の値はセミコロンで区切ります
+	No tags	タグなし
+	XMP	XMP
+	IPTC	IPTC
+	Text	テキスト
+	Rights	権利
+	IPTC Extension	IPTC 拡張
+	Categories	カテゴリ
+	DICOM	DICOM
+	Procedure Browser	プロシージャブラウザ
+	Plug-In Browser	プラグインブラウザ
+	Search procedures	プロシージャを検索
+	{n} procedures	{n} 件のプロシージャ
+	(no menu)	(メニューなし)
+	Menu: {path}	メニュー: {path}
+	Parameters	パラメーター
+	Available now	現在実行可能
+	Not available in the current state	現在の状態では実行できません
+	Run	実行
+	Select a procedure to read its parameters.	プロシージャを選ぶとパラメーターを読めます。
+	Dashboard	ダッシュボード
+	Low memory: swap is nearly full. Save your work.	メモリ不足: スワップがほぼ満杯です。作業を保存してください。
+	Memory	メモリ
+	Cache	キャッシュ
+	Swap	スワップ
+	Swap: not reported on this platform	スワップ: このプラットフォームでは取得できません
+	CPU	CPU
+	CPU renderer	CPU レンダラー
+	uploads	アップロード
+	Misc: {jobs} jobs running · {n} samples	その他: 実行中のジョブ {jobs} 件 · サンプル {n} 件
+	Log to File…	ファイルに記録…
+	Stop Logging	記録を停止
+	Device Status	デバイスの状態
+	Core Pointer	コアポインター
+	Pen / Tablet	ペン / タブレット
+	Brush:	ブラシ:
+	Pattern:	パターン:
+	Gradient:	グラデーション:
+	Save Device Status	デバイスの状態を保存
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	各デバイスはツール、色、ブラシ、パターン、グラデーションを記憶し、デバイスを切り替えると一緒に切り替わります。
+	Selection Editor	選択範囲エディター
+	No document open.	ドキュメントが開かれていません。
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	クリックすると自動選択ツールでその位置の連続した色を選択します (Shift で追加、Alt で削除)
+	Save to Channel	チャンネルに保存
+	To Path	パスへ
+	Advanced options	詳細オプション
+	MyPaint Brushes	MyPaint ブラシ
+	No MyPaint brushes yet. Import .myb files to list them here.	MyPaint ブラシはまだありません。.myb ファイルを読み込むとここに表示されます。
+	No brush matches the filter.	絞り込みに一致するブラシがありません。
+	Handle Transform	ハンドル変形
+	3D Transform	3D 変形
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	再調整
+	Apply the transform so far and put a fresh box on the result	ここまでの変形を適用し、結果に新しいボックスを置きます
+	Camera	カメラ
+	Vanishing X:	消失点 X:
+	Y:	Y:
+	Focal length:	焦点距離:
+	Local pivot	ローカルピボット
+	Unified pivot	統合ピボット
+	Close Cage	ケージを閉じる
+	Reset Cage	ケージをリセット
+	Fill Plain Colour	単色で塗る
+	Fill the original position of the cage with the plain colour of its outline	ケージの元の位置を、その輪郭の単色で塗ります
+	{n} points	{n} 点
+	Click to place a handle	クリックしてハンドルを置く
+	Rotate and Scale	回転と拡大・縮小
+	{n} handles: {what}	ハンドル {n} 個: {what}
+	Reset Handles	ハンドルをリセット
+	Remove Handles	ハンドルを削除
+	Commit Cage Transform (Enter)	ケージ変形を確定 (Enter)
+	Commit Handle Transform (Enter)	ハンドル変形を確定 (Enter)
+	Commit 3D Transform (Enter)	3D 変形を確定 (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	ケージ変形: 変形する部分の周りをクリックし、最初の点をクリックしてケージを閉じ、点をドラッグします
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	ハンドル変形: 1〜4 個のハンドルを置いてドラッグします (1 個で移動、2 個で回転と拡縮、3 個で傾き、4 個で遠近)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 変形: ドラッグで X・Y 軸回転、Alt+ドラッグで Z 軸回転。移動とカメラのタブでレイヤーとカメラを動かします
+	Segment {n}	セグメント {n}
+	Blending:	ブレンド:
+	Coloring:	カラーリング:
+	Midpoint:	中間点:
+	Sinusoidal	正弦波
+	Spherical (increasing)	球面 (増加)
+	Spherical (decreasing)	球面 (減少)
+	Step	ステップ
+	HSV (counter-clockwise)	HSV (反時計回り)
+	HSV (clockwise)	HSV (時計回り)
+	Replicate	複製
+	Split the segment at its midpoint	セグメントを中間点で分割します
+	Replace the segment with two copies of itself	セグメントを自身の 2 つのコピーに置き換えます
+	Flip the whole gradient end to end	グラデーション全体を反転します
+	Save as POV-Ray…	POV-Ray 形式で保存…
