@@ -860,6 +860,7 @@ fn arc_cubics(centre: Point, a: Point, b: Point, ccw: bool) -> Vec<CubicBez> {
 /// A corner of a stroke's outer side: the path's vertex `v`, the end `e` of the incoming offset
 /// (tangent `te`) and the start `s` of the outgoing one (tangent `ts`); `ccw` whether the outer
 /// side goes counterclockwise round `v` from `e` to `s`.
+#[derive(Clone, Copy)]
 struct Corner {
     v: Point,
     e: Point,
