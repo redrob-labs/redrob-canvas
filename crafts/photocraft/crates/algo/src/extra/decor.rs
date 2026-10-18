@@ -105,7 +105,7 @@ pub(crate) fn filmstrip(src: &Image, out: Rect, ctx: &Ctx, spec: &FilmstripSpec)
     let film = [spec.color[0], spec.color[1], spec.color[2], 1.0];
     let num_h = if spec.number_height > 0.0 { spec.number_height.clamp(0.01, 0.3) * bh } else { (hole_h * 0.9).max(5.0) };
     let n = src.ch;
-    let mut tmp = vec![0.0f32; crate::fxutil::MAXC];
+    let mut tmp = [0.0f32; crate::fxutil::MAXC];
     map_px(src, out, ctx, |x, y, _| {
         let (fx, fy) = (x as f32 + 0.5 - b.x0 as f32, y as f32 + 0.5 - b.y0 as f32);
         // Sprocket holes.

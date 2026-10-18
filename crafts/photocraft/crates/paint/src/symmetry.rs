@@ -248,7 +248,7 @@ pub struct IntervalSymmetry {
 impl IntervalSymmetry {
     pub fn new(x: f64, y: f64, columns: u32, rows: u32) -> Option<Self> {
         let total = (columns as usize).checked_mul(rows as usize)?;
-        if columns == 0 || rows == 0 || total < 2 || total > MAX_TRANSLATE_COPIES {
+        if columns == 0 || rows == 0 || !(2..=MAX_TRANSLATE_COPIES).contains(&total) {
             return None;
         }
         if !(x.is_finite() && y.is_finite())

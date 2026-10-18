@@ -9,7 +9,7 @@
 use crate::svgfilter::{BlendOp, Channel, CompositeOp, EdgeMode, FilterGraph, Kind, Light, MatrixMode, MorphologyOp, Primitive, Transfer};
 
 /// One stock preset.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct FilterPreset {
     /// Stable id, `<category>.<name>`, e.g. `bevels.bloom`.
     pub id: &'static str,

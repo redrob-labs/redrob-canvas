@@ -465,8 +465,8 @@ pub fn trace_pixel_art(img: &Raster, p: &PixelArtParams) -> Vec<PixelArtShape> {
     let mut out = vec![];
     match p.output {
         PixelArtOutput::Voronoi => {
-            for i in 0..g.w * g.h {
-                let Some(r) = region[i] else { continue };
+            for (i, r) in region.iter().enumerate().take(g.w * g.h) {
+                let Some(r) = *r else { continue };
                 out.push(PixelArtShape { rgba: g.px[i], path: poly_path(&g.cell(i)), region: r });
             }
         }
@@ -474,8 +474,8 @@ pub fn trace_pixel_art(img: &Raster, p: &PixelArtParams) -> Vec<PixelArtShape> {
             // Each region's boundary from its cells' edges, coloured by the region's average.
             let mut edges: Vec<Vec<((i64, i64), (i64, i64))>> = vec![vec![]; count];
             let mut sums: Vec<([u64; 4], u64)> = vec![([0; 4], 0); count];
-            for i in 0..g.w * g.h {
-                let Some(r) = region[i] else { continue };
+            for (i, r) in region.iter().enumerate().take(g.w * g.h) {
+                let Some(r) = *r else { continue };
                 let cell = g.cell(i);
                 for k in 0..cell.len() {
                     // Axis-aligned edges in quarter steps, so a long edge cancels against the

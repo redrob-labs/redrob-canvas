@@ -1352,7 +1352,7 @@ impl StrokeRenderer {
             self.ctx.rasterize_into(d, false, rect, &mut self.scratch, (wet || tip_levels).then_some(&mut self.depth_scratch));
             if let (true, Some(f)) = (per_pixel, self.fmt) {
                 let nc = f.mode.color_channels();
-                let w = rect.width().max(0) as usize;
+                let w = rect.width() as usize;
                 let ctx = &self.ctx;
                 let depth = &self.depth_scratch;
                 self.cov.accumulate_with(rect, &self.scratch, d.opacity, wet.then_some(&self.depth_scratch[..]), nc, |x, y, out| {

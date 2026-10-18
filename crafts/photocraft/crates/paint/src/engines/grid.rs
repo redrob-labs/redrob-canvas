@@ -143,8 +143,8 @@ pub fn paint(target: &mut Surface, sample: Option<&Surface>, stroke: &Stroke, s:
                         }
                         if s.mix_background {
                             let t = rand01(seed, idx, 206);
-                            for c in 0..3 {
-                                color[c] += (b.background[c] - color[c]) * t;
+                            for (c, bg) in b.background.iter().enumerate().take(3) {
+                                color[c] += (bg - color[c]) * t;
                             }
                         }
                         let mut k = d.opacity * d.alpha;

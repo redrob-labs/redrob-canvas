@@ -149,7 +149,7 @@ pub(crate) fn stencil_chrome(src: &Image, out: Rect, ctx: &Ctx, spec: &ChromeSpe
         }
     };
     map_px(src, out, ctx, |x, y, me| {
-        let (ix, iy) = ((x - win.x0) as i32, (y - win.y0) as i32);
+        let (ix, iy) = (x - win.x0, y - win.y0);
         let h = |dx: i32, dy: i32| height[(iy + dy).clamp(0, wh as i32 - 1) as usize * ww + (ix + dx).clamp(0, ww as i32 - 1) as usize];
         let nx = (h(-1, 0) - h(1, 0)) * depth;
         let ny = (h(0, -1) - h(0, 1)) * depth;

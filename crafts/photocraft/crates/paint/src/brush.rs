@@ -1922,18 +1922,12 @@ impl ColorSource {
 
 /// A straight-RGBA colour tile (the colour pattern a [`ColorSource::Pattern`] paints). Pixels are
 /// row-major, four floats each.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct PatternTile {
     pub width: u32,
     pub height: u32,
     pub data: Vec<f32>,
-}
-
-impl Default for PatternTile {
-    fn default() -> Self {
-        Self { width: 0, height: 0, data: Vec::new() }
-    }
 }
 
 impl PatternTile {

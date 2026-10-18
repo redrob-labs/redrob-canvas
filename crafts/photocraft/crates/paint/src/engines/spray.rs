@@ -239,8 +239,8 @@ pub fn paint(target: &mut Surface, sample: Option<&Surface>, stroke: &Stroke, s:
             } else if s.gradient_by_distance {
                 let t = rad * rad;
                 let mut c = d.color;
-                for ch in 0..4 {
-                    c[ch] += (b.background[ch] - c[ch]) * t;
+                for (ch, bg) in b.background.iter().enumerate().take(4) {
+                    c[ch] += (bg - c[ch]) * t;
                 }
                 c
             } else {
@@ -257,8 +257,8 @@ pub fn paint(target: &mut Surface, sample: Option<&Surface>, stroke: &Stroke, s:
             }
             if s.mix_background {
                 let t = r(412);
-                for ch in 0..3 {
-                    color[ch] += (b.background[ch] - color[ch]) * t;
+                for (ch, bg) in b.background.iter().enumerate().take(3) {
+                    color[ch] += (bg - color[ch]) * t;
                 }
             }
             let mut opa = d.opacity * d.alpha;

@@ -166,7 +166,7 @@ pub fn paint(target: &mut Surface, stroke: &Stroke, s: &BristleSettings, selecti
         for (bi, br) in bristles.iter_mut().enumerate() {
             let idx = ((si as u64) << 16) | bi as u64;
             // Tip space → document: scale, shear, rotate, plus the random offset.
-            let (mut ox, mut oy) = (br.ox * r, br.oy * r * d.roundness.max(0.05));
+            let (mut ox, oy) = (br.ox * r, br.oy * r * d.roundness.max(0.05));
             ox += s.shear.clamp(-2.0, 2.0) * oy;
             let (dx, dy) = (ox * ca - oy * sa, ox * sa + oy * ca);
             let jitter = s.random_offset.max(0.0);

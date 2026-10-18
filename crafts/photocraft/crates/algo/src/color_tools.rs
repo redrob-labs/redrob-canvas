@@ -742,11 +742,11 @@ fn blue_noise() -> &'static [f32] {
         let mut rank = vec![0u32; total];
         let add = |field: &mut Vec<f32>, i: usize, sign: f32| {
             let (x, y) = (i % n, i / n);
-            for j in 0..total {
+            for (j, fj) in field.iter_mut().enumerate().take(total) {
                 let (jx, jy) = (j % n, j / n);
                 let dx = (jx + n - x) % n;
                 let dy = (jy + n - y) % n;
-                field[j] += sign * energy[dy * n + dx];
+                *fj += sign * energy[dy * n + dx];
             }
         };
         // Initial pattern: a tenth of the points, placed randomly then relaxed.

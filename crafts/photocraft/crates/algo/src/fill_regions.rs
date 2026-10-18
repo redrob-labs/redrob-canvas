@@ -17,7 +17,7 @@ fn window(region: &Region, origin: (i32, i32), w: usize, h: usize) -> Vec<u8> {
     cov
 }
 
-fn region_from(cov: &[u8], w: usize, h: usize, origin: (i32, i32)) -> Option<Region> {
+fn region_from(cov: &[u8], w: usize, _h: usize, origin: (i32, i32)) -> Option<Region> {
     let (mut bx0, mut by0, mut bx1, mut by1) = (usize::MAX, usize::MAX, 0usize, 0usize);
     for (i, v) in cov.iter().enumerate() {
         if *v == 0 {
@@ -132,7 +132,7 @@ impl Region {
     /// This region with its edge feathered over `radius` pixels (a Gaussian blur of the
     /// coverage), clipped to `area`.
     pub fn feathered(&self, radius: f32, area: Rect) -> Region {
-        if !(radius > 0.0) {
+        if radius <= 0.0 || radius.is_nan() {
             return self.clone();
         }
         let pad = (radius * 3.0).ceil() as i32;

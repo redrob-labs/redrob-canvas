@@ -205,7 +205,7 @@ impl EllipseGeom {
     pub fn through(&self, p: [f64; 2]) -> Option<Self> {
         let l = self.to_local(p);
         let k = ((l[0] / self.rx).powi(2) + (l[1] / self.ry).powi(2)).sqrt();
-        (k > 1e-6).then(|| Self { rx: self.rx * k, ry: self.ry * k, ..*self })
+        (k > 1e-6).then_some(Self { rx: self.rx * k, ry: self.ry * k, ..*self })
     }
 
     /// The point of the rim nearest to `p` (Newton's method on the rim parameter).
