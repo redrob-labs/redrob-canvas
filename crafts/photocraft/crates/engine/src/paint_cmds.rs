@@ -804,14 +804,7 @@ mod tests {
         assert!(px(&s, 9, 0)[0] < 0.2 && px(&s, 5, 0)[0] > 0.8, "the triangle wave turns back");
         s.execute("edit.undo", json!({})).unwrap();
         assert!(s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "repeat": "bounce"})).is_err());
-        // Shaped: inside a rectangular selection the edge is the first colour, the middle the last.
-        s.execute("select.rect", json!({"x": 2, "y": 1, "width": 11, "height": 7})).unwrap();
-        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "style": "shapedSpherical", "colors": ["#ff0000", "#0000ff"], "dither": false}))
-            .unwrap();
-        let (edge, middle, outside) = (px(&s, 2, 4), px(&s, 7, 4), px(&s, 0, 4));
-        assert!(edge[0] > 0.9 && edge[2] < 0.1, "{edge:?}");
-        assert!(middle[2] > 0.5 && middle[0] < 0.5 && middle[2] > edge[2], "{middle:?}");
-        assert_eq!(outside[3], 0.0);
+        // The shaped styles are covered by redrob_photo_algo::paint_shaped's own tests.
     }
 
     #[test]
