@@ -706,13 +706,13 @@ fn portable_generated_stem(stem: String) -> String {
     if is_windows_device_asset_name(&stem) { format!("{stem}_") } else { stem }
 }
 
-fn html_escape(s: &str) -> String {
+pub(crate) fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
 }
 
 /// Imported slice URLs are document data. Only ordinary web/contact links and relative links
 /// become anchors; an unsupported scheme leaves the image unlinked.
-fn safe_slice_url(url: &str) -> bool {
+pub(crate) fn safe_slice_url(url: &str) -> bool {
     if url.is_empty() || url.trim() != url || url.chars().any(|c| c.is_control() || c == '\\') {
         return false;
     }

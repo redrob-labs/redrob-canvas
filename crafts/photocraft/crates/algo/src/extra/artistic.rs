@@ -10,7 +10,7 @@ use super::{fbm, luma_gradient, luma_rgb, map_px, over, rgb_to_hsv, rgba_at, rgb
 use crate::fxutil::gauss_blur_n;
 use crate::image::Image;
 use crate::noise::hash01;
-use crate::{Ctx, LicChannel, LicConvolve, LicOperator, StrokeBackground, StrokeColor, StrokeOrientation, StrokePlacement, StrokeShape, SuperpixelColor};
+use crate::{Ctx, LicChannel, LicConvolve, LicOperator, PaperTexture, StrokeBackground, StrokeColor, StrokeOrientation, StrokePlacement, StrokeShape, SuperpixelColor};
 
 /// Pixels Cubism reads around an output pixel.
 pub(crate) fn cubism_reach(tile_size: f32, saturation: f32) -> f32 {
@@ -289,7 +289,7 @@ pub(crate) fn waterpixels(src: &Image, out: Rect, ctx: &Ctx, size: f32, smoothne
 }
 
 /// Impressionist parameters.
-pub(crate) struct ImpressionistSpec {
+pub(crate) struct ImpressionistSpec<'a> {
     pub brush_size: f32,
     pub size_variation: f32,
     pub orientation: f32,
@@ -302,6 +302,49 @@ pub(crate) struct ImpressionistSpec {
     pub background: StrokeBackground,
     pub background_color: [f32; 4],
     pub seed: u32,
+    /// Paper texture under the relief (and its scale in pixels per weave).
+    pub paper: PaperTexture,
+    pub paper_scale: f32,
+    /// Greyscale paper image for `PaperTexture::Image`, tiled over the bounds.
+    pub paper_map: Option<&'a Image>,
+    /// Greyscale brush image for `StrokeShape::Image`: bright pixels are the stroke.
+    pub brush_map: Option<&'a Image>,
+}
+
+/// Luma of a greyscale/colour image at integer pixel `(x, y)`, wrapping (tiled).
+fn tiled_luma(m: &Image, x: i32, y: i32) -> f32 {
+    let r = m.rect;
+    let (w, h) = (r.width().max(1) as i32, r.height().max(1) as i32);
+    let (px, py) = (r.x0 + x.rem_euclid(w), r.y0 + y.rem_euclid(h));
+    let l = if m.ch >= 3 { 0.299 * m.get(px, py, 0) + 0.587 * m.get(px, py, 1) + 0.114 * m.get(px, py, 2) } else { m.get(px, py, 0) };
+    let a = if m.ch == 2 || m.ch == 4 { m.get(px, py, m.ch - 1) } else { 1.0 };
+    l * a
+}
+
+/// Paper height (-0.5..0.5) at `(x, y)` for the chosen texture.
+fn paper_height(spec: &ImpressionistSpec, x: f32, y: f32) -> f32 {
+    let sc = spec.paper_scale.clamp(1.0, 200.0);
+    match spec.paper {
+        PaperTexture::Plain => fbm(x / 3.0, y / 3.0, spec.seed ^ 0x9a5f) - 0.5,
+        PaperTexture::Canvas => {
+            let (a, b) = ((x / sc * std::f32::consts::TAU).sin(), (y / sc * std::f32::consts::TAU).sin());
+            // Two crossed threads: the one on top at this cell is the higher of the two.
+            let over_x = ((x / sc).floor() as i32 + (y / sc).floor() as i32).rem_euclid(2) == 0;
+            (if over_x { a.abs() * 0.7 + b.abs() * 0.3 } else { b.abs() * 0.7 + a.abs() * 0.3 }) - 0.5
+        }
+        PaperTexture::Burlap => {
+            let s2 = sc * 2.2;
+            let (a, b) = ((x / s2 * std::f32::consts::TAU).sin(), (y / s2 * std::f32::consts::TAU).sin());
+            (a.abs().max(b.abs()) * 0.8 + fbm(x / 2.0, y / 2.0, spec.seed ^ 0x77) * 0.2) - 0.5
+        }
+        PaperTexture::Marble => {
+            let v = fbm(x / (sc * 4.0), y / (sc * 4.0), spec.seed ^ 0x31);
+            // Ridged: veins where the noise crosses the middle.
+            0.5 - (v - 0.5).abs() * 2.0 - 0.25
+        }
+        PaperTexture::Rough => fbm(x / (sc * 1.5), y / (sc * 1.5), spec.seed ^ 0x9a5f) * 0.6 + fbm(x / 2.0, y / 2.0, spec.seed ^ 0x13) * 0.4 - 0.5,
+        PaperTexture::Image => spec.paper_map.map_or(0.0, |m| tiled_luma(m, x.floor() as i32, y.floor() as i32) - 0.5),
+    }
 }
 
 /// Pixels Impressionist reads around an output pixel.
@@ -374,6 +417,9 @@ pub(crate) fn impressionist(src: &Image, out: Rect, ctx: &Ctx, spec: &Impression
             StrokeShape::Square => (s * 0.4, s * 0.4),
             StrokeShape::Line => (s * 0.6, (s * 0.06).max(0.6)),
             StrokeShape::Splotch => (s * 0.45, s * 0.3),
+            StrokeShape::Circle | StrokeShape::Star | StrokeShape::Diamond => (s * 0.4, s * 0.4),
+            StrokeShape::Triangle => (s * 0.45, s * 0.4),
+            StrokeShape::Image => (s * 0.5, s * 0.5),
         };
         Stroke { c, len, wid, ang, col, rough: (h(4) * 1000.0) as u32 }
     };
@@ -396,12 +442,30 @@ pub(crate) fn impressionist(src: &Image, out: Rect, ctx: &Ctx, spec: &Impression
                     let (sn, cs) = st.ang.sin_cos();
                     let (u, v) = (dx * cs + dy * sn, -dx * sn + dy * cs);
                     let inside = match spec.shape {
-                        StrokeShape::Ellipse | StrokeShape::Line => (u / st.len).powi(2) + (v / st.wid).powi(2) <= 1.0,
+                        StrokeShape::Ellipse | StrokeShape::Line | StrokeShape::Circle => (u / st.len).powi(2) + (v / st.wid).powi(2) <= 1.0,
                         StrokeShape::Square => u.abs() <= st.len && v.abs() <= st.wid,
                         StrokeShape::Splotch => {
                             let wob = 0.75 + 0.5 * fbm(u / st.len * 2.0 + st.rough as f32, v / st.wid * 2.0, spec.seed);
                             (u / st.len).powi(2) + (v / st.wid).powi(2) <= wob
                         }
+                        StrokeShape::Diamond => (u / st.len).abs() + (v / st.wid).abs() <= 1.0,
+                        StrokeShape::Triangle => {
+                            // Apex along +u, base across v.
+                            let a = (u / st.len + 1.0) * 0.5;
+                            (0.0..=1.0).contains(&a) && (v / st.wid).abs() <= 1.0 - a
+                        }
+                        StrokeShape::Star => {
+                            let r = (u * u + v * v).sqrt() / st.len.max(1e-3);
+                            let ang = v.atan2(u);
+                            let k = ((ang * 2.5).cos() * 0.5 + 0.5).powf(0.6);
+                            r <= 0.45 + 0.55 * k
+                        }
+                        StrokeShape::Image => spec.brush_map.is_some_and(|m| {
+                            let r = m.rect;
+                            let bu = ((u / st.len + 1.0) * 0.5 * r.width() as f32).floor() as i32;
+                            let bv = ((v / st.wid + 1.0) * 0.5 * r.height() as f32).floor() as i32;
+                            (0..r.width() as i32).contains(&bu) && (0..r.height() as i32).contains(&bv) && tiled_luma(m, bu, bv) > 0.5
+                        }),
                     };
                     if inside {
                         // Bristle texture along the stroke.
@@ -413,7 +477,7 @@ pub(crate) fn impressionist(src: &Image, out: Rect, ctx: &Ctx, spec: &Impression
             }
         }
         if relief > 0.0 {
-            let paper = fbm(fx / 3.0, fy / 3.0, spec.seed ^ 0x9a5f) - 0.5;
+            let paper = paper_height(spec, fx, fy);
             let k = 1.0 + paper * relief * 0.6;
             acc = [(acc[0] * k).clamp(0.0, 1.0), (acc[1] * k).clamp(0.0, 1.0), (acc[2] * k).clamp(0.0, 1.0), acc[3]];
         }
