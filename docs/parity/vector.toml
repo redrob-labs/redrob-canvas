@@ -950,8 +950,8 @@ name = "Attach path"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Links the start or end of the path to a point on another path so that it follows when the other path is edited; optional curve handles at the attachment."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_link.rs (path.attachPath), crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (refresh keeps the linked geometry, effect.selectLinked), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -974,8 +974,8 @@ name = "Bounding box"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Replaces the path by a live rectangle tracking the bounding box of a linked object (visual or geometric)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_link.rs (path.boundingBox), crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (refresh keeps the linked geometry, effect.selectLinked), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1010,9 +1010,9 @@ name = "Clone original"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Makes the path a live copy of another path's geometry (and optionally its style or whole attribute set) so edits to the source propagate; the copy can carry its own style and further effects."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/symbols.rs, crafts/vectorcraft/crates/doc/src/node.rs (SymbolInstance)"
-gap = "symbol instances copy the whole symbol; no per-path geometry link with independent style"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_link.rs (path.cloneOriginal), crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (refresh keeps the linked geometry, effect.selectLinked), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1022,9 +1022,9 @@ name = "Construct grid"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "From a path of three nodes builds a (possibly skewed) grid of the chosen number of rows and columns."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/extra.rs (Rectangular Grid, Polar Grid tools)"
-gap = "grids are drawn as static paths by a tool; not live from a three-node path"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.constructGrid), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1058,8 +1058,8 @@ name = "Ellipse by 5 points"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Fits an ellipse through the first five nodes of the path."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.ellipseByFivePoints), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1070,8 +1070,8 @@ name = "Ellipse from points"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Builds a circle or ellipse (optionally an arc, slice or isometric circle) from 2 to 5 nodes with several construction methods; draws optional axes and frame."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.ellipseFromPoints), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog), crafts/vectorcraft/crates/ui-egui/src/dialogs/effect.rs (method dropdown)"
 gap = ""
 priority = 3
 
@@ -1082,8 +1082,8 @@ name = "Embroidery stitch"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "Connects the subpaths of a path into one continuous stitching path, with ordering, connection and jump options for machine embroidery."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.embroideryStitch), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1106,8 +1106,8 @@ name = "Fill between many"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1"
 behaviour = "The path becomes the live fill of the region enclosed by a list of linked paths, following them as they move; join and close options, and an option to keep the fill when the effect is flattened."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_link.rs (path.fillBetweenMany), crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (refresh keeps the linked geometry, effect.selectLinked), crafts/vectorcraft/crates/engine/src/cmd/effectcmd.rs (several selected objects link on apply), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1118,8 +1118,8 @@ name = "Fill between strokes"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Fills the area between two linked stroked paths, optionally reversing one of them and closing the result."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_link.rs (path.fillBetweenStrokes), crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (refresh keeps the linked geometry, effect.selectLinked), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1130,8 +1130,8 @@ name = "Gears"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "Turns a chain of nodes into a chain of meshing gears, each node giving a gear's centre, with teeth count and pressure angle."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.gears), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1142,9 +1142,9 @@ name = "Hatches (rough)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "Fills the shape with hand-drawn-looking hatch lines; frequency, growth, direction, randomness, bend and thickness variation, with on-canvas handles for direction and bend."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/stylize.rs (stylize.scribble)"
-gap = "Scribble gives sketchy strokes along a direction with curviness and spacing variation but no bend handle or thickness variation"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.hatches), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = "the hatch direction and bend are set in the effect options, not by on-canvas handles"
 priority = 3
 
 [[feature]]
@@ -1154,8 +1154,8 @@ name = "Interpolate points"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Draws a smooth curve through the path's nodes using an interpolator (cubic Bezier fit, centripetal Catmull-Rom, spiro, linear)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.interpolatePoints), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1178,9 +1178,9 @@ name = "Join type"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Replaces the stroke by an outlined path whose joins can be of extra kinds (round, bevel, miter, extrapolated arc variants) and whose width is editable live."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/appearance.rs (LineJoin), crafts/vectorcraft/crates/effects/src/stroke/outline.rs"
-gap = "standard miter/round/bevel joins and Outline Stroke; no extrapolated-arc joins"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.joinType: bevel, round, miter, miter clip, extrapolated arc, alt and smooth), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1190,9 +1190,9 @@ name = "Knot"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Adds over/under gaps where the path crosses itself (or other subpaths) so it reads as a knot; gap width, switcher knot on canvas, interrupt width."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.knot), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = "the strand to switch is chosen by crossing number in the effect options, not by a knot clicked on canvas"
 priority = 3
 
 [[feature]]
@@ -1214,9 +1214,9 @@ name = "Measure segments"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Draws dimension lines with length labels for every segment of the path (or only selected ones), with unit, precision, scale, offsets, arrows, text style and the option to hide collinear measurements."
-ours = "none"
-ours_where = ""
-gap = "Measure tool shows a reading but writes no dimension objects"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.measureSegments, labels in a line font), crafts/vectorcraft/crates/effects/src/lpe_util.rs (label), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1274,9 +1274,9 @@ name = "Power clip"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Applied to a clipped group it keeps the clip editable as a live effect, with inverse clip and 'hide clip' options so the clip path can be reused after release."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/maskedit.rs, crafts/vectorcraft/crates/doc/src/clipnest.rs"
-gap = "clipping masks are editable in place but there is no inverse clip option"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_link.rs (path.powerClip), crafts/vectorcraft/crates/effects/src/clip.rs (inverse clip region), crafts/vectorcraft/crates/doc/src/node.rs (clip_paint hides the clip), crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (object.powerClip), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Clipping Mask)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1286,9 +1286,9 @@ name = "Power mask"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Same for masks: keeps the mask editable, inverts it, optionally adds a background and hides the mask."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/opacitymask.rs, crafts/vectorcraft/crates/ui-egui/src/panels/transparency.rs"
-gap = "opacity masks have clip and invert toggles; no background option"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (transparency.maskBackground), crafts/vectorcraft/crates/ui-egui/src/panels/transparency.rs (Background)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1334,8 +1334,8 @@ name = "Ruler"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Ruler"
 behaviour = "Draws tick marks along the path at a given interval with major/minor marks, offset, mark direction and length; 1.4 adds unit-aware mark distance."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.ruler), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1346,8 +1346,8 @@ name = "Show handles"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Renders the path's nodes and Bezier handles as visible geometry (for tutorials), with sizes and options for which parts to draw."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.showHandles), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1358,9 +1358,9 @@ name = "Simplify (live)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Live node reduction with steps, threshold, smooth angles, helper size and 'paths separately' options; also used by the pencil tool's interactive simplify."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/pathops.rs (object.path.simplify)"
-gap = "simplify is a one-shot command, not a live effect"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.simplify), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1370,9 +1370,9 @@ name = "Sketch"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "Replaces the path by several overlapping pencil-like strokes with length, overlap, displacement, tremble and construction-line parameters."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/stylize.rs (stylize.scribble), crafts/vectorcraft/crates/effects/src/pixel/brushstrokes.rs"
-gap = "Scribble is a fill-area hatching; no stroke-following sketch lines"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.sketch), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1382,9 +1382,9 @@ name = "Slice"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.1"
 behaviour = "Splits the object along a draggable line into two live halves (with recursive slicing), each half keeping its own style; allows 'split and fuse' back."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.lineCut, path.mirrorCut)"
-gap = "Line Cut and Mirror & Cut tools cut destructively"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.slice), crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (object.liveSlice, object.fuseSlice), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Path)"
+gap = "the cutting line is set by a point and an angle in the effect options, not dragged on canvas"
 priority = 3
 
 [[feature]]
@@ -1406,8 +1406,8 @@ name = "Stitch sub-paths"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "Connects consecutive subpaths by a number of stitch lines whose shape is a pattern path, with start/end spacing and variation."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.stitchSubpaths), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1442,9 +1442,9 @@ name = "Transform by 2 points"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/0.92"
 behaviour = "Two knots define a start and end point; moving them translates, rotates and scales the object between them, with elastic and lock-length/angle options; used for fitting an element between two places."
-ours = "none"
-ours_where = ""
-gap = "Free Transform tool does the same by hand without live knots"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.transformByTwoPoints), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = "the two knots are set in the effect options (box coordinates), not dragged on canvas"
 priority = 3
 
 [[feature]]
@@ -1454,8 +1454,8 @@ name = "VonKoch"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/live-path-effects.html"
 behaviour = "Applies a fractal generator: each segment is replaced by a scaled copy of the path a chosen number of times, with reference segment, max complexity and 'draw all generations' options."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_draw.rs (path.vonKoch), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1466,8 +1466,8 @@ name = "Angle bisector (experimental)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "From a three-node path draws the bisector of the angle at the middle node, with start/end lengths."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.angleBisector), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1478,8 +1478,8 @@ name = "Circle by 3 points (experimental)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Replaces a three-node path by the circle through those points."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.circleByThreePoints), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1490,8 +1490,8 @@ name = "Circle by centre and radius (experimental)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "First node is the centre, second gives the radius; the path becomes that circle."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.circleByCenterAndRadius), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1514,8 +1514,8 @@ name = "Line segment (experimental)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Turns the path into a straight line through its first two nodes: closed, open at one end or infinite."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.lineSegment), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1526,8 +1526,8 @@ name = "Parallel (experimental)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Draws a line parallel to the segment between the first two nodes through an offset knot."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.parallel), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1538,8 +1538,8 @@ name = "Perpendicular bisector (experimental)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Draws the perpendicular bisector of the segment between the first two nodes."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.perpendicularBisector), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
 gap = ""
 priority = 3
 
@@ -1550,9 +1550,9 @@ name = "Tangent to curve (experimental)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0"
 behaviour = "Draws the tangent line at a draggable point on the curve, with start/end lengths and angle offset."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/lpe_geo.rs (path.tangentToCurve), crafts/vectorcraft/crates/effects/src/lpe_catalog.rs (catalog)"
+gap = "the tangent point is a position along the path in the effect options, not a dragged knot"
 priority = 3
 
 [[feature]]
@@ -1574,9 +1574,9 @@ name = "Select path effect parent object"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.2#Select_Path_Effect_Parent_Object"
 behaviour = "When an effect links to another path (bend path, boolean operand, clone source) a button in its panel selects that linked object."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/symbols.rs (Edit Symbol), crafts/vectorcraft/crates/engine/src/cmd/live.rs (Replace Spine)"
-gap = "only blends (spine) and symbols have a jump to the linked object"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/lpelink.rs (effect.selectLinked), crafts/vectorcraft/crates/ui-egui/src/dialogs/effect.rs (Select Linked Object button), crafts/vectorcraft/crates/effects/src/lpe_link.rs (link_ids)"
+gap = ""
 priority = 3
 
 # ---------------------------------------------------------------------------------------------

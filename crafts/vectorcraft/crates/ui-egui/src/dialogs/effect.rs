@@ -153,6 +153,23 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
             form::param_fields(ui, d, &|k| redrob_vector_effects::is_length(&id, k, relative), &|k| choices(&id, k), &|k| doc_rank(doc, k), unit)
         }
     };
+    // An effect linked to other objects (Clone Original, Attach Path, Bounding Box, Fill
+    // Between…): a button selects them, as Replace Spine and Edit Symbol jump to theirs.
+    if redrob_vector_effects::is_linked(&id) && !redrob_vector_effects::link_ids(&id, &form::params(d)).is_empty() {
+        ui.add_space(4.0);
+        let applied = d.fields.get("__index").and_then(Value::as_u64);
+        if ui.add_enabled(applied.is_some(), egui::Button::new(tl!("Select Linked Object"))).clicked()
+            && let Some(index) = applied
+        {
+            let item = d.fields.get("__item").cloned().unwrap_or(Value::Null);
+            if app.session.in_interaction() {
+                let _ = app.session.cancel_interaction();
+            }
+            let _ = app.run("effect.selectLinked", json!({"index": index, "item": item}));
+            app.ui.dialog = None;
+            return false;
+        }
+    }
     ui.add_space(6.0);
     let pv_changed = widgets::check(ui, tl!("Preview"), d.bool("preview"), true);
     let pv = d.bool("preview") != pv_changed;
@@ -210,10 +227,27 @@ fn choices(effect: &str, key: &str) -> Option<form::Choices> {
         ("path.offsetPath", "joins") => Some(&[("Miter", "miter"), ("Round", "round"), ("Bevel", "bevel")]),
         ("path.taperStroke", "join") => Some(&redrob_vector_effects::TAPER_JOINS),
         ("path.taperStroke", "direction") => Some(&redrob_vector_effects::TAPER_DIRECTIONS),
+        ("path.ellipseFromPoints", "method") => Some(&redrob_vector_effects::lpe_geo::ELLIPSE_METHODS),
+        ("path.lineSegment", "type") => Some(&redrob_vector_effects::lpe_geo::LINE_KINDS),
+        ("path.attachPath", "end") => Some(&redrob_vector_effects::lpe_link::ATTACH_ENDS),
+        ("path.fillBetweenMany", "method") => Some(&[("Original", "original"), ("B-Spline", "bspline"), ("Spiro", "spiro")]),
+        ("path.interpolatePoints", "interpolator") => Some(&redrob_vector_effects::lpe_draw::INTERPOLATORS),
+        ("path.joinType", "join") => Some(&redrob_vector_effects::lpe_draw::JOIN_KINDS),
+        ("path.joinType", "cap") => Some(&redrob_vector_effects::lpe_draw::CAP_KINDS),
+        ("path.slice", "side") => Some(&redrob_vector_effects::lpe_draw::SLICE_SIDES),
+        ("path.ruler", "direction") => Some(&redrob_vector_effects::lpe_draw::RULER_SIDES),
+        ("path.ruler" | "path.measureSegments", "unit") => Some(&UNITS),
+        ("path.embroideryStitch", "ordering") => Some(&redrob_vector_effects::lpe_draw::STITCH_ORDERS),
+        ("path.embroideryStitch", "connection") => Some(&redrob_vector_effects::lpe_draw::STITCH_CONNECTIONS),
+        ("path.knot", "switcher") => Some(&redrob_vector_effects::lpe_draw::KNOT_SWITCHERS),
+        ("path.vonKoch", "reference") => Some(&redrob_vector_effects::lpe_draw::VONKOCH_REFERENCES),
         ("distort.roughen" | "distort.zigZag", "points") => Some(&[("Smooth", "smooth"), ("Corner", "corner")]),
         _ => None,
     }
 }
+
+/// The units Measure Segments and Ruler read distances in: (label, value); shown as they are.
+const UNITS: [(&str, &str); 6] = [("pt", "pt"), ("px", "px"), ("mm", "mm"), ("cm", "cm"), ("in", "in"), ("pc", "pc")];
 
 /// Where parameter `key` comes in the effect's parameter documentation `doc` (`{radius: …,
 /// threshold: …}`), which lists them in its dialog's order; the end when it isn't there.
