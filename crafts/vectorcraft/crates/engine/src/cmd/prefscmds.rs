@@ -82,6 +82,8 @@ pub const UNITS: &[(&str, &str)] = &[
     ("feet", "Feet"),
 ];
 const LINE_STYLE: &[(&str, &str)] = &[("lines", "Lines"), ("dots", "Dots")];
+/// Input Devices modes: `screen` and `window` both take the toolkit's window coordinates.
+const DEVICE_MODES: &[(&str, &str)] = &[("disabled", "Disabled"), ("screen", "Screen"), ("window", "Window")];
 const GRID_KINDS: &[(&str, &str)] = &[("rectangular", "Rectangular"), ("axonometric", "Axonometric"), ("modular", "Modular")];
 /// Performance › Graphics Processor (`gpuPreference`), read by the desktop app at startup. The
 /// values are WebGPU's power preferences plus `automatic`; 0.5.0's default, `powerSaving`, reads as
@@ -342,6 +344,13 @@ pub const PREF_SPECS: &[PrefSpec] = &[
     // Devices
     p!("touchWorkspace", "Devices", "", "Enable Touch Workspace", bool),
     p!("touchGestures", "Devices", "", "Enable Touch Gestures", bool),
+    // Input Devices: each pointer class's mode and the tools' pressure curves.
+    p!("mouseMode", "Devices", "Input Devices", "Mouse", choice(DEVICE_MODES)),
+    p!("penMode", "Devices", "Input Devices", "Pen / Stylus", choice(DEVICE_MODES)),
+    p!("touchMode", "Devices", "Input Devices", "Touch", choice(DEVICE_MODES)),
+    p!("pressureCurveBrush", "Devices", "Pressure Curves", "Paintbrush", num(0.2, 5.0, "")),
+    p!("pressureCurvePencil", "Devices", "Pressure Curves", "Pencil", num(0.2, 5.0, "")),
+    p!("pressureCurveLiquify", "Devices", "Pressure Curves", "Liquify Tools", num(0.2, 5.0, "")),
     // Graphic Styles panel menu
     p!("overrideCharColor", "Type", "Graphic Styles", "Override Character Color", bool),
     // Object → Pattern → Tile Edge Color

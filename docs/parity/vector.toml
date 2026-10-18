@@ -3084,8 +3084,8 @@ name = "Split view and X-ray"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Split_View_Mode"
 behaviour = "Split view shows normal rendering on one side of a draggable divider and outline on the other; X-ray shows an outline circle around the pointer (Alt+6)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/canvas.rs (split_and_xray: outline frame right of a draggable divider; X-ray disc around the pointer), crafts/vectorcraft/crates/ui-egui/src/menus.rs (view.splitView, view.xray Alt+6), crafts/vectorcraft/crates/ui-egui/src/state.rs (ViewFlags::split_view, split_at, xray)"
 gap = ""
 priority = 3
 
@@ -3216,9 +3216,9 @@ name = "Input devices dialog (tablet mapping)"
 reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Lists pointer devices and sets each one's mode (disabled, screen, window), axes and key mapping; pressure/tilt curves are per tool."
-ours = "none"
-ours_where = ""
-gap = "tablet input is used as the OS delivers it; no per-device configuration"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/prefscmds.rs (Preferences › Devices › Input Devices: Mouse, Pen / Stylus, Touch modes disabled|screen|window; Pressure Curves per tool), crafts/vectorcraft/crates/engine/src/lib.rs (Prefs), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (device_disabled, shaped_pressure), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Edit › Input Devices…)"
+gap = ""
 priority = 3
 
 [[feature]]

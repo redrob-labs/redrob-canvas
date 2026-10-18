@@ -168,6 +168,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ("file.newDialog", "New…", "Cmd+N", "{} opens the New Document dialog"),
     ("app.home", "Home", "", "{} shows the Home screen (new file presets, Open) over the open documents; choosing a document tab returns to it"),
     ("edit.preferences", "Preferences…", "Cmd+K", "{category?} open Preferences (engine: prefs.get / prefs.set / prefs.list)"),
+    (
+        "edit.inputDevices",
+        "Input Devices…",
+        "",
+        "{} open Preferences › Devices: each pointer class's mode (disabled, screen, window) and the tools' pressure curves (prefs mouseMode, penMode, touchMode, pressureCurveBrush, pressureCurvePencil, pressureCurveLiquify)",
+    ),
     ("edit.keyboardShortcuts", "Keyboard Shortcuts…", "Cmd+Alt+Shift+K", "{}"),
     ("shortcuts.set", "Set Keyboard Shortcut", "", "{id: command id or tool:<id>, shortcut: \"Cmd+Shift+K\" | \"\" (none) | null (default), force?}"),
     ("shortcuts.list", "List Keyboard Shortcuts", "", "{query?} → [{id, label, group, shortcut, default, overridden}]"),
@@ -265,6 +271,8 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "",
         "{angle: deg (clockwise on screen)} set the view's rotation, as the status-bar angle field does; refused while Lock Rotate View is on",
     ),
+    ("view.splitView", "Split View", "", "{} normal rendering on one side of a draggable divider and outline on the other; toggles"),
+    ("view.xray", "X-ray", "Alt+6", "{} a disc of outline rendering around the pointer; toggles"),
     ("view.flipHorizontal", "Flip Horizontal", "", "{} mirror the view left to right (View › Canvas Orientation); toggles"),
     ("view.flipVertical", "Flip Vertical", "", "{} mirror the view top to bottom (View › Canvas Orientation); toggles"),
     ("view.flipReset", "Reset Canvas Orientation", "", "{} undo both view flips"),
@@ -1056,6 +1064,10 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             crate::prefs_dialog::open(app, s("category").as_deref());
             Ok(Value::Null)
         }
+        "edit.inputDevices" => {
+            crate::prefs_dialog::open(app, Some("Devices"));
+            Ok(Value::Null)
+        }
         // Edit → Color Settings… / Assign Profile… (no params): show the colour-management panel.
         "edit.colorSettings" | "edit.assignProfile" if p.as_object().is_none_or(|o| o.is_empty()) => {
             app.ui.open_panel = Some("separations".into());
@@ -1205,6 +1217,8 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             Ok(Value::Null)
         }
         "view.rotateLock" => flag(&mut app.ui.view.rotation_lock),
+        "view.splitView" => flag(&mut app.ui.view.split_view),
+        "view.xray" => flag(&mut app.ui.view.xray),
         "view.setRotation" => match p.get("angle").and_then(Value::as_f64) {
             _ if app.ui.view.rotation_lock => Err("the view's rotation is locked (View › Lock Rotate View)".into()),
             None => Err("view.setRotation: missing `angle`".into()),
@@ -1595,6 +1609,8 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
         }
         "view.smartGuides" => v.smart_guides,
         "view.rotateLock" => v.rotation_lock,
+        "view.splitView" => v.split_view,
+        "view.xray" => v.xray,
         "view.grid" => v.grid,
         "view.snapToGrid" => v.snap_to_grid,
         "view.snapToPoint" => v.snap_to_point,
@@ -2252,6 +2268,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Assign Profile…", "edit.assignProfile"),
                 Sep,
                 c("Keyboard Shortcuts…", "edit.keyboardShortcuts"),
+                c("Input Devices…", "edit.inputDevices"),
                 c("Preferences…", "edit.preferences"),
             ],
         ),
@@ -2651,6 +2668,8 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 Sep,
                 c("Reset Rotate View", "view.rotateReset"),
                 c("Lock Rotate View", "view.rotateLock"),
+                c("Split View", "view.splitView"),
+                c("X-ray", "view.xray"),
                 sub(
                     "Canvas Orientation",
                     vec![

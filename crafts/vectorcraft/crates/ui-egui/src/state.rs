@@ -208,6 +208,20 @@ pub struct ViewFlags {
     /// status-bar angle and Cmd+Shift+scroll leave it alone).
     #[serde(default)]
     pub rotation_lock: bool,
+    /// View › Split View: normal rendering on one side of a draggable divider, outline on the other.
+    #[serde(default)]
+    pub split_view: bool,
+    /// Where the Split View divider is, as a fraction of the canvas width (the outline side is
+    /// to its right).
+    #[serde(default = "half")]
+    pub split_at: f32,
+    /// View › X-ray: a disc of outline rendering around the pointer.
+    #[serde(default)]
+    pub xray: bool,
+}
+
+fn half() -> f32 {
+    0.5
 }
 
 impl Default for ViewFlags {
@@ -232,6 +246,9 @@ impl Default for ViewFlags {
             hidden_chars: false,
             show_handles: true,
             rotation_lock: false,
+            split_view: false,
+            split_at: 0.5,
+            xray: false,
         }
     }
 }

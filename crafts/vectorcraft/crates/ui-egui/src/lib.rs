@@ -274,6 +274,10 @@ pub struct CanvasCache {
     pub renderer: redrob_vector_render::Renderer,
     pub texture: Option<egui::TextureHandle>,
     pub key: Option<CacheKey>,
+    /// View › Split View / X-ray: the same frame in outline, for the outline side of the divider
+    /// or the disc around the pointer, keyed like the frame it pairs with.
+    pub outline_texture: Option<egui::TextureHandle>,
+    pub outline_key: Option<CacheKey>,
     pub last_ms: f64,
     /// The frame shown drew raster effects from rasters made before their objects moved
     /// ([`redrob_vector_render::FrameStats::moved`]): the next frame outside an interaction runs
@@ -476,6 +480,8 @@ impl VectorcraftApp {
                 renderer: redrob_vector_render::Renderer::new(),
                 texture: None,
                 key: None,
+                outline_texture: None,
+                outline_key: None,
                 last_ms: 0.0,
                 moved: false,
                 worker: None,
