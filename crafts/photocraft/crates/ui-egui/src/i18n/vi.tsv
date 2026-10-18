@@ -3920,3 +3920,23 @@ curves	Smooth	Làm mượt
 	Popup palette	Bảng màu bật lên
 	Smear	Miết
 	Smudge Radius	Bán kính nhòe
+	Grain Extract	Tách hạt
+	Grain Merge	Gộp hạt
+	LCh Hue	Sắc màu LCh
+	LCh Chroma	Độ màu LCh
+	LCh Color	Màu LCh
+	LCh Lightness	Độ sáng LCh
+	Merge	Gộp
+	Split	Tách
+	Remove Holes	Xóa lỗ hổng
+	Distort…	Biến dạng…
+	Rounded Rectangle…	Hình chữ nhật bo góc…
+	Anchor Layer	Neo lớp
+	To New Layer	Thành lớp mới
+	Layer Boundary Size…	Kích thước biên lớp…
+	Layer to Image Size	Lớp theo kích thước ảnh
+	Resize Layer to Selection	Lớp theo vùng chọn
+	Crop Layer to Content	Cắt lớp theo nội dung
+	Threshold Alpha…	Ngưỡng alpha…
+	Composite Options…	Tùy chọn kết hợp…
+	Zealous Crop	Cắt triệt để

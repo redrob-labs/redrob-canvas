@@ -4192,3 +4192,23 @@ curves	Smooth	Vloeiend maken
 	Popup palette	Pop-uppalet
 	Smear	Uitsmeren
 	Smudge Radius	Smeerradius
+	Grain Extract	Korrel extraheren
+	Grain Merge	Korrel samenvoegen
+	LCh Hue	LCh-kleurtoon
+	LCh Chroma	LCh-chroma
+	LCh Color	LCh-kleur
+	LCh Lightness	LCh-helderheid
+	Merge	Samenvoegen
+	Split	Splitsen
+	Remove Holes	Gaten verwijderen
+	Distort…	Vervormen…
+	Rounded Rectangle…	Afgeronde rechthoek…
+	Anchor Layer	Laag verankeren
+	To New Layer	Naar nieuwe laag
+	Layer Boundary Size…	Laaggrensgrootte…
+	Layer to Image Size	Laag naar afbeeldingsgrootte
+	Resize Layer to Selection	Laag naar selectiegrootte
+	Crop Layer to Content	Laag bijsnijden tot inhoud
+	Threshold Alpha…	Alfadrempel…
+	Composite Options…	Compositieopties…
+	Zealous Crop	Grondig bijsnijden

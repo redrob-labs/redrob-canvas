@@ -4350,3 +4350,23 @@ cameraRaw	Yellow	Sárga
 	Popup palette	Felugró paletta
 	Smear	Elkenés
 	Smudge Radius	Maszatolási sugár
+	Grain Extract	Szemcse kivonása
+	Grain Merge	Szemcse egyesítése
+	LCh Hue	LCh színárnyalat
+	LCh Chroma	LCh színesség
+	LCh Color	LCh szín
+	LCh Lightness	LCh világosság
+	Merge	Egyesítés
+	Split	Felosztás
+	Remove Holes	Lyukak eltávolítása
+	Distort…	Torzítás…
+	Rounded Rectangle…	Lekerekített téglalap…
+	Anchor Layer	Réteg rögzítése
+	To New Layer	Új rétegbe
+	Layer Boundary Size…	Réteghatár mérete…
+	Layer to Image Size	Réteg képméretre
+	Resize Layer to Selection	Réteg kijelölésméretre
+	Crop Layer to Content	Réteg vágása tartalomra
+	Threshold Alpha…	Alfa küszöb…
+	Composite Options…	Kompozíciós beállítások…
+	Zealous Crop	Alapos vágás

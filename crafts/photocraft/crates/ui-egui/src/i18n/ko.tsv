@@ -3963,3 +3963,23 @@ curves	Smooth	매끄럽게
 	Cumulative undo duration	누적 실행 취소 지속 시간
 	Popup palette	팝업 팔레트
 	Smudge Radius	스머지 반경
+	Grain Extract	그레인 추출
+	Grain Merge	그레인 병합
+	LCh Hue	LCh 색조
+	LCh Chroma	LCh 채도
+	LCh Color	LCh 색상
+	LCh Lightness	LCh 명도
+	Merge	병합
+	Split	분할
+	Remove Holes	구멍 제거
+	Distort…	왜곡…
+	Rounded Rectangle…	둥근 사각형…
+	Anchor Layer	레이어 고정
+	To New Layer	새 레이어로
+	Layer Boundary Size…	레이어 경계 크기…
+	Layer to Image Size	레이어를 이미지 크기로
+	Resize Layer to Selection	레이어를 선택 영역 크기로
+	Crop Layer to Content	레이어를 콘텐츠에 맞게 자르기
+	Threshold Alpha…	알파 임계값…
+	Composite Options…	합성 옵션…
+	Zealous Crop	철저한 자르기

@@ -4222,3 +4222,23 @@ layerLabel	No Color	Sem cor
 	Popup palette	Paleta flutuante
 	Smear	Esfregar
 	Smudge Radius	Raio de borrar
+	Grain Extract	Extrair granulação
+	Grain Merge	Mesclar granulação
+	LCh Hue	Matiz LCh
+	LCh Chroma	Croma LCh
+	LCh Color	Cor LCh
+	LCh Lightness	Luminosidade LCh
+	Merge	Mesclar
+	Split	Dividir
+	Remove Holes	Remover buracos
+	Distort…	Distorcer…
+	Rounded Rectangle…	Retângulo arredondado…
+	Anchor Layer	Ancorar camada
+	To New Layer	Para nova camada
+	Layer Boundary Size…	Tamanho do limite da camada…
+	Layer to Image Size	Camada para tamanho da imagem
+	Resize Layer to Selection	Camada para tamanho da seleção
+	Crop Layer to Content	Cortar camada ao conteúdo
+	Threshold Alpha…	Limiar alfa…
+	Composite Options…	Opções de composição…
+	Zealous Crop	Corte minucioso

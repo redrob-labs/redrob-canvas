@@ -3443,3 +3443,23 @@ curves	Smooth	Lisser
 	Popup palette	Palette contextuelle
 	Smear	Étalement
 	Smudge Radius	Rayon de maculage
+	Grain Extract	Extraction de grain
+	Grain Merge	Fusion de grain
+	LCh Hue	Teinte LCh
+	LCh Chroma	Chroma LCh
+	LCh Color	Couleur LCh
+	LCh Lightness	Luminosité LCh
+	Merge	Fusionner
+	Split	Scinder
+	Remove Holes	Supprimer les trous
+	Distort…	Distorsion…
+	Rounded Rectangle…	Rectangle arrondi…
+	Anchor Layer	Ancrer le calque
+	To New Layer	Vers un nouveau calque
+	Layer Boundary Size…	Taille des bords du calque…
+	Layer to Image Size	Calque aux dimensions de l'image
+	Resize Layer to Selection	Calque aux dimensions de la sélection
+	Crop Layer to Content	Rogner le calque selon le contenu
+	Threshold Alpha…	Seuil alpha…
+	Composite Options…	Options de composition…
+	Zealous Crop	Découpage futé

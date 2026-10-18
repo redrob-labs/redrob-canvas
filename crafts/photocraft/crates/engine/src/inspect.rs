@@ -162,6 +162,14 @@ fn layer_sel(
     if !l.advanced.is_default() {
         v["advancedBlending"] = serde_json::to_value(l.advanced).unwrap_or(Value::Null);
     }
+    // Composite mode / blend space / composite space / legacy (only when set), and the layer's
+    // own boundary (only when bounded).
+    if !l.composite.is_default() {
+        v["composite"] = serde_json::to_value(l.composite).unwrap_or(Value::Null);
+    }
+    if let Some(bd) = l.boundary {
+        v["boundary"] = json!([bd.x0, bd.y0, bd.width(), bd.height()]);
+    }
     // Blending Options › Blend If (only when set): range index (0 = Gray, then the mode's
     // channels) with This Layer / Underlying Layer as [blackLo, blackHi, whiteLo, whiteHi].
     if !l.blend_if.is_default() {

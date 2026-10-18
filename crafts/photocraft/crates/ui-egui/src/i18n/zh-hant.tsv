@@ -3041,3 +3041,23 @@ curves	Smooth	平滑
 	Popup palette	彈出調色盤
 	Smear	塗抹
 	Smudge Radius	塗抹半徑
+	Grain Extract	顆粒擷取
+	Grain Merge	顆粒合併
+	LCh Hue	LCh 色相
+	LCh Chroma	LCh 彩度
+	LCh Color	LCh 顏色
+	LCh Lightness	LCh 明度
+	Merge	合併
+	Split	分割
+	Remove Holes	移除孔洞
+	Distort…	扭曲…
+	Rounded Rectangle…	圓角矩形…
+	Anchor Layer	錨定圖層
+	To New Layer	轉為新圖層
+	Layer Boundary Size…	圖層邊界大小…
+	Layer to Image Size	圖層至影像大小
+	Resize Layer to Selection	圖層調整為選取範圍大小
+	Crop Layer to Content	圖層裁切至內容
+	Threshold Alpha…	Alpha 閾值…
+	Composite Options…	合成選項…
+	Zealous Crop	徹底裁切

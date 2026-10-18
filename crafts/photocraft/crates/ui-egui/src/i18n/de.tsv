@@ -3437,3 +3437,23 @@ curves	Smooth	Glätten
 	Popup palette	Pop-up-Palette
 	Smear	Verschmieren
 	Smudge Radius	Verwischradius
+	Grain Extract	Körnung extrahieren
+	Grain Merge	Körnung verschmelzen
+	LCh Hue	LCh-Farbton
+	LCh Chroma	LCh-Buntheit
+	LCh Color	LCh-Farbe
+	LCh Lightness	LCh-Helligkeit
+	Merge	Verschmelzen
+	Split	Aufteilen
+	Remove Holes	Löcher entfernen
+	Distort…	Verzerren…
+	Rounded Rectangle…	Abgerundetes Rechteck…
+	Anchor Layer	Ebene verankern
+	To New Layer	In neue Ebene
+	Layer Boundary Size…	Ebenengröße…
+	Layer to Image Size	Ebene auf Bildgröße
+	Resize Layer to Selection	Ebene auf Auswahlgröße
+	Crop Layer to Content	Ebene auf Inhalt zuschneiden
+	Threshold Alpha…	Alpha-Schwellwert…
+	Composite Options…	Kompositionsoptionen…
+	Zealous Crop	Gründlich zuschneiden

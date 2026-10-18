@@ -12,6 +12,7 @@ pub mod adjust;
 pub mod advanced;
 pub mod analysis;
 pub mod blend_if;
+pub mod composite;
 pub mod comps;
 pub mod effects;
 pub mod mode;
@@ -30,6 +31,7 @@ pub use adjust::Adjustment;
 pub use advanced::{AdvancedBlending, Knockout};
 pub use analysis::{CountGroup, Measurement, MeasurementScale, Note, Ruler};
 pub use blend_if::{BlendIf, BlendRange};
+pub use composite::{BlendSpace, CompositeMode, LayerComposite};
 pub use comps::{Artboard, ArtboardBackground, CompAppearance, CompLayerState, LayerComp};
 pub use effects::{
     Bevel, BevelContour, BevelStyle, BevelTechnique, BevelTexture, Contour, Effect, FxCommon, FxPaint, GlobalLight, Glow, GlowSource, GlowTechnique, Gradient,
@@ -659,6 +661,13 @@ pub struct Layer {
     pub advanced: AdvancedBlending,
     /// Layer › Video Layers frame stack (None for a normal layer).
     pub video: Option<VideoData>,
+    /// Composite mode, blend space, composite space and the legacy switch (see
+    /// [`LayerComposite`]). Default = alpha union in the document's space.
+    pub composite: LayerComposite,
+    /// The layer's own boundary in document pixels: content outside it is not composited and
+    /// Layer Boundary Size / Layer to Image Size / Crop to Content change it. `None` = unbounded
+    /// (the layer shows wherever it has pixels).
+    pub boundary: Option<Rect>,
 }
 
 impl Layer {
@@ -692,6 +701,8 @@ impl Layer {
             blend_if: BlendIf::default(),
             advanced: AdvancedBlending::default(),
             video: None,
+            composite: LayerComposite::default(),
+            boundary: None,
         }
     }
     pub fn raster(name: impl Into<String>, format: PixelFormat) -> Self {

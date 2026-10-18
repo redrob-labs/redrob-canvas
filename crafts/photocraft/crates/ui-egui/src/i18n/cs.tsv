@@ -4041,3 +4041,23 @@ navigator	Zoom	Zvětšení
 	Popup palette	Vyskakovací paleta
 	Smear	Rozmazání
 	Smudge Radius	Poloměr rozmazání
+	Grain Extract	Extrakce zrna
+	Grain Merge	Sloučení zrna
+	LCh Hue	Odstín LCh
+	LCh Chroma	Chroma LCh
+	LCh Color	Barva LCh
+	LCh Lightness	Světlost LCh
+	Merge	Sloučit
+	Split	Rozdělit
+	Remove Holes	Odstranit díry
+	Distort…	Zkreslit…
+	Rounded Rectangle…	Zaoblený obdélník…
+	Anchor Layer	Ukotvit vrstvu
+	To New Layer	Do nové vrstvy
+	Layer Boundary Size…	Velikost hranice vrstvy…
+	Layer to Image Size	Vrstva na velikost obrázku
+	Resize Layer to Selection	Vrstva na velikost výběru
+	Crop Layer to Content	Oříznout vrstvu na obsah
+	Threshold Alpha…	Prahová hodnota alfa…
+	Composite Options…	Možnosti skládání…
+	Zealous Crop	Důkladné oříznutí

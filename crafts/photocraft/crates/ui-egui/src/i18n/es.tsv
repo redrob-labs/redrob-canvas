@@ -4741,3 +4741,23 @@ navigator	Zoom	Zoom
 	Cumulative undo duration	Duración de deshacer acumulativo
 	Popup palette	Paleta emergente
 	Smudge Radius	Radio de difuminado
+	Grain Extract	Extraer grano
+	Grain Merge	Combinar grano
+	LCh Hue	Tono LCh
+	LCh Chroma	Croma LCh
+	LCh Color	Color LCh
+	LCh Lightness	Luminosidad LCh
+	Merge	Combinar
+	Split	Dividir
+	Remove Holes	Eliminar agujeros
+	Distort…	Distorsionar…
+	Rounded Rectangle…	Rectángulo redondeado…
+	Anchor Layer	Anclar capa
+	To New Layer	A capa nueva
+	Layer Boundary Size…	Tamaño del borde de la capa…
+	Layer to Image Size	Capa a tamaño de imagen
+	Resize Layer to Selection	Redimensionar capa a la selección
+	Crop Layer to Content	Recortar capa al contenido
+	Threshold Alpha…	Umbral alfa…
+	Composite Options…	Opciones de composición…
+	Zealous Crop	Recorte exhaustivo

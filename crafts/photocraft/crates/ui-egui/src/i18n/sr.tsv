@@ -4504,3 +4504,23 @@ shape	Appearance	Izgled
 	Popup palette	Iskačuća paleta
 	Smear	Razmazivanje
 	Smudge Radius	Poluprečnik razmazivanja
+	Grain Extract	Izdvajanje zrna
+	Grain Merge	Spajanje zrna
+	LCh Hue	LCh nijansa
+	LCh Chroma	LCh hroma
+	LCh Color	LCh boja
+	LCh Lightness	LCh svetlina
+	Merge	Spoji
+	Split	Razdvoji
+	Remove Holes	Ukloni rupe
+	Distort…	Izobliči…
+	Rounded Rectangle…	Zaobljeni pravougaonik…
+	Anchor Layer	Usidri sloj
+	To New Layer	U novi sloj
+	Layer Boundary Size…	Veličina granice sloja…
+	Layer to Image Size	Sloj na veličinu slike
+	Resize Layer to Selection	Sloj na veličinu izbora
+	Crop Layer to Content	Iseci sloj na sadržaj
+	Threshold Alpha…	Prag providnosti…
+	Composite Options…	Opcije kompozicije…
+	Zealous Crop	Temeljno isecanje

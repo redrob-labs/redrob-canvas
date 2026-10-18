@@ -129,9 +129,9 @@ name = "Float selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-float.html"
 behaviour = "Cuts the selected pixels into a temporary floating layer above the active one which must be anchored or turned into a new layer before other layers can be edited."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/selection_cmds.rs (select.float), crafts/photocraft/crates/engine/src/new_layer.rs"
-gap = "no floating-layer concept; the command creates a new ordinary layer via cut"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/float_cmds.rs (select.float: floating piece, every other command anchors it), crafts/photocraft/crates/engine/src/select_refine_cmds.rs (layer.anchor, layer.floatingToLayer)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -177,9 +177,9 @@ name = "Sharpen selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-sharpen.html"
 behaviour = "Removes partial (antialiased or feathered) coverage so every pixel is fully in or out."
-ours = "none"
-ours_where = ""
-gap = "no threshold-to-binary command for the selection mask"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (select.sharpen)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -225,9 +225,9 @@ name = "Remove holes"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-flood.html"
 behaviour = "Fills enclosed unselected islands inside the selection."
-ours = "none"
-ours_where = ""
-gap = "not available as a command; magic wand with inverse is the workaround"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (select.removeHoles)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -237,9 +237,9 @@ name = "Distort selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-distress-selection.html"
 behaviour = "Randomises the selection outline with threshold, spread, granularity, smoothness and smooth-horizontally/vertically parameters for a ragged edge."
-ours = "none"
-ours_where = ""
-gap = "no selection distress command"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (select.distort: threshold, spread, granularity, smooth, smooth horizontally/vertically)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -249,9 +249,9 @@ name = "Rounded rectangle selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/script-fu-selection-rounded-rectangle.html"
 behaviour = "Rounds (or concaves) the corners of the current rectangular selection by a radius percentage."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/selection_cmds.rs (select.modify.smooth)"
-gap = "smooth rounds corners by radius in pixels, no concave option"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (select.roundedRectangle: radius %, concave)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3393,9 +3393,9 @@ name = "Layer mode: Grain extract"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-inversion.html"
 behaviour = "Lower minus upper plus mid gray; isolates texture."
-ours = "none"
-ours_where = ""
-gap = "no grain extract mode"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3405,9 +3405,9 @@ name = "Layer mode: Grain merge"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-inversion.html"
 behaviour = "Lower plus upper minus mid gray; re-applies extracted texture."
-ours = "none"
-ours_where = ""
-gap = "no grain merge mode"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3477,9 +3477,9 @@ name = "Layer mode: LCh Hue"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Hue from the upper layer in CIE LCh."
-ours = "none"
-ours_where = ""
-gap = "no LCh component modes"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3489,8 +3489,8 @@ name = "Layer mode: LCh Chroma"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Chroma from the upper layer in CIE LCh."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3501,8 +3501,8 @@ name = "Layer mode: LCh Color"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Hue and chroma from the upper layer in CIE LCh."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3513,8 +3513,8 @@ name = "Layer mode: LCh Lightness"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/layer-mode-group-lch.html"
 behaviour = "Lightness from the upper layer in CIE LCh."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3537,9 +3537,9 @@ name = "Layer mode: Erase"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-layer-modes.html"
 behaviour = "The upper layer's alpha erases the lower layers."
-ours = "none"
-ours_where = ""
-gap = "use a layer mask or clipping group"
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3549,8 +3549,8 @@ name = "Layer mode: Merge"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-layer-modes.html"
 behaviour = "Composites the upper onto the lower as if merged, affecting how group alpha is formed."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3561,8 +3561,8 @@ name = "Layer mode: Split"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-layer-modes.html"
 behaviour = "Keeps only where the lower layer is transparent (alpha split)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/color/src/blend.rs (BlendMode::{GrainExtract,GrainMerge,LchHue,LchChroma,LchColor,LchLightness,Erase,Merge,Split}, composite_alpha), crafts/photocraft/crates/compose/src/psblend.rs, crafts/photocraft/crates/gpu/src/plan.rs (CPU fallback), crafts/photocraft/crates/ui-egui/src/panels.rs (blend_options)"
 gap = ""
 priority = 3
 
@@ -3585,9 +3585,9 @@ name = "Composite mode, composite space, blend space per layer; legacy mode vari
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-layer-modes.html"
 behaviour = "Beyond the mode a layer sets how alpha combines (union, clip to backdrop, clip to layer, intersection) and whether blending and compositing happen in linear or perceptual RGB, LAB, etc.; each mode also has a legacy (pre-2.10 gamma) variant for old files."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/compose/src/adjust.rs (Transfer), crafts/photocraft/crates/doc/src/ (layer props)"
-gap = "linear vs perceptual document transfer only; no per-layer composite mode or space"
+ours = "full"
+ours_where = "crafts/photocraft/crates/doc/src/composite.rs (CompositeMode, BlendSpace, LayerComposite), crafts/photocraft/crates/doc/src/lib.rs (Layer::composite), crafts/photocraft/crates/compose/src/lib.rs (composite_with_options), crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (layer.compositeOptions), crafts/photocraft/crates/format/src/manifest.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3645,9 +3645,9 @@ name = "Anchor floating layer"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-layer-anchor.html"
 behaviour = "Merges a floating selection back into the layer it came from."
-ours = "none"
-ours_where = ""
-gap = "no floating selections, paste creates a new layer"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/select_refine_cmds.rs (layer.anchor, layer.floatingToLayer), crafts/photocraft/crates/engine/src/float_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3801,8 +3801,8 @@ name = "Threshold Alpha"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-threshold-alpha.html"
 behaviour = "Makes alpha binary at a chosen threshold."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (layer.thresholdAlpha)"
 gap = ""
 priority = 3
 
@@ -3837,9 +3837,9 @@ name = "Layer Boundary Size / Layers to Image Size / Resize Layers to Selection"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-layer-resize.html"
 behaviour = "Changes a layer's own boundary with offsets and fill, or sets it to the canvas or the selection bounds, without scaling."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/image_cmds.rs (image.canvasSize)"
-gap = "layers are unbounded by the canvas; no per-layer boundary"
+ours = "full"
+ours_where = "crafts/photocraft/crates/doc/src/lib.rs (Layer::boundary), crafts/photocraft/crates/compose/src/lib.rs (clip_to_boundary, layer_bounds), crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (layer.boundarySize, layer.toImageSize, layer.resizeToSelection)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3861,9 +3861,9 @@ name = "Crop Layers to Content"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-layer-crop-to-content.html"
 behaviour = "Shrinks the layer boundary to its opaque content."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/image_cmds.rs (image.trim)"
-gap = "trims the whole canvas rather than one layer"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (layer.cropToContent, opaque_bounds), crafts/photocraft/crates/doc/src/lib.rs (Layer::boundary)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4209,9 +4209,9 @@ name = "Zealous Crop"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-zealouscrop.html"
 behaviour = "Removes any whole rows and columns of uniform colour, even in the middle."
-ours = "none"
-ours_where = ""
-gap = "trim removes only the border"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/layer_boundary_cmds.rs (image.zealousCrop, zealous_keep)"
+gap = ""
 priority = 3
 
 [[feature]]

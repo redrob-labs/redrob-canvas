@@ -4030,3 +4030,23 @@ curves	Smooth	Wygładź
 	Popup palette	Paleta podręczna
 	Smear	Rozmazywanie
 	Smudge Radius	Promień rozmazywania
+	Grain Extract	Wydobycie ziarna
+	Grain Merge	Scalenie ziarna
+	LCh Hue	Odcień LCh
+	LCh Chroma	Chroma LCh
+	LCh Color	Kolor LCh
+	LCh Lightness	Jasność LCh
+	Merge	Scal
+	Split	Podziel
+	Remove Holes	Usuń dziury
+	Distort…	Zniekształć…
+	Rounded Rectangle…	Zaokrąglony prostokąt…
+	Anchor Layer	Zakotwicz warstwę
+	To New Layer	Do nowej warstwy
+	Layer Boundary Size…	Rozmiar granic warstwy…
+	Layer to Image Size	Warstwa do rozmiaru obrazu
+	Resize Layer to Selection	Warstwa do rozmiaru zaznaczenia
+	Crop Layer to Content	Przytnij warstwę do zawartości
+	Threshold Alpha…	Próg alfa…
+	Composite Options…	Opcje kompozycji…
+	Zealous Crop	Dokładne przycięcie

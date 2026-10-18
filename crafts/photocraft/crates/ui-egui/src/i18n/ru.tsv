@@ -3409,3 +3409,23 @@ curves	Smooth	Сгладить
 	Popup palette	Всплывающая палитра
 	Smear	Размазывание
 	Smudge Radius	Радиус смазывания
+	Grain Extract	Извлечение зерна
+	Grain Merge	Объединение зерна
+	LCh Hue	Тон LCh
+	LCh Chroma	Цветность LCh
+	LCh Color	Цвет LCh
+	LCh Lightness	Светлота LCh
+	Merge	Объединить
+	Split	Разделить
+	Remove Holes	Удалить дыры
+	Distort…	Искажение…
+	Rounded Rectangle…	Закруглённый прямоугольник…
+	Anchor Layer	Прикрепить слой
+	To New Layer	В новый слой
+	Layer Boundary Size…	Размер границ слоя…
+	Layer to Image Size	Слой к размеру изображения
+	Resize Layer to Selection	Слой к размеру выделения
+	Crop Layer to Content	Кадрировать слой по содержимому
+	Threshold Alpha…	Порог альфа-канала…
+	Composite Options…	Параметры композиции…
+	Zealous Crop	Усердное кадрирование

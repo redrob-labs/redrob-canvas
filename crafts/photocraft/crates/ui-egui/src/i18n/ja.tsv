@@ -4108,3 +4108,23 @@ curves	Smooth	スムーズ
 	Popup palette	ポップアップパレット
 	Smear	スミア
 	Smudge Radius	スマッジ半径
+	Grain Extract	グレイン抽出
+	Grain Merge	グレイン結合
+	LCh Hue	LCh 色相
+	LCh Chroma	LCh クロマ
+	LCh Color	LCh カラー
+	LCh Lightness	LCh 明度
+	Merge	統合
+	Split	分割
+	Remove Holes	穴を除去
+	Distort…	ゆがみ…
+	Rounded Rectangle…	角丸長方形…
+	Anchor Layer	レイヤーを固定
+	To New Layer	新規レイヤーへ
+	Layer Boundary Size…	レイヤー境界サイズ…
+	Layer to Image Size	レイヤーを画像サイズに
+	Resize Layer to Selection	レイヤーを選択範囲に合わせる
+	Crop Layer to Content	レイヤーを内容に合わせて切り抜き
+	Threshold Alpha…	アルファしきい値…
+	Composite Options…	合成オプション…
+	Zealous Crop	徹底的に切り抜き

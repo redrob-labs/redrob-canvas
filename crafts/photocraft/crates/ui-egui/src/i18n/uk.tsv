@@ -4131,3 +4131,23 @@ curves	Smooth	Згладити
 	Popup palette	Спливна палітра
 	Smear	Розмазування
 	Smudge Radius	Радіус розмазування
+	Grain Extract	Витягнення зерна
+	Grain Merge	Об'єднання зерна
+	LCh Hue	Тон LCh
+	LCh Chroma	Хроматичність LCh
+	LCh Color	Колір LCh
+	LCh Lightness	Світлота LCh
+	Merge	Об'єднати
+	Split	Розділити
+	Remove Holes	Видалити дірки
+	Distort…	Спотворення…
+	Rounded Rectangle…	Заокруглений прямокутник…
+	Anchor Layer	Прикріпити шар
+	To New Layer	У новий шар
+	Layer Boundary Size…	Розмір меж шару…
+	Layer to Image Size	Шар до розміру зображення
+	Resize Layer to Selection	Шар до розміру виділення
+	Crop Layer to Content	Кадрувати шар за вмістом
+	Threshold Alpha…	Поріг альфа-каналу…
+	Composite Options…	Параметри композиції…
+	Zealous Crop	Ретельне кадрування

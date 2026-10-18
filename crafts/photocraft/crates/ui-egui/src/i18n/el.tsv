@@ -4132,3 +4132,23 @@ curves	Smooth	Εξομάλυνση
 	Popup palette	Αναδυόμενη παλέτα
 	Smear	Επάλειψη
 	Smudge Radius	Ακτίνα μουτζούρας
+	Grain Extract	Εξαγωγή κόκκου
+	Grain Merge	Συγχώνευση κόκκου
+	LCh Hue	Απόχρωση LCh
+	LCh Chroma	Χρωματικότητα LCh
+	LCh Color	Χρώμα LCh
+	LCh Lightness	Φωτεινότητα LCh
+	Merge	Συγχώνευση
+	Split	Διαχωρισμός
+	Remove Holes	Αφαίρεση οπών
+	Distort…	Παραμόρφωση…
+	Rounded Rectangle…	Στρογγυλεμένο ορθογώνιο…
+	Anchor Layer	Αγκύρωση στρώσης
+	To New Layer	Σε νέα στρώση
+	Layer Boundary Size…	Μέγεθος ορίων στρώσης…
+	Layer to Image Size	Στρώση σε μέγεθος εικόνας
+	Resize Layer to Selection	Στρώση σε μέγεθος επιλογής
+	Crop Layer to Content	Περικοπή στρώσης στο περιεχόμενο
+	Threshold Alpha…	Κατώφλι άλφα…
+	Composite Options…	Επιλογές σύνθεσης…
+	Zealous Crop	Εξονυχιστική περικοπή

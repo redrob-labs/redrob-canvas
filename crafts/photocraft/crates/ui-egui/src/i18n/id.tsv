@@ -3430,3 +3430,23 @@ curves	Smooth	Haluskan
 	Popup palette	Palet sembul
 	Smear	Oles
 	Smudge Radius	Radius smudge
+	Grain Extract	Ekstrak Butiran
+	Grain Merge	Gabung Butiran
+	LCh Hue	Hue LCh
+	LCh Chroma	Kroma LCh
+	LCh Color	Warna LCh
+	LCh Lightness	Kecerahan LCh
+	Merge	Gabung
+	Split	Pisah
+	Remove Holes	Hapus Lubang
+	Distort…	Distorsi…
+	Rounded Rectangle…	Persegi Panjang Membulat…
+	Anchor Layer	Jangkar Lapisan
+	To New Layer	Ke Lapisan Baru
+	Layer Boundary Size…	Ukuran Batas Lapisan…
+	Layer to Image Size	Lapisan ke Ukuran Gambar
+	Resize Layer to Selection	Ubah Ukuran Lapisan ke Seleksi
+	Crop Layer to Content	Pangkas Lapisan ke Konten
+	Threshold Alpha…	Ambang Alfa…
+	Composite Options…	Opsi Komposit…
+	Zealous Crop	Pangkas Menyeluruh

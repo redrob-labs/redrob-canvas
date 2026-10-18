@@ -194,7 +194,7 @@ fn diff_rect(g: &mut Gpu, doc: &Document, rect: Rect, what: &str) -> Result<redr
 /// The layer modes the GPU composites itself: everything but the modulo family, which the plan
 /// hands to the CPU (a sawtooth cannot be matched pixel for pixel across float units).
 fn gpu_modes() -> impl Iterator<Item = BlendMode> {
-    BlendMode::layer_modes().filter(|m| !BlendMode::MODULO_MODES.contains(m))
+    BlendMode::layer_modes().filter(|m| !m.is_cpu_only())
 }
 
 fn check(g: &mut Gpu, doc: &Document, what: &str) {

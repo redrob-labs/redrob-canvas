@@ -4162,3 +4162,23 @@ cameraData	Lens	Lens
 	Popup palette	Açılır palet
 	Smear	Sürme
 	Smudge Radius	Bulaştırma yarıçapı
+	Grain Extract	Gren Çıkar
+	Grain Merge	Gren Birleştir
+	LCh Hue	LCh Renk Tonu
+	LCh Chroma	LCh Kroma
+	LCh Color	LCh Renk
+	LCh Lightness	LCh Açıklık
+	Merge	Birleştir
+	Split	Böl
+	Remove Holes	Delikleri Kaldır
+	Distort…	Bozma…
+	Rounded Rectangle…	Yuvarlatılmış Dikdörtgen…
+	Anchor Layer	Katmanı Sabitle
+	To New Layer	Yeni Katmana
+	Layer Boundary Size…	Katman Sınır Boyutu…
+	Layer to Image Size	Katmanı Görüntü Boyutuna
+	Resize Layer to Selection	Katmanı Seçim Boyutuna
+	Crop Layer to Content	Katmanı İçeriğe Kırp
+	Threshold Alpha…	Alfa Eşiği…
+	Composite Options…	Birleştirme Seçenekleri…
+	Zealous Crop	Titiz Kırpma
