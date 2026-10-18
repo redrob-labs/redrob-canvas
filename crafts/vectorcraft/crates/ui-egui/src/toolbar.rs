@@ -36,7 +36,7 @@ pub const BASIC: &[(&str, &[&[&str]])] = &[
     (
         "Shapes",
         &[
-            &["rectangle", "roundedRectangle", "star", "lineSegment", "arc", "spiral", "rectangularGrid", "polarGrid", "flare", "connector"],
+            &["rectangle", "roundedRectangle", "star", "lineSegment", "arc", "spiral", "rectangularGrid", "polarGrid", "flare", "connector", "box3d"],
             &["ellipse"],
             &["polygon"],
             &["shaper"],
@@ -413,6 +413,9 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.session.tool_id() == "connector" {
         return connector_options(app, ui);
     }
+    if app.session.tool_id() == "box3d" {
+        return box3d_options(app, ui);
+    }
     if app.session.tool_id() != "mirrorCut" {
         return;
     }
@@ -524,6 +527,50 @@ fn paint_bucket_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
     if widgets::check(ui, "Add to Fill", union, true) {
         app.run("tool.setOption", json!({ "key": "union", "value": !union })).ok();
+    }
+    ui.separator();
+}
+
+/// The 3D Box tool's controls: each axis toward its vanishing point (finite) or parallel at an
+/// angle (infinite), and the depth; the selected box takes the values as they change (`box3d.set`).
+fn box3d_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    let mut changed: Vec<(String, Value)> = vec![];
+    for (axis, label) in [("x", "X:"), ("y", "Y:"), ("z", "Z:")] {
+        let finite = opts[format!("{axis}Finite")].as_bool().unwrap_or(axis != "y");
+        let angle = opts[format!("{axis}Angle")].as_f64().unwrap_or(0.0);
+        ui.label(egui::RichText::new(tl!(label)).size(12.0).color(t.text));
+        let modes = ["Vanishing Point", "Infinite"];
+        let cur = if finite { modes[0] } else { modes[1] };
+        if let Some(i) = widgets::dropdown(ui, ("cb-box3d", axis), cur, &modes, 112.0) {
+            changed.push((format!("{axis}Finite"), json!(i == 0)));
+        }
+        if !finite && let Some(v) = widgets::plain_field(ui, ("cb-box3d-angle", axis), angle, "°", 0, 48.0) {
+            changed.push((format!("{axis}Angle"), json!(v)));
+        }
+    }
+    ui.label(egui::RichText::new(tl!("Depth:")).size(12.0).color(t.text));
+    let depth = opts["depth"].as_f64().unwrap_or(0.4);
+    if let Some(v) = widgets::plain_field(ui, "cb-box3d-depth", depth * 100.0, "%", 0, 48.0) {
+        changed.push(("depth".into(), json!((v / 100.0).clamp(0.0, 1.0))));
+    }
+    if !changed.is_empty() {
+        for (key, value) in &changed {
+            app.run("tool.setOption", json!({ "key": key, "value": value })).ok();
+        }
+        // The selected box follows the options.
+        let has_box = app.session.active().is_some_and(|st| {
+            st.selection
+                .objects
+                .iter()
+                .any(|id| st.doc.node(*id).is_some_and(|n| n.extras().attrs.as_deref().is_some_and(|a| a.data.iter().any(|(k, _)| k == "vc-box3d"))))
+        });
+        if has_box {
+            let o = app.session.tool_options();
+            let ax = |a: &str| json!({ "finite": o[format!("{a}Finite")].as_bool().unwrap_or(true), "angle": o[format!("{a}Angle")].as_f64().unwrap_or(0.0) });
+            app.run("box3d.set", json!({ "depth": o["depth"], "x": ax("x"), "y": ax("y"), "z": ax("z") })).ok();
+        }
     }
     ui.separator();
 }

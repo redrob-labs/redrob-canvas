@@ -99,9 +99,9 @@ name = "3D box tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/3d-boxes.html"
 behaviour = "Draws a box in perspective governed by three vanishing points shown as draggable targets; each of the six faces is a separately styled path inside a group; the toolbar sets each axis to a finite or infinite vanishing point and its angle; boxes share a document perspective."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/distort/perspective.rs, crafts/vectorcraft/crates/three-d/src/solid.rs"
-gap = "perspective grid draws planar art in 1/2/3-point perspective and the 3D effect extrudes a face, but there is no live box primitive with draggable vanishing points"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/box3d.rs (3D Box tool: drag the front face, draggable vanishing-point targets, per-axis finite/infinite options), crafts/vectorcraft/crates/engine/src/cmd/box3d.rs (box3d.create/set: six separately styled faces in a group, the document perspective grid's vanishing points), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (control bar: X/Y/Z vanishing point or infinite angle, depth)"
+gap = ""
 priority = 3
 
 [[feature]]

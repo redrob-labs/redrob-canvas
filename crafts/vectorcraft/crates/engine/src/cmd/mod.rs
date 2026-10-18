@@ -3,6 +3,7 @@
 pub(crate) mod appearance;
 mod assets;
 mod attributes;
+mod box3d;
 mod brushsym;
 mod buildcmds;
 pub mod clipboard;
@@ -305,6 +306,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(stylesheet::specs());
         v.extend(xmlcmds::specs());
         v.extend(connector::specs());
+        v.extend(box3d::specs());
         v
     })
 }

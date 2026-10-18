@@ -83,6 +83,7 @@ pub fn tool_icon(name: &str) -> &'static str {
         "tool-eyedropper" => "pipette",
         "tool-measure" => "dc-measure",
         "tool-connector" => "git-branch",
+        "tool-box3d" => "dc-cube",
         "tool-blend" => "dc-blend",
         "tool-symbol" => "dc-symbol-sprayer",
         "tool-graph" => "chart-column",
