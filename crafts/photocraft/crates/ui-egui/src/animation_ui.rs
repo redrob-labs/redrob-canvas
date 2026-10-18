@@ -247,7 +247,7 @@ fn frames(s: &Session, anim: &mut AnimationUi, ui: &mut egui::Ui, tl: &Timeline,
         });
     }
     // Horizontal scroll of the table with the wheel.
-    let wheel = ui.input(|i| i.raw_scroll_delta.x + if i.modifiers.shift { i.raw_scroll_delta.y } else { 0.0 });
+    let wheel = ui.input(|i| i.smooth_scroll_delta.x + if i.modifiers.shift { i.smooth_scroll_delta.y } else { 0.0 });
     if wheel != 0.0 && ui.rect_contains_pointer(hdr.union(ui.min_rect())) {
         let step = (wheel.abs() / cell).ceil() as usize;
         anim.scroll = if wheel > 0.0 { scroll.saturating_sub(step) } else { (scroll + step).min(tl.duration.saturating_sub(1)) };
@@ -311,7 +311,7 @@ fn onion(s: &Session, ui: &mut egui::Ui, t: &Tokens) -> Out {
         }
     });
     if changed {
-        out.out.act = Some((
+        out.act = Some((
             "anim.onionSkin.set",
             json!({"enabled": o.enabled, "before": o.before, "after": o.after, "opacities": o.opacities, "tintBefore": o.tint_before, "tintAfter": o.tint_after, "tintStrength": o.tint_strength}),
         ));

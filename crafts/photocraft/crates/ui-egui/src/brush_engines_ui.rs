@@ -1,7 +1,7 @@
 //! Brush engines in the options bar: which engine the Brush paints with (the tip-stamping Pixel
 //! engine, or sketch, hatching, shape, grid, particle, curve, dyna, tangent normal, MyPaint-style,
 //! spray, bristle, deform, or a filter through the brush), that engine's main settings, a text tip,
-//! and a MyPaint-style brush file. The current engine lives in `ToolOptions::brush_engine` (the
+//! and a MyPaint-style brush file. The current engine lives in `ToolOptions::engine_settings` (the
 //! `engine` object `paint.engineStroke` takes) and travels in every stroke's params.
 
 use serde_json::{Value, json};
@@ -21,7 +21,7 @@ pub fn default_engine() -> Value {
 
 /// The current engine's `kind`.
 pub fn kind(app: &PhotocraftApp) -> String {
-    app.ui.tool_options.brush_engine.get("kind").and_then(Value::as_str).unwrap_or("pixel").to_string()
+    app.ui.tool_options.engine_settings.get("kind").and_then(Value::as_str).unwrap_or("pixel").to_string()
 }
 
 /// Does a stroke with `tool` go to an alternative engine (so it is not drawn live and commits
@@ -38,7 +38,7 @@ pub fn commit(app: &mut PhotocraftApp, d: &crate::canvas::Drag) -> bool {
     app.live_stroke = None;
     let pts = crate::stroke_constraint::straighten(&d.points, d.live.shift || d.modifiers.shift);
     let points = app.stylus.stroke_points(if crate::canvas::line_mode(app, d.tool) { &pts } else { &d.points });
-    let engine = app.ui.tool_options.brush_engine.clone();
+    let engine = app.ui.tool_options.engine_settings.clone();
     let k = kind(app);
     let target = crate::canvas::paint_target(app);
     let sample_all = app.ui.tool_options.sample_all_layers;
@@ -285,7 +285,7 @@ fn select_kind(app: &mut PhotocraftApp, kind: &str) {
             Err(_) => json!({ "kind": kind }),
         }
     };
-    app.ui.tool_options.brush_engine = engine;
+    app.ui.tool_options.engine_settings = engine;
 }
 
 /// The engine section of the Brush options bar: the engine dropdown and the engine's settings.
@@ -300,7 +300,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         return;
     }
     widgets::vline(ui, 22.0);
-    let mut engine = app.ui.tool_options.brush_engine.clone();
+    let mut engine = app.ui.tool_options.engine_settings.clone();
     let mut changed = false;
     if k == FILTER_KIND {
         let mut filter = engine.get("filter").and_then(Value::as_str).unwrap_or("filter.blur.gaussianBlur").to_string();
@@ -373,7 +373,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         }
     }
     if changed {
-        app.ui.tool_options.brush_engine = engine;
+        app.ui.tool_options.engine_settings = engine;
     }
 }
 

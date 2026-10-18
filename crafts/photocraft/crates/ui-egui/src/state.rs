@@ -863,7 +863,7 @@ pub struct ToolOptions {
     /// The Brush's engine: the `engine` object `paint.engineStroke` takes (`{"kind": "pixel"}` is
     /// the tip-stamping default; see `brush_engines_ui`).
     #[serde(default = "crate::brush_engines_ui::default_engine")]
-    pub brush_engine: serde_json::Value,
+    pub engine_settings: serde_json::Value,
     /// Painting tools › Snap to Assistants magnetism: how far (document px) a stroke may stray
     /// from an assistant and still be pulled onto it; 1000 = always (`assistant_ui`).
     #[serde(default = "thousand")]
@@ -947,10 +947,6 @@ fn six() -> f32 {
 
 fn three() -> f32 {
     3.0
-}
-
-fn thousand() -> f32 {
-    1000.0
     /// Lasso › Foreground Select: the outline is a rough outline round the subject, later drags
     /// mark foreground (or background) and the matting engine grows the mask
     /// (`foreground_select_ui`).
@@ -971,6 +967,10 @@ fn thousand() -> f32 {
     /// Foreground Select › matting engine: graphCut (full) | fast (reduced budget).
     #[serde(default = "default_fg_engine")]
     pub fg_engine: String,
+}
+
+fn thousand() -> f32 {
+    1000.0
 }
 
 fn twenty() -> f32 {
@@ -1234,7 +1234,7 @@ impl Default for ToolOptions {
             filter_split: false,
             filter_split_pos: 0.5,
             filter_split_horizontal: false,
-            brush_engine: crate::brush_engines_ui::default_engine(),
+            engine_settings: crate::brush_engines_ui::default_engine(),
             foreground_select: false,
             fg_stroke_width: 20.0,
             fg_mark_background: false,

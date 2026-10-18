@@ -208,7 +208,7 @@ impl Dictionary {
 static CACHE: OnceLock<Mutex<HashMap<String, Arc<Dictionary>>>> = OnceLock::new();
 
 /// The dictionary `code`, loaded once per process.
-pub fn load(code: &str) -> Result<Arc<Dictionary>, String> {
+pub fn load(code: &str) -> std::result::Result<Arc<Dictionary>, String> {
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     if let Ok(c) = cache.lock()
         && let Some(d) = c.get(code)
@@ -229,7 +229,7 @@ pub fn load(code: &str) -> Result<Arc<Dictionary>, String> {
 }
 
 /// Read `.dic` (with its `.aff`) or a plain word list.
-fn read_dictionary(file: &DictionaryFile) -> Result<Dictionary, String> {
+fn read_dictionary(file: &DictionaryFile) -> std::result::Result<Dictionary, String> {
     let bytes = std::fs::read(&file.path).map_err(|e| format!("{}: {e}", file.path.display()))?;
     let aff_path = file.path.with_extension("aff");
     let aff_bytes = std::fs::read(&aff_path).ok();

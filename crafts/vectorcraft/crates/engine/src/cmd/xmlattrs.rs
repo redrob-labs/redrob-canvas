@@ -5,7 +5,7 @@
 //! edited with `object.setXmlAttribute`, which maps each attribute back onto the live shape
 //! (through the shape, paint, transparency and attribute commands) as one undo step.
 
-use redrob_vector_doc::{LiveShape, NodeKind, xml_id};
+use redrob_vector_doc::{Document, LiveShape, Node, NodeKind, xml_id};
 use redrob_vector_geom::{Affine, PathEl, Point};
 use serde_json::{Map, Value, json};
 
@@ -188,7 +188,7 @@ fn describe(d: &Document, n: &Node) -> (String, Map<String, Value>, Vec<&'static
             "text"
         }
         NodeKind::SymbolInstance { symbol, .. } => {
-            put(&mut a, "href", format!("#{}", xml_id::from_object_name(symbol)));
+            put(&mut a, "href", format!("#{}", xml_id::from_object_name(&symbol)));
             editable.extend(["x", "y", "width", "height"]);
             "use"
         }

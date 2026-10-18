@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use redrob_vector_color::{Color, Paint};
-use redrob_vector_doc::{Appearance, LayerColor, Node, NodeKind, SvgFont, SvgGlyph, SvgKern};
+use redrob_vector_doc::{Appearance, Document, LayerColor, Node, NodeKind, SvgFont, SvgGlyph, SvgKern};
 use redrob_vector_geom::{Affine, BezPath, PathData, Point, Shape};
 use serde_json::{Value, json};
 

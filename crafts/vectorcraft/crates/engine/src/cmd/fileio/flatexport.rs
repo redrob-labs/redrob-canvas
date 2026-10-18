@@ -315,7 +315,7 @@ impl Writer<'_> {
     /// with whether it closes.
     fn polylines(&self, path: &BezPath, tol: f64) -> Vec<(Vec<Point>, bool)> {
         let mut out: Vec<(Vec<Point>, bool)> = vec![];
-        self.local(path).flatten(tol, |el| match el {
+        redrob_vector_geom::kurbo::flatten(self.local(path), tol, |el| match el {
             PathEl::MoveTo(p) => out.push((vec![p], false)),
             PathEl::LineTo(p) => {
                 if let Some(last) = out.last_mut() {

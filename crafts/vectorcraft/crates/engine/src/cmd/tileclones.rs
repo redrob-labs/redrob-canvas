@@ -5,7 +5,7 @@
 
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::recolor::{ColorVisitor, Reach, recolor_node};
-use redrob_vector_doc::{CloneRef, Node};
+use redrob_vector_doc::{CloneRef, Document, Node};
 use redrob_vector_geom::{Affine, Point, Rect, Vec2};
 use serde_json::{Value, json};
 

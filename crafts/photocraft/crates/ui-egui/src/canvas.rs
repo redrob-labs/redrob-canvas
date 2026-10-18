@@ -4059,16 +4059,6 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                                     }
                                     egui::CursorIcon::None
                                 }
-                                // A shaped tip (sampled bitmap, or a rotated/flattened round tip)
-                                // traces its outline, turned and flipped with the view; a plain round
-                                // tip keeps the circle.
-                                _ => {
-                                    let centre = brush_tip_centre(tool, alt || app.ui.shell.sticky_alt, cur.show_crosshair_in_brush_tip);
-                                    let axes = crate::brush_cursor::tip_axes(&xf, brush.size);
-                                    crate::brush_cursor::cursor(&painter, p, brush, full, axes, cur.painting == PaintingCursor::NormalTip, centre)
-                                }
-                                egui::CursorIcon::None
-                            }
                             // Align Outline to Pixel Grid (Sharpness on): the staircase of whole
                             // pixels the aliased dab fills, on the pixel grid (pixel art).
                             _ if brush.aliased && brush.align_outline => {
@@ -4106,6 +4096,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                                 let centre = brush_tip_centre(tool, alt || app.ui.shell.sticky_alt, cur.show_crosshair_in_brush_tip);
                                 let axes = crate::brush_cursor::tip_axes(&xf, brush.size);
                                 crate::brush_cursor::cursor(&painter, p, brush, full, axes, cur.painting == PaintingCursor::NormalTip, centre)
+                            }
                             }
                         }
                     }
