@@ -4542,3 +4542,89 @@ lighting	Light	Luce
 @msg	select an object	seleziona un oggetto
 @msg	the copied object is no longer in this document	l’oggetto copiato non è più in questo documento
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Simula» stampa le sovrastampe come le mostra l’Anteprima sovrastampa; le separazioni le mantengono sempre. Una preimpostazione converte la trasparenza prima della stampa (i file PostScript la convertono sempre).
+	3D Marble	Marmo 3D
+	3D Wood	Legno 3D
+	Air Spray	Spruzzo d'aria
+	Aluminium	Alluminio
+	Apply Effects to Image Pixels	Applica effetti ai pixel dell'immagine
+	Apply Filter Preset	Applica filtro predefinito
+	Apply to Selection	Applica alla selezione
+	Bevels	Smussi
+	Black Hole	Buco nero
+	Blobs	Macchie
+	Bloom	Bagliore
+	Brilliance	Brillantezza
+	Bump	Rilievo
+	Bumps	Rilievi
+	Button	Pulsante
+	Canvas Bumps	Rilievo tela
+	Chalk and Sponge	Gesso e spugna
+	Channel to Alpha	Canale in alfa
+	Chrome	Cromo
+	Color Blindness	Daltonismo
+	Colour Space:	Spazio colore:
+	Comics Cream	Crema fumetto
+	Cracked Glass	Vetro crepato
+	Cubes	Cubi
+	Dark and Glow	Scuro e bagliore
+	Document Filters	Filtri del documento
+	Dragee	Confetto
+	Duochrome	Duocromo
+	Duplicate Filter	Duplica filtro
+	Embossed Leather	Pelle goffrata
+	Extract Channel	Estrai canale
+	Fade to Black	Dissolvenza al nero
+	Felt Feather	Piuma di feltro
+	Fill and Overlays	Riempimenti e sovrapposizioni
+	Filter	Filtro
+	Filter Gallery	Galleria filtri
+	Filter Presets	Filtri predefiniti
+	Filter copy	Copia filtro
+	Filters	Filtri
+	Glow	Bagliore
+	Glowing Metal	Metallo incandescente
+	Gold	Oro
+	Greyscale	Scala di grigi
+	HSL Noise	Disturbo HSL
+	Ink Blot	Macchia d'inchiostro
+	Ink Splash	Schizzo d'inchiostro
+	Inner Shadow	Ombra interna
+	Leopard Fur	Pelliccia di leopardo
+	Light Eraser	Gomma per luci
+	Luminance to Alpha	Luminanza in alfa
+	Materials	Materiali
+	Matte Jelly	Gelatina opaca
+	Metallized Paint	Vernice metallizzata
+	Neon	Neon
+	No filter matches the search.	Nessun filtro corrisponde alla ricerca.
+	Noise Fill	Riempimento disturbo
+	Non-realistic 3D Shaders	Shader 3D non realistici
+	Open Filter Editor	Apri editor filtri
+	Paper Bump	Rilievo carta
+	Pointillism	Puntinismo
+	Protrusions	Protuberanze
+	Quadritone	Quadritono
+	Ridges	Creste
+	Rough Paper	Carta ruvida
+	Rough Transparency	Trasparenza ruvida
+	Roughen	Irruvidisci
+	Saturation Map	Mappa saturazione
+	Select an object to apply a filter.	Seleziona un oggetto per applicare un filtro.
+	Silhouette	Silhouette
+	Smooth Edges	Bordi lisci
+	Solarize	Solarizza
+	Specular Light	Luce speculare
+	Spikes	Punte
+	Spots Overlay	Sovrapposizione macchie
+	Stone Wall	Muro di pietra
+	Subregion:	Sottoregione:
+	Swirl	Vortice
+	Textures	Texture
+	The document has no filters yet.	Il documento non ha ancora filtri.
+	Thin Membrane	Membrana sottile
+	Torn Edges	Bordi strappati
+	Translucent	Traslucido
+	Transparency Utilities	Utilità trasparenza
+	Tritone	Tritono
+	Watercolor	Acquerello
+	Waves	Onde

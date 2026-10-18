@@ -2585,9 +2585,9 @@ name = "Filter Editor dialog"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Filter_Editor"
 behaviour = "Lists the document's filters, lets one be built from a chain of primitives drawn as a connection graph (inputs: source graphic, source alpha, background, fill/stroke paint, previous result), with per-primitive parameter panels, a filter region (x, y, w, h), rename, duplicate and apply to the selection; 1.3 reworked the layout and primitive settings."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/ui-egui/src/panels/filter_editor.rs, crafts/vectorcraft/crates/effects/src/lib.rs (filter.graph)"
-gap = "the Filter Editor panel lists the object's primitives drawn as a connection graph with input pickers and attribute fields, region, add/duplicate/move/remove and a drop-shadow preset; inputs are source graphic, source alpha, the previous result or a named result (no background or fill/stroke paint inputs), one filter per object (no document-wide filter list, rename or duplicate of whole filters), no graphical dragging of connections"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (BackgroundImage, BackgroundAlpha, FillPaint, StrokePaint inputs, FilterGraph::name), crafts/vectorcraft/crates/ui-egui/src/panels/filter_editor.rs (document filter list, rename, duplicate, apply to selection, dragged connections, subregions), crafts/vectorcraft/crates/render/src/fx.rs"
+gap = ""
 priority = 2
 evidence = "docs/parity/evidence/VEC-filter-editor.png"
 
@@ -2598,9 +2598,9 @@ name = "Filter Gallery (preset browser)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Filter_Gallery"
 behaviour = "1.4 adds a gallery with rendered thumbnails of every stock filter, grouped by category, with search and one-click apply; the Filters menu still lists them by category."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect menu), crafts/vectorcraft/crates/ui-egui/src/dialogs/effect.rs"
-gap = "effects are chosen from a menu with a dialog; no thumbnail gallery"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/filter_gallery.rs (rendered thumbnails by category, search, one-click apply), crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters by category)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2657,9 +2657,9 @@ name = "Primitive: component transfer"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Per-channel identity/table/discrete/linear/gamma functions, the basis of the Posterize, Brightness-Contrast and Solarize presets."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/artistic.rs, crafts/vectorcraft/crates/render/src/fx.rs"
-gap = "no table/discrete/gamma transfer primitive; posterize-like looks only via raster effects"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::ComponentTransfer: identity, table, discrete, linear, gamma per channel), crafts/vectorcraft/crates/effects/src/filter_presets.rs (Solarize, Brilliance, Duochrome)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2669,9 +2669,9 @@ name = "Primitive: composite (over, in, out, atop, xor, arithmetic)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Combines two inputs with a Porter-Duff operator or an arithmetic k1..k4 formula; used for cutouts and knockouts."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (Knockout groups), crafts/vectorcraft/crates/render/src/group.rs"
-gap = "knockout and blend compositing at the group level only"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::Composite: over, in, out, atop, xor, arithmetic k1..k4), crafts/vectorcraft/crates/ui-egui/src/panels/filter_editor.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2681,9 +2681,9 @@ name = "Primitive: convolve matrix"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Arbitrary NxM kernel with divisor, bias, target, edge mode and alpha preservation (sharpen, emboss, edge detect)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/sharpen.rs (Unsharp Mask), crafts/vectorcraft/crates/effects/src/pixel/edges.rs (Glowing Edges)"
-gap = "fixed kernels only"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::ConvolveMatrix: NxM kernel, divisor, bias, target, edge mode, preserve alpha), crafts/vectorcraft/crates/ui-egui/src/panels/filter_editor.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2693,8 +2693,8 @@ name = "Primitives: diffuse and specular lighting"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Light the input's alpha as a height map with a distant, point or spot light; surface scale, constants, exponent and light colour; the basis of bevel, bump and 3D-shader presets."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::DiffuseLighting, Kind::SpecularLighting; Light::Distant/Point/Spot), crafts/vectorcraft/crates/effects/src/filter_presets.rs (Bevels, Bumps, Materials)"
 gap = ""
 priority = 3
 
@@ -2705,9 +2705,9 @@ name = "Primitive: displacement map"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Displaces the pixels of one input by the channels of another (usually turbulence) with a scale; the basis of the Distort presets."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/distort.rs (Glass, Ocean Ripple, Diffuse Glow)"
-gap = "fixed displacement looks; no user-supplied map"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::DisplacementMap: scale, x/y channel, any input as the map), crafts/vectorcraft/crates/effects/src/filter_presets.rs (Distort presets)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2717,9 +2717,9 @@ name = "Primitives: flood, merge, offset, tile, image"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Flood fills the region with a colour, Merge stacks inputs, Offset shifts by dx/dy, Tile repeats the input, Image brings in an external or document image as an input."
-ours = "none"
-ours_where = ""
-gap = "these appear only implicitly inside the fixed shadow/glow effects"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::Flood, Merge, Offset, Tile, Image), crafts/vectorcraft/crates/render/src/fx.rs (feImage from a document image or data URL), crafts/vectorcraft/crates/svg/src/filter_graph.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2729,9 +2729,9 @@ name = "Primitive: morphology (erode / dilate)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Shrinks or grows the alpha shape by a radius; used for outlines and ink-blot presets."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/pathops/src/offset.rs (vector Offset Path)"
-gap = "geometric offset of paths; no raster erode/dilate of the composite"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::Morphology: erode/dilate, radius x/y), crafts/vectorcraft/crates/effects/src/filter_presets.rs (Outline, Ink Blot, Glow)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2741,9 +2741,9 @@ name = "Primitive: turbulence (fractal noise)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Perlin turbulence or fractal noise with base frequency, octaves, seed and stitching; the texture source for most Texture, Materials and Scatter presets."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs (Grain, Texturizer, Craquelure), crafts/vectorcraft/crates/effects/src/pixel/artistic.rs (Film Grain)"
-gap = "noise is baked into specific texture effects"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::Turbulence: base frequency, octaves, seed, stitch tiles, fractal noise)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2753,9 +2753,9 @@ name = "Primitive: blend (16 modes between two inputs)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Blends two filter inputs with any of the CSS blend modes inside the filter graph."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/color/src/blend.rs"
-gap = "blend modes apply between objects/fills, not between filter results"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/svgfilter.rs (Kind::Blend: the 16 CSS modes between two filter inputs), crafts/vectorcraft/crates/svg/src/filter_graph.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2765,9 +2765,9 @@ name = "Preset category: Bevels"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Lighting-based raised looks (bloom, button, matte jelly, neon, specular light, stained glass, translucent...) applied with one click and editable afterwards in the editor."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs (Stained Glass), crafts/vectorcraft/crates/effects/src/solids.rs (3D Extrude & Bevel)"
-gap = "no lighting-based bevel/emboss raster effect on flat art"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2789,9 +2789,9 @@ name = "Preset category: Bumps"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Relief looks from turbulence and lighting: bump, canvas bumps, dark/light bumps, embossed leather, lead pencil, paper bump, wax bump, HSL bumps, bubbly, fuzzy, rough paper..."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs (Texturizer, Craquelure, Grain, Mosaic Tiles, Patchwork)"
-gap = "texture effects without lighting direction control"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2801,9 +2801,9 @@ name = "Preset category: Colour"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Brilliance, Channel transparency, Colour blindness simulation, Colour shift, Colorize, Duochrome, Extract channel, Fade to black or white, Greyscale, Invert, Lightness-contrast, Nudge RGB/CMY, Quadritone, Simple blend, Solarize, Tritone."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/adjust.rs, crafts/vectorcraft/crates/effects/src/pixel/mod.rs (Color Matrix as a live raster primitive), crafts/vectorcraft/crates/engine/src/cmd/colorcmds.rs"
-gap = "greyscale, invert, saturate, hue shift and luminance-to-alpha run live as colour matrices on the composite and any 5x4 matrix can be typed; no named presets for colour blindness, duotone, tritone, quadritone, solarize or channel extraction"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2813,9 +2813,9 @@ name = "Preset category: Distort"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Chalk and sponge, Felt feather, Lapping, Noise transparency, Pixel smear, Roughen, Rough and dilate, Swirl, Torn edges, Waves..."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/distort.rs (Glass, Ocean Ripple, Diffuse Glow), crafts/vectorcraft/crates/effects/src/distort.rs (vector Roughen, Zig Zag, Twist, Tweak)"
-gap = "no swirl or torn-edges raster looks"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2825,8 +2825,8 @@ name = "Preset category: Fill and Overlays"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Noise fill, Silhouette, Felt, HSL noise, light eraser, and overlay textures (alpha fill, noise, spots, swirls, tartan, marbled ink...)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs, crafts/vectorcraft/crates/effects/src/pixel/artistic.rs (Film Grain)"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
 gap = ""
 priority = 3
 
@@ -2849,9 +2849,9 @@ name = "Preset category: Materials and Non-realistic 3D shaders"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Surface looks (3D marble, wood, mother of pearl, metallized paint, gold, chrome, leather, ink paint...) and comic/cel shading presets (aluminium, comics cream, dark and glow, fluorescent...)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/solids.rs (3D Extrude/Revolve/Inflate with plastic/diffuse shading)"
-gap = "no flat-art material filters"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2861,8 +2861,8 @@ name = "Preset category: Morphology and Protrusions and Ridges"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Outline, Cross-smooth, Ink blot, Smooth edges, Black hole, Dilate/erode looks; Protrusions (spikes, blobs); Ridges (dragee, glowing metal, matte ridge, thin membrane)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/pixelate.rs (Crystallize, Pointillize, Mezzotint, Color Halftone), crafts/vectorcraft/crates/effects/src/lib.rs (path.offsetPath)"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
 gap = ""
 priority = 3
 
@@ -2873,8 +2873,8 @@ name = "Preset category: Scatter"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Air spray, Cubes, Leopard fur, Pixel smear, Point engraving, Pointillism, Smash, Stone wall..."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/pixelate.rs (Pointillize, Crystallize), crafts/vectorcraft/crates/effects/src/pixel/brushstrokes.rs (Spatter)"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
 gap = ""
 priority = 3
 
@@ -2897,9 +2897,9 @@ name = "Preset category: Textures and Transparency utilities"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Cracked glass, Ink splash, Rough transparency, Sun burst, Watercolour; utilities that turn luminance or a channel into transparency (channel to alpha, light eraser, saturation map, blend-mode helpers)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/texture.rs, crafts/vectorcraft/crates/engine/src/cmd/opacitymask.rs"
-gap = "no luminance-to-alpha utility"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/effects/src/filter_presets.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs, crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (filter.applyPreset, filter.presets), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Effect › Filters)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2909,9 +2909,9 @@ name = "Raster (bitmap) extensions on images"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Extensions"
 behaviour = "Extensions > Raster offers about 35 destructive image operations (adaptive threshold, add noise, blur, charcoal, colorize, contrast, crop, despeckle, edge, emboss, enhance, equalize, implode, level, median, modulate, negate, normalize, oil paint, raise, reduce noise, sample, shade, sharpen, solarize, spread, swirl, unsharp mask, wave...) applied to the embedded bitmap."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/effects/src/pixel/, crafts/vectorcraft/crates/engine/src/cmd/rasterfx.rs (live raster effects on any object, with Document Raster Effects Settings resolution)"
-gap = "no destructive edit of an embedded image's own pixels (effects stay live on the object)"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/filtercmds.rs (image.applyEffects: renders an embedded image with its live effects, or a named raster effect, into its own pixels and drops the effects), crafts/vectorcraft/crates/effects/src/pixel/"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2933,9 +2933,9 @@ name = "SVG filter round-trip on import and export"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/filters.html"
 behaviour = "Every filter is stored as SVG and comes back unchanged when the file is reopened; filters from other SVG tools render as the SVG specification says."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/svg/src/filter_graph.rs, crafts/vectorcraft/crates/svg/src/import/fx.rs (graphs), crafts/vectorcraft/crates/svg/src/export.rs (open_filters), crafts/vectorcraft/crates/effects/src/svgfilter.rs"
-gap = "every <filter> chain is kept as a filter graph (blur, offset, flood, merge, composite, colour matrix, component transfer, convolve, morphology, turbulence, displacement, lighting, blend, drop shadow, tile) and written back; feImage is dropped, primitive subregions and linearRGB interpolation are not kept (everything filters in sRGB over the filter region), and the renderer's raster is clipped to the region without SVG's exact pixel grid"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/svg/src/filter_graph.rs (every primitive, feImage, subregions, linearRGB), crafts/vectorcraft/crates/svg/src/import/fx.rs, crafts/vectorcraft/crates/svg/src/export.rs, crafts/vectorcraft/crates/effects/src/svgfilter.rs"
+gap = ""
 priority = 2
 
 # ---------------------------------------------------------------------------------------------

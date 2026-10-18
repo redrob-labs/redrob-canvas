@@ -4497,3 +4497,89 @@ theme	Appearance	Erscheinungsbild
 @msg	select an object	wählen Sie ein Objekt aus
 @msg	the copied object is no longer in this document	das kopierte Objekt ist nicht mehr in diesem Dokument
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	„Simulieren“ druckt Überdrucken so, wie es die Überdruckenvorschau zeigt; Separationen behalten es immer. Eine Vorgabe reduziert die Transparenz vor dem Drucken (PostScript-Dateien reduzieren sie immer).
+	3D Marble	3D-Marmor
+	3D Wood	3D-Holz
+	Air Spray	Sprühnebel
+	Aluminium	Aluminium
+	Apply Effects to Image Pixels	Effekte auf Bildpixel anwenden
+	Apply Filter Preset	Filtervorgabe anwenden
+	Apply to Selection	Auf Auswahl anwenden
+	Bevels	Abschrägungen
+	Black Hole	Schwarzes Loch
+	Blobs	Kleckse
+	Bloom	Bloom
+	Brilliance	Brillanz
+	Bump	Relief
+	Bumps	Reliefs
+	Button	Schaltfläche
+	Canvas Bumps	Leinwandrelief
+	Chalk and Sponge	Kreide und Schwamm
+	Channel to Alpha	Kanal zu Alpha
+	Chrome	Chrom
+	Color Blindness	Farbenblindheit
+	Colour Space:	Farbraum:
+	Comics Cream	Comic-Creme
+	Cracked Glass	Zersprungenes Glas
+	Cubes	Würfel
+	Dark and Glow	Dunkel und Leuchten
+	Document Filters	Dokumentfilter
+	Dragee	Dragee
+	Duochrome	Duochrom
+	Duplicate Filter	Filter duplizieren
+	Embossed Leather	Geprägtes Leder
+	Extract Channel	Kanal extrahieren
+	Fade to Black	Nach Schwarz ausblenden
+	Felt Feather	Filzfeder
+	Fill and Overlays	Füllungen und Überlagerungen
+	Filter	Filter
+	Filter Gallery	Filtergalerie
+	Filter Presets	Filtervorgaben
+	Filter copy	Filter Kopie
+	Filters	Filter
+	Glow	Leuchten
+	Glowing Metal	Glühendes Metall
+	Gold	Gold
+	Greyscale	Graustufen
+	HSL Noise	HSL-Rauschen
+	Ink Blot	Tintenklecks
+	Ink Splash	Tintenspritzer
+	Inner Shadow	Schatten nach innen
+	Leopard Fur	Leopardenfell
+	Light Eraser	Lichtradierer
+	Luminance to Alpha	Luminanz zu Alpha
+	Materials	Materialien
+	Matte Jelly	Mattes Gelee
+	Metallized Paint	Metallic-Lack
+	Neon	Neon
+	No filter matches the search.	Kein Filter entspricht der Suche.
+	Noise Fill	Rauschfüllung
+	Non-realistic 3D Shaders	Nichtrealistische 3D-Shader
+	Open Filter Editor	Filter-Editor öffnen
+	Paper Bump	Papierrelief
+	Pointillism	Pointillismus
+	Protrusions	Auswüchse
+	Quadritone	Vierfarbton
+	Ridges	Grate
+	Rough Paper	Raues Papier
+	Rough Transparency	Raue Transparenz
+	Roughen	Aufrauen
+	Saturation Map	Sättigungskarte
+	Select an object to apply a filter.	Wählen Sie ein Objekt aus, um einen Filter anzuwenden.
+	Silhouette	Silhouette
+	Smooth Edges	Kanten glätten
+	Solarize	Solarisation
+	Specular Light	Glanzlicht
+	Spikes	Spitzen
+	Spots Overlay	Flecken-Überlagerung
+	Stone Wall	Steinmauer
+	Subregion:	Teilbereich:
+	Swirl	Strudel
+	Textures	Texturen
+	The document has no filters yet.	Das Dokument hat noch keine Filter.
+	Thin Membrane	Dünne Membran
+	Torn Edges	Gerissene Kanten
+	Translucent	Durchscheinend
+	Transparency Utilities	Transparenz-Werkzeuge
+	Tritone	Dreifarbton
+	Watercolor	Aquarell
+	Waves	Wellen

@@ -4966,3 +4966,89 @@ theme	Appearance	Apparence
 @msg	select a clone	sélectionnez un clone
 @msg	select an object	sélectionnez un objet
 @msg	the copied object is no longer in this document	l’objet copié n’est plus dans ce document
+	3D Marble	Marbre 3D
+	3D Wood	Bois 3D
+	Air Spray	Aérosol
+	Aluminium	Aluminium
+	Apply Effects to Image Pixels	Appliquer les effets aux pixels de l’image
+	Apply Filter Preset	Appliquer un filtre prédéfini
+	Apply to Selection	Appliquer à la sélection
+	Bevels	Biseaux
+	Black Hole	Trou noir
+	Blobs	Gouttes
+	Bloom	Bloom
+	Brilliance	Brillance
+	Bump	Bosselage
+	Bumps	Bosselages
+	Button	Bouton
+	Canvas Bumps	Bosselage de toile
+	Chalk and Sponge	Craie et éponge
+	Channel to Alpha	Canal vers alpha
+	Chrome	Chrome
+	Color Blindness	Daltonisme
+	Colour Space:	Espace colorimétrique :
+	Comics Cream	Crème BD
+	Cracked Glass	Verre craquelé
+	Cubes	Cubes
+	Dark and Glow	Sombre et lueur
+	Document Filters	Filtres du document
+	Dragee	Dragée
+	Duochrome	Duochrome
+	Duplicate Filter	Dupliquer le filtre
+	Embossed Leather	Cuir gaufré
+	Extract Channel	Extraire un canal
+	Fade to Black	Fondu au noir
+	Felt Feather	Plume feutrée
+	Fill and Overlays	Remplissages et superpositions
+	Filter	Filtre
+	Filter Gallery	Galerie de filtres
+	Filter Presets	Filtres prédéfinis
+	Filter copy	Copie de filtre
+	Filters	Filtres
+	Glow	Lueur
+	Glowing Metal	Métal incandescent
+	Gold	Or
+	Greyscale	Niveaux de gris
+	HSL Noise	Bruit TSL
+	Ink Blot	Tache d’encre
+	Ink Splash	Éclaboussure d’encre
+	Inner Shadow	Ombre interne
+	Leopard Fur	Fourrure de léopard
+	Light Eraser	Gomme à lumière
+	Luminance to Alpha	Luminance vers alpha
+	Materials	Matériaux
+	Matte Jelly	Gelée mate
+	Metallized Paint	Peinture métallisée
+	Neon	Néon
+	No filter matches the search.	Aucun filtre ne correspond à la recherche.
+	Noise Fill	Remplissage de bruit
+	Non-realistic 3D Shaders	Ombrages 3D non réalistes
+	Open Filter Editor	Ouvrir l’éditeur de filtres
+	Paper Bump	Bosselage papier
+	Pointillism	Pointillisme
+	Protrusions	Protubérances
+	Quadritone	Quadritone
+	Ridges	Crêtes
+	Rough Paper	Papier rugueux
+	Rough Transparency	Transparence rugueuse
+	Roughen	Rugosité
+	Saturation Map	Carte de saturation
+	Select an object to apply a filter.	Sélectionnez un objet pour appliquer un filtre.
+	Silhouette	Silhouette
+	Smooth Edges	Adoucir les bords
+	Solarize	Solarisation
+	Specular Light	Lumière spéculaire
+	Spikes	Pointes
+	Spots Overlay	Superposition de taches
+	Stone Wall	Mur de pierre
+	Subregion:	Sous-région :
+	Swirl	Tourbillon
+	Textures	Textures
+	The document has no filters yet.	Le document n’a pas encore de filtres.
+	Thin Membrane	Membrane fine
+	Torn Edges	Bords déchirés
+	Translucent	Translucide
+	Transparency Utilities	Utilitaires de transparence
+	Tritone	Tritone
+	Watercolor	Aquarelle
+	Waves	Vagues

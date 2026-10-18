@@ -4506,3 +4506,89 @@ lighting	Light	광원
 @msg	select an object	개체를 선택하세요
 @msg	the copied object is no longer in this document	복사한 개체가 이 문서에 더 이상 없습니다
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	‘시뮬레이션’은 겹쳐찍기 미리 보기에 표시되는 대로 겹쳐찍기를 인쇄하고, 분판은 항상 겹쳐찍기를 유지합니다. 사전 설정은 인쇄 전에 투명도를 병합합니다 (PostScript 파일은 항상 병합합니다).
+	3D Marble	3D 대리석
+	3D Wood	3D 나무
+	Air Spray	에어 스프레이
+	Aluminium	알루미늄
+	Apply Effects to Image Pixels	효과를 이미지 픽셀에 적용
+	Apply Filter Preset	필터 사전 설정 적용
+	Apply to Selection	선택 항목에 적용
+	Bevels	경사
+	Black Hole	블랙홀
+	Blobs	방울
+	Bloom	블룸
+	Brilliance	광채
+	Bump	범프
+	Bumps	범프
+	Button	버튼
+	Canvas Bumps	캔버스 범프
+	Chalk and Sponge	분필과 스펀지
+	Channel to Alpha	채널을 알파로
+	Chrome	크롬
+	Color Blindness	색맹
+	Colour Space:	색 공간:
+	Comics Cream	코믹 크림
+	Cracked Glass	깨진 유리
+	Cubes	큐브
+	Dark and Glow	어둠과 빛
+	Document Filters	문서 필터
+	Dragee	드라제
+	Duochrome	듀오크롬
+	Duplicate Filter	필터 복제
+	Embossed Leather	엠보싱 가죽
+	Extract Channel	채널 추출
+	Fade to Black	검정으로 페이드
+	Felt Feather	펠트 깃털
+	Fill and Overlays	채우기 및 오버레이
+	Filter	필터
+	Filter Gallery	필터 갤러리
+	Filter Presets	필터 사전 설정
+	Filter copy	필터 복사본
+	Filters	필터
+	Glow	광선
+	Glowing Metal	빛나는 금속
+	Gold	금
+	Greyscale	회색조
+	HSL Noise	HSL 노이즈
+	Ink Blot	잉크 얼룩
+	Ink Splash	잉크 튐
+	Inner Shadow	내부 그림자
+	Leopard Fur	표범 모피
+	Light Eraser	밝은 부분 지우기
+	Luminance to Alpha	광도를 알파로
+	Materials	재질
+	Matte Jelly	매트 젤리
+	Metallized Paint	메탈릭 페인트
+	Neon	네온
+	No filter matches the search.	검색과 일치하는 필터가 없습니다.
+	Noise Fill	노이즈 채우기
+	Non-realistic 3D Shaders	비사실적 3D 셰이더
+	Open Filter Editor	필터 편집기 열기
+	Paper Bump	종이 범프
+	Pointillism	점묘
+	Protrusions	돌출
+	Quadritone	쿼드톤
+	Ridges	융기
+	Rough Paper	거친 종이
+	Rough Transparency	거친 투명도
+	Roughen	거칠게
+	Saturation Map	채도 맵
+	Select an object to apply a filter.	필터를 적용할 오브젝트를 선택하세요.
+	Silhouette	실루엣
+	Smooth Edges	가장자리 부드럽게
+	Solarize	솔라리즈
+	Specular Light	반사광
+	Spikes	스파이크
+	Spots Overlay	점 오버레이
+	Stone Wall	돌담
+	Subregion:	하위 영역:
+	Swirl	소용돌이
+	Textures	텍스처
+	The document has no filters yet.	문서에 아직 필터가 없습니다.
+	Thin Membrane	얇은 막
+	Torn Edges	찢어진 가장자리
+	Translucent	반투명
+	Transparency Utilities	투명도 유틸리티
+	Tritone	트라이톤
+	Watercolor	수채화
+	Waves	파도

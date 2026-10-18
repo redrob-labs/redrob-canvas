@@ -4918,3 +4918,89 @@ imageTrace	Outline	Körvonal
 @msg	select a clone	jelölj ki egy klónt
 @msg	select an object	jelölj ki egy objektumot
 @msg	the copied object is no longer in this document	a másolt objektum már nincs ebben a dokumentumban
+	3D Marble	3D márvány
+	3D Wood	3D fa
+	Air Spray	Festékszóró
+	Aluminium	Alumínium
+	Apply Effects to Image Pixels	Effektek alkalmazása a kép pixeleire
+	Apply Filter Preset	Szűrő-előbeállítás alkalmazása
+	Apply to Selection	Alkalmazás a kijelölésre
+	Bevels	Lekerekítések
+	Black Hole	Fekete lyuk
+	Blobs	Pacák
+	Bloom	Ragyogás
+	Brilliance	Ragyogás
+	Bump	Dombor
+	Bumps	Domborítások
+	Button	Gomb
+	Canvas Bumps	Vászondombor
+	Chalk and Sponge	Kréta és szivacs
+	Channel to Alpha	Csatorna alfába
+	Chrome	Króm
+	Color Blindness	Színtévesztés
+	Colour Space:	Színtér:
+	Comics Cream	Képregény krém
+	Cracked Glass	Repedt üveg
+	Cubes	Kockák
+	Dark and Glow	Sötét és fény
+	Document Filters	Dokumentum szűrői
+	Dragee	Drazsé
+	Duochrome	Kétszínű
+	Duplicate Filter	Szűrő duplikálása
+	Embossed Leather	Dombornyomott bőr
+	Extract Channel	Csatorna kivonása
+	Fade to Black	Feketébe halványítás
+	Felt Feather	Filctoll
+	Fill and Overlays	Kitöltések és rátétek
+	Filter	Szűrő
+	Filter Gallery	Szűrőgaléria
+	Filter Presets	Szűrő-előbeállítások
+	Filter copy	Szűrő másolata
+	Filters	Szűrők
+	Glow	Fénylés
+	Glowing Metal	Izzó fém
+	Gold	Arany
+	Greyscale	Szürkeárnyalatos
+	HSL Noise	HSL-zaj
+	Ink Blot	Tintapaca
+	Ink Splash	Tintafröccs
+	Inner Shadow	Belső árnyék
+	Leopard Fur	Leopárdbunda
+	Light Eraser	Fényradír
+	Luminance to Alpha	Fénysűrűség alfába
+	Materials	Anyagok
+	Matte Jelly	Matt zselé
+	Metallized Paint	Metálfény
+	Neon	Neon
+	No filter matches the search.	Nincs a keresésnek megfelelő szűrő.
+	Noise Fill	Zajkitöltés
+	Non-realistic 3D Shaders	Nem valósághű 3D árnyalók
+	Open Filter Editor	Szűrőszerkesztő megnyitása
+	Paper Bump	Papírdombor
+	Pointillism	Pointillizmus
+	Protrusions	Kitüremkedések
+	Quadritone	Négytónusú
+	Ridges	Gerincek
+	Rough Paper	Durva papír
+	Rough Transparency	Durva átlátszóság
+	Roughen	Durvítás
+	Saturation Map	Telítettségtérkép
+	Select an object to apply a filter.	Jelöljön ki egy objektumot a szűrő alkalmazásához.
+	Silhouette	Sziluett
+	Smooth Edges	Lágy élek
+	Solarize	Szolarizáció
+	Specular Light	Tükröződő fény
+	Spikes	Tüskék
+	Spots Overlay	Pöttyös rátét
+	Stone Wall	Kőfal
+	Subregion:	Altartomány:
+	Swirl	Örvény
+	Textures	Textúrák
+	The document has no filters yet.	A dokumentumnak még nincsenek szűrői.
+	Thin Membrane	Vékony hártya
+	Torn Edges	Tépett élek
+	Translucent	Áttetsző
+	Transparency Utilities	Átlátszósági segédeszközök
+	Tritone	Háromtónusú
+	Watercolor	Akvarell
+	Waves	Hullámok

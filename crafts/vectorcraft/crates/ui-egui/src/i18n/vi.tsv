@@ -4509,3 +4509,89 @@ theme	Appearance	Giao diện
 @msg	select an object	hãy chọn một đối tượng
 @msg	the copied object is no longer in this document	đối tượng đã sao chép không còn trong tài liệu này
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	Mô phỏng in các in chồng như Xem trước in chồng hiển thị; tách màu luôn giữ chúng. Một cài đặt sẵn làm phẳng độ trong suốt trước khi in (tệp PostScript luôn làm phẳng nó).
+	3D Marble	Đá hoa 3D
+	3D Wood	Gỗ 3D
+	Air Spray	Phun sương
+	Aluminium	Nhôm
+	Apply Effects to Image Pixels	Áp dụng hiệu ứng vào điểm ảnh
+	Apply Filter Preset	Áp dụng bộ lọc sẵn
+	Apply to Selection	Áp dụng cho vùng chọn
+	Bevels	Vát cạnh
+	Black Hole	Hố đen
+	Blobs	Đốm
+	Bloom	Toả sáng
+	Brilliance	Rực rỡ
+	Bump	Gồ
+	Bumps	Gồ ghề
+	Button	Nút
+	Canvas Bumps	Gồ vải
+	Chalk and Sponge	Phấn và bọt biển
+	Channel to Alpha	Kênh thành alpha
+	Chrome	Mạ crôm
+	Color Blindness	Mù màu
+	Colour Space:	Không gian màu:
+	Comics Cream	Kem truyện tranh
+	Cracked Glass	Kính nứt
+	Cubes	Khối vuông
+	Dark and Glow	Tối và sáng
+	Document Filters	Bộ lọc của tài liệu
+	Dragee	Kẹo bọc
+	Duochrome	Hai sắc
+	Duplicate Filter	Nhân đôi bộ lọc
+	Embossed Leather	Da dập nổi
+	Extract Channel	Tách kênh
+	Fade to Black	Mờ dần về đen
+	Felt Feather	Lông nỉ
+	Fill and Overlays	Tô và lớp phủ
+	Filter	Bộ lọc
+	Filter Gallery	Thư viện bộ lọc
+	Filter Presets	Bộ lọc sẵn
+	Filter copy	Bản sao bộ lọc
+	Filters	Bộ lọc
+	Glow	Phát sáng
+	Glowing Metal	Kim loại rực
+	Gold	Vàng
+	Greyscale	Thang xám
+	HSL Noise	Nhiễu HSL
+	Ink Blot	Vết mực
+	Ink Splash	Mực bắn
+	Inner Shadow	Bóng trong
+	Leopard Fur	Lông báo
+	Light Eraser	Xoá vùng sáng
+	Luminance to Alpha	Độ chói thành alpha
+	Materials	Vật liệu
+	Matte Jelly	Thạch mờ
+	Metallized Paint	Sơn kim loại
+	Neon	Đèn neon
+	No filter matches the search.	Không có bộ lọc nào khớp với tìm kiếm.
+	Noise Fill	Tô nhiễu
+	Non-realistic 3D Shaders	Đổ bóng 3D phi thực
+	Open Filter Editor	Mở trình soạn bộ lọc
+	Paper Bump	Gồ giấy
+	Pointillism	Chấm màu
+	Protrusions	Lồi
+	Quadritone	Bốn tông
+	Ridges	Gờ
+	Rough Paper	Giấy nhám
+	Rough Transparency	Trong suốt nhám
+	Roughen	Làm nhám
+	Saturation Map	Bản đồ bão hoà
+	Select an object to apply a filter.	Chọn một đối tượng để áp dụng bộ lọc.
+	Silhouette	Hình bóng
+	Smooth Edges	Làm mịn cạnh
+	Solarize	Phơi sáng ngược
+	Specular Light	Ánh sáng phản chiếu
+	Spikes	Gai
+	Spots Overlay	Lớp phủ đốm
+	Stone Wall	Tường đá
+	Subregion:	Vùng con:
+	Swirl	Xoáy
+	Textures	Hoạ tiết
+	The document has no filters yet.	Tài liệu chưa có bộ lọc nào.
+	Thin Membrane	Màng mỏng
+	Torn Edges	Cạnh rách
+	Translucent	Bán trong
+	Transparency Utilities	Tiện ích trong suốt
+	Tritone	Ba tông
+	Watercolor	Màu nước
+	Waves	Sóng

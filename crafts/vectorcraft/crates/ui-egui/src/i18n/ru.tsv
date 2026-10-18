@@ -4523,3 +4523,89 @@ lighting	Light	Свет
 @msg	select an object	выделите объект
 @msg	the copied object is no longer in this document	скопированного объекта больше нет в этом документе
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Имитировать» печатает наложение так, как его показывает просмотр наложения; цветоделение всегда сохраняет его. Набор сводит прозрачность перед печатью (файлы PostScript всегда сводят её).
+	3D Marble	3D-мрамор
+	3D Wood	3D-дерево
+	Air Spray	Аэрограф
+	Aluminium	Алюминий
+	Apply Effects to Image Pixels	Применить эффекты к пикселям изображения
+	Apply Filter Preset	Применить предустановку фильтра
+	Apply to Selection	Применить к выделению
+	Bevels	Скосы
+	Black Hole	Чёрная дыра
+	Blobs	Капли
+	Bloom	Свечение
+	Brilliance	Блеск
+	Bump	Рельеф
+	Bumps	Рельефы
+	Button	Кнопка
+	Canvas Bumps	Рельеф холста
+	Chalk and Sponge	Мел и губка
+	Channel to Alpha	Канал в альфа
+	Chrome	Хром
+	Color Blindness	Дальтонизм
+	Colour Space:	Цветовое пространство:
+	Comics Cream	Комикс крем
+	Cracked Glass	Треснувшее стекло
+	Cubes	Кубики
+	Dark and Glow	Тьма и свечение
+	Document Filters	Фильтры документа
+	Dragee	Драже
+	Duochrome	Двухцветный
+	Duplicate Filter	Дублировать фильтр
+	Embossed Leather	Тиснёная кожа
+	Extract Channel	Извлечь канал
+	Fade to Black	Затухание в чёрный
+	Felt Feather	Фетровое перо
+	Fill and Overlays	Заливки и наложения
+	Filter	Фильтр
+	Filter Gallery	Галерея фильтров
+	Filter Presets	Предустановки фильтров
+	Filter copy	Копия фильтра
+	Filters	Фильтры
+	Glow	Свечение
+	Glowing Metal	Раскалённый металл
+	Gold	Золото
+	Greyscale	Оттенки серого
+	HSL Noise	Шум HSL
+	Ink Blot	Чернильная клякса
+	Ink Splash	Брызги чернил
+	Inner Shadow	Внутренняя тень
+	Leopard Fur	Мех леопарда
+	Light Eraser	Ластик светлого
+	Luminance to Alpha	Яркость в альфа
+	Materials	Материалы
+	Matte Jelly	Матовое желе
+	Metallized Paint	Металлик
+	Neon	Неон
+	No filter matches the search.	Ни один фильтр не соответствует поиску.
+	Noise Fill	Заливка шумом
+	Non-realistic 3D Shaders	Нереалистичные 3D-шейдеры
+	Open Filter Editor	Открыть редактор фильтров
+	Paper Bump	Рельеф бумаги
+	Pointillism	Пуантилизм
+	Protrusions	Выступы
+	Quadritone	Четырёхтоновый
+	Ridges	Гребни
+	Rough Paper	Шероховатая бумага
+	Rough Transparency	Шероховатая прозрачность
+	Roughen	Огрубление
+	Saturation Map	Карта насыщенности
+	Select an object to apply a filter.	Выделите объект, чтобы применить фильтр.
+	Silhouette	Силуэт
+	Smooth Edges	Сглаженные края
+	Solarize	Соляризация
+	Specular Light	Блик
+	Spikes	Шипы
+	Spots Overlay	Наложение пятен
+	Stone Wall	Каменная стена
+	Subregion:	Подобласть:
+	Swirl	Вихрь
+	Textures	Текстуры
+	The document has no filters yet.	В документе пока нет фильтров.
+	Thin Membrane	Тонкая плёнка
+	Torn Edges	Рваные края
+	Translucent	Полупрозрачный
+	Transparency Utilities	Утилиты прозрачности
+	Tritone	Трёхтоновый
+	Watercolor	Акварель
+	Waves	Волны

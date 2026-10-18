@@ -4110,3 +4110,89 @@ lighting	Light	光源
 	Select an object to edit its SVG filter.	选择对象以编辑其 SVG 滤镜。
 	Open a document to see its element tree.	打开文档以查看其元素树。
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	“模拟”按叠印预览所示打印叠印；分色始终保留叠印。预设在打印前拼合透明度（PostScript 文件始终拼合）。
+	3D Marble	3D 大理石
+	3D Wood	3D 木纹
+	Air Spray	喷雾
+	Aluminium	铝
+	Apply Effects to Image Pixels	将效果应用到图像像素
+	Apply Filter Preset	应用滤镜预设
+	Apply to Selection	应用到选区
+	Bevels	斜角
+	Black Hole	黑洞
+	Blobs	斑点
+	Bloom	光晕
+	Brilliance	亮彩
+	Bump	凸起
+	Bumps	凸起
+	Button	按钮
+	Canvas Bumps	画布凸起
+	Chalk and Sponge	粉笔与海绵
+	Channel to Alpha	通道转为 Alpha
+	Chrome	镀铬
+	Color Blindness	色盲
+	Colour Space:	色彩空间：
+	Comics Cream	漫画奶油
+	Cracked Glass	碎裂玻璃
+	Cubes	方块
+	Dark and Glow	暗与光
+	Document Filters	文档滤镜
+	Dragee	糖衣
+	Duochrome	双色调
+	Duplicate Filter	复制滤镜
+	Embossed Leather	压纹皮革
+	Extract Channel	提取通道
+	Fade to Black	淡出至黑
+	Felt Feather	毛毡羽
+	Fill and Overlays	填色与叠加
+	Filter	滤镜
+	Filter Gallery	滤镜库
+	Filter Presets	滤镜预设
+	Filter copy	滤镜副本
+	Filters	滤镜
+	Glow	发光
+	Glowing Metal	炽热金属
+	Gold	黄金
+	Greyscale	灰度
+	HSL Noise	HSL 噪点
+	Ink Blot	墨渍
+	Ink Splash	墨水飞溅
+	Inner Shadow	内阴影
+	Leopard Fur	豹皮
+	Light Eraser	亮部橡皮擦
+	Luminance to Alpha	亮度转为 Alpha
+	Materials	材质
+	Matte Jelly	哑光果冻
+	Metallized Paint	金属漆
+	Neon	霓虹
+	No filter matches the search.	没有符合搜索的滤镜。
+	Noise Fill	噪点填色
+	Non-realistic 3D Shaders	非写实 3D 着色器
+	Open Filter Editor	打开滤镜编辑器
+	Paper Bump	纸张凸起
+	Pointillism	点彩
+	Protrusions	突起
+	Quadritone	四色调
+	Ridges	脊纹
+	Rough Paper	粗糙纸
+	Rough Transparency	粗糙透明
+	Roughen	粗糙化
+	Saturation Map	饱和度映射
+	Select an object to apply a filter.	选择对象以应用滤镜。
+	Silhouette	剪影
+	Smooth Edges	平滑边缘
+	Solarize	曝光过度
+	Specular Light	镜面光
+	Spikes	尖刺
+	Spots Overlay	斑点叠加
+	Stone Wall	石墙
+	Subregion:	子区域：
+	Swirl	漩涡
+	Textures	纹理
+	The document has no filters yet.	文档尚无滤镜。
+	Thin Membrane	薄膜
+	Torn Edges	撕裂边缘
+	Translucent	半透明
+	Transparency Utilities	透明工具
+	Tritone	三色调
+	Watercolor	水彩
+	Waves	波浪

@@ -88,7 +88,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                     if widgets::icon_button(ui, "copy", tl!("Duplicate Filter"), false, 18.0).clicked() {
                         apply = Some((g.clone(), true));
                     }
-                    if widgets::icon_button_enabled(ui, "check", tl!("Apply to Selection"), false, selection_len(app) > 0, 18.0).clicked() {
+                    if widgets::icon_button_enabled(ui, "plus", tl!("Apply to Selection"), false, selection_len(app) > 0, 18.0).clicked() {
                         apply = Some((g.clone(), false));
                     }
                 });
