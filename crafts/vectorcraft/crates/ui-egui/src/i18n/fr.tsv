@@ -5030,3 +5030,184 @@ theme	Appearance	Apparence
 	Background	Arrière-plan
 	Live Slice	Tranche dynamique
 	Fuse Slice	Fusionner la tranche
+	3D Marble	Marbre 3D
+	3D Wood	Bois 3D
+	Air Spray	Aérosol
+	Aluminium	Aluminium
+	Apply Effects to Image Pixels	Appliquer les effets aux pixels de l’image
+	Apply Filter Preset	Appliquer un filtre prédéfini
+	Apply to Selection	Appliquer à la sélection
+	Bevels	Biseaux
+	Black Hole	Trou noir
+	Blobs	Gouttes
+	Bloom	Bloom
+	Brilliance	Brillance
+	Bump	Bosselage
+	Bumps	Bosselages
+	Button	Bouton
+	Canvas Bumps	Bosselage de toile
+	Chalk and Sponge	Craie et éponge
+	Channel to Alpha	Canal vers alpha
+	Chrome	Chrome
+	Color Blindness	Daltonisme
+	Colour Space:	Espace colorimétrique :
+	Comics Cream	Crème BD
+	Cracked Glass	Verre craquelé
+	Cubes	Cubes
+	Dark and Glow	Sombre et lueur
+	Document Filters	Filtres du document
+	Dragee	Dragée
+	Duochrome	Duochrome
+	Duplicate Filter	Dupliquer le filtre
+	Embossed Leather	Cuir gaufré
+	Extract Channel	Extraire un canal
+	Fade to Black	Fondu au noir
+	Felt Feather	Plume feutrée
+	Fill and Overlays	Remplissages et superpositions
+	Filter	Filtre
+	Filter Gallery	Galerie de filtres
+	Filter Presets	Filtres prédéfinis
+	Filter copy	Copie de filtre
+	Filters	Filtres
+	Glow	Lueur
+	Glowing Metal	Métal incandescent
+	Gold	Or
+	Greyscale	Niveaux de gris
+	HSL Noise	Bruit TSL
+	Ink Blot	Tache d’encre
+	Ink Splash	Éclaboussure d’encre
+	Inner Shadow	Ombre interne
+	Leopard Fur	Fourrure de léopard
+	Light Eraser	Gomme à lumière
+	Luminance to Alpha	Luminance vers alpha
+	Materials	Matériaux
+	Matte Jelly	Gelée mate
+	Metallized Paint	Peinture métallisée
+	Neon	Néon
+	No filter matches the search.	Aucun filtre ne correspond à la recherche.
+	Noise Fill	Remplissage de bruit
+	Non-realistic 3D Shaders	Ombrages 3D non réalistes
+	Open Filter Editor	Ouvrir l’éditeur de filtres
+	Paper Bump	Bosselage papier
+	Pointillism	Pointillisme
+	Protrusions	Protubérances
+	Quadritone	Quadritone
+	Ridges	Crêtes
+	Rough Paper	Papier rugueux
+	Rough Transparency	Transparence rugueuse
+	Roughen	Rugosité
+	Saturation Map	Carte de saturation
+	Select an object to apply a filter.	Sélectionnez un objet pour appliquer un filtre.
+	Silhouette	Silhouette
+	Smooth Edges	Adoucir les bords
+	Solarize	Solarisation
+	Specular Light	Lumière spéculaire
+	Spikes	Pointes
+	Spots Overlay	Superposition de taches
+	Stone Wall	Mur de pierre
+	Subregion:	Sous-région :
+	Swirl	Tourbillon
+	Textures	Textures
+	The document has no filters yet.	Le document n’a pas encore de filtres.
+	Thin Membrane	Membrane fine
+	Torn Edges	Bords déchirés
+	Translucent	Translucide
+	Transparency Utilities	Utilitaires de transparence
+	Tritone	Tritone
+	Watercolor	Aquarelle
+	Waves	Vagues
+	Turns:	Tours :
+	Divergence:	Divergence :
+	Clockwise	Sens horaire
+	Threshold:	Seuil :
+	Grow/Shrink:	Dilater/éroder :
+	Fill by:	Remplir selon :
+	Visible Colors	Couleurs visibles
+	Alpha	Alpha
+	Add to Fill	Ajouter au remplissage
+	View rotation (Cmd+Shift+scroll turns the view)	Rotation de la vue (Cmd+Maj+défilement fait tourner la vue)
+	Lock Rotate View	Verrouiller la rotation de la vue
+	Fixation:	Fixation :
+	Dip Pen	Plume à tremper
+	Marker	Marqueur
+	Brush	Pinceau
+	Wiggly	Tremblant
+	Splotchy	Tacheté
+	Tracing	Calque
+	Use Pressure	Utiliser la pression
+	Live Simplify	Simplification dynamique
+	Simplify (Live)…	Simplifier (dynamique)…
+	Split View	Vue partagée
+	X-ray	Rayons X
+	Input Devices…	Périphériques d’entrée…
+	Input Devices	Périphériques d’entrée
+	Pressure Curves	Courbes de pression
+	Mouse	Souris
+	Pen / Stylus	Stylet
+	Touch	Tactile
+	Liquify Tools	Outils de fluidité
+	Disabled	Désactivé
+	Grids	Grilles
+	Main Grid	Grille principale
+	Add Grid	Ajouter une grille
+	Remove Grid	Supprimer la grille
+	Grid Options	Options de grille
+	Kind:	Type :
+	Subdivisions:	Subdivisions :
+	Angles:	Angles :
+	Gaps:	Écarts :
+	Origin:	Origine :
+	Own color	Couleur propre
+	Open a document to edit its grids.	Ouvrez un document pour modifier ses grilles.
+	Add Script	Ajouter un script
+	Edit Script	Modifier le script
+	Remove Script	Supprimer le script
+	The document has no scripts.	Le document n’a pas de scripts.
+	External:	Externe :
+	Embedded script	Script embarqué
+	Add Embedded Script	Ajouter un script embarqué
+	Add External Script	Ajouter un script externe
+	Source:	Source :
+	External file	Fichier externe
+	Code:	Code :
+	Open a document to edit its scripts.	Ouvrez un document pour modifier ses scripts.
+	Alignment Handles	Poignées d’alignement
+	Align (Shift: move the key object)	Aligner (Maj : déplacer l’objet clé)
+	Stylesheet	Feuille de style
+	No rules yet. Add one and assign its class to objects.	Pas encore de règles. Ajoutez-en une et affectez sa classe aux objets.
+	Add Rule	Ajouter une règle
+	Remove Rule	Supprimer la règle
+	Selector:	Sélecteur :
+	Declarations:	Déclarations :
+	Assign to Selection	Affecter à la sélection
+	Remove from Selection	Retirer de la sélection
+	Add CSS Rule	Ajouter une règle CSS
+	Edit CSS Rule	Modifier la règle CSS
+	Remove CSS Rule	Supprimer la règle CSS
+	Assign CSS Class	Affecter une classe CSS
+	Remove CSS Class	Retirer la classe CSS
+	Apply Stylesheet	Appliquer la feuille de style
+	New Node	Nouveau nœud
+	Indent Node	Indenter le nœud
+	Outdent Node	Désindenter le nœud
+	Move Node	Déplacer le nœud
+	Set Path Data	Définir les données du chemin
+	Round to:	Arrondir à :
+	Round Path Data	Arrondir les données du chemin
+	Connector Tool	Outil Connecteur
+	Connect Objects	Connecter les objets
+	Reroute Connectors	Rerouter les connecteurs
+	Connector Obstacle	Obstacle de connecteur
+	Arrange Connected Objects	Disposer les objets connectés
+	Arrange Connected	Disposer connectés
+	Routing:	Routage :
+	Orthogonal	Orthogonal
+	Polyline	Polyligne
+	Curvature:	Courbure :
+	3D Box Tool	Outil Boîte 3D
+	3D Box	Boîte 3D
+	3D Box Options	Options de boîte 3D
+	Move Vanishing Point	Déplacer le point de fuite
+	Z:	Z :
+	Vanishing Point	Point de fuite
+	Infinite	Infini

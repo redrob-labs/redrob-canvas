@@ -4574,3 +4574,185 @@ theme	Appearance	Giao diện
 	Background	Nền
 	Live Slice	Cắt lát động
 	Fuse Slice	Hợp nhất lát cắt
+	3D Marble	Đá hoa 3D
+	3D Wood	Gỗ 3D
+	Air Spray	Phun sương
+	Aluminium	Nhôm
+	Apply Effects to Image Pixels	Áp dụng hiệu ứng vào điểm ảnh
+	Apply Filter Preset	Áp dụng bộ lọc sẵn
+	Apply to Selection	Áp dụng cho vùng chọn
+	Bevels	Vát cạnh
+	Black Hole	Hố đen
+	Blobs	Đốm
+	Bloom	Toả sáng
+	Brilliance	Rực rỡ
+	Bump	Gồ
+	Bumps	Gồ ghề
+	Button	Nút
+	Canvas Bumps	Gồ vải
+	Chalk and Sponge	Phấn và bọt biển
+	Channel to Alpha	Kênh thành alpha
+	Chrome	Mạ crôm
+	Color Blindness	Mù màu
+	Colour Space:	Không gian màu:
+	Comics Cream	Kem truyện tranh
+	Cracked Glass	Kính nứt
+	Cubes	Khối vuông
+	Dark and Glow	Tối và sáng
+	Document Filters	Bộ lọc của tài liệu
+	Dragee	Kẹo bọc
+	Duochrome	Hai sắc
+	Duplicate Filter	Nhân đôi bộ lọc
+	Embossed Leather	Da dập nổi
+	Extract Channel	Tách kênh
+	Fade to Black	Mờ dần về đen
+	Felt Feather	Lông nỉ
+	Fill and Overlays	Tô và lớp phủ
+	Filter	Bộ lọc
+	Filter Gallery	Thư viện bộ lọc
+	Filter Presets	Bộ lọc sẵn
+	Filter copy	Bản sao bộ lọc
+	Filters	Bộ lọc
+	Glow	Phát sáng
+	Glowing Metal	Kim loại rực
+	Gold	Vàng
+	Greyscale	Thang xám
+	HSL Noise	Nhiễu HSL
+	Ink Blot	Vết mực
+	Ink Splash	Mực bắn
+	Inner Shadow	Bóng trong
+	Leopard Fur	Lông báo
+	Light Eraser	Xoá vùng sáng
+	Luminance to Alpha	Độ chói thành alpha
+	Materials	Vật liệu
+	Matte Jelly	Thạch mờ
+	Metallized Paint	Sơn kim loại
+	Neon	Đèn neon
+	No filter matches the search.	Không có bộ lọc nào khớp với tìm kiếm.
+	Noise Fill	Tô nhiễu
+	Non-realistic 3D Shaders	Đổ bóng 3D phi thực
+	Open Filter Editor	Mở trình soạn bộ lọc
+	Paper Bump	Gồ giấy
+	Pointillism	Chấm màu
+	Protrusions	Lồi
+	Quadritone	Bốn tông
+	Ridges	Gờ
+	Rough Paper	Giấy nhám
+	Rough Transparency	Trong suốt nhám
+	Roughen	Làm nhám
+	Saturation Map	Bản đồ bão hoà
+	Select an object to apply a filter.	Chọn một đối tượng để áp dụng bộ lọc.
+	Silhouette	Hình bóng
+	Smooth Edges	Làm mịn cạnh
+	Solarize	Phơi sáng ngược
+	Specular Light	Ánh sáng phản chiếu
+	Spikes	Gai
+	Spots Overlay	Lớp phủ đốm
+	Stone Wall	Tường đá
+	Subregion:	Vùng con:
+	Swirl	Xoáy
+	Textures	Hoạ tiết
+	The document has no filters yet.	Tài liệu chưa có bộ lọc nào.
+	Thin Membrane	Màng mỏng
+	Torn Edges	Cạnh rách
+	Translucent	Bán trong
+	Transparency Utilities	Tiện ích trong suốt
+	Tritone	Ba tông
+	Watercolor	Màu nước
+	Waves	Sóng
+	Turns:	Số vòng:
+	Divergence:	Độ phân kỳ:
+	Clockwise	Theo chiều kim đồng hồ
+	Threshold:	Ngưỡng:
+	Grow/Shrink:	Nở/Co:
+	Fill by:	Tô theo:
+	Visible Colors	Màu hiển thị
+	Alpha	Alpha
+	Add to Fill	Thêm vào vùng tô
+	View rotation (Cmd+Shift+scroll turns the view)	Xoay khung nhìn (Cmd+Shift+cuộn để xoay)
+	Lock Rotate View	Khoá xoay khung nhìn
+	Rotate View	Xoay khung nhìn
+	Fixation:	Cố định:
+	Dip Pen	Bút chấm mực
+	Marker	Bút lông
+	Brush	Cọ
+	Wiggly	Ngoằn ngoèo
+	Splotchy	Lem nhem
+	Tracing	Đồ nét
+	Use Pressure	Dùng lực nhấn
+	Live Simplify	Đơn giản hoá động
+	Simplify (Live)…	Đơn giản hoá (động)…
+	Split View	Chia đôi khung nhìn
+	X-ray	Tia X
+	Input Devices…	Thiết bị nhập…
+	Input Devices	Thiết bị nhập
+	Pressure Curves	Đường cong lực nhấn
+	Mouse	Chuột
+	Pen / Stylus	Bút / Bút cảm ứng
+	Touch	Cảm ứng
+	Liquify Tools	Công cụ hoá lỏng
+	Disabled	Tắt
+	Grids	Lưới
+	Main Grid	Lưới chính
+	Add Grid	Thêm lưới
+	Remove Grid	Xoá lưới
+	Grid Options	Tuỳ chọn lưới
+	Kind:	Loại:
+	Subdivisions:	Phân chia:
+	Angles:	Góc:
+	Gaps:	Khoảng trống:
+	Origin:	Gốc:
+	Own color	Màu riêng
+	Open a document to edit its grids.	Mở một tài liệu để sửa lưới của nó.
+	Add Script	Thêm tập lệnh
+	Edit Script	Sửa tập lệnh
+	Remove Script	Xoá tập lệnh
+	The document has no scripts.	Tài liệu không có tập lệnh.
+	External:	Bên ngoài:
+	Embedded script	Tập lệnh nhúng
+	Add Embedded Script	Thêm tập lệnh nhúng
+	Add External Script	Thêm tập lệnh ngoài
+	Source:	Nguồn:
+	External file	Tệp bên ngoài
+	Code:	Mã:
+	Open a document to edit its scripts.	Mở một tài liệu để sửa tập lệnh của nó.
+	Alignment Handles	Tay cầm căn chỉnh
+	Align (Shift: move the key object)	Căn chỉnh (Shift: di chuyển đối tượng khoá)
+	Stylesheet	Bảng kiểu
+	No rules yet. Add one and assign its class to objects.	Chưa có quy tắc. Thêm một quy tắc và gán lớp của nó cho đối tượng.
+	Add Rule	Thêm quy tắc
+	Remove Rule	Xoá quy tắc
+	Selector:	Bộ chọn:
+	Declarations:	Khai báo:
+	Assign to Selection	Gán cho vùng chọn
+	Remove from Selection	Bỏ khỏi vùng chọn
+	Add CSS Rule	Thêm quy tắc CSS
+	Edit CSS Rule	Sửa quy tắc CSS
+	Remove CSS Rule	Xoá quy tắc CSS
+	Assign CSS Class	Gán lớp CSS
+	Remove CSS Class	Bỏ lớp CSS
+	Apply Stylesheet	Áp dụng bảng kiểu
+	New Node	Nút mới
+	Indent Node	Thụt nút vào
+	Outdent Node	Đưa nút ra
+	Move Node	Di chuyển nút
+	Set Path Data	Đặt dữ liệu đường
+	Round to:	Làm tròn đến:
+	Round Path Data	Làm tròn dữ liệu đường
+	Connector Tool	Công cụ nối
+	Connect Objects	Nối đối tượng
+	Reroute Connectors	Định tuyến lại đường nối
+	Connector Obstacle	Vật cản đường nối
+	Arrange Connected Objects	Sắp xếp đối tượng đã nối
+	Arrange Connected	Sắp xếp đã nối
+	Routing:	Định tuyến:
+	Orthogonal	Vuông góc
+	Polyline	Đường gấp khúc
+	Curvature:	Độ cong:
+	3D Box Tool	Công cụ hộp 3D
+	3D Box	Hộp 3D
+	3D Box Options	Tuỳ chọn hộp 3D
+	Move Vanishing Point	Di chuyển điểm tụ
+	Z:	Z:
+	Vanishing Point	Điểm tụ
+	Infinite	Vô cực

@@ -781,6 +781,16 @@ pub struct Prefs {
     // Devices
     pub touch_workspace: bool,
     pub touch_gestures: bool,
+    /// Input Devices: how each class of pointer is used on the canvas (`disabled`: its input is
+    /// ignored; `screen` and `window` both take the toolkit's window coordinates).
+    pub mouse_mode: String,
+    pub pen_mode: String,
+    pub touch_mode: String,
+    /// Input Devices: the pressure curve of each pressure-sensitive tool, as a gamma exponent
+    /// applied to the stylus pressure (1 is linear; below 1 reaches full width sooner).
+    pub pressure_curve_brush: f64,
+    pub pressure_curve_pencil: f64,
+    pub pressure_curve_liquify: f64,
     // Graphic Styles panel
     /// Override Character Color: a graphic style applied to type replaces its characters' fill
     /// and stroke with the style's fills and strokes.
@@ -995,6 +1005,12 @@ impl Default for Prefs {
             black_output: s("accurate"),
             touch_workspace: true,
             touch_gestures: true,
+            mouse_mode: "screen".into(),
+            pen_mode: "screen".into(),
+            touch_mode: "screen".into(),
+            pressure_curve_brush: 1.0,
+            pressure_curve_pencil: 1.0,
+            pressure_curve_liquify: 1.0,
             override_char_color: true,
             pattern_tile_edge_color: {
                 let [r, g, b] = redrob_vector_doc::LAYER_COLORS[0].1;

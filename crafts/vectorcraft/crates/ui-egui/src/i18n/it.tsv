@@ -4607,3 +4607,185 @@ lighting	Light	Luce
 	Background	Sfondo
 	Live Slice	Taglio dinamico
 	Fuse Slice	Fondi taglio
+	3D Marble	Marmo 3D
+	3D Wood	Legno 3D
+	Air Spray	Spruzzo d'aria
+	Aluminium	Alluminio
+	Apply Effects to Image Pixels	Applica effetti ai pixel dell'immagine
+	Apply Filter Preset	Applica filtro predefinito
+	Apply to Selection	Applica alla selezione
+	Bevels	Smussi
+	Black Hole	Buco nero
+	Blobs	Macchie
+	Bloom	Bagliore
+	Brilliance	Brillantezza
+	Bump	Rilievo
+	Bumps	Rilievi
+	Button	Pulsante
+	Canvas Bumps	Rilievo tela
+	Chalk and Sponge	Gesso e spugna
+	Channel to Alpha	Canale in alfa
+	Chrome	Cromo
+	Color Blindness	Daltonismo
+	Colour Space:	Spazio colore:
+	Comics Cream	Crema fumetto
+	Cracked Glass	Vetro crepato
+	Cubes	Cubi
+	Dark and Glow	Scuro e bagliore
+	Document Filters	Filtri del documento
+	Dragee	Confetto
+	Duochrome	Duocromo
+	Duplicate Filter	Duplica filtro
+	Embossed Leather	Pelle goffrata
+	Extract Channel	Estrai canale
+	Fade to Black	Dissolvenza al nero
+	Felt Feather	Piuma di feltro
+	Fill and Overlays	Riempimenti e sovrapposizioni
+	Filter	Filtro
+	Filter Gallery	Galleria filtri
+	Filter Presets	Filtri predefiniti
+	Filter copy	Copia filtro
+	Filters	Filtri
+	Glow	Bagliore
+	Glowing Metal	Metallo incandescente
+	Gold	Oro
+	Greyscale	Scala di grigi
+	HSL Noise	Disturbo HSL
+	Ink Blot	Macchia d'inchiostro
+	Ink Splash	Schizzo d'inchiostro
+	Inner Shadow	Ombra interna
+	Leopard Fur	Pelliccia di leopardo
+	Light Eraser	Gomma per luci
+	Luminance to Alpha	Luminanza in alfa
+	Materials	Materiali
+	Matte Jelly	Gelatina opaca
+	Metallized Paint	Vernice metallizzata
+	Neon	Neon
+	No filter matches the search.	Nessun filtro corrisponde alla ricerca.
+	Noise Fill	Riempimento disturbo
+	Non-realistic 3D Shaders	Shader 3D non realistici
+	Open Filter Editor	Apri editor filtri
+	Paper Bump	Rilievo carta
+	Pointillism	Puntinismo
+	Protrusions	Protuberanze
+	Quadritone	Quadritono
+	Ridges	Creste
+	Rough Paper	Carta ruvida
+	Rough Transparency	Trasparenza ruvida
+	Roughen	Irruvidisci
+	Saturation Map	Mappa saturazione
+	Select an object to apply a filter.	Seleziona un oggetto per applicare un filtro.
+	Silhouette	Silhouette
+	Smooth Edges	Bordi lisci
+	Solarize	Solarizza
+	Specular Light	Luce speculare
+	Spikes	Punte
+	Spots Overlay	Sovrapposizione macchie
+	Stone Wall	Muro di pietra
+	Subregion:	Sottoregione:
+	Swirl	Vortice
+	Textures	Texture
+	The document has no filters yet.	Il documento non ha ancora filtri.
+	Thin Membrane	Membrana sottile
+	Torn Edges	Bordi strappati
+	Translucent	Traslucido
+	Transparency Utilities	Utilità trasparenza
+	Tritone	Tritono
+	Watercolor	Acquerello
+	Waves	Onde
+	Turns:	Giri:
+	Divergence:	Divergenza:
+	Clockwise	In senso orario
+	Threshold:	Soglia:
+	Grow/Shrink:	Espandi/contrai:
+	Fill by:	Riempi per:
+	Visible Colors	Colori visibili
+	Alpha	Alfa
+	Add to Fill	Aggiungi al riempimento
+	View rotation (Cmd+Shift+scroll turns the view)	Rotazione della vista (Cmd+Maiusc+scorrimento ruota la vista)
+	Lock Rotate View	Blocca rotazione vista
+	Rotate View	Ruota vista
+	Fixation:	Fissazione:
+	Dip Pen	Pennino
+	Marker	Pennarello
+	Brush	Pennello
+	Wiggly	Tremolante
+	Splotchy	Macchiato
+	Tracing	Ricalco
+	Use Pressure	Usa pressione
+	Live Simplify	Semplifica dinamico
+	Simplify (Live)…	Semplifica (dinamico)…
+	Split View	Vista divisa
+	X-ray	Raggi X
+	Input Devices…	Dispositivi di input…
+	Input Devices	Dispositivi di input
+	Pressure Curves	Curve di pressione
+	Mouse	Mouse
+	Pen / Stylus	Penna / Stilo
+	Touch	Tocco
+	Liquify Tools	Strumenti fluidifica
+	Disabled	Disattivato
+	Grids	Griglie
+	Main Grid	Griglia principale
+	Add Grid	Aggiungi griglia
+	Remove Grid	Rimuovi griglia
+	Grid Options	Opzioni griglia
+	Kind:	Tipo:
+	Subdivisions:	Suddivisioni:
+	Angles:	Angoli:
+	Gaps:	Spazi:
+	Origin:	Origine:
+	Own color	Colore proprio
+	Open a document to edit its grids.	Apri un documento per modificarne le griglie.
+	Add Script	Aggiungi script
+	Edit Script	Modifica script
+	Remove Script	Rimuovi script
+	The document has no scripts.	Il documento non ha script.
+	External:	Esterno:
+	Embedded script	Script incorporato
+	Add Embedded Script	Aggiungi script incorporato
+	Add External Script	Aggiungi script esterno
+	Source:	Sorgente:
+	External file	File esterno
+	Code:	Codice:
+	Open a document to edit its scripts.	Apri un documento per modificarne gli script.
+	Alignment Handles	Maniglie di allineamento
+	Align (Shift: move the key object)	Allinea (Maiusc: sposta l'oggetto chiave)
+	Stylesheet	Foglio di stile
+	No rules yet. Add one and assign its class to objects.	Nessuna regola. Aggiungine una e assegna la sua classe agli oggetti.
+	Add Rule	Aggiungi regola
+	Remove Rule	Rimuovi regola
+	Selector:	Selettore:
+	Declarations:	Dichiarazioni:
+	Assign to Selection	Assegna alla selezione
+	Remove from Selection	Rimuovi dalla selezione
+	Add CSS Rule	Aggiungi regola CSS
+	Edit CSS Rule	Modifica regola CSS
+	Remove CSS Rule	Rimuovi regola CSS
+	Assign CSS Class	Assegna classe CSS
+	Remove CSS Class	Rimuovi classe CSS
+	Apply Stylesheet	Applica foglio di stile
+	New Node	Nuovo nodo
+	Indent Node	Indenta nodo
+	Outdent Node	Rimuovi rientro nodo
+	Move Node	Sposta nodo
+	Set Path Data	Imposta dati tracciato
+	Round to:	Arrotonda a:
+	Round Path Data	Arrotonda dati tracciato
+	Connector Tool	Strumento connettore
+	Connect Objects	Connetti oggetti
+	Reroute Connectors	Reinstrada connettori
+	Connector Obstacle	Ostacolo connettore
+	Arrange Connected Objects	Disponi oggetti connessi
+	Arrange Connected	Disponi connessi
+	Routing:	Instradamento:
+	Orthogonal	Ortogonale
+	Polyline	Polilinea
+	Curvature:	Curvatura:
+	3D Box Tool	Strumento scatola 3D
+	3D Box	Scatola 3D
+	3D Box Options	Opzioni scatola 3D
+	Move Vanishing Point	Sposta punto di fuga
+	Z:	Z:
+	Vanishing Point	Punto di fuga
+	Infinite	Infinito

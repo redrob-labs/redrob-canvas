@@ -4588,3 +4588,185 @@ lighting	Light	Свет
 	Background	Фон
 	Live Slice	Живой разрез
 	Fuse Slice	Слить разрез
+	3D Marble	3D-мрамор
+	3D Wood	3D-дерево
+	Air Spray	Аэрограф
+	Aluminium	Алюминий
+	Apply Effects to Image Pixels	Применить эффекты к пикселям изображения
+	Apply Filter Preset	Применить предустановку фильтра
+	Apply to Selection	Применить к выделению
+	Bevels	Скосы
+	Black Hole	Чёрная дыра
+	Blobs	Капли
+	Bloom	Свечение
+	Brilliance	Блеск
+	Bump	Рельеф
+	Bumps	Рельефы
+	Button	Кнопка
+	Canvas Bumps	Рельеф холста
+	Chalk and Sponge	Мел и губка
+	Channel to Alpha	Канал в альфа
+	Chrome	Хром
+	Color Blindness	Дальтонизм
+	Colour Space:	Цветовое пространство:
+	Comics Cream	Комикс крем
+	Cracked Glass	Треснувшее стекло
+	Cubes	Кубики
+	Dark and Glow	Тьма и свечение
+	Document Filters	Фильтры документа
+	Dragee	Драже
+	Duochrome	Двухцветный
+	Duplicate Filter	Дублировать фильтр
+	Embossed Leather	Тиснёная кожа
+	Extract Channel	Извлечь канал
+	Fade to Black	Затухание в чёрный
+	Felt Feather	Фетровое перо
+	Fill and Overlays	Заливки и наложения
+	Filter	Фильтр
+	Filter Gallery	Галерея фильтров
+	Filter Presets	Предустановки фильтров
+	Filter copy	Копия фильтра
+	Filters	Фильтры
+	Glow	Свечение
+	Glowing Metal	Раскалённый металл
+	Gold	Золото
+	Greyscale	Оттенки серого
+	HSL Noise	Шум HSL
+	Ink Blot	Чернильная клякса
+	Ink Splash	Брызги чернил
+	Inner Shadow	Внутренняя тень
+	Leopard Fur	Мех леопарда
+	Light Eraser	Ластик светлого
+	Luminance to Alpha	Яркость в альфа
+	Materials	Материалы
+	Matte Jelly	Матовое желе
+	Metallized Paint	Металлик
+	Neon	Неон
+	No filter matches the search.	Ни один фильтр не соответствует поиску.
+	Noise Fill	Заливка шумом
+	Non-realistic 3D Shaders	Нереалистичные 3D-шейдеры
+	Open Filter Editor	Открыть редактор фильтров
+	Paper Bump	Рельеф бумаги
+	Pointillism	Пуантилизм
+	Protrusions	Выступы
+	Quadritone	Четырёхтоновый
+	Ridges	Гребни
+	Rough Paper	Шероховатая бумага
+	Rough Transparency	Шероховатая прозрачность
+	Roughen	Огрубление
+	Saturation Map	Карта насыщенности
+	Select an object to apply a filter.	Выделите объект, чтобы применить фильтр.
+	Silhouette	Силуэт
+	Smooth Edges	Сглаженные края
+	Solarize	Соляризация
+	Specular Light	Блик
+	Spikes	Шипы
+	Spots Overlay	Наложение пятен
+	Stone Wall	Каменная стена
+	Subregion:	Подобласть:
+	Swirl	Вихрь
+	Textures	Текстуры
+	The document has no filters yet.	В документе пока нет фильтров.
+	Thin Membrane	Тонкая плёнка
+	Torn Edges	Рваные края
+	Translucent	Полупрозрачный
+	Transparency Utilities	Утилиты прозрачности
+	Tritone	Трёхтоновый
+	Watercolor	Акварель
+	Waves	Волны
+	Turns:	Витки:
+	Divergence:	Расхождение:
+	Clockwise	По часовой стрелке
+	Threshold:	Порог:
+	Grow/Shrink:	Расширить/сжать:
+	Fill by:	Заливка по:
+	Visible Colors	Видимые цвета
+	Alpha	Альфа
+	Add to Fill	Добавить к заливке
+	View rotation (Cmd+Shift+scroll turns the view)	Поворот вида (Cmd+Shift+прокрутка поворачивает вид)
+	Lock Rotate View	Заблокировать поворот вида
+	Rotate View	Повернуть вид
+	Fixation:	Фиксация:
+	Dip Pen	Перо
+	Marker	Маркер
+	Brush	Кисть
+	Wiggly	Волнистый
+	Splotchy	Пятнистый
+	Tracing	Трассировка
+	Use Pressure	Использовать нажим
+	Live Simplify	Живое упрощение
+	Simplify (Live)…	Упростить (живое)…
+	Split View	Разделённый вид
+	X-ray	Рентген
+	Input Devices…	Устройства ввода…
+	Input Devices	Устройства ввода
+	Pressure Curves	Кривые нажима
+	Mouse	Мышь
+	Pen / Stylus	Перо / стилус
+	Touch	Сенсорный ввод
+	Liquify Tools	Инструменты пластики
+	Disabled	Отключено
+	Grids	Сетки
+	Main Grid	Основная сетка
+	Add Grid	Добавить сетку
+	Remove Grid	Удалить сетку
+	Grid Options	Параметры сетки
+	Kind:	Вид:
+	Subdivisions:	Подразделения:
+	Angles:	Углы:
+	Gaps:	Промежутки:
+	Origin:	Начало:
+	Own color	Свой цвет
+	Open a document to edit its grids.	Откройте документ, чтобы изменить его сетки.
+	Add Script	Добавить скрипт
+	Edit Script	Изменить скрипт
+	Remove Script	Удалить скрипт
+	The document has no scripts.	В документе нет скриптов.
+	External:	Внешний:
+	Embedded script	Встроенный скрипт
+	Add Embedded Script	Добавить встроенный скрипт
+	Add External Script	Добавить внешний скрипт
+	Source:	Источник:
+	External file	Внешний файл
+	Code:	Код:
+	Open a document to edit its scripts.	Откройте документ, чтобы изменить его скрипты.
+	Alignment Handles	Маркеры выравнивания
+	Align (Shift: move the key object)	Выровнять (Shift: переместить ключевой объект)
+	Stylesheet	Таблица стилей
+	No rules yet. Add one and assign its class to objects.	Правил пока нет. Добавьте одно и назначьте его класс объектам.
+	Add Rule	Добавить правило
+	Remove Rule	Удалить правило
+	Selector:	Селектор:
+	Declarations:	Объявления:
+	Assign to Selection	Назначить выделению
+	Remove from Selection	Убрать у выделения
+	Add CSS Rule	Добавить правило CSS
+	Edit CSS Rule	Изменить правило CSS
+	Remove CSS Rule	Удалить правило CSS
+	Assign CSS Class	Назначить класс CSS
+	Remove CSS Class	Убрать класс CSS
+	Apply Stylesheet	Применить таблицу стилей
+	New Node	Новый узел
+	Indent Node	Вложить узел
+	Outdent Node	Вынести узел
+	Move Node	Переместить узел
+	Set Path Data	Задать данные контура
+	Round to:	Округлить до:
+	Round Path Data	Округлить данные контура
+	Connector Tool	Инструмент «Коннектор»
+	Connect Objects	Соединить объекты
+	Reroute Connectors	Перестроить коннекторы
+	Connector Obstacle	Препятствие для коннекторов
+	Arrange Connected Objects	Расставить соединённые объекты
+	Arrange Connected	Расставить соединённые
+	Routing:	Прокладка:
+	Orthogonal	Ортогонально
+	Polyline	Полилиния
+	Curvature:	Кривизна:
+	3D Box Tool	Инструмент «3D-блок»
+	3D Box	3D-блок
+	3D Box Options	Параметры 3D-блока
+	Move Vanishing Point	Переместить точку схода
+	Z:	Z:
+	Vanishing Point	Точка схода
+	Infinite	Бесконечно

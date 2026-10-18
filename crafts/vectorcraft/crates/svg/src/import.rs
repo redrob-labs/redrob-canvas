@@ -99,6 +99,11 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
     if im.files.nested_text() {
         im.warn("text inside an SVG image isn't imported".into());
     }
+    // `<script>` elements (interactive SVG): kept as the document's scripts, never run.
+    im.doc.scripts = scripts(&xml);
+    // The file's `<style>` rules, for the Selectors and CSS editor (our own export's class rules
+    // and font faces aside).
+    im.doc.stylesheet = stylesheet(&xml);
 
     // usvg wraps everything in an id-less group carrying the viewBox transform when needed.
     let mut top = tree.root();
@@ -619,9 +624,13 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
             found.links.insert(edits.id(svg, a), url.to_string());
         }
     }
-    if svg.contains("data-") {
+    if svg.contains("data-") || svg.contains("class=") {
         for e in elements().filter(|e| OBJECT_ELEMENTS.contains(&e.tag_name().name())) {
-            let data = user_data(e);
+            let mut data = user_data(e);
+            // The element's classes (Selectors and CSS) travel as the `vc-class` data key.
+            if let Some(c) = e.attribute("class").map(str::trim).filter(|c| !c.is_empty()) {
+                data.push((redrob_vector_doc::CssRule::CLASS_KEY.to_string(), c.to_string()));
+            }
             if !data.is_empty() {
                 found.data.insert(edits.id(svg, e), data);
             }
@@ -759,6 +768,44 @@ fn link(n: &mut Node, url: &str) {
     if n.url().is_none() {
         n.edit_attrs(|a| a.url = url.to_string());
     }
+}
+
+/// The rules of the file's `<style>` elements (at most 256), without the ones our own export
+/// writes for its styling classes (`cls-`) and `@font-face`.
+fn stylesheet(xml: &roxmltree::Document) -> Vec<redrob_vector_doc::CssRule> {
+    let mut out = vec![];
+    for st in xml.descendants().filter(|n| n.is_element() && n.tag_name().name() == "style") {
+        let css: String = st.descendants().filter_map(|t| t.text()).collect();
+        for rule in redrob_vector_doc::CssRule::parse_sheet(&css) {
+            if rule.selector.contains("cls-") {
+                continue;
+            }
+            out.push(rule);
+            if out.len() >= 256 {
+                return out;
+            }
+        }
+    }
+    out
+}
+
+/// Every `<script>` of the file: external ones by their `href` (or `xlink:href`), embedded ones
+/// with their code (at most 64 scripts of 256 KiB each).
+fn scripts(xml: &roxmltree::Document) -> Vec<redrob_vector_doc::DocScript> {
+    const XLINK: &str = "http://www.w3.org/1999/xlink";
+    xml.descendants()
+        .filter(|n| n.is_element() && n.tag_name().name() == "script")
+        .take(64)
+        .map(|n| {
+            let href = n.attribute("href").or_else(|| n.attribute((XLINK, "href"))).filter(|h| !h.trim().is_empty()).map(str::to_string);
+            let content = if href.is_some() {
+                String::new()
+            } else {
+                n.descendants().filter_map(|t| t.text()).collect::<String>().chars().take(262_144).collect()
+            };
+            redrob_vector_doc::DocScript { href, content, mime: n.attribute("type").unwrap_or_default().to_string() }
+        })
+        .collect()
 }
 
 /// The names apps keep beside element ids, by id: `data-name`, `inkscape:label`, `serif:id` or

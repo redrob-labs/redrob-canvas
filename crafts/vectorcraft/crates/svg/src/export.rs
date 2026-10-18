@@ -119,14 +119,16 @@ fn write(doc: &Document, opts: &ExportOptions, native: Option<&[u8]>, id_prefix:
     out.push_str(&format!(" viewBox=\"0 0 {ww} {hh}\">{nl}"));
     let css = opts.styling == Styling::InternalCss && !w.classes.is_empty();
     let fonts = w.font_faces();
-    if !w.defs.is_empty() || css || !fonts.is_empty() {
+    // The document's own stylesheet (Selectors and CSS) goes along with the styling classes.
+    let sheet: Vec<String> = doc.stylesheet.iter().map(redrob_vector_doc::CssRule::text).collect();
+    if !w.defs.is_empty() || css || !fonts.is_empty() || !sheet.is_empty() {
         out.push_str(&w.indent(1));
         out.push_str(&format!("<defs>{nl}"));
-        if css || !fonts.is_empty() {
+        if css || !fonts.is_empty() || !sheet.is_empty() {
             out.push_str(&w.indent(2));
             out.push_str("<style>");
             let classes = w.classes.iter().enumerate().filter(|_| css).map(|(i, c)| format!(".{id_prefix}cls-{}{{{c}}}", i + 1));
-            for rule in classes.chain(fonts) {
+            for rule in classes.chain(fonts).chain(sheet) {
                 out.push_str(&format!("{nl}{}{}", w.indent(3), xml_escape(&rule)));
             }
             out.push_str(&format!("{nl}{}</style>{nl}", w.indent(2)));
@@ -143,6 +145,16 @@ fn write(doc: &Document, opts: &ExportOptions, native: Option<&[u8]>, id_prefix:
     if !doc.metadata.description.trim().is_empty() {
         out.push_str(&w.indent(1));
         out.push_str(&format!("<desc>{}</desc>{nl}", xml_escape(&doc.metadata.description)));
+    }
+    // The document's scripts (Scripts panel): external ones by reference, embedded ones in a
+    // CDATA section so their code needs no escaping.
+    for sc in &doc.scripts {
+        out.push_str(&w.indent(1));
+        let ty = if sc.mime.is_empty() { String::new() } else { format!(" type=\"{}\"", xml_escape(&sc.mime)) };
+        match &sc.href {
+            Some(href) => out.push_str(&format!("<script{ty} href=\"{}\"/>{nl}", xml_escape(href))),
+            None => out.push_str(&format!("<script{ty}><![CDATA[{}]]></script>{nl}", sc.content.replace("]]>", "]]]]><![CDATA[>"))),
+        }
     }
     let latin1 = encoding == Encoding::Latin1;
     if latin1 {
@@ -638,6 +650,13 @@ impl Writer<'_> {
         }
         let mut keys = HashSet::new();
         for (k, v) in n.extras().attrs.as_deref().map_or(&[][..], |a| a.data.as_slice()) {
+            // The object's classes (Selectors and CSS) are its SVG `class`.
+            if k == redrob_vector_doc::CssRule::CLASS_KEY {
+                if !v.trim().is_empty() && valid_xml_value(v) {
+                    out.push_str(&format!(" class=\"{}\"", xml_attr_escape(v.trim())));
+                }
+                continue;
+            }
             // Ours (`name`, `vc-…`) are written by the export itself.
             if k == "name" || k.starts_with("vc-") {
                 continue;
@@ -1776,6 +1795,7 @@ impl Writer<'_> {
                 continue;
             }
             let fid = self.fresh_id("filter");
+            let mut interpolation = "sRGB";
             let mut region_attr = match region {
                 Some(r) => format!(
                     " filterUnits=\"userSpaceOnUse\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
@@ -1840,7 +1860,20 @@ impl Writer<'_> {
                         self.num(r.width()),
                         self.num(r.height())
                     );
-                    crate::filter_graph::graph_markup(g, (b.x0, b.y0))
+                    if g.linear_rgb {
+                        interpolation = "linearRGB";
+                    }
+                    let images = &self.doc.images;
+                    let href = |h: &str| -> String {
+                        if h.starts_with("data:") || h.is_empty() {
+                            return h.to_string();
+                        }
+                        match images.get(h.trim_start_matches('#')) {
+                            Some(blob) => format!("data:{};base64,{}", blob.mime, base64_encode(&blob.bytes)),
+                            None => h.to_string(),
+                        }
+                    };
+                    crate::filter_graph::graph_markup(g, (b.x0, b.y0), (b.x0, b.y0, b.width(), b.height()), &href)
                 }
             };
             // Filters composite normally: a shadow's or glow's other blend mode is recorded for import.
@@ -1852,7 +1885,7 @@ impl Writer<'_> {
                 }
                 _ => String::new(),
             };
-            self.def(1, &format!("<filter id=\"{fid}\"{region_attr}{mode} color-interpolation-filters=\"sRGB\">{body}</filter>"));
+            self.def(1, &format!("<filter id=\"{fid}\"{region_attr}{mode} color-interpolation-filters=\"{interpolation}\">{body}</filter>"));
             self.line(&format!("<g filter=\"url(#{fid})\">"));
             self.depth += 1;
             opened += 1;

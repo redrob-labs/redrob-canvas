@@ -2,15 +2,15 @@
 //! filter primitives as the SVG specification defines them (`feGaussianBlur`, `feOffset`,
 //! `feFlood`, `feMerge`, `feComposite`, `feColorMatrix`, `feComponentTransfer`,
 //! `feConvolveMatrix`, `feMorphology`, `feTurbulence`, `feDisplacementMap`, `feDiffuseLighting`,
-//! `feSpecularLighting`, `feBlend`, `feDropShadow`, `feTile`), connected by their `in`/`in2`
-//! inputs and `result` names into a graph, and evaluated here on the object's pixels.
+//! `feSpecularLighting`, `feBlend`, `feDropShadow`, `feTile`, `feImage`), connected by their
+//! `in`/`in2` inputs and `result` names into a graph, and evaluated here on the object's pixels.
 //!
 //! The graph is the effect's parameters (`filter.graph`): `{region: [x, y, w, h] (fractions of the
-//! object's bounds, SVG's defaults -10 %, -10 %, 120 %, 120 %), primitives: [{type, result?, in?,
-//! …}]}`, so the SVG writer puts it back as a `<filter>` and the reader keeps any `<filter>` it
-//! meets. Lengths are in document units (points) and become pixels through the raster's
-//! [`PixelSpace::px`]. Colours are filtered in sRGB (`color-interpolation-filters` is not
-//! distinguished) and a primitive's own subregion is the filter region (not kept).
+//! object's bounds, SVG's defaults -10 %, -10 %, 120 %, 120 %), name?, linearRgb?, primitives:
+//! [{type, result?, subregion?, in?, …}]}`, so the SVG writer puts it back as a `<filter>` and the
+//! reader keeps any `<filter>` it meets. Lengths are in document units (points) and become pixels
+//! through the raster's [`PixelSpace::px`]. Colours are filtered in sRGB, or in linear light with
+//! `linearRgb` (`color-interpolation-filters`); a primitive's own subregion clips its result.
 
 use std::collections::HashMap;
 
@@ -39,11 +39,19 @@ pub struct FilterGraph {
     /// The primitives, first evaluated first; the last one's result is the filter's.
     #[serde(default)]
     pub primitives: Vec<Primitive>,
+    /// The filter's name (the Filter Editor's document list, SVG's `id`/`inkscape:label`-like
+    /// title); empty: unnamed.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub name: String,
+    /// `color-interpolation-filters="linearRGB"`: the primitives run on linear-light colours
+    /// (the SVG default); false: sRGB (what the editor makes).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub linear_rgb: bool,
 }
 
 impl Default for FilterGraph {
     fn default() -> Self {
-        Self { region: DEFAULT_REGION, primitives: vec![] }
+        Self { region: DEFAULT_REGION, primitives: vec![], name: String::new(), linear_rgb: false }
     }
 }
 
@@ -53,14 +61,53 @@ pub struct Primitive {
     /// `result`: the name later primitives refer to this one by (empty: unnamed).
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub result: String,
+    /// The primitive subregion (`x`, `y`, `width`, `height` on the element) as fractions of the
+    /// object's bounds, like [`FilterGraph::region`]; `None`: the filter region.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub subregion: Option<[f64; 4]>,
     /// What it does.
     #[serde(flatten)]
     pub kind: Kind,
 }
 
-/// A filter primitive's input: `SourceGraphic`, `SourceAlpha`, a `result` name, or empty for the
-/// previous primitive's result (the source graphic for the first).
+impl Primitive {
+    /// A primitive over the whole filter region.
+    pub fn new(result: impl Into<String>, kind: Kind) -> Self {
+        Self { result: result.into(), subregion: None, kind }
+    }
+}
+
+/// A filter primitive's input: `SourceGraphic`, `SourceAlpha`, `BackgroundImage`,
+/// `BackgroundAlpha`, `FillPaint`, `StrokePaint`, a `result` name, or empty for the previous
+/// primitive's result (the source graphic for the first).
 pub type Input = String;
+
+/// The standard input names of the SVG specification, in the editor's order.
+pub const STANDARD_INPUTS: [&str; 6] = ["SourceGraphic", "SourceAlpha", "BackgroundImage", "BackgroundAlpha", "FillPaint", "StrokePaint"];
+
+/// A decoded image for `feImage`: straight RGBA8 pixels, row-major.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ImagePixels {
+    pub width: usize,
+    pub height: usize,
+    pub rgba: Vec<u8>,
+}
+
+/// What a filter reads besides the object's own pixels: the standard inputs the renderer can
+/// supply and the images `feImage` refers to.
+#[derive(Default)]
+pub struct Inputs<'a> {
+    /// `BackgroundImage`: the pixels painted beneath the object, in the raster's own layout
+    /// (premultiplied RGBA8, the same size); `None`: transparent.
+    pub background: Option<&'a [u8]>,
+    /// `FillPaint`: the object's fill as a flat colour (straight RGB, 0..1); `None`: transparent.
+    pub fill: Option<[f32; 3]>,
+    /// `StrokePaint`: the object's stroke as a flat colour.
+    pub stroke: Option<[f32; 3]>,
+    /// The image an `feImage` `href` names (a document image key, `#key`, or a `data:` URL the
+    /// caller decodes); `None`: nothing drawn.
+    pub image: Option<&'a dyn Fn(&str) -> Option<ImagePixels>>,
+}
 
 /// Composite operators (`feComposite operator`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -166,6 +213,59 @@ pub enum BlendOp {
     SoftLight,
     Difference,
     Exclusion,
+    Hue,
+    Saturation,
+    Color,
+    Luminosity,
+}
+
+impl BlendOp {
+    /// Every mode, in the editor's order.
+    pub const ALL: [BlendOp; 16] = [
+        BlendOp::Normal,
+        BlendOp::Multiply,
+        BlendOp::Screen,
+        BlendOp::Overlay,
+        BlendOp::Darken,
+        BlendOp::Lighten,
+        BlendOp::ColorDodge,
+        BlendOp::ColorBurn,
+        BlendOp::HardLight,
+        BlendOp::SoftLight,
+        BlendOp::Difference,
+        BlendOp::Exclusion,
+        BlendOp::Hue,
+        BlendOp::Saturation,
+        BlendOp::Color,
+        BlendOp::Luminosity,
+    ];
+
+    /// The CSS keyword (`mode` attribute).
+    pub fn css(self) -> &'static str {
+        match self {
+            BlendOp::Normal => "normal",
+            BlendOp::Multiply => "multiply",
+            BlendOp::Screen => "screen",
+            BlendOp::Overlay => "overlay",
+            BlendOp::Darken => "darken",
+            BlendOp::Lighten => "lighten",
+            BlendOp::ColorDodge => "color-dodge",
+            BlendOp::ColorBurn => "color-burn",
+            BlendOp::HardLight => "hard-light",
+            BlendOp::SoftLight => "soft-light",
+            BlendOp::Difference => "difference",
+            BlendOp::Exclusion => "exclusion",
+            BlendOp::Hue => "hue",
+            BlendOp::Saturation => "saturation",
+            BlendOp::Color => "color",
+            BlendOp::Luminosity => "luminosity",
+        }
+    }
+
+    /// The mode of a CSS keyword.
+    pub fn parse(s: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|m| m.css() == s)
+    }
 }
 
 /// A light source of the lighting primitives.
@@ -377,11 +477,24 @@ pub enum Kind {
         #[serde(default = "one")]
         opacity: f64,
     },
-    /// `feTile`: the input repeated over the region (drawn as the input itself).
+    /// `feTile`: the input's painted extent repeated over the region.
     Tile {
         #[serde(default, rename = "in")]
         input: Input,
     },
+    /// `feImage`: an image drawn over the primitive's subregion (the filter region without one):
+    /// `href` is a document image key, `#key`, or a `data:` URL.
+    Image {
+        #[serde(default)]
+        href: String,
+        /// `preserveAspectRatio` isn't `none`: the image is fitted inside the region, centred.
+        #[serde(default = "yes")]
+        preserve_aspect_ratio: bool,
+    },
+}
+
+fn yes() -> bool {
+    true
 }
 
 fn default_sd() -> f64 {
@@ -474,6 +587,7 @@ pub fn primitive_kinds() -> Vec<(&'static str, &'static str, Kind)> {
         ("Blend", "feBlend", Kind::Blend { input: String::new(), in2: "SourceGraphic".into(), mode: BlendOp::Multiply }),
         ("Drop Shadow", "feDropShadow", Kind::DropShadow { input: "SourceGraphic".into(), dx: 2.0, dy: 2.0, sd: 2.0, color: black(), opacity: 0.5 }),
         ("Tile", "feTile", Kind::Tile { input: String::new() }),
+        ("Image", "feImage", Kind::Image { href: String::new(), preserve_aspect_ratio: true }),
     ]
 }
 
@@ -497,6 +611,7 @@ impl Kind {
             Kind::Blend { .. } => "feBlend",
             Kind::DropShadow { .. } => "feDropShadow",
             Kind::Tile { .. } => "feTile",
+            Kind::Image { .. } => "feImage",
         }
     }
 
@@ -520,7 +635,7 @@ impl Kind {
             | Kind::Tile { input } => vec![input],
             Kind::Composite { input, in2, .. } | Kind::DisplacementMap { input, in2, .. } | Kind::Blend { input, in2, .. } => vec![input, in2],
             Kind::Merge { inputs } => inputs.iter().collect(),
-            Kind::Flood { .. } | Kind::Turbulence { .. } => vec![],
+            Kind::Flood { .. } | Kind::Turbulence { .. } | Kind::Image { .. } => vec![],
         }
     }
 
@@ -539,7 +654,7 @@ impl Kind {
             | Kind::Tile { input } => vec![input],
             Kind::Composite { input, in2, .. } | Kind::DisplacementMap { input, in2, .. } | Kind::Blend { input, in2, .. } => vec![input, in2],
             Kind::Merge { inputs } => inputs.iter_mut().collect(),
-            Kind::Flood { .. } | Kind::Turbulence { .. } => vec![],
+            Kind::Flood { .. } | Kind::Turbulence { .. } | Kind::Image { .. } => vec![],
         }
     }
 
@@ -618,8 +733,11 @@ impl FilterGraph {
     }
 
     /// How far from a pixel the content deciding it lies: every primitive's spread, added up
-    /// (`None` when a turbulence or a lighting makes the whole region matter).
+    /// (`None` when a tile or an image makes the whole region matter).
     pub fn reach(&self) -> Option<f64> {
+        if self.primitives.iter().any(|p| matches!(p.kind, Kind::Tile { .. } | Kind::Image { .. })) {
+            return None;
+        }
         Some(self.primitives.iter().map(|p| p.kind.spread()).sum())
     }
 
@@ -632,15 +750,43 @@ impl FilterGraph {
 
     /// Run the filter on `data`, `w` × `h` premultiplied RGBA8 pixels lying in the document as
     /// `space` says, for an object whose bounds are `bounds`. Does nothing when the sizes don't
-    /// match or the graph is empty.
+    /// match or the graph is empty. The background, paint and image inputs read as transparent;
+    /// [`FilterGraph::apply_with`] takes them.
     pub fn apply(&self, data: &mut [u8], w: usize, h: usize, space: &PixelSpace, bounds: Rect) {
+        self.apply_with(data, w, h, space, bounds, &Inputs::default());
+    }
+
+    /// [`FilterGraph::apply`] with the standard inputs and images `inputs` supplies.
+    pub fn apply_with(&self, data: &mut [u8], w: usize, h: usize, space: &PixelSpace, bounds: Rect, inputs: &Inputs) {
         if self.primitives.is_empty() || w == 0 || h == 0 || data.len() != w * h * 4 {
             return;
         }
         let px = space.px.max(1e-9);
-        let source: Buf =
-            data.chunks_exact(4).map(|c| [f32::from(c[0]), f32::from(c[1]), f32::from(c[2]), f32::from(c[3])].map(|v| v / 255.0)).collect();
-        let ctx = Ctx { w, h, px, space, bounds };
+        let decode = |bytes: &[u8]| -> Buf {
+            let mut b: Buf =
+                bytes.chunks_exact(4).map(|c| [f32::from(c[0]), f32::from(c[1]), f32::from(c[2]), f32::from(c[3])].map(|v| v / 255.0)).collect();
+            if self.linear_rgb {
+                for p in &mut b {
+                    *p = to_linear(*p);
+                }
+            }
+            b
+        };
+        let source: Buf = decode(data);
+        let background: Buf = match inputs.background.filter(|b| b.len() == w * h * 4) {
+            Some(b) => decode(b),
+            None => vec![[0.0; 4]; w * h],
+        };
+        let flat = |c: Option<[f32; 3]>| -> Buf {
+            match c {
+                Some([r, g, b]) => {
+                    let p = if self.linear_rgb { to_linear([r, g, b, 1.0]) } else { [r, g, b, 1.0] };
+                    vec![p; w * h]
+                }
+                None => vec![[0.0; 4]; w * h],
+            }
+        };
+        let ctx = Ctx { w, h, px, space, bounds, linear: self.linear_rgb, image: inputs.image };
         let mut results: HashMap<&str, Buf> = HashMap::new();
         let mut last: Buf = source.clone();
         for prim in &self.primitives {
@@ -649,10 +795,27 @@ impl FilterGraph {
                     "" => last.clone(),
                     "SourceGraphic" => source.clone(),
                     "SourceAlpha" => source.iter().map(|p| [0.0, 0.0, 0.0, p[3]]).collect(),
+                    "BackgroundImage" => background.clone(),
+                    "BackgroundAlpha" => background.iter().map(|p| [0.0, 0.0, 0.0, p[3]]).collect(),
+                    "FillPaint" => flat(inputs.fill),
+                    "StrokePaint" => flat(inputs.stroke),
                     other => results.get(other).cloned().unwrap_or_else(|| vec![[0.0; 4]; w * h]),
                 }
             };
-            let out = eval(&prim.kind, &ctx, &|n| input(n, &last));
+            let sub = prim.subregion.map(|[x, y, rw, rh]| {
+                let (bw, bh) = (bounds.width(), bounds.height());
+                Rect::new(bounds.x0 + x * bw, bounds.y0 + y * bh, bounds.x0 + (x + rw) * bw, bounds.y0 + (y + rh) * bh)
+            });
+            let mut out = eval(&prim.kind, &ctx, sub, &|n| input(n, &last));
+            if let Some(r) = sub {
+                // The primitive subregion clips what the primitive paints.
+                for (i, o) in out.iter_mut().enumerate() {
+                    let q = space.to_doc * Point::new((i % w) as f64 + 0.5, (i / w) as f64 + 0.5);
+                    if !r.contains(q) {
+                        *o = [0.0; 4];
+                    }
+                }
+            }
             if !prim.result.is_empty() {
                 results.insert(prim.result.as_str(), out.clone());
             }
@@ -663,12 +826,29 @@ impl FilterGraph {
         let to_doc = space.to_doc;
         for (i, (o, p)) in data.chunks_exact_mut(4).zip(&last).enumerate() {
             let q = to_doc * Point::new((i % w) as f64 + 0.5, (i / w) as f64 + 0.5);
-            let v = if region.contains(q) { *p } else { [0.0; 4] };
+            let mut v = if region.contains(q) { *p } else { [0.0; 4] };
+            if self.linear_rgb {
+                v = to_srgb(v);
+            }
             let a = v[3].clamp(0.0, 1.0);
             let c = |k: usize| (v[k].clamp(0.0, a) * 255.0).round() as u8;
             o.copy_from_slice(&[c(0), c(1), c(2), (a * 255.0).round() as u8]);
         }
     }
+}
+
+/// A premultiplied sRGB pixel as linear light (the colour channels through the sRGB curve).
+fn to_linear(p: [f32; 4]) -> [f32; 4] {
+    let s = unpremul(p);
+    let f = |c: f32| if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) };
+    premul([f(s[0]), f(s[1]), f(s[2]), s[3]])
+}
+
+/// A premultiplied linear-light pixel back in sRGB.
+fn to_srgb(p: [f32; 4]) -> [f32; 4] {
+    let s = unpremul(p);
+    let f = |c: f32| if c <= 0.003_130_8 { c * 12.92 } else { 1.055 * c.powf(1.0 / 2.4) - 0.055 };
+    premul([f(s[0]), f(s[1]), f(s[2]), s[3]])
 }
 
 /// Premultiplied RGBA pixels, 0..1.
@@ -680,15 +860,27 @@ struct Ctx<'a> {
     px: f64,
     space: &'a PixelSpace,
     bounds: Rect,
+    /// The buffers hold linear light (`feImage` and flood colours are converted to match).
+    linear: bool,
+    image: Option<&'a dyn Fn(&str) -> Option<ImagePixels>>,
 }
 
 fn parse_color(s: &str) -> [f32; 3] {
     redrob_vector_doc::color::Color::from_hex(s).map_or([0.0, 0.0, 0.0], |c| c.to_rgb())
 }
 
-fn eval(kind: &Kind, c: &Ctx, input: &dyn Fn(&str) -> Buf) -> Buf {
+fn eval(kind: &Kind, c: &Ctx, sub: Option<Rect>, input: &dyn Fn(&str) -> Buf) -> Buf {
     let (w, h) = (c.w, c.h);
     let to_px = |len: f64| len / c.px;
+    let colour = |hex: &str| -> [f32; 3] {
+        let [r, g, b] = parse_color(hex);
+        if c.linear {
+            let l = to_linear([r, g, b, 1.0]);
+            [l[0], l[1], l[2]]
+        } else {
+            [r, g, b]
+        }
+    };
     match kind {
         Kind::GaussianBlur { input: i, sd_x, sd_y } => {
             let mut b = input(i);
@@ -697,7 +889,7 @@ fn eval(kind: &Kind, c: &Ctx, input: &dyn Fn(&str) -> Buf) -> Buf {
         }
         Kind::Offset { input: i, dx, dy } => offset(&input(i), w, h, to_px(*dx), to_px(*dy)),
         Kind::Flood { color, opacity } => {
-            let [r, g, b] = parse_color(color);
+            let [r, g, b] = colour(color);
             let a = opacity.clamp(0.0, 1.0) as f32;
             vec![[r * a, g * a, b * a, a]; w * h]
         }
@@ -755,8 +947,17 @@ fn eval(kind: &Kind, c: &Ctx, input: &dyn Fn(&str) -> Buf) -> Buf {
             let r = |v: f64| to_px(v).round().clamp(0.0, 256.0) as usize;
             morphology(&input(i), w, h, *operator, r(*radius_x), r(*radius_y))
         }
-        Kind::Turbulence { base_frequency_x, base_frequency_y, num_octaves, seed, stitch_tiles: _, fractal_noise } => {
-            turbulence(c, *base_frequency_x, *base_frequency_y, *num_octaves, *seed, *fractal_noise)
+        Kind::Turbulence { base_frequency_x, base_frequency_y, num_octaves, seed, stitch_tiles, fractal_noise } => {
+            let (mut fx, mut fy) = (base_frequency_x.max(0.0), base_frequency_y.max(0.0));
+            if *stitch_tiles {
+                // Stitching: a whole number of noise cycles across the tile (the subregion, else
+                // the filter region), so the texture repeats seamlessly (the SVG adjustment).
+                let tile = sub.unwrap_or_else(|| c.bounds.inflate(0.1 * c.bounds.width(), 0.1 * c.bounds.height()));
+                let fit = |f: f64, len: f64| if f > 0.0 && len > 0.0 { (f * len).round().max(1.0) / len } else { f };
+                fx = fit(fx, tile.width());
+                fy = fit(fy, tile.height());
+            }
+            turbulence(c, fx, fy, *num_octaves, *seed, *fractal_noise)
         }
         Kind::DisplacementMap { input: i, in2, scale, x_channel, y_channel } => {
             displace(&input(i), &input(in2), w, h, to_px(*scale), *x_channel, *y_channel)
@@ -776,7 +977,7 @@ fn eval(kind: &Kind, c: &Ctx, input: &dyn Fn(&str) -> Buf) -> Buf {
             let mut shadow: Buf = src.iter().map(|p| [0.0, 0.0, 0.0, p[3]]).collect();
             blur(&mut shadow, w, h, to_px(*sd), to_px(*sd));
             let shadow = offset(&shadow, w, h, to_px(*dx), to_px(*dy));
-            let [r, g, b] = parse_color(color);
+            let [r, g, b] = colour(color);
             let o = opacity.clamp(0.0, 1.0) as f32;
             shadow
                 .iter()
@@ -787,8 +988,73 @@ fn eval(kind: &Kind, c: &Ctx, input: &dyn Fn(&str) -> Buf) -> Buf {
                 })
                 .collect()
         }
-        Kind::Tile { input: i } => input(i),
+        Kind::Tile { input: i } => tile(&input(i), w, h),
+        Kind::Image { href, preserve_aspect_ratio } => image(c, sub, href, *preserve_aspect_ratio),
     }
+}
+
+/// The input's painted extent (its non-transparent bounding box) repeated over the whole buffer,
+/// the tiles lined up with the extent.
+fn tile(src: &Buf, w: usize, h: usize) -> Buf {
+    let (mut x0, mut y0, mut x1, mut y1) = (usize::MAX, usize::MAX, 0usize, 0usize);
+    for (i, p) in src.iter().enumerate() {
+        if p[3] > 1e-4 {
+            let (x, y) = (i % w, i / w);
+            x0 = x0.min(x);
+            y0 = y0.min(y);
+            x1 = x1.max(x);
+            y1 = y1.max(y);
+        }
+    }
+    if x0 == usize::MAX {
+        return src.clone();
+    }
+    let (tw, th) = (x1 - x0 + 1, y1 - y0 + 1);
+    let mut out = vec![[0.0f32; 4]; w * h];
+    for y in 0..h {
+        let sy = y0 + (y as i64 - y0 as i64).rem_euclid(th as i64) as usize;
+        for x in 0..w {
+            let sx = x0 + (x as i64 - x0 as i64).rem_euclid(tw as i64) as usize;
+            if let (Some(o), Some(p)) = (out.get_mut(y * w + x), src.get(sy * w + sx)) {
+                *o = *p;
+            }
+        }
+    }
+    out
+}
+
+/// `feImage`: the image `href` names, drawn over `sub` (else the filter region, 10 % beyond the
+/// object's bounds), fitted inside it and centred when the aspect ratio is kept, stretched over
+/// it otherwise; nearest-neighbour sampled.
+fn image(c: &Ctx, sub: Option<Rect>, href: &str, keep_aspect: bool) -> Buf {
+    let (w, h) = (c.w, c.h);
+    let mut out = vec![[0.0f32; 4]; w * h];
+    let Some(img) = c.image.and_then(|f| f(href)).filter(|i| i.width > 0 && i.height > 0 && i.rgba.len() >= i.width * i.height * 4) else {
+        return out;
+    };
+    let mut r = sub.unwrap_or_else(|| c.bounds.inflate(0.1 * c.bounds.width(), 0.1 * c.bounds.height()));
+    if !(r.width() > 0.0 && r.height() > 0.0) {
+        return out;
+    }
+    if keep_aspect {
+        let k = (r.width() / img.width as f64).min(r.height() / img.height as f64);
+        let (iw, ih) = (img.width as f64 * k, img.height as f64 * k);
+        let cen = r.center();
+        r = Rect::new(cen.x - iw / 2.0, cen.y - ih / 2.0, cen.x + iw / 2.0, cen.y + ih / 2.0);
+    }
+    for (i, o) in out.iter_mut().enumerate() {
+        let q = c.space.to_doc * Point::new((i % w) as f64 + 0.5, (i / w) as f64 + 0.5);
+        if !r.contains(q) {
+            continue;
+        }
+        let u = ((q.x - r.x0) / r.width() * img.width as f64).floor().clamp(0.0, (img.width - 1) as f64) as usize;
+        let v = ((q.y - r.y0) / r.height() * img.height as f64).floor().clamp(0.0, (img.height - 1) as f64) as usize;
+        let k = (v * img.width + u) * 4;
+        let s = [img.rgba[k], img.rgba[k + 1], img.rgba[k + 2], img.rgba[k + 3]].map(|b| f32::from(b) / 255.0);
+        let p = premul(s);
+        *o = if c.linear { to_linear(p) } else { p };
+    }
+    out
 }
 
 fn over(top: [f32; 4], bottom: [f32; 4]) -> [f32; 4] {
@@ -1377,9 +1643,56 @@ fn blend(mode: BlendOp, top: [f32; 4], bottom: [f32; 4]) -> [f32; 4] {
             }
             BlendOp::Difference => (cs - cb).abs(),
             BlendOp::Exclusion => cs + cb - 2.0 * cs * cb,
+            // Non-separable modes are blended whole below.
+            BlendOp::Hue | BlendOp::Saturation | BlendOp::Color | BlendOp::Luminosity => cs,
         }
     };
-    // The separable blend of the SVG compositing specification, premultiplied.
-    let ch = |k: usize| (1.0 - ba) * top[k] + (1.0 - ta) * bottom[k] + ta * ba * f(t[k], b[k]);
+    let mixed: [f32; 3] = match mode {
+        BlendOp::Hue => set_lum(set_sat([t[0], t[1], t[2]], sat([b[0], b[1], b[2]])), lum([b[0], b[1], b[2]])),
+        BlendOp::Saturation => set_lum(set_sat([b[0], b[1], b[2]], sat([t[0], t[1], t[2]])), lum([b[0], b[1], b[2]])),
+        BlendOp::Color => set_lum([t[0], t[1], t[2]], lum([b[0], b[1], b[2]])),
+        BlendOp::Luminosity => set_lum([b[0], b[1], b[2]], lum([t[0], t[1], t[2]])),
+        _ => [f(t[0], b[0]), f(t[1], b[1]), f(t[2], b[2])],
+    };
+    // The blend of the SVG compositing specification, premultiplied.
+    let ch = |k: usize| (1.0 - ba) * top[k] + (1.0 - ta) * bottom[k] + ta * ba * mixed[k];
     [ch(0), ch(1), ch(2), a]
+}
+
+/// The luminosity of a straight colour (the compositing specification's weights).
+fn lum(c: [f32; 3]) -> f32 {
+    0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]
+}
+
+fn sat(c: [f32; 3]) -> f32 {
+    c[0].max(c[1]).max(c[2]) - c[0].min(c[1]).min(c[2])
+}
+
+/// `c` with its luminosity set to `l`, clipped back into gamut.
+fn set_lum(c: [f32; 3], l: f32) -> [f32; 3] {
+    let d = l - lum(c);
+    let mut o = [c[0] + d, c[1] + d, c[2] + d];
+    let l = lum(o);
+    let n = o[0].min(o[1]).min(o[2]);
+    let x = o[0].max(o[1]).max(o[2]);
+    if n < 0.0 && (l - n).abs() > 1e-6 {
+        o = o.map(|v| l + (v - l) * l / (l - n));
+    }
+    if x > 1.0 && (x - l).abs() > 1e-6 {
+        o = o.map(|v| l + (v - l) * (1.0 - l) / (x - l));
+    }
+    o
+}
+
+/// `c` with its saturation set to `s` (the compositing specification's SetSat).
+fn set_sat(c: [f32; 3], s: f32) -> [f32; 3] {
+    let mut idx = [0usize, 1, 2];
+    idx.sort_by(|a, b| c[*a].total_cmp(&c[*b]));
+    let (lo, mid, hi) = (idx[0], idx[1], idx[2]);
+    let mut o = [0.0f32; 3];
+    if c[hi] > c[lo] {
+        o[mid] = (c[mid] - c[lo]) * s / (c[hi] - c[lo]);
+        o[hi] = s;
+    }
+    o
 }

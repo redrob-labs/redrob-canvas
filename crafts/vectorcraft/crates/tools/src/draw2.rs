@@ -66,7 +66,7 @@ pub fn points_json(pts: &[Point]) -> Value {
 /// The shapes the Pen and the Pencil give a stroke along its path (`path.freehand` and
 /// `path.strokeShape` `shape`): none, a triangle wide at the start or at the end, an ellipse, the
 /// copied path's outline.
-pub const STROKE_SHAPES: [&str; 5] = ["none", "triangleIn", "triangleOut", "ellipse", "fromClipboard"];
+pub const STROKE_SHAPES: [&str; 6] = ["none", "triangleIn", "triangleOut", "ellipse", "fromClipboard", "pressure"];
 
 /// A subpath as `path.setAnchors` / `path.create` take it: `{anchors: [{x, y, in?, out?,
 /// smooth?}], closed}`.

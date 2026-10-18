@@ -4572,3 +4572,185 @@ lighting	Light	Світло
 	Background	Тло
 	Live Slice	Живий розріз
 	Fuse Slice	Злити розріз
+	3D Marble	3D-мармур
+	3D Wood	3D-дерево
+	Air Spray	Аерограф
+	Aluminium	Алюміній
+	Apply Effects to Image Pixels	Застосувати ефекти до пікселів зображення
+	Apply Filter Preset	Застосувати набір фільтра
+	Apply to Selection	Застосувати до виділення
+	Bevels	Скоси
+	Black Hole	Чорна діра
+	Blobs	Краплі
+	Bloom	Світіння
+	Brilliance	Блиск
+	Bump	Рельєф
+	Bumps	Рельєфи
+	Button	Кнопка
+	Canvas Bumps	Рельєф полотна
+	Chalk and Sponge	Крейда та губка
+	Channel to Alpha	Канал в альфа
+	Chrome	Хром
+	Color Blindness	Дальтонізм
+	Colour Space:	Колірний простір:
+	Comics Cream	Комікс крем
+	Cracked Glass	Тріснуте скло
+	Cubes	Кубики
+	Dark and Glow	Темрява і світіння
+	Document Filters	Фільтри документа
+	Dragee	Драже
+	Duochrome	Двоколірний
+	Duplicate Filter	Дублювати фільтр
+	Embossed Leather	Тиснена шкіра
+	Extract Channel	Витягти канал
+	Fade to Black	Згасання в чорний
+	Felt Feather	Фетрове перо
+	Fill and Overlays	Заливки та накладання
+	Filter	Фільтр
+	Filter Gallery	Галерея фільтрів
+	Filter Presets	Набори фільтрів
+	Filter copy	Копія фільтра
+	Filters	Фільтри
+	Glow	Сяйво
+	Glowing Metal	Розжарений метал
+	Gold	Золото
+	Greyscale	Відтінки сірого
+	HSL Noise	Шум HSL
+	Ink Blot	Чорнильна пляма
+	Ink Splash	Бризки чорнила
+	Inner Shadow	Внутрішня тінь
+	Leopard Fur	Хутро леопарда
+	Light Eraser	Гумка для світлого
+	Luminance to Alpha	Яскравість в альфа
+	Materials	Матеріали
+	Matte Jelly	Матове желе
+	Metallized Paint	Металік
+	Neon	Неон
+	No filter matches the search.	Жоден фільтр не відповідає пошуку.
+	Noise Fill	Заливка шумом
+	Non-realistic 3D Shaders	Нереалістичні 3D-шейдери
+	Open Filter Editor	Відкрити редактор фільтрів
+	Paper Bump	Рельєф паперу
+	Pointillism	Пуантилізм
+	Protrusions	Виступи
+	Quadritone	Чотиритоновий
+	Ridges	Гребені
+	Rough Paper	Шорсткий папір
+	Rough Transparency	Шорстка прозорість
+	Roughen	Огрубіння
+	Saturation Map	Мапа насиченості
+	Select an object to apply a filter.	Виділіть об’єкт, щоб застосувати фільтр.
+	Silhouette	Силует
+	Smooth Edges	Згладжені краї
+	Solarize	Соляризація
+	Specular Light	Відблиск
+	Spikes	Шипи
+	Spots Overlay	Накладання плям
+	Stone Wall	Кам’яна стіна
+	Subregion:	Підобласть:
+	Swirl	Вир
+	Textures	Текстури
+	The document has no filters yet.	У документі ще немає фільтрів.
+	Thin Membrane	Тонка плівка
+	Torn Edges	Рвані краї
+	Translucent	Напівпрозорий
+	Transparency Utilities	Утиліти прозорості
+	Tritone	Тритоновий
+	Watercolor	Акварель
+	Waves	Хвилі
+	Turns:	Витки:
+	Divergence:	Розходження:
+	Clockwise	За годинниковою стрілкою
+	Threshold:	Поріг:
+	Grow/Shrink:	Розширити/стиснути:
+	Fill by:	Заливка за:
+	Visible Colors	Видимі кольори
+	Alpha	Альфа
+	Add to Fill	Додати до заливки
+	View rotation (Cmd+Shift+scroll turns the view)	Обертання виду (Cmd+Shift+прокрутка обертає вид)
+	Lock Rotate View	Заблокувати обертання виду
+	Rotate View	Обернути вид
+	Fixation:	Фіксація:
+	Dip Pen	Перо
+	Marker	Маркер
+	Brush	Пензель
+	Wiggly	Хвилястий
+	Splotchy	Плямистий
+	Tracing	Трасування
+	Use Pressure	Використовувати натиск
+	Live Simplify	Живе спрощення
+	Simplify (Live)…	Спростити (живе)…
+	Split View	Розділений вид
+	X-ray	Рентген
+	Input Devices…	Пристрої введення…
+	Input Devices	Пристрої введення
+	Pressure Curves	Криві натиску
+	Mouse	Миша
+	Pen / Stylus	Перо / стилус
+	Touch	Сенсорне введення
+	Liquify Tools	Інструменти пластики
+	Disabled	Вимкнено
+	Grids	Сітки
+	Main Grid	Основна сітка
+	Add Grid	Додати сітку
+	Remove Grid	Видалити сітку
+	Grid Options	Параметри сітки
+	Kind:	Вид:
+	Subdivisions:	Поділки:
+	Angles:	Кути:
+	Gaps:	Проміжки:
+	Origin:	Початок:
+	Own color	Власний колір
+	Open a document to edit its grids.	Відкрийте документ, щоб змінити його сітки.
+	Add Script	Додати скрипт
+	Edit Script	Змінити скрипт
+	Remove Script	Видалити скрипт
+	The document has no scripts.	У документі немає скриптів.
+	External:	Зовнішній:
+	Embedded script	Вбудований скрипт
+	Add Embedded Script	Додати вбудований скрипт
+	Add External Script	Додати зовнішній скрипт
+	Source:	Джерело:
+	External file	Зовнішній файл
+	Code:	Код:
+	Open a document to edit its scripts.	Відкрийте документ, щоб змінити його скрипти.
+	Alignment Handles	Маркери вирівнювання
+	Align (Shift: move the key object)	Вирівняти (Shift: перемістити ключовий об’єкт)
+	Stylesheet	Таблиця стилів
+	No rules yet. Add one and assign its class to objects.	Правил ще немає. Додайте одне й призначте його клас об’єктам.
+	Add Rule	Додати правило
+	Remove Rule	Видалити правило
+	Selector:	Селектор:
+	Declarations:	Оголошення:
+	Assign to Selection	Призначити виділенню
+	Remove from Selection	Зняти з виділення
+	Add CSS Rule	Додати правило CSS
+	Edit CSS Rule	Змінити правило CSS
+	Remove CSS Rule	Видалити правило CSS
+	Assign CSS Class	Призначити клас CSS
+	Remove CSS Class	Зняти клас CSS
+	Apply Stylesheet	Застосувати таблицю стилів
+	New Node	Новий вузол
+	Indent Node	Вкласти вузол
+	Outdent Node	Винести вузол
+	Move Node	Перемістити вузол
+	Set Path Data	Задати дані контуру
+	Round to:	Округлити до:
+	Round Path Data	Округлити дані контуру
+	Connector Tool	Інструмент «Коннектор»
+	Connect Objects	З’єднати об’єкти
+	Reroute Connectors	Перебудувати коннектори
+	Connector Obstacle	Перешкода для коннекторів
+	Arrange Connected Objects	Розставити з’єднані об’єкти
+	Arrange Connected	Розставити з’єднані
+	Routing:	Прокладання:
+	Orthogonal	Ортогонально
+	Polyline	Полілінія
+	Curvature:	Кривина:
+	3D Box Tool	Інструмент «3D-блок»
+	3D Box	3D-блок
+	3D Box Options	Параметри 3D-блока
+	Move Vanishing Point	Перемістити точку сходу
+	Z:	Z:
+	Vanishing Point	Точка сходу
+	Infinite	Нескінченно

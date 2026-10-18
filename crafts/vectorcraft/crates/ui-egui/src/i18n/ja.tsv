@@ -4601,3 +4601,185 @@ lighting	Light	ライト
 	Background	背景
 	Live Slice	ライブスライス
 	Fuse Slice	スライスを結合
+	3D Marble	3D 大理石
+	3D Wood	3D 木目
+	Air Spray	エアスプレー
+	Aluminium	アルミニウム
+	Apply Effects to Image Pixels	効果を画像のピクセルに適用
+	Apply Filter Preset	フィルタープリセットを適用
+	Apply to Selection	選択範囲に適用
+	Bevels	ベベル
+	Black Hole	ブラックホール
+	Blobs	ブロブ
+	Bloom	ブルーム
+	Brilliance	輝き
+	Bump	バンプ
+	Bumps	バンプ
+	Button	ボタン
+	Canvas Bumps	キャンバスバンプ
+	Chalk and Sponge	チョークとスポンジ
+	Channel to Alpha	チャンネルをアルファに
+	Chrome	クローム
+	Color Blindness	色覚異常
+	Colour Space:	色空間:
+	Comics Cream	コミッククリーム
+	Cracked Glass	ひび割れガラス
+	Cubes	キューブ
+	Dark and Glow	ダークと光
+	Document Filters	ドキュメントのフィルター
+	Dragee	ドラジェ
+	Duochrome	デュオクローム
+	Duplicate Filter	フィルターを複製
+	Embossed Leather	エンボスレザー
+	Extract Channel	チャンネルを抽出
+	Fade to Black	黒へフェード
+	Felt Feather	フェルトの羽
+	Fill and Overlays	塗りとオーバーレイ
+	Filter	フィルター
+	Filter Gallery	フィルターギャラリー
+	Filter Presets	フィルタープリセット
+	Filter copy	フィルターのコピー
+	Filters	フィルター
+	Glow	グロー
+	Glowing Metal	光る金属
+	Gold	ゴールド
+	Greyscale	グレースケール
+	HSL Noise	HSL ノイズ
+	Ink Blot	インクのしみ
+	Ink Splash	インクの飛沫
+	Inner Shadow	内側のシャドウ
+	Leopard Fur	レオパードの毛皮
+	Light Eraser	明部を消去
+	Luminance to Alpha	輝度をアルファに
+	Materials	マテリアル
+	Matte Jelly	マットゼリー
+	Metallized Paint	メタリック塗装
+	Neon	ネオン
+	No filter matches the search.	検索に一致するフィルターはありません。
+	Noise Fill	ノイズ塗り
+	Non-realistic 3D Shaders	非写実的 3D シェーダー
+	Open Filter Editor	フィルターエディターを開く
+	Paper Bump	紙のバンプ
+	Pointillism	点描
+	Protrusions	突起
+	Quadritone	クアドリトーン
+	Ridges	隆起
+	Rough Paper	ざらざらした紙
+	Rough Transparency	ざらざらした透明
+	Roughen	ラフ
+	Saturation Map	彩度マップ
+	Select an object to apply a filter.	フィルターを適用するオブジェクトを選択してください。
+	Silhouette	シルエット
+	Smooth Edges	エッジを滑らかに
+	Solarize	ソラリゼーション
+	Specular Light	スペキュラー光
+	Spikes	スパイク
+	Spots Overlay	斑点オーバーレイ
+	Stone Wall	石壁
+	Subregion:	サブ領域:
+	Swirl	渦
+	Textures	テクスチャ
+	The document has no filters yet.	ドキュメントにはまだフィルターがありません。
+	Thin Membrane	薄い膜
+	Torn Edges	ちぎれたエッジ
+	Translucent	半透明
+	Transparency Utilities	透明ユーティリティ
+	Tritone	トリトーン
+	Watercolor	水彩
+	Waves	波
+	Turns:	巻き数:
+	Divergence:	発散:
+	Clockwise	時計回り
+	Threshold:	しきい値:
+	Grow/Shrink:	拡大/縮小:
+	Fill by:	塗りの基準:
+	Visible Colors	表示色
+	Alpha	アルファ
+	Add to Fill	塗りに追加
+	View rotation (Cmd+Shift+scroll turns the view)	表示の回転 (Cmd+Shift+スクロールで回転)
+	Lock Rotate View	表示の回転をロック
+	Rotate View	表示を回転
+	Fixation:	固定:
+	Dip Pen	つけペン
+	Marker	マーカー
+	Brush	ブラシ
+	Wiggly	ゆらゆら
+	Splotchy	しみ
+	Tracing	トレース
+	Use Pressure	筆圧を使用
+	Live Simplify	ライブ単純化
+	Simplify (Live)…	単純化 (ライブ)…
+	Split View	分割表示
+	X-ray	X 線
+	Input Devices…	入力デバイス…
+	Input Devices	入力デバイス
+	Pressure Curves	筆圧カーブ
+	Mouse	マウス
+	Pen / Stylus	ペン / スタイラス
+	Touch	タッチ
+	Liquify Tools	リキッドツール
+	Disabled	無効
+	Grids	グリッド
+	Main Grid	メイングリッド
+	Add Grid	グリッドを追加
+	Remove Grid	グリッドを削除
+	Grid Options	グリッドオプション
+	Kind:	種類:
+	Subdivisions:	分割数:
+	Angles:	角度:
+	Gaps:	間隔:
+	Origin:	原点:
+	Own color	独自の色
+	Open a document to edit its grids.	グリッドを編集するドキュメントを開いてください。
+	Add Script	スクリプトを追加
+	Edit Script	スクリプトを編集
+	Remove Script	スクリプトを削除
+	The document has no scripts.	ドキュメントにスクリプトはありません。
+	External:	外部:
+	Embedded script	埋め込みスクリプト
+	Add Embedded Script	埋め込みスクリプトを追加
+	Add External Script	外部スクリプトを追加
+	Source:	ソース:
+	External file	外部ファイル
+	Code:	コード:
+	Open a document to edit its scripts.	スクリプトを編集するドキュメントを開いてください。
+	Alignment Handles	整列ハンドル
+	Align (Shift: move the key object)	整列 (Shift: キーオブジェクトを移動)
+	Stylesheet	スタイルシート
+	No rules yet. Add one and assign its class to objects.	ルールはまだありません。追加してそのクラスをオブジェクトに割り当ててください。
+	Add Rule	ルールを追加
+	Remove Rule	ルールを削除
+	Selector:	セレクター:
+	Declarations:	宣言:
+	Assign to Selection	選択範囲に割り当て
+	Remove from Selection	選択範囲から削除
+	Add CSS Rule	CSS ルールを追加
+	Edit CSS Rule	CSS ルールを編集
+	Remove CSS Rule	CSS ルールを削除
+	Assign CSS Class	CSS クラスを割り当て
+	Remove CSS Class	CSS クラスを削除
+	Apply Stylesheet	スタイルシートを適用
+	New Node	新規ノード
+	Indent Node	ノードをインデント
+	Outdent Node	ノードをアウトデント
+	Move Node	ノードを移動
+	Set Path Data	パスデータを設定
+	Round to:	丸め桁数:
+	Round Path Data	パスデータを丸める
+	Connector Tool	コネクターツール
+	Connect Objects	オブジェクトを接続
+	Reroute Connectors	コネクターを再配線
+	Connector Obstacle	コネクターの障害物
+	Arrange Connected Objects	接続されたオブジェクトを配置
+	Arrange Connected	接続を配置
+	Routing:	配線:
+	Orthogonal	直交
+	Polyline	折れ線
+	Curvature:	曲率:
+	3D Box Tool	3D ボックスツール
+	3D Box	3D ボックス
+	3D Box Options	3D ボックスオプション
+	Move Vanishing Point	消点を移動
+	Z:	Z:
+	Vanishing Point	消点
+	Infinite	無限

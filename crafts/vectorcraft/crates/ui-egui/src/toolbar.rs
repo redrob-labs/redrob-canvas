@@ -36,7 +36,7 @@ pub const BASIC: &[(&str, &[&[&str]])] = &[
     (
         "Shapes",
         &[
-            &["rectangle", "roundedRectangle", "star", "lineSegment", "arc", "spiral", "rectangularGrid", "polarGrid", "flare"],
+            &["rectangle", "roundedRectangle", "star", "lineSegment", "arc", "spiral", "rectangularGrid", "polarGrid", "flare", "connector", "box3d"],
             &["ellipse"],
             &["polygon"],
             &["shaper"],
@@ -395,6 +395,27 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.session.tool_id() == "directSelection" {
         return node_options(app, ui);
     }
+    if app.session.tool_id() == "spiral" {
+        return spiral_options(app, ui);
+    }
+    if app.session.tool_id() == "selection" {
+        // On-canvas alignment handles around the selection's bounds.
+        let on = app.ui.view.align_handles;
+        if widgets::check(ui, "Alignment Handles", on, true) {
+            app.ui.view.align_handles = !on;
+        }
+        ui.separator();
+        return;
+    }
+    if app.session.tool_id() == "livePaintBucket" {
+        return paint_bucket_options(app, ui);
+    }
+    if app.session.tool_id() == "connector" {
+        return connector_options(app, ui);
+    }
+    if app.session.tool_id() == "box3d" {
+        return box3d_options(app, ui);
+    }
     if app.session.tool_id() != "mirrorCut" {
         return;
     }
@@ -419,12 +440,13 @@ fn drawing_mode_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     /// (value, label) of each choice.
     type Choices = [(&'static str, &'static str)];
     const MODES: [(&str, &str); 4] = [("regular", "Regular"), ("spiro", "Spiro"), ("bspline", "BSpline"), ("paraxial", "Paraxial")];
-    const SHAPES: [(&str, &str); 5] = [
+    const SHAPES: [(&str, &str); 6] = [
         ("none", "None"),
         ("triangleIn", "Triangle In"),
         ("triangleOut", "Triangle Out"),
         ("ellipse", "Ellipse"),
         ("fromClipboard", "From Clipboard"),
+        ("pressure", "Pressure"),
     ];
     let t = Tokens::get(ui.ctx());
     let opts = app.session.tool_options();
@@ -439,6 +461,145 @@ fn drawing_mode_options(app: &mut VectorcraftApp, ui: &mut Ui) {
         if let Some((value, _)) = widgets::dropdown(ui, ("cb-draw", key), shown, &labels, 112.0).and_then(|i| choices.get(i)) {
             app.run("tool.setOption", json!({ "key": key, "value": value })).ok();
         }
+    }
+    if app.session.tool_id() == "pencil" {
+        // Pressure-sensitive width and the live Simplify (the smoothing stays editable).
+        let use_pressure = opts["usePressure"].as_bool().unwrap_or(false);
+        if widgets::check(ui, "Use Pressure", use_pressure, true) {
+            app.run("tool.setOption", json!({ "key": "usePressure", "value": !use_pressure })).ok();
+        }
+        let live = opts["lpeSimplify"].as_bool().unwrap_or(false);
+        if widgets::check(ui, "Live Simplify", live, true) {
+            app.run("tool.setOption", json!({ "key": "lpeSimplify", "value": !live })).ok();
+        }
+    }
+    ui.separator();
+}
+
+/// The Spiral tool's controls: Turns (quarter turns ÷ 4), Divergence (the decay a quarter turn, %)
+/// and the winding direction, the tool's `segments`, `decay` and `clockwise` options; the live
+/// spiral's handles change the same values afterwards.
+fn spiral_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    let segments = opts["segments"].as_u64().unwrap_or(10);
+    let decay = opts["decay"].as_f64().unwrap_or(80.0);
+    let clockwise = opts["clockwise"].as_bool().unwrap_or(true);
+    ui.label(egui::RichText::new(tl!("Turns:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-spiral-turns", segments as f64 / 4.0, "", 2, 52.0) {
+        let n = ((v * 4.0).round() as i64).clamp(2, 1000);
+        app.run("tool.setOption", json!({ "key": "segments", "value": n })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Divergence:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-spiral-decay", decay, "%", 1, 56.0) {
+        app.run("tool.setOption", json!({ "key": "decay", "value": v.clamp(5.0, 150.0) })).ok();
+    }
+    if widgets::check(ui, "Clockwise", clockwise, true) {
+        app.run("tool.setOption", json!({ "key": "clockwise", "value": !clockwise })).ok();
+    }
+    ui.separator();
+}
+
+/// The Paint Bucket's controls: the colour threshold, grow/shrink of the filled region, fill by
+/// the visible colours or by one channel, and whether a click adds to the previous fill (what
+/// Shift does): the tool's `threshold`, `grow`, `channel` and `union` options.
+fn paint_bucket_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    const CHANNELS: [(&str, &str); 5] = [("visible", "Visible Colors"), ("red", "Red"), ("green", "Green"), ("blue", "Blue"), ("alpha", "Alpha")];
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    let threshold = opts["threshold"].as_f64().unwrap_or(10.0);
+    let grow = opts["grow"].as_f64().unwrap_or(0.0);
+    let channel = opts["channel"].as_str().unwrap_or("visible");
+    let union = opts["union"].as_bool().unwrap_or(false);
+    ui.label(egui::RichText::new(tl!("Threshold:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-bucket-threshold", threshold, "%", 0, 48.0) {
+        app.run("tool.setOption", json!({ "key": "threshold", "value": v.clamp(0.0, 100.0) })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Grow/Shrink:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-bucket-grow", grow, "px", 0, 48.0) {
+        app.run("tool.setOption", json!({ "key": "grow", "value": v.clamp(-64.0, 64.0) })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Fill by:")).size(12.0).color(t.text));
+    let shown = CHANNELS.iter().find(|(v, _)| *v == channel).map_or(channel, |(_, l)| *l);
+    let labels: Vec<&str> = CHANNELS.iter().map(|(_, l)| *l).collect();
+    if let Some((value, _)) = widgets::dropdown(ui, ("cb-bucket", "channel"), shown, &labels, 112.0).and_then(|i| CHANNELS.get(i)) {
+        app.run("tool.setOption", json!({ "key": "channel", "value": value })).ok();
+    }
+    if widgets::check(ui, "Add to Fill", union, true) {
+        app.run("tool.setOption", json!({ "key": "union", "value": !union })).ok();
+    }
+    ui.separator();
+}
+
+/// The 3D Box tool's controls: each axis toward its vanishing point (finite) or parallel at an
+/// angle (infinite), and the depth; the selected box takes the values as they change (`box3d.set`).
+fn box3d_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    let mut changed: Vec<(String, Value)> = vec![];
+    for (axis, label) in [("x", "X:"), ("y", "Y:"), ("z", "Z:")] {
+        let finite = opts[format!("{axis}Finite")].as_bool().unwrap_or(axis != "y");
+        let angle = opts[format!("{axis}Angle")].as_f64().unwrap_or(0.0);
+        ui.label(egui::RichText::new(tl!(label)).size(12.0).color(t.text));
+        let modes = ["Vanishing Point", "Infinite"];
+        let cur = if finite { modes[0] } else { modes[1] };
+        if let Some(i) = widgets::dropdown(ui, ("cb-box3d", axis), cur, &modes, 112.0) {
+            changed.push((format!("{axis}Finite"), json!(i == 0)));
+        }
+        if !finite && let Some(v) = widgets::plain_field(ui, ("cb-box3d-angle", axis), angle, "°", 0, 48.0) {
+            changed.push((format!("{axis}Angle"), json!(v)));
+        }
+    }
+    ui.label(egui::RichText::new(tl!("Depth:")).size(12.0).color(t.text));
+    let depth = opts["depth"].as_f64().unwrap_or(0.4);
+    if let Some(v) = widgets::plain_field(ui, "cb-box3d-depth", depth * 100.0, "%", 0, 48.0) {
+        changed.push(("depth".into(), json!((v / 100.0).clamp(0.0, 1.0))));
+    }
+    if !changed.is_empty() {
+        for (key, value) in &changed {
+            app.run("tool.setOption", json!({ "key": key, "value": value })).ok();
+        }
+        // The selected box follows the options.
+        let has_box = app.session.active().is_some_and(|st| {
+            st.selection
+                .objects
+                .iter()
+                .any(|id| st.doc.node(*id).is_some_and(|n| n.extras().attrs.as_deref().is_some_and(|a| a.data.iter().any(|(k, _)| k == "vc-box3d"))))
+        });
+        if has_box {
+            let o = app.session.tool_options();
+            let ax = |a: &str| json!({ "finite": o[format!("{a}Finite")].as_bool().unwrap_or(true), "angle": o[format!("{a}Angle")].as_f64().unwrap_or(0.0) });
+            app.run("box3d.set", json!({ "depth": o["depth"], "x": ax("x"), "y": ax("y"), "z": ax("z") })).ok();
+        }
+    }
+    ui.separator();
+}
+
+/// The Connector tool's controls: routing (polyline or orthogonal), the corner curvature and the
+/// spacing kept from obstacles, plus Arrange (graph auto-layout of the connected objects).
+fn connector_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    const ROUTINGS: [(&str, &str); 2] = [("orthogonal", "Orthogonal"), ("polyline", "Polyline")];
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    let routing = opts["routing"].as_str().unwrap_or("orthogonal");
+    let curvature = opts["curvature"].as_f64().unwrap_or(0.0);
+    let spacing = opts["spacing"].as_f64().unwrap_or(10.0);
+    ui.label(egui::RichText::new(tl!("Routing:")).size(12.0).color(t.text));
+    let shown = ROUTINGS.iter().find(|(v, _)| *v == routing).map_or(routing, |(_, l)| *l);
+    let labels: Vec<&str> = ROUTINGS.iter().map(|(_, l)| *l).collect();
+    if let Some((value, _)) = widgets::dropdown(ui, ("cb-connector", "routing"), shown, &labels, 104.0).and_then(|i| ROUTINGS.get(i)) {
+        app.run("tool.setOption", json!({ "key": "routing", "value": value })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Curvature:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-connector-curvature", curvature, "%", 0, 48.0) {
+        app.run("tool.setOption", json!({ "key": "curvature", "value": v.clamp(0.0, 100.0) })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Spacing:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-connector-spacing", spacing, "pt", 1, 52.0) {
+        app.run("tool.setOption", json!({ "key": "spacing", "value": v.clamp(0.0, 1000.0) })).ok();
+    }
+    if widgets::secondary_button(ui, tl!("Arrange Connected")).clicked() {
+        app.run("connector.layout", json!({})).ok();
     }
     ui.separator();
 }

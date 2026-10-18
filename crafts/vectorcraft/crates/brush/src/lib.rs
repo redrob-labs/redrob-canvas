@@ -152,12 +152,77 @@ pub struct Calligraphic {
     /// Wiggle (0..100): a slow random wandering of the nib off the path.
     #[serde(default)]
     pub wiggle: f64,
+    /// Fixation (0..100): how much the nib keeps its `angle` as the stroke turns. 100 is a fixed
+    /// nib (a dip pen's), 0 a nib always perpendicular to the stroke (a brush's), between the two
+    /// a blend.
+    #[serde(default = "hundred")]
+    pub fixation: f64,
+}
+
+fn hundred() -> f64 {
+    100.0
 }
 
 impl Default for Calligraphic {
     fn default() -> Self {
-        Self { angle: 0.0, roundness: 100.0, size: 3.0, variation: [0.0; 3], modes: None, thinning: 0.0, mass: 0.0, tremor: 0.0, wiggle: 0.0 }
+        Self {
+            angle: 0.0,
+            roundness: 100.0,
+            size: 3.0,
+            variation: [0.0; 3],
+            modes: None,
+            thinning: 0.0,
+            mass: 0.0,
+            tremor: 0.0,
+            wiggle: 0.0,
+            fixation: 100.0,
+        }
     }
+}
+
+/// A named calligraphic preset (Brush Options › Preset): the brush's dynamics for a pen type.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CalligraphicPreset {
+    pub id: &'static str,
+    pub label: &'static str,
+    /// (angle, roundness, size, thinning, mass, tremor, wiggle, fixation, size varies with pressure).
+    pub values: (f64, f64, f64, f64, f64, f64, f64, f64, bool),
+}
+
+impl CalligraphicPreset {
+    /// The brush the preset describes, named `name`.
+    pub fn brush(&self) -> Calligraphic {
+        let (angle, roundness, size, thinning, mass, tremor, wiggle, fixation, pressure) = self.values;
+        Calligraphic {
+            angle,
+            roundness,
+            size,
+            variation: [0.0, 0.0, if pressure { size * 0.8 } else { 0.0 }],
+            modes: Some([Variation::Fixed, Variation::Fixed, if pressure { Variation::Pressure } else { Variation::Fixed }]),
+            thinning,
+            mass,
+            tremor,
+            wiggle,
+            fixation,
+        }
+    }
+}
+
+/// The calligraphic presets, in menu order: a dip pen (fixed thin nib that thins with speed), a
+/// marker (round, even), a brush (nib following the stroke, pressure-sensitive), a wiggly pen, a
+/// splotchy one (heavy, with tremor) and a tracing pen (fine, no dynamics).
+pub const CALLIGRAPHIC_PRESETS: [CalligraphicPreset; 6] = [
+    CalligraphicPreset { id: "dipPen", label: "Dip Pen", values: (30.0, 20.0, 8.0, 40.0, 10.0, 0.0, 0.0, 100.0, true) },
+    CalligraphicPreset { id: "marker", label: "Marker", values: (0.0, 100.0, 6.0, 0.0, 0.0, 0.0, 0.0, 100.0, false) },
+    CalligraphicPreset { id: "brush", label: "Brush", values: (0.0, 60.0, 10.0, -20.0, 30.0, 0.0, 0.0, 0.0, true) },
+    CalligraphicPreset { id: "wiggly", label: "Wiggly", values: (45.0, 30.0, 8.0, 20.0, 60.0, 20.0, 60.0, 90.0, false) },
+    CalligraphicPreset { id: "splotchy", label: "Splotchy", values: (0.0, 100.0, 14.0, 60.0, 0.0, 70.0, 10.0, 100.0, true) },
+    CalligraphicPreset { id: "tracing", label: "Tracing", values: (0.0, 100.0, 2.0, 0.0, 0.0, 0.0, 0.0, 100.0, false) },
+];
+
+/// The preset with that id.
+pub fn calligraphic_preset(id: &str) -> Option<&'static CalligraphicPreset> {
+    CALLIGRAPHIC_PRESETS.iter().find(|p| p.id == id)
 }
 
 impl Calligraphic {

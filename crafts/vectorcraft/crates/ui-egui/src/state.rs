@@ -155,6 +155,9 @@ pub const ICON_PANELS: &[(&str, &str, &str)] = &[
     (crate::panels::css_properties::ID, "CSS Properties", "globe"),
     (crate::panels::variables::ID, "Variables", "chart-column"),
     (crate::panels::filter_editor::ID, "Filter Editor", "dc-fx"),
+    (crate::panels::filter_gallery::ID, "Filter Gallery", "dc-fx"),
+    (crate::panels::grids::ID, "Grids", "layout-grid"),
+    (crate::panels::scripts::ID, "Scripts", "dc-list-view"),
     (crate::panels::xml_editor::ID, "XML Editor", "dc-list-view"),
 ];
 
@@ -203,6 +206,28 @@ pub struct ViewFlags {
     /// The node tool's handle visibility toggle: direction handles of selected anchors show.
     #[serde(default = "yes")]
     pub show_handles: bool,
+    /// View › Lock Rotate View: the view's rotation stays where it is (the Rotate View tool, the
+    /// status-bar angle and Cmd+Shift+scroll leave it alone).
+    #[serde(default)]
+    pub rotation_lock: bool,
+    /// View › Split View: normal rendering on one side of a draggable divider, outline on the other.
+    #[serde(default)]
+    pub split_view: bool,
+    /// Where the Split View divider is, as a fraction of the canvas width (the outline side is
+    /// to its right).
+    #[serde(default = "half")]
+    pub split_at: f32,
+    /// View › X-ray: a disc of outline rendering around the pointer.
+    #[serde(default)]
+    pub xray: bool,
+    /// The Selection tool's Alignment Handles: buttons around the selection's bounds that align
+    /// the selected objects to that edge or centre (Shift: the key object moves instead).
+    #[serde(default)]
+    pub align_handles: bool,
+}
+
+fn half() -> f32 {
+    0.5
 }
 
 impl Default for ViewFlags {
@@ -226,6 +251,11 @@ impl Default for ViewFlags {
             gradient_annotator: true,
             hidden_chars: false,
             show_handles: true,
+            rotation_lock: false,
+            split_view: false,
+            split_at: 0.5,
+            xray: false,
+            align_handles: false,
         }
     }
 }

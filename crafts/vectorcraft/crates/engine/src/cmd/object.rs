@@ -332,6 +332,8 @@ pub(crate) fn apply_transform(s: &mut Session, label: &str, ids: Vec<NodeId>, xf
                     transform_node(n, xf, sc, objects);
                 }
             }
+            // Connectors follow the objects they join.
+            super::connector::reroute_all(d);
             Ok(targets)
         })?
     };

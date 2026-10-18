@@ -9,6 +9,7 @@
 
 pub mod arc;
 pub mod bez;
+pub mod clothoid;
 pub mod corners;
 pub mod hit;
 pub mod path;
@@ -20,6 +21,7 @@ pub mod spline;
 pub mod spline_lpe;
 
 pub use arc::ArcPath;
+pub use clothoid::clothoid_to_bezier;
 pub use kurbo;
 pub use kurbo::{Affine, BezPath, CubicBez, Line, ParamCurve, PathEl, PathSeg, Point, Rect, Shape, Size, Vec2};
 pub use path::{Anchor, AnchorKind, FillRule, PathData, SubPath};

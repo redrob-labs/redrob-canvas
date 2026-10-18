@@ -4982,3 +4982,184 @@ imageTrace	Outline	Körvonal
 	Background	Háttér
 	Live Slice	Élő szelet
 	Fuse Slice	Szelet egyesítése
+	3D Marble	3D márvány
+	3D Wood	3D fa
+	Air Spray	Festékszóró
+	Aluminium	Alumínium
+	Apply Effects to Image Pixels	Effektek alkalmazása a kép pixeleire
+	Apply Filter Preset	Szűrő-előbeállítás alkalmazása
+	Apply to Selection	Alkalmazás a kijelölésre
+	Bevels	Lekerekítések
+	Black Hole	Fekete lyuk
+	Blobs	Pacák
+	Bloom	Ragyogás
+	Brilliance	Ragyogás
+	Bump	Dombor
+	Bumps	Domborítások
+	Button	Gomb
+	Canvas Bumps	Vászondombor
+	Chalk and Sponge	Kréta és szivacs
+	Channel to Alpha	Csatorna alfába
+	Chrome	Króm
+	Color Blindness	Színtévesztés
+	Colour Space:	Színtér:
+	Comics Cream	Képregény krém
+	Cracked Glass	Repedt üveg
+	Cubes	Kockák
+	Dark and Glow	Sötét és fény
+	Document Filters	Dokumentum szűrői
+	Dragee	Drazsé
+	Duochrome	Kétszínű
+	Duplicate Filter	Szűrő duplikálása
+	Embossed Leather	Dombornyomott bőr
+	Extract Channel	Csatorna kivonása
+	Fade to Black	Feketébe halványítás
+	Felt Feather	Filctoll
+	Fill and Overlays	Kitöltések és rátétek
+	Filter	Szűrő
+	Filter Gallery	Szűrőgaléria
+	Filter Presets	Szűrő-előbeállítások
+	Filter copy	Szűrő másolata
+	Filters	Szűrők
+	Glow	Fénylés
+	Glowing Metal	Izzó fém
+	Gold	Arany
+	Greyscale	Szürkeárnyalatos
+	HSL Noise	HSL-zaj
+	Ink Blot	Tintapaca
+	Ink Splash	Tintafröccs
+	Inner Shadow	Belső árnyék
+	Leopard Fur	Leopárdbunda
+	Light Eraser	Fényradír
+	Luminance to Alpha	Fénysűrűség alfába
+	Materials	Anyagok
+	Matte Jelly	Matt zselé
+	Metallized Paint	Metálfény
+	Neon	Neon
+	No filter matches the search.	Nincs a keresésnek megfelelő szűrő.
+	Noise Fill	Zajkitöltés
+	Non-realistic 3D Shaders	Nem valósághű 3D árnyalók
+	Open Filter Editor	Szűrőszerkesztő megnyitása
+	Paper Bump	Papírdombor
+	Pointillism	Pointillizmus
+	Protrusions	Kitüremkedések
+	Quadritone	Négytónusú
+	Ridges	Gerincek
+	Rough Paper	Durva papír
+	Rough Transparency	Durva átlátszóság
+	Roughen	Durvítás
+	Saturation Map	Telítettségtérkép
+	Select an object to apply a filter.	Jelöljön ki egy objektumot a szűrő alkalmazásához.
+	Silhouette	Sziluett
+	Smooth Edges	Lágy élek
+	Solarize	Szolarizáció
+	Specular Light	Tükröződő fény
+	Spikes	Tüskék
+	Spots Overlay	Pöttyös rátét
+	Stone Wall	Kőfal
+	Subregion:	Altartomány:
+	Swirl	Örvény
+	Textures	Textúrák
+	The document has no filters yet.	A dokumentumnak még nincsenek szűrői.
+	Thin Membrane	Vékony hártya
+	Torn Edges	Tépett élek
+	Translucent	Áttetsző
+	Transparency Utilities	Átlátszósági segédeszközök
+	Tritone	Háromtónusú
+	Watercolor	Akvarell
+	Waves	Hullámok
+	Turns:	Fordulatok:
+	Divergence:	Divergencia:
+	Clockwise	Óramutató járása szerint
+	Threshold:	Küszöb:
+	Grow/Shrink:	Növelés/zsugorítás:
+	Fill by:	Kitöltés alapja:
+	Visible Colors	Látható színek
+	Alpha	Alfa
+	Add to Fill	Hozzáadás a kitöltéshez
+	View rotation (Cmd+Shift+scroll turns the view)	Nézet forgatása (Cmd+Shift+görgetés forgat)
+	Lock Rotate View	Nézetforgatás zárolása
+	Fixation:	Rögzítés:
+	Dip Pen	Mártogatós toll
+	Marker	Filctoll
+	Brush	Ecset
+	Wiggly	Remegő
+	Splotchy	Pacás
+	Tracing	Átrajzolás
+	Use Pressure	Nyomás használata
+	Live Simplify	Élő egyszerűsítés
+	Simplify (Live)…	Egyszerűsítés (élő)…
+	Split View	Osztott nézet
+	X-ray	Röntgen
+	Input Devices…	Beviteli eszközök…
+	Input Devices	Beviteli eszközök
+	Pressure Curves	Nyomásgörbék
+	Mouse	Egér
+	Pen / Stylus	Toll / ceruza
+	Touch	Érintés
+	Liquify Tools	Folyósító eszközök
+	Disabled	Letiltva
+	Grids	Rácsok
+	Main Grid	Fő rács
+	Add Grid	Rács hozzáadása
+	Remove Grid	Rács eltávolítása
+	Grid Options	Rácsbeállítások
+	Kind:	Fajta:
+	Subdivisions:	Felosztások:
+	Angles:	Szögek:
+	Gaps:	Hézagok:
+	Origin:	Origó:
+	Own color	Saját szín
+	Open a document to edit its grids.	Nyisson meg egy dokumentumot a rácsai szerkesztéséhez.
+	Add Script	Szkript hozzáadása
+	Edit Script	Szkript szerkesztése
+	Remove Script	Szkript eltávolítása
+	The document has no scripts.	A dokumentumnak nincsenek szkriptjei.
+	External:	Külső:
+	Embedded script	Beágyazott szkript
+	Add Embedded Script	Beágyazott szkript hozzáadása
+	Add External Script	Külső szkript hozzáadása
+	Source:	Forrás:
+	External file	Külső fájl
+	Code:	Kód:
+	Open a document to edit its scripts.	Nyisson meg egy dokumentumot a szkriptjei szerkesztéséhez.
+	Alignment Handles	Igazítási fogantyúk
+	Align (Shift: move the key object)	Igazítás (Shift: a kulcsobjektum mozog)
+	Stylesheet	Stíluslap
+	No rules yet. Add one and assign its class to objects.	Még nincs szabály. Adjon hozzá egyet, és rendelje osztályát objektumokhoz.
+	Add Rule	Szabály hozzáadása
+	Remove Rule	Szabály eltávolítása
+	Selector:	Szelektor:
+	Declarations:	Deklarációk:
+	Assign to Selection	Hozzárendelés a kijelöléshez
+	Remove from Selection	Eltávolítás a kijelölésről
+	Add CSS Rule	CSS-szabály hozzáadása
+	Edit CSS Rule	CSS-szabály szerkesztése
+	Remove CSS Rule	CSS-szabály eltávolítása
+	Assign CSS Class	CSS-osztály hozzárendelése
+	Remove CSS Class	CSS-osztály eltávolítása
+	Apply Stylesheet	Stíluslap alkalmazása
+	New Node	Új csomópont
+	Indent Node	Csomópont behúzása
+	Outdent Node	Csomópont kihúzása
+	Move Node	Csomópont áthelyezése
+	Set Path Data	Útvonaladatok beállítása
+	Round to:	Kerekítés:
+	Round Path Data	Útvonaladatok kerekítése
+	Connector Tool	Összekötő eszköz
+	Connect Objects	Objektumok összekötése
+	Reroute Connectors	Összekötők újravezetése
+	Connector Obstacle	Összekötő-akadály
+	Arrange Connected Objects	Összekötött objektumok elrendezése
+	Arrange Connected	Összekötöttek elrendezése
+	Routing:	Vezetés:
+	Orthogonal	Derékszögű
+	Polyline	Töröttvonal
+	Curvature:	Görbület:
+	3D Box Tool	3D doboz eszköz
+	3D Box	3D doboz
+	3D Box Options	3D doboz beállításai
+	Move Vanishing Point	Enyészpont mozgatása
+	Z:	Z:
+	Vanishing Point	Enyészpont
+	Infinite	Végtelen

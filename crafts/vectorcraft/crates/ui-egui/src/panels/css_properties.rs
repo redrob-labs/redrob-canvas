@@ -108,6 +108,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         widgets::dim_label(ui, tl!("No document"));
         return;
     };
+    stylesheet_section(app, ui, selected);
     let opts: CssOptions = pstate(&ctx, OPTIONS);
     let all = !selected && pstate::<bool>(&ctx, ALL);
     let Some(shown) = shown(app, ui, &opts, all) else { return };
@@ -207,6 +208,89 @@ pub(crate) fn export_file(app: &mut VectorcraftApp, p: &Value) -> Result<Value, 
 }
 
 /// The panel (≡) menu: copy and export, Generate CSS and the export options.
+/// Panel state: the Stylesheet section is open, and the selected rule.
+const SHEET_OPEN: &str = "css-sheet-open";
+const SHEET_RULE: &str = "css-sheet-rule";
+
+fn run(app: &mut VectorcraftApp, cmd: &str, p: Value) {
+    if let Err(e) = app.run(cmd, p) {
+        app.ui.status = e;
+    }
+}
+
+/// Selectors and CSS: the document's own stylesheet. Rules are listed by selector; the selected
+/// one's selector and declarations are edited as text; Assign gives the selection the rule's
+/// class, Apply restyles the objects the rule selects (`css.*` commands).
+fn stylesheet_section(app: &mut VectorcraftApp, ui: &mut Ui, selected: bool) {
+    let ctx = ui.ctx().clone();
+    let open: bool = pstate(&ctx, SHEET_OPEN);
+    if widgets::section_toggle(ui, tl!("Stylesheet"), open) {
+        set_pstate(&ctx, SHEET_OPEN, !open);
+    }
+    if !open {
+        return;
+    }
+    let rules: Vec<redrob_vector_doc::CssRule> = app.session.active().map(|st| st.doc.stylesheet.clone()).unwrap_or_default();
+    let t = Tokens::get(&ctx);
+    let current: usize = pstate::<usize>(&ctx, SHEET_RULE).min(rules.len().saturating_sub(1));
+    if rules.is_empty() {
+        widgets::dim_label(ui, tl!("No rules yet. Add one and assign its class to objects."));
+    }
+    for (i, r) in rules.iter().enumerate() {
+        let label = format!("{}  {{ {} }}", r.selector, r.declarations.len());
+        if ui.add(egui::Button::selectable(current == i, egui::RichText::new(label).color(t.text).size(12.0)).truncate()).clicked() {
+            set_pstate(&ctx, SHEET_RULE, i);
+        }
+    }
+    ui.horizontal(|ui| {
+        if widgets::icon_button(ui, "plus", tl!("Add Rule"), false, 18.0).clicked() {
+            run(app, "css.addRule", json!({}));
+            set_pstate(&ctx, SHEET_RULE, rules.len());
+        }
+        if widgets::icon_button_enabled(ui, "x", tl!("Remove Rule"), false, !rules.is_empty(), 18.0).clicked() {
+            run(app, "css.removeRule", json!({ "index": current }));
+            set_pstate(&ctx, SHEET_RULE, current.saturating_sub(1));
+        }
+    });
+    let Some(r) = rules.get(current) else {
+        widgets::divider(ui);
+        return;
+    };
+    let mut changes = serde_json::Map::new();
+    widgets::label_row(ui, tl!("Selector:"), 64.0, |ui| {
+        if let Some(sel) = widgets::exact_text_field(ui, ("css-rule-selector", current), &r.selector, 150.0) {
+            changes.insert("selector".into(), json!(sel));
+        }
+    });
+    widgets::dim_label(ui, tl!("Declarations:"));
+    let text: String = r.declarations.iter().map(|(k, v)| format!("{k}: {v};")).collect::<Vec<_>>().join("\n");
+    if let Some(edited) = widgets::text_field(ui, ("css-rule-decls", current), Some(&text), ui.available_width().max(120.0), 5) {
+        changes.insert("declarations".into(), json!(edited));
+    }
+    if !changes.is_empty() {
+        changes.insert("index".into(), json!(current));
+        run(app, "css.setRule", Value::Object(changes));
+    }
+    ui.horizontal(|ui| {
+        let class = r.selector.trim().strip_prefix('.').map(str::to_string);
+        let can_assign = selected && class.is_some();
+        if ui.add_enabled(can_assign, |ui: &mut Ui| widgets::secondary_button(ui, tl!("Assign to Selection"))).clicked()
+            && let Some(class) = &class
+        {
+            run(app, "css.assign", json!({ "class": class, "apply": true }));
+        }
+        if ui.add_enabled(can_assign, |ui: &mut Ui| widgets::secondary_button(ui, tl!("Remove from Selection"))).clicked()
+            && let Some(class) = &class
+        {
+            run(app, "css.unassign", json!({ "class": class }));
+        }
+        if widgets::secondary_button(ui, tl!("Apply")).clicked() {
+            run(app, "css.applyRules", json!({ "index": current }));
+        }
+    });
+    widgets::divider(ui);
+}
+
 pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
     let ctx = ui.ctx().clone();
     let Some(selected) = app.session.active().map(|st| !st.selection.is_empty()) else { return };

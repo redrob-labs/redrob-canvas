@@ -521,18 +521,33 @@ pub fn status_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     },
                 );
                 let rot = app.view().map(|v| v.rotation).unwrap_or(0.0);
-                egui::ComboBox::from_id_salt("rot-combo").selected_text(egui::RichText::new(format!("{rot:.0}°")).size(11.5)).width(52.0).show_ui(
-                    ui,
-                    |ui| {
-                        for a in [0.0, 15.0, 30.0, 45.0, 60.0, 90.0, 180.0, -15.0, -30.0, -45.0, -60.0, -90.0] {
-                            if ui.selectable_label(rot == a, format!("{a:.0}°")).clicked()
-                                && let Some(v) = app.view_mut()
-                            {
-                                v.rotation = a;
-                            }
-                        }
-                    },
+                let locked = app.ui.view.rotation_lock;
+                // The view angle: typed or dragged (any angle), or picked from the presets; the
+                // lock keeps it (View › Lock Rotate View).
+                let mut angle = rot;
+                let field = ui.add_enabled(
+                    !locked,
+                    egui::DragValue::new(&mut angle).speed(0.5).range(-180.0..=180.0).suffix("°").fixed_decimals(0).update_while_editing(false),
                 );
+                if field.changed()
+                    && (angle - rot).abs() > 1e-9
+                    && let Some(v) = app.view_mut()
+                {
+                    v.rotation = redrob_vector_geom::normalize_deg(angle);
+                }
+                field.on_hover_text(tl!("View rotation (Cmd+Shift+scroll turns the view)"));
+                egui::ComboBox::from_id_salt("rot-combo").selected_text(egui::RichText::new("").size(11.5)).width(18.0).show_ui(ui, |ui| {
+                    for a in [0.0, 15.0, 30.0, 45.0, 60.0, 90.0, 180.0, -15.0, -30.0, -45.0, -60.0, -90.0] {
+                        if ui.add_enabled(!locked, egui::Button::selectable(rot == a, format!("{a:.0}°"))).clicked()
+                            && let Some(v) = app.view_mut()
+                        {
+                            v.rotation = a;
+                        }
+                    }
+                });
+                if widgets::icon_button(ui, if locked { "lock" } else { "lock-open" }, tl!("Lock Rotate View"), locked, 18.0).clicked() {
+                    app.ui.view.rotation_lock = !locked;
+                }
                 ui.separator();
                 // The artboard navigator: first, previous, the current artboard's number, next, last.
                 let nab = app.session.active().map(|d| d.doc.artboards.len()).unwrap_or(0);

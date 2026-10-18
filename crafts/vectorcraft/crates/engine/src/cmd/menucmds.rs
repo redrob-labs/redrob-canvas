@@ -389,7 +389,7 @@ pub(crate) fn unique_key(d: &redrob_vector_doc::Document, stem: &str) -> String 
 }
 
 /// `doc` rendered over `region` with `opts` as a PNG in colour model `color`.
-fn render_png(
+pub(crate) fn render_png(
     doc: &redrob_vector_doc::Document,
     region: Rect,
     scale: f64,

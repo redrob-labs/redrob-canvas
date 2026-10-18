@@ -4562,3 +4562,185 @@ theme	Appearance	Erscheinungsbild
 	Background	Hintergrund
 	Live Slice	Live-Schnitt
 	Fuse Slice	Schnitt verschmelzen
+	3D Marble	3D-Marmor
+	3D Wood	3D-Holz
+	Air Spray	Sprühnebel
+	Aluminium	Aluminium
+	Apply Effects to Image Pixels	Effekte auf Bildpixel anwenden
+	Apply Filter Preset	Filtervorgabe anwenden
+	Apply to Selection	Auf Auswahl anwenden
+	Bevels	Abschrägungen
+	Black Hole	Schwarzes Loch
+	Blobs	Kleckse
+	Bloom	Bloom
+	Brilliance	Brillanz
+	Bump	Relief
+	Bumps	Reliefs
+	Button	Schaltfläche
+	Canvas Bumps	Leinwandrelief
+	Chalk and Sponge	Kreide und Schwamm
+	Channel to Alpha	Kanal zu Alpha
+	Chrome	Chrom
+	Color Blindness	Farbenblindheit
+	Colour Space:	Farbraum:
+	Comics Cream	Comic-Creme
+	Cracked Glass	Zersprungenes Glas
+	Cubes	Würfel
+	Dark and Glow	Dunkel und Leuchten
+	Document Filters	Dokumentfilter
+	Dragee	Dragee
+	Duochrome	Duochrom
+	Duplicate Filter	Filter duplizieren
+	Embossed Leather	Geprägtes Leder
+	Extract Channel	Kanal extrahieren
+	Fade to Black	Nach Schwarz ausblenden
+	Felt Feather	Filzfeder
+	Fill and Overlays	Füllungen und Überlagerungen
+	Filter	Filter
+	Filter Gallery	Filtergalerie
+	Filter Presets	Filtervorgaben
+	Filter copy	Filter Kopie
+	Filters	Filter
+	Glow	Leuchten
+	Glowing Metal	Glühendes Metall
+	Gold	Gold
+	Greyscale	Graustufen
+	HSL Noise	HSL-Rauschen
+	Ink Blot	Tintenklecks
+	Ink Splash	Tintenspritzer
+	Inner Shadow	Schatten nach innen
+	Leopard Fur	Leopardenfell
+	Light Eraser	Lichtradierer
+	Luminance to Alpha	Luminanz zu Alpha
+	Materials	Materialien
+	Matte Jelly	Mattes Gelee
+	Metallized Paint	Metallic-Lack
+	Neon	Neon
+	No filter matches the search.	Kein Filter entspricht der Suche.
+	Noise Fill	Rauschfüllung
+	Non-realistic 3D Shaders	Nichtrealistische 3D-Shader
+	Open Filter Editor	Filter-Editor öffnen
+	Paper Bump	Papierrelief
+	Pointillism	Pointillismus
+	Protrusions	Auswüchse
+	Quadritone	Vierfarbton
+	Ridges	Grate
+	Rough Paper	Raues Papier
+	Rough Transparency	Raue Transparenz
+	Roughen	Aufrauen
+	Saturation Map	Sättigungskarte
+	Select an object to apply a filter.	Wählen Sie ein Objekt aus, um einen Filter anzuwenden.
+	Silhouette	Silhouette
+	Smooth Edges	Kanten glätten
+	Solarize	Solarisation
+	Specular Light	Glanzlicht
+	Spikes	Spitzen
+	Spots Overlay	Flecken-Überlagerung
+	Stone Wall	Steinmauer
+	Subregion:	Teilbereich:
+	Swirl	Strudel
+	Textures	Texturen
+	The document has no filters yet.	Das Dokument hat noch keine Filter.
+	Thin Membrane	Dünne Membran
+	Torn Edges	Gerissene Kanten
+	Translucent	Durchscheinend
+	Transparency Utilities	Transparenz-Werkzeuge
+	Tritone	Dreifarbton
+	Watercolor	Aquarell
+	Waves	Wellen
+	Turns:	Windungen:
+	Divergence:	Divergenz:
+	Clockwise	Im Uhrzeigersinn
+	Threshold:	Schwellenwert:
+	Grow/Shrink:	Erweitern/Verkleinern:
+	Fill by:	Füllen nach:
+	Visible Colors	Sichtbare Farben
+	Alpha	Alpha
+	Add to Fill	Zur Füllung hinzufügen
+	View rotation (Cmd+Shift+scroll turns the view)	Ansichtsdrehung (Cmd+Shift+Scrollen dreht die Ansicht)
+	Lock Rotate View	Ansichtsdrehung sperren
+	Rotate View	Ansicht drehen
+	Fixation:	Fixierung:
+	Dip Pen	Tauchfeder
+	Marker	Marker
+	Brush	Pinsel
+	Wiggly	Zittrig
+	Splotchy	Fleckig
+	Tracing	Nachzeichnen
+	Use Pressure	Druck verwenden
+	Live Simplify	Live-Vereinfachen
+	Simplify (Live)…	Vereinfachen (Live)…
+	Split View	Geteilte Ansicht
+	X-ray	Röntgen
+	Input Devices…	Eingabegeräte…
+	Input Devices	Eingabegeräte
+	Pressure Curves	Druckkurven
+	Mouse	Maus
+	Pen / Stylus	Stift / Stylus
+	Touch	Touch
+	Liquify Tools	Verflüssigen-Werkzeuge
+	Disabled	Deaktiviert
+	Grids	Raster
+	Main Grid	Hauptraster
+	Add Grid	Raster hinzufügen
+	Remove Grid	Raster entfernen
+	Grid Options	Rasteroptionen
+	Kind:	Art:
+	Subdivisions:	Unterteilungen:
+	Angles:	Winkel:
+	Gaps:	Abstände:
+	Origin:	Ursprung:
+	Own color	Eigene Farbe
+	Open a document to edit its grids.	Öffnen Sie ein Dokument, um seine Raster zu bearbeiten.
+	Add Script	Skript hinzufügen
+	Edit Script	Skript bearbeiten
+	Remove Script	Skript entfernen
+	The document has no scripts.	Das Dokument hat keine Skripte.
+	External:	Extern:
+	Embedded script	Eingebettetes Skript
+	Add Embedded Script	Eingebettetes Skript hinzufügen
+	Add External Script	Externes Skript hinzufügen
+	Source:	Quelle:
+	External file	Externe Datei
+	Code:	Code:
+	Open a document to edit its scripts.	Öffnen Sie ein Dokument, um seine Skripte zu bearbeiten.
+	Alignment Handles	Ausrichtungsgriffe
+	Align (Shift: move the key object)	Ausrichten (Shift: Schlüsselobjekt verschieben)
+	Stylesheet	Stylesheet
+	No rules yet. Add one and assign its class to objects.	Noch keine Regeln. Fügen Sie eine hinzu und weisen Sie ihre Klasse Objekten zu.
+	Add Rule	Regel hinzufügen
+	Remove Rule	Regel entfernen
+	Selector:	Selektor:
+	Declarations:	Deklarationen:
+	Assign to Selection	Auswahl zuweisen
+	Remove from Selection	Aus Auswahl entfernen
+	Add CSS Rule	CSS-Regel hinzufügen
+	Edit CSS Rule	CSS-Regel bearbeiten
+	Remove CSS Rule	CSS-Regel entfernen
+	Assign CSS Class	CSS-Klasse zuweisen
+	Remove CSS Class	CSS-Klasse entfernen
+	Apply Stylesheet	Stylesheet anwenden
+	New Node	Neuer Knoten
+	Indent Node	Knoten einrücken
+	Outdent Node	Knoten ausrücken
+	Move Node	Knoten verschieben
+	Set Path Data	Pfaddaten setzen
+	Round to:	Runden auf:
+	Round Path Data	Pfaddaten runden
+	Connector Tool	Verbinder-Werkzeug
+	Connect Objects	Objekte verbinden
+	Reroute Connectors	Verbinder neu führen
+	Connector Obstacle	Verbinder-Hindernis
+	Arrange Connected Objects	Verbundene Objekte anordnen
+	Arrange Connected	Verbundene anordnen
+	Routing:	Führung:
+	Orthogonal	Orthogonal
+	Polyline	Polylinie
+	Curvature:	Krümmung:
+	3D Box Tool	3D-Box-Werkzeug
+	3D Box	3D-Box
+	3D Box Options	3D-Box-Optionen
+	Move Vanishing Point	Fluchtpunkt verschieben
+	Z:	Z:
+	Vanishing Point	Fluchtpunkt
+	Infinite	Unendlich

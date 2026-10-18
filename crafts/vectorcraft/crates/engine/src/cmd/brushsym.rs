@@ -72,7 +72,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Brush Options…",
             [],
             None,
-            "{name, params?: {…fields to change (brush.get shows them; values outside their ranges are clamped). calligraphic: angle −180..180°, roundness 0..100%, size 0..1296 pt, variation: [angle°, roundness%, size pt], modes: [fixed|random|pressure for angle, roundness, size] (pressure goes from value − variation at the lightest pen pressure to value + variation at the heaviest). scatter: size [a, b] 1..10000%, spacing [a, b] 1..10000%, scatter [a, b] −1000..1000%, rotation [a, b] −180..180°, modes: [fixed|random|pressure for size, spacing, scatter, rotation] (fixed: a; random: between a and b; pressure: a at the lightest pen pressure to b at the heaviest), rotation_relative_to_path. art: width 1..1000%, scale: {mode: proportional|stretch|betweenGuides, start, end: 0..1 of the art length}, direction: leftToRight|rightToLeft|topToBottom|bottomToTop, flip_along, flip_across. pattern: scale 1..10000%, spacing 0..10000%, fit: stretch|addSpace|approximate, flip_along, flip_across. scatter, art and pattern: colorization: {method: none|tints|tintsAndShades|hueShift, key: colour (hueShift: the art colour that becomes the stroke colour)}}, newName?} edit a brush definition (strokes using it update) → {name}",
+            "{name, params?: {…fields to change (brush.get shows them; values outside their ranges are clamped). calligraphic: angle −180..180°, roundness 0..100%, size 0..1296 pt, variation: [angle°, roundness%, size pt], modes: [fixed|random|pressure for angle, roundness, size] (pressure goes from value − variation at the lightest pen pressure to value + variation at the heaviest). scatter: size [a, b] 1..10000%, spacing [a, b] 1..10000%, scatter [a, b] −1000..1000%, rotation [a, b] −180..180°, modes: [fixed|random|pressure for size, spacing, scatter, rotation] (fixed: a; random: between a and b; pressure: a at the lightest pen pressure to b at the heaviest), rotation_relative_to_path. art: width 1..1000%, scale: {mode: proportional|stretch|betweenGuides, start, end: 0..1 of the art length}, direction: leftToRight|rightToLeft|topToBottom|bottomToTop, flip_along, flip_across. pattern: scale 1..10000%, spacing 0..10000%, fit: stretch|addSpace|approximate, flip_along, flip_across. scatter, art and pattern: colorization: {method: none|tints|tintsAndShades|hueShift, key: colour (hueShift: the art colour that becomes the stroke colour)}. calligraphic also: thinning −100..100%, mass, tremor, wiggle, fixation 0..100% (100: the nib keeps its angle; 0: it stays perpendicular to the stroke)}, preset?: dipPen|marker|brush|wiggly|splotchy|tracing (a calligraphic pen type's values, applied before params), newName?} edit a brush definition (strokes using it update) → {name}",
             has_doc,
             brush_options
         ),
@@ -433,6 +433,14 @@ fn brush_options(s: &mut Session, p: &Value) -> Result<Value> {
     let mut lib = brush::library(&s.doc()?.doc);
     let i = lib.iter().position(|b| b.name == name).ok_or_else(|| bad(C, format!("no brush named `{name}`")))?;
     let mut v = serde_json::to_value(&lib[i]).unwrap_or_default();
+    // A calligraphic preset's values first, then the params on top.
+    if let Some(preset) = str_param(p, "preset") {
+        let pr = brush::calligraphic_preset(preset).ok_or_else(|| bad(C, format!("unknown calligraphic preset `{preset}`")))?;
+        if !matches!(lib[i].kind, brush::BrushKind::Calligraphic(_)) {
+            return Err(bad(C, "presets are for calligraphic brushes"));
+        }
+        merge(&mut v, &serde_json::to_value(pr.brush()).unwrap_or_default());
+    }
     if let Some(params) = p.get("params") {
         merge(&mut v, params);
     }

@@ -17,10 +17,12 @@ pub mod color_themes;
 pub mod css_properties;
 pub mod doc_info;
 pub mod filter_editor;
+pub mod filter_gallery;
 pub mod flattener_preview;
 pub mod glyphs;
 pub mod gradient;
 pub mod graphic_styles;
+pub mod grids;
 pub mod history;
 pub mod image_trace;
 pub mod info;
@@ -35,6 +37,7 @@ pub mod paragraph;
 pub mod pathfinder;
 pub mod pattern_options;
 pub mod properties;
+pub mod scripts;
 pub mod separations;
 pub mod stroke;
 pub mod swatches;
@@ -177,6 +180,9 @@ pub fn show_icon_panel(app: &mut VectorcraftApp, ui: &mut Ui, id: &str) {
         asset_export::ID => asset_export::show(app, ui),
         css_properties::ID => css_properties::show(app, ui),
         filter_editor::ID => filter_editor::show(app, ui),
+        filter_gallery::ID => filter_gallery::show(app, ui),
+        grids::ID => grids::show(app, ui),
+        scripts::ID => scripts::show(app, ui),
         xml_editor::ID => xml_editor::show(app, ui),
         _ => {
             dim_label(ui, tl!("This panel is on the roadmap (see the parity plan)."));
@@ -227,6 +233,9 @@ pub fn panel_menu_items(app: &mut VectorcraftApp, ui: &mut Ui, id: &str) -> bool
         css_properties::ID => css_properties::menu(app, ui),
         variables::ID => variables::menu(app, ui),
         filter_editor::ID => filter_editor::menu(app, ui),
+        filter_gallery::ID => filter_gallery::menu(app, ui),
+        grids::ID => grids::menu(app, ui),
+        scripts::ID => scripts::menu(app, ui),
         xml_editor::ID => xml_editor::menu(app, ui),
         _ => return false,
     }

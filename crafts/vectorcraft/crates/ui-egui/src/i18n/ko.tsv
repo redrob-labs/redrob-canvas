@@ -4571,3 +4571,185 @@ lighting	Light	광원
 	Background	배경
 	Live Slice	라이브 슬라이스
 	Fuse Slice	슬라이스 융합
+	3D Marble	3D 대리석
+	3D Wood	3D 나무
+	Air Spray	에어 스프레이
+	Aluminium	알루미늄
+	Apply Effects to Image Pixels	효과를 이미지 픽셀에 적용
+	Apply Filter Preset	필터 사전 설정 적용
+	Apply to Selection	선택 항목에 적용
+	Bevels	경사
+	Black Hole	블랙홀
+	Blobs	방울
+	Bloom	블룸
+	Brilliance	광채
+	Bump	범프
+	Bumps	범프
+	Button	버튼
+	Canvas Bumps	캔버스 범프
+	Chalk and Sponge	분필과 스펀지
+	Channel to Alpha	채널을 알파로
+	Chrome	크롬
+	Color Blindness	색맹
+	Colour Space:	색 공간:
+	Comics Cream	코믹 크림
+	Cracked Glass	깨진 유리
+	Cubes	큐브
+	Dark and Glow	어둠과 빛
+	Document Filters	문서 필터
+	Dragee	드라제
+	Duochrome	듀오크롬
+	Duplicate Filter	필터 복제
+	Embossed Leather	엠보싱 가죽
+	Extract Channel	채널 추출
+	Fade to Black	검정으로 페이드
+	Felt Feather	펠트 깃털
+	Fill and Overlays	채우기 및 오버레이
+	Filter	필터
+	Filter Gallery	필터 갤러리
+	Filter Presets	필터 사전 설정
+	Filter copy	필터 복사본
+	Filters	필터
+	Glow	광선
+	Glowing Metal	빛나는 금속
+	Gold	금
+	Greyscale	회색조
+	HSL Noise	HSL 노이즈
+	Ink Blot	잉크 얼룩
+	Ink Splash	잉크 튐
+	Inner Shadow	내부 그림자
+	Leopard Fur	표범 모피
+	Light Eraser	밝은 부분 지우기
+	Luminance to Alpha	광도를 알파로
+	Materials	재질
+	Matte Jelly	매트 젤리
+	Metallized Paint	메탈릭 페인트
+	Neon	네온
+	No filter matches the search.	검색과 일치하는 필터가 없습니다.
+	Noise Fill	노이즈 채우기
+	Non-realistic 3D Shaders	비사실적 3D 셰이더
+	Open Filter Editor	필터 편집기 열기
+	Paper Bump	종이 범프
+	Pointillism	점묘
+	Protrusions	돌출
+	Quadritone	쿼드톤
+	Ridges	융기
+	Rough Paper	거친 종이
+	Rough Transparency	거친 투명도
+	Roughen	거칠게
+	Saturation Map	채도 맵
+	Select an object to apply a filter.	필터를 적용할 오브젝트를 선택하세요.
+	Silhouette	실루엣
+	Smooth Edges	가장자리 부드럽게
+	Solarize	솔라리즈
+	Specular Light	반사광
+	Spikes	스파이크
+	Spots Overlay	점 오버레이
+	Stone Wall	돌담
+	Subregion:	하위 영역:
+	Swirl	소용돌이
+	Textures	텍스처
+	The document has no filters yet.	문서에 아직 필터가 없습니다.
+	Thin Membrane	얇은 막
+	Torn Edges	찢어진 가장자리
+	Translucent	반투명
+	Transparency Utilities	투명도 유틸리티
+	Tritone	트라이톤
+	Watercolor	수채화
+	Waves	파도
+	Turns:	회전 수:
+	Divergence:	발산:
+	Clockwise	시계 방향
+	Threshold:	임계값:
+	Grow/Shrink:	확대/축소:
+	Fill by:	채우기 기준:
+	Visible Colors	표시 색상
+	Alpha	알파
+	Add to Fill	채우기에 추가
+	View rotation (Cmd+Shift+scroll turns the view)	보기 회전 (Cmd+Shift+스크롤로 회전)
+	Lock Rotate View	보기 회전 잠금
+	Rotate View	보기 회전
+	Fixation:	고정:
+	Dip Pen	딥 펜
+	Marker	마커
+	Brush	브러시
+	Wiggly	구불구불
+	Splotchy	얼룩
+	Tracing	트레이싱
+	Use Pressure	필압 사용
+	Live Simplify	라이브 단순화
+	Simplify (Live)…	단순화 (라이브)…
+	Split View	분할 보기
+	X-ray	X-레이
+	Input Devices…	입력 장치…
+	Input Devices	입력 장치
+	Pressure Curves	필압 곡선
+	Mouse	마우스
+	Pen / Stylus	펜 / 스타일러스
+	Touch	터치
+	Liquify Tools	리퀴파이 도구
+	Disabled	사용 안 함
+	Grids	그리드
+	Main Grid	기본 그리드
+	Add Grid	그리드 추가
+	Remove Grid	그리드 제거
+	Grid Options	그리드 옵션
+	Kind:	종류:
+	Subdivisions:	분할:
+	Angles:	각도:
+	Gaps:	간격:
+	Origin:	원점:
+	Own color	고유 색상
+	Open a document to edit its grids.	그리드를 편집할 문서를 여세요.
+	Add Script	스크립트 추가
+	Edit Script	스크립트 편집
+	Remove Script	스크립트 제거
+	The document has no scripts.	문서에 스크립트가 없습니다.
+	External:	외부:
+	Embedded script	포함된 스크립트
+	Add Embedded Script	포함된 스크립트 추가
+	Add External Script	외부 스크립트 추가
+	Source:	소스:
+	External file	외부 파일
+	Code:	코드:
+	Open a document to edit its scripts.	스크립트를 편집할 문서를 여세요.
+	Alignment Handles	정렬 핸들
+	Align (Shift: move the key object)	정렬 (Shift: 키 오브젝트 이동)
+	Stylesheet	스타일시트
+	No rules yet. Add one and assign its class to objects.	규칙이 아직 없습니다. 하나 추가하고 그 클래스를 오브젝트에 할당하세요.
+	Add Rule	규칙 추가
+	Remove Rule	규칙 제거
+	Selector:	선택자:
+	Declarations:	선언:
+	Assign to Selection	선택 항목에 할당
+	Remove from Selection	선택 항목에서 제거
+	Add CSS Rule	CSS 규칙 추가
+	Edit CSS Rule	CSS 규칙 편집
+	Remove CSS Rule	CSS 규칙 제거
+	Assign CSS Class	CSS 클래스 할당
+	Remove CSS Class	CSS 클래스 제거
+	Apply Stylesheet	스타일시트 적용
+	New Node	새 노드
+	Indent Node	노드 들여쓰기
+	Outdent Node	노드 내어쓰기
+	Move Node	노드 이동
+	Set Path Data	경로 데이터 설정
+	Round to:	반올림 자릿수:
+	Round Path Data	경로 데이터 반올림
+	Connector Tool	커넥터 도구
+	Connect Objects	오브젝트 연결
+	Reroute Connectors	커넥터 다시 배선
+	Connector Obstacle	커넥터 장애물
+	Arrange Connected Objects	연결된 오브젝트 정렬
+	Arrange Connected	연결 정렬
+	Routing:	배선:
+	Orthogonal	직교
+	Polyline	폴리라인
+	Curvature:	곡률:
+	3D Box Tool	3D 상자 도구
+	3D Box	3D 상자
+	3D Box Options	3D 상자 옵션
+	Move Vanishing Point	소실점 이동
+	Z:	Z:
+	Vanishing Point	소실점
+	Infinite	무한

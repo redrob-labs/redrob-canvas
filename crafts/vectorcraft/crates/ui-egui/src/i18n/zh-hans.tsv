@@ -4175,3 +4175,183 @@ lighting	Light	光源
 	Background	背景
 	Live Slice	实时切片
 	Fuse Slice	融合切片
+	3D Marble	3D 大理石
+	3D Wood	3D 木纹
+	Air Spray	喷雾
+	Aluminium	铝
+	Apply Effects to Image Pixels	将效果应用到图像像素
+	Apply Filter Preset	应用滤镜预设
+	Apply to Selection	应用到选区
+	Bevels	斜角
+	Black Hole	黑洞
+	Blobs	斑点
+	Bloom	光晕
+	Brilliance	亮彩
+	Bump	凸起
+	Bumps	凸起
+	Button	按钮
+	Canvas Bumps	画布凸起
+	Chalk and Sponge	粉笔与海绵
+	Channel to Alpha	通道转为 Alpha
+	Chrome	镀铬
+	Color Blindness	色盲
+	Colour Space:	色彩空间：
+	Comics Cream	漫画奶油
+	Cracked Glass	碎裂玻璃
+	Cubes	方块
+	Dark and Glow	暗与光
+	Document Filters	文档滤镜
+	Dragee	糖衣
+	Duochrome	双色调
+	Duplicate Filter	复制滤镜
+	Embossed Leather	压纹皮革
+	Extract Channel	提取通道
+	Fade to Black	淡出至黑
+	Felt Feather	毛毡羽
+	Fill and Overlays	填色与叠加
+	Filter	滤镜
+	Filter Gallery	滤镜库
+	Filter Presets	滤镜预设
+	Filter copy	滤镜副本
+	Filters	滤镜
+	Glow	发光
+	Glowing Metal	炽热金属
+	Gold	黄金
+	Greyscale	灰度
+	HSL Noise	HSL 噪点
+	Ink Blot	墨渍
+	Ink Splash	墨水飞溅
+	Inner Shadow	内阴影
+	Leopard Fur	豹皮
+	Light Eraser	亮部橡皮擦
+	Luminance to Alpha	亮度转为 Alpha
+	Materials	材质
+	Matte Jelly	哑光果冻
+	Metallized Paint	金属漆
+	Neon	霓虹
+	No filter matches the search.	没有符合搜索的滤镜。
+	Noise Fill	噪点填色
+	Non-realistic 3D Shaders	非写实 3D 着色器
+	Open Filter Editor	打开滤镜编辑器
+	Paper Bump	纸张凸起
+	Pointillism	点彩
+	Protrusions	突起
+	Quadritone	四色调
+	Ridges	脊纹
+	Rough Paper	粗糙纸
+	Rough Transparency	粗糙透明
+	Roughen	粗糙化
+	Saturation Map	饱和度映射
+	Select an object to apply a filter.	选择对象以应用滤镜。
+	Silhouette	剪影
+	Smooth Edges	平滑边缘
+	Solarize	曝光过度
+	Specular Light	镜面光
+	Spikes	尖刺
+	Spots Overlay	斑点叠加
+	Stone Wall	石墙
+	Subregion:	子区域：
+	Swirl	漩涡
+	Textures	纹理
+	The document has no filters yet.	文档尚无滤镜。
+	Thin Membrane	薄膜
+	Torn Edges	撕裂边缘
+	Translucent	半透明
+	Transparency Utilities	透明工具
+	Tritone	三色调
+	Watercolor	水彩
+	Waves	波浪
+	Turns:	圈数：
+	Divergence:	发散：
+	Clockwise	顺时针
+	Threshold:	阈值：
+	Grow/Shrink:	扩张/收缩：
+	Fill by:	填色依据：
+	Visible Colors	可见颜色
+	Alpha	Alpha
+	Add to Fill	加入填色
+	View rotation (Cmd+Shift+scroll turns the view)	视图旋转（Cmd+Shift+滚动可旋转）
+	Lock Rotate View	锁定视图旋转
+	Fixation:	固定：
+	Dip Pen	蘸水笔
+	Marker	马克笔
+	Brush	毛笔
+	Wiggly	摇摆
+	Splotchy	斑驳
+	Use Pressure	使用压力
+	Live Simplify	实时简化
+	Simplify (Live)…	简化（实时）…
+	Split View	分割视图
+	X-ray	X 光
+	Input Devices…	输入设备…
+	Input Devices	输入设备
+	Pressure Curves	压力曲线
+	Mouse	鼠标
+	Pen / Stylus	画笔 / 触控笔
+	Touch	触控
+	Liquify Tools	液化工具
+	Disabled	禁用
+	Grids	网格
+	Main Grid	主网格
+	Add Grid	添加网格
+	Remove Grid	移除网格
+	Grid Options	网格选项
+	Kind:	种类：
+	Subdivisions:	细分：
+	Angles:	角度：
+	Gaps:	间距：
+	Origin:	原点：
+	Own color	自定颜色
+	Open a document to edit its grids.	打开文档以编辑其网格。
+	Add Script	添加脚本
+	Edit Script	编辑脚本
+	Remove Script	移除脚本
+	The document has no scripts.	文档没有脚本。
+	External:	外部：
+	Embedded script	内嵌脚本
+	Add Embedded Script	添加内嵌脚本
+	Add External Script	添加外部脚本
+	Source:	来源：
+	External file	外部文件
+	Code:	代码：
+	Open a document to edit its scripts.	打开文档以编辑其脚本。
+	Alignment Handles	对齐控制点
+	Align (Shift: move the key object)	对齐（Shift：移动关键对象）
+	Stylesheet	样式表
+	No rules yet. Add one and assign its class to objects.	尚无规则。添加一个并将其类分配给对象。
+	Add Rule	添加规则
+	Remove Rule	移除规则
+	Selector:	选择器：
+	Declarations:	声明：
+	Assign to Selection	分配给选区
+	Remove from Selection	从选区移除
+	Add CSS Rule	添加 CSS 规则
+	Edit CSS Rule	编辑 CSS 规则
+	Remove CSS Rule	移除 CSS 规则
+	Assign CSS Class	分配 CSS 类
+	Remove CSS Class	移除 CSS 类
+	Apply Stylesheet	应用样式表
+	New Node	新节点
+	Indent Node	缩进节点
+	Outdent Node	减少节点缩进
+	Move Node	移动节点
+	Set Path Data	设置路径数据
+	Round to:	四舍五入到：
+	Round Path Data	四舍五入路径数据
+	Connector Tool	连接线工具
+	Connect Objects	连接对象
+	Reroute Connectors	重新布线连接线
+	Connector Obstacle	连接线障碍物
+	Arrange Connected Objects	排列已连接对象
+	Arrange Connected	排列已连接
+	Routing:	布线：
+	Orthogonal	正交
+	Polyline	折线
+	Curvature:	曲率：
+	3D Box Tool	3D 盒子工具
+	3D Box	3D 盒子
+	3D Box Options	3D 盒子选项
+	Move Vanishing Point	移动消失点
+	Z:	Z：
+	Vanishing Point	消失点
+	Infinite	无限
