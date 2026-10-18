@@ -9,7 +9,7 @@
 //! panel order). Like the other preset commands they change the preferences document, not a
 //! document's history.
 
-use redrob_photo_io::palette_files::{PalColor, PalEntry, PalGroup, Palette, PaletteKind};
+use redrob_photo_io::palette_files::{PalColor, PalEntry, PalGroup, Palette, PaletteKind as PalFileKind};
 use redrob_photo_psd::aco::{AcoColor, AcoSwatch};
 use redrob_photo_psd::ase::{AseColor, AseEntry, AseFile, AseKind, AseSwatch};
 use serde_json::{Value, json};
@@ -844,7 +844,7 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
     // .kpl) are read by `redrob_photo_io::palette_files`; `.aco`/`.ase` by the PSD crate.
     let other = match str_param(p, "format") {
         Some(f) if Format::parse(f).is_none() => {
-            Some(PaletteKind::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|gpl|riff|act|psp|xml|sbz|acb|kpl)")))?)
+            Some(PalFileKind::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|gpl|riff|act|psp|xml|sbz|acb|kpl)")))?)
         }
         Some(_) => None,
         None if bytes.starts_with(redrob_photo_psd::ase::SIGNATURE) || matches!(bytes.get(..2), Some([0, 1] | [0, 2])) => None,
@@ -976,10 +976,10 @@ fn export(s: &mut Session, p: &Value) -> Result<Value> {
     // Palette files other than .aco/.ase/css/txt go through `palette_files`.
     let other = match str_param(p, "format") {
         Some(f) if Format::parse(f).is_none() => {
-            Some(PaletteKind::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|css|txt|gpl|riff|act|psp|xml|kpl)")))?)
+            Some(PalFileKind::parse(f).ok_or_else(|| bad(CMD, format!("unknown format `{f}` (aco|ase|css|txt|gpl|riff|act|psp|xml|kpl)")))?)
         }
         Some(_) => None,
-        None => ext.filter(|e| Format::parse(e).is_none()).and_then(PaletteKind::parse),
+        None => ext.filter(|e| Format::parse(e).is_none()).and_then(PalFileKind::parse),
     };
     let format = match (other, str_param(p, "format")) {
         (Some(_), _) => Format::Aco,
@@ -1025,7 +1025,7 @@ fn export(s: &mut Session, p: &Value) -> Result<Value> {
         }
         (None, _) => write_file(&groups, format).map_err(|e| bad(CMD, e))?,
     };
-    let format_id = other.map_or(format.id(), PaletteKind::id);
+    let format_id = other.map_or(format.id(), PalFileKind::id);
     let mut out = json!({"format": format_id, "count": count, "bytes": bytes.len(), "warnings": warnings});
     match path {
         Some(path) => {

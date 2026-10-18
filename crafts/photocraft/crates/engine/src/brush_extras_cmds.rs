@@ -438,7 +438,7 @@ fn pad_fill(s: &mut Session, p: &Value) -> Result<Value> {
             let scale = (iw / w as f32).max(ih / h as f32).max(1e-6);
             for y in 0..h {
                 for x in 0..w {
-                    let (sx, sy) = (((x as f32 + 0.5) * scale) as i32, ((y as f32 + 0.5) * scale) as i32);
+                    let (sx, sy) = (((x as f32 + 0.5) * scale) as u32, ((y as f32 + 0.5) * scale) as u32);
                     let c = if sx < ir.width() && sy < ir.height() { ipx[(sy * ir.width() + sx) as usize] } else { [1.0; 4] };
                     // Over white, as a flattened preview.
                     px[(y * w + x) as usize] = [c[0] * c[3] + (1.0 - c[3]), c[1] * c[3] + (1.0 - c[3]), c[2] * c[3] + (1.0 - c[3]), 1.0];

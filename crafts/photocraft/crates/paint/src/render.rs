@@ -460,12 +460,12 @@ impl BrushContext {
         let mw = mask.rect.width() as usize;
         for yy in 0..h {
             let my = rect.y0 + yy as i32 - oy - mask.rect.y0;
-            if my < 0 || my >= mask.rect.height() {
+            if my < 0 || my >= mask.rect.height() as i32 {
                 continue;
             }
             for xx in 0..w {
                 let mx = rect.x0 + xx as i32 - ox - mask.rect.x0;
-                if mx < 0 || mx >= mask.rect.width() {
+                if mx < 0 || mx >= mask.rect.width() as i32 {
                     continue;
                 }
                 let v = mask.vals[my as usize * mw + mx as usize];
