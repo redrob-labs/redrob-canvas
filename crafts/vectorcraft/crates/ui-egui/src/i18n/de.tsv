@@ -4655,3 +4655,10 @@ theme	Appearance	Erscheinungsbild
 	Assign CSS Class	CSS-Klasse zuweisen
 	Remove CSS Class	CSS-Klasse entfernen
 	Apply Stylesheet	Stylesheet anwenden
+	New Node	Neuer Knoten
+	Indent Node	Knoten einrücken
+	Outdent Node	Knoten ausrücken
+	Move Node	Knoten verschieben
+	Set Path Data	Pfaddaten setzen
+	Round to:	Runden auf:
+	Round Path Data	Pfaddaten runden

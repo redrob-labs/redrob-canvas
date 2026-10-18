@@ -4700,3 +4700,10 @@ lighting	Light	Luce
 	Assign CSS Class	Assegna classe CSS
 	Remove CSS Class	Rimuovi classe CSS
 	Apply Stylesheet	Applica foglio di stile
+	New Node	Nuovo nodo
+	Indent Node	Indenta nodo
+	Outdent Node	Rimuovi rientro nodo
+	Move Node	Sposta nodo
+	Set Path Data	Imposta dati tracciato
+	Round to:	Arrotonda a:
+	Round Path Data	Arrotonda dati tracciato

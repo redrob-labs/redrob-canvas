@@ -4053,3 +4053,10 @@ lighting	Light	光源
 	Assign CSS Class	指派 CSS 類別
 	Remove CSS Class	移除 CSS 類別
 	Apply Stylesheet	套用樣式表
+	New Node	新節點
+	Indent Node	縮排節點
+	Outdent Node	凸排節點
+	Move Node	移動節點
+	Set Path Data	設定路徑資料
+	Round to:	四捨五入至：
+	Round Path Data	四捨五入路徑資料

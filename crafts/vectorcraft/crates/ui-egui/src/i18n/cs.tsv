@@ -5108,3 +5108,10 @@ mark-style	Japanese	Japonské
 	Assign CSS Class	Přiřadit třídu CSS
 	Remove CSS Class	Odebrat třídu CSS
 	Apply Stylesheet	Použít stylopis
+	New Node	Nový uzel
+	Indent Node	Odsadit uzel
+	Outdent Node	Předsadit uzel
+	Move Node	Přesunout uzel
+	Set Path Data	Nastavit data cesty
+	Round to:	Zaokrouhlit na:
+	Round Path Data	Zaokrouhlit data cesty

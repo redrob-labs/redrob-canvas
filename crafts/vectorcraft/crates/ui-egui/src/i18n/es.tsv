@@ -5064,3 +5064,10 @@ mark-style	Japanese	Japonesas
 	Assign CSS Class	Asignar clase CSS
 	Remove CSS Class	Quitar clase CSS
 	Apply Stylesheet	Aplicar hoja de estilos
+	New Node	Nuevo nodo
+	Indent Node	Sangrar nodo
+	Outdent Node	Quitar sangría del nodo
+	Move Node	Mover nodo
+	Set Path Data	Establecer datos del trazado
+	Round to:	Redondear a:
+	Round Path Data	Redondear datos del trazado

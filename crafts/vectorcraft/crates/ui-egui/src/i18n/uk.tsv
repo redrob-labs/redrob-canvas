@@ -4665,3 +4665,10 @@ lighting	Light	Світло
 	Assign CSS Class	Призначити клас CSS
 	Remove CSS Class	Зняти клас CSS
 	Apply Stylesheet	Застосувати таблицю стилів
+	New Node	Новий вузол
+	Indent Node	Вкласти вузол
+	Outdent Node	Винести вузол
+	Move Node	Перемістити вузол
+	Set Path Data	Задати дані контуру
+	Round to:	Округлити до:
+	Round Path Data	Округлити дані контуру

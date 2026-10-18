@@ -4694,3 +4694,10 @@ lighting	Light	ライト
 	Assign CSS Class	CSS クラスを割り当て
 	Remove CSS Class	CSS クラスを削除
 	Apply Stylesheet	スタイルシートを適用
+	New Node	新規ノード
+	Indent Node	ノードをインデント
+	Outdent Node	ノードをアウトデント
+	Move Node	ノードを移動
+	Set Path Data	パスデータを設定
+	Round to:	丸め桁数:
+	Round Path Data	パスデータを丸める

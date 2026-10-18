@@ -4266,3 +4266,10 @@ lighting	Light	光源
 	Assign CSS Class	分配 CSS 类
 	Remove CSS Class	移除 CSS 类
 	Apply Stylesheet	应用样式表
+	New Node	新节点
+	Indent Node	缩进节点
+	Outdent Node	减少节点缩进
+	Move Node	移动节点
+	Set Path Data	设置路径数据
+	Round to:	四舍五入到：
+	Round Path Data	四舍五入路径数据

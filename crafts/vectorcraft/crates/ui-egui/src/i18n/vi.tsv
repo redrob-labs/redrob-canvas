@@ -4667,3 +4667,10 @@ theme	Appearance	Giao diện
 	Assign CSS Class	Gán lớp CSS
 	Remove CSS Class	Bỏ lớp CSS
 	Apply Stylesheet	Áp dụng bảng kiểu
+	New Node	Nút mới
+	Indent Node	Thụt nút vào
+	Outdent Node	Đưa nút ra
+	Move Node	Di chuyển nút
+	Set Path Data	Đặt dữ liệu đường
+	Round to:	Làm tròn đến:
+	Round Path Data	Làm tròn dữ liệu đường

@@ -4664,3 +4664,10 @@ lighting	Light	광원
 	Assign CSS Class	CSS 클래스 할당
 	Remove CSS Class	CSS 클래스 제거
 	Apply Stylesheet	스타일시트 적용
+	New Node	새 노드
+	Indent Node	노드 들여쓰기
+	Outdent Node	노드 내어쓰기
+	Move Node	노드 이동
+	Set Path Data	경로 데이터 설정
+	Round to:	반올림 자릿수:
+	Round Path Data	경로 데이터 반올림

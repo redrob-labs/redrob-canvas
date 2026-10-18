@@ -4681,3 +4681,10 @@ lighting	Light	Свет
 	Assign CSS Class	Назначить класс CSS
 	Remove CSS Class	Убрать класс CSS
 	Apply Stylesheet	Применить таблицу стилей
+	New Node	Новый узел
+	Indent Node	Вложить узел
+	Outdent Node	Вынести узел
+	Move Node	Переместить узел
+	Set Path Data	Задать данные контура
+	Round to:	Округлить до:
+	Round Path Data	Округлить данные контура

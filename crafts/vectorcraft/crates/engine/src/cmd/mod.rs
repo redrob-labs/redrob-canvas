@@ -94,6 +94,7 @@ pub(crate) mod views;
 pub mod wand;
 pub mod webexport;
 mod xform;
+mod xmlcmds;
 
 use redrob_vector_color::Color;
 use redrob_vector_doc::NodeId;
@@ -301,6 +302,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(gridcmds::specs());
         v.extend(scriptcmds::specs());
         v.extend(stylesheet::specs());
+        v.extend(xmlcmds::specs());
         v
     })
 }

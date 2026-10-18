@@ -4954,3 +4954,10 @@ mark-style	Japanese	Japońskie
 	Assign CSS Class	Przypisz klasę CSS
 	Remove CSS Class	Usuń klasę CSS
 	Apply Stylesheet	Zastosuj arkusz stylów
+	New Node	Nowy węzeł
+	Indent Node	Wcięcie węzła
+	Outdent Node	Usuń wcięcie węzła
+	Move Node	Przenieś węzeł
+	Set Path Data	Ustaw dane ścieżki
+	Round to:	Zaokrąglij do:
+	Round Path Data	Zaokrąglij dane ścieżki

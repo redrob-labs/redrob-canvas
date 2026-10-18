@@ -2949,9 +2949,9 @@ name = "XML editor"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#XML_Editor"
 behaviour = "A tree of the document's SVG nodes with attribute list editing (add, delete, edit values with syntax highlighting), node create/delete/duplicate/indent/raise/lower, drag reorder, and selection sync with the canvas; path data can be rounded; changes apply live."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/xml_editor.rs"
-gap = "an element tree with selection sync, click-to-select, duplicate/delete/raise/lower, and live edits of name, visibility, lock, opacity, blend, href, description and data-* attributes (add, edit, remove); geometry and appearance show as read-only JSON (no path-data editing or rounding), no node creation, indent/outdent or drag reorder, no syntax highlighting"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/xml_editor.rs (element tree with selection sync, highlighted tags, attribute editing, data-* add/edit/remove, path d editing and rounding, new node, duplicate/delete/raise/lower/indent/outdent, drag reorder), crafts/vectorcraft/crates/engine/src/cmd/xmlcmds.rs (xml.newNode/indent/outdent/move, path.setSvgData)"
+gap = ""
 priority = 2
 evidence = "docs/parity/evidence/VEC-xml-editor.png"
 
