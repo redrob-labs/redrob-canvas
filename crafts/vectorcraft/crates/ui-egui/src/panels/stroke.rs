@@ -323,6 +323,28 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             set(app, json!({"midArrow": a.map(|a| format!("{a:?}"))}));
         }
     });
+    // Custom markers (Object › Objects to Marker), when the document has any.
+    let marker_names: Vec<String> = app.session.active().map(|d| d.doc.markers.iter().map(|m| m.name.clone()).collect()).unwrap_or_default();
+    if !marker_names.is_empty() {
+        let none = tl!("None").to_string();
+        let mut names: Vec<&str> = vec![none.as_str()];
+        names.extend(marker_names.iter().map(String::as_str));
+        let current = |m: Option<&redrob_vector_doc::CustomMarker>| m.map_or(none.clone(), |m| m.name.clone());
+        let picks = [
+            ("startMarker", "marker-start", current(st.as_ref().and_then(|s| s.custom_start.as_deref()))),
+            ("midMarker", "marker-mid", current(st.as_ref().and_then(|s| s.custom_mid.as_deref()))),
+            ("endMarker", "marker-end", current(st.as_ref().and_then(|s| s.custom_end.as_deref()))),
+        ];
+        ui.horizontal(|ui| {
+            row_label(ui, tl!("Markers:"));
+            for (key, id, cur) in picks {
+                if let Some(i) = widgets::dropdown_names(ui, id, &cur, &names, 72.0) {
+                    let value = if i == 0 { Value::Null } else { json!(names[i]) };
+                    set(app, json!({ key: value }));
+                }
+            }
+        });
+    }
     let orient = st.as_ref().map_or(MarkerOrient::Auto, |s| s.marker_orient);
     let any_head = st.as_ref().is_some_and(StrokeLayer::has_heads);
     ui.horizontal(|ui| {

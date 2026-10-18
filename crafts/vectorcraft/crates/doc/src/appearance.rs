@@ -2,6 +2,7 @@
 //! effects, plus object-level effects.
 
 use redrob_vector_color::{BlendMode, Color, Paint};
+use redrob_vector_geom::PathData;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -531,6 +532,23 @@ pub struct StrokeLayer {
     /// is their scale of 1 pt.
     #[serde(default = "yes", skip_serializing_if = "crate::skip::is_true")]
     pub markers_scale: bool,
+    /// Custom markers (Object › Objects to Marker) drawn in place of the start, mid and end heads:
+    /// each carries its own art, so the stroke stays complete wherever it goes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_start: Option<Box<CustomMarker>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_mid: Option<Box<CustomMarker>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_end: Option<Box<CustomMarker>>,
+}
+
+/// A marker made from objects: its outline in head units (a unit is the head weight; x runs back
+/// from the tip at 0 to the base at 4, y across, -2..2 to the right of the direction), filled with
+/// the stroke's paint. Documents keep their markers in [`crate::Document::markers`] by name.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CustomMarker {
+    pub name: String,
+    pub path: PathData,
 }
 
 /// How a stroke's arrowheads and markers turn (SVG `orient`). Saved by variant name: new
@@ -649,7 +667,21 @@ impl StrokeLayer {
             mid_arrow: None,
             marker_orient: MarkerOrient::Auto,
             markers_scale: true,
+            custom_start: None,
+            custom_mid: None,
+            custom_end: None,
         }
+    }
+    /// The start head's kind: the arrowhead, or a triangle standing for a custom marker (its
+    /// outline is the marker's).
+    pub fn start_head(&self) -> Option<Arrowhead> {
+        self.start_arrow.or(self.custom_start.as_ref().map(|_| Arrowhead::Triangle))
+    }
+    pub fn end_head(&self) -> Option<Arrowhead> {
+        self.end_arrow.or(self.custom_end.as_ref().map(|_| Arrowhead::Triangle))
+    }
+    pub fn mid_head(&self) -> Option<Arrowhead> {
+        self.mid_arrow.or(self.custom_mid.as_ref().map(|_| Arrowhead::Triangle))
     }
     /// Weight of the mid markers: the start scale of the stroke's weight (or of 1 pt when markers
     /// don't scale), at least a quarter point.
@@ -662,7 +694,7 @@ impl StrokeLayer {
     }
     /// Does this stroke place any arrowhead or marker?
     pub fn has_heads(&self) -> bool {
-        self.start_arrow.is_some() || self.end_arrow.is_some() || self.mid_arrow.is_some()
+        self.start_head().is_some() || self.end_head().is_some() || self.mid_head().is_some()
     }
     /// Weight of the start (`end == false`) or end arrowhead: stroke weight × its scale, at least
     /// a quarter point. A head of weight `hw` fits a box about `4·hw` long and wide.
@@ -673,12 +705,12 @@ impl StrokeLayer {
     /// How far the start (`end == false`) or end arrowhead can reach from its end point (0
     /// without one): the head's diagonal, or with [`ArrowAlign::Extend`] its length, plus the cap.
     pub fn head_reach(&self, end: bool) -> f64 {
-        let head = if end { self.end_arrow } else { self.start_arrow };
+        let head = if end { self.end_head() } else { self.start_head() };
         head.map_or(0.0, |_| HEAD_REACH * self.arrow_weight(end) + self.width / 2.0)
     }
     /// How far the arrowheads can reach from the path's end points (0 without heads).
     pub fn arrow_reach(&self) -> f64 {
-        let mid = self.mid_arrow.map_or(0.0, |_| HEAD_REACH * self.mid_weight() + self.width / 2.0);
+        let mid = self.mid_head().map_or(0.0, |_| HEAD_REACH * self.mid_weight() + self.width / 2.0);
         self.head_reach(false).max(self.head_reach(true)).max(mid)
     }
     /// The widest the width profile makes the stroke, as a factor of its weight (1 without one).

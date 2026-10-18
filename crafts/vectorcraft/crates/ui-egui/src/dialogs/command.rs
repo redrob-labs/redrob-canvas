@@ -49,6 +49,7 @@ fn choices(command: &str, key: &str) -> Option<form::Choices> {
         ("edit.findReplace", "scope") => Some(FIND_SCOPE),
         ("object.tileClones", "symmetry") => Some(TILE_SYMMETRY),
         ("object.tileClones", "trace") => Some(TILE_TRACE),
+        ("object.tracePixelArt", "output") => Some(PIXEL_ART_OUTPUT),
         _ => None,
     }
 }
@@ -84,6 +85,9 @@ const TILE_SYMMETRY: form::Choices = &[
     ("P6", "P6"),
     ("P6M", "P6M"),
 ];
+
+/// Trace Pixel Art › Output.
+const PIXEL_ART_OUTPUT: form::Choices = &[("B-Spline Curves", "bspline"), ("Polygons", "polygon"), ("Voronoi Cells", "voronoi")];
 
 /// Create Tiled Clones › Trace: what the drawing under each tile sets.
 const TILE_TRACE: form::Choices = &[("None", "none"), ("Color", "color"), ("Opacity", "opacity"), ("Size", "size")];

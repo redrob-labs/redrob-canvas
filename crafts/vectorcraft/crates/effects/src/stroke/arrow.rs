@@ -37,17 +37,27 @@ pub(super) fn pieces<'a>(bp: &'a BezPath, st: &StrokeLayer) -> StrokePieces<'a> 
     let last = subs.last().filter(|s| !s.1).map(|s| s.0.clone());
     let cap = cap_extent(st.cap, st.width);
     let (hw0, hw1) = (st.arrow_weight(false), st.arrow_weight(true));
-    let start = st.start_arrow.zip(first).map(|(k, r)| (k, r, inset(k, hw0, cap)));
-    let end = st.end_arrow.zip(last).map(|(k, r)| (k, r, inset(k, hw1, cap)));
-    if start.is_none() && end.is_none() && st.mid_arrow.is_none() {
+    let start = st.start_head().zip(first).map(|(k, r)| (k, r, inset(k, hw0, cap)));
+    let end = st.end_head().zip(last).map(|(k, r)| (k, r, inset(k, hw1, cap)));
+    if start.is_none() && end.is_none() && st.mid_head().is_none() {
         return StrokePieces { line: Cow::Borrowed(bp), heads: vec![] };
     }
+    // Custom markers draw their own art in the head's place.
+    let custom = |m: Option<&redrob_vector_doc::CustomMarker>, kind: Arrowhead, tip: Point, dir: Vec2, hw: f64| match m {
+        Some(m) => {
+            let n = Vec2::new(-dir.y, dir.x);
+            let mut p = m.path.to_bezpath();
+            p.apply_affine(Affine::new([-dir.x * hw, -dir.y * hw, n.x * hw, n.y * hw, tip.x, tip.y]));
+            p
+        }
+        None => shape(kind, tip, dir, hw),
+    };
     let tip_mode = st.arrow_align == ArrowAlign::Tip;
     let orient = st.marker_orient;
     let mut heads = vec![];
     // Mid markers: one on every node between the ends of each subpath (and on a closed subpath's
     // start), centred on the node along the bisector of the tangents there.
-    if let Some(kind) = st.mid_arrow {
+    if let Some(kind) = st.mid_head() {
         let hw = st.mid_weight();
         for (range, closed) in &subs {
             let segs = segments(&els[range.clone()]);
@@ -60,7 +70,7 @@ pub(super) fn pieces<'a>(bp: &'a BezPath, st: &StrokeLayer) -> StrokePieces<'a> 
                 let natural = if (a + b).hypot() > 1e-9 { unit(a + b) } else { b };
                 let dir = oriented(orient, natural, false);
                 let tip = at + dir * (len(hw) / 2.0);
-                heads.push(Arrow { kind, outline: shape(kind, tip, dir, hw), tip, dir, inset: 0.0 });
+                heads.push(Arrow { kind, outline: custom(st.custom_mid.as_deref(), kind, tip, dir, hw), tip, dir, inset: 0.0 });
             }
         }
     }
@@ -77,7 +87,8 @@ pub(super) fn pieces<'a>(bp: &'a BezPath, st: &StrokeLayer) -> StrokePieces<'a> 
             (end_pt + outward * inset, outward)
         };
         let dir = oriented(orient, dir, at_start);
-        heads.push(Arrow { kind, outline: shape(kind, tip, dir, hw), tip, dir, inset });
+        let m = if at_start { st.custom_start.as_deref() } else { st.custom_end.as_deref() };
+        heads.push(Arrow { kind, outline: custom(m, kind, tip, dir, hw), tip, dir, inset });
     };
     if let Some((k, r, i)) = start {
         place(k, r, true, i, hw0);

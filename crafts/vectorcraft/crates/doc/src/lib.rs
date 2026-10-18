@@ -78,7 +78,7 @@ pub use appearance::{
     Appearance, AppearanceItem, ArrowAlign, Arrowhead, Dash, Effect, FillLayer, LineCap, LineJoin, PressureProfile, ProfilePreset, SavedProfile,
     StrokeAlign, StrokeLayer, WidthProfile,
 };
-pub use appearance::{MarkerOrient, StrokeGradientMode};
+pub use appearance::{CustomMarker, MarkerOrient, StrokeGradientMode};
 pub use assets::ExportAsset;
 pub use corners::LiveCorners;
 pub use depth::MAX_DEPTH;
@@ -693,6 +693,9 @@ pub struct Document {
     /// Pattern swatch definitions (Object → Pattern).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub patterns: Vec<PatternDef>,
+    /// Custom markers (Object › Objects to Marker), offered in the stroke's marker menus.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub markers: Vec<CustomMarker>,
     /// Pattern editing mode, while active.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pattern_edit: Option<PatternEdit>,
@@ -830,6 +833,7 @@ impl Document {
             raster_effects_ppi: 72.0,
             images: BTreeMap::new(),
             patterns: vec![],
+            markers: vec![],
             pattern_edit: None,
             mask_edit: None,
             next_id: 1,

@@ -997,7 +997,7 @@ impl Writer<'_> {
     /// `marker-start`, `marker-mid` and `marker-end` for the heads of `s`, each a `<marker>` def
     /// ([`Writer::marker_def`]).
     fn marker_props(&mut self, s: &StrokeLayer, p: &mut Props) {
-        for (which, kind) in [(MarkerAt::Start, s.start_arrow), (MarkerAt::Mid, s.mid_arrow), (MarkerAt::End, s.end_arrow)] {
+        for (which, kind) in [(MarkerAt::Start, s.start_head()), (MarkerAt::Mid, s.mid_head()), (MarkerAt::End, s.end_head())] {
             if let Some(kind) = kind {
                 let id = self.marker_def(s, kind, which);
                 p.push((which.property(), format!("url(#{id})")));
@@ -1048,7 +1048,21 @@ impl Writer<'_> {
         if fixed && s.arrow_align == ArrowAlign::Extend {
             self.warn("arrowheads at a fixed angle are written with their tips on the path's end points");
         }
-        let outline = stroke::head_outline(kind, tip, dir, hw);
+        let custom = match which {
+            MarkerAt::Start => s.custom_start.as_deref(),
+            MarkerAt::Mid => s.custom_mid.as_deref(),
+            MarkerAt::End => s.custom_end.as_deref(),
+        };
+        let outline = match custom {
+            // A custom marker's own art, placed as the canvas places it (head units of `hw`).
+            Some(m) => {
+                let n = Vec2::new(-dir.y, dir.x);
+                let mut p = m.path.to_bezpath();
+                p.apply_affine(Affine::new([-dir.x * hw, -dir.y * hw, n.x * hw, n.y * hw, tip.x, tip.y]));
+                p
+            }
+            None => stroke::head_outline(kind, tip, dir, hw),
+        };
         let orient = if fixed { s.marker_orient.svg() } else { "auto".to_string() };
         let fill = self.paint(&s.paint, None);
         let opacity = if s.opacity < 1.0 { format!(" fill-opacity=\"{}\"", fmt_num(s.opacity as f64, 3)) } else { String::new() };

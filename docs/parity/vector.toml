@@ -1882,9 +1882,9 @@ name = "Custom markers from objects"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/custom-markers.html"
 behaviour = "Objects to Marker turns the selection into a marker definition available in the marker menus of this document."
-ours = "none"
-ours_where = ""
-gap = "arrowheads are a fixed set"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/markers.rs (object.objectsToMarker, marker.list, marker.delete), crafts/vectorcraft/crates/doc/src/appearance.rs (CustomMarker; StrokeLayer.custom_start/mid/end), crafts/vectorcraft/crates/doc/src/lib.rs (Document.markers), crafts/vectorcraft/crates/effects/src/stroke/arrow.rs (custom outlines drawn in the head's place), crafts/vectorcraft/crates/svg/src/export.rs (<marker> of the custom art), crafts/vectorcraft/crates/engine/src/cmd/stroke.rs (stroke.set startMarker/midMarker/endMarker), crafts/vectorcraft/crates/ui-egui/src/panels/stroke.rs (Markers row)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3760,9 +3760,9 @@ name = "Trace bitmap: pixel art mode"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/tracing-an-image.html"
 behaviour = "Low-resolution images are vectorised so that each pixel region becomes a clean shape with heuristics for curves, islands and sparse pixels, and the output can be voronoi cells or B-spline curves."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/trace/src/mosaic.rs, shapes.rs"
-gap = "no voronoi output and no per-heuristic weights; mosaic mode gives square cells only"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/trace/src/pixelart.rs (similarity graph with weighted curves, islands and sparse-pixels heuristics; voronoi cells, polygon and B-spline outputs), crafts/vectorcraft/crates/engine/src/cmd/pixelart.rs (object.tracePixelArt), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Trace Pixel Art…), crafts/vectorcraft/crates/ui-egui/src/dialogs/command.rs"
+gap = ""
 priority = 3
 
 [[feature]]
