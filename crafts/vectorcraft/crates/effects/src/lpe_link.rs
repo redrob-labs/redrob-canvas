@@ -140,7 +140,9 @@ pub fn attach_path(path: &PathData, p: &Value) -> PathData {
     let curve = flag(p, "curve", true);
     let handle = num(p, "handleLength", 20.0).clamp(0.0, 1e4);
     let mut out = path.clone();
-    let Some(sp) = out.subpaths.iter_mut().find(|s| !s.closed && s.anchors.len() >= 2) else { return out };
+    let at = out.subpaths.iter().position(|s| !s.closed && s.anchors.len() >= 2);
+    let Some(at) = at else { return out };
+    let sp = &mut out.subpaths[at];
     let n = sp.anchors.len();
     if do_start {
         let (q, t) = m.at(num(p, "startPosition", 0.0).clamp(0.0, 1.0) * m.total);
