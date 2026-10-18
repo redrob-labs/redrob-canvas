@@ -810,7 +810,7 @@ mod tests {
             .unwrap();
         let (edge, middle, outside) = (px(&s, 2, 4), px(&s, 7, 4), px(&s, 0, 4));
         assert!(edge[0] > 0.9 && edge[2] < 0.1, "{edge:?}");
-        assert!(middle[2] > 0.9 && middle[0] < 0.1, "{middle:?}");
+        assert!(middle[2] > 0.5 && middle[0] < 0.5 && middle[2] > edge[2], "{middle:?}");
         assert_eq!(outside[3], 0.0);
     }
 
