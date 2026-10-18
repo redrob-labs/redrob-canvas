@@ -39,6 +39,8 @@ pub struct LoadOptions {
     /// A `.ai` opens from its editing copy even where that draws differently from its PDF part
     /// (which can be older than it), with a warning, instead of from the PDF part.
     pub trust_editing_data: bool,
+    /// An SVG saved by a 90-dpi editor is scaled by 96/90 to keep its physical size (`legacyDpi`).
+    pub legacy_dpi: bool,
 }
 
 impl Default for LoadOptions {
@@ -54,6 +56,7 @@ impl Default for LoadOptions {
             dxf: Default::default(),
             editing_data: true,
             trust_editing_data: false,
+            legacy_dpi: true,
         }
     }
 }
@@ -91,7 +94,11 @@ impl LoadOptions {
             Some(v) => (v.as_bool().ok_or_else(|| bad(cmd, "editingData must be true, false or \"always\""))?, false),
         };
         let dxf = super::dxfimport::options(cmd, p.get("dxf"))?;
-        Ok(Self { pages, crop, password, color_mode, grays, text_as, layers, dxf, editing_data, trust_editing_data })
+        let legacy_dpi = match p.get("legacyDpi").filter(|v| !v.is_null()) {
+            None => true,
+            Some(v) => v.as_bool().ok_or_else(|| bad(cmd, "legacyDpi must be true or false"))?,
+        };
+        Ok(Self { pages, crop, password, color_mode, grays, text_as, layers, dxf, editing_data, trust_editing_data, legacy_dpi })
     }
 
     /// Does the document read only part of the file, or read it differently (a page range, another

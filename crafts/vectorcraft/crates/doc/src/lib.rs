@@ -31,6 +31,7 @@ pub mod overprint;
 pub mod pattern;
 pub mod perspective;
 mod pixels;
+pub mod svgfont;
 pub use pixels::MAX_RASTER_ALLOC;
 pub mod placed_document;
 pub mod profiles;
@@ -78,7 +79,7 @@ pub use appearance::{
     Appearance, AppearanceItem, ArrowAlign, Arrowhead, Dash, Effect, FillLayer, LineCap, LineJoin, PressureProfile, ProfilePreset, SavedProfile,
     StrokeAlign, StrokeLayer, WidthProfile,
 };
-pub use appearance::{MarkerOrient, StrokeGradientMode};
+pub use appearance::{CustomMarker, MarkerOrient, StrokeGradientMode};
 pub use assets::ExportAsset;
 pub use corners::LiveCorners;
 pub use depth::MAX_DEPTH;
@@ -107,6 +108,7 @@ pub use selection::{AnchorRef, SegmentRef, Selection};
 pub use setup::{Background, DocSetup, ExportText, GridSize, Quotes};
 pub use slices::{CellAlign, CellVAlign, Slice, SliceArea, SliceKind, SliceOptions, SliceSource};
 pub use style_libs::StyleLibrary;
+pub use svgfont::{SvgFont, SvgGlyph, SvgKern};
 pub use text::{
     AreaFit, AreaOptions, Burasagari, CharAlign, CharPosition, CharStyle, Composer, Digits, FirstBaseline, InlineArt, Justify, Kinsoku, LeadingModel,
     Mojikumi, ParaDirection, ParaStyle, PathAlign, PathEffect, ScriptMetrics, TabAlign, TabStop, TextKind, TextObject, TextRun, TextStyleDef,
@@ -848,6 +850,12 @@ pub struct Document {
     /// Pattern swatch definitions (Object → Pattern).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub patterns: Vec<PatternDef>,
+    /// Custom markers (Object › Objects to Marker), offered in the stroke's marker menus.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub markers: Vec<CustomMarker>,
+    /// SVG fonts made in this document (Type › SVG Font Editor), written as `<font>` elements.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub svg_fonts: Vec<SvgFont>,
     /// Pattern editing mode, while active.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pattern_edit: Option<PatternEdit>,
@@ -988,6 +996,8 @@ impl Document {
             raster_effects_ppi: 72.0,
             images: BTreeMap::new(),
             patterns: vec![],
+            markers: vec![],
+            svg_fonts: vec![],
             pattern_edit: None,
             mask_edit: None,
             next_id: 1,

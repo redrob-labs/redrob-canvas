@@ -613,12 +613,14 @@ fn node_options(app: &mut VectorcraftApp, ui: &mut Ui) {
         st.selection.anchors.iter().flat_map(|(id, set)| set.iter().map(move |&(si, ai)| (*id, si, ai))).collect();
     let has_segments = st.selection.segments.values().any(|s| !s.is_empty());
     let can_retype = has_segments || anchors.len() >= 2;
-    let single = match anchors.as_slice() {
-        [(id, si, ai)] => {
+    // X/Y: one anchor's position, or the centre of several anchors' bounds; editing moves them all.
+    let bounds = {
+        let mut pts = anchors.iter().filter_map(|(id, si, ai)| {
             st.doc.node(*id).and_then(|n| n.path_data()).and_then(|pd| pd.subpaths.get(*si)).and_then(|sp| sp.anchors.get(*ai)).map(|a| a.p)
-        }
-        _ => None,
+        });
+        pts.next().map(|first| pts.fold(redrob_vector_geom::Rect::from_points(first, first), |r, q| r.union_pt(q)))
     };
+    let single = bounds.map(|b| b.center());
     let t = Tokens::get(ui.ctx());
     let units = app.session.general_unit();
     if can_retype {
@@ -641,6 +643,20 @@ fn node_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     let show = app.ui.view.show_handles;
     if widgets::icon_button(ui, "tool-anchor", "Show Handles", show, 24.0).clicked() {
         app.ui.view.show_handles = !show;
+    }
+    // What else the node tool shows on the canvas: the clipping path, the opacity mask's art, the
+    // bounding box with its transform handles, the path outlines and the live effects' knots.
+    let v = &mut app.ui.view;
+    for (flag, label) in [
+        (&mut v.node_clip_path, tl!("Clip path")),
+        (&mut v.node_mask, tl!("Mask")),
+        (&mut v.node_transform_handles, tl!("Transform handles")),
+        (&mut v.node_path_outline, tl!("Path outline")),
+        (&mut v.node_effect_knots, tl!("Effect knots")),
+    ] {
+        if widgets::check(ui, label, *flag, true) {
+            *flag = !*flag;
+        }
     }
     ui.separator();
 }

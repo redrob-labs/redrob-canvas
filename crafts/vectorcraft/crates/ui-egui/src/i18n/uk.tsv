@@ -4754,3 +4754,86 @@ lighting	Light	Світло
 	Z:	Z:
 	Vanishing Point	Точка сходу
 	Infinite	Нескінченно
+	Arrange in Grid	Розставити за сіткою
+	Arrange in Circle	Розставити по колу
+	Dynamic Offset	Динамічний зсув
+	Fill Between Paths	Заливка між контурами
+	Linked Offset	Пов'язаний зсув
+	Linked Offset Distance	Відстань пов'язаного зсуву
+	Remove Overlaps	Усунути перекриття
+	Unlink Live Object	Від'єднати живий об'єкт
+	Create Anchor	Створити посилання
+	Follow Link	Перейти за посиланням
+	Select All Anchors	Вибрати всі опорні точки
+	Invert Anchor Selection	Інвертувати вибір опорних точок
+	Aspect ratio:	Співвідношення сторін:
+	Clip path	Контур відсікання
+	DPI:	DPI:
+	Effect knots	Вузли ефектів
+	Highlight color:	Колір підсвічування:
+	Interactivity	Інтерактивність
+	Link target:	Ціль посилання:
+	Link title:	Заголовок посилання:
+	Path outline	Контур шляху
+	Transform handles	Маніпулятори трансформації
+	Plot…	Вивести на плотер…
+	Import Web Image…	Імпортувати зображення з вебу…
+	Check Spelling	Перевірка правопису
+	Edit Custom Dictionary	Змінити власний словник
+	The spell check is complete.	Перевірку правопису завершено.
+	Words checked	Перевірено слів
+	Check Again	Перевірити знову
+	Word Not Found:	Слово не знайдено:
+	Change To:	Замінити на:
+	Suggestions:	Варіанти:
+	No suggestions	Немає варіантів
+	Ignore All	Пропустити все
+	No words yet	Слів ще немає
+	Word:	Слово:
+	Change Spelling	Виправити написання
+	Ignore Spelling	Пропустити слово
+	Add to Dictionary	Додати до словника
+	Remove from Dictionary	Видалити зі словника
+	Spelling Dictionaries	Орфографічні словники
+	Visible Hairlines	Видимі волосяні лінії
+	Rename…	Перейменувати…
+	Extract…	Витягти…
+	Object Attributes	Атрибути об'єкта
+	Object Attributes…	Атрибути об'єкта…
+	Create Tiled Clones…	Створити мозаїку клонів…
+	Rename Symbol	Перейменувати символ
+	Set Object Attribute	Задати атрибут об'єкта
+	Trace Pixel Art…	Трасувати піксельну графіку…
+	Objects to Marker	Об'єкти в маркер
+	Markers	Маркери
+	Markers:	Маркери:
+	Delete Marker	Видалити маркер
+	SVG Font Editor	Редактор шрифтів SVG
+	SVG Font Editor…	Редактор шрифтів SVG…
+	New Font	Новий шрифт
+	Delete Font	Видалити шрифт
+	No SVG font yet: make one, or turn glyph layers into one.	Шрифтів SVG ще немає: створіть шрифт або зберіть його з шарів гліфів.
+	Glyph Layers to Font	Шари гліфів у шрифт
+	Glyph	Гліф
+	Advance	Ширина
+	Curves	Контури
+	Unicode:	Unicode:
+	Glyph name:	Назва гліфа:
+	Advance:	Ширина:
+	Add Glyph	Додати гліф
+	Remove Glyph	Видалити гліф
+	Get Curves from Selection	Узяти контури з виділення
+	Glyph to Objects	Гліф в об'єкти
+	Kerning:	Кернінг:
+	Set Pair	Задати пару
+	Preview:	Перегляд:
+	Font to Glyph Layers	Шрифт у шари гліфів
+	New SVG Font	Новий шрифт SVG
+	SVG Fonts	Шрифти SVG
+	Delete SVG Font	Видалити шрифт SVG
+	SVG Font Options	Параметри шрифту SVG
+	Set Glyph	Задати гліф
+	Set Kerning Pair	Задати пару кернінгу
+	Preview SVG Font	Перегляд шрифту SVG
+	Glyph Layers to SVG Font	Шари гліфів у шрифт SVG
+	SVG Font to Glyph Layers	Шрифт SVG у шари гліфів

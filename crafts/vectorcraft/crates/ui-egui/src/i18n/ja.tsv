@@ -4783,3 +4783,86 @@ lighting	Light	ライト
 	Z:	Z:
 	Vanishing Point	消点
 	Infinite	無限
+	Arrange in Grid	グリッドに配置
+	Arrange in Circle	円形に配置
+	Dynamic Offset	ダイナミックオフセット
+	Fill Between Paths	パス間を塗りつぶす
+	Linked Offset	リンクオフセット
+	Linked Offset Distance	リンクオフセットの距離
+	Remove Overlaps	重なりを解消
+	Unlink Live Object	ライブオブジェクトのリンクを解除
+	Create Anchor	アンカーを作成
+	Follow Link	リンクを開く
+	Select All Anchors	すべてのアンカーポイントを選択
+	Invert Anchor Selection	アンカーポイントの選択を反転
+	Aspect ratio:	縦横比:
+	Clip path	クリップパス
+	DPI:	DPI:
+	Effect knots	効果ノット
+	Highlight color:	ハイライト色:
+	Interactivity	インタラクティビティ
+	Link target:	リンクターゲット:
+	Link title:	リンクタイトル:
+	Path outline	パスのアウトライン
+	Transform handles	変形ハンドル
+	Plot…	プロット…
+	Import Web Image…	Web 画像を読み込み…
+	Check Spelling	スペルチェック
+	Edit Custom Dictionary	ユーザー辞書を編集
+	The spell check is complete.	スペルチェックが完了しました。
+	Words checked	チェックした単語数
+	Check Again	再チェック
+	Word Not Found:	見つからない単語:
+	Change To:	変更後:
+	Suggestions:	候補:
+	No suggestions	候補なし
+	Ignore All	すべて無視
+	No words yet	単語はまだありません
+	Word:	単語:
+	Change Spelling	スペルを変更
+	Ignore Spelling	スペルを無視
+	Add to Dictionary	辞書に追加
+	Remove from Dictionary	辞書から削除
+	Spelling Dictionaries	スペル辞書
+	Visible Hairlines	ヘアラインを表示
+	Rename…	名前を変更…
+	Extract…	取り出す…
+	Object Attributes	オブジェクトの属性
+	Object Attributes…	オブジェクトの属性…
+	Create Tiled Clones…	タイルクローンを作成…
+	Rename Symbol	シンボルの名前を変更
+	Set Object Attribute	オブジェクトの属性を設定
+	Trace Pixel Art…	ピクセルアートをトレース…
+	Objects to Marker	オブジェクトをマーカーに
+	Markers	マーカー
+	Markers:	マーカー:
+	Delete Marker	マーカーを削除
+	SVG Font Editor	SVG フォントエディター
+	SVG Font Editor…	SVG フォントエディター…
+	New Font	新規フォント
+	Delete Font	フォントを削除
+	No SVG font yet: make one, or turn glyph layers into one.	SVG フォントがまだありません。新しく作るか、グリフレイヤーから作成してください。
+	Glyph Layers to Font	グリフレイヤーをフォントに
+	Glyph	グリフ
+	Advance	送り幅
+	Curves	曲線
+	Unicode:	Unicode:
+	Glyph name:	グリフ名:
+	Advance:	送り幅:
+	Add Glyph	グリフを追加
+	Remove Glyph	グリフを削除
+	Get Curves from Selection	選択範囲から曲線を取得
+	Glyph to Objects	グリフをオブジェクトに
+	Kerning:	カーニング:
+	Set Pair	ペアを設定
+	Preview:	プレビュー:
+	Font to Glyph Layers	フォントをグリフレイヤーに
+	New SVG Font	新規 SVG フォント
+	SVG Fonts	SVG フォント
+	Delete SVG Font	SVG フォントを削除
+	SVG Font Options	SVG フォントオプション
+	Set Glyph	グリフを設定
+	Set Kerning Pair	カーニングペアを設定
+	Preview SVG Font	SVG フォントをプレビュー
+	Glyph Layers to SVG Font	グリフレイヤーを SVG フォントに
+	SVG Font to Glyph Layers	SVG フォントをグリフレイヤーに

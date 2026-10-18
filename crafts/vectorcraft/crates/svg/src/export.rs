@@ -87,6 +87,33 @@ fn write(doc: &Document, opts: &ExportOptions, native: Option<&[u8]>, id_prefix:
         w.depth -= 1;
         w.line("</g>");
     }
+    // SVG fonts made in the document (Type › SVG Font Editor).
+    for f in &doc.svg_fonts {
+        w.def(1, &format!("<font id=\"{}\" horiz-adv-x=\"{}\">", xml_escape(&f.id), fmt_num(f.advance, 3)));
+        let asc = f.ascent.unwrap_or(f.units_per_em * 0.8);
+        let desc = f.descent.unwrap_or(f.units_per_em * 0.2);
+        w.def(
+            2,
+            &format!(
+                "<font-face font-family=\"{}\" units-per-em=\"{}\" ascent=\"{}\" descent=\"{}\"/>",
+                xml_escape(&f.family),
+                fmt_num(f.units_per_em, 3),
+                fmt_num(asc, 3),
+                fmt_num(desc, 3)
+            ),
+        );
+        w.def(2, "<missing-glyph/>");
+        for g in &f.glyphs {
+            let name = if g.name.is_empty() { String::new() } else { format!(" glyph-name=\"{}\"", xml_escape(&g.name)) };
+            let adv = g.advance.map(|a| format!(" horiz-adv-x=\"{}\"", fmt_num(a, 3))).unwrap_or_default();
+            let d = if g.path.is_empty() { String::new() } else { format!(" d=\"{}\"", g.path.to_bezpath().to_svg()) };
+            w.def(2, &format!("<glyph unicode=\"{}\"{name}{adv}{d}/>", xml_escape(&g.unicode)));
+        }
+        for k in &f.kerning {
+            w.def(2, &format!("<hkern u1=\"{}\" u2=\"{}\" k=\"{}\"/>", xml_escape(&k.left), xml_escape(&k.right), fmt_num(k.k, 3)));
+        }
+        w.def(1, "</font>");
+    }
 
     // XML names cannot use character references. Preserve names that Latin-1 cannot encode.
     let encoding = if opts.encoding == Encoding::Latin1 && w.non_latin1_names {
@@ -673,6 +700,20 @@ impl Writer<'_> {
             self.non_latin1_names |= k.chars().any(|c| u32::from(c) > 0xff);
             out.push_str(&format!(" data-{k}=\"{}\"", xml_attr_escape(v)));
         }
+        // Object Properties: the event attributes (interactivity) and the highlight colour.
+        if let Some(a) = n.extras().attrs.as_deref() {
+            for (k, script) in &a.events {
+                if k.starts_with("on") && k.chars().all(|c| c.is_ascii_alphanumeric()) && valid_xml_value(script) {
+                    out.push_str(&format!(" {k}=\"{}\"", xml_attr_escape(script)));
+                }
+            }
+            if let Some(h) = &a.highlight {
+                out.push_str(&format!(" data-vc-highlight=\"{}\"", xml_attr_escape(h)));
+            }
+            if let Some(dpi) = a.dpi.filter(|d| d.is_finite() && *d > 0.0) {
+                out.push_str(&format!(" data-vc-dpi=\"{}\"", fmt_num(dpi, 3)));
+            }
+        }
         out
     }
     fn matrix(&self, m: Affine) -> String {
@@ -1002,7 +1043,7 @@ impl Writer<'_> {
     /// `marker-start`, `marker-mid` and `marker-end` for the heads of `s`, each a `<marker>` def
     /// ([`Writer::marker_def`]).
     fn marker_props(&mut self, s: &StrokeLayer, p: &mut Props) {
-        for (which, kind) in [(MarkerAt::Start, s.start_arrow), (MarkerAt::Mid, s.mid_arrow), (MarkerAt::End, s.end_arrow)] {
+        for (which, kind) in [(MarkerAt::Start, s.start_head()), (MarkerAt::Mid, s.mid_head()), (MarkerAt::End, s.end_head())] {
             if let Some(kind) = kind {
                 let id = self.marker_def(s, kind, which);
                 p.push((which.property(), format!("url(#{id})")));
@@ -1053,7 +1094,21 @@ impl Writer<'_> {
         if fixed && s.arrow_align == ArrowAlign::Extend {
             self.warn("arrowheads at a fixed angle are written with their tips on the path's end points");
         }
-        let outline = stroke::head_outline(kind, tip, dir, hw);
+        let custom = match which {
+            MarkerAt::Start => s.custom_start.as_deref(),
+            MarkerAt::Mid => s.custom_mid.as_deref(),
+            MarkerAt::End => s.custom_end.as_deref(),
+        };
+        let outline = match custom {
+            // A custom marker's own art, placed as the canvas places it (head units of `hw`).
+            Some(m) => {
+                let n = Vec2::new(-dir.y, dir.x);
+                let mut p = m.path.to_bezpath();
+                p.apply_affine(Affine::new([-dir.x * hw, -dir.y * hw, n.x * hw, n.y * hw, tip.x, tip.y]));
+                p
+            }
+            None => stroke::head_outline(kind, tip, dir, hw),
+        };
         let orient = if fixed { s.marker_orient.svg() } else { "auto".to_string() };
         let fill = self.paint(&s.paint, None);
         let opacity = if s.opacity < 1.0 { format!(" fill-opacity=\"{}\"", fmt_num(s.opacity as f64, 3)) } else { String::new() };
@@ -1477,8 +1532,15 @@ impl Writer<'_> {
     fn linked_node(&mut self, n: &Node) {
         match n.url().filter(|_| n.visible && !self.anonymous) {
             Some(url) => {
-                self.line(&format!("<a xlink:href=\"{}\">", xml_escape(url)));
+                let a = n.extras().attrs.as_deref();
+                let target =
+                    a.map(|a| a.url_target.as_str()).filter(|t| !t.is_empty()).map(|t| format!(" target=\"{}\"", xml_escape(t))).unwrap_or_default();
+                let title = a.map(|a| a.url_title.as_str()).filter(|t| !t.is_empty());
+                self.line(&format!("<a xlink:href=\"{}\"{target}>", xml_escape(url)));
                 self.depth += 1;
+                if let Some(t) = title {
+                    self.line(&format!("<title>{}</title>", xml_escape(t)));
+                }
                 self.node_body(n);
                 self.depth -= 1;
                 self.line("</a>");
@@ -1600,8 +1662,17 @@ impl Writer<'_> {
                     return;
                 }
                 let Some(href) = self.image_href(im) else { return };
+                // Object Properties › preserve aspect ratio: the image's own value, else none (the
+                // transform places it exactly).
+                let par = n
+                    .extras()
+                    .attrs
+                    .as_deref()
+                    .and_then(|a| a.preserve_aspect_ratio.clone())
+                    .filter(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_alphanumeric() || c == ' '))
+                    .unwrap_or_else(|| "none".into());
                 self.line(&format!(
-                    "<image{id} width=\"{}\" height=\"{}\" transform=\"{m}\" preserveAspectRatio=\"none\"{a} xlink:href=\"{}\"/>",
+                    "<image{id} width=\"{}\" height=\"{}\" transform=\"{m}\" preserveAspectRatio=\"{par}\"{a} xlink:href=\"{}\"/>",
                     im.width,
                     im.height,
                     xml_escape(&href)

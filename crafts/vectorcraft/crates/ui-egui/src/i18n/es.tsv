@@ -5152,3 +5152,86 @@ mark-style	Japanese	Japonesas
 	Z:	Z:
 	Vanishing Point	Punto de fuga
 	Infinite	Infinito
+	Arrange in Grid	Organizar en cuadrícula
+	Arrange in Circle	Organizar en círculo
+	Dynamic Offset	Desplazamiento dinámico
+	Fill Between Paths	Rellenar entre trazados
+	Linked Offset	Desplazamiento enlazado
+	Linked Offset Distance	Distancia del desplazamiento enlazado
+	Remove Overlaps	Eliminar superposiciones
+	Unlink Live Object	Desenlazar objeto dinámico
+	Create Anchor	Crear ancla
+	Follow Link	Seguir enlace
+	Select All Anchors	Seleccionar todos los puntos de ancla
+	Invert Anchor Selection	Invertir selección de puntos de ancla
+	Aspect ratio:	Relación de aspecto:
+	Clip path	Trazado de recorte
+	DPI:	PPP:
+	Effect knots	Nudos de efecto
+	Highlight color:	Color de resaltado:
+	Interactivity	Interactividad
+	Link target:	Destino del enlace:
+	Link title:	Título del enlace:
+	Path outline	Contorno del trazado
+	Transform handles	Manejadores de transformación
+	Plot…	Trazar en plóter…
+	Import Web Image…	Importar imagen web…
+	Check Spelling	Revisar ortografía
+	Edit Custom Dictionary	Editar diccionario personalizado
+	The spell check is complete.	La revisión ortográfica ha terminado.
+	Words checked	Palabras revisadas
+	Check Again	Revisar de nuevo
+	Word Not Found:	Palabra no encontrada:
+	Change To:	Cambiar a:
+	Suggestions:	Sugerencias:
+	No suggestions	Sin sugerencias
+	Ignore All	Ignorar todo
+	No words yet	Aún no hay palabras
+	Word:	Palabra:
+	Change Spelling	Cambiar ortografía
+	Ignore Spelling	Ignorar ortografía
+	Add to Dictionary	Añadir al diccionario
+	Remove from Dictionary	Quitar del diccionario
+	Spelling Dictionaries	Diccionarios ortográficos
+	Visible Hairlines	Líneas finas visibles
+	Rename…	Cambiar nombre…
+	Extract…	Extraer…
+	Object Attributes	Atributos del objeto
+	Object Attributes…	Atributos del objeto…
+	Create Tiled Clones…	Crear clones en mosaico…
+	Rename Symbol	Cambiar nombre del símbolo
+	Set Object Attribute	Establecer atributo del objeto
+	Trace Pixel Art…	Vectorizar pixel art…
+	Objects to Marker	Objetos a marcador
+	Markers	Marcadores
+	Markers:	Marcadores:
+	Delete Marker	Eliminar marcador
+	SVG Font Editor	Editor de fuentes SVG
+	SVG Font Editor…	Editor de fuentes SVG…
+	New Font	Nueva fuente
+	Delete Font	Eliminar fuente
+	No SVG font yet: make one, or turn glyph layers into one.	Aún no hay fuente SVG: cree una o convierta capas de glifos en una.
+	Glyph Layers to Font	Capas de glifos a fuente
+	Glyph	Glifo
+	Advance	Avance
+	Curves	Curvas
+	Unicode:	Unicode:
+	Glyph name:	Nombre del glifo:
+	Advance:	Avance:
+	Add Glyph	Añadir glifo
+	Remove Glyph	Quitar glifo
+	Get Curves from Selection	Obtener curvas de la selección
+	Glyph to Objects	Glifo a objetos
+	Kerning:	Interletraje:
+	Set Pair	Establecer par
+	Preview:	Previsualización:
+	Font to Glyph Layers	Fuente a capas de glifos
+	New SVG Font	Nueva fuente SVG
+	SVG Fonts	Fuentes SVG
+	Delete SVG Font	Eliminar fuente SVG
+	SVG Font Options	Opciones de fuente SVG
+	Set Glyph	Establecer glifo
+	Set Kerning Pair	Establecer par de interletraje
+	Preview SVG Font	Previsualizar fuente SVG
+	Glyph Layers to SVG Font	Capas de glifos a fuente SVG
+	SVG Font to Glyph Layers	Fuente SVG a capas de glifos

@@ -4355,3 +4355,86 @@ lighting	Light	光源
 	Z:	Z：
 	Vanishing Point	消失点
 	Infinite	无限
+	Arrange in Grid	排列成网格
+	Arrange in Circle	排列成圆形
+	Dynamic Offset	动态偏移
+	Fill Between Paths	填充路径之间
+	Linked Offset	链接偏移
+	Linked Offset Distance	链接偏移距离
+	Remove Overlaps	移除重叠
+	Unlink Live Object	取消链接实时对象
+	Create Anchor	创建锚点
+	Follow Link	打开链接
+	Select All Anchors	选择所有锚点
+	Invert Anchor Selection	反转锚点选择
+	Aspect ratio:	宽高比:
+	Clip path	剪裁路径
+	DPI:	DPI:
+	Effect knots	效果控制点
+	Highlight color:	高亮颜色:
+	Interactivity	交互性
+	Link target:	链接目标:
+	Link title:	链接标题:
+	Path outline	路径轮廓
+	Transform handles	变形控点
+	Plot…	绘图仪输出…
+	Import Web Image…	导入网络图像…
+	Check Spelling	拼写检查
+	Edit Custom Dictionary	编辑自定义词典
+	The spell check is complete.	拼写检查已完成。
+	Words checked	已检查的单词
+	Check Again	再次检查
+	Word Not Found:	未找到的单词:
+	Change To:	更改为:
+	Suggestions:	建议:
+	No suggestions	无建议
+	Ignore All	全部忽略
+	No words yet	尚无单词
+	Word:	单词:
+	Change Spelling	更改拼写
+	Ignore Spelling	忽略拼写
+	Add to Dictionary	添加到词典
+	Remove from Dictionary	从词典移除
+	Spelling Dictionaries	拼写词典
+	Visible Hairlines	显示细线
+	Rename…	重命名…
+	Extract…	提取…
+	Object Attributes	对象属性
+	Object Attributes…	对象属性…
+	Create Tiled Clones…	创建平铺克隆…
+	Rename Symbol	重命名符号
+	Set Object Attribute	设置对象属性
+	Trace Pixel Art…	描摹像素画…
+	Objects to Marker	对象转为标记
+	Markers	标记
+	Markers:	标记:
+	Delete Marker	删除标记
+	SVG Font Editor	SVG 字体编辑器
+	SVG Font Editor…	SVG 字体编辑器…
+	New Font	新字体
+	Delete Font	删除字体
+	No SVG font yet: make one, or turn glyph layers into one.	尚无 SVG 字体：请创建一个，或将字形图层转为字体。
+	Glyph Layers to Font	字形图层转为字体
+	Glyph	字形
+	Advance	字宽
+	Curves	曲线
+	Unicode:	Unicode:
+	Glyph name:	字形名称:
+	Advance:	字宽:
+	Add Glyph	添加字形
+	Remove Glyph	移除字形
+	Get Curves from Selection	从选区获取曲线
+	Glyph to Objects	字形转为对象
+	Kerning:	字偶间距:
+	Set Pair	设置字偶
+	Preview:	预览:
+	Font to Glyph Layers	字体转为字形图层
+	New SVG Font	新 SVG 字体
+	SVG Fonts	SVG 字体
+	Delete SVG Font	删除 SVG 字体
+	SVG Font Options	SVG 字体选项
+	Set Glyph	设置字形
+	Set Kerning Pair	设置字偶间距
+	Preview SVG Font	预览 SVG 字体
+	Glyph Layers to SVG Font	字形图层转为 SVG 字体
+	SVG Font to Glyph Layers	SVG 字体转为字形图层

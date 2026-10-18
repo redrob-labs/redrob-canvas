@@ -407,7 +407,12 @@ fn encode_files(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
     let doc = &*doc.without_edit_modes();
     let n = doc.artboards.len();
     // SVG reads its own `useArtboards` (an SVG option).
-    let use_artboards = if f.raster || matches!(f.id, "pdf" | "ai" | "dxf" | "emf" | "wmf") { use_artboards(p)? } else { None };
+    let use_artboards =
+        if f.raster || matches!(f.id, "pdf" | "ai" | "dxf" | "emf" | "wmf" | "canvas" | "fxg" | "pov" | "sif" | "xaml" | "odg" | "tex" | "hpgl") {
+            use_artboards(p)?
+        } else {
+            None
+        };
     if use_artboards == Some(false) {
         let bounds = redrob_vector_render::encode::art_bounds(doc).ok_or_else(|| bad(C, "nothing to export: the document has no visible art"))?;
         let mut q = super::export::without_artboards(p);
@@ -431,6 +436,9 @@ fn encode_files(doc: &Document, f: &Format, p: &Value) -> Result<Encoded> {
         "eps" => return super::eps::encode(doc, p),
         "emf" => return super::metafile::encode(doc, p, use_artboards, redrob_vector_metafile::Kind::Emf),
         "wmf" => return super::metafile::encode(doc, p, use_artboards, redrob_vector_metafile::Kind::Wmf),
+        "canvas" | "fxg" | "pov" | "sif" | "xaml" | "odg" | "tex" | "hpgl" => return super::flatexport::encode(doc, f.id, p, use_artboards),
+        "pdftex" => return super::flatexport::encode_pdftex(doc, p),
+        "xcf" => return super::xcf::encode(doc, p, use_artboards),
         "ai" => return super::save::encode_ai(C, f, doc, p),
         "pdf" => {
             let (bytes, warnings) = super::pdf::encode(C, doc, p)?;

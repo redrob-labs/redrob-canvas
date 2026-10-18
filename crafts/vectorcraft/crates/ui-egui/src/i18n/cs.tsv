@@ -5196,3 +5196,86 @@ mark-style	Japanese	Japonské
 	Z:	Z:
 	Vanishing Point	Úběžník
 	Infinite	Nekonečný
+	Arrange in Grid	Uspořádat do mřížky
+	Arrange in Circle	Uspořádat do kruhu
+	Dynamic Offset	Dynamický posun
+	Fill Between Paths	Vyplnit mezi cestami
+	Linked Offset	Propojený posun
+	Linked Offset Distance	Vzdálenost propojeného posunu
+	Remove Overlaps	Odstranit překrytí
+	Unlink Live Object	Odpojit živý objekt
+	Create Anchor	Vytvořit odkaz
+	Follow Link	Otevřít odkaz
+	Select All Anchors	Vybrat všechny kotevní body
+	Invert Anchor Selection	Invertovat výběr kotevních bodů
+	Aspect ratio:	Poměr stran:
+	Clip path	Ořezová cesta
+	DPI:	DPI:
+	Effect knots	Uzly efektů
+	Highlight color:	Barva zvýraznění:
+	Interactivity	Interaktivita
+	Link target:	Cíl odkazu:
+	Link title:	Název odkazu:
+	Path outline	Obrys cesty
+	Transform handles	Úchyty transformace
+	Plot…	Vykreslit na plotru…
+	Import Web Image…	Importovat webový obrázek…
+	Check Spelling	Kontrola pravopisu
+	Edit Custom Dictionary	Upravit vlastní slovník
+	The spell check is complete.	Kontrola pravopisu je dokončena.
+	Words checked	Zkontrolovaná slova
+	Check Again	Zkontrolovat znovu
+	Word Not Found:	Nenalezené slovo:
+	Change To:	Změnit na:
+	Suggestions:	Návrhy:
+	No suggestions	Žádné návrhy
+	Ignore All	Ignorovat vše
+	No words yet	Zatím žádná slova
+	Word:	Slovo:
+	Change Spelling	Změnit pravopis
+	Ignore Spelling	Ignorovat pravopis
+	Add to Dictionary	Přidat do slovníku
+	Remove from Dictionary	Odebrat ze slovníku
+	Spelling Dictionaries	Slovníky pravopisu
+	Visible Hairlines	Viditelné vlasové čáry
+	Rename…	Přejmenovat…
+	Extract…	Extrahovat…
+	Object Attributes	Atributy objektu
+	Object Attributes…	Atributy objektu…
+	Create Tiled Clones…	Vytvořit dlaždicové klony…
+	Rename Symbol	Přejmenovat symbol
+	Set Object Attribute	Nastavit atribut objektu
+	Trace Pixel Art…	Vektorizovat pixel art…
+	Objects to Marker	Objekty na značku
+	Markers	Značky
+	Markers:	Značky:
+	Delete Marker	Odstranit značku
+	SVG Font Editor	Editor písem SVG
+	SVG Font Editor…	Editor písem SVG…
+	New Font	Nové písmo
+	Delete Font	Odstranit písmo
+	No SVG font yet: make one, or turn glyph layers into one.	Zatím žádné písmo SVG: vytvořte nové nebo převeďte vrstvy glyfů.
+	Glyph Layers to Font	Vrstvy glyfů na písmo
+	Glyph	Glyf
+	Advance	Šířka
+	Curves	Křivky
+	Unicode:	Unicode:
+	Glyph name:	Název glyfu:
+	Advance:	Šířka:
+	Add Glyph	Přidat glyf
+	Remove Glyph	Odebrat glyf
+	Get Curves from Selection	Získat křivky z výběru
+	Glyph to Objects	Glyf na objekty
+	Kerning:	Kerning:
+	Set Pair	Nastavit pár
+	Preview:	Náhled:
+	Font to Glyph Layers	Písmo na vrstvy glyfů
+	New SVG Font	Nové písmo SVG
+	SVG Fonts	Písma SVG
+	Delete SVG Font	Odstranit písmo SVG
+	SVG Font Options	Volby písma SVG
+	Set Glyph	Nastavit glyf
+	Set Kerning Pair	Nastavit kerningový pár
+	Preview SVG Font	Náhled písma SVG
+	Glyph Layers to SVG Font	Vrstvy glyfů na písmo SVG
+	SVG Font to Glyph Layers	Písmo SVG na vrstvy glyfů

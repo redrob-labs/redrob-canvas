@@ -302,6 +302,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         h,
         outline: app.ui.view.outline,
         trim: app.ui.view.trim_view,
+        hairlines: app.ui.view.visible_hairlines,
         ppp,
         hidden: vec![],
         rot: v.rotation,
@@ -352,6 +353,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             proof: redrob_vector_render::proof::active_proof(),
             overprint_preview: redrob_vector_render::proof::overprint_preview_on(),
             trim: app.ui.view.trim_view,
+            visible_hairlines: key.hairlines,
             tile_edge: redrob_vector_color::Color::from_hex(&app.session.prefs.pattern_tile_edge_color).map_or(opts.tile_edge, |c| {
                 let [r, g, b, _] = c.to_rgba8(1.0);
                 [r, g, b]
@@ -2066,10 +2068,11 @@ fn align_handles(app: &mut VectorcraftApp, ui: &mut Ui, p: &egui::Painter, xf: &
 fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve_points_from_tool: bool) {
     // The Selection tool's bounding box (rotated with the objects after a rotation). It hides while
     // a drag moves or resizes the selection, so only the art is seen going with the pointer (#712).
-    let show_box = app.session.tool_id() == "selection"
+    let direct_tool = redrob_vector_tools::catalog::edits_anchors(app.session.tool_id());
+    let show_box = (app.session.tool_id() == "selection" || (direct_tool && app.ui.view.node_transform_handles))
         && !app.session.tool_transforming()
         && app.ui.view.bounding_box
-        && app.session.active().is_some_and(|st| !st.selection.is_empty() && st.selection.anchors.is_empty());
+        && app.session.active().is_some_and(|st| !st.selection.is_empty() && (st.selection.anchors.is_empty() || direct_tool));
     let bbox = if show_box { app.selection_box() } else { None };
     let st = app.session.active();
     let big = st.is_some_and(|st| too_many_anchors(st.selection.objects.iter().filter_map(|id| st.doc.node(*id))));
@@ -2108,8 +2111,29 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
         let Some(n) = st.doc.node(*id) else { continue };
         let color = c32(st.doc.layer_color(*id));
         let partial = st.selection.partial(*id);
-        // Path outlines.
-        stroke_path(p, &node_outline(n, &symbols), xf, Stroke::new(1.0, color));
+        // Path outlines (the node toolbar's Path outline toggle hides them in the node tool).
+        if !direct || app.ui.view.node_path_outline {
+            stroke_path(p, &node_outline(n, &symbols), xf, Stroke::new(1.0, color));
+        }
+        // Node toolbar: the clipping path of the clip group this object is (or is in), dashed; the
+        // art of its opacity mask, dashed and dimmed.
+        if direct && app.ui.view.node_clip_path {
+            let clip_group = if n.clips() { Some(n) } else { st.doc.parent_of(*id).and_then(|pid| st.doc.node(pid)).filter(|g| g.clips()) };
+            if let Some(cp) = clip_group.and_then(|g| g.children()).and_then(|ch| ch.first()) {
+                for line in to_screen_path(&node_outline(cp, &symbols), xf) {
+                    p.extend(Shape::dashed_line(&line, Stroke::new(1.0, color), 4.0, 3.0));
+                }
+            }
+        }
+        if direct
+            && app.ui.view.node_mask
+            && let Some(mask) = n.extras().mask.as_deref()
+        {
+            let dim = Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 160);
+            for line in to_screen_path(&node_outline(&mask.art, &symbols), xf) {
+                p.extend(Shape::dashed_line(&line, Stroke::new(1.0, dim), 2.0, 3.0));
+            }
+        }
         // Anchors (and handles for selected anchors in direct mode); a gradient mesh's or a mesh
         // envelope's points.
         walk_drawn(n, &mut |c| {
@@ -2236,6 +2260,20 @@ fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve
             let d = 4.0 + grow / 2.0;
             let pts = vec![c + vec2(0.0, -d), c + vec2(d, 0.0), c + vec2(0.0, d), c + vec2(-d, 0.0)];
             p.add(Shape::convex_polygon(pts, Color32::WHITE, Stroke::new(1.0, color)));
+        }
+    }
+    // Effect knots (node toolbar's Effect knots): an Offset Path's distance, a blur's radius and a
+    // linked offset's distance, as circles tied to the object's edge by a line.
+    if tool == "directSelection"
+        && app.ui.view.node_effect_knots
+        && let Some(k) = redrob_vector_tools::effectknots::EffectKnots::of(&st.doc, &st.selection)
+    {
+        for knot in k.visible_on() {
+            let (c, color) = (xf.to_screen(knot.at), c32(st.doc.layer_color(knot.id)));
+            let from = xf.to_screen(Point::new(knot.bounds.x1, knot.at.y));
+            p.line_segment([from, c], Stroke::new(1.0, color));
+            p.circle_filled(c, 4.0 + grow / 2.0, Color32::WHITE);
+            p.circle_stroke(c, 4.0 + grow / 2.0, Stroke::new(1.5, color));
         }
     }
     // Bounding box with handles (Selection tool).

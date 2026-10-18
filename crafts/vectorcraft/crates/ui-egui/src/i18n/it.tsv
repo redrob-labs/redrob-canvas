@@ -4789,3 +4789,86 @@ lighting	Light	Luce
 	Z:	Z:
 	Vanishing Point	Punto di fuga
 	Infinite	Infinito
+	Arrange in Grid	Disponi in griglia
+	Arrange in Circle	Disponi in cerchio
+	Dynamic Offset	Scostamento dinamico
+	Fill Between Paths	Riempi tra tracciati
+	Linked Offset	Scostamento collegato
+	Linked Offset Distance	Distanza dello scostamento collegato
+	Remove Overlaps	Rimuovi sovrapposizioni
+	Unlink Live Object	Scollega oggetto dinamico
+	Create Anchor	Crea ancora
+	Follow Link	Segui collegamento
+	Select All Anchors	Seleziona tutti i punti di ancoraggio
+	Invert Anchor Selection	Inverti selezione punti di ancoraggio
+	Aspect ratio:	Proporzioni:
+	Clip path	Tracciato di ritaglio
+	DPI:	DPI:
+	Effect knots	Nodi effetto
+	Highlight color:	Colore di evidenziazione:
+	Interactivity	Interattività
+	Link target:	Destinazione collegamento:
+	Link title:	Titolo collegamento:
+	Path outline	Contorno tracciato
+	Transform handles	Maniglie di trasformazione
+	Plot…	Plotta…
+	Import Web Image…	Importa immagine web…
+	Check Spelling	Controllo ortografia
+	Edit Custom Dictionary	Modifica dizionario personale
+	The spell check is complete.	Il controllo ortografico è completo.
+	Words checked	Parole controllate
+	Check Again	Controlla di nuovo
+	Word Not Found:	Parola non trovata:
+	Change To:	Cambia in:
+	Suggestions:	Suggerimenti:
+	No suggestions	Nessun suggerimento
+	Ignore All	Ignora tutto
+	No words yet	Nessuna parola
+	Word:	Parola:
+	Change Spelling	Cambia ortografia
+	Ignore Spelling	Ignora ortografia
+	Add to Dictionary	Aggiungi al dizionario
+	Remove from Dictionary	Rimuovi dal dizionario
+	Spelling Dictionaries	Dizionari ortografici
+	Visible Hairlines	Linee sottili visibili
+	Rename…	Rinomina…
+	Extract…	Estrai…
+	Object Attributes	Attributi oggetto
+	Object Attributes…	Attributi oggetto…
+	Create Tiled Clones…	Crea cloni in serie…
+	Rename Symbol	Rinomina simbolo
+	Set Object Attribute	Imposta attributo oggetto
+	Trace Pixel Art…	Ricalca pixel art…
+	Objects to Marker	Oggetti in marcatore
+	Markers	Marcatori
+	Markers:	Marcatori:
+	Delete Marker	Elimina marcatore
+	SVG Font Editor	Editor di font SVG
+	SVG Font Editor…	Editor di font SVG…
+	New Font	Nuovo font
+	Delete Font	Elimina font
+	No SVG font yet: make one, or turn glyph layers into one.	Nessun font SVG: creane uno o trasforma i livelli di glifi in un font.
+	Glyph Layers to Font	Livelli glifi in font
+	Glyph	Glifo
+	Advance	Avanzamento
+	Curves	Curve
+	Unicode:	Unicode:
+	Glyph name:	Nome glifo:
+	Advance:	Avanzamento:
+	Add Glyph	Aggiungi glifo
+	Remove Glyph	Rimuovi glifo
+	Get Curves from Selection	Prendi curve dalla selezione
+	Glyph to Objects	Glifo in oggetti
+	Kerning:	Crenatura:
+	Set Pair	Imposta coppia
+	Preview:	Anteprima:
+	Font to Glyph Layers	Font in livelli glifi
+	New SVG Font	Nuovo font SVG
+	SVG Fonts	Font SVG
+	Delete SVG Font	Elimina font SVG
+	SVG Font Options	Opzioni font SVG
+	Set Glyph	Imposta glifo
+	Set Kerning Pair	Imposta coppia di crenatura
+	Preview SVG Font	Anteprima font SVG
+	Glyph Layers to SVG Font	Livelli glifi in font SVG
+	SVG Font to Glyph Layers	Font SVG in livelli glifi

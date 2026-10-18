@@ -4142,3 +4142,86 @@ lighting	Light	光源
 	Z:	Z：
 	Vanishing Point	消失點
 	Infinite	無限
+	Arrange in Grid	排列成網格
+	Arrange in Circle	排列成圓形
+	Dynamic Offset	動態偏移
+	Fill Between Paths	填滿路徑之間
+	Linked Offset	連結偏移
+	Linked Offset Distance	連結偏移距離
+	Remove Overlaps	移除重疊
+	Unlink Live Object	取消連結即時物件
+	Create Anchor	建立錨點
+	Follow Link	開啟連結
+	Select All Anchors	選取所有錨點
+	Invert Anchor Selection	反轉錨點選取
+	Aspect ratio:	外觀比例:
+	Clip path	剪裁路徑
+	DPI:	DPI:
+	Effect knots	效果控制點
+	Highlight color:	醒目提示色彩:
+	Interactivity	互動性
+	Link target:	連結目標:
+	Link title:	連結標題:
+	Path outline	路徑外框
+	Transform handles	變形控點
+	Plot…	繪圖機輸出…
+	Import Web Image…	匯入網路影像…
+	Check Spelling	拼字檢查
+	Edit Custom Dictionary	編輯自訂字典
+	The spell check is complete.	拼字檢查已完成。
+	Words checked	已檢查的字詞
+	Check Again	再次檢查
+	Word Not Found:	找不到的字詞:
+	Change To:	變更為:
+	Suggestions:	建議:
+	No suggestions	沒有建議
+	Ignore All	全部忽略
+	No words yet	尚無字詞
+	Word:	字詞:
+	Change Spelling	變更拼字
+	Ignore Spelling	忽略拼字
+	Add to Dictionary	加入字典
+	Remove from Dictionary	從字典移除
+	Spelling Dictionaries	拼字字典
+	Visible Hairlines	顯示細線
+	Rename…	重新命名…
+	Extract…	擷取…
+	Object Attributes	物件屬性
+	Object Attributes…	物件屬性…
+	Create Tiled Clones…	建立拼貼複本…
+	Rename Symbol	重新命名符號
+	Set Object Attribute	設定物件屬性
+	Trace Pixel Art…	描摹像素圖…
+	Objects to Marker	物件轉為標記
+	Markers	標記
+	Markers:	標記:
+	Delete Marker	刪除標記
+	SVG Font Editor	SVG 字型編輯器
+	SVG Font Editor…	SVG 字型編輯器…
+	New Font	新字型
+	Delete Font	刪除字型
+	No SVG font yet: make one, or turn glyph layers into one.	尚無 SVG 字型：請建立一個，或將字符圖層轉為字型。
+	Glyph Layers to Font	字符圖層轉為字型
+	Glyph	字符
+	Advance	字寬
+	Curves	曲線
+	Unicode:	Unicode:
+	Glyph name:	字符名稱:
+	Advance:	字寬:
+	Add Glyph	加入字符
+	Remove Glyph	移除字符
+	Get Curves from Selection	從選取範圍取得曲線
+	Glyph to Objects	字符轉為物件
+	Kerning:	字距微調:
+	Set Pair	設定字偶
+	Preview:	預覽:
+	Font to Glyph Layers	字型轉為字符圖層
+	New SVG Font	新 SVG 字型
+	SVG Fonts	SVG 字型
+	Delete SVG Font	刪除 SVG 字型
+	SVG Font Options	SVG 字型選項
+	Set Glyph	設定字符
+	Set Kerning Pair	設定字距微調字偶
+	Preview SVG Font	預覽 SVG 字型
+	Glyph Layers to SVG Font	字符圖層轉為 SVG 字型
+	SVG Font to Glyph Layers	SVG 字型轉為字符圖層

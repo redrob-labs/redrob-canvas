@@ -4770,3 +4770,86 @@ lighting	Light	Свет
 	Z:	Z:
 	Vanishing Point	Точка схода
 	Infinite	Бесконечно
+	Arrange in Grid	Расставить по сетке
+	Arrange in Circle	Расставить по кругу
+	Dynamic Offset	Динамическое смещение
+	Fill Between Paths	Заливка между контурами
+	Linked Offset	Связанное смещение
+	Linked Offset Distance	Расстояние связанного смещения
+	Remove Overlaps	Убрать перекрытия
+	Unlink Live Object	Отвязать живой объект
+	Create Anchor	Создать ссылку
+	Follow Link	Перейти по ссылке
+	Select All Anchors	Выделить все опорные точки
+	Invert Anchor Selection	Инвертировать выделение опорных точек
+	Aspect ratio:	Соотношение сторон:
+	Clip path	Обтравочный контур
+	DPI:	DPI:
+	Effect knots	Узлы эффектов
+	Highlight color:	Цвет подсветки:
+	Interactivity	Интерактивность
+	Link target:	Цель ссылки:
+	Link title:	Заголовок ссылки:
+	Path outline	Контур пути
+	Transform handles	Манипуляторы трансформации
+	Plot…	Вывести на плоттер…
+	Import Web Image…	Импортировать изображение из веба…
+	Check Spelling	Проверка орфографии
+	Edit Custom Dictionary	Изменить пользовательский словарь
+	The spell check is complete.	Проверка орфографии завершена.
+	Words checked	Проверено слов
+	Check Again	Проверить снова
+	Word Not Found:	Слово не найдено:
+	Change To:	Заменить на:
+	Suggestions:	Варианты:
+	No suggestions	Нет вариантов
+	Ignore All	Пропустить все
+	No words yet	Слов пока нет
+	Word:	Слово:
+	Change Spelling	Исправить написание
+	Ignore Spelling	Пропустить слово
+	Add to Dictionary	Добавить в словарь
+	Remove from Dictionary	Удалить из словаря
+	Spelling Dictionaries	Орфографические словари
+	Visible Hairlines	Видимые волосяные линии
+	Rename…	Переименовать…
+	Extract…	Извлечь…
+	Object Attributes	Атрибуты объекта
+	Object Attributes…	Атрибуты объекта…
+	Create Tiled Clones…	Создать узор из клонов…
+	Rename Symbol	Переименовать символ
+	Set Object Attribute	Задать атрибут объекта
+	Trace Pixel Art…	Трассировать пиксельную графику…
+	Objects to Marker	Объекты в маркер
+	Markers	Маркеры
+	Markers:	Маркеры:
+	Delete Marker	Удалить маркер
+	SVG Font Editor	Редактор шрифтов SVG
+	SVG Font Editor…	Редактор шрифтов SVG…
+	New Font	Новый шрифт
+	Delete Font	Удалить шрифт
+	No SVG font yet: make one, or turn glyph layers into one.	Шрифтов SVG пока нет: создайте шрифт или соберите его из слоёв глифов.
+	Glyph Layers to Font	Слои глифов в шрифт
+	Glyph	Глиф
+	Advance	Ширина
+	Curves	Контуры
+	Unicode:	Unicode:
+	Glyph name:	Имя глифа:
+	Advance:	Ширина:
+	Add Glyph	Добавить глиф
+	Remove Glyph	Удалить глиф
+	Get Curves from Selection	Взять контуры из выделения
+	Glyph to Objects	Глиф в объекты
+	Kerning:	Кернинг:
+	Set Pair	Задать пару
+	Preview:	Просмотр:
+	Font to Glyph Layers	Шрифт в слои глифов
+	New SVG Font	Новый шрифт SVG
+	SVG Fonts	Шрифты SVG
+	Delete SVG Font	Удалить шрифт SVG
+	SVG Font Options	Параметры шрифта SVG
+	Set Glyph	Задать глиф
+	Set Kerning Pair	Задать пару кернинга
+	Preview SVG Font	Просмотр шрифта SVG
+	Glyph Layers to SVG Font	Слои глифов в шрифт SVG
+	SVG Font to Glyph Layers	Шрифт SVG в слои глифов

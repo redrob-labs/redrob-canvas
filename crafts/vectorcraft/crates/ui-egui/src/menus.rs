@@ -205,6 +205,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{} toggle General › Use Precise Cursors: the drawing tools' pointers become a crosshair → true when on",
     ),
     ("view.textThreads", "Hide Text Threads", "Cmd+Shift+Y", "{} toggle the thread lines between threaded text frames"),
+    (
+        "view.visibleHairlines",
+        "Visible Hairlines",
+        "",
+        "{} toggle View › Visible Hairlines: every stroke draws at least one screen pixel wide, so thin lines stay visible zoomed out",
+    ),
     ("view.gradientAnnotator", "Hide Gradient Annotator", "Cmd+Alt+G", "{} toggle the Gradient tool's annotator"),
     ("type.hiddenCharacters", "Show Hidden Characters", "Cmd+Alt+I", "{} toggle markers for spaces, paragraph ends and story ends"),
     ("type.alignLeft", "Align left", "Cmd+Shift+L", "{} align the selected type's paragraphs (or those the Type tool's selection touches) left"),
@@ -943,6 +949,42 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "",
         "{plane?: left|right|ground (default: the active plane)} open the plane's options, as double-clicking its plane widget does (dialog `perspectivePlane`: location (pt along the plane's normal), objects: none|move|copy): OK runs perspective.plane.move",
     ),
+    (
+        "ui.followLink",
+        "Follow Link",
+        "",
+        "{id?} open the link the selected object (or the anchor it is inside) points to in the browser (object.followLink)",
+    ),
+    (
+        "ui.objectAttributes",
+        "Object Attributes…",
+        "",
+        "{id?} open Object Attributes on the selected element (dialog `objectAttributes`: its raw SVG attributes as object.xmlAttributes lists them; OK sets the changed ones with object.setXmlAttribute)",
+    ),
+    (
+        "ui.checkSpelling",
+        "Check Spelling…",
+        "Cmd+I",
+        "{language?: a dictionary code (default: the first English one installed)} run text.spellCheck over the document's type and open Check Spelling (dialog `checkSpelling`: Ignore, Ignore All, Add, Change, Change All over the misspellings found)",
+    ),
+    (
+        "ui.svgFontEditor",
+        "SVG Font Editor…",
+        "",
+        "{font?: id|family} open the SVG Font Editor (dialog `svgFontEditor`: the document's SVG fonts, their glyphs with unicode, name and advance, Get Curves from Selection, Glyph to Objects, kerning pairs, a preview string, and the glyph layers round trip; svgFont.*)",
+    ),
+    (
+        "ui.customDictionary",
+        "Edit Custom Dictionary…",
+        "",
+        "{} open the custom spelling dictionary (dialog `customDictionary`: the words text.spellAdd keeps, with Add and Remove)",
+    ),
+    (
+        "ui.importWebImage",
+        "Import Web Image…",
+        "",
+        "{url: http(s) URL of an image or SVG file, at?: [x, y], rect?: [x, y, w, h] (as file.place)} download the file and place it embedded in the document (file.place {name, dataBase64}); File › Import Web Image… asks for the URL → file.place's result",
+    ),
 ];
 
 /// Canonical panel id for `window.panel`: a dock tab's or an icon panel's id or display label,
@@ -1121,6 +1163,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             })
         }
         "view.textThreads" => flag(&mut app.ui.view.text_threads),
+        "view.visibleHairlines" => flag(&mut app.ui.view.visible_hairlines),
         "type.hiddenCharacters" => flag(&mut app.ui.view.hidden_chars),
         "type.bold" => crate::panels::character::toggle_face(app, Face::Bold),
         "type.italic" => crate::panels::character::toggle_face(app, Face::Italic),
@@ -1357,6 +1400,55 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             app.select_tool(redrob_vector_tools::cropimage::ID);
             Ok(json!({"tool": app.session.tool_id()}))
         }
+        "ui.objectAttributes" => crate::dialogs::object_attributes::open(app, p),
+        "ui.checkSpelling" => crate::dialogs::spelling::open(app, p),
+        "ui.customDictionary" => crate::dialogs::spelling::open_dictionary(app, p),
+        "ui.svgFontEditor" => crate::dialogs::svg_font::open(app, p),
+        "ui.importWebImage" => {
+            let url = s("url").unwrap_or_default().trim().to_string();
+            if !(url.starts_with("http://") || url.starts_with("https://")) {
+                Err("give `url`: an http:// or https:// address of an image".into())
+            } else {
+                match app.services.fetch_url.as_mut() {
+                    None => Err("downloading needs the desktop app".into()),
+                    Some(fetch) => match fetch(&url) {
+                        Err(e) => Err(format!("{url}: {e}")),
+                        Ok(bytes) => {
+                            let name = url
+                                .rsplit('/')
+                                .next()
+                                .filter(|n| !n.is_empty() && n.contains('.'))
+                                .unwrap_or("web-image.png")
+                                .split(['?', '#'])
+                                .next()
+                                .unwrap_or("web-image.png")
+                                .to_string();
+                            let mut q = json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(&bytes) });
+                            if let Some(o) = q.as_object_mut() {
+                                for k in ["at", "rect", "replace", "template"] {
+                                    if let Some(v) = p.get(k) {
+                                        o.insert(k.into(), v.clone());
+                                    }
+                                }
+                            }
+                            app.run("file.place", q)
+                        }
+                    },
+                }
+            }
+        }
+        "ui.followLink" => match app.run("object.followLink", p.clone()) {
+            Ok(r) => {
+                let url = r.get("url").and_then(Value::as_str).unwrap_or("").to_string();
+                if url.is_empty() {
+                    Err("the selected object has no link".into())
+                } else {
+                    app.open_url(&url);
+                    Ok(r)
+                }
+            }
+            Err(e) => Err(e),
+        },
         "ui.paramDialog" => {
             let cmd = s("command").unwrap_or_default();
             let mut fields = p.get("params").and_then(Value::as_object).cloned().unwrap_or_default();
@@ -1610,6 +1702,7 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
         "view.pixelPreview" => v.pixel_preview,
         "view.trimView" => v.trim_view,
         "view.snapToPixel" => v.snap_to_pixel,
+        "view.visibleHairlines" => v.visible_hairlines,
         // Type on a Path effect of the selected path type.
         "type.pathOptions" if p.get("effect").is_some() => {
             selected_text(true).is_some_and(|t| p.get("effect").and_then(Value::as_str) == Some(t.path_effect.id()))
@@ -2102,6 +2195,23 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
         "ui.expandDialog" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.spotColors" => app.session.active().is_some(),
         "ui.menuDialog" | "ui.objectProperties" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
+        "ui.importWebImage" => app.session.active().is_some() && app.services.fetch_url.is_some(),
+        "ui.checkSpelling" => app.session.active().is_some(),
+        "ui.objectAttributes" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
+        "ui.customDictionary" => true,
+        "ui.svgFontEditor" => app.session.active().is_some(),
+        "ui.followLink" => app.session.active().is_some_and(|st| {
+            st.selection.objects.iter().any(|id| {
+                let mut cur = Some(*id);
+                while let Some(n) = cur {
+                    if st.doc.node(n).is_some_and(|n| n.url().is_some()) {
+                        return true;
+                    }
+                    cur = st.doc.parent_of(n);
+                }
+                false
+            })
+        }),
         "ui.dxfOptionsDialog" => app.session.active().is_some(),
         "links.editOriginal" | "links.reveal" => selected_image(app, |im| im.link.is_some()) || selected_placed(app),
         "ui.placementOptionsDialog" => selected_image(app, |_| true) || selected_placed(app),
@@ -2181,6 +2291,11 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Revert", "file.revert"),
                 Sep,
                 c("Place…", "file.place"),
+                cp(
+                    "Import Web Image…",
+                    "ui.paramDialog",
+                    json!({"command": "ui.importWebImage", "label": "Import Web Image", "params": {"url": "https://"}}),
+                ),
                 Sep,
                 sub(
                     "Export",
@@ -2234,7 +2349,8 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     json!({"find": "", "replace": "", "in": "text", "scope": "all", "matchCase": false, "wholeWord": false, "exact": false, "includeHidden": false, "includeLocked": false}),
                 ),
                 cp("Find Next", "edit.findNext", json!({"find": ""})),
-                sub("Spelling", vec![todo("Auto Spell Check"), todos("Check Spelling…", "Cmd+I"), todo("Edit Custom Dictionary…")]),
+                sub("Spelling", vec![c("Check Spelling…", "ui.checkSpelling"), c("Edit Custom Dictionary…", "ui.customDictionary")]),
+                c("SVG Font Editor…", "ui.svgFontEditor"),
                 Sep,
                 sub(
                     "Edit Colors",
@@ -2317,12 +2433,21 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     "Clone",
                     vec![
                         c("Create Clone", "object.clone"),
+                        cp(
+                            "Create Tiled Clones…",
+                            "ui.paramDialog",
+                            json!({"command": "object.tileClones", "label": "Create Tiled Clones", "params": {"rows": 3, "cols": 3, "symmetry": "P1", "shiftRowX": 0, "shiftRowY": 0, "shiftColX": 0, "shiftColY": 0, "shiftRandom": 0, "scaleRow": 0, "scaleCol": 0, "scaleRandom": 0, "rotateRow": 0, "rotateCol": 0, "rotateRandom": 0, "opacityRow": 0, "opacityCol": 0, "opacityRandom": 0, "hueRow": 0, "hueCol": 0, "saturationRow": 0, "saturationCol": 0, "lightnessRow": 0, "lightnessCol": 0, "colorRandom": 0, "trace": "none", "clones": true}}),
+                        ),
                         c("Unlink Clone", "object.unlinkClone"),
                         c("Relink to Copied", "object.relinkClone"),
                         c("Select Original", "object.selectOriginal"),
                     ],
                 ),
                 c("Object Properties…", "ui.objectProperties"),
+                c("Object Attributes…", "ui.objectAttributes"),
+                c("Objects to Marker", "object.objectsToMarker"),
+                c("Create Anchor", "object.createAnchor"),
+                c("Follow Link", "ui.followLink"),
                 Sep,
                 c("Expand…", "ui.expandDialog"),
                 c("Expand Appearance", "effect.expandAppearance"),
@@ -2333,6 +2458,11 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     "Create Object Mosaic…",
                     "object.createObjectMosaic",
                     json!({"columns": 10, "rows": 10, "spacingX": 0, "spacingY": 0, "gray": false, "deleteRaster": false}),
+                ),
+                cp(
+                    "Trace Pixel Art…",
+                    "object.tracePixelArt",
+                    json!({"output": "bspline", "curves": 1, "islands": 1, "sparse": 1, "similarity": 48, "deleteRaster": false}),
                 ),
                 c("Vector Halftone…", "object.vectorHalftone"),
                 c("Create Trim Marks", "object.createTrimMarks"),
@@ -2382,6 +2512,13 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                         c("Remove Anchor Points", "path.removeAnchors"),
                         c("Divide Objects Below", "object.path.divideObjectsBelow"),
                         c("Split Into Grid…", "object.path.splitIntoGrid"),
+                        c("Cut Path", "path.cutPath"),
+                        c("Split Path", "path.splitNonOverlapping"),
+                        Sep,
+                        c("Dynamic Offset", "path.dynamicOffset"),
+                        c("Linked Offset", "path.linkedOffset"),
+                        c("Fill Between Paths", "path.fillBetween"),
+                        c("Unlink Live Object", "path.unlinkLive"),
                         Sep,
                         c("Live Slice", "object.liveSlice"),
                         c("Fuse Slice", "object.fuseSlice"),
@@ -2705,6 +2842,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Hide Bounding Box", "view.boundingBox"),
                 c("Show Transparency Grid", "view.transparencyGrid"),
                 c("Hide Text Threads", "view.textThreads"),
+                c("Visible Hairlines", "view.visibleHairlines"),
                 c("Hide Gradient Annotator", "view.gradientAnnotator"),
                 c("Hide Corner Widget", "view.cornerWidget"),
                 Sep,
@@ -2871,6 +3009,10 @@ fn arrange_items() -> Vec<Item> {
         c("Send to Back", "object.arrange.sendToBack"),
         Sep,
         c("Send to Current Layer", "object.arrange.sendToCurrentLayer"),
+        Sep,
+        c("Arrange in Grid", "object.arrange.grid"),
+        c("Arrange in Circle", "object.arrange.polar"),
+        c("Remove Overlaps", "object.arrange.removeOverlaps"),
     ]
 }
 

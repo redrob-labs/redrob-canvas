@@ -511,8 +511,42 @@ pub mod vector {
             open_url: Some(Box::new(|url: &str| {
                 let _ = open_url(url);
             })),
+            fetch_url: Some(Box::new(fetch_url)),
             ..Default::default()
         }
+    }
+
+    /// File › Import Web Image…: the bytes at `url` (at most 64 MB), fetched on a runtime of
+    /// its own so the UI thread needs no async context.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn fetch_url(url: &str) -> Result<Vec<u8>, String> {
+        const MAX: usize = 64 * 1024 * 1024;
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| e.to_string())?;
+        let url = url.to_string();
+        rt.block_on(async move {
+            let client = reqwest::Client::builder()
+                .user_agent(concat!("redrob-canvas/", env!("CARGO_PKG_VERSION")))
+                .timeout(std::time::Duration::from_secs(60))
+                .build()
+                .map_err(|e| e.to_string())?;
+            let resp = client
+                .get(&url)
+                .send()
+                .await
+                .and_then(|r| r.error_for_status())
+                .map_err(|e| e.to_string())?;
+            if resp.content_length().is_some_and(|n| n as usize > MAX) {
+                return Err("the file is larger than 64 MB".to_string());
+            }
+            let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+            if bytes.len() > MAX {
+                return Err("the file is larger than 64 MB".to_string());
+            }
+            Ok(bytes.to_vec())
+        })
     }
 
     /// Have the font scans read the editor's own Fonts folder, which `text.addFontFiles`
@@ -536,6 +570,11 @@ pub mod vector {
             app.session
                 .recovery
                 .set_default_folder(sibling("Data Recovery"));
+            if let Some(dir) = sibling("Spelling") {
+                app.session
+                    .spelling
+                    .set_user_dir(std::path::PathBuf::from(dir));
+            }
         }
     }
 

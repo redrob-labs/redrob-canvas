@@ -18,6 +18,7 @@ pub mod cut;
 pub mod direct;
 pub mod distort;
 pub mod draw2;
+pub mod effectknots;
 pub mod extra;
 pub mod guides;
 pub mod meshblend;
@@ -131,6 +132,10 @@ pub enum ToolKey {
     /// Page Up / Page Down: the node tool grows and shrinks the anchor selection.
     PageUp,
     PageDown,
+    /// Cmd+A in the node tool: every anchor of the selected subpaths (with Alt, of every subpath).
+    SelectAll,
+    /// `!` in the node tool: inverts the anchor selection.
+    Invert,
     /// A digit key 0–9 (5 while dragging with the Perspective Selection tool moves perpendicular
     /// to the plane).
     Digit(u8),

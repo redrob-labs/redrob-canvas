@@ -21,7 +21,7 @@ const BI_PNG: u32 = 5;
 
 /// Pixels with straight (not premultiplied) alpha, row by row from the top.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct Rgba {
+pub struct Rgba {
     pub width: u32,
     pub height: u32,
     pub pixels: Vec<u8>,

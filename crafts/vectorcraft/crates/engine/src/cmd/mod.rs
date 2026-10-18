@@ -1,6 +1,7 @@
 //! The command registry. Ids follow Illustrator's menu structure.
 
 pub(crate) mod appearance;
+mod arrangecmds;
 mod assets;
 mod attributes;
 mod box3d;
@@ -42,10 +43,12 @@ pub(crate) mod inline;
 mod layer;
 mod layerpanel;
 pub mod library;
+pub(crate) mod linked;
 pub mod linkfiles;
 pub mod links;
 mod live;
 pub(crate) mod lpelink;
+pub mod markers;
 pub(crate) mod maskedit;
 pub(crate) mod menucmds;
 pub(crate) mod newart;
@@ -63,6 +66,7 @@ mod pathops;
 mod patterncmds;
 pub mod pdfcmds;
 pub mod perspgrid;
+pub mod pixelart;
 pub(crate) mod place;
 pub mod plugin;
 pub mod prefscmds;
@@ -79,10 +83,12 @@ mod select;
 pub(crate) mod shaper;
 pub mod shortcutset;
 pub(crate) mod slices;
+pub mod spell;
 mod stroke;
 mod style;
 pub mod stylelib;
 mod stylesheet;
+pub mod svgfont;
 mod swatch;
 pub mod swatchlib;
 pub(crate) mod tabs;
@@ -90,6 +96,7 @@ mod textedit;
 pub mod textstyles;
 pub(crate) mod textwrap;
 pub(crate) mod threads;
+pub mod tileclones;
 pub(crate) mod typecmd;
 mod typemenu;
 mod variablecmds;
@@ -98,6 +105,7 @@ pub mod wand;
 pub mod webexport;
 mod xform;
 mod xmlcmds;
+pub mod xmlattrs;
 
 use redrob_vector_color::Color;
 use redrob_vector_doc::NodeId;
@@ -243,6 +251,12 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(colormgmt::specs());
         v.extend(typemenu::specs());
         v.extend(textedit::specs());
+        v.extend(spell::specs());
+        v.extend(tileclones::specs());
+        v.extend(xmlattrs::specs());
+        v.extend(pixelart::specs());
+        v.extend(markers::specs());
+        v.extend(svgfont::specs());
         v.extend(inline::specs());
         v.extend(textstyles::specs());
         v.extend(fonts::specs());
@@ -309,6 +323,8 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(xmlcmds::specs());
         v.extend(connector::specs());
         v.extend(box3d::specs());
+        v.extend(arrangecmds::specs());
+        v.extend(linked::specs());
         v
     })
 }

@@ -4744,3 +4744,86 @@ theme	Appearance	Erscheinungsbild
 	Z:	Z:
 	Vanishing Point	Fluchtpunkt
 	Infinite	Unendlich
+	Arrange in Grid	In Raster anordnen
+	Arrange in Circle	Im Kreis anordnen
+	Dynamic Offset	Dynamischer Versatz
+	Fill Between Paths	Zwischen Pfaden füllen
+	Linked Offset	Verknüpfter Versatz
+	Linked Offset Distance	Abstand des verknüpften Versatzes
+	Remove Overlaps	Überlappungen entfernen
+	Unlink Live Object	Live-Objekt trennen
+	Create Anchor	Anker erstellen
+	Follow Link	Link folgen
+	Select All Anchors	Alle Ankerpunkte auswählen
+	Invert Anchor Selection	Ankerpunktauswahl umkehren
+	Aspect ratio:	Seitenverhältnis:
+	Clip path	Clip-Pfad
+	DPI:	DPI:
+	Effect knots	Effektknoten
+	Highlight color:	Hervorhebungsfarbe:
+	Interactivity	Interaktivität
+	Link target:	Linkziel:
+	Link title:	Linktitel:
+	Path outline	Pfadkontur
+	Transform handles	Transformationsgriffe
+	Plot…	Plotten…
+	Import Web Image…	Webbild importieren…
+	Check Spelling	Rechtschreibprüfung
+	Edit Custom Dictionary	Benutzerwörterbuch bearbeiten
+	The spell check is complete.	Die Rechtschreibprüfung ist abgeschlossen.
+	Words checked	Geprüfte Wörter
+	Check Again	Erneut prüfen
+	Word Not Found:	Unbekanntes Wort:
+	Change To:	Ändern in:
+	Suggestions:	Vorschläge:
+	No suggestions	Keine Vorschläge
+	Ignore All	Alle ignorieren
+	No words yet	Noch keine Wörter
+	Word:	Wort:
+	Change Spelling	Schreibweise ändern
+	Ignore Spelling	Schreibweise ignorieren
+	Add to Dictionary	Zum Wörterbuch hinzufügen
+	Remove from Dictionary	Aus dem Wörterbuch entfernen
+	Spelling Dictionaries	Wörterbücher
+	Visible Hairlines	Sichtbare Haarlinien
+	Rename…	Umbenennen…
+	Extract…	Extrahieren…
+	Object Attributes	Objektattribute
+	Object Attributes…	Objektattribute…
+	Create Tiled Clones…	Gekachelte Klone erstellen…
+	Rename Symbol	Symbol umbenennen
+	Set Object Attribute	Objektattribut setzen
+	Trace Pixel Art…	Pixelgrafik nachzeichnen…
+	Objects to Marker	Objekte zu Marker
+	Markers	Marker
+	Markers:	Marker:
+	Delete Marker	Marker löschen
+	SVG Font Editor	SVG-Schriften-Editor
+	SVG Font Editor…	SVG-Schriften-Editor…
+	New Font	Neue Schrift
+	Delete Font	Schrift löschen
+	No SVG font yet: make one, or turn glyph layers into one.	Noch keine SVG-Schrift: eine anlegen oder Glyphenebenen in eine umwandeln.
+	Glyph Layers to Font	Glyphenebenen zu Schrift
+	Glyph	Glyphe
+	Advance	Dickte
+	Curves	Kurven
+	Unicode:	Unicode:
+	Glyph name:	Glyphenname:
+	Advance:	Dickte:
+	Add Glyph	Glyphe hinzufügen
+	Remove Glyph	Glyphe entfernen
+	Get Curves from Selection	Kurven aus Auswahl übernehmen
+	Glyph to Objects	Glyphe zu Objekten
+	Kerning:	Unterschneidung:
+	Set Pair	Paar setzen
+	Preview:	Vorschau:
+	Font to Glyph Layers	Schrift zu Glyphenebenen
+	New SVG Font	Neue SVG-Schrift
+	SVG Fonts	SVG-Schriften
+	Delete SVG Font	SVG-Schrift löschen
+	SVG Font Options	SVG-Schriftoptionen
+	Set Glyph	Glyphe setzen
+	Set Kerning Pair	Unterschneidungspaar setzen
+	Preview SVG Font	SVG-Schrift-Vorschau
+	Glyph Layers to SVG Font	Glyphenebenen zu SVG-Schrift
+	SVG Font to Glyph Layers	SVG-Schrift zu Glyphenebenen

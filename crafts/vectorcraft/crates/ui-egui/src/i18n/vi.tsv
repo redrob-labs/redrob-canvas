@@ -4756,3 +4756,86 @@ theme	Appearance	Giao diện
 	Z:	Z:
 	Vanishing Point	Điểm tụ
 	Infinite	Vô cực
+	Arrange in Grid	Sắp xếp theo lưới
+	Arrange in Circle	Sắp xếp theo vòng tròn
+	Dynamic Offset	Dịch chuyển động
+	Fill Between Paths	Tô giữa các đường
+	Linked Offset	Dịch chuyển liên kết
+	Linked Offset Distance	Khoảng dịch chuyển liên kết
+	Remove Overlaps	Bỏ chồng lấn
+	Unlink Live Object	Bỏ liên kết đối tượng động
+	Create Anchor	Tạo liên kết
+	Follow Link	Mở liên kết
+	Select All Anchors	Chọn tất cả điểm neo
+	Invert Anchor Selection	Đảo chọn điểm neo
+	Aspect ratio:	Tỷ lệ khung hình:
+	Clip path	Đường cắt
+	DPI:	DPI:
+	Effect knots	Nút hiệu ứng
+	Highlight color:	Màu nổi bật:
+	Interactivity	Tương tác
+	Link target:	Đích liên kết:
+	Link title:	Tiêu đề liên kết:
+	Path outline	Đường viền đường dẫn
+	Transform handles	Tay cầm biến đổi
+	Plot…	Vẽ máy vẽ…
+	Import Web Image…	Nhập ảnh web…
+	Check Spelling	Kiểm tra chính tả
+	Edit Custom Dictionary	Sửa từ điển tùy chỉnh
+	The spell check is complete.	Đã kiểm tra chính tả xong.
+	Words checked	Số từ đã kiểm tra
+	Check Again	Kiểm tra lại
+	Word Not Found:	Không tìm thấy từ:
+	Change To:	Đổi thành:
+	Suggestions:	Gợi ý:
+	No suggestions	Không có gợi ý
+	Ignore All	Bỏ qua tất cả
+	No words yet	Chưa có từ nào
+	Word:	Từ:
+	Change Spelling	Đổi chính tả
+	Ignore Spelling	Bỏ qua chính tả
+	Add to Dictionary	Thêm vào từ điển
+	Remove from Dictionary	Xóa khỏi từ điển
+	Spelling Dictionaries	Từ điển chính tả
+	Visible Hairlines	Hiện đường mảnh
+	Rename…	Đổi tên…
+	Extract…	Trích xuất…
+	Object Attributes	Thuộc tính đối tượng
+	Object Attributes…	Thuộc tính đối tượng…
+	Create Tiled Clones…	Tạo bản sao xếp lớp…
+	Rename Symbol	Đổi tên ký hiệu
+	Set Object Attribute	Đặt thuộc tính đối tượng
+	Trace Pixel Art…	Vector hóa pixel art…
+	Objects to Marker	Đối tượng thành điểm đánh dấu
+	Markers	Điểm đánh dấu
+	Markers:	Điểm đánh dấu:
+	Delete Marker	Xóa điểm đánh dấu
+	SVG Font Editor	Trình sửa phông SVG
+	SVG Font Editor…	Trình sửa phông SVG…
+	New Font	Phông mới
+	Delete Font	Xóa phông
+	No SVG font yet: make one, or turn glyph layers into one.	Chưa có phông SVG: hãy tạo một phông hoặc chuyển các lớp ký tự thành phông.
+	Glyph Layers to Font	Lớp ký tự thành phông
+	Glyph	Ký tự
+	Advance	Khoảng tiến
+	Curves	Đường cong
+	Unicode:	Unicode:
+	Glyph name:	Tên ký tự:
+	Advance:	Khoảng tiến:
+	Add Glyph	Thêm ký tự
+	Remove Glyph	Xóa ký tự
+	Get Curves from Selection	Lấy đường cong từ vùng chọn
+	Glyph to Objects	Ký tự thành đối tượng
+	Kerning:	Khoảng cách chữ:
+	Set Pair	Đặt cặp
+	Preview:	Xem trước:
+	Font to Glyph Layers	Phông thành lớp ký tự
+	New SVG Font	Phông SVG mới
+	SVG Fonts	Phông SVG
+	Delete SVG Font	Xóa phông SVG
+	SVG Font Options	Tùy chọn phông SVG
+	Set Glyph	Đặt ký tự
+	Set Kerning Pair	Đặt cặp khoảng cách
+	Preview SVG Font	Xem trước phông SVG
+	Glyph Layers to SVG Font	Lớp ký tự thành phông SVG
+	SVG Font to Glyph Layers	Phông SVG thành lớp ký tự

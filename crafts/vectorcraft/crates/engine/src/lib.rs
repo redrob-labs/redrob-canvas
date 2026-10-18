@@ -1114,6 +1114,8 @@ pub struct Session {
     pub(crate) batch_stash: Option<Vec<DocState>>,
     /// Where Data Recovery keeps its copies ([`cmd::recovery`]).
     pub recovery: cmd::recovery::Recovery,
+    /// Check Spelling: the session's ignored words and the custom dictionary ([`cmd::spell`]).
+    pub spelling: cmd::spell::Spelling,
     /// While the active tool's actions run: their commands aren't "a command from outside the
     /// tool" ([`Session::after_command`]).
     pub(crate) in_tool_actions: bool,
@@ -1191,6 +1193,7 @@ impl Session {
             note_depth: 1,
             batch_stash: None,
             recovery: Default::default(),
+            spelling: Default::default(),
             in_tool_actions: false,
             envelope_defaults: None,
             liquify_stroke: None,
@@ -1502,6 +1505,8 @@ impl Session {
                     cmd::clones::refresh(&before, Arc::make_mut(&mut st.doc));
                     // Linked path effects (Clone Original, Attach Path, Fill Between…) follow their objects.
                     cmd::lpelink::refresh(Arc::make_mut(&mut st.doc));
+                    // Linked offsets and fill-between objects follow their sources.
+                    cmd::linked::refresh(&before, Arc::make_mut(&mut st.doc));
                     // Text Wrap: area type follows its wrap objects; then threads re-flow.
                     cmd::textwrap::refresh(Arc::make_mut(&mut st.doc));
                     // Opacity-mask editing: the mask follows its art on the editing layer.

@@ -5211,3 +5211,86 @@ theme	Appearance	Apparence
 	Z:	Z :
 	Vanishing Point	Point de fuite
 	Infinite	Infini
+	Arrange in Grid	Disposer en grille
+	Arrange in Circle	Disposer en cercle
+	Dynamic Offset	Décalage dynamique
+	Fill Between Paths	Remplir entre les chemins
+	Linked Offset	Décalage lié
+	Linked Offset Distance	Distance du décalage lié
+	Remove Overlaps	Supprimer les chevauchements
+	Unlink Live Object	Délier l'objet dynamique
+	Create Anchor	Créer une ancre
+	Follow Link	Suivre le lien
+	Select All Anchors	Sélectionner tous les points d'ancrage
+	Invert Anchor Selection	Inverser la sélection des points d'ancrage
+	Aspect ratio:	Rapport d'aspect :
+	Clip path	Chemin de découpe
+	DPI:	PPP :
+	Effect knots	Poignées d'effet
+	Highlight color:	Couleur de surbrillance :
+	Interactivity	Interactivité
+	Link target:	Cible du lien :
+	Link title:	Titre du lien :
+	Path outline	Contour du chemin
+	Transform handles	Poignées de transformation
+	Plot…	Tracer…
+	Import Web Image…	Importer une image web…
+	Check Spelling	Vérifier l'orthographe
+	Edit Custom Dictionary	Modifier le dictionnaire personnel
+	The spell check is complete.	La vérification orthographique est terminée.
+	Words checked	Mots vérifiés
+	Check Again	Vérifier à nouveau
+	Word Not Found:	Mot introuvable :
+	Change To:	Remplacer par :
+	Suggestions:	Suggestions :
+	No suggestions	Aucune suggestion
+	Ignore All	Tout ignorer
+	No words yet	Aucun mot pour l'instant
+	Word:	Mot :
+	Change Spelling	Corriger l'orthographe
+	Ignore Spelling	Ignorer l'orthographe
+	Add to Dictionary	Ajouter au dictionnaire
+	Remove from Dictionary	Retirer du dictionnaire
+	Spelling Dictionaries	Dictionnaires orthographiques
+	Visible Hairlines	Lignes fines visibles
+	Rename…	Renommer…
+	Extract…	Extraire…
+	Object Attributes	Attributs de l'objet
+	Object Attributes…	Attributs de l'objet…
+	Create Tiled Clones…	Créer un pavage de clones…
+	Rename Symbol	Renommer le symbole
+	Set Object Attribute	Définir l'attribut de l'objet
+	Trace Pixel Art…	Vectoriser le pixel art…
+	Objects to Marker	Objets en marqueur
+	Markers	Marqueurs
+	Markers:	Marqueurs :
+	Delete Marker	Supprimer le marqueur
+	SVG Font Editor	Éditeur de polices SVG
+	SVG Font Editor…	Éditeur de polices SVG…
+	New Font	Nouvelle police
+	Delete Font	Supprimer la police
+	No SVG font yet: make one, or turn glyph layers into one.	Aucune police SVG : créez-en une ou convertissez des calques de glyphes.
+	Glyph Layers to Font	Calques de glyphes en police
+	Glyph	Glyphe
+	Advance	Chasse
+	Curves	Courbes
+	Unicode:	Unicode :
+	Glyph name:	Nom du glyphe :
+	Advance:	Chasse :
+	Add Glyph	Ajouter un glyphe
+	Remove Glyph	Supprimer le glyphe
+	Get Curves from Selection	Prendre les courbes de la sélection
+	Glyph to Objects	Glyphe en objets
+	Kerning:	Crénage :
+	Set Pair	Définir la paire
+	Preview:	Aperçu :
+	Font to Glyph Layers	Police en calques de glyphes
+	New SVG Font	Nouvelle police SVG
+	SVG Fonts	Polices SVG
+	Delete SVG Font	Supprimer la police SVG
+	SVG Font Options	Options de police SVG
+	Set Glyph	Définir le glyphe
+	Set Kerning Pair	Définir la paire de crénage
+	Preview SVG Font	Aperçu de la police SVG
+	Glyph Layers to SVG Font	Calques de glyphes en police SVG
+	SVG Font to Glyph Layers	Police SVG en calques de glyphes
