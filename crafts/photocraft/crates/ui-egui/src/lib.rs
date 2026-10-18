@@ -173,7 +173,9 @@ mod pressure_curve_ui;
 pub mod props_layout;
 pub mod proxy;
 pub mod puppet_ui;
+pub mod foreground_select_ui;
 pub mod quick_pick;
+pub mod wand_drag;
 pub mod rasterize_prompt;
 pub mod retouch_ui;
 mod rgb_histogram;
@@ -611,6 +613,11 @@ pub struct PhotocraftApp {
     pub(crate) brush_resize: Option<brush_resize::Resize>,
     /// A ⌘⌥⌃-click layer pick is in progress; its drag and release are swallowed (`quick_pick`).
     pub(crate) quick_pick: bool,
+    /// A held Magic Wand press whose drag adjusts the tolerance (`wand_drag`).
+    pub(crate) wand_drag: Option<wand_drag::WandDrag>,
+    /// Foreground Select: the rough outline, the marks and the preview state
+    /// (`foreground_select_ui`).
+    pub(crate) fg_select: foreground_select_ui::ForegroundSelect,
     /// The next tool `Down` is an Alt+right-drag that resizes the brush (#297). `tool_event`
     /// takes it on every event, so a press another handler consumes can't leave it set.
     pub(crate) brush_resize_armed: bool,
@@ -855,6 +862,8 @@ impl PhotocraftApp {
             last_stroke_end: None,
             brush_resize: None,
             quick_pick: false,
+            wand_drag: None,
+            fg_select: Default::default(),
             brush_resize_armed: false,
             alt_sampling: false,
             eyedropper_base: None,

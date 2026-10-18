@@ -1194,7 +1194,16 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             if icons::button(ui, "pentagon", 24.0, o.lasso_free_select, tl!("Free select: clicks and drags build one editable outline")).clicked() {
                                 o.lasso_free_select = !o.lasso_free_select;
                             }
+                            let was = o.foreground_select;
+                            widgets::checkbox(ui, &mut o.foreground_select, tl!("Foreground Select"))
+                                .on_hover_text(tl!("Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask"));
+                            if was && !app.ui.tool_options.foreground_select {
+                                crate::foreground_select_ui::reset(app);
+                            }
                             widgets::vline(ui, 22.0);
+                            if app.ui.tool_options.foreground_select {
+                                crate::foreground_select_ui::options_bar(app, ui);
+                            }
                         }
                         if widgets::secondary_button(ui, tl!("Select and Mask…"), 0.0).clicked() {
                             let _ = crate::menus::invoke(app, ui.ctx(), "select.selectAndMask", json!({}));

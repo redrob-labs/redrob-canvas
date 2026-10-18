@@ -781,6 +781,38 @@ pub struct ToolOptions {
     pub filter_split_pos: f32,
     #[serde(default)]
     pub filter_split_horizontal: bool,
+    /// Lasso › Foreground Select: the outline is a rough outline round the subject, later drags
+    /// mark foreground (or background) and the matting engine grows the mask
+    /// (`foreground_select_ui`).
+    #[serde(default)]
+    pub foreground_select: bool,
+    /// Foreground Select › stroke width of the marks, px.
+    #[serde(default = "twenty")]
+    pub fg_stroke_width: f32,
+    /// Foreground Select › the next marks are background strokes (else foreground).
+    #[serde(default)]
+    pub fg_mark_background: bool,
+    /// Foreground Select › preview overlay colour: red | green | blue.
+    #[serde(default = "default_fg_preview_color")]
+    pub fg_preview_color: String,
+    /// Foreground Select › preview in grayscale instead of the colour overlay.
+    #[serde(default)]
+    pub fg_preview_gray: bool,
+    /// Foreground Select › matting engine: graphCut (full) | fast (reduced budget).
+    #[serde(default = "default_fg_engine")]
+    pub fg_engine: String,
+}
+
+fn twenty() -> f32 {
+    20.0
+}
+
+fn default_fg_preview_color() -> String {
+    "red".into()
+}
+
+fn default_fg_engine() -> String {
+    "graphCut".into()
 }
 
 fn one_f32() -> f32 {
@@ -981,6 +1013,12 @@ impl Default for ToolOptions {
             filter_split: false,
             filter_split_pos: 0.5,
             filter_split_horizontal: false,
+            foreground_select: false,
+            fg_stroke_width: 20.0,
+            fg_mark_background: false,
+            fg_preview_color: default_fg_preview_color(),
+            fg_preview_gray: false,
+            fg_engine: default_fg_engine(),
         }
     }
 }

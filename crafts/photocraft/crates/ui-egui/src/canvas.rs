@@ -4870,6 +4870,8 @@ fn draw_smoothing_string(painter: &egui::Painter, xf: &ViewXform, (brush, pointe
 
 fn draw_drag_preview(app: &mut PhotocraftApp, painter: &egui::Painter, xf: &ViewXform) {
     draw_tool_state(app, painter, xf, painter.ctx().input(|i| i.pointer.hover_pos()));
+    // Foreground Select: the rough outline and the marks stay drawn between drags.
+    crate::foreground_select_ui::draw(app, painter, xf);
     // Remove strokes waiting for ↩ stay tinted between drags.
     crate::retouch_ui::draw_remove_pending(app, painter, xf);
     let Some(d) = &app.drag else {
@@ -5227,6 +5229,10 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
     }
     // ⌥ (Alt) with a painting tool is the Eyedropper for that press.
     if alt_eyedropper(app, ev, mods) {
+        return;
+    }
+    // Magic Wand: a held press drags the tolerance (wand_drag.rs).
+    if crate::wand_drag::pointer(app, ev, mods) {
         return;
     }
     // Move tool: ⇧ locks the axis, ⌥ duplicates (move_mods.rs).
@@ -5918,6 +5924,10 @@ pub(crate) fn finish_gesture(app: &mut PhotocraftApp, d: Drag) {
         }
         Tool::Lasso | Tool::Patch | Tool::ContentAwareMove => {
             let pts: Vec<[f64; 2]> = d.points.iter().map(|p| [p[0], p[1]]).collect();
+            // Foreground Select takes the lasso's outline and marks (foreground_select_ui.rs).
+            if d.tool == Tool::Lasso && crate::foreground_select_ui::take_lasso(app, &pts, d.modifiers.alt || d.live.alt) {
+                return;
+            }
             if pts.len() >= 3 {
                 let mode = selection_mode(app, d.modifiers);
                 let o = &app.ui.tool_options;
