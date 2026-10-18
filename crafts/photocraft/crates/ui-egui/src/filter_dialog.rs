@@ -995,6 +995,8 @@ const OWN_RUNNER: &[&str] = &[
     "filter.map.tile",
     "filter.combine.depthMerge",
     "filter.render.geometricShapes",
+    // The external G'MIC runner (filters_paint) edits the document directly too.
+    "filter.gmic.run",
 ];
 
 /// Whether the dialog with fields `f` gets Blending Options: a Filter menu dialog on the shared

@@ -338,11 +338,13 @@ fn has_pixels(s: &Session) -> std::result::Result<(), String> {
 }
 
 /// Straight RGBA → the layer's native pixel.
+#[cfg_attr(target_arch = "wasm32", allow(dead_code))]
 fn native(fmt: &redrob_photo_color::PixelFormat, c: [f32; 4]) -> Vec<f32> {
     redrob_photo_raster::from_rgba(fmt, c)
 }
 
 /// A new pixel layer named `name` holding the straight RGBA buffer `rgba` at `rect`.
+#[cfg_attr(target_arch = "wasm32", allow(dead_code))]
 fn layer_from_rgba(doc: &redrob_photo_doc::Document, name: &str, rect: Rect, rgba: &[f32]) -> Layer {
     let fmt = doc.pixel_format();
     let n = fmt.channels();
