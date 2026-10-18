@@ -4380,3 +4380,28 @@ cameraRaw	Yellow	Sárga
 	Outline placed: paint over the foreground, then Preview or Select	Körvonal elhelyezve: fesse át az előteret, majd Előnézet vagy Kijelölés
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Durván körvonalazza a témát, fesse át az előteret, és a maszkoló motor megnöveli a maszkot
 	Paint over the foreground (hold Alt for background), then Preview or Select	Fesse át az előteret (Alt a háttérhez), majd Előnézet vagy Kijelölés
+	Display Filters…	Megjelenítési szűrők…
+	Display Filters	Megjelenítési szűrők
+	No Color Deficiency Simulation	Nincs színlátászavar-szimuláció
+	Simulate Protanopia	Protanopia szimulálása
+	Simulate Deuteranopia	Deuteranopia szimulálása
+	Simulate Tritanopia	Tritanopia szimulálása
+	Clip Warning	Vágási figyelmeztetés
+	Clip warning	Vágási figyelmeztetés
+	Color deficiency:	Színlátászavar:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Kontraszt:
+	View-only: the filters change what this view shows, never the pixels.	Csak megjelenítés: a szűrők azt változtatják, amit ez a nézet mutat, a pixeleket soha.
+	Padding Color	Kitöltőszín
+	From Theme	Témából
+	Light Check Color	Világos kockaszín
+	Dark Check Color	Sötét kockaszín
+	Light Check	Világos kocka
+	Dark Check	Sötét kocka
+	Light check	Világos kocka
+	Dark check	Sötét kocka
+	Custom Color	Egyéni szín
+	Keep Padding in Show All	Kitöltés megtartása az Összes megjelenítésében
+	Keep padding in show all	Kitöltés megtartása az Összes megjelenítésében

@@ -4138,3 +4138,29 @@ curves	Smooth	スムーズ
 	Outline placed: paint over the foreground, then Preview or Select	輪郭を配置しました: 前景を塗ってから、プレビューまたは選択
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	被写体を大まかに囲み、前景を塗ると、マッティングエンジンがマスクを広げます
 	Paint over the foreground (hold Alt for background), then Preview or Select	前景を塗ります (Alt で背景)。その後プレビューまたは選択
+	Display Filters…	表示フィルター…
+	Display Filters	表示フィルター
+	No Color Deficiency Simulation	色覚シミュレーションなし
+	Simulate Protanopia	1型色覚をシミュレート
+	Simulate Deuteranopia	2型色覚をシミュレート
+	Simulate Tritanopia	3型色覚をシミュレート
+	Clip Warning	クリップ警告
+	Clip warning	クリップ警告
+	Color deficiency:	色覚特性:
+	Protanopia	1型色覚
+	Deuteranopia	2型色覚
+	Tritanopia	3型色覚
+	Contrast:	コントラスト:
+	View-only: the filters change what this view shows, never the pixels.	表示のみ: フィルターはこのビューの見え方を変えるだけで、ピクセルは変えません。
+	Show All	すべて表示
+	Padding Color	パディングの色
+	From Theme	テーマから
+	Light Check Color	明るいチェックの色
+	Dark Check Color	暗いチェックの色
+	Light Check	明るいチェック
+	Dark Check	暗いチェック
+	Light check	明るいチェック
+	Dark check	暗いチェック
+	Custom Color	カスタムカラー
+	Keep Padding in Show All	すべて表示でパディングを保持
+	Keep padding in show all	すべて表示でパディングを保持

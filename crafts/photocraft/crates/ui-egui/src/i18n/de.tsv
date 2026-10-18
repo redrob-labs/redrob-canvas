@@ -3468,3 +3468,32 @@ curves	Smooth	Glätten
 	Outline placed: paint over the foreground, then Preview or Select	Umriss gesetzt: Vordergrund übermalen, dann Vorschau oder Auswählen
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Motiv grob umreißen, Vordergrund übermalen, dann lässt die Matting-Engine die Maske wachsen
 	Paint over the foreground (hold Alt for background), then Preview or Select	Vordergrund übermalen (Alt für Hintergrund), dann Vorschau oder Auswählen
+	Display Filters…	Anzeigefilter…
+	Display Filters	Anzeigefilter
+	No Color Deficiency Simulation	Keine Farbsehschwäche simulieren
+	Simulate Protanopia	Protanopie simulieren
+	Simulate Deuteranopia	Deuteranopie simulieren
+	Simulate Tritanopia	Tritanopie simulieren
+	Clip Warning	Beschneidungswarnung
+	Clip warning	Beschneidungswarnung
+	Color deficiency:	Farbsehschwäche:
+	Protanopia	Protanopie
+	Deuteranopia	Deuteranopie
+	Tritanopia	Tritanopie
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Nur Anzeige: Die Filter ändern, was diese Ansicht zeigt, nie die Pixel.
+	Show All	Alles anzeigen
+	Padding Color	Rahmenfarbe
+	From Theme	Aus dem Thema
+	Dark Gray	Dunkelgrau
+	Medium Gray	Mittelgrau
+	Light Check Color	Helle Schachbrettfarbe
+	Dark Check Color	Dunkle Schachbrettfarbe
+	Light Check	Helles Schachbrett
+	Dark Check	Dunkles Schachbrett
+	Light check	Helles Schachbrett
+	Dark check	Dunkles Schachbrett
+	Custom Color	Eigene Farbe
+	Select Custom Color…	Eigene Farbe wählen…
+	Keep Padding in Show All	Rahmen in Alles anzeigen beibehalten
+	Keep padding in show all	Rahmen in Alles anzeigen beibehalten

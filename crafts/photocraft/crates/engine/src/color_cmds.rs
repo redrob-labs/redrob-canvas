@@ -217,6 +217,8 @@ pub struct ColorState {
     pub(crate) display: crate::display_color::DisplayCaches,
     /// View › 32-bit Preview Options per document.
     pub hdr: HashMap<DocId, crate::proof_sim::HdrPreview>,
+    /// View › Display Filters per document (view-only deficiency, gamma, contrast, clip warning).
+    pub display_filters: HashMap<DocId, crate::display_filters::DisplayFilters>,
 }
 
 impl ColorState {
@@ -463,7 +465,7 @@ impl ColorState {
         let size = size.max(2);
         let pv = self.proof(doc.id);
         let display = self.canvas_display_for(doc, on)?;
-        if !(pv.enabled || pv.gamut_warning || hdr && crate::proof_sim::hdr_active(self, doc)) {
+        if !(pv.enabled || pv.gamut_warning || hdr && crate::proof_sim::hdr_active(self, doc) || crate::display_filters::active(self, doc).is_some()) {
             return Ok(display.transform.as_ref().map(|t| Lut3d::from_transform(t, size).to_rgba8()));
         }
         let lut = self.display_lut_with(doc, size, hdr, on)?;

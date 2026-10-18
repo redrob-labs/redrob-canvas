@@ -4252,3 +4252,31 @@ layerLabel	No Color	Sem cor
 	Outline placed: paint over the foreground, then Preview or Select	Contorno colocado: pinte sobre o primeiro plano e depois Visualizar ou Selecionar
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Contorne o assunto grosseiramente, pinte o primeiro plano e deixe o mecanismo de recorte expandir a máscara
 	Paint over the foreground (hold Alt for background), then Preview or Select	Pinte sobre o primeiro plano (Alt para o fundo), depois Visualizar ou Selecionar
+	Display Filters…	Filtros de exibição…
+	Display Filters	Filtros de exibição
+	No Color Deficiency Simulation	Sem simulação de deficiência de cor
+	Simulate Protanopia	Simular protanopia
+	Simulate Deuteranopia	Simular deuteranopia
+	Simulate Tritanopia	Simular tritanopia
+	Clip Warning	Aviso de corte
+	Clip warning	Aviso de corte
+	Color deficiency:	Deficiência de cor:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Contraste:
+	View-only: the filters change what this view shows, never the pixels.	Somente exibição: os filtros mudam o que esta visualização mostra, nunca os pixels.
+	Padding Color	Cor do preenchimento
+	From Theme	Do tema
+	Dark Gray	Cinza escuro
+	Medium Gray	Cinza médio
+	Light Check Color	Cor clara do xadrez
+	Dark Check Color	Cor escura do xadrez
+	Light Check	Xadrez claro
+	Dark Check	Xadrez escuro
+	Light check	Xadrez claro
+	Dark check	Xadrez escuro
+	Custom Color	Cor personalizada
+	Select Custom Color…	Selecionar cor personalizada…
+	Keep Padding in Show All	Manter preenchimento em Mostrar tudo
+	Keep padding in show all	Manter preenchimento em Mostrar tudo

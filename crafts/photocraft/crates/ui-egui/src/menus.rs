@@ -207,6 +207,10 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     if let Some(r) = crate::workspace_ui::menu(app, id, &params) {
         return r;
     }
+    // View › Padding Color, Show All.
+    if let Some(r) = crate::padding_ui::menu(app, id, &params) {
+        return r;
+    }
     // Window › Gradients, Patterns, Styles, Shapes, Tool Presets, Clone Source.
     if let Some(r) = crate::preset_panels::menu(app, id, &params) {
         return r;
@@ -749,6 +753,9 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
     if let Some(e) = crate::workspace_ui::is_enabled(app, id) {
         return e;
     }
+    if crate::padding_ui::handles(id) {
+        return true;
+    }
     if crate::analysis_ui::handles(id) {
         return true;
     }
@@ -840,6 +847,9 @@ fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
         return Some(c);
     }
     if let Some(c) = crate::analysis_ui::checked(app, id).or_else(|| crate::workspace_ui::checked(app, id)).or_else(|| crate::file_ui::checked(app, id)) {
+        return Some(c);
+    }
+    if let Some(c) = crate::padding_ui::checked(app, id) {
         return Some(c);
     }
     if let Some(c) = crate::preset_panels::checked(app, id) {
@@ -972,6 +982,7 @@ pub fn is_live(id: &str) -> bool {
         || crate::view_cmds::handles(id)
         || crate::analysis_ui::handles(id)
         || crate::workspace_ui::handles(id)
+        || crate::padding_ui::handles(id)
         || crate::preset_panels::handles(id)
         || crate::type_panels_ui::handles(id)
         || crate::timeline_ui::handles(id)

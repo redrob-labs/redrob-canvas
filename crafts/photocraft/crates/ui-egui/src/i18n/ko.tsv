@@ -3994,3 +3994,32 @@ curves	Smooth	매끄럽게
 	Outline placed: paint over the foreground, then Preview or Select	윤곽 배치됨: 전경을 칠한 뒤 미리 보기 또는 선택
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	피사체를 대략 둘러 그리고 전경을 칠하면 매팅 엔진이 마스크를 키웁니다
 	Paint over the foreground (hold Alt for background), then Preview or Select	전경을 칠하세요 (Alt를 누르면 배경), 그런 다음 미리 보기 또는 선택
+	Display Filters…	표시 필터…
+	Display Filters	표시 필터
+	No Color Deficiency Simulation	색각 이상 시뮬레이션 없음
+	Simulate Protanopia	적색맹 시뮬레이션
+	Simulate Deuteranopia	녹색맹 시뮬레이션
+	Simulate Tritanopia	청색맹 시뮬레이션
+	Clip Warning	클리핑 경고
+	Clip warning	클리핑 경고
+	Color deficiency:	색각 이상:
+	Protanopia	적색맹
+	Deuteranopia	녹색맹
+	Tritanopia	청색맹
+	Contrast:	대비:
+	View-only: the filters change what this view shows, never the pixels.	표시 전용: 필터는 이 보기의 표시만 바꾸며 픽셀은 바꾸지 않습니다.
+	Show All	모두 표시
+	Padding Color	여백 색상
+	From Theme	테마에서
+	Dark Gray	어두운 회색
+	Medium Gray	중간 회색
+	Light Check Color	밝은 체크 색상
+	Dark Check Color	어두운 체크 색상
+	Light Check	밝은 체크
+	Dark Check	어두운 체크
+	Light check	밝은 체크
+	Dark check	어두운 체크
+	Custom Color	사용자 정의 색상
+	Select Custom Color…	사용자 정의 색상 선택…
+	Keep Padding in Show All	모두 표시에서 여백 유지
+	Keep padding in show all	모두 표시에서 여백 유지

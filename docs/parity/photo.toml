@@ -4977,9 +4977,9 @@ name = "Display Filters"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-display-filter-dialog.html"
 behaviour = "Stack of view-only filters: colour deficiency simulation (protanopia, deuteranopia, tritanopia), gamma, contrast, clip warning (over/under exposure colours); configurable per view."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/view_cmds.rs (view.proofSetup.colorBlindnessProtanopia/Deuteranopia), crafts/photocraft/crates/engine/src/display_color.rs, crafts/photocraft/crates/ui-egui/src/clipping_indicator_tests.rs"
-gap = "no tritanopia, gamma or contrast display filters"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/display_filters.rs (view.displayFilters: protanopia/deuteranopia/tritanopia, gamma, contrast, clip warning with colours, per document), crafts/photocraft/crates/engine/src/proof_sim.rs (display LUT), crafts/photocraft/crates/ui-egui/src/workspace_ui.rs (dialog), crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5025,9 +5025,9 @@ name = "Padding colour"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-view-padding-color.html"
 behaviour = "Colour around the canvas: from theme, light/dark check, custom, keep padding in Show All."
-ours = "none"
-ours_where = ""
-gap = "fixed theme padding"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/padding_ui.rs (View > Padding Color: from theme, greys, light/dark check, custom, Keep Padding in Show All; View > Show All), crafts/photocraft/crates/engine/src/prefs.rs (CanvasColor lightCheck/darkCheck, interface.keepPaddingInShowAll), crafts/photocraft/crates/ui-egui/src/canvas.rs (Show All beyond-canvas rendering)"
+gap = ""
 priority = 3
 
 [[feature]]

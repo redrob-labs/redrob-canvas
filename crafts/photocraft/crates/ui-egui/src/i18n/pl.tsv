@@ -4060,3 +4060,32 @@ curves	Smooth	Wygładź
 	Outline placed: paint over the foreground, then Preview or Select	Obrys umieszczony: zamaluj pierwszy plan, potem Podgląd lub Zaznacz
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Obrysuj z grubsza obiekt, zamaluj pierwszy plan, a silnik mattingu rozszerzy maskę
 	Paint over the foreground (hold Alt for background), then Preview or Select	Zamaluj pierwszy plan (Alt dla tła), potem Podgląd lub Zaznacz
+	Display Filters…	Filtry wyświetlania…
+	Display Filters	Filtry wyświetlania
+	No Color Deficiency Simulation	Bez symulacji zaburzeń widzenia barw
+	Simulate Protanopia	Symuluj protanopię
+	Simulate Deuteranopia	Symuluj deuteranopię
+	Simulate Tritanopia	Symuluj tritanopię
+	Clip Warning	Ostrzeżenie o przycięciu
+	Clip warning	Ostrzeżenie o przycięciu
+	Color deficiency:	Zaburzenie widzenia barw:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Tylko wyświetlanie: filtry zmieniają to, co pokazuje ten widok, nigdy piksele.
+	Show All	Pokaż wszystko
+	Padding Color	Kolor wyściółki
+	From Theme	Z motywu
+	Dark Gray	Ciemnoszary
+	Medium Gray	Średnioszary
+	Light Check Color	Jasny kolor szachownicy
+	Dark Check Color	Ciemny kolor szachownicy
+	Light Check	Jasna szachownica
+	Dark Check	Ciemna szachownica
+	Light check	Jasna szachownica
+	Dark check	Ciemna szachownica
+	Custom Color	Kolor niestandardowy
+	Select Custom Color…	Wybierz kolor niestandardowy…
+	Keep Padding in Show All	Zachowaj wyściółkę w Pokaż wszystko
+	Keep padding in show all	Zachowaj wyściółkę w Pokaż wszystko

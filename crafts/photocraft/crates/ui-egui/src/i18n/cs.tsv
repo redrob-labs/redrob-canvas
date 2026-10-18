@@ -4071,3 +4071,28 @@ navigator	Zoom	Zvětšení
 	Outline placed: paint over the foreground, then Preview or Select	Obrys umístěn: přemalujte popředí, pak Náhled nebo Vybrat
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Hrubě obkreslete objekt, přemalujte popředí a maticovací jádro rozšíří masku
 	Paint over the foreground (hold Alt for background), then Preview or Select	Přemalujte popředí (Alt pro pozadí), pak Náhled nebo Vybrat
+	Display Filters…	Zobrazovací filtry…
+	Display Filters	Zobrazovací filtry
+	No Color Deficiency Simulation	Bez simulace poruchy barvocitu
+	Simulate Protanopia	Simulovat protanopii
+	Simulate Deuteranopia	Simulovat deuteranopii
+	Simulate Tritanopia	Simulovat tritanopii
+	Clip Warning	Varování před oříznutím
+	Clip warning	Varování před oříznutím
+	Color deficiency:	Porucha barvocitu:
+	Protanopia	Protanopie
+	Deuteranopia	Deuteranopie
+	Tritanopia	Tritanopie
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Pouze zobrazení: filtry mění, co tento pohled ukazuje, nikdy pixely.
+	Padding Color	Barva výplně okolo
+	From Theme	Z motivu
+	Light Check Color	Světlá barva šachovnice
+	Dark Check Color	Tmavá barva šachovnice
+	Light Check	Světlá šachovnice
+	Dark Check	Tmavá šachovnice
+	Light check	Světlá šachovnice
+	Dark check	Tmavá šachovnice
+	Custom Color	Vlastní barva
+	Keep Padding in Show All	Zachovat výplň při Zobrazit vše
+	Keep padding in show all	Zachovat výplň při Zobrazit vše

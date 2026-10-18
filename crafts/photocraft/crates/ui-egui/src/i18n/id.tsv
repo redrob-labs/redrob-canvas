@@ -3460,3 +3460,32 @@ curves	Smooth	Haluskan
 	Outline placed: paint over the foreground, then Preview or Select	Garis besar ditempatkan: cat latar depan, lalu Pratinjau atau Pilih
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Garis bentuk subjek secara kasar, cat latar depan, dan biarkan mesin matting mengembangkan masker
 	Paint over the foreground (hold Alt for background), then Preview or Select	Cat latar depan (tahan Alt untuk latar belakang), lalu Pratinjau atau Pilih
+	Display Filters…	Filter Tampilan…
+	Display Filters	Filter Tampilan
+	No Color Deficiency Simulation	Tanpa Simulasi Defisiensi Warna
+	Simulate Protanopia	Simulasikan Protanopia
+	Simulate Deuteranopia	Simulasikan Deuteranopia
+	Simulate Tritanopia	Simulasikan Tritanopia
+	Clip Warning	Peringatan Klip
+	Clip warning	Peringatan klip
+	Color deficiency:	Defisiensi warna:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Kontras:
+	View-only: the filters change what this view shows, never the pixels.	Hanya tampilan: filter mengubah apa yang ditampilkan tampilan ini, bukan pikselnya.
+	Show All	Tampilkan Semua
+	Padding Color	Warna Bantalan
+	From Theme	Dari Tema
+	Dark Gray	Abu-abu Gelap
+	Medium Gray	Abu-abu Sedang
+	Light Check Color	Warna Kotak Terang
+	Dark Check Color	Warna Kotak Gelap
+	Light Check	Kotak Terang
+	Dark Check	Kotak Gelap
+	Light check	Kotak terang
+	Dark check	Kotak gelap
+	Custom Color	Warna Kustom
+	Select Custom Color…	Pilih Warna Kustom…
+	Keep Padding in Show All	Pertahankan Bantalan di Tampilkan Semua
+	Keep padding in show all	Pertahankan bantalan di Tampilkan Semua

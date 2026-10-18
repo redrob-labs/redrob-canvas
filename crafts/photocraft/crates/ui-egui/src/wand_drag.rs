@@ -45,29 +45,18 @@ fn run(app: &mut PhotocraftApp, d: &WandDrag) {
 pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) -> bool {
     match ev {
         ToolEvent::Down { x, y, .. } => {
-            if app.ui.tool != Tool::MagicWand
-                || app.drag.is_some()
-                || app.session.active().is_none()
-            {
+            if app.ui.tool != Tool::MagicWand || app.drag.is_some() || app.session.active().is_none() {
                 return false;
             }
             let n = PRESSES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             let t = app.ui.tool_options.tolerance;
-            let d = WandDrag {
-                seed: [x, y],
-                start_tolerance: t,
-                tolerance: t,
-                mode: crate::canvas::selection_mode(app, mods),
-                key: format!("magic-wand-{n}"),
-            };
+            let d = WandDrag { seed: [x, y], start_tolerance: t, tolerance: t, mode: crate::canvas::selection_mode(app, mods), key: format!("magic-wand-{n}") };
             run(app, &d);
             app.wand_drag = Some(d);
             true
         }
         ToolEvent::Move { x, .. } => {
-            let Some(mut d) = app.wand_drag.clone() else {
-                return false;
-            };
+            let Some(mut d) = app.wand_drag.clone() else { return false };
             let t = tolerance_for(d.start_tolerance, x - d.seed[0], app.point_zoom());
             if t != d.tolerance {
                 d.tolerance = t;
@@ -80,9 +69,7 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) ->
             true
         }
         ToolEvent::Up { .. } => {
-            let Some(d) = app.wand_drag.take() else {
-                return false;
-            };
+            let Some(d) = app.wand_drag.take() else { return false };
             app.ui.tool_options.tolerance = d.tolerance;
             true
         }
@@ -99,13 +86,8 @@ mod tests {
 
     /// A 64×64 white document with a soft grey ramp on the right half.
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(
-            redrob_photo_engine::Session::new(),
-            crate::Services::default(),
-        );
-        app.session
-            .execute("file.new", json!({"width": 64, "height": 64}))
-            .unwrap();
+        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
+        app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
         app.session
             .edit("ramp", |doc, a| {
                 let surf = doc.layer_mut(a.unwrap()).unwrap().surface_mut().unwrap();
@@ -122,13 +104,7 @@ mod tests {
     }
 
     fn selected_width(app: &PhotocraftApp) -> u32 {
-        app.session
-            .active()
-            .unwrap()
-            .doc
-            .selection
-            .as_ref()
-            .map_or(0, |s| s.content_bounds().width())
+        app.session.active().unwrap().doc.selection.as_ref().map_or(0, |s| s.content_bounds().width())
     }
 
     #[test]
@@ -136,40 +112,16 @@ mod tests {
         let mut app = app();
         app.ui.tool_options.tolerance = 0.0;
         let before = app.session.active().unwrap().history.past_len();
-        tool_event(
-            &mut app,
-            ToolEvent::Down {
-                x: 10.0,
-                y: 10.0,
-                pressure: 1.0,
-            },
-            egui::Modifiers::NONE,
-        );
+        tool_event(&mut app, ToolEvent::Down { x: 10.0, y: 10.0, pressure: 1.0 }, egui::Modifiers::NONE);
         let narrow = selected_width(&app);
         assert!(narrow >= 32 && narrow < 64, "{narrow}");
         let zoom = app.point_zoom();
-        tool_event(
-            &mut app,
-            ToolEvent::Move {
-                x: 10.0 + 100.0 / f64::from(zoom),
-                y: 10.0,
-                pressure: 1.0,
-            },
-            egui::Modifiers::NONE,
-        );
+        tool_event(&mut app, ToolEvent::Move { x: 10.0 + 100.0 / f64::from(zoom), y: 10.0, pressure: 1.0 }, egui::Modifiers::NONE);
         assert_eq!(app.ui.tool_options.tolerance, 100.0);
         assert!(selected_width(&app) > narrow);
-        tool_event(
-            &mut app,
-            ToolEvent::Up { x: 10.0, y: 10.0 },
-            egui::Modifiers::NONE,
-        );
+        tool_event(&mut app, ToolEvent::Up { x: 10.0, y: 10.0 }, egui::Modifiers::NONE);
         assert!(app.wand_drag.is_none());
-        assert_eq!(
-            app.session.active().unwrap().history.past_len(),
-            before + 1,
-            "the runs of one press are one step"
-        );
+        assert_eq!(app.session.active().unwrap().history.past_len(), before + 1, "the runs of one press are one step");
         assert_eq!(tolerance_for(32.0, -100.0, 1.0), 0.0);
         assert_eq!(tolerance_for(32.0, 10.0, 2.0), 52.0);
     }

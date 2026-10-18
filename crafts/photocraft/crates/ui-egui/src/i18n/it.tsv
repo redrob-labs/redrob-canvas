@@ -4929,3 +4929,28 @@ shape	Appearance	Aspetto
 	Outline placed: paint over the foreground, then Preview or Select	Contorno posizionato: dipingi sul primo piano, poi Anteprima o Seleziona
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Contorna grossolanamente il soggetto, dipingi sul primo piano e lascia che il motore di matting espanda la maschera
 	Paint over the foreground (hold Alt for background), then Preview or Select	Dipingi sul primo piano (Alt per lo sfondo), poi Anteprima o Seleziona
+	Display Filters…	Filtri di visualizzazione…
+	Display Filters	Filtri di visualizzazione
+	No Color Deficiency Simulation	Nessuna simulazione di deficit cromatico
+	Simulate Protanopia	Simula protanopia
+	Simulate Deuteranopia	Simula deuteranopia
+	Simulate Tritanopia	Simula tritanopia
+	Clip Warning	Avviso di clipping
+	Clip warning	Avviso di clipping
+	Color deficiency:	Deficit cromatico:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Contrasto:
+	View-only: the filters change what this view shows, never the pixels.	Solo visualizzazione: i filtri cambiano ciò che mostra questa vista, mai i pixel.
+	Padding Color	Colore di riempimento
+	From Theme	Dal tema
+	Light Check Color	Colore scacchi chiaro
+	Dark Check Color	Colore scacchi scuro
+	Light Check	Scacchi chiaro
+	Dark Check	Scacchi scuro
+	Light check	Scacchi chiaro
+	Dark check	Scacchi scuro
+	Custom Color	Colore personalizzato
+	Keep Padding in Show All	Mantieni riempimento in Mostra tutto
+	Keep padding in show all	Mantieni riempimento in Mostra tutto

@@ -3439,3 +3439,32 @@ curves	Smooth	Сгладить
 	Outline placed: paint over the foreground, then Preview or Select	Контур задан: закрасьте передний план, затем Просмотр или Выделить
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Грубо обведите объект, закрасьте передний план, и движок матирования вырастит маску
 	Paint over the foreground (hold Alt for background), then Preview or Select	Закрасьте передний план (Alt для фона), затем Просмотр или Выделить
+	Display Filters…	Экранные фильтры…
+	Display Filters	Экранные фильтры
+	No Color Deficiency Simulation	Без имитации нарушения цветовосприятия
+	Simulate Protanopia	Имитировать протанопию
+	Simulate Deuteranopia	Имитировать дейтеранопию
+	Simulate Tritanopia	Имитировать тританопию
+	Clip Warning	Предупреждение об отсечении
+	Clip warning	Предупреждение об отсечении
+	Color deficiency:	Нарушение цветовосприятия:
+	Protanopia	Протанопия
+	Deuteranopia	Дейтеранопия
+	Tritanopia	Тританопия
+	Contrast:	Контраст:
+	View-only: the filters change what this view shows, never the pixels.	Только отображение: фильтры меняют вид этого окна, но не пиксели.
+	Show All	Показать всё
+	Padding Color	Цвет обрамления
+	From Theme	Из темы
+	Dark Gray	Тёмно-серый
+	Medium Gray	Средне-серый
+	Light Check Color	Светлая клетка
+	Dark Check Color	Тёмная клетка
+	Light Check	Светлая клетка
+	Dark Check	Тёмная клетка
+	Light check	Светлая клетка
+	Dark check	Тёмная клетка
+	Custom Color	Свой цвет
+	Select Custom Color…	Выбрать свой цвет…
+	Keep Padding in Show All	Сохранять обрамление в режиме Показать всё
+	Keep padding in show all	Сохранять обрамление в режиме Показать всё

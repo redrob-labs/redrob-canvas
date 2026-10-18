@@ -93,6 +93,8 @@ pub const PASTEBOARD_MENU: &[Row] = &[
     Some(("Dark Gray", "pasteboard.darkGray")),
     Some(("Medium Gray", "pasteboard.mediumGray")),
     Some(("Light Gray", "pasteboard.lightGray")),
+    Some(("Light Check", "pasteboard.lightCheck")),
+    Some(("Dark Check", "pasteboard.darkCheck")),
     Some(("Custom", "pasteboard.custom")),
     None,
     Some(("Select Custom Color…", PASTEBOARD_PICK)),
@@ -166,8 +168,16 @@ pub const GUIDE_MENU: &[Row] = &[
 ];
 
 /// The pasteboard colours in the menu's order, which Space+F steps through.
-const CANVAS_COLORS: [CanvasColor; 6] =
-    [CanvasColor::Default, CanvasColor::Black, CanvasColor::DarkGray, CanvasColor::MediumGray, CanvasColor::LightGray, CanvasColor::Custom];
+const CANVAS_COLORS: [CanvasColor; 8] = [
+    CanvasColor::Default,
+    CanvasColor::Black,
+    CanvasColor::DarkGray,
+    CanvasColor::MediumGray,
+    CanvasColor::LightGray,
+    CanvasColor::LightCheck,
+    CanvasColor::DarkCheck,
+    CanvasColor::Custom,
+];
 
 /// Photoshop's Space+F (⇧Space+F backwards): the next pasteboard colour, round and round. Saved
 /// like a choice in the pasteboard menu (`interface.canvasColor`).

@@ -4555,14 +4555,20 @@ fn draw_beyond_canvas(app: &mut PhotocraftApp, painter: &egui::Painter, xf: &Vie
     let key = egui::Id::new(("crop-beyond-canvas", id.0, output));
     let frame =
         app.ui.crop_rect.filter(|f| f.iter().all(|v| v.is_finite()) && app.session.active_index() == Some(idx) && crate::crop_ui::shows_beyond_canvas(app));
-    let Some(f) = frame else {
+    // View › Show All (padding_ui.rs): the layers beyond the canvas stay shown without the Crop tool.
+    let show_all = frame.is_none() && crate::padding_ui::show_all(app, idx);
+    if frame.is_none() && !show_all {
         ctx.data_mut(|d| d.remove::<BeyondCanvas>(key));
         return false;
-    };
+    }
     let (doc, preview_key) = display_doc(app, idx);
     if doc.has_artboards() {
         return false;
     }
+    let f = frame.unwrap_or_else(|| {
+        let e = redrob_photo_engine::extra_cmds::reveal_all_bounds(&doc);
+        [f64::from(e.x0), f64::from(e.y0), f64::from(e.x1), f64::from(e.y1)]
+    });
     let (display, display_key) = canvas_display(app, &doc, output);
     let doc_key = preview_key ^ display_key;
     let cached: Option<BeyondCanvas> = ctx.data(|d| d.get_temp(key));
@@ -4597,11 +4603,12 @@ fn draw_beyond_canvas(app: &mut PhotocraftApp, painter: &egui::Painter, xf: &Vie
     // Transparency out to the frame, in phase with the canvas's own checkerboard.
     let canvas = xf.doc_rect(doc.bounds());
     // A turned frame reaches as far as its corners.
-    let f = crate::crop_ui::turned_bounds(f, crate::crop_ui::angle(app));
+    let f = if show_all { f } else { crate::crop_ui::turned_bounds(f, crate::crop_ui::angle(app)) };
     let fr = DRect::new(f[0].floor() as i32, f[1].floor() as i32, f[2].ceil() as i32, f[3].ceil() as i32);
     let square = app.session.prefs().transparency_and_gamut.square();
     let checker_id = square.map(|_| checker(app, &ctx));
-    let around = ring(c.extent.union(&fr), doc.bounds());
+    // Show All with Keep Padding: the pasteboard colour stays under the pixels beyond the canvas.
+    let around = if show_all && crate::padding_ui::keep_padding(app) { Vec::new() } else { ring(c.extent.union(&fr), doc.bounds()) };
     // A turned view (Rotate View, or the Crop tool's default mode turning the image behind its
     // box) draws each band as its turned quad: its screen bounding box would stretch the band's
     // texture and spread the checkerboard past the band.

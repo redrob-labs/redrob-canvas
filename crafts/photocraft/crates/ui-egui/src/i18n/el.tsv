@@ -4162,3 +4162,31 @@ curves	Smooth	Εξομάλυνση
 	Outline placed: paint over the foreground, then Preview or Select	Το περίγραμμα τοποθετήθηκε: βάψτε το προσκήνιο, μετά Προεπισκόπηση ή Επιλογή
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Περιγράψτε πρόχειρα το θέμα, βάψτε το προσκήνιο και η μηχανή matting θα μεγαλώσει τη μάσκα
 	Paint over the foreground (hold Alt for background), then Preview or Select	Βάψτε το προσκήνιο (Alt για φόντο), μετά Προεπισκόπηση ή Επιλογή
+	Display Filters…	Φίλτρα προβολής…
+	Display Filters	Φίλτρα προβολής
+	No Color Deficiency Simulation	Χωρίς προσομοίωση αχρωματοψίας
+	Simulate Protanopia	Προσομοίωση πρωτανοπίας
+	Simulate Deuteranopia	Προσομοίωση δευτερανοπίας
+	Simulate Tritanopia	Προσομοίωση τριτανοπίας
+	Clip Warning	Προειδοποίηση αποκοπής
+	Clip warning	Προειδοποίηση αποκοπής
+	Color deficiency:	Αχρωματοψία:
+	Protanopia	Πρωτανοπία
+	Deuteranopia	Δευτερανοπία
+	Tritanopia	Τριτανοπία
+	Contrast:	Αντίθεση:
+	View-only: the filters change what this view shows, never the pixels.	Μόνο προβολή: τα φίλτρα αλλάζουν τι δείχνει αυτή η προβολή, ποτέ τα pixel.
+	Padding Color	Χρώμα περιθωρίου
+	From Theme	Από το θέμα
+	Dark Gray	Σκούρο γκρι
+	Medium Gray	Μεσαίο γκρι
+	Light Check Color	Ανοιχτό χρώμα σκακιέρας
+	Dark Check Color	Σκούρο χρώμα σκακιέρας
+	Light Check	Ανοιχτή σκακιέρα
+	Dark Check	Σκούρα σκακιέρα
+	Light check	Ανοιχτή σκακιέρα
+	Dark check	Σκούρα σκακιέρα
+	Custom Color	Προσαρμοσμένο χρώμα
+	Select Custom Color…	Επιλογή προσαρμοσμένου χρώματος…
+	Keep Padding in Show All	Διατήρηση περιθωρίου στην Εμφάνιση όλων
+	Keep padding in show all	Διατήρηση περιθωρίου στην Εμφάνιση όλων

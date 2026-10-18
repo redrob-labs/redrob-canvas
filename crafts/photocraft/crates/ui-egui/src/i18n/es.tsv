@@ -4771,3 +4771,28 @@ navigator	Zoom	Zoom
 	Outline placed: paint over the foreground, then Preview or Select	Contorno colocado: pinte sobre el primer plano y luego Vista previa o Seleccionar
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Delimite el sujeto a grandes rasgos, pinte sobre el primer plano y deje que el motor de recorte amplíe la máscara
 	Paint over the foreground (hold Alt for background), then Preview or Select	Pinte sobre el primer plano (Alt para el fondo), luego Vista previa o Seleccionar
+	Display Filters…	Filtros de visualización…
+	Display Filters	Filtros de visualización
+	No Color Deficiency Simulation	Sin simulación de deficiencia de color
+	Simulate Protanopia	Simular protanopia
+	Simulate Deuteranopia	Simular deuteranopia
+	Simulate Tritanopia	Simular tritanopia
+	Clip Warning	Aviso de recorte
+	Clip warning	Aviso de recorte
+	Color deficiency:	Deficiencia de color:
+	Protanopia	Protanopia
+	Deuteranopia	Deuteranopia
+	Tritanopia	Tritanopia
+	Contrast:	Contraste:
+	View-only: the filters change what this view shows, never the pixels.	Solo visualización: los filtros cambian lo que muestra esta vista, nunca los píxeles.
+	Padding Color	Color de relleno
+	From Theme	Del tema
+	Light Check Color	Color de cuadro claro
+	Dark Check Color	Color de cuadro oscuro
+	Light Check	Cuadro claro
+	Dark Check	Cuadro oscuro
+	Light check	Cuadro claro
+	Dark check	Cuadro oscuro
+	Custom Color	Color personalizado
+	Keep Padding in Show All	Mantener el relleno en Mostrar todo
+	Keep padding in show all	Mantener el relleno en Mostrar todo

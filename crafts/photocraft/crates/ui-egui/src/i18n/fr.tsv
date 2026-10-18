@@ -3473,3 +3473,32 @@ curves	Smooth	Lisser
 	Outline placed: paint over the foreground, then Preview or Select	Contour placé : peignez le premier plan, puis Aperçu ou Sélectionner
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Entourez grossièrement le sujet, peignez le premier plan et laissez le moteur de détourage étendre le masque
 	Paint over the foreground (hold Alt for background), then Preview or Select	Peignez le premier plan (Alt pour l'arrière-plan), puis Aperçu ou Sélectionner
+	Display Filters…	Filtres d'affichage…
+	Display Filters	Filtres d'affichage
+	No Color Deficiency Simulation	Aucune simulation de déficience chromatique
+	Simulate Protanopia	Simuler la protanopie
+	Simulate Deuteranopia	Simuler la deutéranopie
+	Simulate Tritanopia	Simuler la tritanopie
+	Clip Warning	Avertissement d'écrêtage
+	Clip warning	Avertissement d'écrêtage
+	Color deficiency:	Déficience chromatique :
+	Protanopia	Protanopie
+	Deuteranopia	Deutéranopie
+	Tritanopia	Tritanopie
+	Contrast:	Contraste :
+	View-only: the filters change what this view shows, never the pixels.	Affichage seulement : les filtres changent ce que montre cette vue, jamais les pixels.
+	Show All	Tout afficher
+	Padding Color	Couleur de remplissage
+	From Theme	D'après le thème
+	Dark Gray	Gris foncé
+	Medium Gray	Gris moyen
+	Light Check Color	Couleur de damier clair
+	Dark Check Color	Couleur de damier foncé
+	Light Check	Damier clair
+	Dark Check	Damier foncé
+	Light check	Damier clair
+	Dark check	Damier foncé
+	Custom Color	Couleur personnalisée
+	Select Custom Color…	Choisir une couleur personnalisée…
+	Keep Padding in Show All	Conserver le remplissage dans Tout afficher
+	Keep padding in show all	Conserver le remplissage dans Tout afficher

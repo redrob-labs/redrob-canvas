@@ -3087,3 +3087,32 @@ curves	Smooth	平滑
 	Outline placed: paint over the foreground, then Preview or Select	轮廓已放置：涂抹前景，然后预览或选择
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	粗略勾出主体，涂抹前景，让抠图引擎扩展蒙版
 	Paint over the foreground (hold Alt for background), then Preview or Select	涂抹前景（按住 Alt 涂背景），然后预览或选择
+	Display Filters…	显示滤镜…
+	Display Filters	显示滤镜
+	No Color Deficiency Simulation	不模拟色觉缺陷
+	Simulate Protanopia	模拟红色盲
+	Simulate Deuteranopia	模拟绿色盲
+	Simulate Tritanopia	模拟蓝色盲
+	Clip Warning	剪切警告
+	Clip warning	剪切警告
+	Color deficiency:	色觉缺陷：
+	Protanopia	红色盲
+	Deuteranopia	绿色盲
+	Tritanopia	蓝色盲
+	Contrast:	对比度：
+	View-only: the filters change what this view shows, never the pixels.	仅影响显示：滤镜只改变此视图的显示，不改变像素。
+	Show All	显示全部
+	Padding Color	填充色
+	From Theme	来自主题
+	Dark Gray	深灰色
+	Medium Gray	中灰色
+	Light Check Color	浅色格子颜色
+	Dark Check Color	深色格子颜色
+	Light Check	浅色格子
+	Dark Check	深色格子
+	Light check	浅色格子
+	Dark check	深色格子
+	Custom Color	自定颜色
+	Select Custom Color…	选择自定颜色…
+	Keep Padding in Show All	显示全部时保留填充
+	Keep padding in show all	显示全部时保留填充

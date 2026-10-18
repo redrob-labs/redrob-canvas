@@ -112,7 +112,7 @@ pub fn hdr_active(c: &ColorState, doc: &Document) -> bool {
 pub fn signature(c: &ColorState, doc: &Document) -> String {
     let pv = c.proof(doc.id);
     let h = if hdr_active(c, doc) { c.hdr.get(&doc.id).copied() } else { None };
-    format!("{:?} {:?}", pv.setup.kind, h)
+    format!("{:?} {:?} {:?}", pv.setup.kind, h, crate::display_filters::key(c, doc.id))
 }
 
 fn srgb_decode(v: f32) -> f32 {
@@ -155,7 +155,8 @@ pub fn display_lut_with(c: &ColorState, doc: &Document, size: usize, include_hdr
     let pv = c.proof(doc.id);
     let kind = if pv.enabled { pv.setup.kind } else { ProofKind::Profile };
     let hdr = if include_hdr { c.hdr_preview(doc) } else { None };
-    if kind == ProofKind::Profile && hdr.is_none() {
+    let filters = crate::display_filters::active(c, doc);
+    if kind == ProofKind::Profile && hdr.is_none() && filters.is_none() {
         return Ok(None);
     }
     let err = |e: redrob_photo_cms::CmsError| EngineError::Other(format!("colour management: {e}"));
@@ -216,7 +217,10 @@ pub fn display_lut_with(c: &ColorState, doc: &Document, size: usize, include_hdr
                 if let Some(h) = hdr {
                     v = v.map(|x| h.apply(x));
                 }
-                let o = base(v);
+                let mut o = base(v);
+                if let Some(f) = &filters {
+                    o = f.apply(v, o);
+                }
                 data[r + g * n + b * n * n] = [o[0], o[1], o[2], 1.0];
             }
         }

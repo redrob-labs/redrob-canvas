@@ -4534,3 +4534,28 @@ shape	Appearance	Izgled
 	Outline placed: paint over the foreground, then Preview or Select	Контура постављена: обојите предњи план, затим Преглед или Изабери
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Грубо оцртајте објекат, обојите предњи план и мотор за матирање ће проширити маску
 	Paint over the foreground (hold Alt for background), then Preview or Select	Обојите предњи план (Alt за позадину), затим Преглед или Изабери
+	Display Filters…	Филтери приказа…
+	Display Filters	Филтери приказа
+	No Color Deficiency Simulation	Без симулације слабовидости за боје
+	Simulate Protanopia	Симулирај протанопију
+	Simulate Deuteranopia	Симулирај деутеранопију
+	Simulate Tritanopia	Симулирај тританопију
+	Clip Warning	Упозорење о одсецању
+	Clip warning	Упозорење о одсецању
+	Color deficiency:	Слабовидост за боје:
+	Protanopia	Протанопија
+	Deuteranopia	Деутеранопија
+	Tritanopia	Тританопија
+	Contrast:	Контраст:
+	View-only: the filters change what this view shows, never the pixels.	Само приказ: филтери мењају шта овај приказ показује, никад пикселе.
+	Padding Color	Боја испуне око платна
+	From Theme	Из теме
+	Light Check Color	Светло поље шаховнице
+	Dark Check Color	Тамно поље шаховнице
+	Light Check	Светло поље
+	Dark Check	Тамно поље
+	Light check	Светло поље
+	Dark check	Тамно поље
+	Custom Color	Прилагођена боја
+	Keep Padding in Show All	Задржи испуну у Прикажи све
+	Keep padding in show all	Задржи испуну у Прикажи све

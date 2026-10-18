@@ -4192,3 +4192,31 @@ cameraData	Lens	Lens
 	Outline placed: paint over the foreground, then Preview or Select	Ana hat yerleştirildi: ön planı boyayın, sonra Önizleme veya Seç
 	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Konuyu kabaca çevreleyin, ön planı boyayın ve matlaştırma motoru maskeyi büyütsün
 	Paint over the foreground (hold Alt for background), then Preview or Select	Ön planı boyayın (arka plan için Alt), sonra Önizleme veya Seç
+	Display Filters…	Görüntü Filtreleri…
+	Display Filters	Görüntü Filtreleri
+	No Color Deficiency Simulation	Renk Görme Bozukluğu Simülasyonu Yok
+	Simulate Protanopia	Protanopi Simülasyonu
+	Simulate Deuteranopia	Döteranopi Simülasyonu
+	Simulate Tritanopia	Tritanopi Simülasyonu
+	Clip Warning	Kırpma Uyarısı
+	Clip warning	Kırpma uyarısı
+	Color deficiency:	Renk görme bozukluğu:
+	Protanopia	Protanopi
+	Deuteranopia	Döteranopi
+	Tritanopia	Tritanopi
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Yalnızca görünüm: filtreler bu görünümün gösterdiğini değiştirir, pikselleri asla.
+	Padding Color	Dolgu Rengi
+	From Theme	Temadan
+	Dark Gray	Koyu Gri
+	Medium Gray	Orta Gri
+	Light Check Color	Açık Kare Rengi
+	Dark Check Color	Koyu Kare Rengi
+	Light Check	Açık Kare
+	Dark Check	Koyu Kare
+	Light check	Açık kare
+	Dark check	Koyu kare
+	Custom Color	Özel Renk
+	Select Custom Color…	Özel Renk Seç…
+	Keep Padding in Show All	Tümünü Göster'de Dolguyu Koru
+	Keep padding in show all	Tümünü Göster'de dolguyu koru
