@@ -47,7 +47,8 @@ fn url_param<'a>(p: &'a Value, cmd: &str) -> Result<&'a str> {
 /// The file name a URL names (its last path segment, without the query), else `fallback`.
 pub fn name_of_url(url: &str, fallback: &str) -> String {
     let no_query = url.split(['?', '#']).next().unwrap_or(url);
-    let last = no_query.trim_end_matches('/').rsplit('/').next().unwrap_or("");
+    let path = no_query.find("://").map(|i| &no_query[i + 3..]).and_then(|rest| rest.find('/').map(|j| &rest[j..])).unwrap_or(no_query);
+    let last = path.trim_end_matches('/').rsplit('/').next().unwrap_or("");
     let decoded = percent_decode(last);
     if decoded.is_empty() || !decoded.contains('.') || decoded.contains("://") { fallback.to_string() } else { decoded }
 }

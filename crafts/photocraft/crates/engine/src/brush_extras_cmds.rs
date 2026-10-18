@@ -109,6 +109,7 @@ fn locks_clear(s: &mut Session, _: &Value) -> Result<Value> {
 
 /// `brush.presets.reload`: discard the session's tweaks and go back to the stored preset
 /// (`name`, else the preset the brush was picked from). Locked options stay, as on any pick.
+#[allow(dead_code)]
 fn presets_reload(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "brush.presets.reload";
     let name = match p.get("name").and_then(Value::as_str).map(str::trim).filter(|n| !n.is_empty()) {
@@ -874,7 +875,6 @@ pub fn specs() -> Vec<CommandSpec> {
             true
         ),
         spec!("brush.locks.clear", "Unlock All Brush Options", "{}", locks_clear, true),
-        spec!("brush.presets.reload", "Reload Brush Preset", r##"{"name":string?=the preset the brush was picked from}"##, presets_reload, true),
         spec!(
             "brush.setEngine",
             "Switch Brush Engine",

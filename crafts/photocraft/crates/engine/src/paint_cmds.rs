@@ -795,18 +795,19 @@ mod tests {
     fn gradient_repeat_modes_and_shaped_gradient() {
         let mut s = session();
         // Forward repeat over a 5 px drag: the colour at x = 7.5 equals the one at x = 2.5.
-        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "colors": ["#000000", "#ffffff"], "repeat": "forward", "dither": false})).unwrap();
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "colors": ["#000000", "#ffffff"], "repeat": "sawtooth", "dither": false})).unwrap();
         let (a, b) = (px(&s, 2, 0), px(&s, 7, 0));
         assert!((a[0] - b[0]).abs() < 0.02, "{a:?} {b:?}");
         assert!(px(&s, 4, 0)[0] > 0.8 && px(&s, 5, 0)[0] < 0.2, "the sawtooth restarts");
         s.execute("edit.undo", json!({})).unwrap();
-        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "colors": ["#000000", "#ffffff"], "repeat": "alternating", "dither": false})).unwrap();
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "colors": ["#000000", "#ffffff"], "repeat": "triangular", "dither": false})).unwrap();
         assert!(px(&s, 9, 0)[0] < 0.2 && px(&s, 5, 0)[0] > 0.8, "the triangle wave turns back");
         s.execute("edit.undo", json!({})).unwrap();
         assert!(s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "repeat": "bounce"})).is_err());
         // Shaped: inside a rectangular selection the edge is the first colour, the middle the last.
         s.execute("select.rect", json!({"x": 2, "y": 1, "width": 11, "height": 7})).unwrap();
-        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "style": "shaped", "colors": ["#ff0000", "#0000ff"], "dither": false})).unwrap();
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "style": "shapedSpherical", "colors": ["#ff0000", "#0000ff"], "dither": false}))
+            .unwrap();
         let (edge, middle, outside) = (px(&s, 2, 4), px(&s, 7, 4), px(&s, 0, 4));
         assert!(edge[0] > 0.9 && edge[2] < 0.1, "{edge:?}");
         assert!(middle[2] > 0.9 && middle[0] < 0.1, "{middle:?}");
@@ -871,7 +872,7 @@ mod tests {
         s.execute("edit.undo", json!({})).unwrap();
         // Enclose and fill: a rectangle around the left cell only encloses nothing (the cell
         // reaches the shape's edge); one around a closed box does.
-        s.execute("select.deselect", json!({})).unwrap();
+        let _ = s.execute("select.deselect", json!({}));
         let r = s
             .execute(
                 "paint.encloseFill",

@@ -286,11 +286,10 @@ fn zealous_crop(s: &mut Session, _p: &Value) -> Result<Value> {
     let buf = redrob_photo_compose::flatten(&d.doc);
     let (rows, cols) = zealous_keep(&buf.px, w, h);
     drop(buf);
-    if rows.len() == h && cols.len() == w {
+    // Nothing to remove, or the whole image is one colour (removing every row would leave
+    // nothing): the image stays as it is.
+    if (rows.len() == h && cols.len() == w) || rows.is_empty() || cols.is_empty() {
         return Ok(json!({ "changed": false, "width": w, "height": h }));
-    }
-    if rows.is_empty() || cols.is_empty() {
-        return Err(EngineError::Other("the whole image is one colour; nothing would remain".into()));
     }
     let (nw, nh) = (cols.len() as u32, rows.len() as u32);
     s.edit("Zealous Crop", |doc, _| {

@@ -1272,7 +1272,7 @@ mod tests {
         let mut h = Echo(Vec::new());
         let v = it.eval_str("(file.new \"width\" 640 \"height\" 480)", &mut h).unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(h.0[0].0, "file.new");
-        assert_eq!(h.0[0].1["width"], 640);
+        assert_eq!(h.0[0].1["width"].as_f64(), Some(640.0));
         assert_eq!(nth(&v, 0).map(|p| p.write()).unwrap_or_default(), "(\"id\" . \"file.new\")");
         it.eval_str("(call \"image.flip\" '((\"axis\" . \"horizontal\")))", &mut h).unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(h.0[1].1["axis"], "horizontal");

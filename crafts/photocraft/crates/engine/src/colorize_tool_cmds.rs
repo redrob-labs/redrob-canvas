@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn colorize_writes_a_layer_below_the_line_art_and_rewrites_it() {
         let mut s = Session::new();
-        s.execute("file.new", json!({"width": 12, "height": 6})).unwrap();
+        s.execute("file.new", json!({"width": 12, "height": 6, "background": "transparent"})).unwrap();
         let line_art = s.active().unwrap().active_layer.unwrap();
         s.edit("ink", |doc, _| {
             doc.layer_mut(line_art).unwrap().surface_mut().unwrap().fill_rect(Rect::new(6, 0, 7, 6), &[0.0, 0.0, 0.0, 1.0]);

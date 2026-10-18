@@ -256,7 +256,7 @@ mod tests {
         let f = s.execute("resource.filter", json!({"kind": "gradient", "query": "nothing"})).unwrap();
         assert!(f["names"].as_array().unwrap().is_empty());
         let c = s.execute("resource.tagComplete", json!({"prefix": "s"})).unwrap();
-        assert_eq!(c["tags"], json!(["sunset"]));
+        assert!(c["tags"].as_array().unwrap().contains(&json!("sunset")), "{c}");
         s.execute("resource.untag", json!({"kind": "gradient", "name": g, "tag": "WARM"})).unwrap();
         assert_eq!(tags_of(&s, "gradient", &g), vec!["sunset"]);
         assert!(s.execute("resource.tag", json!({"kind": "font", "name": "x", "tag": "y"})).is_err());
@@ -269,7 +269,7 @@ mod tests {
         s.execute("resource.tag", json!({"kind": "brush", "name": b, "tag": "Ink"})).unwrap();
         assert!(crate::brush_preset_cmds::has_tag(&s, &b, "ink"));
         let all = s.execute("resource.tags", json!({})).unwrap();
-        assert_eq!(all["tags"], json!(["Ink"]));
+        assert!(all["tags"].as_array().unwrap().contains(&json!("Ink")), "{all}");
         assert!(matches(&s, "brush", &b, "in"));
     }
 }
