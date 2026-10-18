@@ -4114,3 +4114,18 @@ curves	Smooth	매끄럽게
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	케이지 변형: 변형할 부분 주위를 클릭하고 첫 점을 클릭해 케이지를 닫은 뒤 점을 드래그하세요
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	핸들 변형: 핸들을 1~4개 놓고 드래그하세요 (1개 이동, 2개 회전·크기, 3개 기울이기, 4개 원근)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 변형: 드래그로 X·Y 축 회전, Alt+드래그로 Z 축 회전; 이동과 카메라 탭으로 레이어와 카메라를 움직입니다
+	Segment {n}	세그먼트 {n}
+	Blending:	혼합:
+	Coloring:	색상 방식:
+	Midpoint:	중간점:
+	Spherical (increasing)	구형 (증가)
+	Spherical (decreasing)	구형 (감소)
+	Step	계단
+	RGB	RGB
+	HSV (counter-clockwise)	HSV (시계 반대 방향)
+	HSV (clockwise)	HSV (시계 방향)
+	Replicate	복제
+	Split the segment at its midpoint	세그먼트를 중간점에서 분할합니다
+	Replace the segment with two copies of itself	세그먼트를 자신의 복사본 2개로 바꿉니다
+	Flip the whole gradient end to end	그레이디언트 전체를 뒤집습니다
+	Save as POV-Ray…	POV-Ray로 저장…

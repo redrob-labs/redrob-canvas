@@ -5133,9 +5133,9 @@ name = "Gradients dialog and gradient editor"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-gradient-dialog.html"
 behaviour = "List with preview, new/duplicate/edit/delete/refresh/save as POV-Ray; editor with segment handles, colour pickers, blend/colouring types, split/flip/replicate."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/gradient_ui.rs, crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
-gap = "stop-based editor without segment blending functions"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/presets/gradients.rs (Segment: blending functions linear/curved/sinusoidal/spherical/step, colouring RGB/HSV ccw/cw, midpoint; gradient.presets.segment/splitSegment/replicate/flip/exportPov), crafts/photocraft/crates/ui-egui/src/gradient_ui.rs (segment editor, Save as POV-Ray), crafts/photocraft/crates/ui-egui/src/preset_panels.rs"
+gap = ""
 priority = 2
 
 [[feature]]

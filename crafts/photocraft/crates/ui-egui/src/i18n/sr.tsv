@@ -4646,3 +4646,18 @@ shape	Appearance	Izgled
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Трансформација кавезом: кликните око дела за деформацију, кликните на прву тачку да затворите кавез, затим превлачите тачке
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Трансформација ручкама: поставите једну до четири ручке и превлачите их (једна помера, две ротирају и скалирају, три искошавају, четири дају перспективу)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D трансформација: превлачите за ротацију око X и Y, Alt за Z; картице Помери и Камера померају слој и камеру
+	Segment {n}	Сегмент {n}
+	Blending:	Прелаз:
+	Coloring:	Бојење:
+	Midpoint:	Средишња тачка:
+	Sinusoidal	Синусоидално
+	Spherical (increasing)	Сферно (растуће)
+	Spherical (decreasing)	Сферно (опадајуће)
+	Step	Степенасто
+	HSV (counter-clockwise)	HSV (супротно од казаљке)
+	HSV (clockwise)	HSV (у смеру казаљке)
+	Replicate	Умножи
+	Split the segment at its midpoint	Подели сегмент на средишњој тачки
+	Replace the segment with two copies of itself	Замени сегмент са две његове копије
+	Flip the whole gradient end to end	Обрни цео прелив
+	Save as POV-Ray…	Сачувај као POV-Ray…

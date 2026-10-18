@@ -4068,3 +4068,18 @@ curves	Smooth	Làm mượt
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Biến đổi lồng: nhấp quanh phần cần biến dạng, nhấp điểm đầu để đóng lồng, rồi kéo các điểm
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Biến đổi tay cầm: đặt một đến bốn tay cầm và kéo (một di chuyển, hai xoay và co giãn, ba xô nghiêng, bốn tạo phối cảnh)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Biến đổi 3D: kéo để xoay quanh X và Y, Alt-kéo quanh Z; thẻ Di chuyển và Máy ảnh di chuyển lớp và máy ảnh
+	Segment {n}	Đoạn {n}
+	Blending:	Pha trộn:
+	Coloring:	Tô màu:
+	Midpoint:	Điểm giữa:
+	Sinusoidal	Hình sin
+	Spherical (increasing)	Hình cầu (tăng)
+	Spherical (decreasing)	Hình cầu (giảm)
+	Step	Bậc
+	HSV (counter-clockwise)	HSV (ngược chiều kim đồng hồ)
+	HSV (clockwise)	HSV (theo chiều kim đồng hồ)
+	Replicate	Nhân bản
+	Split the segment at its midpoint	Tách đoạn tại điểm giữa
+	Replace the segment with two copies of itself	Thay đoạn bằng hai bản sao của nó
+	Flip the whole gradient end to end	Đảo ngược toàn bộ chuyển sắc
+	Save as POV-Ray…	Lưu dạng POV-Ray…

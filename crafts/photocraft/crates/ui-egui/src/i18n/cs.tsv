@@ -4185,3 +4185,18 @@ navigator	Zoom	Zvětšení
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformace klecí: klepejte kolem části k deformaci, klepnutím na první bod klec uzavřete a pak body přetahujte
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformace úchyty: umístěte jeden až čtyři úchyty a přetahujte je (jeden posouvá, dva otáčejí a škálují, tři zkosí, čtyři dávají perspektivu)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D transformace: tažením otáčíte kolem X a Y, s Alt kolem Z; karty Přesunout a Kamera posouvají vrstvu a kameru
+	Segment {n}	Segment {n}
+	Blending:	Prolnutí:
+	Coloring:	Barvení:
+	Midpoint:	Střed:
+	Sinusoidal	Sinusový
+	Spherical (increasing)	Sférický (rostoucí)
+	Spherical (decreasing)	Sférický (klesající)
+	Step	Skok
+	HSV (counter-clockwise)	HSV (proti směru hodin)
+	HSV (clockwise)	HSV (po směru hodin)
+	Replicate	Replikovat
+	Split the segment at its midpoint	Rozdělí segment v jeho středu
+	Replace the segment with two copies of itself	Nahradí segment dvěma jeho kopiemi
+	Flip the whole gradient end to end	Převrátí celý přechod
+	Save as POV-Ray…	Uložit jako POV-Ray…

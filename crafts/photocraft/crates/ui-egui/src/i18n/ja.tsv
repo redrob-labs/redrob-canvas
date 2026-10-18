@@ -4251,3 +4251,18 @@ curves	Smooth	スムーズ
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	ケージ変形: 変形する部分の周りをクリックし、最初の点をクリックしてケージを閉じ、点をドラッグします
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	ハンドル変形: 1〜4 個のハンドルを置いてドラッグします (1 個で移動、2 個で回転と拡縮、3 個で傾き、4 個で遠近)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 変形: ドラッグで X・Y 軸回転、Alt+ドラッグで Z 軸回転。移動とカメラのタブでレイヤーとカメラを動かします
+	Segment {n}	セグメント {n}
+	Blending:	ブレンド:
+	Coloring:	カラーリング:
+	Midpoint:	中間点:
+	Sinusoidal	正弦波
+	Spherical (increasing)	球面 (増加)
+	Spherical (decreasing)	球面 (減少)
+	Step	ステップ
+	HSV (counter-clockwise)	HSV (反時計回り)
+	HSV (clockwise)	HSV (時計回り)
+	Replicate	複製
+	Split the segment at its midpoint	セグメントを中間点で分割します
+	Replace the segment with two copies of itself	セグメントを自身の 2 つのコピーに置き換えます
+	Flip the whole gradient end to end	グラデーション全体を反転します
+	Save as POV-Ray…	POV-Ray 形式で保存…

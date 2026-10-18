@@ -3586,3 +3586,19 @@ curves	Smooth	Glätten
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Käfig-Transformation: um den zu verformenden Teil klicken, den ersten Punkt klicken, um den Käfig zu schließen, dann die Punkte ziehen
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Griffpunkt-Transformation: ein bis vier Griffpunkte setzen und ziehen (einer verschiebt, zwei drehen und skalieren, drei scheren, vier geben Perspektive)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-Transformation: ziehen dreht um X und Y, Alt-Ziehen um Z; die Reiter Bewegen und Kamera bewegen Ebene und Kamera
+	Segment {n}	Segment {n}
+	Blending:	Übergang:
+	Coloring:	Färbung:
+	Midpoint:	Mittelpunkt:
+	Sinusoidal	Sinusförmig
+	Spherical (increasing)	Sphärisch (zunehmend)
+	Spherical (decreasing)	Sphärisch (abnehmend)
+	Step	Stufe
+	RGB	RGB
+	HSV (counter-clockwise)	HSV (gegen den Uhrzeigersinn)
+	HSV (clockwise)	HSV (im Uhrzeigersinn)
+	Replicate	Replizieren
+	Split the segment at its midpoint	Teilt das Segment an seinem Mittelpunkt
+	Replace the segment with two copies of itself	Ersetzt das Segment durch zwei Kopien von sich
+	Flip the whole gradient end to end	Kehrt den ganzen Verlauf um
+	Save as POV-Ray…	Als POV-Ray speichern…

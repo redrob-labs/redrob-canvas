@@ -4278,3 +4278,19 @@ curves	Smooth	Εξομάλυνση
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Μετασχηματισμός κλωβού: κλικ γύρω από το τμήμα, κλικ στο πρώτο σημείο για κλείσιμο, μετά σύρετε τα σημεία
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Μετασχηματισμός με λαβές: βάλτε μία έως τέσσερις λαβές και σύρετε (μία μετακινεί, δύο περιστρέφουν και κλιμακώνουν, τρεις στρεβλώνουν, τέσσερις δίνουν προοπτική)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Μετασχηματισμός 3D: σύρετε για περιστροφή στους X και Y, Alt για Z· οι καρτέλες Μετακίνηση και Κάμερα μετακινούν στρώση και κάμερα
+	Segment {n}	Τμήμα {n}
+	Blending:	Ανάμειξη:
+	Coloring:	Χρωματισμός:
+	Midpoint:	Μέσο:
+	Sinusoidal	Ημιτονοειδές
+	Spherical (increasing)	Σφαιρικό (αύξον)
+	Spherical (decreasing)	Σφαιρικό (φθίνον)
+	Step	Βαθμίδα
+	RGB	RGB
+	HSV (counter-clockwise)	HSV (αριστερόστροφα)
+	HSV (clockwise)	HSV (δεξιόστροφα)
+	Replicate	Αναπαραγωγή
+	Split the segment at its midpoint	Διαιρεί το τμήμα στο μέσο του
+	Replace the segment with two copies of itself	Αντικαθιστά το τμήμα με δύο αντίγραφά του
+	Flip the whole gradient end to end	Αναστρέφει ολόκληρη τη διαβάθμιση
+	Save as POV-Ray…	Αποθήκευση ως POV-Ray…

@@ -30,6 +30,207 @@ pub struct GradientPreset {
     /// Transparency stops `(location, opacity 0..1)`; empty = opaque.
     #[serde(default)]
     pub opacity: Vec<(f32, f32)>,
+    /// How each interval between consecutive colour stops blends (`segments[i]` is the segment
+    /// from stop `i` to stop `i + 1`): its midpoint, blending function and colouring type. Missing
+    /// or short = plain linear RGB with centred midpoints (see [`Segment`]).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub segments: Vec<Segment>,
+}
+
+/// A segment's blending function: how the blend factor runs from one stop to the next.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Blend {
+    #[default]
+    Linear,
+    /// A power curve through the midpoint.
+    Curved,
+    /// A sine ease-in-out.
+    Sinusoidal,
+    /// A quarter circle that rises steeply first.
+    SphericalIncreasing,
+    /// A quarter circle that rises steeply last.
+    SphericalDecreasing,
+    /// The left colour up to the midpoint, the right one after.
+    Step,
+}
+
+impl Blend {
+    pub fn name(self) -> &'static str {
+        match self {
+            Blend::Linear => "linear",
+            Blend::Curved => "curved",
+            Blend::Sinusoidal => "sinusoidal",
+            Blend::SphericalIncreasing => "sphericalIncreasing",
+            Blend::SphericalDecreasing => "sphericalDecreasing",
+            Blend::Step => "step",
+        }
+    }
+    pub fn parse(s: &str) -> Option<Blend> {
+        Some(match s {
+            "linear" => Blend::Linear,
+            "curved" => Blend::Curved,
+            "sinusoidal" | "sine" => Blend::Sinusoidal,
+            "sphericalIncreasing" | "sphericalInc" => Blend::SphericalIncreasing,
+            "sphericalDecreasing" | "sphericalDec" => Blend::SphericalDecreasing,
+            "step" => Blend::Step,
+            _ => return None,
+        })
+    }
+    pub const ALL: [Blend; 6] = [Blend::Linear, Blend::Curved, Blend::Sinusoidal, Blend::SphericalIncreasing, Blend::SphericalDecreasing, Blend::Step];
+}
+
+/// A segment's colouring type: the space the two colours are mixed in.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Coloring {
+    #[default]
+    Rgb,
+    /// HSV with the hue turning counter-clockwise (increasing).
+    HsvCcw,
+    /// HSV with the hue turning clockwise (decreasing).
+    HsvCw,
+}
+
+impl Coloring {
+    pub fn name(self) -> &'static str {
+        match self {
+            Coloring::Rgb => "rgb",
+            Coloring::HsvCcw => "hsvCcw",
+            Coloring::HsvCw => "hsvCw",
+        }
+    }
+    pub fn parse(s: &str) -> Option<Coloring> {
+        Some(match s {
+            "rgb" => Coloring::Rgb,
+            "hsvCcw" | "hsvCounterClockwise" => Coloring::HsvCcw,
+            "hsvCw" | "hsvClockwise" => Coloring::HsvCw,
+            _ => return None,
+        })
+    }
+    pub const ALL: [Coloring; 3] = [Coloring::Rgb, Coloring::HsvCcw, Coloring::HsvCw];
+}
+
+/// One segment's blending: midpoint (0..1 of the segment), blending function, colouring type.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Segment {
+    pub midpoint: f32,
+    pub blend: Blend,
+    pub coloring: Coloring,
+}
+
+impl Default for Segment {
+    fn default() -> Self {
+        Segment { midpoint: 0.5, blend: Blend::Linear, coloring: Coloring::Rgb }
+    }
+}
+
+impl Segment {
+    /// A plain segment: linear RGB with its midpoint centred (what a stop list without segments is).
+    pub fn is_plain(&self) -> bool {
+        (self.midpoint - 0.5).abs() < 1e-4 && self.blend == Blend::Linear && self.coloring == Coloring::Rgb
+    }
+
+    /// The blend factor (0..1, how much of the right colour) at position `u` (0..1) along the
+    /// segment: the midpoint maps to one half, then the blending function shapes the run.
+    pub fn factor(&self, u: f32) -> f32 {
+        let u = u.clamp(0.0, 1.0);
+        let m = self.midpoint.clamp(0.001, 0.999);
+        // Piecewise-linear warp putting the midpoint at one half.
+        let w = if u <= m { 0.5 * u / m } else { 0.5 + 0.5 * (u - m) / (1.0 - m) };
+        match self.blend {
+            Blend::Linear => w,
+            Blend::Curved => u.max(1e-6).powf((0.5f32).ln() / m.ln()),
+            Blend::Sinusoidal => (((w - 0.5) * std::f32::consts::PI).sin() + 1.0) / 2.0,
+            Blend::SphericalIncreasing => (1.0 - (1.0 - w) * (1.0 - w)).max(0.0).sqrt(),
+            Blend::SphericalDecreasing => 1.0 - (1.0 - w * w).max(0.0).sqrt(),
+            Blend::Step => {
+                if w < 0.5 {
+                    0.0
+                } else {
+                    1.0
+                }
+            }
+        }
+    }
+
+    /// Mixes two RGBA colours by `f` in the segment's colouring space.
+    pub fn mix(&self, a: [f32; 4], b: [f32; 4], f: f32) -> [f32; 4] {
+        match self.coloring {
+            Coloring::Rgb => lerp4(a, b, f),
+            Coloring::HsvCcw | Coloring::HsvCw => {
+                let (ha, sa, va) = rgb_to_hsv(a);
+                let (hb, sb, vb) = rgb_to_hsv(b);
+                // Grey ends take the other end's hue so the turn is defined.
+                let ha = if sa < 1e-4 { hb } else { ha };
+                let hb = if sb < 1e-4 { ha } else { hb };
+                let mut d = hb - ha;
+                if self.coloring == Coloring::HsvCcw && d < 0.0 {
+                    d += 1.0;
+                }
+                if self.coloring == Coloring::HsvCw && d > 0.0 {
+                    d -= 1.0;
+                }
+                let h = (ha + d * f).rem_euclid(1.0);
+                let [r, g, bl] = hsv_to_rgb(h, sa + (sb - sa) * f, va + (vb - va) * f);
+                [r, g, bl, a[3] + (b[3] - a[3]) * f]
+            }
+        }
+    }
+
+    /// The segment the other way round (Flip).
+    pub fn flipped(&self) -> Segment {
+        Segment {
+            midpoint: 1.0 - self.midpoint,
+            blend: match self.blend {
+                Blend::SphericalIncreasing => Blend::SphericalDecreasing,
+                Blend::SphericalDecreasing => Blend::SphericalIncreasing,
+                b => b,
+            },
+            coloring: match self.coloring {
+                Coloring::HsvCcw => Coloring::HsvCw,
+                Coloring::HsvCw => Coloring::HsvCcw,
+                c => c,
+            },
+        }
+    }
+}
+
+fn rgb_to_hsv(c: [f32; 4]) -> (f32, f32, f32) {
+    let (r, g, b) = (c[0], c[1], c[2]);
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let d = max - min;
+    let v = max;
+    let s = if max > 1e-6 { d / max } else { 0.0 };
+    let h = if d < 1e-6 {
+        0.0
+    } else if max == r {
+        ((g - b) / d).rem_euclid(6.0) / 6.0
+    } else if max == g {
+        ((b - r) / d + 2.0) / 6.0
+    } else {
+        ((r - g) / d + 4.0) / 6.0
+    };
+    (h, s, v)
+}
+
+fn hsv_to_rgb(h: f32, s: f32, v: f32) -> [f32; 3] {
+    let h6 = h.rem_euclid(1.0) * 6.0;
+    let i = h6.floor();
+    let f = h6 - i;
+    let p = v * (1.0 - s);
+    let q = v * (1.0 - s * f);
+    let t = v * (1.0 - s * (1.0 - f));
+    match i as i32 {
+        0 => [v, t, p],
+        1 => [q, v, p],
+        2 => [p, v, t],
+        3 => [p, q, v],
+        4 => [t, p, v],
+        _ => [v, p, q],
+    }
 }
 
 impl Named for GradientPreset {
@@ -79,14 +280,32 @@ impl GradientPreset {
             name: name.into(),
             stops: colors.iter().enumerate().map(|(i, c)| (i as f32 / n as f32, StopColor::Rgb(hex(c)))).collect(),
             opacity: Vec::new(),
+            segments: Vec::new(),
         }
     }
     pub fn foreground_to_background() -> Self {
-        GradientPreset { name: "Foreground to Background".into(), stops: vec![(0.0, StopColor::Foreground), (1.0, StopColor::Background)], opacity: Vec::new() }
+        GradientPreset {
+            name: "Foreground to Background".into(),
+            stops: vec![(0.0, StopColor::Foreground), (1.0, StopColor::Background)],
+            opacity: Vec::new(),
+            segments: Vec::new(),
+        }
     }
 
-    /// RGBA stops for painting: colour and transparency stops merged (see [`apply_opacity`]).
-    pub fn resolve(&self, fg: [f32; 4], bg: [f32; 4]) -> Vec<(f32, [f32; 4])> {
+    /// The segment settings of the interval from stop `i` to stop `i + 1` (plain when unset).
+    pub fn segment(&self, i: usize) -> Segment {
+        self.segments.get(i).copied().unwrap_or_default()
+    }
+
+    /// Whether any segment blends other than plain linear RGB.
+    pub fn has_shaped_segments(&self) -> bool {
+        self.segments.iter().any(|s| !s.is_plain())
+    }
+
+    /// The sorted colour stops with the live colours resolved, and the shaped segments expanded
+    /// into dense sub-stops so a linear painter follows their curves (plain segments stay as
+    /// they are; a Step segment becomes two stops at its midpoint).
+    pub fn expanded_stops(&self, fg: [f32; 4], bg: [f32; 4]) -> Vec<(f32, [f32; 4])> {
         let rgb = |c: StopColor| match c {
             StopColor::Foreground => [fg[0], fg[1], fg[2], 1.0],
             StopColor::Background => [bg[0], bg[1], bg[2], 1.0],
@@ -97,6 +316,38 @@ impl GradientPreset {
         if cs.is_empty() {
             cs = vec![(0.0, [fg[0], fg[1], fg[2], 1.0]), (1.0, [bg[0], bg[1], bg[2], 1.0])];
         }
+        if !self.has_shaped_segments() {
+            return cs;
+        }
+        const SUBDIV: usize = 16;
+        let mut out = Vec::with_capacity(cs.len() * SUBDIV);
+        for (i, w) in cs.windows(2).enumerate() {
+            let ((t0, a), (t1, b)) = (w[0], w[1]);
+            let seg = self.segment(i);
+            out.push((t0, a));
+            if seg.is_plain() || t1 - t0 < 1e-6 {
+                continue;
+            }
+            if seg.blend == Blend::Step {
+                let tm = t0 + (t1 - t0) * seg.midpoint.clamp(0.001, 0.999);
+                out.push((tm - 1e-5, a));
+                out.push((tm, seg.mix(a, b, 1.0)));
+                continue;
+            }
+            for k in 1..SUBDIV {
+                let u = k as f32 / SUBDIV as f32;
+                out.push((t0 + (t1 - t0) * u, seg.mix(a, b, seg.factor(u))));
+            }
+        }
+        if let Some(last) = cs.last() {
+            out.push(*last);
+        }
+        out
+    }
+
+    /// RGBA stops for painting: colour and transparency stops merged (see [`apply_opacity`]).
+    pub fn resolve(&self, fg: [f32; 4], bg: [f32; 4]) -> Vec<(f32, [f32; 4])> {
+        let cs = self.expanded_stops(fg, bg);
         apply_opacity(cs, &self.opacity)
     }
 
@@ -137,7 +388,13 @@ impl GradientPreset {
             })
             .collect();
         let opacity: Vec<Value> = self.opacity.iter().map(|(t, a)| json!([t, (a * 100.0).round()])).collect();
-        json!({"name": self.name, "stops": stops, "transparency": opacity})
+        let segments: Vec<Value> = (0..self.stops.len().saturating_sub(1))
+            .map(|i| {
+                let s = self.segment(i);
+                json!({"midpoint": s.midpoint, "blend": s.blend.name(), "coloring": s.coloring.name()})
+            })
+            .collect();
+        json!({"name": self.name, "stops": stops, "transparency": opacity, "segments": segments})
     }
 
     /// Parse `{"stops":[[t,"#hex"|"foreground"|"background"],…],"transparency":[[t,0..100],…]}`.
@@ -163,7 +420,20 @@ impl GradientPreset {
             return Err(bad(cmd, "a gradient needs at least 2 colour stops"));
         }
         stops.sort_by(|a, b| a.0.total_cmp(&b.0));
-        GradientPreset { name: name.into(), stops, opacity: Vec::new() }.with_transparency(p, cmd)
+        GradientPreset { name: name.into(), stops, opacity: Vec::new(), segments: Vec::new() }.with_transparency(p, cmd)?.with_segments(p, cmd)
+    }
+
+    /// This gradient with its segments replaced by explicit `"segments"` (a list of
+    /// `{"midpoint","blend","coloring"}`), when `p` has them.
+    pub fn with_segments(mut self, p: &Value, cmd: &str) -> Result<Self> {
+        let Some(v) = p.get("segments") else { return Ok(self) };
+        let arr = v.as_array().ok_or_else(|| bad(cmd, "`segments` is [{midpoint, blend, coloring}, …]"))?;
+        let mut out = Vec::with_capacity(arr.len());
+        for s in arr {
+            out.push(segment_param(s, Segment::default(), cmd)?);
+        }
+        self.segments = out;
+        Ok(self)
     }
 
     /// This gradient with its transparency stops replaced by explicit `"transparency"` stops,
@@ -233,6 +503,7 @@ pub fn builtin() -> Vec<Group<GradientPreset>> {
         name: "Foreground to Transparent".into(),
         stops: vec![(0.0, StopColor::Foreground), (1.0, StopColor::Foreground)],
         opacity: vec![(0.0, 1.0), (1.0, 0.0)],
+        segments: Vec::new(),
     };
     // A smooth spectrum: 13 hues evenly spaced from red (0°) to magenta (300°). The pastel and
     // neon presets reuse the same hues at a different saturation/lightness, and Rainbow Fade
@@ -733,4 +1004,280 @@ pub fn specs() -> Vec<CommandSpec> {
             journal: true,
         },
     ]
+    .into_iter()
+    .chain(segment_specs())
+    .collect()
+}
+
+/// A `{"midpoint","blend","coloring"}` object over `base` (missing keys keep the base's values).
+fn segment_param(v: &Value, base: Segment, cmd: &str) -> Result<Segment> {
+    let mut seg = base;
+    if let Some(m) = v.get("midpoint").and_then(Value::as_f64) {
+        if !m.is_finite() {
+            return Err(bad(cmd, "midpoint must be a number 0..1"));
+        }
+        seg.midpoint = (m as f32).clamp(0.001, 0.999);
+    }
+    if let Some(b) = v.get("blend").and_then(Value::as_str) {
+        seg.blend = Blend::parse(b).ok_or_else(|| bad(cmd, format!("blend `{b}` (linear|curved|sinusoidal|sphericalIncreasing|sphericalDecreasing|step)")))?;
+    }
+    if let Some(c) = v.get("coloring").and_then(Value::as_str) {
+        seg.coloring = Coloring::parse(c).ok_or_else(|| bad(cmd, format!("coloring `{c}` (rgb|hsvCcw|hsvCw)")))?;
+    }
+    Ok(seg)
+}
+
+/// Where a segment edit lands: the named preset in its group, or the current gradient.
+fn edit_target(s: &mut Session, p: &Value, cmd: &str, f: impl FnOnce(&mut GradientPreset) -> Result<()>) -> Result<Value> {
+    if let Some(name) = str_param(p, "preset") {
+        let (gi, ii) = find(&s.presets.gradients, name, str_param(p, "group")).ok_or_else(|| bad(cmd, format!("no gradient preset \"{name}\"")))?;
+        f(&mut s.presets.gradients[gi].items[ii])?;
+        let g = s.presets.gradients[gi].items[ii].clone();
+        // The current gradient follows when it is this preset.
+        if s.presets.gradient.name == g.name {
+            s.presets.gradient = g.clone();
+        }
+        s.presets_changed();
+        return Ok(json!({"preset": g.to_json()}));
+    }
+    f(&mut s.presets.gradient)?;
+    s.presets_changed();
+    Ok(json!({"current": s.presets.gradient.to_json()}))
+}
+
+fn segment_index(g: &GradientPreset, p: &Value, cmd: &str) -> Result<usize> {
+    let n = g.stops.len().saturating_sub(1);
+    let i = p.get("index").and_then(Value::as_u64).ok_or_else(|| bad(cmd, "missing `index` (segment number, 0-based)"))? as usize;
+    if i >= n {
+        return Err(bad(cmd, format!("segment index {i} out of range (the gradient has {n} segments)")));
+    }
+    Ok(i)
+}
+
+fn sorted_stops(g: &mut GradientPreset) {
+    g.stops.sort_by(|a, b| a.0.total_cmp(&b.0));
+}
+
+fn segment_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "gradient.presets.segment";
+    edit_target(s, p, CMD, |g| {
+        sorted_stops(g);
+        let i = segment_index(g, p, CMD)?;
+        let seg = segment_param(p, g.segment(i), CMD)?;
+        while g.segments.len() <= i {
+            g.segments.push(Segment::default());
+        }
+        g.segments[i] = seg;
+        if g.segments.iter().all(Segment::is_plain) {
+            g.segments.clear();
+        }
+        Ok(())
+    })
+}
+
+/// Splits segment `index` at its midpoint: a new stop with the colour there, both halves keeping
+/// the segment's blending.
+fn split_segment(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "gradient.presets.splitSegment";
+    let (fg, bg) = (s.tools.foreground, s.tools.background);
+    edit_target(s, p, CMD, |g| {
+        sorted_stops(g);
+        let i = segment_index(g, p, CMD)?;
+        let seg = g.segment(i);
+        let (t0, t1) = (g.stops[i].0, g.stops[i + 1].0);
+        let tm = t0 + (t1 - t0) * seg.midpoint;
+        let cs = g.expanded_stops(fg, bg);
+        let c = sample(&cs, tm, lerp4).unwrap_or([0.0, 0.0, 0.0, 1.0]);
+        g.stops.insert(i + 1, (tm, StopColor::Rgb([c[0], c[1], c[2]])));
+        let mut segs: Vec<Segment> = (0..g.stops.len() - 2).map(|k| g.segment(k)).collect();
+        segs.insert(i + 1, Segment { midpoint: 0.5, ..seg });
+        segs[i] = Segment { midpoint: 0.5, ..seg };
+        g.segments = segs;
+        if g.segments.iter().all(Segment::is_plain) {
+            g.segments.clear();
+        }
+        Ok(())
+    })
+}
+
+/// Replicates segment `index` into `count` copies of itself squeezed into its span.
+fn replicate_segment(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "gradient.presets.replicate";
+    let count = p.get("count").and_then(Value::as_u64).unwrap_or(2).clamp(2, 32) as usize;
+    edit_target(s, p, CMD, |g| {
+        sorted_stops(g);
+        let i = segment_index(g, p, CMD)?;
+        let seg = g.segment(i);
+        let (t0, c0) = g.stops[i];
+        let (t1, c1) = g.stops[i + 1];
+        let mut segs: Vec<Segment> = (0..g.stops.len() - 1).map(|k| g.segment(k)).collect();
+        let mut new_stops = Vec::new();
+        let mut new_segs = Vec::new();
+        for k in 0..count {
+            let a = t0 + (t1 - t0) * k as f32 / count as f32;
+            new_stops.push((a, c0));
+            let b = t0 + (t1 - t0) * (k + 1) as f32 / count as f32;
+            if k + 1 < count {
+                // The copy ends on the right colour, and the next copy starts again on the left one.
+                new_stops.push((b - 1e-5, c1));
+                new_segs.push(seg);
+                new_segs.push(Segment { blend: Blend::Step, midpoint: 0.5, coloring: Coloring::Rgb });
+            } else {
+                new_segs.push(seg);
+            }
+        }
+        g.stops.splice(i..i + 1, new_stops);
+        segs.splice(i..i + 1, new_segs);
+        g.segments = segs;
+        Ok(())
+    })
+}
+
+/// Flips the gradient end to end: stops, transparency and segments reversed.
+fn flip(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "gradient.presets.flip";
+    edit_target(s, p, CMD, |g| {
+        sorted_stops(g);
+        let n = g.stops.len().saturating_sub(1);
+        let segs: Vec<Segment> = (0..n).map(|k| g.segment(k)).collect();
+        for st in &mut g.stops {
+            st.0 = 1.0 - st.0;
+        }
+        g.stops.reverse();
+        for o in &mut g.opacity {
+            o.0 = 1.0 - o.0;
+        }
+        g.opacity.reverse();
+        g.segments = segs.iter().rev().map(Segment::flipped).collect();
+        if g.segments.iter().all(Segment::is_plain) {
+            g.segments.clear();
+        }
+        Ok(())
+    })
+}
+
+/// The gradient as a POV-Ray `color_map` (the stops with their shaped segments expanded), for
+/// Save as POV-Ray.
+pub fn pov_ray(g: &GradientPreset, fg: [f32; 4], bg: [f32; 4]) -> String {
+    let stops = g.resolve(fg, bg);
+    let mut out = format!("/* {} */\ncolor_map {{\n", g.name.replace("*/", "* /"));
+    for (t, c) in stops {
+        out.push_str(&format!("    [{:.6} color rgbt <{:.6}, {:.6}, {:.6}, {:.6}>]\n", t, c[0], c[1], c[2], 1.0 - c[3]));
+    }
+    out.push_str("}\n");
+    out
+}
+
+fn export_pov(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "gradient.presets.exportPov";
+    let g = preset_param(s, p, CMD)?;
+    Ok(json!({"name": g.name, "pov": pov_ray(&g, s.tools.foreground, s.tools.background)}))
+}
+
+/// Segment editor commands (blending functions, colouring types, split, replicate, flip,
+/// POV-Ray export), added to [`specs`] by [`segment_specs`].
+pub fn segment_specs() -> Vec<CommandSpec> {
+    vec![
+        CommandSpec {
+            id: "gradient.presets.segment",
+            label: "Edit Gradient Segment",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"preset":name?=current,"group":name?,"index":segment number (0-based, between stops index and index+1),"midpoint":0..1?,"blend":"linear|curved|sinusoidal|sphericalIncreasing|sphericalDecreasing|step"?,"coloring":"rgb|hsvCcw|hsvCw"?} → {current|preset}"##,
+            enabled: always,
+            run: segment_cmd,
+            journal: true,
+        },
+        CommandSpec {
+            id: "gradient.presets.splitSegment",
+            label: "Split Gradient Segment",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"preset":name?=current,"index":segment number} (a new stop at the segment's midpoint) → {current|preset}"##,
+            enabled: always,
+            run: split_segment,
+            journal: true,
+        },
+        CommandSpec {
+            id: "gradient.presets.replicate",
+            label: "Replicate Gradient Segment",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"preset":name?=current,"index":segment number,"count":2..32=2} → {current|preset}"##,
+            enabled: always,
+            run: replicate_segment,
+            journal: true,
+        },
+        CommandSpec {
+            id: "gradient.presets.flip",
+            label: "Flip Gradient",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"preset":name?=current} → {current|preset}"##,
+            enabled: always,
+            run: flip,
+            journal: true,
+        },
+        CommandSpec {
+            id: "gradient.presets.exportPov",
+            label: "Save Gradient as POV-Ray",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"preset":name?=current} → {name, pov} (a POV-Ray color_map)"##,
+            enabled: always,
+            run: export_pov,
+            journal: false,
+        },
+    ]
+}
+
+#[cfg(test)]
+mod segment_tests {
+    use super::*;
+
+    #[test]
+    fn shaped_segments_expand_and_commands_edit_them() {
+        let mut s = Session::new();
+        s.execute("gradient.presets.select", json!({"stops": [[0.0, "#000000"], [1.0, "#ffffff"]]})).unwrap();
+        let plain = s.presets.gradient.resolve([0.0; 4], [1.0; 4]);
+        assert_eq!(plain.len(), 2);
+        let r = s.execute("gradient.presets.segment", json!({"index": 0, "blend": "sphericalIncreasing", "midpoint": 0.25})).unwrap();
+        assert_eq!(r["current"]["segments"][0]["blend"], "sphericalIncreasing");
+        let shaped = s.presets.gradient.resolve([0.0; 4], [1.0; 4]);
+        assert!(shaped.len() > 10);
+        // Spherical increasing rises fast: well past half at a quarter of the way.
+        let at = |t: f32| sample(&shaped, t, lerp4).unwrap()[0];
+        assert!(at(0.25) > 0.6, "{}", at(0.25));
+        s.execute("gradient.presets.segment", json!({"index": 0, "blend": "step", "midpoint": 0.5})).unwrap();
+        let step = s.presets.gradient.resolve([0.0; 4], [1.0; 4]);
+        let at = |t: f32| sample(&step, t, lerp4).unwrap()[0];
+        assert!(at(0.4) < 0.01 && at(0.6) > 0.99);
+        // Split makes three stops; flip reverses; replicate doubles.
+        s.execute("gradient.presets.segment", json!({"index": 0, "blend": "linear"})).unwrap();
+        s.execute("gradient.presets.splitSegment", json!({"index": 0})).unwrap();
+        assert_eq!(s.presets.gradient.stops.len(), 3);
+        s.execute("gradient.presets.flip", json!({})).unwrap();
+        assert_eq!(s.presets.gradient.stops[0].1, StopColor::Rgb([1.0, 1.0, 1.0]));
+        s.execute("gradient.presets.replicate", json!({"index": 0, "count": 2})).unwrap();
+        assert_eq!(s.presets.gradient.stops.len(), 5);
+        assert!(s.execute("gradient.presets.segment", json!({"index": 9, "blend": "linear"})).is_err());
+        let pov = s.execute("gradient.presets.exportPov", json!({})).unwrap();
+        assert!(pov["pov"].as_str().unwrap().starts_with("/* "));
+        assert!(pov["pov"].as_str().unwrap().contains("color_map {"));
+    }
+
+    #[test]
+    fn hsv_coloring_turns_the_hue_the_asked_way() {
+        let seg = Segment { coloring: Coloring::HsvCcw, ..Segment::default() };
+        let red = [1.0, 0.0, 0.0, 1.0];
+        let blue = [0.0, 0.0, 1.0, 1.0];
+        let mid = seg.mix(red, blue, 0.5);
+        // Counter-clockwise from red (0°) to blue (240°) passes green (120°).
+        assert!(mid[1] > 0.9 && mid[0] < 0.1 && mid[2] < 0.1, "{mid:?}");
+        let cw = Segment { coloring: Coloring::HsvCw, ..Segment::default() }.mix(red, blue, 0.5);
+        // Clockwise passes magenta (300°).
+        assert!(cw[0] > 0.9 && cw[2] > 0.9 && cw[1] < 0.1, "{cw:?}");
+        assert!((Segment::default().factor(0.3) - 0.3).abs() < 1e-6);
+        assert!((Segment { midpoint: 0.25, ..Segment::default() }.factor(0.25) - 0.5).abs() < 1e-6);
+    }
 }

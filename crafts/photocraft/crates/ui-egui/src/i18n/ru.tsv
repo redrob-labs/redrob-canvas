@@ -3555,3 +3555,18 @@ curves	Smooth	Сгладить
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Трансформация клеткой: щёлкайте вокруг деформируемой части, щёлкните первую точку, чтобы замкнуть клетку, затем перетаскивайте точки
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Трансформация по рукояткам: поставьте от одной до четырёх рукояток и тяните (одна двигает, две вращают и масштабируют, три наклоняют, четыре дают перспективу)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-трансформация: тяните для поворота вокруг X и Y, Alt — вокруг Z; вкладки Переместить и Камера двигают слой и камеру
+	Segment {n}	Сегмент {n}
+	Blending:	Переход:
+	Coloring:	Окрашивание:
+	Midpoint:	Средняя точка:
+	Sinusoidal	Синусоидальный
+	Spherical (increasing)	Сферический (возрастающий)
+	Spherical (decreasing)	Сферический (убывающий)
+	Step	Ступенька
+	HSV (counter-clockwise)	HSV (против часовой)
+	HSV (clockwise)	HSV (по часовой)
+	Replicate	Размножить
+	Split the segment at its midpoint	Разделить сегмент в средней точке
+	Replace the segment with two copies of itself	Заменить сегмент двумя его копиями
+	Flip the whole gradient end to end	Перевернуть весь градиент
+	Save as POV-Ray…	Сохранить как POV-Ray…

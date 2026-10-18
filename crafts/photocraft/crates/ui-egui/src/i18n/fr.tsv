@@ -3589,3 +3589,18 @@ curves	Smooth	Lisser
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformation par cage : cliquez autour de la partie à déformer, cliquez sur le premier point pour fermer la cage, puis faites glisser ses points
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformation par poignées : placez une à quatre poignées et faites-les glisser (une déplace, deux tournent et redimensionnent, trois inclinent, quatre donnent une perspective)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformation 3D : faites glisser pour tourner autour de X et Y, Alt pour Z ; les onglets Déplacer et Caméra déplacent le calque et la caméra
+	Segment {n}	Segment {n}
+	Blending:	Fondu :
+	Coloring:	Coloration :
+	Midpoint:	Point médian :
+	Sinusoidal	Sinusoïdal
+	Spherical (increasing)	Sphérique (croissant)
+	Spherical (decreasing)	Sphérique (décroissant)
+	Step	Palier
+	HSV (counter-clockwise)	TSV (sens antihoraire)
+	HSV (clockwise)	TSV (sens horaire)
+	Replicate	Répliquer
+	Split the segment at its midpoint	Scinde le segment en son point médian
+	Replace the segment with two copies of itself	Remplace le segment par deux copies de lui-même
+	Flip the whole gradient end to end	Retourne tout le dégradé
+	Save as POV-Ray…	Enregistrer en POV-Ray…

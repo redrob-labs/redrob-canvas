@@ -4367,3 +4367,18 @@ layerLabel	No Color	Sem cor
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformação por gaiola: clique ao redor da parte a deformar, clique no primeiro ponto para fechar a gaiola e arraste seus pontos
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformação por alças: coloque de uma a quatro alças e arraste (uma move, duas giram e redimensionam, três inclinam, quatro dão perspectiva)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformação 3D: arraste para girar em X e Y, Alt-arraste em Z; as abas Mover e Câmera movem a camada e a câmera
+	Segment {n}	Segmento {n}
+	Blending:	Mistura:
+	Coloring:	Coloração:
+	Midpoint:	Ponto médio:
+	Sinusoidal	Senoidal
+	Spherical (increasing)	Esférico (crescente)
+	Spherical (decreasing)	Esférico (decrescente)
+	Step	Degrau
+	HSV (counter-clockwise)	HSV (anti-horário)
+	HSV (clockwise)	HSV (horário)
+	Replicate	Replicar
+	Split the segment at its midpoint	Divide o segmento no seu ponto médio
+	Replace the segment with two copies of itself	Substitui o segmento por duas cópias dele
+	Flip the whole gradient end to end	Inverte todo o degradê
+	Save as POV-Ray…	Salvar como POV-Ray…

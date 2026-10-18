@@ -3208,3 +3208,19 @@ curves	Smooth	平滑
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	笼子变换：围绕要变形的部分单击，单击第一个点闭合笼子，然后拖动其点
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	手柄变换：放置一到四个手柄并拖动（一个移动，两个旋转缩放，三个倾斜，四个透视）
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 变换：拖动绕 X 和 Y 旋转，Alt 拖动绕 Z 旋转；移动和相机选项卡移动图层和相机
+	Segment {n}	段 {n}
+	Blending:	混合：
+	Coloring:	着色：
+	Midpoint:	中点：
+	Sinusoidal	正弦
+	Spherical (increasing)	球面（递增）
+	Spherical (decreasing)	球面（递减）
+	Step	阶跃
+	RGB	RGB
+	HSV (counter-clockwise)	HSV（逆时针）
+	HSV (clockwise)	HSV（顺时针）
+	Replicate	复制
+	Split the segment at its midpoint	在中点处拆分该段
+	Replace the segment with two copies of itself	用该段的两个副本替换它
+	Flip the whole gradient end to end	将整个渐变首尾翻转
+	Save as POV-Ray…	存储为 POV-Ray…

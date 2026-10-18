@@ -5040,3 +5040,17 @@ shape	Appearance	Aspetto
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Trasformazione a gabbia: clicca intorno alla parte da deformare, clicca il primo punto per chiudere la gabbia, poi trascina i punti
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Trasformazione con maniglie: posiziona da una a quattro maniglie e trascinale (una sposta, due ruotano e scalano, tre inclinano, quattro danno prospettiva)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Trasformazione 3D: trascina per ruotare su X e Y, Alt-trascina su Z; le schede Sposta e Fotocamera muovono livello e fotocamera
+	Segment {n}	Segmento {n}
+	Blending:	Fusione:
+	Coloring:	Colorazione:
+	Midpoint:	Punto medio:
+	Spherical (increasing)	Sferico (crescente)
+	Spherical (decreasing)	Sferico (decrescente)
+	Step	Gradino
+	HSV (counter-clockwise)	HSV (antiorario)
+	HSV (clockwise)	HSV (orario)
+	Replicate	Replica
+	Split the segment at its midpoint	Divide il segmento nel suo punto medio
+	Replace the segment with two copies of itself	Sostituisce il segmento con due copie di se stesso
+	Flip the whole gradient end to end	Capovolge l'intero gradiente
+	Save as POV-Ray…	Salva come POV-Ray…

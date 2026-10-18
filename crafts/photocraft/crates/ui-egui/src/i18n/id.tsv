@@ -3576,3 +3576,18 @@ curves	Smooth	Haluskan
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformasi kurungan: klik di sekeliling bagian yang akan dideformasi, klik titik pertama untuk menutup kurungan, lalu seret titiknya
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformasi pegangan: tempatkan satu sampai empat pegangan dan seret (satu memindahkan, dua memutar dan menskalakan, tiga mencondongkan, empat memberi perspektif)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformasi 3D: seret untuk memutar pada X dan Y, Alt-seret pada Z; tab Pindah dan Kamera memindahkan lapisan dan kamera
+	Segment {n}	Segmen {n}
+	Blending:	Pencampuran:
+	Coloring:	Pewarnaan:
+	Midpoint:	Titik tengah:
+	Sinusoidal	Sinusoidal
+	Spherical (increasing)	Sferis (meningkat)
+	Spherical (decreasing)	Sferis (menurun)
+	Step	Tangga
+	HSV (counter-clockwise)	HSV (berlawanan jarum jam)
+	HSV (clockwise)	HSV (searah jarum jam)
+	Replicate	Replikasi
+	Split the segment at its midpoint	Bagi segmen di titik tengahnya
+	Replace the segment with two copies of itself	Ganti segmen dengan dua salinan dirinya
+	Flip the whole gradient end to end	Balik seluruh gradien
+	Save as POV-Ray…	Simpan sebagai POV-Ray…

@@ -4307,3 +4307,18 @@ cameraData	Lens	Lens
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Kafes Dönüşümü: biçimi değiştirilecek bölümün etrafına tıklayın, kafesi kapatmak için ilk noktaya tıklayın, sonra noktaları sürükleyin
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Tutamaç Dönüşümü: bir ila dört tutamaç yerleştirip sürükleyin (biri taşır, ikisi döndürür ve ölçekler, üçü kaydırır, dördü perspektif verir)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3B Dönüşüm: X ve Y etrafında döndürmek için sürükleyin, Z için Alt ile sürükleyin; Taşı ve Kamera sekmeleri katmanı ve kamerayı taşır
+	Segment {n}	Parça {n}
+	Blending:	Karışım:
+	Coloring:	Renklendirme:
+	Midpoint:	Orta nokta:
+	Sinusoidal	Sinüzoidal
+	Spherical (increasing)	Küresel (artan)
+	Spherical (decreasing)	Küresel (azalan)
+	Step	Basamak
+	HSV (counter-clockwise)	HSV (saat yönünün tersi)
+	HSV (clockwise)	HSV (saat yönünde)
+	Replicate	Çoğalt
+	Split the segment at its midpoint	Parçayı orta noktasından böl
+	Replace the segment with two copies of itself	Parçayı kendisinin iki kopyasıyla değiştir
+	Flip the whole gradient end to end	Tüm gradyanı uçtan uca çevir
+	Save as POV-Ray…	POV-Ray olarak kaydet…

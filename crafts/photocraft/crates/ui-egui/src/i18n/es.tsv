@@ -4882,3 +4882,17 @@ navigator	Zoom	Zoom
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformación de jaula: haga clic alrededor de la parte a deformar, haga clic en el primer punto para cerrar la jaula y arrastre sus puntos
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformación por tiradores: coloque de uno a cuatro tiradores y arrástrelos (uno mueve, dos rotan y escalan, tres sesgan, cuatro dan perspectiva)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformación 3D: arrastre para rotar en X e Y, Alt-arrastre en Z; las pestañas Mover y Cámara mueven la capa y la cámara
+	Segment {n}	Segmento {n}
+	Blending:	Mezcla:
+	Coloring:	Coloración:
+	Midpoint:	Punto medio:
+	Spherical (increasing)	Esférico (creciente)
+	Spherical (decreasing)	Esférico (decreciente)
+	Step	Escalón
+	HSV (counter-clockwise)	HSV (antihorario)
+	HSV (clockwise)	HSV (horario)
+	Replicate	Replicar
+	Split the segment at its midpoint	Divide el segmento en su punto medio
+	Replace the segment with two copies of itself	Sustituye el segmento por dos copias de sí mismo
+	Flip the whole gradient end to end	Invierte todo el degradado de extremo a extremo
+	Save as POV-Ray…	Guardar como POV-Ray…

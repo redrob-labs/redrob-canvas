@@ -4176,3 +4176,18 @@ curves	Smooth	Wygładź
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Przekształcenie klatką: klikaj wokół części do zdeformowania, kliknij pierwszy punkt, aby zamknąć klatkę, a potem przeciągaj punkty
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Przekształcenie uchwytami: umieść od jednego do czterech uchwytów i przeciągaj (jeden przesuwa, dwa obracają i skalują, trzy pochylają, cztery dają perspektywę)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Przekształcenie 3D: przeciągaj, aby obracać wokół X i Y, z Alt wokół Z; karty Przesuń i Kamera przesuwają warstwę i kamerę
+	Segment {n}	Segment {n}
+	Blending:	Przejście:
+	Coloring:	Kolorowanie:
+	Midpoint:	Punkt środkowy:
+	Sinusoidal	Sinusoidalny
+	Spherical (increasing)	Sferyczny (rosnący)
+	Spherical (decreasing)	Sferyczny (malejący)
+	Step	Skok
+	HSV (counter-clockwise)	HSV (przeciwnie do wskazówek)
+	HSV (clockwise)	HSV (zgodnie ze wskazówkami)
+	Replicate	Powiel
+	Split the segment at its midpoint	Dzieli segment w punkcie środkowym
+	Replace the segment with two copies of itself	Zastępuje segment dwoma jego kopiami
+	Flip the whole gradient end to end	Odwraca cały gradient
+	Save as POV-Ray…	Zapisz jako POV-Ray…

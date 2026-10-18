@@ -4337,3 +4337,18 @@ curves	Smooth	Vloeiend maken
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Kooitransformatie: klik rond het te vervormen deel, klik op het eerste punt om de kooi te sluiten en sleep dan de punten
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Handgreeptransformatie: plaats een tot vier handgrepen en sleep ze (één verplaatst, twee roteren en schalen, drie scheren, vier geven perspectief)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-transformatie: sleep om rond X en Y te roteren, Alt-slepen rond Z; de tabs Verplaatsen en Camera verplaatsen laag en camera
+	Segment {n}	Segment {n}
+	Blending:	Overgang:
+	Coloring:	Kleuring:
+	Midpoint:	Middelpunt:
+	Sinusoidal	Sinusvormig
+	Spherical (increasing)	Sferisch (toenemend)
+	Spherical (decreasing)	Sferisch (afnemend)
+	Step	Stap
+	HSV (counter-clockwise)	HSV (linksom)
+	HSV (clockwise)	HSV (rechtsom)
+	Replicate	Repliceren
+	Split the segment at its midpoint	Splitst het segment op het middelpunt
+	Replace the segment with two copies of itself	Vervangt het segment door twee kopieën van zichzelf
+	Flip the whole gradient end to end	Keert het hele verloop om
+	Save as POV-Ray…	Opslaan als POV-Ray…

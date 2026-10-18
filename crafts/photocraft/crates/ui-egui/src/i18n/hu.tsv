@@ -4492,3 +4492,18 @@ cameraRaw	Yellow	Sárga
 	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Ketreces átalakítás: kattintson a torzítandó rész köré, az első pontra kattintva zárja be, majd húzza a pontokat
 	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Fogantyús átalakítás: tegyen le egy-négy fogantyút és húzza őket (egy mozgat, kettő forgat és méretez, három nyír, négy perspektívát ad)
 	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D átalakítás: húzással X és Y körül forgat, Alt-húzással Z körül; a Mozgatás és Kamera lapok a réteget és a kamerát mozgatják
+	Segment {n}	{n}. szakasz
+	Blending:	Átmenet:
+	Coloring:	Színezés:
+	Midpoint:	Középpont:
+	Sinusoidal	Szinuszos
+	Spherical (increasing)	Gömbi (növekvő)
+	Spherical (decreasing)	Gömbi (csökkenő)
+	Step	Lépcső
+	HSV (counter-clockwise)	HSV (óramutatóval ellentétes)
+	HSV (clockwise)	HSV (óramutató irányába)
+	Replicate	Megkettőzés
+	Split the segment at its midpoint	A szakaszt a középpontjánál osztja
+	Replace the segment with two copies of itself	A szakaszt két másolatával helyettesíti
+	Flip the whole gradient end to end	Az egész színátmenetet megfordítja
+	Save as POV-Ray…	Mentés POV-Ray-ként…
