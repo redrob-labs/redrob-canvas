@@ -20,6 +20,7 @@ pub mod atn_cmds;
 pub mod automate_cmds;
 pub mod background_cmds;
 pub mod brush_cmds;
+pub mod brush_engine_cmds;
 pub mod brush_key_cmds;
 pub mod brush_preset_cmds;
 pub mod build_info;

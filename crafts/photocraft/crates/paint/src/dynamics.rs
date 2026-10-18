@@ -6,7 +6,7 @@
 
 use redrob_photo_geom::Point;
 
-use crate::brush::{BrushSettings, Control, Dynamic, HoseSelection, ImageHose, SensorCombine, Smoothing};
+use crate::brush::{BrushSettings, ColorSource, Control, Dynamic, HoseSelection, ImageHose, SensorCombine, Smoothing};
 use crate::rng::{rand_signed, rand01, stream};
 use crate::{Dab, StrokePoint};
 
@@ -624,10 +624,31 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> [f32; 3] {
 /// Colour Dynamics for one dab (or once per stroke, with `index = 0`).
 pub fn dynamic_color(b: &BrushSettings, s: &StepInput, seed: u64, index: u64) -> [f32; 4] {
     let cd = &b.color_dynamics;
-    let (fg, bg) = (b.color, b.background);
     let r = |st: u64| rand01(seed, index, st);
+    // The base colour: foreground, background, a gradient position or a random colour.
+    let (fg, bg) = match cd.source {
+        ColorSource::Foreground => (b.color, b.background),
+        ColorSource::Background => (b.background, b.color),
+        ColorSource::Gradient => {
+            let pos = if cd.gradient_dynamic.is_active() {
+                dynamic_value_rnd(&cd.gradient_dynamic, s, r(stream::GRADIENT))
+            } else {
+                let n = u64::from(cd.gradient_steps.max(1));
+                (index % n) as f32 / (n - 1).max(1) as f32
+            };
+            (crate::brush::gradient_at(&cd.gradient, b.color, b.background, pos), b.background)
+        }
+        ColorSource::Random => {
+            let o = hsv_to_rgb(r(stream::RANDOM_COLOR), 1.0, 1.0);
+            ([o[0], o[1], o[2], b.color[3]], b.background)
+        }
+    };
     let base = if cd.fg_bg.control != Control::Off || cd.fg_bg.has_sensors() { 1.0 - dynamic_value_rnd(&cd.fg_bg, s, r(stream::RANDOM)) } else { 0.0 };
-    let t = (base + (1.0 - base) * cd.fg_bg.jitter.clamp(0.0, 1.0) * r(stream::FG_BG)).clamp(0.0, 1.0);
+    let mut t = (base + (1.0 - base) * cd.fg_bg.jitter.clamp(0.0, 1.0) * r(stream::FG_BG)).clamp(0.0, 1.0);
+    // Sensor-driven mix: the control's value is the background's share.
+    if cd.mix.is_active() {
+        t = (t + dynamic_value_rnd(&cd.mix, s, r(stream::MIX_COLOR))).clamp(0.0, 1.0);
+    }
     let rgb = [fg[0] + (bg[0] - fg[0]) * t, fg[1] + (bg[1] - fg[1]) * t, fg[2] + (bg[2] - fg[2]) * t];
     let [mut h, mut sat, mut v] = rgb_to_hsv(rgb);
     h += rand_signed(seed, index, stream::HUE) * cd.hue_jitter.clamp(0.0, 1.0) * 0.5;
@@ -635,6 +656,19 @@ pub fn dynamic_color(b: &BrushSettings, s: &StepInput, seed: u64, index: u64) ->
     let pu = cd.purity.clamp(-1.0, 1.0);
     sat = if pu >= 0.0 { sat + (1.0 - sat) * pu } else { sat * (1.0 + pu) };
     v = (v + rand_signed(seed, index, stream::BRIGHT) * cd.brightness_jitter.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+    // Sensor-driven hue, saturation, value and darken (per dab, from pressure, tilt, speed…).
+    if cd.hue.is_active() {
+        h += (dynamic_value_rnd(&cd.hue, s, r(stream::SENSOR_HUE)) - 0.5) * cd.hue_amount.clamp(0.0, 1.0);
+    }
+    if cd.saturation.is_active() {
+        sat = (sat + (dynamic_value_rnd(&cd.saturation, s, r(stream::SENSOR_SAT)) - 0.5) * 2.0 * cd.saturation_amount.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+    }
+    if cd.value.is_active() {
+        v = (v + (dynamic_value_rnd(&cd.value, s, r(stream::SENSOR_VALUE)) - 0.5) * 2.0 * cd.value_amount.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+    }
+    if cd.darken.is_active() {
+        v *= (1.0 - cd.darken_amount.clamp(0.0, 1.0) * dynamic_value_rnd(&cd.darken, s, r(stream::DARKEN))).clamp(0.0, 1.0);
+    }
     let o = hsv_to_rgb(h, sat, v);
     [o[0], o[1], o[2], fg[3] + (bg[3] - fg[3]) * t]
 }

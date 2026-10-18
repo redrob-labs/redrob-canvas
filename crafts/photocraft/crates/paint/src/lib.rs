@@ -24,6 +24,7 @@ pub mod brush;
 pub mod curve;
 pub mod dynamics;
 pub mod dynamics_preset;
+pub mod engines;
 pub mod mixer;
 pub mod outline;
 pub mod presets;
@@ -36,12 +37,13 @@ pub mod symmetry;
 pub mod tile;
 
 pub use brush::{
-    BrushPreset, BrushSettings, ColorDynamics, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, HoseDimension, HoseSelection, ImageHose,
-    MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering, SectionLocks, Sensor,
-    SensorCombine, ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
+    BrushPreset, BrushSettings, ColorDynamics, ColorSource, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, GradientStop, HoseDimension,
+    HoseSelection, ImageHose, MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering,
+    SectionLocks, Sensor, SensorCombine, ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
 };
 pub use curve::ResponseCurve;
 pub use dynamics_preset::{DynInput, DynOutput, DynamicsPreset, DynamicsRow};
+pub use engines::EngineSettings;
 pub use mixer::MixerSettings;
 pub use render::{BrushContext, StrokeRenderer, UnionLive, grid_center, grid_square, render_stroke};
 pub use tile::{GrayTile, StoredTile};
