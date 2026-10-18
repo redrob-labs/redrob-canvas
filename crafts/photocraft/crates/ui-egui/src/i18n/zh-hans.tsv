@@ -3257,3 +3257,6 @@ curves	Smooth	平滑
 	Enclose and Fill Tool	包围填充工具
 	Colorize Mask Tool	着色蒙版工具
 	Reference Images Tool	参考图像工具
+	Alternating	交替
+	Forward	正向
+	Shaped Gradient (follows the selection)	形状渐变（跟随选区）

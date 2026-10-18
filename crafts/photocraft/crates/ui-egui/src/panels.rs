@@ -1345,6 +1345,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             ("conicalSymmetric", "cone", tl!("Conical Gradient (symmetric)")),
                             ("spiralClockwise", "shell", tl!("Spiral Gradient (clockwise)")),
                             ("spiralCounterClockwise", "rotate-ccw", tl!("Spiral Gradient (counter-clockwise)")),
+                            ("shaped", "lasso-select", tl!("Shaped Gradient (follows the selection)")),
                         ] {
                             if icons::button(ui, icon, 24.0, app.ui.tool_options.gradient_style == style, tip).clicked() {
                                 app.ui.tool_options.gradient_style = style.into();
@@ -1375,6 +1376,14 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         }
                         widgets::checkbox(ui, &mut app.ui.tool_options.gradient_reverse, tl!("Reverse"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.gradient_dither, tl!("Dither"));
+                        if app.ui.tool_options.gradient_classic {
+                            opt_label(ui, tl!("Repeat"));
+                            if app.ui.tool_options.gradient_repeat.is_empty() {
+                                app.ui.tool_options.gradient_repeat = "none".into();
+                            }
+                            let repeats = [("none".to_string(), tl!("None")), ("forward".to_string(), tl!("Forward")), ("alternating".to_string(), tl!("Alternating"))];
+                            widgets::dropdown_literal(ui, "gradient-repeat", &mut app.ui.tool_options.gradient_repeat, &repeats, 100.0);
+                        }
                         // Live mode: the options also change a selected gradient fill layer.
                         crate::gradient_ui::options_changed(app, &before);
                     }

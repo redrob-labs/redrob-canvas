@@ -42,6 +42,7 @@ mod extra;
 mod extra2;
 pub mod features;
 pub mod fill_regions;
+pub mod gradient_ext;
 mod fxutil;
 mod gallery;
 mod gen_fractal;

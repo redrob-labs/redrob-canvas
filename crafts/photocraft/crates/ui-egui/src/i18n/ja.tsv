@@ -4304,3 +4304,6 @@ curves	Smooth	スムーズ
 	Enclose and Fill Tool	囲んで塗りつぶしツール
 	Colorize Mask Tool	カラライズマスクツール
 	Reference Images Tool	参照画像ツール
+	Alternating	交互
+	Forward	順方向
+	Shaped Gradient (follows the selection)	シェイプグラデーション (選択範囲に沿う)

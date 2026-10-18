@@ -339,16 +339,25 @@ fn enclose_fill(s: &mut Session, p: &Value) -> Result<Value> {
 fn gradient(s: &mut Session, p: &Value) -> Result<Value> {
     let from = point(p, "from").ok_or_else(|| EngineError::BadParams { cmd: "paint.gradient".into(), msg: "missing from".into() })?;
     let to = point(p, "to").ok_or_else(|| EngineError::BadParams { cmd: "paint.gradient".into(), msg: "missing to".into() })?;
-    let shape = match p.get("style").and_then(Value::as_str).unwrap_or("linear") {
-        "radial" => GradientShape::Radial,
-        "angle" => GradientShape::Angle,
-        "reflected" => GradientShape::Reflected,
-        "diamond" => GradientShape::Diamond,
-        "square" => GradientShape::Square,
-        "conicalSymmetric" => GradientShape::ConicalSymmetric,
-        "spiralClockwise" => GradientShape::SpiralClockwise,
-        "spiralCounterClockwise" => GradientShape::SpiralCounterClockwise,
-        _ => GradientShape::Linear,
+    // `shaped` follows the selection's outline instead of the drag (`None` shape below).
+    let style = p.get("style").and_then(Value::as_str).unwrap_or("linear");
+    let shape = match style {
+        "radial" => Some(GradientShape::Radial),
+        "angle" => Some(GradientShape::Angle),
+        "reflected" => Some(GradientShape::Reflected),
+        "diamond" => Some(GradientShape::Diamond),
+        "square" => Some(GradientShape::Square),
+        "conicalSymmetric" => Some(GradientShape::ConicalSymmetric),
+        "spiralClockwise" => Some(GradientShape::SpiralClockwise),
+        "spiralCounterClockwise" => Some(GradientShape::SpiralCounterClockwise),
+        "shaped" => None,
+        _ => Some(GradientShape::Linear),
+    };
+    let repeat = match p.get("repeat") {
+        None | Some(Value::Null) => redrob_photo_algo::gradient_ext::GradientRepeat::None,
+        Some(Value::String(r)) => redrob_photo_algo::gradient_ext::GradientRepeat::from_name(r)
+            .ok_or_else(|| EngineError::BadParams { cmd: "paint.gradient".into(), msg: format!("unknown repeat `{r}` (want none|forward|alternating)") })?,
+        Some(v) => return Err(EngineError::BadParams { cmd: "paint.gradient".into(), msg: format!("`repeat` must be none|forward|alternating, not {v}") }),
     };
     let (fg, bg) = (s.tools.foreground, s.tools.background);
     // A preset (`gradient`), explicit `stops`, or the current gradient (Gradients panel); the
@@ -388,7 +397,17 @@ fn gradient(s: &mut Session, p: &Value) -> Result<Value> {
         let sel = doc.selection.clone();
         let area = sel.as_ref().map(|m| m.content_bounds()).filter(|r| !r.is_empty()).unwrap_or_else(|| doc.bounds()).intersect(&doc.bounds());
         let (surf, lock) = crate::channel_cmds::target_surface(doc, *active, p)?;
-        paint_gradient(surf, area, from, to, shape, &stops, reverse, opacity, blend, dither, sel.as_ref(), lock);
+        match shape {
+            Some(shape) if repeat == redrob_photo_algo::gradient_ext::GradientRepeat::None => {
+                paint_gradient(surf, area, from, to, shape, &stops, reverse, opacity, blend, dither, sel.as_ref(), lock);
+            }
+            shape => {
+                let field = shape.is_none().then(|| redrob_photo_algo::gradient_ext::ShapedField::from_selection(sel.as_ref(), area));
+                let color =
+                    |x: i32, y: i32| redrob_photo_algo::gradient_ext::tool_color(shape, field.as_ref(), from, to, x, y, &stops, repeat, reverse, dither);
+                redrob_photo_algo::gradient_ext::paint_gradient_colors(surf, area, color, opacity, blend, sel.as_ref(), lock);
+            }
+        }
         Ok(())
     })?;
     Ok(Value::Null)
@@ -432,7 +451,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Gradient",
             menu: &[],
             shortcut: None,
-            params: r##"{"from":[x,y],"to":[x,y],"style":"linear|radial|angle|reflected|diamond|square|conicalSymmetric|spiralClockwise|spiralCounterClockwise"="linear","colors":["#rrggbb",…]? (evenly spaced),"gradient":preset name?,"stops":[[t,"#rrggbb"|"foreground"|"background"],…]?,"transparency":[[t,0..100],…]? (default: the current gradient, see gradient.presets.select),"method":"classic|perceptual|linear|smooth"? (Photoshop's interpolation; omitted: straight stops),"smoothness":0..100=100,"reverse":bool=false,"dither":bool=true,"opacity":1..100=100,"mode":"normal|multiply|…"="normal","target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
+            params: r##"{"from":[x,y],"to":[x,y],"style":"linear|radial|angle|reflected|diamond|square|conicalSymmetric|spiralClockwise|spiralCounterClockwise|shaped (follows the selection's outline)"="linear","repeat":"none|forward|alternating"="none","colors":["#rrggbb",…]? (evenly spaced),"gradient":preset name?,"stops":[[t,"#rrggbb"|"foreground"|"background"],…]?,"transparency":[[t,0..100],…]? (default: the current gradient, see gradient.presets.select),"method":"classic|perceptual|linear|smooth"? (Photoshop's interpolation; omitted: straight stops),"smoothness":0..100=100,"reverse":bool=false,"dither":bool=true,"opacity":1..100=100,"mode":"normal|multiply|…"="normal","target":"pixels"|"mask"|"quickMask"|{"channel":i}=Channels panel target}"##,
             enabled: crate::commands::has_paintable,
             run: gradient,
             journal: true,
@@ -745,6 +764,28 @@ mod tests {
             s.execute(cmd, grey_fill(cmd, Value::Null)).unwrap();
             assert!((px(&s, 5, 5)[0] - 128.0 / 255.0).abs() < 0.01, "{cmd}: null opacity is 100%");
         }
+    }
+
+    #[test]
+    fn gradient_repeat_modes_and_shaped_gradient() {
+        let mut s = session();
+        // Forward repeat over a 5 px drag: the colour at x = 7.5 equals the one at x = 2.5.
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "colors": ["#000000", "#ffffff"], "repeat": "forward", "dither": false})).unwrap();
+        let (a, b) = (px(&s, 2, 0), px(&s, 7, 0));
+        assert!((a[0] - b[0]).abs() < 0.02, "{a:?} {b:?}");
+        assert!(px(&s, 4, 0)[0] > 0.8 && px(&s, 5, 0)[0] < 0.2, "the sawtooth restarts");
+        s.execute("edit.undo", json!({})).unwrap();
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "colors": ["#000000", "#ffffff"], "repeat": "alternating", "dither": false})).unwrap();
+        assert!(px(&s, 9, 0)[0] < 0.2 && px(&s, 5, 0)[0] > 0.8, "the triangle wave turns back");
+        s.execute("edit.undo", json!({})).unwrap();
+        assert!(s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "repeat": "bounce"})).is_err());
+        // Shaped: inside a rectangular selection the edge is the first colour, the middle the last.
+        s.execute("select.rect", json!({"x": 2, "y": 1, "width": 11, "height": 7})).unwrap();
+        s.execute("paint.gradient", json!({"from": [0, 0], "to": [5, 0], "style": "shaped", "colors": ["#ff0000", "#0000ff"], "dither": false})).unwrap();
+        let (edge, middle, outside) = (px(&s, 2, 4), px(&s, 7, 4), px(&s, 0, 4));
+        assert!(edge[0] > 0.9 && edge[2] < 0.1, "{edge:?}");
+        assert!(middle[2] > 0.9 && middle[0] < 0.1, "{middle:?}");
+        assert_eq!(outside[3], 0.0);
     }
 
     #[test]

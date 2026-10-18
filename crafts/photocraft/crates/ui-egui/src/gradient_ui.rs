@@ -130,7 +130,7 @@ fn edited_fill(app: &PhotocraftApp, layer: &Layer, canvas: Rect32, cmd: &str, p:
 /// Styles only the classic (pixel) gradient has: a Gradient Fill layer knows the five Photoshop
 /// styles, so these cannot become a live gradient.
 pub fn classic_only_style(style: &str) -> bool {
-    matches!(style, "square" | "conicalSymmetric" | "spiralClockwise" | "spiralCounterClockwise")
+    matches!(style, "square" | "conicalSymmetric" | "spiralClockwise" | "spiralCounterClockwise" | "shaped")
 }
 
 /// Options-bar params of a new live gradient.

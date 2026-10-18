@@ -858,6 +858,9 @@ pub struct ToolOptions {
     pub enclose_exclude_color_on: bool,
     #[serde(default)]
     pub enclose_exclude_color: [f32; 3],
+    /// Gradient tool (classic) › Repeat: none | forward | alternating.
+    #[serde(default)]
+    pub gradient_repeat: String,
 }
 
 fn thousand() -> f32 {
@@ -1079,6 +1082,7 @@ impl Default for ToolOptions {
             enclose_exclude_transparent: false,
             enclose_exclude_color_on: false,
             enclose_exclude_color: [1.0, 1.0, 1.0],
+            gradient_repeat: String::new(),
         }
     }
 }
