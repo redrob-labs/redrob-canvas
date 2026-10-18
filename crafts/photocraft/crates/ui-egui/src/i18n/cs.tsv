@@ -4061,3 +4061,13 @@ navigator	Zoom	Zvětšení
 	Threshold Alpha…	Prahová hodnota alfa…
 	Composite Options…	Možnosti skládání…
 	Zealous Crop	Důkladné oříznutí
+	Foreground Select	Výběr popředí
+	Stroke width	Šířka tahu
+	Engine	Jádro
+	Graph cut	Řez grafu
+	To Layer Mask	Do masky vrstvy
+	Draw a rough outline round the subject	Nakreslete hrubý obrys kolem objektu
+	Draw a rough outline round the subject first	Nejprve nakreslete hrubý obrys kolem objektu
+	Outline placed: paint over the foreground, then Preview or Select	Obrys umístěn: přemalujte popředí, pak Náhled nebo Vybrat
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Hrubě obkreslete objekt, přemalujte popředí a maticovací jádro rozšíří masku
+	Paint over the foreground (hold Alt for background), then Preview or Select	Přemalujte popředí (Alt pro pozadí), pak Náhled nebo Vybrat

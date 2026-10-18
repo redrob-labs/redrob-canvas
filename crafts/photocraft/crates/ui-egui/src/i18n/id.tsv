@@ -3450,3 +3450,13 @@ curves	Smooth	Haluskan
 	Threshold Alpha…	Ambang Alfa…
 	Composite Options…	Opsi Komposit…
 	Zealous Crop	Pangkas Menyeluruh
+	Foreground Select	Pilih Latar Depan
+	Stroke width	Lebar sapuan
+	Engine	Mesin
+	Graph cut	Potong graf
+	To Layer Mask	Ke Masker Lapisan
+	Draw a rough outline round the subject	Gambar garis besar kasar di sekitar subjek
+	Draw a rough outline round the subject first	Gambar garis besar kasar di sekitar subjek terlebih dahulu
+	Outline placed: paint over the foreground, then Preview or Select	Garis besar ditempatkan: cat latar depan, lalu Pratinjau atau Pilih
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Garis bentuk subjek secara kasar, cat latar depan, dan biarkan mesin matting mengembangkan masker
+	Paint over the foreground (hold Alt for background), then Preview or Select	Cat latar depan (tahan Alt untuk latar belakang), lalu Pratinjau atau Pilih

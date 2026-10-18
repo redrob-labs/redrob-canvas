@@ -3457,3 +3457,14 @@ curves	Smooth	Glätten
 	Threshold Alpha…	Alpha-Schwellwert…
 	Composite Options…	Kompositionsoptionen…
 	Zealous Crop	Gründlich zuschneiden
+	Foreground Select	Vordergrundauswahl
+	Stroke width	Strichbreite
+	Engine	Engine
+	Graph cut	Graph-Cut
+	Fast	Schnell
+	To Layer Mask	In Ebenenmaske
+	Draw a rough outline round the subject	Zeichnen Sie einen groben Umriss um das Motiv
+	Draw a rough outline round the subject first	Zeichnen Sie zuerst einen groben Umriss um das Motiv
+	Outline placed: paint over the foreground, then Preview or Select	Umriss gesetzt: Vordergrund übermalen, dann Vorschau oder Auswählen
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Motiv grob umreißen, Vordergrund übermalen, dann lässt die Matting-Engine die Maske wachsen
+	Paint over the foreground (hold Alt for background), then Preview or Select	Vordergrund übermalen (Alt für Hintergrund), dann Vorschau oder Auswählen

@@ -4212,3 +4212,13 @@ curves	Smooth	Vloeiend maken
 	Threshold Alpha…	Alfadrempel…
 	Composite Options…	Compositieopties…
 	Zealous Crop	Grondig bijsnijden
+	Foreground Select	Voorgrondselectie
+	Stroke width	Streekbreedte
+	Engine	Engine
+	Graph cut	Graph cut
+	To Layer Mask	Naar laagmasker
+	Draw a rough outline round the subject	Teken een ruwe omtrek rond het onderwerp
+	Draw a rough outline round the subject first	Teken eerst een ruwe omtrek rond het onderwerp
+	Outline placed: paint over the foreground, then Preview or Select	Omtrek geplaatst: verf over de voorgrond, dan Voorbeeld of Selecteren
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Omlijn het onderwerp ruw, verf over de voorgrond en laat de matting-engine het masker laten groeien
+	Paint over the foreground (hold Alt for background), then Preview or Select	Verf over de voorgrond (Alt voor achtergrond), dan Voorbeeld of Selecteren

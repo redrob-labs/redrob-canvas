@@ -4370,3 +4370,13 @@ cameraRaw	Yellow	Sárga
 	Threshold Alpha…	Alfa küszöb…
 	Composite Options…	Kompozíciós beállítások…
 	Zealous Crop	Alapos vágás
+	Foreground Select	Előtér kijelölése
+	Stroke width	Ecsetvonás szélessége
+	Engine	Motor
+	Graph cut	Gráfvágás
+	To Layer Mask	Rétegmaszkba
+	Draw a rough outline round the subject	Rajzoljon durva körvonalat a téma köré
+	Draw a rough outline round the subject first	Először rajzoljon durva körvonalat a téma köré
+	Outline placed: paint over the foreground, then Preview or Select	Körvonal elhelyezve: fesse át az előteret, majd Előnézet vagy Kijelölés
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Durván körvonalazza a témát, fesse át az előteret, és a maszkoló motor megnöveli a maszkot
+	Paint over the foreground (hold Alt for background), then Preview or Select	Fesse át az előteret (Alt a háttérhez), majd Előnézet vagy Kijelölés

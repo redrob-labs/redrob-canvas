@@ -4152,3 +4152,13 @@ curves	Smooth	Εξομάλυνση
 	Threshold Alpha…	Κατώφλι άλφα…
 	Composite Options…	Επιλογές σύνθεσης…
 	Zealous Crop	Εξονυχιστική περικοπή
+	Foreground Select	Επιλογή προσκηνίου
+	Stroke width	Πλάτος πινελιάς
+	Engine	Μηχανή
+	Graph cut	Τομή γράφου
+	To Layer Mask	Σε μάσκα στρώσης
+	Draw a rough outline round the subject	Σχεδιάστε ένα πρόχειρο περίγραμμα γύρω από το θέμα
+	Draw a rough outline round the subject first	Σχεδιάστε πρώτα ένα πρόχειρο περίγραμμα γύρω από το θέμα
+	Outline placed: paint over the foreground, then Preview or Select	Το περίγραμμα τοποθετήθηκε: βάψτε το προσκήνιο, μετά Προεπισκόπηση ή Επιλογή
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Περιγράψτε πρόχειρα το θέμα, βάψτε το προσκήνιο και η μηχανή matting θα μεγαλώσει τη μάσκα
+	Paint over the foreground (hold Alt for background), then Preview or Select	Βάψτε το προσκήνιο (Alt για φόντο), μετά Προεπισκόπηση ή Επιλογή

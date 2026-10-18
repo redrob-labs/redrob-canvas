@@ -3983,3 +3983,14 @@ curves	Smooth	매끄럽게
 	Threshold Alpha…	알파 임계값…
 	Composite Options…	합성 옵션…
 	Zealous Crop	철저한 자르기
+	Foreground Select	전경 선택
+	Stroke width	획 두께
+	Engine	엔진
+	Graph cut	그래프 컷
+	Fast	빠름
+	To Layer Mask	레이어 마스크로
+	Draw a rough outline round the subject	피사체 주위에 대략적인 윤곽을 그리세요
+	Draw a rough outline round the subject first	먼저 피사체 주위에 대략적인 윤곽을 그리세요
+	Outline placed: paint over the foreground, then Preview or Select	윤곽 배치됨: 전경을 칠한 뒤 미리 보기 또는 선택
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	피사체를 대략 둘러 그리고 전경을 칠하면 매팅 엔진이 마스크를 키웁니다
+	Paint over the foreground (hold Alt for background), then Preview or Select	전경을 칠하세요 (Alt를 누르면 배경), 그런 다음 미리 보기 또는 선택

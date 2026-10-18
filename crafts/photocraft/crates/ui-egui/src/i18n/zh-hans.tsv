@@ -3076,3 +3076,14 @@ curves	Smooth	平滑
 	Threshold Alpha…	Alpha 阈值…
 	Composite Options…	合成选项…
 	Zealous Crop	彻底裁剪
+	Foreground Select	前景选择
+	Stroke width	描边宽度
+	Engine	引擎
+	Graph cut	图割
+	Fast	快速
+	To Layer Mask	转为图层蒙版
+	Draw a rough outline round the subject	围绕主体绘制粗略轮廓
+	Draw a rough outline round the subject first	请先围绕主体绘制粗略轮廓
+	Outline placed: paint over the foreground, then Preview or Select	轮廓已放置：涂抹前景，然后预览或选择
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	粗略勾出主体，涂抹前景，让抠图引擎扩展蒙版
+	Paint over the foreground (hold Alt for background), then Preview or Select	涂抹前景（按住 Alt 涂背景），然后预览或选择

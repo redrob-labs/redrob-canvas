@@ -3429,3 +3429,13 @@ curves	Smooth	Сгладить
 	Threshold Alpha…	Порог альфа-канала…
 	Composite Options…	Параметры композиции…
 	Zealous Crop	Усердное кадрирование
+	Foreground Select	Выделение переднего плана
+	Stroke width	Ширина штриха
+	Engine	Движок
+	Graph cut	Разрез графа
+	To Layer Mask	В маску слоя
+	Draw a rough outline round the subject	Нарисуйте грубый контур вокруг объекта
+	Draw a rough outline round the subject first	Сначала нарисуйте грубый контур вокруг объекта
+	Outline placed: paint over the foreground, then Preview or Select	Контур задан: закрасьте передний план, затем Просмотр или Выделить
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Грубо обведите объект, закрасьте передний план, и движок матирования вырастит маску
+	Paint over the foreground (hold Alt for background), then Preview or Select	Закрасьте передний план (Alt для фона), затем Просмотр или Выделить

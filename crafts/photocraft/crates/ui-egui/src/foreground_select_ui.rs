@@ -64,14 +64,20 @@ pub fn take_lasso(app: &mut PhotocraftApp, pts: &[[f64; 2]], alt: bool) -> bool 
     if !app.fg_select.has_outline() {
         if pts.len() >= 3 {
             app.fg_select.outline = pts.to_vec();
-            app.ui.status = tl!("Outline placed: paint over the foreground, then Preview or Select").to_string();
+            app.ui.status =
+                tl!("Outline placed: paint over the foreground, then Preview or Select")
+                    .to_string();
             app.ui.status_error = false;
         }
         return true;
     }
     if !pts.is_empty() {
         let o = &app.ui.tool_options;
-        app.fg_select.marks.push(Mark { points: pts.to_vec(), size: o.fg_stroke_width.max(1.0), background: o.fg_mark_background || alt });
+        app.fg_select.marks.push(Mark {
+            points: pts.to_vec(),
+            size: o.fg_stroke_width.max(1.0),
+            background: o.fg_mark_background || alt,
+        });
     }
     true
 }
@@ -87,7 +93,13 @@ fn colour_hex(name: &str) -> &'static str {
 fn params(app: &PhotocraftApp) -> serde_json::Value {
     let f = &app.fg_select;
     let o = &app.ui.tool_options;
-    let strokes = |bg: bool| -> Vec<serde_json::Value> { f.marks.iter().filter(|m| m.background == bg).map(|m| json!({"points": m.points, "size": m.size})).collect() };
+    let strokes = |bg: bool| -> Vec<serde_json::Value> {
+        f.marks
+            .iter()
+            .filter(|m| m.background == bg)
+            .map(|m| json!({"points": m.points, "size": m.size}))
+            .collect()
+    };
     json!({
         "outline": f.outline,
         "foreground": strokes(false),
@@ -126,12 +138,21 @@ pub fn preview(app: &mut PhotocraftApp) {
     }
     let colour = colour_hex(&app.ui.tool_options.fg_preview_color);
     let gray = app.ui.tool_options.fg_preview_gray;
-    if app.run("select.editInQuickMaskMode", json!({"on": true})).is_err() {
+    if app
+        .run("select.editInQuickMaskMode", json!({"on": true}))
+        .is_err()
+    {
         return;
     }
-    let _ = app.run("channel.options", json!({"channel": "quickMask", "color": colour, "opacity": 60, "indicates": "selected"}));
+    let _ = app.run(
+        "channel.options",
+        json!({"channel": "quickMask", "color": colour, "opacity": 60, "indicates": "selected"}),
+    );
     if gray {
-        let _ = app.run("channel.setVisible", json!({"channel": "composite", "visible": false}));
+        let _ = app.run(
+            "channel.setVisible",
+            json!({"channel": "composite", "visible": false}),
+        );
     }
     app.fg_select.previewing = true;
     app.fg_select.gray_hidden = gray;
@@ -144,7 +165,10 @@ fn end_preview(app: &mut PhotocraftApp, keep: bool) {
         return;
     }
     if app.fg_select.gray_hidden {
-        let _ = app.run("channel.setVisible", json!({"channel": "composite", "visible": true}));
+        let _ = app.run(
+            "channel.setVisible",
+            json!({"channel": "composite", "visible": true}),
+        );
     }
     let _ = app.run("select.editInQuickMaskMode", json!({"on": false}));
     if !keep {
@@ -195,25 +219,56 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         let marks = [(false, tl!("Foreground")), (true, tl!("Background"))];
         widgets::dropdown(ui, "fg-mark", &mut o.fg_mark_background, &marks, 104.0);
         opt(ui, tl!("Engine"));
-        let engines = [("graphCut".to_string(), tl!("Graph cut")), ("fast".to_string(), tl!("Fast"))];
+        let engines = [
+            ("graphCut".to_string(), tl!("Graph cut")),
+            ("fast".to_string(), tl!("Fast")),
+        ];
         widgets::dropdown(ui, "fg-engine", &mut o.fg_engine, &engines, 96.0);
         opt(ui, tl!("Preview"));
-        let colours = [("red".to_string(), tl!("Red")), ("green".to_string(), tl!("Green")), ("blue".to_string(), tl!("Blue"))];
+        let colours = [
+            ("red".to_string(), tl!("Red")),
+            ("green".to_string(), tl!("Green")),
+            ("blue".to_string(), tl!("Blue")),
+        ];
         widgets::dropdown(ui, "fg-color", &mut o.fg_preview_color, &colours, 80.0);
         widgets::checkbox(ui, &mut o.fg_preview_gray, tl!("Grayscale"));
     }
     widgets::vline(ui, 22.0);
     let has_outline = app.fg_select.has_outline();
-    if ui.add_enabled_ui(has_outline, |ui| widgets::secondary_button(ui, tl!("Preview"), 0.0)).inner.clicked() {
+    if ui
+        .add_enabled_ui(has_outline, |ui| {
+            widgets::secondary_button(ui, tl!("Preview"), 0.0)
+        })
+        .inner
+        .clicked()
+    {
         preview(app);
     }
-    if ui.add_enabled_ui(has_outline, |ui| widgets::primary_button(ui, tl!("Select"), 0.0)).inner.clicked() {
+    if ui
+        .add_enabled_ui(has_outline, |ui| {
+            widgets::primary_button(ui, tl!("Select"), 0.0)
+        })
+        .inner
+        .clicked()
+    {
         commit(app);
     }
-    if ui.add_enabled_ui(has_outline, |ui| widgets::secondary_button(ui, tl!("To Layer Mask"), 0.0)).inner.clicked() {
+    if ui
+        .add_enabled_ui(has_outline, |ui| {
+            widgets::secondary_button(ui, tl!("To Layer Mask"), 0.0)
+        })
+        .inner
+        .clicked()
+    {
         to_layer_mask(app);
     }
-    if ui.add_enabled_ui(has_outline || !app.fg_select.marks.is_empty(), |ui| widgets::secondary_button(ui, tl!("Reset"), 0.0)).inner.clicked() {
+    if ui
+        .add_enabled_ui(has_outline || !app.fg_select.marks.is_empty(), |ui| {
+            widgets::secondary_button(ui, tl!("Reset"), 0.0)
+        })
+        .inner
+        .clicked()
+    {
         reset(app);
     }
     let t = Tokens::get(ui.ctx());
@@ -233,7 +288,11 @@ pub fn draw(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform) {
     let f = &app.fg_select;
     let t = Tokens::get(painter.ctx());
     if f.has_outline() {
-        let mut pts: Vec<Pos2> = f.outline.iter().map(|p| xf.to_screen(p[0] as f32, p[1] as f32)).collect();
+        let mut pts: Vec<Pos2> = f
+            .outline
+            .iter()
+            .map(|p| xf.to_screen(p[0] as f32, p[1] as f32))
+            .collect();
         if let Some(first) = pts.first().copied() {
             pts.push(first);
         }
@@ -241,8 +300,16 @@ pub fn draw(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform) {
     }
     let zoom = app.point_zoom().max(0.01);
     for m in &f.marks {
-        let pts: Vec<Pos2> = m.points.iter().map(|p| xf.to_screen(p[0] as f32, p[1] as f32)).collect();
-        let colour = if m.background { Color32::from_rgba_unmultiplied(0x29, 0x79, 0xff, 140) } else { Color32::from_rgba_unmultiplied(0xff, 0xff, 0xff, 140) };
+        let pts: Vec<Pos2> = m
+            .points
+            .iter()
+            .map(|p| xf.to_screen(p[0] as f32, p[1] as f32))
+            .collect();
+        let colour = if m.background {
+            Color32::from_rgba_unmultiplied(0x29, 0x79, 0xff, 140)
+        } else {
+            Color32::from_rgba_unmultiplied(0xff, 0xff, 0xff, 140)
+        };
         let width = (m.size * zoom).max(1.0);
         if pts.len() == 1 {
             painter.circle_filled(pts[0], width / 2.0, colour);
@@ -262,8 +329,13 @@ mod tests {
     use crate::state::Tool;
 
     fn app() -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
-        app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
+        let mut app = PhotocraftApp::new(
+            redrob_photo_engine::Session::new(),
+            crate::Services::default(),
+        );
+        app.session
+            .execute("file.new", json!({"width": 64, "height": 64}))
+            .unwrap();
         app.session
             .edit("subject", |doc, a| {
                 let surf = doc.layer_mut(a.unwrap()).unwrap().surface_mut().unwrap();
@@ -279,26 +351,73 @@ mod tests {
     }
 
     fn drag(app: &mut PhotocraftApp, pts: &[[f64; 2]], mods: egui::Modifiers) {
-        tool_event(app, ToolEvent::Down { x: pts[0][0], y: pts[0][1], pressure: 1.0 }, mods);
+        tool_event(
+            app,
+            ToolEvent::Down {
+                x: pts[0][0],
+                y: pts[0][1],
+                pressure: 1.0,
+            },
+            mods,
+        );
         for p in &pts[1..] {
-            tool_event(app, ToolEvent::Move { x: p[0], y: p[1], pressure: 1.0 }, mods);
+            tool_event(
+                app,
+                ToolEvent::Move {
+                    x: p[0],
+                    y: p[1],
+                    pressure: 1.0,
+                },
+                mods,
+            );
         }
         let last = pts[pts.len() - 1];
-        tool_event(app, ToolEvent::Up { x: last[0], y: last[1] }, mods);
+        tool_event(
+            app,
+            ToolEvent::Up {
+                x: last[0],
+                y: last[1],
+            },
+            mods,
+        );
     }
 
     #[test]
     fn outline_then_marks_then_select() {
         let mut app = app();
-        drag(&mut app, &[[12.0, 12.0], [52.0, 12.0], [52.0, 52.0], [12.0, 52.0], [12.0, 14.0]], egui::Modifiers::NONE);
+        drag(
+            &mut app,
+            &[
+                [12.0, 12.0],
+                [52.0, 12.0],
+                [52.0, 52.0],
+                [12.0, 52.0],
+                [12.0, 14.0],
+            ],
+            egui::Modifiers::NONE,
+        );
         assert!(app.fg_select.has_outline(), "the first drag is the outline");
-        assert!(app.session.active().unwrap().doc.selection.is_none(), "nothing is selected yet");
-        drag(&mut app, &[[24.0, 32.0], [40.0, 32.0]], egui::Modifiers::NONE);
+        assert!(
+            app.session.active().unwrap().doc.selection.is_none(),
+            "nothing is selected yet"
+        );
+        drag(
+            &mut app,
+            &[[24.0, 32.0], [40.0, 32.0]],
+            egui::Modifiers::NONE,
+        );
         drag(&mut app, &[[4.0, 4.0], [60.0, 4.0]], egui::Modifiers::ALT);
         assert_eq!(app.fg_select.marks.len(), 2);
         assert!(!app.fg_select.marks[0].background && app.fg_select.marks[1].background);
         commit(&mut app);
-        let sel = app.session.active().unwrap().doc.selection.clone().expect("the subject is selected");
+        let sel = app
+            .session
+            .active()
+            .unwrap()
+            .doc
+            .selection
+            .clone()
+            .expect("the subject is selected");
         assert!(sel.sample_channel(32, 32, 0) > 0.5);
         assert!(sel.sample_channel(2, 2, 0) < 0.5);
         assert!(!app.fg_select.has_outline(), "Select ends the workflow");
@@ -307,13 +426,31 @@ mod tests {
     #[test]
     fn preview_shows_a_quick_mask_and_reset_clears_it() {
         let mut app = app();
-        drag(&mut app, &[[12.0, 12.0], [52.0, 12.0], [52.0, 52.0], [12.0, 52.0], [12.0, 14.0]], egui::Modifiers::NONE);
-        drag(&mut app, &[[24.0, 32.0], [40.0, 32.0]], egui::Modifiers::NONE);
+        drag(
+            &mut app,
+            &[
+                [12.0, 12.0],
+                [52.0, 12.0],
+                [52.0, 52.0],
+                [12.0, 52.0],
+                [12.0, 14.0],
+            ],
+            egui::Modifiers::NONE,
+        );
+        drag(
+            &mut app,
+            &[[24.0, 32.0], [40.0, 32.0]],
+            egui::Modifiers::NONE,
+        );
         app.ui.tool_options.fg_preview_color = "green".into();
         preview(&mut app);
         assert!(app.fg_select.previewing);
         let st = app.session.active().unwrap();
-        let q = st.doc.quick_mask.as_ref().expect("a Quick Mask previews the mask");
+        let q = st
+            .doc
+            .quick_mask
+            .as_ref()
+            .expect("a Quick Mask previews the mask");
         let rgb = q.color.to_rgba8();
         assert_eq!([rgb[0], rgb[1], rgb[2]], [0x00, 0xc8, 0x53]);
         reset(&mut app);

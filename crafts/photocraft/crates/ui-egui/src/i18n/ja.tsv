@@ -4128,3 +4128,13 @@ curves	Smooth	スムーズ
 	Threshold Alpha…	アルファしきい値…
 	Composite Options…	合成オプション…
 	Zealous Crop	徹底的に切り抜き
+	Foreground Select	前景選択
+	Stroke width	ストローク幅
+	Engine	エンジン
+	Graph cut	グラフカット
+	To Layer Mask	レイヤーマスクへ
+	Draw a rough outline round the subject	被写体の周りに大まかな輪郭を描きます
+	Draw a rough outline round the subject first	まず被写体の周りに大まかな輪郭を描いてください
+	Outline placed: paint over the foreground, then Preview or Select	輪郭を配置しました: 前景を塗ってから、プレビューまたは選択
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	被写体を大まかに囲み、前景を塗ると、マッティングエンジンがマスクを広げます
+	Paint over the foreground (hold Alt for background), then Preview or Select	前景を塗ります (Alt で背景)。その後プレビューまたは選択

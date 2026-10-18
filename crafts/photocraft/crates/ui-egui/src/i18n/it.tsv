@@ -4919,3 +4919,13 @@ shape	Appearance	Aspetto
 	Threshold Alpha…	Soglia alfa…
 	Composite Options…	Opzioni di composizione…
 	Zealous Crop	Ritaglio zelante
+	Foreground Select	Selezione primo piano
+	Stroke width	Larghezza tratto
+	Engine	Motore
+	Graph cut	Taglio del grafo
+	To Layer Mask	A maschera di livello
+	Draw a rough outline round the subject	Traccia un contorno approssimativo intorno al soggetto
+	Draw a rough outline round the subject first	Traccia prima un contorno approssimativo intorno al soggetto
+	Outline placed: paint over the foreground, then Preview or Select	Contorno posizionato: dipingi sul primo piano, poi Anteprima o Seleziona
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Contorna grossolanamente il soggetto, dipingi sul primo piano e lascia che il motore di matting espanda la maschera
+	Paint over the foreground (hold Alt for background), then Preview or Select	Dipingi sul primo piano (Alt per lo sfondo), poi Anteprima o Seleziona

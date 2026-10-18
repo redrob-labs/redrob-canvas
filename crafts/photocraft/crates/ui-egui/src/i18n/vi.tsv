@@ -3940,3 +3940,13 @@ curves	Smooth	Làm mượt
 	Threshold Alpha…	Ngưỡng alpha…
 	Composite Options…	Tùy chọn kết hợp…
 	Zealous Crop	Cắt triệt để
+	Foreground Select	Chọn tiền cảnh
+	Stroke width	Độ rộng nét
+	Engine	Bộ máy
+	Graph cut	Cắt đồ thị
+	To Layer Mask	Thành mặt nạ lớp
+	Draw a rough outline round the subject	Vẽ đường bao thô quanh chủ thể
+	Draw a rough outline round the subject first	Hãy vẽ đường bao thô quanh chủ thể trước
+	Outline placed: paint over the foreground, then Preview or Select	Đã đặt đường bao: tô lên tiền cảnh, rồi Xem trước hoặc Chọn
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Bao thô chủ thể, tô lên tiền cảnh và để bộ máy matting mở rộng mặt nạ
+	Paint over the foreground (hold Alt for background), then Preview or Select	Tô lên tiền cảnh (giữ Alt cho hậu cảnh), rồi Xem trước hoặc Chọn

@@ -4524,3 +4524,13 @@ shape	Appearance	Izgled
 	Threshold Alpha…	Prag providnosti…
 	Composite Options…	Opcije kompozicije…
 	Zealous Crop	Temeljno isecanje
+	Foreground Select	Избор предњег плана
+	Stroke width	Ширина потеза
+	Engine	Мотор
+	Graph cut	Рез графа
+	To Layer Mask	У маску слоја
+	Draw a rough outline round the subject	Нацртајте грубу контуру око објекта
+	Draw a rough outline round the subject first	Прво нацртајте грубу контуру око објекта
+	Outline placed: paint over the foreground, then Preview or Select	Контура постављена: обојите предњи план, затим Преглед или Изабери
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Грубо оцртајте објекат, обојите предњи план и мотор за матирање ће проширити маску
+	Paint over the foreground (hold Alt for background), then Preview or Select	Обојите предњи план (Alt за позадину), затим Преглед или Изабери

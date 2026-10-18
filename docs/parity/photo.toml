@@ -45,9 +45,9 @@ name = "Foreground select tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-foreground-select.html"
 behaviour = "Rough outline round the subject, then paint over foreground (and optionally background) strokes; a matting engine (two algorithms selectable) grows a mask with a preview overlay in a chosen colour; adjustable stroke width, preview mode (colour or grayscale), and commit to a selection or a layer mask."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/segment/grabcut.rs (foreground_select: outline + foreground/background marks), crafts/photocraft/crates/engine/src/smartselect_cmds.rs (select.foreground), crafts/photocraft/crates/ui-egui/src/select_mask_view.rs"
-gap = "the two-stage outline-then-mark workflow is an engine command (select.foreground) driven by scripts and actions; no dedicated canvas tool yet (Quick Selection plus Select and Mask stand in)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/foreground_select_ui.rs (Lasso > Foreground Select: outline, foreground/background marks, stroke width, two engines, colour or grayscale preview, Select / To Layer Mask), crafts/photocraft/crates/algo/src/segment/grabcut.rs, crafts/photocraft/crates/engine/src/smartselect_cmds.rs (select.foreground, fast)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -57,9 +57,9 @@ name = "Fuzzy select (magic wand)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-fuzzy-select.html"
 behaviour = "Click seeds a contiguous region grown by colour distance; threshold 0-255 adjustable by dragging during the click; options: antialias, feather, select transparent areas, sample merged, diagonal neighbours, draw mask preview, select-by criterion (composite, R, G, B, H, S, V, LCh L/C/H, alpha)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/selection_cmds.rs (select.magicWand), crafts/photocraft/crates/algo/src/selection.rs"
-gap = "no drag-to-adjust threshold, no diagonal-neighbours switch, no per-channel criterion"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/wand_drag.rs (press-and-drag threshold), crafts/photocraft/crates/ui-egui/src/eraser_ui.rs (diagonal switch, criterion incl. LCh L/C/H), crafts/photocraft/crates/engine/src/selection_cmds.rs (select.magicWand), crafts/photocraft/crates/algo/src/selection.rs (WandCriterion)"
+gap = ""
 priority = 1
 
 [[feature]]

@@ -3463,3 +3463,13 @@ curves	Smooth	Lisser
 	Threshold Alpha…	Seuil alpha…
 	Composite Options…	Options de composition…
 	Zealous Crop	Découpage futé
+	Foreground Select	Sélection du premier plan
+	Stroke width	Largeur du trait
+	Engine	Moteur
+	Graph cut	Coupe de graphe
+	To Layer Mask	Vers un masque de calque
+	Draw a rough outline round the subject	Tracez un contour approximatif autour du sujet
+	Draw a rough outline round the subject first	Tracez d'abord un contour approximatif autour du sujet
+	Outline placed: paint over the foreground, then Preview or Select	Contour placé : peignez le premier plan, puis Aperçu ou Sélectionner
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Entourez grossièrement le sujet, peignez le premier plan et laissez le moteur de détourage étendre le masque
+	Paint over the foreground (hold Alt for background), then Preview or Select	Peignez le premier plan (Alt pour l'arrière-plan), puis Aperçu ou Sélectionner

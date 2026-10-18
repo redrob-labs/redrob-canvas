@@ -4761,3 +4761,13 @@ navigator	Zoom	Zoom
 	Threshold Alpha…	Umbral alfa…
 	Composite Options…	Opciones de composición…
 	Zealous Crop	Recorte exhaustivo
+	Foreground Select	Selección de primer plano
+	Stroke width	Ancho del trazo
+	Engine	Motor
+	Graph cut	Corte de grafo
+	To Layer Mask	A máscara de capa
+	Draw a rough outline round the subject	Dibuje un contorno aproximado alrededor del sujeto
+	Draw a rough outline round the subject first	Primero dibuje un contorno aproximado alrededor del sujeto
+	Outline placed: paint over the foreground, then Preview or Select	Contorno colocado: pinte sobre el primer plano y luego Vista previa o Seleccionar
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Delimite el sujeto a grandes rasgos, pinte sobre el primer plano y deje que el motor de recorte amplíe la máscara
+	Paint over the foreground (hold Alt for background), then Preview or Select	Pinte sobre el primer plano (Alt para el fondo), luego Vista previa o Seleccionar

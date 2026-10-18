@@ -4182,3 +4182,13 @@ cameraData	Lens	Lens
 	Threshold Alpha…	Alfa Eşiği…
 	Composite Options…	Birleştirme Seçenekleri…
 	Zealous Crop	Titiz Kırpma
+	Foreground Select	Ön Plan Seçimi
+	Stroke width	Vuruş genişliği
+	Engine	Motor
+	Graph cut	Graf kesimi
+	To Layer Mask	Katman Maskesine
+	Draw a rough outline round the subject	Konunun etrafına kaba bir ana hat çizin
+	Draw a rough outline round the subject first	Önce konunun etrafına kaba bir ana hat çizin
+	Outline placed: paint over the foreground, then Preview or Select	Ana hat yerleştirildi: ön planı boyayın, sonra Önizleme veya Seç
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Konuyu kabaca çevreleyin, ön planı boyayın ve matlaştırma motoru maskeyi büyütsün
+	Paint over the foreground (hold Alt for background), then Preview or Select	Ön planı boyayın (arka plan için Alt), sonra Önizleme veya Seç

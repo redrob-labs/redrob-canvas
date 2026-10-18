@@ -4242,3 +4242,13 @@ layerLabel	No Color	Sem cor
 	Threshold Alpha…	Limiar alfa…
 	Composite Options…	Opções de composição…
 	Zealous Crop	Corte minucioso
+	Foreground Select	Seleção de primeiro plano
+	Stroke width	Largura do traço
+	Engine	Mecanismo
+	Graph cut	Corte de grafo
+	To Layer Mask	Para máscara de camada
+	Draw a rough outline round the subject	Desenhe um contorno aproximado ao redor do assunto
+	Draw a rough outline round the subject first	Primeiro desenhe um contorno aproximado ao redor do assunto
+	Outline placed: paint over the foreground, then Preview or Select	Contorno colocado: pinte sobre o primeiro plano e depois Visualizar ou Selecionar
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Contorne o assunto grosseiramente, pinte o primeiro plano e deixe o mecanismo de recorte expandir a máscara
+	Paint over the foreground (hold Alt for background), then Preview or Select	Pinte sobre o primeiro plano (Alt para o fundo), depois Visualizar ou Selecionar

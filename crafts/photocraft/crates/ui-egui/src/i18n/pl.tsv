@@ -4050,3 +4050,13 @@ curves	Smooth	Wygładź
 	Threshold Alpha…	Próg alfa…
 	Composite Options…	Opcje kompozycji…
 	Zealous Crop	Dokładne przycięcie
+	Foreground Select	Zaznaczenie pierwszego planu
+	Stroke width	Szerokość pociągnięcia
+	Engine	Silnik
+	Graph cut	Cięcie grafu
+	To Layer Mask	Do maski warstwy
+	Draw a rough outline round the subject	Narysuj przybliżony obrys wokół obiektu
+	Draw a rough outline round the subject first	Najpierw narysuj przybliżony obrys wokół obiektu
+	Outline placed: paint over the foreground, then Preview or Select	Obrys umieszczony: zamaluj pierwszy plan, potem Podgląd lub Zaznacz
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Obrysuj z grubsza obiekt, zamaluj pierwszy plan, a silnik mattingu rozszerzy maskę
+	Paint over the foreground (hold Alt for background), then Preview or Select	Zamaluj pierwszy plan (Alt dla tła), potem Podgląd lub Zaznacz
