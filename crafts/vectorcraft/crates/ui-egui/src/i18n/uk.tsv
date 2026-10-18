@@ -4651,3 +4651,17 @@ lighting	Light	Світло
 	Open a document to edit its scripts.	Відкрийте документ, щоб змінити його скрипти.
 	Alignment Handles	Маркери вирівнювання
 	Align (Shift: move the key object)	Вирівняти (Shift: перемістити ключовий об’єкт)
+	Stylesheet	Таблиця стилів
+	No rules yet. Add one and assign its class to objects.	Правил ще немає. Додайте одне й призначте його клас об’єктам.
+	Add Rule	Додати правило
+	Remove Rule	Видалити правило
+	Selector:	Селектор:
+	Declarations:	Оголошення:
+	Assign to Selection	Призначити виділенню
+	Remove from Selection	Зняти з виділення
+	Add CSS Rule	Додати правило CSS
+	Edit CSS Rule	Змінити правило CSS
+	Remove CSS Rule	Видалити правило CSS
+	Assign CSS Class	Призначити клас CSS
+	Remove CSS Class	Зняти клас CSS
+	Apply Stylesheet	Застосувати таблицю стилів

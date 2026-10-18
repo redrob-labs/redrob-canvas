@@ -4252,3 +4252,17 @@ lighting	Light	光源
 	Open a document to edit its scripts.	打开文档以编辑其脚本。
 	Alignment Handles	对齐控制点
 	Align (Shift: move the key object)	对齐（Shift：移动关键对象）
+	Stylesheet	样式表
+	No rules yet. Add one and assign its class to objects.	尚无规则。添加一个并将其类分配给对象。
+	Add Rule	添加规则
+	Remove Rule	移除规则
+	Selector:	选择器：
+	Declarations:	声明：
+	Assign to Selection	分配给选区
+	Remove from Selection	从选区移除
+	Add CSS Rule	添加 CSS 规则
+	Edit CSS Rule	编辑 CSS 规则
+	Remove CSS Rule	移除 CSS 规则
+	Assign CSS Class	分配 CSS 类
+	Remove CSS Class	移除 CSS 类
+	Apply Stylesheet	应用样式表

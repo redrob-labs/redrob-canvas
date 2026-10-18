@@ -488,6 +488,104 @@ fn default_grid_angle() -> f64 {
     30.0
 }
 
+/// One rule of the document's stylesheet (Selectors and CSS): a selector (`.name`, an element
+/// name such as `path`, `text`, `image`, `g`, or `*`) and its declarations in order.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct CssRule {
+    pub selector: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub declarations: Vec<(String, String)>,
+}
+
+impl CssRule {
+    /// The data key that carries an object's classes (SVG `class`), space-separated.
+    pub const CLASS_KEY: &'static str = "vc-class";
+
+    /// The rule as CSS text: `selector { prop: value; … }`.
+    pub fn text(&self) -> String {
+        let decls: Vec<String> = self.declarations.iter().map(|(k, v)| format!("{k}: {v};")).collect();
+        format!("{} {{ {} }}", self.selector, decls.join(" "))
+    }
+
+    /// The rules of a stylesheet's text (comments dropped, `@`-rules skipped); a rule's text
+    /// takes the form `selector { prop: value; … }`.
+    pub fn parse_sheet(css: &str) -> Vec<CssRule> {
+        let mut out = vec![];
+        let mut text = String::with_capacity(css.len());
+        let mut rest = css;
+        while let Some(i) = rest.find("/*") {
+            text.push_str(&rest[..i]);
+            match rest[i + 2..].find("*/") {
+                Some(j) => rest = &rest[i + 2 + j + 2..],
+                None => rest = "",
+            }
+        }
+        text.push_str(rest);
+        let mut depth = 0usize;
+        let mut cur = String::new();
+        for ch in text.chars() {
+            match ch {
+                '{' => {
+                    depth += 1;
+                    cur.push(ch);
+                }
+                '}' => {
+                    depth = depth.saturating_sub(1);
+                    cur.push(ch);
+                    if depth == 0 {
+                        if let Some(rule) = Self::parse_rule(&cur) {
+                            out.push(rule);
+                        }
+                        cur.clear();
+                    }
+                }
+                _ => cur.push(ch),
+            }
+        }
+        out
+    }
+
+    /// One `selector { declarations }`; `None` for an `@`-rule or malformed text.
+    pub fn parse_rule(text: &str) -> Option<CssRule> {
+        let (selector, body) = text.split_once('{')?;
+        let selector = selector.trim();
+        if selector.is_empty() || selector.starts_with('@') {
+            return None;
+        }
+        let body = body.trim_end().trim_end_matches('}');
+        let declarations = Self::parse_declarations(body);
+        Some(CssRule { selector: selector.to_string(), declarations })
+    }
+
+    /// `prop: value; prop: value` as pairs, in order.
+    pub fn parse_declarations(body: &str) -> Vec<(String, String)> {
+        body.split(';')
+            .filter_map(|d| {
+                let (k, v) = d.split_once(':')?;
+                let (k, v) = (k.trim(), v.trim().trim_end_matches("!important").trim());
+                (!k.is_empty() && !v.is_empty()).then(|| (k.to_string(), v.to_string()))
+            })
+            .collect()
+    }
+
+    /// Does the selector pick an object with `classes` and of element `kind` (`path`, `text`,
+    /// `image`, `g`…)? Comma lists are any-of; a compound `kind.class` needs both.
+    pub fn matches(&self, classes: &[String], kind: &str) -> bool {
+        self.selector.split(',').map(str::trim).any(|sel| {
+            if sel == "*" {
+                return true;
+            }
+            let (elem, cls) = match sel.find('.') {
+                Some(i) => (&sel[..i], &sel[i + 1..]),
+                None => (sel, ""),
+            };
+            let elem_ok = elem.is_empty() || elem == "*" || elem.eq_ignore_ascii_case(kind);
+            let cls_ok = cls.is_empty() || cls.split('.').all(|c| classes.iter().any(|have| have == c));
+            elem_ok && cls_ok && !(elem.is_empty() && cls.is_empty())
+        })
+    }
+}
+
 /// One SVG `<script>` of the document (Document Properties › Scripting): an external reference
 /// (`href`) or embedded code (`content`), with its MIME type.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -739,6 +837,10 @@ pub struct Document {
     /// reader and writer and edited in the Scripts panel; nothing here runs them.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub scripts: Vec<DocScript>,
+    /// The document's stylesheet (Selectors and CSS): rules objects share through their classes
+    /// (the `vc-class` data attribute, SVG `class`), written to the SVG `<style>` and kept from it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stylesheet: Vec<CssRule>,
     #[serde(default = "ppi72")]
     pub raster_effects_ppi: f64,
     #[serde(default)]
@@ -882,6 +984,7 @@ impl Document {
             grid: GridPrefs::default(),
             extra_grids: vec![],
             scripts: vec![],
+            stylesheet: vec![],
             raster_effects_ppi: 72.0,
             images: BTreeMap::new(),
             patterns: vec![],

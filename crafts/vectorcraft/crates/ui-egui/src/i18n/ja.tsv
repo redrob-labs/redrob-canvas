@@ -4680,3 +4680,17 @@ lighting	Light	ライト
 	Open a document to edit its scripts.	スクリプトを編集するドキュメントを開いてください。
 	Alignment Handles	整列ハンドル
 	Align (Shift: move the key object)	整列 (Shift: キーオブジェクトを移動)
+	Stylesheet	スタイルシート
+	No rules yet. Add one and assign its class to objects.	ルールはまだありません。追加してそのクラスをオブジェクトに割り当ててください。
+	Add Rule	ルールを追加
+	Remove Rule	ルールを削除
+	Selector:	セレクター:
+	Declarations:	宣言:
+	Assign to Selection	選択範囲に割り当て
+	Remove from Selection	選択範囲から削除
+	Add CSS Rule	CSS ルールを追加
+	Edit CSS Rule	CSS ルールを編集
+	Remove CSS Rule	CSS ルールを削除
+	Assign CSS Class	CSS クラスを割り当て
+	Remove CSS Class	CSS クラスを削除
+	Apply Stylesheet	スタイルシートを適用

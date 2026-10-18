@@ -4039,3 +4039,17 @@ lighting	Light	光源
 	Open a document to edit its scripts.	開啟文件以編輯其指令碼。
 	Alignment Handles	對齊控制點
 	Align (Shift: move the key object)	對齊（Shift：移動關鍵物件）
+	Stylesheet	樣式表
+	No rules yet. Add one and assign its class to objects.	尚無規則。新增一個並將其類別指派給物件。
+	Add Rule	新增規則
+	Remove Rule	移除規則
+	Selector:	選擇器：
+	Declarations:	宣告：
+	Assign to Selection	指派給選取範圍
+	Remove from Selection	從選取範圍移除
+	Add CSS Rule	新增 CSS 規則
+	Edit CSS Rule	編輯 CSS 規則
+	Remove CSS Rule	移除 CSS 規則
+	Assign CSS Class	指派 CSS 類別
+	Remove CSS Class	移除 CSS 類別
+	Apply Stylesheet	套用樣式表

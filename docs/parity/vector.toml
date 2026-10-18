@@ -2962,9 +2962,9 @@ name = "Selectors and CSS dialog"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Selectors_and_CSS_.5BExperimental.2C_hidden.5D"
 behaviour = "Creates CSS classes and selectors in the document stylesheet, assigns them to objects, and edits the rules' properties so many objects share one style."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/css_properties.rs, crafts/vectorcraft/crates/engine/src/cmd/css.rs"
-gap = "CSS Properties shows/exports the selection's style as CSS and named character/graphic styles export as classes; no rule editing in a stylesheet"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/lib.rs (CssRule, Document::stylesheet, classes as the vc-class data / SVG class), crafts/vectorcraft/crates/engine/src/cmd/stylesheet.rs (css.rules/addRule/setRule/removeRule/assign/unassign/applyRules), crafts/vectorcraft/crates/ui-egui/src/panels/css_properties.rs (Stylesheet section: rules, selector and declarations editing, assign to selection, apply), crafts/vectorcraft/crates/svg/src/import.rs, crafts/vectorcraft/crates/svg/src/export.rs (<style> rules and class attributes round-trip)"
+gap = ""
 priority = 3
 
 [[feature]]

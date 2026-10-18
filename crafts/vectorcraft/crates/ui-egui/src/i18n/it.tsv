@@ -4686,3 +4686,17 @@ lighting	Light	Luce
 	Open a document to edit its scripts.	Apri un documento per modificarne gli script.
 	Alignment Handles	Maniglie di allineamento
 	Align (Shift: move the key object)	Allinea (Maiusc: sposta l'oggetto chiave)
+	Stylesheet	Foglio di stile
+	No rules yet. Add one and assign its class to objects.	Nessuna regola. Aggiungine una e assegna la sua classe agli oggetti.
+	Add Rule	Aggiungi regola
+	Remove Rule	Rimuovi regola
+	Selector:	Selettore:
+	Declarations:	Dichiarazioni:
+	Assign to Selection	Assegna alla selezione
+	Remove from Selection	Rimuovi dalla selezione
+	Add CSS Rule	Aggiungi regola CSS
+	Edit CSS Rule	Modifica regola CSS
+	Remove CSS Rule	Rimuovi regola CSS
+	Assign CSS Class	Assegna classe CSS
+	Remove CSS Class	Rimuovi classe CSS
+	Apply Stylesheet	Applica foglio di stile

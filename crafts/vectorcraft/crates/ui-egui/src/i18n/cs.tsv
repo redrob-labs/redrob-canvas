@@ -5094,3 +5094,17 @@ mark-style	Japanese	Japonské
 	Open a document to edit its scripts.	Otevřete dokument a upravte jeho skripty.
 	Alignment Handles	Úchyty zarovnání
 	Align (Shift: move the key object)	Zarovnat (Shift: přesunout klíčový objekt)
+	Stylesheet	Stylopis
+	No rules yet. Add one and assign its class to objects.	Zatím žádná pravidla. Přidejte jedno a přiřaďte jeho třídu objektům.
+	Add Rule	Přidat pravidlo
+	Remove Rule	Odebrat pravidlo
+	Selector:	Selektor:
+	Declarations:	Deklarace:
+	Assign to Selection	Přiřadit výběru
+	Remove from Selection	Odebrat z výběru
+	Add CSS Rule	Přidat pravidlo CSS
+	Edit CSS Rule	Upravit pravidlo CSS
+	Remove CSS Rule	Odebrat pravidlo CSS
+	Assign CSS Class	Přiřadit třídu CSS
+	Remove CSS Class	Odebrat třídu CSS
+	Apply Stylesheet	Použít stylopis

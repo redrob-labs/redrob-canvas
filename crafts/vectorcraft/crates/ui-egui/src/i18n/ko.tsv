@@ -4650,3 +4650,17 @@ lighting	Light	광원
 	Open a document to edit its scripts.	스크립트를 편집할 문서를 여세요.
 	Alignment Handles	정렬 핸들
 	Align (Shift: move the key object)	정렬 (Shift: 키 오브젝트 이동)
+	Stylesheet	스타일시트
+	No rules yet. Add one and assign its class to objects.	규칙이 아직 없습니다. 하나 추가하고 그 클래스를 오브젝트에 할당하세요.
+	Add Rule	규칙 추가
+	Remove Rule	규칙 제거
+	Selector:	선택자:
+	Declarations:	선언:
+	Assign to Selection	선택 항목에 할당
+	Remove from Selection	선택 항목에서 제거
+	Add CSS Rule	CSS 규칙 추가
+	Edit CSS Rule	CSS 규칙 편집
+	Remove CSS Rule	CSS 규칙 제거
+	Assign CSS Class	CSS 클래스 할당
+	Remove CSS Class	CSS 클래스 제거
+	Apply Stylesheet	스타일시트 적용

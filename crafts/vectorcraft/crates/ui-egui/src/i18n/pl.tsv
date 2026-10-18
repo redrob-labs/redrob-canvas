@@ -4940,3 +4940,17 @@ mark-style	Japanese	Japońskie
 	Open a document to edit its scripts.	Otwórz dokument, aby edytować jego skrypty.
 	Alignment Handles	Uchwyty wyrównania
 	Align (Shift: move the key object)	Wyrównaj (Shift: przesuń obiekt kluczowy)
+	Stylesheet	Arkusz stylów
+	No rules yet. Add one and assign its class to objects.	Brak reguł. Dodaj jedną i przypisz jej klasę obiektom.
+	Add Rule	Dodaj regułę
+	Remove Rule	Usuń regułę
+	Selector:	Selektor:
+	Declarations:	Deklaracje:
+	Assign to Selection	Przypisz do zaznaczenia
+	Remove from Selection	Usuń z zaznaczenia
+	Add CSS Rule	Dodaj regułę CSS
+	Edit CSS Rule	Edytuj regułę CSS
+	Remove CSS Rule	Usuń regułę CSS
+	Assign CSS Class	Przypisz klasę CSS
+	Remove CSS Class	Usuń klasę CSS
+	Apply Stylesheet	Zastosuj arkusz stylów

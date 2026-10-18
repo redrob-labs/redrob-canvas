@@ -119,14 +119,16 @@ fn write(doc: &Document, opts: &ExportOptions, native: Option<&[u8]>, id_prefix:
     out.push_str(&format!(" viewBox=\"0 0 {ww} {hh}\">{nl}"));
     let css = opts.styling == Styling::InternalCss && !w.classes.is_empty();
     let fonts = w.font_faces();
-    if !w.defs.is_empty() || css || !fonts.is_empty() {
+    // The document's own stylesheet (Selectors and CSS) goes along with the styling classes.
+    let sheet: Vec<String> = doc.stylesheet.iter().map(redrob_vector_doc::CssRule::text).collect();
+    if !w.defs.is_empty() || css || !fonts.is_empty() || !sheet.is_empty() {
         out.push_str(&w.indent(1));
         out.push_str(&format!("<defs>{nl}"));
-        if css || !fonts.is_empty() {
+        if css || !fonts.is_empty() || !sheet.is_empty() {
             out.push_str(&w.indent(2));
             out.push_str("<style>");
             let classes = w.classes.iter().enumerate().filter(|_| css).map(|(i, c)| format!(".{id_prefix}cls-{}{{{c}}}", i + 1));
-            for rule in classes.chain(fonts) {
+            for rule in classes.chain(fonts).chain(sheet) {
                 out.push_str(&format!("{nl}{}{}", w.indent(3), xml_escape(&rule)));
             }
             out.push_str(&format!("{nl}{}</style>{nl}", w.indent(2)));
@@ -648,6 +650,13 @@ impl Writer<'_> {
         }
         let mut keys = HashSet::new();
         for (k, v) in n.extras().attrs.as_deref().map_or(&[][..], |a| a.data.as_slice()) {
+            // The object's classes (Selectors and CSS) are its SVG `class`.
+            if k == redrob_vector_doc::CssRule::CLASS_KEY {
+                if !v.trim().is_empty() && valid_xml_value(v) {
+                    out.push_str(&format!(" class=\"{}\"", xml_attr_escape(v.trim())));
+                }
+                continue;
+            }
             // Ours (`name`, `vc-…`) are written by the export itself.
             if k == "name" || k.starts_with("vc-") {
                 continue;

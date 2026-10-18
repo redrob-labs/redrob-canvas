@@ -4641,3 +4641,17 @@ theme	Appearance	Erscheinungsbild
 	Open a document to edit its scripts.	Öffnen Sie ein Dokument, um seine Skripte zu bearbeiten.
 	Alignment Handles	Ausrichtungsgriffe
 	Align (Shift: move the key object)	Ausrichten (Shift: Schlüsselobjekt verschieben)
+	Stylesheet	Stylesheet
+	No rules yet. Add one and assign its class to objects.	Noch keine Regeln. Fügen Sie eine hinzu und weisen Sie ihre Klasse Objekten zu.
+	Add Rule	Regel hinzufügen
+	Remove Rule	Regel entfernen
+	Selector:	Selektor:
+	Declarations:	Deklarationen:
+	Assign to Selection	Auswahl zuweisen
+	Remove from Selection	Aus Auswahl entfernen
+	Add CSS Rule	CSS-Regel hinzufügen
+	Edit CSS Rule	CSS-Regel bearbeiten
+	Remove CSS Rule	CSS-Regel entfernen
+	Assign CSS Class	CSS-Klasse zuweisen
+	Remove CSS Class	CSS-Klasse entfernen
+	Apply Stylesheet	Stylesheet anwenden

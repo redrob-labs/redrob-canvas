@@ -5050,3 +5050,17 @@ mark-style	Japanese	Japonesas
 	Open a document to edit its scripts.	Abra un documento para editar sus scripts.
 	Alignment Handles	Manejadores de alineación
 	Align (Shift: move the key object)	Alinear (Mayús: mover el objeto clave)
+	Stylesheet	Hoja de estilos
+	No rules yet. Add one and assign its class to objects.	Aún no hay reglas. Añada una y asigne su clase a los objetos.
+	Add Rule	Añadir regla
+	Remove Rule	Quitar regla
+	Selector:	Selector:
+	Declarations:	Declaraciones:
+	Assign to Selection	Asignar a la selección
+	Remove from Selection	Quitar de la selección
+	Add CSS Rule	Añadir regla CSS
+	Edit CSS Rule	Editar regla CSS
+	Remove CSS Rule	Quitar regla CSS
+	Assign CSS Class	Asignar clase CSS
+	Remove CSS Class	Quitar clase CSS
+	Apply Stylesheet	Aplicar hoja de estilos

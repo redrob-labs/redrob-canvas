@@ -5061,3 +5061,17 @@ imageTrace	Outline	Körvonal
 	Open a document to edit its scripts.	Nyisson meg egy dokumentumot a szkriptjei szerkesztéséhez.
 	Alignment Handles	Igazítási fogantyúk
 	Align (Shift: move the key object)	Igazítás (Shift: a kulcsobjektum mozog)
+	Stylesheet	Stíluslap
+	No rules yet. Add one and assign its class to objects.	Még nincs szabály. Adjon hozzá egyet, és rendelje osztályát objektumokhoz.
+	Add Rule	Szabály hozzáadása
+	Remove Rule	Szabály eltávolítása
+	Selector:	Szelektor:
+	Declarations:	Deklarációk:
+	Assign to Selection	Hozzárendelés a kijelöléshez
+	Remove from Selection	Eltávolítás a kijelölésről
+	Add CSS Rule	CSS-szabály hozzáadása
+	Edit CSS Rule	CSS-szabály szerkesztése
+	Remove CSS Rule	CSS-szabály eltávolítása
+	Assign CSS Class	CSS-osztály hozzárendelése
+	Remove CSS Class	CSS-osztály eltávolítása
+	Apply Stylesheet	Stíluslap alkalmazása

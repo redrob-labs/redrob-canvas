@@ -5109,3 +5109,17 @@ theme	Appearance	Apparence
 	Open a document to edit its scripts.	Ouvrez un document pour modifier ses scripts.
 	Alignment Handles	Poignées d’alignement
 	Align (Shift: move the key object)	Aligner (Maj : déplacer l’objet clé)
+	Stylesheet	Feuille de style
+	No rules yet. Add one and assign its class to objects.	Pas encore de règles. Ajoutez-en une et affectez sa classe aux objets.
+	Add Rule	Ajouter une règle
+	Remove Rule	Supprimer la règle
+	Selector:	Sélecteur :
+	Declarations:	Déclarations :
+	Assign to Selection	Affecter à la sélection
+	Remove from Selection	Retirer de la sélection
+	Add CSS Rule	Ajouter une règle CSS
+	Edit CSS Rule	Modifier la règle CSS
+	Remove CSS Rule	Supprimer la règle CSS
+	Assign CSS Class	Affecter une classe CSS
+	Remove CSS Class	Retirer la classe CSS
+	Apply Stylesheet	Appliquer la feuille de style

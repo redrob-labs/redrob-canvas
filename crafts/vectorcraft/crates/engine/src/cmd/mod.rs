@@ -79,6 +79,7 @@ pub(crate) mod slices;
 mod stroke;
 mod style;
 pub mod stylelib;
+mod stylesheet;
 mod swatch;
 pub mod swatchlib;
 pub(crate) mod tabs;
@@ -299,6 +300,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(filtercmds::specs());
         v.extend(gridcmds::specs());
         v.extend(scriptcmds::specs());
+        v.extend(stylesheet::specs());
         v
     })
 }

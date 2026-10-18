@@ -4653,3 +4653,17 @@ theme	Appearance	Giao diện
 	Open a document to edit its scripts.	Mở một tài liệu để sửa tập lệnh của nó.
 	Alignment Handles	Tay cầm căn chỉnh
 	Align (Shift: move the key object)	Căn chỉnh (Shift: di chuyển đối tượng khoá)
+	Stylesheet	Bảng kiểu
+	No rules yet. Add one and assign its class to objects.	Chưa có quy tắc. Thêm một quy tắc và gán lớp của nó cho đối tượng.
+	Add Rule	Thêm quy tắc
+	Remove Rule	Xoá quy tắc
+	Selector:	Bộ chọn:
+	Declarations:	Khai báo:
+	Assign to Selection	Gán cho vùng chọn
+	Remove from Selection	Bỏ khỏi vùng chọn
+	Add CSS Rule	Thêm quy tắc CSS
+	Edit CSS Rule	Sửa quy tắc CSS
+	Remove CSS Rule	Xoá quy tắc CSS
+	Assign CSS Class	Gán lớp CSS
+	Remove CSS Class	Bỏ lớp CSS
+	Apply Stylesheet	Áp dụng bảng kiểu
