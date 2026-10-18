@@ -60,6 +60,14 @@ pub struct AttributesInfo {
     pub reversed: Option<bool>,
     /// [`Session::recent_urls`].
     pub recent_urls: Vec<String>,
+    /// Object Properties: the link's target and title, the event attributes, the highlight
+    /// colour, an image's DPI and preserveAspectRatio; `None` where the targets differ.
+    pub url_target: Option<String>,
+    pub url_title: Option<String>,
+    pub events: Option<Vec<(String, String)>>,
+    pub highlight: Option<Option<String>>,
+    pub dpi: Option<Option<f64>>,
+    pub preserve_aspect_ratio: Option<Option<String>>,
 }
 
 impl AttributesInfo {
@@ -77,6 +85,12 @@ impl AttributesInfo {
             "fillRule": self.fill_rule.map(super::attributes::rule_name),
             "reversed": self.reversed,
             "recentUrls": self.recent_urls,
+            "urlTarget": self.url_target,
+            "urlTitle": self.url_title,
+            "events": self.events.as_ref().map(|e| e.iter().map(|(k, v)| (k.clone(), Value::String(v.clone()))).collect::<serde_json::Map<String, Value>>()),
+            "highlight": self.highlight,
+            "dpi": self.dpi,
+            "preserveAspectRatio": self.preserve_aspect_ratio,
         })
     }
 }

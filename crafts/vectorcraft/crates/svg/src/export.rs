@@ -654,6 +654,17 @@ impl Writer<'_> {
             self.non_latin1_names |= k.chars().any(|c| u32::from(c) > 0xff);
             out.push_str(&format!(" data-{k}=\"{}\"", xml_attr_escape(v)));
         }
+        // Object Properties: the event attributes (interactivity) and the highlight colour.
+        if let Some(a) = n.extras().attrs.as_deref() {
+            for (k, script) in &a.events {
+                if k.starts_with("on") && k.chars().all(|c| c.is_ascii_alphanumeric()) && valid_xml_value(script) {
+                    out.push_str(&format!(" {k}=\"{}\"", xml_attr_escape(script)));
+                }
+            }
+            if let Some(h) = &a.highlight {
+                out.push_str(&format!(" data-vc-highlight=\"{}\"", xml_attr_escape(h)));
+            }
+        }
         out
     }
     fn matrix(&self, m: Affine) -> String {
@@ -1458,8 +1469,14 @@ impl Writer<'_> {
     fn linked_node(&mut self, n: &Node) {
         match n.url().filter(|_| n.visible && !self.anonymous) {
             Some(url) => {
-                self.line(&format!("<a xlink:href=\"{}\">", xml_escape(url)));
+                let a = n.extras().attrs.as_deref();
+                let target = a.map(|a| a.url_target.as_str()).filter(|t| !t.is_empty()).map(|t| format!(" target=\"{}\"", xml_escape(t))).unwrap_or_default();
+                let title = a.map(|a| a.url_title.as_str()).filter(|t| !t.is_empty());
+                self.line(&format!("<a xlink:href=\"{}\"{target}>", xml_escape(url)));
                 self.depth += 1;
+                if let Some(t) = title {
+                    self.line(&format!("<title>{}</title>", xml_escape(t)));
+                }
                 self.node_body(n);
                 self.depth -= 1;
                 self.line("</a>");
@@ -1581,8 +1598,17 @@ impl Writer<'_> {
                     return;
                 }
                 let Some(href) = self.image_href(im) else { return };
+                // Object Properties › preserve aspect ratio: the image's own value, else none (the
+                // transform places it exactly).
+                let par = n
+                    .extras()
+                    .attrs
+                    .as_deref()
+                    .and_then(|a| a.preserve_aspect_ratio.clone())
+                    .filter(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_alphanumeric() || c == ' '))
+                    .unwrap_or_else(|| "none".into());
                 self.line(&format!(
-                    "<image{id} width=\"{}\" height=\"{}\" transform=\"{m}\" preserveAspectRatio=\"none\"{a} xlink:href=\"{}\"/>",
+                    "<image{id} width=\"{}\" height=\"{}\" transform=\"{m}\" preserveAspectRatio=\"{par}\"{a} xlink:href=\"{}\"/>",
                     im.width,
                     im.height,
                     xml_escape(&href)

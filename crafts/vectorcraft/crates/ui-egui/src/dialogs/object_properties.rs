@@ -3,8 +3,11 @@
 //! `layer.setProps` and the rest with `attributes.set`, as one undo step.
 //!
 //! Fields: `ids` (the objects), `id` (the XML id, [`redrob_vector_doc::xml_id`] of the name),
-//! `label` (the name as shown), `title`, `description`, `url`, `hidden`, `locked`. With several
-//! objects the id and label are left alone (only the first object's are shown).
+//! `label` (the name as shown), `title`, `description`, `url`, `urlTarget`, `urlTitle`,
+//! `highlight` (a hex colour, empty: the layer colour), `hidden`, `locked`, for images `dpi` and
+//! `preserveAspectRatio`, and the interactivity scripts `onclick`, `onmouseover`, `onmouseout`,
+//! `onmousedown`, `onmouseup`, `onfocusin`, `onfocusout`, `onload`. With several objects the id
+//! and label are left alone (only the first object's are shown).
 
 use redrob_vector_doc::{Node, NodeId, xml_id};
 use serde_json::{Value, json};
@@ -16,6 +19,9 @@ use crate::{VectorcraftApp, widgets};
 
 /// The dialog kind of Object Properties.
 pub const KIND: &str = "objectProperties";
+
+/// The SVG event attributes the Interactivity section edits.
+pub const EVENTS: [&str; 8] = ["onclick", "onmouseover", "onmouseout", "onmousedown", "onmouseup", "onfocusin", "onfocusout", "onload"];
 
 pub(super) const SPEC: DialogSpec = DialogSpec { heading: |_| tl!("Object Properties").into(), body, confirm, min_width: 360.0, ..DialogSpec::FORM };
 
@@ -29,8 +35,21 @@ fn fields_of(n: &Node) -> serde_json::Map<String, Value> {
     f.insert("title".into(), json!(attrs.title));
     f.insert("description".into(), json!(attrs.description));
     f.insert("url".into(), json!(attrs.url));
+    f.insert("urlTarget".into(), json!(attrs.url_target));
+    f.insert("urlTitle".into(), json!(attrs.url_title));
+    f.insert("highlight".into(), json!(attrs.highlight.clone().unwrap_or_default()));
     f.insert("hidden".into(), json!(!n.visible));
     f.insert("locked".into(), json!(n.locked));
+    let image = matches!(n.kind, redrob_vector_doc::NodeKind::Image(_));
+    f.insert("image".into(), json!(image));
+    if image {
+        f.insert("dpi".into(), json!(attrs.dpi.map(|d| format!("{d}")).unwrap_or_default()));
+        f.insert("preserveAspectRatio".into(), json!(attrs.preserve_aspect_ratio.clone().unwrap_or_default()));
+    }
+    for ev in EVENTS {
+        let script = attrs.events.iter().find(|(k, _)| k == ev).map(|(_, v)| v.clone()).unwrap_or_default();
+        f.insert(ev.into(), json!(script));
+    }
     f
 }
 
@@ -89,12 +108,40 @@ fn body(_: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
         label(ui, tl!("Hyperlink:"));
         form::text(ui, d, "url", 220.0);
         ui.end_row();
+        label(ui, tl!("Link target:"));
+        form::text(ui, d, "urlTarget", 220.0);
+        ui.end_row();
+        label(ui, tl!("Link title:"));
+        form::text(ui, d, "urlTitle", 220.0);
+        ui.end_row();
+        label(ui, tl!("Highlight color:"));
+        form::text(ui, d, "highlight", 220.0);
+        ui.end_row();
+        if d.bool("image") {
+            label(ui, tl!("DPI:"));
+            form::text(ui, d, "dpi", 220.0);
+            ui.end_row();
+            label(ui, tl!("Aspect ratio:"));
+            form::text(ui, d, "preserveAspectRatio", 220.0);
+            ui.end_row();
+        }
     });
     ui.add_space(8.0);
     ui.horizontal(|ui| {
         toggle(ui, d, "hidden", tl!("Hide"));
         ui.add_space(16.0);
         toggle(ui, d, "locked", tl!("Lock"));
+    });
+    ui.add_space(8.0);
+    ui.collapsing(tl!("Interactivity"), |ui| {
+        grid(ui, |ui| {
+            for ev in EVENTS {
+                // Attribute names are SVG's own: shown as they are written.
+                label(ui, ev);
+                form::text(ui, d, ev, 220.0);
+                ui.end_row();
+            }
+        });
     });
     false
 }
@@ -110,7 +157,24 @@ pub(crate) fn params(d: &Dialog, xml_id: bool) -> [(&'static str, Value); 2] {
         let name = if xml_id { d.str("id") } else { d.str("label") };
         o.insert("name".into(), json!(name));
     }
-    let attrs = json!({ "ids": ids, "title": d.str("title"), "description": d.str("description"), "url": d.str("url") });
+    let events: serde_json::Map<String, Value> = EVENTS.iter().map(|ev| (ev.to_string(), json!(d.str(ev)))).collect();
+    let highlight = d.str("highlight");
+    let mut attrs = json!({
+        "ids": ids,
+        "title": d.str("title"),
+        "description": d.str("description"),
+        "url": d.str("url"),
+        "urlTarget": d.str("urlTarget"),
+        "urlTitle": d.str("urlTitle"),
+        "events": events,
+        "highlight": if highlight.trim().is_empty() { Value::Null } else { json!(highlight.trim()) },
+    });
+    if d.bool("image") && let Some(o) = attrs.as_object_mut() {
+        let dpi = d.str("dpi");
+        o.insert("dpi".into(), dpi.trim().parse::<f64>().ok().filter(|v| *v > 0.0).map_or(Value::Null, |v| json!(v)));
+        let par = d.str("preserveAspectRatio");
+        o.insert("preserveAspectRatio".into(), if par.trim().is_empty() { Value::Null } else { json!(par.trim()) });
+    }
     [("layer.setProps", props), ("attributes.set", attrs)]
 }
 

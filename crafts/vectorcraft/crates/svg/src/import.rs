@@ -92,6 +92,8 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
         non_scaling: found.non_scaling,
         data: found.data,
         descriptions: found.descriptions,
+        link_extras: found.link_extras,
+        properties: found.properties,
         sublayers: found.sublayers,
         sublayer_groups: HashSet::new(),
         screen: k,
@@ -376,6 +378,10 @@ struct Importer {
     data: HashMap<String, Vec<(String, String)>>,
     /// The `<title>` and `<desc>` of elements, by id ([`descriptions`]).
     descriptions: HashMap<String, (String, String)>,
+    /// Each `<a>`'s target and title, by id ([`prepass`]).
+    link_extras: HashMap<String, (String, String)>,
+    /// Object Properties read from elements, by id ([`prepass`]).
+    properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>)>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
     /// The groups made of them, made sublayers where they sit in a layer ([`promote_sublayers`]).
@@ -496,6 +502,11 @@ struct Found {
     descriptions: HashMap<String, (String, String)>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
+    /// Each `<a>`'s target and title, by id.
+    link_extras: HashMap<String, (String, String)>,
+    /// Object Properties read from elements, by id: event attributes, highlight colour, an
+    /// image's preserveAspectRatio.
+    properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>)>,
     warnings: Vec<String>,
 }
 
@@ -606,6 +617,10 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
             "groupmode",
             "<title",
             "<desc",
+            "onclick",
+            "onmouse",
+            "onload",
+            "onfocus",
         ]
         .iter()
         .any(|t| svg.contains(t))
@@ -616,7 +631,34 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
     let elements = || xml.descendants().filter(|n| n.is_element());
     for a in elements().filter(|n| n.tag_name().name() == "a") {
         if let Some(url) = href(a) {
-            found.links.insert(edits.id(svg, a), url.to_string());
+            let id = edits.id(svg, a);
+            // The link's target and its own `<title>` (Object Properties).
+            let target = a.attribute("target").unwrap_or("").to_string();
+            let title = a
+                .children()
+                .find(|c| c.is_element() && c.tag_name().name() == "title")
+                .map(|c| c.descendants().filter_map(|t| t.text()).collect::<String>().trim().to_string())
+                .unwrap_or_default();
+            if !target.is_empty() || !title.is_empty() {
+                found.link_extras.insert(id.clone(), (target, title));
+            }
+            found.links.insert(id, url.to_string());
+        }
+    }
+    if ["onclick", "onmouse", "onload", "onfocus", "data-vc-highlight", "preserveAspectRatio"].iter().any(|t| svg.contains(t)) {
+        for e in elements().filter(|e| OBJECT_ELEMENTS.contains(&e.tag_name().name())) {
+            let events: Vec<(String, String)> = e
+                .attributes()
+                .filter(|a| a.namespace().is_none())
+                .filter(|a| a.name().starts_with("on") && a.name().len() > 2 && a.name().chars().all(|c| c.is_ascii_alphanumeric()))
+                .take(MAX_DATA)
+                .map(|a| (a.name().to_string(), a.value().to_string()))
+                .collect();
+            let highlight = e.attribute("data-vc-highlight").map(str::to_string);
+            let par = e.attribute("preserveAspectRatio").filter(|_| e.tag_name().name() == "image").filter(|p| *p != "none").map(str::to_string);
+            if !events.is_empty() || highlight.is_some() || par.is_some() {
+                found.properties.insert(edits.id(svg, e), (events, highlight, par));
+            }
         }
     }
     if svg.contains("data-") {
@@ -908,6 +950,20 @@ impl Importer {
         if let Some(data) = self.data.get(id).filter(|_| n.extras().attrs.as_ref().is_none_or(|a| a.data.is_empty())) {
             n.edit_attrs(|a| a.data = data.clone());
         }
+        // Object Properties: event attributes, the highlight colour, an image's aspect handling.
+        if let Some((events, highlight, par)) = self.properties.get(id) {
+            n.edit_attrs(|a| {
+                if a.events.is_empty() {
+                    a.events.clone_from(events);
+                }
+                if a.highlight.is_none() {
+                    a.highlight.clone_from(highlight);
+                }
+                if a.preserve_aspect_ratio.is_none() {
+                    a.preserve_aspect_ratio.clone_from(par);
+                }
+            });
+        }
         // Its title and description too, unless an inner element gave it some.
         if let Some((title, desc)) = self.descriptions.get(id) {
             n.edit_attrs(|a| {
@@ -949,6 +1005,14 @@ impl Importer {
         };
         if let Some(url) = url {
             link(&mut n, &url);
+            if let Some((target, title)) = self.link_extras.get(g.id())
+                && n.url() == Some(url.as_str())
+            {
+                n.edit_attrs(|a| {
+                    a.url_target.clone_from(target);
+                    a.url_title.clone_from(title);
+                });
+            }
         }
         Some(n)
     }
