@@ -4273,3 +4273,13 @@ lighting	Light	光源
 	Set Path Data	设置路径数据
 	Round to:	四舍五入到：
 	Round Path Data	四舍五入路径数据
+	Connector Tool	连接线工具
+	Connect Objects	连接对象
+	Reroute Connectors	重新布线连接线
+	Connector Obstacle	连接线障碍物
+	Arrange Connected Objects	排列已连接对象
+	Arrange Connected	排列已连接
+	Routing:	布线：
+	Orthogonal	正交
+	Polyline	折线
+	Curvature:	曲率：

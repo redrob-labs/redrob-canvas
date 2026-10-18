@@ -4060,3 +4060,13 @@ lighting	Light	光源
 	Set Path Data	設定路徑資料
 	Round to:	四捨五入至：
 	Round Path Data	四捨五入路徑資料
+	Connector Tool	連接線工具
+	Connect Objects	連接物件
+	Reroute Connectors	重新佈線連接線
+	Connector Obstacle	連接線障礙物
+	Arrange Connected Objects	排列已連接物件
+	Arrange Connected	排列已連接
+	Routing:	佈線：
+	Orthogonal	正交
+	Polyline	折線
+	Curvature:	曲率：

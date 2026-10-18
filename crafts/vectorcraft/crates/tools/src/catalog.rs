@@ -47,6 +47,7 @@ pub const TOOL_GROUPS: &[&[ToolInfo]] = &[
         t("spiral", "Spiral Tool", None, "tool-spiral"),
         t("rectangularGrid", "Rectangular Grid Tool", None, "tool-rect-grid"),
         t("polarGrid", "Polar Grid Tool", None, "tool-polar-grid"),
+        t("connector", "Connector Tool", None, "tool-connector"),
     ],
     &[
         t("rectangle", "Rectangle Tool", Some("M"), "tool-rect"),

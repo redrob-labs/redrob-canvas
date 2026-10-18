@@ -4662,3 +4662,13 @@ theme	Appearance	Erscheinungsbild
 	Set Path Data	Pfaddaten setzen
 	Round to:	Runden auf:
 	Round Path Data	Pfaddaten runden
+	Connector Tool	Verbinder-Werkzeug
+	Connect Objects	Objekte verbinden
+	Reroute Connectors	Verbinder neu führen
+	Connector Obstacle	Verbinder-Hindernis
+	Arrange Connected Objects	Verbundene Objekte anordnen
+	Arrange Connected	Verbundene anordnen
+	Routing:	Führung:
+	Orthogonal	Orthogonal
+	Polyline	Polylinie
+	Curvature:	Krümmung:

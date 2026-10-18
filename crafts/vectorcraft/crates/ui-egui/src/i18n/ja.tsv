@@ -4701,3 +4701,13 @@ lighting	Light	ライト
 	Set Path Data	パスデータを設定
 	Round to:	丸め桁数:
 	Round Path Data	パスデータを丸める
+	Connector Tool	コネクターツール
+	Connect Objects	オブジェクトを接続
+	Reroute Connectors	コネクターを再配線
+	Connector Obstacle	コネクターの障害物
+	Arrange Connected Objects	接続されたオブジェクトを配置
+	Arrange Connected	接続を配置
+	Routing:	配線:
+	Orthogonal	直交
+	Polyline	折れ線
+	Curvature:	曲率:

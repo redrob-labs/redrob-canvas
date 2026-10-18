@@ -4707,3 +4707,13 @@ lighting	Light	Luce
 	Set Path Data	Imposta dati tracciato
 	Round to:	Arrotonda a:
 	Round Path Data	Arrotonda dati tracciato
+	Connector Tool	Strumento connettore
+	Connect Objects	Connetti oggetti
+	Reroute Connectors	Reinstrada connettori
+	Connector Obstacle	Ostacolo connettore
+	Arrange Connected Objects	Disponi oggetti connessi
+	Arrange Connected	Disponi connessi
+	Routing:	Instradamento:
+	Orthogonal	Ortogonale
+	Polyline	Polilinea
+	Curvature:	Curvatura:

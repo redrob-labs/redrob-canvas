@@ -5115,3 +5115,13 @@ mark-style	Japanese	Japonské
 	Set Path Data	Nastavit data cesty
 	Round to:	Zaokrouhlit na:
 	Round Path Data	Zaokrouhlit data cesty
+	Connector Tool	Nástroj spojnice
+	Connect Objects	Spojit objekty
+	Reroute Connectors	Přesměrovat spojnice
+	Connector Obstacle	Překážka spojnic
+	Arrange Connected Objects	Uspořádat spojené objekty
+	Arrange Connected	Uspořádat spojené
+	Routing:	Vedení:
+	Orthogonal	Pravoúhlé
+	Polyline	Lomená čára
+	Curvature:	Zakřivení:

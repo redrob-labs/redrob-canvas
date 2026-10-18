@@ -5082,3 +5082,13 @@ imageTrace	Outline	Körvonal
 	Set Path Data	Útvonaladatok beállítása
 	Round to:	Kerekítés:
 	Round Path Data	Útvonaladatok kerekítése
+	Connector Tool	Összekötő eszköz
+	Connect Objects	Objektumok összekötése
+	Reroute Connectors	Összekötők újravezetése
+	Connector Obstacle	Összekötő-akadály
+	Arrange Connected Objects	Összekötött objektumok elrendezése
+	Arrange Connected	Összekötöttek elrendezése
+	Routing:	Vezetés:
+	Orthogonal	Derékszögű
+	Polyline	Töröttvonal
+	Curvature:	Görbület:

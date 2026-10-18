@@ -10,6 +10,7 @@ pub(crate) mod clones;
 mod colorcmds;
 pub mod colormgmt;
 pub mod colortheme;
+pub(crate) mod connector;
 mod create;
 mod css;
 mod cut;
@@ -303,6 +304,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(scriptcmds::specs());
         v.extend(stylesheet::specs());
         v.extend(xmlcmds::specs());
+        v.extend(connector::specs());
         v
     })
 }

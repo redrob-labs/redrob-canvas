@@ -255,9 +255,9 @@ name = "Connector tool"
 reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Draws lines that stay attached to the objects they connect and reroute around objects marked as obstacles; polyline or orthogonal routing, curvature, spacing, graph auto-layout of connected objects."
-ours = "none"
-ours_where = ""
-gap = "no connector objects"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/connector.rs (Connector tool: drag object to object, Shift-click marks obstacles, Alt-click reroutes), crafts/vectorcraft/crates/engine/src/cmd/connector.rs (connector.create/reroute/setObstacle/layout: polyline or orthogonal routing around obstacles with spacing and curvature; transforms reroute), crafts/vectorcraft/crates/engine/src/cmd/object.rs (apply_transform reroutes), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (control bar: Routing, Curvature, Spacing, Arrange Connected)"
+gap = ""
 priority = 3
 
 [[feature]]

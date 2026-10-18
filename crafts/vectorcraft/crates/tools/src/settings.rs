@@ -28,6 +28,7 @@ const ROWS: &[Row] = &[
     (&["arc"], None, &["closed"]),
     (&["spiral"], None, &["decay", "segments", "clockwise"]),
     (&["livePaintBucket"], None, &["threshold", "grow", "channel", "union"]),
+    (&["connector"], None, &["routing", "curvature", "spacing"]),
     (&["rectangularGrid"], None, &["rows", "columns", "rowSkew", "columnSkew", "frame", "fill"]),
     (&["polarGrid"], None, &["concentric", "radial", "concentricSkew", "radialSkew", "compound", "fill"]),
     (&["pencil", "paintbrush"], None, &["fidelity", "fill", "editWithin", "closeWithin", "mode", "shape", "usePressure", "lpeSimplify"]),

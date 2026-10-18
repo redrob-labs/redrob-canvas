@@ -4672,3 +4672,13 @@ lighting	Light	Світло
 	Set Path Data	Задати дані контуру
 	Round to:	Округлити до:
 	Round Path Data	Округлити дані контуру
+	Connector Tool	Інструмент «Коннектор»
+	Connect Objects	З’єднати об’єкти
+	Reroute Connectors	Перебудувати коннектори
+	Connector Obstacle	Перешкода для коннекторів
+	Arrange Connected Objects	Розставити з’єднані об’єкти
+	Arrange Connected	Розставити з’єднані
+	Routing:	Прокладання:
+	Orthogonal	Ортогонально
+	Polyline	Полілінія
+	Curvature:	Кривина:

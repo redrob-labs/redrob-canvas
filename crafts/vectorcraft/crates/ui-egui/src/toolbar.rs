@@ -36,7 +36,7 @@ pub const BASIC: &[(&str, &[&[&str]])] = &[
     (
         "Shapes",
         &[
-            &["rectangle", "roundedRectangle", "star", "lineSegment", "arc", "spiral", "rectangularGrid", "polarGrid", "flare"],
+            &["rectangle", "roundedRectangle", "star", "lineSegment", "arc", "spiral", "rectangularGrid", "polarGrid", "flare", "connector"],
             &["ellipse"],
             &["polygon"],
             &["shaper"],
@@ -410,6 +410,9 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.session.tool_id() == "livePaintBucket" {
         return paint_bucket_options(app, ui);
     }
+    if app.session.tool_id() == "connector" {
+        return connector_options(app, ui);
+    }
     if app.session.tool_id() != "mirrorCut" {
         return;
     }
@@ -521,6 +524,35 @@ fn paint_bucket_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     }
     if widgets::check(ui, "Add to Fill", union, true) {
         app.run("tool.setOption", json!({ "key": "union", "value": !union })).ok();
+    }
+    ui.separator();
+}
+
+/// The Connector tool's controls: routing (polyline or orthogonal), the corner curvature and the
+/// spacing kept from obstacles, plus Arrange (graph auto-layout of the connected objects).
+fn connector_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    const ROUTINGS: [(&str, &str); 2] = [("orthogonal", "Orthogonal"), ("polyline", "Polyline")];
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    let routing = opts["routing"].as_str().unwrap_or("orthogonal");
+    let curvature = opts["curvature"].as_f64().unwrap_or(0.0);
+    let spacing = opts["spacing"].as_f64().unwrap_or(10.0);
+    ui.label(egui::RichText::new(tl!("Routing:")).size(12.0).color(t.text));
+    let shown = ROUTINGS.iter().find(|(v, _)| *v == routing).map_or(routing, |(_, l)| *l);
+    let labels: Vec<&str> = ROUTINGS.iter().map(|(_, l)| *l).collect();
+    if let Some((value, _)) = widgets::dropdown(ui, ("cb-connector", "routing"), shown, &labels, 104.0).and_then(|i| ROUTINGS.get(i)) {
+        app.run("tool.setOption", json!({ "key": "routing", "value": value })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Curvature:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-connector-curvature", curvature, "%", 0, 48.0) {
+        app.run("tool.setOption", json!({ "key": "curvature", "value": v.clamp(0.0, 100.0) })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Spacing:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-connector-spacing", spacing, "pt", 1, 52.0) {
+        app.run("tool.setOption", json!({ "key": "spacing", "value": v.clamp(0.0, 1000.0) })).ok();
+    }
+    if widgets::secondary_button(ui, tl!("Arrange Connected")).clicked() {
+        app.run("connector.layout", json!({})).ok();
     }
     ui.separator();
 }

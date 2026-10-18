@@ -4671,3 +4671,13 @@ lighting	Light	광원
 	Set Path Data	경로 데이터 설정
 	Round to:	반올림 자릿수:
 	Round Path Data	경로 데이터 반올림
+	Connector Tool	커넥터 도구
+	Connect Objects	오브젝트 연결
+	Reroute Connectors	커넥터 다시 배선
+	Connector Obstacle	커넥터 장애물
+	Arrange Connected Objects	연결된 오브젝트 정렬
+	Arrange Connected	연결 정렬
+	Routing:	배선:
+	Orthogonal	직교
+	Polyline	폴리라인
+	Curvature:	곡률:

@@ -4674,3 +4674,13 @@ theme	Appearance	Giao diện
 	Set Path Data	Đặt dữ liệu đường
 	Round to:	Làm tròn đến:
 	Round Path Data	Làm tròn dữ liệu đường
+	Connector Tool	Công cụ nối
+	Connect Objects	Nối đối tượng
+	Reroute Connectors	Định tuyến lại đường nối
+	Connector Obstacle	Vật cản đường nối
+	Arrange Connected Objects	Sắp xếp đối tượng đã nối
+	Arrange Connected	Sắp xếp đã nối
+	Routing:	Định tuyến:
+	Orthogonal	Vuông góc
+	Polyline	Đường gấp khúc
+	Curvature:	Độ cong:
