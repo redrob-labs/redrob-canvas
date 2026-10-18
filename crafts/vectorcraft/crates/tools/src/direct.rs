@@ -380,20 +380,27 @@ impl Tool for DirectSelectionTool {
         match key {
             ToolKey::Tab => cx.selection.objects.iter().any(|id| cx.doc.node(*id).is_some_and(|n| n.path_data().is_some())),
             ToolKey::PageUp | ToolKey::PageDown => cx.selection.anchors.values().any(|a| !a.is_empty()),
+            // Cmd+A and ! act on anchors only while some anchors are direct-selected (else Cmd+A
+            // is Select › All).
+            ToolKey::SelectAll | ToolKey::Invert => cx.selection.anchors.values().any(|a| !a.is_empty()),
             _ => false,
         }
     }
     /// Escape during a drag (anchors, handles, segments, objects, type areas, blend spines, a
     /// marquee) cancels it: what it moved goes back and the tool waits for the next press (#1743).
     fn key(&mut self, cx: &ToolContext, key: ToolKey, mods: Mods) -> Vec<Action> {
-        if matches!(key, ToolKey::Tab | ToolKey::PageUp | ToolKey::PageDown) {
+        if matches!(key, ToolKey::Tab | ToolKey::PageUp | ToolKey::PageDown | ToolKey::SelectAll | ToolKey::Invert) {
             if !self.claims_key(cx, key) {
                 return vec![];
             }
+            // Ctrl (Cmd on a Mac keyboard counts too) with Page Up / Page Down grows along the path.
+            let along = mods.ctrl || mods.cmd;
             return match key {
                 ToolKey::Tab => vec![Action::Exec("select.anchorStep".into(), json!({"dir": if mods.shift { -1 } else { 1 }}))],
-                ToolKey::PageUp => vec![Action::Exec("select.anchorGrow".into(), json!({"grow": true}))],
-                _ => vec![Action::Exec("select.anchorGrow".into(), json!({"grow": false}))],
+                ToolKey::PageUp => vec![Action::Exec("select.anchorGrow".into(), json!({"grow": true, "along": along}))],
+                ToolKey::SelectAll => vec![Action::Exec("select.anchorsAll".into(), json!({"acrossSubpaths": mods.alt}))],
+                ToolKey::Invert => vec![Action::Exec("select.anchorsInvert".into(), json!({}))],
+                _ => vec![Action::Exec("select.anchorGrow".into(), json!({"grow": false, "along": along}))],
             };
         }
         if key != ToolKey::Escape || matches!(self.state, State::Idle | State::Mesh | State::Corner(_) | State::ShapeHandle(_) | State::Bracket(_)) {

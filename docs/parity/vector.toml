@@ -582,9 +582,9 @@ name = "Node selection: rubber band, Tab walk, grow by Page keys, nearest"
 reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Rubber band selects nodes (Shift adds), Alt-drag touch-selects along a stroke, Tab/Shift+Tab walk nodes, Ctrl+A selects all nodes of the path, Ctrl+Alt+A all across subpaths, PgUp/PgDn grow or shrink the selection spatially or along the path, ! inverts."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/direct.rs (Alt-drag lasso, Tab, Page Up/Down), crafts/vectorcraft/crates/engine/src/cmd/nodeops.rs (select.anchorStep, select.anchorGrow, select.anchorsTouching)"
-gap = "Page Up/Down grow spatially only (not along the path); no Ctrl+Alt+A across subpaths and no ! invert for anchors"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/nodeops.rs (select.anchorGrow along, select.anchorsAll, select.anchorsInvert), crafts/vectorcraft/crates/tools/src/direct.rs (Ctrl+PgUp/PgDn along the path, Cmd+A / Cmd+Alt+A, !), crafts/vectorcraft/crates/tools/src/lib.rs, crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -618,9 +618,9 @@ name = "Node toolbar X/Y fields and handle visibility toggles"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/editing-paths.html"
 behaviour = "The node toolbar shows the X/Y of the selected node(s) in a chosen unit for numeric editing, plus toggles: show clipping path, show mask, show transform handles, show Bezier handles, show path outline, edit the live path effect parameters on canvas."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (node_options: X/Y fields, Show Handles toggle), crafts/vectorcraft/crates/ui-egui/src/state.rs (ViewFlags.show_handles), crafts/vectorcraft/crates/ui-egui/src/canvas.rs"
-gap = "X/Y edit one selected anchor only; no clipping-path, mask, transform-handle, path-outline or LPE-parameter toggles in the node toolbar"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (node_options: X/Y of all selected anchors, Clip path / Mask / Transform handles / Path outline / Effect knots toggles), crafts/vectorcraft/crates/ui-egui/src/state.rs (ViewFlags.node_*), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (selection_overlay)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -777,9 +777,9 @@ name = "Cut path"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/boolean-operations.html"
 behaviour = "Cuts the bottom path's stroke where the top path crosses it, leaving open stroked segments without fill."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/pathops/src/pathfinder.rs (Outline, Trim), crafts/vectorcraft/crates/engine/src/cmd/path.rs (path.knife, path.lineCut)"
-gap = "Pathfinder Outline splits strokes at all intersections of all objects; no 'cut bottom by top only' variant"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/arrangecmds.rs (path.cutPath), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Path › Cut Path)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -801,9 +801,9 @@ name = "Split path (non-overlapping subpaths)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.3#Path_Operations"
 behaviour = "Like break apart but keeps subpaths that lie inside another (holes) together, so letters keep their counters."
-ours = "none"
-ours_where = ""
-gap = "Release Compound Path always separates every subpath"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/arrangecmds.rs (path.splitNonOverlapping), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Path › Split Path)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -909,8 +909,8 @@ name = "Remove overlaps (arrange)"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/align-and-distribute.html"
 behaviour = "Moves the selected objects apart by the smallest amount so their bounding boxes no longer overlap, with optional horizontal and vertical gaps."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/arrangecmds.rs (object.arrange.removeOverlaps), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Arrange › Remove Overlaps)"
 gap = ""
 priority = 3
 
@@ -1995,9 +1995,9 @@ name = "Arrange: grid"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Arrange"
 behaviour = "Lays the selected objects out in rows x columns with equal or fitted cell sizes, spacing, alignment inside cells and row/column fill order."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/menucmds.rs (Split Into Grid), crafts/vectorcraft/crates/doc/src/node.rs (Repeat grid)"
-gap = "Split Into Grid cuts one object into cells; no 'arrange selected objects into a grid'"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/arrangecmds.rs (object.arrange.grid), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Arrange › Arrange in Grid)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -2007,9 +2007,9 @@ name = "Arrange: polar / circular"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Arrange"
 behaviour = "Places the objects evenly around a circle or ellipse (from a parameter set or from a selected ellipse), with rotation and anchor options."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (Repeat radial)"
-gap = "radial Repeat copies one object; no placement of distinct objects around a circle"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/arrangecmds.rs (object.arrange.polar), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Arrange › Arrange in Circle)"
+gap = ""
 priority = 3
 
 [[feature]]

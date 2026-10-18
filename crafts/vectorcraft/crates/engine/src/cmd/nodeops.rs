@@ -36,9 +36,27 @@ pub fn specs() -> Vec<CommandSpec> {
             "Grow Anchor Selection",
             [],
             None,
-            "{grow?: bool (default true)} grow the direct selection by the unselected anchor nearest to it (over the selected paths), or shrink it by the selected anchor farthest from its centre (Page Up / Page Down in the node tool)",
+            "{grow?: bool (default true), along?: bool (default false: spatially; true: along the path, by the anchors next to the selected ones on their subpath, shrinking from the ends of each selected run)} grow the direct selection by the unselected anchor nearest to it (over the selected paths), or shrink it by the selected anchor farthest from its centre (Page Up / Page Down in the node tool; with Ctrl along the path)",
             has_anchors,
             anchor_grow
+        ),
+        cmd!(
+            "select.anchorsAll",
+            "Select All Anchors",
+            [],
+            None,
+            "{acrossSubpaths?: bool (default false: every anchor of the subpaths that hold a selected anchor, else of the selected paths' first subpath; true: every anchor of every subpath of the selected paths)} (Ctrl+A / Ctrl+Alt+A in the node tool) → {count}",
+            has_selection,
+            anchors_all
+        ),
+        cmd!(
+            "select.anchorsInvert",
+            "Invert Anchor Selection",
+            [],
+            None,
+            "{} over the selected paths, the unselected anchors become selected and the selected ones unselected (! in the node tool) → {count}",
+            has_selection,
+            anchors_invert
         ),
         cmd!(
             "select.anchorsTouching",
@@ -166,6 +184,9 @@ fn anchor_step(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn anchor_grow(s: &mut Session, p: &Value) -> Result<Value> {
     let grow = bool_or(p, "grow", true);
+    if bool_or(p, "along", false) {
+        return anchor_grow_along(s, grow);
+    }
     let st = s.doc()?;
     let mut selected: Vec<(NodeId, AnchorRef, Point)> = vec![];
     let mut candidates: Vec<(NodeId, AnchorRef, Point)> = vec![];
@@ -306,5 +327,164 @@ fn anchors_touching(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
     })?;
+    Ok(json!({ "count": count }))
+}
+
+/// The direct-selected anchors of each selected path (a path selected whole counts as all of its
+/// anchors selected), with the path's anchors in path order.
+fn selected_anchor_sets(s: &Session) -> Result<Vec<(NodeId, Vec<AnchorRef>, BTreeSet<AnchorRef>)>> {
+    let st = s.doc()?;
+    let mut out = vec![];
+    for id in &st.selection.objects {
+        let Some(pd) = st.doc.node(*id).and_then(|n| n.path_data()) else { continue };
+        let all = all_anchors(pd);
+        let picked: BTreeSet<AnchorRef> = match st.selection.anchors.get(id) {
+            Some(set) => set.clone(),
+            None => all.iter().copied().collect(),
+        };
+        out.push((*id, all, picked));
+    }
+    Ok(out)
+}
+
+/// Write `sets` as the anchor selection of their paths (a path left with no anchor leaves the
+/// selection) → the number of anchors selected.
+fn write_anchor_sets(s: &mut Session, sets: Vec<(NodeId, BTreeSet<AnchorRef>)>) -> Result<usize> {
+    let count = sets.iter().map(|(_, set)| set.len()).sum();
+    s.select(|_, sel| {
+        for (id, set) in sets {
+            sel.segments.remove(&id);
+            if set.is_empty() {
+                sel.anchors.remove(&id);
+                sel.remove(id);
+            } else {
+                sel.add(id);
+                sel.anchors.insert(id, set);
+            }
+        }
+    })?;
+    Ok(count)
+}
+
+/// Page Up / Page Down with Ctrl: the selection grows by the anchors next to the selected ones on
+/// their subpath (both neighbours of every selected anchor, wrapping on closed subpaths), or
+/// shrinks by the anchors at the ends of each selected run (a run that is the whole subpath keeps
+/// one anchor).
+fn anchor_grow_along(s: &mut Session, grow: bool) -> Result<Value> {
+    let sets = selected_anchor_sets(s)?;
+    if sets.iter().all(|(_, _, picked)| picked.is_empty()) {
+        return Ok(json!({ "changed": false }));
+    }
+    let st = s.doc()?;
+    let mut changed = false;
+    let mut out = vec![];
+    for (id, _, picked) in sets {
+        let Some(pd) = st.doc.node(id).and_then(|n| n.path_data()) else { continue };
+        let mut next = picked.clone();
+        for (si, sp) in pd.subpaths.iter().enumerate() {
+            let n = sp.anchors.len();
+            if n == 0 {
+                continue;
+            }
+            let neighbours = |ai: usize| -> Vec<usize> {
+                let mut v = vec![];
+                if sp.closed {
+                    v.push((ai + n - 1) % n);
+                    v.push((ai + 1) % n);
+                } else {
+                    if ai > 0 {
+                        v.push(ai - 1);
+                    }
+                    if ai + 1 < n {
+                        v.push(ai + 1);
+                    }
+                }
+                v
+            };
+            let here: Vec<usize> = (0..n).filter(|ai| picked.contains(&(si, *ai))).collect();
+            if here.is_empty() {
+                continue;
+            }
+            if grow {
+                for ai in &here {
+                    for nb in neighbours(*ai) {
+                        next.insert((si, nb));
+                    }
+                }
+            } else if here.len() > 1 {
+                // The ends of each run: selected anchors with an unselected neighbour. A run
+                // that is the whole subpath has none; it drops its last anchor instead.
+                let ends: Vec<usize> = here.iter().copied().filter(|ai| neighbours(*ai).iter().any(|nb| !picked.contains(&(si, *nb)))).collect();
+                if ends.is_empty() {
+                    next.remove(&(si, here[here.len() - 1]));
+                } else {
+                    for ai in ends {
+                        // Keep one anchor of a two-anchor run.
+                        if next.iter().filter(|(s2, _)| *s2 == si).count() > 1 {
+                            next.remove(&(si, ai));
+                        }
+                    }
+                }
+            }
+        }
+        if next != picked {
+            changed = true;
+        }
+        out.push((id, next));
+    }
+    let count = write_anchor_sets(s, out)?;
+    Ok(json!({ "changed": changed, "count": count }))
+}
+
+fn anchors_all(s: &mut Session, p: &Value) -> Result<Value> {
+    let across = bool_or(p, "acrossSubpaths", false);
+    let sets = selected_anchor_sets(s)?;
+    if sets.is_empty() {
+        return Err(bad("select.anchorsAll", "no path selected"));
+    }
+    let st = s.doc()?;
+    let mut out = vec![];
+    for (id, all, picked) in sets {
+        let Some(pd) = st.doc.node(id).and_then(|n| n.path_data()) else { continue };
+        let set: BTreeSet<AnchorRef> = if across || st.selection.anchors.get(&id).is_none() {
+            all.into_iter().collect()
+        } else {
+            // The subpaths that hold a selected anchor; the first subpath when none does.
+            let mut subs: BTreeSet<usize> = picked.iter().map(|(si, _)| *si).collect();
+            if subs.is_empty() {
+                subs.insert(0);
+            }
+            pd.subpaths
+                .iter()
+                .enumerate()
+                .filter(|(si, _)| subs.contains(si))
+                .flat_map(|(si, sp)| (0..sp.anchors.len()).map(move |ai| (si, ai)))
+                .collect()
+        };
+        out.push((id, set));
+    }
+    let count = write_anchor_sets(s, out)?;
+    Ok(json!({ "count": count }))
+}
+
+fn anchors_invert(s: &mut Session, _: &Value) -> Result<Value> {
+    let sets = selected_anchor_sets(s)?;
+    if sets.is_empty() {
+        return Err(bad("select.anchorsInvert", "no path selected"));
+    }
+    let out: Vec<(NodeId, BTreeSet<AnchorRef>)> =
+        sets.into_iter().map(|(id, all, picked)| (id, all.into_iter().filter(|r| !picked.contains(r)).collect())).collect();
+    // Inverting a path selected whole (every anchor selected) leaves no anchor: the path stays
+    // selected with none, so a second ! brings them all back.
+    let kept: Vec<NodeId> = out.iter().filter(|(_, set)| set.is_empty()).map(|(id, _)| *id).collect();
+    let count = write_anchor_sets(s, out)?;
+    if !kept.is_empty() {
+        s.select(|_, sel| {
+            for id in kept {
+                sel.add(id);
+                sel.anchors.insert(id, BTreeSet::new());
+            }
+        })?;
+    }
     Ok(json!({ "count": count }))
 }

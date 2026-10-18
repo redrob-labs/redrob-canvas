@@ -2332,6 +2332,8 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                         c("Remove Anchor Points", "path.removeAnchors"),
                         c("Divide Objects Below", "object.path.divideObjectsBelow"),
                         c("Split Into Grid…", "object.path.splitIntoGrid"),
+                        c("Cut Path", "path.cutPath"),
+                        c("Split Path", "path.splitNonOverlapping"),
                         Sep,
                         cp("Clean Up…", "object.path.cleanUp", json!({"strayPoints": true, "unpaintedObjects": true, "emptyTextPaths": true})),
                     ],
@@ -2807,6 +2809,10 @@ fn arrange_items() -> Vec<Item> {
         c("Send to Back", "object.arrange.sendToBack"),
         Sep,
         c("Send to Current Layer", "object.arrange.sendToCurrentLayer"),
+        Sep,
+        c("Arrange in Grid", "object.arrange.grid"),
+        c("Arrange in Circle", "object.arrange.polar"),
+        c("Remove Overlaps", "object.arrange.removeOverlaps"),
     ]
 }
 

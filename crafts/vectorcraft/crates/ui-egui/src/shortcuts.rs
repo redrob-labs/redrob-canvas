@@ -367,7 +367,13 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
         (Key::Tab, ToolKey::Tab),
         (Key::PageUp, ToolKey::PageUp),
         (Key::PageDown, ToolKey::PageDown),
+        // Cmd+A while anchors are direct-selected: every anchor of their subpaths (Alt: of every
+        // subpath), ahead of Select › All.
+        (Key::A, ToolKey::SelectAll),
     ] {
+        if tk == ToolKey::SelectAll && !(m.command || m.ctrl) {
+            continue;
+        }
         if ctx.input(|i| i.key_pressed(k)) && app.session.tool_claims_key(tk, view) && ctx.input_mut(|i| i.consume_key(m, k)) {
             let r = app.session.tool_key(tk, crate::canvas::mods(m, false), view);
             // Keyboard actions can change the Artboard tool's active board too. Keep the
@@ -419,6 +425,8 @@ pub fn handle(app: &mut VectorcraftApp, ctx: &egui::Context) {
                         "]" => Some((t.clone(), ToolKey::BracketRight, false)),
                         "{" => Some((t.clone(), ToolKey::BracketLeft, true)),
                         "}" => Some((t.clone(), ToolKey::BracketRight, true)),
+                        // The node tool: `!` inverts the anchor selection.
+                        "!" => Some((t.clone(), ToolKey::Invert, true)),
                         _ => None,
                     },
                     _ => None,
