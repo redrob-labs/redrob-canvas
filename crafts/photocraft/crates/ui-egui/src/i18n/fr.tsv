@@ -3472,3 +3472,85 @@ curves	Smooth	Lisser
 	Set Colormap…	Définir la palette…
 	Border Average…	Moyenne du bord…
 	Export Histogram…	Exporter l’histogramme…
+	Gradient Source	Source dégradé
+	Value Jitter	Variation de valeur
+	Pipe	Séquence
+	Brush file (.myb)	Fichier de brosse (.myb)
+	Text as brush tip	Texte comme pointe de brosse
+	One character per dab along the stroke	Un caractère par touche le long du tracé
+	Engine	Moteur
+	Text Tip	Pointe texte
+	Hatching	Hachures
+	Particle	Particule
+	Dyna	Dyna
+	Tangent Normal	Normale tangente
+	MyPaint	MyPaint
+	Spray	Aérosol
+	Bristle	Poils
+	Deform	Déformer
+	Separation	Séparation
+	Jitter	Variation
+	Mass	Masse
+	Drag	Traînée
+	Gravity	Gravité
+	Particles	Particules
+	Grid Width	Largeur de grille
+	Grid Height	Hauteur de grille
+	Diameter	Diamètre
+	Aspect	Proportions
+	Cluster	Groupé
+	Tip	Pointe
+	Perpendicular	Perpendiculaire
+	Shrink	Rétrécir
+	Wire	Fil
+	Two	Deux
+	Lens Zoom In	Zoom lentille avant
+	Lens Zoom Out	Zoom lentille arrière
+	Swirl CW	Tourbillon horaire
+	Swirl CCW	Tourbillon antihoraire
+	Colour Deform	Déformation de couleur
+	Follow Cursor	Suivre le curseur
+	Weighted	Pondéré
+	Angular	Angulaire
+	Moiré	Moiré
+	Anti-aliased Pixel	Pixel lissé
+	Magnetify	Magnétiser
+	Simple Mode	Mode simple
+	Hard Edge	Bord dur
+	Connect Hairs	Relier les poils
+	Ink Depletion	Épuisement de l'encre
+	Soak Ink	Absorber l'encre
+	Mouse Pressure	Pression souris
+	Composite Bristles	Composer les poils
+	Use Density	Utiliser la densité
+	Proportional	Proportionnel
+	Random Size	Taille aléatoire
+	Sample Input Layer	Échantillonner le calque
+	Colour per Particle	Couleur par particule
+	Fill Background	Remplir l'arrière-plan
+	Fixed Angle	Angle fixe
+	Paint Connection	Tracer la connexion
+	Use Foreground Colour	Utiliser la couleur de premier plan
+	Width by Pressure	Largeur par pression
+	Opacity by Pressure	Opacité par pression
+	Connection Line	Ligne de connexion
+	Even-odd Fill	Remplissage pair-impair
+	Division by Pressure	Division par pression
+	Separation by Pressure	Séparation par pression
+	Thickness by Pressure	Épaisseur par pression
+	Coloured Background	Arrière-plan coloré
+	Distance Density	Densité par distance
+	Distance Opacity	Opacité par distance
+	Use Undeformed Image	Utiliser l'image non déformée
+	Random RGB	RVB aléatoire
+	Random Opacity	Opacité aléatoire
+	Curve Opacity	Opacité des courbes
+	Width Range	Plage de largeur
+	Line Spacing	Espacement des lignes
+	Angle Offset	Décalage d'angle
+	Particle Width	Largeur de particule
+	Particle Height	Hauteur de particule
+	Random Offset	Décalage aléatoire
+	Ink Amount	Quantité d'encre
+	Counter	Compteur
+	Thickness	Épaisseur

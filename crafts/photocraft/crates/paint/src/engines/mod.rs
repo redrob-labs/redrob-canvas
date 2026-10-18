@@ -56,10 +56,11 @@ pub enum EngineSettings {
     Curve(CurveSettings),
     Dyna(DynaSettings),
     TangentNormal(TangentSettings),
+    /// Boxed (like Spray and Bristle): these settings are large, and the enum travels by value.
     #[serde(rename = "myPaint")]
-    MyPaint(MyPaintSettings),
-    Spray(SpraySettings),
-    Bristle(BristleSettings),
+    MyPaint(Box<MyPaintSettings>),
+    Spray(Box<SpraySettings>),
+    Bristle(Box<BristleSettings>),
     Deform(DeformSettings),
 }
 
@@ -99,9 +100,9 @@ impl EngineSettings {
             "curve" => EngineSettings::Curve(CurveSettings::default()),
             "dyna" => EngineSettings::Dyna(DynaSettings::default()),
             "tangentNormal" => EngineSettings::TangentNormal(TangentSettings::default()),
-            "myPaint" => EngineSettings::MyPaint(MyPaintSettings::default()),
-            "spray" => EngineSettings::Spray(SpraySettings::default()),
-            "bristle" => EngineSettings::Bristle(BristleSettings::default()),
+            "myPaint" => EngineSettings::MyPaint(Box::default()),
+            "spray" => EngineSettings::Spray(Box::default()),
+            "bristle" => EngineSettings::Bristle(Box::default()),
             "deform" => EngineSettings::Deform(DeformSettings::default()),
             _ => return None,
         })

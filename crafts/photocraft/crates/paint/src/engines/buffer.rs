@@ -119,7 +119,7 @@ impl PaintBuf {
         if ![x0, y0, x1, y1].iter().all(|v| v.is_finite()) {
             return;
         }
-        let hw = (width.max(0.0) / 2.0).min(MAX_SIDE as f32);
+        let hw = (width / 2.0).clamp(0.0, MAX_SIDE as f32);
         let (dx, dy) = (x1 - x0, y1 - y0);
         let len = dx.hypot(dy);
         if len < 1e-4 {
@@ -203,7 +203,7 @@ impl PaintBuf {
         if ![cx, cy, rx, ry, angle].iter().all(|v| v.is_finite()) {
             return;
         }
-        let (rx, ry) = (rx.max(0.0).min(MAX_SIDE as f32), ry.max(0.0).min(MAX_SIDE as f32));
+        let (rx, ry) = (rx.clamp(0.0, MAX_SIDE as f32), ry.clamp(0.0, MAX_SIDE as f32));
         let reach = rx.max(ry) + 1.0;
         let r = self.rect;
         let bx0 = (cx - reach).floor().max(r.x0 as f32) as i32;
@@ -239,7 +239,7 @@ impl PaintBuf {
         if ![cx, cy, w, h, angle].iter().all(|v| v.is_finite()) {
             return;
         }
-        let (hw, hh) = ((w / 2.0).max(0.0).min(MAX_SIDE as f32), (h / 2.0).max(0.0).min(MAX_SIDE as f32));
+        let (hw, hh) = ((w / 2.0).clamp(0.0, MAX_SIDE as f32), (h / 2.0).clamp(0.0, MAX_SIDE as f32));
         let reach = hw.hypot(hh) + 1.0;
         let r = self.rect;
         let bx0 = (cx - reach).floor().max(r.x0 as f32) as i32;

@@ -3070,3 +3070,20 @@ curves	Smooth	平滑
 	Set Colormap…	設定顏色表…
 	Border Average…	邊框平均…
 	Export Histogram…	匯出直方圖…
+	Gradient Source	漸層來源
+	Value Jitter	明度抖動
+	Pipe	管線
+	Brush file (.myb)	筆刷檔案 (.myb)
+	Text as brush tip	文字作為筆尖
+	One character per dab along the stroke	沿筆畫每個筆觸一個字元
+	Engine	引擎
+	Text Tip	文字筆尖
+	Hatching	陰影線
+	Particle	粒子
+	Dyna	動力
+	Tangent Normal	切線法線
+	MyPaint	MyPaint
+	Spray	噴灑
+	Bristle	鬃毛
+	Deform	變形
+	Thickness	粗細

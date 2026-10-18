@@ -248,7 +248,7 @@ pub fn mypaint_parse(_: &mut Session, p: &Value) -> Result<Value> {
     if let Some(v) = p.get("useBrushColor").and_then(Value::as_bool) {
         settings.use_brush_color = v;
     }
-    let engine = serde_json::to_value(EngineSettings::MyPaint(settings)).map_err(|e| EngineError::Other(e.to_string()))?;
+    let engine = serde_json::to_value(EngineSettings::MyPaint(Box::new(settings))).map_err(|e| EngineError::Other(e.to_string()))?;
     Ok(json!({ "engine": engine }))
 }
 
@@ -256,7 +256,8 @@ pub fn mypaint_parse(_: &mut Session, p: &Value) -> Result<Value> {
 pub fn engines_list(_: &mut Session, _: &Value) -> Result<Value> {
     let list: Vec<Value> = KINDS
         .iter()
-        .filter_map(|k| EngineSettings::by_kind(k))
+        .copied()
+        .filter_map(EngineSettings::by_kind)
         .map(|e| json!({ "kind": e.kind(), "defaults": serde_json::to_value(&e).unwrap_or(Value::Null) }))
         .collect();
     Ok(json!({ "engines": list }))

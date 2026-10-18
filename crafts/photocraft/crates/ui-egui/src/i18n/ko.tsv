@@ -4044,3 +4044,86 @@ curves	Smooth	매끄럽게
 	Ycbcr709	YCbCr 709
 	Ycbcr470f	YCbCr 470 전체 범위
 	Ycbcr709f	YCbCr 709 전체 범위
+	Gradient Source	그레이디언트 소스
+	Value Jitter	명도 지터
+	Pipe	파이프
+	Brush file (.myb)	브러시 파일 (.myb)
+	Text as brush tip	텍스트를 브러시 팁으로
+	One character per dab along the stroke	스트로크를 따라 대브마다 글자 하나
+	Engine	엔진
+	Text Tip	텍스트 팁
+	Hatching	해칭
+	Particle	파티클
+	Dyna	다이나
+	Tangent Normal	탄젠트 노멀
+	MyPaint	MyPaint
+	Spray	스프레이
+	Bristle	브리슬
+	Deform	변형
+	Separation	간격
+	Jitter	지터
+	Mass	질량
+	Drag	저항
+	Gravity	중력
+	Particles	파티클 수
+	Grid Width	격자 너비
+	Grid Height	격자 높이
+	Diameter	직경
+	Aspect	비율
+	Cluster	군집
+	Rectangle	직사각형
+	Pixel	픽셀
+	Tip	팁
+	Perpendicular	수직
+	Shrink	축소
+	Wire	와이어
+	Two	둘
+	Lens Zoom In	렌즈 확대
+	Lens Zoom Out	렌즈 축소
+	Swirl CW	시계 방향 회오리
+	Swirl CCW	반시계 방향 회오리
+	Colour Deform	색상 변형
+	Follow Cursor	커서 따르기
+	Weighted	가중
+	Angular	각도 분포
+	Moiré	모아레
+	Anti-aliased Pixel	앤티앨리어스 픽셀
+	Magnetify	자석 효과
+	Simple Mode	단순 모드
+	Hard Edge	단단한 가장자리
+	Connect Hairs	털 연결
+	Ink Depletion	잉크 고갈
+	Soak Ink	잉크 흡수
+	Mouse Pressure	마우스 필압
+	Composite Bristles	털 합성
+	Use Density	밀도 사용
+	Proportional	비례
+	Random Size	임의 크기
+	Sample Input Layer	입력 레이어 샘플링
+	Colour per Particle	파티클별 색상
+	Fill Background	배경 채우기
+	Fixed Angle	고정 각도
+	Paint Connection	연결선 그리기
+	Use Foreground Colour	전경색 사용
+	Width by Pressure	필압에 따른 너비
+	Opacity by Pressure	필압에 따른 불투명도
+	Connection Line	연결선
+	Even-odd Fill	짝수-홀수 채우기
+	Division by Pressure	필압에 따른 분할
+	Separation by Pressure	필압에 따른 간격
+	Thickness by Pressure	필압에 따른 두께
+	Coloured Background	색 배경
+	Distance Density	거리 밀도
+	Distance Opacity	거리 불투명도
+	Use Undeformed Image	변형 전 이미지 사용
+	Random RGB	임의 RGB
+	Random Opacity	임의 불투명도
+	Curve Opacity	곡선 불투명도
+	Width Range	너비 범위
+	Line Spacing	선 간격
+	Angle Offset	각도 오프셋
+	Particle Width	파티클 너비
+	Particle Height	파티클 높이
+	Random Offset	임의 오프셋
+	Ink Amount	잉크 양
+	Counter	카운터

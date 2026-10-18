@@ -292,7 +292,7 @@ pub fn paint(target: &mut Surface, sample: Option<&Surface>, stroke: &Stroke, s:
                 (ParticleShape::Pixel, _) => buf.point(px, py, color, opa),
                 (ParticleShape::Line, _) => {
                     let (lx, ly) = (rot.cos() * pw / 2.0, -rot.sin() * pw / 2.0);
-                    buf.line(px - lx, py - ly, px + lx, py + ly, ph.min(pw).max(1.0).min(3.0), color, opa, aa);
+                    buf.line(px - lx, py - ly, px + lx, py + ly, ph.min(pw).clamp(1.0, 3.0), color, opa, aa);
                 }
             }
         }

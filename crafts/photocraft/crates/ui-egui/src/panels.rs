@@ -1112,6 +1112,17 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         if widgets::value_field(ui, &mut radius, 50.0..=300.0, "%", 62.0).changed() {
                             b.mixer.smudge_radius = (radius / 100.0).clamp(0.5, 3.0);
                         }
+                        // Paint thickness (a height map shades the deposit), the gradient as the
+                        // paint source, and HSV jitter of the paint per dab.
+                        percent_field(ui, tl!("Thickness"), &mut b.mixer.thickness, 0.0..=100.0, 62.0);
+                        widgets::checkbox(ui, &mut b.mixer.gradient_source, tl!("Gradient Source"));
+                        for (label, value) in [
+                            (tl!("Hue Jitter"), &mut b.mixer.hue_jitter),
+                            (tl!("Saturation Jitter"), &mut b.mixer.saturation_jitter),
+                            (tl!("Value Jitter"), &mut b.mixer.value_jitter),
+                        ] {
+                            percent_field(ui, label, value, 0.0..=100.0, 62.0);
+                        }
                     }
                     Tool::RectMarquee | Tool::EllipseMarquee | Tool::SingleRowMarquee | Tool::SingleColumnMarquee if t.pro => {
                         ui.spacing_mut().item_spacing.x = 2.0;
@@ -1600,6 +1611,13 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 // action available for Brush, Pencil and Eraser in every palette (#2659).
                 if matches!(tool, Tool::Brush | Tool::Pencil | Tool::Eraser) {
                     crate::symmetry_ui::menu(app, ui);
+                }
+                // The Brush's engine (Pixel, or sketch, hatching, spray… and a filter through the
+                // brush), its settings, and a text tip.
+                if tool == Tool::Brush {
+                    widgets::vline(ui, 22.0);
+                    crate::brush_engines_ui::options_bar(app, ui);
+                    crate::brush_engines_ui::text_tip_row(app, ui);
                 }
                 crate::brush_panel::commit_gesture(app, ui.ctx(), &brush_before, &brush);
             });

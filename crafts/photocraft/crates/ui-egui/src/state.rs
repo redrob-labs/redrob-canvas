@@ -781,6 +781,10 @@ pub struct ToolOptions {
     pub filter_split_pos: f32,
     #[serde(default)]
     pub filter_split_horizontal: bool,
+    /// The Brush's engine: the `engine` object `paint.engineStroke` takes (`{"kind": "pixel"}` is
+    /// the tip-stamping default; see `brush_engines_ui`).
+    #[serde(default = "crate::brush_engines_ui::default_engine")]
+    pub brush_engine: serde_json::Value,
 }
 
 fn one_f32() -> f32 {
@@ -981,6 +985,7 @@ impl Default for ToolOptions {
             filter_split: false,
             filter_split_pos: 0.5,
             filter_split_horizontal: false,
+            brush_engine: crate::brush_engines_ui::default_engine(),
         }
     }
 }

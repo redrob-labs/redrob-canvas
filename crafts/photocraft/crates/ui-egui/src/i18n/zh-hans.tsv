@@ -3085,3 +3085,87 @@ curves	Smooth	平滑
 	Set Colormap…	设置颜色表…
 	Border Average…	边框平均…
 	Export Histogram…	导出直方图…
+	Gradient Source	渐变源
+	Value Jitter	明度抖动
+	Pipe	管道
+	Brush file (.myb)	画笔文件 (.myb)
+	Text as brush tip	文字作为笔尖
+	One character per dab along the stroke	沿笔画每个笔触一个字符
+	Engine	引擎
+	Text Tip	文字笔尖
+	Hatching	阴影线
+	Particle	粒子
+	Dyna	动力
+	Tangent Normal	切线法线
+	MyPaint	MyPaint
+	Spray	喷溅
+	Bristle	鬃毛
+	Deform	变形
+	Separation	间距
+	Jitter	抖动
+	Mass	质量
+	Drag	阻力
+	Gravity	重力
+	Particles	粒子数
+	Grid Width	网格宽度
+	Grid Height	网格高度
+	Diameter	直径
+	Aspect	比例
+	Cluster	聚集
+	Rectangle	矩形
+	Pixel	像素
+	Tip	笔尖
+	Perpendicular	垂直
+	Shrink	收缩
+	Wire	线框
+	Two	双圆
+	Lens Zoom In	镜头放大
+	Lens Zoom Out	镜头缩小
+	Swirl CW	顺时针旋涡
+	Swirl CCW	逆时针旋涡
+	Colour Deform	颜色变形
+	Follow Cursor	跟随光标
+	Weighted	加权
+	Angular	角度分布
+	Moiré	莫尔纹
+	Anti-aliased Pixel	抗锯齿像素
+	Magnetify	磁化
+	Simple Mode	简单模式
+	Hard Edge	硬边
+	Connect Hairs	连接毛发
+	Ink Depletion	墨水耗尽
+	Soak Ink	吸墨
+	Mouse Pressure	鼠标压力
+	Composite Bristles	合成毛发
+	Use Density	使用密度
+	Proportional	成比例
+	Random Size	随机大小
+	Sample Input Layer	采样输入图层
+	Colour per Particle	每粒子颜色
+	Fill Background	填充背景
+	Fixed Angle	固定角度
+	Paint Connection	绘制连接线
+	Use Foreground Colour	使用前景色
+	Width by Pressure	压力控制宽度
+	Opacity by Pressure	压力控制不透明度
+	Connection Line	连接线
+	Even-odd Fill	奇偶填充
+	Division by Pressure	压力控制分割
+	Separation by Pressure	压力控制间距
+	Thickness by Pressure	压力控制粗细
+	Coloured Background	彩色背景
+	Distance Density	距离密度
+	Distance Opacity	距离不透明度
+	Use Undeformed Image	使用未变形图像
+	Random RGB	随机 RGB
+	Random Opacity	随机不透明度
+	Curve Opacity	曲线不透明度
+	Width Range	宽度范围
+	Line Spacing	线间距
+	Angle Offset	角度偏移
+	Particle Width	粒子宽度
+	Particle Height	粒子高度
+	Random Offset	随机偏移
+	Ink Amount	墨水量
+	Counter	计数器
+	Thickness	粗细
