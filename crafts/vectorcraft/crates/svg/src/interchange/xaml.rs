@@ -237,12 +237,12 @@ impl Conv {
         if stroke == "none" {
             return " stroke=\"none\"".into();
         }
-        let w: f64 = e.attribute(&format!("{prefix}StrokeThickness")).or_else(|| e.attribute("Thickness")).and_then(|v| v.trim().parse().ok()).unwrap_or(1.0);
+        let w: f64 = e.attribute(format!("{prefix}StrokeThickness").as_str()).or_else(|| e.attribute("Thickness")).and_then(|v| v.trim().parse().ok()).unwrap_or(1.0);
         let mut s = format!(" stroke=\"{stroke}\" stroke-width=\"{}\"", n(w));
         if so < 1.0 {
             let _ = write!(s, " stroke-opacity=\"{}\"", n(so));
         }
-        let cap = e.attribute(&format!("{prefix}StrokeStartLineCap")).or_else(|| e.attribute("StartLineCap")).unwrap_or("Flat");
+        let cap = e.attribute(format!("{prefix}StrokeStartLineCap").as_str()).or_else(|| e.attribute("StartLineCap")).unwrap_or("Flat");
         let _ = write!(
             s,
             " stroke-linecap=\"{}\"",
@@ -252,12 +252,12 @@ impl Conv {
                 _ => "butt",
             }
         );
-        let join = e.attribute(&format!("{prefix}StrokeLineJoin")).or_else(|| e.attribute("LineJoin")).unwrap_or("Miter");
+        let join = e.attribute(format!("{prefix}StrokeLineJoin").as_str()).or_else(|| e.attribute("LineJoin")).unwrap_or("Miter");
         let _ = write!(s, " stroke-linejoin=\"{}\"", join.to_ascii_lowercase());
-        if let Some(m) = e.attribute(&format!("{prefix}StrokeMiterLimit")).or_else(|| e.attribute("MiterLimit")) {
+        if let Some(m) = e.attribute(format!("{prefix}StrokeMiterLimit").as_str()).or_else(|| e.attribute("MiterLimit")) {
             let _ = write!(s, " stroke-miterlimit=\"{}\"", m.trim());
         }
-        let dashes = e.attribute(&format!("{prefix}StrokeDashArray")).map(nums).or_else(|| {
+        let dashes = e.attribute(format!("{prefix}StrokeDashArray").as_str()).map(nums).or_else(|| {
             Self::prop(e, "DashStyle").and_then(|p| p.children().find(|c| c.is_element())).and_then(|d| d.attribute("Dashes")).map(nums)
         });
         if let Some(d) = dashes.filter(|d| !d.is_empty()) {

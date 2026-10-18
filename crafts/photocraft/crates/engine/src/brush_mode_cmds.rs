@@ -95,7 +95,7 @@ pub(crate) fn park_tweaks(s: &mut Session, next: &str) {
 }
 
 /// The tweaked brush kept for preset `name`, if any.
-pub(crate) fn tweak_of(s: &Session, name: &str) -> Option<&redrob_photo_paint::BrushSettings> {
+pub(crate) fn tweak_of<'a>(s: &'a Session, name: &str) -> Option<&'a redrob_photo_paint::BrushSettings> {
     s.tools.preset_tweaks.get(&name.to_ascii_lowercase())
 }
 

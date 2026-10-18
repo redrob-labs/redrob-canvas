@@ -73,7 +73,7 @@ pub(crate) fn sample_reference(s: &Session, p: &Value, cmd: &str) -> Result<(red
             };
             let d = s.active().ok_or(EngineError::NoDocument)?;
             let area = d.doc.bounds();
-            let mut doc = d.doc.clone();
+            let mut doc = (*d.doc).clone();
             let hide: Vec<redrob_photo_doc::LayerId> = doc.walk().iter().filter(|(_, _, l)| !labels.contains(&l.label)).map(|(_, _, l)| l.id).collect();
             for id in hide {
                 if let Some(l) = doc.layer_mut(id) {

@@ -25,7 +25,7 @@ pub(super) fn wanted(svg: &str) -> bool {
 }
 
 /// Find the SVG 2 features in `xml`, editing the text so usvg keeps the shapes they paint.
-pub(super) fn find(svg: &str, xml: &roxmltree::Document, edits: &mut Edits, found: &mut Found, legacy_dpi: bool) {
+pub(super) fn find(svg: &str, xml: &usvg::roxmltree::Document, edits: &mut Edits, found: &mut Found, legacy_dpi: bool) {
     let elements = || xml.descendants().filter(|n| n.is_element());
     // Mesh gradients, by id.
     let mut meshes: HashMap<String, GradientMesh> = HashMap::new();

@@ -55,6 +55,7 @@ mod kra;
 pub mod legacy;
 pub mod linked;
 pub mod modern;
+pub mod myb;
 mod multichannel_map;
 mod ora;
 pub use ora::losses as ora_losses;

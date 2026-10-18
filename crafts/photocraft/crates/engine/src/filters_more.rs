@@ -723,10 +723,10 @@ fn tile(s: &mut Session, p: &Value) -> Result<Value> {
     let old = Rect::from_xywh(0, 0, ow, oh);
     s.execute("image.canvasSize", json!({"width": w, "height": h, "anchor": "topLeft", "extensionColor": "transparent"}))?;
     s.edit("Tile", |doc, active| {
+        let bounds = doc.bounds();
         let l = doc.layer_mut(layer).ok_or(EngineError::NoLayer(layer))?;
         let surf = l.surface_mut().ok_or_else(|| EngineError::Other("the active layer has no pixels".into()))?;
         let src = surf.read_region(old);
-        let bounds = doc.bounds();
         let (tw, th) = (old.width() as i32, old.height() as i32);
         let mut y = 0;
         while y < bounds.y1 {

@@ -426,8 +426,8 @@ pub fn group_to_animated(s: &mut Session, p: &Value) -> Result<Value> {
             })
             .collect();
         let n = frames.len();
-        let fps = ensure_timeline(doc, n);
         let name = g.name.clone();
+        let fps = ensure_timeline(doc, n);
         let mut l = Layer::new(name, LayerContent::Raster(frames[0].clone()));
         l.video = Some(VideoData::new(frames, fps));
         layer_meta::set(&mut l, KEYS, &Keys { keys: (0..n).collect(), clones: Vec::new() });
