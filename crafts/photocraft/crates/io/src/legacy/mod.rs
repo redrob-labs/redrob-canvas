@@ -45,7 +45,8 @@ impl Rgba {
         if (w as u64) * (h as u64) > MAX_PIXELS {
             return Err(IoError::Unsupported(format!("{w} × {h} is too large to open")));
         }
-        let data = crate::flat::try_buffer((w as usize) * (h as usize), 4)?;
+        let mut data = crate::flat::try_buffer((w as usize) * (h as usize), 4)?;
+        data.resize((w as usize) * (h as usize) * 4, 0);
         Ok(Rgba { w, h, data, palette: None, dpi: None, warnings: Vec::new() })
     }
 

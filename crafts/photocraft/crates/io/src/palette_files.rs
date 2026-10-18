@@ -648,7 +648,7 @@ fn utf16_string(b: &[u8], at: usize) -> Result<(String, usize), String> {
 fn book_text(s: &str) -> String {
     match s.rfind('=') {
         Some(i) if s.starts_with("$$$") => s[i + 1..].trim().to_string(),
-        _ => s.trim().to_string(),
+        _ => s.to_string(),
     }
 }
 

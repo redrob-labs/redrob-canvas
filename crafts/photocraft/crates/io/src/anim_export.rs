@@ -161,7 +161,7 @@ impl Crc {
             for _ in 0..8 {
                 c = if c & 1 == 1 { 0xEDB8_8320 ^ (c >> 1) } else { c >> 1 };
             }
-            self.0 = (self.0 >> 8) ^ c;
+            self.0 = c;
         }
     }
     fn finish(self) -> u32 {

@@ -485,7 +485,7 @@ pub fn export(doc: &Document, opts: EpsOptions) -> Result<ExportResult, IoError>
     s.push_str(if opts.encoding == EpsEncoding::Binary { "Binary\n" } else { "Clean7Bit\n" });
     s.push_str("%%EndComments\n");
     let format_code = match opts.encoding {
-        EpsEncoding::Binary => 2,
+        EpsEncoding::Binary if opts.level > 1 => 2,
         _ => 1,
     };
     let op = if comps == 1 { "image" } else { "colorimage" };

@@ -540,6 +540,7 @@ fn read_hierarchy(r: &Rd, at: usize, compression: Compression) -> Result<(u32, u
         offsets.push(o);
     }
     let mut out = crate::flat::try_buffer((w as usize) * (hgt as usize), bpp)?;
+    out.resize((w as usize) * (hgt as usize) * bpp, 0);
     for (ti, &o) in offsets.iter().enumerate() {
         let tx = (ti % tiles_x) as u32;
         let ty = (ti / tiles_x) as u32;

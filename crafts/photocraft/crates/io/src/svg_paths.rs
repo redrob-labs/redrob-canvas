@@ -79,6 +79,9 @@ fn subpath_d(sp: &Subpath) -> String {
             && (b.in_ctrl.x - b.anchor.x).abs() < 1e-9
             && (b.in_ctrl.y - b.anchor.y).abs() < 1e-9;
         if straight {
+            if sp.closed && i + 1 == n {
+                continue; // Z draws the closing edge
+            }
             d.push_str(&format!("L{} {} ", num(b.anchor.x), num(b.anchor.y)));
         } else {
             d.push_str(&format!(
