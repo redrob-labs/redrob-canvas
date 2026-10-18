@@ -630,7 +630,7 @@ impl WideSpace {
         }
     }
 
-    fn from_xyz(self) -> [[f32; 3]; 3] {
+    fn matrix_from_xyz(self) -> [[f32; 3]; 3] {
         invert3(&self.to_xyz())
     }
 
@@ -664,7 +664,7 @@ impl WideSpace {
     pub fn to_srgb_unclipped(self, c: [f32; 3]) -> [f32; 3] {
         let lin = c.map(|v| self.decode(v));
         let xyz = mat3_mul(&self.to_xyz(), lin);
-        let s = mat3_mul(&WideSpace::Srgb.from_xyz(), xyz);
+        let s = mat3_mul(&WideSpace::Srgb.matrix_from_xyz(), xyz);
         s.map(|v| {
             if v <= 0.0 {
                 -linear_to_srgb((-v).min(1.0))
@@ -685,7 +685,7 @@ impl WideSpace {
     pub fn from_srgb(self, rgb: [f32; 3]) -> [f32; 3] {
         let lin = rgb.map(|v| srgb_to_linear(v.clamp(0.0, 1.0)));
         let xyz = mat3_mul(&WideSpace::Srgb.to_xyz(), lin);
-        let own = mat3_mul(&self.from_xyz(), xyz);
+        let own = mat3_mul(&self.matrix_from_xyz(), xyz);
         own.map(|v| self.encode(v.max(0.0)))
     }
 
@@ -744,7 +744,7 @@ pub fn pq_decode(v: f32) -> f32 {
 pub fn hlg_encode(e: f32) -> f32 {
     const A: f32 = 0.178_832_77;
     const B: f32 = 0.284_668_92;
-    const C: f32 = 0.559_910_73;
+    const C: f32 = 0.559_910_7;
     let e = e.max(0.0) / 12.0;
     if e <= 1.0 / 12.0 { (3.0 * e).sqrt() } else { A * (12.0 * e - B).max(1e-6).ln() + C }.clamp(0.0, 1.0)
 }

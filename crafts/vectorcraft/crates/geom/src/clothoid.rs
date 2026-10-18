@@ -26,6 +26,7 @@ const HANDLE_ROUNDS: usize = 16;
 /// linear; `len` is the piece's arc length for a chord of length 1.
 #[derive(Clone, Copy, Debug)]
 struct Span {
+    #[allow(dead_code)]
     a0: f64,
     b: f64,
     c: f64,
@@ -284,9 +285,8 @@ pub fn clothoid_to_bezier(pts: &[Point], closed: bool) -> SubPath {
     let tangent = |i: usize| Vec2::new(theta[i].cos(), theta[i].sin());
     let mut h_out: Vec<Point> = p.clone();
     let mut h_in: Vec<Point> = p.clone();
-    for i in 0..segs {
+    for (i, &(span, _, d)) in sp.iter().enumerate().take(segs) {
         let (a, b) = (i, (i + 1) % n);
-        let (span, _, d) = sp[i];
         let (ka, kb) = span.curvatures(d);
         let (c1, c2) = cubic_for(p[a], p[b], tangent(a), tangent(b), ka, kb);
         h_out[a] = c1;
