@@ -4103,3 +4103,21 @@ curves	Smooth	매끄럽게
 	How much the pen's tilt turns and stretches the nib	펜 기울기가 펜촉을 얼마나 돌리고 늘리는지
 	How much a fast stroke thins the nib	빠른 획이 펜촉을 얼마나 가늘게 하는지
 	Added to the preset's logarithmic radius	사전 설정의 로그 반경에 더해집니다
+	Operation…	연산…
+	Operation name or id	연산 이름 또는 ID
+	{n} operations	연산 {n}개
+	Choose an operation	연산을 선택하세요
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu 콘솔…
+	Load Scripts Folder…	스크립트 폴더 불러오기…
+	Python Console…	Python 콘솔…
+	Load Plug-ins Folder…	플러그인 폴더 불러오기…
+	Loaded {n} scripts	스크립트 {n}개를 불러왔습니다
+	Loaded {n} Python plug-ins	Python 플러그인 {n}개를 불러왔습니다
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3: call(command, **params), message(text), print(). 모든 엔진 명령은 call로 호출할 수 있습니다.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: 모든 엔진 명령이 프로시저입니다, (file.new "width" 640 "height" 480). 프로시저를 define하고 script-fu-register로 등록합니다.
+	Code	코드
+	Run	실행
+	Cmd+Enter runs the code	Cmd+Enter로 코드를 실행합니다
+	Clear Log	로그 지우기

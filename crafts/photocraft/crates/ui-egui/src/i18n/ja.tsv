@@ -4247,3 +4247,21 @@ curves	Smooth	スムーズ
 	How much the pen's tilt turns and stretches the nib	ペンの傾きがペン先をどれだけ回し伸ばすか
 	How much a fast stroke thins the nib	速いストロークがペン先をどれだけ細くするか
 	Added to the preset's logarithmic radius	プリセットの対数半径に加算されます
+	Operation…	操作…
+	Operation name or id	操作名またはID
+	{n} operations	{n}個の操作
+	Choose an operation	操作を選択してください
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fuコンソール…
+	Load Scripts Folder…	スクリプトフォルダーを読み込み…
+	Python Console…	Pythonコンソール…
+	Load Plug-ins Folder…	プラグインフォルダーを読み込み…
+	Loaded {n} scripts	{n}個のスクリプトを読み込みました
+	Loaded {n} Python plug-ins	{n}個のPythonプラグインを読み込みました
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3: call(command, **params)、message(text)、print()。すべてのエンジンコマンドはcallから呼べます。
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: すべてのエンジンコマンドは手続きです。(file.new "width" 640 "height" 480)。手続きをdefineしscript-fu-registerで登録します。
+	Code	コード
+	Run	実行
+	Cmd+Enter runs the code	Cmd+Enterでコードを実行します
+	Clear Log	ログを消去

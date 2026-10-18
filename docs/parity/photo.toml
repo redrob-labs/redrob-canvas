@@ -753,9 +753,9 @@ name = "GEGL operation tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-gegl.html"
 behaviour = "Pick any installed GEGL operation from a list and set its properties with a live preview; a generic front end for operations without a dedicated menu entry."
-ours = "none"
-ours_where = ""
-gap = "no generic operation picker; filters are individual commands (edit.search finds them)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/operation_ui.rs (Filter > Operation…: searchable list of every filter, adjustment and selection-modify operation grouped by menu path, parameter summary, OK opens the operation's own live-preview dialog)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5325,9 +5325,9 @@ name = "Script-Fu (Scheme) scripts and console"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-concepts-script-fu.html"
 behaviour = "User scripts register menu entries with parameter dialogs; a console evaluates Scheme interactively; scripts call any PDB procedure."
-ours = "none"
-ours_where = ""
-gap = "no embedded Scheme; see MCP and plug-ins"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/scheme.rs (Scheme interpreter: define/lambda/let/cond/case/do/quasiquote, lists, strings, numbers, every engine command as a procedure, script-fu-register with SF-* parameters), crafts/photocraft/crates/engine/src/script_cmds.rs (script.eval/load/loadFolder/list/run), crafts/photocraft/crates/ui-egui/src/scripts_ui.rs (Filter > Script-Fu > Console, Load Scripts Folder, registered scripts as menu entries with parameter dialogs)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5337,9 +5337,9 @@ name = "Python plug-ins (GObject introspection API)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-using-python-plug-in-tutorial.html"
 behaviour = "Python 3 plug-ins register procedures, menu items and dialogs via the libgimp bindings; run in a separate process."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/plugins/src/lib.rs (WebAssembly filter plug-ins with manifest), crafts/photocraft/crates/engine/src/plugin_cmds.rs"
-gap = "sandboxed WASM filters only; no scripting language binding"
+ours = "full"
+ours_where = "crafts/photocraft/crates/plugins/src/lib.rs (WebAssembly filter plug-ins), crafts/photocraft/crates/engine/src/python_cmds.rs (Python 3 plug-ins in a separate process over a JSON-line bridge: register/call/message helper module, --describe discovery, python.loadFolder/list/run/eval/helper), crafts/photocraft/crates/ui-egui/src/scripts_ui.rs (Filter > Python-Fu > Console, Load Plug-ins Folder, registered procedures as menu entries with parameter dialogs)"
+gap = ""
 priority = 2
 
 [[feature]]

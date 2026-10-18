@@ -235,6 +235,14 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     if let Some(r) = crate::input_ui::menu(app, id, &params) {
         return r;
     }
+    // Filter > Operation…: the generic operation chooser.
+    if let Some(r) = crate::operation_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Script-Fu and Python consoles, registered scripts and plug-ins, their folders.
+    if let Some(r) = crate::scripts_ui::menu(app, id, &params) {
+        return r;
+    }
     // Image > Mode > Color Table…: the swatch grid editor (the generic form stays for scripts).
     if id == "image.mode.colorTable"
         && params.as_object().is_none_or(|o| o.is_empty())
@@ -777,6 +785,8 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
         || crate::buffers_ui::handles(id)
         || crate::modules_ui::handles(id)
         || crate::input_ui::handles(id)
+        || crate::operation_ui::handles(id)
+        || crate::scripts_ui::handles(id)
     {
         return true;
     }
@@ -1073,6 +1083,7 @@ pub fn menu_items(app: &PhotocraftApp) -> Vec<MenuItem> {
         }
     }
     crate::plugin_ui::insert_menu_items(app, &mut items);
+    crate::scripts_ui::insert_menu_items(app, &mut items);
     if let Some(mask) = app.session.active().and_then(|s| s.active_layer.and_then(|id| s.doc.layer(id))).and_then(|l| l.mask.as_ref())
         && let Some(item) = items.iter_mut().find(|i| i.id == "layer.layerMask.enabled")
     {

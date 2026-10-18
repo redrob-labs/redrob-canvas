@@ -3200,3 +3200,21 @@ curves	Smooth	平滑
 	How much the pen's tilt turns and stretches the nib	笔倾斜转动并拉伸笔尖的程度
 	How much a fast stroke thins the nib	快速笔画使笔尖变细的程度
 	Added to the preset's logarithmic radius	加到预设的对数半径上
+	Operation…	操作…
+	Operation name or id	操作名称或 ID
+	{n} operations	{n} 个操作
+	Choose an operation	请选择一个操作
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu 控制台…
+	Load Scripts Folder…	加载脚本文件夹…
+	Python Console…	Python 控制台…
+	Load Plug-ins Folder…	加载插件文件夹…
+	Loaded {n} scripts	已加载 {n} 个脚本
+	Loaded {n} Python plug-ins	已加载 {n} 个 Python 插件
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3，提供 call(command, **params)、message(text) 和 print()；每个引擎命令都可通过 call 调用。
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme：每个引擎命令都是一个过程，(file.new "width" 640 "height" 480)；用 define 定义过程并用 script-fu-register 注册。
+	Code	代码
+	Run	运行
+	Cmd+Enter runs the code	Cmd+Enter 运行代码
+	Clear Log	清除日志

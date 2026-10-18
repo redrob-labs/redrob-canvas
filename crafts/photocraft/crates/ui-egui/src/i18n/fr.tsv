@@ -3582,3 +3582,21 @@ curves	Smooth	Lisser
 	How much the pen's tilt turns and stretches the nib	Dans quelle mesure l'inclinaison du stylet tourne et étire la plume
 	How much a fast stroke thins the nib	Dans quelle mesure un trait rapide affine la plume
 	Added to the preset's logarithmic radius	Ajouté au rayon logarithmique du préréglage
+	Operation…	Opération…
+	Operation name or id	Nom ou identifiant de l'opération
+	{n} operations	{n} opérations
+	Choose an operation	Choisissez une opération
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Console Script-Fu…
+	Load Scripts Folder…	Charger un dossier de scripts…
+	Python Console…	Console Python…
+	Load Plug-ins Folder…	Charger un dossier de modules…
+	Loaded {n} scripts	{n} scripts chargés
+	Loaded {n} Python plug-ins	{n} modules Python chargés
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 avec call(command, **params), message(text) et print() ; chaque commande du moteur est accessible par call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme : chaque commande du moteur est une procédure, (file.new "width" 640 "height" 480) ; définissez des procédures et enregistrez-les avec script-fu-register.
+	Code	Code
+	Run	Exécuter
+	Cmd+Enter runs the code	Cmd+Entrée exécute le code
+	Clear Log	Effacer le journal

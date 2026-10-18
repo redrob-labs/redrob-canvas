@@ -4640,3 +4640,21 @@ shape	Appearance	Izgled
 	How much the pen's tilt turns and stretches the nib	Koliko nagib olovke okreće i izdužuje vrh
 	How much a fast stroke thins the nib	Koliko brz potez sužava vrh
 	Added to the preset's logarithmic radius	Dodaje se logaritamskom poluprečniku podešavanja
+	Operation…	Operacija…
+	Operation name or id	Naziv ili id operacije
+	{n} operations	Operacija: {n}
+	Choose an operation	Izaberite operaciju
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu konzola…
+	Load Scripts Folder…	Učitaj fasciklu skripti…
+	Python Console…	Python konzola…
+	Load Plug-ins Folder…	Učitaj fasciklu dodataka…
+	Loaded {n} scripts	Učitano skripti: {n}
+	Loaded {n} Python plug-ins	Učitano Python dodataka: {n}
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 sa call(command, **params), message(text) i print(); svaka komanda motora je dostupna kroz call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: svaka komanda motora je procedura, (file.new "width" 640 "height" 480); definišite procedure i registrujte ih sa script-fu-register.
+	Code	Kod
+	Run	Pokreni
+	Cmd+Enter runs the code	Cmd+Enter pokreće kod
+	Clear Log	Obriši dnevnik

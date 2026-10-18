@@ -1513,6 +1513,9 @@ pub struct UiState {
     /// Paths panel › Paste Path from SVG asked the OS for its text; the next paste event is taken.
     #[serde(default, skip)]
     pub svg_paste_pending: bool,
+    /// Filter › Operation…: the operation chosen last time (preselected).
+    #[serde(default)]
+    pub last_operation: Option<String>,
     /// Layers panel kind filter ("pixel", "adjustment", "type", "shape", "smart"); empty = all.
     #[serde(default)]
     pub layer_filter: Vec<String>,
@@ -1716,6 +1719,7 @@ impl Default for UiState {
             corner_radius: None,
             selected_path: None,
             svg_paste_pending: false,
+            last_operation: None,
             panels: Panels::default(),
             views: Vec::new(),
             dialogs: Vec::new(),

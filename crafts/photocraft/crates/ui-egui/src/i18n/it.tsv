@@ -5034,3 +5034,21 @@ shape	Appearance	Aspetto
 	How much the pen's tilt turns and stretches the nib	Quanto l'inclinazione della penna ruota e allunga il pennino
 	How much a fast stroke thins the nib	Quanto un tratto veloce assottiglia il pennino
 	Added to the preset's logarithmic radius	Aggiunto al raggio logaritmico del predefinito
+	Operation…	Operazione…
+	Operation name or id	Nome o id dell'operazione
+	{n} operations	{n} operazioni
+	Choose an operation	Scegli un'operazione
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Console Script-Fu…
+	Load Scripts Folder…	Carica cartella script…
+	Python Console…	Console Python…
+	Load Plug-ins Folder…	Carica cartella plug-in…
+	Loaded {n} scripts	{n} script caricati
+	Loaded {n} Python plug-ins	{n} plug-in Python caricati
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 con call(command, **params), message(text) e print(); ogni comando del motore è raggiungibile con call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: ogni comando del motore è una procedura, (file.new "width" 640 "height" 480); definisci procedure e registrale con script-fu-register.
+	Code	Codice
+	Run	Esegui
+	Cmd+Enter runs the code	Cmd+Invio esegue il codice
+	Clear Log	Cancella registro

@@ -1,5 +1,5 @@
-//! XCF, the layered native format of the GNU image editor, read and written from its public
-//! specification (the XCF file format document). Read: versions 0 to 12 (big-endian, 32-bit
+//! XCF, the layered native image format, read and written from its public specification (the
+//! XCF file format document). Read: versions 0 to 12 (big-endian, 32-bit
 //! offsets before version 11 and 64-bit from it), RGB / grey / indexed images at 8, 16 and 32-bit
 //! integer and 16/32/64-bit float precision, uncompressed, RLE and zlib tiles, layer groups
 //! (item paths), layer masks, channels, offsets, opacity, visibility, blend modes (legacy and

@@ -43,6 +43,8 @@ pub mod modules_ui;
 pub mod colormap_ui;
 pub mod input_ui;
 pub mod paint_engines_ui;
+pub mod operation_ui;
+pub mod scripts_ui;
 pub(crate) mod cam_preview;
 mod cam_transform;
 mod camera_raw_detail_ui;
@@ -1980,6 +1982,8 @@ impl eframe::App for PhotocraftApp {
         timeline_ui::windows(self, &ctx);
         buffers_ui::windows(self, &ctx);
         colormap_ui::tick(self);
+        operation_ui::tick(self);
+        scripts_ui::tick(self);
         workspace_ui::windows(self, &ctx);
         palette::show(self, &ctx);
         dialogs::show(self, &ctx);

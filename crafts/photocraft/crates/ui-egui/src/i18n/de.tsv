@@ -3579,3 +3579,21 @@ curves	Smooth	Glätten
 	How much the pen's tilt turns and stretches the nib	Wie stark die Stiftneigung die Feder dreht und streckt
 	How much a fast stroke thins the nib	Wie stark ein schneller Strich die Feder verdünnt
 	Added to the preset's logarithmic radius	Wird zum logarithmischen Radius der Vorgabe addiert
+	Operation…	Operation…
+	Operation name or id	Name oder ID der Operation
+	{n} operations	{n} Operationen
+	Choose an operation	Eine Operation wählen
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu-Konsole…
+	Load Scripts Folder…	Skriptordner laden…
+	Python Console…	Python-Konsole…
+	Load Plug-ins Folder…	Plug-in-Ordner laden…
+	Loaded {n} scripts	{n} Skripte geladen
+	Loaded {n} Python plug-ins	{n} Python-Plug-ins geladen
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 mit call(command, **params), message(text) und print(); jeder Engine-Befehl ist über call erreichbar.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: jeder Engine-Befehl ist eine Prozedur, (file.new "width" 640 "height" 480); Prozeduren definieren und mit script-fu-register registrieren.
+	Code	Code
+	Run	Ausführen
+	Cmd+Enter runs the code	Cmd+Eingabe führt den Code aus
+	Clear Log	Protokoll löschen

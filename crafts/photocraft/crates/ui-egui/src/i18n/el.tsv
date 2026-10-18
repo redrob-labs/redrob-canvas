@@ -4268,3 +4268,21 @@ curves	Smooth	Εξομάλυνση
 	How much the pen's tilt turns and stretches the nib	Πόσο η κλίση της γραφίδας στρέφει και τεντώνει τη μύτη
 	How much a fast stroke thins the nib	Πόσο μια γρήγορη πινελιά λεπταίνει τη μύτη
 	Added to the preset's logarithmic radius	Προστίθεται στη λογαριθμική ακτίνα της προεπιλογής
+	Operation…	Λειτουργία…
+	Operation name or id	Όνομα ή αναγνωριστικό λειτουργίας
+	{n} operations	{n} λειτουργίες
+	Choose an operation	Επιλέξτε μια λειτουργία
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Κονσόλα Script-Fu…
+	Load Scripts Folder…	Φόρτωση φακέλου δεσμών ενεργειών…
+	Python Console…	Κονσόλα Python…
+	Load Plug-ins Folder…	Φόρτωση φακέλου προσθέτων…
+	Loaded {n} scripts	Φορτώθηκαν {n} δέσμες ενεργειών
+	Loaded {n} Python plug-ins	Φορτώθηκαν {n} πρόσθετα Python
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 με call(command, **params), message(text) και print()· κάθε εντολή της μηχανής είναι προσβάσιμη μέσω call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: κάθε εντολή της μηχανής είναι διαδικασία, (file.new "width" 640 "height" 480)· ορίστε διαδικασίες και καταχωρίστε τις με script-fu-register.
+	Code	Κώδικας
+	Run	Εκτέλεση
+	Cmd+Enter runs the code	Το Cmd+Enter εκτελεί τον κώδικα
+	Clear Log	Καθαρισμός καταγραφής
