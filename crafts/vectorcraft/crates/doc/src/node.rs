@@ -1609,6 +1609,14 @@ impl Node {
     /// Make Clipping Mask. Only paths, compound paths and type paint as clipping paths.
     pub fn clip_paint(&self) -> ClipPaint {
         use crate::appearance::AppearanceItem;
+        // Power Clip's hide clip (the `path.powerClip` effect on the clipping path): the clipping
+        // path's own paint stays out of the picture.
+        let hidden = |e: &crate::appearance::Effect| {
+            e.visible && e.id == "path.powerClip" && e.params.get("hideClip").and_then(serde_json::Value::as_bool).unwrap_or(false)
+        };
+        if self.appearance.effects.iter().any(hidden) {
+            return ClipPaint::default();
+        }
         let runs = match &self.kind {
             NodeKind::Path { guide: false, .. } | NodeKind::Compound { .. } => None,
             NodeKind::Text(t) => Some(&t.runs),

@@ -11,7 +11,10 @@
 //!   [`raster_effects`] and painted by the renderer; [`outset`] says how far they reach beyond
 //!   the geometry.
 //! - **Live path effects** ([`lpe`]: Bend along a spine, B-Spline, Spiro, Dashed Stroke, Taper
-//!   Stroke) rewrite a path from its own anchors and are geometry effects like the others.
+//!   Stroke) rewrite a path from its own anchors and are geometry effects like the others; the
+//!   Effect › Path Effects family ([`lpe_catalog`]: constructions in [`lpe_geo`], drawings in
+//!   [`lpe_draw`], effects linked to other objects in [`lpe_link`]) does the same, the linked
+//!   ones reading the geometry the engine keeps for them in their parameters.
 //! - **Stroke geometry** ([`stroke`]): arrowheads, dash patterns and width profiles, shared by the
 //!   renderer, the exporters and Outline Stroke.
 //! - [`effect_catalog`] lists every effect with its menu path, parameter documentation and
@@ -41,6 +44,11 @@ mod distort;
 mod group;
 mod live;
 pub mod lpe;
+pub mod lpe_catalog;
+pub mod lpe_draw;
+pub mod lpe_geo;
+pub mod lpe_link;
+mod lpe_util;
 mod marks;
 pub mod pixel;
 mod raster;
@@ -71,6 +79,11 @@ pub use group::{
 };
 pub use live::{expand_live, expand_live_deep, expanded_live_group, text_outliner};
 pub use lpe::{BEND, BEND_SPINE, BSPLINE, DASHED_STROKE, SPIRO, TAPER_DIRECTIONS, TAPER_JOINS, TAPER_STROKE};
+pub use lpe_catalog::{ALL as PATH_EFFECTS, MENU as PATH_EFFECTS_MENU, is_path_effect};
+pub use lpe_link::{
+    ATTACH_PATH, BOUNDING_BOX, CLONE_ORIGINAL, FILL_BETWEEN_MANY, FILL_BETWEEN_STROKES, Linked, POWER_CLIP, SOURCES as LINK_SOURCES, is_linked,
+    link_ids, power_clip_hidden, power_clip_inverse, sources as linked_sources,
+};
 pub use marks::{CROP_MARKS, crop_marks_art, has_crop_marks};
 pub use pixel::{PIXEL_EFFECTS, PixelFx, PixelSpace};
 pub use raster::{RasterFx, outset, raster_effects};
@@ -156,7 +169,7 @@ fn lengths_of(id: &str) -> Lengths {
         "texture.mosaicTiles" => always(&["tileSize"]),
         "texture.patchwork" => always(&["squareSize"]),
         "texture.stainedGlass" => always(&["cellSize"]),
-        _ => Lengths::default(),
+        _ => lpe_catalog::lengths_of(id).unwrap_or_default(),
     }
 }
 
@@ -651,6 +664,8 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
     for (id, label, _) in PATHFINDER_EFFECTS {
         v.push(g(id, label, PATHFINDER, "{} (groups and layers: live Pathfinder over the members)", json!({})));
     }
+    // Effect › Path Effects: constructions, drawings and linked effects on the path's own anchors.
+    v.extend(lpe_catalog::entries());
     v.push(g(
         CROP_MARKS,
         "Crop Marks",
@@ -928,7 +943,7 @@ pub(crate) fn apply_one(id: &str, p: &Value, path: &PathData, b: Rect, ctx: &Geo
         "stylize.scribble" => stylize::scribble(path, b, p),
         _ => match id.strip_prefix("warp.").and_then(WarpStyle::from_id) {
             Some(style) => warp::warp(path, b, style, p),
-            None => path.clone(),
+            None => lpe_catalog::apply(id, p, path, b, ctx).unwrap_or_else(|| path.clone()),
         },
     }
 }

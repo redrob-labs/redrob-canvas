@@ -41,6 +41,7 @@ pub mod library;
 pub mod linkfiles;
 pub mod links;
 mod live;
+pub(crate) mod lpelink;
 pub(crate) mod maskedit;
 pub(crate) mod menucmds;
 pub(crate) mod newart;
@@ -229,6 +230,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(typecmd::specs());
         v.extend(menucmds::specs());
         v.extend(clones::specs());
+        v.extend(lpelink::specs());
         v.extend(live::specs());
         v.extend(colorcmds::specs());
         v.extend(colormgmt::specs());
