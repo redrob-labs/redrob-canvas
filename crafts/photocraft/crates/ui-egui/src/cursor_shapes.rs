@@ -9,7 +9,8 @@ use redrob_photo_paint::brush::BrushSettings;
 
 use crate::{PhotocraftApp, canvas::ViewXform};
 
-fn two_tone(painter: &Painter, f: impl Fn(Stroke)) {
+fn two_tone<R>(painter: &Painter, f: impl Fn(Stroke) -> R) {
+    let _ = painter;
     f(Stroke::new(3.0, Color32::from_black_alpha(140)));
     f(Stroke::new(1.0, Color32::WHITE));
 }
