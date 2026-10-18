@@ -4131,3 +4131,17 @@ curves	Smooth	スムーズ
 	Click corner {n} of 4	角 {n}/4 をクリック
 	Perspective plane: corner {n} of 4 set	透視平面: 角 {n}/4 を設定しました
 	Perspective plane set; {key}-click a source, then paint	透視平面を設定しました。{key}クリックでソースを指定してから描画してください
+	Copy Path as SVG	パスをSVGとしてコピー
+	Export Path to SVG…	パスをSVGに書き出し…
+	Import Path from SVG…	SVGからパスを読み込み…
+	Paste Path from SVG	SVGからパスをペースト
+	Copy All Paths as SVG	すべてのパスをSVGとしてコピー
+	Export All Paths to SVG…	すべてのパスをSVGに書き出し…
+	Copied 1 path as SVG	1個のパスをSVGとしてコピーしました
+	Copied {n} paths as SVG	{n}個のパスをSVGとしてコピーしました
+	Exported paths to {path}	パスを{path}に書き出しました
+	Imported 1 path	1個のパスを読み込みました
+	Imported {n} paths	{n}個のパスを読み込みました
+	The clipboard holds no SVG	クリップボードにSVGがありません
+	Clipboard Image Brush	クリップボード画像ブラシ
+	Paint with the image on the clipboard as the brush tip	クリップボードの画像をブラシ先端として描画します

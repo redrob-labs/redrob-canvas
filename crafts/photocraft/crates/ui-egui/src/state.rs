@@ -1447,6 +1447,9 @@ pub struct UiState {
     /// Selected row in the Paths panel ("work" or a saved path name).
     #[serde(default)]
     pub selected_path: Option<String>,
+    /// Paths panel › Paste Path from SVG asked the OS for its text; the next paste event is taken.
+    #[serde(default, skip)]
+    pub svg_paste_pending: bool,
     /// Layers panel kind filter ("pixel", "adjustment", "type", "shape", "smart"); empty = all.
     #[serde(default)]
     pub layer_filter: Vec<String>,
@@ -1645,6 +1648,7 @@ impl Default for UiState {
             direct_selection: Default::default(),
             corner_radius: None,
             selected_path: None,
+            svg_paste_pending: false,
             panels: Panels::default(),
             views: Vec::new(),
             dialogs: Vec::new(),

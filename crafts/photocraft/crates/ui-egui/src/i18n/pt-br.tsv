@@ -4245,3 +4245,17 @@ layerLabel	No Color	Sem cor
 	Click corner {n} of 4	Clique no canto {n} de 4
 	Perspective plane: corner {n} of 4 set	Plano de perspectiva: canto {n} de 4 definido
 	Perspective plane set; {key}-click a source, then paint	Plano de perspectiva definido; {key}-clique em uma origem e pinte
+	Copy Path as SVG	Copiar demarcador como SVG
+	Export Path to SVG…	Exportar demarcador para SVG…
+	Import Path from SVG…	Importar demarcador de SVG…
+	Paste Path from SVG	Colar demarcador de SVG
+	Copy All Paths as SVG	Copiar todos os demarcadores como SVG
+	Export All Paths to SVG…	Exportar todos os demarcadores para SVG…
+	Copied 1 path as SVG	1 demarcador copiado como SVG
+	Copied {n} paths as SVG	{n} demarcadores copiados como SVG
+	Exported paths to {path}	Demarcadores exportados para {path}
+	Imported 1 path	1 demarcador importado
+	Imported {n} paths	{n} demarcadores importados
+	The clipboard holds no SVG	A área de transferência não contém SVG
+	Clipboard Image Brush	Pincel de imagem da área de transferência
+	Paint with the image on the clipboard as the brush tip	Pintar com a imagem da área de transferência como ponta do pincel

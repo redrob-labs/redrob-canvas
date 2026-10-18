@@ -4155,3 +4155,17 @@ curves	Smooth	Εξομάλυνση
 	Click corner {n} of 4	Κλικ στη γωνία {n} από 4
 	Perspective plane: corner {n} of 4 set	Επίπεδο προοπτικής: ορίστηκε η γωνία {n} από 4
 	Perspective plane set; {key}-click a source, then paint	Το επίπεδο προοπτικής ορίστηκε· κάντε {key}-κλικ σε πηγή και μετά ζωγραφίστε
+	Copy Path as SVG	Αντιγραφή διαδρομής ως SVG
+	Export Path to SVG…	Εξαγωγή διαδρομής σε SVG…
+	Import Path from SVG…	Εισαγωγή διαδρομής από SVG…
+	Paste Path from SVG	Επικόλληση διαδρομής από SVG
+	Copy All Paths as SVG	Αντιγραφή όλων των διαδρομών ως SVG
+	Export All Paths to SVG…	Εξαγωγή όλων των διαδρομών σε SVG…
+	Copied 1 path as SVG	Αντιγράφηκε 1 διαδρομή ως SVG
+	Copied {n} paths as SVG	Αντιγράφηκαν {n} διαδρομές ως SVG
+	Exported paths to {path}	Οι διαδρομές εξάχθηκαν σε {path}
+	Imported 1 path	Εισάχθηκε 1 διαδρομή
+	Imported {n} paths	Εισάχθηκαν {n} διαδρομές
+	The clipboard holds no SVG	Το πρόχειρο δεν περιέχει SVG
+	Clipboard Image Brush	Πινέλο εικόνας προχείρου
+	Paint with the image on the clipboard as the brush tip	Ζωγραφίστε με την εικόνα του προχείρου ως άκρη πινέλου

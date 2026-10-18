@@ -3462,3 +3462,17 @@ curves	Smooth	Glätten
 	Click corner {n} of 4	Ecke {n} von 4 anklicken
 	Perspective plane: corner {n} of 4 set	Perspektivebene: Ecke {n} von 4 gesetzt
 	Perspective plane set; {key}-click a source, then paint	Perspektivebene gesetzt; mit {key} auf eine Quelle klicken, dann malen
+	Copy Path as SVG	Pfad als SVG kopieren
+	Export Path to SVG…	Pfad als SVG exportieren…
+	Import Path from SVG…	Pfad aus SVG importieren…
+	Paste Path from SVG	Pfad aus SVG einfügen
+	Copy All Paths as SVG	Alle Pfade als SVG kopieren
+	Export All Paths to SVG…	Alle Pfade als SVG exportieren…
+	Copied 1 path as SVG	1 Pfad als SVG kopiert
+	Copied {n} paths as SVG	{n} Pfade als SVG kopiert
+	Exported paths to {path}	Pfade nach {path} exportiert
+	Imported 1 path	1 Pfad importiert
+	Imported {n} paths	{n} Pfade importiert
+	The clipboard holds no SVG	Die Zwischenablage enthält kein SVG
+	Clipboard Image Brush	Zwischenablage-Bildpinsel
+	Paint with the image on the clipboard as the brush tip	Mit dem Bild aus der Zwischenablage als Pinselspitze malen

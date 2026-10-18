@@ -3434,3 +3434,17 @@ curves	Smooth	Сгладить
 	Click corner {n} of 4	Щёлкните угол {n} из 4
 	Perspective plane: corner {n} of 4 set	Плоскость перспективы: задан угол {n} из 4
 	Perspective plane set; {key}-click a source, then paint	Плоскость перспективы задана; щёлкните источник с {key}, затем рисуйте
+	Copy Path as SVG	Копировать контур как SVG
+	Export Path to SVG…	Экспортировать контур в SVG…
+	Import Path from SVG…	Импортировать контур из SVG…
+	Paste Path from SVG	Вставить контур из SVG
+	Copy All Paths as SVG	Копировать все контуры как SVG
+	Export All Paths to SVG…	Экспортировать все контуры в SVG…
+	Copied 1 path as SVG	1 контур скопирован как SVG
+	Copied {n} paths as SVG	Скопировано контуров как SVG: {n}
+	Exported paths to {path}	Контуры экспортированы в {path}
+	Imported 1 path	Импортирован 1 контур
+	Imported {n} paths	Импортировано контуров: {n}
+	The clipboard holds no SVG	В буфере обмена нет SVG
+	Clipboard Image Brush	Кисть из изображения буфера обмена
+	Paint with the image on the clipboard as the brush tip	Рисовать изображением из буфера обмена как кончиком кисти

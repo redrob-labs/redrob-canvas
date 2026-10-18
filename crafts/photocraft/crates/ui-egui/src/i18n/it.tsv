@@ -4922,3 +4922,17 @@ shape	Appearance	Aspetto
 	Click corner {n} of 4	Fai clic sull’angolo {n} di 4
 	Perspective plane: corner {n} of 4 set	Piano prospettico: angolo {n} di 4 impostato
 	Perspective plane set; {key}-click a source, then paint	Piano prospettico impostato; {key}-clic su una sorgente, poi dipingi
+	Copy Path as SVG	Copia tracciato come SVG
+	Export Path to SVG…	Esporta tracciato in SVG…
+	Import Path from SVG…	Importa tracciato da SVG…
+	Paste Path from SVG	Incolla tracciato da SVG
+	Copy All Paths as SVG	Copia tutti i tracciati come SVG
+	Export All Paths to SVG…	Esporta tutti i tracciati in SVG…
+	Copied 1 path as SVG	1 tracciato copiato come SVG
+	Copied {n} paths as SVG	{n} tracciati copiati come SVG
+	Exported paths to {path}	Tracciati esportati in {path}
+	Imported 1 path	1 tracciato importato
+	Imported {n} paths	{n} tracciati importati
+	The clipboard holds no SVG	Gli appunti non contengono SVG
+	Clipboard Image Brush	Pennello immagine appunti
+	Paint with the image on the clipboard as the brush tip	Dipingi con l'immagine degli appunti come punta del pennello

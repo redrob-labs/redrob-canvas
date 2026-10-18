@@ -3944,3 +3944,17 @@ curves	Smooth	Làm mượt
 	Click corner {n} of 4	Nhấp góc {n}/4
 	Perspective plane: corner {n} of 4 set	Mặt phẳng phối cảnh: đã đặt góc {n}/4
 	Perspective plane set; {key}-click a source, then paint	Đã đặt mặt phẳng phối cảnh; {key}-nhấp một nguồn rồi vẽ
+	Copy Path as SVG	Sao chép đường dẫn dạng SVG
+	Export Path to SVG…	Xuất đường dẫn ra SVG…
+	Import Path from SVG…	Nhập đường dẫn từ SVG…
+	Paste Path from SVG	Dán đường dẫn từ SVG
+	Copy All Paths as SVG	Sao chép mọi đường dẫn dạng SVG
+	Export All Paths to SVG…	Xuất mọi đường dẫn ra SVG…
+	Copied 1 path as SVG	Đã sao chép 1 đường dẫn dạng SVG
+	Copied {n} paths as SVG	Đã sao chép {n} đường dẫn dạng SVG
+	Exported paths to {path}	Đã xuất đường dẫn ra {path}
+	Imported 1 path	Đã nhập 1 đường dẫn
+	Imported {n} paths	Đã nhập {n} đường dẫn
+	The clipboard holds no SVG	Bảng tạm không có SVG
+	Clipboard Image Brush	Cọ ảnh bảng tạm
+	Paint with the image on the clipboard as the brush tip	Vẽ bằng ảnh trên bảng tạm làm đầu cọ

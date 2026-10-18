@@ -4065,3 +4065,17 @@ navigator	Zoom	Zvětšení
 	Click corner {n} of 4	Klepněte na roh {n} ze 4
 	Perspective plane: corner {n} of 4 set	Perspektivní rovina: roh {n} ze 4 nastaven
 	Perspective plane set; {key}-click a source, then paint	Perspektivní rovina nastavena; klepněte se {key} na zdroj a pak malujte
+	Copy Path as SVG	Kopírovat cestu jako SVG
+	Export Path to SVG…	Exportovat cestu do SVG…
+	Import Path from SVG…	Importovat cestu ze SVG…
+	Paste Path from SVG	Vložit cestu ze SVG
+	Copy All Paths as SVG	Kopírovat všechny cesty jako SVG
+	Export All Paths to SVG…	Exportovat všechny cesty do SVG…
+	Copied 1 path as SVG	1 cesta zkopírována jako SVG
+	Copied {n} paths as SVG	Zkopírováno cest jako SVG: {n}
+	Exported paths to {path}	Cesty exportovány do {path}
+	Imported 1 path	Importována 1 cesta
+	Imported {n} paths	Importováno cest: {n}
+	The clipboard holds no SVG	Schránka neobsahuje SVG
+	Clipboard Image Brush	Štětec z obrázku ve schránce
+	Paint with the image on the clipboard as the brush tip	Malovat obrázkem ze schránky jako hrotem štětce

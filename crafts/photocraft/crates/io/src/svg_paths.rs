@@ -122,7 +122,11 @@ pub fn export_paths(paths: &[(&str, &Path)], width: u32, height: u32) -> String 
             FillRule::EvenOdd => "evenodd",
             FillRule::NonZero => "nonzero",
         };
-        s.push_str(&format!("  <path id=\"{}\" fill=\"none\" fill-rule=\"{rule}\" stroke=\"#000000\" stroke-width=\"1\" d=\"{}\"/>\n", escape(name), path_d(path)));
+        s.push_str(&format!(
+            "  <path id=\"{}\" fill=\"none\" fill-rule=\"{rule}\" stroke=\"#000000\" stroke-width=\"1\" d=\"{}\"/>\n",
+            escape(name),
+            path_d(path)
+        ));
     }
     s.push_str("</svg>\n");
     s

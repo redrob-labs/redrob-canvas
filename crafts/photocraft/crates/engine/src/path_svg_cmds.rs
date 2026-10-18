@@ -110,7 +110,8 @@ fn to_svg(s: &mut Session, p: &Value) -> Result<Value> {
 /// `path.exportSvg`: write the chosen paths to an `.svg` file.
 fn export_svg(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "path.exportSvg";
-    let path = p.get("path").and_then(Value::as_str).filter(|v| !v.trim().is_empty()).ok_or_else(|| bad(CMD, "pass `path` (the .svg file to write)"))?.to_string();
+    let path =
+        p.get("path").and_then(Value::as_str).filter(|v| !v.trim().is_empty()).ok_or_else(|| bad(CMD, "pass `path` (the .svg file to write)"))?.to_string();
     let r = to_svg(s, p)?;
     let svg = r.get("svg").and_then(Value::as_str).unwrap_or_default();
     crate::file_cmds::write_file(&path, svg.as_bytes())?;

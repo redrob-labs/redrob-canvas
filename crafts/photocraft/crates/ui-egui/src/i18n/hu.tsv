@@ -4373,3 +4373,17 @@ cameraRaw	Yellow	Sárga
 	Click corner {n} of 4	Kattintson a {n}. sarokra (4-ből)
 	Perspective plane: corner {n} of 4 set	Perspektíva sík: {n}. sarok beállítva (4-ből)
 	Perspective plane set; {key}-click a source, then paint	Perspektíva sík beállítva; {key}-kattintás a forrásra, majd fessen
+	Copy Path as SVG	Útvonal másolása SVG-ként
+	Export Path to SVG…	Útvonal exportálása SVG-be…
+	Import Path from SVG…	Útvonal importálása SVG-ből…
+	Paste Path from SVG	Útvonal beillesztése SVG-ből
+	Copy All Paths as SVG	Minden útvonal másolása SVG-ként
+	Export All Paths to SVG…	Minden útvonal exportálása SVG-be…
+	Copied 1 path as SVG	1 útvonal másolva SVG-ként
+	Copied {n} paths as SVG	{n} útvonal másolva SVG-ként
+	Exported paths to {path}	Útvonalak exportálva ide: {path}
+	Imported 1 path	1 útvonal importálva
+	Imported {n} paths	{n} útvonal importálva
+	The clipboard holds no SVG	A vágólapon nincs SVG
+	Clipboard Image Brush	Vágólapkép-ecset
+	Paint with the image on the clipboard as the brush tip	Festés a vágólapon lévő képpel ecsethegyként

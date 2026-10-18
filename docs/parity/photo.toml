@@ -4005,9 +4005,9 @@ name = "Import and export paths (SVG)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-path-dialog.html"
 behaviour = "Paths can be imported from and exported to SVG files, and copied/pasted as SVG text."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/io/src/svg.rs, crafts/photocraft/crates/io/src/vector_map.rs"
-gap = "SVG opens as a document; no path-only import/export entries"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/svg_paths.rs (paths to and from SVG), crafts/photocraft/crates/engine/src/path_svg_cmds.rs (path.importSvg, path.exportSvg, path.toSvg), crafts/photocraft/crates/ui-egui/src/path_svg_ui.rs, crafts/photocraft/crates/ui-egui/src/vector_ui.rs (Paths panel: Import/Export Path to SVG, Copy/Paste Path as SVG text)"
+gap = ""
 priority = 3
 
 [[feature]]

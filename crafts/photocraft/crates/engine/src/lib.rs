@@ -136,6 +136,7 @@ pub mod web_cmds;
 // v0.11 parity round (A4): formats, file/edit, scripting, Ink and MyPaint-style brushes.
 pub mod dynamics_extra_cmds;
 pub mod perspective_clone_cmds;
+pub mod path_svg_cmds;
 mod wia_cmds;
 
 use std::sync::Arc;

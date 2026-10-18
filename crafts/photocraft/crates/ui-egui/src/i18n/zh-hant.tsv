@@ -3067,3 +3067,17 @@ curves	Smooth	平滑
 	Click corner {n} of 4	點按第 {n}/4 個角
 	Perspective plane: corner {n} of 4 set	透視平面：已設定第 {n}/4 個角
 	Perspective plane set; {key}-click a source, then paint	透視平面已設定；{key} 並點按設定來源，然後繪製
+	Copy Path as SVG	將路徑複製為 SVG
+	Export Path to SVG…	將路徑匯出為 SVG…
+	Import Path from SVG…	從 SVG 匯入路徑…
+	Paste Path from SVG	從 SVG 貼上路徑
+	Copy All Paths as SVG	將所有路徑複製為 SVG
+	Export All Paths to SVG…	將所有路徑匯出為 SVG…
+	Copied 1 path as SVG	已將 1 條路徑複製為 SVG
+	Copied {n} paths as SVG	已將 {n} 條路徑複製為 SVG
+	Exported paths to {path}	已將路徑匯出至 {path}
+	Imported 1 path	已匯入 1 條路徑
+	Imported {n} paths	已匯入 {n} 條路徑
+	The clipboard holds no SVG	剪貼簿中沒有 SVG
+	Clipboard Image Brush	剪貼簿影像筆刷
+	Paint with the image on the clipboard as the brush tip	使用剪貼簿中的影像作為筆刷筆尖繪畫

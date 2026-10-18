@@ -4053,3 +4053,17 @@ curves	Smooth	Wygładź
 	Click corner {n} of 4	Kliknij narożnik {n} z 4
 	Perspective plane: corner {n} of 4 set	Płaszczyzna perspektywy: ustawiono narożnik {n} z 4
 	Perspective plane set; {key}-click a source, then paint	Płaszczyzna perspektywy ustawiona; kliknij źródło z {key}, potem maluj
+	Copy Path as SVG	Kopiuj ścieżkę jako SVG
+	Export Path to SVG…	Eksportuj ścieżkę do SVG…
+	Import Path from SVG…	Importuj ścieżkę z SVG…
+	Paste Path from SVG	Wklej ścieżkę z SVG
+	Copy All Paths as SVG	Kopiuj wszystkie ścieżki jako SVG
+	Export All Paths to SVG…	Eksportuj wszystkie ścieżki do SVG…
+	Copied 1 path as SVG	Skopiowano 1 ścieżkę jako SVG
+	Copied {n} paths as SVG	Skopiowano ścieżek jako SVG: {n}
+	Exported paths to {path}	Ścieżki wyeksportowano do {path}
+	Imported 1 path	Zaimportowano 1 ścieżkę
+	Imported {n} paths	Zaimportowano ścieżek: {n}
+	The clipboard holds no SVG	Schowek nie zawiera SVG
+	Clipboard Image Brush	Pędzel z obrazu ze schowka
+	Paint with the image on the clipboard as the brush tip	Maluj obrazem ze schowka jako końcówką pędzla

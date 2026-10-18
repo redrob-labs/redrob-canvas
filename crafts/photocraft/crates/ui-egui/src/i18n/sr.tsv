@@ -4527,3 +4527,17 @@ shape	Appearance	Izgled
 	Click corner {n} of 4	Кликните угао {n} од 4
 	Perspective plane: corner {n} of 4 set	Раван перспективе: постављен угао {n} од 4
 	Perspective plane set; {key}-click a source, then paint	Раван перспективе постављена; {key}-кликните извор, затим сликајте
+	Copy Path as SVG	Kopiraj putanju kao SVG
+	Export Path to SVG…	Izvezi putanju u SVG…
+	Import Path from SVG…	Uvezi putanju iz SVG…
+	Paste Path from SVG	Nalepi putanju iz SVG
+	Copy All Paths as SVG	Kopiraj sve putanje kao SVG
+	Export All Paths to SVG…	Izvezi sve putanje u SVG…
+	Copied 1 path as SVG	1 putanja kopirana kao SVG
+	Copied {n} paths as SVG	Kopirano putanja kao SVG: {n}
+	Exported paths to {path}	Putanje izvezene u {path}
+	Imported 1 path	Uvezena 1 putanja
+	Imported {n} paths	Uvezeno putanja: {n}
+	The clipboard holds no SVG	U ostavi nema SVG-a
+	Clipboard Image Brush	Četkica od slike iz ostave
+	Paint with the image on the clipboard as the brush tip	Slikaj slikom iz ostave kao vrhom četkice

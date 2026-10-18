@@ -4185,3 +4185,17 @@ cameraData	Lens	Lens
 	Click corner {n} of 4	4 köşeden {n}. köşeye tıklayın
 	Perspective plane: corner {n} of 4 set	Perspektif düzlemi: 4 köşeden {n}. ayarlandı
 	Perspective plane set; {key}-click a source, then paint	Perspektif düzlemi ayarlandı; bir kaynağa {key} ile tıklayın, sonra boyayın
+	Copy Path as SVG	Yolu SVG Olarak Kopyala
+	Export Path to SVG…	Yolu SVG'ye Aktar…
+	Import Path from SVG…	SVG'den Yol İçe Aktar…
+	Paste Path from SVG	SVG'den Yol Yapıştır
+	Copy All Paths as SVG	Tüm Yolları SVG Olarak Kopyala
+	Export All Paths to SVG…	Tüm Yolları SVG'ye Aktar…
+	Copied 1 path as SVG	1 yol SVG olarak kopyalandı
+	Copied {n} paths as SVG	{n} yol SVG olarak kopyalandı
+	Exported paths to {path}	Yollar {path} konumuna aktarıldı
+	Imported 1 path	1 yol içe aktarıldı
+	Imported {n} paths	{n} yol içe aktarıldı
+	The clipboard holds no SVG	Pano SVG içermiyor
+	Clipboard Image Brush	Pano Görüntüsü Fırçası
+	Paint with the image on the clipboard as the brush tip	Panodaki görüntüyü fırça ucu olarak kullanarak boya

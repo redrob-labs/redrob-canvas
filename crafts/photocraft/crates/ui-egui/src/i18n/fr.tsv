@@ -3466,3 +3466,17 @@ curves	Smooth	Lisser
 	Click corner {n} of 4	Cliquez le coin {n} sur 4
 	Perspective plane: corner {n} of 4 set	Plan de perspective : coin {n} sur 4 défini
 	Perspective plane set; {key}-click a source, then paint	Plan de perspective défini ; {key}-cliquez une source, puis peignez
+	Copy Path as SVG	Copier le tracé en SVG
+	Export Path to SVG…	Exporter le tracé en SVG…
+	Import Path from SVG…	Importer un tracé depuis un SVG…
+	Paste Path from SVG	Coller un tracé depuis un SVG
+	Copy All Paths as SVG	Copier tous les tracés en SVG
+	Export All Paths to SVG…	Exporter tous les tracés en SVG…
+	Copied 1 path as SVG	1 tracé copié en SVG
+	Copied {n} paths as SVG	{n} tracés copiés en SVG
+	Exported paths to {path}	Tracés exportés vers {path}
+	Imported 1 path	1 tracé importé
+	Imported {n} paths	{n} tracés importés
+	The clipboard holds no SVG	Le presse-papiers ne contient pas de SVG
+	Clipboard Image Brush	Brosse image du presse-papiers
+	Paint with the image on the clipboard as the brush tip	Peindre avec l'image du presse-papiers comme pointe de brosse

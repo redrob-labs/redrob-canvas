@@ -4154,3 +4154,17 @@ curves	Smooth	Згладити
 	Click corner {n} of 4	Клацніть кут {n} з 4
 	Perspective plane: corner {n} of 4 set	Площина перспективи: задано кут {n} з 4
 	Perspective plane set; {key}-click a source, then paint	Площину перспективи задано; клацніть джерело з {key}, потім малюйте
+	Copy Path as SVG	Копіювати контур як SVG
+	Export Path to SVG…	Експортувати контур у SVG…
+	Import Path from SVG…	Імпортувати контур зі SVG…
+	Paste Path from SVG	Вставити контур зі SVG
+	Copy All Paths as SVG	Копіювати всі контури як SVG
+	Export All Paths to SVG…	Експортувати всі контури у SVG…
+	Copied 1 path as SVG	1 контур скопійовано як SVG
+	Copied {n} paths as SVG	Скопійовано контурів як SVG: {n}
+	Exported paths to {path}	Контури експортовано до {path}
+	Imported 1 path	Імпортовано 1 контур
+	Imported {n} paths	Імпортовано контурів: {n}
+	The clipboard holds no SVG	У буфері обміну немає SVG
+	Clipboard Image Brush	Пензель із зображення буфера обміну
+	Paint with the image on the clipboard as the brush tip	Малювати зображенням із буфера обміну як кінчиком пензля

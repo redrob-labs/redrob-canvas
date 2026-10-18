@@ -4764,3 +4764,17 @@ navigator	Zoom	Zoom
 	Click corner {n} of 4	Haga clic en la esquina {n} de 4
 	Perspective plane: corner {n} of 4 set	Plano de perspectiva: esquina {n} de 4 definida
 	Perspective plane set; {key}-click a source, then paint	Plano de perspectiva definido; haga {key}-clic en un origen y luego pinte
+	Copy Path as SVG	Copiar trazado como SVG
+	Export Path to SVG…	Exportar trazado a SVG…
+	Import Path from SVG…	Importar trazado desde SVG…
+	Paste Path from SVG	Pegar trazado desde SVG
+	Copy All Paths as SVG	Copiar todos los trazados como SVG
+	Export All Paths to SVG…	Exportar todos los trazados a SVG…
+	Copied 1 path as SVG	1 trazado copiado como SVG
+	Copied {n} paths as SVG	{n} trazados copiados como SVG
+	Exported paths to {path}	Trazados exportados a {path}
+	Imported 1 path	1 trazado importado
+	Imported {n} paths	{n} trazados importados
+	The clipboard holds no SVG	El portapapeles no contiene SVG
+	Clipboard Image Brush	Pincel de imagen del portapapeles
+	Paint with the image on the clipboard as the brush tip	Pintar con la imagen del portapapeles como punta del pincel

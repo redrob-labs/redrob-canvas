@@ -4215,3 +4215,17 @@ curves	Smooth	Vloeiend maken
 	Click corner {n} of 4	Klik hoek {n} van 4
 	Perspective plane: corner {n} of 4 set	Perspectiefvlak: hoek {n} van 4 gezet
 	Perspective plane set; {key}-click a source, then paint	Perspectiefvlak gezet; {key}-klik een bron en schilder dan
+	Copy Path as SVG	Pad kopiëren als SVG
+	Export Path to SVG…	Pad exporteren naar SVG…
+	Import Path from SVG…	Pad importeren uit SVG…
+	Paste Path from SVG	Pad plakken uit SVG
+	Copy All Paths as SVG	Alle paden kopiëren als SVG
+	Export All Paths to SVG…	Alle paden exporteren naar SVG…
+	Copied 1 path as SVG	1 pad gekopieerd als SVG
+	Copied {n} paths as SVG	{n} paden gekopieerd als SVG
+	Exported paths to {path}	Paden geëxporteerd naar {path}
+	Imported 1 path	1 pad geïmporteerd
+	Imported {n} paths	{n} paden geïmporteerd
+	The clipboard holds no SVG	Het klembord bevat geen SVG
+	Clipboard Image Brush	Klembordafbeelding-penseel
+	Paint with the image on the clipboard as the brush tip	Schilderen met de klembordafbeelding als penseelpunt

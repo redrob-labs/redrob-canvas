@@ -104,6 +104,7 @@ pub mod gpu_canvas;
 pub mod gpu_status;
 pub mod gradient_ui;
 pub mod dynamics_editor_ui;
+pub mod path_svg_ui;
 pub mod guide_layout_ui;
 pub mod guide_select;
 pub mod hold_keys;

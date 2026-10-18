@@ -3453,3 +3453,17 @@ curves	Smooth	Haluskan
 	Click corner {n} of 4	Klik sudut {n} dari 4
 	Perspective plane: corner {n} of 4 set	Bidang perspektif: sudut {n} dari 4 diatur
 	Perspective plane set; {key}-click a source, then paint	Bidang perspektif diatur; {key}-klik sumber, lalu lukis
+	Copy Path as SVG	Salin Path sebagai SVG
+	Export Path to SVG…	Ekspor Path ke SVG…
+	Import Path from SVG…	Impor Path dari SVG…
+	Paste Path from SVG	Tempel Path dari SVG
+	Copy All Paths as SVG	Salin Semua Path sebagai SVG
+	Export All Paths to SVG…	Ekspor Semua Path ke SVG…
+	Copied 1 path as SVG	1 path disalin sebagai SVG
+	Copied {n} paths as SVG	{n} path disalin sebagai SVG
+	Exported paths to {path}	Path diekspor ke {path}
+	Imported 1 path	1 path diimpor
+	Imported {n} paths	{n} path diimpor
+	The clipboard holds no SVG	Papan klip tidak berisi SVG
+	Clipboard Image Brush	Kuas Gambar Papan Klip
+	Paint with the image on the clipboard as the brush tip	Melukis dengan gambar di papan klip sebagai ujung kuas

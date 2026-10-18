@@ -3987,3 +3987,17 @@ curves	Smooth	매끄럽게
 	Click corner {n} of 4	모서리 {n}/4 클릭
 	Perspective plane: corner {n} of 4 set	원근 평면: 모서리 {n}/4 설정됨
 	Perspective plane set; {key}-click a source, then paint	원근 평면 설정됨. {key}-클릭으로 소스를 지정한 뒤 칠하세요
+	Copy Path as SVG	패스를 SVG로 복사
+	Export Path to SVG…	패스를 SVG로 내보내기…
+	Import Path from SVG…	SVG에서 패스 가져오기…
+	Paste Path from SVG	SVG에서 패스 붙이기
+	Copy All Paths as SVG	모든 패스를 SVG로 복사
+	Export All Paths to SVG…	모든 패스를 SVG로 내보내기…
+	Copied 1 path as SVG	패스 1개를 SVG로 복사했습니다
+	Copied {n} paths as SVG	패스 {n}개를 SVG로 복사했습니다
+	Exported paths to {path}	패스를 {path}에 내보냈습니다
+	Imported 1 path	패스 1개를 가져왔습니다
+	Imported {n} paths	패스 {n}개를 가져왔습니다
+	The clipboard holds no SVG	클립보드에 SVG가 없습니다
+	Clipboard Image Brush	클립보드 이미지 브러시
+	Paint with the image on the clipboard as the brush tip	클립보드의 이미지를 브러시 팁으로 사용해 칠합니다
