@@ -67,6 +67,11 @@ pub fn panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let canvas = app.last_canvas_rect;
     let mut st = std::mem::take(&mut app.ui.presets_ui);
     st.sizes.entry(PANEL.to_string()).or_insert(DEFAULT_SIZE);
+    // A set column count sizes the squares so that many fit a row (`swatches.setColumns`).
+    let columns = app.session.presets.swatch_columns;
+    if columns > 0 {
+        st.sizes.insert(PANEL.to_string(), (ui.available_width() / columns as f32).clamp(8.0, 128.0));
+    }
     let max_h = (ui.available_height() - 30.0).max(60.0);
     // Flat, touching squares, as in Photoshop's Swatches panel (#5103).
     let events = browser(ui, &mut st, PANEL, &groups, Place { canvas, max_h, new_tip: tl!("Create new swatch"), flush: true }, &mut |ui, r: Rect, gi, ii| {
@@ -244,12 +249,40 @@ pub fn panel_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         act = Some("loadFromDocument");
     }
     ui.separator();
+    // Columns per row and the selected swatch's spot flag (the Edit Swatch dialog's box).
+    let columns = app.session.presets.swatch_columns;
+    let mut set_columns: Option<u32> = None;
+    ui.menu_button(tl!("Columns"), |ui| {
+        for (n, label) in [(0u32, "Fit"), (4, "4"), (6, "6"), (8, "8"), (12, "12"), (16, "16")] {
+            let text = if n == 0 { tl!("Fit").to_string() } else { label.to_string() };
+            if ui.radio(columns == n, text).clicked() {
+                set_columns = Some(n);
+                ui.close();
+            }
+        }
+    });
+    let selected = app.ui.presets_ui.selected.get(PANEL).cloned();
+    let selected_spot = selected
+        .as_ref()
+        .and_then(|name| app.session.presets.swatches.iter().flat_map(|g| g.items.iter()).find(|sw| sw.name == *name))
+        .map(|sw| sw.kind == redrob_photo_engine::presets::swatches::SwatchKind::Spot);
+    if let Some(spot) = selected_spot
+        && ui.checkbox(&mut spot.clone(), tl!("Spot Color")).clicked()
+    {
+        act = Some("spot");
+    }
+    ui.separator();
     if ui.button(tl!("Reset Swatches")).clicked() {
         act = Some("reset");
+    }
+    if let Some(n) = set_columns {
+        let _ = app.run("swatches.setColumns", json!({"columns": n}));
+        return;
     }
     let Some(a) = act else { return };
     ui.close();
     let r = match a {
+        "spot" => app.run("swatches.edit", json!({"swatch": selected.clone().unwrap_or_default(), "spot": !selected_spot.unwrap_or(false)})),
         "saveToDocument" => app.run("swatches.saveToDocument", json!({"group": selected_group.unwrap_or_default()})),
         "loadFromDocument" => app.run("swatches.loadFromDocument", json!({})),
         "new" => {

@@ -8,6 +8,7 @@ use redrob_vector_doc::{Document, ImageMap, Node, NodeKind, ObjectAttributes};
 use redrob_vector_geom::FillRule;
 use serde_json::{Value, json};
 
+use super::edit::selected_roots;
 use super::overprint::{AttributesInfo, apply_overprint, edit_counted, overprint_jobs};
 use super::path::paths_in;
 use super::*;
@@ -22,9 +23,27 @@ pub fn specs() -> Vec<CommandSpec> {
             "Attributes",
             [],
             None,
-            "{overprintFill?: bool, overprintStroke?: bool (aimed as object.setOverprint's fill and stroke, item? too), showCenter?: bool (the canvas shows the selected object's centre point), imageMap?: \"none\"|\"rectangle\"|\"polygon\", url?: string (\"\" removes it; SVG export links the object), note?: string, title?: string, description?: string (Object Properties; SVG export writes <title> and <desc>; \"\" removes them), ids?|id?, item?: appearance item index|null, target?: \"object\"|\"contents\"} set the Attributes panel's values on ids or the selection, as one undo step; a URL given joins the recent URLs (attributes.info) → {changed: objects}",
+            "{overprintFill?: bool, overprintStroke?: bool (aimed as object.setOverprint's fill and stroke, item? too), showCenter?: bool (the canvas shows the selected object's centre point), imageMap?: \"none\"|\"rectangle\"|\"polygon\", url?: string (\"\" removes it; SVG export links the object), urlTarget?: string (the link's target: _blank, _self…; \"\" none), urlTitle?: string (the link's tooltip), events?: {onclick?: script, onmouseover?: …} (Object Properties › Interactivity: SVG event attributes; a key given \"\" is removed, others are kept), highlight?: \"#rrggbb\"|null (the colour the object's outline shows in while selected; null: the layer colour), dpi?: number|null (images: the pixels per inch they show at), preserveAspectRatio?: \"xMidYMid meet\"|\"none\"|…|null (images), note?: string, title?: string, description?: string (Object Properties; SVG export writes <title> and <desc>; \"\" removes them), ids?|id?, item?: appearance item index|null, target?: \"object\"|\"contents\"} set the Attributes panel's values on ids or the selection, as one undo step; a URL given joins the recent URLs (attributes.info) → {changed: objects}",
             has_doc,
             set
+        ),
+        cmd!(
+            "object.createAnchor",
+            "Create Anchor",
+            ["Object"],
+            None,
+            "{url?: string (the link; default: the recent URL, else empty, to be set in Object Properties), target?: _blank|_self|…, title?: string, ids?} wrap the selected objects in an anchor (a group named Anchor that links to the URL: the SVG <a> element; Object Properties edits its href, target and title) → {id}",
+            has_selection,
+            create_anchor
+        ),
+        cmd!(
+            query "object.followLink",
+            "Follow Link",
+            ["Object"],
+            None,
+            "{id?} → {url, id} the link the selected object (or the anchor it is inside) points to; an error when none does. The app opens it in the browser",
+            has_selection,
+            follow_link
         ),
         cmd!(
             "path.setFillRule",
@@ -89,6 +108,12 @@ pub(super) fn fill_info(d: &Document, info: &mut AttributesInfo) {
     info.note = same(attrs().map(|a| a.note));
     info.title = same(attrs().map(|a| a.title));
     info.description = same(attrs().map(|a| a.description));
+    info.url_target = same(attrs().map(|a| a.url_target));
+    info.url_title = same(attrs().map(|a| a.url_title));
+    info.events = same(attrs().map(|a| a.events));
+    info.highlight = same(attrs().map(|a| a.highlight));
+    info.dpi = same(attrs().map(|a| a.dpi));
+    info.preserve_aspect_ratio = same(attrs().map(|a| a.preserve_aspect_ratio));
     let mut all = vec![];
     nodes.iter().filter_map(|n| fill_rule_owner(d, n.id)).for_each(|n| ruled(n, &mut all));
     info.fill_rule = same(all.into_iter().map(|(_, r)| r));
@@ -106,6 +131,14 @@ struct Edits {
     note: Option<String>,
     title: Option<String>,
     description: Option<String>,
+    url_target: Option<String>,
+    url_title: Option<String>,
+    /// Event attributes to set (an empty script removes the event).
+    events: Option<Vec<(String, String)>>,
+    /// `Some(None)` clears the highlight.
+    highlight: Option<Option<String>>,
+    dpi: Option<Option<f64>>,
+    preserve_aspect_ratio: Option<Option<String>>,
 }
 
 impl Edits {
@@ -123,6 +156,48 @@ impl Edits {
             note: text("note")?,
             title: text("title")?,
             description: text("description")?,
+            url_target: text("urlTarget")?,
+            url_title: text("urlTitle")?,
+            events: match p.get("events") {
+                None => None,
+                Some(Value::Object(o)) => Some(
+                    o.iter()
+                        .map(|(k, v)| {
+                            let k = k.trim().to_ascii_lowercase();
+                            if !k.starts_with("on") || k.len() < 3 || !k.chars().all(|c| c.is_ascii_alphanumeric()) {
+                                return Err(bad(C, format!("`events` keys are SVG event attributes such as onclick, not {k:?}")));
+                            }
+                            Ok((k, v.as_str().ok_or_else(|| bad(C, "`events` values must be strings"))?.to_string()))
+                        })
+                        .collect::<Result<Vec<_>>>()?,
+                ),
+                Some(_) => return Err(bad(C, "`events` must be an object of event attribute → script")),
+            },
+            highlight: match p.get("highlight") {
+                None => None,
+                Some(Value::Null) => Some(None),
+                Some(v) => {
+                    Some(Some(color_value(v).map(|c| c.to_hex()).ok_or_else(|| bad(C, "`highlight` must be a colour such as \"#ff8800\" or null"))?))
+                }
+            },
+            dpi: match p.get("dpi") {
+                None => None,
+                Some(Value::Null) => Some(None),
+                Some(v) => {
+                    Some(Some(v.as_f64().filter(|d| d.is_finite() && *d > 0.0).ok_or_else(|| bad(C, "`dpi` must be a positive number or null"))?))
+                }
+            },
+            preserve_aspect_ratio: match p.get("preserveAspectRatio") {
+                None => None,
+                Some(Value::Null) => Some(None),
+                Some(v) => Some(Some(
+                    v.as_str()
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == ' '))
+                        .ok_or_else(|| bad(C, "`preserveAspectRatio` must be an SVG value such as \"xMidYMid meet\" or null"))?
+                        .to_string(),
+                )),
+            },
         })
     }
 
@@ -133,6 +208,12 @@ impl Edits {
             && self.note.is_none()
             && self.title.is_none()
             && self.description.is_none()
+            && self.url_target.is_none()
+            && self.url_title.is_none()
+            && self.events.is_none()
+            && self.highlight.is_none()
+            && self.dpi.is_none()
+            && self.preserve_aspect_ratio.is_none()
     }
 
     /// `n`'s attributes with the edits applied (Show Center kept only where it isn't the default).
@@ -156,6 +237,29 @@ impl Edits {
         if let Some(v) = &self.description {
             a.description.clone_from(v);
         }
+        if let Some(v) = &self.url_target {
+            a.url_target.clone_from(v);
+        }
+        if let Some(v) = &self.url_title {
+            a.url_title.clone_from(v);
+        }
+        if let Some(events) = &self.events {
+            for (k, script) in events {
+                a.events.retain(|(e, _)| e != k);
+                if !script.is_empty() {
+                    a.events.push((k.clone(), script.clone()));
+                }
+            }
+        }
+        if let Some(v) = &self.highlight {
+            a.highlight.clone_from(v);
+        }
+        if let Some(v) = self.dpi {
+            a.dpi = v;
+        }
+        if let Some(v) = &self.preserve_aspect_ratio {
+            a.preserve_aspect_ratio.clone_from(v);
+        }
         a
     }
 }
@@ -165,7 +269,10 @@ fn set(s: &mut Session, p: &Value) -> Result<Value> {
     let jobs = overprint_jobs(s, p, C, ["overprintFill", "overprintStroke"])?;
     let edits = Edits::parse(p)?;
     if jobs.is_empty() && edits.is_empty() {
-        return Err(bad(C, "give overprintFill, overprintStroke, showCenter, imageMap, url, note, title or description"));
+        return Err(bad(
+            C,
+            "give overprintFill, overprintStroke, showCenter, imageMap, url, urlTarget, urlTitle, events, highlight, dpi, preserveAspectRatio, note, title or description",
+        ));
     }
     let ids = targets(s, p)?;
     let changed = edit_counted(s, "Attributes", |d| {
@@ -209,4 +316,59 @@ fn set_fill_rule(s: &mut Session, p: &Value) -> Result<Value> {
         Ok(todo.len())
     })?;
     Ok(json!({ "changed": changed }))
+}
+
+fn create_anchor(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "object.createAnchor";
+    let url = match p.get("url") {
+        None => s.recent_urls.first().cloned().unwrap_or_default(),
+        Some(v) => v.as_str().map(|u| u.trim().to_string()).ok_or_else(|| bad(C, "`url` must be a string"))?,
+    };
+    let target = str_param(p, "target").unwrap_or("").trim().to_string();
+    let title = str_param(p, "title").unwrap_or("").trim().to_string();
+    let ids = if p.get("ids").is_some() { checked_ids_param(s, p, "ids", C)? } else { selected_roots(s)? };
+    if ids.is_empty() {
+        return Err(bad(C, "nothing selected"));
+    }
+    let gid = s.edit("Create Anchor", |d, sel| {
+        let gid = d.alloc_id();
+        let id = d.wrap(&ids, |children| {
+            let mut g = Node::group(gid, children);
+            g.name = Some("Anchor".into());
+            g.edit_attrs(|a| {
+                a.url = url.clone();
+                a.url_target = target.clone();
+                a.url_title = title.clone();
+            });
+            g
+        })?;
+        sel.set([id]);
+        Ok(id)
+    })?;
+    if let Some(u) = s.recent_urls.iter().position(|u| *u == url) {
+        s.recent_urls.remove(u);
+    }
+    if !url.is_empty() {
+        s.recent_urls.insert(0, url);
+        s.recent_urls.truncate(RECENT_URLS);
+    }
+    Ok(json!({ "id": gid.0 }))
+}
+
+fn follow_link(s: &mut Session, p: &Value) -> Result<Value> {
+    const C: &str = "object.followLink";
+    let st = s.doc()?;
+    let start = match id_param(p, "id") {
+        Some(id) => id,
+        None => *st.selection.objects.first().ok_or_else(|| bad(C, "nothing selected"))?,
+    };
+    // The object's own link, else the nearest anchor it is inside.
+    let mut cur = Some(start);
+    while let Some(id) = cur {
+        if let Some(url) = st.doc.node(id).and_then(|n| n.url()) {
+            return Ok(json!({ "url": url, "id": id.0 }));
+        }
+        cur = st.doc.parent_of(id);
+    }
+    Err(bad(C, "the selected object has no link"))
 }

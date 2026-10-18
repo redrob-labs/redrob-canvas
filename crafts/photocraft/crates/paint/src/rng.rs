@@ -58,8 +58,29 @@ pub mod stream {
     pub const SPACING: u64 = 21;
     pub const RANDOM: u64 = 22;
     pub const SCATTER_ALONG: u64 = 23;
+    /// Dynamics presets' Hardness, Force and Rate outputs.
+    pub const HARDNESS: u64 = 24;
+    pub const FORCE: u64 = 25;
+    pub const RATE: u64 = 26;
     /// Image hose: a random cell per dab (one stream per dimension, `HOSE + dim`).
     pub const HOSE: u64 = 32;
+    /// Color Dynamics sources and sensors (gradient position, random colour, sensor-driven mix,
+    /// hue, saturation, value and darken).
+    pub const GRADIENT: u64 = 48;
+    pub const RANDOM_COLOR: u64 = 49;
+    pub const MIX_COLOR: u64 = 50;
+    pub const SENSOR_HUE: u64 = 51;
+    pub const SENSOR_SAT: u64 = 52;
+    pub const SENSOR_VALUE: u64 = 53;
+    pub const DARKEN: u64 = 54;
+    /// Softness, Sharpness and Lightness Strength sensors (their Random sensor / jitter draws).
+    pub const SOFTNESS: u64 = 55;
+    pub const SHARPNESS: u64 = 56;
+    pub const LIGHTNESS: u64 = 57;
+    /// Total random colour: per-pixel noise salt.
+    pub const PIXEL_NOISE: u64 = 58;
+    /// The Fuzzy Stroke sensor: one value per stroke (index 0).
+    pub const FUZZY_STROKE: u64 = 59;
 }
 
 /// Seed derived from arbitrary bytes (FNV-1a then mixed), for commands without an explicit seed.

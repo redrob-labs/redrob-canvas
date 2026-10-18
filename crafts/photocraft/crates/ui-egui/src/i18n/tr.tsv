@@ -4162,3 +4162,829 @@ cameraData	Lens	Lens
 	Popup palette	Açılır palet
 	Smear	Sürme
 	Smudge Radius	Bulaştırma yarıçapı
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Doğrusal ters çevir
+	Value Invert	Değeri ters çevir
+	Stretch Contrast HSV	HSV karşıtlığını genişlet
+	Color Enhance	Renk güçlendirme
+	Extract Component…	Bileşeni ayıkla…
+	Alien Map…	Uzaylı haritası…
+	Rotate Colors…	Renkleri döndür…
+	Palette Map…	Palet haritası…
+	Sample Colorize…	Örnekten renklendir…
+	RGB Clip…	RGB kırp…
+	Dither…	Titreme…
+	Local Threshold…	Yerel eşik…
+	Destripe…	Şeritleri kaldır…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Renkten griye…
+	Fattal et al. 2002…	Fattal ve diğ. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Yumuşak palet…
+	Decompose…	Ayrıştır…
+	Compose…	Birleştir…
+	Recompose	Yeniden birleştir
+	Rearrange Colormap…	Renk eşlemini yeniden düzenle…
+	Set Colormap…	Renk eşlemini ayarla…
+	Border Average…	Kenar ortalaması…
+	Export Histogram…	Histogramı dışa aktar…
+	Variable Blur…	Değişken Bulanıklık…
+	Apply Lens…	Lens Uygula…
+	Mosaic Tiles…	Mozaik Karoları…
+	Newsprint…	Gazete Baskısı…
+	Curve Bend…	Eğri Bükme…
+	Warp (Map)…	Çarpıtma (Harita)…
+	Bloom…	Parlama…
+	Sobel…	Sobel…
+	Cartoon…	Karikatür…
+	Clothify…	Kumaş…
+	Stencil Chrome…	Şablon Krom…
+	Bump Map…	Kabartma Haritası…
+	Panorama Projection…	Panorama Projeksiyonu…
+	Perlin Noise…	Perlin Gürültüsü…
+	Plasma…	Plazma…
+	Solid Noise…	Katı Gürültü…
+	Add Border…	Kenarlık Ekle…
+	Fog…	Sis…
+	Old Photo…	Eski Fotoğraf…
+	Round Corners…	Köşeleri Yuvarla…
+	Tile…	Döşe…
+	Depth Merge…	Derinlik Birleştirme…
+	Geometric Shapes…	Geometrik Şekiller…
+	Image Map Area…	Görüntü Haritası Alanı…
+	Image Map From Slices	Dilimlerden Görüntü Haritası
+	Export Image Map…	Görüntü Haritasını Dışa Aktar…
+	Clear Image Map	Görüntü Haritasını Temizle
+	Combine	Birleştir
+	Clipping	Kırpma
+	Color Space	Renk Uzayı
+	Linear light	Doğrusal ışık
+	Copy upper to lower	Üstü alta kopyala
+	Swap curves	Eğrileri değiştir
+	Mirror	Yansıt
+	Gradient Source	Gradyan kaynağı
+	Value Jitter	Değer titremesi
+	Pipe	Sıralı
+	Brush file (.myb)	Fırça dosyası (.myb)
+	Text as brush tip	Fırça ucu olarak metin
+	One character per dab along the stroke	Darbe boyunca her damgada bir karakter
+	Engine	Motor
+	Text Tip	Metin ucu
+	Hatching	Tarama
+	Particle	Parçacık
+	Dyna	Dyna
+	Tangent Normal	Teğet normal
+	MyPaint	MyPaint
+	Spray	Sprey
+	Bristle	Kıl
+	Deform	Deforme
+	Grain Extract	Gren Çıkar
+	Grain Merge	Gren Birleştir
+	LCh Hue	LCh Renk Tonu
+	LCh Chroma	LCh Kroma
+	LCh Color	LCh Renk
+	LCh Lightness	LCh Açıklık
+	Merge	Birleştir
+	Split	Böl
+	Remove Holes	Delikleri Kaldır
+	Distort…	Bozma…
+	Rounded Rectangle…	Yuvarlatılmış Dikdörtgen…
+	Anchor Layer	Katmanı Sabitle
+	To New Layer	Yeni Katmana
+	Layer Boundary Size…	Katman Sınır Boyutu…
+	Layer to Image Size	Katmanı Görüntü Boyutuna
+	Resize Layer to Selection	Katmanı Seçim Boyutuna
+	Crop Layer to Content	Katmanı İçeriğe Kırp
+	Threshold Alpha…	Alfa Eşiği…
+	Composite Options…	Birleştirme Seçenekleri…
+	Zealous Crop	Titiz Kırpma
+	Foreground Select	Ön Plan Seçimi
+	Stroke width	Vuruş genişliği
+	Graph cut	Graf kesimi
+	To Layer Mask	Katman Maskesine
+	Draw a rough outline round the subject	Konunun etrafına kaba bir ana hat çizin
+	Draw a rough outline round the subject first	Önce konunun etrafına kaba bir ana hat çizin
+	Outline placed: paint over the foreground, then Preview or Select	Ana hat yerleştirildi: ön planı boyayın, sonra Önizleme veya Seç
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Konuyu kabaca çevreleyin, ön planı boyayın ve matlaştırma motoru maskeyi büyütsün
+	Paint over the foreground (hold Alt for background), then Preview or Select	Ön planı boyayın (arka plan için Alt), sonra Önizleme veya Seç
+	Display Filters…	Görüntü Filtreleri…
+	Display Filters	Görüntü Filtreleri
+	No Color Deficiency Simulation	Renk Görme Bozukluğu Simülasyonu Yok
+	Simulate Protanopia	Protanopi Simülasyonu
+	Simulate Deuteranopia	Döteranopi Simülasyonu
+	Simulate Tritanopia	Tritanopi Simülasyonu
+	Clip Warning	Kırpma Uyarısı
+	Clip warning	Kırpma uyarısı
+	Color deficiency:	Renk görme bozukluğu:
+	Protanopia	Protanopi
+	Deuteranopia	Döteranopi
+	Tritanopia	Tritanopi
+	Contrast:	Kontrast:
+	View-only: the filters change what this view shows, never the pixels.	Yalnızca görünüm: filtreler bu görünümün gösterdiğini değiştirir, pikselleri asla.
+	Padding Color	Dolgu Rengi
+	From Theme	Temadan
+	Dark Gray	Koyu Gri
+	Medium Gray	Orta Gri
+	Light Check Color	Açık Kare Rengi
+	Dark Check Color	Koyu Kare Rengi
+	Light Check	Açık Kare
+	Dark Check	Koyu Kare
+	Light check	Açık kare
+	Dark check	Koyu kare
+	Custom Color	Özel Renk
+	Select Custom Color…	Özel Renk Seç…
+	Keep Padding in Show All	Tümünü Göster'de Dolguyu Koru
+	Keep padding in show all	Tümünü Göster'de dolguyu koru
+	Filter by tag	Etikete göre filtrele
+	Clear filter	Filtreyi temizle
+	Tags:	Etiketler:
+	Add tag	Etiket ekle
+	Remove tag	Etiketi kaldır
+	View Metadata…	Meta Verileri Görüntüle…
+	Edit Metadata…	Meta Verileri Düzenle…
+	Edit Metadata	Meta Verileri Düzenle
+	Metadata Viewer	Meta Veri Görüntüleyici
+	Write Metadata	Meta Verileri Yaz
+	Separate several values with semicolons	Birden çok değeri noktalı virgülle ayırın
+	No tags	Etiket yok
+	XMP	XMP
+	IPTC	IPTC
+	Text	Metin
+	Rights	Haklar
+	IPTC Extension	IPTC Uzantısı
+	Categories	Kategoriler
+	DICOM	DICOM
+	Procedure Browser	Yordam Tarayıcısı
+	Plug-In Browser	Eklenti Tarayıcısı
+	Search procedures	Yordam ara
+	{n} procedures	{n} yordam
+	(no menu)	(menü yok)
+	Menu: {path}	Menü: {path}
+	Parameters	Parametreler
+	Available now	Şimdi kullanılabilir
+	Not available in the current state	Geçerli durumda kullanılamaz
+	Run	Çalıştır
+	Select a procedure to read its parameters.	Parametrelerini okumak için bir yordam seçin.
+	Dashboard	Gösterge Paneli
+	Low memory: swap is nearly full. Save your work.	Bellek az: takas alanı neredeyse dolu. Çalışmanızı kaydedin.
+	Memory	Bellek
+	Cache	Önbellek
+	Swap	Takas
+	Swap: not reported on this platform	Takas: bu platformda bildirilmiyor
+	CPU	CPU
+	CPU renderer	CPU işleyici
+	uploads	yükleme
+	Misc: {jobs} jobs running · {n} samples	Diğer: {jobs} iş çalışıyor · {n} örnek
+	Log to File…	Dosyaya Günlükle…
+	Stop Logging	Günlüklemeyi Durdur
+	Device Status	Aygıt Durumu
+	Core Pointer	Ana İşaretçi
+	Pen / Tablet	Kalem / Tablet
+	Brush:	Fırça:
+	Pattern:	Desen:
+	Gradient:	Gradyan:
+	Save Device Status	Aygıt Durumunu Kaydet
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Her aygıt aracını, renklerini, fırçasını, desenini ve gradyanını hatırlar; aygıt değiştirmek bunları da değiştirir.
+	Selection Editor	Seçim Düzenleyici
+	No document open.	Açık belge yok.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Oradaki bitişik rengi Sihirli Değnek ile seçmek için tıklayın (Shift ekler, Alt çıkarır)
+	Save to Channel	Kanala Kaydet
+	To Path	Yola
+	Advanced options	Gelişmiş seçenekler
+	MyPaint Brushes	MyPaint Fırçaları
+	No MyPaint brushes yet. Import .myb files to list them here.	Henüz MyPaint fırçası yok. Burada listelemek için .myb dosyalarını içe aktarın.
+	No brush matches the filter.	Filtreyle eşleşen fırça yok.
+	Handle Transform	Tutamaç Dönüşümü
+	3D Transform	3B Dönüşüm
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Yeniden Ayarla
+	Apply the transform so far and put a fresh box on the result	Şimdiye kadarki dönüşümü uygula ve sonuca yeni bir kutu yerleştir
+	Camera	Kamera
+	Vanishing X:	Kaybolma noktası X:
+	Y:	Y:
+	Focal length:	Odak uzaklığı:
+	Local pivot	Yerel eksen
+	Unified pivot	Birleşik eksen
+	Close Cage	Kafesi Kapat
+	Reset Cage	Kafesi Sıfırla
+	Fill Plain Colour	Düz Renkle Doldur
+	Fill the original position of the cage with the plain colour of its outline	Kafesin özgün konumunu dış hattının düz rengiyle doldurur
+	{n} points	{n} nokta
+	Click to place a handle	Tutamaç yerleştirmek için tıklayın
+	Rotate and Scale	Döndür ve Ölçekle
+	{n} handles: {what}	{n} tutamaç: {what}
+	Reset Handles	Tutamaçları Sıfırla
+	Remove Handles	Tutamaçları Kaldır
+	Commit Cage Transform (Enter)	Kafes Dönüşümünü Uygula (Enter)
+	Commit Handle Transform (Enter)	Tutamaç Dönüşümünü Uygula (Enter)
+	Commit 3D Transform (Enter)	3B Dönüşümü Uygula (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Kafes Dönüşümü: biçimi değiştirilecek bölümün etrafına tıklayın, kafesi kapatmak için ilk noktaya tıklayın, sonra noktaları sürükleyin
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Tutamaç Dönüşümü: bir ila dört tutamaç yerleştirip sürükleyin (biri taşır, ikisi döndürür ve ölçekler, üçü kaydırır, dördü perspektif verir)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3B Dönüşüm: X ve Y etrafında döndürmek için sürükleyin, Z için Alt ile sürükleyin; Taşı ve Kamera sekmeleri katmanı ve kamerayı taşır
+	Segment {n}	Parça {n}
+	Blending:	Karışım:
+	Coloring:	Renklendirme:
+	Midpoint:	Orta nokta:
+	Sinusoidal	Sinüzoidal
+	Spherical (increasing)	Küresel (artan)
+	Spherical (decreasing)	Küresel (azalan)
+	Step	Basamak
+	HSV (counter-clockwise)	HSV (saat yönünün tersi)
+	HSV (clockwise)	HSV (saat yönünde)
+	Replicate	Çoğalt
+	Split the segment at its midpoint	Parçayı orta noktasından böl
+	Replace the segment with two copies of itself	Parçayı kendisinin iki kopyasıyla değiştir
+	Flip the whole gradient end to end	Tüm gradyanı uçtan uca çevir
+	Save as POV-Ray…	POV-Ray olarak kaydet…
+	Shaped Gradient (angular)	Şekilli Gradyan (açısal)
+	Shaped Gradient (spherical)	Şekilli Gradyan (küresel)
+	Shaped Gradient (dimpled)	Şekilli Gradyan (çukur)
+	Truncate	Kes
+	Sawtooth wave	Testere dişi dalga
+	Triangular wave	Üçgen dalga
+	Wheel	Tekerlek
+	Force	Kuvvet
+	Jitter	Titreme
+	Fade length	Soldurma uzunluğu
+	Random amount	Rastgele miktar
+	Save Preset	Ön ayarı kaydet
+	Paint Dynamics Editor	Boyama Dinamikleri Düzenleyicisi
+	Color from Gradient	Gradyandan renk
+	Put this table on the current brush	Bu tabloyu geçerli fırçaya uygula
+	Save the table as a named dynamics preset	Tabloyu adlandırılmış dinamik ön ayarı olarak kaydet
+	Give the dynamics preset a name first	Önce dinamik ön ayarına bir ad verin
+	Edit the dynamics table (inputs × outputs)	Dinamik tablosunu düzenle (girişler × çıkışlar)
+	Reset Plane	Düzlemi sıfırla
+	Click four corners to define a perspective plane, then clone along it	Perspektif düzlemi tanımlamak için dört köşeye tıklayın, sonra onun boyunca klonlayın
+	Click corner {n} of 4	4 köşeden {n}. köşeye tıklayın
+	Perspective plane: corner {n} of 4 set	Perspektif düzlemi: 4 köşeden {n}. ayarlandı
+	Perspective plane set; {key}-click a source, then paint	Perspektif düzlemi ayarlandı; bir kaynağa {key} ile tıklayın, sonra boyayın
+	Copy Path as SVG	Yolu SVG Olarak Kopyala
+	Export Path to SVG…	Yolu SVG'ye Aktar…
+	Import Path from SVG…	SVG'den Yol İçe Aktar…
+	Paste Path from SVG	SVG'den Yol Yapıştır
+	Copy All Paths as SVG	Tüm Yolları SVG Olarak Kopyala
+	Export All Paths to SVG…	Tüm Yolları SVG'ye Aktar…
+	Copied 1 path as SVG	1 yol SVG olarak kopyalandı
+	Copied {n} paths as SVG	{n} yol SVG olarak kopyalandı
+	Exported paths to {path}	Yollar {path} konumuna aktarıldı
+	Imported 1 path	1 yol içe aktarıldı
+	Imported {n} paths	{n} yol içe aktarıldı
+	The clipboard holds no SVG	Pano SVG içermiyor
+	Clipboard Image Brush	Pano Görüntüsü Fırçası
+	Paint with the image on the clipboard as the brush tip	Panodaki görüntüyü fırça ucu olarak kullanarak boya
+	Export Layers as Animation…	Katmanları Animasyon Olarak Aktar…
+	Export as Brush (.gbr)…	Fırça Olarak Aktar (.gbr)…
+	Export Layers as Image Hose (.gih)…	Katmanları Animasyonlu Fırça Olarak Aktar (.gih)…
+	Export as Pattern (.pat)…	Desen Olarak Aktar (.pat)…
+	Animation Frame Tags…	Animasyon Kare Etiketleri…
+	Disposal	Elden Çıkarma
+	Incremental	Artımlı
+	Angular	Açısal
+	Xtilt	X Eğimi
+	Ytilt	Y Eğimi
+	Mng	MNG
+	Export as PostScript (.eps)…	PostScript Olarak Aktar (.eps)…
+	Encapsulated	Kapsüllenmiş
+	Encoding	Kodlama
+	Hex	Onaltılık
+	Ascii85	ASCII85
+	Binary	İkili
+	Open Location…	Konum Aç…
+	From Screenshot…	Ekran Görüntüsünden…
+	From Web Page…	Web Sayfasından…
+	Send by Email…	E-posta ile Gönder…
+	Url	URL
+	Cursor	İmleç
+	Region	Bölge
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Arabellek
+	Buffers	Arabellekler
+	Cut Named…	Adlandırılmış Kes…
+	Copy Named…	Adlandırılmış Kopyala…
+	Copy Visible Named…	Görüneni Adlandırılmış Kopyala…
+	Paste Named…	Adlandırılmış Yapıştır…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Adlandırılmış arabellek yok. Burada bir kopya tutmak için Düzen > Arabellek > Adlandırılmış Kopyala… kullanın.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Adlandırılmış arabellek yok; önce Düzen > Arabellek > Adlandırılmış Kopyala kullanın
+	Paste Buffer	Arabelleği Yapıştır
+	Paste Buffer in Place	Arabelleği Yerine Yapıştır
+	Paste Buffer as New Image	Arabelleği Yeni Görüntü Olarak Yapıştır
+	Rename Buffer…	Arabelleği Yeniden Adlandır…
+	Delete Buffer	Arabelleği Sil
+	Paste as New	Yeni Olarak Yapıştır
+	Paste the buffer as a new layer	Arabelleği yeni katman olarak yapıştır
+	Paste the buffer as a new document	Arabelleği yeni belge olarak yapıştır
+	As	Olarak
+	In place	Yerine
+	Into	İçine
+	Modules…	Modüller…
+	Units…	Birimler…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Yüklenebilir modül kurulu değil. Filtre > Eklentiler > Eklenti Kur… bir tane ekler.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Kapatılan bir modül kurulu kalır ancak yeniden açılana kadar menülerden kalkar.
+	Module	Modül
+	Not installed	Kurulu değil
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Çarpan, bir inçte kaç birim olduğudur (santimetre için 2,54, punto için 72).
+	Identifier	Tanımlayıcı
+	Factor	Çarpan
+	Symbol	Simge
+	Abbreviation	Kısaltma
+	Singular	Tekil
+	Plural	Çoğul
+	Delete Unit	Birimi Sil
+	New unit	Yeni birim
+	Add Unit	Birim Ekle
+	That identifier is already a unit	Bu tanımlayıcı zaten bir birim
+	Custom units	Özel birimler
+	Disabled modules	Devre dışı modüller
+	Input Devices…	Giriş Aygıtları…
+	Input Controllers…	Giriş Denetleyicileri…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Kalem, platformun bildirdiği tablet kalemidir. Devre dışı bırakılırsa fare gibi çalışır.
+	Device	Aygıt
+	Invert tilt X	X eğimini ters çevir
+	Invert tilt Y	Y eğimini ters çevir
+	Swap tilt	Eğimi değiştir
+	Pressure scale	Basınç ölçeği
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Tekerlek olayları isteğe bağlı Shift+, Ctrl+ ve Alt+ ile up, down, left veya right; klavye olayları Ctrl+Alt+Up gibi kısayollardır. Eylem bir komut kimliğidir, isteğe bağlı JSON parametreleri izleyebilir.
+	Controller	Denetleyici
+	Event	Olay
+	Remove mapping	Eşlemeyi kaldır
+	New mapping	Yeni eşleme
+	Add Mapping	Eşleme Ekle
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} girdi; tıklama ön plan rengini ayarlar, çift tıklama düzenler
+	Entry	Girdi
+	Add an entry with the foreground colour	Ön plan rengiyle bir girdi ekle
+	Delete the last entry	Son girdiyi sil
+	Use selected	Seçileni kullan
+	Ink	Mürekkep
+	MyPaint Brush	MyPaint Fırçası
+	Nib	Uç
+	Aspect	Oran
+	Opaque	Opak
+	Erase with brush	Fırçayla sil
+	Import .myb…	.myb İçe Aktar…
+	Add a MyPaint brush file to the presets	Ön ayarlara bir MyPaint fırça dosyası ekle
+	Imported MyPaint brush {name}	MyPaint fırçası {name} içe aktarıldı
+	How much pressure changes the nib size	Basıncın uç boyutunu ne kadar değiştirdiği
+	How much the pen's tilt turns and stretches the nib	Kalem eğiminin ucu ne kadar döndürüp uzattığı
+	How much a fast stroke thins the nib	Hızlı bir vuruşun ucu ne kadar incelttiği
+	Added to the preset's logarithmic radius	Ön ayarın logaritmik yarıçapına eklenir
+	Operation…	İşlem…
+	Operation name or id	İşlem adı veya kimliği
+	{n} operations	{n} işlem
+	Choose an operation	Bir işlem seçin
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu Konsolu…
+	Load Scripts Folder…	Betik Klasörünü Yükle…
+	Python Console…	Python Konsolu…
+	Load Plug-ins Folder…	Eklenti Klasörünü Yükle…
+	Loaded {n} scripts	{n} betik yüklendi
+	Loaded {n} Python plug-ins	{n} Python eklentisi yüklendi
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	call(command, **params), message(text) ve print() ile Python 3; her motor komutuna call ile ulaşılır.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: her motor komutu bir yordamdır, (file.new "width" 640 "height" 480); yordamları tanımlayın ve script-fu-register ile kaydedin.
+	Code	Kod
+	Cmd+Enter runs the code	Cmd+Enter kodu çalıştırır
+	Clear Log	Günlüğü Temizle
+	Dodge…	Soldurma…
+	Burn…	Yakma…
+	Cross-Channel Adjustment…	Kanallar Arası Ayar…
+	Slope, Offset, Power…	Eğim, Kayma, Üs…
+	Index Colors…	İndeksli Renkler…
+	Raindrops…	Yağmur Damlaları…
+	Polygon Blur…	Çokgen Bulanıklık…
+	Edge Detection…	Kenar Algılama…
+	Emboss (Directional)…	Kabartma (Yönlü)…
+	Phong Bump Map…	Phong Kabartma Haritası…
+	Palettize…	Paletleştir…
+	Height to Normal Map…	Yükseklikten Normal Haritası…
+	Normalize Normal Map	Normal Haritasını Normalleştir
+	Maximize Channel	Kanalı En Yükseğe Çıkar
+	Minimize Channel	Kanalı En Düşüğe İndir
+	Propagate Colors…	Renkleri Yay…
+	Reset Transparent	Saydamları Sıfırla
+	Mean Removal	Ortalama Çıkarma
+	Wavelet Noise Reducer…	Dalgacık Gürültü Azaltıcı…
+	Random Pick…	Rastgele Seçim…
+	G'MIC Filter…	G'MIC Filtresi…
+	G'MIC executable	G'MIC çalıştırılabilir dosyası
+	G'MIC update folder	G'MIC güncelleme klasörü
+	Add scene at playhead	Oynatma kafasına sahne ekle
+	Add to favourites	Sık kullanılanlara ekle
+	Arithmetic	Aritmetik
+	Attach audio…	Ses ekle…
+	Blend details	Karışım ayrıntıları
+	Blend mode	Karışım modu
+	Blend mode and opacity	Karışım modu ve opaklık
+	Capture now	Şimdi yakala
+	Clone previous keyframe here	Önceki anahtar kareyi buraya klonla
+	Comment	Yorum
+	Display settings	Görüntü ayarları
+	Duplicate keyframe	Anahtar kareyi çoğalt
+	Duplicate keyframe here	Anahtar kareyi buraya çoğalt
+	End	Son
+	Export timelapse…	Hızlandırılmış videoyu dışa aktar…
+	Favourites	Sık kullanılanlar
+	Frame rate	Kare hızı
+	HSX	HSX
+	Key the active layer:	Etkin katmana anahtar:
+	Misc	Diğer
+	Mute audio	Sesi kapat
+	Negative	Negatif
+	New keyframe	Yeni anahtar kare
+	New keyframe here	Buraya yeni anahtar kare
+	Next tint	Sonraki renk tonu
+	No animated layers: add a keyframe to the active layer to animate it.	Animasyonlu katman yok: etkin katmana anahtar kare ekleyerek canlandırın.
+	No animation curves yet.	Henüz animasyon eğrisi yok.
+	No scenes yet.	Henüz sahne yok.
+	Opacity per frame	Kare başına opaklık
+	Previous tint	Önceki renk tonu
+	Quadratic	İkinci dereceden
+	Recorder	Kaydedici
+	Remove from favourites	Sık kullanılanlardan kaldır
+	Remove keyframe	Anahtar kareyi kaldır
+	Remove scene	Sahneyi kaldır
+	Scale X	Ölçek X
+	Scale Y	Ölçek Y
+	Scene name	Sahne adı
+	Show onion skins	Soğan kabuğunu göster
+	Start	Başlangıç
+	Start recording	Kaydı başlat
+	Stop recording	Kaydı durdur
+	Storyboard	Storyboard
+	Thumbnail size	Küçük resim boyutu
+	frames	kare
+	opacity	opaklık
+	rotation	döndürme
+	scaleX	ölçek X
+	scaleY	ölçek Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir} içinde {count} anlık görüntü
+	2-Point Perspective	2 Noktalı Perspektif
+	Assistant colour	Yardımcı rengi
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Yardımcı manyetizması: bir vuruşun yardımcıdan ne kadar uzaklaşıp yine de çekilebileceği (1000 = her zaman)
+	Assistant opacity	Yardımcı opaklığı
+	Concentric Ellipse	Eşmerkezli Elips
+	Curvilinear Perspective	Eğrisel Perspektif
+	Eraser snaps	Silgi yaslanır
+	Fish-Eye Point	Balık Gözü Noktası
+	Handles	Tutamaçlar
+	Infinite Ruler	Sonsuz Cetvel
+	Limit to area	Alanla sınırla
+	Minor subdivisions	Küçük alt bölümler
+	Own colour	Kendi rengi
+	Perspective Ellipse	Perspektif Elips
+	Previews	Önizlemeler
+	Show the snapped stroke's line while painting	Boyarken yaslanan vuruşun çizgisini göster
+	Show this assistant's control handles	Bu yardımcının denetim tutamaçlarını göster
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Vuruşlar boyama yardımcılarını izler (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	İki ek tutamaç yardımcının çizdiği ve yaslandığı yeri kırpar
+	Vertical ruler	Dikey Cetvel
+	Painting Assistants	Boyama Yardımcıları
+	Assistant Previews	Yardımcı Önizlemeleri
+	Drag fill	Sürükleyerek doldur
+	Dragging fills every region passed over	Sürükleme geçilen her bölgeyi doldurur
+	Exclude colour	Rengi dışla
+	Exclude transparent	Saydamı dışla
+	Fill mode	Doldurma modu
+	No region is fully enclosed by the shape	Hiçbir bölge şeklin içinde tamamen kapalı değil
+	Only regions coloured like the first one	Yalnızca ilkiyle aynı renkteki bölgeler
+	Reference	Referans
+	Similar only	Yalnızca benzer
+	Soften the filled edge	Doldurma kenarını yumuşat
+	Spread stops at the darkest pixels (lines)	Yayılma en koyu piksellerde (çizgilerde) durur
+	Spread stops at the most opaque pixels	Yayılma en opak piksellerde durur
+	Stop at darkest	En koyuda dur
+	Stop at opaque	Opakta dur
+	Similar Colours	Benzer Renkler
+	Colour Labels	Renk Etiketleri
+	All Regions	Tüm Bölgeler
+	Specific Colour	Belirli Renk
+	Transparent Regions	Saydam Bölgeler
+	Surrounded By	Çevreleyen
+	Fill with Foreground Color (Opacity)	Ön Plan Rengiyle Doldur (Opaklık)
+	Fill with Background Color (Opacity)	Arka Plan Rengiyle Doldur (Opaklık)
+	Fill with Pattern (Opacity)	Desenle Doldur (Opaklık)
+	Straight Line Tool	Düz Çizgi Aracı
+	Multibrush Tool	Çoklu Fırça Aracı
+	Dynamic Brush Tool	Dinamik Fırça Aracı
+	Enclose and Fill Tool	Çevrele ve Doldur Aracı
+	Colorize Mask Tool	Renklendirme Maskesi Aracı
+	Reference Images Tool	Referans Görüntüleri Aracı
+	Alternating	Değişken
+	Forward	İleri
+	Shaped Gradient (follows the selection)	Şekilli Gradyan (seçimi izler)
+	Clear copies	Kopyaları temizle
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+tık kopya yerleştirir, Ctrl+Alt+tık kaldırır
+	How heavily the stroke lags behind the pointer	Vuruşun işaretçinin ne kadar gerisinde kaldığı
+	How quickly the stroke's motion dies away	Vuruş hareketinin ne kadar hızlı söndüğü
+	Keep one-pixel lines single width without L corners	Tek piksel çizgileri L köşeler olmadan tek genişlikte tut
+	Mirror all tools	Tüm araçları yansıt
+	Multibrush	Çoklu Fırça
+	Pixel smoothing	Piksel yumuşatma
+	The painting symmetry mirrors fills, gradients and retouching too	Boyama simetrisi doldurmaları, gradyanları ve rötuşları da yansıtır
+	The painting symmetry mirrors this tool's output too	Boyama simetrisi bu aracın çıktısını da yansıtır
+	X interval	X aralığı
+	Y interval	Y aralığı
+	Mirror / Rotation	Ayna / Döndürme
+	Translate	Öteleme
+	Copy Translate	Kopyala Ötele
+	Cursor shape	İmleç şekli
+	Outline shape	Dış çizgi şekli
+	Show outline while painting	Boyarken dış çizgiyi göster
+	Effective outline size	Etkin dış çizgi boyutu
+	Tool icon	Araç simgesi
+	Arrow	Ok
+	Crosshair	Artı
+	Small dot	Küçük nokta
+	No cursor	İmleç yok
+	Triangle right	Sağ üçgen
+	Triangle left	Sol üçgen
+	No outline	Dış çizgi yok
+	Instant preview	Anlık önizleme
+	Instant preview megapixels	Anlık önizleme megapiksel
+	Add…	Ekle…
+	Auto update	Otomatik güncelle
+	Canvas input profile	Tuval giriş profili
+	Clean up	Temizle
+	Clear key strokes	Anahtar vuruşları temizle
+	Colorize Mask	Renklendirme Maskesi
+	Draw in the area below to test pressure, tilt and rotation	Basınç, eğim ve döndürmeyi test etmek için aşağıdaki alana çizin
+	Edge detection	Kenar algılama
+	Edit key strokes	Anahtar vuruşları düzenle
+	Embed	Göm
+	Fill only inside the line art's pixels	Yalnızca çizginin piksellerinin içini doldur
+	Gap close	Boşlukları kapat
+	Input API	Giriş API'si
+	Keep aspect	Oranı koru
+	Limit to layer	Katmanla sınırla
+	Next Preset	Sonraki Ön Ayar
+	No samples yet	Henüz örnek yok
+	Nothing to paste: the clipboard holds no image	Yapıştırılacak bir şey yok: panoda görüntü yok
+	Opacity +	Opaklık +
+	Opacity -	Opaklık -
+	Pasted image	Yapıştırılan görüntü
+	Peak pressure	Tepe basıncı
+	Previous Preset	Önceki Ön Ayar
+	Reference Images	Referans Görüntüleri
+	Rotate Left	Sola Döndür
+	Rotate Right	Sağa Döndür
+	Sample rate	Örnekleme hızı
+	Screen mapping	Ekran eşlemesi
+	Show output	Çıktıyı göster
+	Show the key strokes over the canvas	Anahtar vuruşları tuvalin üzerinde göster
+	Show with all tools	Tüm araçlarla göster
+	Size +	Boyut +
+	Size -	Boyut -
+	Speed source	Hız kaynağı
+	Store the pixels in the set; off, link to the file	Pikselleri kümede sakla; kapalıysa dosyaya bağla
+	Tablet Settings…	Tablet Ayarları…
+	Tablet Tester	Tablet Test Aracı
+	The clipboard is not available	Pano kullanılamıyor
+	The next key strokes keep their regions clear	Sonraki anahtar vuruşlar bölgelerini boş bırakır
+	Tilt offset	Eğim kayması
+	Touch Docker	Dokunmatik Panel
+	Transparent key	Saydam anahtar
+	Canvas Input	Tuval Girişi
+	Canvas Input…	Tuval Girişi…
+	Pan key	Kaydırma tuşu
+	Zoom in key	Yaklaştırma tuşu
+	Zoom out key	Uzaklaştırma tuşu
+	Rotate key	Döndürme tuşu
+	Middle button	Orta düğme
+	Stylus button	Kalem düğmesi
+	Pick modifier	Renk seçme değiştiricisi
+	Shift wheel rotates	Shift+tekerlek döndürür
+	Trackpad	İzleme dörtgeni
+	Pick	Renk seç
+	No action	İşlem yok
+	No pick	Renk seçme yok
+	Scroll	Kaydır
+	Rotate View (hold)	Görünümü Döndür (basılı)
+	Tilt offset x	Eğim kayması X
+	Tilt offset y	Eğim kayması Y
+	Tablet speed source	Tablet hız kaynağı
+	Tablet api	Tablet API'si
+	Tablet screen mapping	Tablet ekran eşlemesi
+	Pointer	İşaretçi
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Izgara türü
+	Isometric left angle	İzometrik sol açı
+	Isometric right angle	İzometrik sağ açı
+	Isometric vertical lines	İzometrik dikey çizgiler
+	Rectangular	Dikdörtgen
+	Isometric	İzometrik
+	Node	Düğüm
+	Extension	Uzantı
+	Intersection	Kesişim
+	Alt-click a bottom patch to set it to the foreground colour	Alt+tıklama alttaki kareyi ön plan rengine ayarlar
+	Apply:	Uygula:
+	Brushes this large preview coarsely while painting	Bu boyuttaki fırçalar boyarken kaba önizlenir
+	Click the disc to add shape points	Şekil noktaları eklemek için diske tıklayın
+	Close Shape	Şekli kapat
+	Color Space:	Renk uzayı:
+	Common Colors	Yaygın renkler
+	Components:	Bileşenler:
+	Continuous Mode	Sürekli kip
+	Current pattern	Geçerli desen
+	Depth:	Derinlik:
+	Display:	Görüntü:
+	Dynamic Hue Ring	Dinamik renk tonu halkası
+	Enable Pen Settings	Kalem ayarlarını etkinleştir
+	Erase mode keeps its own opacity on this preset	Silme kipi bu ön ayarda kendi opaklığını korur
+	Erase mode keeps its own size on this preset	Silme kipi bu ön ayarda kendi boyutunu korur
+	Eraser Opacity	Silgi opaklığı
+	Eraser Size	Silgi boyutu
+	Fit Panel Width	Panel genişliğine sığdır
+	Gamut Mask	Gam maskesi
+	Gradient Steps	Gradyan adımları
+	Gradient ends: Alt-click to set from the foreground	Gradyan uçları: Ön plandan almak için Alt+tıklayın
+	Hue Steps	Renk tonu adımları
+	Instant Preview	Anlık önizleme
+	LUT Management (OCIO)	LUT yönetimi (OCIO)
+	Lightness Strength	Açıklık gücü
+	Lock Color	Rengi kilitle
+	Luma:	Luma:
+	Minimum Hardness	En az sertlik
+	Minimum Strength	En az güç
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Kapalı: tüm algılayıcılar yok sayılır, eğriler korunur
+	Out of gamut	Gam dışı
+	Panel colours are not shown through the display transform	Panel renkleri görüntü dönüşümünden geçirilmez
+	Patch Count	Kare sayısı
+	Patch Size	Kare boyutu
+	Patches:	Kareler:
+	Pattern Scale	Desen ölçeği
+	Pop-up Size	Açılır pencere boyutu
+	Proof to Painting Space	Boyama uzayına prova
+	Recent Colors	Son renkler
+	Remove Last Shape	Son şekli kaldır
+	Rotate Mask	Maskeyi döndür
+	Saturation Steps	Doygunluk adımları
+	Selector settings	Seçici ayarları
+	Selector:	Seçici:
+	Shade Count	Ton sayısı
+	Shade Ring by Value	Halkayı değere göre gölgele
+	Shade Selector	Ton seçici
+	Shade Size	Ton boyutu
+	Shade Spread	Ton yayılımı
+	Shade Strip	Ton şeridi
+	Shades	Tonlar
+	Share Curve Across Settings	Eğriyi ayarlar arasında paylaş
+	Show as Fractions	Kesir olarak göster
+	Soften Edge	Kenarı yumuşat
+	Source:	Kaynak:
+	Style:	Stil:
+	The tip's grey levels are painted into the colour as lightness	Ucun gri düzeyleri renge açıklık olarak boyanır
+	Threshold the tip mask for crisp pixel strokes	Keskin piksel darbeleri için uç maskesini eşikle
+	Tip as Lightness Map	Uç açıklık haritası olarak
+	Update:	Güncelleme:
+	Value Steps	Değer adımları
+	Value on the Ring	Değer halkada
+	Zoom Pop-up	Yaklaştırma açılır penceresi
+	Length over which the value goes from 0 to 1	Değerin 0'dan 1'e çıktığı uzunluk
+	Start over past the length instead of holding the end value	Uzunluğu aşınca son değeri tutmak yerine yeniden başla
+	Pressure In	Basınç (yalnızca artan)
+	X-Tilt	X Eğimi
+	Y-Tilt	Y Eğimi
+	Tilt Direction	Eğim Yönü
+	Tilt Elevation	Eğim Yükseltisi
+	Fuzzy Stroke	Vuruş Başına Rastgele
+	Tip Scale:	Uç Ölçeği:
+	Initial size as a share of the bitmap's size	Bit eşlem boyutunun payı olarak başlangıç boyutu
+	Tip Rotation:	Uç Döndürme:
+	Initial rotation of the tip	Ucun başlangıç döndürmesi
+	No anti-aliasing: the dab's pixels are fully on or off	Kenar yumuşatma yok: damganın pikselleri tamamen açık veya kapalı
+	Align Outline to Pixel Grid	Ana Hattı Piksel Izgarasına Hizala
+	The brush outline snaps to the pixels the dab fills	Fırça ana hattı damganın doldurduğu piksellere yapışır
+	Tip Mode:	Uç Modu:
+	(no colour bitmap: paints the brush colour)	(renkli bit eşlem yok: fırça rengiyle boyar)
+	Neutral Point	Nötr Nokta
+	Canvas Only: hide the panels around the canvas	Yalnızca Tuval: tuvalin çevresindeki panelleri gizle
+	Presets kept in the history	Geçmişte tutulan ön ayarlar
+	Clear the history	Geçmişi temizle
+	No presets used yet	Henüz ön ayar kullanılmadı
+	Forget this preset	Bu ön ayarı unut
+	Ten Brushes	On Fırça
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Ön ayarları on yuvaya atayın; bir yuvayı yeniden etkinleştirmek önceki ön ayara döner
+	Clear this slot	Bu yuvayı temizle
+	Assign current	Geçerliyi ata
+	Browse a folder of reference images	Referans görüntü klasörüne göz at
+	No folder	Klasör yok
+	Next image	Sonraki görüntü
+	Previous image	Önceki görüntü
+	Pick an image to show it here	Burada göstermek için bir görüntü seçin
+	Search actions and commands	Eylem ve komut ara
+	No matching action	Eşleşen eylem yok
+	Search Actions…	Eylem Ara…
+	Brush History	Fırça Geçmişi
+	Color Image	Renkli Görüntü
+	Lightness Map	Açıklık Haritası
+	Static	Sabit
+	Move to Top	En Üste Taşı
+	Bubble Up	Bir Yukarı
+	Clear the scratch pad to white	Karalama defterini beyaza temizle
+	Fill the scratch pad with the background colour	Karalama defterini arka plan rengiyle doldur
+	Fill the scratch pad with the current gradient	Karalama defterini geçerli gradyanla doldur
+	Fill the scratch pad with the current image	Karalama defterini geçerli görüntüyle doldur
+	Fill the scratch pad with the preset's icon	Karalama defterini ön ayarın simgesiyle doldur
+	Reload the stored preset, discarding the tweaks	Kayıtlı ön ayarı yeniden yükle, değişiklikleri at
+	BG	AP
+	Icon	Simge
+	Thumbnail:	Küçük Resim:
+	Stroke preview	Vuruş önizlemesi
+	Scratch pad	Karalama defteri
+	Icon library	Simge kitaplığı
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Yerel Seçimi Etkinleştir
+	Add Curve Key	Eğri Anahtarı Ekle
+	Add Filter…	Filtre Ekle…
+	Add Local Selection	Yerel Seçim Ekle
+	Add Scene	Sahne Ekle
+	Add Transform Key	Dönüştürme Anahtarı Ekle
+	Alpha into Mask	Alfayı Maskeye
+	Attach Audio…	Ses Ekle…
+	Backup count	Yedek sayısı
+	Capture Snapshot	Anlık Görüntü Al
+	Change Clone Source…	Klon Kaynağını Değiştir…
+	Clone Keyframe	Anahtar Kareyi Klonla
+	Clone Layer	Katmanı Klonla
+	Clones Array…	Klon Dizisi…
+	Colorize Mask Properties…	Renklendirme Maskesi Özellikleri…
+	Convert	Dönüştür
+	Convert Group to Animated Layer	Grubu Animasyonlu Katmana Dönüştür
+	Convert to Paint Layer	Boyama Katmanına Dönüştür
+	Copy Keyframe	Anahtar Kareyi Kopyala
+	Curved	Eğri
+	Drag	Sürükle
+	Duplicate Keyframe	Anahtar Kareyi Çoğalt
+	Edit Generated Fill…	Oluşturulan Dolguyu Düzenle…
+	Edit Transform Mask…	Dönüştürme Maskesini Düzenle…
+	Ellipse	Elips
+	Export Storyboard…	Storyboard'u Dışa Aktar…
+	Export Timelapse…	Hızlandırılmış Çekimi Dışa Aktar…
+	File Layer Properties…	Dosya Katmanı Özellikleri…
+	File Layer…	Dosya Katmanı…
+	Filter Layer…	Filtre Katmanı…
+	Filter Mask…	Filtre Maskesi…
+	Frame rate limit	Kare hızı sınırı
+	Frames	Kareler
+	Freeze Live Layer	Canlı Katmanı Dondur
+	High quality	Yüksek kalite
+	Import Animation Frames…	Animasyon Karelerini İçe Aktar…
+	Import Image as…	Görüntüyü Farklı İçe Aktar…
+	Import Video Animation…	Video Animasyonunu İçe Aktar…
+	Input controllers	Giriş denetleyicileri
+	Input devices	Giriş aygıtları
+	Invisible	Görünmez
+	Layer Color Space…	Katman Renk Uzayı…
+	Layers by State	Duruma Göre Katmanlar
+	Local Selection	Yerel Seçim
+	Mass	Kütle
+	Move Clone…	Klonu Taşı…
+	Move Keyframe	Anahtar Kareyi Taşı
+	Multigrid…	Çoklu Izgara…
+	Mute Audio	Sesi Kapat
+	Nearest	En yakın
+	New Keyframe	Yeni Anahtar Kare
+	Onion Skin…	Soğan Kabuğu…
+	Pan	Kaydır
+	Pixel grid threshold	Piksel ızgarası eşiği
+	Reload File Layer	Dosya Katmanını Yeniden Yükle
+	Remove Audio	Sesi Kaldır
+	Remove Curve Key	Eğri Anahtarını Kaldır
+	Remove Filter	Filtreyi Kaldır
+	Remove Keyframe	Anahtar Kareyi Kaldır
+	Remove Local Selection	Yerel Seçimi Kaldır
+	Remove Transform Key	Dönüştürme Anahtarını Kaldır
+	Remove Transform Mask	Dönüştürme Maskesini Kaldır
+	Render Animation…	Animasyonu İşle…
+	Save Merged…	Birleştirilmiş Olarak Kaydet…
+	Scaling filter	Ölçekleme filtresi
+	Screentone…	Tram…
+	Script…	Komut Dosyası…
+	Set Filter…	Filtreyi Ayarla…
+	Show Output	Çıktıyı Göster
+	Split Alpha	Alfayı Ayır
+	Start Recording	Kaydı Başlat
+	Stop Recording	Kaydı Durdur
+	Swap directory	Takas dizini
+	Ten scripts	On komut dosyası
+	Threads	İş parçacıkları
+	Transform Mask…	Dönüştürme Maskesi…
+	Update Local Selection	Yerel Seçimi Güncelle
+	Write as Alpha	Alfa Olarak Yaz
+	to File Layer…	Dosya Katmanına…
+	to Filter Mask…	Filtre Maskesine…
+	to Paint Layer	Boyama Katmanına
+	to Selection Mask	Seçim Maskesine
+	to Transparency Mask	Saydamlık Maskesine

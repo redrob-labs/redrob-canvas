@@ -38,6 +38,8 @@ pub enum Temporary {
     Hand,
     ZoomIn,
     ZoomOut,
+    /// Rotate View while held (Preferences › Canvas Input › Rotate key).
+    Rotate,
     /// ⌘ held with a tool that [`cmd_moves`]: a modifier, not a rebindable key.
     Move,
 }
@@ -48,6 +50,7 @@ impl Temporary {
             Temporary::Hand => "tools.temporary.hand",
             Temporary::ZoomIn => "tools.temporary.zoomIn",
             Temporary::ZoomOut => "tools.temporary.zoomOut",
+            Temporary::Rotate => "tools.temporary.rotate",
             Temporary::Move => "tools.temporary.move",
         }
     }
@@ -56,12 +59,13 @@ impl Temporary {
         match self {
             Temporary::Hand => Tool::Hand,
             Temporary::ZoomIn | Temporary::ZoomOut => Tool::Zoom,
+            Temporary::Rotate => Tool::RotateView,
             Temporary::Move => Tool::Move,
         }
     }
 
     /// The key-bound temporary tools (`prefs::TEMPORARY_TOOLS`).
-    const BOUND: [Temporary; 3] = [Temporary::Hand, Temporary::ZoomIn, Temporary::ZoomOut];
+    const BOUND: [Temporary; 4] = [Temporary::Hand, Temporary::ZoomIn, Temporary::ZoomOut, Temporary::Rotate];
 }
 
 /// Tools on which holding ⌘ (Ctrl off the Mac) is the Move tool. Photoshop excepts the Hand,
@@ -130,6 +134,18 @@ pub fn binding(app: &PhotocraftApp, t: Temporary) -> Option<KeyboardShortcut> {
 
 /// [`binding`] by id.
 fn binding_of(app: &PhotocraftApp, id: &str) -> Option<KeyboardShortcut> {
+    // Preferences › Canvas Input's keys win over the temporary tool's own shortcut when set.
+    let ci = &app.session.prefs().canvas_input;
+    let profile_key = match id {
+        "tools.temporary.hand" => ci.pan_key.as_str(),
+        "tools.temporary.zoomIn" => ci.zoom_in_key.as_str(),
+        "tools.temporary.zoomOut" => ci.zoom_out_key.as_str(),
+        "tools.temporary.rotate" => ci.rotate_key.as_str(),
+        _ => "",
+    };
+    if !profile_key.trim().is_empty() {
+        return parse(profile_key);
+    }
     let def = redrob_photo_engine::prefs::TEMPORARY_TOOLS.iter().find(|x| x.0 == id).map(|x| x.2);
     parse(app.session.prefs().shortcut(id, def)?)
 }

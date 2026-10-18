@@ -91,6 +91,8 @@ pub struct PresetState {
     pub layer_defaults: BTreeMap<String, Value>,
     /// Swatches panel library.
     pub swatches: Vec<Group<swatches::Swatch>>,
+    /// Swatches panel: swatches per row (0 = as many as fit the width).
+    pub swatch_columns: u32,
     /// Bumped on every preset change (UIs key thumbnail caches on it).
     pub rev: u64,
 }
@@ -111,6 +113,7 @@ impl Default for PresetState {
             clone: Default::default(),
             layer_defaults: BTreeMap::new(),
             swatches: swatches::builtin(),
+            swatch_columns: 0,
             rev: 0,
         }
     }
@@ -144,6 +147,8 @@ struct Persisted {
     #[serde(default)]
     layer_defaults: Option<BTreeMap<String, Value>>,
     swatches: Option<Vec<Group<swatches::Swatch>>>,
+    #[serde(default)]
+    swatch_columns: Option<u32>,
 }
 
 impl PresetState {
@@ -162,6 +167,7 @@ impl PresetState {
             custom_shapes: Some(s.edit_state.custom_shapes.clone()),
             layer_defaults: Some(self.layer_defaults.clone()),
             swatches: Some(self.swatches.clone()),
+            swatch_columns: Some(self.swatch_columns),
         };
         serde_json::to_value(p).unwrap_or(Value::Null)
     }
@@ -210,6 +216,9 @@ impl Session {
             // A hand-edited preferences file can't make the library unbounded.
             crate::swatch_cmds::cap_library(&mut g);
             self.presets.swatches = g;
+        }
+        if let Some(c) = p.swatch_columns {
+            self.presets.swatch_columns = c.min(64);
         }
         self.presets.rev += 1;
     }

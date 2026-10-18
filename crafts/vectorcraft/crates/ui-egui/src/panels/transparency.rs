@@ -8,7 +8,7 @@ use egui::{Sense, Stroke, StrokeKind, Ui, vec2};
 use redrob_vector_color::{BlendMode, Paint};
 use redrob_vector_doc::{Knockout, Node, NodeId, OpacityMask};
 use redrob_vector_engine::cmd::TransparencyInfo;
-use serde_json::json;
+use serde_json::{Value, json};
 
 use super::{current_paints, current_transparency, live_run, pstate, selection_len, set_pstate};
 use crate::theme::Tokens;
@@ -155,6 +155,19 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             }
             if widgets::check(ui, tl!("Invert Mask"), invert, mask.is_some()) {
                 app.run("transparency.setOpacityMask", json!({"invert": !invert})).ok();
+            }
+            // Power Mask: a background behind the mask art (white shows the whole object, black
+            // hides it where the art isn't), kept as a named rectangle in the mask art.
+            let background = mask.and_then(|m| match &m.art.kind {
+                redrob_vector_doc::NodeKind::Group { children, clip: false } => children
+                    .first()
+                    .filter(|c| c.name.as_deref() == Some("Mask Background"))
+                    .map(|c| c.appearance.fill().is_none_or(|f| !f.paint.is_none())),
+                _ => None,
+            });
+            if widgets::check(ui, tl!("Background"), background.is_some(), mask.is_some()) {
+                let color = if background.is_some() { Value::Null } else { json!("#ffffff") };
+                app.run("transparency.maskBackground", json!({"color": color})).ok();
             }
         });
     });

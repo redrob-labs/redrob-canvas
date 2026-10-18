@@ -4509,3 +4509,369 @@ theme	Appearance	Giao diện
 @msg	select an object	hãy chọn một đối tượng
 @msg	the copied object is no longer in this document	đối tượng đã sao chép không còn trong tài liệu này
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	Mô phỏng in các in chồng như Xem trước in chồng hiển thị; tách màu luôn giữ chúng. Một cài đặt sẵn làm phẳng độ trong suốt trước khi in (tệp PostScript luôn làm phẳng nó).
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	Hiệu ứng đường
+	Clone Original	Nhân bản gốc
+	Clone Original…	Nhân bản gốc…
+	Attach Path	Gắn đường
+	Attach Path…	Gắn đường…
+	Bounding Box	Hộp bao
+	Bounding Box…	Hộp bao…
+	Fill Between Many	Tô giữa nhiều đường
+	Fill Between Many…	Tô giữa nhiều đường…
+	Fill Between Strokes	Tô giữa các nét
+	Fill Between Strokes…	Tô giữa các nét…
+	Power Clip	Cắt mạnh
+	Power Clip…	Cắt mạnh…
+	Power Clip (Inverse)	Cắt mạnh (đảo)
+	Release Power Clip	Bỏ cắt mạnh
+	Construct Grid	Dựng lưới
+	Construct Grid…	Dựng lưới…
+	Ellipse by 5 Points	Elip qua 5 điểm
+	Ellipse by 5 Points…	Elip qua 5 điểm…
+	Ellipse from Points	Elip từ các điểm
+	Ellipse from Points…	Elip từ các điểm…
+	Circle by 3 Points	Đường tròn qua 3 điểm
+	Circle by 3 Points…	Đường tròn qua 3 điểm…
+	Circle by Center and Radius	Đường tròn theo tâm và bán kính
+	Line Segment…	Đoạn thẳng…
+	Parallel	Song song
+	Parallel…	Song song…
+	Perpendicular Bisector	Đường trung trực
+	Perpendicular Bisector…	Đường trung trực…
+	Angle Bisector	Đường phân giác
+	Angle Bisector…	Đường phân giác…
+	Tangent to Curve	Tiếp tuyến của đường cong
+	Tangent to Curve…	Tiếp tuyến của đường cong…
+	Transform by 2 Points	Biến đổi theo 2 điểm
+	Transform by 2 Points…	Biến đổi theo 2 điểm…
+	Show Handles…	Hiện tay cầm…
+	Measure Segments	Đo các đoạn
+	Measure Segments…	Đo các đoạn…
+	Ruler	Thước
+	Ruler…	Thước…
+	Interpolate Points	Nội suy điểm
+	Interpolate Points…	Nội suy điểm…
+	Knot	Nút thắt
+	Knot…	Nút thắt…
+	VonKoch	VonKoch
+	VonKoch…	VonKoch…
+	Gears	Bánh răng
+	Gears…	Bánh răng…
+	Embroidery Stitch	Mũi thêu
+	Embroidery Stitch…	Mũi thêu…
+	Stitch Sub-Paths	Khâu các đường con
+	Stitch Sub-Paths…	Khâu các đường con…
+	Hatches (Rough)	Gạch chéo (thô)
+	Hatches (Rough)…	Gạch chéo (thô)…
+	Sketch	Phác thảo
+	Sketch…	Phác thảo…
+	Join Type	Kiểu nối
+	Join Type…	Kiểu nối…
+	Slice…	Cắt lát…
+	Select Linked Object	Chọn đối tượng liên kết
+	Mask Background	Nền mặt nạ
+	Background	Nền
+	Live Slice	Cắt lát động
+	Fuse Slice	Hợp nhất lát cắt
+	3D Marble	Đá hoa 3D
+	3D Wood	Gỗ 3D
+	Air Spray	Phun sương
+	Aluminium	Nhôm
+	Apply Effects to Image Pixels	Áp dụng hiệu ứng vào điểm ảnh
+	Apply Filter Preset	Áp dụng bộ lọc sẵn
+	Apply to Selection	Áp dụng cho vùng chọn
+	Bevels	Vát cạnh
+	Black Hole	Hố đen
+	Blobs	Đốm
+	Bloom	Toả sáng
+	Brilliance	Rực rỡ
+	Bump	Gồ
+	Bumps	Gồ ghề
+	Button	Nút
+	Canvas Bumps	Gồ vải
+	Chalk and Sponge	Phấn và bọt biển
+	Channel to Alpha	Kênh thành alpha
+	Chrome	Mạ crôm
+	Color Blindness	Mù màu
+	Colour Space:	Không gian màu:
+	Comics Cream	Kem truyện tranh
+	Cracked Glass	Kính nứt
+	Cubes	Khối vuông
+	Dark and Glow	Tối và sáng
+	Document Filters	Bộ lọc của tài liệu
+	Dragee	Kẹo bọc
+	Duochrome	Hai sắc
+	Duplicate Filter	Nhân đôi bộ lọc
+	Embossed Leather	Da dập nổi
+	Extract Channel	Tách kênh
+	Fade to Black	Mờ dần về đen
+	Felt Feather	Lông nỉ
+	Fill and Overlays	Tô và lớp phủ
+	Filter	Bộ lọc
+	Filter Gallery	Thư viện bộ lọc
+	Filter Presets	Bộ lọc sẵn
+	Filter copy	Bản sao bộ lọc
+	Filters	Bộ lọc
+	Glow	Phát sáng
+	Glowing Metal	Kim loại rực
+	Gold	Vàng
+	Greyscale	Thang xám
+	HSL Noise	Nhiễu HSL
+	Ink Blot	Vết mực
+	Ink Splash	Mực bắn
+	Inner Shadow	Bóng trong
+	Leopard Fur	Lông báo
+	Light Eraser	Xoá vùng sáng
+	Luminance to Alpha	Độ chói thành alpha
+	Materials	Vật liệu
+	Matte Jelly	Thạch mờ
+	Metallized Paint	Sơn kim loại
+	Neon	Đèn neon
+	No filter matches the search.	Không có bộ lọc nào khớp với tìm kiếm.
+	Noise Fill	Tô nhiễu
+	Non-realistic 3D Shaders	Đổ bóng 3D phi thực
+	Open Filter Editor	Mở trình soạn bộ lọc
+	Paper Bump	Gồ giấy
+	Pointillism	Chấm màu
+	Protrusions	Lồi
+	Quadritone	Bốn tông
+	Ridges	Gờ
+	Rough Paper	Giấy nhám
+	Rough Transparency	Trong suốt nhám
+	Roughen	Làm nhám
+	Saturation Map	Bản đồ bão hoà
+	Select an object to apply a filter.	Chọn một đối tượng để áp dụng bộ lọc.
+	Silhouette	Hình bóng
+	Smooth Edges	Làm mịn cạnh
+	Solarize	Phơi sáng ngược
+	Specular Light	Ánh sáng phản chiếu
+	Spikes	Gai
+	Spots Overlay	Lớp phủ đốm
+	Stone Wall	Tường đá
+	Subregion:	Vùng con:
+	Swirl	Xoáy
+	Textures	Hoạ tiết
+	The document has no filters yet.	Tài liệu chưa có bộ lọc nào.
+	Thin Membrane	Màng mỏng
+	Torn Edges	Cạnh rách
+	Translucent	Bán trong
+	Transparency Utilities	Tiện ích trong suốt
+	Tritone	Ba tông
+	Watercolor	Màu nước
+	Waves	Sóng
+	Turns:	Số vòng:
+	Divergence:	Độ phân kỳ:
+	Clockwise	Theo chiều kim đồng hồ
+	Threshold:	Ngưỡng:
+	Grow/Shrink:	Nở/Co:
+	Fill by:	Tô theo:
+	Visible Colors	Màu hiển thị
+	Alpha	Alpha
+	Add to Fill	Thêm vào vùng tô
+	View rotation (Cmd+Shift+scroll turns the view)	Xoay khung nhìn (Cmd+Shift+cuộn để xoay)
+	Lock Rotate View	Khoá xoay khung nhìn
+	Rotate View	Xoay khung nhìn
+	Fixation:	Cố định:
+	Dip Pen	Bút chấm mực
+	Marker	Bút lông
+	Brush	Cọ
+	Wiggly	Ngoằn ngoèo
+	Splotchy	Lem nhem
+	Use Pressure	Dùng lực nhấn
+	Live Simplify	Đơn giản hoá động
+	Simplify (Live)…	Đơn giản hoá (động)…
+	Split View	Chia đôi khung nhìn
+	X-ray	Tia X
+	Input Devices…	Thiết bị nhập…
+	Input Devices	Thiết bị nhập
+	Pressure Curves	Đường cong lực nhấn
+	Mouse	Chuột
+	Pen / Stylus	Bút / Bút cảm ứng
+	Touch	Cảm ứng
+	Liquify Tools	Công cụ hoá lỏng
+	Disabled	Tắt
+	Grids	Lưới
+	Main Grid	Lưới chính
+	Add Grid	Thêm lưới
+	Remove Grid	Xoá lưới
+	Grid Options	Tuỳ chọn lưới
+	Kind:	Loại:
+	Subdivisions:	Phân chia:
+	Angles:	Góc:
+	Gaps:	Khoảng trống:
+	Origin:	Gốc:
+	Own color	Màu riêng
+	Open a document to edit its grids.	Mở một tài liệu để sửa lưới của nó.
+	Add Script	Thêm tập lệnh
+	Edit Script	Sửa tập lệnh
+	Remove Script	Xoá tập lệnh
+	The document has no scripts.	Tài liệu không có tập lệnh.
+	External:	Bên ngoài:
+	Embedded script	Tập lệnh nhúng
+	Add Embedded Script	Thêm tập lệnh nhúng
+	Add External Script	Thêm tập lệnh ngoài
+	Source:	Nguồn:
+	External file	Tệp bên ngoài
+	Code:	Mã:
+	Open a document to edit its scripts.	Mở một tài liệu để sửa tập lệnh của nó.
+	Alignment Handles	Tay cầm căn chỉnh
+	Align (Shift: move the key object)	Căn chỉnh (Shift: di chuyển đối tượng khoá)
+	Stylesheet	Bảng kiểu
+	No rules yet. Add one and assign its class to objects.	Chưa có quy tắc. Thêm một quy tắc và gán lớp của nó cho đối tượng.
+	Add Rule	Thêm quy tắc
+	Remove Rule	Xoá quy tắc
+	Selector:	Bộ chọn:
+	Declarations:	Khai báo:
+	Assign to Selection	Gán cho vùng chọn
+	Remove from Selection	Bỏ khỏi vùng chọn
+	Add CSS Rule	Thêm quy tắc CSS
+	Edit CSS Rule	Sửa quy tắc CSS
+	Remove CSS Rule	Xoá quy tắc CSS
+	Assign CSS Class	Gán lớp CSS
+	Remove CSS Class	Bỏ lớp CSS
+	Apply Stylesheet	Áp dụng bảng kiểu
+	New Node	Nút mới
+	Indent Node	Thụt nút vào
+	Outdent Node	Đưa nút ra
+	Move Node	Di chuyển nút
+	Set Path Data	Đặt dữ liệu đường
+	Round to:	Làm tròn đến:
+	Round Path Data	Làm tròn dữ liệu đường
+	Connector Tool	Công cụ nối
+	Connect Objects	Nối đối tượng
+	Reroute Connectors	Định tuyến lại đường nối
+	Connector Obstacle	Vật cản đường nối
+	Arrange Connected Objects	Sắp xếp đối tượng đã nối
+	Arrange Connected	Sắp xếp đã nối
+	Routing:	Định tuyến:
+	Orthogonal	Vuông góc
+	Polyline	Đường gấp khúc
+	Curvature:	Độ cong:
+	3D Box Tool	Công cụ hộp 3D
+	3D Box	Hộp 3D
+	3D Box Options	Tuỳ chọn hộp 3D
+	Move Vanishing Point	Di chuyển điểm tụ
+	Z:	Z:
+	Vanishing Point	Điểm tụ
+	Infinite	Vô cực
+	Arrange in Grid	Sắp xếp theo lưới
+	Arrange in Circle	Sắp xếp theo vòng tròn
+	Dynamic Offset	Dịch chuyển động
+	Fill Between Paths	Tô giữa các đường
+	Linked Offset	Dịch chuyển liên kết
+	Linked Offset Distance	Khoảng dịch chuyển liên kết
+	Remove Overlaps	Bỏ chồng lấn
+	Unlink Live Object	Bỏ liên kết đối tượng động
+	Create Anchor	Tạo liên kết
+	Follow Link	Mở liên kết
+	Select All Anchors	Chọn tất cả điểm neo
+	Invert Anchor Selection	Đảo chọn điểm neo
+	Aspect ratio:	Tỷ lệ khung hình:
+	Clip path	Đường cắt
+	DPI:	DPI:
+	Effect knots	Nút hiệu ứng
+	Highlight color:	Màu nổi bật:
+	Interactivity	Tương tác
+	Link target:	Đích liên kết:
+	Link title:	Tiêu đề liên kết:
+	Path outline	Đường viền đường dẫn
+	Transform handles	Tay cầm biến đổi
+	Plot…	Vẽ máy vẽ…
+	Import Web Image…	Nhập ảnh web…
+	Check Spelling	Kiểm tra chính tả
+	Edit Custom Dictionary	Sửa từ điển tùy chỉnh
+	The spell check is complete.	Đã kiểm tra chính tả xong.
+	Words checked	Số từ đã kiểm tra
+	Check Again	Kiểm tra lại
+	Word Not Found:	Không tìm thấy từ:
+	Change To:	Đổi thành:
+	Suggestions:	Gợi ý:
+	No suggestions	Không có gợi ý
+	Ignore All	Bỏ qua tất cả
+	No words yet	Chưa có từ nào
+	Word:	Từ:
+	Change Spelling	Đổi chính tả
+	Ignore Spelling	Bỏ qua chính tả
+	Add to Dictionary	Thêm vào từ điển
+	Remove from Dictionary	Xóa khỏi từ điển
+	Spelling Dictionaries	Từ điển chính tả
+	Visible Hairlines	Hiện đường mảnh
+	Rename…	Đổi tên…
+	Extract…	Trích xuất…
+	Object Attributes	Thuộc tính đối tượng
+	Object Attributes…	Thuộc tính đối tượng…
+	Create Tiled Clones…	Tạo bản sao xếp lớp…
+	Rename Symbol	Đổi tên ký hiệu
+	Set Object Attribute	Đặt thuộc tính đối tượng
+	Trace Pixel Art…	Vector hóa pixel art…
+	Objects to Marker	Đối tượng thành điểm đánh dấu
+	Markers	Điểm đánh dấu
+	Markers:	Điểm đánh dấu:
+	Delete Marker	Xóa điểm đánh dấu
+	SVG Font Editor	Trình sửa phông SVG
+	SVG Font Editor…	Trình sửa phông SVG…
+	New Font	Phông mới
+	Delete Font	Xóa phông
+	No SVG font yet: make one, or turn glyph layers into one.	Chưa có phông SVG: hãy tạo một phông hoặc chuyển các lớp ký tự thành phông.
+	Glyph Layers to Font	Lớp ký tự thành phông
+	Glyph	Ký tự
+	Advance	Khoảng tiến
+	Curves	Đường cong
+	Unicode:	Unicode:
+	Glyph name:	Tên ký tự:
+	Advance:	Khoảng tiến:
+	Add Glyph	Thêm ký tự
+	Remove Glyph	Xóa ký tự
+	Get Curves from Selection	Lấy đường cong từ vùng chọn
+	Glyph to Objects	Ký tự thành đối tượng
+	Kerning:	Khoảng cách chữ:
+	Set Pair	Đặt cặp
+	Preview:	Xem trước:
+	Font to Glyph Layers	Phông thành lớp ký tự
+	New SVG Font	Phông SVG mới
+	SVG Fonts	Phông SVG
+	Delete SVG Font	Xóa phông SVG
+	SVG Font Options	Tùy chọn phông SVG
+	Set Glyph	Đặt ký tự
+	Set Kerning Pair	Đặt cặp khoảng cách
+	Preview SVG Font	Xem trước phông SVG
+	Glyph Layers to SVG Font	Lớp ký tự thành phông SVG
+	SVG Font to Glyph Layers	Phông SVG thành lớp ký tự
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	tệp WPG phiên bản 2 (WordPerfect 6 trở lên) chưa đọc được: hãy lưu hình dưới dạng WPG 1 hoặc định dạng vectơ khác
+@msg	bad central record	bản ghi trung tâm bị lỗi
+@msg	downloading needs the desktop app	tải xuống cần ứng dụng máy tính
+@msg	give `url`: an http:// or https:// address of an image	hãy cung cấp `url`: địa chỉ http:// hoặc https:// của một hình ảnh
+@msg	no zip end record	không có bản ghi kết thúc zip
+@msg	not a CGM file	không phải tệp CGM
+@msg	not a CorelDRAW file	không phải tệp CorelDRAW
+@msg	not a WordPerfect Graphics file	không phải tệp WordPerfect Graphics
+@msg	not a zip	không phải tệp zip
+@msg	not an XFig file	không phải tệp XFig
+@msg	select an embedded image	hãy chọn một hình ảnh nhúng
+@msg	the drawing has nothing Redrob Canvas reads	bản vẽ không có gì mà Redrob Canvas đọc được
+@msg	the effect links to no object in this document	hiệu ứng không liên kết với đối tượng nào trong tài liệu này
+@msg	the file draws nothing Redrob Canvas reads	tệp không vẽ gì mà Redrob Canvas đọc được
+@msg	the file is empty	tệp trống
+@msg	the font has a glyph for `{nu}` already	phông đã có ký tự cho `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	hình không vẽ gì mà Redrob Canvas đọc được
+@msg	the metafile draws nothing Redrob Canvas reads	siêu tệp không vẽ gì mà Redrob Canvas đọc được
+@msg	the object is gone	đối tượng không còn tồn tại
+@msg	the preview bitmap can't be read	không đọc được ảnh bitmap xem trước
+@msg	the preview bitmap is empty	ảnh bitmap xem trước trống
+@msg	the selected object has no link	đối tượng đã chọn không có liên kết
+@msg	the view's rotation is locked (View › Lock Rotate View)	xoay khung nhìn đang bị khoá (Hiển thị › Khoá xoay khung nhìn)
+@msg	truncated zip	tệp zip bị cắt cụt
+@msg	view.setRotation: missing `angle`	view.setRotation: thiếu `angle`
+@msg	{_1}: the dictionary is empty	{_1}: từ điển trống
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: ứng dụng web không có thiết bị nối tiếp hay tệp: hãy xuất HPGL rồi tải xuống
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} không phải định dạng mà trình đọc này biết
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	tệp {kind}{ver} là vùng chứa nén mà các bản ghi bản vẽ chưa được tài liệu hoá: hãy xuất bản vẽ từ CorelDRAW sang SVG, PDF, EPS hoặc EMF để mở
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: các bản ghi bản vẽ chưa được tài liệu hoá và tệp không có ảnh bitmap xem trước: hãy xuất bản vẽ sang SVG, PDF, EPS hoặc EMF để mở
+@msg	{name}: compression method {m} isn't supported	{name}: phương thức nén {m} không được hỗ trợ
+@msg	{name}: not found among the document's images	{name}: không tìm thấy trong các hình ảnh của tài liệu
+@msg	{name}: too large	{name}: quá lớn
+@msg	{url}: {e}	{url}: {e}

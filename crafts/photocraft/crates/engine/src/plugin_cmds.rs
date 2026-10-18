@@ -64,6 +64,10 @@ fn plugin_by_id(cmd: &str, p: &Value) -> Result<std::sync::Arc<Plugin>> {
 
 fn run(s: &mut Session, p: &Value) -> Result<Value> {
     let plugin = plugin_by_id(RUN, p)?;
+    // Edit › Modules can switch a plug-in off without removing it.
+    if !crate::modules_cmds::module_enabled(s, plugin.id()) {
+        return Err(EngineError::Other(format!("plug-in {} is switched off (Edit > Modules)", plugin.id())));
+    }
     let params = plugin_params(p);
     // Bad parameters fail before anything is touched.
     let resolved = Value::Object(plugin.manifest().resolve_params(&params).map_err(|e| bad(RUN, e.to_string()))?);

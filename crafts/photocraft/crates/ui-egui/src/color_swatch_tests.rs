@@ -76,7 +76,12 @@ fn preferences_colours_open_the_color_picker() {
     h.run_steps(4);
     let values = |h: &Harness<'_, PhotocraftApp>| h.state().ui.dialogs.iter().find(|d| d.id == id).unwrap().fields["values"]["guidesGridAndSlices"].clone();
     let before = values(&h);
-    h.get_all_by_role(Role::ColorWell).next().expect("a colour swatch").click();
+    // The dialog's first colour setting (the Color panel's swatches are colour wells too).
+    let key = before.as_object().unwrap().keys().find(|k| redrob_photo_engine::prefs::is_color(&format!("guidesGridAndSlices.{k}"))).expect("a colour setting");
+    let label = crate::prefs_ui::humanize(key);
+    h.get_by_role_and_label(Role::ColorWell, label.as_str()).scroll_to_me();
+    h.run_steps(2);
+    h.get_by_role_and_label(Role::ColorWell, label.as_str()).click();
     answer(&mut h, "the first Preferences colour");
     let after = values(&h);
     let changed: Vec<&str> = after.as_object().unwrap().iter().filter(|(k, v)| before.get(k.as_str()) != Some(v)).map(|(k, _)| k.as_str()).collect();

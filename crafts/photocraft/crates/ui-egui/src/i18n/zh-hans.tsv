@@ -3056,3 +3056,929 @@ curves	Smooth	平滑
 	Popup palette	弹出调色板
 	Smear	涂抹
 	Smudge Radius	涂抹半径
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	线性反相
+	Value Invert	明度反相
+	Stretch Contrast HSV	拉伸对比度 HSV
+	Color Enhance	色彩增强
+	Extract Component…	提取分量…
+	Alien Map…	外星映射…
+	Rotate Colors…	旋转颜色…
+	Palette Map…	调色板映射…
+	Sample Colorize…	样本着色…
+	RGB Clip…	RGB 裁剪…
+	Dither…	抖动…
+	Local Threshold…	局部阈值…
+	Destripe…	去除条纹…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	彩色转灰度…
+	Fattal et al. 2002…	Fattal 等 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	平滑调色板…
+	Decompose…	分解…
+	Compose…	合成…
+	Recompose	重新合成
+	Rearrange Colormap…	重排颜色表…
+	Set Colormap…	设置颜色表…
+	Border Average…	边框平均…
+	Export Histogram…	导出直方图…
+	Variable Blur…	可变模糊…
+	Apply Lens…	应用镜头…
+	Mosaic Tiles…	马赛克瓷砖…
+	Newsprint…	新闻纸…
+	Curve Bend…	曲线弯曲…
+	Warp (Map)…	变形（映射）…
+	Bloom…	泛光…
+	Sobel…	Sobel…
+	Cartoon…	卡通…
+	Clothify…	布纹…
+	Stencil Chrome…	镂空镀铬…
+	Bump Map…	凹凸贴图…
+	Panorama Projection…	全景投影…
+	Perlin Noise…	柏林噪点…
+	Plasma…	等离子…
+	Solid Noise…	实心噪点…
+	Add Border…	添加边框…
+	Fog…	雾…
+	Old Photo…	老照片…
+	Round Corners…	圆角…
+	Tile…	平铺…
+	Depth Merge…	深度合并…
+	Geometric Shapes…	几何形状…
+	Image Map Area…	图像映射区域…
+	Image Map From Slices	从切片创建图像映射
+	Export Image Map…	导出图像映射…
+	Clear Image Map	清除图像映射
+	Combine	组合
+	Clipping	剪裁
+	Color Space	色彩空间
+	Linear light	线性光
+	Copy upper to lower	将上部复制到下部
+	Swap curves	交换曲线
+	Mirror	镜像
+	Upper	上部
+	Lower	下部
+	Gradient Source	渐变源
+	Value Jitter	明度抖动
+	Pipe	管道
+	Brush file (.myb)	画笔文件 (.myb)
+	Text as brush tip	文字作为笔尖
+	One character per dab along the stroke	沿笔画每个笔触一个字符
+	Engine	引擎
+	Text Tip	文字笔尖
+	Hatching	阴影线
+	Particle	粒子
+	Dyna	动力
+	Tangent Normal	切线法线
+	MyPaint	MyPaint
+	Spray	喷溅
+	Bristle	鬃毛
+	Deform	变形
+	Separation	间距
+	Jitter	抖动
+	Mass	质量
+	Drag	阻力
+	Gravity	重力
+	Particles	粒子数
+	Grid Width	网格宽度
+	Grid Height	网格高度
+	Diameter	直径
+	Aspect	比例
+	Cluster	聚集
+	Rectangle	矩形
+	Pixel	像素
+	Tip	笔尖
+	Perpendicular	垂直
+	Shrink	收缩
+	Wire	线框
+	Two	双圆
+	Lens Zoom In	镜头放大
+	Lens Zoom Out	镜头缩小
+	Swirl CW	顺时针旋涡
+	Swirl CCW	逆时针旋涡
+	Colour Deform	颜色变形
+	Follow Cursor	跟随光标
+	Weighted	加权
+	Angular	角度分布
+	Moiré	莫尔纹
+	Anti-aliased Pixel	抗锯齿像素
+	Magnetify	磁化
+	Simple Mode	简单模式
+	Hard Edge	硬边
+	Connect Hairs	连接毛发
+	Ink Depletion	墨水耗尽
+	Soak Ink	吸墨
+	Mouse Pressure	鼠标压力
+	Composite Bristles	合成毛发
+	Use Density	使用密度
+	Proportional	成比例
+	Random Size	随机大小
+	Sample Input Layer	采样输入图层
+	Colour per Particle	每粒子颜色
+	Fill Background	填充背景
+	Fixed Angle	固定角度
+	Paint Connection	绘制连接线
+	Use Foreground Colour	使用前景色
+	Width by Pressure	压力控制宽度
+	Opacity by Pressure	压力控制不透明度
+	Connection Line	连接线
+	Even-odd Fill	奇偶填充
+	Division by Pressure	压力控制分割
+	Separation by Pressure	压力控制间距
+	Thickness by Pressure	压力控制粗细
+	Coloured Background	彩色背景
+	Distance Density	距离密度
+	Distance Opacity	距离不透明度
+	Use Undeformed Image	使用未变形图像
+	Random RGB	随机 RGB
+	Random Opacity	随机不透明度
+	Curve Opacity	曲线不透明度
+	Width Range	宽度范围
+	Line Spacing	线间距
+	Angle Offset	角度偏移
+	Particle Width	粒子宽度
+	Particle Height	粒子高度
+	Random Offset	随机偏移
+	Ink Amount	墨水量
+	Counter	计数器
+	Thickness	粗细
+	Grain Extract	颗粒提取
+	Grain Merge	颗粒合并
+	LCh Hue	LCh 色相
+	LCh Chroma	LCh 色度
+	LCh Color	LCh 颜色
+	LCh Lightness	LCh 明度
+	Merge	合并
+	Split	拆分
+	Remove Holes	移除孔洞
+	Distort…	扭曲…
+	Rounded Rectangle…	圆角矩形…
+	Anchor Layer	锚定图层
+	To New Layer	转为新图层
+	Layer Boundary Size…	图层边界大小…
+	Layer to Image Size	图层到图像大小
+	Resize Layer to Selection	图层调整为选区大小
+	Crop Layer to Content	图层裁剪到内容
+	Threshold Alpha…	Alpha 阈值…
+	Composite Options…	合成选项…
+	Zealous Crop	彻底裁剪
+	Foreground Select	前景选择
+	Stroke width	描边宽度
+	Graph cut	图割
+	Fast	快速
+	To Layer Mask	转为图层蒙版
+	Draw a rough outline round the subject	围绕主体绘制粗略轮廓
+	Draw a rough outline round the subject first	请先围绕主体绘制粗略轮廓
+	Outline placed: paint over the foreground, then Preview or Select	轮廓已放置：涂抹前景，然后预览或选择
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	粗略勾出主体，涂抹前景，让抠图引擎扩展蒙版
+	Paint over the foreground (hold Alt for background), then Preview or Select	涂抹前景（按住 Alt 涂背景），然后预览或选择
+	Display Filters…	显示滤镜…
+	Display Filters	显示滤镜
+	No Color Deficiency Simulation	不模拟色觉缺陷
+	Simulate Protanopia	模拟红色盲
+	Simulate Deuteranopia	模拟绿色盲
+	Simulate Tritanopia	模拟蓝色盲
+	Clip Warning	剪切警告
+	Clip warning	剪切警告
+	Color deficiency:	色觉缺陷：
+	Protanopia	红色盲
+	Deuteranopia	绿色盲
+	Tritanopia	蓝色盲
+	Contrast:	对比度：
+	View-only: the filters change what this view shows, never the pixels.	仅影响显示：滤镜只改变此视图的显示，不改变像素。
+	Show All	显示全部
+	Padding Color	填充色
+	From Theme	来自主题
+	Dark Gray	深灰色
+	Medium Gray	中灰色
+	Light Check Color	浅色格子颜色
+	Dark Check Color	深色格子颜色
+	Light Check	浅色格子
+	Dark Check	深色格子
+	Light check	浅色格子
+	Dark check	深色格子
+	Custom Color	自定颜色
+	Select Custom Color…	选择自定颜色…
+	Keep Padding in Show All	显示全部时保留填充
+	Keep padding in show all	显示全部时保留填充
+	Filter by tag	按标签筛选
+	Clear filter	清除筛选
+	Tags:	标签：
+	Add tag	添加标签
+	Remove tag	移除标签
+	View Metadata…	查看元数据…
+	Edit Metadata…	编辑元数据…
+	Edit Metadata	编辑元数据
+	Metadata Viewer	元数据查看器
+	Write Metadata	写入元数据
+	Separate several values with semicolons	多个值用分号分隔
+	Copyrighted	受版权保护
+	Public Domain	公共领域
+	Unknown	未知
+	No tags	无标签
+	XMP	XMP
+	IPTC	IPTC
+	Text	文本
+	Rights	权利
+	IPTC Extension	IPTC 扩展
+	Categories	类别
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	过程浏览器
+	Plug-In Browser	插件浏览器
+	Search procedures	搜索过程
+	{n} procedures	{n} 个过程
+	(no menu)	（无菜单）
+	Menu: {path}	菜单：{path}
+	Parameters	参数
+	Available now	当前可用
+	Not available in the current state	当前状态下不可用
+	Run	运行
+	Select a procedure to read its parameters.	选择一个过程以查看其参数。
+	Dashboard	仪表板
+	Low memory: swap is nearly full. Save your work.	内存不足：交换空间几乎已满。请保存您的工作。
+	Memory	内存
+	Cache	缓存
+	Swap	交换空间
+	Swap: not reported on this platform	交换空间：此平台不报告
+	CPU	CPU
+	CPU renderer	CPU 渲染器
+	uploads	次上传
+	Misc: {jobs} jobs running · {n} samples	其他：{jobs} 个任务运行中 · {n} 个样本
+	Log to File…	记录到文件…
+	Stop Logging	停止记录
+	Device Status	设备状态
+	Core Pointer	核心指针
+	Pen / Tablet	压感笔 / 数位板
+	Brush:	画笔：
+	Pattern:	图案：
+	Gradient:	渐变：
+	Save Device Status	保存设备状态
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	每个设备记住自己的工具、颜色、画笔、图案和渐变；切换设备时随之切换。
+	Selection Editor	选区编辑器
+	No document open.	没有打开的文档。
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	单击以用魔棒选择该处的连续颜色（Shift 添加，Alt 减去）
+	Save to Channel	存储到通道
+	To Path	转为路径
+	Advanced options	高级选项
+	MyPaint Brushes	MyPaint 画笔
+	Import…	导入…
+	No MyPaint brushes yet. Import .myb files to list them here.	还没有 MyPaint 画笔。导入 .myb 文件即可在此列出。
+	No brush matches the filter.	没有画笔符合筛选条件。
+	Handle Transform	手柄变换
+	3D Transform	3D 变换
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	重新调整
+	Apply the transform so far and put a fresh box on the result	应用到目前为止的变换，并在结果上放置新的框
+	Camera	相机
+	Vanishing X:	消失点 X：
+	Y:	Y:
+	Focal length:	焦距：
+	Local pivot	局部轴心
+	Unified pivot	统一轴心
+	Close Cage	闭合笼子
+	Reset Cage	重置笼子
+	Fill Plain Colour	填充纯色
+	Fill the original position of the cage with the plain colour of its outline	用笼子轮廓的纯色填充其原始位置
+	{n} points	{n} 个点
+	Click to place a handle	单击以放置手柄
+	Rotate and Scale	旋转和缩放
+	{n} handles: {what}	{n} 个手柄：{what}
+	Reset Handles	重置手柄
+	Remove Handles	移除手柄
+	Commit Cage Transform (Enter)	提交笼子变换 (Enter)
+	Commit Handle Transform (Enter)	提交手柄变换 (Enter)
+	Commit 3D Transform (Enter)	提交 3D 变换 (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	笼子变换：围绕要变形的部分单击，单击第一个点闭合笼子，然后拖动其点
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	手柄变换：放置一到四个手柄并拖动（一个移动，两个旋转缩放，三个倾斜，四个透视）
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 变换：拖动绕 X 和 Y 旋转，Alt 拖动绕 Z 旋转；移动和相机选项卡移动图层和相机
+	Segment {n}	段 {n}
+	Blending:	混合：
+	Coloring:	着色：
+	Midpoint:	中点：
+	Sinusoidal	正弦
+	Spherical (increasing)	球面（递增）
+	Spherical (decreasing)	球面（递减）
+	Step	阶跃
+	RGB	RGB
+	HSV (counter-clockwise)	HSV（逆时针）
+	HSV (clockwise)	HSV（顺时针）
+	Replicate	复制
+	Split the segment at its midpoint	在中点处拆分该段
+	Replace the segment with two copies of itself	用该段的两个副本替换它
+	Flip the whole gradient end to end	将整个渐变首尾翻转
+	Save as POV-Ray…	存储为 POV-Ray…
+	Shaped Gradient (angular)	形状渐变（角度）
+	Shaped Gradient (spherical)	形状渐变（球面）
+	Shaped Gradient (dimpled)	形状渐变（凹陷）
+	Truncate	截断
+	Sawtooth wave	锯齿波
+	Triangular wave	三角波
+	Repeat	重复
+	Tilt	倾斜
+	Wheel	滚轮
+	Force	力度
+	Aspect Ratio	长宽比
+	Fade length	渐隐长度
+	Random amount	随机量
+	Save Preset	保存预设
+	Paint Dynamics Editor	绘画动态编辑器
+	Color from Gradient	颜色来自渐变
+	Put this table on the current brush	将此表应用到当前画笔
+	Save the table as a named dynamics preset	将此表保存为命名的动态预设
+	Give the dynamics preset a name first	请先为动态预设命名
+	Edit the dynamics table (inputs × outputs)	编辑动态表（输入 × 输出）
+	Reset Plane	重置平面
+	Click four corners to define a perspective plane, then clone along it	单击四个角定义透视平面，然后沿该平面仿制
+	Click corner {n} of 4	单击第 {n}/4 个角
+	Perspective plane: corner {n} of 4 set	透视平面：已设置第 {n}/4 个角
+	Perspective plane set; {key}-click a source, then paint	透视平面已设置；{key} 并单击设置源点，然后绘制
+	Copy Path as SVG	将路径复制为 SVG
+	Export Path to SVG…	将路径导出为 SVG…
+	Import Path from SVG…	从 SVG 导入路径…
+	Paste Path from SVG	从 SVG 粘贴路径
+	Copy All Paths as SVG	将所有路径复制为 SVG
+	Export All Paths to SVG…	将所有路径导出为 SVG…
+	Copied 1 path as SVG	已将 1 条路径复制为 SVG
+	Copied {n} paths as SVG	已将 {n} 条路径复制为 SVG
+	Exported paths to {path}	已将路径导出到 {path}
+	Imported 1 path	已导入 1 条路径
+	Imported {n} paths	已导入 {n} 条路径
+	The clipboard holds no SVG	剪贴板中没有 SVG
+	Clipboard Image Brush	剪贴板图像画笔
+	Paint with the image on the clipboard as the brush tip	使用剪贴板中的图像作为画笔笔尖绘画
+	Export Layers as Animation…	将图层导出为动画…
+	Export as Brush (.gbr)…	导出为画笔 (.gbr)…
+	Export Layers as Image Hose (.gih)…	将图层导出为图像管 (.gih)…
+	Export as Pattern (.pat)…	导出为图案 (.pat)…
+	Animation Frame Tags…	动画帧标记…
+	Disposal	处置方式
+	Replace	替换
+	Incremental	递增
+	Xtilt	X 倾斜
+	Ytilt	Y 倾斜
+	Mng	MNG
+	Export as PostScript (.eps)…	导出为 PostScript (.eps)…
+	Encapsulated	封装 (EPS)
+	Encoding	编码
+	Hex	十六进制
+	Ascii85	ASCII85
+	Binary	二进制
+	Open Location…	打开位置…
+	From Screenshot…	从屏幕截图…
+	From Web Page…	从网页…
+	Send by Email…	通过电子邮件发送…
+	Url	URL
+	Cursor	包含光标
+	Region	区域
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Loop	循环
+	Buffer	缓冲区
+	Buffers	缓冲区
+	Cut Named…	命名剪切…
+	Copy Named…	命名复制…
+	Copy Visible Named…	命名复制可见部分…
+	Paste Named…	命名粘贴…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	没有命名缓冲区。使用“编辑 > 缓冲区 > 命名复制…”在此保留副本。
+	There are no named buffers; use Edit > Buffer > Copy Named first	没有命名缓冲区；请先使用“编辑 > 缓冲区 > 命名复制”
+	Paste Buffer	粘贴缓冲区
+	Paste Buffer in Place	原位粘贴缓冲区
+	Paste Buffer as New Image	将缓冲区粘贴为新图像
+	Rename Buffer…	重命名缓冲区…
+	Delete Buffer	删除缓冲区
+	Paste as New	粘贴为新图像
+	Paste the buffer as a new layer	将缓冲区粘贴为新图层
+	Paste the buffer as a new document	将缓冲区粘贴为新文档
+	As	方式
+	In place	原位
+	Into	贴入
+	Modules…	模块…
+	Units…	单位…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	未安装可加载模块。使用“滤镜 > 插件 > 安装插件…”添加。
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	关闭的模块仍保持安装，但在重新开启前不会出现在菜单中。
+	Module	模块
+	Not installed	未安装
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	系数是一英寸包含多少该单位（厘米为 2.54，点为 72）。
+	Identifier	标识符
+	Factor	系数
+	Digits	位数
+	Symbol	符号
+	Abbreviation	缩写
+	Singular	单数
+	Plural	复数
+	Delete Unit	删除单位
+	New unit	新单位
+	Add Unit	添加单位
+	That identifier is already a unit	该标识符已是一个单位
+	Custom units	自定义单位
+	Disabled modules	已禁用的模块
+	Input Devices…	输入设备…
+	Input Controllers…	输入控制器…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	笔是平台报告的数位板触控笔。禁用后它像鼠标一样工作。
+	Device	设备
+	Invert tilt X	反转倾斜 X
+	Invert tilt Y	反转倾斜 Y
+	Swap tilt	交换倾斜轴
+	Pressure scale	压力缩放
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	滚轮事件为 up、down、left 或 right，可加 Shift+、Ctrl+、Alt+ 前缀；键盘事件是如 Ctrl+Alt+Up 的快捷键。动作是命令 ID，可后跟 JSON 参数。
+	Keyboard	键盘
+	Controller	控制器
+	Event	事件
+	Remove mapping	移除映射
+	New mapping	新映射
+	Add Mapping	添加映射
+	Disabled	已禁用
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} 个条目；单击设置为前景色，双击编辑
+	Entry	条目
+	Add an entry with the foreground colour	以前景色添加一个条目
+	Delete the last entry	删除最后一个条目
+	Use selected	使用所选项
+	Ink	墨水
+	MyPaint Brush	MyPaint 画笔
+	Nib	笔尖
+	Opaque	不透明
+	Erase with brush	用画笔擦除
+	Import .myb…	导入 .myb…
+	Add a MyPaint brush file to the presets	将 MyPaint 画笔文件添加到预设
+	Imported MyPaint brush {name}	已导入 MyPaint 画笔 {name}
+	How much pressure changes the nib size	压力改变笔尖大小的程度
+	How much the pen's tilt turns and stretches the nib	笔倾斜转动并拉伸笔尖的程度
+	How much a fast stroke thins the nib	快速笔画使笔尖变细的程度
+	Added to the preset's logarithmic radius	加到预设的对数半径上
+	Operation…	操作…
+	Operation name or id	操作名称或 ID
+	{n} operations	{n} 个操作
+	Choose an operation	请选择一个操作
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu 控制台…
+	Load Scripts Folder…	加载脚本文件夹…
+	Python Console…	Python 控制台…
+	Load Plug-ins Folder…	加载插件文件夹…
+	Loaded {n} scripts	已加载 {n} 个脚本
+	Loaded {n} Python plug-ins	已加载 {n} 个 Python 插件
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3，提供 call(command, **params)、message(text) 和 print()；每个引擎命令都可通过 call 调用。
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme：每个引擎命令都是一个过程，(file.new "width" 640 "height" 480)；用 define 定义过程并用 script-fu-register 注册。
+	Code	代码
+	Cmd+Enter runs the code	Cmd+Enter 运行代码
+	Clear Log	清除日志
+	Dodge…	减淡…
+	Burn…	加深…
+	Cross-Channel Adjustment…	跨通道调整…
+	Slope, Offset, Power…	斜率、偏移、幂…
+	Index Colors…	索引颜色…
+	Raindrops…	雨滴…
+	Polygon Blur…	多边形模糊…
+	Edge Detection…	边缘检测…
+	Emboss (Directional)…	浮雕（方向）…
+	Phong Bump Map…	Phong 凹凸贴图…
+	Palettize…	调色板化…
+	Height to Normal Map…	高度转法线贴图…
+	Normalize Normal Map	规范化法线贴图
+	Maximize Channel	最大化通道
+	Minimize Channel	最小化通道
+	Propagate Colors…	传播颜色…
+	Reset Transparent	重置透明像素
+	Mean Removal	均值移除
+	Wavelet Noise Reducer…	小波降噪…
+	Random Pick…	随机拾取…
+	G'MIC Filter…	G'MIC 滤镜…
+	G'MIC executable	G'MIC 可执行文件
+	G'MIC update folder	G'MIC 更新文件夹
+	Add scene at playhead	在播放头处添加场景
+	Add to favourites	添加到收藏
+	After	之后
+	Arithmetic	算术
+	Attach audio…	附加音频…
+	Before	之前
+	Blend details	混合详情
+	Blend mode	混合模式
+	Blend mode and opacity	混合模式和不透明度
+	Capture now	立即捕获
+	Clone previous keyframe here	在此克隆上一个关键帧
+	Comment	备注
+	Display settings	显示设置
+	Duplicate keyframe	复制关键帧
+	Duplicate keyframe here	在此复制关键帧
+	Duration	时长
+	End	结束
+	Export timelapse…	导出延时视频…
+	Favourites	收藏
+	Frame rate	帧率
+	HSX	HSX
+	Hidden	隐藏
+	Key the active layer:	为活动图层设置关键帧:
+	Misc	其他
+	Mute audio	静音音频
+	Negative	负片
+	New keyframe	新建关键帧
+	New keyframe here	在此新建关键帧
+	Next tint	下一帧色调
+	No animated layers: add a keyframe to the active layer to animate it.	没有动画图层：为活动图层添加关键帧即可开始动画。
+	No animation curves yet.	还没有动画曲线。
+	No scenes yet.	还没有场景。
+	Opacity per frame	每帧不透明度
+	Previous tint	上一帧色调
+	Quadratic	二次
+	Recorder	录制器
+	Remove from favourites	从收藏中移除
+	Remove keyframe	删除关键帧
+	Remove scene	删除场景
+	Scale X	缩放 X
+	Scale Y	缩放 Y
+	Scene name	场景名称
+	Show onion skins	显示洋葱皮
+	Start	开始
+	Start recording	开始录制
+	Stop recording	停止录制
+	Storyboard	故事板
+	Thumbnail size	缩略图大小
+	frames	帧
+	opacity	不透明度
+	rotation	旋转
+	scaleX	缩放 X
+	scaleY	缩放 Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir} 中有 {count} 张快照
+	2-Point Perspective	两点透视
+	Assistant colour	辅助线颜色
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	辅助线磁性：笔画偏离辅助线多远仍会被吸附（1000 = 始终）
+	Assistant opacity	辅助线不透明度
+	Concentric Ellipse	同心椭圆
+	Curvilinear Perspective	曲线透视
+	Eraser snaps	橡皮擦吸附
+	Fish-Eye Point	鱼眼点
+	Handles	控制柄
+	Infinite Ruler	无限标尺
+	Limit to area	限制到区域
+	Minor subdivisions	次级细分
+	Own colour	单独颜色
+	Perspective Ellipse	透视椭圆
+	Previews	预览
+	Show the snapped stroke's line while painting	绘画时显示吸附笔画的线
+	Show this assistant's control handles	显示此辅助线的控制柄
+	Spline	样条
+	Strokes follow the painting assistants (Ctrl+Shift+L)	笔画跟随绘画辅助线 (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	两个额外控制柄裁剪辅助线绘制和吸附的范围
+	Vertical ruler	垂直标尺
+	Painting Assistants	绘画辅助线
+	Assistant Previews	辅助线预览
+	Drag fill	拖动填充
+	Dragging fills every region passed over	拖动时填充经过的每个区域
+	Exclude colour	排除颜色
+	Exclude transparent	排除透明
+	Fill mode	填充模式
+	No region is fully enclosed by the shape	没有区域被形状完全包围
+	Only regions coloured like the first one	仅与第一个区域颜色相同的区域
+	Reference	参考
+	Similar only	仅相似
+	Soften the filled edge	柔化填充边缘
+	Spread stops at the darkest pixels (lines)	扩展在最暗的像素（线条）处停止
+	Spread stops at the most opaque pixels	扩展在最不透明的像素处停止
+	Stop at darkest	在最暗处停止
+	Stop at opaque	在不透明处停止
+	Similar Colours	相似颜色
+	Colour Labels	颜色标签
+	All Regions	所有区域
+	Specific Colour	特定颜色
+	Transparent Regions	透明区域
+	Surrounded By	被包围
+	Fill with Foreground Color (Opacity)	用前景色填充（不透明度）
+	Fill with Background Color (Opacity)	用背景色填充（不透明度）
+	Fill with Pattern (Opacity)	用图案填充（不透明度）
+	Straight Line Tool	直线工具
+	Multibrush Tool	多重画笔工具
+	Dynamic Brush Tool	动态画笔工具
+	Enclose and Fill Tool	包围填充工具
+	Colorize Mask Tool	着色蒙版工具
+	Reference Images Tool	参考图像工具
+	Alternating	交替
+	Forward	正向
+	Shaped Gradient (follows the selection)	形状渐变（跟随选区）
+	Clear copies	清除副本
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+点击放置副本，Ctrl+Alt+点击移除
+	How heavily the stroke lags behind the pointer	笔画滞后于指针的程度
+	How quickly the stroke's motion dies away	笔画的运动衰减得多快
+	Keep one-pixel lines single width without L corners	保持单像素线条为单一宽度且无L形拐角
+	Mirror all tools	镜像所有工具
+	Multibrush	多重画笔
+	Pixel smoothing	像素平滑
+	The painting symmetry mirrors fills, gradients and retouching too	绘画对称也镜像填充、渐变和修饰
+	The painting symmetry mirrors this tool's output too	绘画对称也镜像此工具的输出
+	X interval	X间隔
+	Y interval	Y间隔
+	Mirror / Rotation	镜像 / 旋转
+	Translate	平移
+	Copy Translate	复制平移
+	Cursor shape	光标形状
+	Outline shape	轮廓形状
+	Show outline while painting	绘画时显示轮廓
+	Effective outline size	有效轮廓大小
+	Tool icon	工具图标
+	Arrow	箭头
+	Crosshair	十字线
+	Small dot	小点
+	No cursor	无光标
+	Triangle right	右三角
+	Triangle left	左三角
+	No outline	无轮廓
+	Instant preview	即时预览
+	Instant preview megapixels	即时预览百万像素
+	Add…	添加…
+	Auto update	自动更新
+	Canvas input profile	画布输入配置
+	Clean up	清理
+	Clear key strokes	清除关键笔画
+	Colorize Mask	着色蒙版
+	Draw in the area below to test pressure, tilt and rotation	在下方区域绘画以测试压力、倾斜和旋转
+	Edge detection	边缘检测
+	Edit key strokes	编辑关键笔画
+	Embed	嵌入
+	Fill only inside the line art's pixels	仅在线稿像素内填充
+	Gap close	闭合间隙
+	Input API	输入 API
+	Keep aspect	保持比例
+	Limit to layer	限制到图层
+	Mouse	鼠标
+	Next Preset	下一个预设
+	No samples yet	尚无采样
+	Nothing to paste: the clipboard holds no image	无可粘贴内容：剪贴板中没有图像
+	Opacity +	不透明度 +
+	Opacity -	不透明度 -
+	Pasted image	粘贴的图像
+	Peak pressure	峰值压力
+	Pen	笔
+	Previous Preset	上一个预设
+	Reference Images	参考图像
+	Rotate Left	向左旋转
+	Rotate Right	向右旋转
+	Sample rate	采样率
+	Screen mapping	屏幕映射
+	Show output	显示输出
+	Show the key strokes over the canvas	在画布上显示关键笔画
+	Show with all tools	在所有工具下显示
+	Size +	大小 +
+	Size -	大小 -
+	Speed source	速度来源
+	Store the pixels in the set; off, link to the file	将像素存入集合；关闭则链接到文件
+	Tablet Settings…	数位板设置…
+	Tablet Tester	数位板测试器
+	The clipboard is not available	剪贴板不可用
+	The next key strokes keep their regions clear	接下来的关键笔画保持其区域透明
+	Tilt offset	倾斜偏移
+	Touch Docker	触控面板
+	Transparent key	透明键
+	Update	更新
+	Canvas Input	画布输入
+	Canvas Input…	画布输入…
+	Pan key	平移键
+	Zoom in key	放大键
+	Zoom out key	缩小键
+	Rotate key	旋转键
+	Middle button	中键
+	Stylus button	笔侧键
+	Pick modifier	取色修饰键
+	Shift wheel rotates	Shift+滚轮旋转
+	Tablet	数位板
+	Trackpad	触控板
+	Pick	取色
+	No action	无操作
+	No pick	不取色
+	Scroll	滚动
+	Rotate View (hold)	旋转视图（按住）
+	Tilt offset x	倾斜偏移 X
+	Tilt offset y	倾斜偏移 Y
+	Tablet speed source	数位板速度来源
+	Tablet api	数位板 API
+	Tablet screen mapping	数位板屏幕映射
+	Pointer	指针
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	网格类型
+	Isometric left angle	等距左角
+	Isometric right angle	等距右角
+	Isometric vertical lines	等距垂直线
+	Rectangular	矩形
+	Isometric	等距
+	Node	节点
+	Extension	延长线
+	Intersection	交点
+	Alt-click a bottom patch to set it to the foreground colour	Alt+点击下方色块以设为前景色
+	Apply:	应用:
+	Brushes this large preview coarsely while painting	此尺寸以上的画笔在绘制时粗略预览
+	Click the disc to add shape points	点击色盘以添加形状点
+	Close Shape	闭合形状
+	Color Space:	色彩空间:
+	Common Colors	常用颜色
+	Components:	分量:
+	Continuous Mode	连续模式
+	Current pattern	当前图案
+	Depth:	深度:
+	Display:	显示:
+	Dynamic Hue Ring	动态色相环
+	Enable Pen Settings	启用笔设置
+	Erase mode keeps its own opacity on this preset	擦除模式在此预设中保留自己的不透明度
+	Erase mode keeps its own size on this preset	擦除模式在此预设中保留自己的大小
+	Eraser Opacity	橡皮擦不透明度
+	Eraser Size	橡皮擦大小
+	Fit Panel Width	适应面板宽度
+	Gamut Mask	色域蒙版
+	Gradient Steps	渐变步数
+	Gradient ends: Alt-click to set from the foreground	渐变端点: Alt+点击以用前景色设置
+	Hue Steps	色相步数
+	Instant Preview	即时预览
+	LUT Management (OCIO)	LUT 管理 (OCIO)
+	Lightness Strength	亮度强度
+	Lock Color	锁定颜色
+	Luma:	亮度系数:
+	Minimum Hardness	最小硬度
+	Minimum Strength	最小强度
+	Model:	模型:
+	Off: every sensor is ignored; the curves are kept	关闭: 忽略所有传感器，保留曲线
+	Out of gamut	超出色域
+	Panel colours are not shown through the display transform	面板颜色不经过显示变换显示
+	Patch Count	色块数量
+	Patch Size	色块大小
+	Patches:	色块:
+	Pattern Scale	图案缩放
+	Pop-up Size	弹出窗口大小
+	Proof to Painting Space	校样到绘画空间
+	Recent Colors	最近使用的颜色
+	Remove Last Shape	删除最后一个形状
+	Rotate Mask	旋转蒙版
+	Saturation Steps	饱和度步数
+	Selector settings	选择器设置
+	Selector:	选择器:
+	Shade Count	色调数量
+	Shade Ring by Value	按明度着色色环
+	Shade Selector	色调选择器
+	Shade Size	色调大小
+	Shade Spread	色调跨度
+	Shade Strip	色调条
+	Shades	色调
+	Share Curve Across Settings	所有设置共用曲线
+	Show as Fractions	以小数显示
+	Soften Edge	柔化边缘
+	Source:	来源:
+	Style:	样式:
+	The tip's grey levels are painted into the colour as lightness	笔尖的灰度作为亮度绘入颜色
+	Threshold the tip mask for crisp pixel strokes	对笔尖蒙版取阈值以获得锐利的像素笔画
+	Tip as Lightness Map	笔尖作为亮度映射
+	Update:	更新:
+	Value Steps	明度步数
+	Value on the Ring	色环显示明度
+	Zoom Pop-up	缩放弹出窗口
+	Duplicate	复制
+	Gamma	伽马
+	Sharpness	锐度
+	Strength	强度
+	Length over which the value goes from 0 to 1	数值从 0 到 1 所经过的长度
+	Start over past the length instead of holding the end value	超过长度后重新开始，而不是保持终值
+	Pressure In	压力（仅上升）
+	X-Tilt	X 倾斜
+	Y-Tilt	Y 倾斜
+	Tilt Direction	倾斜方向
+	Tilt Elevation	倾斜仰角
+	Time	时间
+	Fuzzy Stroke	每笔随机
+	Tip Scale:	笔尖比例:
+	Initial size as a share of the bitmap's size	初始大小占位图大小的比例
+	Tip Rotation:	笔尖旋转:
+	Initial rotation of the tip	笔尖的初始旋转
+	No anti-aliasing: the dab's pixels are fully on or off	无抗锯齿：笔点像素要么全开要么全关
+	Align Outline to Pixel Grid	轮廓对齐像素网格
+	The brush outline snaps to the pixels the dab fills	画笔轮廓吸附到笔点填充的像素
+	Tip Mode:	笔尖模式:
+	(no colour bitmap: paints the brush colour)	（无彩色位图：以画笔颜色绘制）
+	Neutral Point	中性点
+	Canvas Only: hide the panels around the canvas	仅画布：隐藏画布周围的面板
+	Presets kept in the history	历史中保留的预设数
+	Clear the history	清除历史
+	No presets used yet	尚未使用任何预设
+	Forget this preset	从历史中移除此预设
+	Ten Brushes	十画笔
+	Assign presets to ten slots; activating a slot again returns to the previous preset	将预设分配到十个槽位；再次激活同一槽位会回到之前的预设
+	Clear this slot	清空此槽位
+	Assign current	分配当前预设
+	Browse a folder of reference images	浏览参考图像文件夹
+	No folder	无文件夹
+	Next image	下一张图像
+	Previous image	上一张图像
+	Pick an image to show it here	选择一张图像在此显示
+	Search actions and commands	搜索动作和命令
+	No matching action	没有匹配的动作
+	Search Actions…	搜索动作…
+	Brush History	画笔历史
+	Mask	蒙版
+	Color Image	彩色图像
+	Lightness Map	明度映射
+	Static	固定
+	Move to Top	移到顶部
+	Bubble Up	上浮一位
+	Clear the scratch pad to white	将试笔板清为白色
+	Fill the scratch pad with the background colour	用背景色填充试笔板
+	Fill the scratch pad with the current gradient	用当前渐变填充试笔板
+	Fill the scratch pad with the current image	用当前图像填充试笔板
+	Fill the scratch pad with the preset's icon	用预设图标填充试笔板
+	Reload the stored preset, discarding the tweaks	重新加载已存预设，放弃改动
+	BG	背景
+	Icon	图标
+	Thumbnail:	缩略图:
+	Stroke preview	笔画预览
+	Scratch pad	试笔板
+	Icon library	图标库
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	激活局部选区
+	Add Curve Key	添加曲线关键点
+	Add Filter…	添加滤镜…
+	Add Local Selection	添加局部选区
+	Add Scene	添加场景
+	Add Transform Key	添加变换关键帧
+	Alpha into Mask	Alpha 转入蒙版
+	Attach Audio…	附加音频…
+	Backup count	备份数量
+	Capture Snapshot	捕获快照
+	Change Clone Source…	更改仿制源…
+	Clone Keyframe	克隆关键帧
+	Clone Layer	克隆图层
+	Clones Array…	克隆阵列…
+	Colorize Mask Properties…	着色蒙版属性…
+	Convert	转换
+	Convert Group to Animated Layer	将组转换为动画图层
+	Convert to Paint Layer	转换为绘画图层
+	Copy Keyframe	复制关键帧
+	Curved	曲线
+	Duplicate Keyframe	创建关键帧副本
+	Edit Generated Fill…	编辑生成填充…
+	Edit Transform Mask…	编辑变换蒙版…
+	Ellipse	椭圆
+	Export Storyboard…	导出故事板…
+	Export Timelapse…	导出延时视频…
+	File Layer Properties…	文件图层属性…
+	File Layer…	文件图层…
+	Filter Layer…	滤镜图层…
+	Filter Mask…	滤镜蒙版…
+	Frame rate limit	帧率限制
+	Frames	帧
+	Freeze Live Layer	冻结实时图层
+	High quality	高质量
+	Import Animation Frames…	导入动画帧…
+	Import Image as…	将图像导入为…
+	Import Video Animation…	导入视频动画…
+	Input controllers	输入控制器
+	Input devices	输入设备
+	Invisible	不可见
+	Label	标签
+	Layer Color Space…	图层色彩空间…
+	Layers by State	按状态列出图层
+	Local Selection	局部选区
+	Locked	已锁定
+	Move Clone…	移动克隆…
+	Move Keyframe	移动关键帧
+	Multigrid…	多重网格…
+	Mute Audio	静音音频
+	Nearest	最近邻
+	New Keyframe	新建关键帧
+	Onion Skin…	洋葱皮…
+	Pan	平移
+	Pixel grid threshold	像素网格阈值
+	Profile	配置文件
+	Reload File Layer	重新加载文件图层
+	Remove Audio	移除音频
+	Remove Curve Key	移除曲线关键点
+	Remove Filter	移除滤镜
+	Remove Keyframe	移除关键帧
+	Remove Local Selection	移除局部选区
+	Remove Transform Key	移除变换关键帧
+	Remove Transform Mask	移除变换蒙版
+	Render Animation…	渲染动画…
+	Save Merged…	合并后保存…
+	Scaling filter	缩放滤镜
+	Screentone…	网点…
+	Script…	脚本…
+	Set Filter…	设置滤镜…
+	Shear	切变
+	Show Output	显示输出
+	Split Alpha	拆分 Alpha
+	Start Recording	开始录制
+	Stop Recording	停止录制
+	Swap directory	交换目录
+	Ten scripts	十个脚本
+	Threads	线程数
+	Transform Mask…	变换蒙版…
+	Unlocked	未锁定
+	Update Local Selection	更新局部选区
+	Write as Alpha	写入为 Alpha
+	to File Layer…	转为文件图层…
+	to Filter Mask…	转为滤镜蒙版…
+	to Paint Layer	转为绘画图层
+	to Selection Mask	转为选区蒙版
+	to Transparency Mask	转为透明度蒙版

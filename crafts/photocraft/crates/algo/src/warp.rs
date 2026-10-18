@@ -358,6 +358,7 @@ pub fn warp_triangles(src: &Surface, src_rect: Rect, verts: &[([f64; 2], [f64; 2
                         }
                     }
                 }
+                Interp::NoHalo | Interp::LoHalo => crate::transform::halo_bounded(interp, u, v, n, &at, acc),
             }
         };
         for (o, (q, &k)) in uv.iter().zip(&owner).enumerate() {

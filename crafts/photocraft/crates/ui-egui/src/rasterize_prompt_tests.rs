@@ -367,7 +367,8 @@ fn every_filter_live_on_pixels_asks_on_a_type_layer() {
     let mut asked = 0;
     for id in ids {
         let mut app = app_with(Kind::Type);
-        if !crate::menus::is_enabled(&pixels, id) || app.session.is_enabled(id) {
+        // Filter › Operation… only chooses an operation; the one chosen asks through its own dialog.
+        if !crate::menus::is_enabled(&pixels, id) || app.session.is_enabled(id) || crate::operation_ui::handles(id) {
             continue;
         }
         assert!(crate::menus::is_enabled(&app, id), "{id}");

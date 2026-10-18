@@ -4108,3 +4108,898 @@ curves	Smooth	スムーズ
 	Popup palette	ポップアップパレット
 	Smear	スミア
 	Smudge Radius	スマッジ半径
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	リニア反転
+	Value Invert	明度反転
+	Stretch Contrast HSV	HSV コントラスト伸張
+	Color Enhance	色強調
+	Extract Component…	コンポーネントの抽出…
+	Alien Map…	エイリアンマップ…
+	Rotate Colors…	色相の回転…
+	Palette Map…	パレットマップ…
+	Sample Colorize…	サンプル着色…
+	RGB Clip…	RGB クリップ…
+	Dither…	ディザ…
+	Local Threshold…	ローカルしきい値…
+	Destripe…	ストライプ除去…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	カラーからグレーへ…
+	Fattal et al. 2002…	Fattal ほか 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	スムーズパレット…
+	Decompose…	分解…
+	Compose…	合成…
+	Recompose	再合成
+	Rearrange Colormap…	カラーマップの並べ替え…
+	Set Colormap…	カラーマップの設定…
+	Border Average…	境界の平均…
+	Export Histogram…	ヒストグラムの書き出し…
+	Variable Blur…	可変ぼかし…
+	Apply Lens…	レンズ効果…
+	Mosaic Tiles…	モザイクタイル…
+	Newsprint…	新聞印刷…
+	Curve Bend…	カーブで曲げる…
+	Warp (Map)…	ワープ (マップ)…
+	Bloom…	ブルーム…
+	Sobel…	ソーベル…
+	Cartoon…	カートゥーン…
+	Clothify…	布地化…
+	Stencil Chrome…	ステンシルクローム…
+	Bump Map…	バンプマップ…
+	Panorama Projection…	パノラマ投影…
+	Perlin Noise…	パーリンノイズ…
+	Plasma…	プラズマ…
+	Solid Noise…	ソリッドノイズ…
+	Add Border…	枠を追加…
+	Fog…	霧…
+	Old Photo…	古い写真…
+	Round Corners…	角を丸める…
+	Tile…	タイル…
+	Depth Merge…	深度合成…
+	Geometric Shapes…	幾何図形…
+	Image Map Area…	イメージマップ領域…
+	Image Map From Slices	スライスからイメージマップ
+	Export Image Map…	イメージマップを書き出し…
+	Clear Image Map	イメージマップを消去
+	Combine	合成
+	Clipping	クリッピング
+	Color Space	色空間
+	Linear light	リニアライト
+	Copy upper to lower	上を下にコピー
+	Swap curves	カーブを入れ替え
+	Mirror	ミラー
+	Gradient Source	グラデーション源
+	Value Jitter	明度ジッター
+	Pipe	パイプ
+	Brush file (.myb)	ブラシファイル (.myb)
+	Text as brush tip	テキストをブラシ先端に
+	One character per dab along the stroke	ストロークに沿って1ダブに1文字
+	Engine	エンジン
+	Text Tip	テキスト先端
+	Hatching	ハッチング
+	Particle	パーティクル
+	Dyna	ダイナ
+	Tangent Normal	タンジェント法線
+	MyPaint	MyPaint
+	Spray	スプレー
+	Bristle	ブリスル
+	Deform	変形
+	Separation	間隔
+	Jitter	ジッター
+	Mass	質量
+	Drag	抵抗
+	Gravity	重力
+	Particles	パーティクル数
+	Grid Width	グリッド幅
+	Grid Height	グリッド高さ
+	Diameter	直径
+	Aspect	縦横比
+	Cluster	クラスター
+	Tip	先端
+	Perpendicular	垂直
+	Shrink	縮小
+	Wire	ワイヤー
+	Two	2つ
+	Lens Zoom In	レンズ拡大
+	Lens Zoom Out	レンズ縮小
+	Swirl CW	渦 (時計回り)
+	Swirl CCW	渦 (反時計回り)
+	Colour Deform	色の変形
+	Follow Cursor	カーソルに従う
+	Weighted	重み付き
+	Angular	角度分布
+	Moiré	モアレ
+	Anti-aliased Pixel	アンチエイリアスピクセル
+	Magnetify	磁力
+	Simple Mode	シンプルモード
+	Hard Edge	ハードエッジ
+	Connect Hairs	毛を接続
+	Ink Depletion	インク消耗
+	Soak Ink	インク吸収
+	Mouse Pressure	マウス筆圧
+	Composite Bristles	毛を合成
+	Use Density	密度を使用
+	Proportional	比例
+	Random Size	ランダムサイズ
+	Sample Input Layer	入力レイヤーをサンプル
+	Colour per Particle	パーティクルごとの色
+	Fill Background	背景を塗る
+	Fixed Angle	固定角度
+	Paint Connection	接続線を描く
+	Use Foreground Colour	描画色を使用
+	Width by Pressure	筆圧で幅
+	Opacity by Pressure	筆圧で不透明度
+	Connection Line	接続線
+	Even-odd Fill	偶奇塗り
+	Division by Pressure	筆圧で分割
+	Separation by Pressure	筆圧で間隔
+	Thickness by Pressure	筆圧で太さ
+	Coloured Background	色付き背景
+	Distance Density	距離密度
+	Distance Opacity	距離不透明度
+	Use Undeformed Image	変形前の画像を使用
+	Random RGB	ランダムRGB
+	Random Opacity	ランダム不透明度
+	Curve Opacity	曲線の不透明度
+	Width Range	幅の範囲
+	Line Spacing	線間隔
+	Angle Offset	角度オフセット
+	Particle Width	パーティクル幅
+	Particle Height	パーティクル高さ
+	Random Offset	ランダムオフセット
+	Ink Amount	インク量
+	Counter	カウンター
+	Grain Extract	グレイン抽出
+	Grain Merge	グレイン結合
+	LCh Hue	LCh 色相
+	LCh Chroma	LCh クロマ
+	LCh Color	LCh カラー
+	LCh Lightness	LCh 明度
+	Merge	統合
+	Split	分割
+	Remove Holes	穴を除去
+	Distort…	ゆがみ…
+	Rounded Rectangle…	角丸長方形…
+	Anchor Layer	レイヤーを固定
+	To New Layer	新規レイヤーへ
+	Layer Boundary Size…	レイヤー境界サイズ…
+	Layer to Image Size	レイヤーを画像サイズに
+	Resize Layer to Selection	レイヤーを選択範囲に合わせる
+	Crop Layer to Content	レイヤーを内容に合わせて切り抜き
+	Threshold Alpha…	アルファしきい値…
+	Composite Options…	合成オプション…
+	Zealous Crop	徹底的に切り抜き
+	Foreground Select	前景選択
+	Stroke width	ストローク幅
+	Graph cut	グラフカット
+	To Layer Mask	レイヤーマスクへ
+	Draw a rough outline round the subject	被写体の周りに大まかな輪郭を描きます
+	Draw a rough outline round the subject first	まず被写体の周りに大まかな輪郭を描いてください
+	Outline placed: paint over the foreground, then Preview or Select	輪郭を配置しました: 前景を塗ってから、プレビューまたは選択
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	被写体を大まかに囲み、前景を塗ると、マッティングエンジンがマスクを広げます
+	Paint over the foreground (hold Alt for background), then Preview or Select	前景を塗ります (Alt で背景)。その後プレビューまたは選択
+	Display Filters…	表示フィルター…
+	Display Filters	表示フィルター
+	No Color Deficiency Simulation	色覚シミュレーションなし
+	Simulate Protanopia	1型色覚をシミュレート
+	Simulate Deuteranopia	2型色覚をシミュレート
+	Simulate Tritanopia	3型色覚をシミュレート
+	Clip Warning	クリップ警告
+	Clip warning	クリップ警告
+	Color deficiency:	色覚特性:
+	Protanopia	1型色覚
+	Deuteranopia	2型色覚
+	Tritanopia	3型色覚
+	Contrast:	コントラスト:
+	View-only: the filters change what this view shows, never the pixels.	表示のみ: フィルターはこのビューの見え方を変えるだけで、ピクセルは変えません。
+	Show All	すべて表示
+	Padding Color	パディングの色
+	From Theme	テーマから
+	Light Check Color	明るいチェックの色
+	Dark Check Color	暗いチェックの色
+	Light Check	明るいチェック
+	Dark Check	暗いチェック
+	Light check	明るいチェック
+	Dark check	暗いチェック
+	Custom Color	カスタムカラー
+	Keep Padding in Show All	すべて表示でパディングを保持
+	Keep padding in show all	すべて表示でパディングを保持
+	Filter by tag	タグで絞り込む
+	Clear filter	絞り込みを解除
+	Tags:	タグ:
+	Add tag	タグを追加
+	Remove tag	タグを削除
+	View Metadata…	メタデータを表示…
+	Edit Metadata…	メタデータを編集…
+	Edit Metadata	メタデータを編集
+	Metadata Viewer	メタデータビューア
+	Write Metadata	メタデータを書き込む
+	Separate several values with semicolons	複数の値はセミコロンで区切ります
+	No tags	タグなし
+	XMP	XMP
+	IPTC	IPTC
+	Text	テキスト
+	Rights	権利
+	IPTC Extension	IPTC 拡張
+	Categories	カテゴリ
+	DICOM	DICOM
+	Procedure Browser	プロシージャブラウザ
+	Plug-In Browser	プラグインブラウザ
+	Search procedures	プロシージャを検索
+	{n} procedures	{n} 件のプロシージャ
+	(no menu)	(メニューなし)
+	Menu: {path}	メニュー: {path}
+	Parameters	パラメーター
+	Available now	現在実行可能
+	Not available in the current state	現在の状態では実行できません
+	Run	実行
+	Select a procedure to read its parameters.	プロシージャを選ぶとパラメーターを読めます。
+	Dashboard	ダッシュボード
+	Low memory: swap is nearly full. Save your work.	メモリ不足: スワップがほぼ満杯です。作業を保存してください。
+	Memory	メモリ
+	Cache	キャッシュ
+	Swap	スワップ
+	Swap: not reported on this platform	スワップ: このプラットフォームでは取得できません
+	CPU	CPU
+	CPU renderer	CPU レンダラー
+	uploads	アップロード
+	Misc: {jobs} jobs running · {n} samples	その他: 実行中のジョブ {jobs} 件 · サンプル {n} 件
+	Log to File…	ファイルに記録…
+	Stop Logging	記録を停止
+	Device Status	デバイスの状態
+	Core Pointer	コアポインター
+	Pen / Tablet	ペン / タブレット
+	Brush:	ブラシ:
+	Pattern:	パターン:
+	Gradient:	グラデーション:
+	Save Device Status	デバイスの状態を保存
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	各デバイスはツール、色、ブラシ、パターン、グラデーションを記憶し、デバイスを切り替えると一緒に切り替わります。
+	Selection Editor	選択範囲エディター
+	No document open.	ドキュメントが開かれていません。
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	クリックすると自動選択ツールでその位置の連続した色を選択します (Shift で追加、Alt で削除)
+	Save to Channel	チャンネルに保存
+	To Path	パスへ
+	Advanced options	詳細オプション
+	MyPaint Brushes	MyPaint ブラシ
+	No MyPaint brushes yet. Import .myb files to list them here.	MyPaint ブラシはまだありません。.myb ファイルを読み込むとここに表示されます。
+	No brush matches the filter.	絞り込みに一致するブラシがありません。
+	Handle Transform	ハンドル変形
+	3D Transform	3D 変形
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	再調整
+	Apply the transform so far and put a fresh box on the result	ここまでの変形を適用し、結果に新しいボックスを置きます
+	Camera	カメラ
+	Vanishing X:	消失点 X:
+	Y:	Y:
+	Focal length:	焦点距離:
+	Local pivot	ローカルピボット
+	Unified pivot	統合ピボット
+	Close Cage	ケージを閉じる
+	Reset Cage	ケージをリセット
+	Fill Plain Colour	単色で塗る
+	Fill the original position of the cage with the plain colour of its outline	ケージの元の位置を、その輪郭の単色で塗ります
+	{n} points	{n} 点
+	Click to place a handle	クリックしてハンドルを置く
+	Rotate and Scale	回転と拡大・縮小
+	{n} handles: {what}	ハンドル {n} 個: {what}
+	Reset Handles	ハンドルをリセット
+	Remove Handles	ハンドルを削除
+	Commit Cage Transform (Enter)	ケージ変形を確定 (Enter)
+	Commit Handle Transform (Enter)	ハンドル変形を確定 (Enter)
+	Commit 3D Transform (Enter)	3D 変形を確定 (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	ケージ変形: 変形する部分の周りをクリックし、最初の点をクリックしてケージを閉じ、点をドラッグします
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	ハンドル変形: 1〜4 個のハンドルを置いてドラッグします (1 個で移動、2 個で回転と拡縮、3 個で傾き、4 個で遠近)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 変形: ドラッグで X・Y 軸回転、Alt+ドラッグで Z 軸回転。移動とカメラのタブでレイヤーとカメラを動かします
+	Segment {n}	セグメント {n}
+	Blending:	ブレンド:
+	Coloring:	カラーリング:
+	Midpoint:	中間点:
+	Sinusoidal	正弦波
+	Spherical (increasing)	球面 (増加)
+	Spherical (decreasing)	球面 (減少)
+	Step	ステップ
+	HSV (counter-clockwise)	HSV (反時計回り)
+	HSV (clockwise)	HSV (時計回り)
+	Replicate	複製
+	Split the segment at its midpoint	セグメントを中間点で分割します
+	Replace the segment with two copies of itself	セグメントを自身の 2 つのコピーに置き換えます
+	Flip the whole gradient end to end	グラデーション全体を反転します
+	Save as POV-Ray…	POV-Ray 形式で保存…
+	Shaped Gradient (angular)	形状グラデーション (角度)
+	Shaped Gradient (spherical)	形状グラデーション (球状)
+	Shaped Gradient (dimpled)	形状グラデーション (くぼみ)
+	Truncate	切り捨て
+	Sawtooth wave	のこぎり波
+	Triangular wave	三角波
+	Wheel	ホイール
+	Force	筆圧の強さ
+	Fade length	フェードの長さ
+	Random amount	ランダム量
+	Save Preset	プリセットを保存
+	Paint Dynamics Editor	描画ダイナミクスエディター
+	Color from Gradient	グラデーションから色
+	Put this table on the current brush	この表を現在のブラシに適用
+	Save the table as a named dynamics preset	この表を名前付きダイナミクスプリセットとして保存
+	Give the dynamics preset a name first	先にダイナミクスプリセットに名前を付けてください
+	Edit the dynamics table (inputs × outputs)	ダイナミクス表を編集 (入力 × 出力)
+	Reset Plane	平面をリセット
+	Click four corners to define a perspective plane, then clone along it	4つの角をクリックして透視平面を定義し、その平面に沿ってクローンします
+	Click corner {n} of 4	角 {n}/4 をクリック
+	Perspective plane: corner {n} of 4 set	透視平面: 角 {n}/4 を設定しました
+	Perspective plane set; {key}-click a source, then paint	透視平面を設定しました。{key}クリックでソースを指定してから描画してください
+	Copy Path as SVG	パスをSVGとしてコピー
+	Export Path to SVG…	パスをSVGに書き出し…
+	Import Path from SVG…	SVGからパスを読み込み…
+	Paste Path from SVG	SVGからパスをペースト
+	Copy All Paths as SVG	すべてのパスをSVGとしてコピー
+	Export All Paths to SVG…	すべてのパスをSVGに書き出し…
+	Copied 1 path as SVG	1個のパスをSVGとしてコピーしました
+	Copied {n} paths as SVG	{n}個のパスをSVGとしてコピーしました
+	Exported paths to {path}	パスを{path}に書き出しました
+	Imported 1 path	1個のパスを読み込みました
+	Imported {n} paths	{n}個のパスを読み込みました
+	The clipboard holds no SVG	クリップボードにSVGがありません
+	Clipboard Image Brush	クリップボード画像ブラシ
+	Paint with the image on the clipboard as the brush tip	クリップボードの画像をブラシ先端として描画します
+	Export Layers as Animation…	レイヤーをアニメーションとして書き出し…
+	Export as Brush (.gbr)…	ブラシとして書き出し (.gbr)…
+	Export Layers as Image Hose (.gih)…	レイヤーをイメージホースとして書き出し (.gih)…
+	Export as Pattern (.pat)…	パターンとして書き出し (.pat)…
+	Animation Frame Tags…	アニメーションフレームタグ…
+	Disposal	処理方法
+	Replace	置換
+	Incremental	順次
+	Xtilt	X傾き
+	Ytilt	Y傾き
+	Mng	MNG
+	Export as PostScript (.eps)…	PostScriptとして書き出し (.eps)…
+	Encapsulated	カプセル化 (EPS)
+	Encoding	エンコーディング
+	Hex	16進
+	Ascii85	ASCII85
+	Binary	バイナリ
+	Open Location…	場所を開く…
+	From Screenshot…	スクリーンショットから…
+	From Web Page…	Webページから…
+	Send by Email…	メールで送信…
+	Url	URL
+	Cursor	カーソルを含める
+	Region	領域
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	バッファ
+	Buffers	バッファ
+	Cut Named…	名前を付けて切り取り…
+	Copy Named…	名前を付けてコピー…
+	Copy Visible Named…	可視部分を名前を付けてコピー…
+	Paste Named…	名前を付けてペースト…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	名前付きバッファがありません。編集 > バッファ > 名前を付けてコピー…でここにコピーを保持します。
+	There are no named buffers; use Edit > Buffer > Copy Named first	名前付きバッファがありません。先に編集 > バッファ > 名前を付けてコピーを使ってください
+	Paste Buffer	バッファをペースト
+	Paste Buffer in Place	バッファを同じ位置にペースト
+	Paste Buffer as New Image	バッファを新規画像としてペースト
+	Rename Buffer…	バッファ名を変更…
+	Delete Buffer	バッファを削除
+	Paste as New	新規としてペースト
+	Paste the buffer as a new layer	バッファを新規レイヤーとしてペーストします
+	Paste the buffer as a new document	バッファを新規ドキュメントとしてペーストします
+	As	形式
+	In place	同じ位置
+	Into	選択範囲内に
+	Modules…	モジュール…
+	Units…	単位…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	読み込み可能なモジュールがインストールされていません。フィルター > プラグイン > プラグインをインストール…で追加します。
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	オフにしたモジュールはインストールされたままですが、再びオンにするまでメニューから消えます。
+	Module	モジュール
+	Not installed	未インストール
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	係数は1インチあたりの単位数です(センチメートルは2.54、ポイントは72)。
+	Identifier	識別子
+	Factor	係数
+	Symbol	記号
+	Abbreviation	略語
+	Singular	単数形
+	Plural	複数形
+	Delete Unit	単位を削除
+	New unit	新しい単位
+	Add Unit	単位を追加
+	That identifier is already a unit	その識別子はすでに単位です
+	Custom units	カスタム単位
+	Disabled modules	無効なモジュール
+	Input Devices…	入力デバイス…
+	Input Controllers…	入力コントローラー…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	ペンはプラットフォームが報告するタブレットのスタイラスです。無効にするとマウスとして動作します。
+	Device	デバイス
+	Invert tilt X	傾きXを反転
+	Invert tilt Y	傾きYを反転
+	Swap tilt	傾き軸を入れ替え
+	Pressure scale	筆圧倍率
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	ホイールイベントはup、down、left、rightに任意でShift+、Ctrl+、Alt+を付けます。キーボードイベントはCtrl+Alt+Upのようなショートカットです。アクションはコマンドIDで、JSONパラメータを続けられます。
+	Keyboard	キーボード
+	Controller	コントローラー
+	Event	イベント
+	Remove mapping	マッピングを削除
+	New mapping	新しいマッピング
+	Add Mapping	マッピングを追加
+	Disabled	無効
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n}項目。クリックで描画色に設定、ダブルクリックで編集
+	Entry	項目
+	Add an entry with the foreground colour	描画色の項目を追加します
+	Delete the last entry	最後の項目を削除します
+	Use selected	選択項目を使用
+	Ink	インク
+	MyPaint Brush	MyPaintブラシ
+	Nib	ペン先
+	Opaque	不透明
+	Erase with brush	ブラシで消去
+	Import .myb…	.mybを読み込み…
+	Add a MyPaint brush file to the presets	MyPaintブラシファイルをプリセットに追加します
+	Imported MyPaint brush {name}	MyPaintブラシ{name}を読み込みました
+	How much pressure changes the nib size	筆圧がペン先の大きさをどれだけ変えるか
+	How much the pen's tilt turns and stretches the nib	ペンの傾きがペン先をどれだけ回し伸ばすか
+	How much a fast stroke thins the nib	速いストロークがペン先をどれだけ細くするか
+	Added to the preset's logarithmic radius	プリセットの対数半径に加算されます
+	Operation…	操作…
+	Operation name or id	操作名またはID
+	{n} operations	{n}個の操作
+	Choose an operation	操作を選択してください
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fuコンソール…
+	Load Scripts Folder…	スクリプトフォルダーを読み込み…
+	Python Console…	Pythonコンソール…
+	Load Plug-ins Folder…	プラグインフォルダーを読み込み…
+	Loaded {n} scripts	{n}個のスクリプトを読み込みました
+	Loaded {n} Python plug-ins	{n}個のPythonプラグインを読み込みました
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3: call(command, **params)、message(text)、print()。すべてのエンジンコマンドはcallから呼べます。
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: すべてのエンジンコマンドは手続きです。(file.new "width" 640 "height" 480)。手続きをdefineしscript-fu-registerで登録します。
+	Code	コード
+	Cmd+Enter runs the code	Cmd+Enterでコードを実行します
+	Clear Log	ログを消去
+	Dodge…	覆い焼き…
+	Burn…	焼き込み…
+	Cross-Channel Adjustment…	クロスチャンネル調整…
+	Slope, Offset, Power…	スロープ、オフセット、パワー…
+	Index Colors…	インデックスカラー…
+	Raindrops…	雨粒…
+	Polygon Blur…	多角形ぼかし…
+	Edge Detection…	エッジ検出…
+	Emboss (Directional)…	エンボス（方向）…
+	Phong Bump Map…	フォンバンプマップ…
+	Palettize…	パレット化…
+	Height to Normal Map…	高さから法線マップ…
+	Normalize Normal Map	法線マップを正規化
+	Maximize Channel	チャンネルを最大化
+	Minimize Channel	チャンネルを最小化
+	Propagate Colors…	色を伝播…
+	Reset Transparent	透明部分をリセット
+	Mean Removal	平均除去
+	Wavelet Noise Reducer…	ウェーブレットノイズ低減…
+	Random Pick…	ランダムピック…
+	G'MIC Filter…	G'MIC フィルター…
+	G'MIC executable	G'MIC 実行ファイル
+	G'MIC update folder	G'MIC 更新フォルダー
+	Add scene at playhead	再生ヘッドにシーンを追加
+	Add to favourites	お気に入りに追加
+	After	後
+	Arithmetic	算術
+	Attach audio…	オーディオを添付…
+	Before	前
+	Blend details	ブレンド詳細
+	Blend mode	ブレンドモード
+	Blend mode and opacity	ブレンドモードと不透明度
+	Capture now	今キャプチャ
+	Clone previous keyframe here	前のキーフレームをここにクローン
+	Comment	コメント
+	Display settings	表示設定
+	Duplicate keyframe	キーフレームを複製
+	Duplicate keyframe here	ここにキーフレームを複製
+	End	終了
+	Export timelapse…	タイムラプスを書き出し…
+	Favourites	お気に入り
+	Frame rate	フレームレート
+	HSX	HSX
+	Hidden	非表示
+	Key the active layer:	アクティブレイヤーにキーを設定:
+	Misc	その他
+	Mute audio	オーディオをミュート
+	Negative	ネガティブ
+	New keyframe	新規キーフレーム
+	New keyframe here	ここに新規キーフレーム
+	Next tint	次の色味
+	No animated layers: add a keyframe to the active layer to animate it.	アニメーションレイヤーがありません。アクティブレイヤーにキーフレームを追加するとアニメーションになります。
+	No animation curves yet.	アニメーションカーブはまだありません。
+	No scenes yet.	シーンはまだありません。
+	Opacity per frame	フレームごとの不透明度
+	Previous tint	前の色味
+	Quadratic	二次
+	Recorder	レコーダー
+	Remove from favourites	お気に入りから削除
+	Remove keyframe	キーフレームを削除
+	Remove scene	シーンを削除
+	Scale X	拡大縮小 X
+	Scale Y	拡大縮小 Y
+	Scene name	シーン名
+	Show onion skins	オニオンスキンを表示
+	Start	開始
+	Start recording	録画を開始
+	Stop recording	録画を停止
+	Storyboard	ストーリーボード
+	Thumbnail size	サムネイルサイズ
+	frames	フレーム
+	opacity	不透明度
+	rotation	回転
+	scaleX	拡大縮小 X
+	scaleY	拡大縮小 Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir} に {count} 枚のスナップショット
+	2-Point Perspective	2点透視
+	Assistant colour	アシスタントの色
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	アシスタントの磁力: ストロークがアシスタントから離れていても引き寄せられる距離 (1000 = 常に)
+	Assistant opacity	アシスタントの不透明度
+	Concentric Ellipse	同心楕円
+	Curvilinear Perspective	曲線透視
+	Eraser snaps	消しゴムもスナップ
+	Fish-Eye Point	魚眼ポイント
+	Handles	ハンドル
+	Infinite Ruler	無限定規
+	Limit to area	領域に限定
+	Minor subdivisions	補助目盛り
+	Own colour	固有の色
+	Perspective Ellipse	透視楕円
+	Previews	プレビュー
+	Show the snapped stroke's line while painting	ペイント中にスナップしたストロークの線を表示
+	Show this assistant's control handles	このアシスタントのコントロールハンドルを表示
+	Spline	スプライン
+	Strokes follow the painting assistants (Ctrl+Shift+L)	ストロークがペイントアシスタントに沿う (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	2つの追加ハンドルで、アシスタントが描画・スナップする範囲を切り取る
+	Vertical ruler	垂直定規
+	Painting Assistants	ペイントアシスタント
+	Assistant Previews	アシスタントのプレビュー
+	Drag fill	ドラッグ塗り
+	Dragging fills every region passed over	ドラッグで通過したすべての領域を塗る
+	Exclude colour	除外する色
+	Exclude transparent	透明を除外
+	Fill mode	塗りモード
+	No region is fully enclosed by the shape	シェイプに完全に囲まれた領域がありません
+	Only regions coloured like the first one	最初の領域と同じ色の領域のみ
+	Reference	参照
+	Similar only	類似色のみ
+	Soften the filled edge	塗りの縁をぼかす
+	Spread stops at the darkest pixels (lines)	拡張は最も暗いピクセル (線) で止まる
+	Spread stops at the most opaque pixels	拡張は最も不透明なピクセルで止まる
+	Stop at darkest	最暗で停止
+	Stop at opaque	不透明で停止
+	Similar Colours	類似色
+	Colour Labels	カラーラベル
+	All Regions	すべての領域
+	Specific Colour	特定の色
+	Transparent Regions	透明な領域
+	Surrounded By	囲まれている色
+	Fill with Foreground Color (Opacity)	描画色で塗りつぶし (不透明度)
+	Fill with Background Color (Opacity)	背景色で塗りつぶし (不透明度)
+	Fill with Pattern (Opacity)	パターンで塗りつぶし (不透明度)
+	Straight Line Tool	直線ツール
+	Multibrush Tool	マルチブラシツール
+	Dynamic Brush Tool	ダイナミックブラシツール
+	Enclose and Fill Tool	囲んで塗りつぶしツール
+	Colorize Mask Tool	カラライズマスクツール
+	Reference Images Tool	参照画像ツール
+	Alternating	交互
+	Forward	順方向
+	Shaped Gradient (follows the selection)	シェイプグラデーション (選択範囲に沿う)
+	Clear copies	コピーをクリア
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+クリックでコピーを配置、Ctrl+Alt+クリックで削除
+	How heavily the stroke lags behind the pointer	ストロークがポインタからどれだけ遅れるか
+	How quickly the stroke's motion dies away	ストロークの動きがどれだけ速く収まるか
+	Keep one-pixel lines single width without L corners	1ピクセルの線をL字の角なしで1ピクセル幅に保つ
+	Mirror all tools	すべてのツールをミラー
+	Multibrush	マルチブラシ
+	Pixel smoothing	ピクセルスムージング
+	The painting symmetry mirrors fills, gradients and retouching too	ペイントの対称が塗り、グラデーション、レタッチもミラーする
+	The painting symmetry mirrors this tool's output too	ペイントの対称がこのツールの出力もミラーする
+	X interval	X間隔
+	Y interval	Y間隔
+	Mirror / Rotation	ミラー / 回転
+	Translate	平行移動
+	Copy Translate	コピー平行移動
+	Cursor shape	カーソルの形状
+	Outline shape	アウトラインの形状
+	Show outline while painting	ペイント中にアウトラインを表示
+	Effective outline size	実効アウトラインサイズ
+	Tool icon	ツールアイコン
+	Arrow	矢印
+	Crosshair	十字
+	Small dot	小さな点
+	No cursor	カーソルなし
+	Triangle right	右向き三角
+	Triangle left	左向き三角
+	No outline	アウトラインなし
+	Instant preview	インスタントプレビュー
+	Instant preview megapixels	インスタントプレビューのメガピクセル
+	Add…	追加…
+	Auto update	自動更新
+	Canvas input profile	キャンバス入力プロファイル
+	Clean up	クリーンアップ
+	Clear key strokes	キーストロークをクリア
+	Colorize Mask	カラライズマスク
+	Draw in the area below to test pressure, tilt and rotation	下の領域に描いて筆圧・傾き・回転をテスト
+	Edge detection	エッジ検出
+	Edit key strokes	キーストロークを編集
+	Embed	埋め込む
+	Fill only inside the line art's pixels	線画のピクセル内だけを塗る
+	Gap close	隙間を閉じる
+	Input API	入力API
+	Keep aspect	縦横比を保持
+	Limit to layer	レイヤーに限定
+	Mouse	マウス
+	Next Preset	次のプリセット
+	No samples yet	サンプルなし
+	Nothing to paste: the clipboard holds no image	ペーストするものがありません: クリップボードに画像がありません
+	Opacity +	不透明度 +
+	Opacity -	不透明度 -
+	Pasted image	ペーストした画像
+	Peak pressure	最大筆圧
+	Previous Preset	前のプリセット
+	Reference Images	参照画像
+	Rotate Left	左に回転
+	Rotate Right	右に回転
+	Sample rate	サンプルレート
+	Screen mapping	画面マッピング
+	Show output	出力を表示
+	Show the key strokes over the canvas	キャンバス上にキーストロークを表示
+	Show with all tools	すべてのツールで表示
+	Size +	サイズ +
+	Size -	サイズ -
+	Speed source	速度ソース
+	Store the pixels in the set; off, link to the file	ピクセルをセットに保存。オフならファイルにリンク
+	Tablet Settings…	タブレット設定…
+	Tablet Tester	タブレットテスター
+	The clipboard is not available	クリップボードを利用できません
+	The next key strokes keep their regions clear	次のキーストロークは領域を透明に保つ
+	Tilt offset	傾きオフセット
+	Touch Docker	タッチドッカー
+	Transparent key	透明キー
+	Update	更新
+	Canvas Input	キャンバス入力
+	Canvas Input…	キャンバス入力…
+	Pan key	パンキー
+	Zoom in key	ズームインキー
+	Zoom out key	ズームアウトキー
+	Rotate key	回転キー
+	Middle button	中ボタン
+	Stylus button	スタイラスボタン
+	Pick modifier	ピックの修飾キー
+	Shift wheel rotates	Shift+ホイールで回転
+	Tablet	タブレット
+	Trackpad	トラックパッド
+	Pick	ピック
+	No action	動作なし
+	No pick	ピックなし
+	Scroll	スクロール
+	Rotate View (hold)	ビューを回転 (長押し)
+	Tilt offset x	傾きオフセット X
+	Tilt offset y	傾きオフセット Y
+	Tablet speed source	タブレットの速度ソース
+	Tablet api	タブレットAPI
+	Tablet screen mapping	タブレットの画面マッピング
+	Pointer	ポインタ
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	グリッドの種類
+	Isometric left angle	アイソメ左角度
+	Isometric right angle	アイソメ右角度
+	Isometric vertical lines	アイソメ垂直線
+	Rectangular	長方形
+	Isometric	アイソメトリック
+	Node	ノード
+	Extension	延長線
+	Intersection	交点
+	Alt-click a bottom patch to set it to the foreground colour	下のパッチをAlt+クリックで描画色に設定
+	Apply:	適用:
+	Brushes this large preview coarsely while painting	この大きさ以上のブラシは描画中に粗くプレビューします
+	Click the disc to add shape points	円盤をクリックして形状の点を追加
+	Close Shape	形状を閉じる
+	Color Space:	カラースペース:
+	Common Colors	画像の主な色
+	Components:	コンポーネント:
+	Continuous Mode	連続モード
+	Current pattern	現在のパターン
+	Depth:	深度:
+	Display:	表示:
+	Dynamic Hue Ring	動的な色相リング
+	Enable Pen Settings	ペン設定を有効化
+	Erase mode keeps its own opacity on this preset	消去モードはこのプリセットで独自の不透明度を保持します
+	Erase mode keeps its own size on this preset	消去モードはこのプリセットで独自のサイズを保持します
+	Eraser Opacity	消しゴムの不透明度
+	Eraser Size	消しゴムのサイズ
+	Fit Panel Width	パネル幅に合わせる
+	Gamut Mask	色域マスク
+	Gradient Steps	グラデーションの段階数
+	Gradient ends: Alt-click to set from the foreground	グラデーション端: Alt+クリックで描画色から設定
+	Hue Steps	色相の段階数
+	Instant Preview	インスタントプレビュー
+	LUT Management (OCIO)	LUT管理 (OCIO)
+	Lightness Strength	明度の強さ
+	Lock Color	色をロック
+	Luma:	ルマ:
+	Minimum Hardness	最小硬さ
+	Minimum Strength	最小強度
+	Model:	モデル:
+	Off: every sensor is ignored; the curves are kept	オフ: すべてのセンサーを無視し、カーブは保持します
+	Out of gamut	色域外
+	Panel colours are not shown through the display transform	パネルの色は表示変換を通さずに表示します
+	Patch Count	パッチ数
+	Patch Size	パッチサイズ
+	Patches:	パッチ:
+	Pattern Scale	パターンの拡大率
+	Pop-up Size	ポップアップのサイズ
+	Proof to Painting Space	描画スペースへ校正
+	Recent Colors	最近の色
+	Remove Last Shape	最後の形状を削除
+	Rotate Mask	マスクを回転
+	Saturation Steps	彩度の段階数
+	Selector settings	セレクターの設定
+	Selector:	セレクター:
+	Shade Count	シェードの数
+	Shade Ring by Value	明度でリングを陰影付け
+	Shade Selector	シェードセレクター
+	Shade Size	シェードのサイズ
+	Shade Spread	シェードの広がり
+	Shade Strip	シェードストリップ
+	Shades	シェード
+	Share Curve Across Settings	すべての設定でカーブを共有
+	Show as Fractions	小数で表示
+	Soften Edge	エッジを柔らかく
+	Source:	ソース:
+	Style:	スタイル:
+	The tip's grey levels are painted into the colour as lightness	先端のグレー階調を明度として色に描き込みます
+	Threshold the tip mask for crisp pixel strokes	くっきりしたピクセルストロークのために先端マスクを二値化
+	Tip as Lightness Map	先端を明度マップとして使用
+	Update:	更新:
+	Value Steps	明度の段階数
+	Value on the Ring	リングに明度
+	Zoom Pop-up	ズームポップアップ
+	Length over which the value goes from 0 to 1	値が0から1になるまでの長さ
+	Start over past the length instead of holding the end value	長さを超えたら最終値を保持せず最初から繰り返す
+	Pressure In	筆圧（上昇のみ）
+	X-Tilt	X傾き
+	Y-Tilt	Y傾き
+	Tilt Direction	傾き方向
+	Tilt Elevation	傾き仰角
+	Fuzzy Stroke	ストロークごとのランダム
+	Tip Scale:	ブラシ先端の倍率:
+	Initial size as a share of the bitmap's size	ビットマップのサイズに対する初期サイズの割合
+	Tip Rotation:	ブラシ先端の回転:
+	Initial rotation of the tip	ブラシ先端の初期回転
+	No anti-aliasing: the dab's pixels are fully on or off	アンチエイリアスなし: ドットの画素は完全にオンかオフ
+	Align Outline to Pixel Grid	アウトラインをピクセルグリッドに揃える
+	The brush outline snaps to the pixels the dab fills	ブラシのアウトラインがドットが塗る画素にスナップします
+	Tip Mode:	先端モード:
+	(no colour bitmap: paints the brush colour)	(カラービットマップなし: ブラシの色で描画)
+	Neutral Point	中立点
+	Canvas Only: hide the panels around the canvas	キャンバスのみ: キャンバス周りのパネルを隠す
+	Presets kept in the history	履歴に残すプリセット数
+	Clear the history	履歴を消去
+	No presets used yet	まだ使ったプリセットはありません
+	Forget this preset	このプリセットを履歴から除く
+	Ten Brushes	テンブラシ
+	Assign presets to ten slots; activating a slot again returns to the previous preset	10個のスロットにプリセットを割り当て。同じスロットを再度有効化すると前のプリセットに戻ります
+	Clear this slot	このスロットを空にする
+	Assign current	現在のものを割り当て
+	Browse a folder of reference images	参考画像のフォルダーを開く
+	No folder	フォルダーなし
+	Next image	次の画像
+	Previous image	前の画像
+	Pick an image to show it here	ここに表示する画像を選択
+	Search actions and commands	アクションとコマンドを検索
+	No matching action	一致するアクションがありません
+	Search Actions…	アクションを検索…
+	Brush History	ブラシ履歴
+	Color Image	カラー画像
+	Lightness Map	明度マップ
+	Static	固定
+	Move to Top	先頭へ移動
+	Bubble Up	一つ上へ
+	Clear the scratch pad to white	スクラッチパッドを白にする
+	Fill the scratch pad with the background colour	スクラッチパッドを背景色で塗る
+	Fill the scratch pad with the current gradient	スクラッチパッドを現在のグラデーションで塗る
+	Fill the scratch pad with the current image	スクラッチパッドを現在の画像で塗る
+	Fill the scratch pad with the preset's icon	スクラッチパッドをプリセットのアイコンで塗る
+	Reload the stored preset, discarding the tweaks	保存済みプリセットを再読み込みして変更を破棄
+	BG	背景
+	Icon	アイコン
+	Thumbnail:	サムネイル:
+	Stroke preview	ストロークプレビュー
+	Scratch pad	スクラッチパッド
+	Icon library	アイコンライブラリ
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	ローカル選択範囲を有効にする
+	Add Curve Key	カーブキーを追加
+	Add Filter…	フィルターを追加…
+	Add Local Selection	ローカル選択範囲を追加
+	Add Scene	シーンを追加
+	Add Transform Key	変形キーを追加
+	Alpha into Mask	アルファをマスクへ
+	Attach Audio…	オーディオを添付…
+	Backup count	バックアップ数
+	Capture Snapshot	スナップショットを取得
+	Change Clone Source…	コピーソースを変更…
+	Clone Keyframe	キーフレームをクローン
+	Clone Layer	レイヤーをクローン
+	Clones Array…	クローン配列…
+	Colorize Mask Properties…	カラライズマスクのプロパティ…
+	Convert	変換
+	Convert Group to Animated Layer	グループをアニメーションレイヤーに変換
+	Convert to Paint Layer	ペイントレイヤーに変換
+	Copy Keyframe	キーフレームをコピー
+	Curved	曲線
+	Duplicate Keyframe	キーフレームを複製
+	Edit Generated Fill…	生成塗りを編集…
+	Edit Transform Mask…	変形マスクを編集…
+	Ellipse	楕円
+	Export Storyboard…	ストーリーボードを書き出し…
+	Export Timelapse…	タイムラプスを書き出し…
+	File Layer Properties…	ファイルレイヤーのプロパティ…
+	File Layer…	ファイルレイヤー…
+	Filter Layer…	フィルターレイヤー…
+	Filter Mask…	フィルターマスク…
+	Frame rate limit	フレームレート制限
+	Frames	フレーム
+	Freeze Live Layer	ライブレイヤーを固定
+	High quality	高品質
+	Import Animation Frames…	アニメーションフレームを読み込み…
+	Import Image as…	画像を次として読み込み…
+	Import Video Animation…	ビデオアニメーションを読み込み…
+	Input controllers	入力コントローラー
+	Input devices	入力デバイス
+	Invisible	非表示
+	Layer Color Space…	レイヤーのカラースペース…
+	Layers by State	状態別レイヤー
+	Local Selection	ローカル選択範囲
+	Locked	ロック済み
+	Move Clone…	クローンを移動…
+	Move Keyframe	キーフレームを移動
+	Multigrid…	マルチグリッド…
+	Mute Audio	オーディオをミュート
+	Nearest	最近傍
+	New Keyframe	新規キーフレーム
+	Onion Skin…	オニオンスキン…
+	Pan	パン
+	Pixel grid threshold	ピクセルグリッドのしきい値
+	Reload File Layer	ファイルレイヤーを再読み込み
+	Remove Audio	オーディオを削除
+	Remove Curve Key	カーブキーを削除
+	Remove Filter	フィルターを削除
+	Remove Keyframe	キーフレームを削除
+	Remove Local Selection	ローカル選択範囲を削除
+	Remove Transform Key	変形キーを削除
+	Remove Transform Mask	変形マスクを削除
+	Render Animation…	アニメーションをレンダリング…
+	Save Merged…	統合して保存…
+	Scaling filter	拡大縮小フィルター
+	Screentone…	スクリーントーン…
+	Script…	スクリプト…
+	Set Filter…	フィルターを設定…
+	Show Output	出力を表示
+	Split Alpha	アルファを分離
+	Start Recording	録画を開始
+	Stop Recording	録画を停止
+	Swap directory	スワップディレクトリ
+	Ten scripts	10 個のスクリプト
+	Threads	スレッド数
+	Transform Mask…	変形マスク…
+	Unlocked	ロック解除
+	Update Local Selection	ローカル選択範囲を更新
+	Write as Alpha	アルファとして書き込み
+	to File Layer…	ファイルレイヤーへ…
+	to Filter Mask…	フィルターマスクへ…
+	to Paint Layer	ペイントレイヤーへ
+	to Selection Mask	選択マスクへ
+	to Transparency Mask	透明マスクへ

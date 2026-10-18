@@ -417,6 +417,8 @@ pub fn params_for(id: &str, p: &Value) -> Option<FilterParams> {
         _ => {
             return crate::filters_extra::params_for(id, p)
                 .or_else(|| crate::filters_gen::params_for(id, p))
+                .or_else(|| crate::filters_more::params_for(id, p))
+                .or_else(|| crate::filters_paint::params_for(id, p))
                 .or_else(|| crate::gallery_cmds::params_for(id, p));
         }
     })
@@ -428,6 +430,8 @@ fn uses_colours(id: &str) -> bool {
         || crate::filters_extra::uses_colours(id)
         || crate::gallery_cmds::uses_colours(id)
         || crate::filters_gen::uses_colours(id)
+        || crate::filters_more::uses_colours(id)
+        || crate::filters_paint::uses_colours(id)
 }
 
 /// Fills in session state a filter reads (the current colours) as explicit params, so the
@@ -440,11 +444,12 @@ pub(crate) fn prepare(s: &Session, id: &str, p: &Value) -> Value {
         m.entry("foreground").or_insert_with(|| json!(s.tools.foreground));
         m.entry("background").or_insert_with(|| json!(s.tools.background));
     }
+    crate::filters_paint::prepare(s, id, &mut out);
     out
 }
 
 /// A flattened document (or one of its layers) as an RGBA map image.
-fn map_from_document(doc: &Document, layer: Option<u64>) -> Option<algo::Image> {
+pub(crate) fn map_from_document(doc: &Document, layer: Option<u64>) -> Option<algo::Image> {
     let buf = match layer.and_then(|l| doc.layer(redrob_photo_doc::LayerId(l))) {
         Some(l) => redrob_photo_compose::render_layer(l, l.surface().map(|s| s.content_bounds()).filter(|r| !r.is_empty()).unwrap_or_else(|| doc.bounds())),
         None => redrob_photo_compose::flatten(doc),
@@ -494,7 +499,7 @@ fn map_path(p: &Value) -> Option<&str> {
 }
 
 /// Displace's map read from a file (flattened, or its `mapLayer`).
-fn map_from_path(path: &str, layer: Option<u64>) -> Result<Option<algo::Image>> {
+pub(crate) fn map_from_path(path: &str, layer: Option<u64>) -> Result<Option<algo::Image>> {
     let bytes = std::fs::read(path).map_err(|e| EngineError::Other(format!("cannot read displacement map `{path}`: {e}")))?;
     let imported = crate::file_cmds::import(path, &bytes).map_err(|e| EngineError::Other(format!("cannot open displacement map `{path}`: {e}")))?;
     Ok(map_from_document(&imported, layer))

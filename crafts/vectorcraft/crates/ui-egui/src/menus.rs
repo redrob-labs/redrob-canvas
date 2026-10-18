@@ -168,6 +168,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ("file.newDialog", "New…", "Cmd+N", "{} opens the New Document dialog"),
     ("app.home", "Home", "", "{} shows the Home screen (new file presets, Open) over the open documents; choosing a document tab returns to it"),
     ("edit.preferences", "Preferences…", "Cmd+K", "{category?} open Preferences (engine: prefs.get / prefs.set / prefs.list)"),
+    (
+        "edit.inputDevices",
+        "Input Devices…",
+        "",
+        "{} open Preferences › Devices: each pointer class's mode (disabled, screen, window) and the tools' pressure curves (prefs mouseMode, penMode, touchMode, pressureCurveBrush, pressureCurvePencil, pressureCurveLiquify)",
+    ),
     ("edit.keyboardShortcuts", "Keyboard Shortcuts…", "Cmd+Alt+Shift+K", "{}"),
     ("shortcuts.set", "Set Keyboard Shortcut", "", "{id: command id or tool:<id>, shortcut: \"Cmd+Shift+K\" | \"\" (none) | null (default), force?}"),
     ("shortcuts.list", "List Keyboard Shortcuts", "", "{query?} → [{id, label, group, shortcut, default, overridden}]"),
@@ -199,6 +205,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{} toggle General › Use Precise Cursors: the drawing tools' pointers become a crosshair → true when on",
     ),
     ("view.textThreads", "Hide Text Threads", "Cmd+Shift+Y", "{} toggle the thread lines between threaded text frames"),
+    (
+        "view.visibleHairlines",
+        "Visible Hairlines",
+        "",
+        "{} toggle View › Visible Hairlines: every stroke draws at least one screen pixel wide, so thin lines stay visible zoomed out",
+    ),
     ("view.gradientAnnotator", "Hide Gradient Annotator", "Cmd+Alt+G", "{} toggle the Gradient tool's annotator"),
     ("type.hiddenCharacters", "Show Hidden Characters", "Cmd+Alt+I", "{} toggle markers for spaces, paragraph ends and story ends"),
     ("type.alignLeft", "Align left", "Cmd+Shift+L", "{} align the selected type's paragraphs (or those the Type tool's selection touches) left"),
@@ -253,6 +265,26 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ("view.presentation", "Presentation Mode", "Shift+F", "{}"),
     ("view.screenMode", "Screen Mode", "F", "{mode?: 0..2} (no param cycles)"),
     ("view.rotateReset", "Reset Rotate View", "Cmd+Shift+1", "{}"),
+    (
+        "view.rotateLock",
+        "Lock Rotate View",
+        "",
+        "{} keep the view's rotation (the Rotate View tool, the status-bar angle and Cmd+Shift+scroll leave it alone); toggles",
+    ),
+    (
+        "view.setRotation",
+        "Rotate View",
+        "",
+        "{angle: deg (clockwise on screen)} set the view's rotation, as the status-bar angle field does; refused while Lock Rotate View is on",
+    ),
+    ("view.splitView", "Split View", "", "{} normal rendering on one side of a draggable divider and outline on the other; toggles"),
+    ("view.xray", "X-ray", "Alt+6", "{} a disc of outline rendering around the pointer; toggles"),
+    (
+        "view.alignHandles",
+        "Alignment Handles",
+        "",
+        "{} buttons around the selection's bounds on the canvas (the Selection tool): click aligns the selected objects to that edge or centre, Shift-click moves the key object to it instead; toggles",
+    ),
     ("view.flipHorizontal", "Flip Horizontal", "", "{} mirror the view left to right (View › Canvas Orientation); toggles"),
     ("view.flipVertical", "Flip Vertical", "", "{} mirror the view top to bottom (View › Canvas Orientation); toggles"),
     ("view.flipReset", "Reset Canvas Orientation", "", "{} undo both view flips"),
@@ -917,6 +949,42 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "",
         "{plane?: left|right|ground (default: the active plane)} open the plane's options, as double-clicking its plane widget does (dialog `perspectivePlane`: location (pt along the plane's normal), objects: none|move|copy): OK runs perspective.plane.move",
     ),
+    (
+        "ui.followLink",
+        "Follow Link",
+        "",
+        "{id?} open the link the selected object (or the anchor it is inside) points to in the browser (object.followLink)",
+    ),
+    (
+        "ui.objectAttributes",
+        "Object Attributes…",
+        "",
+        "{id?} open Object Attributes on the selected element (dialog `objectAttributes`: its raw SVG attributes as object.xmlAttributes lists them; OK sets the changed ones with object.setXmlAttribute)",
+    ),
+    (
+        "ui.checkSpelling",
+        "Check Spelling…",
+        "Cmd+I",
+        "{language?: a dictionary code (default: the first English one installed)} run text.spellCheck over the document's type and open Check Spelling (dialog `checkSpelling`: Ignore, Ignore All, Add, Change, Change All over the misspellings found)",
+    ),
+    (
+        "ui.svgFontEditor",
+        "SVG Font Editor…",
+        "",
+        "{font?: id|family} open the SVG Font Editor (dialog `svgFontEditor`: the document's SVG fonts, their glyphs with unicode, name and advance, Get Curves from Selection, Glyph to Objects, kerning pairs, a preview string, and the glyph layers round trip; svgFont.*)",
+    ),
+    (
+        "ui.customDictionary",
+        "Edit Custom Dictionary…",
+        "",
+        "{} open the custom spelling dictionary (dialog `customDictionary`: the words text.spellAdd keeps, with Add and Remove)",
+    ),
+    (
+        "ui.importWebImage",
+        "Import Web Image…",
+        "",
+        "{url: http(s) URL of an image or SVG file, at?: [x, y], rect?: [x, y, w, h] (as file.place)} download the file and place it embedded in the document (file.place {name, dataBase64}); File › Import Web Image… asks for the URL → file.place's result",
+    ),
 ];
 
 /// Canonical panel id for `window.panel`: a dock tab's or an icon panel's id or display label,
@@ -1044,6 +1112,10 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             crate::prefs_dialog::open(app, s("category").as_deref());
             Ok(Value::Null)
         }
+        "edit.inputDevices" => {
+            crate::prefs_dialog::open(app, Some("Devices"));
+            Ok(Value::Null)
+        }
         // Edit → Color Settings… / Assign Profile… (no params): show the colour-management panel.
         "edit.colorSettings" | "edit.assignProfile" if p.as_object().is_none_or(|o| o.is_empty()) => {
             app.ui.open_panel = Some("separations".into());
@@ -1091,6 +1163,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             })
         }
         "view.textThreads" => flag(&mut app.ui.view.text_threads),
+        "view.visibleHairlines" => flag(&mut app.ui.view.visible_hairlines),
         "type.hiddenCharacters" => flag(&mut app.ui.view.hidden_chars),
         "type.bold" => crate::panels::character::toggle_face(app, Face::Bold),
         "type.italic" => crate::panels::character::toggle_face(app, Face::Italic),
@@ -1192,6 +1265,21 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             }
             Ok(Value::Null)
         }
+        "view.rotateLock" => flag(&mut app.ui.view.rotation_lock),
+        "view.splitView" => flag(&mut app.ui.view.split_view),
+        "view.xray" => flag(&mut app.ui.view.xray),
+        "view.alignHandles" => flag(&mut app.ui.view.align_handles),
+        "view.setRotation" => match p.get("angle").and_then(Value::as_f64) {
+            _ if app.ui.view.rotation_lock => Err("the view's rotation is locked (View › Lock Rotate View)".into()),
+            None => Err("view.setRotation: missing `angle`".into()),
+            Some(angle) => {
+                let rot = app.view_mut().map(|v| {
+                    v.rotation = redrob_vector_geom::normalize_deg(angle);
+                    v.rotation
+                });
+                Ok(rot.map_or(Value::Null, |r| json!(r)))
+            }
+        },
         "view.flipHorizontal" | "view.flipVertical" | "view.flipReset" => {
             let flipped = app.view_mut().map(|v| {
                 match id {
@@ -1312,6 +1400,55 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             app.select_tool(redrob_vector_tools::cropimage::ID);
             Ok(json!({"tool": app.session.tool_id()}))
         }
+        "ui.objectAttributes" => crate::dialogs::object_attributes::open(app, p),
+        "ui.checkSpelling" => crate::dialogs::spelling::open(app, p),
+        "ui.customDictionary" => crate::dialogs::spelling::open_dictionary(app, p),
+        "ui.svgFontEditor" => crate::dialogs::svg_font::open(app, p),
+        "ui.importWebImage" => {
+            let url = s("url").unwrap_or_default().trim().to_string();
+            if !(url.starts_with("http://") || url.starts_with("https://")) {
+                Err("give `url`: an http:// or https:// address of an image".into())
+            } else {
+                match app.services.fetch_url.as_mut() {
+                    None => Err("downloading needs the desktop app".into()),
+                    Some(fetch) => match fetch(&url) {
+                        Err(e) => Err(format!("{url}: {e}")),
+                        Ok(bytes) => {
+                            let name = url
+                                .rsplit('/')
+                                .next()
+                                .filter(|n| !n.is_empty() && n.contains('.'))
+                                .unwrap_or("web-image.png")
+                                .split(['?', '#'])
+                                .next()
+                                .unwrap_or("web-image.png")
+                                .to_string();
+                            let mut q = json!({ "name": name, "dataBase64": redrob_vector_format::base64_encode(&bytes) });
+                            if let Some(o) = q.as_object_mut() {
+                                for k in ["at", "rect", "replace", "template"] {
+                                    if let Some(v) = p.get(k) {
+                                        o.insert(k.into(), v.clone());
+                                    }
+                                }
+                            }
+                            app.run("file.place", q)
+                        }
+                    },
+                }
+            }
+        }
+        "ui.followLink" => match app.run("object.followLink", p.clone()) {
+            Ok(r) => {
+                let url = r.get("url").and_then(Value::as_str).unwrap_or("").to_string();
+                if url.is_empty() {
+                    Err("the selected object has no link".into())
+                } else {
+                    app.open_url(&url);
+                    Ok(r)
+                }
+            }
+            Err(e) => Err(e),
+        },
         "ui.paramDialog" => {
             let cmd = s("command").unwrap_or_default();
             let mut fields = p.get("params").and_then(Value::as_object).cloned().unwrap_or_default();
@@ -1565,11 +1702,16 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
         "view.pixelPreview" => v.pixel_preview,
         "view.trimView" => v.trim_view,
         "view.snapToPixel" => v.snap_to_pixel,
+        "view.visibleHairlines" => v.visible_hairlines,
         // Type on a Path effect of the selected path type.
         "type.pathOptions" if p.get("effect").is_some() => {
             selected_text(true).is_some_and(|t| p.get("effect").and_then(Value::as_str) == Some(t.path_effect.id()))
         }
         "view.smartGuides" => v.smart_guides,
+        "view.rotateLock" => v.rotation_lock,
+        "view.splitView" => v.split_view,
+        "view.xray" => v.xray,
+        "view.alignHandles" => v.align_handles,
         "view.grid" => v.grid,
         "view.snapToGrid" => v.snap_to_grid,
         "view.snapToPoint" => v.snap_to_point,
@@ -2053,6 +2195,23 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
         "ui.expandDialog" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.spotColors" => app.session.active().is_some(),
         "ui.menuDialog" | "ui.objectProperties" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
+        "ui.importWebImage" => app.session.active().is_some() && app.services.fetch_url.is_some(),
+        "ui.checkSpelling" => app.session.active().is_some(),
+        "ui.objectAttributes" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
+        "ui.customDictionary" => true,
+        "ui.svgFontEditor" => app.session.active().is_some(),
+        "ui.followLink" => app.session.active().is_some_and(|st| {
+            st.selection.objects.iter().any(|id| {
+                let mut cur = Some(*id);
+                while let Some(n) = cur {
+                    if st.doc.node(n).is_some_and(|n| n.url().is_some()) {
+                        return true;
+                    }
+                    cur = st.doc.parent_of(n);
+                }
+                false
+            })
+        }),
         "ui.dxfOptionsDialog" => app.session.active().is_some(),
         "links.editOriginal" | "links.reveal" => selected_image(app, |im| im.link.is_some()) || selected_placed(app),
         "ui.placementOptionsDialog" => selected_image(app, |_| true) || selected_placed(app),
@@ -2132,6 +2291,11 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Revert", "file.revert"),
                 Sep,
                 c("Place…", "file.place"),
+                cp(
+                    "Import Web Image…",
+                    "ui.paramDialog",
+                    json!({"command": "ui.importWebImage", "label": "Import Web Image", "params": {"url": "https://"}}),
+                ),
                 Sep,
                 sub(
                     "Export",
@@ -2185,7 +2349,8 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     json!({"find": "", "replace": "", "in": "text", "scope": "all", "matchCase": false, "wholeWord": false, "exact": false, "includeHidden": false, "includeLocked": false}),
                 ),
                 cp("Find Next", "edit.findNext", json!({"find": ""})),
-                sub("Spelling", vec![todo("Auto Spell Check"), todos("Check Spelling…", "Cmd+I"), todo("Edit Custom Dictionary…")]),
+                sub("Spelling", vec![c("Check Spelling…", "ui.checkSpelling"), c("Edit Custom Dictionary…", "ui.customDictionary")]),
+                c("SVG Font Editor…", "ui.svgFontEditor"),
                 Sep,
                 sub(
                     "Edit Colors",
@@ -2227,6 +2392,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Assign Profile…", "edit.assignProfile"),
                 Sep,
                 c("Keyboard Shortcuts…", "edit.keyboardShortcuts"),
+                c("Input Devices…", "edit.inputDevices"),
                 c("Preferences…", "edit.preferences"),
             ],
         ),
@@ -2267,12 +2433,21 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     "Clone",
                     vec![
                         c("Create Clone", "object.clone"),
+                        cp(
+                            "Create Tiled Clones…",
+                            "ui.paramDialog",
+                            json!({"command": "object.tileClones", "label": "Create Tiled Clones", "params": {"rows": 3, "cols": 3, "symmetry": "P1", "shiftRowX": 0, "shiftRowY": 0, "shiftColX": 0, "shiftColY": 0, "shiftRandom": 0, "scaleRow": 0, "scaleCol": 0, "scaleRandom": 0, "rotateRow": 0, "rotateCol": 0, "rotateRandom": 0, "opacityRow": 0, "opacityCol": 0, "opacityRandom": 0, "hueRow": 0, "hueCol": 0, "saturationRow": 0, "saturationCol": 0, "lightnessRow": 0, "lightnessCol": 0, "colorRandom": 0, "trace": "none", "clones": true}}),
+                        ),
                         c("Unlink Clone", "object.unlinkClone"),
                         c("Relink to Copied", "object.relinkClone"),
                         c("Select Original", "object.selectOriginal"),
                     ],
                 ),
                 c("Object Properties…", "ui.objectProperties"),
+                c("Object Attributes…", "ui.objectAttributes"),
+                c("Objects to Marker", "object.objectsToMarker"),
+                c("Create Anchor", "object.createAnchor"),
+                c("Follow Link", "ui.followLink"),
                 Sep,
                 c("Expand…", "ui.expandDialog"),
                 c("Expand Appearance", "effect.expandAppearance"),
@@ -2283,6 +2458,11 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     "Create Object Mosaic…",
                     "object.createObjectMosaic",
                     json!({"columns": 10, "rows": 10, "spacingX": 0, "spacingY": 0, "gray": false, "deleteRaster": false}),
+                ),
+                cp(
+                    "Trace Pixel Art…",
+                    "object.tracePixelArt",
+                    json!({"output": "bspline", "curves": 1, "islands": 1, "sparse": 1, "similarity": 48, "deleteRaster": false}),
                 ),
                 c("Vector Halftone…", "object.vectorHalftone"),
                 c("Create Trim Marks", "object.createTrimMarks"),
@@ -2332,6 +2512,16 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                         c("Remove Anchor Points", "path.removeAnchors"),
                         c("Divide Objects Below", "object.path.divideObjectsBelow"),
                         c("Split Into Grid…", "object.path.splitIntoGrid"),
+                        c("Cut Path", "path.cutPath"),
+                        c("Split Path", "path.splitNonOverlapping"),
+                        Sep,
+                        c("Dynamic Offset", "path.dynamicOffset"),
+                        c("Linked Offset", "path.linkedOffset"),
+                        c("Fill Between Paths", "path.fillBetween"),
+                        c("Unlink Live Object", "path.unlinkLive"),
+                        Sep,
+                        c("Live Slice", "object.liveSlice"),
+                        c("Fuse Slice", "object.fuseSlice"),
                         Sep,
                         cp("Clean Up…", "object.path.cleanUp", json!({"strayPoints": true, "unpaintedObjects": true, "emptyTextPaths": true})),
                     ],
@@ -2433,6 +2623,10 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                         c("Release", "object.clippingMask.release"),
                         c("Edit Contents", "object.clippingMask.editContents"),
                         c("Edit Clipping Path", "object.clippingMask.editMask"),
+                        Sep,
+                        c("Power Clip", "object.powerClip"),
+                        cp("Power Clip (Inverse)", "object.powerClip", json!({"inverse": true})),
+                        cp("Release Power Clip", "object.powerClip", json!({"remove": true})),
                     ],
                 ),
                 sub("Compound Path", vec![c("Make", "object.compoundPath.make"), c("Release", "object.compoundPath.release")]),
@@ -2625,6 +2819,10 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Actual Size", "view.actualSize"),
                 Sep,
                 c("Reset Rotate View", "view.rotateReset"),
+                c("Lock Rotate View", "view.rotateLock"),
+                c("Split View", "view.splitView"),
+                c("X-ray", "view.xray"),
+                c("Alignment Handles", "view.alignHandles"),
                 sub(
                     "Canvas Orientation",
                     vec![
@@ -2644,6 +2842,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Hide Bounding Box", "view.boundingBox"),
                 c("Show Transparency Grid", "view.transparencyGrid"),
                 c("Hide Text Threads", "view.textThreads"),
+                c("Visible Hairlines", "view.visibleHairlines"),
                 c("Hide Gradient Annotator", "view.gradientAnnotator"),
                 c("Hide Corner Widget", "view.cornerWidget"),
                 Sep,
@@ -2722,6 +2921,9 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 panel("CSS Properties", crate::panels::css_properties::ID),
                 panel("Document Info", "docInfo"),
                 panel("Filter Editor", crate::panels::filter_editor::ID),
+                panel("Filter Gallery", crate::panels::filter_gallery::ID),
+                panel("Grids", crate::panels::grids::ID),
+                panel("Scripts", crate::panels::scripts::ID),
                 panel("Flattener Preview", crate::panels::flattener_preview::ID),
                 panel("Gradient", "gradient"),
                 panel("Graphic Styles", "graphicStyles"),
@@ -2807,6 +3009,10 @@ fn arrange_items() -> Vec<Item> {
         c("Send to Back", "object.arrange.sendToBack"),
         Sep,
         c("Send to Current Layer", "object.arrange.sendToCurrentLayer"),
+        Sep,
+        c("Arrange in Grid", "object.arrange.grid"),
+        c("Arrange in Circle", "object.arrange.polar"),
+        c("Remove Overlaps", "object.arrange.removeOverlaps"),
     ]
 }
 
@@ -3566,6 +3772,7 @@ fn effect_menu() -> Vec<Item> {
         "Crop Marks",
         "Distort & Transform",
         "Path",
+        "Path Effects",
         "Pathfinder",
         "Stylize",
         "SVG Filters",
@@ -3616,6 +3823,16 @@ fn effect_menu() -> Vec<Item> {
     }
     // Live-effect plug-ins close the vector effects.
     out.extend(crate::dialogs::plugin::effect_menu());
+    // Effect › Filters: the stock filter presets by category, and the gallery that browses them.
+    let mut filters: Vec<Item> = vec![cp("Filter Gallery", "window.panel", json!({ "panel": crate::panels::filter_gallery::ID })), Sep];
+    for category in redrob_vector_effects::filter_presets::CATEGORIES {
+        let items: Vec<Item> = redrob_vector_effects::filter_presets::presets_in(category)
+            .map(|p| Item::Cmd(p.label, "filter.applyPreset", json!({ "id": p.id })))
+            .collect();
+        filters.push(sub(category, items));
+    }
+    out.push(Sep);
+    out.push(sub("Filters", filters));
     let raster: Vec<Item> = RASTER_MENUS
         .iter()
         .filter_map(|(name, path)| {

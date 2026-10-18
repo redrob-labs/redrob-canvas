@@ -249,7 +249,13 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
             if web {
                 ui.set_max_width(available.x);
                 ui.set_min_size(available);
-            } else if let Some(w) = crate::file_ui::dialog_width(&d.fields) {
+            } else if let Some(w) = crate::file_ui::dialog_width(&d.fields)
+                .or_else(|| crate::modules_ui::dialog_width(&d.fields))
+                .or_else(|| crate::colormap_ui::dialog_width(&d.fields))
+                .or_else(|| crate::input_ui::dialog_width(&d.fields))
+                .or_else(|| crate::operation_ui::dialog_width(&d.fields))
+                .or_else(|| crate::scripts_ui::dialog_width(&d.fields))
+            {
                 ui.set_min_width(w);
                 ui.set_max_width(w);
             }
@@ -374,6 +380,11 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
                     }
                 }
                 DialogKind::Command if crate::new_guide_ui::owns(&fields) => crate::new_guide_ui::body(ui, &mut fields),
+                DialogKind::Command if crate::modules_ui::owns(&fields) => crate::modules_ui::body(ui, &mut fields),
+                DialogKind::Command if crate::colormap_ui::owns(&fields) => crate::colormap_ui::body(ui, &mut fields),
+                DialogKind::Command if crate::input_ui::owns(&fields) => crate::input_ui::body(ui, &mut fields),
+                DialogKind::Command if crate::operation_ui::owns(&fields) => crate::operation_ui::body(ui, &mut fields),
+                DialogKind::Command if crate::scripts_ui::owns(&fields) => crate::scripts_ui::body(ui, &mut fields),
                 DialogKind::Command if fields.contains_key("__form") => crate::view_cmds::form_body(ui, &mut fields),
                 DialogKind::Command => {}
                 DialogKind::LayerStyle => crate::layer_style::body(app, ui, &mut fields),
@@ -639,6 +650,11 @@ pub fn confirm(app: &mut PhotocraftApp, id: u64) -> Result<Value, String> {
         DialogKind::Command if crate::variables_ui::owns(&d.fields) => crate::variables_ui::confirm(app, &d.fields),
         DialogKind::Command if crate::file_ui::owns(&d.fields) => crate::file_ui::confirm(app, &d.fields),
         DialogKind::Command if crate::new_guide_ui::owns(&d.fields) => crate::new_guide_ui::confirm(app, &d.fields),
+        DialogKind::Command if crate::modules_ui::owns(&d.fields) => crate::modules_ui::confirm(app, &d.fields),
+        DialogKind::Command if crate::colormap_ui::owns(&d.fields) => crate::colormap_ui::confirm(app, &d.fields),
+        DialogKind::Command if crate::input_ui::owns(&d.fields) => crate::input_ui::confirm(app, &d.fields),
+        DialogKind::Command if crate::operation_ui::owns(&d.fields) => crate::operation_ui::confirm(app, &d.fields),
+        DialogKind::Command if crate::scripts_ui::owns(&d.fields) => crate::scripts_ui::confirm(app, &d.fields),
         DialogKind::Command if crate::color_picker_ui::owns(&d.fields) => crate::color_picker_ui::confirm(app, &d.fields),
         DialogKind::Command if crate::color_range_ui::owns(&d.fields) => crate::color_range_ui::confirm(app, &d.fields),
         DialogKind::Command if crate::prefs_ui::owns(&d.fields) => crate::prefs_ui::confirm(app, &d.fields),
@@ -1051,8 +1067,9 @@ mod tests {
         let size = egui::vec2(1280.0, 800.0);
         let mut h = dialog_harness(size, "filter.blur.gaussianBlur");
         let centred = h.get_by_label("Gaussian Blur").rect();
-        // Drag the title bar up and to the left.
-        let (from, by) = (centred.center(), egui::vec2(-240.0, -150.0));
+        // Drag the title bar up and to the left (not past the top of the window: the dialog is
+        // tall enough to be centred near it, and the window clamps a title bar to stay in reach).
+        let (from, by) = (centred.center(), egui::vec2(-240.0, -(centred.top() - 40.0).min(150.0)));
         h.event(egui::Event::PointerMoved(from));
         h.event(egui::Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
         for k in 1..=6 {

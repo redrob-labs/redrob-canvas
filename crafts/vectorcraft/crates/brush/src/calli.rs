@@ -85,19 +85,20 @@ fn samples(t: &Track, step: Option<f64>) -> Vec<(Point, Vec2, f64)> {
     out
 }
 
-/// The swept outline along `t` of the nib `nib(f)` (`f`: the fraction of the track's length) as
-/// closed subpaths. `step`: how often a varying nib is sampled (None: a constant nib).
-pub(crate) fn sweep(t: &Track, nib: &dyn Fn(f64) -> Nib, step: Option<f64>) -> Vec<SubPath> {
+/// The swept outline along `t` of the nib `nib(f, tangent)` (`f`: the fraction of the track's
+/// length, `tangent`: the track's direction there, for a nib that follows the stroke) as closed
+/// subpaths. `step`: how often a varying nib is sampled (None: a constant nib).
+pub(crate) fn sweep(t: &Track, nib: &dyn Fn(f64, Vec2) -> Nib, step: Option<f64>) -> Vec<SubPath> {
     let s = samples(t, step);
-    let left: Vec<Point> = s.iter().map(|(p, tg, f)| *p + nib(*f).support(normal(*tg))).collect();
-    let right: Vec<Point> = s.iter().map(|(p, tg, f)| *p + nib(*f).support(-normal(*tg))).collect();
+    let left: Vec<Point> = s.iter().map(|(p, tg, f)| *p + nib(*f, *tg).support(normal(*tg))).collect();
+    let right: Vec<Point> = s.iter().map(|(p, tg, f)| *p + nib(*f, *tg).support(-normal(*tg))).collect();
     if t.closed {
         let mut r = right;
         r.reverse();
         return vec![SubPath::polyline(&left, true), SubPath::polyline(&r, true)];
     }
     let cap = |(p, tg, f): (Point, Vec2, f64), from: f64, to: f64, out: &mut Vec<Point>| {
-        let (steps, nib) = (16, nib(f));
+        let (steps, nib) = (16, nib(f, tg));
         for k in 1..steps {
             let ang = from + (to - from) * k as f64 / steps as f64;
             out.push(p + nib.support(rot(tg, ang)));
@@ -215,9 +216,30 @@ fn wiggle_track(t: &mut Track, seed: u64, amp: f64) {
     }
 }
 
+/// The nib angle (degrees, counter-clockwise on the page) at a point of the stroke whose tangent
+/// is `tg`: the brush's `angle` for a fully fixed nib, the angle perpendicular to the stroke for
+/// `fixation` 0, and between them the blend (the difference taken the short way round, since a
+/// nib has no front).
+fn fixed_angle(angle: f64, fixation: f64, tg: Vec2) -> f64 {
+    let fix = (fixation / 100.0).clamp(0.0, 1.0);
+    if fix >= 1.0 || tg.hypot() < 1e-12 {
+        return angle;
+    }
+    // The nib across the stroke: its major axis along the stroke's left normal. In the nib's
+    // convention (y down on the page) the angle of a vector (x, y) is atan2(-y, x).
+    let n = normal(tg);
+    let across = (-n.y).atan2(n.x).to_degrees();
+    let mut d = (angle - across).rem_euclid(180.0);
+    if d > 90.0 {
+        d -= 180.0;
+    }
+    across + fix * d
+}
+
 pub(crate) fn calligraphic(c: &Calligraphic, bp: &BezPath, weight: f64, stroke: &StrokeLayer, name: &str) -> Vec<Node> {
     let mut rng = Rng::new(seed_of(bp, name));
     let base = randomized(c, &mut rng);
+    let follows = c.fixation < 100.0;
     let seed = seed_of(bp, name);
     let speed = if c.thinning != 0.0 { speed_profile(bp) } else { None };
     let thinning = (c.thinning / 100.0).clamp(-1.0, 1.0);
@@ -231,10 +253,11 @@ pub(crate) fn calligraphic(c: &Calligraphic, bp: &BezPath, weight: f64, stroke: 
         }
         ts
     };
-    let mut subs: Vec<SubPath> = if c.varies_along() {
+    let mut subs: Vec<SubPath> = if c.varies_along() || follows {
         let pressure = stroke.pressure.as_ref();
-        let nib = |f: f64| {
+        let nib = |f: f64, tg: Vec2| {
             let [angle, round, mut size] = pressured(c, base, pressure.map_or(PressureProfile::MID, |p| p.at(f)));
+            let angle = fixed_angle(angle, c.fixation, tg);
             if let Some(speed) = &speed {
                 // Faster thins (positive thinning): twice the mean speed halves the width at 100 %.
                 let k = 1.0 - thinning * (speed(f) - 1.0).clamp(-1.0, 1.0) * 0.5;
@@ -251,7 +274,7 @@ pub(crate) fn calligraphic(c: &Calligraphic, bp: &BezPath, weight: f64, stroke: 
     } else {
         let [angle, round, size] = base;
         let nib = Nib::new(angle, round / 100.0, size * weight);
-        wiggled(tracks(bp, tolerance(size * weight))).iter().flat_map(|t| sweep(t, &|_| nib, None)).collect()
+        wiggled(tracks(bp, tolerance(size * weight))).iter().flat_map(|t| sweep(t, &|_, _| nib, None)).collect()
     };
     if subs.is_empty() {
         return vec![];
@@ -326,7 +349,7 @@ pub(crate) fn bristle(b: &Bristle, bp: &BezPath, weight: f64, paint: &Paint, nam
             let Some(sp) = offset_track(&t, off, t0.min(l * 0.3), t1.min(l * 0.3)) else { continue };
             let w = thick * (0.6 + 0.4 * edge) * rng.range(0.8, 1.2);
             let nib = Nib::new(0.0, 1.0, w);
-            let subs: Vec<SubPath> = tracks(&sp, tolerance(w)).iter().flat_map(|tt| sweep(tt, &|_| nib, None)).collect();
+            let subs: Vec<SubPath> = tracks(&sp, tolerance(w)).iter().flat_map(|tt| sweep(tt, &|_, _| nib, None)).collect();
             if subs.is_empty() {
                 continue;
             }

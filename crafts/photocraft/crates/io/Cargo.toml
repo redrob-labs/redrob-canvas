@@ -43,6 +43,11 @@ roxmltree = "0.20"
 # already in the tree through the UI's icon loader; text shaping needs the fonts feature set.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 resvg = { version = "0.45", default-features = false, features = ["text", "system-fonts", "raster-images"] }
+# JPEG XL decode (modern.rs): pure Rust, MIT OR Apache-2.0; the same pin as redrob-photo-raw.
+jxl-oxide = { version = "=0.12.6", default-features = false, features = ["rayon"] }
+# Lossless JPEG XL encode (modern.rs): pure Rust, MIT OR Apache-2.0 OR Zlib.
+zune-jpegxl = { version = "=0.5.2", default-features = false, features = ["std"] }
+zune-core = "0.5"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 resvg = { version = "0.45", default-features = false, features = ["text", "raster-images"] }

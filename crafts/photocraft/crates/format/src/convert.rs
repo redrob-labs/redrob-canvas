@@ -209,6 +209,8 @@ fn layer_m(l: &Layer, sink: &mut dyn Sink) -> LayerM {
         blend_if: l.blend_if.clone(),
         advanced: l.advanced,
         video: l.video.as_ref().map(|v| video_m(v, sink)),
+        composite: l.composite,
+        boundary: l.boundary,
     }
 }
 
@@ -545,6 +547,8 @@ impl Loader<'_> {
             blend_if: m.blend_if.clone(),
             advanced: m.advanced,
             video: m.video.as_ref().map(|v| self.video(v)).transpose()?,
+            composite: m.composite,
+            boundary: m.boundary,
         })
     }
 

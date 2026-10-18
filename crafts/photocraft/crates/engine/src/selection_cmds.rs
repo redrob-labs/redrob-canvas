@@ -131,10 +131,13 @@ pub(crate) fn wand_options(p: &Value, cmd: &str) -> Result<sel::WandOptions> {
         "saturation" => sel::WandCriterion::Saturation,
         "value" => sel::WandCriterion::Value,
         "alpha" => sel::WandCriterion::Alpha,
+        "lchLightness" | "lightness" => sel::WandCriterion::LchLightness,
+        "lchChroma" | "chroma" => sel::WandCriterion::LchChroma,
+        "lchHue" => sel::WandCriterion::LchHue,
         other => {
             return Err(EngineError::BadParams {
                 cmd: cmd.into(),
-                msg: format!("unknown criterion `{other}` (want composite|red|green|blue|hue|saturation|value|alpha)"),
+                msg: format!("unknown criterion `{other}` (want composite|red|green|blue|hue|saturation|value|alpha|lchLightness|lchChroma|lchHue)"),
             });
         }
     };
@@ -682,7 +685,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "select.magicWand",
             "Magic Wand",
             [],
-            r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha"="composite","mode":"replace|add|subtract|intersect"="replace"} (samples the visible alpha, Quick Mask, or layer mask when that is the picture)"##,
+            r##"{"x":px,"y":px,"tolerance":0..255=32,"contiguous":bool=true,"antiAlias":bool=true,"sampleAllLayers":bool=false,"diagonal":bool=false,"criterion":"composite|red|green|blue|hue|saturation|value|alpha|lchLightness|lchChroma|lchHue"="composite","mode":"replace|add|subtract|intersect"="replace"} (samples the visible alpha, Quick Mask, or layer mask when that is the picture)"##,
             has_doc,
             magic_wand
         ),

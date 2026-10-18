@@ -344,8 +344,11 @@ fn submenus_are_as_tall_as_their_rows_on_a_tall_window() {
             if !open_submenu(&mut h, n) {
                 continue;
             }
-            checked += 1;
             let (view, content) = fits(&h, 1);
+            if content > h.ctx.content_rect().height() - 60.0 {
+                continue; // Taller than the window itself (Image › Adjustments): scrolling is right.
+            }
+            checked += 1;
             assert!(content > 0.0 && (view - content).abs() < 1.0, "{top} submenu {n}: {view} pt view for {content} pt of rows");
             if let Err(e) = hugs_rows(&h, 1) {
                 panic!("{top} submenu {n}: {e}");

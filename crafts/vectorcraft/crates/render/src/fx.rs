@@ -1199,7 +1199,30 @@ impl Renderer {
                     }
                 }
                 RasterFx::Pixel(p) => p.apply(pm.data_as_u8_slice_mut(), wz, hz, &space),
-                RasterFx::Graph(g) => g.apply(pm.data_as_u8_slice_mut(), wz, hz, &space, content.reach),
+                RasterFx::Graph(g) => {
+                    // The standard inputs the object supplies: its flat fill and stroke colours
+                    // and the document's images for feImage (the backdrop reads as transparent).
+                    let flat = |p: &redrob_vector_color::Paint| p.color().map(|c| c.to_rgb());
+                    let images = &f.doc.images;
+                    let image = |href: &str| -> Option<effects::svgfilter::ImagePixels> {
+                        let bytes: std::borrow::Cow<[u8]> = if let Some(rest) = href.strip_prefix("data:") {
+                            let (_, data) = rest.split_once(";base64,")?;
+                            std::borrow::Cow::Owned(base64_decode(data)?)
+                        } else {
+                            std::borrow::Cow::Borrowed(images.get(href.trim_start_matches('#'))?.bytes.as_slice())
+                        };
+                        let img = image::load_from_memory(&bytes).ok()?.to_rgba8();
+                        let (iw, ih) = (img.width() as usize, img.height() as usize);
+                        Some(effects::svgfilter::ImagePixels { width: iw, height: ih, rgba: img.into_raw() })
+                    };
+                    let inputs = effects::svgfilter::Inputs {
+                        background: None,
+                        fill: flat(&content.node.appearance.fill_paint()),
+                        stroke: flat(&content.node.appearance.stroke_paint()),
+                        image: Some(&image),
+                    };
+                    g.apply_with(pm.data_as_u8_slice_mut(), wz, hz, &space, content.reach, &inputs)
+                }
                 _ => {}
             }
         }
@@ -1506,6 +1529,31 @@ impl Renderer {
             }
         }
     }
+}
+/// The bytes of a standard base64 string (whitespace skipped, padding optional); `None` on a
+/// character outside the alphabet. For the `data:` URLs of `feImage`.
+pub(crate) fn base64_decode(s: &str) -> Option<Vec<u8>> {
+    let mut out = Vec::with_capacity(s.len() * 3 / 4);
+    let (mut acc, mut bits) = (0u32, 0u32);
+    for c in s.bytes() {
+        let v = match c {
+            b'A'..=b'Z' => c - b'A',
+            b'a'..=b'z' => c - b'a' + 26,
+            b'0'..=b'9' => c - b'0' + 52,
+            b'+' | b'-' => 62,
+            b'/' | b'_' => 63,
+            b'=' | b' ' | b'\n' | b'\r' | b'\t' => continue,
+            _ => return None,
+        };
+        acc = (acc << 6) | u32::from(v);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((acc >> bits) as u8);
+            acc &= (1 << bits) - 1;
+        }
+    }
+    Some(out)
 }
 
 #[cfg(test)]

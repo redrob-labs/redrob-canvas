@@ -24,6 +24,7 @@ pub mod brush;
 pub mod curve;
 pub mod dynamics;
 pub mod dynamics_preset;
+pub mod engines;
 pub mod mixer;
 pub mod outline;
 pub mod presets;
@@ -36,15 +37,17 @@ pub mod symmetry;
 pub mod tile;
 
 pub use brush::{
-    BrushPreset, BrushSettings, ColorDynamics, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, HoseDimension, HoseSelection, ImageHose,
-    MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering, SectionLocks, Sensor,
-    SensorCombine, ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
+    BrushPreset, BrushSettings, ColorDynamics, ColorSource, Control, DrawingAngle, DualBrush, Dynamic, GeneratedTip, GradientStop, HoseDimension,
+    HoseSelection, ImageHose, MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering,
+    SectionLocks, Sensor, SensorCombine, ShapeDynamics, Smoothing, Texture, TipAdjust, TipGeometry, TipMode, TipShape, Transfer,
 };
+pub use brush::{EraserSwitch, InstantPreview, Sharpness, TextureApply};
 pub use curve::ResponseCurve;
 pub use dynamics_preset::{DynInput, DynOutput, DynamicsPreset, DynamicsRow};
+pub use engines::EngineSettings;
 pub use mixer::MixerSettings;
 pub use render::{BrushContext, StrokeRenderer, UnionLive, grid_center, grid_square, render_stroke};
-pub use tile::{GrayTile, StoredTile};
+pub use tile::{ColorTile, GrayTile, StoredTile};
 
 /// One input sample. Missing stylus data defaults to "mouse": full pressure, no tilt/rotation.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -63,11 +66,14 @@ pub struct StrokePoint {
     pub wheel: f32,
     /// Timestamp in milliseconds (airbrush build-up and smoothing catch-up).
     pub time: f64,
+    /// The perspective sensor's reading at this point, 0..1: how large things are here relative
+    /// to the near edge of a perspective grid assistant (1 without one).
+    pub perspective: f32,
 }
 
 impl Default for StrokePoint {
     fn default() -> Self {
-        Self { x: 0.0, y: 0.0, pressure: 1.0, tilt_x: 0.0, tilt_y: 0.0, rotation: 0.0, wheel: 1.0, time: 0.0 }
+        Self { x: 0.0, y: 0.0, pressure: 1.0, tilt_x: 0.0, tilt_y: 0.0, rotation: 0.0, wheel: 1.0, time: 0.0, perspective: 1.0 }
     }
 }
 
@@ -112,6 +118,15 @@ pub struct Dab {
     pub mix: f32,
     /// Image hose cell this dab paints with ([`BrushSettings::hose`]); 0 for a plain tip.
     pub cell: u32,
+    /// Hardness multiplier from a dynamics preset's Hardness output (1 = the brush's own
+    /// hardness); a computed tip gets softer as it falls.
+    pub hardness: f32,
+    /// Softness: multiplier of the computed tip's hardness for this dab (1 = as set).
+    pub hardness_scale: f32,
+    /// Sharpness: 0..1 strength of the mask threshold for this dab (0 = off).
+    pub sharpness: f32,
+    /// Lightness Strength: 0..1 contrast of a lightness map painted into the colour.
+    pub lightness: f32,
 }
 
 impl Dab {
@@ -134,6 +149,10 @@ impl Dab {
             wet: 1.0,
             mix: 1.0,
             cell: 0,
+            hardness: 1.0,
+            hardness_scale: 1.0,
+            sharpness: 0.0,
+            lightness: 1.0,
         }
     }
 }

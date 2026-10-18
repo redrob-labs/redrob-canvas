@@ -86,6 +86,14 @@ pub fn detect(name: &str, bytes: &[u8]) -> Option<&'static Format> {
     if redrob_vector_cad::is_dxf(bytes) {
         return format("dxf");
     }
+    if let Some(id) = redrob_vector_cad::legacy::sniff(bytes) {
+        return format(id);
+    }
+    if redrob_vector_svg::interchange::visio::is_vsd(bytes)
+        || (redrob_vector_svg::interchange::visio::is_zip(bytes) && bytes.windows(12).any(|w| w == b"visio/pages/"))
+    {
+        return format("visio");
+    }
     if let Some(kind) = redrob_vector_metafile::sniff(bytes) {
         return format(kind.id());
     }
@@ -95,8 +103,15 @@ pub fn detect(name: &str, bytes: &[u8]) -> Option<&'static Format> {
     if let Some(f) = image::guess_format(bytes).ok().and_then(image_format) {
         return Some(f);
     }
-    if clipboard::looks_like_svg(&String::from_utf8_lossy(&bytes[..bytes.len().min(4096)])) {
+    let head = String::from_utf8_lossy(&bytes[..bytes.len().min(4096)]);
+    if clipboard::looks_like_svg(&head) {
         return format("svg");
+    }
+    if redrob_vector_svg::interchange::xaml::is_xaml(&head) {
+        return format("xaml");
+    }
+    if redrob_vector_svg::interchange::visio::is_vdx(&head) {
+        return format("visio");
     }
     by_name
 }
@@ -214,7 +229,7 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
             let editing = redrob_vector_svg::editing(&text).map(|e| (e.intact, move || redrob_vector_format::base64_decode(&e.data)));
             // Relative links are found in the SVG's folder (when `name` is a path).
             let folder = std::path::Path::new(name).parent().map(|f| f.to_string_lossy()).filter(|f| !f.is_empty()).map(|f| absolute_path(&f));
-            restore_or_import(editing, || import_svg(&text, folder.as_deref()))?
+            restore_or_import(editing, || import_svg_with(&text, folder.as_deref(), opts.legacy_dpi))?
         }
         "pdf" | "ai" | "ait" => {
             // Saved with Preserve Editing: the document it carries, unless some pages are picked.
@@ -246,6 +261,24 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
             let (doc, warnings) = super::metafile::import(bytes)?;
             (doc, warnings, false)
         }
+        "xaml" => {
+            let text = String::from_utf8_lossy(bytes);
+            let (doc, warnings) = redrob_vector_svg::interchange::xaml::import(&text).map_err(err)?;
+            (doc, warnings, false)
+        }
+        "visio" => {
+            use redrob_vector_svg::interchange::visio;
+            if visio::is_vsd(bytes) {
+                return Err(err("binary .vsd drawings aren't read: save the drawing as .vsdx or .vdx from Visio to open it"));
+            }
+            let r = if visio::is_zip(bytes) { visio::import_vsdx(bytes, &title) } else { visio::import_vdx(&String::from_utf8_lossy(bytes), &title) };
+            let (doc, warnings) = r.map_err(err)?;
+            (doc, warnings, false)
+        }
+        "hpgl" | "cgm" | "cdr" | "wpg" | "fig" => {
+            let i = redrob_vector_cad::legacy::import(format.id, bytes, &title).map_err(err)?;
+            (i.document, i.warnings, false)
+        }
         "affinity" => {
             let i = super::affinity::import(&title, bytes)?;
             preview_only = i.preview_only;
@@ -274,6 +307,11 @@ pub fn load_with(name: &str, bytes: &[u8], opts: &LoadOptions) -> Result<Loaded>
 /// own): rasters stay linked, SVG files become art, missing ones placeholders (see
 /// [`redrob_vector_svg::ImportOptions`]).
 pub(crate) fn import_svg(text: &str, folder: Option<&str>) -> Result<(Document, Vec<String>)> {
+    import_svg_with(text, folder, true)
+}
+
+/// [`import_svg`], with whether a 90-dpi legacy file is scaled to keep its size (`legacyDpi`).
+pub(crate) fn import_svg_with(text: &str, folder: Option<&str>, legacy_dpi: bool) -> Result<(Document, Vec<String>)> {
     // The importer reads on a thread of its own (for its stack): what may be read is what may be
     // read here.
     let scope = crate::file_access::ScopeHandle::capture();
@@ -286,7 +324,7 @@ pub(crate) fn import_svg(text: &str, folder: Option<&str>) -> Result<(Document, 
             Some((bytes, link))
         })
     };
-    redrob_vector_svg::import_with(text, &redrob_vector_svg::ImportOptions { folder, read: Some(&read) }).map_err(err)
+    redrob_vector_svg::import_with(text, &redrob_vector_svg::ImportOptions { folder, read: Some(&read), legacy_dpi }).map_err(err)
 }
 
 /// Open a file's bytes as the new active document (what `document.open` does) →

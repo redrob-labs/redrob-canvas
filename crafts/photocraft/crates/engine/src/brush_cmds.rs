@@ -68,6 +68,7 @@ pub fn parse_points(p: &Value, cmd: &str) -> Result<Vec<StrokePoint>> {
                 sp.rotation = g(5).unwrap_or(0.0) as f32;
                 sp.time = g(6).unwrap_or(0.0);
                 sp.wheel = g(7).unwrap_or(1.0) as f32;
+                sp.perspective = g(8).unwrap_or(1.0) as f32;
                 Some(sp)
             }
             Value::Object(_) => serde_json::from_value(v.clone()).ok(),
@@ -79,6 +80,33 @@ pub fn parse_points(p: &Value, cmd: &str) -> Result<Vec<StrokePoint>> {
     }
     check_coords(&pts, cmd)?;
     Ok(pts)
+}
+
+/// The perspective sensor's reading written onto each point: the scale of the document's
+/// perspective grid assistant at that point (the first grid with one; the nearest, when the point
+/// is inside several). Points keep 1 without a grid or with assistant snapping off.
+pub(crate) fn with_perspective(s: &Session, mut pts: Vec<StrokePoint>) -> Vec<StrokePoint> {
+    let Some(st) = s.active() else { return pts };
+    if !st.assistants_snap {
+        return pts;
+    }
+    let grids: Vec<_> = st
+        .assistants
+        .iter()
+        .enumerate()
+        .filter(|(_, a)| matches!(a, redrob_photo_paint::assistants::Assistant::PerspectiveGrid { .. }))
+        .map(|(i, a)| (a, crate::assistant_cmds::style_of(st, i)))
+        .collect();
+    if grids.is_empty() {
+        return pts;
+    }
+    for q in &mut pts {
+        let here = [q.x, q.y];
+        if let Some(v) = grids.iter().filter(|(_, style)| style.admits(here)).find_map(|(a, _)| a.perspective_scale(here)) {
+            q.perspective = v as f32;
+        }
+    }
+    pts
 }
 
 /// A stroke runs dab by dab along its length: an absurd coordinate would mean billions of dabs.
@@ -192,6 +220,8 @@ pub fn resolve_brush(s: &Session, p: &Value, cmd: &str) -> Result<BrushSettings>
     }
     // A library preset's tips stay on disk until a stroke uses them (#1843).
     s.load_brush_tips(&mut b).map_err(|e| bad(cmd, e))?;
+    // A Pattern colour source reads the library pattern's pixels.
+    crate::brush_mode_cmds::load_color_pattern(s, &mut b, cmd)?;
     if let Some(v) = num(p, "size") {
         b.resize_with_dual_brush(v.max(0.5));
     }
@@ -408,7 +438,7 @@ fn with_blend_mode(mut b: BrushSettings, p: &Value) -> BrushSettings {
 
 /// `paint.stroke`: the Brush (and Eraser) tool.
 pub fn paint_stroke(s: &mut Session, p: &Value) -> Result<Value> {
-    let pts = parse_points(p, "paint.stroke")?;
+    let pts = with_perspective(s, parse_points(p, "paint.stroke")?);
     let brush = with_blend_mode(resolve_brush(s, p, "paint.stroke")?, p);
     let label = if brush.erase && !clear_mode(p) { "Eraser" } else { "Brush Tool" };
     stroke_with(s, "paint.stroke", p, label, brush, pts, false)
@@ -444,6 +474,8 @@ pub struct LiveStroke {
     points: Vec<StrokePoint>,
     /// The document and revision the stroke started on.
     base: (redrob_photo_doc::DocId, u64),
+    /// Painted with the Instant Preview's coarse brush (see `BrushSettings::preview_brush`).
+    approximate: bool,
 }
 
 /// A finished live stroke offered to its own commit ([`Session::offer_live_stroke`],
@@ -492,7 +524,7 @@ impl LiveStroke {
     /// Committing `cmd` with the same params and `"seed": live.seed` gives the same pixels.
     pub fn begin_with(s: &Session, cmd: &str, p: &Value) -> Result<Self> {
         has_paintable(s).map_err(EngineError::Other)?;
-        let pts = parse_points(p, cmd)?;
+        let pts = with_perspective(s, parse_points(p, cmd)?);
         let pencil = match cmd {
             "paint.stroke" => false,
             "paint.pencil" => true,
@@ -510,6 +542,15 @@ impl LiveStroke {
         if pencil && flag(p, "autoErase", false) {
             apply_auto_erase(&mut brush, surf, pts.first(), fg, s.tools.background);
         }
+        // Instant Preview: a very large brush previews coarsely; the commit paints the exact
+        // brush, so an approximate preview is never offered to the commit.
+        let approximate = match brush.preview_brush(s.prefs().tools.instant_preview) {
+            Some(coarse) => {
+                brush = coarse;
+                true
+            }
+            None => false,
+        };
         let renderer = StrokeRenderer::new(&brush, Some(surf.format()), zoom);
         let symmetry = s.active().and_then(crate::symmetry_cmds::stroke_passes);
         let mirrors: Vec<_> = (0..symmetry.as_ref().map_or(0, |s| s.mirror_count())).map(|_| StrokeRenderer::new(&brush, Some(surf.format()), zoom)).collect();
@@ -533,13 +574,22 @@ impl LiveStroke {
             cmyk: doc_cmyk_space(s),
             points: Vec::new(),
             base,
+            approximate,
         };
         live.push(&pts)?;
         Ok(live)
     }
 
+    /// Is this an Instant Preview (coarse) rendering, which the commit must not take over?
+    pub fn is_approximate(&self) -> bool {
+        self.approximate
+    }
+
     /// The stroke as its commit would take it over (see [`LiveCommit`]).
     pub fn into_commit(mut self) -> Result<LiveCommit> {
+        if self.approximate {
+            return Err(EngineError::Other("the live stroke is an instant preview; the commit renders the exact stroke".into()));
+        }
         let bounds = self.bounds();
         let (surf, _) = crate::channel_cmds::target_surface(std::sync::Arc::make_mut(&mut self.doc), self.layer, &self.params)?;
         Ok(LiveCommit { cmd: self.cmd, base: self.base, params: self.params, seed: Some(self.seed), points: self.points, surface: surf.clone(), bounds })
@@ -623,7 +673,7 @@ impl LiveStroke {
 }
 
 fn pencil(s: &mut Session, p: &Value) -> Result<Value> {
-    let pts = parse_points(p, "paint.pencil")?;
+    let pts = with_perspective(s, parse_points(p, "paint.pencil")?);
     let brush = pencil_brush(s, p)?;
     let label = if brush.erase && !clear_mode(p) { "Eraser" } else { "Pencil" };
     stroke_with(s, "paint.pencil", p, label, brush, pts, flag(p, "autoErase", false))
@@ -647,6 +697,11 @@ fn mixer_brush(s: &mut Session, p: &Value) -> Result<Value> {
         sample_all_layers: flag(p, "sampleAllLayers", bm.sample_all_layers),
         smear: flag(p, "smear", bm.smear),
         smudge_radius: p.get("smudgeRadius").and_then(Value::as_f64).map_or(bm.smudge_radius, |v| v.clamp(0.5, 3.0) as f32),
+        thickness: pct(p, "thickness", bm.thickness * 100.0),
+        gradient_source: flag(p, "gradientSource", bm.gradient_source),
+        hue_jitter: pct(p, "hueJitter", bm.hue_jitter * 100.0),
+        saturation_jitter: pct(p, "saturationJitter", bm.saturation_jitter * 100.0),
+        value_jitter: pct(p, "valueJitter", bm.value_jitter * 100.0),
     };
     let sample_all = m.sample_all_layers;
     let (clean, load_after) = (flag(p, "cleanAfterStroke", true), flag(p, "loadAfterStroke", true));
@@ -761,7 +816,7 @@ fn name_param(p: &Value, cmd: &str) -> Result<String> {
 }
 
 /// Replace the preset of that name, or append it at the end of the list.
-fn upsert(s: &mut Session, preset: BrushPreset) {
+pub(crate) fn upsert(s: &mut Session, preset: BrushPreset) {
     match s.tools.presets.iter_mut().find(|x| x.name.eq_ignore_ascii_case(&preset.name)) {
         Some(x) => *x = preset,
         None => s.tools.presets.push(preset),
@@ -923,8 +978,13 @@ pub(crate) fn set_brush(s: &mut Session, p: &Value) -> Result<Value> {
     let mut picked = None;
     let mut picked_color = None;
     if let Some(name) = p.get("preset").and_then(Value::as_str) {
+        // The preset being left keeps its session tweaks (`brush.presets.reload` reverts them).
+        crate::brush_mode_cmds::park_tweaks(s, name);
         let preset = find_preset(s, name, cmd)?;
-        b = preset.picked_over(&s.tools.brush);
+        b = match crate::brush_mode_cmds::tweak_of(s, name) {
+            Some(tw) => tw.clone().picked_over(&s.tools.brush),
+            None => preset.picked_over(&s.tools.brush),
+        };
         picked_color = preset.captures.color.then_some(preset.brush.color);
         picked = Some(name.to_string());
     }
@@ -953,6 +1013,8 @@ pub(crate) fn set_brush(s: &mut Session, p: &Value) -> Result<Value> {
     if reset {
         s.tools.current_preset = None;
     } else if let Some(name) = picked {
+        // The Brush Preset History docker lists every pick.
+        s.tools.preset_history.record(&name);
         s.tools.current_preset = Some(name);
         // A preset saved with Include Color brings its colour as the foreground (Photoshop).
         if let Some(c) = picked_color {
@@ -1125,7 +1187,7 @@ pub fn specs() -> Vec<CommandSpec> {
         spec!(
             "paint.mixerBrush",
             "Mixer Brush",
-            r##"{"points":[…],"brush":{…}?,"preset":name?,"size":0.5..5000 px?,"wet":0..100=brush.mixer.wet,"load":0..100=brush.mixer.load,"mix":0..100=brush.mixer.mix,"flow":0..100=brush.mixer.flow,"color":"#rrggbb"?=foreground,"sampleAllLayers":bool=brush.mixer.sampleAllLayers,"smear":bool=brush.mixer.smear (drag pixels along; off = dulling with the average colour),"smudgeRadius":0.5..3=brush.mixer.smudgeRadius (sampled area as a multiple of the dab),"cleanAfterStroke":bool=true,"loadAfterStroke":bool=true,"seed":u64?}"##,
+            r##"{"points":[…],"brush":{…}?,"preset":name?,"size":0.5..5000 px?,"wet":0..100=brush.mixer.wet,"load":0..100=brush.mixer.load,"mix":0..100=brush.mixer.mix,"flow":0..100=brush.mixer.flow,"color":"#rrggbb"?=foreground,"sampleAllLayers":bool=brush.mixer.sampleAllLayers,"smear":bool=brush.mixer.smear (drag pixels along; off = dulling with the average colour),"smudgeRadius":0.5..3=brush.mixer.smudgeRadius (sampled area as a multiple of the dab),"thickness":0..100=brush.mixer.thickness (paint thickness: a height map shades the deposit),"gradientSource":bool=brush.mixer.gradientSource (paint colour from the Color Dynamics gradient along the stroke),"hueJitter":0..100=brush.mixer.hueJitter,"saturationJitter":0..100=brush.mixer.saturationJitter,"valueJitter":0..100=brush.mixer.valueJitter,"cleanAfterStroke":bool=true,"loadAfterStroke":bool=true,"seed":u64?}"##,
             has_paintable,
             mixer_brush,
             true

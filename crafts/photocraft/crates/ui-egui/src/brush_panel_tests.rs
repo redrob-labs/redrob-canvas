@@ -418,7 +418,7 @@ fn brush_and_eraser_size_fields_keep_sizes_above_2500_px() {
 fn airbrush_smoothing_options_and_symmetry_buttons_work() {
     // #1177: in the default (Photoshop) theme these options-bar buttons did nothing.
     use egui_kittest::kittest::Queryable;
-    let mut h = app_harness();
+    let mut h = app_harness_sized(crate::i18n::Lang::EN, 2400.0);
     let brush = |h: &Harness<'static, PhotocraftApp>| h.state().session.tools.brush.clone();
 
     // The airbrush toggles Build-up, one setBrush each click.
@@ -444,6 +444,9 @@ fn airbrush_smoothing_options_and_symmetry_buttons_work() {
         (!before.pulled_string, !before.catch_up, !before.catch_up_on_end, !before.adjust_for_zoom)
     );
     assert_eq!(after.amount, before.amount);
+    // The smoothing menu is still open: a click elsewhere would only close it.
+    h.key_press(egui::Key::Escape);
+    h.run_steps(2);
 
     // Symmetry: the menu lists the document's paths and turns symmetry on and off.
     h.state_mut().run("file.new", json!({"width": 80, "height": 60})).unwrap();
@@ -1028,9 +1031,15 @@ fn app_harness() -> Harness<'static, PhotocraftApp> {
 }
 
 fn app_harness_with_language(lang: crate::i18n::Lang) -> Harness<'static, PhotocraftApp> {
+    app_harness_sized(lang, 1400.0)
+}
+
+/// [`app_harness`] in a window `width` points wide: the Brush bar (engines, symmetry, text tip)
+/// runs past 1400 points, and a button past the window's edge can't be clicked.
+fn app_harness_sized(lang: crate::i18n::Lang, width: f32) -> Harness<'static, PhotocraftApp> {
     let mut app = app();
     app.ui.tool = crate::state::Tool::Brush;
-    let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_ui_state(
+    let mut h = Harness::builder().with_size(vec2(width, 900.0)).build_ui_state(
         move |ui, app: &mut PhotocraftApp| {
             let ctx = ui.ctx().clone();
             if !ctx.fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {

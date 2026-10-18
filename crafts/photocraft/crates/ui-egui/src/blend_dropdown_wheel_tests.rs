@@ -145,19 +145,28 @@ fn click(h: &mut Harness<'_, PhotocraftApp>, at: Pos2) {
 
 /// Where the entry `label` of the open list is (also when it is scrolled out of sight).
 fn entry(h: &Harness<'_, PhotocraftApp>, label: &str) -> Rect {
-    h.get_by_label(label).rect()
+    crate::blend_menu_ui::test_row(h, label).expect(label)
+}
+
+/// A filled pixel layer on Overlay: the mode after it (Soft Light) is in the open list's first
+/// view, so a step to it scrolls nothing (a step to Dissolve, at the end of the grouped list, would).
+fn overlay_layer(app: &mut PhotocraftApp) {
+    pixel_layer(app);
+    let id = app.session.active().unwrap().active_layer.unwrap().0;
+    app.run("layer.setProps", json!({"layer": id, "blend": "Overlay"})).unwrap();
 }
 
 #[test]
 fn the_wheel_over_the_open_list_steps_modes_instead_of_scrolling_it() {
-    let mut h = harness(pixel_layer);
+    let mut h = harness(overlay_layer);
     let undo = steps(&h);
     let at = dropdown(&h).center();
     click(&mut h, at);
-    let (last, darken) = (entry(&h, "Luminosity"), entry(&h, "Darken").center());
-    wheel(&mut h, darken, -1.0);
+    // A row in view (the Mix family's, below the favourites) to wheel over.
+    let (last, hard_light) = (entry(&h, "Luminosity"), entry(&h, "Hard Light").center());
+    wheel(&mut h, hard_light, -1.0);
     h.run_steps(10);
-    assert_eq!((blend(&h), steps(&h)), (BlendMode::Dissolve, undo + 1), "one mode, one step");
+    assert_eq!((blend(&h), steps(&h)), (BlendMode::SoftLight, undo + 1), "one mode, one step");
     assert_eq!(entry(&h, "Luminosity"), last, "the list stays open and doesn't scroll");
 }
 
@@ -167,9 +176,9 @@ fn wheel_steps_in_the_open_list_keep_the_chosen_mode_in_view() {
     let at = dropdown(&h).center();
     click(&mut h, at);
     // Unscrolled, the list shows its first entry at the top and is at most 420 pt tall.
-    let (top, darken) = (entry(&h, "Normal").top(), entry(&h, "Darken").center());
+    let (top, soft_light) = (entry(&h, "Normal").top(), entry(&h, "Soft Light").center());
     for _ in 0..22 {
-        wheel(&mut h, darken, -1.0);
+        wheel(&mut h, soft_light, -1.0);
     }
     h.run_steps(30);
     assert_eq!(blend(&h), BlendMode::Divide);
@@ -195,7 +204,7 @@ fn previewed(h: &mut Harness<'_, PhotocraftApp>) -> Option<BlendMode> {
 
 #[test]
 fn a_wheel_step_ends_the_hover_preview_until_the_pointer_moves() {
-    let mut h = harness(pixel_layer);
+    let mut h = harness(overlay_layer);
     let at = dropdown(&h).center();
     click(&mut h, at);
     let screen = entry(&h, "Screen").center();
@@ -203,7 +212,7 @@ fn a_wheel_step_ends_the_hover_preview_until_the_pointer_moves() {
     h.run_steps(3);
     assert_eq!(previewed(&mut h), Some(BlendMode::Screen));
     wheel(&mut h, screen, -1.0);
-    assert_eq!(blend(&h), BlendMode::Dissolve);
+    assert_eq!(blend(&h), BlendMode::SoftLight);
     assert_eq!(previewed(&mut h), None, "the chosen mode shows, not the one under the pointer");
     h.run_steps(10);
     assert_eq!(previewed(&mut h), None, "still, while the pointer rests");

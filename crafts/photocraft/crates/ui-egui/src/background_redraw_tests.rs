@@ -117,16 +117,19 @@ fn an_edit_during_a_redraw_is_not_overwritten_by_blocks_drawn_before_it() {
     let _gpu = redrob_photo_testkit::gpu_lock();
     let Some(mut g) = gpu_app() else { return };
     // 4×3 blocks: the worker can't hand them all over before the next frame.
-    let doc = cpu_only_document(g.harness.state_mut(), 4096, 3072);
+    // 6×4 blocks: a fast machine finished 4×3 within the three frames below.
+    let doc = cpu_only_document(g.harness.state_mut(), 6144, 4096);
     g.harness.step();
     assert!(g.harness.state().redraws.contains_key(&doc));
     // A corner, drawn last (farthest from the view's centre), changes on a layer of its own while
-    // the redraw runs: a small edit, drawn at once.
+    // the redraw runs: a small edit, drawn at once (the frame after the start still refreshes the
+    // whole texture, so the layer comes first and the fill a frame later).
     g.harness.state_mut().run("layer.new.layer", json!({})).expect("layer");
     g.harness.step();
-    g.harness.state_mut().run("select.rect", json!({"x": 3900, "y": 2900, "width": 150, "height": 150})).expect("select");
-    g.harness.step();
-    g.harness.state_mut().run("edit.fill", json!({"color": "#22ee22"})).expect("fill");
+    let app = g.harness.state_mut();
+    app.run("select.rect", json!({"x": 5900, "y": 3900, "width": 150, "height": 150})).expect("select");
+    app.run("edit.fill", json!({"color": "#22ee22"})).expect("fill");
+    assert!(app.redraws.contains_key(&doc), "the redraw is still running when the edit lands");
     g.harness.step();
     assert_eq!(g.harness.state().perf.last_refresh, "rect", "the fill's damage was drawn synchronously");
     assert!(g.harness.state().redraws.contains_key(&doc), "the redraw goes on");

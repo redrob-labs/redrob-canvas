@@ -5,10 +5,11 @@
 //!   curve is smooth (C2) and hugs the polygon without passing through its inner points; an open
 //!   run is clamped so it starts and ends on its first and last point.
 //! * [`spiro_approx_to_bezier`]: an interpolating spline through the points, as close to
-//!   curvature-continuous (G2) as a cubic per span can get. This is an APPROXIMATION of a
-//!   clothoid ("spiro") spline, not one: tangents come from a Catmull-Rom style blend of the
-//!   neighbouring chords, handle lengths start at the circular-arc fit of each span and are then
-//!   relaxed a few rounds so the curvature on both sides of every point agrees.
+//!   curvature-continuous (G2) as a cubic per span can get without solving the clothoid: tangents
+//!   come from a Catmull-Rom style blend of the neighbouring chords, handle lengths start at the
+//!   circular-arc fit of each span and are then relaxed a few rounds so the curvature on both
+//!   sides of every point agrees. The Spiro mode itself solves the clothoid spline
+//!   ([`crate::clothoid`]); this one is kept for the corner-aware spline live effect.
 //! * [`paraxial`]: the next point of an axis-aligned (paraxial) polyline, every segment
 //!   horizontal or vertical and perpendicular to the one before.
 
@@ -22,7 +23,7 @@ pub enum SplineMode {
     /// Plain Bézier segments: corners and dragged-out handles as placed.
     #[default]
     Bezier,
-    /// [`spiro_approx_to_bezier`] through the points.
+    /// A clothoid spline through the points ([`crate::clothoid::clothoid_to_bezier`]).
     Spiro,
     /// [`bspline_to_bezier`] with the points as the control polygon.
     BSpline,
@@ -64,7 +65,7 @@ impl SplineMode {
     /// segments one by one ([`SplineMode::Bezier`], [`SplineMode::Paraxial`]).
     pub fn through(self, pts: &[Point], closed: bool) -> Option<SubPath> {
         match self {
-            SplineMode::Spiro => Some(spiro_approx_to_bezier(pts, closed)),
+            SplineMode::Spiro => Some(crate::clothoid::clothoid_to_bezier(pts, closed)),
             SplineMode::BSpline => Some(bspline_to_bezier(pts, closed)),
             _ => None,
         }

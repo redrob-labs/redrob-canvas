@@ -70,7 +70,7 @@ fn read(path: &str) -> Option<(Vec<u8>, LinkInfo)> {
 
 fn open_in(dir: &Path, body: &str) -> (Document, Vec<String>) {
     let folder = dir.to_string_lossy();
-    import_with(&svg(body), &ImportOptions { folder: Some(&folder), read: Some(&read) }).unwrap()
+    import_with(&svg(body), &ImportOptions { folder: Some(&folder), read: Some(&read), legacy_dpi: true }).unwrap()
 }
 
 #[test]

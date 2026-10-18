@@ -2901,7 +2901,6 @@
 	Touch Type Tool	修饰文字工具
 	Trace	描摹
 	Trace the image with the Default preset	使用“默认”预设描摹图像
-	Tracing	描摹
 	Tracking	字距
 	Trademark Symbol	商标符号
 	Transform	变换
@@ -4110,3 +4109,369 @@ lighting	Light	光源
 	Select an object to edit its SVG filter.	选择对象以编辑其 SVG 滤镜。
 	Open a document to see its element tree.	打开文档以查看其元素树。
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	“模拟”按叠印预览所示打印叠印；分色始终保留叠印。预设在打印前拼合透明度（PostScript 文件始终拼合）。
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	路径效果
+	Clone Original	克隆原始对象
+	Clone Original…	克隆原始对象…
+	Attach Path	附加路径
+	Attach Path…	附加路径…
+	Bounding Box	边界框
+	Bounding Box…	边界框…
+	Fill Between Many	多路径间填色
+	Fill Between Many…	多路径间填色…
+	Fill Between Strokes	描边间填色
+	Fill Between Strokes…	描边间填色…
+	Power Clip	高级剪裁
+	Power Clip…	高级剪裁…
+	Power Clip (Inverse)	高级剪裁 (反向)
+	Release Power Clip	释放高级剪裁
+	Construct Grid	构造网格
+	Construct Grid…	构造网格…
+	Ellipse by 5 Points	五点椭圆
+	Ellipse by 5 Points…	五点椭圆…
+	Ellipse from Points	由点创建椭圆
+	Ellipse from Points…	由点创建椭圆…
+	Circle by 3 Points	三点圆
+	Circle by 3 Points…	三点圆…
+	Circle by Center and Radius	由圆心和半径创建圆
+	Line Segment…	线段…
+	Parallel	平行线
+	Parallel…	平行线…
+	Perpendicular Bisector	垂直平分线
+	Perpendicular Bisector…	垂直平分线…
+	Angle Bisector	角平分线
+	Angle Bisector…	角平分线…
+	Tangent to Curve	曲线切线
+	Tangent to Curve…	曲线切线…
+	Transform by 2 Points	两点变换
+	Transform by 2 Points…	两点变换…
+	Show Handles…	显示手柄…
+	Measure Segments	测量线段
+	Measure Segments…	测量线段…
+	Ruler	标尺
+	Ruler…	标尺…
+	Interpolate Points	插值点
+	Interpolate Points…	插值点…
+	Knot	绳结
+	Knot…	绳结…
+	VonKoch	科赫曲线
+	VonKoch…	科赫曲线…
+	Gears	齿轮
+	Gears…	齿轮…
+	Embroidery Stitch	刺绣针迹
+	Embroidery Stitch…	刺绣针迹…
+	Stitch Sub-Paths	缝合子路径
+	Stitch Sub-Paths…	缝合子路径…
+	Hatches (Rough)	影线 (粗略)
+	Hatches (Rough)…	影线 (粗略)…
+	Sketch	素描
+	Sketch…	素描…
+	Join Type	连接类型
+	Join Type…	连接类型…
+	Slice…	切片…
+	Select Linked Object	选择链接的对象
+	Mask Background	蒙版背景
+	Background	背景
+	Live Slice	实时切片
+	Fuse Slice	融合切片
+	3D Marble	3D 大理石
+	3D Wood	3D 木纹
+	Air Spray	喷雾
+	Aluminium	铝
+	Apply Effects to Image Pixels	将效果应用到图像像素
+	Apply Filter Preset	应用滤镜预设
+	Apply to Selection	应用到选区
+	Bevels	斜角
+	Black Hole	黑洞
+	Blobs	斑点
+	Bloom	光晕
+	Brilliance	亮彩
+	Bump	凸起
+	Bumps	凸起
+	Button	按钮
+	Canvas Bumps	画布凸起
+	Chalk and Sponge	粉笔与海绵
+	Channel to Alpha	通道转为 Alpha
+	Chrome	镀铬
+	Color Blindness	色盲
+	Colour Space:	色彩空间：
+	Comics Cream	漫画奶油
+	Cracked Glass	碎裂玻璃
+	Cubes	方块
+	Dark and Glow	暗与光
+	Document Filters	文档滤镜
+	Dragee	糖衣
+	Duochrome	双色调
+	Duplicate Filter	复制滤镜
+	Embossed Leather	压纹皮革
+	Extract Channel	提取通道
+	Fade to Black	淡出至黑
+	Felt Feather	毛毡羽
+	Fill and Overlays	填色与叠加
+	Filter	滤镜
+	Filter Gallery	滤镜库
+	Filter Presets	滤镜预设
+	Filter copy	滤镜副本
+	Filters	滤镜
+	Glow	发光
+	Glowing Metal	炽热金属
+	Gold	黄金
+	Greyscale	灰度
+	HSL Noise	HSL 噪点
+	Ink Blot	墨渍
+	Ink Splash	墨水飞溅
+	Inner Shadow	内阴影
+	Leopard Fur	豹皮
+	Light Eraser	亮部橡皮擦
+	Luminance to Alpha	亮度转为 Alpha
+	Materials	材质
+	Matte Jelly	哑光果冻
+	Metallized Paint	金属漆
+	Neon	霓虹
+	No filter matches the search.	没有符合搜索的滤镜。
+	Noise Fill	噪点填色
+	Non-realistic 3D Shaders	非写实 3D 着色器
+	Open Filter Editor	打开滤镜编辑器
+	Paper Bump	纸张凸起
+	Pointillism	点彩
+	Protrusions	突起
+	Quadritone	四色调
+	Ridges	脊纹
+	Rough Paper	粗糙纸
+	Rough Transparency	粗糙透明
+	Roughen	粗糙化
+	Saturation Map	饱和度映射
+	Select an object to apply a filter.	选择对象以应用滤镜。
+	Silhouette	剪影
+	Smooth Edges	平滑边缘
+	Solarize	曝光过度
+	Specular Light	镜面光
+	Spikes	尖刺
+	Spots Overlay	斑点叠加
+	Stone Wall	石墙
+	Subregion:	子区域：
+	Swirl	漩涡
+	Textures	纹理
+	The document has no filters yet.	文档尚无滤镜。
+	Thin Membrane	薄膜
+	Torn Edges	撕裂边缘
+	Translucent	半透明
+	Transparency Utilities	透明工具
+	Tritone	三色调
+	Watercolor	水彩
+	Waves	波浪
+	Turns:	圈数：
+	Divergence:	发散：
+	Clockwise	顺时针
+	Threshold:	阈值：
+	Grow/Shrink:	扩张/收缩：
+	Fill by:	填色依据：
+	Visible Colors	可见颜色
+	Alpha	Alpha
+	Add to Fill	加入填色
+	View rotation (Cmd+Shift+scroll turns the view)	视图旋转（Cmd+Shift+滚动可旋转）
+	Lock Rotate View	锁定视图旋转
+	Fixation:	固定：
+	Dip Pen	蘸水笔
+	Marker	马克笔
+	Brush	毛笔
+	Wiggly	摇摆
+	Splotchy	斑驳
+	Use Pressure	使用压力
+	Live Simplify	实时简化
+	Simplify (Live)…	简化（实时）…
+	Split View	分割视图
+	X-ray	X 光
+	Input Devices…	输入设备…
+	Input Devices	输入设备
+	Pressure Curves	压力曲线
+	Mouse	鼠标
+	Pen / Stylus	画笔 / 触控笔
+	Touch	触控
+	Liquify Tools	液化工具
+	Disabled	禁用
+	Grids	网格
+	Main Grid	主网格
+	Add Grid	添加网格
+	Remove Grid	移除网格
+	Grid Options	网格选项
+	Kind:	种类：
+	Subdivisions:	细分：
+	Angles:	角度：
+	Gaps:	间距：
+	Origin:	原点：
+	Own color	自定颜色
+	Open a document to edit its grids.	打开文档以编辑其网格。
+	Add Script	添加脚本
+	Edit Script	编辑脚本
+	Remove Script	移除脚本
+	The document has no scripts.	文档没有脚本。
+	External:	外部：
+	Embedded script	内嵌脚本
+	Add Embedded Script	添加内嵌脚本
+	Add External Script	添加外部脚本
+	Source:	来源：
+	External file	外部文件
+	Code:	代码：
+	Open a document to edit its scripts.	打开文档以编辑其脚本。
+	Alignment Handles	对齐控制点
+	Align (Shift: move the key object)	对齐（Shift：移动关键对象）
+	Stylesheet	样式表
+	No rules yet. Add one and assign its class to objects.	尚无规则。添加一个并将其类分配给对象。
+	Add Rule	添加规则
+	Remove Rule	移除规则
+	Selector:	选择器：
+	Declarations:	声明：
+	Assign to Selection	分配给选区
+	Remove from Selection	从选区移除
+	Add CSS Rule	添加 CSS 规则
+	Edit CSS Rule	编辑 CSS 规则
+	Remove CSS Rule	移除 CSS 规则
+	Assign CSS Class	分配 CSS 类
+	Remove CSS Class	移除 CSS 类
+	Apply Stylesheet	应用样式表
+	New Node	新节点
+	Indent Node	缩进节点
+	Outdent Node	减少节点缩进
+	Move Node	移动节点
+	Set Path Data	设置路径数据
+	Round to:	四舍五入到：
+	Round Path Data	四舍五入路径数据
+	Connector Tool	连接线工具
+	Connect Objects	连接对象
+	Reroute Connectors	重新布线连接线
+	Connector Obstacle	连接线障碍物
+	Arrange Connected Objects	排列已连接对象
+	Arrange Connected	排列已连接
+	Routing:	布线：
+	Orthogonal	正交
+	Polyline	折线
+	Curvature:	曲率：
+	3D Box Tool	3D 盒子工具
+	3D Box	3D 盒子
+	3D Box Options	3D 盒子选项
+	Move Vanishing Point	移动消失点
+	Z:	Z：
+	Vanishing Point	消失点
+	Infinite	无限
+	Arrange in Grid	排列成网格
+	Arrange in Circle	排列成圆形
+	Dynamic Offset	动态偏移
+	Fill Between Paths	填充路径之间
+	Linked Offset	链接偏移
+	Linked Offset Distance	链接偏移距离
+	Remove Overlaps	移除重叠
+	Unlink Live Object	取消链接实时对象
+	Create Anchor	创建锚点
+	Follow Link	打开链接
+	Select All Anchors	选择所有锚点
+	Invert Anchor Selection	反转锚点选择
+	Aspect ratio:	宽高比:
+	Clip path	剪裁路径
+	DPI:	DPI:
+	Effect knots	效果控制点
+	Highlight color:	高亮颜色:
+	Interactivity	交互性
+	Link target:	链接目标:
+	Link title:	链接标题:
+	Path outline	路径轮廓
+	Transform handles	变形控点
+	Plot…	绘图仪输出…
+	Import Web Image…	导入网络图像…
+	Check Spelling	拼写检查
+	Edit Custom Dictionary	编辑自定义词典
+	The spell check is complete.	拼写检查已完成。
+	Words checked	已检查的单词
+	Check Again	再次检查
+	Word Not Found:	未找到的单词:
+	Change To:	更改为:
+	Suggestions:	建议:
+	No suggestions	无建议
+	Ignore All	全部忽略
+	No words yet	尚无单词
+	Word:	单词:
+	Change Spelling	更改拼写
+	Ignore Spelling	忽略拼写
+	Add to Dictionary	添加到词典
+	Remove from Dictionary	从词典移除
+	Spelling Dictionaries	拼写词典
+	Visible Hairlines	显示细线
+	Rename…	重命名…
+	Extract…	提取…
+	Object Attributes	对象属性
+	Object Attributes…	对象属性…
+	Create Tiled Clones…	创建平铺克隆…
+	Rename Symbol	重命名符号
+	Set Object Attribute	设置对象属性
+	Trace Pixel Art…	描摹像素画…
+	Objects to Marker	对象转为标记
+	Markers	标记
+	Markers:	标记:
+	Delete Marker	删除标记
+	SVG Font Editor	SVG 字体编辑器
+	SVG Font Editor…	SVG 字体编辑器…
+	New Font	新字体
+	Delete Font	删除字体
+	No SVG font yet: make one, or turn glyph layers into one.	尚无 SVG 字体：请创建一个，或将字形图层转为字体。
+	Glyph Layers to Font	字形图层转为字体
+	Glyph	字形
+	Advance	字宽
+	Curves	曲线
+	Unicode:	Unicode:
+	Glyph name:	字形名称:
+	Advance:	字宽:
+	Add Glyph	添加字形
+	Remove Glyph	移除字形
+	Get Curves from Selection	从选区获取曲线
+	Glyph to Objects	字形转为对象
+	Kerning:	字偶间距:
+	Set Pair	设置字偶
+	Preview:	预览:
+	Font to Glyph Layers	字体转为字形图层
+	New SVG Font	新 SVG 字体
+	SVG Fonts	SVG 字体
+	Delete SVG Font	删除 SVG 字体
+	SVG Font Options	SVG 字体选项
+	Set Glyph	设置字形
+	Set Kerning Pair	设置字偶间距
+	Preview SVG Font	预览 SVG 字体
+	Glyph Layers to SVG Font	字形图层转为 SVG 字体
+	SVG Font to Glyph Layers	SVG 字体转为字形图层
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	WPG 第 2 版文件（WordPerfect 6 及更高版本）尚不能读取：请将图形另存为 WPG 1 或其他矢量格式
+@msg	bad central record	中央记录损坏
+@msg	downloading needs the desktop app	下载需要桌面应用
+@msg	give `url`: an http:// or https:// address of an image	请提供 `url`：图像的 http:// 或 https:// 地址
+@msg	no zip end record	没有 zip 结束记录
+@msg	not a CGM file	不是 CGM 文件
+@msg	not a CorelDRAW file	不是 CorelDRAW 文件
+@msg	not a WordPerfect Graphics file	不是 WordPerfect Graphics 文件
+@msg	not a zip	不是 zip
+@msg	not an XFig file	不是 XFig 文件
+@msg	select an embedded image	请选择一个嵌入图像
+@msg	the drawing has nothing Redrob Canvas reads	该绘图中没有 Redrob Canvas 能读取的内容
+@msg	the effect links to no object in this document	该效果未链接到此文档中的任何对象
+@msg	the file draws nothing Redrob Canvas reads	该文件中没有 Redrob Canvas 能读取的绘图内容
+@msg	the file is empty	文件为空
+@msg	the font has a glyph for `{nu}` already	该字体已有 `{nu}` 的字形
+@msg	the graphic draws nothing Redrob Canvas reads	该图形中没有 Redrob Canvas 能读取的绘图内容
+@msg	the metafile draws nothing Redrob Canvas reads	该图元文件中没有 Redrob Canvas 能读取的绘图内容
+@msg	the object is gone	该对象已不存在
+@msg	the preview bitmap can't be read	无法读取预览位图
+@msg	the preview bitmap is empty	预览位图为空
+@msg	the selected object has no link	所选对象没有链接
+@msg	the view's rotation is locked (View › Lock Rotate View)	视图旋转已锁定（视图 › 锁定视图旋转）
+@msg	truncated zip	zip 被截断
+@msg	view.setRotation: missing `angle`	view.setRotation：缺少 `angle`
+@msg	{_1}: the dictionary is empty	{_1}：字典为空
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}：网页应用没有串行设备或文件：请导出 HPGL 并下载
+@msg	{device}: {e}	{device}：{e}
+@msg	{id} isn't a format this reader knows	{id} 不是此读取器认识的格式
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	{kind}{ver} 文件是压缩容器，其绘图记录没有文档说明：请从 CorelDRAW 将绘图导出为 SVG、PDF、EPS 或 EMF 再打开
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}：绘图记录没有文档说明，且文件没有预览位图：请将绘图导出为 SVG、PDF、EPS 或 EMF 再打开
+@msg	{name}: compression method {m} isn't supported	{name}：不支持压缩方法 {m}
+@msg	{name}: not found among the document's images	{name}：在文档的图像中未找到
+@msg	{name}: too large	{name}：过大
+@msg	{url}: {e}	{url}：{e}
+	Tracing	描摹

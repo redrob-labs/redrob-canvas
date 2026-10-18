@@ -59,7 +59,7 @@ choice!(Theme { Pro = "pro", ProMedium = "proMedium", ProLightGray = "proLightGr
 choice!(AppearanceMode { Auto = "auto", Dark = "dark", Light = "light" } default Dark);
 choice!(DarkTheme { Pro = "pro", ProMedium = "proMedium", Studio = "studio", SolarizedDark = "solarizedDark", AdwaitaDark = "adwaitaDark", BreezeDark = "breezeDark", SoftDark = "softDark" } default ProMedium);
 choice!(LightTheme { ProLight = "proLight", ProLightGray = "proLightGray", StudioLight = "studioLight", Classic = "classic", Adwaita = "adwaita", BreezeLight = "breezeLight", SoftLight = "softLight" } default ProLight);
-choice!(CanvasColor { Default = "default", Black = "black", DarkGray = "darkGray", MediumGray = "mediumGray", LightGray = "lightGray", Custom = "custom" } default Default);
+choice!(CanvasColor { Default = "default", Black = "black", DarkGray = "darkGray", MediumGray = "mediumGray", LightGray = "lightGray", LightCheck = "lightCheck", DarkCheck = "darkCheck", Custom = "custom" } default Default);
 choice!(CanvasBorder { DropShadow = "dropShadow", Line = "line", None = "none" } default DropShadow);
 choice!(UiScale { Auto = "auto", P75 = "75", P80 = "80", P85 = "85", P90 = "90", P95 = "95", P100 = "100", P125 = "125", P150 = "150", P175 = "175", P200 = "200", P250 = "250", P300 = "300" } default Auto);
 choice!(
@@ -83,6 +83,11 @@ choice!(
     LinuxDisplayServer { Auto = "auto", X11 = "x11" } default Auto
 );
 choice!(UiFontSize { Tiny = "tiny", Small = "small", Medium = "medium", Large = "large" } default Small);
+choice!(
+    /// Canvas scaling filter: how the canvas is resampled at zooms other than 100 % (`auto`
+    /// picks by zoom: nearest when zoomed far in, trilinear otherwise).
+    ScalingFilter { Auto = "auto", Nearest = "nearest", Bilinear = "bilinear", Trilinear = "trilinear", HighQuality = "highQuality" } default Auto
+);
 choice!(LogDestination { Metadata = "metadata", TextFile = "textFile", Both = "both" } default Metadata);
 choice!(LogDetail { SessionsOnly = "sessionsOnly", Concise = "concise", Detailed = "detailed" } default Concise);
 choice!(Ask { Always = "always", Never = "never", Ask = "ask" } default Always);
@@ -101,6 +106,20 @@ choice!(
     RightClickPaint { BrushPicker = "brushPicker", Erase = "erase", PopupPalette = "popupPalette" } default BrushPicker
 );
 choice!(OtherCursor { Standard = "standard", Precise = "precise" } default Standard);
+choice!(GridType { Rectangular = "rectangular", Isometric = "isometric" } default Rectangular);
+choice!(TabletSpeedSource { Pointer = "pointer", Tablet = "tablet" } default Pointer);
+choice!(TabletApi { Auto = "auto", WinTab = "winTab", WindowsPointer = "windowsPointer" } default Auto);
+choice!(
+    /// The painting cursor's pointer shape, independent of the brush outline: the tool's own
+    /// icon (then `PaintingCursor` decides), an arrow, a crosshair, a small dot, no pointer at
+    /// all, a triangle pointing right or left, or the single pixel under the pointer.
+    CursorShape { ToolIcon = "toolIcon", Arrow = "arrow", Crosshair = "crosshair", SmallDot = "smallDot", NoCursor = "noCursor", TriangleRight = "triangleRight", TriangleLeft = "triangleLeft", Pixel = "pixel" } default ToolIcon
+);
+choice!(
+    /// The brush outline drawn with a custom cursor shape: none, the brush's circle, the tip's
+    /// traced preview, or the circle flattened by the stylus tilt.
+    OutlineShape { NoOutline = "noOutline", Circle = "circle", Preview = "preview", Tilt = "tilt" } default Circle
+);
 choice!(CheckerSize { None = "none", Small = "small", Medium = "medium", Large = "large" } default Medium);
 choice!(CheckerColors { Light = "light", Medium = "medium", Dark = "dark", Red = "red", Orange = "orange", Green = "green", Blue = "blue", Purple = "purple", Custom = "custom" } default Light);
 choice!(LineStyle { Lines = "lines", Dashed = "dashedLines", Dots = "dots" } default Lines);
@@ -111,6 +130,8 @@ choice!(RawDepth { Eight = "8", Sixteen = "16" } default Sixteen);
 choice!(RawSharpen { None = "none", Screen = "screen", Glossy = "glossy", Matte = "matte" } default None);
 
 impl Unit {
+    /// Every built-in unit, in menu order.
+    pub const ALL: [Unit; 7] = [Unit::Pixels, Unit::Inches, Unit::Centimeters, Unit::Millimeters, Unit::Points, Unit::Picas, Unit::Percent];
     /// Document pixels → this unit. `dpi` is the document resolution, `extent` the 100% length
     /// (for percent), `ppi` points per inch (72 PostScript, 72.27 traditional).
     pub fn from_px(self, px: f64, dpi: f64, extent: f64, ppi: f64) -> f64 {
@@ -252,9 +273,13 @@ pub struct Interface {
     pub light_theme: LightTheme,
     /// Theme shortcuts shown in the appearance button's context menu.
     pub favorite_themes: Vec<Theme>,
-    /// Pasteboard colour in standard screen mode (`canvasCustomColor` when "custom").
+    /// Pasteboard colour in standard screen mode (`canvasCustomColor` when "custom";
+    /// `lightCheck`/`darkCheck` take the transparency checkerboard's light or dark colour).
     pub canvas_color: CanvasColor,
     pub canvas_custom_color: String,
+    /// View › Show All: keep the pasteboard colour round the canvas (off: the area beyond the
+    /// canvas shows the transparency checkerboard under the layers' pixels there).
+    pub keep_padding_in_show_all: bool,
     /// Show the repeating dot pattern on the canvas surround (including the empty workspace).
     /// Disable for a uniform background, for example on OLED displays (#2264).
     pub show_canvas_dots: bool,
@@ -304,6 +329,7 @@ impl Default for Interface {
             favorite_themes: Vec::new(),
             canvas_color: CanvasColor::Default,
             canvas_custom_color: "#282828".into(),
+            keep_padding_in_show_all: false,
             show_canvas_dots: true,
             show_home_recent_files: true,
             canvas_border: CanvasBorder::DropShadow,
@@ -383,6 +409,16 @@ pub struct Tools {
     /// Pen pressure response: `[input, output]` control points in 0..1 that the pen's pressure
     /// passes through before it reaches any brush ([`PressureCurve`]). Linear by default.
     pub pressure_curve: Vec<[f32; 2]>,
+    /// Pen tablets: degrees added to the reported tilt, so a pen held askew reads level.
+    pub tilt_offset_x: f32,
+    pub tilt_offset_y: f32,
+    /// Where stroke speed comes from (the pointer events, or the tablet's own timing).
+    pub tablet_speed_source: TabletSpeedSource,
+    /// Which API reads the pen on Windows (WinTab or Windows Pointer; Auto picks).
+    pub tablet_api: TabletApi,
+    /// The part of the screen the tablet's surface covers: `x,y,w,h` as fractions (empty = the
+    /// whole screen). The tablet tester shows the mapping in effect.
+    pub tablet_screen_mapping: String,
     /// Arrow-key nudges of one thing (the selected layers, the selection outline, the Free
     /// Transform box) that follow each other within [`Tools::nudge_bundle_pause_ms`] are one
     /// History state (#2259). Off: every press is a state.
@@ -390,6 +426,72 @@ pub struct Tools {
     /// The longest pause, in milliseconds, between two nudges that still bundle into one state.
     /// Longer than a key's auto-repeat delay (about half a second), so a held key is one state.
     pub nudge_bundle_pause_ms: u32,
+    /// Instant Preview (the global switch, Shift+L): a live stroke with a brush at or above its
+    /// preset's threshold paints a coarse preview first; the commit paints the exact stroke
+    /// (`tools.instantPreview`).
+    pub instant_preview: bool,
+    /// Edit › Input Devices: per-device configuration (`input_cmds`). The entry named `pen`
+    /// configures the tablet pen the platform reports.
+    pub input_devices: Vec<InputDevice>,
+    /// Edit › Input Controllers: wheel and keyboard events mapped to commands (`input_cmds`).
+    pub input_controllers: Vec<ControllerMapping>,
+    /// Ten Scripts: the action names on the ten script shortcut slots (`plugins.tenScripts`).
+    pub ten_scripts: Vec<Option<String>>,
+}
+
+/// One input device's configuration (Edit › Input Devices…).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct InputDevice {
+    /// `pen` for the tablet pen; other names are kept for devices the platform may report later.
+    pub name: String,
+    /// `disabled` (the device acts as a mouse), `screen` (absolute, the default) or `window`.
+    pub mode: String,
+    /// Report tilt (off: tilt reads 0).
+    pub tilt: bool,
+    /// Report barrel rotation (off: rotation reads 0).
+    pub rotation: bool,
+    pub invert_tilt_x: bool,
+    pub invert_tilt_y: bool,
+    /// Swap the tilt axes (a pen mounted sideways).
+    pub swap_tilt: bool,
+    /// Pressure scale 0.1..=4 applied before the pressure curve.
+    pub pressure_scale: f32,
+}
+
+impl Default for InputDevice {
+    fn default() -> Self {
+        Self {
+            name: "pen".into(),
+            mode: "screen".into(),
+            tilt: true,
+            rotation: true,
+            invert_tilt_x: false,
+            invert_tilt_y: false,
+            swap_tilt: false,
+            pressure_scale: 1.0,
+        }
+    }
+}
+
+/// A controller event bound to a command (Edit › Input Controllers…).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ControllerMapping {
+    /// `wheel` or `keyboard`.
+    pub controller: String,
+    /// Wheel: `up` / `down` / `left` / `right` with optional `Shift+`, `Ctrl+`, `Alt+` prefixes
+    /// (`Shift+up`); keyboard: a shortcut in the `Cmd+Shift+N` notation.
+    pub event: String,
+    /// The command id to run (`view.zoomIn`, `brush.size.increase`, ...), with optional
+    /// `{"k":v}` JSON params after a space.
+    pub action: String,
+}
+
+impl Default for ControllerMapping {
+    fn default() -> Self {
+        Self { controller: "wheel".into(), event: "Alt+up".into(), action: "view.zoomIn".into() }
+    }
 }
 
 impl Default for Tools {
@@ -408,8 +510,17 @@ impl Default for Tools {
             right_click_with_painting_tools: RightClickPaint::BrushPicker,
             use_tablet_pressure: true,
             pressure_curve: vec![[0.0, 0.0], [1.0, 1.0]],
+            tilt_offset_x: 0.0,
+            tilt_offset_y: 0.0,
+            tablet_speed_source: TabletSpeedSource::Pointer,
+            tablet_api: TabletApi::Auto,
+            tablet_screen_mapping: String::new(),
             bundle_nudges: true,
             nudge_bundle_pause_ms: 1000,
+            input_devices: Vec::new(),
+            input_controllers: Vec::new(),
+            instant_preview: true,
+            ten_scripts: Vec::new(),
         }
     }
 }
@@ -459,6 +570,8 @@ pub struct FileHandling {
     pub recent_file_count: u32,
     /// Most recently opened files, newest first (File › Open Recent).
     pub recent_files: Vec<String>,
+    /// Numbered backups kept beside a saved file (`name.ext~1`, `~2`, …; 0 = none).
+    pub backup_count: u32,
 }
 
 impl Default for FileHandling {
@@ -477,6 +590,7 @@ impl Default for FileHandling {
             rasterize_svg_groups_deeper_than: redrob_photo_doc::MAX_GROUP_DEPTH as u32,
             recent_file_count: 20,
             recent_files: Vec::new(),
+            backup_count: 1,
         }
     }
 }
@@ -541,6 +655,23 @@ pub struct Performance {
     pub cumulative_undo: bool,
     pub cumulative_undo_interval: f32,
     pub cumulative_undo_duration: f32,
+    /// Instant preview: while a heavy operation runs (a brush stroke, a transform or move, a
+    /// filter job) on a large document the canvas shows a low-resolution pass, refined to full
+    /// resolution once it ends.
+    pub instant_preview: bool,
+    /// Instant preview kicks in above this many megapixels.
+    pub instant_preview_megapixels: f32,
+    /// Worker threads for filters, compositing and strokes (0 = every core). Applies at the next
+    /// launch once a pool is running.
+    pub threads: u32,
+    /// Canvas scaling filter (see [`ScalingFilter`]).
+    pub scaling_filter: ScalingFilter,
+    /// Zoom, in percent, from which the pixel grid is drawn over the canvas.
+    pub pixel_grid_threshold: u32,
+    /// Folder for swapped-out tiles and the undo swap (empty = the system temp folder).
+    pub swap_directory: String,
+    /// Most canvas redraws per second while painting (1..240).
+    pub frame_rate_limit: u32,
 }
 
 impl Performance {
@@ -573,6 +704,13 @@ impl Default for Performance {
             cumulative_undo: false,
             cumulative_undo_interval: 2.0,
             cumulative_undo_duration: 60.0,
+            instant_preview: true,
+            instant_preview_megapixels: 8.0,
+            threads: 0,
+            scaling_filter: ScalingFilter::Auto,
+            pixel_grid_threshold: 2400,
+            swap_directory: String::new(),
+            frame_rate_limit: 60,
         }
     }
 }
@@ -606,6 +744,13 @@ pub struct Cursors {
     pub other: OtherCursor,
     /// Brush preview (HUD) colour.
     pub brush_preview_color: String,
+    /// The pointer shape and the outline drawn with it (`toolIcon` leaves `painting` in charge).
+    pub cursor_shape: CursorShape,
+    pub outline_shape: OutlineShape,
+    /// Keep the outline while the button is down.
+    pub show_outline_while_painting: bool,
+    /// The outline follows the size the pressure gives the dab, not the brush's nominal size.
+    pub effective_outline_size: bool,
 }
 
 impl Default for Cursors {
@@ -616,6 +761,10 @@ impl Default for Cursors {
             show_only_crosshair_while_painting: false,
             other: OtherCursor::Standard,
             brush_preview_color: "#ff0000".into(),
+            cursor_shape: CursorShape::ToolIcon,
+            outline_shape: OutlineShape::Circle,
+            show_outline_while_painting: true,
+            effective_outline_size: false,
         }
     }
 }
@@ -686,6 +835,46 @@ pub struct UnitsAndRulers {
     /// launch, so new and opened documents show them as Photoshop does. Set from the View
     /// menu (⌘R), not from the Preferences dialog.
     pub show_rulers: bool,
+    /// Edit › Units: user-defined measurement units (`modules_cmds`).
+    pub custom_units: Vec<CustomUnit>,
+}
+
+/// A user-defined measurement unit (Edit › Units…): `factor` is how many of it make one inch.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct CustomUnit {
+    pub identifier: String,
+    pub factor: f64,
+    pub digits: u8,
+    pub symbol: String,
+    pub abbreviation: String,
+    pub singular: String,
+    pub plural: String,
+}
+
+impl Default for CustomUnit {
+    fn default() -> Self {
+        Self {
+            identifier: "unit".into(),
+            factor: 1.0,
+            digits: 2,
+            symbol: "u".into(),
+            abbreviation: "u".into(),
+            singular: "unit".into(),
+            plural: "units".into(),
+        }
+    }
+}
+
+impl CustomUnit {
+    /// Document pixels → this unit at `dpi`.
+    pub fn from_px(&self, px: f64, dpi: f64) -> f64 {
+        px / dpi.max(1e-6) * self.factor
+    }
+    /// This unit → document pixels at `dpi`.
+    pub fn to_px(&self, v: f64, dpi: f64) -> f64 {
+        v / self.factor.max(1e-12) * dpi.max(1e-6)
+    }
 }
 
 impl Default for UnitsAndRulers {
@@ -699,6 +888,7 @@ impl Default for UnitsAndRulers {
             screen_resolution: 72.0,
             point_size: PointSize::PostScript,
             show_rulers: false,
+            custom_units: Vec::new(),
         }
     }
 }
@@ -725,6 +915,16 @@ impl UnitsAndRulers {
         let v = self.rulers.from_px(px, dpi, extent, self.point_size.per_inch());
         fmt_decimals(v, self.rulers.decimals())
     }
+
+    /// Format a length in document pixels in a custom unit, with its symbol: `"1.25 fur"`.
+    pub fn format_custom(&self, unit: &CustomUnit, px: f64, dpi: f64) -> String {
+        format!("{} {}", fmt_decimals(unit.from_px(px, dpi), usize::from(unit.digits)), unit.symbol)
+    }
+
+    /// The custom unit called `identifier`, if defined.
+    pub fn custom_unit(&self, identifier: &str) -> Option<&CustomUnit> {
+        self.custom_units.iter().find(|u| u.identifier == identifier)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -741,6 +941,12 @@ pub struct GuidesGridAndSlices {
     pub subdivisions: u32,
     pub slice_color: String,
     pub show_slice_numbers: bool,
+    /// Rectangular (the default) or isometric: lines rising left and right at the two angles,
+    /// plus verticals when asked, spaced by the gridline distance.
+    pub grid_type: GridType,
+    pub isometric_left_angle: f32,
+    pub isometric_right_angle: f32,
+    pub isometric_vertical_lines: bool,
 }
 
 impl Default for GuidesGridAndSlices {
@@ -756,6 +962,10 @@ impl Default for GuidesGridAndSlices {
             subdivisions: 4,
             slice_color: "#38b5ff".into(),
             show_slice_numbers: true,
+            grid_type: GridType::Rectangular,
+            isometric_left_angle: 30.0,
+            isometric_right_angle: 30.0,
+            isometric_vertical_lines: true,
         }
     }
 }
@@ -776,6 +986,13 @@ pub struct PlugIns {
     pub show_extension_panels: bool,
     pub allow_scripts_to_connect: bool,
     pub generator_enabled: bool,
+    /// Edit › Modules: installed plug-ins switched off without being removed (`modules_cmds`).
+    pub disabled_modules: Vec<String>,
+    /// Path of the external G'MIC command-line executable `filter.gmic.run` hands layers to
+    /// (empty: `gmic` on the PATH).
+    pub gmic_executable: String,
+    /// Folder of G'MIC update (`.gmic`) files the executable should read (empty: its default).
+    pub gmic_update_folder: String,
 }
 
 impl Default for PlugIns {
@@ -786,6 +1003,9 @@ impl Default for PlugIns {
             show_extension_panels: true,
             allow_scripts_to_connect: false,
             generator_enabled: false,
+            disabled_modules: Vec::new(),
+            gmic_executable: String::new(),
+            gmic_update_folder: String::new(),
         }
     }
 }
@@ -886,6 +1106,83 @@ impl Default for Integrations {
     }
 }
 
+choice!(
+    /// Canvas input profiles: how the canvas gestures (pan, zoom, rotate, pick) map to keys,
+    /// mouse buttons, the wheel and the stylus. A preset fills the bindings below; editing any
+    /// of them makes the profile `custom`.
+    InputProfile { Default = "default", Tablet = "tablet", Trackpad = "trackpad", Mouse = "mouse", Custom = "custom" } default Default
+);
+choice!(
+    /// What a middle-button (or stylus barrel button) drag does on the canvas.
+    DragAction { Pan = "pan", Rotate = "rotate", Zoom = "zoom", Pick = "pick", NoAction = "noAction" } default Pan
+);
+choice!(
+    /// The modifier that turns a painting tool into the colour picker for a press.
+    PickModifier { Alt = "alt", Ctrl = "ctrl", NoPick = "noPick" } default Alt
+);
+choice!(
+    /// What the plain mouse wheel does over the canvas.
+    WheelAction { Scroll = "scroll", Zoom = "zoom" } default Scroll
+);
+
+/// Edit › Preferences › Canvas Input: every canvas gesture remapped to key, mouse or stylus
+/// combinations, bundled as profiles (`canvas.input.useProfile`).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct CanvasInput {
+    pub profile: InputProfile,
+    /// Held keys (shortcut notation) for the Hand, Zoom In, Zoom Out and Rotate View gestures;
+    /// empty = the temporary tool's own shortcut (Edit › Keyboard Shortcuts).
+    pub pan_key: String,
+    pub zoom_in_key: String,
+    pub zoom_out_key: String,
+    pub rotate_key: String,
+    pub middle_button: DragAction,
+    pub stylus_button: DragAction,
+    pub pick_modifier: PickModifier,
+    pub wheel: WheelAction,
+    /// Shift + wheel rotates the view.
+    pub shift_wheel_rotates: bool,
+}
+
+impl Default for CanvasInput {
+    fn default() -> Self {
+        Self {
+            profile: InputProfile::Default,
+            pan_key: String::new(),
+            zoom_in_key: String::new(),
+            zoom_out_key: String::new(),
+            rotate_key: String::new(),
+            middle_button: DragAction::Pan,
+            stylus_button: DragAction::Pan,
+            pick_modifier: PickModifier::Alt,
+            wheel: WheelAction::Scroll,
+            shift_wheel_rotates: false,
+        }
+    }
+}
+
+impl CanvasInput {
+    /// The preset `profile`'s bindings (`Custom` keeps the current ones).
+    pub fn preset(profile: InputProfile, current: &Self) -> Self {
+        let base = Self { profile, ..Self::default() };
+        match profile {
+            InputProfile::Default => base,
+            InputProfile::Tablet => Self {
+                stylus_button: DragAction::Pan,
+                middle_button: DragAction::Rotate,
+                rotate_key: "Shift+Space".into(),
+                wheel: WheelAction::Zoom,
+                pick_modifier: PickModifier::Ctrl,
+                ..base
+            },
+            InputProfile::Trackpad => Self { middle_button: DragAction::NoAction, wheel: WheelAction::Scroll, shift_wheel_rotates: true, ..base },
+            InputProfile::Mouse => Self { middle_button: DragAction::Pan, wheel: WheelAction::Zoom, pick_modifier: PickModifier::Alt, ..base },
+            InputProfile::Custom => Self { profile, ..current.clone() },
+        }
+    }
+}
+
 /// Edit › Menus: hidden items and item colours, by command id.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -940,6 +1237,7 @@ pub struct Preferences {
     pub enhanced_controls: EnhancedControls,
     pub raw_defaults: RawDefaults,
     pub integrations: Integrations,
+    pub canvas_input: CanvasInput,
     /// Edit › Keyboard Shortcuts: command id → shortcut (`Cmd+Shift+N` notation); an empty
     /// string removes the default shortcut.
     pub shortcuts: BTreeMap<String, String>,
@@ -988,10 +1286,14 @@ pub struct Preferences {
     pub view_extras: Value,
     /// File › Scripts › Script Events Manager: event → script bindings.
     pub script_events: crate::automate_cmds::ScriptEvents,
+    /// Tags on patterns, gradients, palettes, dynamics, tool presets, styles and shapes
+    /// (`resource.tag`): `<kind>/<lower-case name>` → sorted tags. Brush tags live in the brush
+    /// preset store.
+    pub resource_tags: BTreeMap<String, Vec<String>>,
 }
 
 /// Preferences dialog sections in Photoshop's order: (id, title).
-pub const SECTIONS: [(&str, &str); 18] = [
+pub const SECTIONS: [(&str, &str); 19] = [
     ("general", "General"),
     ("interface", "Interface"),
     ("workspace", "Workspace"),
@@ -1010,6 +1312,7 @@ pub const SECTIONS: [(&str, &str); 18] = [
     ("enhancedControls", "Enhanced Controls"),
     ("rawDefaults", "Camera Raw Defaults"),
     ("integrations", "Integrations"),
+    ("canvasInput", "Canvas Input"),
 ];
 
 /// Preferences that nothing reads yet, so Edit › Preferences doesn't show them: a control that
@@ -1080,6 +1383,16 @@ pub fn choices(path: &str) -> Option<&'static [&'static str]> {
         "export.metadata" => ExportMetadata::NAMES,
         "cursors.painting" => PaintingCursor::NAMES,
         "cursors.other" => OtherCursor::NAMES,
+        "tools.tabletSpeedSource" => TabletSpeedSource::NAMES,
+        "tools.tabletApi" => TabletApi::NAMES,
+        "guidesGridAndSlices.gridType" => GridType::NAMES,
+        "cursors.cursorShape" => CursorShape::NAMES,
+        "canvasInput.profile" => InputProfile::NAMES,
+        "canvasInput.middleButton" => DragAction::NAMES,
+        "canvasInput.stylusButton" => DragAction::NAMES,
+        "canvasInput.pickModifier" => PickModifier::NAMES,
+        "canvasInput.wheel" => WheelAction::NAMES,
+        "cursors.outlineShape" => OutlineShape::NAMES,
         "tools.rightClickWithPaintingTools" => RightClickPaint::NAMES,
         "transparencyAndGamut.gridSize" => CheckerSize::NAMES,
         "transparencyAndGamut.gridColors" => CheckerColors::NAMES,
@@ -1095,6 +1408,7 @@ pub fn choices(path: &str) -> Option<&'static [&'static str]> {
         "performance.gpuBackend" => GpuBackend::NAMES,
         "performance.linuxDisplayServer" => LinuxDisplayServer::NAMES,
         "performance.renderingMode" => RenderingMode::NAMES,
+        "performance.scalingFilter" => ScalingFilter::NAMES,
         _ => return None,
     })
 }
@@ -1115,6 +1429,10 @@ pub fn range(path: &str) -> Option<(f64, f64)> {
         "performance.effectCacheMb" => (16.0, 65536.0),
         "performance.cumulativeUndoInterval" => (0.1, 60.0),
         "performance.cumulativeUndoDuration" => (1.0, 3600.0),
+        "performance.threads" => (0.0, 256.0),
+        "performance.pixelGridThreshold" => (100.0, 10_000.0),
+        "performance.frameRateLimit" => (1.0, 240.0),
+        "fileHandling.backupCount" => (0.0, 99.0),
         "transparencyAndGamut.gamutWarningOpacity" => (1.0, 100.0),
         "unitsAndRulers.columnWidth" | "unitsAndRulers.gutter" => (0.0, 10_000.0),
         "unitsAndRulers.printResolution" | "unitsAndRulers.screenResolution" | "rawDefaults.resolution" => (1.0, 10_000.0),
@@ -1486,6 +1804,7 @@ pub const TEMPORARY_TOOLS: &[(&str, &str, &str)] = &[
     ("tools.temporary.hand", "Hand Tool (hold)", "Space"),
     ("tools.temporary.zoomIn", "Zoom In (hold, drag to scrub)", "Cmd+Space"),
     ("tools.temporary.zoomOut", "Zoom Out (hold)", "Alt+Space"),
+    ("tools.temporary.rotate", "Rotate View (hold)", "Shift+Space"),
     ("tools.temporary.erase", "Erase with Brush or Pencil (hold)", "`"),
 ];
 
@@ -2117,9 +2436,29 @@ fn section_of(id: &str) -> &str {
     id.rsplit('.').next().unwrap_or("general")
 }
 
+/// `canvas.input.useProfile`: load a preset's bindings into Preferences › Canvas Input.
+fn use_profile(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "canvas.input.useProfile";
+    let name = p.get("profile").and_then(Value::as_str).ok_or_else(|| bad(cmd, format!("`profile` must be one of {}", InputProfile::NAMES.join(", "))))?;
+    let profile = InputProfile::parse(name).ok_or_else(|| bad(cmd, format!("unknown profile `{name}` (want {})", InputProfile::NAMES.join(", "))))?;
+    let next = CanvasInput::preset(profile, &s.prefs().canvas_input);
+    s.prefs.edit(|p| p.canvas_input = next.clone());
+    s.apply_prefs();
+    serde_json::to_value(&next).map_err(|e| EngineError::Other(e.to_string()))
+}
+
 /// Preference command specs.
 pub fn specs() -> Vec<CommandSpec> {
     vec![
+        spec!(
+            "canvas.input.useProfile",
+            "Use Canvas Input Profile",
+            [],
+            None,
+            r##"{"profile":"default|tablet|trackpad|mouse|custom"} → the profile's bindings (Preferences › Canvas Input)"##,
+            use_profile,
+            true
+        ),
         spec!(
             "prefs.get",
             "Get Preferences",
@@ -2158,6 +2497,7 @@ pub fn specs() -> Vec<CommandSpec> {
         section!("edit.preferences.enhancedControls", "Enhanced Controls…"),
         section!("edit.preferences.rawDefaults", "Camera Raw…"),
         section!("edit.preferences.integrations", "Integrations…"),
+        section!("edit.preferences.canvasInput", "Canvas Input…"),
         spec!(
             "edit.keyboardShortcuts",
             "Keyboard Shortcuts…",

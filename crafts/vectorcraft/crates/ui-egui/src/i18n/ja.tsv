@@ -4536,3 +4536,369 @@ lighting	Light	ライト
 @msg	select an object	オブジェクトを選択してください
 @msg	the copied object is no longer in this document	コピーしたオブジェクトはこのドキュメントにもうありません
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	「シミュレート」はオーバープリントプレビューの表示どおりにオーバープリントをプリントします。分版では常に保持されます。プリセットはプリント前に透明部分を分割・統合します（PostScript ファイルでは常に分割・統合されます）。
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	パス効果
+	Clone Original	オリジナルをクローン
+	Clone Original…	オリジナルをクローン…
+	Attach Path	パスを連結
+	Attach Path…	パスを連結…
+	Bounding Box	バウンディングボックス
+	Bounding Box…	バウンディングボックス…
+	Fill Between Many	複数パス間を塗る
+	Fill Between Many…	複数パス間を塗る…
+	Fill Between Strokes	線の間を塗る
+	Fill Between Strokes…	線の間を塗る…
+	Power Clip	パワークリップ
+	Power Clip…	パワークリップ…
+	Power Clip (Inverse)	パワークリップ (反転)
+	Release Power Clip	パワークリップを解除
+	Construct Grid	グリッドを構成
+	Construct Grid…	グリッドを構成…
+	Ellipse by 5 Points	5点による楕円
+	Ellipse by 5 Points…	5点による楕円…
+	Ellipse from Points	点から楕円
+	Ellipse from Points…	点から楕円…
+	Circle by 3 Points	3点による円
+	Circle by 3 Points…	3点による円…
+	Circle by Center and Radius	中心と半径による円
+	Line Segment…	線分…
+	Parallel	平行線
+	Parallel…	平行線…
+	Perpendicular Bisector	垂直二等分線
+	Perpendicular Bisector…	垂直二等分線…
+	Angle Bisector	角の二等分線
+	Angle Bisector…	角の二等分線…
+	Tangent to Curve	曲線の接線
+	Tangent to Curve…	曲線の接線…
+	Transform by 2 Points	2点で変形
+	Transform by 2 Points…	2点で変形…
+	Show Handles…	ハンドルを表示…
+	Measure Segments	セグメントを計測
+	Measure Segments…	セグメントを計測…
+	Ruler	ルーラー
+	Ruler…	ルーラー…
+	Interpolate Points	点を補間
+	Interpolate Points…	点を補間…
+	Knot	結び目
+	Knot…	結び目…
+	VonKoch	フォン・コッホ
+	VonKoch…	フォン・コッホ…
+	Gears	歯車
+	Gears…	歯車…
+	Embroidery Stitch	刺繍ステッチ
+	Embroidery Stitch…	刺繍ステッチ…
+	Stitch Sub-Paths	サブパスをステッチ
+	Stitch Sub-Paths…	サブパスをステッチ…
+	Hatches (Rough)	ハッチング (ラフ)
+	Hatches (Rough)…	ハッチング (ラフ)…
+	Sketch	スケッチ
+	Sketch…	スケッチ…
+	Join Type	結合の種類
+	Join Type…	結合の種類…
+	Slice…	スライス…
+	Select Linked Object	リンク先のオブジェクトを選択
+	Mask Background	マスクの背景
+	Background	背景
+	Live Slice	ライブスライス
+	Fuse Slice	スライスを結合
+	3D Marble	3D 大理石
+	3D Wood	3D 木目
+	Air Spray	エアスプレー
+	Aluminium	アルミニウム
+	Apply Effects to Image Pixels	効果を画像のピクセルに適用
+	Apply Filter Preset	フィルタープリセットを適用
+	Apply to Selection	選択範囲に適用
+	Bevels	ベベル
+	Black Hole	ブラックホール
+	Blobs	ブロブ
+	Bloom	ブルーム
+	Brilliance	輝き
+	Bump	バンプ
+	Bumps	バンプ
+	Button	ボタン
+	Canvas Bumps	キャンバスバンプ
+	Chalk and Sponge	チョークとスポンジ
+	Channel to Alpha	チャンネルをアルファに
+	Chrome	クローム
+	Color Blindness	色覚異常
+	Colour Space:	色空間:
+	Comics Cream	コミッククリーム
+	Cracked Glass	ひび割れガラス
+	Cubes	キューブ
+	Dark and Glow	ダークと光
+	Document Filters	ドキュメントのフィルター
+	Dragee	ドラジェ
+	Duochrome	デュオクローム
+	Duplicate Filter	フィルターを複製
+	Embossed Leather	エンボスレザー
+	Extract Channel	チャンネルを抽出
+	Fade to Black	黒へフェード
+	Felt Feather	フェルトの羽
+	Fill and Overlays	塗りとオーバーレイ
+	Filter	フィルター
+	Filter Gallery	フィルターギャラリー
+	Filter Presets	フィルタープリセット
+	Filter copy	フィルターのコピー
+	Filters	フィルター
+	Glow	グロー
+	Glowing Metal	光る金属
+	Gold	ゴールド
+	Greyscale	グレースケール
+	HSL Noise	HSL ノイズ
+	Ink Blot	インクのしみ
+	Ink Splash	インクの飛沫
+	Inner Shadow	内側のシャドウ
+	Leopard Fur	レオパードの毛皮
+	Light Eraser	明部を消去
+	Luminance to Alpha	輝度をアルファに
+	Materials	マテリアル
+	Matte Jelly	マットゼリー
+	Metallized Paint	メタリック塗装
+	Neon	ネオン
+	No filter matches the search.	検索に一致するフィルターはありません。
+	Noise Fill	ノイズ塗り
+	Non-realistic 3D Shaders	非写実的 3D シェーダー
+	Open Filter Editor	フィルターエディターを開く
+	Paper Bump	紙のバンプ
+	Pointillism	点描
+	Protrusions	突起
+	Quadritone	クアドリトーン
+	Ridges	隆起
+	Rough Paper	ざらざらした紙
+	Rough Transparency	ざらざらした透明
+	Roughen	ラフ
+	Saturation Map	彩度マップ
+	Select an object to apply a filter.	フィルターを適用するオブジェクトを選択してください。
+	Silhouette	シルエット
+	Smooth Edges	エッジを滑らかに
+	Solarize	ソラリゼーション
+	Specular Light	スペキュラー光
+	Spikes	スパイク
+	Spots Overlay	斑点オーバーレイ
+	Stone Wall	石壁
+	Subregion:	サブ領域:
+	Swirl	渦
+	Textures	テクスチャ
+	The document has no filters yet.	ドキュメントにはまだフィルターがありません。
+	Thin Membrane	薄い膜
+	Torn Edges	ちぎれたエッジ
+	Translucent	半透明
+	Transparency Utilities	透明ユーティリティ
+	Tritone	トリトーン
+	Watercolor	水彩
+	Waves	波
+	Turns:	巻き数:
+	Divergence:	発散:
+	Clockwise	時計回り
+	Threshold:	しきい値:
+	Grow/Shrink:	拡大/縮小:
+	Fill by:	塗りの基準:
+	Visible Colors	表示色
+	Alpha	アルファ
+	Add to Fill	塗りに追加
+	View rotation (Cmd+Shift+scroll turns the view)	表示の回転 (Cmd+Shift+スクロールで回転)
+	Lock Rotate View	表示の回転をロック
+	Rotate View	表示を回転
+	Fixation:	固定:
+	Dip Pen	つけペン
+	Marker	マーカー
+	Brush	ブラシ
+	Wiggly	ゆらゆら
+	Splotchy	しみ
+	Use Pressure	筆圧を使用
+	Live Simplify	ライブ単純化
+	Simplify (Live)…	単純化 (ライブ)…
+	Split View	分割表示
+	X-ray	X 線
+	Input Devices…	入力デバイス…
+	Input Devices	入力デバイス
+	Pressure Curves	筆圧カーブ
+	Mouse	マウス
+	Pen / Stylus	ペン / スタイラス
+	Touch	タッチ
+	Liquify Tools	リキッドツール
+	Disabled	無効
+	Grids	グリッド
+	Main Grid	メイングリッド
+	Add Grid	グリッドを追加
+	Remove Grid	グリッドを削除
+	Grid Options	グリッドオプション
+	Kind:	種類:
+	Subdivisions:	分割数:
+	Angles:	角度:
+	Gaps:	間隔:
+	Origin:	原点:
+	Own color	独自の色
+	Open a document to edit its grids.	グリッドを編集するドキュメントを開いてください。
+	Add Script	スクリプトを追加
+	Edit Script	スクリプトを編集
+	Remove Script	スクリプトを削除
+	The document has no scripts.	ドキュメントにスクリプトはありません。
+	External:	外部:
+	Embedded script	埋め込みスクリプト
+	Add Embedded Script	埋め込みスクリプトを追加
+	Add External Script	外部スクリプトを追加
+	Source:	ソース:
+	External file	外部ファイル
+	Code:	コード:
+	Open a document to edit its scripts.	スクリプトを編集するドキュメントを開いてください。
+	Alignment Handles	整列ハンドル
+	Align (Shift: move the key object)	整列 (Shift: キーオブジェクトを移動)
+	Stylesheet	スタイルシート
+	No rules yet. Add one and assign its class to objects.	ルールはまだありません。追加してそのクラスをオブジェクトに割り当ててください。
+	Add Rule	ルールを追加
+	Remove Rule	ルールを削除
+	Selector:	セレクター:
+	Declarations:	宣言:
+	Assign to Selection	選択範囲に割り当て
+	Remove from Selection	選択範囲から削除
+	Add CSS Rule	CSS ルールを追加
+	Edit CSS Rule	CSS ルールを編集
+	Remove CSS Rule	CSS ルールを削除
+	Assign CSS Class	CSS クラスを割り当て
+	Remove CSS Class	CSS クラスを削除
+	Apply Stylesheet	スタイルシートを適用
+	New Node	新規ノード
+	Indent Node	ノードをインデント
+	Outdent Node	ノードをアウトデント
+	Move Node	ノードを移動
+	Set Path Data	パスデータを設定
+	Round to:	丸め桁数:
+	Round Path Data	パスデータを丸める
+	Connector Tool	コネクターツール
+	Connect Objects	オブジェクトを接続
+	Reroute Connectors	コネクターを再配線
+	Connector Obstacle	コネクターの障害物
+	Arrange Connected Objects	接続されたオブジェクトを配置
+	Arrange Connected	接続を配置
+	Routing:	配線:
+	Orthogonal	直交
+	Polyline	折れ線
+	Curvature:	曲率:
+	3D Box Tool	3D ボックスツール
+	3D Box	3D ボックス
+	3D Box Options	3D ボックスオプション
+	Move Vanishing Point	消点を移動
+	Z:	Z:
+	Vanishing Point	消点
+	Infinite	無限
+	Arrange in Grid	グリッドに配置
+	Arrange in Circle	円形に配置
+	Dynamic Offset	ダイナミックオフセット
+	Fill Between Paths	パス間を塗りつぶす
+	Linked Offset	リンクオフセット
+	Linked Offset Distance	リンクオフセットの距離
+	Remove Overlaps	重なりを解消
+	Unlink Live Object	ライブオブジェクトのリンクを解除
+	Create Anchor	アンカーを作成
+	Follow Link	リンクを開く
+	Select All Anchors	すべてのアンカーポイントを選択
+	Invert Anchor Selection	アンカーポイントの選択を反転
+	Aspect ratio:	縦横比:
+	Clip path	クリップパス
+	DPI:	DPI:
+	Effect knots	効果ノット
+	Highlight color:	ハイライト色:
+	Interactivity	インタラクティビティ
+	Link target:	リンクターゲット:
+	Link title:	リンクタイトル:
+	Path outline	パスのアウトライン
+	Transform handles	変形ハンドル
+	Plot…	プロット…
+	Import Web Image…	Web 画像を読み込み…
+	Check Spelling	スペルチェック
+	Edit Custom Dictionary	ユーザー辞書を編集
+	The spell check is complete.	スペルチェックが完了しました。
+	Words checked	チェックした単語数
+	Check Again	再チェック
+	Word Not Found:	見つからない単語:
+	Change To:	変更後:
+	Suggestions:	候補:
+	No suggestions	候補なし
+	Ignore All	すべて無視
+	No words yet	単語はまだありません
+	Word:	単語:
+	Change Spelling	スペルを変更
+	Ignore Spelling	スペルを無視
+	Add to Dictionary	辞書に追加
+	Remove from Dictionary	辞書から削除
+	Spelling Dictionaries	スペル辞書
+	Visible Hairlines	ヘアラインを表示
+	Rename…	名前を変更…
+	Extract…	取り出す…
+	Object Attributes	オブジェクトの属性
+	Object Attributes…	オブジェクトの属性…
+	Create Tiled Clones…	タイルクローンを作成…
+	Rename Symbol	シンボルの名前を変更
+	Set Object Attribute	オブジェクトの属性を設定
+	Trace Pixel Art…	ピクセルアートをトレース…
+	Objects to Marker	オブジェクトをマーカーに
+	Markers	マーカー
+	Markers:	マーカー:
+	Delete Marker	マーカーを削除
+	SVG Font Editor	SVG フォントエディター
+	SVG Font Editor…	SVG フォントエディター…
+	New Font	新規フォント
+	Delete Font	フォントを削除
+	No SVG font yet: make one, or turn glyph layers into one.	SVG フォントがまだありません。新しく作るか、グリフレイヤーから作成してください。
+	Glyph Layers to Font	グリフレイヤーをフォントに
+	Glyph	グリフ
+	Advance	送り幅
+	Curves	曲線
+	Unicode:	Unicode:
+	Glyph name:	グリフ名:
+	Advance:	送り幅:
+	Add Glyph	グリフを追加
+	Remove Glyph	グリフを削除
+	Get Curves from Selection	選択範囲から曲線を取得
+	Glyph to Objects	グリフをオブジェクトに
+	Kerning:	カーニング:
+	Set Pair	ペアを設定
+	Preview:	プレビュー:
+	Font to Glyph Layers	フォントをグリフレイヤーに
+	New SVG Font	新規 SVG フォント
+	SVG Fonts	SVG フォント
+	Delete SVG Font	SVG フォントを削除
+	SVG Font Options	SVG フォントオプション
+	Set Glyph	グリフを設定
+	Set Kerning Pair	カーニングペアを設定
+	Preview SVG Font	SVG フォントをプレビュー
+	Glyph Layers to SVG Font	グリフレイヤーを SVG フォントに
+	SVG Font to Glyph Layers	SVG フォントをグリフレイヤーに
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	WPG バージョン 2 のファイル（WordPerfect 6 以降）はまだ読み込めません。グラフィックを WPG 1 か別のベクター形式で保存してください
+@msg	bad central record	セントラルレコードが不正です
+@msg	downloading needs the desktop app	ダウンロードにはデスクトップアプリが必要です
+@msg	give `url`: an http:// or https:// address of an image	`url` を指定してください。画像の http:// または https:// アドレスです
+@msg	no zip end record	zip の終端レコードがありません
+@msg	not a CGM file	CGM ファイルではありません
+@msg	not a CorelDRAW file	CorelDRAW ファイルではありません
+@msg	not a WordPerfect Graphics file	WordPerfect Graphics ファイルではありません
+@msg	not a zip	zip ではありません
+@msg	not an XFig file	XFig ファイルではありません
+@msg	select an embedded image	埋め込み画像を選択してください
+@msg	the drawing has nothing Redrob Canvas reads	この図面には Redrob Canvas が読み込めるものがありません
+@msg	the effect links to no object in this document	この効果はこのドキュメント内のどのオブジェクトにもリンクしていません
+@msg	the file draws nothing Redrob Canvas reads	このファイルには Redrob Canvas が読み込める描画がありません
+@msg	the file is empty	ファイルが空です
+@msg	the font has a glyph for `{nu}` already	このフォントには `{nu}` のグリフがすでにあります
+@msg	the graphic draws nothing Redrob Canvas reads	このグラフィックには Redrob Canvas が読み込める描画がありません
+@msg	the metafile draws nothing Redrob Canvas reads	このメタファイルには Redrob Canvas が読み込める描画がありません
+@msg	the object is gone	オブジェクトはすでに存在しません
+@msg	the preview bitmap can't be read	プレビュービットマップを読み込めません
+@msg	the preview bitmap is empty	プレビュービットマップが空です
+@msg	the selected object has no link	選択したオブジェクトにリンクがありません
+@msg	the view's rotation is locked (View › Lock Rotate View)	表示の回転はロックされています（表示 › 表示の回転をロック）
+@msg	truncated zip	zip が途中で切れています
+@msg	view.setRotation: missing `angle`	view.setRotation: `angle` がありません
+@msg	{_1}: the dictionary is empty	{_1}: 辞書が空です
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: ウェブアプリにはシリアルデバイスもファイルもありません。HPGL を書き出してダウンロードしてください
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} はこのリーダーが認識できる形式ではありません
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	{kind}{ver} ファイルは圧縮コンテナで、その描画レコードは文書化されていません。開くには、CorelDRAW から図面を SVG、PDF、EPS、EMF のいずれかで書き出してください
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: 描画レコードは文書化されておらず、ファイルにプレビュービットマップもありません。開くには、図面を SVG、PDF、EPS、EMF のいずれかで書き出してください
+@msg	{name}: compression method {m} isn't supported	{name}: 圧縮方式 {m} はサポートされていません
+@msg	{name}: not found among the document's images	{name}: ドキュメントの画像の中に見つかりません
+@msg	{name}: too large	{name}: サイズが大きすぎます
+@msg	{url}: {e}	{url}: {e}

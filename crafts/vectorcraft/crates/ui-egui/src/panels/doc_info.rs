@@ -72,18 +72,93 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             if rows.is_empty() {
                 widgets::dim_label(ui, tl!("None"));
             }
-            let named = named_rows(s["id"].as_str().unwrap_or_default(), rows);
+            let section = s["id"].as_str().unwrap_or_default().to_string();
+            let named = named_rows(&section, rows);
             for (k, r) in rows.iter().enumerate() {
                 let (label, value) = (r[0].as_str().unwrap_or_default(), r[1].as_str().unwrap_or_default());
                 let label = super::label_or_name(label, !named.contains(&k));
-                if value.is_empty() {
-                    widgets::dim_name(ui, label);
-                } else {
-                    row(ui, label, value.into());
+                if resource_actions(&section).is_empty() {
+                    if value.is_empty() {
+                        widgets::dim_name(ui, label);
+                    } else {
+                        row(ui, label, value.into());
+                    }
+                    continue;
                 }
+                // A resource: its row ends in a menu of what can be done with it.
+                ui.horizontal(|ui| {
+                    if value.is_empty() {
+                        widgets::dim_name(ui, label);
+                    } else {
+                        row(ui, label, value.into());
+                    }
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.menu_button("⋯", |ui| {
+                            for (action, cmd) in resource_actions(&section) {
+                                if ui.button(tl!(action)).clicked() {
+                                    ui.close();
+                                    let ctx = ui.ctx().clone();
+                                    resource_action(app, &ctx, &section, label, cmd);
+                                }
+                            }
+                        });
+                    });
+                });
             }
         }
     });
+}
+
+/// What Document Info can do with a resource of `section`: (label, action id).
+fn resource_actions(section: &str) -> &'static [(&'static str, &'static str)] {
+    match section {
+        "graphicStyles" | "spotColors" | "gradients" | "patterns" => &[("Rename…", "rename"), ("Delete", "delete")],
+        "symbols" => &[("Rename…", "rename"), ("Select All Instances", "select"), ("Delete", "delete")],
+        "embeddedImages" | "linkedImages" => &[("Select", "select"), ("Extract…", "extract")],
+        _ => &[],
+    }
+}
+
+/// Run `action` on resource `name` of `section`: Rename opens the parameter dialog on the
+/// resource's rename command, Delete and Select run at once, Extract writes an embedded image
+/// to a file (the Links panel's Unembed).
+fn resource_action(app: &mut VectorcraftApp, ctx: &egui::Context, section: &str, name: &str, action: &str) {
+    let rename = |command: &str, key: &str| json!({ "command": command, "label": "Rename", "params": { "name": name, key: name } });
+    let r = match (section, action) {
+        ("graphicStyles", "rename") => app.run("ui.paramDialog", rename("graphicStyle.rename", "to")),
+        ("graphicStyles", "delete") => app.run("graphicStyle.delete", json!({ "name": name })),
+        ("spotColors" | "gradients", "rename") => app.run("ui.paramDialog", rename("swatch.edit", "newName")),
+        ("spotColors" | "gradients", "delete") => app.run("swatch.delete", json!({ "name": name })),
+        ("patterns", "rename") => app.run("ui.paramDialog", rename("pattern.options", "newName")),
+        ("patterns", "delete") => app.run("pattern.delete", json!({ "name": name })),
+        ("symbols", "rename") => app.run("ui.paramDialog", rename("symbol.rename", "newName")),
+        ("symbols", "select") => app.run("symbol.selectInstances", json!({ "name": name })),
+        ("symbols", "delete") => app.run("symbol.delete", json!({ "name": name })),
+        (_, "select" | "extract") => {
+            // Images are listed by name: the Links panel's list gives their ids.
+            let list = app.session.execute("links.list", &json!({})).ok();
+            let entry = list
+                .as_ref()
+                .and_then(|l| l.get("links"))
+                .and_then(Value::as_array)
+                .and_then(|a| a.iter().find(|e| e.get("name").and_then(Value::as_str) == Some(name)))
+                .cloned();
+            match entry.as_ref().and_then(|e| e.get("id")).and_then(Value::as_u64) {
+                None => Err(format!("{name}: not found among the document's images")),
+                Some(id) if action == "select" => app.run("select.set", json!({ "ids": [id] })),
+                Some(id) => {
+                    super::links::unembed(app, id, name);
+                    Ok(Value::Null)
+                }
+            }
+        }
+        _ => Ok(Value::Null),
+    };
+    if let Err(e) = r {
+        app.status(e);
+    }
+    // The listing is fetched again.
+    set_pstate(ctx, "docinfo-cache", Cache::default());
 }
 
 /// The rows of Document Info section `id` labelled by a name (an artboard, a style, a swatch, a

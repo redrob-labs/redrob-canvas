@@ -195,6 +195,8 @@ pub type DownloadFn = Box<dyn FnMut(&str, &[u8]) -> Result<(), String>>;
 
 /// Opens a URL in the system browser.
 pub type OpenUrlFn = Box<dyn FnMut(&str)>;
+/// Fetches the bytes at an http(s) URL (desktop: File › Import Web Image…).
+pub type FetchUrlFn = Box<dyn FnMut(&str) -> Result<Vec<u8>, String>>;
 
 /// Shows a file in the system file manager, or opens it in its app.
 pub type RevealFn = Box<dyn FnMut(&str) -> Result<(), String>>;
@@ -219,6 +221,9 @@ pub struct Services {
     pub clipboard_read: Option<Box<dyn FnMut() -> Option<String>>>,
     /// Open a URL in the system browser (desktop). Without it, egui opens it (a new tab on the web).
     pub open_url: Option<OpenUrlFn>,
+    /// Download the bytes at a URL (desktop): File › Import Web Image… places them as an
+    /// embedded image. Without it the command answers with an error.
+    pub fetch_url: Option<FetchUrlFn>,
     /// Show an open dialog for several files (File → Place…); returns their paths (none: cancelled).
     pub pick_open_multi: Option<Box<dyn FnMut() -> Vec<String>>>,
     /// Web: start an async pick of files to place (they arrive via `place_inbox`).
@@ -274,6 +279,10 @@ pub struct CanvasCache {
     pub renderer: redrob_vector_render::Renderer,
     pub texture: Option<egui::TextureHandle>,
     pub key: Option<CacheKey>,
+    /// View › Split View / X-ray: the same frame in outline, for the outline side of the divider
+    /// or the disc around the pointer, keyed like the frame it pairs with.
+    pub outline_texture: Option<egui::TextureHandle>,
+    pub outline_key: Option<CacheKey>,
     pub last_ms: f64,
     /// The frame shown drew raster effects from rasters made before their objects moved
     /// ([`redrob_vector_render::FrameStats::moved`]): the next frame outside an interaction runs
@@ -315,6 +324,8 @@ pub struct CacheKey {
     pub h: u32,
     pub outline: bool,
     pub trim: bool,
+    /// View › Visible Hairlines ([`redrob_vector_render::RenderOptions::visible_hairlines`]).
+    pub hairlines: bool,
     pub ppp: f32,
     pub hidden: Vec<u64>,
     pub rot: f64,
@@ -476,6 +487,8 @@ impl VectorcraftApp {
                 renderer: redrob_vector_render::Renderer::new(),
                 texture: None,
                 key: None,
+                outline_texture: None,
+                outline_key: None,
                 last_ms: 0.0,
                 moved: false,
                 worker: None,

@@ -23,15 +23,15 @@ const TOOL_SECTIONS: &[&[&[Tool]]] = &[
         &[Tool::ObjectSelection, Tool::QuickSelection, Tool::MagicWand],
         &[Tool::Crop, Tool::PerspectiveCrop, Tool::Slice, Tool::SliceSelect],
         &[Tool::Frame],
-        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count, Tool::Assistant],
+        &[Tool::Eyedropper, Tool::ColorSampler, Tool::Ruler, Tool::Note, Tool::Count, Tool::Assistant, Tool::ColorizeMask, Tool::ReferenceImages],
     ],
     &[
         &[Tool::Remove, Tool::SpotHealing, Tool::Healing, Tool::Patch, Tool::ContentAwareMove, Tool::RedEye],
-        &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement],
+        &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement, Tool::StraightLine, Tool::Multibrush, Tool::DynamicBrush],
         &[Tool::CloneStamp, Tool::PatternStamp],
         &[Tool::HistoryBrush],
         &[Tool::Eraser, Tool::BackgroundEraser, Tool::MagicEraser],
-        &[Tool::Gradient, Tool::PaintBucket],
+        &[Tool::Gradient, Tool::PaintBucket, Tool::EncloseFill],
         &[Tool::Blur, Tool::Sharpen, Tool::Smudge],
         &[Tool::Dodge, Tool::Burn, Tool::Sponge],
     ],
@@ -980,6 +980,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     || crate::vector_ui::options_bar(app, ui, tool)
                     || crate::analysis_ui::options_bar(app, ui, tool)
                     || crate::assistant_ui::options_bar(app, ui, tool)
+                    || crate::fill_tool_ui::enclose_options_bar(app, ui, tool)
+                    || crate::reference_ui::options_bar(app, ui, tool)
+                    || crate::colorize_ui::options_bar(app, ui, tool)
                     || crate::slice_ui::options_bar(app, ui, tool)
                     || crate::frame_tool::options_bar(app, ui, tool)
                     || crate::artboard_tool::options_bar(app, ui, tool)
@@ -990,7 +993,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let mut brush = brush_before.clone();
                 let b = &mut brush;
                 match app.ui.tool {
-                    Tool::Brush | Tool::Eraser if t.pro => {
+                    Tool::Brush | Tool::Eraser | Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush if t.pro => {
                         // A Block-mode Eraser has a fixed size, opacity and flow (Photoshop, #2770).
                         let block = crate::eraser_ui::block_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!block, |ui| {
@@ -998,6 +1001,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             crate::brush_picker::settings_toggle(app, ui);
                         });
                         widgets::vline(ui, 22.0);
+                        if app.ui.tool == Tool::Brush {
+                            crate::paint_engines_ui::controls(app, ui);
+                        }
                         // The Eraser has no blend mode: its Mode is Brush, Pencil or Block (#2662).
                         if app.ui.tool == Tool::Eraser {
                             crate::eraser_ui::mode_dropdown(ui, &mut app.ui.tool_options.eraser_mode);
@@ -1009,6 +1015,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
                         line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
+                        crate::brush_extras_ui::options(app, ui);
                         ui.add_enabled_ui(!block, |ui| {
                             percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, 62.0);
                             if icons::button(ui, "circle-dot", 24.0, b.pressure_opacity, tl!("Always use pressure for opacity")).clicked() {
@@ -1053,16 +1060,20 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         paint_mode_dropdown(ui, "pencil-mode", b, &mut app.ui.tool_options.pencil_clear, held);
                         erase_toggle(ui, &mut app.ui.tool_options.pencil_clear, held);
                         line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
+                        crate::brush_extras_ui::options(app, ui);
                         percent_field(ui, tl!("Opacity"), &mut b.opacity, 0.0..=100.0, if t.pro { 62.0 } else { 66.0 });
                         opt_label(ui, tl!("Smoothing"));
                         smoothing_field(ui, b, if t.pro { 58.0 } else { 66.0 });
                         widgets::vline(ui, 22.0);
                         widgets::checkbox(ui, &mut app.ui.tool_options.pencil_auto_erase, tl!("Auto Erase"));
                     }
-                    Tool::Brush | Tool::Eraser => {
+                    Tool::Brush | Tool::Eraser | Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush => {
                         brush_preset_chip(ui, b, &mut app.ui);
                         crate::brush_picker::settings_toggle(app, ui);
                         widgets::vline(ui, 22.0);
+                        if app.ui.tool == Tool::Brush {
+                            crate::paint_engines_ui::controls(app, ui);
+                        }
                         // A Block-mode Eraser has a fixed size, opacity and flow (Photoshop, #2770).
                         let block = crate::eraser_ui::block_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!block, |ui| {
@@ -1080,6 +1091,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             erase_toggle(ui, &mut app.ui.tool_options.brush_clear, held);
                         }
                         line_mode_toggle(ui, &mut app.ui.tool_options.brush_line_mode);
+                        crate::brush_extras_ui::options(app, ui);
                         // A Pencil-mode Eraser is always hard and at full flow (Photoshop).
                         let fixed = block || crate::eraser_ui::pencil_mode(app, app.ui.tool);
                         ui.add_enabled_ui(!fixed, |ui| percent_field(ui, tl!("Hardness"), &mut b.hardness, 0.0..=100.0, 66.0));
@@ -1090,6 +1102,33 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::vline(ui, 22.0);
                         widgets::toggle(ui, &mut b.pressure_size, tl!("Pressure for Size"));
                         widgets::toggle(ui, &mut b.pressure_opacity, tl!("Pressure for Opacity"));
+                        if app.ui.tool == Tool::Brush {
+                            // Colour from gradient: the stroke runs through the current gradient
+                            // (`brush.colorFromGradient`), one run per fade length.
+                            let mut from_gradient = !b.color_gradient.is_empty();
+                            if widgets::toggle(ui, &mut from_gradient, tl!("Color from Gradient")).changed() {
+                                let p = if from_gradient {
+                                    json!({ "on": true, "length": app.ui.tool_options.gradient_fade_length, "repeat": app.ui.tool_options.gradient_repeat })
+                                } else {
+                                    json!({ "on": false })
+                                };
+                                if let Err(e) = app.run("brush.colorFromGradient", p) {
+                                    app.ui.status = e;
+                                    app.ui.status_error = true;
+                                }
+                            }
+                            if from_gradient {
+                                opt_label(ui, tl!("Fade length"));
+                                if widgets::value_field(ui, &mut app.ui.tool_options.gradient_fade_length, 1.0..=100000.0, "px", 70.0).changed()
+                                    && let Err(e) = app.run(
+                                        "brush.colorFromGradient",
+                                        json!({ "on": true, "length": app.ui.tool_options.gradient_fade_length, "repeat": app.ui.tool_options.gradient_repeat }),
+                                    )
+                                {
+                                    app.ui.status = e;
+                                }
+                            }
+                        }
                     }
                     Tool::MixerBrush => {
                         brush_preset_chip(ui, b, &mut app.ui);
@@ -1111,6 +1150,17 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         let mut radius = b.mixer.smudge_radius * 100.0;
                         if widgets::value_field(ui, &mut radius, 50.0..=300.0, "%", 62.0).changed() {
                             b.mixer.smudge_radius = (radius / 100.0).clamp(0.5, 3.0);
+                        }
+                        // Paint thickness (a height map shades the deposit), the gradient as the
+                        // paint source, and HSV jitter of the paint per dab.
+                        percent_field(ui, tl!("Thickness"), &mut b.mixer.thickness, 0.0..=100.0, 62.0);
+                        widgets::checkbox(ui, &mut b.mixer.gradient_source, tl!("Gradient Source"));
+                        for (label, value) in [
+                            (tl!("Hue Jitter"), &mut b.mixer.hue_jitter),
+                            (tl!("Saturation Jitter"), &mut b.mixer.saturation_jitter),
+                            (tl!("Value Jitter"), &mut b.mixer.value_jitter),
+                        ] {
+                            percent_field(ui, label, value, 0.0..=100.0, 62.0);
                         }
                     }
                     Tool::RectMarquee | Tool::EllipseMarquee | Tool::SingleRowMarquee | Tool::SingleColumnMarquee if t.pro => {
@@ -1194,7 +1244,16 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             if icons::button(ui, "pentagon", 24.0, o.lasso_free_select, tl!("Free select: clicks and drags build one editable outline")).clicked() {
                                 o.lasso_free_select = !o.lasso_free_select;
                             }
+                            let was = o.foreground_select;
+                            widgets::checkbox(ui, &mut o.foreground_select, tl!("Foreground Select"))
+                                .on_hover_text(tl!("Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask"));
+                            if was && !app.ui.tool_options.foreground_select {
+                                crate::foreground_select_ui::reset(app);
+                            }
                             widgets::vline(ui, 22.0);
+                            if app.ui.tool_options.foreground_select {
+                                crate::foreground_select_ui::options_bar(app, ui);
+                            }
                         }
                         if widgets::secondary_button(ui, tl!("Select and Mask…"), 0.0).clicked() {
                             let _ = crate::menus::invoke(app, ui.ctx(), "select.selectAndMask", json!({}));
@@ -1267,8 +1326,16 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         opt_label(ui, tl!("Tolerance"));
                         widgets::value_field(ui, &mut app.ui.tool_options.tolerance, 0.0..=255.0, "", 58.0);
                         widgets::checkbox(ui, &mut app.ui.tool_options.anti_alias, tl!("Anti-alias"));
-                        widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous"));
-                        widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("All Layers"));
+                        if widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous")).changed() {
+                            // The Fill mode dropdown (fill_tool_ui) says the same thing: keep them together.
+                            let o = &mut app.ui.tool_options;
+                            o.bucket_fill_mode = if o.contiguous { "contiguous" } else { "similar" }.into();
+                        }
+                        if widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("All Layers")).changed() {
+                            // The Reference dropdown (fill_tool_ui) is what the fill reads (#1118).
+                            let o = &mut app.ui.tool_options;
+                            o.bucket_reference = if o.sample_all_layers { "all" } else { "current" }.into();
+                        }
                         crate::eraser_ui::wand_options(ui, &mut app.ui.tool_options);
                         widgets::vline(ui, 22.0);
                         let o = &mut app.ui.tool_options;
@@ -1300,6 +1367,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                                 }
                             }
                         }
+                        crate::fill_tool_ui::bucket_options(ui, o);
                     }
                     Tool::Gradient => {
                         // Live "Gradient" (a Gradient Fill layer) or "Classic gradient" (pixels).
@@ -1329,6 +1397,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             ("conicalSymmetric", "cone", tl!("Conical Gradient (symmetric)")),
                             ("spiralClockwise", "shell", tl!("Spiral Gradient (clockwise)")),
                             ("spiralCounterClockwise", "rotate-ccw", tl!("Spiral Gradient (counter-clockwise)")),
+                            ("shapedAngular", "lasso", tl!("Shaped Gradient (angular)")),
+                            ("shapedSpherical", "circle-dot", tl!("Shaped Gradient (spherical)")),
+                            ("shapedDimpled", "circle-dashed", tl!("Shaped Gradient (dimpled)")),
                         ] {
                             if icons::button(ui, icon, 24.0, app.ui.tool_options.gradient_style == style, tip).clicked() {
                                 app.ui.tool_options.gradient_style = style.into();
@@ -1359,6 +1430,16 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         }
                         widgets::checkbox(ui, &mut app.ui.tool_options.gradient_reverse, tl!("Reverse"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.gradient_dither, tl!("Dither"));
+                        if app.ui.tool_options.gradient_classic {
+                            // Classic gradient only: how the ramp repeats past the drag, and the
+                            // start offset. A live Gradient Fill layer has neither.
+                            opt_label(ui, tl!("Repeat"));
+                            let repeats: [(String, &str); 4] =
+                                [("none".into(), "None"), ("sawtooth".into(), "Sawtooth wave"), ("triangular".into(), "Triangular wave"), ("truncate".into(), "Truncate")];
+                            widgets::dropdown(ui, "gradient-repeat", &mut app.ui.tool_options.gradient_repeat, &repeats, 118.0);
+                            opt_label(ui, tl!("Offset"));
+                            widgets::value_field(ui, &mut app.ui.tool_options.gradient_offset, 0.0..=100.0, "%", 58.0);
+                        }
                         // Live mode: the options also change a selected gradient fill layer.
                         crate::gradient_ui::options_changed(app, &before);
                     }
@@ -1600,6 +1681,13 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 // action available for Brush, Pencil and Eraser in every palette (#2659).
                 if matches!(tool, Tool::Brush | Tool::Pencil | Tool::Eraser) {
                     crate::symmetry_ui::menu(app, ui);
+                }
+                // The Brush's engine (Pixel, or sketch, hatching, spray… and a filter through the
+                // brush), its settings, and a text tip.
+                if tool == Tool::Brush {
+                    widgets::vline(ui, 22.0);
+                    crate::brush_engines_ui::options_bar(app, ui);
+                    crate::brush_engines_ui::text_tip_row(app, ui);
                 }
                 crate::brush_panel::commit_gesture(app, ui.ctx(), &brush_before, &brush);
             });
@@ -1870,6 +1958,8 @@ pub(crate) fn dock_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, group: crate
         (Group::Layers, 0) => layers(app, ui),
         (Group::Layers, 1) => channels(app, ui),
         (Group::Layers, _) => crate::vector_ui::paths_panel(app, ui),
+        (Group::Brushes, 1) => crate::brush_history_tab::show(app, ui),
+        (Group::Brushes, 2) => crate::reference_tab::show(app, ui),
         (Group::Brushes, _) => crate::brushes_tab::show(app, ui),
     }
 }
@@ -1987,7 +2077,9 @@ pub(crate) type SamplerReadouts = ((redrob_photo_doc::DocId, u64), std::sync::Ar
 /// adding, moving or deleting a sampler and every pixel edit bump the revision, so between them
 /// the Info panel reuses them instead of compositing each point through the stack every frame.
 pub(crate) fn sampler_readouts(app: &mut PhotocraftApp) -> std::sync::Arc<Vec<Value>> {
-    let Some(key) = app.session.active().map(|s| (s.doc.id, s.revision)) else { return std::sync::Arc::default() };
+    let Some(key) = app.session.active().map(|s| (s.doc.id, s.revision)) else {
+        return std::sync::Arc::default();
+    };
     if let Some((k, v)) = &app.info_samplers
         && *k == key
     {
@@ -2023,7 +2115,9 @@ fn navigator(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     } else if crate::canvas::navigator_waits_for_gpu(app, idx, &ctx) {
         widgets::checker(ui.painter(), rect, 6.0);
     } else {
-        let Some(tex) = crate::canvas::navigator_texture(app, &ctx, idx) else { return };
+        let Some(tex) = crate::canvas::navigator_texture(app, &ctx, idx) else {
+            return;
+        };
         widgets::checker(ui.painter(), rect, 6.0);
         ui.painter().image(tex, rect, Rect::from_min_max(egui::Pos2::ZERO, pos2(1.0, 1.0)), Color32::WHITE);
     }
@@ -2273,6 +2367,9 @@ fn blend_options(groups: bool, current: BlendMode) -> Vec<(BlendMode, &'static s
         .filter(|_| groups)
         .chain(BlendMode::LAYER_MODES)
         .chain(BlendMode::EXTENDED_MODES)
+        .chain(BlendMode::LCH_MODES)
+        .chain(BlendMode::INVERSION_MODES)
+        .chain(BlendMode::ALPHA_MODES)
         .chain(BlendMode::BINARY_MODES)
         .chain(BlendMode::MODULO_MODES)
         .chain(BlendMode::QUADRATIC_MODES)
@@ -2348,7 +2445,8 @@ fn layers(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let opacity_label = if t.pro { tl!("Opacity:") } else { tl!("Opacity") };
                 let (blend_width, show_opacity_label) =
                     opacity_row_layout(ui.available_width(), body_text_width(ui, opacity_label), ui.spacing().item_spacing.x);
-                let (chosen, hovered) = widgets::dropdown_wheel_hovered(ui, "blend", &mut m, &blend_options(l.is_group(), l.blend), blend_width);
+                let (chosen, hovered) =
+                    crate::blend_menu_ui::menu(ui, "blend", &mut m, &blend_options(l.is_group(), l.blend), &mut app.ui.blend_favourites, blend_width);
                 // One step per choice: a click, an arrow key or each wheel notch (#1747).
                 for m in &chosen {
                     actions.push(("layer.setProps".into(), json!({"layer": l.id.0, "blend": m.label()})));
@@ -2476,6 +2574,13 @@ fn layers(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let row = RowSel { selected: selection.contains(&l.id), primary: active == Some(l.id), multi: selection.len() > 1 };
                 let top = ui.cursor().top();
                 drawn.push((l.id, layer_row(app, &ctx, ui, &doc, l, depth, row, &mut actions)));
+                // Display Settings › blend details: the mode (and opacity) under the name.
+                if let Some(line) = app.ui.layer_display.detail_line(l) {
+                    ui.horizontal(|ui| {
+                        ui.add_space(40.0 + depth as f32 * 12.0);
+                        ui.label(egui::RichText::new(line).small().color(t.text_dim));
+                    });
+                }
                 if reveal == Some(l.id) {
                     crate::layer_reveal::scroll_to_row(ui, top);
                 }
@@ -2714,7 +2819,9 @@ fn footer_drop(ui: &egui::Ui, button: &egui::Response, drag: Option<(u64, bool)>
 
 /// While something is dragged over a footer `button`: highlights it, and is true on the release.
 pub(crate) fn dropped_on(ui: &egui::Ui, button: &egui::Response) -> bool {
-    let Some(p) = ui.ctx().input(|i| i.pointer.interact_pos()) else { return false };
+    let Some(p) = ui.ctx().input(|i| i.pointer.interact_pos()) else {
+        return false;
+    };
     if !button.rect.contains(p) {
         return false;
     }
@@ -2818,7 +2925,9 @@ fn eye_sweep(ctx: &egui::Context, l: &Layer, row: Rect, eye: &egui::Response, ac
         ctx.data_mut(|d| d.insert_temp(id, sweep));
         return;
     }
-    let Some(mut sweep) = ctx.data(|d| d.get_temp::<EyeSweep>(id)) else { return };
+    let Some(mut sweep) = ctx.data(|d| d.get_temp::<EyeSweep>(id)) else {
+        return;
+    };
     let (down, pos, delta) = ctx.input(|i| (i.pointer.primary_down(), i.pointer.interact_pos(), i.pointer.delta()));
     if !down {
         ctx.data_mut(|d| d.remove::<EyeSweep>(id));
@@ -2939,7 +3048,7 @@ fn layer_row(
         + if l.is_group() { crate::layer_tree_ui::TRIANGLE_W } else { 0.0 }
         + if l.clipped { 12.0 } else { 0.0 }
         + crate::layer_row_ui::reserved_width(l);
-    let ts = crate::mask_thumbs_ui::thumb_size(l, if t.pro { 24.0 } else { 34.0 }, rect.width() - others);
+    let ts = crate::mask_thumbs_ui::thumb_size(l, (if t.pro { 24.0 } else { 34.0 }) * app.ui.layer_display.thumbnail.factor(), rect.width() - others);
     let fixed = others + ts + 6.0 + crate::mask_thumbs_ui::width(l, ts);
     x += 28.0 + crate::layer_row_ui::indent(depth, rect.width(), fixed);
     let toggled = crate::layer_tree_ui::disclosure(ui, rect, &mut x, l, actions);
@@ -3873,11 +3982,11 @@ fn hsva_color32(h: egui::ecolor::Hsva) -> Color32 {
 
 /// The Color panel's row of recent colours (`color_history`), under the readout.
 fn color_history_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
-    if app.ui.color_history.is_empty() {
-        return;
-    }
-    ui.add_space(4.0);
-    crate::color_history::patches(app, ui, 14.0, 16);
+    // The recent colours with the selector settings' count, size and direction, then the
+    // chosen selector (advanced, artistic, wide gamut, specific, mixer), the shade strip and the
+    // common colours of the image (`color_selectors`).
+    crate::color_selectors::history_patches(app, ui);
+    crate::color_selectors::panel(app, ui);
 }
 
 /// The Color panel's editable colour readout: a hex field and R, G, B fields, all drawn like the
@@ -4045,7 +4154,9 @@ fn layer_drop_payload(dragged: u64, target: LayerId, position: &str, selected: &
 /// Would this drop move the Background off the bottom, or put a layer below it? Photoshop
 /// refuses both (no drop indicator); ⌥-dragging the Background still copies it above.
 fn background_drop_refused(doc: &redrob_photo_doc::Document, payload: &Value, target: LayerId, position: &str, copy: bool) -> bool {
-    let Some(bg) = doc.layers.first().filter(|b| crate::doc_props_ui::is_background(doc, b)).map(|b| b.id) else { return false };
+    let Some(bg) = doc.layers.first().filter(|b| crate::doc_props_ui::is_background(doc, b)).map(|b| b.id) else {
+        return false;
+    };
     let moves_bg =
         !copy && (payload["layer"].as_u64() == Some(bg.0) || payload["layers"].as_array().is_some_and(|a| a.iter().any(|v| v.as_u64() == Some(bg.0))));
     moves_bg || (target == bg && position == "below")
@@ -4070,7 +4181,9 @@ fn layer_drag_and_drop(
     if resp.drag_started() && !mask_drag {
         ctx.data_mut(|d| d.insert_temp(key, l.id.0));
     }
-    let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(key)) else { return };
+    let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(key)) else {
+        return;
+    };
     let pointer = ctx.input(|i| i.pointer.interact_pos());
     let released = ctx.input(|i| i.pointer.any_released());
     let copy = ctx.input(|i| i.modifiers.alt);
@@ -4121,7 +4234,9 @@ fn layer_drag_and_drop(
     } else {
         "below"
     };
-    let Some(st) = app.session.active() else { return };
+    let Some(st) = app.session.active() else {
+        return;
+    };
     let mut payload = layer_drop_payload(dragged, l.id, position, &st.selected_layers());
     if background_drop_refused(&st.doc, &payload, l.id, position, copy) {
         return;
@@ -4159,12 +4274,16 @@ fn layer_drop_zone(
     position: &'static str,
     actions: &mut Vec<(String, Value)>,
 ) {
-    let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(egui::Id::new("layer-drag"))) else { return };
+    let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(egui::Id::new("layer-drag"))) else {
+        return;
+    };
     let selected = app.session.active().map(|st| st.selected_layers()).unwrap_or_default();
     if target.0 == LayerId(dragged) && selected.len() > 1 && selected.contains(&target.0) {
         return;
     }
-    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else { return };
+    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else {
+        return;
+    };
     if !zone.contains(p) {
         return;
     }
@@ -4219,8 +4338,12 @@ fn start_fx_drag(ctx: &egui::Context, layer: LayerId, effect: Option<usize>) {
 
 /// While effects are dragged: their name by the pointer, and the copy cursor while ⌥ is held.
 fn fx_drag_feedback(ctx: &egui::Context, doc: &redrob_photo_doc::Document) {
-    let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else { return };
-    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else { return };
+    let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else {
+        return;
+    };
+    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else {
+        return;
+    };
     let label = match effect {
         Some(i) => doc.layer(LayerId(from)).and_then(|l| l.effects.items.get(i)).map_or("", |e| e.label()),
         None => "Effects",
@@ -4246,8 +4369,12 @@ fn fx_drop_action(from: u64, effect: Option<usize>, target: LayerId, copy: bool)
 /// A layer row accepts the fx row being dragged: outlined while the pointer is over it, dropped
 /// on release.
 fn fx_drop(ctx: &egui::Context, ui: &egui::Ui, l: &Layer, rect: Rect, actions: &mut Vec<(String, Value)>) {
-    let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else { return };
-    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else { return };
+    let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else {
+        return;
+    };
+    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else {
+        return;
+    };
     if from == l.id.0 || !rect.contains(p) {
         return;
     }
@@ -4355,7 +4482,15 @@ mod symmetry_theme_tests {
                 let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
                 app.run("file.new", json!({"width": 80, "height": 80})).unwrap();
                 app.ui.tool = tool;
-                let mut h = Harness::builder().with_size(vec2(1600.0, 300.0)).build_ui_state(|ui, app| options_bar(app, ui), app);
+                // The first pass runs before the fonts are installed: the bar's medium weight needs them.
+                let mut h = Harness::builder().with_size(vec2(1600.0, 300.0)).build_ui_state(
+                    |ui, app| {
+                        if ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
+                            options_bar(app, ui);
+                        }
+                    },
+                    app,
+                );
                 PhotocraftApp::setup_context(&h.ctx, kind);
                 h.run_steps(4);
                 assert!(h.query_by_label("Set painting symmetry options").is_some(), "missing symmetry menu in {:?} for {:?}", kind, tool);
@@ -5192,7 +5327,16 @@ mod swatch_type_tests {
             resize: None,
             preedit: None,
         });
-        let mut h = Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(|ui, app: &mut PhotocraftApp| color_picker(app, ui), app);
+        // The first pass runs before the fonts are installed: the panel's medium weight needs them.
+        let mut h = Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(
+            |ui, app: &mut PhotocraftApp| {
+                if ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
+                    color_picker(app, ui);
+                }
+            },
+            app,
+        );
+        PhotocraftApp::setup_context(&h.ctx, crate::theme::ThemeKind::ALL[0]);
         h.run_steps(4);
         assert_eq!(h.state().session.tools.foreground, fg);
         let st = h.state().session.active().unwrap();
@@ -5416,9 +5560,11 @@ mod type_flyout_tests {
         // A press on the flyout itself keeps it open (the row picks on release).
         open(&mut app, 1.0);
         let menu = ctx.memory(|m| m.area_rect(egui::Id::new(("tool-slot", index)).with("flyout"))).unwrap();
-        frame(&mut app, &ctx, 1.5, vec![egui::Event::PointerMoved(menu.center()), primary(menu.center(), true)]);
+        // Its first row (the Brush): the release picks it, so the slot keeps showing the Brush.
+        let first_row = egui::pos2(menu.left() + 65.0, menu.top() + 21.0);
+        frame(&mut app, &ctx, 1.5, vec![egui::Event::PointerMoved(first_row), primary(first_row, true)]);
         assert!(flyout(&ctx), "a press on the flyout keeps it");
-        frame(&mut app, &ctx, 1.55, vec![primary(menu.center(), false)]);
+        frame(&mut app, &ctx, 1.55, vec![primary(first_row, false)]);
         // A drag far from the toolbar (the canvas) closes it as soon as it starts.
         open(&mut app, 2.0);
         let canvas = egui::pos2(900.0, 900.0);
@@ -5504,8 +5650,8 @@ mod type_flyout_tests {
         frame(&mut app, &ctx, 0.1, vec![]);
         let index = TOOL_SECTIONS.iter().flat_map(|section| section.iter()).position(|slot| slot.contains(&Tool::Brush)).unwrap();
         let slot = TOOL_SECTIONS.iter().flat_map(|section| section.iter()).nth(index).copied().unwrap();
-        // Photoshop's Brush group, Color Replacement after the Mixer Brush.
-        assert_eq!(slot, &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement]);
+        // Photoshop's Brush group, Color Replacement after the Mixer Brush, then the Krita brushes.
+        assert_eq!(slot, &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement, Tool::StraightLine, Tool::Multibrush, Tool::DynamicBrush]);
         let bx = if Tokens::get(&ctx).pro { 30.0 } else { 36.0 };
         let mut buttons: Vec<Rect> = ctx.viewport(|v| {
             v.prev_pass
@@ -5525,8 +5671,8 @@ mod type_flyout_tests {
         frame(&mut app, &ctx, 1.45, vec![]);
         let key = egui::Id::new(("tool-slot", index));
         let menu = ctx.memory(|m| m.area_rect(key.with("flyout"))).unwrap();
-        // The last of the four 26-point rows.
-        let row = egui::pos2(menu.left() + 65.0, menu.bottom() - 20.0);
+        // The fourth of the seven 26-point rows (3 pt apart, under the popup frame's margin).
+        let row = egui::pos2(menu.left() + 65.0, menu.top() + 6.0 + 3.0 * 29.0 + 13.0);
         frame(&mut app, &ctx, 2.0, vec![egui::Event::PointerMoved(row), pointer(row, true)]);
         frame(&mut app, &ctx, 2.05, vec![pointer(row, false)]);
         assert_eq!(app.ui.tool, Tool::ColorReplacement);
@@ -5581,7 +5727,8 @@ mod toolbar_hidden_tests {
         let slots: usize = TOOL_SECTIONS.iter().map(|section| section.len()).sum();
         hide(&mut app, &Tool::ALL);
         assert_eq!(tool_buttons(&mut app), all - slots, "every tool slot is gone when every tool is hidden");
-        hide(&mut app, &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement]);
+        let brushes = TOOL_SECTIONS.iter().flat_map(|section| section.iter()).find(|slot| slot.contains(&Tool::Brush)).unwrap();
+        hide(&mut app, brushes);
         assert_eq!(tool_buttons(&mut app), all - 1, "a slot whose tools are all hidden is gone");
         hide(&mut app, &[Tool::Sponge]);
         assert_eq!(tool_buttons(&mut app), all, "a slot with a visible tool stays");
@@ -6112,7 +6259,9 @@ mod compact_visual_regressions {
 
     #[test]
     fn capture_compact_visual_fixtures() {
-        let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_VISUAL_FIXTURES").map(std::path::PathBuf::from) else { return };
+        let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_VISUAL_FIXTURES").map(std::path::PathBuf::from) else {
+            return;
+        };
         std::fs::create_dir_all(&directory).unwrap();
         for kind in crate::theme::ThemeKind::ALL {
             for (width, height) in [(800.0, 480.0), (1280.0, 720.0)] {
@@ -6361,7 +6510,8 @@ mod compact_visual_regressions {
                     crate::theme::install_fonts(&ctx);
                     crate::theme::apply(&ctx, kind);
                     let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
-                    let (tool, last_label) = if Tokens::get(&ctx).pro { (Tool::Pencil, "Auto Erase") } else { (Tool::Brush, "Pressure for Opacity") };
+                    // The Brush bar ends with its engine controls and the Text Tip row's Apply button.
+                    let (tool, last_label) = if Tokens::get(&ctx).pro { (Tool::Pencil, "Auto Erase") } else { (Tool::Brush, "Apply") };
                     app.ui.tool = tool;
                     let screen = Rect::from_min_size(egui::Pos2::ZERO, vec2(width, 120.0));
                     let mut output = ctx.run_ui(input_at_scale(screen, scale), |ui| options_bar(&mut app, ui));

@@ -144,6 +144,11 @@ pub(crate) fn apply(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let effect = effects::new_effect(id, &params).ok_or_else(|| bad(C, format!("unknown effect `{id}`")))?;
     let label = effects::effect_info(id).map(|e| e.label.trim_end_matches('…').to_string()).unwrap_or_default();
+    // A linked path effect applied to several selected objects links them (the others become the
+    // effect's sources) instead of applying to each.
+    if let Some(r) = super::lpelink::apply_linked(s, p, id, &effect, &label) {
+        return r;
+    }
     if let Some(loose) = loose_for_pathfinder(s, p, id)? {
         let gid = s.edit(&label, |d, sel| {
             let gid = super::object::group_nodes(d, &loose)?;

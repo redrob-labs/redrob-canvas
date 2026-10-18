@@ -48,7 +48,8 @@ fn an_svg_path_writes_svg_and_save_writes_it_back() {
     let svg = path(&d, "art.svg");
     let r = s.execute("document.save", &json!({"path": svg})).unwrap();
     assert_eq!(r["format"], "svg");
-    assert!(r["warnings"][0].as_str().unwrap().contains("SVG keeps the artwork"), "{r}");
+    // An SVG save carries the editor data in its own namespace, so nothing is lost: no warning.
+    assert!(r["warnings"].as_array().is_none_or(|w| w.is_empty()), "{r}");
     assert!(std::fs::read_to_string(&svg).unwrap().starts_with("<?xml"));
     let st = s.doc().unwrap();
     assert_eq!((st.path.as_deref(), st.format, st.is_dirty()), (Some(svg.as_str()), "svg", false));

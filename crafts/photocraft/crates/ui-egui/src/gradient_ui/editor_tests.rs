@@ -23,7 +23,9 @@ fn editor(layer: bool) -> (Harness<'static, PhotocraftApp>, Sink) {
     PhotocraftApp::setup_context(&h.ctx, crate::theme::ThemeKind::ProMedium);
     h.run_steps(2);
     h.state_mut().ui.panels.gradient_editor = true;
-    h.run_steps(4);
+    // The window grows to its content over a few frames (the preset editor's rows are wider
+    // than the default width), and the strip with it: let it settle before reading geometry.
+    h.run_steps(12);
     (h, sink)
 }
 

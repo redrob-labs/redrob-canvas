@@ -88,6 +88,28 @@ pub enum BlendMode {
     FreezeReflect,
     /// The mean of Heat-Glow and Freeze-Reflect.
     HeatGlowFreezeReflectHybrid,
+    // ---- Inversion family: texture extraction about mid grey ----
+    /// `cb - cs + 0.5`: isolates the texture of the backdrop relative to the source.
+    GrainExtract,
+    /// `cb + cs - 0.5`: re-applies an extracted texture.
+    GrainMerge,
+    // ---- CIE LCh component family ----
+    /// Hue of the source in CIE LCh, lightness and chroma of the backdrop.
+    LchHue,
+    /// Chroma of the source in CIE LCh, lightness and hue of the backdrop.
+    LchChroma,
+    /// Hue and chroma of the source in CIE LCh, lightness of the backdrop.
+    LchColor,
+    /// Lightness of the source in CIE LCh, hue and chroma of the backdrop.
+    LchLightness,
+    // ---- Alpha family: the source's coverage reshapes the backdrop's alpha ----
+    /// The source's alpha erases the backdrop: `αo = αb · (1 − αs)`, colour of the backdrop.
+    Erase,
+    /// Alphas add (`αo = min(1, αb + αs)`) and the colours mix by their alphas; once the two
+    /// coverages exceed 1 the result is Normal.
+    Merge,
+    /// The inverse of Merge: `αo = max(0, αb − αs)`, colour of the backdrop.
+    Split,
 }
 
 impl BlendMode {
@@ -121,8 +143,19 @@ impl BlendMode {
     pub const QUADRATIC_MODES: [BlendMode; 7] =
         [Self::Freeze, Self::Heat, Self::GlowHeat, Self::HeatGlow, Self::ReflectFreeze, Self::FreezeReflect, Self::HeatGlowFreezeReflectHybrid];
 
-    /// All editable layer modes, with the extended, Paint.NET, binary, modulo and quadratic modes
-    /// after Photoshop's menu order.
+    /// The inversion family: Grain Extract and Grain Merge, texture about mid grey.
+    pub const INVERSION_MODES: [BlendMode; 2] = [Self::GrainExtract, Self::GrainMerge];
+
+    /// The CIE LCh component family: one or two LCh components from the source, the rest of
+    /// the backdrop.
+    pub const LCH_MODES: [BlendMode; 4] = [Self::LchHue, Self::LchChroma, Self::LchColor, Self::LchLightness];
+
+    /// The alpha family: the source's coverage erases, adds to or subtracts from the backdrop's
+    /// alpha instead of blending colour.
+    pub const ALPHA_MODES: [BlendMode; 3] = [Self::Erase, Self::Merge, Self::Split];
+
+    /// All editable layer modes, with the extended, Paint.NET, binary, modulo, quadratic,
+    /// inversion, LCh and alpha modes after Photoshop's menu order.
     pub fn layer_modes() -> impl Iterator<Item = Self> {
         Self::LAYER_MODES
             .into_iter()
@@ -131,6 +164,21 @@ impl BlendMode {
             .chain(Self::BINARY_MODES)
             .chain(Self::MODULO_MODES)
             .chain(Self::QUADRATIC_MODES)
+            .chain(Self::INVERSION_MODES)
+            .chain(Self::LCH_MODES)
+            .chain(Self::ALPHA_MODES)
+    }
+
+    /// Whether the mode reshapes the backdrop's alpha rather than blending colour
+    /// ([`Self::ALPHA_MODES`]); [`composite`] handles these before the general formula.
+    pub fn is_alpha_mode(self) -> bool {
+        Self::ALPHA_MODES.contains(&self)
+    }
+
+    /// The families the GPU compositor hands to the CPU: the modulo sawtooth and the newer
+    /// inversion, LCh and alpha families, which the shader has no kernel for.
+    pub fn is_cpu_only(self) -> bool {
+        Self::MODULO_MODES.contains(&self) || Self::INVERSION_MODES.contains(&self) || Self::LCH_MODES.contains(&self) || Self::ALPHA_MODES.contains(&self)
     }
 
     /// The family a mode belongs to in a grouped blend-mode menu.
@@ -145,6 +193,12 @@ impl BlendMode {
             "Modulo"
         } else if Self::QUADRATIC_MODES.contains(&self) || matches!(self, Self::Reflect | Self::Glow) {
             "Quadratic"
+        } else if Self::INVERSION_MODES.contains(&self) {
+            "Inversion"
+        } else if Self::LCH_MODES.contains(&self) {
+            "LCh"
+        } else if Self::ALPHA_MODES.contains(&self) {
+            "Alpha"
         } else {
             "Paint.NET"
         }
@@ -246,6 +300,15 @@ impl BlendMode {
             BlendMode::ReflectFreeze => "Reflect-Freeze",
             BlendMode::FreezeReflect => "Freeze-Reflect",
             BlendMode::HeatGlowFreezeReflectHybrid => "Heat-Glow and Freeze-Reflect Hybrid",
+            BlendMode::GrainExtract => "Grain Extract",
+            BlendMode::GrainMerge => "Grain Merge",
+            BlendMode::LchHue => "LCh Hue",
+            BlendMode::LchChroma => "LCh Chroma",
+            BlendMode::LchColor => "LCh Color",
+            BlendMode::LchLightness => "LCh Lightness",
+            BlendMode::Erase => "Erase",
+            BlendMode::Merge => "Merge",
+            BlendMode::Split => "Split",
         }
     }
 
@@ -302,6 +365,13 @@ impl BlendMode {
                 | BlendMode::HsvSaturation
                 | BlendMode::HsvValue
                 | BlendMode::Luminance
+                | BlendMode::LchHue
+                | BlendMode::LchChroma
+                | BlendMode::LchColor
+                | BlendMode::LchLightness
+                | BlendMode::Erase
+                | BlendMode::Merge
+                | BlendMode::Split
         )
     }
 }
@@ -427,8 +497,16 @@ fn channel(mode: BlendMode, cb: f32, cs: f32, hi: f32) -> f32 {
         BlendMode::ReflectFreeze => reflect(cb, freeze(cb, cs)),
         BlendMode::FreezeReflect => freeze(cb, reflect(cb, cs)),
         BlendMode::HeatGlowFreezeReflectHybrid => 0.5 * (freeze(reflect(cs, cb), cb) + freeze(cb, reflect(cb, cs))),
+        BlendMode::GrainExtract => (cb - cs + 0.5).clamp(0.0, 1.0),
+        BlendMode::GrainMerge => (cb + cs - 0.5).clamp(0.0, 1.0),
+        // Alpha modes keep the backdrop's colour; `composite` reshapes the alpha.
+        BlendMode::Erase | BlendMode::Merge | BlendMode::Split => cb,
         // Non-separable modes are handled by `blend_rgb`; fall back to source.
-        BlendMode::DarkerColor
+        BlendMode::LchHue
+        | BlendMode::LchChroma
+        | BlendMode::LchColor
+        | BlendMode::LchLightness
+        | BlendMode::DarkerColor
         | BlendMode::LighterColor
         | BlendMode::Hue
         | BlendMode::Saturation
@@ -674,6 +752,66 @@ fn luminance_blend(cb: [f32; 3], cs: [f32; 3], top: f32) -> [f32; 3] {
     lin.map(|v| crate::convert::linear_to_srgb(v).min(top))
 }
 
+/// CIE L*a*b* → (L, C, h in radians).
+#[inline]
+fn lab_to_lch(lab: [f32; 3]) -> [f32; 3] {
+    [lab[0], (lab[1] * lab[1] + lab[2] * lab[2]).sqrt(), lab[2].atan2(lab[1])]
+}
+
+/// (L, C, h in radians) → CIE L*a*b*.
+#[inline]
+fn lch_to_lab(lch: [f32; 3]) -> [f32; 3] {
+    [lch[0], lch[1] * lch[2].cos(), lch[1] * lch[2].sin()]
+}
+
+/// The LCh component modes: lightness, chroma and hue are taken from the backdrop or the source
+/// per mode in CIE LCh (D50), and the result is converted back and clipped at `top`. A grey
+/// source has no hue of its own, so LCh Hue keeps the backdrop's hue there.
+fn lch_blend(mode: BlendMode, cb: [f32; 3], cs: [f32; 3], top: f32) -> [f32; 3] {
+    let b = lab_to_lch(crate::convert::srgb_to_lab(cb.map(|v| v.clamp(0.0, 1.0))));
+    let s = lab_to_lch(crate::convert::srgb_to_lab(cs.map(|v| v.clamp(0.0, 1.0))));
+    let hue_of_source = if s[1] > 1e-4 { s[2] } else { b[2] };
+    let out = match mode {
+        BlendMode::LchHue => [b[0], b[1], hue_of_source],
+        BlendMode::LchChroma => [b[0], s[1], b[2]],
+        BlendMode::LchColor => [b[0], s[1], hue_of_source],
+        _ => [s[0], b[1], b[2]],
+    };
+    crate::convert::lab_to_srgb(lch_to_lab(out)).map(|v| v.min(top))
+}
+
+/// The alpha family's composite: Erase removes the source's coverage from the backdrop, Merge
+/// adds the two coverages (mixing colour by coverage until they fill the pixel, then Normal),
+/// Split subtracts the source's coverage. `None` for every other mode.
+pub fn composite_alpha(mode: BlendMode, backdrop: [f32; 4], source: [f32; 4], opacity: f32) -> Option<[f32; 4]> {
+    let ab = backdrop[3];
+    let as_ = (source[3] * opacity).clamp(0.0, 1.0);
+    match mode {
+        BlendMode::Erase => Some([backdrop[0], backdrop[1], backdrop[2], ab * (1.0 - as_)]),
+        BlendMode::Split => Some([backdrop[0], backdrop[1], backdrop[2], (ab - as_).max(0.0)]),
+        BlendMode::Merge => {
+            if as_ <= 0.0 {
+                return Some(backdrop);
+            }
+            let total = ab + as_;
+            if total >= 1.0 {
+                // Over a full pixel Merge is Normal.
+                let ao = as_ + ab * (1.0 - as_);
+                let kb = ab * (1.0 - as_);
+                return Some([
+                    (kb * backdrop[0] + as_ * source[0]) / ao,
+                    (kb * backdrop[1] + as_ * source[1]) / ao,
+                    (kb * backdrop[2] + as_ * source[2]) / ao,
+                    ao,
+                ]);
+            }
+            let (wb, ws) = (ab / total, as_ / total);
+            Some([wb * backdrop[0] + ws * source[0], wb * backdrop[1] + ws * source[1], wb * backdrop[2] + ws * source[2], total])
+        }
+        _ => None,
+    }
+}
+
 /// Blend a whole RGB triple: `B(Cb, Cs)` including non-separable modes.
 pub fn blend_rgb(mode: BlendMode, cb: [f32; 3], cs: [f32; 3]) -> [f32; 3] {
     blend_rgb_within(mode, cb, cs, 1.0)
@@ -700,6 +838,8 @@ pub fn blend_rgb_within(mode: BlendMode, cb: [f32; 3], cs: [f32; 3], top: f32) -
             hsv_to_rgb(b[0], b[1], s[2].min(top))
         }
         BlendMode::Luminance => luminance_blend(cb, cs, top),
+        BlendMode::LchHue | BlendMode::LchChroma | BlendMode::LchColor | BlendMode::LchLightness => lch_blend(mode, cb, cs, top),
+        BlendMode::Erase | BlendMode::Merge | BlendMode::Split => cb,
         BlendMode::DarkerColor => {
             if lum(cs) < lum(cb) {
                 cs
@@ -731,6 +871,9 @@ pub fn blend_rgb_hdr(mode: BlendMode, cb: [f32; 3], cs: [f32; 3]) -> [f32; 3] {
 /// `αo·Co = (1−αs)·αb·Cb + (1−αb)·αs·Cs + αs·αb·B(Cb,Cs)`.
 /// Dissolve must be resolved by the caller (per-pixel coverage decision) before calling.
 pub fn composite(mode: BlendMode, backdrop: [f32; 4], source: [f32; 4], opacity: f32) -> [f32; 4] {
+    if let Some(out) = composite_alpha(mode, backdrop, source, opacity) {
+        return out;
+    }
     let ab = backdrop[3];
     let as_ = source[3] * opacity;
     if as_ <= 0.0 {
@@ -798,7 +941,7 @@ mod tests {
                 }
             }
         }
-        assert_eq!(BlendMode::layer_modes().count(), 59);
+        assert_eq!(BlendMode::layer_modes().count(), 68);
     }
 
     #[test]
@@ -1185,5 +1328,37 @@ mod tests {
         // Alpha accumulates.
         let r = composite(BlendMode::Screen, [0.0, 0.0, 0.0, 0.5], [0.0, 0.0, 0.0, 0.5], 1.0);
         assert!(close(r[3], 0.75));
+    }
+
+    #[test]
+    fn inversion_lch_and_alpha_families() {
+        assert!(close(blend_channel(BlendMode::GrainExtract, 0.7, 0.4), 0.8));
+        assert!(close(blend_channel(BlendMode::GrainMerge, 0.3, 0.4), 0.2));
+        assert!(close(blend_channel(BlendMode::GrainExtract, 0.5, 0.5), 0.5));
+        for m in BlendMode::INVERSION_MODES.into_iter().chain(BlendMode::LCH_MODES).chain(BlendMode::ALPHA_MODES) {
+            assert!(!m.has_psd_equivalent() && m.is_cpu_only());
+            assert!(BlendMode::layer_modes().any(|x| x == m));
+        }
+        // LCh Lightness takes the source's L*, keeps the backdrop's chroma and hue.
+        let cb = [0.8, 0.2, 0.2];
+        let cs = [0.1, 0.1, 0.9];
+        let r = blend_rgb(BlendMode::LchLightness, cb, cs);
+        let (lb, ls, lr) = (crate::convert::srgb_to_lab(cb), crate::convert::srgb_to_lab(cs), crate::convert::srgb_to_lab(r));
+        assert!((lr[0] - ls[0]).abs() < 1.0, "{r:?}");
+        assert!((lr[2].atan2(lr[1]) - lb[2].atan2(lb[1])).abs() < 0.05, "{r:?}");
+        // A grey source leaves the hue alone in LCh Hue.
+        let g = blend_rgb(BlendMode::LchHue, cb, [0.5; 3]);
+        assert!((g[0] - cb[0]).abs() < 0.02 && (g[1] - cb[1]).abs() < 0.02, "{g:?}");
+        // Alpha family.
+        let bg = [0.2, 0.4, 0.6, 0.8];
+        let e = composite(BlendMode::Erase, bg, [1.0, 0.0, 0.0, 0.5], 1.0);
+        assert!(close(e[3], 0.4) && close(e[0], 0.2));
+        let s = composite(BlendMode::Split, bg, [1.0, 0.0, 0.0, 0.5], 1.0);
+        assert!(close(s[3], 0.3) && close(s[1], 0.4));
+        assert_eq!(composite(BlendMode::Split, [0.0, 0.0, 0.0, 0.5], [0.0, 0.0, 0.0, 0.5], 1.0)[3], 0.0);
+        let m = composite(BlendMode::Merge, [0.0, 0.0, 0.0, 0.5], [1.0, 1.0, 1.0, 0.5], 1.0);
+        assert!(close(m[3], 1.0) && close(m[0], 0.5), "{m:?}");
+        let n = composite(BlendMode::Merge, bg, [1.0, 0.0, 0.0, 1.0], 1.0);
+        assert_eq!(n, composite(BlendMode::Normal, bg, [1.0, 0.0, 0.0, 1.0], 1.0));
     }
 }

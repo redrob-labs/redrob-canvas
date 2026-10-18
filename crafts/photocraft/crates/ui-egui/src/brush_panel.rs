@@ -390,10 +390,23 @@ fn settings_tab(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     widgets::hairline(ui);
     ui.add_space(6.0);
     ui.horizontal(|ui| {
-        let (r, _) = ui.allocate_exact_size(vec2(STRIP.0 as f32, STRIP.1 as f32), Sense::hover());
-        ui.painter().rect_filled(r, t.radius_sm, t.field);
-        let tex = brush_preview::stroke_texture(ui.ctx(), "settings-strip", &b, STRIP.0, STRIP.1, t.text);
-        ui.painter().image(tex.id(), r, full_uv(), Color32::WHITE);
+        // The strip is the scratch pad: drag on it to try the settings being edited; a stroke
+        // preview of them is drawn when the pad is untouched (the Reload and fill buttons below).
+        if app.session.scratch_pad.as_ref().is_some_and(|p| p.rev > 1) {
+            crate::scratch_pad_ui::strip(app, ui, &b, STRIP.0, STRIP.1);
+        } else {
+            let (r, resp) = ui.allocate_exact_size(vec2(STRIP.0 as f32, STRIP.1 as f32), Sense::click_and_drag());
+            ui.painter().rect_filled(r, t.radius_sm, t.field);
+            let tex = brush_preview::stroke_texture(ui.ctx(), "settings-strip", &b, STRIP.0, STRIP.1, t.text);
+            ui.painter().image(tex.id(), r, full_uv(), Color32::WHITE);
+            if resp.drag_started() || resp.clicked() {
+                // First touch: the pad takes over from the preview.
+                run_or_status(app, "brush.scratchPad.fill", json!({ "with": "white", "width": STRIP.0, "height": STRIP.1 }));
+                if let Some(p) = app.session.scratch_pad.as_mut() {
+                    p.rev += 1;
+                }
+            }
+        }
         ui.vertical(|ui| {
             let new = icons::button(ui, "square-plus", 24.0, false, tl!("Create new brush from these settings"));
             if crate::brush_picker::named(new, "Create new brush from these settings").clicked() {
@@ -413,6 +426,10 @@ fn settings_tab(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             }
         });
     });
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 4.0;
+        crate::scratch_pad_ui::buttons(app, ui);
+    });
     commit_gesture(app, ui.ctx(), &before, &b);
 }
 
@@ -424,8 +441,11 @@ fn dynamics_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let presets = app.session.tools.dynamics_presets.clone();
     let none = tl!("No Dynamics Preset").to_string();
     let mut options: Vec<(String, &str)> = vec![(String::new(), none.as_str())];
-    options.extend(presets.iter().map(|d| (d.name.clone(), d.name.as_str())));
+    // Tagged dynamics presets: the panel's tag filter narrows the list (resource_tags_cmds).
+    let ctx_f = ui.ctx().clone();
+    options.extend(presets.iter().filter(|d| crate::tag_filter::visible(app, &ctx_f, "dynamics", &d.name)).map(|d| (d.name.clone(), d.name.as_str())));
     let mut current = app.session.tools.current_dynamics.clone().unwrap_or_default();
+    crate::tag_filter::filter_row(app, ui, "dynamics");
     ui.horizontal(|ui| {
         ui.label(RichText::new(tl!("Dynamics:")).color(t.text_dim));
         if widgets::dropdown_literal(ui, "brush-dynamics-preset", &mut current, &options, 180.0) && !current.is_empty() {
@@ -452,6 +472,17 @@ fn dynamics_row(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         let deletable = presets.iter().any(|d| !d.builtin && d.name.eq_ignore_ascii_case(&current));
         if ui.add_enabled_ui(deletable, |ui| icons::button(ui, "trash", 22.0, false, tl!("Delete this dynamics preset"))).inner.clicked() {
             run_or_status(app, "brush.dynamics.delete", json!({ "name": current }));
+        }
+        // The matrix editor: opens on the chosen preset, or on the brush's own dynamics table.
+        if icons::button(ui, "sliders-horizontal", 22.0, crate::dynamics_editor_ui::is_open(ui.ctx()), tl!("Edit the dynamics table (inputs × outputs)"))
+            .clicked()
+        {
+            let preset = presets
+                .iter()
+                .find(|d| d.name.eq_ignore_ascii_case(&current))
+                .cloned()
+                .unwrap_or_else(|| paint::DynamicsPreset::from_brush("Dynamics", &app.session.tools.brush));
+            crate::dynamics_editor_ui::open(ui.ctx(), preset);
         }
     });
 }

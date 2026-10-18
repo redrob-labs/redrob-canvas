@@ -151,13 +151,16 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
             &[("style", "finite|infinite|fading|fadingFixedLength"), ("composition", "shadowPlusImage|shadowOnly|shadowMinusImage")]
         }
         "filter.lightShadow.perspectiveShadow" => &[("interpolation", "none|linear|cubic")],
+        "filter.lightShadow.gradientFlare" => &[("design", "classic|brightStar|distantSun|coldRings|hiddenPlanet|softGlow")],
+        "filter.decor.filmstrip" => &[("font", "compact|classic")],
         "filter.stylize.imageGradient" => &[("output", "magnitude|direction|both")],
         "filter.other.distanceMap" => &[("metric", "euclidean|manhattan|chebyshev")],
         "filter.other.normalMap" => &[("xComponent", "red|green|blue"), ("yComponent", "red|green|blue")],
         "filter.artistic.waterpixels" => &[("superpixelsColor", "average|random")],
         "filter.artistic.impressionist" => &[
             ("orientationType", "value|radius|random|radial|flowing|hue|adaptive"),
-            ("brushShape", "ellipse|square|line|splotch"),
+            ("brushShape", "ellipse|square|line|splotch|circle|triangle|diamond|star|image"),
+            ("paper", "plain|canvas|burlap|marble|rough|image"),
             ("placement", "randomly|evenly"),
             ("strokeColor", "average|center"),
             ("background", "keepOriginal|solidColor|transparent"),
@@ -177,14 +180,12 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         | "filter.distort.engrave"
         | "filter.distort.kaleidoscope"
         | "filter.lightShadow.supernova"
-        | "filter.lightShadow.gradientFlare"
         | "filter.lightShadow.xachEffect"
         | "filter.stylize.differenceOfGaussians"
         | "filter.stylize.laplace"
         | "filter.artistic.cubism"
         | "filter.artistic.slic"
         | "filter.artistic.weave"
-        | "filter.decor.filmstrip"
         | "filter.decor.fuzzyBorder" => &[],
         // Map / Render / Decor batch (filters_gen): choices checked, numbers clamp in params_for.
         "filter.map.fractalTrace" => &[("fractal", "mandelbrot|julia"), ("abyss", "loop|clamp|black|white|transparent")],
@@ -222,6 +223,73 @@ fn choices(id: &str) -> Option<&'static [(&'static str, &'static str)]> {
         | "filter.decor.coffeeStain"
         | "filter.decor.stencilCarve"
         | "filter.web.semiFlatten" => &[],
+        // Fourth batch (filters_more): choices checked, numbers clamp in params_for.
+        "filter.blur.variableBlur" => &[("mask", "map|layerMask|alpha")],
+        "filter.distort.mosaicTiles" => &[("tileType", "squares|hexagons|octagons|triangles")],
+        "filter.distort.newsprint" => &[
+            ("colorModel", "blackOnWhite|whiteOnBlack|rgb|cmyk"),
+            ("pattern", "circle|line|diamond|psSquare|cross"),
+            ("pattern2", "circle|line|diamond|psSquare|cross"),
+            ("pattern3", "circle|line|diamond|psSquare|cross"),
+            ("pattern4", "circle|line|diamond|psSquare|cross"),
+        ],
+        "filter.distort.warpMap" => &[("onEdges", "wrap|smear|black|foregroundColor")],
+        "filter.map.bumpMap" => &[("auxInput", "map|layerMask|self"), ("type", "linear|spherical|sinusoidal")],
+        "filter.map.panoramaProjection" => &[("sampler", "nearest|linear|cubic")],
+        "filter.render.geometricShapes" => {
+            &[("shape", "star|polygon|circle|ellipse|rectangle|line|arc|spiral|bezier"), ("direction", "clockwise|counterClockwise")]
+        }
+        "filter.distort.applyLens"
+        | "filter.distort.curveBend"
+        | "filter.lightShadow.bloom"
+        | "filter.stylize.sobel"
+        | "filter.artistic.cartoon"
+        | "filter.artistic.clothify"
+        | "filter.decor.stencilChrome"
+        | "filter.render.perlinNoise"
+        | "filter.render.plasma"
+        | "filter.render.solidNoise"
+        | "filter.decor.addBorder"
+        | "filter.render.fog"
+        | "filter.decor.oldPhoto"
+        | "filter.decor.roundCorners"
+        | "filter.map.tile"
+        | "filter.combine.depthMerge" => &[],
+        // Fifth batch (filters_paint, Paint-mode parity): choices checked, numbers clamp in params_for.
+        "filter.adjust.dodge" | "filter.adjust.burn" => &[("range", "shadows|midtones|highlights")],
+        "filter.adjust.crossChannel" => {
+            &[("driven", "red|green|blue|alpha|hue|saturation|lightness"), ("driver", "red|green|blue|alpha|hue|saturation|lightness")]
+        }
+        "filter.artistic.indexColors" => &[("dither", "none|ordered|noise")],
+        "filter.blur.polygonBlur" => &[("shape", "circle|triangle|quadrilateral|pentagon|hexagon|octagon")],
+        "filter.stylize.edgeDetection" => &[("method", "prewitt|sobel|simple"), ("output", "pythagorean|xOnly|yOnly|radians")],
+        "filter.stylize.embossDirectional" => &[("direction", "horizontal|vertical|both|allDirections|laplacian|variableDepth")],
+        "filter.map.phongBumpMap" => &[("heightChannel", "red|green|blue|alpha|luminance")],
+        "filter.map.palettize" => &[
+            ("colorSpaceModel", "rgb|lab"),
+            ("dither", "none|pattern|diffusion|noise"),
+            ("colorMode", "perChannelOffset|nearestColors"),
+            ("alphaMode", "clip|index|dither|unchanged"),
+        ],
+        "filter.map.heightToNormalMap" => &[
+            ("method", "prewitt|sobel|simple"),
+            ("heightChannel", "red|green|blue|alpha|luminance"),
+            ("redChannel", "x+|x-|y+|y-|z+|z-"),
+            ("greenChannel", "x+|x-|y+|y-|z+|z-"),
+            ("blueChannel", "x+|x-|y+|y-|z+|z-"),
+        ],
+        "filter.gmic.run" => &[("input", "activeLayer|allLayers"), ("output", "replace|newLayer")],
+        "filter.adjust.slopeOffsetPower"
+        | "filter.artistic.raindrops"
+        | "filter.other.maximizeChannel"
+        | "filter.other.minimizeChannel"
+        | "filter.other.propagateColors"
+        | "filter.map.normalizeNormals"
+        | "filter.other.resetTransparent"
+        | "filter.sharpen.meanRemoval"
+        | "filter.noise.waveletNoiseReducer"
+        | "filter.noise.randomPick"
+        | "filter.gmic.status" => &[],
         _ => return None,
     })
 }
@@ -255,6 +323,9 @@ pub(crate) fn validate_params(id: &str, params: &Value) -> Result<()> {
                 // The dialog's Blending Options, shared by every filter (checked in `run_filter`).
                 "blend" => (value.as_str().is_some_and(|name| crate::commands::blend_from_str(name).is_some()), "a blend mode name".into()),
                 "opacity" => (value.as_f64().is_some_and(|o| o.is_finite() && (0.0..=100.0).contains(&o)), "a number in 0..100".into()),
+                // The dialog's Clipping and colour-space choices (PH-FLT-002), applied in `run_filter`.
+                "clipping" => (value.as_str().is_some_and(|s| matches!(s, "adjust" | "clip")), "adjust or clip".into()),
+                "colorSpace" => (value.as_str().is_some_and(|s| matches!(s, "perceptual" | "linear")), "perceptual or linear".into()),
                 "target" => (
                     value.as_str().is_some_and(|s| matches!(s, "pixels" | "mask" | "quickMask"))
                         || value.as_object().is_some_and(|o| o.len() == 1 && o.get("channel").and_then(Value::as_u64).is_some()),

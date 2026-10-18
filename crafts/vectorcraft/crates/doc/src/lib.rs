@@ -31,6 +31,7 @@ pub mod overprint;
 pub mod pattern;
 pub mod perspective;
 mod pixels;
+pub mod svgfont;
 pub use pixels::MAX_RASTER_ALLOC;
 pub mod placed_document;
 pub mod profiles;
@@ -78,7 +79,7 @@ pub use appearance::{
     Appearance, AppearanceItem, ArrowAlign, Arrowhead, Dash, Effect, FillLayer, LineCap, LineJoin, PressureProfile, ProfilePreset, SavedProfile,
     StrokeAlign, StrokeLayer, WidthProfile,
 };
-pub use appearance::{MarkerOrient, StrokeGradientMode};
+pub use appearance::{CustomMarker, MarkerOrient, StrokeGradientMode};
 pub use assets::ExportAsset;
 pub use corners::LiveCorners;
 pub use depth::MAX_DEPTH;
@@ -107,6 +108,7 @@ pub use selection::{AnchorRef, SegmentRef, Selection};
 pub use setup::{Background, DocSetup, ExportText, GridSize, Quotes};
 pub use slices::{CellAlign, CellVAlign, Slice, SliceArea, SliceKind, SliceOptions, SliceSource};
 pub use style_libs::StyleLibrary;
+pub use svgfont::{SvgFont, SvgGlyph, SvgKern};
 pub use text::{
     AreaFit, AreaOptions, Burasagari, CharAlign, CharPosition, CharStyle, Composer, Digits, FirstBaseline, InlineArt, Justify, Kinsoku, LeadingModel,
     Mojikumi, ParaDirection, ParaStyle, PathAlign, PathEffect, ScriptMetrics, TabAlign, TabStop, TextKind, TextObject, TextRun, TextStyleDef,
@@ -470,15 +472,152 @@ pub struct GridPrefs {
     pub gap_x: f64,
     #[serde(default)]
     pub gap_y: f64,
+    /// Where the grid's lines start (a gridline crossing), in document coordinates.
+    #[serde(default, skip_serializing_if = "skip::is_default")]
+    pub origin: Point,
+    /// The grid's own colour (`#rrggbb`); `None`: the preferences' grid colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// Drawn and snapped to (View › Show Grid shows every visible grid).
+    #[serde(default = "yes", skip_serializing_if = "skip::is_true")]
+    pub visible: bool,
+    /// The grid's name in the Grids panel (empty: unnamed).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub name: String,
 }
 
 fn default_grid_angle() -> f64 {
     30.0
 }
 
+/// One rule of the document's stylesheet (Selectors and CSS): a selector (`.name`, an element
+/// name such as `path`, `text`, `image`, `g`, or `*`) and its declarations in order.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct CssRule {
+    pub selector: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub declarations: Vec<(String, String)>,
+}
+
+impl CssRule {
+    /// The data key that carries an object's classes (SVG `class`), space-separated.
+    pub const CLASS_KEY: &'static str = "vc-class";
+
+    /// The rule as CSS text: `selector { prop: value; … }`.
+    pub fn text(&self) -> String {
+        let decls: Vec<String> = self.declarations.iter().map(|(k, v)| format!("{k}: {v};")).collect();
+        format!("{} {{ {} }}", self.selector, decls.join(" "))
+    }
+
+    /// The rules of a stylesheet's text (comments dropped, `@`-rules skipped); a rule's text
+    /// takes the form `selector { prop: value; … }`.
+    pub fn parse_sheet(css: &str) -> Vec<CssRule> {
+        let mut out = vec![];
+        let mut text = String::with_capacity(css.len());
+        let mut rest = css;
+        while let Some(i) = rest.find("/*") {
+            text.push_str(&rest[..i]);
+            match rest[i + 2..].find("*/") {
+                Some(j) => rest = &rest[i + 2 + j + 2..],
+                None => rest = "",
+            }
+        }
+        text.push_str(rest);
+        let mut depth = 0usize;
+        let mut cur = String::new();
+        for ch in text.chars() {
+            match ch {
+                '{' => {
+                    depth += 1;
+                    cur.push(ch);
+                }
+                '}' => {
+                    depth = depth.saturating_sub(1);
+                    cur.push(ch);
+                    if depth == 0 {
+                        if let Some(rule) = Self::parse_rule(&cur) {
+                            out.push(rule);
+                        }
+                        cur.clear();
+                    }
+                }
+                _ => cur.push(ch),
+            }
+        }
+        out
+    }
+
+    /// One `selector { declarations }`; `None` for an `@`-rule or malformed text.
+    pub fn parse_rule(text: &str) -> Option<CssRule> {
+        let (selector, body) = text.split_once('{')?;
+        let selector = selector.trim();
+        if selector.is_empty() || selector.starts_with('@') {
+            return None;
+        }
+        let body = body.trim_end().trim_end_matches('}');
+        let declarations = Self::parse_declarations(body);
+        Some(CssRule { selector: selector.to_string(), declarations })
+    }
+
+    /// `prop: value; prop: value` as pairs, in order.
+    pub fn parse_declarations(body: &str) -> Vec<(String, String)> {
+        body.split(';')
+            .filter_map(|d| {
+                let (k, v) = d.split_once(':')?;
+                let (k, v) = (k.trim(), v.trim().trim_end_matches("!important").trim());
+                (!k.is_empty() && !v.is_empty()).then(|| (k.to_string(), v.to_string()))
+            })
+            .collect()
+    }
+
+    /// Does the selector pick an object with `classes` and of element `kind` (`path`, `text`,
+    /// `image`, `g`…)? Comma lists are any-of; a compound `kind.class` needs both.
+    pub fn matches(&self, classes: &[String], kind: &str) -> bool {
+        self.selector.split(',').map(str::trim).any(|sel| {
+            if sel == "*" {
+                return true;
+            }
+            let (elem, cls) = match sel.find('.') {
+                Some(i) => (&sel[..i], &sel[i + 1..]),
+                None => (sel, ""),
+            };
+            let elem_ok = elem.is_empty() || elem == "*" || elem.eq_ignore_ascii_case(kind);
+            let cls_ok = cls.is_empty() || cls.split('.').all(|c| classes.iter().any(|have| have == c));
+            elem_ok && cls_ok && !(elem.is_empty() && cls.is_empty())
+        })
+    }
+}
+
+/// One SVG `<script>` of the document (Document Properties › Scripting): an external reference
+/// (`href`) or embedded code (`content`), with its MIME type.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocScript {
+    /// `href`: the external script's URL; `None` for an embedded script.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub href: Option<String>,
+    /// The embedded code (empty for an external script).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub content: String,
+    /// `type`; empty: the SVG default (ECMAScript).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub mime: String,
+}
+
 impl Default for GridPrefs {
     fn default() -> Self {
-        Self { spacing: 72.0, subdivisions: 8, kind: GridKind::Rectangular, angle_x: 30.0, angle_z: 30.0, gap_x: 0.0, gap_y: 0.0 }
+        Self {
+            spacing: 72.0,
+            subdivisions: 8,
+            kind: GridKind::Rectangular,
+            angle_x: 30.0,
+            angle_z: 30.0,
+            gap_x: 0.0,
+            gap_y: 0.0,
+            origin: Point::ZERO,
+            color: None,
+            visible: true,
+            name: String::new(),
+        }
     }
 }
 
@@ -511,8 +650,15 @@ impl GridPrefs {
     }
 
     /// `p` snapped to the grid: the nearest crossing of two gridline families (rectangular and
-    /// modular grids: the subdivisions' crossings; axonometric: a vertical line with an angled one).
+    /// modular grids: the subdivisions' crossings; axonometric: a vertical line with an angled one),
+    /// the grid's origin taken into account.
     pub fn snap_point(&self, p: Point) -> Point {
+        let o = self.origin.to_vec2();
+        self.snap_point_at_origin(p - o) + o
+    }
+
+    /// [`GridPrefs::snap_point`] for a grid whose origin is (0, 0).
+    fn snap_point_at_origin(&self, p: Point) -> Point {
         let s = self.step();
         if s <= 0.0 {
             return p;
@@ -686,6 +832,17 @@ pub struct Document {
     pub variables: Shared<Variables>,
     #[serde(default)]
     pub grid: GridPrefs,
+    /// Further grids of the document (the Grids panel): drawn and snapped to with `grid`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub extra_grids: Vec<GridPrefs>,
+    /// The document's scripts (SVG `<script>` elements, for interactive SVG): kept through the SVG
+    /// reader and writer and edited in the Scripts panel; nothing here runs them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub scripts: Vec<DocScript>,
+    /// The document's stylesheet (Selectors and CSS): rules objects share through their classes
+    /// (the `vc-class` data attribute, SVG `class`), written to the SVG `<style>` and kept from it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stylesheet: Vec<CssRule>,
     #[serde(default = "ppi72")]
     pub raster_effects_ppi: f64,
     #[serde(default)]
@@ -693,6 +850,12 @@ pub struct Document {
     /// Pattern swatch definitions (Object → Pattern).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub patterns: Vec<PatternDef>,
+    /// Custom markers (Object › Objects to Marker), offered in the stroke's marker menus.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub markers: Vec<CustomMarker>,
+    /// SVG fonts made in this document (Type › SVG Font Editor), written as `<font>` elements.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub svg_fonts: Vec<SvgFont>,
     /// Pattern editing mode, while active.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pattern_edit: Option<PatternEdit>,
@@ -827,9 +990,14 @@ impl Document {
             saved_selections: Default::default(),
             variables: Default::default(),
             grid: GridPrefs::default(),
+            extra_grids: vec![],
+            scripts: vec![],
+            stylesheet: vec![],
             raster_effects_ppi: 72.0,
             images: BTreeMap::new(),
             patterns: vec![],
+            markers: vec![],
+            svg_fonts: vec![],
             pattern_edit: None,
             mask_edit: None,
             next_id: 1,
@@ -1861,3 +2029,31 @@ mod tests_lookups;
 mod tests_slices;
 #[cfg(test)]
 mod tests_units;
+
+impl Document {
+    /// Every grid of the document: the main one (Preferences › Guides & Grid, or the one the file
+    /// keeps) first, then the Grids panel's.
+    pub fn grids(&self) -> impl Iterator<Item = &GridPrefs> {
+        std::iter::once(&self.grid).chain(self.extra_grids.iter())
+    }
+
+    /// Grid `i` of [`Document::grids`], mutable.
+    pub fn grid_mut(&mut self, i: usize) -> Option<&mut GridPrefs> {
+        if i == 0 { Some(&mut self.grid) } else { self.extra_grids.get_mut(i - 1) }
+    }
+
+    /// `p` snapped to the nearest gridline crossing of any visible grid (Snap to Grid).
+    pub fn snap_grids(&self, p: Point) -> Point {
+        let mut best = p;
+        let mut best_d = f64::INFINITY;
+        for g in self.grids().filter(|g| g.visible) {
+            let q = g.snap_point(p);
+            let d = q.distance(p);
+            if d < best_d {
+                best = q;
+                best_d = d;
+            }
+        }
+        best
+    }
+}

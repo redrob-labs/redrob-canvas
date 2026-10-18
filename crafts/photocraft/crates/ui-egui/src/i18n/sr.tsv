@@ -4504,3 +4504,824 @@ shape	Appearance	Izgled
 	Popup palette	Iskačuća paleta
 	Smear	Razmazivanje
 	Smudge Radius	Poluprečnik razmazivanja
+
+# Colour tools: components, inversions, maps, dither, retinex, tone mapping, colormap (v0.11 parity)
+	Linear Invert	Linearna inverzija
+	Value Invert	Inverzija vrednosti
+	Stretch Contrast HSV	Razvuci kontrast HSV
+	Color Enhance	Pojačanje boje
+	Extract Component…	Izdvoji komponentu…
+	Alien Map…	Vanzemaljska mapa…
+	Rotate Colors…	Rotiraj boje…
+	Palette Map…	Mapa palete…
+	Sample Colorize…	Oboji po uzorku…
+	RGB Clip…	RGB odsecanje…
+	Dither…	Diterovanje…
+	Local Threshold…	Lokalni prag…
+	Destripe…	Ukloni pruge…
+	Retinex…	Retinex…
+	Stress…	Stress…
+	Color to Gray…	Boja u sivo…
+	Fattal et al. 2002…	Fattal i dr. 2002…
+	Mantiuk 2006…	Mantiuk 2006…
+	Reinhard 2005…	Reinhard 2005…
+	Smooth Palette…	Glatka paleta…
+	Decompose…	Rastavi…
+	Compose…	Sastavi…
+	Recompose	Ponovo sastavi
+	Rearrange Colormap…	Preuredi mapu boja…
+	Set Colormap…	Postavi mapu boja…
+	Border Average…	Prosek ivice…
+	Export Histogram…	Izvezi histogram…
+	Variable Blur…	Promenljivo zamućenje…
+	Apply Lens…	Primeni sočivo…
+	Mosaic Tiles…	Mozaičke pločice…
+	Newsprint…	Novinska štampa…
+	Curve Bend…	Savijanje krivom…
+	Warp (Map)…	Izobličenje (mapa)…
+	Bloom…	Sjaj…
+	Sobel…	Sobel…
+	Cartoon…	Crtani film…
+	Clothify…	Tkanina…
+	Stencil Chrome…	Hromirana šablona…
+	Bump Map…	Mapa ispupčenja…
+	Panorama Projection…	Panoramska projekcija…
+	Perlin Noise…	Perlinov šum…
+	Plasma…	Plazma…
+	Solid Noise…	Puni šum…
+	Add Border…	Dodaj ivicu…
+	Fog…	Magla…
+	Old Photo…	Stara fotografija…
+	Round Corners…	Zaobljeni uglovi…
+	Tile…	Popločaj…
+	Depth Merge…	Spajanje po dubini…
+	Geometric Shapes…	Geometrijski oblici…
+	Image Map Area…	Oblast mape slike…
+	Image Map From Slices	Mapa slike iz isečaka
+	Export Image Map…	Izvezi mapu slike…
+	Clear Image Map	Obriši mapu slike
+	Combine	Kombinuj
+	Clipping	Odsecanje
+	Color Space	Prostor boja
+	Linear light	Linearno svetlo
+	Copy upper to lower	Kopiraj gornju u donju
+	Swap curves	Zameni krive
+	Mirror	Preslikaj
+	Gradient Source	Izvor: preliv
+	Value Jitter	Podrhtavanje vrednosti
+	Pipe	Niz
+	Brush file (.myb)	Datoteka četkice (.myb)
+	Text as brush tip	Tekst kao vrh četkice
+	One character per dab along the stroke	Jedan znak po otisku duž poteza
+	Engine	Pogon
+	Text Tip	Tekstualni vrh
+	Hatching	Šrafura
+	Particle	Čestica
+	Dyna	Dyna
+	Tangent Normal	Tangentna normala
+	MyPaint	MyPaint
+	Spray	Sprej
+	Bristle	Čekinje
+	Deform	Deformacija
+	Grain Extract	Izdvajanje zrna
+	Grain Merge	Spajanje zrna
+	LCh Hue	LCh nijansa
+	LCh Chroma	LCh hroma
+	LCh Color	LCh boja
+	LCh Lightness	LCh svetlina
+	Merge	Spoji
+	Split	Razdvoji
+	Remove Holes	Ukloni rupe
+	Distort…	Izobliči…
+	Rounded Rectangle…	Zaobljeni pravougaonik…
+	Anchor Layer	Usidri sloj
+	To New Layer	U novi sloj
+	Layer Boundary Size…	Veličina granice sloja…
+	Layer to Image Size	Sloj na veličinu slike
+	Resize Layer to Selection	Sloj na veličinu izbora
+	Crop Layer to Content	Iseci sloj na sadržaj
+	Threshold Alpha…	Prag providnosti…
+	Composite Options…	Opcije kompozicije…
+	Zealous Crop	Temeljno isecanje
+	Foreground Select	Избор предњег плана
+	Stroke width	Ширина потеза
+	Graph cut	Рез графа
+	To Layer Mask	У маску слоја
+	Draw a rough outline round the subject	Нацртајте грубу контуру око објекта
+	Draw a rough outline round the subject first	Прво нацртајте грубу контуру око објекта
+	Outline placed: paint over the foreground, then Preview or Select	Контура постављена: обојите предњи план, затим Преглед или Изабери
+	Outline the subject roughly, paint over the foreground, and let the matting engine grow the mask	Грубо оцртајте објекат, обојите предњи план и мотор за матирање ће проширити маску
+	Paint over the foreground (hold Alt for background), then Preview or Select	Обојите предњи план (Alt за позадину), затим Преглед или Изабери
+	Display Filters…	Филтери приказа…
+	Display Filters	Филтери приказа
+	No Color Deficiency Simulation	Без симулације слабовидости за боје
+	Simulate Protanopia	Симулирај протанопију
+	Simulate Deuteranopia	Симулирај деутеранопију
+	Simulate Tritanopia	Симулирај тританопију
+	Clip Warning	Упозорење о одсецању
+	Clip warning	Упозорење о одсецању
+	Color deficiency:	Слабовидост за боје:
+	Protanopia	Протанопија
+	Deuteranopia	Деутеранопија
+	Tritanopia	Тританопија
+	Contrast:	Контраст:
+	View-only: the filters change what this view shows, never the pixels.	Само приказ: филтери мењају шта овај приказ показује, никад пикселе.
+	Padding Color	Боја испуне око платна
+	From Theme	Из теме
+	Light Check Color	Светло поље шаховнице
+	Dark Check Color	Тамно поље шаховнице
+	Light Check	Светло поље
+	Dark Check	Тамно поље
+	Light check	Светло поље
+	Dark check	Тамно поље
+	Custom Color	Прилагођена боја
+	Keep Padding in Show All	Задржи испуну у Прикажи све
+	Keep padding in show all	Задржи испуну у Прикажи све
+	Filter by tag	Филтрирај по ознаци
+	Clear filter	Обриши филтер
+	Tags:	Ознаке:
+	Add tag	Додај ознаку
+	Remove tag	Уклони ознаку
+	View Metadata…	Прикажи метаподатке…
+	Edit Metadata…	Уреди метаподатке…
+	Edit Metadata	Уреди метаподатке
+	Metadata Viewer	Преглед метаподатака
+	Write Metadata	Упиши метаподатке
+	Separate several values with semicolons	Више вредности раздвојите тачка-зарезом
+	No tags	Нема ознака
+	XMP	XMP
+	IPTC	IPTC
+	Text	Текст
+	Rights	Права
+	IPTC Extension	IPTC проширење
+	Categories	Категорије
+	DICOM	DICOM
+	Procedure Browser	Прегледач процедура
+	Plug-In Browser	Прегледач додатака
+	Search procedures	Претражи процедуре
+	{n} procedures	{n} процедура
+	(no menu)	(без менија)
+	Menu: {path}	Мени: {path}
+	Parameters	Параметри
+	Available now	Доступно сада
+	Not available in the current state	Није доступно у тренутном стању
+	Run	Покрени
+	Select a procedure to read its parameters.	Изаберите процедуру да прочитате њене параметре.
+	Dashboard	Контролна табла
+	Low memory: swap is nearly full. Save your work.	Мало меморије: swap је скоро пун. Сачувајте рад.
+	Memory	Меморија
+	Cache	Кеш
+	Swap	Swap
+	Swap: not reported on this platform	Swap: није доступно на овој платформи
+	CPU	CPU
+	CPU renderer	CPU рендерер
+	uploads	отпремања
+	Misc: {jobs} jobs running · {n} samples	Разно: {jobs} послова у току · {n} узорака
+	Log to File…	Бележи у датотеку…
+	Stop Logging	Заустави бележење
+	Device Status	Стање уређаја
+	Core Pointer	Основни показивач
+	Pen / Tablet	Оловка / таблет
+	Brush:	Четкица:
+	Pattern:	Шаблон:
+	Gradient:	Прелив:
+	Save Device Status	Сачувај стање уређаја
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Сваки уређај памти свој алат, боје, четкицу, шаблон и прелив; промена уређаја мења и њих.
+	Selection Editor	Уређивач избора
+	No document open.	Нема отвореног документа.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Кликните да изаберете суседну боју чаробним штапићем (Shift додаје, Alt одузима)
+	Save to Channel	Сачувај у канал
+	To Path	У путању
+	Advanced options	Напредне опције
+	MyPaint Brushes	MyPaint четкице
+	No MyPaint brushes yet. Import .myb files to list them here.	Још нема MyPaint четкица. Увезите .myb датотеке да се овде прикажу.
+	No brush matches the filter.	Ниједна четкица не одговара филтеру.
+	Handle Transform	Трансформација ручкама
+	3D Transform	3D трансформација
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Поново подеси
+	Apply the transform so far and put a fresh box on the result	Примени досадашњу трансформацију и постави нови оквир на резултат
+	Camera	Камера
+	Vanishing X:	Тачка нестајања X:
+	Y:	Y:
+	Focal length:	Жижна даљина:
+	Local pivot	Локална оса
+	Unified pivot	Јединствена оса
+	Close Cage	Затвори кавез
+	Reset Cage	Поништи кавез
+	Fill Plain Colour	Испуни једнобојно
+	Fill the original position of the cage with the plain colour of its outline	Испуни првобитни положај кавеза једнобојном бојом његове ивице
+	{n} points	{n} тачака
+	Click to place a handle	Кликните да поставите ручку
+	Rotate and Scale	Ротирај и скалирај
+	{n} handles: {what}	{n} ручки: {what}
+	Reset Handles	Поништи ручке
+	Remove Handles	Уклони ручке
+	Commit Cage Transform (Enter)	Потврди трансформацију кавезом (Enter)
+	Commit Handle Transform (Enter)	Потврди трансформацију ручкама (Enter)
+	Commit 3D Transform (Enter)	Потврди 3D трансформацију (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Трансформација кавезом: кликните око дела за деформацију, кликните на прву тачку да затворите кавез, затим превлачите тачке
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Трансформација ручкама: поставите једну до четири ручке и превлачите их (једна помера, две ротирају и скалирају, три искошавају, четири дају перспективу)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D трансформација: превлачите за ротацију око X и Y, Alt за Z; картице Помери и Камера померају слој и камеру
+	Segment {n}	Сегмент {n}
+	Blending:	Прелаз:
+	Coloring:	Бојење:
+	Midpoint:	Средишња тачка:
+	Sinusoidal	Синусоидално
+	Spherical (increasing)	Сферно (растуће)
+	Spherical (decreasing)	Сферно (опадајуће)
+	Step	Степенасто
+	HSV (counter-clockwise)	HSV (супротно од казаљке)
+	HSV (clockwise)	HSV (у смеру казаљке)
+	Replicate	Умножи
+	Split the segment at its midpoint	Подели сегмент на средишњој тачки
+	Replace the segment with two copies of itself	Замени сегмент са две његове копије
+	Flip the whole gradient end to end	Обрни цео прелив
+	Save as POV-Ray…	Сачувај као POV-Ray…
+	Shaped Gradient (angular)	Градијент по облику (угаони)
+	Shaped Gradient (spherical)	Градијент по облику (сферни)
+	Shaped Gradient (dimpled)	Градијент по облику (удубљени)
+	Truncate	Одсеци
+	Sawtooth wave	Тестерасти талас
+	Triangular wave	Троугаони талас
+	Wheel	Точкић
+	Force	Сила
+	Jitter	Подрхтавање
+	Fade length	Дужина бледења
+	Random amount	Количина случајности
+	Save Preset	Сачувај поставку
+	Paint Dynamics Editor	Уређивач динамике сликања
+	Color from Gradient	Боја из градијента
+	Put this table on the current brush	Примени табелу на тренутну четкицу
+	Save the table as a named dynamics preset	Сачувај табелу као именовану поставку динамике
+	Give the dynamics preset a name first	Прво дајте име поставци динамике
+	Edit the dynamics table (inputs × outputs)	Уреди табелу динамике (улази × излази)
+	Reset Plane	Поништи раван
+	Click four corners to define a perspective plane, then clone along it	Кликните четири угла да одредите раван перспективе, затим клонирајте дуж ње
+	Click corner {n} of 4	Кликните угао {n} од 4
+	Perspective plane: corner {n} of 4 set	Раван перспективе: постављен угао {n} од 4
+	Perspective plane set; {key}-click a source, then paint	Раван перспективе постављена; {key}-кликните извор, затим сликајте
+	Copy Path as SVG	Kopiraj putanju kao SVG
+	Export Path to SVG…	Izvezi putanju u SVG…
+	Import Path from SVG…	Uvezi putanju iz SVG…
+	Paste Path from SVG	Nalepi putanju iz SVG
+	Copy All Paths as SVG	Kopiraj sve putanje kao SVG
+	Export All Paths to SVG…	Izvezi sve putanje u SVG…
+	Copied 1 path as SVG	1 putanja kopirana kao SVG
+	Copied {n} paths as SVG	Kopirano putanja kao SVG: {n}
+	Exported paths to {path}	Putanje izvezene u {path}
+	Imported 1 path	Uvezena 1 putanja
+	Imported {n} paths	Uvezeno putanja: {n}
+	The clipboard holds no SVG	U ostavi nema SVG-a
+	Clipboard Image Brush	Četkica od slike iz ostave
+	Paint with the image on the clipboard as the brush tip	Slikaj slikom iz ostave kao vrhom četkice
+	Export Layers as Animation…	Izvezi slojeve kao animaciju…
+	Export as Brush (.gbr)…	Izvezi kao četkicu (.gbr)…
+	Export Layers as Image Hose (.gih)…	Izvezi slojeve kao animiranu četkicu (.gih)…
+	Export as Pattern (.pat)…	Izvezi kao mustru (.pat)…
+	Animation Frame Tags…	Oznake kadra animacije…
+	Disposal	Odlaganje
+	Incremental	Redom
+	Angular	Ugaono
+	Xtilt	Nagib X
+	Ytilt	Nagib Y
+	Mng	MNG
+	Export as PostScript (.eps)…	Izvezi kao PostScript (.eps)…
+	Encapsulated	Enkapsulirano
+	Encoding	Kodiranje
+	Hex	Heksadecimalno
+	Ascii85	ASCII85
+	Binary	Binarno
+	Open Location…	Otvori lokaciju…
+	From Screenshot…	Iz snimka ekrana…
+	From Web Page…	Iz veb stranice…
+	Send by Email…	Pošalji e-poštom…
+	Url	URL
+	Cursor	Kursor
+	Region	Oblast
+	Tif	TIFF
+	Psd	PSD
+	Pdf	PDF
+	Buffer	Bafer
+	Buffers	Baferi
+	Cut Named…	Iseci u imenovani…
+	Copy Named…	Kopiraj u imenovani…
+	Copy Visible Named…	Kopiraj vidljivo u imenovani…
+	Paste Named…	Nalepi imenovani…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Nema imenovanih bafera. Koristite Uredi > Bafer > Kopiraj u imenovani… da sačuvate kopiju ovde.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Nema imenovanih bafera; prvo koristite Uredi > Bafer > Kopiraj u imenovani
+	Paste Buffer	Nalepi bafer
+	Paste Buffer in Place	Nalepi bafer na mesto
+	Paste Buffer as New Image	Nalepi bafer kao novu sliku
+	Rename Buffer…	Preimenuj bafer…
+	Delete Buffer	Obriši bafer
+	Paste as New	Nalepi kao novo
+	Paste the buffer as a new layer	Nalepi bafer kao novi sloj
+	Paste the buffer as a new document	Nalepi bafer kao novi dokument
+	As	Kao
+	In place	Na mesto
+	Into	Unutra
+	Modules…	Moduli…
+	Units…	Jedinice…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nema instaliranih modula. Filter > Dodaci > Instaliraj dodatak… dodaje jedan.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Isključen modul ostaje instaliran, ali nestaje iz menija dok se ponovo ne uključi.
+	Module	Modul
+	Not installed	Nije instalirano
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor je koliko jedinica čini jedan inč (2,54 za centimetre, 72 za tačke).
+	Identifier	Identifikator
+	Factor	Faktor
+	Symbol	Simbol
+	Abbreviation	Skraćenica
+	Singular	Jednina
+	Plural	Množina
+	Delete Unit	Obriši jedinicu
+	New unit	Nova jedinica
+	Add Unit	Dodaj jedinicu
+	That identifier is already a unit	Taj identifikator je već jedinica
+	Custom units	Prilagođene jedinice
+	Disabled modules	Isključeni moduli
+	Input Devices…	Ulazni uređaji…
+	Input Controllers…	Ulazni kontroleri…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Olovka je stilus tableta koji platforma prijavljuje. Isključena radi kao miš.
+	Device	Uređaj
+	Invert tilt X	Obrni nagib X
+	Invert tilt Y	Obrni nagib Y
+	Swap tilt	Zameni nagib
+	Pressure scale	Razmera pritiska
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Događaji točkića su up, down, left ili right sa opcionim Shift+, Ctrl+ i Alt+; događaji tastature su prečice kao Ctrl+Alt+Up. Radnja je id komande, opciono praćen JSON parametrima.
+	Controller	Kontroler
+	Event	Događaj
+	Remove mapping	Ukloni mapiranje
+	New mapping	Novo mapiranje
+	Add Mapping	Dodaj mapiranje
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} stavki; klik postavlja boju četkice, dvoklik uređuje
+	Entry	Stavka
+	Add an entry with the foreground colour	Dodaj stavku sa bojom četkice
+	Delete the last entry	Obriši poslednju stavku
+	Use selected	Koristi izabranu
+	Ink	Mastilo
+	MyPaint Brush	MyPaint četkica
+	Nib	Vrh pera
+	Aspect	Odnos
+	Opaque	Neprovidnost
+	Erase with brush	Briši četkicom
+	Import .myb…	Uvezi .myb…
+	Add a MyPaint brush file to the presets	Dodaj MyPaint datoteku četkice u podešavanja
+	Imported MyPaint brush {name}	Uvezena MyPaint četkica {name}
+	How much pressure changes the nib size	Koliko pritisak menja veličinu vrha
+	How much the pen's tilt turns and stretches the nib	Koliko nagib olovke okreće i izdužuje vrh
+	How much a fast stroke thins the nib	Koliko brz potez sužava vrh
+	Added to the preset's logarithmic radius	Dodaje se logaritamskom poluprečniku podešavanja
+	Operation…	Operacija…
+	Operation name or id	Naziv ili id operacije
+	{n} operations	Operacija: {n}
+	Choose an operation	Izaberite operaciju
+	Script-Fu	Script-Fu
+	Python-Fu	Python-Fu
+	Script-Fu Console…	Script-Fu konzola…
+	Load Scripts Folder…	Učitaj fasciklu skripti…
+	Python Console…	Python konzola…
+	Load Plug-ins Folder…	Učitaj fasciklu dodataka…
+	Loaded {n} scripts	Učitano skripti: {n}
+	Loaded {n} Python plug-ins	Učitano Python dodataka: {n}
+	Python 3 with call(command, **params), message(text) and print(); every engine command is reachable through call.	Python 3 sa call(command, **params), message(text) i print(); svaka komanda motora je dostupna kroz call.
+	Scheme: every engine command is a procedure, (file.new "width" 640 "height" 480); define procedures and register them with script-fu-register.	Scheme: svaka komanda motora je procedura, (file.new "width" 640 "height" 480); definišite procedure i registrujte ih sa script-fu-register.
+	Code	Kod
+	Cmd+Enter runs the code	Cmd+Enter pokreće kod
+	Clear Log	Obriši dnevnik
+	Dodge…	Izbeljivanje…
+	Burn…	Zatamnjivanje…
+	Cross-Channel Adjustment…	Podešavanje između kanala…
+	Slope, Offset, Power…	Nagib, pomak, stepen…
+	Index Colors…	Indeksirane boje…
+	Raindrops…	Kišne kapi…
+	Polygon Blur…	Poligonalno zamućenje…
+	Edge Detection…	Otkrivanje ivica…
+	Emboss (Directional)…	Reljef (usmereni)…
+	Phong Bump Map…	Fongova mapa ispupčenja…
+	Palettize…	Paletizacija…
+	Height to Normal Map…	Visina u mapu normala…
+	Normalize Normal Map	Normalizuj mapu normala
+	Maximize Channel	Maksimizuj kanal
+	Minimize Channel	Minimizuj kanal
+	Propagate Colors…	Proširi boje…
+	Reset Transparent	Resetuj providne
+	Mean Removal	Uklanjanje srednje vrednosti
+	Wavelet Noise Reducer…	Talasićno uklanjanje šuma…
+	Random Pick…	Nasumični odabir…
+	G'MIC Filter…	G'MIC filter…
+	G'MIC executable	G'MIC izvršna datoteka
+	G'MIC update folder	G'MIC fascikla ažuriranja
+	Add scene at playhead	Додај сцену на позицији репродукције
+	Add to favourites	Додај у омиљене
+	Arithmetic	Аритметички
+	Attach audio…	Приложи звук…
+	Blend details	Детаљи мешања
+	Blend mode	Режим мешања
+	Blend mode and opacity	Режим мешања и провидност
+	Capture now	Сними сада
+	Clone previous keyframe here	Клонирај овде претходни кључни кадар
+	Comment	Коментар
+	Display settings	Подешавања приказа
+	Duplicate keyframe	Дуплирај кључни кадар
+	Duplicate keyframe here	Дуплирај кључни кадар овде
+	End	Крај
+	Export timelapse…	Извези тајмлапс…
+	Favourites	Омиљени
+	Frame rate	Број кадрова
+	HSX	HSX
+	Key the active layer:	Кључ за активни слој:
+	Misc	Разно
+	Mute audio	Утишај звук
+	Negative	Негативни
+	New keyframe	Нови кључни кадар
+	New keyframe here	Нови кључни кадар овде
+	Next tint	Боја следећих
+	No animated layers: add a keyframe to the active layer to animate it.	Нема анимираних слојева: додајте кључни кадар активном слоју да га анимирате.
+	No animation curves yet.	Још нема кривих анимације.
+	No scenes yet.	Још нема сцена.
+	Opacity per frame	Провидност по кадру
+	Previous tint	Боја претходних
+	Quadratic	Квадратни
+	Recorder	Снимач
+	Remove from favourites	Уклони из омиљених
+	Remove keyframe	Уклони кључни кадар
+	Remove scene	Уклони сцену
+	Scale X	Размера X
+	Scale Y	Размера Y
+	Scene name	Назив сцене
+	Show onion skins	Прикажи паус папир
+	Start	Почетак
+	Start recording	Почни снимање
+	Stop recording	Заустави снимање
+	Storyboard	Сториборд
+	Thumbnail size	Величина сличице
+	frames	кадрова
+	opacity	провидност
+	rotation	ротација
+	scaleX	размера X
+	scaleY	размера Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} снимака у {dir}
+	2-Point Perspective	Perspektiva sa 2 tačke
+	Assistant colour	Boja pomoćnika
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetizam pomoćnika: koliko potez sme da odstupi od pomoćnika a da ipak bude privučen (1000 = uvek)
+	Assistant opacity	Neprozirnost pomoćnika
+	Concentric Ellipse	Koncentrična elipsa
+	Curvilinear Perspective	Krivolinijska perspektiva
+	Eraser snaps	Gumica se lepi
+	Fish-Eye Point	Tačka ribljeg oka
+	Handles	Ručke
+	Infinite Ruler	Beskonačni lenjir
+	Limit to area	Ograniči na oblast
+	Minor subdivisions	Manje podele
+	Own colour	Sopstvena boja
+	Perspective Ellipse	Elipsa u perspektivi
+	Previews	Pregledi
+	Show the snapped stroke's line while painting	Prikaži liniju prilepljenog poteza dok se slika
+	Show this assistant's control handles	Prikaži kontrolne ručke ovog pomoćnika
+	Spline	Splajn
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Potezi prate pomoćnike za slikanje (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dve dodatne ručke ograničavaju gde pomoćnik crta i lepi
+	Vertical ruler	Vertikalni lenjir
+	Painting Assistants	Pomoćnici za slikanje
+	Assistant Previews	Pregledi pomoćnika
+	Drag fill	Popuna prevlačenjem
+	Dragging fills every region passed over	Prevlačenje popunjava svaku pređenu oblast
+	Exclude colour	Izuzmi boju
+	Exclude transparent	Izuzmi providno
+	Fill mode	Režim popune
+	No region is fully enclosed by the shape	Nijedna oblast nije potpuno obuhvaćena oblikom
+	Only regions coloured like the first one	Samo oblasti obojene kao prva
+	Reference	Referenca
+	Similar only	Samo slične
+	Soften the filled edge	Umekšaj ivicu popune
+	Spread stops at the darkest pixels (lines)	Širenje se zaustavlja na najtamnijim pikselima (linijama)
+	Spread stops at the most opaque pixels	Širenje se zaustavlja na najneprozirnijim pikselima
+	Stop at darkest	Stani na najtamnijem
+	Stop at opaque	Stani na neprozirnom
+	Similar Colours	Slične boje
+	Colour Labels	Oznake boja
+	All Regions	Sve oblasti
+	Specific Colour	Određena boja
+	Transparent Regions	Providne oblasti
+	Surrounded By	Okruženo bojom
+	Fill with Foreground Color (Opacity)	Popuni bojom prednjeg plana (neprozirnost)
+	Fill with Background Color (Opacity)	Popuni bojom pozadine (neprozirnost)
+	Fill with Pattern (Opacity)	Popuni šablonom (neprozirnost)
+	Straight Line Tool	Alatka Prava linija
+	Multibrush Tool	Alatka Višestruka četkica
+	Dynamic Brush Tool	Alatka Dinamička četkica
+	Enclose and Fill Tool	Alatka Obuhvati i popuni
+	Colorize Mask Tool	Alatka Maska za bojenje
+	Reference Images Tool	Alatka Referentne slike
+	Alternating	Naizmenično
+	Forward	Napred
+	Shaped Gradient (follows the selection)	Oblikovani preliv (prati izbor)
+	Clear copies	Obriši kopije
+	Ctrl-click places a copy, Ctrl-Alt-click removes one	Ctrl+klik postavlja kopiju, Ctrl+Alt+klik je uklanja
+	How heavily the stroke lags behind the pointer	Koliko potez zaostaje za pokazivačem
+	How quickly the stroke's motion dies away	Koliko brzo se kretanje poteza gasi
+	Keep one-pixel lines single width without L corners	Linije od jednog piksela ostaju jednostruke bez L uglova
+	Mirror all tools	Preslikaj sve alatke
+	Multibrush	Višestruka četkica
+	Pixel smoothing	Pikselsko glačanje
+	The painting symmetry mirrors fills, gradients and retouching too	Simetrija slikanja preslikava i popune, prelive i retuširanje
+	The painting symmetry mirrors this tool's output too	Simetrija slikanja preslikava i rezultat ove alatke
+	X interval	X razmak
+	Y interval	Y razmak
+	Mirror / Rotation	Ogledalo / Rotacija
+	Translate	Pomeranje
+	Copy Translate	Kopiraj i pomeri
+	Cursor shape	Oblik kursora
+	Outline shape	Oblik konture
+	Show outline while painting	Prikaži konturu dok se slika
+	Effective outline size	Stvarna veličina konture
+	Tool icon	Ikona alatke
+	Arrow	Strelica
+	Crosshair	Nišan
+	Small dot	Mala tačka
+	No cursor	Bez kursora
+	Triangle right	Trougao desno
+	Triangle left	Trougao levo
+	No outline	Bez konture
+	Instant preview	Trenutni pregled
+	Instant preview megapixels	Megapikseli trenutnog pregleda
+	Add…	Dodaj…
+	Auto update	Automatsko ažuriranje
+	Canvas input profile	Profil unosa platna
+	Clean up	Čišćenje
+	Clear key strokes	Obriši ključne poteze
+	Colorize Mask	Maska za bojenje
+	Draw in the area below to test pressure, tilt and rotation	Crtajte u oblasti ispod da proverite pritisak, nagib i rotaciju
+	Edge detection	Otkrivanje ivica
+	Edit key strokes	Uredi ključne poteze
+	Embed	Ugradi
+	Fill only inside the line art's pixels	Popuni samo unutar piksela crteža
+	Gap close	Zatvori praznine
+	Input API	API unosa
+	Keep aspect	Zadrži proporcije
+	Limit to layer	Ograniči na sloj
+	Next Preset	Sledeći preset
+	No samples yet	Još nema uzoraka
+	Opacity +	Neprozirnost +
+	Opacity -	Neprozirnost -
+	Pasted image	Nalepljena slika
+	Peak pressure	Vršni pritisak
+	Previous Preset	Prethodni preset
+	Reference Images	Referentne slike
+	Rotate Left	Rotiraj ulevo
+	Rotate Right	Rotiraj udesno
+	Sample rate	Učestalost uzoraka
+	Screen mapping	Mapiranje ekrana
+	Show output	Prikaži rezultat
+	Show the key strokes over the canvas	Prikaži ključne poteze preko platna
+	Show with all tools	Prikaži sa svim alatkama
+	Size +	Veličina +
+	Size -	Veličina -
+	Speed source	Izvor brzine
+	Store the pixels in the set; off, link to the file	Sačuvaj piksele u skupu; isključeno, poveži sa datotekom
+	Tablet Settings…	Podešavanja tableta…
+	Tablet Tester	Tester tableta
+	The clipboard is not available	Ostava nije dostupna
+	The next key strokes keep their regions clear	Sledeći ključni potezi ostavljaju svoje oblasti providnim
+	Tilt offset	Pomak nagiba
+	Touch Docker	Panel na dodir
+	Transparent key	Providan ključ
+	Canvas Input	Unos platna
+	Canvas Input…	Unos platna…
+	Pan key	Taster pomeranja
+	Zoom in key	Taster uvećanja
+	Zoom out key	Taster umanjenja
+	Rotate key	Taster rotacije
+	Middle button	Srednje dugme
+	Stylus button	Dugme olovke
+	Pick modifier	Modifikator biranja boje
+	Shift wheel rotates	Shift+točkić rotira
+	Trackpad	Dodirna tabla
+	Pick	Biranje boje
+	No action	Bez radnje
+	No pick	Bez biranja
+	Scroll	Klizanje
+	Rotate View (hold)	Rotiraj prikaz (drži)
+	Tilt offset x	Pomak nagiba X
+	Tilt offset y	Pomak nagiba Y
+	Tablet speed source	Izvor brzine tableta
+	Tablet api	API tableta
+	Tablet screen mapping	Mapiranje ekrana tableta
+	Pointer	Pokazivač
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Vrsta mreže
+	Isometric left angle	Izometrijski levi ugao
+	Isometric right angle	Izometrijski desni ugao
+	Isometric vertical lines	Izometrijske vertikalne linije
+	Rectangular	Pravougaona
+	Isometric	Izometrijska
+	Node	Čvor
+	Extension	Produžetak
+	Intersection	Presek
+	Alt-click a bottom patch to set it to the foreground colour	Alt+klik na donju pločicu postavlja boju prednjeg plana
+	Apply:	Primeni:
+	Brushes this large preview coarsely while painting	Četkice ove veličine se grubo prikazuju tokom slikanja
+	Click the disc to add shape points	Kliknite na disk da dodate tačke oblika
+	Close Shape	Zatvori oblik
+	Color Space:	Prostor boja:
+	Common Colors	Česte boje
+	Components:	Komponente:
+	Continuous Mode	Neprekidni režim
+	Current pattern	Trenutni uzorak
+	Depth:	Dubina:
+	Display:	Prikaz:
+	Dynamic Hue Ring	Dinamički prsten nijansi
+	Enable Pen Settings	Uključi podešavanja olovke
+	Erase mode keeps its own opacity on this preset	Režim brisanja čuva sopstvenu providnost u ovom podešavanju
+	Erase mode keeps its own size on this preset	Režim brisanja čuva sopstvenu veličinu u ovom podešavanju
+	Eraser Opacity	Providnost brisača
+	Eraser Size	Veličina brisača
+	Fit Panel Width	Uklopi u širinu panela
+	Gamut Mask	Maska gamuta
+	Gradient Steps	Koraci preliva
+	Gradient ends: Alt-click to set from the foreground	Krajevi preliva: Alt+klik postavlja boju prednjeg plana
+	Hue Steps	Koraci nijanse
+	Instant Preview	Trenutni pregled
+	LUT Management (OCIO)	Upravljanje LUT (OCIO)
+	Lightness Strength	Jačina svetline
+	Lock Color	Zaključaj boju
+	Luma:	Luma:
+	Minimum Hardness	Najmanja tvrdoća
+	Minimum Strength	Najmanja jačina
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Isključeno: svi senzori se zanemaruju; krive ostaju
+	Out of gamut	Van gamuta
+	Panel colours are not shown through the display transform	Boje panela se ne prikazuju kroz transformaciju prikaza
+	Patch Count	Broj pločica
+	Patch Size	Veličina pločice
+	Patches:	Pločice:
+	Pattern Scale	Razmera uzorka
+	Pop-up Size	Veličina iskačućeg prozora
+	Proof to Painting Space	Proba u prostoru slikanja
+	Recent Colors	Nedavne boje
+	Remove Last Shape	Ukloni poslednji oblik
+	Rotate Mask	Rotiraj masku
+	Saturation Steps	Koraci zasićenja
+	Selector settings	Podešavanja birača
+	Selector:	Birač:
+	Shade Count	Broj tonova
+	Shade Ring by Value	Senči prsten po vrednosti
+	Shade Selector	Birač tonova
+	Shade Size	Veličina tona
+	Shade Spread	Raspon tonova
+	Shade Strip	Traka tonova
+	Shades	Tonovi
+	Share Curve Across Settings	Deli krivu među podešavanjima
+	Show as Fractions	Prikaži kao razlomke
+	Soften Edge	Omekšaj ivicu
+	Source:	Izvor:
+	Style:	Stil:
+	The tip's grey levels are painted into the colour as lightness	Nivoi sive vrha se slikaju u boju kao svetlina
+	Threshold the tip mask for crisp pixel strokes	Prag maske vrha za oštre pikselne poteze
+	Tip as Lightness Map	Vrh kao mapa svetline
+	Update:	Osvežavanje:
+	Value Steps	Koraci vrednosti
+	Value on the Ring	Vrednost na prstenu
+	Zoom Pop-up	Iskačući zum
+	Length over which the value goes from 0 to 1	Дужина на којој вредност расте од 0 до 1
+	Start over past the length instead of holding the end value	После дужине почни испочетка уместо да задржиш крајњу вредност
+	Pressure In	Притисак (само раст)
+	X-Tilt	Нагиб X
+	Y-Tilt	Нагиб Y
+	Tilt Direction	Смер нагиба
+	Tilt Elevation	Висина нагиба
+	Fuzzy Stroke	Насумично по потезу
+	Tip Scale:	Размера врха:
+	Initial size as a share of the bitmap's size	Почетна величина као удео величине битмапе
+	Tip Rotation:	Ротација врха:
+	Initial rotation of the tip	Почетна ротација врха
+	No anti-aliasing: the dab's pixels are fully on or off	Без умекшавања: пиксели отиска су потпуно укључени или искључени
+	Align Outline to Pixel Grid	Поравнај контуру са пикселском мрежом
+	The brush outline snaps to the pixels the dab fills	Контура четкице се лепи за пикселе које отисак попуњава
+	Tip Mode:	Режим врха:
+	(no colour bitmap: paints the brush colour)	(нема битмапе у боји: слика бојом четкице)
+	Neutral Point	Неутрална тачка
+	Canvas Only: hide the panels around the canvas	Само платно: сакриј панеле око платна
+	Presets kept in the history	Поставки у историји
+	Clear the history	Обриши историју
+	No presets used yet	Још нема коришћених поставки
+	Forget this preset	Заборави ову поставку
+	Ten Brushes	Десет четкица
+	Assign presets to ten slots; activating a slot again returns to the previous preset	Додели поставке десет места; поновно активирање места враћа претходну поставку
+	Clear this slot	Испразни ово место
+	Assign current	Додели тренутну
+	Browse a folder of reference images	Прегледај фасциклу референтних слика
+	No folder	Нема фасцикле
+	Next image	Следећа слика
+	Previous image	Претходна слика
+	Pick an image to show it here	Изабери слику да се прикаже овде
+	Search actions and commands	Претражи радње и наредбе
+	No matching action	Нема одговарајуће радње
+	Search Actions…	Претражи радње…
+	Brush History	Историја четкица
+	Color Image	Слика у боји
+	Lightness Map	Мапа светлине
+	Static	Непомично
+	Move to Top	Премести на врх
+	Bubble Up	Подигни за једно место
+	Clear the scratch pad to white	Очисти подлогу за пробу у бело
+	Fill the scratch pad with the background colour	Попуни подлогу за пробу бојом позадине
+	Fill the scratch pad with the current gradient	Попуни подлогу за пробу тренутним преливом
+	Fill the scratch pad with the current image	Попуни подлогу за пробу тренутном сликом
+	Fill the scratch pad with the preset's icon	Попуни подлогу за пробу иконом поставке
+	Reload the stored preset, discarding the tweaks	Поново учитај сачувану поставку и одбаци измене
+	BG	Позадина
+	Icon	Икона
+	Thumbnail:	Сличица:
+	Stroke preview	Преглед потеза
+	Scratch pad	Подлога за пробу
+	Icon library	Библиотека икона
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Aktiviraj lokalni izbor
+	Add Curve Key	Dodaj ključ krive
+	Add Filter…	Dodaj filter…
+	Add Local Selection	Dodaj lokalni izbor
+	Add Scene	Dodaj scenu
+	Add Transform Key	Dodaj ključ transformacije
+	Alpha into Mask	Alfa u masku
+	Attach Audio…	Priloži zvuk…
+	Backup count	Broj rezervnih kopija
+	Capture Snapshot	Snimi snimak stanja
+	Change Clone Source…	Promeni izvor kloniranja…
+	Clone Keyframe	Kloniraj ključni kadar
+	Clone Layer	Kloniraj sloj
+	Clones Array…	Niz klonova…
+	Colorize Mask Properties…	Svojstva maske bojenja…
+	Convert Group to Animated Layer	Pretvori grupu u animirani sloj
+	Convert to Paint Layer	Pretvori u sloj za crtanje
+	Copy Keyframe	Kopiraj ključni kadar
+	Curved	Zakrivljeno
+	Drag	Prevlačenje
+	Duplicate Keyframe	Dupliraj ključni kadar
+	Edit Generated Fill…	Uredi generisanu popunu…
+	Edit Transform Mask…	Uredi masku transformacije…
+	Ellipse	Elipsa
+	Export Storyboard…	Izvezi storiboard…
+	Export Timelapse…	Izvezi timelapse…
+	File Layer Properties…	Svojstva sloja datoteke…
+	File Layer…	Sloj datoteke…
+	Filter Layer…	Sloj filtera…
+	Filter Mask…	Maska filtera…
+	Frame rate limit	Ograničenje broja kadrova
+	Frames	Kadrovi
+	Freeze Live Layer	Zamrzni živi sloj
+	High quality	Visok kvalitet
+	Import Animation Frames…	Uvezi kadrove animacije…
+	Import Image as…	Uvezi sliku kao…
+	Import Video Animation…	Uvezi video animaciju…
+	Input controllers	Kontroleri unosa
+	Input devices	Uređaji za unos
+	Invisible	Nevidljivo
+	Layer Color Space…	Prostor boja sloja…
+	Layers by State	Slojevi po stanju
+	Local Selection	Lokalni izbor
+	Mass	Masa
+	Move Clone…	Pomeri klon…
+	Move Keyframe	Pomeri ključni kadar
+	Multigrid…	Višestruka mreža…
+	Mute Audio	Isključi zvuk
+	Nearest	Najbliži
+	New Keyframe	Novi ključni kadar
+	Onion Skin…	Paus papir…
+	Pan	Pomeranje
+	Pixel grid threshold	Prag mreže piksela
+	Reload File Layer	Ponovo učitaj sloj datoteke
+	Remove Audio	Ukloni zvuk
+	Remove Curve Key	Ukloni ključ krive
+	Remove Filter	Ukloni filter
+	Remove Keyframe	Ukloni ključni kadar
+	Remove Local Selection	Ukloni lokalni izbor
+	Remove Transform Key	Ukloni ključ transformacije
+	Remove Transform Mask	Ukloni masku transformacije
+	Render Animation…	Renderuj animaciju…
+	Save Merged…	Sačuvaj spojeno…
+	Scaling filter	Filter skaliranja
+	Screentone…	Raster…
+	Script…	Skripta…
+	Set Filter…	Postavi filter…
+	Show Output	Prikaži izlaz
+	Split Alpha	Razdvoji alfu
+	Start Recording	Počni snimanje
+	Stop Recording	Zaustavi snimanje
+	Swap directory	Direktorijum za razmenu
+	Ten scripts	Deset skripti
+	Threads	Niti
+	Transform Mask…	Maska transformacije…
+	Update Local Selection	Ažuriraj lokalni izbor
+	Write as Alpha	Upiši kao alfu
+	to File Layer…	u sloj datoteke…
+	to Filter Mask…	u masku filtera…
+	to Paint Layer	u sloj za crtanje
+	to Selection Mask	u masku izbora
+	to Transparency Mask	u masku providnosti

@@ -59,7 +59,7 @@ fn glyph(c: char) -> Option<[u8; 7]> {
 
 /// Coverage of the caption `text` drawn at `(ox, oy)` (top-left) with `size` px per font row, at
 /// the pixel centred on `(x, y)`.
-fn caption(text: &str, ox: f32, oy: f32, size: f32, x: f32, y: f32) -> f32 {
+pub(crate) fn caption(text: &str, ox: f32, oy: f32, size: f32, x: f32, y: f32) -> f32 {
     let cell = (size / 7.0).max(0.5);
     let advance = cell * 6.0;
     let col = ((x - ox) / advance).floor();

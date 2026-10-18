@@ -123,9 +123,10 @@ pub fn bspline(path: &PathData, p: &Value) -> PathData {
     )
 }
 
-/// Spiro: a smooth spline through the anchors of each subpath (see
-/// [`redrob_vector_geom::spline`] for the approximation). With `cusps`, corner anchors without
-/// handles stay sharp.
+/// Spiro: the clothoid spline through the anchors of each subpath
+/// ([`redrob_vector_geom::clothoid_to_bezier`]). With `cusps`, corner anchors without handles stay
+/// sharp: the runs between them are splined apart (the corner-aware approximation of
+/// [`redrob_vector_geom::spline_lpe`]).
 pub fn spiro(path: &PathData, p: &Value) -> PathData {
     let cusps = flag(p, "cusps", false);
     PathData::new(
@@ -134,7 +135,11 @@ pub fn spiro(path: &PathData, p: &Value) -> PathData {
             .map(|sp| {
                 let pts: Vec<Point> = sp.anchors.iter().map(|a| a.p).collect();
                 let corners: Vec<bool> = sp.anchors.iter().map(|a| cusps && a.kind == AnchorKind::Corner && !a.has_in() && !a.has_out()).collect();
-                redrob_vector_geom::spiro_approx_to_bezier_corners(&pts, sp.closed, Some(&corners))
+                if corners.iter().any(|c| *c) {
+                    redrob_vector_geom::spiro_approx_to_bezier_corners(&pts, sp.closed, Some(&corners))
+                } else {
+                    redrob_vector_geom::clothoid_to_bezier(&pts, sp.closed)
+                }
             })
             .collect(),
     )

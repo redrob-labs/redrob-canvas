@@ -415,6 +415,7 @@ fn cage(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
         return Ok(json!({"layer": id.0, "changed": false}));
     }
     let it = interp(p);
+    let fill_plain = p.get("fillPlain").and_then(Value::as_bool).unwrap_or(false);
     let mask_fn = |m: &Surface, sel: Option<&Surface>| {
         let f = |x, y| cage.map(x, y);
         let whole = |m: &Surface| Ok(warp_mesh_gray(m, &f, Interp::Bilinear));
@@ -423,11 +424,78 @@ fn cage(s: &mut Session, p: &Value, cmd: &str) -> Result<Value> {
             None => whole(m),
         }
     };
-    run_on_layer(s, cmd, "Cage Transform", p, true, &|surf, sel, _| deform_selected(surf, sel, &|x| Ok(cage_surface(x, &cage, it))), Some(&mask_fn))
+    let deform = |x: &Surface| -> Result<Surface> {
+        let mut out = cage_surface(x, &cage, it);
+        if fill_plain {
+            fill_vacated(x, &mut out, &cage);
+        }
+        Ok(out)
+    };
+    run_on_layer(s, cmd, "Cage Transform", p, true, &|surf, sel, _| deform_selected(surf, sel, &deform), Some(&mask_fn))
+}
+
+/// Cage Transform › Fill the original position with a plain colour: the pixels that were inside
+/// the source cage and are no longer under the moved cage take the average colour of the source
+/// pixels along the cage's outline, instead of what the warp left there.
+pub fn fill_vacated(src: &Surface, out: &mut Surface, cage: &Cage) {
+    let n = src.channels();
+    // The plain colour: the source sampled along the cage's edges.
+    let mut acc = vec![0.0f64; n];
+    let mut count = 0usize;
+    let src_ring = &cage.src;
+    for i in 0..src_ring.len() {
+        let (a, b) = (src_ring[i], src_ring[(i + 1) % src_ring.len()]);
+        let steps = ((a[0] - b[0]).hypot(a[1] - b[1]).ceil() as usize).clamp(1, 512);
+        let mut px = vec![0.0f32; n];
+        for k in 0..steps {
+            let t = k as f64 / steps as f64;
+            let (x, y) = (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t);
+            src.read_pixel(x.floor() as i32, y.floor() as i32, &mut px);
+            for (s, v) in acc.iter_mut().zip(&px) {
+                *s += f64::from(*v);
+            }
+            count += 1;
+        }
+    }
+    if count == 0 {
+        return;
+    }
+    let plain: Vec<f32> = acc.iter().map(|v| (*v / count as f64) as f32).collect();
+    let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for v in src_ring {
+        x0 = x0.min(v[0]);
+        y0 = y0.min(v[1]);
+        x1 = x1.max(v[0]);
+        y1 = y1.max(v[1]);
+    }
+    let dst_ring = &cage.dst;
+    for y in (y0.floor() as i32)..(y1.ceil() as i32) {
+        for x in (x0.floor() as i32)..(x1.ceil() as i32) {
+            let c = [f64::from(x) + 0.5, f64::from(y) + 0.5];
+            if point_in_polygon(src_ring, c) && !point_in_polygon(dst_ring, c) {
+                out.write_pixel(x, y, &plain);
+            }
+        }
+    }
+}
+
+/// Even-odd point-in-polygon test.
+fn point_in_polygon(poly: &[[f64; 2]], p: [f64; 2]) -> bool {
+    let n = poly.len();
+    let mut inside = false;
+    let mut j = n.saturating_sub(1);
+    for i in 0..n {
+        let (a, b) = (poly[i], poly[j]);
+        if (a[1] > p[1]) != (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0] {
+            inside = !inside;
+        }
+        j = i;
+    }
+    inside
 }
 
 pub fn specs() -> Vec<CommandSpec> {
-    const C: &str = r##"{"cage":[[x,y],…] (closed polygon around the part to deform),"deformed":[[x,y],…] (the same vertices moved),"interpolation":"bicubic|bilinear|nearest","layer":id?} — the pixels inside the cage follow its vertices by mean value coordinates; outside nothing moves"##;
+    const C: &str = r##"{"cage":[[x,y],…] (closed polygon around the part to deform),"deformed":[[x,y],…] (the same vertices moved),"fillPlain":bool=false (the vacated part of the original cage takes the plain colour of the cage's outline),"interpolation":"bicubic|bilinear|nearest","layer":id?} — the pixels inside the cage follow its vertices by mean value coordinates; outside nothing moves"##;
     const L: &str = r##"{"strokes":[{"tool":"forwardWarp|reconstruct|smooth|twirlCw|twirlCcw|pucker|bloat|pushLeft|freeze|thaw|lassoMask|reconstructAll","size":px=100,"density":0-100=50,"pressure":0-100=100,"rate":0-100=80,"points":[[x,y,pressure?]…],"amount":%? (reconstructAll; lassoMask: 1 freezes the polygon in points, 0 thaws it)}…],"meshSize":px? (field resolution, px per node; default 2, or 4 above 4 MP),"layer":id?} — strokes replay in order on a fresh field; a selection limits the effect; on a smart object it becomes a smart filter"##;
     const P: &str = r##"{"pins":[{"src":[x,y],"dst":[x,y],"rotate":deg?,"depth":n?}…],"mode":"rigid|normal|distort"="normal","density":"fewer|normal|more"="normal","expansion":px=2,"interpolation":"bicubic|bilinear|nearest","layer":id?} — mesh over the opaque region, as-rigid-as-possible; on a smart object it becomes a smart filter"##;
     const Q: &str = r##"{"planes":[{"src":[[x,y]×4],"dst":[[x,y]×4]}…] (corners clockwise from top-left; corners that coincide in src are linked),"straighten":"horizontal|vertical|auto"?,"interpolation":"bicubic|bilinear|nearest","layer":id?}"##;

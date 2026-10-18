@@ -111,6 +111,31 @@ pub fn finish_stroke(app: &mut PhotocraftApp, tool: Tool, points: &[[f64; 3]], m
             }
             ("paint.patternStamp", p)
         }
+        Tool::CloneStamp if o.clone_perspective => {
+            // Perspective mode: the first four clicks place the plane's corners, then strokes
+            // clone along it from the ⌥-clicked source.
+            if app.ui.perspective_corners.len() < 4 {
+                if let Some(q) = points.first() {
+                    app.ui.perspective_corners.push([q[0].round(), q[1].round()]);
+                    let n = app.ui.perspective_corners.len();
+                    app.ui.status = if n < 4 {
+                        crate::i18n::fmt(tl!("Perspective plane: corner {n} of 4 set"), &[("n", &n.to_string())])
+                    } else {
+                        crate::i18n::fmt(tl!("Perspective plane set; {key}-click a source, then paint"), &[("key", &crate::shortcuts::pretty("Alt"))])
+                    };
+                    app.ui.status_error = false;
+                }
+                return true;
+            }
+            let Some(mut p) = clone_params(app) else {
+                app.ui.status = crate::i18n::fmt(tl!("{key}-click to set the source"), &[("key", &crate::shortcuts::pretty("Alt"))]);
+                app.ui.status_error = true;
+                return true;
+            };
+            p["corners"] = json!(app.ui.perspective_corners);
+            p["sampleAllLayers"] = json!(o.clone_sample == "all");
+            ("paint.perspectiveClone", p)
+        }
         Tool::Healing | Tool::CloneStamp => {
             let Some(p) = clone_params(app) else {
                 // Option-click on the Mac, Alt-click on Windows.
@@ -144,7 +169,7 @@ pub fn finish_stroke(app: &mut PhotocraftApp, tool: Tool, points: &[[f64; 3]], m
     p["points"] = pts;
     // The layer mask, an alpha channel or the Quick Mask when targeted, as the Brush paints.
     p["target"] = crate::canvas::paint_target(app);
-    match app.run(cmd, p) {
+    match crate::mirror_tools_ui::run_mirrored(app, cmd, p) {
         Ok(r) if matches!(tool, Tool::Healing | Tool::CloneStamp) => {
             // Aligned: keep the offset for later strokes; non-aligned: every stroke restarts at the source.
             app.ui.clone_offset = r.get("offset").and_then(|v| serde_json::from_value(v.clone()).ok()).filter(|_| o.clone_aligned);
@@ -169,7 +194,9 @@ fn remove_params(o: &crate::state::ToolOptions) -> Value {
 /// Remove after each stroke off: a finished stroke waits with the others, tinted on the canvas,
 /// until ↩ or the options bar's ✓ applies them all as one removal (Esc or ⊘ drops them).
 pub fn remove_pending_add(app: &mut PhotocraftApp, points: &[[f64; 3]]) {
-    let Some(st) = app.session.active() else { return };
+    let Some(st) = app.session.active() else {
+        return;
+    };
     let (doc, size) = (st.doc.id, [st.doc.size.width, st.doc.size.height]);
     if app.remove_pending_doc != Some(doc) {
         app.remove_pending.clear();
@@ -234,7 +261,9 @@ pub fn draw_remove_pending(app: &mut PhotocraftApp, painter: &egui::Painter, xf:
     if !remove_pending_live(app) {
         return;
     }
-    let Some(bounds) = app.session.active().map(|st| st.doc.bounds()) else { return };
+    let Some(bounds) = app.session.active().map(|st| st.doc.bounds()) else {
+        return;
+    };
     let doc_rect = xf.doc_rect(bounds);
     let col = Tokens::get(painter.ctx()).danger.gamma_multiply(0.45);
     if let Some(trail) = app.remove_trail.as_mut() {
@@ -248,7 +277,9 @@ pub fn patch_drags_selection(app: &PhotocraftApp, at: [f64; 2], mods: egui::Modi
     if mods.shift || mods.alt {
         return false;
     }
-    let Some(sel) = app.session.active().and_then(|st| st.doc.selection.as_ref()) else { return false };
+    let Some(sel) = app.session.active().and_then(|st| st.doc.selection.as_ref()) else {
+        return false;
+    };
     sel.sample_channel(at[0].floor() as i32, at[1].floor() as i32, 0) > 0.0
 }
 
@@ -257,7 +288,9 @@ pub fn patch_drags_selection(app: &PhotocraftApp, at: [f64; 2], mods: egui::Modi
 pub fn patch_offset(app: &mut PhotocraftApp, start: [f64; 2], end: [f64; 2]) -> [i32; 2] {
     let (dx, dy) = ((end[0] - start[0]).round(), (end[1] - start[1]).round());
     let (dx, dy) = if dx.is_finite() && dy.is_finite() { (dx.clamp(-1e7, 1e7) as i32, dy.clamp(-1e7, 1e7) as i32) } else { (0, 0) };
-    let Some((canvas, sel)) = app.session.active().and_then(|st| Some((st.doc.bounds(), st.doc.selection.clone()?))) else { return [dx, dy] };
+    let Some((canvas, sel)) = app.session.active().and_then(|st| Some((st.doc.bounds(), st.doc.selection.clone()?))) else {
+        return [dx, dy];
+    };
     let key = u64::MAX - app.session.active().map_or(0, |st| st.doc.id.0);
     let b = app.cached_bounds(key, &sel).intersect(&canvas);
     if b.is_empty() {
@@ -420,11 +453,35 @@ pub fn source_marker_point(app: &PhotocraftApp) -> Option<[f64; 2]> {
 
 /// Crosshair at [`source_marker_point`].
 pub fn draw_source_marker(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform) {
-    let Some(s) = source_marker_point(app) else { return };
+    draw_perspective_plane(app, painter, xf);
+    let Some(s) = source_marker_point(app) else {
+        return;
+    };
     let c = xf.to_screen(s[0] as f32, s[1] as f32);
     for (w, col) in [(3.0, Color32::from_black_alpha(160)), (1.0, Color32::WHITE)] {
         painter.line_segment([c - vec2(7.0, 0.0), c + vec2(7.0, 0.0)], Stroke::new(w, col));
         painter.line_segment([c - vec2(0.0, 7.0), c + vec2(0.0, 7.0)], Stroke::new(w, col));
+    }
+}
+
+/// Clone Stamp › Perspective: the plane's corners placed so far, and the quad once all four are.
+pub fn draw_perspective_plane(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform) {
+    if app.active_tool() != Tool::CloneStamp || !app.ui.tool_options.clone_perspective {
+        return;
+    }
+    let pts: Vec<egui::Pos2> = app.ui.perspective_corners.iter().map(|c| xf.to_screen(c[0] as f32, c[1] as f32)).collect();
+    for c in &pts {
+        painter.circle(*c, 4.0, Color32::from_rgb(70, 140, 255), Stroke::new(1.0, Color32::WHITE));
+    }
+    if pts.len() >= 2 {
+        let n = pts.len();
+        let edges = if n == 4 { n } else { n - 1 };
+        for i in 0..edges {
+            let a = pts[i];
+            let b = pts[(i + 1) % n];
+            painter.line_segment([a, b], Stroke::new(3.0, Color32::from_black_alpha(120)));
+            painter.line_segment([a, b], Stroke::new(1.0, Color32::from_rgb(70, 140, 255)));
+        }
     }
 }
 
@@ -535,6 +592,24 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
         }
         Tool::Healing | Tool::CloneStamp => {
             crate::widgets::checkbox(ui, &mut o.clone_aligned, tl!("Aligned"));
+            if tool == Tool::CloneStamp {
+                // Perspective Clone: four clicks define the plane, strokes clone along it.
+                if crate::widgets::checkbox(ui, &mut o.clone_perspective, tl!("Perspective"))
+                    .on_hover_text(tl!("Click four corners to define a perspective plane, then clone along it"))
+                    .changed()
+                    && !o.clone_perspective
+                {
+                    app.ui.perspective_corners.clear();
+                }
+                if o.clone_perspective {
+                    let n = app.ui.perspective_corners.len();
+                    if n < 4 {
+                        opt(ui, &crate::i18n::fmt(tl!("Click corner {n} of 4"), &[("n", &(n + 1).to_string())]));
+                    } else if crate::widgets::secondary_button(ui, tl!("Reset Plane"), 0.0).clicked() {
+                        app.ui.perspective_corners.clear();
+                    }
+                }
+            }
             opt(ui, tl!("Sample:"));
             let opts = [
                 ("current".to_string(), tl!("Current Layer")),

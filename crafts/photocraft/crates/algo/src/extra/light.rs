@@ -7,7 +7,7 @@ use super::{add_light, alpha_at, hsv_to_rgb, luma_rgb, map_px, over, rgb_to_hsv,
 use crate::fxutil::gauss_blur_n;
 use crate::image::Image;
 use crate::noise::hash01;
-use crate::{Ctx, ShadowComposition, ShadowInterpolation, ShadowStyle, SparkleColor};
+use crate::{Ctx, FlareDesign, ShadowComposition, ShadowInterpolation, ShadowStyle, SparkleColor};
 
 /// Supernova parameters.
 pub(crate) struct SupernovaSpec {
@@ -64,57 +64,184 @@ pub(crate) struct FlareSpec {
     pub glow: bool,
     pub rays: bool,
     pub second_flares: bool,
+    /// Built-in design (palette, ray count, ghost layout).
+    pub design: FlareDesign,
+    /// Rays around the centre (0 = the design's own count).
+    pub ray_count: u32,
+    /// Glow size as a percentage of `radius` (100 = the design's own).
+    pub glow_size: f32,
+    /// Second flares along the vector (0 = the design's own count).
+    pub ghost_count: u32,
 }
 
-/// Gradient Flare: a glow with a warm-to-red radial gradient, rotating rays, and second flares
+/// A second flare: position along the vector, radius factor, hue, saturation, ring?
+type Ghost = (f32, f32, f32, f32, bool);
+
+/// The fixed parts of a flare design: glow palette (core, mid, fringe as HSV hue/sat/value),
+/// where the mid colour sits (0..1 of the glow), ray count, ray reach factor, ghosts.
+struct FlareDesignSpec {
+    core: [f32; 3],
+    mid: [f32; 3],
+    fringe: [f32; 3],
+    mid_at: f32,
+    rays: u32,
+    ray_reach: f32,
+    ray_hsv: [f32; 3],
+    glow_scale: f32,
+    ghosts: &'static [Ghost],
+}
+
+const CLASSIC_GHOSTS: [Ghost; 6] = [
+    (0.25, 0.12, 0.6, 0.8, false),
+    (0.45, 0.3, 0.33, 0.6, true),
+    (0.6, 0.08, 0.1, 0.9, false),
+    (0.8, 0.22, 0.75, 0.7, true),
+    (1.0, 0.16, 0.5, 0.8, false),
+    (1.2, 0.4, 0.15, 0.5, true),
+];
+const STAR_GHOSTS: [Ghost; 2] = [(0.5, 0.1, 0.55, 0.5, false), (1.1, 0.14, 0.08, 0.6, true)];
+const SUN_GHOSTS: [Ghost; 4] = [(0.35, 0.45, 0.08, 0.5, false), (0.7, 0.6, 0.05, 0.4, false), (1.0, 0.3, 0.12, 0.6, true), (1.4, 0.8, 0.1, 0.3, false)];
+const RING_GHOSTS: [Ghost; 8] = [
+    (0.2, 0.1, 0.6, 0.7, true),
+    (0.35, 0.14, 0.65, 0.7, true),
+    (0.5, 0.09, 0.7, 0.8, true),
+    (0.65, 0.18, 0.55, 0.6, true),
+    (0.8, 0.12, 0.75, 0.7, true),
+    (0.95, 0.2, 0.6, 0.6, true),
+    (1.1, 0.1, 0.8, 0.8, true),
+    (1.3, 0.26, 0.62, 0.5, true),
+];
+const PLANET_GHOSTS: [Ghost; 5] =
+    [(0.3, 0.2, 0.4, 0.9, false), (0.55, 0.35, 0.45, 0.7, true), (0.75, 0.5, 0.38, 0.8, false), (1.0, 0.25, 0.5, 0.9, true), (1.25, 0.6, 0.42, 0.6, false)];
+
+fn design_spec(d: FlareDesign) -> FlareDesignSpec {
+    match d {
+        FlareDesign::Classic => FlareDesignSpec {
+            core: [0.0, 0.0, 1.0],
+            mid: [0.12, 0.9, 1.0],
+            fringe: [0.0, 1.0, 0.8],
+            mid_at: 0.3,
+            rays: 9,
+            ray_reach: 2.5,
+            ray_hsv: [0.1, 0.5, 1.0],
+            glow_scale: 1.0,
+            ghosts: &CLASSIC_GHOSTS,
+        },
+        FlareDesign::BrightStar => FlareDesignSpec {
+            core: [0.0, 0.0, 1.0],
+            mid: [0.6, 0.15, 1.0],
+            fringe: [0.6, 0.6, 0.6],
+            mid_at: 0.5,
+            rays: 6,
+            ray_reach: 6.0,
+            ray_hsv: [0.6, 0.1, 1.0],
+            glow_scale: 0.6,
+            ghosts: &STAR_GHOSTS,
+        },
+        FlareDesign::DistantSun => FlareDesignSpec {
+            core: [0.1, 0.3, 1.0],
+            mid: [0.08, 0.9, 1.0],
+            fringe: [0.03, 1.0, 0.7],
+            mid_at: 0.2,
+            rays: 16,
+            ray_reach: 1.6,
+            ray_hsv: [0.08, 0.7, 0.9],
+            glow_scale: 1.6,
+            ghosts: &SUN_GHOSTS,
+        },
+        FlareDesign::ColdRings => FlareDesignSpec {
+            core: [0.0, 0.0, 1.0],
+            mid: [0.62, 0.7, 1.0],
+            fringe: [0.75, 0.9, 0.7],
+            mid_at: 0.35,
+            rays: 12,
+            ray_reach: 2.0,
+            ray_hsv: [0.6, 0.4, 0.9],
+            glow_scale: 0.9,
+            ghosts: &RING_GHOSTS,
+        },
+        FlareDesign::HiddenPlanet => FlareDesignSpec {
+            core: [0.45, 0.2, 1.0],
+            mid: [0.42, 0.8, 0.9],
+            fringe: [0.5, 1.0, 0.5],
+            mid_at: 0.4,
+            rays: 5,
+            ray_reach: 1.2,
+            ray_hsv: [0.45, 0.6, 0.8],
+            glow_scale: 0.5,
+            ghosts: &PLANET_GHOSTS,
+        },
+        FlareDesign::SoftGlow => FlareDesignSpec {
+            core: [0.0, 0.0, 1.0],
+            mid: [0.1, 0.2, 1.0],
+            fringe: [0.1, 0.3, 0.8],
+            mid_at: 0.5,
+            rays: 0,
+            ray_reach: 1.0,
+            ray_hsv: [0.1, 0.2, 1.0],
+            glow_scale: 1.4,
+            ghosts: &[],
+        },
+    }
+}
+
+/// Gradient Flare: a glow with the design's radial gradient, rotating rays, and second flares
 /// (coloured rings and discs) laid along a vector of `vector_length` pixels at `vector_angle`.
-/// `hue_rotation` turns every colour.
+/// `hue_rotation` turns every colour; the ray count, glow size and ghost count can override the
+/// design's own.
 pub(crate) fn gradient_flare(src: &Image, out: Rect, ctx: &Ctx, spec: &FlareSpec) -> Vec<f32> {
     let b = ctx.bounds;
+    let d = design_spec(spec.design);
     let (cx, cy) = (b.x0 as f32 + spec.center.0 * b.width() as f32, b.y0 as f32 + spec.center.1 * b.height() as f32);
-    let r = spec.radius.clamp(1.0, 3000.0);
+    let r = (spec.radius.clamp(1.0, 3000.0) * d.glow_scale * (spec.glow_size / 100.0).clamp(0.05, 10.0)).max(1.0);
+    let ray_r = spec.radius.clamp(1.0, 3000.0);
     let rot = spec.rotation.to_radians();
     let hue = spec.hue_rotation / 360.0;
     let (vs, vc) = spec.vector_angle.to_radians().sin_cos();
     let vlen = spec.vector_length.max(0.0);
     let tint = |h: f32, s: f32, v: f32| hsv_to_rgb([h + hue, s, v]);
-    // Second flares: (position along the vector, radius factor, hue, saturation, ring?).
-    const GHOSTS: [(f32, f32, f32, f32, bool); 6] = [
-        (0.25, 0.12, 0.6, 0.8, false),
-        (0.45, 0.3, 0.33, 0.6, true),
-        (0.6, 0.08, 0.1, 0.9, false),
-        (0.8, 0.22, 0.75, 0.7, true),
-        (1.0, 0.16, 0.5, 0.8, false),
-        (1.2, 0.4, 0.15, 0.5, true),
-    ];
+    let core = tint(d.core[0], d.core[1], d.core[2]);
+    let mid = tint(d.mid[0], d.mid[1], d.mid[2]);
+    let fringe = tint(d.fringe[0], d.fringe[1], d.fringe[2]);
+    let rays_n = if spec.ray_count > 0 { spec.ray_count.min(256) } else { d.rays } as f32;
+    let ghosts: Vec<Ghost> = if spec.ghost_count > 0 {
+        // More ghosts than the design has: continue the layout further along the vector.
+        (0..spec.ghost_count.min(32) as usize)
+            .map(|i| {
+                let base = if d.ghosts.is_empty() { CLASSIC_GHOSTS[i % CLASSIC_GHOSTS.len()] } else { d.ghosts[i % d.ghosts.len()] };
+                let cycle = (i / d.ghosts.len().max(1)) as f32;
+                (base.0 + cycle * 0.25, base.1 * (1.0 + cycle * 0.3), base.2, base.3, base.4)
+            })
+            .collect()
+    } else {
+        d.ghosts.to_vec()
+    };
     map_px(src, out, ctx, |x, y, c| {
         let (fx, fy) = (x as f32 + 0.5, y as f32 + 0.5);
         let (dx, dy) = (fx - cx, fy - cy);
-        let d = (dx * dx + dy * dy).sqrt();
+        let dist = (dx * dx + dy * dy).sqrt();
         let mut light = [0.0f32; 3];
         if spec.glow {
-            let t = (d / r).min(1.0);
-            // White core, yellow mid, red fringe.
-            let col =
-                if t < 0.3 { lerp3([1.0, 1.0, 1.0], tint(0.12, 0.9, 1.0), t / 0.3) } else { lerp3(tint(0.12, 0.9, 1.0), tint(0.0, 1.0, 0.8), (t - 0.3) / 0.7) };
-            let k = (1.0 - t).powi(2) * 0.9 + 0.1 * (-d / r).exp();
+            let t = (dist / r).min(1.0);
+            let col = if t < d.mid_at { lerp3(core, mid, t / d.mid_at.max(1e-3)) } else { lerp3(mid, fringe, (t - d.mid_at) / (1.0 - d.mid_at).max(1e-3)) };
+            let k = (1.0 - t).powi(2) * 0.9 + 0.1 * (-dist / r).exp();
             for i in 0..3 {
                 light[i] += col[i] * k;
             }
         }
-        if spec.rays {
+        if spec.rays && rays_n > 0.0 {
             let th = dy.atan2(dx) + rot;
-            let m = ((th * 9.0).sin() * 0.5 + 0.5).powi(6) * 0.7 + ((th * 23.0 + 0.7).sin() * 0.5 + 0.5).powi(14) * 0.5;
-            let k = m * (-d / (r * 2.5)).exp() * 0.8;
-            let col = tint(0.1, 0.5, 1.0);
+            let m = ((th * rays_n).sin() * 0.5 + 0.5).powi(6) * 0.7 + ((th * (rays_n * 2.5 + 0.5) + 0.7).sin() * 0.5 + 0.5).powi(14) * 0.5;
+            let k = m * (-dist / (ray_r * d.ray_reach)).exp() * 0.8;
+            let col = tint(d.ray_hsv[0], d.ray_hsv[1], d.ray_hsv[2]);
             for i in 0..3 {
                 light[i] += col[i] * k;
             }
         }
         if spec.second_flares && vlen > 0.0 {
-            for (t, rf, h, s, ring) in GHOSTS {
+            for &(t, rf, h, s, ring) in &ghosts {
                 let (gx, gy) = (cx + vc * vlen * t, cy + vs * vlen * t);
-                let gr = (r * rf).max(1.0);
+                let gr = (ray_r * rf).max(1.0);
                 let gd = ((fx - gx).powi(2) + (fy - gy).powi(2)).sqrt() / gr;
                 let k = if ring { sstep(0.6, 0.9, gd) * sstep(1.1, 0.95, gd) * 0.35 } else { sstep(1.0, 0.6, gd) * 0.3 };
                 let col = tint(h, s, 1.0);

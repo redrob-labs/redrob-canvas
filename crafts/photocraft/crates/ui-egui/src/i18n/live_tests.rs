@@ -398,7 +398,8 @@ fn czech_status_notices_and_navigator_draw_translated_text() {
         h.ctx.fonts_mut(|fonts| {
             let font = egui::FontId::proportional(12.0);
             for c in chars {
-                assert!(fonts.has_glyph(&font, c), "missing glyph {c}");
+                let shown: Vec<&String> = text.iter().filter(|s| s.contains(c)).collect();
+                assert!(fonts.has_glyph(&font, c), "missing glyph {c} in {shown:?}");
             }
         });
     });

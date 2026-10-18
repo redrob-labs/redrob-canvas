@@ -4507,3 +4507,369 @@ lighting	Light	Світло
 @msg	select an object	виділіть об’єкт
 @msg	the copied object is no longer in this document	скопійованого об’єкта більше немає в цьому документі
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Імітувати» друкує накладання так, як його показує перегляд накладання; кольороподіл завжди зберігає його. Набір зводить прозорість перед друком (файли PostScript завжди зводять її).
+# Effect > Path Effects (v0.11.0 parity round).
+	Path Effects	Ефекти контуру
+	Clone Original	Клон оригіналу
+	Clone Original…	Клон оригіналу…
+	Attach Path	Приєднати контур
+	Attach Path…	Приєднати контур…
+	Bounding Box	Обмежувальна рамка
+	Bounding Box…	Обмежувальна рамка…
+	Fill Between Many	Заливка між багатьма
+	Fill Between Many…	Заливка між багатьма…
+	Fill Between Strokes	Заливка між обведеннями
+	Fill Between Strokes…	Заливка між обведеннями…
+	Power Clip	Розумне обрізання
+	Power Clip…	Розумне обрізання…
+	Power Clip (Inverse)	Розумне обрізання (інверсія)
+	Release Power Clip	Зняти розумне обрізання
+	Construct Grid	Побудувати сітку
+	Construct Grid…	Побудувати сітку…
+	Ellipse by 5 Points	Еліпс за 5 точками
+	Ellipse by 5 Points…	Еліпс за 5 точками…
+	Ellipse from Points	Еліпс за точками
+	Ellipse from Points…	Еліпс за точками…
+	Circle by 3 Points	Коло за 3 точками
+	Circle by 3 Points…	Коло за 3 точками…
+	Circle by Center and Radius	Коло за центром і радіусом
+	Line Segment…	Відрізок…
+	Parallel	Паралель
+	Parallel…	Паралель…
+	Perpendicular Bisector	Серединний перпендикуляр
+	Perpendicular Bisector…	Серединний перпендикуляр…
+	Angle Bisector	Бісектриса
+	Angle Bisector…	Бісектриса…
+	Tangent to Curve	Дотична до кривої
+	Tangent to Curve…	Дотична до кривої…
+	Transform by 2 Points	Перетворення за 2 точками
+	Transform by 2 Points…	Перетворення за 2 точками…
+	Show Handles…	Показати важелі…
+	Measure Segments	Виміряти сегменти
+	Measure Segments…	Виміряти сегменти…
+	Ruler	Лінійка
+	Ruler…	Лінійка…
+	Interpolate Points	Інтерполяція точок
+	Interpolate Points…	Інтерполяція точок…
+	Knot	Вузол
+	Knot…	Вузол…
+	VonKoch	Фон Кох
+	VonKoch…	Фон Кох…
+	Gears	Шестерні
+	Gears…	Шестерні…
+	Embroidery Stitch	Вишивальний стібок
+	Embroidery Stitch…	Вишивальний стібок…
+	Stitch Sub-Paths	Зшити підконтури
+	Stitch Sub-Paths…	Зшити підконтури…
+	Hatches (Rough)	Штрихування (грубе)
+	Hatches (Rough)…	Штрихування (грубе)…
+	Sketch	Ескіз
+	Sketch…	Ескіз…
+	Join Type	Тип з'єднання
+	Join Type…	Тип з'єднання…
+	Slice…	Розріз…
+	Select Linked Object	Вибрати пов'язаний об'єкт
+	Mask Background	Тло маски
+	Background	Тло
+	Live Slice	Живий розріз
+	Fuse Slice	Злити розріз
+	3D Marble	3D-мармур
+	3D Wood	3D-дерево
+	Air Spray	Аерограф
+	Aluminium	Алюміній
+	Apply Effects to Image Pixels	Застосувати ефекти до пікселів зображення
+	Apply Filter Preset	Застосувати набір фільтра
+	Apply to Selection	Застосувати до виділення
+	Bevels	Скоси
+	Black Hole	Чорна діра
+	Blobs	Краплі
+	Bloom	Світіння
+	Brilliance	Блиск
+	Bump	Рельєф
+	Bumps	Рельєфи
+	Button	Кнопка
+	Canvas Bumps	Рельєф полотна
+	Chalk and Sponge	Крейда та губка
+	Channel to Alpha	Канал в альфа
+	Chrome	Хром
+	Color Blindness	Дальтонізм
+	Colour Space:	Колірний простір:
+	Comics Cream	Комікс крем
+	Cracked Glass	Тріснуте скло
+	Cubes	Кубики
+	Dark and Glow	Темрява і світіння
+	Document Filters	Фільтри документа
+	Dragee	Драже
+	Duochrome	Двоколірний
+	Duplicate Filter	Дублювати фільтр
+	Embossed Leather	Тиснена шкіра
+	Extract Channel	Витягти канал
+	Fade to Black	Згасання в чорний
+	Felt Feather	Фетрове перо
+	Fill and Overlays	Заливки та накладання
+	Filter	Фільтр
+	Filter Gallery	Галерея фільтрів
+	Filter Presets	Набори фільтрів
+	Filter copy	Копія фільтра
+	Filters	Фільтри
+	Glow	Сяйво
+	Glowing Metal	Розжарений метал
+	Gold	Золото
+	Greyscale	Відтінки сірого
+	HSL Noise	Шум HSL
+	Ink Blot	Чорнильна пляма
+	Ink Splash	Бризки чорнила
+	Inner Shadow	Внутрішня тінь
+	Leopard Fur	Хутро леопарда
+	Light Eraser	Гумка для світлого
+	Luminance to Alpha	Яскравість в альфа
+	Materials	Матеріали
+	Matte Jelly	Матове желе
+	Metallized Paint	Металік
+	Neon	Неон
+	No filter matches the search.	Жоден фільтр не відповідає пошуку.
+	Noise Fill	Заливка шумом
+	Non-realistic 3D Shaders	Нереалістичні 3D-шейдери
+	Open Filter Editor	Відкрити редактор фільтрів
+	Paper Bump	Рельєф паперу
+	Pointillism	Пуантилізм
+	Protrusions	Виступи
+	Quadritone	Чотиритоновий
+	Ridges	Гребені
+	Rough Paper	Шорсткий папір
+	Rough Transparency	Шорстка прозорість
+	Roughen	Огрубіння
+	Saturation Map	Мапа насиченості
+	Select an object to apply a filter.	Виділіть об’єкт, щоб застосувати фільтр.
+	Silhouette	Силует
+	Smooth Edges	Згладжені краї
+	Solarize	Соляризація
+	Specular Light	Відблиск
+	Spikes	Шипи
+	Spots Overlay	Накладання плям
+	Stone Wall	Кам’яна стіна
+	Subregion:	Підобласть:
+	Swirl	Вир
+	Textures	Текстури
+	The document has no filters yet.	У документі ще немає фільтрів.
+	Thin Membrane	Тонка плівка
+	Torn Edges	Рвані краї
+	Translucent	Напівпрозорий
+	Transparency Utilities	Утиліти прозорості
+	Tritone	Тритоновий
+	Watercolor	Акварель
+	Waves	Хвилі
+	Turns:	Витки:
+	Divergence:	Розходження:
+	Clockwise	За годинниковою стрілкою
+	Threshold:	Поріг:
+	Grow/Shrink:	Розширити/стиснути:
+	Fill by:	Заливка за:
+	Visible Colors	Видимі кольори
+	Alpha	Альфа
+	Add to Fill	Додати до заливки
+	View rotation (Cmd+Shift+scroll turns the view)	Обертання виду (Cmd+Shift+прокрутка обертає вид)
+	Lock Rotate View	Заблокувати обертання виду
+	Rotate View	Обернути вид
+	Fixation:	Фіксація:
+	Dip Pen	Перо
+	Marker	Маркер
+	Brush	Пензель
+	Wiggly	Хвилястий
+	Splotchy	Плямистий
+	Use Pressure	Використовувати натиск
+	Live Simplify	Живе спрощення
+	Simplify (Live)…	Спростити (живе)…
+	Split View	Розділений вид
+	X-ray	Рентген
+	Input Devices…	Пристрої введення…
+	Input Devices	Пристрої введення
+	Pressure Curves	Криві натиску
+	Mouse	Миша
+	Pen / Stylus	Перо / стилус
+	Touch	Сенсорне введення
+	Liquify Tools	Інструменти пластики
+	Disabled	Вимкнено
+	Grids	Сітки
+	Main Grid	Основна сітка
+	Add Grid	Додати сітку
+	Remove Grid	Видалити сітку
+	Grid Options	Параметри сітки
+	Kind:	Вид:
+	Subdivisions:	Поділки:
+	Angles:	Кути:
+	Gaps:	Проміжки:
+	Origin:	Початок:
+	Own color	Власний колір
+	Open a document to edit its grids.	Відкрийте документ, щоб змінити його сітки.
+	Add Script	Додати скрипт
+	Edit Script	Змінити скрипт
+	Remove Script	Видалити скрипт
+	The document has no scripts.	У документі немає скриптів.
+	External:	Зовнішній:
+	Embedded script	Вбудований скрипт
+	Add Embedded Script	Додати вбудований скрипт
+	Add External Script	Додати зовнішній скрипт
+	Source:	Джерело:
+	External file	Зовнішній файл
+	Code:	Код:
+	Open a document to edit its scripts.	Відкрийте документ, щоб змінити його скрипти.
+	Alignment Handles	Маркери вирівнювання
+	Align (Shift: move the key object)	Вирівняти (Shift: перемістити ключовий об’єкт)
+	Stylesheet	Таблиця стилів
+	No rules yet. Add one and assign its class to objects.	Правил ще немає. Додайте одне й призначте його клас об’єктам.
+	Add Rule	Додати правило
+	Remove Rule	Видалити правило
+	Selector:	Селектор:
+	Declarations:	Оголошення:
+	Assign to Selection	Призначити виділенню
+	Remove from Selection	Зняти з виділення
+	Add CSS Rule	Додати правило CSS
+	Edit CSS Rule	Змінити правило CSS
+	Remove CSS Rule	Видалити правило CSS
+	Assign CSS Class	Призначити клас CSS
+	Remove CSS Class	Зняти клас CSS
+	Apply Stylesheet	Застосувати таблицю стилів
+	New Node	Новий вузол
+	Indent Node	Вкласти вузол
+	Outdent Node	Винести вузол
+	Move Node	Перемістити вузол
+	Set Path Data	Задати дані контуру
+	Round to:	Округлити до:
+	Round Path Data	Округлити дані контуру
+	Connector Tool	Інструмент «Коннектор»
+	Connect Objects	З’єднати об’єкти
+	Reroute Connectors	Перебудувати коннектори
+	Connector Obstacle	Перешкода для коннекторів
+	Arrange Connected Objects	Розставити з’єднані об’єкти
+	Arrange Connected	Розставити з’єднані
+	Routing:	Прокладання:
+	Orthogonal	Ортогонально
+	Polyline	Полілінія
+	Curvature:	Кривина:
+	3D Box Tool	Інструмент «3D-блок»
+	3D Box	3D-блок
+	3D Box Options	Параметри 3D-блока
+	Move Vanishing Point	Перемістити точку сходу
+	Z:	Z:
+	Vanishing Point	Точка сходу
+	Infinite	Нескінченно
+	Arrange in Grid	Розставити за сіткою
+	Arrange in Circle	Розставити по колу
+	Dynamic Offset	Динамічний зсув
+	Fill Between Paths	Заливка між контурами
+	Linked Offset	Пов'язаний зсув
+	Linked Offset Distance	Відстань пов'язаного зсуву
+	Remove Overlaps	Усунути перекриття
+	Unlink Live Object	Від'єднати живий об'єкт
+	Create Anchor	Створити посилання
+	Follow Link	Перейти за посиланням
+	Select All Anchors	Вибрати всі опорні точки
+	Invert Anchor Selection	Інвертувати вибір опорних точок
+	Aspect ratio:	Співвідношення сторін:
+	Clip path	Контур відсікання
+	DPI:	DPI:
+	Effect knots	Вузли ефектів
+	Highlight color:	Колір підсвічування:
+	Interactivity	Інтерактивність
+	Link target:	Ціль посилання:
+	Link title:	Заголовок посилання:
+	Path outline	Контур шляху
+	Transform handles	Маніпулятори трансформації
+	Plot…	Вивести на плотер…
+	Import Web Image…	Імпортувати зображення з вебу…
+	Check Spelling	Перевірка правопису
+	Edit Custom Dictionary	Змінити власний словник
+	The spell check is complete.	Перевірку правопису завершено.
+	Words checked	Перевірено слів
+	Check Again	Перевірити знову
+	Word Not Found:	Слово не знайдено:
+	Change To:	Замінити на:
+	Suggestions:	Варіанти:
+	No suggestions	Немає варіантів
+	Ignore All	Пропустити все
+	No words yet	Слів ще немає
+	Word:	Слово:
+	Change Spelling	Виправити написання
+	Ignore Spelling	Пропустити слово
+	Add to Dictionary	Додати до словника
+	Remove from Dictionary	Видалити зі словника
+	Spelling Dictionaries	Орфографічні словники
+	Visible Hairlines	Видимі волосяні лінії
+	Rename…	Перейменувати…
+	Extract…	Витягти…
+	Object Attributes	Атрибути об'єкта
+	Object Attributes…	Атрибути об'єкта…
+	Create Tiled Clones…	Створити мозаїку клонів…
+	Rename Symbol	Перейменувати символ
+	Set Object Attribute	Задати атрибут об'єкта
+	Trace Pixel Art…	Трасувати піксельну графіку…
+	Objects to Marker	Об'єкти в маркер
+	Markers	Маркери
+	Markers:	Маркери:
+	Delete Marker	Видалити маркер
+	SVG Font Editor	Редактор шрифтів SVG
+	SVG Font Editor…	Редактор шрифтів SVG…
+	New Font	Новий шрифт
+	Delete Font	Видалити шрифт
+	No SVG font yet: make one, or turn glyph layers into one.	Шрифтів SVG ще немає: створіть шрифт або зберіть його з шарів гліфів.
+	Glyph Layers to Font	Шари гліфів у шрифт
+	Glyph	Гліф
+	Advance	Ширина
+	Curves	Контури
+	Unicode:	Unicode:
+	Glyph name:	Назва гліфа:
+	Advance:	Ширина:
+	Add Glyph	Додати гліф
+	Remove Glyph	Видалити гліф
+	Get Curves from Selection	Узяти контури з виділення
+	Glyph to Objects	Гліф в об'єкти
+	Kerning:	Кернінг:
+	Set Pair	Задати пару
+	Preview:	Перегляд:
+	Font to Glyph Layers	Шрифт у шари гліфів
+	New SVG Font	Новий шрифт SVG
+	SVG Fonts	Шрифти SVG
+	Delete SVG Font	Видалити шрифт SVG
+	SVG Font Options	Параметри шрифту SVG
+	Set Glyph	Задати гліф
+	Set Kerning Pair	Задати пару кернінгу
+	Preview SVG Font	Перегляд шрифту SVG
+	Glyph Layers to SVG Font	Шари гліфів у шрифт SVG
+	SVG Font to Glyph Layers	Шрифт SVG у шари гліфів
+
+# v0.11 messages
+@msg	WPG version 2 files (WordPerfect 6 and later) aren't read yet: save the graphic as WPG 1 or another vector format	файли WPG версії 2 (WordPerfect 6 і новіші) поки не читаються: збережіть графіку як WPG 1 або в іншому векторному форматі
+@msg	bad central record	пошкоджений центральний запис
+@msg	downloading needs the desktop app	для завантаження потрібен настільний застосунок
+@msg	give `url`: an http:// or https:// address of an image	вкажіть `url`: адресу зображення, що починається з http:// або https://
+@msg	no zip end record	немає кінцевого запису zip
+@msg	not a CGM file	це не файл CGM
+@msg	not a CorelDRAW file	це не файл CorelDRAW
+@msg	not a WordPerfect Graphics file	це не файл WordPerfect Graphics
+@msg	not a zip	це не zip
+@msg	not an XFig file	це не файл XFig
+@msg	select an embedded image	виділіть вбудоване зображення
+@msg	the drawing has nothing Redrob Canvas reads	у малюнку немає нічого, що читає Redrob Canvas
+@msg	the effect links to no object in this document	ефект не пов’язаний із жодним об’єктом у цьому документі
+@msg	the file draws nothing Redrob Canvas reads	файл не малює нічого, що читає Redrob Canvas
+@msg	the file is empty	файл порожній
+@msg	the font has a glyph for `{nu}` already	у шрифті вже є гліф для `{nu}`
+@msg	the graphic draws nothing Redrob Canvas reads	графіка не малює нічого, що читає Redrob Canvas
+@msg	the metafile draws nothing Redrob Canvas reads	метафайл не малює нічого, що читає Redrob Canvas
+@msg	the object is gone	об’єкт більше не існує
+@msg	the preview bitmap can't be read	не вдається прочитати растрове зображення попереднього перегляду
+@msg	the preview bitmap is empty	растрове зображення попереднього перегляду порожнє
+@msg	the selected object has no link	у виділеного об’єкта немає посилання
+@msg	the view's rotation is locked (View › Lock Rotate View)	обертання виду заблоковано (Перегляд › Заблокувати обертання виду)
+@msg	truncated zip	обрізаний zip
+@msg	view.setRotation: missing `angle`	view.setRotation: відсутній `angle`
+@msg	{_1}: the dictionary is empty	{_1}: словник порожній
+@msg	{device}: the web app has no serial devices or files: export the HPGL and download it	{device}: у вебзастосунку немає послідовних пристроїв і файлів: експортуйте HPGL і завантажте його
+@msg	{device}: {e}	{device}: {e}
+@msg	{id} isn't a format this reader knows	{id} не є форматом, відомим цьому модулю читання
+@msg	{kind}{ver} files are compressed containers whose drawing records aren't documented: export the drawing as SVG, PDF, EPS or EMF from CorelDRAW to open it	файли {kind}{ver} є стиснутими контейнерами, записи малюнка в яких не задокументовані: експортуйте малюнок із CorelDRAW у SVG, PDF, EPS або EMF, щоб відкрити його
+@msg	{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it	{kind}{ver}: записи малюнка не задокументовані, і у файлі немає растрового зображення попереднього перегляду: експортуйте малюнок у SVG, PDF, EPS або EMF, щоб відкрити його
+@msg	{name}: compression method {m} isn't supported	{name}: метод стиснення {m} не підтримується
+@msg	{name}: not found among the document's images	{name}: не знайдено серед зображень документа
+@msg	{name}: too large	{name}: надто великий
+@msg	{url}: {e}	{url}: {e}
